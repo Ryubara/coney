@@ -54,6 +54,15 @@ std::optional<double> LevelObjects::objectOfTriangle(std::uint32_t triangle) con
     return std::nullopt;
 }
 
+bool LevelObjects::ghostForCamera(double object) {
+    const Door* door = doors.find(object);
+    if (door == nullptr || !isDoorKind(door->objectType)) {
+        return false;
+    }
+    markTriangles(world.collision, door->triangles, kCameraGhostBit);
+    return true;
+}
+
 std::optional<anim::Vec3> LevelObjects::positionOf(double object) const {
     if (const GlassPane* pane = glass.find(object)) {
         return pane->centre;

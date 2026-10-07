@@ -57,6 +57,16 @@ inline constexpr std::uint32_t kStereoStealIntro = 683; ///< `STEREO_STEAL_INTRO
 inline constexpr std::uint32_t kStereoStealLoop = 684;  ///< The stereo theft's loop while the stick turns.
 inline constexpr std::uint32_t kTaggingIntro = 334;     ///< `ANIM_TAGGING_INTRO`: the spray's start.
 inline constexpr std::uint32_t kTaggingLoop = 335;      ///< The spray's loop while the stick game runs.
+// The arrest and the uncuffing (docs/research/crimes.md#uncuffing): the cuffed human's idle, the freer's clips and the
+// cuffed human's paired reactions.
+inline constexpr std::uint32_t kArrestedIdle = 320;      ///< `ANIM_ARRESTED_IDLE`, move style `0x11`'s idle.
+inline constexpr std::uint32_t kReleaseIntro = 325;      ///< `ANIM_ARREST_RELEASE_INTRO_FRONT`: the freer's start.
+inline constexpr std::uint32_t kReleaseIntroReact = 326; ///< The cuffed human's half of 325.
+inline constexpr std::uint32_t kReleaseLoop = 329;       ///< `ANIM_ARREST_RELEASE_LOOP`: the freer while he mashes.
+inline constexpr std::uint32_t kReleaseLoopReact = 330;  ///< The cuffed human's loop while the mash runs.
+inline constexpr std::uint32_t kReleaseHitReact = 331;   ///< `ANIM_ARREST_RELEASE_HIT_REACT`: the freer hit.
+inline constexpr std::uint32_t kReleaseEnd = 332;        ///< `ANIM_ARREST_RELEASE_END`: the freer's end.
+inline constexpr std::uint32_t kReleaseEndReact = 333;   ///< `ANIM_ARREST_RELEASE_END_REACT`: the freed human's end.
 inline constexpr std::uint32_t kBlockShuffle = 607;
 
 /// What the player's moves hold on the record `+0x08` while their clips play (docs/research/tasks.md#held-flags).

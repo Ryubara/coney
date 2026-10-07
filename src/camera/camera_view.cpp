@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "camera/camera_view.h"
 
+#include <algorithm>
 #include <cmath>
+
+#include "camera/camera_lens.h"
+#include "raycast/collision_mesh.h"
 
 namespace coney::camera {
 
@@ -36,6 +40,36 @@ anim::Vec3 viewForward(const CameraView& view) {
 
 anim::Vec3 viewUp(const CameraView& view) {
     return anim::transformDirection(anim::matrixFromQuat(view.orientation), anim::Vec3{0.0F, 0.0F, 1.0F});
+}
+
+bool canSeePoint(const CameraView& view, anim::Vec3 point, float range, const raycast::CollisionMesh* mesh) {
+    const float reach = range > 0.0F ? std::min(range, view.farClip) : view.farClip;
+    const anim::Vec3 to = anim::subtract(point, view.position);
+    const float distance = anim::length(to);
+    if (distance > reach) {
+        return false;
+    }
+    // In the camera's frame: depth along +y, across along +x, up along +z, against the view window.
+    const anim::Mat34 frame = anim::matrixFromQuat(view.orientation);
+    const float depth = anim::dot(to, frame.y);
+    if (depth < view.nearClip) {
+        return false;
+    }
+    const ViewWindow window =
+        viewWindow(CameraLens{.fieldOfView = view.fieldOfView, .nearClip = view.nearClip, .farClip = view.farClip});
+    if (std::abs(anim::dot(to, frame.x)) > depth * window.halfWidth ||
+        std::abs(anim::dot(to, frame.z)) > depth * window.halfHeight) {
+        return false;
+    }
+    // Nothing of the world in the way.
+    if (mesh == nullptr || distance <= 0.0F) {
+        return true;
+    }
+    const anim::Vec3 direction = anim::scale(to, 1.0F / distance);
+    const raycast::Ray ray{.origin = {view.position.x, view.position.y, view.position.z},
+                           .direction = {direction.x, direction.y, direction.z},
+                           .length = distance};
+    return !mesh->rayCast(ray, {}, 0).has_value();
 }
 
 CameraView viewLookingAt(anim::Vec3 position, anim::Vec3 lookAt, float fieldOfView, float nearClip, float farClip) {

@@ -103,24 +103,33 @@ class StereoTheft {
     Stick m_last;
 };
 
-/// The button mash, mode 1: alternate L1 and R1. Each update the meter loses CombatTuning::mashDecay; each change from
-/// one button to the other adds half the press gain times the Warrior class's factor (1.5 or 0.7, byte `+0x08`); the
-/// target completes it.
+/// The mash gain factor of a Warrior class byte `+0x08`: 1.5 for 1, 0.7 for 3 (docs/research/crimes.md#uncuffing).
+/// **Coney's reading**: any other byte keeps the gain as it is (1.0).
+[[nodiscard]] float mashFactor(std::uint8_t warriorMashByte);
+
+/// The button mash, mode 1 (freeing a cuffed human, docs/research/crimes.md#uncuffing), one update at a time:
+/// - an **alternation** between commands 6 (L1 held) and 4 (R1 held), the first of either and then each switch,
+///   adds half the press gain times the Warrior class's factor, rounded, and restarts the decay;
+/// - a **quit** command (10, 17, 18 or 30) sets the meter to -1;
+/// - otherwise the meter loses the decay, which stops once a step takes it to 0 or below and has not started before
+///   the first alternation.
 ///
-/// **Coney choices**: the first press counts as an alternation; L1's and R1's pressed commands count as their held
-/// ones; other commands are ignored (the research names failing commands only for mode 3); the gain is truncated to
-/// a whole number.
+/// The target completes it; a meter below 0 fails it.
+/// @orig 0x0027bcd8 Mash_IsAlternation (unknown)
+/// @orig 0x0027bc48 Mash_IsQuitCommand (unknown)
 class ButtonMash {
   public:
-    /// One update with this update's command; `pressFactor` is the Warrior class's 1.5 or 0.7.
+    /// One update with this update's command; `pressFactor` is mashFactor() of the Warrior class.
+    /// @orig 0x0027e6d8 Player_UpdateTheft (unknown)
     GameResult update(CommandId command, float pressFactor, const CombatTuning& tuning);
 
-    /// The meter, 0 up to the target.
+    /// The meter: up to the target, -1 once failed.
     [[nodiscard]] int meter() const { return m_meter; }
 
   private:
     int m_meter = 0;
-    int m_lastSide = 0; // 0 none, 1 L1, 2 R1
+    int m_lastSide = 0;      // 0 none, 1 L1, 2 R1
+    bool m_decaying = false; // the inverse of the flag 0x005109a8
 };
 
 } // namespace coney::combat

@@ -182,7 +182,7 @@ mark humans. The result was described as nil when false before; it is pushed as 
   `0x001202e8` `Camera_AnyPlayerCanSeePoint`, `0x00122548` `Camera_CanSeePoint`
 - **Used by** 19 of 467 script chunks (179 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 10 of 28 levels, first [`level93`](story.md#level93) (mission 10)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CamDelete {#camdelete}
 
@@ -570,7 +570,7 @@ queries whose mask has bit 9 skip the triangles too (not listed).
   `0x00395020`, `0x003a4a40` `CollisionMesh_OrTriangleTypeBits`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level31`](story.md#level31) (mission 11)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CamLeadRail {#camleadrail}
 

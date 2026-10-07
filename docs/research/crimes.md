@@ -728,6 +728,25 @@ let-go or a hit (`LevelPickups::mugEnded()`). **Coney's stand-ins**: a `grp_` ob
 rolled object is not given to the human; not yet: interrogation, the pocket items, the half-way `no_item` stop, ped
 type 5's 1.5 times, item 2's pick-up sound and the statistic.
 
+**The arrest and the uncuffing** (2026-10-07): `HuSetArrested` (`ai::ScriptedHumans::setArrested()`) cuffs the human
+(`Human::setArrested()`: stopped, its fighting ended, 320 looping), resets its brain as `Brain_OnArrested` does
+(actions, target, goals down to a FindEnemy goal), sends it event 17 with 1 and has a friendly AI human say 25
+`arrested`; the release sends event 17 with 0 after the cuffs come off. In gameplay
+(`repo:src/gamemodes/gameplay_uncuff.cpp`) the kind-0 record is a cuffed AI human friendly to player 1 within
+`CfgActionDistance` 0 in plan and 1.5 m of his waist, not being freed: its prompt is `GSTRING.HUD` 2, chosen before the
+action object and hidden while a mash runs, and triangle tries it before the level's own records. The start has the
+freer say 68, turn to the cuffed human over 325 (holding `0x2000000`, so the mash's input waits) then loop 329, and
+runs the mash ([above](#uncuffing), `combat::ButtonMash`) with his class's byte `+0x08` (`script::warriorMashByte()`,
+`combat::mashFactor()`); the cuffed human plays 326 paired, then 330. Success: he says 67 and is released (and revived
+when knocked out and revivable), the freer plays 332 and he 333; failure (a quit command, the decay below 0, the cuffed
+human gone or released some other way): 332 and back to 320. A body something else takes before the outcome (a hit)
+plays 331. A disc test (`[disc][uncuff]`, `repo:tests/platform/disc_level80_test.cpp`) frees Snow and Cowboy at
+`level80` checkpoint 2 and reaches checkpoint 3. **Coney's stand-ins and readings**: friendly is the gangs'
+friendship (`Human_IsFriendly`, `0x00222a90`, is not on the page); event 17's other human is none; the push weight,
+the partner and the shared body group are not kept; after a hit the cuffed human goes back to 320. Not yet: the mash
+meter and hint 19, the `dyn_cuffs` icon, the key path, the 0.2 m capsule test, players in cuffs, the leaderless
+gang's follow after a release and `0x00280fd8`.
+
 Coney's choices: a break-in and a custom crime queue kind-1 responders (the break-in after `CfgBreakAndEnterDelay`);
 the assault statistic is scored once per victim through the service.
 

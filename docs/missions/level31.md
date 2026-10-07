@@ -29,14 +29,14 @@ wheelchair-bound lieutenant of the Turnbull AC, and his gang.
 
 ## What it needs {#needs}
 
-Its scripts can call 266 script bindings. 9 of them are new, which no earlier level of the story calls: 2 are
+Its scripts can call 266 script bindings. 9 of them are new, which no earlier level of the story calls: 3 are
 implemented in Coney and 9 are traced. The full list is on [the coverage page](../references/bindings/story.md#level31).
 
 | Family | New bindings | In Coney |
 | --- | --- | --- |
 | [AI](../references/bindings/ai.md) | 3 | 0 |
 | [Gangs](../references/bindings/gang.md) | 2 | 1 |
-| [Cameras](../references/bindings/camera.md) | 1 | 0 |
+| [Cameras](../references/bindings/camera.md) | 1 | 1 |
 | [World and objects](../references/bindings/world.md) | 1 | 0 |
 | [Sound and music](../references/bindings/sound.md) | 2 | 1 |
 

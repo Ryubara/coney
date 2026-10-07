@@ -728,6 +728,11 @@ name = "Camera_SetFollowSecondary"
 subsystem = "Camera"
 
 [[function]]
+address = 0x0011dd78
+name = "Camera_CanSeeObject"
+subsystem = "Camera"
+
+[[function]]
 address = 0x0011de58
 name = "Camera_EnableFeature"
 subsystem = "Camera"
@@ -3609,6 +3614,11 @@ name = "Mugging_End"
 subsystem = "Human"
 
 [[function]]
+address = 0x0022d3f8
+name = "Uncuff_BeginMash"
+subsystem = "Human"
+
+[[function]]
 address = 0x0022d790
 name = "LockPick_Start"
 subsystem = "Human"
@@ -3633,6 +3643,16 @@ subsystem = "Human"
 [[function]]
 address = 0x0022e848
 name = "Tag_End"
+subsystem = "Human"
+
+[[function]]
+address = 0x0022ec18
+name = "Human_Arrest"
+subsystem = "Human"
+
+[[function]]
+address = 0x0022ef58
+name = "Human_Unarrest"
 subsystem = "Human"
 
 [[function]]
@@ -3676,6 +3696,11 @@ address = 0x00231198
 name = "AttackKind_ChainDelay"
 subsystem = "Human"
 size = 1016
+
+[[function]]
+address = 0x002325e0
+name = "MiniGame_Abort"
+subsystem = "Human"
 
 [[function]]
 address = 0x00233d60
@@ -4624,6 +4649,11 @@ subsystem = "Human"
 size = 1976
 
 [[function]]
+address = 0x00255f08
+name = "MiniGame_Update"
+subsystem = "Human"
+
+[[function]]
 address = 0x002562d0
 name = "Human_DrainMeters"
 subsystem = "Human"
@@ -4688,6 +4718,21 @@ subsystem = "Human"
 [[function]]
 address = 0x0025f770
 name = "Human_BuildIdleTasks"
+subsystem = "Human"
+
+[[function]]
+address = 0x002606e8
+name = "Uncuff_MashSuccess"
+subsystem = "Human"
+
+[[function]]
+address = 0x00260a70
+name = "Uncuff_MashFail"
+subsystem = "Human"
+
+[[function]]
+address = 0x00260ca8
+name = "Uncuff_Start"
 subsystem = "Human"
 
 [[function]]
@@ -4860,6 +4905,16 @@ subsystem = "Human"
 [[function]]
 address = 0x0027a6c0
 name = "Player_PickTarget"
+subsystem = "Human"
+
+[[function]]
+address = 0x0027bc48
+name = "Mash_IsQuitCommand"
+subsystem = "Human"
+
+[[function]]
+address = 0x0027bcd8
+name = "Mash_IsAlternation"
 subsystem = "Human"
 
 [[function]]
@@ -5036,6 +5091,11 @@ address = 0x0028c1a8
 name = "Brain_InstallHandlers"
 subsystem = "Human"
 size = 440
+
+[[function]]
+address = 0x0028c5d8
+name = "Brain_OnArrested"
+subsystem = "Human"
 
 [[function]]
 address = 0x0028cfe0
@@ -7147,6 +7207,11 @@ name = "CamSetSecondary"
 subsystem = "Scripting"
 
 [[function]]
+address = 0x00367160
+name = "lua_CamCanSee"
+subsystem = "Scripting"
+
+[[function]]
 address = 0x003671e0
 name = "CamEnable"
 subsystem = "Scripting"
@@ -7749,6 +7814,11 @@ name = "SpawnParticle"
 subsystem = "Scripting"
 
 [[function]]
+address = 0x00379be8
+name = "lua_CamGhostDoor"
+subsystem = "Scripting"
+
+[[function]]
 address = 0x00379ea0
 name = "SetupRadio"
 subsystem = "Scripting"
@@ -8132,6 +8202,11 @@ subsystem = "TaskEngine"
 size = 1136
 
 [[function]]
+address = 0x00395020
+name = "ObjType_IsDoorKind"
+subsystem = "TaskEngine"
+
+[[function]]
 address = 0x00395b70
 name = "WorldObject_Update"
 subsystem = "TaskEngine"
@@ -8225,6 +8300,11 @@ address = 0x00397330
 name = "DoorCRCCheck"
 subsystem = "TaskEngine"
 size = 8
+
+[[function]]
+address = 0x003973a0
+name = "Door_SetCameraGhost"
+subsystem = "TaskEngine"
 
 [[function]]
 address = 0x00397598

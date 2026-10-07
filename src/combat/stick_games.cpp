@@ -40,15 +40,21 @@ float wrapRadians(float radians) {
 // The stick's anticlockwise angle from the right, radians: what the theft's rotation is measured in.
 float anticlockwiseAngle(Stick stick) { return std::atan2(stick.y, stick.x); }
 
-// Which mash button a command is: 1 for L1, 2 for R1, 0 for neither.
+// Which mash button a command is: 1 for L1 held, 2 for R1 held, 0 for neither (the presses do not count).
 int mashSide(CommandId command) {
-    if (command == command::kL1Held || command == command::kL1Pressed) {
+    if (command == command::kL1Held) {
         return 1;
     }
-    if (command == command::kR1Held || command == command::kR1Pressed) {
+    if (command == command::kR1Held) {
         return 2;
     }
     return 0;
+}
+
+// Whether a command quits the mash: triangle, square's chain command, cross or circle pressed.
+bool mashQuits(CommandId command) {
+    return command == command::kTrianglePressed || command == command::kSquareChain ||
+           command == command::kCrossPressed || command == command::kCirclePressed;
 }
 
 } // namespace
@@ -146,18 +152,34 @@ GameResult StereoTheft::update(std::uint64_t nowMs, CommandId command, Stick sti
     return GameResult::Running;
 }
 
+float mashFactor(std::uint8_t warriorMashByte) {
+    constexpr float kFast = 1.5F;
+    constexpr float kSlow = 0.7F;
+    if (warriorMashByte == 1) {
+        return kFast;
+    }
+    return warriorMashByte == 3 ? kSlow : 1.0F;
+}
+
 GameResult ButtonMash::update(CommandId command, float pressFactor, const CombatTuning& tuning) {
-    m_meter = std::max(0, m_meter - tuning.mashDecay);
     const int side = mashSide(command);
     if (side != 0 && side != m_lastSide) {
+        // An alternation: the gain, rounded, and the decay (re)started.
         m_lastSide = side;
-        m_meter += static_cast<int>(static_cast<float>(tuning.mashPressGain) / 2.0F * pressFactor);
+        m_meter += static_cast<int>(std::lround(static_cast<float>(tuning.mashPressGain) / 2.0F * pressFactor));
+        m_decaying = true;
+    } else if (mashQuits(command)) {
+        m_meter = -1;
+    } else if (m_decaying) {
+        // The decay stops at 0 or below; a step that ends below 0 fails the mash.
+        m_meter -= tuning.mashDecay;
+        m_decaying = m_meter > 0;
     }
     if (m_meter >= tuning.mashTarget) {
         m_meter = tuning.mashTarget;
         return GameResult::Succeeded;
     }
-    return GameResult::Running;
+    return m_meter < 0 ? GameResult::Failed : GameResult::Running;
 }
 
 } // namespace coney::combat

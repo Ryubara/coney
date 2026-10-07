@@ -27,6 +27,7 @@ add_library(coney_core STATIC
     gamemodes/game_mode_stack.cpp
     gamemodes/gameplay_mode.cpp
     gamemodes/gameplay_tag.cpp
+    gamemodes/gameplay_uncuff.cpp
     gamemodes/gameplay_war_commands.cpp
     gamemodes/system_music.cpp
     gamemodes/legal_screen_mode.cpp

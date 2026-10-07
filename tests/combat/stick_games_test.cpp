@@ -155,12 +155,43 @@ TEST_CASE("the button mash fills on alternating L1 and R1 and loses 15 an update
     CHECK(fast > 0);
     CHECK(slow > fast);
 
-    // Holding one button fills nothing past its first press.
+    // Holding one button counts its first command only; the decay then takes the meter below 0 and fails the mash.
     ButtonMash held;
-    for (int update = 0; update < 100; ++update) {
-        CHECK(held.update(command::kL1Held, 1.5F, tuning) == GameResult::Running);
+    GameResult heldResult = GameResult::Running;
+    int heldUpdates = 0;
+    while (heldResult == GameResult::Running && heldUpdates < 100) {
+        heldResult = held.update(command::kL1Held, 1.5F, tuning);
+        ++heldUpdates;
     }
-    CHECK(held.meter() == 0);
+    CHECK(heldResult == GameResult::Failed);
+    // 250 / 2 x 1.5 = 187.5, rounded to 188, then 15 an update: below 0 on the 13th decay step.
+    CHECK(heldUpdates == 14);
+    CHECK(held.meter() == -7);
+}
+
+TEST_CASE("the button mash waits for the first alternation and a quit command fails it", "[combat]") {
+    const CombatTuning tuning;
+    // No decay before the first alternation: the meter stays at 0 and the mash runs on.
+    ButtonMash idle;
+    for (int update = 0; update < 50; ++update) {
+        CHECK(idle.update(command::kNone, 1.0F, tuning) == GameResult::Running);
+    }
+    CHECK(idle.meter() == 0);
+    // The presses themselves do not count, only the held commands.
+    CHECK(idle.update(command::kL1Pressed, 1.0F, tuning) == GameResult::Running);
+    CHECK(idle.meter() == 0);
+    // An alternation gains 125, then triangle quits: the meter is -1 and the mash fails.
+    CHECK(idle.update(command::kL1Held, 1.0F, tuning) == GameResult::Running);
+    CHECK(idle.meter() == 125);
+    CHECK(idle.update(command::kTrianglePressed, 1.0F, tuning) == GameResult::Failed);
+    CHECK(idle.meter() == -1);
+}
+
+TEST_CASE("the mash factor of a Warrior class byte", "[combat]") {
+    CHECK(mashFactor(1) == 1.5F);
+    CHECK(mashFactor(3) == 0.7F);
+    CHECK(mashFactor(2) == 1.0F);
+    CHECK(mashFactor(0) == 1.0F);
 }
 
 TEST_CASE("SetInterrogateParam's mugging: the off-target time adds up and the target moves with the progress",

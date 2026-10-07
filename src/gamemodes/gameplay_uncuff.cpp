@@ -1,0 +1,178 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// The gameplay mode's uncuffing (docs/research/crimes.md#arrest, docs/research/crimes.md#uncuffing): a cuffed friendly
+// human in player 1's reach is his kind-0 action, triangle starts the mash of L1 and R1, and its outcome frees the
+// cuffed human or leaves him cuffed.
+#include <cmath>
+#include <cstdint>
+#include <format>
+#include <optional>
+#include <string>
+
+#include "ai/brain.h"
+#include "ai/brains.h"
+#include "ai/gangs.h"
+#include "ai/scripted_brains.h"
+#include "ai/scripted_humans.h"
+#include "characters/character_class.h"
+#include "combat/player_combat.h"
+#include "combat/stick_games.h"
+#include "gamemodes/gameplay_mode.h"
+#include "human/human.h"
+#include "human/human_flags.h"
+#include "scripting/object_bindings.h"
+#include "scripting/sound_bindings.h"
+
+namespace coney {
+
+namespace {
+
+// The speech commands (docs/references/speech.md): the cuffed human's `arrested`, the freer's `unarrest_reasure`
+// and the freed human's `unarrest_thank`.
+constexpr std::uint32_t kArrestedCommand = 25;
+constexpr std::uint32_t kReassureCommand = 68;
+constexpr std::uint32_t kThankCommand = 67;
+// A context record's height must be within this of the human's waist, the feet plus 1 m (`0x00417ed0`).
+constexpr float kWaistHeight = 1.0F;
+constexpr float kHeightReach = 1.5F;
+// The kind-0 record's prompt: `GSTRING.HUD` 2 (uncuff).
+constexpr std::uint32_t kUncuffPrompt = 2;
+
+// Whether `brain` is friendly to `player` for the kind-0 record (`Human_IsFriendly`, `0x00222a90`). **Coney's
+// stand-in**: the gangs' friendship (ai::Gangs::friends(): the same gang or kind, or the friend bit).
+bool friendlyTo(const ai::Brain& brain, const ai::Brain& player) {
+    return ai::Gangs::friends(brain.gang(), player.gang());
+}
+
+} // namespace
+
+void GameplayMode::onArrest(ai::Brain& brain, bool arrested) {
+    // A release needs nothing here: the kind-0 record goes with the cuffs (cuffedInReach() reads them) and a mash under
+    // way on him fails (updateUncuff()).
+    const ai::Brain* player = m_scripted ? m_scripted->player() : nullptr;
+    // An AI human friendly to player 1 gets the kind-0 record (cuffedInReach() finds it) and says 25 `arrested`.
+    if (!arrested || player == nullptr || brain.type() == ai::BrainType::Player || !friendlyTo(brain, *player)) {
+        return;
+    }
+    m_log(std::format("uncuff: human {:.0f} arrested\n", brain.handle()));
+    if (m_context.sound != nullptr) {
+        static_cast<void>(m_context.sound->sayCommand(
+            script::CommandCall{.human = brain.handle(), .command = kArrestedCommand, .interrupt = true}, {}));
+    }
+}
+
+ai::Brain* GameplayMode::cuffedInReach() const {
+    ai::Brain* player = m_scripted ? m_scripted->player() : nullptr;
+    if (player == nullptr) {
+        return nullptr;
+    }
+    const anim::Vec3 feet = player->human().position();
+    const float reachSquared = m_state.hub.actionDistanceSquared.at(0);
+    ai::Brain* best = nullptr;
+    float bestSquared = reachSquared;
+    ai::Brains& brains = m_scripted->owner();
+    for (std::size_t i = 0; i < brains.size(); ++i) {
+        ai::Brain& brain = brains.at(i);
+        const human::Human& human = brain.human();
+        // A friendly AI human who is cuffed and not being freed already.
+        if (&brain == player || brain.type() == ai::BrainType::Player || !human.script().arrested ||
+            !friendlyTo(brain, *player) || (m_uncuff && m_uncuff->cuffed == brain.handle())) {
+            continue;
+        }
+        // In the kind's reach in the ground plane, and within 1.5 m of the player's waist.
+        const anim::Vec3 at = human.position();
+        const float squared = ((at.x - feet.x) * (at.x - feet.x)) + ((at.y - feet.y) * (at.y - feet.y));
+        if (squared <= bestSquared && std::fabs(at.z - (feet.z + kWaistHeight)) <= kHeightReach) {
+            best = &brain;
+            bestSquared = squared;
+        }
+    }
+    return best;
+}
+
+std::string GameplayMode::uncuffPrompt() const {
+    if (m_uncuff || m_context.strings == nullptr || cuffedInReach() == nullptr) {
+        return {};
+    }
+    return std::string(m_context.strings->get(kUncuffPrompt));
+}
+
+bool GameplayMode::startUncuff(human::Human& freer) {
+    ai::Brain* cuffed = cuffedInReach();
+    const HumanCreation* player = m_humans.player(1);
+    if (cuffed == nullptr || player == nullptr || m_uncuff) {
+        return false;
+    }
+    // Uncuff_Start without a key: the freer says 68 and turns to the cuffed human over 325; the mash runs with his
+    // Warrior class's factor; the cuffed human plays his half. **Coney's readings**: the 0.2 m capsule test between the
+    // two and the key path (`Uncuff_WithKey`, `0x00260fd0`) are not built.
+    const int mashByte = script::warriorMashByte(&m_recorded, characters::warriorClassOf(player->type));
+    const float factor = combat::mashFactor(static_cast<std::uint8_t>(mashByte));
+    if (m_context.sound != nullptr) {
+        static_cast<void>(m_context.sound->sayCommand(
+            script::CommandCall{.human = player->handle, .command = kReassureCommand, .interrupt = true}, {}));
+    }
+    freer.startUncuff(cuffed->human().position(), factor);
+    cuffed->human().playUncuffReact(freer);
+    m_uncuff = Uncuff{.freer = player->handle, .cuffed = cuffed->handle()};
+    m_log(std::format("uncuff: freeing human {:.0f}, mash byte {}\n", cuffed->handle(), mashByte));
+    return true;
+}
+
+void GameplayMode::updateUncuff() {
+    ai::Brain* player = m_scripted ? m_scripted->player() : nullptr;
+    if (player == nullptr) {
+        return;
+    }
+    // Triangle by a cuffed human: the kind-0 record, tried before the level's own.
+    human::Human& freer = player->human();
+    if (m_uncuffHooked != &freer) {
+        m_uncuffHooked = &freer;
+        freer.setFirstContextAction([this](human::Human& human) { return startUncuff(human); });
+    }
+    if (!m_uncuff) {
+        return;
+    }
+    ai::Brain* cuffed = m_scripted->brain(m_uncuff->cuffed);
+    const combat::PlayerCombat& combat = freer.fighter().combat();
+    const combat::GameResult result = combat.theftResult();
+    const bool running = combat.mode() == combat::CombatMode::Theft;
+    // The cuffed human gone, or freed some other way: the mash fails.
+    const bool cuffedGone = cuffed == nullptr || !cuffed->human().script().arrested;
+    if (running && !cuffedGone && freer.uncuffPlaying()) {
+        return;
+    }
+    const Uncuff uncuff = *m_uncuff;
+    m_uncuff.reset();
+    if (result == combat::GameResult::Succeeded && !cuffedGone) {
+        uncuffSucceeded(freer, *cuffed);
+        return;
+    }
+    // A hit (anything that took the freer's body before an outcome) plays 331; a failure 332. **Coney's reading**:
+    // the cuffed human goes back to 320 after a hit too (the original's clips there are not traced).
+    const bool hit = result == combat::GameResult::Running && !cuffedGone;
+    m_log(std::format("uncuff: freeing human {:.0f} {}\n", uncuff.cuffed, hit ? "cut short" : "failed"));
+    freer.endUncuff(hit);
+    if (cuffed != nullptr && cuffed->human().script().arrested) {
+        cuffed->human().endUncuffReact(freer, false);
+    }
+}
+
+// Uncuff_MashSuccess: the cuffed human thanks the freer and is released (and brought round when knocked out and
+// revivable), each playing his end.
+// @orig 0x002606e8 Uncuff_MashSuccess (unknown)
+void GameplayMode::uncuffSucceeded(human::Human& freer, ai::Brain& cuffed) {
+    m_log(std::format("uncuff: freed human {:.0f}\n", cuffed.handle()));
+    if (m_context.sound != nullptr) {
+        static_cast<void>(m_context.sound->sayCommand(
+            script::CommandCall{.human = cuffed.handle(), .command = kThankCommand, .interrupt = true}, {}));
+    }
+    freer.endUncuff(false);
+    human::Human& freed = cuffed.human();
+    m_scripted->humanHost().setArrested(cuffed.handle(), false);
+    if (freed.script().knockedOut && freed.hasFlag(human::flag::kRevivable)) {
+        freed.revive();
+    }
+    freed.endUncuffReact(freer, true);
+}
+
+} // namespace coney

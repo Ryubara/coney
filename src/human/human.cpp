@@ -609,10 +609,14 @@ void Human::updateMeters(bool sprintHeld) {
 
 bool Human::tryContextAction() {
     // The level decides what the press does, whatever is in hand; not during a pick-up.
-    if (!m_contextAction || m_pickUp) {
+    if (m_pickUp) {
         return false;
     }
-    return m_contextAction(*this);
+    // A cuffed human to free (kind 0) before the level's records and objects.
+    if (m_firstContextAction && m_firstContextAction(*this)) {
+        return true;
+    }
+    return m_contextAction && m_contextAction(*this);
 }
 
 bool Human::startPickUp(double handle, anim::Vec3 point, std::uint32_t clip) {
@@ -638,21 +642,68 @@ bool Human::startPickUp(double handle, anim::Vec3 point, std::uint32_t clip) {
     return true;
 }
 
+void Human::turnOverClip(std::uint32_t clip, anim::Vec3 point, float share) {
+    const anim::AnimClip* found = m_animator.anims().clip(clip);
+    if (found == nullptr) {
+        return;
+    }
+    const float rate = m_animator.anims().rate(clip) > 0.0F ? m_animator.anims().rate(clip) : 1.0F;
+    const int updates = std::max(1, static_cast<int>(std::lround(found->duration / rate * share / m_stepSeconds)));
+    const anim::Vec3 to = anim::subtract(point, m_position);
+    const float turn = std::hypot(to.x, to.y) > 1e-4F ? wrapAngle(headingOf(to) - m_heading) : 0.0F;
+    m_clipTurn = ClipTurn{.clip = clip, .updatesLeft = updates, .turnStep = turn / static_cast<float>(updates)};
+}
+
 bool Human::startTagSpray(anim::Vec3 point) {
-    const anim::AnimClip* intro = m_animator.anims().clip(clips::kTaggingIntro);
-    if (intro == nullptr) {
+    if (m_animator.anims().clip(clips::kTaggingIntro) == nullptr) {
         return false;
     }
     // The turn to the tag is spread over half the intro's playing time.
-    const float rate =
-        m_animator.anims().rate(clips::kTaggingIntro) > 0.0F ? m_animator.anims().rate(clips::kTaggingIntro) : 1.0F;
-    const int updates = std::max(1, static_cast<int>(std::lround(intro->duration / rate / 2.0F / m_stepSeconds)));
-    const anim::Vec3 to = anim::subtract(point, m_position);
-    const float turn = std::hypot(to.x, to.y) > 1e-4F ? wrapAngle(headingOf(to) - m_heading) : 0.0F;
+    constexpr float kHalf = 0.5F;
+    turnOverClip(clips::kTaggingIntro, point, kHalf);
     m_animator.playCombat(clips::one(clips::kTaggingIntro), clips::kTaggingLoop, AnimState::Hold, kCombatFade);
     m_velocity = anim::Vec3{};
-    m_tagTurn = TagTurn{.updatesLeft = updates, .turnStep = turn / static_cast<float>(updates)};
     return true;
+}
+
+void Human::startUncuff(anim::Vec3 cuffed, float mashFactor) {
+    // He turns to the cuffed human over 325 (Attack_SteerToTarget), which holds 0x2000000 and so keeps the mash's
+    // input closed until it ends, then loops 329 while the mash runs.
+    constexpr std::uint32_t kMashClosed = 0x2000000;
+    turnOverClip(clips::kReleaseIntro, cuffed, 1.0F);
+    m_velocity = anim::Vec3{};
+    m_animator.playCombat(clips::one(clips::kReleaseIntro), clips::kReleaseLoop, AnimState::Hold, kCombatFade,
+                          HeldFlags{.held = kMashClosed, .set = kMashClosed});
+    m_fighter.combat().startTheft(combat::TheftKind::Mash, nowMs(), 1.0F, mashFactor);
+}
+
+bool Human::uncuffPlaying() const {
+    const std::uint32_t id = m_animator.animId();
+    return id == clips::kReleaseIntro || id == clips::kReleaseLoop;
+}
+
+void Human::endUncuff(bool hit) {
+    m_clipTurn.reset();
+    m_fighter.combat().abortTheft();
+    // 332 after the mash, 331 after a hit; then the idle.
+    m_animator.playCombat(clips::one(hit ? clips::kReleaseHitReact : clips::kReleaseEnd), clips::kIdle,
+                          AnimState::Attack, kCombatFade);
+}
+
+void Human::playUncuffReact(const Human& freer) {
+    m_velocity = anim::Vec3{};
+    m_animator.playPaired(clips::one(clips::kReleaseIntroReact), freer.animator().anims(), clips::kReleaseLoopReact,
+                          AnimState::Hold);
+}
+
+void Human::endUncuffReact(const Human& freer, bool freed) {
+    if (freed) {
+        m_animator.playPaired(clips::one(clips::kReleaseEndReact), freer.animator().anims(), clips::kIdle,
+                              AnimState::Attack);
+        return;
+    }
+    // Still cuffed: back to the arrest's loop.
+    m_animator.playCombat(clips::kNoClips, clips::kArrestedIdle, AnimState::Hold);
 }
 
 bool Human::tagSprayLooping() const { return m_animator.animId() == clips::kTaggingLoop; }
@@ -662,7 +713,7 @@ bool Human::tagSprayPlaying() const {
 }
 
 void Human::endTagSpray() {
-    m_tagTurn.reset();
+    m_clipTurn.reset();
     if (tagSprayPlaying()) {
         m_animator.settleToIdle();
     }
@@ -855,11 +906,11 @@ void Human::animate(const raycast::CollisionMesh* mesh) {
     m_animator.advance(m_stepSeconds);
     followClimb(mesh);
     followPickUp();
-    // A spray intro's turn to the tag, a step each update.
-    if (m_tagTurn) {
-        m_heading = wrapAngle(m_heading + m_tagTurn->turnStep);
-        if (--m_tagTurn->updatesLeft <= 0 || !tagSprayPlaying()) {
-            m_tagTurn.reset();
+    // A clip's turn to a point (the spray's intro, the uncuffing's), a step each update while the clip plays.
+    if (m_clipTurn) {
+        m_heading = wrapAngle(m_heading + m_clipTurn->turnStep);
+        if (--m_clipTurn->updatesLeft <= 0 || m_animator.animId() != m_clipTurn->clip) {
+            m_clipTurn.reset();
         }
     }
     sendWarnings(before, beforeId, beforeTime);

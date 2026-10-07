@@ -59,6 +59,11 @@ void applyRecordedGlassTypes(const RecordedCalls& recorded, world_objects::Glass
 /// recorded or `recorded` is null (docs/research/crimes.md#tagging).
 [[nodiscard]] int tagDifficulty(const RecordedCalls* recorded, int warriorClass);
 
+/// The uncuffing mash's byte for a human of Warrior class `warriorClass`: his `CfgWarriorClass` record's byte `+0x08`
+/// (its 9th argument), which combat::mashFactor() turns into the gain factor, from the last such call in `recorded`;
+/// 0 when none was recorded or `recorded` is null (docs/research/crimes.md#uncuffing).
+[[nodiscard]] int warriorMashByte(const RecordedCalls* recorded, int warriorClass);
+
 /// Registers kObjectBindings in `vm`, working on `context.objects` as it is at each call (gameplay sets it as a level
 /// enters, after the bindings were installed; a null one places nothing: the spawns still return a new handle each, so
 /// a script keeps working) and reading the object types from `context.recorded`'s `CfgObj` calls; `context` must

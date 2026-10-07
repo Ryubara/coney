@@ -1613,9 +1613,13 @@ The world viewer keeps its own free camera with the player camera's lens
   ([Characters](characters.md#update)), and the device takes the lens once per frame.
 - Keep the camera deterministic (no real time) so the test mode can compare frames.
 
-In Coney, `CameraSetClipping` sets a locked camera's near and far clips and the follow camera's own far clip (at most
-150; the follow camera keeps its 0.1 near clip), `CameraGetActive` answers the current camera's handle (NilHandle for a
-scene's or for player 2), `CamGetPos` its position, and `CamSetFollowPos` puts the follow camera at a point at once.
+In Coney, `CamCanSee` asks whether player 1's current view sees the point 1 m above a human or 0.3 m above an
+object (`camera::canSeePoint()`: within the range and the far clip, inside the 4:3 view window beyond the near clip,
+no collision triangle on the line, **Coney's reading**: the default ray mask), and `CamGhostDoor` sets type bit
+`0x200` on a door's two triangles, which the follow camera's rays skip. `CameraSetClipping` sets a locked camera's
+near and far clips and the follow camera's own far clip (at most 150; the follow camera keeps its 0.1 near clip),
+`CameraGetActive` answers the current camera's handle (NilHandle for a scene's or for player 2), `CamGetPos` its
+position, and `CamSetFollowPos` puts the follow camera at a point at once.
 
 ## Open questions
 

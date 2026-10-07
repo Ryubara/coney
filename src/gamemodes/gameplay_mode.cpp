@@ -369,6 +369,9 @@ void GameplayMode::enter() {
             return spot.tagger == human && spot.fadeMode == world_objects::TagSpot::kFadingIn;
         });
     });
+    m_uncuff.reset();
+    m_uncuffHooked = nullptr;
+    m_scripted->humanHost().setArrestHook([this](ai::Brain& brain, bool arrested) { onArrest(brain, arrested); });
     m_context.flagNet = &m_flagNet;
     m_scripted->setFlagNet(&m_flagNet);
     m_scripted->storyHost().setBoxes(m_context.boxes);
@@ -380,6 +383,15 @@ void GameplayMode::enter() {
             return std::nullopt;
         }
         return anim::Vec3{placement->position[0], placement->position[1], placement->position[2]};
+    });
+    // CamCanSee's objects: a spawned object, else a pane or door.
+    m_cameras->setObjectLocator([this](double handle) -> std::optional<anim::Vec3> {
+        if (m_context.spawnRecords != nullptr) {
+            if (const world_objects::SpawnRecord* record = m_context.spawnRecords->find(handle)) {
+                return anim::Vec3{record->position[0], record->position[1], record->position[2]};
+            }
+        }
+        return m_objects.positionOf(handle);
     });
     // The win camera starts on its target where he stands and faces; player 1 where a teleport the level has not
     // applied yet puts him (the scripts move the winner and start the camera in one frame).
@@ -618,6 +630,7 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
     if (m_level) {
         result = m_level->update(stack, frame);
     }
+    updateUncuff();
     m_scripts.setTime(nowMs);
     callTutorialCallback();
     callPadHandler();
@@ -889,8 +902,10 @@ void GameplayMode::updateActionPrompt() {
     }
     // Nothing while he sprays or plays a part in a scene; else the action object's text.
     std::string text;
-    if (const std::optional<anim::Vec3> feet = playerFeet(); feet && !m_tagSession && !playerInScene()) {
-        if (const std::optional<ActionObject> object = m_pickups->actionObject(*feet)) {
+    if (const std::optional<anim::Vec3> feet = playerFeet(); feet && !m_tagSession && !m_uncuff && !playerInScene()) {
+        // The kinds in order: a cuffed human (0) first, then the action object.
+        text = uncuffPrompt();
+        if (const std::optional<ActionObject> object = m_pickups->actionObject(*feet); text.empty() && object) {
             text = object->prompt;
         }
     }

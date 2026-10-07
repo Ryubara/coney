@@ -83,6 +83,16 @@ class Cameras {
     using Placer = std::function<std::optional<std::pair<anim::Vec3, float>>(double handle)>;
     /// Sets how the manager finds a human's placement.
     void setPlacer(Placer placer) { m_place = std::move(placer); }
+    /// Sets how the manager finds an object (not a human) by handle, for CamCanSee.
+    void setObjectLocator(Locator locator) { m_locateObject = std::move(locator); }
+
+    /// `CamCanSee(object, range)`: whether the current camera sees the point just above the human (1 m up) or object
+    /// (0.3 m up) `handle` names: within `range` of the camera (at most its far clip; 0 or less: the far clip), inside
+    /// its view and with nothing of the level's collision mesh (the last update's) on the line to it. False for a
+    /// handle that names nothing. **Coney's reading**: player 1's camera is the only one; the line takes the default
+    /// ray mask.
+    /// @orig 0x0011dd78 Camera_CanSeeObject (unknown)
+    [[nodiscard]] bool canSee(double handle, float range) const;
 
     /// `CamSetupFollow(name, target)`: puts the follow camera on its target behind it (its reset) and returns its
     /// handle, `handle` the first time and the same one after (without a follow camera yet, it is reset when one is
@@ -293,6 +303,7 @@ class Cameras {
     std::uint32_t m_splitMode = 0;
     std::uint32_t m_reverseButton = 0;
     Locator m_locate;
+    Locator m_locateObject;
     Mover m_move;
     std::map<double, anim::Vec3> m_keptBefore; // each kept-in-view human's feet at the last update
     CameraShake m_shake;

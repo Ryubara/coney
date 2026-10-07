@@ -20,7 +20,7 @@ Warriors' burner outside their hangout, which sets up the next mission.
 | # | Status | Note |
 | --- | --- | --- |
 | 1 | 🚧 In Progress | The intro, skipped, gives the screen back; holding R2 and pushing the right stick to Let's Go gives the follow order (CommandIssued runs). Blocked after it: Vermin and Rembrandt do not come down to the player (the crew's follow is being built). |
-| 2 | 🚧 In Progress | Driven by the pad to the arrest scene and "Free Cowboy and Snow"; uncuffing them is not built yet. |
+| 2 | 🚧 In Progress | Driven by the pad to the arrest scene and "Free Cowboy and Snow"; triangle by each shows the uncuff prompt and the L1-R1 mash frees him, and checkpoint 3 follows (`coney_tests "[uncuff]"`). Not yet: the mash meter, the cuffs icon, the crew's follow after. |
 | 3 | 🚧 In Progress | Reaches Fox's scene; its next step needs the Hold Up order and the crew's tactics. |
 | 4 | 🚧 In Progress | Reaches Cochise and Swan's scene; the fight needs the Wreck'em All order and the crew's tactics. |
 
@@ -70,6 +70,7 @@ coney_tests "[disc][story]"
 All four checkpoints play headless on the disc with no script error and player 1 moving under the pad
 (`tests/platform/disc_story_missions_test.cpp`); the checkpoint 1 intro, skipped, fades back in and moves player 1 to
 where the scene leaves him (the skip makes its three pending end-function calls, as the original does); the Warrior
-command menu (R2 and the right stick) gives the orders the hints ask for; nobody has played it to the end yet.
+command menu (R2 and the right stick) gives the orders the hints ask for (`coney_tests "[commands]"`); nobody has played
+it to the end yet.
 
 [All missions](index.md) and [how a mission moves between states](index.md#lifecycle).

@@ -26,12 +26,12 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███░░░░░░░░░░░░░░░░░` | 14.9% of the game's own code (498,932 of 3,354,776 bytes, 1,679 functions) |
+| **Reimplemented** | `███░░░░░░░░░░░░░░░░░` | 14.9% of the game's own code (498,932 of 3,354,776 bytes, 1,695 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `█████████████████▋░░` | 88.4% named in Ghidra and cited with evidence (2,903,120 of 3,283,904 bytes; 9,818 of 11,422 functions, 86.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-524 reimplemented function(s) have no size yet and add no bytes.
+540 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -58,7 +58,7 @@ at the top of the repository's `README.md`.
 | --- | --- | --- | --- | --- |
 | `Animation` | `██████▉░░░░░░░░░░░░░` | 34.6% | 25 | 54,616 |
 | `Audio` | `█▌░░░░░░░░░░░░░░░░░░` | 7.8% | 88 | 57,368 |
-| `Camera` | `▉░░░░░░░░░░░░░░░░░░░` | 4.4% | 61 | 165,680 |
+| `Camera` | `▉░░░░░░░░░░░░░░░░░░░` | 4.4% | 62 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
@@ -66,15 +66,15 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 106 | 100,440 |
 | `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 11.7% | 72 | 195,624 |
 | `GUI` | `███▉░░░░░░░░░░░░░░░░` | 19.5% | 203 | 497,416 |
-| `Human` | `███▏░░░░░░░░░░░░░░░░` | 15.4% | 533 | 1,096,672 |
+| `Human` | `███▏░░░░░░░░░░░░░░░░` | 15.4% | 544 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 6 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 4 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 30 | 17,904 |
-| `Scripting` | `██████░░░░░░░░░░░░░░` | 30.2% | 204 | 197,192 |
+| `Scripting` | `██████░░░░░░░░░░░░░░` | 30.2% | 206 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `█▊░░░░░░░░░░░░░░░░░░` | 8.5% | 115 | 531,312 |
+| `TaskEngine` | `█▊░░░░░░░░░░░░░░░░░░` | 8.5% | 117 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 32 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 27 | 22,008 |
@@ -270,6 +270,7 @@ at the top of the repository's `README.md`.
 | `0x0011cbb0` | `Camera_AddPoizoPoint` | `Camera` | not filled in |
 | `0x0011cc68` | `Camera_AddPoizoPointCam` | `Camera` | not filled in |
 | `0x0011dcf0` | `Camera_SetFollowSecondary` | `Camera` | not filled in |
+| `0x0011dd78` | `Camera_CanSeeObject` | `Camera` | not filled in |
 | `0x0011de58` | `Camera_EnableFeature` | `Camera` | not filled in |
 | `0x0011e0a8` | `Camera_SetSplitMode` | `Camera` | 56 |
 | `0x0011e198` | `Camera_AssignReverseButton` | `Camera` | 24 |
@@ -773,11 +774,14 @@ at the top of the repository's `README.md`.
 | `0x0022ae40` | `Human_SpeedForGait` | `Human` | 112 |
 | `0x0022aeb0` | `Human_GaitOfVelocity` | `Human` | not filled in |
 | `0x0022ceb8` | `Mugging_End` | `Human` | not filled in |
+| `0x0022d3f8` | `Uncuff_BeginMash` | `Human` | not filled in |
 | `0x0022d790` | `LockPick_Start` | `Human` | 376 |
 | `0x0022d908` | `LockPick_End` | `Human` | 824 |
 | `0x0022dd98` | `StereoTheft_Start` | `Human` | not filled in |
 | `0x0022e020` | `StereoTheft_End` | `Human` | not filled in |
 | `0x0022e848` | `Tag_End` | `Human` | not filled in |
+| `0x0022ec18` | `Human_Arrest` | `Human` | not filled in |
+| `0x0022ef58` | `Human_Unarrest` | `Human` | not filled in |
 | `0x0022f100` | `Human_KnockDown` | `Human` | 712 |
 | `0x0022f658` | `Human_Stun` | `Human` | 640 |
 | `0x0022f8d8` | `Human_EndStun` | `Human` | 264 |
@@ -785,6 +789,7 @@ at the top of the repository's `README.md`.
 | `0x0022fc00` | `Human_EndWounded` | `Human` | 232 |
 | `0x00231090` | `AttackKind_ToCommand` | `Human` | 264 |
 | `0x00231198` | `AttackKind_ChainDelay` | `Human` | 1,016 |
+| `0x002325e0` | `MiniGame_Abort` | `Human` | not filled in |
 | `0x00233d60` | `Human_Create` | `Human` | 400 |
 | `0x00233ef0` | `Human_Delete` | `Human` | 112 |
 | `0x00234038` | `Human_SetNoTarget` | `Human` | 112 |
@@ -951,6 +956,7 @@ at the top of the repository's `README.md`.
 | `0x002548f0` | `AnimRange_ApplyClassDamage` | `Human` | not filled in |
 | `0x00254e78` | `Human_UpdateBlockState` | `Human` | 1,736 |
 | `0x00255540` | `Human_UpdateWorkout` | `Human` | 1,976 |
+| `0x00255f08` | `MiniGame_Update` | `Human` | not filled in |
 | `0x002562d0` | `Human_DrainMeters` | `Human` | not filled in |
 | `0x00256a60` | `Human_RefillMeters` | `Human` | not filled in |
 | `0x00257f38` | `Human_DropHeld` | `Human` | not filled in |
@@ -964,6 +970,9 @@ at the top of the repository's `README.md`.
 | `0x0025e5a8` | `Human_PickUpMessage` | `Human` | not filled in |
 | `0x0025ec28` | `Gait_BlendForSpeed` | `Human` | not filled in |
 | `0x0025f770` | `Human_BuildIdleTasks` | `Human` | not filled in |
+| `0x002606e8` | `Uncuff_MashSuccess` | `Human` | not filled in |
+| `0x00260a70` | `Uncuff_MashFail` | `Human` | not filled in |
+| `0x00260ca8` | `Uncuff_Start` | `Human` | not filled in |
 | `0x002617f8` | `Block_DuckCounter` | `Human` | 528 |
 | `0x002625a8` | `Attack_Start` | `Human` | 792 |
 | `0x00262ac8` | `Attack_StartPaired` | `Human` | 2,232 |
@@ -995,6 +1004,8 @@ at the top of the repository's `README.md`.
 | `0x00278018` | `Tag_StartSprayClips` | `Human` | not filled in |
 | `0x00279f50` | `Player_CarTargetFilter` | `Human` | not filled in |
 | `0x0027a6c0` | `Player_PickTarget` | `Human` | not filled in |
+| `0x0027bc48` | `Mash_IsQuitCommand` | `Human` | not filled in |
+| `0x0027bcd8` | `Mash_IsAlternation` | `Human` | not filled in |
 | `0x0027c120` | `Player_UpdateActions` | `Human` | 3,120 |
 | `0x0027ce90` | `Player_UpdateSprint` | `Human` | not filled in |
 | `0x0027d6e0` | `Player_TryCounterGrab` | `Human` | 288 |
@@ -1026,6 +1037,7 @@ at the top of the repository's `README.md`.
 | `0x0028abc0` | `Brain_CanBeChased` | `Human` | not filled in |
 | `0x0028bf00` | `Brain_GetSightRange` | `Human` | not filled in |
 | `0x0028c1a8` | `Brain_InstallHandlers` | `Human` | 440 |
+| `0x0028c5d8` | `Brain_OnArrested` | `Human` | not filled in |
 | `0x0028cfe0` | `Brain_SetTarget` | `Human` | 432 |
 | `0x0028d190` | `Brain_PushFightGoal` | `Human` | 344 |
 | `0x0028d2e8` | `Brain_Fight` | `Human` | 112 |
@@ -1392,6 +1404,7 @@ at the top of the repository's `README.md`.
 | `0x00366dd0` | `lua_CamReversePoizo` | `Scripting` | not filled in |
 | `0x00367030` | `CamLockLocked` | `Scripting` | not filled in |
 | `0x003670c0` | `CamSetSecondary` | `Scripting` | not filled in |
+| `0x00367160` | `lua_CamCanSee` | `Scripting` | not filled in |
 | `0x003671e0` | `CamEnable` | `Scripting` | not filled in |
 | `0x00367270` | `CamSetSplitMode` | `Scripting` | 56 |
 | `0x003672a8` | `CamAssignRevCamButton` | `Scripting` | 56 |
@@ -1495,6 +1508,7 @@ at the top of the repository's `README.md`.
 | `0x00378808` | `CarMakeGoodAsNew` | `Scripting` | not filled in |
 | `0x003788b8` | `CarPlaceInTrunkOnDetach` | `Scripting` | not filled in |
 | `0x00378958` | `SpawnParticle` | `Scripting` | not filled in |
+| `0x00379be8` | `lua_CamGhostDoor` | `Scripting` | not filled in |
 | `0x00379ea0` | `SetupRadio` | `Scripting` | not filled in |
 | `0x00379fd0` | `AddFlag` | `Scripting` | 384 |
 | `0x0037a288` | `GetFlagPos` | `Scripting` | 112 |
@@ -1564,6 +1578,7 @@ at the top of the repository's `README.md`.
 | `0x00391c10` | `WorldObject_Remove` | `TaskEngine` | not filled in |
 | `0x00391c98` | `WorldObject_RegisterContext` | `TaskEngine` | not filled in |
 | `0x00393538` | `Thrown_HitObject` | `TaskEngine` | 1,136 |
+| `0x00395020` | `ObjType_IsDoorKind` | `TaskEngine` | not filled in |
 | `0x00395b70` | `WorldObject_Update` | `TaskEngine` | 432 |
 | `0x003961d0` | `World_BreakObjectsInRadius` | `TaskEngine` | 448 |
 | `0x00396390` | `BreakObjectsInRadius` | `TaskEngine` | 40 |
@@ -1580,6 +1595,7 @@ at the top of the repository's `README.md`.
 | `0x00397078` | `Door_SetPickable` | `TaskEngine` | 336 |
 | `0x00397230` | `Door_Spawn` | `TaskEngine` | 256 |
 | `0x00397330` | `DoorCRCCheck` | `TaskEngine` | 8 |
+| `0x003973a0` | `Door_SetCameraGhost` | `TaskEngine` | not filled in |
 | `0x00397598` | `Obj_Exists` | `TaskEngine` | 40 |
 | `0x003975c0` | `Particle_Start` | `TaskEngine` | not filled in |
 | `0x00397610` | `Particle_End` | `TaskEngine` | not filled in |

@@ -114,7 +114,36 @@ void ScriptedHumans::markReachable(double human, bool reachable) {
 bool ScriptedHumans::tagging(double human) const { return m_tagging && m_tagging(human); }
 
 void ScriptedHumans::setArrested(double human, bool arrested) {
-    onBrain(human, [arrested](Brain& brain) { brain.human().setArrested(arrested); });
+    // The arrest's and the release's event (`ScriptHandler_MarshalMessage` case 0x11): `(self, other, 1 or 0)`.
+    constexpr int kArrestEvent = 17;
+    onBrain(human, [this, arrested](Brain& brain) {
+        if (brain.human().script().arrested == arrested) {
+            return;
+        }
+        if (!arrested) {
+            if (m_arrestHook) {
+                m_arrestHook(brain, false);
+            }
+            brain.human().setArrested(false);
+            static_cast<void>(deliverEvent(brain, BrainEvent{.id = kArrestEvent, .other = nullptr, .value = 0}));
+            return;
+        }
+        brain.human().setArrested(true);
+        // Brain_OnArrested: its actions and target go, and its goals down to a FindEnemy goal (all when it has none).
+        brain.clearActions();
+        brain.setTarget(nullptr);
+        if (brain.findGoal(GoalType::FindEnemy) == nullptr) {
+            brain.clearGoals();
+        } else {
+            while (brain.topGoal() != nullptr && brain.topGoal()->type() != GoalType::FindEnemy) {
+                brain.popGoal();
+            }
+        }
+        static_cast<void>(deliverEvent(brain, BrainEvent{.id = kArrestEvent, .other = nullptr, .value = 1}));
+        if (m_arrestHook) {
+            m_arrestHook(brain, true);
+        }
+    });
 }
 
 void ScriptedHumans::setPushable(double human, bool pushable) {

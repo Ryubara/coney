@@ -245,6 +245,25 @@ std::optional<double> Cameras::activeHandle() const {
     }
 }
 
+bool Cameras::canSee(double handle, float range) const {
+    // The point above a human or an object (class flag 0x40, inferred humans, takes 1 m).
+    std::optional<anim::Vec3> point;
+    if (m_locate) {
+        if (const std::optional<anim::Vec3> feet = m_locate(handle)) {
+            point = anim::add(*feet, anim::Vec3{0.0F, 0.0F, 1.0F});
+        }
+    }
+    if (!point && m_locateObject) {
+        if (const std::optional<anim::Vec3> at = m_locateObject(handle)) {
+            point = anim::add(*at, anim::Vec3{0.0F, 0.0F, 0.3F});
+        }
+    }
+    if (!point || m_current.kind == CameraKind::None) {
+        return false;
+    }
+    return canSeePoint(m_view, *point, range, m_lastMesh);
+}
+
 std::optional<anim::Vec3> Cameras::positionOf(double handle) const {
     const std::optional<CameraRef> ref = find(handle);
     if (!ref) {

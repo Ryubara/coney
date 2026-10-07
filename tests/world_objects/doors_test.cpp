@@ -16,6 +16,7 @@
 #include "raycast/collision_mesh.h"
 #include "support/object_fixtures.h"
 #include "world/path_map.h"
+#include "world_objects/level_objects.h"
 
 using coney::world_objects::Door;
 using coney::world_objects::DoorBreaking;
@@ -426,4 +427,36 @@ TEST_CASE("a door whose model is not listed falls back to dyn_dr_ and its name, 
     REQUIRE(draws.size() == 3);
     CHECK(draws[0].fallbackHash == coney::crc32("dyn_dr_fence"));
     CHECK(draws[1].fallbackHash == coney::crc32("dyn_dr_woodfnce_xl"));
+}
+
+TEST_CASE("CamGhostDoor lets the camera's rays through a door's triangles, and only a door's",
+          "[world_objects][doors]") {
+    coney::test::ObjectWorldFixture fixture;
+    coney::world_objects::LevelObjects objects;
+    objects.world = fixture.world;
+    const ObjectTypeInfo door = swinging(100, 15); // TYPE_DOOR
+    const double handle =
+        objects.doors
+            .spawn(
+                fixture.handle(), at("dyn_door_wood"), &door, [&fixture] { return fixture.handle(); }, objects.world)
+            .handle;
+    REQUIRE((fixture.mesh->triangles()[0].flags & coney::world_objects::kCameraGhostBit) == 0);
+    CHECK(objects.ghostForCamera(handle));
+    CHECK((fixture.mesh->triangles()[0].flags & coney::world_objects::kCameraGhostBit) != 0);
+    CHECK((fixture.mesh->triangles()[1].flags & coney::world_objects::kCameraGhostBit) != 0);
+    // Not a door kind, or not a door at all: nothing.
+    const ObjectTypeInfo plain = swinging(100, 0);
+    coney::world_objects::DoorSpawn other = at("dyn_door_wood");
+    other.triangles = {2, 3};
+    const double plainHandle =
+        objects.doors.spawn(
+                         fixture.handle(), other, &plain, [&fixture] { return fixture.handle(); }, objects.world)
+            .handle;
+    CHECK_FALSE(objects.ghostForCamera(plainHandle));
+    CHECK((fixture.mesh->triangles()[2].flags & coney::world_objects::kCameraGhostBit) == 0);
+    CHECK_FALSE(objects.ghostForCamera(12345.0));
+    CHECK(coney::world_objects::isDoorKind(25));
+    CHECK(coney::world_objects::isDoorKind(30));
+    CHECK(coney::world_objects::isDoorKind(33));
+    CHECK_FALSE(coney::world_objects::isDoorKind(0));
 }

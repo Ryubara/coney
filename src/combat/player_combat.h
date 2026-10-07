@@ -97,6 +97,13 @@ class PlayerCombat {
     /// Starts a theft minigame (triangle at a car's window: the caller finds the window). `stageTurns` is the stereo
     /// rotation's (stereoStageTurns()); `mashFactor` the mash's Warrior factor.
     void startTheft(TheftKind kind, std::uint64_t nowMs, float stageTurns = 1.0F, float mashFactor = 1.5F);
+    /// Ends a theft minigame from outside, with no result (`MiniGame_Abort`: a hit on the player, the cuffed human
+    /// gone): back to free.
+    /// @orig 0x002325e0 MiniGame_Abort (unknown)
+    void abortTheft();
+    /// How the last theft minigame ended: GameResult::Running while one runs or none has ended; an aborted one leaves
+    /// it Running.
+    [[nodiscard]] GameResult theftResult() const { return m_theftResult; }
     /// The grab or tackle is over (the victim broke free, was thrown, the tackle resolved): back to free.
     void release();
     /// A hit took the player out of what it was doing: the attack and its chain are lost and the block ends.
@@ -121,6 +128,7 @@ class PlayerCombat {
     [[nodiscard]] const RageMeter& rage() const { return m_rage; }
     [[nodiscard]] const std::optional<MuggingGame>& mugging() const { return m_mugging; }
     [[nodiscard]] const std::optional<StereoTheft>& theft() const { return m_theft; }
+    [[nodiscard]] const std::optional<ButtonMash>& mash() const { return m_mash; }
     /// The grab's power move playing (57, 63 or an extension), or anim_id::kNone.
     [[nodiscard]] int powerMove() const { return m_powerMove; }
 
@@ -170,6 +178,7 @@ class PlayerCombat {
     std::optional<StereoTheft> m_theft;
     std::optional<ButtonMash> m_mash;
     float m_mashFactor = 1.5F;
+    GameResult m_theftResult = GameResult::Running;
     int m_powerMove = anim_id::kNone; // the grab's power move playing (57, 63 or an extension), else kNone
     int m_powerExtensions = 0;        // its extensions so far (record +0xbc)
 };

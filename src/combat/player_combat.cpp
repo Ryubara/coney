@@ -89,6 +89,7 @@ CombatOutput PlayerCombat::update(const CombatInput& input, const CombatTuning& 
 void PlayerCombat::startTheft(TheftKind kind, std::uint64_t nowMs, float stageTurns, float mashFactor) {
     m_chain.cancel();
     m_mode = CombatMode::Theft;
+    m_theftResult = GameResult::Running;
     if (kind == TheftKind::Rotate) {
         m_theft.emplace(nowMs, stageTurns);
         m_mash.reset();
@@ -103,6 +104,15 @@ void PlayerCombat::release() {
     m_mode = CombatMode::Free;
     m_mugging.reset();
     m_powerMove = anim_id::kNone;
+}
+
+void PlayerCombat::abortTheft() {
+    if (m_mode != CombatMode::Theft) {
+        return;
+    }
+    m_theft.reset();
+    m_mash.reset();
+    m_mode = CombatMode::Free;
 }
 
 void PlayerCombat::interrupt() {
@@ -265,10 +275,16 @@ void PlayerCombat::updateTheft(const CombatInput& input, const CombatTuning& tun
             out.startAnim = result == GameResult::Succeeded ? anim_id::kStereoStealEnd : anim_id::kStereoStealFail;
         }
     } else if (m_mash) {
+        // The mash's input stays closed while the record holds any of these (the freer's intro holds 0x2000000).
+        constexpr std::uint32_t kMashClosedPhases = 0x7c7eee0;
+        if ((phaseFlags(input) & kMashClosedPhases) != 0) {
+            return;
+        }
         result = m_mash->update(input.command, m_mashFactor, tuning);
     }
     if (result != GameResult::Running) {
         out.game = result;
+        m_theftResult = result;
         m_theft.reset();
         m_mash.reset();
         m_mode = CombatMode::Free;

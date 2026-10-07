@@ -23,6 +23,7 @@
 #include "scripting/lua_value.h"
 #include "scripting/sound_bindings.h"
 #include "warriors/game_state.h"
+#include "world_objects/level_objects.h"
 #include "world_objects/radios.h"
 #include "world_objects/spawn_records.h"
 #include "world_objects/tag_spots.h"
@@ -156,6 +157,27 @@ NativeFunction makeCamAddPoizoPoint(const BindingContext& context) {
 NativeFunction makeCamReversePoizo(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
         return binding::boolean(context->cameras != nullptr && context->cameras->reversePath(nameArg(args, 0)));
+    };
+}
+
+// `CamCanSee(object, range) -> boolean`: whether player 1's camera sees the human or object.
+// @orig 0x00367160 lua_CamCanSee (unknown)
+NativeFunction makeCamCanSee(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        return binding::boolean(
+            context->cameras != nullptr &&
+            context->cameras->canSee(handleArg(args, 0), static_cast<float>(binding::number(args, 1))));
+    };
+}
+
+// `CamGhostDoor(door)`: the camera passes through the door from now on.
+// @orig 0x00379be8 lua_CamGhostDoor (unknown)
+NativeFunction makeCamGhostDoor(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        if (context->objects != nullptr) {
+            context->objects->ghostForCamera(handleArg(args, 0));
+        }
+        return binding::none();
     };
 }
 
@@ -420,6 +442,8 @@ void addStoryEffectsBindings(LuaVm& vm, const BindingContext& context, std::func
     vm.registerFunction("CamAddPoizoPoint", makeCamAddPoizoPoint(context));
     vm.registerFunction("CamAddPoizoPointCam", makeCamAddPoizoPointCam(context));
     vm.registerFunction("CamReversePoizo", makeCamReversePoizo(context));
+    vm.registerFunction("CamCanSee", makeCamCanSee(context));
+    vm.registerFunction("CamGhostDoor", makeCamGhostDoor(context));
     vm.registerFunction("CameraGetActive", makeCameraGetActive(context));
     vm.registerFunction("CameraSetClipping", makeCameraSetClipping(context));
     vm.registerFunction("CfgSteam", makeCfgSteam(context));

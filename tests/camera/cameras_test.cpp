@@ -24,6 +24,7 @@
 #include "camera/follow_camera.h"
 #include "camera/locked_camera.h"
 #include "camera/slow_motion.h"
+#include "support/collision_fixtures.h"
 
 using Catch::Approx;
 using coney::anim::Vec3;
@@ -444,4 +445,41 @@ TEST_CASE("CamLockLocked lists a human once; the current locked camera pushes hi
     // Off removes him.
     rig.cameras.lockLocked(kLockedHandle, 2.0, false);
     CHECK(rig.cameras.locked(kLockedHandle)->keptInView == std::vector<double>{1.0});
+}
+
+TEST_CASE("CamCanSee: in range, inside the picture and with no wall in the way; 1 m above a human, 0.3 m above an "
+          "object",
+          "[camera]") {
+    // A camera at the origin looking along +y, 65° wide, far clip 115.
+    const CameraView view =
+        coney::camera::viewLookingAt(Vec3{0.0F, 0.0F, 1.0F}, Vec3{0.0F, 10.0F, 1.0F}, 65.0F, 0.1F, 115.0F);
+    CHECK(coney::camera::canSeePoint(view, Vec3{0.0F, 20.0F, 1.0F}, 0.0F, nullptr));
+    // Behind, too far for the range or the far clip, or outside the 4:3 window's sides or top.
+    CHECK_FALSE(coney::camera::canSeePoint(view, Vec3{0.0F, -5.0F, 1.0F}, 0.0F, nullptr));
+    CHECK_FALSE(coney::camera::canSeePoint(view, Vec3{0.0F, 20.0F, 1.0F}, 10.0F, nullptr));
+    CHECK_FALSE(coney::camera::canSeePoint(view, Vec3{0.0F, 120.0F, 1.0F}, 500.0F, nullptr));
+    CHECK(coney::camera::canSeePoint(view, Vec3{6.0F, 10.0F, 1.0F}, 0.0F, nullptr)); // tan(32.5°) = 0.637
+    CHECK_FALSE(coney::camera::canSeePoint(view, Vec3{7.0F, 10.0F, 1.0F}, 0.0F, nullptr));
+    CHECK(coney::camera::canSeePoint(view, Vec3{0.0F, 10.0F, 5.5F}, 0.0F, nullptr)); // 0.478 high
+    CHECK_FALSE(coney::camera::canSeePoint(view, Vec3{0.0F, 10.0F, 6.0F}, 0.0F, nullptr));
+    // A wall across y = 15 hides what is beyond it, not what is before it.
+    const auto mesh = coney::test::makeMesh(coney::test::wallFacingMinusY(15.0F, -10.0F, 10.0F, -1.0F, 10.0F));
+    CHECK_FALSE(coney::camera::canSeePoint(view, Vec3{0.0F, 20.0F, 1.0F}, 0.0F, mesh.get()));
+    CHECK(coney::camera::canSeePoint(view, Vec3{0.0F, 12.0F, 1.0F}, 0.0F, mesh.get()));
+
+    // Through the manager: the human's point is 1 m above his feet, an object's 0.3 m; an unknown handle is unseen.
+    Rig rig;
+    rig.cameras.makeActive(kLockedHandle, 0.0F);
+    rig.step();
+    // The cut-away at (50, 40, 3) looks along -x, 10° down: a point 10 m ahead at z 1.3 is inside, one at z 4 not.
+    rig.cameras.setLocator([](double handle) -> std::optional<Vec3> {
+        return handle == 1.0 ? std::optional<Vec3>{Vec3{40.0F, 40.0F, 0.3F}} : std::nullopt;
+    });
+    rig.cameras.setObjectLocator([](double handle) -> std::optional<Vec3> {
+        return handle == 2.0 ? std::optional<Vec3>{Vec3{40.0F, 40.0F, 1.0F}} : std::nullopt;
+    });
+    CHECK(rig.cameras.canSee(1.0, 0.0F));
+    CHECK(rig.cameras.canSee(2.0, 0.0F));
+    CHECK_FALSE(rig.cameras.canSee(1.0, 5.0F));
+    CHECK_FALSE(rig.cameras.canSee(3.0, 0.0F));
 }

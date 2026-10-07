@@ -2619,8 +2619,9 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   345 or 346 / 347 play, and the mugger's callback runs when his end clip finishes, or at once for a let-go or a hit
   ([Crimes](crimes.md#coneys-implementation)); the speech, the hints, the half-way `no_item` stop, the victim's
   interrogation and pocket item, ped type 5's 1.5 times and the statistic are not built. The theft: clockwise steps neither
-  add nor take away; the 250 ms pause ignores the stick. The mash: the first press counts, a press's gain is
-  truncated, and other commands are ignored.
+  add nor take away; the 250 ms pause ignores the stick. The mash follows [Uncuffing](crimes.md#uncuffing): only
+  the held commands of L1 and R1 alternate, the gain is rounded, the quit commands fail it and the decay starts at the
+  first alternation.
 - The block is read only when the player is free (not grabbing, tackling, mugging or in a theft); it turns the player
   towards the stick at the standing turn rate.
 - The stun's loop is 356, as seen at runtime (the code names 355 as a stunned reaction's return).

@@ -780,6 +780,8 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("CamAddPoizoPoint"),
     real("CamAddPoizoPointCam"),
     real("CamReversePoizo"),
+    real("CamCanSee"),
+    real("CamGhostDoor"),
     real("CamSetupPoizo"),
     real("CameraGetActive"),
     real("CameraSetClipping"),

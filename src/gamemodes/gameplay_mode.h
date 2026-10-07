@@ -336,10 +336,28 @@ class GameplayMode final : public GameMode {
     // Player 1's feet as the scripts see them; nothing with no player 1.
     [[nodiscard]] std::optional<anim::Vec3> playerFeet() const;
     // HUD_Update's choice of player 1's action prompt (docs/research/hud.md#action-prompts), as far as Coney has it:
-    // the action object's text, none while he sprays or is in a scene. **Coney's stand-in**: the other sources (a
-    // held human to mug, a partner to revive, a talkable human) are not chosen yet.
+    // a cuffed human to free (kind 0, uncuffPrompt()), else the action object's text; none while he sprays, frees a
+    // cuffed human or is in a scene. **Coney's stand-in**: the other sources (a held human to mug, a partner to
+    // revive, a talkable human) are not chosen yet.
     // @orig 0x001af010 HUD_Update (unknown)
     void updateActionPrompt();
+    // The uncuffing (gameplay_uncuff.cpp, docs/research/crimes.md#uncuffing). An arrest or a release (the
+    // ScriptedHumans hook): a friendly AI human arrested says 25 `arrested`.
+    void onArrest(ai::Brain& brain, bool arrested);
+    // The friendly AI human in cuffs nearest player 1 within the kind-0 reach (`CfgActionDistance` 0) and 1.5 m of his
+    // waist, not being freed already; null when none.
+    [[nodiscard]] ai::Brain* cuffedInReach() const;
+    // The kind-0 prompt, `GSTRING.HUD` 2, while a cuffed human is in reach and no mash runs; empty otherwise.
+    [[nodiscard]] std::string uncuffPrompt() const;
+    // Triangle by a cuffed human (`ContextAction_Use` kind 0): `freer` starts the mash; false when none is in reach.
+    bool startUncuff(human::Human& freer);
+    // Each frame after the level's step: installs the triangle hook on player 1, and ends a mash that has an outcome,
+    // was cut short or lost its cuffed human (`MiniGame_Update` mode 1).
+    // @orig 0x00255f08 MiniGame_Update (unknown)
+    // @orig 0x00260a70 Uncuff_MashFail (unknown)
+    void updateUncuff();
+    // A mash that filled: the cuffed human is released and both play their ends.
+    void uncuffSucceeded(human::Human& freer, ai::Brain& cuffed);
 
     graphics::RenderDevice& m_device;
     script::ScriptSystem& m_scripts;
@@ -381,10 +399,17 @@ class GameplayMode final : public GameMode {
     };
     std::optional<TagIntro> m_tagIntro;
     std::optional<TagSession> m_tagSession; // player 1's spray under way (HuTag)
-    double m_tagTicks = 0.0;                // 60 Hz ticks not yet given to the tag spots
-    world_objects::FlagNet m_flagNet;       // the level's flag network (FlagNetAddLink)
-    std::optional<LevelPickups> m_pickups;  // over the context's spawn records and object types
-    std::string m_shownPrompt;              // the action prompt updateActionPrompt() last set
+    // A cuffed human being freed by player 1's mash: the two handles.
+    struct Uncuff {
+        double freer = 0;
+        double cuffed = 0;
+    };
+    std::optional<Uncuff> m_uncuff;
+    const human::Human* m_uncuffHooked = nullptr; // the human the triangle hook is on
+    double m_tagTicks = 0.0;                      // 60 Hz ticks not yet given to the tag spots
+    world_objects::FlagNet m_flagNet;             // the level's flag network (FlagNetAddLink)
+    std::optional<LevelPickups> m_pickups;        // over the context's spawn records and object types
+    std::string m_shownPrompt;                    // the action prompt updateActionPrompt() last set
     std::unique_ptr<GameMode> m_level;
     std::uint32_t m_playerTeleports = 0;  // player 1's teleports the level has been told of
     PauseMode* m_pause = nullptr;         // what START pauses through; not owned

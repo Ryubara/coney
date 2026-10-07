@@ -44,6 +44,12 @@ class LevelObjects {
     /// Where the pane (its centre), door or leaf `object` is; nothing for another handle.
     [[nodiscard]] std::optional<anim::Vec3> positionOf(double object) const;
 
+    /// `CamGhostDoor(door)`: the camera passes through the door from now on: its two collision triangles take type bit
+    /// `0x200`, which the camera's rays skip, until the level's mesh is loaded again. Only a door of the door kinds
+    /// (`TYPE_DOOR`, `TYPE_BREAKABLE_DOOR`, `TYPE_BREAKANDENTER_DOOR`, `TYPE_SLIDING_DOOR`); false for another handle.
+    /// Research: docs/references/bindings/camera.md#camghostdoor
+    /// @orig 0x003973a0 Door_SetCameraGhost (unknown)
+    bool ghostForCamera(double door);
     /// One 60 Hz tick of the doors (the panes' update does nothing).
     void tick() { doors.tick(world); }
     /// Forgets the level's panes and doors (its unload).
@@ -53,6 +59,15 @@ class LevelObjects {
     // humanHit() without the damage message: the pane, door or barrier takes the hit.
     bool takeHumanHit(double object, const ObjectHit& hit);
 };
+
+/// The collision triangles' type bit the camera's rays skip (`CamGhostDoor`).
+inline constexpr std::uint16_t kCameraGhostBit = 0x200;
+
+/// Whether an object of `objectType` (`TYPE_*`) is a door: 15, 25, 30 or 33.
+/// @orig 0x00395020 ObjType_IsDoorKind (unknown)
+[[nodiscard]] constexpr bool isDoorKind(int objectType) {
+    return objectType == 15 || objectType == 25 || objectType == 30 || objectType == 33;
+}
 
 /// The hit kind of a thrown object of `objectType` in animation set `animSet`: 1, but 3 for a `TYPE_MISSIONTV` and 0
 /// for an object of animation set 5 other than a molotov.

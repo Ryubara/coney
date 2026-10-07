@@ -358,8 +358,8 @@ class Human final : public Holdable {
     void setNormalMode(bool full);
     /// Breaks any pair it is in from outside (Fighter::breakPair()), as a placement does.
     void breakPair() { m_fighter.breakPair(); }
-    /// `HuSetArrested`: arrested, the human stops where it is and its fighting ends; released, it stands again with
-    /// the idle.
+    /// `HuSetArrested`: arrested, the human stops where it is, its fighting ends and it loops 320
+    /// `ANIM_ARRESTED_IDLE`; released, it stands again with the idle (docs/research/crimes.md#arrest).
     /// @orig 0x00237700 Human_SetArrested (unknown)
     void setArrested(bool arrested);
     /// `HuSetWounded`: wounding (when not wounded already) ends its fighting, grab or throw, cuts its health to a
@@ -396,6 +396,9 @@ class Human final : public Holdable {
     /// None: nothing.
     using ContextAction = std::function<bool(Human& human)>;
     void setContextAction(ContextAction action) { m_contextAction = std::move(action); }
+    /// What triangle tries before the level's context action: the kind-0 record, a cuffed human to free, comes first
+    /// in the kinds' order (docs/research/crimes.md#triangle). None: nothing.
+    void setFirstContextAction(ContextAction action) { m_firstContextAction = std::move(action); }
     /// What an airborne body touches before the walls push it (`Human_OnContact`'s object branch and the jump's strike
     /// shapes, docs/research/objects.md#pane-break): the level breaks the panes whose bodies a sphere at `centre` of
     /// `radius` reaches. Humans::setBodyContact() gives it; null: nothing.
@@ -415,6 +418,22 @@ class Human final : public Holdable {
     /// with `stageTurns` turns of the stick a stage (combat::stereoStageTurns()). **Coney's reading**: the turn is not
     /// spread over the intro.
     void startStereoTheft(anim::Vec3 point, float stageTurns);
+    /// Starts freeing a cuffed human at `cuffed` by the mash (`Uncuff_Start`, docs/research/crimes.md#uncuffing): he
+    /// turns to him over 325 `ANIM_ARREST_RELEASE_INTRO_FRONT`, which holds `0x2000000` and so keeps the mash's input
+    /// closed, then loops 329; the mash (mode 1) runs with the Warrior factor `mashFactor` (combat::mashFactor()).
+    /// @orig 0x00260ca8 Uncuff_Start (unknown)
+    /// @orig 0x0022d3f8 Uncuff_BeginMash (unknown)
+    void startUncuff(anim::Vec3 cuffed, float mashFactor);
+    /// Whether the freer's clips (325 or 329) still play: false once a hit or anything else took the body.
+    [[nodiscard]] bool uncuffPlaying() const;
+    /// The freer's end: the mash stops and he plays 332 `ANIM_ARREST_RELEASE_END`, or 331
+    /// `ANIM_ARREST_RELEASE_HIT_REACT` after a hit, then his idle.
+    void endUncuff(bool hit);
+    /// The cuffed human's half while `freer` frees him: 326 paired to the freer, then the loop 330.
+    void playUncuffReact(const Human& freer);
+    /// The cuffed human's end: freed, 333 `ANIM_ARREST_RELEASE_END_REACT` paired to `freer` then his idle; still
+    /// cuffed, back to 320.
+    void endUncuffReact(const Human& freer, bool freed);
     /// Starts a tag's spray clips (`Tag_StartSprayClips`): 334 `ANIM_TAGGING_INTRO`, then the loop 335, turning to face
     /// the tag at `point` over half of 334's length (`Human_TurnToFacePoint`); the human stays where he stands.
     /// Returns false when the intro clip is not loaded. docs/research/crimes.md#tag-callbacks
@@ -578,13 +597,19 @@ class Human final : public Holdable {
     };
     std::optional<PickUpRun> m_pickUp;
     // A spray intro's turn to the tag: the updates left and the turn each takes.
-    struct TagTurn {
+    // A turn to a point spread over a clip (the spray's intro, the uncuffing's 325): the clip, the updates left and
+    // the turn each takes; it ends early when the clip is replaced.
+    struct ClipTurn {
+        std::uint32_t clip = 0;
         int updatesLeft = 0;
         float turnStep = 0.0F;
     };
-    std::optional<TagTurn> m_tagTurn;
+    std::optional<ClipTurn> m_clipTurn;
+    // Starts a turn to `point` spread over `share` of `clip`'s playing time; nothing when the clip is not loaded.
+    void turnOverClip(std::uint32_t clip, anim::Vec3 point, float share);
     std::optional<double> m_pickedUp; // the object a pick-up reached, until takePickedUp()
     ContextAction m_contextAction;
+    ContextAction m_firstContextAction;         // tried before m_contextAction (a cuffed human to free)
     const BodyContact* m_bodyContact = nullptr; // setBodyContact(), the step's
     const anim::Skeleton* m_skeleton = nullptr; // setSkeleton()
     StrikeShapes m_strikes;

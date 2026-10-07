@@ -7,6 +7,8 @@
 
 #include <cstdint>
 
+#include "human/fighter_clips.h"
+
 namespace coney::human {
 
 void Human::setHealthPercent(float percent) {
@@ -28,13 +30,17 @@ void Human::setArrested(bool arrested) {
         return;
     }
     m_script.arrested = arrested;
-    // Arrested, it stops and whatever it was doing ends; released, it stands up again into the idle.
+    // Arrested, it stops and whatever it was doing ends; released, it stands up again into the idle. **Coney's
+    // reading**: the push weight (1e9 while cuffed) is not kept, as Coney's bodies do not push each other yet.
     m_velocity.x = 0.0F;
     m_velocity.y = 0.0F;
     m_fighter.setNormal(m_animator, false);
     if (!arrested) {
         m_animator.stopToIdle();
+        return;
     }
+    // Move style 0x11's idle, 320 `ANIM_ARRESTED_IDLE`, loops until the release.
+    m_animator.playCombat(clips::kNoClips, clips::kArrestedIdle, AnimState::Hold);
 }
 
 void Human::setWounded(bool wounded) {

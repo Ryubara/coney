@@ -30,8 +30,8 @@ inline constexpr std::array<std::uint32_t, 4> kUseAnimIds{0x184, 0x198, 0x19a, 0
 // dozen padding bytes cost nothing worth the lost readability.
 // NOLINTNEXTLINE(clang-analyzer-optin.performance.Padding)
 struct ScriptState {
-    /// Arrested (state `0x20000`, `HuSetArrested`): **Coney stand-in**, the arrest's clips are not researched, so an
-    /// arrested human stands still and does nothing until released.
+    /// Arrested (state `0x20000`, `HuSetArrested`): it loops 320 `ANIM_ARRESTED_IDLE` where it stands and does nothing
+    /// until released (docs/research/crimes.md#arrest).
     bool arrested = false;
     /// Knocked out (state `0x40000`, `HuSetConscious(h, false)`): not alive, and its brain off until brought round.
     /// **Coney stand-in**: the knocked-out and get-up clips are not played, and it does not wake by itself after the

@@ -54,7 +54,21 @@ class ScriptedHumans final : public script::HumanBindingHost {
     using TaggingQuery = std::function<bool(double human)>;
     /// Sets the tagging query; an empty one answers false.
     void setTaggingQuery(TaggingQuery query) { m_tagging = std::move(query); }
+    /// `HuSetArrested` (docs/research/crimes.md#arrest). Arrest (`Human_Arrest`): the human is cuffed
+    /// (Human::setArrested()), its brain reset (`Brain_OnArrested`: the actions cleared, the target dropped, the goals
+    /// popped down to a FindEnemy goal or all of them), event 17 with value 1 delivered, then the arrest hook. Release
+    /// (`Human_Unarrest`): the hook first, then the human freed and event 17 with value 0. Nothing for a human already
+    /// in that state. **Coney's readings**: event 17's other human is none (Coney keeps no grab partner on the
+    /// record); the leaderless gang's follow after a release is not built.
+    /// @orig 0x0022ec18 Human_Arrest (unknown)
+    /// @orig 0x0022ef58 Human_Unarrest (unknown)
+    /// @orig 0x0028c5d8 Brain_OnArrested (unknown)
     void setArrested(double human, bool arrested) override;
+    /// What the game does with an arrest or a release beyond the human and its brain (the kind-0 record, the
+    /// `arrested` line): called with the brain and whether it is now arrested.
+    using ArrestHook = std::function<void(Brain& brain, bool arrested)>;
+    /// Sets the arrest hook; an empty one does nothing.
+    void setArrestHook(ArrestHook hook) { m_arrestHook = std::move(hook); }
     void setPushable(double human, bool pushable) override;
     void setMoney(double human, int dollars) override;
     /// Kept with a 100 % chance (`+0x278` = 100).
@@ -148,6 +162,7 @@ class ScriptedHumans final : public script::HumanBindingHost {
     int m_playerGang = -1;
     std::uint64_t m_gangChangeMs = 0;
     TaggingQuery m_tagging;
+    ArrestHook m_arrestHook;
 };
 
 } // namespace coney::ai

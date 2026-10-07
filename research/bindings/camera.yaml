@@ -697,6 +697,7 @@
     other humans and objects do not block the ray, only the world collision mesh. Class flag 0x40 is inferred to mark
     humans. The result was described as nil when false before; it is pushed as a boolean.
   usage: {chunks: 19, calls: 179, boot: false, mission1: false, result_used: true, levels: [93, 9, 54, 84, 82, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: CamEnable
   wrapper: 0x003671e0
@@ -823,3 +824,4 @@
     There is no way back: no binding clears the bit, and it lasts until the collision mesh is reloaded. Other queries
     whose mask has bit 9 skip the triangles too (not listed).
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [31, 54]}
+  coney: implemented
