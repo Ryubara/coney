@@ -531,6 +531,11 @@ Confirmed (code) at the functions cited unless a line says otherwise.
   the CRC-32 of `room_smoke_overlay`; it is a 256 × 256 texture with one rectangle covering the whole of it
   (texel-inset by 1/1024), linear filtering and **wrap** addressing in U and V (texture filter-and-address word
   `0x1102`). The wrap matters: the texture coordinates below run past 1. (Record 18 is `fog_overlay`, same shape.)
+  **Its alpha** (disc check, the extracted texture's statistics): a light grey (about 220 in each channel), densest
+  in the top fifth (mean alpha about 160-173 of 255 in rows 0-40), fading down the sheet (about 37 at `v` 0.5, under
+  10 by 0.62) to **0 in every texel from row 191 (`v` 0.746) to the bottom**. Across, it tiles: its left and right
+  columns differ by under 1 on average, and no column fades towards the sides (column means 54-73). Down, it does
+  not: the top row averages 159, the bottom row 0.
 - **Start** (`OE_RoomSmoke_Construct`, `0x0019add0`): the overlay-effect base (`0x0019ba70`); the script's record
   (`0x0019aff8`: tint RGB `+0x9c`, alpha 0 at `+0x9f`, lowest and highest alpha `+0xa0`/`+0xa1`, amount `+0xa4`); a
   random U offset 0-1 (`+0xd8`); one `OE_Particle` sprite widget ([`BaseWidget`](gui.md#widget-classes)) set up with
@@ -557,29 +562,66 @@ Confirmed (code) at the functions cited unless a line says otherwise.
       to ±180 and mapped onto [0, 0.9999], is kept per view (`0x0019b968`, effect `+0x20 + 4 × view`); twice the
       change since the last update (old − new) is added to this update's scroll, so turning the camera slides the
       haze sideways (a whole turn, about two texture widths).
-- **The sprite** (`OE_RoomSmoke_Update`, `0x0019b4c0`, the effect's slot `+0x18`): size (`0x001a2120`) width
-  1.3 × width scale and height = height scale × `*0x0050cf00` (1.0; the update rewrites it to 1.0 in progressive or
-  `0x02` mode), in overlay units (the screen is 1.595 wide and 1.1 high, [2D drawing](#2d-drawing)), so about 2.1-2.5
-  × 1.0-1.2: wider than the screen and about as high; the position; the tint with the drift's alpha; the U offset
-  `+0xd8` += scroll, wrapped into [0, 1]; texture rectangle (U, -0.1)-(U + 1, 0.9) (`0x001a2190`): one whole repeat
-  of the texture across the sprite, shifted a tenth up.
+- **The sprite** (`OE_RoomSmoke_Update`, `0x0019b4c0`, the effect's slot `+0x18`): size (`0x001a2120`, without the
+  device's width conversion) width = width scale × `*0x0050cefc` and height = height scale × `*0x0050cf00`, in
+  overlay units (the screen is 1.595 wide and 1.1 high in 4:3, [2D drawing](#2d-drawing)), so 2.12-2.51 × 1.0-1.2;
+  the position (GUI (0.5, `y`), centred, converted by the device: overlay `X` 0, `Y` = 0.5 − `y`); the tint with the
+  drift's alpha; the U offset `+0xd8` += scroll, wrapped into [0, 1]; texture rectangle (U, -0.1)-(U + 1, 0.9)
+  (`0x001a2190`): one whole repeat of the texture across the sprite, shifted a tenth up. **The two factors are the
+  same in every mode** (`0x0019b500`-`0x0019b56c`): both paths, the one for device flag `0x02` or `0x20` and the
+  other, store 1.3 (`0x3fa66666`) in `0x0050cefc`; only the first also stores 1.0 in `0x0050cf00`, whose static value
+  is already 1.0, and nothing else in the program writes either global (their only references are these). The other
+  path computes `flags & 0x04` (the 16:9 flag) in a branch delay slot and never uses it, so the source probably had
+  a 16:9 case with the same numbers (inferred). The widget's own update, which runs first in the same tick
+  (`OverlayEffect_Tick`), sets the width from the rectangle's shape times `*0x0050b208` × 0.80357 (the effect's
+  widget is set up with the aspect fix on, `0x0019aeec`), but this size call overwrites it before anything is drawn,
+  so the overlay aspect does not reach the sprite.
 - **Drawing:** the widget's sprite in the overlay pass ([2D drawing](#2d-drawing)): Z test and write off, the
   instance's blending, source alpha over inverse source alpha ([GUI](gui.md#resource-instances)), so the haze is an
   alpha-blended layer over the scene, with alpha (0-255) from the drift.
+- **In 16:9** only the overlay camera changes: `RwDevice_SetWidescreen` (`0x00194e28`) sets the overlay aspect
+  1.6667 and the view-window scale 1.1 ([Video mode](#video-mode)) and leaves the device's 640 × 448 (`+0x44c`,
+  `+0x450`), which the GUI conversion (`0x00195238`) uses, alone; the sprite's size, position, texture rectangle,
+  blending and cadence are the same as in 4:3 (confirmed (code), above). At the sprite's depth 1.1 the screen is
+  2 × 1.1 × 0.9167 = **2.017 overlay units wide and 2 × 1.1 × 0.55 = 1.21 high** in 16:9 (1.595 × 1.1 in 4:3, 1.749
+  × 1.1 in progressive mode), so the same sprite looks narrower and lower on a 16:9 picture. Where its edges fall
+  (inferred, arithmetic on the confirmed numbers; centre `Y` 0.24-0.75 from GUI `y` -0.25 to 0.26):
+
+    | Edge | 4:3 | 16:9 |
+    | --- | --- | --- |
+    | width, fraction of the screen's | 1.33-1.57 | **1.05-1.24** |
+    | left and right edges | 16-29 % of the width outside each side | **2.5-12 % outside each side** |
+    | top edge (`Y` + height / 2 ≥ 0.74) | above the top (0.55) | above the top (0.605) |
+    | the texture's wrap from `v` 1 to `v` 0, a tenth of the height below the top (`Y` ≥ 0.64) | above the top | above the top, by at least 0.035 |
+    | bottom edge (`Y` − height / 2, -0.36 to 0.25) | on screen, 27-83 % down | on screen, 29-80 % down |
+
+    So the sprite covers the screen across in both modes (in 16:9 by as little as 2.5 % a side at the narrowest
+    drift), always reaches past the top, and never reaches the bottom: the haze is a band hanging from the top whose
+    lower part is the texture's own fade. Its bottom edge is never seen because the texture is fully transparent from
+    `v` 0.746 and the sprite stops at `v` 0.9; its sides are never seen because they are off screen and the texture
+    tiles across. Nothing fades or clamps at the sprite's edges: the rectangle runs past the texture in V, and the
+    sheet wraps.
 - **Cadence** (`OverlayEffect_Tick`, `0x0019bc10`, called by the manager's update `0x0018bf68` for each layer that
   is on, while the view's player camera exists): nothing while the game clock is paused (`0x0050b734` slot `+0x20`)
   or in game mode 10 or 12; when more than 1000 / 30 ms of game time (`*(0x0050b734) + 0x48`) have passed since the
   last tick (`0x0019bd90`, rate byte `+0x10` = 30), each visible widget's own update runs (it copies the sheet
   rectangle and sets the width from the height and the rectangle's shape) and then the effect's, which overrides
   both; then each visible widget is drawn, every frame, unless `0x00512c44` is set. So the drift advances at most
-  30 times a second of game time while the blend runs on real time.
+  30 times a second of game time while the blend runs on real time. Confirmed (code) at each address.
 - **Again while running:** `StartRoomSmoke` on a running layer passes the new record to slot `+0x20`
   (`0x0019aff8`), which also picks a new "to" and sets its blend time to 1 ms, so the next update jumps to it.
   `EndRoomSmoke` deletes the effect (`0x0018bd48`) and its widget with it (`0x0019bab8`).
 
 Coney (`effects::RoomSmoke`, `repo:src/effects/room_smoke.h`; `platform::RoomSmokeOverlay`) follows this, drawn after
 the motion blur and before the HUD with the texture repeating. **Coney's readings**: its fixed step drives both the
-blend and the ticks; the heading is measured from +x toward +y, and the first tick slides nothing.
+blend and the ticks; the heading is measured from +x toward +y, and the first tick slides nothing. **Where it differs
+in a 16:9 window** (2026-10-08): `RoomSmokeOverlay::draw` projects the sprite with the default `OverlayCamera` (scale
+1.0, aspect 1.45) into the 4:3 logical screen, which `fitLogicalScreen` pillarboxes in the middle 75 % of a 16:9
+window while the 3D view fills the window. The sprite then spans 0.997-1.18 of the window's width (the original's
+1.05-1.24 of the screen's), so its sides reach the window's edges at the narrowest drift, and its height and its
+offset from the middle are 1.1 times the original's 16:9 ones (÷ 1.1 rather than ÷ 1.21). To match, a 16:9 view projects the sprite with the 16:9 overlay
+camera (scale 1.1, aspect 1.6667, a view window of 0.9167 × 0.55) across the whole 16:9 frame: screen `x` = 0.5 +
+`X` / 2.017 and `y` = 0.5 − `Y` / 1.21, with the sprite's size and texture rectangle unchanged.
 
 ## Behaviour
 
