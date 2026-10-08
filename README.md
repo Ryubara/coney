@@ -41,7 +41,7 @@ Per subsystem, the research coverage, the middleware and how it is all measured:
 
 ## Documentation
 
-The documentation is published at **<https://kagetoba.github.io/coney/>**, rebuilt from `main` on every push. It
+The documentation is published at **<https://ryubara.github.io/coney/>**, rebuilt from `main` on every push. It
 is a MkDocs site built from `docs/`. To build it locally:
 
 ```sh
