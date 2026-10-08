@@ -10,6 +10,7 @@
 #include <utility>
 
 #include "world/path_map.h"
+#include "world_objects/pickups.h"
 
 namespace coney::world_objects {
 
@@ -322,14 +323,53 @@ bool Props::cashRegisterHit(double handle, Prop& prop, const ObjectType& type, c
         return true;
     }
     services->setModel(handle, kCashRegisterBrokenModel);
-    // Its drawer opens (message 0x12) and spills the money one drawer update later. Coney's stand-in: the break makes
-    // the drawer, open, at the register's pose.
-    prop.drawerAt = pose.position;
-    prop.drawerTurn = pose.rotation;
-    if (services->spawnObject(kCashDrawerType, pose.position, pose.rotation) != kNoObject) {
-        prop.moneyIn = kDrawerTicks;
+    // Its drawer opens (message 0x12): it jumps out and spills the money at its next two updates.
+    if (prop.drawer != kNoObject) {
+        prop.drawerOpenUpdates = 0;
     }
     return true;
+}
+
+void Props::initCashRegister(double handle, const ObjectType& type, const PropPose& pose, ObjectWorld& world) {
+    if (type.className != kCashRegisterClass) {
+        return;
+    }
+    const bool made = m_props.contains(handle);
+    Prop& prop = stateOf(handle, type);
+    if (made || world.services == nullptr) {
+        return;
+    }
+    // The drawer: its own child, at the offset turned by the register's rotation, in the register's pose.
+    const anim::Mat34 turn = anim::transform(pose.rotation, pose.position);
+    prop.drawerAt = anim::transformPoint(turn, kDrawerOffset);
+    prop.drawerTurn = pose.rotation;
+    prop.drawer = world.services->spawnObject(kCashDrawerType, prop.drawerAt, prop.drawerTurn);
+    prop.drawerClock = kDrawerTicks;
+}
+
+bool Props::useCashRegister(double handle, const ObjectType& type, ObjectWorld& world) {
+    if (type.className != kCashRegisterClass) {
+        return false;
+    }
+    Prop& prop = stateOf(handle, type);
+    // The drawer goes in every case (message 0x15).
+    if (prop.drawer != kNoObject) {
+        if (world.services != nullptr) {
+            world.services->destroyObject(prop.drawer);
+        }
+        prop.drawer = kNoObject;
+        prop.drawerOpenUpdates = -1;
+    }
+    if (prop.broken || prop.busy) {
+        return false;
+    }
+    prop.busy = true;
+    return true;
+}
+
+double Props::drawerOf(double handle) const {
+    const auto found = m_props.find(handle);
+    return found != m_props.end() ? found->second.drawer : kNoObject;
 }
 
 PropStrike Props::strike(double handle, const ObjectType& type, const ObjectHit& hit, const PropPose& pose,
@@ -381,21 +421,65 @@ std::optional<std::uint8_t> Props::counter(double handle) const {
 
 void Props::tick(ObjectWorld& world) {
     for (auto& [handle, prop] : m_props) {
-        if (prop.broken && prop.removalIn > 0 && --prop.removalIn == 0) {
+        if ((prop.broken || prop.spent) && prop.removalIn > 0 && --prop.removalIn == 0) {
             m_removed.push_back(handle);
         }
-        // An open drawer's update: a dyn_money above it, holding $25-49 (its +0x124).
-        if (prop.moneyIn > 0 && --prop.moneyIn == 0 && world.services != nullptr) {
+        // A drawer's update (every 60 ticks): once open, the first moves it out, the second spills its money.
+        if (prop.drawer == kNoObject || --prop.drawerClock > 0) {
+            continue;
+        }
+        prop.drawerClock = kDrawerTicks;
+        if (prop.drawerOpenUpdates < 0 || world.services == nullptr) {
+            continue;
+        }
+        ++prop.drawerOpenUpdates;
+        if (prop.drawerOpenUpdates == 1) {
+            // DynCashregB_OnMessage's 0x12 set its position slot 0.35 m out along its local y; the update takes it.
+            const anim::Mat34 turn = anim::transform(prop.drawerTurn, prop.drawerAt);
+            prop.drawerAt = anim::transformPoint(turn, anim::Vec3{0.0F, kDrawerOut, 0.0F});
+            world.services->moveObject(prop.drawer, prop.drawerAt);
+        } else if (prop.drawerOpenUpdates == 2) {
+            // A dyn_money 0.22 m above the drawer in its pose, holding 25 + Random_Int(25) dollars (its +0x124).
             const anim::Vec3 at{prop.drawerAt.x, prop.drawerAt.y, prop.drawerAt.z + kMoneyRise};
             const double money = world.services->spawnObject(kMoneyType, at, prop.drawerTurn);
             if (money != kNoObject) {
                 world.services->setValue(
-                    money, static_cast<std::uint32_t>(kMoneyLeast + randomBelow(world.random, kMoneySpread)));
+                    money, static_cast<std::uint32_t>(kMoneyLeast + randomBelow(world.random, kMoneySpread + 1)));
             }
         }
     }
 }
 
 std::vector<double> Props::takeRemoved() { return std::exchange(m_removed, {}); }
+
+std::optional<double> Props::takeFromPile(double handle, const ObjectType& type, const PropPose& pose,
+                                          ObjectWorld& world) {
+    // The one pile that runs out (its model's hash).
+    constexpr std::uint32_t kMolotovPileB = 0x69b9d1a0U;
+    Prop& prop = stateOf(handle, type);
+    if (prop.spent) {
+        return kNoObject;
+    }
+    const PileTake take = pileTake(type.objectKind, [&world](int below) { return randomBelow(world.random, below); });
+    if (take.itself) {
+        return std::nullopt;
+    }
+    if (type.modelHash == kMolotovPileB && ++prop.takes >= kMolotovPileTakes) {
+        prop.spent = true;
+        prop.removalIn = 2 * kSpentPileTicks;
+    }
+    if (take.object.empty() || world.services == nullptr) {
+        return kNoObject;
+    }
+    if (take.cue >= 0) {
+        world.services->playCueAt(take.cue, pose.position);
+    }
+    return world.services->spawnObject(take.object, pose.position, pose.rotation);
+}
+
+bool Props::pileSpent(double handle) const {
+    const auto found = m_props.find(handle);
+    return found != m_props.end() && found->second.spent;
+}
 
 } // namespace coney::world_objects

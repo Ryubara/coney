@@ -316,6 +316,17 @@ TEST_CASE("the disc's level80: the cuffed Warriors offer the uncuff prompt and t
     REQUIRE(arrested);
     level.pad.buttons = 0;
     REQUIRE(skipToPad(level, kWait));
+    // Each cuffed Warrior wears the cuffs icon over his head (docs/research/crimes.md#arrest).
+    const auto cuffsIcons = [&level] {
+        int count = 0;
+        if (const coney::ai::Brains* brains = level.gameplay->brains(); brains != nullptr) {
+            for (std::size_t i = 0; i < brains->size(); ++i) {
+                count += brains->at(i).human().script().icon == "dyn_cuffs" ? 1 : 0;
+            }
+        }
+        return count;
+    };
+    CHECK(cuffsIcons() == 2);
     const std::string uncuff(level.scripts->context().strings->get(2));
     REQUIRE_FALSE(uncuff.empty());
 
@@ -355,6 +366,7 @@ TEST_CASE("the disc's level80: the cuffed Warriors offer the uncuff prompt and t
         level.run(60);
     }
     CHECK(freed == 2);
+    CHECK(cuffsIcons() == 0);
     // Both freed: the script's event-17 handlers ran and the mission moved on to checkpoint 3.
     REQUIRE(level.runUntil([&level] { return level.checkPoint() >= 3; }, kWait));
     CHECK(level.scripts->scripts().errors() == 0);

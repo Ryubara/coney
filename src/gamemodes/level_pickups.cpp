@@ -31,19 +31,21 @@ float planDistance(anim::Vec3 a, anim::Vec3 b) { return std::hypot(b.x - a.x, b.
 } // namespace
 
 std::optional<PickupChoice> LevelPickups::search(anim::Vec3 feet, anim::Vec3 facing,
-                                                 const world_objects::SightBlocked& blocked) const {
+                                                 const world_objects::SightBlocked& blocked,
+                                                 std::span<const double> refused) const {
     std::vector<world_objects::PickupCandidate> candidates;
     std::vector<int> pickupAnims;
     for (const world_objects::SpawnRecord& record : m_records.all()) {
         if (record.removed || record.hidden || m_inHand.contains(record.handle) ||
-            !m_records.zoneEnabled(record.zone)) {
+            !m_records.zoneEnabled(record.zone) || std::ranges::find(refused, record.handle) != refused.end()) {
             continue;
         }
         const world_objects::ObjectType* type = m_types.find(record.typeName);
         candidates.push_back(world_objects::PickupCandidate{
             .handle = record.handle,
             .position = positionOf(record),
-            .pickable = type != nullptr && world_objects::pickable(type->className, type->modelHash)});
+            .pickable = type != nullptr && world_objects::pickable(type->className, type->modelHash) &&
+                        !(m_spent && m_spent(record.handle))});
         pickupAnims.push_back(type != nullptr ? type->pickupAnim : 0);
     }
     const std::optional<std::size_t> found = world_objects::searchPickup(feet, facing, candidates, blocked);
@@ -70,13 +72,29 @@ TriangleOutcome LevelPickups::triangle(double human, anim::Vec3 feet, anim::Vec3
             gathered.push_back(record.handle);
         }
     }
+    std::vector<double> refused;
     for (const double object : gathered) {
         if (interact(object, human)) {
             return TriangleOutcome{.result = TriangleResult::Consumed, .choice = {}};
         }
+        // A class's own answer: a cash register asks to be lifted (message 0x14), or refuses once broken.
+        const NativeUse use = m_native ? m_native(object, human) : NativeUse::Ignore;
+        const world_objects::SpawnRecord* record = m_records.find(object);
+        const world_objects::ObjectType* type = record != nullptr ? m_types.find(record->typeName) : nullptr;
+        if (use == NativeUse::Lift && !holding && record != nullptr && type != nullptr) {
+            const anim::Vec3 at = positionOf(*record);
+            return TriangleOutcome{
+                .result = TriangleResult::PickUp,
+                .choice = PickupChoice{.handle = object,
+                                       .position = at,
+                                       .clip = world_objects::pickupClip(type->pickupAnim, at.z - feet.z)}};
+        }
+        if (use != NativeUse::Ignore) {
+            refused.push_back(object);
+        }
     }
     // Then the search's choice: one needing empty hands is not taken with something held.
-    if (const std::optional<PickupChoice> choice = search(feet, facing, blocked)) {
+    if (const std::optional<PickupChoice> choice = search(feet, facing, blocked, refused)) {
         const world_objects::SpawnRecord* record = m_records.find(choice->handle);
         const world_objects::ObjectType* type = record != nullptr ? m_types.find(record->typeName) : nullptr;
         const int kind = type != nullptr ? type->objectKind : 0;

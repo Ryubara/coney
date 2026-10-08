@@ -476,6 +476,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     void stepObjectBodies();
     // Player 1's pick-up that reached its clip's event this step: the object is taken.
     void stepPickups();
+    // A take from `object` when it is a weapon pile (world_objects::Props::takeFromPile()): the object made for the
+    // hand, kNoObject when none was made; nothing when `object` is no pile, or a pile taken itself.
+    [[nodiscard]] std::optional<double> takeFromPile(double object);
     // Player 1 lets go of `held`: it leaves the hand from where the hand holds it and falls (dropHeld()), or, `thrown`,
     // flies off with the throw's velocity and spin (docs/research/objects.md#held).
     // @orig 0x00257f38 Human_DropHeld (unknown)

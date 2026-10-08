@@ -794,10 +794,12 @@ human gone or released some other way): 332 and back to 320. A body something el
 plays 331. Player 1's [mash meter](hud.md#mash-meter-layout) (`hud::MashMeter`) shows from the press to the outcome,
 filled by the meter over its target, and hides the prompt, the hint box and the scroll-in messages meanwhile. A disc
 test (`[disc][uncuff]`, `repo:tests/platform/disc_level80_test.cpp`) frees Snow and Cowboy at
-`level80` checkpoint 2 and reaches checkpoint 3. **Coney's stand-ins and readings**: friendly is the gangs'
+`level80` checkpoint 2 and reaches checkpoint 3; a cuffed friendly AI human wears the `dyn_cuffs` icon until his
+release, which removes whatever icon he wears. **Coney's stand-ins and readings**: friendly is the gangs'
 friendship (`Human_IsFriendly`, `0x00222a90`, is not on the page); event 17's other human is none; the push weight,
-the partner and the shared body group are not kept; after a hit the cuffed human goes back to 320. Not yet: hint 19,
-the `dyn_cuffs` icon, the key path, the 0.2 m capsule test, players in cuffs, the leaderless
+the partner and the shared body group are not kept; after a hit the cuffed human goes back to 320; the cuffs icon
+stays attached over his feet rather than detached where it appeared (he does not move while cuffed). Not yet: hint 19,
+the key path, the 0.2 m capsule test, players in cuffs, the leaderless
 gang's follow after a release and `0x00280fd8`.
 
 Coney's choices: a break-in and a custom crime queue kind-1 responders (the break-in after `CfgBreakAndEnterDelay`);

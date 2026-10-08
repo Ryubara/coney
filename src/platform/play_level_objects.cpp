@@ -210,6 +210,20 @@ void PlayLevelMode::bindPickups(LevelPickups* pickups) {
     if (m_pickups == nullptr) {
         return;
     }
+    // A weapon pile that ran out is no longer pickable.
+    m_pickups->setSpent([this](double object) { return m_objects != nullptr && m_objects->props.pileSpent(object); });
+    // The classes' own message 0 from triangle: a cash register gives up its drawer and asks to be lifted.
+    m_pickups->setNativeMessage([this](double object, double /*human*/) {
+        const world_objects::SpawnRecord* record = m_records != nullptr ? m_records->find(object) : nullptr;
+        const world_objects::ObjectType* type =
+            record != nullptr && m_objectTypes != nullptr ? m_objectTypes->find(record->typeName) : nullptr;
+        if (type == nullptr || m_objects == nullptr || type->className != world_objects::kCashRegisterClass) {
+            return LevelPickups::NativeUse::Ignore;
+        }
+        const bool lift = m_objects->props.useCashRegister(object, *type, m_objects->world);
+        m_print(std::format("objects: dyn_cashreg {:.0f} used{}\n", object, lift ? ", lifted" : ""));
+        return lift ? LevelPickups::NativeUse::Lift : LevelPickups::NativeUse::Refuse;
+    });
     m_player->human().setContextAction([this](human::Human& human) {
         // A ray to the object blocked by the level's collision (the panes' and doors' among it).
         const world_objects::SightBlocked blocked = [this](anim::Vec3 from, anim::Vec3 to) {
@@ -600,6 +614,21 @@ void PlayLevelMode::useFlash(human::Human& human) {
     m_print(std::format("flash: used, health {}\n", health.value()));
 }
 
+std::optional<double> PlayLevelMode::takeFromPile(double object) {
+    if (m_objects == nullptr || m_records == nullptr || m_objectTypes == nullptr) {
+        return std::nullopt;
+    }
+    const world_objects::SpawnRecord* record = m_records->find(object);
+    const world_objects::ObjectType* type = record != nullptr ? m_objectTypes->find(record->typeName) : nullptr;
+    if (type == nullptr || type->className != world_objects::kDynPileClass) {
+        return std::nullopt;
+    }
+    const world_objects::PropPose pose{
+        .position = {record->position[0], record->position[1], record->position[2]},
+        .rotation = {record->rotation[0], record->rotation[1], record->rotation[2], record->rotation[3]}};
+    return m_objects->props.takeFromPile(object, *type, pose, m_objects->world);
+}
+
 const world_objects::ObjectType* PlayLevelMode::worldObjectType(double handle) const {
     if (m_records == nullptr || m_objectTypes == nullptr) {
         return nullptr;
@@ -627,6 +656,21 @@ void PlayLevelMode::stepObjectBodies() {
             const world_objects::PropPose pose = recordPose(*record);
             strikeProp(attacker, object, *type, world_objects::HitKind::Plain, feet,
                        anim::normalise(anim::subtract(pose.position, feet)), feet, pose, true);
+        }
+    }
+    // A cash register that has come into the world makes its drawer (DynCashreg_Init); gathered first, as the drawer
+    // adds a record.
+    std::vector<std::pair<double, world_objects::PropPose>> registers;
+    for (const world_objects::SpawnRecord& record : m_records->all()) {
+        const world_objects::ObjectType* type = m_objectTypes->find(record.typeName);
+        if (!record.removed && type != nullptr && type->className == world_objects::kCashRegisterClass &&
+            m_objects != nullptr && m_objectTasks.inWorld(record.handle)) {
+            registers.emplace_back(record.handle, recordPose(record));
+        }
+    }
+    for (const auto& [handle, pose] : registers) {
+        if (const world_objects::ObjectType* type = worldObjectType(handle)) {
+            m_objects->props.initCashRegister(handle, *type, pose, m_objects->world);
         }
     }
     // Each object in the world and not in a hand or on a head whose type has a body and a layer; a broken prop has
@@ -731,7 +775,12 @@ void PlayLevelMode::stepPickups() {
         const anim::Vec3 v = flying != nullptr ? flying->velocity : anim::Vec3{};
         m_print(std::format("pickup: threw object {:.0f} at ({:.2f}, {:.2f}, {:.2f}) m/s\n", held, v.x, v.y, v.z));
     }
-    if (const std::optional<double> taken = human.takePickedUp()) {
+    if (std::optional<double> taken = human.takePickedUp()) {
+        // A weapon pile stays: its take makes a new object, which goes into the hand instead.
+        if (const std::optional<double> made = takeFromPile(*taken)) {
+            m_print(std::format("pickup: pile {:.0f} gave object {:.0f}\n", *taken, *made));
+            taken = *made;
+        }
         const TakeResult result = m_pickups->take(*taken, 0);
         if (result == TakeResult::InHand) {
             script.heldObject = *taken;

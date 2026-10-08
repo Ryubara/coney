@@ -83,6 +83,7 @@ class LevelObjectServices final : public world_objects::ObjectServices {
     }
 
     void playSound(std::uint32_t nameHash, anim::Vec3 at) override;
+    void playCueAt(int cue, anim::Vec3 at) override;
     void playMaterialPair(std::uint8_t a, std::uint8_t b, anim::Vec3 at, float volume = 1.0F) override;
     void lockPickClick(double human) override;
     /// Calls the script function `function` with the human's and the door's handles; nothing for an empty name.
@@ -122,6 +123,10 @@ class LevelObjectServices final : public world_objects::ObjectServices {
     void setModel(double object, std::uint32_t modelHash) override;
     /// The object's spawn record keeps `value` as its money (SpawnRecord::money).
     void setValue(double object, std::uint32_t value) override;
+    /// The object's spawn record stands at `at` from now on.
+    void moveObject(double object, anim::Vec3 at) override;
+    /// The object's spawn record is gone for good.
+    void destroyObject(double object) override;
 
   private:
     script::ScriptSystem& m_scripts;

@@ -413,7 +413,8 @@ class GameplayMode final : public GameMode {
     // wanted timers.
     void wireScoutServices();
     // The uncuffing (gameplay_uncuff.cpp, docs/research/crimes.md#uncuffing). An arrest or a release (the
-    // ScriptedHumans hook): a friendly AI human arrested says 25 `arrested`.
+    // ScriptedHumans hook): a friendly AI human arrested says 25 `arrested` and gets the cuffs icon; a release removes
+    // the icon.
     void onArrest(ai::Brain& brain, bool arrested);
     // The friendly AI human in cuffs nearest player 1 within the kind-0 reach (`CfgActionDistance` 0) and 1.5 m of his
     // waist, not being freed already; null when none.

@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The breakable street props: the hit counters, a strike's order and message 6, a dyn_masks prop's break and removal,
-// the body flags and the body test (docs/research/objects.md#breakable-props). Synthetic types only.
+// the body flags and the body test (docs/research/objects.md#breakable-props); and the weapon piles' takes
+// (docs/research/objects.md#weapon-piles). Synthetic types only.
 
 #include "world_objects/props.h"
 
 #include <cmath>
 #include <cstdint>
 #include <numbers>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -15,6 +17,7 @@
 
 #include "support/object_fixtures.h"
 #include "support/path_fixtures.h"
+#include "world_objects/pickups.h"
 
 namespace {
 
@@ -209,17 +212,30 @@ TEST_CASE("a trash prop broken by running into it sounds its break at 0.65", "[w
     CHECK(g.services.volumes.back() == 1.0F);
 }
 
-TEST_CASE("a cash register takes 2 + 8k a hit; broken it stays, opens its drawer and spills $25-49",
+TEST_CASE("a cash register makes its drawer; broken it stays, its drawer jumps out and spills $25-50",
           "[world_objects][props]") {
-    // docs/research/script-types.md#dyn-cashreg: hit points from +0x5a (16), material CASHREG (103).
+    // docs/research/script-types.md#dyn-cashreg: hit points from +0x5a (16), material CASHREG (103); the drawer at
+    // (0, 0.02, -0.22) in the register's frame, 0.35 m out at its first update after the break, the money at its
+    // second.
     ObjectType till;
     till.name = "dyn_cashreg";
     till.className = std::string(coney::world_objects::kCashRegisterClass);
     till.hitpoints = 50;
     till.value = 16;
     till.material = 103;
+    const PropPose pose{.position = Vec3{1, 2, 0}, .rotation = Quat{}};
     SECTION("seven bare blows leave it standing, each with its sound and dust; the eighth breaks it") {
         Fixture f;
+        f.props.initCashRegister(50.0, till, pose, f.world);
+        f.props.initCashRegister(50.0, till, pose, f.world);
+        REQUIRE(f.services.spawned == std::vector<std::string>{"dyn_cashreg_b"});
+        CHECK(f.services.spawnedAt[0].y == 2.02F);
+        CHECK(f.services.spawnedAt[0].z == -0.22F);
+        CHECK(f.props.drawerOf(50.0) == 1001.0);
+        // Its drawer updates every 60 ticks; shut, it does nothing.
+        for (int tick = 0; tick < 30; ++tick) {
+            f.props.tick(f.world);
+        }
         for (int blow = 0; blow < 7; ++blow) {
             CHECK_FALSE(f.strike(till).broke);
         }
@@ -232,22 +248,28 @@ TEST_CASE("a cash register takes 2 + 8k a hit; broken it stays, opens its drawer
         CHECK(last.broke);
         CHECK(f.props.broken(50.0));
         CHECK(f.services.pairs.back() == std::pair<std::uint8_t, std::uint8_t>{103, 103});
-        // Its broken model and its drawer; it keeps its body.
+        // Its broken model; it keeps its body; a later blow does nothing.
         CHECK(f.services.models ==
               std::vector<std::pair<double, std::uint32_t>>{{50.0, coney::world_objects::kCashRegisterBrokenModel}});
-        CHECK(f.services.spawned == std::vector<std::string>{"dyn_cashreg_b"});
         CHECK(f.services.bodies.empty());
         CHECK_FALSE(f.props.bodyLost(50.0));
-        // A later blow does nothing.
         CHECK_FALSE(f.strike(till).broke);
-        CHECK(f.services.spawned.size() == 1);
-        // The drawer spills its money one update (60 ticks) after opening, and the register is never removed.
+        // The drawer's next update (30 ticks on) moves it 0.35 m out; the one after spills the money.
+        for (int tick = 1; tick < 30; ++tick) {
+            f.props.tick(f.world);
+        }
+        CHECK(f.services.moves.empty());
+        f.props.tick(f.world);
+        REQUIRE(f.services.moves.size() == 1);
+        CHECK(f.services.moves[0].first == 1001.0);
+        CHECK(f.services.moves[0].second.y == 2.02F + Props::kDrawerOut);
         for (int tick = 1; tick < Props::kDrawerTicks; ++tick) {
             f.props.tick(f.world);
         }
         CHECK(f.services.spawned.size() == 1);
         f.props.tick(f.world);
         CHECK(f.services.spawned == std::vector<std::string>{"dyn_cashreg_b", "dyn_money"});
+        CHECK(f.services.spawnedAt[1].z == -0.22F + Props::kMoneyRise);
         REQUIRE(f.services.values.size() == 1);
         CHECK(f.services.values[0].first == 1002.0);
         CHECK(f.services.values[0].second == static_cast<std::uint32_t>(Props::kMoneyLeast));
@@ -261,6 +283,88 @@ TEST_CASE("a cash register takes 2 + 8k a hit; broken it stays, opens its drawer
         Fixture f;
         CHECK(f.strike(till, HitKind::Charge).broke);
     }
+    SECTION("triangle's message 0 deletes its drawer and lifts it once; a broken one refuses") {
+        Fixture f;
+        f.props.initCashRegister(50.0, till, pose, f.world);
+        CHECK(f.props.useCashRegister(50.0, till, f.world));
+        CHECK(f.services.destroyed == std::vector<double>{1001.0});
+        CHECK(f.props.drawerOf(50.0) == coney::world_objects::kNoObject);
+        CHECK_FALSE(f.props.useCashRegister(50.0, till, f.world));
+        Fixture g;
+        g.props.initCashRegister(50.0, till, pose, g.world);
+        CHECK(g.strike(till, HitKind::Charge).broke);
+        CHECK_FALSE(g.props.useCashRegister(50.0, till, g.world));
+        CHECK(g.services.destroyed == std::vector<double>{1001.0});
+    }
+}
+
+namespace {
+
+// A weapon pile of object type `kind` (docs/research/objects.md#weapon-piles).
+ObjectType pileType(int kind, std::uint32_t modelHash = 0x1234U) {
+    ObjectType type;
+    type.name = "dyn_testpile";
+    type.className = std::string(coney::world_objects::kDynPileClass);
+    type.objectKind = kind;
+    type.modelHash = modelHash;
+    return type;
+}
+
+} // namespace
+
+TEST_CASE("a beer pile hands out a new bottle with its cue on every take and never runs out",
+          "[world_objects][props][piles]") {
+    Fixture f;
+    const ObjectType beer = pileType(19);
+    const coney::world_objects::PropPose pose{.position = {1.0F, 2.0F, 3.0F}, .rotation = {0.0F, 0.0F, 0.0F, 1.0F}};
+    constexpr int kTakes = 12;
+    for (int take = 0; take < kTakes; ++take) {
+        const std::optional<double> made = f.props.takeFromPile(50.0, beer, pose, f.world);
+        REQUIRE(made.has_value());
+        CHECK(*made == 1001.0 + take);
+    }
+    CHECK(f.services.spawned == std::vector<std::string>(kTakes, "dyn_beerbottle"));
+    CHECK(f.services.cues == std::vector<int>(kTakes, 27));
+    CHECK_FALSE(f.props.pileSpent(50.0));
+    for (int tick = 0; tick < 2 * Props::kSpentPileTicks; ++tick) {
+        f.props.tick(f.world);
+    }
+    CHECK(f.props.takeRemoved().empty());
+}
+
+TEST_CASE("the second molotov pile runs out after five takes and goes two of its updates later",
+          "[world_objects][props][piles]") {
+    Fixture f;
+    const ObjectType molotovs = pileType(22, 0x69b9d1a0U);
+    const coney::world_objects::PropPose pose{};
+    for (int take = 0; take < Props::kMolotovPileTakes; ++take) {
+        CHECK(f.props.takeFromPile(50.0, molotovs, pose, f.world).value_or(0.0) != coney::world_objects::kNoObject);
+    }
+    CHECK(f.services.spawned == std::vector<std::string>(5, "dyn_molotv"));
+    CHECK(f.props.pileSpent(50.0));
+    CHECK(f.props.takeFromPile(50.0, molotovs, pose, f.world) == coney::world_objects::kNoObject);
+    CHECK(f.services.spawned.size() == 5);
+    for (int tick = 1; tick < 2 * Props::kSpentPileTicks; ++tick) {
+        f.props.tick(f.world);
+    }
+    CHECK(f.props.takeRemoved().empty());
+    f.props.tick(f.world);
+    CHECK(f.props.takeRemoved() == std::vector<double>{50.0});
+    // The first molotov pile never runs out.
+    const ObjectType first = pileType(22);
+    for (int take = 0; take < 2 * Props::kMolotovPileTakes; ++take) {
+        static_cast<void>(f.props.takeFromPile(60.0, first, pose, f.world));
+    }
+    CHECK_FALSE(f.props.pileSpent(60.0));
+}
+
+TEST_CASE("a pile with no take of its own is picked up itself", "[world_objects][props][piles]") {
+    Fixture f;
+    CHECK_FALSE(f.props.takeFromPile(50.0, pileType(2), coney::world_objects::PropPose{}, f.world).has_value());
+    CHECK(f.services.spawned.empty());
+    // The spray-can box makes nothing in the hand, and is not taken itself either.
+    CHECK(f.props.takeFromPile(51.0, pileType(44), coney::world_objects::PropPose{}, f.world) ==
+          coney::world_objects::kNoObject);
 }
 
 TEST_CASE("a broken prop goes after its update interval", "[world_objects][props]") {

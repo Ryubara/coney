@@ -33,7 +33,7 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.3% of the game's own code (579,384 of 3,354,776 bytes, 2,134 functions) |
+| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.3% of the game's own code (580,824 of 3,354,776 bytes, 2,137 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,192 of 3,284,000 bytes; 11,423 of 11,425 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
@@ -81,7 +81,7 @@ at the top of the repository's `README.md`.
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 30 | 17,904 |
 | `Scripting` | `██████▏░░░░░░░░░░░░░` | 30.6% | 224 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `███▍░░░░░░░░░░░░░░░░` | 16.8% | 170 | 531,312 |
+| `TaskEngine` | `███▍░░░░░░░░░░░░░░░░` | 17.1% | 173 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 33 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 32 | 22,008 |
@@ -2035,6 +2035,7 @@ at the top of the repository's `README.md`.
 | `0x003b7a88` | `DynMasks_OnHit` | `TaskEngine` | 30,508 |
 | `0x003bf548` | `DynMasks_Update` | `TaskEngine` | 336 |
 | `0x003bffd0` | `DynCashregB_Update` | `TaskEngine` | 312 |
+| `0x003c04e0` | `DynCashreg_Init` | `TaskEngine` | 464 |
 | `0x003c06b0` | `DynCashreg_OnMessage` | `TaskEngine` | 1,768 |
 | `0x003c3448` | `PartExplosion_Init` | `TaskEngine` | not filled in |
 | `0x003c4580` | `SubFireballEmitter_Init` | `TaskEngine` | not filled in |
@@ -2045,6 +2046,8 @@ at the top of the repository's `README.md`.
 | `0x003ca658` | `Fog3D_WispInit` | `TaskEngine` | not filled in |
 | `0x003ca9d8` | `Fog3D_WispUpdate` | `TaskEngine` | not filled in |
 | `0x003cadd8` | `Fog3D_EmitterUpdate` | `TaskEngine` | not filled in |
+| `0x003d3d30` | `DynPile_OnMessage` | `TaskEngine` | 808 |
+| `0x003d4058` | `DynPile_Update` | `TaskEngine` | 168 |
 | `0x003d7f10` | `PartGarbageFlies_Update` | `TaskEngine` | 624 |
 | `0x003e02a8` | `SubNeonLight_Init` | `TaskEngine` | 264 |
 | `0x003e03d8` | `SubNeonLight_Update` | `TaskEngine` | 352 |

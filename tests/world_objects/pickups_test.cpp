@@ -150,3 +150,34 @@ TEST_CASE("a placed objects file with a short line or a bad count does not read"
     CHECK_FALSE(wo::parsePlacedObjects("1\ndyn_a {0, 0, 0}, {0, 0, 0, 1}, -1, 0, 0, nil )\n").has_value());
     CHECK_FALSE(wo::parsePlacedObjects("1\ndyn_a {0, 0, z}, {0, 0, 0, 1}, -1, 0, 0, ff, nil )\n").has_value());
 }
+
+TEST_CASE("a weapon pile's type picks what its take hands out and the cue it plays",
+          "[world_objects][pickups][piles]") {
+    using coney::world_objects::pileTake;
+    // docs/research/objects.md#weapon-piles: 17 brick, 19 beer bottle, 20 baseball, 47 heavy beer bottle.
+    CHECK(pileTake(17, {}).object == "dyn_brick");
+    CHECK(pileTake(17, {}).cue == 25);
+    CHECK(pileTake(19, {}).object == "dyn_beerbottle");
+    CHECK(pileTake(19, {}).cue == 27);
+    CHECK(pileTake(20, {}).object == "dyn_baseball");
+    CHECK(pileTake(47, {}).object == "dyn_beerbottleheavy");
+    CHECK(pileTake(47, {}).cue == 27);
+    CHECK(pileTake(41, {}).cue == -1);
+    // The liquor pile draws one of its three bottles.
+    int asked = 0;
+    const auto third = [&asked](int below) {
+        asked = below;
+        return 2;
+    };
+    CHECK(pileTake(21, third).object == "dyn_bottle_c");
+    CHECK(asked == 3);
+    // The pool-ball pile draws once and always makes ball 8.
+    int draws = 0;
+    CHECK(pileTake(23, [&draws](int /*below*/) { return ++draws; }).object == "dyn_poolball08_");
+    CHECK(draws == 1);
+    // A type its take has no case for is taken itself; the spray-can box makes nothing (yet).
+    CHECK(pileTake(2, {}).itself);
+    CHECK(pileTake(44, {}).object.empty());
+    CHECK_FALSE(pileTake(44, {}).itself);
+    CHECK(coney::world_objects::pickable(coney::world_objects::kDynPileClass, 0));
+}

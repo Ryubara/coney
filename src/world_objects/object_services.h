@@ -121,12 +121,16 @@ class ObjectServices {
     virtual void breakGlassObjects(anim::Vec3 /*centre*/, float /*radius*/) {}
     /// Adds (`present`) or removes an object's collision body (`0x003a52c8` / `0x003a5340`).
     virtual void setBody(double /*object*/, bool /*present*/) {}
+    /// Plays interface cue `cue` of the sound matrix as a 3D sound at `at` (a weapon pile's take cue).
+    virtual void playCueAt(int /*cue*/, anim::Vec3 /*at*/) {}
     /// Makes a loose object of `type` (a wreck piece, a board) at `at`; its handle, or kNoObject.
     virtual double spawnObject(std::string_view /*type*/, anim::Vec3 /*at*/, anim::Quat /*rotation*/) {
         return kNoObject;
     }
     /// Removes an object (message `0x15`).
     virtual void destroyObject(double /*object*/) {}
+    /// Moves an object to `at` (a cash register's drawer jumping open).
+    virtual void moveObject(double /*object*/, anim::Vec3 /*at*/) {}
     /// Gives an object its next model (message `0x19`, a damaged door's or leaf's next stage).
     virtual void nextModel(double /*object*/) {}
     /// Gives an object the model named by `modelHash`.

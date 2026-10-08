@@ -1761,6 +1761,12 @@ Coney's stand-ins for the world objects, where this page is silent:
   detach's spin. Stand-ins: the target is the fighter's own (no `Player_PickThrowTarget`, no turn to face it), aimed
   at a fixed head height and from the object's place rather than the hand bone; the aiming state, set 5's smash,
   hits on humans, wear and breaks on contact, the removal time and the AI's throws are not built.
+- **Weapon piles** ([above](#weapon-piles); `world_objects::pileTake`, `world_objects::Props::takeFromPile`, the play
+  mode's `takeFromPile`): a `dyn_pile` is pickable; player 1's pick-up of one makes the object its type hands out at
+  the pile, plays the take cue there as a 3D sound, and puts the new object in his hand while the pile stays.
+  `dyn_molotovpile_b` runs out after 5 takes (no longer pickable) and goes two 240-tick updates later. Stand-ins: the
+  spray-can box and the donut spawner hand out nothing; message `0x22`, a carried or knocked pile, and the AI's pile
+  goals (ManWeaponPile, ThrowSubTactic) are not built.
 
 **Glass and doors**, written from this page and [Crimes](crimes.md#lockpick) (2026-10-06), in `repo:src/world_objects/`:
 
@@ -1865,19 +1871,23 @@ debris pieces are splinters; a litter piece's offset is drawn in ±0.43, ±0.43 
 stopped dead after the strike (he slides along the bags that step, and they are gone the next).
 
 **Cash register** ([Script types: cash registers](script-types.md#dyn-cashreg), `repo:src/world_objects/props.h`):
-a `dyn_cashreg` takes 2 + 8 × the hit's kind from its type's `+0x5a` (16), so eight bare hits or one charge break it.
-A hit it survives sounds its material against concrete at the register and raises dust at the hit; the breaking hit
-swaps its broken model (`0x59026f53`, drawn through the spawn record's model), sounds its material against itself and
-opens its drawer; the register is no longer a strike target but keeps its body and is never removed. 60 ticks later
-the drawer spills a `dyn_money` 0.22 m above it holding $25-49 (`WorldObject_SetField124`, the record's money).
+a `dyn_cashreg` makes its drawer (`dyn_cashreg_b`) when it first stands in the world, at (0, 0.02, −0.22) m in its
+own frame and pose, updating every 60 ticks. It takes 2 + 8 × the hit's kind from its type's `+0x5a` (16), so eight
+bare hits or one charge break it. A hit it survives sounds its material against concrete at the register and raises
+dust at the hit; the breaking hit swaps its broken model (`0x59026f53`, drawn through the spawn record's model), sounds
+its material against itself and opens its drawer; the register is no longer a strike target but keeps its body and is
+never removed. At its first update after the break the drawer jumps 0.35 m out along its local y; at its second it
+spills a `dyn_money` 0.22 m above it holding $25-50 (`WorldObject_SetField124`, the record's money), which rests there.
 Player 1 takes money by walking over it ([Walking over a power-up](player-state.md#walk-over),
-`repo:src/gamemodes/level_pickups.h`): item 2 × its value with notify, and the record is removed. Coney's stand-ins:
-what makes the drawer is not traced, so the break makes it, open, at the register's own pose (no slide); the dust is a
-burst; the game state flag that silences the hit sound, the use (the triangle robbery, which takes the drawer and
-leaves a `dyn_cashreg_c` on the break instead), and the pick-up and drop of the register are not built; the money
-rests where it is made; and the walk-over's touch is [Player state](player-state.md#coneys-implementation)'s. In
-`level99` at checkpoint 2 the store's register stands at (53.23, 57.26, 1.63); from the shop floor south of
-it eight squares break it and walking north into the counter takes the money (disc check, 2026-10-07).
+`repo:src/gamemodes/level_pickups.h`). Triangle's message 0 reaches the register's own class (`DynCashreg_OnMessage`,
+LevelPickups' native message): its drawer is deleted whatever happens, and unless it is broken or already lifted it
+asks to be picked up (`0x14`), so the press lifts it with its pick-up animation's clip (2: 503, or 504 above 0.8 m);
+a broken one refuses and the search passes it over. Coney's stand-ins: the dust is a burst; the game state flag that
+silences the hit sound is not built; a lifted register's break (its `dyn_cashreg_c` piece and money) is not built
+yet; and the walk-over's touch is [Player state](player-state.md#coneys-implementation)'s. In `level99` at checkpoint
+2 the store's register stands at (53.23, 57.26, 1.63); eight squares from the shop floor south of it break it, the
+money lies behind the counter, and walking into it from there takes it; triangle from the same spot instead deletes
+the drawer and lifts the register with clip 504 (disc checks, 2026-10-08).
 
 ## Open questions
 

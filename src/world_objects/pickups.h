@@ -64,9 +64,32 @@ using SightBlocked = std::function<bool(anim::Vec3 from, anim::Vec3 to)>;
 /// @orig 0x0021c570 Human_CanSeeObject (unknown)
 [[nodiscard]] bool inSight(anim::Vec3 feet, anim::Vec3 at, const SightBlocked& blocked);
 
+/// The weapon piles' class (docs/research/objects.md#weapon-piles): triangle at one makes a new object in the hand and
+/// the pile stays.
+inline constexpr std::string_view kDynPileClass = "dyn_pile";
+
+/// What a take from a pile of object type `objectKind` (`CfgObj`'s type, record `+0x86`) hands out: the object type
+/// to make (empty when the take makes nothing in the hand), the interface cue it plays at the pile (−1 for none), and
+/// whether the take is of the pile itself, as of any other pickable object (a type the take event has no case for).
+struct PileTake {
+    std::string_view object;
+    int cue = -1;
+    bool itself = false;
+};
+
+/// The take from a pile of object type `objectKind`, as `DynPile`'s take event switches on it: a brick (17), cue ball
+/// (18), beer bottle (19), baseball (20), one of the three liquor bottles (21, drawn by `pick`, which gets 3 and gives
+/// 0-2), molotov (22), pool ball (23, after one draw of `pick` it leaves unused), oil can (41) or bolt cutter (49),
+/// heavy beer bottle (47), with cues 25-31 for 17-23 and 27 for 47. **Coney's stand-ins**: the spray-can box (44) and
+/// the donut spawner (46), which go by the spray charges, hand out nothing yet. Any other type (`dyn_blokpile`'s 2)
+/// is taken itself (inferred on the page).
+/// @orig 0x003d3d30 DynPile_OnMessage (unknown)
+[[nodiscard]] PileTake pileTake(int objectKind, const std::function<int(int)>& pick);
+
 /// Whether triangle picks up an object of class `className` whose model hash is `modelHash`: the classes whose init
-/// sets flag `0x8000` (docs/research/objects.md#pickable), `melee_weapon`, `thrown_weapon`, `overhead_weapon` and
-/// `pickup_item`, but for the hashes they exclude, and a `simple_object` whose hash adds it. A `powerup_item` has the
+/// sets flag `0x8000` (docs/research/objects.md#pickable), `melee_weapon`, `thrown_weapon`, `overhead_weapon`,
+/// `pickup_item` and `dyn_pile` (docs/research/objects.md#weapon-piles), but for the hashes they exclude, and a
+/// `simple_object` whose hash adds it. A `powerup_item` has the
 /// flag but is walked over instead, never taken by triangle. **Coney's reading**: the messages that set or clear the
 /// flag later (`0x19`) are not modelled.
 /// @orig 0x003fd420 MeleeWeapon_Init (unknown)

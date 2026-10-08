@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "audio/object_sounds.h"
 
+#include "audio/sound_engine.h"
+
 namespace coney::audio {
 
 namespace {
@@ -16,6 +18,15 @@ void ObjectSounds::playSound(std::uint32_t nameHash, anim::Vec3 at) {
         // The objects' hashes are CRC-32s of the sound names, the ids the SoundPlayer keys its sounds by; a sound whose
         // class has no position plays as 2D.
         (void)m_player->play3D(SoundId{nameHash}, soundAt(at), VoiceParams{.bus = Bus::Sfx});
+    }
+}
+
+void ObjectSounds::playCueAt(int cue, anim::Vec3 at) {
+    const SoundEngine* engine = m_player != nullptr ? m_player->engine() : nullptr;
+    const std::uint32_t sound =
+        engine != nullptr && cue >= 0 ? engine->interfaceSound(static_cast<std::size_t>(cue)) : 0;
+    if (sound != 0) {
+        playSound(sound, at);
     }
 }
 

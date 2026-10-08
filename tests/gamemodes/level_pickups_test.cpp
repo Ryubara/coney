@@ -283,6 +283,33 @@ TEST_CASE("triangle offers message 0 first: a prompt's object, then each object 
     CHECK(h.messages.prompts().empty());
 }
 
+TEST_CASE("a class's own message 0 lifts the object, or keeps the search off it", "[level_pickups]") {
+    // docs/research/script-types.md#dyn-cashreg: a register asks to be lifted (0x14), and once broken refuses.
+    Harness h;
+    wo::ObjectType till;
+    till.name = "dyn_cashreg";
+    till.className = "dyn_cashreg";
+    till.pickupAnim = 2;
+    h.types.add(till);
+    coney::LevelPickups pickups(h.scripts, h.state, h.records, h.types, &h.messages);
+    h.place(9, "dyn_cashreg", Vec3{10.0F, 11.0F, 1.4F});
+    coney::LevelPickups::NativeUse answer = coney::LevelPickups::NativeUse::Lift;
+    std::vector<double> asked;
+    pickups.setNativeMessage([&](double object, double /*human*/) {
+        asked.push_back(object);
+        return answer;
+    });
+    coney::TriangleOutcome outcome = pickups.triangle(100, kFeet, kFacingY, false, {});
+    CHECK(asked == std::vector<double>{9});
+    REQUIRE(outcome.result == coney::TriangleResult::PickUp);
+    CHECK(outcome.choice.handle == 9);
+    CHECK(outcome.choice.clip == 504); // TwoHandPickUp, more than 0.8 m above the feet
+    // Refused, the search does not take it though its class is pickable.
+    answer = coney::LevelPickups::NativeUse::Refuse;
+    outcome = pickups.triangle(100, kFeet, kFacingY, false, {});
+    CHECK(outcome.result == coney::TriangleResult::Nothing);
+}
+
 TEST_CASE("with something in hand triangle takes loot, but drops it for a weapon or nothing", "[level_pickups]") {
     Harness h;
     coney::LevelPickups pickups(h.scripts, h.state, h.records, h.types, &h.messages);

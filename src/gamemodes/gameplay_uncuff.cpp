@@ -7,6 +7,7 @@
 #include <format>
 #include <optional>
 #include <string>
+#include <string_view>
 
 #include "ai/brain.h"
 #include "ai/brains.h"
@@ -33,6 +34,8 @@ namespace {
 // The speech commands (docs/references/speech.md): the cuffed human's `arrested`, the freer's `unarrest_reasure`
 // and the freed human's `unarrest_thank`.
 constexpr std::uint32_t kArrestedCommand = 25;
+// The icon over a cuffed human's head (`Human_ShowOverheadIcon` from `Human_Arrest`, docs/research/crimes.md#arrest).
+constexpr std::string_view kCuffsIcon = "dyn_cuffs";
 constexpr std::uint32_t kReassureCommand = 68;
 constexpr std::uint32_t kThankCommand = 67;
 // A context record's height must be within this of the human's waist, the feet plus 1 m (`0x00417ed0`).
@@ -56,13 +59,19 @@ bool friendlyTo(const ai::Brain& brain, const ai::Brain& player) {
 } // namespace
 
 void GameplayMode::onArrest(ai::Brain& brain, bool arrested) {
-    // A release needs nothing here: the kind-0 record goes with the cuffs (cuffedInReach() reads them) and a mash under
-    // way on him fails (updateUncuff()).
-    const ai::Brain* player = m_scripted ? m_scripted->player() : nullptr;
-    // An AI human friendly to player 1 gets the kind-0 record (cuffedInReach() finds it) and says 25 `arrested`.
-    if (!arrested || player == nullptr || brain.type() == ai::BrainType::Player || !friendlyTo(brain, *player)) {
+    // A release removes the icon over his head, whichever it is (`Human_Unarrest` sends it message 0x15). The kind-0
+    // record goes with the cuffs (cuffedInReach() reads them) and a mash under way on him fails (updateUncuff()).
+    if (!arrested) {
+        brain.human().script().icon.clear();
         return;
     }
+    const ai::Brain* player = m_scripted ? m_scripted->player() : nullptr;
+    // An AI human friendly to player 1 gets the kind-0 record (cuffedInReach() finds it), says 25 `arrested` and gets
+    // the cuffs icon. **Coney's reading**: a player is never registered (no second player, no key upgrade yet).
+    if (player == nullptr || brain.type() == ai::BrainType::Player || !friendlyTo(brain, *player)) {
+        return;
+    }
+    brain.human().script().icon = std::string(kCuffsIcon);
     m_log(std::format("uncuff: human {:.0f} arrested\n", brain.handle()));
     if (m_context.sound != nullptr) {
         static_cast<void>(m_context.sound->sayCommand(

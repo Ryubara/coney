@@ -10469,6 +10469,12 @@ subsystem = "TaskEngine"
 size = 312
 
 [[function]]
+address = 0x003c04e0
+name = "DynCashreg_Init"
+subsystem = "TaskEngine"
+size = 464
+
+[[function]]
 address = 0x003c06b0
 name = "DynCashreg_OnMessage"
 subsystem = "TaskEngine"
@@ -11949,3 +11955,15 @@ subsystem = "Human"
 address = 0x0031b030
 name = "ScoutTactic_Process"
 subsystem = "Human"
+
+[[function]]
+address = 0x003d3d30
+name = "DynPile_OnMessage"
+subsystem = "TaskEngine"
+size = 808
+
+[[function]]
+address = 0x003d4058
+name = "DynPile_Update"
+subsystem = "TaskEngine"
+size = 168

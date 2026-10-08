@@ -19,6 +19,12 @@ void LevelObjectServices::playSound(std::uint32_t nameHash, anim::Vec3 at) {
     }
 }
 
+void LevelObjectServices::playCueAt(int cue, anim::Vec3 at) {
+    if (m_sounds != nullptr) {
+        m_sounds->playCueAt(cue, at);
+    }
+}
+
 void LevelObjectServices::playMaterialPair(std::uint8_t a, std::uint8_t b, anim::Vec3 at, float volume) {
     if (m_sounds != nullptr) {
         m_sounds->playMaterialPair(a, b, at, volume);
@@ -174,6 +180,18 @@ void LevelObjectServices::setModel(double object, std::uint32_t modelHash) {
 void LevelObjectServices::setValue(double object, std::uint32_t value) {
     if (world_objects::SpawnRecord* record = m_records != nullptr ? m_records->find(object) : nullptr) {
         record->money = value;
+    }
+}
+
+void LevelObjectServices::destroyObject(double object) {
+    if (m_records != nullptr) {
+        static_cast<void>(m_records->destroy(object));
+    }
+}
+
+void LevelObjectServices::moveObject(double object, anim::Vec3 at) {
+    if (world_objects::SpawnRecord* record = m_records != nullptr ? m_records->find(object) : nullptr) {
+        record->position = {at.x, at.y, at.z};
     }
 }
 

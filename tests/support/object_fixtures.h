@@ -37,6 +37,7 @@ class RecordingServices final : public world_objects::ObjectServices {
     };
 
     std::vector<std::uint32_t> sounds;
+    std::vector<int> cues; // playCueAt()
     std::vector<std::pair<std::uint8_t, std::uint8_t>> pairs;
     std::vector<float> volumes; // each pair's volume
     int shards = 0;
@@ -54,6 +55,7 @@ class RecordingServices final : public world_objects::ObjectServices {
     std::vector<double> nextModels;
     std::vector<std::pair<double, std::uint32_t>> models;
     std::vector<std::pair<double, std::uint32_t>> values; // setValue()
+    std::vector<std::pair<double, anim::Vec3>> moves;     // moveObject()
     int dusts = 0;
     int splinterCount = 0;
     int bursts = 0;
@@ -69,6 +71,7 @@ class RecordingServices final : public world_objects::ObjectServices {
         pairs.emplace_back(a, b);
         volumes.push_back(volume);
     }
+    void playCueAt(int cue, anim::Vec3 /*at*/) override { cues.push_back(cue); }
     bool shardsWanted(anim::Vec3 /*centre*/) override { return wantShards; }
     void spawnShard(anim::Vec3 /*at*/, float size, std::uint32_t /*colour*/) override {
         ++shards;
@@ -92,6 +95,7 @@ class RecordingServices final : public world_objects::ObjectServices {
     void nextModel(double object) override { nextModels.push_back(object); }
     void setModel(double object, std::uint32_t modelHash) override { models.emplace_back(object, modelHash); }
     void setValue(double object, std::uint32_t value) override { values.emplace_back(object, value); }
+    void moveObject(double object, anim::Vec3 at) override { moves.emplace_back(object, at); }
     void dust(anim::Vec3 /*at*/, float /*radius*/) override { ++dusts; }
     void splinters(anim::Vec3 /*at*/, int count) override { splinterCount += count; }
     void burst(anim::Vec3 /*at*/) override { ++bursts; }

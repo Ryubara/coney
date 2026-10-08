@@ -185,6 +185,10 @@ class SoundEngine {
     void setAmbientTrackVolume(float volume);
     /// Fills interface cue `index` with the sound `hash` (SoundCfgInterfaceSound).
     void setInterfaceSound(std::size_t index, std::uint32_t hash);
+    /// The sound in interface cue `index`; 0 for an empty or unknown cue.
+    [[nodiscard]] std::uint32_t interfaceSound(std::size_t index) const {
+        return index < m_interfaceSounds.size() ? m_interfaceSounds[index] : 0;
+    }
     /// Plays interface cue `index` as a 2D sound; nothing for an empty cue.
     SoundHandle playInterfaceSound(std::size_t index);
 

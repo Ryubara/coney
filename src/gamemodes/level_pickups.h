@@ -5,6 +5,7 @@
 #include <functional>
 #include <optional>
 #include <set>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -81,6 +82,14 @@ class LevelPickups {
     using Locator = std::function<std::optional<anim::Vec3>(double object)>;
     /// Plays a sound by name hash once, without a position (`PlaySound2DByHash`: the game's sound in a run).
     using Play2D = std::function<void(std::uint32_t hash)>;
+    /// What an object's own class answers message 0 from triangle's search (a native handler, not a script's).
+    enum class NativeUse : std::uint8_t {
+        Ignore, ///< The class does nothing with it.
+        Lift,   ///< The object asks the human to pick it up (message `0x14`): the press picks it up.
+        Refuse, ///< The object refuses: the search does not take it this press.
+    };
+    /// A class's message 0 to `object` from `human`.
+    using NativeMessage = std::function<NativeUse(double object, double human)>;
 
     LevelPickups(script::ScriptSystem& scripts, GameState& state, world_objects::SpawnRecords& records,
                  const world_objects::ObjectTypes& types, const script::MessageHandlers* messages = nullptr)
@@ -91,6 +100,11 @@ class LevelPickups {
     void setLocator(Locator locator) { m_locate = std::move(locator); }
     /// Plays the items' pick-up sounds through `play` from now on (empty: none).
     void setSound(Play2D play) { m_play2D = std::move(play); }
+    /// Asks `spent` which objects have lost their pickable flag since they were made (a weapon pile that ran out,
+    /// world_objects::Props::pileSpent()); the search skips them. Empty: none has.
+    void setSpent(std::function<bool(double object)> spent) { m_spent = std::move(spent); }
+    /// The classes' own message 0 (a cash register's lift) goes to `native` from now on (empty: none).
+    void setNativeMessage(NativeMessage native) { m_native = std::move(native); }
 
     /// The action object for a player whose feet are at `feet`: of the objects with an interaction prompt, the
     /// nearest within kPromptReach in the ground plane whose height is within kPromptHeight of the feet + 1 m.
@@ -101,9 +115,11 @@ class LevelPickups {
     [[nodiscard]] std::optional<ActionObject> actionObject(anim::Vec3 feet) const;
 
     /// The triangle search (world_objects::searchPickup()) for a human at `feet` facing `facing`, over the records that
-    /// are not removed, hidden, held or in a disabled zone, whose type is pickable. Nothing when none qualifies.
+    /// are not removed, hidden, held, in a disabled zone or in `refused`, whose type is pickable. Nothing when none
+    /// qualifies.
     [[nodiscard]] std::optional<PickupChoice> search(anim::Vec3 feet, anim::Vec3 facing,
-                                                     const world_objects::SightBlocked& blocked) const;
+                                                     const world_objects::SightBlocked& blocked,
+                                                     std::span<const double> refused = {}) const;
 
     /// Steps 4 and 5 of triangle for human `human` at `feet` facing `facing`, `holding` whether something is in hand:
     /// the action object (actionObject()) gets message 0, and a true result ends the press; then every object within
@@ -235,9 +251,11 @@ class LevelPickups {
     world_objects::SpawnRecords& m_records;
     const world_objects::ObjectTypes& m_types;
     const script::MessageHandlers* m_messages;
-    std::set<double> m_inHand; // the objects held, whose records stay
-    Locator m_locate;          // the prompt objects that are not spawn records
-    Play2D m_play2D;           // the items' pick-up sounds
+    std::set<double> m_inHand;           // the objects held, whose records stay
+    Locator m_locate;                    // the prompt objects that are not spawn records
+    std::function<bool(double)> m_spent; // objects no longer pickable
+    NativeMessage m_native;              // the classes' own message 0
+    Play2D m_play2D;                     // the items' pick-up sounds
 };
 
 } // namespace coney

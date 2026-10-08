@@ -29,6 +29,9 @@ class ObjectSounds final : public world_objects::ObjectServices {
 
     /// Plays the sound whose name hashes to `nameHash` (a door's open or close sound, a hit's).
     void playSound(std::uint32_t nameHash, anim::Vec3 at) override;
+    /// Interface cue `cue`'s sound (the engine's cue table, `AudioManager_GetCueTable`) as a 3D sound at `at`; nothing
+    /// for an empty cue or without the engine.
+    void playCueAt(int cue, anim::Vec3 at) override;
     /// The pair's sounds from the sound matrix at `at`.
     /// @orig 0x00117280 Sound_PlayMaterialPairAt (unknown)
     void playMaterialPair(std::uint8_t a, std::uint8_t b, anim::Vec3 at, float volume = 1.0F) override;

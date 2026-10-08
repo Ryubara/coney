@@ -20,12 +20,61 @@ bool inSight(anim::Vec3 feet, anim::Vec3 at, const SightBlocked& blocked) {
            !blocked(anim::Vec3{feet.x, feet.y, feet.z + kPickupSightHigh}, at);
 }
 
+PileTake pileTake(int objectKind, const std::function<int(int)>& pick) {
+    // The pile types by their object type (TYPE_BRICKPILE ... TYPE_BOLTCUTTERBOX).
+    constexpr int kBrickPile = 17;
+    constexpr int kChunkPile = 18;
+    constexpr int kBeerPile = 19;
+    constexpr int kBaseballPile = 20;
+    constexpr int kLiquorPile = 21;
+    constexpr int kMolotovPile = 22;
+    constexpr int kPoolBallPile = 23;
+    constexpr int kOilPile = 41;
+    constexpr int kSprayPile = 44;
+    constexpr int kDonutPile = 46;
+    constexpr int kBeerPileHeavy = 47;
+    constexpr int kBoltCutterBox = 49;
+    constexpr std::array<std::string_view, 3> kLiquor{"dyn_bottle_a", "dyn_bottle_b", "dyn_bottle_c"};
+    constexpr int kLiquorKinds = 3;
+    const auto draw = [&pick](int below) { return pick ? std::clamp(pick(below), 0, below - 1) : 0; };
+    switch (objectKind) {
+    case kBrickPile:
+        return {.object = "dyn_brick", .cue = 25};
+    case kChunkPile:
+        return {.object = "dyn_cueball", .cue = 26};
+    case kBeerPile:
+        return {.object = "dyn_beerbottle", .cue = 27};
+    case kBaseballPile:
+        return {.object = "dyn_baseball", .cue = 28};
+    case kLiquorPile:
+        return {.object = kLiquor.at(static_cast<std::size_t>(draw(kLiquorKinds))), .cue = 29};
+    case kMolotovPile:
+        return {.object = "dyn_molotv", .cue = 30};
+    case kPoolBallPile:
+        // A number is drawn and never used: the draw still takes its place in the sequence, which one draw advances
+        // the same whatever its range (not on the page), so any range keeps the game's sequence.
+        static_cast<void>(draw(1));
+        return {.object = "dyn_poolball08_", .cue = 31};
+    case kOilPile:
+        return {.object = "dyn_oilcan", .cue = -1};
+    case kBeerPileHeavy:
+        return {.object = "dyn_beerbottleheavy", .cue = 27};
+    case kBoltCutterBox:
+        return {.object = "dyn_boltcutter_b", .cue = -1};
+    case kSprayPile:
+    case kDonutPile:
+        return {};
+    default:
+        return {.object = {}, .cue = -1, .itself = true};
+    }
+}
+
 bool pickable(std::string_view className, std::uint32_t modelHash) {
     // The model hashes a class's init treats apart (docs/research/objects.md#pickable).
     constexpr std::uint32_t kNotPickableOverhead = 0x8fc6ac30U;
     constexpr std::uint32_t kNotPickableItem = 0x2fd690d6U;
     constexpr std::uint32_t kPickableSimpleObject = 0xfcbe9fbbU;
-    if (className == "melee_weapon" || className == "thrown_weapon") {
+    if (className == "melee_weapon" || className == "thrown_weapon" || className == kDynPileClass) {
         return true;
     }
     if (className == "overhead_weapon") {
@@ -33,6 +82,10 @@ bool pickable(std::string_view className, std::uint32_t modelHash) {
     }
     if (className == kPickupItemClass) {
         return modelHash != kNotPickableItem;
+    }
+    // A cash register's init sets the flag too (docs/research/script-types.md#dyn-cashreg).
+    if (className == "dyn_cashreg") {
+        return true;
     }
     if (className == "simple_object") {
         return modelHash == kPickableSimpleObject;
