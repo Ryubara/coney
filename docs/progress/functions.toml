@@ -2423,6 +2423,16 @@ subsystem = "Graphics"
 size = 160
 
 [[function]]
+address = 0x00191230
+name = "WaterEffect_Init"
+subsystem = "Graphics"
+
+[[function]]
+address = 0x00191dd8
+name = "WaterEffect_Update"
+subsystem = "Graphics"
+
+[[function]]
 address = 0x00192688
 name = "AtomicPlugin_StreamRead"
 subsystem = "Graphics"
@@ -9474,6 +9484,11 @@ subsystem = "Scripting"
 size = 88
 
 [[function]]
+address = 0x0037ba48
+name = "SetPositionOfWater"
+subsystem = "Scripting"
+
+[[function]]
 address = 0x0037be18
 name = "QueueMotionBlurEffect_Alpha"
 subsystem = "Scripting"
@@ -10510,6 +10525,11 @@ address = 0x0040c948
 name = "World_Precache"
 subsystem = "World"
 size = 208
+
+[[function]]
+address = 0x0040ca18
+name = "Water_Set"
+subsystem = "World"
 
 [[function]]
 address = 0x0040cc40

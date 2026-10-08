@@ -9,6 +9,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "animation/anim_math.h"
@@ -69,6 +70,9 @@ class PlayScenery {
     /// Holds the scenery's own animations (clouds, light flicker) at game time `atMs` from now on, whatever draw() is
     /// given, while what streams in still fades in: `--freeze-world`. A scenery without animations ignores it.
     virtual void freezeAnimation(std::uint64_t atMs) { (void)atMs; }
+    /// Sets what draw() draws after the level's worlds and their objects (the water); a scenery without a level's
+    /// worlds ignores it.
+    virtual void setAfterWorlds(std::function<void()> draw) { (void)draw; }
     /// The direction the character's directional light travels, in the game's axes: the stand-in lighting of a scenery
     /// without a level's lights.
     [[nodiscard]] virtual anim::Vec3 lightDirection() const = 0;
@@ -130,6 +134,7 @@ class LevelPlayScenery final : public PlayScenery {
               const std::function<void()>& drawObjects) override;
     [[nodiscard]] anim::Vec3 lightDirection() const override;
     void setLighting(SceneLighting* lighting) override { m_renderer.setLighting(lighting); }
+    void setAfterWorlds(std::function<void()> draw) override { m_renderer.setAfterWorlds(std::move(draw)); }
     void freezeAnimation(std::uint64_t atMs) override { m_renderer.freezeAnimation(atMs); }
     [[nodiscard]] std::string summary() const override;
     [[nodiscard]] std::string name() const override { return m_name; }

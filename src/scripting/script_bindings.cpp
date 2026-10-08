@@ -1107,6 +1107,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     // The particle systems and the motion blur (effects_bindings.h).
     real("SpawnParticle"),
     real("QueueMotionBlurEffect"),
+    real("SetPositionOfWater"),
     // The sound: configuration, ambience, music, the listener and speech (sound_bindings.h).
     real("SndCfgMusicInfo"),
     real("SoundCfgInterfaceSound"),

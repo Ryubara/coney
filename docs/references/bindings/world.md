@@ -1989,7 +1989,7 @@ later calls move it, resize it, recolour it and change its waves. Used by the ri
   `WaterEffect_Init`, `0x001915a0` `WaterEffect_SetFrame`, `0x00191dd8` `WaterEffect_Update`
 - **Used by** 4 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level84`](story.md#level84) (mission 18)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SpawnBreakableGlass {#spawnbreakableglass}
 

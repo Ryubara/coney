@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The effects bindings (docs/references/bindings/effects.md): SpawnParticle's handle, place, rotation and parent, and
-// both forms of QueueMotionBlurEffect, and the tag spots' CfgTagSettings and ProcessTag.
+// both forms of QueueMotionBlurEffect, SetPositionOfWater, and the tag spots' CfgTagSettings and ProcessTag.
 #include "scripting/effects_bindings.h"
 
 #include <array>
@@ -250,4 +250,19 @@ TEST_CASE("CfgTagSettings and ProcessTag act on a particle system's tag spot onl
     h.first("CfgTagSettings", {Value(999.0), Value(1.0)});
     h.first("ProcessTag", {Value(999.0), Value(true)});
     CHECK(h.tagSpots.find(999.0) == nullptr);
+}
+
+TEST_CASE("SetPositionOfWater places the level's water with its size, colour and waves", "[effects_bindings]") {
+    Harness h;
+    CHECK_FALSE(h.effects.water.placed());
+    h.first("SetPositionOfWater", {list({-100, 50, -2}), list({0, 0, 0, -1}), Value(300.0), Value(1339.0),
+                                   list({0.2, 0.4, 1.0}), Value(0.1), Value(0.25)});
+    REQUIRE(h.effects.water.placed());
+    const coney::effects::WaterSettings& s = *h.effects.water.settings();
+    CHECK(s.position == coney::anim::Vec3{-100, 50, -2});
+    CHECK(s.width == 300.0F);
+    CHECK(s.length == 1339.0F);
+    CHECK(s.colour == std::array<std::uint8_t, 3>{51, 102, 255});
+    CHECK(s.waveHeight == 0.1F);
+    CHECK(s.waveSpeed == 0.25F);
 }

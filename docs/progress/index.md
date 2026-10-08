@@ -33,12 +33,12 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▍░░░░░░░░░░░░░░░░` | 16.8% of the game's own code (563,308 of 3,354,776 bytes, 2,075 functions) |
+| **Reimplemented** | `███▍░░░░░░░░░░░░░░░░` | 16.8% of the game's own code (563,308 of 3,354,776 bytes, 2,079 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,220 of 3,284,028 bytes; 11,424 of 11,426 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-841 reimplemented function(s) have no size yet and add no bytes.
+845 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -71,7 +71,7 @@ at the top of the repository's `README.md`.
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
 | `FileIO` | `███▍░░░░░░░░░░░░░░░░` | 17.0% | 10 | 7,120 |
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 111 | 100,440 |
-| `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 12.0% | 88 | 195,624 |
+| `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 12.0% | 90 | 195,624 |
 | `GUI` | `████░░░░░░░░░░░░░░░░` | 19.8% | 235 | 497,416 |
 | `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 776 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 8 | 12,544 |
@@ -79,11 +79,11 @@ at the top of the repository's `README.md`.
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 4 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 12 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 30 | 17,904 |
-| `Scripting` | `██████▏░░░░░░░░░░░░░` | 30.6% | 223 | 197,192 |
+| `Scripting` | `██████▏░░░░░░░░░░░░░` | 30.6% | 224 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `███▏░░░░░░░░░░░░░░░░` | 15.8% | 160 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
-| `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 32 | 24,344 |
+| `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 33 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 32 | 22,008 |
 | `Warriors` | `███▊░░░░░░░░░░░░░░░░` | 19.0% | 112 | 54,264 |
 | `Movie` | `██████████████████▍░` | 91.9% | 5 | 5,208 |
@@ -579,6 +579,8 @@ at the top of the repository's `README.md`.
 | `0x0018e780` | `ScreenFx_ExitStore` | `Graphics` | 80 |
 | `0x001906e8` | `ChunkReader_TextureDictionaryTid` | `Graphics` | 136 |
 | `0x00190770` | `ChunkReader_RenderwareTextureDic` | `Graphics` | 160 |
+| `0x00191230` | `WaterEffect_Init` | `Graphics` | not filled in |
+| `0x00191dd8` | `WaterEffect_Update` | `Graphics` | not filled in |
 | `0x00192688` | `AtomicPlugin_StreamRead` | `Graphics` | not filled in |
 | `0x00193d80` | `RwDevice_BlurPass` | `Graphics` | not filled in |
 | `0x00195238` | `RwDevice::GuiToOverlay` | `Graphics` | 248 |
@@ -1856,6 +1858,7 @@ at the top of the repository's `README.md`.
 | `0x0037b6e8` | `SSMC_StartDeleteSequence_Binding` | `Scripting` | 32 |
 | `0x0037b7d8` | `SetLUASaveDataFloat` | `Scripting` | 120 |
 | `0x0037b850` | `GetLUASaveDataFloat` | `Scripting` | 88 |
+| `0x0037ba48` | `SetPositionOfWater` | `Scripting` | not filled in |
 | `0x0037be18` | `QueueMotionBlurEffect_Alpha` | `Scripting` | not filled in |
 | `0x0037be90` | `QueueMotionBlurEffect` | `Scripting` | not filled in |
 | `0x0037d420` | `RegisterBindings` | `Scripting` | 27,408 |
@@ -2042,6 +2045,7 @@ at the top of the repository's `README.md`.
 | `0x0040c868` | `Level_SetFogColour` | `World` | 160 |
 | `0x0040c908` | `Level_SetFogDistance` | `World` | 48 |
 | `0x0040c948` | `World_Precache` | `World` | 208 |
+| `0x0040ca18` | `Water_Set` | `World` | not filled in |
 | `0x0040cc40` | `World_QueuePackToPrecache` | `World` | 40 |
 | `0x0040cc70` | `ScreenFx_SetMotionAlpha` | `World` | 120 |
 | `0x0040cce8` | `ScreenFx_QueueMotionBlurAlpha` | `World` | not filled in |

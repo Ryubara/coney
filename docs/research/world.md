@@ -681,8 +681,11 @@ registered from Coney's code; librw needs no patch.
   ([Rendering](rendering.md#world)). Coney keeps each texture's `K` and `L` when it converts it and draws atomics
   through its own copy of librw's default GL3 shaders, which sample at `log2(depth) × 2^L + K` for the sectors and
   at level 0 for everything else (`repo:src/platform/texture_lod.h`). With an OpenGL 2.1 context librw's own shaders
-  stay. The far roller shutters of the street view still show a grid pattern where the original shows slats, at any
-  level: not a filtering difference.
+  stay.
+- **Mipmap levels unswizzled once**: librw's conversion unswizzles each mipmap level twice (its level lock, then the
+  image's), which scrambled every level and turned the padded small ones into a lattice (`level99`'s far roller
+  shutters). Coney converts PS2 mipmapped rasters level by level itself, each unswizzled once at its sent size and
+  cropped ([GS upload packets](formats/renderware.md#gs-packets)); the far shutters then show their slats.
 
 **Seen in the viewer** (screenshots of `level2`, `level14`, `level51`, `level83`, `level100` and `objarena`, checked by
 eye; none kept):

@@ -1447,6 +1447,11 @@ step 9) and draws with culling off; Z test, Z write and fog stay as the world pa
     - the last row and the last column copy the first one's heights and colours, so the surface tiles.
 3. Unlock the geometry and render the clump (`0x0046a100`).
 
+**The texture's file**, inferred (disc check): the WAD file `725908093`, the decimal CRC-32 of `water_tex`, is a
+container holding one texture dictionary; so is `2169582214`, of `ocean_tex`. Coney (`effects::Water`,
+`repo:src/effects/water.h`; `platform::WaterRenderer`) loads it when the water is first placed, and draws the grid
+after the `d` world.
+
 ### The RenderWare device's helpers {#code-device}
 
 `DevRWGeneric.cpp`'s functions that are not in the [device](#device-vtable) or [camera](#camera-wrapper) tables

@@ -20,7 +20,8 @@ namespace coney::platform {
 
 PlayLevelEffects::PlayLevelEffects(RenderEngine& engine, const io::Wad& wad, const effects::LevelEffects* effects,
                                    const world_objects::Cars* cars, std::function<void(std::string_view)> print)
-    : m_engine(engine), m_effects(effects), m_particles(wad, engine.drawsPixels(), print), m_smoke(wad, print) {
+    : m_engine(engine), m_effects(effects), m_particles(wad, engine.drawsPixels(), print), m_smoke(wad, print),
+      m_water(wad, print) {
     if (cars != nullptr) {
         m_cars = std::make_unique<ParkedCars>(wad, *cars, engine.drawsPixels(), std::move(print));
     }
@@ -61,6 +62,12 @@ void PlayLevelEffects::drawFog(const world::CameraPose& view) {
         sprites.push_back(sprite);
     }
     m_particles.drawSprites(sprites, effects::GroundFog::sheetOf(fog.settings()->sprite), false, view);
+}
+
+void PlayLevelEffects::drawWater() {
+    if (m_effects != nullptr && m_engine.drawsPixels()) {
+        m_water.draw(m_effects->water);
+    }
 }
 
 void PlayLevelEffects::drawGlints(std::span<const effects::Particle> glints, const world::CameraPose& view) {

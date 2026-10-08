@@ -279,6 +279,12 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
         attachScenes(cast->scenes, player != nullptr ? player->handle : 0.0);
     }
     m_levelEffects = std::move(levelEffects);
+    // The level's water, after its worlds (step 9 of the world pass).
+    m_scenery->setAfterWorlds([this] {
+        if (m_levelEffects) {
+            m_levelEffects->drawWater();
+        }
+    });
 }
 
 void PlayLevelMode::useHud(hud::Hud& shared) {
@@ -295,6 +301,7 @@ PlayLevelMode::~PlayLevelMode() {
     m_levelEffects.reset();
     attachScenes(nullptr, 0.0); // the scenes may outlive the stage they were hosted by
     m_scenery->setLighting(nullptr);
+    m_scenery->setAfterWorlds({});
     m_lights.reset();
     m_ai.reset(); // out of the player's step before he goes
     m_fighterMeshes.clear();

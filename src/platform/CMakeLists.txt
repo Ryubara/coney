@@ -22,7 +22,7 @@ target_sources(coney_platform PRIVATE reference_renderer.cpp)
 target_sources(coney_platform PRIVATE sdl_input.cpp)
 # A level's particle systems and motion blur, drawn in play (docs/research/particles.md#coneys-implementation).
 target_sources(coney_platform PRIVATE motion_blur_pass.cpp parked_cars.cpp particle_renderer.cpp play_level_effects.cpp
-                                      room_smoke_overlay.cpp)
+                                      room_smoke_overlay.cpp water_renderer.cpp)
 # Real-time frame pacing: the one place that reads the clock (docs/guides/conventions.md#update-and-render).
 target_sources(coney_platform PRIVATE frame_pacer.cpp)
 # Sound output: the SDL3 audio device over the mixer, or the offline pull of test mode (docs/research/sound.md).

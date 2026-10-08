@@ -205,6 +205,10 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
     if (worlds.size() < 2 && drawObjects) {
         drawObjects();
     }
+    // 9. The water, in the world pass's states.
+    if (m_afterWorlds) {
+        m_afterWorlds();
+    }
     // The coronas of the visible lights, over the world.
     lit.drawCoronas();
     rw::SetRenderState(rw::FOGENABLE, 0);

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "scripting/effects_bindings.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -112,11 +113,41 @@ void addTintBindings(LuaVm& vm, const BindingContext& context) {
     });
 }
 
+// `SetPositionOfWater(pos, rot, width, length, colour, waveHeight, waveSpeed)`: places the level's water surface.
+// **Coney's stand-in** until the page says: the colour's 0-1 components × 255.
+// @orig 0x0037ba48 SetPositionOfWater (unknown)
+// @orig 0x0040ca18 Water_Set (WorldManagerLua.cpp)
+NativeFunction makeSetPositionOfWater(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        effects::LevelEffects* effects = context->effects;
+        if (effects == nullptr) {
+            return binding::none();
+        }
+        const auto component = [&args](std::size_t k) {
+            return static_cast<std::uint8_t>(std::clamp(tableNumber(args, 4, k), 0.0, 1.0) * 255.0);
+        };
+        const std::array<float, 3> p = binding::position(args, 0).value_or(std::array<float, 3>{});
+        effects::WaterSettings settings;
+        settings.position = anim::Vec3{p[0], p[1], p[2]};
+        settings.rotation =
+            anim::Quat{static_cast<float>(tableNumber(args, 1, 1)), static_cast<float>(tableNumber(args, 1, 2)),
+                       static_cast<float>(tableNumber(args, 1, 3)), static_cast<float>(tableNumber(args, 1, 4))};
+        settings.width = static_cast<float>(binding::number(args, 2));
+        settings.length = static_cast<float>(binding::number(args, 3));
+        settings.colour = {component(1), component(2), component(3)};
+        settings.waveHeight = static_cast<float>(binding::number(args, 5));
+        settings.waveSpeed = static_cast<float>(binding::number(args, 6));
+        effects->water.set(settings);
+        return binding::none();
+    };
+}
+
 } // namespace
 
 void addEffectsBindings(LuaVm& vm, const BindingContext& context, std::function<double()> nextHandle) {
     vm.registerFunction("QueueMotionBlurEffect", makeQueueMotionBlurEffect(context));
     vm.registerFunction("SpawnParticle", makeSpawnParticle(context, std::move(nextHandle)));
+    vm.registerFunction("SetPositionOfWater", makeSetPositionOfWater(context));
     addTintBindings(vm, context);
 }
 

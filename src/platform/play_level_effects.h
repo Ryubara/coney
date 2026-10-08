@@ -14,6 +14,7 @@
 #include "platform/particle_renderer.h"
 #include "platform/render_engine.h"
 #include "platform/room_smoke_overlay.h"
+#include "platform/water_renderer.h"
 #include "raycast/collision_builder.h"
 #include "world/view_frustum.h"
 #include "world_objects/cars.h"
@@ -41,6 +42,8 @@ class PlayLevelEffects {
     /// Draws the glints of the pickups and lock-pickable doors (effects::Triglints::sprites()) through the current
     /// camera at `view`, blended by their alpha, after the particle systems.
     void drawGlints(std::span<const effects::Particle> glints, const world::CameraPose& view);
+    /// Draws the level's water (effects::Water) through the current camera, after the `d` world.
+    void drawWater();
     /// Lays the motion blur, then the room smoke, over the 3D frame, before the 2D overlays.
     void drawOverlay(RenderEngine& engine);
     /// Lays the screen tint (effects::ScreenTint) over the whole screen: after the HUD, before the scene's captions
@@ -62,6 +65,7 @@ class PlayLevelEffects {
     ParticleRenderer m_particles;
     MotionBlurPass m_motionBlur;
     RoomSmokeOverlay m_smoke;
+    WaterRenderer m_water;
     std::unique_ptr<ParkedCars> m_cars; // null without cars
 };
 

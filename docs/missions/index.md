@@ -38,7 +38,7 @@ to run it.
 | [Mission 15: No Permits, No Parley](level52.md) | `level52` | ⬜ Not Started | 0 of 4 | 0 | 0 of 4 |
 | [Mission 16: Home Run](level54.md) | `level54` | ⬜ Not Started | 0 of 5 | 0 | 1 of 7 |
 | [Mission 17: Friendly Faces](level55.md) | `level55` | ⬜ Not Started | 0 of 3 | 0 | 2 of 8 |
-| [Mission 18: Come Out To Play](level84.md) | `level84` | ⬜ Not Started | 0 of 3 | 0 | 0 of 8 |
+| [Mission 18: Come Out To Play](level84.md) | `level84` | ⬜ Not Started | 0 of 3 | 0 | 1 of 8 |
 
 ## The hub {#hub}
 

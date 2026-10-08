@@ -24,6 +24,51 @@ std::unexpected<Error> conversionFailure(const rw::Texture* texture, std::string
         Error{ErrorCode::Invalid, std::format("librw could not convert texture \"{}\" {}", texture->name, what)});
 }
 
+// librw's conversion of a raster to the current platform through an image of each level, with the mipmap levels
+// unswizzled once. librw's own (Raster::convertTexToCurrentPlatform) locks level i, which unswizzles it, then makes the
+// image through a lock of level 0, which unswizzles the same texels again: every mipmap level came out scrambled, the
+// padded small levels into a lattice of blobs (level99's far roller shutters,
+// docs/research/world.md#coneys-implementation). Here level i is locked without fetching, so the image's own lock
+// unswizzles it once, at its sent size (the width padded to the transfer's minimum,
+// docs/research/formats/renderware.md#gs-packets), and the image keeps the top-left corner. Null when librw cannot make
+// the new raster.
+rw::Raster* convertPs2ByLevels(rw::Raster* source) {
+    rw::Image* image = source->toImage();
+    if (image == nullptr) {
+        return nullptr;
+    }
+    image->unpalettize();
+    rw::int32 width = 0;
+    rw::int32 height = 0;
+    rw::int32 depth = 0;
+    rw::int32 format = 0;
+    rw::Raster::imageFindRasterFormat(image, rw::Raster::TEXTURE, &width, &height, &depth, &format);
+    format |= source->format & (rw::Raster::MIPMAP | rw::Raster::AUTOMIPMAP);
+    rw::Raster* converted = rw::Raster::create(width, height, depth, format);
+    if (converted == nullptr) {
+        image->destroy();
+        return nullptr;
+    }
+    converted->setFromImage(image);
+    image->destroy();
+    const rw::int32 levels = source->getNumLevels();
+    for (rw::int32 level = 1; level < levels; ++level) {
+        // Positions the raster on the level (its texels, width and height) without undoing the order yet.
+        source->lock(level, rw::Raster::LOCKREAD | rw::Raster::LOCKNOFETCH);
+        rw::Image* levelImage = source->toImage(); // locks "level 0" of the positioned raster: one unswizzle
+        if (levelImage != nullptr) {
+            levelImage->unpalettize();
+            converted->lock(level, rw::Raster::LOCKWRITE | rw::Raster::LOCKNOFETCH);
+            converted->setFromImage(levelImage);
+            converted->unlock(level);
+            levelImage->destroy();
+        }
+        source->unlock(level);
+    }
+    source->destroy();
+    return converted;
+}
+
 // Reads a whole stream into memory from its start.
 std::expected<std::vector<std::byte>, Error> readAll(io::Stream& stream) {
     if (auto moved = stream.seek(0); !moved) {
@@ -253,7 +298,9 @@ std::expected<void, Error> TextureDictionary::convertForDrawing() {
         const std::optional<rw::uint32> packedKl = texture->raster->platform == rw::PLATFORM_PS2
                                                        ? std::optional<rw::uint32>(GETPS2RASTEREXT(texture->raster)->kl)
                                                        : std::nullopt;
-        rw::Raster* converted = rw::Raster::convertTexToCurrentPlatform(texture->raster);
+        rw::Raster* converted = texture->raster->platform == rw::PLATFORM_PS2 && levels > 1
+                                    ? convertPs2ByLevels(texture->raster)
+                                    : rw::Raster::convertTexToCurrentPlatform(texture->raster);
         if (converted == nullptr) {
             return conversionFailure(texture, "for drawing");
         }

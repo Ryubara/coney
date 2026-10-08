@@ -10,6 +10,7 @@
 #include "effects/particles.h"
 #include "effects/room_smoke.h"
 #include "effects/screen_tint.h"
+#include "effects/water.h"
 
 namespace coney::effects {
 
@@ -28,6 +29,8 @@ struct LevelEffects {
     GroundFog fog;
     CameraLitter litter;
     RoomSmoke smoke;
+    /// The level's water surface (`SetPositionOfWater`); not placed in most levels.
+    Water water;
     /// The level's collision for the litter's rays (empty: the litter meets nothing).
     LitterRay litterRay;
 
@@ -52,6 +55,7 @@ struct LevelEffects {
             litter.step(seconds, viewer->position, litterRay);
         }
         smoke.step(seconds, viewer);
+        water.step();
     }
 };
 

@@ -5,6 +5,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <utility>
 
 #include "graphics/level_lighting.h"
 #include "graphics/render_device.h"
@@ -91,6 +92,8 @@ class WorldRenderer {
     /// Lights the frames with `lighting` (a level's, which must outlive its use) from now on; null goes back to the
     /// renderer's own.
     void setLighting(SceneLighting* lighting) { m_lighting = lighting; }
+    /// Sets what render() draws after the `d` world, before the coronas: the level's water (step 9). Empty for nothing.
+    void setAfterWorlds(std::function<void()> draw) { m_afterWorlds = std::move(draw); }
     /// The lighting the frames are drawn with.
     [[nodiscard]] SceneLighting& lighting() const { return m_lighting != nullptr ? *m_lighting : *m_ownLighting; }
 
@@ -117,6 +120,7 @@ class WorldRenderer {
     std::unique_ptr<graphics::LevelLighting> m_ownLevel; // the manager as it starts, for frames without a level's
     std::unique_ptr<SceneLighting> m_ownLighting;
     SceneLighting* m_lighting = nullptr; // a level's, when set
+    std::function<void()> m_afterWorlds; // the water, drawn after the `d` world
     std::uint32_t m_drawn = 0;
     std::optional<std::uint64_t> m_animationMs; // freezeAnimation()'s time
 };

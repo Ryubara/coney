@@ -1550,3 +1550,4 @@
     The wrapper writes the three tables back unchanged. The wave also modulates each vertex's alpha. The update
     (0x00191dd8) runs at most every `0x0050cd84` seconds. There is no binding to remove the water.
   usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: false, levels: [84, 82, 83, 64]}
+  coney: implemented
