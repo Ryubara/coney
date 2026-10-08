@@ -33,6 +33,24 @@ RingColour healthColour(float percent) {
     return RingColour{158, static_cast<std::uint8_t>(24 + static_cast<int>(percent * 1.1571F)), 24};
 }
 
+BossBand bossBand(float percent) {
+    constexpr RingColour kGreen{76, 122, 27};
+    constexpr RingColour kAmber{128, 100, 0};
+    constexpr RingColour kRed{134, 26, 0};
+    constexpr float kHigh = 70.0F;
+    constexpr float kMiddle = 40.0F;
+    constexpr float kBandScale = 3.33F;
+    constexpr float kLastScale = 2.5F;
+    const float p = std::clamp(percent, 0.0F, 100.0F);
+    if (p >= kHigh) {
+        return BossBand{.value = std::min((p - kHigh) * kBandScale, 100.0F), .fill = kGreen, .lost = kAmber};
+    }
+    if (p >= kMiddle) {
+        return BossBand{.value = (p - kMiddle) * kBandScale, .fill = kAmber, .lost = kRed};
+    }
+    return BossBand{.value = p * kLastScale, .fill = kRed, .lost = kRingLost};
+}
+
 RingArc ringArcOf(int k, float value, float capacity) {
     const int segments = kRingSegments;
     const int rest = static_cast<int>(std::floor(static_cast<float>(segments) * (100.0F - capacity) / 100.0F));
@@ -140,6 +158,13 @@ void HealthRings::queue(const RingHuman& human, const RingFrame& frame, std::uin
     outer.value = std::clamp(health * k, 0.0F, 100.0F);
     outer.fill = healthColour(health);
     outer.alpha = alpha;
+    // A boss outside Rumble: the band its health is in, filling over its range.
+    if (human.boss && !frame.rumble) {
+        const BossBand band = bossBand(health);
+        outer.value = std::clamp(band.value * k, 0.0F, 100.0F);
+        outer.fill = band.fill;
+        outer.lost = band.lost;
+    }
     // A player's low health blinks: black for 232 ms, its colour for the next. **Coney's choice**: the game clock,
     // black first.
     if (human.player && health > 0.1F && health <= kRingBlinkPercent && (frame.nowMs / kRingBlinkMs) % 2 == 0) {

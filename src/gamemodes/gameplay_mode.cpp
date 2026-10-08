@@ -1365,6 +1365,8 @@ void GameplayMode::suspend() {
 }
 
 void GameplayMode::resume() {
+    // An open Warrior command menu gives its order when the pause menu over play closes (`PauseMenu_Close`).
+    issueOpenWarCommand();
     // Play resuming shows the HUD, even one a script hid, unless player 1 is in a scene. The original also needs
     // game state +0x14c at 0 (no level change asked for); Coney leaves play at once instead of setting it.
     if (m_context.hud != nullptr && !m_context.hud->visible() && !playerInScene()) {

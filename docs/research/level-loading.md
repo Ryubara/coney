@@ -939,7 +939,12 @@ fade in, `levelLoaded` before the finish: [Sound](sound.md#banks)). Coney's stan
   first step in the same step: 96 steps in all. `coney --play-level` has the screen too (it is the story's level, started
   directly); only the subsystem tests that build gameplay alone load in `enter`.
 - `armload` is not chosen (who decides, `0x0041d110`, is open); without the sound engine (no disc sound data, or
-  `--no-audio`) the screen is silent. The memory-card screen (start-up) is not done.
+  `--no-audio`) the screen is silent. The memory-card screen (`LoadingScreen::beginMemoryCard`: its two pictures, the
+21 s timeline, picture 1 from 5 s in with [the spinner](hud.md#hud-spinner) pulsing over it, no bar) shows the
+start-up front end's load (`LevelFlowMode::setLoadingScreen`, given by the game session): it fades in, `level100`
+loads, it holds until 7,000 ms after its start (`LevelFlowMode::kMemoryCardHoldMilliseconds`, **Coney's stand-in**
+for the PS2's load, long enough for the second picture), fades out, and then the menus show. **Coney's reading** of
+the flag `0x0050f5b8`: only the first front-end load uses it; any later return to the front end loads at once.
 
 - **The worlds in `LoadLevel`'s order**: `<level>s_sec.wld` decides between two worlds (`<level>s`, `<level>d`) and one
   (`<level>`); each is constructed, its manifest read and its world stream loaded, and no part is loaded

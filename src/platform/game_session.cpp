@@ -168,6 +168,9 @@ GameSession::GameSession(RenderEngine& renderer, GameModeStack& stack, const io:
         [this](std::string_view name) { return m_wad.lookup(resourceFileName(name)).has_value(); },
         LoadScreenSettings{.language = settings.language}, std::move(loadSounds), m_log);
     m_flow->gameplay().setLoadingScreen(&*m_loadingScreen);
+    // The same screen in its memory-card form for the start-up front end's load, pulsing the HUD's spinner.
+    m_loadingScreen->setSpinner(&m_flow->hud().spinner());
+    m_flow->levelFlow().setLoadingScreen(&*m_loadingScreen);
 
     // What the pause and the mission-failed screen ask of the game (docs/research/pause.md#pausing): all sound paused,
     // the HUD's objectives for the Objectives screen, both radars off.

@@ -284,10 +284,12 @@ screen.
 
 ```sh
 build/dev/src/platform/coney --disc /path/to/warriors.iso --frames 3 --screenshot ../../scratch/legal.png
-build/dev/src/platform/coney --disc /path/to/warriors.iso --headless --frames 310 --skip-movies --input-script tests/support/start_menu.txt
+build/dev/src/platform/coney --disc /path/to/warriors.iso --headless --frames 530 --skip-movies --input-script tests/support/start_menu.txt
 ```
 
-The second line runs to the main menu without a window: its last line is `profile manager: PM_Mode`.
+The second line runs to the main menu without a window: its last line is `profile manager: PM_Mode`. The front end
+loads behind the memory-card loading screen (its two pictures and the red spinner, 7.2 s), so the menus are up from
+frame 458.
 
 **STORY** starts a new game as the original does, through the profile screens: (with two pads, how many players),
 the profile manager (CREATE NEW PROFILE when there is none), the name keyboard (cross types the key under the cursor,
@@ -301,13 +303,15 @@ over it (skipped with `--skip-movies`). There is no intro scene, tutorial or oth
 way: `profile manager: PM_Create` and the other screens, `profile manager: profile "A" created in slot 0`, `script:
 Menu.startGame()`, `mission complete: kind 4`, `level flow: starting level99`, `loading screen: level99 (3 pictures:
 ...)`, `gameplay: level99 checkpoint 1: player 1 Rembrandt ...`, then `movie: L99_IN`. The scripted way
-(`tests/support/story_new_profile.txt`: a one-letter name, the defaults, the cursor moved with the left stick at 70 %):
+(`tests/support/story_new_profile_session.txt`: a one-letter name, the defaults, the cursor moved with the left stick
+at 70 %; the test harnesses without the memory-card screen play the same presses 220 frames earlier,
+`tests/support/story_new_profile.txt`):
 
 ```sh
-build/dev/src/platform/coney --disc /path/to/warriors.iso --headless --frames 570 --skip-movies --input-script tests/support/story_new_profile.txt
+build/dev/src/platform/coney --disc /path/to/warriors.iso --headless --frames 790 --skip-movies --input-script tests/support/story_new_profile_session.txt
 ```
 
-The loading screen shows from about frame 452 and level99 plays from frame 548.
+The loading screen shows from about frame 672 and level99 plays from frame 768.
 
 **QUICK RUMBLE** follows the original's path too: the menu's scripts call `ShowRumbleModeInterface`, which opens the
 Rumble menu (mode 0x11) and its four screens, as a fresh boot offers them: **Game Mode** (1 ON 1 or WAR PARTY),

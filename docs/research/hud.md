@@ -2545,8 +2545,9 @@ over 1,500 ms and the rest over 500 ms, the chosen slot blinking, until the name
 the six slots and the highlighted slot's `GSTRING.COMMAND` name (entry 7 for a disabled command) at x 0.5.
 **Coney's readings**: player 1 is the war chief (`+0x3ac` is not kept) and his state flags do not hold the menu back; a
 stick byte of 128 or more is right or down; the backing and plate are flat squares (the sprite word `0xd0100` is not
-mapped); not built: the order on the pause menu's close, the close when the chief goes down, the two-player and 16:9
-layouts. A script drives it as a player does: `press r2`, `stick right -70 70` (up-left, attack), `release r2`
+mapped); the order is also given when play resumes under a closing pause menu (**Coney's reading**: any mode popped
+over play) and the menu closes when the chief is knocked out; not built: the two-player and 16:9 layouts. A script
+drives it as a player does: `press r2`, `stick right -70 70` (up-left, attack), `release r2`
 (`repo:tests/hud/war_command_display_test.cpp`).
 
 **The health rings** (`repo:src/hud/health_rings.h`, drawn by `repo:src/platform/play_level_world.cpp`), as
@@ -2594,14 +2595,18 @@ leaving the copy to its own display time. In play the level's crime services pas
 **The spinner** (`repo:src/hud/spinner.h`), as [the spinner](#hud-spinner) says: `part_page0` rectangle 92, 0.09 high,
 upright, at (0.95, 0.83), drawn after the arrow while shown in the colour the last loading pulse left (the set-up's
 grey before any); `Spinner::drawPulse` is the pulse, (221, 56, 56) fading out over 1.1 s and back over the next.
-**Coney's stand-in**: the pulse runs on its caller's clock. Not yet: a caller (Coney has no memory-card load screen
-or preload indicator, and the HUD's fade branch needs the profile manager's flag and the screen fade).
+**Coney's stand-in**: the pulse runs on its caller's clock. The memory-card screen at start-up turns it on and pulses
+it ([Level loading](level-loading.md#memory-card-screen)); a level's set-up (`Hud::levelSetUp`) turns it off again,
+**Coney's stand-in** for the fade branch on the level's first fully faded frame. Not yet: the preload indicator, and
+the HUD's fade branch itself.
 
 **Coney's stand-ins for the rings** (marked in the code): the blend state the world pass leaves is taken as alpha
 blending with Z test and no Z write; flat shading gives a triangle its last vertex's colour; the blink runs on the game
 clock, black first; the fight stance is a lock-on or a block; a hit's pulse is the health lost in the step; the
-civilian's class byte is Rembrandt's 35; the camera's heading is that of its forward. Not built: a boss's three
-bands, the Rumble team disc and pointer, two players' rings and icons.
+civilian's class byte is Rembrandt's 35; the camera's heading is that of its forward. A boss's outer ring (a fighter
+whose class `+0x11b` is 13, outside a Rumble level) shows the three bands (`hud::bossBand`; **Coney's reading**: the
+band's percentage is the health's, scaled by the class byte as the others). Not built: the Rumble team disc and
+pointer, two players' rings and icons.
 
 **Wrapping** (`repo:src/hud/hint_box.h`, `wrapText`) follows `MessageHUD_WordWrap` (`0x001bac20`,
 [GUI](gui.md)): a break before the word that takes the line past the width, each line measured with its tags
@@ -2625,7 +2630,8 @@ prompt widget's colour) centred on the prompt's anchor, its word swapping every 
 
 **The radar's range and the chase HUD** (2026-10-06): `HUDRadarSetRange` keeps both players' near and far radii
 (`RadarState::nearRange`, `farRange`; 50 and 75 until a script sets them); `HUDSetChaseHUDState_DESTROY` clears the
-chase HUD's flag. **Coney's stand-ins**: the radar and the chase HUD are not drawn yet, so both are only kept.
+chase HUD's flag. The radar's zoom eases between the two radii ([The radar](#the-radar-on-screen)). **Coney's
+stand-in**: the chase HUD is not built or drawn (no level script creates it), so its flag is only kept.
 
 ## Open questions
 

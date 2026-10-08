@@ -20,6 +20,7 @@
 #include "core/error.h"
 #include "graphics/overlay_camera.h"
 #include "graphics/screen.h"
+#include "hud/spinner.h"
 #include "support/recording_device.h"
 
 using Catch::Approx;
@@ -215,4 +216,51 @@ TEST_CASE("loading screen: a picture that fails to load leaves the bar at full a
     REQUIRE(device.draws.size() == 1);
     CHECK(device.draws[0].quads.front().colour == Rgba{223, 223, 223, 255});
     CHECK(log.size() == 2); // the failed picture and the begin line
+}
+
+TEST_CASE("loading screen: the memory-card screen's pictures take the language and 16:9 forms", "[loading_screen]") {
+    const auto pictures = coney::memoryCardPictures(
+        Language::French, false, archive({"memory_card_screen", "memory_card_screen_fr", "memory_card_loading"}));
+    CHECK(pictures.names == std::vector<std::string>{"memory_card_screen_fr", "memory_card_loading"});
+    const auto wide = coney::memoryCardPictures(Language::English, true, archive({}));
+    CHECK(wide.names == std::vector<std::string>{"memory_card_screen_w", "memory_card_loading_w"});
+}
+
+TEST_CASE("loading screen: the memory-card screen shows its second picture after 5 s with the spinner's pulse",
+          "[loading_screen]") {
+    coney::test::RecordingDevice device;
+    auto texture = std::make_shared<coney::test::FakeTexture>(512, 512);
+    std::vector<std::string> loaded;
+    const LoadingScreen::SheetLoader loader =
+        [&loaded, &texture](std::string_view name) -> std::expected<coney::graphics::SpriteSheet, coney::Error> {
+        loaded.emplace_back(name);
+        coney::graphics::SpriteSheet sheet;
+        // Enough rectangles for the spinner's 92.
+        for (int i = 0; i < 100; ++i) {
+            sheet.page.rects.push_back(coney::graphics::UvRect{0.0F, 0.0F, 0.25F, 0.25F});
+        }
+        sheet.texture = texture;
+        return sheet;
+    };
+    LoadingScreen screen(device, loader, archive({"memory_card_screen", "memory_card_loading"}), {}, {},
+                         [](std::string_view) {});
+    coney::hud::Spinner spinner;
+    screen.setSpinner(&spinner);
+    screen.beginMemoryCard(1000);
+    CHECK(screen.memoryCard());
+    CHECK(loaded == std::vector<std::string>{"memory_card_screen", "memory_card_loading", "part_page0"});
+    CHECK(screen.timeline().end == 22000);
+    // Picture 0 alone in the first 5 s: no bar, no spinner.
+    screen.render(3000);
+    REQUIRE(device.draws.size() == 1);
+    CHECK_FALSE(spinner.shown());
+    // Then picture 1 and the spinner on, in the pulse's colour at that moment (full red at the cycle's start).
+    device.draws.clear();
+    screen.render(6600);
+    REQUIRE(device.draws.size() == 2);
+    CHECK(spinner.shown());
+    CHECK(spinner.colour() == coney::hud::Spinner::pulseColour(6600));
+    CHECK(device.draws[1].quads.front().colour == coney::hud::Spinner::pulseColour(6600));
+    screen.end();
+    CHECK_FALSE(screen.memoryCard());
 }

@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <optional>
 
+#include "ai/brain.h"
 #include "camera/cameras.h"
 #include "camera/follow_camera.h"
 #include "core/pad.h"
@@ -12,6 +13,8 @@
 #include "gamemodes/gameplay_mode.h"
 #include "hud/hint_box.h"
 #include "hud/hud.h"
+#include "human/human.h"
+#include "human/script_state.h"
 #include "scripting/story_bindings.h"
 
 namespace coney {
@@ -41,9 +44,14 @@ void GameplayMode::updateWarCommandMenu(const Pads& pads, std::uint64_t nowMs) {
         display.open(chief, nowMs);
     }
     // A HUD that is not drawn gives the open menu's order at once (HUD_Render's hidden branch).
-    if (!hud.visible() && display.shown() && !display.issued()) {
-        if (const std::optional<int> command = display.issue(); command) {
-            script::giveWarriorCommand(m_scripts, m_context, player->handle, *command);
+    if (!hud.visible()) {
+        issueOpenWarCommand();
+    }
+    // A chief who goes down (knocked out, `Human_IsKnockedOut`) closes it at once.
+    if (display.shown() && m_scripted) {
+        if (const ai::Brain* brain = m_scripted->brain(player->handle);
+            brain != nullptr && brain->human().script().knockedOut) {
+            display.close();
         }
     }
     // The right stick's raw bytes (right x, right y) steer it.
@@ -51,6 +59,20 @@ void GameplayMode::updateWarCommandMenu(const Pads& pads, std::uint64_t nowMs) {
     display.update(sticks.at(0), sticks.at(1), chief, nowMs, hud.services().sound);
     if (m_cameras != nullptr && m_cameras->follow() != nullptr) {
         m_cameras->follow()->enablePadStick(display.cameraStickOn());
+    }
+}
+
+void GameplayMode::issueOpenWarCommand() {
+    const HumanCreation* player = m_humans.player(1);
+    if (m_context.hud == nullptr || player == nullptr) {
+        return;
+    }
+    hud::WarCommandDisplay& display = m_context.hud->warCommands(0);
+    if (!display.shown() || display.issued()) {
+        return;
+    }
+    if (const std::optional<int> command = display.issue(); command) {
+        script::giveWarriorCommand(m_scripts, m_context, player->handle, *command);
     }
 }
 

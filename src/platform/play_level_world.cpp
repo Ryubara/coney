@@ -140,6 +140,7 @@ void PlayLevelMode::stepRings(const Pad& pad, const WorldView& view, std::uint64
         ring.canShow = !human.airborne() && human.traversal() != human::Traversal::Climbing && human.alive() &&
                        standing(human.state());
         ring.player = isPlayer;
+        ring.boss = human.fighter().bossClass();
         int& last = m_ringHealth[ring.id];
         const int health = human.health().value();
         ring.damageTaken = last > health ? last - health : 0;
@@ -153,6 +154,7 @@ void PlayLevelMode::stepRings(const Pad& pad, const WorldView& view, std::uint64
     frame.forceAll = m_cast.forceReticules != nullptr && *m_cast.forceReticules;
     // The heading of the camera's forward in the game's axes (RenderWare's (x, y, z) is the game's (x, -z, y)).
     frame.cameraHeading = std::atan2(view.pose.forward.x, -view.pose.forward.z);
+    frame.rumble = m_levelNumber >= hud::kArcadeLevelStart;
     hud::RingPlayer ringPlayer;
     ringPlayer.human = ringHuman(player, true);
     ringPlayer.human.canShow = ringPlayer.human.canShow && !sceneHoldsPlayer();

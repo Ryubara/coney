@@ -1,0 +1,30 @@
+# tests/support/story_new_profile.txt as `coney` itself plays it: the same presses 220 frames later, since the game
+# session's start-up front end loads behind the memory-card loading screen (7.2 s; PM_Greet up from frame 458), which
+# the test harnesses without a session do not show. Keep the two in step.
+# Format: docs/guides/building.md#input-scripts
+510 tap start
+525 tap cross
+535 tap cross
+545 tap cross
+550 stick left 70 0
+552 stick left 0 0
+556 stick left 70 0
+558 stick left 0 0
+562 stick left 70 0
+564 stick left 0 0
+568 stick left 70 0
+570 stick left 0 0
+574 stick left 70 0
+576 stick left 0 0
+580 stick left 70 0
+582 stick left 0 0
+586 stick left 70 0
+588 stick left 0 0
+592 stick left 70 0
+594 stick left 0 0
+600 stick left 0 70
+602 stick left 0 0
+608 tap cross
+618 tap cross
+628 tap cross
+638 tap cross

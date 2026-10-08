@@ -262,6 +262,8 @@ class Fighter {
     void setLockBlocked(bool blocked) { m_lockBlocked = blocked; }
     /// Whether it fights as a player (FighterProfile::player).
     [[nodiscard]] bool player() const { return m_player; }
+    /// Its class's `+0x11b` is kBossCategory (FighterProfile::bossClass).
+    [[nodiscard]] bool bossClass() const { return m_bossClass; }
 
     // The human flag word (human `+0xe0`, human/human_flags.h): what the scripts switch on a human and combat reads.
 

@@ -1,3 +1,4 @@
-# A synthetic input script for the disc smoke test: START on PM_Greet, which is up from frame 242 (after the memory-card check's 3 s message).
+# A synthetic input script for the disc smoke test: START on PM_Greet, which is up from frame 458 in `coney` (after
+# the memory-card check's 3 s message and the memory-card loading screen's 7.2 s).
 # Format: docs/guides/building.md#input-scripts
-290 tap start
+510 tap start

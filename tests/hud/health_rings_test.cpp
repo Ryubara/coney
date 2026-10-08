@@ -180,3 +180,35 @@ TEST_CASE("rage full flashes the outer ring gold three times", "[health_rings]")
     rings.update(frame);
     CHECK(rings.rings()[0].fill == coney::hud::healthColour(90.0F));
 }
+
+TEST_CASE("a boss's health shows in three bands, each filling over its range", "[health_rings]") {
+    using coney::hud::bossBand;
+    CHECK(bossBand(100.0F).fill == RingColour{76, 122, 27});
+    CHECK(bossBand(100.0F).lost == RingColour{128, 100, 0});
+    CHECK(bossBand(100.0F).value == Approx(99.9F));
+    CHECK(bossBand(85.0F).value == Approx(49.95F));
+    CHECK(bossBand(55.0F).fill == RingColour{128, 100, 0});
+    CHECK(bossBand(55.0F).lost == RingColour{134, 26, 0});
+    CHECK(bossBand(55.0F).value == Approx(49.95F));
+    CHECK(bossBand(20.0F).fill == RingColour{134, 26, 0});
+    CHECK(bossBand(20.0F).lost == RingColour{0, 0, 0});
+    CHECK(bossBand(20.0F).value == Approx(50.0F));
+}
+
+TEST_CASE("a boss target's outer ring shows its band outside Rumble", "[health_rings]") {
+    RingFrame frame = frameAt(0);
+    frame.players[0].target = RingHuman{.id = 7, .healthPercent = 55.0F, .classByte = 100, .boss = true};
+    HealthRings rings;
+    run(rings, 0, 600, frame);
+    REQUIRE(rings.rings().size() == 1);
+    CHECK(rings.rings()[0].fill == RingColour{128, 100, 0});
+    CHECK(rings.rings()[0].lost == RingColour{134, 26, 0});
+    CHECK(rings.rings()[0].value == Approx(49.95F));
+    // In Rumble its health as any other's.
+    frame.rumble = true;
+    HealthRings rumble;
+    run(rumble, 0, 600, frame);
+    REQUIRE(rumble.rings().size() == 1);
+    CHECK(rumble.rings()[0].fill == coney::hud::healthColour(55.0F));
+    CHECK(rumble.rings()[0].value == Approx(55.0F));
+}

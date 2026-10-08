@@ -14,6 +14,8 @@
 #include "graphics/overlay_camera.h"
 #include "graphics/particle_page.h"
 #include "graphics/render_device.h"
+#include "graphics/sprite_batch.h"
+#include "hud/spinner.h"
 
 namespace coney {
 
@@ -58,6 +60,21 @@ inline constexpr int kLastStoryLoadScreenLevel = 100;
 [[nodiscard]] LoadScreenPictures loadScreenPictures(std::string_view level, int levelNumber, int rumbleGameType,
                                                     Language language, bool widescreen,
                                                     const std::function<bool(std::string_view)>& exists);
+
+/// The memory-card screen's two pictures: picture 0 `memory_card_screen` (the 16:9 and language forms as a level's,
+/// else the plain name), picture 1 `memory_card_loading` (`_w` with the 16:9 option).
+///
+/// Research: docs/research/level-loading.md#memory-card-screen
+/// @orig 0x001620a0 MemCardLoadScreen_Start (unknown)
+[[nodiscard]] LoadScreenPictures memoryCardPictures(Language language, bool widescreen,
+                                                    const std::function<bool(std::string_view)>& exists);
+
+/// The memory-card screen's timeline (21 s) and when it changes to its second picture (5 s in).
+inline constexpr std::uint64_t kMemoryCardTimelineMilliseconds = 21000;
+inline constexpr std::uint64_t kMemoryCardFirstPictureMilliseconds = 5000;
+
+/// The sprite sheet the spinner is drawn from on the memory-card screen.
+inline constexpr std::string_view kSpinnerSheet = "part_page0";
 
 /// How long a level's loading timeline lasts, in milliseconds: 23,000 for a level numbered up to 100, 30,000 above.
 [[nodiscard]] constexpr std::uint64_t loadScreenTimelineMilliseconds(int levelNumber) {
@@ -144,6 +161,13 @@ class LoadingScreen {
     /// @orig 0x001612b0 LoadScreen_Begin (unknown)
     /// @orig 0x00163888 LevelLoadScreen_Start (unknown)
     void begin(std::string_view level, int levelNumber, int rumbleGameType, std::uint64_t nowMs);
+    /// The memory-card screen's start (the front end's load at start-up, while the profile manager's load-screen flag
+    /// is set): memoryCardPictures() and the spinner's sheet loaded, a 21 s timeline from `nowMs`.
+    /// @orig 0x001620a0 MemCardLoadScreen_Start (unknown)
+    void beginMemoryCard(std::uint64_t nowMs);
+    /// The HUD's spinner the memory-card screen pulses (it turns it on and leaves its colour on it); null: one of the
+    /// screen's own. Must outlive the screen.
+    void setSpinner(hud::Spinner* spinner) { m_spinner = spinner; }
 
     /// Starts the load-screen sounds (step 3 of `InitLevel`).
     void startSounds();
@@ -164,6 +188,9 @@ class LoadingScreen {
     /// 10, then the bar (alpha 255 when the picture is not loaded); presents.
     /// @orig 0x00162b88 LevelLoadScreen_Tick (unknown)
     void render(std::uint64_t nowMs) const;
+
+    /// Whether the last begin was the memory-card screen's.
+    [[nodiscard]] bool memoryCard() const { return m_memoryCard; }
 
     /// Whether the screen is begun and not ended.
     [[nodiscard]] bool active() const { return m_active; }
@@ -186,6 +213,17 @@ class LoadingScreen {
     LoadScreenPictures m_pictures;
     std::vector<std::optional<graphics::SpriteSheet>> m_sheets; // one per picture; empty when it failed to load
     LoadScreenTimeline m_timeline;
+    bool m_memoryCard = false;
+    // The memory-card screen's spinner: the HUD's (setSpinner()) or its own, drawn from part_page0 through `m_parts`.
+    hud::Spinner* m_spinner = nullptr;
+    mutable hud::Spinner m_ownSpinner;
+    mutable std::optional<graphics::SpriteBatch> m_parts;
+
+    // The memory-card screen's tick: picture 0 for 5 s, then picture 1 with the spinner's pulse over it; no bar.
+    // @orig 0x001619d0 MemCardLoadScreen_Tick (unknown)
+    void renderMemoryCard(std::uint64_t nowMs, const graphics::OverlayCamera& camera) const;
+    // Loads `name` into a slot of m_sheets (empty when it fails).
+    void loadPicture(const std::string& name);
 };
 
 } // namespace coney

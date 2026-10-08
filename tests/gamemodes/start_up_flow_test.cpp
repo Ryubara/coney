@@ -28,11 +28,13 @@
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/gameplay_mode.h"
 #include "gamemodes/level_flow_mode.h"
+#include "gamemodes/loading_screen.h"
 #include "gamemodes/memory_card_mode.h"
 #include "gamemodes/profile_manager_mode.h"
 #include "graphics/render_device.h"
 #include "gui/global_strings.h"
 #include "gui/profile_management_gui/pm_new_game_screens.h"
+#include "hud/hud.h"
 #include "scenes/scene_list.h"
 #include "scenes/scene_player.h"
 #include "support/fixtures.h"
@@ -139,6 +141,38 @@ TEST_CASE("start-up: legal screen, memory card, level flow, then the profile man
     run.frames(300);
     CHECK(run.flow->profileManager().controller().currentName() == "PM_Greet");
     CHECK(run.flow->services().cues().empty());
+}
+
+TEST_CASE("start-up: with a loading screen the front end loads behind the memory-card screen", "[start_up]") {
+    Run run("");
+    coney::LoadingScreen screen(
+        run.device,
+        [](std::string_view) -> std::expected<SpriteSheet, coney::Error> { return coney::test::testFontSheet(); },
+        [](std::string_view) { return true; }, {}, {}, [](std::string_view) {});
+    screen.setSpinner(&run.flow->hud().spinner());
+    run.flow->levelFlow().setLoadingScreen(&screen);
+    LevelFlowMode& levelFlow = run.flow->levelFlow();
+    // Frames 0-151: the legal screen, the memory-card check, then the level flow's enter puts the screen up and the
+    // first update begins it: nothing loaded yet.
+    run.frames(152);
+    CHECK(levelFlow.memoryCardScreenUp());
+    CHECK(screen.memoryCard());
+    CHECK_FALSE(levelFlow.frontEndLoaded());
+    CHECK(run.stack.topId() == LevelFlowMode::kId);
+    // Faded in (200 ms): the front end loads behind it, the menus wait.
+    run.frames(8);
+    CHECK(levelFlow.currentLevel() == "level100");
+    CHECK_FALSE(levelFlow.frontEndLoaded());
+    CHECK(run.stack.topId() == LevelFlowMode::kId);
+    // Past 5 s the second picture shows and the HUD's spinner is turned on.
+    run.frames(150);
+    CHECK(run.flow->hud().spinner().shown());
+    // The hold ends at 7 s, the fade out takes about 170 ms: then the menus.
+    run.frames(70);
+    CHECK_FALSE(levelFlow.memoryCardScreenUp());
+    CHECK(levelFlow.frontEndLoaded());
+    CHECK(run.stack.topId() == ProfileManagerMode::kId);
+    CHECK_FALSE(screen.active());
 }
 
 TEST_CASE("start-up: START on PM_Greet reaches the main menu, PM_Mode", "[start_up]") {

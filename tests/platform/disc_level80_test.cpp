@@ -237,6 +237,35 @@ TEST_CASE("the disc's level80: R2 and the right stick up give the follow order t
         }
     }
     CHECK(following == 2);
+
+    // Opened again, the menu gives its order when play resumes under a closing pause menu, R2 still held.
+    level.pad.buttons = coney::pad::kR2;
+    level.run(2);
+    REQUIRE(display.shown());
+    CHECK_FALSE(display.issued());
+    level.gameplay->resume();
+    CHECK(display.issued());
+    level.pad.buttons = 0;
+    level.run(60);
+    // Opened again, it closes at once when the chief is knocked out.
+    level.pad.buttons = coney::pad::kR2;
+    level.run(2);
+    REQUIRE(display.shown());
+    REQUIRE(level.gameplay->brains() != nullptr);
+    // The test knocks player 1 out, so it writes to a brain gameplay owns.
+    auto& allBrains = const_cast<coney::ai::Brains&>(*level.gameplay->brains());
+    coney::ai::Brain* chief = nullptr;
+    for (std::size_t i = 0; i < allBrains.size() && chief == nullptr; ++i) {
+        if (allBrains.at(i).type() == coney::ai::BrainType::Player) {
+            chief = &allBrains.at(i);
+        }
+    }
+    REQUIRE(chief != nullptr);
+    chief->human().script().knockedOut = true;
+    level.run(1);
+    CHECK_FALSE(display.shown());
+    chief->human().script().knockedOut = false;
+    level.pad.buttons = 0;
     std::printf("  level80 commands: follow given, callback %s, %d Warriors following after the staging\n",
                 level.scripts->state().story.commandCallback.empty() ? "ran" : "pending", following);
 }

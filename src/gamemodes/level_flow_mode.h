@@ -13,6 +13,7 @@
 #include "gamemodes/front_end_scene.h"
 #include "gamemodes/front_end_services.h"
 #include "gamemodes/game_mode.h"
+#include "gamemodes/loading_screen.h"
 #include "gamemodes/profile_manager_mode.h"
 #include "graphics/render_device.h"
 #include "scenes/scene_player.h"
@@ -125,6 +126,18 @@ class LevelFlowMode final : public GameMode {
     /// The front end's scene system while the front end is loaded; null otherwise or without a maker.
     [[nodiscard]] scenes::SceneSystem* scenes() const { return m_scenes.get(); }
 
+    /// Shows the start-up front end's load behind `screen`'s memory-card form (LoadingScreen::beginMemoryCard()):
+    /// while the profile manager's load-screen flag is set (`0x0050f5b8`, 1 at boot), the front end's load is timed
+    /// as gameplay's is: the screen fades in, the front end loads, the screen holds until kMemoryCardHoldMilliseconds
+    /// after its start, fades out, then the menus show. Null, or after the first time: the load is immediate.
+    /// `screen` must outlive the mode. docs/research/level-loading.md#memory-card-screen
+    void setLoadingScreen(LoadingScreen* screen) { m_loadingScreen = screen; }
+    /// How long the memory-card screen stays up from its start before its fade out. **Coney's stand-in** for the
+    /// PS2's start-up load, long enough for the second picture and its spinner (from 5 s in) to show.
+    static constexpr std::uint64_t kMemoryCardHoldMilliseconds = 7000;
+    /// Whether the memory-card screen is up (from the resume that starts the front end to its fade out's end).
+    [[nodiscard]] bool memoryCardScreenUp() const { return m_cardLoad.has_value(); }
+
     /// What the memory-card mode's exit does to this mode when it is below: no front end on the next resume.
     void cancelFrontEndLoad() { m_loadFrontEndOnResume = false; }
 
@@ -144,6 +157,14 @@ class LevelFlowMode final : public GameMode {
     /// loaded.
     /// @orig 0x0015c4b0 LevelFlow_StartFrontEnd (unknown)
     void startFrontEnd();
+    /// startFrontEnd()'s load: level 0 selected, its world, scenes and scripts, the sound bank `menu`.
+    void loadFrontEnd();
+    /// startFrontEnd()'s end: `Menu.onStart` (or Coney's own showing of the menus) and the front end marked loaded.
+    void showMenus();
+    /// One step of the memory-card screen at game time `nowMs` (the step began `stepMs` earlier): begun on the first,
+    /// the front end loaded once faded in, finished after the hold, the menus shown once the fade out is over.
+    /// @orig 0x001619d0 MemCardLoadScreen_Tick (unknown)
+    void stepMemoryCardScreen(std::uint64_t nowMs, std::uint64_t stepMs);
 
     /// Calls `Menu.onFinish` and unloads the front-end level: its part of `UnloadLevel` here is the fresh Lua state.
     /// @orig 0x0015c5f8 LevelFlow_FinishFrontEnd (unknown)
@@ -170,6 +191,14 @@ class LevelFlowMode final : public GameMode {
     int m_chosenLevel = kNoLevel;
     bool m_frontEndLoaded = false;
     bool m_loadFrontEndOnResume = false;
+    LoadingScreen* m_loadingScreen = nullptr; // the memory-card screen's; null: none
+    bool m_loadScreenFlag = true;             // the profile manager's `0x0050f5b8`: the next front end's load is timed
+    // The memory-card screen's load while it is up: its phase and start.
+    struct CardLoad {
+        enum class Phase : std::uint8_t { FadeIn, Loading, FadeOut } phase = Phase::FadeIn;
+        std::optional<std::uint64_t> startMs;
+    };
+    std::optional<CardLoad> m_cardLoad;
     std::string m_currentLevel;
     std::vector<std::string> m_levelRequests;
     FrontEndSceneLoader m_loadScene;

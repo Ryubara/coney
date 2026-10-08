@@ -78,6 +78,19 @@ inline constexpr RingColour kRingRageFlash{128, 100, 0};
 /// @orig 0x0024a230 Reticule_QueueHealthRings (unknown)
 [[nodiscard]] RingColour healthColour(float percent);
 
+/// A boss's outer ring: the fill of the band its health is in, over the next band's colour.
+struct BossBand {
+    float value = 0.0F; ///< The band's fill, percent of the circle before the class byte's scale.
+    RingColour fill;
+    RingColour lost;
+    friend bool operator==(const BossBand&, const BossBand&) = default;
+};
+
+/// The band of a boss at health `percent` (0-100), as the target panel's bar: from 70 green (76, 122, 27) over amber
+/// (128, 100, 0), from 40 amber over red (134, 26, 0), below that red over black, each filling over its range (× 3.33,
+/// or × 2.5 for the last). **Coney's reading**: the percentage (`0x00222ef0`) is the health's.
+[[nodiscard]] BossBand bossBand(float percent);
+
 /// Which arc a rim vertex belongs to.
 enum class RingArc : std::uint8_t { Fill, Lost, Rest };
 
@@ -137,6 +150,7 @@ struct RingHuman {
     bool canShow = true;   ///< Not airborne, in a scene, climbing over, down or dead.
     int damageTaken = 0;   ///< Damage this update (the hit pulse's target); 0 for none.
     bool player = false;
+    bool boss = false; ///< Class `+0x11b` 13 (`Human_IsClass13`): the outer ring shows bossBand() outside Rumble.
 };
 
 /// A player's part of an update.
@@ -155,6 +169,7 @@ struct RingFrame {
     bool hudShown = true;       ///< HUD `+0x177a0`: nothing while hidden (`HideHud`, a letterbox).
     bool forceAll = false;      ///< `HuForceEnableReticule`: every player's rings at 255.
     float cameraHeading = 0.0F; ///< atan2(x, y) of the player camera's forward, game axes.
+    bool rumble = false;        ///< A Rumble level: a boss's ring shows its health as any other.
     std::vector<RingPlayer> players;
 };
 

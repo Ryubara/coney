@@ -1,5 +1,6 @@
 # STORY with a new profile, from the legal screen into level99 at checkpoint 1: START on PM_Greet (up from frame 242
-# in `coney`, after the memory-card check's 3 s message; the test harnesses skip the message and simply wait), cross on
+# after the memory-card check's 3 s message in the test harnesses, which skip the message and simply wait; `coney` plays
+# story_new_profile_session.txt, the same presses after its memory-card loading screen), cross on
 # STORY, cross on CREATE NEW PROFILE, cross on the keyboard's first key (one character), the left stick at 70 % right
 # eight times (to key 8) and 70 % up once (key 8's jump to OK), cross on OK, then cross on the defaults of
 # PM_Difficulty, PM_Light and PM_Subtitles. The menus then fade out for 1 s and the story starts.

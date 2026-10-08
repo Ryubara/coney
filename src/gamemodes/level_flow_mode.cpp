@@ -52,7 +52,14 @@ void LevelFlowMode::startAtLevel(std::string level, int checkpoint, std::functio
 }
 
 void LevelFlowMode::resume() {
-    if (m_loadFrontEndOnResume && m_chosenLevel == kNoLevel) {
+    if (m_loadFrontEndOnResume && m_chosenLevel == kNoLevel && !m_cardLoad) {
+        // The start-up load behind the memory-card screen, timed by the updates; any later one at once. **Coney's
+        // reading**: the flag is cleared by this first use (the original's PM_Greet START, which follows it).
+        if (m_loadingScreen != nullptr && m_loadScreenFlag) {
+            m_loadScreenFlag = false;
+            m_cardLoad = CardLoad{};
+            return;
+        }
         startFrontEnd();
     }
 }
@@ -60,6 +67,11 @@ void LevelFlowMode::resume() {
 ModeResult LevelFlowMode::update(GameModeStack& /*stack*/, const FrameTime& frame) {
     const std::uint64_t nowMs = frame.gameTicks / (GameTimer::kTicksPerSecond / 1000);
     m_scripts.setTime(nowMs);
+    // Behind the memory-card screen nothing else runs.
+    if (m_cardLoad) {
+        stepMemoryCardScreen(nowMs, frame.stepTicks / (GameTimer::kTicksPerSecond / 1000));
+        return ModeResult::Stay;
+    }
 
     // A level is chosen: finish the front end if it is loaded, select the level and push gameplay (mode 1), whose
     // enter loads it. Without gameplay, Coney stops at the request and brings the front end back.
@@ -92,6 +104,10 @@ ModeResult LevelFlowMode::update(GameModeStack& /*stack*/, const FrameTime& fram
 }
 
 void LevelFlowMode::render(const RenderTime& time) {
+    if (m_cardLoad && m_loadingScreen != nullptr) {
+        m_loadingScreen->render(time.gameTicks / (GameTimer::kTicksPerSecond / 1000));
+        return;
+    }
     // The front-end world when it is loaded, else the black background the front end sets.
     if (m_scene) {
         m_scene->render(time, {});
@@ -122,6 +138,36 @@ void LevelFlowMode::chooseLevelIndex(std::size_t index) {
 }
 
 void LevelFlowMode::startFrontEnd() {
+    loadFrontEnd();
+    showMenus();
+}
+
+void LevelFlowMode::stepMemoryCardScreen(std::uint64_t nowMs, std::uint64_t stepMs) {
+    LoadingScreen& screen = *m_loadingScreen;
+    CardLoad& load = *m_cardLoad;
+    if (!load.startMs) {
+        // LoadScreen_Begin, at the resume: just before this first step.
+        load.startMs = nowMs > stepMs ? nowMs - stepMs : 0;
+        screen.beginMemoryCard(*load.startMs);
+    }
+    const std::uint64_t start = *load.startMs;
+    if (load.phase == CardLoad::Phase::FadeIn && nowMs >= start + LoadScreenTimeline::kFadeMilliseconds) {
+        // Faded in: the whole load in this one step.
+        loadFrontEnd();
+        load.phase = CardLoad::Phase::Loading;
+    }
+    if (load.phase == CardLoad::Phase::Loading && nowMs >= start + kMemoryCardHoldMilliseconds) {
+        screen.finish(nowMs);
+        load.phase = CardLoad::Phase::FadeOut;
+    }
+    if (load.phase == CardLoad::Phase::FadeOut && screen.finished(nowMs)) {
+        screen.end();
+        m_cardLoad.reset();
+        showMenus();
+    }
+}
+
+void LevelFlowMode::loadFrontEnd() {
     // Level index 0 is the front end, `level100` (its name from the level table when the preloads filled it).
     m_state.currentLevel = 0;
     const LevelRecord* record = m_state.levels.at(0);
@@ -133,7 +179,9 @@ void LevelFlowMode::startFrontEnd() {
     makeScenes();
     m_scripts.enterLevel(m_currentLevel);
     m_services.loadBank(ProfileManagerMode::kSoundBank);
+}
 
+void LevelFlowMode::showMenus() {
     // Menu.onStart shows the menus. Without scripts, or when it did not, Coney shows them itself with the callbacks the
     // script passes.
     m_scripts.call("Menu.onStart");

@@ -365,6 +365,10 @@ class GameplayMode final : public GameMode {
     // Player 1's Warrior command menu on R2 and the right stick at game time `nowMs`, before the level's step so the
     // camera's stick is off on the frame it opens (gameplay_war_commands.cpp).
     void updateWarCommandMenu(const Pads& pads, std::uint64_t nowMs);
+    // An open Warrior command menu that has not ordered gives its highlighted order now: the HUD not drawn, or play
+    // resuming as the pause menu closes. **Coney's reading**: any mode popped over play resumes it, and the pause and
+    // mission-failed menus are the ones that do while the menu can be open.
+    void issueOpenWarCommand();
     // The combat tutorial's callback (`HUDSetTutorialCallback`) with the anim id of each hit player 1 struck in the
     // level's step, landed or blocked (docs/research/hud.md#tutorial-callback). The original calls it from the damage
     // step itself; Coney calls it right after the step.

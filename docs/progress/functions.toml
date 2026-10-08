@@ -1638,6 +1638,16 @@ subsystem = "GameModes"
 size = 528
 
 [[function]]
+address = 0x001619d0
+name = "MemCardLoadScreen_Tick"
+subsystem = "GameModes"
+
+[[function]]
+address = 0x001620a0
+name = "MemCardLoadScreen_Start"
+subsystem = "GameModes"
+
+[[function]]
 address = 0x00162598
 name = "LevelLoadScreen_Finish"
 subsystem = "GameModes"

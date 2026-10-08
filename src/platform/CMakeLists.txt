@@ -97,14 +97,14 @@ set_tests_properties(coney.render_size_needs_window PROPERTIES WILL_FAIL TRUE)
 # must reach PM_Mode (docs/research/frontend.md#coneys-implementation). It prints states only, never game data.
 if(DEFINED ENV{CONEY_DISC} AND NOT "$ENV{CONEY_DISC}" STREQUAL "")
     add_test(NAME coney.reaches_main_menu
-             COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 310 --skip-movies
+             COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 530 --skip-movies
                      --input-script "${PROJECT_SOURCE_DIR}/tests/support/start_menu.txt")
     set_tests_properties(coney.reaches_main_menu PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION "profile manager: PM_Mode")
     # STORY with a new profile through the profile screens into level99 at checkpoint 1, headless
     # (docs/guides/building.md#input-scripts). States only.
     add_test(NAME coney.story_reaches_level99
-             COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 570 --skip-movies
-                     --input-script "${PROJECT_SOURCE_DIR}/tests/support/story_new_profile.txt")
+             COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 790 --skip-movies
+                     --input-script "${PROJECT_SOURCE_DIR}/tests/support/story_new_profile_session.txt")
     set_tests_properties(coney.story_reaches_level99 PROPERTIES TIMEOUT 120
                          PASS_REGULAR_EXPRESSION "movie: L99_IN")
     # The start-up movies headless (docs/research/movies.md#coneys-implementation): LOGO plays to its end, a tap skips

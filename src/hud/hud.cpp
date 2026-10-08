@@ -68,6 +68,9 @@ int Hud::attachPlayer(int slot, int type) {
 
 void Hud::levelSetUp() {
     m_radar.scriptOn = true;
+    // **Coney's stand-in** for HUD_Render's fade branch, which hides the spinner the memory-card screen left on at
+    // the level's first fully faded frame (docs/research/hud.md#hud-spinner): a level's set-up hides it.
+    m_spinner.set(false);
     // The fixed-camera icons are set up active (HUD_InitLevel); only `HUDEnableFixedCamIcon(false)` turns them off.
     for (FixedCamIcon& icon : m_fixedCam) {
         icon.setEnabled(true);

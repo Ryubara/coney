@@ -33,12 +33,12 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.3% of the game's own code (579,384 of 3,354,776 bytes, 2,132 functions) |
+| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.3% of the game's own code (579,384 of 3,354,776 bytes, 2,134 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,192 of 3,284,000 bytes; 11,423 of 11,425 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-867 reimplemented function(s) have no size yet and add no bytes.
+869 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -70,7 +70,7 @@ at the top of the repository's `README.md`.
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
 | `FileIO` | `███▍░░░░░░░░░░░░░░░░` | 17.0% | 10 | 7,120 |
-| `GameModes` | `██████▋░░░░░░░░░░░░░` | 33.1% | 115 | 100,440 |
+| `GameModes` | `██████▋░░░░░░░░░░░░░` | 33.1% | 117 | 100,440 |
 | `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 12.0% | 90 | 195,624 |
 | `GUI` | `████▏░░░░░░░░░░░░░░░` | 20.7% | 246 | 497,416 |
 | `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.5% | 790 | 1,096,672 |
@@ -440,6 +440,8 @@ at the top of the repository's `README.md`.
 | `0x001612b0` | `LoadScreen_Begin` | `GameModes` | 144 |
 | `0x00161378` | `LoadScreen_End` | `GameModes` | 120 |
 | `0x001613f0` | `LoadScreen_DrawPulse` | `GameModes` | 528 |
+| `0x001619d0` | `MemCardLoadScreen_Tick` | `GameModes` | not filled in |
+| `0x001620a0` | `MemCardLoadScreen_Start` | `GameModes` | not filled in |
 | `0x00162598` | `LevelLoadScreen_Finish` | `GameModes` | 240 |
 | `0x00162688` | `LevelLoadScreen_DrawBar` | `GameModes` | 1,280 |
 | `0x00162b88` | `LevelLoadScreen_Tick` | `GameModes` | 1,768 |

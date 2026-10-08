@@ -49,7 +49,7 @@ inline constexpr std::uint32_t kWarCommandFadeMs = 500;
 /// **Coney's choices**: the slots' backing and plate are plain squares (the original's sprite word `0xd0100` of
 /// sprite instance 6 is not mapped to a sheet rectangle); the name's time counts from the last time the menu changed
 /// its text (opening or a new highlight), and the display closes when that time passes the name's `<DISPLAYTIME>`
-/// after an order (inferred on the page); the 16:9 layouts and the issue on the pause menu's close are not built.
+/// after an order (inferred on the page); the 16:9 layouts are not built.
 class WarCommandDisplay {
   public:
     /// What the menu needs to know about its chief each update.

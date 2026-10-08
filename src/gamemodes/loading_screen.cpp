@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "gamemodes/legal_screen_mode.h"
+#include "hud/hud_canvas.h"
 
 namespace coney {
 
@@ -92,6 +93,17 @@ LoadScreenPictures loadScreenPictures(std::string_view level, int levelNumber, i
     return pictures;
 }
 
+LoadScreenPictures memoryCardPictures(Language language, bool widescreen,
+                                      const std::function<bool(std::string_view)>& exists) {
+    LoadScreenPictures pictures;
+    // Picture 0 as a level's first two steps; the plain name when neither form is there.
+    std::string first = findWithLanguage("memory_card_screen", language, widescreen, exists);
+    pictures.names.push_back(first.empty() ? std::string(widescreen ? "memory_card_screen_w" : "memory_card_screen")
+                                           : std::move(first));
+    pictures.names.emplace_back(widescreen ? "memory_card_loading_w" : "memory_card_loading");
+    return pictures;
+}
+
 graphics::Rgba loadScreenBarColour(int levelNumber) {
     static constexpr std::array<int, 5> kGreyLevels{11, 20, 82, 83, 92};
     if (std::ranges::contains(kGreyLevels, levelNumber)) {
@@ -160,20 +172,10 @@ void LoadingScreen::begin(std::string_view level, int levelNumber, int rumbleGam
     m_pictures =
         loadScreenPictures(level, levelNumber, rumbleGameType, m_settings.language, m_settings.widescreen, exists);
     // Each picture loaded before the clock starts, as the original waits until each is resident.
+    m_memoryCard = false;
     m_sheets.clear();
     for (const std::string& name : m_pictures.names) {
-        std::optional<graphics::SpriteSheet>& slot = m_sheets.emplace_back();
-        if (!m_loadSheet) {
-            continue;
-        }
-        auto sheet = m_loadSheet(name);
-        if (!sheet) {
-            m_log(std::format("loading screen: {}: {}\n", name, sheet.error().message));
-        } else if (sheet->page.rects.empty() || sheet->texture == nullptr) {
-            m_log(std::format("loading screen: {}: the sprite sheet has no picture\n", name));
-        } else {
-            slot = std::move(*sheet);
-        }
+        loadPicture(name);
     }
     m_timeline = LoadScreenTimeline{.start = nowMs, .end = nowMs + loadScreenTimelineMilliseconds(levelNumber)};
     m_active = true;
@@ -183,6 +185,68 @@ void LoadingScreen::begin(std::string_view level, int levelNumber, int rumbleGam
     }
     m_log(std::format("loading screen: {} ({} picture{}: {}{})\n", level, m_pictures.names.size(),
                       m_pictures.names.size() == 1 ? "" : "s", names, m_pictures.fellBack ? ", the default" : ""));
+}
+
+void LoadingScreen::loadPicture(const std::string& name) {
+    std::optional<graphics::SpriteSheet>& slot = m_sheets.emplace_back();
+    if (!m_loadSheet) {
+        return;
+    }
+    auto sheet = m_loadSheet(name);
+    if (!sheet) {
+        m_log(std::format("loading screen: {}: {}\n", name, sheet.error().message));
+    } else if (sheet->page.rects.empty() || sheet->texture == nullptr) {
+        m_log(std::format("loading screen: {}: the sprite sheet has no picture\n", name));
+    } else {
+        slot = std::move(*sheet);
+    }
+}
+
+void LoadingScreen::beginMemoryCard(std::uint64_t nowMs) {
+    const auto exists = [this](std::string_view name) { return m_exists && m_exists(name); };
+    m_pictures = memoryCardPictures(m_settings.language, m_settings.widescreen, exists);
+    m_memoryCard = true;
+    m_sheets.clear();
+    for (const std::string& name : m_pictures.names) {
+        loadPicture(name);
+    }
+    // The spinner's sheet, for its pulse over picture 1.
+    m_parts.reset();
+    if (m_loadSheet) {
+        if (auto parts = m_loadSheet(kSpinnerSheet); parts) {
+            constexpr std::size_t kSpinnerSprites = 4;
+            constexpr float kSpinnerDepth = 11000.0F;
+            m_parts.emplace(std::move(*parts), kSpinnerSprites, kSpinnerDepth);
+        } else {
+            m_log(std::format("loading screen: {}: {}\n", kSpinnerSheet, parts.error().message));
+        }
+    }
+    m_timeline = LoadScreenTimeline{.start = nowMs, .end = nowMs + kMemoryCardTimelineMilliseconds};
+    m_active = true;
+    m_log(std::format("loading screen: the memory-card screen ({}, {})\n", m_pictures.names[0], m_pictures.names[1]));
+}
+
+void LoadingScreen::renderMemoryCard(std::uint64_t nowMs, const graphics::OverlayCamera& camera) const {
+    const std::uint8_t alpha = m_timeline.alpha(nowMs);
+    const bool second = nowMs - m_timeline.start >= kMemoryCardFirstPictureMilliseconds;
+    const std::optional<graphics::SpriteSheet>& sheet = m_sheets.at(second ? 1 : 0);
+    constexpr std::uint8_t kMinimumAlpha = 10;
+    if (sheet.has_value() && alpha > kMinimumAlpha) {
+        graphics::LogicalQuad quad = legalScreenQuad(
+            camera, legalScreenFactors(LegalScreenSettings{.widescreen = m_settings.widescreen}), sheet->page.rect(0));
+        quad.colour = graphics::Rgba{255, 255, 255, alpha};
+        m_device.drawQuads(sheet->texture.get(), std::span(&quad, 1));
+    }
+    // Over picture 1 the spinner is turned on and pulses, leaving its colour on it.
+    if (second && m_parts.has_value()) {
+        hud::Spinner& spinner = m_spinner != nullptr ? *m_spinner : m_ownSpinner;
+        spinner.set(true);
+        hud::HudCanvas canvas;
+        canvas.parts = &*m_parts;
+        spinner.drawPulse(canvas, nowMs);
+        m_parts->render(m_device, graphics::OverlayCamera());
+        m_parts->clear();
+    }
 }
 
 void LoadingScreen::startSounds() {
@@ -205,6 +269,8 @@ bool LoadingScreen::finished(std::uint64_t nowMs) const {
 
 void LoadingScreen::end() {
     m_sheets.clear();
+    m_parts.reset();
+    m_memoryCard = false;
     m_timeline = {};
     m_active = false;
 }
@@ -218,6 +284,11 @@ void LoadingScreen::render(std::uint64_t nowMs) const {
     const graphics::OverlayCamera camera = m_settings.widescreen
                                                ? graphics::OverlayCamera(1.1F, graphics::OverlayCamera::kWideViewAspect)
                                                : graphics::OverlayCamera();
+    if (m_memoryCard) {
+        renderMemoryCard(nowMs, camera);
+        m_device.present();
+        return;
+    }
     const std::uint8_t alpha = m_timeline.alpha(nowMs);
     const int index = m_timeline.picture(nowMs, static_cast<int>(m_sheets.size()));
     const std::optional<graphics::SpriteSheet>* sheet =
