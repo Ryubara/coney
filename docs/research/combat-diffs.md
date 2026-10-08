@@ -38,8 +38,6 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
   × 1.1 (`Fighter::steer`). The original keeps the current target for square in the stance (searching only without
   one or beyond 3 m), searches for cross with a fixed 2.0 m, keeps the target on a square chain step, and uses the
   far range only through `Player_FindAttackTarget` (cross chain steps, the specials).
-- **The search's wide passes.** Coney runs the × 0.9 any-angle pass whatever the current target; the original runs
-  it only with no current target and otherwise falls back to × 0.7 at any angle (Coney drops that pass).
 - **Taking a target by nearness.** Coney takes a target only from L1 or an attack; the original's stance logic takes
   the nearest enemy within 2 m every update (and locks it with the street's `CfgAutoLockAndCombat`), swaps it once the
   target is beyond 3 m and tracks enemies to 6 m.
@@ -60,11 +58,13 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 - **Counters from square and cross** (76 / 9 against a grab or tackle intro) are not built; only R1 at the catch is
   ([Counters](combat-moves.md#counters)).
 - **Tandems** are not built ([Tandems](combat-moves.md#tandem)).
-- **The run attack's window**: Coney's 24 shapes run from update 1; the clip's events give 2-7.
+- **The moving attacks' windows** open late: on the disc Coney's run attack 24 switches its shapes on at update 4 and
+  off at 9, the walk attack 23 at 6 and 12, against 1 and 7, 4 and 10 at runtime
+  ([How a moving attack strikes](combat.md#moving-strikes)). Coney fires the clips' events by the clip time from 0 on
+  the clip's first update ([Animation](formats/animation.md#animation-tasks)); why the original's open about two
+  updates earlier is not yet traced.
 - **The armed run attack 501** does not test the fight stance in Coney; the original's armed branch does
   ([Square](combat-moves.md#square)).
-- **The special** always plays 653 / 645: the original's id adds 4 × the variant and the side (`0x00263c90`,
-  [Combat](combat.md#run-attacks)).
 - **The snap's target**: Coney does not test the clear line (`0x00222a90`) and does not keep the snap's target as
   the current target ([Combat](combat.md#attacks)).
 - **Object targets**: only glass panes; doors and loose objects are not targets, and the approach from far × 1.5 is
@@ -80,7 +80,10 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 
 - **The tackle** always connects with 5 / 6 (the front hit), without the original's connect gates; 7, the hit from
   the rear, never plays ([Grab and tackle](combat.md#grab)).
-- **Wall throws** (155-161) never play: no caller sets the wall-in-reach input ([Throws](combat.md#throws)).
+- **Wall throws** (155-161) are picked by the original's ray and a head-on one turns the pair square to the face,
+  but the slam's `0x41` sweep (the dust puff, the impact sound and a world object struck) is not built, and the plain
+  throw does not turn the pair to the stick over 1/6 s first ([Throws](combat.md#throws)). **Coney's choice**: the
+  thrown body does not strike its own thrower.
 - **The mounted victim** cannot struggle (250), get the mounter off or reverse (242 / 243)
   ([The mounted victim](combat-moves.md#mounted-victim)).
 - **The mount's power strike** stops at its first part: the extensions (227 / 229, 233 / 235) a press in the window
@@ -125,4 +128,6 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 
 - **Attack kinds**: the AI plays its strikes and chains; its grabs, tackles, throws, specials and the kinds that need
   commands Coney ignores do nothing ([Attack kinds](../references/attacks.md#attack-kind)).
-- **A held AI** does nothing in the grab: no struggle, strike back or escape ([Grabbed](combat.md#grabbed)).
+- **A human held in another human's grab** (the player in an AI's, or an AI in the player's) struggles, strikes back
+  and escapes by its command as `Player_UpdateGrabbed` decides, the grabber playing its side an update later; the
+  **reversal** (R1) is not offered this way ([Grabbed](combat.md#grabbed)).

@@ -33,6 +33,11 @@ constexpr std::uint16_t kCoveredGroundFlag = 0x20;
 // A human's capsule (docs/research/physics.md): its radius and height before the body scale.
 constexpr float kStrikeCapsuleRadius = 0.35F;
 constexpr float kStrikeCapsuleHeight = 2.0F;
+// The struck capsule's top above the head bone, and its least height, before the body scale
+// (`PhysicsCapsule_Pose` 0x00343518, docs/research/combat.md#capsule-strike).
+constexpr float kCapsuleAboveHead = 0.2F;
+/// The bone the led steer aims at: the head, which human +0x500 holds (docs/research/combat.md#led-steer).
+constexpr int kLedPointBone = 6;
 // Beyond this between the feet no strike shape can meet another body's (each reaches well under 1.5 m from its feet),
 // so the victim is not posed.
 constexpr float kStrikeBroadReach = 3.0F;
@@ -100,6 +105,26 @@ std::optional<anim::Vec3> slideOut(const raycast::CollisionMesh& mesh, anim::Vec
         feet = anim::add(feet, *push);
     }
     return std::nullopt;
+}
+
+// The capsule strike (docs/research/combat.md#capsule-strike): whether any bone strike shape of `shapes` (posed now;
+// `before`, the update before) meets the target's upright `capsule`. A segment is tested where it stands, against the
+// capsule's axis; a sphere along its path this update. The attacker's own capsule (bone -1) does not strike.
+// @orig 0x00349a60 Sweep_SphereCapsule (unknown)
+bool meetsCapsule(std::span<const PosedShape> before, std::span<const PosedShape> shapes, const PosedShape& capsule) {
+    for (std::size_t i = 0; i < shapes.size(); ++i) {
+        const PosedShape& shape = shapes[i];
+        if (shape.bone < 0) {
+            continue;
+        }
+        const bool sphere = shape.a.x == shape.b.x && shape.a.y == shape.b.y && shape.a.z == shape.b.z;
+        const PosedShape tested =
+            sphere ? PosedShape{.a = before[i].a, .b = shape.a, .radius = shape.radius, .bone = shape.bone} : shape;
+        if (shapesOverlap(tested, capsule)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 } // namespace
@@ -715,7 +740,7 @@ void Human::combatWalk(const Combatant& target, bool gated) {
     m_animator.playCombatWalk(static_cast<std::uint32_t>(combat::combatWalkClip(clockwise)));
 }
 
-void Human::fight(std::span<Combatant* const> targets) {
+void Human::fight(std::span<Combatant* const> targets, const raycast::CollisionMesh* mesh) {
     // The stick in the facing frame: x to the player's right, y ahead.
     const float relative = wrapAngle(m_intent.angle - kPi / 2.0F - m_heading);
     const combat::Stick stick{-m_intent.magnitude * std::sin(relative), m_intent.magnitude * std::cos(relative)};
@@ -735,7 +760,9 @@ void Human::fight(std::span<Combatant* const> targets) {
                                   .targets = targets,
                                   .stepSeconds = m_stepSeconds,
                                   .objects = m_objectTargets,
-                                  .strikeShapes = m_skeleton != nullptr},
+                                  .strikeShapes = m_skeleton != nullptr,
+                                  .mesh = mesh,
+                                  .sprinting = m_sprinting},
                      m_animator, m_heading);
 }
 
@@ -1265,6 +1292,30 @@ std::optional<anim::Vec3> Human::bodyPoint() const {
     return anim::scale(anim::boneTransforms(*m_skeleton, pose())[kHips].t, m_scale);
 }
 
+PosedShape Human::struckCapsule() const {
+    // Upright from the feet to the head bone's height + 0.2 (never under 0.2), its radius 0.35, all times the scale;
+    // the walking sweep's body factor is not applied.
+    const float least = kCapsuleAboveHead * m_scale;
+    const float height = std::max(ledPoint().z - m_position.z + least, least);
+    return PosedShape{.a = m_position,
+                      .b = anim::add(m_position, anim::Vec3{0.0F, 0.0F, height}),
+                      .radius = kStrikeCapsuleRadius * m_scale,
+                      .bone = -1};
+}
+
+anim::Vec3 Human::ledPoint() const {
+    if (m_skeleton == nullptr) {
+        return m_position;
+    }
+    // Bone 6 posed into the world, as the original composes human +0x500 (already times the human's scale) with the
+    // world transform.
+    auto bones = anim::boneTransforms(*m_skeleton, pose());
+    auto& headBone = bones.at(static_cast<std::size_t>(kLedPointBone));
+    headBone.t = anim::scale(headBone.t, m_scale);
+    const std::array<StrikeShapeDef, 1> head{StrikeShapeDef{.bone = kLedPointBone}};
+    return poseStrikeShapes(head, bones, placement()).front().a;
+}
+
 void Human::testStrikes(std::span<Human* const> victims, const StrikeContact* contact) {
     if (!m_strikes.anyOn() || m_skeleton == nullptr || m_outOfWorld) {
         m_strikesBefore.clear();
@@ -1281,19 +1332,28 @@ void Human::testStrikes(std::span<Human* const> victims, const StrikeContact* co
     }
     m_strikesBefore = shapes;
     const int animId = static_cast<int>(m_animator.animId());
+    // A clip with flag 0x10000 (gen_rage_sweep, gen_sweep) strikes the target's capsule, not its spine and head.
+    const anim::AnimClip* clip = m_animator.clip(static_cast<std::uint32_t>(animId));
+    const bool capsuleStrike = clip != nullptr && (clip->flags & anim::kClipCapsuleStrike) != 0;
     if (m_fighter.strikesWithShapes(animId)) {
         for (Human* victim : victims) {
-            // A body is struck once while the shapes stay on; one far beyond any shape's reach is not posed.
+            // A body is struck once while the shapes stay on; one far beyond any shape's reach is not posed; a thrown
+            // body does not strike its thrower.
             const anim::Vec3 to = anim::subtract(victim->position(), m_position);
-            if (victim == this || m_strikes.struckHuman(victim) || victim->m_skeleton == nullptr ||
+            const bool thrower = clips::isThrow(animId) && victim->m_fighter.lastThrown() == this;
+            if (victim == this || thrower || m_strikes.struckHuman(victim) || victim->m_skeleton == nullptr ||
                 victim->outOfWorld() || std::hypot(to.x, to.y) > kStrikeBroadReach) {
                 continue;
             }
-            const std::vector<PosedShape> body = victim->posedStrikeShapes(true);
             bool met = false;
-            for (std::size_t i = 0; i < shapes.size() && !met; ++i) {
-                met = std::ranges::any_of(
-                    body, [&](const PosedShape& part) { return sweptShapesMeet(before[i], shapes[i], part); });
+            if (capsuleStrike) {
+                met = meetsCapsule(before, shapes, victim->struckCapsule());
+            } else {
+                const std::vector<PosedShape> body = victim->posedStrikeShapes(true);
+                for (std::size_t i = 0; i < shapes.size() && !met; ++i) {
+                    met = std::ranges::any_of(
+                        body, [&](const PosedShape& part) { return sweptShapesMeet(before[i], shapes[i], part); });
+                }
             }
             if (met) {
                 m_strikes.markStruckHuman(victim);
@@ -1475,7 +1535,7 @@ void Human::updateActions(std::span<Combatant* const> targets, const raycast::Co
     // An arrested human neither fights nor acts (**Coney stand-in**, human/script_state.h), nor does one working out:
     // its pad pumps and quits the workout instead.
     if (!m_airborne && !m_climbRun && !m_script.arrested && !m_script.workingOut) {
-        fight(targets);
+        fight(targets, mesh);
     }
     if (m_record.actionPressed && !m_fighter.holdsMovement(m_animator) && !m_script.arrested && !m_script.workingOut) {
         tryActions(mesh, m_record.sprintHeld);

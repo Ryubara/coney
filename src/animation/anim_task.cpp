@@ -34,6 +34,9 @@ constexpr float kClipEndSlack = 1e-4F;
 
 // Rounding slack for eventFrame(): a time that sums to a whole and a half frame in floats counts as the tie it is.
 constexpr float kEventFrameSlack = 1e-3F;
+// The ties below this many frames act on time (only 1.5: frame 2 at rate 0.75); the later ones one update late
+// (docs/research/combat-moves.md#reading).
+constexpr float kFirstTieOnTime = 2.0F;
 
 } // namespace
 
@@ -65,7 +68,15 @@ void applyHeldFlagEvent(std::uint16_t type, AnimTask& task, std::uint32_t& flags
 }
 
 int eventFrame(float seconds) {
-    return static_cast<int>(std::ceil((seconds * kClipFrameRate) - 0.5F - kEventFrameSlack));
+    // The cursor's frame uint(t × 30 + 0.5). A time on a half frame is a tie: the original's time, summed with the
+    // PS2 FPU rounding toward zero, falls a hair short of every tie but the first (frame 2 at rate 0.75, two steps in),
+    // so that one rounds up and the others down.
+    const float frames = seconds * kClipFrameRate;
+    const float half = std::floor(frames) + 0.5F;
+    if (std::fabs(frames - half) <= kEventFrameSlack) {
+        return half < kFirstTieOnTime ? static_cast<int>(half + 0.5F) : static_cast<int>(half - 0.5F);
+    }
+    return static_cast<int>(std::floor(frames + 0.5F));
 }
 
 float AnimTask::normalisedTime() const {

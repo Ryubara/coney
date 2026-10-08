@@ -13,6 +13,7 @@
 #include "combat/reactions.h"
 #include "human/fighter_clips.h"
 #include "human/pair_placement.h"
+#include "raycast/collision_mesh.h"
 
 // The fighter's grabs the player holds: the intro and the alignment, the connecting clips, the snap to the hold and
 // the attachment, the moves inside the hold, the tackle's mount, the stick turning the pair, and letting go.
@@ -25,6 +26,8 @@ namespace {
 namespace id = combat::anim_id;
 
 constexpr float kPi = std::numbers::pi_v<float>;
+// The mount's slide and turn of the mounter onto the victim (`Human_AlignToVictimFacing`, 0x00277248).
+constexpr float kMountSeatSeconds = 0.1F;
 
 // The alignment's slide is dropped from this far, or above this speed (m/s).
 constexpr float kAlignMaxSlide = 13.0F;
@@ -34,6 +37,13 @@ constexpr float kAlignMaxSpeed = 50.0F;
 constexpr int kEscapeFront = 100;
 constexpr int kEscapeRear = 112;
 
+// The wall throw's ray (docs/research/combat.md#throws): its height above the feet, its length past the far range,
+// the steepest face normal · up that counts (cos 80°), and the head-on bound (normal · ray at most cos 135°).
+constexpr float kWallThrowRayHeight = 1.4F;
+constexpr float kWallThrowRayExtra = 0.2F;
+constexpr float kWallThrowSteep = 0.17365F;
+constexpr float kWallThrowHeadOn = -0.70711F;
+
 } // namespace
 
 void Fighter::dropLostHold(const FighterInput& input, HumanAnimator& animator) {
@@ -41,6 +51,9 @@ void Fighter::dropLostHold(const FighterInput& input, HumanAnimator& animator) {
     const auto listed = [&input](const Holdable* victim) {
         return std::ranges::find(input.targets, static_cast<const Combatant*>(victim)) != input.targets.end();
     };
+    if (m_lastThrown != nullptr && !listed(m_lastThrown)) {
+        m_lastThrown = nullptr;
+    }
     if (m_thrown != nullptr && !listed(m_thrown)) {
         m_thrown = nullptr;
     }
@@ -76,6 +89,7 @@ void Fighter::dropLostHold(const FighterInput& input, HumanAnimator& animator) {
     m_rear = false;
     m_tacklePending = false;
     m_mountPending = false;
+    m_seatUpdates = 0;
     m_combat.release();
     if (reaction != 0) {
         animator.playCombat(clips::one(reaction), kAnimFightIdle, AnimState::Attack);
@@ -121,6 +135,7 @@ void Fighter::breakPair() {
     m_grabbed.reset();
     m_tacklePending = false;
     m_mountPending = false;
+    m_seatUpdates = 0;
 }
 
 bool Fighter::inPair() const { return m_held != nullptr || m_holdState.has_value() || m_grabbed.has_value(); }
@@ -373,6 +388,7 @@ void Fighter::playGrabAction(const combat::CombatOutput& out, HumanAnimator& ani
                                AnimState::Hold, TargetState::Grounded);
         }
         m_thrown = m_held;
+        m_lastThrown = m_held;
         m_pair = PairStage::None;
         m_held = nullptr;
         m_rear = false;
@@ -395,6 +411,12 @@ void Fighter::playGrabAction(const combat::CombatOutput& out, HumanAnimator& ani
         if (m_held != nullptr) {
             m_held->playPaired(clips::one(clips::clipOf(out.startAnim) + 1), animator.anims(), clips::kMountedIdle,
                                AnimState::Hold, TargetState::Mounted);
+        }
+        // Nothing holds the pair during 118 / 119: each body moves by its own clip from where the hold left it, and
+        // at 210 the mounter is moved onto the victim (seatMount(), docs/research/combat.md#mount).
+        if (m_held != nullptr) {
+            m_held->setAttached(false);
+            m_pair = PairStage::Moving;
         }
         m_rear = false;
         m_mountPending = true;
@@ -440,14 +462,15 @@ void Fighter::playGrabAction(const combat::CombatOutput& out, HumanAnimator& ani
     }
 }
 
-void Fighter::mountVictim(const FighterInput& input, const HumanAnimator& animator, float heading) {
-    // The victim goes down under the player (the attacker's clip, a paired task), mounted, and stays at clip 210's
-    // pair event: 0.120 m to the mounter's left and 0.032 m ahead, facing the other way.
+void Fighter::mountVictim(const HumanAnimator& animator) {
+    // The victim goes down under the player (the attacker's clip, a paired task), mounted, by its own clip; at 210
+    // the mounter is moved onto it, as after the grab's mount (seatMount()).
     m_tacklePending = false;
-    m_mountPending = false;
     m_held->playPaired(clips::one(clips::kTackleReact), animator.anims(), clips::kMountedIdle, AnimState::Hold,
                        TargetState::Mounted);
-    snapAttach(input, heading, pairEventPoint(animator.clip(clips::kMountingIdle), kMountOffset), kPi);
+    m_held->setAttached(false);
+    m_pair = PairStage::Moving;
+    m_mountPending = true;
 }
 
 void Fighter::playMountAction(const combat::CombatOutput& out, HumanAnimator& animator) {
@@ -484,6 +507,7 @@ void Fighter::playMountAction(const combat::CombatOutput& out, HumanAnimator& an
             m_pair = PairStage::None;
             m_tacklePending = false;
             m_mountPending = false;
+            m_seatUpdates = 0;
             const std::array<std::uint32_t, 2> rise{clip + 1, clips::kGroundedRise};
             victim.play(rise, clips::kIdle, AnimState::Attack, TargetState::Standing);
         }
@@ -496,9 +520,23 @@ void Fighter::playMountAction(const combat::CombatOutput& out, HumanAnimator& an
 }
 
 void Fighter::seatMount(const FighterInput& input, const HumanAnimator& animator, float heading) {
-    // The victim already plays 119 into 207; only its place changes, to clip 210's pair event.
+    // The mounter, never the victim, is moved: to the victim's position minus clip 210's offset turned by the
+    // mounter's rotation, and turned to the victim's heading + 180 degrees, both over 0.1 s; the victim then lies
+    // 0.120 m to his left and 0.032 m ahead. Attached once the slide is done (attachSeat()).
     m_mountPending = false;
-    snapAttach(input, heading, pairEventPoint(animator.clip(clips::kMountingIdle), kMountOffset), kPi);
+    const anim::Vec3 offset = pairEventPoint(animator.clip(clips::kMountingIdle), kMountOffset);
+    const anim::Vec3 along = anim::subtract(fromFrame(input.position, heading, offset), input.position);
+    const anim::Vec3 stand = anim::subtract(m_held->position(), along);
+    m_steer.clear();
+    m_steer.turnToOver(heading, wrapAngle(m_held->heading() + kPi), kMountSeatSeconds);
+    m_steer.moveToOver(input.position, stand, kMountSeatSeconds);
+    m_seatUpdates = static_cast<int>(std::ceil((kMountSeatSeconds / input.stepSeconds) - 1e-4F));
+}
+
+void Fighter::attachSeat(const FighterInput& input, float heading) {
+    // Where the slide left the pair: the victim is attached as it lies, so nothing jumps.
+    const anim::Vec3 offset = toFrame(input.position, heading, m_held->position());
+    snapAttach(input, heading, offset, wrapAngle(m_held->heading() - heading));
 }
 
 void Fighter::victimEscapes(const FighterInput& input, HumanAnimator& animator) {
@@ -515,6 +553,108 @@ void Fighter::victimEscapes(const FighterInput& input, HumanAnimator& animator) 
     animator.playPaired(clips::one(clips::clipOf(escape) + 1), victim.anims(), clips::kGroundedIdle, AnimState::Hold);
     m_victim.knockDown(input.nowMs, true);
     m_reacting = true;
+}
+
+std::optional<Fighter::WallThrow> Fighter::wallThrow(const FighterInput& input) const {
+    if (input.mesh == nullptr || m_ranges == nullptr) {
+        return std::nullopt;
+    }
+    // The side the stick names, its body axis in the world (front +y, right +x, rear -y, left -x of the facing), and
+    // the far range of its wall throw (155, 157, 159, 161).
+    const combat::Side side = combat::sideOf(input.stick.angleDegrees());
+    const auto index = static_cast<int>(side);
+    const float axisHeading = wrapAngle(input.heading - (static_cast<float>(index) * kPi / 2.0F));
+    const int wallClip = id::kThrow2Front + (2 * index);
+    const float far = m_ranges->farRange(static_cast<std::size_t>(clips::clipOf(wallClip)));
+    if (far <= 0.0F) {
+        return std::nullopt;
+    }
+    const anim::Vec3 origin = anim::add(input.position, anim::Vec3{0.0F, 0.0F, kWallThrowRayHeight});
+    // The stick's own direction in the world: its x to the right of the facing, its y ahead.
+    const anim::Vec3 ahead = facing(input.heading);
+    const anim::Vec3 right{std::cos(input.heading), std::sin(input.heading), 0.0F};
+    const anim::Vec3 stick = anim::add(anim::scale(right, input.stick.x), anim::scale(ahead, input.stick.y));
+    const float stickLength = std::hypot(stick.x, stick.y);
+    const std::array<anim::Vec3, 2> directions{
+        facing(axisHeading), stickLength > 1e-4F ? anim::scale(stick, 1.0F / stickLength) : facing(axisHeading)};
+    for (const anim::Vec3& direction : directions) {
+        const auto hit =
+            input.mesh->rayCast(raycast::Ray{.origin = raycast::Vec3{origin.x, origin.y, origin.z},
+                                             .direction = raycast::Vec3{direction.x, direction.y, direction.z},
+                                             .length = far + kWallThrowRayExtra},
+                                {}, 0);
+        if (!hit.has_value()) {
+            continue;
+        }
+        // Only a steep face counts; within the far range it is the wall throw (the first ray that hits decides).
+        if (hit->normal.z >= kWallThrowSteep || hit->t > far) {
+            return std::nullopt;
+        }
+        const anim::Vec3 normal{hit->normal.x, hit->normal.y, hit->normal.z};
+        return WallThrow{.vector = anim::scale(direction, hit->t),
+                         .normal = normal,
+                         .headOn = anim::dot(normal, direction) <= kWallThrowHeadOn};
+    }
+    return std::nullopt;
+}
+
+void Fighter::alignWallThrow(const combat::CombatOutput& out, const FighterInput& input, float& heading) {
+    const int animId = out.startAnim;
+    const bool wall = animId >= id::kThrow2Front && animId <= id::kThrow2Left && (animId - id::kThrow2Front) % 2 == 0;
+    if (!wall || !m_wallThrow.has_value() || !m_wallThrow->headOn || m_held == nullptr ||
+        m_pair != PairStage::Attached) {
+        return;
+    }
+    // The side's axis along the face's inward normal, the victim carried round at the hold's offset.
+    const int index = (animId - id::kThrow2Front) / 2;
+    const anim::Vec3 inward{-m_wallThrow->normal.x, -m_wallThrow->normal.y, 0.0F};
+    if (std::hypot(inward.x, inward.y) < 1e-4F) {
+        return;
+    }
+    heading = wrapAngle(headingOf(inward) + (static_cast<float>(index) * kPi / 2.0F));
+    placeAttached(input.position, heading);
+}
+
+combat::GrabberState Fighter::grabberState() const {
+    return combat::GrabberState{.power = m_combat.power().value(),
+                                .powerMax = std::max(1, m_combat.power().maximum()),
+                                .hurt = hurt(),
+                                .raging = m_combat.rage().raging(),
+                                .flag40 = hasFlag(flag::kUngrabbable),
+                                .struggleDivisor = m_victim.powerClass().struggleDivisor};
+}
+
+void Fighter::applyHeldReport(const GrabbedReport& report, const FighterInput& input, HumanAnimator& animator) {
+    if (m_held == nullptr || m_combat.mode() != combat::CombatMode::Grabbing) {
+        return;
+    }
+    // The struggle's cost, spent even when no move could start; at 0 the grab's own power-out ends it.
+    if (report.grabberPowerCost > 0 && !m_combat.power().unlimited()) {
+        m_combat.power().set(m_combat.power().value() - report.grabberPowerCost);
+    }
+    switch (report.action) {
+    case combat::GrabbedAction::Struggle:
+    case combat::GrabbedAction::StrikeBack: {
+        // The move's damage first: one that empties the grabber's health breaks the grab.
+        if (report.grabberDamage > 0 && m_health.apply(report.grabberDamage) > 0 && m_health.depleted()) {
+            releaseHold(animator, false);
+            return;
+        }
+        // Both play the pair from the victim's set (the grabber its id + 1), then their holds again.
+        Holdable& victim = *m_held;
+        animator.playPaired(clips::one(clips::clipOf(report.grabberClip)), victim.anims(),
+                            m_rear ? clips::kGrabRearHold : clips::kGrabHold, AnimState::Hold);
+        victim.play(clips::one(clips::clipOf(report.victimClip)), m_rear ? clips::kGrabRearHeld : clips::kGrabHeld,
+                    AnimState::Hold, TargetState::Held);
+        break;
+    }
+    case combat::GrabbedAction::Escape:
+        victimEscapes(input, animator);
+        break;
+    case combat::GrabbedAction::None:
+    case combat::GrabbedAction::Reversal:
+        break;
+    }
 }
 
 void Fighter::endPowerMove() {
@@ -559,6 +699,7 @@ void Fighter::releaseHold(HumanAnimator& animator, bool letGo) {
     m_rear = false;
     m_tacklePending = false;
     m_mountPending = false;
+    m_seatUpdates = 0;
 }
 
 } // namespace coney::human

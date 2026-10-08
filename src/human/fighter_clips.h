@@ -99,6 +99,8 @@ inline constexpr HeldFlags kGrabHolds{.held = combat::kPhaseGrabStart, .set = co
 inline constexpr HeldFlags kDuckHolds{.held = combat::kPhaseDuck, .set = combat::kPhaseDuck};
 inline constexpr HeldFlags kCounterHolds{.held = combat::kPhaseCounter, .set = combat::kPhaseCounter};
 inline constexpr HeldFlags kMovingAttackHolds{.held = combat::kPhaseRunAttack, .set = combat::kPhaseRunAttack};
+/// The dive holds 0x400000 instead, which makes the human busy (docs/research/combat.md#charge-aim).
+inline constexpr HeldFlags kDiveHolds{.held = combat::kPhaseDive, .set = combat::kPhaseDive};
 
 /// The moves of a hold switch both humans on the same update, with no fade (docs/research/combat.md#grab-posing).
 inline constexpr float kPairFade = 0.0F;
@@ -128,6 +130,18 @@ inline constexpr std::array<std::uint32_t, 0> kNoClips{};
 /// Whether `animId` is one of the throws.
 [[nodiscard]] inline bool isThrow(int animId) {
     return animId >= combat::anim_id::kThrow1Front && animId <= combat::anim_id::kThrow2Left;
+}
+
+/// Whether `animId` carries strike windows that make the human playing it the striker though it attacks no one: a
+/// thrown victim's flight (148, 150, 152, 154) and the extreme reactions (292-303) it knocks a bystander into, which
+/// can chain (docs/research/combat.md#throws).
+[[nodiscard]] inline bool carriesStrike(int animId) {
+    constexpr int kFirstThrownVictim = 148;
+    constexpr int kLastThrownVictim = 154;
+    constexpr int kFirstExtremeReaction = 292;
+    constexpr int kLastExtremeReaction = 303;
+    return (animId >= kFirstThrownVictim && animId <= kLastThrownVictim && animId % 2 == 0) ||
+           (animId >= kFirstExtremeReaction && animId <= kLastExtremeReaction);
 }
 
 } // namespace coney::human::clips

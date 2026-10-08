@@ -33,9 +33,10 @@ namespace coney::test {
 inline constexpr anim::Vec3 kAlongY{0.0F, 1.0F, 0.0F};
 
 // The range data the tests fight with: the damage measured on a civilian (combat.md#damage-table), the hit codes and
-// flags read at runtime (combat.md#hit-codes), a reach of 1 m (far 1.25 m) for every attack, and the grab's and the
-// tackle's far ranges and the grab's places; the strong grapple's strikes are placed as the plain grab's connects.
-inline combat::AnimRangeList fightRanges() {
+// flags read at runtime (combat.md#hit-codes; `codes` replaces some ids' hit codes), a reach of 1 m (far 1.25 m) for
+// every attack, and the grab's and the tackle's far ranges and the grab's places; the strong grapple's strikes are
+// placed as the plain grab's connects.
+inline combat::AnimRangeList fightRanges(const std::map<int, std::int16_t>& codes = {}) {
     struct Move {
         std::int16_t damage;
         std::int16_t code;
@@ -48,13 +49,16 @@ inline combat::AnimRangeList fightRanges() {
         {59, {79, 0, 0}},         {147, {66, 0x2a, 0x100}}, {193, {20, 0x0a, 0}}, {212, {30, 0x06, 0}},
         {0, {31, 0x36, 0}},       {76, {30, 0, 0}},         {96, {0, 0, 0}},      {100, {20, 0x2a, 0x100}},
         {104, {20, 0x26, 0x400}}, {219, {61, 0, 0}},        {221, {61, 0, 0}},    {223, {61, 0, 0}},
-        {225, {61, 0, 0}},        {657, {60, 0, 0}},        {659, {60, 0, 0}},    {25, {31, 0, 0}},
-        {27, {31, 0, 0}},         {29, {31, 0, 0}}};
+        {225, {61, 0, 0}},        {657, {60, 0, 0}},        {659, {60, 0, 0}},    {25, {31, 0x1b, 0}},
+        {27, {31, 0x19, 0}},      {29, {31, 0x1b, 0}},      {148, {-60, 0x3a, 0}}};
     test::Bytes bytes;
     bytes.u32(722);
     for (int animId = 0; animId < 722; ++animId) {
         const auto found = moves.find(animId);
-        const Move move = found != moves.end() ? found->second : Move{0, 0, 0};
+        Move move = found != moves.end() ? found->second : Move{0, 0, 0};
+        if (const auto code = codes.find(animId); code != codes.end()) {
+            move.code = code->second;
+        }
         std::int16_t far = 0;
         if (animId == combat::anim_id::kGrabIntro) {
             far = 2499;
@@ -71,9 +75,17 @@ inline combat::AnimRangeList fightRanges() {
         };
         const std::map<int, Place> places{{72, {0, 1000, 0.999F}},   {74, {0, 1000, 1.018F}},  {82, {351, 936, 1.081F}},
                                           {84, {-399, 916, 0.242F}}, {657, {0, 1000, 0.999F}}, {659, {0, 1000, 1.018F}},
-                                          {25, {999, -12, 1.0F}},    {27, {-1000, 0, 1.0F}},   {29, {-39, -999, 1.0F}}};
+                                          {25, {999, -12, 1.0F}},    {27, {-1000, 0, 1.0F}},   {29, {-39, -999, 1.0F}},
+                                          {0, {0, 1000, 3.29F}},     {1, {0, 1000, 2.22F}}};
+        const std::map<int, std::int16_t> wallFars{{155, 2250}, {157, 1549}, {159, 1250},
+                                                   {161, 1549}, {0, 4110},   {1, 3000}};
         const auto placed = places.find(animId);
         const Place place = placed != places.end() ? placed->second : Place{0, 1000, 1.0F};
+        // The wall throws' far ranges, as on the disc (combat.md#throws), and the charge's and the dive's bands
+        // (combat.md#charge-aim).
+        if (const auto wall = wallFars.find(animId); wall != wallFars.end()) {
+            far = wall->second;
+        }
         if (animId == 72 || animId == 74 || animId == 657 || animId == 659) {
             far = 2500;
         }

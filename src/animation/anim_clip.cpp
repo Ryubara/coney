@@ -21,6 +21,7 @@ constexpr std::size_t kMaskOffset = 0x20;
 constexpr std::size_t kMaskBytes = 5;
 constexpr std::size_t kNameOffset = 0x25;
 constexpr std::size_t kNameBytes = 30;
+constexpr std::size_t kFlagsOffset = 0x44;
 
 // The scales of the stored integers: positions x / 1023, y / 1023, z / 2047; rotations x, y, z × 2^-15.
 constexpr float kPositionScaleXy = 1.0F / 1023.0F;
@@ -187,6 +188,9 @@ std::expected<AnimClip, Error> parseAnimClip(std::span<const std::byte> descript
     const std::size_t eventCount = reader.readU16Le().value();
     for (std::size_t i = 0; i < kMaskBytes; ++i) {
         clip.boneMask |= std::uint64_t{std::to_integer<std::uint8_t>(descriptor[kMaskOffset + i])} << (8 * i);
+    }
+    for (std::size_t i = 0; i < sizeof(clip.flags); ++i) {
+        clip.flags |= std::to_integer<std::uint32_t>(descriptor[kFlagsOffset + i]) << (8 * i);
     }
     const auto name = descriptor.subspan(kNameOffset, kNameBytes);
     for (const std::byte c : name) {

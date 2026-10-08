@@ -77,8 +77,10 @@ inline constexpr int kMountRelease = 244; ///< `MOUNT_RELEASE`: L2 gets off (vic
 inline constexpr int kMountPickup = 248;  ///< `MOUNT_PICKUP`: circle back to the front hold (victim 249).
 
 inline constexpr int kRageStart = 643;
-inline constexpr int kSpecialRage = 645; ///< Cross + square outside a grab in rage (`RAGE_SPECIAL`).
-inline constexpr int kSpecial = 653;     ///< Cross + square outside a grab: the strong attack.
+inline constexpr int kSpecialRage = 645;     ///< Cross + square outside a grab in rage (`RAGE_ATTACK1_FRONT`).
+inline constexpr int kSpecialRageRear = 647; ///< The same from the target's rear (`RAGE_ATTACK1_REAR`).
+inline constexpr int kSpecial = 653;         ///< Cross + square outside a grab: the strong attack.
+inline constexpr int kSpecialRear = 655;     ///< The same from the target's rear (`SPECIAL_ATTACK1_REAR`).
 inline constexpr int kStrongGrappleRage =
     649;                                   ///< `RAGE_ATTACK2_FRONT`: the strong grapple's strike in rage (rear 651).
 inline constexpr int kStrongGrapple = 657; ///< `SPECIAL_ATTACK2_FRONT`: the strong grapple's strike (rear 659).

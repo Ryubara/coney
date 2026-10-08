@@ -2767,6 +2767,16 @@ name = "HUD_SetWanted"
 subsystem = "GUI"
 
 [[function]]
+address = 0x001b26a8
+name = "HUD_RadarSetTintBlue"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001b2790
+name = "HUD_RadarSetTintGrey"
+subsystem = "GUI"
+
+[[function]]
 address = 0x001b2e10
 name = "HudManager_SetRadarRange"
 subsystem = "GUI"
@@ -4332,6 +4342,21 @@ subsystem = "Human"
 size = 232
 
 [[function]]
+address = 0x0022ff88
+name = "Human_EnterShadow"
+subsystem = "Human"
+
+[[function]]
+address = 0x002300c0
+name = "Human_LeaveShadow"
+subsystem = "Human"
+
+[[function]]
+address = 0x00230140
+name = "Human_ClearHiddenState"
+subsystem = "Human"
+
+[[function]]
 address = 0x00230930
 name = "Attack_FarReachSquared"
 subsystem = "Human"
@@ -5081,6 +5106,11 @@ name = "Human_PickUpObject"
 subsystem = "Human"
 
 [[function]]
+address = 0x0023cd30
+name = "Human_UpdateLedSlots"
+subsystem = "Human"
+
+[[function]]
 address = 0x0023cf88
 name = "Human_TurnToOver"
 subsystem = "Human"
@@ -5572,6 +5602,16 @@ subsystem = "Human"
 size = 744
 
 [[function]]
+address = 0x00264878
+name = "Player_StartDive"
+subsystem = "Human"
+
+[[function]]
+address = 0x00264a80
+name = "Player_StartCharge"
+subsystem = "Human"
+
+[[function]]
 address = 0x00264bd8
 name = "Human_AddPendingDamage"
 subsystem = "Human"
@@ -5652,6 +5692,11 @@ subsystem = "Human"
 size = 2288
 
 [[function]]
+address = 0x0026ef68
+name = "Grab_MountClipEnd"
+subsystem = "Human"
+
+[[function]]
 address = 0x00273a68
 name = "Tag_SayNearbyLine"
 subsystem = "Human"
@@ -5677,6 +5722,11 @@ name = "TagGame_Update"
 subsystem = "Human"
 
 [[function]]
+address = 0x00275678
+name = "Attack_SteerLed"
+subsystem = "Human"
+
+[[function]]
 address = 0x00276008
 name = "Attack_TurnToTarget"
 subsystem = "Human"
@@ -5697,6 +5747,11 @@ address = 0x00276d98
 name = "Pair_SnapAttach"
 subsystem = "Human"
 size = 600
+
+[[function]]
+address = 0x00277248
+name = "Human_AlignToVictimFacing"
+subsystem = "Human"
 
 [[function]]
 address = 0x00277958
@@ -5727,6 +5782,11 @@ subsystem = "Human"
 [[function]]
 address = 0x0027a6c0
 name = "Player_PickTarget"
+subsystem = "Human"
+
+[[function]]
+address = 0x0027b058
+name = "Attack_FindNearestInReach"
 subsystem = "Human"
 
 [[function]]
@@ -5974,6 +6034,11 @@ name = "Brain_CanBeChased"
 subsystem = "Human"
 
 [[function]]
+address = 0x0028b358
+name = "Brain_ScanEnemies"
+subsystem = "Human"
+
+[[function]]
 address = 0x0028bf00
 name = "Brain_GetSightRange"
 subsystem = "Human"
@@ -6110,6 +6175,11 @@ subsystem = "Human"
 size = 1920
 
 [[function]]
+address = 0x0028f000
+name = "Brain_ShakeOffPursuers"
+subsystem = "Human"
+
+[[function]]
 address = 0x0028f240
 name = "Brain_EndReactionGoal"
 subsystem = "Human"
@@ -6138,6 +6208,11 @@ address = 0x0028f928
 name = "Brain_OnEvent"
 subsystem = "Human"
 size = 96
+
+[[function]]
+address = 0x0028fa18
+name = "Brain_MaybeScanEnemies"
+subsystem = "Human"
 
 [[function]]
 address = 0x0028fbb0
@@ -7256,6 +7331,56 @@ subsystem = "Human"
 size = 208
 
 [[function]]
+address = 0x002d5cf0
+name = "CallGangGoal_Init"
+subsystem = "Human"
+
+[[function]]
+address = 0x002d5db8
+name = "CallGangGoal_Start"
+subsystem = "Human"
+
+[[function]]
+address = 0x002d5f98
+name = "CallGangGoal_End"
+subsystem = "Human"
+
+[[function]]
+address = 0x002d6638
+name = "CallGangGoal_Process"
+subsystem = "Human"
+
+[[function]]
+address = 0x002d6ca0
+name = "ScoutGoal_Init"
+subsystem = "Human"
+
+[[function]]
+address = 0x002d6db0
+name = "ScoutGoal_Start"
+subsystem = "Human"
+
+[[function]]
+address = 0x002d6e10
+name = "ScoutGoal_Resume"
+subsystem = "Human"
+
+[[function]]
+address = 0x002d6ef0
+name = "ScoutGoal_Suspend"
+subsystem = "Human"
+
+[[function]]
+address = 0x002d6f98
+name = "ScoutGoal_End"
+subsystem = "Human"
+
+[[function]]
+address = 0x002d73b8
+name = "ScoutGoal_Process"
+subsystem = "Human"
+
+[[function]]
 address = 0x002d9238
 name = "Goal_Backoff"
 subsystem = "Human"
@@ -8202,6 +8327,26 @@ name = "Tactic_Scout"
 subsystem = "Human"
 
 [[function]]
+address = 0x0031a430
+name = "ScoutTactic_Construct"
+subsystem = "Human"
+
+[[function]]
+address = 0x0031a818
+name = "ScoutTactic_OnEvent"
+subsystem = "Human"
+
+[[function]]
+address = 0x0031af98
+name = "ScoutTactic_Start"
+subsystem = "Human"
+
+[[function]]
+address = 0x0031b030
+name = "ScoutTactic_Process"
+subsystem = "Human"
+
+[[function]]
 address = 0x00320530
 name = "WarriorAttackTactic_Create"
 subsystem = "Human"
@@ -8290,6 +8435,11 @@ subsystem = "Physics"
 size = 728
 
 [[function]]
+address = 0x00343518
+name = "PhysicsCapsule_Pose"
+subsystem = "Physics"
+
+[[function]]
 address = 0x003477c0
 name = "PhysicsBody_PushOutOfWalls"
 subsystem = "Physics"
@@ -8297,6 +8447,11 @@ subsystem = "Physics"
 [[function]]
 address = 0x00347c08
 name = "PhysicsMesh_SweepCapsule"
+subsystem = "Physics"
+
+[[function]]
+address = 0x00349a60
+name = "Sweep_SphereCapsule"
 subsystem = "Physics"
 
 [[function]]
@@ -10526,6 +10681,18 @@ name = "Fog3D_EmitterUpdate"
 subsystem = "TaskEngine"
 
 [[function]]
+address = 0x003d3d30
+name = "DynPile_OnMessage"
+subsystem = "TaskEngine"
+size = 808
+
+[[function]]
+address = 0x003d4058
+name = "DynPile_Update"
+subsystem = "TaskEngine"
+size = 168
+
+[[function]]
 address = 0x003d7f10
 name = "PartGarbageFlies_Update"
 subsystem = "TaskEngine"
@@ -11164,15 +11331,15 @@ subsystem = "Warriors"
 size = 664
 
 [[function]]
+address = 0x004197a8
+name = "GameState_CheckGameOver"
+subsystem = "Warriors"
+
+[[function]]
 address = 0x00419fc8
 name = "GameState_SetMusicMood"
 subsystem = "Warriors"
 size = 64
-
-[[function]]
-address = 0x004197a8
-name = "GameState_CheckGameOver"
-subsystem = "Warriors"
 
 [[function]]
 address = 0x0041a060
@@ -11845,125 +12012,3 @@ address = 0x0042a938
 name = "Movie_Play"
 subsystem = "Movie"
 size = 1768
-
-[[function]]
-address = 0x0022ff88
-name = "Human_EnterShadow"
-subsystem = "Human"
-
-[[function]]
-address = 0x002300c0
-name = "Human_LeaveShadow"
-subsystem = "Human"
-
-[[function]]
-address = 0x00230140
-name = "Human_ClearHiddenState"
-subsystem = "Human"
-
-[[function]]
-address = 0x0028f000
-name = "Brain_ShakeOffPursuers"
-subsystem = "Human"
-
-[[function]]
-address = 0x001b26a8
-name = "HUD_RadarSetTintBlue"
-subsystem = "GUI"
-
-[[function]]
-address = 0x001b2790
-name = "HUD_RadarSetTintGrey"
-subsystem = "GUI"
-
-[[function]]
-address = 0x0028b358
-name = "Brain_ScanEnemies"
-subsystem = "Human"
-
-[[function]]
-address = 0x0028fa18
-name = "Brain_MaybeScanEnemies"
-subsystem = "Human"
-
-[[function]]
-address = 0x002d5cf0
-name = "CallGangGoal_Init"
-subsystem = "Human"
-
-[[function]]
-address = 0x002d5db8
-name = "CallGangGoal_Start"
-subsystem = "Human"
-
-[[function]]
-address = 0x002d5f98
-name = "CallGangGoal_End"
-subsystem = "Human"
-
-[[function]]
-address = 0x002d6638
-name = "CallGangGoal_Process"
-subsystem = "Human"
-
-[[function]]
-address = 0x002d6ca0
-name = "ScoutGoal_Init"
-subsystem = "Human"
-
-[[function]]
-address = 0x002d6db0
-name = "ScoutGoal_Start"
-subsystem = "Human"
-
-[[function]]
-address = 0x002d6e10
-name = "ScoutGoal_Resume"
-subsystem = "Human"
-
-[[function]]
-address = 0x002d6ef0
-name = "ScoutGoal_Suspend"
-subsystem = "Human"
-
-[[function]]
-address = 0x002d6f98
-name = "ScoutGoal_End"
-subsystem = "Human"
-
-[[function]]
-address = 0x002d73b8
-name = "ScoutGoal_Process"
-subsystem = "Human"
-
-[[function]]
-address = 0x0031a430
-name = "ScoutTactic_Construct"
-subsystem = "Human"
-
-[[function]]
-address = 0x0031a818
-name = "ScoutTactic_OnEvent"
-subsystem = "Human"
-
-[[function]]
-address = 0x0031af98
-name = "ScoutTactic_Start"
-subsystem = "Human"
-
-[[function]]
-address = 0x0031b030
-name = "ScoutTactic_Process"
-subsystem = "Human"
-
-[[function]]
-address = 0x003d3d30
-name = "DynPile_OnMessage"
-subsystem = "TaskEngine"
-size = 808
-
-[[function]]
-address = 0x003d4058
-name = "DynPile_Update"
-subsystem = "TaskEngine"
-size = 168

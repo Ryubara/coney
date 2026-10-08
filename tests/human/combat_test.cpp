@@ -247,6 +247,35 @@ TEST_CASE("an attack turns and slides onto its target at a constant rate up to i
     CHECK(std::hypot(40.4F - end.x, 41.1F - end.y) == Approx(1.0F).margin(1e-3));
 }
 
+TEST_CASE("an attack without the led steer's flag slides and turns only up to its first event", "[human][combat]") {
+    // X1's hit code without flag 0x8, as 653's and 645's: Attack_SteerToTarget over the time to the first event that
+    // Attack_Start passes, not that + 0.1 s (combat-moves.md#two-steers).
+    FightCharacter character;
+    character.ranges = coney::test::fightRanges({{id::kAttackX1, 0x01}});
+    const NoAutoLock unlocked;
+    Fight fight(character, 1.1F, 0.4F);
+    std::vector<Vec3> positions;
+    std::vector<std::uint32_t> clips;
+    fight.run("5 tap cross\n", 30, [&](std::uint64_t) {
+        clips.push_back(fight.human().animator().animId());
+        positions.push_back(fight.human().position());
+    });
+    const auto start = std::ranges::find(clips, static_cast<std::uint32_t>(id::kAttackX1));
+    REQUIRE(start != clips.end());
+    const auto k = static_cast<std::size_t>(start - clips.begin());
+    REQUIRE(positions.size() > k + 9);
+    // 0.222 s: 6 updates at one rate and two thirds of one more, onto the 1 m reach.
+    const float toEvent = 5.0F / 30.0F / 0.75F;
+    const float stepLength = (std::hypot(0.4F, 1.1F) - 1.0F) * (1.0F / 30.0F) / toEvent;
+    for (std::size_t i = k + 1; i <= k + 6; ++i) {
+        const Vec3 a = positions[i - 1];
+        const Vec3 b = positions[i];
+        CHECK(std::hypot(b.x - a.x, b.y - a.y) == Approx(stepLength).margin(1e-4));
+    }
+    const Vec3 end = positions[k + 8];
+    CHECK(std::hypot(40.4F - end.x, 41.1F - end.y) == Approx(1.0F).margin(1e-3));
+}
+
 namespace {
 
 // The clips the player played, in order, and the heading after every update, for one script.
@@ -294,15 +323,18 @@ TEST_CASE("a snap turns the player so a human on the stick's side sits at the sn
     CHECK_FALSE(playedClip(played, id::kAttackS1));
     CHECK(fight.target().damageTaken() == 31);
     CHECK(fight.human().fighter().hitsLanded() == 1);
-    // The steer, set on the snap's start (update 11) from the next update on: over 0.1 s (3 updates, at one rate) the
-    // facing turns to put the target at the snap's direction on the disc, (0.999, -0.012), 90.7° to the right.
+    // The steer, set on the snap's start (update 11) from the next update on. The snap's hit code has flag 0x8, so it
+    // takes the led steer over the time to its first event + 0.1 s (combat-moves.md#two-steers): the synthetic clip's
+    // is at frame 3 at rate 0.75, so 0.133 s + 0.1 s, 7 updates at one rate. The facing turns to put the target at the
+    // snap's direction on the disc, (0.999, -0.012), 90.7° to the right.
     const Vec3 to = coney::anim::subtract(fight.target().position(), played.positions[11]);
     const float wanted = coney::human::wrapAngle(coney::human::headingOf(to) - std::atan2(-0.999F, -0.012F));
-    CHECK(played.headings[14] == Approx(wanted).margin(1e-3));
+    CHECK(played.headings[18] == Approx(wanted).margin(1e-3));
     const auto turned = [&](std::size_t frame) { return played.headings[frame] - played.headings[frame - 1]; };
-    CHECK(turned(13) == Approx(turned(12)).margin(1e-4));
-    CHECK(turned(14) == Approx(turned(12)).margin(1e-4));
-    CHECK(turned(15) == Approx(0.0F).margin(1e-5));
+    for (std::size_t frame = 13; frame <= 18; ++frame) {
+        CHECK(turned(frame) == Approx(turned(12)).margin(1e-4));
+    }
+    CHECK(turned(19) == Approx(0.0F).margin(1e-5));
     CHECK(std::fabs(turned(12)) > 0.05F);
 }
 
@@ -604,4 +636,54 @@ TEST_CASE("dying during the stereo theft ends it", "[human][combat]") {
     CHECK(fight.human().fighter().health().depleted());
     CHECK_FALSE(fight.human().fighter().combat().theft().has_value());
     CHECK(fight.human().fighter().combat().mode() == coney::combat::CombatMode::Free);
+}
+
+TEST_CASE("cross + square plays the special 653 at a target's front and 655 at its rear", "[human][combat]") {
+    const FightCharacter character;
+    // Returns the clips the player played with the target 1 m ahead turned to `targetHeading`.
+    const auto special = [&character](float targetHeading) {
+        Fight fight(character, 1.0F, 0.0F, targetHeading);
+        std::vector<std::uint32_t> played;
+        fight.run("5 tap cross square\n", 20, [&](std::uint64_t) {
+            const std::uint32_t now = fight.human().animator().animId();
+            if (played.empty() || played.back() != now) {
+                played.push_back(now);
+            }
+        });
+        return played;
+    };
+    // Facing the player: the front special; facing away, the rear one (docs/research/combat.md#attacks).
+    const std::vector<std::uint32_t> front = special(std::numbers::pi_v<float>);
+    CHECK(std::ranges::find(front, 653U) != front.end());
+    CHECK(std::ranges::find(front, 655U) == front.end());
+    const std::vector<std::uint32_t> rear = special(0.0F);
+    CHECK(std::ranges::find(rear, 655U) != rear.end());
+    CHECK(std::ranges::find(rear, 653U) == rear.end());
+}
+
+TEST_CASE("the grab's mount leaves the victim where its clip put it and slides the mounter beside it over 0.1 s",
+          "[human][combat]") {
+    // Grab, then circle with the stick at rest mounts (118 / 119). At 210 the mounter, never the victim, turns and
+    // slides over 0.1 s (3 updates) to stand with the victim 0.120 m to his left and 0.032 m ahead, facing him
+    // (docs/research/combat.md#mount).
+    const FightCharacter character;
+    Fight fight(character, 1.5F);
+    std::optional<std::uint64_t> seated;
+    coney::anim::Vec3 victimAtSeat{};
+    fight.run("5 tap circle\n40 tap circle\n", 120, [&](std::uint64_t frame) {
+        if (!seated && fight.human().animator().animId() == 210U) {
+            seated = frame;
+            victimAtSeat = fight.target().position();
+        }
+    });
+    REQUIRE(seated.has_value());
+    REQUIRE(fight.target().state() == TargetState::Mounted);
+    const coney::anim::Vec3 victim = fight.target().position();
+    CHECK(victim.x == Approx(victimAtSeat.x).margin(1e-3F));
+    CHECK(victim.y == Approx(victimAtSeat.y).margin(1e-3F));
+    const coney::anim::Vec3 local = coney::human::toFrame(fight.human().position(), fight.human().heading(), victim);
+    CHECK(local.x == Approx(-0.120F).margin(0.01F));
+    CHECK(local.y == Approx(0.032F).margin(0.01F));
+    CHECK(std::fabs(std::remainder(fight.target().heading() - fight.human().heading() - std::numbers::pi_v<float>,
+                                   2.0F * std::numbers::pi_v<float>)) < 0.02F);
 }

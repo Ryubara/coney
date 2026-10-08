@@ -4,8 +4,10 @@
 // its brain gets follows its state, the hold's moves and the throw land on it, a human with flag 0x40 cannot be
 // grabbed, and a human gone from the level or freed by a script ends the hold. Synthetic clips; the player's stick and
 // buttons come from input scripts.
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <span>
 #include <string_view>
@@ -42,8 +44,8 @@ namespace {
 // taken out of the level), then the other human.
 class HumanFight {
   public:
-    HumanFight(const FightCharacter& character, float ahead)
-        : m_mesh(coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F))),
+    HumanFight(const FightCharacter& character, float ahead, const std::vector<coney::test::Tri>& walls = {})
+        : m_mesh(coney::test::makeMesh(coney::test::join(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F), walls))),
           m_player(character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 1.0F,
                    &character.ranges),
           m_other(character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 1.0F,
@@ -74,15 +76,16 @@ class HumanFight {
                               m_mesh.get());
             }
             if (!m_removed) {
-                m_other.step(coney::human::HumanInput{.stickX = 0.0F,
-                                                      .stickY = 0.0F,
-                                                      .cameraForward = Vec3{0.0F, 1.0F, 0.0F},
-                                                      .sprintHeld = false,
-                                                      .actionPressed = false,
-                                                      .command = combat::command::kNone,
-                                                      .buttons = 0,
-                                                      .targets = {}},
-                             m_mesh.get());
+                m_other.step(
+                    coney::human::HumanInput{.stickX = 0.0F,
+                                             .stickY = 0.0F,
+                                             .cameraForward = Vec3{0.0F, 1.0F, 0.0F},
+                                             .sprintHeld = false,
+                                             .actionPressed = false,
+                                             .command = otherCommand ? otherCommand(m_frame) : combat::command::kNone,
+                                             .buttons = 0,
+                                             .targets = {}},
+                    m_mesh.get());
             }
             each(m_frame++);
         }
@@ -100,6 +103,8 @@ class HumanFight {
 
     Human& player() { return m_player; }
     Human& other() { return m_other; }
+    // The other human's command on each update (its brain's, in play): none when empty.
+    std::function<combat::CommandId(std::uint64_t)> otherCommand;
     // The damage the other human has taken.
     [[nodiscard]] int damageTaken() const {
         return m_other.fighter().health().maximum() - m_other.fighter().health().value();
@@ -358,4 +363,71 @@ TEST_CASE("a held human stays held while its grabber goes on updating", "[human]
     fight.run("5 tap circle\n", 40);
     REQUIRE(fight.other().state() == TargetState::Held);
     fight.run("", 200, [&](std::uint64_t /*frame*/) { REQUIRE(fight.other().state() == TargetState::Held); });
+}
+
+TEST_CASE("a held human struggles out of a grab: square costs the grabber power, circle then escapes",
+          "[human][combat]") {
+    const FightCharacter character;
+    HumanFight fight(character, 1.5F);
+    // The held human presses square three times, then circle (docs/research/combat.md#grabbed).
+    fight.otherCommand = [](std::uint64_t frame) {
+        if (frame == 30 || frame == 60 || frame == 90) {
+            return combat::command::kSquarePressed;
+        }
+        return frame == 120 ? combat::command::kCirclePressed : combat::command::kNone;
+    };
+    std::vector<std::uint32_t> grabberClips;
+    std::vector<std::uint32_t> heldClips;
+    int powerAfterStruggles = 0;
+    fight.run("5 tap circle\n", 160, [&](std::uint64_t frame) {
+        const std::uint32_t grabber = fight.player().animator().animId();
+        const std::uint32_t held = fight.other().animator().animId();
+        if (grabberClips.empty() || grabberClips.back() != grabber) {
+            grabberClips.push_back(grabber);
+        }
+        if (heldClips.empty() || heldClips.back() != held) {
+            heldClips.push_back(held);
+        }
+        if (frame == 110) {
+            powerAfterStruggles = fight.player().fighter().combat().power().value();
+        }
+    });
+    // Each square played 96 on the held human and 97 on the grabber, and cost a quarter of the grabber's 400 (the
+    // civilian's divisor 4), on top of the grab's drain of 15 a second.
+    CHECK(std::ranges::find(heldClips, 96U) != heldClips.end());
+    CHECK(std::ranges::find(grabberClips, 97U) != grabberClips.end());
+    CHECK(powerAfterStruggles < 400 - 3 * 100 + 5);
+    CHECK(powerAfterStruggles >= 400 - 3 * 100 - 15 * 105 / 30);
+    // With the grabber's power at a quarter or less, circle always escapes: 100 on the held human, 101 on the grabber,
+    // who goes down; the hold is over.
+    CHECK(std::ranges::find(heldClips, 100U) != heldClips.end());
+    CHECK(std::ranges::find(grabberClips, 101U) != grabberClips.end());
+    CHECK_FALSE(fight.other().fighter().holdState().has_value());
+    CHECK(fight.player().fighter().held() == nullptr);
+    CHECK(fight.player().state() == TargetState::Grounded);
+}
+
+TEST_CASE("a throw toward a wall within the side's reach is the wall throw", "[human][combat]") {
+    const FightCharacter character;
+    // Circle with the stick ahead throws ahead: with a wall 2 m ahead (within 155's far range of 2.25 m) the wall
+    // throw 155 / 156 plays; with none, the plain throw 147 / 148 (docs/research/combat.md#throws).
+    const auto throwClips = [&character](const std::vector<coney::test::Tri>& walls) {
+        HumanFight fight(character, 1.5F, walls);
+        std::vector<std::uint32_t> clips;
+        fight.run("5 tap circle\n40 stick left 0 70\n41 tap circle\n43 stick left 0 0\n", 60, [&](std::uint64_t) {
+            for (const std::uint32_t clip : {fight.player().animator().animId(), fight.other().animator().animId()}) {
+                if (std::ranges::find(clips, clip) == clips.end()) {
+                    clips.push_back(clip);
+                }
+            }
+        });
+        return clips;
+    };
+    const std::vector<std::uint32_t> wall = throwClips(coney::test::wallFacingMinusY(42.0F, 30.0F, 50.0F, 0.0F, 3.0F));
+    CHECK(std::ranges::find(wall, 155U) != wall.end());
+    CHECK(std::ranges::find(wall, 156U) != wall.end());
+    CHECK(std::ranges::find(wall, 147U) == wall.end());
+    const std::vector<std::uint32_t> open = throwClips({});
+    CHECK(std::ranges::find(open, 147U) != open.end());
+    CHECK(std::ranges::find(open, 155U) == open.end());
 }

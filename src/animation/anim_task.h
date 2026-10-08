@@ -232,10 +232,12 @@ class GaitBlendTask final : public AnimTask {
 /// @orig 0x00101dd8 Anim_FireEvents (unknown)
 void applyHeldFlagEvent(std::uint16_t type, AnimTask& task, std::uint32_t& flags);
 
-/// The frame a clip's events count as reached `seconds` into it: the nearest whole frame, a tie going to the lower
-/// one, as the sampler reads its keys (docs/research/formats/animation.md#coneys-implementation). An event of frame f
-/// fires on the advance that takes this from below f to f or beyond. **Coney's reading**: with it the events of
-/// Rembrandt's attack clips on the disc fall on the updates measured at runtime (docs/research/tasks.md#held-flags).
+/// The frame a clip's events count as reached `seconds` into it: the cursor's `uint(t × 30 + 0.5)`, the nearest whole
+/// frame; of the ties, the first (1.5 frames, frame 2 at rate 0.75) goes up and every later one down, as the
+/// original's time summed with the PS2 FPU's rounding toward zero falls short of them
+/// (docs/research/combat-moves.md#reading). An event of frame f fires on the advance that takes this from below f to
+/// f or beyond.
+/// @orig 0x001044a0 AnimCursor_Advance (unknown)
 [[nodiscard]] int eventFrame(float seconds);
 
 /// A character's tasks: the newest first, each fading in over the ones older than it. The original keeps one stack of

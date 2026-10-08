@@ -92,12 +92,16 @@ TEST_CASE("an attack's clip sets its wind-up, its events open the window, end it
     CHECK(stack.top()->animId() == 358U);
 }
 
-TEST_CASE("events fire on the update the clip's nearest frame reaches them, a tie going to the lower frame",
+TEST_CASE("events fire on the update the clip's nearest frame reaches them, every tie but the first going down",
           "[anim_task][held_flags]") {
     CHECK(anim::eventFrame(0.0F) == 0);
     CHECK(anim::eventFrame(4.6F / 30.0F) == 5);
     CHECK(anim::eventFrame(4.4F / 30.0F) == 4);
     CHECK(anim::eventFrame(13.5F / 30.0F) == 13); // the tie goes down
+    // The first tie, 1.5 frames (frame 2 at rate 0.75, two updates in), goes up: the run attack 24's shapes and early
+    // block act on update 2 (docs/research/combat-moves.md#reading).
+    CHECK(anim::eventFrame(1.5F / 30.0F) == 2);
+    CHECK(anim::eventFrame(2.0F * 0.75F / 30.0F) == 2);
     // The power strike's window event at frame 14, at rate 0.75: 13.5 frames after 18 updates (a tie), so 19.
     const AnimClip clip = eventClip(33.0F, {{14, anim::kEventChainWindow}, {25, anim::kEventAttackEnd}});
     const AnimClip idle = eventClip(30.0F, {});

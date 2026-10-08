@@ -3,7 +3,6 @@
 
 #include <cstdint>
 #include <memory>
-#include <numbers>
 #include <optional>
 #include <span>
 #include <vector>
@@ -149,7 +148,7 @@ TEST_CASE("a reaction to a player's hit asks for a shake at the hit code's stren
     // The other human 1 m in front of the player, facing him; the player's square lands on it
     // (docs/research/camera.md#shake).
     Pair pair;
-    pair.other.spawn(pair.mesh.get(), coney::anim::Vec3{40.0F, 41.0F, 0.0F}, std::numbers::pi_v<float>);
+    pair.other.spawn(pair.mesh.get(), coney::anim::Vec3{40.0F, 41.0F, 0.0F}, 180.0F);
     std::optional<coney::human::ReactionShake> seen;
     for (int k = 0; k < 30 && !seen; ++k) {
         pair.player.record().command = k == 0 ? command::kSquarePressed : command::kNone;

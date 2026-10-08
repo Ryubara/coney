@@ -97,6 +97,7 @@ struct ClipFields {
     std::uint64_t mask = 0;     ///< Bone mask; bits 0-39 are stored.
     std::uint16_t channels = 0; ///< The descriptor's rotation channel count.
     std::uint16_t events = 0;
+    std::uint32_t flags = 0; ///< The clip flags at +0x44.
 };
 
 /// An 80-byte clip descriptor (chunk 0x02) for sections of `sizeA`, `sizeB` and `sizeC` bytes.
@@ -111,6 +112,7 @@ inline Bytes clipDescriptor(const ClipFields& fields, std::size_t sizeA, std::si
         d.u8(static_cast<std::uint8_t>((fields.mask >> (8 * i)) & 0xFFU));
     }
     d.text(fields.name.substr(0, 29));
+    d.padTo(0x44).u32(fields.flags);
     return d.padTo(80);
 }
 

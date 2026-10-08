@@ -33,6 +33,7 @@ struct LocomotionClip {
     bool knockdown = false;       ///< A type-7 event (a reaction that knocks the victim down).
     float pairX = 0.0F;           ///< The type-8 event's x (with `reach` as its y: a pair event's offset).
     std::vector<std::array<std::uint16_t, 2>> markers{}; ///< More events with no vector: (frame, type) each.
+    std::uint32_t flags = 0;                             ///< The descriptor's clip flags (anim::AnimClip::flags).
 };
 
 /// The synthetic climb clips: for each of the four climbs (437 fence, 443 short fence, 449 wall, 455 short wall), a
@@ -104,7 +105,7 @@ inline std::vector<LocomotionClip> locomotionClips() {
 /// 661, 662, 0.6 s), the
 /// grab (69, 71-75, 0.3 s; the holds 82-85, 1 s), the grab strikes and their reactions (51-56, 57-58, 0.5 s), the spins
 /// (78-81, 0.4 s), the let-go (94, 95, 0.4 s), the throw and its reaction (147, 148, 0.6 s), the tackle (2, 4-6, 0.4
-/// s), the ground (195, 196, 199, 207, 210, 212), the mount (118, 119, 219-226, 244, 245, 248, 249; 0.4 s), the
+/// s), the ground (193, 195, 196, 199, 207, 210, 212), the mount (118, 119, 219-226, 244, 245, 248, 249; 0.4 s), the
 /// reactions 268-303 (0.4 s; 288-303, the heavy and crushing ones, knock down), the stun (356 loop, 357 end), the fight
 /// idle (358), the miss's 389, the block (606, 607, looping) and the stereo theft (683, 0.5 s; 684 looping).
 inline std::vector<LocomotionClip> combatClips() {
@@ -120,17 +121,25 @@ inline std::vector<LocomotionClip> combatClips() {
                          .knockdown = knockdown});
     };
     // The attacks, each with phase events as an attack's clip has them (docs/research/tasks.md#held-flags): the first
-    // and second of a chain open a window (0x2c) at frame 5, every one ends (0x2d) at 12 and recovers (0x48) at 13.
+    // and second of a chain open a window (0x2c) at frame 5, every one ends (0x2d) at 12 and recovers (0x48) at 13. The
+    // snaps carry a contact event (0x41) at frame 3, which ends their steer's time (combat-moves.md#two-steers).
     for (const std::uint32_t id : {11U, 12U, 13U, 14U, 15U, 16U, 17U, 19U, 25U, 27U, 29U, 661U, 662U}) {
         still(id, 0.6F);
         if (id == 11U || id == 12U || id == 16U) {
             clips.back().markers.push_back({5, 0x2c});
+        }
+        if (id == 25U || id == 27U || id == 29U) {
+            clips.back().markers.push_back({3, 0x41});
         }
         clips.back().markers.push_back({12, 0x2d});
         clips.back().markers.push_back({13, 0x48});
     }
     for (const std::uint32_t id : {69U, 71U, 72U, 73U, 75U}) {
         still(id, 0.3F);
+    }
+    // The special, from the front and the rear (653 / 655, in rage 645 / 647).
+    for (const std::uint32_t id : {645U, 647U, 653U, 655U}) {
+        still(id, 0.6F);
     }
     // The strong grapple's connecting strikes and their reactions (front 657 / 658, rear 659 / 660).
     for (const std::uint32_t id : {657U, 658U, 659U, 660U}) {
@@ -192,11 +201,15 @@ inline std::vector<LocomotionClip> combatClips() {
     }
     for (const std::uint32_t id :
          {78U,  79U,  80U,  81U,  94U,  95U,  2U,   4U,   5U,   6U,   195U, 199U, 212U, 357U, 389U, 118U, 119U,
-          219U, 220U, 221U, 222U, 223U, 224U, 225U, 226U, 244U, 245U, 248U, 249U, 106U, 107U, 138U, 145U}) {
+          219U, 220U, 221U, 222U, 223U, 224U, 225U, 226U, 244U, 245U, 248U, 249U, 106U, 107U, 138U, 145U, 193U}) {
         still(id, 0.4F);
     }
     still(147, 0.6F);
     still(148, 0.6F);
+    // The wall throws and their reactions (155-162).
+    for (std::uint32_t id = 155; id <= 162; ++id) {
+        still(id, 0.6F);
+    }
     for (std::uint32_t id = 268; id <= 303; ++id) {
         still(id, 0.4F, false, id >= 288);
     }
@@ -237,6 +250,7 @@ inline Bytes locomotionResource(const std::vector<LocomotionClip>& clips) {
         fields.name = "synthetic";
         fields.displacementY = clip.speed * clip.duration;
         fields.duration = clip.duration;
+        fields.flags = clip.flags;
         // Markers: an event each, with no vector.
         for (const std::array<std::uint16_t, 2>& marker : clip.markers) {
             Bytes event;

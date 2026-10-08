@@ -145,9 +145,8 @@ class PlayerCombat {
     // The grabbing route.
     void updateGrabbing(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
     // Cross + square outside a hold: the special 653 (645 in rage), which needs and spends a quarter of the power meter
-    // (docs/research/combat.md#attacks). Refused on kSpecialRefusingPhases. **Coney choices**: the variant and side
-    // offsets (+ 4 × variant, + 0 / 2 by side, `0x00263c90`) are not built, so it is always 653; circle + triangle
-    // (the tag) is not built.
+    // (docs/research/combat.md#attacks). Refused on kSpecialRefusingPhases. The fighter adds 2 from the target's rear
+    // (Fighter::playAttack()). **Coney choice**: circle + triangle (the tag) is not built.
     // @orig 0x00287730 Player_Special (unknown)
     void special(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
     // Circle + cross outside a hold: the strong grapple, a grab whose connect is the strike 657 (649 in rage), with no

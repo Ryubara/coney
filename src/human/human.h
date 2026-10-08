@@ -206,6 +206,11 @@ class Human final : public Holdable {
     /// or with `targets` the spine and the head, which a strike is tested against (flag `0x4`). Empty without a
     /// skeleton.
     [[nodiscard]] std::vector<PosedShape> posedStrikeShapes(bool targets) const;
+    /// The capsule a capsule strike (clip flag `0x10000`) is tested against: upright from the feet to the head bone's
+    /// height + 0.2, never under 0.2, of radius 0.35, all times the scale (docs/research/combat.md#capsule-strike).
+    /// **Coney choice**: the standing height in every state.
+    /// @orig 0x00343518 PhysicsCapsule_Pose (unknown)
+    [[nodiscard]] PosedShape struckCapsule() const;
     /// The body point (`+0x4e0`): the hips' (pose bone 2) position in the body's own frame, z up and facing +y, not
     /// turned by the heading, times the scale; none without a skeleton (docs/research/camera.md#body-point).
     /// @orig 0x0023bde8 Human_GetBoneTransform (unknown)
@@ -214,7 +219,8 @@ class Human final : public Holdable {
     /// Humans::setStrikeContact() gives it.
     using StrikeContact = std::function<void(Human& human, std::span<const PosedShape> shapes)>;
     /// The strike test, after every human's move (human::Humans): while any strike shape is on, its posed shapes
-    /// meet each of `victims` (the humans it fights) whose spine or head they overlap, each once while the shapes stay
+    /// meet each of `victims` (the humans it fights) whose spine or head they overlap (its capsule for a clip with flag
+    /// `0x10000`, struckCapsule()), each once while the shapes stay
     /// on, swept from where each shape was posed the update before (sweptShapesMeet()), and the free attack playing
     /// (Fighter::strikesWithShapes()) hits it there (Fighter::strikeContact()); then
     /// `contact`
@@ -241,6 +247,9 @@ class Human final : public Holdable {
     [[nodiscard]] bool outOfWorld() const { return m_outOfWorld; }
     /// With a skeleton and in the world, its spine and head shapes are posed each update for the strike test.
     [[nodiscard]] bool struckByShapes() const override { return m_skeleton != nullptr && !m_outOfWorld; }
+    /// The head (bone 6) as posed now, in the world; the position without a skeleton.
+    /// @orig 0x0023cd30 Human_UpdateLedSlots (unknown)
+    [[nodiscard]] anim::Vec3 ledPoint() const override;
     /// The ground normal from the last snap.
     [[nodiscard]] anim::Vec3 groundNormal() const { return m_groundNormal; }
     /// The flags of the collision triangle the last ground snap stood on (`flags & 0xfff`); 0 when it found none.
@@ -401,6 +410,10 @@ class Human final : public Holdable {
     void keepHold() override { m_fighter.keepHold(); }
     [[nodiscard]] std::optional<TargetState> takeBrokenHold() override { return m_fighter.takeBrokenHold(); }
     [[nodiscard]] std::optional<CounterPress> takeCounterPress() override { return m_fighter.takeCounterPress(); }
+    void heldInGrab(const combat::GrabberState& grabber, bool fromRear) override {
+        m_fighter.heldInGrab(grabber, fromRear);
+    }
+    [[nodiscard]] GrabbedReport takeGrabbedReport() override { return m_fighter.takeHeldReport(); }
     /// Moves it there and stops it (its velocity goes).
     void place(anim::Vec3 position, float headingRadians) override;
     /// An AI's jump (`Human_BeginJump` with argument 1, then `Human_LaunchJump`, docs/research/ai.md#route-jump): from
@@ -646,7 +659,7 @@ class Human final : public Holdable {
     // @orig 0x00241b90 Human_FightStanceMove (unknown)
     void combatWalk(const Combatant& target, bool gated);
     // Combat's update from the record: the stick turned into the facing frame, the game time, the targets.
-    void fight(std::span<Combatant* const> targets);
+    void fight(std::span<Combatant* const> targets, const raycast::CollisionMesh* mesh);
     // The attacker's side of a warning: an event 0x24 or 0x26 of the clip playing that this step's animation passed
     // (since `beforeTime` of `before`, which played `beforeId`, when it is still the clip) tells the fighter's target,
     // when it stands within twice the anim's reach.

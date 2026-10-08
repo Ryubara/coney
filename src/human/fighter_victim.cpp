@@ -346,6 +346,42 @@ void Fighter::updateGrabbed(const FighterInput& input, HumanAnimator& animator) 
     }
 }
 
+void Fighter::struggleInHold(const FighterInput& input, const HumanAnimator& animator) {
+    const std::optional<HeldGrabber> held = std::exchange(m_heldGrabber, std::nullopt);
+    if (!held.has_value()) {
+        return;
+    }
+    combat::GrabbedInput in;
+    in.command = input.command;
+    in.fromRear = held->fromRear;
+    in.hurt = hurt();
+    in.ownPowerFraction = m_combat.power().fraction();
+    in.ownStruggleDivisor = m_victim.powerClass().struggleDivisor;
+    in.movePlaying = animator.drivingClipPlaying();
+    in.grabber = held->grabber;
+    combat::GrabbedOutcome outcome = combat::updateGrabbed(in, m_grabbedRandom);
+    if (outcome.action == combat::GrabbedAction::Reversal) {
+        outcome = combat::GrabbedOutcome{};
+    }
+    // The cost adds up until the grabber takes the report; a move is kept until then (one at a time plays).
+    m_heldReport.grabberPowerCost += outcome.grabberPowerCost;
+    if (outcome.action == combat::GrabbedAction::None || m_heldReport.action != combat::GrabbedAction::None) {
+        return;
+    }
+    m_heldReport.action = outcome.action;
+    m_heldReport.victimClip = outcome.animId;
+    m_heldReport.grabberClip = outcome.animId + 1;
+    m_heldReport.ended = outcome.action == combat::GrabbedAction::Escape;
+    if (outcome.action != combat::GrabbedAction::Escape) {
+        m_heldReport.grabberDamage =
+            m_ranges != nullptr ? m_ranges->damage(static_cast<std::size_t>(outcome.animId)) : 0;
+    }
+    if (outcome.action == combat::GrabbedAction::StrikeBack) {
+        earnRage(outcome.animId, input.nowMs);
+        m_repeat.note(outcome.animId, input.nowMs);
+    }
+}
+
 void Fighter::escapeGrab(int clip, HumanAnimator& animator) {
     // The escape knocks the grabber down and stuns it; the escapee takes the clip's own damage, as at runtime.
     animator.playCombat(clips::one(clips::clipOf(clip)), kAnimFightIdle, AnimState::Attack, clips::kPairFade);

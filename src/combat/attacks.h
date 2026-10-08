@@ -26,9 +26,12 @@ inline constexpr std::uint32_t kPhaseEnd = anim::kFlagAttackEnd;
 inline constexpr std::uint32_t kPhaseGrabStart = 0x10; ///< Held by a grab's or tackle's clips, and object attacks.
 inline constexpr std::uint32_t kPhaseTackling = 0x200;
 inline constexpr std::uint32_t kPhaseRecovery = anim::kFlagRecovery;
-inline constexpr std::uint32_t kPhaseDuck = 0x1000;                ///< Ducking under an attack (616).
-inline constexpr std::uint32_t kPhaseCounter = 0x2000;             ///< The duck's counter (617-620).
-inline constexpr std::uint32_t kPhaseRunAttack = 0x1000000;        ///< The run attack (24), for its whole length.
+inline constexpr std::uint32_t kPhaseDuck = 0x1000;         ///< Ducking under an attack (616).
+inline constexpr std::uint32_t kPhaseCounter = 0x2000;      ///< The duck's counter (617-620).
+inline constexpr std::uint32_t kPhaseRunAttack = 0x1000000; ///< The run attack (24), for its whole length.
+/// The dive (1), for its whole length: it makes the human busy, so the stick does nothing until it ends
+/// (docs/research/combat.md#charge-aim).
+inline constexpr std::uint32_t kPhaseDive = 0x400000;
 inline constexpr std::uint32_t kPhaseNormalFromFight = 0x40000000; ///< 389, which nothing refuses.
 /// The bits an attack's clip holds while the attack is under way: its phases and recovery, the counter's and the
 /// moving attacks'. The chain ends once none is left (the clip has given them back).

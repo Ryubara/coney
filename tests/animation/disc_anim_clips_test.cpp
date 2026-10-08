@@ -47,6 +47,8 @@ struct ClipTotals {
     std::uint64_t withoutA = 0;   // distinct clips without a root velocity channel
     std::uint64_t withoutB = 0;   // ... without a root translation channel
     std::uint64_t events = 0;     // over the distinct clips
+    std::uint64_t capsule = 0;    // distinct clips with the capsule strike flag 0x10000
+    std::uint64_t oddCapsule = 0; // ... not a sweep (gen_rage_sweep, gen_sweep) with flags 0x10004
 };
 
 // Reads `size` bytes at the stream's position.
@@ -82,6 +84,12 @@ void countClip(const std::vector<std::byte>& keyframes, const std::vector<std::b
     totals.withoutA += clip->rootVelocity.empty() ? 1 : 0;
     totals.withoutB += clip->rootTranslation.empty() ? 1 : 0;
     totals.events += clip->events.size();
+    // Only the two sweeps strike the target's capsule (docs/research/combat.md#capsule-strike).
+    if ((clip->flags & coney::anim::kClipCapsuleStrike) != 0) {
+        ++totals.capsule;
+        const bool sweep = clip->name == "gen_rage_sweep" || clip->name == "gen_sweep";
+        totals.oddCapsule += sweep && clip->flags == 0x10004U ? 0 : 1;
+    }
     const std::array<coney::anim::Quat, coney::anim::kPoseBones> bind{};
     for (const float t : {0.0F, clip->duration * 0.5F, clip->duration}) {
         const coney::anim::Pose pose = coney::anim::samplePose(*clip, t, bind);
@@ -189,11 +197,15 @@ TEST_CASE("every animation clip on the disc decodes and samples", "[disc][anim]"
                 totals.distinct.size(), static_cast<unsigned long long>(totals.failures),
                 static_cast<unsigned long long>(totals.unpaired), static_cast<unsigned long long>(totals.badSamples));
     std::printf("  distinct clips: at most %zu keys in a channel, last key frame %u to %u, %llu animate bone 33, "
-                "%llu without section A, %llu without section B, %llu events\n",
+                "%llu without section A, %llu without section B, %llu events, %llu capsule strikes (%llu not a "
+                "sweep)\n",
                 totals.mostKeys, totals.shortest, totals.longest, static_cast<unsigned long long>(totals.withBone33),
                 static_cast<unsigned long long>(totals.withoutA), static_cast<unsigned long long>(totals.withoutB),
-                static_cast<unsigned long long>(totals.events));
+                static_cast<unsigned long long>(totals.events), static_cast<unsigned long long>(totals.capsule),
+                static_cast<unsigned long long>(totals.oddCapsule));
     CHECK(totals.occurrences > 0);
+    CHECK(totals.capsule > 0);
+    CHECK(totals.oddCapsule == 0);
     CHECK(totals.failures == 0);
     CHECK(totals.unpaired == 0);
     CHECK(totals.badSamples == 0);

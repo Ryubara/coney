@@ -115,7 +115,7 @@ struct Watched {
     int attacks = 0;         // attack actions started (its next-attack time moved on)
     bool engaged = false;    // seen running in with an EngageEnemy goal on top
     float engageEnd = -1.0F; // the distance when its first EngageEnemy left the top of its stack; -1 before
-    float fastest = 0.0F;    // its highest speed, m/s
+    float fastest = 0.0F;    // its highest speed during its run-in (EngageEnemy), m/s
     std::uint64_t lastNextAttack = 0;
 };
 
@@ -262,9 +262,12 @@ TEST_CASE("the disc's level99: the sparring Warriors of the last lesson close on
             const coney::anim::Vec3 at = watched.brain->human().position();
             const float distance = std::hypot(at.x - now.x, at.y - now.y);
             watched.nearest = std::min(watched.nearest, distance);
-            watched.fastest = std::max(watched.fastest, watched.brain->human().speed());
             const coney::ai::Goal* top = watched.brain->topGoal();
             const bool engagedNow = top != nullptr && top->type() == coney::ai::GoalType::EngageEnemy;
+            // The run-in's speed tells a charge from a stop short; an attack's steer afterwards may slide faster.
+            if (engagedNow) {
+                watched.fastest = std::max(watched.fastest, watched.brain->human().speed());
+            }
             // Where its run-in ended: the charge ends it on the player, a stop short of him.
             if (watched.engaged && !engagedNow && watched.engageEnd < 0.0F) {
                 watched.engageEnd = distance;

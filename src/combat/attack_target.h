@@ -46,7 +46,7 @@ struct AttackTarget {
 /// target (re-picking within 2.0 m without one or beyond 3 m); square's moving attacks and every cross attack pick
 /// afresh at 2.0 m; armed swings pick at 2.5 m; a cross chain step (SX2, XX2, SSX3) re-searches with
 /// FindAttackTarget at its own far range unless locked, a square step keeps the target; the snaps search their own way;
-/// the special 653 / 645 searches at the far range of id 0 (the charge).
+/// the special (653 / 655, 645 / 647 in rage) searches at the far range of id 0 (the charge).
 /// @orig 0x00286cc8 Player_Square (unknown)
 /// @orig 0x00287a18 Player_Cross (unknown)
 [[nodiscard]] AttackTarget attackTarget(int animId, bool cross, bool armed, bool chainStep, bool locked);

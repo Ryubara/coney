@@ -75,6 +75,31 @@ std::optional<coney::io::Wad> openDisc() {
     return wad ? std::optional<coney::io::Wad>(std::move(*wad)) : std::nullopt;
 }
 
+// The scripted pad, which can be paused: while paused it gives pads at rest, and on resuming its script carries on
+// from the frame it paused at, so its lines keep their spacing however long the pause was.
+class PausablePad final : public coney::InputSource {
+  public:
+    explicit PausablePad(coney::ScriptedInput& inner) : m_inner(inner) {}
+
+    // Pauses the script from the next frame asked for until resume().
+    void pause() { m_paused = true; }
+    // Resumes the script where it paused.
+    void resume() { m_paused = false; }
+
+    coney::PortSamples sample(std::uint64_t frame) override {
+        if (m_paused) {
+            ++m_skipped;
+            return {};
+        }
+        return m_inner.sample(frame - m_skipped);
+    }
+
+  private:
+    coney::ScriptedInput& m_inner;
+    bool m_paused = false;
+    std::uint64_t m_skipped = 0; // the frames paused so far
+};
+
 // What one level's run found.
 struct MissionRun {
     std::uint64_t scriptErrors = 0;
@@ -186,7 +211,8 @@ MissionRun playMission(const coney::io::Wad& wad, std::string_view level, int ch
     // when the run goes on past a blocked walk).
     auto input = coney::parseInputScript(script);
     REQUIRE(input.has_value());
-    coney::ScriptedInput pad(std::move(*input));
+    coney::ScriptedInput scriptPad(std::move(*input));
+    PausablePad pad(scriptPad);
     coney::GameModeStack stack;
     stack.setInput(&pad);
     stack.push(gameplay);
@@ -202,7 +228,15 @@ MissionRun playMission(const coney::io::Wad& wad, std::string_view level, int ch
         return run;
     }
     // The walk checks the pad alone: the other gangs' brains are suspended (BrSuspend) so that none grabs or downs
-    // the player in those 2 s (the AI grabs and tackles, docs/research/ai.md#coney).
+    // the player in those 2 s (the AI grabs and tackles, docs/research/ai.md#coney). A grab or mount already on the
+    // player is first let finish, the pad at rest, for up to 30 s: a suspended mounter never gets off.
+    const coney::human::Human& player = play->player().human();
+    const auto free = [&player] { return player.state() == coney::human::TargetState::Standing && !player.attached(); };
+    pad.pause();
+    for (int wait = 0; wait < 900 && !free(); wait += 10) {
+        stack.runUntilEmpty(timer, {}, 10);
+    }
+    pad.resume();
     suspendOtherGangs(scripts);
     // Each 2 s push in turn (the default walk's four, else one) until one walks more than 1 m; the longest counts.
     const int pushes = script == kDefaultWalk ? 4 : 1;
@@ -211,8 +245,7 @@ MissionRun playMission(const coney::io::Wad& wad, std::string_view level, int ch
         stack.runUntilEmpty(timer, {}, 60);
         run.travelled = std::max(run.travelled, play->stats().travelled - before);
     }
-    const coney::human::Human& human = play->player().human();
-    run.standing = !human.airborne() && !human.fighter().health().depleted();
+    run.standing = !player.airborne() && !player.fighter().health().depleted();
     run.scriptErrors = scripts.scripts().errors();
     run.humans = scripts.humans().all().size();
     for (const std::string& line : log) {

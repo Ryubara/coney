@@ -575,3 +575,19 @@ TEST_CASE("a hit reports its sound at the attacker, a charge's body pair first, 
     fight.human().reportSound(wall);
     CHECK(fight.human().takeSounds().empty());
 }
+
+TEST_CASE("L2 drops the target on the update it is read, mid-attack and with L1 held", "[human][combat]") {
+    // X1 at a target 0.95 m ahead, L1 held throughout; L2 pressed in its wind-up drops the target there and then, and
+    // nothing picks it again while L2 is held (docs/research/combat.md#fight-stance). Without L2 the lock holds.
+    for (const bool l2 : {true, false}) {
+        INFO((l2 ? "L2 at 12" : "no L2"));
+        const FightCharacter character;
+        Fight fight(character, 0.95F);
+        fight.run("0 press l1\n3 tap cross\n", 12);
+        REQUIRE(fight.human().fighter().target() != nullptr);
+        fight.run(l2 ? "0 press l1\n0 press l2\n" : "0 press l1\n", 1);
+        CHECK((fight.human().fighter().target() == nullptr) == l2);
+        fight.run(l2 ? "0 press l1\n0 press l2\n" : "0 press l1\n", 10);
+        CHECK((fight.human().fighter().target() == nullptr) == l2);
+    }
+}

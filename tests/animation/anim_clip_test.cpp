@@ -41,7 +41,8 @@ TestClip makeClip(std::uint16_t channels = 2) {
                                                 .duration = 1.0F,
                                                 .mask = mask,
                                                 .channels = channels,
-                                                .events = 1},
+                                                .events = 1,
+                                                .flags = 0x10004},
                                      a.size(), b.size(), c.size());
     clip.keyframes.append(a.span()).append(b.span()).append(c.span()).append(clipEvent(12, 11).span());
     clip.keyframes.padTo((clip.keyframes.size() + 15) / 16 * 16); // the chunk's padding
@@ -66,6 +67,9 @@ TEST_CASE("a clip's descriptor and sections decode into channels with absolute f
     CHECK(clip->name == "warr_test_walk");
     CHECK(clip->duration == 1.0F);
     CHECK(clip->displacement.y == 0.5F);
+    // The flags at +0x44: the sweeps' 0x10004, a capsule strike.
+    CHECK(clip->flags == 0x10004U);
+    CHECK((clip->flags & coney::anim::kClipCapsuleStrike) != 0);
     REQUIRE(clip->rootVelocity.size() == 2);
     CHECK(clip->rootVelocity[1].frame == 10);
     CHECK(clip->rootVelocity[1].value.y == Approx(2.0F)); // y / 1023

@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdint>
 #include <memory>
+#include <numbers>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -332,4 +333,81 @@ TEST_CASE("with a bat, square or cross at a walk or standing swings where he is"
             }
         }
     }
+}
+
+namespace {
+
+// A sprint with L2 held and `button` tapped at kPress; the fight yard's target is put `distance` m from the player
+// at `bearing` degrees right of his facing on the update before the press is read. Returns the player's heading
+// (degrees) on each update from the attack's start, and whether the attack took the target.
+struct MovingAim {
+    std::vector<float> headings;
+    bool targeted = false;
+};
+
+MovingAim moveAt(std::string_view button, float distance, float bearing, std::string_view extra = {}) {
+    const coney::test::FightCharacter character(movingClips());
+    coney::test::Fight fight(character, 60.0F);
+    const int start = startOf(button);
+    MovingAim aim;
+    std::string text = script(0, 100, button, true);
+    text += extra;
+    fight.run(text, 90, [&](std::uint64_t frame) {
+        Human& player = fight.human();
+        if (static_cast<int>(frame) == start - 1) {
+            const float h = player.heading();
+            const float b = bearing * std::numbers::pi_v<float> / 180.0F;
+            const coney::anim::Vec3 at = player.position();
+            // Forward is (-sin h, cos h) and right (cos h, sin h): headings grow to the left.
+            const float dx = (-std::sin(h) * std::cos(b)) + (std::cos(h) * std::sin(b));
+            const float dy = (std::cos(h) * std::cos(b)) + (std::sin(h) * std::sin(b));
+            fight.target().place(coney::anim::Vec3{at.x + (dx * distance), at.y + (dy * distance), at.z}, 0.0F);
+        }
+        if (static_cast<int>(frame) >= start) {
+            aim.headings.push_back(player.heading() * 180.0F / std::numbers::pi_v<float>);
+            aim.targeted = aim.targeted || player.fighter().target() == &fight.target();
+        }
+    });
+    return aim;
+}
+
+// How far the heading turned from the attack's start to `updates` later, degrees, wrapped.
+float turned(const MovingAim& aim, std::size_t updates) {
+    return std::remainder(aim.headings.at(updates) - aim.headings.front(), 360.0F);
+}
+
+} // namespace
+
+TEST_CASE("the dive takes the nearest human between its reach and far range within 54 degrees and steers onto him in "
+          "3 updates",
+          "[human][combat][moving]") {
+    // A human 2.6 m away, 31 degrees right: the dive takes him and turns about 31 degrees right (headings grow to the
+    // left) over its first updates, then holds (docs/research/combat.md#charge-aim).
+    const MovingAim onto = moveAt("square", 2.6F, 31.0F);
+    // (He is its target only for that update: L2, still held, drops the target as the sprint does every update.)
+    CHECK(turned(onto, 4) < -20.0F);
+    CHECK(turned(onto, 8) == turned(onto, 4));
+    // Inside the reach (1.6 m), outside the cone (71 degrees) or beyond the far range (3.4 m): no target, no turn.
+    for (const auto [distance, bearing] : {std::pair{1.6F, 32.0F}, std::pair{2.64F, 71.0F}, std::pair{3.4F, 30.0F}}) {
+        INFO(distance << " m at " << bearing << " degrees");
+        const MovingAim none = moveAt("square", distance, bearing);
+        CHECK_FALSE(none.targeted);
+        CHECK(std::fabs(turned(none, 8)) < 0.5F);
+    }
+    // The stick does nothing during the dive: the record's 0x400000 makes the human busy.
+    const MovingAim held = moveAt("square", 40.0F, 0.0F, "64 stick left 70 70\n");
+    CHECK(std::fabs(turned(held, 15)) < 0.5F);
+}
+
+TEST_CASE("the charge takes no target and never steers, but the stick turns it", "[human][combat][moving]") {
+    // A human 3.7 m away 30 degrees right, or 2.0 m at 31: the charge runs straight past him.
+    for (const auto [distance, bearing] : {std::pair{3.7F, 30.0F}, std::pair{2.0F, 31.0F}}) {
+        INFO(distance << " m at " << bearing << " degrees");
+        const MovingAim past = moveAt("cross", distance, bearing);
+        CHECK_FALSE(past.targeted);
+        CHECK(std::fabs(turned(past, 8)) < 0.5F);
+    }
+    // The stick pushed about 45 degrees right from the charge's 4th update turns the charger toward it.
+    const MovingAim steered = moveAt("cross", 40.0F, 0.0F, "65 stick left 70 70\n");
+    CHECK(turned(steered, 15) < -5.0F);
 }

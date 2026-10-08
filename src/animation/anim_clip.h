@@ -62,6 +62,10 @@ struct ClipEvent {
     Quat rotation;          ///< +0xe: x, y, z, with w rebuilt as a rotation key's.
 };
 
+/// Clip flag `0x10000` (`Anim_HitsWithCapsule`, docs/research/animation.md#clip-flags): its strike shapes are tested
+/// against a human target's capsule, not its spine and head (gen_rage_sweep, gen_sweep).
+inline constexpr std::uint32_t kClipCapsuleStrike = 0x10000;
+
 /// A clip, decoded.
 struct AnimClip {
     std::string name;                         ///< The descriptor's name, cut to 30 characters by the tools.
@@ -73,6 +77,8 @@ struct AnimClip {
     std::vector<std::vector<RotationKey>> rotations; ///< Section C: one channel per bit of the mask, in bone order.
     std::vector<std::uint8_t> rotationBones;         ///< The bone of each channel of `rotations`.
     std::vector<ClipEvent> events;
+    /// The descriptor's flags (`+0x44`, docs/research/animation.md#clip-flags): kClipCapsuleStrike and others.
+    std::uint32_t flags = 0;
 
     /// The channel of `bone`'s rotation, or nullptr when the clip does not animate it.
     [[nodiscard]] const std::vector<RotationKey>* rotationChannel(std::size_t bone) const;

@@ -27,6 +27,10 @@ struct AnimRange {
     std::uint16_t flags = 0; ///< `+0x0e`: the playback-rate flags and the stun flag `0x400`.
 };
 
+/// The hit code's flag that gives an attack the led steer, aimed at the target's head over the time to its first
+/// event + 0.1 s (`AttackTable_GetFlags` `0x00254d60`, docs/research/combat-moves.md#two-steers).
+inline constexpr std::int16_t kLedSteerFlag = 0x8;
+
 /// The Anim Range List of one character.
 class AnimRangeList {
   public:

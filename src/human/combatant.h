@@ -73,6 +73,10 @@ class Combatant {
     /// human/strike_shapes.h): its hits then land only where a shape touches it. False by default: a target without
     /// shapes takes an attack's hit at its hit update (combat::attackHitUpdate(), a **Coney stand-in**).
     [[nodiscard]] virtual bool struckByShapes() const { return false; }
+    /// Where an attack's led steer aims (slot point 0, `Human_GetLedSlotPoint(target, 0)` `0x00226aa0`): a human's head
+    /// (bone 6) in the world, a few centimetres off its position at rest and up to 0.28 m in a reel
+    /// (docs/research/combat.md#led-steer). The position by default.
+    [[nodiscard]] virtual anim::Vec3 ledPoint() const { return position(); }
 };
 
 } // namespace coney::human

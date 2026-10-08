@@ -23,7 +23,8 @@ AttackTarget attackTarget(int animId, bool cross, bool armed, bool chainStep, bo
         return AttackTarget{.search = TargetSearch::Snap};
     }
     // The special searches at the far range of the charge (id 0).
-    if (animId == anim_id::kSpecial || animId == anim_id::kSpecialRage) {
+    if (animId == anim_id::kSpecial || animId == anim_id::kSpecialRage || animId == anim_id::kSpecialRear ||
+        animId == anim_id::kSpecialRageRear) {
         return AttackTarget{.search = TargetSearch::FindAttack, .farId = anim_id::kRunningAttackCharge};
     }
     if (chainStep) {
@@ -35,8 +36,8 @@ AttackTarget attackTarget(int animId, bool cross, bool armed, bool chainStep, bo
     if (armed) {
         return AttackTarget{.range = kArmedPickRange};
     }
-    // Cross always picks afresh; square's moving attacks too. **Coney's reading**: the charge and the dive (L2's
-    // commands, whose search the page does not give) pick as the moving attacks do.
+    // Cross always picks afresh; square's moving attacks too. (The charge takes no target and the dive searches its
+    // own band; Fighter::steer() runs those, docs/research/combat.md#charge-aim.)
     if (cross || movingAttack(animId)) {
         return AttackTarget{};
     }

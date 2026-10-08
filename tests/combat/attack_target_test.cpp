@@ -44,7 +44,7 @@ TEST_CASE("a cross chain step re-searches at its far range unless locked; a squa
 }
 
 TEST_CASE("the special searches at the charge's far range", "[combat][targets]") {
-    for (const int special : {id::kSpecial, id::kSpecialRage}) {
+    for (const int special : {id::kSpecial, id::kSpecialRage, id::kSpecialRear, id::kSpecialRageRear}) {
         const auto how = attackTarget(special, false, false, false, false);
         CHECK(how.search == TargetSearch::FindAttack);
         CHECK(how.farId == id::kRunningAttackCharge);

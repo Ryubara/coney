@@ -33,12 +33,12 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.3% of the game's own code (580,824 of 3,354,776 bytes, 2,137 functions) |
+| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.3% of the game's own code (580,824 of 3,354,776 bytes, 2,146 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,192 of 3,284,000 bytes; 11,423 of 11,425 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-869 reimplemented function(s) have no size yet and add no bytes.
+878 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -73,10 +73,10 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▋░░░░░░░░░░░░░` | 33.1% | 117 | 100,440 |
 | `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 12.0% | 90 | 195,624 |
 | `GUI` | `████▏░░░░░░░░░░░░░░░` | 20.7% | 246 | 497,416 |
-| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.5% | 790 | 1,096,672 |
+| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.5% | 797 | 1,096,672 |
 | `Maths (unnamed)` | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% | 9 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
-| `Physics` | `▌░░░░░░░░░░░░░░░░░░░` | 2.5% | 8 | 79,032 |
+| `Physics` | `▌░░░░░░░░░░░░░░░░░░░` | 2.5% | 10 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 12 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 30 | 17,904 |
 | `Scripting` | `██████▏░░░░░░░░░░░░░` | 30.6% | 224 | 197,192 |
@@ -1052,6 +1052,7 @@ at the top of the repository's `README.md`.
 | `0x0023b778` | `Human_SetSlowMo` | `Human` | 192 |
 | `0x0023bde8` | `Human_GetBoneTransform` | `Human` | not filled in |
 | `0x0023bf00` | `Human_PickUpObject` | `Human` | not filled in |
+| `0x0023cd30` | `Human_UpdateLedSlots` | `Human` | not filled in |
 | `0x0023cf88` | `Human_TurnToOver` | `Human` | not filled in |
 | `0x0023d2b8` | `Human_MoveToOver` | `Human` | not filled in |
 | `0x0023d8c8` | `Human_Move` | `Human` | not filled in |
@@ -1143,6 +1144,8 @@ at the top of the repository's `README.md`.
 | `0x00262ac8` | `Attack_StartPaired` | `Human` | 2,232 |
 | `0x00263c90` | `Player_SpecialAttack` | `Human` | not filled in |
 | `0x00264178` | `Player_ObjectAttack` | `Human` | 744 |
+| `0x00264878` | `Player_StartDive` | `Human` | not filled in |
+| `0x00264a80` | `Player_StartCharge` | `Human` | not filled in |
 | `0x00264bd8` | `Human_AddPendingDamage` | `Human` | 288 |
 | `0x00264cf8` | `Human_AddRage` | `Human` | 680 |
 | `0x002653d8` | `Stats_AttackRage` | `Human` | 2,128 |
@@ -1157,21 +1160,25 @@ at the top of the repository's `README.md`.
 | `0x0026c1d8` | `Grab_IntroEnd` | `Human` | 880 |
 | `0x0026cc18` | `Grab_Escape` | `Human` | 1,120 |
 | `0x0026dd08` | `Player_Throw` | `Human` | 2,288 |
+| `0x0026ef68` | `Grab_MountClipEnd` | `Human` | not filled in |
 | `0x00273a68` | `Tag_SayNearbyLine` | `Human` | not filled in |
 | `0x00273ff0` | `TagGame_CatmullRom` | `Human` | not filled in |
 | `0x002741d8` | `TagGame_Init` | `Human` | not filled in |
 | `0x00274710` | `TagGame_Track` | `Human` | not filled in |
 | `0x002748a8` | `TagGame_Update` | `Human` | not filled in |
+| `0x00275678` | `Attack_SteerLed` | `Human` | not filled in |
 | `0x00276008` | `Attack_TurnToTarget` | `Human` | not filled in |
 | `0x002761c8` | `Attack_SteerToTarget` | `Human` | not filled in |
 | `0x00276998` | `Pair_AlignStart` | `Human` | 1,024 |
 | `0x00276d98` | `Pair_SnapAttach` | `Human` | 600 |
+| `0x00277248` | `Human_AlignToVictimFacing` | `Human` | not filled in |
 | `0x00277958` | `Pair_CheckPlace` | `Human` | 456 |
 | `0x00278018` | `Tag_StartSprayClips` | `Human` | not filled in |
 | `0x00279078` | `Human_FindRevivableNear` | `Human` | not filled in |
 | `0x00279f50` | `Player_CarTargetFilter` | `Human` | not filled in |
 | `0x0027a4b0` | `Player_FindAttackTarget` | `Human` | not filled in |
 | `0x0027a6c0` | `Player_PickTarget` | `Human` | not filled in |
+| `0x0027b058` | `Attack_FindNearestInReach` | `Human` | not filled in |
 | `0x0027bc48` | `Mash_IsQuitCommand` | `Human` | not filled in |
 | `0x0027bcd8` | `Mash_IsAlternation` | `Human` | not filled in |
 | `0x0027c120` | `Player_UpdateActions` | `Human` | 3,120 |
@@ -1652,8 +1659,10 @@ at the top of the repository's `README.md`.
 | `0x00340918` | `IPhysics_Step` | `Physics` | 544 |
 | `0x00340b38` | `Settle_NearestAxis` | `Physics` | 464 |
 | `0x00340d08` | `Settle_ComputeTarget` | `Physics` | 728 |
+| `0x00343518` | `PhysicsCapsule_Pose` | `Physics` | not filled in |
 | `0x003477c0` | `PhysicsBody_PushOutOfWalls` | `Physics` | not filled in |
 | `0x00347c08` | `PhysicsMesh_SweepCapsule` | `Physics` | not filled in |
+| `0x00349a60` | `Sweep_SphereCapsule` | `Physics` | not filled in |
 | `0x0034f740` | `Collision_MarchRay` | `RayCast` | not filled in |
 | `0x0034f950` | `Collision_DropToGround` | `RayCast` | not filled in |
 | `0x0034fa28` | `Collision_DropToMarkedGround` | `RayCast` | not filled in |

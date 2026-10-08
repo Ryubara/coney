@@ -769,6 +769,13 @@ target was 1.63-1.74 m away while the shapes were on.
 `gen_sweep` (653 / 655 of `moon_lt_header`) carry `0x10000`, both with `0x10004`. Every other strike clip is tested
 against the spine and head.
 
+**In Coney** (`Human::testStrikes`, `Human::struckCapsule`, [`human/human.cpp`](repo:src/human/human.cpp)): the clip
+decoder keeps the descriptor's flags, and a clip with `0x10000` tests its bone shapes against the target's capsule as
+above: a segment where it stands, a sphere along its path this update. **Coney choice**: the capsule always has the
+standing height (head + 0.2); the shorter heights of some states are not built. The unit test plays 645 at a bum
+(flagged never to be a target) 1.0 m away, which it hits, and 1.6 m away, which it misses. The disc check finds the
+two sweeps and no other clip with the flag.
+
 ### When input and the stick come back {#input-return}
 
 **At runtime** (confirmed (runtime)), PCSX2 2.9.94, a copy of slot 1 (the street, Rembrandt, nobody within 14 m),
@@ -3363,8 +3370,8 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   `EnableCommand` is kept pending; the human acts on neither, but the `PadSetHandlerEx` handler hears both
   ([PadSetHandlerEx](../references/bindings/input.md#padsethandlerex)). Only the pad-driven humans carry a pad command:
   Coney's brains write their commands straight to the record.
-- The special (cross + square outside a hold, [Specials](#attacks)) is always 653 (645 in rage): the variant and side
-  offsets of `0x00263c90` are not built, nor circle + triangle (the tag). Both specials are refused on `0xaeebf7ff`.
+- The special (cross + square outside a hold, [Specials](#attacks)) is 653 (645 in rage), 655 (647) when the player
+  stands on its target's rear; circle + triangle (the tag) is not built. Both specials are refused on `0xaeebf7ff`.
 - The strong grapple ([Strong grapple](#strong-grapple)) is the grab with 657 / 659 (649 / 651 in rage) as its
   connect and 658 / 660 on the victim, searched with anim 1's range within 54° of the stick, the clear line to the
   target (`0x0021c0a8`) not tested. Its damage is dealt on the snap to the hold, reported to the tutorial as 82 / 84;
@@ -3380,13 +3387,18 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   target search uses the attack's far range in `Player_PickTarget`'s first two passes (the third finds no human the
   second missed); beyond the far range the attacker turns at most 8° at once (read as degrees). Within it the steer
   follows [The steer in detail](#targets): from the update after the clip starts it turns at angle / `T` and slides at
-  (goal − position) / `T`, on top of the clip's root motion, the last update only for the time left. **Coney's
-  readings**: the turn and the slide last the time to the clip's first event + 0.1 s (X1 at runtime turned and slid
-  for 9.25 updates, 0.208 s + 0.1 s, [where the attacker stands](combat-moves.md#reach)), but the special's slide
-  (653, 645) the time to the event alone (653 stands at its reach by k3 at runtime); the lead is the target's velocity ×
-  (the time + 0.1 s), cut to 0.5 m as above; the
-  turn faces the led target, not the standing point, which lies behind the attacker when the target is inside the
-  reach (the runtime `XX2` at 0.83 m, inside its 1.12 m reach, turned under 1°). A reaction cuts the steer.
+  (goal − position) / `T`, on top of the clip's root motion, the last update only for the time left. The attack's hit
+  code picks the steer: with flag `0x8` (`AttackTable_GetFlags` `0x00254d60`) `Attack_SteerLed` (`0x00275678`) turns and
+  slides over the time to the clip's first event + 0.1 s (X1, S1, the chain's steps but `SSX3` and `SSS3`, and the
+  snaps); without it `Attack_SteerToTarget` takes the caller's time cut to that, the time to the event from
+  `Attack_Start` and the specials (653 and 645 stand at their reach by k3 at runtime), 0.1 s from the snap's start. The
+  lead is the target's velocity × (the time to the event + 0.1 s), cut to 0.5 m as above ([where the attacker
+  stands](combat-moves.md#reach)). The led steer aims at the target's head ([The led steer](#led-steer)), read once as
+  the attack starts, and the other at its position. On the disc Coney's posed heads match the runtime ones: in 388 the
+  head stands 0.001-0.039 m forward and within 0.006 m sideways, in 358 0.097-0.186 m forward and 0.038-0.065 m right,
+  0.02 m beyond the recorded leans. **Coney's reading**: the turn faces the led target, not the standing point, which
+  lies behind the attacker when the target is inside the reach (the runtime `XX2` at 0.83 m, inside its 1.12 m reach,
+  turned under 1°). A reaction cuts the steer.
 - **Posing a grab** follows [Posing a grab](#grab-posing): circle plays 71, then 72 (from the front) or 74 (from the
   rear, when the player stands on the victim's rear side), the player turning to face the victim over 71's playing
   time while the victim waits in its idle. When 72 / 74 starts, the alignment turns and slides the player over 0.1 ×
@@ -3503,10 +3515,6 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
 - **Input and the stick after a move** (answered at runtime, [When input and the stick come back](#input-return)).
   The locomotion gate (answered, [Tasks](tasks.md#locomotion-gate)). The block's 5 updates after release (answered):
   the idle's fade holding `0x10000000`, not the state code.
-- **The steer's time**: the code clamps `T` to the time to the first event + 0.1 s, which reads as the time to the
-  event, while X1 at runtime turned and slid for that time + 0.1 s and 653 slid for the time to the event alone.
-  Coney gives the special the shorter slide ([Target selection](#targets)); what sets it in the original is not
-  traced.
 - **`XX2` against a walking target**: in `combat_cross` the original's target walks up (0.83 → 0.91 m) and the bodies
   push apart on `XX2` (0.25 m/s against Coney's 0.81); Coney's sandbox target stands still and has no body contact.
 - **The grab at runtime**: the placement is confirmed ([Grab pose at runtime](#grab-pose-runtime)); still open are

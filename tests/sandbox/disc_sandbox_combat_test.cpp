@@ -29,9 +29,11 @@
 #include "animation/skeleton.h"
 #include "characters/character_data.h"
 #include "core/input_script.h"
+#include "core/pad.h"
 #include "core/pads.h"
 #include "fileio/disc.h"
 #include "fileio/wad.h"
+#include "human/human.h"
 #include "human/player.h"
 #include "human/target_human.h"
 #include "sandbox/sandbox_world.h"
@@ -194,7 +196,7 @@ TEST_CASE("on the disc, Rembrandt has the combat clips the fighter and the targe
     std::vector<std::uint32_t> ids{0, 1, 2, 4, 5, 6, 11, 12, 13, 14, 15, 16, 17, 19, 24, 25, 27, 29, 51, 52, 53, 54, 55,
                                    56, 57, 58, 63, 64, 69, 71, 72, 73, 78, 79, 80, 81, 82, 83, 84, 85, 94, 95, 147, 148,
                                    149, 150, 151, 152, 153, 154, 193, 195, 196, 199, 207, 210, 212, 338, 339, 340, 341,
-                                   342, 343, 344, 345, 356, 357, 358, 389, 606, 607, 643,
+                                   342, 343, 344, 345, 356, 357, 358, 389, 606, 607, 643, 645, 647, 653, 655,
                                    // The walk attack, and a bat's swings, strikes and run attack.
                                    23, 34, 36, 37, 38, 501};
     for (int id = 268; id <= 315; ++id) {
@@ -306,5 +308,124 @@ TEST_CASE("on the disc, the holds 82-85 pose the pelvis as the game does at runt
                     static_cast<double>(bones[1].t.z), static_cast<double>(hold.height));
         CHECK(degrees < 3.0F);
         CHECK(std::fabs(bones[1].t.z - hold.height) < 0.02F);
+    }
+}
+
+TEST_CASE("on the disc, the led steer's head point leans as the game's does at runtime", "[sandbox][combat][disc]") {
+    const char* path = discPath();
+    if (path == nullptr) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    const Yard yard = loadYard(path);
+    // The head (bone 6) in the model's frame over the idle 388 and the fight idle 358: at runtime x (right) -0.004 to
+    // 0.025 and y (forward) 0.019 to 0.041 m in 388, x 0.024 to 0.051 and y 0.075 to 0.165 m in 358
+    // (docs/research/combat.md#led-steer).
+    for (const std::uint32_t id : {388U, 358U, 275U, 389U}) {
+        const coney::anim::AnimClip* clip = yard.character->anims().clip(id);
+        REQUIRE(clip != nullptr);
+        float minX = 1e9F;
+        float maxX = -1e9F;
+        float minY = 1e9F;
+        float maxY = -1e9F;
+        for (int step = 0; step <= 20; ++step) {
+            const float time = clip->duration * static_cast<float>(step) / 20.0F;
+            const coney::anim::Pose pose = coney::anim::samplePose(*clip, time, coney::anim::referenceRotations());
+            const auto bones = coney::anim::boneTransforms(yard.character->skeleton(), pose);
+            minX = std::min(minX, bones[6].t.x);
+            maxX = std::max(maxX, bones[6].t.x);
+            minY = std::min(minY, bones[6].t.y);
+            maxY = std::max(maxY, bones[6].t.y);
+        }
+        std::printf("clip %u: head x %.3f to %.3f, y %.3f to %.3f m\n", id, static_cast<double>(minX),
+                    static_cast<double>(maxX), static_cast<double>(minY), static_cast<double>(maxY));
+        // Within 0.03 m of the recorded ranges, which sampled the clips less widely than this.
+        if (id != 388U && id != 358U) {
+            continue;
+        }
+        const bool fight = id == 358U;
+        CHECK(minX > (fight ? 0.024F : -0.004F) - 0.03F);
+        CHECK(maxX < (fight ? 0.051F : 0.025F) + 0.03F);
+        CHECK(minY > (fight ? 0.075F : 0.019F) - 0.03F);
+        CHECK(maxY < (fight ? 0.165F : 0.041F) + 0.03F);
+    }
+    // The player's own head point, turned 120 degrees from +y so that a heading of the wrong sign would put it behind
+    // him or on his left: it stays a few centimetres ahead of his feet in the idle 388, at head height.
+    const coney::sandbox::SandboxLayout& layout = yard.world->layout();
+    coney::human::Player player(
+        *yard.character, yard.world->collision(),
+        coney::human::PlayerStart{.position = layout.spawns.front().position, .headingDegrees = 120.0F});
+    coney::Pads pads;
+    for (int frame = 0; frame < 10; ++frame) {
+        pads.update(coney::PortSamples{});
+        player.update(pads.port(0), yard.world->collision());
+    }
+    const coney::human::Human& human = player.human();
+    const coney::anim::Vec3 off = coney::anim::subtract(human.ledPoint(), human.position());
+    const float h = human.heading();
+    const float forward = (-std::sin(h) * off.x) + (std::cos(h) * off.y);
+    const float right = (std::cos(h) * off.x) + (std::sin(h) * off.y);
+    std::printf("player clip %u heading %.3f: head %.3f forward, %.3f right, %.3f up\n", human.animator().animId(),
+                static_cast<double>(h), static_cast<double>(forward), static_cast<double>(right),
+                static_cast<double>(off.z));
+    CHECK(human.animator().animId() == 388U);
+    CHECK(forward > 0.0F);
+    CHECK(forward < 0.06F);
+    CHECK(std::fabs(right) < 0.03F);
+    CHECK(off.z > 1.5F);
+}
+
+TEST_CASE("on the disc, square at a human knocked down beside or behind the player plays 193 and lands it",
+          "[sandbox][combat][disc]") {
+    const char* path = discPath();
+    if (path == nullptr) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    const Yard yard = loadYard(path);
+    // A human with Rembrandt's clips is knocked down (the charge's hit code 0x36) and, lying in 196, put back beside
+    // the player, ahead or behind him; square pressed then picks him through Player_PickTarget's wide pass (any angle,
+    // 1.4 m), steers the grounded strike onto him and lands it (docs/research/combat-moves.md#targeting).
+    for (const auto [ahead, side] : {std::pair{0.9F, 0.0F}, std::pair{0.6F, 0.9F}, std::pair{-0.9F, 0.3F}}) {
+        coney::Pads pads;
+        const coney::raycast::CollisionMesh* mesh = yard.world->collision();
+        const coney::sandbox::SandboxLayout& layout = yard.world->layout();
+        coney::human::Player player(*yard.character, mesh,
+                                    coney::human::PlayerStart{.position = layout.spawns.front().position,
+                                                              .headingDegrees = layout.spawns.front().headingDegrees});
+        coney::human::Human victim(yard.character->anims(), coney::human::AnimSlots::player(),
+                                   coney::anim::referenceRotations(), 1.0F, &yard.character->ranges());
+        victim.setFighterProfile(coney::human::FighterProfile{.player = false});
+        victim.setSkeleton(&yard.character->skeleton());
+        player.humans().add(victim, false);
+        // The player's forward and right in the world (headings grow to the left, 0 facing +y).
+        const coney::anim::Vec3 at = player.human().position();
+        const float heading = player.human().heading();
+        const coney::anim::Vec3 there{at.x - (std::sin(heading) * ahead) + (std::cos(heading) * side),
+                                      at.y + (std::cos(heading) * ahead) + (std::sin(heading) * side), at.z};
+        victim.spawn(mesh, coney::anim::Vec3{at.x, at.y + 1.0F, at.z}, 0.0F);
+        const std::array<coney::human::Combatant*, 1> targets{&victim};
+        std::vector<std::uint32_t> clips;
+        int hitsBefore = 0;
+        for (int frame = 0; frame < 80; ++frame) {
+            if (frame == 2) {
+                victim.hit(coney::human::IncomingHit{
+                    .damage = 10, .attackAnim = 0, .code = 0x36, .attacker = player.human().position()});
+            }
+            // Down by now: lying in 196, he is put back beside the player, who presses square.
+            if (frame == 46) {
+                REQUIRE(victim.state() == TargetState::Grounded);
+                victim.place(there, victim.heading());
+                hitsBefore = victim.fighter().hitsTaken();
+            }
+            coney::PortSamples ports{};
+            ports[0].connected = true;
+            ports[0].buttons = frame == 50 ? coney::pad::kSquare : std::uint16_t{0};
+            pads.update(ports);
+            player.update(pads.port(0), mesh, targets);
+            addChange(clips, player.human().animator().animId());
+        }
+        INFO("victim " << ahead << " m ahead, " << side << " m right");
+        CHECK(std::ranges::find(clips, 193U) != clips.end());
+        CHECK(std::ranges::find(clips, 12U) == clips.end());
+        CHECK(victim.fighter().hitsTaken() == hitsBefore + 1);
     }
 }

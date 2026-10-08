@@ -7,6 +7,7 @@
 
 #include "animation/anim_math.h"
 #include "characters/anim_set.h"
+#include "combat/grabbed.h"
 #include "human/combatant.h"
 #include "human/human_animator.h"
 
@@ -23,6 +24,19 @@ namespace coney::human {
 struct CounterPress {
     int grabDamage = 0;   ///< 76 `GRAB_FRONT_COUNTER`'s damage.
     int tackleDamage = 0; ///< 9 `TACKLE_FRONT_COUNTER`'s damage.
+};
+
+/// What the grabbed human did to its grabber in an update, for the grabber to apply.
+struct GrabbedReport {
+    combat::GrabbedAction action = combat::GrabbedAction::None;
+    bool countered = false;          ///< R1 at the catch: the player's counter 76 plays instead of the grab.
+    int victimClip = -1;             ///< The grabbed human's move (96 / 108, 104 / 116, 100 / 112).
+    int grabberClip = -1;            ///< The clip the grabber plays (the move's id + 1, from the grabbed human's set).
+    int grabberPowerCost = 0;        ///< Power the grabber loses.
+    int grabberDamage = 0;           ///< Damage the grabber takes (the move's Anim Range List damage).
+    bool grabberKnockedDown = false; ///< The grabber goes down (an escape)...
+    bool grabberStunned = false;     ///< ... and is stunned (an escape, a counter).
+    bool ended = false;              ///< The grabbed human is out of the grab.
 };
 
 /// A combatant a grab or a tackle can hold.
@@ -55,6 +69,12 @@ class Holdable : public Combatant {
     /// Its AI counter press (command 3) of its last update, made while it could counter (Fighter's test), once:
     /// the grabber whose intro it answers takes it. None for one no brain drives (the default).
     [[nodiscard]] virtual std::optional<CounterPress> takeCounterPress() { return std::nullopt; }
+    /// Its grabber's numbers this update, while a grab (not a tackle) holds it attached: with them its own next
+    /// update may struggle, strike back or escape (`Player_UpdateGrabbed`, docs/research/combat.md#grabbed). A
+    /// passive target ignores them (the default).
+    virtual void heldInGrab(const combat::GrabberState& /*grabber*/, bool /*fromRear*/) {}
+    /// What it did to its grabber in its last update while held, once (none by default): the grabber plays its side.
+    [[nodiscard]] virtual GrabbedReport takeGrabbedReport() { return {}; }
 };
 
 } // namespace coney::human
