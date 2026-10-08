@@ -36,10 +36,11 @@ inline constexpr std::array<std::string_view, 13> kMission4Bindings{"BrSetPedTyp
 
 /// The run-time type bits `GetRTTI` gives (docs/references/bindings/util.md#getrtti).
 namespace rtti {
-inline constexpr std::uint32_t kProp = 0x08;  ///< A dynamic object (a spawn record).
-inline constexpr std::uint32_t kTag = 0x10;   ///< A tag.
-inline constexpr std::uint32_t kHuman = 0x40; ///< A human.
-inline constexpr std::uint32_t kFlag = 0x80;  ///< A world flag.
+inline constexpr std::uint32_t kProp = 0x08;   ///< A dynamic object (a spawn record).
+inline constexpr std::uint32_t kTag = 0x10;    ///< A tag.
+inline constexpr std::uint32_t kHuman = 0x40;  ///< A human.
+inline constexpr std::uint32_t kFlag = 0x80;   ///< A world flag.
+inline constexpr std::uint32_t kGlass = 0x400; ///< A breakable glass pane.
 } // namespace rtti
 
 /// Registers kMission4Bindings in `vm`, acting on `context` (its state, object database, humans, flags, spawn records,

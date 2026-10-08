@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -15,7 +16,9 @@
 #include <format>
 #include <functional>
 #include <memory>
+#include <numbers>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -25,17 +28,24 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "ai/ai_config.h"
+#include "ai/ai_humans.h"
+#include "ai/brain.h"
+#include "ai/gangs.h"
+#include "animation/anim_math.h"
 #include "characters/character_types.h"
 #include "core/error.h"
 #include "core/game_random.h"
 #include "core/game_timer.h"
 #include "core/input_script.h"
+#include "core/options.h"
 #include "fileio/disc.h"
 #include "fileio/executable.h"
 #include "fileio/wad.h"
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/gameplay_mode.h"
 #include "gamemodes/level_start.h"
+#include "human/human.h"
+#include "human/locomotion.h"
 #include "human/player.h"
 #include "platform/play_level_mode.h"
 #include "platform/render_engine.h"
@@ -46,6 +56,7 @@
 #include "scripting/config_strings.h"
 #include "scripting/lua_value.h"
 #include "scripting/script_system.h"
+#include "support/live_pad.h"
 #include "warriors/created_humans.h"
 #include "world/sector_budget.h"
 
@@ -73,6 +84,7 @@ struct MissionRun {
     float travelled = 0.0F;
     std::size_t humans = 0;
     std::vector<std::string> errors; // the scripts' error lines
+    std::vector<std::string> log;    // every printed line
 };
 
 // The game's random table from the disc's executable; empty when it cannot be read.
@@ -86,9 +98,10 @@ std::vector<std::uint32_t> randomTable(const coney::io::Wad& wad) {
 // character configuration.
 coney::GameplayMode::LevelLoader playLoader(coney::platform::RenderEngine& renderer, const coney::io::Wad& wad,
                                             coney::world::SectorBudget& budget, coney::LevelScripts& scripts,
-                                            const std::function<void(std::string_view)>& print) {
-    return [&renderer, &wad, &budget, &scripts,
-            print](const coney::LevelStart& start,
+                                            const std::function<void(std::string_view)>& print,
+                                            std::optional<coney::StartPlace> place = std::nullopt) {
+    return [&renderer, &wad, &budget, &scripts, print,
+            place](const coney::LevelStart& start,
                    const coney::ScriptedCast& cast) -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
         std::optional<coney::human::PlayerStart> playerStart;
         coney::platform::PlayerSetup setup;
@@ -110,13 +123,38 @@ coney::GameplayMode::LevelLoader playLoader(coney::platform::RenderEngine& rende
         if (!mode) {
             return std::unexpected(std::move(mode.error()));
         }
+        // `--start`: player 1 somewhere else from the first step.
+        if (place) {
+            (*mode)->startAt(*place);
+        }
         return std::unique_ptr<coney::GameMode>(std::move(*mode));
     };
 }
 
+// Suspends the brain (BrSuspend) of every human created so far who is not in player 1's gang, so that a check of the
+// pad is not cut short by the AI's grabs and attacks (docs/research/ai.md#coney). With `done`, a human already in it
+// is skipped and each one suspended is added, so that it can run every update as spawners add humans.
+void suspendOtherGangs(coney::LevelScripts& scripts, std::set<double>* done = nullptr) {
+    const coney::HumanCreation* player = scripts.humans().player(1);
+    if (player == nullptr) {
+        return;
+    }
+    for (const coney::HumanCreation& human : scripts.humans().all()) {
+        if (human.handle != player->handle && (human.gang != player->gang || human.gang < 0) &&
+            (done == nullptr || done->insert(human.handle).second)) {
+            const std::array<coney::script::Value, 2> suspend{coney::script::Value(human.handle),
+                                                              coney::script::Value(true)};
+            (void)scripts.scripts().call("BrSuspend", suspend);
+        }
+    }
+}
+
 // Plays `level` at `checkpoint` as `--play-level` does (the preloads, the level's script, gameplay over the play mode
-// with the scripts' AI and character configuration) for 20 s, the stick pushed forward for the last 2 s.
-MissionRun playMission(const coney::io::Wad& wad, std::string_view level, int checkpoint) {
+// with the scripts' AI and character configuration) for 20 s, the stick pushed forward for the last 2 s; or, with
+// `script`, that input script from `place` (as `--start` gives it).
+MissionRun playMission(const coney::io::Wad& wad, std::string_view level, int checkpoint,
+                       std::string_view script = "540 stick left 0 70\n",
+                       std::optional<coney::StartPlace> place = std::nullopt) {
     MissionRun run;
     auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
     REQUIRE(engine.has_value());
@@ -136,12 +174,12 @@ MissionRun playMission(const coney::io::Wad& wad, std::string_view level, int ch
     }
     coney::LevelScripts scripts(coney::script::wadScriptSource(wad), level, checkpoint, print, options);
     coney::GameplayMode gameplay(renderer, scripts.scripts(), scripts.context(), scripts.state(), scripts.humans(),
-                                 scripts.flags(), scripts.recorded(), playLoader(renderer, wad, budget, scripts, print),
-                                 print);
+                                 scripts.flags(), scripts.recorded(),
+                                 playLoader(renderer, wad, budget, scripts, print, place), print);
     gameplay.setLevel(std::string(level));
 
-    // 18 s with the pad at rest, then the stick 70 % forward for 2 s.
-    auto input = coney::parseInputScript("540 stick left 0 70\n");
+    // By default 18 s with the pad at rest, then the stick 70 % forward for 2 s.
+    auto input = coney::parseInputScript(script);
     REQUIRE(input.has_value());
     coney::ScriptedInput pad(std::move(*input));
     coney::GameModeStack stack;
@@ -160,15 +198,7 @@ MissionRun playMission(const coney::io::Wad& wad, std::string_view level, int ch
     }
     // The walk checks the pad alone: the other gangs' brains are suspended (BrSuspend) so that none grabs or downs
     // the player in those 2 s (the AI grabs and tackles, docs/research/ai.md#coney).
-    if (const coney::HumanCreation* player = scripts.humans().player(1); player != nullptr) {
-        for (const coney::HumanCreation& human : scripts.humans().all()) {
-            if (human.handle != player->handle && (human.gang != player->gang || human.gang < 0)) {
-                const std::array<coney::script::Value, 2> suspend{coney::script::Value(human.handle),
-                                                                  coney::script::Value(true)};
-                (void)scripts.scripts().call("BrSuspend", suspend);
-            }
-        }
-    }
+    suspendOtherGangs(scripts);
     const float before = play->stats().travelled;
     stack.runUntilEmpty(timer, {}, 60);
     run.travelled = play->stats().travelled - before;
@@ -185,6 +215,7 @@ MissionRun playMission(const coney::io::Wad& wad, std::string_view level, int ch
             ++run.missingBindings;
         }
     }
+    run.log = std::move(log);
     return run;
 }
 
@@ -239,6 +270,275 @@ TEST_CASE("the disc's level34 plays each checkpoint without a script error or a 
                     checkpoint, run.humans, static_cast<unsigned long long>(run.scriptErrors), run.missingBindings,
                     run.travelled);
     }
+}
+
+TEST_CASE("the disc's level34 crate stack breaks on the first square and goes", "[disc][story]") {
+    // docs/research/objects.md#breakable-props: a dyn_masks crate stack breaks on the first blow of any kind, sends
+    // message 6 once (F.Vandalize) and is removed at its next update. Player 1 starts 1.2 m north of the first crate
+    // stack checkpoint 2 meets, facing it, and presses square four times, from his first updates: by update 60 the
+    // rioters spawned nearby stand in front of him, and square goes to a human in front before any object.
+    std::optional<coney::io::Wad> wad = openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    coney::StartPlace place;
+    place.x = -26.4F;
+    place.y = -75.8F;
+    place.headingDegrees = 180.0F;
+    const MissionRun run =
+        playMission(*wad, "level34", 2, "5 tap square\n45 tap square\n85 tap square\n125 tap square\n", place);
+    REQUIRE(run.loaded);
+    CHECK(run.scriptErrors == 0);
+    const auto count = [&run](std::string_view text) {
+        return std::ranges::count_if(run.log,
+                                     [text](const std::string& line) { return line.find(text) != std::string::npos; });
+    };
+    CHECK(count("dyn_crate_stack") == 1);
+    CHECK(count("hit, broke") == 1);
+    CHECK(count("objects: prop") == 1);
+    std::printf("  level34 checkpoint 2: %td crate stack hit, %td prop removed\n", count("dyn_crate_stack"),
+                count("objects: prop"));
+}
+
+namespace {
+
+// Square at a car (its window breaks), triangle (the theft starts) and the left stick turned anticlockwise at 0.9,
+// 30 degrees an update, for 400 updates (docs/research/combat.md#stereo-theft: four stages of three turns), from
+// update `from`.
+std::string stereoTheft(int from) {
+    std::string script = std::format("{} tap square\n{} tap triangle\n", from + 40, from + 120);
+    constexpr int kTurnUpdates = 400;
+    constexpr float kDeflection = 90.0F;
+    for (int i = 0; i < kTurnUpdates; ++i) {
+        const float angle =
+            (std::numbers::pi_v<float> / 2.0F) + (static_cast<float>(i) * std::numbers::pi_v<float> / 6.0F);
+        script += std::format("{} stick left {} {}\n", from + 150 + i, static_cast<int>(kDeflection * std::cos(angle)),
+                              static_cast<int>(kDeflection * std::sin(angle)));
+    }
+    script += std::format("{} stick left 0 0\n", from + 150 + kTurnUpdates);
+    return script;
+}
+
+// A place for startAt(): the feet at (x, y) facing `heading` degrees.
+coney::StartPlace placeAt(float x, float y, float heading) {
+    coney::StartPlace place;
+    place.x = x;
+    place.y = y;
+    place.headingDegrees = heading;
+    return place;
+}
+
+} // namespace
+
+TEST_CASE("the disc's level34 radio objective: three car stereos stolen with the stick", "[disc][story]") {
+    // docs/research/scripting.md#level34: the riot's radio objective counts three dyn_carstereo pick-ups (item 11)
+    // from the three cars CarSpawnRadio gave a radio. From checkpoint 2, player 1 is placed beside each car in turn
+    // (Coney's --start test aid stands for the walk) and steals its stereo with the pad; the third car stands past
+    // the section 3 trigger, so the police scene l34_c3 plays before it.
+    std::optional<coney::io::Wad> wad = openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    if (!engine) {
+        return;
+    }
+    coney::world::SectorBudget budget(coney::world::kSectorPoolSize);
+    std::vector<std::string> log;
+    const std::function<void(std::string_view)> print = [&log](std::string_view line) { log.emplace_back(line); };
+    coney::LevelScriptOptions options;
+    const std::vector<std::uint32_t> table = randomTable(*wad);
+    if (!table.empty()) {
+        options.randomTable = table;
+    }
+    coney::LevelScripts scripts(coney::script::wadScriptSource(*wad), "level34", 2, print, options);
+    std::vector<std::string> trace;
+    scripts.scripts().traceCalls([&trace](std::string_view line) { trace.emplace_back(line); });
+    coney::GameplayMode gameplay(
+        **engine, scripts.scripts(), scripts.context(), scripts.state(), scripts.humans(), scripts.flags(),
+        scripts.recorded(), playLoader(**engine, *wad, budget, scripts, print, placeAt(-82.4F, -156.8F, 90.0F)), print);
+    gameplay.setLevel("level34");
+    auto sceneList = coney::scenes::loadSceneList(*wad);
+    REQUIRE(sceneList.has_value());
+    gameplay.setSceneMaker([&wad, &sceneList] {
+        return std::make_unique<coney::scenes::SceneSystem>(*sceneList, coney::scenes::wadSceneSource(*wad),
+                                                            coney::scenes::SceneSystem::ScriptCall{});
+    });
+
+    // The three thefts at updates 0, 600 and 1800; at 1200 the walk past the section 3 trigger.
+    constexpr int kSecond = 600;
+    constexpr int kTrigger = 1200;
+    constexpr int kThird = 1800;
+    constexpr int kEnd = 2450;
+    auto input = coney::parseInputScript(stereoTheft(0) + stereoTheft(kSecond) + stereoTheft(kThird));
+    REQUIRE(input.has_value());
+    coney::ScriptedInput pad(std::move(*input));
+    coney::GameModeStack stack;
+    stack.setInput(&pad);
+    stack.push(gameplay);
+    coney::GameTimer timer;
+    timer.setFixedStep(true);
+    // The thefts alone are checked: every update the brains of the humans not in player 1's gang are suspended, as the
+    // riot gangs' spawners place their rioters by the first car, who attack player 1 and cut his theft short.
+    std::set<double> suspended;
+    const auto run = [&](int updates) {
+        for (int i = 0; i < updates; ++i) {
+            stack.runUntilEmpty(timer, {}, 1);
+            suspendOtherGangs(scripts, &suspended);
+        }
+    };
+    run(kSecond);
+    auto* play = dynamic_cast<coney::platform::PlayLevelMode*>(gameplay.level());
+    REQUIRE(play != nullptr);
+    play->startAt(placeAt(-114.5F, -180.8F, 180.0F));
+    run(kTrigger - kSecond);
+    play->startAt(placeAt(-57.97F, -250.7F, 180.0F));
+    run(kThird - kTrigger);
+    play->startAt(placeAt(-59.76F, -252.3F, 264.0F));
+    run(kEnd - kThird);
+
+    const auto count = [](const std::vector<std::string>& lines, std::string_view text) {
+        return std::ranges::count_if(lines,
+                                     [text](const std::string& line) { return line.find(text) != std::string::npos; });
+    };
+    CHECK(scripts.scripts().errors() == 0);
+    CHECK(count(log, "theft: stole the stereo of car") == 3);
+    CHECK(count(trace, "> F.InventoryPickup(11)") == 3);
+    // The third completes the objective: the scripts save it as done (Lua save float 3 = its target, 3).
+    CHECK(count(trace, "SetLUASaveDataFloat(3, 3)") == 1);
+    std::printf("  level34 radios: %td stereos stolen, %td item-11 pick-ups heard\n",
+                count(log, "theft: stole the stereo of car"), count(trace, "> F.InventoryPickup(11)"));
+}
+
+namespace {
+
+// The nearest AI human to `from` who is not a Warrior, still standing and not in a grab; null for none.
+const coney::human::Human* nearestVictim(const coney::platform::PlayLevelMode& play, coney::anim::Vec3 from) {
+    const coney::human::Human* best = nullptr;
+    float bestDistance = 0.0F;
+    for (const coney::ai::AiHuman& other : play.fighters().humans()) {
+        if (other.removed || other.human == nullptr) {
+            continue;
+        }
+        const coney::human::Human& human = *other.human;
+        const coney::ai::Brain* brain = play.fighters().brainOf(human);
+        if (brain == nullptr || (brain->gang() != nullptr && brain->gang()->kind() == coney::ai::kWarriorsKind) ||
+            human.airborne() || human.fighter().health().depleted() || human.fighter().grabbed() ||
+            human.fighter().holdState().has_value()) {
+            continue;
+        }
+        const float distance = coney::anim::distance(human.position(), from);
+        if (best == nullptr || distance < bestDistance) {
+            best = &human;
+            bestDistance = distance;
+        }
+    }
+    return best;
+}
+
+} // namespace
+
+TEST_CASE("the disc's level34 muggings bonus counts a mugging done with the stick", "[disc][story]") {
+    // docs/research/scripting.md#level34: the bonus counts the players' successful muggings (HuSetMugCallback, here
+    // F.PedMugged). From checkpoint 2, player 1 is placed in front of the nearest pedestrian (Coney's --start test
+    // aid stands for the walk), grabs him with circle, starts the mugging with triangle and holds the stick, 80 %
+    // deflected, on the mug meter's target as a player reading the HUD does (docs/research/combat.md#mugging).
+    std::optional<coney::io::Wad> wad = openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    if (!engine) {
+        return;
+    }
+    coney::world::SectorBudget budget(coney::world::kSectorPoolSize);
+    std::vector<std::string> log;
+    const std::function<void(std::string_view)> print = [&log](std::string_view line) { log.emplace_back(line); };
+    coney::LevelScriptOptions options;
+    const std::vector<std::uint32_t> table = randomTable(*wad);
+    if (!table.empty()) {
+        options.randomTable = table;
+    }
+    coney::LevelScripts scripts(coney::script::wadScriptSource(*wad), "level34", 2, print, options);
+    std::vector<std::string> trace;
+    scripts.scripts().traceCalls([&trace](std::string_view line) { trace.emplace_back(line); });
+    coney::GameplayMode gameplay(**engine, scripts.scripts(), scripts.context(), scripts.state(), scripts.humans(),
+                                 scripts.flags(), scripts.recorded(),
+                                 playLoader(**engine, *wad, budget, scripts, print), print);
+    gameplay.setLevel("level34");
+
+    coney::test::LivePad pad;
+    coney::GameModeStack stack;
+    stack.setInput(&pad);
+    stack.push(gameplay);
+    coney::GameTimer timer;
+    timer.setFixedStep(true);
+    const auto step = [&] { stack.runUntilEmpty(timer, {}, 1); };
+    // The scripts set the level up first.
+    constexpr int kSettle = 90;
+    for (int i = 0; i < kSettle; ++i) {
+        step();
+    }
+    auto* play = dynamic_cast<coney::platform::PlayLevelMode*>(gameplay.level());
+    REQUIRE(play != nullptr);
+    if (play == nullptr) {
+        return;
+    }
+    const auto succeeded = [&log] {
+        return std::ranges::count_if(log,
+                                     [](const std::string& line) { return line.starts_with("mugging: succeeded"); });
+    };
+    // Up to 60 s: grab and mug until one mugging succeeds, then 3 s for its end clip and the callback.
+    constexpr std::uint64_t kLimit = 1800;
+    constexpr float kDeflection = 80.0F;
+    constexpr int kRetry = 30;
+    constexpr std::uint64_t kPressGap = 10;
+    std::uint64_t doneAt = 0;
+    std::uint64_t lastTry = 0;
+    while (pad.nextFrame() < kLimit && (doneAt == 0 || pad.nextFrame() < doneAt + 90)) {
+        const std::uint64_t at = pad.nextFrame();
+        const coney::human::Human& me = play->player().human();
+        const coney::human::Fighter& fighter = me.fighter();
+        if (const auto& mugging = fighter.combat().mugging(); mugging) {
+            // On the meter's target: the stick's own angle, atan2(x, y).
+            const float target = mugging->targetDegrees() * std::numbers::pi_v<float> / 180.0F;
+            pad.play(std::format("{} stick left {} {}\n", at, static_cast<int>(kDeflection * std::sin(target)),
+                                 static_cast<int>(kDeflection * std::cos(target))));
+        } else if (doneAt == 0 && fighter.held() != nullptr) {
+            // Triangle, released between presses: the first spins him to the rear hold, the next starts the mugging.
+            pad.play(at % kPressGap == 0 ? std::format("{} tap triangle\n", at)
+                                         : std::format("{} stick left 0 0\n", at));
+        } else if (doneAt == 0 && at >= lastTry + kRetry) {
+            // In front of the nearest pedestrian, facing him; circle grabs.
+            if (const coney::human::Human* victim = nearestVictim(*play, me.position()); victim != nullptr) {
+                const coney::anim::Vec3 there = victim->position();
+                const coney::anim::Vec3 ahead = coney::human::facing(victim->heading());
+                coney::StartPlace place;
+                place.x = there.x + (ahead.x * 0.9F);
+                place.y = there.y + (ahead.y * 0.9F);
+                place.z = there.z;
+                place.headingDegrees = std::atan2(ahead.x, -ahead.y) * 180.0F / std::numbers::pi_v<float>;
+                play->startAt(place);
+                pad.play(std::format("{} stick left 0 0\n{} tap circle\n", at, at + 1));
+            }
+            lastTry = at;
+        }
+        step();
+        if (doneAt == 0 && succeeded() > 0) {
+            doneAt = pad.nextFrame();
+        }
+    }
+    const auto count = [&trace](std::string_view text) {
+        return std::ranges::count_if(trace,
+                                     [text](const std::string& line) { return line.find(text) != std::string::npos; });
+    };
+    CHECK(scripts.scripts().errors() == 0);
+    CHECK(succeeded() >= 1);
+    CHECK(count("> F.PedMugged(") >= 1);
+    std::printf("  level34 muggings: %td succeeded by frame %llu, %td mug callbacks heard\n", succeeded(),
+                static_cast<unsigned long long>(doneAt), count("> F.PedMugged("));
 }
 
 TEST_CASE("the disc's level80 intro, skipped, gives the screen and the player back", "[disc][story]") {

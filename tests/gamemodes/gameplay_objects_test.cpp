@@ -222,3 +222,30 @@ TEST_CASE("a break-in lights the alarm strobe nearest the store's flag", "[gamep
     CHECK((group & (1U << 16)) != 0);
     CHECK(((group >> 18) & 0x1fU) == 3);
 }
+
+TEST_CASE("the level's objects' services make a loose object a spawn record", "[gameplay][objects]") {
+    const auto files = objectScripts();
+    const coney::script::ScriptSource source =
+        [&files](std::string_view name) -> std::expected<std::vector<std::byte>, coney::Error> {
+        const auto found = files.find(name);
+        if (found == files.end()) {
+            return coney::fail(coney::ErrorCode::NotFound, "no such script");
+        }
+        return found->second;
+    };
+    coney::LevelScripts scripts(source, "level1", 1, [](std::string_view) {});
+    coney::LevelObjectServices services(scripts.scripts(), scripts.flags(), nullptr);
+    // No records yet: nothing is made.
+    CHECK(services.spawnObject("test_piece", {}, {}) == coney::world_objects::kNoObject);
+    coney::world_objects::SpawnRecords records;
+    services.setSpawnRecords(&records);
+    const double piece = services.spawnObject("test_piece", coney::anim::Vec3{1, 2, 3}, coney::anim::Quat{});
+    REQUIRE(piece != coney::world_objects::kNoObject);
+    const coney::world_objects::SpawnRecord* record = records.find(piece);
+    REQUIRE(record != nullptr);
+    if (record == nullptr) {
+        return;
+    }
+    CHECK(record->typeName == "test_piece");
+    CHECK(record->position == std::array<float, 3>{1, 2, 3});
+}

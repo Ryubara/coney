@@ -202,6 +202,8 @@ GameplayMode::GameplayMode(graphics::RenderDevice& device, script::ScriptSystem&
       m_recorded(recorded), m_loader(std::move(loader)), m_log(std::move(log)),
       m_objectServices(scripts, flags, nullptr) {
     m_objectServices.setPlayers(&state, &humans);
+    // A broken prop's piece becomes a spawn record of the level.
+    m_objectServices.setSpawnRecords(context.spawnRecords);
     // Damage a human does reaches the volume boxes he stands in as their message 6, (human, box, object).
     m_objectServices.setDamageReceiver([this](double human, double object) { sendDamageMessage(human, object); });
     // A human's car hit reaches the car's own handler and the cars' general one as message 0x19.

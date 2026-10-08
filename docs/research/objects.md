@@ -1492,7 +1492,8 @@ Coney's stand-ins, where this page is silent:
   objects do not reach the objects yet: nothing is thrown in play.
 - Sounds: a name hash plays as a positional sound at the object, a material pair from the
   [sound matrix](sound.md#sound-matrix); the lock pick's click is counted, not played (its cue is not traced). Shards,
-  crimes beyond the `CrimeScene` flag, statistics, loose objects and models do nothing yet.
+  crimes beyond the `CrimeScene` flag, statistics and models do nothing yet; a loose object (a wreck piece, a board, a
+  broken prop's piece) becomes a spawn record that rests where it is made.
 - Shards (`gamemodes/level_object_services.h`, with [Particles](particles.md)): the culling step's tests are player
   1's camera (the scene camera while a scene plays) within 15 m of the pane and the pane within 10 m of its view's
   frustum (`effects::effectNearView()`, `repo:src/effects/effect_culling.h`), and the budget is 158 particles left in
@@ -1503,6 +1504,19 @@ Coney's stand-ins, where this page is silent:
   are live (and the centre object) within the radius (`repo:src/world_objects/object_breaks.h`): a `dyn_molotv`
   breaks itself 22 ticks later into a `sub_explode` 0.7 m up ([Script types: the Molotov](script-types.md#molotov));
   other types ignore it. **Coney's reading**: 22 ticks for every bottle, the page's figure for one spawned that frame.
+
+**Breakable props** ([Breakable props](#breakable-props), `repo:src/world_objects/props.h`): `CfgObj` keeps the
+counters' bytes, the body word, the material and the body's centre, size and shape; `bodyFlagsOf` and
+`isStrikeTarget` decide which world objects a strike may pick. Square offers player 1 the drawn ones within 2 m
+([Combat](combat.md#targets)) and its object attack strikes the one picked; a moving attack's strike shapes strike any
+whose body they reach (a box of the type's size about its centre, or a sphere of half its x). `Props::strike` follows
+`Strike_Contact`'s order: intact or not, `WorldObject_TakeHit`, the impact sound, message 6 only while intact, then
+`DynMasks_OnHit` for a `dyn_masks` prop: its sound and two dust bursts at the hit point, and on a break the crate
+stack's or the bench's piece (and the bench's splinters); then it loses its body and is removed (message 2, its record
+gone). `GetRTTI` gives `0x400` for a pane. Coney's stand-ins: the noise, statistic 9, the burn near a fire and the
+newsstands' paper are not built; the dust is the shards' `sub_shack_puff`; a piece rests where it is made; the crate
+piece's random turn is drawn in steps of 1/1000 of pi; a broken prop goes 20 ticks after the break; the size is read as
+whole extents, a cylinder or capsule body is tested as its box, and only drawn objects within 4 m are tested.
 
 ## Open questions
 

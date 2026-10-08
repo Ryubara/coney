@@ -113,6 +113,34 @@ TEST_CASE("CfgObj adds a type found by name, its model hash the CRC-32 of the na
     CHECK(h.recorded.count("CfgObj") == 1);
 }
 
+TEST_CASE("CfgObj keeps a prop's counters, body and material", "[spawn_bindings]") {
+    Harness h;
+    std::vector<Value> args(22, Value(0.0));
+    args[0] = str("test_prop");
+    args[1] = str("dyn_masks");
+    args[2] = Value(10.0);
+    args[3] = Value(2.0);
+    args[4] = Value(3.0);
+    args[6] = list({0, 0, 0.5});
+    args[7] = list({1.5, 0.5, 1.0});
+    args[8] = Value(1.0);
+    args[11] = Value(191.0);
+    args[12] = Value(47.0);
+    h.first("CfgObj", args);
+    const coney::world_objects::ObjectType* prop = h.types.find("test_prop");
+    REQUIRE(prop != nullptr);
+    if (prop == nullptr) {
+        return;
+    }
+    CHECK(prop->value == 2);
+    CHECK(prop->secondHits == 3);
+    CHECK(prop->bodyCentre == std::array<float, 3>{0.0F, 0.0F, 0.5F});
+    CHECK(prop->bodySize == std::array<float, 3>{1.5F, 0.5F, 1.0F});
+    CHECK(prop->bodyShape == coney::world_objects::kBodyBox);
+    CHECK(prop->bodyWord == 191);
+    CHECK(prop->material == 47);
+}
+
 TEST_CASE("the object database keeps the first type of a name and cuts long names", "[spawn_bindings]") {
     coney::world_objects::ObjectTypes types;
     types.add("crate", "simple_object", 1);

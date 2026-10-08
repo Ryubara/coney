@@ -6,10 +6,14 @@
 // the Warriors, `P1.SetupWarriors`, docs/research/ai.md#level99-save), the scene `l99_c5` plays and its return
 // function `P1.SendWarriors` gives each of the three sparring Warriors `GoalFight` on a player who stands still
 // (the recording `warriors_passive`, docs/research/ai.md#level99-fight). Then each Warrior must close on the player
-// and attack him, running in with the EngageEnemy goal the Melee goal pushes (docs/research/ai.md#fight-approach); the
-// sparring gang must be id 4 with no tactic and threat response 2, the two fence gangs under a cheering crowd. It
-// runs only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts, distances
-// and speeds only (LEGAL.md).
+// and attack him, running in with the EngageEnemy goal the Melee goal pushes (docs/research/ai.md#fight-approach), and
+// exactly one must charge (faster than the run); the sparring gang must be id 4 with no tactic and threat
+// response 2, the two fence gangs under a cheering crowd. It runs only when the environment variable CONEY_DISC names
+// the disc and skips otherwise; it prints counts, distances and speeds only (LEGAL.md).
+//
+// Only the first Warrior charges, as in the original: his charge makes the player busy, and the other two, a little
+// behind him because they steer round each other, stop at the first re-plan that finds the player busy within 3.75 m
+// (EngageEnemy step 9, docs/research/ai.md#level99-fight). So their run-ins end beyond the 1.6 m run-in distance.
 
 #include <algorithm>
 #include <array>
@@ -70,6 +74,10 @@ constexpr std::uint64_t kSceneWait = 1500;
 constexpr int kFightFrames = 300;
 // How near a Warrior must come to the player: within his far melee range (5 m, docs/research/ai.md#level99).
 constexpr float kCloseRange = 3.0F;
+// The run's top speed, m/s: a Warrior faster than this is charging (docs/research/ai.md#level99-fight).
+constexpr float kRunSpeed = 7.8F;
+// The run-in distance, m: a run-in that ends beyond it stopped short of the player (docs/research/ai.md#engage-enemy).
+constexpr float kRunIn = 1.6F;
 // The sparring Warriors' gang (docs/research/ai.md#level99-fight).
 constexpr std::string_view kSparringGang = "CombatWarriors";
 // Its id: the gangs are made in record order, and it is the fifth (docs/research/ai.md#level99-fight).
@@ -104,9 +112,10 @@ struct Watched {
     const coney::ai::Brain* brain = nullptr;
     float startDistance = 0.0F;
     float nearest = 1e9F;
-    int attacks = 0;      // attack actions started (its next-attack time moved on)
-    bool engaged = false; // seen running in with an EngageEnemy goal on top
-    float fastest = 0.0F; // its highest speed, m/s
+    int attacks = 0;         // attack actions started (its next-attack time moved on)
+    bool engaged = false;    // seen running in with an EngageEnemy goal on top
+    float engageEnd = -1.0F; // the distance when its first EngageEnemy left the top of its stack; -1 before
+    float fastest = 0.0F;    // its highest speed, m/s
     std::uint64_t lastNextAttack = 0;
 };
 
@@ -251,10 +260,16 @@ TEST_CASE("the disc's level99: the sparring Warriors of the last lesson close on
         const coney::anim::Vec3 now = play()->player().human().position();
         for (Watched& watched : warriors) {
             const coney::anim::Vec3 at = watched.brain->human().position();
-            watched.nearest = std::min(watched.nearest, std::hypot(at.x - now.x, at.y - now.y));
+            const float distance = std::hypot(at.x - now.x, at.y - now.y);
+            watched.nearest = std::min(watched.nearest, distance);
             watched.fastest = std::max(watched.fastest, watched.brain->human().speed());
             const coney::ai::Goal* top = watched.brain->topGoal();
-            watched.engaged = watched.engaged || (top != nullptr && top->type() == coney::ai::GoalType::EngageEnemy);
+            const bool engagedNow = top != nullptr && top->type() == coney::ai::GoalType::EngageEnemy;
+            // Where its run-in ended: the charge ends it on the player, a stop short of him.
+            if (watched.engaged && !engagedNow && watched.engageEnd < 0.0F) {
+                watched.engageEnd = distance;
+            }
+            watched.engaged = watched.engaged || engagedNow;
             if (watched.brain->nextAttackMs() != watched.lastNextAttack) {
                 watched.lastNextAttack = watched.brain->nextAttackMs();
                 ++watched.attacks;
@@ -265,17 +280,23 @@ TEST_CASE("the disc's level99: the sparring Warriors of the last lesson close on
     int closed = 0;
     int attacked = 0;
     int engaged = 0;
+    int charged = 0;
+    int stoppedShort = 0;
     for (const Watched& watched : warriors) {
-        std::printf("  level99 sparring Warrior: %.2f m from the player when sent, %s at up to %.1f m/s, nearest "
-                    "%.2f m, %d attacks, %zu goals\n",
+        std::printf("  level99 sparring Warrior: %.2f m from the player when sent, %s at up to %.1f m/s, run-in ended "
+                    "at %.2f m, nearest %.2f m, %d attacks, %zu goals\n",
                     watched.startDistance, watched.engaged ? "ran in" : "did not run in", watched.fastest,
-                    watched.nearest, watched.attacks, watched.brain->goalCount());
+                    watched.engageEnd, watched.nearest, watched.attacks, watched.brain->goalCount());
+        const bool charging = watched.fastest > kRunSpeed + 0.5F;
+        charged += charging ? 1 : 0;
+        stoppedShort += !charging && watched.engageEnd > kRunIn ? 1 : 0;
         engaged += watched.engaged ? 1 : 0;
         closed += watched.nearest < kCloseRange ? 1 : 0;
         attacked += watched.attacks > 0 ? 1 : 0;
     }
-    std::printf("  level99 sparring fight: %zu Warriors, %d closed in, %d attacked; player health %d -> %d\n",
-                warriors.size(), closed, attacked, healthBefore, healthAfter);
+    std::printf(
+        "  level99 sparring fight: %zu Warriors, %d closed in, %d attacked, %d charged; player health %d -> %d\n",
+        warriors.size(), closed, attacked, charged, healthBefore, healthAfter);
     if (closed < 3 || attacked < 3) {
         for (const std::string& line : log) {
             UNSCOPED_INFO(line);
@@ -283,6 +304,8 @@ TEST_CASE("the disc's level99: the sparring Warriors of the last lesson close on
     }
     CHECK(warriors.size() == 3);
     CHECK(engaged == 3);
+    CHECK(charged == 1);
+    CHECK(stoppedShort == 2);
     CHECK(closed == 3);
     CHECK(attacked == 3);
     CHECK(scripts.scripts().errors() == 0);

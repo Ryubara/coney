@@ -92,7 +92,8 @@ binding::Results objGetIndex(const BindingContext& context, std::span<const Valu
 }
 
 // `GetRTTI(object)`: the object's type bits. Coney stand-in: only the bits the page names are given, one per kind of
-// object Coney keeps (a human, a flag, a spawned prop); a tag and every other object give 0, as a bad handle does.
+// object Coney keeps (a human, a flag, a spawned prop, a glass pane); a tag and every other object give 0, as a bad
+// handle does.
 // @orig 0x00385950 Object_GetTypeBits (unknown)
 binding::Results getRtti(const BindingContext& context, std::span<const Value> args) {
     const double handle = handleArg(args, 0);
@@ -103,6 +104,8 @@ binding::Results getRtti(const BindingContext& context, std::span<const Value> a
         bits = rtti::kFlag;
     } else if (context.spawnRecords != nullptr && context.spawnRecords->find(handle) != nullptr) {
         bits = rtti::kProp;
+    } else if (context.objects != nullptr && context.objects->glass.find(handle) != nullptr) {
+        bits = rtti::kGlass;
     }
     return binding::number(static_cast<double>(bits));
 }

@@ -36,6 +36,7 @@
 #include "scripting/sound_bindings.h"
 #include "warriors/inventory.h"
 #include "world_objects/glass.h"
+#include "world_objects/props.h"
 
 namespace coney::platform {
 
@@ -44,6 +45,17 @@ namespace {
 // A segment strike shape meets a pane's body as spheres of its radius along it, at most this far apart (**Coney's
 // reading**: the pane test takes spheres).
 constexpr float kPaneSampleStep = 0.05F;
+// How near a world object must be to be offered as a target: the square's 2 m search (docs/research/combat.md#targets).
+constexpr float kObjectTargetReach = 2.0F;
+// The strike test looks at world objects within this of the feet (Coney's stand-in for "the bodies near the human":
+// past every riot prop's body and a strike shape's reach).
+constexpr float kPropStrikeSearch = 4.0F;
+// Where a spawn record's object stands: its position and rotation (the record keeps the quaternion as {x, y, z, w}).
+world_objects::PropPose recordPose(const world_objects::SpawnRecord& record) {
+    return world_objects::PropPose{
+        .position = anim::Vec3{record.position[0], record.position[1], record.position[2]},
+        .rotation = anim::Quat{record.rotation[0], record.rotation[1], record.rotation[2], record.rotation[3]}};
+}
 // A dropped object lands this far ahead of the feet (Coney's stand-in for its fall from the hand).
 constexpr float kDropAhead = 0.3F;
 // A car stereo's context record (kind 3) reaches this far in the ground plane (`CfgActionDistance`'s default).
@@ -355,11 +367,37 @@ void PlayLevelMode::stepFlash() {
     m_print(std::format("flash: used, health {}\n", health.value()));
 }
 
+const world_objects::ObjectType* PlayLevelMode::worldObjectType(double handle) const {
+    if (m_records == nullptr || m_objectTypes == nullptr) {
+        return nullptr;
+    }
+    const world_objects::SpawnRecord* record = m_records->find(handle);
+    if (record == nullptr || record->removed) {
+        return nullptr;
+    }
+    const world_objects::ObjectType* type = m_objectTypes->find(record->typeName);
+    return type != nullptr && world_objects::isStrikeTarget(world_objects::bodyFlagsOf(type->bodyWord)) ? type
+                                                                                                        : nullptr;
+}
+
 void PlayLevelMode::giveObjectTargets() {
     if (m_objects == nullptr) {
         return;
     }
     std::vector<human::ObjectTarget> objects;
+    // The world objects in the world whose body makes them a strike target (a street prop, a trash can), not broken,
+    // within 2 m in height and near enough for the square's reach (docs/research/combat.md#targets).
+    if (m_records != nullptr && m_objectTypes != nullptr) {
+        const anim::Vec3 feet = m_player->human().position();
+        for (const world_objects::ObjectDraw& draw : m_objectTasks.draws()) {
+            if (draw.column || worldObjectType(draw.handle) == nullptr || m_objects->props.broken(draw.handle) ||
+                std::fabs(draw.position.z - feet.z) > human::kPickHeight ||
+                std::hypot(draw.position.x - feet.x, draw.position.y - feet.y) > kObjectTargetReach) {
+                continue;
+            }
+            objects.push_back(human::ObjectTarget{.handle = draw.handle, .point = draw.position});
+        }
+    }
     for (const world_objects::GlassPane& pane : m_objects->glass.panes()) {
         if (!pane.broken && !pane.hidden) {
             objects.push_back(human::ObjectTarget{.handle = pane.handle, .point = pane.centre});
@@ -593,6 +631,11 @@ void PlayLevelMode::stepObjects() {
                     services->carHit(*attacked, playerHandle(), report.part, report.broke);
                 }
             }
+        } else if (const world_objects::ObjectType* type = worldObjectType(*attacked); type != nullptr) {
+            // A world object (a street prop): its counters, the boxes' message 6 while it was intact, its own hit.
+            const world_objects::SpawnRecord* record = m_records->find(*attacked);
+            strikeProp(playerHandle(), *attacked, *type, world_objects::humanHitKind(false, false),
+                       recordPose(*record).position, ahead, feet, recordPose(*record));
         } else {
             const world_objects::GlassPane* pane = m_objects->glass.find(*attacked);
             const bool took = m_objects->humanHit(
@@ -612,6 +655,15 @@ void PlayLevelMode::stepObjects() {
         m_print(std::format("objects: {:.0f} removed\n", removed));
         if (m_pickups != nullptr) {
             m_pickups->objectRemoved(removed);
+        }
+    }
+    // A broken prop goes for good at its update: its handlers hear message 2 and its record is never spawned again.
+    for (const double removed : m_objects->props.takeRemoved()) {
+        m_print(std::format("objects: prop {:.0f} removed\n", removed));
+        if (m_pickups != nullptr) {
+            m_pickups->objectRemoved(removed);
+        } else if (m_records != nullptr) {
+            static_cast<void>(m_records->destroy(removed));
         }
     }
     // The car parts that came off this step: the hook for their shatter, sound and fall (carBreaks()).
@@ -673,7 +725,16 @@ void PlayLevelMode::strikeObjects(human::Human& human, std::span<const human::Po
             }
         }
     }
-    // The panes: each shape as spheres along it against the panes' bodies.
+    // The world objects that are strike targets, not broken and within reach of the human.
+    std::vector<std::pair<const world_objects::ObjectDraw*, const world_objects::ObjectType*>> props;
+    for (const world_objects::ObjectDraw& draw : m_objectTasks.draws()) {
+        const world_objects::ObjectType* type = draw.column ? nullptr : worldObjectType(draw.handle);
+        if (type != nullptr && !m_objects->props.broken(draw.handle) && !strikes.struck(draw.handle) &&
+            anim::distance(draw.position, feet) <= kPropStrikeSearch) {
+            props.emplace_back(&draw, type);
+        }
+    }
+    // The panes and props: each shape as spheres along it against their bodies.
     for (const human::PosedShape& shape : shapes) {
         const float length = anim::distance(shape.a, shape.b);
         const int steps = std::max(1, static_cast<int>(std::ceil(length / kPaneSampleStep)));
@@ -682,6 +743,16 @@ void PlayLevelMode::strikeObjects(human::Human& human, std::span<const human::Po
             for (const double pane : m_objects->glass.bodiesTouching(at, shape.radius)) {
                 if (!strikes.struck(pane)) {
                     strike(pane, at, world_objects::material::kGlass);
+                }
+            }
+            for (const auto& [draw, type] : props) {
+                if (!strikes.struck(draw->handle) &&
+                    world_objects::bodyTouches(*type, draw->position, draw->rotation, at, shape.radius)) {
+                    strikes.markStruck(draw->handle);
+                    strikeProp(handleOf(human), draw->handle, *type,
+                               world_objects::humanHitKind((gate.flags & kRunAttackOrCharge) != 0, gate.airborne), at,
+                               human::facing(human.heading()), feet,
+                               world_objects::PropPose{.position = draw->position, .rotation = draw->rotation});
                 }
             }
         }
@@ -719,6 +790,18 @@ void PlayLevelMode::strikeLevel(human::Human& human, std::span<const human::Pose
             return;
         }
     }
+}
+
+void PlayLevelMode::strikeProp(double attacker, double handle, const world_objects::ObjectType& type,
+                               world_objects::HitKind kind, anim::Vec3 point, anim::Vec3 direction,
+                               anim::Vec3 attackerAt, const world_objects::PropPose& pose) {
+    const world_objects::PropStrike strike = m_objects->props.strike(
+        handle, type,
+        world_objects::ObjectHit{
+            .attacker = attacker, .kind = kind, .point = point, .direction = direction, .attackerAt = attackerAt},
+        pose, m_objects->world);
+    m_print(std::format("objects: {} {:.0f} hit{}{}\n", type.name, handle,
+                        strike.intactBefore ? "" : " (already broken)", strike.broke ? ", broke" : ""));
 }
 
 double PlayLevelMode::handleOf(const human::Human& human) const {

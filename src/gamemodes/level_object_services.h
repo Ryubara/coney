@@ -17,6 +17,7 @@
 #include "world_objects/cars.h"
 #include "world_objects/flags.h"
 #include "world_objects/object_services.h"
+#include "world_objects/spawn_records.h"
 
 namespace coney {
 
@@ -46,6 +47,8 @@ class LevelObjectServices final : public world_objects::ObjectServices {
 
     /// Sounds go to `sounds` from now on (null: none).
     void setSounds(world_objects::ObjectServices* sounds) { m_sounds = sounds; }
+    /// Loose objects (a broken prop's piece) become spawn records in `records` from now on (null: none).
+    void setSpawnRecords(world_objects::SpawnRecords* records) { m_records = records; }
     /// Car stereos are freed in `cars` from now on (null: none).
     void setCars(world_objects::Cars* cars) { m_cars = cars; }
     /// Shards, dust and bursts go to `particles` from now on (null: none), culled by the camera `view` gives for
@@ -105,6 +108,10 @@ class LevelObjectServices final : public world_objects::ObjectServices {
     /// Dust: a `sub_shack_puff`. **Coney's stand-in**: which types `0x003c57d8` makes is not traced; `radius` is not
     /// used.
     void dust(anim::Vec3 at, float radius) override;
+    /// A loose object: a spawn record of `type` at `at` turned by `rotation`, in zone 0 and untinted, with the next
+    /// world object handle; kNoObject without records or a handle. **Coney's stand-in**: it rests where it is made
+    /// (no knock or fall, docs/research/physics.md#movers).
+    double spawnObject(std::string_view type, anim::Vec3 at, anim::Quat rotation) override;
     /// A leaf's burst: a `sub_shack_puff` (**Coney's stand-in**, as dust()).
     void burst(anim::Vec3 at) override;
 
@@ -123,6 +130,7 @@ class LevelObjectServices final : public world_objects::ObjectServices {
     // The 0-based player whose human is `human`; -1 for none.
     [[nodiscard]] int playerOf(double human) const;
     world_objects::Cars* m_cars = nullptr;
+    world_objects::SpawnRecords* m_records = nullptr; // setSpawnRecords()
 };
 
 } // namespace coney

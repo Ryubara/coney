@@ -9,6 +9,7 @@
 #include "world_objects/glass.h"
 #include "world_objects/lock_pick.h"
 #include "world_objects/object_services.h"
+#include "world_objects/props.h"
 
 namespace coney::world_objects {
 
@@ -27,6 +28,7 @@ class LevelObjects {
     GlassPanes glass;          ///< The glass types and panes.
     Doors doors;               ///< The doors and barriers.
     LockPickHandlers lockPick; ///< `CfgSetLockPickHandler`'s and `CfgSetLockPickStageFailHandler`'s functions.
+    Props props;               ///< The world objects strikes have landed on (the breakable street props).
 
     /// A human's landed hit on `object` (`Strike_Contact`): a pane breaks (with its alarm, window link, flags and
     /// statistic); a door or barrier takes the hit, and a `TYPE_BREAKANDENTER_DOOR` also reports a break-in at the
@@ -50,9 +52,12 @@ class LevelObjects {
     /// Research: docs/references/bindings/camera.md#camghostdoor
     /// @orig 0x003973a0 Door_SetCameraGhost (unknown)
     bool ghostForCamera(double door);
-    /// One 60 Hz tick of the doors (the panes' update does nothing).
-    void tick() { doors.tick(world); }
-    /// Forgets the level's panes and doors (its unload).
+    /// One 60 Hz tick of the doors and the broken props (the panes' update does nothing).
+    void tick() {
+        doors.tick(world);
+        props.tick();
+    }
+    /// Forgets the level's panes, doors and struck props (its unload).
     void clear();
 
   private:

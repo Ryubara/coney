@@ -166,6 +166,7 @@ add_library(coney_core STATIC
     world_objects/object_tasks.cpp
     world_objects/object_types.cpp
     world_objects/pickups.cpp
+    world_objects/props.cpp
     world_objects/placed_objects_file.cpp
     world_objects/radios.cpp
     world_objects/spinning_icons.cpp

@@ -28,12 +28,12 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 15.8%](https://img.shields.io/badge/reimplemented-15.8%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 16.8%](https://img.shields.io/badge/reimplemented-16.8%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 ![Understood: 100.0%](https://img.shields.io/badge/understood-100.0%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▏░░░░░░░░░░░░░░░░` | 15.8% of the game's own code (529,132 of 3,354,776 bytes, 1,940 functions) |
+| **Reimplemented** | `███▍░░░░░░░░░░░░░░░░` | 16.8% of the game's own code (563,308 of 3,354,776 bytes, 1,946 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,220 of 3,284,028 bytes; 11,424 of 11,426 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
@@ -81,7 +81,7 @@ at the top of the repository's `README.md`.
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 30 | 17,904 |
 | `Scripting` | `██████▏░░░░░░░░░░░░░` | 30.6% | 211 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `█▉░░░░░░░░░░░░░░░░░░` | 9.4% | 154 | 531,312 |
+| `TaskEngine` | `███▏░░░░░░░░░░░░░░░░` | 15.8% | 160 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 32 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 27 | 22,008 |
@@ -1794,6 +1794,8 @@ at the top of the repository's `README.md`.
 | `0x003913d8` | `ObjectDb_FindByName` | `TaskEngine` | not filled in |
 | `0x00391c10` | `WorldObject_Remove` | `TaskEngine` | not filled in |
 | `0x00391c98` | `WorldObject_RegisterContext` | `TaskEngine` | not filled in |
+| `0x00391d48` | `Obj_CreatePhysicsBody` | `TaskEngine` | 1,648 |
+| `0x00393450` | `WorldObject_TakeHit` | `TaskEngine` | 228 |
 | `0x00393538` | `Thrown_HitObject` | `TaskEngine` | 1,136 |
 | `0x00395020` | `ObjType_IsDoorKind` | `TaskEngine` | not filled in |
 | `0x00395b70` | `WorldObject_Update` | `TaskEngine` | 432 |
@@ -1801,6 +1803,7 @@ at the top of the repository's `README.md`.
 | `0x00396390` | `BreakObjectsInRadius` | `TaskEngine` | 40 |
 | `0x003963b8` | `World_BreakGlassInRadius` | `TaskEngine` | 784 |
 | `0x003966c8` | `BreakGlassInRadius` | `TaskEngine` | 72 |
+| `0x00396710` | `Object_IsStrikeTarget` | `TaskEngine` | 100 |
 | `0x00396778` | `ObjZone_Enable` | `TaskEngine` | 48 |
 | `0x003967e0` | `ObjZone_Mark` | `TaskEngine` | 48 |
 | `0x00396858` | `Obj_Spawn` | `TaskEngine` | not filled in |
@@ -1858,6 +1861,9 @@ at the top of the repository's `README.md`.
 | `0x003b2180` | `DoorFence_Hit` | `TaskEngine` | 3,520 |
 | `0x003b2f40` | `DoorFence_Init` | `TaskEngine` | 536 |
 | `0x003b3220` | `DoorFence_Update` | `TaskEngine` | not filled in |
+| `0x003b7538` | `DynMasks_Init` | `TaskEngine` | 1,356 |
+| `0x003b7a88` | `DynMasks_OnHit` | `TaskEngine` | 30,508 |
+| `0x003bf548` | `DynMasks_Update` | `TaskEngine` | 336 |
 | `0x003c3448` | `PartExplosion_Init` | `TaskEngine` | not filled in |
 | `0x003c4580` | `SubFireballEmitter_Init` | `TaskEngine` | not filled in |
 | `0x003c4a58` | `SubFireball_Init` | `TaskEngine` | not filled in |

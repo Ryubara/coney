@@ -83,6 +83,7 @@ std::optional<anim::Vec3> LevelObjects::positionOf(double object) const {
 void LevelObjects::clear() {
     glass.clearPanes();
     doors.clear();
+    props.clear();
 }
 
 HitKind thrownHitKind(int objectType, int animSet, bool molotov) {

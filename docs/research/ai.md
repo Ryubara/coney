@@ -4915,7 +4915,12 @@ human whose last move failed runs straight at
   AttackTarget gate and goal `0x35` are not built; past its deadline a fight goal ends only without an attack slot (the
   slot standing in for the target's active attackers). `level99`'s sparring Warriors are sent from 8.6-9.0 m ([the
   sparring fight](#level99-fight)) and run in this way: `coney_tests "the disc's level99: the sparring Warriors*"`
-  checks that all three run in with EngageEnemy, close in and attack.
+  checks that all three run in with EngageEnemy, close in and attack, that exactly one charges (faster than the run's
+  7.80 m/s) and that the other two stop short of the player, as in the original. The [steering](#steering) round each
+  other puts those two a little behind the first, so his charge has made the player busy when their re-plan tests
+  step 9; without it the three ran in abreast and all charged at once (clip 1, up to 9.6 m/s), ending 2.1-2.9 m past
+  him. Their run-ins end at 2.5 and 4.0 m from the player; the original's ended at 2.1-2.6 m, and why one of Coney's
+  ends farther is not traced.
 - **Sight and targeting** (`repo:src/ai/perception.h`, `repo:src/ai/targeting.h`, [Sight](#sight),
   [the score](#enemy-score)): the line of sight is the two rays (1.7 m, then 1.0 m) through the level's collision mesh,
   passing the six see-through materials; the field of view and `Human_CanSeeHuman` (range, then the line); the brains

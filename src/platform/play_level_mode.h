@@ -378,13 +378,19 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // After the player's step: his object attack's hit sent to its object, then the objects' two 60 Hz ticks.
     void stepObjects();
     // The strike test's objects (`Strike_Contact`'s object branch, docs/research/combat.md#moving-strikes): `human`'s
-    // posed strike `shapes` strike each door or barrier whose enabled triangles they touch and each pane whose body
-    // they reach, once while the shapes stay on, with message 1 of the attack record's hit kind, each sounding as
-    // its type's material; then the level (strikeLevel()). **Coney's stand-in**: a car's hit is not made here.
+    // posed strike `shapes` strike each door or barrier whose enabled triangles they touch, each pane whose body they
+    // reach and each strike-target world object (a street prop) whose body (props.h bodyTouches()) they reach, once
+    // while the shapes stay on, with message 1 of the attack record's hit kind, each sounding as its type's material;
+    // then the level (strikeLevel()). **Coney's stand-ins**: a car's hit is not made here; only the drawn world
+    // objects are tested.
     void strikeObjects(human::Human& human, std::span<const human::PosedShape> shapes);
     // The strike shapes' contact with the level mesh: once while the shapes stay on, the fist (or the charging body)
     // against the triangle met, as `human`'s sound (`player`: he is player 1; docs/research/sound-events.md).
     void strikeLevel(human::Human& human, std::span<const human::PosedShape> shapes, bool player);
+    // A strike from `attacker` of `kind` on the world object `handle` of `type` at `point`, which stands at `pose` (the
+    // prop's `Strike_Contact`, world_objects::Props::strike()), printed as an `objects:` line.
+    void strikeProp(double attacker, double handle, const world_objects::ObjectType& type, world_objects::HitKind kind,
+                    anim::Vec3 point, anim::Vec3 direction, anim::Vec3 attackerAt, const world_objects::PropPose& pose);
     // The handle `human` goes by as an attacker: player 1's, its brain's, else none.
     [[nodiscard]] double handleOf(const human::Human& human) const;
     // Gives player 1 triangle's pick-up over `pickups` (may be null: none): the search, with sight rays through the
@@ -404,8 +410,11 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // sound is not played; the full-health rage use (upgrade (6, 8)) is not built.
     // @orig 0x002843f8 Player_StartRage (unknown)
     void stepFlash();
-    // Player 1's square may strike the level's whole glass panes, aiming at their centres.
+    // Player 1's square may strike the world objects that are strike targets, the cars he faces and the level's whole
+    // glass panes, aiming at their positions, aim points and centres.
     void giveObjectTargets();
+    // The type of the world object `handle` (a spawn record) when its body makes it a strike target; null otherwise.
+    [[nodiscard]] const world_objects::ObjectType* worldObjectType(double handle) const;
     // Player 1's pick-up that reached its clip's event this step: the object is taken.
     void stepPickups();
     // Player 1's mugging: the scripts' record for the next one, and the end of one (the money, the mug callback).

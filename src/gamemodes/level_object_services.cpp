@@ -4,6 +4,8 @@
 #include <array>
 #include <cstddef>
 #include <optional>
+#include <string>
+#include <utility>
 
 #include "effects/effect_culling.h"
 #include "gamemodes/level_start.h"
@@ -161,6 +163,19 @@ void LevelObjectServices::burst(anim::Vec3 at) {
     if (m_particles != nullptr) {
         m_particles->spawn("sub_shack_puff", at);
     }
+}
+
+double LevelObjectServices::spawnObject(std::string_view type, anim::Vec3 at, anim::Quat rotation) {
+    const double handle = m_scripts.nextObjectHandle();
+    if (m_records == nullptr || handle == world_objects::kNoObject) {
+        return world_objects::kNoObject;
+    }
+    world_objects::SpawnRecord record;
+    record.handle = handle;
+    record.typeName = std::string(type);
+    record.position = {at.x, at.y, at.z};
+    record.rotation = {rotation.x, rotation.y, rotation.z, rotation.w};
+    return m_records->add(std::move(record)) != nullptr ? handle : world_objects::kNoObject;
 }
 
 } // namespace coney

@@ -101,6 +101,8 @@ class AiHumans {
     [[nodiscard]] const Brain& playerBrain() const { return *m_playerBrain; }
     /// `human`'s brain (null for a human that is not one of these, or the player's).
     [[nodiscard]] Brain* brainOf(const human::Human& human) { return m_brains->find(human); }
+    /// The same, for a reader (a test following the humans).
+    [[nodiscard]] const Brain* brainOf(const human::Human& human) const { return m_brains->find(human); }
     [[nodiscard]] const AiConfig& config() const { return m_config; }
     /// The player's gang and the fighters' (ids in brains().gangs()); -1 until a level's scripts make them.
     [[nodiscard]] int playerGang() const { return m_playerGang; }

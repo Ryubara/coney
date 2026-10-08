@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "scripting/spawn_bindings.h"
 
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <optional>
@@ -47,10 +48,17 @@ NativeFunction makeCfgObj(const BindingContext& context) {
             recorded->add("CfgObj", args);
         }
         if (types != nullptr) {
-            // The arguments by their place (0-based): 3 the byte `+0x5a`, 13 the pick-up animation `+0x65`, 18 the
-            // kind `+0x86` and 19 the anim set `+0x87`, each kept as a byte; 16 the float `+0x70`, a held object's
-            // grip.
+            // The arguments by their place (0-based): 3 and 4 the bytes `+0x5a` and `+0x5b`, 12 the material `+0x64`,
+            // 13 the pick-up animation `+0x65`, 18 the kind `+0x86` and 19 the anim set `+0x87`, each kept as a byte;
+            // 11 the body word `+0x5e` (16 bits); 16 the float `+0x70`, a held object's grip; 6 and 7 the body's centre
+            // and size (tables of three numbers) and 8 its shape `+0x84`.
+            constexpr std::size_t kBodyCentreArg = 6;
+            constexpr std::size_t kBodySizeArg = 7;
+            constexpr std::size_t kBodyShapeArg = 8;
             constexpr std::size_t kValueArg = 3;
+            constexpr std::size_t kSecondHitsArg = 4;
+            constexpr std::size_t kBodyWordArg = 11;
+            constexpr std::size_t kMaterialArg = 12;
             constexpr std::size_t kPickupAnimArg = 13;
             constexpr std::size_t kObjectKindArg = 18;
             constexpr std::size_t kAnimSetArg = 19;
@@ -75,6 +83,12 @@ NativeFunction makeCfgObj(const BindingContext& context) {
             type.holdPosition = anim::Vec3{hold[0], hold[1], hold[2]};
             const std::array<float, 4> turn = quaternionArg(args, kHoldRotationArg);
             type.holdRotation = anim::Quat{turn[0], turn[1], turn[2], turn[3]};
+            type.secondHits = byte(kSecondHitsArg);
+            type.bodyWord = static_cast<std::uint16_t>(unsignedArg(args, kBodyWordArg) & 0xffffU);
+            type.material = static_cast<std::uint8_t>(byte(kMaterialArg));
+            type.bodyCentre = binding::position(args, kBodyCentreArg).value_or(std::array<float, 3>{});
+            type.bodySize = binding::position(args, kBodySizeArg).value_or(std::array<float, 3>{});
+            type.bodyShape = byte(kBodyShapeArg);
             types->add(std::move(type));
         }
         return binding::none();

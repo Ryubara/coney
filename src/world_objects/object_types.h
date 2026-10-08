@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -31,7 +32,22 @@ struct ObjectType {
     /// hat on a human who is not a Warrior sits there in his head's frame (docs/research/characters.md#hats).
     anim::Vec3 holdPosition{};
     anim::Quat holdRotation{};
+    int secondHits = 0; ///< `+0x5b`, `CfgObj`'s 5th argument: the hits a flying or held object spends first.
+    /// `+0x5e`, `CfgObj`'s 12th argument: the word its collision body's flags come from (bodyFlagsOf()).
+    std::uint16_t bodyWord = 0;
+    std::uint8_t material = 0; ///< `+0x64`, `CfgObj`'s 13th argument: its surface material (impact sounds).
+    /// `CfgObj`'s 7th argument: the collision body's centre in the object's frame, metres.
+    std::array<float, 3> bodyCentre{};
+    /// `+0x78`, `CfgObj`'s 8th argument: the collision box's size (whole extents), metres.
+    std::array<float, 3> bodySize{};
+    /// `+0x84`, `CfgObj`'s 9th argument: the body's shape (`PHYS`: 0 none, 1 a box, 2 a sphere, 3 an upright
+    /// cylinder, 4 a capsule).
+    int bodyShape = 0;
 };
+
+/// `PHYS.OBB` and `PHYS.SPHERE`: the body shapes `Obj_CreatePhysicsBody` makes (docs/research/objects.md#spawning).
+inline constexpr int kBodyBox = 1;
+inline constexpr int kBodySphere = 2;
 
 /// `TYPE_SPECIAL`: a store's jewellery and other loose loot (docs/research/combat.md#breakables).
 inline constexpr int kObjectKindSpecial = 12;

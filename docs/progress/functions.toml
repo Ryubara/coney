@@ -9302,6 +9302,18 @@ name = "WorldObject_RegisterContext"
 subsystem = "TaskEngine"
 
 [[function]]
+address = 0x00391d48
+name = "Obj_CreatePhysicsBody"
+subsystem = "TaskEngine"
+size = 1648
+
+[[function]]
+address = 0x00393450
+name = "WorldObject_TakeHit"
+subsystem = "TaskEngine"
+size = 228
+
+[[function]]
 address = 0x00393538
 name = "Thrown_HitObject"
 subsystem = "TaskEngine"
@@ -9341,6 +9353,12 @@ address = 0x003966c8
 name = "BreakGlassInRadius"
 subsystem = "TaskEngine"
 size = 72
+
+[[function]]
+address = 0x00396710
+name = "Object_IsStrikeTarget"
+subsystem = "TaskEngine"
+size = 100
 
 [[function]]
 address = 0x00396778
@@ -9661,6 +9679,24 @@ size = 536
 address = 0x003b3220
 name = "DoorFence_Update"
 subsystem = "TaskEngine"
+
+[[function]]
+address = 0x003b7538
+name = "DynMasks_Init"
+subsystem = "TaskEngine"
+size = 1356
+
+[[function]]
+address = 0x003b7a88
+name = "DynMasks_OnHit"
+subsystem = "TaskEngine"
+size = 30508
+
+[[function]]
+address = 0x003bf548
+name = "DynMasks_Update"
+subsystem = "TaskEngine"
+size = 336
 
 [[function]]
 address = 0x003c3448
