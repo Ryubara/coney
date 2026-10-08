@@ -335,33 +335,68 @@ the next update turns both off. It ends after 240 ticks or on message `0x13`.
 
 ### Blood {#blood}
 
-The blood types: `sub_blo` and `sub_pch` / `sub_punch_flash` (hit effects) make `sub_blood_effect`, which makes the
-pieces. Colours are `0x7a0015` (`0x9a1616` for sprays) unless the colour swap above is on.
+The blood types: `sub_blo`, `sub_pch` and `sub_punch_flash` make `sub_blood_effect`, which makes the pieces. Which
+hits and clip events start them, and with what count, is on [Combat: hit blood](combat.md#hit-blood). Colours are
+`0x7a0015` (`0x9a1616` for sprays, `0x280606` for the ground drops, `0x801010` for the decal) unless the colour
+swap above is on. Every piece below is a camera-facing square of `part_page1` drawn by the particle draw, which
+blends each update's colour and size from the previous ones over the update interval ([Particles](particles.md#fog));
+ticks are 1/60 s ([Tasks](tasks.md#tick)). Confirmed (code) at each address unless marked.
+
+**One `sub_blood_effect`** (attached to a bone of the human, an update every 2 ticks, 8 updates), within 25 m of a
+camera and in a view (10 m margin), with `d` its spray direction (the effect's rotation applied to +y, or, for the
+single burst of a fist hit, the unit direction of the bone's motion since the last update):
+
+- at once, for bones 5-15: a `blood_mist` at the head;
+- its first update after that: one `blood_splatter` with velocity `0.7 d`, a `bloosh` 0.25 m along `d` (velocity
+  `d` × 1-1.75) when it has a parent, and 8 `blood_spray` within ±0.1 m of the bone (velocity `d` × 1-1.5);
+- the next six updates: one `blood_drop` within ±0.1 m (velocity `d` × 1-3), the start point moving to the bone each
+  time.
+
+**The blob** (`blood_splatter`) is an unseen tracer: it is hidden (flag `0x04`) and sets no sprite. It starts at the
+bone with velocity `v × r + (0, 0, u)`, `r` in [1, 3] and `u` in [2, 2.5] m/s, falls under the task gravity of
+15.68 m/s² (flag `0x4000000`, `Task_Integrate`) and probes ahead for a surface (flag `0x10000000`,
+[Particles: landing](particles.md#landing)). On the update after the probe hits (flag `0x20000000`), which the probe
+times to the contact, it:
+
+1. plays `vags/character/blood_02` once at its position (`PlaySound3DByName`, volume and pitch 1, duckable; its
+   distances come from the sound list);
+2. lies flat on the surface (its rotation turns −y onto the contact normal `n`), drops flags `0x20000000` and
+   `0x4000000` and sets `0x2000001`, so it no longer falls, and does not land again (confirmed (runtime): one
+   landing per blob, [Combat](combat.md#hit-blood));
+3. makes `blood_splat_ground` drops, each lying on the surface with the blob's new rotation:
+    - on a floor (`n.z` 0.9 or more): 17; drop *i* (0-16) at the blob plus `(sx · dx, sy · dy, 0)`, `sx` and `sy`
+      each random in [−k, k] with `k` = 0.1-0.4 + 0.15 *i* and `(dx, dy)` the blob's direction `0.7 d`: a spatter
+      stretched along the spray;
+    - on a wall or slope: 10 in a line along `c` = `0.7 d` × `n` (cross product), 5 each way; drop *i* (0-4) at
+      ±(0.05-0.1 + 0.1 *i*) along `c`, with up to 0.06 m of jitter and its `y` scaled by 1-1.75.
+
+The blob ends at its 180th update (step 179 sets a 180-tick interval and alpha 0) or when the pool is short; a blob
+that never lands makes no drops and no sound.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
-| `0x003a9090` | `SubBlo_Init` | `sub_blo` init | attached emitter; at once a `sub_blood_effect` unless blood is off | confirmed (code) |
-| `0x003a9270` | `SubBlo_Update` | `sub_blo` update | one `blo_splat` (with its parent) when near a camera and blood is on; done | confirmed (code) |
-| `0x003adcc0` | `BloSplat_Init` | `blo_splat` init | a decal on the surface a ray finds (1 m along its rotation, else 2 m along the parent's; `0x003a36e0`), turned to its normal; own sprite batch (`PTank_New(10, 0x10005)`); hidden when no surface | confirmed (code) |
-| `0x003ae0f0` | `BloSplat_Update` | `blo_splat` update | 6 steps of 60 ticks (fades early when the pool is busy), then frees its batch (`0x003a4f78`) | confirmed (code) |
-| `0x003ae180` | `Bloosh_Init` | `bloosh` init | a puff with velocity, sprite `0x1002e`, update every 4 | confirmed (code) |
-| `0x003ae2b0` | `Bloosh_Update` | `bloosh` update | sprites `0x2e`-`0x31`, one per update, then done | confirmed (code) |
-| `0x003ae328` | `BloodMist_Init` | `blood_mist` init | a mist at a bone of the human it came from (`0x003a3f30`), placed with the player camera | confirmed (code); camera role inferred |
-| `0x003ae520` | `BloodMist_Update` | `blood_mist` update | follows bone 6, grows to 0.6, 5 alpha less a step; done when faded | confirmed (code) |
-| `0x003ae708` | `BloodSplatGround_Init` | `blood_splat_ground` init | a small drop on the ground, sprite `0x2`-`0x4`, update every 10 | confirmed (code) |
-| `0x003ae880` | `BloodSplatGround_Update` | `blood_splat_ground` update | step 3: 180-tick interval, size 0.225; step 4: faded, 0.45; done at 5 | confirmed (code) |
-| `0x003ae990` | `BloodSplatter_Init` | `blood_splatter` init | a falling blob, velocity × 1-3, flags `0x14000005` | confirmed (code) |
-| `0x003aeb78` | `BloodSplatter_Update` | `blood_splatter` update | on landing (flag `0x20000000`): sound `vags/character/blood_02`, lies on the floor, and 10 drops in a line along its travel (5 each way) or 17 around it on a slope; step 179 waits 180 ticks, done at 180 | confirmed (code) |
-| `0x003af280` | `BloodDrop_Init` | `blood_drop` init | a drop jittered ±0.25 m, sprite `0x10034`, colour by kind (1, 2) | confirmed (code) |
-| `0x003af518` | `BloodDrop_Update` | `blood_drop` update | 4 alpha less a step for 20 steps | confirmed (code) |
-| `0x003af590` | `BloodSpray_Init` | `blood_spray` init | a streak with velocity × 1-2, sprite `0x10034` | confirmed (code) |
+| `0x003a9090` | `SubBlo_Init` | `sub_blo` init | attached emitter; at once a `sub_blood_effect` (kind word `0x10000`, so its mist draws from batch 1) unless blood is off | confirmed (code) |
+| `0x003a9270` | `SubBlo_Update` | `sub_blo` update | once: a `blo_splat` along its +y when blood is on, the pool has room, it has a parent and `Effects_CanSpawnAt(15, 5)`; done | confirmed (code) |
+| `0x003adcc0` | `BloSplat_Init` | `blo_splat` init | a decal with its own batch (`PTank_New(10, 0x10005)`, rectangle 5): a ray 1 m along its direction, else 2 m along the parent's +y (`Effects_RayCastToGlobals`, `0x003a36e0`); 0.05 m off the hit along the normal, turned to it; size 0 → 0.2 (0.4 when the normal's z is beyond ±0.99), alpha 0 → 255, every 60 ticks; hidden when no ray hits or the surface id (ray result `+0x24`) is 2 | confirmed (code); the surface id's meaning not traced |
+| `0x003ae0f0` | `BloSplat_Update` | `blo_splat` update | step 5 (or a short pool) fades to alpha 0; step 6 frees its batch and ends: 360 ticks | confirmed (code) |
+| `0x003ae180` | `Bloosh_Init` | `bloosh` init | a puff with velocity, rotation from the parent, sprite `0x1002e`, size 0 → 0.2, alpha 0 → 128, every 4 ticks | confirmed (code) |
+| `0x003ae2b0` | `Bloosh_Update` | `bloosh` update | rectangles 46-49, one per update, then done (16 ticks) | confirmed (code) |
+| `0x003ae328` | `BloodMist_Init` | `blood_mist` init | at a bone of the human (`0x003a3f30`) moved 0.15 m toward player 1's camera; rectangle 7 of the batch in its word's high half; opaque; size 0 → 0.15; every 2 ticks | confirmed (code) |
+| `0x003ae520` | `BloodMist_Update` | `blood_mist` update | re-placed at bone 6 (the head) 0.15 m toward the camera; size + 0.045 × growth (1, or 1.33 from a weapon's flash) while under 0.6; alpha 5 less; done after 16 ticks | confirmed (code) |
+| `0x003ae708` | `BloodSplatGround_Init` | `blood_splat_ground` init | a still drop (flags 1), rectangle 2-4, size 0 → 0.10-0.15, alpha 128, every 10 ticks | confirmed (code) |
+| `0x003ae880` | `BloodSplatGround_Update` | `blood_splat_ground` update | after 3 updates a 180-tick interval spreading to 0.225; then 180 ticks fading to alpha 0 while spreading to 0.45; done (400 ticks in all) | confirmed (code) |
+| `0x003ae990` | `BloodSplatter_Init` | `blood_splatter` init | the unseen blob: flags `0x14000005`, velocity × 1-3 + 2-2.5 m/s up, size 0 → 0.05 | confirmed (code) |
+| `0x003aeb78` | `BloodSplatter_Update` | `blood_splatter` update | on landing the `blood_02` sound, lies flat, 17 drops on a floor or 10 in a line on a wall; done at step 180 | confirmed (code); one landing per blob confirmed (runtime) |
+| `0x003af280` | `BloodDrop_Init` | `blood_drop` init | a falling drop (flags `0x4800000`), sprite `0x10034`, size 0 → 0.06, alpha 0 → 255; kind 1: velocity x, y ± 0.25 then × 0.9, alpha 235; kind 2: × 0.85, alpha 215 (the effect passes 0) | confirmed (code) |
+| `0x003af518` | `BloodDrop_Update` | `blood_drop` update | alpha 4 less a step; done at step 20 (40 ticks) or when it is down to 15 | confirmed (code) |
+| `0x003af590` | `BloodSpray_Init` | `blood_spray` init | a falling streak (flags `0x4800000`), velocity × 1-2, sprite `0x10034`, size 0 → 0.05, alpha 0 → 255 | confirmed (code) |
 | `0x003af728` | `BloodSpray_Update` | `blood_spray` update | as `blood_drop` | confirmed (code) |
-| `0x003af7a0` | `SubBloodEffect_Init` | `sub_blood_effect` init | attached to a human's bone; for bones 5-15 a `blood_mist` at once; keeps the start point | confirmed (code) |
-| `0x003afa08` | `SubBloodEffect_Update` | `sub_blood_effect` update | 8 steps within 25 m and on screen: step 1 a `blood_splatter`, a `bloosh` and 8 `blood_spray`; later steps one `blood_drop` along the bone's movement | confirmed (code) |
+| `0x003af7a0` | `SubBloodEffect_Init` | `sub_blood_effect` init | attached to a human's bone; for bones 5-15 a `blood_mist` at once; keeps the start point and the direction | confirmed (code) |
+| `0x003afa08` | `SubBloodEffect_Update` | `sub_blood_effect` update | 8 steps within 25 m and on screen: step 1 a `blood_splatter`, a `bloosh` and 8 `blood_spray`; later steps one `blood_drop` | confirmed (code) |
 | `0x003b00c8` | `SubBloodGush_Init` | `sub_blood_gush` init | attached emitter, keeps the start point | confirmed (code) |
 | `0x003b01e8` | `SubBloodGush_Update` | `sub_blood_gush` update | 16 steps: step 1 a `blood_splatter` (1 in 4), a `bloosh`, 8 sprays; then two `blood_drop` a step | confirmed (code) |
-| `0x003b1460` | `SubPunchFlash_Init` | `sub_punch_flash` init | within 25 m and on screen, blood on: with a count above 1 a `blood_mist` and count + 1 `sub_blood_effect` at random angles; else one | confirmed (code) |
-| `0x003b17f8` | `SubPch_Init` | `sub_pch` init | a hit's effect: kind 0 a `sub_sweat_effect`, else a `sub_blood_effect` (blood on) | confirmed (code) |
+| `0x003b1460` | `SubPunchFlash_Init` | `sub_punch_flash` init | within 25 m and on screen, blood on: count 1 one `sub_blood_effect`; count *n* of 2 or more a `blood_mist` (× 1.33) and *n* + 1 `sub_blood_effect` at random turns about z; count 0 nothing | confirmed (code) |
+| `0x003b17f8` | `SubPch_Init` | `sub_pch` init | a clip's `pch` event: kind 0 (not hurt) a `sub_sweat_effect`, else a `sub_blood_effect` (blood on) | confirmed (code) |
 
 ### Sweat {#sweat}
 
@@ -568,21 +603,31 @@ object. Confirmed (code) at the addresses in the table.
 - **The breaking hit, drawer gone** (the register was lifted): it spawns a **`dyn_cashreg_c`** (a
   [`fade_object`](#fade-object)) at its position + 0.2 × its contact vector `+0xb0` + its contact offset, in its own
   rotation, sets the piece's `+0x124` = 1 (always: the register was not broken before), knocks it (message `0x30` with
-  the hit's direction and no spin; the piece flies at 2-5 m/s, [`fade_object`](#fade-object)), makes three dust
-  bursts (one at a random offset of 0-0.25 m on each axis, × and y signed), sets `+0x11` and reschedules itself for the
+  **the hit's direction** (message 1's first vector) and a zero spin; the piece flies at 2-5 m/s along it, z 0,
+  [`fade_object`](#fade-object)), makes three dust
+  bursts (the third at a random offset of 0-0.25 m on each axis, x and y signed), sets `+0x11` and reschedules itself
+  for the
   next tick, when its update answers done and it is removed. The piece spawns the money once it has landed
   ([`fade_object`](#fade-object)).
 - **How a lifted register breaks**: contacts while held or flying spend its counters
   (`OverheadWeapon_ContactDamage` `0x003932c8` then `WorldObject_TakeHit` `0x00393450`, which spends `+0x10e` first for
   a held `dyn_cashreg` or anything airborne), and the contact that leaves `+0x10d` or `+0x10e` at 0 breaks it
   (`WorldObject_OnContact` `0x00394050` then `WorldObject_Break` `0x00393e20`: it is dropped and sent message 1 with
-  kind −1). With `+0x10e` 3, three damaging contacts break it. A held register is damaged by contacts with humans; one
-  that is not held (and, unlike the trash props, not of class `overhead_weapon`) only while its body has flag 1, which a
-  thrower's contact clears, so a thrown register spends one count per throw (inferred from `0x003932c8`; not measured).
+  kind −1). With `+0x10e` 3, three damaging contacts break it. A **held** register (model `0x3c4e590b`) is worn by
+  **every** contact; one that is **not held** (not of class `overhead_weapon`) only while its body has flag 1, which a
+  throw sets and its first contact clears, so a thrown register spends one count per throw and nothing as it rolls
+  (confirmed (code) at `0x003932c8`, [Objects: wear on contact](objects.md#throws); counts not measured).
 - **Dropped** (message `0x1c`, `DynCashreg_OnDrop` `0x003c0330`): detached, airborne, a velocity of the holder's
   forward vector crossed with the given vector, record `+0x00` = (0, 0, −9.8), a random spin about z of up to 2.5-4.5
   rad/s (negative), interval 2.
 - **Knocked** (message `0x30`): velocity 4-6 × the knock's horizontal part, the given spin, airborne.
+- **The piece `dyn_cashreg_c`** (`config_preload3`): class `fade_object`, `TYPE_GENERIC`, shape `OBB` 0.53 × 0.55 ×
+  0.58, axis `XY`, argument 11 (the restitution, [Physics](physics.md)) 0.1, `PHYFLAG` 0 (a body of flags `0x500`:
+  only the level mesh stops it; walkers, thrown objects and strikes pass through), material `CASHREG`, arguments 15-18
+  0.8, 0.8, 0.3, 0.3 (not traced). Its launch direction is the register's break direction: a strike's direction, or
+  the contact normal when a thrown or held register breaks on a contact ([Objects](objects.md#throws)), so a register
+  dropped flat on the floor gives its piece almost no horizontal speed. The ±0.25 m random offset in the break is the
+  third dust burst's position, not a push. Confirmed (code) at `DynCashreg_OnMessage` (`0x003c06b0`).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -2147,9 +2192,31 @@ Data: `+0x20` state, `+0x24` update interval, `+0x30` a linked object's handle, 
 | --- | --- | --- | --- | --- |
 | `0x00403090` | `ThrownWeapon_Init` | `thrown_weapon` init | flags `0x228081`, update 20, model, tint, link for `CfgObj` kind 11 | confirmed (code) |
 | `0x004032c0` | `ThrownWeapon_OnPickedUp` | message `0x1b` | rotation reset, attached to the human's bone, messages 3 and `0x17` to him | confirmed (code) |
-| `0x004034b8` | `ThrownWeapon_Break` | message 1 | state −5; by model hash, bursts of set colours and pieces (4-7 for the first tinted model, 10-13 for the second; inferred: glass), and for one model 60 particles | confirmed (code) |
+| `0x004034b8` | `ThrownWeapon_Break` | message 1 | state −5 (removed next update), position set to the hit point, effects by model hash (below) | confirmed (code) |
 | `0x004041a8` | `ThrownWeapon_OnMessage` | `thrown_weapon` message | 0 pick-up offer, 1 break, 4 update 2, 8 detach, 10 hittable (off also stops the link), `0x19` flag `0x8000`, `0x1b` picked up, `0x1c` dropped (detached, airborne), `0x20` the link off, `0x30` thrown, `0x32` attach to a human | confirmed (code) |
 | `0x00404660` | `ThrownWeapon_Update` | `thrown_weapon` update | as `melee_weapon`'s; airborne below z velocity −500: done; on landing two models bleed (`sub_blo`, a message to itself) or set state −10; broken: the link dropped and done | confirmed (code) |
+
+**The break** (`ThrownWeapon_Break`, `0x004034b8`, message 1), confirmed (code). It pops the direction, the hit point P,
+the kind, the strength and two handles. Unless the kind is −2 the state becomes **−5**; the object's position is set
+to P. The effects run when the kind is non-zero (every contact break, kind −1) or when the particle pool has room and
+P is visible from a camera (10 m margin). With c the object's contact vector `+0xb0` and u the unit vector from data
+`+0x10` (the view position stored at its last landing, zero before one) to its view position:
+
+- **`dyn_beerbottle`** (`0x6effeee0`): the default dust (`Particles_Dust`, radius 1.6, colour `0x8b7d6994`) at P, then
+  **4-8** `sub_coloured_glass` pieces (`Spawn_SubColouredGlass`, `Random_Int(4)` + 4), each at P + a random offset of
+  ±0.04 m per axis, velocity u × 0.5-1.0, size 0.025-0.045, colour **`0x6f4d42ff`** (brown glass); a kind above 0 (a
+  strike) destroys it at once (`ScriptObj_Destroy`).
+- **`dyn_brick`** (`0x83baff06`): the dust, then a `sub_rubble` (`Spawn_SubRubble`) at P along c with 0.06,
+  colour `0xa5786490` and 0x55.
+- **`dyn_baseball`, `dyn_cueball`**: the dust and a `sub_rubble` along 0.15 c, 0.04, grey `0x909090ff`, 1.
+- `dyn_bong_f` (`0x26b7048b`): 10-14 coloured glass pieces in its own tint; `dyn_poolball08_` (`0x0191ccb4`) a rubble in
+  its tint; food, paint and oil cans: `WorldObject_HitEffectsByModel` along c; `dyn_mug`: a burst of 10-15 and
+  `sub_detergent`; `dyn_drumstick`: 6 splinters; `dyn_rice_steamer`: 60 debris; and a few bursts by model.
+
+It plays **no sound**: the break's sound comes from the contact handler before it (the pair (bottle, bottle) at 1.0 and
+(bottle, surface) at 0.5 at the contact point on a floor, [Objects](objects.md#throws)). It removes nothing itself: with
+state −5 the next `ThrownWeapon_Update` (interval 2 while flying) answers done and the object is removed, 1-2 ticks
+after the contact.
 
 ### The Molotov {#molotov}
 

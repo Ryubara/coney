@@ -1,0 +1,113 @@
+# An AI on the gravel heap leg of level99 lesson 2: Vermin (slot 6, dead brain, sphere 0.35 m) on his own
+# GoalMoveToFlag (0x006e05e0 in this state) re-aimed at (-285.2, 124.2), walk, radius 2, from the leg's start.
+# Research: docs/research/characters.md#slopes.
+description = "level99 gravel heap: Vermin (dead brain, radius 0.35) on his GoalMoveToFlag re-aimed at (-285.2, 124.2), gait 2, radius 2, from (-271.7, 129.4)"
+research = "docs/research/characters.md#slopes"
+input = "heap_ai.txt"
+updates = 600
+fields = ["player", "enemy"]
+
+[[field]]
+name = "e_px"
+address = "tf(enemy) + 0x0"
+type = "f32"
+digits = 3
+
+[[field]]
+name = "e_py"
+address = "tf(enemy) + 0x4"
+type = "f32"
+digits = 3
+
+[[field]]
+name = "e_z"
+address = "tf(enemy) + 0x8"
+type = "f32"
+digits = 3
+
+[[field]]
+name = "e_vx"
+address = "enemy + 0x30"
+type = "f32"
+digits = 3
+
+[[field]]
+name = "e_vy"
+address = "enemy + 0x34"
+type = "f32"
+digits = 3
+
+[[field]]
+name = "e_vz"
+address = "enemy + 0x38"
+type = "f32"
+digits = 3
+
+[[field]]
+name = "e_gnz"
+address = "enemy + 0x238"
+type = "f32"
+digits = 3
+
+[[field]]
+name = "e_blocked"
+address = "u32(enemy + 0x1a0) + 0x70"
+type = "u32"
+
+[[field]]
+name = "e_fail"
+address = "brain(enemy) + 0x284"
+type = "s32"
+
+[[field]]
+name = "e_aim_x"
+address = "brain(enemy) + 0x90"
+type = "f32"
+digits = 2
+
+[[field]]
+name = "e_aim_y"
+address = "brain(enemy) + 0x94"
+type = "f32"
+digits = 2
+
+[[field]]
+name = "e_aim_z"
+address = "brain(enemy) + 0x98"
+type = "f32"
+digits = 2
+
+[[field]]
+name = "e_b60"
+address = "u32(enemy + 0x1a0) + 0x60"
+type = "f32"
+digits = 4
+
+[original]
+slot = 6                          # the owner's slot 6, copied read-only
+patches = ["scripted-pad", "right-stick", "call-brains"]
+let = { enemy = 'human("Vermin")' }
+setup = [
+  { address = "0x006e05f0", type = "f32", value = "-285.2", frame = 0 },
+  { address = "0x006e05f4", type = "f32", value = "124.2", frame = 0 },
+  { address = "0x006e05f8", type = "f32", value = "0.3", frame = 0 },
+  { address = "0x006e0604", type = "s32", value = "2", frame = 0 },
+  { address = "0x006e060c", type = "f32", value = "2.0", frame = 0 },
+  { address = "tf(enemy) + 0x0", type = "f32", value = "-271.7", frame = 0, until = 3 },
+  { address = "tf(enemy) + 0x4", type = "f32", value = "129.4", frame = 0, until = 3 },
+  { address = "tf(enemy) + 0x8", type = "f32", value = "0.3", frame = 0, until = 3 },
+  { address = "tf(enemy) + 0x10", type = "f32", value = "0.0", frame = 0, until = 3 },
+  { address = "tf(enemy) + 0x14", type = "f32", value = "0.0", frame = 0, until = 3 },
+  { address = "tf(enemy) + 0x18", type = "f32", value = "0.549", frame = 0, until = 3 },
+  { address = "tf(enemy) + 0x1c", type = "f32", value = "0.836", frame = 0, until = 3 },
+  { address = "tf(player) + 0x0", type = "f32", value = "-267.5", frame = 0, until = 3 },
+  { address = "tf(player) + 0x4", type = "f32", value = "127.6", frame = 0, until = 3 },
+  { address = "tf(player) + 0x8", type = "f32", value = "0.3", frame = 0, until = 3 },
+]
+calls = [
+  { function = "0x0028db20", args = ["brain(enemy)"], frame = 4 },
+]
+
+[coney]
+level = "level99"
+args = ["--checkpoint", "3"]

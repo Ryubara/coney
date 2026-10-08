@@ -1074,6 +1074,69 @@ Points a playthrough test needs:
   them to go back (a dropped bottle shows `TT_26` again).
 - **Entered at checkpoint 3 or 4** (`LoadState`), the chapter's `Setup` also locks the commands and fades in; at 3 it
   sets up the Destroyer-cop and alley-bum events chapter 2 would have.
+- **The scenes' ids**: most chapter scenes are preloaded with **one** argument (`ScenePreload("l80_c7")`, no
+  callback), 2-3 s after the chapter's `Setup` by a scheduled call, into a global (`CochiseSwanScene`, ...). That
+  number is the `SceneId` `SuperRunScene` later stores as `tblScene[SceneId]` (`global.lua` function 125) because
+  the table says `Preloaded`; a nil id stops the script there ("table index is nil"). So `ScenePreload` must return
+  the scene's id with or without a callback name (the original returned 1744 for `l80_c7`), and the preload must
+  have run before the volume is entered. Confirmed (runtime) for the order: `Setup` at update 54185, the preload 67
+  updates later.
+
+#### The order at runtime (reference) {#level80-hints}
+
+One play of the whole mission on the original (2026-10-08), entered at checkpoint 1 from a `level99` state by
+setting mode 8's level to `level80` (record 2) and reloading, with the hooks `lua-exec`, `c-call`, `c-call-args`,
+`game-hint` and `hint-show` of `repo:research/traces/patches.toml` and the `call-brains` call hook. Scenes were left
+to play out. Input over PINE as a pad: R2 held with the right stick at full deflection for each order (up, down,
+down-left, up-left), the left stick at 0.4-0.7 for walks, triangle, L1, cross, square and the L1/R1 mash. Long walks
+were shortened by **teleports** (`Object_Teleport`, `0x00385bb8`, through the call hook) to just outside each
+objective's volume, so nothing on the routes was exercised. Updates count from the first sample; the waits between
+steps are the driver's, so only the order and the gaps inside one step mean anything. "Shown" is when
+`HintBox_Update` takes the text off its queue (`0x001cdf7c`). Confirmed (runtime).
+
+| Update | Step | Shown or set, in order |
+| --- | --- | --- |
+| 416 | 1.1 | `HUDSetObjective(2, MP_1, 0)`; scene `l80_c1` (preloaded, played at once) |
+| 1859-2058 | 1.2 | Warrior command 3 issued; **`TT_1`** shown; scene `l80_make_out` (Ajax, looping); **`TT_4`** shown 151 updates after `TT_1`; `WCSetCallback("CommandIssued")` |
+| 4423 | 1.3 | follow given: callback and text cleared |
+| 4647 | 1.4 | objective **`MS_C1_1`** (states 0, 1, 0) and its radar objective, 224 updates after the order (the crew's walk down) |
+| 14264-15182 | 1.4 | `vAjaxTrigger` entered: hint flushed, `MS_C1_1` state 2, radar objective removed; scene **`l80_c4`**; **`SetCheckPoint(2)`** at its end |
+| 15182 | 2.1 | command 0 issued; objective **`MS_C2_1`** (0, 1, 0) and its radar objective; `l80_c5` preloaded |
+| 20437-20467 | 2.1 | within 2 m of `fSnowCowboyTrigger`: `MS_C2_1` state 2; scene **`l80_c5`** |
+| 21478-21824 | 2.2 | command 0 issued; **`TT_11`** shown 196 updates after; cleared and objective **`MS_C2_2`** (0) 144 updates later |
+| 29582 | 2.2 | Snow freed (one triangle, then L1/R1 alternating every 2 updates) |
+| 34143-34173 | 2.2 → 3.1 | Cowboy freed: `MS_C2_2` state 2; **`SetCheckPoint(3)`** 30 updates later; objective **`MS_C3_1`** (0, 1, 0); `l80_c6` preloaded |
+| 35038-35071 | 3.1 | `vFoxTrigger` entered: `MS_C3_1` state 2; scene **`l80_c6`** |
+| 35989 | 3.2 | `WCSetCallback("StartPlayers2")`; **`TT_5`** shown |
+| 36655 | 3.2 | hold given: callback and text cleared; objective **`MS_C3_1a`** (0) and its radar objective |
+| 36891-37101 | 3.3 | `vThrowTutorialTrigger` entered: `MS_C3_1a` state 1; **`TT_25`** 37 updates later; objective **`MS_C3_2`** (0) 143 updates after that; **`TT_26`** 30 updates later |
+| 37929 | 3.3 | a bottle in hand: **`TT_27`** |
+| 38230 | 3.3 | L1 (throw aim): **`TT_28`** |
+| 47972 | 3.3 | aimed at the marker (the aim turned right and pitched down to 0.139 rad; the aim's target `+0x634` set): **`TT_29`** |
+| 48302-48332 | 3.3 | cross: the bottle broke in `vBottleBox`, thrown from the roof ([message 6](#triggers)): `MS_C3_2` state 2, text cleared, command 0 issued; scene **`l80_c6_b`** |
+| 49202-49207 | 3.4 | command 0 issued; **`TT_7`**; `WCSetCallback("StartVandalize")` |
+| 50317-50373 | 3.4 | wreck given: text cleared; objective **`MS_C3_3`** (0) and the front-door radar objective; `CfgSetLockPickHandler(nil, nil, "FrontDoorPicked")`; command 0, then command 5 two seconds later |
+| 52875 | 3.5 | front lock picked (three cross presses 31, 16 and 10 updates apart from the dial's start): text cleared, command 5 issued, marker removed |
+| 53230-53236 | 3.5 | the crew's tenth stolen object: `MS_C3_3` state 2, objective **`MS_C3_4`** (0), `CfgSetLockPickHandler(... "BackDoorPicked")`, back-door radar objective |
+| 54166-54185 | 3.6 → 4.1 | back lock picked: `MS_C3_4` state 2; **`SetCheckPoint(4)`** 11 updates later; objective **`MS_C4_1`** (0, 1, 0); `l80_c7` preloaded |
+| 54609-54638 | 4.1 | `vCochiseSwanTrigger` entered: `MS_C4_1` state 2; scene **`l80_c7`** |
+| 55063-55069 | 4.2 | command 0 issued; **`TT_8`**; `WCSetCallback("CommandIssued")` |
+| 62056-62204 | 4.2 | attack given: text cleared, `HUDRemoveAllGoalText`, objective **`MS_C4_2`** (0), command 1 issued; **`TANDEM`** shown 148 updates later (`<DISPLAYTIME 6000>`) |
+| 63277-63363 | 4.4 | the last Destroyer down (all twelve beaten, 1,200 updates of square at the nearest): `MS_C4_2` state 2; scene **`l80_c3`** 86 updates later |
+| 63726-64643 | 4.4 | scene **`l80_c3_a`**, then **`l80_c3_b`** (`Final`) |
+| 65829-65831 | end | **`HUDLaunchMissionComplete()`**; `UM_Unlock(80, …)`; `level87` loads at checkpoint 1 |
+
+Points a playthrough test needs:
+
+- **Hints in order**: `TT_1`, `TT_4`, `TT_11`, `TT_5`, `TT_25`, `TT_26`, `TT_27`, `TT_28`, `TT_29`, `TT_7`, `TT_8`,
+  `TANDEM`. `TT_26`-`TT_29` follow the thrower's state (a test that drops the bottle sees `TT_26` again).
+- **Not seen in this run**: `TT_9` (Cleon's message 1 from a gang-type-19 attacker; he was not hit), and no game hint
+  (`HintBox_QueueGameHint`) at all, neither the uncuff's hint 19 nor the lock pick's `0x14`: their shown counts in
+  this save's profile are not known, so a fresh profile may show them ([Uncuffing](crimes.md),
+  [Lock picking](crimes.md#lockpick)). `level87`'s first game hint (id 22) did show in the same run.
+- **The passing-train scene** (`Coney_Sub3`/`Coney_Sub4`, `ScenePlayFixedScene`) played every ~30 s throughout; it
+  is not a mission scene.
+- **The stolen objects** (step 3.5) come from the crew under the wreck order alone; the player only picked the lock.
 
 ### `level34.lua` (mission 4) {#level34}
 

@@ -53,7 +53,7 @@ which file each belongs to is inferred from the range only. Names are ours.
 | `0x003a1630` | `Task_SetUpdateInterval` | | confirmed (code) |
 | `0x003a1660` | `Task_Unschedule` | the base vtable `+0x4c` | confirmed (code) |
 | `0x003a1f00` | `Task_GetVelocity` | zero when the object is static | confirmed (code) |
-| `0x003a1f40` | `Task_AdjustIntervalByGround` | | confirmed (code), purpose inferred |
+| `0x003a1f40` | `Task_ProbeLandingAhead` | a flag-`0x10000000` task's ray along its velocity; on a hit sets `0x20000000` and times the next update to the contact ([Particles: landing](particles.md#landing)) | confirmed (code) |
 | `0x003a2310` | `Task_Integrate` | the default integrator (vtable `+0x144`) | confirmed (code) |
 | `0x003a2e00` → `0x003a4288` | `Task_SendMessage` → `Task_DeliverMessage` | synchronous message to an object | confirmed (code) |
 | `0x00390180` | `Handle_Resolve` | handle → object ([Handles](#handles)) | confirmed (code) |
@@ -1116,7 +1116,7 @@ See [Tasks: The wheel](#wheel).
 | --- | --- | --- | --- |
 | `0x003a33b0` | `TaskManager_InitWheel` | Inits the timing wheel. | confirmed (code) |
 | `0x003a3430` | `TaskWheel_FindBucket` | Finds the wheel bucket for a time. | confirmed (code) |
-| `0x003a36e0` | `TaskWheel_Unknown36e0` | Wheel helper; purpose not traced. | speculative |
+| `0x003a36e0` | `Effects_RayCastToGlobals` | A world ray (length, origin, direction); on a hit stores the point, normal and surface id where `ScriptObj_GetGlobalVector` 1 / 2 and `ScriptObj_GetGlobalInt` 7 / 8 return them ([Script types: blood](script-types.md#blood)). | confirmed (code) |
 | `0x003a45a8` | `ScriptObj_Unschedule` | Takes the task off the wheel. | confirmed (code) |
 | `0x003a45d8` | `ScriptObj_Schedule` | Puts the task on the wheel. | confirmed (code) |
 

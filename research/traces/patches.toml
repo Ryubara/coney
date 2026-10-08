@@ -478,3 +478,59 @@ address = 0x001cdf7c
 # lbu v0,0x4(s1); lui a0,0x60
 original = [0x92220004, 0x3c040060]
 log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "[s1 + 0x0]", name = "text" }, { value = "[s1 + 0x4]", name = "priority", type = "u8" }]
+
+[hook.hit-effect]
+description = "Each call of Human_SpawnHitEffect (0x0021d928): the attacker, the victim and the blocking flag (t1) of a strike, throw or blast on a human; the return address tells which (Strike_Contact, ThrownObject_HitHuman, Explosion_DamageHumansInRadius)."
+research = "docs/research/combat.md#hit-blood"
+address = 0x0021d928
+# addiu sp,sp,-0xf0; sq s5,0x80(sp)
+original = [0x27bdff10, 0x7fb50080]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "attacker" }, { value = "a1", name = "victim" }, { value = "t1", name = "blocking" }]
+
+[hook.anim-effect]
+description = "Each call of Human_SpawnAnimEffect (0x0021de48): a clip's type-0x21 effect event; the first four bytes of the effect name ('sub_'), the next four (the code), the human and the bone."
+research = "docs/research/combat.md#hit-blood"
+address = 0x0021de48
+# addiu sp,sp,-0x100; sq s3,0xb0(sp)
+original = [0x27bdff00, 0x7fb300b0]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "[a0 + 0x4]", name = "code" }, { value = "a1", name = "human" }, { value = "a2", name = "bone" }]
+
+[hook.punch-flash]
+description = "Each sub_punch_flash init (SubPunchFlash_Init, 0x003b1460): the new task."
+research = "docs/research/combat.md#hit-blood"
+address = 0x003b1460
+# addiu sp,sp,-0x570; sq s0,0x540(sp)
+original = [0x27bdfa90, 0x7fb00540]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a0", name = "task" }]
+
+[hook.blood-effect]
+description = "Each sub_blood_effect init (SubBloodEffect_Init, 0x003af7a0): the new task."
+research = "docs/research/combat.md#hit-blood"
+address = 0x003af7a0
+# addiu sp,sp,-0x520; sq s0,0x500(sp)
+original = [0x27bdfae0, 0x7fb00500]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a0", name = "task" }]
+
+[hook.splatter-init]
+description = "Each blood_splatter init (BloodSplatter_Init, 0x003ae990): the new blob task."
+research = "docs/research/combat.md#hit-blood"
+address = 0x003ae990
+# addiu sp,sp,-0x110; sq s0,0xf0(sp)
+original = [0x27bdfef0, 0x7fb000f0]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a0", name = "task" }]
+
+[hook.splatter-land]
+description = "BloodSplatter_Update taking its landing branch (0x003aeca4, flag 0x20000000 seen, just before the blood_02 sound): the blob, its step, its position and the contact normal's z."
+research = "docs/research/combat.md#hit-blood"
+address = 0x003aeca4
+# lui at,0x3f80; mtc1 at,f20
+original = [0x3c013f80, 0x4481a000]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "s0", name = "task" }, { value = "[s2 + 0x10]", name = "step" }, { value = "[s0 + 0x10]", name = "x", type = "f32" }, { value = "[s0 + 0x14]", name = "y", type = "f32" }, { value = "[s0 + 0x18]", name = "z", type = "f32" }, { value = "[s0 + 0xa8]", name = "nz", type = "f32" }]
+
+[hook.human-blood]
+description = "HumanRender_Draw choosing a human's blood texture (0x0017450c, after the slot index): s2 (the object being drawn), the health percentage (f20) and the slot offset ((2 - i) mod 3) x 4 (v0)."
+research = "docs/research/graphics.md#human-draw"
+address = 0x0017450c
+# addu a1,a1,v0; lw v1,0x74(a1)
+original = [0x00a22821, 0x8ca30074]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "s2", name = "drawn" }, { value = "f20", name = "percent" }, { value = "v0", name = "slot" }]

@@ -269,7 +269,7 @@ does not want them (`+0xf0`) are skipped. The low 16 bits of the answer:
 | 1 | moves the body back to the contact (owner position, vtable `+0xa8` / `+0xb0`) and removes from the velocity the part that goes into the surface (`0x0033d870`) | confirmed (code); summary inferred |
 | 2 | when the move went more than 0.01 into the surface, moves the body back to 0.01 in front of it; then bounces both velocities (the one in and the one out) off the normal with the owner's restitution (owner vtable `+0xd0` with 8; `0x0033d8f0`) | confirmed (code); summary inferred |
 | 3 | the same move back, then zeroes both velocities | confirmed (code); summary inferred |
-| 4 | as 1, after handing half of the velocity along the normal to the other body (its body vtable `+0x54`), unless that body has flag `0x200` | confirmed (code); summary inferred |
+| 4 | as 1, after pushing the other body: unless its flag `0x200` is set, `0.5 × (d · n) n × w(mover) / (w(other) × k(other))` is added to its pending push-out (`+0x50`), `d` being this pass's move and `n` the contact normal (pointing at the mover), so the other is moved away by half of the mover's move into it on its own next sweep; then the other body's vtable `+0x54` is told ([Human contacts](#human-contacts)) | confirmed (code) |
 
 High bits: `0x10000` go on with the next contact (return 0), `0x40000` abort the move (return −1), otherwise stop
 after this contact (return 1); `0x20000` keeps the smallest contact scale (body vtable `+0x48`) as the move's limit.
@@ -419,7 +419,57 @@ So `+0x14` is the classic sort-and-sweep bound: the step's refresh keeps it from
    `JUMPTARGET`) while airborne or holding (`0x800`), plus `0x20` `CHARGETARGET` when the capsule has flag `0x2`,
    `0x40000` `RUNTARGET` above gait 3, and `0x80000 << player`; same non-zero group skipped; owner asked
    (`+0x110`); each enabled shape of the candidate (body vtable `+0x28`) through the sweep table. Confirmed (code).
+   Between two humans this is one capsule against one capsule: [Human contacts](#human-contacts).
 4. Contacts are inserted sorted by fraction (`0x0033d718`) and resolved ([Contacts](#contacts)).
+
+After the passes: still blocked after three, the body stays, its horizontal velocity is zeroed (owner vtable
+`+0x74`) and its counter `+0x70` goes up; otherwise the counter is reset. The velocity the slides leave is written
+back to the owner (vtable `+0x74`) **only when body flag `0x400` is set** (`0x0033e738`), which only a player's body
+has: `Human_CreatePhysicsBody` (`0x0021ce08`) sets it with `+0x60` = `+0x64` = 1.4286 for a brain of type 0, as does
+`Human_MakePlayer` (`0x00229c40`); `Human_ReleasePlayer` (`0x0022a2a8`) clears it and puts `+0x60` / `+0x64` back
+to 1.0. So a slide brakes the player ([Characters](characters.md#walls)) but never an AI, whose control asks for its
+speed again each update. Confirmed (code); the AI's unchanged speed is confirmed (runtime) on
+[Characters](characters.md#slopes).
+
+#### Human contacts {#human-contacts}
+
+What a walking human meets of another human, confirmed (code) at the cited addresses:
+
+- **The shapes.** The mover sweeps its first shape, and the candidate's chain is walked from its first shape too
+  (body vtable `+0x28`; `PhysicsHumanBody_GetShapes` `0x003420c8` returns `+0x30`): for a human that chain is the
+  capsule alone, so the bone shapes and the push sphere never block. Capsule against capsule
+  (`PhysicsSweep_CapsuleCapsule` `0x00343cd8`) uses each capsule's own radius (shape `+0x40`, 0.35 × the class
+  scale, already scaled by `PhysicsBody_ApplyHumanScale`), **without** body `+0x60` or a second scale: centres meet at
+  the sum of the radii (about 0.69 m for the player and a man of scale 1), and the two vertical ranges must overlap
+  during the move. The level's sphere radius ([Characters](characters.md#walls)) plays no part.
+- **Who is skipped.** A candidate without `BLOCKHUMANS` (`0x4`) in its body flags, one sharing the mover's non-zero
+  group, and a disabled capsule. Human owners never refuse (owner vtable `+0x110` is `0x004dac30`, which returns 1),
+  and the brain is not read, so a scripted or `BrDead` human is met like any other.
+- **Groups.** Every link of two (or three) humans takes a fresh number from IPhysics `+0x10` (counted 1 to `0xfffe`)
+  and writes it to both bodies' `+0x3c`, so linked humans pass through each other: `Grab_Link` (`0x0022c760`),
+  `Pair_LinkMount` (`0x0022c000`), the tackle (`HitReact_WhileTackling`), `Grab_Escape`, `Revive_Start`,
+  `Uncuff_BeginMash`, `Pair_AlignForMove` and `Tandem_AlignThree`; each also sets both push weights (attribute 7) to
+  1e9. The matching ends write 0 (`Grab_End`, `Tackle_End`, `Tandem_Unlink`, `Throw_ClearLink`, `Revive_Finish`, the
+  uncuff end hooks), as does `Human_StartFall` (`0x0023dc58`). A scene sets one group on the humans it plays
+  (`SceneTask_Start` `0x0039d870`, cleared by `SceneTask_End`). The ignore lists ([below](#ignore-lists)) serve
+  strikes, not the walk.
+- **Health gone** (`Human_OnHealthOut` `0x002674c0`): a human knocked out or wounded loses `BLOCKHUMANS`, so walkers
+  pass over him; a dead one (state `0x100000000`) has his body freed unless airborne. What gives `BLOCKHUMANS` back
+  on getting up is not traced.
+- **The answer** (`Human_OnContact` `0x00219d50`): a charging capsule (shape flag `0x2`) or an airborne mover not yet
+  ignoring the other strikes him (`Strike_Contact`, then ignores him) and slides (1); otherwise **4**, `0x20004` in
+  the air. So walking into a human slides along him and pushes him by half of the move into him (code 4 above),
+  times 1 / his push weight `k` (1, or 1e9 while held: nothing). Body flag `0x200` (not pushable) is set by
+  `Human_SetPushable` (`0x0021d848`, `HuSetPushable(false)`; also when a body is made for a human whose `+0x3bf` is
+  0, `Human_CreatePhysicsBody`), and by the punch bag; such a human is slid along but never moved.
+- **The pushed human is told** (body vtable `+0x54`, `PhysicsHumanBody_OnStruck` `0x00342130` →
+  `Human_OnPushContact` `0x00219b08`): only when the pusher is a player and walks into him nearly head-on (the move's
+  direction · the normal < −0.8). A cop, a civilian, or a human of the pusher's side (friendly, and the pusher at a jog
+  or faster) starts a timer at `+0x56c` / `+0x570` (10 s, or 2.1 s for a friend); a second push after 2 s deals
+  `Human_DealDamage` (unfriendly) or asks `Human_CanPush` (friendly) and clears it. A bum under `BumLogic` ignores it.
+  The reaction's meaning is inferred.
+
+The mover's own velocity is cut by the slide only when it is a player ([Sweeping a body](#sweep)).
 
 ### The shape-pair tables {#dispatch}
 
@@ -477,8 +527,8 @@ the exact algebra is not written out here (any correct implementation of the sam
 | `0x0034bbe8` and `0x0034b040`, `0x0034b3b8`, `0x0034b600`, `0x0034b7b0`, `0x0034baf0` | `Sweep_SphereOrientedBox` and its corner, edge, edges, face-edge and frame steps | moving sphere against an oriented box (also the camera's tilt over obstacles) | confirmed (code) |
 | `0x0034c430` | `Sweep_BoxBox` | moving oriented box against an oriented box | confirmed (code) |
 | `0x0034d5d0`, `0x0034aa60`, `0x0034ab28` | `Sweep_BoxTriangle`, `BoxTri_ProjectBox`, `BoxTri_ProjectTriangle` | moving box against a triangle, axis by axis | confirmed (code) |
-| `0x0034ee60` (`0x0034ee40` calls it) | `Sweep_SphereTriangle` | moving sphere against a triangle: the face, then the edges (`0x0034e5d0`, `0x0034e3b8`) | confirmed (code) |
-| `0x0034e3b8`, `0x0034e5d0`, `0x0034dff8`, `0x0034d938`, `0x0034e120` | `SphereSweep_Edge`, `_EdgeIfNear`, `_EdgeCylinder`, `Ray_InfiniteCylinder`, `Segment_SphereIntersect` | its edge steps: the end points as spheres, then the edge as a cylinder | confirmed (code) |
+| `0x0034ee60` (`0x0034ee40` calls it) | `Sweep_SphereTriangle` | moving sphere against a triangle: the face, then an edge (`0x0034e3b8`) or a corner's region (`0x0034e5d0`); what it does with a sphere that already overlaps is on [Characters](characters.md#slopes) | confirmed (code) |
+| `0x0034e3b8`, `0x0034e5d0`, `0x0034dff8`, `0x0034d938`, `0x0034e120` | `SphereSweep_Edge`, `SphereSweep_VertexRegion`, `SphereSweep_EdgeCylinder`, `Ray_InfiniteCylinder`, `Segment_SphereIntersect` | its edge steps: an edge already within the radius (fraction 0), else the edge as a cylinder; past a corner, one of the corner's two edges | confirmed (code) |
 | `0x0034e840`, `0x0034edd0` | `PointTriangle_DistanceSq`, `SphereTriangle_Penetration` | the distance of a point to a triangle; a sphere's depth into it | confirmed (code) |
 
 ### How things actually move {#movers}

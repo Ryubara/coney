@@ -1,0 +1,1 @@
+# no input: the player stands while its health is written

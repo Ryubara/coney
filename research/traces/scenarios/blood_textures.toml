@@ -1,0 +1,20 @@
+description = "level99 checkpoint 1, no input: the player's health written down past 90, 60 and 30 % of its maximum, logging the blood texture HumanRender_Draw picks for every human it draws"
+research = "docs/research/graphics.md#human-draw"
+input = "blood_textures.txt"
+updates = 140
+fields = ["player"]
+
+[original]
+state = "states/l99-cp1.p2s"
+patches = ["scripted-pad", "right-stick", "human-blood"]
+setup = [
+  { address = "rec(player) + 0x144", type = "s16", value = "u16(rec(player) + 0x146) * 0.95", frame = 10, until = 29 },
+  { address = "rec(player) + 0x144", type = "s16", value = "u16(rec(player) + 0x146) * 0.89", frame = 30, until = 49 },
+  { address = "rec(player) + 0x144", type = "s16", value = "u16(rec(player) + 0x146) * 0.61", frame = 50, until = 69 },
+  { address = "rec(player) + 0x144", type = "s16", value = "u16(rec(player) + 0x146) * 0.59", frame = 70, until = 89 },
+  { address = "rec(player) + 0x144", type = "s16", value = "u16(rec(player) + 0x146) * 0.31", frame = 90, until = 109 },
+  { address = "rec(player) + 0x144", type = "s16", value = "u16(rec(player) + 0x146) * 0.29", frame = 110, until = 129 },
+]
+
+[coney]
+level = "level99"

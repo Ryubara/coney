@@ -1,0 +1,2 @@
+# Nothing pressed; the player stands.
+595 stick left 0 0

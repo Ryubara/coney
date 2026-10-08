@@ -136,6 +136,22 @@ from its sheet's texture and scaled to fit 64 × 64 (the `lighting` glows are 12
 Three types traced to rectangle 54 of `part_page1` (`part_s_subway_sparks`, `subway_spark`, `urine_spray`) show a
 grey box there, not a spark or a spray (checked on the images), so their trace is in doubt.
 
+### Falling and landing {#landing}
+
+A particle task moves itself through the task flags ([Tasks](tasks.md#task-object)): `Task_Integrate` (`0x003a2310`,
+the particle task's vtable `+0x144`, run before each update by `ParticleTask_Process`) adds velocity × elapsed
+seconds to the position and, with flag `0x4000000`, takes 15.68 m/s² × elapsed off the z velocity. A particle with
+flag `0x10000000` **probes ahead for a surface** after each update that keeps it (`TaskWheel_RunBucket`, `0x003a3588`,
+when its flags hold `0x10002000`): `Task_ProbeLandingAhead` (`0x003a1f40`), when the task has no physics body and
+moves faster than 0.005 m/s, casts a world ray from its position along its velocity, speed × (the update interval in
+seconds + 1/60) long. On a hit it sets flags `0x20000000` (landed) and `0x80000000`, stores the hit's surface id,
+its normal (task `+0xa0`, which `ScriptObj_GetContactVector`, `0x003a4bd0`, returns for a particle) and `+0xda`, and
+brings the next update forward to the tick the particle reaches the surface: (hit distance × 60 / speed) ticks (the
+ray result's distance, inferred), at least 1, when that is sooner than its interval. The type's update sees the
+flag and acts (the [blood blob](script-types.md#blood), `pee_tracer`, the glass shards, sparks and embers); the
+probe itself stops nothing.
+Confirmed (code); the particle's radius term (vtable `+0x17c`) returns 0.
+
 ### Steam vents {#steam}
 
 `part_steam` (init `0x003f69b8`, update `0x003f6bf0`, messages `0x003f6b40`) is a vent that `CfgSteam` configures
@@ -445,4 +461,4 @@ are dropped at once rather than at their next update, and their draws come from 
 - What `+0xc8`-`+0xd0` (1.0, 5.0, 0.3) scale in the particle draw, and what the negated sprite width does (the
   facing, blending and Z of a format-0 batch are in [Drifting fog](#fog)).
 - `glasstest`'s sprite and fall, and which types the objects' dust (`0x003c57d8`) and bursts (`0x003c6038`) make.
-- Which combat hits spawn which blood and spark types.
+- Which combat hits spawn which spark types (the blood is on [Combat: hit blood](combat.md#hit-blood)).

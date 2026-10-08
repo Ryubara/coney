@@ -108,7 +108,10 @@ word at `+8`** as their message's value (`lw a1,0x8(s1)` at `0x0010246c` for typ
 type 11 the animation sound id, so `+0xa`-`+0xb` must be 0 for the id to be used as such (on the disc `+4` and `+6`
 are 0 in these events). Confirmed (code) for the layout at `0x00101dd8` (the cursor steps `0x18` at `0x00103df8`);
 the type meanings are open, except type 8, the **partner's place** in a paired clip ([Paired tasks](#paired-tasks)),
-read by `0x00101558`, and types 9 and 10, effects. Survey: type 11 is the most common (4,287 events).
+read by `0x00101558`, types 9 and 10, effects, and type `0x21`, a **named effect**: `+0x06` the bone, the position
+and rotation as above, and `+0x14` a three-letter code (`bld`, `pch`, `blo`, `dus` ...) that `0x00101dd8` makes
+into the type name `sub_` + code for `Human_SpawnAnimEffect` (`0x0021de48`, [Combat: hit blood](../combat.md#hit-blood)).
+Survey: type 11 is the most common (4,287 events); 344 distinct type-`0x21` events, 122 of them `bld`.
 
 ### The pose
 

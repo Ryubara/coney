@@ -788,9 +788,68 @@ no target locked, or with a friendly one or one of his own gang (`Player_OnL1Pre
 `Human_EnterThrowAim` `0x00227b30`: state `0x200000000000`, move style `0x13`, clips 466-470). It stores the human's
 position at `+0x610`, his rotation at `+0x620` and the pitch **0.157 rad** (9°) at `+0x630`. Each frame the left
 stick turns the aim (outside a dead zone of 26 of 128, 0.000589 rad per step of the stick value) and pitches it,
-clamped to ±0.628 rad (36°); with the camera in mode 2 the aim follows the camera's heading. L1 again leaves it, and
-so does losing the object, a grab or a mug, or an AI in control. Square or cross then throws as above, at the target
-the aim trace found (`0x006ebd30`).
+clamped to ±0.628 rad (36°). L1 again leaves it, and so does losing the object (held flag `0x20000` gone), a grab or
+a mug, or an AI in control. Square or cross then throws as above, along the aim.
+
+**The aim's heading is the human's own rotation**, confirmed (code) at `Human_SetThrowAimState` (`0x002446b0`) and
+`Human_MoveThrowAim` (`0x00244770`): the move function writes the human's facing every frame and copies it to
+`+0x620`, so turning the aim turns him. It starts from the way he faces, with **one exception on the first frame**
+(human `+0x256`, cleared by `Human_SetThrowAimState`, set by the first `Human_MoveThrowAim`): for a player with one
+view per player camera (`0x0050b198` = `0x0050b19c`) whose active camera is of **type 2, the
+[follow camera](camera.md)** (camera vtable `+0x1ec`, [camera types](../references/cameras.md#type)), his heading is
+set once to the follow camera's: the direction from its position (vtable `+0x21c`) to its focus point (`+0x24c`),
+horizontal part only. Under any other camera, such as a script's locked camera, he keeps his own facing. The follow
+camera then frames the aim origin while he aims ([Camera: the follow update](camera.md#update), step 5). Each frame
+after that:
+
+1. `Human_TraceThrowAim` runs (below).
+2. **With a human target** (`+0x638`) he turns straight to face it (heading from his release point to the target's
+   point, `+0x620` set at once) on each of the 5 frames after a new target is found (`+0x63c`, set to 5 when the
+   target changes, counted down here), and on any frame both stick axes are inside the dead zone. Objects are never
+   turned to.
+3. Otherwise the stick's x outside the dead zone turns him by x × 0.000589 rad a frame (x = the stick's offset from
+   the centre less 25, about ±0.06 rad a frame at full tilt), with action 10 (the turn); the stick's y pitches the aim
+   by the same rate, clamped to ±0.628 rad.
+
+**The aim trace's targets**, confirmed (code) at `Human_TraceThrowAim` (`0x0018fee0`) and `IPhysics_CollideShape`
+(`0x0033e7f0`): the 18 kept arc points make 17 segments; a sphere of radius **half the held object's type `+0x78`**
+is swept along each in turn, in two passes:
+
+1. **Humans**: a query of bodies only (option `2`, not the level mesh), of type mask `0x40` (humans), with body flag
+   `0x20000` (`THROWNWEAPONTARGET`, [layers](physics.md#layers)) and none of `0x180000`, the thrower's own body
+   skipped, and the callback `ThrowArc_TargetFilter` (`0x0018f7b8`): only an AI human (`+0x1b0` = −1) that is not
+   friendly to the thrower, and with the stick pushed sideways only one on that side. The first segment that meets one
+   gives the candidate human and its fraction.
+2. **Anything in the way**, from the first segment up to the candidate's (all 17 when there is none): the same query
+   with the **level mesh** added (option `1`), any type, still flag `0x20000` and not `0x180000`, no callback. The
+   first contact, unless it is in the candidate's segment and no nearer than the candidate, **ends the arc** there
+   (the strip is cut at the contact) and replaces the candidate.
+
+The results: **`+0x638`** = the human target (0 when none or blocked); **`+0x634`** = the hit's task when it has type
+bit 2, which every task class has ([Tasks: type bits](tasks.md#task-object)): the target human, or the first world
+object, car or other body with `THROWNWEAPONTARGET` the arc meets; **0** when the arc ends on the level mesh (a wall,
+the ground) or meets nothing. So a wall ends the trace and nothing behind it is seen. `HuIsAimingAt(player, object)`
+(`Human_IsAimingAt`, `0x0023a468`) is true when the player's `+0x634` is that object. The trace also clears the
+brain's target (`Brain_SetTarget(brain, 0, 1)`) and stores `0x006ebd30` at brain `+0x128`, so a throw from the aim
+has no locked target and follows the pitch rule of the velocity below. Which world objects have `THROWNWEAPONTARGET`
+is their `CfgObj` `PHYFLAG` argument; the objective marker `dyn_w_mission` has exactly that one flag (`config_preload3`:
+shape `OBB` 0.52 × 0.52 × 2, `PHYFLAG.THROWNWEAPONTARGET`), so it can be aimed at.
+
+**`level80`'s throw lesson** ([Scripting](scripting.md)): `C3.throwObjective` = `Objects.dyn_w_mission`, the marker
+`level80.lua` spawns at (−259.542, 278.038, 1.27) (beside the flag `fBottleTarget`, (−259.6, 278, 1.3)) and
+`ShowDistractCopObjective` shows (`ObjShow`). `C3.TargetCheck`, every 200 ms while the player holds a bottle
+(`HuWhatAmIHolding` 4) and his control is `throwControl`, shows `TT_29` ("Press X to throw") once
+`HuIsAimingAt(C3.throwPlayer1, C3.throwObjective)`; `C3.ThrowCheck` goes back to `TT_28` when it stops being true.
+Confirmed (runtime), PCSX2 2.9.94, an analyst run of `level80` (re-mission-ref, 2026-10-08): `+0x634` stayed 0 while
+the stick pitched the aim down from 0.304 rad and became the marker (`0x00ef97c0`) at pitch 0.139 rad; `TT_29` was set
+13 updates later.
+
+**The aim's clips** (move style `0x13`, `Human_ApplyMoveStyle` `0x00253688`, confirmed (code)): slot 21 (the block
+start) = **466** `gen_1hand_throw_enter`, slot 23 (the block sustain) and the idles in slots 0 and 11 = **469**
+`gen_1hand_throw_cycle`, slot 24 (the block shuffle) = **470** `gen_1hand_throw_turn`. So he enters with 466, holds
+469 and plays 470 while the stick turns him (action 10); inferred from the slots' names, not watched at runtime. No
+code names **468** `gen_1hand_throw_exit`: leaving (`Human_ExitThrowAim` `0x00227aa8`) only removes the style, so the
+idle returns; whether 468 plays through the anim data is not traced. The throw from the aim is 467 (standing).
 
 **The aim trace** (`Human_TraceThrowAim`, `0x0018fee0`, each aiming frame) writes the two holder fields the first
 flying update reads: **`+0x5f0`, the release point** = `+0x610` + `+0x620` turning **(0.3009, −0.6354, 1.5865)** (x
@@ -830,8 +889,13 @@ a body and a brain, `+0xd4`): `ThrownObject_HitHumanTest` (`0x003928d0`) handles
 ends (answer 0): kind `0x1d` deals the human his own record's `+0x144` damage with a particle and a sound and clears
 his body flags `2` and `1`; kind `0x22` deals **500** once per object (human `+0x564` remembers it). Otherwise
 `ThrownObject_HitHuman` (`0x00392b88`) deals the damage, plays the impact sounds ([Sound events](sound-events.md)),
-reports the noise and, for a knife that stays whole, sticks it in him (`Human_StickThrownKnife`); the answer is then
-`0x40000` (the object's move stops there). The damage is the type's `+0x58` (× the holder's class factor while
+reports the noise and, for a knife that stays whole, sticks it in him (`Human_StickThrownKnife`). Only that stuck
+knife makes it answer non-zero, and then the contact's answer is `0x40000` (the object's move stops there) before the
+break test; for anything else the contact goes on to the break test below, so a thrown object that wears out on a
+human **deals its damage first and breaks on the same contact** (confirmed (code) at `0x00392b88` and `0x00394050`).
+With no thrower (no holder and no last holder `+0x11c`), `ThrownObject_HitHuman` deals no damage and only plays the
+material pair (the object's, 26), or (its own, its own) at 1.0 and (its own, 26) at 0.5 when it is breaking. The damage
+is the type's `+0x58` (× the holder's class factor while
 held), negated against a friend of the thrower (no hurt flag), × 0.25 for kind `0x24` when the thrower's stored gait
 `+0x1a8` is above 2, × 0.5 from an AI of brain kind 3 against class 13, and from a player × 3 against human kinds `0x77`
 and
@@ -841,15 +905,53 @@ damage) asks `Hit_PickReactionClip` with a severity from the object: set 2 → 3
 by the weight `+0x62`: under 20 → 0, 20-49 → 1, 50 and over → 2. He reacts toward the thrower's side, or toward the
 object's point for kinds `0x22`, `0x1d`, 8 and cars (kind 8 plays no reaction).
 
-**Wear on contact** (`OverheadWeapon_ContactDamage`, `0x003932c8`, run first on every contact of a free object): an
-`overhead_weapon` (the class at `0x00580ed8`; not material `0x9a`) that no one holds loses **one hit**
-(`WorldObject_TakeHit(obj, −1)`, `0x00393450`: `+0x10e` first for an object with flag `0x4000000`, else `+0x10d`;
-255 means it never wears) only on its **first contact after the throw** (body flag `1`, cleared after it when it has
-a last holder); any other class loses one hit on **every** contact. At the end of the handler, when either counter
-is 0, the object breaks (`WorldObject_Break`, `0x00393e20`) and the answer is `0x10000` (the move goes on: no
-bounce). So a type with hits (`+0x5a`) 1 breaks on the first thing it meets: every bottle, brick and ball, and the
-lawn chairs and the other set 4 objects with 1 ([Riot props](#riot-prop-breaks) for what a break makes). The roles
-of the arguments the decompiler hides in these calls are inferred from their use.
+**Wear on contact** (`OverheadWeapon_ContactDamage`, `0x003932c8`, confirmed (code) from its assembly). It is the
+first thing `WorldObject_OnContact` (`0x00394050`) does with each contact of the object's own sweep, flying or held
+(not while its holder is in a car with `+0x568` set), with the contact, the holder or else the last holder (`+0x11c`),
+and whether the other side is a world object whose counters are already spent. One hit is taken
+(`WorldObject_TakeHit(obj, −1)`, `0x00393450`: `+0x10e` first for an object with flag `0x4000000` (flying) or a held
+`dyn_cashreg`, else `+0x10d`; 255 never wears):
+
+| Object | Which contacts wear it |
+| --- | --- |
+| class `overhead_weapon` (the name at `0x00580ed8`), held or not | **every** contact: the level mesh (floor, walls), bodies, humans |
+| material `0x9a` (154, `GUITAR`), any class | every contact |
+| a held `dyn_cashreg` (model `0x3c4e590b`) | every contact |
+| any other class, held | only a contact with a **human**, and only when the holder's body record's `+0x38` is 0 (not traced) |
+| any other class, not held | only while its body has **flag `1`**, and not against a world object already spent; with a last holder (a thrower) the flag is then cleared, so it wears **once per throw** |
+
+Body flag `1` is set by `Human_ReleaseThrow` (`0x002586d8`, on whichever body the throw made) and
+`ThrownObject_MakeBody` (`0x003923b8`, its only caller being the throw), and at body creation for kinds `0x1d`
+(`TYPE_MOVINGVEHICLE`) and `0x22` (`TYPE_CHATTERBOXTRAIN`) (`Obj_CreatePhysicsBody` `0x00391d48`). A knock (message
+`0x30`) does not set it: the `dyn_beerbottle` the trash props drop ([Trash cans and bags](#trash-props)) never wears
+from its fall and stays whole, a bottle to pick up. A `thrown_weapon` (bottle, brick, ball) has hits 1, so it breaks on
+its first contact after a throw; an `overhead_weapon` with 1 (the trash cans and bags, the lawn chairs) on its first
+contact of any kind, thrown or swung into something while held.
+
+At the end of `WorldObject_OnContact`, when either counter is 0, the object breaks (`WorldObject_Break`) and the
+answer is `0x10000` (the move goes on: no bounce). Before that test a level contact runs `WorldObject_OnImpact`
+(`0x003939a8`) and a body contact the human, car or object handlers above, so their sounds and damage come first.
+[Riot props](#riot-prop-breaks) lists what a break makes.
+
+**`WorldObject_Break`** (`0x00393e20`, called with the contact and the holder), confirmed (code), in order:
+
+1. A holder drops it (`Human_DropHeld`).
+2. **Message 1** to the object's class with, as popped: the **contact normal** (contact `+0x50`) as the direction, the
+   **contact point** (`+0x90`) as the hit point, kind **−1**, strength **100**, then two handles. The class does the
+   break: a `thrown_weapon` ([Script types](script-types.md#thrown-weapon)), an `overhead_weapon`
+   ([Trash cans and bags](#trash-props)), a `dyn_cashreg` ([Script types](script-types.md#dyn-cashreg)); a
+   `fade_object` pops and ignores it.
+3. The collision body is freed (`Obj_FreePhysicsBody`); a holder's strike contacts are cleared.
+4. Kind **8** (`TYPE_MOLOTOV`, only `dyn_molotv`): an explosion of radius 1.5 m dealing half the contact damage
+   (`Explosion_DamageHumansInRadius`). No `level99` script spawns one and none was live in quick-save slot 8 (the hash
+   `0x183cc260` only in the type tables; confirmed (runtime), read from the state), so no `level99` object has it.
+5. Velocity and spin set to zero.
+
+It plays **no sound** and **removes nothing** itself: the class's message 1 decides both. Its sounds come from the
+contact handlers before it: on the level mesh `WorldObject_OnImpact` plays, for a breaking object, the pair (its
+material, its material) at 1.0 and (its material, the surface's) at 0.5 at the contact point (else just the second
+at 1 / (bounces + 1)); against another world object `ThrownObject_OnContact` (`0x00393538`) plays (its, its) at 1.0
+and (its, the other's) at 0.5; against a human `ThrownObject_HitHuman` plays its own pairs (above).
 
 **The removal time** (`+0x120`). `WorldObject_SetRespawnTimer` (`0x00395d20`) sets now + the time and marks the
 spawn record (bit `0x1000000`). The setting `0x0051489c` `+0x26c` (`CfgSetGlobalTimeToLive`) held **30,000 ms** in
@@ -1449,6 +1551,17 @@ boxes (the object was intact), stats crime 9 when the hit left a counter at 0 an
 one blow of any kind, a thrown object's hit or a sprint into the bags breaks it. Confirmed (code); at runtime
 (`props_trashcan`, square at the can from 0.72 m) the strike landed 9 updates into clip 661 and the can broke on that
 update.
+
+**A thrown can or bags** (or one swung into something while held) breaks on its first contact of any kind: the
+`overhead_weapon` class wears on every contact and their hits are 1 ([Wear on contact](#throws)). The break is the same
+`OverheadWeapon_Break` as a strike's, through `WorldObject_Break`'s message 1: the hit point is the **contact point**,
+the direction d the **contact normal** (out of the surface), kind −1 (only −2 is tested, so −1 acts as a strike), and
+`+0xb0` holds this contact's vector, so c is the normal too (the pieces and litter go up off a floor, the splat probe
+away from the surface). Two things differ because the object is flying (`0x4000000`): before the effects its position
+is moved **1 m along c** (the unit contact vector added; the pieces and the bottle start from there), and the break's
+own material pair is skipped; the sound is `WorldObject_OnImpact`'s on the floor or a wall, or the human or object
+handler's. A human it hits takes the contact damage (`ThrownObject_HitHuman`) **before** the break, on the same
+contact. Confirmed (code) at `0x003932c8`, `0x00394050`, `0x00393e20` and `0x003ffe90`; not watched at runtime.
 
 **The break** (`OverheadWeapon_Break`, confirmed (code) unless marked):
 

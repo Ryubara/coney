@@ -2013,7 +2013,12 @@ a "flag kind `0x12`" bit.
        (`0x00250708`, `0x0024f718`); each failure lowers the trial speed by 1 + 0.75 × the detail level `+0x333`,
        down to the walking speed. It keeps the first corner's speed `+0x0c`, the second's `+0x44` and a braking
        distance² `+0x48`, and uses `+0x0c` while farther than that, else `+0x44`, never above the gait's speed.
-    9. **Stuck** (`0x002fc330`): every 60 updates while moving, less than 0.2 m covered → brain `+0x284` = 3, done.
+    9. **Stuck** (`MoveAction_CheckStuck` `0x002fc330`): while the asked speed is above 0 a counter (`+0x4e`) counts
+       updates (speed 0 resets it); on the 61st, less than 0.2 m covered since the saved point, measured in **3D**
+       (`Vec_DistSq`, height included), → brain `+0x284` = 3, done; else the point is saved again and the count
+       restarts. A climb up a slope counts its height. Confirmed (code). An AI walking a heap too steep for floor
+       is not braked by its wall slides and covers about 1.1 m per 60 updates there
+       ([Characters](characters.md#slopes)), well clear of the test.
 - **The speed and the legs** (confirmed (code) at `0x002fc778`-`0x002fc7a8` and `0x002fc988`-`0x002fc998`):
     - **Where the speed comes from.** Just before the route step, the update takes its speed: the steering override
       (`+0x34`) while its count `+0x32` is non-zero, else the action's own `+0x40`. That one value goes by pointer to

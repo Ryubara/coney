@@ -1402,8 +1402,11 @@ functions by type (world `+0xe0`, `0x0033d2d8`, which passes −0.65). For type 
    and the shape's `+0x40` reads 0.3395 (0.35 × 0.97), so `r` = 0.3395 × 1.4286 = **0.485 m** (0.470 m if the scale
    were applied a second time; the stops below fit 0.485) and the sphere spans 0.05 to 1.02 m above the feet.
    Confirmed (runtime): the fields read in the street save, and the player stopped 0.480 m from three faces (a wall
-   head-on, a wall at an angle and the fence of slot 7). Who sets `+0x60`, and its value for other humans (1.0
-   would give them 0.34 m), are not traced.
+   head-on, a wall at an angle and the fence of slot 7). Only a player's body has `+0x60` = 1.4286
+   (`Human_CreatePhysicsBody` `0x0021ce08` for a brain of type 0, `Human_MakePlayer` `0x00229c40`;
+   `Human_ReleasePlayer` `0x0022a2a8` puts back 1.0, [Physics](physics.md#sweep)). **Every AI human's is 1.0**, so
+   its sphere is shape `+0x40` (0.35 × its class scale) × its scale: 0.350 m for Vermin, 0.357 m for level99's bums
+   and civilians of scale 1.01 (fields read in slot 6). Confirmed (code), values confirmed (runtime).
 2. For each enabled triangle of the grid cells it covers that is a wall (`|n.z| ≤ 0.65`) and that the sphere is in
    front of (a two-sided triangle is turned to face it), and that the move goes into (`n · move < −0.001`):
 3. **Skip low and thin triangles**: take the edge whose unit vector is steepest; if its two ends differ in height by
@@ -1470,16 +1473,30 @@ Nothing else changes them:
   faces below hold 3.
 - **The route.** A leg of kind 1 is walked with no handler of its own ([AI: link kinds](ai.md#route-follow)). The
   sweep, the contact handler and the snap read neither the brain nor its route, and an AI's body moves through the
-  same move as the player's. Only the sphere's radius differs (body `+0x60`, [above](#walls)).
+  same move as the player's. Two things differ: the sphere's radius (body `+0x60`, about 0.35 m for an AI,
+  [above](#walls)), and the slid velocity, which is written back only to a player's body (body flag `0x400`,
+  [Physics](physics.md#sweep)). An AI asks for its full speed again each update, so a slide never brakes it.
 
 **How the sweep slides up such a face:**
 
-1. A wall face the sphere already touches, with the centre's projection inside the triangle, gives a contact at
-   **fraction 0** (`Sweep_SphereTriangle` `0x0034ee60`: the start distance to the plane is at most `r` and all three
-   edge tests pass, case 7). Nothing pushes a walking sphere out of a face it overlaps:
-   `PhysicsBody_PushOutOfWalls` runs only in the air (below).
+1. A face the sphere already reaches (start distance to the plane at most `r`) is sorted by where the centre lies
+   (`Sweep_SphereTriangle` `0x0034ee60`; edge `k` runs from corner `k` to `k + 1`, and the centre is inside it when
+   `(e_k × n) · c ≤ (e_k × n) · v_k`):
+    - **inside all three edges** (case 7): a contact at **fraction 0**;
+    - **outside one edge** (cases 3, 5, 6): that edge alone (`SphereSweep_Edge` `0x0034e3b8`). When the edge
+      segment already passes within `r` of the centre (`Segment_SphereIntersect` `0x0034e120`: the segment's roots
+      against the sphere overlap 0 to 1) the contact is at **fraction 0**; otherwise the move is swept against the
+      edge as a cylinder and the first root from 0 to 1 is the contact;
+    - **outside two edges**, past a corner (cases 1, 2, 4; `SphereSweep_VertexRegion` `0x0034e5d0`): a corner
+      already inside the sphere (`|v − c|` < `r`) gives **no contact at all**, nor does a move going away from it
+      (`move · (v − c)` ≤ 0); otherwise one of the corner's two edges is swept as above.
+
+   A sphere not yet at the plane is sorted the same way at the point where it first touches the plane. Every case
+   hands back only a fraction: there is no edge or corner normal and no push-out. Nothing pushes a walking sphere
+   out of a face it overlaps: `PhysicsBody_PushOutOfWalls` runs only in the air (below).
 2. The contact carries the triangle's own unit normal, turned to the sphere for a two-sided one (contact `+0x50`,
-   copied in `0x00347c08`), with its `z`.
+   copied in `0x00347c08`), with its `z`, **in every case of step 1**: a sphere that touches the face only past its
+   edge slides along the face's plane exactly as one inside it.
 3. The slide (`PhysicsBody_ResolveContacts` `0x0033d9d8`, code 1) removes from what is left of the move, and from
    the velocity, the part that goes into that normal: `v −= (v · n) n` on x, y and z, only when `v · n` < 0
    (`Vec_RemoveNormalPart` `0x0033d870`). The move then goes **along the face, rising**.
@@ -1512,6 +1529,26 @@ put the move about 64° from north toward the west. Every run took the line onto
 
 So a human on that leg does climb the heap in the original: by sliding along 680, not by walking up it. The lesson's
 walk reaching the platform itself was not run (the stick's line passed 1 m north of it).
+
+**An AI on the same leg** (confirmed (runtime), PCSX2 2.9.94, a copy of slot 6, 2026-10-08, scenario
+`repo:research/traces/scenarios/heap_ai.toml`). Vermin (dead brain, radius 0.350) was put at (−271.7, 129.4, 0.3) with
+the player standing 4 m behind, and his own `GoalMoveToFlag` was re-aimed at (−285.2, 124.2, 0.3), gait 2
+(walk, his 1.654 m/s), radius 2, and his actions cleared. The planner
+gave him the same route as Coney's: (−277.71, 132.00, 3.12), (−280.76, 130.48, 3.76), a drop leg, the target. Each
+update, read over PINE:
+
+| Stretch | What happened |
+| --- | --- |
+| street, updates 1-81 | 1.654 m/s straight at the first waypoint, 20° off 680's normal in plan |
+| 679, along 680's foot, 82-110 | the centre's projection **0.36 to 0.02 m outside the crease edge** (679-680) with the edge 0.50 down to 0.27 m from the centre (radius 0.35): the edge case of step 1. He moved 0.013-0.015 m across the ground (0.42 m/s) and 0.012 m up per update, turned 20-30° north of his aim, while his asked speed (`+0x1ac`) and velocity stayed 1.654 m/s; the "could not move" counter stayed 0 |
+| inside 680, 111-155 | the projection inside the face (step 1's first case), the centre sinking to 0.21 m from its plane; feet still on 679 until update 140, then on 680 itself (`n.z` 0.526): 0.33 m/s across and 0.45 m/s up |
+| crest | the route moved on to (−280.76, 130.48) at update 160, before he reached the first waypoint (the route's straight-line skip, [AI](ai.md#route-follow)); he crested at z 3.7, took the drop leg and stopped 1.9 m from the target at update 487 |
+
+The same run with his body `+0x60` raised to 1.3429 (radius 0.470, Coney's) was alike: the crease edge 0.49 down
+to 0.35 m from the centre, the projection 0.27 to 0.05 m outside it, 0.013-0.015 m across and 0.012 m up per
+update, never blocked; this passes within 0.5 m of the point where Coney's bum stalls. Neither run tripped the move
+action's stuck test (0.2 m in 60 updates, [AI](ai.md#move-action)): about 1.1 m was covered in each 60 updates on
+the heap. The waypoint was not skipped to get round the heap, and nothing warped him.
 
 The push-out `PhysicsBody_PushOutOfWalls` (`0x003477c0`, a sphere out of the nearest wall by `n × (r − distance)`)
 is not the walking case: its only caller `Human_PushOutInAir` (`0x0021a490`) runs while the human is airborne
@@ -1893,8 +1930,8 @@ bytes each. A human flag is a bit of `+0xe0`, a state flag one of record `+0x00`
 | `0x0021d570` | `Human_HasScriptHandler` | True when the script handler (`+0xe8`) has a handler or the force flag `+0x1b2` is set. | confirmed (code) |
 | `0x0021d848` | `Human_SetPushable` | Clears (on) or sets (off) body flag 0x200 and stores the choice in `+0x3bf`. | confirmed (code) |
 | `0x0021d880` | `Human_SpawnParticleAbove` | Spawns a named particle at the human's feet plus 1 m. | confirmed (code) |
-| `0x0021d928` | `Human_SpawnHitEffect` | Spawns the hit particle and blood for a strike on a human, facing the camera; counts hits for a tutorial hint and queues a screen effect. | confirmed (code) |
-| `0x0021de48` | `Human_SpawnBloodEffect` | Spawns blood particles for a hit at a bone, scaled by how hurt the human is. | confirmed (code) |
+| `0x0021d928` | `Human_SpawnHitEffect` | A hit on a human: a `sub_punch_flash` whose blood count comes from the attacker's weapon and the victim's hurt and blocking state; a kind-39 object queues a blur pulse and hint 26 instead ([Combat: hit blood](combat.md#hit-blood)). | confirmed (code) |
+| `0x0021de48` | `Human_SpawnAnimEffect` | A clip's type-`0x21` effect event: spawns `sub_` + its code at the human's bone (`bld` blood, `pch` blood or sweat by hurt, `blo` blood and a decal, and the non-blood codes) ([Combat: hit blood](combat.md#hit-blood)). | confirmed (code) |
 | `0x0021e3a8` | `Human_GetSoundVolumeScale` | 1.0, or the combat-framing volume (game state `+0x24c`) for a player while the camera frames a fight. | confirmed (code) |
 | `0x0021e940` | `Human_UpdateSpeech` | Per update speech: when the line ends, clears speaking state and runs the end callback once; while it plays, moves the stream to the head and faces the partner. | confirmed (code) |
 | `0x0021ec30` | `Human_GetSpeechHandle` | Returns the current speech line handle `+0x178`. | confirmed (code) |

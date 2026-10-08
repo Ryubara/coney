@@ -805,6 +805,15 @@ The humans in view are drawn in the world pass after the `s` world ([The streame
     "no blood" switch the retail game never sets (inferred). The dual pass draws the blood texture with the model's
     second texture-coordinate set; at runtime it is the GS context-2 pass that follows each character draw (PCSX2 GS
     dumps, confirmed (runtime)).
+
+    **No build-up.** The texture and the blend are worked out from the current health at every draw; the human keeps
+    no blood state of its own, so the blood never accumulates and goes away as soon as health rises again (a heal, or
+    `Human_ResetStats`, [Characters](characters.md), giving a new or respawned human its class health). At a
+    checkpoint it shows whatever health the checkpoint leaves. Confirmed (runtime), PCSX2 2.9.94, `level99`
+    checkpoint 1 (scenario [`blood_textures`](repo:research/traces/scenarios/blood_textures.toml), hook `human-blood` at
+    `0x0017450c`): the player standing still, its health written to 95, 89, 61, 59, 31 and 29 % of 900 twenty updates
+    apart, the draw picked slot `+0x74` at 100, 95, 89 and 61 %, `+0x78` at 59 and 31 % and `+0x7c` at 29 %, each
+    on the first draw after the write; the other humans stayed at 100 % and `+0x74`.
 3. **Colour.** The material colour is the instance's colour (`+0x28`, R in the low byte, set by `HuColor`) with R, G
    and B × `f`. `f` follows the brain's "hidden in shadow" byte (`+0x2d4`, [Lighting](lighting.md#humans)): with
    `t` = min(time since the brain's stamp `+0x10`, 250 ms) × 0.002, `f = 0.5 + t` when not hidden (0.5 up to 1.0)
@@ -1385,7 +1394,7 @@ Confirmed (code) at each address unless a row says otherwise.
 | `0x0018f7b0` | `ThrowArc_SetHuman` | `+0x0c` (from `PlayerList_Add`) | confirmed (code) |
 | `0x0018f7b8` | `ThrowArc_TargetFilter` | the sweep's callback: for a player, a human counts unless it is an ally (`0x00222a90`) or lies on the other side from the one the left stick pushes (dead zone 26) | confirmed (code); the side test inferred |
 | `0x0018fa68` | `ThrowArc_BuildStrip(arc, points, count, hit)` | writes the arc's points as a strip 0.16 m wide, fading in from the hand; one colour when `hit` is set and another when not | confirmed (code) |
-| `0x0018fee0` | `Human_TraceThrowAim` | each frame of the aiming state (`0x00244770`): steps the throw from the hand at 1/60 s with gravity (z speed − 0.2613 a step) for 108 steps, keeps every sixth point (18), sweeps a sphere of half the object's size along them, stops at the first human hit (the target, human `+0x638`) or wall, and rebuilds the strip | confirmed (code) |
+| `0x0018fee0` | `Human_TraceThrowAim` | each frame of the aiming state (`0x00244770`): steps the throw from the hand at 1/60 s with gravity (z speed − 0.2613 a step) for 108 steps, keeps every sixth point (18), sweeps a sphere of half the object's size along them, stops at the first non-friendly AI human (human `+0x638`) unless a body with `THROWNWEAPONTARGET` or the level mesh comes first (that body is `+0x634`; [Objects: throws](objects.md#throws)), and rebuilds the strip | confirmed (code) |
 | `0x00190588` | `ThrowArc_Render` | from `WorldManager_Render`, while its human is in the aiming state: draws the clump in each view with back-face culling off | confirmed (code) |
 | `0x001906e8`, `0x00190770` | `ChunkReader_TextureDictionaryTid`, `ChunkReader_RenderwareTextureDic` | [Chunk system](chunk-system.md) | confirmed (code) |
 

@@ -2106,6 +2106,87 @@ Being hit gave the player no rage. Every gain set the hold timer to now + 5000 m
 `XS2` 10, `SX2` 13 and `SSX3` 15 every time; the 7 is the halved gain ([Rage](#rage)): `SSX3`'s two awards 3 and 8
 give 2 + 5 at a factor 0.72, and `S1`'s 1 gives 0.
 
+### Hit blood {#hit-blood}
+
+Blood comes from two places: every landed hit on a human asks for a **punch flash** whose blood count depends on
+the weapon and on how hurt the victim is, and the **reaction and kill clips** carry effect events that spawn blood
+(or sweat) at a bone on chosen frames. Both end in the same effect, `sub_blood_effect`, whose pieces (a mist, a puff,
+sprays, drops and an unseen falling blob that leaves drops where it lands, with the `blood_02` sound) are on
+[Script types: blood](script-types.md#blood). Nothing is spawned while the game state's blood switch `+0x454` (a
+short) is set; nothing in the retail game sets it (inferred, [Graphics](graphics.md#human-draw)). The blood a human
+wears on his skin as he loses health is a texture, not a particle: [Drawing a human](graphics.md#human-draw).
+
+**A hit** (`Human_SpawnHitEffect(attacker, victim, …, blocking)`, `0x0021d928`), called by `Strike_Contact`
+(`0x0021b290`) after the damage of every strike on a human, by `ThrownObject_HitHuman` (`0x00392b88`, the thrower as
+attacker, not blocking) and by `Explosion_DamageHumansInRadius` (`0x00392638`, each human the blast reaches with a
+clear ray, not blocking). `Strike_Contact` passes `Human_IsBlockingOrDucking(victim)` as `blocking`; the zone and
+bone arguments it also passes are not read. Confirmed (code), in order:
+
+1. **Culling.** Nothing when the victim's position is more than 2 m outside one of the six frustum planes of player
+   1's view and, with two players, of player 2's view too; nothing when the [particle pool](script-types.md#effect-pattern)
+   is short (`ParticlePool_HasRoom`, `0x003a5a50`).
+2. **The count**, from the object in the attacker's hand (its model hash `+0xc4`):
+
+    | Held object | Count |
+    | --- | --- |
+    | `dyn_bowie`, `dyn_hunter`, `dyn_tknife`, `dyn_swhbld`, `dyn_swhbld_super` (the knives), `dyn_cleaver`, `dyn_beerbottle_b` (the broken bottle) | 2 |
+    | `dyn_machet`, `dyn_sledgehammer` | 3 |
+    | anything else, or nothing (fists, bat, pipe …) | 0 |
+
+    Then, when the victim **is hurt** (`Human_IsHurt`, `0x00222ff8`: health below the class's `+0x04` fraction of
+    maximum, 0.3 by default, [Characters](characters.md)), a count of 0 becomes 1, and a hurt victim who is
+    **blocking** gets 0 whatever the weapon. A victim who is not hurt keeps the weapon's count even when blocking.
+    The names are the model hashes' CRC-32 matches (`0x2a263bb3` … `0x4b95d669`), corroborated against the
+    reference lists.
+3. **An object of kind 39** in the attacker's hand (`ObjectAttribs` `+0x86`, the one-sphere melee object of
+   [Moving strikes](#moving-strikes)) makes no blood: when the victim's player record `+0x1b` is set it queues screen
+   effect 4 (the blur pulse, [Screen effects](../references/screen-effects.md)) on the victim's view for as long as
+   his anim `0x4d` plays, and the first time (game state bit `0x800000000`), outside the armies levels and with
+   tutorial hint 26 unlocked, queues game hint 26.
+4. **The flash**: a `sub_punch_flash` attached to the victim at attach point 9 (a head bone, in the head range 5-16
+   of [Sound events](sound-events.md#strike-human)), offset 0, rotation word `(0, 1, 0, 1)`, with the count. Its
+   init (`SubPunchFlash_Init`, `0x003b1460`), when a camera is within 25 m, the point is in a view (10 m margin) and
+   blood is on: count 0 makes nothing; count 1 makes one `sub_blood_effect` whose spray direction follows the bone's
+   own motion; a count *n* of 2 or more makes a `blood_mist` grown × 1.33 and *n* + 1 `sub_blood_effect`s, each with
+   the flash's rotation turned by a random angle `a` in [0, 2π) through the quaternion `(0, 0, sin a, cos a)`, their
+   sprays along the turned +y.
+
+So bare fists draw blood only from a hurt victim (one burst a hit), and a knife, cleaver or broken bottle draws three
+bursts and a machete or sledgehammer four on every hit, unless a hurt victim blocks.
+
+**Clip effect events** (type `0x21`, [Animation format](formats/animation.md)): `Anim_FireFrameEvents`
+(`0x00101dd8`) builds the name `sub_` + the event's three-letter code (`+0x14`) and calls `Human_SpawnAnimEffect`
+(`0x0021de48`) with the human whose clip it is, the event's bone (`+0x06`) and its position and rotation decoded as
+the type-8 event's. That function culls as above (2 m outside every player view) and spawns by code; the blood codes
+(confirmed (code)):
+
+- `bld`: a `sub_blood_effect` at the bone, unless blood is off;
+- `pch`: a `sub_pch` (`SubPch_Init`, `0x003b17f8`), which within 25 m and in view makes a `sub_blood_effect` when the
+  human is hurt (blood on) and a `sub_sweat_effect` when he is not;
+- `blo`: a `sub_blo`: a `sub_blood_effect` at once and, on its first update, a blood decal on the surface 1 m along
+  the event's +y ([Script types](script-types.md#blood)).
+
+The other codes are not blood: `dus` dust, `smk` smoke, `puk` vomit, `spp` / `spr` / `spm` spray paint, `pla`, `gun`,
+`glt`, `dce` ([Script types](script-types.md#by-address)). A survey of every clip on the disc (`coney-tools`
+animation decoder; counts only) found 122 distinct `bld`, 62 `blo` and 33 `pch` events:
+
+- `pch`, all on bone 6 (the head) at frame 0-1: the twelve high hit reactions `gen_hit_react_high_*`
+  (front / back / left / right × `1m`, `down`, `ex`; anim slots 280-283, 292-295, 300-303), five deaths
+  `gen_die_high_*` / `gen_die_mid_*` (slots 308-315), the grab strike reactions 1-3 (slots 52, 54, 56), some
+  grab and mount power reactions, the ground hit reaction (slot 195) and `virgil_uppercut_react`. The mid and low
+  hit reactions have none, so a body blow never bleeds through the clip;
+- `bld` (bones 6, 5, 25, 19, 3, 33, 24, 0): the knife and bottle kills and grabs (`gen_grab_front_knife`,
+  `gen_grab_back_knife`, `gen_knife_mounting_react`, `bottle_smash_victim`, `player_stealthkill_knife_react` with
+  18), the bat tandem, mount and grab power moves and the mounted punches;
+- `blo` (bone 6): mount and grab power moves, tandems, tackle counters and `gen_fall_front_land`.
+
+**At runtime** (PCSX2 2.9.94, scenario `blood_knife_grab`: the knife grab kill of `moves_knife_grab` with call
+hooks on the functions above, 400 updates): the kill fired five `bld` events (one on the victim's bone 3, four on the
+killer's bone 25, his knife hand), each made one `sub_blood_effect` and, one update later, one `blood_splatter`;
+every blob landed exactly once, 25 to 38 ticks after it was made, on the floor (contact normal z 1.0), and none
+landed again in the rest of the run. No `Human_SpawnHitEffect` call: the paired kill strikes nothing. Confirmed
+(runtime).
+
 ### Power meter {#power-meter}
 
 Record `+0x148`, maximum the power class's `+0x28` (400) through `0x00223068` (with upgrades). In

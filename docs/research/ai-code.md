@@ -587,7 +587,7 @@ Every function of the classes, and the helpers among them:
 | `0x002fbd18` | `MoveAction_CollectPoints` | `MoveTo` helper | the next points of the route, with the leg kinds | confirmed (code) |
 | `0x002fbef0` | `MoveAction_TrialSpeed` | `MoveTo` helper | the speed a simulated walk along the points allows ([Moving](ai.md#move-action)) | confirmed (code) |
 | `0x002fc158` | `MoveAction_CornerSpeed` | `MoveTo` helper | the corner speed of the next waypoints | confirmed (code) |
-| `0x002fc330` | `MoveAction_CheckStuck` | `MoveTo` helper | every 60 updates while moving: less than 0.2 m covered → brain `+0x284` = 3 | confirmed (code) |
+| `0x002fc330` | `MoveAction_CheckStuck` | `MoveTo` helper | on the 61st update while moving: less than 0.2 m covered in 3D → brain `+0x284` = 3 | confirmed (code) |
 | `0x002fc3e8` | `MoveAction_ResetSpeed` | `MoveTo` helper | speed = the gait's speed | confirmed (code) |
 | `0x002fc560` | `MoveAction_Abort` | `MoveTo` Abort | marks it aborted, clears the move and the route | confirmed (code) |
 | `0x002fcd90` | `Move_CornerSpeedLimit` | `MoveTo` helper | the highest speed that still turns through a corner circle, stepping the gait down | confirmed (code) |
