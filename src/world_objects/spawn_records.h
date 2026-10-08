@@ -35,6 +35,8 @@ struct SpawnRecord {
     /// removed (world_objects::ObjectTasks).
     bool dying = false;
     std::uint32_t money = 0; ///< A `dyn_money` pickup's dollars (its object's `+0x124`).
+    /// The model its object draws instead of its type's (a broken cash register's); nothing for the type's.
+    std::optional<std::uint32_t> model;
     /// What `ObjEnablePhysics` last gave its object (`+0x118`): a physics body (true) or none (false); nothing while no
     /// script has called it. **Coney stand-in**: Coney's dynamic objects have no collision bodies yet, so it is only
     /// kept.

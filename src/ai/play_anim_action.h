@@ -2,6 +2,8 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
+#include <utility>
 
 #include "ai/action.h"
 
@@ -21,6 +23,11 @@ class PlayAnimAction final : public Action {
     /// (whether it loops or holds is not traced).
     PlayAnimAction(ScriptServices& services, int animId, bool option, std::int16_t delayMs = 0)
         : Action(delayMs), m_services(&services), m_animId(animId), m_option(option) {}
+    /// Plays the level-loaded clip `clipName` as anim `animId`, blended in over `fade` seconds (a dealer's gesture:
+    /// the gang clip table's entry for the id, `DealerGoal_QueueGesture`, 0.5 s).
+    PlayAnimAction(ScriptServices& services, int animId, std::string clipName, float fade)
+        : Action(0), m_services(&services), m_animId(animId), m_option(false), m_clipName(std::move(clipName)),
+          m_fade(fade) {}
 
     /// The human stands (the brain's speed 0).
     [[nodiscard]] ActionStatus start(Brain& brain) override;
@@ -38,6 +45,8 @@ class PlayAnimAction final : public Action {
     ScriptServices* m_services;
     int m_animId;
     bool m_option;
+    std::string m_clipName; // the clip to play as the id; empty: the anim set's own
+    float m_fade = 0.0F;
     bool m_playing = false;
     std::uint32_t m_heldFlags = 0;
 };

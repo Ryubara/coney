@@ -17,6 +17,7 @@
 
 #include "ai/ai_config.h"
 #include "ai/ai_humans.h"
+#include "ai/dealer_goal.h"
 #include "ai/route_planner.h"
 #include "animation/anim_math.h"
 #include "camera/camera_lens.h"
@@ -291,9 +292,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] const effects::Triglints& glints() const { return m_glints; }
     /// The health rings and L1 markers the newest step queued.
     [[nodiscard]] const hud::HealthRings& healthRings() const { return m_rings; }
-    /// The parked cars' parts that came off in the newest step (world_objects::Cars::takeBreaks()), in order: where a
-    /// car window's shatter and its glass sound start (docs/research/cars.md#windows).
-    [[nodiscard]] const std::vector<world_objects::CarPartBreak>& carBreaks() const { return m_carBreaks; }
+    /// The parked cars' hit effects of the newest step (world_objects::Cars::takeHitEffects()), in order: the sparks,
+    /// the windows' shatters with their glass sound, the bonnet's steam (docs/research/cars.md#hit-effects).
+    [[nodiscard]] const std::vector<world_objects::CarHitEffect>& carHitEffects() const { return m_carHitEffects; }
     /// How many world objects the last frame drew (0 without pixels).
     [[nodiscard]] std::size_t objectsDrawn() const { return m_placed ? m_placed->drawn() : 0; }
 
@@ -422,12 +423,32 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // the press. **Coney's stand-in**: the two-player swap is not built.
     // @orig 0x00306040 WarriorBrain_OnPrompt (unknown)
     bool trySwap(human::Human& human, const world_objects::SightBlocked& blocked);
+    // A deal's outcome for player 1: the item and money moved for a sale or a rip-off, and the dealer's line.
+    void settleDeal(ai::Brain& brain, ai::DealerGoal& dealer, ai::DealOutcome outcome);
+    // Each dealer whose money clip (`money_take`, his 668) passed its action event completes the sale its pair
+    // started (`DealerGoal_FinishPair`, docs/research/ai.md#dealer-buy).
+    void stepDealerPairs();
+    // The game-over check each update (GameState_CheckGameOver, docs/research/combat.md#defeat) with player 1 as it
+    // sees him, then the failure's hand-off: the HUD hidden at its first update, and after 180 updates (10 once cross
+    // is newly pressed) the mission-failed mode with the reason's `GSTRING.HUD` title. **Coney's stand-ins**: a
+    // player at 0 health counts as knocked out and none as dead; no player frees himself (Coney has no uncuffing);
+    // `+0x414` never blocks the wait; a held member is one attached to his holder; the route check is a route request
+    // (no blocked links in Coney); the failed camera, the tint, the blur and the music's fade are not built.
+    // @orig 0x004197a8 GameState_CheckGameOver (unknown)
+    // @orig 0x00169dd8 Gang_NoneAbleToHelp (unknown)
+    // @orig 0x00169ea0 Gang_CanReachToHelp (unknown)
+    void stepGameOver(const Pad& pad);
     // Player 1's flash (command 0x28, d-pad right, docs/research/combat.md#rage): with a flash carried and health
-    // below its maximum, a pair he is in is broken, the flash spent and his health filled, and 665 SPECIAL_FLASH plays
-    // when nothing blocks a move. **Coney's stand-ins**: the flash is spent on the press, not on the clip's event; its
-    // sound is not played; the full-health rage use (upgrade (6, 8)) is not built.
+    // below its maximum, 665 SPECIAL_FLASH plays when nothing blocks a move, and its action event 19 updates in uses
+    // the flash (a clip cut first spends nothing); when something blocks a move (a grab, which stays) the flash is used
+    // at once, unless 665 already plays. **Coney's stand-in**: the full-health rage use (upgrade (6, 8)) is not built.
     // @orig 0x002843f8 Player_StartRage (unknown)
     void stepFlash();
+    // `Flash_Use`: one flash spent, interface sound 23 (`vags/misc/flash`), the health filled and wounding ended, and
+    // the HUD's ring request. **Coney's stand-in**: always the full heal (Coney has no difficulty setting; above
+    // normal the original heals a player by half), and the player's screen effect reset is not built.
+    // @orig 0x00284280 Flash_Use (unknown)
+    void useFlash(human::Human& human);
     // Player 1's square may strike the world objects that are strike targets, the cars he faces and the level's whole
     // glass panes, aiming at their positions, aim points and centres.
     void giveObjectTargets();
@@ -620,12 +641,15 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
         bool shapesOn = false;  // its strike shapes have come on
     };
     std::optional<ObjectAttack> m_objectAttack;
-    std::vector<world_objects::CarPartBreak> m_carBreaks; // car parts off in the newest step (carBreaks())
-    bool m_wasMugging = false;                            // player 1 was mugging at the last step
-    std::optional<bool> m_mugEnding;                      // a decided mugging's result, until its end clip finishes
-    std::uint32_t m_mugEndClip = 0;                       // that end clip
-    LevelPickups* m_pickups = nullptr;                    // the level's loose objects for the pick-up; not owned
-    int m_theftStage = 0;                                 // the theft's stage the panel last showed
+    std::vector<world_objects::CarHitEffect> m_carHitEffects; // the cars' hit effects of the newest step
+    GameOverCheck* m_gameOver = nullptr;                      // the game-over check (GameState::gameOver); not owned
+    std::function<void(std::string_view)> m_missionFailed;    // opens the mission-failed mode with a title
+    bool m_failShown = false;                                 // the failure's first hand-off update ran
+    bool m_wasMugging = false;                                // player 1 was mugging at the last step
+    std::optional<bool> m_mugEnding;                          // a decided mugging's result, until its end clip finishes
+    std::uint32_t m_mugEndClip = 0;                           // that end clip
+    LevelPickups* m_pickups = nullptr;                        // the level's loose objects for the pick-up; not owned
+    int m_theftStage = 0;                                     // the theft's stage the panel last showed
     std::optional<world_objects::LockPick> m_lockPick;
     int m_lockPickDifficulty = 0;
     bool m_flashRingRequest = false;      // a flash used: the HUD's ring request (docs/research/hud.md)

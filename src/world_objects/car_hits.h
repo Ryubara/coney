@@ -15,6 +15,9 @@ using CarPartMask = std::uint32_t;
 
 /// The window parts (15, 17, 19, 21): one hit breaks one (docs/research/cars.md#windows).
 inline constexpr CarPartMask kCarWindowParts = (1U << 15U) | (1U << 17U) | (1U << 19U) | (1U << 21U);
+/// The glass parts: the front and rear glass 6 and 7 and the windows (`Car_OnHit`'s mask `0xffd57f3f` leaves them out
+/// of its sparks; docs/research/cars.md#hit-effects).
+inline constexpr CarPartMask kCarGlassParts = (1U << 6U) | (1U << 7U) | kCarWindowParts;
 /// The window beside the stereo: its break frees the stereo.
 inline constexpr std::uint32_t kStereoWindowPart = 15;
 /// A plain human hit's damage to each part it reaches.

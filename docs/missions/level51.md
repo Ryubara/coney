@@ -30,7 +30,7 @@ area.
 
 ## What it needs {#needs}
 
-Its scripts can call 256 script bindings. 6 of them are new, which no earlier level of the story calls: 1 are
+Its scripts can call 256 script bindings. 6 of them are new, which no earlier level of the story calls: 2 are
 implemented in Coney and 6 are traced. The full list is on [the coverage page](../references/bindings/story.md#level51).
 
 | Family | New bindings | In Coney |
@@ -39,7 +39,7 @@ implemented in Coney and 6 are traced. The full list is on [the coverage page](.
 | [Cameras](../references/bindings/camera.md) | 1 | 0 |
 | [Effects and lighting](../references/bindings/effects.md) | 1 | 1 |
 | [Sound and music](../references/bindings/sound.md) | 1 | 0 |
-| [Levels and game state](../references/bindings/level.md) | 2 | 0 |
+| [Levels and game state](../references/bindings/level.md) | 2 | 1 |
 
 Research:
 

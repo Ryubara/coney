@@ -76,7 +76,13 @@ void ScriptedBrains::runAnimCallbacks() {
     if (m_animCallbacks == nullptr || m_scripts == nullptr) {
         return;
     }
+    // One call for each (human, anim) the step started, in the order of their first start.
+    std::vector<std::pair<double, std::uint32_t>> called;
     for (const auto& [human, anim] : starts) {
+        if (std::ranges::find(called, std::pair{human, anim}) != called.end()) {
+            continue;
+        }
+        called.emplace_back(human, anim);
         const std::string_view function = m_animCallbacks->match(human, anim);
         if (!function.empty()) {
             const std::array<script::Value, 2> args{script::Value(human), script::Value(static_cast<double>(anim))};
@@ -833,6 +839,16 @@ std::optional<std::uint32_t> ScriptedBrains::playClip(Brain& human, int animId) 
         return std::nullopt;
     }
     human.human().playScripted(*clip, static_cast<std::uint32_t>(animId), rate, kScriptedClipFade, kScriptedClipHeld);
+    return kScriptedClipHeld.held;
+}
+
+std::optional<std::uint32_t> ScriptedBrains::playNamedClip(Brain& human, int animId, std::string_view name,
+                                                           float fade) {
+    const anim::AnimClip* clip = m_clipSource ? m_clipSource(name) : nullptr;
+    if (clip == nullptr || animId < 0) {
+        return std::nullopt;
+    }
+    human.human().playScripted(*clip, static_cast<std::uint32_t>(animId), 1.0F, fade, kScriptedClipHeld);
     return kScriptedClipHeld.held;
 }
 

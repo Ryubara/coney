@@ -300,6 +300,7 @@
     0x00227dd8 (`0x40000`, or no state record) and 0x00227eb0 (`0x100000000`) are inferred as out of the fight. Any
     player in the `0x100000000` state fails the mission at once.
   usage: {chunks: 3, calls: 6, boot: false, mission1: false, result_used: false, levels: [51, 84]}
+  coney: implemented
 
 - name: PrecacheWorld
   wrapper: 0x0036c7a0

@@ -44,12 +44,13 @@ void PlayLevelMode::makeCast(const ScriptedCast& cast, const ai::AiConfig& fight
     cast.scripted->setHandOver([this](const ai::Brain& to) { takePlace(to); });
     // GoalPlayDynAnimation's clips are the level's dynamic clips, loaded from the disc when first named.
     cast.scripted->setClipSource([this](std::string_view name) { return m_dynamicClips.find(name); });
-    // The AI goals' lines (a boss's taunts and shouts) go to the game's sound, when there is one.
-    cast.scripted->setSpeech([this](double handle, int command, bool interrupt) {
+    // The AI goals' lines (a boss's taunts and shouts, the dealer's lines) go to the game's sound, when there is one.
+    cast.scripted->setSpeech([this](double handle, int command, bool interrupt, double target) {
         if (m_sound != nullptr) {
             static_cast<void>(m_sound->sayCommand(script::CommandCall{.human = handle,
                                                                       .command = static_cast<std::uint32_t>(command),
-                                                                      .interrupt = interrupt},
+                                                                      .interrupt = interrupt,
+                                                                      .target = target},
                                                   {}));
         }
     });

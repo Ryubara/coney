@@ -192,6 +192,11 @@ void addStateBindings(LuaVm& vm, const BindingContext& context) {
                         stateCall(context, [](GameState& state, std::span<const Value> args) {
                             state.autoSwitch = boolArg(args, 0, true);
                         }));
+    // `EnableGameOverCheck(on)`: missing counts as false.
+    // @orig 0x0041d890 GameState_EnableGameOverCheck (unknown)
+    vm.registerFunction("EnableGameOverCheck", stateCall(context, [](GameState& state, std::span<const Value> args) {
+                            state.gameOver.setEnabled(boolArg(args, 0));
+                        }));
     // `QueueFileToPrecache(file)`: appended unchecked; a missing file is dropped when the queue is loaded.
     // @orig 0x0040cc40 World_QueuePackToPrecache (unknown)
     vm.registerFunction("QueueFileToPrecache", stateCall(context, [](GameState& state, std::span<const Value> args) {

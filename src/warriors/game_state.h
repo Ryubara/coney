@@ -10,6 +10,7 @@
 #include "core/game_random.h"
 #include "core/language.h"
 #include "warriors/character_rules.h"
+#include "warriors/game_over.h"
 #include "warriors/hub_state.h"
 #include "warriors/level_table.h"
 #include "warriors/player_state.h"
@@ -115,6 +116,8 @@ struct GameState {
     bool forceReticules = false;
     /// `0x005109ac` (`CNSEnableMissionInfo`): nothing in the original reads it.
     bool missionInfo = false;
+    /// The game-over check and the failure's hand-off (`+0x155`, `+0x14c`, `+0x56e6`; EnableGameOverCheck).
+    GameOverCheck gameOver;
     /// The world manager's precache queue (`+0x0c`, `QueueFileToPrecache`): the files the next `PrecacheWorld` loads.
     std::vector<std::string> precacheQueue;
 };

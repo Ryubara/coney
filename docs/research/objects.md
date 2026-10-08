@@ -1653,6 +1653,22 @@ colours, the quieter break of a run-in, the camera test and the path-polygon fla
 debris pieces are splinters; a litter piece's offset is drawn in ±0.43, ±0.43 and 0-0.83 m; and the sprinter is not
 stopped dead after the strike (he slides along the bags that step, and they are gone the next).
 
+**Cash register** ([Script types: cash registers](script-types.md#dyn-cashreg), `repo:src/world_objects/props.h`):
+a `dyn_cashreg` takes 2 + 8 × the hit's kind from its type's `+0x5a` (16), so eight bare hits or one charge break it.
+A hit it survives sounds its material against concrete at the register and raises dust at the hit; the breaking hit
+swaps its broken model (`0x59026f53`, drawn through the spawn record's model), sounds its material against itself and
+opens its drawer; the register is no longer a strike target but keeps its body and is never removed. 60 ticks later
+the drawer spills a `dyn_money` 0.22 m above it holding $25-49 (`WorldObject_SetField124`, the record's money).
+Player 1 takes money by walking over it ([Walking over a power-up](player-state.md#walk-over),
+`repo:src/gamemodes/level_pickups.h`): item 2 × its value with notify, and the record is removed. Coney's stand-ins:
+what makes the drawer is not traced, so the break makes it, open, at the register's own pose (no slide); the dust is a
+burst; the game state flag that silences the hit sound, the use (the triangle robbery, which takes the drawer and
+leaves a `dyn_cashreg_c` on the break instead), and the pick-up and drop of the register are not built; the money
+rests where it is made; and a walk-over touch is the money within 1.1 m of player 1 in plan and from 0.5 m below to
+2 m above his feet (Coney's power-ups have no bodies), with no sight test, no other power-up types and no pick-up
+sound. In `level99` at checkpoint 2 the store's register stands at (53.23, 57.26, 1.63); from the shop floor south of
+it eight squares break it and walking north into the counter takes the money (disc check, 2026-10-07).
+
 ## Open questions
 
 - Which search mask admits `0x40` links.
@@ -1676,6 +1692,8 @@ stopped dead after the strike (he slides along the bags that step, and they are 
   direction), what sets game-state set 3's bits, and who sends a broken prop message `0x20`.
 - `dyn_door_vargas`' second object, and the leaf models of `dyn_door_chainlnk_pick` (no `dyn_dr_chainlnk_pick` record).
 - What a cabin door's leaves do once it breaks, and where the wreck pieces and boards appear.
+- Who makes a cash register's drawer (`dyn_cashreg_b`, the register's `+0x1c`) and where it sits before it opens; how
+  far message `0x12` slides it; and whether the spilled `dyn_money` falls or rests where it is made.
 - Moving into a pane ([Moving into a pane](#pane-break)): which clip events switch the strike shapes on in a jump.
   (Answered on [Combat](combat.md#moving-strikes): the strike shapes' sizes and events, record `+0x08` bit `0x800`,
   and a knock-back flight, which is not airborne. Human vtable `+0x10c`, `0x00227180`: any non-human body may be

@@ -165,6 +165,18 @@ void LevelObjectServices::burst(anim::Vec3 at) {
     }
 }
 
+void LevelObjectServices::setModel(double object, std::uint32_t modelHash) {
+    if (world_objects::SpawnRecord* record = m_records != nullptr ? m_records->find(object) : nullptr) {
+        record->model = modelHash;
+    }
+}
+
+void LevelObjectServices::setValue(double object, std::uint32_t value) {
+    if (world_objects::SpawnRecord* record = m_records != nullptr ? m_records->find(object) : nullptr) {
+        record->money = value;
+    }
+}
+
 double LevelObjectServices::spawnObject(std::string_view type, anim::Vec3 at, anim::Quat rotation) {
     const double handle = m_scripts.nextObjectHandle();
     if (m_records == nullptr || handle == world_objects::kNoObject) {

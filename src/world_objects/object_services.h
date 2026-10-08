@@ -129,6 +129,9 @@ class ObjectServices {
     virtual void nextModel(double /*object*/) {}
     /// Gives an object the model named by `modelHash`.
     virtual void setModel(double /*object*/, std::uint32_t /*modelHash*/) {}
+    /// Sets an object's value (`+0x124`): a `dyn_money`'s dollars.
+    /// @orig 0x003a4cb0 WorldObject_SetField124 (unknown)
+    virtual void setValue(double /*object*/, std::uint32_t /*value*/) {}
     /// Dust of `radius` at `at` (`0x003c57d8`).
     virtual void dust(anim::Vec3 /*at*/, float /*radius*/) {}
     /// `count` splinters at `at` (`0x003c5b00`).

@@ -103,29 +103,47 @@ TEST_CASE("a stereo is put in, freed by a broken window, then taken once", "[car
     CHECK(Cars::stereoPosition(*cars.find(4)).z > 0.0F);
 }
 
-TEST_CASE("each part coming off is reported once, a window with its burst side", "[cars]") {
+TEST_CASE("a hit sends sparks off a solid part and each part's first-hit effect once", "[cars]") {
+    using coney::world_objects::CarHitEffectKind;
     Cars cars;
     REQUIRE(cars.spawn("car_osedan", Vec3{}, Quat{}, 4) != nullptr);
-    CHECK(cars.damagePart(4, 15, 0.115F, false));
-    CHECK_FALSE(cars.damagePart(4, 15, 0.115F, false)); // already off: nothing more
-    CHECK_FALSE(cars.damagePart(4, 14, 0.115F, false)); // a door takes 0.115 and stays
-    CHECK(cars.damagePart(4, 17, 0.115F, false));
-    auto breaks = cars.takeBreaks();
-    REQUIRE(breaks.size() == 2);
-    CHECK(breaks[0].car == 4);
-    CHECK(breaks[0].part == 15);
-    CHECK(breaks[0].window);
-    CHECK_FALSE(breaks[0].instant);
-    CHECK(breaks[0].burst.x < -0.99F); // the left window bursts along the car's -x
-    CHECK(breaks[1].part == 17);
-    CHECK(breaks[1].burst.x > 0.99F);
-    CHECK(cars.takeBreaks().empty());
-    // The explosion knocks off every other part, instant, the door not a window.
+    // Standing at the front-left door: the first square breaks window 15 only, a small shatter on the atomic's frame
+    // (its first row, negated), and no sparks (glass only).
+    const Vec3 standing{-1.6F, 0.5F, 0};
+    const Vec3 point{-0.6F, 0.5F, 1.5F};
+    REQUIRE(cars.humanHit(4, standing, point) == (1U << 15U));
+    auto effects = cars.takeHitEffects();
+    REQUIRE(effects.size() == 1);
+    CHECK(effects[0].kind == CarHitEffectKind::SmallShatter);
+    CHECK(effects[0].part == 15);
+    CHECK(effects[0].fromAtomic);
+    CHECK(effects[0].atomic == 40);
+    CHECK(effects[0].frameRow == 0);
+    CHECK(effects[0].rowSign == -1.0F);
+    CHECK(cars.takeHitEffects().empty());
+    // The door next: sparks at the point and the door's own first hit (kind 0 too); a second hit sparks only.
+    REQUIRE(cars.humanHit(4, standing, point) == (1U << 14U));
+    effects = cars.takeHitEffects();
+    REQUIRE(effects.size() == 2);
+    CHECK(effects[0].kind == CarHitEffectKind::Sparks);
+    CHECK(effects[0].position.z == 1.5F);
+    CHECK(effects[1].kind == CarHitEffectKind::Sparks);
+    CHECK(effects[1].part == 14);
+    REQUIRE(cars.humanHit(4, standing, point) == (1U << 14U));
+    CHECK(cars.takeHitEffects().size() == 1);
+    // The bonnet's first hit is steam at its point in the car's frame, upward.
+    const auto steam = coney::world_objects::carBreakWindowEffect(*cars.find(4), 4, point);
+    CHECK(steam.kind == CarHitEffectKind::Steam);
+    CHECK(std::fabs(steam.position.y - 2.743F) < 1e-4F);
+    CHECK(steam.direction.z == 1.0F);
+    // The right windows burst along the first row, the front and rear glass along the second.
+    CHECK(coney::world_objects::carBreakWindowEffect(*cars.find(4), 17, point).rowSign == 1.0F);
+    CHECK(coney::world_objects::carBreakWindowEffect(*cars.find(4), 7, point).kind == CarHitEffectKind::LargeShatter);
+    CHECK(coney::world_objects::carBreakWindowEffect(*cars.find(4), 7, point).frameRow == 1);
+    CHECK(coney::world_objects::carBreakWindowEffect(*cars.find(4), 7, point).rowSign == -1.0F);
+    // The explosion sends nothing.
     CHECK(cars.explode(4));
-    breaks = cars.takeBreaks();
-    CHECK(breaks.size() == 24);
-    CHECK(breaks.front().instant);
-    CHECK_FALSE(breaks.front().window);
+    CHECK(cars.takeHitEffects().empty());
 }
 
 TEST_CASE("a stereo is drawn in its car until a theft takes it", "[cars]") {

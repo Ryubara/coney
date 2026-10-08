@@ -137,6 +137,7 @@ add_library(coney_core STATIC
     warriors/created_humans.cpp
     warriors/crime_reports.cpp
     warriors/disk_profile_store.cpp
+    warriors/game_over.cpp
     warriors/inventory.cpp
     warriors/level_table.cpp
     warriors/player_stats.cpp

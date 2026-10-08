@@ -69,15 +69,26 @@ class ScriptServices {
     [[nodiscard]] virtual bool dynamicClipLoaded(const Brain& /*human*/) const { return true; }
     /// Frees `human`'s dynamic slot (`0x0010bcf8`).
     virtual void freeDynamicClip(Brain& /*human*/) {}
-    /// Has `human` say speech command `command` (0-206, `Human_PlaySpeech`); with `interrupt` it cuts off a line he is
-    /// saying, else nothing plays while one does. Nothing without a sound system.
-    virtual void say(Brain& /*human*/, int /*command*/, bool /*interrupt*/) {}
+    /// Has `human` say speech command `command` (0-206, `Human_PlaySpeech`) to `target` (a handle he looks at, 0 for
+    /// none); with `interrupt` it cuts off a line he is saying, else nothing plays while one does. Nothing without a
+    /// sound system.
+    virtual void say(Brain& /*human*/, int /*command*/, bool /*interrupt*/, double /*target*/) {}
     /// Starts anim `animId` on `human` (`0x0025a3e0`) and returns the record flags (`+0x08`) it holds while it plays;
     /// nothing when it cannot start. By default nothing starts: Coney's humans play no clip by id from outside their
     /// dispatcher yet.
     [[nodiscard]] virtual std::optional<std::uint32_t> playClip(Brain& /*human*/, int /*animId*/) {
         return std::nullopt;
     }
+    /// Starts the level-loaded clip `name` on `human` as anim `animId` (a gang clip table's entry or an override
+    /// `Human_SetAnimOverride` binds to the id), faded in over `fade` seconds; returns the record flags it holds, or
+    /// nothing when the clip is not loaded. By default nothing starts.
+    [[nodiscard]] virtual std::optional<std::uint32_t> playNamedClip(Brain& /*human*/, int /*animId*/,
+                                                                     std::string_view /*name*/, float /*fade*/) {
+        return std::nullopt;
+    }
+    /// Whether the level-loaded clip `name` is available (the level's animation cache, `0x0016f980`). False by
+    /// default.
+    [[nodiscard]] virtual bool clipAvailable(std::string_view /*name*/) const { return false; }
 };
 
 } // namespace coney::ai

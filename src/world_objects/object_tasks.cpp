@@ -201,7 +201,7 @@ void ObjectTasks::step(SpawnRecords& records, const ObjectTypes& types, const St
 void ObjectTasks::addDraws(const SpawnRecord& record, const ObjectType& type, const Task& task) {
     ObjectDraw draw;
     draw.handle = record.handle;
-    draw.modelHash = type.modelHash;
+    draw.modelHash = record.model.value_or(type.modelHash);
     draw.position = anim::Vec3{record.position[0], record.position[1], record.position[2]};
     draw.rotation = anim::Quat{record.rotation[0], record.rotation[1], record.rotation[2], record.rotation[3]};
     draw.fadeDistance = record.fadeInDistance;

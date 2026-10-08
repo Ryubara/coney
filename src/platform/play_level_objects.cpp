@@ -141,6 +141,8 @@ constexpr std::uint16_t kLockPickKeeps =
 constexpr std::uint32_t kFlashAnim = 665;
 constexpr std::uint32_t kFlashHeld = 0x2000;
 constexpr float kFlashFade = 0.2F;
+// `Flash_Use`'s interface sound: entry 23 of the cue table, which the scripts fill with `vags/misc/flash`.
+constexpr int kFlashSoundCue = 23;
 // The 60 Hz ticks the objects take in one 1/30 s step.
 constexpr int kObjectTicksPerStep = 2;
 // The prompts' GSTRING.HUD ids (docs/research/crimes.md#context-records): a held human to mug, a pickable door, a car
@@ -438,48 +440,159 @@ bool PlayLevelMode::tryDeal(human::Human& human) {
         const ai::DealOutcome outcome =
             dealer.deal(brain, m_ai->playerBrain(), m_pickups->carried(0, item::kMoney),
                         m_pickups->carried(0, terms->item), m_pickups->itemLimit(terms->item));
-        if (outcome == ai::DealOutcome::Sold) {
-            m_pickups->dealerSold(0, terms->item, terms->amount, terms->price);
-        } else if (outcome == ai::DealOutcome::RippedOff) {
-            m_pickups->dealerSold(0, terms->item, 0, terms->price);
-        }
-        // His line about it, said with the buyer as its target.
-        if (const std::optional<std::uint32_t> line = dealer.dealLine(outcome, brain.nowMs());
-            line && m_sound != nullptr) {
-            static_cast<void>(m_sound->sayCommand(
-                script::CommandCall{
-                    .human = brain.handle(), .command = *line, .interrupt = true, .target = playerHandle()},
-                {}));
-        }
+        settleDeal(brain, dealer, outcome);
         m_print(std::format("deal: dealer {} outcome {}\n", i, static_cast<int>(outcome)));
         return outcome != ai::DealOutcome::NotDealing;
     }
     return false;
 }
 
+void PlayLevelMode::settleDeal(ai::Brain& brain, ai::DealerGoal& dealer, ai::DealOutcome outcome) {
+    const std::optional<ai::DealTerms> terms = ai::dealTerms(dealer.type());
+    if (!terms) {
+        return;
+    }
+    if (outcome == ai::DealOutcome::Sold) {
+        m_pickups->dealerSold(0, terms->item, terms->amount, terms->price);
+    } else if (outcome == ai::DealOutcome::RippedOff) {
+        m_pickups->dealerSold(0, terms->item, 0, terms->price);
+    }
+    // His line about it, said with the buyer as its target.
+    if (const std::optional<std::uint32_t> line = dealer.dealLine(outcome, brain.nowMs()); line && m_sound != nullptr) {
+        static_cast<void>(m_sound->sayCommand(
+            script::CommandCall{.human = brain.handle(), .command = *line, .interrupt = true, .target = playerHandle()},
+            {}));
+    }
+}
+
+void PlayLevelMode::stepDealerPairs() {
+    if (m_ai == nullptr || m_pickups == nullptr) {
+        return;
+    }
+    // A dealer's money clip (his 668) passing its action event completes the sale its pair started.
+    ai::Brains& brains = m_ai->brains();
+    for (std::size_t i = 0; i < brains.size(); ++i) {
+        ai::Brain& brain = brains.at(i);
+        ai::Goal* goal = brain.topGoal();
+        if (goal == nullptr || goal->type() != ai::GoalType::Dealer ||
+            brain.human().actionEvent() != static_cast<std::uint32_t>(ai::kDealerActionAnim)) {
+            continue;
+        }
+        auto& dealer = static_cast<ai::DealerGoal&>(*goal);
+        if (const std::optional<ai::DealOutcome> outcome = dealer.finishPair(brain)) {
+            settleDeal(brain, dealer, *outcome);
+            m_print(std::format("deal: dealer {} completes the pair\n", i));
+        }
+    }
+}
+
+void PlayLevelMode::stepGameOver(const Pad& pad) {
+    if (m_gameOver == nullptr || m_pickups == nullptr || m_ai == nullptr) {
+        return;
+    }
+    if (!m_gameOver->failed()) {
+        const human::Human& human = m_player->human();
+        const GameOverPlayer player{.dead = false,
+                                    .knockedOut = human.fighter().health().depleted() || human.script().knockedOut,
+                                    .cuffed = human.script().arrested,
+                                    .canFreeSelf = false,
+                                    .holdsFlash = m_pickups->carried(0, item::kRevive) > 0,
+                                    .waitBlocked = false};
+        // The others of player 1's gang (docs/research/combat.md#defeat-helpers). Free: not cuffed, not knocked out
+        // and not held (in a grab or tackle, state 0x10000). An empty gang is not "none able": it goes on to the
+        // route test, which then finds no one.
+        // @orig 0x00169dd8 Gang_NoneAbleToHelp (unknown)
+        const ai::Gang* gang = m_ai->playerBrain().gang();
+        std::vector<const human::Human*> others;
+        if (gang != nullptr) {
+            for (const ai::Brain* member : gang->members()) {
+                if (member != &m_ai->playerBrain()) {
+                    others.push_back(&member->human());
+                }
+            }
+        }
+        const auto knockedOut = [](const human::Human& h) {
+            return h.fighter().health().depleted() || h.script().knockedOut;
+        };
+        const bool noneAble = !others.empty() && std::ranges::none_of(others, [&knockedOut](const human::Human* other) {
+            return !other->script().arrested && !knockedOut(*other) && !other->attached();
+        });
+        // Whether one of them has a route to him: the player's feet on the path polygons (none: no), then each member
+        // not cuffed and not down or dead with a route there, with no distance limit. **Coney's reading**: the route
+        // request stands for Nav_CanReach (it fails off the polygons, off the graph or with no route); Coney's links
+        // are never blocked, and a level with no path data finds a route always.
+        // @orig 0x00169ea0 Gang_CanReachToHelp (unknown)
+        const auto canReachToHelp = [this, &others, &knockedOut] {
+            if (m_planner == nullptr) {
+                return true;
+            }
+            const anim::Vec3 goal = m_player->human().position();
+            return std::ranges::any_of(others, [this, &goal, &knockedOut](const human::Human* other) {
+                if (other->script().arrested || knockedOut(*other) || other->attached()) {
+                    return false;
+                }
+                return m_planner->request(other->position(), goal, 0xffff).has_value();
+            });
+        };
+        if (const std::optional<GameOverReason> reason =
+                m_gameOver->update(std::span(&player, 1), noneAble, canReachToHelp)) {
+            m_print(std::format("game over: the mission fails ({})\n",
+                                *reason == GameOverReason::Busted ? "busted" : "beaten"));
+        }
+        return;
+    }
+    // The hand-off: the HUD goes at its first update; the mission-failed mode opens at the end of the countdown.
+    if (!m_failShown) {
+        m_failShown = true;
+        m_hud->hud().hideAll();
+    }
+    if (m_gameOver->stepHandOff((pad.pressed() & pad::kCross) != 0) && m_missionFailed) {
+        const auto id = static_cast<std::uint32_t>(m_gameOver->reason().value_or(GameOverReason::Beaten));
+        const hud::HudServices& services = m_hud->hud().services();
+        m_missionFailed(services.hudString ? services.hudString(id) : std::string{});
+    }
+}
+
 void PlayLevelMode::stepFlash() {
     human::Human& human = m_player->human();
-    if (human.record().command != combat::command::kDpadRight || m_pickups == nullptr ||
-        m_pickups->carried(0, item::kRevive) < 1) {
+    if (m_pickups == nullptr) {
+        return;
+    }
+    // 665's action event uses the flash it was played for (`Human_HandleMessage`, message 0xc1).
+    if (human.actionEvent() == kFlashAnim) {
+        useFlash(human);
+    }
+    if (human.record().command != combat::command::kDpadRight || m_pickups->carried(0, item::kRevive) < 1) {
         return;
     }
     // Not while out of health, down or airborne; at full health it would only feed rage (not built).
-    combat::Health& health = human.fighter().health();
+    const combat::Health& health = human.fighter().health();
     if (health.depleted() || human.airborne() || human.fighter().helpless(human.animator()) ||
         health.value() >= health.maximum()) {
         return;
     }
-    // A grab he holds or is held in is let go first; then 665 when nothing holds his moves, and the flash is used.
-    human.breakPair();
-    if (!human::stickBusy(human.gateInput())) {
-        if (const anim::AnimClip* clip = human.anims().clip(kFlashAnim)) {
-            human.playScripted(*clip, kFlashAnim, 1.0F, kFlashFade, human::HeldFlags{.held = kFlashHeld});
-        }
+    // Nothing blocks a move: 665 is pushed, and its event uses the flash. Otherwise (a grab, which stays) the flash is
+    // used at once, unless 665 already plays.
+    const bool blocked = human::stickBusy(human.gateInput()) || human.fighter().inPair();
+    const anim::AnimClip* clip = human.anims().clip(kFlashAnim);
+    if (!blocked && clip != nullptr) {
+        human.playScripted(*clip, kFlashAnim, 1.0F, kFlashFade, human::HeldFlags{.held = kFlashHeld});
+        m_print("flash: 665 plays\n");
+    } else if (human.animator().animId() != kFlashAnim) {
+        useFlash(human);
+    }
+}
+
+void PlayLevelMode::useFlash(human::Human& human) {
+    if (m_pickups->carried(0, item::kRevive) < 1) {
+        return;
     }
     m_pickups->spendItem(0, item::kRevive);
-    m_flashRingRequest = true;
+    m_hud->hud().services().sound.playCue(kFlashSoundCue);
+    combat::Health& health = human.fighter().health();
     human.setWounded(false);
     health.set(health.maximum());
+    m_flashRingRequest = true;
     m_print(std::format("flash: used, health {}\n", health.value()));
 }
 
@@ -513,11 +626,11 @@ void PlayLevelMode::stepObjectBodies() {
         }
     }
     // Each object in the world and not in a hand or on a head whose type has a body and a layer; a broken prop has
-    // lost its body.
+    // lost its body (a broken cash register has not).
     for (const world_objects::SpawnRecord& record : m_records->all()) {
         if (record.removed || !m_objectTasks.inWorld(record.handle) || m_wornHats.contains(record.handle) ||
             (m_pickups != nullptr && m_pickups->inHand(record.handle)) ||
-            (m_objects != nullptr && m_objects->props.broken(record.handle))) {
+            (m_objects != nullptr && m_objects->props.bodyLost(record.handle))) {
             continue;
         }
         const world_objects::ObjectType* type = m_objectTypes->find(record.typeName);
@@ -926,9 +1039,13 @@ void PlayLevelMode::stepObjects() {
         const anim::Vec3 feet = human.position();
         const anim::Vec3 ahead = human::facing(human.heading());
         // A car takes the hit itself (Strike_Contact calls its hit handler; no message 1), by where the player stands.
-        if (m_cars != nullptr && m_cars->find(*attacked) != nullptr) {
+        if (const world_objects::Car* car = m_cars != nullptr ? m_cars->find(*attacked) : nullptr; car != nullptr) {
+            // The contact point: **Coney's reading**, the square's aim point on the car (the strike shapes do not
+            // test cars yet), else 1 m ahead at the feet.
+            const anim::Vec3 point = world_objects::carAimPoint(*car, feet, ahead)
+                                         .value_or(anim::Vec3{feet.x + ahead.x, feet.y + ahead.y, feet.z});
             std::vector<world_objects::CarHitReport> reports;
-            const world_objects::CarPartMask struck = m_cars->humanHit(*attacked, feet, &reports);
+            const world_objects::CarPartMask struck = m_cars->humanHit(*attacked, feet, point, &reports);
             m_print(std::format("objects: car {:.0f} hit, parts {:#x}\n", *attacked, struck));
             // A strike that reached a part sounds on the hood.
             if (struck != 0) {
@@ -966,6 +1083,12 @@ void PlayLevelMode::stepObjects() {
     for (int tick = 0; tick < kObjectTicksPerStep; ++tick) {
         m_objects->tick();
     }
+    // Player 1 takes the money he walks over (a broken cash register's).
+    if (m_pickups != nullptr) {
+        for (const LevelPickups::WalkedOver& money : m_pickups->walkOver(0, human.position())) {
+            m_print(std::format("objects: money {:.0f} taken, ${}\n", money.handle, money.dollars));
+        }
+    }
     // A broken barrier removed at its update: its handlers hear message 2 and its record goes.
     for (const double removed : m_objects->doors.takeRemoved()) {
         m_print(std::format("objects: {:.0f} removed\n", removed));
@@ -982,13 +1105,13 @@ void PlayLevelMode::stepObjects() {
             static_cast<void>(m_records->destroy(removed));
         }
     }
-    // The car parts that came off this step: the hook for their shatter, sound and fall (carBreaks()).
-    m_carBreaks.clear();
+    // The cars' hit effects this step: the hook for their sparks, glass and steam (carHitEffects()).
+    m_carHitEffects.clear();
     if (m_cars != nullptr) {
-        m_carBreaks = m_cars->takeBreaks();
-        for (const world_objects::CarPartBreak& broke : m_carBreaks) {
-            m_print(std::format("objects: car {:.0f} part {} off{}\n", broke.car, broke.part,
-                                broke.window ? " (a window)" : ""));
+        m_carHitEffects = m_cars->takeHitEffects();
+        for (const world_objects::CarHitEffect& effect : m_carHitEffects) {
+            m_print(std::format("objects: car {:.0f} part {} effect {}\n", effect.car, effect.part,
+                                static_cast<int>(effect.kind)));
         }
     }
 }

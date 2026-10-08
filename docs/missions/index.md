@@ -34,7 +34,7 @@ to run it.
 | [Mission 11: Boys In Blue](level31.md) | `level31` | ⬜ Not Started | 0 of 6 | 0 | 3 of 9 |
 | [Mission 12: Set Up](level14.md) | `level14` | ⬜ Not Started | 0 of 3 | 0 | 2 of 6 |
 | [Mission 13: All-City](level9.md) | `level9` | ⬜ Not Started | 0 of 3 | 0 | 2 of 6 |
-| [Mission 14: Desperate Dudes](level51.md) | `level51` | ⬜ Not Started | 0 of 7 | 0 | 1 of 6 |
+| [Mission 14: Desperate Dudes](level51.md) | `level51` | ⬜ Not Started | 0 of 7 | 0 | 2 of 6 |
 | [Mission 15: No Permits, No Parley](level52.md) | `level52` | ⬜ Not Started | 0 of 4 | 0 | 0 of 4 |
 | [Mission 16: Home Run](level54.md) | `level54` | ⬜ Not Started | 0 of 5 | 0 | 1 of 7 |
 | [Mission 17: Friendly Faces](level55.md) | `level55` | ⬜ Not Started | 0 of 3 | 0 | 2 of 8 |

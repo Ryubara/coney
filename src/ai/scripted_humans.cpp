@@ -497,18 +497,33 @@ void ScriptedHumans::setDefaultFollowSlots(int set, std::span<const std::pair<fl
 }
 
 void ScriptedHumans::runRageHandlers() {
+    // The humans raging before this pass's changes: the original's count of ragers (W_GameState + 0x268).
+    int ragers = 0;
+    for (const auto& [handle, brain] : m_scripted->bound()) {
+        ragers += m_rageSeen[handle].raging ? 1 : 0;
+    }
     for (const auto& [handle, brain] : m_scripted->bound()) {
         const combat::RageMeter& rage = brain->human().fighter().combat().rage();
         RageSeen& seen = m_rageSeen[handle];
-        const std::array<double, 1> args{handle};
+        // Lua 4's true is 1 and its false nil, so a false flag is the argument left off.
+        const std::array<double, 2> args{handle, 1.0};
+        const std::span<const double> withFlag(args);
+        const std::span<const double> withoutFlag = withFlag.first(1);
         if (rage.full() && !seen.full && !m_rage.onFull.empty()) {
-            static_cast<void>(m_scripted->call(m_rage.onFull, args));
+            static_cast<void>(m_scripted->call(m_rage.onFull, withFlag));
         }
-        if (rage.raging() && !seen.raging && !m_rage.onEnter.empty()) {
-            static_cast<void>(m_scripted->call(m_rage.onEnter, args));
+        // The flag is whether no other human rages: counted before this one is added, and after it is taken off.
+        if (rage.raging() && !seen.raging) {
+            if (!m_rage.onEnter.empty()) {
+                static_cast<void>(m_scripted->call(m_rage.onEnter, ragers < 1 ? withFlag : withoutFlag));
+            }
+            ++ragers;
         }
-        if (!rage.raging() && seen.raging && !m_rage.onExit.empty()) {
-            static_cast<void>(m_scripted->call(m_rage.onExit, args));
+        if (!rage.raging() && seen.raging) {
+            --ragers;
+            if (!m_rage.onExit.empty()) {
+                static_cast<void>(m_scripted->call(m_rage.onExit, ragers < 1 ? withFlag : withoutFlag));
+            }
         }
         seen = RageSeen{.full = rage.full(), .raging = rage.raging()};
     }

@@ -433,10 +433,12 @@ first 26 atomics of each car, each at its frame and given the dictionary's first
   item sit at the documented offsets.
 - **The stereo's model** (`world_objects::stereoDraws()`): the play mode draws `dyn_carstereo` at the stereo's offset,
   turned with the car, while it is in the car or freed, and no more once stolen.
-- **Parts coming off** (`Cars::takeBreaks()`, `PlayLevelMode::carBreaks()`): each part that comes off is reported
-  once, with whether it is a window, whether the damage was instant, and a window's burst side (the car's −x for 15
-  and 19, +x for 17 and 21). It is the hook for the window's shatter and glass sound, which wait for message
-  `0x3f`'s effect kinds (below).
+- **Hit effects** (`Cars::takeHitEffects()`, `PlayLevelMode::carHitEffects()`, `carBreakWindowEffect()`): a human hit
+  that reaches a part outside the glass reports sparks at the hit point, and each part's first hit ever (`+0x11ec`)
+  its own effect by `Car_BreakWindow`'s table: the side windows' small shatter and the front and rear glass's large
+  one (placed by the part's damaged atomic and a row of its frame, which the platform resolves), the bonnet's steam,
+  the lights' glass. The explosion sends none. The hit point is the square's aim point (**Coney's reading**: the
+  strike shapes do not test cars yet). It is the hook the effects and the glass sound are drawn and played from.
 - **Explosion** (`CarExplode`, `repo:src/scripting/mission4_bindings.h`, `Cars::explode()`): a car not yet exploded
   takes instant damage on every part (so a boot item is lost) and is marked exploded; without `quiet` its message
   `0x19` goes to its own handler and then to the cars' general one (`SetGeneralCarMsgHandler`,
@@ -462,8 +464,8 @@ Coney's stand-ins, where this page is silent:
 - Every type uses the sedan's zone tables and box (the others' are not on the page yet); the car pass's candidate
   joins the object targets, nearest first, rather than coming before them.
 - Not yet in a car hit: the gang lock (`+0x12d8`), the exploding car, a player above the car skipping the cabin
-  table, the charge's and thrown objects' contact-point zones, a molotov's fire (its `-1, 0` message), the first-hit
-  effect and the statistic.
+  table, the charge's and thrown objects' contact-point zones, a molotov's fire (its `-1, 0` message) and the
+  statistic.
 - The money pickup's 15 s life is not applied.
 - A name that is not one of the six types still makes a car, which draws nothing.
 - The explosion's pieces flying off (the car shows every part's damaged form where it was), effects, sound, 300

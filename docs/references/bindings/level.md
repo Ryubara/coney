@@ -269,7 +269,7 @@ in the `0x100000000` state fails the mission at once.
 - **Wrapper** `0x0036c710` (registered by `RegisterBindings`); **calls** `0x0041d890` `GameState_EnableGameOverCheck`
 - **Used by** 3 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level51`](story.md#level51) (mission 14)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## EnterStore {#enterstore}
 

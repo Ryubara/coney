@@ -141,8 +141,10 @@ class ScriptedHumans final : public script::HumanBindingHost {
     void setDefaultFollowSlots(int set, std::span<const std::pair<float, float>> slots) override;
 
     /// Calls the rage handlers for what changed since the last call on each bound human's rage meter: `onFull` when
-    /// it filled, `onEnter` when rage started, `onExit` when it ended, each with the human's handle (**Coney choice**
-    /// of the arguments and of when: after the characters' step, as the animation callbacks run).
+    /// it filled, with `(human, true)` (`Human_AddRage`); `onEnter` when rage started and `onExit` when it ended, with
+    /// `(human, flag)`, the flag true when no other human rages (the original's count of ragers below 1; counted
+    /// before the starter and after the ender, **Coney's reading**). docs/research/combat.md#rage. **Coney choice** of
+    /// when: after the characters' step, as the animation callbacks run.
     void runRageHandlers();
 
     /// The gangs' spawners (`GangAddSpawner`, `GangStartSpawner`); the play mode updates them.

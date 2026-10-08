@@ -64,6 +64,9 @@ inline constexpr int kBodySphere = 2;
 
 /// `TYPE_SPECIAL`: a store's jewellery and other loose loot (docs/research/combat.md#breakables).
 inline constexpr int kObjectKindSpecial = 12;
+/// `TYPE_MONEY`: money a human takes by walking over it, worth its object's value
+/// (docs/research/player-state.md#walk-over).
+inline constexpr int kObjectKindMoney = 28;
 
 /// The object database (`0x00512c04`): the types `CfgObj` configures, found by name.
 ///

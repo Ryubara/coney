@@ -248,6 +248,8 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
         m_cars = cast->cars;
         bindPickups(cast->pickups);
         m_sound = cast->sound;
+        m_gameOver = cast->gameOver;
+        m_missionFailed = cast->missionFailed;
         makeWorldObjects(*cast);
     }
     // The AI humans in the player's step: the level's scripts' humans, or the layout's fighters.
@@ -560,6 +562,8 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     stepLockPickDial();
     stepLooseObjects();
     stepFlash();
+    stepDealerPairs();
+    stepGameOver(pad);
     stepObjects();
     stepHats();
     const anim::Vec3 after = m_player->human().position();

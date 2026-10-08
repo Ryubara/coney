@@ -28,17 +28,17 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 17.1%](https://img.shields.io/badge/reimplemented-17.1%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 17.2%](https://img.shields.io/badge/reimplemented-17.2%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 ![Understood: 100.0%](https://img.shields.io/badge/understood-100.0%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▍░░░░░░░░░░░░░░░░` | 17.1% of the game's own code (573,384 of 3,354,776 bytes, 2,110 functions) |
+| **Reimplemented** | `███▍░░░░░░░░░░░░░░░░` | 17.2% of the game's own code (575,520 of 3,354,776 bytes, 2,123 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,192 of 3,284,000 bytes; 11,423 of 11,425 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-857 reimplemented function(s) have no size yet and add no bytes.
+867 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -70,10 +70,10 @@ at the top of the repository's `README.md`.
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
 | `FileIO` | `███▍░░░░░░░░░░░░░░░░` | 17.0% | 10 | 7,120 |
-| `GameModes` | `██████▋░░░░░░░░░░░░░` | 33.1% | 112 | 100,440 |
+| `GameModes` | `██████▋░░░░░░░░░░░░░` | 33.1% | 115 | 100,440 |
 | `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 12.0% | 90 | 195,624 |
 | `GUI` | `████▏░░░░░░░░░░░░░░░` | 20.7% | 246 | 497,416 |
-| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 783 | 1,096,672 |
+| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 787 | 1,096,672 |
 | `Maths (unnamed)` | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% | 9 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `▌░░░░░░░░░░░░░░░░░░░` | 2.5% | 8 | 79,032 |
@@ -81,11 +81,11 @@ at the top of the repository's `README.md`.
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 30 | 17,904 |
 | `Scripting` | `██████▏░░░░░░░░░░░░░` | 30.6% | 224 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `███▎░░░░░░░░░░░░░░░░` | 16.4% | 166 | 531,312 |
+| `TaskEngine` | `███▍░░░░░░░░░░░░░░░░` | 16.8% | 170 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 33 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 32 | 22,008 |
-| `Warriors` | `███▉░░░░░░░░░░░░░░░░` | 19.1% | 113 | 54,264 |
+| `Warriors` | `███▉░░░░░░░░░░░░░░░░` | 19.1% | 115 | 54,264 |
 | `Movie` | `██████████████████▍░` | 91.9% | 5 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
 | Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 27,632 |
@@ -444,6 +444,7 @@ at the top of the repository's `README.md`.
 | `0x00163270` | `LoadScreen_FormatTextureName` | `GameModes` | 864 |
 | `0x001635d0` | `LoadScreen_FormatTextureNameEx` | `GameModes` | 696 |
 | `0x00163888` | `LevelLoadScreen_Start` | `GameModes` | 896 |
+| `0x00163fc0` | `GangClips_Get` | `GameModes` | not filled in |
 | `0x001647e0` | `Gang_ClearMsgHandlers` | `GameModes` | 40 |
 | `0x00164bb8` | `Gang_SetMessageHandler` | `GameModes` | 88 |
 | `0x00164c20` | `Gang_OnEvent` | `GameModes` | 1,432 |
@@ -462,6 +463,8 @@ at the top of the repository's `README.md`.
 | `0x001696e0` | `Gangs_MusicMood` | `GameModes` | not filled in |
 | `0x001698c8` | `Gang_SetSecondWantedTimer` | `GameModes` | not filled in |
 | `0x001698f0` | `Gang_UpdateWanted` | `GameModes` | 304 |
+| `0x00169dd8` | `Gang_NoneAbleToHelp` | `GameModes` | not filled in |
+| `0x00169ea0` | `Gang_CanReachToHelp` | `GameModes` | not filled in |
 | `0x0016a1e8` | `Gang_FreeWhenEmpty` | `GameModes` | not filled in |
 | `0x0016a220` | `Gang_Suspend` | `GameModes` | 64 |
 | `0x0016a260` | `Gang_SetInvincible` | `GameModes` | 72 |
@@ -1184,6 +1187,7 @@ at the top of the repository's `README.md`.
 | `0x00282370` | `Climb_ProbeTop` | `Human` | not filled in |
 | `0x002826f0` | `Climb_TryStart` | `Human` | not filled in |
 | `0x002829e8` | `Player_TryJump` | `Human` | not filled in |
+| `0x00284280` | `Flash_Use` | `Human` | not filled in |
 | `0x002843f8` | `Player_StartRage` | `Human` | 1,320 |
 | `0x00284920` | `Player_GrabOrTackle` | `Human` | 896 |
 | `0x002854b0` | `Brain_SetInterrogateOverride` | `Human` | 112 |
@@ -1403,7 +1407,10 @@ at the top of the repository's `README.md`.
 | `0x002c6d90` | `DealerGoal_Init` | `Human` | 232 |
 | `0x002c6e78` | `DealerGoal_Start` | `Human` | 288 |
 | `0x002c70a0` | `DealerGoal_End` | `Human` | 184 |
+| `0x002c7158` | `DealerGoal_QueueGesture` | `Human` | not filled in |
 | `0x002c74d8` | `DealerGoal_Deal` | `Human` | not filled in |
+| `0x002c7c20` | `DealerGoal_FinishPair` | `Human` | not filled in |
+| `0x002c7de8` | `DealerGoal_Reset` | `Human` | not filled in |
 | `0x002c7ee0` | `DealerGoal_AddRadarIcon` | `Human` | not filled in |
 | `0x002c7fd8` | `DealerGoal_Process` | `Human` | 2,256 |
 | `0x002caf78` | `IdleGoal_Init` | `Human` | 160 |
@@ -1909,6 +1916,7 @@ at the top of the repository's `README.md`.
 | `0x00387ad8` | `Car_Release` | `TaskEngine` | 240 |
 | `0x00387bc8` | `Car_Init` | `TaskEngine` | not filled in |
 | `0x0038a4d8` | `Car_DamagePart` | `TaskEngine` | not filled in |
+| `0x0038a830` | `Car_BreakWindow` | `TaskEngine` | not filled in |
 | `0x0038ab18` | `Car_TryExplode` | `TaskEngine` | 56 |
 | `0x0038ab50` | `Car_DoExplode` | `TaskEngine` | 1,432 |
 | `0x0038b520` | `Car_FacingParts` | `TaskEngine` | not filled in |
@@ -2006,6 +2014,7 @@ at the top of the repository's `README.md`.
 | `0x003a2e00` | `Task_SendMessage` | `TaskEngine` | 32 |
 | `0x003a3ba0` | `Human_PlaceHat` | `TaskEngine` | 460 |
 | `0x003a4768` | `Triangle_MakeTwoSided` | `TaskEngine` | 88 |
+| `0x003a4cb0` | `WorldObject_SetField124` | `TaskEngine` | 56 |
 | `0x003a50e0` | `Camera_IsPointInPlayerView` | `TaskEngine` | not filled in |
 | `0x003a51f8` | `Cameras_IsPointVisibleAny` | `TaskEngine` | not filled in |
 | `0x003a5280` | `Cameras_IsWithinRange` | `TaskEngine` | not filled in |
@@ -2018,6 +2027,8 @@ at the top of the repository's `README.md`.
 | `0x003b7538` | `DynMasks_Init` | `TaskEngine` | 1,356 |
 | `0x003b7a88` | `DynMasks_OnHit` | `TaskEngine` | 30,508 |
 | `0x003bf548` | `DynMasks_Update` | `TaskEngine` | 336 |
+| `0x003bffd0` | `DynCashregB_Update` | `TaskEngine` | 312 |
+| `0x003c06b0` | `DynCashreg_OnMessage` | `TaskEngine` | 1,768 |
 | `0x003c3448` | `PartExplosion_Init` | `TaskEngine` | not filled in |
 | `0x003c4580` | `SubFireballEmitter_Init` | `TaskEngine` | not filled in |
 | `0x003c4a58` | `SubFireball_Init` | `TaskEngine` | not filled in |
@@ -2140,6 +2151,7 @@ at the top of the repository's `README.md`.
 | `0x00417af0` | `Cfg_SetActionDistance` | `Warriors` | 32 |
 | `0x00418150` | `ContextActions_Pick` | `Warriors` | not filled in |
 | `0x00418428` | `RepeatTracker_Note` | `Warriors` | 240 |
+| `0x004197a8` | `GameState_CheckGameOver` | `Warriors` | not filled in |
 | `0x00419fc8` | `GameState_SetMusicMood` | `Warriors` | 64 |
 | `0x0041a060` | `GameState_UpdateSystemMusic` | `Warriors` | not filled in |
 | `0x0041a8c0` | `Human_SwitchPlayer` | `Warriors` | 256 |
@@ -2177,6 +2189,7 @@ at the top of the repository's `README.md`.
 | `0x0041d820` | `GetProfileDifficulty` | `Warriors` | 16 |
 | `0x0041d830` | `GameState_SetDetailFlag` | `Warriors` | not filled in |
 | `0x0041d860` | `GameState_ClearDetailFlag` | `Warriors` | not filled in |
+| `0x0041d890` | `GameState_EnableGameOverCheck` | `Warriors` | not filled in |
 | `0x0041d8a0` | `Cfg_SetCrimeResponders` | `Warriors` | not filled in |
 | `0x0041d8d0` | `GameState_SetForceCrimeLevel` | `Warriors` | 16 |
 | `0x0041d920` | `Cfg_SetGangSizeForCombatMusic` | `Warriors` | not filled in |

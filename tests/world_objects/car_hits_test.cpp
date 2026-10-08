@@ -74,17 +74,17 @@ TEST_CASE("the first hit breaks the window, which shielded its door, and window 
     REQUIRE(cars.spawn("car_osedan", Vec3{}, Quat{}, 1) != nullptr);
     cars.spawnRadio(1);
     const Vec3 standing{-1.6F, 0.5F, 0};
-    CHECK(cars.humanHit(1, standing) == bit(15));
+    CHECK(cars.humanHit(1, standing, standing) == bit(15));
     CHECK((cars.find(1)->removedKept & bit(15)) != 0);
     CHECK(cars.find(1)->stereo == StereoState::Freed);
     // The window is gone: now the door takes a plain hit's damage.
-    CHECK(cars.humanHit(1, standing) == bit(14));
+    CHECK(cars.humanHit(1, standing, standing) == bit(14));
     CHECK(cars.find(1)->damage.at(14) == Approx(coney::world_objects::kHumanCarHitDamage));
     CHECK((cars.find(1)->removedKept & bit(14)) == 0);
     // Window 19 does not free a stereo.
     REQUIRE(cars.spawn("car_osedan", Vec3{10, 0, 0}, Quat{}, 2) != nullptr);
     cars.spawnRadio(2);
-    CHECK(cars.humanHit(2, Vec3{8.4F, -0.5F, 0}) == bit(19));
+    CHECK(cars.humanHit(2, Vec3{8.4F, -0.5F, 0}, Vec3{}) == bit(19));
     CHECK(cars.find(2)->stereo == StereoState::InCar);
 }
 
@@ -110,12 +110,12 @@ TEST_CASE("a hit reports each part it damaged and whether it broke, and the hit 
     REQUIRE(cars.spawn("car_osedan", Vec3{}, Quat{}, 1) != nullptr);
     const Vec3 standing{-1.6F, 0.5F, 0};
     std::vector<coney::world_objects::CarHitReport> reports;
-    CHECK(cars.humanHit(1, standing, &reports) == bit(15));
+    CHECK(cars.humanHit(1, standing, standing, &reports) == bit(15));
     REQUIRE(reports.size() == 1);
     CHECK(reports[0].part == 15);
     CHECK(reports[0].broke);
     reports.clear();
-    CHECK(cars.humanHit(1, standing, &reports) == bit(14));
+    CHECK(cars.humanHit(1, standing, standing, &reports) == bit(14));
     REQUIRE(reports.size() == 1);
     CHECK(reports[0].part == 14);
     CHECK_FALSE(reports[0].broke);
@@ -129,7 +129,7 @@ TEST_CASE("a hit reports each part it damaged and whether it broke, and the hit 
     constexpr int kMostHits = 20;
     for (int hit = 0; hit < kMostHits; ++hit) {
         reports.clear();
-        static_cast<void>(cars.humanHit(1, standing, &reports));
+        static_cast<void>(cars.humanHit(1, standing, standing, &reports));
         if (reports.empty() || reports.front().broke) {
             break;
         }
@@ -141,6 +141,6 @@ TEST_CASE("a hit reports each part it damaged and whether it broke, and the hit 
     CHECK(reports[1].broke);
     // Nothing left to damage: no report.
     reports.clear();
-    static_cast<void>(cars.humanHit(1, standing, &reports));
+    static_cast<void>(cars.humanHit(1, standing, standing, &reports));
     CHECK(reports.empty());
 }

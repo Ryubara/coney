@@ -1662,6 +1662,11 @@ subsystem = "GameModes"
 size = 896
 
 [[function]]
+address = 0x00163fc0
+name = "GangClips_Get"
+subsystem = "GameModes"
+
+[[function]]
 address = 0x001647e0
 name = "Gang_ClearMsgHandlers"
 subsystem = "GameModes"
@@ -1765,6 +1770,16 @@ address = 0x001698f0
 name = "Gang_UpdateWanted"
 subsystem = "GameModes"
 size = 304
+
+[[function]]
+address = 0x00169dd8
+name = "Gang_NoneAbleToHelp"
+subsystem = "GameModes"
+
+[[function]]
+address = 0x00169ea0
+name = "Gang_CanReachToHelp"
+subsystem = "GameModes"
 
 [[function]]
 address = 0x0016a1e8
@@ -5797,6 +5812,11 @@ name = "Player_TryJump"
 subsystem = "Human"
 
 [[function]]
+address = 0x00284280
+name = "Flash_Use"
+subsystem = "Human"
+
+[[function]]
 address = 0x002843f8
 name = "Player_StartRage"
 subsystem = "Human"
@@ -7006,8 +7026,23 @@ subsystem = "Human"
 size = 184
 
 [[function]]
+address = 0x002c7158
+name = "DealerGoal_QueueGesture"
+subsystem = "Human"
+
+[[function]]
 address = 0x002c74d8
 name = "DealerGoal_Deal"
+subsystem = "Human"
+
+[[function]]
+address = 0x002c7c20
+name = "DealerGoal_FinishPair"
+subsystem = "Human"
+
+[[function]]
+address = 0x002c7de8
+name = "DealerGoal_Reset"
 subsystem = "Human"
 
 [[function]]
@@ -9772,6 +9807,11 @@ name = "Car_DamagePart"
 subsystem = "TaskEngine"
 
 [[function]]
+address = 0x0038a830
+name = "Car_BreakWindow"
+subsystem = "TaskEngine"
+
+[[function]]
 address = 0x0038ab18
 name = "Car_TryExplode"
 subsystem = "TaskEngine"
@@ -10312,6 +10352,12 @@ subsystem = "TaskEngine"
 size = 88
 
 [[function]]
+address = 0x003a4cb0
+name = "WorldObject_SetField124"
+subsystem = "TaskEngine"
+size = 56
+
+[[function]]
 address = 0x003a50e0
 name = "Camera_IsPointInPlayerView"
 subsystem = "TaskEngine"
@@ -10375,6 +10421,18 @@ address = 0x003bf548
 name = "DynMasks_Update"
 subsystem = "TaskEngine"
 size = 336
+
+[[function]]
+address = 0x003bffd0
+name = "DynCashregB_Update"
+subsystem = "TaskEngine"
+size = 312
+
+[[function]]
+address = 0x003c06b0
+name = "DynCashreg_OnMessage"
+subsystem = "TaskEngine"
+size = 1768
 
 [[function]]
 address = 0x003c3448
@@ -11048,6 +11106,11 @@ subsystem = "Warriors"
 size = 64
 
 [[function]]
+address = 0x004197a8
+name = "GameState_CheckGameOver"
+subsystem = "Warriors"
+
+[[function]]
 address = 0x0041a060
 name = "GameState_UpdateSystemMusic"
 subsystem = "Warriors"
@@ -11249,6 +11312,11 @@ subsystem = "Warriors"
 [[function]]
 address = 0x0041d860
 name = "GameState_ClearDetailFlag"
+subsystem = "Warriors"
+
+[[function]]
+address = 0x0041d890
+name = "GameState_EnableGameOverCheck"
 subsystem = "Warriors"
 
 [[function]]

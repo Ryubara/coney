@@ -15,7 +15,9 @@ ActionStatus PlayAnimAction::start(Brain& brain) {
 
 ActionStatus PlayAnimAction::update(Brain& brain) {
     if (!m_playing) {
-        const std::optional<std::uint32_t> held = m_services->playClip(brain, m_animId);
+        const std::optional<std::uint32_t> held = m_clipName.empty()
+                                                      ? m_services->playClip(brain, m_animId)
+                                                      : m_services->playNamedClip(brain, m_animId, m_clipName, m_fade);
         if (!held) {
             return ActionStatus::Done;
         }

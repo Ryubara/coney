@@ -114,6 +114,10 @@ struct ScriptedCast {
     /// The world objects' handle counter (script::ScriptSystem::nextObjectHandle()), for the objects the level makes
     /// itself (a human's hat); empty for none.
     std::function<double()> objectHandles;
+    /// The game-over check the level runs each update (GameState::gameOver); null for none.
+    GameOverCheck* gameOver = nullptr;
+    /// Opens the mission-failed mode (0xc) with its title (the host's `launchMissionFailed`); empty for none.
+    std::function<void(std::string_view title)> missionFailed;
 };
 
 /// A loaded level that can draw a 2D layer over its frame just before the frame is presented: the pause menu over the

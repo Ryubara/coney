@@ -7,12 +7,14 @@
 #include <set>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "animation/anim_math.h"
 #include "combat/stick_games.h"
 #include "scripting/message_handlers.h"
 #include "scripting/script_system.h"
 #include "warriors/game_state.h"
+#include "world_objects/object_services.h"
 #include "world_objects/object_types.h"
 #include "world_objects/pickups.h"
 #include "world_objects/spawn_records.h"
@@ -120,6 +122,25 @@ class LevelPickups {
     /// loot.
     /// @orig 0x0023bf00 Human_PickUpObject (unknown)
     TakeResult take(double handle, int player);
+
+    /// Money player `player` (0 or 1) took by walking over it: its object and its dollars.
+    struct WalkedOver {
+        double handle = world_objects::kNoObject;
+        int dollars = 0;
+    };
+    /// The walk-over: player `player` (0 or 1), standing at `feet`, touches each `TYPE_MONEY` object in an enabled
+    /// zone and takes it: item 2 × its value (SpawnRecord::money), notifying, and the record is removed for good.
+    /// **Coney's stand-ins**: Coney's power-ups have no bodies to touch, so a touch is the object within
+    /// kWalkOverReach of him in plan, the distance at which the original's contact took a spray can
+    /// (docs/research/player-state.md#walk-over), and from kWalkOverBelow below his feet to kWalkOverAbove above them
+    /// (his body's height); the sight test, the other power-up types and item 2's pick-up sound are left out.
+    /// @orig 0x0023bf00 Human_PickUpObject (unknown)
+    std::vector<WalkedOver> walkOver(int player, anim::Vec3 feet);
+    /// How near a human comes to a power-up in plan when their bodies touch, metres.
+    static constexpr float kWalkOverReach = 1.1F;
+    /// How far below and above a human's feet a power-up he touches can be, metres (Coney's stand-in).
+    static constexpr float kWalkOverBelow = 0.5F;
+    static constexpr float kWalkOverAbove = 2.0F;
 
     /// The object `handle` leaves the hand at `at` (a dropped weapon): no longer held, its record unpinned and moved
     /// there. Its fall is the play mode's (world_objects::LooseObjects).

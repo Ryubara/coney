@@ -68,7 +68,7 @@ A u32 after the reference count. Confirmed (code) at the readers; meanings from 
 | `0x80` | `0x00101bc0` | read by `0x00228488` (not traced) |
 | `0x100` | `0x00101c20` | read by `0x0022f4f8` (a reaction; not traced) |
 | `0x200` | `0x00101bf0` | read by the stun and reaction code (`Human_Stun`, `0x0022f4f8`, `0x0022f9e0`) |
-| `0x10000` | `0x00101b88` | the strike is tested with the attacker's capsule ([Combat](combat.md)) |
+| `0x10000` | `0x00101b88` | read on the **attacker's** clip: its strike shapes are tested against a human target's **capsule** instead of the target's spine and head ([The capsule strike](combat.md#capsule-strike)). Only `gen_rage_sweep` (645 / 647 for `warr_fo_header` and `warr_re_header`) and `gen_sweep` (653 / 655 for `moon_lt_header`) carry it, both with flags `0x10004` |
 
 ## The cursor and the pose {#cursor}
 

@@ -589,7 +589,8 @@ one sphere of 0.8 m; for an object with `0x20000` one sphere of half its smalles
 `+0xd0`. Confirmed (code); the attribs fields' meanings are on [World objects](objects.md#held).
 
 - **What it hits.** Humans and objects go through the same test. A human's body is tested against the shapes of the
-  target that carry flag `0x4` (or its capsule, when `0x00101b88` says so for the attacker's clip); an object's
+  target that carry flag `0x4`, or the target's capsule when the attacker's clip has flag `0x10000`
+  ([The capsule strike](#capsule-strike)); an object's
   against its own shapes; a shape touching the level mesh calls `Strike_Contact` with no object (a material impact
   sound only). `Strike_Contact` then does what a hit on that thing does: damage from the clip's
   [Anim Range List](#damage-table) value for a human, message 1 of kind 2 for an object
@@ -605,9 +606,9 @@ one sphere of 0.8 m; for an object with `0x20000` one sphere of half its smalles
   hand 25 from 5 to 9, `SS2` both left shapes 18 and 19 from 2 to 6, `XX2` the right forearm and hand from 7 to 11,
   `SSS3` the right hand from 6 to 12 (Rembrandt's clips; the generic `S1` and `X1`, `combo2a_S_hi` and `combo2b_X_lo`,
   hold 19 from 0 to 5 and 25 from 4 to 8); the chain-window event `0x2c` falls inside each window. So a standing attack
-  damages a human only if the posed hand or forearm overlaps the target's spine or head shape (or its capsule for a
-  `0x10000` clip) during that window. Confirmed (code) at `0x0021b290` and its callers; the events read from the disc's
-  clips.
+  damages a human only if the posed hand or forearm overlaps the target's spine or head shape during that
+  window (the two `0x10000` sweeps test the target's capsule instead, [below](#capsule-strike)). Confirmed (code) at
+  `0x0021b290` and its callers; the events read from the disc's clips.
 - **Who is tested** (`Human_TestStrikes`, `0x0033f110`, confirmed (code)): every body the physics box query
   (`IPhysics_QueryBox`, all masks) returns around the human, **foes and allies alike**, except a body of the same
   body group (`+0x3c`, when not 0), one already on the striking body's contact list, a body with flag `0x8` whose
@@ -715,6 +716,58 @@ from the line, and stops 0.51 m from it 3 updates later; the original also strik
 and stops 1 update later at 0.42 m. The AI does not charge a human yet (its attack pick takes only the square and cross
 strikes and the snap), so the charge against a human is untested in play. Not made yet: the level mesh's impact sound, a
 car struck by the shapes, and the weapon spheres of a held object.
+
+#### The capsule strike {#capsule-strike}
+
+A clip with flag `0x10000` ([Clip flags](animation.md#clip-flags)) strikes a human target's **capsule**, not its
+spine and head. The flag is read from the **attacker's** clip: `Human_TestStrikes` (`0x0033f110`) calls
+`Anim_HitsWithCapsule(attacker, Human_GetAnimId(attacker))` (`0x00101b88` at `0x0033f998`, its only caller), which is
+clip `+0x44` & `0x10000` of the clip the attacker plays (`Human_FindAnimQuiet` `0x00221bf0`). Confirmed (code):
+
+1. The test applies only to a struck body of a **human** (type mask, body `+0x44` & `0x40`), after the checks of *Who is
+   tested* under [How a moving attack strikes](#moving-strikes). It also needs the striking body to have a shape on
+   (`+0xc0`), the struck body's flags `+0x40` & `0x30`, and the attacker's vtable `+0x10c` to accept the target. An
+   object's body is struck on its own shapes whatever the flag.
+2. Without the flag: each of the attacker's ten bone shapes that is enabled (`+0x32` & `0x1`) and striking (`& 0x2`)
+   is tested against each of the target's shapes with `0x4`, the spine and the head.
+3. With the flag: each such shape is tested against the target body's **first shape** (body `+0x30`), its capsule.
+   No flag of the capsule is read.
+4. The pair goes through the [sweep table](physics.md#dispatch), row = the strike shape's type, column 3:
+    - a **segment** (shin 29 / 32, forearms) uses the static overlap `0x00345d38` → `0x00346fb8`. It takes the closest
+      points of the bone segment and the capsule's axis (from its base straight up for its height,
+      `Segment_ClosestPoints` `0x0034ad50`). It hits when their distance is at most the segment's radius plus the
+      capsule's radius.
+    - a **sphere** (foot 30 / 33, hands) uses `0x00345670` → `Sweep_SphereCapsule` (`0x00349a60`): the sphere moved
+      by its displacement this update, against the upright capsule, with the two radii added; a hit at a fraction
+      from 0 to 1 counts.
+5. The first hit ends the test of that body: `Strike_Contact` (owner vtable `+0x104`) with the contact (`+0x04` the
+   strike shape, `+0x40` the target, `+0x44` the target shape), and the target goes on the contact list.
+
+**The capsule** (confirmed (code), `PhysicsCapsule_Pose` `0x00343518` and `PhysicsBody_ApplyHumanScale`
+`0x00341f28`; see also [Physics](physics.md#human-body)):
+
+- **Radius:** `+0x40` = 0.35 × the human's scale (`Human_GetCapsuleRadius` `0x00219860`): 0.3395 m at scale 0.97.
+  The walking sweep's body factor `+0x60` (1.4286 for the player, [Characters](characters.md#walls)) is not applied
+  here.
+- **Base:** `+0x50`, at the human's position (the feet), each update.
+- **Height:** `+0x44`, the height of the head bone (6) above the feet + 0.2 × scale, so about 1.8 m standing.
+  It is shorter in some states, by the rules on the Physics page; 0.35 × scale when cuffed; never under 0.2 × scale.
+
+So a strike shape at shin or foot height (0.1-0.4 m) that comes within its radius plus 0.34 m of the target's
+vertical axis hits it. A strike shape tested against the spine (about 1.0 m up) and head (about 1.6 m) never could.
+
+**At runtime** (confirmed (runtime), PCSX2 2.9.94, a copy of slot 6, 2026-10-08). Rembrandt was given a full rage
+meter (78) and rage started with L1 + R1 (clip 643, updates 15-74). PoizoCiv stood 1.0 m ahead, its brain and stick
+off. Cross + square at update 85 played **645**. The shin 29 and foot 30 went on at k15 (update 102) and off at k35
+(update 122). On update 102 `Strike_Contact` ran once with the strike shape of type 4, bone 29 (the shin segment) and
+the target shape of **type 3, bone `0xff`** (PoizoCiv's capsule). PoizoCiv lost 10 health (600 to 590), the table's
+10 ([combat-moves](combat-moves.md)), and played reaction 285. With PoizoCiv 1.6 m ahead the same 645 missed: the
+target was 1.63-1.74 m away while the shapes were on.
+
+**Clips with the flag** (the disc's clip headers, `+0x44`): only `gen_rage_sweep` (645 / 647, the rage special of
+`warr_fo_header` and `warr_re_header`; other sets put `gen_spinpunch`, `gen_360clearkick` or other clips in 645) and
+`gen_sweep` (653 / 655 of `moon_lt_header`) carry `0x10000`, both with `0x10004`. Every other strike clip is tested
+against the spine and head.
 
 ### When input and the stick come back {#input-return}
 
@@ -1824,6 +1877,14 @@ So a stand-in that always finds a route never fails on the 4th try. The faithful
 the mesh (no area), when every free member is in an area off the graph, or when every route crosses a blocked edge (a
 link with a negative cost, `NavNode_IsLinkBlocked` `0x002510a8`).
 
+**In Coney** (`repo:src/warriors/game_over.h`, `PlayLevelMode::stepGameOver()`): the check runs each update in the
+order above, on at each level's start and switched by `EnableGameOverCheck`; a failure hides the HUD and, 180 updates
+later (10 once cross is newly pressed), opens the mission-failed mode with `GSTRING.HUD` 20 or 21 as its title.
+Stand-ins: a player at 0 health counts as knocked out and none as dead, no player frees himself from cuffs, the
+wait's `+0x414` never blocks it, a held member is one attached to his holder, and the route check is a route request
+(Coney has no blocked links, and a level without path data always finds a route); the failed camera, the tint, the
+blur, the music's fade and the `dyn_cross` icon are not built.
+
 ### Being hit, at runtime {#being-hit-runtime}
 
 A puppet civilian (`PoizoCiv`, type 417, power class 2) attacked, blocked and grabbed the player (Rembrandt, 900
@@ -2503,6 +2564,12 @@ panes at x 50.25-52.26, y 56.99, 3 `dyn_ringdmnd` in the next cabinet (x 48.16-5
   breaker the player; [a pane's life](objects.md#pane)); the cabinet's other panes stay whole and the items do not
   move. At slot 4 one square broke the front pane centred at (51.26, 56.99, 1.59), 12 updates after the press.
   Confirmed (runtime) (re-labelled one update later after the recorder fix, [Recording a trace](../guides/research-workflow.md#hooks)).
+  A cabinet has **no damage stages**: a pane has no hit points, and its hit handler
+  (`GlassScript_OnMessage`, `0x003e2d90`) acts once. It sends the pane's break event, swaps to the type's broken
+  rectangle (`0x00010015` for type 1) drawn white at alpha `0x70`, makes one `sub_glass` shatter (shard size 0.2) at
+  the pane's centre along its normal, turns off both triangles (type 1's extra hook is empty) and removes the body.
+  Later hits find flag `0x800000` set and do nothing. The impact sound is `Strike_Contact`'s (material `GLASS`).
+  Confirmed (code).
 - **Triangle with nothing held** reaches the pick-up search `0x0024d810` ([Crimes: triangle](crimes.md#triangle), step
   5; `ContextAction_Use` ran with no context record each press). It gathers objects within **1.5 m** of the human (and
   of a second point, his position + human `+0x4e0`), and keeps one that is pickable (object flags `0x8000`), not the
@@ -2867,7 +2934,7 @@ a seeded generator (`CombatRandom`), so a run with the same seed and input is th
 | `combat/combat_tuning.*`, `debug/combat_tunables.*` | the values above as tunables, category **Combat**, registered at start-up beside the game's |
 | `human/fighter.*`, `human/fighter_grab.cpp`, `human/fighter_victim.cpp`, `human/fighter_clips.h` | the player's combat inside the human (split as the attacker, the grab and the victim side): builds `PlayerCombat`'s input (the camera-turned stick in the facing frame, the pad's stick, the gait, game time, the target in front, the grab search and the snap's search), plays its clips, turns and slides into an attack, poses a grab (the alignment, the connect, the gate, the snap and the attachment), turns and walks the grab by the stick, lands the hits with their rage, locks onto a target and combat-walks round it; and the player hit (a duck and its counter, the block, the health floor, the hit armour, the reaction, stun, knockdown and mash) and held in a grab (the counter at the catch, the struggle, the strike back, the escape and the reversal) |
 | `world_objects/pickups.*`, `gamemodes/level_pickups.*` | triangle with the objects of a level ([Crimes: triangle](crimes.md#triangle), steps 4 and 5): message 0 to the nearest object with a prompt (`SetMsgHandlerEx`), then to each object in reach, a true result taking the press; the search (the [pickable](objects.md#pickable) classes, reach, the two sight rays, the score by the direction from behind the feet) and the clip; the take, which adds a `TYPE_SPECIAL`'s loot with notify and its value in money without and removes the record, or puts any other kind in the hand ([A bat in hand](#bat)); with something in hand and nothing taken, the drop. The human plays the clip with a 0.2 s blend and takes the object at its first event (`Human::startPickUp`); the play mode gives the fighter the held type's anim set, whose square, cross and two strikes `combat::animSetClips()` gives |
-| `human/human_flags.h`, `human/fighter_script.cpp` | the [human flags](#human-flags) as the fighter keeps and reads them: god mode drops a hit's damage (**Coney's reading**: the reaction still plays), the demi-god floor (`HuSetDemiGodMode`'s fraction, one global) sets god mode when reached, `0x80`, `0x100`, `0x200`, `0x400` and `0x200000` shape the reaction, `0x2000000` gates every rage gain, `0x100000` freezes the meter's drain and decay, `0x4000000` spends no power, `0x100000000000` and an untargetable gang are skipped by the target search; `HuRevive` and `HuSetNormalMode`. The rage handlers (`CfgRageHandlers`) are called after the characters' step with the human's handle (**Coney choice** of the arguments) |
+| `human/human_flags.h`, `human/fighter_script.cpp` | the [human flags](#human-flags) as the fighter keeps and reads them: god mode drops a hit's damage (**Coney's reading**: the reaction still plays), the demi-god floor (`HuSetDemiGodMode`'s fraction, one global) sets god mode when reached, `0x80`, `0x100`, `0x200`, `0x400` and `0x200000` shape the reaction, `0x2000000` gates every rage gain, `0x100000` freezes the meter's drain and decay, `0x4000000` spends no power, `0x100000000000` and an untargetable gang are skipped by the target search; `HuRevive` and `HuSetNormalMode`. The rage handlers (`CfgRageHandlers`) are called after the characters' step (**Coney choice** of when) with the original's arguments: the full one with `(human, true)`, enter and exit with `(human, flag)`, the flag true (1) when no other human rages and nil otherwise (counted before the starter is added and after the ender is taken off, **Coney's reading**). Before, the full handler got the handle alone, so `level99`'s `P1.CheckRage` skipped its full branch: the bat stayed in his hand through the rage lesson |
 | `human/turn_and_slide.*` | the attack's steer ([Target selection](#targets)): a turn and a slide at a constant rate over a time, the last update only for the time left; the time to a clip's first steer-ending event; and the goal, the target led by its velocity and short of it by the reach |
 | `human/victim.*` | what the player and the target share as victims: the update's largest hit, the reaction it plays, the stun (its exit waits for the clip playing to end), the knockdown, the ground time, the rise and the mash |
 | `human/pair_placement.*` | the pair's geometry: offsets in the grabber's frame from a range record's direction × reach or a clip's type-8 pair event, the alignment (`Pair_AlignStart`), its time, the gate at the connect's end and `Pair_CheckPlace` |
@@ -3160,10 +3227,11 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   scene is not built: no human in a pair is taken into one.
 - The combat walk's clip by eight even 45° sectors centred on the clips' directions; the walk starts at its full
   speed (the 5 slower first updates backward are not known).
-- **The flash** (`PlayLevelMode::stepFlash()`): d-pad right with a flash carried and health below the maximum breaks
-  any pair, plays 665 (holding `0x2000`) when nothing holds the stick, spends the flash and fills the health at once
-  (the original spends it on the clip's event), and asks for the health rings; its sound and the full-health rage use
-  are not built.
+- **The flash** (`PlayLevelMode::stepFlash()`, `useFlash()`): d-pad right with a flash carried and health below the
+  maximum plays 665 (holding `0x2000`) when nothing holds a move, and the clip's action event `0x41` 19 updates in
+  (`Human::actionEvent()`) uses the flash: one spent, interface sound 23, the health filled, the health rings asked
+  for; a clip cut first spends nothing. In a grab the flash is used at once and the grab stays. Coney always heals in
+  full (it has no difficulty setting) and does not build the full-health rage use or the screen effect reset.
 
 **Not yet**: an attacker for the player (no human attacks him yet, so the victim side runs only in the tests; the
 AI that would is on [AI](ai.md)); the

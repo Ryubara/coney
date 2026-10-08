@@ -51,6 +51,7 @@ class RecordingServices final : public world_objects::ObjectServices {
     std::vector<double> destroyed;
     std::vector<double> nextModels;
     std::vector<std::pair<double, std::uint32_t>> models;
+    std::vector<std::pair<double, std::uint32_t>> values; // setValue()
     int dusts = 0;
     int splinterCount = 0;
     int bursts = 0;
@@ -84,6 +85,7 @@ class RecordingServices final : public world_objects::ObjectServices {
     void destroyObject(double object) override { destroyed.push_back(object); }
     void nextModel(double object) override { nextModels.push_back(object); }
     void setModel(double object, std::uint32_t modelHash) override { models.emplace_back(object, modelHash); }
+    void setValue(double object, std::uint32_t value) override { values.emplace_back(object, value); }
     void dust(anim::Vec3 /*at*/, float /*radius*/) override { ++dusts; }
     void splinters(anim::Vec3 /*at*/, int count) override { splinterCount += count; }
     void burst(anim::Vec3 /*at*/) override { ++bursts; }

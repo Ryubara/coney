@@ -75,7 +75,10 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     void setAnimCallbacks(script::AnimCallbacks* callbacks);
     /// Calls the animation callback of each anim a bound human started since the last call, in order, with (human,
     /// anim id). **Coney choice**: the original calls it inside the animation code, as the clip is taken; Coney runs
-    /// them after the characters' step, so a callback never changes a human in the middle of its update.
+    /// them after the characters' step, so a callback never changes a human in the middle of its update. A human that
+    /// started the same anim more than once in the step (two attack chains, one fading out under the other, handing
+    /// over to the same fight idle) gets one call (**Coney's reading**): two calls queued two hints for one start, and
+    /// the hint box backed up behind them (docs/research/characters.md#anim-callbacks).
     /// @orig 0x0023ac50 AnimCallback_Dispatch (unknown)
     void runAnimCallbacks();
     /// The bound humans as the volume boxes test them: handle, feet and whether alive (health not run out).
@@ -298,13 +301,15 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
         m_radarIcon = std::move(hook);
     }
     /// Hands the line to the hook setSpeech() gave (the game's sound), with the human's handle.
-    void say(Brain& human, int command, bool interrupt) override {
+    void say(Brain& human, int command, bool interrupt, double target) override {
         if (m_speech) {
-            m_speech(human.handle(), command, interrupt);
+            m_speech(human.handle(), command, interrupt, target);
         }
     }
-    /// What say() calls: the game's speech (by handle, command, interrupt); empty for none.
-    void setSpeech(std::function<void(double handle, int command, bool interrupt)> hook) { m_speech = std::move(hook); }
+    /// What say() calls: the game's speech (by handle, command, interrupt, target); empty for none.
+    void setSpeech(std::function<void(double handle, int command, bool interrupt, double target)> hook) {
+        m_speech = std::move(hook);
+    }
     /// ScriptSystem::schedule() when there is a script system.
     void schedule(std::string_view function, std::span<const double> args, std::uint32_t delayMs) override;
     /// ScriptSystem::call() when there is a script system. **Coney choice**: the result is whether the call ran, as
@@ -333,6 +338,14 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     /// kScriptedClipHeld (`0x80000`, busy and gated), as which bits the original's holds is not traced; a dynamic clip
     /// plays at rate 1.
     [[nodiscard]] std::optional<std::uint32_t> playClip(Brain& human, int animId) override;
+    /// Starts the clip `name` from the clip source on `human` as anim `animId`, at rate 1, faded in over `fade` and
+    /// then the idle; holds kScriptedClipHeld as playClip() does. Nothing when the source has no such clip.
+    [[nodiscard]] std::optional<std::uint32_t> playNamedClip(Brain& human, int animId, std::string_view name,
+                                                             float fade) override;
+    /// Whether the clip source answers `name`.
+    [[nodiscard]] bool clipAvailable(std::string_view name) const override {
+        return m_clipSource && m_clipSource(name) != nullptr;
+    }
 
   private:
     // The brain named by `handle`, or null.
@@ -351,7 +364,7 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     const world_objects::WorldFlags* m_flags;
     world_objects::ObjectLocator m_locate;
     std::function<void(double, int, int, float)> m_radarIcon; // setRadarIcon()
-    std::function<void(double, int, bool)> m_speech;          // setSpeech()
+    std::function<void(double, int, bool, double)> m_speech;  // setSpeech()
     script::ScriptSystem* m_scripts = nullptr;
     const script::MessageHandlers* m_messages = nullptr;
     const world_objects::FlagNet* m_flagNet = nullptr;

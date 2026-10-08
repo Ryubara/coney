@@ -3,10 +3,12 @@
 // TacticTrigger; and GoalDealer (docs/research/ai.md#dealer).
 #include "ai/tactic.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -24,6 +26,7 @@
 
 using coney::ai::Brain;
 using coney::ai::GoalType;
+using coney::anim::Vec3;
 using coney::test::AiScene;
 
 namespace {
@@ -178,8 +181,10 @@ TEST_CASE("GoalDealer turns to the player, greets him, deals once he is close, a
     for (int k = 0; k < 300 && !goal->dealing(); ++k) {
         scene.run(1);
     }
-    CHECK(goal->greeted());
+    // The offer (state 1 to 3) comes before the greeting, which the next update makes.
     CHECK(goal->dealing());
+    scene.run(1);
+    CHECK(goal->greeted());
     CHECK(goal->state() == coney::ai::DealerState::Dealing);
     // Made without the option: no radar icon at the greeting.
     CHECK(scene.services.radarIcons.empty());
@@ -335,4 +340,72 @@ TEST_CASE("a goal a script gives right after a tactic stays under the tactic's g
     REQUIRE(rival.goalCount() == 1);
     CHECK(rival.topGoal()->type() == GoalType::MoveToHuman);
     CHECK(rival.goalBase() == -1);
+}
+
+TEST_CASE("a dealer greets with his line, refuses with a gesture and says goodbye when the buyer leaves",
+          "[ai][dealer]") {
+    AiScene scene;
+    Brain& dealer = scene.add({41.2F, 40.0F, 0.0F}, 0.0F);
+    dealer.pushGoal(std::make_unique<coney::ai::DealerGoal>(scene.services, 0, 10.0F, 50, 0, false));
+    auto* goal = dynamic_cast<coney::ai::DealerGoal*>(dealer.topGoal());
+    REQUIRE(goal != nullptr);
+    if (goal == nullptr) {
+        return;
+    }
+    for (int k = 0; k < 300 && !(goal->greeted() && goal->offering()); ++k) {
+        scene.run(1);
+    }
+    scene.run(30); // the greeting's turn and gesture play
+    REQUIRE(goal->offering());
+    const auto saidLine = [&](std::uint32_t line) {
+        return std::ranges::any_of(scene.services.said, [&](const auto& s) { return s.second == line; });
+    };
+    CHECK(saidLine(coney::ai::kDealOfferLine));
+    CHECK(saidLine(coney::ai::kDealGreetLine));
+    // The greeting's gesture: one of his anim set's 668 (his gang is not the dealer kind).
+    CHECK(std::ranges::find(scene.services.clips, coney::ai::kDealerActionAnim) != scene.services.clips.end());
+    // Too little money: the refusal gesture (603).
+    CHECK(goal->deal(dealer, scene.player(), 5, 0, 3) == coney::ai::DealOutcome::NoCash);
+    scene.run(5);
+    CHECK(std::ranges::find(scene.services.clips, coney::ai::kDealerFidgetAnim) != scene.services.clips.end());
+    // The buyer walks out of range: goodbye, and the next visit starts in state 1.
+    scene.player().human().place(Vec3{60.0F, 60.0F, 0.0F}, 0.0F);
+    scene.run(2);
+    CHECK(saidLine(coney::ai::kDealGoodbyeLine));
+    CHECK(goal->state() == coney::ai::DealerState::Waiting);
+    CHECK_FALSE(goal->dealing());
+}
+
+TEST_CASE("with the money clips loaded a sale starts the pair and completes at its event", "[ai][dealer]") {
+    AiScene scene;
+    scene.services.clipsAvailable = true;
+    Brain& dealer = scene.add({41.2F, 40.0F, 0.0F}, 0.0F);
+    dealer.pushGoal(std::make_unique<coney::ai::DealerGoal>(scene.services, 0, 10.0F, 50, 0, false));
+    auto* goal = dynamic_cast<coney::ai::DealerGoal*>(dealer.topGoal());
+    REQUIRE(goal != nullptr);
+    if (goal == nullptr) {
+        return;
+    }
+    for (int k = 0; k < 300 && !goal->offering(); ++k) {
+        scene.run(1);
+    }
+    REQUIRE(goal->offering());
+    CHECK(goal->deal(dealer, scene.player(), 20, 0, 3) == coney::ai::DealOutcome::PairStarted);
+    CHECK(goal->pairPending());
+    CHECK(goal->sales() == 0);
+    // money_take on the dealer and money_give on the buyer, both as 668.
+    const auto& played = scene.services.namedClips;
+    REQUIRE(played.size() >= 2);
+    CHECK(std::get<0>(played[played.size() - 2]) == &dealer);
+    CHECK(std::get<2>(played[played.size() - 2]) == coney::ai::kMoneyTakeClip);
+    CHECK(std::get<1>(played.back()) == coney::ai::kDealerActionAnim);
+    CHECK(std::get<2>(played.back()) == coney::ai::kMoneyGiveClip);
+    // The dealer's clip's event completes it, once.
+    CHECK(goal->finishPair(dealer) == coney::ai::DealOutcome::Sold);
+    CHECK(goal->sales() == 1);
+    CHECK(dealer.human().script().money == 20);
+    CHECK_FALSE(goal->finishPair(dealer).has_value());
+    CHECK(coney::ai::dealerGangClip(603, 7) == "dlr_nearfight");
+    CHECK(coney::ai::dealerGangClip(668, 2) == "money_take");
+    CHECK(coney::ai::dealerGangClip(668, 3).empty());
 }

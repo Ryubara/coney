@@ -51,6 +51,7 @@ struct Car {
     std::uint32_t removedKept = 0;          ///< `+0x11f8`: the same bits, kept.
     std::uint32_t openParts = 0;            ///< Bit 2 of each part's state byte, one bit per part.
     std::uint32_t damagedParts = 0;         ///< Parts showing their damaged form (atomic `p + 25`).
+    std::uint32_t firstHits = 0;            ///< `+0x11ec`: the parts ever hit (each first hit sends its effect).
     bool dirty = true;                      ///< `+0x1308`: the model needs its colour and transform again.
     bool lights = false;                    ///< `+0x1210`: whether it made the police car's `part_copcar_lights`.
     StereoState stereo = StereoState::None; ///< `CarSpawnRadio`'s stereo.
@@ -61,19 +62,40 @@ struct Car {
     bool exploded = false;                  ///< `+0x12d5`: it has blown up.
 };
 
-/// A part that came off a car, for what shows and sounds it: the hook a window's shatter and its sound are made from
-/// (docs/research/cars.md#windows). The original plays a part's first-hit effect on a hit (`0x0038a830`: windows 15
-/// and 19 burst along the part frame's −x, 17 and 21 along +x); which effect and sound that is, is not on the page
-/// yet, so Coney only reports the break.
-struct CarPartBreak {
-    double car = 0;           ///< The car's handle.
-    std::uint32_t part = 0;   ///< The part id (0-25).
-    bool window = false;      ///< One of the windows 15, 17, 19, 21 (kCarWindowParts).
-    bool instant = false;     ///< Knocked off by instant damage (the car exploding), not a hit.
-    anim::Vec3 burst{};       ///< A window's burst direction in world axes: the car's −x for 15/19, +x for 17/21.
-    anim::Vec3 carPosition{}; ///< The car's place (game axes), for finding the part's atomic in its model.
+/// The kinds of message `0x3f` a car's hit sends the shared `sub_car_damage` particle
+/// (docs/research/cars.md#hit-effects).
+enum class CarHitEffectKind : std::uint8_t {
+    Sparks = 0,     ///< A `sub_car_spark_emitter` and a dust puff at the point.
+    HeadlightGlass, ///< `miniglass` pieces (parts 26, 27).
+    RearLightGlass, ///< `sub_coloured_glass` pieces, dark red (parts 28, 29).
+    Steam,          ///< One `sub_car_steam` (the bonnet, part 4).
+    SmallShatter,   ///< A `sub_glass` shatter of 1 × 1 m, 10 shards of 0.06, the `GLASS_SMALL` sound (side windows).
+    HoodSmoke,      ///< One `sub_hood_smoke` (a landing, not a hit).
+    LargeShatter,   ///< A `sub_glass` shatter of 2 × 1 m, 20 shards of 0.09, the `GLASS` sound (front and rear glass).
+};
+
+/// One effect a hit on a car sends (`Car_OnHit` → message `0x3f`): the hook the presentation draws and sounds it from
+/// (docs/research/cars.md#hit-effects). For the glass of parts 6, 7, 15, 17, 19 and 21 the position and direction are
+/// the part's damaged atomic's (`fromAtomic`): its world position, and row `frameRow` of its frame times `rowSign`;
+/// the platform, which holds the model, resolves them. Otherwise `position` and `direction` are in world axes.
+struct CarHitEffect {
+    double car = 0;         ///< The car's handle.
+    std::uint32_t part = 0; ///< The part whose first hit made it; for Sparks, the lowest non-glass part struck.
+    CarHitEffectKind kind = CarHitEffectKind::Sparks;
+    anim::Vec3 position{};    ///< World axes, unless fromAtomic.
+    anim::Vec3 direction{};   ///< World axes, unless fromAtomic.
+    bool fromAtomic = false;  ///< Position and direction from atomic `atomic`'s world frame.
+    std::uint32_t atomic = 0; ///< The damaged atomic (part + 25).
+    int frameRow = 0;         ///< 0: the frame's first row, 1: its second.
+    float rowSign = 1.0F;     ///< +1 or −1 on that row.
+    anim::Vec3 carPosition{}; ///< The car's place (game axes).
     anim::Quat carRotation{}; ///< The car's turn.
 };
+
+/// The effect of the first hit on part `part` of `car` at `point` (`Car_BreakWindow`), by the table on
+/// docs/research/cars.md#hit-effects.
+/// @orig 0x0038a830 Car_BreakWindow (unknown)
+[[nodiscard]] CarHitEffect carBreakWindowEffect(const Car& car, std::uint32_t part, anim::Vec3 point);
 
 /// What `Car_UpdateRender` makes of a paint word for the model: `CarSetColor`'s `{c1, c2, c3, c4}` stored in that
 /// order, read back reversed, so c4 is red and c1 alpha (docs/research/cars.md#colour).
@@ -179,13 +201,15 @@ class Cars {
     /// @orig 0x0038ab18 Car_TryExplode (unknown)
     /// @orig 0x0038ab50 Car_DoExplode (unknown)
     bool explode(double handle);
-    /// A plain human's strike from `standing` reached the car: each part carHumanHitParts() names takes
-    /// kHumanCarHitDamage (a window breaks at once). Returns the parts struck; `reports` (when given) gets what message
-    /// 0x19 says of the hit: each part 1-25 not already off that it damaged, then kCarHitAllBroken if it left every
-    /// part 1-25 off. **Coney's reading**: the gang lock
-    /// (`+0x12d8`), the exploding car, message `0x19`, the effects and the statistic are not modelled yet.
+    /// A plain human's strike from `standing` reached the car at `point` (the hit record's `+0x90`): each part
+    /// carHumanHitParts() names takes kHumanCarHitDamage (a window breaks at once); a hit on any part outside the glass
+    /// sends sparks at `point`, and each part's first hit ever its carBreakWindowEffect() (takeHitEffects()). Returns
+    /// the parts struck; `reports` (when given) gets what message 0x19 says of the hit: each part 1-25 not already off
+    /// that it damaged, then kCarHitAllBroken if it left every part 1-25 off. **Coney's reading**: the gang lock
+    /// (`+0x12d8`), the exploding car and the statistic are not modelled yet.
     /// @orig 0x0038bea0 Car_OnHit (unknown)
-    CarPartMask humanHit(double handle, anim::Vec3 standing, std::vector<CarHitReport>* reports = nullptr);
+    CarPartMask humanHit(double handle, anim::Vec3 standing, anim::Vec3 point,
+                         std::vector<CarHitReport>* reports = nullptr);
     /// Where a car's boot item is released (game axes): carBootPosition().
     [[nodiscard]] static anim::Vec3 bootPosition(const Car& car);
 
@@ -199,16 +223,16 @@ class Cars {
     /// Where a car's stereo sits (game axes): carStereoPosition().
     [[nodiscard]] static anim::Vec3 stereoPosition(const Car& car);
 
-    /// The parts that came off since the last call (damagePart()), in order, once: the presentation's hook for a
-    /// window's shatter and sound and a part's fall.
-    [[nodiscard]] std::vector<CarPartBreak> takeBreaks() { return std::exchange(m_breaks, {}); }
+    /// The hit effects since the last call (humanHit()), in order, once: the presentation's hook for the sparks, the
+    /// glass shatters and their sound, and the steam.
+    [[nodiscard]] std::vector<CarHitEffect> takeHitEffects() { return std::exchange(m_effects, {}); }
 
     /// Every car, oldest first.
     [[nodiscard]] const std::vector<Car>& all() const { return m_cars; }
     /// Forgets every car: the level is unloaded.
     void clear() {
         m_cars.clear();
-        m_breaks.clear();
+        m_effects.clear();
     }
 
   private:
@@ -217,7 +241,7 @@ class Cars {
     void releaseTrunk(Car& car);
 
     std::vector<Car> m_cars;
-    std::vector<CarPartBreak> m_breaks; // parts off since the last takeBreaks()
+    std::vector<CarHitEffect> m_effects; // hit effects since the last takeHitEffects()
     effects::ParticleSystems* m_particles = nullptr;
     SpawnRecords* m_records = nullptr;
     NextHandle m_nextHandle;

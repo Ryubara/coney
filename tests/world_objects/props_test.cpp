@@ -134,7 +134,7 @@ TEST_CASE("any strike breaks a trash prop at once: its pieces, dust and sound, g
         CHECK(f.services.bodies == std::vector<std::pair<double, bool>>{{50.0, false}});
         // A later strike does nothing; it goes on the next tick.
         CHECK_FALSE(f.strike(overheadType(0xfbf3e3aeU)).broke);
-        f.props.tick();
+        f.props.tick(f.world);
         CHECK(f.props.takeRemoved() == std::vector<double>{50.0});
     }
     SECTION("the bags: the litter alone") {
@@ -160,16 +160,70 @@ TEST_CASE("any strike breaks a trash prop at once: its pieces, dust and sound, g
     }
 }
 
+TEST_CASE("a cash register takes 2 + 8k a hit; broken it stays, opens its drawer and spills $25-49",
+          "[world_objects][props]") {
+    // docs/research/script-types.md#dyn-cashreg: hit points from +0x5a (16), material CASHREG (103).
+    ObjectType till;
+    till.name = "dyn_cashreg";
+    till.className = std::string(coney::world_objects::kCashRegisterClass);
+    till.hitpoints = 50;
+    till.value = 16;
+    till.material = 103;
+    SECTION("seven bare blows leave it standing, each with its sound and dust; the eighth breaks it") {
+        Fixture f;
+        for (int blow = 0; blow < 7; ++blow) {
+            CHECK_FALSE(f.strike(till).broke);
+        }
+        CHECK_FALSE(f.props.broken(50.0));
+        CHECK(f.services.bursts == 7);
+        // Each blow: the impact sound, then the register against concrete.
+        REQUIRE(f.services.pairs.size() == 14);
+        CHECK(f.services.pairs[1] == std::pair<std::uint8_t, std::uint8_t>{103, 5});
+        const PropStrike last = f.strike(till);
+        CHECK(last.broke);
+        CHECK(f.props.broken(50.0));
+        CHECK(f.services.pairs.back() == std::pair<std::uint8_t, std::uint8_t>{103, 103});
+        // Its broken model and its drawer; it keeps its body.
+        CHECK(f.services.models ==
+              std::vector<std::pair<double, std::uint32_t>>{{50.0, coney::world_objects::kCashRegisterBrokenModel}});
+        CHECK(f.services.spawned == std::vector<std::string>{"dyn_cashreg_b"});
+        CHECK(f.services.bodies.empty());
+        CHECK_FALSE(f.props.bodyLost(50.0));
+        // A later blow does nothing.
+        CHECK_FALSE(f.strike(till).broke);
+        CHECK(f.services.spawned.size() == 1);
+        // The drawer spills its money one update (60 ticks) after opening, and the register is never removed.
+        for (int tick = 1; tick < Props::kDrawerTicks; ++tick) {
+            f.props.tick(f.world);
+        }
+        CHECK(f.services.spawned.size() == 1);
+        f.props.tick(f.world);
+        CHECK(f.services.spawned == std::vector<std::string>{"dyn_cashreg_b", "dyn_money"});
+        REQUIRE(f.services.values.size() == 1);
+        CHECK(f.services.values[0].first == 1002.0);
+        CHECK(f.services.values[0].second == static_cast<std::uint32_t>(Props::kMoneyLeast));
+        for (int tick = 0; tick < 300; ++tick) {
+            f.props.tick(f.world);
+        }
+        CHECK(f.services.spawned.size() == 2);
+        CHECK(f.props.takeRemoved().empty());
+    }
+    SECTION("one charge (18) breaks it") {
+        Fixture f;
+        CHECK(f.strike(till, HitKind::Charge).broke);
+    }
+}
+
 TEST_CASE("a broken prop goes after its update interval", "[world_objects][props]") {
     Fixture f;
     f.strike(masksType(0, 1));
     for (int tick = 1; tick < Props::kRemovalTicks; ++tick) {
-        f.props.tick();
+        f.props.tick(f.world);
     }
     CHECK(f.props.takeRemoved().empty());
-    f.props.tick();
+    f.props.tick(f.world);
     CHECK(f.props.takeRemoved() == std::vector<double>{50.0});
-    f.props.tick();
+    f.props.tick(f.world);
     CHECK(f.props.takeRemoved().empty());
     f.props.clear();
     CHECK_FALSE(f.props.broken(50.0));

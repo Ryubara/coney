@@ -18,7 +18,7 @@
 namespace coney::script {
 
 /// The bindings registered here; installBindings() registers them with addArenaBindings().
-inline constexpr std::array<std::string_view, 29> kArenaBindings{"ActGiveWay",
+inline constexpr std::array<std::string_view, 30> kArenaBindings{"ActGiveWay",
                                                                  "HuSetNoAutoLock",
                                                                  "HuSetWheelchairControl",
                                                                  "ObjColor",
@@ -26,6 +26,7 @@ inline constexpr std::array<std::string_view, 29> kArenaBindings{"ActGiveWay",
                                                                  "BrSetDamageResponse",
                                                                  "BrSetType",
                                                                  "CNSEnableMissionInfo",
+                                                                 "EnableGameOverCheck",
                                                                  "GoalEngageEnemy",
                                                                  "GoalMoveToHuman",
                                                                  "HuGetCharType",

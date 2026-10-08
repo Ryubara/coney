@@ -153,6 +153,33 @@ TEST_CASE("taking loot adds item 10 with the callback, then its value in money, 
     CHECK(pickups.take(99, 0) == coney::TakeResult::Gone);
 }
 
+TEST_CASE("walking over money takes its value with the callback and removes it", "[level_pickups]") {
+    // docs/research/player-state.md#walk-over: TYPE_MONEY gives item 2 x the object's value, notifying.
+    Harness h;
+    wo::ObjectType cash;
+    cash.name = "dyn_money";
+    cash.className = "powerup_item";
+    cash.objectKind = wo::kObjectKindMoney;
+    h.types.add(cash);
+    coney::LevelPickups pickups(h.scripts, h.state, h.records, h.types);
+    h.place(6, "dyn_money", Vec3{10.0F, 11.0F, 1.6F})->money = 37;
+    h.place(7, "dyn_money", Vec3{10.0F, 12.5F, 0.0F})->money = 30;
+    h.place(8, "dyn_watch", Vec3{10.0F, 10.5F, 0.0F});
+    // Beyond the reach in plan, or above the body, nothing is touched.
+    CHECK(pickups.walkOver(0, Vec3{10.0F, 9.8F, 0.0F}).empty());
+    CHECK(pickups.walkOver(0, Vec3{10.0F, 10.5F, -2.5F}).empty());
+    const std::vector<coney::LevelPickups::WalkedOver> taken = pickups.walkOver(0, Vec3{10.0F, 10.5F, 0.0F});
+    REQUIRE(taken.size() == 1);
+    CHECK(taken[0].handle == 6);
+    CHECK(taken[0].dollars == 37);
+    CHECK(h.state.player.inventory.count(0, item::kMoney) == 37);
+    CHECK(h.items == std::vector<double>{item::kMoney});
+    CHECK(h.records.find(6)->removed);
+    // The loot beside it is not a power-up: it stays for triangle.
+    CHECK_FALSE(h.records.find(8)->removed);
+    CHECK(pickups.walkOver(0, Vec3{10.0F, 10.5F, 0.0F}).empty());
+}
+
 TEST_CASE("a bat goes into the hand, out of the search, and back when dropped", "[level_pickups]") {
     Harness h;
     coney::LevelPickups pickups(h.scripts, h.state, h.records, h.types);

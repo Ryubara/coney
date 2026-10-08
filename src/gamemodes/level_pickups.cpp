@@ -104,6 +104,28 @@ TakeResult LevelPickups::take(double handle, int player) {
     return TakeResult::InHand;
 }
 
+std::vector<LevelPickups::WalkedOver> LevelPickups::walkOver(int player, anim::Vec3 feet) {
+    std::vector<WalkedOver> taken;
+    for (const world_objects::SpawnRecord& record : m_records.all()) {
+        const anim::Vec3 at = positionOf(record);
+        if (record.removed || record.hidden || m_inHand.contains(record.handle) ||
+            !m_records.zoneEnabled(record.zone) || planDistance(feet, at) > kWalkOverReach ||
+            at.z < feet.z - kWalkOverBelow || at.z > feet.z + kWalkOverAbove) {
+            continue;
+        }
+        const world_objects::ObjectType* type = m_types.find(record.typeName);
+        if (type != nullptr && type->objectKind == world_objects::kObjectKindMoney) {
+            taken.push_back(WalkedOver{.handle = record.handle, .dollars = static_cast<int>(record.money)});
+        }
+    }
+    // Each gift notifies, and the object goes for good.
+    for (const WalkedOver& money : taken) {
+        script::addInventoryItem(m_scripts, m_state, player, item::kMoney, money.dollars, true);
+        m_records.destroy(money.handle);
+    }
+    return taken;
+}
+
 void LevelPickups::drop(double handle, anim::Vec3 at) {
     if (m_inHand.erase(handle) == 0) {
         return;

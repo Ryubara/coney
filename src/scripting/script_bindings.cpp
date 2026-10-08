@@ -1166,6 +1166,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("BrSetDamageResponse"),
     real("BrSetType"),
     real("CNSEnableMissionInfo"),
+    real("EnableGameOverCheck"),
     real("GangAttachSpinningIcon"),
     real("GangRemoveSpinningIcon"),
     real("GangSetDamageResponse"),

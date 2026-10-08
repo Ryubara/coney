@@ -531,8 +531,19 @@ task (model `0x2e055fc5`) kept at the register's `+0x1c`. Register record: `+0x1
 - **Hit** (message 1): the hit points drop by **2 + 8 × strength** (a kind of −1 empties them, −2 costs nothing).
   At 0: broken model `0x59026f53`, interval 240, flag `0x800000`, and the drawer gets message `0x12` (it opens); with no
   drawer the register itself is knocked (message `0x30`, a random spread ±0.25) and rescheduled.
-- The drawer's update, one step after opening, calls `0x003a4cb0` with a random 25-50 (inferred: the money that spills;
-  not traced), then sleeps 240 ticks.
+- The drawer's update, one step after opening, spawns a `dyn_money` 0.22 m above the drawer and sets its `+0x124`
+  (`WorldObject_SetField124`, `0x003a4cb0`) to 25 + a random 0-24 (inferred: the cash it holds), then sleeps 240 ticks.
+- **The values** (`dyn_cashreg`'s `CfgObj`, `config_preload3`): hit points `+0x58` 50, hits `+0x5a` **16**, which is
+  what the init copies into `+0x18`. So 8 punches or kicks (kind 0, 2 each) break it, or one blow with something in
+  hand (kind 2, 18) or of kind 3 (26). Its material is `CASHREG` (103).
+- **Each surviving hit** (hit points still above 0): the material sound (material, 5) at the register unless game
+  state flag 3 has bit 4, and a dust burst (`Effects_BurstC`, colours `0x7e796f` and `0x605240`) at the contact point.
+  No movement. **The breaking hit**: broken model `0x59026f53`, the material-pair sound, flag `0x800000` (later hits
+  are ignored), and the collision record's bits `0x10` and `0x08` cleared. When the drawer was already taken (by the
+  use), a `dyn_cashreg_c` (a `fade_object`) is spawned instead and sent `0x30` with a random push of ±0.25 (three dust
+  bursts), and the register's update ends. Confirmed (code) at `0x003c06b0`, `0x003bffd0`.
+- The init sets flag `0x8000` (pickable, with the `TwoHandPickUp` animation and the `0x1b` / `0x1c` hand messages),
+  yet at runtime `level99`'s register had no `0x8000` ([Pickable](objects.md#pickable)). What clears it was not traced.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |

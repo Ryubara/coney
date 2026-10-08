@@ -154,6 +154,11 @@ Props::Prop& Props::stateOf(double handle, const ObjectType& type) {
         prop.counter = static_cast<std::uint8_t>(prop.hitpoints);
     }
     prop.overhead = type.className == kOverheadWeaponClass;
+    // DynCashreg_Init: a cash register's hit points are its type's `+0x5a`.
+    if (type.className == kCashRegisterClass) {
+        prop.cashRegister = true;
+        prop.hitpoints = type.value;
+    }
     return m_props.emplace(handle, prop).first->second;
 }
 
@@ -250,6 +255,37 @@ void Props::overheadBreak(Prop& prop, const ObjectType& type, const ObjectHit& h
     playPair(world, type.material, type.material, hit.point);
 }
 
+bool Props::cashRegisterHit(double handle, Prop& prop, const ObjectType& type, const ObjectHit& hit,
+                            const PropPose& pose, ObjectWorld& world) {
+    // 2 + 8 x the kind from its hit points.
+    prop.hitpoints -= 2 + (8 * static_cast<int>(hit.kind));
+    ObjectServices* services = world.services;
+    if (prop.hitpoints > 0) {
+        // It stands: its material against concrete at the register, and dust at the hit (it does not move).
+        playPair(world, type.material, kSurviveMaterial, pose.position);
+        if (services != nullptr) {
+            services->burst(hit.point);
+        }
+        return false;
+    }
+    // Broken for good: its broken model and its material against itself; later hits are ignored.
+    prop.broken = true;
+    prop.modelHash = kCashRegisterBrokenModel;
+    playPair(world, type.material, type.material, pose.position);
+    if (services == nullptr) {
+        return true;
+    }
+    services->setModel(handle, kCashRegisterBrokenModel);
+    // Its drawer opens (message 0x12) and spills the money one drawer update later. Coney's stand-in: the break makes
+    // the drawer, open, at the register's pose.
+    prop.drawerAt = pose.position;
+    prop.drawerTurn = pose.rotation;
+    if (services->spawnObject(kCashDrawerType, pose.position, pose.rotation) != kNoObject) {
+        prop.moneyIn = kDrawerTicks;
+    }
+    return true;
+}
+
 PropStrike Props::strike(double handle, const ObjectType& type, const ObjectHit& hit, const PropPose& pose,
                          ObjectWorld& world) {
     Prop& prop = stateOf(handle, type);
@@ -269,8 +305,11 @@ PropStrike Props::strike(double handle, const ObjectType& type, const ObjectHit&
     } else if (prop.overhead) {
         overheadBreak(prop, type, hit, pose, world);
         result.broke = true;
+    } else if (prop.cashRegister) {
+        result.broke = cashRegisterHit(handle, prop, type, hit, pose, world);
     }
-    if (result.broke && world.services != nullptr) {
+    // A broken prop loses its body, but a cash register keeps it (only its strike-target bits go).
+    if (result.broke && !prop.cashRegister && world.services != nullptr) {
         world.services->setBody(handle, false);
     }
     return result;
@@ -281,6 +320,11 @@ bool Props::broken(double handle) const {
     return found != m_props.end() && found->second.broken;
 }
 
+bool Props::bodyLost(double handle) const {
+    const auto found = m_props.find(handle);
+    return found != m_props.end() && found->second.broken && !found->second.cashRegister;
+}
+
 std::optional<std::uint8_t> Props::counter(double handle) const {
     const auto found = m_props.find(handle);
     if (found == m_props.end()) {
@@ -289,10 +333,19 @@ std::optional<std::uint8_t> Props::counter(double handle) const {
     return found->second.counter;
 }
 
-void Props::tick() {
+void Props::tick(ObjectWorld& world) {
     for (auto& [handle, prop] : m_props) {
         if (prop.broken && prop.removalIn > 0 && --prop.removalIn == 0) {
             m_removed.push_back(handle);
+        }
+        // An open drawer's update: a dyn_money above it, holding $25-49 (its +0x124).
+        if (prop.moneyIn > 0 && --prop.moneyIn == 0 && world.services != nullptr) {
+            const anim::Vec3 at{prop.drawerAt.x, prop.drawerAt.y, prop.drawerAt.z + kMoneyRise};
+            const double money = world.services->spawnObject(kMoneyType, at, prop.drawerTurn);
+            if (money != kNoObject) {
+                world.services->setValue(
+                    money, static_cast<std::uint32_t>(kMoneyLeast + randomBelow(world.random, kMoneySpread)));
+            }
         }
     }
 }

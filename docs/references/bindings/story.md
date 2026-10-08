@@ -28,7 +28,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`level31`](#level31) | mission 11 | 266 | 9 | 9 | 3 |
 | [`level14`](#level14) | mission 12 | 226 | 6 | 6 | 2 |
 | [`level9`](#level9) | mission 13 | 225 | 6 | 6 | 2 |
-| [`level51`](#level51) | mission 14 | 256 | 6 | 6 | 1 |
+| [`level51`](#level51) | mission 14 | 256 | 6 | 6 | 2 |
 | [`level52`](#level52) | mission 15 | 235 | 4 | 4 | 0 |
 | [`level54`](#level54) | mission 16 | 241 | 7 | 7 | 1 |
 | [`level55`](#level55) | mission 17 | 226 | 8 | 8 | 2 |
@@ -521,7 +521,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level51: mission 14 {#level51}
 
-256 bindings, 6 new: 6 traced, 1 implemented in Coney (242 of all 256).
+256 bindings, 6 new: 6 traced, 2 implemented in Coney (243 of all 256).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -529,7 +529,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`CamSetupHood`](camera.md#camsetuphood) | Cameras | traced | confirmed (code) | not implemented |
 | [`SetWorldAmbient`](effects.md#setworldambient) | Effects and lighting | traced | confirmed (code) | implemented |
 | [`PreLoadObjectSound`](sound.md#preloadobjectsound) | Sound and music | traced | confirmed (code) | not implemented |
-| [`EnableGameOverCheck`](level.md#enablegameovercheck) | Levels and game state | traced | confirmed (code) | not implemented |
+| [`EnableGameOverCheck`](level.md#enablegameovercheck) | Levels and game state | traced | confirmed (code) | implemented |
 | [`SetLoadPriority`](level.md#setloadpriority) | Levels and game state | traced | confirmed (code) | not implemented |
 
 ## level52: mission 15 {#level52}
@@ -574,7 +574,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level84: mission 18 {#level84}
 
-219 bindings, 8 new: 8 traced, 1 implemented in Coney (203 of all 219).
+219 bindings, 8 new: 8 traced, 1 implemented in Coney (204 of all 219).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |

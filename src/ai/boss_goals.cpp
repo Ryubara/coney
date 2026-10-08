@@ -79,7 +79,7 @@ constexpr std::uint64_t kHalfWaitMs = 2000;
 // Has `brain` say `line` through `services`, when there are services.
 void say(ScriptServices* services, Brain& brain, int line, bool interrupt = false) {
     if (services != nullptr) {
-        services->say(brain, line, interrupt);
+        services->say(brain, line, interrupt, 0.0);
     }
 }
 

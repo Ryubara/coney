@@ -1140,6 +1140,7 @@ void Human::animate(const raycast::CollisionMesh* mesh) {
     noteSlowMotion(before, beforeId, beforeTime);
     noteStrikeEvents(before, beforeId, beforeTime);
     noteReleaseEvent(before, beforeId, beforeTime);
+    noteActionEvent(before, beforeId, beforeTime);
 }
 
 void Human::noteReleaseEvent(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime) {
@@ -1156,6 +1157,25 @@ void Human::noteReleaseEvent(const anim::AnimTask* before, std::uint32_t beforeI
         if (event.type == kReleaseEvent && event.frame > from && event.frame <= to) {
             m_throwRelease = true;
         }
+    }
+}
+
+void Human::noteActionEvent(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime) {
+    constexpr std::uint16_t kActionEvent = 0x41;
+    m_actionEvent.reset();
+    const anim::AnimTask* top = m_animator.tasks().top();
+    if (top == nullptr || top->eventClip() == nullptr) {
+        return;
+    }
+    // From the clip's start when it began this step (or another clip took the top), else from where it was.
+    const bool same = top == before && top->animId() == beforeId && top->time() >= beforeTime;
+    const int from = same ? anim::eventFrame(beforeTime) : -1;
+    const int to = anim::eventFrame(top->time());
+    const bool passed = std::ranges::any_of(top->eventClip()->events, [&](const anim::ClipEvent& event) {
+        return event.type == kActionEvent && event.frame > from && event.frame <= to;
+    });
+    if (passed) {
+        m_actionEvent = top->animId();
     }
 }
 

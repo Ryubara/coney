@@ -425,3 +425,29 @@ TEST_CASE("a human made another character in place is the human made as that cha
     CHECK(changed.position().y == Approx(fresh.position().y));
     CHECK(changed.speed() == Approx(fresh.speed()));
 }
+
+TEST_CASE("a clip's action event (0x41) is reported in the update that passes it, once", "[human]") {
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 40.0F, 0.0F});
+    human.step(stick(0.0F, 0.0F), mesh.get());
+    // 665 SPECIAL_FLASH's shape: 40 frames, the action event at frame 19.
+    coney::anim::AnimClip flash;
+    flash.duration = 40.0F / 30.0F;
+    flash.events.push_back(
+        coney::anim::ClipEvent{.frame = 19, .type = 0x41, .word = 0, .position = {}, .rotation = {}});
+    human.playScripted(flash, 665, 1.0F, 0.0F, coney::human::HeldFlags{.held = 0x2000});
+    int fired = 0;
+    int firedAt = 0;
+    for (int update = 1; update <= 30; ++update) {
+        human.step(stick(0.0F, 0.0F), mesh.get());
+        if (human.actionEvent().has_value()) {
+            CHECK(*human.actionEvent() == 665U);
+            ++fired;
+            firedAt = update;
+        }
+    }
+    CHECK(fired == 1);
+    CHECK(firedAt >= 19);
+    CHECK(firedAt <= 20);
+}

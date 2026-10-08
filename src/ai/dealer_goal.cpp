@@ -14,6 +14,7 @@
 #include "ai/gangs.h"
 #include "ai/idle_goals.h"
 #include "ai/move_action.h"
+#include "ai/play_anim_action.h"
 #include "ai/script_services.h"
 #include "ai/turn_action.h"
 #include "human/human.h"
@@ -42,6 +43,8 @@ constexpr int kDealerClassLast = 440;
 constexpr int kFlashType = 0;
 constexpr int kWeaponType = 1;
 constexpr int kThirdType = 2;
+// The wary gesture's entry of 603 (`dlr_nearfight`).
+constexpr int kWaryVariant = 7;
 
 // The horizontal distance between two points.
 float planDistance(anim::Vec3 a, anim::Vec3 b) { return std::hypot(b.x - a.x, b.y - a.y); }
@@ -133,30 +136,48 @@ GoalStatus DealerGoal::process(Brain& brain) {
     // withdrawn.
     m_prompting = false;
     // 1. The player in range, or leaving it.
-    const Brain* player = m_services->player();
+    Brain* player = m_services->player();
     const float distance = player != nullptr ? brain.distanceTo(*player) : std::numeric_limits<float>::max();
     const bool wasInRange = m_playerInRange;
     m_playerInRange = player != nullptr && distance <= m_range;
     if (!m_playerInRange) {
-        if (wasInRange && m_dealing) {
-            m_state = DealerState::Leaving;
-            if (brain.actionCount() == 0 && player != nullptr) {
+        if (wasInRange && m_dealing && player != nullptr) {
+            // The leaving gesture and line: thanks after a sale, goodbye without one (not after "limit").
+            if (brain.actionCount() == 0) {
                 brain.queueAction(TurnAction::toPoint(player->human().position()));
             }
+            if (m_sold) {
+                gesture(brain, kDealerFidgetAnim, rollRange(brain.random(), 5, 6));
+                m_services->say(brain, static_cast<int>(kDealThanksLine), true, player->handle());
+            } else if (!m_atLimit) {
+                gesture(brain, kDealerFidgetAnim, 4);
+                m_services->say(brain, static_cast<int>(kDealGoodbyeLine), true, player->handle());
+            }
+        }
+        if (wasInRange) {
+            // The reset: a new visit starts in state 1.
+            m_sold = false;
+            m_atLimit = false;
+            m_dealing = false;
+            m_pairPending = false;
+            m_offering = false;
+            if (m_state != DealerState::Leaving && m_state != DealerState::LeavingOption) {
+                m_state = DealerState::Waiting;
+            }
+            m_nextScanMs = 0;
         }
         if (distance > m_range + m_range) {
             m_greeted = false;
         }
-    }
-    // 2. Actions queued; leaving; no player in range.
-    if (brain.actionCount() > 0 || m_state == DealerState::Leaving || m_state == DealerState::LeavingOption) {
         return GoalStatus::Stop;
     }
-    if (!m_playerInRange || player == nullptr) {
+    // 2. Actions queued (a gesture, a turn) or leaving: nothing more, and no offer while busy.
+    if (brain.actionCount() > 0 || m_state == DealerState::Leaving || m_state == DealerState::LeavingOption) {
+        m_offering = false;
         return GoalStatus::Stop;
     }
     const anim::Vec3 at = player->human().position();
-    // 3. Every 2 s while he would not fight: an enemy close to him and to the player makes him wary.
+    // 3. Every 2 s while he would not fight: an enemy close to him makes him wary.
     if (m_nextScanMs < brain.nowMs()) {
         m_nextScanMs = brain.nowMs() + kWaryPeriodMs;
         float enemyDistance = 0.0F;
@@ -164,7 +185,9 @@ GoalStatus DealerGoal::process(Brain& brain) {
             const Brain* enemy = nearestEnemy(brain, enemyDistance);
             if (enemy != nullptr && enemyDistance < kWaryDistance) {
                 brain.pushGoal(std::make_unique<SpectateGoal>(SpectateArgs::dealerWary()));
-                brain.queueAction(TurnAction::toPoint(enemy->human().position()));
+                brain.queueAction(TurnAction::toPoint(at));
+                gesture(brain, kDealerFidgetAnim, kWaryVariant);
+                m_services->say(brain, static_cast<int>(kDealWaryLine), true, player->handle());
                 return GoalStatus::Stop;
             }
         }
@@ -187,58 +210,131 @@ GoalStatus DealerGoal::process(Brain& brain) {
             return GoalStatus::Stop;
         }
     }
-    // 6. The greeting, the first time; then the deal once the player is close.
+    // 6. The offer once the player is close (state 1 to 3).
+    if (m_state == DealerState::Waiting && distance < kDealDistance) {
+        m_services->say(brain, static_cast<int>(kDealOfferLine), true, player->handle());
+        m_state = DealerState::Dealing;
+        m_dealing = true;
+        m_offering = true;
+        m_prompting = true;
+        return GoalStatus::Stop;
+    }
+    // 7. The greeting, the first time: a turn, the gesture, the line and the radar blip.
     if (!m_greeted) {
         m_greeted = true;
+        brain.queueAction(TurnAction::toPoint(at));
+        gesture(brain, kDealerActionAnim, rollRange(brain.random(), 0, 1));
+        m_services->say(brain, static_cast<int>(kDealGreetLine), true, player->handle());
         // The blip: type 2, 4 or 3 with icon 29, 31 or 30 at 0.8 for dealer types 0, 1, 2.
         if (m_option && m_type >= 0 && m_type < static_cast<int>(kDealerBlips.size())) {
             const DealerBlip& blip = kDealerBlips.at(static_cast<std::size_t>(m_type));
             m_services->addRadarIcon(brain, blip.type, blip.icon, kDealerBlipFactor);
         }
     }
-    if (m_state == DealerState::Waiting && distance < kDealDistance) {
-        m_state = DealerState::Dealing;
-        m_dealing = true;
-        m_offering = true;
-    }
-    // 11. Greeted, idle and the player in range: the offer's prompt (kind 4) is up until the next update.
+    // 8. From the greeting on, while he is idle and the player in range: the deal offered and its prompt (kind 4)
+    // registered, until the next update.
+    m_offering = true;
     m_prompting = true;
     return GoalStatus::Stop;
 }
 
-DealOutcome DealerGoal::deal(Brain& brain, const Brain& buyer, int money, int carried, int itemLimit) {
+DealOutcome DealerGoal::deal(Brain& brain, Brain& buyer, int money, int carried, int itemLimit) {
     const std::optional<DealTerms> terms = dealTerms(m_type);
     if (!offering() || !terms) {
         return DealOutcome::NotDealing;
     }
-    // 1. He turns to the buyer.
+    // 1. He turns to the buyer and deals.
     brain.queueAction(TurnAction::toPoint(buyer.human().position()));
-    // 2. Too little money, or carrying the most already: the offer is withdrawn.
+    m_atLimit = false;
+    m_dealing = true;
+    if (m_state == DealerState::Waiting) {
+        m_state = DealerState::Dealing;
+    }
+    // 2. Too little money, or carrying the most already: the refusal and the offer withdrawn.
     if (money < terms->price) {
+        gesture(brain, kDealerFidgetAnim, rollRange(brain.random(), 2, 3));
         m_offering = false;
         m_prompting = false;
         return DealOutcome::NoCash;
     }
     const int most = terms->mostCarried > 0 ? std::min(terms->mostCarried, itemLimit) : itemLimit;
     if (carried >= most) {
+        gesture(brain, kDealerFidgetAnim, rollRange(brain.random(), 2, 3));
         m_atLimit = true;
         m_offering = false;
         m_prompting = false;
         return DealOutcome::AtLimit;
     }
     // 3. A dirty dealer keeps the price and runs.
-    int& takings = brain.human().script().money;
-    takings = std::min(kDealerMostMoney, takings + terms->price);
     if (m_dirty) {
+        int& takings = brain.human().script().money;
+        takings = std::min(kDealerMostMoney, takings + terms->price);
         m_state = DealerState::Leaving;
         m_offering = false;
         m_prompting = false;
         return DealOutcome::RippedOff;
     }
-    // 4. The sale.
+    // 4. The money pair, when both clips are loaded and it is not playing: the sale waits for its event.
+    const bool pairPlaying = brain.human().animator().animId() == static_cast<std::uint32_t>(kDealerActionAnim);
+    if (!pairPlaying && m_services->clipAvailable(kMoneyTakeClip) && m_services->clipAvailable(kMoneyGiveClip)) {
+        brain.clearActions();
+        static_cast<void>(m_services->playNamedClip(brain, kDealerActionAnim, kMoneyTakeClip, kDealerGestureFade));
+        static_cast<void>(m_services->playNamedClip(buyer, kDealerActionAnim, kMoneyGiveClip, kDealerGestureFade));
+        m_pairPending = true;
+        return DealOutcome::PairStarted;
+    }
+    // 5. The sale now.
+    completeSale(brain);
+    return DealOutcome::Sold;
+}
+
+std::optional<DealOutcome> DealerGoal::finishPair(Brain& brain) {
+    if (!m_pairPending) {
+        return std::nullopt;
+    }
+    completeSale(brain);
+    return DealOutcome::Sold;
+}
+
+void DealerGoal::completeSale(Brain& brain) {
+    m_pairPending = false;
+    if (const std::optional<DealTerms> terms = dealTerms(m_type)) {
+        int& takings = brain.human().script().money;
+        takings = std::min(kDealerMostMoney, takings + terms->price);
+    }
     m_sold = true;
     ++m_sales;
-    return DealOutcome::Sold;
+}
+
+void DealerGoal::gesture(Brain& brain, int animId, int variant) {
+    const Gang* gang = brain.gang();
+    const std::string_view clip =
+        gang != nullptr && gang->kind() == kDealerGangKind ? dealerGangClip(animId, variant) : std::string_view{};
+    if (clip.empty()) {
+        brain.queueAction(std::make_unique<PlayAnimAction>(*m_services, animId, false));
+        return;
+    }
+    brain.queueAction(std::make_unique<PlayAnimAction>(*m_services, animId, std::string(clip), kDealerGestureFade));
+}
+
+std::string_view dealerGangClip(int animId, int variant) {
+    // 603: the offer, the buyer's money, two refusals, goodbye, two thanks, the wary look; 668: two beckons, the
+    // dealer's money.
+    static constexpr std::array<std::string_view, 8> kFidget{"dlr_offer_flash", "money_give",   "dlr_refuse_1",
+                                                             "dlr_refuse_2",    "dlr_goodbye1", "dlr_thanks_1",
+                                                             "dlr_thanks_2",    "dlr_nearfight"};
+    static constexpr std::array<std::string_view, 3> kAction{"dlr_becken_1", "dlr_becken_2", "money_take"};
+    if (variant < 0) {
+        return {};
+    }
+    const auto index = static_cast<std::size_t>(variant);
+    if (animId == kDealerFidgetAnim && index < kFidget.size()) {
+        return kFidget.at(index);
+    }
+    if (animId == kDealerActionAnim && index < kAction.size()) {
+        return kAction.at(index);
+    }
+    return {};
 }
 
 std::optional<std::uint32_t> DealerGoal::dealLine(DealOutcome outcome, std::uint64_t nowMs) {
@@ -256,6 +352,7 @@ std::optional<std::uint32_t> DealerGoal::dealLine(DealOutcome outcome, std::uint
         }
         m_lastCashMs = nowMs;
         return kDealCashLine;
+    case DealOutcome::PairStarted:
     case DealOutcome::NotDealing:
         return std::nullopt;
     }

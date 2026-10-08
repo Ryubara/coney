@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cmath>
 #include <string>
 #include <utility>
@@ -16,28 +17,14 @@ namespace {
 
 // The highest part id: parts are 0-25.
 constexpr std::uint32_t kLastPart = kCarParts - 1;
+// A part's damaged form is the atomic 25 after it (docs/research/cars.md#hit-effects).
+constexpr std::uint32_t kDamagedAtomicOffset = 25;
 
 // One component 0-1 as a byte: × 255, kept to 0-255. **Coney's choice**: truncated, as the page does not say whether
 // `0x0017aca8` rounds.
 std::uint32_t componentByte(float component) {
     const float scaled = std::clamp(component, 0.0F, 1.0F) * 255.0F;
     return static_cast<std::uint32_t>(scaled);
-}
-
-// A window's burst direction in world axes (`0x0038a830`): along the car's −x for the left windows 15 and 19, +x for
-// 17 and 21; zero for any other part. **Coney's reading**: the part frame's x taken as the car's x (the windows'
-// frames are not turned on the page).
-anim::Vec3 windowBurst(const Car& car, std::uint32_t part) {
-    float side = 0.0F;
-    if (part == 15 || part == 19) {
-        side = -1.0F;
-    } else if (part == 17 || part == 21) {
-        side = 1.0F;
-    }
-    if (side == 0.0F) {
-        return anim::Vec3{};
-    }
-    return anim::transformDirection(anim::matrixFromQuat(anim::normalise(car.rotation)), anim::Vec3{side, 0.0F, 0.0F});
 }
 
 } // namespace
@@ -179,13 +166,6 @@ bool Cars::damagePart(double handle, std::uint32_t part, float amount, bool inst
     }
     car->removedKept |= bit;
     car->dirty = true;
-    m_breaks.push_back(CarPartBreak{.car = handle,
-                                    .part = part,
-                                    .window = (kCarWindowParts & bit) != 0,
-                                    .instant = instant,
-                                    .burst = windowBurst(*car, part),
-                                    .carPosition = car->position,
-                                    .carRotation = car->rotation});
     if (part == kBootPart && !instant && car->trunkLoaded) {
         car->trunkLoaded = false;
         releaseTrunk(*car);
@@ -204,13 +184,14 @@ bool Cars::explode(double handle) {
     }
     for (std::uint32_t part = 0; part < kCarParts; ++part) {
         static_cast<void>(damagePart(handle, part, 1.0F, true));
+        car->firstHits |= 1U << part;
     }
     car->exploded = true;
     return true;
 }
 
-CarPartMask Cars::humanHit(double handle, anim::Vec3 standing, std::vector<CarHitReport>* reports) {
-    const Car* car = find(handle);
+CarPartMask Cars::humanHit(double handle, anim::Vec3 standing, anim::Vec3 point, std::vector<CarHitReport>* reports) {
+    Car* car = find(handle);
     if (car == nullptr) {
         return 0;
     }
@@ -231,7 +212,79 @@ CarPartMask Cars::humanHit(double handle, anim::Vec3 standing, std::vector<CarHi
     if (reports != nullptr && !allOffBefore && (car->removedKept & kReported) == kReported) {
         reports->push_back(CarHitReport{.part = kCarHitAllBroken, .broke = true});
     }
+    // Any part outside the glass: sparks and dust at the hit point.
+    if (const CarPartMask solid = struck & ~kCarGlassParts; solid != 0) {
+        m_effects.push_back(CarHitEffect{.car = handle,
+                                         .part = static_cast<std::uint32_t>(std::countr_zero(solid)),
+                                         .kind = CarHitEffectKind::Sparks,
+                                         .position = point,
+                                         .direction = anim::Vec3{0.0F, 1.0F, 0.0F},
+                                         .carPosition = car->position,
+                                         .carRotation = car->rotation});
+    }
+    // Each part's first hit ever: its own effect.
+    for (std::uint32_t part = 0; part <= kLastPart; ++part) {
+        const std::uint32_t bit = 1U << part;
+        if ((struck & bit) != 0 && (car->firstHits & bit) == 0) {
+            car->firstHits |= bit;
+            m_effects.push_back(carBreakWindowEffect(*car, part, point));
+        }
+    }
     return struck;
+}
+
+CarHitEffect carBreakWindowEffect(const Car& car, std::uint32_t part, anim::Vec3 point) {
+    // The bonnet's steam point in the car's frame (docs/research/cars.md#hit-effects).
+    constexpr anim::Vec3 kSteamPoint{0.0F, 2.743F, 0.023F};
+    CarHitEffect effect{.car = car.handle,
+                        .part = part,
+                        .kind = CarHitEffectKind::Sparks,
+                        .position = point,
+                        .direction = anim::Vec3{0.0F, 1.0F, 0.0F},
+                        .carPosition = car.position,
+                        .carRotation = car.rotation};
+    // The glass's effect sits on the part's damaged atomic, along a row of its frame.
+    const auto atAtomic = [&](CarHitEffectKind kind, int row, float sign) {
+        effect.kind = kind;
+        effect.fromAtomic = true;
+        effect.atomic = part + kDamagedAtomicOffset;
+        effect.frameRow = row;
+        effect.rowSign = sign;
+    };
+    switch (part) {
+    case 4: {
+        const anim::Mat34 turn = anim::matrixFromQuat(anim::normalise(car.rotation));
+        effect.kind = CarHitEffectKind::Steam;
+        effect.position = anim::add(car.position, anim::transformDirection(turn, kSteamPoint));
+        effect.direction = anim::Vec3{0.0F, 0.0F, 1.0F};
+        break;
+    }
+    case 6:
+        atAtomic(CarHitEffectKind::LargeShatter, 1, 1.0F);
+        break;
+    case 7:
+        atAtomic(CarHitEffectKind::LargeShatter, 1, -1.0F);
+        break;
+    case 15:
+    case 19:
+        atAtomic(CarHitEffectKind::SmallShatter, 0, -1.0F);
+        break;
+    case 17:
+    case 21:
+        atAtomic(CarHitEffectKind::SmallShatter, 0, 1.0F);
+        break;
+    case 26:
+    case 27:
+        effect.kind = CarHitEffectKind::HeadlightGlass;
+        break;
+    case 28:
+    case 29:
+        effect.kind = CarHitEffectKind::RearLightGlass;
+        break;
+    default:
+        break;
+    }
+    return effect;
 }
 
 anim::Vec3 Cars::bootPosition(const Car& car) { return carBootPosition(car); }

@@ -26,10 +26,13 @@
 #include "ai/scripted_brains.h"
 #include "ai/scripted_humans.h"
 #include "ai/scripted_story.h"
+#include "animation/anim_clip.h"
 #include "combat/combat_tuning.h"
 #include "core/error.h"
 #include "gui/global_strings.h"
+#include "human/human.h"
 #include "human/human_flags.h"
+#include "scripting/anim_callbacks.h"
 #include "scripting/binding_args.h"
 #include "scripting/lua_value.h"
 #include "scripting/lua_vm.h"
@@ -412,7 +415,7 @@ TEST_CASE("a script's follow slots survive later configuration calls; only the d
     CHECK(offsetOf(0) == std::pair<int, int>{8, 8});
 }
 
-TEST_CASE("the rage handler runs when a human's meter fills, with its handle", "[ai][scripted]") {
+TEST_CASE("the rage handler runs when a human's meter fills, with its handle and true", "[ai][scripted]") {
     const TuningScope scope;
     Level level;
     level.call("CfgRageHandlers", {Value(), Value(), Value("RageFull"), Value(20000.0), Value(5000.0)});
@@ -422,7 +425,31 @@ TEST_CASE("the rage handler runs when a human's meter fills, with its handle", "
     level.scripted->humanHost().runRageHandlers();
     level.scripted->humanHost().runRageHandlers();
     REQUIRE(level.rageCalls.size() == 1);
-    CHECK(level.rageCalls[0] == std::vector<double>{1.0});
+    // (human, true): Lua 4's true is 1 (docs/research/combat.md#rage).
+    CHECK(level.rageCalls[0] == std::vector<double>{1.0, 1.0});
+}
+
+TEST_CASE("the rage enter and exit handlers get the human and whether no one else rages", "[ai][scripted]") {
+    const TuningScope scope;
+    Level level;
+    level.add({44.0F, 40.0F, 0.0F});
+    level.call("CfgRageHandlers", {Value("RageFull"), Value("RageFull"), Value(), Value(20000.0), Value(5000.0)});
+    level.scripted->humanHost().runRageHandlers();
+    // Human 1 starts alone: (1, true). Then human 2 while 1 rages: (2), the flag nil.
+    level.call("HuSetRageMode", {Value(1.0), Value(1.0)});
+    level.scripted->humanHost().runRageHandlers();
+    level.call("HuSetRageMode", {Value(2.0), Value(1.0)});
+    level.scripted->humanHost().runRageHandlers();
+    // Human 1 ends while 2 rages: (1); then 2 ends, the last: (2, true).
+    level.call("HuSetRageMode", {Value(1.0), Value()});
+    level.scripted->humanHost().runRageHandlers();
+    level.call("HuSetRageMode", {Value(2.0), Value()});
+    level.scripted->humanHost().runRageHandlers();
+    REQUIRE(level.rageCalls.size() == 4);
+    CHECK(level.rageCalls[0] == std::vector<double>{1.0, 1.0});
+    CHECK(level.rageCalls[1] == std::vector<double>{2.0});
+    CHECK(level.rageCalls[2] == std::vector<double>{1.0});
+    CHECK(level.rageCalls[3] == std::vector<double>{2.0, 1.0});
 }
 
 TEST_CASE("SetDynamicAnimation lists the clips HuUseAnim may use", "[ai][scripted]") {
@@ -559,4 +586,24 @@ TEST_CASE("HuChangePlayerGang hands player 1 to the new gang's lowest priority; 
     CHECK(removed == std::vector<double>{oldAsh, ash});
     CHECK(level.scripted->brain(rembrandt) == &player);
     CHECK(player.gang() == nullptr);
+}
+
+TEST_CASE("an anim a human starts twice in one step calls its animation callback once", "[ai][scripted]") {
+    Level level;
+    Brain& extra = level.add({44.0F, 40.0F, 0.0F});
+    coney::script::AnimCallbacks callbacks;
+    level.scripted->setAnimCallbacks(&callbacks);
+    REQUIRE(callbacks.add(extra.handle(), 665, "RageFull"));
+    coney::anim::AnimClip clip;
+    clip.duration = 1.0F;
+    // Two starts of 665 in one step (as two attack chains handing over to the same loop): one call.
+    extra.human().playScripted(clip, 665, 1.0F, 0.0F, coney::human::HeldFlags{});
+    extra.human().playScripted(clip, 665, 1.0F, 0.0F, coney::human::HeldFlags{});
+    level.scripted->runAnimCallbacks();
+    REQUIRE(level.rageCalls.size() == 1);
+    CHECK(level.rageCalls[0] == std::vector<double>{extra.handle(), 665.0});
+    // A start in the next step calls it again.
+    extra.human().playScripted(clip, 665, 1.0F, 0.0F, coney::human::HeldFlags{});
+    level.scripted->runAnimCallbacks();
+    CHECK(level.rageCalls.size() == 2);
 }

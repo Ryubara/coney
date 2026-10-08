@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <string_view>
 
 #include "ai/goal.h"
 #include "animation/anim_math.h"
@@ -52,11 +53,12 @@ struct DealTerms {
 
 /// How a buyer's triangle at a dealing dealer ends (docs/research/ai.md#dealer).
 enum class DealOutcome : std::uint8_t {
-    NoCash,    ///< Less money than the price: the offer is withdrawn.
-    AtLimit,   ///< Already carrying the most: the offer is withdrawn.
-    RippedOff, ///< A dirty dealer took the price and gave nothing; he leaves.
-    Sold,      ///< The price taken and the item given.
-    NotDealing ///< He is not offering a deal.
+    NoCash,      ///< Less money than the price: the offer is withdrawn.
+    AtLimit,     ///< Already carrying the most: the offer is withdrawn.
+    RippedOff,   ///< A dirty dealer took the price and gave nothing; he leaves.
+    Sold,        ///< The price taken and the item given.
+    PairStarted, ///< The money pair (`money_take` / `money_give`) started; the sale completes at its event.
+    NotDealing   ///< He is not offering a deal.
 };
 
 /// The reach of a dealer's offer (context record kind 4, `CfgActionDistance`), m in plan.
@@ -64,11 +66,32 @@ inline constexpr float kDealReach = 1.75F;
 /// The most money a dealer holds.
 inline constexpr int kDealerMostMoney = 999;
 /// The dealer's speech commands (docs/research/ai.md#dealer) and the least time between two `cash` lines, ms.
+inline constexpr std::uint32_t kDealGreetLine = 94;
 inline constexpr std::uint32_t kDealCashLine = 96;
+inline constexpr std::uint32_t kDealOfferLine = 95;
+inline constexpr std::uint32_t kDealThanksLine = 98;
+inline constexpr std::uint32_t kDealGoodbyeLine = 99;
+inline constexpr std::uint32_t kDealWaryLine = 100;
 inline constexpr std::uint32_t kDealNoCashLine = 97;
 inline constexpr std::uint32_t kDealLimitLine = 101;
 inline constexpr std::uint32_t kDealRipOffLine = 105;
 inline constexpr std::uint64_t kDealCashLineMs = 5000;
+
+/// The gesture anim ids: 603 `ANIM_FIDGET_FIGHT` and 668 `ANIM_SPECIAL_ACTION`, and the gang kind whose clip table
+/// fills them with the dealer's clips (`GangCreate(24, "FDealer")`, docs/research/ai.md#dealer-gestures).
+inline constexpr int kDealerFidgetAnim = 603;
+inline constexpr int kDealerActionAnim = 668;
+inline constexpr int kDealerGangKind = 24;
+/// A gesture's blend in and out, seconds.
+inline constexpr float kDealerGestureFade = 0.5F;
+/// The money pair's clips: the dealer's (668 entry 2) and the buyer's (603 entry 1, bound to his 668).
+inline constexpr std::string_view kMoneyTakeClip = "money_take";
+inline constexpr std::string_view kMoneyGiveClip = "money_give";
+
+/// The clip of entry `variant` of anim `animId`'s group in the dealer gang's clip table (`GangClips_Set` from
+/// `0x0050cbc0` and `0x0050cbe0`): 603 entries 0-7, 668 entries 0-2; empty for any other.
+/// @orig 0x00163fc0 GangClips_Get (unknown)
+[[nodiscard]] std::string_view dealerGangClip(int animId, int variant);
 
 /// The kind of goods a dealer sells, from `GoalDealer`'s type or his class: 0 flash, 1 weapons, 2 the third kind.
 /// Classes 426-430 sell flash, 431-435 the third kind and 436-440 weapons, whatever the type says.
@@ -94,33 +117,42 @@ class DealerGoal final : public Goal {
     /// Threat response back to 2, his icon removed; he no longer deals.
     /// @orig 0x002c70a0 DealerGoal_End (unknown)
     void end(Brain& brain) override;
-    /// One update: the player in range or not (leaving after a deal: state 4, or 5 with the option, and a turn to
-    /// him; beyond twice the range he is forgotten); waits while actions are queued; states 4 and 5 stay put
-    /// (**Coney choice**: the run to a flag of kind 8 is not built); every 2 s while his threat response is 0 an enemy
-    /// gang's member within 16 m makes him wary (a spectate goal of 2-4 s and a turn to it); more than 1 m
-    /// from home he walks back; more than 15° off the player he turns (before he has greeted him, or when the player
-    /// stands within 2 m); the first time, he greets him; in state 1 (as constructed) with the player within 1.5 m
-    /// he deals (state 3). Never done. The greeting puts him on the radar when the goal was made with `option`
-    /// (DealerGoal_AddRadarIcon). **Coney choices**: no line of sight is tested, the gestures and the buy clip in the
-    /// player's slot are not built, and the run and dirty chances are kept, not read.
+    /// One update (docs/research/ai.md#dealer-process): the player leaving his range after a deal brings the leaving
+    /// gesture and line (`thanks` after a sale, `goodbye` without one unless refused at the limit) and the reset to
+    /// state 1; beyond twice the range he is forgotten. In range, nothing more while actions are queued; states 4 and
+    /// 5 stay put (**Coney choice**: the run to a flag of kind 8 is not built); every 2 s while his threat response is
+    /// 0 an enemy gang's member within 16 m makes him wary (a spectate goal, a turn to the player, the wary gesture and
+    /// line); more than 1 m from home he walks back; more than 15° off the player he turns (before he has greeted him,
+    /// or when the player stands within 2 m); in state 1 with the player within 1.5 m the offer line and state 3; the
+    /// first time, a turn, the greeting gesture and line, and his radar blip when the goal was made with `option`
+    /// (DealerGoal_AddRadarIcon). Every update that gets that far offers the deal. Never done. **Coney choices**: no
+    /// line of sight is tested, and the run chance is kept, not read.
     /// @orig 0x002c7fd8 DealerGoal_Process (unknown)
+    /// @orig 0x002c7de8 DealerGoal_Reset (unknown)
     [[nodiscard]] GoalStatus process(Brain& brain) override;
 
-    /// Whether he offers a deal (state 3, human `+0x1b2` = 1): the buyer's triangle within kDealReach reaches deal().
-    [[nodiscard]] bool offering() const { return m_offering && m_state == DealerState::Dealing; }
+    /// Whether he offers a deal (human `+0x1b2` = 1): the buyer's triangle within kDealReach reaches deal().
+    [[nodiscard]] bool offering() const { return m_offering; }
     /// Whether his offer's prompt (context record kind 4, GSTRING.HUD DealTerms::prompt) is registered: the last update
     /// reached its end (greeted, idle, the player in range) and no refusal withdrew it since. The HUD shows it to a
     /// player within kDealReach.
     [[nodiscard]] bool prompting() const { return m_prompting; }
     /// A buyer's triangle at the offer (event 0, `DealerBrain_OnEvent`), the buyer holding `money` dollars and
-    /// `carried` of the item, which the inventory holds to `itemLimit`. The dealer turns to `buyer`; then, as the
-    /// outcome says, the offer is withdrawn (no cash, at the limit), he takes the price and leaves (dirty), or he
-    /// sells: his money rises by the price (to at most kDealerMostMoney) and his sales count. The caller moves the
-    /// buyer's money and item. **Coney choices**: the dealer's speech and gestures and the pair `money_take.anm` /
-    /// `money_give.anm` are not played (the original completes the deal at once when the pair cannot load), and a
-    /// dirty dealer queues no shove.
+    /// `carried` of the item, which the inventory holds to `itemLimit`. The dealer turns to `buyer` and deals (state
+    /// 3); then the first that applies: too little money or carrying the most (the refusal gesture, the offer
+    /// withdrawn); dirty (he takes the price and leaves; **Coney choice**: the shove 21 is not queued); the money pair
+    /// when both its clips are loaded and it is not playing (`money_take` on him and `money_give` on the buyer, both
+    /// as anim 668: PairStarted, the sale waits for finishPair()); else the sale now (his money up by the price, to at
+    /// most kDealerMostMoney, and his sales counted). The caller moves the buyer's money and item.
     /// @orig 0x002c74d8 DealerGoal_Deal (unknown)
-    [[nodiscard]] DealOutcome deal(Brain& brain, const Brain& buyer, int money, int carried, int itemLimit);
+    [[nodiscard]] DealOutcome deal(Brain& brain, Brain& buyer, int money, int carried, int itemLimit);
+    /// The dealer's clip in the pair (`money_take`, his 668) passed its action event (`0x41`, 17 updates in), which
+    /// `Human_HandleMessage` turns into `DealerGoal_FinishPair`: the pending sale completes (Sold, as deal()'s), once.
+    /// Nothing when no pair is pending.
+    /// @orig 0x002c7c20 DealerGoal_FinishPair (unknown)
+    [[nodiscard]] std::optional<DealOutcome> finishPair(Brain& brain);
+    /// Whether a money pair waits for its event.
+    [[nodiscard]] bool pairPending() const { return m_pairPending; }
     /// The deals made (`+0x38`) and whether one was (`+0x3f`).
     /// The speech command the dealer says for a deal's `outcome` at `nowMs`: 97 `nocash`, 101 `limit`, 105 `ripoff`,
     /// and 96 `cash` for a sale at most every 5 s; nothing otherwise.
@@ -157,8 +189,16 @@ class DealerGoal final : public Goal {
     bool m_sold = false;                        // +0x3f
     bool m_atLimit = false;                     // +0x40
     bool m_offering = false;                    // the dealer human's +0x1b2
-    bool m_prompting = false;                   // the kind-4 prompt registered by this update (step 11)
+    bool m_prompting = false;                   // the kind-4 prompt registered by this update (steps 6, 8)
     std::optional<std::uint64_t> m_lastCashMs;  // when he last said `cash`
+    bool m_pairPending = false;                 // +0x45: the money pair started by a deal
+
+    // Queues gesture `animId` (603 or 668) of `variant` (`DealerGoal_QueueGesture`): the dealer gang's clip for it,
+    // or, for another gang, his anim set's own.
+    // @orig 0x002c7158 DealerGoal_QueueGesture (unknown)
+    void gesture(Brain& brain, int animId, int variant);
+    // Completes a sale: his money up by the price, the visit's sale and the count.
+    void completeSale(Brain& brain);
 };
 
 } // namespace coney::ai

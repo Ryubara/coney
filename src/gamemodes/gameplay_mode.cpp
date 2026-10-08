@@ -611,6 +611,8 @@ void GameplayMode::loadLevel() {
     m_promptHintObject.reset();
     m_promptHint.clear();
 
+    // The level's start turns the game-over check on and clears a failure (`0x00418c68`).
+    m_state.gameOver.reset();
     // The level itself, with the player at that start; entering it preloads the world around him.
     std::expected<std::unique_ptr<GameMode>, Error> level = fail(ErrorCode::NotFound, "no level loader");
     if (m_loader) {
@@ -629,7 +631,14 @@ void GameplayMode::loadLevel() {
                                              .types = m_context.objectTypes,
                                              .forceReticules = &m_state.forceReticules,
                                              .sound = m_context.sound,
-                                             .objectHandles = [this] { return m_scripts.nextObjectHandle(); }});
+                                             .objectHandles = [this] { return m_scripts.nextObjectHandle(); },
+                                             .gameOver = &m_state.gameOver,
+                                             .missionFailed =
+                                                 [this](std::string_view title) {
+                                                     if (m_context.host != nullptr) {
+                                                         m_context.host->launchMissionFailed(title);
+                                                     }
+                                                 }});
     }
     if (!level) {
         m_log(std::format("gameplay: {}: {}\n", start.level, level.error().message));

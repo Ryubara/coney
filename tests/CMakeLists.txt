@@ -109,6 +109,7 @@ add_executable(coney_tests
     platform/disc_level99_handover_test.cpp
     platform/disc_level99_street_test.cpp
     platform/disc_level99_store_glass_test.cpp
+    platform/disc_level99_store_register_test.cpp
     platform/disc_level99_world_test.cpp
     platform/disc_story_chain_test.cpp
     platform/disc_story_missions_test.cpp
@@ -167,6 +168,7 @@ add_executable(coney_tests
     scripting/world_bindings_test.cpp
     warriors/created_humans_test.cpp
     warriors/disk_profile_store_test.cpp
+    warriors/game_over_test.cpp
     warriors/level_table_test.cpp
     warriors/player_state_test.cpp
     warriors/profile_record_test.cpp

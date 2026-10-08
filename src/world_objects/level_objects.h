@@ -55,7 +55,7 @@ class LevelObjects {
     /// One 60 Hz tick of the doors and the broken props (the panes' update does nothing).
     void tick() {
         doors.tick(world);
-        props.tick();
+        props.tick(world);
     }
     /// Forgets the level's panes, doors and struck props (its unload).
     void clear();

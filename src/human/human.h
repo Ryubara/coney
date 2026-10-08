@@ -373,6 +373,10 @@ class Human final : public Holdable {
     /// The slow-motion event (type `0x2e` on, `0x2f` off) the clip playing passed in the last update, if any; the
     /// later of the two when both did (docs/research/camera.md#slow-motion).
     [[nodiscard]] std::optional<std::uint16_t> slowMotionEvent() const { return m_slowMotionEvent; }
+    /// The anim whose action event (type `0x41`, which `Anim_FireEvents` sends as message `0xc1`) the clip playing
+    /// passed in the last update, if any: for 665 `SPECIAL_FLASH` the flash is used, for 666 the door ahead opens and
+    /// for 668 the dealer's goal is served (docs/research/combat.md#rage).
+    [[nodiscard]] std::optional<std::uint32_t> actionEvent() const { return m_actionEvent; }
     /// Sets the characters' step its next updates advance by: kStepSeconds, or less in slow motion
     /// (docs/research/camera.md#slow-motion; Humans::update() sets it for every human).
     void setStepSeconds(float seconds) { m_stepSeconds = seconds; }
@@ -660,6 +664,10 @@ class Human final : public Holdable {
     // Notes the release event (type 10) of the clip playing when this step's animation passed it, as
     // noteStrikeEvents() does; takeThrowRelease() reads it.
     void noteReleaseEvent(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
+    // Notes the action event (0x41) of the clip playing that this step's animation passed (message 0xc1, read by
+    // Human_HandleMessage at 0x002473bc).
+    // @orig 0x00101dd8 Anim_FireEvents (unknown)
+    void noteActionEvent(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
     // The world placement of the body the strike shapes are posed on.
     [[nodiscard]] BodyPlacement placement() const;
     // Stamina's drain and refill, then the sprint flag, for this update's L2.
@@ -699,6 +707,7 @@ class Human final : public Holdable {
     Fighter m_fighter;
     std::vector<anim::Vec3> m_announced;            // attacks announced since the brain last looked (event 0x10)
     std::optional<std::uint16_t> m_slowMotionEvent; // the last update's slow-motion event (0x2e / 0x2f)
+    std::optional<std::uint32_t> m_actionEvent;     // the anim whose action event (0x41) the last update passed
     float m_stepSeconds = kStepSeconds;             // the characters' step (slow motion shortens it)
     std::uint64_t m_updates = 0;                    // updates stepped: combat's game time
     std::array<anim::Quat, anim::kPoseBones> m_bindRotations{};

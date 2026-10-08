@@ -21,6 +21,12 @@ namespace coney::world_objects {
 inline constexpr std::string_view kDynMasksClass = "dyn_masks";
 /// The class of the trash cans, bags and other props a player can pick up and throw, which any strike breaks.
 inline constexpr std::string_view kOverheadWeaponClass = "overhead_weapon";
+/// The cash register's class, its drawer's type and the money the open drawer spills.
+inline constexpr std::string_view kCashRegisterClass = "dyn_cashreg";
+inline constexpr std::string_view kCashDrawerType = "dyn_cashreg_b";
+inline constexpr std::string_view kMoneyType = "dyn_money";
+/// The broken cash register's model.
+inline constexpr std::uint32_t kCashRegisterBrokenModel = 0x59026f53U;
 
 /// A collision body's flags from its type's word `+0x5e`: bit `0x1` gives `0x2`, `0x2` → `0x4`, `0x4` → `0x10`,
 /// `0x8` → `0x8`, `0x10` → `0x40`, `0x20` → `0x20`, `0x40` → `0x2000`, `0x80` → `0x10000`, `0x100` → `0x20000`, on top
@@ -50,7 +56,7 @@ struct PropPose {
 /// What one strike did to a prop.
 struct PropStrike {
     bool intactBefore = false; ///< Neither counter was 0 before it: the strike was damage done (message 6).
-    bool broke = false;        ///< A `dyn_masks` prop broke on it.
+    bool broke = false;        ///< The prop broke on it.
 };
 
 /// The world objects strikes have landed on: each one's two hit counters (`+0x10d`, `+0x10e`) and, for a `dyn_masks`
@@ -71,8 +77,16 @@ struct PropStrike {
 /// out; the cardboard set's 8 debris pieces are 8 splinters; and a litter piece's offset is each axis drawn in ±0.43,
 /// ±0.43 and 0-0.83 m (the research leaves the draw's use open).
 ///
+/// A cash register (`dyn_cashreg`) takes 2 + 8 × kind from its hit points (its type's `+0x5a`, 16): a surviving hit
+/// sounds its material against concrete and raises dust at the hit; the breaking one swaps its broken model, sounds its
+/// material against itself, opens its drawer and stops it being a strike target, and it stays, still solid. One drawer
+/// update later (60 ticks) the drawer spills a `dyn_money` 0.22 m above it holding $25-49. **Coney's stand-ins**
+/// there: what makes the drawer is not traced, so the break makes it, open, at the register's pose (it does not slide);
+/// the dust is ObjectServices::burst(); the game state flag that silences the hit sound, the use (triangle's robbery,
+/// which takes the drawer) and the pick-up and drop of the register are left out.
+///
 /// Research: docs/research/objects.md#breakable-props, docs/research/objects.md#riot-prop-breaks,
-/// docs/research/objects.md#trash-props
+/// docs/research/objects.md#trash-props, docs/research/script-types.md#dyn-cashreg
 class Props {
   public:
     /// The ticks after a break until a broken prop goes: its update interval.
@@ -82,23 +96,34 @@ class Props {
     /// The two dust bursts every hit on a `dyn_masks` prop raises at the hit point, metres.
     static constexpr float kDustRadius = 3.75F;
     static constexpr float kSecondDustRadius = 2.75F;
+    /// The open drawer's update interval: the ticks from its opening to its money.
+    static constexpr int kDrawerTicks = 60;
+    /// The money: how far above the drawer it appears, and its dollars, kMoneyLeast plus a draw below kMoneySpread.
+    static constexpr float kMoneyRise = 0.22F;
+    static constexpr int kMoneyLeast = 25;
+    static constexpr int kMoneySpread = 25;
 
     /// A strike from `hit.attacker` (of `hit.kind`, landing at `hit.point`) on the world object `handle` of `type`, at
     /// `pose`
     /// (`Strike_Contact` on a world object): takes the counters (`WorldObject_TakeHit`), plays the impact sound,
     /// tells the boxes the attacker stands in when the object was intact (ObjectServices::damageDone()), then gives a
-    /// `dyn_masks` prop its hit (`DynMasks_OnHit`). A broken prop takes nothing more.
+    /// `dyn_masks` prop, an `overhead_weapon` or a cash register its hit (message 1). A broken prop takes nothing more.
     /// @orig 0x0021b290 Strike_Contact (unknown)
     PropStrike strike(double handle, const ObjectType& type, const ObjectHit& hit, const PropPose& pose,
                       ObjectWorld& world);
 
     /// Whether the prop `handle` is broken (it no longer offers itself to a strike).
     [[nodiscard]] bool broken(double handle) const;
+    /// Whether the prop `handle` broke and lost its body with it (every broken prop but a cash register, which stays
+    /// solid).
+    [[nodiscard]] bool bodyLost(double handle) const;
     /// The prop's counter `+0x10d`; nothing for an object no strike has landed on.
     [[nodiscard]] std::optional<std::uint8_t> counter(double handle) const;
 
-    /// One 60 Hz tick: a broken prop's wait for its removal.
-    void tick();
+    /// One 60 Hz tick: a broken prop's wait for its removal, and an open drawer's for its money, which it spills into
+    /// `world` (ObjectServices::spawnObject(), ObjectServices::setValue()).
+    /// @orig 0x003bffd0 DynCashregB_Update (unknown)
+    void tick(ObjectWorld& world);
     /// The broken props whose time came since the last call: their objects go for good (message 2, spawn record bit
     /// `0x40000`).
     /// @orig 0x003bf548 DynMasks_Update (unknown)
@@ -118,10 +143,14 @@ class Props {
         bool onePoint = false;          // +0x128: each hit takes one point
         bool masks = false;             // a dyn_masks prop, with the data below
         bool overhead = false;          // an overhead_weapon prop: any strike breaks it
-        int hitpoints = -1;             // its data +0x0c: -1 for none
-        int hits = -1;                  // its data +0x10: -1 for none
-        bool broken = false;            // its data +0x00
-        int removalIn = 0;              // ticks until it goes, once broken
+        bool cashRegister = false;      // a dyn_cashreg: its hit points below, its drawer once open
+        anim::Vec3 drawerAt{};          // the open drawer's place and turn
+        anim::Quat drawerTurn{};
+        int moneyIn = 0;     // ticks until the open drawer spills its money; 0 for none
+        int hitpoints = -1;  // its data +0x0c: -1 for none
+        int hits = -1;       // its data +0x10: -1 for none
+        bool broken = false; // its data +0x00
+        int removalIn = 0;   // ticks until it goes, once broken
         std::uint32_t modelHash = 0;
     };
 
@@ -137,6 +166,11 @@ class Props {
     // @orig 0x003ffe90 OverheadWeapon_Break (unknown)
     static void overheadBreak(Prop& prop, const ObjectType& type, const ObjectHit& hit, const PropPose& pose,
                               ObjectWorld& world);
+    // A cash register's message 1: its hit points, the sound and dust, and when they run out its broken model and its
+    // drawer opened.
+    // @orig 0x003c06b0 DynCashreg_OnMessage (unknown)
+    static bool cashRegisterHit(double handle, Prop& prop, const ObjectType& type, const ObjectHit& hit,
+                                const PropPose& pose, ObjectWorld& world);
 
     std::map<double, Prop> m_props;
     std::vector<double> m_removed;

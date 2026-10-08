@@ -12,6 +12,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -72,6 +73,15 @@ class KeepingServices final : public ai::ScriptServices {
         }
         return 0U; // held by no flag: the action ends on its next update
     }
+    [[nodiscard]] std::optional<std::uint32_t> playNamedClip(ai::Brain& human, int animId, std::string_view name,
+                                                             float /*fade*/) override {
+        namedClips.emplace_back(&human, animId, std::string(name));
+        return 0U;
+    }
+    [[nodiscard]] bool clipAvailable(std::string_view /*name*/) const override { return clipsAvailable; }
+    void say(ai::Brain& human, int command, bool /*interrupt*/, double /*target*/) override {
+        said.emplace_back(&human, static_cast<std::uint32_t>(command));
+    }
 
     /// One addRadarIcon() call.
     struct RadarIcon {
@@ -95,6 +105,9 @@ class KeepingServices final : public ai::ScriptServices {
     int freed = 0;
     std::vector<int> clips;
     bool clipsPlay = true;
+    std::vector<std::tuple<ai::Brain*, int, std::string>> namedClips; // (human, anim id, clip) played by name
+    bool clipsAvailable = false;                                      // what clipAvailable() answers
+    std::vector<std::pair<ai::Brain*, std::uint32_t>> said;           // (human, speech command)
 };
 
 /// Humans on a floor, each with a brain; slot 0 is the pad's player at (40, 40) facing +y.

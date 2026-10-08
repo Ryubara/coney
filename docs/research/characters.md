@@ -1320,6 +1320,13 @@ addresses given:
   and whose flag is set or whose handle is the human's) or the next `InitLevel`.
 - A paired task (`0x00108450`, `0x00108a78`) looks the id up in **the other human's** instance, so the dispatch runs
   for that human (inferred from the instance used).
+- **Coney's implementation** (`ScriptedBrains::runAnimCallbacks`): the starts are gathered over the characters' step
+  and the callbacks called after it. A human that starts the same id more than once in one step gets **one** call
+  (**Coney's reading**). Coney hands a chain over to its loop in every layer, the fading ones too, so two attack chains
+  ending in the fight idle 358 started it twice in one update. `level99`'s `PlayerState` then ran twice: each time
+  `HUDSetTutorialText(nil)` and a hint, and the second nil found nothing showing yet, so one hint stayed queued per
+  double start. The box backed up behind them, and the Targeting and Light Combos hints never showed
+  ([Hints](hud.md#hints-hudsettutorialtext)).
 
 ### Moving, standing on the ground and falling {#ground}
 

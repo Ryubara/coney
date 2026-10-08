@@ -118,6 +118,10 @@ class LevelObjectServices final : public world_objects::ObjectServices {
     double spawnObject(std::string_view type, anim::Vec3 at, anim::Quat rotation) override;
     /// A leaf's burst: a `sub_shack_puff` (**Coney's stand-in**, as dust()).
     void burst(anim::Vec3 at) override;
+    /// The object's spawn record draws the model `modelHash` from now on (SpawnRecord::model).
+    void setModel(double object, std::uint32_t modelHash) override;
+    /// The object's spawn record keeps `value` as its money (SpawnRecord::money).
+    void setValue(double object, std::uint32_t value) override;
 
   private:
     script::ScriptSystem& m_scripts;
