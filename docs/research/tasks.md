@@ -850,7 +850,7 @@ See [World objects: The tint](objects.md#tint).
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
 | `0x0039c2e0` | `Obj_SetWidgetColour` | Sets an object's tint. | confirmed (code) |
-| `0x003a4bd0` | `ScriptObj_GetColourVec` | Returns the object's colour as a vector. | confirmed (code) |
+| `0x003a4bd0` | `ScriptObj_GetContactVector` | A world object's last contact vector `+0xb0` (a particle system's `+0xa0`), not a colour ([Objects: trash props](objects.md#trash-props)). | confirmed (code) |
 | `0x003a5f80` | `Colour_UnpackToVec` | Unpacks a packed colour into floats. | confirmed (code) |
 
 ### Particles: Drifting fog {#code-particles-fog}

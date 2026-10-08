@@ -59,6 +59,7 @@ constexpr std::string_view kLine = "vags/speeches/l99/l99_test_001";
 constexpr std::string_view kOtherLine = "vags/speeches/l99/l99_test_002";
 constexpr std::string_view kGull = "vags/ambient/test/gull";
 constexpr std::string_view kCrow = "vags/ambient/test/crow";
+constexpr std::string_view kBreath = "vags/character/test_breathe";
 
 // The classes: a speech line (streamed, positional, priority 4), a voice line (streamed, positional, directional,
 // priority 9), an ambient sound (a positional bank sample, far 100 m).
@@ -82,6 +83,7 @@ SoundTables testTables() {
     add(kOtherLine, kLineClass);
     add(kGull, kAmbientClass);
     add(kCrow, kAmbientClass);
+    add(kBreath, kAmbientClass);
     for (const std::string& name : voiceLines()) {
         add(name, kVoiceClass);
     }
@@ -451,6 +453,31 @@ TEST_CASE("the ambient bindings fill the table and place a level's emitters", "[
     CHECK(rig.sound.emitters().emitterCount() == 0);
 }
 
+TEST_CASE("a _DAM_ emitter plays only from 2 s to 15 s after a noise", "[audio][ambient]") {
+    Rig rig;
+    rig.call("AddAmbientSound", {Value(3.0), str(kGull)});
+    rig.call("AddAmbientSoundEmitter2",
+             {str("t_DAM_01"), position(0, 0, 0), position(4, 0, 0), Value(3.0), str(""), Value(1.0), Value(40.0),
+              Value(-1.0), Value(1.0), Value(1.0), Value(4.0), Value(0.0)});
+    // No noise: nothing, however long.
+    rig.frames(150);
+    CHECK(rig.sound.emitters().plays() == 0);
+    CHECK_FALSE(rig.sound.damageWindowOpen());
+    // A noise: still nothing in its first 2 s, then the window opens and the emitter plays.
+    rig.sound.markAmbientEvent();
+    rig.frames(45);
+    CHECK_FALSE(rig.sound.damageWindowOpen());
+    CHECK(rig.sound.emitters().plays() == 0);
+    rig.frames(45);
+    CHECK(rig.sound.damageWindowOpen());
+    CHECK(rig.sound.emitters().plays() == 1);
+    // Past 15 s it shuts; a second noise then opens it at once (its stamp 2 s back).
+    rig.frames(13 * 30);
+    CHECK_FALSE(rig.sound.damageWindowOpen());
+    rig.sound.markAmbientEvent();
+    CHECK(rig.sound.damageWindowOpen());
+}
+
 TEST_CASE("HuSpeak plays a line at the speaker and calls back when it ends", "[audio][speech]") {
     Rig rig;
     rig.call("HuSpeak", {Value(20.0), str(kLine), str("OnLine"), Value(7.0)});
@@ -520,6 +547,39 @@ TEST_CASE("SoundPlayCommand says the speaker's voice set's lines in turn", "[aud
     // The chance, by command for every set.
     rig.call("SndSetCommandSoundPercent", {Value(-1.0), Value(12.0), Value(30.0)});
     CHECK(rig.sound.voices().percent(3, 12) == 30);
+}
+
+TEST_CASE("the angry breathing fades in while the camera frames a fight and out after", "[audio]") {
+    Rig r;
+    r.call("CfgBreathingSound", {Value(1.0), Value(5000.0), Value(2000.0), str(kBreath)});
+    r.frames(30);
+    CHECK_FALSE(r.sound.breathingPlays());
+    // Framed: the loop starts silent and rises over the 5 s.
+    r.sound.setCombatFraming(true);
+    r.frames(75);
+    CHECK(r.sound.breathingPlays());
+    CHECK(r.sound.breathingLevel() == Approx(0.5F).margin(0.001F));
+    r.frames(100);
+    CHECK(r.sound.breathingLevel() == Approx(1.0F));
+    // No longer framed: it falls over the 2 s; framed again on the way down, it turns back up from there.
+    r.sound.setCombatFraming(false);
+    r.frames(30);
+    CHECK(r.sound.breathingLevel() == Approx(0.5F).margin(0.001F));
+    r.sound.setCombatFraming(true);
+    r.frames(15);
+    CHECK(r.sound.breathingLevel() == Approx(0.6F).margin(0.001F));
+    // Down to 0 it stops.
+    r.sound.setCombatFraming(false);
+    r.frames(37);
+    CHECK(r.sound.breathingLevel() == Approx(0.0F));
+    CHECK_FALSE(r.sound.breathingPlays());
+}
+
+TEST_CASE("without CfgBreathingSound the camera's framing breathes nothing", "[audio]") {
+    Rig r;
+    r.sound.setCombatFraming(true);
+    r.frames(60);
+    CHECK_FALSE(r.sound.breathingPlays());
 }
 
 TEST_CASE("the listener sits at player 1's camera, or at the player for listener 1", "[audio]") {

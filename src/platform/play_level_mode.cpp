@@ -303,6 +303,7 @@ PlayLevelMode::~PlayLevelMode() {
     if (m_objects != nullptr) {
         m_objects->world.collision = nullptr;
         m_objects->world.paths = nullptr;
+        m_objects->world.knock = nullptr;
     }
 }
 

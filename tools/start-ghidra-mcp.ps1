@@ -44,12 +44,15 @@ $ErrorActionPreference = "Stop"
 
 $RepoRoot = Split-Path $PSScriptRoot -Parent
 
-# Read simple `key = "value"` lines from coney.local.toml; ignore comments and blank lines.
+# Read simple `key = "value"` or `key = 'value'` lines from coney.local.toml (TOML's literal strings let Windows
+# paths skip backslash escapes, and coney-tools accepts both); ignore comments and blank lines.
 $Config = @{}
 $ConfigFile = Join-Path $RepoRoot "coney.local.toml"
 if (Test-Path $ConfigFile) {
     foreach ($line in Get-Content $ConfigFile) {
-        if ($line -match '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*"([^"]*)"') { $Config[$Matches[1]] = $Matches[2] }
+        if ($line -match '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(?:"(?<v>[^"]*)"|''(?<v>[^'']*)'')') {
+            $Config[$Matches[1]] = $Matches['v']
+        }
     }
 }
 

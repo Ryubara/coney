@@ -214,6 +214,21 @@ TEST_CASE("the disc's level99 street: a trash can stops a walker; square and a s
     REQUIRE(struckRecord != nullptr);
     CHECK(struckRecord->removed);
     CHECK(count("dyn_trashcan_b") == dentedBefore + static_cast<std::ptrdiff_t>(cans.size()));
+    // Its bottle fell from 0.5 m above the street and came to rest on it.
+    const coney::world_objects::SpawnRecord* bottle = nullptr;
+    for (const coney::world_objects::SpawnRecord& record : scripts.spawnRecords().all()) {
+        if (record.typeName == "dyn_beerbottle" && !record.removed &&
+            std::hypot(record.position[0] - struckRecord->position[0], record.position[1] - struckRecord->position[1]) <
+                2.0F) {
+            bottle = &record;
+        }
+    }
+    REQUIRE(bottle != nullptr);
+    const std::string rested = std::format("objects: object {:.0f} came to rest", bottle->handle);
+    const bool bottleRested =
+        std::ranges::any_of(log, [&rested](const std::string& line) { return line.starts_with(rested); });
+    std::printf("  level99 street: the bottle rested %d at z %.2f\n", bottleRested ? 1 : 0, bottle->position[2]);
+    CHECK(bottleRested);
 
     // The garbage bags the runtime sprint broke, at (57.39, 13.72) (docs/research/objects.md#trash-props), and player 1
     // put 5 m south of them, on his own street height, facing north: his sprint into them strikes them (their

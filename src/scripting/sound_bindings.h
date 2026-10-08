@@ -151,6 +151,13 @@ class SoundHost {
     /// Whether player 1 stands on covered ground, which decides the ambient emitters he hears
     /// (docs/research/sound-events.md#covered). Does nothing by default.
     virtual void setPlayerCovered(bool /*covered*/) {}
+    /// Whether the camera frames player 1's fight (`Camera_IsCombatFraming`, `0x00233c50`: L1 held at a fight target,
+    /// docs/research/sound-events.md#players), each frame: the angry breathing follows it. Does nothing by default.
+    virtual void setCombatFraming(bool /*framing*/) {}
+    /// An AI noise was reported (a strike on a world object or a car): the ambient manager's event stamp, which opens
+    /// the `_DAM_` emitters' window from 2 s to 15 s after it (docs/research/sound.md#ambient). Does nothing by
+    /// default.
+    virtual void markAmbientEvent() {}
     /// `SoundStopAmbientTrack()`.
     virtual void stopAmbientTrack() = 0;
     /// Whether the sound `handle` (from play2D() or play3D()) still plays.

@@ -102,9 +102,11 @@ add_executable(coney_tests
     platform/disc_level99_audio_test.cpp
     platform/disc_level99_scene_speech_test.cpp
     platform/disc_level99_hud_test.cpp
+    platform/disc_level99_story_sounds_test.cpp
     platform/disc_level99_scene_grab_test.cpp
     platform/disc_level99_snaps_test.cpp
     platform/disc_level99_course_test.cpp
+    platform/disc_level99_powerups_test.cpp
     platform/disc_level99_sparring_test.cpp
     platform/disc_level99_change_character_test.cpp
     platform/disc_level99_car_climb_test.cpp

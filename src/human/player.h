@@ -171,6 +171,9 @@ class Player {
     void setPadControlled(bool padControlled);
     /// Whether the pad drives the human (true until setPadControlled(false)).
     [[nodiscard]] bool padControlled() const { return m_padControlled; }
+    /// Whether the camera frames his fight after the last update (`Camera_IsCombatFraming`, `0x00233c50`): the pad
+    /// holds L1 at his fight target and he is not in a grab (docs/research/sound-events.md#players).
+    [[nodiscard]] bool combatFraming() const { return m_combatFraming; }
     /// Hands the player's follow camera to `cameras` (which must outlive the player, or be detached with nullptr):
     /// from then on update() steps the cameras rather than the follow camera alone, the stick is turned by the current
     /// camera's view, the snapshots show it, and the player's slow-motion events reach it.
@@ -217,6 +220,7 @@ class Player {
     camera::Cameras* m_cameras = nullptr; // the manager the follow camera belongs to; null steps it alone
     std::uint32_t m_respawns = 0;
     bool m_padControlled = true;
+    bool m_combatFraming = false;        // combatFraming()
     std::optional<float> m_nearestEnemy; // the distance to the nearest enemy, none with no enemies
     PlayerSnapshot m_previous;
     PlayerSnapshot m_current;

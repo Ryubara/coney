@@ -1331,13 +1331,20 @@ workers) that belong to this page, by address.
   on, unless his bits `0x400800` or anims 2, 4 and `0x1b2` keep it quiet) and on a pane or door (against its type's
   material), and player 1's object attack on a car (`CAR_HOOD` at 0.5 when a part was reached), sound as his, `HUMAN`
   instead of `FIST` while he charges ([Sound events](sound-events.md#strike-object)). The SA id is the event's
-  32-bit word at `+8`.
+  32-bit word at `+8`. A scene's role clip sends its event 11 the same way: the human's animation sound at the place
+  the scene holds him and on the ground there (a ray from 1 m above his feet, 1.5 m down; **Coney's reading**, as
+  the scene poses him without moving his body); a stand-in the stage draws has no body and stays silent. Player 1's
+  combat framing is the follow camera's lock-on test (L1 held at his fight target, not in a grab), so his sounds add
+  column 3 under it, and the **angry breathing** (`CfgBreathingSound`'s sound, a 2D loop) fades in over the first
+  time while it holds and out over the second after, stopping at 0 (linearly on the engine's clock: **Coney's
+  choice**). A disc test (`[disc][story][audio]`) plays STORY into level99's lessons 1-6 and checks the hints' cue,
+  the `l99_t1` humans' shuffles and the lock-on's breathing are asked for, as a differential run against the PS2
+  found them missing.
   **Coney's stand-ins**: the striking limb comes from the strike clip's name (`kick`, `stomp`, `knee` a foot;
   `headbutt` the head; else a hand), not the striking shape's bone; nobody is hidden in shadow, burning or holding a
-  world object, the camera's combat framing is not told apart (the combat factor never applies), and only the
-  scripts' humans report sounds; there are no punch bags (`BAG`); a strike shape meets the level when its segment,
-  as a ray, crosses a level triangle, without the turn limits and state `0x4000000`; a pane sounds as `GLASS`; a
-  thrown human against the level (`Human_OnContact`) does not sound yet.
+  world object, and only the scripts' humans report sounds; there are no punch bags (`BAG`); a strike shape meets the
+  level when its segment, as a ray, crosses a level triangle, without the turn limits and state `0x4000000`; a
+  pane sounds as `GLASS`; a thrown human against the level (`Human_OnContact`) does not sound yet.
 - `VoiceTable` (`voice_table.cpp`, [The voice table](#voice-table)) and `Speech` (`speech.cpp`,
   [Saying a speech command](#speech)): one line per human at a time, positional and directional at him, cut off by
   an interrupting one.
@@ -1346,7 +1353,9 @@ workers) that belong to this page, by address.
   from `pos1`, the plays, the delays, the points, the volume, the name kinds, the filter on player 1's covered
   ground (his last ground snap's triangle flag `0x20`), the ambient factor and the `music` duck, once a second and
   at most two new sounds an update. **Coney's stand-ins**: one listener (the game's) and one player; the fight
-  timer is on while the music's mood is the fight; no AI event opens the `_DAM_` window; mode 7 (no script makes
+  timer is on while the music's mood is the fight; the `_DAM_` window opens 2 s after a strike on a world object
+  or a car (each reports an AI noise, `AI_ReportNoise`, which Coney reads as always stamping the event; a stamp
+  already set puts the new one 2 s back), and the stamp is forgotten when gameplay is left; mode 7 (no script makes
   one) and the `0x005147c8` block are not modelled.
 - **System music** (`repo:src/gamemodes/system_music.cpp`, [Music](#music)): on a mood change a random track of
   the mood loops through the music player, cross-faded on the bar as `0x0010e7d0` does (a cut into the fight, 4

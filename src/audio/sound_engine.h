@@ -11,6 +11,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "audio/mixer.h"
@@ -116,6 +117,9 @@ class SoundEngine {
     /// sound, refused, or the task pool is full).
     /// @orig 0x00111de8 AudioManager_Play (unknown)
     SoundHandle play(std::uint32_t hash, const SoundPlay& how = {});
+    /// Calls `observer` with the hash of every sound play() is asked for, started or not (the game's play calls, for
+    /// the tests that check what a run asks to hear); empty for none.
+    void setPlayObserver(std::function<void(std::uint32_t hash)> observer) { m_playObserver = std::move(observer); }
     /// Stops a sound at once, or fades it out over `fadeOutMs`.
     void stop(SoundHandle sound, float fadeOutMs = 0.0F);
     /// Stops every sound.
@@ -321,6 +325,7 @@ class SoundEngine {
     std::uint32_t m_ambientHash = 0;
     float m_ambientVolume = 1.0F;
     std::vector<std::uint32_t> m_interfaceSounds;
+    std::function<void(std::uint32_t)> m_playObserver; // setPlayObserver()
     SoundHandle m_sceneSound;
     bool m_sceneSoundStarted = false;      // +0x2426c: started and still alive
     std::uint32_t m_pendingSceneSound = 0; // music player +0x04: waiting for a stereo pair

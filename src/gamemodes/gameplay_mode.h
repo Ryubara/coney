@@ -83,6 +83,9 @@ class ScriptedPlayer {
     virtual void endTagSpray() {}
     /// What player 1 can act on this frame besides the scripts' action objects (kind 1), for the action prompt.
     [[nodiscard]] virtual PromptOffer promptOffer() const { return {}; }
+    /// Whether the camera frames player 1's fight now (`Camera_IsCombatFraming`, `0x00233c50`): his sounds' combat
+    /// framing and the angry breathing (docs/research/sound-events.md#players).
+    [[nodiscard]] virtual bool combatFraming() const { return false; }
 };
 
 /// What a level's scripts drive, which gameplay gives the level it loads: the humans the scripts create, the brains

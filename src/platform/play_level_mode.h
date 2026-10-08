@@ -274,6 +274,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     /// ScriptedPlayer: what player 1 can act on for the action prompt: nothing during a mugging, a theft or a lock
     /// pick; else a held human to mug, a pickable door, a freed car stereo and a dealer's offer in reach.
     [[nodiscard]] PromptOffer promptOffer() const override;
+    [[nodiscard]] bool combatFraming() const override { return m_player->combatFraming(); }
     /// The model the player is drawn as.
     [[nodiscard]] const std::string& model() const { return m_model; }
 
@@ -402,10 +403,22 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     void strikeLevel(human::Human& human, std::span<const human::PosedShape> shapes, bool player);
     // A strike from `attacker` of `kind` on the world object `handle` of `type` at `point`, which stands at `pose` (the
     // prop's `Strike_Contact`, world_objects::Props::strike()), printed as an `objects:` line.
+    // `runIn`: the attacker ran into it (a sprint into a RUNTARGET body).
     void strikeProp(double attacker, double handle, const world_objects::ObjectType& type, world_objects::HitKind kind,
-                    anim::Vec3 point, anim::Vec3 direction, anim::Vec3 attackerAt, const world_objects::PropPose& pose);
+                    anim::Vec3 point, anim::Vec3 direction, anim::Vec3 attackerAt, const world_objects::PropPose& pose,
+                    bool runIn = false);
     // The handle `human` goes by as an attacker: player 1's, its brain's, else none.
     [[nodiscard]] double handleOf(const human::Human& human) const;
+    // Whether a ray from `from` to `to` meets the level's collision (the panes' and doors' among it): the pick-up
+    // search's and the walk-over's sight test.
+    [[nodiscard]] bool sightBlocked(anim::Vec3 from, anim::Vec3 to) const;
+    // Player 1 walks over the power-ups he touches (LevelPickups::walkOver(), which plays their pick-up sounds).
+    void walkOverPowerups();
+    // A strike on a world object or a car reports a 30 m noise (`AI_ReportNoise`, `0x002936a8`;
+    // docs/research/combat.md, cars.md#hit-effects). Coney's AI does not hear it yet; the noise stamps the ambient
+    // manager's event, which opens the `_DAM_` emitters' window (docs/research/sound.md#ambient).
+    // @orig 0x002936a8 AI_ReportNoise (unknown)
+    void reportNoise();
     // Gives player 1 triangle's pick-up over `pickups` (may be null: none): the search, with sight rays through the
     // level's collision, starts the pick-up on him.
     void bindPickups(LevelPickups* pickups);

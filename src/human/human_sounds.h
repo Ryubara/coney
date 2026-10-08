@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <string_view>
 
 #include "animation/anim_math.h"
@@ -46,6 +47,10 @@ struct HumanSound {
     bool victimDown = false;     ///< Impact: the victim is knocked down (TORSO and HEAD become TORSO_PRONE).
     bool ownerIsPlayer = false;  ///< Impact: the human it sounds at (its owner) is a player.
     anim::Vec3 at;               ///< Impact: where it sounds (the owner's feet).
+    /// Anim from a scene's role clip: where the scene holds the human, and the material under those feet, in place of
+    /// his own (a scene poses him without moving his body).
+    std::optional<anim::Vec3> sceneFeet;
+    std::uint8_t sceneGround = 0;
 };
 
 /// The striking material of a landed strike (`Hit_ResolveBlock`, `0x00220df0`): by the striking limb and the hit's

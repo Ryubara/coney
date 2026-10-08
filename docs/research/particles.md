@@ -281,8 +281,29 @@ size in metres, inferred from the quad being 1 × 1 before scaling):
 
 Other kinds do nothing. Each piece takes a random rectangle and size in its kind's range (`0x003353f0`, both ends
 included), a grey of 128-190 in all three channels, a wind threshold of 0.5-10, a lifetime of 600-900 updates and an
-orientation a quarter turn about a fixed axis (`0x00511720`). Breakables throw extra pieces through `0x00170b28`
-(table `0x0050cc08`, 12-byte entries; start speed 6 m/s along the given direction). Confirmed (code).
+orientation a quarter turn about a fixed axis (`0x00511720`). Breakables throw extra pieces
+through `Garbage_Throw(litter, kind, position, direction)` (`0x00170b28`), described below. Confirmed (code).
+
+**Thrown litter** (`Garbage_Throw`, confirmed (code); the table read from the executable). It takes `Random_IntRange`
+(min, max) pieces, both ends included, from the 64 in index order, using **only pieces waiting to respawn** (piece
+byte `+0x6d` bit `0x10`, set by the update when a piece's ground ray found nothing or it faded out); with none waiting,
+nothing is thrown, and it stops early when it runs out. Each taken piece is re-made by `Garbage_SpawnPiece`
+(`0x0016fd90`: looks, grey, wind threshold, 600-900 updates of life) with the entry's sprite and a size byte of
+96-102 (0.38-0.40 m, whatever the entry says), then put at the given position with velocity **6 m/s along the
+normalised direction** and handed to the wind step (`Garbage_ApplyWind`, `0x00170600`). The 12-byte entries at
+`0x0050cc08`:
+
+| Kind | `+0x00` sprite word (rectangle) | `+0x04` extra rectangles | `+0x05`, `+0x06` pieces | `+0x07`, `+0x08` size bytes (unused here) |
+| --- | --- | --- | --- | --- |
+| 0 | `0x10036` (54) | 1 (54-55) | 5-9 | 96-102 |
+| 1 | `0x10036` (54) | 1 (54-55) | 5-9 | 96-102 |
+| 2 | `0x1001e` (30) | 1 (30-31) | 5-9 | 96-102 |
+| 3 | `0x10012` (18) | 0 (18) | 9-16 | 43-50 |
+
+The rectangle is the word + `Random_IntRange(0, +0x04)`. Kind 0 is the trash props' ([Objects: trash
+props](objects.md#trash-props)), kind 1 a few other `overhead_weapon` breaks; `DynMasks_OnHit` and `DynChicken_Break`
+also call it. The trash props pass their contact vector `+0xb0` as the direction, which is zero for a prop that was
+never touched (then the pieces start with no speed and only the wind moves them; inferred).
 
 **Placement**: the pieces start on an 8 × 8 grid around the camera's position, 7 m apart (offsets −28 to +21 m), at
 the camera's height −1 to +5 m. Every 20 updates (staggered) each piece casts a ray 25 m down: no ground makes it

@@ -389,7 +389,9 @@ CfgBreathingSound(threshold, intervalMs, durationMs, sound)
 Configures the angry breathing sound: the sound (resolved by name), two times in milliseconds and a float threshold, all
 stored in the game state (+0x24c to +0x258).
 
-**Notes.** Which timer is the repeat interval and which the play time is inferred from the values.
+**Notes.** The two times are the breathing loop's fade-in and fade-out while the camera frames a fight and after
+(Breathing_Configure 0x004193e8, Breathing_Update 0x00419150; docs/research/sound.md#warriors-functions), and the
+threshold is the players' combat sound factor (docs/research/sound-events.md#players).
 
 - **Evidence:** confirmed (code) at `0x0041d480`; detail: traced
 - **Wrapper** `0x0035a7c0` (registered by `RegisterBindings`); **calls** `0x0041d480` `Cfg_SetBreathingSound`
@@ -1792,8 +1794,9 @@ CfgPowerupPickup(enabled)
 **Returns** nothing.
 
 Stores the power-up pickup switch (byte at game state `+0x56e5`, 1 after every level load). With it 0, the three pickup
-paths (`Human_OnContact` 0x0021a3d8, 0x00219550, 0x00395510) skip objects of class 14 (power-ups, object type `+0x86`)
-for player humans (`+0x1b0` not -1); AI humans and other objects are unaffected.
+paths (`Human_OnContact` at 0x0021a3d8, `Human_FindPickupNear` at 0x00219550, `WorldObject_TryTouchPickUp` 0x00395510)
+skip only a `TYPE_REVIVAL` (14, a flash; object type `+0x86`) for a player human (`+0x1b0` not -1) at full health; every
+other power-up, a hurt player and AI humans are unaffected.
 
 **Notes.** Reset to 1 by the level set-up (0x00418c68). Used by Armies of the Night (levels 60-64) to control when
 power-ups can be collected.
@@ -1802,7 +1805,7 @@ power-ups can be collected.
 - **Wrapper** `0x0036c208` (registered by `RegisterBindings`); **calls** `0x0041da70` `GameState_SetPowerupPickup`
 - **Used by** 5 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgQueueGrappleCombos {#cfgqueuegrapplecombos}
 

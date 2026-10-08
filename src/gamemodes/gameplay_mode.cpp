@@ -368,6 +368,8 @@ void GameplayMode::enter() {
     });
     if (m_context.state != nullptr) {
         m_context.state->story.resetForLevel();
+        // The same reset sets the power-up switch on (CfgPowerupPickup).
+        m_context.state->hub.powerupPickup = true;
     }
     // The level's trigger spheres, round the objects the scripts name, and its flag network for the pedestrians.
     m_spheres.setLocate([this](double handle) { return objectPosition(handle); });
@@ -824,9 +826,14 @@ void GameplayMode::reportHumanSounds() {
         return;
     }
     const ai::Brain* player = m_scripted->player();
-    // Player 1's ground decides the ambient emitters he hears.
+    // Player 1's ground decides the ambient emitters he hears; the camera framing his fight, the angry breathing.
+    const auto* level = dynamic_cast<const ScriptedPlayer*>(m_level.get());
+    const bool framing = player != nullptr && level != nullptr && level->combatFraming();
     if (player != nullptr && m_context.sound != nullptr) {
         m_context.sound->setPlayerCovered(player->human().onCoveredGround());
+    }
+    if (m_context.sound != nullptr) {
+        m_context.sound->setCombatFraming(framing);
     }
     for (const auto& [handle, brain] : m_scripted->bound()) {
         human::Human& body = brain->human();
@@ -843,7 +850,7 @@ void GameplayMode::reportHumanSounds() {
                                     .player = brain == player,
                                     .ground = body.groundMaterial(),
                                     .hiddenInShadow = false,
-                                    .combatFraming = false,
+                                    .combatFraming = brain == player && framing,
                                     .burning = false,
                                     .targetIsPlayer = target != nullptr && target == player,
                                     .hasThrowTarget = false,
@@ -852,9 +859,14 @@ void GameplayMode::reportHumanSounds() {
                                     .heldType = 0,
                                     .sound = {}};
         // **Coney's stand-ins** for what Coney's humans do not have yet: no sneaking in shadow, no burning, no world
-        // object in hand, no throw; the camera's combat framing is not told apart.
+        // object in hand, no throw.
         for (const human::HumanSound& sound : sounds) {
             call.sound = sound;
+            // A scene's role clip sounds where the scene holds him, on the ground there.
+            call.position = sound.sceneFeet
+                                ? std::array<float, 3>{sound.sceneFeet->x, sound.sceneFeet->y, sound.sceneFeet->z}
+                                : std::array<float, 3>{feet.x, feet.y, feet.z};
+            call.ground = sound.sceneFeet ? sound.sceneGround : body.groundMaterial();
             m_context.sound->humanSound(call);
         }
     }

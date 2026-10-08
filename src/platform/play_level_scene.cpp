@@ -3,13 +3,16 @@
 // over to a scene and back, and `--scene`, Coney's test aid that plays one at once (docs/research/scenes.md,
 // docs/guides/building.md#playing-a-level).
 #include <array>
+#include <cstdint>
 #include <format>
 #include <numbers>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
 
 #include "gamemodes/level_pickups.h"
+#include "human/human_sounds.h"
 #include "platform/play_level_mode.h"
 #include "raycast/collision_mesh.h"
 #include "scenes/scene_disc.h"
@@ -25,6 +28,10 @@ constexpr double kTestPlayerHandle = 1.0;
 constexpr double kStandInHandle = 1000.0;
 // The role the test aid binds player 1 to: Rembrandt's cutscene model in level99's scenes.
 constexpr std::string_view kPlayerRole = "warrrecv";
+// The ground under a scene's human: a ray from 1 m above his feet, 1.5 m down, as each update's snap
+// (docs/research/sound-events.md#ground-material).
+constexpr float kSceneGroundAbove = 1.0F;
+constexpr float kSceneGroundLength = 1.5F;
 
 // **Coney stand-in** for `--scene`: the model a role's name stands for in level99's scenes (a role names its
 // cutscene model, not a Character List entry; in the game the bound humans bring their own). Unknown names are drawn
@@ -89,6 +96,33 @@ void PlayLevelMode::makeStage() {
         if (human == m_playerHandle && m_ai != nullptr) {
             m_ai->playerBrain().setDead(joined);
         }
+    });
+    // A bound human's role clip sounds (event 11) as his gameplay clips do, at the scene's place for him and on the
+    // ground there (**Coney's reading**: the scene moves the human himself in the original, so his snap finds that
+    // ground; Coney poses him without moving his body). A stand-in the stage draws has no body and stays silent.
+    // Research: docs/research/sound.md#anim-sounds
+    m_stage->setAnimSoundHandler([this](double handle, std::uint32_t id, std::optional<anim::Vec3> feet) {
+        human::Human* body = nullptr;
+        if (handle == m_playerHandle) {
+            body = &m_player->human();
+        } else if (const ai::AiHuman* fighter = castHumanOf(handle); fighter != nullptr) {
+            body = fighter->human.get();
+        }
+        if (body == nullptr) {
+            return;
+        }
+        human::HumanSound sound{.kind = human::HumanSound::Kind::Anim, .animSound = id};
+        if (feet) {
+            sound.sceneFeet = feet;
+            sound.sceneGround = body->groundMaterial();
+            const raycast::Ray ray{.origin = raycast::Vec3{feet->x, feet->y, feet->z + kSceneGroundAbove},
+                                   .direction = raycast::kDown,
+                                   .length = kSceneGroundLength};
+            if (const std::optional<raycast::RayHit> hit = m_scenery->collision().rayCast(ray, {}, 0); hit) {
+                sound.sceneGround = hit->material;
+            }
+        }
+        body->reportSound(sound);
     });
     // A bound object stays where the scene leaves it (scenes.md#ending): its record keeps the place.
     m_stage->setObjectMover([this](double object, anim::Vec3 position, anim::Quat rotation) {

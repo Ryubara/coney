@@ -31,7 +31,7 @@ class ObjectSounds final : public world_objects::ObjectServices {
     void playSound(std::uint32_t nameHash, anim::Vec3 at) override;
     /// The pair's sounds from the sound matrix at `at`.
     /// @orig 0x00117280 Sound_PlayMaterialPairAt (unknown)
-    void playMaterialPair(std::uint8_t a, std::uint8_t b, anim::Vec3 at) override;
+    void playMaterialPair(std::uint8_t a, std::uint8_t b, anim::Vec3 at, float volume = 1.0F) override;
     /// Counted: the click's cue is not on the research page.
     void lockPickClick(double human) override;
 

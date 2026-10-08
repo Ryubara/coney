@@ -22,6 +22,8 @@
 #include "core/name_hash.h"
 #include "gamemodes/system_music.h"
 #include "gui/global_strings.h"
+#include "hud/hud.h"
+#include "scripting/hud_bindings.h"
 #include "scripting/lua_value.h"
 #include "scripting/lua_vm.h"
 #include "scripting/script_bindings.h"
@@ -218,6 +220,19 @@ TEST_CASE("the configuration and music bindings read their arguments as tolua do
                                    std::format("music {:#x} false Level.onMusicEnd", track), "music volume 1",
                                    "music stop", "track volume 0", "listener 1", "bank boss"});
     CHECK(h.host.music.empty());
+}
+
+TEST_CASE("SoundCfgInterfaceSound names the HUD's cues, with or without a sound host", "[sound_bindings]") {
+    // The HUD plays its hint, objective and alarm cues by the name this call gave (a regression: the real binding
+    // once stopped keeping it, and every HUD cue went silent).
+    for (const bool withSound : {true, false}) {
+        Harness h(withSound);
+        h.call("SoundCfgInterfaceSound", {Value(21.0), str("vags/misc/bleep50")});
+        const coney::hud::HudServices services = coney::script::hudServicesOf(h.context);
+        REQUIRE(services.sound.cueName);
+        CHECK(services.sound.cueName(21) == "vags/misc/bleep50");
+        CHECK(services.sound.cueName(20).empty());
+    }
 }
 
 TEST_CASE("without a sound host the music bindings go to the binding host", "[sound_bindings]") {

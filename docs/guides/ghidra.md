@@ -44,7 +44,8 @@ powershell -ExecutionPolicy Bypass -File tools\start-ghidra-mcp.ps1        # 127
 
 Options: `-Port`, `-ProjectDir`, `-ProjectName`, `-BindAddress` (leave loopback), `-McpRepo` (overrides
 `ghidra_mcp_repo`). The script reads `ghidra_install`, `ghidra_projects`, `jdk_home` and `ghidra_mcp_repo` from
-`coney.local.toml` and stops with an error naming the key and the resolved path when one is missing. It follows the
+`coney.local.toml` (double- or single-quoted values) and stops with an error naming the key and the resolved path when
+one is missing. It follows the
 shared `start-headless.ps1` logic (which targets another project's Ghidra install) with: this project's GhidraHome,
 extension jars added to the classpath, project created via `/create_project` on first start, and the java PID written to
 `<ghidra_projects>\ghidra-mcp-8090.pid`.

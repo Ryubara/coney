@@ -28,12 +28,12 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 17.2%](https://img.shields.io/badge/reimplemented-17.2%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 17.3%](https://img.shields.io/badge/reimplemented-17.3%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 ![Understood: 100.0%](https://img.shields.io/badge/understood-100.0%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▍░░░░░░░░░░░░░░░░` | 17.2% of the game's own code (575,520 of 3,354,776 bytes, 2,123 functions) |
+| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.3% of the game's own code (579,384 of 3,354,776 bytes, 2,132 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,192 of 3,284,000 bytes; 11,423 of 11,425 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
@@ -63,7 +63,7 @@ at the top of the repository's `README.md`.
 
 | Subsystem | Reimplemented | Share | Functions | Code (bytes) |
 | --- | --- | --- | --- | --- |
-| `Animation` | `███████░░░░░░░░░░░░░` | 35.0% | 28 | 54,616 |
+| `Animation` | `███████▏░░░░░░░░░░░░` | 35.5% | 30 | 54,616 |
 | `Audio` | `█▋░░░░░░░░░░░░░░░░░░` | 8.4% | 91 | 57,368 |
 | `Camera` | `█▏░░░░░░░░░░░░░░░░░░` | 5.6% | 81 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
@@ -73,7 +73,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▋░░░░░░░░░░░░░` | 33.1% | 115 | 100,440 |
 | `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 12.0% | 90 | 195,624 |
 | `GUI` | `████▏░░░░░░░░░░░░░░░` | 20.7% | 246 | 497,416 |
-| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 787 | 1,096,672 |
+| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.5% | 790 | 1,096,672 |
 | `Maths (unnamed)` | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% | 9 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `▌░░░░░░░░░░░░░░░░░░░` | 2.5% | 8 | 79,032 |
@@ -85,7 +85,7 @@ at the top of the repository's `README.md`.
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 33 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 32 | 22,008 |
-| `Warriors` | `███▉░░░░░░░░░░░░░░░░` | 19.1% | 115 | 54,264 |
+| `Warriors` | `████▏░░░░░░░░░░░░░░░` | 20.9% | 119 | 54,264 |
 | `Movie` | `██████████████████▍░` | 91.9% | 5 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
 | Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 27,632 |
@@ -166,6 +166,8 @@ at the top of the repository's `README.md`.
 | `0x0010a558` | `GaitBlend_SetValue` | `Animation` | not filled in |
 | `0x0010a5b8` | `GaitBlend_Advance` | `Animation` | not filled in |
 | `0x0010adf8` | `GaitBlend_Sample` | `Animation` | not filled in |
+| `0x0010be40` | `AmbientManager_MarkEvent` | `Animation` | 52 |
+| `0x0010be78` | `AmbientManager_UpdateTimers` | `Animation` | 196 |
 | `0x0010c100` | `Ambient_Update` | `Animation` | 2,928 |
 | `0x0010ced0` | `AmbientManager_AddParticleEmitter` | `Animation` | 132 |
 | `0x0010cf58` | `Ambient_AddEmitter` | `Animation` | 792 |
@@ -845,8 +847,10 @@ at the top of the repository's `README.md`.
 | `0x00214138` | `PlayerHUD_Update` | `GUI` | 2,704 |
 | `0x00218008` | `Human_Init` | `Human` | not filled in |
 | `0x002195e0` | `Human_SetCoverFlag5` | `Human` | 36 |
+| `0x00219d50` | `Human_OnContact` | `Human` | 1,856 |
 | `0x0021a490` | `Human_PushOutInAir` | `Human` | not filled in |
 | `0x0021b290` | `Strike_Contact` | `Human` | 3,488 |
+| `0x0021c570` | `Human_CanSeeObject` | `Human` | 600 |
 | `0x0021cda8` | `Human_StoreName` | `Human` | 96 |
 | `0x0021d080` | `Human_GetPosition` | `Human` | 96 |
 | `0x0021d428` | `Human_GetFormation` | `Human` | 80 |
@@ -1272,6 +1276,7 @@ at the top of the repository's `README.md`.
 | `0x00292d80` | `Brain_DefaultOnEvent` | `Human` | not filled in |
 | `0x002935d8` | `Brain_IsInHearRange` | `Human` | not filled in |
 | `0x00293640` | `Gang_BroadcastHelpCall` | `Human` | not filled in |
+| `0x002936a8` | `AI_ReportNoise` | `Human` | 192 |
 | `0x00293768` | `AI_AlertNearby` | `Human` | not filled in |
 | `0x00293b28` | `Brains_Update` | `Human` | 320 |
 | `0x00293c68` | `Formations_Update` | `Human` | 104 |
@@ -2151,6 +2156,9 @@ at the top of the repository's `README.md`.
 | `0x00417af0` | `Cfg_SetActionDistance` | `Warriors` | 32 |
 | `0x00418150` | `ContextActions_Pick` | `Warriors` | not filled in |
 | `0x00418428` | `RepeatTracker_Note` | `Warriors` | 240 |
+| `0x00419030` | `Breathing_Start` | `Warriors` | 216 |
+| `0x00419108` | `Breathing_Stop` | `Warriors` | 72 |
+| `0x00419150` | `Breathing_Update` | `Warriors` | 664 |
 | `0x004197a8` | `GameState_CheckGameOver` | `Warriors` | not filled in |
 | `0x00419fc8` | `GameState_SetMusicMood` | `Warriors` | 64 |
 | `0x0041a060` | `GameState_UpdateSystemMusic` | `Warriors` | not filled in |
@@ -2199,6 +2207,7 @@ at the top of the repository's `README.md`.
 | `0x0041da30` | `Cfg_SetSubtitles` | `Warriors` | 16 |
 | `0x0041da50` | `Cfg_SetTurfInvasion` | `Warriors` | 16 |
 | `0x0041da60` | `Cfg_SetGrappleCounters` | `Warriors` | not filled in |
+| `0x0041da70` | `GameState_SetPowerupPickup` | `Warriors` | 16 |
 | `0x0041da80` | `Cfg_EnableCrimeType` | `Warriors` | 48 |
 | `0x0041daf8` | `Cfg_SetPlayerMugging` | `Warriors` | 16 |
 | `0x0041db08` | `GameState_EnableAllWarriorCommands` | `Warriors` | 224 |

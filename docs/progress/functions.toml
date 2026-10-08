@@ -133,6 +133,18 @@ name = "GaitBlend_Sample"
 subsystem = "Animation"
 
 [[function]]
+address = 0x0010be40
+name = "AmbientManager_MarkEvent"
+subsystem = "Animation"
+size = 52
+
+[[function]]
+address = 0x0010be78
+name = "AmbientManager_UpdateTimers"
+subsystem = "Animation"
+size = 196
+
+[[function]]
 address = 0x0010c100
 name = "Ambient_Update"
 subsystem = "Animation"
@@ -3928,6 +3940,12 @@ subsystem = "Human"
 size = 36
 
 [[function]]
+address = 0x00219d50
+name = "Human_OnContact"
+subsystem = "Human"
+size = 1856
+
+[[function]]
 address = 0x0021a490
 name = "Human_PushOutInAir"
 subsystem = "Human"
@@ -3937,6 +3955,12 @@ address = 0x0021b290
 name = "Strike_Contact"
 subsystem = "Human"
 size = 3488
+
+[[function]]
+address = 0x0021c570
+name = "Human_CanSeeObject"
+subsystem = "Human"
+size = 600
 
 [[function]]
 address = 0x0021cda8
@@ -6266,6 +6290,12 @@ subsystem = "Human"
 address = 0x00293640
 name = "Gang_BroadcastHelpCall"
 subsystem = "Human"
+
+[[function]]
+address = 0x002936a8
+name = "AI_ReportNoise"
+subsystem = "Human"
+size = 192
 
 [[function]]
 address = 0x00293768
@@ -11100,6 +11130,24 @@ subsystem = "Warriors"
 size = 240
 
 [[function]]
+address = 0x00419030
+name = "Breathing_Start"
+subsystem = "Warriors"
+size = 216
+
+[[function]]
+address = 0x00419108
+name = "Breathing_Stop"
+subsystem = "Warriors"
+size = 72
+
+[[function]]
+address = 0x00419150
+name = "Breathing_Update"
+subsystem = "Warriors"
+size = 664
+
+[[function]]
 address = 0x00419fc8
 name = "GameState_SetMusicMood"
 subsystem = "Warriors"
@@ -11367,6 +11415,12 @@ size = 16
 address = 0x0041da60
 name = "Cfg_SetGrappleCounters"
 subsystem = "Warriors"
+
+[[function]]
+address = 0x0041da70
+name = "GameState_SetPowerupPickup"
+subsystem = "Warriors"
+size = 16
 
 [[function]]
 address = 0x0041da80

@@ -80,6 +80,9 @@ class SceneHost {
     virtual void humanEnterScene(double /*human*/, std::size_t /*role*/) {}
     /// The scene drives `human` this update.
     virtual void humanPose(double /*human*/, const RoleFrame& /*frame*/) {}
+    /// Role clip event 11 on `human`'s clip: animation sound `id` (`SA.*`), which the human plays as a gameplay clip's
+    /// (his footsteps, shuffles and cloth during the scene; docs/research/sound.md#anim-sounds).
+    virtual void humanAnimSound(double /*human*/, std::uint32_t /*id*/) {}
     /// `human`'s clip has ended and the scene no longer drives it; it stays where the clip left it.
     virtual void humanExitScene(double /*human*/) {}
     /// The scene has ended for `human`: its join goal is popped, which gives a player control back. `endPose` (world)

@@ -14,6 +14,12 @@ bool neverGlints(std::uint32_t modelHash) {
     return std::ranges::find(kHoboFood, modelHash) != kHoboFood.end();
 }
 
+bool inSight(anim::Vec3 feet, anim::Vec3 at, const SightBlocked& blocked) {
+    // From the waist's height, or else from above the head.
+    return !blocked || !blocked(anim::Vec3{feet.x, feet.y, feet.z + kPickupSightLow}, at) ||
+           !blocked(anim::Vec3{feet.x, feet.y, feet.z + kPickupSightHigh}, at);
+}
+
 bool pickable(std::string_view className, std::uint32_t modelHash) {
     // The model hashes a class's init treats apart (docs/research/objects.md#pickable).
     constexpr std::uint32_t kNotPickableOverhead = 0x8fc6ac30U;
@@ -45,9 +51,7 @@ std::optional<std::size_t> searchPickup(anim::Vec3 feet, anim::Vec3 facing, std:
         if (!candidate.pickable || std::hypot(at.x - feet.x, at.y - feet.y) > kPickupReach) {
             continue;
         }
-        // In sight from the waist's height, or else from above the head.
-        if (blocked && blocked(anim::Vec3{feet.x, feet.y, feet.z + kPickupSightLow}, at) &&
-            blocked(anim::Vec3{feet.x, feet.y, feet.z + kPickupSightHigh}, at)) {
+        if (!inSight(feet, at, blocked)) {
             continue;
         }
         const float dx = at.x - behind.x;

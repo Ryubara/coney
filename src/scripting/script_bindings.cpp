@@ -829,6 +829,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("CfgEnableTurfInvasion"),
     real("CfgObjectValueMod"),
     real("CfgPlayerCombatWalkOnly"),
+    real("CfgPowerupPickup"),
     real("CfgStickDeflection"),
     real("CfgWorkoutParams"),
     real("CheckMultiplayer"),

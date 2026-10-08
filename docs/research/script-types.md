@@ -522,37 +522,76 @@ colours `0xffffff00` / `0xffffff80`, size 2.5: a flicker of firelight on the gro
 ### Cash registers (`dyn_cashreg`, `dyn_cashreg_b`) {#dyn-cashreg}
 
 `dyn_cashreg` (type 14) is the register a player can rob or smash; `dyn_cashreg_b` (type 15) is its drawer, a separate
-task (model `0x2e055fc5`) kept at the register's `+0x1c`. Register record: `+0x10` broken, `+0x11` the drawer flew out,
-`+0x14` update interval, `+0x18` hit points (type property 1), `+0x1c` the drawer. Drawer record: `+0x10` interval,
-`+0x14` a step count, `+0x18` open, `+0x1c` a value it passes on. Confirmed (code).
+task (model `0x2e055fc5`, the CRC-32 of `dyn_cashreg_b`) kept at the register's `+0x1c`. Register record: `+0x10`
+broken, `+0x11` the drawer flew out, `+0x14` update interval, `+0x18` hit points (type property 1), `+0x1c` the drawer.
+Drawer record: `+0x00` its closed position, `+0x10` interval, `+0x14` a step count, `+0x18` open, `+0x1c` the money
+object. Confirmed (code) at the addresses in the table.
 
-- **Use** (message 0, the triangle): if not broken and not busy (`0x100000`), the register marks itself busy and sends
-  message `0x14` to the human (inferred: the rob action). Any drawer is removed.
-- **Hit** (message 1): the hit points drop by **2 + 8 × strength** (a kind of −1 empties them, −2 costs nothing).
-  At 0: broken model `0x59026f53`, interval 240, flag `0x800000`, and the drawer gets message `0x12` (it opens); with no
-  drawer the register itself is knocked (message `0x30`, a random spread ±0.25) and rescheduled.
-- The drawer's update, one step after opening, spawns a `dyn_money` 0.22 m above the drawer and sets its `+0x124`
-  (`WorldObject_SetField124`, `0x003a4cb0`) to 25 + a random 0-24 (inferred: the cash it holds), then sleeps 240 ticks.
+- **The drawer is the register's own child**: `DynCashreg_Init` (`0x003c04e0`) spawns a `dyn_cashreg_b`
+  (`Obj_SpawnChildByName`) at the register's position + (0, 0.02, −0.22) m turned by the register's rotation, in the
+  register's pose, with no parent. It is drawn (flags `0x201`, interval 60) and has no body (`CfgObj` shape `NONE`).
+- **"Robbing" is lifting it.** The register is pickable (init flags `0x228001`; in quick-save slot 8, `level99`
+  checkpoint 2, the store's register at (53.23, 57.26, 1.63) had flags `0x8022a001`, so `0x8000`, and counters
+  `+0x10d` 16, `+0x10e` 3: confirmed (runtime), PCSX2 2.9.94, read from the state). Triangle's
+  [pick-up search](objects.md#pickable) sends it **message 0**: unless broken or busy (`0x100000`) it marks itself
+  busy and sends the human message **`0x14`** with itself; in every case its drawer is deleted at once (message `0x15`,
+  `+0x1c` cleared). The human's `0x14` (`Human_HandleMessage` `0x00245920`, [the pick-up
+  clip](combat.md#breakables)) plays its `TwoHandPickUp` clip, **503** `ANIM_BARREL_PICK_UP`, or **504** when the
+  register is more than 0.8 m above his feet, with anim set 4 (`OVERHEAD_WEAPON_SET`). The clip's take event sends it
+  message **`0x1b`** (`DynCashreg_OnPickUp` `0x003c0108`): velocity and spin zeroed, attached to his hand at the bone
+  (flag `0x10`), the hand offset from type properties 11 and 12 (or the event's), human message 3 (he holds it:
+  `Human_PickUpObject` has no case for `TYPE_GENERIC`, so `Human_SetHeldObject`) and message `0x17` with property 5,
+  1.0 and its material. **No money, item, notify or sound comes from the lift itself**; the money comes when it breaks.
+- **Message `0x20`** deletes the drawer too (inferred: sent to an object about to be removed, as seen for the trash
+  props, [Trash cans and bags](objects.md#trash-props)).
+- **Hit** (message 1; pops direction, point, a kind slot, the strength, two handles): the hit points drop by
+  **2 + 8 × strength**; a kind slot of −1 (from `WorldObject_Break`) empties them and −2 costs nothing. Ignored once
+  broken (flag `0x800000`).
 - **The values** (`dyn_cashreg`'s `CfgObj`, `config_preload3`): hit points `+0x58` 50, hits `+0x5a` **16**, which is
   what the init copies into `+0x18`. So 8 punches or kicks (kind 0, 2 each) break it, or one blow with something in
   hand (kind 2, 18) or of kind 3 (26). Its material is `CASHREG` (103).
 - **Each surviving hit** (hit points still above 0): the material sound (material, 5) at the register unless game
   state flag 3 has bit 4, and a dust burst (`Effects_BurstC`, colours `0x7e796f` and `0x605240`) at the contact point.
-  No movement. **The breaking hit**: broken model `0x59026f53`, the material-pair sound, flag `0x800000` (later hits
-  are ignored), and the collision record's bits `0x10` and `0x08` cleared. When the drawer was already taken (by the
-  use), a `dyn_cashreg_c` (a `fade_object`) is spawned instead and sent `0x30` with a random push of ±0.25 (three dust
-  bursts), and the register's update ends. Confirmed (code) at `0x003c06b0`, `0x003bffd0`.
-- The init sets flag `0x8000` (pickable, with the `TwoHandPickUp` animation and the `0x1b` / `0x1c` hand messages),
-  yet at runtime `level99`'s register had no `0x8000` ([Pickable](objects.md#pickable)). What clears it was not traced.
+  No movement.
+- **The breaking hit, drawer still there** (it was never lifted): model `dyn_cashreg_c` (`0x59026f53`), interval 240,
+  the material-pair sound, flag `0x800000`, the collision record's bits `0x10` and `0x08` cleared, and the drawer gets
+  message **`0x12`**: it is shown (flag 4 cleared) and its velocity slot `+0x30` is set to its closed position +
+  (0, 0.35, 0) m turned by its rotation. Because the drawer has flag `0x200`, `Task_Integrate` (`0x003a2310`) copies
+  `+0x30` into the position on its next update, so the drawer **jumps 0.35 m out along its local y** at its next
+  update (within 60 ticks), with no slide over time (inferred from `0x003a2310`). The register stays, broken, for good
+  (`DynCashreg_Update` only ends once `+0x11` is set).
+- **The money from the drawer** (`DynCashregB_Update`, `0x003bffd0`): each drawer update while open counts `+0x14`;
+  at its second update after the open (60-120 ticks after the break) it spawns a **`dyn_money`** at the drawer's
+  position + (0, 0, 0.22) m in the drawer's pose, with no parent, sets its `+0x124` to **25 + `Random_Int(25)`, so
+  $25-50** (`WorldObject_SetField124` `0x003a4cb0`; both ends included, `Random_Int(n)` is 0-n), keeps its handle at
+  `+0x1c` and then updates every 240 ticks.
+- **The breaking hit, drawer gone** (the register was lifted): it spawns a **`dyn_cashreg_c`** (a
+  [`fade_object`](#fade-object)) at its position + 0.2 × its contact vector `+0xb0` + its contact offset, in its own
+  rotation, sets the piece's `+0x124` = 1 (always: the register was not broken before), knocks it (message `0x30` with
+  the hit's direction and no spin; the piece flies at 2-5 m/s, [`fade_object`](#fade-object)), makes three dust
+  bursts (one at a random offset of 0-0.25 m on each axis, × and y signed), sets `+0x11` and reschedules itself for the
+  next tick, when its update answers done and it is removed. The piece spawns the money once it has landed
+  ([`fade_object`](#fade-object)).
+- **How a lifted register breaks**: contacts while held or flying spend its counters
+  (`OverheadWeapon_ContactDamage` `0x003932c8` then `WorldObject_TakeHit` `0x00393450`, which spends `+0x10e` first for
+  a held `dyn_cashreg` or anything airborne), and the contact that leaves `+0x10d` or `+0x10e` at 0 breaks it
+  (`WorldObject_OnContact` `0x00394050` then `WorldObject_Break` `0x00393e20`: it is dropped and sent message 1 with
+  kind −1). With `+0x10e` 3, three damaging contacts break it. A held register is damaged by contacts with humans; one
+  that is not held (and, unlike the trash props, not of class `overhead_weapon`) only while its body has flag 1, which a
+  thrower's contact clears, so a thrown register spends one count per throw (inferred from `0x003932c8`; not measured).
+- **Dropped** (message `0x1c`, `DynCashreg_OnDrop` `0x003c0330`): detached, airborne, a velocity of the holder's
+  forward vector crossed with the given vector, record `+0x00` = (0, 0, −9.8), a random spin about z of up to 2.5-4.5
+  rad/s (negative), interval 2.
+- **Knocked** (message `0x30`): velocity 4-6 × the knock's horizontal part, the given spin, airborne.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
 | `0x003bfbf0` | `DynCashregB_Init` | `dyn_cashreg_b` init | model `0x2e055fc5`, flags `0x201`, interval 60, record cleared | confirmed (code) |
-| `0x003bfcc8` | `DynCashregB_OnMessage` | `dyn_cashreg_b` message | `0x12` shows it and slides it open (`+0x18` = 1); `0x15` deletes; `0x30` knocked (spin 4-6); `0x3c` re-poses it | confirmed (code) |
-| `0x003bffd0` | `DynCashregB_Update` | `dyn_cashreg_b` update | when open, one step later `0x003a4cb0(value, 25-50)` and interval 240 | confirmed (code); the meaning inferred |
-| `0x003c0108` | `DynCashreg_OnPickUp` | helper (message `0x1b`, from `0x003c06b0`) | attached to the human's hand at a bone, flags `0x10`; messages 3 and `0x17` to the human; the drawer removed | confirmed (code) |
+| `0x003bfcc8` | `DynCashregB_OnMessage` | `dyn_cashreg_b` message | `0x12` shows it and moves it 0.35 m out (`+0x30`, `+0x18` = 1); `0x15` deletes; `0x30` knocked (4-6 m/s); `0x3c` poses it open | confirmed (code) |
+| `0x003bffd0` | `DynCashregB_Update` | `dyn_cashreg_b` update | when open, at its second update a `dyn_money` 0.22 m above holding $25-50, then interval 240 | confirmed (code) |
+| `0x003c0108` | `DynCashreg_OnPickUp` | helper (message `0x1b`, from `0x003c06b0`) | attached to the human's hand at a bone, flags `0x10`; messages 3 and `0x17` to the human; any drawer removed | confirmed (code) |
 | `0x003c0330` | `DynCashreg_OnDrop` | helper (message `0x1c`, from `0x003c06b0`) | detached when held, flag `0x4000000` (airborne), a random drop speed | confirmed (code) |
-| `0x003c04e0` | `DynCashreg_Init` | `dyn_cashreg` init | interval 20, flags `0x228001`, no own model, hit points from type property 1 | confirmed (code) |
+| `0x003c04e0` | `DynCashreg_Init` | `dyn_cashreg` init | interval 20, flags `0x228001`, its model by name, hit points from type property 1, spawns its drawer | confirmed (code) |
 | `0x003c06b0` | `DynCashreg_OnMessage` | `dyn_cashreg` message | 0 use, 1 hit, 4 a knock, 10 hittable, `0x1b` / `0x1c` hand, `0x20` the drawer removed, `0x30` knocked, `0x3c` broken model and the drawer told | confirmed (code) |
 | `0x003c0d98` | `DynCashreg_Update` | `dyn_cashreg` update | done once the drawer flew out (`+0x11`); else keeps its interval | confirmed (code) |
 
@@ -691,20 +730,48 @@ The burning patch a fire leaves (`0x003c40a0` init, [AI](ai.md) no-go spheres): 
 ### `fade_object` {#fade-object}
 
 A loose piece of a broken prop (flags `0xa00001`, interval 20) that is thrown, lands and later fades. Record `+0x30`
-age, `+0x34` a value from message `0x27`. Confirmed (code).
+age, `+0x34` money pending (also written by message `0x27`). Confirmed (code) at `FadeObject_Update` (`0x003c61d8`),
+`FadeObject_Launch` (`0x003c6ae0`) and `WorldObject_Update` (`0x00395b70`) unless marked.
 
-- On landing it lies flat and, by its type name, makes a mess: `dyn_paintcan_brk` a `paint_splat` (larger with
-  game-state bit `0x20`), `dyn_icecream_a_fade`, `dyn_hotdog_c_fade`, `dyn_oilcan_brk` and `dyn_steak_fade` their own
-  splats or pieces.
-- Past an age of 3550 it fades by 5 each update; message `0x15` jumps the age to 3400 (3530 for three models) so it
-  fades soon. A piece of the broken register (`0x59026f53`) is treated apart.
+- **Launch** (message `0x30`, pops a spin, then a direction): the busy flag `0x100000` cleared; velocity = the
+  direction normalised in all three axes, then x and y each × a random 2-5 and **z = 0**; the spin as given; flags
+  `|= 0x4200000` (airborne); **interval 2**. Nothing sets the interval back, so a launched piece updates every 2 ticks
+  (30 Hz) for the rest of its life; one never launched updates every 20. A zero direction (see the
+  [trash props](objects.md#trash-props)) gives no speed at all: the piece falls straight down, spinning.
+- **Flight**: gravity, sweep and contacts are the world object's ([Physics: movers](physics.md#movers),
+  [Settling](physics.md#settle) for a type whose `axis` lets it lie flat; `dyn_cashreg_c` is `XY`, the trash bits
+  are listed on [Objects](../references/objects.md)). A contact with the level runs `WorldObject_OnImpact`
+  (`0x003939a8`), which sets object flag **`0x20000000`**, and `WorldObject_OnContact` (`0x00394050`) stores the
+  **contact vector `+0xb0`**: the contact normal × the speed into the surface × dt (pointing out of the surface).
+- **Landing**, on the next update that sees `0x20000000`: the flag is cleared and the velocity and spin are set to
+  zero. When the normalised `+0xb0` has **z ≥ 0.9** (flat ground) the piece stays put (the airborne flag is not
+  cleared here; [Settling](physics.md#settle) ends it on the floor) and makes its mess by name: `dyn_paintcan_brk` a
+  `paint_splat` of one of six colours (`0x00514460`), size 0.55-1.0 (1.5-2.0 with game-state set 3 bit `0x20`), then
+  is **removed**; `dyn_icecream_a_fade` a white `paint_splat` of 0.5-0.75, removed; `dyn_oilcan_brk` a `paint_splat`
+  `0x221a0460` of 1.25-1.75, removed; `dyn_hotdog_c_fade` three small splats (0.2-0.35, 0.15-0.25 and 0.1-0.25, the
+  last two 0.02 and 0.04 m along the normal) and six `sub_debris` crumbs, and stays; `dyn_steak_fade` a `sub_blo`
+  along −normal, and stays. On a steeper surface it is made airborne again and falls from rest.
+- **Money** (any landing, flat or not): a piece whose model is `dyn_cashreg_c` (`0x59026f53`) and whose `+0x124` is 1
+  sets `+0x34`. Once the age is past **60** with `+0x34` set, it spawns a **`dyn_money`** at its position +
+  (0, 0, 0.47) m in its own pose, with itself as parent, holding **25 + `Random_Int(25)` = $25-50** (`+0x124`), and
+  clears `+0x34`. A launched piece passes 60 two seconds after its launch.
+- **Age**: +1 on every update, so at 30 Hz for a launched piece. Past **3550** the drawn tint `+0xcc` is set to the
+  tint `+0xc8` − 5 each update; `WorldObject_Update` copies `+0xcc` into `+0xc8` at the start of the next, so the
+  alpha falls by 5 per update and reaches 0 after 51 updates. Message `0x15` sets the age to 3400 (3530 for
+  `0x4a48ab26`, `0x17afa860`, `0x29aa34d8`), so a launched piece starts to fade 151 updates (5.0 s) after it, and is
+  gone 1.7 s later; without `0x15` it starts after 3551 updates (118 s).
+- **Removal**, tested first on every update: the update answers done (and `WorldObject_Update` removes it) when the
+  tint word `+0xc8` is at most `0xffffff00` (white with alpha 0 after the fade; any non-white tint passes the test at
+  once), or when **no view sees its position with a 30 m margin** (`Cameras_IsPointVisibleAny(30, p)`,
+  `0x003a51f8`: it fails only when the point lies more than 30 m outside one of a view camera's six frustum planes;
+  it is not a distance to the camera).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
 | `0x003c60d8` | `FadeObject_Init` | `fade_object` init | pops its parent, interval 20, flags, no own model, counters cleared | confirmed (code) |
-| `0x003c61d8` | `FadeObject_Update` | `fade_object` update | the landing, the messes and the fade above; also calls `0x003a4cb0` with 25-50 | confirmed (code) |
-| `0x003c6ae0` | `FadeObject_Launch` | helper (message `0x30`, from `0x003c6c48`) | not busy; a speed of 2-5 along the knock; interval 2; flags `0x4200000` | confirmed (code) |
-| `0x003c6c48` | `FadeObject_OnMessage` | `fade_object` message | 1 pops a hit; 8 drop; 10 hittable; `0x15` fade soon; `0x19` alpha (`+0xcc`); `0x27` `+0x34`; `0x30` launch | confirmed (code) |
+| `0x003c61d8` | `FadeObject_Update` | `fade_object` update | the removal tests, the landing, the messes, the register's money and the fade above | confirmed (code) |
+| `0x003c6ae0` | `FadeObject_Launch` | helper (message `0x30`, from `0x003c6c48`) | not busy; x and y 2-5 × the normalised direction, z 0; interval 2; flags `0x4200000` | confirmed (code) |
+| `0x003c6c48` | `FadeObject_OnMessage` | `fade_object` message | 1 pops a hit and ignores it; 8 detached from its parent in its current pose; 10 hittable (flag 4); `0x15` fade soon; `0x19` tint `+0xcc`; `0x27` `+0x34`; `0x30` launch | confirmed (code) |
 
 ### Script type helpers {#type-helpers}
 
@@ -986,7 +1053,8 @@ A switchable lamp: `dyn_on_off` holds one `on_off_light` (`+0x00`) and sets its 
 ### `dyn_pile`: piles you take from {#dyn-pile}
 
 A pickable pile (flags `0x228481`). `dyn_donut_spawner` has no model. Record `+0x14` takes allowed (5; message
-`0x22`), `+0x18` takes so far, `+0x1c` −5 when empty.
+`0x22`), `+0x18` takes so far, `+0x1c` −5 when empty. What a take hands out, running out and AI use:
+[Weapon piles](objects.md#weapon-piles).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1633,6 +1701,19 @@ decal takes sprite `0x24` or `0x25`, a random spin, size 0.55 × its size argume
 every 60 ticks and fades out after 90 updates (400 when the game mode record's `+0x04` is 3), or at once when no
 camera is within 35 m (50 m in mode 3).
 
+Details, confirmed (code) at `0x003ebed8`, `0x003ebff0`, `0x003ec158`, `0x003ec3a0`:
+
+- **`Spawn_SubPaintSplat(size, position, direction, colour)`** (`0x003c5e50`) makes a `sub_paint_splat`: hidden
+  (flags `0x10000004`), interval 1, at the position with **velocity 8 m/s along the direction** (not airborne, no
+  gravity). It lives **15 ticks**: on the tick it sees flag `0x20000000` (a touch; inferred to be set by its own
+  sweep) it makes the decal and ends. It draws nothing itself.
+- **The decal** (`paint_splat`): at the probe's position + 0.04 m along its contact vector (the particle's `+0xa0`),
+  facing that vector, turned by a random 0-π; sprite `0x24` or `0x25`; size 0.55 × `size`; colour `+0xb4` = the
+  colour, `+0xb0` = the colour with alpha masked to `0x80` or 0. A decal whose alpha is **below `0x80` ends on its
+  first update** (`+0xb0`'s alpha byte 0), 2 ticks after it is made; otherwise it updates every 60 ticks, and after
+  90 updates (90 s) or once out of range its drawn alpha `+0xb4` goes to 0 (no gradual fade; whether the task then
+  ends is not traced).
+
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
 | `0x003ebed8` | `SubPaintSplat_Init` | `sub_paint_splat` init | Colour, size, pose; update every tick. | confirmed (code) |
@@ -1814,6 +1895,20 @@ glow, and the object or car it sits on (`+0x58`). The glow's colour is chosen by
 `sub_powerup_glow` sprite (`0x4001d`, size 0.2) attached to the item; message `0x34` sets its colour and `0x15` ends
 it. The item's messages: 0 first touch, 8, 10 shown or hidden, `0x15` removed, `0x19` flag `0x8000` (glow off) or
 cleared (glow back), `0x20` glow off, `0x30` ignored. Its update is `PowerupItem_Update` (`0x003f2870`).
+
+**A spawned `dyn_money` rests where it is made.** Confirmed (code) at `PowerupItem_Init` (`0x003f2700`) and
+`PowerupItem_OnMessage` (`0x003f2c40`): the init sets flags `0x808081` (not airborne, no `0x200` / `0x400`), a zero
+velocity and an angular velocity of (0, 0, π) rad/s, so `Task_Integrate` turns it half a turn per second about z and
+never moves it; its type has no collision shape (`CfgObj` shape `NONE`), so nothing pushes it, and message `0x30` (a
+knock) only pops its arguments. Neither the drawer nor the `dyn_cashreg_c` gives it a velocity. With game-state set 3
+bit `0x40` its `+0x124` is forced to 5 at init (before the spawner writes the amount).
+
+**Taking it** ([Walking over a power-up](player-state.md#walk-over)): `Human_PickUpObject` (`0x0023bf00`) type 28 gives
+a player item 2 × `+0x124` with notify 1 and the item's pick-up sound (`InventoryBlock_GetSound(2)`, 2D), then
+message 0. The first message 0 clears `0x8000` and sets record `+0x00` = 1 (`PowerupItem_OnTouch`, `0x003f2b60`);
+from then on each update (interval 1, every tick) counts it up, removes the glow, adds 1 rad/s to its spin about z
+(from 6) and takes 5 off its alpha; past a count of 60 (61 ticks, about 1 s) the update answers done and it is
+removed.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -2124,7 +2219,28 @@ litter and the steam puffs read ([Blowing litter](particles.md#garbage)). Its up
 ### Wood splinters {#wood-splinters}
 
 `sub_wood_splinter` throws `wood_splinter_bit` pieces (through `Spawn_WoodSplinterBit`), each a small sprite that
-falls and plays a material sound when it lands.
+falls and lies flat or plays a material sound when it lands. Confirmed (code) at the addresses below.
+
+**`Particles_Splinters(spin, life, size, jitter, position, velocity, count, colour, sound)`** (`0x003c5b00`) creates
+one `sub_wood_splinter` with those arguments. Its update (hidden, interval 2, done after one run) throws the bits, a
+quarter as many with game flag word 0 bit 1; it stops when the particle pool is full. Each bit:
+
+- **position**: the source + a random offset of up to ±`jitter` on each axis (`Random_ScaledVector` of three
+  `Random_FloatRange(−jitter, jitter)`);
+- **velocity**: `velocity` × r, the bits mostly in mirrored pairs (r in 0.5-1.5 for the first of a pair, −0.5 to −1.5
+  for the second), the odd ones with r in ±1.5 and z made positive; `WoodSplinterBit_Init` (`0x004077b8`) then scales
+  it by a random **5-9**, and when the horizontal speed |x| + |y| is under 1 it sets z from the larger of x and y × 1-2;
+  with a sound, a rising z is set to 0;
+- **spin**: three random values in ±2π scaled by `spin`, or their negation (50/50);
+- **size** (`+0xc0`): a random `size`/2 to `size`, × 8 as stored; a negative `size` picks among four sprites instead of
+  two; **sprite** `0x1003c` + 0-1 (rectangle 60-61 of batch 1; flag `0x10000` added under 0.02 m);
+- **colour** `+0xb0` / `+0xb4` = `colour`; flags `0x14400001` (airborne; game flag word 0 bit 0 clears `0x10000000`,
+  bit 2 drops the sound);
+- **life**: `life` × 60 updates at interval 2 (`life` seconds × 2), counted by `WoodSplinterBit_Update`
+  (`0x00407ae0`); at the end its drawn alpha (`+0xb4`) goes to 0 and the next update, 60 ticks later, ends it;
+- **landing** (flag `0x20000000`): the first bit of a burst that carries a sound plays the pair (its sound, the
+  surface's material) at its position and is **removed**; any other clears the flag and, on a surface with normal z
+  above 0.9, stops airborne, loses its velocity and spin and lies flat on the normal, turned by a random 0-π.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |

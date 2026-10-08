@@ -337,6 +337,7 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
     }
     const auto& raw = pad.rawSticks(); // right x, right y, left x, left y
     const camera::FollowTarget after = followTargetOf(*m_driven, pad, m_nearestEnemy, m_padControlled);
+    m_combatFraming = after.lockOn && !after.grabbing;
     if (m_cameras != nullptr) {
         m_cameras->update(after, raw[0], raw[1], mesh, kStepSeconds);
     } else {

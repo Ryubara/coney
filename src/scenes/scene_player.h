@@ -68,15 +68,16 @@ struct PlayRequest {
 
 /// What the scene system has done, for the log and the tests (counts only).
 struct SceneStats {
-    std::uint64_t preloads = 0;  ///< `ScenePreload` calls.
-    std::uint64_t started = 0;   ///< Scenes that reached state 5.
-    std::uint64_t ended = 0;     ///< Scenes that reached state 8.
-    std::uint64_t skipped = 0;   ///< Of those, skipped.
-    std::uint64_t aborted = 0;   ///< Given up after kStartTimeoutMs.
-    std::uint64_t updates = 0;   ///< Scene task updates, all tasks.
-    std::uint64_t events = 0;    ///< Track and clip events fired.
-    std::uint64_t warps = 0;     ///< Role clip events 21 and 22 applied.
-    std::uint64_t callbacks = 0; ///< Lua calls made (preload callbacks, the global callback, end functions).
+    std::uint64_t preloads = 0;   ///< `ScenePreload` calls.
+    std::uint64_t started = 0;    ///< Scenes that reached state 5.
+    std::uint64_t ended = 0;      ///< Scenes that reached state 8.
+    std::uint64_t skipped = 0;    ///< Of those, skipped.
+    std::uint64_t aborted = 0;    ///< Given up after kStartTimeoutMs.
+    std::uint64_t updates = 0;    ///< Scene task updates, all tasks.
+    std::uint64_t events = 0;     ///< Track and clip events fired.
+    std::uint64_t warps = 0;      ///< Role clip events 21 and 22 applied.
+    std::uint64_t animSounds = 0; ///< Role clip events 11 passed to the host (humanAnimSound()).
+    std::uint64_t callbacks = 0;  ///< Lua calls made (preload callbacks, the global callback, end functions).
 };
 
 class SceneTask;
@@ -87,7 +88,7 @@ class SceneTask;
 ///
 /// Coney's choices where the page is silent (docs/research/scenes.md#coneys-implementation): a task's first update
 /// is the one after the play binding; a role's root motion moves its feet in all three axes and the host may settle
-/// them on the ground; role clip events other than 21 and 22 are not acted on; a caption is passed to the host by
+/// them on the ground; role clip events other than 11, 21 and 22 are not acted on; a caption is passed to the host by
 /// number, its text being unknown.
 ///
 /// Research: docs/research/scenes.md

@@ -141,7 +141,10 @@ TEST_CASE("the level's objects' services pass the sounds on", "[gameplay][object
         int pairs = 0;
         int clicks = 0;
         void playSound(std::uint32_t /*nameHash*/, coney::anim::Vec3 /*at*/) override { ++sounds; }
-        void playMaterialPair(std::uint8_t /*a*/, std::uint8_t /*b*/, coney::anim::Vec3 /*at*/) override { ++pairs; }
+        void playMaterialPair(std::uint8_t /*a*/, std::uint8_t /*b*/, coney::anim::Vec3 /*at*/,
+                              float /*volume*/ = 1.0F) override {
+            ++pairs;
+        }
         void lockPickClick(double /*human*/) override { ++clicks; }
     };
     const auto files = objectScripts();

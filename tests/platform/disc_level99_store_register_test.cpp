@@ -166,7 +166,7 @@ TEST_CASE("the disc's level99 store: the cash register breaks, opens its drawer 
         nearest = std::min(nearest, std::hypot(feet.x - bills.x, feet.y - bills.y));
     }
     std::printf("  level99 store: player 1 came within %.2f m of the money in plan\n", nearest);
-    const std::string taken = std::format("objects: money {:.0f} taken, ${}", moneyHandle, dollars);
+    const std::string taken = std::format("pickup: walked over object {:.0f}: item 2 x{}", moneyHandle, dollars);
     const bool took = std::ranges::any_of(log, [&taken](const std::string& line) { return line.starts_with(taken); });
     const int after = scripts.state().player.inventory.count(0, coney::item::kMoney);
     std::printf("  level99 store: money taken %d, player's money %d -> %d\n", took ? 1 : 0, before, after);

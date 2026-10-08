@@ -1624,8 +1624,9 @@ which gives the per-class defaults back. Confirmed (code); bytes `+0x00` and `+0
 
 Three more per-update state machines run the same stick game for the other player's side of a mugging and for both
 sides of the **cuffing hold** (the hold a tackle leads to, `Tackle_StartHold` `0x0022d030`, state `0x8000000000` for
-the holder and `0x10000000000` for the held; `Player_UpdateHold` picks the side). Each drives the mug meter in its
-own mode ([HUD: the mug meter](hud.md#mug-meter-layout)). Confirmed (code) at `0x00286550`, `0x002833c0`, `0x00283a30`.
+the holder and `0x10000000000` for the held; `Player_UpdateHold` picks the side; [The cuffing hold](#cuffing-hold)).
+Each drives the mug meter in its own mode ([HUD: the mug meter](hud.md#mug-meter-layout)). Confirmed (code) at
+`0x00286550`, `0x002833c0`, `0x00283a30`.
 
 What they share with `Player_UpdateMugging` (mode 0, above): the record `+0xd4` of the human running the game (state
 `+0x128`, progress `+0x12c`, off-target time `+0x138`, start `+0x130`, time limit `+0x134`), the target angle (human
@@ -1645,7 +1646,7 @@ value is not 0, being **near** the target resets the off-target time in the hold
 | --- | --- | --- | --- |
 | Function | `Player_UpdateMuggedGame` `0x00286550` | `Player_UpdateCuffHold` `0x002833c0` | `Player_UpdateMugHold` `0x00283a30` |
 | Who runs it | the victim, a player, against his mugger (a player in two-player play) | the holder | the held human, a player |
-| Parameters | own: `Mug_GetPlayerVictimParams` (`0x002853a8`, sets 3-5 of `SetInterrogateParam`); the mugger's: `Mug_GetParams` (`0x00284ca0`) | own: `Hold_GetParams` (`0x00282b68`, by the held human's class and a Warrior's difficulty byte); a player held: his `Hold_GetParamsB` (`0x00283078`) | own: `Hold_GetParamsB`; the holder's: `Hold_GetParams` |
+| Parameters | own: `Mug_GetPlayerVictimParams` (`0x002853a8`, sets 3-5 of `SetInterrogateParam`); the mugger's: `Mug_GetParams` (`0x00284ca0`) | own: `Hold_GetParams` (`0x00282b68`, by the held human's category and the holder's Warrior class byte `+0x07`, [values](#cuffing-hold)); a player held: his `Hold_GetParamsB` (`0x00283078`) | own: `Hold_GetParamsB`; the holder's: `Hold_GetParams` |
 | State 0 | clears the mugger's result `+0x5b4` and `+0x5b5`, first angle | first angle, own result and `+0x5b5` cleared | the holder's result and `+0x5b5` cleared, first angle, and he says 8 `swear` (interrupting) |
 | Reaching the required time `+0x04` | the mugger **fails** (his `+0x5b4` = 0): the victim has resisted | at each half of `+0x04` the game drops to state 1 (the stick must find the target again); at `+0x04` own result = 1: **cuffed** | the holder **fails** (his `+0x5b4` = 0): broken free |
 | Off target past `+0x0c` | the mugger **succeeds** (his `+0x5b4` = 1) | own result 0: fails | the holder **succeeds** (his `+0x5b4` = 1) |
@@ -1657,6 +1658,145 @@ So a mugging between two players is a race between two games: the mugger's mode 
 the victim's mode 1 ends it in the victim's favour at the victim's required time, and a victim who stays off target
 too long hands the mugger the win. The hold is the same race between holder (mode 2) and held (mode 3). The modes'
 meter colours and prompts are on [HUD: the mug meter](hud.md#mug-meter-layout).
+
+#### The cuffing hold {#cuffing-hold}
+
+The hold a tackle leads to when the tackler has handcuffs: both sides kneel in the arrest loop while the
+[stick games](#other-stick-games) of modes 2 (the holder) and 3 (the held player) race, and the holder either cuffs
+the held human or lets him go. Confirmed (code) at the cited addresses; confirmed (runtime) where marked.
+
+**What starts it** (`Player_UpdateMounting` `0x0027ec20`, the dispatcher's route for state `0x400`, run for players
+and AIs alike):
+
+1. The tackler is in the mount (state `0x400`, idle 210 / 207), the victim is still tackled, and the tackler holds
+   none of held flags `0x5c7eee1`.
+2. The command is **R1 pressed** (command 3, the word at `0x0051098c`) or `0x31`, the command an AI's attack kind 41
+   writes ([AI](ai.md)). Both are tested by `PlayerCmd_IsCommand31` (`0x0027bf98`). L1 + R1 (`0x1f`) is not it.
+3. The tackler has a cuff (`Human_GetCuffCount` `0x00222908`):
+    - a player: inventory item 5;
+    - an AI of brain type 1 (police): always one;
+    - any other AI: byte `+0x378`.
+4. The victim is not a boss (category `+0x11b` 13, `Human_IsClass13` `0x00223e20`).
+
+Then, when **both** humans are AIs, the tackler cuffs at once (`Cuff_Start`, below) with no hold. When either is a
+player, `Tackle_StartHold(tackler, victim)` (`0x0022d030`) starts the hold. Nothing else gates it: no game type and no
+gang, and any human with a cuff can hold. A cop who has tackled player 1 enters the hold the same way, through his
+attack kind 41 (command `0x31`); `Cuff_Start` alone is only the AI-on-AI path. Confirmed (runtime) both ways in slot 6
+copies: a player with one cuff (given by `Human_AddCuffs` `0x00222980`) tackling PoizoCiv and pressing R1 in the mount,
+and PoizoCiv, given a cuff and command `0x31` in the mount, holding the player.
+
+**`Tackle_StartHold`** (`0x0022d030`):
+
+1. Clears `0x400` and `0x8000` on the holder and `0x800` and `0x8000` on the held. Sets **`0x8000000000`** on the
+   holder and **`0x10000000000`** on the held.
+2. Deals the held a zero-damage hit from the holder (`Human_DealDamage(held, 0, holder, 1, 1, 0)`; its purpose is
+   not traced).
+3. Resets both records' stick games: `+0x128` = 0, `+0x12c` = 0, `+0x138` = 0, and `+0x130` = the game time
+   (`*(0x0050b734) + 0x48`).
+4. Sets the **time limits** in each player's own record:
+    - the holder's `+0x134` = start + `Hold_GetParams` `+0x18`, only if the holder is a player;
+    - the held's `+0x134` = the same start + `Hold_GetParamsB` `+0x18`, only if the held is a player.
+5. For a **held player** only, starts his mini camera (`CamMini_Start` kind 0 on the held player's view, framing both,
+   [Camera](camera.md)). A player holding an AI keeps his own camera.
+6. `Pair_StartLoop256` (`0x002613a8`): the holder loops **256** `ANIM_ARRESTING_LOOP` (`arrest_minigame_cycle`) and
+   the held **257** `ANIM_ARRESTING_LOOP_REACT`, each after a 0.05 s blend. Both push spheres go off and both anim
+   states are set to 0. The pair link (`+0xc4`) is the tackle's own, kept as it was. So the pair leaves the mount
+   pose: 210 / 207 give way to 256 / 257 on the next update (confirmed (runtime)).
+
+`Human_ChooseAnimState` returns at once for a human in either hold state (`Human_IsInMugMeter` `0x002280f0`), so
+nothing replaces the loops. The struggle clips 258 / 259 (`ANIM_ARRESTING_STRUGGLE`) are named by no code, and none
+played in either run. The stick games move no clip.
+
+**Each update** (`Player_UpdateHold` `0x00284140`, the dispatcher's route for `0x18000000000`):
+
+- **An AI** (`+0x1b0` = −1) does nothing here: the route returns 1 and the update ends. An AI holder just loops 256
+  until the held player's game ends the hold.
+- **A player** runs his side: mode 2 (`Player_UpdateCuffHold`, holder) or mode 3 (`Player_UpdateMugHold`, held).
+- When a player's game reports its end (returns 0), `Player_UpdateHold` calls `Tackle_EndHold(holder, held)` and reads
+  the **holder's** result `+0x5b4`: 1 → `Cuff_Start(holder)`; 0 → `Mount_GetOff(holder)` (`0x00271470`). Two players
+  run both games, and the first to end decides.
+
+With an AI on the other side, the player's own `+0x134` ends his game:
+
+- a **holding player** past it ends with his result as it stands: 0 unless he reached the required time, so the held
+  gets away;
+- a **held player** past it hands the AI holder the win, and he is cuffed.
+
+The held player's off-target time never grows, because `Hold_GetParamsB`'s off-target rumble `+0x1c` is 255, not 0
+([the rumble rule](#other-stick-games)). So he can lose only to the time limit (confirmed (runtime): `+0x138` stayed
+0, against 7.4 s for the holding player).
+
+**`Tackle_EndHold`** (`0x0022d1f8`) clears `0x8000000000` / `0x10000000000` and gives back `0x400` / `0x800` (the
+tackle). It zeroes both per-player bytes `+0x1c` and `+0x1d` (the pad's motors, inferred). When the held is a player
+whose view is in its mini mode (8), it sets that mini camera's done flag (`+0x258`), and the view blends back over
+0.3 s on its next update. A holding player had no mini camera to end.
+
+**The parameters.** `Hold_GetParams(holder, held)` (`0x00282b68`) serves the holder's game (mode 2) and the holder's
+side of mode 3. `Hold_GetParamsB(holder, held)` (`0x00283078`) serves the held player. Each returns a static record
+(`0x005109c0` / `0x005109e0`) when its `+0x04` is non-zero (nothing found writes them; both read zero), else builds
+one in `0x006cdd78` / `0x006cdd98`. It builds one only when its subject (the holder for the first, the held for the
+second) is a player, and otherwise returns the last one built. The record's layout is the mugging's
+([Mugging](#mugging)). The choice is by the **player's Warrior class byte `+0x07`** (`CfgWarriorClass`'s seventh
+value, 3 for Rembrandt's class 6 at runtime; its meaning is not traced). `Hold_GetParams` also chooses by the held
+human's category `+0x11b`: 5 and 6-7 are civilian groups (6 also the drunk Destroyers), 9 cops, 10 the tougher cops
+(`cops_ty`), 14 the Warriors. Times are in ms.
+
+`Hold_GetParams` (the holder), every set with bytes `+0x00`-`+0x02` = 160, 75, 255, off-target `+0x0c` = 50,000,
+tolerances `+0x10` = 40° and `+0x14` = 60°, off-target rumble `+0x1c` = 0:
+
+| Byte `+0x07` | Held category | Required `+0x04` | Period `+0x08` | Time limit `+0x18` |
+| --- | --- | --- | --- | --- |
+| 2 | 5, 9, 10 | 1,350 | 900 | 4,000 |
+| 2 | 6, 7 | 1,000 | 500 | 8,000 |
+| 2 | 14 | 2,000 | 1,000 | 4,000 |
+| 2 | other | 1,000 | 500 | 5,000 |
+| 3 | 5, 9, 10 | 2,000 | 700 | 6,000 |
+| 3 | 6, 7 | 1,800 | 600 | 10,000 |
+| 3 | 14 | 2,000 | 800 | 5,000 |
+| 3 | other | 1,800 | 600 | 7,500 |
+| other | 5, 9, 10 | 1,300 | 1,300 | 3,000 |
+| other | 6, 7 | 1,000 | 1,000 | 6,000 |
+| other | 14 | 2,000 | 1,000 | 5,000 |
+| other | other | 1,000 | 1,000 | 4,000 |
+
+`Hold_GetParamsB` (the held player), every set with bytes `+0x00`-`+0x02` = 75, 160, 0 (no rumble on target),
+off-target `+0x0c` = 50,000, off-target rumble `+0x1c` = 255:
+
+| Byte `+0x07` | Required `+0x04` | Period `+0x08` | Tolerances `+0x10` / `+0x14` | Time limit `+0x18` |
+| --- | --- | --- | --- | --- |
+| 2 | 2,000 | 800 | 90° / 91° | 5,000 |
+| 3 | 1,750 | 500 | 90° / 91° | 4,500 |
+| other | 2,000 | 1,000 | 80° / 81° | 4,000 |
+
+Confirmed (runtime): the holding player against PoizoCiv (category 4) got a limit of start + 7,500, and the held
+player start + 4,500, both with byte `+0x07` = 3.
+
+**How it ends.** Confirmed (code); the runs confirmed (runtime) the first and fourth rows.
+
+| Outcome | How | The holder plays | The held plays | After |
+| --- | --- | --- | --- | --- |
+| Cuffed | the holder's result 1: a holding player reached `+0x04`, or a held player's limit ran out | 252 `ARRESTING_INTRO`, 260 `ARRESTING_END`, 266 `ARRESTING_RISE` (`cop_arrest_*`), then his stance loop | 253, 261, 267, then the loop **320** `ARRESTED_IDLE` | `Cuff_Start` (`0x00260250`) first calls `Tackle_Mount` (`0x0022c548`): `0x400` / `0x800` off, both immovable, states `0x8000000` / `0x10000000`. Held flags `0x4000000` (holder) and `0x10000` (held). At 261's end (`Cuff_OnCuffedClipEnd` `0x00260178`) the held is **arrested** (`Human_Arrest` `0x0022ec18`: state **`0x20000`**, move style `0x11`; for a player, busted, [Knocked out](#defeat)), the holder **spends one cuff** (`Human_AddCuffs(−1)`), and a holding player scores style 12 (`Stats_AddStyle(…, 0xc, 1)`). At 266's end an AI holder (brain type 0) drops his target |
+| Holder lost or let go | the holder's result 0: a held player reached his `+0x04`, a holding player's off-target time passed `+0x0c` or his limit ran out, or he pressed **L2** (pad mask 1, newly pressed) | 247 `MOUNT_BREAK_REACT` (`gen_mounting_escape`) | 246 `MOUNT_BREAK` (`gen_mounted_escape`) | `Mount_GetOff` (`0x00271470`): both back in the tackle states `0x400` / `0x800` (from `Tackle_EndHold`), held flag `0x2000` on both, 0.2 s blends, end hooks `0x00270f88` / `0x00270fc0`. A held human already down (`0x100000000`, knocked out or `0x80000000`) plays nothing. No cuff is spent |
+
+The holder's win is always `Cuff_Start`, whichever side's game ended it. A held player "broken free" and a holding
+player who "gets off" both end in `Mount_GetOff`, with the same clips. 244 / 245 (`MOUNT_RELEASE`) are the
+teleport's pair break, not this. Confirmed (runtime): the held player cuffed 135 updates (4.5 s) after the hold began,
+with state `0x20000` from 261's end and the holder's cuffs 1 → 0. The holding player was let go at 225 updates
+(7.5 s), with 247 / 246.
+
+**A hit during the hold** (`Human_ApplyPendingDamage` → the reaction by state). Each handler zeroes the struck
+human's pending damage `+0x118` (the health has already dropped, [Damage](#damage) step 4). Then it ends the hold
+(`Tackle_EndHold`, so the tackle states come back) with neither `Cuff_Start` nor `Mount_GetOff`. Confirmed (code):
+
+- **The holder hit** (`HitReact_WhileMounting` `0x00269ac0` → `HitReact_WhileTackling` `0x00269670`): from a third
+  human, the tackle ends too (`Tackle_End`, the held gets state `0x80000`). The holder plays 216
+  `MOUNTING_HIT_REACT_RIGHT` or 218 `MOUNTING_HIT_REACT_LEFT` by the side struck (0.1 s blend), and the held gets up
+  (199 `GROUNDED_RISE`, `PairBreak_GetUp199`). Both bodies get a fresh shared body group (`+0x3c`), so they do not
+  strike each other.
+- **The held hit** (`HitReact_WhileMounted` `0x00269b18` → `HitReact_WhileTackled` `0x00269ab0`): the holder's
+  pending damage is zeroed too, and **no clip** plays. The pair is left in the tackle states with the arrest loops
+  still on their stacks, and the holder's mount update (`0x400`) runs again from the next update (inferred from the
+  states).
 
 ### Damage, health and reactions {#damage}
 
@@ -2858,7 +2998,7 @@ alignment helpers and revives.
 | `0x0027bea8` | `PlayerCmd_IsGrabReverse` | Command 0x00510988 (R1 pressed) or 0x19, for a grabbed or tackled human: reverses it. | confirmed (code) |
 | `0x0027bf08` | `PlayerCmd_IsLetGo` | Command 5 (L2 held): lets go of a grab or mount. | confirmed (code) |
 | `0x0027bf30` | `PlayerCmd_IsCircleAny` | Command 0x1e, 0xd or 0xe (circle pressed, tapped or held). | confirmed (code) |
-| `0x0027bf98` | `PlayerCmd_IsCommand31` | Command 0x31 or the one at 0x0051098c (the mount). | confirmed (code) |
+| `0x0027bf98` | `PlayerCmd_IsCommand31` | Command 0x31 or the word at 0x0051098c (3, R1 pressed): the mount's cuff command ([Cuffing hold](#cuffing-hold)). | confirmed (code) |
 | `0x0027bff0` | `PlayerCmd_IsCircleAnyB` | Command 0x1e, 0xd or 0xe (circle), for the mount and the grab. | confirmed (code) |
 | `0x0027c058` | `PlayerCmd_IsR2Held` | Command 1 (R2 held). | confirmed (code) |
 | `0x0027c080` | `PlayerCmd_IsR2Released` | Command 2 (R2 released). | confirmed (code) |
@@ -2883,8 +3023,8 @@ player ([Mugging](#mugging)).
 | `0x00281048` | `Float_NearlyEqual` | Whether two floats differ by less than a tolerance. | confirmed (code) |
 | `0x00281070` | `Climb_IsSpaceClear` | Whether a sphere of the human's capsule radius at a point overlaps nothing. | confirmed (code) |
 | `0x00281368` | `Human_RestoreBodyAfterClimb` | Clears body flag 0x4000 and resets the body's fields; reports the anim's sound to the AI as a noise. | confirmed (code) |
-| `0x00282b68` | `Hold_GetParams` | The cuffing hold's stick-game record, by the held human's class byte +0x11b and a Warrior's difficulty byte +7. | confirmed (code) |
-| `0x00283078` | `Hold_GetParamsB` | The cuffing hold's second parameter record, by the Warrior's difficulty byte +7. | confirmed (code) |
+| `0x00282b68` | `Hold_GetParams` | The cuffing hold's holder record, by the held human's category +0x11b and the holding player's Warrior class byte +0x07 ([values](#cuffing-hold)). | confirmed (code) |
+| `0x00283078` | `Hold_GetParamsB` | The cuffing hold's held-player record, by that player's Warrior class byte +0x07 ([values](#cuffing-hold)). | confirmed (code) |
 | `0x002833c0` | `Player_UpdateCuffHold` | The holder's side of the cuffing hold (state 0x8000000000): the stick game with the mug meter; when it ends, cuffs (+0x5b4 set) or gets off. | confirmed (code) |
 | `0x00283a30` | `Player_UpdateMugHold` | The held human's side of the cuffing hold (state 0x10000000000): the stick game (state byte +0x128); says 8 swear. | confirmed (code) |
 | `0x00286550` | `Player_UpdateMuggedGame` | A player being mugged: the victim's stick game with the mug meter (Mug_GetParams, Mug_GetPlayerVictimParams). | confirmed (code) |

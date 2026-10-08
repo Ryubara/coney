@@ -38,6 +38,7 @@ class RecordingServices final : public world_objects::ObjectServices {
 
     std::vector<std::uint32_t> sounds;
     std::vector<std::pair<std::uint8_t, std::uint8_t>> pairs;
+    std::vector<float> volumes; // each pair's volume
     int shards = 0;
     float shardSize = 0.0F;
     std::vector<Crime> crimes;
@@ -48,6 +49,7 @@ class RecordingServices final : public world_objects::ObjectServices {
     int glassObjectBreaks = 0;
     std::vector<std::pair<double, bool>> bodies;
     std::vector<std::string> spawned;
+    std::vector<anim::Vec3> spawnedAt; // where each spawned object was made
     std::vector<double> destroyed;
     std::vector<double> nextModels;
     std::vector<std::pair<double, std::uint32_t>> models;
@@ -63,7 +65,10 @@ class RecordingServices final : public world_objects::ObjectServices {
     bool wantShards = true;
 
     void playSound(std::uint32_t nameHash, anim::Vec3 /*at*/) override { sounds.push_back(nameHash); }
-    void playMaterialPair(std::uint8_t a, std::uint8_t b, anim::Vec3 /*at*/) override { pairs.emplace_back(a, b); }
+    void playMaterialPair(std::uint8_t a, std::uint8_t b, anim::Vec3 /*at*/, float volume = 1.0F) override {
+        pairs.emplace_back(a, b);
+        volumes.push_back(volume);
+    }
     bool shardsWanted(anim::Vec3 /*centre*/) override { return wantShards; }
     void spawnShard(anim::Vec3 /*at*/, float size, std::uint32_t /*colour*/) override {
         ++shards;
@@ -78,8 +83,9 @@ class RecordingServices final : public world_objects::ObjectServices {
     void freeCarStereos(anim::Vec3 /*at*/, float /*radius*/) override { ++stereosFreed; }
     void breakGlassObjects(anim::Vec3 /*centre*/, float /*radius*/) override { ++glassObjectBreaks; }
     void setBody(double object, bool present) override { bodies.emplace_back(object, present); }
-    double spawnObject(std::string_view type, anim::Vec3 /*at*/, anim::Quat /*rotation*/) override {
+    double spawnObject(std::string_view type, anim::Vec3 at, anim::Quat /*rotation*/) override {
         spawned.emplace_back(type);
+        spawnedAt.push_back(at);
         return 1000.0 + static_cast<double>(spawned.size());
     }
     void destroyObject(double object) override { destroyed.push_back(object); }

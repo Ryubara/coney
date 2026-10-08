@@ -81,6 +81,8 @@ struct ObjectHit {
     anim::Vec3 point{};      ///< Where it landed.
     anim::Vec3 direction{};  ///< Which way it went.
     anim::Vec3 attackerAt{}; ///< Where the attacker stands: a store door hit open swings away from him.
+    /// The attacker ran into it (human `+0x368`, a sprint into a `RUNTARGET` body): its break sounds quieter.
+    bool runIn = false;
 };
 
 /// Everything a pane's or a door's change reaches beyond the collision triangles and the navigation links: sounds,
@@ -99,7 +101,7 @@ class ObjectServices {
     /// A 3D sound by name hash at `at` (`0x003a6ee8`).
     virtual void playSound(std::uint32_t /*nameHash*/, anim::Vec3 /*at*/) {}
     /// The sound matrix's entry for materials `a` and `b` at `at` (`0x00117280`, docs/research/sound.md#play).
-    virtual void playMaterialPair(std::uint8_t /*a*/, std::uint8_t /*b*/, anim::Vec3 /*at*/) {}
+    virtual void playMaterialPair(std::uint8_t /*a*/, std::uint8_t /*b*/, anim::Vec3 /*at*/, float /*volume*/ = 1.0F) {}
     /// Whether a shatter at `centre` makes shards: within 15 m and 10 m of the two tests' points and inside the
     /// particle budget (`0x003a5280`, `0x003a51f8`, `0x003a5a50`), or forced by game state bit `0x20`.
     [[nodiscard]] virtual bool shardsWanted(anim::Vec3 /*centre*/) { return true; }
@@ -164,6 +166,9 @@ struct ObjectWorld {
     world::PathMap* paths = nullptr;             ///< The level's navigation links (the path data's D records).
     ObjectServices* services = nullptr;          ///< Everything else; null does nothing.
     GameRandom* random = nullptr;                ///< The game's random numbers; null draws 0.
+    /// Knocks an object loose (message `0x30`): it flies from where its record stands at `velocity` (m/s), spinning at
+    /// `spin` (rad/s); empty: nothing moves it.
+    std::function<void(double object, anim::Vec3 velocity, anim::Vec3 spin)> knock;
 };
 
 /// Switches the collision triangles `triangles` (indices into `mesh`) on or off; indices outside the mesh are skipped.

@@ -19,13 +19,14 @@ void ObjectSounds::playSound(std::uint32_t nameHash, anim::Vec3 at) {
     }
 }
 
-void ObjectSounds::playMaterialPair(std::uint8_t a, std::uint8_t b, anim::Vec3 at) {
+void ObjectSounds::playMaterialPair(std::uint8_t a, std::uint8_t b, anim::Vec3 at, float volume) {
     ++m_materialPairs;
     if (m_materials == nullptr) {
         ++m_unplayed;
         return;
     }
-    m_materials->playMaterialPairAt(a, b, soundAt(at));
+    // Sound_PlayMaterialPairAt is this at volume 1; a quieter break passes its own.
+    m_materials->playMaterialPair(volume, a, b, soundAt(at));
 }
 
 void ObjectSounds::lockPickClick(double /*human*/) { ++m_unplayed; }

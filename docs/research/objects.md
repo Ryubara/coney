@@ -577,6 +577,71 @@ The search also refuses bit `0x10`, bit `0x4000000`, an object whose type value 
 vtable `+0xdc`) is 75 or more unless the human's record `+0x11b` is 13, the model hash `0xd2cfcd44` for a non-player,
 and anything out of sight. At runtime (slot 1) `dyn_masks`, the cash register and the swinging doors had no `0x8000`.
 
+### Weapon piles (`dyn_pile`) {#weapon-piles}
+
+A pile is a world object that is never picked up itself: each take makes a **new** object in the taker's hand and the
+pile stays. The 13 types of class `dyn_pile` ([Script types](script-types.md#dyn-pile)) are pickable (flags
+`0x228481`, so `0x8000`), update every 20 ticks and have a solid box; `dyn_donut_spawner` has no model.
+Confirmed (code) at the cited addresses.
+
+1. **Triangle** (or an AI's pick-up action) sends the pile message 0 like any pickable object
+   ([Breakables](combat.md#breakables): a player must have empty hands). `DynPile_OnMessage` (`0x003d3d30`) answers by
+   sending the taker message **`0x14`** with the pile as the object.
+2. The taker's `0x14` (`Human_HandleMessage`, `0x00245920`) plays the **pick-up clip** of the pile's `pickup_anim`
+   ([Combat: the pick-up clip](combat.md#breakables); `na` gives 461, or 462 when the pile is more than 0.8 m above
+   his feet). A spray-can box (type 44) is refused first when the player's spray charges (item 3) are at the limit.
+3. The clip's take event ([event 9](#held)) sends the pile message `0x1b`, which the pile answers with human message
+   3 (same function). That makes the object by the pile's **object type** (`CfgObj`'s `type`, type record `+0x86`),
+   plays the pile's take cue at the pile (3D, volume 1.0), and puts the new object in his hand with
+   `Human_PlaceItemInHand(human, name, 1, 0)` (`0x0024c280`, the `HuPlaceItemInHand` path):
+
+| Pile type (value) | Piles | Object made | Take cue |
+| --- | --- | --- | --- |
+| `TYPE_BRICKPILE` (17) | `dyn_brickpile` | `dyn_brick` | 25 |
+| `TYPE_CHUNKPILE` (18) | (none of class `dyn_pile` in the list) | `dyn_cueball` | 26 |
+| `TYPE_BEERPILE` (19) | `dyn_beerpile` | `dyn_beerbottle` | 27 |
+| `TYPE_BASEBALLPILE` (20) | `dyn_baseballpile` | `dyn_baseball` | 28 |
+| `TYPE_LIQUORPILE` (21) | `dyn_liquorpile` | `dyn_bottle_a`, `_b` or `_c` at random | 29 |
+| `TYPE_MOLOTOVPILE` (22) | `dyn_molotovpile`, `dyn_molotovpile_b` | `dyn_molotv` | 30 |
+| `TYPE_POOLBALLPILE` (23) | `dyn_poolballpile` | `dyn_poolball08_` (a random number is drawn and not used) | 31 |
+| `TYPE_OILPILE` (41) | `dyn_oilcan_box` | `dyn_oilcan` | none |
+| `TYPE_SPRAYPILE` (44) | `dyn_spraycan_box` | no object: one spray charge (item 3; the last up to 9), its pick-up sound, the spray hint once | none |
+| `TYPE_DONUTPILE` (46) | `dyn_donut_spawner` | `dyn_donut_a`, `_b` or `_c` at random, only while item 3 is below its limit (the spray-can test, copied) | none |
+| `TYPE_BEERPILEHEAVY` (47) | `dyn_beerpileheavy` | `dyn_beerbottleheavy` | 27 |
+| `TYPE_BOLTCUTTERBOX` (49) | `dyn_boltcut_box` | `dyn_boltcutter_b` | none |
+
+   So the numbers a level's `CfgObj` line gives a pile (17, 19, 20, 47, ...) are its object type, and the type alone
+   chooses what it hands out; no field names the object. `dyn_blokpile` is `TYPE_GENERIC` (2): its take falls to the
+   default case, `Human_PickUpObject` and then the pile itself in the hand (inferred from the code; not seen).
+   The take cue is the `AudioManager` cue table entry (`0x00111130`) of that number ([Sound](sound.md)).
+4. **Running out.** Only `dyn_molotovpile_b` (model `0x69b9d1a0`) counts: each take adds 1 to record `+0x18`; when it
+   reaches the limit (record `+0x14`, 5 from `DynPile_Init` `0x003d3c28`, replaced by message `0x22`) the pile toggles
+   flag `0x8000` (no longer pickable), sets `+0x1c` = −5 and updates every 240 ticks; its next update
+   (`DynPile_Update`, `0x003d4058`) zeroes the tint `+0xcc`, and the one after (tint `+0xc8` now 0) is done, so it is
+   removed. **Every other pile never runs out and never refills**: it hands out an object on every take.
+5. Messages `0x1b` / `0x1c` (handed / released) and `0x30` (knocked: 4-6 m/s along the knock, airborne) let a pile be
+   carried and thrown like a prop; a thrown pile that falls below −500 m is removed.
+
+**AI use** (confirmed (code)):
+
+- **`GoalManWeaponPile`** (`ManWeaponPileGoal_Process`, `0x002a3498`; arguments on
+  [the binding page](../references/bindings/ai.md#goalmanweaponpile)). Fetch state 0, empty-handed: with a `style`
+  of 1-5 the object is put straight in his hand (`dyn_brick`, `dyn_molotv`, `dyn_manqheadred`, `dyn_porcelain_weap_b`,
+  `dyn_beerbottle`) with no pile; with style 0 the nearest object with flag `0x20000` within `pickupRadius` that
+  he can reach (`Ai_FindObject` with filter `0x0053f2d0` = `ObjFilter_HasFlags` `0x20000`; a pile has it) gets a
+  **GetItem** goal (gait 3), whose pick-up action takes from it as in steps 1-3. After 21 updates with nothing found
+  the goal ends. Holding something (state 1): wait the delay (`delayMs`, 500 ms), turn to the target (within 15°),
+  check the line when asked, look only when the target is beyond `throwRange`, else command `0x10` (throw), count
+  the throw and wait `pauseS`, then fetch again (state 2 → 0) until `maxThrows` (−1: no limit) or a target within
+  `closeRange`. Since piles do not run out, a scripted thrower keeps throwing as long as the goal lives.
+- **`ThrowSubTactic`** (`ThrowSubTactic_Order`, `0x00322ba8`), with its pile option (`+0x16` = 1): the objects within
+  30 m of the gang, nearest first, whose type's class is `dyn_pile` (name `0x005747a0`), not held, not bit 26 and not
+  already claimed by this gang, with a reachable navigation polygon under them, are claimed for 5 s and each given
+  to a free member (not attacked, no goal `0x3f`, top goal not ObjectPile or GetItem) as an **ObjectPile** goal
+  ([AI goals](ai-goals.md#goal-object-pile)), until the order's count is met. Without the option it sends GetItem
+  goals at loose objects of anim set 4 or 5 instead.
+- **`TacticManWeaponPile`** gives each member a ManWeaponPile goal ([AI code](ai-code.md#t2-man-weapon-pile)).
+
 ### Objects in a human's hand {#held}
 
 One mechanism carries every object a human holds (a bat, a bottle, a brick, a stolen stereo, a hat being picked
@@ -1366,6 +1431,14 @@ south of the lone trash can at (47.71, 2.28) and walked at it (stick 60 %, gait 
 struck them (`Strike_Contact` from `0x0021a0e0`), they broke, and he stopped dead 0.8 m short of their centre on the
 next update; walking on into the trash can beside them (gait 2-3) only slid.
 
+**Why the sprinter stops.** The bags' body has `0x4`, so after the strike the same contact still answers the slide
+`0x20001`; met head-on, the slide removes all of his velocity, and the blocked-sweep rule
+([Physics: contacts](physics.md#contacts)) zeroes what is left horizontally, so his speed `+0x1ac` and gait fall to 0
+and the move set drops him to idle (confirmed (code) in `Human_OnContact`, `0x00219d50`). Confirmed (runtime),
+`props_gbags_run` with L2 and the stick held at 100 % throughout: struck at step 35; steps 36-40 the idle clip 388 at
+speed 0; step 41 the run start clip 414 at gait 2-3, building up again from there. `+0x368` is read only by
+`OverheadWeapon_Break` (the 0.65 volume), not by the movement; what holds him idle for those 5 updates is not traced.
+
 **A strike** (any of the player's or an AI's strike shapes that meet a `MELEETARGET` body,
 [Combat](combat.md#breakables); square at a trash can plays 661 `SPECIAL_BREAK_OBJECT_LOW`) reaches the object through
 `Strike_Contact` (`0x0021b290`, [above](#breakable-props)): the hit counter `+0x10d` goes 1 → 0, the impact sound
@@ -1404,25 +1477,47 @@ message `0x20`, which the class ignores). Confirmed (runtime).
 | `dyn_parktrash_a` (`0xb0c69542`) | the "trash" set | **`dyn_parktrash_aa`** (`fade_object`) at its pose, message `0x15`; plus the set's pieces |
 | `dyn_pstack` (`0xfbd21393`) | the "cardboard" set (as `dyn_cbox`): litter kind 1 and 8 brown (`0x4e4338ff`) `sub_debris` pieces of 0.35-0.55 | none |
 
-- **The "trash" set** (mode 1 of the break): litter pieces thrown from the hit point when the level has
-  [litter](particles.md#garbage) armed (`Garbage_Throw` kind 0); 10 black (`0x101010ff`) splinters
-  (`Particles_Splinters`, spread 2π); a brown splat (`Spawn_SubPaintSplat`, colour `0x55423860`, size 0.75-1.0) and a
-  burst at the object; a **`dyn_beerbottle`** (`thrown_weapon`) placed 0.5 m above the path polygon under the hit point,
-  when there is one, in the object's rotation, and knocked (message `0x30`) with no velocity and a spin of (0, a, b), a
-  and b random in ±π; and four **`fade_object` litter pieces**, `dyn_trashbit_a`, `dyn_trashbit_b` and two
-  `dyn_trashbit_d`, each at a random offset from the object (the arguments ±0.43, ±0.43, 0.83 of `Random_ScaledVector`;
-  their exact use is inferred). The two hobo variants (`dyn_hobo_trashcan`, `dyn_hobo_gbags`) drop a random hobo food
-  instead of the bottle.
+- **The "trash" set** (mode 1 of the break, `OverheadWeapon_Break` `0x003ffe90`, for models `0x57f87129`,
+  `0x3792e23d` and `0x7f48b418`; confirmed (code)), each with the hit point P, the message's direction d (normalised)
+  and the contact vector c = `+0xb0` normalised (zero for a prop never touched, below):
+    - **litter**: `Garbage_Throw(litter, 0, P, c)` (`0x00170b28`): 5-9 pieces of the level's
+      [litter](particles.md#garbage), when it has any waiting to respawn;
+    - **10 black splinters**: `Particles_Splinters(2π, 1.0, 0.16, 1.2, P + (0, 0, 0.5), 1.5 c, 10, 0x101010ff, 0)`
+      (`0x003c5b00`), a `sub_wood_splinter` ([Script types: wood splinters](script-types.md#wood-splinters)): sprite bits
+      of 0.08-0.16 m within ±1.2 m of the point 0.5 m above P, at 1.5 c × 0.5-1.5 × 5-9 m/s (so none for a standing
+      prop), spinning, that fall, lie flat and last 2 s;
+    - **a brown splat**: `Spawn_SubPaintSplat(0.75-1.0, P, d, 0x55423860)` (`0x003c5e50`), an invisible probe sent at
+      8 m/s along d that leaves a `paint_splat` decal where it touches a surface within 15 ticks
+      ([Script types: paint splats](script-types.md#paint-splat)); the colour's alpha `0x60` is below `0x80`, so that
+      decal is **removed on its first update** (2 ticks): the trash's splat never stays on screen (confirmed (code) at
+      `0x003ec3a0`);
+    - **a burst** (`Effects_SpawnBurst`) at the object's position;
+    - **a `dyn_beerbottle`** (`thrown_weapon`) placed 0.5 m above the path polygon under the hit point, when there is
+      one, in the object's rotation, and knocked (message `0x30`) with no velocity and a spin of (0, a, b), a and b
+      random in ±π;
+    - **four `fade_object` litter pieces**, `dyn_trashbit_a`, `dyn_trashbit_b` and two `dyn_trashbit_d`, each at a
+      random offset from the object (the arguments ±0.43, ±0.43, 0.83 of `Random_ScaledVector`; their exact use is
+      inferred).
+
+  The two hobo variants (`dyn_hobo_trashcan`, `dyn_hobo_gbags`) drop a random hobo food instead of the bottle.
 - **The default set** (a model with no case): 20 light-wood (`0xbea780ff`) and 24 dark (`0x5c3f27ff`) splinters.
 - **A piece's flight** (`ScriptObj_SpawnThrownDebris`): created by type name at the object's position plus the offset
   turned by its rotation, in the given rotation (here identity), with the object as parent, then message `0x30` with a
-  spin of ±3π rad/s on each axis and a velocity of the normalised object vector `+0xb0` × 1-1.5 (what `+0xb0` holds at a
-  break is not traced). A `fade_object` takes that knock as a horizontal speed of 2-5 m/s each axis, z 0, and flies
-  airborne (`FadeObject_Launch`, `0x003c6ae0`). Nothing is spawned while set 3 has bit `0x2`.
-- **The pieces' end** ([Script types: `fade_object`](script-types.md#fade-object)): removed at once when no camera sees
-  them within 30 m; message `0x15` sets the age to 3400, so the dented can fades by 5 of alpha per update from age 3550
-  (inferred: about 150 of its updates after the break, then 51 to fade); the litter, without `0x15`, lasts until age
-  3550.
+  spin of ±3π rad/s on each axis and a velocity of the normalised object vector `+0xb0` × 1-1.5. A `fade_object` takes
+  that knock as a horizontal speed of 2-5 m/s each axis, z 0, and flies airborne (`FadeObject_Launch`, `0x003c6ae0`).
+  Nothing is spawned while set 3 has bit `0x2`.
+- **`+0xb0` is the object's last contact vector** (`ScriptObj_GetContactVector`, `0x003a4bd0`, reads it): the contact
+  normal × the speed into the surface × dt, written by `WorldObject_OnContact` (`0x00394050`) on each contact. A prop
+  that has never touched anything holds **(0, 0, 0)**: confirmed (runtime), PCSX2 2.9.94, quick-save slot 8 read from
+  the state, the bags at `0x00ef3780` and the trash can at `0x00ef2600`. Normalising a zero vector gives zero on the
+  PS2's VU (its reciprocal square root of 0 is the largest float, and 0 × that is 0), so the pieces of a **struck
+  standing prop get no velocity** and drop straight from their offsets, spinning (inferred). A thrown prop that
+  breaks on a contact gives them that contact's normal (out of the surface), 1-1.5 m/s before the `fade_object`'s
+  2-5 × scaling.
+- **The pieces' end** ([Script types: `fade_object`](script-types.md#fade-object), confirmed (code)): a launched piece
+  updates at 30 Hz; it is removed on any update where its position is more than 30 m outside every view's frustum;
+  message `0x15` sets the age to 3400, so the dented can starts to fade 151 updates (5.0 s) after the break and is gone
+  51 updates (1.7 s) later; the litter, without `0x15`, starts to fade after 3551 updates (118 s).
 
 At runtime (`props_trashcan`) the can's break spawned `dyn_trashcan_b` (offset and rotation the identity) and
 `dyn_trashcan` / `dyn_gbags` breaks each spawned `dyn_trashbit_a`, `_b`, `_d`, `_d`, in that order, in the strike's
@@ -1645,11 +1740,14 @@ whole extents, a cylinder or capsule body is tested as its box, and only drawn o
 **Trash props** ([Trash cans and bags](#trash-props), `repo:src/world_objects/props.h`): an `overhead_weapon` prop
 breaks on its first strike (`OverheadWeapon_Break`): two dust bursts 0.5 m above the hit point; the trash can's dented
 can or the park bin's piece at its pose; for the can, the bags and the park bin, 10 splinters, a burst at the prop and
-the four litter pieces; the paper stack's 8 debris pieces, or 44 splinters for another model; then its material
-against itself. It loses its body at once and is removed the next tick. A human above jog whose walking sphere meets a
-`RUNTARGET` body (the bags, the paper stack) strikes it with a plain hit at the next step, once. Coney's stand-ins: the
-pieces rest where they are made and never fade; the bottle, the litter system's pieces, the splat, the splinters'
-colours, the quieter break of a run-in, the camera test and the path-polygon flag 8 are not built; the paper stack's
+the four litter pieces, and the `dyn_beerbottle` 0.5 m above the path polygon under the hit point (none off the
+polygons), in the prop's rotation, falling as a loose object with a spin of (0, a, b), a and b in ±π; the paper stack's
+8 debris pieces, or 44 splinters for another model; then its material against itself, at 0.65 of its volume when the
+attacker ran into it. It loses its body at once and is removed the next tick. A human above jog whose walking sphere
+meets a `RUNTARGET` body (the bags, the paper stack) strikes it with a plain hit at the next step, once. Coney's
+stand-ins: the pieces rest where they are made and never fade; the litter system's pieces, the splat, the splinters'
+colours, the camera test and the path-polygon flag 8 are not built; the polygon's height under the hit point is the
+mean of its vertices' heights; the hobo variants' food is not dropped; the paper stack's
 debris pieces are splinters; a litter piece's offset is drawn in ±0.43, ±0.43 and 0-0.83 m; and the sprinter is not
 stopped dead after the strike (he slides along the bags that step, and they are gone the next).
 
@@ -1664,9 +1762,8 @@ Player 1 takes money by walking over it ([Walking over a power-up](player-state.
 what makes the drawer is not traced, so the break makes it, open, at the register's own pose (no slide); the dust is a
 burst; the game state flag that silences the hit sound, the use (the triangle robbery, which takes the drawer and
 leaves a `dyn_cashreg_c` on the break instead), and the pick-up and drop of the register are not built; the money
-rests where it is made; and a walk-over touch is the money within 1.1 m of player 1 in plan and from 0.5 m below to
-2 m above his feet (Coney's power-ups have no bodies), with no sight test, no other power-up types and no pick-up
-sound. In `level99` at checkpoint 2 the store's register stands at (53.23, 57.26, 1.63); from the shop floor south of
+rests where it is made; and the walk-over's touch is [Player state](player-state.md#coneys-implementation)'s. In
+`level99` at checkpoint 2 the store's register stands at (53.23, 57.26, 1.63); from the shop floor south of
 it eight squares break it and walking north into the counter takes the money (disc check, 2026-10-07).
 
 ## Open questions
@@ -1688,12 +1785,12 @@ it eight squares break it and walking north into the counter takes the money (di
 - What the first camera's vtable `+0x214` returns (the streaming-out distance).
 - Held objects: what fills human `+0x348` / `+0x34c` (event `0x37`), what message `0x17` to the holder does, who
   sends `melee_weapon` messages `0x12` / `0x13`, and the frame of a thrown object's angular velocity.
-- Trash props ([Trash cans and bags](#trash-props)): what object `+0xb0` holds when one breaks (its pieces' launch
-  direction), what sets game-state set 3's bits, and who sends a broken prop message `0x20`.
+- Trash props ([Trash cans and bags](#trash-props)): what sets game-state set 3's bits, and who sends a broken prop
+  message `0x20`.
 - `dyn_door_vargas`' second object, and the leaf models of `dyn_door_chainlnk_pick` (no `dyn_dr_chainlnk_pick` record).
 - What a cabin door's leaves do once it breaks, and where the wreck pieces and boards appear.
-- Who makes a cash register's drawer (`dyn_cashreg_b`, the register's `+0x1c`) and where it sits before it opens; how
-  far message `0x12` slides it; and whether the spilled `dyn_money` falls or rests where it is made.
+- Cash register ([Script types](script-types.md#dyn-cashreg)): how many throws or swings break a lifted register at
+  runtime.
 - Moving into a pane ([Moving into a pane](#pane-break)): which clip events switch the strike shapes on in a jump.
   (Answered on [Combat](combat.md#moving-strikes): the strike shapes' sizes and events, record `+0x08` bit `0x800`,
   and a knock-back flight, which is not airborne. Human vtable `+0x10c`, `0x00227180`: any non-human body may be

@@ -23,6 +23,7 @@
 #include "combat/anim_ids.h"
 #include "combat/anim_ranges.h"
 #include "combat/attacks.h"
+#include "combat/meters.h"
 #include "combat/player_combat.h"
 #include "combat/stick_games.h"
 #include "combat/throw_velocity.h"
@@ -165,6 +166,20 @@ void PlayLevelMode::bindObjects(world_objects::LevelObjects* objects, const scri
     }
     m_objects->world.collision = m_scenery->objectCollision();
     m_objects->world.paths = m_scenery->objectPaths();
+    // An object knocked loose (a broken trash can's bottle) flies from its record's pose as a loose object.
+    m_objects->world.knock = [this](double object, anim::Vec3 velocity, anim::Vec3 spin) {
+        const world_objects::SpawnRecord* record = m_records != nullptr ? m_records->find(object) : nullptr;
+        if (record == nullptr) {
+            return;
+        }
+        const world_objects::ObjectType* type =
+            m_objectTypes != nullptr ? m_objectTypes->find(record->typeName) : nullptr;
+        m_looseObjects.start(
+            object, anim::Vec3{record->position[0], record->position[1], record->position[2]},
+            anim::Quat{record->rotation[0], record->rotation[1], record->rotation[2], record->rotation[3]},
+            type != nullptr ? world_objects::LooseObjects::Kind::of(*type) : world_objects::LooseObjects::Kind{},
+            velocity, spin);
+    };
     m_lockPickDifficulty = script::lockPickDifficulty(recorded, characters::warriorClassOf(m_type));
     // An airborne human breaks every pane whose body he reaches, as Strike_Contact does
     // (docs/research/objects.md#pane-break).
@@ -198,18 +213,7 @@ void PlayLevelMode::bindPickups(LevelPickups* pickups) {
     m_player->human().setContextAction([this](human::Human& human) {
         // A ray to the object blocked by the level's collision (the panes' and doors' among it).
         const world_objects::SightBlocked blocked = [this](anim::Vec3 from, anim::Vec3 to) {
-            const raycast::Vec3 d{to.x - from.x, to.y - from.y, to.z - from.z};
-            const float length = std::sqrt((d.x * d.x) + (d.y * d.y) + (d.z * d.z));
-            if (length < 1e-4F) {
-                return false;
-            }
-            const raycast::Ray ray{.origin = {from.x, from.y, from.z},
-                                   .direction = {d.x / length, d.y / length, d.z / length},
-                                   .length = length};
-            const raycast::CollisionMesh* mesh = m_objects != nullptr && m_objects->world.collision != nullptr
-                                                     ? m_objects->world.collision
-                                                     : &m_scenery->collision();
-            return mesh->rayCast(ray, {}, 0).has_value();
+            return sightBlocked(from, to);
         };
         human::ScriptState& script = human.script();
         const anim::Vec3 feet = human.position();
@@ -622,7 +626,7 @@ void PlayLevelMode::stepObjectBodies() {
         if (record != nullptr && type != nullptr && m_objects != nullptr && !m_objects->props.broken(object)) {
             const world_objects::PropPose pose = recordPose(*record);
             strikeProp(attacker, object, *type, world_objects::HitKind::Plain, feet,
-                       anim::normalise(anim::subtract(pose.position, feet)), feet, pose);
+                       anim::normalise(anim::subtract(pose.position, feet)), feet, pose, true);
         }
     }
     // Each object in the world and not in a hand or on a head whose type has a body and a layer; a broken prop has
@@ -1046,6 +1050,7 @@ void PlayLevelMode::stepObjects() {
                                          .value_or(anim::Vec3{feet.x + ahead.x, feet.y + ahead.y, feet.z});
             std::vector<world_objects::CarHitReport> reports;
             const world_objects::CarPartMask struck = m_cars->humanHit(*attacked, feet, point, &reports);
+            reportNoise();
             m_print(std::format("objects: car {:.0f} hit, parts {:#x}\n", *attacked, struck));
             // A strike that reached a part sounds on the hood.
             if (struck != 0) {
@@ -1071,6 +1076,7 @@ void PlayLevelMode::stepObjects() {
             }
         } else {
             const world_objects::GlassPane* pane = m_objects->glass.find(*attacked);
+            reportNoise();
             const bool took = m_objects->humanHit(
                 *attacked, world_objects::ObjectHit{.attacker = playerHandle(),
                                                     .kind = world_objects::humanHitKind(false, false),
@@ -1083,12 +1089,7 @@ void PlayLevelMode::stepObjects() {
     for (int tick = 0; tick < kObjectTicksPerStep; ++tick) {
         m_objects->tick();
     }
-    // Player 1 takes the money he walks over (a broken cash register's).
-    if (m_pickups != nullptr) {
-        for (const LevelPickups::WalkedOver& money : m_pickups->walkOver(0, human.position())) {
-            m_print(std::format("objects: money {:.0f} taken, ${}\n", money.handle, money.dollars));
-        }
-    }
+    walkOverPowerups();
     // A broken barrier removed at its update: its handlers hear message 2 and its record goes.
     for (const double removed : m_objects->doors.takeRemoved()) {
         m_print(std::format("objects: {:.0f} removed\n", removed));
@@ -1164,7 +1165,8 @@ void PlayLevelMode::strikeObjects(human::Human& human, std::span<const human::Po
         if (player && m_objectAttack && m_objectAttack->object == object) {
             m_objectAttack.reset();
         }
-        // The object sounds as its type's material before it takes the hit.
+        // A 30 m noise, then the object sounds as its type's material before it takes the hit.
+        reportNoise();
         reportStrikeSound(human, material, 1.0F, player);
         const bool took = m_objects->humanHit(
             object, world_objects::ObjectHit{
@@ -1269,14 +1271,53 @@ void PlayLevelMode::strikeLevel(human::Human& human, std::span<const human::Pose
 
 void PlayLevelMode::strikeProp(double attacker, double handle, const world_objects::ObjectType& type,
                                world_objects::HitKind kind, anim::Vec3 point, anim::Vec3 direction,
-                               anim::Vec3 attackerAt, const world_objects::PropPose& pose) {
-    const world_objects::PropStrike strike = m_objects->props.strike(
-        handle, type,
-        world_objects::ObjectHit{
-            .attacker = attacker, .kind = kind, .point = point, .direction = direction, .attackerAt = attackerAt},
-        pose, m_objects->world);
+                               anim::Vec3 attackerAt, const world_objects::PropPose& pose, bool runIn) {
+    reportNoise();
+    const world_objects::PropStrike strike = m_objects->props.strike(handle, type,
+                                                                     world_objects::ObjectHit{.attacker = attacker,
+                                                                                              .kind = kind,
+                                                                                              .point = point,
+                                                                                              .direction = direction,
+                                                                                              .attackerAt = attackerAt,
+                                                                                              .runIn = runIn},
+                                                                     pose, m_objects->world);
     m_print(std::format("objects: {} {:.0f} hit{}{}\n", type.name, handle,
                         strike.intactBefore ? "" : " (already broken)", strike.broke ? ", broke" : ""));
+}
+
+bool PlayLevelMode::sightBlocked(anim::Vec3 from, anim::Vec3 to) const {
+    const raycast::Vec3 d{to.x - from.x, to.y - from.y, to.z - from.z};
+    const float length = std::sqrt((d.x * d.x) + (d.y * d.y) + (d.z * d.z));
+    if (length < 1e-4F) {
+        return false;
+    }
+    const raycast::Ray ray{
+        .origin = {from.x, from.y, from.z}, .direction = {d.x / length, d.y / length, d.z / length}, .length = length};
+    const raycast::CollisionMesh* mesh = m_objects != nullptr && m_objects->world.collision != nullptr
+                                             ? m_objects->world.collision
+                                             : &m_scenery->collision();
+    return mesh->rayCast(ray, {}, 0).has_value();
+}
+
+void PlayLevelMode::walkOverPowerups() {
+    if (m_pickups == nullptr) {
+        return;
+    }
+    const human::Human& human = m_player->human();
+    const world_objects::SightBlocked blocked = [this](anim::Vec3 from, anim::Vec3 to) {
+        return sightBlocked(from, to);
+    };
+    const combat::Health& health = human.fighter().health();
+    for (const LevelPickups::WalkedOver& gift :
+         m_pickups->walkOver(0, human.position(), health.value() >= health.maximum(), blocked)) {
+        m_print(std::format("pickup: walked over object {:.0f}: item {} x{}\n", gift.handle, gift.item, gift.amount));
+    }
+}
+
+void PlayLevelMode::reportNoise() {
+    if (m_sound != nullptr) {
+        m_sound->markAmbientEvent();
+    }
 }
 
 double PlayLevelMode::handleOf(const human::Human& human) const {

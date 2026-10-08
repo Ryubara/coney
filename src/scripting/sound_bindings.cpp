@@ -336,10 +336,18 @@ void addSoundBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& co
                                                       static_cast<float>(unsignedArg(args, 1)),
                                                       std::clamp(floatArg(args, 2), 0.0F, 1.0F));
                         }));
+    // The call is also kept in `context.recorded`, with or without a sound host: the HUD names its cues (the hint's
+    // bleep, the objective's, the wanted alarm) from there (hudServicesOf()).
     // @orig 0x001141b0 Sound_CfgInterfaceSound (unknown)
-    vm.registerFunction("SoundCfgInterfaceSound", soundCall(context, [](SoundHost& sound, std::span<const Value> args) {
-                            sound.setInterfaceSound(intArg(args, 0), crc32(binding::string(args, 1)));
-                        }));
+    vm.registerFunction("SoundCfgInterfaceSound", [context = &context](std::span<const Value> args) {
+        if (context->recorded != nullptr) {
+            context->recorded->add("SoundCfgInterfaceSound", args);
+        }
+        if (SoundHost* sound = context->sound; sound != nullptr) {
+            sound->setInterfaceSound(intArg(args, 0), crc32(binding::string(args, 1)));
+        }
+        return binding::none();
+    });
     // @orig 0x00113dd0 Sound_AllocateCharacterVoices (unknown)
     vm.registerFunction("SndAllocateCharacterVoices",
                         soundCall(context, [](SoundHost& sound, std::span<const Value> args) {

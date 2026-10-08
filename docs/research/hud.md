@@ -2464,8 +2464,9 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   `HUDSetTutorialCallback` keeps the name; the play mode calls that function after the level's step with the anim
   id of each hit player 1 struck in it, landed or blocked (`Fighter::strikes`). **Coney's choice**: called after the
   step, not from inside the damage step.
-- **Sound**: the cues by the table `SoundCfgInterfaceSound` fills, and the named sounds, play through
-  `audio::SoundPlayer` ([Sound](sound.md#interface-sounds)); silent without sound.
+- **Sound**: the cues by the table `SoundCfgInterfaceSound` fills (the binding keeps each call for the HUD as well
+  as filling the engine's table), and the named sounds, play through `audio::SoundPlayer`
+  ([Sound](sound.md#interface-sounds)); silent without sound.
 - **The action prompt** (`repo:src/gamemodes/gameplay_mode.cpp`, the level's part `PlayLevelMode::promptOffer()`):
   each frame of play player 0's text is chosen in `HUD_Update`'s order: nothing while he tags, plays a scene part,
   mugs, steals a stereo or picks a lock; a held human set up for interrogation gives `GSTRING.HUD` 0 (interrogate,

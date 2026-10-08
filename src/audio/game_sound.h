@@ -111,6 +111,14 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     void enableAmbientEmitter(int emitter, bool on) override;
     void setAmbientEmitterVolume(int emitter, float volume) override;
     void setPlayerCovered(bool covered) override { m_playerCovered = covered; }
+    void setCombatFraming(bool framing) override { m_combatFraming = framing; }
+    /// @orig 0x0010be40 AmbientManager_MarkEvent (unknown)
+    void markAmbientEvent() override;
+    /// Whether the `_DAM_` emitters' window is open now (AmbientManager_UpdateTimers, `0x0010be78`).
+    [[nodiscard]] bool damageWindowOpen() const;
+    /// The angry breathing's level now (0 silent to 1), and whether its loop plays.
+    [[nodiscard]] float breathingLevel() const { return m_breathing.level; }
+    [[nodiscard]] bool breathingPlays() const { return m_breathing.sound.valid(); }
     void stopAmbientTrack() override;
     [[nodiscard]] bool soundPlaying(double handle) const override;
     void stopSound(double handle) override;
@@ -188,6 +196,8 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     void updateListener();
     // Runs the ambient emitters with the game's view (AmbientWorld).
     void updateEmitters(SoundEngine& engine);
+    // Fades the angry breathing in while the camera frames a fight and out after.
+    void updateBreathing(SoundEngine& engine);
     // Runs the callbacks of the lines that ended.
     void runCallbacks(std::span<const Speech::Ended> ended);
     // Writes a line to the log, if there is one.
@@ -208,7 +218,17 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     VoiceTable m_voices;
     Speech m_speech;
     int m_listenerMode = 0;
-    bool m_playerCovered = false; // setPlayerCovered()
+    bool m_playerCovered = false;           // setPlayerCovered()
+    bool m_combatFraming = false;           // setCombatFraming()
+    std::optional<double> m_ambientEventMs; // markAmbientEvent()'s stamp on the engine's clock (+0x1b78c)
+    // The angry breathing (game state +0x234 its sound, +0x248 its state): its loop and level, and the engine's clock
+    // at the last update (none: the next update starts the count).
+    struct Breathing {
+        SoundHandle sound;
+        float level = 0.0F;
+        std::optional<double> lastMs;
+    };
+    Breathing m_breathing;
     Listener m_listener{};
 };
 

@@ -19,9 +19,9 @@ void LevelObjectServices::playSound(std::uint32_t nameHash, anim::Vec3 at) {
     }
 }
 
-void LevelObjectServices::playMaterialPair(std::uint8_t a, std::uint8_t b, anim::Vec3 at) {
+void LevelObjectServices::playMaterialPair(std::uint8_t a, std::uint8_t b, anim::Vec3 at, float volume) {
     if (m_sounds != nullptr) {
-        m_sounds->playMaterialPair(a, b, at);
+        m_sounds->playMaterialPair(a, b, at, volume);
     }
 }
 

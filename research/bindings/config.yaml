@@ -379,7 +379,9 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Which timer is the repeat interval and which the play time is inferred from the values.
+    The two times are the breathing loop's fade-in and fade-out while the camera frames a fight and after
+    (Breathing_Configure 0x004193e8, Breathing_Update 0x00419150; docs/research/sound.md#warriors-functions), and the
+    threshold is the players' combat sound factor (docs/research/sound-events.md#players).
   usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
 
 - name: CfgRagePowerMode
@@ -1943,14 +1945,16 @@
     - {name: enabled, lua: boolean, default: true, desc: "true (the default) lets players pick up power-ups; false stops them."}
   description: >-
     Stores the power-up pickup switch (byte at game state `+0x56e5`, 1 after every level load). With it 0, the three
-    pickup paths (`Human_OnContact` 0x0021a3d8, 0x00219550, 0x00395510) skip objects of class 14 (power-ups, object
-    type `+0x86`) for player humans (`+0x1b0` not -1); AI humans and other objects are unaffected.
+    pickup paths (`Human_OnContact` at 0x0021a3d8, `Human_FindPickupNear` at 0x00219550, `WorldObject_TryTouchPickUp`
+    0x00395510) skip only a `TYPE_REVIVAL` (14, a flash; object type `+0x86`) for a player human (`+0x1b0` not -1) at
+    full health; every other power-up, a hurt player and AI humans are unaffected.
   evidence: confirmed-code
   depth: thorough
   notes: >-
     Reset to 1 by the level set-up (0x00418c68). Used by Armies of the Night (levels 60-64) to control when power-ups
     can be collected.
   usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: CfgCredits
   wrapper: 0x0036ee48

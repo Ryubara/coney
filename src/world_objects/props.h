@@ -71,11 +71,13 @@ struct PropStrike {
 /// model, so none is swapped.
 ///
 /// An `overhead_weapon` prop (a trash can, bags) breaks on any strike (`OverheadWeapon_Break`): its pieces by model,
-/// its dust and splinters, its material pair, and it goes the next tick. **Coney's stand-ins** there: the pieces rest
-/// where they are spawned and never fade; the bottle and the litter system's pieces, the brown splat, the splinters'
-/// colours, the quieter sound of a prop broken by running into it, the camera test and the path-polygon flag are left
-/// out; the cardboard set's 8 debris pieces are 8 splinters; and a litter piece's offset is each axis drawn in ±0.43,
-/// ±0.43 and 0-0.83 m (the research leaves the draw's use open).
+/// its dust and splinters, a trash set's bottle (a `dyn_beerbottle` 0.5 m above the path polygon under the hit point,
+/// knocked loose through ObjectWorld::knock with a random spin), its material pair (at 0.65 when the attacker ran into
+/// it, ObjectHit::runIn), and it goes the next tick. **Coney's stand-ins** there: the pieces rest where they are
+/// spawned and never fade; the litter system's pieces, the brown splat, the splinters' colours, the camera test and the
+/// path-polygon flag are left out; the path polygon's height is the mean of its vertices' heights; the cardboard set's
+/// 8 debris pieces are 8 splinters; and a litter piece's offset is each axis drawn in ±0.43, ±0.43 and 0-0.83 m (the
+/// research leaves the draw's use open).
 ///
 /// A cash register (`dyn_cashreg`) takes 2 + 8 × kind from its hit points (its type's `+0x5a`, 16): a surviving hit
 /// sounds its material against concrete and raises dust at the hit; the breaking one swaps its broken model, sounds its

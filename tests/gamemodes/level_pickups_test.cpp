@@ -166,18 +166,79 @@ TEST_CASE("walking over money takes its value with the callback and removes it",
     h.place(7, "dyn_money", Vec3{10.0F, 12.5F, 0.0F})->money = 30;
     h.place(8, "dyn_watch", Vec3{10.0F, 10.5F, 0.0F});
     // Beyond the reach in plan, or above the body, nothing is touched.
-    CHECK(pickups.walkOver(0, Vec3{10.0F, 9.8F, 0.0F}).empty());
-    CHECK(pickups.walkOver(0, Vec3{10.0F, 10.5F, -2.5F}).empty());
-    const std::vector<coney::LevelPickups::WalkedOver> taken = pickups.walkOver(0, Vec3{10.0F, 10.5F, 0.0F});
+    CHECK(pickups.walkOver(0, Vec3{10.0F, 9.8F, 0.0F}, false).empty());
+    CHECK(pickups.walkOver(0, Vec3{10.0F, 10.5F, -2.5F}, false).empty());
+    // Out of sight from both heights, it is not touched either.
+    const wo::SightBlocked wall = [](Vec3 /*from*/, Vec3 /*to*/) { return true; };
+    CHECK(pickups.walkOver(0, Vec3{10.0F, 10.5F, 0.0F}, false, wall).empty());
+    const std::vector<coney::LevelPickups::WalkedOver> taken = pickups.walkOver(0, Vec3{10.0F, 10.5F, 0.0F}, false);
     REQUIRE(taken.size() == 1);
     CHECK(taken[0].handle == 6);
-    CHECK(taken[0].dollars == 37);
+    CHECK(taken[0].item == item::kMoney);
+    CHECK(taken[0].amount == 37);
     CHECK(h.state.player.inventory.count(0, item::kMoney) == 37);
     CHECK(h.items == std::vector<double>{item::kMoney});
     CHECK(h.records.find(6)->removed);
     // The loot beside it is not a power-up: it stays for triangle.
     CHECK_FALSE(h.records.find(8)->removed);
-    CHECK(pickups.walkOver(0, Vec3{10.0F, 10.5F, 0.0F}).empty());
+    CHECK(pickups.walkOver(0, Vec3{10.0F, 10.5F, 0.0F}, false).empty());
+}
+
+TEST_CASE("walking over a key, a flash or a spray can gives one, below its limit", "[level_pickups]") {
+    // docs/research/player-state.md#walk-over: TYPE_KEY item 6, TYPE_REVIVAL item 1, TYPE_SPRAYCAN item 3 (at most 9),
+    // TYPE_SPECIAL loot; each notifying.
+    Harness h;
+    const auto powerup = [&h](const char* name, int kind, int value = 0) {
+        wo::ObjectType type;
+        type.name = name;
+        type.className = "powerup_item";
+        type.objectKind = kind;
+        type.value = value;
+        h.types.add(type);
+    };
+    powerup("dyn_key", wo::kObjectKindKey);
+    powerup("dyn_revival", wo::kObjectKindRevival);
+    powerup("dyn_spraycan", wo::kObjectKindSpraycan);
+    powerup("dyn_record", wo::kObjectKindSpecial, 12);
+    coney::LevelPickups pickups(h.scripts, h.state, h.records, h.types);
+    coney::Inventory& inventory = h.state.player.inventory;
+    constexpr Vec3 kAt{10.0F, 10.5F, 0.0F};
+    SECTION("each kind gives its item and goes") {
+        h.place(1, "dyn_key", kAt);
+        h.place(2, "dyn_revival", kAt);
+        h.place(3, "dyn_spraycan", kAt);
+        h.place(4, "dyn_record", kAt);
+        const std::vector<coney::LevelPickups::WalkedOver> taken = pickups.walkOver(0, kFeet, false);
+        CHECK(taken.size() == 4);
+        CHECK(inventory.count(0, item::kHandcuffKey) == 1);
+        CHECK(inventory.count(0, item::kRevive) == 1);
+        CHECK(inventory.count(0, item::kSprayPaint) == 1);
+        CHECK(inventory.count(0, item::kStolenLoot) == 1);
+        CHECK(inventory.count(0, item::kMoney) == 12);
+        // Every gift notified but the loot's money.
+        CHECK(h.items == std::vector<double>{item::kHandcuffKey, item::kRevive, item::kSprayPaint, item::kStolenLoot});
+        for (const double handle : {1.0, 2.0, 3.0, 4.0}) {
+            CHECK(h.records.find(handle)->removed);
+        }
+    }
+    SECTION("a full spray-paint count or a full set of flashes refuses it, and it stays") {
+        inventory.set(0, item::kSprayPaint, coney::LevelPickups::kSprayPaintMost);
+        inventory.set(0, item::kRevive, coney::Inventory::kRevives);
+        h.place(2, "dyn_revival", kAt);
+        h.place(3, "dyn_spraycan", kAt);
+        CHECK(pickups.walkOver(0, kFeet, false).empty());
+        CHECK_FALSE(h.records.find(2)->removed);
+        CHECK_FALSE(h.records.find(3)->removed);
+        inventory.set(0, item::kSprayPaint, 8);
+        CHECK(pickups.walkOver(0, kFeet, false).size() == 1);
+        CHECK(inventory.count(0, item::kSprayPaint) == coney::LevelPickups::kSprayPaintMost);
+    }
+    SECTION("at full health with CfgPowerupPickup off a flash is walked past") {
+        h.place(2, "dyn_revival", kAt);
+        h.state.hub.powerupPickup = false;
+        CHECK(pickups.walkOver(0, kFeet, true).empty());
+        CHECK(pickups.walkOver(0, kFeet, false).size() == 1);
+    }
 }
 
 TEST_CASE("a bat goes into the hand, out of the search, and back when dropped", "[level_pickups]") {

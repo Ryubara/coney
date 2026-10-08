@@ -62,7 +62,7 @@ void addHudBindings(LuaVm& vm, const BindingContext& context);
 
 /// The HUD's services from a binding context: the HUD, tutorial and announcement strings of `context.strings`, and the
 /// HUD colours scripts gave `CfgHUDColor` and the interface cues `SoundCfgInterfaceSound` named (kept by their
-/// recording stubs in `context.recorded`). The sound output is left empty (Hud::setSoundOutput()). Both must outlive
+/// bindings in `context.recorded`). The sound output is left empty (Hud::setSoundOutput()). Both must outlive
 /// the services' use.
 [[nodiscard]] hud::HudServices hudServicesOf(const BindingContext& context);
 

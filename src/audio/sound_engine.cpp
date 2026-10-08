@@ -265,7 +265,12 @@ bool SoundEngine::takeVoice(Task& task) {
     return true;
 }
 
-SoundHandle SoundEngine::play(std::uint32_t hash, const SoundPlay& how) { return startTask(hash, how, false); }
+SoundHandle SoundEngine::play(std::uint32_t hash, const SoundPlay& how) {
+    if (m_playObserver) {
+        m_playObserver(hash);
+    }
+    return startTask(hash, how, false);
+}
 
 // AudioManager_NewTask and AudioManager_Play (docs/research/sound.md#play); a prepared task gets its voice but does not
 // start it (a scene soundtrack).

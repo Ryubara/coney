@@ -123,24 +123,41 @@ class LevelPickups {
     /// @orig 0x0023bf00 Human_PickUpObject (unknown)
     TakeResult take(double handle, int player);
 
-    /// Money player `player` (0 or 1) took by walking over it: its object and its dollars.
+    /// A power-up player `player` (0 or 1) took by walking over it: its object, the item it gave (whose pick-up sound
+    /// plays) and how many.
     struct WalkedOver {
         double handle = world_objects::kNoObject;
-        int dollars = 0;
+        int item = 0;
+        int amount = 0;
     };
-    /// The walk-over: player `player` (0 or 1), standing at `feet`, touches each `TYPE_MONEY` object in an enabled
-    /// zone and takes it: item 2 × its value (SpawnRecord::money), notifying, and the record is removed for good.
-    /// **Coney's stand-ins**: Coney's power-ups have no bodies to touch, so a touch is the object within
-    /// kWalkOverReach of him in plan, the distance at which the original's contact took a spray can
-    /// (docs/research/player-state.md#walk-over), and from kWalkOverBelow below his feet to kWalkOverAbove above them
-    /// (his body's height); the sight test, the other power-up types and item 2's pick-up sound are left out.
+    /// The walk-over (`Human_OnContact`, then `Human_PickUpObject`): player `player` (0 or 1), standing at `feet`,
+    /// touches each `powerup_item` in an enabled zone, not hidden and in sight (world_objects::inSight() over
+    /// `blocked`), and takes it by its kind, each gift notifying:
+    ///
+    /// - `TYPE_MONEY`: item 2 × its value (SpawnRecord::money);
+    /// - `TYPE_KEY`: item 6 ×1, below the item's limit;
+    /// - `TYPE_REVIVAL`: item 1 ×1 (a flash), below the limit, and not while he is at full health (`fullHealth`) with
+    ///   `CfgPowerupPickup` off (HubState::powerupPickup);
+    /// - `TYPE_SPRAYCAN`: item 3 ×1, below the limit and never past kSprayPaintMost;
+    /// - `TYPE_SPECIAL`: loot, as take() gives it (item 10 ×1, then its value in money without notify).
+    ///
+    /// A taken power-up is removed for good; any other kind, or one refused, stays. **Coney's stand-ins**: Coney's
+    /// power-ups have no bodies to touch, so a touch is the object within kWalkOverReach of him in plan, the distance
+    /// at which the original's contact took a spray can (docs/research/player-state.md#walk-over), and from
+    /// kWalkOverBelow below his feet to kWalkOverAbove above them (his body's height); kinds 29 and 34's own cases,
+    /// the first key's and flash's hints and the named mission items (every `TYPE_SPECIAL` is loot) are not built;
+    /// limits are the inventory's (Inventory::limit()).
+    /// @orig 0x00219d50 Human_OnContact (unknown)
     /// @orig 0x0023bf00 Human_PickUpObject (unknown)
-    std::vector<WalkedOver> walkOver(int player, anim::Vec3 feet);
+    std::vector<WalkedOver> walkOver(int player, anim::Vec3 feet, bool fullHealth,
+                                     const world_objects::SightBlocked& blocked = {});
     /// How near a human comes to a power-up in plan when their bodies touch, metres.
     static constexpr float kWalkOverReach = 1.1F;
     /// How far below and above a human's feet a power-up he touches can be, metres (Coney's stand-in).
     static constexpr float kWalkOverBelow = 0.5F;
     static constexpr float kWalkOverAbove = 2.0F;
+    /// The most spray-paint charges a spray can tops up.
+    static constexpr int kSprayPaintMost = 9;
 
     /// The object `handle` leaves the hand at `at` (a dropped weapon): no longer held, its record unpinned and moved
     /// there. Its fall is the play mode's (world_objects::LooseObjects).
@@ -210,6 +227,8 @@ class LevelPickups {
     [[nodiscard]] std::optional<anim::Vec3> promptPosition(double object) const;
     // Delivers message 0 from `human` to `object`; whether its handler took the press.
     bool interact(double object, double human);
+    // Gives player `player` a piece of loot of `type`: item 10 with notify, then its value in money without.
+    void giveLoot(int player, const world_objects::ObjectType& type);
 
     script::ScriptSystem& m_scripts;
     GameState& m_state;

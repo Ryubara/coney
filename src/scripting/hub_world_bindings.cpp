@@ -350,6 +350,11 @@ void addHubWorldBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext&
         state.hub.turfInvasion = boolArgOr(args, 0, true);
         return binding::none();
     });
+    // @orig 0x0041da70 GameState_SetPowerupPickup (unknown)
+    add(vm, "CfgPowerupPickup", [&state](A args) {
+        state.hub.powerupPickup = boolArgOr(args, 0, true);
+        return binding::none();
+    });
     // @orig 0x0041d618 GameState_SetObjectValueMod (unknown)
     add(vm, "CfgObjectValueMod", [&state](A args) {
         state.hub.objectValueFactor = floatArg(args, 0);

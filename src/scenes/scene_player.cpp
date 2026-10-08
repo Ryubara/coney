@@ -42,6 +42,9 @@ constexpr std::uint16_t kEventCaption = 41;
 constexpr std::uint16_t kEventHoldObject = 73;
 constexpr std::uint16_t kEventColouredFade = 74;
 constexpr std::uint16_t kEventRumble = 76;
+// The role clip event of an animation sound (the `SA` id in the word at +8, as a gameplay clip's;
+// docs/research/sound.md#anim-sounds).
+constexpr std::uint16_t kEventAnimSound = 11;
 // The role clip events that put a human at its marks: a position and a heading.
 constexpr std::uint16_t kEventMarkPosition = 21;
 constexpr std::uint16_t kEventMarkHeading = 22;
@@ -831,11 +834,15 @@ class SceneTask {
     }
 
     // One role clip event: 21 puts the human at a position, 22 turns it to a heading (both in the scene's space), 13
-    // starts the scene soundtrack; the animation code's other events are not acted on.
+    // starts the scene soundtrack, 11 is the human's animation sound (his footsteps, shuffles and cloth, as in play);
+    // the animation code's other events are not acted on.
     void roleEvent(RoleRun& run, const SceneEvent& event) {
         ++m_system.m_stats.events;
         if (event.type == kEventSoundtrack) {
             m_system.host().soundtrackStart();
+        } else if (event.type == kEventAnimSound) {
+            m_system.host().humanAnimSound(run.handle, event.u32At(8));
+            ++m_system.m_stats.animSounds;
         } else if (event.type == kEventMarkPosition) {
             run.feet =
                 toWorld(m_request.place, ScenePose{anim::Vec3{event.f32At(8), event.f32At(0xc), event.f32At(0x10)}, {}})

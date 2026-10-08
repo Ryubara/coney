@@ -4,7 +4,9 @@
 
 #include "world_objects/props.h"
 
+#include <cmath>
 #include <cstdint>
+#include <numbers>
 #include <string>
 #include <utility>
 #include <vector>
@@ -12,6 +14,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "support/object_fixtures.h"
+#include "support/path_fixtures.h"
 
 namespace {
 
@@ -158,6 +161,52 @@ TEST_CASE("any strike breaks a trash prop at once: its pieces, dust and sound, g
         CHECK(g.strike(overheadType(0x1234U), HitKind::Charge).broke);
         CHECK(g.services.splinterCount == 44);
     }
+}
+
+TEST_CASE("a trash break drops a bottle 0.5 m above the path polygon under the hit, knocked with a spin",
+          "[world_objects][props]") {
+    // docs/research/objects.md#trash-props: dyn_beerbottle, no velocity, spin (0, a, b) with a and b in +-pi.
+    coney::world::PathMap paths = coney::test::uCorridors();
+    Fixture f;
+    f.world.paths = &paths;
+    std::vector<std::pair<Vec3, Vec3>> knocks;
+    std::vector<double> knocked;
+    f.world.knock = [&](double object, Vec3 velocity, Vec3 spin) {
+        knocked.push_back(object);
+        knocks.emplace_back(velocity, spin);
+    };
+    ObjectHit hit = hitOf(HitKind::Plain);
+    hit.point = Vec3{1.0F, 1.0F, 0.7F};
+    CHECK(f.props.strike(50.0, overheadType(0x62502b03U), hit, PropPose{}, f.world).broke);
+    REQUIRE(f.services.spawned.size() == 5);
+    CHECK(f.services.spawned[0] == "dyn_beerbottle");
+    CHECK(f.services.spawnedAt[0].x == 1.0F);
+    CHECK(f.services.spawnedAt[0].z == 0.5F);
+    REQUIRE(knocked == std::vector<double>{1001.0});
+    CHECK(knocks[0].first.x == 0.0F);
+    CHECK(knocks[0].first.z == 0.0F);
+    CHECK(knocks[0].second.x == 0.0F);
+    CHECK(std::abs(knocks[0].second.y) <= std::numbers::pi_v<float>);
+    // No polygon under the hit (the U's hollow): no bottle.
+    Fixture g;
+    g.world.paths = &paths;
+    hit.point = Vec3{4.0F, 5.0F, 0.7F};
+    CHECK(g.props.strike(50.0, overheadType(0x62502b03U), hit, PropPose{}, g.world).broke);
+    CHECK(g.services.spawned.size() == 4);
+}
+
+TEST_CASE("a trash prop broken by running into it sounds its break at 0.65", "[world_objects][props]") {
+    // docs/research/objects.md#trash-props: volume 0.65 when the attacker's +0x368 is set.
+    Fixture f;
+    ObjectHit hit = hitOf(HitKind::Plain);
+    hit.runIn = true;
+    CHECK(f.props.strike(50.0, overheadType(0x62502b03U), hit, PropPose{}, f.world).broke);
+    REQUIRE(f.services.volumes.size() == 2);
+    CHECK(f.services.volumes[0] == 1.0F);
+    CHECK(f.services.volumes[1] == 0.65F);
+    Fixture g;
+    CHECK(g.strike(overheadType(0x62502b03U)).broke);
+    CHECK(g.services.volumes.back() == 1.0F);
 }
 
 TEST_CASE("a cash register takes 2 + 8k a hit; broken it stays, opens its drawer and spills $25-49",

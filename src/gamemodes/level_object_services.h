@@ -83,7 +83,7 @@ class LevelObjectServices final : public world_objects::ObjectServices {
     }
 
     void playSound(std::uint32_t nameHash, anim::Vec3 at) override;
-    void playMaterialPair(std::uint8_t a, std::uint8_t b, anim::Vec3 at) override;
+    void playMaterialPair(std::uint8_t a, std::uint8_t b, anim::Vec3 at, float volume = 1.0F) override;
     void lockPickClick(double human) override;
     /// Calls the script function `function` with the human's and the door's handles; nothing for an empty name.
     void callScript(std::string_view function, double human, double door) override;

@@ -6,6 +6,9 @@
 #include <cmath>
 #include <format>
 #include <numbers>
+#include <optional>
+#include <span>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -28,6 +31,10 @@
 namespace coney::audio {
 
 namespace {
+
+// The `_DAM_` emitters' window after an AI event, ms (docs/research/sound.md#ambient).
+constexpr double kDamWindowOpensMs = 2000.0;
+constexpr double kDamWindowClosesMs = 15000.0;
 
 // Mode 1's enter (docs/research/level-loading.md#mode-1, step 1): the pitch, the non-duckable duck and the music's duck
 // under scenes back to their defaults.
@@ -72,10 +79,16 @@ void GameSound::connect(script::ScriptSystem* scripts, const script::BindingCont
 void GameSound::update() {
     updateListener();
     SoundEngine* engine = m_sounds.engine();
-    if (engine == nullptr || engine->paused()) {
+    if (engine == nullptr) {
+        return;
+    }
+    if (engine->paused()) {
+        // The breathing's fades do not count the pause.
+        m_breathing.lastMs.reset();
         return;
     }
     updateEmitters(*engine);
+    updateBreathing(*engine);
     const std::vector<Speech::Ended> ended = m_speech.update(*engine, [this](double human) { return locate(human); });
     runCallbacks(ended);
 }
@@ -523,6 +536,11 @@ void GameSound::gameplayLeft() {
     m_speech.clear(engine);
     m_emitters.clearEmitters(engine);
     m_listenerMode = 0;
+    // The breathing goes with the other sounds (stopAll below) and starts afresh in the next level, as does the
+    // ambient event stamp.
+    m_combatFraming = false;
+    m_breathing = Breathing{};
+    m_ambientEventMs.reset();
     if (engine == nullptr) {
         return;
     }
@@ -589,6 +607,50 @@ std::optional<double> GameSound::playerHandle() const {
 // The listener (docs/research/level-loading.md#a-frame-of-play, step 5): each update the game stores, per player, the
 // camera's matrix and the player's position raised 1.8 m. Which one `SndSetListener` picks is inferred: 0 the camera,
 // 1 the player; the ears lie along the camera's right either way.
+// The angry breathing (docs/research/sound.md#warriors-functions): `CfgBreathingSound(factor, inMs, outMs, sound)`'s
+// sound, a 2D loop. While the camera frames player 1's fight it starts at volume 0 and rises to 1 over `inMs`; once it
+// does not, it falls over `outMs` and stops at 0; framing again while it falls turns it back up from where it is.
+// **Coney's choice**: the level moves linearly with the engine's clock.
+// @orig 0x00419150 Breathing_Update (unknown)
+// @orig 0x00419030 Breathing_Start (unknown)
+// @orig 0x00419108 Breathing_Stop (unknown)
+void GameSound::updateBreathing(SoundEngine& engine) {
+    const double now = engine.now();
+    const double elapsed = m_breathing.lastMs ? now - *m_breathing.lastMs : 0.0;
+    m_breathing.lastMs = now;
+    if (m_context == nullptr || m_context->recorded == nullptr) {
+        return;
+    }
+    const std::span<const std::vector<script::Value>> calls = m_context->recorded->calls("CfgBreathingSound");
+    if (calls.empty() || calls.back().size() < 4) {
+        return;
+    }
+    const std::vector<script::Value>& call = calls.back();
+    const std::optional<std::string_view> name = call[3].string();
+    if (!name) {
+        return;
+    }
+    const float inMs = static_cast<float>(call[1].number().value_or(0.0));
+    const float outMs = static_cast<float>(call[2].number().value_or(0.0));
+    if (m_combatFraming) {
+        if (!m_breathing.sound.valid()) {
+            m_breathing.level = 0.0F;
+            m_breathing.sound = engine.play(crc32(*name), SoundPlay{.volume = 0.0F});
+        }
+        m_breathing.level = inMs > 0.0F ? std::min(1.0F, m_breathing.level + static_cast<float>(elapsed) / inMs) : 1.0F;
+    } else if (m_breathing.sound.valid()) {
+        m_breathing.level =
+            outMs > 0.0F ? std::max(0.0F, m_breathing.level - static_cast<float>(elapsed) / outMs) : 0.0F;
+        if (m_breathing.level <= 0.0F) {
+            engine.stop(std::exchange(m_breathing.sound, SoundHandle{}));
+            return;
+        }
+    }
+    if (m_breathing.sound.valid()) {
+        engine.setVolume(m_breathing.sound, m_breathing.level);
+    }
+}
+
 void GameSound::updateListener() {
     if (m_context == nullptr || m_context->cameras == nullptr) {
         return;
@@ -614,6 +676,27 @@ void GameSound::updateListener() {
 // The emitters' view of the game (docs/research/sound.md#ambient): player 1 and the listener; the scene, the music's
 // duck and the fight timer. **Coney's stand-ins**: the fight timer is on while the music's mood is the fight (the
 // original's 5 s after it ends are not kept); no AI event opens the `_DAM_` window yet.
+// The stamp is the clock, or 2 s before it once a stamp is set, so a noise while one counts opens the window at once.
+// **Coney's reading** of "already set": any earlier stamp (the field is never cleared but by a reset).
+void GameSound::markAmbientEvent() {
+    const SoundEngine* engine = m_sounds.engine();
+    if (engine == nullptr) {
+        return;
+    }
+    m_ambientEventMs = m_ambientEventMs ? engine->now() - kDamWindowOpensMs : engine->now();
+}
+
+// From 2 s to 15 s after the stamp.
+// @orig 0x0010be78 AmbientManager_UpdateTimers (unknown)
+bool GameSound::damageWindowOpen() const {
+    const SoundEngine* engine = m_sounds.engine();
+    if (engine == nullptr || !m_ambientEventMs) {
+        return false;
+    }
+    const double since = engine->now() - *m_ambientEventMs;
+    return since >= kDamWindowOpensMs && since <= kDamWindowClosesMs;
+}
+
 void GameSound::updateEmitters(SoundEngine& engine) {
     const int mood = m_context != nullptr && m_context->state != nullptr ? m_context->state->story.musicMood : -1;
     const MusicPlayer& music = engine.music();
@@ -627,7 +710,7 @@ void GameSound::updateEmitters(SoundEngine& engine) {
                              .playersCovered = hasPlayer ? std::span<const bool>(covered) : std::span<const bool>(),
                              .scenePlaying = engine.cinematic(),
                              .musicDuck = musicBusy && mood != 2,
-                             .damWindow = false,
+                             .damWindow = damageWindowOpen(),
                              .fightTimer = mood == 1});
 }
 

@@ -109,6 +109,11 @@ class SceneStage final : public scenes::SceneHost {
     /// Sets what tells whether a bound human is free to be taken in at the scene's start (not in a grab or a mount);
     /// without one every human is.
     void setFreeTest(std::function<bool(double)> test) { m_isFree = std::move(test); }
+    /// Sets what plays a bound human's animation sound (role clip event 11): the human, the `SA` id and where the
+    /// scene holds him (none before his first frame). Without one the sound is not played.
+    void setAnimSoundHandler(std::function<void(double, std::uint32_t, std::optional<anim::Vec3>)> handler) {
+        m_onAnimSound = std::move(handler);
+    }
     /// Sets what the scene's moves of a bound object go to (the object's handle, its world position and rotation).
     void setObjectMover(std::function<void(double, anim::Vec3, anim::Quat)> mover) {
         m_onObjectPose = std::move(mover);
@@ -137,6 +142,7 @@ class SceneStage final : public scenes::SceneHost {
     void humanEnterScene(double human, std::size_t role) override;
     void humanPose(double human, const scenes::RoleFrame& frame) override;
     void humanExitScene(double human) override;
+    void humanAnimSound(double human, std::uint32_t id) override;
     void humanRelease(double human, const std::optional<scenes::ScenePose>& endPose) override;
     void suspendBrains(bool suspended) override;
     void cameraBegin(const scenes::ScenePose& pose, const scenes::SceneLens& lens) override;
@@ -188,6 +194,7 @@ class SceneStage final : public scenes::SceneHost {
     std::function<void(const Release&)> m_onRelease;
     std::function<void(double, bool)> m_onJoin;
     std::function<bool(double)> m_isFree;
+    std::function<void(double, std::uint32_t, std::optional<anim::Vec3>)> m_onAnimSound;
     std::function<void(double, anim::Vec3, anim::Quat)> m_onObjectPose; // where the scene's object moves go
     std::optional<Interpolated<CameraState>> m_camera;
     graphics::ScreenFade m_fade;

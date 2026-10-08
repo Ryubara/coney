@@ -50,6 +50,10 @@ class RecordingHost final : public scenes::SceneHost {
     }
     void humanPose(double human, const scenes::RoleFrame& frame) override { frames[human] = frame; }
     void humanExitScene(double human) override { calls.push_back(std::format("exit {}", human)); }
+    void humanAnimSound(double human, std::uint32_t id) override {
+        animSounds.push_back(std::format("{} {}", human, id));
+    }
+    std::vector<std::string> animSounds; // "human id", in order
     void humanRelease(double human, const std::optional<scenes::ScenePose>& endPose) override {
         released[human] = endPose;
         calls.push_back(std::format("release {}", human));
@@ -142,7 +146,8 @@ struct Harness {
                                                                {4, 0, "tst_wheel"},
                                                                {5, 0, "tst_loop"},
                                                                {6, 0, "tst_calls"},
-                                                               {7, 0, "tst_card"}}};
+                                                               {7, 0, "tst_card"},
+                                                               {8, 0, "tst_steps"}}};
     std::map<std::string, std::vector<std::byte>, std::less<>> files;
     std::vector<std::string> lua;
     RecordingHost host;
@@ -188,6 +193,18 @@ struct Harness {
                                          test::SceneEventBytes(85, 27).f32At(8, 1.0F)};
         files["tst_calls"] = test::sceneHeaderRecord(callsSpec).data();
         files["tst_card"] = test::sceneHeaderRecord(cardSceneSpec()).data();
+        // tst_long without its segment, one second long, its roles' clips with animation sounds (event 11, the SA id
+        // in the word at +8): role 0 a footstep at frame 5 and a run's at 20, role 1 a fabric rustle at frame 10.
+        test::SceneSpec stepsSpec = longSpec;
+        stepsSpec.name = "tst_steps";
+        stepsSpec.frames = 30;
+        for (test::ClipSpec& clip : stepsSpec.part.clips) {
+            clip.duration = 1.0F;
+        }
+        stepsSpec.part.clips[0].events.push_back(test::SceneEventBytes(5, 11).u32At(8, 1));
+        stepsSpec.part.clips[0].events.push_back(test::SceneEventBytes(20, 11).u32At(8, 3));
+        stepsSpec.part.clips[1].events.push_back(test::SceneEventBytes(10, 11).u32At(8, 4));
+        files["tst_steps"] = test::sceneHeaderRecord(stepsSpec).data();
         files["tst_wheel"] = test::sceneHeaderRecord(objectSceneSpec("tst_wheel", false)).data();
         files["tst_loop"] = test::sceneHeaderRecord(objectSceneSpec("tst_loop", true)).data();
         system.setHost(&host);
@@ -356,6 +373,28 @@ TEST_CASE("a cinematic starts, plays its parts, streams its segment and ends wit
     CHECK(h.system.stats().started == 1);
     CHECK(h.system.stats().ended == 1);
     CHECK(h.system.stats().skipped == 0);
+}
+
+TEST_CASE("a role clip's animation sounds go to its human as they come", "[scenes]") {
+    Harness h;
+    h.system.preload("tst_steps", "");
+    h.step();
+    REQUIRE(h.system.joinHuman(7.0, 8, 0, 2));
+    REQUIRE(h.system.joinHuman(8.0, 8, 1, 2));
+    REQUIRE(h.system.play(8, Harness::fixedScene()));
+    // Into the scene's frame 12: role 0's footstep, then role 1's rustle; the run's step is still to come.
+    for (int i = 0; i < 60 && h.system.frame(8).value_or(-1.0F) < 12.0F; ++i) {
+        h.step();
+    }
+    REQUIRE(h.system.frame(8).value_or(-1.0F) >= 12.0F);
+    REQUIRE(h.system.frame(8).value_or(-1.0F) < 20.0F);
+    CHECK(h.host.animSounds == std::vector<std::string>{"7 1", "8 4"});
+    // To the end: the run's step once.
+    for (int i = 0; i < 40 && !h.system.done(8); ++i) {
+        h.step();
+    }
+    CHECK(h.host.animSounds == std::vector<std::string>{"7 1", "8 4", "7 3"});
+    CHECK(h.system.stats().animSounds == 3);
 }
 
 TEST_CASE("cross skips a skippable scene only after 2 s; the humans go to their end poses", "[scenes]") {

@@ -685,8 +685,9 @@ starts (1 human holding, 1 held), and finds no human holding, held or grabbed 90
 - `ScreenQueueEffect` also goes to the scenes' host in play: the stage owns player 1's view's fades and letterbox,
   which the scene events use too (the original's effect managers are the views', [Graphics](graphics.md)).
 - A role is driven from its clip alone: root motion (section A turned by the heading, all three axes; the host may
-  settle the feet on the ground) and the 21/22 marks, which the data shows hold `f32` positions and headings. Clip
-  events other than 13, 21 and 22 are not acted on.
+  settle the feet on the ground) and the 21/22 marks, which the data shows hold `f32` positions and headings. Event
+  11 is the human's animation sound, as in play ([Sound](sound.md#anim-sounds)): footsteps, shuffles and cloth during
+  the scene. Clip events other than 11, 13, 21 and 22 are not acted on.
 - Keyed rotations are slerped; the camera looks along its rotation's +y with +z up (inferred: `l99_c5`'s first camera
   key aims +y at the roles).
 - Event 30's colour is read as bytes r, g, b at `+8` (the cone's float is at `+0x10`); 69 does nothing.

@@ -83,7 +83,15 @@ with triangle: the triangle search skips the class ([Combat: breakables](combat.
 1. **Contact.** When a human's body touches an object (`Human_OnContact`, `0x00219d50`), a class other than
    `powerup_item` (the name at `0x0055a908`) is a solid contact. A power-up is passed through and picked up, unless it
    is `TYPE_REVIVAL` (14) and the human is a player at full health while game state `+0x56e5` is 0, or it is out of
-   sight (`0x0021c570`, the same ray test as the search). Types 29 and 34 have their own cases there (not traced).
+   sight (`0x0021c570`, the same ray test as the search). Two types come first, before the class test, and are
+   never solid nor taken (both answer 0; confirmed (code) in `0x00219d50`):
+   - **29 `TYPE_MOVINGVEHICLE`**: a particle above the human, `Human_DealDamage` with the damage at `+0x144` of the
+     vehicle's record (`+0xd4`), the material pair (the human's material, 26), and the human's body flags 1 and 2
+     cleared. When a player holds the victim (`Human_GetGrabOther`), the player gets style 7 and rage, plus a stat by
+     the victim's brain kind: 2 combat 7 (and a mission stat when its class `+0x11b` is 13), 1 crime 4, 4 or 5 crime 2.
+   - **34 `TYPE_CHATTERBOXTRAIN`**: damage of a third of the human's maximum health (the human as attacker) and the
+     material pair 26. Its once-only test compares the human's `+0x564` with the human itself, not the train, so it
+     hits on every contact; it then stores the train in `+0x564`.
 2. **The take** (`Human_PickUpObject`, `0x0023bf00`) needs flag `0x8000` ([pickable](objects.md#pickable)) and a
    brain of kind 0, 2, 3 or 4, then goes by the object's type:
 
@@ -265,6 +273,12 @@ Written from this page, [Scripts](scripting.md#stopwatch), [AI: crimes](ai.md#cr
   `UM_GetRecordData` over the profile's locked and new bits (`SavedProgress`), so a save carries story progress.
 - **The checkpoint copy**: `SetCheckPoint` copies the inventories and statistics; `restoreCheckpoint()` puts them back
   for a restart.
+- **The walk-over** (`LevelPickups::walkOver`, `src/gamemodes/level_pickups.h`): each update player 1 takes every
+  `powerup_item` he touches that is shown, in an enabled zone and in sight (the search's ray test), by its kind as in
+  the table [above](#walk-over): money its value, a key item 6, a flash item 1 (passed by at full health while
+  `CfgPowerupPickup` is off; the level reset turns it on), a spray can item 3 (at most 9), a `TYPE_SPECIAL` loot as
+  triangle gives it; each gift notifies, plays its item's `CfgInventoryItem` pick-up sound without a position and
+  removes the object for good; a refused one stays. A loot taken by triangle plays item 10's sound too.
 
 Coney's choices, where the page is silent:
 
@@ -278,6 +292,10 @@ Coney's choices, where the page is silent:
   own paths (`GiveMoney` calls the money callback; the others call none), as their notify flags are not traced.
 - `SetMultiplayerCallback`'s function is kept (`PlayerState::multiplayerCallback`); Coney has one player, so the
   two-player sync that calls it never runs.
+- The walk-over's touch: Coney's power-ups have no collision bodies, so player 1 touches one within 1.1 m of his feet
+  in plan (where the runtime check's contact took the spray can) and from 0.5 m below his feet to 2 m above them.
+  Kinds 29 and 34's own contact cases, the first key's and flash's hints, the named mission items (every
+  `TYPE_SPECIAL` is loot) and a second player are not built; a key's and a flash's limits are the inventory's.
 
 ## Open questions
 
@@ -287,6 +305,11 @@ Coney's choices, where the page is silent:
 - How `global.lua`'s `SetupMissionPoints` turns a level's mission and bonus values into maxima.
 - Whether scripts other than the four found set events 1/0-1/2 and 2/4.
 - The item limits at `0x0058b300`, and what each item's duration (`+0x28`) does.
+- Which hints the first spray can, key and flash queue (game state flags `0x2000`, `0x40`, `0x4000`); what
+  `Human_OnContact` does with object kinds 29 and 34; which `TYPE_SPECIAL` model hashes are the named mission items
+  and what each gives.
+- `CfgPowerupPickup` off: whether a player walks past a flash only at full health (the walk-over above) or past every
+  kind-14 object (the binding's page, [config](../references/bindings/config.md#cfgpoweruppickup)).
 - Which category `StatGetTotal`'s statistic id picks.
 - Which notify flag `InvGiveItem`, `InvGiveRevive` and the other give bindings pass to `Inventory_AddItem`.
 - What the money multiplier at game state `+0x380` (1.0 in mission 1) is.

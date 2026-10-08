@@ -20,6 +20,8 @@ namespace coney::world_objects {
 /// the cash, the bottles of pills; each keeps a glint while it lies (docs/research/particles.md#glints), unless
 /// neverGlints().
 inline constexpr std::string_view kPickupItemClass = "pickup_item";
+/// The class of the power-ups a human takes by walking over them (docs/research/player-state.md#walk-over).
+inline constexpr std::string_view kPowerupItemClass = "powerup_item";
 
 /// Whether a `pickup_item` of model `modelHash` (CRC-32 of the model's name) never glints: the seven hobo foods
 /// (`dyn_hobo_donut_a`/`_b`/`_c`, `dyn_hobo_hotdog`, `dyn_hobo_mug`, `dyn_hobo_salami`, `dyn_hobo_steak`), item
@@ -56,6 +58,11 @@ struct PickupCandidate {
 
 /// Whether a ray from `from` to `to` meets something solid.
 using SightBlocked = std::function<bool(anim::Vec3 from, anim::Vec3 to)>;
+
+/// Whether an object at `at` is in sight of a human whose feet are at `feet`: a ray from the feet + kPickupSightLow to
+/// it, or, when that is blocked, one from the feet + kPickupSightHigh. Always in sight without `blocked`.
+/// @orig 0x0021c570 Human_CanSeeObject (unknown)
+[[nodiscard]] bool inSight(anim::Vec3 feet, anim::Vec3 at, const SightBlocked& blocked);
 
 /// Whether triangle picks up an object of class `className` whose model hash is `modelHash`: the classes whose init
 /// sets flag `0x8000` (docs/research/objects.md#pickable), `melee_weapon`, `thrown_weapon`, `overhead_weapon` and

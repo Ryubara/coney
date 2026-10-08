@@ -21,12 +21,13 @@
 namespace coney::script {
 
 /// The bindings registered here; installBindings() registers them with addHubWorldBindings().
-inline constexpr std::array<std::string_view, 26> kHubWorldBindings{"CarDestroy",
+inline constexpr std::array<std::string_view, 27> kHubWorldBindings{"CarDestroy",
                                                                     "CfgActionDistance",
                                                                     "CfgEnableCrimeType",
                                                                     "CfgEnableTurfInvasion",
                                                                     "CfgObjectValueMod",
                                                                     "CfgPlayerCombatWalkOnly",
+                                                                    "CfgPowerupPickup",
                                                                     "CfgStickDeflection",
                                                                     "CheckMultiplayer",
                                                                     "EnableAmbientEmitter",

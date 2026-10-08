@@ -374,6 +374,19 @@ Most of the first mission's progress is driven by message 3 on volume boxes. Con
       is broken by the impact, with the thrower as the human (inferred). An object breaking on a human it hit
       (`ThrownObject_HitHuman`, `0x00392b88`): no object (`NilHandle`). Glass broken by an explosion or
       `BreakGlassInRadius` sends nothing.
+    - **A thrown object** (`WorldObject_OnContact`, `0x00394050`, calling `WorldObject_OnImpact`, `0x003939a8`,
+      at `0x003945a8` / `0x003945ec`): the human passed is the object's **holder** (`WorldObject_GetHolder`,
+      `0x003951d8`) or, once it has left the hand, **the human who threw it** (object `+0x11c`); the message is sent
+      only when that human is set and the object is **broken** by the contact (damage counter `+0x10d` or `+0x10e`
+      at 0). So the box test is on **the thrower's position at the moment the object breaks**, not on where it lands,
+      and the Lua handler's third argument is the broken object, whose own position a script may test. No noise
+      event is involved (`AI_ReportNoise` is a separate call). Confirmed (code).
+    - **`level80` checkpoint 3** (`CopsDistracted`, [`level80`](#level80)) relies on this: `vVandalBox` (corner
+      −265, 262.2, 1; size 34.3 × 19 × 6, so z 1-7) contains the roof spot the thrower is walked to (`fThrowPlayer1`,
+      −243.8, 268.2, 5.8), so every bottle he breaks sends message 6; the handler then accepts it only when the
+      **bottle** is inside `vBottleBox` (corner −264.7, 274.7, 1.1; size 8.2 × 6.5 × 3.5, around `fBottleTarget`
+      −259.6, 278, 1.3) and otherwise sends the two cops searching again. Inferred from the positions (corner read as
+      the minimum corner).
 - **A trigger sphere** ([`TriggerSphereCfg`](../references/bindings/world.md#triggerspherecfg), `0x00414bc0`) is a
   0x184-byte record from a pool of 100 (`0x006f3f50`, slots `0x006fd6e0`) attached to an object's handler component:
   `+0x170` the object, `+0x174` the radius, `+0x17c` the mode, `+0x180` armed, `+0x164` its message-5 period (1000
@@ -467,6 +480,51 @@ languages' `GSTRING`/`LABEL` tables and keeps the one for `GetLanguage()` (then 
 nil), picks the sound matrix (`SndLoadMatrix("armies")` for levels 60-64, else `"sound"`), sets `MenuTrack`
 (`music/in_the_city` once level 84 is complete), and defines the helpers (`ChangeCam`, `TagInfo`, `NoScenes`,
 `ObjectiveAdd`, ...). It ends with `CfgAmbient()` and `SetupLevelInventory()`. inferred (disassembly of the chunk).
+
+#### The objective helper (`ObjectiveSetup`) {#objective-helper}
+
+Most story objectives "go to this place" are made by `ObjectiveSetup(t)` (`global.lua` function 132) with a table
+of fields. Inferred from the disassembly of `global.lua` (functions 132-146; names, fields and values only).
+
+- **`ObjectiveSetup(t, noAdd)`** stores `t` under a new index and, unless `noAdd`, runs **`ObjectiveAdd`**: the text
+  (`String`) on objective line 0, or line 1 when `Bonus` is true (`HUDSetObjective(line, String, 0, Silent)`, then
+  states 1 and 0 again); default `Radius` 2 m, `RemoveTime` 4000 ms, `GTDistance` 15 m. When there is a `Flag` or a
+  `Volume`: without a `Volume`, a [trigger sphere](#triggers) on the flag (`TriggerSphereCfg(Flag, true, Radius,
+  true, 100)`) and the handler `ObjectiveEnter` for messages 3 and 5 on the **flag**; with a `Volume`, the same handler
+  on the **volume box** (no sphere). Then the flag becomes a radar mission objective (texture 27, or 28 when
+  `bMission`) and, unless `NoObject`, a marker object (`dyn_w_goto`, or `dyn_w_mission` with `bMission`) is spawned
+  at the flag and shown. `HUDType` adds a counter panel.
+- **`ObjectiveEnter(box, human)`** (messages 3 and 5) finds the objective whose `Volume` is the sender, else whose
+  `Flag` is (`ObjectiveGetIndex`, function 146: the message's first argument is compared with the Lua value of
+  `Volume`/`Flag`, so the box or flag handle the engine passes must be the one the script holds). It goes on only
+  when **`human` is a player** (`HuIsAPlayer`), or, with `CheckWarriors`, any human of gang type 0. Then it clears
+  messages 3 and 5 on the sender and:
+    - with **`GoodToGo`**: hides the marker, sets message 4 to `ObjectiveExit`, remembers the human (`GTGHuman`) and
+      runs `ObjectiveGoodToGo` (below);
+    - with `bShowHide`: hides the marker and sets message 4 to `ObjectiveExit` only;
+    - otherwise: **`CallBack(index)`** (`CallBack(index, human)` with `Player2Callback`), then **`ObjectiveComplete`**
+      unless `NoComplete`. So an objective without `GoodToGo` completes on the **first player who enters**, alone.
+- **`ObjectiveGoodToGo(box)`** (function 145), the "wait for the crew" test, every 500 ms
+  (`ScheduleFuncArg1`) while the player stays: it passes when `GTGHuman` is within `Radius` (2 m by default) of the
+  `Flag` (`TestDistance`) **and every human in the Lua table `Warriors`** is within `GTDistance` (15 m) of
+  `GTGHuman` (`GetDistanceTweenHumans`), **not arrested and alive**; with `GTGUseObject` instead, every Warrior must be
+  inside the box. With `PoliceWanted`, a wanted Warriors gang (`GangIsWanted(GangWarriors, true)`) fails it too. On a
+  pass: the hint is flushed if it was shown, `CallBack` runs and `ObjectiveComplete`. On a fail: the hint
+  `GSTRING.GTGPOLICE` (wanted) or, once, `GSTRING.GOODTOGO` at priority 1 (`HUDSetTutorialText(text, 1)`); with
+  `NoComplete` the callback gets `false` once (and `true` once on a later pass, without completing); then it checks
+  again 500 ms later. A dead or arrested Warrior still in `Warriors` blocks it.
+- **`ObjectiveExit(box, human)`** (message 4, only after `GoodToGo` or `bShowHide`): when the leaving human is the
+  player and player 2 is not still inside (or player 2 leaves with player 1 outside), it stops the 500 ms check, shows
+  the marker again, flushes the `GOODTOGO` hint if shown, and sets messages 3 and 5 back to `ObjectiveEnter`.
+- **`ObjectiveComplete(index)`**: flushes the hint (`HUDFlushTutorialText(1)`), marks the text done
+  (`HUDSetObjective(0, text, 2, true)`; state 1 with `OBJRemove`; a bonus on line 1, state 2), releases the counter
+  panel, removes the radar objective and the marker, clears messages 3 and 4 on the flag and the volume,
+  `UM_Unlock(Level, 1, UnlockID)` when set, and forgets the objective.
+
+Uses: `level80`'s four "go to" objectives (`{String, Flag, Volume, CallBack}`, no `GoodToGo`: the player alone
+entering the volume completes them, [`level80`](#level80)); `level5` checkpoint 1's bar
+(`{Flag = fObjective01, Volume = volObjective01, Player2Callback, CallBack = C1.OpenBar, GoodToGo = true}`): the
+player must stand within 2 m of `fObjective01` with all four Warriors within 15 m of him, alive and not arrested.
 
 ### `level100.lua` (the front end)
 
@@ -966,6 +1024,56 @@ Points an implementer needs:
   2 drops out while player 1 waits at the window, `level99.lua`'s drop-out handler runs `P3.Player2Jumps` itself.
 - **3.5**: who sends a barrier's script message 2 is not traced; its class update (`0x003b3220`) reports done once the
   barrier has broken (data `+0x00`), which is inferred to make the object system send it.
+
+### `level80.lua` (mission 2) {#level80}
+
+Story mission 2, loaded by `runNextMission` after `level99`: Cleon (player 1) and the Warriors after the Destroyers
+torch the clubhouse. Read from the disassembly of `level80.lua` and its four chapter scripts (names, ids and values
+only); bindings on [Story coverage](../references/bindings/story.md#level80). Inferred unless marked.
+
+- **The main chunk** sets `CHAPTER = GetCheckPoint()`, the chapter table (1-4 `level80_chapter1` to `_chapter4`) and
+  the Warriors set-up per checkpoint (`PlayerGang`), and runs `Main` (unless the debug `SCENETEST` is set).
+  **`Main`**: `LoadState = GetCheckPoint()`, fog colour, the ambient sound boxes, the cop-car lights, the
+  checkpoint's Warriors (`player = Cleon`, `player2 = Vermin`), the follow camera, `RestoreHud`, the radar,
+  `HUDRemoveAllGoalText`, **`HUDSetObjective(2, LEVEL80.MP_1, 0, true)`** (the mission line), `RunMission`
+  (`preLoadFile(chapter, "Setup")`), and `PreloadSubway` 2 s later: the passing-train scene `Coney_Sub3` / `Coney_Sub4`
+  replays through `SuperRunScene` every 30 s for the whole level (a scene event a test should ignore).
+- **`NextMission`** runs the chapter's `Cleanup`, adds 1 to `CHAPTER`, **`SetCheckPoint(CHAPTER)`** and loads the next
+  chapter in place, as in [`level3`](#level3). **`TutorialEnable(on)`**: on locks player 1's stick
+  (`HuLockPadMovement`), Vermin brain-dead, all player commands off but 1 and 2; off undoes it.
+- **Objectives** are made with the [objective helper](#objective-helper), none with `GoodToGo`: the player alone
+  entering the volume completes each. **Warrior-command lessons** each set one `WCSetCallback` and wait for that
+  command from player 1 (R2 menu, [HUD](hud.md#warrior-command-menu)).
+- **No scripted failure**: no chunk calls `HUDLaunchMissionFailed`; the mission ends with the final scene's
+  `Final = true` ([how a mission ends](#level99)).
+
+| Step | Started by | Hints, objectives, scenes (in order) | Waits for | Ends with |
+| --- | --- | --- | --- | --- |
+| 1.1 intro | `Setup` | scene `l80_c1` (preloaded, `RunIntroScene`; three callbacks break club windows with molotovs) | the scene's end | `Setup2` |
+| 1.2 Let's Go | `Setup2` (`EndIntroScene`) | Warriors teleported, Warrior command 3 issued, commands locked, Cleon's stick locked; Ajax and his girl made; locked camera `StartCam1`; 1.5 s: **`TT_1`**; 2 s: scene `l80_make_out` (Ajax, played with `ScenePlayCinematic`, looping); 5 s after `TT_1`: text cleared, **`TT_4`**, command 0 enabled, `WCSetCallback("CommandIssued")` | command **0** (follow, R2 up) from player 1 | text cleared; Vermin walks to `fC1Vermin2` |
+| 1.3 crew down | `CommandIssued` | none | all three Warriors inside `vWarriorsTrigger` (message 3, counted with `IsInsideBox`) | `TutorialEnable(false)`, a walk-in camera `StartCam2`; 5 s: `EndStartCam` |
+| 1.4 to Ajax | `EndStartCam` | follow camera back, objective **`MS_C1_1`** to `fHangAjax` (volume `vAjaxTrigger`) | a player in `vAjaxTrigger` | fade, `l80_make_out` ended, scene **`l80_c4`**; at its end Ajax joins, **`SetCheckPoint(2)`** |
+| 2.1 to Snow and Cowboy | `Setup` (chapter 2) | commands locked to 0 (issued); Snow, Cowboy and four cops (all god mode); objective **`MS_C2_1`** to `fSnowCowboyTrigger` (sphere 2 m); `vSnowCowboyTrigger` (message 3, a player) sets the cops on Snow | a player within 2 m of `fSnowCowboyTrigger` | fade, scene **`l80_c5`** (the arrest) |
+| 2.2 uncuff | `EndSnowCowboyScene` | Snow and Cowboy arrested at their flags (`HuSetArrested`), message 17 handlers, the Destroyer-cop and alley-bum events; locked cameras `FenceCam`, `MoveCam` (5 s), then the follow camera; 1 s later **`TT_11`**; 5 s later text cleared, objective **`MS_C2_2`** (state 0, not silent) | message 17 (freed, [uncuffing](crimes.md)) on both | `MS_C2_2` done (state 2); 1 s: **`SetCheckPoint(3)`** |
+| 3.1 to Fox | `Setup` (chapter 3) | Fox hiding (god mode) and two searching cops; objective **`MS_C3_1`** to `fFoxTrigger` (volume `vFoxTrigger`) | a player in `vFoxTrigger` | fade, scene **`l80_c6`** |
+| 3.2 Hold Up | `EndFoxScene` | `TutorialEnable(true)`, only command 3 enabled, **`TT_5`**, `WCSetCallback("StartPlayers2")`; the cops' search lines every 3-10 s | command **3** (hold, R2 down) | text cleared; objective **`MS_C3_1a`** (state 0, silent false, 2000), radar `fBottles` (texture 28), marker `dyn_w_mission01` |
+| 3.3 throw lesson | `vThrowTutorialTrigger` message 3 (a player) | `MS_C3_1a` state 1; the thrower walked to `fThrowPlayer1` (brain-dead), locked camera `ThrowCam`; 1 s: **`TT_25`**; 5 s: text cleared, radar `fBottleTarget`, marker `dyn_w_mission`, objective **`MS_C3_2`**; 1 s: **`TT_26`** (pick up), then every 200 ms by state: **`TT_27`** (aim: holding, not in throw control), **`TT_28`** (in throw control, not aimed at the marker), **`TT_29`** (aimed: throw); back to `TT_26` when the hand is empty. The stick stays locked; only command 10 (pick up), then 7 (aim), then 16 (throw) is enabled at each stage | `vVandalBox` message 6 with the bottle inside `vBottleBox` ([message 6](#triggers)) | `MS_C3_2` done (state 2), scheduled calls flushed, text cleared, Warrior command 0 issued, control back; fade, scene **`l80_c6_b`** |
+| 3.4 Wreck'em | `EndFoxScene2` | Fox joins (hunter in hand), **`TT_7`**, `TutorialEnable(true)`, only command 5, `WCSetCallback("StartVandalize")` | command **5** (wreck, R2 down-left) | text cleared; objective **`MS_C3_3`**, the front-door marker (`fStoreFront`, `dyn_w_mission04`, hidden while the player stands at it), front door pickable, `CfgSetLockPickHandler(... "FrontDoorPicked")`; 2 s: command 5 issued |
+| 3.5 store | `FrontDoorPicked` (a player picks the front lock) | text cleared, marker gone, command 5 issued, `vStealTrigger` message 7 counts | **10** message 7 on `vStealTrigger` (objects stolen) | `MS_C3_3` state 2, objective **`MS_C3_4`**, the back door pickable with its marker (`fStoreBack`) |
+| 3.6 back door | `BackDoorPicked` (a player picks the back lock) | text cleared, `MS_C3_4` done (state 2, silent) | 0.5 s | **`SetCheckPoint(4)`** |
+| 4.1 to Cochise and Swan | `Setup` (chapter 4) | Cochise, Swan and twelve Destroyers (suspended, god mode); objective **`MS_C4_1`** to `fCochiseSwan` (volume `vCochiseSwanTrigger`) | a player in `vCochiseSwanTrigger` | fade, scene **`l80_c7`** |
+| 4.2 Attack | `EndCochiseSwanScene` | locked camera `FightCam1`, everyone teleported, Destroyers awake (messages 2 and 18 → `DestroyerDied`), fight music, **`TT_8`**, `TutorialEnable(true)`, only command 1, `WCSetCallback("CommandIssued")` | command **1** (attack, R2 up-left) | text cleared, control back, Cochise and Swan join, `HUDRemoveAllGoalText`, objective **`MS_C4_2`**, command 1 issued, the Destroyers lose god mode; 5 s: **`TANDEM`** |
+| 4.3 watch your back | Cleon's message 1 from a gang-type-19 human (hit by a Destroyer) | command 2 enabled, text cleared, **`TT_9`**, `WCSetCallback("EndWatchBackText")` | any command | text cleared |
+| 4.4 the end | `DestroyerDied` with no Destroyer of either gang standing | `MS_C4_2` done (state 2, silent), Cleon's line; at its end a fade, scene **`l80_c3`**, then **`l80_c3_a`** (the Destroyers' tag shown), then **`l80_c3_b`** with `Final = true` | the last scene | `PreCashTheWorld` → `HUDLaunchMissionComplete()` |
+
+Points a playthrough test needs:
+
+- **Steps 4.3 and 4.2's `TANDEM`** depend on timing: `TANDEM` shows 5 s after the attack order, `TT_9` on the first
+  Destroyer hit on Cleon, so their order can swap.
+- **`TT_26`-`TT_29`** follow the thrower's state every 200 ms and repeat; merge consecutive repeats and allow
+  them to go back (a dropped bottle shows `TT_26` again).
+- **Entered at checkpoint 3 or 4** (`LoadState`), the chapter's `Setup` also locks the commands and fades in; at 3 it
+  sets up the Destroyer-cop and alley-bum events chapter 2 would have.
 
 ### `level34.lua` (mission 4) {#level34}
 

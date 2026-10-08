@@ -215,6 +215,18 @@ void SceneStage::humanPose(double human, const scenes::RoleFrame& frame) {
 
 void SceneStage::humanExitScene(double /*human*/) {}
 
+void SceneStage::humanAnimSound(double human, std::uint32_t id) {
+    // At the human's newest scene frame: the scene, not his brain, places him while it holds him.
+    if (!m_onAnimSound) {
+        return;
+    }
+    std::optional<anim::Vec3> feet;
+    if (const auto found = m_bound.find(human); found != m_bound.end() && found->second.frame) {
+        feet = found->second.frame->current().feet;
+    }
+    m_onAnimSound(human, id, feet);
+}
+
 void SceneStage::objectPose(double object, const scenes::ScenePose& pose) {
     if (m_onObjectPose) {
         m_onObjectPose(object, pose.position, pose.rotation);

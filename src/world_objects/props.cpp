@@ -5,8 +5,11 @@
 #include <array>
 #include <cmath>
 #include <numbers>
+#include <optional>
 #include <string_view>
 #include <utility>
+
+#include "world/path_map.h"
 
 namespace coney::world_objects {
 
@@ -48,6 +51,12 @@ constexpr float kTrashBitRise = 0.83F;
 // The "cardboard" set's 8 debris pieces (Coney's stand-in: splinters), and the default set's 20 + 24 splinters.
 constexpr int kCardboardPieces = 8;
 constexpr int kDefaultSplinters = 44;
+// The trash set's bottle, placed this far above the path polygon under the hit point, spun up to pi rad/s about y
+// and z.
+constexpr std::string_view kTrashBottle = "dyn_beerbottle";
+constexpr float kBottleRise = 0.5F;
+// The break's volume when the attacker ran into it (human +0x368).
+constexpr float kRunInVolume = 0.65F;
 // An overhead_weapon's dust rises 0.5 m above the hit point.
 constexpr float kOverheadDustRise = 0.5F;
 // A draw in [-1, 1] in this many steps each side.
@@ -78,15 +87,50 @@ std::uint8_t counterOf(int value) {
 }
 
 // Plays the material pair `a` × `b` at `at`.
-void playPair(ObjectWorld& world, std::uint8_t a, std::uint8_t b, anim::Vec3 at) {
+void playPair(ObjectWorld& world, std::uint8_t a, std::uint8_t b, anim::Vec3 at, float volume = 1.0F) {
     if (world.services != nullptr) {
-        world.services->playMaterialPair(a, b, at);
+        world.services->playMaterialPair(a, b, at, volume);
     }
+}
+
+// The height of the path polygon under (x, y): Coney's stand-in, the mean of its vertices' heights; nothing where no
+// polygon lies.
+std::optional<float> pathHeightAt(const world::PathMap* paths, float x, float y) {
+    const std::optional<std::uint32_t> found = paths != nullptr ? paths->polygonAt(x, y) : std::nullopt;
+    if (!found) {
+        return std::nullopt;
+    }
+    const world::PathPolygon& polygon = paths->polygons()[*found];
+    if (polygon.vertexCount == 0) {
+        return std::nullopt;
+    }
+    float sum = 0.0F;
+    for (std::uint32_t i = 0; i < polygon.vertexCount; ++i) {
+        sum += paths->vertices()[polygon.firstVertex + i].z;
+    }
+    return sum / static_cast<float>(polygon.vertexCount);
 }
 
 // A draw in [-1, 1] from the game's random numbers.
 float randomSigned(GameRandom* random) {
     return (static_cast<float>(randomBelow(random, (2 * kOffsetSteps) + 1)) / static_cast<float>(kOffsetSteps)) - 1.0F;
+}
+
+// The trash set's bottle: a dyn_beerbottle 0.5 m above the path polygon under the hit point (none where there is no
+// polygon), in the prop's rotation, knocked with no velocity and a spin of (0, a, b), a and b in +-pi.
+void dropBottle(anim::Vec3 point, anim::Quat rotation, ObjectWorld& world) {
+    const std::optional<float> ground = pathHeightAt(world.paths, point.x, point.y);
+    if (!ground || world.services == nullptr) {
+        return;
+    }
+    const double bottle =
+        world.services->spawnObject(kTrashBottle, anim::Vec3{point.x, point.y, *ground + kBottleRise}, rotation);
+    if (bottle == kNoObject || !world.knock) {
+        return;
+    }
+    const float a = randomSigned(world.random) * std::numbers::pi_v<float>;
+    const float b = randomSigned(world.random) * std::numbers::pi_v<float>;
+    world.knock(bottle, anim::Vec3{}, anim::Vec3{0.0F, a, b});
 }
 
 } // namespace
@@ -238,6 +282,7 @@ void Props::overheadBreak(Prop& prop, const ObjectType& type, const ObjectHit& h
     if (trash) {
         services->splinters(hit.point, kTrashSplinters);
         services->burst(pose.position);
+        dropBottle(hit.point, pose.rotation, world);
         // The litter pieces at random offsets turned by the prop's rotation.
         const anim::Mat34 turn = anim::transform(pose.rotation, pose.position);
         for (const std::string_view bit : kTrashBits) {
@@ -252,7 +297,8 @@ void Props::overheadBreak(Prop& prop, const ObjectType& type, const ObjectHit& h
     } else {
         services->splinters(hit.point, kDefaultSplinters);
     }
-    playPair(world, type.material, type.material, hit.point);
+    // At 0.65 of its volume when the attacker broke it by running into it.
+    playPair(world, type.material, type.material, hit.point, hit.runIn ? kRunInVolume : 1.0F);
 }
 
 bool Props::cashRegisterHit(double handle, Prop& prop, const ObjectType& type, const ObjectHit& hit,

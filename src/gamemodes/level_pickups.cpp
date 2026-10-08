@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "gamemodes/level_pickups.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <numbers>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "core/name_hash.h"
@@ -91,9 +94,7 @@ TakeResult LevelPickups::take(double handle, int player) {
     }
     const world_objects::ObjectType* type = m_types.find(record->typeName);
     if (type != nullptr && type->objectKind == world_objects::kObjectKindSpecial) {
-        script::addInventoryItem(m_scripts, m_state, player, item::kStolenLoot, 1, true);
-        const auto money = static_cast<int>(std::lround(static_cast<float>(type->value) * kLootMoneyFactor));
-        script::addInventoryItem(m_scripts, m_state, player, item::kMoney, money, false);
+        giveLoot(player, *type);
         pickupSound(player, item::kStolenLoot);
         m_records.destroy(handle);
         return TakeResult::Loot;
@@ -104,8 +105,22 @@ TakeResult LevelPickups::take(double handle, int player) {
     return TakeResult::InHand;
 }
 
-std::vector<LevelPickups::WalkedOver> LevelPickups::walkOver(int player, anim::Vec3 feet) {
-    std::vector<WalkedOver> taken;
+void LevelPickups::giveLoot(int player, const world_objects::ObjectType& type) {
+    // Item 10 with notify, then the type's value in money without.
+    script::addInventoryItem(m_scripts, m_state, player, item::kStolenLoot, 1, true);
+    const auto money = static_cast<int>(std::lround(static_cast<float>(type.value) * kLootMoneyFactor));
+    script::addInventoryItem(m_scripts, m_state, player, item::kMoney, money, false);
+}
+
+std::vector<LevelPickups::WalkedOver> LevelPickups::walkOver(int player, anim::Vec3 feet, bool fullHealth,
+                                                             const world_objects::SightBlocked& blocked) {
+    const Inventory& inventory = m_state.player.inventory;
+    // Whether the player has room for one more of `id`, at most `most`.
+    const auto room = [&inventory, player](int id, int most) {
+        return inventory.count(player, id) < std::min(inventory.limit(id), most);
+    };
+    // The power-ups he touches (Human_OnContact passes through them) and what each would give.
+    std::vector<std::pair<WalkedOver, const world_objects::ObjectType*>> touched;
     for (const world_objects::SpawnRecord& record : m_records.all()) {
         const anim::Vec3 at = positionOf(record);
         if (record.removed || record.hidden || m_inHand.contains(record.handle) ||
@@ -114,14 +129,57 @@ std::vector<LevelPickups::WalkedOver> LevelPickups::walkOver(int player, anim::V
             continue;
         }
         const world_objects::ObjectType* type = m_types.find(record.typeName);
-        if (type != nullptr && type->objectKind == world_objects::kObjectKindMoney) {
-            taken.push_back(WalkedOver{.handle = record.handle, .dollars = static_cast<int>(record.money)});
+        if (type == nullptr || type->className != world_objects::kPowerupItemClass) {
+            continue;
+        }
+        // A flash is passed by at full health while the switch is off; anything out of sight is not touched.
+        if (type->objectKind == world_objects::kObjectKindRevival && fullHealth && !m_state.hub.powerupPickup) {
+            continue;
+        }
+        if (!world_objects::inSight(feet, at, blocked)) {
+            continue;
+        }
+        // Human_PickUpObject by the type: a refused one stays.
+        WalkedOver gift{.handle = record.handle};
+        switch (type->objectKind) {
+        case world_objects::kObjectKindMoney:
+            gift.item = item::kMoney;
+            gift.amount = static_cast<int>(record.money);
+            break;
+        case world_objects::kObjectKindKey:
+            gift.item = item::kHandcuffKey;
+            gift.amount = room(item::kHandcuffKey, Inventory::kNoLimit) ? 1 : 0;
+            break;
+        case world_objects::kObjectKindRevival:
+            gift.item = item::kRevive;
+            gift.amount = room(item::kRevive, Inventory::kNoLimit) ? 1 : 0;
+            break;
+        case world_objects::kObjectKindSpraycan:
+            gift.item = item::kSprayPaint;
+            gift.amount = room(item::kSprayPaint, kSprayPaintMost) ? 1 : 0;
+            break;
+        case world_objects::kObjectKindSpecial:
+            gift.item = item::kStolenLoot;
+            gift.amount = 1;
+            break;
+        default:
+            break;
+        }
+        if (gift.amount > 0 || (gift.item == item::kMoney && type->objectKind == world_objects::kObjectKindMoney)) {
+            touched.emplace_back(gift, type);
         }
     }
-    // Each gift notifies, and the object goes for good.
-    for (const WalkedOver& money : taken) {
-        script::addInventoryItem(m_scripts, m_state, player, item::kMoney, money.dollars, true);
-        m_records.destroy(money.handle);
+    // Each gift notifies and plays its item's pick-up sound, and the object goes for good.
+    std::vector<WalkedOver> taken;
+    for (const auto& [gift, type] : touched) {
+        if (type->objectKind == world_objects::kObjectKindSpecial) {
+            giveLoot(player, *type);
+        } else {
+            script::addInventoryItem(m_scripts, m_state, player, gift.item, gift.amount, true);
+        }
+        pickupSound(player, gift.item);
+        m_records.destroy(gift.handle);
+        taken.push_back(gift);
     }
     return taken;
 }

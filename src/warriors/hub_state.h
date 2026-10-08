@@ -40,6 +40,9 @@ struct HubState {
     std::array<float, kActionKinds> actionDistanceSquared{4.0F, 1.21F, 4.0F, 4.0F, 3.0625F, 2.25F};
     /// `CfgEnableTurfInvasion` (`+0x56e1`). **Coney stand-in**: the turf invasion is not built, so it is only kept.
     bool turfInvasion = true;
+    /// `CfgPowerupPickup` (`+0x56e5`): with it off, a player at full health walks past a flash
+    /// (docs/research/player-state.md#walk-over). The level set-up sets it on.
+    bool powerupPickup = true;
     /// `CfgPlayerCombatWalkOnly` (`0x0051031c`). **Coney stand-in**: its five readers are not on the page, so it is
     /// only kept.
     bool playerCombatWalkOnly = false;
