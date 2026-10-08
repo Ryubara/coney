@@ -184,3 +184,15 @@ TEST_CASE("a scene soundtrack outlives its cinematic's end and stops only on a s
     stage.soundtrackStop();
     CHECK_FALSE(engine.isPlaying(prepared));
 }
+
+TEST_CASE("the stage tells the scenes a view wider than 4:3 is 16:9, for the intro card's distance", "[scene_stage]") {
+    // The scenes read the mode through the host (docs/research/scenes.md#intro-cards): 4:3 until the play mode says
+    // the view is wider.
+    SceneStage stage = quietStage();
+    const coney::scenes::SceneHost& host = stage;
+    CHECK_FALSE(host.widescreen());
+    stage.setWidescreen(true);
+    CHECK(host.widescreen());
+    stage.setWidescreen(false);
+    CHECK_FALSE(host.widescreen());
+}

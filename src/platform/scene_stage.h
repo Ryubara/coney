@@ -79,6 +79,10 @@ class SceneStage final : public scenes::SceneHost {
     /// Tells the stage, each step, whether a cinematic is playing (the original's scene state), for the sound engine:
     /// the music ducks and the soundtrack's stream pair is kept from the music while one does.
     void setCinematic(bool playing);
+    /// Tells the stage, each step, whether the view is wider than 4:3, which the scenes take as the original's 16:9
+    /// mode: an intro card is then held nearer the camera, so that it fills the wider view (widescreen()).
+    void setWidescreen(bool wide) { m_widescreen = wide; }
+    [[nodiscard]] bool widescreen() const override { return m_widescreen; }
     /// Sets the role names of the scene about to play (the human's model may follow its role), by role index.
     void setRoleNames(std::vector<std::string> names) { m_roleNames = std::move(names); }
 
@@ -194,6 +198,7 @@ class SceneStage final : public scenes::SceneHost {
     std::function<void(const Release&)> m_onRelease;
     std::function<void(double, bool)> m_onJoin;
     std::function<bool(double)> m_isFree;
+    bool m_widescreen = false; // the view is wider than 4:3 (setWidescreen())
     std::function<void(double, std::uint32_t, std::optional<anim::Vec3>)> m_onAnimSound;
     std::function<void(double, anim::Vec3, anim::Quat)> m_onObjectPose; // where the scene's object moves go
     std::optional<Interpolated<CameraState>> m_camera;
