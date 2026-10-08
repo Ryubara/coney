@@ -355,9 +355,25 @@ Chapter 5 of `level87` (`level87_chap5_club.lua`) is the stealth tutorial. What 
 
 ## Coney's implementation
 
-Not built yet (the level87 checkpoint 5 work, track missions-2-3): the hide rules belong with the ground snap, the
-hidden state and style with the player's locomotion, the scan rules with the AI's perception
-([AI: Coney](ai.md#coney)), the call with the Scout tactic.
+- **Shadow ground and the hidden state** (`repo:src/human/human_hiding.cpp`, `repo:src/ai/hiding.h`): the ground snap
+  keeps the floor triangle's flags, and flag `0x10` is shadow. Player 1 walking onto it hides (state `0x200000`)
+  unless he carries a molotov or a hunter already sees him; he stays hidden while on it, and for 4 s after leaving it
+  while walking with a target; a sprint ends it at once. Hiding shakes off the hunters who lost sight of him.
+- **Sneaking** (`HumanAnimator::setStealthStyle`): while hidden the move style swaps to the stealth set (630 idle, 631
+  start, 633 walk at its own speed), with 634 in and 394 out from the idle.
+- **The HUD cue** ([HUD](hud.md#coneys-implementation)): the radar turns blue while he is hidden and back to grey,
+  blending over 500 ms.
+- **Seen or not** (`repo:src/ai/enemy_scan.h`, [AI: the enemy scan](ai.md#enemy-scan)): `Human_CanSeeHuman` and the scan
+  see a hidden human only within 2 m.
+- **Scouts and the call** (`repo:src/ai/tactic_scout.h`, [AI: Coney](ai.md#coney)): TacticScout's guards keep their
+  posts and scan every 500 ms; one who spots, is hit by or is warned of an enemy fights him, and when the level allows
+  it runs to the farthest phone flag in range and, 1.5 s later, starts the enemy gang's second wanted timer
+  ([Crimes](crimes.md#coneys-implementation)), which `GangIsWanted(gang, false)` reads.
+
+Not yet: the other players' Warriors hiding and their hide order, the camera's raised look-at, the half-volume
+footsteps, the scouts' clips, glances, roaming and radar blips, the help call, the investigation of an unseen hit, the
+caller's lines and clips, the responders the call brings (only logged), the stealth kill, distractions and level87's
+checkpoint 5 as a whole.
 
 ## Open questions
 

@@ -20,7 +20,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`level95`](#level95) | the hub | 323 | 91 | 91 | 90 |
 | [`level34`](#level34) | mission 4 | 204 | 17 | 17 | 17 |
 | [`level2`](#level2) | mission 5 | 243 | 19 | 19 | 19 |
-| [`level3`](#level3) | mission 6 | 259 | 22 | 22 | 21 |
+| [`level3`](#level3) | mission 6 | 259 | 22 | 22 | 22 |
 | [`level5`](#level5) | mission 7 | 274 | 16 | 16 | 15 |
 | [`level81`](#level81) | mission 8 | 236 | 20 | 20 | 7 |
 | [`level86`](#level86) | mission 9 | 245 | 17 | 17 | 4 |
@@ -345,7 +345,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level3: mission 6 {#level3}
 
-259 bindings, 22 new: 22 traced, 21 implemented in Coney (258 of all 259).
+259 bindings, 22 new: 22 traced, 22 implemented in Coney (259 of all 259).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -359,7 +359,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`GoalBigLedgeThrower`](ai.md#goalbigledgethrower) | AI | traced | confirmed (code) | implemented |
 | [`GoalDevilRun`](ai.md#goaldevilrun) | AI | traced | confirmed (code) | implemented |
 | [`GoalGuardFlag`](ai.md#goalguardflag) | AI | traced | confirmed (code) | implemented |
-| [`GoalTag`](ai.md#goaltag) | AI | traced | confirmed (code) | not implemented |
+| [`GoalTag`](ai.md#goaltag) | AI | traced | confirmed (code) | implemented |
 | [`GangMakeEnemiesOfType`](gang.md#gangmakeenemiesoftype) | Gangs | traced | confirmed (code) | implemented |
 | [`GangSetAlwaysSeen`](gang.md#gangsetalwaysseen) | Gangs | traced | confirmed (code) | implemented |
 | [`CameraCreateFixed`](camera.md#cameracreatefixed) | Cameras | traced | confirmed (code) | implemented |
@@ -424,7 +424,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level86: mission 9 {#level86}
 
-245 bindings, 17 new: 17 traced, 4 implemented in Coney (230 of all 245).
+245 bindings, 17 new: 17 traced, 4 implemented in Coney (231 of all 245).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |

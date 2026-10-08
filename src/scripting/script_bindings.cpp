@@ -746,6 +746,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("GoalBackoff"),
     real("GoalBumLogic"),
     real("GoalMoveToUseFlag"),
+    real("GoalTag"),
     real("HuAttachSpinningIcon"),
     real("HuChangePlayerGang"),
     real("HuDropWeapon"),

@@ -226,7 +226,8 @@ Combatant* Fighter::attackTargetOf(int animId, const FighterInput& input, bool c
 }
 
 const Combatant* Fighter::lockTarget() const {
-    return combat::lockedOn(combat::combatTuning(), m_target != nullptr, m_l1Held) ? m_target : nullptr;
+    return !m_lockBlocked && combat::lockedOn(combat::combatTuning(), m_target != nullptr, m_l1Held) ? m_target
+                                                                                                     : nullptr;
 }
 
 void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& heading) {

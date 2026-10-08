@@ -227,6 +227,15 @@ TEST_CASE("A Warrior command reaches the chief's crew and the callback", "[ai][s
     CHECK(level.scripted->storyHost().warriorCommand() == 0);
 }
 
+TEST_CASE("GangIsWanted asks the wanted timer by default and the second timer for a nil or false", "[ai][story]") {
+    Level level;
+    level.state.player.crimes.setSecondWanted(2, 0);
+    CHECK(level.call("GangIsWanted", {Value(2.0)}).isNil());
+    CHECK_FALSE(level.call("GangIsWanted", {Value(2.0), Value()}).isNil());
+    CHECK_FALSE(level.call("GangIsWanted", {Value(2.0), Value(0.0)}).isNil());
+    CHECK(level.call("GangIsWanted", {Value(-1.0), Value()}).isNil());
+}
+
 TEST_CASE("The story's configuration reaches the game state", "[ai][story]") {
     Level level;
     level.call("CfgVerticalSightModifier", {Value(2.5)});

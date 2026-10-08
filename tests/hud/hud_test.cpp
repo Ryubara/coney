@@ -359,6 +359,27 @@ TEST_CASE("the instruction arrow bobs up by 2 a frame to 10 and back by 0.5", "[
     CHECK(hud.arrow().place.x == 0.5F);
 }
 
+TEST_CASE("the radar disc turns blue only while the HUD shows, blending over 500 ms", "[hud][hiding]") {
+    Hud hud = makeHud(nullptr);
+    hud.hideAll();
+    hud.setRadarTint(0, coney::hud::RadarTint::Blue);
+    CHECK(hud.radar().tint[0] == coney::hud::RadarTint::Grey);
+    CHECK(hud.radarColour(0) == coney::graphics::Rgba{191, 191, 191, 240});
+    hud.showAll();
+    HudFrame frame;
+    frame.nowMs = 1000;
+    hud.update(frame);
+    hud.setRadarTint(0, coney::hud::RadarTint::Blue);
+    CHECK(hud.radar().tint[0] == coney::hud::RadarTint::Blue);
+    CHECK(hud.radarColour(0) == coney::graphics::Rgba{191, 191, 191, 240});
+    frame.nowMs = 1250;
+    hud.update(frame);
+    CHECK(hud.radarColour(0) == coney::graphics::Rgba{146, 156, 196, 240});
+    frame.nowMs = 1500;
+    hud.update(frame);
+    CHECK(hud.radarColour(0) == coney::graphics::Rgba{100, 120, 200, 240});
+}
+
 TEST_CASE("radars: on and off by player, off during a screen fade and back after it, kept by HideHud", "[hud]") {
     Hud hud = makeHud(nullptr);
     hud.radarOff(2);

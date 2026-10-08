@@ -15,6 +15,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "ai/gangs.h"
 #include "animation/anim_math.h"
 #include "core/error.h"
 #include "core/pad.h"
@@ -28,6 +29,7 @@
 #include "scripting/lua_vm.h"
 #include "scripting/script_bindings.h"
 #include "scripting/script_system.h"
+#include "support/ai_fixtures.h"
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
 #include "world_objects/flags.h"
@@ -308,4 +310,40 @@ TEST_CASE("the level's objects report crimes and score statistics through the pl
     CHECK(h.state.player.stats.count(0, 4, 10) == 1);
     CHECK(h.state.player.stats.count(0, 1, 3) == 1);
     CHECK(h.state.player.stats.score(0) == 50);
+}
+
+TEST_CASE("a crime by player 1 makes his gang wanted once the level's brains give the gangs", "[player_bindings]") {
+    Harness h;
+    coney::world_objects::WorldFlags flags;
+    flags.createPool(4);
+    coney::LevelObjectServices services(h.scripts, flags, nullptr);
+    services.setPlayers(&h.state, &h.humans);
+    h.state.player.crimes.setCallback("Record");
+
+    // Player 1 (handle 10) in the Warriors, an AI (handle 11) in a police gang.
+    coney::test::AiScene scene;
+    auto& gangs = scene.brains.gangs();
+    const int warriors = gangs.create(0, "Warriors");
+    const int police = gangs.create(coney::ai::kPoliceKind, "Police");
+    gangs.addMember(warriors, scene.player());
+    coney::ai::Brain& cop = scene.add(coney::anim::Vec3{30.0F, 30.0F, 0.0F}, 0.0F);
+    gangs.addMember(police, cop);
+    scene.services.brains[10.0] = &scene.player();
+    scene.services.brains[11.0] = &cop;
+
+    // Without the brains no offender has a gang.
+    services.reportCrime(coney::crime::kVandalism, coney::anim::Vec3{1.0F, 2.0F, 3.0F}, 10.0);
+    CHECK_FALSE(h.state.player.crimes.wanted(warriors));
+
+    services.setBrains(&scene.services);
+    services.reportCrime(coney::crime::kVandalism, coney::anim::Vec3{1.0F, 2.0F, 3.0F}, 10.0);
+    CHECK(h.state.player.crimes.wanted(warriors));
+    CHECK(h.state.player.crimes.lastCrime() == coney::crime::kVandalism); // player 1's gang
+    REQUIRE(h.recordedArgs.size() == 1);
+    CHECK(h.recordedArgs[0][0].number() == static_cast<double>(warriors));
+
+    // A police offender reports nothing.
+    services.reportCrime(coney::crime::kVandalism, coney::anim::Vec3{1.0F, 2.0F, 3.0F}, 11.0);
+    CHECK_FALSE(h.state.player.crimes.wanted(police));
+    CHECK(h.recordedArgs.size() == 1);
 }

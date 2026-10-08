@@ -256,6 +256,10 @@ class Fighter {
     [[nodiscard]] const Combatant* lockTarget() const;
     /// The sounds its hits asked for since the last call (the hit sound of a hit it took), oldest first.
     [[nodiscard]] std::vector<HumanSound> takeSounds() { return std::exchange(m_sounds, {}); }
+    /// Keeps the target from locking (`blocked`) or lets it lock again: while the human is hidden L1 picks a target
+    /// but `Player_LockOn` is skipped, so it keeps its walk and never enters the fight stance by itself
+    /// (docs/research/stealth.md#stealth-kill).
+    void setLockBlocked(bool blocked) { m_lockBlocked = blocked; }
     /// Whether it fights as a player (FighterProfile::player).
     [[nodiscard]] bool player() const { return m_player; }
 
@@ -593,6 +597,7 @@ class Fighter {
     bool m_player = true;         // FighterProfile::player
     bool m_bossClass = false;     // FighterProfile::bossClass
     bool m_l1Held = false;        // L1 held this update (record +0x00 0x8)
+    bool m_lockBlocked = false;   // setLockBlocked(): hidden, the target does not lock
     bool m_tacklePending = false; // the tackle's intro plays; the victim reacts when its hit clip starts
     bool m_mountPending = false;  // the grab's mount (118) plays; the victim moves to the mount's point at 210
     bool m_mugOnTarget = false;

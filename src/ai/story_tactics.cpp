@@ -14,6 +14,7 @@
 #include "ai/story_goals.h"
 #include "ai/tactic_attack.h"
 #include "ai/tactic_boss.h"
+#include "ai/tactic_scout.h"
 #include "ai/track_human_goal.h"
 #include "human/human.h"
 
@@ -32,7 +33,6 @@ constexpr float kFollowWalkinTall = 0.75F;
 constexpr float kFollowWander = 4.0F;
 // The checks' periods, ms.
 constexpr std::uint64_t kWalkinTallCheckMs = 1000;
-constexpr std::uint64_t kScoutCheckMs = 200;
 constexpr std::uint64_t kUseFlagCheckMs = 1000;
 constexpr std::uint64_t kDefendCheckMs = 1500;
 constexpr std::uint64_t kHoldTheLineCheckMs = 1750;
@@ -276,17 +276,6 @@ int StationTactic::update(Gang& gang) {
             return kTacAnimDone;
         }
         return 0;
-    case TacticKind::Scout:
-        if (now >= m_nextCheckMs) {
-            m_nextCheckMs = now + kScoutCheckMs;
-            for (Brain* member : gang.members()) {
-                if (canAct(*member) && member->findGoal(kMeleeGoal) == nullptr &&
-                    std::ranges::any_of(member->enemies(), [](const Brain* e) { return Brain::fightable(*e); })) {
-                    giveMelee(*member, gang.owner());
-                }
-            }
-        }
-        return 0;
     default:
         return 0;
     }
@@ -294,9 +283,6 @@ int StationTactic::update(Gang& gang) {
 
 bool StationTactic::event(Gang& gang, Brain& member, const BrainEvent& event) {
     const bool roused = event.id == kEventDamaged || event.id == kEventEnemyAdded || event.id == kEventAttackWarning;
-    if (roused && call().kind == TacticKind::Scout && canAct(member)) {
-        giveMelee(member, gang.owner());
-    }
     if (roused && call().kind == TacticKind::Idle && call().options.at(script::kTacticLoop)) {
         // The dynamic idles end.
         for (Brain* each : gang.members()) {
@@ -440,6 +426,8 @@ std::unique_ptr<Tactic> makeStoryTactic(const script::TacticCall& call, std::vec
         return std::make_unique<PursueTactic>(call, services);
     case TacticKind::BossDiegoVargas:
         return std::make_unique<BossDiegoVargasTactic>(call, services);
+    case TacticKind::Scout:
+        return std::make_unique<ScoutTactic>(call, services);
     default:
         return std::make_unique<StationTactic>(call, services);
     }

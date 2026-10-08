@@ -285,6 +285,20 @@ TEST_CASE("forcing the crime level holds a gang wanted", "[crimes]") {
     CHECK_FALSE(crimes.wanted(3));
 }
 
+TEST_CASE("the second wanted timer runs 10 s on its own, forced or not", "[crimes]") {
+    CrimeReports crimes;
+    RecordingServices services;
+    crimes.setSecondWanted(4, 1000);
+    CHECK(crimes.secondWanted(4));
+    CHECK_FALSE(crimes.wanted(4));
+    crimes.setForced(true);
+    crimes.update(services, 10999);
+    CHECK(crimes.secondWanted(4));
+    crimes.update(services, 11000);
+    CHECK_FALSE(crimes.secondWanted(4));
+    CHECK(services.calls.empty());
+}
+
 TEST_CASE("pad handlers are kept under the highest bit of the mask", "[pad_handlers]") {
     coney::PadHandlers handlers;
     handlers.set(0, coney::pad::kCross | coney::pad::kSquare, "OnSquare");

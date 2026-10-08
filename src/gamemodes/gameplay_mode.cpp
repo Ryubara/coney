@@ -60,6 +60,10 @@ constexpr int kCarMessage = 0x19;
 constexpr std::array<std::uint8_t, 4> kSeeThroughMaterials{30, 2, 122, 107};
 // The largest float below 1, so a draw stays in [0, 1).
 constexpr float kBelowOne = 0.99999994F;
+// The tag spot's state that makes it blank, to be painted in (message 0x19), and the event a tagger gets at a tag's
+// end (docs/research/crimes.md#tagging).
+constexpr int kTagBlankState = 4;
+constexpr int kTagEndEventId = 0xe;
 
 // The level as the gangs' spawners see it: player 1 and the bound humans from the scripts' hold, the route graph and
 // player 1's camera for the spots out of sight, the gangs' turf boxes, and a new human made by the scripts' own
@@ -278,6 +282,7 @@ void GameplayMode::endLevel() {
     if (m_context.ai == m_scripted.get()) {
         m_context.ai = nullptr;
     }
+    m_objectServices.setBrains(nullptr);
     m_scripted.reset();
     m_brains.reset();
     if (m_scenes && m_context.scenes == m_scenes.get()) {
@@ -346,6 +351,7 @@ void GameplayMode::enter() {
     wireHub();
     // The crimes the scripts report reach the level's gangs and police; the story's per-level switches start clear.
     m_context.crimes = &m_objectServices.crimeServices();
+    m_objectServices.setBrains(m_scripted.get());
     if (m_context.state != nullptr) {
         m_context.state->story.resetForLevel();
     }
@@ -384,12 +390,29 @@ void GameplayMode::enter() {
             return spot.tagger == human && spot.fadeMode == world_objects::TagSpot::kFadingIn;
         });
     });
+    // GoalTag's spray starts as HuTag's does; its other tag is made blank with message 0x19 state 4.
+    m_scripted->humanHost().setTagStart([this](double human, double tag, double flag) { startTag(human, tag, flag); },
+                                        [this](double tag) { m_tagSpots.setState(tag, kTagBlankState); });
+    // A spot telling an AI tagger he is done (message 0x13) ends his spray as Tag_End does: he gets event 14 with
+    // the tag and whether it was finished. **Coney's reading**: the human's handling of 0x13 is not traced.
+    m_tagSpots.setTaggerMessage([this](double human, int message, double tag) {
+        const HumanCreation* player = m_humans.player(1);
+        if (message != world_objects::TagSpots::kTaggerDone || (player != nullptr && player->handle == human) ||
+            m_context.messages == nullptr) {
+            return;
+        }
+        const world_objects::TagSpot* spot = m_tagSpots.find(tag);
+        const bool finished = spot != nullptr && spot->fraction >= 1.0F;
+        m_log(std::format("tag: human {:.0f} {} tag {:.0f}\n", human, finished ? "finished" : "stopped", tag));
+        m_context.messages->deliver(m_scripts, human, kTagEndEventId, 0.0, tag, finished ? 1.0 : 0.0);
+    });
     m_uncuff.reset();
     m_uncuffHooked = nullptr;
     m_scripted->humanHost().setArrestHook([this](ai::Brain& brain, bool arrested) { onArrest(brain, arrested); });
     m_context.flagNet = &m_flagNet;
     m_scripted->setFlagNet(&m_flagNet);
     m_scripted->storyHost().setBoxes(m_context.boxes);
+    wireScoutServices();
     // Player 1's cameras, which the script sets up before the level makes him; CamSetSecondary finds its human live.
     m_cameras = std::make_unique<camera::Cameras>();
     m_cameras->setLocator([scripted = m_scripted.get()](double handle) -> std::optional<anim::Vec3> {
@@ -680,6 +703,7 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
         m_frozenStepDone = true;
     }
     updateUncuff();
+    updateHiding();
     m_scripts.setTime(nowMs);
     callTutorialCallback();
     callPadHandler();
@@ -1153,6 +1177,59 @@ void GameplayMode::updateActionPrompt() {
     if (text != m_shownPrompt) {
         m_shownPrompt = text;
         m_context.hud->setActionPrompt(0, std::move(text));
+    }
+}
+
+void GameplayMode::wireScoutServices() {
+    ai::ScoutServices& scout = m_scripted->storyHost().scoutServices();
+    scout.callerActive = false;
+    // A responder spawner: one in state 9 or 10 on any gang.
+    scout.responderReady = [this] {
+        const ai::Spawners& spawners = m_scripted->humanHost().spawners();
+        for (int gang = 0; gang < static_cast<int>(ai::kGangSlots); ++gang) {
+            for (const ai::Spawner& spawner : spawners.of(gang)) {
+                const auto state = static_cast<ai::SpawnerState>(spawner.state);
+                if (spawner.inUse &&
+                    (state == ai::SpawnerState::GangDispatch || state == ai::SpawnerState::DispatchingGang)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+    // The farthest enabled phone flag (activity 6) within the radius.
+    scout.phone = [this](anim::Vec3 from, float radius) -> std::optional<anim::Vec3> {
+        std::optional<anim::Vec3> best;
+        float bestDistance = -1.0F;
+        for (const world_objects::WorldFlag& flag : m_flags.all()) {
+            const anim::Vec3 at{flag.position[0], flag.position[1], flag.position[2]};
+            const float distance = anim::distance(from, at);
+            if (flag.enabled && flag.kind == ai::kPhoneActivity && distance <= radius && distance > bestDistance) {
+                best = at;
+                bestDistance = distance;
+            }
+        }
+        return best;
+    };
+    // **Coney stand-in**: the dispatch queue of the responder spawners is not built, so the call is logged only.
+    scout.queueGangCall = [this](int count, int delaySeconds, anim::Vec3 point) {
+        m_log(std::format("scout: gang called, {} responders in {} s to ({:.1f}, {:.1f})\n", count, delaySeconds,
+                          point.x, point.y));
+    };
+    scout.secondWanted = [this](int gang) { return m_state.player.crimes.secondWanted(gang); };
+    scout.setSecondWanted = [this](int gang) { m_state.player.crimes.setSecondWanted(gang, m_scripts.now()); };
+}
+
+void GameplayMode::updateHiding() {
+    ai::Brain* player = m_scripted ? m_scripted->player() : nullptr;
+    if (player == nullptr || !m_brains) {
+        m_hideMemory = ai::HideMemory{};
+        return;
+    }
+    // **Coney stand-in**: Coney's held objects have no molotov test yet, so a carried molotov does not stop hiding.
+    const ai::HideResult result = ai::updateHiding(*m_brains, *player, m_hideMemory, false);
+    if (m_context.hud != nullptr) {
+        m_context.hud->setRadarTint(0, result.mayHide ? hud::RadarTint::Blue : hud::RadarTint::Grey);
     }
 }
 

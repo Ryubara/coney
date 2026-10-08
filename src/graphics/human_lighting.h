@@ -35,8 +35,8 @@ class ShadowDim {
     std::uint32_t m_sinceChangeMs = kFallMs; // since the flag last changed, at most kFallMs (long ago at the start)
 };
 
-/// The collision triangle type bit that marks a shadow to hide in (`flags` bit 4).
-inline constexpr std::uint16_t kTriangleShadow = 0x10;
+/// The collision triangle type bit that marks a shadow to hide in (`flags` bit 4, raycast::kTriangleShadow).
+inline constexpr std::uint16_t kTriangleShadow = raycast::kTriangleShadow;
 
 /// Whether the ground under `feet` (game axes) is a shadow to hide in: a ray straight down from 0.25 m above the feet
 /// meets, within 4 m, a triangle with kTriangleShadow. **Coney's stand-in** for the original's ground check

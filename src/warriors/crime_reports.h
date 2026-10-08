@@ -133,6 +133,15 @@ class CrimeReports {
 
     /// Whether gang `gang` is wanted.
     [[nodiscard]] bool wanted(int gang) const { return m_wantedUntil.contains(gang); }
+    /// The gang's second wanted timer (gang `+0x5f0`): set for 10 s from `nowMs` by a gang's call for help (a scout's
+    /// phone call, `GoalCallGang`, `GangRespond` by a gang that is not the police); it runs out as the first does,
+    /// without the police's side.
+    /// @orig 0x001698c8 Gang_SetSecondWantedTimer (unknown)
+    void setSecondWanted(int gang, std::uint64_t nowMs) { m_secondUntil[gang] = nowMs + kSecondWantedMs; }
+    /// Whether gang `gang`'s second wanted timer runs (`GangIsWanted(gang, false)`).
+    [[nodiscard]] bool secondWanted(int gang) const { return m_secondUntil.contains(gang); }
+    /// The second timer's length, ms.
+    static constexpr std::uint64_t kSecondWantedMs = 10'000;
     /// The wanted time left of gang `gang` as a fraction of 10 s (what the HUD draws); 0 when not wanted.
     [[nodiscard]] float wantedFraction(int gang, std::uint64_t nowMs) const;
     /// Player 1's last crime type (`+0x290`); crime::kNoCrime at start and once the wanted time ran out.
@@ -160,6 +169,7 @@ class CrimeReports {
     std::uint64_t m_reports = 0;
     std::optional<CrimePosition> m_lastPosition;
     std::map<int, std::uint64_t> m_wantedUntil;
+    std::map<int, std::uint64_t> m_secondUntil; // gang -> when its second timer runs out
     std::map<int, std::uint64_t> m_lastAssault;
     std::set<double> m_scoredVictims;
 

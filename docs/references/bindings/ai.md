@@ -2899,7 +2899,7 @@ tagging](../../research/crimes.md#tagging).
   `TagGoal_Init`, `0x002cd258` `TagGoal_Process`
 - **Used by** 4 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level3`](story.md#level3) (mission 6)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalTagEx {#goaltagex}
 

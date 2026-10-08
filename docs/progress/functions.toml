@@ -1750,6 +1750,11 @@ name = "Gangs_MusicMood"
 subsystem = "GameModes"
 
 [[function]]
+address = 0x001698c8
+name = "Gang_SetSecondWantedTimer"
+subsystem = "GameModes"
+
+[[function]]
 address = 0x001698f0
 name = "Gang_UpdateWanted"
 subsystem = "GameModes"
@@ -6943,6 +6948,26 @@ subsystem = "Human"
 size = 800
 
 [[function]]
+address = 0x002cce88
+name = "Goal_Tag"
+subsystem = "Human"
+
+[[function]]
+address = 0x002ccfe0
+name = "TagGoal_Init"
+subsystem = "Human"
+
+[[function]]
+address = 0x002cd198
+name = "TagGoal_Suspend"
+subsystem = "Human"
+
+[[function]]
+address = 0x002cd258
+name = "TagGoal_Process"
+subsystem = "Human"
+
+[[function]]
 address = 0x002cf480
 name = "Goal_ThrowObject"
 subsystem = "Human"
@@ -11488,3 +11513,113 @@ address = 0x0042a938
 name = "Movie_Play"
 subsystem = "Movie"
 size = 1768
+
+[[function]]
+address = 0x0022ff88
+name = "Human_EnterShadow"
+subsystem = "Human"
+
+[[function]]
+address = 0x002300c0
+name = "Human_LeaveShadow"
+subsystem = "Human"
+
+[[function]]
+address = 0x00230140
+name = "Human_ClearHiddenState"
+subsystem = "Human"
+
+[[function]]
+address = 0x0028f000
+name = "Brain_ShakeOffPursuers"
+subsystem = "Human"
+
+[[function]]
+address = 0x001b26a8
+name = "HUD_RadarSetTintBlue"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001b2790
+name = "HUD_RadarSetTintGrey"
+subsystem = "GUI"
+
+[[function]]
+address = 0x0028b358
+name = "Brain_ScanEnemies"
+subsystem = "Human"
+
+[[function]]
+address = 0x0028fa18
+name = "Brain_MaybeScanEnemies"
+subsystem = "Human"
+
+[[function]]
+address = 0x002d5cf0
+name = "CallGangGoal_Init"
+subsystem = "Human"
+
+[[function]]
+address = 0x002d5db8
+name = "CallGangGoal_Start"
+subsystem = "Human"
+
+[[function]]
+address = 0x002d5f98
+name = "CallGangGoal_End"
+subsystem = "Human"
+
+[[function]]
+address = 0x002d6638
+name = "CallGangGoal_Process"
+subsystem = "Human"
+
+[[function]]
+address = 0x002d6ca0
+name = "ScoutGoal_Init"
+subsystem = "Human"
+
+[[function]]
+address = 0x002d6db0
+name = "ScoutGoal_Start"
+subsystem = "Human"
+
+[[function]]
+address = 0x002d6e10
+name = "ScoutGoal_Resume"
+subsystem = "Human"
+
+[[function]]
+address = 0x002d6ef0
+name = "ScoutGoal_Suspend"
+subsystem = "Human"
+
+[[function]]
+address = 0x002d6f98
+name = "ScoutGoal_End"
+subsystem = "Human"
+
+[[function]]
+address = 0x002d73b8
+name = "ScoutGoal_Process"
+subsystem = "Human"
+
+[[function]]
+address = 0x0031a430
+name = "ScoutTactic_Construct"
+subsystem = "Human"
+
+[[function]]
+address = 0x0031a818
+name = "ScoutTactic_OnEvent"
+subsystem = "Human"
+
+[[function]]
+address = 0x0031af98
+name = "ScoutTactic_Start"
+subsystem = "Human"
+
+[[function]]
+address = 0x0031b030
+name = "ScoutTactic_Process"
+subsystem = "Human"

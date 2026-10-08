@@ -243,6 +243,32 @@ class Human final : public Holdable {
     [[nodiscard]] bool struckByShapes() const override { return m_skeleton != nullptr && !m_outOfWorld; }
     /// The ground normal from the last snap.
     [[nodiscard]] anim::Vec3 groundNormal() const { return m_groundNormal; }
+    /// The flags of the collision triangle the last ground snap stood on (`flags & 0xfff`); 0 when it found none.
+    [[nodiscard]] std::uint16_t groundFlags() const { return m_groundFlags; }
+    /// Whether it stands on shadow ground: the ground snap's triangle has raycast::kTriangleShadow
+    /// (docs/research/stealth.md#shadow-ground).
+    [[nodiscard]] bool onShadowGround() const { return (m_groundFlags & raycast::kTriangleShadow) != 0; }
+
+    // The hidden state (state `0x200000`, docs/research/stealth.md#hidden). The ground rules that start and end it
+    // (who may hide, when) are the caller's (ai/hiding.h); these are what entering and leaving do to the human.
+
+    /// Whether it is hidden (state `0x200000`), the grace after leaving the shadow included.
+    [[nodiscard]] bool hidden() const { return m_hidden; }
+    /// Enters the hidden state: nothing when already hidden or sprinting. Its target no longer locks
+    /// (Fighter::setLockBlocked()), so it leaves the fight stance, and its locomotion takes the hidden move style
+    /// (HumanAnimator::setStealthStyle()); any grace is cleared.
+    /// @orig 0x0022ff88 Human_EnterShadow (unknown)
+    void enterHiding();
+    /// Leaves the hidden state, as stepping off the shadow does: when it is not running and has a target, the state
+    /// is kept for a 4 s grace (once: a grace already running keeps its end); otherwise clearHiding(). Nothing when not
+    /// hidden.
+    /// @orig 0x002300c0 Human_LeaveShadow (unknown)
+    void leaveHiding();
+    /// Ends the hidden state at once: the move style comes off, the target may lock again and the grace is cleared.
+    /// @orig 0x00230140 Human_ClearHiddenState (unknown)
+    void clearHiding();
+    /// The grace's length after leaving the shadow with a target, ms.
+    static constexpr std::uint64_t kHideGraceMs = 4000;
     /// The vertical speed at the last landing (negative), 0 before any.
     [[nodiscard]] float lastLandingSpeed() const { return m_lastLandingSpeed; }
     /// How many times it has landed (a fall or a jump), for a move that must notice a landing.
@@ -611,6 +637,9 @@ class Human final : public Holdable {
     [[nodiscard]] BodyPlacement placement() const;
     // Stamina's drain and refill, then the sprint flag, for this update's L2.
     void updateMeters(bool sprintHeld);
+    // The hidden state's own ends each update: a sprint, the fight stance or the grace running out
+    // (docs/research/stealth.md#hidden).
+    void updateHiding();
     // Triangle: a climb (stick above the dead zone), then the context action, then a jump.
     // @orig 0x0027c120 Player_UpdateActions (unknown)
     void tryActions(const raycast::CollisionMesh* mesh, bool sprintHeld);
@@ -664,10 +693,13 @@ class Human final : public Holdable {
     std::uint32_t m_blockedUpdates = 0;
     anim::Vec3 m_lastGround;
     anim::Vec3 m_groundNormal{0.0F, 0.0F, 1.0F};
-    bool m_coveredGround = false;            // onCoveredGround()
-    std::uint8_t m_groundMaterial = 5;       // groundMaterial(): CONCRETE until the first snap
-    bool m_reportSounds = false;             // reportSounds()
-    std::vector<HumanSound> m_contactSounds; // reportSound()
+    bool m_coveredGround = false;                  // onCoveredGround()
+    std::uint8_t m_groundMaterial = 5;             // groundMaterial(): CONCRETE until the first snap
+    bool m_reportSounds = false;                   // reportSounds()
+    std::vector<HumanSound> m_contactSounds;       // reportSound()
+    std::uint16_t m_groundFlags = 0;               // the last ground snap's triangle flags
+    bool m_hidden = false;                         // state 0x200000
+    std::optional<std::uint64_t> m_hideGraceUntil; // record +0x114: the grace's end, ms
     float m_lastLandingSpeed = 0.0F;
     std::uint32_t m_landings = 0;
     Stamina m_stamina;

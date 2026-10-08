@@ -55,9 +55,12 @@ enum class GoalType : std::uint8_t {
     Peddler = 0x50,            ///< PeddlerGoal: a vendor beckoning passers-by.
     Riot = 0x54,               ///< RiotGoal: roams, smashes, loots and picks fights, then leaves.
     AddressPerson = 0x57,      ///< AddressPersonGoal.
+    Tag = 0x5a,                ///< TagGoal: runs to a tag flag and sprays the tag.
     ThrowObject = 0x5d,        ///< ThrowObjectGoal.
     Pedestrian = 0x69,         ///< PedestrianGoal: wanders the flag network (`FlagNetTraverse`).
     PedestrianReaction = 0x6b, ///< PedestrianReactionGoal: a pedestrian reacting to trouble (mode 9: flight).
+    CallGang = 0x6e,           ///< CallGangGoal: runs to a phone and calls the gang.
+    Scout = 0x6f,              ///< ScoutGoal: a lookout at his post.
     Dealer = 0x80,             ///< DealerGoal.
     Shopkeeper = 0x82,         ///< ShopkeeperGoal.
     BigBrawler = 0x84,        ///< BigBrawlerGoal: a boss who fights, tires after six hits and (Vargas) fetches objects.

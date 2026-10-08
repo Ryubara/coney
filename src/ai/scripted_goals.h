@@ -114,4 +114,57 @@ class MoveToUseFlagGoal final : public Goal {
     bool m_arrived = false;
 };
 
+/// What the tag goal asks of the level.
+struct TagServices {
+    /// Whether a human other than `human` holds the flag `flag`.
+    std::function<bool(double flag, double human)> heldByOther;
+    /// The spray's start on `tag` from `flag` (`Human_Tag`, as `HuTag` starts it).
+    std::function<void(double human, double tag, double flag)> startTag;
+    /// Whether `human` is spraying a tag now.
+    std::function<bool(double human)> tagging;
+    /// Message `0x19` with 4 to the tag object `tag`: blank, to be painted in.
+    std::function<void(double tag)> blank;
+};
+
+/// The tag goal's arrival radius, m: farther than this once stopped, it gives up.
+inline constexpr float kTagReach = 1.5F;
+
+/// `GoalTag`'s goal (type `0x5a`, docs/research/ai-goals.md#goal-tag): the human runs (gait 4) to the flag; within
+/// kTagReach the other tag object, if any, is made blank once and the spray starts on the tag; it is done once the
+/// spray is over. It is also done when the flag is gone, the human is cuffed or down, another human holds the flag, or
+/// the run stopped more than kTagReach short. The flag is claimed from the goal's making until its end.
+/// **Coney's reading**: the start of the spray is the Tag action's start (`Human_Tag`) without the action's command
+/// presses, and "down" is the human not alive (Human::alive()).
+/// @orig 0x002ccfe0 TagGoal_Init (unknown)
+/// @orig 0x002cd258 TagGoal_Process (unknown)
+class TagGoal final : public Goal {
+  public:
+    /// Spraying `tag` from `flag`, made blank first `extra` (0 for none); `flags` must outlive it, and `release` (may
+    /// be empty) frees the flag's claim at its end.
+    TagGoal(double flag, double tag, double extra, FlagServices& flags, TagServices services,
+            std::function<void()> release);
+    /// The run's start.
+    void start(Brain& brain) override;
+    /// The run's resume while it runs.
+    void resume(Brain& brain) override;
+    /// Frees the flag.
+    /// @orig 0x002cd198 TagGoal_Suspend (unknown)
+    void end(Brain& brain) override;
+    /// The three states: run, arrive and start, spray.
+    [[nodiscard]] GoalStatus process(Brain& brain) override;
+
+    /// The state (`+0x24`): 0 running, 1 arrived, 2 spraying.
+    [[nodiscard]] int state() const { return m_state; }
+
+  private:
+    std::unique_ptr<MoveToFlagGoal> m_move;
+    FlagServices* m_flags;
+    TagServices m_services;
+    std::function<void()> m_release;
+    double m_flag;
+    double m_tag;
+    double m_extra;
+    int m_state = 0;
+};
+
 } // namespace coney::ai

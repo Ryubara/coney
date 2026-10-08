@@ -2535,7 +2535,8 @@ zoom eases between `HUDRadarSetRange`'s radii by the speed and `HUDSetRadarZoomS
 factor), white but the dealers' green icons 29-31, a new objective blinking for 100 updates; the player's arrow (icon
 362, 0.03 wide, `(178, 178, 178)`) turned by his heading less the camera's, drawn as two triangles. **Coney's
 stand-ins**: w = 1.33 (the measured disc) for the camera slot's value; `rest` 50 and `fast` 75 until a script sets
-them; the disc colour's blue state and its blend are not built; enemies and police (types 6, 8) never show, as no
+them; the disc's state set by `Hud::setRadarTint` (blue while player 1 may hide,
+[Stealth](stealth.md#hud-cue)) and blended over 500 ms; enemies and police (types 6, 8) never show, as no
 scanner marks them yet; `HUDAddRadarHuman` makes every human a Warrior's blip (type 7, icon 365); a blip whose
 object the locator cannot find is skipped, not freed. Tests: `repo:tests/hud/radar_test.cpp`.
 

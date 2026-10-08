@@ -561,6 +561,17 @@ NativeFunction makeGoalMoveToUseFlag(const BindingContext& context) {
     });
 }
 
+// `GoalTag(human, flag, tag, extra)`.
+// @orig 0x002cce88 Goal_Tag (unknown)
+NativeFunction makeGoalTag(const BindingContext& context) {
+    return hostCall(context, [](HumanBindingHost& host, std::span<const Value> args) {
+        host.goalTag(TagCall{.human = handleArg(args, 0),
+                             .flag = handleArg(args, 1),
+                             .tag = handleArg(args, 2),
+                             .extra = handleArg(args, 3)});
+    });
+}
+
 // `SetInterrogateParam(valueA, valueB, valueC, timeA, timeB, timeC, angleA, angleB, timeD, flag, set)`: sets 0-2
 // write the first override, 3-5 the second; 6 or more is ignored.
 // @orig 0x002854b0 Brain_SetInterrogateOverride (unknown)
@@ -797,6 +808,7 @@ void addHumanBindings(LuaVm& vm, const BindingContext& context, std::function<do
     vm.registerFunction("GoalBackoff", makeGoalBackoff(context));
     vm.registerFunction("GoalBumLogic", makeGoalBumLogic(context));
     vm.registerFunction("GoalMoveToUseFlag", makeGoalMoveToUseFlag(context));
+    vm.registerFunction("GoalTag", makeGoalTag(context));
     vm.registerFunction("SetInterrogateParam", makeSetInterrogateParam(context));
     vm.registerFunction("GangAddSpawner", makeGangAddSpawner(context));
     vm.registerFunction("GangClearResponders", makeGangClearResponders(context));

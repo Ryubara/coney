@@ -48,8 +48,17 @@ struct SightLine {
 /// @orig 0x00222710 Human_IsInFieldOfView (unknown)
 [[nodiscard]] bool inFieldOfView(float fieldOfView, const human::Human& human, anim::Vec3 point);
 
-/// Whether `viewer` can see `other` (`Human_CanSeeHuman`): `other` within `range` in 3D, then the line of sight.
-/// **Coney stand-in**: no human hides in shadow yet, so the shorter shadow range never applies.
+/// How near a hidden human must be to be seen at all, m (docs/research/stealth.md#seen).
+inline constexpr float kHiddenSightRange = 2.0F;
+
+/// Whether the shadow lets `viewer` see `other`: always when `other` is not hidden; hidden, only within
+/// kHiddenSightRange and only when `viewer` himself stands on shadow ground (a guard on normal ground does not see a
+/// hidden human even next to him).
+/// Research: docs/research/stealth.md#seen
+[[nodiscard]] bool shadowAllowsSight(const human::Human& viewer, const human::Human& other);
+
+/// Whether `viewer` can see `other` (`Human_CanSeeHuman`): `other` within `range` in 3D, the shadow's rule
+/// (shadowAllowsSight()), then the line of sight.
 /// @orig 0x002223e8 Human_CanSeeHuman (unknown)
 [[nodiscard]] bool canSeeHuman(const raycast::CollisionMesh* mesh, const human::Human& viewer,
                                const human::Human& other, float range);

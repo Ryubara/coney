@@ -310,6 +310,13 @@ class Hud {
     }
     [[nodiscard]] RadarState& radar() { return m_radar; }
     [[nodiscard]] const RadarState& radar() const { return m_radar; }
+    /// Sets player `player`'s radar disc to `tint`, blending from the colour it shows now over kRadarTintBlendMs.
+    /// Blue only while the HUD is shown (a blue asked for while it is hidden is ignored); nothing for the tint it has.
+    /// @orig 0x001b26a8 HUD_RadarSetTintBlue (unknown)
+    /// @orig 0x001b2790 HUD_RadarSetTintGrey (unknown)
+    void setRadarTint(std::size_t player, RadarTint tint);
+    /// Player `player`'s radar disc colour now: the blend from the previous tint to the current one.
+    [[nodiscard]] graphics::Rgba radarColour(std::size_t player) const;
 
     /// `HUDEnableTextProgress(on, labels, count, slot)`: on, rows 0 to `count` - 1 (at most 6) not shown yet show
     /// label i with score 0; off, every row goes. Either way `count` is recorded as row count `slot` (1 the main, 0

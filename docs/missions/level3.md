@@ -19,21 +19,21 @@ summary is still to be written from the script.
 
 | # | Status | Note |
 | --- | --- | --- |
-| 1 | 🚧 In Progress | Runs headless with no script error and every binding it calls; not yet checked to its end. |
-| 2 | 🚧 In Progress | No script error; waits on the tagging goal and the HUD bars (being built for level34). |
+| 1 | 🚧 In Progress | Plays to checkpoint 2 driven by the pad: the walk past the Moonrunners and Panzers to the showdown's marker. |
+| 2 | 🚧 In Progress | Plays to checkpoint 3 driven by the pad: Poizo's pan, then the Warriors' five-piece burner tagged at the wall (five stick games) wins the showdown. The rival painters run GoalTag; they tag only once the tactics stop flushing a member's goals at their start (re-human dc040b31). |
 | 3 | 🚧 In Progress | No script error; waits on the car message handler and object indices (being built for level34). |
 | 4 | 🚧 In Progress | Plays to its end from a pad script (tests/support/level3_chase.txt, its disc test `[playthrough]`): the AI walks Snow to the rail's start box, then the stick, L2 and triangle run, climb and jump him across the roofs to the gallery box, which hands over to checkpoint 5. The Warriors follow on the default command. |
 | 5 | 🚧 In Progress | Runs headless with no script error and every binding it calls; not yet checked to its end. |
 
 ## What it needs {#needs}
 
-Its scripts can call 259 script bindings. 22 of them are new, which no earlier level of the story calls: 21 are
+Its scripts can call 259 script bindings. 22 of them are new, which no earlier level of the story calls: 22 are
 implemented in Coney and 22 are traced. The full list is on [the coverage page](../references/bindings/story.md#level3).
 
 | Family | New bindings | In Coney |
 | --- | --- | --- |
 | [Characters](../references/bindings/character.md) | 7 | 7 |
-| [AI](../references/bindings/ai.md) | 4 | 3 |
+| [AI](../references/bindings/ai.md) | 4 | 4 |
 | [Gangs](../references/bindings/gang.md) | 2 | 2 |
 | [Cameras](../references/bindings/camera.md) | 2 | 2 |
 | [World and objects](../references/bindings/world.md) | 1 | 1 |

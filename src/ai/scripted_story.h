@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "ai/riot_goals.h"
+#include "ai/scout_services.h"
 #include "animation/anim_math.h"
 #include "scripting/story_bindings.h"
 
@@ -102,6 +103,8 @@ class ScriptedStory final : public script::StoryBindingHost {
     void setTagHandler(TagHandler handler) { m_tagHandler = std::move(handler); }
     /// Hands the call to the tag handler; without one nothing happens.
     void tag(double human, double tag, double flag) override;
+    /// What the scouts' calls ask of the level (TacticScout, ai/tactic_scout.h): the play mode fills the hooks.
+    [[nodiscard]] ScoutServices& scoutServices() { return m_scout; }
     /// The level's volume boxes, where the gangs' turf boxes are found (null for none: every point is in turf).
     void setBoxes(const world_objects::VolumeBoxes* boxes) { m_boxes = boxes; }
     /// Kept on the human (ScriptState); true when the handle names a human (or calls are held for the level).
@@ -190,7 +193,8 @@ class ScriptedStory final : public script::StoryBindingHost {
     ScriptedBrains* m_scripted;
     const world_objects::VolumeBoxes* m_boxes = nullptr;
     std::map<double, WorldPath> m_paths;
-    RiotServices m_riot; // what every rioter asks of the level (set on the first GoalRiot)
+    RiotServices m_riot;   // what every rioter asks of the level (set on the first GoalRiot)
+    ScoutServices m_scout; // what the scouts' calls ask of the level (scoutServices())
     int m_warriorCommand = -1;
     TagHandler m_tagHandler;
 };

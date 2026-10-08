@@ -55,9 +55,16 @@ bool inFieldOfView(float fieldOfView, const human::Human& human, anim::Vec3 poin
     return cosine >= std::cos(fieldOfView * 0.5F);
 }
 
+bool shadowAllowsSight(const human::Human& viewer, const human::Human& other) {
+    if (!other.hidden()) {
+        return true;
+    }
+    return anim::distance(viewer.position(), other.position()) <= kHiddenSightRange && viewer.onShadowGround();
+}
+
 bool canSeeHuman(const raycast::CollisionMesh* mesh, const human::Human& viewer, const human::Human& other,
                  float range) {
-    if (anim::distance(viewer.position(), other.position()) > range) {
+    if (anim::distance(viewer.position(), other.position()) > range || !shadowAllowsSight(viewer, other)) {
         return false;
     }
     return lineOfSight(mesh, viewer.position(), other.position()).clear;

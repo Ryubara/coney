@@ -13,6 +13,7 @@
 
 #include "ai/brains.h"
 #include "ai/crew.h"
+#include "ai/hiding.h"
 #include "ai/scripted_brains.h"
 #include "camera/cameras.h"
 #include "core/error.h"
@@ -391,6 +392,12 @@ class GameplayMode final : public GameMode {
     // **Coney's stand-in**: a talkable human is not chosen yet.
     // @orig 0x001af010 HUD_Update (unknown)
     void updateActionPrompt();
+    // Player 1's hiding after the level's step (ai::updateHiding()): the hidden state from the ground he stands on,
+    // and his radar blue while he may hide (docs/research/stealth.md#hud-cue).
+    void updateHiding();
+    // Fills the scouts' call hooks (ai::ScoutServices): the responder spawners, the phone flags, the gangs' second
+    // wanted timers.
+    void wireScoutServices();
     // The uncuffing (gameplay_uncuff.cpp, docs/research/crimes.md#uncuffing). An arrest or a release (the
     // ScriptedHumans hook): a friendly AI human arrested says 25 `arrested`.
     void onArrest(ai::Brain& brain, bool arrested);
@@ -482,6 +489,7 @@ class GameplayMode final : public GameMode {
     std::string m_shownPrompt;                    // the action prompt updateActionPrompt() last set
     std::optional<double> m_promptHintObject;     // the action object whose hint updateActionPrompt() queued
     std::string m_promptHint;                     // that hint
+    ai::HideMemory m_hideMemory;                  // player 1's ground rule memory (updateHiding())
     std::unique_ptr<GameMode> m_level;
     std::uint32_t m_playerTeleports = 0;  // player 1's teleports the level has been told of
     PauseMode* m_pause = nullptr;         // what START pauses through; not owned

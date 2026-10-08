@@ -84,7 +84,7 @@ std::size_t HumanAnimator::clipsMissing(const characters::AnimSet& anims, const 
 }
 
 HumanAnimator::HumanAnimator(const characters::AnimSet& anims, const AnimSlots& slots)
-    : m_anims(&anims), m_slots(slots), m_speeds(speedsOf(anims, slots)) {
+    : m_anims(&anims), m_slots(slots), m_normalSlots(slots), m_speeds(speedsOf(anims, slots)) {
     CONEY_ASSERT(clipsMissing(anims, slots) == 0);
     // A human is made standing: its idle, with nothing to fade from.
     m_tasks.change(idleLoop(), 0.0F);
@@ -105,6 +105,43 @@ void HumanAnimator::changeAnims(const characters::AnimSet& anims) {
 anim::GaitClip HumanAnimator::slotClip(std::size_t slot) const {
     const std::uint32_t id = m_slots.ids[slot];
     return anim::GaitClip{.clip = clip(id), .animId = id};
+}
+
+std::uint32_t HumanAnimator::runStartId() const {
+    return m_stealth ? m_slots.ids[kSlotWalkStart] : m_slots.ids[kSlotWalkStart] + kRunStartOffset;
+}
+
+void HumanAnimator::setStealthStyle(bool on) {
+    if (on == m_stealth) {
+        return;
+    }
+    if (on && (!hasClip(kAnimStealthIdle) || !hasClip(kAnimStealthWalk) || !hasClip(kAnimStealthWalkStart))) {
+        return;
+    }
+    // The style's slots (the original's slots 0 and 11, 3 and 4, 9 and 10), and the speeds from the clips again.
+    m_stealth = on;
+    m_slots = m_normalSlots;
+    if (on) {
+        m_slots.ids[kSlotIdle] = kAnimStealthIdle;
+        m_slots.ids[kSlotSneak] = kAnimStealthWalk;
+        m_slots.ids[kSlotWalk] = kAnimStealthWalk;
+        m_slots.ids[kSlotWalkStart] = kAnimStealthWalkStart;
+    }
+    m_speeds = speedsOf(*m_anims, m_slots);
+    // Standing, the idle's builder plays the transition first (`Human_BuildIdleTasks`, 0x0025f770): 634 going in, 394
+    // coming out of 630. Moving, a new gait blend on the new clips carries on the old one.
+    constexpr HeldFlags kTransitionHeld{.held = kFlagNormalFromFight, .set = kFlagNormalFromFight};
+    if (m_state == AnimState::Idle) {
+        const std::uint32_t transition = on ? kAnimStealthFromNormal : kAnimNormalFromStealth;
+        const bool fromStealthIdle = animId() == kAnimStealthIdle;
+        if (hasClip(transition) && (on || fromStealthIdle)) {
+            m_tasks.change(clipThen(transition, idleLoop(), nullptr, kTransitionHeld), kIdleFade);
+        } else {
+            m_tasks.change(idleLoop(), kIdleFade);
+        }
+    } else if (m_state == AnimState::Move && gaitBlendPlaying()) {
+        buildMove(false);
+    }
 }
 
 std::unique_ptr<anim::GaitBlendTask> HumanAnimator::gaitBlend(float value, float phase) const {
@@ -208,7 +245,7 @@ void HumanAnimator::buildMove(bool run) {
     }
     // From standing: the walk start (or the run start) at once, handing over to a gait blend at the walk (or run) when
     // less than an update of it is left (13 updates at runtime).
-    const std::uint32_t startId = m_slots.ids[kSlotWalkStart] + (run ? kRunStartOffset : 0U);
+    const std::uint32_t startId = run ? runStartId() : m_slots.ids[kSlotWalkStart];
     auto start = std::make_unique<anim::ClipThenNextTask>(*clip(startId), startId, m_anims->rate(startId), 0U,
                                                           gaitBlend(run ? kRunValue : kWalkValue, 0.0F), 0.0F, true);
     start->holdFlags(kStartClipHeld.held, kStartClipHeld.set);
@@ -410,8 +447,9 @@ void HumanAnimator::choose(const AnimInputs& inputs) {
     // A walk start that has played less than half its length becomes a run start when a run is asked for.
     const anim::AnimTask* top = m_tasks.top();
     if (top != nullptr && top->type() == anim::AnimTaskType::ClipThenNext &&
-        top->animId() == m_slots.ids[kSlotWalkStart] && inputs.wantsRun && top->normalisedTime() < kRunSwapLimit) {
-        const std::uint32_t runId = m_slots.ids[kSlotWalkStart] + kRunStartOffset;
+        top->animId() == m_slots.ids[kSlotWalkStart] && runStartId() != m_slots.ids[kSlotWalkStart] &&
+        inputs.wantsRun && top->normalisedTime() < kRunSwapLimit) {
+        const std::uint32_t runId = runStartId();
         const anim::AnimClip* runStart = clip(runId);
         const float startAt = top->normalisedTime() * runStart->duration;
         const float fade = std::min(kMoveFadeMoving, top->duration());

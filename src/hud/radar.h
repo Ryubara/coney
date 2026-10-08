@@ -48,8 +48,13 @@ struct RadarView {
     float speed = 0.0F;         ///< The player's speed, m/s.
 };
 
+/// The radar disc's colour state (radar `+0x38`): grey, or blue while the player stands on shadow ground and may hide
+/// (docs/research/stealth.md#hud-cue). The third state (100, 50, 50, 140) has no caller.
+enum class RadarTint : std::uint8_t { Grey = 0, Blue = 1 };
+
 /// The radars' state: on or off per player (each radar's `+0x04`), whether they come back on their own after a
-/// letterbox or fade (`+0x177ac`, the scripts' last radar call), the blips, the level's map and the zoom.
+/// letterbox or fade (`+0x177ac`, the scripts' last radar call), the blips, the level's map and the zoom, and each
+/// disc's tint with the one it blends from and when it changed (`+0x38`, `+0x3c`, `+0x40`).
 struct RadarState {
     std::array<bool, 2> on{true, true};
     bool scriptOn = true; ///< `+0x177ac`: set by the level's set-up and `HUDTurnOnRadar`, cleared by `HUDTurnOffRadar`.
@@ -67,6 +72,9 @@ struct RadarState {
     /// The chase HUD (the pursuit widget at `0x00609e80`) exists. **Coney stand-in**: it is not built or drawn; only
     /// `HUDSetChaseHUDState_DESTROY` clears it.
     bool chaseHud = false;
+    std::array<RadarTint, 2> tint{};
+    std::array<RadarTint, 2> previousTint{};
+    std::array<std::uint64_t, 2> tintChangedMs{};
 };
 
 /// The full speed of the zoom's easing, m/s, and its rate per millisecond.
@@ -88,6 +96,13 @@ inline constexpr int kRadarSegments = 32;
 inline constexpr float kRadarFilled = 0.825F;
 /// The disc's colour in state 0 (`0x0050e9e8`): grey, alpha 240.
 inline constexpr graphics::Rgba kRadarDiscColour{191, 191, 191, 240};
+/// Its colour in state 1: blue, alpha 240.
+inline constexpr graphics::Rgba kRadarBlueColour{100, 120, 200, 240};
+/// How long a change of the disc's state blends, ms.
+inline constexpr std::uint64_t kRadarTintBlendMs = 500;
+
+/// The disc's colour for `tint`: kRadarDiscColour or kRadarBlueColour (`0x0050e9e8`).
+[[nodiscard]] graphics::Rgba radarTintColour(RadarTint tint);
 /// A dot's start size (`0x003e5bf8`), the factor the human and dealer blips' icons are set at, and a dot's height
 /// factor in the particle draw (`0x0039b020`).
 inline constexpr float kRadarDotSize = 0.7F;

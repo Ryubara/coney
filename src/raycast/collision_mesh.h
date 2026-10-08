@@ -43,6 +43,7 @@ inline constexpr std::size_t kCollisionHeaderBytes = 160;
 /// Triangle flag bits (docs/research/collision.md#triangles).
 inline constexpr std::uint16_t kTriangleEnabled = 0x0001;          ///< Set at load; switched by setEnabledInBox().
 inline constexpr std::uint16_t kTriangleTwoSided = 0x0002;         ///< Rays and spheres meet both faces.
+inline constexpr std::uint16_t kTriangleShadow = 0x0010;           ///< Shadow ground: a human on it may hide.
 inline constexpr std::uint16_t kTriangleTestableDisabled = 0x0800; ///< Testable while disabled, with mask bit 0x800.
 
 /// The material id a ray cast reports before it hits anything: `MATERIAL_NONE`. Also the original's end marker of an

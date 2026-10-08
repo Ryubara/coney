@@ -699,18 +699,22 @@ difficulty of the player's `CfgWarriorClass` byte `+0x0a` less 1; the pick takes
 turning each step, cross judging and any button but cross, L1, R2, the d-pad and SELECT abandoning. Not yet: the
 lock-pick animations (689, 690), the hint and the HUD dial.
 
-**Crime reports** (`repo:src/warriors/crime_reports.h`, `CrimeReports` in `GameState::player`), written
-from [AI: crimes](ai.md#crimes) and [Wanted](#wanted) (2026-10-06): `report()` follows steps 1-6 there, reaching gangs,
-spawners, stores, statistics, the script callback and the HUD through a `CrimeServices` interface the play mode
-implements as those systems arrive; `update()` clears a gang's wanted state 10 s after its last report (held while
-forced). In play the objects' break-ins report through it (`repo:src/gamemodes/level_crime_services.h`: the crime
-callback, the `CrimeScene` flag and which humans are players; Coney's gangs, spawners and HUD are not wired to it
-yet). A break-in marks the nearest store flag within 10 m robbed (the gang in bits 18-22) and switches on the alarm
-strobe (a `part_strobe_red` of the level's objects file) within 6 m of it (`LevelObjectServices::robStore`): its
-[strober](script-types.md#strober), a red light pulsing on a 40-tick cycle, and its `alarmbell_loop` emitter, heard
-within 30 m ([Particles](particles.md#coneys-implementation)); `ResetStore` switches the one within 7 m off. **Coney's
-stand-in**: the store's buyers are not done yet. `ReportCrime` switches reporting. `EnterStore` / `ExitStore` switch the
-[screen tint](graphics.md#looks), and `CfgSetSteroTheftHandler` keeps its callback's name.
+**Crime reports** (`repo:src/warriors/crime_reports.h`, `CrimeReports` in `GameState::player`), written from [AI:
+crimes](ai.md#crimes) and [Wanted](#wanted) (2026-10-06): `report()` follows steps 1-6 there, reaching gangs, spawners,
+stores, statistics, the script callback and the HUD through a `CrimeServices` interface the play mode implements as
+those systems arrive; `update()` clears a gang's wanted state 10 s after its last report (held while forced).
+`setSecondWanted()` starts a gang's second timer (10 s, not held by `ForceCrimeLevel`; the all-clear callback at its end
+is not built), which `GangIsWanted(gang, false)` reads; a second argument passed as `nil` reads as false, as level87's
+`CheckIfWanted` relies on. In play the objects' break-ins report through it
+(`repo:src/gamemodes/level_crime_services.h`: the crime callback, the `CrimeScene` flag, which humans are players, and
+the offender's gang and player 1's through the level's brains, so a report makes the gang wanted; the police's
+hostility, the spawners and the HUD are not wired to it yet). A break-in marks the nearest store flag within 10 m robbed
+(the gang in bits 18-22) and switches on the alarm strobe (a `part_strobe_red` of the level's objects file) within 6 m
+of it (`LevelObjectServices::robStore`): its [strober](script-types.md#strober), a red light pulsing on a 40-tick cycle,
+and its `alarmbell_loop` emitter, heard within 30 m ([Particles](particles.md#coneys-implementation)); `ResetStore`
+switches the one within 7 m off. **Coney's stand-in**: the store's buyers are not done yet. `ReportCrime` switches
+reporting. `EnterStore` / `ExitStore` switch the [screen tint](graphics.md#looks), and `CfgSetSteroTheftHandler` keeps
+its callback's name.
 
 **Tagging** (`repo:src/warriors/tag_game.h`, `repo:src/warriors/tag_session.h`, `repo:src/world_objects/tag_spots.h`,
 2026-10-06): `tagPath()` samples `HuTagPattern`'s points along the Catmull-Rom curve into grid cells and `TagGame` is
@@ -736,7 +740,10 @@ spot's flag: the script gives the flag (activity 12) a message-0 handler and a p
 particle system (`LevelPickups::actionObject()`), shows its text as player 1's [action prompt](hud.md#action-prompts)
 and hands it triangle, whose handler calls `HuTag`. **Coney's stand-ins**: any picked crew mate may gesture (the gesture
 slots are not kept), and the busy test is the actions-blocked one; the spray clips stop at the end (back to the idle);
-an AI human given `HuTag` becomes the spot's tagger at once (its fade in) without walking to the flag. Not yet: the
+an AI human given `HuTag` becomes the spot's tagger at once (its fade in) without walking to the flag (`GoalTag`
+walks him there first, [AI](ai.md#coney)). A spot telling an AI tagger he is done (message `0x13`, at the end of its fade
+or when hidden) ends his spray as `Tag_End` does: he gets event 14 with the tag and whether it is fully painted
+(**Coney's reading**: the human's handling of `0x13` is not traced). Not yet: the
 slip's rumble, the bonus event on a clean finish, the spray particles and the tag's drawing, the HUD grid, hint `0x10`,
 and buttons other than the stick ending a session.
 
@@ -793,4 +800,4 @@ the assault statistic is scored once per victim through the service.
 - The prompt widgets' base position and text style.
 - The lock-picking dial's rate at runtime (one step per drawn frame is inferred).
 - The responder spawn kind of a break-in (type 1) and of a custom crime (type 4).
-- Wiring the report's hostility, responders, robbed stores and HUD messages to Coney's gangs, spawners and HUD.
+- Wiring the report's police hostility, responders and HUD messages to Coney's gangs, spawners and HUD.

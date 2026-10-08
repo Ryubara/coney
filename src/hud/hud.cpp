@@ -221,6 +221,30 @@ void Hud::radarOff(int player) {
     m_radar.scriptOn = false;
 }
 
+graphics::Rgba radarTintColour(RadarTint tint) { return tint == RadarTint::Blue ? kRadarBlueColour : kRadarDiscColour; }
+
+void Hud::setRadarTint(std::size_t player, RadarTint tint) {
+    if (player >= kPlayers || m_radar.tint.at(player) == tint || (tint == RadarTint::Blue && !m_visible)) {
+        return;
+    }
+    // A change blends from the old tint's colour, as the original keeps only the two states and the time.
+    m_radar.previousTint.at(player) = m_radar.tint.at(player);
+    m_radar.tint.at(player) = tint;
+    m_radar.tintChangedMs.at(player) = m_nowMs;
+}
+
+graphics::Rgba Hud::radarColour(std::size_t player) const {
+    const graphics::Rgba from = radarTintColour(m_radar.previousTint.at(player));
+    const graphics::Rgba to = radarTintColour(m_radar.tint.at(player));
+    const std::uint64_t since = m_nowMs - std::min(m_nowMs, m_radar.tintChangedMs.at(player));
+    const float share = std::min(1.0F, static_cast<float>(since) / static_cast<float>(kRadarTintBlendMs));
+    // Each channel moved `share` of the way, rounded.
+    const auto mix = [share](std::uint8_t a, std::uint8_t b) {
+        return static_cast<std::uint8_t>(std::lround(static_cast<float>(a) + (static_cast<float>(b) - a) * share));
+    };
+    return graphics::Rgba{mix(from.r, to.r), mix(from.g, to.g), mix(from.b, to.b), mix(from.a, to.a)};
+}
+
 void Hud::setNumIndicator(int player, bool on, int gang) {
     if (player < 0 || player >= static_cast<int>(kNumIndicators)) {
         return;
@@ -377,7 +401,7 @@ void Hud::renderRadar(const HudCanvas& canvas) const {
     const graphics::OverlayPoint centre{kRadarX, kRadarY, kRadarDepth};
     if (canvas.radarMap != nullptr && m_radar.map.usable()) {
         addRadarDisc(*canvas.radarMap, centre, kRadarRadius * kRadarStretchX, kRadarRadius * kRadarStretchY, m_radar,
-                     kRadarDiscColour);
+                     radarColour(0));
     }
     renderBlips(canvas, centre);
     renderPlayerArrow(canvas, centre);

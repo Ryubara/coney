@@ -4923,14 +4923,34 @@ human whose last move failed runs straight at
   ends farther is not traced.
 - **Sight and targeting** (`repo:src/ai/perception.h`, `repo:src/ai/targeting.h`, [Sight](#sight),
   [the score](#enemy-score)): the line of sight is the two rays (1.7 m, then 1.0 m) through the level's collision mesh,
-  passing the six see-through materials; the field of view and `Human_CanSeeHuman` (range, then the line); the brains
+  passing the six see-through materials; the field of view and `Human_CanSeeHuman` (range, the shadow's rule, then
+  the line); the brains
   get the mesh from `Brains::setCollision`, and an attack warning needs the line too. `Brain_ValidateEnemy`,
   `Brain_CanBeChased`, `Brain_IsAttackableBy` (the attackable byte `+0x11f`, `GangSetAttackable`, and the street
   civilian and dog exceptions), `Brain_CanTakeSlotOn`, `Brain_ScoreEnemy` with every term and the weights of
   `CfgSetTargetingPoints` / `CfgSetTargetingPointsEx` (read from the scripts' calls), and `Brain_PickBestEnemy` with
-  the goals' adjustment (the previous target's 3 points). **Stand-ins**: Coney has no shadows, trains, fires,
+  the goals' adjustment (the previous target's 3 points). **Stand-ins**: Coney has no trains, fires,
   muggings, interrogations, tagging or turf-only rule, so those tests pass and those terms give nothing; only the
   level's static collision blocks a sight ray; a gang's chosen target (`+0x10`) is kept but nothing sets it yet.
+- **Hiding** (`repo:src/ai/hiding.h`, `repo:src/human/human_hiding.cpp`, [Stealth](stealth.md#shadow-ground)):
+  the ground snap keeps its triangle's flags (`Human::onShadowGround`, bit `0x10`); after the level's step
+  `ai::updateHiding` runs the ground rule for player 1: on shadow ground with nobody hunting him (no other fightable
+  brain with him as its target or enemy, **Coney's reading** of the hostile count) he enters the hidden state, off it
+  or hunted he leaves it (kept 4 s when walking with a target), and stepping on shakes off hunters beyond twice their
+  far melee range with no line of sight. Hidden, his target does not lock, a sprint ends it, his idle and walk take
+  the stealth style (634 in, 630, 633 at its own speed, 631 starts, 394 out), the radar turns blue
+  ([HUD](hud.md#coneys-implementation)), and `Human_CanSeeHuman` sees him only within 2 m from shadow ground. Not
+  yet: the other players' Warriors and their hide order, the molotov test, the camera's raised look-at and the half
+  volume footsteps.
+- **The enemy scan** (`repo:src/ai/enemy_scan.h`, [The enemy scan](#enemy-scan)): `scanEnemies` lists the members
+  of the enemy gangs in use that it sees (sight range, the shadow's 2 m rule, 1.9 m above an AI scanner at most, the
+  Warriors' threat filter, the near radius of 1.5, 3 or 5.2 m all round and the view cone beyond it, then the line of
+  sight), keeps old entries within the range, valid and near or in sight, keeps the 16 nearest, and tells the scanner
+  of each new one as event `0xb` (its script's handler, else its type's; a tactic through `Brain::addEnemy`).
+  `ScanSchedule` runs it every interval (2 s, cops 1 s, × 4 locked on in the stance, or a goal's own) with five scans
+  an update at most. **Coney's reading**: the gangs always seen, `Human_MaySpectate`'s fight count, the civilians'
+  ped type, the gang's chosen target, the hostile counts, the radar's enemy marks, the detail level's slowdown and the
+  rescan on a gang change are not built. The Scout tactic (below) scans its members at their posts.
 - **Blocking**: `BlockGoal` never produces a block: Coney's block starts only on R1 held in the record's buttons,
   which only a pad writes, so its command 4 does nothing. It turns the human's hit reactions off
   (`Fighter::setHitReactionsOff`, bit `0x800`) from its start until its sixth update with the human free; rolls the
@@ -5168,6 +5188,11 @@ stands there (the flag reserved until the goal ends). `GangInvincible` sets god 
 ones; `GangSetTargetable` sets each member's targetable byte, kept on the human. `GangAddSpawner` keeps up to four
 spawners per gang, which spawn (below); `GangClearWanted` has no wanted state to clear; `GangClearResponders` deletes
 non-police gangs named `Responder<n>`. `BrSetThugWantsWeapon` and `SetInterrogateParam` are kept only.
+`GoalTag` pushes the [tag goal](ai-goals.md#goal-tag) (`0x5a`, `TagGoal`): the flag claimed until the goal ends, a run
+(gait 4) to it, done short of 1.5 m or when the flag is gone, the human is not alive or another holds the flag; at the
+flag the other tag is made blank and the spray starts as `HuTag`'s does ([Crimes](crimes.md#coneys-implementation)),
+and the goal ends once the human is no longer tagging. **Coney's reading**: the Tag action's command presses are not
+built; the spray starts at once.
 
 **The spawners** (`src/ai/spawners.*`, [Spawners](#spawners)): after each characters' step every spawner in use whose
 state is ready (1, 6, 7, 8 and 10 always; 2 past its deadline; 3 and 5 by player 1's distance, taken in 3D) makes a
@@ -5281,9 +5306,18 @@ places, and with `dynIdle` breaks the dynamic idles off on events 1, 11 and 16, 
 Defend tracks the human at `range`: 11 once he is gone or out of health, else 9 with no enemy. HoldTheLine sends
 min(line length, 60 % of the members) to the line's two flags in turn, the rest to the third: 9 with no enemy.
 Pursue makes the target gang's leader an enemy and melees: 9 once that gang is gone or leaderless, 7 while a member is
-within `range` of one of it. Scout melees with members that have enemies. **Stand-ins**: ManWeaponPile, Vandalize,
-Steal, AvoidEnemies and Scout hold their places, their goals not traced; banter, answering violence, the anim
-substitutions, HoldTheLine's 12 and 14 and Pursue's search time are not built.
+within `range` of one of it. Scout (`src/ai/tactic_scout.*`) posts each member where he stands (the Scout goal:
+threat response 0, a 500 ms scan, back to his post at a walk or a jog and turned to his heading); the members at
+their posts scan (`ScanSchedule`), and every 200 ms one with an enemy and no fight is given one. A member at his post
+who is hit by someone he sees, warned of an attack or spots an enemy (events 1, `0x10`, `0xb`) fights him and, with
+a responder spawner (state 9 or 10), the enemy's gang's second wanted timer not running and no other caller, gets a
+CallGang goal: he runs (gait 5) to the farthest phone flag (activity 6) within `range` (twice his far melee range
+when negative), or calls where he stands, and after 1.5 s the call is made and the enemy's gang gets its second
+wanted timer. **Stand-ins**: ManWeaponPile, Vandalize, Steal and AvoidEnemies hold their places, their goals not
+traced; the scouts' radar blip, clips, glances, roaming, help call within 15 m, investigation of an unseen hit and
+the gang's alert state, the caller's lines, clips and call spot, and the responders themselves (the level only logs
+the call); banter, answering violence, the anim substitutions, HoldTheLine's 12 and 14 and Pursue's search time are
+not built.
 
 **Open in Coney.** The pattern read at Start and in the pick; the reposition's band-keeping move and taunt; the move's
 sight checks; choke points and the waypoint queues; the dynamic obstacles; the legs of edges 8, `0x10`,

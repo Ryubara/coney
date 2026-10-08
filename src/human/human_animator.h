@@ -45,6 +45,17 @@ inline constexpr std::size_t kSlotDropCycle = 26;
 inline constexpr std::size_t kSlotJumpLoop = 30;
 inline constexpr std::size_t kSlotRunStop = 33;
 
+/// The hidden move style (`0x14`, docs/research/stealth.md#sneaking): 630 `STEALTH_IDLE` for the idle, 633
+/// `STEALTH_WALK` for the sneak and the walk, 631 `STEALTH_WALK_START` for the walk and the run start; the jog, run and
+/// sprint keep theirs.
+inline constexpr std::uint32_t kAnimStealthIdle = 630;
+inline constexpr std::uint32_t kAnimStealthWalkStart = 631;
+inline constexpr std::uint32_t kAnimStealthWalk = 633;
+/// The idle's way into the hidden style (634 `STEALTH_TRANSITION_FROM_NORMAL`) and out of it (394
+/// `NORMAL_TRANSITION_FROM_STEALTH`).
+inline constexpr std::uint32_t kAnimStealthFromNormal = 634;
+inline constexpr std::uint32_t kAnimNormalFromStealth = 394;
+
 /// The jump's landing clips (not slots): 435 standing (jump end), 436 moving on (jump end running).
 inline constexpr std::uint32_t kAnimJumpEnd = 435;
 inline constexpr std::uint32_t kAnimJumpEndRunning = 436;
@@ -194,6 +205,16 @@ class HumanAnimator {
     [[nodiscard]] bool settling() const;
     /// Whether the anim set has a clip for `id`.
     [[nodiscard]] bool hasClip(std::uint32_t id) const { return clip(id) != nullptr; }
+    /// Puts the hidden move style (`0x14`) on or takes it off: the idle, sneak, walk and both start slots play the
+    /// stealth clips (kAnimStealthIdle, kAnimStealthWalk, kAnimStealthWalkStart) and the speeds are taken from the
+    /// clips again, so the walk goes at 633's speed. Standing idle, the idle is rebuilt through 634 going in, or
+    /// through 394 coming out while 630 plays (each holding `0x40000000`); moving, the gait blend is rebuilt on the new
+    /// clips. Nothing when the style is already so, or (going in) when the anim set lacks a stealth clip. Research:
+    /// docs/research/stealth.md#sneaking
+    /// @orig 0x00253688 Human_ApplyAnimSet (unknown)
+    void setStealthStyle(bool on);
+    /// Whether the hidden move style is on.
+    [[nodiscard]] bool stealthStyle() const { return m_stealth; }
 
     /// The blended pose.
     [[nodiscard]] anim::Pose pose(std::span<const anim::Quat, anim::kPoseBones> bindRotations) const {
@@ -272,11 +293,15 @@ class HumanAnimator {
                    AnimState state, float fade, HeldFlags held);
     // The clip for slot `slot` with its anim id.
     [[nodiscard]] anim::GaitClip slotClip(std::size_t slot) const;
+    // The run start's id: the walk start's + 1, or the stealth walk start itself in the hidden style.
+    [[nodiscard]] std::uint32_t runStartId() const;
 
     const characters::AnimSet* m_anims;
     const anim::AnimClip* m_idleClip = nullptr;                 // setIdleClip()
     std::map<std::uint32_t, const anim::AnimClip*> m_overrides; // setOverride()
     AnimSlots m_slots;
+    AnimSlots m_normalSlots; // the slots without the hidden style
+    bool m_stealth = false;  // setStealthStyle()
     Speeds m_speeds;
     anim::AnimTaskStack m_tasks;
     AnimState m_state = AnimState::None;

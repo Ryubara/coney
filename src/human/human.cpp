@@ -489,9 +489,11 @@ void Human::snapToGround(const raycast::CollisionMesh& mesh, anim::Vec3 feet) {
         m_groundNormal = fromMesh(hit->normal);
         m_groundMaterial = hit->material;
         m_coveredGround = (hit->flags & kCoveredGroundFlag) != 0;
+        m_groundFlags = hit->flags;
         return;
     }
     // Nothing within 0.5 m below the feet: the human starts to fall.
+    m_groundFlags = 0;
     m_position = feet;
     m_airborne = true;
     m_airborneUpdates = 0;
@@ -1364,6 +1366,7 @@ void Human::updateActions(std::span<Combatant* const> targets, const raycast::Co
     // as the original's dispatcher reads the block and the chain before the commands; triangle keeps its climb,
     // context action and jump while combat does not hold the body (in a grab it mugs).
     updateMeters(m_record.sprintHeld && !m_fighter.blocking());
+    updateHiding();
     // An arrested human neither fights nor acts (**Coney stand-in**, human/script_state.h), nor does one working out:
     // its pad pumps and quits the workout instead.
     if (!m_airborne && !m_climbRun && !m_script.arrested && !m_script.workingOut) {

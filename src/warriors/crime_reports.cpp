@@ -147,6 +147,9 @@ void CrimeReports::update(CrimeServices& services, std::uint64_t nowMs) {
             m_lastCrime = crime::kNoCrime;
         }
     }
+    // The second timers run out (**Coney's reading**: `ForceCrimeLevel` holds only the first; the all-clear callback
+    // at their end is not built).
+    std::erase_if(m_secondUntil, [nowMs](const auto& entry) { return nowMs >= entry.second; });
 }
 
 float CrimeReports::wantedFraction(int gang, std::uint64_t nowMs) const {
@@ -164,6 +167,7 @@ std::optional<std::uint64_t> CrimeReports::lastAssault(int gang) const {
 
 void CrimeReports::clearLevel() {
     m_wantedUntil.clear();
+    m_secondUntil.clear();
     m_lastAssault.clear();
     m_scoredVictims.clear();
     m_scene.reset();

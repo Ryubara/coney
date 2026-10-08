@@ -224,6 +224,7 @@ target_sources(coney_tests PRIVATE
     camera/follow_script_test.cpp
     human/disc_player_test.cpp
     human/human_test.cpp
+    human/hiding_test.cpp
     human/body_test.cpp
     human/climb_test.cpp
     human/combat_test.cpp
@@ -306,6 +307,9 @@ target_sources(coney_tests PRIVATE
     ai/give_way_test.cpp
     ai/move_action_test.cpp
     ai/perception_test.cpp
+    ai/hiding_test.cpp
+    ai/enemy_scan_test.cpp
+    ai/scout_tactic_test.cpp
     ai/route_planner_test.cpp
     ai/scripted_goals_test.cpp
     ai/scripted_hub_test.cpp

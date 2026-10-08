@@ -33,12 +33,12 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▍░░░░░░░░░░░░░░░░` | 16.8% of the game's own code (563,308 of 3,354,776 bytes, 2,048 functions) |
+| **Reimplemented** | `███▍░░░░░░░░░░░░░░░░` | 16.8% of the game's own code (563,308 of 3,354,776 bytes, 2,075 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,220 of 3,284,028 bytes; 11,424 of 11,426 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-814 reimplemented function(s) have no size yet and add no bytes.
+841 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -70,10 +70,10 @@ at the top of the repository's `README.md`.
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
 | `FileIO` | `███▍░░░░░░░░░░░░░░░░` | 17.0% | 10 | 7,120 |
-| `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 110 | 100,440 |
+| `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 111 | 100,440 |
 | `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 12.0% | 88 | 195,624 |
-| `GUI` | `████░░░░░░░░░░░░░░░░` | 19.8% | 233 | 497,416 |
-| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 752 | 1,096,672 |
+| `GUI` | `████░░░░░░░░░░░░░░░░` | 19.8% | 235 | 497,416 |
+| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 776 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 8 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 4 | 79,032 |
@@ -459,6 +459,7 @@ at the top of the repository's `README.md`.
 | `0x00168eb8` | `GangSpawner_SetMaxConcurrent` | `GameModes` | 80 |
 | `0x00168f58` | `Gang_AreFriends` | `GameModes` | 136 |
 | `0x001696e0` | `Gangs_MusicMood` | `GameModes` | not filled in |
+| `0x001698c8` | `Gang_SetSecondWantedTimer` | `GameModes` | not filled in |
 | `0x001698f0` | `Gang_UpdateWanted` | `GameModes` | 304 |
 | `0x0016a1e8` | `Gang_FreeWhenEmpty` | `GameModes` | not filled in |
 | `0x0016a220` | `Gang_Suspend` | `GameModes` | 64 |
@@ -623,6 +624,8 @@ at the top of the repository's `README.md`.
 | `0x001b2088` | `HUD_ShowPlayers` | `GUI` | 88 |
 | `0x001b20f8` | `HUD_ShowAll` | `GUI` | 176 |
 | `0x001b2200` | `HUD_AttachPlayer` | `GUI` | 240 |
+| `0x001b26a8` | `HUD_RadarSetTintBlue` | `GUI` | not filled in |
+| `0x001b2790` | `HUD_RadarSetTintGrey` | `GUI` | not filled in |
 | `0x001b2e10` | `HudManager_SetRadarRange` | `GUI` | not filled in |
 | `0x001b3f98` | `HUD_RadarAddObjective` | `GUI` | 40 |
 | `0x001b4038` | `HUD_RadarSetIcon` | `GUI` | 96 |
@@ -891,6 +894,9 @@ at the top of the repository's `README.md`.
 | `0x0022f8d8` | `Human_EndStun` | `Human` | 264 |
 | `0x0022fa78` | `Human_StartWounded` | `Human` | 392 |
 | `0x0022fc00` | `Human_EndWounded` | `Human` | 232 |
+| `0x0022ff88` | `Human_EnterShadow` | `Human` | not filled in |
+| `0x002300c0` | `Human_LeaveShadow` | `Human` | not filled in |
+| `0x00230140` | `Human_ClearHiddenState` | `Human` | not filled in |
 | `0x00230930` | `Attack_FarReachSquared` | `Human` | not filled in |
 | `0x00230d00` | `Attack_ReachSquared` | `Human` | not filled in |
 | `0x00231090` | `AttackKind_ToCommand` | `Human` | 264 |
@@ -1182,6 +1188,7 @@ at the top of the repository's `README.md`.
 | `0x00289ed0` | `Brain_GiveWayTo` | `Human` | not filled in |
 | `0x0028a248` | `Brain_PushAside` | `Human` | not filled in |
 | `0x0028abc0` | `Brain_CanBeChased` | `Human` | not filled in |
+| `0x0028b358` | `Brain_ScanEnemies` | `Human` | not filled in |
 | `0x0028bf00` | `Brain_GetSightRange` | `Human` | not filled in |
 | `0x0028c1a8` | `Brain_InstallHandlers` | `Human` | 440 |
 | `0x0028c3b0` | `Brain_OnKnockedOut` | `Human` | not filled in |
@@ -1206,11 +1213,13 @@ at the top of the repository's `README.md`.
 | `0x0028df30` | `Brain_ClaimAttackSlot` | `Human` | 688 |
 | `0x0028e248` | `Brain_QueueAttack` | `Human` | 1,216 |
 | `0x0028e708` | `Brain_PickAttack` | `Human` | 1,920 |
+| `0x0028f000` | `Brain_ShakeOffPursuers` | `Human` | not filled in |
 | `0x0028f240` | `Brain_EndReactionGoal` | `Human` | 112 |
 | `0x0028f2b0` | `Brain_UpdateReactionGoal` | `Human` | 1,040 |
 | `0x0028f6c0` | `Brain_Think` | `Human` | 504 |
 | `0x0028f8b8` | `Brain_Update` | `Human` | 112 |
 | `0x0028f928` | `Brain_OnEvent` | `Human` | 96 |
+| `0x0028fa18` | `Brain_MaybeScanEnemies` | `Human` | not filled in |
 | `0x0028fbb0` | `Brain_UpdateGoals` | `Human` | 632 |
 | `0x0028fe28` | `Brain_RunActions` | `Human` | 104 |
 | `0x0028fe90` | `Brain_GetSectors` | `Human` | not filled in |
@@ -1383,6 +1392,10 @@ at the top of the repository's `README.md`.
 | `0x002cc408` | `AddressPersonGoal_Init` | `Human` | 128 |
 | `0x002cc488` | `AddressPersonGoal_Start` | `Human` | 256 |
 | `0x002cc588` | `AddressPersonGoal_Process` | `Human` | 800 |
+| `0x002cce88` | `Goal_Tag` | `Human` | not filled in |
+| `0x002ccfe0` | `TagGoal_Init` | `Human` | not filled in |
+| `0x002cd198` | `TagGoal_Suspend` | `Human` | not filled in |
+| `0x002cd258` | `TagGoal_Process` | `Human` | not filled in |
 | `0x002cf480` | `Goal_ThrowObject` | `Human` | not filled in |
 | `0x002cf690` | `ThrowObjectGoal_Process` | `Human` | not filled in |
 | `0x002d0e98` | `Goal_Riot` | `Human` | 208 |
@@ -1402,6 +1415,16 @@ at the top of the repository's `README.md`.
 | `0x002d46b8` | `PlayGenAnimGoal_Init` | `Human` | 136 |
 | `0x002d4748` | `PlayGenAnimGoal_End` | `Human` | 136 |
 | `0x002d47d0` | `PlayGenAnimGoal_Process` | `Human` | 208 |
+| `0x002d5cf0` | `CallGangGoal_Init` | `Human` | not filled in |
+| `0x002d5db8` | `CallGangGoal_Start` | `Human` | not filled in |
+| `0x002d5f98` | `CallGangGoal_End` | `Human` | not filled in |
+| `0x002d6638` | `CallGangGoal_Process` | `Human` | not filled in |
+| `0x002d6ca0` | `ScoutGoal_Init` | `Human` | not filled in |
+| `0x002d6db0` | `ScoutGoal_Start` | `Human` | not filled in |
+| `0x002d6e10` | `ScoutGoal_Resume` | `Human` | not filled in |
+| `0x002d6ef0` | `ScoutGoal_Suspend` | `Human` | not filled in |
+| `0x002d6f98` | `ScoutGoal_End` | `Human` | not filled in |
+| `0x002d73b8` | `ScoutGoal_Process` | `Human` | not filled in |
 | `0x002d9238` | `Goal_Backoff` | `Human` | 176 |
 | `0x002d92e8` | `BackoffGoal_Init` | `Human` | 144 |
 | `0x002d97c0` | `Goal_Boxer` | `Human` | 136 |
@@ -1574,6 +1597,10 @@ at the top of the repository's `README.md`.
 | `0x00316ee8` | `Tactic_Idle` | `Human` | not filled in |
 | `0x00316fa0` | `Tactic_TriggerCrowd` | `Human` | 176 |
 | `0x0031a268` | `Tactic_Scout` | `Human` | not filled in |
+| `0x0031a430` | `ScoutTactic_Construct` | `Human` | not filled in |
+| `0x0031a818` | `ScoutTactic_OnEvent` | `Human` | not filled in |
+| `0x0031af98` | `ScoutTactic_Start` | `Human` | not filled in |
+| `0x0031b030` | `ScoutTactic_Process` | `Human` | not filled in |
 | `0x00320530` | `WarriorAttackTactic_Create` | `Human` | not filled in |
 | `0x00336a00` | `QuaternionSlerp` | `Maths (unnamed)` | 440 |
 | `0x00336bb8` | `VectorLerp` | `Maths (unnamed)` | 64 |

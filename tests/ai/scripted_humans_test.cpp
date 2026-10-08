@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <format>
 #include <initializer_list>
 #include <memory>
 #include <span>
@@ -264,6 +265,51 @@ TEST_CASE("GoalMoveToUseFlag reserves the flag until its goal ends; GoalBumLogic
     level.call("GoalBumLogic", {Value(2.0), Value(2.0), Value(), Value(175.0)});
     REQUIRE(extra.topGoal() != nullptr);
     CHECK(extra.topGoal()->type() == coney::ai::GoalType::BumLogic);
+}
+
+TEST_CASE("GoalTag runs to the flag, blanks the other tag, sprays until done and frees the flag", "[ai][scripted]") {
+    Level level;
+    Brain& painter = level.add({41.0F, 41.0F, 0.0F});
+    const double spot = level.flags.add(100.0, "fTag", {47.0F, 41.0F, 0.0F}, 90.0F).handle;
+    std::vector<std::string> seen;
+    bool spraying = false;
+    level.scripted->humanHost().setTagStart(
+        [&](double human, double tag, double flag) {
+            seen.push_back(std::format("start {:.0f} {:.0f} {:.0f}", human, tag, flag));
+            spraying = true;
+        },
+        [&](double tag) { seen.push_back(std::format("blank {:.0f}", tag)); });
+    level.scripted->humanHost().setTaggingQuery([&](double /*human*/) { return spraying; });
+    level.call("GoalTag", {Value(2.0), Value(spot), Value(300.0), Value(301.0)});
+    REQUIRE(painter.topGoal() != nullptr);
+    CHECK(painter.topGoal()->type() == coney::ai::GoalType::Tag);
+    CHECK(level.scripted->humanHost().reservation(spot) == 2.0);
+
+    // It runs to the flag, then the other tag is blanked once and the spray starts.
+    for (int k = 0; k < 300 && seen.empty(); ++k) {
+        level.scene.run(1);
+    }
+    CHECK(painter.human().position().x > 45.4F);
+    CHECK(seen == std::vector<std::string>{"blank 301", std::format("start 2 300 {:.0f}", spot)});
+    level.scene.run(10);
+    CHECK(painter.goalCount() == 1);
+    // The spray over, the goal ends and frees the flag.
+    spraying = false;
+    level.scene.run(2);
+    CHECK(painter.goalCount() == 0);
+    CHECK(level.scripted->humanHost().reservation(spot) == 0.0);
+}
+
+TEST_CASE("GoalTag gives up when another human holds the flag", "[ai][scripted]") {
+    Level level;
+    Brain& painter = level.add({41.0F, 41.0F, 0.0F});
+    level.add({50.0F, 50.0F, 0.0F});
+    const double spot = level.flags.add(100.0, "fTag", {47.0F, 41.0F, 0.0F}, 90.0F).handle;
+    level.call("GoalTag", {Value(2.0), Value(spot), Value(300.0), Value(0.0)});
+    level.call("GoalMoveToUseFlag",
+               {Value(3.0), Value(spot), Value(2.0), Value(0.0), Value(0.5), Value(0.5), Value(1.0)});
+    level.scene.run(2);
+    CHECK(painter.goalCount() == 0);
 }
 
 TEST_CASE("the configuration bindings set the game state's rules, which the level takes", "[ai][scripted]") {

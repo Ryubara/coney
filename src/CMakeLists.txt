@@ -238,6 +238,7 @@ target_sources(coney_core PRIVATE
     human/human_sounds.cpp
     human/human_animator.cpp
     human/human_held.cpp
+    human/human_hiding.cpp
     human/human_script.cpp
     human/humans.cpp
     human/locomotion_gate.cpp
@@ -282,6 +283,9 @@ target_sources(coney_core PRIVATE
     ai/perception.cpp
     ai/fight_book.cpp
     ai/fight_checks.cpp
+    ai/hiding.cpp
+    ai/enemy_scan.cpp
+    ai/tactic_scout.cpp
     ai/fight_goal.cpp
     ai/fight_reactions.cpp
     ai/formations.cpp

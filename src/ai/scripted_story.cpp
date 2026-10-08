@@ -657,7 +657,7 @@ void ScriptedStory::setTactic(const script::TacticCall& call) {
         }
     }
     const TacticServices services{
-        .flags = m_scripted, .scripts = m_scripted, .formations = &m_scripted->owner().formations()};
+        .flags = m_scripted, .scripts = m_scripted, .formations = &m_scripted->owner().formations(), .scout = &m_scout};
     if (std::unique_ptr<Tactic> tactic = makeStoryTactic(call, std::move(points), services); tactic != nullptr) {
         m_scripted->owner().gangs().setTactic(call.gang, std::move(tactic));
     }

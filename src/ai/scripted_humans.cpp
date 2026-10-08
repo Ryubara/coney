@@ -419,6 +419,29 @@ void ScriptedHumans::goalMoveToUseFlag(const script::MoveToUseFlagCall& call) {
     });
 }
 
+void ScriptedHumans::goalTag(const script::TagCall& call) {
+    onBrain(call.human, [this, call](Brain& brain) {
+        // The flag is the human's from now until the goal ends.
+        const double user = brain.handle();
+        m_reservations[call.flag] = user;
+        auto release = [this, flag = call.flag, user] {
+            if (const auto found = m_reservations.find(flag); found != m_reservations.end() && found->second == user) {
+                m_reservations.erase(found);
+            }
+        };
+        TagServices services{.heldByOther =
+                                 [this](double flag, double human) {
+                                     const double holder = reservation(flag);
+                                     return holder != 0.0 && holder != human;
+                                 },
+                             .startTag = m_tagStart,
+                             .tagging = [this](double human) { return tagging(human); },
+                             .blank = m_tagBlank};
+        static_cast<void>(brain.pushGoal(std::make_unique<TagGoal>(call.flag, call.tag, call.extra, *m_scripted,
+                                                                   std::move(services), std::move(release))));
+    });
+}
+
 void ScriptedHumans::addSpawner(const script::SpawnerCall& call) {
     if (m_scripted->owner().gangs().find(call.gang) == nullptr) {
         return;

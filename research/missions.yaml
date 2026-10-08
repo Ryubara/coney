@@ -169,8 +169,8 @@ missions:
       count: 5
       default: in-progress
       each:
-        1: {status: in-progress, note: "Runs headless with no script error and every binding it calls; not yet checked to its end."}
-        2: {status: in-progress, note: "No script error; waits on the tagging goal and the HUD bars (being built for level34)."}
+        1: {status: in-progress, note: "Plays to checkpoint 2 driven by the pad: the walk past the Moonrunners and Panzers to the showdown's marker."}
+        2: {status: in-progress, note: "Plays to checkpoint 3 driven by the pad: Poizo's pan, then the Warriors' five-piece burner tagged at the wall (five stick games) wins the showdown. The rival painters run GoalTag; they tag only once the tactics stop flushing a member's goals at their start (re-human dc040b31)."}
         3: {status: in-progress, note: "No script error; waits on the car message handler and object indices (being built for level34)."}
         4: {status: in-progress, note: "Plays to its end from a pad script (tests/support/level3_chase.txt, its disc test `[playthrough]`): the AI walks Snow to the rail's start box, then the stick, L2 and triangle run, climb and jump him across the roofs to the gallery box, which hands over to checkpoint 5. The Warriors follow on the default command."}
         5: {status: in-progress, note: "Runs headless with no script error and every binding it calls; not yet checked to its end."}

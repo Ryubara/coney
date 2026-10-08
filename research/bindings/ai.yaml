@@ -1497,6 +1497,7 @@
     flag 0x2000000 is clear). The message to `extra` goes once (goal `+0x28`). Tagging rules: [Crimes:
     tagging](../../research/crimes.md#tagging).
   usage: {chunks: 4, calls: 6, boot: false, mission1: false, result_used: false, levels: [3, 86]}
+  coney: implemented
 
 - name: GoalTagEx
   wrapper: 0x00362a28

@@ -71,8 +71,9 @@ inline std::vector<LocomotionClip> climbClips() {
 /// The synthetic set: idle (388), sneak 1.2 (407), walk 1.5 (408), jog 4 (409), run 7.5 (410), sprint 10 (411), all
 /// looping at rate 1 (flag 0x1000) but the idle; the walk start (413, 0.3 s, root velocity 1.0) and the run start
 /// (414, 0.3 s, root velocity 4.0) at rate 0.75; the run stop (417, 0.6 s, root velocity 2.0); the drop cycle (428);
-/// the jump loop (434), the jump end (435, root velocity 1.0) and the jump end running (436, root velocity 4.0); and
-/// climbClips().
+/// the jump loop (434), the jump end (435, root velocity 1.0) and the jump end running (436, root velocity 4.0); the
+/// hidden style's idle (630), walk start (631, 0.3 s, root velocity 0.8) and walk 1.0 (633), and its two transitions
+/// (634, 394, 0.3 s, still); and climbClips().
 inline std::vector<LocomotionClip> locomotionClips() {
     std::vector<LocomotionClip> clips{
         {.id = 388, .speed = 0.0F, .duration = 2.0F, .rootVelocity = 0.0F, .rangeFlags = 0},
@@ -88,6 +89,11 @@ inline std::vector<LocomotionClip> locomotionClips() {
         {.id = 434, .speed = 0.0F, .duration = 1.0F, .rootVelocity = 0.0F, .rangeFlags = 0},
         {.id = 435, .speed = 0.5F, .duration = 0.3F, .rootVelocity = 1.0F, .rangeFlags = 0},
         {.id = 436, .speed = 2.0F, .duration = 0.3F, .rootVelocity = 4.0F, .rangeFlags = 0},
+        {.id = 630, .speed = 0.0F, .duration = 2.0F, .rootVelocity = 0.0F, .rangeFlags = 0},
+        {.id = 631, .speed = 0.24F, .duration = 0.3F, .rootVelocity = 0.8F, .rangeFlags = 0},
+        {.id = 633, .speed = 1.0F, .duration = 1.0F, .rootVelocity = 0.0F, .rangeFlags = 0x1000},
+        {.id = 634, .speed = 0.0F, .duration = 0.3F, .rootVelocity = 0.0F, .rangeFlags = 0},
+        {.id = 394, .speed = 0.0F, .duration = 0.3F, .rootVelocity = 0.0F, .rangeFlags = 0},
     };
     const std::vector<LocomotionClip> climbs = climbClips();
     clips.insert(clips.end(), climbs.begin(), climbs.end());

@@ -648,13 +648,16 @@ NativeFunction makeGangAddTurfBox(const BindingContext& context) {
     });
 }
 
-// `GangIsWanted(gang, current) -> boolean`. **Coney stand-in**: Coney keeps one wanted state per gang (the crime
-// report's 10 s), so both flags read it.
+// `GangIsWanted(gang, current) -> boolean`: with `current` (the default) the gang's wanted timer, without it the
+// second timer (docs/research/crimes.md#wanted).
 // @orig 0x0016b580 Gang_IsWanted (unknown)
 NativeFunction makeGangIsWanted(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
         const int gang = intArg(args, 0);
-        return binding::boolean(gang >= 0 && context->state->player.crimes.wanted(gang));
+        // Left out, `current` is true; passed, even as nil, it is read as a boolean (nil is false).
+        const bool current = args.size() < 2 || boolArg(args, 1);
+        const CrimeReports& crimes = context->state->player.crimes;
+        return binding::boolean(gang >= 0 && (current ? crimes.wanted(gang) : crimes.secondWanted(gang)));
     };
 }
 

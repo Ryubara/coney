@@ -2,9 +2,11 @@
 #pragma once
 
 #include <functional>
+#include <optional>
 #include <string>
 #include <utility>
 
+#include "ai/script_services.h"
 #include "scripting/script_system.h"
 #include "warriors/created_humans.h"
 #include "warriors/crime_reports.h"
@@ -12,9 +14,10 @@
 namespace coney {
 
 /// What a crime report reaches in a level Coney plays: the scripts' crime callback, the `CrimeScene` flag (moved by
-/// `moveScene`, the objects' own mover), which humans are players, and a robbed store (`robStore`: its flag and alarm
-/// strobe). **Coney's stand-in:** the gangs, the police spawners and the HUD are not wired yet, so hostility,
-/// responders and the HUD's crime messages do nothing (open item on docs/research/crimes.md).
+/// `moveScene`, the objects' own mover), which humans are players, a robbed store (`robStore`: its flag and alarm
+/// strobe), and the offender's gang and player 1's through the level's brains (setBrains()), so a report makes the
+/// gang wanted. **Coney's stand-in:** the police's hostility, the police spawners and the HUD are not wired yet, so
+/// hostility, responders and the HUD's crime messages do nothing (open item on docs/research/crimes.md).
 ///
 /// Research: docs/research/ai.md#crimes
 class LevelCrimeServices final : public CrimeServices {
@@ -26,6 +29,13 @@ class LevelCrimeServices final : public CrimeServices {
 
     /// The humans the level scripts made (null: none is a player); must outlive its use.
     void setHumans(CreatedHumans* humans) { m_humans = humans; }
+    /// The level's brains, by handle and player 1's (null: none, so no offender has a gang); must outlive its use.
+    void setBrains(const ai::ScriptServices* brains) { m_brains = brains; }
+
+    /// The gang of the human with `handle`, through his brain.
+    [[nodiscard]] std::optional<CrimeGang> gangOf(double handle) override;
+    /// Player 1's brain's gang (-1: none).
+    [[nodiscard]] int playerOneGang() override;
 
     [[nodiscard]] bool isPlayer(double handle) override;
     /// Calls the Lua function `function` with the gang and the type.
@@ -39,6 +49,7 @@ class LevelCrimeServices final : public CrimeServices {
     std::function<void(const CrimePosition&)> m_moveScene;
     std::function<void(const CrimePosition&, int)> m_robStore;
     CreatedHumans* m_humans = nullptr;
+    const ai::ScriptServices* m_brains = nullptr;
 };
 
 } // namespace coney

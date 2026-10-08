@@ -113,6 +113,16 @@ class ScriptedHumans final : public script::HumanBindingHost {
     void goalBumLogic(const script::BumLogicCall& call) override;
     /// Reserves the flag for the human and pushes the goal, which frees it at its end.
     void goalMoveToUseFlag(const script::MoveToUseFlagCall& call) override;
+    /// Claims the flag for the human and pushes a TagGoal, which frees it at its end; the spray starts through the
+    /// tag start set with setTagStart().
+    void goalTag(const script::TagCall& call) override;
+    /// What the tag goal starts a spray with (`Human_Tag`) and how it makes a tag object blank.
+    using TagStart = std::function<void(double human, double tag, double flag)>;
+    using TagBlank = std::function<void(double tag)>;
+    void setTagStart(TagStart start, TagBlank blank) {
+        m_tagStart = std::move(start);
+        m_tagBlank = std::move(blank);
+    }
     /// Adds the spawner to its gang's (at most 4), which spawners() runs.
     void addSpawner(const script::SpawnerCall& call) override;
     /// The gangs made to respond (named `Responder<n>`) that are not the police's are deleted; the police's are left.
@@ -165,6 +175,8 @@ class ScriptedHumans final : public script::HumanBindingHost {
     std::uint64_t m_gangChangeMs = 0;
     TaggingQuery m_tagging;
     ArrestHook m_arrestHook;
+    TagStart m_tagStart;
+    TagBlank m_tagBlank;
 };
 
 } // namespace coney::ai

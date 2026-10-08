@@ -44,6 +44,8 @@ class LevelObjectServices final : public world_objects::ObjectServices {
     void setPlayers(GameState* state, CreatedHumans* humans);
     /// What a crime report reaches in the level.
     [[nodiscard]] CrimeServices& crimeServices() { return m_crimes; }
+    /// The offenders' gangs come from `brains` from now on (null: none); it must outlive its use.
+    void setBrains(const ai::ScriptServices* brains) { m_crimes.setBrains(brains); }
 
     /// Sounds go to `sounds` from now on (null: none).
     void setSounds(world_objects::ObjectServices* sounds) { m_sounds = sounds; }

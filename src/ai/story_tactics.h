@@ -23,13 +23,16 @@ class FlagServices;
 class Formations;
 class Gang;
 class ScriptServices;
+struct ScoutServices;
 
 /// What the story tactics ask of the level: the flags, the scripts (and through them the humans by handle and player
-/// 1), and the formations the followers join. All must outlive the tactic.
+/// 1), the formations the followers join and what the scouts' call needs (ai/tactic_scout.h). All must outlive the
+/// tactic.
 struct TacticServices {
     FlagServices* flags = nullptr;
     ScriptServices* scripts = nullptr;
     Formations* formations = nullptr;
+    ScoutServices* scout = nullptr;
 };
 
 /// The tactic codes the story tactics return or fire (`TacticGetString`, docs/references/bindings/ai.md).
@@ -92,9 +95,9 @@ class GroupMoveTactic final : public StoryTactic {
 /// awareness, narrows their view by 20° and their sight to 75 %; UseFlag (`0x21`) walks them to the flag (gait 3,
 /// within `range`) and, once player 1 comes within `range` of it, sends them off and returns 7; Idle (`0x24`) holds
 /// them where they stand and, with `dynIdle`, ends their dynamic idles on events 1, 11 and 16 and returns 15 once none
-/// is left; Scout (`0x27`) melees with members that have an enemy (each 200 ms) and with one hit, attacked or spotting;
-/// ManWeaponPile (`0x06`), Vandalize (`0x1c`), Steal (`0x1d`) and AvoidEnemies (`0x20`) stand. **Coney stand-ins**:
-/// the hang-out, use-flag, man-the-pile, destroy, steal, avoid and scout goals are not traced, so the members stand
+/// is left; ManWeaponPile (`0x06`), Vandalize (`0x1c`), Steal (`0x1d`) and AvoidEnemies (`0x20`) stand (Scout is
+/// ai/tactic_scout.h). **Coney stand-ins**:
+/// the hang-out, use-flag, man-the-pile, destroy, steal and avoid goals are not traced, so the members stand
 /// where those walks leave them; banter, answering violence and the anim substitutions are not built.
 /// @orig 0x00315fc8 Tactic_HanginOut (unknown)
 /// @orig 0x00316ee8 Tactic_Idle (unknown)

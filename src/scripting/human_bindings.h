@@ -25,7 +25,7 @@
 namespace coney::script {
 
 /// The bindings registered here; installBindings() registers them with addHumanBindings().
-inline constexpr std::array<std::string_view, 64> kHumanBindings{"BrClearBackoff",
+inline constexpr std::array<std::string_view, 65> kHumanBindings{"BrClearBackoff",
                                                                  "BrSetThugWantsWeapon",
                                                                  "CfgPlayerMugging",
                                                                  "CfgRageHandlers",
@@ -43,6 +43,7 @@ inline constexpr std::array<std::string_view, 64> kHumanBindings{"BrClearBackoff
                                                                  "GoalBackoff",
                                                                  "GoalBumLogic",
                                                                  "GoalMoveToUseFlag",
+                                                                 "GoalTag",
                                                                  "HuAttachSpinningIcon",
                                                                  "HuChangePlayerGang",
                                                                  "HuDropWeapon",
@@ -140,6 +141,14 @@ struct MoveToUseFlagCall {
     float duration = 0.0F;
     float radius = 0.0F;
     bool reserve = false;
+};
+
+/// `GoalTag(human, flag, tag, extra)`.
+struct TagCall {
+    double human = 0;
+    double flag = 0;  ///< The flag to spray from; the goal claims it.
+    double tag = 0;   ///< The tag object sprayed.
+    double extra = 0; ///< Another tag object made blank (message `0x19` with 4) as the spray starts; 0 for none.
 };
 
 /// `GangAddSpawner(gang, name, arg3, types, model, pos, heading, total, delay, maxConcurrent, kind, target, arg13,
@@ -267,6 +276,8 @@ class HumanBindingHost {
     virtual void goalBumLogic(const BumLogicCall& /*call*/) {}
     /// `GoalMoveToUseFlag`.
     virtual void goalMoveToUseFlag(const MoveToUseFlagCall& /*call*/) {}
+    /// `GoalTag`.
+    virtual void goalTag(const TagCall& /*call*/) {}
 
     // ---- The gangs (docs/references/bindings/gang.md).
 
