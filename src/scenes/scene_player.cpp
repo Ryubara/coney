@@ -172,6 +172,8 @@ class SceneTask {
     [[nodiscard]] std::uint32_t id() const { return m_slot.id; }
     [[nodiscard]] SceneState state() const { return m_slot.state; }
     [[nodiscard]] bool cinematic() const { return m_request.cinematic; }
+    // Whether event 73 holds an object (an intro card) before the camera now.
+    [[nodiscard]] bool holdingObject() const { return m_held.has_value(); }
     [[nodiscard]] const std::vector<double>& roles() const { return m_slot.roleHandles; }
     // The frame the roles (or else the camera or the first runner) have reached, from the scene's start.
     [[nodiscard]] float frame() const {
@@ -1209,6 +1211,10 @@ bool SceneSystem::playing() const {
 }
 
 bool SceneSystem::cinematicActive() const { return m_sceneState != 0; }
+
+bool SceneSystem::holdingObject() const {
+    return std::ranges::any_of(m_tasks, [](const std::unique_ptr<SceneTask>& task) { return task->holdingObject(); });
+}
 
 SceneState SceneSystem::state(std::uint32_t id) const {
     const SceneSlot* slot = m_cache.find(id);

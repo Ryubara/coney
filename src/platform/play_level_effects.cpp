@@ -72,10 +72,13 @@ void PlayLevelEffects::drawGlints(std::span<const effects::Particle> glints, con
     }
 }
 
-void PlayLevelEffects::drawOverlay(RenderEngine& engine) {
+void PlayLevelEffects::drawOverlay(RenderEngine& engine, bool cardHeld) {
     if (m_effects != nullptr) {
         m_motionBlur.apply(engine, m_effects->motionBlur.current());
-        m_smoke.draw(engine, m_effects->smoke);
+        // Only the drawing stops: the smoke keeps drifting under the card, as OverlayEffect_Tick still updates it.
+        if (!cardHeld) {
+            m_smoke.draw(engine, m_effects->smoke);
+        }
     }
 }
 

@@ -166,6 +166,9 @@ class SceneSystem {
     [[nodiscard]] bool playing() const;
     /// Whether a playing cinematic holds the scene state (`0x0051489c + 0x410`): the scene camera governs.
     [[nodiscard]] bool cinematicActive() const;
+    /// Whether a scene holds an intro card before its camera (event 73), which sets `0x00512c44`: the room smoke is
+    /// not drawn meanwhile (docs/research/scenes.md#intro-cards).
+    [[nodiscard]] bool holdingObject() const;
     /// The state of the scene `id`; Empty when no slot holds it.
     [[nodiscard]] SceneState state(std::uint32_t id) const;
     /// The id `name` finds (first record containing it), nothing when none.

@@ -761,7 +761,9 @@ void PlayLevelMode::render(const RenderTime& time) {
     // scene's letterbox and fade. The scenery draws itself through the blended view, with the character and the debug
     // lines among its objects.
     if (m_levelEffects) {
-        m_engine.addFrameOverlay([this](RenderEngine& engine) { m_levelEffects->drawOverlay(engine); });
+        const bool cardHeld = m_scenes != nullptr && m_scenes->holdingObject();
+        m_engine.addFrameOverlay(
+            [this, cardHeld](RenderEngine& engine) { m_levelEffects->drawOverlay(engine, cardHeld); });
     }
     // The blur pulse, then the level's screen tint. They cover the HUD, as the original's screen effects follow it,
     // except while a blur pulse runs: then they go first and the HUD stays sharp over them

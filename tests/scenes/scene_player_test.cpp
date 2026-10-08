@@ -710,9 +710,12 @@ TEST_CASE("event 73 holds a character's intro card before the scene camera for i
         }
         REQUIRE(h.system.state(7) == scenes::SceneState::Playing);
         CHECK(h.host.objectPoses.at(kCard).position.z == Approx(-10.0F)); // parked before the event
+        CHECK_FALSE(h.system.holdingObject());
         for (int i = 0; i < 10; ++i) {
             h.step();
         }
+        // While held, the scenes say so: the room smoke is not drawn (0x00512c44).
+        CHECK(h.system.holdingObject());
         const float distance = wide ? 0.3F * 1.6667F / std::tan(std::numbers::pi_v<float> / 6.0F)
                                     : 0.5F * 1.3333F / std::tan(std::numbers::pi_v<float> / 6.0F);
         const scenes::ScenePose& held = h.host.objectPoses.at(kCard);
@@ -725,6 +728,7 @@ TEST_CASE("event 73 holds a character's intro card before the scene camera for i
             h.step();
         }
         CHECK(h.host.objectPoses.at(kCard).position.z == Approx(-10.0F));
+        CHECK_FALSE(h.system.holdingObject());
     }
 }
 

@@ -42,8 +42,9 @@ class PlayLevelEffects {
     void drawGlints(std::span<const effects::Particle> glints, const world::CameraPose& view);
     /// Draws the level's water (effects::Water) through the current camera, after the `d` world.
     void drawWater();
-    /// Lays the motion blur, then the room smoke, over the 3D frame, before the 2D overlays.
-    void drawOverlay(RenderEngine& engine);
+    /// Lays the motion blur, then the room smoke, over the 3D frame, before the 2D overlays. The smoke is left out
+    /// while `cardHeld`: a scene holds an intro card (`0x00512c44`, docs/research/graphics.md#room-smoke).
+    void drawOverlay(RenderEngine& engine, bool cardHeld);
     /// Lays the screen tint (effects::ScreenTint) over the whole screen: after the HUD, before the scene's captions
     /// (docs/research/rendering.md#tint).
     void drawTint(RenderEngine& engine);
