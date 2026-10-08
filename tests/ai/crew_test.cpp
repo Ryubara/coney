@@ -64,6 +64,54 @@ TEST_CASE("the follow tactic gives each AI member the follow goal and leaves the
     CHECK(goal->mode() == 3);
 }
 
+TEST_CASE("re-adding a member already in the crew gives every member the follow goal again", "[ai][crew]") {
+    // level80's EndStartCam: GangBrFlush(0) empties the members' stacks under the running follow tactic, then
+    // GangAddMember for humans already in gang 0 gives them back the follow (event 0x16 with 1).
+    AiScene scene;
+    std::vector<Brain*> members;
+    const int gang = makeCrew(scene, 2, 4.0F, members);
+    follow(scene, gang);
+    scene.run(1);
+    for (Brain* member : members) {
+        member->flush();
+        CHECK(member->goalCount() == 0);
+    }
+    scene.run(5);
+    CHECK(members[0]->goalCount() == 0); // the tactic's Process gives nothing by itself
+    scene.brains.gangs().addMember(gang, *members[0]);
+    for (const Brain* member : members) {
+        REQUIRE(member->goalCount() > 0);
+        CHECK(member->topGoal()->type() == GoalType::FollowPlayer);
+        CHECK(member->gang() == scene.brains.gangs().find(gang));
+    }
+    // The gang keeps one entry per member.
+    CHECK(scene.brains.gangs().find(gang)->members().size() == 3);
+}
+
+TEST_CASE("an add before the follow tactic's first update starts it first, so no follow goal is doubled",
+          "[ai][crew]") {
+    // level3's checkpoint 3: the script sets the follow tactic and adds the crew in the same step. Gang_OnEvent runs
+    // the gang's update for a tactic not yet started (0x00165144), so the start's goals are given, then the event's
+    // give pops them to the base and pushes one again.
+    AiScene scene;
+    std::vector<Brain*> members;
+    const int gang = makeCrew(scene, 2, 4.0F, members);
+    follow(scene, gang);
+    scene.brains.gangs().addMember(gang, *members[0]);
+    const coney::ai::Gang* crew = scene.brains.gangs().find(gang);
+    REQUIRE(crew->tactic() != nullptr);
+    CHECK(crew->tactic()->started());
+    for (const Brain* member : members) {
+        CHECK(member->goalCount() == 1);
+        REQUIRE(member->topGoal() != nullptr);
+        CHECK(member->topGoal()->type() == GoalType::FollowPlayer);
+    }
+    scene.run(1);
+    for (const Brain* member : members) {
+        CHECK(member->goalCount() == 1);
+    }
+}
+
 TEST_CASE("followers join the chief's formation and walk to their slots", "[ai][crew]") {
     AiScene scene;
     std::vector<Brain*> members;

@@ -125,7 +125,8 @@ class WarriorFollowTactic final : public Tactic {
     [[nodiscard]] double chief() const { return m_chief; }
 
   private:
-    // Gives `member` the follow goal in `mode`, flushed first.
+    // Gives `member` the follow goal in `mode` above his goal base (Brain::pushTacticGoal(),
+    // `WarriorFollowTactic_GiveGoals` `0x00310f38`).
     void follow(Brain& member, int mode);
 
     double m_chief;

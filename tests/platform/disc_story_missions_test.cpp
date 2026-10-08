@@ -149,12 +149,16 @@ void suspendOtherGangs(coney::LevelScripts& scripts, std::set<double>* done = nu
     }
 }
 
+// The default walk: the stick 70 % forward from 18 s for 2 s, then right, back and left for 2 s each.
+constexpr std::string_view kDefaultWalk = "540 stick left 0 70\n600 stick left 70 0\n660 stick left 0 -70\n"
+                                          "720 stick left -70 0\n";
+
 // Plays `level` at `checkpoint` as `--play-level` does (the preloads, the level's script, gameplay over the play mode
 // with the scripts' AI and character configuration) for 20 s, the stick pushed forward for the last 2 s; or, with
-// `script`, that input script from `place` (as `--start` gives it).
+// `script`, that input script from `place` (as `--start` gives it). When the default walk is blocked (a wall, a ledge
+// or a crewman in the way), the stick then goes right, back and left for 2 s each, and the run keeps the longest walk.
 MissionRun playMission(const coney::io::Wad& wad, std::string_view level, int checkpoint,
-                       std::string_view script = "540 stick left 0 70\n",
-                       std::optional<coney::StartPlace> place = std::nullopt) {
+                       std::string_view script = kDefaultWalk, std::optional<coney::StartPlace> place = std::nullopt) {
     MissionRun run;
     auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
     REQUIRE(engine.has_value());
@@ -178,7 +182,8 @@ MissionRun playMission(const coney::io::Wad& wad, std::string_view level, int ch
                                  playLoader(renderer, wad, budget, scripts, print, place), print);
     gameplay.setLevel(std::string(level));
 
-    // By default 18 s with the pad at rest, then the stick 70 % forward for 2 s.
+    // By default 18 s with the pad at rest, then the stick 70 % forward for 2 s (the other directions follow, used only
+    // when the run goes on past a blocked walk).
     auto input = coney::parseInputScript(script);
     REQUIRE(input.has_value());
     coney::ScriptedInput pad(std::move(*input));
@@ -199,9 +204,13 @@ MissionRun playMission(const coney::io::Wad& wad, std::string_view level, int ch
     // The walk checks the pad alone: the other gangs' brains are suspended (BrSuspend) so that none grabs or downs
     // the player in those 2 s (the AI grabs and tackles, docs/research/ai.md#coney).
     suspendOtherGangs(scripts);
-    const float before = play->stats().travelled;
-    stack.runUntilEmpty(timer, {}, 60);
-    run.travelled = play->stats().travelled - before;
+    // Each 2 s push in turn (the default walk's four, else one) until one walks more than 1 m; the longest counts.
+    const int pushes = script == kDefaultWalk ? 4 : 1;
+    for (int push = 0; push < pushes && run.travelled <= 1.0F; ++push) {
+        const float before = play->stats().travelled;
+        stack.runUntilEmpty(timer, {}, 60);
+        run.travelled = std::max(run.travelled, play->stats().travelled - before);
+    }
     const coney::human::Human& human = play->player().human();
     run.standing = !human.airborne() && !human.fighter().health().depleted();
     run.scriptErrors = scripts.scripts().errors();

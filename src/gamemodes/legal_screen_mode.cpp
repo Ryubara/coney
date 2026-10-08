@@ -48,17 +48,20 @@ graphics::LogicalQuad legalScreenQuad(const graphics::OverlayCamera& camera, std
 
 std::string resourceFileName(std::string_view resourceName) { return std::format("{}", crc32(resourceName)); }
 
+void runPreloadScripts(script::ScriptSystem& scripts) {
+    scripts.runFiles(script::kEnumPreloadScripts);
+    scripts.runFiles(script::kConfigPreloadScripts);
+}
+
 LegalScreenMode::LegalScreenMode(graphics::RenderDevice& device, SheetLoader loadSheet, LegalScreenSettings settings,
                                  std::function<void(std::string_view)> log, script::ScriptSystem* scripts)
     : m_device(device), m_loadSheet(std::move(loadSheet)), m_settings(settings), m_log(std::move(log)),
       m_scripts(scripts) {}
 
 void LegalScreenMode::enter() {
-    // The preload scripts, two lists in the one Lua state: the enumerations, then the configuration. The "mode switch"
-    // calls the original makes around them do nothing in this build.
+    // The preload scripts, in the one Lua state.
     if (m_scripts != nullptr && m_scripts->exists()) {
-        m_scripts->runFiles(script::kEnumPreloadScripts);
-        m_scripts->runFiles(script::kConfigPreloadScripts);
+        runPreloadScripts(*m_scripts);
     }
     m_startTicks.reset();
     const std::string name = legalScreenResourceName(m_settings);

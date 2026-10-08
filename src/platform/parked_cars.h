@@ -9,12 +9,10 @@
 #include <string_view>
 #include <vector>
 
-#include "animation/anim_math.h"
 #include "core/chunk_system.h"
 #include "fileio/wad.h"
 #include "graphics/car_draw.h"
 #include "platform/object_models.h"
-#include "raycast/collision_builder.h"
 #include "world_objects/cars.h"
 #include "world_objects/object_list.h"
 
@@ -55,18 +53,13 @@ class ParkedCars {
     /// @orig 0x00172c70 CarInstance_Render (unknown)
     void draw(const std::function<void(rw::Atomic*)>& render, graphics::CarPass pass);
 
-    /// The triangles of every car's box, facing out, in the game's axes: for the level's collision.
-    [[nodiscard]] std::vector<raycast::BuildTriangle> obstacles();
-
     /// Cars drawn by the last draw().
     [[nodiscard]] std::size_t drawn() const { return m_drawn; }
 
   private:
-    // A type's model and the box round its undamaged atomics, in the model's (the game's) axes.
+    // A type's model.
     struct TypeModel {
         ObjectModel model;
-        anim::Vec3 min;
-        anim::Vec3 max;
     };
 
     // The model of car type `type`, loading it on first use; null when it does not load.

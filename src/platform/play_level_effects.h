@@ -15,7 +15,6 @@
 #include "platform/render_engine.h"
 #include "platform/room_smoke_overlay.h"
 #include "platform/water_renderer.h"
-#include "raycast/collision_builder.h"
 #include "world/view_frustum.h"
 #include "world_objects/cars.h"
 
@@ -23,7 +22,8 @@ namespace coney::platform {
 
 /// What the play mode draws of a level's scripted world beyond its humans and objects: the parked cars
 /// (world_objects::Cars) and the particle systems among the scenery, and the motion blur over the 3D frame
-/// (effects::LevelEffects). Gameplay steps them; this only draws them, and gives the cars' boxes to the collision.
+/// (effects::LevelEffects). Gameplay steps them; this only draws them. A walker meets a parked car through the level's
+/// own collision mesh, its shell there (docs/research/characters.md#car-shells), never through the car.
 class PlayLevelEffects {
   public:
     /// Draws `effects` and `cars` (either may be null; both must outlive this), loading sprite sheets and car models
@@ -32,8 +32,6 @@ class PlayLevelEffects {
     PlayLevelEffects(RenderEngine& engine, const io::Wad& wad, const effects::LevelEffects* effects,
                      const world_objects::Cars* cars, std::function<void(std::string_view)> print);
 
-    /// The parked cars' boxes for the level's collision (none without cars).
-    [[nodiscard]] std::vector<raycast::BuildTriangle> carObstacles();
     /// Draws the parked cars' `pass` (docs/research/graphics.md#car-draw): the opaque parts with the solid objects, the
     /// glass after the see-through ones; through the current camera, each atomic lit and drawn by `render`.
     void drawCars(const std::function<void(rw::Atomic*)>& render, graphics::CarPass pass);

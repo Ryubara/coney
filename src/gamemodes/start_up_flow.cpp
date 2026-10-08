@@ -2,9 +2,16 @@
 #include "gamemodes/start_up_flow.h"
 
 #include <format>
+#include <functional>
+#include <optional>
+#include <string>
+#include <string_view>
 #include <utility>
 
+#include "gamemodes/rumble_menu_mode.h"
+#include "gui/rumble_mode_gui/rumble_menu.h"
 #include "scripting/hud_bindings.h"
+#include "scripting/script_system.h"
 #include "warriors/disk_profile_store.h"
 
 namespace coney {
@@ -86,6 +93,32 @@ void StartUpFlow::start() {
     for (const std::string_view movie : kStartUpMovies) {
         playMovie(movie);
     }
+}
+
+void StartUpFlow::startAtLevel(std::string_view level, int checkpoint, std::function<void()> ready) {
+    if (m_hasScripts) {
+        m_scripts.create();
+    }
+    // An arena started directly gets the set-up the Rumble menu leaves by default for it: the menu's chunks need the
+    // `RM_*` names `global.lua` defines.
+    const std::optional<int> arena = rumbleArenaOf(level);
+    m_levelFlow.startAtLevel(std::string(level), checkpoint, [this, arena, ready = std::move(ready)] {
+        if (arena && m_hasScripts) {
+            m_scripts.runFile(script::kGlobalScript);
+            const gui::RumbleMenuServices services{
+                .state = &m_state,
+                .data = &m_rumbleData,
+                .strings = m_context.strings,
+                .runChunk = [this](std::string_view chunk) { m_scripts.runFile(chunk); }};
+            if (!gui::rumbleMenuDefaults(services, *arena)) {
+                m_log("rumble: the menu's chunks list no mode or gang; the set-up stays empty\n");
+            }
+        }
+        if (ready) {
+            ready();
+        }
+    });
+    m_stack.push(m_levelFlow);
 }
 
 void StartUpFlow::showProfileManager(std::string_view onRumble, std::string_view onStartGame) {

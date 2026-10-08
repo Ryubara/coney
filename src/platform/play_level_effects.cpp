@@ -27,10 +27,6 @@ PlayLevelEffects::PlayLevelEffects(RenderEngine& engine, const io::Wad& wad, con
     }
 }
 
-std::vector<raycast::BuildTriangle> PlayLevelEffects::carObstacles() {
-    return m_cars ? m_cars->obstacles() : std::vector<raycast::BuildTriangle>{};
-}
-
 void PlayLevelEffects::drawCars(const std::function<void(rw::Atomic*)>& render, graphics::CarPass pass) {
     if (m_cars && m_engine.drawsPixels()) {
         m_cars->draw(render, pass);

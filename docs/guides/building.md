@@ -676,14 +676,23 @@ The original's trace, recorded in PCSX2 by `coney-tools pcsx2 record`, uses the 
 both have, and `coney-tools trace coney` runs a scenario's script on Coney with `--trace`; `coney-tools trace diff`
 compares the two, column by column ([Comparing with Coney](research-workflow.md#comparing-with-coney)).
 
+**The story's own set-up.** A level played with `--play-level` is the story's level, started there directly: it runs in
+the same game session as the story from the main menu and the debug menus' jumps (`src/platform/game_session.h`,
+[Test through the player's path](conventions.md#test-through-the-players-path)), and differs only in skipping the
+start-up movies, the legal screen, the memory-card check and the menus. So it has the loading screen and the level's
+intro movie (`--skip-movies` skips the movie), the pause (START) and the mission screens, the game's sound with the
+level's own bank, and the debug menus' Lua console and Cheats page work on its scripts. An `--input-script` starts on
+the first frame after the loading screen and the movie (with no movie, the level's first step runs in the screen's last
+frame, with the pad at rest), and `--frames` and `--screenshot` count from there too, however long the loading screen
+and the movie take (a level that never starts playing ends the run after 10 minutes of frames, with a message).
+
 **Going on to the next level.** A level played with `--play-level` (or from the debug menus) goes on to the next one the
-way the story does, with no flag: when a mission ends (`HUDLaunchMissionComplete`), Coney runs the scripts'
-`UnlockAndLoad` (the unlocks, then `runNextMission(1)`, [Story order](../research/scripting.md#run-next-mission)), banks
-the players' money and plays the level and checkpoint it chose (`chain: going on to level80 at checkpoint 1`); a level a
-script starts with `MenuLoadLevel` (the hub's missions) is played the same way. The unlocks, bank and saved script numbers
-carry from one level to the next, so the story's order holds: 99, 80, 87, the hub (`level95`), 34 and on. It happens
-between frames, once the level's gameplay is the mode on top (not under a pause), and only for a level with a streamed
-world: the front end (`level100`) is not played, and a mission with no next one just stays. `--frames` still ends the run.
+way the story does, because it is the story's: when a mission ends (`HUDLaunchMissionComplete`), the mission-complete
+mode runs the scripts' `UnlockAndLoad` (the unlocks, then `runNextMission(1)`, [Story
+order](../research/scripting.md#run-next-mission)), and the level flow loads the level and checkpoint it chose; a level
+a script starts with `MenuLoadLevel` (the hub's missions) is played the same way. The unlocks, bank and saved script
+numbers carry from one level to the next, so the story's order holds: 99, 80, 87, the hub (`level95`), 34 and on.
+`--frames` still ends the run.
 
 #### Matched views {#matched-views}
 
@@ -711,9 +720,9 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 -
 ### Shutdown order {#shutdown-order}
 
 `main` destroys things in reverse order of declaration, so whatever points at the sound output must be declared
-after it or reset before it. The level played on its own (`levelGameplay`, then `levelScripts`) is reset explicitly
-right after the run summaries, before the sound output goes: its scripts' binding context and play mode hold the game
-sound, and tearing them down afterwards read freed state and segfaulted `--play-level level95` at exit. Any new
+after it or reset before it. The game session (`session`) is reset explicitly right after the run summaries, before the
+sound output goes: its scripts' binding context and play mode hold the game sound, and tearing them down afterwards
+read freed state and segfaulted `--play-level level95` at exit. Any new
 object that keeps a pointer into the sound output, the scene or the renderer follows the same rule. A ctest with
 `PASS_REGULAR_EXPRESSION` ignores the exit code, so `coney.exits_cleanly_level95` and `_level99` (with `CONEY_DISC`
 set) check the exit code alone.

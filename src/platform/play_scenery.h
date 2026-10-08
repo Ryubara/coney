@@ -6,7 +6,6 @@
 #include <functional>
 #include <memory>
 #include <optional>
-#include <span>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -24,7 +23,6 @@
 #include "platform/sandbox_renderer.h"
 #include "platform/world_renderer.h"
 #include "platform/world_viewer_mode.h"
-#include "raycast/collision_builder.h"
 #include "raycast/collision_mesh.h"
 #include "sandbox/sandbox_world.h"
 #include "world/path_map.h"
@@ -101,10 +99,6 @@ class PlayScenery {
     /// unchanged.
     virtual std::expected<void, Error> setExtras(const RenderEngine& engine,
                                                  const std::vector<sandbox::Primitive>& extra);
-    /// Adds `obstacles` (the parked cars' boxes, src/platform/parked_cars.h) to collision(), before anything has
-    /// taken the mesh. Fails with ErrorCode::InvalidArgument where the scenery cannot (a sandbox), and as the rebuild
-    /// does; the collision is then unchanged.
-    virtual std::expected<void, Error> addObstacles(std::span<const raycast::BuildTriangle> obstacles);
 };
 
 /// A level's scenery for the play mode: its streamed worlds and level file (loadLevelScenery()), streamed around the
@@ -136,11 +130,6 @@ class LevelPlayScenery final : public PlayScenery {
     [[nodiscard]] std::string name() const override { return m_name; }
     [[nodiscard]] const world::PathMap* pathMap() const override { return m_paths ? &*m_paths : nullptr; }
     [[nodiscard]] raycast::CollisionMesh* objectCollision() override { return m_scenery.level->collision.get(); }
-    /// The level's collision rebuilt with `obstacles` after its own triangles (raycast::buildCollisionMesh()), so every
-    /// level triangle keeps its index, flags, material and area for the objects that switch them. **Coney's stand-in**
-    /// for the cars' physics boxes, which humans meet in a way the research has not traced
-    /// (docs/research/physics.md#open-questions).
-    std::expected<void, Error> addObstacles(std::span<const raycast::BuildTriangle> obstacles) override;
     [[nodiscard]] world::PathMap* objectPaths() override { return m_paths ? &*m_paths : nullptr; }
 
   private:

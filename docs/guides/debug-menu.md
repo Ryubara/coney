@@ -134,19 +134,20 @@ is not in Coney yet. The page does what the checker does on a match: it calls th
 `DbgEnterCheat`, with the code's index. `global.lua` defines that callback when a level loads; at the front end or in
 the sandbox the page reports that it is not set.
 
-**Levels.** In the front end (a run with a disc and no mode named), the level table holds the game's levels (filled by
-`CfgLevelName`); choosing one jumps there at checkpoint 1 at the start of the next frame, as the Missions page does
-(below). In `--play-level` and the other
-modes run with a disc, the page lists instead every level with a streamed world on the disc (`level0` to `level199`,
-79 of them); choosing one, or typing its name, plays it with Rembrandt at the start of the next frame, in place of the
+**Levels.** In the game (the story from the front end, or a `--play-level` run, which is the same game session), the
+level table holds the game's levels (filled by `CfgLevelName`); choosing one jumps there at checkpoint 1 at the start
+of the next frame, as the Missions page does (below). In a sandbox and the other modes run with a disc, the page lists
+instead every level with a streamed world on the disc (`level0` to `level199`,
+79 of them); choosing one, or typing its name, starts the game there as `--play-level` does, at the start of the next
+frame, in place of the
 play mode or sandbox viewer on top. *Sandbox layouts* lists the layouts in the sandbox folder
 ([Sandbox](sandbox.md)); choosing one plays it at the start of the next frame, in place of the play mode or sandbox
 viewer on top: with Rembrandt when there is a disc for his character, else with the free camera.
 
 **Missions.** The page lists the story's missions in order, each tagged with its level and its checkpoint count (`1. New
 Blood`, `level99, 3 cp`); a mission opens a page with one action per checkpoint, which starts the level there as
-`--play-level LEVEL --checkpoint N` does: in a `--play-level` run it replaces the play mode at the start of the next
-frame. In the story (a plain `coney --disc PATH`) the jump waits for the start of the next frame too, then sets the
+`--play-level LEVEL --checkpoint N` does. In the game (the story, or a `--play-level` run) the jump waits for the start
+of the next frame, then sets the
 checkpoint (`SetCheckPoint`), asks the level flow for the level as `runNextMission` does, and closes everything above
 the level flow: the front end's menus or a movie, or the level in play and its pause. The level flow starts the level on
 its next step, from the front end or from inside a level (`StartUpFlow::jumpToLevel`). A level the level table does not

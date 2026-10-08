@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -98,6 +99,16 @@ class LevelFlowMode final : public GameMode {
     /// "reload" and "next level"). An index with no record is logged and ignored.
     void chooseLevelIndex(std::size_t index);
 
+    /// Coney's direct start (`--play-level`, the debug menu's jumps before the front end, the disc tests): the next
+    /// enter skips the front end. It runs what the legal screen and the front end run before a story level, the
+    /// preloads (runPreloadScripts()), then `ready` (when set) in that same Lua state, where the menus would have run
+    /// (the Rumble menu's set-up of an arena), then the fresh Lua state of the front end's unload; it sets the
+    /// checkpoint and chooses `level`, which gameplay then starts exactly as it starts a level chosen from the menus.
+    /// After the level, the front end comes as usual.
+    ///
+    /// Coney's tool: the original always starts through the menus (docs/research/level-loading.md#story-into-level99).
+    void startAtLevel(std::string level, int checkpoint, std::function<void()> ready = {});
+
     /// Loads the front-end world through `loadScene` when the front end starts (empty: none, a black background).
     void setSceneLoader(FrontEndSceneLoader loadScene) { m_loadScene = std::move(loadScene); }
     /// The front-end world while the front end is loaded; null otherwise or without a loader.
@@ -166,6 +177,13 @@ class LevelFlowMode final : public GameMode {
     SceneMaker m_sceneMaker;
     script::BindingContext* m_context = nullptr;   // where the bindings find the scenes and lights; null: not given
     std::unique_ptr<scenes::SceneSystem> m_scenes; // the front end's scenes while it is loaded
+    // The direct start startAtLevel() asked for, carried out by the next enter.
+    struct DirectStart {
+        std::string level;
+        int checkpoint = 1;
+        std::function<void()> ready;
+    };
+    std::optional<DirectStart> m_directStart;
 };
 
 } // namespace coney

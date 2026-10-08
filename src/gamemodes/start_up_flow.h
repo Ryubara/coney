@@ -76,6 +76,12 @@ class StartUpFlow final : public script::BindingHost {
     /// before the pushes). Coney leaves out the controller check and its error mode (the pads are always read).
     void start();
 
+    /// Coney's direct start in place of start(): makes the Lua state and pushes only the level flow, which runs the
+    /// preloads and the front end's fresh state itself and starts `level` at `checkpoint` in gameplay as a level chosen
+    /// from the menus starts (LevelFlowMode::startAtLevel(), where `ready` is described). No movies, legal screen,
+    /// memory-card check or menus; everything else (gameplay, the pause, the mission screens) is the story's own.
+    void startAtLevel(std::string_view level, int checkpoint, std::function<void()> ready = {});
+
     /// The services the modes share.
     [[nodiscard]] FrontEndServices& services() { return m_services; }
     /// The script system.

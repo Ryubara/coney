@@ -88,7 +88,7 @@ struct LevelScriptOptions {
 
 /// What the bindings ask of the game while a level's scripts run without the menus: there are no menus, modes or
 /// audio, so most requests are dropped. The two that change the level are kept for whoever runs the level to act on
-/// between frames (`--play-level`'s chaining, docs/guides/building.md#playing-a-level): `MenuLoadLevel` (a hub
+/// between frames (the subsystem tests' harnesses): `MenuLoadLevel` (a hub
 /// mission's start, `runNextMission`) and `HUDLaunchMissionComplete` (a mission's end). The mission's end
 /// (`HUDLaunchMissionComplete`, `HUDLaunchMissionFailed`) is also logged, so a level played on its own says how it
 /// ended. A movie is not played.
@@ -134,7 +134,8 @@ class QuietBindingHost final : public script::BindingHost {
     std::optional<std::string> m_nextLevel;
 };
 
-/// The story's way into a level without the menus, as `--play-level` plays it: what the level's scripts work on (a
+/// The story's way into a level without the menus, for the tests of one subsystem (the game itself starts a level in
+/// platform::GameSession): what the level's scripts work on (a
 /// game state, the strings and configuration the preloads fill, the humans, flags and binding context, with the
 /// bindings' requests dropped) and a script system that has run what the original runs before a level's script, in its
 /// order: the preloads (the legal screen's, which fill the level table), then a fresh Lua state (the front end's

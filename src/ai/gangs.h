@@ -39,6 +39,8 @@ inline constexpr int kPoliceLikeKind = 0x17;
 /// standing), a member's headcount event (2) and an arrest (`0x11`: the event's value).
 inline constexpr int kGangMessageDown = 18;
 inline constexpr int kGangMessageHeadcount = 2;
+/// A member left (value 0) or joined (value 1) the gang (event `0x16`, from `Gang_RemoveMember` and `Gang_AddMember`).
+inline constexpr int kGangMessageMembers = 0x16;
 inline constexpr int kGangMessageArrest = 0x11;
 
 /// A gang's turf holds at most this many volume boxes (`+0x15c`, count `+0x17c`).
@@ -110,13 +112,19 @@ class Gang {
     /// event's id is called: for 18 with (member, other, standing()), for 2 with (member, other, the headcount), for
     /// `0x11` with (member, other, the event's value), none of which uses the event; for any other id with (member,
     /// other, the event's value), which uses it when the function returns true (**Coney choice** of the arguments: the
-    /// generic marshaller `0x00384ce0` is not traced). Then a tactic, when the gang has members, has it. Returns
-    /// whether it was used.
+    /// generic marshaller `0x00384ce0` is not traced). Then the tactic has it, when the gang has members (with none,
+    /// only a member leaving: kGangMessageMembers with 0); a tactic not yet started is first processed once, as the
+    /// gang's update would, so its start's goals are on the members before the event gives any again. Returns whether
+    /// it was used.
     /// @orig 0x00164c20 Gang_OnEvent (unknown)
     bool onEvent(Brain& member, const BrainEvent& event);
 
   private:
     friend class Gangs;
+
+    // The tactic's update (`Tactic_Process`, from the gang's update `0x00166708`), its callback fired on a non-zero
+    // result. The tactic must be set.
+    void processTactic();
 
     Gangs* m_owner = nullptr;
     int m_id = -1;
@@ -161,8 +169,12 @@ class Gangs {
     [[nodiscard]] Gang* find(int id);
     [[nodiscard]] const Gang* find(int id) const;
 
-    /// `GangAddMember`: `brain` leaves its gang (its goals and actions flushed) and joins gang `id`; a full gang drops
-    /// its first member first (**Coney choice** of which). Nothing for an id not in use or a member already in it.
+    /// `GangAddMember`: `brain` leaves its gang, even when it is gang `id` (its actions and target cleared, under a
+    /// tactic popped to its goal base, no longer the leader, event kGangMessageMembers with 0), then joins gang `id`
+    /// (a player becomes its leader, the war chief; event kGangMessageMembers with 1), so a follow tactic gives the
+    /// members their goals again (docs/research/ai.md#warrior-follow). A full gang drops its first member first
+    /// (**Coney choice** of which). Nothing for an id not in use. **Coney choices**: the brain's counted enemies are
+    /// kept; any player joining leads, where the original makes only a war chief (`+0x3ac`) the leader.
     /// @orig 0x00166308 Gang_AddMember (unknown)
     void addMember(int id, Brain& brain);
     /// `brain` leaves its gang, if it has one.

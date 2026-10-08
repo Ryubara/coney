@@ -216,8 +216,8 @@ WarriorFollowTactic::WarriorFollowTactic(double chief, ScriptServices& services,
     : Tactic(kFollowTacticType, {}), m_chief(chief), m_services(&services), m_formations(&formations) {}
 
 void WarriorFollowTactic::follow(Brain& member, int mode) {
-    member.flush();
-    static_cast<void>(member.pushGoal(
+    // Popped to the goal base, marked, then the goal on top: what the member had at the tactic's start stays under it.
+    static_cast<void>(member.pushTacticGoal(
         std::make_unique<FollowPlayerGoal>(*m_services, *m_formations, m_chief, kCrewFollowDistance, mode)));
 }
 

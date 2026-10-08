@@ -19,7 +19,7 @@ Warriors' burner outside their hangout, which sets up the next mission.
 
 | # | Status | Note |
 | --- | --- | --- |
-| 1 | 🚧 In Progress | The intro, skipped, gives the screen back; holding R2 and pushing the right stick to Let's Go gives the follow order (CommandIssued runs). Blocked after it: Vermin and Rembrandt do not come down to the player (the crew's follow is being built). |
+| 1 | 🚧 In Progress | The intro, skipped, gives the screen back; holding R2 and pushing the right stick to Let's Go gives the follow order (CommandIssued runs). Vermin and Rembrandt come down the stairs to the player, and after the script's staging (EndStartCam re-adds the crew to gang 0) they follow him again (`coney_tests "[commands]"`). Open: a Warrior who steps round the other on the landing can slide along its railing for a few seconds before taking the stairs. |
 | 2 | 🚧 In Progress | Driven by the pad to the arrest scene and "Free Cowboy and Snow"; triangle by each shows the uncuff prompt and the L1-R1 mash frees him, and checkpoint 3 follows (`coney_tests "[uncuff]"`). Not yet: the cuffs icon, the crew's follow after. |
 | 3 | 🚧 In Progress | Reaches Fox's scene; its next step needs the Hold Up order and the crew's tactics. |
 | 4 | 🚧 In Progress | Reaches Cochise and Swan's scene; the fight needs the Wreck'em All order and the crew's tactics. |

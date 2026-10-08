@@ -438,6 +438,24 @@ reports go to stderr and the process ends at once; the `coney.error_dialogs_off`
 builds. In tests, check a container's size (`REQUIRE(!starts.empty())`) before reading `front()`, `back()` or an
 index, so a missing value fails one test cleanly instead of ending the whole run.
 
+### Test through the player's path {#test-through-the-players-path}
+
+The game is set up one way. The story from the main menu, `coney --play-level LEVEL --checkpoint N` and the debug
+menus' jumps all run in one `platform::GameSession` (`src/platform/game_session.h`): the start-up flow, gameplay with
+its loading screen, intro movie, pause and mission screens, the play mode, the game's sound and the debug menus'
+services. A direct start differs from the story only in the level and checkpoint it starts at: it skips the movies,
+the legal screen, the memory-card check and the menus, and nothing else. New set-up code goes into the session, never
+into one of the paths.
+
+Disc tests that play a level start it there too: `coney::test::DiscSession` (`repo:tests/support/disc_session.h`) is
+the session as `coney --play-level` runs it in test mode, with the offline sound output and a pad script that starts
+at the level's first frame of play. A test that builds its own gameplay or level scripts (the older `LevelScripts`
+harnesses) checks one subsystem only, and says so; it is not evidence that the game works for the player.
+`repo:tests/platform/disc_game_session_test.cpp` checks that a direct start and a jump from the story's front end
+give `level99` checkpoint 2 the same set-up. Why: the owner found three bugs (no glass sound after a pause, a mission
+that stopped at checkpoint 2, cheats that did nothing) that every test missed, because the tests and `--play-level`
+set the game up differently from the story.
+
 ### Mission playthrough tests {#playthrough-tests}
 
 Owner decision: a mission is tested by an **adaptive playthrough**, not by a frame-locked pad script. A driver written

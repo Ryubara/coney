@@ -509,8 +509,10 @@ A car's collision is one body (`IPhysics_CreateCarBody`) with two boxes from the
 (`0x00387d50`) from the type record (`0x0057e4c0 + 0x5f0 × type`, [Cars](cars.md#type-record)): box 1 has its
 half-sizes at record `+0x00` and its offset at `+0x10`, box 2 at `+0x20` and `+0x30`. It sets body flags `0x2211a`
 and clears the car's object flag `0x200`. Confirmed (code). The car never sweeps its body: it is moved with the car
-(pose on the next update) and is what humans, objects and the camera meet. When a car explodes, box 1 loses 0.25 m of
-height ([Cars](cars.md#explode)). `Car_OnLanded` (`0x00389e08`) answers 2 to every contact; on the level it also
+(pose on the next update) and is what objects and the camera meet. A walking human does not meet it: his layers
+leave the car's body out, and he meets and climbs the car's shell in the level's mesh ([layers](#layers),
+[Characters](characters.md#car-shells)). When a car explodes, box 1 loses 0.25 m of height ([Cars](cars.md#explode)).
+`Car_OnLanded` (`0x00389e08`) answers 2 to every contact; on the level it also
 clears the airborne flag, zeroes the velocity and sends message `0x3f` (kind 5) with the point (0, 1.84, 0.02) in the car's
 frame to the task whose handle is at `[0x005971b4] + 0x14`: the shared `sub_car_damage`, which makes a `sub_hood_smoke`
 there ([Cars: hit effects](cars.md#hit-effects)).

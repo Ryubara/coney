@@ -42,6 +42,13 @@ struct LegalScreenSettings {
 /// Research: docs/research/graphics.md#first-screen, docs/research/formats/wad-contents.md#names
 [[nodiscard]] std::string resourceFileName(std::string_view resourceName);
 
+/// The preload scripts the legal screen runs in the first Lua state, two lists: the enumerations, then the
+/// configuration. They fill the level table, the UI strings and the configuration the stub bindings record. The
+/// "mode switch" calls the original makes around them do nothing in this build. `scripts` must have a state.
+///
+/// Research: docs/research/scripting.md#life-of-the-lua-state
+void runPreloadScripts(script::ScriptSystem& scripts);
+
 /// The legal screen's scale factors (horizontal, vertical) for the video mode `settings` stands for: (1.55, 1.35) in
 /// the default interlaced 4:3 mode, (1.9, 1.45) with the 16:9 option. The original also has factors for its
 /// progressive modes, which Coney does not offer.

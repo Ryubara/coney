@@ -223,8 +223,22 @@ TEST_CASE("the disc's level80: R2 and the right stick up give the follow order t
     CHECK(level.scripts->state().characters.lastWarriorCommand.at(0) == 0);
     CHECK(level.scripts->state().story.commandCallback.empty());
     CHECK(level.scripts->scripts().errors() == 0);
-    std::printf("  level80 commands: follow given, callback %s\n",
-                level.scripts->state().story.commandCallback.empty() ? "ran" : "pending");
+
+    // The script then stages the street (GangBrFlush(0), the Warriors walked to their flags) and, at EndStartCam,
+    // adds the crew to gang 0 again, which gives the Warriors the follow back (docs/research/ai.md#warrior-follow).
+    constexpr int kStaging = 15 * 30;
+    level.run(kStaging);
+    int following = 0;
+    const auto& brains = level.play()->fighters().brains();
+    for (std::size_t b = 0; b < brains.size(); ++b) {
+        const coney::ai::Brain& brain = brains.at(b);
+        if (brain.type() != coney::ai::BrainType::Player && brain.following() != nullptr) {
+            ++following;
+        }
+    }
+    CHECK(following == 2);
+    std::printf("  level80 commands: follow given, callback %s, %d Warriors following after the staging\n",
+                level.scripts->state().story.commandCallback.empty() ? "ran" : "pending", following);
 }
 
 TEST_CASE("the disc's level80: the cuffed Warriors offer the uncuff prompt and the mash frees both",

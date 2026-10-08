@@ -65,11 +65,25 @@ bool Gang::onEvent(Brain& member, const BrainEvent& event) {
         }
         }
     }
-    // Then the tactic, while the gang has members.
-    if (m_tactic != nullptr && !m_members.empty()) {
-        return m_tactic->event(*this, member, event);
+    // Then the tactic: while the gang has members, or for a member leaving the last place (0x16 with 0). One not yet
+    // started is first run once, as the gang's update would (0x00165144): its start marks the members' goal bases and
+    // gives its goals, so an event that gives them again (a follow tactic's 0x16 with 1) pops those, not stacks on.
+    if (m_tactic == nullptr || (m_members.empty() && (event.id != kGangMessageMembers || event.value != 0))) {
+        return false;
     }
-    return false;
+    if (!m_tactic->started()) {
+        processTactic();
+        if (m_tactic == nullptr) {
+            return false;
+        }
+    }
+    return m_tactic->event(*this, member, event);
+}
+
+void Gang::processTactic() {
+    if (const int result = m_tactic->process(*this); result != 0) {
+        m_tactic->fireCallback(*this, result);
+    }
 }
 
 Gangs::Gangs(std::uint32_t seed) : m_random(seed) {
@@ -133,13 +147,22 @@ const Gang* Gangs::find(int id) const { return const_cast<Gangs*>(this)->find(id
 
 void Gangs::addMember(int id, Brain& brain) {
     Gang* gang = find(id);
-    if (gang == nullptr || brain.gang() == gang) {
+    if (gang == nullptr) {
         return;
     }
-    // Leaving the old gang flushes what the brain was doing.
-    if (brain.gang() != nullptr) {
+    // Leaving the old gang, the same one included: the actions and target cleared, then out of its list under event
+    // 0x16 with 0 (a tactic's member popped to his goal base first; a leader no longer leads).
+    if (Gang* old = brain.gang(); old != nullptr) {
+        static_cast<void>(brain.clearActions());
+        brain.setTarget(nullptr);
+        if (old->m_tactic != nullptr) {
+            brain.popToGoalBase();
+        }
+        if (old->m_orders.leader == brain.handle()) {
+            old->m_orders.leader = 0;
+        }
         removeMember(brain);
-        brain.flush();
+        static_cast<void>(old->onEvent(brain, BrainEvent{.id = kGangMessageMembers, .other = &brain, .value = 0}));
     }
     const std::size_t cap = policeLike(gang->m_kind) ? kGangMemberSlots : kGangMembers;
     if (gang->m_members.size() >= cap && !gang->m_members.empty()) {
@@ -147,10 +170,15 @@ void Gangs::addMember(int id, Brain& brain) {
     }
     gang->m_members.push_back(&brain);
     brain.setGang(gang);
-    // An invincible gang's new member is invincible too (0x00166308).
+    // An invincible gang's new member is invincible too (0x00166308); a player joining leads it (the war chief);
+    // then event 0x16 with 1, on which a follow tactic gives every member his goal again.
     if (gang->m_invincible) {
         brain.human().setFlag(human::flag::kGod, true);
     }
+    if (brain.type() == BrainType::Player) {
+        gang->m_orders.leader = brain.handle();
+    }
+    static_cast<void>(gang->onEvent(brain, BrainEvent{.id = kGangMessageMembers, .other = &brain, .value = 1}));
 }
 
 void Gangs::removeMember(Brain& brain) {
@@ -339,9 +367,7 @@ void Gangs::update(std::uint64_t nowMs) {
         if (!gang.m_inUse || gang.m_members.empty() || gang.m_tactic == nullptr) {
             continue;
         }
-        if (const int result = gang.m_tactic->process(gang); result != 0) {
-            gang.m_tactic->fireCallback(gang, result);
-        }
+        gang.processTactic();
     }
     // The tactics replaced since the last update are freed (`0x00306630`).
     m_retired.clear();

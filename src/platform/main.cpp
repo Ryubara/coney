@@ -28,9 +28,9 @@
 
 #include "ai/ai_config.h"
 #include "audio/object_sounds.h"
-#include "audio/sound_engine.h"
 #include "characters/character_types.h"
 #include "core/chunk_system.h"
+#include "core/deferred_input.h"
 #include "core/error.h"
 #include "core/frame_clock.h"
 #include "core/game_random.h"
@@ -50,7 +50,7 @@
 #include "gamemodes/idle_mode.h"
 #include "gamemodes/level_start.h"
 #include "gamemodes/load_entry_mode.h"
-#include "gamemodes/loading_screen.h"
+#include "gamemodes/memory_card_mode.h"
 #include "gamemodes/rumble_menu_mode.h"
 #include "gamemodes/sheet_viewer_mode.h"
 #include "gamemodes/start_up_flow.h"
@@ -60,17 +60,14 @@
 #include "gui/text_layout.h"
 #include "human/locomotion.h"
 #include "human/player.h"
-#include "movies/disc_captions.h"
 #include "movies/movie_mode.h"
 #include "platform/audio_output.h"
 #include "platform/character_viewer_mode.h"
 #include "platform/debug_menus.h"
 #include "platform/error_dialogs.h"
-#include "platform/ffmpeg_movie_decoder.h"
 #include "platform/frame_pacer.h"
-#include "platform/front_end_scene.h"
+#include "platform/game_session.h"
 #include "platform/imgui_overlay.h"
-#include "platform/movie_screen.h"
 #include "platform/play_level_mode.h"
 #include "platform/profile_folder.h"
 #include "platform/reference_renderer.h"
@@ -84,8 +81,6 @@
 #include "platform/world_set.h"
 #include "platform/world_viewer_mode.h"
 #include "sandbox/sandbox_world.h"
-#include "scenes/scene_disc.h"
-#include "scenes/scene_player.h"
 #include "scripting/config_strings.h"
 #include "scripting/lua_value.h"
 #include "scripting/script_bindings.h"
@@ -217,39 +212,6 @@ std::expected<coney::sandbox::SandboxWorld, coney::Error> loadSandbox(const cone
     return world;
 }
 
-// Player 1's start as the level scripts left him, in the play mode's terms: where a TeleportToFlag put him, else where
-// HuCreate made him; nothing when the scripts made none.
-std::optional<coney::human::PlayerStart> playerStartOf(const coney::LevelStart& start) {
-    if (!start.player) {
-        return std::nullopt;
-    }
-    const coney::HumanCreation& player = *start.player;
-    if (player.teleported) {
-        const std::array<float, 3>& p = player.teleported->position;
-        return coney::human::PlayerStart{.position = coney::anim::Vec3{p[0], p[1], p[2]},
-                                         .headingDegrees = player.teleported->headingDegrees};
-    }
-    if (!player.position) {
-        return std::nullopt;
-    }
-    const std::array<float, 3>& p = *player.position;
-    return coney::human::PlayerStart{.position = coney::anim::Vec3{p[0], p[1], p[2]},
-                                     .headingDegrees = player.headingDegrees};
-}
-
-// Who player 1 is and whether his start snaps: the model his type names, no snap after a TeleportToFlag.
-coney::platform::PlayerSetup playerSetupOf(const coney::LevelStart& start) {
-    coney::platform::PlayerSetup setup;
-    if (start.player) {
-        if (!start.player->model.empty()) {
-            setup.model = start.player->model;
-        }
-        setup.type = start.player->type;
-        setup.snapToGround = !start.player->teleported;
-    }
-    return setup;
-}
-
 // What a level run alone starts with: the game's random table from the disc's executable when it has the NTSC-U one
 // (counted, never printed), and for a Rumble arena the Rumble menu's default set-up.
 coney::LevelScriptOptions levelScriptOptions(const coney::io::Wad& wad, std::string_view name,
@@ -262,33 +224,6 @@ coney::LevelScriptOptions levelScriptOptions(const coney::io::Wad& wad, std::str
     }
     options.rumbleArena = coney::rumbleArenaOf(name);
     return options;
-}
-
-// The scripts of level `name` as the story reaches it at `checkpoint`, without the menus
-// (docs/guides/building.md#playing-a-level): the preloads, a fresh Lua state and the checkpoint, ready for gameplay to
-// run the level's script. The player's turning comes from the preloads' configuration.
-std::unique_ptr<coney::LevelScripts> levelScriptsFor(const coney::io::Wad& wad, std::string_view name, int checkpoint,
-                                                     coney::script::SoundHost* sound) {
-    std::vector<std::uint32_t> table;
-    coney::LevelScriptOptions options = levelScriptOptions(wad, name, table);
-    options.sound = sound;
-    auto scripts = std::make_unique<coney::LevelScripts>(coney::script::wadScriptSource(wad), name, checkpoint,
-                                                         printText, options);
-    coney::applyTurnConfig(scripts->recorded());
-    return scripts;
-}
-
-// The play mode gameplay loads for `start`: player 1 where the level's scripts left him, as the character his type
-// names; the AI fighters and the character types as the scripts configured them (`recorded`); and the scripts' cast.
-std::expected<std::unique_ptr<coney::platform::PlayLevelMode>, coney::Error>
-playModeFor(coney::platform::RenderEngine& renderer, const coney::io::Wad& wad, coney::world::SectorBudget& budget,
-            const coney::LevelStart& start, const coney::ScriptedCast& cast,
-            const coney::script::RecordedCalls& recorded) {
-    coney::platform::PlayerSetup setup = playerSetupOf(start);
-    setup.ai = coney::ai::aiConfigFrom(recorded);
-    setup.types = coney::characters::CharacterTypes::fromRecorded(recorded);
-    return coney::platform::PlayLevelMode::create(renderer, wad, start.level, budget, printText, playerStartOf(start),
-                                                  setup, &cast);
 }
 
 // The setup of a sandbox's player: **Coney's choice**, level99's configuration (the combat training level whose
@@ -446,11 +381,6 @@ int main(int argc, char** argv) {
         return sheet;
     };
     coney::gui::GlobalStrings strings;
-    std::optional<coney::StartUpFlow> startUp;
-    // The movie player over the start-up flow, its screen and the font of its captions.
-    std::optional<coney::platform::RasterMovieScreen> movieScreen;
-    std::optional<coney::graphics::Font> captionFont;
-    std::optional<coney::movies::MovieMode> movieMode;
     std::optional<coney::platform::TextureViewerMode> viewer;
     std::optional<coney::SheetViewerMode> sheetViewer;
     std::optional<coney::TextViewerMode> textViewer;
@@ -460,127 +390,30 @@ int main(int argc, char** argv) {
     std::unique_ptr<coney::platform::CharacterViewerMode> characterViewer;
     std::unique_ptr<coney::platform::PlayLevelMode> playLevel;
     std::unique_ptr<coney::platform::SandboxViewerMode> sandboxViewer;
-    // The debug lines a story level's play mode draws: the debug session's, once it exists (below).
-    const coney::debug::DebugDrawOptions* storyDebugDraw = nullptr;
-    // The sound player a level's play mode plays its scenes through: the sound output's, once it exists (below).
-    coney::audio::SoundPlayer* playSounds = nullptr;
-    // The disc's scene list, read once (as the original's boot does), and the scene system each level's gameplay
-    // makes over it. A list that cannot be read leaves the scene bindings to Coney's stand-in.
-    std::optional<coney::scenes::SceneList> sceneList;
-    bool sceneListFailed = false;
-    const coney::GameplayMode::SceneMaker sceneMaker =
-        [&wad, &sceneList, &sceneListFailed]() -> std::unique_ptr<coney::scenes::SceneSystem> {
-        if (!wad || sceneListFailed) {
-            return nullptr;
-        }
-        if (!sceneList) {
-            auto list = coney::scenes::loadSceneList(*wad);
-            if (!list) {
-                sceneListFailed = true;
-                printText(std::format("scenes: {}; the scene bindings stand in\n", list.error().message));
-                return nullptr;
-            }
-            sceneList = std::move(*list);
-        }
-        return std::make_unique<coney::scenes::SceneSystem>(*sceneList, coney::scenes::wadSceneSource(*wad),
-                                                            coney::scenes::SceneSystem::ScriptCall{});
-    };
-    // The game's sound the scripts' bindings and gameplay drive (audio/game_sound.h): the sound output's, once it
-    // exists.
-    coney::audio::GameSound* gameSound = nullptr;
-    // Gives a script system's bindings the game's sound, and the sound that Lua state and binding context, when it
-    // exists.
-    const auto connectSound = [&gameSound](coney::script::ScriptSystem& scripts,
-                                           coney::script::BindingContext& context) {
-        if (gameSound != nullptr) {
-            context.sound = gameSound;
-            gameSound->connect(&scripts, &context);
-        }
-    };
-    // The story level `--play-level` names, made once the sound exists so its scripts' preloads configure the sound.
-    std::optional<std::string> commandLineLevel;
-    // The HUD's sound output (docs/research/hud.md#coneys-implementation): the game-facing SoundPlayer's play, set once
-    // the sound output starts (below) and empty without sound. Every HUD a play mode or the story holds plays through
-    // it.
-    std::function<void(std::string_view)> hudPlay;
-    const auto hudSound = [&hudPlay]() -> std::function<void(std::string_view)> {
-        return [&hudPlay](std::string_view name) {
-            if (hudPlay) {
-                hudPlay(name);
-            }
-        };
-    };
-    // A level played on its own (`--play-level NAME`, the Levels page): gameplay (mode 1) over the level's scripts as
-    // the story reaches them, its level loaded as the play mode. The scripts outlive the gameplay that runs them.
-    std::unique_ptr<coney::LevelScripts> levelScripts;
-    std::unique_ptr<coney::GameplayMode> levelGameplay;
-    // The glass panes' and doors' sounds, for every gameplay: silent until the sound output starts (below).
+    // The glass panes' and doors' sounds, for every level: silent until the sound output starts (below).
     coney::audio::ObjectSounds objectSounds;
-    // Makes that gameplay for level `name` at `checkpoint`, replacing any before (which must be off the stack); with
-    // `commandLine`, its play mode takes the command line's --start and --trace.
-    const auto makeLevelGameplay = [&](const std::string& name, int checkpoint, bool commandLine) {
-        levelGameplay.reset();
-        levelScripts = levelScriptsFor(*wad, name, checkpoint, gameSound);
-        connectSound(levelScripts->scripts(), levelScripts->context());
-        coney::LevelScripts& scripts = *levelScripts;
-        // `--script-trace`: every binding call and call into the scripts, to a file the trace keeps open.
-        if (const std::optional<std::string> scriptTrace = options->scriptTraceFile; commandLine && scriptTrace) {
-            auto file = std::make_shared<std::ofstream>(*scriptTrace, std::ios::binary | std::ios::trunc);
-            if (*file) {
-                scripts.scripts().traceCalls([file](std::string_view line) { *file << line; });
-            } else {
-                std::fprintf(stderr, "coney: --script-trace: cannot write %s\n", scriptTrace->c_str());
-            }
-        }
-        coney::GameplayMode::LevelLoader loader =
-            [&renderer, &wad, &sectorBudget, &storyDebugDraw, &playSounds, &scripts, &options, commandLine](
-                const coney::LevelStart& start,
-                const coney::ScriptedCast& cast) -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
-            auto mode = playModeFor(renderer, *wad, sectorBudget, start, cast, scripts.recorded());
-            if (!mode) {
-                return std::unexpected(std::move(mode.error()));
-            }
-            (*mode)->setDebugDraw(storyDebugDraw);
-            (*mode)->setSounds(playSounds);
-            (*mode)->useHud(scripts.hud());
-            if (commandLine) {
-                // `--start`: the player (and the camera) somewhere else from the first step, a trace scenario's start.
-                if (const std::optional<coney::StartPlace> place = options->start; place) {
-                    (*mode)->startAt(*place);
-                }
-                // `--camera` and `--freeze-world`: a stable, matched view for comparing with the original's frames.
-                if (const std::optional<coney::CameraPin> pin = options->cameraPin; pin) {
-                    (*mode)->pinCamera(*pin);
-                }
-                if (options->freezeWorld) {
-                    (*mode)->freezeWorld();
-                }
-                if (const std::optional<std::string> tracePath = options->traceFile; tracePath) {
-                    if (auto traced = (*mode)->traceTo(*tracePath); !traced) {
-                        return std::unexpected(std::move(traced.error()));
-                    }
-                }
-                // `--scene`: a scene plays at once, a test aid.
-                if (const std::optional<std::string> scene = options->scene; scene) {
-                    if (auto played = (*mode)->playScene(*scene); !played) {
-                        return std::unexpected(std::move(played.error()));
-                    }
-                }
-            }
-            return std::unique_ptr<coney::GameMode>(std::move(*mode));
-        };
-        levelGameplay = std::make_unique<coney::GameplayMode>(renderer, scripts.scripts(), scripts.context(),
-                                                              scripts.state(), scripts.humans(), scripts.flags(),
-                                                              scripts.recorded(), std::move(loader), printText);
-        levelGameplay->setLevel(name);
-        levelGameplay->setWorldFrozen(commandLine && options->freezeWorld);
-        levelGameplay->setSceneMaker(sceneMaker);
-        levelGameplay->setObjectSounds(&objectSounds);
-        scripts.hud().setSoundOutput(hudSound());
+    // The game over the disc (platform/game_session.h): the story from boot, the level `--play-level` names and the
+    // levels the debug menus jump to all run in it, set up one way
+    // (docs/guides/conventions.md#test-through-the-players- path). Made below when the run plays the game, or by the
+    // debug menus' first level jump.
+    std::optional<coney::platform::GameSession> session;
+    coney::platform::GameSessionSettings sessionSettings;
+    sessionSettings.language = options->language;
+    sessionSettings.skipMovies = options->skipMovies;
+    sessionSettings.rumble = options->rumble;
+    // The saved profiles: the player's folder, or none in test mode (docs/research/save.md#coney).
+    sessionSettings.profiles = coney::platform::profileFolder(*options);
+    sessionSettings.cardCheckingMs = coney::MemoryCardMode::kCheckingMessageMs;
+    const auto makeSession = [&]() -> coney::platform::GameSession& {
+        return session.emplace(renderer, modes, *wad, chunkHandlers, sectorBudget, strings, objectSounds,
+                               sessionSettings, printText);
     };
-    // The play mode of a level played on its own; null when none is loaded.
-    const auto levelPlayMode = [&levelGameplay]() -> coney::platform::PlayLevelMode* {
-        return levelGameplay ? dynamic_cast<coney::platform::PlayLevelMode*>(levelGameplay->level()) : nullptr;
+    // The level `--play-level` names: the session starts there directly once the sound exists, so the preloads
+    // configure the sound.
+    std::optional<std::string> commandLineLevel;
+    // The play mode of the session's level; null when none is loaded.
+    const auto sessionPlayMode = [&session]() -> coney::platform::PlayLevelMode* {
+        return session ? session->play() : nullptr;
     };
     if (const std::optional<std::string> viewTxd = options->viewTxd; viewTxd) {
         if (!wad) {
@@ -684,13 +517,14 @@ int main(int argc, char** argv) {
             }
             modes.push(*playLevel);
         } else {
-            // The level as the story reaches it: gameplay runs its scripts, whose `HuCreate` says where player 1
-            // starts at the checkpoint, and loads it with the scripts' humans in it. A level with no world fails here.
+            // The level as the story reaches it, started directly in the game session (GameSession::startAtLevel(),
+            // once the sound exists) so that it is set up as the story sets it up. A level with no world fails here.
             if (auto worlds = coney::platform::worldNamesFor(*wad, *playName); !worlds) {
                 std::fprintf(stderr, "coney: %s: %s\n", playName->c_str(), worlds.error().message.c_str());
                 return 1;
             }
             commandLineLevel = *playName;
+            makeSession();
         }
     } else if (const std::optional<std::string> sandboxName = options->sandbox; sandboxName) {
         // The sandbox with the free camera: no disc needed.
@@ -704,95 +538,9 @@ int main(int argc, char** argv) {
         sandboxViewer = std::move(*viewerMode);
         modes.push(*sandboxViewer);
     } else if (wad) {
-        // The start-up flow, as the original's main pushes it (docs/research/boot.md#main): the level flow (mode 8) at
-        // the bottom, then the memory-card check (mode 6), then the legal screen (mode 5), which runs first; the level
-        // flow later shows the menus (mode 0x12). The game's scripts run in the flow's script system: the legal
-        // screen's preloads fill the UI strings (docs/research/scripting.md#life-of-the-lua-state).
-        coney::LegalScreenSettings legal;
-        legal.language = options->language;
-        // Gameplay (mode 1) loads the chosen level as the play mode, with player 1 where the level script made him.
-        const coney::io::Wad& gameWad = *wad;
-        coney::GameplayMode::LevelLoader loadLevel =
-            [&renderer, &gameWad, &sectorBudget, &storyDebugDraw, &playSounds, &startUp](
-                const coney::LevelStart& start,
-                const coney::ScriptedCast& cast) -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
-            // The fighters as the flow's scripts configured them.
-            auto mode = playModeFor(renderer, gameWad, sectorBudget, start, cast, *cast.recorded);
-            if (!mode) {
-                return std::unexpected(std::move(mode.error()));
-            }
-            (*mode)->setDebugDraw(storyDebugDraw);
-            (*mode)->setSounds(playSounds);
-            // The game's HUD, which the scripts' bindings act on.
-            if (startUp) {
-                (*mode)->useHud(startUp->hud());
-            }
-            return std::unique_ptr<coney::GameMode>(std::move(*mode));
-        };
-        // The saved profiles: the player's folder, or none in test mode (docs/research/save.md#coney).
-        const std::optional<std::filesystem::path> profiles = coney::platform::profileFolder(*options);
-        startUp.emplace(renderer, modes, loadSheet, strings, legal, printText, coney::script::wadScriptSource(*wad),
-                        std::move(loadLevel), profiles, coney::MemoryCardMode::kCheckingMessageMs);
-        if (profiles) {
-            printText(std::format("profiles: {} in {}\n", startUp->profiles().count(), profiles->string()));
-        }
-        // The front-end level's world behind the menus (docs/research/frontend.md#background).
-        startUp->levelFlow().setSceneLoader(
-            [&renderer, &startUp,
-             &gameWad](std::string_view level) -> std::expected<std::unique_ptr<coney::FrontEndScene>, coney::Error> {
-                // The dynamic objects the flow's scripts spawn (the Wonder Wheel), which the scene binds and moves.
-                const coney::platform::FrontEndObjectSource objects{&startUp->spawnRecords(), &startUp->objectTypes()};
-                auto scene = coney::platform::FrontEndWorldScene::create(renderer, gameWad, level, printText, objects);
-                if (!scene) {
-                    return std::unexpected(std::move(scene.error()));
-                }
-                return std::unique_ptr<coney::FrontEndScene>(std::move(*scene));
-            });
-        startUp->gameplay().setObjectSounds(&objectSounds);
-        // The sheet-table records the pause menu and the mission-failed screen draw (docs/research/pause.md#layout-gui-
-        // coordinates): a record's sheet is the WAD file named by its name hash.
-        startUp->setSheetRecordLoader(
-            [&renderer, &gameWad, &chunkHandlers, hashes = coney::platform::sheetTableHashes(gameWad)](
-                std::uint32_t record) -> std::expected<coney::graphics::SpriteSheet, coney::Error> {
-                if (record >= hashes.size()) {
-                    return coney::fail(coney::ErrorCode::NotFound, std::format("no sheet-table record {}", record));
-                }
-                auto entry = gameWad.lookup(std::to_string(hashes[record]));
-                if (!entry) {
-                    return std::unexpected(std::move(entry.error()));
-                }
-                return coney::platform::loadSpriteSheet(gameWad, **entry, chunkHandlers, renderer.drawsPixels());
-            });
-        // The game's random table, from the disc's own executable (docs/research/flags.md#player-starts).
-        std::vector<std::uint32_t> table;
-        if (levelScriptOptions(*wad, {}, table).randomTable.size() == coney::GameRandom::kTableSize) {
-            startUp->state().random.setTable(table);
-        }
-        startUp->gameplay().setSceneMaker(sceneMaker);
-        // The front end's scenes (the Wonder Wheel's `WonderWheel_100`), over the same list.
-        startUp->levelFlow().setScenes(sceneMaker, &startUp->context());
-        // The movie player (docs/research/movies.md#coneys-implementation): every movie the flow asks for, its sound on
-        // the mixer once the sound output starts (below), drawn when the renderer draws pixels.
-        if (renderer.drawsPixels()) {
-            movieScreen.emplace();
-        }
-        coney::movies::MovieSettings movieSettings;
-        movieSettings.present = renderer.drawsPixels();
-        movieSettings.skipAll = options->skipMovies;
-        movieSettings.subtitlesOn = [&startUp] { return startUp->state().subtitles; };
-        movieMode.emplace(modes, renderer, coney::platform::discMovieOpener(wad->disc()),
-                          movieScreen ? &*movieScreen : nullptr, nullptr, std::move(movieSettings), printText);
-        movieMode->setCaptionSource(
-            coney::movies::wadCaptionSource(*wad, [&startUp] { return startUp->state().language; }));
-        if (auto font = loadSheet(coney::gui::kBigFontSheet).and_then(coney::graphics::Font::fromSheet); font) {
-            captionFont.emplace(std::move(*font));
-            movieMode->setCaptionFont(&*captionFont);
-        }
-        startUp->services().attachMoviePlayer(&*movieMode);
-        if (options->rumble) {
-            startUp->rumbleMenu().setLaunchOverride(options->rumble);
-        }
-        startUp->start();
+        // The game from boot (GameSession::startStory(), once the sound exists): the start-up flow as the original's
+        // main pushes it (docs/research/boot.md#main).
+        makeSession();
     } else {
         // No disc: no game to run, only the idle screen.
         modes.push(idle);
@@ -800,8 +548,11 @@ int main(int argc, char** argv) {
 
     // Pad input (docs/research/frontend.md#input): a script in test mode, otherwise SDL's gamepads and keyboard when
     // there is a window; a headless run without a script has no pads. Declared after the renderer, so it is destroyed
-    // before SDL stops.
+    // before SDL stops. With `--play-level` a script starts at the level's first frame of play (DeferredInput), so its
+    // frames keep their meaning however long the loading screen and an intro movie take.
+    std::unique_ptr<coney::ScriptedInput> levelScript; // the script under the deferred start; before `input`
     std::unique_ptr<coney::InputSource> input;
+    coney::DeferredInput* deferredInput = nullptr;
     // The SDL input, when it is the source: the developer overlay mutes its keyboard.
     coney::platform::SdlInput* devices = nullptr;
     if (const std::optional<std::string> scriptPath = options->inputScript; scriptPath) {
@@ -812,8 +563,8 @@ int main(int argc, char** argv) {
         }
         auto scripted = std::make_unique<coney::ScriptedInput>(std::move(*events));
         // `steer` lines read player 1 and his camera from the level in play (a sandbox's or a story level's).
-        scripted->setSteerSource([&playLevel, &levelPlayMode](std::size_t port) -> std::optional<coney::SteerView> {
-            const coney::platform::PlayLevelMode* mode = playLevel ? playLevel.get() : levelPlayMode();
+        scripted->setSteerSource([&playLevel, &sessionPlayMode](std::size_t port) -> std::optional<coney::SteerView> {
+            const coney::platform::PlayLevelMode* mode = playLevel ? playLevel.get() : sessionPlayMode();
             if (port != 0 || mode == nullptr) {
                 return std::nullopt;
             }
@@ -825,7 +576,15 @@ int main(int argc, char** argv) {
                                     .y = feet.y,
                                     .cameraHeading = std::atan2(-(target.x - eye.x), target.y - eye.y) * kDegrees};
         });
-        input = std::move(scripted);
+        if (commandLineLevel) {
+            levelScript = std::move(scripted);
+            auto deferred = std::make_unique<coney::DeferredInput>(*levelScript,
+                                                                   [&session] { return session && session->inPlay(); });
+            deferredInput = deferred.get();
+            input = std::move(deferred);
+        } else {
+            input = std::move(scripted);
+        }
     } else if (renderer.window()) {
         auto started = coney::platform::SdlInput::start();
         if (started) {
@@ -882,18 +641,6 @@ int main(int argc, char** argv) {
                                                                     : coney::platform::AudioSink::Device);
         if (started) {
             audio = std::move(*started);
-            playSounds = &audio->sounds();
-            objectSounds.setPlayer(&audio->sounds());
-            objectSounds.setMaterialSounds(&audio->game().materialSounds());
-            if (movieMode) {
-                movieMode->setMixer(&audio->sounds().mixer());
-                movieMode->setSoundStop([&audio] {
-                    if (coney::audio::SoundEngine* engine = audio->sounds().engine(); engine != nullptr) {
-                        engine->music().stop();
-                        engine->stopAll();
-                    }
-                });
-            }
             if (!testMode) {
                 printText(audio->startLine());
             }
@@ -908,133 +655,97 @@ int main(int argc, char** argv) {
                 }
             }
             debugServices.audio = [&audio]() -> coney::debug::AudioControls* { return audio.get(); };
-            gameSound = &audio->game();
-            gameSound->setLog(printText);
+            audio->game().setLog(printText);
         } else {
             std::fprintf(stderr, "coney: %s; running without sound\n", started.error().message.c_str());
         }
     }
-    if (audio) {
-        hudPlay = [&audio](std::string_view name) { audio->sounds().play(name); };
-    }
-    if (startUp) {
-        startUp->hud().setSoundOutput(hudSound());
-        // What the pause and the mission-failed screen ask of the game (docs/research/pause.md#pausing): all sound
-        // paused, the HUD's objectives for the Objectives screen, both radars off.
-        auto radarsBeforePause = std::make_shared<std::array<bool, 2>>(std::array<bool, 2>{true, true});
-        startUp->setPauseHooks(coney::PauseHooks{
-            .pauseSound =
-                [&audio](bool paused) {
-                    if (audio && paused) {
-                        audio->sounds().pauseAll();
-                    } else if (audio) {
-                        audio->sounds().resumeAll();
+    // The game session gets the sound before its first frame, then starts: from boot, or directly at the command
+    // line's level, where the run's own options (`--start`, `--camera`, `--freeze-world`, `--trace`, `--scene`,
+    // `--script-trace`) apply to the first level it loads.
+    if (session) {
+        session->attachAudio(audio.get());
+        if (commandLineLevel) {
+            session->setFirstLevelSetup(
+                [&options](coney::platform::PlayLevelMode& mode) -> std::expected<void, coney::Error> {
+                    // `--start`: the player (and the camera) somewhere else from the first step, a trace scenario's
+                    // start.
+                    if (const std::optional<coney::StartPlace> place = options->start; place) {
+                        mode.startAt(*place);
                     }
-                },
-            .objectives =
-                [&startUp] {
-                    std::array<std::vector<std::string>, 3> lists;
-                    const coney::hud::Checklist& checklist = startUp->hud().checklist();
-                    for (std::size_t i = 0; i < lists.size(); ++i) {
-                        if (const auto& line = checklist.slots.at(i)) {
-                            lists.at(i).push_back(line->text);
+                    // `--camera` and `--freeze-world`: a stable, matched view for comparing with the original's frames.
+                    if (const std::optional<coney::CameraPin> pin = options->cameraPin; pin) {
+                        mode.pinCamera(*pin);
+                    }
+                    if (options->freezeWorld) {
+                        mode.freezeWorld();
+                    }
+                    if (const std::optional<std::string> tracePath = options->traceFile; tracePath) {
+                        if (auto traced = mode.traceTo(*tracePath); !traced) {
+                            return std::unexpected(std::move(traced.error()));
                         }
                     }
-                    return lists;
-                },
-            // Both radars off while paused, leaving the scripts' own radar wish alone, and back as they were after.
-            .radarsOff =
-                [&startUp, radarsBeforePause] {
-                    *radarsBeforePause = startUp->hud().radar().on;
-                    startUp->hud().radar().on = {false, false};
-                },
-            .radarsBack = [&startUp, radarsBeforePause] { startUp->hud().radar().on = *radarsBeforePause; },
-        });
-    }
-    // The front end's banks, music and cues, and the scripts' sound bindings, go to the game's sound.
-    if (startUp && gameSound != nullptr) {
-        connectSound(startUp->scripts(), startUp->context());
-        startUp->services().attachAudio(gameSound);
-    }
-    if (commandLineLevel) {
-        makeLevelGameplay(*commandLineLevel, options->checkpoint.value_or(1), true);
-        modes.push(*levelGameplay);
-    }
-    // The story's loading screen (docs/research/level-loading.md#loading-screen), after the sound output its sounds
-    // play through, so it is destroyed first. The game's sound picks the bank (load_NN, from its seeded start, or
-    // armload for an Armies level) and plays it; stopping them also loads the level's bank. Without it the screen is
-    // silent.
-    std::optional<coney::LoadingScreen> loadingScreen;
-    if (startUp && wad) {
-        coney::LoadScreenSounds loadSounds;
-        if (gameSound != nullptr) {
-            coney::GameState& state = startUp->state();
-            loadSounds.start = [gameSound, &state] {
-                const coney::LevelRecord* record = state.levels.at(state.currentLevel);
-                gameSound->levelLoadStarted(record != nullptr ? static_cast<int>(record->number) : 0);
-            };
-            loadSounds.stop = [gameSound] { gameSound->levelLoaded(); };
+                    // `--scene`: a scene plays at once, a test aid.
+                    if (const std::optional<std::string> scene = options->scene; scene) {
+                        if (auto played = mode.playScene(*scene); !played) {
+                            return std::unexpected(std::move(played.error()));
+                        }
+                    }
+                    return {};
+                });
+            session->gameplay().setWorldFrozen(options->freezeWorld);
+            // `--script-trace`: every binding call and call into the scripts from the level's Lua state on, to a file
+            // the trace keeps open.
+            std::function<void()> ready;
+            if (const std::optional<std::string> scriptTrace = options->scriptTraceFile; scriptTrace) {
+                auto file = std::make_shared<std::ofstream>(*scriptTrace, std::ios::binary | std::ios::trunc);
+                if (!*file) {
+                    std::fprintf(stderr, "coney: --script-trace: cannot write %s\n", scriptTrace->c_str());
+                    return 1;
+                }
+                ready = [&session, file] {
+                    session->flow().scripts().traceCalls([file](std::string_view line) { *file << line; });
+                };
+            }
+            session->startAtLevel(*commandLineLevel, options->checkpoint.value_or(1), std::move(ready));
+        } else {
+            session->startStory();
         }
-        const coney::io::Wad& screenWad = *wad;
-        loadingScreen.emplace(
-            renderer, loadSheet,
-            [&screenWad](std::string_view name) { return screenWad.lookup(coney::resourceFileName(name)).has_value(); },
-            coney::LoadScreenSettings{.language = options->language}, std::move(loadSounds), printText);
-        startUp->gameplay().setLoadingScreen(&*loadingScreen);
     }
-    // A level the Levels or Missions page asks for, started at the start of the next frame, outside any step: by the
-    // level flow's jump (from the front end or a level in play), or without it by replacing the play mode
-    // (playLevelNamed below).
-    std::optional<std::string> pendingLevel;
-    int pendingCheckpoint = 1;
-    if (startUp) {
-        debugServices.scripts = [&startUp] { return &startUp->scripts(); };
-        debugServices.recorded = [&startUp] { return &startUp->recorded(); };
-        debugServices.gameState = [&startUp] { return &startUp->state(); };
-        // The level table decides what can be jumped to; the jump itself waits for the next frame.
-        debugServices.loadLevel = [&startUp, &pendingLevel, &pendingCheckpoint](std::string_view name) {
-            if (!startUp->state().levels.find(name)) {
-                return false;
-            }
-            pendingLevel = std::string(name);
-            pendingCheckpoint = 1;
-            return true;
-        };
-        debugServices.loadLevelAt = [&startUp, &pendingLevel, &pendingCheckpoint](std::string_view name,
-                                                                                  int checkpoint) {
-            if (!startUp->state().levels.find(name)) {
-                return false;
-            }
-            pendingLevel = std::string(name);
-            pendingCheckpoint = checkpoint;
-            return true;
+    // The debug menus' level jumps (the Levels and Missions pages), carried out at the start of the next frame, outside
+    // any step: by the game session (the level flow's jump, from the front end or a level in play), or, before a
+    // session runs (a viewer or a sandbox), by a new session started directly at that level.
+    std::optional<std::pair<std::string, int>> pendingStart;
+    const auto jumpTo = [&session, &pendingStart, &wad](std::string_view name, int checkpoint) {
+        if (session) {
+            return session->jumpToLevel(name, checkpoint);
+        }
+        if (!wad || !coney::platform::worldNamesFor(*wad, name)) {
+            return false;
+        }
+        pendingStart.emplace(std::string(name), checkpoint);
+        return true;
+    };
+    if (wad) {
+        // The game's scripts and state for the Lua console and the Cheats page: the session's, however it started.
+        coney::platform::connectDebugServices(
+            debugServices, [&session]() -> coney::platform::GameSession* { return session ? &*session : nullptr; });
+        debugServices.loadLevel = [jumpTo](std::string_view name) { return jumpTo(name, 1); };
+        debugServices.loadLevelAt = [jumpTo](std::string_view name, int checkpoint) {
+            return jumpTo(name, checkpoint);
         };
     }
-    // Without the level flow the Levels page lists every level with a world on the disc.
-    if (!startUp && wad) {
-        debugServices.loadLevel = [&pendingLevel, &pendingCheckpoint](std::string_view name) {
-            pendingLevel = std::string(name);
-            pendingCheckpoint = 1;
-            return true;
-        };
-        debugServices.loadLevelAt = [&pendingLevel, &pendingCheckpoint](std::string_view name, int checkpoint) {
-            pendingLevel = std::string(name);
-            pendingCheckpoint = checkpoint;
-            return true;
-        };
+    // Before a game session runs, the Levels page lists every level with a world on the disc.
+    if (!session && wad) {
         debugServices.playableLevels = [&wad] { return coney::platform::playableLevelNames(*wad); };
     }
     // The play mode, for the Player, Camera and Spawner pages; and the sandbox layouts the Levels page plays, switched
     // to at the start of the next frame (playSandbox below), outside any step.
-    debugServices.play = [&playLevel, &levelPlayMode, &startUp]() -> coney::debug::PlayControls* {
+    debugServices.play = [&playLevel, &sessionPlayMode]() -> coney::debug::PlayControls* {
         if (playLevel) {
             return playLevel.get();
         }
-        if (coney::platform::PlayLevelMode* level = levelPlayMode(); level != nullptr) {
-            return level;
-        }
-        // A story level in play: gameplay's level is the play mode.
-        return startUp ? dynamic_cast<coney::platform::PlayLevelMode*>(startUp->gameplay().level()) : nullptr;
+        return sessionPlayMode();
     };
     debugServices.sandboxFolder = sandboxFolder(*options);
     std::optional<std::string> pendingSandbox;
@@ -1069,20 +780,25 @@ int main(int argc, char** argv) {
         }
     }
     coney::platform::PadMenuOverlay padMenu(debugSession, std::move(debugFont));
+    // A sandbox's play mode plays the HUD's sounds through the game-facing player, when there is sound.
+    const auto sandboxHudSound = [&audio](std::string_view name) {
+        if (audio) {
+            audio->sounds().play(name);
+        }
+    };
     if (playLevel) {
         playLevel->setDebugDraw(&debugSession.debugDraw());
         playLevel->setSounds(audio ? &audio->sounds() : nullptr);
-        playLevel->hud()->setSoundOutput(hudSound());
+        playLevel->hud()->setSoundOutput(sandboxHudSound);
     }
-    storyDebugDraw = &debugSession.debugDraw();
-    // The mode a sandbox or level the Levels page plays replaces: the play mode, the level's gameplay or the sandbox
-    // viewer; null when none of them runs.
-    const auto replaceable = [&playLevel, &levelGameplay, &sandboxViewer]() -> coney::GameMode* {
+    if (session) {
+        session->setDebugDraw(&debugSession.debugDraw());
+    }
+    // The mode a sandbox or a new game session replaces: the sandbox's play mode or the sandbox viewer; null when
+    // neither runs.
+    const auto replaceable = [&playLevel, &sandboxViewer]() -> coney::GameMode* {
         if (playLevel) {
             return playLevel.get();
-        }
-        if (levelGameplay) {
-            return levelGameplay.get();
         }
         return sandboxViewer.get();
     };
@@ -1111,11 +827,10 @@ int main(int argc, char** argv) {
                 modes.pop();
             }
             sandboxViewer.reset();
-            levelGameplay.reset();
             playLevel = std::move(*mode);
             playLevel->setDebugDraw(&debugSession.debugDraw());
             playLevel->setSounds(audio ? &audio->sounds() : nullptr);
-            playLevel->hud()->setSoundOutput(hudSound());
+            playLevel->hud()->setSoundOutput(sandboxHudSound);
             modes.push(*playLevel);
             return;
         }
@@ -1128,18 +843,13 @@ int main(int argc, char** argv) {
             modes.pop();
         }
         playLevel.reset();
-        levelGameplay.reset();
         sandboxViewer = std::move(*viewerMode);
         modes.push(*sandboxViewer);
     };
-    // Plays level `name` (`level2`) in place of the play mode or sandbox viewer on top. The mode it replaces goes
-    // first, so its sectors leave the budget before the level loads; the name is checked before that, so a typo keeps
-    // it.
-    const auto playLevelNamed = [&](const std::string& name, int checkpoint) {
-        if (auto worlds = coney::platform::worldNamesFor(*wad, name); !worlds) {
-            debugSession.print("levels: " + worlds.error().message);
-            return;
-        }
+    // Starts a game session directly at level `name`, as `--play-level` does, in place of the sandbox's play mode or
+    // viewer on top: the debug menus' first level jump when no session runs yet. The mode it replaces goes first, so
+    // its sectors leave the budget before the level loads.
+    const auto startSessionAt = [&](const std::string& name, int checkpoint) {
         coney::GameMode* replaced = replaceable();
         if (replaced != nullptr && modes.top() != replaced) {
             debugSession.print("levels: finish the mode on top first");
@@ -1150,50 +860,11 @@ int main(int argc, char** argv) {
         }
         playLevel.reset();
         sandboxViewer.reset();
-        makeLevelGameplay(name, checkpoint, false);
-        modes.push(*levelGameplay);
+        coney::platform::GameSession& started = makeSession();
+        started.attachAudio(audio.get());
+        started.setDebugDraw(&debugSession.debugDraw());
+        started.startAtLevel(name, checkpoint);
         debugSession.print(std::format("levels: playing {} at checkpoint {}", name, checkpoint));
-    };
-    // A level played on its own (`--play-level`, the Missions page) goes on to the next level when its scripts ask for
-    // one, as the story does: a mission that ends (`HUDLaunchMissionComplete`: the unlocks and `runNextMission(1)`
-    // choose the next level and checkpoint) and a level a script starts (`MenuLoadLevel`: the hub's missions). Run
-    // between frames, once the level's gameplay is the mode running; the progress (unlocks, bank) carries over.
-    const auto chainLevels = [&]() {
-        if (!levelScripts || !levelGameplay || !wad) {
-            return;
-        }
-        coney::QuietBindingHost& host = levelScripts->host();
-        if (!host.missionCompleteRequested() && !host.nextLevel()) {
-            return;
-        }
-        if (modes.top() != levelGameplay.get()) {
-            return; // a pause or another mode is on top: try again next frame
-        }
-        if (host.missionCompleteRequested()) {
-            printText("chain: mission complete\n");
-            if (!levelScripts->completeMission()) {
-                printText("chain: this level's scripts have no UnlockAndLoad\n");
-            }
-        }
-        const std::optional<std::string> next = host.nextLevel();
-        host.clearNextLevel();
-        if (!next) {
-            printText("chain: no next mission\n");
-            return;
-        }
-        // The front end is not a level to play; a name with no world cannot be.
-        if (auto worlds = coney::platform::worldNamesFor(*wad, *next); *next == "level100" || !worlds) {
-            printText(std::format("chain: not going on to {}\n", *next));
-            return;
-        }
-        const int checkpoint = static_cast<int>(levelScripts->state().checkPoint);
-        printText(std::format("chain: going on to {} at checkpoint {}\n", *next, checkpoint));
-        modes.pop();
-        std::unique_ptr<coney::LevelScripts> previous = std::move(levelScripts);
-        makeLevelGameplay(*next, checkpoint, false);
-        previous->carryProgressTo(*levelScripts);
-        modes.push(*levelGameplay);
-        previous.reset();
     };
     // The developer overlay (F1), only with a window; without it the pad menu still works.
     std::unique_ptr<coney::platform::ImGuiOverlay> devOverlay;
@@ -1220,33 +891,62 @@ int main(int argc, char** argv) {
     // frame still renders the game's last step.
     modes.setStepGate([&debugSession] { return debugSession.time().shouldStep(); });
 
-    // A screenshot is of the last frame, so it needs the frame limit (parseOptions makes sure of it).
+    // `--frames` (and so the screenshot of the last frame, which needs it: parseOptions makes sure of it). With
+    // `--play-level` they count from the level's first frame of play, like the input script, so a run is as long
+    // however long the loading screen and an intro movie take: the loop is stopped by the frame hook below instead.
     const std::optional<std::string> screenshotPath = options->screenshotPath;
+    const std::optional<std::uint64_t> playFrameLimit = commandLineLevel ? frameLimit : std::nullopt;
+    if (playFrameLimit) {
+        frameLimit.reset();
+    }
     if (screenshotPath && frameLimit) {
         renderer.requestCapture(*frameLimit - 1, *screenshotPath);
     }
+    // How long a `--play-level` run may wait for its level to play before it gives up: 10 minutes of frames, longer
+    // than any loading screen and intro movie.
+    constexpr std::uint64_t kPlayStartFrames = 18000;
+    std::uint64_t frameIndex = 0;
+    std::optional<std::uint64_t> playOrigin;
+    const auto playFramesDone = [&]() {
+        const std::uint64_t frame = frameIndex++;
+        if (!playFrameLimit) {
+            return false;
+        }
+        if (!playOrigin && session && session->inPlay()) {
+            playOrigin = frame;
+            if (screenshotPath) {
+                renderer.requestCapture(frame + *playFrameLimit - 1, *screenshotPath);
+            }
+        }
+        if (!playOrigin && frame >= kPlayStartFrames) {
+            std::fprintf(stderr, "coney: %s never started playing\n", commandLineLevel->c_str());
+            return true;
+        }
+        return playOrigin && frame - *playOrigin >= *playFrameLimit;
+    };
 
     // The main loop, paced as set up above.
     std::optional<coney::platform::Window> window = renderer.window();
     // The window's events go past the developer overlay first; while it has the keyboard, the keyboard pad is off.
     coney::FrameHooks hooks;
-    hooks.beginFrame = [&window, &devOverlay, devices, &pendingSandbox, &playSandbox, &pendingLevel, &pendingCheckpoint,
-                        &playLevelNamed, &chainLevels, &startUp] {
-        chainLevels();
+    hooks.beginFrame = [&window, &devOverlay, devices, &pendingSandbox, &playSandbox, &pendingStart, &startSessionAt,
+                        &session, &playFramesDone, &deferredInput] {
         // A sandbox or level the Levels page asked for, between two frames.
         if (pendingSandbox) {
             const std::string name = *pendingSandbox;
             pendingSandbox.reset();
             playSandbox(name);
         }
-        if (pendingLevel) {
-            const std::string name = *pendingLevel;
-            pendingLevel.reset();
-            if (startUp) {
-                startUp->jumpToLevel(name, pendingCheckpoint);
-            } else {
-                playLevelNamed(name, pendingCheckpoint);
-            }
+        if (pendingStart) {
+            const std::pair<std::string, int> start = *pendingStart;
+            pendingStart.reset();
+            startSessionAt(start.first, start.second);
+        }
+        if (session) {
+            session->beginFrame();
+        }
+        if (playFramesDone()) {
+            return false;
         }
         if (!window) {
             return true;
@@ -1290,17 +990,11 @@ int main(int argc, char** argv) {
     if (playLevel) {
         printText(playLevel->summary());
     }
-    if (const coney::platform::PlayLevelMode* level = levelPlayMode(); level != nullptr) {
+    if (const coney::platform::PlayLevelMode* level = sessionPlayMode(); level != nullptr) {
         printText(level->summary());
     }
-    if (startUp) {
-        if (const auto* storyLevel = dynamic_cast<const coney::platform::PlayLevelMode*>(startUp->gameplay().level());
-            storyLevel != nullptr) {
-            printText(storyLevel->summary());
-        }
-    }
-    if (movieMode && movieMode->counts().movies > 0) {
-        const coney::movies::MovieMode::Counts& counts = movieMode->counts();
+    if (session && session->movies().counts().movies > 0) {
+        const coney::movies::MovieMode::Counts& counts = session->movies().counts();
         printText(std::format("movies: {} played ({} skipped, {} failed), {} frames decoded, {} shown, {} sound "
                               "samples, {} captions\n",
                               counts.movies, counts.skipped, counts.failed, counts.framesDecoded, counts.framesShown,
@@ -1312,16 +1006,18 @@ int main(int argc, char** argv) {
     if (audio && options->audioTest) {
         printText(audio->summary());
     }
-    // A level played in test mode, alone or through the story: what its humans asked to be heard (counts only).
-    if (audio && testMode && (levelGameplay || startUp)) {
+    // A game played in test mode, from the story or a level: what its humans asked to be heard and what the glass and
+    // doors played (counts only).
+    if (audio && testMode && session) {
         printText(audio->game().summary());
+        printText(std::format("object sounds: {} played, {} material pairs, {} unplayed\n", objectSounds.played(),
+                              objectSounds.materialPairs(), objectSounds.unplayed()));
     }
 
-    // The level played on its own goes before the sound output (declared further down, so destroyed first), whose
-    // game sound its scripts' binding context and play mode still point at: tearing those down afterwards read freed
-    // sound state and crashed `--play-level level95` at exit.
-    levelGameplay.reset();
-    levelScripts.reset();
+    // The game session goes before the sound output (declared further down, so destroyed first), whose game sound its
+    // scripts' binding context and play modes still point at: tearing those down afterwards read freed sound state and
+    // crashed `--play-level level95` at exit.
+    session.reset();
 
     // Report the screenshot: where it went and a summary that says whether anything was drawn.
     if (const auto& capture = renderer.capture(); capture) {

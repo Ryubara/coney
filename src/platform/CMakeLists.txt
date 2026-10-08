@@ -33,6 +33,8 @@ target_sources(coney_platform PRIVATE ffmpeg_info.cpp ffmpeg_movie_decoder.cpp m
 target_sources(coney_platform PRIVATE error_dialogs.cpp)
 # The debug menus' platform glue: the pad menu drawn over every frame (docs/guides/debug-menu.md).
 target_sources(coney_platform PRIVATE debug_menus.cpp)
+# The one game set-up over a disc that every way into a level shares (docs/guides/conventions.md#test-through-the-players-path).
+target_sources(coney_platform PRIVATE game_session.cpp)
 # Where the player profiles are kept: the per-user data folder (docs/research/save.md#coney).
 target_sources(coney_platform PRIVATE profile_folder.cpp)
 # The developer overlay over the same menus, with Dear ImGui (docs/guides/debug-menu.md#the-developer-overlay).

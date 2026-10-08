@@ -14,6 +14,7 @@
 
 #include "core/assert.h"
 #include "effects/particles.h"
+#include "gamemodes/legal_screen_mode.h"
 #include "gui/global_strings.h"
 #include "gui/rumble_mode_gui/rumble_data.h"
 #include "gui/rumble_mode_gui/rumble_menu.h"
@@ -184,8 +185,7 @@ LevelScripts::LevelScripts(const script::ScriptSource& source, std::string_view 
 
     // The legal screen's preloads, in the first Lua state: they fill the level table.
     m_scripts.create();
-    m_scripts.runFiles(script::kEnumPreloadScripts);
-    m_scripts.runFiles(script::kConfigPreloadScripts);
+    runPreloadScripts(m_scripts);
 
     // An arena run alone gets the Rumble menu's default set-up: its chunks need the `RM_*` names `global.lua` defines.
     if (!options.rumble && options.rumbleArena) {

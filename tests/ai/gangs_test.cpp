@@ -59,7 +59,8 @@ TEST_CASE("friends are the same gang or kind, both police-like, or made friends;
     CHECK(w->enemyMask() == 1U << static_cast<unsigned>(enemy));
 }
 
-TEST_CASE("joining another gang flushes the brain; a full gang drops its first member", "[ai][gangs]") {
+TEST_CASE("joining a gang, the same one included, re-adds the brain; a full gang drops its first member",
+          "[ai][gangs]") {
     AiScene scene;
     Gangs& gangs = scene.brains.gangs();
     const int a = gangs.create(19, "A");
@@ -67,10 +68,12 @@ TEST_CASE("joining another gang flushes the brain; a full gang drops its first m
     Brain& brain = scene.add({44.0F, 40.0F, 0.0F}, 0.0F);
     gangs.addMember(a, brain);
     brain.pushGoal(std::make_unique<coney::ai::IdleGoal>());
-    gangs.addMember(a, brain); // already in it: nothing
+    // Already in it: out and back in once; with no tactic its goals stay.
+    gangs.addMember(a, brain);
     CHECK(brain.goalCount() == 1);
+    CHECK(gangs.find(a)->members().size() == 1);
     gangs.addMember(b, brain);
-    CHECK(brain.goalCount() == 0);
+    CHECK(brain.goalCount() == 1);
     CHECK(brain.gang() == gangs.find(b));
     CHECK(gangs.find(a)->members().empty());
 

@@ -629,6 +629,11 @@ merging are in [How we work](how-we-work.md#shared-machine); the emulator's mech
 - **Trace the cause, not the symptom.** A stuck character, a missing effect or a wrong value usually comes from a
   state that is never reset or a handler that never fires; follow who writes the value and who clears it. Write down
   what you ruled out, in one line, so nobody repeats it.
+- **Test through the path the player uses.** A reimplementation grows shortcuts for testing (start a level directly,
+  skip the menus), and each shortcut that sets the game up its own way hides bugs the player meets: a pause that only
+  the real path has, a hand-over between checkpoints that a direct start never plays, a debug service wired to one
+  path only. Keep one set-up that every start goes through, differing only in where it starts, and run playthrough
+  tests through it. When the owner sees a bug that a test does not, first ask which path each one took.
 - **Find a second source for the same function.** Another build of the game (named library calls, inline strings) can
   read faster; cite evidence only at the primary executable's addresses.
 - **Ask the data.** Tables, lists and counts can be read from the disc by tool and printed as counts and hashes;

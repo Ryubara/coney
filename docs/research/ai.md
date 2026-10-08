@@ -3642,8 +3642,13 @@ runners against the Warriors (gait 5, attack at 1 m, pace distance 13 m, up to 1
   `other` is the attacker (the null handle when none) and `standing` the members not dead or knocked out
   (`0x00166220`); event `0x11` passes the event's `+4`, event 2 the headcount; any other id goes through the generic
   marshaller (`0x00384ce0`) and is consumed when the Lua function returns true.
-- Then, when the gang has a tactic and members, the event goes to the tactic's event slot and its result is
-  returned.
+- Then, when the gang has a tactic, the event goes to the tactic's event slot and its result is returned. With no
+  members (`0x004de0c8` on `+0x48`) only event `0x16` with `+0x08` = 0 (a member left) goes on. A tactic not yet
+  started (`+0x04` = 0, the flag `Tactic_Process` `0x003067d8` tests) is first run through the gang's update,
+  `0x00166708(gang, 0)` (`0x00165144`-`0x00165158`), whose `Tactic_Process` starts it. So when a script sets a tactic
+  and adds members in the same step, the start's goals are given before the event's: the follow tactic's 22 with 1
+  then pops them to the base (`WarriorFollowTactic_GiveGoals` calls `Brain_PopToGoalBase` and `Brain_MarkGoalBase`)
+  and gives them once again, not twice. Confirmed (code).
 
 #### The gang update {#gang-update}
 
@@ -4360,7 +4365,8 @@ command gives nothing) and always rebuilds the tactic.
 
 - **Start** (`0x003111a8`) gives the members their goals (`WarriorFollowTactic_GiveGoals` `0x00310f38`): the chief's
   formation takes slot set 9 (`0x00295dd8`); every member that is not the chief, not a player (human `+0x1b0` = −1) and
-  not down is flushed and gets **`GoalFollowPlayer(9 m, chief, mode 3)`** (`0x002de380`, type `0x32`, vtable
+  not down is popped to his goal base, marked (`Brain_PopToGoalBase`, `Brain_MarkGoalBase`) and gets
+  **`GoalFollowPlayer(9 m, chief, mode 3)`** (`0x002de380`, type `0x32`, vtable
   `0x00541d70`). In a two-player game a Warrior of the first player's gang more than 10 m from him whose nearest player
   is the other one gets `FollowAndDefend` (`0x35`, `0x002bca20`) on that player instead. "Not down" is
   `Human_IsDownOrDead` (`0x00227e60`) returning 0: the human has its record (`+0xd4`) and none of the state bits

@@ -11,6 +11,7 @@
 #include "core/game_timer.h"
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/gameplay_mode.h"
+#include "gamemodes/legal_screen_mode.h"
 #include "scripting/lua_value.h"
 
 namespace coney {
@@ -23,7 +24,31 @@ LevelFlowMode::LevelFlowMode(graphics::RenderDevice& device, GameModeStack& stac
 
 void LevelFlowMode::enter() {
     m_loadFrontEndOnResume = true;
+    // Coney's direct start: what the legal screen and the front end run before a story level, then the level chosen,
+    // so the resume below starts no front end.
+    if (m_directStart) {
+        DirectStart start = std::move(*m_directStart);
+        m_directStart.reset();
+        m_log(std::format("level flow: direct start of {} at checkpoint {}\n", start.level, start.checkpoint));
+        if (m_scripts.exists()) {
+            runPreloadScripts(m_scripts);
+        }
+        // What the menus would have done in the front end's state (the Rumble menu's set-up of an arena).
+        if (start.ready) {
+            start.ready();
+        }
+        // The front end's unload (finishFrontEnd()) makes a fresh state: the level starts from the bindings alone.
+        if (m_scripts.exists()) {
+            m_scripts.create();
+        }
+        m_state.checkPoint = start.checkpoint;
+        chooseLevel(start.level);
+    }
     resume();
+}
+
+void LevelFlowMode::startAtLevel(std::string level, int checkpoint, std::function<void()> ready) {
+    m_directStart = DirectStart{.level = std::move(level), .checkpoint = checkpoint, .ready = std::move(ready)};
 }
 
 void LevelFlowMode::resume() {

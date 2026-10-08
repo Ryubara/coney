@@ -1307,8 +1307,8 @@ workers) that belong to this page, by address.
   `DuplicateSoundMaterials`, `NewAnimSlots` and `NewAnimSound` fill it (kept by `GameSound`; `SndLoadMatrix` empties it
   for a new name), its lookups (alternatives in turn, the default material's fallback) and its players (a pair's
   columns 2 then 1, a hit's column 1, an animation sound's column 1, the footstep remap) into the engine. A level
-  played alone (`--play-level`) gives its preloads the sound before they run. **Coney's stand-in**: `CAR_HOOD`'s
-  varied pitch is not applied (`0x003354e0` is not on this page).
+  started directly (`--play-level`) gives its preloads the sound before they run, as the story does. **Coney's
+  stand-in**: `CAR_HOOD`'s varied pitch is not applied (`0x003354e0` is not on this page).
 - `GameSound` (`game_sound.cpp`): the game's sound as the rest of the game drives it. The sound bindings
   (`repo:src/scripting/sound_bindings.cpp`: the preloads' configuration, the ambience, the music, `SndSetListener`,
   `HuSpeak`, `HuSpeakNI`, `HuShutUp`, `SoundPlayCommand`) reach it through the binding context; the front end's

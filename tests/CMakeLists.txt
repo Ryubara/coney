@@ -2,6 +2,7 @@
 add_executable(coney_tests
     camera/camera_lens_test.cpp
     core/chunk_system_test.cpp
+    core/deferred_input_test.cpp
     core/frame_clock_test.cpp
     core/frame_rate_meter_test.cpp
     core/game_random_test.cpp
@@ -96,6 +97,7 @@ add_executable(coney_tests
     platform/disc_rumble_test.cpp
     platform/disc_hub_test.cpp
     platform/disc_level80_test.cpp
+    platform/disc_level5_boss_camera_test.cpp
     platform/disc_level5_fights_test.cpp
     platform/disc_level99_audio_test.cpp
     platform/disc_level99_scene_speech_test.cpp
@@ -105,7 +107,9 @@ add_executable(coney_tests
     platform/disc_level99_course_test.cpp
     platform/disc_level99_sparring_test.cpp
     platform/disc_level99_change_character_test.cpp
+    platform/disc_level99_car_climb_test.cpp
     platform/disc_level99_street_props_test.cpp
+    platform/disc_game_session_test.cpp
     platform/disc_level99_handover_test.cpp
     platform/disc_level99_street_test.cpp
     platform/disc_level99_store_glass_test.cpp

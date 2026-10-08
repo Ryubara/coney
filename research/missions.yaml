@@ -58,7 +58,7 @@ missions:
       count: 4
       default: in-progress
       each:
-        1: {status: in-progress, note: "The intro, skipped, gives the screen back; holding R2 and pushing the right stick to Let's Go gives the follow order (CommandIssued runs). Blocked after it: Vermin and Rembrandt do not come down to the player (the crew's follow is being built)."}
+        1: {status: in-progress, note: "The intro, skipped, gives the screen back; holding R2 and pushing the right stick to Let's Go gives the follow order (CommandIssued runs). Vermin and Rembrandt come down the stairs to the player, and after the script's staging (EndStartCam re-adds the crew to gang 0) they follow him again (`coney_tests \"[commands]\"`). Open: a Warrior who steps round the other on the landing can slide along its railing for a few seconds before taking the stairs."}
         2: {status: in-progress, note: "Driven by the pad to the arrest scene and \"Free Cowboy and Snow\"; triangle by each shows the uncuff prompt and the L1-R1 mash frees him, and checkpoint 3 follows (`coney_tests \"[uncuff]\"`). Not yet: the cuffs icon, the crew's follow after."}
         3: {status: in-progress, note: "Reaches Fox's scene; its next step needs the Hold Up order and the crew's tactics."}
         4: {status: in-progress, note: "Reaches Cochise and Swan's scene; the fight needs the Wreck'em All order and the crew's tactics."}
@@ -196,7 +196,7 @@ missions:
         1: {status: in-progress, note: "The scripts run with no error; the checkpoint is not yet played to its end."}
         2: {status: pending-approval, note: "Played to its end with the pad (disc test): the bar's room smoke drifts over the screen as the original's does, the Hurricanes fight the player, and once all eight are down the scene l5_c5 plays and sets checkpoint 3. The surviving Hurricanes stop attacking after a while (AI fight-goal stall, with ai-combat2)."}
         3: {status: in-progress, note: "The scripts run with no error; the runner's carrot run (GoalRunCarrotRun) is still missing."}
-        4: {status: in-progress, note: "Played to its end with the pad (disc test): Diego and Vargas fight through the three stages of TacticBossScenarioA, the boss's HUD bars show in the right column, and the end scene l5_c3 ends the mission (HUDLaunchMissionComplete). The boss rail camera (CamSetupRail) is still missing."}
+        4: {status: in-progress, note: "Played to its end with the pad (disc test): Diego and Vargas fight through the three stages of TacticBossScenarioA, the boss's HUD bars show in the right column, and the end scene l5_c3 ends the mission (HUDLaunchMissionComplete). The boss rail camera (CamSetupRail) takes the screen after the opening (disc test)."}
     research:
       - {title: "The mission's scripts, checkpoint by checkpoint", path: "research/scripting.md#level5"}
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}

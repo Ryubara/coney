@@ -936,7 +936,8 @@ fade in, `levelLoaded` before the finish: [Sound](sound.md#banks)). Coney's stan
   (6 steps), loads the whole level in the next step (the window keeps the faded-in picture, as the original keeps its
   last frame between reads), holds it until 3,000 ms after its start (`GameplayMode::kLoadScreenHoldMilliseconds`,
   standing for the PS2's load), finishes it (6 steps of fade out), then asks for the intro movie and runs the level's
-  first step in the same step: 96 steps in all. `coney --play-level` and the tests without a screen load in `enter`.
+  first step in the same step: 96 steps in all. `coney --play-level` has the screen too (it is the story's level, started
+  directly); only the subsystem tests that build gameplay alone load in `enter`.
 - `armload` is not chosen (who decides, `0x0041d110`, is open); without the sound engine (no disc sound data, or
   `--no-audio`) the screen is silent. The memory-card screen (start-up) is not done.
 

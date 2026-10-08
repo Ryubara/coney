@@ -2,13 +2,12 @@
 #include "platform/parked_cars.h"
 
 #include <algorithm>
-#include <array>
 #include <format>
-#include <limits>
 #include <utility>
 
 #include <rw.h>
 
+#include "animation/anim_math.h"
 #include "graphics/car_draw.h"
 #include "platform/level_file.h"
 #include "platform/texture_dictionary.h"
@@ -45,35 +44,6 @@ void place(rw::Atomic* atomic, const anim::Mat34& m) {
 const LevelClumpObject* clumpOf(const ObjectModel& model) {
     const auto* clump = dynamic_cast<const LevelClumpObject*>(model.model.get());
     return clump != nullptr && clump->parts().size() >= world_objects::kCarParts ? clump : nullptr;
-}
-
-// The twelve triangles of the box [`min`, `max`] (model axes) placed by `pose`, each facing out of the box.
-void addBox(std::vector<raycast::BuildTriangle>& triangles, anim::Vec3 min, anim::Vec3 max, const anim::Mat34& pose) {
-    // Corner i has x from bit 0, y from bit 1, z from bit 2.
-    std::array<raycast::Vec3, 8> corners{};
-    for (std::size_t i = 0; i < corners.size(); ++i) {
-        const anim::Vec3 local{(i & 1U) != 0 ? max.x : min.x, (i & 2U) != 0 ? max.y : min.y,
-                               (i & 4U) != 0 ? max.z : min.z};
-        const anim::Vec3 p = anim::transformPoint(pose, local);
-        corners.at(i) = raycast::Vec3{p.x, p.y, p.z};
-    }
-    // Each face as four corners counter-clockwise seen from outside, so (b - a) × (c - a) points out.
-    constexpr std::array<std::array<std::size_t, 4>, 6> kFaces{{
-        {0, 2, 3, 1}, // bottom (-z)
-        {4, 5, 7, 6}, // top (+z)
-        {0, 1, 5, 4}, // -y
-        {2, 6, 7, 3}, // +y
-        {0, 4, 6, 2}, // -x
-        {1, 3, 7, 5}, // +x
-    }};
-    for (const auto& face : kFaces) {
-        raycast::BuildTriangle first;
-        first.corners = {corners.at(face[0]), corners.at(face[1]), corners.at(face[2])};
-        raycast::BuildTriangle second;
-        second.corners = {corners.at(face[0]), corners.at(face[2]), corners.at(face[3])};
-        triangles.push_back(first);
-        triangles.push_back(second);
-    }
 }
 
 } // namespace
@@ -132,7 +102,7 @@ ParkedCars::TypeModel* ParkedCars::model(std::uint8_t type) {
         }
         return nullptr;
     }
-    auto typeModel = std::make_unique<TypeModel>(TypeModel{std::move(*loaded), {}, {}});
+    auto typeModel = std::make_unique<TypeModel>(TypeModel{std::move(*loaded)});
     const LevelClumpObject& clump = *clumpOf(typeModel->model);
     // Every atomic, damaged forms included, draws with the dictionary's first texture, as the model's untextured
     // materials are linked.
@@ -143,28 +113,6 @@ ParkedCars::TypeModel* ParkedCars::model(std::uint8_t type) {
             geometry->matList.materials[m]->setTexture(typeModel->model.texture.texture);
         }
     }
-    // The box round the undamaged car's vertices, each placed by its part's frame.
-    constexpr float kHuge = std::numeric_limits<float>::max();
-    anim::Vec3 min{kHuge, kHuge, kHuge};
-    anim::Vec3 max{-kHuge, -kHuge, -kHuge};
-    for (const LevelClumpObject::Part& part : clump.parts().first(world_objects::kCarParts)) {
-        rw::Geometry* geometry = part.atomic.atomic()->geometry;
-        const anim::Mat34 frame = toMat34(part.frame);
-        if (geometry->numMorphTargets == 0) {
-            continue;
-        }
-        const rw::V3d* vertices = geometry->morphTargets[0].vertices;
-        for (rw::int32 v = 0; vertices != nullptr && v < geometry->numVertices; ++v) {
-            const anim::Vec3 p = anim::transformPoint(frame, anim::Vec3{vertices[v].x, vertices[v].y, vertices[v].z});
-            min = anim::Vec3{std::min(min.x, p.x), std::min(min.y, p.y), std::min(min.z, p.z)};
-            max = anim::Vec3{std::max(max.x, p.x), std::max(max.y, p.y), std::max(max.z, p.z)};
-        }
-    }
-    if (min.x > max.x) {
-        min = max = anim::Vec3{};
-    }
-    typeModel->min = min;
-    typeModel->max = max;
     slot = std::move(typeModel);
     return slot.get();
 }
@@ -214,18 +162,6 @@ void ParkedCars::draw(const std::function<void(rw::Atomic*)>& render, graphics::
     }
     rw::SetRenderState(rw::ZWRITEENABLE, 1);
     rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
-}
-
-std::vector<raycast::BuildTriangle> ParkedCars::obstacles() {
-    std::vector<raycast::BuildTriangle> triangles;
-    for (const world_objects::Car& car : m_cars.all()) {
-        const TypeModel* typeModel = car.type ? model(*car.type) : nullptr;
-        if (typeModel == nullptr) {
-            continue;
-        }
-        addBox(triangles, typeModel->min, typeModel->max, anim::transform(car.rotation, car.position));
-    }
-    return triangles;
 }
 
 } // namespace coney::platform

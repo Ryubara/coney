@@ -192,14 +192,11 @@ PlayLevelMode::createWith(RenderEngine& engine, const io::Wad& wad, std::unique_
                       model, start.position.x, start.position.y, start.position.z, start.headingDegrees,
                       scenery->startSource(), setup.snapToGround ? "" : ", not snapped", speeds.walk, speeds.jog,
                       speeds.run, speeds.sprint));
-    // The level's cars, particles and motion blur, when gameplay brought them; the cars' boxes join the level's
-    // collision before anything takes the mesh.
+    // The level's cars, particles and motion blur, when gameplay brought them. A car adds nothing to the collision:
+    // humans meet and climb it through its shell in the level's mesh (docs/research/characters.md#car-shells).
     std::unique_ptr<PlayLevelEffects> levelEffects;
     if (cast != nullptr && (cast->effects != nullptr || cast->cars != nullptr)) {
         levelEffects = std::make_unique<PlayLevelEffects>(engine, wad, cast->effects, cast->cars, print);
-        if (auto added = scenery->addObstacles(levelEffects->carObstacles()); !added) {
-            print(std::format("cars: no collision for the parked cars: {}\n", added.error().message));
-        }
     }
     return std::unique_ptr<PlayLevelMode>(new PlayLevelMode(engine, wad, std::move(scenery), std::move(*loaded),
                                                             std::move(print), std::move(model), used, cast,

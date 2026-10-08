@@ -168,37 +168,6 @@ std::expected<void, Error> PlayScenery::setExtras(const RenderEngine& /*engine*/
     return fail(ErrorCode::InvalidArgument, "objects can be spawned in a sandbox only, for now");
 }
 
-std::expected<void, Error> PlayScenery::addObstacles(std::span<const raycast::BuildTriangle> /*obstacles*/) {
-    return fail(ErrorCode::InvalidArgument, "obstacles can be added to a level only");
-}
-
-std::expected<void, Error> LevelPlayScenery::addObstacles(std::span<const raycast::BuildTriangle> obstacles) {
-    // **Coney's stand-in** grid cell for the rebuilt mesh, in metres: the builder's grid is its own, not the file's.
-    constexpr float kObstacleCellSize = 4.0F;
-    if (obstacles.empty()) {
-        return {};
-    }
-    const raycast::CollisionMesh& level = *m_scenery.level->collision;
-    const auto vertices = level.vertices();
-    std::vector<raycast::BuildTriangle> triangles;
-    triangles.reserve(level.triangles().size() + obstacles.size());
-    for (const raycast::CollisionTriangle& triangle : level.triangles()) {
-        raycast::BuildTriangle copy;
-        copy.corners = {vertices[triangle.vertices[0]], vertices[triangle.vertices[1]], vertices[triangle.vertices[2]]};
-        copy.flags = triangle.flags;
-        copy.material = triangle.material;
-        copy.area = triangle.area;
-        triangles.push_back(copy);
-    }
-    triangles.insert(triangles.end(), obstacles.begin(), obstacles.end());
-    auto mesh = raycast::buildCollisionMesh(triangles, kObstacleCellSize);
-    if (!mesh) {
-        return std::unexpected(std::move(mesh.error()));
-    }
-    m_scenery.level->collision = std::move(*mesh);
-    return {};
-}
-
 std::expected<std::unique_ptr<SandboxPlayScenery>, Error>
 SandboxPlayScenery::create(const RenderEngine& engine, sandbox::SandboxWorld world,
                            const std::optional<std::string>& spawn) {

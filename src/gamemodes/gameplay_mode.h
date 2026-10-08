@@ -158,8 +158,8 @@ class PauseMode;
 ///   over 200 ms of game time, load the level in one step (the window keeps the faded-in picture meanwhile, as the
 ///   original keeps its last frame between reads), hold it until kLoadScreenHoldMilliseconds after its start (Coney's
 ///   loads take no game time, so this stands for the PS2's load), finish it (about 170 ms of fade out), and only then
-///   ask for the intro movie and run the level's first step. The pads are not read meanwhile. Without one (`coney
-///   --play-level`, most tests), the level loads in enter and plays from the first update.
+///   ask for the intro movie and run the level's first step. The pads are not read meanwhile. Without one (the
+///   subsystem tests that build gameplay alone), the level loads in enter and plays from the first update.
 /// - The level's brains and gangs are made before its script (the AI host of `context`), but the humans the script
 ///   creates are made, and the calls on them run, only once the level has loaded its characters (ScriptedCast).
 /// - So are player 1's cameras (`context`'s cameras), which the script's camera calls set up before the player exists
@@ -244,6 +244,9 @@ class GameplayMode final : public GameMode {
     };
     /// The current phase (Playing without a loading screen).
     [[nodiscard]] Phase phase() const { return m_phase; }
+    /// Whether a loaded level plays: entered, past its loading screen and with its level loaded. On top of the stack,
+    /// the next update is a frame of play (the intro movie, when there is one, goes over it first).
+    [[nodiscard]] bool playing() const { return entered() && m_phase == Phase::Playing && m_level != nullptr; }
 
     /// `InitLevel`: the level's brains, the level script, then the level from the loader, entered (its preload).
     /// @orig 0x001582e0 Mode1::Enter (unknown)

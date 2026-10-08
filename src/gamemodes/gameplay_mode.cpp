@@ -471,6 +471,9 @@ void GameplayMode::enter() {
     // The level script spawns the level's panes and doors into gameplay's objects, typed by what the boot scripts'
     // `CfgSetGlassProperties` calls recorded.
     script::applyRecordedGlassTypes(m_recorded, m_objects.glass);
+    // The player's turning as the preloads configured it (`CfgSetTurnRates`, `CfgTurnRate`), whichever way the game
+    // reached the level.
+    applyTurnConfig(m_recorded);
     m_context.objects = &m_objects;
     // A fresh light manager and fog for the level, which its scripts' SetLight and SetFogColor fill.
     m_lighting = std::make_unique<graphics::LevelLighting>();
