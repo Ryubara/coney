@@ -301,7 +301,12 @@ show the same 640-wide buffer, one from line 0 (`DISPLAY1` height 448) and one f
 lines: a slight vertical blur that softens the image and hides the jagged edges of thin lines. The driver side is
 [The picture on the TV](ps2-render.md#video-output).
 
-Coney (`RenderEngine::setLineBlend`, `repo:src/platform/render_engine.h`) does the same by default after the game's
+Coney offers this as an **optional PS2 look, off by default** (`--line-blend on`). The blend existed to hide interlace
+flicker on a TV; Coney draws whole frames on a full-resolution monitor, where there is nothing to hide, and the
+one-line shift (about 2.4 pixels at 1080p, vertical only) reads as a smear on faces and thin lines rather than the
+soft TV picture players remember. This is a quirk of the console's video output, not of the game, so turning it off
+leaves the game's behaviour as the original's. When on, Coney (`RenderEngine::setLineBlend`,
+`repo:src/platform/render_engine.h`) does the same after the game's
 2D layers and before the debug menus: the frame is copied and laid back over itself at half strength, shifted up by
 one of the original's 448 lines at the window's size, the last line clamped. It covers the whole 3D view
 (`RenderEngine::viewRect`), so in a window wider than 4:3 the view's sides are softened too: the original's output

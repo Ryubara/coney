@@ -215,8 +215,10 @@ struct Options {
     /// `--vsync on|off`: whether a present waits for the display's vertical blank; on by default. Needs a window.
     bool vsync = true;
     /// `--line-blend on|off`: whether each shown line is the mean of two neighbouring lines, as the PS2's video output
-    /// softens the picture (docs/research/rendering.md#output); on by default. Reference renders never blend.
-    bool lineBlend = true;
+    /// softens the picture (docs/research/rendering.md#output); off by default, an optional PS2 look: on a
+    /// full-resolution monitor there is no interlace flicker to hide, and the one-line shift reads as a smear.
+    /// Reference renders never blend.
+    bool lineBlend = false;
     /// `--show-fps`: print the frame and step rates once a second, and their totals at the end. Not in test mode.
     bool showFps = false;
     /// `--no-activate`: the window opens without taking the keyboard focus from the one in use, so a run started by

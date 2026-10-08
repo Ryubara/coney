@@ -159,7 +159,7 @@ class RenderEngine final : public graphics::RenderDevice {
     void setVsync(bool on) { m_vsync = on; }
     /// Whether present() waits for the vertical blank.
     [[nodiscard]] bool vsync() const { return m_vsync; }
-    /// Chooses whether present() softens the frame as the PS2's video output does (on, the default): each line becomes
+    /// Chooses whether present() softens the frame as the PS2's video output does (off by default): each line becomes
     /// the mean of itself and the line one of the original's 448 below it, after the modes' 2D layers and before the
     /// debug menus (docs/research/rendering.md#output). Off shows the frame as drawn, sharper than the original.
     void setLineBlend(bool on) { m_lineBlend = on; }
@@ -235,7 +235,7 @@ class RenderEngine final : public graphics::RenderDevice {
     bool m_vsync = true;                // present() waits for the vertical blank
     bool m_logicalFrame = false;        // the logical screen fills the frame (WindowDesc::logicalFrame)
     bool m_textureLod = false;          // Coney's distance mip levels are in librw's pipeline (texture_lod.h)
-    bool m_lineBlend = true;            // present() blends neighbouring lines (setLineBlend())
+    bool m_lineBlend = false;           // present() blends neighbouring lines (setLineBlend())
     rw::Raster* m_lineRaster = nullptr; // the frame's copy for blendLines(), the view's size
     rw::Raster* m_blurRaster = nullptr; // blurScreen()'s copies: the screen, then its half-size image
     rw::Raster* m_halfRaster = nullptr;

@@ -225,7 +225,7 @@ so motion is smooth above 30 frames a second and the game's speed never changes
 | --- | --- |
 | `--fps-cap N` | at most N frames a second; 0, the default, is no cap. 30 is the original's rhythm: one step and one frame, nothing blended |
 | `--vsync on\|off` | wait for the display's vertical blank when presenting (on, the default) or not (frames may tear) |
-| `--line-blend on\|off` | soften the picture as the PS2's video output does, each shown line the mean of two neighbouring lines of the original's 448 (on, the default; [Rendering](../research/rendering.md#output)), or show the frame as drawn, sharper than the original (off); reference renders are never blended |
+| `--line-blend on\|off` | an optional PS2 look: soften the picture as the PS2's video output does, each shown line the mean of two neighbouring lines of the original's 448 (on; [Rendering](../research/rendering.md#output)), or show the frame as drawn (off, the default); reference renders are never blended |
 | `--show-fps` | print the frame and step rates once a second, and the totals when Coney stops |
 
 The default, no cap with vsync on, draws one frame per refresh of the display. With vsync off and no cap Coney draws
