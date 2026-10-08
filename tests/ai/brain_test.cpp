@@ -18,6 +18,7 @@
 #include "ai/attack_places.h"
 #include "ai/block_goal.h"
 #include "ai/brains.h"
+#include "ai/fight_goal.h"
 #include "ai/goal.h"
 #include "ai/reaction_goals.h"
 #include "combat/ai_counter.h"
@@ -26,6 +27,7 @@
 #include "combat/reactions.h"
 #include "human/human.h"
 #include "human/humans.h"
+#include "human/locomotion_gate.h"
 #include "support/collision_fixtures.h"
 #include "support/fight_fixtures.h"
 #include "support/human_fixtures.h"
@@ -303,6 +305,22 @@ TEST_CASE("a Warrior waits the attack delay times its class's factor, halved whe
     CHECK(ally.nextAttackMs() == stepMs(32) + 2000);
 }
 
+TEST_CASE("an attack on a busy target leaves the target's attackable time alone", "[ai]") {
+    Scene scene;
+    Brain& gang = scene.add({41.0F, 40.0F, 0.0F}, 270.0F, BrainType::Gang);
+    gang.setTarget(&scene.playerBrain());
+    // Stunned, the player is busy by his state alone (no record bit): the strike leaves +0x1ec where it was, so the
+    // others do not wait out swings landed while he could not answer.
+    scene.player().stunFor(stepMs(30), 5000);
+    REQUIRE((scene.player().animator().flags() & coney::human::kBusyFlags) == 0);
+    REQUIRE(coney::ai::humanBusy(scene.player()));
+    const std::uint64_t before = scene.playerBrain().attackableAtMs();
+    REQUIRE(gang.queueAction(std::make_unique<coney::ai::AttackAction>(1, 0)));
+    gang.update(stepMs(30));
+    CHECK(gang.nextAttackMs() == stepMs(30) + 4000);
+    CHECK(scene.playerBrain().attackableAtMs() == before);
+}
+
 TEST_CASE("the attack action writes its command once, as it starts, and waits on the attack's held flags", "[ai]") {
     Scene scene;
     Brain& gang = scene.add({40.0F, 41.0F, 0.0F}, 180.0F, BrainType::Gang);
@@ -545,6 +563,8 @@ TEST_CASE("a block extended while the target attacks punishes in its last second
     scene.playerBrain().setTarget(&gang);
     // Reactions off before the goal (so they stay off): the player's hit does not stun the AI out of its goal.
     gang.human().fighter().setHitReactionsOff(true);
+    // The block runs over a fight, as a fight pushes it: the player's hit then only keeps him as the target.
+    REQUIRE(gang.pushGoal(std::make_unique<coney::ai::FightGoal>()));
     REQUIRE(gang.pushGoal(std::make_unique<coney::ai::BlockGoal>()));
     scene.run(1);
     const auto* block = dynamic_cast<const coney::ai::BlockGoal*>(gang.topGoal());

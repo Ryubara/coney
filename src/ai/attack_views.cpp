@@ -208,7 +208,8 @@ bool behind(const Brain& attacker, Brain& target) { return nearestIn(target, att
 std::optional<int> snapSectorOf(Brain& attacker) {
     const Sectors& record = attacker.sectors(kSectorAgeMs);
     const std::vector<Brain*>& slots = attacker.attackSlots();
-    for (const int k : {4, 5, 3, 6, 2}) {
+    // The game's 4, 5, 3, 6, 2 (it numbers clockwise) in Coney's anticlockwise numbering.
+    for (const int k : {4, 3, 5, 2, 6}) {
         const Sector& sector = record[k];
         if ((sector.flags & sector_flag::kOccupied) != 0 && sector.nearest != nullptr &&
             std::ranges::find(slots, sector.nearest) != slots.end()) {

@@ -17,6 +17,7 @@
 #include "ai/move_to_flag_goal.h"
 #include "ai/move_to_human_action.h"
 #include "ai/play_anim_action.h"
+#include "ai/reaction_goals.h"
 #include "ai/script_services.h"
 #include "ai/targeting.h"
 #include "ai/turn_action.h"
@@ -26,7 +27,6 @@
 #include "human/human.h"
 #include "human/human_flags.h"
 #include "human/locomotion.h"
-#include "human/locomotion_gate.h"
 
 namespace coney::ai {
 
@@ -90,8 +90,8 @@ void play(ScriptServices* services, Brain& brain, int animId, std::int16_t delay
     }
 }
 
-// Whether `brain`'s human is busy (`Human_IsBusy`'s record bits).
-bool busy(const Brain& brain) { return (brain.human().animator().flags() & human::kBusyFlags) != 0; }
+// Whether `brain`'s human is busy (`Human_IsBusy`: his record bits and his state).
+bool busy(const Brain& brain) { return humanBusy(brain.human()); }
 
 // Whether `brain`'s human is down (state `0xe0000`): out of health or on the ground.
 bool down(const Brain& brain) {

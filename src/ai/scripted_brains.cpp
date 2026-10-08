@@ -759,7 +759,9 @@ void ScriptedBrains::humanCreated(const HumanCreation& human) {
     // NOLINTNEXTLINE(bugprone-exception-escape): copying the captures can only fail on allocation
     if (held([this, human] { humanCreated(human); })) {
         // Counted in its gang until the hold ends, so the start callback's head counts see it.
+        const Gang* gang = m_owner->gangs().find(human.gang);
         m_heldHumans[human.handle] = HeldHuman{.gang = human.gang, .playerIndex = human.playerIndex};
+        m_playerTactics[human.handle] = gang != nullptr ? gang->tacticsSet() : 0;
         return;
     }
     if (!m_spawner) {
@@ -769,6 +771,14 @@ void ScriptedBrains::humanCreated(const HumanCreation& human) {
         m_priorities[human.handle] = human.playerIndex;
         made->setCharacterClass(human.type);
         bind(human.handle, *made, human.gang);
+        // Player 1's human, now in his gang: his crew's follow is given at once, before what the script gives it next.
+        // Not when the script gave his gang a tactic after creating him (the hold's choice, setPlayerMade()).
+        const Gang* gang = m_owner->gangs().find(human.gang);
+        const auto created = m_playerTactics.find(human.handle);
+        const bool newer = created != m_playerTactics.end() && gang != nullptr && gang->tacticsSet() != created->second;
+        if (human.playerIndex == 1 && m_playerMade && !newer) {
+            m_playerMade(human.handle);
+        }
     }
 }
 

@@ -82,6 +82,8 @@ class Gang {
     [[nodiscard]] const std::vector<Brain*>& members() const { return m_members; }
     /// The tactic (`+0x40`); null for none.
     [[nodiscard]] Tactic* tactic() const { return m_tactic.get(); }
+    /// How many times a tactic was set on it (Gangs::setTactic()): a change says a newer order came.
+    [[nodiscard]] std::uint32_t tacticsSet() const { return m_tacticsSet; }
     /// The Lua handler of message `message` (`+0xe4 + message × 4`); empty for none.
     [[nodiscard]] std::string_view handler(int message) const;
     /// The members still on their feet (`0x00166220`): health left and not on the ground. **Coney choice** for the
@@ -129,6 +131,7 @@ class Gang {
     std::vector<Brain*> m_members;
     Brain* m_chosenTarget = nullptr;
     std::unique_ptr<Tactic> m_tactic;
+    std::uint32_t m_tacticsSet = 0; // tactics set so far
     std::map<int, std::string> m_handlers;
     GangOrders m_orders;
 };

@@ -107,6 +107,12 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     /// the brains then name the player by `to`'s handle (changePlayerGang()). Empty: no hand-over is made.
     using HandOver = std::function<void(const Brain& to)>;
     void setHandOver(HandOver handOver) { m_handOver = std::move(handOver); }
+    /// Told the handle of player 1's human once it is made and bound (`Human_MakePlayer`'s step, whose last act is
+    /// the crew's follow command, docs/research/ai.md#warrior-follow). Empty: nothing is told.
+    /// **Coney choice**: Coney makes the humans after the level's script has run, while the gangs' tactics were set as
+    /// it ran; a tactic the script set on his gang after creating him is the newer order, so then nothing is told.
+    using PlayerMade = std::function<void(double handle)>;
+    void setPlayerMade(PlayerMade playerMade) { m_playerMade = std::move(playerMade); }
     /// Whether calls are being held.
     [[nodiscard]] bool holding() const { return m_holding; }
     /// A human `HuCreate` made while holding, not deleted since: its gang and player index.
@@ -356,6 +362,7 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     std::size_t m_arrivals = 0;
     Spawner m_spawner;
     Remover m_remover;
+    PlayerMade m_playerMade; // told when player 1's human is made
     Switcher m_switcher;
     HandOver m_handOver;
     bool m_switchToKindZero = false;
@@ -364,9 +371,10 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     std::unique_ptr<ScriptedHumans> m_humans;
     std::unique_ptr<ScriptedStory> m_story;
     std::unique_ptr<ScriptedHub> m_hub;
-    std::map<double, HeldHuman> m_heldHumans; // the humans created while holding, by handle
-    std::map<double, int> m_deletedGangs;     // the gang of each human deleted from one, by handle
-    std::map<double, int> m_priorities;       // HuCreate's player argument of each human made, by handle
+    std::map<double, HeldHuman> m_heldHumans;        // the humans created while holding, by handle
+    std::map<double, std::uint32_t> m_playerTactics; // a held human's gang's Gang::tacticsSet() when it was created
+    std::map<double, int> m_deletedGangs;            // the gang of each human deleted from one, by handle
+    std::map<double, int> m_priorities;              // HuCreate's player argument of each human made, by handle
     ClipSource m_clipSource;
     std::map<double, const anim::AnimClip*> m_dynamicClips; // each human's dynamic animation, by handle
 };

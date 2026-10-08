@@ -158,9 +158,10 @@ class ScriptedStory final : public script::StoryBindingHost {
     /// names. Attack and Confront are the AI host's (ScriptedBrains::tacticAttack(), tacticConfront()).
     void setTactic(const script::TacticCall& call) override;
 
-    /// **Coney stand-in** for the commands' tactics (not traced): the crew's tactic is cleared and its AI members
-    /// flushed, then 0 follow and 2 defend have them track the chief, 1 attack look for enemies to fight, 3 hold
-    /// stand where they are; 4, 5 and 6 start nothing more.
+    /// 0 follow gives the crew the follow tactic (ai/crew.h). **Coney stand-in** for the other commands' tactics:
+    /// the crew's tactic is cleared and its AI members flushed, then 2 defend has them track the chief, 1 attack look
+    /// for enemies to fight (`FollowAndAttack` is not traced), 3 hold stand where they are; 4, 5 and 6 start nothing
+    /// more.
     bool startWarriorCommand(double chief, int command, bool forced) override;
     [[nodiscard]] double playerOne() const override;
 

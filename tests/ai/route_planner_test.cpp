@@ -302,6 +302,42 @@ TEST_CASE("a blocked straight line takes the route; the follower names a climb l
     CHECK(follower.onLastLeg());
 }
 
+TEST_CASE("a start in a hole plans from the hole's nearest edge or a probe; a destination in one fails",
+          "[ai][routes]") {
+    // A yard with an obstacle's padding, a hole across x 3 to 5, y 2 to 3; a node either side of it.
+    coney::test::PathBuilder builder;
+    const std::uint32_t yard = builder.rectangle(0.0F, 8.0F, 0.0F, 6.0F);
+    builder.hole(3.0F, 5.0F, 2.0F, 3.0F);
+    builder.node(yard, 1.0F, 1.0F);
+    builder.node(yard, 1.0F, 5.0F);
+    builder.link(0, 1);
+    const coney::world::PathMap map = builder.build();
+    RoutePlanner planner(map);
+    // A point an area takes in is its own.
+    CHECK(planner.navPoint({1.0F, 1.0F, 0.0F}) == Vec3{1.0F, 1.0F, 0.0F});
+    CHECK_FALSE(planner.inHole({1.0F, 1.0F, 0.0F}));
+    // In the hole, 0.1 m from its top edge (under kNavEdgeNear): snapped exactly onto that edge, which the yard takes
+    // in; the body is not moved, but the plan starts there.
+    const Vec3 inHole{4.0F, 2.9F, 0.0F};
+    CHECK(planner.inHole(inHole));
+    const std::optional<Vec3> snapped = planner.navPoint(inHole);
+    REQUIRE(snapped.has_value());
+    CHECK(*snapped == Vec3{4.0F, 3.0F, 0.0F});
+    CHECK(planner.lineClear(inHole, {4.0F, 5.0F, 0.0F}));
+    CHECK(planner.request(inHole, {4.0F, 5.0F, 0.0F}).has_value());
+    CHECK(planner.request(inHole, {1.0F, 1.0F, 0.0F}).has_value());
+    // Whatever the edge point gives, the start is one an area takes in, on the hole's edge or a probe 1 to 1.4 m out.
+    for (const Vec3 point : {Vec3{3.1F, 2.5F, 0.0F}, Vec3{4.0F, 2.1F, 0.0F}, Vec3{4.9F, 2.5F, 0.0F}}) {
+        const std::optional<Vec3> start = planner.navPoint(point);
+        REQUIRE(start.has_value());
+        CHECK(planner.areaAt(*start).has_value());
+        CHECK(std::hypot(start->x - point.x, start->y - point.y) <= 1.5F);
+    }
+    // A destination in the hole has no fallback.
+    CHECK(planner.request({4.0F, 5.0F, 0.0F}, inHole).error() == coney::ai::MoveFailure::NoRoute);
+    CHECK(planner.request({1.0F, 1.0F, 0.0F}, inHole).error() == coney::ai::MoveFailure::NoRoute);
+}
+
 TEST_CASE("a jump leg's take-off is the nearest queue point on its edge and its landing the position projected across",
           "[ai][routes]") {
     // Two roofs with a 2 m gap. The take-off edge (nodes 1 and 2, pair 1) runs along the near roof's edge, the landing

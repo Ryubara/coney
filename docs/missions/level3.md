@@ -22,7 +22,7 @@ summary is still to be written from the script.
 | 1 | 🚧 In Progress | Runs headless with no script error and every binding it calls; not yet checked to its end. |
 | 2 | 🚧 In Progress | No script error; waits on the tagging goal and the HUD bars (being built for level34). |
 | 3 | 🚧 In Progress | No script error; waits on the car message handler and object indices (being built for level34). |
-| 4 | 🚧 In Progress | Plays to its end from a pad script (tests/support/level3_chase.txt, its disc test `[playthrough]`): the AI walks Snow to the rail's start box, then the stick, L2 and triangle run, climb and jump him across the roofs to the gallery box, which hands over to checkpoint 5. The Warriors stay behind the player (the crew's follow is not built yet). |
+| 4 | 🚧 In Progress | Plays to its end from a pad script (tests/support/level3_chase.txt, its disc test `[playthrough]`): the AI walks Snow to the rail's start box, then the stick, L2 and triangle run, climb and jump him across the roofs to the gallery box, which hands over to checkpoint 5. The Warriors follow on the default command. |
 | 5 | 🚧 In Progress | Runs headless with no script error and every binding it calls; not yet checked to its end. |
 
 ## What it needs {#needs}

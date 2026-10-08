@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ai/route_planner.h"
+#include "raycast/collision_mesh.h"
 
 #include <algorithm>
 #include <cmath>
@@ -8,6 +9,19 @@
 #include <utility>
 
 namespace coney::ai {
+
+world::GroundProbe groundProbe(const raycast::CollisionMesh& mesh) {
+    return [mesh = &mesh](anim::Vec3 point) -> std::optional<std::uint16_t> {
+        const raycast::Ray down{.origin = raycast::Vec3{point.x, point.y, point.z},
+                                .direction = raycast::Vec3{0.0F, 0.0F, -1.0F},
+                                .length = kAreaProbeLength};
+        const std::optional<raycast::RayHit> hit = mesh->rayCast(down, {}, 0);
+        if (!hit) {
+            return std::nullopt;
+        }
+        return hit->area;
+    };
+}
 
 namespace {
 
@@ -71,6 +85,18 @@ RoutePlanner::RoutePlanner(const world::PathMap& map, PlannerSettings settings)
     : m_map(&map), m_settings(settings), m_uses(map.nodes().size(), 0) {}
 
 std::expected<RoutePlan, MoveFailure> RoutePlanner::request(anim::Vec3 from, anim::Vec3 to, std::uint16_t mask) {
+    // A start standing in a hole (an obstacle's padding) plans from its edge or a probe; a destination in one has no
+    // fallback, and the move ends at once.
+    if (inHole(from)) {
+        const std::optional<anim::Vec3> start = navPoint(from);
+        if (!start) {
+            return std::unexpected(MoveFailure::NoRoute);
+        }
+        from = *start;
+    }
+    if (inHole(to)) {
+        return std::unexpected(MoveFailure::NoRoute);
+    }
     // 1. The start's polygon.
     const std::optional<std::uint32_t> startPolygon = polygonUnder(from);
     if (!startPolygon) {
@@ -224,6 +250,12 @@ std::optional<RouteSearch> RoutePlanner::searchWithRetries(std::uint32_t start, 
 }
 
 std::optional<std::uint32_t> RoutePlanner::polygonUnder(anim::Vec3 point) const {
+    // The area on the ground under it (its first polygon holds the area's nodes), then any polygon in plan.
+    if (m_ground) {
+        if (const std::optional<std::uint32_t> area = areaAt(point)) {
+            return area;
+        }
+    }
     if (const std::optional<std::uint32_t> polygon = m_map->polygonAt(point.x, point.y)) {
         return polygon;
     }
@@ -250,6 +282,69 @@ std::optional<std::uint32_t> RoutePlanner::endNode(std::uint32_t polygon, anim::
         const anim::Vec3 node = m_map->nodes()[byDistance[i].second].position;
         if (toNode ? lineClear(point, node) : lineClear(node, point)) {
             return byDistance[i].second;
+        }
+    }
+    return std::nullopt;
+}
+
+bool RoutePlanner::lineClear(anim::Vec3 from, anim::Vec3 to) const {
+    if (m_map->walkable(from, to, 0, &m_ground)) {
+        return true;
+    }
+    // From a hole no line passes; the original's tests start at the point its human's polygon came from.
+    if (!inHole(from)) {
+        return false;
+    }
+    const std::optional<anim::Vec3> start = navPoint(from);
+    return start && m_map->walkable(*start, to, 0, &m_ground);
+}
+
+bool RoutePlanner::inHole(anim::Vec3 point) const {
+    return !areaAt(point) && m_map->polygonAt(point.x, point.y).has_value();
+}
+
+std::optional<anim::Vec3> RoutePlanner::navPoint(anim::Vec3 point) const {
+    // 1. The point itself.
+    if (areaAt(point)) {
+        return point;
+    }
+    // 2. The nearest point on an edge of the candidate area's polygons (the outline and its holes) within reach, the
+    // first edge nearer than kNavEdgeNear ending the look; it counts only when an area takes it in.
+    if (const std::optional<std::uint32_t> area = m_map->candidateArea(point, &m_ground)) {
+        const std::span<const world::PathPolygon> polygons = m_map->polygons();
+        const std::span<const anim::Vec3> vertices = m_map->vertices();
+        std::optional<anim::Vec3> nearest;
+        float best = kNavEdgeReach;
+        bool near = false;
+        for (std::size_t q = *area; q < polygons.size() && polygons[q].area == *area && !near; ++q) {
+            const world::PathPolygon& polygon = polygons[q];
+            for (std::uint32_t k = 0; k < polygon.vertexCount && !near; ++k) {
+                const anim::Vec3 a = vertices[polygon.firstVertex + k];
+                const anim::Vec3 b = vertices[polygon.firstVertex + ((k + 1) % polygon.vertexCount)];
+                const float ex = b.x - a.x;
+                const float ey = b.y - a.y;
+                const float length2 = (ex * ex) + (ey * ey);
+                const float t =
+                    length2 > 0.0F ? std::clamp((((point.x - a.x) * ex) + ((point.y - a.y) * ey)) / length2, 0.0F, 1.0F)
+                                   : 0.0F;
+                const anim::Vec3 on{a.x + (t * ex), a.y + (t * ey), point.z};
+                const float d = std::hypot(on.x - point.x, on.y - point.y);
+                if (d < best) {
+                    best = d;
+                    nearest = on;
+                    near = d < kNavEdgeNear;
+                }
+            }
+        }
+        if (nearest && areaAt(*nearest)) {
+            return nearest;
+        }
+    }
+    // 3. The probes, in the original's order.
+    for (const auto& [dx, dy] : kNavProbes) {
+        const anim::Vec3 probe{point.x + dx, point.y + dy, point.z};
+        if (areaAt(probe)) {
+            return probe;
         }
     }
     return std::nullopt;

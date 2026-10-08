@@ -16,9 +16,9 @@ namespace coney::ai {
 
 class Brain;
 
-/// The direction a grabber throws or pushes his man (`Grabbing_PickMove`): 0 to his left, 1 ahead, 2 to his right, 3
-/// behind him.
-enum class GrabMove : std::uint8_t { Left = 0, Ahead = 1, Right = 2, Behind = 3 };
+/// The direction a grabber throws or pushes his man (`Grabbing_PickMove`'s d): 0 to his right, 1 ahead, 2 to his left,
+/// 3 behind him (the game's angle heading + d × 90° − 90° in its clockwise headings).
+enum class GrabMove : std::uint8_t { Right = 0, Ahead = 1, Left = 2, Behind = 3 };
 
 /// The stick heading of `move` for a grabber facing `heading` (radians, Coney's convention: anticlockwise from above,
 /// so his left is heading + π/2).
@@ -49,7 +49,8 @@ class GrabbingGoal final : public Goal {
     /// player among them (else the nearest active attacker) and waits: holding him up for a friend to hit. Otherwise it
     /// picks a kind: kind 24 (a strike in the grab) twice 40 % of the time, the throws 25 and 29 with the stick toward
     /// grabMoveDirection(), the power strikes 26-28 without one. **Coney stand-ins**: no trains; the presenting does
-    /// not test player 1's state 2.
+    /// not test that player 1's Warrior command is not Defend (the command lives in the story, out of the brain's
+    /// reach).
     /// @orig 0x002b60c0 GrabbingGoal_Process (unknown)
     [[nodiscard]] GoalStatus process(Brain& brain) override;
     /// Clears the actions.
@@ -70,8 +71,9 @@ class GrabbingGoal final : public Goal {
 /// The throw's or push's direction for `brain` grabbing `held` (`Grabbing_PickMove`), the first rule that gives one:
 /// away from his HoldFlag goal's flag; for a power class that throws at walls, a random wall next to them (the man's
 /// sectors 4, 6 and 2 and the grabber's 4), else a random side where a human not friendly to the grabber stands; away
-/// from the human his gang's Defend tactic defends; else a random left, ahead or right (never behind). **Coney
-/// reading**: the not-friendly sides are the same four sectors, each occupied with its nearest not friendly.
+/// from the human his gang's Defend tactic defends; else a random left, ahead or right (never behind). The
+/// not-friendly sides are the same four sectors, each with flag 1 and a nearest man not a friend (the test behind the
+/// grabber reads his flag with the man's sector-4 human, as the original does).
 /// @orig 0x002b5b98 Grabbing_PickMove (unknown)
 [[nodiscard]] GrabMove grabMoveDirection(Brain& brain, Brain& held);
 

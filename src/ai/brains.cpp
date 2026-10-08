@@ -108,9 +108,12 @@ void Brains::reportDowns() {
         const bool down = brain->human().fighter().health().depleted();
         if (down && !brain->downReported()) {
             brain->setDownReported(true);
-            deliverEvent(*brain, BrainEvent{.id = kEventDown});
+            // Knocked out: his brain lets go of everything and stops, then his human hears of it with his foe.
+            Brain* foe = brain->knockOut();
+            deliverEvent(*brain, BrainEvent{.id = kEventDown, .other = foe});
         } else if (!down) {
             brain->setDownReported(false);
+            brain->wakeUp();
         }
     }
 }

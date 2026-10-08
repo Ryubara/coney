@@ -43,6 +43,7 @@
 #include "scripting/lua_vm.h"
 #include "scripting/object_bindings.h"
 #include "scripting/sound_bindings.h"
+#include "scripting/story_bindings.h"
 #include "warriors/crime_reports.h"
 #include "world_objects/object_breaks.h"
 #include "world_objects/spawn_records.h"
@@ -308,6 +309,11 @@ void GameplayMode::enter() {
         m_context.animCallbacks->clear();
     }
     m_scripted->setAnimCallbacks(m_context.animCallbacks);
+    // Human_MakePlayer's follow for player 1's crew, in the scripts' order: what they give the gang next replaces it.
+    m_scripted->setPlayerMade([this](double handle) {
+        m_crewChief = handle;
+        script::issueWarriorCommand(m_scripts, m_context, handle, ai::kCrewFollow, true);
+    });
     m_scripted->hold();
     // The level's scenes, which the script preloads and plays; their end functions and preload callbacks call it.
     if (m_sceneMaker) {
@@ -688,6 +694,7 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
         m_scripted->runAnimCallbacks();
         m_scripted->humanHost().runRageHandlers();
         m_scripted->storyHost().update();
+        stepCrew(nowMs);
         ScriptSpawnerWorld spawnerWorld(*m_scripted, m_scripts, m_cameras.get(), m_context.boxes,
                                         m_objects.world.collision, m_state.random);
         m_scripted->humanHost().spawners().update(nowMs, spawnerWorld);
@@ -1241,6 +1248,43 @@ void GameplayMode::resume() {
     }
     if (m_level) {
         m_level->resume();
+    }
+}
+
+void GameplayMode::stepCrew(std::uint64_t nowMs) {
+    const HumanCreation* player = m_humans.player(1);
+    ai::Brain* chief = player != nullptr && m_scripted ? m_scripted->brain(player->handle) : nullptr;
+    if (chief == nullptr) {
+        return;
+    }
+    CharacterRules& rules = m_state.characters;
+    // A switch of player 1 gives his crew the follow (the level's start gives it as he is made, above).
+    if (player->handle != m_crewChief) {
+        m_crewFollowDue = m_crewFollowDue || m_crewChief != 0.0;
+        m_crewChief = player->handle;
+    }
+    // A scene that held him has ended.
+    const bool inScene = playerInScene();
+    if (m_crewInScene && !inScene) {
+        m_crewFollowDue = true;
+    }
+    m_crewInScene = inScene;
+    const bool sceneCamera = m_cameras && m_cameras->current().kind == camera::CameraKind::Scene;
+    if (m_crewFollowDue && !inScene && !sceneCamera) {
+        m_crewFollowDue = false;
+        m_state.story.menuLocked.at(0) = false;
+        script::issueWarriorCommand(m_scripts, m_context, player->handle, ai::kCrewFollow, true);
+    }
+    // The automatic commands, his menu unlocked every 10 updates, while they are on (game state `+0x431`,
+    // `WCEnableAutomaticSwitching`; the Rumble arenas turn them off).
+    if (!m_state.autoSwitch) {
+        return;
+    }
+    if (++m_crewUpdates % 10 == 0) {
+        m_state.story.menuLocked.at(0) = false;
+    }
+    if (const std::optional<int> command = m_crewOrders.update(*chief, rules.lastWarriorCommand.at(0), nowMs)) {
+        script::issueWarriorCommand(m_scripts, m_context, player->handle, *command, true);
     }
 }
 

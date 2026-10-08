@@ -7,10 +7,15 @@
 #include <expected>
 #include <optional>
 #include <span>
+#include <utility>
 #include <vector>
 
 #include "animation/anim_math.h"
 #include "world/path_map.h"
+
+namespace coney::raycast {
+class CollisionMesh;
+}
 
 // The route planner: how an AI finds its way over the level's path data. A request first tries the straight line;
 // when that leaves the walkable polygons it searches the route graph (A*, from the destination's node back to the
@@ -68,6 +73,19 @@ inline constexpr std::uint32_t kEdgeCostCap = 65000;
 inline constexpr std::size_t kEndNodeTries = 30;
 /// How far a point just off every polygon may be from one and still count as on it (**Coney choice**, metres).
 inline constexpr float kPolygonReach = 1.0F;
+/// How far a human standing in no area looks for the nearest point on an edge of its candidate area's polygons, and
+/// how near an edge ends the look at once (metres; `Nav_NearestPolygonPoint` `0x002505b0`, RoutePlanner::navPoint()).
+inline constexpr float kNavEdgeReach = 20.0F;
+inline constexpr float kNavEdgeNear = 0.18F;
+/// The eight probes `Nav_FindPolygonNear` (`0x0024e218`) tries last, in its order, metres in plan from the point.
+inline constexpr std::array<std::array<float, 2>, 8> kNavProbes{{{0.0F, 1.0F},
+                                                                 {0.0F, -1.0F},
+                                                                 {-1.0F, 0.0F},
+                                                                 {1.0F, 0.0F},
+                                                                 {1.0F, 1.0F},
+                                                                 {-1.0F, -1.0F},
+                                                                 {-1.0F, 1.0F},
+                                                                 {1.0F, -1.0F}}};
 
 class RoutePlanner;
 
@@ -111,6 +129,16 @@ struct RoutePlan {
     std::optional<Route> route;
 };
 
+/// How far down the ground probe's ray reaches, metres. **Coney choice**: the length of the ray `0x00250760` casts is
+/// not on the page; 10 m finds the floor under any point a human stands or falls at.
+inline constexpr float kAreaProbeLength = 10.0F;
+
+/// The ground probe of the level's collision `mesh` (it must outlive the probe): the area byte of the first ground a
+/// ray straight down from the point finds within kAreaProbeLength (world::GroundProbe). **Coney choice**: the page
+/// names "the ground's collision byte"; the triangle's area byte (`+0x09`) is the one whose values the paths' `+0x4a`
+/// match on the disc (in `level80` the material byte finds no area under the upper walkway), so it is read here.
+[[nodiscard]] world::GroundProbe groundProbe(const raycast::CollisionMesh& mesh);
+
 /// The route planner of one level's path data.
 class RoutePlanner {
   public:
@@ -126,13 +154,23 @@ class RoutePlanner {
     [[nodiscard]] const world::PathMap& map() const { return *m_map; }
 
     /// The walkable-line test with the mask 0 (world::PathMap::walkable(), docs/research/ai.md#path-planning): a
-    /// hole in the path polygons on the way, a fence's among them, refuses the line.
-    [[nodiscard]] bool lineClear(anim::Vec3 from, anim::Vec3 to) const { return m_map->walkable(from, to); }
+    /// hole in the path polygons on the way, a fence's among them, refuses the line. A start standing in a hole is
+    /// tested from its navPoint(), as the original tests from the point its human's polygon came from (`+0x2b0`).
+    [[nodiscard]] bool lineClear(anim::Vec3 from, anim::Vec3 to) const;
+    /// The level's ground probe, which the area lookups ask so that a point on an upper floor finds that floor's area
+    /// (world::PathMap::areaAt()); without one they look in plan only.
+    void setGroundProbe(world::GroundProbe probe) { m_ground = std::move(probe); }
+    /// The area under `point` (world::PathMap::areaAt() with the ground probe): its first polygon.
+    [[nodiscard]] std::optional<std::uint32_t> areaAt(anim::Vec3 point) const {
+        return m_map->areaAt(point, &m_ground);
+    }
 
-    /// A route from `from` to `to` over edges whose flags meet `mask`: none needed when the straight line is
-    /// walkable; MoveFailure::NoRoute when either end lies on no polygon (or, off every polygon, none within
-    /// kPolygonReach), when the ends' polygons are neither the same nor both on the graph (`+0x02`), when an end
-    /// reaches none of its polygon's nodes, when the search fails, or when the pool is full.
+    /// A route from `from` to `to` over edges whose flags meet `mask`, a start standing in a hole planned from its
+    /// navPoint(): none needed when the straight line is walkable; MoveFailure::NoRoute when the start has no
+    /// navPoint(), when the destination stands in a hole (it has no fallback), when either end lies on no polygon (or,
+    /// off every polygon, none within kPolygonReach), when the ends' polygons are neither the same nor both on the
+    /// graph (`+0x02`), when an end reaches none of its polygon's nodes, when the search fails, or when the pool is
+    /// full.
     /// @orig 0x0029a8c0 Route_Request (unknown)
     [[nodiscard]] std::expected<RoutePlan, MoveFailure> request(anim::Vec3 from, anim::Vec3 to,
                                                                 std::uint16_t mask = edge_flag::kDefaultMask);
@@ -158,6 +196,19 @@ class RoutePlanner {
     /// kPolygonReach), the nearest of up to kEndNodeTries of its nodes that `point` reaches in a straight line;
     /// nothing when there is none.
     [[nodiscard]] std::optional<std::uint32_t> startNode(anim::Vec3 point) const;
+
+    /// The point a human standing at `point` plans from (docs/research/ai.md#path-holes), the first that an area
+    /// takes in (areaAt()) of: `point` itself; the point on an edge of its candidate area's polygons
+    /// (world::PathMap::candidateArea(), the outline and its holes) nearest it within kNavEdgeReach, the first edge
+    /// nearer than kNavEdgeNear ending the look; the eight kNavProbes. Nothing when none is. The body is not moved.
+    /// **Coney choices**: a probe keeps the point's height and its area is found by the ground probe, where the
+    /// original drops it to the collision from 1 m up and needs a clear ray to it; with no edge in reach there is no
+    /// edge point (the original reuses the previous call's).
+    /// @orig 0x002505b0 Nav_NearestPolygonPoint (unknown)
+    /// @orig 0x0024e218 Nav_FindPolygonNear (unknown)
+    [[nodiscard]] std::optional<anim::Vec3> navPoint(anim::Vec3 point) const;
+    /// Whether `point` stands in a hole of the path polygons: inside a polygon in plan, yet no area takes it in.
+    [[nodiscard]] bool inHole(anim::Vec3 point) const;
 
   private:
     friend class Route;
@@ -188,6 +239,7 @@ class RoutePlanner {
 
     const world::PathMap* m_map;
     PlannerSettings m_settings;
+    world::GroundProbe m_ground; // the level's ground under a point, for the area lookups
     std::vector<std::uint8_t> m_uses;
     std::size_t m_routesInUse = 0;
 };

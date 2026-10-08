@@ -7,6 +7,7 @@
 #include "ai/attack_kinds.h"
 #include "ai/attack_places.h"
 #include "ai/brain.h"
+#include "ai/reaction_goals.h"
 #include "human/locomotion.h"
 #include "human/locomotion_gate.h"
 
@@ -17,8 +18,8 @@ namespace {
 // The snap's kind: its press comes with a full stick toward the target when the action has no angle of its own.
 constexpr int kSnapKind = 10;
 
-// Whether `brain`'s human is busy (`Human_IsBusy`'s record bits).
-bool busy(Brain& brain) { return (brain.human().animator().flags() & human::kBusyFlags) != 0; }
+// Whether `brain`'s human is busy (`Human_IsBusy`: his record bits and his state).
+bool busy(Brain& brain) { return humanBusy(brain.human()); }
 
 // Whether `target`'s human has `brain`'s human as its own target (its brain's, or its fighter's for a player).
 bool targetsBack(Brain& target, Brain& brain) {

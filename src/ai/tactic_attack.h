@@ -47,7 +47,7 @@ class TacticMeleeGoal final : public Goal {
 };
 
 /// Gives `brain` the melee goal unless it has one: what the attack tactic and its events do for a member.
-/// @orig 0x002b75b8 Brain_Melee (unknown)
+/// @orig 0x002b75b8 Gang_SendHelper (unknown)
 void giveMelee(Brain& brain, Gangs& gangs);
 
 /// The attack tactic (type 0, vtable `0x00543320`).

@@ -241,6 +241,7 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
     // The brains plan their moves on the level's routes, when it has path data.
     if (const world::PathMap* paths = m_scenery->pathMap(); paths != nullptr) {
         m_planner = std::make_unique<ai::RoutePlanner>(*paths);
+        m_planner->setGroundProbe(ai::groundProbe(m_scenery->collision()));
     }
     if (cast != nullptr) {
         bindObjects(cast->objects, cast->recorded);

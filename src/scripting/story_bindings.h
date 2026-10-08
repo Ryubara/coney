@@ -457,4 +457,9 @@ void giveWarriorCommand(ScriptSystem& scripts, const BindingContext& context, do
 void addStoryBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& context,
                       std::function<double()> nextHandle);
 
+/// Gives the Warrior command `command` as the war chief `chief` through the dispatcher the bindings and the menu use
+/// (`0x0041c4e0`): the game's own commands (the follow it issues when a player is made or a scene ends, the chief's
+/// automatic commands) are `forced`.
+void issueWarriorCommand(ScriptSystem& scripts, const BindingContext& context, double chief, int command, bool forced);
+
 } // namespace coney::script

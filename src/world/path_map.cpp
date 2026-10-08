@@ -26,6 +26,7 @@ constexpr std::size_t kEdgeBytes = 8;
 constexpr std::size_t kNextInAreaAt = 0x20;
 constexpr std::size_t kSlabStartsAt = 0x28;
 constexpr std::size_t kFlagsAt = 0x48;
+constexpr std::size_t kGroundAt = 0x4a;
 constexpr std::size_t kARecordAt = 0x4c;
 // Two areas join where the segment leaves one within this distance squared of where it enters the next (0.02 m).
 constexpr float kAreaJoinSquared = 0.0004F;
@@ -117,7 +118,8 @@ std::expected<PathMap, Error> PathMap::decode(std::span<const std::byte> chunk) 
             polygon.slabStarts.at(slab) = loadS16(chunk, at + kSlabStartsAt + slab * 2);
         }
         polygon.nextInArea = loadU32(chunk, at + kNextInAreaAt) != 0;
-        polygon.flags = loadU32(chunk, at + kFlagsAt);
+        polygon.flags = static_cast<std::uint16_t>(loadS16(chunk, at + kFlagsAt));
+        polygon.ground = static_cast<std::uint16_t>(loadS16(chunk, at + kGroundAt));
         polygon.hasNodes = loadU32(chunk, at + kARecordAt) != 0;
         if (polygon.hasNodes) {
             if (nextA >= header->aCount) {
@@ -356,19 +358,59 @@ std::optional<std::uint32_t> PathMap::holeAt(float x, float y) const {
     return *std::ranges::min_element(pool, {}, averageDistance);
 }
 
+int PathMap::areaWinding(std::uint32_t area, float x, float y) const {
+    int sum = 0;
+    for (std::size_t q = area; q < m_polygons.size() && m_polygons[q].area == area; ++q) {
+        if (usable(m_polygons[q], kPathPolygonExcluded)) {
+            sum += winding(m_polygons[q], x, y);
+        }
+    }
+    return sum;
+}
+
 std::optional<std::uint32_t> PathMap::areaAt(float x, float y) const {
     for (std::size_t p = 0; p < m_polygons.size(); ++p) {
-        if (m_polygons[p].area != p) {
+        // The winding summed over the area's polygons (a hole's runs the other way), flag 8's left out.
+        if (m_polygons[p].area == p && areaWinding(static_cast<std::uint32_t>(p), x, y) > 0) {
+            return static_cast<std::uint32_t>(p);
+        }
+    }
+    return std::nullopt;
+}
+
+std::optional<std::uint32_t> PathMap::areaAt(anim::Vec3 point, const GroundProbe* probe) const {
+    const std::optional<std::uint16_t> ground =
+        probe != nullptr && *probe ? (*probe)(anim::Vec3{point.x, point.y, point.z + kGroundProbeLift}) : std::nullopt;
+    if (!ground) {
+        return areaAt(point.x, point.y);
+    }
+    for (std::size_t p = 0; p < m_polygons.size(); ++p) {
+        const PathPolygon& first = m_polygons[p];
+        if (first.area != p || (first.flags & kPathPolygonExcluded) != 0 || first.ground != *ground ||
+            point.x < first.xMin - kAreaBoxMargin || point.x > first.xMax + kAreaBoxMargin ||
+            point.y < first.yMin - kAreaBoxMargin || point.y > first.yMax + kAreaBoxMargin) {
             continue;
         }
-        // The winding summed over the area's polygons (a hole's runs the other way), flag 8's left out.
-        int sum = 0;
-        for (std::size_t q = p; q < m_polygons.size() && m_polygons[q].area == p; ++q) {
-            if (usable(m_polygons[q], kPathPolygonExcluded)) {
-                sum += winding(m_polygons[q], x, y);
-            }
+        if (areaWinding(static_cast<std::uint32_t>(p), point.x, point.y) > 0) {
+            return static_cast<std::uint32_t>(p);
         }
-        if (sum > 0) {
+    }
+    return std::nullopt;
+}
+
+std::optional<std::uint32_t> PathMap::candidateArea(anim::Vec3 point, const GroundProbe* probe) const {
+    const std::optional<std::uint16_t> ground =
+        probe != nullptr && *probe ? (*probe)(anim::Vec3{point.x, point.y, point.z + kGroundProbeLift}) : std::nullopt;
+    for (std::size_t p = 0; p < m_polygons.size(); ++p) {
+        const PathPolygon& first = m_polygons[p];
+        if (first.area != p || (first.flags & kPathPolygonExcluded) != 0) {
+            continue;
+        }
+        // On the ground the probe found: the area's byte and its widened box; else the outline in plan.
+        if (ground ? first.ground == *ground && point.x >= first.xMin - kAreaBoxMargin &&
+                         point.x <= first.xMax + kAreaBoxMargin && point.y >= first.yMin - kAreaBoxMargin &&
+                         point.y <= first.yMax + kAreaBoxMargin
+                   : winding(first, point.x, point.y) != 0) {
             return static_cast<std::uint32_t>(p);
         }
     }
@@ -401,9 +443,9 @@ std::optional<float> PathMap::areaCrossing(std::uint32_t area, anim::Vec3 from, 
     return found;
 }
 
-bool PathMap::walkable(anim::Vec3 from, anim::Vec3 to, std::uint32_t mask) const {
+bool PathMap::walkable(anim::Vec3 from, anim::Vec3 to, std::uint32_t mask, const GroundProbe* probe) const {
     const std::uint32_t exclude = kPathPolygonExcluded | mask;
-    const std::optional<std::uint32_t> startArea = areaAt(from.x, from.y);
+    const std::optional<std::uint32_t> startArea = areaAt(from, probe);
     if (!startArea) {
         return false;
     }
@@ -414,7 +456,7 @@ bool PathMap::walkable(anim::Vec3 from, anim::Vec3 to, std::uint32_t mask) const
     if (!any) {
         return false;
     }
-    const std::optional<std::uint32_t> endArea = areaAt(to.x, to.y);
+    const std::optional<std::uint32_t> endArea = areaAt(to, probe);
     // 2. No crossing: the end must be in the same area.
     if (!leaves) {
         return endArea == startArea;

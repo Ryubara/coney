@@ -5,6 +5,8 @@
 // environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only, never data (LEGAL.md).
 // docs/research/ai.md#coney has the results.
 
+#include <array>
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <format>
@@ -19,6 +21,7 @@
 #include "fileio/wad.h"
 #include "platform/level_file.h"
 #include "platform/render_engine.h"
+#include "world/level_object.h"
 #include "world/path_map.h"
 
 namespace {
@@ -130,5 +133,61 @@ TEST_CASE("every level's path data decodes and level99's routes are planned", "[
     CHECK(nodesInside * 50 > ownedNodes * 49); // at least 98 % lie inside their owner
     CHECK(routed > 0);
     CHECK(straight + routed + offGraph + otherEdges + unlinked == kPairs);
+    CHECK(planner.routesInUse() == 0);
+}
+
+TEST_CASE("level87's routes leave a hole a human stands in: checkpoint 4's start and the roof path", "[disc][routes]") {
+    const char* discPath = SDL_getenv("CONEY_DISC");
+    if (discPath == nullptr || *discPath == '\0') {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    auto disc = coney::io::Disc::open(discPath);
+    REQUIRE(disc.has_value());
+    auto wad = coney::io::Wad::open(std::move(*disc));
+    REQUIRE(wad.has_value());
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    auto level = coney::platform::loadLevel(*wad, "level87", false);
+    REQUIRE(level.has_value());
+    auto map = coney::world::PathMap::decode((*level)->pathData);
+    REQUIRE(map.has_value());
+    REQUIRE((*level)->collision != nullptr);
+    coney::ai::RoutePlanner planner(*map);
+    planner.setGroundProbe(coney::ai::groundProbe(*(*level)->collision));
+
+    // Checkpoint 4's start stands in a small hole of the street's area (an obstacle's padding): no area takes it in,
+    // so its human plans from the hole's nearest edge (or a probe); before, every line and route from it failed, even
+    // to open ground 2-10 m away.
+    const coney::anim::Vec3 start{419.07F, 119.95F, 0.20F};
+    CHECK_FALSE(planner.areaAt(start).has_value());
+    CHECK(planner.inHole(start));
+    const std::optional<coney::anim::Vec3> snapped = planner.navPoint(start);
+    REQUIRE(snapped.has_value());
+    CHECK(planner.areaAt(*snapped).has_value());
+    std::printf("level87: checkpoint 4's start plans from %.2f m away\n",
+                static_cast<double>(std::hypot(snapped->x - start.x, snapped->y - start.y)));
+    // A point an area takes in is its own; a destination in the hole fails.
+    const coney::anim::Vec3 open{413.5F, 122.4F, 0.20F};
+    CHECK(planner.navPoint(open) == open);
+    CHECK_FALSE(planner.request(open, start).has_value());
+
+    // From the start to open ground, the tag marker, and the roof path down to the street and on to the marker.
+    const coney::anim::Vec3 marker{422.6F, 79.0F, 0.3F};
+    const coney::anim::Vec3 roof{470.0F, 71.0F, 6.4F};
+    const coney::anim::Vec3 street{470.6F, 71.7F, 0.3F};
+    const std::array<std::pair<coney::anim::Vec3, coney::anim::Vec3>, 7> legs{{{start, {425.0F, 120.0F, 0.3F}},
+                                                                               {start, {410.0F, 124.0F, 0.3F}},
+                                                                               {start, {417.7F, 122.6F, 0.3F}},
+                                                                               {start, marker},
+                                                                               {roof, street},
+                                                                               {street, marker},
+                                                                               {roof, marker}}};
+    int planned = 0;
+    for (const auto& [from, to] : legs) {
+        auto plan = planner.request(from, to);
+        CHECK(plan.has_value());
+        planned += plan ? 1 : 0;
+    }
+    std::printf("level87: %d of %zu legs planned from checkpoint 4's start and the roofs\n", planned, legs.size());
     CHECK(planner.routesInUse() == 0);
 }

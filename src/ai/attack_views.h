@@ -73,9 +73,10 @@ enum class PickFilter : std::uint8_t { CanUse, CanStart };
 /// grab row).
 [[nodiscard]] bool behind(const Brain& attacker, Brain& target);
 
-/// The sector of A's record the snap aims at (`FightGoal_TryGrab`): the first of 4, 5, 3, 6 and 2 whose nearest human
-/// (flag bit 1) holds an attack slot on A (`Brain_HoldsAttackSlot`: he is in A's own slot list, attacking A); none
-/// without one.
+/// The sector of A's record the snap aims at (`FightGoal_TryGrab`): the first of behind, behind-left, behind-right,
+/// left and right (the game's sectors 4, 5, 3, 6, 2; Coney's 4, 3, 5, 2, 6, its numbering being the mirror of the
+/// game's) whose nearest human (flag bit 1) holds an attack slot on A (`Brain_HoldsAttackSlot`: he is in A's own slot
+/// list, attacking A); none without one. Returned in Coney's numbering.
 [[nodiscard]] std::optional<int> snapSectorOf(Brain& attacker);
 
 /// `brain`'s human's capsule radius, metres (the body's radius × the human's scale).

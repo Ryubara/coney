@@ -31,7 +31,6 @@ constexpr int kReactDelayMaxMs = 750;
 constexpr int kViolenceDelayMinMs = 200;
 constexpr int kViolenceDelayMaxMs = 400;
 // The events it answers (docs/research/ai.md#tactics).
-constexpr int kEventViolence = 0x14;
 constexpr int kEventReseat = 0x13;
 constexpr int kEventReseatToo = 0x16;
 // What its callback gets for a member warned of an attack.

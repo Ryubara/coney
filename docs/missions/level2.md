@@ -19,7 +19,7 @@ summary is still to be written from the script.
 
 | # | Status | Note |
 | --- | --- | --- |
-| 1 | 🚧 In Progress | Runs headless with no script error and every binding it calls; not yet checked to its end. |
+| 1 | 🚧 In Progress | Played from the pad through the subway exit, the street, the dice game fight (the Warriors follow Cleon on the default command and fight beside him) and the bums' gate to the walkway above the clinic; the climb over its parapet is next. |
 | 2 | 🚧 In Progress | No script error; the tenement's set-up runs after RunLevel, which sets up the pedestrian net (`SetupFlagNet2`) first, as in the original. |
 | 3 | 🚧 In Progress | Runs headless with no script error and every binding it calls; not yet checked to its end. |
 | 4 | 🚧 In Progress | No script error; waits on the general car message handler (being built for level34). |

@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "ai/brains.h"
+#include "ai/crew.h"
 #include "ai/scripted_brains.h"
 #include "camera/cameras.h"
 #include "core/error.h"
@@ -367,6 +368,13 @@ class GameplayMode final : public GameMode {
     // Whether player 1 holds a role in a starting or playing scene (Human_IsInSceneState, as far as Coney tracks it).
     // @orig 0x00227d28 Human_IsInSceneState (unknown)
     [[nodiscard]] bool playerInScene() const;
+    // Player 1's crew this frame: the follow the game issues itself (forced) when he is made a player and when a scene
+    // that held him ends, once no scene camera is current; then his automatic commands (ai::CrewOrders), and his
+    // menu unlocked every 10 updates (docs/research/ai.md#warrior-follow, #warrior-auto-commands).
+    // @orig 0x00229c40 Human_MakePlayer (unknown)
+    // @orig 0x0039f450 SceneTask_End (unknown)
+    // @orig 0x003035d8 PlayerBrain_Update (unknown)
+    void stepCrew(std::uint64_t nowMs);
     // Gives the hub's host (ai::ScriptedHub) what it reads beyond the brains: the configuration's categories and flee
     // percentages, the workout's tuning, the volume boxes and the flags inside them, the crimes and the crime scene.
     void wireHub();
@@ -428,6 +436,11 @@ class GameplayMode final : public GameMode {
     // The level's brains and the scripts' hold on them, before the level, whose humans they refer to.
     std::unique_ptr<ai::Brains> m_brains;
     std::unique_ptr<ai::ScriptedBrains> m_scripted;
+    ai::CrewOrders m_crewOrders;  // player 1's automatic commands
+    double m_crewChief = 0.0;     // player 1's handle when his crew was last given the follow
+    bool m_crewInScene = false;   // whether a scene held player 1 last frame
+    bool m_crewFollowDue = false; // a follow waits for the scene camera to go
+    std::uint64_t m_crewUpdates = 0;
     std::unique_ptr<camera::Cameras> m_cameras;    // player 1's; declared before the level, whose player holds them
     std::unique_ptr<scenes::SceneSystem> m_scenes; // the level's scenes, which outlive the level that hosts them
     scenes::SceneSystem* m_scenesBefore = nullptr; // the context's scene system before the level's, put back after

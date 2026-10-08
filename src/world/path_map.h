@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <functional>
 #include <optional>
 #include <span>
 #include <vector>
@@ -27,6 +28,14 @@ inline constexpr std::uint32_t kPathPolygonHole = 0x4;
 /// The slabs a polygon's box is cut into across y, each with its own list of the edges that reach it.
 inline constexpr std::size_t kPathSlabCount = 16;
 
+/// What a point's area lookup asks of the level's collision: the byte of the ground a ray finds straight down from
+/// 0.4 m above `point`, which an area's `+0x4a` must equal; nothing when the ray finds no ground.
+using GroundProbe = std::function<std::optional<std::uint16_t>(anim::Vec3 point)>;
+/// How far above the point the ground probe's ray starts, metres (`0x00250760`).
+inline constexpr float kGroundProbeLift = 0.4F;
+/// How far an area's box is widened when a point's area is looked up, metres (`0x00250760`).
+inline constexpr float kAreaBoxMargin = 0.35F;
+
 /// One walkable polygon (a "path", 0x50 bytes).
 struct PathPolygon {
     std::uint32_t firstVertex =
@@ -40,7 +49,8 @@ struct PathPolygon {
     /// `+0x28`: where each slab's list starts in PathMap::edgeLists(), −1 for none; a negative first start means the
     /// polygon has no lists and every edge is walked.
     std::array<std::int16_t, kPathSlabCount> slabStarts{};
-    std::uint32_t flags = 0;     ///< `+0x48`.
+    std::uint32_t flags = 0;     ///< `+0x48` (`u16`).
+    std::uint16_t ground = 0;    ///< `+0x4a`: the ground's collision byte its area lies on (an area's first polygon).
     bool nextInArea = false;     ///< `+0x20` not 0: the next polygon is one of this area's holes.
     std::uint32_t area = 0;      ///< Its area's first polygon (the outline), worked out from nextInArea.
     bool hasNodes = false;       ///< `+0x4c` not 0: it has an A record, so route nodes.
@@ -124,6 +134,18 @@ class PathMap {
     /// with flag 8 left out) add up to a positive sum; nothing when none. Returns the area's first polygon.
     /// @orig 0x00250708 PathArea_FindAtPoint (unknown)
     [[nodiscard]] std::optional<std::uint32_t> areaAt(float x, float y) const;
+    /// The area at `point` in 3D, as the original finds it: the first area whose first polygon lacks flag 8, whose
+    /// `+0x4a` equals the byte `probe` gives for the ground under `point`, whose box widened by kAreaBoxMargin holds
+    /// it, and whose polygons take it in (areaAt(x, y)'s sum), so a point on an upper floor finds the floor's area and
+    /// not the street's below. **Coney choices**: an area whose box holds the point but whose polygons do not take it
+    /// in is passed over for the next; with no probe, or no ground under the point, the plan-only areaAt(x, y).
+    /// @orig 0x00250760 PathArea_FindAtGround (unknown)
+    [[nodiscard]] std::optional<std::uint32_t> areaAt(anim::Vec3 point, const GroundProbe* probe) const;
+    /// The area a point's lookup would have tested first, whether or not its polygons take the point in (the candidate
+    /// `0x00250760` keeps at `0x006ca234`): with the ground probe, the first area whose ground byte matches and whose
+    /// box, widened by kAreaBoxMargin, holds the point; with none, or no ground, the first whose outline holds it in
+    /// plan (**Coney choice**, matching areaAt(x, y)). A point inside a hole has this area but no areaAt().
+    [[nodiscard]] std::optional<std::uint32_t> candidateArea(anim::Vec3 point, const GroundProbe* probe) const;
     /// The walkable-line test (docs/research/ai.md#path-planning): the segment from `from` to `to` (in plan) is
     /// crossed with the edges of the start's area's polygons that have neither flag 8 (kPathPolygonExcluded) nor any
     /// of `mask`, keeping the nearest crossing (one at the very end ignored). With none, it passes when the end lies in
@@ -132,13 +154,16 @@ class PathMap {
     /// found from the point; every edge is crossed rather than the slab lists'; the hazard spheres (`0x00221f80`)
     /// are not built (only fire adds them).
     /// @orig 0x0024fbf8 PathMap_LineWalkable (unknown)
-    [[nodiscard]] bool walkable(anim::Vec3 from, anim::Vec3 to, std::uint32_t mask = 0) const;
+    [[nodiscard]] bool walkable(anim::Vec3 from, anim::Vec3 to, std::uint32_t mask = 0,
+                                const GroundProbe* probe = nullptr) const;
 
   private:
     // Checks the records against each other (counts, indices) and builds the map.
     [[nodiscard]] static std::expected<PathMap, Error> checked(PathMap map);
     // Whether `polygon` takes part in the walkable-line test under `mask`.
     [[nodiscard]] static bool usable(const PathPolygon& polygon, std::uint32_t excludeFlags);
+    // The winding number of (x, y) summed over area `area`'s polygons, flag 8's left out (positive: inside).
+    [[nodiscard]] int areaWinding(std::uint32_t area, float x, float y) const;
     // The winding number of (x, y) in `polygon` (inside()'s sum).
     [[nodiscard]] int winding(const PathPolygon& polygon, float x, float y) const;
     // The nearest (or `farthest`) parameter in [0, 1) at which the segment crosses an edge of area `area`'s polygons

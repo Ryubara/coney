@@ -330,6 +330,7 @@ void Gangs::setTactic(int id, std::unique_ptr<Tactic> tactic) {
         m_retired.push_back(std::move(gang->m_tactic));
     }
     gang->m_tactic = std::move(tactic);
+    ++gang->m_tacticsSet;
 }
 
 void Gangs::update(std::uint64_t nowMs) {

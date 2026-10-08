@@ -214,13 +214,23 @@ TEST_CASE("a fall in a human's health is event 1 about the nearest human that ca
 
     static_cast<void>(victim.human().fighter().health().apply(20));
     scene.run(1);
-    REQUIRE(scene.services.humanEvents.size() == 1);
-    const coney::ai::BrainEvent& event = scene.services.humanEvents[0].second;
+    // Only the hits count here: the fight it starts brings help calls (violence) too.
+    const auto hits = [&scene] {
+        std::vector<coney::ai::BrainEvent> found;
+        for (const auto& [brain, event] : scene.services.humanEvents) {
+            if (event.id == coney::ai::kEventDamaged) {
+                found.push_back(event);
+            }
+        }
+        return found;
+    };
+    REQUIRE(hits().size() == 1);
+    const coney::ai::BrainEvent event = hits()[0];
     CHECK(event.id == coney::ai::kEventDamaged);
     CHECK(event.other == &near);
     CHECK(event.value == 20);
     scene.run(3);
-    CHECK(scene.services.humanEvents.size() == 1); // once per fall
+    CHECK(hits().size() == 1); // once per fall
 }
 
 TEST_CASE("GangMakeNeutralOfType ends the enmity with every unfriendly gang of a kind, both ways", "[ai][gangs]") {

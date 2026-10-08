@@ -95,15 +95,20 @@ inline constexpr int kDefaultBaseBlockChance = 60;
 /// (`0xb`, for the gang's tactic), an attack started on it within its brain's range and field of view (`0x10`), and its
 /// health run out (18, for its gang's message handler).
 inline constexpr int kEventDamaged = 1;
+inline constexpr int kEventReset = 2;
 inline constexpr int kEventEnemyAdded = 0x0b;
 inline constexpr int kEventAttackWarning = 0x10;
+inline constexpr int kEventViolence = 0x14;
 inline constexpr int kEventDown = 18;
 
-/// One event to a human: its id, the other human it is about (null for none) and a value.
+/// One event to a human: its id, the other human it is about (null for none) and a value; for violence (`0x14`, a
+/// help call among them) the victim who called (`+0x24`) and the new-enemy flag (`+0x0c`).
 struct BrainEvent {
     int id = 0;
     Brain* other = nullptr;
     int value = 0;
+    Brain* victim = nullptr;
+    bool newEnemy = false;
 };
 
 /// The default hearing ranges, metres: noises (`+0x134`) and allies calling for help (`+0x138`)
@@ -189,6 +194,16 @@ class Brain {
     /// @orig 0x00292330 Brain_SetDead (unknown)
     /// @orig 0x0028c1a8 Brain_InstallHandlers (unknown)
     void setDead(bool dead);
+    /// The knock-out (`Brain_OnKnockedOut`, from `Human_KnockOut` when his health runs out): the reaction goal ended,
+    /// every goal popped, the actions cleared, the target dropped (his attack slot and active place on it released)
+    /// and the enemies cleared; the brain then stops (enabled byte `+0x08` cleared) until wakeUp(). Returns the target
+    /// he had (the event `0x12`'s foe).
+    /// @orig 0x0028c3b0 Brain_OnKnockedOut (unknown)
+    Brain* knockOut();
+    /// Back up (`Human_WakeUp` → `Brain_EnableAndResume`): the brain runs again.
+    void wakeUp() { m_knockedOut = false; }
+    /// Whether he is knocked out (the brain stopped).
+    [[nodiscard]] bool knockedOut() const { return m_knockedOut; }
     [[nodiscard]] bool dead() const { return m_dead; }
     /// What a player's brain calls when it gives up the pad (false) or takes it back (true).
     using PadControl = std::function<void(bool padControlled)>;
@@ -202,8 +217,9 @@ class Brain {
     /// The formation it follows in (`+0x212`); null for none. ai::Formation sets it.
     [[nodiscard]] Formation* following() const { return m_following; }
     void setFollowing(Formation* formation) { m_following = formation; }
-    /// Its human's event once the gang has passed on it (handler C of `Brain_OnEvent`): an attack warning is counted
-    /// (`+0x200`) unless the brain is dead. Returns whether it was used.
+    /// Its human's event once the gang has passed on it (handler C of `Brain_OnEvent`): nothing for a dead brain, else
+    /// its type's handler and the shared one (answerEvent(), docs/research/ai.md#brain-type-handlers). Returns whether
+    /// it was used.
     /// @orig 0x0028f928 Brain_OnEvent (unknown)
     bool onEvent(const BrainEvent& event);
     /// Whether its human's health running out has been told (event 18).
@@ -266,6 +282,8 @@ class Brain {
     bool pushTacticGoal(std::unique_ptr<Goal> goal);
     /// The goal base's index (−1: none).
     [[nodiscard]] int goalBase() const { return m_goalBase; }
+    /// The goal of `type` above the goal base, nearest the top; null when none.
+    [[nodiscard]] Goal* findGoalAboveBase(GoalType type);
     /// The goal of `type` on the stack, nearest the top; null when none.
     /// @orig 0x0028d960 Brain_FindGoal (unknown)
     [[nodiscard]] Goal* findGoal(GoalType type);
@@ -338,6 +356,8 @@ class Brain {
     void addEnemy(Brain& enemy);
     /// The enemy list.
     [[nodiscard]] const std::vector<Brain*>& enemies() const { return m_enemies; }
+    /// Empties the enemy list (event 2, the reset).
+    void clearEnemies() { m_enemies.clear(); }
     /// Takes `target` (null for none) as the target: the old target's attack slot is released and one is claimed on
     /// the new.
     /// @orig 0x0028cfe0 Brain_SetTarget (unknown)
@@ -380,6 +400,8 @@ class Brain {
     /// How many attacks on the human were announced since the last update and seen (`+0x200`): the starts (event
     /// `0x10`) within the range and field of view, with a clear line of sight to the attacker.
     [[nodiscard]] int attackWarnings() const { return m_attackWarnings; }
+    /// Counts one attack warning (`+0x200`, the shared handler's event `0x10`).
+    void countAttackWarning() { ++m_attackWarnings; }
     /// The range and field of view (half-angle, radians) an announced attack must be within (`+0x130`, `+0x12c`).
     void setSight(float range, float fieldOfView);
     /// The sight range (`+0x130`, `HuSetLOSRange`) and field of view (`+0x12c`, `BrSetFOV`).
@@ -566,6 +588,7 @@ class Brain {
     bool m_dead = false;              // +0x09
     bool m_givingWay = false;         // +0xcc bit 1
     bool m_pushingAside = false;      // +0xcc bit 4
+    bool m_knockedOut = false;        // +0x08 cleared
     bool m_suspended = false;         // +0x0a
     bool m_wantsWeapon = true;        // +0x265
     Gang* m_gang = nullptr;           // +0x20c

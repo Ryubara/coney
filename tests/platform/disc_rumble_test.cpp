@@ -155,9 +155,18 @@ TEST_CASE("the disc's King of the hill scores a point a tick for the gang whose 
     std::printf("  king of the hill: %s %u, %s %u after 15 s on top\n", rows[0].label.c_str(), rows[0].score,
                 rows[1].label.c_str(), rows[1].score);
 
-    // Held to 100: the movement lock, X.GameOver 4 s later and the result screen naming the winner. Either gang may
-    // win: the Orphans' AI grabs, tackles and throws the idle Furies player off the top (docs/research/ai.md#coney).
-    const bool ended = game.runUntilTop(coney::RumbleResultMode::kId, 9000);
+    // Held to 100: the movement lock, X.GameOver 4 s later and the result screen naming the Furies. The player
+    // holds the top as a player would: put back on it each second the brawl knocks him off, until the Furies have 100
+    // (his crew follows him from the start, so where the fight goes is not fixed).
+    constexpr std::uint64_t kHoldStep = 30;
+    constexpr std::uint64_t kHoldLimit = 9000;
+    constexpr unsigned kWinScore = 100;
+    for (std::uint64_t held = 0; held < kHoldLimit && rows[0].score < kWinScore; held += kHoldStep) {
+        REQUIRE(game.flow().scripts().call("TeleportToFlag", args));
+        game.run(kHoldStep);
+    }
+    CHECK(rows[0].score >= kWinScore);
+    const bool ended = game.runUntilTop(coney::RumbleResultMode::kId, kHoldLimit);
     REQUIRE(ended);
     const std::string& winner = game.flow().rumbleResult().winner();
     CHECK((winner.find("FURIES") != std::string::npos || winner.find("ORPHANS") != std::string::npos));

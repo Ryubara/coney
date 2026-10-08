@@ -71,6 +71,13 @@ LevelStart runLevelScript(script::ScriptSystem& scripts, GameState& state, Creat
     humans.clear();
     flags.clear();
     state.startGameCallback.clear();
+    // InitLevel's reset of the Warrior commands (`0x00418c68`): each player's last command is follow, all seven are
+    // enabled and the menu is unlocked (docs/research/ai.md#warrior-follow).
+    for (std::size_t player = 0; player < kWarriorPlayers; ++player) {
+        state.characters.lastWarriorCommand.at(player) = 0;
+        state.characters.warriorCommands.at(player).fill(true);
+        state.story.menuLocked.at(player) = false;
+    }
     scripts.enterLevel(level);
 
     // Step 7: the level's placed objects, into the spawn records.

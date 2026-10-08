@@ -870,6 +870,10 @@ void giveWarriorCommand(ScriptSystem& scripts, const BindingContext& context, do
     dispatchWarriorCommand(scripts, context, chief, command, false);
 }
 
+void issueWarriorCommand(ScriptSystem& scripts, const BindingContext& context, double chief, int command, bool forced) {
+    dispatchWarriorCommand(scripts, context, chief, command, forced);
+}
+
 void addStoryBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& context,
                       std::function<double()> nextHandle) {
     // The Warrior commands.

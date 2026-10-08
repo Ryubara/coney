@@ -5,6 +5,7 @@
 #include "world/path_map.h"
 
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
@@ -186,4 +187,26 @@ TEST_CASE("a point's hole is the flag-4 polygon whose box holds it, the nearest 
     CHECK(map.holeAt(5.0F, 5.0F) == 1U);             // two: the small hole's centre is nearer
     CHECK(map.holeAt(8.0F, 8.0F) == 2U);             // only the larger hole's box
     CHECK_FALSE(map.holeAt(2.0F, 2.0F).has_value()); // in the area, in no hole
+}
+
+TEST_CASE("a point's area is found on the ground under it, so an upper floor is not the street below",
+          "[world][paths]") {
+    coney::test::PathBuilder builder;
+    builder.rectangle(0.0F, 10.0F, 0.0F, 10.0F); // the street
+    builder.rectangle(0.0F, 4.0F, 0.0F, 10.0F);  // a walkway above it, 3 m up
+    PathMap map = builder.build();
+    map.mutablePolygons()[0].ground = 5;
+    map.mutablePolygons()[1].ground = 7;
+    // The ground under a point: the walkway's byte from 3 m up over it, else the street's.
+    const coney::world::GroundProbe probe = [](Vec3 point) -> std::optional<std::uint16_t> {
+        return point.x <= 4.0F && point.z >= 3.0F ? 7 : 5;
+    };
+    CHECK(map.areaAt({2.0F, 5.0F, 3.0F}, &probe) == 1U);
+    CHECK(map.areaAt({2.0F, 5.0F, 0.0F}, &probe) == 0U);
+    CHECK(map.areaAt(2.0F, 5.0F) == 0U);                  // in plan: the first area
+    CHECK(map.areaAt({2.0F, 5.0F, 3.0F}, nullptr) == 0U); // no probe: in plan
+    // Along the walkway, yes; off its edge onto the street, no (in plan alone the street takes both ends).
+    CHECK(map.walkable({2.0F, 1.0F, 3.0F}, {2.0F, 9.0F, 3.0F}, 0, &probe));
+    CHECK_FALSE(map.walkable({2.0F, 5.0F, 3.0F}, {8.0F, 5.0F, 0.0F}, 0, &probe));
+    CHECK(map.walkable({2.0F, 5.0F, 3.0F}, {8.0F, 5.0F, 0.0F}));
 }

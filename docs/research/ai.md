@@ -5052,6 +5052,17 @@ human whose last move failed runs straight at
   callback with (gang id, code); a gang with a tactic gets no fight goal from `GoalFight`.
   `TacticCrowd` seats its members (idle and fightless when cheering, spectating 4-6 s when watching), gestures,
   cheers in turn and reacts (a clip, then the cheer) on its tick, on `TacticTrigger` and on violence nearby.
+- **Events and help calls** (`repo:src/ai/brain_events.h`, [Shared events](#shared-events)): a brain answers its human's
+  events with its type's handler (gang soldiers and Warriors: a stranger's hit starts a fight, violence is
+  `Brain_OnViolenceSeen`), then the shared one (a hit, a new enemy or an attack warning sends a 20 m help call; the
+  reset clears the brain; an attack warning under a fight goal may be countered). A help call is violence (`0x14`)
+  to everyone within its range and the hearer's help hearing; a soldier or Warrior takes a side
+  (`Brain_PickSideInFight`), fights him and pushes HelpRespond. **Coney stand-ins**: the threat test is the enemy list
+  or an enemy gang; the cop's, civilian's, dealer's and shopkeeper's handlers are not built (they take the shared
+  one); the top goals' own hit handlers, the Mark goal's noise reaction and the look-around are not built.
+- **The knock-out** (`Brain::knockOut`, [Reaction goals](#reaction-goals)): when a human's health runs out his brain ends
+  its reaction goal, pops every goal, clears the actions, drops the target (releasing the attack slot and active place
+  on it) and the enemies, and stops until he is up again; then event `0x12` reaches his human with his foe.
 - **The Diego and Vargas fight** (`BossDiegoVargasTactic`, `repo:src/ai/tactic_boss.h`, `repo:src/ai/boss_goals.h`,
   [the fight](#boss-diego-vargas)): `TacticBossScenarioA` gives class 120 a `BigBrawlerGoal`, class 119 a
   `BigThrowerGoal` in stage 2 and a `BigBrawlerGoal` in stage 3, the others `StationaryThrowerGoal`; holds the
@@ -5076,9 +5087,8 @@ fight each other, and only the former fight the sandbox's passive targets. A mov
 ms (2000 beyond twice the reach). Command `0x11` chains as
 square. A reaction goal clears the actions and the move. The fight reaction goals (grabbing, mounting, grabbed,
 mounted, grounded) are built in `repo:src/ai/fight_reactions.h`; their stand-ins: no trains, the presenting does not
-test player 1's state 2, the FollowAndDefend that clears the hand-over is TrackHumanGoal, the throw at men who are not
-friends reads the wall rule's four sectors (a Coney reading), no help call, and a held AI's presses reach no handler
-(its holder drives it). A block ends when its target is not on its feet
+test player 1's Warrior command, the FollowAndDefend that clears the hand-over is TrackHumanGoal, no help call,
+and a held AI's presses reach no handler (its holder drives it). A block ends when its target is not on its feet
 (Coney has no state word). Each brain's generator is seeded by its slot.
 A think only counts (the types' think handlers are not traced).
 
@@ -5089,7 +5099,20 @@ in order (the counts add up to the C records in every file; `+0x08` does not alw
 `level99`'s reachable pairs failed). The use term is 40 × uses − 8 on the node entered; `0x0051059c` is 1 and
 `0x005105a0` 0. An end off every polygon counts on the nearest within 1 m and takes its nearest node; the shortcut
 takes any edge that links back. The walkable line crosses every edge of the two areas rather than the slab lists',
-finds the start's area from the point, and has no hazard spheres (Coney has no fire to add them). A climb leg's climb
+finds the start's area from the point, and has no hazard spheres (Coney has no fire to add them). A point's area
+(the walkable line's ends and the request's start and end polygons) is found on the ground as
+[`0x00250760`](#path-planning) does, with the collision triangle's **area byte** as the "ground's collision byte"
+(the material byte finds no area under `level80`'s upper walkway, where the area byte finds the walkway's) from a ray
+10 m down; an area whose box holds the point but whose polygons do not is passed over, and with no ground found the
+area is looked up in plan. A start standing in a hole of the path polygons (an obstacle's padded footprint: `level87`'s
+checkpoint 4 start
+is in a 2.3 × 1.7 m hole of flags 7) plans from the point its human's polygon would come from
+(`RoutePlanner::navPoint()`): the nearest point on an edge of its candidate area within 20 m (the first edge under
+0.18 m ending the look), else the first of eight probes 1 m out that an area takes in; the walkable-line tests from
+such a start run from that point too, and the body is not moved. A destination in a hole fails the request. **Coney
+choices**: a probe keeps the point's height and finds its area by the ground probe (no drop to the collision, no ray
+test), and with no edge in reach there is no edge point. `level87`'s checkpoint 4 start plans from a diagonal probe
+1.41 m out; before, every line from it, and so every route, failed. A climb leg's climb
 that has ended moves the
 follower on past the leg's waypoint (the original's step there is open); the fast climber's early start within
 4.5 m, the charge (`0x40`), the link's clear test and the waypoint claims are not built. A jump leg (kind 4) takes
@@ -5197,10 +5220,38 @@ the nearest hostile within the sight range, once a second, and a fight started u
 `GoalPlayDynIdle` (`0x23`) walks to the flag, turns to its heading and stands for its time; the clips are kept, not
 played. `GangExitWorld` sends each AI member out; once none is alive the callback gets the gang's id and the gang is
 deleted unless kept. Turf boxes, leader, respond percentage, hear ranges, investigate response, world-flag use and
-attack strategies are kept for readers not built. **Warrior commands, stand-in** for the untraced tactics: the crew's
-tactic is cleared and its AI members flushed, then 0 follow and 2 defend track the chief (2 m), 1 attack finds
-enemies, 3 hold stands; 4, 5 and 6 start nothing; the lines are not said. `GangStartSpawner` switches a spawner
-([above](#spawners)).
+attack strategies are kept for readers not built. **Warrior commands** (`src/ai/crew.*`,
+[Warrior commands](#warrior-commands), [follow](#warrior-follow)): 0 follow gives the crew's gang the follow tactic
+(`WarriorFollowTactic`: nine slots on the chief's formation, each AI member that can act flushed and given
+`GoalFollowPlayer(9 m, chief, 3)`,
+which joins the formation, walks back to its slot every 31 updates through `FollowFormation` (0.75 m), turns to the
+chief's heading when more than 60° off it every 2-4 s, and in fight mode turns to or moves to (3 s) the nearest
+attacker of the crew within 20 m or the chief's target, never attacking). **Stand-ins** there: the slot walk runs
+beyond 3 m and walks nearer; "someone's enemy" is any fightable brain holding the follower among its enemies; the
+straight-line test, fight stance, pick-ups, idle clips, the 8 s reshuffle, banter and lines are not built. 2 defend
+still tracks the chief (2 m) (**stand-in** for the defend tactic). 1 attack gives the gang the attack tactic
+(`WarriorAttackTactic`, type 1): each AI member that can act is flushed and given `FollowAndAttackGoal` on the chief,
+which joins his formation and fights the best enemy within 60 m of him: a fight goal (4000 ms) within 1.1 × the far
+melee range, else the fight's run-in while it may close on him, else a straight move to him; with no enemy it stays
+within 8 m of the chief, turning to his heading every 4 s, and farther walks back to its slot (`FollowFormation`,
+0.75 m). **Stand-ins** there: its enemies are its own plus the nearest attacker of the crew; dogs get the same goal,
+not `AvoidEnemies`; pick-ups, the fight stance, the fidgets, the chief's clip, the gang's target and the answer line
+are not built.
+3 hold gives the gang the hold tactic (`WarriorHoldTactic`, type 3): each AI member that can act is flushed and
+holds his own spot (`HoldPositionGoal`, 1.5 m), then turns to a heading spread 360° / (members − 1) round the
+chief's after 0-1 s with enemies about, else 2-4 s; events 17 (no other human), 19 and 22 (argument 1) hold again.
+The hold walks back (gait 2, to 0.5 m) when outside the radius, turns to an enemy more than 60° off, and against one
+after him fights (4000 ms) from inside the radius once he is within 1.1 × the far melee range and in sight.
+**Stand-ins** there: the enemy is the best-scoring one by the melee terms, "in sight" a clear straight line; the
+fidgets, the shuffle, the way round an object, the answer line and event 20's look and taunt are not built; a gang
+whose brain `+0x2d5` is set gets this tactic too, not the hiding one. 4, 5 and 6 start nothing. The level's start resets
+each player's last command to 0, enables every
+command and unlocks the menu (`InitLevel`). Gameplay dispatches follow, forced, for a new player 1 and when a scene
+that held him ends, once no scene camera is up; it unlocks his menu every 10 updates and runs the
+[automatic commands](#warrior-auto-commands) each update: under follow, attack 1.5 s after an attacker came within
+his far melee range (**stand-in**: Coney's player brain keeps no target, so his attackers stand in for it); under
+attack or defend, follow again 1.5 s after no member of the gang has an enemy. Defend on a rear grab, mug or tag,
+the player modes 2 and 3 and steal at a store are not built. `GangStartSpawner` switches a spawner ([above](#spawners)).
 
 **The fourth mission's brain and human calls** (`src/scripting/mission4_bindings.*`, for `level34`). `BrSetPedType`
 keeps the low 16 bits at the brain (**stand-in**: neither the civilian brain nor the mugging reads it yet).
@@ -5277,6 +5328,8 @@ the wait, and its animation name is kept, not applied.
   tackle meter brain `+0x148` besides the fight goal, and what brain `+0x28f` controls.
 - The per-gang `CfgGang` values 2, 3, 5, 7 and 8 (attackers at once, tackle and rear-grab chances) as
   `config_preload2.lua` sets them; the target's pattern bytes `+0x5d0` / `+0x5d1`.
+- Which byte of the ground triangle `0x00250760` matches against a path's `+0x4a` (Coney reads the area byte), and
+  the length of its downward ray.
 - `GoalBumLogic`'s begging (type 2's prompt, the chance, the callback, the 12 s timer) and what sets `+0x36`; what
   `GoalBackoff`, `GoalMoveToUseFlag` and the pedestrian goal (`0x69`, with its two variants
   and `FlagNetTraverse`'s flags) do each update (Process), and the use-flag goal's two floats; what

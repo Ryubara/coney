@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ai/reaction_goals.h"
 
+#include <algorithm>
 #include <array>
 
 #include "ai/brain.h"
 #include "ai/fight_reactions.h"
 #include "combat/player_combat.h"
+#include "human/locomotion_gate.h"
 
 namespace coney::ai {
 
@@ -33,6 +35,16 @@ bool reactionHolds(GoalType type, const human::Human& human) {
     default:
         return false;
     }
+}
+
+bool humanBusy(const human::Human& human) {
+    if ((human.animator().flags() & human::kBusyFlags) != 0 || human.airborne()) {
+        return true;
+    }
+    constexpr std::array<GoalType, 5> kBusyStates{GoalType::ReactGrabbed, GoalType::ReactTackling,
+                                                  GoalType::ReactTackled, GoalType::ReactKnockedDown,
+                                                  GoalType::ReactStunned};
+    return std::ranges::any_of(kBusyStates, [&human](GoalType type) { return reactionHolds(type, human); });
 }
 
 std::unique_ptr<Goal> reactionGoalFor(const human::Human& human) {

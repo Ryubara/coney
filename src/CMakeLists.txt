@@ -270,8 +270,10 @@ target_sources(coney_core PRIVATE
     ai/block_goal.cpp
     ai/boss_goals.cpp
     ai/brain.cpp
+    ai/brain_events.cpp
     ai/brains.cpp
     ai/chase_goals.cpp
+    ai/crew.cpp
     ai/dealer_goal.cpp
     ai/engage_goals.cpp
     ai/melee_goal.cpp

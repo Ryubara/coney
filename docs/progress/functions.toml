@@ -4090,6 +4090,11 @@ name = "Human_ScaleAttackDamages"
 subsystem = "Human"
 
 [[function]]
+address = 0x00229c40
+name = "Human_MakePlayer"
+subsystem = "Human"
+
+[[function]]
 address = 0x0022a770
 name = "Gang_PickSwitchMember"
 subsystem = "Human"
@@ -5097,6 +5102,11 @@ name = "Ray_IsClear"
 subsystem = "Human"
 
 [[function]]
+address = 0x0024e218
+name = "Nav_FindPolygonNear"
+subsystem = "Human"
+
+[[function]]
 address = 0x0024e478
 name = "Nav_GetWalkingDistance"
 subsystem = "Human"
@@ -5125,8 +5135,18 @@ subsystem = "Human"
 size = 664
 
 [[function]]
+address = 0x002505b0
+name = "Nav_NearestPolygonPoint"
+subsystem = "Human"
+
+[[function]]
 address = 0x00250708
 name = "PathArea_FindAtPoint"
+subsystem = "Human"
+
+[[function]]
+address = 0x00250760
+name = "PathArea_FindAtGround"
 subsystem = "Human"
 
 [[function]]
@@ -5797,6 +5817,11 @@ subsystem = "Human"
 size = 440
 
 [[function]]
+address = 0x0028c3b0
+name = "Brain_OnKnockedOut"
+subsystem = "Human"
+
+[[function]]
 address = 0x0028c5d8
 name = "Brain_OnArrested"
 subsystem = "Human"
@@ -5964,6 +5989,11 @@ name = "Brain_GetSectors"
 subsystem = "Human"
 
 [[function]]
+address = 0x00290328
+name = "Brain_MakeGangsEnemies"
+subsystem = "Human"
+
+[[function]]
 address = 0x002906b8
 name = "Brain_CheckAttack"
 subsystem = "Human"
@@ -5997,6 +6027,16 @@ address = 0x002911f8
 name = "Brain_GetAttackWeight"
 subsystem = "Human"
 size = 32
+
+[[function]]
+address = 0x002912b0
+name = "Brain_PickSideInFight"
+subsystem = "Human"
+
+[[function]]
+address = 0x00291960
+name = "Brain_OnViolenceSeen"
+subsystem = "Human"
 
 [[function]]
 address = 0x00291ed0
@@ -6077,6 +6117,26 @@ address = 0x00292cf0
 name = "Brain_ClearBackoff"
 subsystem = "Human"
 size = 144
+
+[[function]]
+address = 0x00292d80
+name = "Brain_DefaultOnEvent"
+subsystem = "Human"
+
+[[function]]
+address = 0x002935d8
+name = "Brain_IsInHearRange"
+subsystem = "Human"
+
+[[function]]
+address = 0x00293640
+name = "Gang_BroadcastHelpCall"
+subsystem = "Human"
+
+[[function]]
+address = 0x00293768
+name = "AI_AlertNearby"
+subsystem = "Human"
 
 [[function]]
 address = 0x00293b28
@@ -6664,9 +6724,29 @@ size = 520
 
 [[function]]
 address = 0x002b75b8
-name = "Brain_Melee"
+name = "Gang_SendHelper"
 subsystem = "Human"
 size = 184
+
+[[function]]
+address = 0x002b7670
+name = "HelpRespondGoal_Init"
+subsystem = "Human"
+
+[[function]]
+address = 0x002b76a0
+name = "HelpRespondGoal_Start"
+subsystem = "Human"
+
+[[function]]
+address = 0x002b78e0
+name = "HelpRespondGoal_End"
+subsystem = "Human"
+
+[[function]]
+address = 0x002b7900
+name = "HelpRespondGoal_Process"
+subsystem = "Human"
 
 [[function]]
 address = 0x002b79b8
@@ -6736,6 +6816,46 @@ address = 0x002bb858
 name = "GrabTargetGoal_Process"
 subsystem = "Human"
 size = 1384
+
+[[function]]
+address = 0x002bbdc0
+name = "FollowAndAttackGoal_Init"
+subsystem = "Human"
+
+[[function]]
+address = 0x002bbe00
+name = "FollowAndAttackGoal_Start"
+subsystem = "Human"
+
+[[function]]
+address = 0x002bbe98
+name = "FollowAndAttackGoal_End"
+subsystem = "Human"
+
+[[function]]
+address = 0x002bc198
+name = "FollowAndAttackGoal_Process"
+subsystem = "Human"
+
+[[function]]
+address = 0x002be590
+name = "Goal_HoldPosition"
+subsystem = "Human"
+
+[[function]]
+address = 0x002be640
+name = "HoldPositionGoal_Init"
+subsystem = "Human"
+
+[[function]]
+address = 0x002be688
+name = "HoldPositionGoal_End"
+subsystem = "Human"
+
+[[function]]
+address = 0x002be818
+name = "HoldPositionGoal_Process"
+subsystem = "Human"
 
 [[function]]
 address = 0x002c0430
@@ -7043,6 +7163,16 @@ subsystem = "Human"
 size = 400
 
 [[function]]
+address = 0x002de380
+name = "Goal_FollowPlayer"
+subsystem = "Human"
+
+[[function]]
+address = 0x002de7c0
+name = "FollowPlayerGoal_Process"
+subsystem = "Human"
+
+[[function]]
 address = 0x002df1a8
 name = "Goal_TrackHuman"
 subsystem = "Human"
@@ -7065,6 +7195,11 @@ address = 0x002df3c0
 name = "TrackHumanGoal_Process"
 subsystem = "Human"
 size = 768
+
+[[function]]
+address = 0x002dfba8
+name = "Goal_FollowFormation"
+subsystem = "Human"
 
 [[function]]
 address = 0x002e05a8
@@ -7535,6 +7670,21 @@ subsystem = "Human"
 size = 944
 
 [[function]]
+address = 0x00303988
+name = "WarChief_AutoCommand"
+subsystem = "Human"
+
+[[function]]
+address = 0x00304fa8
+name = "GangBrain_OnEvent"
+subsystem = "Human"
+
+[[function]]
+address = 0x003063b0
+name = "WarriorBrain_OnEvent"
+subsystem = "Human"
+
+[[function]]
 address = 0x00306690
 name = "Tactic_Start"
 subsystem = "Human"
@@ -7706,6 +7856,46 @@ subsystem = "Human"
 size = 136
 
 [[function]]
+address = 0x00310e00
+name = "WarriorFollowTactic_Create"
+subsystem = "Human"
+
+[[function]]
+address = 0x00310f38
+name = "WarriorFollowTactic_GiveGoals"
+subsystem = "Human"
+
+[[function]]
+address = 0x003111a8
+name = "WarriorFollowTactic_Start"
+subsystem = "Human"
+
+[[function]]
+address = 0x00311638
+name = "WarriorFollowTactic_Process"
+subsystem = "Human"
+
+[[function]]
+address = 0x00311928
+name = "WarriorFollowTactic_Event"
+subsystem = "Human"
+
+[[function]]
+address = 0x00313400
+name = "WarriorHoldTactic_Create"
+subsystem = "Human"
+
+[[function]]
+address = 0x00313508
+name = "HoldTactic_GiveGoals"
+subsystem = "Human"
+
+[[function]]
+address = 0x00313718
+name = "HoldTactic_GiveMemberGoal"
+subsystem = "Human"
+
+[[function]]
 address = 0x00313e30
 name = "Tactic_HoldTheLine"
 subsystem = "Human"
@@ -7790,6 +7980,11 @@ size = 176
 [[function]]
 address = 0x0031a268
 name = "Tactic_Scout"
+subsystem = "Human"
+
+[[function]]
+address = 0x00320530
+name = "WarriorAttackTactic_Create"
 subsystem = "Human"
 
 [[function]]

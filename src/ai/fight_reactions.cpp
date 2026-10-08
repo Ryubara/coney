@@ -27,7 +27,6 @@
 #include "human/fighter.h"
 #include "human/human.h"
 #include "human/locomotion.h"
-#include "human/locomotion_gate.h"
 #include "scripting/story_bindings.h"
 
 namespace coney::ai {
@@ -59,11 +58,12 @@ constexpr int kDogClass = 221;
 constexpr float kPresentRange = 3.0F;
 constexpr std::uint64_t kPresentMs = 3000;
 
-// Whether `brain`'s human is busy (`Human_IsBusy`'s record bits).
-bool busy(const Brain& brain) { return (brain.human().animator().flags() & human::kBusyFlags) != 0; }
+// Whether `brain`'s human is busy (`Human_IsBusy`: his record bits and his state).
+bool busy(const Brain& brain) { return humanBusy(brain.human()); }
 
-// The throw away from something in the grabber's sector `k`: ahead of him (0, 1, 7) behind, on his left (2) right,
-// behind him (3-5) ahead, on his right (6) left.
+// The throw away from something in the grabber's sector `k` (Coney's numbering, the mirror of the game's): ahead of
+// him (0, 1, 7) behind, on his left (2; the game's 6) right, behind him (3-5) ahead, on his right (6; the game's 2)
+// left.
 GrabMove awayFrom(int k) {
     switch (wrapSector(k)) {
     case 2:
@@ -85,10 +85,11 @@ struct SideTest {
     int sector;
     GrabMove move;
 };
-// In the original's order: behind the man, his right, his left, behind the grabber.
+// In the original's order: behind the man, his left (the game's 6, Coney's 2), his right (the game's 2, Coney's 6),
+// behind the grabber. The man faces the grabber, so his left is the grabber's right.
 constexpr std::array<SideTest, 4> kSideTests{{{false, 4, GrabMove::Ahead},
-                                              {false, 6, GrabMove::Left},
                                               {false, 2, GrabMove::Right},
+                                              {false, 6, GrabMove::Left},
                                               {true, 4, GrabMove::Behind}}};
 
 // The brain whose human is `human` among those `brain` knows: its target, its enemies, and those holding attack slots
@@ -280,10 +281,13 @@ GrabMove grabMoveDirection(Brain& brain, Brain& held) {
             for (const SideTest& test : kSideTests) {
                 Sectors& record = test.grabbers ? mine : his;
                 const Brain& owner = test.grabbers ? brain : held;
-                const Sector& sector = record[test.sector];
+                // The men: the sector's flag 1 and its nearest man not a friend. As the original does, the test
+                // behind the grabber reads his flag with the man's sector-4 human.
+                const Brain* other = his[test.sector].nearest;
+                const bool occupied = (record[test.sector].flags & sector_flag::kOccupied) != 0;
                 const bool hit = walls ? record.wall(owner, test.sector)
-                                       : sector.nearest != nullptr && sector.nearest != &brain &&
-                                             !Gangs::friends(sector.nearest->gang(), brain.gang());
+                                       : occupied && other != nullptr && other != &brain &&
+                                             !Gangs::friends(other->gang(), brain.gang());
                 if (hit) {
                     choices.at(count++) = test.move;
                 }

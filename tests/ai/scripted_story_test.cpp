@@ -213,8 +213,10 @@ TEST_CASE("A Warrior command reaches the chief's crew and the callback", "[ai][s
     level.call("WCSetCallback", {Value("Note")});
     level.call("IssueWarriorCommand", {Value(0.0), Value(0.0)});
     CHECK(level.scripted->storyHost().warriorCommand() == 0);
+    // Follow is the follow tactic, which gives the member its goal when it starts.
+    level.scene.brains.gangs().update(0);
     REQUIRE(crew.topGoal() != nullptr);
-    CHECK(crew.topGoal()->type() == GoalType::TrackHuman);
+    CHECK(crew.topGoal()->type() == GoalType::FollowPlayer);
     REQUIRE(level.notes.size() == 1);
     CHECK(level.notes[0] == std::vector<double>{1.0, 0.0});
     // An unforced repeat only repeats the line; a disabled command does nothing.

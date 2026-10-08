@@ -35,6 +35,7 @@ enum class GoalType : std::uint8_t {
     ReactKnockedDown = 0x17,   ///< Reaction: knocked down (`0x80000`).
     ReactStunned = 0x18,       ///< Reaction: stunned (`0x100000`) and not down.
     Block = 0x1b,              ///< BlockGoal.
+    HelpRespond = 0x1d,        ///< HelpRespondGoal: answers a help call.
     GrabTarget = 0x1f,         ///< GrabTargetGoal: walks up to a human and holds it.
     PlayAnimation = 0x21,      ///< PlayAnimationGoal: a scene.
     PlayDynAnimation = 0x22,   ///< PlayDynAnimationGoal.
@@ -42,6 +43,10 @@ enum class GoalType : std::uint8_t {
     PlayGenAnim = 0x26,        ///< PlayGenAnimGoal: one generic clip.
     GuardFlag = 0x2b,          ///< GuardFlagGoal: keeps to a flag.
     TrackHuman = 0x30,         ///< TrackHumanGoal.
+    FollowPlayer = 0x32,       ///< FollowPlayerGoal: keeps to the war chief's formation.
+    FollowFormation = 0x33,    ///< FollowFormationGoal: walks to its formation slot.
+    FollowAndAttack = 0x34,    ///< FollowAndAttackGoal: fights the best enemy near the war chief, or stays with him.
+    HoldPosition = 0x36,       ///< HoldPositionGoal: keeps to a radius round a point and fights from there.
     TravelPath = 0x38,         ///< TravelPathGoal.
     FindEnemy = 0x41,          ///< FindEnemyGoal: looks for an enemy to fight.
     AreaWalker = 0x47,         ///< AreaWalkerGoal: strolls round a centre.

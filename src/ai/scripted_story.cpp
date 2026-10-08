@@ -13,6 +13,7 @@
 #include "ai/brain.h"
 #include "ai/brains.h"
 #include "ai/chase_goals.h"
+#include "ai/crew.h"
 #include "ai/gangs.h"
 #include "ai/riot_goals.h"
 #include "ai/route_planner.h"
@@ -56,9 +57,8 @@ constexpr float kExitRadius = 2.0F;
 constexpr int kBumReactAnim = 669;
 // The Warrior commands' stand-ins.
 constexpr int kCommandFollow = 0;
-constexpr int kCommandAttack = 1;
 constexpr int kCommandDefend = 2;
-// How far the crew keeps from the chief when it follows or defends him, metres (**Coney stand-in**).
+// How far the crew keeps from the chief when it defends him, metres (**Coney stand-in**).
 constexpr float kCrewTrackDistance = 2.0F;
 
 // Degrees to radians.
@@ -673,6 +673,24 @@ bool ScriptedStory::startWarriorCommand(double chief, int command, bool /*forced
     if (crew == nullptr) {
         return true;
     }
+    // Follow: the follow tactic, which gives the members their goals on its first process.
+    if (command == kCommandFollow) {
+        m_scripted->owner().gangs().setTactic(
+            crew->id(), std::make_unique<WarriorFollowTactic>(chief, *m_scripted, m_scripted->owner().formations()));
+        return true;
+    }
+    // Attack: the attack tactic, which gives the members their goals on its first process.
+    if (command == kCrewAttack) {
+        m_scripted->owner().gangs().setTactic(
+            crew->id(), std::make_unique<WarriorAttackTactic>(chief, *m_scripted, m_scripted->owner().formations()));
+        return true;
+    }
+    // Hold: the hold tactic, which gives the members their goals on its first process. **Coney stand-in**: a gang
+    // whose brain `+0x2d5` is set gets the hiding tactic (`0x003128a0`) instead, which Coney does not build yet.
+    if (command == kCrewHold) {
+        m_scripted->owner().gangs().setTactic(crew->id(), std::make_unique<WarriorHoldTactic>(chief, *m_scripted));
+        return true;
+    }
     // The crew's last orders end, then each AI member takes the command's.
     m_scripted->owner().gangs().setTactic(crew->id(), nullptr);
     const std::vector<Brain*> members(crew->members().begin(), crew->members().end());
@@ -681,11 +699,9 @@ bool ScriptedStory::startWarriorCommand(double chief, int command, bool /*forced
             continue;
         }
         member->flush();
-        if (command == kCommandFollow || command == kCommandDefend) {
+        if (command == kCommandDefend) {
             static_cast<void>(
                 goalTrackHuman(*member, *m_scripted, m_scripted->owner().formations(), chief, kCrewTrackDistance));
-        } else if (command == kCommandAttack) {
-            member->pushGoal(std::make_unique<FindEnemyGoal>());
         }
     }
     return true;

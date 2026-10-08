@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "ai/attack_views.h"
+#include "ai/brain_events.h"
 #include "ai/fight_goal.h"
 #include "ai/gangs.h"
 #include "ai/melee_goal.h"
@@ -75,7 +76,7 @@ void Brain::update(std::uint64_t nowMs) {
     // suspended brain or gang keeps only the time.
     const bool runsGoals = m_type != BrainType::Player || m_dead;
     const bool held = m_suspended || (m_gang != nullptr && m_gang->suspended());
-    if (runsGoals && !held && !m_human->airborne() && !m_human->fighter().health().depleted()) {
+    if (runsGoals && !held && !m_knockedOut && !m_human->airborne() && !m_human->fighter().health().depleted()) {
         // The reaction goal, else the goal stack; then the actions.
         if (!updateReactionGoal()) {
             processGoals();
@@ -108,6 +109,21 @@ void Brain::setDead(bool dead) {
     }
 }
 
+Brain* Brain::knockOut() {
+    Brain* foe = m_target;
+    if (m_reaction != nullptr) {
+        m_reaction->end(*this);
+        m_reaction.reset();
+    }
+    clearGoals();
+    m_goalBase = -1;
+    clearActions();
+    setTarget(nullptr);
+    m_enemies.clear();
+    m_knockedOut = true;
+    return foe;
+}
+
 void Brain::setType(BrainType type) {
     if (type == m_type) {
         return;
@@ -124,11 +140,7 @@ bool Brain::onEvent(const BrainEvent& event) {
     if (m_dead) {
         return false;
     }
-    if (event.id == kEventAttackWarning) {
-        ++m_attackWarnings;
-        return true;
-    }
-    return false;
+    return answerEvent(*this, event);
 }
 
 bool Brain::pushGoal(std::unique_ptr<Goal> goal) {
@@ -164,6 +176,15 @@ void Brain::clearGoals() {
     while (!m_goals.empty()) {
         popGoal();
     }
+}
+
+Goal* Brain::findGoalAboveBase(GoalType type) {
+    for (auto k = static_cast<int>(m_goals.size()) - 1; k > m_goalBase; --k) {
+        if (m_goals.at(static_cast<std::size_t>(k))->type() == type) {
+            return m_goals.at(static_cast<std::size_t>(k)).get();
+        }
+    }
+    return nullptr;
 }
 
 Brain* Brain::nearestPlayer() const {

@@ -294,7 +294,9 @@ target_sources(coney_tests PRIVATE
     ai/fight_goal_test.cpp
     ai/fight_reactions_test.cpp
     ai/boss_goals_test.cpp
+    ai/brain_events_test.cpp
     ai/brain_test.cpp
+    ai/crew_test.cpp
     ai/disc_ai_config_test.cpp
     ai/disc_route_test.cpp
     ai/formations_test.cpp
