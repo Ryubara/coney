@@ -323,6 +323,32 @@ fight goal resumed from the stack; the stunned goal `0x18` came with `0x100000`,
 `0x12` goals with the civilian's own tackle and grab. So the reaction goal lags the state by one update, because the
 brains run before the human's state update ([Tasks](tasks.md#humans-update)).
 
+**A knocked-out human's brain stops** (there is no reaction goal for state `0x40000`). Confirmed (code) at the
+addresses cited:
+
+1. `Human_KnockOut(h, 0)` (`0x00230328`; from `Human_OnHealthOut`, `HuSetConscious`, `Human_Destroy`) sets state
+   `0x40000` and, unless the human is already dead or wounded (`0x100050000`), first calls `Brain_OnKnockedOut(brain,
+   0)` (`0x0028c3b0`). `Human_ReleaseInstance` passes 1 and skips the brain part.
+2. `Brain_OnKnockedOut` ends the reaction goal, **pops every goal** (`Brain_ClearGoals`: each goal's End runs), clears
+   the actions, **drops the target** (`Human_DropTarget` → `Brain_SetTarget(brain, 0, 0)`, which releases his
+   active-attacker place (`Brain_ReleaseActiveAttacker`, target `+0x1f0`) and attack slot (`Brain_ReleaseAttackSlot`,
+   `+0x1a4`) on the old target, and restores that target's spacing when no slot holder is left), and, being knocked
+   out, empties his enemy list and **disables the brain** (`Brain_ClearEnemies`: brain `+0x08` = 0). It then sends his
+   human event `0x12` with his foe.
+3. `Brains_Update` (`0x00293b28`) runs a brain only while `+0x08` is set, so a knocked-out human neither thinks nor
+   updates until `Human_WakeUp(h, 0)` clears the state and calls `Brain_EnableAndResume`. Its per-human gate
+   `Human_ShouldThinkThisUpdate` (`0x0023d790`) guards both the think and `Brain_Update`; it is a cull, not a health
+   test: it is false only for a human with no held flag, not paired or blocking, not in a scene state, at gait 0,
+   whose brain `+0x2d7` is clear and who is busy with a scene or whose gang has a flag in `+0xd8`'s high half, when
+   the human was handled within 500 ms (`+0x2a0`) and is off screen (model drawn more than 1 s ago, or no model
+   and `+0x334` ≥ 60).
+4. The claims do not test the holder's health: `Brain_ClaimActiveAttacker` (`0x00291008`) and
+   `Brain_ClaimAttackSlot` only prune dead handles (`HandleArray16_PruneDead`). A downed holder is released by his own
+   knock-out (step 2), not evicted by the claimants.
+
+A wounded human (`0x10000`, `Human_StartWounded`) is not knocked out: it takes the Wounded reaction goal and keeps
+its brain.
+
 #### The fight reaction goals {#fight-reactions}
 
 Each runs as [the reaction goal](#reaction-goals) while its state lasts, and ends (2, actions cleared) when it
@@ -4290,6 +4316,31 @@ command gives nothing) and always rebuilds the tactic.
 - Repeating the follow command (unforced, under type `0x12`) calls `0x003114e0`: each member holding `FollowPlayer`
   without `FollowFormation` (`0x33`) also gets `FollowFormation(0.75 m, chief, 1)`.
 
+**Adding a member who is already in the gang** (`GangAddMember` → `Gang_AddMember`, `0x00166308`; confirmed (code) at
+the cited addresses). There is no early return:
+
+1. A human whose brain `+0x20c` names any gang, the same one included, first has his actions, target, counted enemies
+   and brain `+0x164` list cleared. He then leaves through `Gang_RemoveMember(old, h, 1)` (`0x001664d8`):
+   - a spawned human (brain `+0x210` ≥ 0) takes his spawner's alive count (`+0x69c` of the spawner record) and the
+     game state's `+0x432` down by one and gets `+0x210` = −1, unless the spawner is in state 4, 6, 9 or 10;
+   - the leader is cleared when he was it;
+   - under a tactic (gang `+0x40`) his brain is popped to its goal base;
+   - the gang gets event `0x16` with `+4` = the members left and `+8` = **0**.
+2. He is put back: brain `+0x20c`, his attack weights, god mode under an invincible gang, the leader slot for a
+   player war chief (human `+0x3ac` = 1).
+3. Event `0x16` follows with `+4` = the count before + 1 and `+8` = **1**.
+
+`Gang_OnEvent` (`0x00164c20`) hands an event first to a script handler the gang registered for its type (consumed
+when that returns 1), then to the running tactic (vtable `+0x4c`) while the gang is not empty, or for a removal. The
+follow tactic answers 22 with `+8` = 1 by `WarriorFollowTactic_GiveGoals` for **every** non-player member who is
+not down and not the leader, not only the one added. Each is popped to his goal base and marked; nothing requires an
+empty stack. That is the only way back: `Process` gives no goals, and `GangBrFlush` (`0x0016ba18`) clears the goals
+and actions but leaves the tactic at gang `+0x40`.
+
+So `level80`'s `EndStartCam` works in the original by its own `GangAddMember` calls:
+`GangBrFlush(0)`, `GangBrDead(0, nil)`, then `GangAddMember(0, −1, h)` for the player and both Warriors. Each add
+re-runs `GiveGoals`. The player's add also clears and resets the leader before the Warriors' adds; the Warriors' own
+adds give everyone the follow again.
 **`GoalFollowPlayer`'s Process** (`0x002de7c0`): done (2) when the leader is gone. Every 31 updates while the
 follower is not in fight mode, or when it lost a straight walkable line to the leader, it pushes
 `FollowFormation(0.75 m, leader)` (`0x002dfba8`), which walks it to its formation slot. Its **fight mode**

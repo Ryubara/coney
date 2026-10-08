@@ -1211,6 +1211,70 @@ throw gives the `THROW_02` set (155 front, 264 damage). A throw costs the power 
 victim plays 152 and lands in 196 `GROUNDED_IDLE`, where square plays the grounded strikes. Confirmed (code), and
 confirmed (runtime) for 147, 151, 155 and the damage.
 
+**Picking the wall throw** (`Player_Throw`, confirmed (code) at `0x0026dd08`). The stick side (0 front, 1 right,
+2 rear, 3 left) also names a body axis (+y, +x, −y, −x). A ray (`WorldManager_RayCast`, mask 0) starts 1.4 m above
+the player's position and runs along that axis for the far range of the side's wall clip
+(`AttackTable_GetFarRange`, `0x00254508`: 155 front, 157 right, 159 rear, 161 left; on the disc 2.25, 1.549, 1.25 and
+1.549 m, before any class override) + 0.2 m. If it hits nothing, a second ray runs along the stick's own world
+direction. A hit counts only on a steep face (normal · up < cos 80°): its distance is kept, and when it is also no
+more than the far range (without the 0.2 m) the throw becomes the wall throw of that side (`THROW_02`, kind 29, damage
+index 29) and the victim's `+0x5c0` gets the ray's direction × the distance. Otherwise it is the plain throw (kind
+25). A face more than 45° off head-on (normal · ray > cos 135°) still gives the wall throw but skips the alignment
+below. Before the pair starts (`Attack_StartPaired`; `Grab_StartPairedMove` from a rear hold without human flag
+`0x40000000`), a plain throw turns the player to the stick's angle + side × 90° over 1/6 s and moves the victim
+round with him; a head-on wall throw aligns the pair instead (`Human_AlignToObject`, 0.01 s). Every throw sets the
+victim's `+0x3bd`, which arms its one wall-impact sound ([Moving strikes](#moving-strikes)).
+
+**What the thrown body hits** (confirmed (code) at `0x0021b290`, `0x00264bd8`, `0x00265f70`; the clip data read
+from the disc). The plain throws' victim clips switch the victim's own strike shapes on: event `0x13`
+(`Human_StrikeAllOn`: all ten bone shapes, and flag `0x2` on the 0.35 m capsule) to `0x14`, at frames 0-32 for 148
+`THROW_01_FROM_GRAB_FRONT_REACT` (`gen_grab_front_throw_front_re`), 7-22 for 152 rear, 13-18 for 150 right and
+13-20 for 154 left. So the flying victim is the striker: `Human_TestStrikes` tests his shapes and capsule against the
+spine and head shapes of every body near him, foe or friend, exactly as for a punch, and the first overlap calls
+`Strike_Contact` with **the thrown human as the attacker**. There is no radius of its own: the reach is the
+capsule's 0.35 m plus the bystander's spine (0.18 m) or head (0.15 m). The thrower is not left out by
+`Human_MayStrikeBody` (`0x00227180`); what keeps him from being struck (a shared body group, `+0x3c`) was not
+traced. What a bystander gets comes from the **victim clip's** Anim Range List entry, which no class overrides
+(the values of 1,196 of the disc's 1,209 lists):
+
+| Ids | Damage `+0x0a` | Hit code `+0x0c` | Flags |
+| --- | --- | --- | --- |
+| 148, 150, 152, 154 (throw victims) | **−60** | `0x3a`: straight, high, crushing | 0 |
+| 156, 158, 160, 162 (wall-throw victims) | 0 | 0 | 0 |
+| 296-303 (extreme reactions) | 20 (0 in 40 lists) | `0x2a`: straight, high, heavy | 0 |
+
+- **No health is lost.** `Human_AddPendingDamage` keeps the larger magnitude but stores the sign, and
+  `Human_ApplyPendingDamage` subtracts only a pending value of 1 or more, so −60 takes nothing. (Between two friendly
+  players it is negated to 60.) The pending value is not 0, so the hit still goes on to the reaction, and the
+  bystander's foe becomes the thrown human.
+- **The reaction is a crushing high hit**: by the [reaction table](#hit-codes), 300-303
+  `REACT_EXTREME_HIGH_*` by the side the thrown body comes from. These carry the knockdown event (type 7), so the
+  bystander goes down ([Reactions](#reactions)). The usual adjustments apply: −1 strength for a victim with flag
+  `0x200` (292-295, still a knockdown), at most 1 with `0x80`, the height by the two roots' height difference, and hit
+  armour.
+- **It can chain.** The extreme reactions have strike windows of their own (300-303: type `0xf` on the spine and head,
+  and the shins in 301 and 302; 296-299: `0x13`), so a felled bystander who flies into a third human strikes him
+  for 20 with a heavy high hit (292-295, knockdown).
+- **The negative value also hurts the thrown human.** Thrown through a glass pane (`Glass_Break` from
+  `Strike_Contact`) while he holds `0x400000` and has a grab partner, he takes 60 himself, kept above 0 when he has
+  state `0x800000000`. Into a world object he takes the object type's `+0x58` × 5; into a car, 100 (the same cap),
+  with a camera shake and style for a player thrower ([World objects](objects.md#door-break)).
+
+**The wall throw's slam** (confirmed (code) at `Human_HandleMessage`'s message `0xc1`, `0x00245920`; the clip
+events read from the disc). The victim clips 156-162 carry no `0x13` window, and their 0 damage and 0 hit code leave
+a bystander their own shapes touch untouched (a pending 0 is dropped). The slam is one event of type `0x41`
+(message `0xc1`) at frame 6 of 156 (front), 12 of 158 (right), 11 of 160 (rear) and 15 of 162 (left). For an anim in
+156-163 while the victim holds state `0x2000`, the handler sweeps the victim's capsule along the vector the throw
+stored at `+0x5c0` (`IPhysics_CollideShape`) and calls `Strike_Contact` (human vtable `+0x104`) for each body met
+that is not already on its contact list. On the level mesh that gives a dust puff (`sub_shack_puff_aligned`) at the
+contact, and a material impact sound unless the victim holds `0x400800` or is airborne; a world object takes the hit
+and hurts the victim as above. Separately, the victim's own move meeting the mesh plays the one wall sound the throw
+armed at `+0x3bd` (`Human_OnContact`, `0x00219d50`). The same frames carry a one-frame strike window
+(type `0xf`): the spine for 156 and 160, a foot (30) for 158, the right hand for 162. The 264 damage is the thrower's
+(clip 155's entry, index 29), applied on the grab move's first update, not the wall's. There is no separate
+head-slam clip or reaction beyond these four victim clips. `CfgPowerClass` flag 22 is not read here (it belongs to
+`Grabbing_PickMove`, [AI](ai.md#fight-reactions)).
+
 ### A bat in hand {#bat}
 
 **At runtime** (confirmed (runtime), slot 6 copy, `Human_PlaceItemInHand(player, "dyn_bat_tuff")` (`0x00238540`)
@@ -1431,6 +1495,72 @@ every hit tested (confirmed (runtime)). Grab moves (`0x00262ac8`) apply their da
    raging, has flag `0x200000` or `0x4000`, or plays 617-620.
 6. Otherwise the reaction by state: grabbed `0x002688d0`, grabbing `0x00268ea8`, and others; a normal hit
    `0x0026b0a0` ([Hit codes](#hit-codes)).
+
+### Attacking a busy target {#busy-target}
+
+What happens when an attacker goes for a human who is busy with something else: held by a third human, stealing a
+car stereo, or spraying a tag. No test anywhere names these three activities. Each check reads the target's state word
+(record `+0x00`, [State flags](#state-flags)) or held flags (record `+0x08`) against a mask, and the three show up
+there as grabbed `0x10` (front) / `0x20` (rear), a mini-game `0x4000000` (the stereo is mini-game mode 3,
+[Crimes](crimes.md#mini-game-record)) and tagging `0x2000000`. `Tag_StartSpray` (`0x0022e610`) and
+`StereoTheft_Start` (`0x0022dd98`) set only those state bits and no held flag; what their clips hold was not
+checked. All confirmed (code) at the cited addresses.
+
+**The checks on an AI's way in**, in the order a fight meets them ([AI](ai.md#check-attack)):
+
+1. **EngageEnemy's run-in** (`0x002afa48`, [AI](ai.md#engage-enemy)): within 0.75 × far (3.75 m) of a target whose
+   state has any of the busy mask `0x7bf9e9f7ff0` (`HumanRecord_AreActionsBlocked`, `0x00228228`), the runner stops
+   and turns to him instead of charging. All three activities are in the mask. The fight goal then attacks from
+   there.
+2. **`Brain_CheckAttack`** (`0x002906b8`) uses the same busy mask only to *relax* two of its waits:
+   - result 4, hold back from an armed man, applies only when neither T nor T's target is busy;
+   - result 8, let a heavy-armed mate go first, counts only a mate who is not busy.
+   The busy target itself is not refused. Result 3 (`Brain_IsAttackableBy`, brain `+0x11f`) does not read the state:
+   only `GoalGrabTarget` clears the flag while it holds its victim, so a human held by a scripted stalker is off
+   limits, but a human held in an ordinary fight grab is not.
+3. **The pick** (`Human_CanUseAttackKind`, `0x002240e8`) and **the start** (`Human_CanStartAttack`, `0x00224778`; the
+   kind table at [An AI's attacks](#ai-attacks)). The start first refuses a target holding any of the held flags
+   `0xc08200` (unless T has state `0x2000` and A `0x1000`). By kind:
+
+| Kinds | Grabbed by another (`0x10` / `0x20`) | Stereo (`0x4000000`) | Tagging (`0x2000000`) |
+| --- | --- | --- | --- |
+| 0-9, 11 (strikes, combos) | yes (target mask `0xe3000`) | yes | yes |
+| 10 (snap), 15, 16-18 (specials; mask `0x40100f0800`) | yes | yes | yes |
+| 19, 20 (charge, dive: T not down) | yes | yes | yes |
+| 21 (tackle: T free of `0x7bf9e9f7ff0`) | no | no | no |
+| 22 (grab: T free of `0x7bfdc8f7fd0`) | front no; rear only from in front of him (the start test) | no | **yes** |
+| 12-14 (grounded) | unchanged: T must be down (or high) | the same | the same |
+
+The pick also weighs a rear-grabbed target held by a gang mate +200 toward the grab ([AI](ai.md#pick-attack)).
+
+**A player's moves.** Square and cross strike whatever their shapes meet. The player's grab and tackle search uses
+`Human_CanBeGrabbed` (`0x002256a0`). It refuses the state bits `0x7bfdc8f7ff0` (grabbed, mini-game, but not tagging),
+the held flags `0x8fc57a60`, a human down, in a scene, more than 0.25 m above or below, or with human flag `0x40`. So
+a tagger can be grabbed or tackled; a stereo thief or a held human cannot.
+
+**The strike itself** never asks about these states. `Human_TestStrikes` skips only a target in state `0x100000000`
+(`Human_MayStrikeBody`, `0x00227180`), and `Strike_Contact` deals the damage. What the hit then does is
+`Human_ApplyPendingDamage`'s (`0x00265f70`, [Damage](#damage)). The health always drops first. Then, unless hit
+armour, the held flags `0x1c16a40` or human flag `0x800` cancel the reaction:
+
+- **Tagging: the tag ends.** `Tag_End` (`0x0022e848`) runs for a tagger (or a human whose `+0x36c` still holds the
+  tag's particle system), scoring an unfinished tag ([Crimes](crimes.md#tagging)). The ordinary reaction by hit code
+  follows.
+- **The stereo: the theft fails.** A human in a mini-game goes to `HitReact_InMiniGame` (`0x00268c50`):
+  `MiniGame_Abort` (`0x0022d628`) → `StereoTheft_End(h, 0)` (`0x0022e020`) with no reward. It clears the mode, the
+  meter, the stage and angle, and the context record's occupant (so the stereo can be tried again), closes the HUD and
+  restores the camera. Then, whatever the hit's strength, the thief plays **331** `ARREST_RELEASE_HIT_REACT` and his
+  stance loop, holding `0x2000`, with the push sphere off. Only lock picking (mode 2) gets the ordinary reaction
+  instead.
+- **Held by another: the hold breaks** (`HitReact_WhileGrabbed`, `0x002688d0`, for an attacker other than the
+  grabber; the grabber's own hits are the grab's). The pending damage is cleared after the health drop.
+    - Rear-held (`0x20`) and not holding `0x2000`: the grab ends and the victim plays 133, the grabber 107
+      `GRAB_REAR_BREAK_REACT`.
+    - Front-held (`0x10`), not holding `0x2000`, without human flag `0x200`: the grab ends and the victim plays 137
+      `GRAB_FRONT_HIT_VICTIM_KNOCKDOWN`, the grabber 138.
+    - Otherwise the pair stays and plays a paired hit reaction (front 133, rear 123), except that a heavy or crushing
+      hit (hit-code strength ≥ 2) without held `0x2000` ends the grab and stuns the victim first.
+    - The grabber hit by a third human is `HitReact_WhileGrabbing` (`0x00268ea8`) and loses 0.6 of his power.
 
 ### Reactions: stun, knockdown and getting up {#reactions}
 

@@ -437,6 +437,27 @@ reports go to stderr and the process ends at once; the `coney.error_dialogs_off`
 builds. In tests, check a container's size (`REQUIRE(!starts.empty())`) before reading `front()`, `back()` or an
 index, so a missing value fails one test cleanly instead of ending the whole run.
 
+### Mission playthrough tests {#playthrough-tests}
+
+Owner decision: a mission is tested by an **adaptive playthrough**, not by a frame-locked pad script. A driver written
+for the mission plays it through the pad, with analog sticks at realistic deflections, and decides each input from
+what is on screen: the objective marker, which callbacks are armed, where the NPCs stand. The test asserts that
+
+- every hint and help message fires, in the order the original showed them;
+- each objective is detected and completes;
+- scenes play in order;
+- the run reaches the next checkpoint.
+
+The reference order comes from an analyst's recording of the original, written on the research page. A mission
+checkpoint is not done until its playthrough test passes. Level 99's `CourseDriver`
+(`repo:tests/platform/disc_level99_course_test.cpp`) is the example.
+
+Why not a frame-locked script: it replays inputs by step number, so any change to the camera or the AI moves the
+characters a little, the recorded presses then land in the wrong place, and the test fails (or passes by luck) for
+reasons that have nothing to do with the mission. A driver that reads the state and steers toward the marker
+survives those changes, and a failure means the mission really cannot be finished. Like every disc test, it skips
+without a disc and prints only aggregates.
+
 ## Python {#python}
 
 `python/coney_tools` holds Coney-specific automation: the WAD extractor and name recovery, the PCSX2 bridge, and

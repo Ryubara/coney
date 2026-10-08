@@ -156,7 +156,7 @@ What stops a walker at a parked car is the **collision mesh**. Confirmed (runtim
 (`+0x40` = 0) and a mesh triangle with flags `0xf00d` (enabled, type bits 2 and 3, top value 15) and material 0. The
 car code has no collision-mesh call, so these triangles are inferred to be part of the level's static mesh at the
 car's place; bit 2 is the player-climbable bit ([Collision](collision.md#triangles)), which matches the climb onto a
-car ([Characters](characters.md#climb)).
+car ([Characters](characters.md#climb)). The shells themselves are on [Characters](characters.md#car-shells).
 
 The create functions take the first free body of a pool (owner 0), set the owner (`0x00341a68`) and flags, and add it to
 the body vector and the sorted list (`IPhysics_AddBody` `0x00340668`); the free functions undo that

@@ -1588,6 +1588,12 @@ at runtime for Vermin (3.5 m/s up, 9.55 m/s across a 4.1 m gap); the rest is in
    otherwise it is **short** (the low hit is used; a hit by the high ray alone is not a climb).
 5. The hit must be **climbable**: material 30 (`MATERIAL_LOW_FENCE`), or triangle flag `0x4` for a player, or
    triangle flag `0x80` ([Collision](collision.md#triangles)).
+   Both probes are `WorldManager_RayCast`, the level's static mesh only, so a parked car is climbed through its
+   shell in that mesh (every triangle with flag `0x4`, material 0, never `0x80`, so **only players** climb cars;
+   [below](#car-shells)). On `level99_2`'s sedan shells the 0.69 m ray meets a side (`0xf00d` or
+   `0x700d`) and the 1.7 m one passes the 1.71 m roof or meets the sloped screen at another distance, so the car is
+   **short**. The down probe from 1.8 m finds the sill or bonnet at 1.18-1.30 m above the ground, inside 0.7-1.7 m: a
+   short wall climb (455 / 458). Inferred from the code and the disc's mesh; not run.
 6. `Climb_ProbeTop` (`0x00282370`) with, for a tall obstacle, `H` = 3.0, a window of 1.7-2.91 m and the fence ids
    437 / 440; for a short one `H` = 1.8, a window of 0.7-1.7 m and the short-fence ids 443 / 446.
 
@@ -1656,6 +1662,23 @@ The vertical part of a climb is the single move at P2's start: the feet do not r
 
 **In an input script**: standing, `stick left 0 50` toward the obstacle and `tap triangle` within reach; from a run,
 `stick left 0 100` and `tap triangle` when the face is 4.5 m away or less.
+
+#### Parked cars are shells in the level mesh {#car-shells}
+
+Nothing builds collision triangles from a car: `Car_MakeBodies` (`0x00387d50`) gives a car one body with two boxes
+sized from its model's record (`0x0057e4c0` + model × `0x5f0`), and the only code that switches mesh triangles is the
+script's `ChangeCollision` (`0x00379c20` → `CollisionMesh_SetEnabledInVolume`). Confirmed (code). The level files
+carry the shells. `level99_2`'s mesh has three closed car-shaped boxes, the number of cars `SetupCars` spawns
+(`car_coupe`, `car_osedan`, `car_osedan01`), so they are inferred to be these cars. Two are 5.74 × 2.2 m, with the
+sill at 1.18-1.30 m, the roof at 1.71 m and sloped screens; one is 5.11 × 2.3 m with the roof at 1.67 m. All are
+material 0. Every triangle has bits 0, 2 and 3 (low bits `0x00d`) and a top value of 3-15: the long sides `0xf00d` /
+`0x700d`, the ends `0x400d` / `0x700d`, the roof and bonnet `0xc00d` / `0xd00d`. No triangle has bit 7 (`0x80`). Read
+from the disc. Across the disc's levels, 2,530 triangles with these low bits and material 0 sit in 19 levels. So a
+car's climbable surface is wherever the level put a shell, not where the car is: a car that `CreateCar` or `CarSpawn`
+places away from a shell, or one moved off its shell, has no mesh surface for a walker, a climb probe or a ray (rays
+and climbs test the level mesh only, `WorldManager_RayCast` `0x0040db88`). Bit 2 is the player-climbable bit
+([Collision](collision.md#triangles), and what stops a walker at a car is on [Physics](physics.md#layers)); the climb
+itself is above.
 
 ### The spinning icon {#spinning-icon}
 

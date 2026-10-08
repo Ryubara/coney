@@ -563,6 +563,55 @@ The smoke scenarios reproduce claims of the research pages: `walk60` (the walk s
 (level99 checkpoint 3 with `--start`), and `combat_cross` (`X1` then `XX2` at a puppet civilian 1.5 m away, slot 6, which
 walks in to 1.36 m; on Coney the fight yard's `cross` spawn, a still target 1.05 m away that X1 steers onto alike).
 
+## Lessons learned {#lessons-learned}
+
+What past sessions taught, written so that it holds for any game. Multi-agent coordination, the shared machine and
+merging are in [How we work](how-we-work.md#shared-machine); the emulator's mechanics are in
+[Driving PCSX2](#driving-pcsx2).
+
+### Method
+
+- **Runtime beats reading.** When the code is ambiguous, run it: read or write the memory of the original while a
+  scripted scenario plays, and grade the result `confirmed (runtime)`. Say on the page which patch or input the claim
+  depends on.
+- **Drive every movement like a player would.** Give input as a gamepad with analog sticks, at realistic partial
+  deflections, and state the magnitude with every claim that depends on it ("stick 0.5, straight up"). A behaviour
+  found only at full deflection is usually not what the player meets.
+- **Input goes through the game's memory, never the window.** Writing pad state over the remote-memory interface (the
+  patches above) is exact, repeatable and leaves the owner's keyboard and focus alone. Use posted window messages only
+  for the rare hotkey, and never move focus.
+- **One sample per update.** Compare games by the update, not by wall-clock time: count the game's own ticks, record
+  one row per update, and apply scripted input as each update is seen. Rows labelled by the poll rather than the
+  update are off by one, which looks like a behaviour difference and is not.
+- **Test your instruments.** A recorder, hook or diff tool is code too. Pin its labelling with a test that drives a
+  fake game (the hook recorder once labelled every entry one update early until a test with two-message updates
+  exposed it), and say in the guide how recordings made before a fix are wrong. When a result is off by a fixed
+  amount, suspect the tool before the code.
+- **Compare, then localise.** Run the same scenario on both games and diff the traces; the first differing column and
+  step says where to read. A difference goes back as a question or a fix, never as a page edit that hides it.
+- **Trace the cause, not the symptom.** A stuck character, a missing effect or a wrong value usually comes from a
+  state that is never reset or a handler that never fires; follow who writes the value and who clears it. Write down
+  what you ruled out, in one line, so nobody repeats it.
+- **Find a second source for the same function.** Another build of the game (named library calls, inline strings) can
+  read faster; cite evidence only at the primary executable's addresses.
+- **Ask the data.** Tables, lists and counts can be read from the disc by tool and printed as counts and hashes;
+  that is evidence anyone can rerun, and it puts no game data in the repository.
+
+### Conduct
+
+- **Claim before use, release after.** Anything shared and scarce (an emulator copy, a lock) has one user at a time:
+  claim it with the tool, release it when done, and close what you started.
+- **Keep the owner's slots read-only.** Quick-save slots, settings and files the owner made are never overwritten;
+  save your own states to files in scratch, and put patched words back before reusing a saved state.
+- **Add names, never undo them.** The shared Ghidra project is written by many analysts: rename and annotate freely,
+  but do not revert another analyst's names; a disagreement goes on the page as an open question.
+- **Do not guess in code.** A gap in a page becomes an open question on the page and a marked stand-in in code, never
+  a silent guess ([When a research page isn't enough](#when-a-research-page-isnt-enough)).
+- **Research is done when a reader can implement from it:** a name and plate comment in Ghidra, and a page that cites
+  the address with an evidence level and says what the function does ([The Understood measure](#understood)).
+- **Weak evidence stays labelled.** A screenshot is a source of measurements, not a claim; a claim quotes numbers, the
+  scenario that produced them and the build or state they came from.
+
 ## Writing up a finding
 
 A finding is done when someone else can use it without asking you. For each one:
