@@ -31,6 +31,27 @@ constexpr std::string_view kCratePiece = "dyn_wooddmg_a";
 constexpr float kCratePieceDrop = -0.604F;
 // **Coney's stand-in**: the crate piece's random turn in 0-pi is drawn in this many steps.
 constexpr int kAngleSteps = 1000;
+// The overhead_weapon models with their own break effects (docs/research/objects.md#trash-props).
+constexpr std::uint32_t kTrashCanModel = 0xfbf3e3aeU;
+constexpr std::uint32_t kBagsModel = 0x62502b03U;
+constexpr std::uint32_t kParkTrashModel = 0xb0c69542U;
+constexpr std::uint32_t kPaperStackModel = 0xfbd21393U;
+// The dented can and the park bin's piece, left at the prop's own pose.
+constexpr std::string_view kTrashCanPiece = "dyn_trashcan_b";
+constexpr std::string_view kParkTrashPiece = "dyn_parktrash_aa";
+// The "trash" set: 10 splinters, a burst at the prop and four litter pieces.
+constexpr int kTrashSplinters = 10;
+constexpr std::array<std::string_view, 4> kTrashBits{"dyn_trashbit_a", "dyn_trashbit_b", "dyn_trashbit_d",
+                                                     "dyn_trashbit_d"};
+constexpr float kTrashBitSpread = 0.43F;
+constexpr float kTrashBitRise = 0.83F;
+// The "cardboard" set's 8 debris pieces (Coney's stand-in: splinters), and the default set's 20 + 24 splinters.
+constexpr int kCardboardPieces = 8;
+constexpr int kDefaultSplinters = 44;
+// An overhead_weapon's dust rises 0.5 m above the hit point.
+constexpr float kOverheadDustRise = 0.5F;
+// A draw in [-1, 1] in this many steps each side.
+constexpr int kOffsetSteps = 1000;
 // The one model whose break sounds its material against tin (`TINBOX`).
 constexpr std::uint32_t kTinBreakModel = 0xe42da444U;
 constexpr std::uint8_t kTinMaterial = 23;
@@ -61,6 +82,11 @@ void playPair(ObjectWorld& world, std::uint8_t a, std::uint8_t b, anim::Vec3 at)
     if (world.services != nullptr) {
         world.services->playMaterialPair(a, b, at);
     }
+}
+
+// A draw in [-1, 1] from the game's random numbers.
+float randomSigned(GameRandom* random) {
+    return (static_cast<float>(randomBelow(random, (2 * kOffsetSteps) + 1)) / static_cast<float>(kOffsetSteps)) - 1.0F;
 }
 
 } // namespace
@@ -127,6 +153,7 @@ Props::Prop& Props::stateOf(double handle, const ObjectType& type) {
         prop.onePoint = prop.hits != -1 && prop.hitpoints == -1;
         prop.counter = static_cast<std::uint8_t>(prop.hitpoints);
     }
+    prop.overhead = type.className == kOverheadWeaponClass;
     return m_props.emplace(handle, prop).first->second;
 }
 
@@ -182,6 +209,47 @@ bool Props::masksHit(Prop& prop, const ObjectType& type, const ObjectHit& hit, c
     return true;
 }
 
+void Props::overheadBreak(Prop& prop, const ObjectType& type, const ObjectHit& hit, const PropPose& pose,
+                          ObjectWorld& world) {
+    // Broken whatever the hit: its counter 0, and it goes at its next update, the next tick.
+    prop.broken = true;
+    prop.counter = 0;
+    prop.removalIn = 1;
+    ObjectServices* services = world.services;
+    if (services == nullptr) {
+        return;
+    }
+    // Two dust bursts above the hit point, then the model's effects and pieces.
+    const anim::Vec3 dustAt{hit.point.x, hit.point.y, hit.point.z + kOverheadDustRise};
+    services->dust(dustAt, kDustRadius);
+    services->dust(dustAt, kSecondDustRadius);
+    const bool trash =
+        prop.modelHash == kTrashCanModel || prop.modelHash == kBagsModel || prop.modelHash == kParkTrashModel;
+    if (prop.modelHash == kTrashCanModel) {
+        static_cast<void>(services->spawnObject(kTrashCanPiece, pose.position, pose.rotation));
+    } else if (prop.modelHash == kParkTrashModel) {
+        static_cast<void>(services->spawnObject(kParkTrashPiece, pose.position, pose.rotation));
+    }
+    if (trash) {
+        services->splinters(hit.point, kTrashSplinters);
+        services->burst(pose.position);
+        // The litter pieces at random offsets turned by the prop's rotation.
+        const anim::Mat34 turn = anim::transform(pose.rotation, pose.position);
+        for (const std::string_view bit : kTrashBits) {
+            const float x = randomSigned(world.random) * kTrashBitSpread;
+            const float y = randomSigned(world.random) * kTrashBitSpread;
+            const float z = (randomSigned(world.random) + 1.0F) / 2.0F * kTrashBitRise;
+            static_cast<void>(
+                services->spawnObject(bit, anim::transformPoint(turn, anim::Vec3{x, y, z}), anim::Quat{}));
+        }
+    } else if (prop.modelHash == kPaperStackModel) {
+        services->splinters(hit.point, kCardboardPieces);
+    } else {
+        services->splinters(hit.point, kDefaultSplinters);
+    }
+    playPair(world, type.material, type.material, hit.point);
+}
+
 PropStrike Props::strike(double handle, const ObjectType& type, const ObjectHit& hit, const PropPose& pose,
                          ObjectWorld& world) {
     Prop& prop = stateOf(handle, type);
@@ -198,9 +266,12 @@ PropStrike Props::strike(double handle, const ObjectType& type, const ObjectHit&
     }
     if (prop.masks) {
         result.broke = masksHit(prop, type, hit, pose, world);
-        if (result.broke && world.services != nullptr) {
-            world.services->setBody(handle, false);
-        }
+    } else if (prop.overhead) {
+        overheadBreak(prop, type, hit, pose, world);
+        result.broke = true;
+    }
+    if (result.broke && world.services != nullptr) {
+        world.services->setBody(handle, false);
     }
     return result;
 }

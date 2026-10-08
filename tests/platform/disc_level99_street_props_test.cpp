@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Checks against the player's own disc that `level99`'s street props are solid: checkpoint 2 played as
+// Checks against the player's own disc that `level99`'s street props are solid and break: checkpoint 2 played as
 // `--play-level level99 --checkpoint 2` plays it, headless, its scene skipped; player 1 is put south of a
 // `dyn_trashcan` and walks north into it with the left stick at 60 %, and his walking body slides along the can's
-// `BLOCKHUMANS` box instead of passing through it (docs/research/physics.md#bodies, #layers). It runs only when the
+// `BLOCKHUMANS` box instead of passing through it (docs/research/physics.md#bodies, #layers). Then square breaks the
+// can, and a sprint into garbage bags breaks them (docs/research/objects.md#trash-props). It runs only when the
 // environment variable CONEY_DISC names the disc and skips otherwise; it prints counts and positions only (LEGAL.md).
 #include <algorithm>
 #include <array>
@@ -12,6 +13,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <expected>
+#include <format>
 #include <memory>
 #include <optional>
 #include <string>
@@ -68,7 +70,8 @@ std::optional<coney::io::Wad> openDisc() {
 
 } // namespace
 
-TEST_CASE("the disc's level99 street: a trash can stops player 1 walking into it", "[disc][story][objects]") {
+TEST_CASE("the disc's level99 street: a trash can stops a walker; square and a sprint break the trash",
+          "[disc][story][objects]") {
     std::optional<coney::io::Wad> wad = openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -123,8 +126,11 @@ TEST_CASE("the disc's level99 street: a trash can stops player 1 walking into it
                                                             coney::scenes::SceneSystem::ScriptCall{});
     });
 
-    // The checkpoint's scene skipped (START, then cross on the skip prompt); then the left stick at 60 % up for 3 s.
-    auto input = coney::parseInputScript("300 tap start\n310 tap cross\n520 stick left 0 60\n610 stick left 0 0\n");
+    // The checkpoint's scene skipped (START, then cross on the skip prompt); then the left stick at 60 % up for 3 s;
+    // square at the can; then L2 and the stick full up for 1.5 s, a sprint.
+    auto input = coney::parseInputScript("300 tap start\n310 tap cross\n520 stick left 0 60\n610 stick left 0 0\n"
+                                         "660 tap square\n"
+                                         "760 press l2\n760 stick left 0 100\n850 release l2\n850 stick left 0 0\n");
     REQUIRE(input.has_value());
     coney::ScriptedInput pad(std::move(*input));
     coney::GameModeStack stack;
@@ -177,4 +183,64 @@ TEST_CASE("the disc's level99 street: a trash can stops player 1 walking into it
     // He reached the can (his sphere within its reach) but never went into it.
     CHECK(nearest < 1.0F);
     CHECK(deepest < 0.05F);
+
+    // The trash props whose breaks the log has: each "objects: <type> <handle> hit, broke" line.
+    const auto breaks = [&log](std::string_view name) {
+        std::vector<double> handles;
+        const std::string head = std::format("objects: {} ", name);
+        for (const std::string& line : log) {
+            if (line.starts_with(head) && line.find(" hit, broke") != std::string::npos) {
+                handles.push_back(std::stod(line.substr(head.size())));
+            }
+        }
+        return handles;
+    };
+    const auto count = [&scripts](std::string_view name) {
+        return std::ranges::count_if(scripts.spawnRecords().all(), [name](const coney::world_objects::SpawnRecord& r) {
+            return r.typeName == name && !r.removed;
+        });
+    };
+    // Square by the can breaks the trash prop it picks (the can, or bags beside it) on the strike
+    // (docs/research/objects.md#trash-props): it is gone, and a can leaves its dented can.
+    const std::ptrdiff_t dentedBefore = count("dyn_trashcan_b");
+    stack.runUntilEmpty(timer, {}, 700 - 640);
+    const std::vector<double> cans = breaks("dyn_trashcan");
+    const std::vector<double> squareBags = breaks("dyn_gbags");
+    std::printf("  level99 street: square by the can: %zu cans and %zu bags broken, dented cans %td\n", cans.size(),
+                squareBags.size(), count("dyn_trashcan_b") - dentedBefore);
+    REQUIRE(cans.size() + squareBags.size() == 1);
+    const double struck = cans.empty() ? squareBags.front() : cans.front();
+    const coney::world_objects::SpawnRecord* struckRecord = scripts.spawnRecords().find(struck);
+    REQUIRE(struckRecord != nullptr);
+    CHECK(struckRecord->removed);
+    CHECK(count("dyn_trashcan_b") == dentedBefore + static_cast<std::ptrdiff_t>(cans.size()));
+
+    // The garbage bags the runtime sprint broke, at (57.39, 13.72) (docs/research/objects.md#trash-props), and player 1
+    // put 5 m south of them, on his own street height, facing north: his sprint into them strikes them (their
+    // RUNTARGET layer) and they break.
+    const coney::world_objects::SpawnRecord* bags = nullptr;
+    float closest = 0.5F;
+    for (const coney::world_objects::SpawnRecord& record : scripts.spawnRecords().all()) {
+        const float away = std::hypot(record.position[0] - 57.39F, record.position[1] - 13.72F);
+        if (record.typeName == "dyn_gbags" && !record.removed && away < closest) {
+            closest = away;
+            bags = &record;
+        }
+    }
+    REQUIRE(bags != nullptr);
+    const double bagsHandle = bags->handle;
+    const float street = play->player().human().position().z;
+    // Put there twice: the first brings the place's sectors in (the camera follows him), the second stands him on
+    // their ground before the sprint.
+    const coney::debug::Place start{
+        .name = "bags", .feet = {bags->position[0], bags->position[1] - 5.0F, street}, .headingDegrees = 0.0F};
+    play->teleport(start);
+    stack.runUntilEmpty(timer, {}, 740 - 700);
+    play->teleport(start);
+    stack.runUntilEmpty(timer, {}, 900 - 740);
+    const std::vector<double> run = breaks("dyn_gbags");
+    const bool sprintBroke = std::ranges::find(run, bagsHandle) != run.end();
+    std::printf("  level99 street: sprint into the bags: broken %d\n", sprintBroke ? 1 : 0);
+    CHECK(sprintBroke);
+    CHECK(scripts.scripts().errors() == 0);
 }

@@ -12,6 +12,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <vector>
 
 #include "ai/ai_config.h"
@@ -57,6 +58,7 @@
 #include "world_objects/object_bodies.h"
 #include "world_objects/object_list.h"
 #include "world_objects/object_tasks.h"
+#include "world_objects/pickups.h"
 
 namespace rw {
 struct Texture;
@@ -414,6 +416,12 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // whose offer is within ai::kDealReach in plan and whose feet are within the prompt height of the human's waist
     // deals. Returns whether one took the press.
     bool tryDeal(human::Human& human);
+    // Player 1's triangle beside a Warrior whose swap prompt is up (docs/research/ai.md#warrior-swap): the Warriors
+    // ahead within 1.5 m are asked nearest first; the first that does not refuse turns to him over 0.2 s and the two
+    // swap what they hold at once, and player 1 says `give_me` when he now holds something. Returns whether one took
+    // the press. **Coney's stand-in**: the two-player swap is not built.
+    // @orig 0x00306040 WarriorBrain_OnPrompt (unknown)
+    bool trySwap(human::Human& human, const world_objects::SightBlocked& blocked);
     // Player 1's flash (command 0x28, d-pad right, docs/research/combat.md#rage): with a flash carried and health
     // below its maximum, a pair he is in is broken, the flash spent and his health filled, and 665 SPECIAL_FLASH plays
     // when nothing blocks a move. **Coney's stand-ins**: the flash is spent on the press, not on the clip's event; its
@@ -426,7 +434,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // The type of the world object `handle` (a spawn record) when its body makes it a strike target; null otherwise.
     [[nodiscard]] const world_objects::ObjectType* worldObjectType(double handle) const;
     // The bodies of the world objects in the world this step (their types' CfgObj shapes at their poses), and the
-    // walking humans' slide along the BLOCKHUMANS ones (docs/research/physics.md#bodies).
+    // walking humans' slide along the BLOCKHUMANS ones (docs/research/physics.md#bodies). First the RUNTARGET bodies
+    // running humans met last step take their strike (Human_OnContact, docs/research/objects.md#trash-props).
     // @orig 0x00391d48 Obj_CreatePhysicsBody (unknown)
     void stepObjectBodies();
     // Player 1's pick-up that reached its clip's event this step: the object is taken.
@@ -632,7 +641,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     const world_objects::ObjectTypes* m_objectTypes = nullptr;
     world_objects::ObjectTasks m_objectTasks;
     effects::Triglints m_glints;
-    world_objects::ObjectBodies m_objectBodies;              // this step's world-object bodies
+    world_objects::ObjectBodies m_objectBodies; // this step's world-object bodies
+    // The RUNTARGET bodies running humans met last step: (the human's handle, his feet, the object), struck next step.
+    std::vector<std::tuple<double, anim::Vec3, double>> m_runContacts;
     world_objects::LooseObjects m_looseObjects;              // the dropped objects falling or settling
     combat::CombatRandom m_throwRandom{0x7417U};             // a thrown object's spin (a fixed seed)
     std::unique_ptr<world_objects::ObjectList> m_objectList; // before the models that read it

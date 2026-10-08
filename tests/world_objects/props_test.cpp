@@ -101,20 +101,63 @@ TEST_CASE("the bench takes three bare blows or one charge, each blow while intac
     }
 }
 
-TEST_CASE("a strike on a trash can counts only while its counter lasts", "[world_objects][props]") {
-    Fixture f;
-    ObjectType can;
-    can.name = "test_can";
-    can.className = "overhead_weapon";
-    can.hitpoints = 150;
-    can.value = 1;
-    CHECK(f.strike(can).intactBefore);
-    CHECK(f.props.counter(50.0) == std::uint8_t{0});
-    CHECK_FALSE(f.strike(can).intactBefore);
-    CHECK(f.services.damage.size() == 1);
-    // Not a dyn_masks prop: it never breaks or goes.
-    CHECK_FALSE(f.props.broken(50.0));
-    CHECK(f.services.bodies.empty());
+// An overhead_weapon type of model `modelHash`, material 31.
+ObjectType overheadType(std::uint32_t modelHash) {
+    ObjectType type;
+    type.name = "test_trash";
+    type.className = std::string(coney::world_objects::kOverheadWeaponClass);
+    type.hitpoints = 150;
+    type.value = 1;
+    type.material = 31;
+    type.modelHash = modelHash;
+    return type;
+}
+
+TEST_CASE("any strike breaks a trash prop at once: its pieces, dust and sound, gone the next tick",
+          "[world_objects][props]") {
+    // docs/research/objects.md#trash-props: OverheadWeapon_Break, whatever the hit, by model.
+    SECTION("the trash can: the dented can and four litter pieces") {
+        Fixture f;
+        const PropStrike struck = f.strike(overheadType(0xfbf3e3aeU));
+        CHECK(struck.intactBefore);
+        CHECK(struck.broke);
+        CHECK(f.props.broken(50.0));
+        CHECK(f.services.damage.size() == 1);
+        CHECK(f.services.spawned == std::vector<std::string>{"dyn_trashcan_b", "dyn_trashbit_a", "dyn_trashbit_b",
+                                                             "dyn_trashbit_d", "dyn_trashbit_d"});
+        CHECK(f.services.dusts == 2);
+        CHECK(f.services.splinterCount == 10);
+        CHECK(f.services.bursts == 1);
+        // The impact sound, then the break's material against itself; the body goes.
+        REQUIRE(f.services.pairs.size() == 2);
+        CHECK(f.services.pairs[1] == std::pair<std::uint8_t, std::uint8_t>{31, 31});
+        CHECK(f.services.bodies == std::vector<std::pair<double, bool>>{{50.0, false}});
+        // A later strike does nothing; it goes on the next tick.
+        CHECK_FALSE(f.strike(overheadType(0xfbf3e3aeU)).broke);
+        f.props.tick();
+        CHECK(f.props.takeRemoved() == std::vector<double>{50.0});
+    }
+    SECTION("the bags: the litter alone") {
+        Fixture f;
+        CHECK(f.strike(overheadType(0x62502b03U)).broke);
+        CHECK(f.services.spawned.size() == 4);
+        CHECK(f.services.spawned.front() == "dyn_trashbit_a");
+    }
+    SECTION("the park bin: its piece and the litter") {
+        Fixture f;
+        CHECK(f.strike(overheadType(0xb0c69542U)).broke);
+        REQUIRE(f.services.spawned.size() == 5);
+        CHECK(f.services.spawned.front() == "dyn_parktrash_aa");
+    }
+    SECTION("the paper stack: no pieces, its eight debris; another model: 44 splinters") {
+        Fixture f;
+        CHECK(f.strike(overheadType(0xfbd21393U)).broke);
+        CHECK(f.services.spawned.empty());
+        CHECK(f.services.splinterCount == 8);
+        Fixture g;
+        CHECK(g.strike(overheadType(0x1234U), HitKind::Charge).broke);
+        CHECK(g.services.splinterCount == 44);
+    }
 }
 
 TEST_CASE("a broken prop goes after its update interval", "[world_objects][props]") {

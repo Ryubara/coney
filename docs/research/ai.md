@@ -825,7 +825,7 @@ offender raises `+0x200`.
    one of them holding an object; this Warrior not sparring (`+0x2e5` clear), not blocked, standing (gait 0), in the
    player's gang (or `+0x121` set), with no attacker slots taken on him, and on the right side of the player
    (`Human_GetSideOf` = 0). The prompt string is `0xc` (both hold), `0xd` (he holds) or `0xe` (the player holds);
-   the swap itself is the event-0 prompt (`WarriorBrain_OnPrompt` `0x00306040`).
+   the swap itself is the event-0 prompt ([The weapon swap](#warrior-swap)).
 8. Timer `+0x2dc`: once past, cleared with byte `+0x2e4`.
 9. **Getting out of the way**, every 12 thinks, when he is out of the fight stance, not in shadow, not busy or
    blocked, standing, with no target, no attackers, and a top goal other than GetItem (`0x2c`) and PlaySpecialIdle
@@ -863,6 +863,69 @@ of the fight stance, not blocked, standing, one holding something, the other pla
 
 **Events** (`PlayerBrain_OnEvent` `0x00303e90`): **0** → `PlayerBrain_OnPrompt` (`0x00303468`); **`0xb`**, **`0xc`**,
 **`0x14`** dropped; others the shared handler (so the attack warning, `0x10`, reaches a player's brain too).
+
+#### The weapon swap {#warrior-swap}
+
+Triangle beside a Warrior (or, in two-player play, beside the other player) whose swap prompt is up
+([step 7](#think-warrior); [HUD: the talk prompt](hud.md#talk-prompt)) swaps what the two hold in their hands.
+Confirmed (code) at `0x0024d810`, `0x00306040`, `0x00303468`, `0x00233b08`, `0x0021c0a8`, `0x00101360` unless marked.
+
+**How the press gets there.** The swap has no context record: it comes from triangle's pick-up search
+([Crimes: triangle](crimes.md#triangle), step 5; `Human_PickUpSearch`, `0x0024d810`), which runs only while the
+presser has no pick target (human `+0x33c`). The search gathers world objects within 1.5 m and the humans ahead of him
+within 1.5 m (`Humans_FindAhead`), sorts them all by distance, nearest first, and sends each in turn message 0 with
+the presser as the subject; of the humans only brain types 0 (a player) and 3 (a Warrior) are asked. A human's
+message 0 reaches his brain as event 0: `WarriorBrain_OnPrompt` or `PlayerBrain_OnPrompt`, the brain's own human
+being the **receiver**. A handler that returns true ends the press; one that refuses (false) lets the search go on to
+the next candidate, so a refused swap can still pick up an object nearby or, with nothing to take and something in
+hand, **drop** the presser's object (inferred from the search's order; the refusal itself is silent).
+
+**A Warrior** (`WarriorBrain_OnPrompt`, `0x00306040`) refuses unless all hold:
+
+1. the receiver is talkable (his interface's "has a handler or `+0x1b2`", `0x0021d570`);
+2. neither of the two has his actions blocked (`HumanRecord_AreActionsBlocked`, `0x00228228`);
+3. neither has any of the held flags `0x5c0221f` (busy: attacks and reactions, [EngageEnemy](#engage-enemy));
+4. the way is clear: the receiver is not grabbed and a 0.2 m capsule swept from him to the presser hits nothing but
+   the presser (`Human_IsWayClearTo`, `0x0021c0a8`, collision mask `0x2803`).
+
+Then his actions are cleared, he **turns to face the presser over 0.2 s** (`Human_TurnToFacePoint`, `0x00221c20`),
+and the swap runs (below). The presser does not turn.
+
+**The other player** (`PlayerBrain_OnPrompt`, `0x00303468`) checks only 1 and 2 (no held flags, no clear way), clears
+the receiver's actions and **sets his rotation at once** to face the presser (the heading from his position to the
+presser's, written straight into his transform: no turn over time), then the same swap. What puts the prompt up
+between the players is [`PlayerBrain_Think`](#think-player) (two-player game state `+0x224` = 2, not co-op Rumble,
+the receiver not a war chief).
+
+**The swap** (`Human_SwapHeldObjects(receiver, presser)`, `0x00233b08`):
+
+1. Each side's held thing (human `+0x338`) counts only when it is a **world object**; a held human counts as nothing
+   and stays where it is. Nothing else changes hands: not the hat (`+0x364`), not the inventory (items, money, flashes,
+   [Player state](player-state.md)).
+2. Each side holding a world object **drops** it (`Human_DropHeld`, `0x00257f38`, [Objects: drop](objects.md#pickable)):
+   its
+   anim set is popped, it gets a physics body and a removal time.
+3. For each dropped object, the **other** human takes it: every task on his animation stack (`+0xd8`) gets slot
+   `+0xc8` with `0x10` (not traced), then the object is placed **straight into his hand** without a clip, as
+   `HuPlaceItemInHand` does ([Objects: scripted placement](objects.md#pickable)): `Human_PlaceObjectInHandByPickupClip`
+   (`0x0024c6d8`) picks
+   the **low** pick-up clip for the type's `pickup_anim` (`CfgObj` `+0x65`: 461 by default, 503 for 2, 481 for 3, 498
+   for 4, 463 for 5, 465 for 6, 549 for 7; the height is not tested), makes the object his pick target (`+0x33c`) and
+   reads the clip's **first type-9 event** without playing it (`Anim_SendPickupPlacement`, `0x00101360`), sending the
+   object message `0x1b` **take** at once with the event's bone and offset; the take puts it in his hand (`+0x338`)
+   and applies its anim set (message 3). When the placement succeeds the object's record is unpinned. Then his state
+   gets `0x20000000` (the anim state is rebuilt next update, so his idle and moves follow the new anim set) and the
+   object's removal time is cleared (`WorldObject_SetRespawnTimer(obj, 0)`).
+4. A **left-hand** or **hat** object (`pickup_anim` 5 or 6) has no type-9 event in its clip (463, 465), so it is not
+   attached: it stays dropped at the giver's feet (inferred from the placement path, as for `HuPlaceItemInHand`).
+
+So the exchange is **instant**: no clip plays on either side, and both objects change hands on the update of the
+press; when only one holds something it simply passes to the other. Any held world object can be swapped (bats,
+bottles, knives, pipes, two-handed objects; the prompt's own test is only "one of them holds something").
+
+**The line.** Afterwards, when the **presser** holds something and is not hidden in shadow (brain `+0x2d4` clear),
+he says speech command **146 `give_me`** (`Human_SayCommand(1.0, presser, 146, no callback, no interrupt, uncut,
+no target, duckable)`, [Speech](../references/speech.md#speech-command-146)). The handler then returns true.
 
 ### Starting a fight and choosing the target {#targets}
 
@@ -5165,8 +5228,13 @@ A think counts, keeps the tackle meter of a cop, a gang soldier or a Warrior, an
 prompt](#think-warrior) (`repo:src/ai/swap_prompt.h`): talkable (`ScriptState::talkable`) with `GSTRING.HUD` 0xc, 0xd
 or 0xe while a player of his gang within 1.5 m, below a jog, has him standing in front, nobody attacks him and one
 of the two holds an object (**Coney's reading**: the hand's object, `+0x338`); the blocked and held-flag tests, the
-sparring byte and `+0x121` are not modelled, nor the two-player swap or the swap itself (`WarriorBrain_OnPrompt`).
-The other steps are not built.
+sparring byte and `+0x121` are not modelled, nor the two-player prompt. The other steps are not built. **The swap**
+(`PlayLevelMode::trySwap`, `ai::swapHeldObjects`): player 1's triangle, after the dealers' offers, asks the Warriors
+ahead of him within 1.5 m nearest first; one that is talkable, not grabbed, with a clear line to him and both of them
+in the free combat mode (**Coney's stand-in** for the blocked and held-flag tests) clears his actions and turns to
+him over 0.2 s, and the two hands swap at once (a left-hand or hat object stays at its giver's feet); player 1 says
+146 `give_me` when he now holds something and is not hidden. **Coney's stand-ins**: the Warriors are asked before
+the objects' search rather than among them by distance; the two-player swap is not built.
 
 **Coney choices for moving.** The inside test counts an edge going down in y as +1 (the sign under which the route
 nodes lie in their polygons; the clockwise polygons then contain nothing). A polygon's A record takes the next nodes

@@ -19,6 +19,8 @@ namespace coney::world_objects {
 
 /// The class of the breakable street props.
 inline constexpr std::string_view kDynMasksClass = "dyn_masks";
+/// The class of the trash cans, bags and other props a player can pick up and throw, which any strike breaks.
+inline constexpr std::string_view kOverheadWeaponClass = "overhead_weapon";
 
 /// A collision body's flags from its type's word `+0x5e`: bit `0x1` gives `0x2`, `0x2` → `0x4`, `0x4` → `0x10`,
 /// `0x8` → `0x8`, `0x10` → `0x40`, `0x20` → `0x20`, `0x40` → `0x2000`, `0x80` → `0x10000`, `0x100` → `0x20000`, on top
@@ -62,7 +64,15 @@ struct PropStrike {
 /// the break (the original removes it at its next update, up to 20 ticks later). None of the riot props has a damaged
 /// model, so none is swapped.
 ///
-/// Research: docs/research/objects.md#breakable-props, docs/research/objects.md#riot-prop-breaks
+/// An `overhead_weapon` prop (a trash can, bags) breaks on any strike (`OverheadWeapon_Break`): its pieces by model,
+/// its dust and splinters, its material pair, and it goes the next tick. **Coney's stand-ins** there: the pieces rest
+/// where they are spawned and never fade; the bottle and the litter system's pieces, the brown splat, the splinters'
+/// colours, the quieter sound of a prop broken by running into it, the camera test and the path-polygon flag are left
+/// out; the cardboard set's 8 debris pieces are 8 splinters; and a litter piece's offset is each axis drawn in ±0.43,
+/// ±0.43 and 0-0.83 m (the research leaves the draw's use open).
+///
+/// Research: docs/research/objects.md#breakable-props, docs/research/objects.md#riot-prop-breaks,
+/// docs/research/objects.md#trash-props
 class Props {
   public:
     /// The ticks after a break until a broken prop goes: its update interval.
@@ -107,6 +117,7 @@ class Props {
         std::uint8_t secondCounter = 0; // +0x10e
         bool onePoint = false;          // +0x128: each hit takes one point
         bool masks = false;             // a dyn_masks prop, with the data below
+        bool overhead = false;          // an overhead_weapon prop: any strike breaks it
         int hitpoints = -1;             // its data +0x0c: -1 for none
         int hits = -1;                  // its data +0x10: -1 for none
         bool broken = false;            // its data +0x00
@@ -122,6 +133,10 @@ class Props {
     // @orig 0x003b7a88 DynMasks_OnHit (unknown)
     static bool masksHit(Prop& prop, const ObjectType& type, const ObjectHit& hit, const PropPose& pose,
                          ObjectWorld& world);
+    // An overhead_weapon prop's message 1: it breaks, whatever the hit.
+    // @orig 0x003ffe90 OverheadWeapon_Break (unknown)
+    static void overheadBreak(Prop& prop, const ObjectType& type, const ObjectHit& hit, const PropPose& pose,
+                              ObjectWorld& world);
 
     std::map<double, Prop> m_props;
     std::vector<double> m_removed;

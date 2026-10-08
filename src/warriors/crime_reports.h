@@ -144,6 +144,9 @@ class CrimeReports {
     static constexpr std::uint64_t kSecondWantedMs = 10'000;
     /// The wanted time left of gang `gang` as a fraction of 10 s (what the HUD draws); 0 when not wanted.
     [[nodiscard]] float wantedFraction(int gang, std::uint64_t nowMs) const;
+    /// The second timer's time left of gang `gang` as a fraction of 10 s (the radar frame's orange arcs); 0 when it
+    /// does not run.
+    [[nodiscard]] float secondWantedFraction(int gang, std::uint64_t nowMs) const;
     /// Player 1's last crime type (`+0x290`); crime::kNoCrime at start and once the wanted time ran out.
     [[nodiscard]] int lastCrime() const { return m_lastCrime; }
     /// The game time of a gang's last assault-like report (gang `+0x5f4`); nothing when none.

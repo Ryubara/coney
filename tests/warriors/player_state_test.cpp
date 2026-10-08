@@ -291,6 +291,9 @@ TEST_CASE("the second wanted timer runs 10 s on its own, forced or not", "[crime
     crimes.setSecondWanted(4, 1000);
     CHECK(crimes.secondWanted(4));
     CHECK_FALSE(crimes.wanted(4));
+    // The radar frame's orange arcs read the time left as a fraction of 10 s.
+    CHECK(crimes.secondWantedFraction(4, 6000) == 0.5F);
+    CHECK(crimes.secondWantedFraction(3, 6000) == 0.0F);
     crimes.setForced(true);
     crimes.update(services, 10999);
     CHECK(crimes.secondWanted(4));

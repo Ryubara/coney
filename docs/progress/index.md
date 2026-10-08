@@ -33,12 +33,12 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▍░░░░░░░░░░░░░░░░` | 17.1% of the game's own code (573,384 of 3,354,776 bytes, 2,106 functions) |
+| **Reimplemented** | `███▍░░░░░░░░░░░░░░░░` | 17.1% of the game's own code (573,384 of 3,354,776 bytes, 2,110 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,192 of 3,284,000 bytes; 11,423 of 11,425 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-853 reimplemented function(s) have no size yet and add no bytes.
+857 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -73,7 +73,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▋░░░░░░░░░░░░░` | 33.1% | 112 | 100,440 |
 | `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 12.0% | 90 | 195,624 |
 | `GUI` | `████▏░░░░░░░░░░░░░░░` | 20.7% | 246 | 497,416 |
-| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 780 | 1,096,672 |
+| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 783 | 1,096,672 |
 | `Maths (unnamed)` | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% | 9 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `▌░░░░░░░░░░░░░░░░░░░` | 2.5% | 8 | 79,032 |
@@ -81,7 +81,7 @@ at the top of the repository's `README.md`.
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 30 | 17,904 |
 | `Scripting` | `██████▏░░░░░░░░░░░░░` | 30.6% | 224 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `███▎░░░░░░░░░░░░░░░░` | 16.4% | 165 | 531,312 |
+| `TaskEngine` | `███▎░░░░░░░░░░░░░░░░` | 16.4% | 166 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 33 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 32 | 22,008 |
@@ -864,6 +864,7 @@ at the top of the repository's `README.md`.
 | `0x002217f0` | `Human_LaunchJump` | `Human` | not filled in |
 | `0x00221a00` | `Human_GetDynamicAnim` | `Human` | 156 |
 | `0x00221aa0` | `Human_SetAnimOverride` | `Human` | 332 |
+| `0x00221c20` | `Human_TurnToFacePoint` | `Human` | not filled in |
 | `0x002221e0` | `Human_CanWalkStraightTo` | `Human` | not filled in |
 | `0x00222288` | `Human_HasLineOfSight` | `Human` | not filled in |
 | `0x002223e8` | `Human_CanSeeHuman` | `Human` | not filled in |
@@ -917,6 +918,7 @@ at the top of the repository's `README.md`.
 | `0x00231198` | `AttackKind_ChainDelay` | `Human` | 1,016 |
 | `0x00231590` | `Attack_GetNextAttackDelay` | `Human` | 1,192 |
 | `0x002325e0` | `MiniGame_Abort` | `Human` | not filled in |
+| `0x00233b08` | `Human_SwapHeldObjects` | `Human` | not filled in |
 | `0x00233d60` | `Human_Create` | `Human` | 400 |
 | `0x00233ef0` | `Human_Delete` | `Human` | 112 |
 | `0x00234038` | `Human_SetNoTarget` | `Human` | 112 |
@@ -1559,6 +1561,7 @@ at the top of the repository's `README.md`.
 | `0x00303988` | `WarChief_AutoCommand` | `Human` | not filled in |
 | `0x00304fa8` | `GangBrain_OnEvent` | `Human` | not filled in |
 | `0x003052f0` | `WarriorBrain_Think` | `Human` | not filled in |
+| `0x00306040` | `WarriorBrain_OnPrompt` | `Human` | not filled in |
 | `0x003063b0` | `WarriorBrain_OnEvent` | `Human` | not filled in |
 | `0x00306690` | `Tactic_Start` | `Human` | 328 |
 | `0x003067d8` | `Tactic_Process` | `Human` | 120 |
@@ -2066,6 +2069,7 @@ at the top of the repository's `README.md`.
 | `0x003fd420` | `MeleeWeapon_Init` | `TaskEngine` | not filled in |
 | `0x003fe490` | `melee_weapon_HandleMessage` | `TaskEngine` | 552 |
 | `0x003fe6b8` | `MeleeWeapon_Detach` | `TaskEngine` | not filled in |
+| `0x003ffe90` | `OverheadWeapon_Break` | `TaskEngine` | not filled in |
 | `0x00404c48` | `DynMolotov_OnMessage` | `TaskEngine` | not filled in |
 | `0x00405600` | `DynMolotov_Update` | `TaskEngine` | not filled in |
 | `0x0040c868` | `Level_SetFogColour` | `World` | 160 |

@@ -493,8 +493,10 @@ class Human final : public Holdable {
     /// What a walking body slides along beyond the level's walls: the world objects' `BLOCKHUMANS` bodies
     /// (`Human_OnContact` slides along an object as along the level, docs/research/physics.md#contacts). Given the
     /// walking sphere's `centre`, `radius` and the update's `move`, the horizontal push out of the body it is deepest
-    /// in, or nothing. Humans::setObjectPush() gives it; null: nothing.
-    using ObjectPush = std::function<std::optional<anim::Vec3>(anim::Vec3 centre, float radius, anim::Vec3 move)>;
+    /// in, or nothing; `walker` is the human, whose gait decides what else the contact does (a sprinter strikes a
+    /// `RUNTARGET` body). Humans::setObjectPush() gives it; null: nothing.
+    using ObjectPush =
+        std::function<std::optional<anim::Vec3>(const Human& walker, anim::Vec3 centre, float radius, anim::Vec3 move)>;
     void setObjectPush(const ObjectPush* push) { m_objectPush = push; }
     /// The breakable objects square may strike from now on (the level's whole panes), given each step.
     void setObjectTargets(std::vector<ObjectTarget> objects) { m_objectTargets = std::move(objects); }
@@ -549,6 +551,10 @@ class Human final : public Holdable {
     /// The cuffed human's end: freed, 333 `ANIM_ARREST_RELEASE_END_REACT` paired to `freer` then his idle; still
     /// cuffed, back to 320.
     void endUncuffReact(const Human& freer, bool freed);
+    /// Turns to face `point` over `seconds` of updates, whatever plays (`Human_TurnToFacePoint`); the human stays where
+    /// he stands. A Warrior handed a swap turns to the presser this way.
+    /// @orig 0x00221c20 Human_TurnToFacePoint (unknown)
+    void turnToFace(anim::Vec3 point, float seconds);
     /// Starts a tag's spray clips (`Tag_StartSprayClips`): 334 `ANIM_TAGGING_INTRO`, then the loop 335, turning to face
     /// the tag at `point` over half of 334's length (`Human_TurnToFacePoint`); the human stays where he stands.
     /// Returns false when the intro clip is not loaded. docs/research/crimes.md#tag-callbacks
@@ -751,7 +757,7 @@ class Human final : public Holdable {
     // A turn to a point spread over a clip (the spray's intro, the uncuffing's 325): the clip, the updates left and
     // the turn each takes; it ends early when the clip is replaced.
     struct ClipTurn {
-        std::uint32_t clip = 0;
+        std::uint32_t clip = 0; // 0: not tied to a clip
         int updatesLeft = 0;
         float turnStep = 0.0F;
     };

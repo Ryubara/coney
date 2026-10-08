@@ -9,6 +9,7 @@
 #include <numbers>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -16,6 +17,7 @@
 #include "ai/brain.h"
 #include "ai/dealer_goal.h"
 #include "ai/goal.h"
+#include "ai/swap_prompt.h"
 #include "characters/anim_set.h"
 #include "characters/character_class.h"
 #include "combat/anim_ids.h"
@@ -223,6 +225,11 @@ void PlayLevelMode::bindPickups(LevelPickups* pickups) {
         if (!m_pickups->actionObject(feet).has_value() && tryDeal(human)) {
             return true;
         }
+        // A Warrior's swap, asked through the pick-up search (**Coney's stand-in**: before the objects, not by
+        // distance among them).
+        if (!m_pickups->actionObject(feet).has_value() && trySwap(human, blocked)) {
+            return true;
+        }
         const TriangleOutcome outcome = m_pickups->triangle(playerHandle(), feet, human::facing(human.heading()),
                                                             script.heldObject != world_objects::kNoObject, blocked);
         switch (outcome.result) {
@@ -343,6 +350,68 @@ PromptOffer PlayLevelMode::promptOffer() const {
     return offer;
 }
 
+bool PlayLevelMode::trySwap(human::Human& human, const world_objects::SightBlocked& blocked) {
+    if (m_ai == nullptr || m_pickups == nullptr) {
+        return false;
+    }
+    const anim::Vec3 feet = human.position();
+    const anim::Vec3 ahead = human::facing(human.heading());
+    // The Warriors ahead of him within 1.5 m, nearest first, each asked in turn (event 0); a refusal asks the next.
+    ai::Brains& brains = m_ai->brains();
+    std::vector<std::pair<float, ai::Brain*>> asked;
+    for (std::size_t i = 0; i < brains.size(); ++i) {
+        ai::Brain& brain = brains.at(i);
+        const anim::Vec3 at = brain.human().position();
+        const float dx = at.x - feet.x;
+        const float dy = at.y - feet.y;
+        const float distance = std::sqrt((dx * dx) + (dy * dy) + ((at.z - feet.z) * (at.z - feet.z)));
+        if (brain.type() == ai::BrainType::Warrior && &brain.human() != &human && distance <= ai::kSwapReach &&
+            (dx * ahead.x) + (dy * ahead.y) >= 0.0F) {
+            asked.emplace_back(distance, &brain);
+        }
+    }
+    std::ranges::sort(asked, {}, &std::pair<float, ai::Brain*>::first);
+    for (const auto& [distance, brain] : asked) {
+        human::Human& receiver = brain->human();
+        // WarriorBrain_OnPrompt's refusals: not talkable; either busy (**Coney's stand-in** for the blocked actions
+        // and the held flags: out of the free combat mode); the receiver grabbed or the way to the presser blocked.
+        const anim::Vec3 from = receiver.position();
+        constexpr float kChest = 1.0F;
+        if (!receiver.script().talkable || human.fighter().combat().mode() != combat::CombatMode::Free ||
+            receiver.fighter().combat().mode() != combat::CombatMode::Free || receiver.fighter().grabbed() ||
+            blocked(anim::Vec3{from.x, from.y, from.z + kChest}, anim::Vec3{feet.x, feet.y, feet.z + kChest})) {
+            continue;
+        }
+        // He stops what he does and turns to the presser over 0.2 s; the presser does not turn.
+        brain->clearActions();
+        constexpr float kTurnSeconds = 0.2F;
+        receiver.turnToFace(feet, kTurnSeconds);
+        // The swap, at once: what cannot go into a hand stays at its giver's feet.
+        const double presserHad = human.script().heldObject;
+        const ai::SwapOutcome outcome =
+            ai::swapHeldObjects(receiver.script(), human.script(), [this](std::string_view typeName) {
+                const world_objects::ObjectType* type =
+                    m_objectTypes != nullptr ? m_objectTypes->find(typeName) : nullptr;
+                return type == nullptr || ai::swapPlaceable(type->pickupAnim);
+            });
+        for (const double object : outcome.dropped) {
+            m_pickups->drop(object, object == presserHad ? feet : from);
+        }
+        // Player 1's hand changed by the swap, not by a drop: stepPickups() must not drop the old object.
+        m_heldObject = human.script().heldObject;
+        receiver.fighter().setAnimSet(m_pickups->animSetOf(receiver.script().heldObjectName));
+        // His line when he now holds something and is not hidden in shadow.
+        if (human.script().heldObject != world_objects::kNoObject && !human.hidden() && m_sound != nullptr) {
+            static_cast<void>(m_sound->sayCommand(
+                script::CommandCall{.human = playerHandle(), .command = ai::kGiveMeCommand, .interrupt = false}, {}));
+        }
+        m_print(std::format("swap: with human {:.0f}, player 1 now holds {:.0f}, he holds {:.0f}\n", brain->handle(),
+                            human.script().heldObject, receiver.script().heldObject));
+        return true;
+    }
+    return false;
+}
+
 bool PlayLevelMode::tryDeal(human::Human& human) {
     if (m_ai == nullptr || m_pickups == nullptr) {
         return false;
@@ -430,12 +499,25 @@ const world_objects::ObjectType* PlayLevelMode::worldObjectType(double handle) c
 void PlayLevelMode::stepObjectBodies() {
     m_objectBodies.clear();
     if (m_records == nullptr || m_objectTypes == nullptr) {
+        m_runContacts.clear();
         return;
     }
-    // Each object in the world and not in a hand or on a head whose type has a body and a layer.
+    // A running human's contact with a RUNTARGET body strikes it, once (a plain hit at his walking sphere).
+    for (const auto& [attacker, feet, object] : std::exchange(m_runContacts, {})) {
+        const world_objects::SpawnRecord* record = m_records->find(object);
+        const world_objects::ObjectType* type = worldObjectType(object);
+        if (record != nullptr && type != nullptr && m_objects != nullptr && !m_objects->props.broken(object)) {
+            const world_objects::PropPose pose = recordPose(*record);
+            strikeProp(attacker, object, *type, world_objects::HitKind::Plain, feet,
+                       anim::normalise(anim::subtract(pose.position, feet)), feet, pose);
+        }
+    }
+    // Each object in the world and not in a hand or on a head whose type has a body and a layer; a broken prop has
+    // lost its body.
     for (const world_objects::SpawnRecord& record : m_records->all()) {
         if (record.removed || !m_objectTasks.inWorld(record.handle) || m_wornHats.contains(record.handle) ||
-            (m_pickups != nullptr && m_pickups->inHand(record.handle))) {
+            (m_pickups != nullptr && m_pickups->inHand(record.handle)) ||
+            (m_objects != nullptr && m_objects->props.broken(record.handle))) {
             continue;
         }
         const world_objects::ObjectType* type = m_objectTypes->find(record.typeName);
@@ -446,8 +528,18 @@ void PlayLevelMode::stepObjectBodies() {
             m_objectBodies.add(*body);
         }
     }
-    // A walking human slides along the `BLOCKHUMANS` ones.
-    m_player->humans().setObjectPush([this](anim::Vec3 centre, float radius, anim::Vec3 move) {
+    // A walking human slides along the `BLOCKHUMANS` ones; one above jog notes the `RUNTARGET` ones he meets.
+    m_player->humans().setObjectPush([this](const human::Human& walker, anim::Vec3 centre, float radius,
+                                            anim::Vec3 move) {
+        if (walker.gait() > human::Gait::Jog) {
+            for (const double object : m_objectBodies.touching(centre, radius, world_objects::kPhyRunTarget)) {
+                const double attacker = handleOf(walker);
+                if (std::ranges::none_of(m_runContacts,
+                                         [object](const auto& contact) { return std::get<2>(contact) == object; })) {
+                    m_runContacts.emplace_back(attacker, walker.position(), object);
+                }
+            }
+        }
         return m_objectBodies.pushOut(centre, radius, world_objects::kPhyBlockHumans, move);
     });
 }

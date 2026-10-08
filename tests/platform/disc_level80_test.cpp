@@ -317,9 +317,9 @@ TEST_CASE("the disc's level80: the cuffed Warriors offer the uncuff prompt and t
     CHECK(level.scripts->scripts().errors() == 0);
     std::printf("  level80 uncuff: %d freed, checkpoint %g\n", freed, level.checkPoint());
 
-    // The talk prompt: with an object in player 1's hand (a stand-in handle: the test gives him one) a freed Warrior
-    // in his gang, 1 m in front of him, offers the swap prompt, GSTRING.HUD 0xe, from his brain's think; with the hand
-    // empty again, nothing.
+    // The talk prompt and the swap: with an object in player 1's hand (a stand-in handle: the test gives him one) a
+    // freed Warrior in his gang, 1 m in front of him, offers the swap prompt, GSTRING.HUD 0xe, from his brain's think;
+    // triangle hands it over; with both hands empty, nothing.
     REQUIRE(level.gameplay->brains() != nullptr);
     // The test gives player 1 the object, so it writes to a brain gameplay owns.
     auto& brains = const_cast<coney::ai::Brains&>(*level.gameplay->brains());
@@ -350,7 +350,18 @@ TEST_CASE("the disc's level80: the cuffed Warriors offer the uncuff prompt and t
     facingHim();
     CHECK(warrior->human().script().talkable);
     CHECK(level.scripts->hud().actionPrompt(0) == level.scripts->context().strings->get(coney::ai::kSwapPlayerHolds));
-    player->human().script().heldObject = 0.0;
+    // Triangle swaps: the object passes to him at once, and his prompt becomes "he holds" (0xd).
+    level.pad.buttons = coney::pad::kTriangle;
+    level.run(1);
+    level.pad.buttons = 0;
+    level.run(1);
+    CHECK(level.logged("swap: with human"));
+    CHECK(warrior->human().script().heldObject == kHeld);
+    CHECK(player->human().script().heldObject == 0.0);
+    facingHim();
+    CHECK(level.scripts->hud().actionPrompt(0) == level.scripts->context().strings->get(coney::ai::kSwapWarriorHolds));
+    // With neither holding anything, nothing.
+    warrior->human().script().heldObject = 0.0;
     facingHim();
     CHECK_FALSE(warrior->human().script().talkable);
     CHECK(level.scripts->hud().actionPrompt(0).empty());

@@ -2080,7 +2080,8 @@ second record (`+0x90`); its x values are in the last column.
 - **Modes** (`MugMeter_SetMode`, from each state's update): 0 `Player_UpdateMugging` (mugging): bar 1 amber (128,
   100, 0), bar 2 red (170, 43, 43), arcs red, prompt `0x180`; 1 `0x00286550` (being mugged by the other player): the
   bar colours swapped, prompt `0x181`; 2 `0x002833c0` and 3 `Player_UpdateMugHold` (`0x00283a30`), the two sides of a
-  hold (`Player_UpdateHold` picks by state flag `0x8000000000`): as 0 and 1 with blue (35, 83, 188) for red. The
+  hold (`Player_UpdateHold` picks by state flag `0x8000000000`): as 0 and 1 with blue (35, 83, 188) for red; what
+  each game does and what its bars show is on [Combat: the other stick games](combat.md#other-stick-games). The
   prompt's texts are `GSTRING.HUD` entries `0x180` and `0x181` (not reproduced here).
 - The prompt is a `MessageHUD` (`MessageHUD_Setup(1.0, 1.0, …, font slot 3)`) whose alignment byte is never set
   (inferred: left, 0), so at x −0.01 it starts at the screen's left edge (inferred, not checked at run time).
@@ -2476,7 +2477,7 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   while his goal registers it, from the greeting on, within 1.75 m). A prompt naming the dealers' goods wakes the
   player panel. Last, a [talkable](#talk-prompt) Warrior or co-op partner within 1.5 m (`GameplayMode::talkPrompt()`)
   gives the swap string his brain's think set ([AI](ai.md#coney): `GSTRING.HUD` 0xc-0xe while one of the two holds
-  an object), else his own text (`ScriptState::talkText`), else HUD string 9; triangle does not swap yet. The action
+  an object), else his own text (`ScriptState::talkText`), else HUD string 9; triangle swaps ([AI](ai.md#coney)). The action
   object's
   second text
   (`SetMsgHandlerEx`'s `prompt2`)
@@ -2580,10 +2581,10 @@ object the locator cannot find is skipped, not freed. Tests: `repo:tests/hud/rad
 concentric with the disc, flat-coloured strips of 16 segments 54-57.6 pixels out (x 1.1 times), the blue wanted pair
 growing up both sides from the bottom by the fraction of 10 s left on his gang's wanted time (full above 0.9), eased
 5 % an update and snapping on a jump over 0.5, drawn above 0.03; the orange second pair outside it (or in its place)
-from the second timer. **Coney's placement**: the easing runs in the HUD's update, not its draw. Not yet: the second
-timer (`+0x5f0`, `GangRespond` and `GoalCallGang`), which Coney does not keep, so the orange pair never shows; the
-arcs show only once the crime reports know player 1's gang (`CrimeServices::playerOneGang`,
-[Crimes](crimes.md#coneys-implementation)). **The crime message** (`Hud::setWanted`): the crime report sends 7 and the
+from the second timer (`CrimeReports::secondWantedFraction`, started by a gang's call for help). **Coney's
+placement**: the easing runs in the HUD's update, not its draw. The arcs show only once the crime reports know player
+1's gang (`CrimeServices::playerOneGang`, [Crimes](crimes.md#coneys-implementation)). **The crime message**
+(`Hud::setWanted`): the crime report sends 7 and the
 wanted time's end `0xb`; 7-9 sound the alarm (interface cue 2) on the first show of a wanted spell and copy a crime
 text other than the one held into the centred announcement; any other message clears the flag and the held text,
 leaving the copy to its own display time. In play the level's crime services pass player 1's messages on with

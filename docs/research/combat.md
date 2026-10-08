@@ -435,12 +435,18 @@ opened; a press in recovery (update 19) was dropped; a press at update 24 starte
 anywhere from the hit to update 15 continues the combo.
 
 **Timing of the others** (confirmed (runtime), updates of 1/30 s from the clip's start; a cross attack starts on the
-release, command `0x10`; a buffered press plays when the window opens):
+release, command `0x10`; a buffered press plays when the window opens). The hits of 12-19 and 11-14 were measured again
+with the fixed recorder ([Recording a trace](../guides/research-workflow.md#hooks)), in slot 6 with PoizoCiv placed 0.95
+m ahead, facing the player, and then left free (he walks in). Each hit is the update whose sample first shows the
+damage. The values held, except `X1`, which hit on update 8 in one run and 7 in two. Those three runs had the same input
+up to the hit, but the player's turn toward the target differed between them, so something outside the input varies. A
+target standing still further out is hit later (`X1` on 10 from 1.0-1.6 m, [Where the attacker
+stands](combat-moves.md#reach)):
 
 | Id | Hit | Window `0x2` opens | End `0x4` | Idle again |
 | --- | --- | --- | --- | --- |
 | 12 `S1` | 2 | 6 | 15 | 20 |
-| 11 `X1` | 8 | 10 | 20 | 30 |
+| 11 `X1` | 8 (7 in two of three runs) | 10 | 20 | 30 |
 | 16 `SS2` | 4 | 6 | | |
 | 19 `SSS3` | 7 | | 16 | 26 |
 | 17 `SSX3` | 7 | | 24 | |
@@ -465,6 +471,45 @@ in hand the run attack is 501 and there is no walk attack, and with a thrown or 
 square pressed (`0x21`), plays 1 for about **2 s**. Confirmed (code) at `0x0027d800` / `0x0027d900`, confirmed
 (runtime). At a walk or standing the combination does nothing (the cross or square press under it is overwritten,
 inferred from the matching order).
+
+#### Where the charge and the dive aim {#charge-aim}
+
+The two differ. Confirmed (code) unless marked:
+
+- **The search** (`Attack_FindNearestInReach`, `0x0027b058`), used by both: it writes the aim heading (the
+  camera-turned stick's angle above 0.01, else the facing; `Player_GetAimHeading` `0x0021d1a0`) to record `+0xd4`,
+  sets the cone `0x0051096c` to 0.9425 rad (54° each side) and writes the clip's **reach** to record `+0xd8`, which
+  `Humans_FindInRange` (`0x00227598`) and `ObjectList_FindInRange` (`0x0039ab20`) use as a **minimum** distance. It
+  then takes the humans **between the reach and the far range** inside the cone that `TargetFilter_EnemyStanding`
+  (`0x00279568`) accepts; with none, the strikeable world objects in the same band, then the glass panes; the nearest
+  wins. There is **no any-angle or wide pass**, unlike `Player_PickTarget`. For Rembrandt the band is
+  **3.29-4.11 m** for the charge (id 0) and **2.22-3.00 m** for the dive (id 1) ([Frame data](combat-moves.md#frame-data)).
+- **The charge** (`Player_StartCharge(h, 0)`, `0x00264a80`) **neither steers nor sets a target.** It reads the current
+  target; for a human whose brain `+0x4` is 0 (the player; inferred) with none, it runs the search, and whichever human
+  it has is only warned (`Human_WarnOfAttack`, `0x0021d5c0`). The clip then runs straight along the facing. Its
+  record `+0x08` bit `0x1000000` does not make the human busy, so **the stick still turns the charger**: the
+  locomotion's turn runs while its velocity is zeroed ([Tasks](tasks.md#locomotion-gate)), and the clip's root motion
+  follows the new facing.
+- **The dive** (`Player_StartDive`, `0x00264878`) clears the sprint state `0x1000000`, and for the player always
+  searches afresh and **sets the result as the target** (`Human_SetTargetObject`, `0x00226cd0`; none found clears
+  it, unless a pad player is locked). With a target it steers with `Attack_SteerToTarget` (`0x002761c8`, kind 1)
+  over **0.1 s** (`0x3dcccccd`): turned and slid onto the standing point at the reach, in 3 updates. Its record
+  `+0x08` `0x400000` makes the human busy, so the stick does nothing for the rest of the dive.
+
+At runtime (confirmed (runtime), PCSX2 2.9.94, copies of slot 6; PoizoCiv, brain off, placed relative to Rembrandt on
+the update the press was read, after a run of 15 updates at stick 100 % with L2 held; square or cross at update 20):
+
+| Run | Target at the press | Result |
+| --- | --- | --- |
+| dive | 2.62 m, 31° right | target set; turned 34.8° in **3 updates** (11.6° each), speed 16.2, 14.5, 14.7 m/s against 11.7, 9.5, 9.6 without a target, distance 2.62 → 1.26 m in 3 updates |
+| dive | 2.60 m, 40° left | target set; turned 36.3° the other way in 3 updates, 2.60 → 1.40 m |
+| dive | 1.62 m at 32°, 2.64 m at 71°, or 3.40 m at 30° (inside the reach, outside the cone, beyond the far range) | no target, no turn: straight on |
+| dive, stick turned about 42° right from its 4th update | none | no turn from the stick |
+| charge | 3.70 m at 30° right, or 2.01 m at 31° | no target, no turn: straight past him at 7.45 m/s (closest 1.84 m) |
+| charge, stick turned about 42° right from its 4th update | none | the heading turned 1.4, 2.3, 2.9, 3.2, 3.3, 3.3, 3.2 … ° per update, easing off (38° in 15 updates), and the path followed the facing one update later |
+
+Every dive, with or without a target, also turned the body's heading by **+84.4°** over its updates k8 to k12 (16.9°
+per update) while the travel kept its line; why was not traced (inferred: the clip's own root rotation).
 
 **Square at a sprint** has no attack of its own: the moving attacks test the gait exactly (4 → 24, 1-3 → 23), so at
 gait 5 square falls through to the standing path (a fight stance and `S1`). Confirmed (code) at `0x00286cc8`; not
@@ -608,28 +653,29 @@ one sphere of 0.8 m; for an object with `0x20000` one sphere of half its smalles
   (code), `repo:python/src/coney_tools/recorder.py`). Its values here are corrected.
   So the **charge strikes with its whole body from its 4th update to its 16th**,
   about 13 × 0.25 m = 3.2 m of its 6.7 m; the run attack strikes only for 6 updates near its start.
-- **The fence (slot 10).** Rembrandt starts 4.8 m from `level99`'s wooden fence (centre line y −6.67) with the
-  stick at 100 % straight at it and L2 held; cross at gait 4 started the charge (clip 0, record `+0x08`
-  `0x1000000`). On its 10th update, his root 0.80 m from the fence's line, `Strike_Contact` came from the strike test
-  for the fence; the fence took the hit with 10 hitpoints and broke (kind 2: 16). The dive broke it the same way on
-  its 7th update, 1.05 m from the line (record `+0x08` `0x400000`). The walk attack 23, pressed while walking against
-  the fence, also broke it (its record `+0x08` holds `0x1000000` too, so kind 2). The run attack 24 did not: its
-  shapes were off 1.1 m short, and he ran into the fence and slid along it at 1.07 m/s.
+- **The fence (slot 10).** Rembrandt starts 4.8 m from `level99`'s wooden fence (centre line y −6.67) with the stick at
+  100 % straight at it and L2 held; cross at gait 4 started the charge (clip 0, record `+0x08` `0x1000000`). On its 11th
+  update (k10), his root 0.55 m from the fence's line, `Strike_Contact` came from the strike test for the fence; the
+  fence took the hit with 10 hitpoints and broke (kind 2: 16). The dive broke it the same way on its 8th update (k7),
+  0.74 m from the line (record `+0x08` `0x400000`). The walk attack 23, pressed while walking at the fence (stick 50 %),
+  also broke it on its 8th update (k7), 0.50 m from the line (its record `+0x08` holds `0x1000000` too, so kind 2). The
+  run attack 24 did not: its shapes were off 1.1 m short, and he ran into the fence and slid along it at 1.07 m/s.
 - **The strike does not end the charge.** The shapes stay on and the clip runs its 27 updates whether or not anything
-  was struck. What stopped him at the fence was the collision: 2 updates after the strike he stopped dead 0.42 m from
-  the fence's line, with no slide, and did not move again before the clip ended (11 updates later). Why, from the code:
-  the break turns the fence's level triangles off but leaves the hidden fence's **collision body** until the object is
-  removed on its next 60-tick update ([Barriers](objects.md#barriers); 11 updates after the hit in this run). The
-  charge's sweep meets that body (the move's mask holds `0x4` on the ground, `0x0033d498`), and `Human_OnContact`
-  (`0x00219d50`) answers a world object that is not a `powerup_item` with `0x20001`: the slide response of the sweep
-  (`0x0033d9d8`, type 1), which removes the part of the velocity going into the contact's normal (`0x0033d870`) from
-  both velocities the sweep is given (this step's and, inferred, the one kept). Head-on, as here, nothing is left, so he
-  stops dead; the run attack, which met the fence at an angle, kept its sideways part and slid. Inferred from the code
-  (the response types are confirmed (code); that the fence's body has `0x4` follows from the stop). Struck first in the
-  same contact (strike shapes on and the body flagged `0x20`), the fence is not let through: only a body without `0x4`
-  gets `0x20000` (ignored) after a strike, as a glass pane's box does. The last updates of the clip after the removal
-  were not compared with the clip's own root motion. In the open the same input ran the whole clip at 7.45 m/s and the
-  run (410) followed.
+  was struck. What stopped him at the fence was the collision: 1 update after the strike he stopped dead 0.42 m from the
+  fence's line, with no slide, and did not move again before the clip ended (15 updates later). The dive stopped 2
+  updates after its strike, also 0.42 m from the line. Why, from the code: the break turns the fence's level triangles
+  off but leaves the hidden fence's **collision body** until the object is removed on its next 60-tick update
+  ([Barriers](objects.md#barriers); 10 updates after the hit in the charge run, 11 in the dive's, 2 in the walk
+  attack's). The charge's sweep meets that body (the move's mask holds `0x4` on the ground, `0x0033d498`), and
+  `Human_OnContact` (`0x00219d50`) answers a world object that is not a `powerup_item` with `0x20001`: the slide
+  response of the sweep (`0x0033d9d8`, type 1), which removes the part of the velocity going into the contact's normal
+  (`0x0033d870`) from both velocities the sweep is given (this step's and, inferred, the one kept). Head-on, as here,
+  nothing is left, so he stops dead; the run attack, which met the fence at an angle, kept its sideways part and slid.
+  Inferred from the code (the response types are confirmed (code); that the fence's body has `0x4` follows from the
+  stop). Struck first in the same contact (strike shapes on and the body flagged `0x20`), the fence is not let through:
+  only a body without `0x4` gets `0x20000` (ignored) after a strike, as a glass pane's box does. The last updates of the
+  clip after the removal were not compared with the clip's own root motion. In the open the same input ran the whole
+  clip at 7.45 m/s and the run (410) followed.
 - **A knock-back is not airborne.** A knockdown reaction (`Human_PlayReaction`, `0x0026a6d0`) holds record `+0x08`
   `0x400000` (and `0x2000` for its follow-up clip 198) and never sets the object's airborne flag `0x4000000` (none of
   its callees does), so the flying human's sweep keeps the ground mask: a glass pane's box is met only through strike
@@ -645,26 +691,30 @@ one sphere of 0.8 m; for an object with `0x20000` one sphere of half its smalles
   are state-word and human-flag bits (inferred from a search of every `li`/`ori` of `0x800`; a value read from data
   was not ruled out). So it behaves as a dead "airborne" override.
 - **After the break** the script takes over ([Barriers](objects.md#barriers)): the fence's message 2 reaches
-  `P3.FenceBroken`, and 15 updates later the player stood at (18.5, −16.3), heading 178°, beyond the fence. From the
-  strike to that placement took 26 updates in the charge run, 33 in the walk-attack run.
+  `P3.FenceBroken`, and 15 updates later the player stood at (18.5, −16.3), heading 178°, beyond the fence. That is 15
+  updates after the removal in every run, so the time from the strike to the placement follows the removal: 25 updates
+  in the charge run (32 in an earlier walk-attack run), 26 in the dive run, 17 in the later walk-attack run.
 
 Confirmed (runtime), PCSX2 2.9.94, copies of slot 10, scenario
 [`charge_fence`](repo:research/traces/scenarios/charge_fence.toml) (hooks `strike-shape`, `strike-contact`,
-`barrier-hit` and `object-remove`); the open-ground run turned the stick to 100 % straight back.
+`barrier-hit` and `object-remove`); the open-ground run turned the stick to 100 % straight back. The update numbers come
+from runs recorded again on 2026-10-07 with the fixed recorder ([Recording a
+trace](../guides/research-workflow.md#hooks)); the dive (square for cross) and the walk attack (stick 50 %, cross at
+update 85) are variants of its input. The strike shapes went on and off on the updates the frame tables give (charge
+4-17, dive 2-24, walk attack 5-11, [Combat moves](combat-moves.md#frame-data)).
 
 **In Coney** ([`human/strike_shapes.h`](repo:src/human/strike_shapes.h)): the clip events switch the ten shapes, which
 are posed on the drawn skeleton every update, and each human's strike test runs after its move against the spine and
-head of the humans it fights and against the doors' enabled triangles and the panes' bodies. Every free attack hits
-a human this way, each shape tested along its move since the last update (from where it was posed the update
-before, none on its first update), as [where the attacker stands](combat-moves.md#reach) gives; the moves in a
-hold, and a body without shapes, still land at the measured hit update. The doors and panes are met where the
-shapes stand. A charge whose sweep loses
-more than half its move to a wall stops dead until its clip ends, and a broken barrier's triangles stand for its body
-until its removal. In Coney's play-through the charge strikes the fence on its 11th update, 1.06 m from the line, and
-stops 0.51 m from it 3 updates later; the original strikes on the 10th update at 0.80 m and stops 2 updates later at
-0.42 m. The AI does not charge a human yet (its attack pick takes only the square and cross strikes and the snap),
-so the charge against a human is untested in play. Not made yet: the level mesh's impact sound, a car struck by the
-shapes, and the weapon spheres of a held object.
+head of the humans it fights and against the doors' enabled triangles and the panes' bodies. Every free attack hits a
+human this way, each shape tested along its move since the last update (from where it was posed the update before, none
+on its first update), as [where the attacker stands](combat-moves.md#reach) gives; the moves in a hold, and a body
+without shapes, still land at the measured hit update. The doors and panes are met where the shapes stand. A charge
+whose sweep loses more than half its move to a wall stops dead until its clip ends, and a broken barrier's triangles
+stand for its body until its removal. In Coney's play-through the charge strikes the fence on its 11th update, 1.06 m
+from the line, and stops 0.51 m from it 3 updates later; the original also strikes on its 11th update, but at 0.55 m,
+and stops 1 update later at 0.42 m. The AI does not charge a human yet (its attack pick takes only the square and cross
+strikes and the snap), so the charge against a human is untested in play. Not made yet: the level mesh's impact sound, a
+car struck by the shapes, and the weapon spheres of a held object.
 
 ### When input and the stick come back {#input-return}
 
@@ -1078,7 +1128,9 @@ the holds and strikes and carried only the spins' and connects' root motion (78:
 
 **The tackle's mount** (confirmed (runtime), and from the disc's events): after the tackle (5 / 6 from the front,
 7 / 8) the pair is in 210 `MOUNTING_IDLE` / 207 `MOUNTED_IDLE` with the victim **0.032 m ahead and 0.120 m to the
-mounter's left**, its heading the mounter's + 180°. That is clip 210's type-8 pair event (−0.120, 0.032). The tackle
+mounter's left**, its heading the mounter's + 180°. That is the record's offset for 210 × its reach, which
+`Mount_OnStrikeEnd` puts the mounter at ([The mount](#mount)); clip 210's type-8 pair event holds the same point
+(−0.120, 0.032). The tackle
 clips' own pair events: 5 (0.021, 1.013), 7 (−0.092, 1.036), 212 (0, 1.203).
 
 ### The mount {#mount}
@@ -1095,9 +1147,48 @@ puppet civilian 1 m ahead, stick centred):
   `0x400` / `0x800` set), movement styles `0xc` / `0xb`, the victim's brain targets the grabber. The tackle's connect
   (`0x00270270`) and the grounded mount (`0x00271b30`) call it too.
 - Grabber 118 `GRAB_MOUNT`, victim 119 from the grabber's set (a paired type 6 task), both holding `+0x08` `0x2000`,
-  0.1 s blends. **118 lasts 65 updates (2.17 s)**; at its end `Grab_MountClipEnd` (`0x0026ef68`) puts the mounter at
-  clip 210's offset from the victim over 0.1 s (`0x00277248`), and the idles become 210 / 207 with the victim 0.10 m
-  away (0.12 m after a strike). A victim with human flag `0x20000` is got off at once (`0x00271470`).
+  0.1 s blends. **118 lasts 65 updates (2.17 s)**; at its end `Grab_MountClipEnd` (`0x0026ef68`) moves the **mounter**
+  to the victim over 0.1 s (`Human_AlignToVictimFacing`, `0x00277248`, below), and the idles become 210 / 207. A
+  victim with human flag `0x20000` is got off at once (`0x00271470`).
+
+**Where the pair goes in the mount** (the ground slam). Confirmed (code) and (runtime) as marked:
+
+- **During 118 / 119 nothing holds the pair together.** `Grab_StartMountFromFront` ends the grab (`Grab_End`, twice)
+  before linking the mount, and each clip is pushed on its own human's stack ([Paired
+  tasks](formats/animation.md#paired-tasks)), so each body moves by its own clip's root motion from where the front hold
+  left it. Confirmed (code); the paths below are confirmed (runtime).
+- **At 118's end the mounter is moved, never the victim** (`Human_AlignToVictimFacing(0.1, mounter, victim, 210,
+  0)`): the record's offset for id 210 (`AttackTable_GetOffset`: (−965, 259) thousandths, a unit vector in the
+  mounter's frame, x right, y forward) is turned by the **mounter's** rotation, scaled by 210's reach (0.124 m,
+  `AttackTable_GetReach`), and the standing point is the victim's position minus that vector; the turn
+  (`Human_TurnToOver`) is to the **victim's heading + 180°** and the slide (`Human_MoveToOver`), both over 0.1 s. So
+  the victim ends **0.120 m to the mounter's left and 0.032 m ahead** ((−0.965, 0.259) × 0.124 = (−0.1197, 0.0321)),
+  facing him. Confirmed (code); the values are Rembrandt's record.
+- **The same placement** follows the grounded mount (`Mount_StartOnGrounded`, `0x00271b30`, which first steers onto
+  the victim with `Attack_SteerToTarget` over 0.1 s) and the tackle's mount (`0x00270270`), through `Mount_OnStrikeEnd`
+  (`0x002700a8`): there the mounter instead gets off when the victim is more than 0.2 m above or below, farther than
+  max(reach + 0.34, reach × 1.2) or not in a clear line. Confirmed (code).
+
+At runtime (confirmed (runtime), PCSX2 2.9.94, a copy of slot 6, PoizoCiv 1 m ahead, circle at update 10 for the grab
+and at 60 for the mount, then square, square, cross and L2; positions in the grabber's frame when 118 started,
+x right, y forward; neither heading changed during 118 / 119):
+
+| Update of 118 | Mounter | Victim | Victim from the mounter |
+| --- | --- | --- | --- |
+| 0 | (0, 0) | (0.379, 1.012) | (0.379, 1.012), the front hold |
+| 8 | (0.288, 0.520) | (0.320, 1.263) | (0.031, 0.743) |
+| 16 | (0.601, 0.415) | (0.556, 0.954) | (−0.044, 0.539) |
+| 24 | (0.730, 0.369) | (0.542, 0.553) | (−0.188, 0.183) |
+| 32 | (0.653, −0.032) | (0.721, −0.495) | (0.068, −0.463) |
+| 36 | (0.597, −0.336) | (0.922, −0.928) | (0.324, −0.593): the victim is down and stays |
+| 48 | (0.717, −0.567) | (0.924, −0.936) | (0.207, −0.369) |
+| 64 (the last) | (1.050, −1.032) | (0.959, −1.052) | (−0.092, −0.020) |
+| 210, 3 updates on | (1.079, −1.084) | (0.959, −1.052) | **(−0.120, 0.032)** |
+
+So the slam throws the victim about 2 m back past the grabber, who follows on his own clip, and the pair ends 1.5 m
+from where the hold was. The 0.1 s slide moved only the mounter (0.06 m in 3 updates; the victim's position did not
+change by 0.001 m). The strikes 219, 221 and 223 and their returns to 210 moved neither body, and L2's 244 / 245
+moved only the mounter.
 
 **In the mount** (`Player_UpdateMounting`, `0x0027ec20`, state `0x400`), confirmed (code); confirmed (runtime) for
 square, cross, circle and L2, **the same after a tackle or a grab**:
@@ -1324,7 +1415,8 @@ pushed (and popped after) when the human lacks state `0x200000` or the set is 4 
 checked against an inventory count first (`0x0041e420`, `0x0041ded0`, not traced).
 
 At runtime (slot 1, a bat 1 m ahead): triangle started clip **461** with set 3, `Human_PickUpObject` ran 9 updates
-later and the hand held the bat the update after. Confirmed (runtime). `Human_PlaceItemInHand` (`0x00238540`,
+later, and the hand held the bat in that update's sample. Confirmed (runtime) (re-labelled one update later after the
+recorder fix, [Recording a trace](../guides/research-workflow.md#hooks)). `Human_PlaceItemInHand` (`0x00238540`,
 `HuPlaceItemInHand`) is the scripted way to arm a human; the pick-up does not use it.
 
 **In the hand.** The bat hangs from **pose bone 25, the right hand** (bone 19 is the left, which the left-hand pick-up
@@ -1392,8 +1484,9 @@ the walking throw (gait 2) into the standing one.
 
 So **with a bat at a run, square plays 501**, not 24 and not a slot: `Player_Square` tests the held set first and, for
 1, 2 or 3, takes its own branch, which has the run attack (constant `0x1f5`, through the same starter as 24,
-`0x00264a80`: record `+0x08` `0x1000000`, a 0.3 s blend, aimed at the current target or, for the player without one, the
-nearest in the clip's reach, `0x0027b058`) and then only the grounded strike (slot `0x13`, also on a tackled target), a
+`0x00264a80`: record `+0x08` `0x1000000`, a 0.3 s blend, no steer: it only warns the current target or, for the player
+without one, the nearest between the clip's reach and far range, `0x0027b058`, [where the charge
+aims](#charge-aim)) and then only the grounded strike (slot `0x13`, also on a tackled target), a
 [tandem](combat-moves.md#tandem) (`Tandem_Start`, `0x0026f860`), an object attack on a breakable with no human target
 (`0x00263eb8`, not traced) and the slot's swing. That branch has **no walk attack, no snaps, and no strike on a grabbed
 target** (the unarmed 120); a walking player swings from where he is. Cross's armed branch is the same with slot `0x11`
@@ -1455,8 +1548,10 @@ gate, and each new target angle (`0x002855f8`) is re-rolled, up to 64 times, unt
 
 **The stick game's states** (record `+0x128`, confirmed (code) at `0x002856b8`): 0 starts it (the first target angle,
 the speech, the hint) and goes to 4, waiting; in 4, the stick on target goes to 2, and every update off target adds
-to the **off-target time** (record `+0x138`), which is never reset, so `+0x0c` is the total time the player may spend
-off target before the mugging fails (5); in 2, each update on target adds to the progress (`+0x12c`), a new target
+to the **off-target time** (record `+0x138`) while the rumble value is 0 and resets it to 0 while it is non-zero
+but not the on-target value; with the usual off-target rumble of 0 (`+0x1c`) it is therefore never reset, and
+`+0x0c` is the total time the player may spend off target before the mugging fails (5); in 2, each update on target adds
+to the progress (`+0x12c`), a new target
 angle comes each time the progress passes a multiple of `+0x08`, the victim's lines come at half of `+0x04`, and
 reaching `+0x04` succeeds; leaving the target goes through 3 back to 4. "On target" is the stick above 0.5 and within
 `+0x10` of the angle; the pad's rumble gets byte `+0x02` on target and byte `+0x1c` otherwise (player record `+0x1c`,
@@ -1469,7 +1564,46 @@ arguments fill, in order: bytes `+0x00`, `+0x01`, `+0x02` (the on-target rumble)
 `+0x18` (not read by the update), `+0x1c` the off-target rumble. `level99_lesson1`'s mugging lesson passes
 (160, 75, 255, 5000, 2500, 20000, 40, 60, 20000, 0, set 0): **5 s on target, a new angle every 2.5 s of it, 20 s off
 target allowed, 40° of tolerance, each new angle at least 80° from the last**; it passes all zeros after the lesson,
-which gives the per-class defaults back. Confirmed (code); bytes `+0x00` and `+0x01` have no reader found here.
+which gives the per-class defaults back. Confirmed (code); bytes `+0x00` and `+0x01` are read only by the hold's games
+(below).
+
+#### The other stick games: mug meter modes 1-3 {#other-stick-games}
+
+Three more per-update state machines run the same stick game for the other player's side of a mugging and for both
+sides of the **cuffing hold** (the hold a tackle leads to, `Tackle_StartHold` `0x0022d030`, state `0x8000000000` for
+the holder and `0x10000000000` for the held; `Player_UpdateHold` picks the side). Each drives the mug meter in its
+own mode ([HUD: the mug meter](hud.md#mug-meter-layout)). Confirmed (code) at `0x00286550`, `0x002833c0`, `0x00283a30`.
+
+What they share with `Player_UpdateMugging` (mode 0, above): the record `+0xd4` of the human running the game (state
+`+0x128`, progress `+0x12c`, off-target time `+0x138`, start `+0x130`, time limit `+0x134`), the target angle (human
+`+0x5a8`, moved by `0x002855f8`), the frame time (`+0x5ac`), the states 0 → 4 ⇄ 2 (through 3) → 5, the new angle at
+every multiple of `+0x08` of progress, `HUD_MugMeterSet(1)` while on target, and nothing at all while a screen fade
+runs (`0x005fdeb8 + 0x1e8`; the frame time is just restamped). The other human is the one at `+0xc4`. The meter's
+**bar 1 is the opponent's progress** (the other player's `+0x12c` over his own required time) or, against an AI, the
+time since the start over the time allowed (`+0x134` − `+0x130`); **bar 2 is one's own progress** over one's own
+required time.
+
+**Rumble in the holds.** Modes 2 and 3 grade the stick: within `+0x10` of the target (and above 0.5) the on-target
+byte `+0x02`; within the coarser `+0x14` but not `+0x10` a value between bytes `+0x00` (at the edge of `+0x10`) and
+`+0x01` (at `+0x14`): `b1 + (b0 − b1) × (1 − d / tol14)`, with `d` the angle off; elsewhere `+0x1c`. Since that middle
+value is not 0, being **near** the target resets the off-target time in the holds. Modes 0 and 1 have no middle band.
+
+| | Mode 1: a player being mugged | Mode 2: the holder of the cuffing hold | Mode 3: the held player |
+| --- | --- | --- | --- |
+| Function | `Player_UpdateMuggedGame` `0x00286550` | `Player_UpdateCuffHold` `0x002833c0` | `Player_UpdateMugHold` `0x00283a30` |
+| Who runs it | the victim, a player, against his mugger (a player in two-player play) | the holder | the held human, a player |
+| Parameters | own: `Mug_GetPlayerVictimParams` (`0x002853a8`, sets 3-5 of `SetInterrogateParam`); the mugger's: `Mug_GetParams` (`0x00284ca0`) | own: `Hold_GetParams` (`0x00282b68`, by the held human's class and a Warrior's difficulty byte); a player held: his `Hold_GetParamsB` (`0x00283078`) | own: `Hold_GetParamsB`; the holder's: `Hold_GetParams` |
+| State 0 | clears the mugger's result `+0x5b4` and `+0x5b5`, first angle | first angle, own result and `+0x5b5` cleared | the holder's result and `+0x5b5` cleared, first angle, and he says 8 `swear` (interrupting) |
+| Reaching the required time `+0x04` | the mugger **fails** (his `+0x5b4` = 0): the victim has resisted | at each half of `+0x04` the game drops to state 1 (the stick must find the target again); at `+0x04` own result = 1: **cuffed** | the holder **fails** (his `+0x5b4` = 0): broken free |
+| Off target past `+0x0c` | the mugger **succeeds** (his `+0x5b4` = 1) | own result 0: fails | the holder **succeeds** (his `+0x5b4` = 1) |
+| Time limit `+0x134` (an AI opponent) | | past it, state 5 with the result as it is | past it, the holder succeeds |
+| Other | | **L2** (pad mask 1, newly pressed) lets go at once (state 5); `+0x5b5` follows whether the stick is on target | |
+| State 5 | rumble off; the mugging's end clips (`Mug_PlayEnd`, `0x00273110`, with the mugger's result); the mugger's `+0x5b6` = 0 | rumble off, own `+0x5b6` and `+0x5b5` = 0; the caller then cuffs or gets off | rumble off, the holder's `+0x5b6` = 0 |
+
+So a mugging between two players is a race between two games: the mugger's mode 0 succeeds at his own required time,
+the victim's mode 1 ends it in the victim's favour at the victim's required time, and a victim who stays off target
+too long hands the mugger the win. The hold is the same race between holder (mode 2) and held (mode 3). The modes'
+meter colours and prompts are on [HUD: the mug meter](hud.md#mug-meter-layout).
 
 ### Damage, health and reactions {#damage}
 
@@ -2089,6 +2223,24 @@ sprint ends it. A locked-on combat walk keeps `0x1` (it moves at the base speed,
 walk attack and goes to the snap or `S1`**, which is what level99's lesson 7 needs ([Attacks](#attacks)). At runtime L1
 held gave state `0xd` (confirmed (runtime), below).
 
+**L2 ends the stance and the target at once** (`Player_UpdateSprint`, `0x0027ce90`), confirmed (code): with L2 held
+(`PlayerRec_IsPadHeld(rec, 1)`), stamina (record `+0x14a`) above 0 and record `+0x08` free of `0x10`, it sets state
+`0x1000000`, clears `0x8008` and then calls `Human_DropTarget` (`0x00226f70`). That drop is refused only for a pad
+player who is locked, which `Human_IsLocked` reads as state `0x8` **and** `0x4`; `0x8` has just been cleared, so the
+drop always goes through, whatever L1 does. Then, with L2 held (with or without stamina), a player in the stance whose
+record `+0x08` is entirely clear drops the target again and leaves the stance and the lock-on movement state
+(`Player_ExitStanceAndLock`, `0x002801e8`: `0x5` cleared, control back to `0x00240e38`). The update runs whenever the
+dispatcher passes its busy gate (`0x5c7fee0`), so the target goes **during an attack's wind-up or window** too; only
+the stance bits and the lock-on movement wait for the clip's end, when `+0x08` clears.
+
+At runtime (confirmed (runtime), copies of slot 6, `X1` at PoizoCiv pinned 0.95 m ahead, then the stick 100 % straight
+back from update 20): with **L2 pressed at update 20**, the target went on the update L2 was read (21, `X1`'s
+wind-up), state `0x1000005`; on the first update after the clip (43) the movement state was the free one and the
+state word `0x1000000`, and Rembrandt turned to the stick at 22.5° per update and ran off (410 at 7.8 m/s by update
+50), never toward the target. **Without L2** he stayed locked (state `0x5`, `0x00241b90`) and walked backward facing
+the target (385, then 384, at 3.43 m/s) for 14 updates, until the target was dropped at 3.09 m (what dropped it there
+was not traced), then turned and ran. So a player who holds L2 after an attack never walks toward the old target.
+
 **Lock-on** is the fight stance's movement state `0x00241b90` (the normal one is `0x00240e38`), confirmed (code):
 the human is **locked** when it has a human or object target and either L1 is held (`CfgLockOn`), or `CfgAutoLock`,
 `CfgAutoLockAndCombat` (1 in the street) or auto-combat is on. Locked, it **turns to face the target every update**
@@ -2349,8 +2501,8 @@ panes at x 50.25-52.26, y 56.99, 3 `dyn_ringdmnd` in the next cabinet (x 48.16-5
   thrown into it (in a knockdown flight, `+0x08` `0x400000`, with a grab partner) by 5 × type `+0x58`.
 - **Breaking.** The square's hit breaks the struck pane only (`Glass_Break` from `Strike_Contact`, `0x0021b290`, the
   breaker the player; [a pane's life](objects.md#pane)); the cabinet's other panes stay whole and the items do not
-  move. At slot 4 one square broke the front pane centred at (51.26, 56.99, 1.59), 11 updates after the press.
-  Confirmed (runtime).
+  move. At slot 4 one square broke the front pane centred at (51.26, 56.99, 1.59), 12 updates after the press.
+  Confirmed (runtime) (re-labelled one update later after the recorder fix, [Recording a trace](../guides/research-workflow.md#hooks)).
 - **Triangle with nothing held** reaches the pick-up search `0x0024d810` ([Crimes: triangle](crimes.md#triangle), step
   5; `ContextAction_Use` ran with no context record each press). It gathers objects within **1.5 m** of the human (and
   of a second point, his position + human `+0x4e0`), and keeps one that is pickable (object flags `0x8000`), not the
@@ -2365,7 +2517,8 @@ panes at x 50.25-52.26, y 56.99, 3 `dyn_ringdmnd` in the next cabinet (x 48.16-5
   0.2 s blend, and hands `0x00275d10` the time to the clip's first event. Confirmed (code); that the item sends `0x14`,
   and that `0x00275d10` steers like `Attack_SteerToTarget` ([Target selection](#targets)), are inferred. At runtime 464
   ran 20 updates; the player turned 4.6° and moved up to 0.07 m per update for the first 5, and the clip's event
-  (message 3) ran `Human_PickUpObject` (`0x0023bf00`) on the 5th update.
+  (message 3) ran `Human_PickUpObject` (`0x0023bf00`) on the 6th update (re-labelled one update later after the recorder
+  fix, [Recording a trace](../guides/research-workflow.md#hooks)).
 - **The take.** `Human_PickUpObject`, for a `TYPE_SPECIAL` whose model hash is not one of the named mission items, adds
   item **10** (loot) ×1 with the notify flag, then money: the type's `CfgObj` argument 4 × the float at game state
   `+0x380` (1.0 here), without notify ($7 a watch, $10 a diamond ring, $8 a ring, $15 a necklace), and plays item 10's
@@ -2594,7 +2747,7 @@ alignment helpers and revives.
 | `0x0027a1e8` | `TargetFilter_ThrowObject` | The throw-target pick's object filter: within the angle and height, a world object that is a strike target. | confirmed (code) |
 | `0x0027a2f8` | `Human_FindTargetAlong` | A script message's target pick: humans within the vector's length and 54 degrees of its heading, through three filters, nearest first. | confirmed (code) |
 | `0x0027ad80` | `Player_PickThrowTarget` | Picks a throw target within the range (20 m for a melee throw): humans within 27 degrees, then objects and glass; sets record +0xd4 / +0xd8. | confirmed (code) |
-| `0x0027b058` | `Attack_FindNearestInReach` | The charge and dive's target: the nearest human within the clip's reach and 54 degrees, then objects and glass. | confirmed (code) |
+| `0x0027b058` | `Attack_FindNearestInReach` | The charge and dive's target: the nearest human between the clip's reach and far range within 54 degrees, then objects and glass ([where they aim](#charge-aim)). | confirmed (code) |
 | `0x0027b2a8` | `Player_FindLockTarget` | The L1 lock-on search: humans within 6 m and 63 degrees, then enemies within 4 m and 6 m, any angle within 4 m, near ahead, a car within 1 m, then 2.5 m passes; the first in a clear line. | confirmed (code) |
 | `0x0027b548` | `Player_LockOnTarget` | L1 pressed or held: makes the lock-on search's result the human or object target. | confirmed (code) |
 | `0x0027b5c0` | `PlayerCmd_IsAny` | This sample's command is not 0. | confirmed (code) |

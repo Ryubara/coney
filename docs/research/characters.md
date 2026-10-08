@@ -868,10 +868,11 @@ buffers, the run speed and the speed register `f28` as raw words:
   velocity, `0x0023fea8`'s vtable `+0x94`) jitters between `0x40f9a3aa` and `0x40f9a3ae`: of 93 updates at the run
   in one recording, 10 were at or above the run speed and 83 one to three units below it.
 - On every release seen the gait was 4, the previous stick 1.0 and the stick 0. Where the speed on the release update
-  was below (`0x40f9a3ab`, `0x40f9a3ac`, straight and circling alike, three recordings) no code 9 was set and the
-  idle 388 began on the next update at 0 m/s, holding `0x10000000` for 5 updates; where it was not (one circling
-  release), the state code went to 9 from `0x00241538`, the idle builder set it back to 0 (`0x0025fa2c`) and the
-  run stop 417 played for 24 updates with `0x80000`, at the speeds in the table above.
+  was below (`0x40f9a3ab`, `0x40f9a3ac`, straight and circling alike, three recordings) no code 9 was set and the idle
+  388 began on the release update itself at 0 m/s (the skid test's call re-labelled one update later after the recorder
+  fix, [Recording a trace](../guides/research-workflow.md#hooks)), holding `0x10000000` for 5 updates; where it was not
+  (one circling release), the state code went to 9 from `0x00241538`, the idle builder set it back to 0 (`0x0025fa2c`)
+  and the run stop 417 played for 24 updates with `0x80000`, at the speeds in the table above.
 - So **turning has nothing to do with it**: the circling run of `run_circle` (step 192) and a straight run both go
   either way. After a sprint (10.245 m/s) the speed is far above the run speed, so a sprint always ends in the run
   stop; a jog or walk (gait 3 or less) never does.
@@ -1371,7 +1372,8 @@ gait for that speed (`0x0022aeb0`) at `+0x1a8`. So `+0x1ac` (used by the lean) i
   ([Walls and steps](#walls)).
 - **Ground snap**, on the ground only (and not in game modes 8, `0xb` or `0x11`, `0x00221950`), `0x0023eab8`: cast
   a ray **straight down from 1.0 m above the feet, 1.5 m long** (the 1.0 is vtable `+0x5c`, `0x004ed818`, a constant).
-    - **Hit:** put the feet **exactly on the hit point** (no gap), remember it as the last ground position (`+0x390`
+    - **Hit:** put the feet **exactly on the hit point** (no gap), whatever the hit triangle's normal: the snap has
+      no floor test ([Slopes](#slopes)), remember it as the last ground position (`+0x390`
       before the snap, `+0x240` after), store the ground normal at `+0x230` (its `z` at `+0x238`, used by the slope
       rule) and the material at `+0x1d8`. The triangle's flag bits 4 and 5 are passed on (bit 4 to a per-player
       "under cover" state, `0x0028ef00`; bit 5 to `0x002195e0`; meanings inferred from what the callees touch).
@@ -1438,6 +1440,71 @@ settled near
 `0.8 k / (1 − k)` (`k` = sin 20°: 0.42 m/s measured, 0.416 predicted), until it fell under the idle threshold
 (a quarter of the sneak-walk speed, 0.396 m/s) and the idle played with the stick still pushed. A walk does the
 same. So the player brakes against a wall met at a steep angle instead of sliding along it at speed.
+
+#### Slopes between floor and wall {#slopes}
+
+A face too steep to be floor and not steep enough to be a sheer wall (`n.z` between 0.65 and about 0.5) is a **wall
+the body slides up**, not a wall that stops it. Confirmed (code) unless marked.
+
+**The thresholds.** Only two tests read a normal, and the ground snap reads none:
+
+| Test | Rule | Where |
+| --- | --- | --- |
+| The walking sweep's walls | `n.z` from −0.65 to **0.65**, the move going into the face, 0.25 m tall or more | `PhysicsMesh_SweepCapsule` `0x00347c08` (the −0.65 comes from `0x0033d2d8`), [above](#walls) |
+| An airborne body's landing | `n.z` > **0.65** | `0x0023e408` ([Falling and landing](#falling)) |
+| The ground snap | **none**: the feet go onto the first triangle the ray meets (mask 0) | `Human_SnapToGround` `0x0023eab8`; confirmed (runtime) below, walking at full speed down a face with `n.z` 0.54 |
+| The slope's speed | `n.z` < 0.95: × `clamp(0.6 + 0.3 × (n.z − 0.5), 0.5, 1.0)` | the move `0x0023d8c8` ([above](#ground)); confirmed (runtime) below |
+
+Nothing else changes them:
+
+- **The material.** `Human_OnContact` (`0x00219d50`) answers `0x20001` (slide) for every level triangle; its only
+  material rule is the climb's pass-through of 30, 31 and 122. `GRAVEL` (106) and the rest have no movement rule.
+- **The triangle's bits 14-15.** The sweep reads them as the edge of a corner slide; 3 names none, and the gravel
+  faces below hold 3.
+- **The route.** A leg of kind 1 is walked with no handler of its own ([AI: link kinds](ai.md#route-follow)). The
+  sweep, the contact handler and the snap read neither the brain nor its route, and an AI's body moves through the
+  same move as the player's. Only the sphere's radius differs (body `+0x60`, [above](#walls)).
+
+**How the sweep slides up such a face:**
+
+1. A wall face the sphere already touches, with the centre's projection inside the triangle, gives a contact at
+   **fraction 0** (`Sweep_SphereTriangle` `0x0034ee60`: the start distance to the plane is at most `r` and all three
+   edge tests pass, case 7). Nothing pushes a walking sphere out of a face it overlaps:
+   `PhysicsBody_PushOutOfWalls` runs only in the air (below).
+2. The contact carries the triangle's own unit normal, turned to the sphere for a two-sided one (contact `+0x50`,
+   copied in `0x00347c08`), with its `z`.
+3. The slide (`PhysicsBody_ResolveContacts` `0x0033d9d8`, code 1) removes from what is left of the move, and from
+   the velocity, the part that goes into that normal: `v −= (v · n) n` on x, y and z, only when `v · n` < 0
+   (`Vec_RemoveNormalPart` `0x0033d870`). The move then goes **along the face, rising**.
+4. On the next pass the slid move no longer goes into the face (`n · move` ≥ −0.001), so the face is skipped. There
+   are up to three passes.
+5. The velocity keeps the slid `z`, but the next update sets `v.z` to 0 before its sweep ([The move](#ground)). The
+   snap then puts the feet on whatever is under them.
+
+So walking at a face of `n.z` 0.53 at 20° off its normal, the move keeps its part along the face. The snap holds the
+feet on the floor triangle in front of the face, and the body climbs that floor along the face's foot until it rises
+past the face. The sphere sinks steadily into the face, and nothing corrects that. The body has **no step height of
+its own**: it relies on the 0.25 m wall rule and the snap's 1.0 m reach, [above](#walls).
+
+**At runtime** (confirmed (runtime), PCSX2 2.9.94, a copy of slot 1, 2026-10-08). The test used `level99`'s gravel
+heap, where the path data routes a kind-1 walk from (−271.7, 129.4, 0.3) up to the lesson-2 platform at (−277.7,
+132.0, 3.1). The faces on that line:
+
+- triangle **679**: `GRAVEL`, flags `0xc001`, `n` (0.736, −0.134, 0.664), a floor;
+- triangle **680**: `GRAVEL`, flags `0xf001`, `n` (0.849, −0.055, 0.526), a wall to the sweep: 1.77 m tall, its
+  steepest edge rising 1.77 m.
+
+Rembrandt was put at the walk's start facing its end. The stick was pushed straight up from update 60, and the camera
+put the move about 64° from north toward the west. Every run took the line onto 679 first:
+
+| Run | What happened |
+| --- | --- |
+| walk, stick 60 % | 1.63 m/s on the street. On 679 the walk was turned about 30° north along 680's foot, at 0.41 m/s across the ground and 0.29 m/s up: the feet followed 679's surface (ground normal 0.664 every update) while the slid velocity held `z` 0.36. The sphere's distance to 680 fell from 0.48 to 0.33 m (radius 0.485). After 3.5 s at z 1.44 the body passed 680 onto faces with `n.z` 0.77 at 1.107 m/s across the ground (1.63 × 0.6797, the slope rule), crested at z 2.01 and walked down the far side, including a face with `n.z` 0.54 at full walk, onto the street |
+| run, stick 100 % | the same: stopped for an update at 679's foot, then 0.55 m/s up 679 along 680, then a run at 7.80 m/s over the crest at z 2.28 |
+| walk, stick 60 %, body `+0x60` set to 1.0 (radius 0.34, an AI's size if its `+0x60` is 1.0) | the same path: up 679 along 680 (distance to 680 0.32 down to 0.20 m), over at z 2.36, down the other side |
+
+So a human on that leg does climb the heap in the original: by sliding along 680, not by walking up it. The lesson's
+walk reaching the platform itself was not run (the stick's line passed 1 m north of it).
 
 The push-out `PhysicsBody_PushOutOfWalls` (`0x003477c0`, a sphere out of the nearest wall by `n × (r − distance)`)
 is not the walking case: its only caller `Human_PushOutInAir` (`0x0021a490`) runs while the human is airborne

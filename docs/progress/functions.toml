@@ -4033,6 +4033,11 @@ subsystem = "Human"
 size = 332
 
 [[function]]
+address = 0x00221c20
+name = "Human_TurnToFacePoint"
+subsystem = "Human"
+
+[[function]]
 address = 0x002221e0
 name = "Human_CanWalkStraightTo"
 subsystem = "Human"
@@ -4308,6 +4313,11 @@ size = 1192
 [[function]]
 address = 0x002325e0
 name = "MiniGame_Abort"
+subsystem = "Human"
+
+[[function]]
+address = 0x00233b08
+name = "Human_SwapHeldObjects"
 subsystem = "Human"
 
 [[function]]
@@ -7809,6 +7819,11 @@ name = "WarriorBrain_Think"
 subsystem = "Human"
 
 [[function]]
+address = 0x00306040
+name = "WarriorBrain_OnPrompt"
+subsystem = "Human"
+
+[[function]]
 address = 0x003063b0
 name = "WarriorBrain_OnEvent"
 subsystem = "Human"
@@ -10644,6 +10659,11 @@ size = 552
 [[function]]
 address = 0x003fe6b8
 name = "MeleeWeapon_Detach"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x003ffe90
+name = "OverheadWeapon_Break"
 subsystem = "TaskEngine"
 
 [[function]]

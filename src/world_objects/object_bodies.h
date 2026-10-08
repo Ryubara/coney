@@ -17,11 +17,13 @@
 namespace coney::world_objects {
 
 /// `PHYFLAG` bits (`CfgObj` argument 12, type `+0x5e`): `BLOCKOBJECTS` (a flying object's sweep meets the body),
-/// `BLOCKHUMANS` (a walking human's), `MELEETARGET` (strikes), `THROWNWEAPONTARGET` (thrown weapons).
+/// `BLOCKHUMANS` (a walking human's), `MELEETARGET` (strikes), `THROWNWEAPONTARGET` (thrown weapons), `RUNTARGET` (a
+/// human above jog, whose contact strikes it).
 inline constexpr int kPhyBlockObjects = 1;
 inline constexpr int kPhyBlockHumans = 2;
 inline constexpr int kPhyMeleeTarget = 4;
 inline constexpr int kPhyThrownWeaponTarget = 256;
+inline constexpr int kPhyRunTarget = 512;
 
 /// One world object's body in the world's axes.
 struct ObjectBody {

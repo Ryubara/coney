@@ -53,12 +53,21 @@ knife and bottle kills and thrown melee weapons) and gives frame data for all of
 - **Updates** are game updates of 1/30 s, counted from the clip's first update (k = 0). A clip of *f* frames at
   playback rate *r* lasts ceil(*f* / *r*) updates. The rate comes from the Anim Range List record's flags: `0x800` →
   0.8, `0x1000` → 1.0, `0x2000` → 0.9, none → 0.75 ([Playback rate](formats/animation.md#playback-rate)).
-- **An event at frame *f*** (strike shape on or off, warnings, `use`) acts on the first update k with (k + 1) × *r* >
-  *f* − 0.5. This fits every measured "off" and 8 of the 11 measured "on" (the other three were one update early; an
-  exact tie can fall either way). Inferred from the runtime runs below and on [Combat](combat.md#moving-strikes).
+- **An event at frame *f*** (strike shape on or off, warnings, `use`, the held phases) acts on the first update k
+  whose cursor frame reaches *f*. The clip time on update k is the sum of k steps of dt × *r* (dt at `0x005102cc` is
+  `0x3d088889`, 0.033333335), and the frame is `uint(t × 30 + 0.5)` (`AnimCursor_Advance` `0x001044a0`; the time
+  is added in `AnimCursor_Step` `0x00104110`). `Anim_FireFrameEvents` (`0x00101dd8`) fires each event whose frame is
+  at most the cursor's. All of this is confirmed (code). In closed form, the event acts on the **first k with k ×
+  *r* ≥ *f* − 0.5**. The exception is an **exact tie** at rate 0.75 or 0.9 (k × *r* = *f* − 0.5: frames 5, 8, 11
+  and so on at 0.75, frames 5, 14, 23 and so on at 0.9), which acts **one update later**. Frame 2 at 0.75 (k = 2)
+  is the one tie that acts on time. The PS2 FPU rounds every add and multiply toward zero, so the summed time falls a
+  hair short of the tie; at k = 2 it is still exact. Rates 0.8 and 1.0 have no ties that fall short. The rounding
+  mode is inferred; with it the rule matches all 17 strike-shape windows measured after the recorder fix ([Runtime
+  results](#runtime)) and the held phases below. A reimplementation can get the same updates by summing the time in
+  `float` and rounding each step toward zero, or by using the closed form with the tie exception.
 - **The held phases** W (chain window `0x2`, event `0x2c`), E (end `0x4`, `0x2d`) and R (recovery `0x40000`, `0x48`)
-  show in record `+0x08` **one update after** that rule: `S1` 6 / 15 / 16, `X1` 10 / 20 / 21 and `XX2` 17 / 19
-  match the runtime timings on [Combat](combat.md#attacks). Confirmed (runtime) for those three.
+  show in record `+0x08` on the update that rule gives: `S1` 6 / 15 / 16, `X1` 10 / 20 / 21 and `XX2` 17 / 19 match
+  the runtime timings on [Combat](combat.md#attacks). Confirmed (runtime) for those three.
 - **Strike shapes**: event `0xf` turns a bone's shape on and `0x10` off; `0x13` / `0x14` turn on and off all ten
   shapes and the capsule ("all"). Bones: L/R forearm and hand (18/19, 24/25), shin and foot A (29/30) and B
   (32/33), spine 3, head 6 ([Combat](combat.md#moving-strikes)). Shown "on-off" in updates; a shape is live from the
@@ -100,21 +109,21 @@ are the exception: their damage is applied by the pair's own code, mostly on the
 
 | Id | Starts on | Strike shapes on-off | Contact (runtime) | Takes the next press | Window `0x2` (plays it) | End `0x4` | Recovery `0x40000` | Free again |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 12 `S1` | square pressed, the same update | L hand 0-9 | 2 (1 at 0.93 m, 5 from 1.45 m; one miss at 1.03 m) | 0-14 | 6-14 | 15 | 16-19 | 20 |
-| 16 `SS2` | the window of 12 | L forearm, L hand 1-6 | 4 | 0-18 | 6-18 | 19 | 20-24 | 25 |
-| 19 `SSS3` | the window of 16 | R hand 6-14 | 7 | none | - | 16 | 17-26 | 27 |
-| 20 `SSS3_HOLD` | the window of 16, instead of 19 at random ([Combat](combat.md#attacks)) | shin A, foot A 14-20 | | none | - | 24 | 25-31 | 32 |
-| 17 `SSX3` | the window of 16 | shin B, foot B 4-11 | 7 | none | - | 24 | 25-33 | 34 |
-| 11 `X1` | cross released 1-3 updates after the press, or its 4th held update | R hand 5-10 | 8 | 0-19 | 10-19 | 20 | 21-29 | 30 |
-| 15 `SX2` | the window of 12 | R hand 5-10 | 7 | none | - | 14 | 15-19 | 20 |
-| 14 `XS2` | the window of 11 | L hand 6-11 | 9 | none | - | 22 | 24-29 | 30 |
-| 13 `XX2` | the window of 11 | R forearm, R hand 8-13 | 10 | none | - | 17-18 | 19-29 | 30 |
-| 25 / 27 / 29 snaps | square, stick above 0.95 and more than 45° off the facing | forearm, hand 2-6 (29: 0-6) | 3 | none | - | 8 | | 16 |
-| 23 from a walk | square or cross, gait 1-3, stick 0.12 or more, no stance | L forearm, L hand 4-10 | | none | - | | | 24 |
-| 24 from a run | square or cross at gait 4 (cross also at a sprint) | R forearm, R hand 2-7 | | none | - | | | 22 |
-| 653 special | square newly down while cross is held | L hand, R hand 2-8 | 6-7 | none | - | | | 27 |
-| 193 / 194 | square / cross at a low target | foot B 10-12 / 10-16 | 11 / 14 | none | - | | | 27 / 32 |
-| 0 charge / 1 dive | L2 held + cross / square at a run | all 3-16 / all 2-23 | | none | - | | | 27 / 62 |
+| 12 `S1` | square pressed, the same update | L hand 1-10 | 2 (3 from 1.5 m) | 0-14 | 6-14 | 15 | 16-19 | 20 |
+| 16 `SS2` | the window of 12 | L forearm, L hand 2-7 | 4 | 0-18 | 6-18 | 19 | 20-24 | 25 |
+| 19 `SSS3` | the window of 16 | R hand 7-15 | 7 | none | - | 16 | 17-26 | 27 |
+| 20 `SSS3_HOLD` | the window of 16, instead of 19 at random ([Combat](combat.md#attacks)) | shin A, foot A 15-21 | | none | - | 24 | 25-31 | 32 |
+| 17 `SSX3` | the window of 16 | shin B, foot B 5-12 | 7 | none | - | 24 | 25-33 | 34 |
+| 11 `X1` | cross released 1-3 updates after the press, or its 4th held update | R hand 6-11 | 8 (7 in two of three runs; 10 from 1.0-1.6 m) | 0-19 | 10-19 | 20 | 21-29 | 30 |
+| 15 `SX2` | the window of 12 | R hand 6-11 | 7 | none | - | 14 | 15-19 | 20 |
+| 14 `XS2` | the window of 11 | L hand 7-12 | 9 | none | - | 22 | 24-29 | 30 |
+| 13 `XX2` | the window of 11 | R forearm, R hand 9-14 | 10 | none | - | 17-18 | 19-29 | 30 |
+| 25 / 27 / 29 snaps | square, stick above 0.95 and more than 45° off the facing | forearm, hand 2-7 (29: 1-7) | 4 | none | - | 8 | | 16 |
+| 23 from a walk | square or cross, gait 1-3, stick 0.12 or more, no stance | L forearm, L hand 5-11 | | none | - | | | 24 |
+| 24 from a run | square or cross at gait 4 (cross also at a sprint) | R forearm, R hand 2-8 | | none | - | | | 22 |
+| 653 special | square newly down while cross is held | L hand, R hand 2-9 | 7 | none | - | | | 27 |
+| 193 / 194 | square / cross at a low target | foot B 11-13 / 11-17 | 12 / 15 | none | - | | | 27 / 32 |
+| 0 charge / 1 dive | L2 held + cross / square at a run | all 4-17 / all 2-24 | | none | - | | | 27 / 62 |
 
 "Free again" is the first update a press or the stick acts after the move: the clip's length (a run attack hands
 back to the run at once). The rest of the frame data is in [Frame data](#frame-data).
@@ -174,6 +183,7 @@ distances between the humans' positions; "nearest" sorts by that distance (`Sort
 | Armed square and cross | a fresh `Player_PickTarget(2.5 m)` |
 | A chain step | a cross step (`SX2`, `XX2`, `SSX3`) re-searches with `Player_FindAttackTarget(h, next id)` when not locked; a square step keeps the target |
 | Snaps 25 / 27 / 29 | their own search: nearest within 2.0 m and 45° of the stick, line clear ([Combat](combat.md#attacks)) |
+| The charge 0 and the dive 1 | `Attack_FindNearestInReach`: humans **between the reach and the far range** (3.29-4.11 m, 2.22-3.00 m) inside 54°, then objects and glass; the charge only warns it, the dive takes it and steers over 0.1 s ([Combat](combat.md#charge-aim)) |
 | The special 653 and the strong grapple | `Player_FindAttackTarget` with the far range of id 0 (4.11 m) and of id 1 (3.0 m) ([Strong grapple](combat.md#strong-grapple)) |
 
 **`Player_PickTarget(range)`** (`0x0027a6c0`), in order; the first pass that finds anything ends the search:
@@ -291,7 +301,7 @@ the transform):
 | 653 from 1.6 m | 1.591 / 1.663 / **1.617** | the same | **k7** | 1.172 / 1.120 |
 | 653 from 1.9 m | 1.779 / 1.738 / **1.617** | the same | **k7** | 1.172 / 1.120 |
 | `S1` from 1.5 m | 1.319 / 1.176 (no back slide; reach 1.03) | | **k3** | 1.176 / 1.034 |
-| `X1` from 1.0 / 1.3 / 1.6 m | a straight slide from k3 to k11 (below) | ends at 0.878-0.879 m | **k9** | 0.903 / 0.890, 0.976 / 0.930, 1.048 / 0.970 |
+| `X1` from 1.0 / 1.3 / 1.6 m | a straight slide from k3 to k11 (below) | ends at 0.878-0.879 m | **k10** | 0.903 / 0.890, 0.976 / 0.930, 1.048 / 0.970 |
 | `X1` from 1.9 m | turns only (the far range is 1.90 m): 1.886 at k3, 1.747 at k10 | | **miss** | |
 
 From k3 on, the three 653 runs are the same to the millimetre: the steer ends at 1.62 m (the reach 1.58 m and
@@ -324,10 +334,11 @@ decide where `X1` lands, and they hold for every move:
   not only where it ends. A shape is posed only while it is on, so its first posed update has no sweep (previous =
   current). `X1`'s right hand never overlaps the target where it ends: at the contact the static gap is +0.013 m
   from a 1.0 m start and +0.040 m from 1.6 m; only the sweep across the target's front touches.
-- **Hook steps and samples**: a `strike-contact` (or `strike-shape`) call logged at step N happens in the update
-  that produces the sample of step N + 1: the target's health first drops in that sample (also in the `S1` and 653
-  runs above), and the shapes that overlap are the ones posed in it. So "contact k9" in the table is the update
-  whose result is sample k10, the hand sweeping from its k9 point to its k10 point.
+- **Contact and samples**: the contact update k10 is the one whose result is sample k10: the target's health first
+  drops in that sample (also in the `S1` and 653 runs above), and the shapes that overlap are the ones posed in it,
+  the hand sweeping from its k9 point to its k10 point. (These runs were recorded before the recorder fix, which
+  labelled a `strike-contact` or `strike-shape` call one update early; the contact here is re-labelled one update
+  later, [Recording a trace](../guides/research-workflow.md#hooks).)
 
 **The slide** is two motions added together, confirmed (runtime) with the steer's own fields (`moves_reachX1_10_steer`,
 `moves_reachX1_16_steer`):
@@ -447,9 +458,9 @@ confirmed (runtime):
 
 | Scenario | Stick | Clip | Speed | Strike shapes | Result |
 | --- | --- | --- | --- | --- | --- |
-| `moves_strafe_right` | full, 90° right, 10 updates, the target pinned 1.2 m ahead | **31** `STRAFE_RIGHT` | 3.43 m/s before square; locked, the player turns about 7.9° an update to keep facing the target | L forearm / hand k7-k11 | 30 damage at k8, reaction 275 |
-| `moves_strafe_left` | full, 90° left | **32** `STRAFE_LEFT` | 3.43 m/s | L forearm / hand k7-k11 | 30 damage at k9, reaction 273 |
-| `moves_strafe_front` | full, at the target 2.6 m ahead, 6 updates | **33** `STRAFE_FRONT` | lunge at 3.98 m/s | L forearm / hand k4-k10 | out of reach (far range 3.0 m) |
+| `moves_strafe_right` | full, 90° right, 10 updates, the target pinned 1.2 m ahead | **31** `STRAFE_RIGHT` | 3.43 m/s before square; locked, the player turns about 7.9° an update to keep facing the target | L forearm / hand k8-k12 | 30 damage at k9, reaction 275 |
+| `moves_strafe_left` | full, 90° left | **32** `STRAFE_LEFT` | 3.43 m/s | L forearm / hand k8-k12 | 30 damage at k9, reaction 273 |
+| `moves_strafe_front` | full, at the target 2.6 m ahead, 6 updates | **33** `STRAFE_FRONT` | lunge at 3.98 m/s | L forearm / hand k5-k11 | out of reach (far range 3.0 m) |
 
 With the target at 1.2 m the forward strafe did not play: the player had slowed against the target and was below
 walking speed, so square gave `S1`. The strafe values are the file's (the class table writes no strafe index): 30
@@ -472,11 +483,11 @@ showed 359 for one update. Confirmed (runtime).
 
 | Input | Target | Clip | Runtime (`moves_grounded_*`, victim knocked down by 653 and set 1 m ahead) |
 | --- | --- | --- | --- |
-| square | low (down) | **193** `gen_ground_kickB` | foot B shape k10-k12, contact k11, −34 health seen k12, reaction 195 |
-| cross | low (down) | **194** `gen_ground_stomp` | foot B shape k10-k16, contact k14, −34 seen k15, 32 updates, then 358 |
-| square | mid (the mount's states, or 0.7-1.3 m lower) | **212** `MOUNTING_STRIKE` | `moves_mid_square`: at Bum01 mounting PoizoCiv (made the target), contact on the mounter at k7; the victim was let go (245, then up with 199) |
-| cross | mid | **661** `SPECIAL_BREAK_OBJECT_LOW` | `moves_mid_cross`: the same, 661 one update after the release, contact at k8, the victim let go |
-| square or cross | grabbed from the front by someone else, or grabbing someone from the front | **120** | `moves_grab_front_strike`: at PoizoCiv holding Bum01 from the front (82), contact at k8, 50 damage, PoizoCiv 144 and the hold broken |
+| square | low (down) | **193** `gen_ground_kickB` | foot B shape k11-k13, contact k12, −34 health seen in its sample, reaction 195 |
+| cross | low (down) | **194** `gen_ground_stomp` | foot B shape k11-k17, contact k15, −34 seen in its sample, 32 updates, then 358 |
+| square | mid (the mount's states, or 0.7-1.3 m lower) | **212** `MOUNTING_STRIKE` | `moves_mid_square`: at Bum01 mounting PoizoCiv (made the target), contact on the mounter at k8; the victim was let go (245, then up with 199) |
+| cross | mid | **661** `SPECIAL_BREAK_OBJECT_LOW` | `moves_mid_cross`: the same, 661 one update after the release, contact at k9, the victim let go |
+| square or cross | grabbed from the front by someone else, or grabbing someone from the front | **120** | `moves_grab_front_strike`: at PoizoCiv holding Bum01 from the front (82), contact at k9, 50 damage, PoizoCiv 144 and the hold broken |
 | commands `0x37` / `0x38` (scripts, AI) | any | 193 / 194 (`Attack_StartGroundStrike`, `0x00287fe0`) | not run |
 
 Both grounded strikes deal 34 (class indices 12 / 13). Confirmed (code); confirmed (runtime) for 193, 194, 212, 661
@@ -622,22 +633,26 @@ more than 0.95 (snaps, strafes) and is otherwise centred. k counts from the clip
 
 | Scenario | Clip | Strike shapes | Contact | Damage | Reaction |
 | --- | --- | --- | --- | --- | --- |
-| `moves_snap_left` | 27 | L forearm / hand k1-k6 | k3 (health seen k4) | 31 | 283 |
-| `moves_snap_back` | 29 | R forearm / hand k0-k6 | k3 (health seen k4) | 31 | 281 |
-| `moves_snap_right` | 25 | R forearm / hand k1-k6 | none: with the target pinned 0.75 or 1.0 m to the right the player slid 0.3-0.5 m away from it (to 1.26 m) | | |
-| (any walk attack seen) | 23 | L forearm / hand k4-k10 | | | |
-| `moves_grounded_square` setup: cross + square | 653 | | k6-k7 | 6 | 289 / 291, thrown about 3.7 m; power 400 → 300 |
-| `moves_grounded_square` | 193 | foot B k10-k12 | k11 | 34 | 195 |
-| `moves_grounded_cross` | 194 | foot B k10-k16 | k14 | 34 | 358 after 32 updates |
-| `moves_strafe_left` | 32 | L forearm / hand k7-k11 | k9 | 30 | 273 |
-| `moves_strafe_right` | 31 | L forearm / hand k7-k11 | k8 | 30 | 275 |
+| `moves_snap_left` | 27 | L forearm / hand k2-k7 | k4 (health seen k4) | 31 | 283 |
+| `moves_snap_back` | 29 | R forearm / hand k1-k7 | k4 (health seen k4) | 31 | 281 |
+| `moves_snap_right` | 25 | R forearm / hand k2-k7 | none: with the target pinned 0.75 or 1.0 m to the right the player slid 0.3-0.5 m away from it (to 1.26 m) | | |
+| (any walk attack seen) | 23 | L forearm / hand k5-k11 | | | |
+| `moves_grounded_square` setup: cross + square | 653 | | k7 | 6 | 289 / 291, thrown about 3.7 m; power 400 → 300 |
+| `moves_grounded_square` | 193 | foot B k11-k13 | k12 | 34 | 195 |
+| `moves_grounded_cross` | 194 | foot B k11-k17 | k15 | 34 | 358 after 32 updates |
+| `moves_strafe_left` | 32 | L forearm / hand k8-k12 | k9 | 30 | 273 |
+| `moves_strafe_right` | 31 | L forearm / hand k8-k12 | k9 | 30 | 275 |
 | `moves_block_window` | 12, R1 pressed at k10 | | k5 (target 1.45 m away at the press) | 17 | the block 606 replaces 12 at k15 (its end phase), 5 updates before its end |
 | `moves_block_end` | 12, R1 pressed at k16 | | none (target at 1.03 m) | | 606 starts at k20, when 12 ends: no cut in recovery |
-| `moves_strafe_front` | 33 | L forearm / hand k4-k10 | none (2.6 m) | | |
+| `moves_strafe_front` | 33 | L forearm / hand k5-k11 | none (2.6 m) | | |
 | `moves_grabcounter_12`, `_14` | 76 (grabber 77) | all | k0 | 100 | 77 |
 
-The measured shape windows match the frame tables below to the update, except 25 / 27 on, which came one update
-before the rule (the tie case).
+The shape windows and contacts here are re-labelled one update later after the recorder fix: these runs were
+recorded when `pcsx2 record` labelled every `strike-shape` and `strike-contact` call one update early
+([Recording a trace](../guides/research-workflow.md#hooks)); each contact now falls in the update whose sample first
+shows the damage. Re-labelled, every measured window matches the frame tables below to the update ([Reading the
+tables](#reading)), including the late ties: 25 / 27 / 29 off (frame 5), 23 / 33 off (frame 8) and 193 / 194 on
+(frame 8).
 
 ### Frame data {#frame-data}
 
@@ -646,53 +661,53 @@ are never seen. Standing attacks and their chains ([Combat](combat.md#attacks)):
 
 | Id | Name | Clip | Updates (frames × rate) | Strike shapes (updates on-off) | Events (updates) | Reach / far (m) | Damage (file → Rembrandt) | Hit code |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 12 | `ATTACK_S1` | `combo1a_S_hi_b` | 20 (16 f × 0.8) | L hand 0-9 | eblk 0, W 6, E 15, R 16 | 0.94 / 1.80 | 40 → 17 | `0x0a` |
-| 16 | `ATTACK_SS2` | `combo1a_SS_hi_b` | 25 (20 f × 0.8) | L forearm, L hand 1-6 | eblk 0, W 6, E 19, R 20 | 1.09 / 1.80 | 40 → 36 | `0x0b` |
-| 19 | `ATTACK_SSS3` | `combo1a_SSS_lo_b` | 27 (21 f × 0.8) | R hand 6-14 | eblk 3, E 16, R 17 | 1.14 / 1.70 | 50 → 53 | `0x26` stun |
-| 20 | `ATTACK_SSS3_HOLD` | `combo1a_SSSH_lo_b` | 33 (26 f × 0.8) | shin A, foot A 14-20 | eblk 11, E 24, R 25 | 1.13 / 1.90 | 55 → 53 | `0x26` |
-| 17 | `ATTACK_SSX3` | `combo1a_SSX_lo_b` | 34 (27 f × 0.8) | shin B, foot B 4-11 | eblk 5, E 24, R 25 | 1.47 / 1.70 | 60 → 61 | `0x25` |
-| 11 | `ATTACK_X1` | `combo1b_X_hi_r` | 30 (24 f × 0.8) | R hand 5-10 | duck 3, W 10, E 20, R 21 | 1.02 / 1.90 | 45 → 26 | `0x09` |
-| 13 | `ATTACK_XX2` | `combo1b_XX_hi_l` | 30 (24 f × 0.8) | R forearm, R hand 8-13 | duck 5, E 17, R 19 | 1.12 / 1.90 | 60 → 53 | `0x1b` |
-| 15 | `ATTACK_SX2` | `combo1a_SX_hi_b` | 20 (16 f × 0.8) | R hand 5-10 | eblk 4, E 14, R 15 | 1.37 / 1.90 | 50 → 44 | `0x1a` stun |
-| 14 | `ATTACK_XS2` | `combo1b_XS_hi_l` | 30 (24 f × 0.8) | L hand 6-11 | duck 4, E 22, R 24 | 0.88 / 1.90 | 50 → 44 | `0x2b` |
-| 18 | `ATTACK_SSX3_HOLD` | `combo1a_SSSH_lo_b` | 33 (26 f × 0.8) | shin A, foot A 14-20 | eblk 11, E 24, R 25 | 1.13 / 1.90 | 65 → 61 | `0x26` |
-| 25 | `SNAP_RIGHT_01` | `gen_snap_right1` | 16 (12 f × 0.75) | R forearm, R hand 2-6 | E 8 | 0.95 / 1.30 | 10 → 31 | `0x1b` stun |
-| 27 | `SNAP_LEFT_01` | `gen_snap_left1` | 16 (12 f × 0.75) | L forearm, L hand 2-6 | E 8 | 0.82 / 1.30 | 10 → 31 | `0x19` stun |
-| 29 | `SNAP_BACK_01` | `gen_snap_back1` | 16 (12 f × 0.75) | R forearm, R hand 0-6 | E 8 | 0.96 / 1.30 | 10 → 31 | `0x1b` stun |
-| 31 | `STRAFE_RIGHT` | `player_combat_walk_right_punc` | 30 (22 f × 0.75) | L forearm, L hand 7-11 | eblk 6 | 0.89 / 1.40 | 30 | `0x0a` |
-| 32 | `STRAFE_LEFT` | `player_combat_walk_left_punch` | 30 (22 f × 0.75) | L forearm, L hand 7-11 | eblk 4 | 1.02 / 1.40 | 30 | `0x0a` |
-| 33 | `STRAFE_FRONT` | `player_combat_walk_forward_pu` | 23 (17 f × 0.75) | L forearm, L hand 4-10 | eblk 4 | 1.74 / 3.00 | 30 | `0x0a` |
-| 21 | `ATTACK_PUSH` | `gen_push` | 20 (15 f × 0.75) | L hand, R hand 2-8 | - | 1.58 / 1.65 | 20 → 13 | `0x26` stun |
-| 22 | `ATTACK_FROM_IDLE` | `neutral_attack1` | 25 (20 f × 0.8) | R forearm, R hand 4-11 | - | 1.02 / 1.65 | 20 | `0x2a` stun |
-| 653 | `SPECIAL_ATTACK1_FRONT` | `gen_push` | 27 (20 f × 0.75) | L hand, R hand 2-8 | eblk 3 | 1.58 / 1.97 | 10 → 6 | `0x26` |
-| 655 | `SPECIAL_ATTACK1_REAR` | `gen_push` | 27 (20 f × 0.75) | L hand, R hand 2-8 | eblk 3 | 1.58 / 1.97 | 10 → 6 | `0x26` |
-| 645 | `RAGE_ATTACK1_FRONT` | `gen_rage_sweep` | 50 (40 f × 0.8) | shin A, foot A 14-34 | - | 0.95 / 1.50 | 10 | `0x23` |
-| 647 | `RAGE_ATTACK1_REAR` | `gen_rage_sweep` | 50 (40 f × 0.8) | shin A, foot A 14-34 | - | 0.95 / 1.50 | 10 | `0x23` |
-| 617 | `BLOCK_COUNTER_FRONT` | `gen_block_duck_counter2_front` | 27 (20 f × 0.75) | R forearm, R hand 2-10 | - | 1.20 / 1.50 | 50 | `0x26` stun |
-| 618 | `BLOCK_COUNTER_RIGHT` | `gen_block_duck_counter2_right` | 27 (20 f × 0.75) | L forearm, L hand 2-10 | - | 1.20 / 1.50 | 50 | `0x26` stun |
-| 619 | `BLOCK_COUNTER_BACK` | `gen_block_duck_counter2_back` | 27 (20 f × 0.75) | L forearm, L hand 2-10 | - | 1.20 / 1.50 | 50 | `0x26` stun |
-| 620 | `BLOCK_COUNTER_LEFT` | `gen_block_duck_counter2_left` | 27 (20 f × 0.75) | R forearm, R hand 2-10 | - | 1.20 / 1.50 | 50 | `0x26` stun |
+| 12 | `ATTACK_S1` | `combo1a_S_hi_b` | 20 (16 f × 0.8) | L hand 1-10 | eblk 0, W 6, E 15, R 16 | 0.94 / 1.80 | 40 → 17 | `0x0a` |
+| 16 | `ATTACK_SS2` | `combo1a_SS_hi_b` | 25 (20 f × 0.8) | L forearm, L hand 2-7 | eblk 1, W 6, E 19, R 20 | 1.09 / 1.80 | 40 → 36 | `0x0b` |
+| 19 | `ATTACK_SSS3` | `combo1a_SSS_lo_b` | 27 (21 f × 0.8) | R hand 7-15 | eblk 4, E 16, R 17 | 1.14 / 1.70 | 50 → 53 | `0x26` stun |
+| 20 | `ATTACK_SSS3_HOLD` | `combo1a_SSSH_lo_b` | 33 (26 f × 0.8) | shin A, foot A 15-21 | eblk 12, E 24, R 25 | 1.13 / 1.90 | 55 → 53 | `0x26` |
+| 17 | `ATTACK_SSX3` | `combo1a_SSX_lo_b` | 34 (27 f × 0.8) | shin B, foot B 5-12 | eblk 6, E 24, R 25 | 1.47 / 1.70 | 60 → 61 | `0x25` |
+| 11 | `ATTACK_X1` | `combo1b_X_hi_r` | 30 (24 f × 0.8) | R hand 6-11 | duck 4, W 10, E 20, R 21 | 1.02 / 1.90 | 45 → 26 | `0x09` |
+| 13 | `ATTACK_XX2` | `combo1b_XX_hi_l` | 30 (24 f × 0.8) | R forearm, R hand 9-14 | duck 6, E 17, R 19 | 1.12 / 1.90 | 60 → 53 | `0x1b` |
+| 15 | `ATTACK_SX2` | `combo1a_SX_hi_b` | 20 (16 f × 0.8) | R hand 6-11 | eblk 5, E 14, R 15 | 1.37 / 1.90 | 50 → 44 | `0x1a` stun |
+| 14 | `ATTACK_XS2` | `combo1b_XS_hi_l` | 30 (24 f × 0.8) | L hand 7-12 | duck 5, E 22, R 24 | 0.88 / 1.90 | 50 → 44 | `0x2b` |
+| 18 | `ATTACK_SSX3_HOLD` | `combo1a_SSSH_lo_b` | 33 (26 f × 0.8) | shin A, foot A 15-21 | eblk 12, E 24, R 25 | 1.13 / 1.90 | 65 → 61 | `0x26` |
+| 25 | `SNAP_RIGHT_01` | `gen_snap_right1` | 16 (12 f × 0.75) | R forearm, R hand 2-7 | E 8 | 0.95 / 1.30 | 10 → 31 | `0x1b` stun |
+| 27 | `SNAP_LEFT_01` | `gen_snap_left1` | 16 (12 f × 0.75) | L forearm, L hand 2-7 | E 8 | 0.82 / 1.30 | 10 → 31 | `0x19` stun |
+| 29 | `SNAP_BACK_01` | `gen_snap_back1` | 16 (12 f × 0.75) | R forearm, R hand 1-7 | E 8 | 0.96 / 1.30 | 10 → 31 | `0x1b` stun |
+| 31 | `STRAFE_RIGHT` | `player_combat_walk_right_punc` | 30 (22 f × 0.75) | L forearm, L hand 8-12 | eblk 7 | 0.89 / 1.40 | 30 | `0x0a` |
+| 32 | `STRAFE_LEFT` | `player_combat_walk_left_punch` | 30 (22 f × 0.75) | L forearm, L hand 8-12 | eblk 5 | 1.02 / 1.40 | 30 | `0x0a` |
+| 33 | `STRAFE_FRONT` | `player_combat_walk_forward_pu` | 23 (17 f × 0.75) | L forearm, L hand 5-11 | eblk 5 | 1.74 / 3.00 | 30 | `0x0a` |
+| 21 | `ATTACK_PUSH` | `gen_push` | 20 (15 f × 0.75) | L hand, R hand 2-9 | - | 1.58 / 1.65 | 20 → 13 | `0x26` stun |
+| 22 | `ATTACK_FROM_IDLE` | `neutral_attack1` | 25 (20 f × 0.8) | R forearm, R hand 5-12 | - | 1.02 / 1.65 | 20 | `0x2a` stun |
+| 653 | `SPECIAL_ATTACK1_FRONT` | `gen_push` | 27 (20 f × 0.75) | L hand, R hand 2-9 | eblk 4 | 1.58 / 1.97 | 10 → 6 | `0x26` |
+| 655 | `SPECIAL_ATTACK1_REAR` | `gen_push` | 27 (20 f × 0.75) | L hand, R hand 2-9 | eblk 4 | 1.58 / 1.97 | 10 → 6 | `0x26` |
+| 645 | `RAGE_ATTACK1_FRONT` | `gen_rage_sweep` | 50 (40 f × 0.8) | shin A, foot A 15-35 | - | 0.95 / 1.50 | 10 | `0x23` |
+| 647 | `RAGE_ATTACK1_REAR` | `gen_rage_sweep` | 50 (40 f × 0.8) | shin A, foot A 15-35 | - | 0.95 / 1.50 | 10 | `0x23` |
+| 617 | `BLOCK_COUNTER_FRONT` | `gen_block_duck_counter2_front` | 27 (20 f × 0.75) | R forearm, R hand 2-11 | - | 1.20 / 1.50 | 50 | `0x26` stun |
+| 618 | `BLOCK_COUNTER_RIGHT` | `gen_block_duck_counter2_right` | 27 (20 f × 0.75) | L forearm, L hand 2-11 | - | 1.20 / 1.50 | 50 | `0x26` stun |
+| 619 | `BLOCK_COUNTER_BACK` | `gen_block_duck_counter2_back` | 27 (20 f × 0.75) | L forearm, L hand 2-11 | - | 1.20 / 1.50 | 50 | `0x26` stun |
+| 620 | `BLOCK_COUNTER_LEFT` | `gen_block_duck_counter2_left` | 27 (20 f × 0.75) | R forearm, R hand 2-11 | - | 1.20 / 1.50 | 50 | `0x26` stun |
 
 Moving attacks ([Combat](combat.md#run-attacks)):
 
 | Id | Name | Clip | Updates (frames × rate) | Strike shapes (updates on-off) | Events (updates) | Reach / far (m) | Damage (file → Rembrandt) | Hit code |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 23 | `ATTACK_FROM_WALK` | `gen_walk_strike` | 24 (18 f × 0.75) | L forearm, L hand 4-10 | eblk 4 | 1.54 / 1.65 | 20 | `0x1a` stun |
-| 24 | `ATTACK_FROM_RUN` | `gen_run_strike` | 22 (16 f × 0.75) | R forearm, R hand 2-7 | eblk 2 | 2.15 / 2.69 | 20 | `0x2a` stun |
-| 0 | `RUNNING_ATTACK_CHARGE` | `gen_charge_shoulder` | 27 (20 f × 0.75) | all 3-16 | - | 3.29 / 4.11 | 20 → 31 | `0x36` |
-| 1 | `RUNNING_ATTACK_DIVE` | `gen_dive` | 62 (46 f × 0.75) | all 2-23 | - | 2.22 / 3.00 | 30 → 26 | `0x3a` |
-| 501 | `SWINGABLE_OBJECT_ATTACK_FROM_RUN` | `gen_run_1hand_weapon_atk` | 22 (16 f × 0.75) | R hand 2-7 | eblk 2 | 1.00 / 1.65 | 20 | `0x2a` stun |
-| 490 | `KNIFE_ATTACK_FROM_RUN` | `gen_run_1hand_weapon_atk` | 22 (16 f × 0.75) | R hand 2-7 | eblk 2 | 1.00 / 1.65 | 20 | `0x2a` stun |
+| 23 | `ATTACK_FROM_WALK` | `gen_walk_strike` | 24 (18 f × 0.75) | L forearm, L hand 5-11 | eblk 5 | 1.54 / 1.65 | 20 | `0x1a` stun |
+| 24 | `ATTACK_FROM_RUN` | `gen_run_strike` | 22 (16 f × 0.75) | R forearm, R hand 2-8 | eblk 2 | 2.15 / 2.69 | 20 | `0x2a` stun |
+| 0 | `RUNNING_ATTACK_CHARGE` | `gen_charge_shoulder` | 27 (20 f × 0.75) | all 4-17 | - | 3.29 / 4.11 | 20 → 31 | `0x36` |
+| 1 | `RUNNING_ATTACK_DIVE` | `gen_dive` | 62 (46 f × 0.75) | all 2-24 | - | 2.22 / 3.00 | 30 → 26 | `0x3a` |
+| 501 | `SWINGABLE_OBJECT_ATTACK_FROM_RUN` | `gen_run_1hand_weapon_atk` | 22 (16 f × 0.75) | R hand 2-8 | eblk 2 | 1.00 / 1.65 | 20 | `0x2a` stun |
+| 490 | `KNIFE_ATTACK_FROM_RUN` | `gen_run_1hand_weapon_atk` | 22 (16 f × 0.75) | R hand 2-8 | eblk 2 | 1.00 / 1.65 | 20 | `0x2a` stun |
 
 Strikes at a low, mid or held target:
 
 | Id | Name | Clip | Updates (frames × rate) | Strike shapes (updates on-off) | Events (updates) | Reach / far (m) | Damage (file → Rembrandt) | Hit code |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 193 | `GROUNDED_STRIKE_01` | `gen_ground_kickB` | 27 (20 f × 0.75) | foot B 10-12 | - | 0.90 / 2.00 | 50 → 34 | `0x0a` |
-| 194 | `GROUNDED_STRIKE_02` | `gen_ground_stomp` | 32 (24 f × 0.75) | foot B 10-16 | - | 0.85 / 2.20 | 50 → 34 | `0x0a` |
-| 212 | `MOUNTING_STRIKE` | `gen_attack_mounting` | 26 (19 f × 0.75) | R forearm, R hand 7-12 | - | 1.20 / 2.00 | 30 | `0x06` |
-| 661 | `SPECIAL_BREAK_OBJECT_LOW` | `carhit_low` | 34 (25 f × 0.75) | shin B, foot B 7-12 | - | 1.11 / 2.00 | 60 | `0x00` |
-| 120 | `GRAB_FRONT_STRIKE_01` | `gen_attack_mounting` | 26 (19 f × 0.75) | R forearm, R hand 7-12 | - | 1.20 / 1.50 | 50 | `0x2a` |
+| 193 | `GROUNDED_STRIKE_01` | `gen_ground_kickB` | 27 (20 f × 0.75) | foot B 11-13 | - | 0.90 / 2.00 | 50 → 34 | `0x0a` |
+| 194 | `GROUNDED_STRIKE_02` | `gen_ground_stomp` | 32 (24 f × 0.75) | foot B 11-17 | - | 0.85 / 2.20 | 50 → 34 | `0x0a` |
+| 212 | `MOUNTING_STRIKE` | `gen_attack_mounting` | 26 (19 f × 0.75) | R forearm, R hand 8-13 | - | 1.20 / 2.00 | 30 | `0x06` |
+| 661 | `SPECIAL_BREAK_OBJECT_LOW` | `carhit_low` | 34 (25 f × 0.75) | shin B, foot B 8-13 | - | 1.11 / 2.00 | 60 | `0x00` |
+| 120 | `GRAB_FRONT_STRIKE_01` | `gen_attack_mounting` | 26 (19 f × 0.75) | R forearm, R hand 8-13 | - | 1.20 / 1.50 | 50 | `0x2a` |
 
 Grabs, grab strikes and throws ([Combat](combat.md#grab)):
 
@@ -707,7 +722,7 @@ Grabs, grab strikes and throws ([Combat](combat.md#grab)):
 | 53 | `GRAB_COMBO_STRIKE_02` | `gen_grab_front_strike2` | 23 (17 f × 0.75) | - | - | 1.08 / 1.35 | 10 → 57 | `0x00` |
 | 55 | `GRAB_COMBO_STRIKE_03` | `gen_grab_front_strike3` | 23 (17 f × 0.75) | - | - | 1.03 / 1.28 | 10 → 57 | `0x00` |
 | 57 | `GRAB_POWER_01_STRIKE_01` | `gen_grab_front_power10_p1` | 44 (33 f × 0.75) | - | W 19, E 33 | 1.09 / 2.25 | 69 → 57 | `0x00` |
-| 59 | `GRAB_POWER_01_STRIKE_02` | `gen_grab_front_power10_p2` | 94 (70 f × 0.75) | - | use 22 | 0.93 / 2.25 | 69 → 79 | `0x00` |
+| 59 | `GRAB_POWER_01_STRIKE_02` | `gen_grab_front_power10_p2` | 94 (70 f × 0.75) | - | use 23 | 0.93 / 2.25 | 69 → 79 | `0x00` |
 | 61 | `GRAB_POWER_01_STRIKE_03` | `missing_anim_filler` | 20 (20 f × 1.0) | - | - | 1.00 / 1.25 | 0 → 76 | `0x00` |
 | 63 | `GRAB_POWER_02_STRIKE_01` | `gen_grab_front_power14_p1` | 55 (41 f × 0.75) | - | W 23, E 36 | 1.08 / 2.25 | 50 | `0x00` |
 | 65 | `GRAB_POWER_02_STRIKE_02` | `gen_grab_front_power14_p2` | 60 (45 f × 0.75) | - | - | 1.08 / 2.25 | 1000 | `0x00` |
@@ -735,14 +750,14 @@ Tackles and the mount ([Combat](combat.md#mount)):
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 4 | `TACKLE_PLAYER_INTRO` | `gen_tackle_start` | 7 (5 f × 0.75) | - | - | 1.82 / 3.00 | 0 | `0x00` |
 | 3 | `TACKLE_INTRO` | `AI_tackle_start` | 19 (14 f × 0.75) | - | - | 1.82 / 3.00 | 0 | `0x00` |
-| 2 | `TACKLE_MISS` | `gen_tackle_miss` | 59 (44 f × 0.75) | all 0-16 | - | 1.00 / 1.25 | 10 | `0x22` |
+| 2 | `TACKLE_MISS` | `gen_tackle_miss` | 59 (44 f × 0.75) | all 0-17 | - | 1.00 / 1.25 | 10 | `0x22` |
 | 5 | `TACKLE_HIT_FROM_FRONT` | `gen_tackle_front` | 46 (34 f × 0.75) | - | - | 1.01 / 1.50 | 10 | `0x16` |
 | 7 | `TACKLE_HIT_FROM_REAR` | `gen_tackle_back` | 34 (34 f × 1.0) | - | - | 1.04 / 1.50 | 10 | `0x16` |
 | 219 | `MOUNT_COMBO_STRIKE_01` | `gen_mounting_punch1` | 16 (12 f × 0.75) | - | - | 0.12 / 0.15 | 10 → 61 | `0x00` |
 | 221 | `MOUNT_COMBO_STRIKE_02` | `gen_mounting_punch2` | 19 (14 f × 0.75) | - | - | 0.12 / 0.15 | 10 → 61 | `0x00` |
 | 223 | `MOUNT_COMBO_STRIKE_03` | `gen_mounting_punch4` | 28 (21 f × 0.75) | - | - | 0.12 / 0.15 | 10 → 61 | `0x00` |
 | 225 | `MOUNT_POWER_01_STRIKE_01` | `gen_mount_power10_p1` | 80 (60 f × 0.75) | - | W 24, E 44 | 0.12 / 2.25 | 35 → 79 | `0x00` |
-| 227 | `MOUNT_POWER_01_STRIKE_02` | `gen_mount_power10_p2` | 60 (45 f × 0.75) | - | use 11 | 0.12 / 0.15 | 50 → 79 | `0x00` |
+| 227 | `MOUNT_POWER_01_STRIKE_02` | `gen_mount_power10_p2` | 60 (45 f × 0.75) | - | use 12 | 0.12 / 0.15 | 50 → 79 | `0x00` |
 | 229 | `MOUNT_POWER_01_STRIKE_03` | `missing_anim_filler` | 20 (20 f × 1.0) | - | - | 1.00 / 1.25 | 0 → 89 | `0x00` |
 | 231 | `MOUNT_POWER_02_STRIKE_01` | `gen_mount_power13_p1` | 51 (38 f × 0.75) | - | W 19, E 32 | 0.12 / 2.25 | 69 | `0x00` |
 | 233 | `MOUNT_POWER_02_STRIKE_02` | `gen_mount_power13_p2` | 66 (49 f × 0.75) | - | - | 0.12 / 0.15 | 1000 | `0x00` |
@@ -751,8 +766,8 @@ Tackles and the mount ([Combat](combat.md#mount)):
 | 244 | `MOUNT_RELEASE` | `gen_mounting_release` | 26 (19 f × 0.75) | - | - | 0.12 / 0.15 | 0 | `0x00` |
 | 250 | `MOUNT_STRUGGLE` | `gen_mounted_struggle1` | 16 (12 f × 0.75) | - | - | 1.00 / 1.25 | 10 → 40 | `0x00` |
 | 242 | `MOUNT_REVERSAL` | `gen_mounted_reversal` | 58 (43 f × 0.75) | - | - | 1.00 / 1.25 | 0 | `0x00` |
-| 246 | `MOUNT_BREAK` | `gen_mounted_escape` | 48 (36 f × 0.75) | R forearm 4-10 | - | 1.00 / 1.25 | 0 | `0x00` |
-| 214 | `MOUNTING_GRAB` | `gen_grab_mounting` | 40 (30 f × 0.75) | R hand 14-19 | - | 1.48 / 1.50 | 0 | `0x00` |
+| 246 | `MOUNT_BREAK` | `gen_mounted_escape` | 48 (36 f × 0.75) | R forearm 5-11 | - | 1.00 / 1.25 | 0 | `0x00` |
+| 214 | `MOUNTING_GRAB` | `gen_grab_mounting` | 40 (30 f × 0.75) | R hand 15-20 | - | 1.48 / 1.50 | 0 | `0x00` |
 
 The held victim's moves and the counters:
 
@@ -760,14 +775,14 @@ The held victim's moves and the counters:
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 96 | `GRAB_FRONT_STRUGGLE1` | `gen_grab_front_struggle` | 23 (17 f × 0.75) | - | - | 1.08 / 1.35 | 0 | `0x00` |
 | 108 | `GRAB_REAR_STRUGGLE1` | `gen_grab_back_struggle2` | 30 (22 f × 0.75) | - | - | 1.00 / 1.25 | 0 | `0x00` |
-| 104 | `GRAB_FRONT_ATTACK` | `gen_grab_front_victim_strike` | 34 (25 f × 0.75) | foot B 10-18 | - | 1.00 / 1.25 | 20 | `0x26` stun |
-| 116 | `GRAB_REAR_ATTACK` | `gen_grab_back_victim_strike` | 44 (33 f × 0.75) | shin A, foot A, shin B, foot B 10-15 | - | 0.84 / 1.05 | 20 | `0x3a` stun |
+| 104 | `GRAB_FRONT_ATTACK` | `gen_grab_front_victim_strike` | 34 (25 f × 0.75) | foot B 11-19 | - | 1.00 / 1.25 | 20 | `0x26` stun |
+| 116 | `GRAB_REAR_ATTACK` | `gen_grab_back_victim_strike` | 44 (33 f × 0.75) | shin A, foot A, shin B, foot B 11-16 | - | 0.84 / 1.05 | 20 | `0x3a` stun |
 | 100 | `GRAB_FRONT_ESCAPE1` | `gen_grab_front_escape1` | 62 (46 f × 0.75) | - | - | 1.08 / 1.35 | 20 | `0x2a` `0x100` |
 | 112 | `GRAB_REAR_ESCAPE1` | `gen_grab_back_escape_throw` | 56 (42 f × 0.75) | - | - | 0.24 / 0.30 | 20 | `0x2a` `0x100` |
 | 90 | `GRAB_FRONT_REVERSAL` | `gen_grab_front_reversal` | 44 (33 f × 0.75) | - | - | 1.00 / 1.25 | 0 | `0x00` |
 | 92 | `GRAB_REAR_REVERSAL` | `gen_grab_back_reversal` | 44 (33 f × 0.75) | - | - | 1.00 / 1.25 | 0 | `0x00` |
-| 76 | `GRAB_FRONT_COUNTER` | `gen_grab_front_counter` | 36 (27 f × 0.75) | all 0-34 | - | 1.00 / 2.00 | 100 | `0x16` |
-| 9 | `TACKLE_FRONT_COUNTER` | `gen_tackle_counter` | 58 (43 f × 0.75) | all 0-55 | - | 1.12 / 2.00 | 100 | `0x16` |
+| 76 | `GRAB_FRONT_COUNTER` | `gen_grab_front_counter` | 36 (27 f × 0.75) | all 0-35 | - | 1.00 / 2.00 | 100 | `0x16` |
+| 9 | `TACKLE_FRONT_COUNTER` | `gen_tackle_counter` | 58 (43 f × 0.75) | all 0-56 | - | 1.12 / 2.00 | 100 | `0x16` |
 
 Tandems:
 
@@ -786,10 +801,10 @@ Tandems:
 | 173 | `TANDEM_02_VICTIM_END` | `gen_tandem2_victim_end` | 54 (40 f × 0.75) | - | KD 0 | 1.00 / 1.25 | 0 | `0x00` |
 | 174 | `TANDEM_02_ATTACKER_END` | `gen_tandem2_attacker_end` | 47 (35 f × 0.75) | - | - | 1.29 / 1.62 | 350 | `0x00` |
 | 175 | `TANDEM_03_GRABBER_INTRO` | `gen_tandem3_grabber_begin` | 11 (8 f × 0.75) | - | - | 0.24 / 0.30 | 0 | `0x00` |
-| 176 | `TANDEM_03_VICTIM_INTRO` | `gen_tandem3_victim_begin` | 11 (8 f × 0.75) | all 0-10 | - | 1.00 / 1.25 | 0 | `0x00` |
+| 176 | `TANDEM_03_VICTIM_INTRO` | `gen_tandem3_victim_begin` | 11 (8 f × 0.75) | all 0-11 | - | 1.00 / 1.25 | 0 | `0x00` |
 | 177 | `TANDEM_03_ATTACKER_INTRO` | `gen_tandem3_attacker_begin` | 11 (8 f × 0.75) | - | - | 1.69 / 2.80 | 50 | `0x00` |
-| 178 | `TANDEM_03_GRABBER_END` | `gen_tandem3_grabber_end` | 43 (32 f × 0.75) | all 0-31 | - | 0.35 / 0.44 | 0 | `0x00` |
-| 179 | `TANDEM_03_VICTIM_END` | `gen_tandem3_victim_end` | 63 (47 f × 0.75) | all 0-39 | KD 0 | 1.00 / 1.25 | 0 | `0x00` |
+| 178 | `TANDEM_03_GRABBER_END` | `gen_tandem3_grabber_end` | 43 (32 f × 0.75) | all 0-32 | - | 0.35 / 0.44 | 0 | `0x00` |
+| 179 | `TANDEM_03_VICTIM_END` | `gen_tandem3_victim_end` | 63 (47 f × 0.75) | all 0-40 | KD 0 | 1.00 / 1.25 | 0 | `0x00` |
 | 180 | `TANDEM_03_ATTACKER_END` | `gen_tandem3_attacker_end` | 40 (30 f × 0.75) | - | - | 0.99 / 1.24 | 350 | `0x00` |
 | 181 | `BAT_TANDEM_01_GRABBER_INTRO` | `gen_tandem_bat_grabber_begin` | 14 (10 f × 0.75) | - | - | 0.24 / 0.30 | 0 | `0x00` |
 | 182 | `BAT_TANDEM_01_VICTIM_INTRO` | `gen_tandem_bat_victim_begin` | 14 (10 f × 0.75) | - | - | 1.00 / 1.25 | 0 | `0x00` |
@@ -816,40 +831,40 @@ Weapons ([Combat](combat.md#armed-moves)):
 
 | Id | Name | Clip | Updates (frames × rate) | Strike shapes (updates on-off) | Events (updates) | Reach / far (m) | Damage (file → Rembrandt) | Hit code |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 34 | `BAT_COMBO_S1` | `gen_weapon01_atk01` | 38 (28 f × 0.75) | R hand 8-16 | duck 7, E 13, R 25 | 1.56 / 2.10 | 10 | `0x29` |
-| 35 | `BAT_COMBO_SS2` | `gen_weapon01_atk02` | 32 (24 f × 0.75) | R hand 8-12 | duck 7 | 1.78 / 2.10 | 10 | `0x2b` |
-| 36 | `BAT_COMBO_X1` | `gen_weapon01_slash_atk01` | 35 (26 f × 0.75) | R hand 10-16 | E 20, R 23 | 1.24 / 1.50 | 130 | `0x2a` |
-| 37 | `BAT_COMBO_GROUNDED_STRIKE_01` | `gen_weapon01_grnd_atk01` | 30 (22 f × 0.75) | R hand 10-16 | - | 0.97 / 1.50 | 75 | `0x0a` |
-| 38 | `BAT_COMBO_GROUNDED_STRIKE_02` | `gen_weapon01_grnd_atk02` | 26 (19 f × 0.75) | R hand 6-14 | - | 0.97 / 1.50 | 75 | `0x0a` |
-| 39 | `BATON_COMBO_S1` | `baton_1` | 22 (16 f × 0.75) | R hand 0-8 | duck 2, W 9, E 11 | 1.27 / 1.50 | 10 | `0x0a` |
-| 40 | `BATON_COMBO_SS2` | `baton_2` | 18 (13 f × 0.75) | R hand 0-7 | duck 0 | 1.08 / 1.50 | 10 | `0x1a` stun |
-| 41 | `BATON_COMBO_X1` | `baton_3` | 28 (21 f × 0.75) | R hand 6-11 | duck 3 | 1.39 / 1.70 | 60 | `0x0a` stun |
-| 42 | `BATON_COMBO_GROUNDED_STRIKE_01` | `cop_baton_swing_grnd_1` | 27 (20 f × 0.75) | R hand 14-16 | - | 1.21 / 1.50 | 50 | `0x0a` |
-| 43 | `BATON_COMBO_MOUNTING_STRIKE_01` | `cop_baton_swing_grnd_1` | 27 (20 f × 0.75) | R hand 14-16 | - | 1.21 / 1.50 | 50 | `0x0a` |
-| 44 | `BATON_COMBO_GRAB_FRONT_STRIKE_01` | `cop_baton_1` | 20 (15 f × 0.75) | R hand 8-16 | - | 1.53 / 1.91 | 50 | `0x0a` |
-| 45 | `KNIFE_COMBO_S1` | `knife_1` | 23 (17 f × 0.75) | R hand 6-14 | W 15, E 16 | 1.09 / 1.50 | 20 | `0x06` |
-| 46 | `KNIFE_COMBO_SS2` | `knife_2` | 24 (18 f × 0.75) | R hand 0-7 | - | 0.88 / 1.50 | 20 | `0x26` |
-| 47 | `KNIFE_COMBO_X1` | `knife_3` | 27 (20 f × 0.75) | R hand 7-14 | - | 1.18 / 1.50 | 20 | `0x16` stun |
-| 48 | `KNIFE_COMBO_GROUNDED_STRIKE_01` | `gen_knife_attack_grounded` | 27 (20 f × 0.75) | R hand 7-14 | - | 1.05 / 1.50 | 25 | `0x0a` |
-| 49 | `KNIFE_COMBO_MOUNTING_STRIKE_01` | `gen_knife_attack_mounting` | 27 (20 f × 0.75) | R hand 8-11 | - | 1.10 / 1.50 | 25 | `0x0a` |
-| 50 | `KNIFE_COMBO_GRAB_FRONT_STRIKE_01` | `gen_knife_attack_mounting` | 27 (20 f × 0.75) | R hand 8-11 | - | 1.10 / 1.50 | 25 | `0x0a` |
-| 484 | `KNIFE_GRAB_REAR_ATTACK` | `gen_grab_back_knife` | 76 (57 f × 0.75) | - | use 52 | 0.24 / 0.30 | 600 | `0x00` |
-| 486 | `KNIFE_GRAB_FRONT_ATTACK` | `gen_grab_front_knife` | 83 (62 f × 0.75) | - | use 54 | 1.08 / 1.35 | 600 | `0x00` |
-| 488 | `KNIFE_MOUNT_ATTACK` | `gen_knife_mounting` | 80 (60 f × 0.75) | - | use 56 | 0.12 / 0.15 | 600 | `0x2a` `0x100` |
-| 492 | `BROKEN_BOTTLE_GRAB_REAR_ATTACK` | `gen_grab_back_bottle` | 55 (41 f × 0.75) | - | use 40 | 0.24 / 0.30 | 40 | `0x00` |
-| 494 | `BROKEN_BOTTLE_GRAB_FRONT_ATTACK` | `gen_grab_front_bottle` | 43 (32 f × 0.75) | - | use 24 | 1.08 / 1.35 | 40 | `0x00` |
-| 496 | `BROKEN_BOTTLE_MOUNT_ATTACK` | `gen_beerbottle_mounting` | 64 (48 f × 0.75) | - | use 23 | 0.12 / 0.15 | 40 | `0x2a` `0x100` |
+| 34 | `BAT_COMBO_S1` | `gen_weapon01_atk01` | 38 (28 f × 0.75) | R hand 9-17 | duck 8, E 13, R 25 | 1.56 / 2.10 | 10 | `0x29` |
+| 35 | `BAT_COMBO_SS2` | `gen_weapon01_atk02` | 32 (24 f × 0.75) | R hand 9-13 | duck 8 | 1.78 / 2.10 | 10 | `0x2b` |
+| 36 | `BAT_COMBO_X1` | `gen_weapon01_slash_atk01` | 35 (26 f × 0.75) | R hand 11-17 | E 20, R 23 | 1.24 / 1.50 | 130 | `0x2a` |
+| 37 | `BAT_COMBO_GROUNDED_STRIKE_01` | `gen_weapon01_grnd_atk01` | 30 (22 f × 0.75) | R hand 11-17 | - | 0.97 / 1.50 | 75 | `0x0a` |
+| 38 | `BAT_COMBO_GROUNDED_STRIKE_02` | `gen_weapon01_grnd_atk02` | 26 (19 f × 0.75) | R hand 7-15 | - | 0.97 / 1.50 | 75 | `0x0a` |
+| 39 | `BATON_COMBO_S1` | `baton_1` | 22 (16 f × 0.75) | R hand 1-9 | duck 2, W 9, E 11 | 1.27 / 1.50 | 10 | `0x0a` |
+| 40 | `BATON_COMBO_SS2` | `baton_2` | 18 (13 f × 0.75) | R hand 0-8 | duck 0 | 1.08 / 1.50 | 10 | `0x1a` stun |
+| 41 | `BATON_COMBO_X1` | `baton_3` | 28 (21 f × 0.75) | R hand 7-12 | duck 4 | 1.39 / 1.70 | 60 | `0x0a` stun |
+| 42 | `BATON_COMBO_GROUNDED_STRIKE_01` | `cop_baton_swing_grnd_1` | 27 (20 f × 0.75) | R hand 15-17 | - | 1.21 / 1.50 | 50 | `0x0a` |
+| 43 | `BATON_COMBO_MOUNTING_STRIKE_01` | `cop_baton_swing_grnd_1` | 27 (20 f × 0.75) | R hand 15-17 | - | 1.21 / 1.50 | 50 | `0x0a` |
+| 44 | `BATON_COMBO_GRAB_FRONT_STRIKE_01` | `cop_baton_1` | 20 (15 f × 0.75) | R hand 9-17 | - | 1.53 / 1.91 | 50 | `0x0a` |
+| 45 | `KNIFE_COMBO_S1` | `knife_1` | 23 (17 f × 0.75) | R hand 7-15 | W 15, E 16 | 1.09 / 1.50 | 20 | `0x06` |
+| 46 | `KNIFE_COMBO_SS2` | `knife_2` | 24 (18 f × 0.75) | R hand 1-8 | - | 0.88 / 1.50 | 20 | `0x26` |
+| 47 | `KNIFE_COMBO_X1` | `knife_3` | 27 (20 f × 0.75) | R hand 8-15 | - | 1.18 / 1.50 | 20 | `0x16` stun |
+| 48 | `KNIFE_COMBO_GROUNDED_STRIKE_01` | `gen_knife_attack_grounded` | 27 (20 f × 0.75) | R hand 8-15 | - | 1.05 / 1.50 | 25 | `0x0a` |
+| 49 | `KNIFE_COMBO_MOUNTING_STRIKE_01` | `gen_knife_attack_mounting` | 27 (20 f × 0.75) | R hand 9-12 | - | 1.10 / 1.50 | 25 | `0x0a` |
+| 50 | `KNIFE_COMBO_GRAB_FRONT_STRIKE_01` | `gen_knife_attack_mounting` | 27 (20 f × 0.75) | R hand 9-12 | - | 1.10 / 1.50 | 25 | `0x0a` |
+| 484 | `KNIFE_GRAB_REAR_ATTACK` | `gen_grab_back_knife` | 76 (57 f × 0.75) | - | use 53 | 0.24 / 0.30 | 600 | `0x00` |
+| 486 | `KNIFE_GRAB_FRONT_ATTACK` | `gen_grab_front_knife` | 83 (62 f × 0.75) | - | use 55 | 1.08 / 1.35 | 600 | `0x00` |
+| 488 | `KNIFE_MOUNT_ATTACK` | `gen_knife_mounting` | 80 (60 f × 0.75) | - | use 57 | 0.12 / 0.15 | 600 | `0x2a` `0x100` |
+| 492 | `BROKEN_BOTTLE_GRAB_REAR_ATTACK` | `gen_grab_back_bottle` | 55 (41 f × 0.75) | - | use 41 | 0.24 / 0.30 | 40 | `0x00` |
+| 494 | `BROKEN_BOTTLE_GRAB_FRONT_ATTACK` | `gen_grab_front_bottle` | 43 (32 f × 0.75) | - | use 25 | 1.08 / 1.35 | 40 | `0x00` |
+| 496 | `BROKEN_BOTTLE_MOUNT_ATTACK` | `gen_beerbottle_mounting` | 64 (48 f × 0.75) | - | use 24 | 0.12 / 0.15 | 40 | `0x2a` `0x100` |
 | 473 | `ONE_HANDED_OBJECT_SMASH_FRONT` | `bottle_smash_attacker` | 46 (34 f × 0.75) | - | - | 1.27 / 2.00 | 120 | `0x00` |
 | 475 | `ONE_HANDED_OBJECT_SMASH_REAR` | `bottle_smash_attacker` | 46 (34 f × 0.75) | - | - | 1.27 / 2.00 | 120 | `0x00` |
-| 505 | `BARREL_THROW` | `gen_2hand_throw_fwd` | 30 (30 f × 1.0) | R hand 13-18 | - | 0.91 / 1.14 | 30 | `0x1a` |
-| 506 | `BARREL_THROW_FROM_WALK` | `gen_2hand_throw_walk` | 26 (26 f × 1.0) | L hand, R hand 7-15 | - | 1.00 / 1.25 | 30 | `0x1a` |
-| 507 | `BARREL_THROW_FROM_RUN` | `gen_run_2hand_weapon_throw` | 30 (30 f × 1.0) | L hand, R hand 9-13 | - | 1.00 / 1.25 | 30 | `0x1a` |
-| 467 | `ONE_HANDED_OBJECT_THROW` | `gen_1hand_throw` | 26 (19 f × 0.75) | R hand 4-10 | - | 1.02 / 1.28 | 10 | `0x0a` |
-| 471 | `ONE_HANDED_OBJECT_THROW_FROM_WALK` | `gen_1hand_throw_walk` | 31 (23 f × 0.75) | R hand 12-18 | - | 1.00 / 1.25 | 10 | `0x0a` |
-| 472 | `ONE_HANDED_OBJECT_THROW_FROM_RUN` | `gen_1hand_throw_run` | 34 (25 f × 0.75) | R hand 12-18 | - | 1.00 / 1.25 | 10 | `0x0a` |
-| 551 | `GHETTO_THROW` | `ghetto_throw` | 27 (20 f × 0.75) | 0 10-16 | - | 0.85 / 1.07 | 30 | `0x1a` |
-| 552 | `GHETTO_THROW_FROM_WALK` | `ghetto_throw_walk` | 47 (35 f × 0.75) | L hand, R hand 11-15 | - | 1.00 / 1.25 | 30 | `0x1a` |
-| 553 | `GHETTO_THROW_FROM_RUN` | `ghetto_throw_run` | 27 (20 f × 0.75) | R hand 6-10 | - | 1.00 / 1.25 | 30 | `0x1a` |
+| 505 | `BARREL_THROW` | `gen_2hand_throw_fwd` | 30 (30 f × 1.0) | R hand 14-19 | - | 0.91 / 1.14 | 30 | `0x1a` |
+| 506 | `BARREL_THROW_FROM_WALK` | `gen_2hand_throw_walk` | 26 (26 f × 1.0) | L hand, R hand 8-16 | - | 1.00 / 1.25 | 30 | `0x1a` |
+| 507 | `BARREL_THROW_FROM_RUN` | `gen_run_2hand_weapon_throw` | 30 (30 f × 1.0) | L hand, R hand 10-14 | - | 1.00 / 1.25 | 30 | `0x1a` |
+| 467 | `ONE_HANDED_OBJECT_THROW` | `gen_1hand_throw` | 26 (19 f × 0.75) | R hand 5-11 | - | 1.02 / 1.28 | 10 | `0x0a` |
+| 471 | `ONE_HANDED_OBJECT_THROW_FROM_WALK` | `gen_1hand_throw_walk` | 31 (23 f × 0.75) | R hand 13-19 | - | 1.00 / 1.25 | 10 | `0x0a` |
+| 472 | `ONE_HANDED_OBJECT_THROW_FROM_RUN` | `gen_1hand_throw_run` | 34 (25 f × 0.75) | R hand 13-19 | - | 1.00 / 1.25 | 10 | `0x0a` |
+| 551 | `GHETTO_THROW` | `ghetto_throw` | 27 (20 f × 0.75) | 0 11-17 | - | 0.85 / 1.07 | 30 | `0x1a` |
+| 552 | `GHETTO_THROW_FROM_WALK` | `ghetto_throw_walk` | 47 (35 f × 0.75) | L hand, R hand 12-16 | - | 1.00 / 1.25 | 30 | `0x1a` |
+| 553 | `GHETTO_THROW_FROM_RUN` | `ghetto_throw_run` | 27 (20 f × 0.75) | R hand 7-11 | - | 1.00 / 1.25 | 30 | `0x1a` |
 | 491 | `KNIFE_THROW` | `gen_knifethrow` | 38 (28 f × 0.75) | - | - | 1.00 / 1.25 | 0 | `0x00` |
 | 502 | `SWINGABLE_OBJECT_THROW` | `gen_batthrow` | 35 (26 f × 0.75) | - | - | 1.00 / 1.25 | 0 | `0x00` |
 | 629 | `BAT_BLOCK_REACT` | `gen_batblock_dodge_atk` | 22 (16 f × 0.75) | - | - | 1.00 / 1.25 | 0 | `0x00` |
@@ -859,12 +874,12 @@ Block, rage and the rest:
 | Id | Name | Clip | Updates (frames × rate) | Strike shapes (updates on-off) | Events (updates) | Reach / far (m) | Damage (file → Rembrandt) | Hit code |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 643 | `RAGE_START` | `gen_rage_enter05` | 64 (48 f × 0.75) | - | - | 1.00 / 1.25 | 0 | `0x00` |
-| 665 | `SPECIAL_FLASH` | `gen_flash_use` | 54 (40 f × 0.75) | - | use 24 | 1.00 / 1.25 | 0 | `0x00` |
+| 665 | `SPECIAL_FLASH` | `gen_flash_use` | 54 (40 f × 0.75) | - | use 25 | 1.00 / 1.25 | 0 | `0x00` |
 | 616 | `BLOCK_DODGE` | `gen_duck` | 28 (21 f × 0.75) | - | - | 1.00 / 1.25 | 0 | `0x00` |
 | 605 | `BLOCK_START` | `gen_blockA` | 7 (5 f × 0.75) | - | - | 1.00 / 1.25 | 0 | `0x00` |
 | 606 | `BLOCK_SUSTAIN` | `gen_blockA_idle` | 40 (30 f × 0.75) | - | - | 1.00 / 1.25 | 0 | `0x00` |
 | 607 | `BLOCK_SHUFFLE` | `gen_block_turn` | 12 (9 f × 0.75) | - | - | 1.00 / 1.25 | 0 | `0x00` |
-| 664 | `SPECIAL_SPRAY` | `gen_spray` | 30 (30 f × 1.0) | R hand 9-18 | use 13 | 0.94 / 1.80 | 80 | `0x1a` stun |
+| 664 | `SPECIAL_SPRAY` | `gen_spray` | 30 (30 f × 1.0) | R hand 10-19 | use 14 | 0.94 / 1.80 | 80 | `0x1a` stun |
 
 ## Corrections to other pages {#corrections}
 
@@ -909,5 +924,7 @@ The moves Coney plays and where they differ from the table above: [Combat differ
   on the left. That target was pinned while walking, so the steer's lead may explain it ([Contact](#reach)); not
   rerun against a still target.
 - Why the tandem intro ran 51 updates, not 36.
+- The PS2 FPU's rounding toward zero is assumed, not read from the FPU's control, for the late ties ([Reading the
+  tables](#reading)). A run of a rate-0.9 clip with a tie (an event at frame 5 or 14) would check it.
 - 490 `KNIFE_ATTACK_FROM_RUN`, 18 `ATTACK_SSX3_HOLD` and the `_02` snaps: no code path plays them here (20 is the
   chain's random pick after `SS2`, `0x00280708`).

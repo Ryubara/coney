@@ -412,7 +412,10 @@ hud::HudServices hudServicesOf(const BindingContext& context) {
     services.wantedTimers = [context = &context](std::size_t player, std::uint64_t nowMs) {
         std::array<float, 2> timers{};
         if (player == 0 && context->state != nullptr && context->crimes != nullptr) {
-            timers[0] = context->state->player.crimes.wantedFraction(context->crimes->playerOneGang(), nowMs);
+            // The wanted timer (blue) and the second timer (orange) of player 1's gang.
+            const int gang = context->crimes->playerOneGang();
+            timers[0] = context->state->player.crimes.wantedFraction(gang, nowMs);
+            timers[1] = context->state->player.crimes.secondWantedFraction(gang, nowMs);
         }
         return timers;
     };

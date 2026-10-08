@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ai/swap_prompt.h"
 
+#include <string_view>
+#include <vector>
+
 #include <catch2/catch_test_macros.hpp>
 
 #include "ai/brain.h"
 #include "ai/gangs.h"
+#include "human/script_state.h"
 #include "support/ai_fixtures.h"
 
 using coney::ai::Brain;
@@ -78,4 +82,43 @@ TEST_CASE("a Warrior's think sets the swap prompt", "[ai][swap]") {
     s.scene.player().human().script().heldObject = 7.0;
     s.scene.run(5);
     CHECK(s.warrior->human().script().talkable);
+}
+
+TEST_CASE("the swap exchanges the held objects at once, one alone passing across", "[ai][swap]") {
+    coney::human::ScriptState receiver;
+    coney::human::ScriptState presser;
+    receiver.heldObject = 5.0;
+    receiver.heldObjectName = "bat";
+    presser.heldObject = 6.0;
+    presser.heldObjectName = "bottle";
+    const auto any = [](std::string_view) { return true; };
+    coney::ai::SwapOutcome outcome = coney::ai::swapHeldObjects(receiver, presser, any);
+    CHECK(receiver.heldObject == 6.0);
+    CHECK(receiver.heldObjectName == "bottle");
+    CHECK(presser.heldObject == 5.0);
+    CHECK(presser.heldObjectName == "bat");
+    CHECK(outcome.toReceiver == 6.0);
+    CHECK(outcome.toPresser == 5.0);
+    // Only the presser's: it passes to the receiver.
+    receiver.heldObject = 0.0;
+    receiver.heldObjectName.clear();
+    outcome = coney::ai::swapHeldObjects(receiver, presser, any);
+    CHECK(receiver.heldObject == 5.0);
+    CHECK(presser.heldObject == 0.0);
+    CHECK(outcome.toPresser == 0.0);
+}
+
+TEST_CASE("a left-hand or hat object is dropped by the swap and taken by no hand", "[ai][swap]") {
+    CHECK(coney::ai::swapPlaceable(1));
+    CHECK_FALSE(coney::ai::swapPlaceable(5));
+    CHECK_FALSE(coney::ai::swapPlaceable(6));
+    coney::human::ScriptState receiver;
+    coney::human::ScriptState presser;
+    presser.heldObject = 6.0;
+    presser.heldObjectName = "ring";
+    const coney::ai::SwapOutcome outcome =
+        coney::ai::swapHeldObjects(receiver, presser, [](std::string_view name) { return name != "ring"; });
+    CHECK(receiver.heldObject == 0.0);
+    CHECK(presser.heldObject == 0.0);
+    CHECK(outcome.dropped == std::vector<double>{6.0});
 }

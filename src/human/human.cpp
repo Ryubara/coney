@@ -501,7 +501,7 @@ std::optional<Human::Swept> Human::sweep(const raycast::CollisionMesh& mesh, ani
     bool pushed = false;
     for (int pass = 0; pass < kSweepPasses; ++pass) {
         const std::optional<anim::Vec3> push =
-            (*m_objectPush)(anim::add(swept.feet, anim::Vec3{0.0F, 0.0F, centreHeight}), radius, displacement);
+            (*m_objectPush)(*this, anim::add(swept.feet, anim::Vec3{0.0F, 0.0F, centreHeight}), radius, displacement);
         if (!push || anim::length(*push) < kClear) {
             break;
         }
@@ -800,6 +800,13 @@ void Human::turnOverClip(std::uint32_t clip, anim::Vec3 point, float share) {
     const anim::Vec3 to = anim::subtract(point, m_position);
     const float turn = std::hypot(to.x, to.y) > 1e-4F ? wrapAngle(headingOf(to) - m_heading) : 0.0F;
     m_clipTurn = ClipTurn{.clip = clip, .updatesLeft = updates, .turnStep = turn / static_cast<float>(updates)};
+}
+
+void Human::turnToFace(anim::Vec3 point, float seconds) {
+    const int updates = std::max(1, static_cast<int>(std::lround(seconds / m_stepSeconds)));
+    const anim::Vec3 to = anim::subtract(point, m_position);
+    const float turn = std::hypot(to.x, to.y) > 1e-4F ? wrapAngle(headingOf(to) - m_heading) : 0.0F;
+    m_clipTurn = ClipTurn{.clip = 0, .updatesLeft = updates, .turnStep = turn / static_cast<float>(updates)};
 }
 
 bool Human::enterStepControl(float heading, int boost) {
@@ -1120,7 +1127,7 @@ void Human::animate(const raycast::CollisionMesh* mesh) {
     // A clip's turn to a point (the spray's intro, the uncuffing's), a step each update while the clip plays.
     if (m_clipTurn) {
         m_heading = wrapAngle(m_heading + m_clipTurn->turnStep);
-        if (--m_clipTurn->updatesLeft <= 0 || m_animator.animId() != m_clipTurn->clip) {
+        if (--m_clipTurn->updatesLeft <= 0 || (m_clipTurn->clip != 0 && m_animator.animId() != m_clipTurn->clip)) {
             m_clipTurn.reset();
         }
     }

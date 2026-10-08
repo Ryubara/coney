@@ -908,15 +908,16 @@ reaches the box 0.25 m in front of the glass; there is no minimum speed and noth
 strike, the glass is a wall. Thrown objects use `0x00393538` ([A pane's life](#pane)).
 
 **At runtime** (confirmed (runtime), PCSX2 2.9.94, a copy of slot 9, 2026-10-07; scenario
-[`glass_jump`](repo:research/traces/scenarios/glass_jump.toml), stick at 100 % straight ahead, hooks on
-`Strike_Contact` and `Glass_Break`). Slot 9 stands Rembrandt at (63.6, −1.9, 4.20), heading 88°, on the roof of
-`level99` checkpoint 3.4, facing the window: two type-11 panes in the plane x = 47.4, side by side (centres y 0.245
+[`glass_jump`](repo:research/traces/scenarios/glass_jump.toml), stick at 100 % straight ahead, hooks on `Strike_Contact`
+and `Glass_Break`; their updates re-labelled one update later after the recorder fix, [Recording a
+trace](../guides/research-workflow.md#hooks)). Slot 9 stands Rembrandt at (63.6, −1.9, 4.20), heading 88°, on the roof
+of `level99` checkpoint 3.4, facing the window: two type-11 panes in the plane x = 47.4, side by side (centres y 0.245
 and −2.77, a 4 cm mullion between them at y −1.27 to −1.23), from z 4.36 to 7.54.
 
 | Run | What happened |
 | --- | --- |
-| triangle at 51.4 m (update 60), launch at 9.5 m/s | the jump clip 434 from update 60; from the launch (update 61) to the landing (update 84) body `+0xc0` is non-zero and the capsule's flags are `0x13` (`0x11` before and after); on update 71, feet ending at x 48.33 z 5.26, `Strike_Contact` called from `Human_TestStrikes` (return `0x0033fddc`) for **both** panes, each then `Glass_Break` (return `0x0021bb7c`); x kept falling by 0.26 m per update (7.8 m/s) through the window, landing at x 44.95 on update 84 (clip 435) and stopping at 44.38 |
-| no triangle: he runs off the roof edge at 49.6 m | falling (clip 428), feet at z 3.84 on update 72: `Strike_Contact` from `Human_OnContact` (return `0x0021a0e0`) for both panes and `Glass_Break` for each; the panes broke, but his body was below the sill and stopped at x 47.95 against the wall under the window (0.55 m from it) and fell to the street (z 0.22) |
+| triangle at 51.4 m (update 60), launch at 9.5 m/s | the jump clip 434 from update 60; from the launch (update 61) to the landing (update 84) body `+0xc0` is non-zero and the capsule's flags are `0x13` (`0x11` before and after); on update 72, feet ending at x 48.07 z 5.25, `Strike_Contact` called from `Human_TestStrikes` (return `0x0033fddc`) for **both** panes, each then `Glass_Break` (return `0x0021bb7c`); x kept falling by 0.26 m per update (7.8 m/s) through the window, landing at x 44.95 on update 84 (clip 435) and stopping at 44.38 |
+| no triangle: he runs off the roof edge at 49.6 m | falling (clip 428), feet at z 3.71 on update 73: `Strike_Contact` from `Human_OnContact` (return `0x0021a0e0`) for both panes and `Glass_Break` for each; the panes broke, but his body was below the sill and stopped at x 47.95 against the wall under the window (0.55 m from it) and fell to the street (z 0.22) |
 
 So the original's jump goes through the window on the jump's strike shapes, not on the airborne body path; both
 break the pane, and the airborne path alone is enough when the body reaches the box. In `level99` this is the only
@@ -1204,11 +1205,13 @@ broke".
 
 At runtime (confirmed (runtime), PCSX2 2.9.94, slot 10, `level99` checkpoint 3.5; scenario
 [`charge_fence`](repo:research/traces/scenarios/charge_fence.toml)): the fence (type index 520, centre (23.6, −6.67))
-had 10 hitpoints and broke on one charge, dive or walk-attack hit (kind 2). Its three boards were removed on their
-own first update, the update after the hit (type indices 1368 and 1369, along the fence at x 22.7, 23.7 and 24.6); why
-is not traced. The fence was removed 4, 11 and 18 updates after the hit in three runs (its 60-tick phase); in the same
-update the objective marker went, and 15 updates later `P3.FenceBroken`'s placement put the player at (18.5, −16.3),
-beyond the fence. Breaking in by charge: [Combat](combat.md#moving-strikes).
+had 10 hitpoints and broke on one charge, dive or walk-attack hit (kind 2). Its three boards were removed on their own
+first update, in the same update as the hit (the pair's second tick; type indices 1368 and 1369, along the fence at x
+22.7, 23.7 and 24.6); why is not traced. The fence was removed 3, 10 and 17 updates after the hit in three runs (its
+60-tick phase; the hit re-labelled one update later after the recorder fix, [Recording a
+trace](../guides/research-workflow.md#hooks)); in the same update the objective marker went, and 15 updates later
+`P3.FenceBroken`'s placement put the player at (18.5, −16.3), beyond the fence. Breaking in by charge:
+[Combat](combat.md#moving-strikes).
 
 ### Lock picking {#lock-pick}
 
@@ -1638,6 +1641,17 @@ gone). `GetRTTI` gives `0x400` for a pane. Coney's stand-ins: the noise, statist
 newsstands' paper are not built; the dust is the shards' `sub_shack_puff`; a piece rests where it is made; the crate
 piece's random turn is drawn in steps of 1/1000 of pi; a broken prop goes 20 ticks after the break; the size is read as
 whole extents, a cylinder or capsule body is tested as its box, and only drawn objects within 4 m are tested.
+
+**Trash props** ([Trash cans and bags](#trash-props), `repo:src/world_objects/props.h`): an `overhead_weapon` prop
+breaks on its first strike (`OverheadWeapon_Break`): two dust bursts 0.5 m above the hit point; the trash can's dented
+can or the park bin's piece at its pose; for the can, the bags and the park bin, 10 splinters, a burst at the prop and
+the four litter pieces; the paper stack's 8 debris pieces, or 44 splinters for another model; then its material
+against itself. It loses its body at once and is removed the next tick. A human above jog whose walking sphere meets a
+`RUNTARGET` body (the bags, the paper stack) strikes it with a plain hit at the next step, once. Coney's stand-ins: the
+pieces rest where they are made and never fade; the bottle, the litter system's pieces, the splat, the splinters'
+colours, the quieter break of a run-in, the camera test and the path-polygon flag 8 are not built; the paper stack's
+debris pieces are splinters; a litter piece's offset is drawn in ±0.43, ±0.43 and 0-0.83 m; and the sprinter is not
+stopped dead after the strike (he slides along the bags that step, and they are gone the next).
 
 ## Open questions
 

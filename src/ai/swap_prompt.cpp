@@ -3,6 +3,8 @@
 
 #include <algorithm>
 #include <memory>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "ai/brain.h"
@@ -74,6 +76,32 @@ void thinkSwapPrompt(Brain& brain) {
         script.talkString = id;
         script.talkText.clear();
     }
+}
+
+SwapOutcome swapHeldObjects(human::ScriptState& receiver, human::ScriptState& presser,
+                            const std::function<bool(std::string_view typeName)>& placeable) {
+    // Both hands are emptied first (each side drops what it holds).
+    const double fromPresser = std::exchange(presser.heldObject, world_objects::kNoObject);
+    const std::string presserName = std::exchange(presser.heldObjectName, std::string());
+    const double fromReceiver = std::exchange(receiver.heldObject, world_objects::kNoObject);
+    const std::string receiverName = std::exchange(receiver.heldObjectName, std::string());
+    SwapOutcome outcome;
+    // Each dropped object goes into the other hand when its type has a placement, else it stays on the ground.
+    const auto give = [&](double object, const std::string& name, human::ScriptState& to, double& given) {
+        if (object == world_objects::kNoObject) {
+            return;
+        }
+        if (placeable && !placeable(name)) {
+            outcome.dropped.push_back(object);
+            return;
+        }
+        to.heldObject = object;
+        to.heldObjectName = name;
+        given = object;
+    };
+    give(fromPresser, presserName, receiver, outcome.toReceiver);
+    give(fromReceiver, receiverName, presser, outcome.toPresser);
+    return outcome;
 }
 
 } // namespace coney::ai

@@ -294,11 +294,21 @@ TEST_CASE("the disc's level34 crate stack breaks on the first square and goes", 
         return std::ranges::count_if(run.log,
                                      [text](const std::string& line) { return line.find(text) != std::string::npos; });
     };
-    CHECK(count("dyn_crate_stack") == 1);
-    CHECK(count("hit, broke") == 1);
-    CHECK(count("objects: prop") == 1);
-    std::printf("  level34 checkpoint 2: %td crate stack hit, %td prop removed\n", count("dyn_crate_stack"),
-                count("objects: prop"));
+    // The crate stack's one strike broke it, and its object went. Other props may break too: the rioters' strikes and
+    // runs break the street's trash cans and bags (docs/research/objects.md#trash-props).
+    const auto crate = std::ranges::find_if(
+        run.log, [](const std::string& line) { return line.starts_with("objects: dyn_crate_stack "); });
+    REQUIRE(crate != run.log.end());
+    CHECK(count("objects: dyn_crate_stack ") == 1);
+    CHECK(crate->find("hit, broke") != std::string::npos);
+    const std::string handle = crate->substr(crate->find(' ', std::string_view("objects: dyn_crate_stack").size()) + 1);
+    const std::string removed = std::format("objects: prop {} removed", handle.substr(0, handle.find(' ')));
+    CHECK(count(removed) == 1);
+    for (const std::string& line : run.log) {
+        if (line.find("hit, broke") != std::string::npos) {
+            std::printf("  level34 checkpoint 2: %s", line.c_str());
+        }
+    }
 }
 
 namespace {

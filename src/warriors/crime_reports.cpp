@@ -160,6 +160,14 @@ float CrimeReports::wantedFraction(int gang, std::uint64_t nowMs) const {
     return static_cast<float>(found->second - nowMs) / static_cast<float>(kWantedMs);
 }
 
+float CrimeReports::secondWantedFraction(int gang, std::uint64_t nowMs) const {
+    const auto found = m_secondUntil.find(gang);
+    if (found == m_secondUntil.end() || nowMs >= found->second) {
+        return 0.0F;
+    }
+    return static_cast<float>(found->second - nowMs) / static_cast<float>(kSecondWantedMs);
+}
+
 std::optional<std::uint64_t> CrimeReports::lastAssault(int gang) const {
     const auto found = m_lastAssault.find(gang);
     return found != m_lastAssault.end() ? std::optional<std::uint64_t>(found->second) : std::nullopt;

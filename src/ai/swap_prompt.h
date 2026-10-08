@@ -2,6 +2,13 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
+#include <string_view>
+#include <vector>
+
+namespace coney::human {
+struct ScriptState;
+} // namespace coney::human
 
 namespace coney::ai {
 
@@ -24,5 +31,27 @@ inline constexpr float kSwapReach = 1.5F;
 /// Research: docs/research/ai.md#think-warrior, docs/research/hud.md#talk-prompt
 /// @orig 0x003052f0 WarriorBrain_Think (unknown)
 void thinkSwapPrompt(Brain& brain);
+
+/// The speech command the presser says after a swap that left him holding something: 146 `give_me`.
+inline constexpr std::uint32_t kGiveMeCommand = 146;
+
+/// What a swap did: the objects that changed hands and those left at their giver's feet.
+struct SwapOutcome {
+    double toReceiver = 0.0;     ///< The presser's object, now in the receiver's hand (0 for none).
+    double toPresser = 0.0;      ///< The receiver's object, now in the presser's hand (0 for none).
+    std::vector<double> dropped; ///< Objects dropped that no hand took (a left-hand or hat object).
+};
+
+/// The swap (`Human_SwapHeldObjects(receiver, presser)`): each side's held object is dropped and placed straight in
+/// the other's hand, at once and with no clip; one held alone simply passes across. An object whose type
+/// `placeable(typeName)` says has no hand placement (pick-up animation 5 or 6) stays dropped. Nothing else changes
+/// hands. Research: docs/research/ai.md#warrior-swap
+/// @orig 0x00233b08 Human_SwapHeldObjects (unknown)
+SwapOutcome swapHeldObjects(human::ScriptState& receiver, human::ScriptState& presser,
+                            const std::function<bool(std::string_view typeName)>& placeable);
+
+/// Whether an object of pick-up animation `pickupAnim` can be placed in a hand by a swap: all but 5 (left hand) and 6
+/// (hat), whose low pick-up clips (463, 465) have no placement event (inferred).
+[[nodiscard]] constexpr bool swapPlaceable(int pickupAnim) { return pickupAnim != 5 && pickupAnim != 6; }
 
 } // namespace coney::ai
