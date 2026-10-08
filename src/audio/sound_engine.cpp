@@ -39,8 +39,11 @@ constexpr std::uint32_t kFullVolumeSound = 0x510bb577;
 constexpr float kAmbientFadeMs = 2000.0F;
 // The load screens: banks load_00 to load_06.
 constexpr int kLoadScreens = 7;
-// How far ahead of its voice a sound stream is decoded: half a second of frames.
-constexpr int kStreamAheadDivisor = 2;
+// How far ahead of its voice a sound stream is decoded, in seconds of frames. **Coney's choice** (the PS2's IOP streams
+// on its own): the game thread fills the streams once a frame, and a frame that stalls (a busy machine, a level's
+// streaming) longer than this lets speech, ambient loops and scene sounds run dry; stalls of 0.2-1.1 s were seen in
+// real-time play, so two seconds.
+constexpr double kStreamAheadSeconds = 2.0;
 // The two stereo stream pairs, 1+2 (slot 0) and 3+4 (slot 1), shared with the music
 // (docs/research/sound.md#stream-pairs).
 constexpr std::array<int, 2> kStereoPairs{1, 3};
@@ -362,7 +365,7 @@ void SoundEngine::startVoice(Task& task) {
         }
         const int rate = task.record->sampleRate();
         auto feeder = m_files != nullptr && rate > 0
-                          ? StreamFeeder::create(layout, rate, static_cast<std::uint32_t>(rate / kStreamAheadDivisor))
+                          ? StreamFeeder::create(layout, rate, static_cast<std::uint32_t>(rate * kStreamAheadSeconds))
                           : std::unexpected(Error{ErrorCode::NotFound, "no sound files"});
         if (!feeder) {
             task.virtualPlay = true;

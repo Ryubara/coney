@@ -123,6 +123,7 @@ add_executable(coney_tests
     platform/scene_stage_test.cpp
     platform/sdl_devices_test.cpp
     platform/sdl_input_test.cpp
+    platform/window_activation_test.cpp
     platform/sprite_sheets_test.cpp
     platform/texture_dictionary_test.cpp
     platform/world_atomic_test.cpp

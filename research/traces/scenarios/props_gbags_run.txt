@@ -1,0 +1,5 @@
+# The camera looks south (−y), so the stick 100 % down with L2 held is a sprint north into the bags.
+10 stick left 0 -100
+10 press l2
+90 release l2
+90 stick left 0 0

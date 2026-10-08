@@ -146,9 +146,10 @@ void LevelPlayScenery::findVisible(const WorldView& newest) {
 }
 
 void LevelPlayScenery::draw(RenderEngine& engine, const WorldView& view, std::uint64_t nowMs,
-                            const std::function<void()>& drawObjects) {
+                            const std::function<void()>& drawObjects, const std::function<void()>& afterWorlds) {
     // The world draws the sectors its own view sees (WorldRenderer::render), with the characters among the objects.
-    m_renderer.render(engine, *m_scenery.set, m_scenery.level.get(), view, m_pending, nowMs, drawObjects);
+    m_renderer.render(engine, *m_scenery.set, m_scenery.level.get(), view, m_pending, nowMs, drawObjects, {},
+                      afterWorlds);
 }
 
 anim::Vec3 LevelPlayScenery::lightDirection() const { return kLevelLightDirection; }
@@ -266,12 +267,20 @@ std::expected<void, Error> SandboxPlayScenery::setExtras(const RenderEngine& eng
 }
 
 void SandboxPlayScenery::draw(RenderEngine& engine, const WorldView& view, std::uint64_t nowMs,
-                              const std::function<void()>& drawObjects) {
+                              const std::function<void()>& drawObjects, const std::function<void()>& afterWorlds) {
     // The manager's viewport pass (the ambients and the cull) before anything is lit with it.
     if (m_lighting != nullptr) {
         m_lighting->beginFrame(view.pose, view.nearClip, view.drawDistance, nowMs);
     }
-    m_renderer->render(engine, view, drawObjects);
+    // The sandbox has one world, so what follows the worlds comes straight after the objects.
+    m_renderer->render(engine, view, [&drawObjects, &afterWorlds] {
+        if (drawObjects) {
+            drawObjects();
+        }
+        if (afterWorlds) {
+            afterWorlds();
+        }
+    });
 }
 
 std::string SandboxPlayScenery::summary() const {

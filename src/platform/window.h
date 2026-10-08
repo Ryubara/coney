@@ -14,6 +14,9 @@ struct WindowDesc {
     int width = 960;                  ///< Client area width in pixels: 4:3, the shape of the logical screen.
     int height = 720;                 ///< Client area height in pixels.
     bool hidden = false;              ///< Keep the window off the screen, for tools that draw offscreen.
+    /// Let the window take the keyboard focus when it opens. A hidden window never does: librw shows the window
+    /// before Coney can hide it, which would otherwise take the focus for that moment.
+    bool activate = true;
     /// The frame is the logical screen, as the original's frame buffer is: it fills the whole frame, whatever its
     /// shape, and the 3D view keeps the 4:3 display shape across it (`--render-size`). Otherwise the logical screen
     /// keeps its shape inside the window, with black bars round it.

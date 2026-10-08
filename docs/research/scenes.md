@@ -53,6 +53,8 @@ the letterbox, gives the player control back and calls the script's end function
 | `0x0039f450` | `SceneTask_End` | gives everything back | confirmed (code) |
 | `0x0039ec60` | `SceneTask_Abort` | gives up a scene that did not start in 10 s | confirmed (code) |
 | `0x003a0da8` | `SceneTask_CallEnd` | calls the play binding's end function with the scene id | confirmed (code) |
+| `0x003a0e48` | `SceneTask_HoldObject` | event 73: holds a bound object (an intro card) before the camera for a time ([Intro cards](#intro-cards)) | confirmed (code) |
+| `0x003a0ed8` | `SceneTask_UpdateHeldObject` | each update, after the objects' runners: places the held object before the camera until its time is up | confirmed (code) |
 | `0x00356290`, `0x00356308`, `0x003560a8`, `0x00355ab8`, `0x00356188` | track runner: bind camera / bind object, advance, step keys, apply | | confirmed (code) |
 | `0x00354d98` | `SceneTrack_Events` | the object, camera and light tracks' events | confirmed (code) |
 | `0x00355798` | `SceneTrack_Flush` | a skipped scene's remaining track events, a reduced set ([Skipping](#skipping)) | confirmed (code) |
@@ -196,7 +198,7 @@ controls fall where the scene needs them only when read that way. Inferred from 
 | 33 | 333 | a particle effect at a position and rotation (s16 values, scaled as clip keys) named by `+0x14` with a prefix |
 | 41 | 1,422 | caption control: `+4` = 0 shows the next caption, 4 or 5 set that kind (4 hides it), 6 sets a flag first (confirmed (code) at `0x00354d98`; [Movies](movies.md#caption-timing)) |
 | 69 | 0 | an object or car action (`0x00396048`, `0x0038d798`) |
-| 73 | 23 | holds object `+4` in front of the camera for `+8` seconds (`0x003a0e48`) |
+| 73 | 23 | **intro card**: holds the object in slot `+4` (`s16`) before the scene camera for `+8` seconds ([Intro cards](#intro-cards)) |
 | 74 | 0 | a coloured fade: type in bit 31 of `+4`, colour in its low 24 bits, `+8` seconds |
 | 76 | 241 | pad rumble on every player: strength `sqrt(+6 × 0.01) × 180 + 75`, at most 255 |
 
@@ -418,6 +420,48 @@ lens is the definition's field of view, near and far; each update the track move
 
 **Objects** bound by `SceneAddObject` follow their tracks; at the end they are released to the object manager.
 **Lights** are made from their definitions at the start and released at the end. Confirmed (code).
+
+### Intro cards {#intro-cards}
+
+When a cinematic introduces a character or a gang, a card with the name and a picture fills the screen for a second
+or two (Cleon, Vermin and Rembrandt in `l99_c1`, the Destroyers in `l80_c1`). The card is a **scene object**: the
+level script binds it to an object slot like any other (`SceneAddObject`), its own track keeps it parked about 10 m
+underground (`l99_c1`'s `cleon` at z −0.96 to −11.8 for its whole track, with no show or hide events), and a camera
+event 73 lifts it in front of the camera. Confirmed (code) at the addresses below; the cards' names and places from
+the disc.
+
+1. **The event** (`SceneTrack_Events`, `0x003553ac`): the scene task is found through the current camera (a
+   `Cam_Scene`'s `+0x1e4`, `0x00353298`), so only a scene with a camera holds a card; `SceneTask_HoldObject`
+   (`0x003a0e48`) gets the slot from `+4` (`lh`, compared unsigned with the object count `+0x21`) and the seconds from
+   `+8`. When the slot's bound object (object definition `+0x50`) is set, it stores it at task `+0xd0` and the end
+   time, the game clock (`0x0050b734 + 0x48`, ms) plus seconds × 1000, at `+0xd4`; sets `0x00512c44`, which stops the
+   [room smoke](graphics.md#room-smoke)'s widgets drawing (`OverlayEffect_Tick`, `0x0019bd24`); and places the card at
+   once.
+2. **Every update** (`SceneTask_Update`, `0x0039d0fc`, after the object runners have set their objects' poses and
+   before the lights), `SceneTask_UpdateHeldObject` (`0x003a0ed8`): with `+0xd0` set and the game clock not past
+   `+0xd4` (or `+0xd4` 0), and the header's camera count `+0x22` set, the card goes to the camera runner's world pose
+   (task `+0x70`: scene rotation × sampled position + scene position, the rotations composed) moved along the
+   camera's view axis (its rotation's +y, `0x003363b0`) by
+
+   `d = k × aspect / tan(fov / 2)`
+
+   with the fov the current camera's (`+0x44`, the scene lens's, without the progressive mode's added 3°), the aspect
+   the camera's (`+0x4c`, the game aspect: 1.3333 at 4:3, 1.6667 at 16:9, [Graphics](graphics.md#video-mode)),
+   and k 0.5, or 0.3 when the device's 16:9 flag is on (device vtable `+0xd0`, `+0x45c`). The card turns as the
+   camera (object vtable `+0x6c`). Once the clock is past the end, `+0xd0`, `+0xd4` and `0x00512c44` are cleared, and
+   the object's own track puts the card back underground from the next update.
+
+A skip's flush drops event 73 ([Skipping](#skipping)). **Disc check** (scratch script over the scene list): the 23
+events are all on camera tracks, one to three a scene, held 1 to 2 s, and every slot names a character or gang card:
+
+| Scene | Frame: card (seconds) |
+| --- | --- |
+| `l99_c1` | 280: `cleon` (1), 360: `vermin` (1), 1032: `rembrandt` (1) |
+| `l80_c1` | 747: `destroyers` (2) |
+| `l80_c4` / `l80_c5` | 270: `ajax` (1.75) / 181: `cowboy` (1.75), 264: `snow` (1.6) |
+| `l80_c6` / `l80_c7` | 388: `fox` (1.5) / 24: `cochise` (1), 169: `swan` (1) |
+| `l2_c1_a`, `l3_c2`, `l5_c4`, `l9_mintro`, `l11_c2` | `orphans`, `hihats`, `hurricanes`, `moonrunners`, `bopp` |
+| `l14_c1`, `l20_c6`, `l31_c5`, `l34_c4`, `l55_c1`, `l55_c5`, `l82_c2_a` | `saracens` and `jsbs`, `huns`, `turnbull_a`, `furies`, `lizzies`, `punks`, `samo` |
 
 ### Skipping {#skipping}
 
@@ -645,7 +689,10 @@ starts (1 human holding, 1 held), and finds no human holding, held or grabbed 90
   events other than 13, 21 and 22 are not acted on.
 - Keyed rotations are slerped; the camera looks along its rotation's +y with +z up (inferred: `l99_c5`'s first camera
   key aims +y at the roles).
-- Event 30's colour is read as bytes r, g, b at `+8` (the cone's float is at `+0x10`); 69 and 73 do nothing.
+- Event 30's colour is read as bytes r, g, b at `+8` (the cone's float is at `+0x10`); 69 does nothing.
+- Event 73 holds its intro card as [Intro cards](#intro-cards) says (`heldObjectPose`, tested in
+  `coney_tests "[scenes]"`); the host says whether the game is 16:9 (Coney's play is 4:3 so far). Coney does not
+  stop the room smoke while a card shows. Before this, the cards stayed parked underground and never showed.
 - A scene with roles but none bound ends when its tracks do; an aborted scene's end function is not called.
 - A track's events fire against the scene's frame (the part's start frame plus its time), the header's and the
   current part's alike.

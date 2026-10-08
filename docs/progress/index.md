@@ -33,7 +33,7 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▍░░░░░░░░░░░░░░░░` | 16.9% of the game's own code (567,908 of 3,354,776 bytes, 2,091 functions) |
+| **Reimplemented** | `███▍░░░░░░░░░░░░░░░░` | 16.9% of the game's own code (568,632 of 3,354,776 bytes, 2,093 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,192 of 3,284,000 bytes; 11,423 of 11,425 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
@@ -81,7 +81,7 @@ at the top of the repository's `README.md`.
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 30 | 17,904 |
 | `Scripting` | `██████▏░░░░░░░░░░░░░` | 30.6% | 224 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `███▎░░░░░░░░░░░░░░░░` | 16.3% | 163 | 531,312 |
+| `TaskEngine` | `███▎░░░░░░░░░░░░░░░░` | 16.4% | 165 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 33 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 32 | 22,008 |
@@ -1983,6 +1983,8 @@ at the top of the repository's `README.md`.
 | `0x003a0a68` | `SceneTask_EndClips` | `TaskEngine` | 384 |
 | `0x003a0be8` | `SceneTask_StopLooping` | `TaskEngine` | 344 |
 | `0x003a0da8` | `SceneTask_CallEnd` | `TaskEngine` | 160 |
+| `0x003a0e48` | `SceneTask_HoldObject` | `TaskEngine` | 144 |
+| `0x003a0ed8` | `SceneTask_UpdateHeldObject` | `TaskEngine` | 580 |
 | `0x003a13d0` | `SceneTask_Create` | `TaskEngine` | 280 |
 | `0x003a19b0` | `Obj_GetWorldPose` | `TaskEngine` | 296 |
 | `0x003a2e00` | `Task_SendMessage` | `TaskEngine` | 32 |

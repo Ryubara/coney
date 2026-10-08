@@ -32,6 +32,7 @@ constexpr std::string_view kUsage =
     "             [--dev-overlay N]\n"
     "             [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]\n"
     "             [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
+    "             [--no-activate]\n"
     "             [--no-audio | --audio-test] [--skip-movies]\n"
     "\n"
     "  --disc PATH        the game's disc: a mounted disc, a folder of its files or an ISO image\n"
@@ -93,6 +94,8 @@ constexpr std::string_view kUsage =
     "  --line-blend on|off  soften the picture as the PS2's video output does, each line the mean of\n"
     "                     two neighbouring lines (default on); off shows the frame as drawn\n"
     "  --show-fps         print the frame and step rates once a second\n"
+    "  --no-activate      open the window without taking the keyboard focus from the one in use\n"
+    "                     (always so in test mode and for --render-references)\n"
     "  --no-audio         run with no sound output (no audio device is opened)\n"
     "  --skip-movies      skip every movie at once, as if it had ended (by default they play, in\n"
     "                     test mode too; any pad button skips one, as in the game)\n"
@@ -528,6 +531,10 @@ bool isTestMode(const Options& options) {
            options.inputScript.has_value() || options.screenshotPath.has_value();
 }
 
+bool activatesWindow(const Options& options) {
+    return !options.noActivate && !isTestMode(options) && !options.renderReferences.has_value();
+}
+
 std::expected<Options, Error> parseOptions(std::span<const std::string_view> args) {
     Options options;
     std::optional<std::string> languageArg;   // as typed, so a repeat is refused like any other option
@@ -753,6 +760,8 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             options.skipMovies = true;
         } else if (arg == "--audio-test") {
             options.audioTest = true;
+        } else if (arg == "--no-activate") {
+            options.noActivate = true;
         } else if (arg == "--show-fps") {
             options.showFps = true;
         } else if (arg == "--checkpoint") {

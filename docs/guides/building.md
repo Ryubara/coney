@@ -191,7 +191,7 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
       [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps] [--tunables FILE]
       [--no-audio | --audio-test]
       [--skip-movies] [--rumble TYPE [--arena N] [--gang-size N]]
-      [--profiles DIR] [--dev-overlay N]
+      [--profiles DIR] [--dev-overlay N] [--no-activate]
 ```
 
 Coney draws with librw's OpenGL 3 renderer (an OpenGL 3.3 core context through SDL3; librw falls back to 2.1 or
@@ -237,6 +237,10 @@ the pads are read once per step, as in the original.
 Test mode is lockstep: with `--frames`, `--headless`, `--input-script` or `--screenshot` every frame is one step and
 one render, with no clock, so a run gives the same result every time on any machine. `--fps-cap` and `--show-fps`
 are refused there.
+
+A test-mode run's window opens without taking the keyboard focus, so a scripted run never interrupts someone typing;
+`--no-activate` does the same for any other run, and `--render-references` never takes it. Agents start Coney only
+this way ([Running Coney](research-workflow.md#running-coney)).
 
 ```sh
 build/dev/src/platform/coney --disc /path/to/warriors.iso --show-fps

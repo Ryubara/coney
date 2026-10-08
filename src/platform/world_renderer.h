@@ -54,7 +54,8 @@ inline constexpr float kSkylineNearClip = 39.0F;
 inline constexpr float kCloudRadiansPerMs = 1.0F / 60000.0F;
 
 /// The cloud box's frame after `nowMs` of game time: `base` turned about RenderWare's up axis (y) through the
-/// origin by nowMs × kCloudRadiansPerMs.
+/// origin by -nowMs × kCloudRadiansPerMs, clockwise seen from above. The original turns the camera it draws the box
+/// through by +θ instead (docs/research/level-loading.md#render-order), which shows the box turned by -θ.
 [[nodiscard]] world::FrameMatrix cloudFrame(const world::FrameMatrix& base, std::uint64_t nowMs);
 ///
 /// Each atomic is lit as the original's LightManager lights it (SceneLighting): the sectors by the world's lights and
@@ -82,18 +83,18 @@ class WorldRenderer {
     /// simulation's visibility pass. `nowMs` is game time for the fade-in and the clouds. `drawObjects`, when given,
     /// draws the objects between the `s` and the `d` world (step 7, where the original draws the resource manager's
     /// queued objects); it may change the current lights and render states, which are put back after it. `overlay`,
-    /// when given, draws after the world with no depth test, before the frame is presented (the menus' 2D pass). With
+    /// when given, draws after the world with no depth test, before the frame is presented (the menus' 2D pass).
+    /// `afterWorlds`, when given, draws after the `d` world in the world pass's states, before the coronas: the water
+    /// and the see-through parts (steps 9-10). With
     /// the NULL backend the frame is begun and presented and nothing is drawn.
     /// @orig 0x0040e8d8 WorldManager_Render (WorldManagerPS2.cpp)
     void render(RenderEngine& engine, const WorldSet& set, const world::LevelObject* level, const WorldView& view,
                 float pendingDistance, std::uint64_t nowMs, const std::function<void()>& drawObjects = {},
-                const std::function<void()>& overlay = {});
+                const std::function<void()>& overlay = {}, const std::function<void()>& afterWorlds = {});
 
     /// Lights the frames with `lighting` (a level's, which must outlive its use) from now on; null goes back to the
     /// renderer's own.
     void setLighting(SceneLighting* lighting) { m_lighting = lighting; }
-    /// Sets what render() draws after the `d` world, before the coronas: the level's water (step 9). Empty for nothing.
-    void setAfterWorlds(std::function<void()> draw) { m_afterWorlds = std::move(draw); }
     /// The lighting the frames are drawn with.
     [[nodiscard]] SceneLighting& lighting() const { return m_lighting != nullptr ? *m_lighting : *m_ownLighting; }
 
@@ -120,7 +121,6 @@ class WorldRenderer {
     std::unique_ptr<graphics::LevelLighting> m_ownLevel; // the manager as it starts, for frames without a level's
     std::unique_ptr<SceneLighting> m_ownLighting;
     SceneLighting* m_lighting = nullptr; // a level's, when set
-    std::function<void()> m_afterWorlds; // the water, drawn after the `d` world
     std::uint32_t m_drawn = 0;
     std::optional<std::uint64_t> m_animationMs; // freezeAnimation()'s time
 };

@@ -72,6 +72,15 @@ graphics::ScreenRect RenderEngine::logicalScreenIn(graphics::Extent size) const 
 
 RenderEngine::~RenderEngine() { shutDown(); }
 
+void setWindowActivation(bool activate) {
+    // SDL shows a window without activating it (SWP_NOACTIVATE on Windows) when ACTIVATE_WHEN_SHOWN is off, and
+    // ACTIVATE_WHEN_RAISED keeps a later raise from bringing it to the front. librw's GL3 device shows the window
+    // it makes with SDL_ShowWindow's defaults, so these hints are the only way to reach it.
+    const char* value = activate ? "1" : "0";
+    SDL_SetHint(SDL_HINT_WINDOW_ACTIVATE_WHEN_SHOWN, value);
+    SDL_SetHint(SDL_HINT_WINDOW_ACTIVATE_WHEN_RAISED, value);
+}
+
 std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBackend backend, const WindowDesc& desc) {
     // The constructor is private, so make_unique cannot reach it.
     std::unique_ptr<RenderEngine> engine(new RenderEngine(backend, desc));
@@ -81,6 +90,8 @@ std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBa
     // it ignores its own failures and goes on to use a display list it never made; holding our own reference also
     // keeps SDL alive until librw has destroyed its window.
     if (openGl) {
+        // Before librw makes and shows the window, so a run nobody is playing never takes the keyboard focus.
+        setWindowActivation(desc.activate && !desc.hidden);
         if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
             return startFailure("SDL_InitSubSystem(SDL_INIT_VIDEO)", true);
         }

@@ -1,0 +1,25 @@
+# The street trash cans (level99, mission 1): slot 8's level99 street holds an overhead_weapon dyn_trashcan alone at
+# (47.71, 2.28). The player is put 1.6 m south of it facing it, walks into it (stick 60 % down: the camera looks
+# south), then punches it.
+# The hooks log his sweep contacts, the can's messages (1: the strike that breaks it), its pieces and its removal.
+# Research: docs/research/objects.md#trash-props.
+description = "level99 street: walk into a dyn_trashcan (stick 60 % down), then square at it"
+research = "docs/research/objects.md#trash-props"
+input = "props_trashcan.txt"
+updates = 160
+fields = ["player", "prop"]
+
+[original]
+slot = 8
+patches = ["scripted-pad", "right-stick", "human-contact", "strike-contact", "overhead-message", "debris-spawn", "object-remove"]
+let = { prop = "0x00ef2600" }
+setup = [
+  { address = "tf(player) + 0x0", type = "f32", value = "47.71", frame = 0, until = 2 },
+  { address = "tf(player) + 0x4", type = "f32", value = "0.68", frame = 0, until = 2 },
+  { address = "tf(player) + 0x18", type = "f32", value = "0.0", frame = 0, until = 2 },
+  { address = "tf(player) + 0x1c", type = "f32", value = "1.0", frame = 0, until = 2 },
+]
+
+[coney]
+level = "level99"
+args = ["--checkpoint", "2"]

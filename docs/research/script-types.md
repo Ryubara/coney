@@ -2004,9 +2004,9 @@ large and 80 small pieces at once. Then 8 updates (every 5 ticks) of trailing pi
 ### `overhead_weapon` {#overhead-weapon}
 
 Large objects carried over the head and thrown (chairs, trash cans, appliances). Data: `+0x00` a counter, `+0x04`
-state (2 thrown, −5 broken), `+0x08` the update interval, `+0x0c` breakable. The initialiser marks it breakable for a
-list of 18 model hashes, or for any model while game state flag word 3 bit 0 is set; bit 3 clears a flag of its
-collision body.
+state (2 thrown, −5 broken), `+0x08` the update interval, `+0x0c` set when no path-polygon flag 8 is held under it.
+The initialiser sets that flag for every model but a list of 18, and for none while game-state set 3 bit 0 is set;
+bit 3 clears body flag `0x4` (`BLOCKHUMANS`). The street props: [Objects](objects.md#trash-props).
 
 Messages (`OverheadWeapon_OnMessage`): **0** a pick-up offer (held flag `0x100000`, message `0x14` to the human),
 **1** the break, **4** state 0 and update 2, **10** hittable on/off, **`0x15`** flag `0x40`, **`0x19`** flag
@@ -2019,12 +2019,12 @@ by chair), trash (`dyn_trashbit_a`/`b`/`d`, `dyn_parktrash_aa`, `dyn_trashcan_b`
 appliance parts (`dyn_dryer_ba`, `dyn_fridge_ca`, `dyn_stereo_a`, `dyn_vargas_stove_aa`, `dyn_vargas_washer_aa`),
 and for one model a random one of seven hobo foods (`dyn_hobo_donut_a` ... `dyn_hobo_steak`). Some models instead
 send a message to a linked object. It then plays the type's break sound unless game flag word 3 bit 2 is set (at
-0.65 volume when the holder `+0x368` is set). Confirmed (code) for the structure and the names; which hash is which
-model is not traced.
+0.65 volume when the attacker's `+0x368` is set: he ran into it). Confirmed (code) for the structure and the names;
+which hash is which model is traced only for the street trash ([Objects](objects.md#trash-props)).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
-| `0x003ff6c8` | `OverheadWeapon_Init` | `overhead_weapon` init | flags `0x228001`, update 20, model, breakable by model list or game flag | confirmed (code) |
+| `0x003ff6c8` | `OverheadWeapon_Init` | `overhead_weapon` init | flags `0x228001`, update 20, model, path flag 8 unless in the model list or game-state set 3 bit 0 | confirmed (code) |
 | `0x003ff918` | `OverheadWeapon_OnPickedUp` | message `0x1b` | the first time, sets flag 8 of the path polygon under it; resets its rotation, attaches to the human's bone, attached flag on; messages 3 and `0x17` (with `CfgObj` field 3) to the human | confirmed (code) |
 | `0x003ffb48` | `OverheadWeapon_OnDropped` | message `0x1c` | while attached: detached, airborne, state 2, a random spin for seven models (wider for two); held flag off | confirmed (code) |
 | `0x003ffe90` | `OverheadWeapon_Break` | message 1 | the break above | confirmed (code) |

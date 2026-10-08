@@ -937,8 +937,8 @@ See [Scenes: Objects, camera and lights](scenes.md#camera).
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
-| `0x003a0e48` | `SceneTask_StartCameraPart` | Starts the next camera part of a scene. | confirmed (code) |
-| `0x003a0ed8` | `SceneTask_UpdateCamera` | Updates the scene camera. | confirmed (code) |
+| `0x003a0e48` | `SceneTask_HoldObject` | Scene event 73: holds a scene object (an intro card) before the scene camera for a time ([Scenes](scenes.md#intro-cards)). | confirmed (code) |
+| `0x003a0ed8` | `SceneTask_UpdateHeldObject` | Each scene update: places the held object before the camera until its time is up ([Scenes](scenes.md#intro-cards)). | confirmed (code) |
 | `0x003a1540` | `SceneTaskManager_GetCamera` | Returns the scene camera. | confirmed (code) |
 | `0x003a1558` | `SceneTaskManager_SetCamera` | Sets the scene camera. | confirmed (code) |
 

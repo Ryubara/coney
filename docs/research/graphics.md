@@ -634,7 +634,10 @@ What [one in-game frame](boot.md#one-frame) does on the screen, confirmed (code)
    world's sectors with back-face culling, objects, the detail world, water, translucent objects; Z test and write
    on and fog on except where stated; the full order is on [The streamed world](world.md#a-frame)); the 3D sprite
    batches (`0x00185b38`: Z write and culling off, the batches farthest first, then the glass panes near a camera,
-   [World objects: drawing a pane](objects.md#pane-draw));
+   [World objects: drawing a pane](objects.md#pane-draw)); these batches hold the humans' **blob shadows**
+   (`part_page1`, [Lighting](lighting.md#humans)), the **coronas** (`lighting`, [Lighting](lighting.md#corona)) and the
+   particles, so all of them come after the whole world pass, the water and the translucent objects included, in
+   ascending key (measured in a fight: the `part_page1` batches, then `lighting`, [GUI](gui.md#draw-order));
    the ground rings (`0x0017b2e0`, [HUD](hud.md#the-health-rings)); slot `+0x118` (heat distortion).
 4. **Overlays** (`0x00156658`): the HUD (`0x001b1688`) and the overlay pass `0x00185d20` that flushes it ([2D
    drawing](#2d-drawing)); the **screen effects** (slot `+0x128`: the tint, flashes and blur, drawn at once, not
@@ -1392,6 +1395,16 @@ Confirmed (code) at each address unless a row says otherwise.
 [`SetPositionOfWater`](../references/bindings/world.md#setpositionofwater) (world manager `+0x5c`). It is the world
 manager's third streamer ([Choosing what to stream](world.md#streaming)): its file (a texture dictionary) is read
 only when it is near enough. After it come the atomic plugin `0x3F0`'s methods ([The streamed world](world.md#atomic-plugin)).
+**What `Water_Set` (`0x0040ca18`) passes**, confirmed (code): 2 columns and 8 rows, so a grid of **3 vertices across
+the width by 9 along the length**; texture repeats **4 across and 16 along**; the names `water_tex` and `ocean_tex`;
+`+0x58` = 0. The grid is the unit square (x = i / 2, y = j / 8, z = 0) in the water's frame, which is scaled by
+(width, length, 1) (`0x001915a0`), so the wave height is in metres. The file is the WAD entry named the decimal CRC-32
+of `water_tex` (`"725908093"`, entry 3,354): a texture dictionary of **one texture, `water`, 256 × 256, 8-bit**, and the
+material takes the dictionary's texture (`+0x10` of it; confirmed (disc) for the file). `ocean_tex` is hashed into
+`+0x3c`, but `+0x3c` is then overwritten by the file size looked up for `+0x38`, so its file (entry 1,089, one
+texture `ocean`, 128 × 128) is **never loaded**. The geometry is built with texture coordinates `2 × 4 × i / 2` and
+`2 × 4 × j / 8` and prelit `0x7f7f`, but the first update (below) replaces them, since the last update time starts at 0.
+
 Water fields, confirmed (code) at `0x00191230` and `0x00190810`:
 
 | Offset | Meaning |
@@ -1445,6 +1458,8 @@ step 9) and draws with culling off; Z test, Z write and fog stay as the world pa
       `0x0050cd88` = 5; RenderWare's 0-255 scale, so about 88 % opaque);
     - texture coordinates `u = u0 + repeatsAcross × i / (columns − 1)` and `v = repeatsAlong × j / (rows − 1)`;
     - the last row and the last column copy the first one's heights and colours, so the surface tiles.
+    - with `Water_Set`'s grid that leaves two distinct columns: the two edges at `sin t`, the middle at `sin(1 + t)`;
+      the surface rocks across its width and is flat along its length.
 3. Unlock the geometry and render the clump (`0x0046a100`).
 
 **The texture's file**, inferred (disc check): the WAD file `725908093`, the decimal CRC-32 of `water_tex`, is a

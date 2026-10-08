@@ -869,6 +869,54 @@ bums. Points an implementer needs:
 - **2, 6, 8**: a plain grab scores nothing; strikes, throws and power moves are scored with their own ids when they
   start, since a grab move applies its damage on its first update.
 
+#### The hints in order (runtime reference) {#level99-hints}
+
+The texts the hint box showed over one play of checkpoint 1 on the original (2026-10-07, the copy
+`l99-tutorial` of lesson 1 with `TT_20a` already up, driven over PINE as Coney's `CourseDriver` plays it), by
+`LEVEL99` key. "Shown" is the moment `HintBox_Update` takes the text off its queue (`0x001cdf7c`), which can be later
+than the `HUDSetTutorialText` call: a text with `<DISPLAYTIME n>` holds the box for *n* ms first. Updates count from
+the copy's first; the gaps are where the driver was stopped and the game idled, so only differences within one
+stretch mean anything. The hooks are `lua-exec`, `c-call`, `c-call-args`, `game-hint` and `hint-show` of
+`repo:research/traces/patches.toml`. Confirmed (runtime).
+
+| Update | Lesson | Shown (and what the script set) |
+| --- | --- | --- |
+| 0 | 1 | `TT_20a` (marker 01 shown) |
+| 164-165 | 1 | marker 01 entered: `dyn_w_mission02` destroyed, `TT_20c`, `dyn_w_mission03` shown |
+| 280 | 1 | marker 03 entered: `dyn_w_mission03` destroyed, the text cleared twice; then the intro scene (per the lesson table) |
+| 497-866 | 2 | callback `P1.BasicAttacks`; `TT_22a`, `TT_22b`, `TT_19a` (the grab step), `TT_22a`, `TT_22b`, `TT_19c` (the mount step), `TT_22a`, `TT_22b` |
+| 884-929 | 2 | callback cleared; `TT_19b` |
+| 1009-1239 | 3 | `TT_26a` (`<DISPLAYTIME 3000>`), then `TT_26b` **91 updates later** (set at 1009, shown at 1100); pad handler `P1.Target` at 1129, cleared at 1239 |
+| 1357-1726 | 4 | callback `P1.LightCombos`: `TT_23a`, `TT_23b`; `TT_23e` with callback `P1.HeavyCombos`, `TT_23f`, `TT_23d`; callback cleared |
+| 1756-1916 | 5 | `TT_24a` with callback `P1.Power`, `TT_24b`; callback cleared at 1916 |
+| 1916-2278 | 6 | `TT_24d` with callback `P1.PowerMove`; `TT_24e` after the first power strike; callback cleared at 2278 |
+| 2508 | 7 | `dyn_beerbottle` destroyed, `TT_25a`; then the scene `l99_c7` (per the lesson table) |
+| 2659-2857 | 7 | `TT_25c` with callback `P1.Snaps`, shown again after each counted snap |
+| 2993-3188 | 8 | callback `P1.Throws`; `TT_25e` (shown again after each counted throw); callback cleared at 3188 |
+| 3390 | 9 | `TT_25h` (take a bat), after the scene `l99_c8` (per the lesson table) |
+| gap | | |
+| 19654-19903 | 9 | the bat taken: callback `P1.Weapons`; `TT_25i` (16 updates later), `TT_25j`, `TT_25k`, `TT_25k`; callback cleared |
+| 19963 | 10 | `TT_28a` (60 updates after lesson 9's end) |
+| 20745 | 10 | `TT_28b` (the meter full, `P1.CheckRage`) |
+| gap | | |
+| 35827-36588 | 10 | `TT_28e` (`<DISPLAYTIME 3000>`), `TT_28f` 93 updates later, callback `P1.RageMoves` at 35933; `TT_28h` and the callback cleared at 36156, `TT_28d` 91 updates later, callback `P1.RageMoves` at 36261; cleared at 36588 |
+| 36648 | 11 | `TT_30` |
+| 38396 | 12 | `TT_40` |
+| 40057 | | `SetCheckPoint(2)` and the two `HUDSetObjective(2, …)` lines |
+
+Points a playthrough test needs:
+
+- **The lesson texts** are the ones in the table above that are not `TT_19*`. They come in this order on every play.
+- **`TT_19a`, `TT_19b`, `TT_19c` and `TT_19e`** are the grab hints: tap circle to grab, L2 to let go, hold circle for
+  the mount, circle to pick up a downed enemy. The lesson handlers show them on a step that needs a grab. The same
+  texts also show whenever the player's state calls for them. In lesson 6, a circle at a bum lying on the ground
+  showed `TT_19e` and went into the pick-up, where the power strike does not start. So how often they show depends on
+  the driver: assert the lesson texts in order, and allow the `TT_19*` texts between them.
+- **Repeats**: `TT_25c`, `TT_25e` and `TT_25k` are shown again for each counted move. A test that checks the order
+  should merge consecutive repeats.
+- **The `<DISPLAYTIME>` texts** (`TT_26a`, `TT_28e`, `TT_28h`) hold the box for about 90 updates. The next text set
+  with them waits in the queue that long.
+
 #### Checkpoints 2 and 3 {#level99-checkpoints}
 
 `level99_lesson1` (`P2`, checkpoint 2, the street) and `level99_lesson2` (`P3`, checkpoint 3, the run to the

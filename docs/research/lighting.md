@@ -184,7 +184,10 @@ quadwords. Confirmed (code).
 directional lights, world point lights). Confirmed (runtime) in `level99`: with `+0x50` set so that light A is black,
 the scenery stays visible from its prelighting alone; with the normal 0.227 a lit wall's screen brightness doubles
 (mean about 29 → 58 of 255); with 0.927 it reaches about 117, while the road, brighter in its prelighting, moves
-only from 40 to 53 (saturating). The humans and the sky do not change.
+only from 40 to 53 (saturating). The humans do not change. **The sky does**: it is lit by list A too
+([The background](level-loading.md#render-order)); with `+0x50` raised from 0.07 to 0.77 (light A 0.227 → 0.927) the
+sky's mean screen colour went from (10, 17, 27) to (22, 34, 54) of 255, about twice, like the walls (confirmed
+(runtime), PCSX2 2.9.94, the owner's slot 1 copied to a file, `level99` street, window screenshots).
 
 **The maths**, confirmed (runtime), PCSX2 2.9.94 GS dumps of the `level99` street with lights changed over PINE
 (every vertex's colour read from the GS packets, world positions rebuilt from the camera; the VU1 microcode itself was
@@ -302,7 +305,8 @@ the human's first light (`0x0017de10`). Confirmed (code). What sets `+0x644` (wr
 `PM_Light` ([Front end](frontend.md)) and the options call `Gamma_Set(v)` (`0x001b4838`) with v from 0 to 100 in
 steps of 5, 40 by default: `W_GameState + 0x57a4` = v and the manager's brightness `+0x90` = v / 255 in R, G and B.
 So the option **adds v/255 to every ambient and directional light** (the world ambient, the objects' and humans'
-ambient and directional lights): 0 to 0.39, 0.157 by default. It does not touch point lights, the prelighting, the sky,
+ambient and directional lights): 0 to 0.39, 0.157 by default, and so the sky, which light A lights (inferred from the
+runtime test in [World lighting](#world)). It does not touch point lights, the prelighting,
 the fog or the screen. `SetGammaRamp` is empty. Confirmed (code); `level99` reads 40 and `+0x90` = 0.157 (confirmed
 (runtime)). The setting's storage is on the save page.
 

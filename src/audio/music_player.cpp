@@ -13,8 +13,9 @@ namespace {
 
 // The channel that holds the queued request.
 constexpr std::size_t kRequest = 2;
-// How far ahead of its voice a music stream is decoded: a second of frames, so a slow step never starves it.
-constexpr double kAheadSeconds = 1.0;
+// How far ahead of its voice a music stream is decoded: two seconds of frames, as the sound engine's streams, so a
+// stalled frame does not starve it.
+constexpr double kAheadSeconds = 2.0;
 // Fade lengths of the system music by mood change, in bars (docs/research/sound.md#music).
 constexpr int kFadeIntoFight = 0;
 constexpr int kFadeIntoIdle = 4;

@@ -98,6 +98,9 @@ class SceneHost {
     virtual void objectMessage(double /*object*/, int /*message*/) {}
     /// The scene is done with `object`: it goes back to the object manager.
     virtual void objectRelease(double /*object*/) {}
+    /// Whether the game's 16:9 option is on (device `+0x45c`), which sets how far an intro card is held before the
+    /// camera (heldObjectPose()); 4:3 by default.
+    [[nodiscard]] virtual bool widescreen() const { return false; }
     /// Light `index` of the scene is made or changed (world pose).
     virtual void lightSet(std::size_t /*index*/, const ScenePose& /*pose*/, const SceneLight& /*light*/) {}
     /// Light `index` is released.

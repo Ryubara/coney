@@ -1977,12 +1977,16 @@ SetPositionOfWater(pos, rot, width, length, colour, waveHeight, waveSpeed)
 
 **Returns** nothing.
 
-Places, sizes and colours the level's water surface, a 9 × 5 vertex grid textured `water_tex` (`ocean_tex` for the
-second texture) with 4 texture repeats across. The first call creates the WaterEffect (kept at `0x005147c4 + 0x5c`);
-later calls move it, resize it, recolour it and change its waves. Used by the river and dock levels.
+Places, sizes and colours the level's water surface: a grid of 3 vertices across its width by 9 along its length (2 × 8
+cells, z up, wave height in metres), textured with the single texture `water` (256 × 256) of the WAD file named after
+the CRC-32 of `water_tex`, repeated 4 times across and 16 times along. The first call creates the WaterEffect (kept at
+`0x005147c4 + 0x5c`); later calls move it, resize it, recolour it and change its waves. Used by the river and dock
+levels. Details: [Graphics: the water surface](../../research/graphics.md#code-water).
 
-**Notes.** The wrapper writes the three tables back unchanged. The wave also modulates each vertex's alpha. The update
-(0x00191dd8) runs at most every `0x0050cd84` seconds. There is no binding to remove the water.
+**Notes.** The wrapper writes the three tables back unchanged. The wave also modulates each vertex's alpha (225 + 5
+sin). The update (0x00191dd8) runs when the phase has moved more than 0.3 (`0x0050cd84`), every second frame. A second
+name, `ocean_tex`, is hashed but the hash is overwritten by the file size, so its file (texture `ocean`, 128 × 128) is
+never loaded. There is no binding to remove the water.
 
 - **Evidence:** confirmed (code) at `0x0040ca18`, `0x00191230`, `0x001915a0`, `0x00191dd8`; detail: traced
 - **Wrapper** `0x0037ba48` (registered by `RegisterBindings`); **calls** `0x0040ca18` `Water_Set`, `0x00191230`

@@ -210,6 +210,9 @@ struct Options {
     bool lineBlend = true;
     /// `--show-fps`: print the frame and step rates once a second, and their totals at the end. Not in test mode.
     bool showFps = false;
+    /// `--no-activate`: the window opens without taking the keyboard focus from the one in use, so a run started by
+    /// an agent or a tool never interrupts the person typing (activatesWindow()).
+    bool noActivate = false;
     /// `--kind`: the lists `--render-references` renders; unset renders all of them. Requires renderReferences.
     std::optional<ReferenceKind> referenceKind;
     /// `--no-audio`: no sound output at all: no mixer, no device (the debug menu's Audio page says so).
@@ -236,6 +239,12 @@ inline constexpr int kMaxCheckpoint = 99;
 /// mode runs the main loop in lockstep, one fixed step and one render per frame, and never reads a real clock, so a run
 /// gives the same result every time on any machine (docs/guides/conventions.md#platform-code).
 [[nodiscard]] bool isTestMode(const Options& options);
+
+/// Whether the window may take the keyboard focus when it opens: only in a run a person plays, so not with
+/// `--no-activate`, in test mode or for `--render-references` (an offscreen job). Runs started by agents and tools
+/// are test-mode runs, so they never take the focus from someone typing
+/// (docs/guides/research-workflow.md#running-coney).
+[[nodiscard]] bool activatesWindow(const Options& options);
 
 /// The character `--view-character` shows without a name: Rembrandt, the player of level99 (warr_re_cv).
 inline constexpr std::string_view kDefaultViewCharacter = "warr_re_cv";

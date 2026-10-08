@@ -415,6 +415,22 @@ address = 0x00219d50
 original = [0x27bdff90, 0x7fb00050]
 log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a0", name = "human" }, { value = "[a1 + 0x40]", name = "hit" }, { value = "[a1 + 0x58]", name = "nz", type = "f32" }, { value = "[a1 + 0xb4]", name = "triangle" }]
 
+[hook.overhead-message]
+description = "Each message an overhead_weapon gets (OverheadWeapon_OnMessage, 0x00402bf8; 1 is a strike landing, which breaks it): the caller, the object, the message number and the object's position."
+research = "docs/research/objects.md#trash-props"
+address = 0x00402bf8
+# addiu sp,sp,-0x70; sq s0,0x60(sp)
+original = [0x27bdff90, 0x7fb00060]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "object" }, { value = "a1", name = "message" }, { value = "[a0 + 0x10]", name = "x", type = "f32" }, { value = "[a0 + 0x14]", name = "y", type = "f32" }]
+
+[hook.debris-spawn]
+description = "Each call of ScriptObj_SpawnThrownDebris (0x003a5530, a broken prop's piece): the caller, the piece's type name (a string address), the offset and velocity vectors and the broken object."
+research = "docs/research/objects.md#trash-props"
+address = 0x003a5530
+# addiu sp,sp,-0x140; lui v1,0x51
+original = [0x27bdfec0, 0x3c030051]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "name" }, { value = "a1", name = "offset" }, { value = "a2", name = "velocity" }, { value = "a3", name = "object" }]
+
 [hook.texture-upload]
 description = "Each texture upload the GS texture cache places (TexCache_Allocate's call of TexCache_UploadRaster at 0x004a33e0): the raster, its GS word address and its size in words."
 research = "docs/research/ps2-render.md#gs-memory"
@@ -422,3 +438,43 @@ address = 0x004a33e0
 # jal 0x004a2910; move a0,s3
 original = [0x0c128a44, 0x0260202d]
 log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "s3", name = "raster" }, { value = "s1", name = "address" }, { value = "[s0 + 0x30]", name = "size" }]
+
+[hook.lua-exec]
+description = "Each Lua function the script system runs (luaV_execute, 0x00334478, from luaD_call 0x00328b40): the function's lineDefined and chunk name (its Proto +0x38 and +0x3c), and its first two arguments (type, value word, the high word of a number; then the value word of the second)."
+research = "docs/research/scripting.md#level99-hints"
+address = 0x00334478
+# addiu sp,sp,-0xc0; sw a1,0x14(sp)
+original = [0x27bdff40, 0xafa50014]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "[[a1 + 0x0] + 0x38]", name = "line" }, { value = "[[a1 + 0x0] + 0x3c]", name = "source" }, { value = "[a2 + 0x0]", name = "t1" }, { value = "[a2 + 0x8]", name = "v1" }, { value = "[a2 + 0xc]", name = "h1" }, { value = "[a2 + 0x18]", name = "v2" }]
+
+[hook.c-call]
+description = "Each C function (script binding) a Lua script calls (callCclosure, 0x00328a30): the function and its first two arguments, each as the TObject's type, value word and high word (a number is a double)."
+research = "docs/research/scripting.md#level99-hints"
+address = 0x00328a30
+# addiu sp,sp,-0x50; sq s0,0x40(sp)
+original = [0x27bdffb0, 0x7fb00040]
+log = [{ value = "[a1 + 0x0]", name = "function" }, { value = "[a2 + 0x0]", name = "t1" }, { value = "[a2 + 0x8]", name = "v1" }, { value = "[a2 + 0xc]", name = "h1" }, { value = "[a2 + 0x10]", name = "t2" }, { value = "[a2 + 0x18]", name = "v2" }, { value = "[a2 + 0x1c]", name = "h2" }]
+
+[hook.c-call-args]
+description = "With c-call, two instructions later in the same call: the binding's third and fourth arguments (type, value word, high word)."
+research = "docs/research/scripting.md#level99-hints"
+address = 0x00328a38
+# sq s2,0x20(sp); move s0,a0
+original = [0x7fb20020, 0x0080802d]
+log = [{ value = "[a2 + 0x20]", name = "t3" }, { value = "[a2 + 0x28]", name = "v3" }, { value = "[a2 + 0x2c]", name = "h3" }, { value = "[a2 + 0x30]", name = "t4" }, { value = "[a2 + 0x38]", name = "v4" }, { value = "[a2 + 0x3c]", name = "h4" }]
+
+[hook.game-hint]
+description = "Each call of HintBox_QueueGameHint (0x001ce1e8): the game's own hint id (a CfgTutorialMessage entry) queued at priority 2."
+research = "docs/research/hud.md#hints-hudsettutorialtext"
+address = 0x001ce1e8
+# addiu sp,sp,-0x10; lui v0,0x62
+original = [0x27bdfff0, 0x3c020062]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a1", name = "id" }]
+
+[hook.hint-show]
+description = "HintBox_Update taking the next hint off its queue (0x001cdf7c, after MarkupText_SetText): the hint's text pointer and its priority, the moment it shows."
+research = "docs/research/hud.md#hints-hudsettutorialtext"
+address = 0x001cdf7c
+# lbu v0,0x4(s1); lui a0,0x60
+original = [0x92220004, 0x3c040060]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "[s1 + 0x0]", name = "text" }, { value = "[s1 + 0x4]", name = "priority", type = "u8" }]

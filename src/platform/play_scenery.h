@@ -63,16 +63,13 @@ class PlayScenery {
     /// reads, such as a level's visible sectors.
     virtual void findVisible(const WorldView& newest) = 0;
     /// Draws one frame through `view` (RenderWare's axes, blended between the last two steps) and presents it;
-    /// `drawObjects` draws the characters among the scenery. `nowMs` is the frame's game time. Changes nothing the
-    /// simulation reads.
+    /// `drawObjects` draws the characters among the scenery, `afterWorlds` what follows the level's last world (the
+    /// water and the see-through parts). `nowMs` is the frame's game time. Changes nothing the simulation reads.
     virtual void draw(RenderEngine& engine, const WorldView& view, std::uint64_t nowMs,
-                      const std::function<void()>& drawObjects) = 0;
+                      const std::function<void()>& drawObjects, const std::function<void()>& afterWorlds) = 0;
     /// Holds the scenery's own animations (clouds, light flicker) at game time `atMs` from now on, whatever draw() is
     /// given, while what streams in still fades in: `--freeze-world`. A scenery without animations ignores it.
     virtual void freezeAnimation(std::uint64_t atMs) { (void)atMs; }
-    /// Sets what draw() draws after the level's worlds and their objects (the water); a scenery without a level's
-    /// worlds ignores it.
-    virtual void setAfterWorlds(std::function<void()> draw) { (void)draw; }
     /// The direction the character's directional light travels, in the game's axes: the stand-in lighting of a scenery
     /// without a level's lights.
     [[nodiscard]] virtual anim::Vec3 lightDirection() const = 0;
@@ -131,10 +128,9 @@ class LevelPlayScenery final : public PlayScenery {
     [[nodiscard]] float drawDistance() const override { return m_drawDistance; }
     void findVisible(const WorldView& newest) override;
     void draw(RenderEngine& engine, const WorldView& view, std::uint64_t nowMs,
-              const std::function<void()>& drawObjects) override;
+              const std::function<void()>& drawObjects, const std::function<void()>& afterWorlds) override;
     [[nodiscard]] anim::Vec3 lightDirection() const override;
     void setLighting(SceneLighting* lighting) override { m_renderer.setLighting(lighting); }
-    void setAfterWorlds(std::function<void()> draw) override { m_renderer.setAfterWorlds(std::move(draw)); }
     void freezeAnimation(std::uint64_t atMs) override { m_renderer.freezeAnimation(atMs); }
     [[nodiscard]] std::string summary() const override;
     [[nodiscard]] std::string name() const override { return m_name; }
@@ -184,7 +180,7 @@ class SandboxPlayScenery final : public PlayScenery {
     [[nodiscard]] float drawDistance() const override { return m_world.layout().lighting.fogEnd; }
     void findVisible(const WorldView& /*newest*/) override {}
     void draw(RenderEngine& engine, const WorldView& view, std::uint64_t nowMs,
-              const std::function<void()>& drawObjects) override;
+              const std::function<void()>& drawObjects, const std::function<void()>& afterWorlds) override;
     /// The lights the humans and objects are drawn with; each frame starts their viewport pass before drawing.
     void setLighting(SceneLighting* lighting) override { m_lighting = lighting; }
     [[nodiscard]] anim::Vec3 lightDirection() const override { return m_world.layout().lighting.sunDirection; }

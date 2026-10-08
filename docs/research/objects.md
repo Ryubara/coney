@@ -2,8 +2,8 @@
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`), static analysis only
 (Ghidra), a disc check (2026-10-06) of what the scripts pass and of the Object List and the `WonderWheel_100`
-scene, reported as counts and values, and, for the [objective markers](#objective-markers) and
-[held objects](#held) only, PCSX2 2.9.94 over PINE in `level99` (2026-10-06).
+scene, reported as counts and values, and, for the [objective markers](#objective-markers),
+[held objects](#held) and [trash props](#trash-props) only, PCSX2 2.9.94 over PINE in `level99` (2026-10-06, -07).
 
 ## Purpose
 
@@ -52,6 +52,7 @@ The code sits in `TaskEngine/`, in the stretches placed by position
 | `0x003a19b0` / `0x003a1ad8` | `Obj_GetWorldPose` / `Obj_GetPoseNow` | vtable `+0xa4` / `+0xac`: an attached object's pose through its parent's bone | confirmed (code), runtime |
 | `0x003fe490` / `0x003fe6b8` | `MeleeWeapon_Take` / `MeleeWeapon_Detach` | messages `0x1b` / `0x1c` of `melee_weapon` | confirmed (code) |
 | `0x00257f38` / `0x002586d8` | `Human_DropHeld` / `Human_ReleaseThrow` | a held object let go: dropped / thrown | confirmed (code) |
+| `0x003a5530` | `ScriptObj_SpawnThrownDebris` | a broken prop's piece: created by name at the prop's pose, knocked with message `0x30` ([Trash props](#trash-props)) | confirmed (code), runtime |
 | `0x003a53f0` | `Obj_SpawnChildByName` | creates an object by name at an object's pose, attached to it | confirmed (code) |
 | `0x00396bd0` | `Obj_SetColour` | `ObjColor`: packs `{r, g, b, a}` into the tint word | confirmed (code) |
 | `0x0038fab8` | `GlassTypes_Set` | `CfgSetGlassProperties`: one entry of the glass type table | confirmed (code) |
@@ -1291,8 +1292,8 @@ The street props `level34`'s riot meter counts ([Scripts](scripting.md#level34))
   sends message 6 once. The bench takes three bare-handed blows (10 → 6 → 2 → broken) or one armed blow, and each blow
   while intact sends message 6. A strike on a trash can or bags takes `+0x10d` from 1 to 0, so only the first counts.
 - **`overhead_weapon`** objects are the throwables: `OverheadWeapon_ContactDamage` (`0x003932c8`) takes one point
-  (`WorldObject_TakeHit(-1)`) per damaging contact while flying or held. What the class does with message 1 and how
-  it breaks is not traced.
+  (`WorldObject_TakeHit(-1)`) per damaging contact while flying or held. Message 1 breaks one at once, whatever its
+  counters say: [Trash cans and bags](#trash-props).
 - **`F.Vandalize`** (`level34.lua`) tells the newsstand apart by name, not by type bits: `GetRTTI` 8 and
   `GetObjectName` `dyn_newsstand_a` or `_b` give 3 points, other 8 give 1, 1024 (a pane) gives 2.
 
@@ -1317,9 +1318,120 @@ and Object List (the hashes are the CRC-32s of the names in the table above):
   hit point with radii **3.75 m and 2.75 m**, colour `0x8b7d6964`, unless game-state set 0 has bit `0x2`. The
   per-prop effects come after them. Out of view, a hit that leaves the prop standing stops there; a break still
   swaps or removes the model.
-- **Damaged model**: none of the four has one (their Object List records' `+0x04` is 0; only `dyn_trashcan` has one,
-  `dyn_trashcan_b`, and it is an `overhead_weapon`). So each broken riot prop loses its collision body and is removed
-  on its next update, as above; the pieces fly as [knocked pieces](physics.md#movers).
+- **Damaged model**: none of the four has one (their Object List records' `+0x04` is 0; only `dyn_trashcan` names
+  one, `dyn_trashcan_b`, which its own class spawns as a piece instead, [below](#trash-props)). So each broken riot
+  prop loses its collision body and is removed on its next update, as above; the pieces fly as
+  [knocked pieces](physics.md#movers).
+
+#### Trash cans and bags (`overhead_weapon` props) {#trash-props}
+
+`level99`'s street trash is placed by `ObjSpawn` like any [dynamic object](#dynamic-objects): checkpoint 2 has 11
+`dyn_trashcan`, 18 `dyn_gbags`, 2 `dyn_parktrash_a` and 5 `dyn_pstack`, all of class `overhead_weapon` ([Script
+types](script-types.md#overhead-weapon)). Each is a solid box that stops a walker, a weapon the player can pick up and
+throw ([Pickable objects](#pickable), [Throws](#throws)), and a prop that **any strike breaks at once**.
+
+**Collision layers** (`CfgObj` argument 12, `+0x5e`, as [`PHYFLAG`](physics.md#layers) bits). Confirmed (runtime): read
+from the object database (`*0x00512c04` + index × 0x90) and from the live objects' bodies (object `+0x118`, body
+`+0x40`) in quick-save slot 8 (`level99`, PCSX2 2.9.94):
+
+| Type | `+0x5e` | `PHYFLAG` bits | Body flags | Walker | Strikes, charge, jump | Sprint (gait > 3) |
+| --- | --- | --- | --- | --- | --- | --- |
+| `dyn_trashcan` | `0xbf` | `BLOCKOBJECTS`, `BLOCKHUMANS`, `MELEETARGET`, `WEAPONTARGET`, `JUMPTARGET`, `CHARGETARGET`, `COMBATPASSTHROUGH` | `0x1057e` | blocked (slides) | struck | blocked |
+| `dyn_gbags` | `0x2bf` | as the trash can, plus `RUNTARGET` | `0x5057e` | blocked (slides) | struck | struck, then blocked |
+| `dyn_parktrash_a` | `0x3f` | as the trash can, without `COMBATPASSTHROUGH` | `0x57e` | blocked (slides) | struck | blocked |
+| `dyn_pstack` | `0x2bd` | as the bags, without `BLOCKHUMANS` | `0x5057a` (inferred) | passes through | struck | struck, passes through |
+
+The riot props `dyn_crate_stack`, `dyn_newsstand_a` and `dyn_parkbench_a` ([above](#breakable-props)) have `0xbf` too.
+The world-object body base is `0x500` ([Physics](physics.md#bodies)); `COMBATPASSTHROUGH` is body bit `0x10000`,
+`RUNTARGET` `0x40000`. **Game-state set 3** (byte `+0x3eb` of the game state `*0x0051489c`, read by `GameState_TestFlag`
+`0x0041cf30`) changes all four types: bit `0x8` clears body flag `0x4` at init, so walkers pass through; bit `0x2`
+spawns no pieces; bit `0x4` silences the break; bit `0x1` keeps them off the path polygons (below). In slot 8 the byte
+was 0 (confirmed (runtime)); what sets it is not traced.
+
+**Walking into one** (`Human_OnContact`, `0x00219d50`, confirmed (code)): a world object that is not a `powerup_item`
+answers **`0x20001`**, the slide response ([Physics: contacts](physics.md#contacts)): the walker loses the part of his
+velocity that goes into the box and keeps the part along it. Nothing pushes, tips or moves the object: its own contact
+handler is not run by the human's sweep, and no velocity is given to it. Two cases come first: a body with `RUNTARGET`
+met by a human above gait 3 sets human `+0x368` = 1 and is **struck** (`Strike_Contact` through his vtable `+0x104`,
+once per body: it then joins his body's [ignore list](physics.md#ignore-lists)); a body with `JUMPTARGET` is struck the
+same way while he is airborne (`0x4000000`, or record bit `0x800`, or `Human_IsTurnLimited6`), and one with
+`CHARGETARGET` when his contact shape has flag 2 (charging). After such a strike a body without `0x4` answers `0x20000`
+(passed through); one with `0x4` still slides. Confirmed (runtime), slot 8 (`props_trashcan`): the player put 1.6 m
+south of the lone trash can at (47.71, 2.28) and walked at it (stick 60 %, gait 2) stopped with his root at y 1.5645,
+0.72 m from the can's centre, and edged sideways 0.1 m along it over about 30 contacts while the can stayed at (47.705,
+2.284, 0.703). Sprinting (L2, stick 100 %, gait 5, `props_gbags_run`) into the bags at (57.39, 13.72), his first contact
+struck them (`Strike_Contact` from `0x0021a0e0`), they broke, and he stopped dead 0.8 m short of their centre on the
+next update; walking on into the trash can beside them (gait 2-3) only slid.
+
+**A strike** (any of the player's or an AI's strike shapes that meet a `MELEETARGET` body,
+[Combat](combat.md#breakables); square at a trash can plays 661 `SPECIAL_BREAK_OBJECT_LOW`) reaches the object through
+`Strike_Contact` (`0x0021b290`, [above](#breakable-props)): the hit counter `+0x10d` goes 1 → 0, the impact sound
+(`Human_PlayImpactSound` with 9, or 26 armed, and the object's material), a noise report (30 m), message 6 to the volume
+boxes (the object was intact), stats crime 9 when the hit left a counter at 0 and the object has no flag `0x20`, and
+**message 1** with (attacker, attacker, kind, 0, contact point, contact `+0x10`). `OverheadWeapon_OnMessage`
+(`0x00402bf8`) calls `OverheadWeapon_Break` (`0x003ffe90`) for message 1 **unconditionally**: no hit points are read, so
+one blow of any kind, a thrown object's hit or a sprint into the bags breaks it. Confirmed (code); at runtime
+(`props_trashcan`, square at the can from 0.72 m) the strike landed 9 updates into clip 661 and the can broke on that
+update.
+
+**The break** (`OverheadWeapon_Break`, confirmed (code) unless marked):
+
+1. Pickable flag `0x100000` cleared; path-polygon flag 8 under it cleared once (data `+0x0c`, set when the init left
+   none); **the collision body removed** (`Obj_RemoveBody`); unless the fourth argument is −2, the state (data `+0x04`)
+   becomes −5 and `+0x10d` 0.
+2. Only when the particle pool has room and the object is within 60 m of a camera and visible from one
+   (`Cameras_IsPointVisibleAny` 10): the tint's alpha becomes 0 (`+0xcc` = `+0xc8` & `0xffffff00`, so it vanishes on the
+   next update, no fade), flag `0x200000`, `+0xd4` = 0.1; two dust bursts 0.5 m above the hit point (radii 3.75 m and
+   2.75 m, colour `0x8b7d6994`); then the per-model effects (table); then, unless the object is airborne, its material
+   differs from the value `ScriptObj_GetUserValue` returns and set 3 has no bit `0x4`, the material pair (material,
+   material) at the hit point at volume 1.0, or **0.65** when the attacker's `+0x368` is set (he broke it by running
+   into it).
+3. Rescheduled with interval 1, so `OverheadWeapon_Update` (`0x00402e70`) runs next tick, sees state −5 and returns
+   "done": `WorldObject_Update` removes it (`WorldObject_Remove`, message 2, spawn record bit `0x40000`, never spawned
+   again). Out of view the object is not hidden in step 2 but is removed the same way.
+
+At runtime both breaks hid the object (tint `+0xc8` `0xffffffff` → `0xffffff00`, flags `0x8022a001` → `0x80228001`) on
+the update after the strike and removed it on the next tick (`WorldObject_Remove` from `0x00395cb0`, just after a
+message `0x20`, which the class ignores). Confirmed (runtime).
+
+| Model | Effects | Pieces (`ScriptObj_SpawnThrownDebris`, `0x003a5530`) |
+| --- | --- | --- |
+| `dyn_trashcan` (`0xfbf3e3ae`) | the "trash" set below | **`dyn_trashcan_b`** (the dented can, `fade_object`) at the can's own pose, then message `0x15` (fade soon); plus the set's pieces |
+| `dyn_gbags` (`0x62502b03`) | the "trash" set | the set's pieces only |
+| `dyn_parktrash_a` (`0xb0c69542`) | the "trash" set | **`dyn_parktrash_aa`** (`fade_object`) at its pose, message `0x15`; plus the set's pieces |
+| `dyn_pstack` (`0xfbd21393`) | the "cardboard" set (as `dyn_cbox`): litter kind 1 and 8 brown (`0x4e4338ff`) `sub_debris` pieces of 0.35-0.55 | none |
+
+- **The "trash" set** (mode 1 of the break): litter pieces thrown from the hit point when the level has
+  [litter](particles.md#garbage) armed (`Garbage_Throw` kind 0); 10 black (`0x101010ff`) splinters
+  (`Particles_Splinters`, spread 2π); a brown splat (`Spawn_SubPaintSplat`, colour `0x55423860`, size 0.75-1.0) and a
+  burst at the object; a **`dyn_beerbottle`** (`thrown_weapon`) placed 0.5 m above the path polygon under the hit point,
+  when there is one, in the object's rotation, and knocked (message `0x30`) with no velocity and a spin of (0, a, b), a
+  and b random in ±π; and four **`fade_object` litter pieces**, `dyn_trashbit_a`, `dyn_trashbit_b` and two
+  `dyn_trashbit_d`, each at a random offset from the object (the arguments ±0.43, ±0.43, 0.83 of `Random_ScaledVector`;
+  their exact use is inferred). The two hobo variants (`dyn_hobo_trashcan`, `dyn_hobo_gbags`) drop a random hobo food
+  instead of the bottle.
+- **The default set** (a model with no case): 20 light-wood (`0xbea780ff`) and 24 dark (`0x5c3f27ff`) splinters.
+- **A piece's flight** (`ScriptObj_SpawnThrownDebris`): created by type name at the object's position plus the offset
+  turned by its rotation, in the given rotation (here identity), with the object as parent, then message `0x30` with a
+  spin of ±3π rad/s on each axis and a velocity of the normalised object vector `+0xb0` × 1-1.5 (what `+0xb0` holds at a
+  break is not traced). A `fade_object` takes that knock as a horizontal speed of 2-5 m/s each axis, z 0, and flies
+  airborne (`FadeObject_Launch`, `0x003c6ae0`). Nothing is spawned while set 3 has bit `0x2`.
+- **The pieces' end** ([Script types: `fade_object`](script-types.md#fade-object)): removed at once when no camera sees
+  them within 30 m; message `0x15` sets the age to 3400, so the dented can fades by 5 of alpha per update from age 3550
+  (inferred: about 150 of its updates after the break, then 51 to fade); the litter, without `0x15`, lasts until age
+  3550.
+
+At runtime (`props_trashcan`) the can's break spawned `dyn_trashcan_b` (offset and rotation the identity) and
+`dyn_trashcan` / `dyn_gbags` breaks each spawned `dyn_trashbit_a`, `_b`, `_d`, `_d`, in that order, in the strike's
+update. Confirmed (runtime); the bottle's path was not hooked.
+
+**Path polygons.** `OverheadWeapon_Init` (`0x003ff6c8`) sets path-polygon flag 8 at the object's point
+(`PathPolygon_SetFlag8AtPoint`, the flag of [door holes](#nav-links)) for every model but 18 small ones (`dyn_gascan`,
+`dyn_cbox`, `dyn_tire`, `dyn_crate_c`, `dyn_crate_e`, `dyn_tvsmall`, `dyn_tv`, `dyn_box_stereo`, `dyn_ricebag_b`,
+`dyn_keyboard`, `dyn_drumkit_a`, `dyn_drumkit_e`, `dyn_paintcan`, `dyn_detergent`, `dyn_cinderblok`, `dyn_bagcash`,
+`dyn_bagdrug` and one unnamed hash `0xe910f959`), or for none while set 3 has bit `0x1`; the break or the next update
+clears it. So the trash props mark the navigation mesh while they stand. Confirmed (code); what flag 8 means to the AI
+here is on [AI](ai.md).
 
 ### Trains (moving hazards) {#trains}
 
@@ -1546,6 +1658,8 @@ whole extents, a cylinder or capsule body is tested as its box, and only drawn o
 - What the first camera's vtable `+0x214` returns (the streaming-out distance).
 - Held objects: what fills human `+0x348` / `+0x34c` (event `0x37`), what message `0x17` to the holder does, who
   sends `melee_weapon` messages `0x12` / `0x13`, and the frame of a thrown object's angular velocity.
+- Trash props ([Trash cans and bags](#trash-props)): what object `+0xb0` holds when one breaks (its pieces' launch
+  direction), what sets game-state set 3's bits, and who sends a broken prop message `0x20`.
 - `dyn_door_vargas`' second object, and the leaf models of `dyn_door_chainlnk_pick` (no `dyn_dr_chainlnk_pick` record).
 - What a cabin door's leaves do once it breaks, and where the wreck pieces and boards appear.
 - Moving into a pane ([Moving into a pane](#pane-break)): which clip events switch the strike shapes on in a jump.

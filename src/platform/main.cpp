@@ -369,6 +369,8 @@ int main(int argc, char** argv) {
     const bool headless = options->headless || !options->loads.empty();
     coney::platform::WindowDesc windowDesc;
     windowDesc.hidden = options->renderReferences.has_value();
+    // Runs started by agents and tools (test mode, --no-activate) must not take the focus from someone typing.
+    windowDesc.activate = coney::activatesWindow(*options);
     // `--render-size`: frames of that size holding exactly the logical screen, as the original's frame buffer does.
     if (const std::optional<coney::RenderSize> size = options->renderSize; size) {
         windowDesc.width = size->width;

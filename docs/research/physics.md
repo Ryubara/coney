@@ -143,9 +143,11 @@ Body flag bits that a mover's mask selects ([Sweeping a body](#sweep)), named by
 | `RAYCASTTARGET` | 64 | `0x2000` | rays |
 | `COMBATPASSTHROUGH` | 128 | `0x10000` | |
 | `THROWNWEAPONTARGET` | 256 | `0x20000` | thrown weapons |
-| `RUNTARGET` | 512 | `0x40000` | a human above gait 3 (running) |
+| `RUNTARGET` | 512 | `0x40000` | a human above gait 3 (running) strikes it on contact ([Objects](objects.md#trash-props)) |
 
-The "who" column for strikes, rays and thrown weapons is inferred from the names. Confirmed (runtime), the body flags
+The "who" column for strikes, rays and thrown weapons is inferred from the names; the street props' values and what
+`Human_OnContact` does with `JUMPTARGET`, `CHARGETARGET` and `RUNTARGET` are on [Objects](objects.md#trash-props).
+Confirmed (runtime), the body flags
 in `level99`'s street: humans `0x2203f` (`0x2223f`, `0x2343f`), cars `0x2211a`, glass panes `0x7a`, world objects
 `0x500` (no layer) up to `0x5057e`. So **a walking human meets other humans** (answered `4`, [Contacts](#contacts))
 and the objects with `BLOCKHUMANS`, but **not a car's or a glass pane's body**.

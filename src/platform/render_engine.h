@@ -40,6 +40,10 @@ struct CapturedFrame {
     std::string path;           ///< Where the PNG was written.
 };
 
+/// Whether windows SDL shows from now on take the keyboard focus (SDL's ACTIVATE_WHEN_SHOWN and ACTIVATE_WHEN_RAISED
+/// hints). RenderEngine::start sets it from WindowDesc::activate before librw makes its window; it needs no display.
+void setWindowActivation(bool activate);
+
 /// librw's engine and, with the OpenGL backend, the window it draws into, started and stopped in the order librw
 /// requires (init, open, start; then stop, close, term).
 ///

@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <format>
 #include <map>
+#include <numbers>
 #include <optional>
 #include <set>
 #include <string>
@@ -58,6 +59,10 @@ class RecordingHost final : public scenes::SceneHost {
         calls.push_back(std::format("message {} {:#x}", object, message));
     }
     void objectRelease(double object) override { calls.push_back(std::format("object release {}", object)); }
+    void objectPose(double object, const scenes::ScenePose& pose) override { objectPoses[object] = pose; }
+    bool widescreen() const override { return sixteenNine; }
+    std::map<double, scenes::ScenePose> objectPoses;
+    bool sixteenNine = false;
     void cameraBegin(const scenes::ScenePose& /*pose*/, const scenes::SceneLens& l) override {
         calls.push_back(std::format("camera begin {}", l.fieldOfView));
     }
@@ -107,6 +112,26 @@ test::SceneSpec objectSceneSpec(std::string name, bool loopPoint) {
     return spec;
 }
 
+// A cinematic of 3 s like l99_c1's introductions: a camera at (0, -5, 2) looking along +y with a 60° lens, and an
+// intro card `cleon` parked 10 m underground on its own track, which event 73 at frame 6 holds before the camera for
+// 1 s (docs/research/scenes.md#intro-cards).
+test::SceneSpec cardSceneSpec() {
+    test::SceneSpec spec;
+    spec.name = "tst_card";
+    spec.frames = 90;
+    spec.objects = {test::RoleSpec{"cleon", {0.0F, 0.0F, -10.0F}, 0.0F, {0.0F, 0.0F, -10.0F}, 0.0F}};
+    spec.camera = test::RoleSpec{"camera", {0.0F, -5.0F, 2.0F}, 0.0F, {0.0F, -5.0F, 2.0F}, 0.0F};
+    spec.part.objects = {
+        test::TrackSpec{.duration = 3.0F, .positions = {{0, {0.0F, 0.0F, -10.0F}}}, .rotations = {}, .events = {}}};
+    spec.part.camera =
+        test::TrackSpec{.duration = 3.0F,
+                        .positions = {{0, {0.0F, -5.0F, 2.0F}}},
+                        .rotations = {{0, {0, 0, 0}}},
+                        .events = {test::SceneEventBytes(0, 26).f32At(8, 60.0F).f32At(12, 0.1F).f32At(16, 100.0F),
+                                   test::SceneEventBytes(6, 73).u16At(4, 0).f32At(8, 1.0F)}};
+    return spec;
+}
+
 // A scene system over a list of `tst_c1`, its segment, a long one-part scene `tst_long` (3 s) and the object scenes
 // `tst_wheel` (no loop point) and `tst_loop` (a loop point), recording the Lua calls it makes.
 struct Harness {
@@ -116,7 +141,8 @@ struct Harness {
                                                                {3, 0, "tst_long"},
                                                                {4, 0, "tst_wheel"},
                                                                {5, 0, "tst_loop"},
-                                                               {6, 0, "tst_calls"}}};
+                                                               {6, 0, "tst_calls"},
+                                                               {7, 0, "tst_card"}}};
     std::map<std::string, std::vector<std::byte>, std::less<>> files;
     std::vector<std::string> lua;
     RecordingHost host;
@@ -161,6 +187,7 @@ struct Harness {
                                          test::SceneEventBytes(80, 31),
                                          test::SceneEventBytes(85, 27).f32At(8, 1.0F)};
         files["tst_calls"] = test::sceneHeaderRecord(callsSpec).data();
+        files["tst_card"] = test::sceneHeaderRecord(cardSceneSpec()).data();
         files["tst_wheel"] = test::sceneHeaderRecord(objectSceneSpec("tst_wheel", false)).data();
         files["tst_loop"] = test::sceneHeaderRecord(objectSceneSpec("tst_loop", true)).data();
         system.setHost(&host);
@@ -625,4 +652,51 @@ TEST_CASE("the letterbox closes and opens linearly over its time", "[scenes]") {
     CHECK(bars.amount(9000) == 0.0F);
     bars.start(true, 0.0F, 9000); // a chained scene's bars close at once
     CHECK(bars.amount(9000) == 1.0F);
+}
+
+TEST_CASE("event 73 holds a character's intro card before the scene camera for its time", "[scenes]") {
+    // docs/research/scenes.md#intro-cards: SceneTask_HoldObject puts the bound object k × aspect / tan(fov / 2) along
+    // the camera's view (k 0.5 at 4:3, 0.3 at 16:9), turned as the camera, every update until its time is up; then
+    // the object's own track takes it back underground.
+    for (const bool wide : {false, true}) {
+        Harness h;
+        h.host.sixteenNine = wide;
+        constexpr double kCard = 42.0;
+        h.system.preload("tst_card", "");
+        h.step();
+        h.system.addObject(7, kCard, 0);
+        REQUIRE(h.system.play(7, Harness::cinematic()));
+        for (int i = 0; i < 4; ++i) {
+            h.step();
+        }
+        REQUIRE(h.system.state(7) == scenes::SceneState::Playing);
+        CHECK(h.host.objectPoses.at(kCard).position.z == Approx(-10.0F)); // parked before the event
+        for (int i = 0; i < 10; ++i) {
+            h.step();
+        }
+        const float distance = wide ? 0.3F * 1.6667F / std::tan(std::numbers::pi_v<float> / 6.0F)
+                                    : 0.5F * 1.3333F / std::tan(std::numbers::pi_v<float> / 6.0F);
+        const scenes::ScenePose& held = h.host.objectPoses.at(kCard);
+        CHECK(held.position.x == Approx(0.0F).margin(1e-4));
+        CHECK(held.position.y == Approx(-5.0F + distance).margin(1e-4));
+        CHECK(held.position.z == Approx(2.0F).margin(1e-4));
+        CHECK(held.rotation.w == Approx(1.0F).margin(1e-4));
+        // A second later the hold is over and the track puts the card back.
+        for (int i = 0; i < 32; ++i) {
+            h.step();
+        }
+        CHECK(h.host.objectPoses.at(kCard).position.z == Approx(-10.0F));
+    }
+}
+
+TEST_CASE("an intro card is held along the camera's own view axis", "[scenes]") {
+    // A camera turned 90° about z looks along -x (its local +y): the card is d ahead of it that way, turned with it.
+    const float half = std::numbers::sqrt2_v<float> / 2.0F;
+    const scenes::ScenePose camera{.position = {1.0F, 2.0F, 3.0F}, .rotation = {0.0F, 0.0F, half, half}};
+    const scenes::ScenePose card = scenes::heldObjectPose(camera, 90.0F, false);
+    const float distance = 0.5F * 1.3333F; // tan(45°) = 1
+    CHECK(card.position.x == Approx(1.0F - distance).margin(1e-4));
+    CHECK(card.position.y == Approx(2.0F).margin(1e-4));
+    CHECK(card.position.z == Approx(3.0F).margin(1e-4));
+    CHECK(card.rotation.z == Approx(half));
 }

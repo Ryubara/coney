@@ -1,0 +1,18 @@
+# The street garbage bags (level99, mission 1): slot 8's dyn_gbags at (57.39, 13.72) carries RUNTARGET. Slot 8's player
+# stands 5.6 m south of it and sprints into it (L2 held, the stick at 100 % down: the camera looks south). The hooks log his
+# sweep contacts, the strike his contact makes (Strike_Contact from Human_OnContact), the bag's messages and pieces.
+# Research: docs/research/objects.md#trash-props.
+description = "level99 street: sprint into a dyn_gbags (L2, stick 100 % down)"
+research = "docs/research/objects.md#trash-props"
+input = "props_gbags_run.txt"
+updates = 120
+fields = ["player", "prop"]
+
+[original]
+slot = 8
+patches = ["scripted-pad", "right-stick", "human-contact", "strike-contact", "overhead-message", "debris-spawn", "object-remove"]
+let = { prop = "0x00ef3780" }
+
+[coney]
+level = "level99"
+args = ["--checkpoint", "2"]

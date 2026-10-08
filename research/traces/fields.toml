@@ -660,3 +660,30 @@ type = "f32"
 name = "body_oz"                          # human +0x4e8
 address = "player + 0x4e8"
 type = "f32"
+
+# One world object named by the scenario's `let` (`prop`): its position, flags and tint
+# (docs/research/objects.md#breakable-props).
+[[prop]]
+name = "prop_x"
+address = "prop + 0x10"
+type = "f32"
+
+[[prop]]
+name = "prop_y"
+address = "prop + 0x14"
+type = "f32"
+
+[[prop]]
+name = "prop_z"
+address = "prop + 0x18"
+type = "f32"
+
+[[prop]]
+name = "prop_flags"                       # +0x54, the object's flags
+address = "prop + 0x54"
+type = "u32"
+
+[[prop]]
+name = "prop_tint"                        # +0xc8, the tint word (alpha in the low byte)
+address = "prop + 0xc8"
+type = "u32"

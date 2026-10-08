@@ -6,15 +6,17 @@ call. Nothing here needs PCSX2 or game data; the instruction words are checked a
 from __future__ import annotations
 
 import struct
+from collections.abc import Sequence
 from pathlib import Path
 
 import pytest
-from test_pcsx2 import PLAYER, PLAYER_INDEX, RECORD, FakeGame, MemoryOf, _repo
+from test_pcsx2 import PLAYER, PLAYER_INDEX, RECORD, TICK_COUNTER, FakeGame, MemoryOf, _repo
 
 from coney_tools import hooks
 from coney_tools.game_memory import GameMemory
 from coney_tools.hooks import CALL_BASE, RING_BASE, HookError, RingReader, build, load_hooks, parse_hook
-from coney_tools.recorder import Recorder
+from coney_tools.pine import Read, Write
+from coney_tools.recorder import Recorder, entry_step
 from coney_tools.scenario import load_scenario
 
 REPO = Path(__file__).resolve().parents[2]
@@ -163,3 +165,48 @@ def test_a_float_register_is_moved_with_mfc1_and_logged_as_f32() -> None:
     # mfc1 t9,f28 then the store; mfc1 t9,f0.
     assert code[12:14] == [0x4419E000, 0xAF190014]
     assert code[14] == 0x44190000
+
+
+class _HookedGame(FakeGame):
+    """A FakeGame whose character updates take two messages, as the original's pair of ticks does: on the first the
+    count turns even and a hook in `Humans_Update` logs the update's number to the ring (hook 1); on the second the
+    update finishes (its fields and the odd count), so a poll can see the entry before the update's sample is due."""
+
+    def tick(self) -> None:
+        """Start the update due on the next message, then let FakeGame count this one (and finish an update)."""
+        if (self.messages + 2) % self.polls_per_update == 0:
+            number = self.updates + 1
+            self.write32(TICK_COUNTER, 2 * number)
+            count = self.read(RING_BASE, 4)
+            entry = RING_BASE + 0x10 + (count % hooks.RING_ENTRIES) * 32
+            self.write32(entry, 1)
+            self.write32(entry + 4, number)
+            self.write32(RING_BASE, count + 1)
+        super().tick()
+
+
+class _TickingMemory(MemoryOf):
+    """MemoryOf with the game running between a message's writes and its reads."""
+
+    def batch(self, reads: Sequence[Read], writes: Sequence[Write] = ()) -> list[int]:
+        """Apply the writes, let the game run, then answer the reads."""
+        for write in writes:
+            self.game.write(write.address, write.size, write.value)
+        self.game.tick()
+        return [self.game.read(read.address, read.size) for read in reads]
+
+
+@pytest.mark.parametrize("polls_per_update", [2, 3])
+def test_a_hook_entry_carries_the_step_of_the_update_it_was_made_in(tmp_path: Path, polls_per_update: int) -> None:
+    scenario = load_scenario(_repo(tmp_path, ""), tmp_path)
+    hook = parse_hook("update", {"address": 0x00249108, "original": [0, 0], "log": ["a0"]}, "t")
+    game = _HookedGame(polls_per_update)
+    recording = Recorder(GameMemory(_TickingMemory(game)), scenario, hooks=[hook]).record()
+    # The fake game counts its updates in the clip column, so each row says which update its step shows.
+    step_of_update = {int(row[2]): int(row[0]) for row in recording.rows}
+    assert recording.hooks is not None
+    entries = recording.hooks.entries["update"]
+    tagged = [(step, values[0]) for _, step, values in entries if values[0] in step_of_update]
+    assert len(tagged) >= scenario.updates
+    assert all(step == step_of_update[int(number)] for step, number in tagged)
+    assert entry_step(2 * 7, 1) == entry_step(2 * 7 + 1, 1) == 7

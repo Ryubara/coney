@@ -36,6 +36,13 @@ inline constexpr std::uint64_t kStartTimeoutMs = 10'000;
 inline constexpr std::uint16_t kSkipCross = 0x0040;
 inline constexpr std::uint16_t kSkipStart = 0x0800;
 
+/// Where event 73 holds a scene object (a character's or gang's intro card) before the scene camera at world pose
+/// `camera` with field of view `fieldOfView` degrees: along the camera's view axis (local +y) by
+/// k × aspect / tan(fieldOfView / 2), k 0.5 with the 4:3 aspect 1.3333 or 0.3 with the 16:9 aspect 1.6667
+/// (`widescreen`), turned as the camera (docs/research/scenes.md#intro-cards).
+/// @orig 0x003a0ed8 SceneTask_UpdateHeldObject (SceneTask.cpp)
+[[nodiscard]] ScenePose heldObjectPose(const ScenePose& camera, float fieldOfView, bool widescreen);
+
 /// Which binding plays a scene, which decides its flags (docs/research/scenes.md#playing).
 enum class PlayKind : std::uint8_t {
     Cinematic, ///< `ScenePlayCinematic`.

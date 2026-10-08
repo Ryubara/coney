@@ -71,7 +71,7 @@ confirmed (code) at the address.
 | `0x0040c628` / `0x0040c648` / `0x0040c668` | `Wad_FindEntry` / `Wad_GetEntrySize` / `Wad_HasEntry` | the WAD object's lookups (its opener is `Wad_Open`, [File I/O](file-io.md#the-wad-index)): the index entry for a name, its size field (`+0x04`, no null check), whether it exists | confirmed (code) |
 | `0x0040c938` | `WorldManager_SetLoadPriority(scale)` | sets `0x005147cc`, the factor the [streaming update](#streaming) applies to the resource manager's distances (`LoadLevel` sets 0.001, the Rumble menu 10.0) | confirmed (code) |
 | `0x0040c948` | `World_Precache(name, radius, budget)` | pauses the frame pacer (`0x0050b734`) if it runs, then `WorldManager_Preload` around the named position when a level object exists, and resumes | confirmed (code) |
-| `0x0040ca18` | `Water_Set` (anchor of `World/WorldManagerLua.cpp`) | first call: allocates the level's `WaterEffect` (0x100 bytes, texture `water_tex`) into world manager `+0x5c`; later calls set its frame, its two heights and its textures | confirmed (code) |
+| `0x0040ca18` | `Water_Set` (anchor of `World/WorldManagerLua.cpp`) | first call: allocates the level's `WaterEffect` (0x100 bytes, [the water surface](graphics.md#code-water)) into world manager `+0x5c`; later calls set its frame, wave height and speed, width, length and colour | confirmed (code) |
 | `0x0040cc40` | `World_QueuePackToPrecache(name)` | `WorldManager_QueuePack` (`0x0040e1a0`) on the world manager: appends a pack name to the queue at `+0x0c`-`+0x24` that the preload loads at its end ([The world manager](level-loading.md#world-manager)) | confirmed (code) |
 | `0x0040cc70` | `ScreenFx_SetMotionAlpha(a)` | unless the screen effect `0x0051489c` is running, sets the motion-blur colour (white, alpha `a`) of both screen managers (`0x005fdeb8`, `0x005fdebc`, `+0x1a4` and `+0x1a8`) | confirmed (code) |
 | `0x0040cce8` / `0x0040cd28` | `ScreenFx_QueueMotionBlurAlpha` / `ScreenFx_QueueMotionBlurColour(time, rgba)` | queue a blur colour change on the screen manager `0x005fdeb8` (`0x0018c8c8`) | confirmed (code) |
@@ -511,8 +511,11 @@ Z write, `0x0e` fog. The world toggles `0x005e5380`-`0x005e5398` are all 1 (set 
 8. **The `d` world:** the same as the `s` world.
 9. The water effect (`0x00191dd8`, a phase that grows by 0.16 a frame).
 10. With Z write off: the instances of type `0x20` (last first), then the cars' **glass** pass (list `+0xc98`, last
-    first, culling off). Then the remaining
-    effects (`0x00419da0`, litter `0x001712c0`, ground fog `0x00171f58`, embers `0x001795f8`).
+    first, culling off). Then the remaining effects, each after the world camera's update has ended: the players'
+    throw arcs (`ThrowArcs_RenderAll`, `0x00419da0`), litter (`Garbage_Render`, `0x001712c0`), ground fog
+    (`GroundFog_Render`, `0x00171f58`) and, while `0x005971ac` is set, embers (`Embers_Render`, `0x001795f8`)
+    ([Graphics](graphics.md) has each). The toggles `0x005e5380`-`0x005e5398` gate steps 5-10 in the code; all are
+    1, so every step runs. Confirmed (code).
 
 **`World_RenderSectorAtomic`** (`0x00411990`): during the second after the atomic was read, set the alpha of every
 material colour to `255 × (1 - (fadeEnd - now) / 1000)`, afterwards to 255 (only when it changes); light the atomic
@@ -870,6 +873,5 @@ Some pairs are byte-identical (`level91`/`level97`, `level119`/`level120`).
   (speculative).
 - **`0x005147c8`**, the "nearest wanted thing within 75" flag, and the 32 bytes at world `+0x18`: their readers.
 - **`level70`**: 593 streamed sectors overflow the 560-entry table. Is the level reachable?
-- **The water effect** (`Graphics/WaterEffect.cpp`), the third streamer: its file (named `%u` from a CRC) and drawing.
 - **Runtime confirmation** with PCSX2: a breakpoint on `0x00412310` while walking through a level would show the
   order parts are requested in; a watch on world `+0x0000` the reads in flight.

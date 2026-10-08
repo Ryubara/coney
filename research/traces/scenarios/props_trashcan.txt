@@ -1,0 +1,6 @@
+# The camera looks south (−y), so the stick 60 % down walks him north into the trash can for about 2 s; let go,
+# then square twice.
+10 stick left 0 -60
+70 stick left 0 0
+85 tap square
+110 tap square

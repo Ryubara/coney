@@ -673,14 +673,35 @@ Then the ground rings (`0x0017b2e0`, [HUD](hud.md#the-health-rings)) and device 
 2. Light the background as one object far away: `LightManager_SelectLights` (`0x0017de10`) with a sphere at
    (1e6, 1e6, 1e6), radius 1, world lights only (flags 2), no point lights; upload (`0x0017e810`).
 3. If `0x005e5378` is 1 (it is): far clip 5.0, near 0.05, the camera's **translation zeroed** (the sky moves with the
-   camera); Z write off, fog off, no culling. Draw the **sky box** (`+0x1c`). Then the **cloud box** (`+0x24`),
-   rotated about RenderWare's `y` axis (up; `0x00511730`) by `t / 60000` radians, `t` the game time in ms
-   (`0x0050b734 + 0x48`): one radian a minute.
+   camera); Z write off, fog off, no culling. Draw the **sky box** (`+0x1c`). Then the **cloud box** (`+0x24`) through a
+   **turned camera**: the camera's matrix (translation still zeroed) is multiplied on the right by the rotation of the
+   quaternion `(0, sin θ/2, 0, cos θ/2)` (axis `0x00511730` = `y`, up), `θ = t / 60000` radians, `t` the game time in ms
+   (`0x0050b734 + 0x48`, as a float), so one radian a minute (`RwMatrixMultiply` `0x0047d280`, `Quat_ToMatrix`
+   `0x00336500`, whose rows are the rotated axes: x goes to `(cos θ, 0, −sin θ)`).
 4. If `0x005e537c` is 1 (it is): restore the camera's matrix; far clip 560.0; near clip the smaller of 39.0 and the
    distance to the nearest missing sector (`0x0040e100`, [The streamed world](world.md#streaming)); tell the PS2
    driver the far clip (`0x0048f0f8(4, &far)`). Fog off, Z write on: draw the **skyline** (`+0x14`); fog on.
    Then **clear Z only** (camera wrapper slot `+0x70(colour, 0, 1)`).
 5. Restore near, far and the driver's value.
+
+**The cloud turn, in world terms**, confirmed (code) for the maths: the model is not moved; turning the camera by `R`
+about the origin shows the box turned by `R⁻¹`. So the cloud box turns by **−θ about RenderWare's `y` axis**, which is
+**up** (RenderWare axes are game axes `(x, z, −y)`, [Camera distance](world.md#camera-distance)): a point at `(x, y, z)`
+(RenderWare axes) is seen at `(x cos θ − z sin θ, y, x sin θ + z cos θ)`. In game axes (z up) that is −θ about up, so
+**clockwise seen from above**, one radian a minute. A model turned by `+θ` with the same formula turns the other way.
+
+**No sky state.** The three background models are fixed per level by its `.lev` (`skybox_<name>`, `cloudbox`,
+`shadow…` dictionaries, each model showing its dictionary's first texture). Nothing changes them after load: the level
+object's sky fields are read only by `0x0040d0a8` and the destructor, no script binding or string names a sky, a cloud
+or a time of day, and the two switches `0x005e5378` and `0x005e537c` are written only by the static initialiser
+`0x00155a90` (both 1). A level's "time of day" is its own sky texture, lights and fog colour (`SetLight`,
+`SetFogColor`, [Lighting](lighting.md)). Confirmed (code). With a switch off, the code would skip that part and only
+set the render states (dead code).
+
+**The sky's colour** can change only with its lights: the background gets the world list (the world ambient and the
+world directional lights, no point lights; step 2), so `SetWorldAmbient`, a world `SetLight` or the brightness option
+change it at once, and nothing else does. Confirmed (code) for the lights; confirmed (runtime) that the sky follows
+the world ambient ([Lighting](lighting.md#world)).
 
 So the skyline is a far backdrop drawn in the real world position from 39 units out to 560, and the Z clear lets the
 world, drawn next with its own (much shorter) far clip, cover it wherever it has geometry (inferred). Where the world
@@ -958,10 +979,11 @@ every one of their materials finds its `propglow…` texture.
 **The background and the glows** (`src/platform/world_renderer.h`) follow [The background](#render-order) and step 5 of
 [A frame](world.md#a-frame). The sky box and then the cloud box are drawn round the camera with its translation zeroed
 (near 0.05, far 5; Z write and fog off, nothing culled). The cloud box turns about `y` by one radian a minute of game
-time (`cloudFrame`), so a fixed-step run draws the same frames. The skyline is drawn in place from the smaller of 39
-and the nearest missing scenery out to 560, with Z write on and fog off. Then only Z is cleared, and the glow world is
-drawn before the `s` world: nothing culled, Z test and write and fog on. `coney --view-world <level>` loads the level
-file whenever the level has one.
+time (`cloudFrame`), so a fixed-step run draws the same frames. It turns the model by −θ, as the original's turned
+camera shows it ([the cloud turn](#render-order)). The skyline is drawn in place from the smaller of 39 and
+the nearest missing scenery out to 560, with Z write on and fog off. Then only Z is cleared, and the glow world is drawn
+before the `s` world: nothing culled, Z test and write and fog on. `coney --view-world <level>` loads the level file
+whenever the level has one.
 
 - **Coney's choices for the background:** it is lit by the world's ambient and directional lights, without point
   lights ([Lighting](lighting.md#select)). The PS2 driver's far-clip call (`0x0048f0f8`) has no counterpart.

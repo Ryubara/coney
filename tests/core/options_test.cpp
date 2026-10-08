@@ -341,6 +341,30 @@ TEST_CASE("the frame pacing options refuse bad values and test mode", "[options]
     CHECK(coney::usageText().find("--fps-cap") != std::string_view::npos);
 }
 
+TEST_CASE("the window takes the focus only in a run a person plays", "[options]") {
+    auto plain = parseOptions({});
+    REQUIRE(plain.has_value());
+    CHECK_FALSE(plain->noActivate);
+    CHECK(coney::activatesWindow(*plain));
+
+    auto asked = parse(std::array<std::string_view, 1>{"--no-activate"});
+    REQUIRE(asked.has_value());
+    CHECK(asked->noActivate);
+    CHECK_FALSE(coney::activatesWindow(*asked));
+
+    // Agents and tools start Coney in test mode, so their windows never take the focus, flag or not.
+    auto scripted = parse(std::array<std::string_view, 2>{"--frames", "30"});
+    REQUIRE(scripted.has_value());
+    CHECK_FALSE(coney::activatesWindow(*scripted));
+    auto shot = parse(std::array<std::string_view, 4>{"--frames", "1", "--screenshot", "a.png"});
+    REQUIRE(shot.has_value());
+    CHECK_FALSE(coney::activatesWindow(*shot));
+    auto references = parse(std::array<std::string_view, 4>{"--disc", "x", "--render-references", "out"});
+    REQUIRE(references.has_value());
+    CHECK_FALSE(coney::activatesWindow(*references));
+    CHECK(coney::usageText().find("--no-activate") != std::string_view::npos);
+}
+
 TEST_CASE("the sandbox option takes a layout or defaults to the default one, and needs no disc", "[options][sandbox]") {
     auto bare = parse(std::array<std::string_view, 1>{"--sandbox"});
     REQUIRE(bare.has_value());

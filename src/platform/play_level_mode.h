@@ -514,7 +514,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // Places this frame's worn hats among the world objects (before PlacedObjects::draw()).
     void drawHats();
 
-    // Draws the humans: their lights, the render states, each mesh in its two passes; then the blob shadows.
+    // Draws the humans: their lights, the render states, each mesh in its two passes.
     void drawCharacter() const;
     // The blood texture of the second pass of a human with `health`, or null when it shows none.
     [[nodiscard]] rw::Texture* bloodTextureFor(const combat::Health& health) const;

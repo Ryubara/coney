@@ -39,6 +39,7 @@ constexpr std::uint16_t kEventLight = 30;
 constexpr std::uint16_t kEventCallEnd = 31;
 constexpr std::uint16_t kEventParticle = 33;
 constexpr std::uint16_t kEventCaption = 41;
+constexpr std::uint16_t kEventHoldObject = 73;
 constexpr std::uint16_t kEventColouredFade = 74;
 constexpr std::uint16_t kEventRumble = 76;
 // The role clip events that put a human at its marks: a position and a heading.
@@ -81,6 +82,18 @@ int flushedRumbleStrength(std::uint16_t value) {
 
 } // namespace
 
+ScenePose heldObjectPose(const ScenePose& camera, float fieldOfView, bool widescreen) {
+    // The game aspect and the share of it per mode (device +0x45c; docs/research/graphics.md, the camera constants).
+    constexpr float kAspect43 = 1.3333F;
+    constexpr float kAspect169 = 1.6667F;
+    const float share = widescreen ? 0.3F : 0.5F;
+    const float aspect = widescreen ? kAspect169 : kAspect43;
+    const float halfAngle = fieldOfView * (std::numbers::pi_v<float> / 360.0F);
+    const float distance = share * aspect / std::tan(halfAngle);
+    const anim::Vec3 ahead = rotate(camera.rotation, anim::Vec3{0.0F, distance, 0.0F});
+    return ScenePose{.position = anim::add(camera.position, ahead), .rotation = camera.rotation};
+}
+
 /// One playing scene: the task the play bindings make (`SceneTask`, 30 updates a second), its runners and its start
 /// and end sequences. It lives in the SceneSystem until its scene has ended.
 class SceneTask {
@@ -102,6 +115,7 @@ class SceneTask {
     // @orig 0x0039cbf0 SceneTask_Update (SceneTask.cpp)
     void update(std::uint64_t nowMs, std::uint16_t buttons) {
         ++m_updates;
+        m_nowMs = nowMs;
         switch (m_slot.state) {
         case SceneState::Starting:
             if (nowMs - m_createdMs >= kStartTimeoutMs) {
@@ -319,6 +333,7 @@ class SceneTask {
         for (TrackRun& run : m_tracks) {
             stepTrack(run, 0.0F);
         }
+        placeHeldObject();
         for (std::size_t role = 0; role < m_roles.size(); ++role) {
             if (m_roles[role].inScene) {
                 stepRole(role, 0.0F);
@@ -461,6 +476,8 @@ class SceneTask {
         for (TrackRun& run : m_tracks) {
             stepTrack(run, kUpdateSeconds);
         }
+        // The held intro card after the objects' tracks, so that it stays before the camera.
+        placeHeldObject();
         for (std::size_t role = 0; role < m_roles.size(); ++role) {
             if (m_roles[role].inScene) {
                 stepRole(role, kUpdateSeconds);
@@ -571,6 +588,7 @@ class SceneTask {
         const ScenePose pose = toWorld(m_request.place, ScenePose{track.positionAt(frame), track.rotationAt(frame)});
         switch (run.target) {
         case Target::Camera:
+            m_cameraPose = pose;
             host.cameraPose(pose, m_lens);
             return;
         case Target::Object:
@@ -581,6 +599,36 @@ class SceneTask {
         case Target::Light:
             host.lightSet(run.index, pose, run.light);
             return;
+        }
+    }
+
+    // Event 73: holds the object in slot `index` (an intro card: `cleon`, `destroyers`) before the scene camera for
+    // `seconds` of game time, placing it at once. Only a scene with a camera, and only a bound object.
+    // @orig 0x003a0e48 SceneTask_HoldObject (SceneTask.cpp)
+    void holdObject(std::int16_t index, float seconds) {
+        if (!m_cameraBegun || index < 0 || static_cast<std::size_t>(index) >= m_slot.header->objects.size() ||
+            objectHandle(static_cast<std::size_t>(index)) == 0.0) {
+            return;
+        }
+        m_held = static_cast<std::size_t>(index);
+        m_heldUntilMs = m_nowMs + static_cast<std::uint64_t>(std::max(0L, std::lround(seconds * 1000.0F)));
+        placeHeldObject();
+    }
+
+    // Puts the held object before the camera while its time lasts; once the game clock is past it, lets it go (its
+    // own track places it again from the next update).
+    // @orig 0x003a0ed8 SceneTask_UpdateHeldObject (SceneTask.cpp)
+    void placeHeldObject() {
+        if (!m_held) {
+            return;
+        }
+        if (m_nowMs > m_heldUntilMs) {
+            m_held.reset();
+            return;
+        }
+        if (const double object = objectHandle(*m_held); object != 0.0 && m_cameraBegun) {
+            SceneHost& host = m_system.host();
+            host.objectPose(object, heldObjectPose(m_cameraPose, m_lens.fieldOfView, host.widescreen()));
         }
     }
 
@@ -688,8 +736,11 @@ class SceneTask {
         case kEventRumble:
             host.rumble(rumbleStrength(event.u16At(6)));
             return;
+        case kEventHoldObject:
+            holdObject(static_cast<std::int16_t>(event.u16At(4)), event.f32At(8));
+            return;
         default:
-            return; // 9, 10, 54, 69 and 73 do nothing in Coney (69 and 73 are not implemented)
+            return; // 9, 10, 54 and 69 do nothing in Coney (69 is not implemented)
         }
     }
 
@@ -950,6 +1001,10 @@ class SceneTask {
     bool m_loopPoint = false;   // +0xec: a non-forced stop only ends the looping
     std::size_t m_humansIn = 0; // +0x1e
     SceneLens m_lens;
+    std::uint64_t m_nowMs = 0;         // the game clock at this update
+    ScenePose m_cameraPose{};          // the scene camera's last world pose (task +0x70)
+    std::optional<std::size_t> m_held; // +0xd0: the object slot held before the camera (event 73)
+    std::uint64_t m_heldUntilMs = 0;   // +0xd4: until when, game ms
     std::vector<RoleRun> m_roles;
     std::vector<TrackRun> m_tracks;
 };

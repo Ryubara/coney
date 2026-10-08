@@ -14,7 +14,11 @@ The pad goes through the patched pad read (the `scripted-pad` patch): the button
 and the sticks at `0x005de3ac`-`0x005de3af` (right x, right y, left x, left y).
 
 With hooks installed (coney_tools.hooks), each poll also reads the ring's count and, when it has moved, the new
-entries, so a hook's log is read as the game runs and each entry is tagged with the step it was read at.
+entries, so a hook's log is read as the game runs. The ring's count is read between two reads of the tick count, and
+the new entries are labelled from that count with entry_step(): the step of the update they were made in, the step
+whose sample shows what they did. A poll often lands while the characters' tick is still running (the count even,
+the update's sample not yet due), so the label comes from the count, not from the last sample's step. An entry of a
+missed update goes to the step after it; a hook that logs `[0x005104f4]` pins its tick exactly.
 """
 
 from __future__ import annotations
@@ -33,6 +37,14 @@ from coney_tools.scenario import Field, Scenario
 PAD_BYTES = 0x005DE3AA
 #: The count of 60 Hz ticks; a character update runs on each tick that makes it even.
 TICK_COUNTER = 0x005104F4
+
+
+def entry_step(ticks: int, first_update: int) -> int:
+    """The step of the update a hook entry made while the tick count is `ticks` belongs to. The pair of ticks that
+    turns the count to 2Q and then 2Q + 1 is the update a sample labels Q + 1 (a sample sees it once the count is
+    odd), and what runs after the pair, until the count turns even again, belongs to the same update: so both counts
+    give Q + 1, the count halved, rounded down, plus one. `first_update` is the update of step 0."""
+    return ticks // 2 + 1 - first_update
 
 
 class RecordError(Exception):
@@ -182,8 +194,8 @@ class Recorder:
         batch_reads = [Read(TICK_COUNTER, 4), *(read for _, read in reads if read is not None)]
         ring = RingReader(self.game.memory, self.hooks) if self.hooks else None
         if ring is not None:
-            # The ring's count goes last, so the field values keep their places.
-            batch_reads.append(Read(RING_BASE, 4))
+            # The ring's count, then the tick count again, go last, so the field values keep their places.
+            batch_reads += [Read(RING_BASE, 4), Read(TICK_COUNTER, 4)]
             ring.done = self.game.memory.batch([Read(RING_BASE, 4)])[0]
         recording.words = len(batch_reads)
         pad = ScriptedPad(self.scenario.events)
@@ -201,9 +213,15 @@ class Recorder:
             recording.polls += 1
             now = self.clock()
             ticks = values[0]
+            if first_update is None:
+                first_update = (ticks + 1) // 2
             if ring is not None:
-                ring.drain(values[-1], step)
-                values = values[:-1]
+                ring_count, ticks_after = values[-2], values[-1]
+                values = values[:-2]
+                # Entries are drained only when the count did not move during the message, so none of them can be
+                # newer than the tick count they are labelled from; the next poll takes them otherwise.
+                if ticks_after == ticks:
+                    ring.drain(ring_count, entry_step(ticks, first_update))
             if ticks == last_ticks:
                 if now - last_progress > stall:
                     raise RecordError(f"the game stood still for {stall:.0f} s at step {step}; is PCSX2 paused?")
@@ -211,10 +229,7 @@ class Recorder:
             last_ticks, last_progress = ticks, now
             # The update count moves on when the tick after an update's tick starts (the count turns odd), so a
             # sample never sees an update half done; a frame that catches up runs two updates, and a poll may miss one.
-            update = (ticks + 1) // 2
-            if first_update is None:
-                first_update = update
-            new_step = update - first_update
+            new_step = (ticks + 1) // 2 - first_update
             if new_step <= step:
                 continue
             recording.missed.extend(range(step + 1, new_step))
@@ -231,7 +246,9 @@ class Recorder:
         rest = bytes([0xFF, 0xFF, 0x80, 0x80, 0x80, 0x80])
         self.game.memory.batch([], [Write(PAD_BYTES + k, 1, byte) for k, byte in enumerate(rest)])
         if ring is not None:
-            ring.drain(self.game.memory.batch([Read(RING_BASE, 4)])[0], step)
+            # The entries made since the last poll, labelled by the tick count as in the loop.
+            ticks, count = self.game.memory.batch([Read(TICK_COUNTER, 4), Read(RING_BASE, 4)])
+            ring.drain(count, entry_step(ticks, first_update if first_update is not None else (ticks + 1) // 2))
             recording.hooks = ring.log
         recording.seconds = self.clock() - start
         return recording

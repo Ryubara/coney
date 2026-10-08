@@ -66,11 +66,12 @@ rw::Atomic* atomicOf(const chunk::LoadedObject* object) { return levelAtomic(obj
 void placeWorldCamera(rw::Camera* camera, const WorldView& view) { placeCamera(camera, view); }
 
 world::FrameMatrix cloudFrame(const world::FrameMatrix& base, std::uint64_t nowMs) {
-    // Each row, and the position, turned about y: (x, y, z) -> (x cos a + z sin a, y, -x sin a + z cos a).
+    // Each row, and the position, turned by -a about y, as the original's camera turned by +a shows the model:
+    // (x, y, z) -> (x cos a - z sin a, y, x sin a + z cos a), clockwise seen from above.
     const float angle = static_cast<float>(nowMs % 377'000'000ULL) * kCloudRadiansPerMs; // a whole number of turns
     const float c = std::cos(angle);
     const float s = std::sin(angle);
-    const auto turn = [c, s](world::Vec3 v) { return world::Vec3{v.x * c + v.z * s, v.y, -v.x * s + v.z * c}; };
+    const auto turn = [c, s](world::Vec3 v) { return world::Vec3{v.x * c - v.z * s, v.y, v.x * s + v.z * c}; };
     return world::FrameMatrix{
         .right = turn(base.right), .up = turn(base.up), .at = turn(base.at), .position = turn(base.position)};
 }
@@ -127,7 +128,8 @@ void WorldRenderer::renderSectorAtomic(rw::Atomic* atomic, std::uint64_t fadeEnd
 
 void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const world::LevelObject* level,
                            const WorldView& given, float pendingDistance, std::uint64_t nowMs,
-                           const std::function<void()>& drawObjects, const std::function<void()>& overlay) {
+                           const std::function<void()>& drawObjects, const std::function<void()>& overlay,
+                           const std::function<void()>& afterWorlds) {
     m_drawn = 0;
     // The level's fog: its colour clears the frame, and it starts at its fraction of the draw distance.
     SceneLighting& lit = lighting();
@@ -205,9 +207,9 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
     if (worlds.size() < 2 && drawObjects) {
         drawObjects();
     }
-    // 9. The water, in the world pass's states.
-    if (m_afterWorlds) {
-        m_afterWorlds();
+    // 9-10. The water and the see-through parts, in the world pass's states.
+    if (afterWorlds) {
+        afterWorlds();
     }
     // The coronas of the visible lights, over the world.
     lit.drawCoronas();

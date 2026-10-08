@@ -121,7 +121,8 @@ The background's models (sky box, cloud box, skyline, glows) carry no light flag
 lit by the world ambient: `level99`'s sky box (prelight 60), cloud box (70) and the skyline's prelight-0 vertices
 come out at 59, 64 and 29 of 128, `level100`'s sky box (70) at 64, prelight + 0.227 each. Inferred (Coney's models
 against the GS dumps, [Lighting](lighting.md#coneys-implementation)); the VU1 background path that ignores the flag
-has not been found in code.
+has not been found in code. Raising the world ambient brightens the sky on screen about as much as the walls
+(confirmed (runtime), [Lighting](lighting.md#world)).
 
 ### The world {#world}
 

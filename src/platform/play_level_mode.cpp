@@ -279,12 +279,6 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
         attachScenes(cast->scenes, player != nullptr ? player->handle : 0.0);
     }
     m_levelEffects = std::move(levelEffects);
-    // The level's water, after its worlds (step 9 of the world pass).
-    m_scenery->setAfterWorlds([this] {
-        if (m_levelEffects) {
-            m_levelEffects->drawWater();
-        }
-    });
 }
 
 void PlayLevelMode::useHud(hud::Hud& shared) {
@@ -301,7 +295,6 @@ PlayLevelMode::~PlayLevelMode() {
     m_levelEffects.reset();
     attachScenes(nullptr, 0.0); // the scenes may outlive the stage they were hosted by
     m_scenery->setLighting(nullptr);
-    m_scenery->setAfterWorlds({});
     m_lights.reset();
     m_ai.reset(); // out of the player's step before he goes
     m_fighterMeshes.clear();
@@ -523,7 +516,6 @@ void PlayLevelMode::drawCharacter() const {
         }
     }
     m_stage->drawPuppets();
-    m_lights->drawShadows();
 }
 
 rw::Texture* PlayLevelMode::bloodTextureFor(const combat::Health& health) const {
@@ -772,28 +764,38 @@ void PlayLevelMode::render(const RenderTime& time) {
     if (m_overlay != nullptr) {
         m_engine.addFrameOverlay([overlay = *m_overlay](RenderEngine& engine) { overlay(engine); });
     }
-    m_scenery->draw(m_engine, blended, millisecondsOf(time.gameTicks), [this, &snapshot, &blended, &ringFeet] {
-        // The cars take the objects' lights, each atomic for its own sphere (**Coney's choice**: the original selects
-        // them once for the clump's sphere).
-        const auto drawCars = [this](graphics::CarPass pass) {
-            if (m_levelEffects) {
-                m_levelEffects->drawCars([this](rw::Atomic* atomic) { m_lights->drawObject(atomic); }, pass);
-            }
-        };
-        // The humans and their blob shadows, the cars' opaque parts, the world objects; then the see-through panes and
-        // the cars' glass; then the health rings over the shadows.
+    // The cars take the objects' lights, each atomic for its own sphere (**Coney's choice**: the original selects
+    // them once for the clump's sphere).
+    const auto drawCars = [this](graphics::CarPass pass) {
+        if (m_levelEffects) {
+            m_levelEffects->drawCars([this](rw::Atomic* atomic) { m_lights->drawObject(atomic); }, pass);
+        }
+    };
+    // Between the `s` and the `d` world (step 7): the humans, the cars' opaque parts, the world objects.
+    const auto drawObjects = [this, &drawCars, &snapshot] {
         drawCharacter();
         drawCars(graphics::CarPass::Opaque);
         drawWorldObjects(snapshot);
+    };
+    // After the `d` world, as the world pass orders it (docs/research/world.md#a-frame, steps 9-10): the water, then
+    // the see-through panes and the cars' glass, then the effects; then, as the sprite batches after the whole world
+    // (graphics.md#a-frame), the blob shadows, and the health rings over them. **Coney's choice**: the coronas, which
+    // the original batches between the shadows and the rings, follow the rings (WorldRenderer::render draws them).
+    const auto afterWorlds = [this, &drawCars, &snapshot, &blended, &ringFeet] {
+        if (m_levelEffects) {
+            m_levelEffects->drawWater();
+        }
         drawGlass();
         drawCars(graphics::CarPass::Glass);
-        drawRings(ringFeet);
-        drawDebugLines(snapshot);
         if (m_levelEffects) {
             m_levelEffects->drawInScene(blended.pose);
             m_levelEffects->drawGlints(m_glints.sprites(), blended.pose);
         }
-    });
+        m_lights->drawShadows();
+        drawRings(ringFeet);
+        drawDebugLines(snapshot);
+    };
+    m_scenery->draw(m_engine, blended, millisecondsOf(time.gameTicks), drawObjects, afterWorlds);
 }
 
 void PlayLevelMode::renderWithOverlay(const RenderTime& time,

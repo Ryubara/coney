@@ -296,6 +296,25 @@ the entry links.
   the capture. It is a later fallback, for questions that the code and the debugger answer badly (exact rendering
   state, timing). Captures contain game data: they stay in your scratch folder and never enter the repository.
 
+### Running Coney {#running-coney}
+
+A window that takes the keyboard focus interrupts whoever is typing, so agents and tools start Coney only in ways that
+leave the focus alone:
+
+- **Test mode, always.** Run `coney` with `--frames N` (and `--input-script`, `--screenshot` as needed) or
+  `--headless`, never as a plain interactive run. In test mode Coney's window opens without taking the focus (it
+  may show on top, but keystrokes stay where they were), and `--render-references` (which hides its window) never
+  takes it either. Any other windowed run started by a tool adds `--no-activate`
+  ([Frame rate](building.md#frame-rate)).
+- **ctest needs nothing.** The disc tests inside `coney_tests` run on librw's NULL renderer and open no window; the
+  `coney` smoke tests (`repo:src/platform/CMakeLists.txt`) run `--headless` or stop at the command line before a
+  window opens; the one test with a window (`coney.frame_copies_upright`) hides it and so never takes the focus. A new
+  smoke test keeps to `--headless`. `coney-tools trace coney` runs Coney `--headless` too.
+- **How.** librw's GL3 device makes and shows the window with SDL's defaults, which activate it. Before it does,
+  `RenderEngine::start` (`repo:src/platform/render_engine.cpp`) turns off SDL's `SDL_WINDOW_ACTIVATE_WHEN_SHOWN` and
+  `SDL_WINDOW_ACTIVATE_WHEN_RAISED` hints, so on Windows the window is shown with `SWP_NOACTIVATE`. Unlike PCSX2's Qt
+  ([below](#driving-pcsx2)), SDL honours that, so no launcher is needed and the run's output stays on the console.
+
 ### Driving PCSX2 {#driving-pcsx2}
 
 How the first runtime pass (2026-10-04, official portable PCSX2 2.9.94) was done; it needs nothing but PCSX2, its
@@ -390,6 +409,19 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
   the button into all eight entries of pad record 4's button history (`0x005dd950 + 0x1c`, eight `u16`) every update.
   Set `CfgAutoLockAndCombat` (`0x005104b8`) to 0 when the player must not turn to face the attacker. Pick the puppet
   by name: the nearest human changes as pedestrians walk, and an ally's hits play reactions without damage.
+- **Following a script at runtime** (2026-10-07, the level99 hints pass). To log which Lua functions run and which
+  bindings a script calls, with their arguments, hook the Lua 4 VM. Its interpreter entry is `0x00334478`
+  (`luaV_execute`, called by `luaD_call` `0x00328b40`); its `a1` is the closure, whose prototype (`+0x00`) holds
+  `lineDefined` at `+0x38` and the chunk name at `+0x3c`. The C-function call is `0x00328a30` (`callCclosure`): `a1`
+  is the closure, `+0x00` the binding's address (as in a bindings dump), and `a2` its first argument. Arguments are
+  16-byte TObjects: type at `+0`, value at `+8` (1 nil, 2 number as a double, 3 string with its text at `+0x10`).
+  Only the first argument is reliable: the slots after the last real argument hold old values. The hooks are
+  `lua-exec`, `c-call` and `c-call-args`. A script's tables are read the same way, from the globals table
+  (`ScriptSystem *0x00512b04` → state `+4` → globals `+0x44`). That gives `Objects.<name>`, a spawn handle (index
+  `<< 16`), which leads to the live object through the spawn record (`+0x24` low 16 bits) and the handle table
+  `0x006ebd38` ([Objects](../research/objects.md#spawn-records)). A driver that plays a level's steps by what they
+  show ([Scripts](../research/scripting.md#level99-hints)) must send partial sticks through Coney's byte map (below):
+  a plain linear map falls inside the dead band and the player stands still.
 - **One sample per update.** Batch every read of a sample into one PINE message and keep a sample only when a
   character update has run since the last one: the game counts its 60 Hz ticks at `0x005104f4` and steps the
   characters on each tick that makes the count even ([Tasks](../research/tasks.md#tick)), so the count halved numbers
@@ -515,20 +547,25 @@ A column that Coney's `--trace` also writes has Coney's name and unit ([Tracing]
 
 #### Hooks {#hooks}
 
-Hooks are declared in the same file as `[hook.NAME]` and named in a scenario's `patches` like a patch.
-Each gives the address, the two instruction words it displaces (checked against the state; neither may be a branch,
-and the first may be a jump with its delay slot, as in a two-instruction setter) and up to seven values to `log`: a
-register (`a0`, `ra`, `sp`), a float register (`"f28"` logs an `f32`; in a table without `type`, the raw word, to
-compare floats exactly), `count` (the EE's cycle counter, 4,915,200 a 60 Hz tick) or a load such as `[a0 + 0x14]`,
-`[[a0 + 0x0] + 0x200]` or `[0x005104f4]`, a word unless a table gives `type`. The hook's address must
-not be a delay slot or a branch target, and a load must only follow pointers the hooked code itself uses: a bad load
-crashes the game. `pcsx2 record` writes each hook's calls to `<trace>.<hook>.csv` (the ring's sequence number, the
-step it was read at, the values). `call = true` makes the call hook of `calls` above; put it at the entry of a
-function that takes no floating-point arguments (`call-brains` is at `Brains_Update`, before the brains run).
-The hooks of the runtime-checks pass: `tick-game` and `humans-update` (the play step and the character step),
-`wheel-update` (each object the wheel updates), `state-code` (record `+0x14`'s setter), `set-command` and
-`get-command` (per-player `+0x20`), `brain-think`, `brain-event`, `attack-warning`, `try-block`, `block-start`,
-`skid-test` (the locomotion's run-stop test) and `call-brains`.
+Hooks are declared in the same file as `[hook.NAME]` and named in a scenario's `patches` like a patch. Each gives the
+address, the two instruction words it displaces (checked against the state; neither may be a branch, and the first may
+be a jump with its delay slot, as in a two-instruction setter) and up to seven values to `log`: a register (`a0`, `ra`,
+`sp`), a float register (`"f28"` logs an `f32`; in a table without `type`, the raw word, to compare floats exactly),
+`count` (the EE's cycle counter, 4,915,200 a 60 Hz tick) or a load such as `[a0 + 0x14]`, `[[a0 + 0x0] + 0x200]` or
+`[0x005104f4]`, a word unless a table gives `type`. The hook's address must not be a delay slot or a branch target, and
+a load must only follow pointers the hooked code itself uses: a bad load crashes the game. `pcsx2 record` writes each
+hook's calls to `<trace>.<hook>.csv` (the ring's sequence number, the step, the values). The step is the update the call
+was made in, the same numbering as the trace's rows, so a call logged at step N shows its effect in the sample of step
+N. It comes from the tick count read in the same message: while the count is 2Q or 2Q + 1 the game is in the update a
+sample labels Q + 1 (an entry of a missed update goes to the step after it; logging `[0x005104f4]` pins the tick
+exactly). Recordings made before 2026-10-07 labelled entries with the step of the poll before: one step early for a call
+made while the count was even (everything in `Humans_Update`), usually right for one made while it was odd (the second
+tick, after the pair). `call = true` makes the call hook of `calls` above; put it at the entry of a function that takes
+no floating-point arguments (`call-brains` is at `Brains_Update`, before the brains run). The hooks of the
+runtime-checks pass: `tick-game` and `humans-update` (the play step and the character step), `wheel-update` (each object
+the wheel updates), `state-code` (record `+0x14`'s setter), `set-command` and `get-command` (per-player `+0x20`),
+`brain-think`, `brain-event`, `attack-warning`, `try-block`, `block-start`, `skid-test` (the locomotion's run-stop test)
+and `call-brains`.
 
 ### Comparing with Coney {#comparing-with-coney}
 
