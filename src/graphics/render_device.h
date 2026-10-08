@@ -103,6 +103,14 @@ class RenderDevice {
     /// returns.
     virtual void drawQuads(const Texture* texture, std::span<const LogicalQuad> quads) = 0;
 
+    /// drawQuads() for a pass over the whole picture, as the original's screen washes and overlay effects are: the
+    /// logical screen's 640 x 448 stand for all of the picture the 3D view fills, which in a window wider than 4:3 (the
+    /// original's 16:9 mode, docs/research/graphics.md#video-mode) is wider than the logical screen's 4:3 place in it.
+    /// A device with no wider view draws them as drawQuads() does, the default.
+    virtual void drawViewQuads(const Texture* texture, std::span<const LogicalQuad> quads) {
+        drawQuads(texture, quads);
+    }
+
     /// Draws `vertices` as a list of triangles (three corners each; a remainder is ignored) with `texture` (null: flat
     /// colour) in the same 2D states as drawQuads(), the colour and texture coordinates blended across each triangle:
     /// the original's immediate-mode 2D shapes (the radar's disc, docs/research/hud.md#the-radar-on-screen), sampled

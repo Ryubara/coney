@@ -132,6 +132,7 @@ add_executable(coney_tests
     platform/ffmpeg_info_test.cpp
     platform/imgui_model_view_test.cpp
     platform/profile_folder_test.cpp
+    platform/room_smoke_overlay_test.cpp
     platform/scene_stage_test.cpp
     platform/sdl_devices_test.cpp
     platform/pad_pipe_test.cpp

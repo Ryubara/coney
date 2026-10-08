@@ -32,9 +32,6 @@ constexpr std::string_view kPlayerRole = "warrrecv";
 // (docs/research/sound-events.md#ground-material).
 constexpr float kSceneGroundAbove = 1.0F;
 constexpr float kSceneGroundLength = 1.5F;
-// The 4:3 view's width over its height. A wider view is the original's 16:9 mode for the scenes: Coney keeps the view's
-// height and widens it with the window, as that mode does (docs/research/scenes.md#intro-cards).
-constexpr float kStandardViewAspect = 4.0F / 3.0F;
 
 // **Coney stand-in** for `--scene`: the model a role's name stands for in level99's scenes (a role names its
 // cutscene model, not a Character List entry; in the game the bound humans bring their own). Unknown names are drawn
@@ -170,7 +167,7 @@ void PlayLevelMode::stepScenes(std::uint64_t nowMs, std::uint16_t buttons) {
         return;
     }
     m_stage->beginStep(nowMs);
-    m_stage->setWidescreen(m_engine.viewAspect() > kStandardViewAspect);
+    m_stage->setWidescreen(m_engine.widescreen());
     m_scenes->update(nowMs, buttons);
     m_stage->setCinematic(m_scenes->cinematicActive());
 }

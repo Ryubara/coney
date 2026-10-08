@@ -29,6 +29,22 @@ inline constexpr DisplayAspect kStandardAspect{4, 3};
 /// black bars rather than a stretched or cropped picture. A window of size 0 gives an empty rectangle.
 [[nodiscard]] ScreenRect fitLogicalScreen(Extent window, DisplayAspect aspect = kStandardAspect);
 
+/// The 3D view's width over its height on the original's 4:3 display. Coney's 3D view keeps the window's shape
+/// (platform::RenderEngine::viewAspect()); a view wider than this is the original's 16:9 mode (isWideView()).
+inline constexpr float kStandardViewAspect = 4.0F / 3.0F;
+
+/// Whether a 3D view of `viewAspect` (width over height) is shown as the original's 16:9 mode: any view wider than
+/// 4:3, with a little slack for a window rounded to whole pixels. **Coney's reading**: the original has a 16:9 option
+/// (device flag `0x04`, docs/research/graphics.md#video-mode); Coney has no such setting and takes the window's shape
+/// instead, keeping the view's height and widening it as that mode does.
+[[nodiscard]] constexpr bool isWideView(float viewAspect) { return viewAspect > kStandardViewAspect + 0.01F; }
+
+/// The height of one of the original's 448 lines as a share of `view`'s height, where the logical screen is
+/// `logicalScreen` in the same window: for passes that shift the whole view by one original line (the video output's
+/// line blend, docs/research/rendering.md#output). 1 / 448 when the logical screen is as tall as the view (a 4:3 or a
+/// wider window); 0 for an empty view.
+[[nodiscard]] float originalLineShare(const ScreenRect& logicalScreen, const ScreenRect& view);
+
 /// A rectangle of the logical screen, in logical pixels from the top-left corner (floats: the window scales them).
 struct LogicalRect {
     float x = 0.0F;

@@ -439,7 +439,11 @@ blends the blur alone ([effects bindings](../references/bindings/effects.md)). C
 
 Coney (`effects::MotionBlur`, `repo:src/effects/motion_blur.h`; `platform::MotionBlurPass`) blends the blur's colour
 and strength linearly over the time given and lays the last frame over the new one at that strength, a stand-in for
-the drawing [above](#motion-blur); the looks' own blur values are not applied yet.
+the drawing [above](#motion-blur); the looks' own blur values are not applied yet. It keeps and lays over the whole
+3D view (`RenderEngine::viewRect`), as the original lays its whole last frame: in a window wider than 4:3 that is
+wider than the logical screen's 4:3 place, which, kept alone, drew a faint rectangle 12.5 % in from each side
+(fixed 2026-10-08). The blur pulse's `RenderEngine::blurScreen` and the screen tint's and fades' wash
+(`RenderDevice::drawViewQuads`) cover the whole view the same way.
 
 **The screen tint** (`effects::ScreenTint`, `repo:src/effects/screen_tint.h`, drawn by `PlayLevelEffects::drawTint`)
 follows [Level tint](rendering.md#tint): `SetLevelColour` stores look 9's colour (each float × 255, truncated) and
@@ -614,14 +618,14 @@ Confirmed (code) at the functions cited unless a line says otherwise.
 
 Coney (`effects::RoomSmoke`, `repo:src/effects/room_smoke.h`; `platform::RoomSmokeOverlay`) follows this, drawn after
 the motion blur and before the HUD with the texture repeating. **Coney's readings**: its fixed step drives both the
-blend and the ticks; the heading is measured from +x toward +y, and the first tick slides nothing. **Where it differs
-in a 16:9 window** (2026-10-08): `RoomSmokeOverlay::draw` projects the sprite with the default `OverlayCamera` (scale
-1.0, aspect 1.45) into the 4:3 logical screen, which `fitLogicalScreen` pillarboxes in the middle 75 % of a 16:9
-window while the 3D view fills the window. The sprite then spans 0.997-1.18 of the window's width (the original's
-1.05-1.24 of the screen's), so its sides reach the window's edges at the narrowest drift, and its height and its
-offset from the middle are 1.1 times the original's 16:9 ones (÷ 1.1 rather than ÷ 1.21). To match, a 16:9 view projects the sprite with the 16:9 overlay
-camera (scale 1.1, aspect 1.6667, a view window of 0.9167 × 0.55) across the whole 16:9 frame: screen `x` = 0.5 +
-`X` / 2.017 and `y` = 0.5 − `Y` / 1.21, with the sprite's size and texture rectangle unchanged.
+blend and the ticks; the heading is measured from +x toward +y, and the first tick slides nothing. **In a 16:9
+window** (fixed 2026-10-08; before, the sprite went through the 4:3 camera into the logical screen, pillarboxed in
+the middle 75 % of the window while the 3D view filled it, so it spanned 0.997-1.18 of the window's width and its
+height and offset were 1.1 times the original's): Coney takes a window wider than 4:3 as the 16:9 mode
+(`RenderEngine::widescreen`, `graphics::isWideView`), and `roomSmokeQuad` then projects the sprite with the 16:9
+overlay camera (`OverlayCamera::forMode`: scale 1.1, aspect 1.6667, a view window of 0.9167 × 0.55) across the whole
+3D view (`RenderEngine::drawWrappedViewQuads`): screen `x` = 0.5 + `X` / 2.017 and `y` = 0.5 − `Y` / 1.21, with the
+sprite's size and texture rectangle unchanged, so it spans 1.05-1.24 of the window's width as the original does.
 
 ## Behaviour
 
@@ -1680,7 +1684,10 @@ First pixels (2026-10-04), in `src/platform/` and `src/graphics/`:
   [the video mode](#video-mode). Coney shows that screen at the television's shape, 4:3 (16:9 later, with the
   widescreen option), as the largest such rectangle centred in the window (`fitLogicalScreen`), and fills the rest of
   the window black: **letterboxing or pillarboxing is Coney's choice** for a window that is not 4:3; the original
-  has a television picture and no border. The window opens at 960 × 720. `beginFrame(colour)` clears the window to
+  has a television picture and no border. The 3D view itself fills the whole window at the window's shape, and a
+  window wider than 4:3 is taken as the 16:9 mode (`RenderEngine::widescreen`); passes over the whole picture (the
+  line blend, the blurs, the screen washes, the room smoke) cover the whole view (`RenderEngine::viewRect`), not the
+  logical screen's 4:3 place. The window opens at 960 × 720. `beginFrame(colour)` clears the window to
   black and the logical screen to the colour (with a flat quad, since librw's clear covers the whole frame buffer).
 - **2D quads** (`RenderDevice::drawQuads`): textured or flat rectangles in logical pixels with a colour and texture
   coordinates, drawn with Z test and Z write off, no culling, no fog, vertex alpha on and source alpha / inverse

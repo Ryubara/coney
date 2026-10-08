@@ -43,12 +43,20 @@ class OverlayCamera {
     static constexpr float kViewAspect = 1.45F;
     /// The aspect in the 16:9 mode, which also scales the view window by 1.1 (`0x0050b20c`).
     static constexpr float kWideViewAspect = 1.6667F;
+    /// The view-window scale (`0x0050b20c`) in the 16:9 mode; 1.0 otherwise.
+    static constexpr float kWideViewScale = 1.1F;
 
     /// The overlay camera with view-window scale `viewScale` and aspect `aspect`: by default that of the interlaced 4:3
-    /// mode. The original's 16:9 option uses a scale of 1.1 and kWideViewAspect, which Coney's 4:3 logical screen does
-    /// not show yet.
+    /// mode. The original's 16:9 option uses kWideViewScale and kWideViewAspect (forMode()).
     explicit OverlayCamera(float viewScale = 1.0F, float aspect = kViewAspect)
         : m_viewScale(viewScale), m_aspect(aspect) {}
+
+    /// The overlay camera of the 16:9 mode when `widescreen`, else of the interlaced 4:3 mode: the one place that picks
+    /// between them (docs/research/graphics.md#video-mode). Its projection fills the logical screen; drawn in 16:9,
+    /// the logical screen stands for the whole 16:9 picture.
+    [[nodiscard]] static OverlayCamera forMode(bool widescreen) {
+        return widescreen ? OverlayCamera(kWideViewScale, kWideViewAspect) : OverlayCamera();
+    }
 
     /// Half the width of the view window at distance 1: scale × aspect × 0.5 = 0.725 in the default mode.
     [[nodiscard]] float viewWindowX() const { return m_viewScale * m_aspect * 0.5F; }

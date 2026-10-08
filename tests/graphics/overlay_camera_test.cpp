@@ -60,6 +60,19 @@ TEST_CASE("GUI sizes project like the distance between GUI points, and shrink wi
     CHECK(twiceAsFar.x == Approx(near.x / 2));
 }
 
+TEST_CASE("the 16:9 mode's overlay camera sees 2.017 x 1.21 overlay units at the GUI depth", "[overlay_camera]") {
+    // Scale 1.1, aspect 1.6667: a view window of 0.9167 x 0.55 (docs/research/graphics.md#video-mode).
+    const OverlayCamera wide = OverlayCamera::forMode(true);
+    CHECK(wide.viewWindowX() == Approx(0.9167).margin(1e-4));
+    CHECK(wide.viewWindowY() == Approx(0.55));
+    const LogicalPoint screen = wide.projectSize(2.017F, 1.21F, OverlayCamera::kGuiDepth);
+    CHECK(screen.x == Approx(640.0).epsilon(1e-3));
+    CHECK(screen.y == Approx(448.0).epsilon(1e-3));
+    // 4:3 is the default camera.
+    CHECK(OverlayCamera::forMode(false).viewWindowX() == Approx(OverlayCamera().viewWindowX()));
+    CHECK(OverlayCamera::forMode(false).viewWindowY() == Approx(OverlayCamera().viewWindowY()));
+}
+
 TEST_CASE("unproject undoes project at the same depth", "[overlay_camera]") {
     const OverlayCamera camera(1.1F);
     const LogicalPoint point{100.0F, 300.0F};

@@ -32,11 +32,13 @@ void MotionBlurPass::apply(RenderEngine& engine, effects::MotionBlur::Colour col
         m_kept = false;
         return;
     }
-    const graphics::ScreenRect viewport = engine.logicalViewport();
+    // The whole picture the 3D view fills, as the original lays its whole last frame over the new one: in a wide
+    // window more than the logical screen's 4:3 place, which would leave a visible edge 12.5 % in from each side.
+    const graphics::ScreenRect viewport = engine.viewRect();
     if (viewport.width <= 0 || viewport.height <= 0) {
         return;
     }
-    // The kept frame's texture, the logical screen's size; made again when the window is resized.
+    // The kept frame's texture, the view's size; made again when the window is resized.
     if (m_raster == nullptr || m_width != viewport.width || m_height != viewport.height) {
         release();
         m_raster = rw::Raster::create(viewport.width, viewport.height, 32,
@@ -93,7 +95,7 @@ void MotionBlurPass::apply(RenderEngine& engine, effects::MotionBlur::Colour col
         rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
     }
 
-    // 2. Keep the blended frame: the logical screen's pixels copied into the texture (GL counts rows from the bottom).
+    // 2. Keep the blended frame: the view's pixels copied into the texture (GL counts rows from the bottom).
     const int windowHeight = engine.frameSize().height;
     auto* native = PLUGINOFFSET(rw::gl3::Gl3Raster, m_raster, rw::gl3::nativeRasterOffset);
     rw::gl3::bindTexture(native->texid);

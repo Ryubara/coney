@@ -51,14 +51,14 @@ class ScreenFade {
     /// How long the running fade takes to reach its end, in milliseconds (0 when none runs).
     [[nodiscard]] std::uint64_t durationMs() const { return m_durationMs; }
 
-    /// Draws the fade over the logical screen through `device`: nothing while the screen is clear.
+    /// Draws the fade over the whole picture through `device`: nothing while the screen is clear.
     void render(RenderDevice& device) const { draw(device, m_level); }
 
-    /// Draws a fade of `level` (0 clear, 1 black) over the logical screen: nothing at 0 or less. A render that blends
+    /// Draws a fade of `level` (0 clear, 1 black) over the whole picture: nothing at 0 or less. A render that blends
     /// the level of the last two steps draws through this.
     static void draw(RenderDevice& device, float level);
-    /// Draws `colour` over the whole logical screen, blended by its alpha (0-255): the fade's quad, which the level's
-    /// screen tint shares (effects::ScreenTint, docs/research/rendering.md#tint).
+    /// Draws `colour` over the whole picture (RenderDevice::drawViewQuads()), blended by its alpha (0-255): the fade's
+    /// quad, which the level's screen tint shares (effects::ScreenTint, docs/research/rendering.md#tint).
     static void drawWash(RenderDevice& device, Rgba colour);
 
   private:

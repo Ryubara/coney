@@ -63,8 +63,9 @@ void ScreenFade::draw(RenderDevice& device, float level) {
 }
 
 void ScreenFade::drawWash(RenderDevice& device, Rgba colour) {
+    // Over the whole picture, the 3D view's sides in a wide window included.
     const LogicalQuad quad{0.0F, 0.0F, kLogicalWidth, kLogicalHeight, UvRect{}, colour};
-    device.drawQuads(nullptr, std::span(&quad, 1));
+    device.drawViewQuads(nullptr, std::span(&quad, 1));
 }
 
 } // namespace coney::graphics

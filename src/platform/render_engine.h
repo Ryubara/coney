@@ -85,6 +85,16 @@ class RenderEngine final : public graphics::RenderDevice {
     /// The shape the 3D view is drawn at across the frame, width over height: the display's 4:3 when the frame is the
     /// logical screen (WindowDesc::logicalFrame), else the frame's own, so its pixels stay square.
     [[nodiscard]] float viewAspect() const;
+    /// Whether the picture is shown as the original's 16:9 mode: the 3D view is wider than 4:3
+    /// (graphics::isWideView()). The one place Coney decides it; the scenes' intro cards and the screen effects
+    /// drawn over the whole picture (the room smoke's overlay camera) follow it.
+    [[nodiscard]] bool widescreen() const { return graphics::isWideView(viewAspect()); }
+    /// Where the 3D view is in the window this frame, in window pixels: the whole frame. It is the logical screen's
+    /// place (logicalViewport()) in a 4:3 window or with WindowDesc::logicalFrame, and wider or taller than it in a
+    /// window of another shape. Passes over the whole picture (the line blend, the blurs, the washes) cover this.
+    [[nodiscard]] graphics::ScreenRect viewRect() const {
+        return graphics::ScreenRect{0, 0, m_frameSize.width, m_frameSize.height};
+    }
 
     /// Starts a frame: the window cleared to black and the logical screen (graphics::fitLogicalScreen()) filled with
     /// `clear`. Follows the window's size: when the window has been resized, the frame buffers are made again at the
@@ -110,6 +120,12 @@ class RenderEngine final : public graphics::RenderDevice {
     /// drawQuads() with wrapped addressing, for a texture whose coordinates run past its edges and repeat it (the
     /// room-smoke overlay, docs/research/graphics.md#room-smoke).
     void drawWrappedQuads(const graphics::Texture* texture, std::span<const graphics::LogicalQuad> quads);
+    /// drawQuads() with the logical screen's 640 x 448 stretched over the whole 3D view (viewRect()) rather than
+    /// fitted in it: the screen washes (graphics::ScreenFade::drawWash()). Same as drawQuads() in a 4:3 window.
+    void drawViewQuads(const graphics::Texture* texture, std::span<const graphics::LogicalQuad> quads) override;
+    /// drawViewQuads() with wrapped addressing: the room smoke, which in the 16:9 mode the original draws across its
+    /// whole 16:9 picture (docs/research/graphics.md#room-smoke).
+    void drawWrappedViewQuads(const graphics::Texture* texture, std::span<const graphics::LogicalQuad> quads);
     /// Draws `vertices`, given in logical pixels, as triangles mapped onto the logical screen's place in the window,
     /// with `texture` as drawQuads() takes it, wrapped or clamped and alpha tested as `states` says (the test is put
     /// back after). Only between beginFrame() and present(); draws nothing with the NULL backend.
@@ -149,11 +165,11 @@ class RenderEngine final : public graphics::RenderDevice {
     void setLineBlend(bool on) { m_lineBlend = on; }
     /// Whether present() blends neighbouring lines.
     [[nodiscard]] bool lineBlend() const { return m_lineBlend; }
-    /// Replaces the logical screen with a blurred copy of itself, the blur pulse's drawing (device slot `+0x108`,
-    /// docs/research/graphics.md#blur-pulse): the screen drawn at half size, that image drawn `passes` times onto
-    /// itself with one edge moved in by half of (`offsetU`, `offsetV`) of the original's 512 x 256 blur texture, the
-    /// side flipping each pass, then stretched back over the screen, opaque. 0 passes still leaves the half-size copy.
-    /// Only between beginFrame() and present(); draws nothing with the NULL backend.
+    /// Replaces the whole view (viewRect()) with a blurred copy of itself, the blur pulse's drawing (device slot
+    /// `+0x108`, docs/research/graphics.md#blur-pulse): the screen drawn at half size, that image drawn `passes` times
+    /// onto itself with one edge moved in by half of (`offsetU`, `offsetV`) of the original's 512 x 256 blur texture,
+    /// the side flipping each pass, then stretched back over the screen, opaque. 0 passes still leaves the half-size
+    /// copy. Only between beginFrame() and present(); draws nothing with the NULL backend.
     /// @orig 0x00193d80 RwDevice_BlurPass (unknown)
     void blurScreen(int passes, float offsetU, float offsetV);
     /// Sets what present() draws over every frame just before it ends it: the debug menus' overlay
@@ -186,9 +202,10 @@ class RenderEngine final : public graphics::RenderDevice {
     /// Copies the window rectangle (`x`, `y`, `width`, `height`, from the top left) into `raster`, (re)made at that
     /// size when it is missing or another size; false when it cannot be made.
     bool copyToRaster(rw::Raster*& raster, int x, int y, int width, int height);
-    // drawQuads() and drawWrappedQuads(): the texture's filter, `wrap` or clamped addressing, the quads mapped from
-    // logical pixels to the window.
-    void drawTexturedQuads(const graphics::Texture* texture, std::span<const graphics::LogicalQuad> quads, bool wrap);
+    // drawQuads() and its kin: the texture's filter, `wrap` or clamped addressing, the quads mapped from logical pixels
+    // onto the window rectangle `onto` (the logical screen's place, or the whole view).
+    void drawTexturedQuads(const graphics::Texture* texture, std::span<const graphics::LogicalQuad> quads, bool wrap,
+                           const graphics::ScreenRect& onto);
 
     /// Where the logical screen goes in a frame of `size` (WindowDesc::logicalFrame).
     [[nodiscard]] graphics::ScreenRect logicalScreenIn(graphics::Extent size) const;
@@ -196,8 +213,8 @@ class RenderEngine final : public graphics::RenderDevice {
     void createCamera();
     /// Destroys the camera and its buffers, if any.
     void destroyCamera() noexcept;
-    /// The line blend of setLineBlend() over the logical screen: the frame copied into m_lineRaster, laid back over
-    /// itself one original line higher at half strength. OpenGL only.
+    /// The line blend of setLineBlend() over the whole view (viewRect()): the frame copied into m_lineRaster, laid back
+    /// over itself one original line higher at half strength. OpenGL only.
     void blendLines();
     /// Reads the back buffer, summarises it and writes it as a PNG, for requestCapture().
     [[nodiscard]] std::expected<CapturedFrame, Error> captureBackBuffer(const std::string& path) const;
@@ -219,7 +236,7 @@ class RenderEngine final : public graphics::RenderDevice {
     bool m_logicalFrame = false;        // the logical screen fills the frame (WindowDesc::logicalFrame)
     bool m_textureLod = false;          // Coney's distance mip levels are in librw's pipeline (texture_lod.h)
     bool m_lineBlend = true;            // present() blends neighbouring lines (setLineBlend())
-    rw::Raster* m_lineRaster = nullptr; // the frame's copy for blendLines(), the logical screen's size
+    rw::Raster* m_lineRaster = nullptr; // the frame's copy for blendLines(), the view's size
     rw::Raster* m_blurRaster = nullptr; // blurScreen()'s copies: the screen, then its half-size image
     rw::Raster* m_halfRaster = nullptr;
 

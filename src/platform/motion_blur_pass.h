@@ -17,8 +17,9 @@ namespace coney::platform {
 ///
 /// **Coney's stand-in** for the original's blur, which draws through a 512 × 256 camera texture and the effects camera
 /// (device slot `+0x108`, docs/research/graphics.md#device-object) in a way the page does not describe: the kept frame
-/// is the logical screen at the window's size, and the strength is the overlay's alpha. With the NULL backend nothing
-/// is drawn.
+/// is the whole view at the window's size (RenderEngine::viewRect(), so in a wide window its sides too, as the
+/// original's covers its whole screen, docs/research/graphics.md#motion-blur), and the strength is the overlay's alpha.
+/// With the NULL backend nothing is drawn.
 class MotionBlurPass {
   public:
     MotionBlurPass() = default;

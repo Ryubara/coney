@@ -303,8 +303,11 @@ lines: a slight vertical blur that softens the image and hides the jagged edges 
 
 Coney (`RenderEngine::setLineBlend`, `repo:src/platform/render_engine.h`) does the same by default after the game's
 2D layers and before the debug menus: the frame is copied and laid back over itself at half strength, shifted up by
-one of the original's 448 lines at the window's size, the last line clamped. `--line-blend off` shows the frame as
-drawn ([Building](../guides/building.md)); reference renders are never blended.
+one of the original's 448 lines at the window's size, the last line clamped. It covers the whole 3D view
+(`RenderEngine::viewRect`), so in a window wider than 4:3 the view's sides are softened too: the original's output
+blends its whole picture, and a blend of only the logical screen's 4:3 place left a visible edge 12.5 % in from each
+side. `--line-blend off` shows the frame as drawn ([Building](../guides/building.md)); reference renders are never
+blended.
 
 ## Open questions
 

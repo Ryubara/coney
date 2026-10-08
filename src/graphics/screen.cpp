@@ -29,4 +29,12 @@ LogicalRect logicalToWindow(const LogicalRect& rect, const ScreenRect& viewport)
                        static_cast<float>(viewport.y) + rect.y * scaleY, rect.width * scaleX, rect.height * scaleY};
 }
 
+float originalLineShare(const ScreenRect& logicalScreen, const ScreenRect& view) {
+    if (view.height <= 0) {
+        return 0.0F;
+    }
+    // One line is the logical screen's height over 448, in window pixels; as a share of the view's height.
+    return static_cast<float>(logicalScreen.height) / kLogicalHeight / static_cast<float>(view.height);
+}
+
 } // namespace coney::graphics

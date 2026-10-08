@@ -243,11 +243,20 @@ void RenderEngine::beginFrame(graphics::Rgba clear) {
 void RenderEngine::beginWindowFrame(graphics::Rgba clear) { startFrame(clear); }
 
 void RenderEngine::drawQuads(const graphics::Texture* texture, std::span<const graphics::LogicalQuad> quads) {
-    drawTexturedQuads(texture, quads, false);
+    drawTexturedQuads(texture, quads, false, m_viewport);
 }
 
 void RenderEngine::drawWrappedQuads(const graphics::Texture* texture, std::span<const graphics::LogicalQuad> quads) {
-    drawTexturedQuads(texture, quads, true);
+    drawTexturedQuads(texture, quads, true, m_viewport);
+}
+
+void RenderEngine::drawViewQuads(const graphics::Texture* texture, std::span<const graphics::LogicalQuad> quads) {
+    drawTexturedQuads(texture, quads, false, viewRect());
+}
+
+void RenderEngine::drawWrappedViewQuads(const graphics::Texture* texture,
+                                        std::span<const graphics::LogicalQuad> quads) {
+    drawTexturedQuads(texture, quads, true, viewRect());
 }
 
 rw::Raster* RenderEngine::bindTexture(const graphics::Texture* texture, bool wrap) {
@@ -311,17 +320,17 @@ void RenderEngine::drawTriangles(const graphics::Texture* texture, std::span<con
 }
 
 void RenderEngine::drawTexturedQuads(const graphics::Texture* texture, std::span<const graphics::LogicalQuad> quads,
-                                     bool wrap) {
+                                     bool wrap, const graphics::ScreenRect& onto) {
     CONEY_ASSERT(m_inFrame);
     if (m_camera == nullptr || quads.empty()) {
         return; // NULL backend: nothing to draw
     }
     rw::Raster* raster = bindTexture(texture, wrap);
-    // Logical pixels to window pixels, then the shared 2D drawing.
+    // Logical pixels to window pixels over `onto`, then the shared 2D drawing.
     std::vector<graphics::LogicalQuad> mapped(quads.begin(), quads.end());
     for (graphics::LogicalQuad& quad : mapped) {
         const graphics::LogicalRect rect =
-            graphics::logicalToWindow(graphics::LogicalRect{quad.x, quad.y, quad.width, quad.height}, m_viewport);
+            graphics::logicalToWindow(graphics::LogicalRect{quad.x, quad.y, quad.width, quad.height}, onto);
         quad.x = rect.x;
         quad.y = rect.y;
         quad.width = rect.width;
@@ -511,7 +520,9 @@ bool RenderEngine::copyToRaster(rw::Raster*& raster, int x, int y, int width, in
 
 void RenderEngine::blurScreen(int passes, float offsetU, float offsetV) {
     CONEY_ASSERT(m_inFrame);
-    const graphics::ScreenRect viewport = m_viewport;
+    // The whole picture the 3D view fills, as the original blurs its whole screen (in a wide window, past the logical
+    // screen's 4:3 place).
+    const graphics::ScreenRect viewport = viewRect();
     if (m_camera == nullptr || viewport.width < 2 || viewport.height < 2) {
         return;
     }
@@ -572,7 +583,9 @@ void RenderEngine::blurScreen(int passes, float offsetU, float offsetV) {
 }
 
 void RenderEngine::blendLines() {
-    const graphics::ScreenRect viewport = m_viewport;
+    // The whole picture the 3D view fills: the video output softens everything it sends, so in a wide window the
+    // view's sides too, not only the logical screen's 4:3 place (which would leave a visible edge 12.5 % in).
+    const graphics::ScreenRect viewport = viewRect();
     if (viewport.width <= 0 || viewport.height <= 0) {
         return;
     }
@@ -586,7 +599,7 @@ void RenderEngine::blendLines() {
     // two are mixed half and half (PMODE's ALP 0x80). Past the copy's bottom edge it is clamped, as the original's last
     // line has no line below it. Filtered linearly, so a window that is not a whole
     // number of lines per original line still blends exactly one original line.
-    const float shift = 1.0F / graphics::kLogicalHeight;
+    const float shift = graphics::originalLineShare(m_viewport, viewport);
     rw::SetRenderState(rw::TEXTUREFILTER, rw::Texture::LINEAR);
     rw::SetRenderState(rw::TEXTUREADDRESS, rw::Texture::CLAMP);
     const graphics::LogicalQuad quad{static_cast<float>(viewport.x),

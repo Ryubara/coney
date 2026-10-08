@@ -281,9 +281,7 @@ void LoadingScreen::render(std::uint64_t nowMs) const {
         m_device.present();
         return;
     }
-    const graphics::OverlayCamera camera = m_settings.widescreen
-                                               ? graphics::OverlayCamera(1.1F, graphics::OverlayCamera::kWideViewAspect)
-                                               : graphics::OverlayCamera();
+    const graphics::OverlayCamera camera = graphics::OverlayCamera::forMode(m_settings.widescreen);
     if (m_memoryCard) {
         renderMemoryCard(nowMs, camera);
         m_device.present();

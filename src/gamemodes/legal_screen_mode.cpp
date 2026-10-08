@@ -94,9 +94,7 @@ void LegalScreenMode::render(const RenderTime& /*time*/) {
     m_device.beginFrame(graphics::kBlack);
     if (m_sheet) {
         // The first rectangle, sized as the original's sprite record sizes it, through the mode's overlay camera.
-        const graphics::OverlayCamera camera =
-            m_settings.widescreen ? graphics::OverlayCamera(1.1F, graphics::OverlayCamera::kWideViewAspect)
-                                  : graphics::OverlayCamera();
+        const graphics::OverlayCamera camera = graphics::OverlayCamera::forMode(m_settings.widescreen);
         const graphics::LogicalQuad quad =
             legalScreenQuad(camera, legalScreenFactors(m_settings), m_sheet->page.rect(0));
         m_device.drawQuads(m_sheet->texture.get(), std::span(&quad, 1));
