@@ -24,6 +24,7 @@
 #include "characters/character_types.h"
 #include "characters/dynamic_clips.h"
 #include "combat/stick.h"
+#include "combat/throw_aim.h"
 #include "core/error.h"
 #include "core/interpolation.h"
 #include "core/options.h"
@@ -179,6 +180,10 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] std::span<human::TargetHuman* const> targets() const { return m_targetPointers; }
     /// The AI fighters.
     [[nodiscard]] const ai::AiHumans& fighters() const { return *m_ai; }
+    /// Player 1's throw aim (docs/research/objects.md#throws).
+    [[nodiscard]] const combat::ThrowAimState& throwAim() const { return m_throwAim; }
+    /// Player 1's lock pick under way; null when none runs (docs/research/crimes.md#lockpick).
+    [[nodiscard]] const world_objects::LockPick* lockPick() const { return m_lockPick ? &*m_lockPick : nullptr; }
     [[nodiscard]] const PlayStats& stats() const { return m_stats; }
 
     /// Writes the trace (human::traceHeader(), then human::traceLine() after every step) to the file at `path`,
@@ -486,8 +491,15 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // @orig 0x003fe6b8 MeleeWeapon_Detach (unknown)
     void dropHeld(human::Human& human, double held, bool thrown = false);
     // The loose objects in flight: their fall, bounce and settle (docs/research/physics.md#settle), their poses written
-    // back into their spawn records.
+    // back into their spawn records; a thrown bottle, brick or ball breaks on its first contact (thrownBreak()).
     void stepLooseObjects();
+    // A thrown `thrown_weapon`'s break at its contact (docs/research/objects.md#throws): the impact's material pairs on
+    // the level mesh, message 6 from the boxes its thrower stands in, then the class's break (its place at the hit
+    // point, the dust); it goes at the next step.
+    // @orig 0x003939a8 WorldObject_OnImpact (unknown)
+    // @orig 0x00393e20 WorldObject_Break (unknown)
+    // @orig 0x004034b8 ThrownWeapon_Break (unknown)
+    void thrownBreak(double handle, const world_objects::LooseObject& object);
     // Player 1's mugging: the scripts' record for the next one, and the end of one (the money, the mug callback).
     void stepMugging(human::Human& human);
     // The stereo-theft panel follows player 1's theft: shown from the press, its progress each update with cue 0x22 per
@@ -496,6 +508,15 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // The mug meter follows player 1's mugging: shown while it runs, with the raw left stick, whether it is on target
     // and both bars' fills (docs/research/hud.md#mug-meter-layout).
     void stepMugMeter(const human::Human& human, const Pad& pad);
+
+    // --- play_level_throw_aim.cpp: the throw's aim.
+
+    // Player 1's throw aim (docs/research/objects.md#throws): L1 with a set 5 object enters it, `pad`'s raw left stick
+    // turns and pitches it, the arc is traced through the level each frame and what it meets is kept for HuIsAimingAt;
+    // L1 again, the object lost, a grab or the pad lost leaves it. **Coney's stand-ins**: the sweeps are sampled along
+    // the arc's segments, humans are upright capsules, a human target's point is a fixed head height.
+    // @orig 0x0027da10 Player_OnL1Pressed (unknown)
+    void stepThrowAim(const Pad& pad);
     // The lock-pick dial follows player 1's pick: shown at its difficulty while it runs, with the pins' angles and the
     // pin the next press judges (docs/research/hud.md#lock-pick-dial-layout).
     void stepLockPickDial();
@@ -684,9 +705,11 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     world_objects::ObjectTasks m_objectTasks;
     effects::Triglints m_glints;
     world_objects::ObjectBodies m_objectBodies; // this step's world-object bodies
+    combat::ThrowAimState m_throwAim;           // player 1's throw aim
     // The RUNTARGET bodies running humans met last step: (the human's handle, his feet, the object), struck next step.
     std::vector<std::tuple<double, anim::Vec3, double>> m_runContacts;
     world_objects::LooseObjects m_looseObjects;              // the dropped objects falling or settling
+    std::vector<double> m_brokenThrown;                      // thrown objects broken last step, removed this one
     combat::CombatRandom m_throwRandom{0x7417U};             // a thrown object's spin (a fixed seed)
     std::unique_ptr<world_objects::ObjectList> m_objectList; // before the models that read it
     std::unique_ptr<PlacedObjects> m_placed;

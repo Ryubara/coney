@@ -178,6 +178,10 @@ class Player {
     /// from then on update() steps the cameras rather than the follow camera alone, the stick is turned by the current
     /// camera's view, the snapshots show it, and the player's slow-motion events reach it.
     void setCameras(camera::Cameras* cameras);
+    /// The follow camera's look direction when it is the camera shown (its own when no cameras were given); nothing
+    /// under any other camera. A throw's aim takes its heading from it on the first frame
+    /// (docs/research/objects.md#throws).
+    [[nodiscard]] std::optional<anim::Vec3> followForward() const;
 
     /// `HuSwitchPlayer`'s hand-over: the pad drives `human` (in the step; it must outlive its use, or be handed back)
     /// from now on, as player 1, and the follow camera follows it; the human driven before keeps only its brain's

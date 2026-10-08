@@ -465,6 +465,15 @@ class Human final : public Holdable {
     /// `ANIM_ARRESTED_IDLE`; released, it stands again with the idle (docs/research/crimes.md#arrest).
     /// @orig 0x00237700 Human_SetArrested (unknown)
     void setArrested(bool arrested);
+    /// Into or out of a throw's aiming state (docs/research/objects.md#throws): in, it stands (the stick no longer
+    /// walks it) and plays 466 `gen_1hand_throw_enter` into 469 `gen_1hand_throw_cycle`; out, the style goes and the
+    /// controller chooses again (no code plays 468). The aim itself is combat::ThrowAimState's.
+    /// @orig 0x00227b30 Human_EnterThrowAim (unknown)
+    /// @orig 0x00227a90 Human_ExitThrowAim (unknown)
+    void setThrowAiming(bool aiming);
+    /// One aiming frame's outcome: the aim's `heading` (the move function writes his facing) and whether the stick
+    /// turned him, which plays 470 `gen_1hand_throw_turn` instead of 469.
+    void aimThrow(float heading, bool turning);
     /// `HuSetWounded`: wounding (when not wounded already) ends its fighting, grab or throw, cuts its health to a
     /// quarter of the maximum and stamps the time 14 s on; healing only clears the mark. The caller flushes the brain.
     /// @orig 0x00237628 Human_SetWounded (unknown)
@@ -735,6 +744,7 @@ class Human final : public Holdable {
     TurnState m_turn;
     bool m_airborne = false;
     bool m_outOfWorld = false;
+    bool m_aimTurning = false;     // a throw aim's turn clip (470) plays
     bool m_landingPending = false; // an airborne move passed a floor: land once the feet start kLandingDepth below it
     float m_landingFloorZ = 0.0F;  // that floor's height where it was passed
     float m_landingSpeed = 0.0F;   // the vertical speed it was passed at

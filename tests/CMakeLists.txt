@@ -284,6 +284,7 @@ target_sources(coney_tests PRIVATE
     combat/rage_awards_test.cpp
     combat/reactions_test.cpp
     combat/stick_games_test.cpp
+    combat/throw_aim_test.cpp
     combat/throw_velocity_test.cpp
     debug/combat_tunables_test.cpp)
 # Scenes: the records, the slots and the player (docs/research/scenes.md).

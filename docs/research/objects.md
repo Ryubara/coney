@@ -842,7 +842,10 @@ shape `OBB` 0.52 × 0.52 × 2, `PHYFLAG.THROWNWEAPONTARGET`), so it can be aimed
 `HuIsAimingAt(C3.throwPlayer1, C3.throwObjective)`; `C3.ThrowCheck` goes back to `TT_28` when it stops being true.
 Confirmed (runtime), PCSX2 2.9.94, an analyst run of `level80` (re-mission-ref, 2026-10-08): `+0x634` stayed 0 while
 the stick pitched the aim down from 0.304 rad and became the marker (`0x00ef97c0`) at pitch 0.139 rad; `TT_29` was set
-13 updates later.
+13 updates later. The bottle then **passes through the marker** and breaks beyond it (inferred: a flying world
+object's sweep meets only bodies with `BLOCKOBJECTS` ([Sweeping a body](physics.md#sweep), confirmed (code)) and the
+marker's body has `THROWNWEAPONTARGET` alone), which is why the script tests for the bottle's break inside the
+8.2 × 6.5 m `vBottleBox` round the marker ([message 6](scripting.md#triggers)), not for a hit on the marker.
 
 **The aim's clips** (move style `0x13`, `Human_ApplyMoveStyle` `0x00253688`, confirmed (code)): slot 21 (the block
 start) = **466** `gen_1hand_throw_enter`, slot 23 (the block sustain) and the idles in slots 0 and 11 = **469**
@@ -1759,8 +1762,24 @@ Coney's stand-ins for the world objects, where this page is silent:
   the charge or the dive with a set 4-6 object plays the throw clip by gait, its type-10 event lets go, and the object
   leaves the hand's pose with `Human_ComputeThrowVelocity`'s velocity turned by the thrower's heading and the
   detach's spin. Stand-ins: the target is the fighter's own (no `Player_PickThrowTarget`, no turn to face it), aimed
-  at a fixed head height and from the object's place rather than the hand bone; the aiming state, set 5's smash,
-  hits on humans, wear and breaks on contact, the removal time and the AI's throws are not built.
+  at a fixed head height and from the object's place rather than the hand bone; set 5's smash, hits on humans, the
+  wear of anything but a thrown `thrown_weapon`, the removal time and the AI's throws are not built.
+- **The aiming state** ([above](#throws); `repo:src/combat/throw_aim.h`, the play mode's `stepThrowAim`): L1 with a
+  set 5 object and no lock enters it (466 into 469; the stick stops walking him), the raw left stick turns him (470
+  while it does) and pitches the aim, the first frame takes the follow camera's heading, and each frame the arc's 18
+  points are traced in the two passes, a human target faced for 5 frames and while the stick rests. What the arc
+  meets is kept for `HuIsAimingAt`, `HuGetControlName` gives `throwControl`, and a throw from the aim leaves from the
+  release point with the aim's velocity. Stand-ins: the sweeps are sampled every 0.1 m along a segment (not
+  `IPhysics_CollideShape`), humans are 2 m upright capsules, cars are not met, a target's point is a fixed head
+  height, and the lock-on's friendly case is not modelled (Coney's lock never takes a friend). The arc is not drawn.
+- **A thrown bottle's break** ([above](#throws); `world_objects::LooseObjects`, the play mode's `thrownBreak`): a throw
+  sets the flying object's body flag 1 and keeps its thrower; its first contact with the level mesh takes one hit
+  (`WorldObject_TakeHit`, the second counter first), and a `thrown_weapon` (hits 1) breaks there: no bounce, the
+  material pairs (its, its) at 1.0 and (its, the surface's) at 0.5, message 6 to the boxes its thrower stands in with
+  the object where its move left it, then the object at the hit point with dust of radius 1.6, removed at the next
+  step. Stand-ins: the flight meets the level mesh only (no body, so no human or car contact), the coloured glass
+  pieces and rubble by model are not made, and only `thrown_weapon` wears (an `overhead_weapon`'s wear on every
+  contact, `GUITAR`'s and a held object's are not built).
 - **Weapon piles** ([above](#weapon-piles); `world_objects::pileTake`, `world_objects::Props::takeFromPile`, the play
   mode's `takeFromPile`): a `dyn_pile` is pickable; player 1's pick-up of one makes the object its type hands out at
   the pile, plays the take cue there as a 3D sound, and puts the new object in his hand while the pile stays.

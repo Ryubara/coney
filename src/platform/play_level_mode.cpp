@@ -556,6 +556,7 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     }
     m_ai->capture();
     stepPickups();
+    stepThrowAim(playerPad);
     stepMugMeter(m_player->human(), playerPad);
     stepLockPickDial();
     stepLooseObjects();

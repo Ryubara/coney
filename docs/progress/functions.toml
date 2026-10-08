@@ -2454,6 +2454,12 @@ subsystem = "Graphics"
 size = 80
 
 [[function]]
+address = 0x0018fee0
+name = "Human_TraceThrowAim"
+subsystem = "Graphics"
+size = 1704
+
+[[function]]
 address = 0x001906e8
 name = "ChunkReader_TextureDictionaryTid"
 subsystem = "Graphics"
@@ -4210,6 +4216,18 @@ name = "Humans_FindAhead"
 subsystem = "Human"
 
 [[function]]
+address = 0x00227a90
+name = "Human_ExitThrowAim"
+subsystem = "Human"
+size = 156
+
+[[function]]
+address = 0x00227b30
+name = "Human_EnterThrowAim"
+subsystem = "Human"
+size = 72
+
+[[function]]
 address = 0x00227d28
 name = "Human_IsInSceneState"
 subsystem = "Human"
@@ -5013,6 +5031,7 @@ subsystem = "Human"
 address = 0x0023a468
 name = "Human_IsAimingAt"
 subsystem = "Human"
+size = 116
 
 [[function]]
 address = 0x0023a5f8
@@ -5196,6 +5215,18 @@ subsystem = "Human"
 address = 0x00243848
 name = "Human_UpdateControl"
 subsystem = "Human"
+
+[[function]]
+address = 0x002446b0
+name = "Human_SetThrowAimState"
+subsystem = "Human"
+size = 188
+
+[[function]]
+address = 0x00244770
+name = "Human_MoveThrowAim"
+subsystem = "Human"
+size = 1796
 
 [[function]]
 address = 0x00244e78
@@ -5827,6 +5858,12 @@ address = 0x0027d900
 name = "Player_Dive"
 subsystem = "Human"
 size = 272
+
+[[function]]
+address = 0x0027da10
+name = "Player_OnL1Pressed"
+subsystem = "Human"
+size = 496
 
 [[function]]
 address = 0x0027df38
@@ -10197,6 +10234,11 @@ subsystem = "TaskEngine"
 size = 1648
 
 [[function]]
+address = 0x003932c8
+name = "OverheadWeapon_ContactDamage"
+subsystem = "TaskEngine"
+
+[[function]]
 address = 0x00393450
 name = "WorldObject_TakeHit"
 subsystem = "TaskEngine"
@@ -10207,6 +10249,16 @@ address = 0x00393538
 name = "Thrown_HitObject"
 subsystem = "TaskEngine"
 size = 1136
+
+[[function]]
+address = 0x003939a8
+name = "WorldObject_OnImpact"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x00393e20
+name = "WorldObject_Break"
+subsystem = "TaskEngine"
 
 [[function]]
 address = 0x00394050
@@ -10935,6 +10987,11 @@ subsystem = "TaskEngine"
 [[function]]
 address = 0x003ffe90
 name = "OverheadWeapon_Break"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x004034b8
+name = "ThrownWeapon_Break"
 subsystem = "TaskEngine"
 
 [[function]]

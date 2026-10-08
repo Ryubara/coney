@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <map>
 #include <optional>
@@ -13,9 +14,10 @@
 // what its move meets, and on its first floor contact starts a "settle", a short eased turn onto its nearest face run
 // on the 60 Hz physics tick; its next floor contact once the settle is done stops it. The original runs the fall in
 // the world object's own update and the settle in the physics step; Coney runs both from one fixed 1/30 s step (one
-// update, then two settle ticks), which gives the same sequence.
+// update, then two settle ticks), which gives the same sequence. A thrown object wears on its first contact, which
+// breaks a bottle, a brick or a ball.
 // Research: docs/research/physics.md#settle, docs/research/physics.md#movers, docs/research/physics.md#step,
-// docs/research/physics.md#attributes, docs/research/objects.md#held
+// docs/research/physics.md#attributes, docs/research/objects.md#held, docs/research/objects.md#throws
 
 namespace coney::world_objects {
 
@@ -70,11 +72,13 @@ struct LooseShape {
 };
 
 /// What a ray met: its distance along the ray, the surface's unit normal (towards the ray's origin) and whether it
-/// was a body (a human, a car, another object) rather than the level's collision mesh.
+/// was a body (a human, a car, another object) rather than the level's collision mesh, whose triangle's material it
+/// gives (its impact sounds).
 struct RayContact {
     float distance = 0.0F;
     anim::Vec3 normal{0.0F, 0.0F, 1.0F};
     bool body = false;
+    std::uint8_t material = 0;
 };
 
 /// The test a loose object's move asks for: the first surface along the ray from `origin` in the unit direction
@@ -96,6 +100,18 @@ struct LooseObject {
     bool grounded = false;    ///< Flag `0x2000000`: at rest.
     bool firstUpdate = true;  ///< The update after the holder let go, whose move lasts 1/60 s.
     std::optional<SettleTurn> settle;
+    /// Body flag `1`: a throw set it, so the next contact wears the object (once per throw).
+    bool thrown = false;
+    /// Whether the object's class wears on such a contact (**Coney's reading**, the classes built: `thrown_weapon`).
+    bool wears = false;
+    double thrower = 0;                ///< `+0x11c`, the last holder: who threw it; 0 for none.
+    std::uint8_t counter = 0xff;       ///< `+0x10d`, its hits left (`0xff` never wears).
+    std::uint8_t secondCounter = 0xff; ///< `+0x10e`, the hits a flying or held object spends first.
+    /// Set by the contact that wore a counter to 0: the object broke there, at `breakPoint` on a surface of
+    /// `breakContact`.
+    bool broken = false;
+    anim::Vec3 breakPoint;
+    RayContact breakContact;
 
     /// The update's interval in 60 Hz ticks: 2 while airborne or settling, otherwise the resting objects' 20.
     [[nodiscard]] int interval() const { return airborne || settling ? 2 : 20; }
@@ -107,7 +123,8 @@ struct LooseObject {
 /// shape's reach that way, and a contact leaves the shape kBackOff in front of the surface however shallow the move
 /// went into it (the original sweeps the shape, and leaves a contact under 0.01 m deep where it is). An object of a
 /// type with `axis` 0 never settles, so it never stops (as in the original, inferred); the scripts' throwable ones
-/// break on their first contact.
+/// break on their first contact. Only the wear of a thrown `thrown_weapon` is built (an `overhead_weapon`'s wear on
+/// every contact, the `GUITAR` material's and a held object's are not).
 ///
 /// Research: docs/research/physics.md#settle, docs/research/physics.md#movers
 class LooseObjects {
@@ -129,31 +146,38 @@ class LooseObjects {
     /// Settle ticks (60 Hz) per step (1/30 s).
     static constexpr int kTicksPerStep = 2;
 
-    /// What an object leaves a hand with: its type's settle axes, restitution and body.
+    /// What an object leaves a hand with: its type's settle axes, restitution and body, and its counters (`0xff` for a
+    /// type value of 0, which never wears) and whether its class wears on a thrown contact.
     struct Kind {
         int axisMask = 0;
         float restitution = 0.0F;
         LooseShape shape;
+        std::uint8_t counter = 0xff;
+        std::uint8_t secondCounter = 0xff;
+        bool wears = false;
 
         /// The kind of an object of `type`.
-        [[nodiscard]] static Kind of(const ObjectType& type) {
-            return Kind{.axisMask = type.axis, .restitution = type.restitution, .shape = LooseShape::of(type)};
-        }
+        [[nodiscard]] static Kind of(const ObjectType& type);
     };
 
     /// Object `handle` leaves a hand at `position` turned by `rotation`, moving at `velocity` and spinning at
-    /// `angularVelocity` (both zero for a drop). Replaces any flight it had.
+    /// `angularVelocity` (both zero for a drop). A throw names its `thrower`, which sets body flag `1`
+    /// (`Human_ReleaseThrow`); 0 is a drop. Replaces any flight it had.
     /// @orig 0x00257f38 Human_DropHeld (unknown)
+    /// @orig 0x002586d8 Human_ReleaseThrow (unknown)
     void start(double handle, anim::Vec3 position, anim::Quat rotation, const Kind& kind, anim::Vec3 velocity = {},
-               anim::Vec3 angularVelocity = {});
+               anim::Vec3 angularVelocity = {}, double thrower = 0);
 
     /// The object is removed or picked up: it leaves, and its settle with it.
     /// @orig 0x00391c10 WorldObject_Remove (unknown)
     void remove(double handle) { m_objects.erase(handle); }
 
     /// One step: each object's update (fall, move, contact), then kTicksPerStep settle ticks. Objects that came to
-    /// rest are reported to `rested` (may be empty) with their final state and leave.
-    void step(const RayTest& ray, const std::function<void(double, const LooseObject&)>& rested = {});
+    /// rest are reported to `rested` (may be empty) with their final state and leave; objects a contact broke
+    /// (LooseObject::broken) are reported to `broke` (may be empty) and leave too: their class's break is the
+    /// caller's.
+    void step(const RayTest& ray, const std::function<void(double, const LooseObject&)>& rested = {},
+              const std::function<void(double, const LooseObject&)>& broke = {});
 
     /// The object `handle` in flight; null when it is not.
     [[nodiscard]] const LooseObject* find(double handle) const;

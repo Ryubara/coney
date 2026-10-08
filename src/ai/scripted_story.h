@@ -78,10 +78,12 @@ class ScriptedStory final : public script::StoryBindingHost {
     void setShadow(double human, bool on) override;
     void lockMovement(double human, bool locked) override;
     /// **Coney's reading** of the handlers by state: an AI human (or a player's dead brain) `aiControl`; a player held
-    /// `grabbedControl`, holding someone `grabbingControl`, in the air `jumpingControl`, locked on `lockOnControl`,
-    /// otherwise `screenRelativeControl`.
+    /// `grabbedControl`, holding someone `grabbingControl`, in the air `jumpingControl`, in a throw's aim
+    /// `throwControl` (handler 228, docs/research/objects.md#throws), locked on `lockOnControl`, otherwise
+    /// `screenRelativeControl`.
     [[nodiscard]] std::optional<std::string> controlName(double human) const override;
-    /// **Coney stand-in**: Coney has no throw aim, so no object is ever aimed at.
+    /// Whether `human`'s throw aim last met `target` (`+0x634`, kept after the aim ends).
+    /// @orig 0x0023a468 Human_IsAimingAt (unknown)
     [[nodiscard]] bool aimingAt(double human, double target) const override;
     [[nodiscard]] std::string heldObject(double human) const override;
     /// Held in another's grab or tackle.

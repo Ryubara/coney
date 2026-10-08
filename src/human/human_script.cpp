@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // What the level scripts do to a human (docs/references/bindings/character.md): its health, its normal state, the
-// arrest, the wound and the rage meter's lock. The flags and the rest of the scripts' state are set directly
-// (human/human.h).
+// arrest, the wound and the rage meter's lock; and the throw aim's stance (docs/research/objects.md#throws). The flags
+// and the rest of the scripts' state are set directly (human/human.h).
 
 #include "human/human.h"
 
+#include <array>
 #include <cstdint>
 
 #include "human/fighter_clips.h"
+#include "human/locomotion.h"
 
 namespace coney::human {
 
@@ -41,6 +43,33 @@ void Human::setArrested(bool arrested) {
     }
     // Move style 0x11's idle, 320 `ANIM_ARRESTED_IDLE`, loops until the release.
     m_animator.playCombat(clips::kNoClips, clips::kArrestedIdle, AnimState::Hold);
+}
+
+void Human::setThrowAiming(bool aiming) {
+    if (aiming == m_script.throwAiming) {
+        return;
+    }
+    m_script.throwAiming = aiming;
+    m_velocity.x = 0.0F;
+    m_velocity.y = 0.0F;
+    m_aimTurning = false;
+    if (!aiming) {
+        m_animator.endHold();
+        return;
+    }
+    static constexpr std::array<std::uint32_t, 1> kEnter{clips::kThrowAimEnter};
+    m_animator.playCombat(kEnter, clips::kThrowAimCycle, AnimState::Hold);
+}
+
+void Human::aimThrow(float heading, bool turning) {
+    if (!m_script.throwAiming) {
+        return;
+    }
+    m_heading = wrapAngle(heading);
+    if (turning != m_aimTurning) {
+        m_aimTurning = turning;
+        m_animator.playCombat(clips::kNoClips, turning ? clips::kThrowAimTurn : clips::kThrowAimCycle, AnimState::Hold);
+    }
 }
 
 void Human::setWounded(bool wounded) {

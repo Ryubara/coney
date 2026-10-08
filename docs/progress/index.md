@@ -28,17 +28,17 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 17.3%](https://img.shields.io/badge/reimplemented-17.3%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 17.4%](https://img.shields.io/badge/reimplemented-17.4%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 ![Understood: 100.0%](https://img.shields.io/badge/understood-100.0%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.3% of the game's own code (580,824 of 3,354,776 bytes, 2,146 functions) |
+| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.4% of the game's own code (585,352 of 3,354,776 bytes, 2,156 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,192 of 3,284,000 bytes; 11,423 of 11,425 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-878 reimplemented function(s) have no size yet and add no bytes.
+881 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -71,9 +71,9 @@ at the top of the repository's `README.md`.
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
 | `FileIO` | `███▍░░░░░░░░░░░░░░░░` | 17.0% | 10 | 7,120 |
 | `GameModes` | `██████▋░░░░░░░░░░░░░` | 33.1% | 117 | 100,440 |
-| `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 12.0% | 90 | 195,624 |
+| `Graphics` | `██▋░░░░░░░░░░░░░░░░░` | 12.8% | 91 | 195,624 |
 | `GUI` | `████▏░░░░░░░░░░░░░░░` | 20.7% | 246 | 497,416 |
-| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.5% | 797 | 1,096,672 |
+| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.8% | 802 | 1,096,672 |
 | `Maths (unnamed)` | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% | 9 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `▌░░░░░░░░░░░░░░░░░░░` | 2.5% | 10 | 79,032 |
@@ -81,7 +81,7 @@ at the top of the repository's `README.md`.
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 30 | 17,904 |
 | `Scripting` | `██████▏░░░░░░░░░░░░░` | 30.6% | 224 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `███▍░░░░░░░░░░░░░░░░` | 17.1% | 173 | 531,312 |
+| `TaskEngine` | `███▍░░░░░░░░░░░░░░░░` | 17.1% | 177 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 33 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 32 | 22,008 |
@@ -585,6 +585,7 @@ at the top of the repository's `README.md`.
 | `0x0018e5f0` | `ScreenFx_SetColourOverlay` | `Graphics` | 200 |
 | `0x0018e6b8` | `ScreenFx_EnterStore` | `Graphics` | 200 |
 | `0x0018e780` | `ScreenFx_ExitStore` | `Graphics` | 80 |
+| `0x0018fee0` | `Human_TraceThrowAim` | `Graphics` | 1,704 |
 | `0x001906e8` | `ChunkReader_TextureDictionaryTid` | `Graphics` | 136 |
 | `0x00190770` | `ChunkReader_RenderwareTextureDic` | `Graphics` | 160 |
 | `0x00191230` | `WaterEffect_Init` | `Graphics` | not filled in |
@@ -894,6 +895,8 @@ at the top of the repository's `README.md`.
 | `0x00226448` | `Human_SpendPower` | `Human` | 200 |
 | `0x00226510` | `Human_PowerFraction` | `Human` | 192 |
 | `0x002274a8` | `Humans_FindAhead` | `Human` | not filled in |
+| `0x00227a90` | `Human_ExitThrowAim` | `Human` | 156 |
+| `0x00227b30` | `Human_EnterThrowAim` | `Human` | 72 |
 | `0x00227d28` | `Human_IsInSceneState` | `Human` | not filled in |
 | `0x00228448` | `Human_HasHeld20080000` | `Human` | not filled in |
 | `0x00228d70` | `Cfg_AddHatFit` | `Human` | 244 |
@@ -1035,7 +1038,7 @@ at the top of the repository's `README.md`.
 | `0x0023a328` | `Human_SetForceLook` | `Human` | not filled in |
 | `0x0023a3b8` | `Human_SetLookTarget` | `Human` | 168 |
 | `0x0023a460` | `Human_ClearLook_Stub` | `Human` | not filled in |
-| `0x0023a468` | `Human_IsAimingAt` | `Human` | not filled in |
+| `0x0023a468` | `Human_IsAimingAt` | `Human` | 116 |
 | `0x0023a5f8` | `Cfg_SetTurnRate` | `Human` | not filled in |
 | `0x0023a7a0` | `Cfg_SetTurnRates` | `Human` | not filled in |
 | `0x0023a9b8` | `AnimCallback_Clear` | `Human` | 64 |
@@ -1070,6 +1073,8 @@ at the top of the repository's `README.md`.
 | `0x00243360` | `Human_LeaveStepControl` | `Human` | not filled in |
 | `0x00243420` | `Human_StepControl` | `Human` | not filled in |
 | `0x00243848` | `Human_UpdateControl` | `Human` | not filled in |
+| `0x002446b0` | `Human_SetThrowAimState` | `Human` | 188 |
+| `0x00244770` | `Human_MoveThrowAim` | `Human` | 1,796 |
 | `0x00244e78` | `Human_MoveAttached` | `Human` | 1,176 |
 | `0x00245310` | `Human_MoveGrabbing` | `Human` | 1,552 |
 | `0x00245920` | `Human_HandleMessage` | `Human` | 8,248 |
@@ -1186,6 +1191,7 @@ at the top of the repository's `README.md`.
 | `0x0027d6e0` | `Player_TryCounterGrab` | `Human` | 288 |
 | `0x0027d800` | `Player_Charge` | `Human` | 256 |
 | `0x0027d900` | `Player_Dive` | `Human` | 272 |
+| `0x0027da10` | `Player_OnL1Pressed` | `Human` | 496 |
 | `0x0027df38` | `Player_UpdatePowerMove` | `Human` | not filled in |
 | `0x0027e6d8` | `Player_UpdateTheft` | `Human` | 560 |
 | `0x0027ec20` | `Player_UpdateMounting` | `Human` | 1,408 |
@@ -1969,8 +1975,11 @@ at the top of the repository's `README.md`.
 | `0x00391c10` | `WorldObject_Remove` | `TaskEngine` | not filled in |
 | `0x00391c98` | `WorldObject_RegisterContext` | `TaskEngine` | not filled in |
 | `0x00391d48` | `Obj_CreatePhysicsBody` | `TaskEngine` | 1,648 |
+| `0x003932c8` | `OverheadWeapon_ContactDamage` | `TaskEngine` | not filled in |
 | `0x00393450` | `WorldObject_TakeHit` | `TaskEngine` | 228 |
 | `0x00393538` | `Thrown_HitObject` | `TaskEngine` | 1,136 |
+| `0x003939a8` | `WorldObject_OnImpact` | `TaskEngine` | not filled in |
+| `0x00393e20` | `WorldObject_Break` | `TaskEngine` | not filled in |
 | `0x00394050` | `WorldObject_OnContact` | `TaskEngine` | 1,984 |
 | `0x00395020` | `ObjType_IsDoorKind` | `TaskEngine` | not filled in |
 | `0x00395a10` | `WorldObject_Integrate` | `TaskEngine` | 352 |
@@ -2100,6 +2109,7 @@ at the top of the repository's `README.md`.
 | `0x003fe490` | `melee_weapon_HandleMessage` | `TaskEngine` | 552 |
 | `0x003fe6b8` | `MeleeWeapon_Detach` | `TaskEngine` | not filled in |
 | `0x003ffe90` | `OverheadWeapon_Break` | `TaskEngine` | not filled in |
+| `0x004034b8` | `ThrownWeapon_Break` | `TaskEngine` | not filled in |
 | `0x00404c48` | `DynMolotov_OnMessage` | `TaskEngine` | not filled in |
 | `0x00405600` | `DynMolotov_Update` | `TaskEngine` | not filled in |
 | `0x0040c868` | `Level_SetFogColour` | `World` | 160 |

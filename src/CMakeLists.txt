@@ -346,6 +346,7 @@ target_sources(coney_core PRIVATE
     combat/rage_awards.cpp
     combat/reactions.cpp
     combat/stick_games.cpp
+    combat/throw_aim.cpp
     combat/throw_velocity.cpp
     debug/combat_tunables.cpp)
 # Scenes: the in-engine cutscenes' records, slots and player (docs/research/scenes.md).

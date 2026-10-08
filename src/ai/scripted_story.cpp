@@ -216,13 +216,19 @@ std::optional<std::string> ScriptedStory::controlName(double human) const {
     if (body.airborne()) {
         return std::string("jumpingControl");
     }
+    if (body.script().throwAiming) {
+        return std::string("throwControl");
+    }
     if (body.fighter().lockTarget() != nullptr) {
         return std::string("lockOnControl");
     }
     return std::string("screenRelativeControl");
 }
 
-bool ScriptedStory::aimingAt(double /*human*/, double /*target*/) const { return false; }
+bool ScriptedStory::aimingAt(double human, double target) const {
+    const Brain* brain = m_scripted->brain(human);
+    return brain != nullptr && target != 0 && brain->human().script().aimedObject == target;
+}
 
 std::string ScriptedStory::heldObject(double human) const {
     const Brain* brain = m_scripted->brain(human);

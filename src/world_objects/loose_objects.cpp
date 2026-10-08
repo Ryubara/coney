@@ -5,9 +5,12 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <iterator>
 
-// Research: docs/research/physics.md#settle, docs/research/physics.md#movers
+#include "world_objects/props.h"
+
+// Research: docs/research/physics.md#settle, docs/research/physics.md#movers, docs/research/objects.md#throws
 
 namespace coney::world_objects {
 
@@ -21,7 +24,7 @@ anim::Quat multiply(anim::Quat a, anim::Quat b) {
 }
 
 // `v` turned by the unit quaternion `q`.
-anim::Vec3 rotate(anim::Quat q, anim::Vec3 v) {
+anim::Vec3 turnBy(anim::Quat q, anim::Vec3 v) {
     const anim::Quat r = multiply(multiply(q, anim::Quat{v.x, v.y, v.z, 0.0F}), anim::Quat{-q.x, -q.y, -q.z, q.w});
     return anim::Vec3{r.x, r.y, r.z};
 }
@@ -57,7 +60,7 @@ std::optional<int> settleAxis(anim::Quat rotation, anim::Vec3 normal, int axisMa
             continue;
         }
         // The positive direction only: the largest dot product is the smallest angle.
-        const float d = anim::dot(rotate(rotation, kAxes.at(static_cast<std::size_t>(i))), normal);
+        const float d = anim::dot(turnBy(rotation, kAxes.at(static_cast<std::size_t>(i))), normal);
         if (!best || d > bestDot) {
             best = i;
             bestDot = d;
@@ -71,7 +74,7 @@ anim::Quat settleTarget(anim::Quat rotation, anim::Vec3 normal, int axisMask) {
     if (!axis) {
         return rotation;
     }
-    anim::Vec3 world = rotate(rotation, kAxes.at(static_cast<std::size_t>(*axis)));
+    anim::Vec3 world = turnBy(rotation, kAxes.at(static_cast<std::size_t>(*axis)));
     // Wrapped to ±90°: an axis pointing away from the normal lines up its negative direction instead.
     if (anim::dot(world, normal) < 0.0F) {
         world = anim::scale(world, -1.0F);
@@ -108,13 +111,27 @@ float LooseShape::reach(anim::Quat rotation, anim::Vec3 d) const {
         return 0.0F;
     }
     // A box reaches along d by the sum of its half-extents, each weighted by how far its axis points along d.
-    return (std::fabs(anim::dot(rotate(rotation, kAxes[0]), d)) * halfExtents.x) +
-           (std::fabs(anim::dot(rotate(rotation, kAxes[1]), d)) * halfExtents.y) +
-           (std::fabs(anim::dot(rotate(rotation, kAxes[2]), d)) * halfExtents.z);
+    return (std::fabs(anim::dot(turnBy(rotation, kAxes[0]), d)) * halfExtents.x) +
+           (std::fabs(anim::dot(turnBy(rotation, kAxes[1]), d)) * halfExtents.y) +
+           (std::fabs(anim::dot(turnBy(rotation, kAxes[2]), d)) * halfExtents.z);
+}
+
+LooseObjects::Kind LooseObjects::Kind::of(const ObjectType& type) {
+    // A counter of 0 in the type never wears (WorldObject_TakeHit leaves 0xff alone).
+    const auto counterOf = [](int value) {
+        const auto byte = static_cast<std::uint8_t>(value);
+        return byte == 0 ? std::uint8_t{0xff} : byte;
+    };
+    return Kind{.axisMask = type.axis,
+                .restitution = type.restitution,
+                .shape = LooseShape::of(type),
+                .counter = counterOf(type.value),
+                .secondCounter = counterOf(type.secondHits),
+                .wears = type.className == kThrownWeaponClass};
 }
 
 void LooseObjects::start(double handle, anim::Vec3 position, anim::Quat rotation, const Kind& kind, anim::Vec3 velocity,
-                         anim::Vec3 angularVelocity) {
+                         anim::Vec3 angularVelocity, double thrower) {
     LooseObject object;
     object.position = position;
     object.rotation = rotation;
@@ -123,14 +140,31 @@ void LooseObjects::start(double handle, anim::Vec3 position, anim::Quat rotation
     object.shape = kind.shape;
     object.axisMask = kind.axisMask;
     object.restitution = kind.restitution;
+    object.counter = kind.counter;
+    object.secondCounter = kind.secondCounter;
+    object.wears = kind.wears;
+    object.thrower = thrower;
+    object.thrown = thrower != 0;
     m_objects.insert_or_assign(handle, object);
 }
 
-void LooseObjects::step(const RayTest& ray, const std::function<void(double, const LooseObject&)>& rested) {
+void LooseObjects::step(const RayTest& ray, const std::function<void(double, const LooseObject&)>& rested,
+                        const std::function<void(double, const LooseObject&)>& broke) {
     // The objects' updates first (the wheel), then the physics step's settle ticks, as one 1/30 s step holds them.
     for (auto& [handle, object] : m_objects) {
         if (object.airborne) {
             update(object, ray);
+        }
+    }
+    // A broken object leaves the flight: what the break does is its class's.
+    for (auto it = m_objects.begin(); it != m_objects.end();) {
+        if (it->second.broken) {
+            if (broke) {
+                broke(it->first, it->second);
+            }
+            it = m_objects.erase(it);
+        } else {
+            ++it;
         }
     }
     for (int tick = 0; tick < kTicksPerStep; ++tick) {
@@ -181,7 +215,7 @@ void LooseObjects::update(LooseObject& object, const RayTest& ray) {
     const float length = anim::length(move);
     if (length > kMinMove) {
         const anim::Vec3 d = anim::scale(move, 1.0F / length);
-        const anim::Vec3 centre = anim::add(object.position, rotate(object.rotation, object.shape.centre));
+        const anim::Vec3 centre = anim::add(object.position, turnBy(object.rotation, object.shape.centre));
         const std::optional<RayContact> hit =
             ray ? ray(centre, d, length + object.shape.reach(object.rotation, d)) : std::nullopt;
         if (hit) {
@@ -202,7 +236,24 @@ void LooseObjects::contact(LooseObject& object, anim::Vec3 point, const RayConta
     // Moved back to kBackOff in front of the surface.
     const float reach = object.shape.reach(object.rotation, anim::scale(n, -1.0F));
     const anim::Vec3 centre = anim::add(point, anim::scale(n, reach + kBackOff));
-    object.position = anim::subtract(centre, rotate(object.rotation, object.shape.centre));
+    object.position = anim::subtract(centre, turnBy(object.rotation, object.shape.centre));
+    // The wear first (OverheadWeapon_ContactDamage): a thrown object takes one hit, a flying object's second counter
+    // first, and its body flag 1 goes, so it wears once per throw.
+    // @orig 0x003932c8 OverheadWeapon_ContactDamage (unknown)
+    if (object.thrown && object.wears) {
+        takeHit(object.counter, object.secondCounter, -1, false, true);
+    }
+    object.thrown = false;
+    // A counter at 0 breaks it (WorldObject_Break): no bounce, its velocity and spin zero.
+    if (object.counter == 0 || object.secondCounter == 0) {
+        object.broken = true;
+        object.breakPoint = point;
+        object.breakContact = contact;
+        object.velocity = {};
+        object.angularVelocity = {};
+        object.airborne = false;
+        return;
+    }
     // A settled object's floor contact (answer 0x10003): it stops, at rest.
     if (floor && object.settled) {
         object.velocity = {};

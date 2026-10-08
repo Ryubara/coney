@@ -21,6 +21,8 @@ namespace coney::world_objects {
 inline constexpr std::string_view kDynMasksClass = "dyn_masks";
 /// The class of the trash cans, bags and other props a player can pick up and throw, which any strike breaks.
 inline constexpr std::string_view kOverheadWeaponClass = "overhead_weapon";
+/// The class of the small thrown objects (bottles, bricks, balls), which break on their first contact after a throw.
+inline constexpr std::string_view kThrownWeaponClass = "thrown_weapon";
 /// The cash register's class, its drawer's type and the money the open drawer spills.
 inline constexpr std::string_view kCashRegisterClass = "dyn_cashreg";
 inline constexpr std::string_view kCashDrawerType = "dyn_cashreg_b";

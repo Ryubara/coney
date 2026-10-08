@@ -141,6 +141,13 @@ TEST_CASE("The story's human switches reach the humans", "[ai][story]") {
     CHECK(level.call("HuGetControlName", {Value(2.0)}).string() == "aiControl");
     CHECK(level.call("HuGetControlName", {Value(1.0)}).string() == "screenRelativeControl");
     CHECK(level.call("HuGetControlName", {Value(9.0)}).isNil());
+    // In a throw's aim the player's control is throwControl, and HuIsAimingAt follows what the aim last met.
+    level.scene.player().human().script().throwAiming = true;
+    level.scene.player().human().script().aimedObject = 77.0;
+    CHECK(level.call("HuGetControlName", {Value(1.0)}).string() == "throwControl");
+    CHECK_FALSE(level.call("HuIsAimingAt", {Value(1.0), Value(77.0)}).isNil());
+    CHECK(level.call("HuIsAimingAt", {Value(1.0), Value(78.0)}).isNil());
+    level.scene.player().human().script().throwAiming = false;
     level.call("HuSetLOSRange", {Value(2.0), Value(12.0)});
     level.call("BrSetFOV", {Value(2.0), Value(90.0)});
     CHECK(extra.sightRange() == 12.0F);

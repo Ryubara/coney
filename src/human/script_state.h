@@ -64,6 +64,10 @@ struct ScriptState {
     /// The pad's left stick locked (per-player `+0x1f`, `HuLockPadMovement`): it reads as centred, the buttons still
     /// act.
     bool movementLocked = false;
+    /// In a throw's aiming state (state `0x200000000000`, move style `0x13`, the control `throwControl`).
+    bool throwAiming = false;
+    /// What its throw aim last met (`+0x634`, HuIsAimingAt): a human or object handle, 0 for none. Kept after the aim.
+    double aimedObject = 0;
     /// The blob shadow drawn (character instance `+0x2b4`, `HuShadow`). **Coney choice** until set (the default is not
     /// traced): drawn.
     bool shadow = true;

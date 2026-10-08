@@ -878,8 +878,8 @@ void PlayLevelMode::dropHeld(human::Human& human, double held, bool thrown) {
         m_pickups->drop(held, human.position());
         return;
     }
-    // It starts where the hand holds it, thrown or dropped (a throw from the aiming state, which starts at the aim's
-    // release point, is not built), or above the feet when the hand pose is unknown.
+    // It starts where the hand holds it, thrown or dropped, or above the feet when the hand pose is unknown; a throw
+    // from the aiming state starts at the aim's release point instead (below).
     const anim::Vec3 feet = human.position();
     world_objects::WorldPose start =
         heldPose(held, m_player->current())
@@ -924,6 +924,14 @@ void PlayLevelMode::dropHeld(human::Human& human, double held, bool thrown) {
             }
         }
         velocity = anim::transformDirection(turn, combat::throwVelocity(aim));
+        // Released from the aiming state: the aim's release point and velocity (+0x5f0, +0x600), with no target (the
+        // trace clears the brain's), and the aim is left with its pitch back at the start.
+        if (m_throwAim.active()) {
+            start.position = m_throwAim.releasePoint();
+            velocity = m_throwAim.velocity();
+            m_throwAim.leave();
+            human.setThrowAiming(false);
+        }
         if (set == 1 || set == 2) {
             start.rotation = holder;
             spin = anim::Vec3{kThrowTumble, 0.0F, 0.0F};
@@ -938,10 +946,11 @@ void PlayLevelMode::dropHeld(human::Human& human, double held, bool thrown) {
     }
     m_pickups->drop(held, start.position);
     record->rotation = {start.rotation.x, start.rotation.y, start.rotation.z, start.rotation.w};
+    // A throw names its thrower (the last holder, +0x11c), whom its break's message 6 is from.
     m_looseObjects.start(held, start.position, start.rotation,
                          type != nullptr ? world_objects::LooseObjects::Kind::of(*type)
                                          : world_objects::LooseObjects::Kind{},
-                         velocity, spin);
+                         velocity, spin, thrown ? handleOf(human) : 0.0);
 }
 
 void PlayLevelMode::stepLooseObjects() {
@@ -960,6 +969,15 @@ void PlayLevelMode::stepLooseObjects() {
     for (const double handle : gone) {
         m_looseObjects.remove(handle);
     }
+    // A thrown object broken last step goes at its next update (state -5), as a broken prop goes.
+    for (const double handle : std::exchange(m_brokenThrown, {})) {
+        m_print(std::format("objects: object {:.0f} removed\n", handle));
+        if (m_pickups != nullptr) {
+            m_pickups->objectRemoved(handle);
+        } else {
+            static_cast<void>(m_records->destroy(handle));
+        }
+    }
     // The move meets the level's collision mesh. **Coney stand-in**: humans, cars and other objects (the bodies with
     // `BLOCKOBJECTS`) are not met yet.
     const raycast::CollisionMesh* mesh = m_objects != nullptr && m_objects->world.collision != nullptr
@@ -974,8 +992,10 @@ void PlayLevelMode::stepLooseObjects() {
         if (!hit) {
             return std::nullopt;
         }
-        return world_objects::RayContact{
-            .distance = hit->t, .normal = {hit->normal.x, hit->normal.y, hit->normal.z}, .body = false};
+        return world_objects::RayContact{.distance = hit->t,
+                                         .normal = {hit->normal.x, hit->normal.y, hit->normal.z},
+                                         .body = false,
+                                         .material = hit->material};
     };
     // Each object's pose goes back into its record, which the world objects draw.
     const auto place = [this](double handle, const world_objects::LooseObject& object) {
@@ -984,14 +1004,54 @@ void PlayLevelMode::stepLooseObjects() {
             record->rotation = {object.rotation.x, object.rotation.y, object.rotation.z, object.rotation.w};
         }
     };
-    m_looseObjects.step(test, [this, &place](double handle, const world_objects::LooseObject& object) {
-        place(handle, object);
-        m_print(std::format("objects: object {:.0f} came to rest at ({:.2f}, {:.2f}, {:.3f})\n", handle,
-                            object.position.x, object.position.y, object.position.z));
-    });
+    m_looseObjects.step(
+        test,
+        [this, &place](double handle, const world_objects::LooseObject& object) {
+            place(handle, object);
+            m_print(std::format("objects: object {:.0f} came to rest at ({:.2f}, {:.2f}, {:.3f})\n", handle,
+                                object.position.x, object.position.y, object.position.z));
+        },
+        [this, &place](double handle, const world_objects::LooseObject& object) {
+            place(handle, object);
+            thrownBreak(handle, object);
+        });
     for (const auto& [handle, object] : m_looseObjects.all()) {
         place(handle, object);
     }
+}
+
+void PlayLevelMode::thrownBreak(double handle, const world_objects::LooseObject& object) {
+    // The dust a broken thrown weapon raises at the hit point (`Particles_Dust`), metres.
+    constexpr float kBreakDust = 1.6F;
+    // The impact's two material pairs: (its, its) at full volume, (its, the surface's) at half.
+    constexpr float kOwnPairVolume = 1.0F;
+    constexpr float kSurfacePairVolume = 0.5F;
+    world_objects::SpawnRecord* record = m_records->find(handle);
+    const world_objects::ObjectType* type =
+        record != nullptr && m_objectTypes != nullptr ? m_objectTypes->find(record->typeName) : nullptr;
+    world_objects::ObjectServices* services = m_objects != nullptr ? m_objects->world.services : nullptr;
+    const anim::Vec3 at = object.breakPoint;
+    m_print(std::format("objects: thrown object {:.0f} broke at ({:.2f}, {:.2f}, {:.3f})\n", handle, at.x, at.y, at.z));
+    // WorldObject_OnImpact on the level mesh: the sounds, then message 6 to the boxes the thrower stands in, with the
+    // object where its move left it. **Coney's stand-in**: a body contact plays nothing (no body is met yet).
+    if (services != nullptr) {
+        if (type != nullptr && !object.breakContact.body) {
+            services->playMaterialPair(type->material, type->material, at, kOwnPairVolume);
+            services->playMaterialPair(type->material, object.breakContact.material, at, kSurfacePairVolume);
+        }
+        if (object.thrower != world_objects::kNoObject) {
+            services->damageDone(object.thrower, handle);
+        }
+    }
+    // ThrownWeapon_Break (message 1): the object at the hit point, its dust; it goes at its next update.
+    // **Coney's stand-in**: the coloured glass pieces and rubble by model are not made.
+    if (record != nullptr) {
+        record->position = {at.x, at.y, at.z};
+    }
+    if (services != nullptr) {
+        services->dust(at, kBreakDust);
+    }
+    m_brokenThrown.push_back(handle);
 }
 
 void PlayLevelMode::stepMugging(human::Human& human) {

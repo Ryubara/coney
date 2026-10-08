@@ -308,8 +308,26 @@ void GameplayMode::enter() {
         m_context.sound->gameplayEntered();
     }
     m_brains = std::make_unique<ai::Brains>();
-    m_scripted = std::make_unique<ai::ScriptedBrains>(*m_brains, m_flags,
-                                                      [this](double handle) { return m_humans.placement(handle); });
+    // What the scripts' handles name: a human, else a live world object (IsInsideBox on a thrown bottle, a flag on an
+    // object), at its spawn record's place and heading.
+    m_scripted = std::make_unique<ai::ScriptedBrains>(
+        *m_brains, m_flags, [this](double handle) -> std::optional<world_objects::Placement> {
+            if (std::optional<world_objects::Placement> human = m_humans.placement(handle)) {
+                return human;
+            }
+            const world_objects::SpawnRecord* record =
+                m_context.spawnRecords != nullptr ? m_context.spawnRecords->find(handle) : nullptr;
+            if (record == nullptr || record->removed) {
+                return std::nullopt;
+            }
+            // The heading its rotation turns +y to (0 along +y, counter-clockwise from above).
+            const auto& q = record->rotation;
+            const anim::Vec3 ahead = anim::transformDirection(anim::matrixFromQuat(anim::Quat{q[0], q[1], q[2], q[3]}),
+                                                              anim::Vec3{0.0F, 1.0F, 0.0F});
+            return world_objects::Placement{.position = record->position,
+                                            .headingDegrees =
+                                                std::atan2(-ahead.x, ahead.y) * 180.0F / std::numbers::pi_v<float>};
+        });
     m_scripted->setScripts(&m_scripts);
     m_scripted->setMessages(m_context.messages);
     if (m_context.animCallbacks != nullptr) {

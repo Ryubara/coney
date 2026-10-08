@@ -216,6 +216,16 @@ PlayerSnapshot Player::capture() const {
 
 Player::~Player() { setCameras(nullptr); }
 
+std::optional<anim::Vec3> Player::followForward() const {
+    if (m_cameras == nullptr) {
+        return m_camera.forward();
+    }
+    if (m_cameras->current().kind != camera::CameraKind::Follow) {
+        return std::nullopt;
+    }
+    return camera::viewForward(m_cameras->view());
+}
+
 void Player::setCameras(camera::Cameras* cameras) {
     if (m_cameras != nullptr) {
         m_cameras->attachFollow(nullptr);
@@ -289,8 +299,9 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
     // Without the pad the record keeps only the brain's move, which the brains write in the step.
     const anim::Vec3 cameraForward = m_cameras != nullptr ? camera::viewForward(m_cameras->view()) : m_camera.forward();
     if (m_padControlled) {
-        // A locked stick reads as centred (HuLockPadMovement); the buttons still act.
-        const bool stickFree = !script.movementLocked;
+        // A locked stick reads as centred (HuLockPadMovement); the buttons still act. In a throw's aim the stick turns
+        // and pitches the aim instead (combat::ThrowAimState reads the pad itself).
+        const bool stickFree = !script.movementLocked && !script.throwAiming;
         m_driven->record() = PlayerRecord{.stickX = stickFree ? pad.leftX() : 0.0F,
                                           .stickY = stickFree ? pad.leftY() : 0.0F,
                                           .cameraForward = cameraForward,

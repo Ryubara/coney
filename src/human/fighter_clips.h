@@ -57,6 +57,10 @@ inline constexpr std::uint32_t kStereoStealIntro = 683; ///< `STEREO_STEAL_INTRO
 inline constexpr std::uint32_t kStereoStealLoop = 684;  ///< The stereo theft's loop while the stick turns.
 inline constexpr std::uint32_t kTaggingIntro = 334;     ///< `ANIM_TAGGING_INTRO`: the spray's start.
 inline constexpr std::uint32_t kTaggingLoop = 335;      ///< The spray's loop while the stick game runs.
+// A throw's aiming state, move style `0x13` (docs/research/objects.md#throws).
+inline constexpr std::uint32_t kThrowAimEnter = 466; ///< `gen_1hand_throw_enter`, move style `0x13`'s block start.
+inline constexpr std::uint32_t kThrowAimCycle = 469; ///< `gen_1hand_throw_cycle`, its idles and block sustain.
+inline constexpr std::uint32_t kThrowAimTurn = 470;  ///< `gen_1hand_throw_turn`, its block shuffle (action 10).
 // The arrest and the uncuffing (docs/research/crimes.md#uncuffing): the cuffed human's idle, the freer's clips and the
 // cuffed human's paired reactions.
 inline constexpr std::uint32_t kArrestedIdle = 320;      ///< `ANIM_ARRESTED_IDLE`, move style `0x11`'s idle.

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Loose objects in flight (world_objects/loose_objects.h): the settle's eased turn and its target, the bodies' reach,
-// and a dropped object's fall, bounce, settle and stop over a synthetic flat floor at z = 0.
+// and a dropped object's fall, bounce, settle and stop over a synthetic flat floor at z = 0; a thrown bottle's break on
+// its first contact.
 #include "world_objects/loose_objects.h"
 
 #include <cmath>
@@ -244,4 +245,59 @@ TEST_CASE("with every settle slot busy a landing starts no settle; removing an o
     objects.remove(100);
     CHECK(objects.find(100) == nullptr);
     CHECK(objects.settlesInUse() == LooseObjects::kSettleSlots - 1);
+}
+
+TEST_CASE("a thrown bottle breaks on its first contact; dropped, or of another class, it does not",
+          "[world_objects][physics][throw]") {
+    // A synthetic bottle: class thrown_weapon, one hit, no second counter.
+    ObjectType bottle = brickType();
+    bottle.className = "thrown_weapon";
+    bottle.value = 1;
+    const Vec3 velocity{0.0F, 6.0F, 0.0F};
+    constexpr double kThrower = 228;
+
+    LooseObjects objects;
+    objects.start(1, Vec3{0, 0, 1.0F}, {}, LooseObjects::Kind::of(bottle), velocity, {}, kThrower);
+    REQUIRE(objects.find(1)->thrown);
+    std::optional<LooseObject> broke;
+    double brokeHandle = 0;
+    for (int i = 0; i < 60 && objects.find(1) != nullptr; ++i) {
+        objects.step(floorRay, {}, [&](double handle, const LooseObject& object) {
+            brokeHandle = handle;
+            broke = object;
+        });
+    }
+    // It broke where its move met the floor, stopped dead (no bounce), with its thrower kept, and left the flight.
+    REQUIRE(broke.has_value());
+    CHECK(brokeHandle == 1);
+    CHECK(objects.find(1) == nullptr);
+    CHECK(broke->broken);
+    CHECK(broke->counter == 0);
+    CHECK(broke->thrower == kThrower);
+    CHECK(broke->breakPoint.z == Approx(0.0F).margin(1e-4));
+    CHECK(broke->breakPoint.y > 0.0F);
+    CHECK(broke->velocity.y == 0.0F);
+    CHECK(broke->velocity.z == 0.0F);
+
+    // Dropped (no thrower), it lands and bounces whole.
+    LooseObjects dropped;
+    dropped.start(2, Vec3{0, 0, 1.0F}, {}, LooseObjects::Kind::of(bottle));
+    bool droppedBroke = false;
+    for (int i = 0; i < 20; ++i) {
+        dropped.step(floorRay, {}, [&](double, const LooseObject&) { droppedBroke = true; });
+    }
+    CHECK_FALSE(droppedBroke);
+
+    // Thrown, a brick of another class (Coney wears only thrown_weapon) bounces whole too.
+    ObjectType other = bottle;
+    other.className = "simple_object";
+    LooseObjects thrownOther;
+    thrownOther.start(3, Vec3{0, 0, 1.0F}, {}, LooseObjects::Kind::of(other), velocity, {}, kThrower);
+    bool otherBroke = false;
+    for (int i = 0; i < 20; ++i) {
+        thrownOther.step(floorRay, {}, [&](double, const LooseObject&) { otherBroke = true; });
+    }
+    CHECK_FALSE(otherBroke);
+    // A type whose hit count is 0 never wears.
+    CHECK(LooseObjects::Kind::of(brickType()).counter == 0xff);
 }
