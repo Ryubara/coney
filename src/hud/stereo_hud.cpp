@@ -63,7 +63,6 @@ void StereoHud::update(std::uint64_t nowMs) {
         m_step = kStereoPopStep;
         m_drop = 0.0F;
     }
-    m_mirrored = !m_mirrored;
 }
 
 float StereoHud::gaugeSize() const {
@@ -111,7 +110,8 @@ void StereoHud::render(const HudCanvas& canvas, std::size_t player) const {
                              -m_value);
         }
     }
-    // The stick in its four positions, and the ring turning beside it, mirrored every other update.
+    // The stick in its four positions, and the ring turning beside it, always mirrored left to right (the update swaps
+    // u0 and u1 of a rectangle rebuilt from its sprite word each time, so it never flickers: confirmed (runtime)).
     graphics::SpriteBatch* parts = canvas.parts;
     const GuiPoint stick = stickPlace(player);
     if (hasRect(parts, stickRect())) {
@@ -120,9 +120,7 @@ void StereoHud::render(const HudCanvas& canvas, std::size_t player) const {
     }
     if (hasRect(parts, kStereoRingRect)) {
         graphics::UvRect uv = parts->sheet().page.rect(kStereoRingRect);
-        if (m_mirrored) {
-            std::swap(uv.u0, uv.u1);
-        }
+        std::swap(uv.u0, uv.u1);
         // Its turn, kept within one turn so the float stays exact however long the game runs.
         const auto angle = static_cast<float>(
             std::fmod(static_cast<double>(kStereoRingTurn) * static_cast<double>(m_nowMs), 2.0 * std::numbers::pi));

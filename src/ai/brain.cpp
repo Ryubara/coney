@@ -15,6 +15,7 @@
 #include "ai/reaction_goals.h"
 #include "ai/script_services.h"
 #include "ai/story_goals.h"
+#include "ai/swap_prompt.h"
 #include "ai/tactic.h"
 #include "human/locomotion.h"
 
@@ -97,6 +98,10 @@ void Brain::think(std::uint64_t nowMs) {
     // The cop's, the gang soldier's and the Warrior's think handlers keep the tackle meter.
     if (!m_dead && (m_type == BrainType::Cop || m_type == BrainType::Gang || m_type == BrainType::Warrior)) {
         thinkTackle(*this);
+    }
+    // A Warrior's step 7: the swap prompt beside a player.
+    if (!m_dead && m_type == BrainType::Warrior) {
+        thinkSwapPrompt(*this);
     }
 }
 

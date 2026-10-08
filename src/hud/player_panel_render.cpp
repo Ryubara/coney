@@ -29,6 +29,7 @@ void PlayerPanel::render(const HudCanvas& canvas, int levelNumber) const {
     }
     renderMoney(canvas, alpha);
     renderCounters(canvas, alpha);
+    renderTally(canvas, alpha, swapped, levelNumber);
 }
 
 void PlayerPanel::renderBanner(const HudCanvas& canvas, float alpha, bool swapped) const {
@@ -148,6 +149,25 @@ void PlayerPanel::renderCounters(const HudCanvas& canvas, float alpha) const {
                 faded(colour, alpha));
         drawPlainText(canvas, gui::kTextFontSlot, std::to_string(m_items.at(i)), place.x + kCounterTextOffset, place.y,
                       metrics, faded(graphics::kWhite, alpha));
+    }
+}
+
+void PlayerPanel::renderTally(const HudCanvas& canvas, float alpha, bool swapped, int levelNumber) const {
+    graphics::SpriteBatch* parts = canvas.parts;
+    if (!m_tallyOn || parts == nullptr || kTallyBarRect >= parts->sheet().page.rects.size()) {
+        return;
+    }
+    // The living count's marks (the nine sprites there are), turned 3.3 rad, in the rage colour `+0x4148` (player 1's
+    // swapped in a Rumble level), at the panel's fade.
+    const graphics::Rgba colour = faded(swapped ? kRageGold : kRageRed, alpha);
+    const std::size_t marks = std::min<std::size_t>(m_tallyCount, kTallySprites);
+    for (std::size_t i = 0; i < marks; ++i) {
+        const bool bar = NumIndicator::isBar(i);
+        const graphics::UvRect uv = parts->sheet().page.rect(bar ? kTallyBarRect : kTallyStrokeRect);
+        const float height = bar ? kPanelTallyBarSize : kPanelTallyStrokeSize;
+        const GuiPoint place = tallyMarkPlace(i, levelNumber);
+        parts->addSprite(guiSprite(place.x, place.y, squareTexelWidth(parts->sheet(), uv, height), height, uv, colour),
+                         kTallyRotation);
     }
 }
 

@@ -35,6 +35,7 @@
 #include "gamemodes/pause_mode.h"
 #include "gamemodes/player_frame.h"
 #include "gamemodes/system_music.h"
+#include "gui/global_strings.h"
 #include "hud/hud.h"
 #include "human/human.h"
 #include "raycast/collision_mesh.h"
@@ -283,6 +284,7 @@ void GameplayMode::endLevel() {
         m_context.ai = nullptr;
     }
     m_objectServices.setBrains(nullptr);
+    m_objectServices.setCrimeHud({});
     m_scripted.reset();
     m_brains.reset();
     if (m_scenes && m_context.scenes == m_scenes.get()) {
@@ -352,6 +354,18 @@ void GameplayMode::enter() {
     // The crimes the scripts report reach the level's gangs and police; the story's per-level switches start clear.
     m_context.crimes = &m_objectServices.crimeServices();
     m_objectServices.setBrains(m_scripted.get());
+    // Player 1's crime messages: the HUD shows the crime message of his last crime type (`CfgCrimeMessage`).
+    m_objectServices.setCrimeHud([this](int message) {
+        if (m_context.hud == nullptr) {
+            return;
+        }
+        const int type = m_state.player.crimes.lastCrime();
+        const std::string_view text =
+            m_context.strings != nullptr && type >= 0
+                ? m_context.strings->get(gui::StringTable::Crime, static_cast<std::uint32_t>(type))
+                : std::string_view{};
+        m_context.hud->setWanted(message, text);
+    });
     if (m_context.state != nullptr) {
         m_context.state->story.resetForLevel();
     }
@@ -1165,6 +1179,9 @@ void GameplayMode::updateActionPrompt() {
                                                            : offer.stereo ? offer.stereo
                                                                           : offer.dealer) {
             text = hudString(*id);
+        } else {
+            // Last, a talkable human beside him (step 4): a Warrior's swap-weapons prompt.
+            text = talkPrompt();
         }
     }
     // The action object's hint, queued once at priority 0 while it is in reach and withdrawn when the object or its

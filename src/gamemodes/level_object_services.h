@@ -46,6 +46,8 @@ class LevelObjectServices final : public world_objects::ObjectServices {
     [[nodiscard]] CrimeServices& crimeServices() { return m_crimes; }
     /// The offenders' gangs come from `brains` from now on (null: none); it must outlive its use.
     void setBrains(const ai::ScriptServices* brains) { m_crimes.setBrains(brains); }
+    /// Where player 1's crime messages go (LevelCrimeServices::setHud()).
+    void setCrimeHud(std::function<void(int message)> notify) { m_crimes.setHud(std::move(notify)); }
 
     /// Sounds go to `sounds` from now on (null: none).
     void setSounds(world_objects::ObjectServices* sounds) { m_sounds = sounds; }

@@ -110,6 +110,13 @@ struct ScriptState {
     /// count (`+0x254`, a byte). **Coney stand-in**: no mugging or knock-down drop reads it yet, so it is only kept.
     int pocketItem = 0;
     int pocketCount = 0;
+    /// The talk prompt (human `+0x1b2`, and the message-0 handler's text `+0x7c`): set by a Warrior's brain each think
+    /// while the swap prompt applies (ai::thinkSwapPrompt()), which then gives talkString, `GSTRING.HUD` 0xc-0xe, in
+    /// place of any talkText of its own; with neither the prompt reads `GSTRING.HUD` 9
+    /// (docs/research/hud.md#talk-prompt).
+    bool talkable = false;
+    std::uint32_t talkString = 0;
+    std::string talkText;
     /// May be mugged (`+0x5b0`, `HuSetMug`); the mugging asks it unless the human is set up for interrogation.
     /// **Coney choice** until set (the default is not on the page): true.
     bool muggable = true;

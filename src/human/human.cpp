@@ -926,6 +926,11 @@ void Human::startStereoTheft(anim::Vec3 point, float stageTurns) {
     m_fighter.startStereoTheft(m_animator, nowMs(), stageTurns);
 }
 
+bool Human::stereoTheftPlaying() const {
+    const std::uint32_t id = m_animator.animId();
+    return id == clips::kStereoStealIntro || id == clips::kStereoStealLoop;
+}
+
 void Human::followPickUp() {
     if (!m_pickUp) {
         return;
@@ -1118,6 +1123,11 @@ void Human::animate(const raycast::CollisionMesh* mesh) {
         if (--m_clipTurn->updatesLeft <= 0 || m_animator.animId() != m_clipTurn->clip) {
             m_clipTurn.reset();
         }
+    }
+    // A stereo theft whose clips something else took over (a hit, a knock-down, death, a scene) ends with no outcome,
+    // as the original's hit (`0x00268c50`) and leaving normal mode (`0x002325e0`) end the mini-game.
+    if (m_fighter.combat().theft() && !stereoTheftPlaying()) {
+        m_fighter.combat().abortTheft();
     }
     sendWarnings(before, beforeId, beforeTime);
     noteSlowMotion(before, beforeId, beforeTime);

@@ -529,6 +529,10 @@ class Human final : public Holdable {
     /// in no wheelchair, not held by combat or a grab, and no held flag at all on the record.
     /// @orig 0x00225390 Human_IsIdleUnderControl (unknown)
     [[nodiscard]] bool idleUnderControl() const;
+    /// Whether the stereo theft's intro or loop (683, 684) is playing. While a theft runs, anything else taking the
+    /// body (a hit, a knock-down, death, a scene) ends it with no outcome at the next update (`MiniGame_Abort`, from
+    /// the hit `0x00268c50` and from leaving normal mode `0x002325e0`, docs/research/crimes.md#uncuffing).
+    [[nodiscard]] bool stereoTheftPlaying() const;
     /// Starts freeing a cuffed human at `cuffed` by the mash (`Uncuff_Start`, docs/research/crimes.md#uncuffing): he
     /// turns to him over 325 `ANIM_ARREST_RELEASE_INTRO_FRONT`, which holds `0x2000000` and so keeps the mash's input
     /// closed, then loops 329; the mash (mode 1) runs with the Warrior factor `mashFactor` (combat::mashFactor()).

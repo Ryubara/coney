@@ -105,6 +105,10 @@ void PlayLevelMode::takePlace(const ai::Brain& to) {
     m_ai->remove(chosen);
     // The scenes know player 1 by the new handle from now on (level99's l99_c2 joins him by it).
     m_playerHandle = to.handle();
+    // So does every lookup of player 1 in the scripts' humans (his thefts and pick-ups, his crew, his teleports).
+    if (m_cast.humans != nullptr) {
+        m_cast.humans->setPlayer(1, to.handle());
+    }
     const HumanCreation* made = m_cast.humans != nullptr ? m_cast.humans->find(to.handle()) : nullptr;
     if (made != nullptr && !made->model.empty() && made->model != m_model) {
         if (auto loaded = loadCharacter(m_engine, m_wad, made->model); loaded) {

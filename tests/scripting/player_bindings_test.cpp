@@ -335,9 +335,12 @@ TEST_CASE("a crime by player 1 makes his gang wanted once the level's brains giv
     services.reportCrime(coney::crime::kVandalism, coney::anim::Vec3{1.0F, 2.0F, 3.0F}, 10.0);
     CHECK_FALSE(h.state.player.crimes.wanted(warriors));
 
+    std::vector<int> hudMessages;
+    services.setCrimeHud([&hudMessages](int message) { hudMessages.push_back(message); });
     services.setBrains(&scene.services);
     services.reportCrime(coney::crime::kVandalism, coney::anim::Vec3{1.0F, 2.0F, 3.0F}, 10.0);
     CHECK(h.state.player.crimes.wanted(warriors));
+    CHECK(hudMessages == std::vector<int>{7});                            // HUD_SetWanted's show
     CHECK(h.state.player.crimes.lastCrime() == coney::crime::kVandalism); // player 1's gang
     REQUIRE(h.recordedArgs.size() == 1);
     CHECK(h.recordedArgs[0][0].number() == static_cast<double>(warriors));
@@ -346,4 +349,5 @@ TEST_CASE("a crime by player 1 makes his gang wanted once the level's brains giv
     services.reportCrime(coney::crime::kVandalism, coney::anim::Vec3{1.0F, 2.0F, 3.0F}, 11.0);
     CHECK_FALSE(h.state.player.crimes.wanted(police));
     CHECK(h.recordedArgs.size() == 1);
+    CHECK(hudMessages.size() == 1);
 }

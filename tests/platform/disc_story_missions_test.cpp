@@ -335,7 +335,9 @@ TEST_CASE("the disc's level34 radio objective: three car stereos stolen with the
     // docs/research/scripting.md#level34: the riot's radio objective counts three dyn_carstereo pick-ups (item 11)
     // from the three cars CarSpawnRadio gave a radio. From checkpoint 2, player 1 is placed beside each car in turn
     // (Coney's --start test aid stands for the walk) and steals its stereo with the pad; the third car stands past
-    // the section 3 trigger, so the police scene l34_c3 plays before it.
+    // the section 3 trigger, so the police scene l34_c3 plays before it. The Warrior who follows him into
+    // `vCarPoizo` beside the first car starts Vermin's stereo scene, which warps player 1 to `fStereoWarp`; the first
+    // theft waits for it to end, as in play.
     std::optional<coney::io::Wad> wad = openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -367,12 +369,14 @@ TEST_CASE("the disc's level34 radio objective: three car stereos stolen with the
                                                             coney::scenes::SceneSystem::ScriptCall{});
     });
 
-    // The three thefts at updates 0, 600 and 1800; at 1200 the walk past the section 3 trigger.
-    constexpr int kSecond = 600;
-    constexpr int kTrigger = 1200;
-    constexpr int kThird = 1800;
-    constexpr int kEnd = 2450;
-    auto input = coney::parseInputScript(stereoTheft(0) + stereoTheft(kSecond) + stereoTheft(kThird));
+    // The stereo scene in the first 600 updates; the three thefts at updates 600, 1200 and 2400; at 1800 the walk past
+    // the section 3 trigger.
+    constexpr int kFirst = 600;
+    constexpr int kSecond = 1200;
+    constexpr int kTrigger = 1800;
+    constexpr int kThird = 2400;
+    constexpr int kEnd = 3050;
+    auto input = coney::parseInputScript(stereoTheft(kFirst) + stereoTheft(kSecond) + stereoTheft(kThird));
     REQUIRE(input.has_value());
     coney::ScriptedInput pad(std::move(*input));
     coney::GameModeStack stack;
@@ -389,9 +393,16 @@ TEST_CASE("the disc's level34 radio objective: three car stereos stolen with the
             suspendOtherGangs(scripts, &suspended);
         }
     };
-    run(kSecond);
+    const auto count = [](const std::vector<std::string>& lines, std::string_view text) {
+        return std::ranges::count_if(lines,
+                                     [text](const std::string& line) { return line.find(text) != std::string::npos; });
+    };
+    run(kFirst);
     auto* play = dynamic_cast<coney::platform::PlayLevelMode*>(gameplay.level());
     REQUIRE(play != nullptr);
+    CHECK(count(trace, "> P1.DoneStereoPoizo()") == 1);
+    play->startAt(placeAt(-82.4F, -156.8F, 90.0F));
+    run(kSecond - kFirst);
     play->startAt(placeAt(-114.5F, -180.8F, 180.0F));
     run(kTrigger - kSecond);
     play->startAt(placeAt(-57.97F, -250.7F, 180.0F));
@@ -399,10 +410,6 @@ TEST_CASE("the disc's level34 radio objective: three car stereos stolen with the
     play->startAt(placeAt(-59.76F, -252.3F, 264.0F));
     run(kEnd - kThird);
 
-    const auto count = [](const std::vector<std::string>& lines, std::string_view text) {
-        return std::ranges::count_if(lines,
-                                     [text](const std::string& line) { return line.find(text) != std::string::npos; });
-    };
     CHECK(scripts.scripts().errors() == 0);
     CHECK(count(log, "theft: stole the stereo of car") == 3);
     CHECK(count(trace, "> F.InventoryPickup(11)") == 3);

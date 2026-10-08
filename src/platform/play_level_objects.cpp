@@ -144,6 +144,7 @@ constexpr int kObjectTicksPerStep = 2;
 // The prompts' GSTRING.HUD ids (docs/research/crimes.md#context-records): a held human to mug, a pickable door, a car
 // stereo.
 constexpr std::uint32_t kMugPrompt = 1;
+constexpr std::uint32_t kInterrogatePrompt = 0;
 constexpr std::uint32_t kLockPrompt = 15;
 constexpr std::uint32_t kStereoPrompt = 16;
 // The interface cues of the stereo theft: each stage completed, and also the fourth
@@ -300,13 +301,18 @@ PromptOffer PlayLevelMode::promptOffer() const {
         offer.blocked = true;
         return offer;
     }
-    // Holding a human who can be mugged (Mug_CanMugVictim): one who may be mugged and has money or a pocket item.
-    // **Coney's reading**: no interrogation (`+0x5a0`) or carried object (`+0x257`) is modelled, so it is always 1.
+    // Holding a human who can be mugged (Mug_CanMugVictim): one set up for interrogation, whatever he carries
+    // ("interrogate", 0), or one who may be mugged and has money or a pocket item (1). **Coney's reading**: no carried
+    // object (`+0x257`) is modelled.
     if (fight.mode() == combat::CombatMode::Grabbing) {
         if (const auto* victim = dynamic_cast<const human::Human*>(human.fighter().held());
-            victim != nullptr && !victim->health().depleted() && victim->script().muggable &&
-            (victim->script().money > 0 || victim->script().pocketCount > 0)) {
-            offer.held = kMugPrompt;
+            victim != nullptr && !victim->health().depleted()) {
+            const human::ScriptState& script = victim->script();
+            if (!script.interrogationCallback.empty()) {
+                offer.held = kInterrogatePrompt;
+            } else if (script.muggable && (script.money > 0 || script.pocketCount > 0)) {
+                offer.held = kMugPrompt;
+            }
         }
     }
     const anim::Vec3 feet = human.position();
@@ -542,6 +548,12 @@ void PlayLevelMode::stepStereoPanel(const human::Human& human) {
     hud::StereoHud& panel = hud.stereo(0);
     const std::optional<combat::StereoTheft>& theft = human.fighter().combat().theft();
     if (!m_theftCar || !theft) {
+        // A theft cut short (a hit, a knock-down, death, a scene: Human::stereoTheftPlaying()) has no outcome: the car
+        // is forgotten and the panel goes. An ended one keeps the car until its outcome is taken below.
+        if (m_theftCar && human.fighter().last().game == combat::GameResult::Running) {
+            m_print(std::format("theft: cut short at car {:.0f}\n", *m_theftCar));
+            m_theftCar.reset();
+        }
         panel.end();
         return;
     }
@@ -745,6 +757,10 @@ void PlayLevelMode::stepMugging(human::Human& human) {
     // The mugging ended this step. A win pays at once, from the victim still held; a win or a loss then waits for its
     // end clip; a let-go or a hit calls back at once.
     const combat::GameResult result = human.fighter().last().game;
+    // TODO(mission1-finish, the mugging's owner; docs/research/crimes.md#interrogation): a victim set up for
+    // interrogation (ScriptState::interrogationCallback, HuSetInterrogation) says its set lines instead of the
+    // mugging's, pays nothing, and on success says the fourth line, has its callback called with (victim, mugger,
+    // true) and the interrogation cleared (`0x00226168`). Only the "interrogate" prompt is built (promptOffer()).
     if (result == combat::GameResult::Succeeded) {
         auto* victim = dynamic_cast<human::Human*>(human.fighter().held());
         int none = 0;

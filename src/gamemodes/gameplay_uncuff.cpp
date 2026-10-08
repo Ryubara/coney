@@ -43,6 +43,9 @@ constexpr std::uint32_t kUncuffPrompt = 2;
 // The revive prompt, `GSTRING.HUD` 4, and how near a downed partner must be (3 m, in 3D).
 constexpr std::uint32_t kRevivePrompt = 4;
 constexpr float kReviveReach = 3.0F;
+// The talk prompt's reach (1.5 m, in 3D) and the text of a talkable human with none of its own (`GSTRING.HUD` 9).
+constexpr float kTalkReach = 1.5F;
+constexpr std::uint32_t kTalkDefaultPrompt = 9;
 
 // Whether `brain` is friendly to `player` for the kind-0 record (`Human_IsFriendly`, `0x00222a90`). **Coney's
 // stand-in**: the gangs' friendship (ai::Gangs::friends(): the same gang or kind, or the friend bit).
@@ -123,6 +126,39 @@ ai::Brain* GameplayMode::revivableInReach() const {
         }
     }
     return best;
+}
+
+std::string GameplayMode::talkPrompt() const {
+    ai::Brain* player = m_scripted ? m_scripted->player() : nullptr;
+    if (player == nullptr) {
+        return {};
+    }
+    // The first human within 1.5 m who is talkable and a Warrior (or the co-op partner): his text, else string 9.
+    const anim::Vec3 feet = player->human().position();
+    const ai::Brains& brains = m_scripted->owner();
+    for (std::size_t i = 0; i < brains.size(); ++i) {
+        const ai::Brain& brain = brains.at(i);
+        const human::Human& human = brain.human();
+        if (&brain == player || !human.script().talkable ||
+            (brain.type() != ai::BrainType::Player && brain.type() != ai::BrainType::Warrior)) {
+            continue;
+        }
+        const anim::Vec3 at = human.position();
+        const float squared = ((at.x - feet.x) * (at.x - feet.x)) + ((at.y - feet.y) * (at.y - feet.y)) +
+                              ((at.z - feet.z) * (at.z - feet.z));
+        if (squared <= kTalkReach * kTalkReach) {
+            // The swap prompt's string, else the human's own text, else string 9.
+            if (human.script().talkString != 0 && m_context.strings != nullptr) {
+                return std::string(m_context.strings->get(human.script().talkString));
+            }
+            if (!human.script().talkText.empty()) {
+                return human.script().talkText;
+            }
+            return m_context.strings != nullptr ? std::string(m_context.strings->get(kTalkDefaultPrompt))
+                                                : std::string{};
+        }
+    }
+    return {};
 }
 
 std::string GameplayMode::revivePrompt() const {

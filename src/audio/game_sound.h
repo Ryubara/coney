@@ -135,6 +135,8 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     void loadBank(std::string_view bank) override;
     void playMusic(std::string_view track) override;
     void playCue(int cue) override;
+    /// The engine's bank (the level's own after its load); empty without an engine.
+    [[nodiscard]] std::string loadedBank() const override;
 
   private:
     // The engine as the matrix's players' sink: nothing plays until the SoundPlayer has an engine.

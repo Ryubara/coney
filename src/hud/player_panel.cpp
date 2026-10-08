@@ -203,6 +203,35 @@ graphics::Rgba PlayerPanel::bannerColour(bool swapped) const {
     return gold != swapped ? kRageGold : kRageRed;
 }
 
+float PlayerPanel::tallyShift(int levelNumber) const {
+    // The counters shown take the slots in order, so slot k holds an item when more than k counters show.
+    const auto shown = static_cast<std::size_t>(std::ranges::count_if(m_items, [](int count) { return count >= 1; }));
+    const int money = m_values.money;
+    float shift = 0.0F;
+    if ((money >= 1 && money <= 999) || shown > 0) {
+        const auto onLine2 = [&](std::size_t slot) { return shown > slot && m_slots.at(slot).y == kSlotLine2; };
+        shift = onLine2(2) || onLine2(3) ? kTallyShiftTwoLines : kTallyShiftOneLine;
+    }
+    if (levelNumber >= kArcadeLevelStart) {
+        shift += kTallyArcadeShift;
+    }
+    return shift;
+}
+
+GuiPoint PlayerPanel::tallyMarkPlace(std::size_t index, int levelNumber) const {
+    const GuiPoint base = kPanelBase.at(m_player);
+    const auto i = static_cast<float>(index);
+    float x = 0.0F;
+    if (NumIndicator::isBar(index)) {
+        x = kTallyFirstX.at(m_player) + (kTallyBarStep * i);
+    } else if (index < 5) {
+        x = kTallyFirstX.at(m_player) + (kTallyStrokeStep * i);
+    } else {
+        x = kTallyLaterX.at(m_player) + (kTallyStrokeStep * i);
+    }
+    return GuiPoint{base.x + x, base.y + kTallyY + tallyShift(levelNumber)};
+}
+
 GuiPoint PlayerPanel::shifted(GuiPoint offset) const {
     const GuiPoint base = kPanelBase.at(m_player);
     const float shift = m_player == 0 ? 0.0F : kPlayer1Shift;

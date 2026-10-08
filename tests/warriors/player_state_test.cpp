@@ -213,7 +213,7 @@ TEST_CASE("a crime report turns the police on the gang, sends responders and sta
 
     crimes.report(services, crime::kAssault, at, 1.0, 50.0, true, 0, 1000);
     CHECK(services.calls ==
-          std::vector<std::string>{"hostile 3 both", "OnCrime 3 0", "scene", "respond 0 1 2 0", "assault", "hud 0"});
+          std::vector<std::string>{"hostile 3 both", "OnCrime 3 0", "scene", "respond 0 1 2 0", "assault", "hud 7"});
     CHECK(crimes.wanted(3));
     CHECK(crimes.lastCrime() == crime::kAssault);
     CHECK(crimes.lastAssault(3) == 1000);
@@ -222,7 +222,7 @@ TEST_CASE("a crime report turns the police on the gang, sends responders and sta
     // The same victim scores once; the scene does not move again to the same place.
     services.calls.clear();
     crimes.report(services, crime::kAssault, at, 1.0, 50.0, false, 0, 2000);
-    CHECK(services.calls == std::vector<std::string>{"hostile 3 both", "OnCrime 3 0", "hud 0"});
+    CHECK(services.calls == std::vector<std::string>{"hostile 3 both", "OnCrime 3 0", "hud 7"});
 
     // Wanted runs out 10 s after the last report.
     services.calls.clear();

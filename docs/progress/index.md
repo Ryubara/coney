@@ -28,17 +28,17 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 16.9%](https://img.shields.io/badge/reimplemented-16.9%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 17.1%](https://img.shields.io/badge/reimplemented-17.1%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 ![Understood: 100.0%](https://img.shields.io/badge/understood-100.0%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▍░░░░░░░░░░░░░░░░` | 16.9% of the game's own code (568,632 of 3,354,776 bytes, 2,093 functions) |
+| **Reimplemented** | `███▍░░░░░░░░░░░░░░░░` | 17.1% of the game's own code (573,384 of 3,354,776 bytes, 2,106 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,192 of 3,284,000 bytes; 11,423 of 11,425 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-849 reimplemented function(s) have no size yet and add no bytes.
+853 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -70,10 +70,10 @@ at the top of the repository's `README.md`.
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
 | `FileIO` | `███▍░░░░░░░░░░░░░░░░` | 17.0% | 10 | 7,120 |
-| `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 111 | 100,440 |
+| `GameModes` | `██████▋░░░░░░░░░░░░░` | 33.1% | 112 | 100,440 |
 | `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 12.0% | 90 | 195,624 |
-| `GUI` | `████░░░░░░░░░░░░░░░░` | 19.8% | 235 | 497,416 |
-| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 779 | 1,096,672 |
+| `GUI` | `████▏░░░░░░░░░░░░░░░` | 20.7% | 246 | 497,416 |
+| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 780 | 1,096,672 |
 | `Maths (unnamed)` | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% | 9 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `▌░░░░░░░░░░░░░░░░░░░` | 2.5% | 8 | 79,032 |
@@ -437,6 +437,7 @@ at the top of the repository's `README.md`.
 | `0x00161218` | `RunPreloadScripts` | `GameModes` | 152 |
 | `0x001612b0` | `LoadScreen_Begin` | `GameModes` | 144 |
 | `0x00161378` | `LoadScreen_End` | `GameModes` | 120 |
+| `0x001613f0` | `LoadScreen_DrawPulse` | `GameModes` | 528 |
 | `0x00162598` | `LevelLoadScreen_Finish` | `GameModes` | 240 |
 | `0x00162688` | `LevelLoadScreen_DrawBar` | `GameModes` | 1,280 |
 | `0x00162b88` | `LevelLoadScreen_Tick` | `GameModes` | 1,768 |
@@ -609,6 +610,7 @@ at the top of the repository's `README.md`.
 | `0x001a3360` | `MashMeter_Render` | `GUI` | not filled in |
 | `0x001a3990` | `ChaseGauge_Update` | `GUI` | 624 |
 | `0x001a3c00` | `ChaseGauge_Render` | `GUI` | 72 |
+| `0x001a5e38` | `RingArc_Draw` | `GUI` | 544 |
 | `0x001a6c58` | `WarCommandDisplay_Issue` | `GUI` | not filled in |
 | `0x001a6d28` | `WarCommandDisplay_Open` | `GUI` | not filled in |
 | `0x001a7040` | `WarCommandDisplay_ReadStick` | `GUI` | not filled in |
@@ -616,6 +618,10 @@ at the top of the repository's `README.md`.
 | `0x001a8530` | `WarCommand_FromSlot` | `GUI` | not filled in |
 | `0x001a8590` | `WarCommandDisplay_Render` | `GUI` | not filled in |
 | `0x001a8e30` | `Widget::Widget` | `GUI` | 72 |
+| `0x001aa720` | `HudCrimePanel_OnMessage` | `GUI` | not filled in |
+| `0x001aa9b0` | `HudCrimePanel_Update` | `GUI` | 504 |
+| `0x001aaba8` | `HudCrimePanel_Render` | `GUI` | 328 |
+| `0x001acd60` | `ActionPrompt_FindNearbyHuman` | `GUI` | not filled in |
 | `0x001acee0` | `HUD::HUD` | `GUI` | 1,704 |
 | `0x001ad588` | `HUD_LevelSetUp` | `GUI` | not filled in |
 | `0x001aef50` | `HUD_IsPlayerStickPushed` | `GUI` | not filled in |
@@ -626,6 +632,8 @@ at the top of the repository's `README.md`.
 | `0x001b2088` | `HUD_ShowPlayers` | `GUI` | 88 |
 | `0x001b20f8` | `HUD_ShowAll` | `GUI` | 176 |
 | `0x001b2200` | `HUD_AttachPlayer` | `GUI` | 240 |
+| `0x001b24d0` | `HUD_SetSpinner` | `GUI` | 48 |
+| `0x001b2520` | `HUD_SetWanted` | `GUI` | not filled in |
 | `0x001b26a8` | `HUD_RadarSetTintBlue` | `GUI` | not filled in |
 | `0x001b2790` | `HUD_RadarSetTintGrey` | `GUI` | not filled in |
 | `0x001b2e10` | `HudManager_SetRadarRange` | `GUI` | not filled in |
@@ -662,6 +670,9 @@ at the top of the repository's `README.md`.
 | `0x001b5ea8` | `HUD_SetActionTextHigh` | `GUI` | 224 |
 | `0x001b5f88` | `ShowRumbleModeIntro` | `GUI` | 40 |
 | `0x001b5ff0` | `GameState_SetTutorialText` | `GUI` | 16 |
+| `0x001b6358` | `NumIndicator_Setup` | `GUI` | 904 |
+| `0x001b67b8` | `NumIndicator_Update` | `GUI` | 1,000 |
+| `0x001b6ba0` | `NumIndicator_Render` | `GUI` | 176 |
 | `0x001b7a18` | `LockPickDial_SetDifficulty` | `GUI` | 336 |
 | `0x001b7eb0` | `LockPickDial_Init` | `GUI` | 968 |
 | `0x001b8428` | `LockPickDial_Show` | `GUI` | 264 |
@@ -827,6 +838,7 @@ at the top of the repository's `README.md`.
 | `0x00211ca0` | `PlayerHUD::PlayerHUD` | `GUI` | 600 |
 | `0x00212840` | `PlayerHUD_Init` | `GUI` | 2,080 |
 | `0x00213290` | `PlayerHUD_Render` | `GUI` | 1,160 |
+| `0x00213e68` | `PlayerHUD_LayoutTallyMarks` | `GUI` | 720 |
 | `0x00214138` | `PlayerHUD_Update` | `GUI` | 2,704 |
 | `0x00218008` | `Human_Init` | `Human` | not filled in |
 | `0x002195e0` | `Human_SetCoverFlag5` | `Human` | 36 |
@@ -1546,6 +1558,7 @@ at the top of the repository's `README.md`.
 | `0x003035d8` | `PlayerBrain_Update` | `Human` | 944 |
 | `0x00303988` | `WarChief_AutoCommand` | `Human` | not filled in |
 | `0x00304fa8` | `GangBrain_OnEvent` | `Human` | not filled in |
+| `0x003052f0` | `WarriorBrain_Think` | `Human` | not filled in |
 | `0x003063b0` | `WarriorBrain_OnEvent` | `Human` | not filled in |
 | `0x00306690` | `Tactic_Start` | `Human` | 328 |
 | `0x003067d8` | `Tactic_Process` | `Human` | 120 |

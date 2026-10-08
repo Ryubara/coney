@@ -288,6 +288,7 @@ target_sources(coney_core PRIVATE
     ai/fight_checks.cpp
     ai/hiding.cpp
     ai/enemy_scan.cpp
+    ai/swap_prompt.cpp
     ai/tactic_scout.cpp
     ai/fight_goal.cpp
     ai/fight_reactions.cpp
@@ -381,6 +382,7 @@ target_sources(coney_core PRIVATE
 # The in-game HUD: the player panels, hints, objectives, counters, the arrow and the radar (docs/research/hud.md).
 target_sources(coney_core PRIVATE
     hud/counter_panels.cpp
+    hud/crime_panel.cpp
     hud/war_command_display.cpp
     hud/counting_number.cpp
     hud/health_rings.cpp
@@ -397,7 +399,9 @@ target_sources(coney_core PRIVATE
     hud/tag_hud.cpp
     hud/lock_pick_hud.cpp
     hud/mug_meter.cpp
-    hud/scripted_bars.cpp)
+    hud/num_indicator.cpp
+    hud/scripted_bars.cpp
+    hud/spinner.cpp)
 # The pad debug menu's renderer: the in-game list in the game's font or Coney's bitmap font.
 target_sources(coney_core PRIVATE graphics/bitmap_font.cpp gui/debug_menu_view.cpp gui/debug_text_painter.cpp)
 coney_target_defaults(coney_core)

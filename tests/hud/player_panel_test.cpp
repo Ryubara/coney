@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The player panel (docs/research/hud.md#the-player-panel): its layout on the 640 x 448 screen, the fade, the counting
 // score and money, the counters' slots, the rage meter's values and colours, and its sprites, on synthetic data.
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <memory>
@@ -297,4 +298,38 @@ TEST_CASE("an action prompt naming a dealer's goods wakes the panel", "[hud]") {
     values.promptWakes = true;
     panel.update(values, nullptr, 10033, coney::test::kSilent);
     CHECK(panel.fade() == 1.0F);
+}
+
+TEST_CASE("the panel's tally sits under the money and the counters, in the rage colour", "[hud][numindicator]") {
+    PlayerPanel panel(0);
+    panel.attach(32);
+    PanelValues values;
+    panel.update(values, nullptr, 0, coney::test::kSilent);
+    // No money, no counters: the strokes from x 0.005 every 0.015, the bar at 0.025, y 0.154; in Rumble 0.03 higher.
+    CHECK(panel.tallyMarkPlace(0, 99).x == Approx(0.005F).margin(1e-5));
+    CHECK(panel.tallyMarkPlace(4, 99).x == Approx(0.025F).margin(1e-5));
+    CHECK(panel.tallyMarkPlace(5, 99).x == Approx(0.075F).margin(1e-5));
+    CHECK(panel.tallyMarkPlace(0, 99).y == Approx(0.154F).margin(1e-5));
+    CHECK(panel.tallyMarkPlace(0, 101).y == Approx(0.124F).margin(1e-5));
+    // Money on screen: one line down; three counters with money of 100-999 put slot 2 on line 2: two lines.
+    values.money = 50;
+    panel.update(values, nullptr, 33, coney::test::kSilent);
+    CHECK(panel.tallyMarkPlace(0, 99).y == Approx(0.199F).margin(1e-5));
+    values.money = 500;
+    values.items = {1, 1, 1, 0};
+    panel.update(values, nullptr, 66, coney::test::kSilent);
+    CHECK(panel.tallyMarkPlace(0, 99).y == Approx(0.244F).margin(1e-5));
+    // Player 1's strokes start at 0.779.
+    const PlayerPanel other(1);
+    CHECK(other.tallyMarkPlace(0, 99).x == Approx(0.779F).margin(1e-5));
+
+    // Drawn while on: the count's marks in red, turned.
+    coney::graphics::SpriteBatch parts(partsSheet(), 1024, 10000.0F);
+    coney::hud::HudCanvas canvas;
+    canvas.parts = &parts;
+    panel.setTally(true, 6);
+    panel.render(canvas, 99);
+    const auto red = std::ranges::count_if(
+        parts.sprites(), [](const coney::graphics::Sprite& sprite) { return sprite.colour == coney::hud::kRageRed; });
+    CHECK(red == 6);
 }

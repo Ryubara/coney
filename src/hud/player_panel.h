@@ -13,6 +13,7 @@
 #include "hud/hud_audio.h"
 #include "hud/hud_canvas.h"
 #include "hud/hud_layout.h"
+#include "hud/num_indicator.h"
 
 namespace coney::hud {
 
@@ -109,6 +110,20 @@ class PlayerPanel {
     [[nodiscard]] const CountingNumber& money() const { return m_money; }
     /// The counters' slots now (x from the base, y).
     [[nodiscard]] const std::array<GuiPoint, 4>& slots() const { return m_slots; }
+    /// `HUDSetNumIndicator` for this panel's player (interface slots `+0x48` and `+0x50`): the tally on or off and the
+    /// living members it counts, which Hud::update() refreshes.
+    void setTally(bool on, std::uint32_t count) {
+        m_tallyOn = on;
+        m_tallyCount = count;
+    }
+    [[nodiscard]] bool tallyOn() const { return m_tallyOn; }
+    /// Where tally mark `index` goes, GUI, in a level numbered `levelNumber`: the gang-count pattern from the panel's
+    /// base, below the money and the counters by tallyShift().
+    /// @orig 0x00213e68 PlayerHUD_LayoutTallyMarks (unknown)
+    [[nodiscard]] GuiPoint tallyMarkPlace(std::size_t index, int levelNumber) const;
+    /// The tally's drop: none unless the money is 1-999 or a counter shows; then 0.09 when slot 2 or 3 holds an item
+    /// on line 2, else 0.045; less 0.03 in a level numbered 100 or more.
+    [[nodiscard]] float tallyShift(int levelNumber) const;
     /// The values of the last update.
     [[nodiscard]] const PanelValues& values() const { return m_values; }
     /// The game time of the last activity.
@@ -129,6 +144,7 @@ class PlayerPanel {
     void renderScore(const HudCanvas& canvas, float alpha) const;
     void renderMoney(const HudCanvas& canvas, float alpha) const;
     void renderCounters(const HudCanvas& canvas, float alpha) const;
+    void renderTally(const HudCanvas& canvas, float alpha, bool swapped, int levelNumber) const;
 
     std::size_t m_player;
     bool m_attached = false;
@@ -146,6 +162,8 @@ class PlayerPanel {
     CountingNumber m_money;
     std::array<int, 4> m_items{};
     std::array<GuiPoint, 4> m_slots{};
+    bool m_tallyOn = false;         // +0x4130
+    std::uint32_t m_tallyCount = 0; // +0x413c
 };
 
 } // namespace coney::hud

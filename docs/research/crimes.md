@@ -709,8 +709,9 @@ those systems arrive; `update()` clears a gang's wanted state 10 s after its las
 is not built), which `GangIsWanted(gang, false)` reads; a second argument passed as `nil` reads as false, as level87's
 `CheckIfWanted` relies on. In play the objects' break-ins report through it
 (`repo:src/gamemodes/level_crime_services.h`: the crime callback, the `CrimeScene` flag, which humans are players, and
-the offender's gang and player 1's through the level's brains, so a report makes the gang wanted; the police's
-hostility, the spawners and the HUD are not wired to it yet). A break-in marks the nearest store flag within 10 m robbed
+the offender's gang and player 1's through the level's brains, so a report makes the gang wanted, and player 1's HUD
+messages, 7 for a report and `0xb` when the wanted time runs out, to [the HUD's crime message](hud.md#fn-radar-frame);
+the police's hostility and the spawners are not wired to it yet). A break-in marks the nearest store flag within 10 m robbed
 (the gang in bits 18-22) and switches on the alarm strobe (a `part_strobe_red` of the level's objects file) within 6 m
 of it (`LevelObjectServices::robStore`): its [strober](script-types.md#strober), a red light pulsing on a 40-tick cycle,
 and its `alarmbell_loop` emitter, heard within 30 m ([Particles](particles.md#coneys-implementation)); `ResetStore`
@@ -758,7 +759,11 @@ stereo not below the feet starts it (`Human::startStereoTheft`: the player turns
 item 11, then the `CfgSetSteroTheftHandler` callback with the human and the car). **Coney's readings**: the turn to
 the stereo is at once, not spread over the intro; both gifts notify the inventory callback; the success and failure
 clips (685, 686), the hint and the owned byte are not played or set yet. The HUD panel and its cues follow the theft
-([HUD: Coney's implementation](hud.md#coneys-implementation)), as does the action prompt for kinds 2-4.
+([HUD: Coney's implementation](hud.md#coneys-implementation)), as does the action prompt for kinds 2-4. A hit with a
+reaction ends the theft at once (as `0x00268c50` does) and plays its reaction; anything else that takes the body (a
+death, a knock-down, a scene) ends it at the next update (`Human::stereoTheftPlaying()`); either way there is no
+outcome, the car is forgotten and the panel goes. **Coney's reading**: the clip `0x00268c50` plays for a theft is not
+traced, so the hit's own reaction plays.
 
 **The mugging and the starting money** (2026-10-07): `HuCreate` rolls each new human's carry as
 [Starting money](#starting-money) gives (`characters::rollStartingCarry()`, `repo:src/characters/starting_money.h`)
@@ -768,7 +773,9 @@ money in the deciding update (`LevelPickups::mugPaid()`: item 2 with the money a
 2's pick-up sound); his
 `HuSetMugCallback` callback runs with (mugger, 1 or nil) when his end clip (344 or 346) finishes, or at once for a
 let-go or a hit (`LevelPickups::mugEnded()`). **Coney's stand-ins**: a `grp_` object group carries nothing and a
-rolled object is not given to the human; not yet: interrogation, the pocket items, the half-way `no_item` stop, ped
+rolled object is not given to the human; `HuSetInterrogation` keeps the lines and callback
+(`ScriptState::interrogationLines`, `interrogationCallback`) and the prompt reads "interrogate", but not yet its
+mugging (the set lines, no pay, the callback once); not yet: the pocket items, the half-way `no_item` stop, ped
 type 5's 1.5 times and the statistic. While he mugs, the HUD's mug meter shows
 (`PlayLevelMode::stepMugMeter()`, [HUD: the mug meter](hud.md#mug-meter-layout)).
 

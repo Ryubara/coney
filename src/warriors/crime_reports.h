@@ -77,8 +77,8 @@ class CrimeServices {
     virtual void markStoreRobbed(const CrimePosition& /*at*/, int /*offenderGang*/) {}
     /// A player offender's assault statistic against `victim` (crime types 0, 2 and 8; `0x004ed948`).
     virtual void scoreAssault(double /*offender*/, double /*victim*/) {}
-    /// Tells the HUD of player 1's crime state: `message` 0 for a new crime, `0xb` when the wanted time ran out
-    /// (`0x001b2520`).
+    /// Tells the HUD of player 1's crime state (`HUD_SetWanted`, `0x001b2520`): `message` 7 for a new crime (the HUD
+    /// shows lastCrime()'s `CfgCrimeMessage`), `0xb` when the wanted time ran out.
     virtual void notifyHud(int /*message*/) {}
 };
 

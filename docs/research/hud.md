@@ -2467,19 +2467,25 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   `audio::SoundPlayer` ([Sound](sound.md#interface-sounds)); silent without sound.
 - **The action prompt** (`repo:src/gamemodes/gameplay_mode.cpp`, the level's part `PlayLevelMode::promptOffer()`):
   each frame of play player 0's text is chosen in `HUD_Update`'s order: nothing while he tags, plays a scene part,
-  mugs, steals a stereo or picks a lock; a held human with money or a pocket item who may be mugged gives
+  mugs, steals a stereo or picks a lock; a held human set up for interrogation gives `GSTRING.HUD` 0 (interrogate,
+  whatever he carries), one with money or a pocket item who may be mugged gives
   `GSTRING.HUD` 1; else a knocked-out partner to revive gives 4 (`GameplayMode::revivableInReach()`: the nearest
   revivable human friendly to him within 3 m, not cuffed, in sight, while player 1 holds a flash; the states
   `0x80000000` and `0x100000000` are not modelled); else the context records by kind: an action object's own text
   (1), a pickable door 15 (2), a freed car stereo 16 (3), a dealer's offer (4: his type's prompt, 6 for the flash,
   while his goal registers it, from the greeting on, within 1.75 m). A prompt naming the dealers' goods wakes the
-  player panel. Not yet: a talkable human's prompt and the interrogation (0). The action object's second text
+  player panel. Last, a [talkable](#talk-prompt) Warrior or co-op partner within 1.5 m (`GameplayMode::talkPrompt()`)
+  gives the swap string his brain's think set ([AI](ai.md#coney): `GSTRING.HUD` 0xc-0xe while one of the two holds
+  an object), else his own text (`ScriptState::talkText`), else HUD string 9; triangle does not swap yet. The action
+  object's
+  second text
   (`SetMsgHandlerEx`'s `prompt2`)
   is queued as a priority-0 hint while it is in reach and withdrawn when it changes or leaves.
 - **The stereo-theft panel** (`repo:src/hud/stereo_hud.h`, stepped by `PlayLevelMode::stepStereoPanel()`) as
   [the stereo panel on screen](#stereo-layout) says: up from the triangle press, the arrow round the backdrop's
   corners by stage, the gauge sized and turned by the angle turned and dropping by a doubling step while a stage is
-  complete, the stick's four pictures and the turning, flickering ring; cue `0x22` per stage and `0x23` with the
+  complete, the stick's four pictures and the turning ring, always mirrored (it never flickers); cue `0x22` per
+  stage and `0x23` with the
   fourth; gone as the end clip starts. Turned sprites (the format-1 instances: this panel and the instruction arrow)
   go through `SpriteBatch::addSprite(sprite, rotation)`, a positive angle turning clockwise on screen
   as the original's widgets do. **Coney's stand-in**: the stick and ring are timed on the game
@@ -2507,6 +2513,13 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   100 to 255, the painted cells in his `HuTagColor` at alpha 205, the cursor between cells fading white to black and
   back over 500 ms (white while the game pauses), the charge bar shrinking down to its fixed bottom, and the frame at
   alpha 191; gone when the spray ends.
+- **The gang-count indicator** (`repo:src/hud/num_indicator.h`) as [the indicator](#gang-count-indicator) says: the
+  shared one (`HUDSetNumIndicator` player 2), in a level numbered 100 or more, draws the blue header (sheet-table record
+  `0x20e`, French `0x20f`, German `0x210`) with its two black shadows at (0.06, 0.944) and the gang's living members as
+  tally marks from x 0.125, turned 3.3 rad, recounted each update; German's layout moves both. **Coney's readings**:
+  living is health left (`0x00166158`'s test is not described); at most nine marks; the shadows sort at the banners'
+  shadow depth. Players 0 and 1's go to their [panel tallies](#panel-tally) (`PlayerPanel::tallyMarkPlace()`): the same
+  marks from the panel's base in the rage colour at the panel's fade, dropped below the money and counters.
 - **In play**: the play mode steps the HUD with player 1's rage, score, money and item counts (flash, spray paint,
   handcuffs, keys from the inventory) and draws it over the frame; the story shares the
   flow's HUD with the scripts. A disc test (`[disc][hud]`, `repo:tests/platform/disc_level99_hud_test.cpp`) plays
@@ -2563,6 +2576,25 @@ them; the disc's state set by `Hud::setRadarTint` (blue while player 1 may hide,
 scanner marks them yet; `HUDAddRadarHuman` makes every human a Warrior's blip (type 7, icon 365); a blip whose
 object the locator cannot find is skipped, not freed. Tests: `repo:tests/hud/radar_test.cpp`.
 
+**The radar frame** (`repo:src/hud/crime_panel.h`), as [the radar frame](#fn-radar-frame) says: player 0's four arcs
+concentric with the disc, flat-coloured strips of 16 segments 54-57.6 pixels out (x 1.1 times), the blue wanted pair
+growing up both sides from the bottom by the fraction of 10 s left on his gang's wanted time (full above 0.9), eased
+5 % an update and snapping on a jump over 0.5, drawn above 0.03; the orange second pair outside it (or in its place)
+from the second timer. **Coney's placement**: the easing runs in the HUD's update, not its draw. Not yet: the second
+timer (`+0x5f0`, `GangRespond` and `GoalCallGang`), which Coney does not keep, so the orange pair never shows; the
+arcs show only once the crime reports know player 1's gang (`CrimeServices::playerOneGang`,
+[Crimes](crimes.md#coneys-implementation)). **The crime message** (`Hud::setWanted`): the crime report sends 7 and the
+wanted time's end `0xb`; 7-9 sound the alarm (interface cue 2) on the first show of a wanted spell and copy a crime
+text other than the one held into the centred announcement; any other message clears the flag and the held text,
+leaving the copy to its own display time. In play the level's crime services pass player 1's messages on with
+`GSTRING.CRIME` (`CfgCrimeMessage`) of his last crime type (`GameplayMode`).
+
+**The spinner** (`repo:src/hud/spinner.h`), as [the spinner](#hud-spinner) says: `part_page0` rectangle 92, 0.09 high,
+upright, at (0.95, 0.83), drawn after the arrow while shown in the colour the last loading pulse left (the set-up's
+grey before any); `Spinner::drawPulse` is the pulse, (221, 56, 56) fading out over 1.1 s and back over the next.
+**Coney's stand-in**: the pulse runs on its caller's clock. Not yet: a caller (Coney has no memory-card load screen
+or preload indicator, and the HUD's fade branch needs the profile manager's flag and the screen fade).
+
 **Coney's stand-ins for the rings** (marked in the code): the blend state the world pass leaves is taken as alpha
 blending with Z test and no Z write; flat shading gives a triangle its last vertex's colour; the blink runs on the game
 clock, black first; the fight stance is a lock-on or a block; a hit's pulse is the health lost in the step; the
@@ -2575,7 +2607,7 @@ stripped (a button icon takes no width), a leading `<AUTOINDENT f>` giving the w
 scroll-in messages at 0.7 (`0x0050ea50`); Coney has one player, so the split widths (0.52) are not used.
 
 **Coney's stand-ins** (marked in the code): text sizes read as the glyph height (`(0.04, 0.05)` as w × h, 0.05 as h);
-the counter slots' `x0` 0 and lines at y 0.104 and 0.154, the count 0.022 right of its icon; handcuff and key icons
+the count 0.022 right of its icon; handcuff and key icons
 `part_page0` 31 and 34; the money's icon a `$`; the popups' places; the money cue once per count; the built-in
 announcements' texts from `GSTRING.ANNOUNCE` by kind; a `<FREEZE>` hint shown for its time (at least 2 s) as the game
 timer does not freeze yet; the handcuff counter counts inventory item 5 (`Human_GetCuffCount` is not traced); a prompt

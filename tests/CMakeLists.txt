@@ -85,6 +85,9 @@ add_executable(coney_tests
     hud/stereo_hud_test.cpp
     hud/tag_hud_test.cpp
     hud/fixed_cam_icon_test.cpp
+    hud/num_indicator_test.cpp
+    hud/crime_panel_test.cpp
+    hud/spinner_test.cpp
     hud/lock_pick_hud_test.cpp
     hud/mug_meter_test.cpp
     hud/war_command_display_test.cpp
@@ -103,6 +106,7 @@ add_executable(coney_tests
     platform/disc_level99_sparring_test.cpp
     platform/disc_level99_change_character_test.cpp
     platform/disc_level99_street_props_test.cpp
+    platform/disc_level99_handover_test.cpp
     platform/disc_level99_street_test.cpp
     platform/disc_level99_store_glass_test.cpp
     platform/disc_level99_world_test.cpp
@@ -161,6 +165,7 @@ add_executable(coney_tests
     scripting/spawn_bindings_test.cpp
     scripting/trigger_bindings_test.cpp
     scripting/world_bindings_test.cpp
+    warriors/created_humans_test.cpp
     warriors/disk_profile_store_test.cpp
     warriors/level_table_test.cpp
     warriors/player_state_test.cpp
@@ -327,6 +332,7 @@ target_sources(coney_tests PRIVATE
     ai/steering_test.cpp
     ai/spawners_test.cpp
     ai/rumble_tactics_test.cpp
+    ai/swap_prompt_test.cpp
     ai/tactics_test.cpp
     ai/targeting_test.cpp)
 # The sound engine, its data and streams, the mixer and the game-facing sound calls (docs/research/sound.md).

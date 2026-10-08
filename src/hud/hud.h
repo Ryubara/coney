@@ -15,6 +15,7 @@
 
 #include "core/pad.h"
 #include "hud/counter_panels.h"
+#include "hud/crime_panel.h"
 #include "hud/fixed_cam_icon.h"
 #include "hud/hint_box.h"
 #include "hud/hud_audio.h"
@@ -24,9 +25,11 @@
 #include "hud/mash_meter.h"
 #include "hud/messages.h"
 #include "hud/mug_meter.h"
+#include "hud/num_indicator.h"
 #include "hud/player_panel.h"
 #include "hud/radar.h"
 #include "hud/scripted_bars.h"
+#include "hud/spinner.h"
 #include "hud/stereo_hud.h"
 #include "hud/tag_hud.h"
 #include "hud/war_command_display.h"
@@ -46,6 +49,9 @@ struct HudFrame {
     /// Whether each player's camera ignores the right stick: a fixed, locked, transition or rail camera, or camera
     /// switch 0 off (the fixed-camera icon, docs/research/hud.md#hud-fixed-cam-icon).
     std::array<bool, kPlayers> cameraIgnoresStick{};
+    /// How many of gang `gang`'s members are alive (`0x00166158`), which the gang-count indicators show; empty counts
+    /// none.
+    std::function<int(int gang)> gangLiving;
 };
 
 /// Values the debug menus put in place of a player's own (Coney's tool, not the original's): each set field replaces
@@ -71,6 +77,12 @@ struct HudServices {
     std::function<bool(std::size_t player, int command)> commandEnabled;
     /// Whether all of player `player`'s Warrior commands are locked (game state `+0x414` + player).
     std::function<bool(std::size_t player)> commandsLocked;
+    /// Player `player`'s gang's wanted time (gang `+0x5e8`) and second timer (`+0x5f0`) left at `nowMs`, as fractions
+    /// of 10 s (0 for none); the radar frame's arcs show them. Empty: none.
+    std::function<std::array<float, 2>(std::size_t player, std::uint64_t nowMs)> wantedTimers;
+    /// The game's language (`W_GameState + 0x120`), which picks the gang-count header's sheet and layout; empty:
+    /// English.
+    std::function<Language()> language;
 };
 
 /// The instruction arrow (`HUDEnableInstArrow`, HUD `+0x134a0`): a sprite pointing at something on screen, bobbing
@@ -85,13 +97,6 @@ struct InstructionArrow {
 
     /// The bob's offset now: step × (sin angle, −cos angle) / 200.
     [[nodiscard]] GuiPoint offset() const;
-};
-
-/// A number indicator (`HUDSetNumIndicator`): the remaining members of a gang, as Rumble brawls show. **Coney
-/// stand-in**: its place and look are not on the page, so it is kept and not drawn.
-struct NumIndicator {
-    bool on = false;
-    int gang = -1; ///< The gang whose count it shows; -1 for none.
 };
 
 /// One row of the text scoreboard (`HUDEnableTextProgress`, widgets at `0x00615320`): a label, its score and the
@@ -341,11 +346,32 @@ class Hud {
 
     /// The number indicators: player 0's, player 1's and the shared one.
     static constexpr std::size_t kNumIndicators = 3;
-    /// `HUDSetNumIndicator(player, on, gang)`: indicator `player` (0-2) shows gang `gang`'s count; gang -1 turns it
-    /// off. A bad index does nothing.
+    /// The shared indicator's index (HUD `+0x16b30`), the only one drawn.
+    static constexpr std::size_t kSharedNumIndicator = 2;
+    /// `HUDSetNumIndicator(player, on, gang)`: indicator `player` (0-2) shows gang `gang`'s living members as tally
+    /// marks, recounted each update; gang -1 turns it off. A bad index does nothing. Only the shared indicator is
+    /// drawn, and only in a Rumble level; players 0 and 1's go to their panels' own tallies (**Coney: not drawn**,
+    /// the panel tally's numbers are not worked out).
     /// @orig 0x001b4438 HUD_SetNumIndicator (unknown)
     void setNumIndicator(int player, bool on, int gang);
     [[nodiscard]] const NumIndicator& numIndicator(std::size_t index) const { return m_indicators.at(index); }
+
+    /// The spinner (HUD `+0xe050`): the loading screens' blinking element, drawn after the arrow while shown.
+    [[nodiscard]] Spinner& spinner() { return m_spinner; }
+    [[nodiscard]] const Spinner& spinner() const { return m_spinner; }
+
+    /// `HUD_SetWanted(hud, message, player)`: messages 7-9 show the crime message `crimeText` (`CfgCrimeMessage` of the
+    /// game state's last crime type), any other clears it. The first show of a wanted spell plays the alarm (interface
+    /// cue 2); a text that differs from the one held is copied into the centred announcement, a repeat is not (so the
+    /// copy is not restarted). The radar's own wanted flag is never read, so nothing else changes on screen.
+    /// @orig 0x001b2520 HUD_SetWanted (unknown)
+    /// @orig 0x001aa720 HudCrimePanel_OnMessage (unknown)
+    void setWanted(int message, std::string_view crimeText);
+    /// Whether the radar's wanted flag is set (radar `+0x1c`): from a show until a clear.
+    [[nodiscard]] bool wanted() const { return m_wanted; }
+
+    /// Player 0's radar frame: the wanted and second-timer arcs round the radar disc.
+    [[nodiscard]] const CrimePanel& crimePanel() const { return m_crimePanel; }
 
     /// The debug menus' values for player `player`'s panel.
     [[nodiscard]] PanelOverrides& overrides(std::size_t player) { return m_overrides.at(player); }
@@ -395,6 +421,8 @@ class Hud {
     void renderBlips(const HudCanvas& canvas, graphics::OverlayPoint centre) const;
     // The player's arrow at `centre`, turned by his facing from the camera's.
     void renderPlayerArrow(const HudCanvas& canvas, graphics::OverlayPoint centre) const;
+    // Player 0's radar frame's arcs round the disc.
+    void renderCrimePanel(const HudCanvas& canvas) const;
     // The arrow sprite.
     void renderArrow(const HudCanvas& canvas) const;
     // The scoreboard's rows and the stopwatch (Coney's places and sizes, hud_layout.h).
@@ -438,6 +466,10 @@ class Hud {
     RadarState m_radar;
     std::function<std::optional<anim::Vec3>(double)> m_locate;
     std::array<NumIndicator, kNumIndicators> m_indicators{};
+    CrimePanel m_crimePanel; // HUD +0x177d0: player 0's radar frame
+    bool m_wanted = false;   // radar +0x1c (HUD +0x15ec)
+    std::string m_crimeText; // the radar frame's widget +0x450: the crime message it last took
+    Spinner m_spinner;       // HUD +0xe050
     std::array<TextProgressRow, kTextProgressRows> m_progress{};
     std::array<std::uint32_t, 2> m_progressCounts{}; // 0x00622e44 (slot 0) and 0x00622e40 (slot 1)
     StopWatchDisplay m_stopWatch;

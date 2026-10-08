@@ -62,7 +62,7 @@ class StereoHud {
     [[nodiscard]] bool shown() const { return m_shown; }
 
     /// One HUD update at game time `nowMs`: the gauge's pop while the stage is complete (its drop grows by a step that
-    /// doubles each update; below the target both reset), and the ring's mirror, which flips every update.
+    /// doubles each update; below the target both reset).
     /// @orig 0x001ca2d0 StereoHud_Update (unknown)
     void update(std::uint64_t nowMs);
 
@@ -89,7 +89,6 @@ class StereoHud {
     int m_stage = 0;               // +0x44
     float m_step = kStereoPopStep; // +0xb04
     float m_drop = 0.0F;           // the gauge's y offset
-    bool m_mirrored = false;       // the ring's u0 and u1 swapped
     std::uint64_t m_nowMs = 0;
 };
 

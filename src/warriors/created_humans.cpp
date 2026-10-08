@@ -2,6 +2,7 @@
 #include "warriors/created_humans.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <utility>
 
 namespace coney {
@@ -15,8 +16,25 @@ bool CreatedHumans::add(HumanCreation human) {
 }
 
 const HumanCreation* CreatedHumans::player(int index) const {
+    // A hand-over's human first.
+    if (index >= 0 && static_cast<std::size_t>(index) < m_players.size()) {
+        if (const double handed = m_players.at(static_cast<std::size_t>(index)); handed != 0.0) {
+            const auto found = std::ranges::find(m_humans, handed, &HumanCreation::handle);
+            if (found != m_humans.end()) {
+                return &*found;
+            }
+        }
+    }
     const auto found = std::ranges::find(m_humans, index, &HumanCreation::playerIndex);
     return found == m_humans.end() ? nullptr : &*found;
+}
+
+void CreatedHumans::setPlayer(int index, double handle) {
+    if (index < 0 || static_cast<std::size_t>(index) >= m_players.size() ||
+        std::ranges::find(m_humans, handle, &HumanCreation::handle) == m_humans.end()) {
+        return;
+    }
+    m_players.at(static_cast<std::size_t>(index)) = handle;
 }
 
 HumanCreation* CreatedHumans::find(double handle) {

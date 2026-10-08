@@ -101,6 +101,28 @@ something:
 - **Scratch is yours per branch.** Put output in `scratch/<branch>/`; game-derived files (captures, states, dumps,
   screenshots) stay there and are deleted when done.
 
+## Testing {#testing}
+
+How every track proves its work, so that what passes for an agent also works for a player.
+
+- **Test through the player's path.** A player starts with `coney --disc <path>`, the main menu and Story. Disc
+  tests, playthrough tests and the lines handed to the owner start a level the same way, or through the one level
+  setup that Story, `--play-level`, `--checkpoint` and the debug menu jumps all share. A test that builds its own
+  level setup can pass while the player's path stays broken: missing glass sounds and a mission that stopped after
+  the radio minigame showed up only from Story while direct launches worked.
+- **Play missions, do not replay frames.** Each mission checkpoint gets an adaptive pad
+  [playthrough test](conventions.md#playthrough-tests) that asserts hints, objectives and scenes in the original's
+  order. A checkpoint is not done until it passes.
+- **Diff against the original.** A recorded PS2 run of the same stretch, with the same pad input, is replayed into
+  Coney and the two ordered event lists (hints, objectives, spawns, scenes, sounds) are compared. Whatever Coney
+  lacks or orders differently becomes a fix or a research question.
+- **Stand-ins are debt.** Where a research page is silent, code uses a clearly marked stand-in (`stand-in` or
+  `Coney's choice` in a comment) and the page gets an open question. Most tracks replace stand-ins along the mission
+  path with faithful reimplementations of whole systems; the marks are counted so the debt stays visible.
+- **Machines test continuously, the owner at milestones.** Unit, disc and playthrough tests run on every change and
+  before every merge. The owner plays a release build at milestones from one list of what changed; findings come back
+  as fixes on the owning track, and nobody waits for them.
+
 ## Merging safely {#merging}
 
 - **Merge only finished commits.** A "WIP" commit made when a track paused is never merged: create a clean commit

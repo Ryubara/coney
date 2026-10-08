@@ -24,6 +24,9 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "ai/brain.h"
+#include "ai/brains.h"
+#include "ai/swap_prompt.h"
 #include "core/game_random.h"
 #include "core/game_timer.h"
 #include "core/pad.h"
@@ -35,7 +38,9 @@
 #include "gamemodes/level_start.h"
 #include "gui/global_strings.h"
 #include "hud/hud.h"
+#include "human/locomotion.h"
 #include "human/player.h"
+#include "human/script_state.h"
 #include "platform/play_level_mode.h"
 #include "platform/render_engine.h"
 #include "scenes/scene_disc.h"
@@ -311,4 +316,42 @@ TEST_CASE("the disc's level80: the cuffed Warriors offer the uncuff prompt and t
     REQUIRE(level.runUntil([&level] { return level.checkPoint() >= 3; }, kWait));
     CHECK(level.scripts->scripts().errors() == 0);
     std::printf("  level80 uncuff: %d freed, checkpoint %g\n", freed, level.checkPoint());
+
+    // The talk prompt: with an object in player 1's hand (a stand-in handle: the test gives him one) a freed Warrior
+    // in his gang, 1 m in front of him, offers the swap prompt, GSTRING.HUD 0xe, from his brain's think; with the hand
+    // empty again, nothing.
+    REQUIRE(level.gameplay->brains() != nullptr);
+    // The test gives player 1 the object, so it writes to a brain gameplay owns.
+    auto& brains = const_cast<coney::ai::Brains&>(*level.gameplay->brains());
+    coney::ai::Brain* warrior = nullptr;
+    coney::ai::Brain* player = nullptr;
+    for (std::size_t i = 0; i < brains.size(); ++i) {
+        coney::ai::Brain& brain = brains.at(i);
+        if (warrior == nullptr && brain.type() == coney::ai::BrainType::Warrior && brain.gang() != nullptr) {
+            warrior = &brain;
+        }
+        if (player == nullptr && brain.type() == coney::ai::BrainType::Player) {
+            player = &brain;
+        }
+    }
+    REQUIRE(warrior != nullptr);
+    REQUIRE(player != nullptr);
+    const auto facingHim = [&level, warrior] {
+        // Once he stands (the freed Warriors walk off at first), 1 m east of him, facing west (heading 90 degrees
+        // faces -x), for a think or two.
+        REQUIRE(level.runUntil([warrior] { return warrior->human().gait() == coney::human::Gait::Standing; }, kWait));
+        const coney::anim::Vec3 at = warrior->human().position();
+        level.play()->teleportPlayer(
+            coney::world_objects::Placement{.position = {at.x + 1.0F, at.y, at.z}, .headingDegrees = 90.0F});
+        level.run(6);
+    };
+    constexpr double kHeld = 9999.0;
+    player->human().script().heldObject = kHeld;
+    facingHim();
+    CHECK(warrior->human().script().talkable);
+    CHECK(level.scripts->hud().actionPrompt(0) == level.scripts->context().strings->get(coney::ai::kSwapPlayerHolds));
+    player->human().script().heldObject = 0.0;
+    facingHim();
+    CHECK_FALSE(warrior->human().script().talkable);
+    CHECK(level.scripts->hud().actionPrompt(0).empty());
 }

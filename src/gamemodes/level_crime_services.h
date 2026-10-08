@@ -16,8 +16,9 @@ namespace coney {
 /// What a crime report reaches in a level Coney plays: the scripts' crime callback, the `CrimeScene` flag (moved by
 /// `moveScene`, the objects' own mover), which humans are players, a robbed store (`robStore`: its flag and alarm
 /// strobe), and the offender's gang and player 1's through the level's brains (setBrains()), so a report makes the
-/// gang wanted. **Coney's stand-in:** the police's hostility, the police spawners and the HUD are not wired yet, so
-/// hostility, responders and the HUD's crime messages do nothing (open item on docs/research/crimes.md).
+/// gang wanted, and player 1's crime messages to the HUD (setHud()). **Coney's stand-in:** the police's hostility and
+/// the police spawners are not wired yet, so hostility and responders do nothing (open item on
+/// docs/research/crimes.md).
 ///
 /// Research: docs/research/ai.md#crimes
 class LevelCrimeServices final : public CrimeServices {
@@ -31,6 +32,8 @@ class LevelCrimeServices final : public CrimeServices {
     void setHumans(CreatedHumans* humans) { m_humans = humans; }
     /// The level's brains, by handle and player 1's (null: none, so no offender has a gang); must outlive its use.
     void setBrains(const ai::ScriptServices* brains) { m_brains = brains; }
+    /// Where player 1's crime messages go (`HUD_SetWanted`'s message; empty: nowhere).
+    void setHud(std::function<void(int message)> notify) { m_notifyHud = std::move(notify); }
 
     /// The gang of the human with `handle`, through his brain.
     [[nodiscard]] std::optional<CrimeGang> gangOf(double handle) override;
@@ -43,6 +46,12 @@ class LevelCrimeServices final : public CrimeServices {
     void moveCrimeScene(const CrimePosition& at) override;
     /// Hands the break-in to `robStore` (the objects' services: the store's alarm strobe).
     void markStoreRobbed(const CrimePosition& at, int offenderGang) override;
+    /// Hands the message to setHud()'s receiver.
+    void notifyHud(int message) override {
+        if (m_notifyHud) {
+            m_notifyHud(message);
+        }
+    }
 
   private:
     script::ScriptSystem& m_scripts;
@@ -50,6 +59,7 @@ class LevelCrimeServices final : public CrimeServices {
     std::function<void(const CrimePosition&, int)> m_robStore;
     CreatedHumans* m_humans = nullptr;
     const ai::ScriptServices* m_brains = nullptr;
+    std::function<void(int)> m_notifyHud;
 };
 
 } // namespace coney

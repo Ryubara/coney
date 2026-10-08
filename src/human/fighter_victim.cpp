@@ -149,9 +149,16 @@ void Fighter::takePending(const FighterInput& input, HumanAnimator& animator) {
         m_reacting = true;
         return;
     }
+    // A hit ends a stereo theft (`Human_ApplyPendingDamage` sends a human in a mini-game other than lock picking to
+    // `0x00268c50`, which ends it, docs/research/crimes.md#uncuffing); the reaction then plays as in free play.
+    // **Coney's reading**: the clip `0x00268c50` plays for the theft is not traced, so the hit's own reaction plays.
+    if (hit.react && m_combat.theft().has_value()) {
+        m_combat.abortTheft();
+    }
+    const combat::CombatMode reactMode = m_combat.mode();
     // 5. **Coney's choice**: held or holding someone, the hit only takes health (the reactions by those states,
     // `0x002688d0` and `0x00268ea8`, are not traced).
-    if (!hit.react || grabbed() || m_holdState.has_value() || mode != combat::CombatMode::Free) {
+    if (!hit.react || grabbed() || m_holdState.has_value() || reactMode != combat::CombatMode::Free) {
         return;
     }
     // With reactions off (an AI's block goal, docs/research/ai.md#block) the hit only takes health.

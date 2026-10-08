@@ -173,6 +173,28 @@ void Hud::setAnnouncement(int kind, std::string_view text, bool flag) {
     m_announcement = std::move(announcement);
 }
 
+void Hud::setWanted(int message, std::string_view crimeText) {
+    constexpr int kFirstShow = 7;
+    constexpr int kLastShow = 9;
+    if (message < kFirstShow || message > kLastShow) {
+        // Any other message clears the flag and the frame's text, so the next crime sounds the alarm again; the
+        // centred copy stays for its own display time.
+        m_wanted = false;
+        m_crimeText.clear();
+        return;
+    }
+    // The alarm once per wanted spell.
+    if (!m_wanted) {
+        m_wanted = true;
+        m_services.sound.playCue(kCueWanted);
+    }
+    // A new text goes to the frame's widget and is copied into the centred announcement; the same text changes nothing.
+    if (crimeText != m_crimeText) {
+        m_crimeText = std::string(crimeText);
+        setAnnouncement(kAnnounceCustom, crimeText, false);
+    }
+}
+
 void ActionCycle::step() {
     // The word swaps on every multiple of framesPerIcon, the first update included; the blink halves are blinkFrames
     // long.
@@ -250,7 +272,9 @@ void Hud::setNumIndicator(int player, bool on, int gang) {
         return;
     }
     // No gang forces it off.
-    m_indicators.at(static_cast<std::size_t>(player)) = NumIndicator{.on = on && gang != -1, .gang = gang};
+    NumIndicator& indicator = m_indicators.at(static_cast<std::size_t>(player));
+    indicator.on = on && gang != -1;
+    indicator.gang = gang;
 }
 
 void Hud::enableTextProgress(bool on, std::span<const std::string> labels, std::uint32_t count, std::uint32_t slot) {
@@ -339,6 +363,23 @@ void Hud::update(const HudFrame& frame) {
             m_cycles.at(i).step();
         }
     }
+    // The gang-count indicators recount their gang's living members while on (NumIndicator_Update); players 0 and
+    // 1's are their panels' tallies (PlayerHUD_Update).
+    for (NumIndicator& indicator : m_indicators) {
+        if (indicator.on) {
+            indicator.count =
+                frame.gangLiving ? static_cast<std::uint32_t>(std::max(0, frame.gangLiving(indicator.gang))) : 0U;
+        }
+    }
+    for (std::size_t i = 0; i < kPlayers; ++i) {
+        m_panels.at(i).setTally(m_indicators.at(i).on, m_indicators.at(i).count);
+    }
+    // Player 0's radar frame follows his gang's two timers (HudCrimePanel_Update).
+    {
+        const std::array<float, 2> timers =
+            m_services.wantedTimers ? m_services.wantedTimers(0, frame.nowMs) : std::array<float, 2>{};
+        m_crimePanel.update(timers[0], timers[1]);
+    }
     // 2. The messages, the hint box and the counter panels on their game-time clocks; an announcement ends when its
     // `<DISPLAYTIME>` has passed.
     m_scrollIn.update(frame.nowMs, m_services.sound);
@@ -405,6 +446,13 @@ void Hud::renderRadar(const HudCanvas& canvas) const {
     }
     renderBlips(canvas, centre);
     renderPlayerArrow(canvas, centre);
+}
+
+void Hud::renderCrimePanel(const HudCanvas& canvas) const {
+    // The arcs share the disc's centre, untextured, among the 2D shapes.
+    if (canvas.shapes != nullptr) {
+        m_crimePanel.render(*canvas.shapes, graphics::OverlayPoint{kRadarX, kRadarY, kRadarDepth});
+    }
 }
 
 void Hud::renderBlips(const HudCanvas& canvas, graphics::OverlayPoint centre) const {
@@ -517,7 +565,9 @@ void Hud::render(const HudCanvas& canvas) const {
         return;
     }
     renderRadar(canvas);
+    renderCrimePanel(canvas);
     renderArrow(canvas);
+    m_spinner.render(canvas);
     renderScores(canvas);
     m_counters.render(canvas);
     // The bars go below the visible counter panels, and lower again while the stopwatch shows.
@@ -526,6 +576,12 @@ void Hud::render(const HudCanvas& canvas) const {
     m_bars.render(canvas, (panels * kCounterPanelRow) + (m_stopWatch.shown ? kStopWatchBarDrop : 0.0F));
     for (const PlayerPanel& panel : m_panels) {
         panel.render(canvas, m_levelNumber);
+    }
+    // The shared gang-count indicator, only in a Rumble level (GameState_IsRumbleLevel; Coney reads it as a level
+    // numbered 100 or more).
+    if (m_levelNumber >= kArcadeLevelStart) {
+        m_indicators.at(kSharedNumIndicator)
+            .render(canvas, m_services.language ? m_services.language() : Language::English);
     }
     // Per player, the mini-game panels.
     for (std::size_t i = 0; i < kPlayers; ++i) {

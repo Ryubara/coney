@@ -5161,7 +5161,12 @@ mounted, grounded) are built in `repo:src/ai/fight_reactions.h`; their stand-ins
 test player 1's Warrior command, the FollowAndDefend that clears the hand-over is TrackHumanGoal, no help call,
 and a held AI's presses reach no handler (its holder drives it). A block ends when its target is not on its feet
 (Coney has no state word). Each brain's generator is seeded by its slot.
-A think only counts (the types' think handlers are not traced).
+A think counts, keeps the tackle meter of a cop, a gang soldier or a Warrior, and for a Warrior runs step 7, [the swap
+prompt](#think-warrior) (`repo:src/ai/swap_prompt.h`): talkable (`ScriptState::talkable`) with `GSTRING.HUD` 0xc, 0xd
+or 0xe while a player of his gang within 1.5 m, below a jog, has him standing in front, nobody attacks him and one
+of the two holds an object (**Coney's reading**: the hand's object, `+0x338`); the blocked and held-flag tests, the
+sparring byte and `+0x121` are not modelled, nor the two-player swap or the swap itself (`WarriorBrain_OnPrompt`).
+The other steps are not built.
 
 **Coney choices for moving.** The inside test counts an edge going down in y as +1 (the sign under which the route
 nodes lie in their polygons; the clockwise polygons then contain nothing). A polygon's A record takes the next nodes

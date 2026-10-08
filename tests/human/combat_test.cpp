@@ -562,3 +562,46 @@ TEST_CASE("the stereo theft turns the player to the stereo, plays 683 then 684, 
     CHECK(played[1] == 684);
     CHECK(won);
 }
+
+TEST_CASE("a hit during the stereo theft ends it with no outcome, as death or a knock-down would", "[human][combat]") {
+    const FightCharacter character;
+    Fight fight(character, 6.0F);
+    fight.human().startStereoTheft(Vec3{42.0F, 40.0F, 1.0F}, coney::combat::stereoStageTurns(2));
+    // A few updates of the stick turning anticlockwise at 0.9: the theft runs.
+    std::string script;
+    for (int frame = 0; frame < 10; ++frame) {
+        const float radians = static_cast<float>(frame) * 30.0F * std::numbers::pi_v<float> / 180.0F;
+        script += std::format("{} stick left {} {}\n", frame, std::lround(90.0F * std::cos(radians)),
+                              std::lround(90.0F * std::sin(radians)));
+    }
+    fight.run(script, 10);
+    REQUIRE(fight.human().fighter().combat().theft().has_value());
+    REQUIRE(fight.human().stereoTheftPlaying());
+    // A hit from in front takes the body: the next update ends the theft, back to free, no result.
+    fight.human().takeHit(coney::human::IncomingHit{
+        .damage = 14, .attackAnim = 12, .code = 0x0a, .flags = 0x800, .attacker = Vec3{40.0F, 41.0F, 0.0F}});
+    fight.run("", 2);
+    CHECK_FALSE(fight.human().stereoTheftPlaying());
+    CHECK_FALSE(fight.human().fighter().combat().theft().has_value());
+    CHECK(fight.human().fighter().combat().mode() == coney::combat::CombatMode::Free);
+    CHECK(fight.human().fighter().last().game == coney::combat::GameResult::Running);
+}
+
+TEST_CASE("dying during the stereo theft ends it", "[human][combat]") {
+    const FightCharacter character;
+    Fight fight(character, 6.0F);
+    fight.human().startStereoTheft(Vec3{42.0F, 40.0F, 1.0F}, coney::combat::stereoStageTurns(2));
+    fight.run("", 5);
+    REQUIRE(fight.human().fighter().combat().theft().has_value());
+    // A hit with no reaction of its own (a move inside a hold) that takes the last of his health.
+    fight.human().takeHit(coney::human::IncomingHit{.damage = 5000,
+                                                    .attackAnim = 12,
+                                                    .code = 0x0a,
+                                                    .flags = 0x800,
+                                                    .attacker = Vec3{40.0F, 41.0F, 0.0F},
+                                                    .react = false});
+    fight.run("", 2);
+    CHECK(fight.human().fighter().health().depleted());
+    CHECK_FALSE(fight.human().fighter().combat().theft().has_value());
+    CHECK(fight.human().fighter().combat().mode() == coney::combat::CombatMode::Free);
+}

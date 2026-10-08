@@ -121,13 +121,28 @@ inline constexpr std::array<std::size_t, 4> kCounterIcons{29, 30, 31, 34};
 inline constexpr int kCounterMax = 9;
 /// The icon's size.
 inline constexpr float kCounterIconSize = 0.04F;
-/// **Coney's stand-ins** where the page gives an address but no value: the slots' `x0` (`0x00510040`) as 0, line 1
-/// (`0x00510048`) on the money's line, line 2 (`0x0051004c`) one text height below, and the count's offset right of its
-/// icon.
+/// The slots' `x0` for player 0 (`0x00510040`), line 1 (`0x00510048`) and line 2 (`0x0051004c`); **Coney's stand-in**:
+/// the count's offset right of its icon.
 inline constexpr float kSlotX0 = 0.0F;
 inline constexpr float kSlotLine1 = 0.104F;
-inline constexpr float kSlotLine2 = 0.154F;
+inline constexpr float kSlotLine2 = 0.146F;
 inline constexpr float kCounterTextOffset = 0.022F;
+
+// ---- The panel's tally (docs/research/hud.md#panel-tally) ----
+
+/// From the panel's base, per player: the first stroke's (and the bars' base) x, the later strokes' base x; for both
+/// the marks' y. The steps, the turn and the rectangles are the gang-count indicator's (num_indicator.h).
+inline constexpr std::array<float, kPlayers> kTallyFirstX{-0.095F, -0.006F};
+inline constexpr std::array<float, kPlayers> kTallyLaterX{-0.10F, -0.01F};
+inline constexpr float kTallyY = 0.104F;
+/// A stroke's and a crossing bar's size (overlay heights).
+inline constexpr float kPanelTallyStrokeSize = 0.04F;
+inline constexpr float kPanelTallyBarSize = 0.017F;
+/// The marks' drop below the money and the counters: one line, two lines; and the further move in a level numbered 100
+/// or more.
+inline constexpr float kTallyShiftOneLine = 0.045F;
+inline constexpr float kTallyShiftTwoLines = 0.09F;
+inline constexpr float kTallyArcadeShift = -0.03F;
 
 // ---- Messages ----
 
@@ -135,6 +150,7 @@ inline constexpr float kCounterTextOffset = 0.022F;
 inline constexpr int kCueMoneyCount = 0x10;
 inline constexpr int kCueObjective = 0x11;
 inline constexpr int kCueAnnounce = 0x14;
+inline constexpr int kCueWanted = 2; // vags/misc/hudalarm
 inline constexpr int kCueHint = 0x15;
 /// The objective message's place and default time; its glyph height (the page's size 0.05).
 inline constexpr GuiPoint kObjectiveMessagePlace{0.025F, 0.88F};

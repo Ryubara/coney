@@ -2665,7 +2665,11 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   Coney has one player human, so instead of making the chosen human the player and leaving the old one in the world
   until its gang is deleted, the player's human takes the chosen one's place (spawned where it stands, drawn as its
   model, named by its handle, in its gang) and the chosen human leaves the world; the old handle names no one. The
-  end state after level 99's `GangDelete(0)` ([the hand-over](#level99-handover)) is the original's.
+  scripts' record of player 1 (`CreatedHumans::player(1)`, which the play mode's thefts, pick-ups and muggings, the
+  crew's chief and the teleports read) names the chosen human from then on (`CreatedHumans::setPlayer`). The
+  end state after level 99's `GangDelete(0)` ([the hand-over](#level99-handover)) is the original's;
+  `tests/platform/disc_level99_handover_test.cpp` plays checkpoint 1 into 2 and steals the first stereo as the new
+  player 1 (before, the theft named the old handle, `HuIsAPlayer` said no and the lesson stalled).
   `GangDelete` deletes the gang's members at once ([AI](ai.md#coney)); player 1, with no other human to go to, is only
   taken out of the gang. `tests/platform/disc_level99_street_test.cpp` plays the end of the combat course into the
   street with the disc.

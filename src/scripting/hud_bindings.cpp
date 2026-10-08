@@ -2,6 +2,7 @@
 #include "scripting/hud_bindings.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -12,6 +13,7 @@
 
 #include "hud/hud.h"
 #include "scripting/binding_args.h"
+#include "warriors/crime_reports.h"
 #include "warriors/game_state.h"
 
 namespace coney::script {
@@ -406,6 +408,15 @@ hud::HudServices hudServicesOf(const BindingContext& context) {
     services.hudColour = [recorded = context.recorded](int slot) { return recordedHudColour(recorded, slot); };
     services.sound.cueName = [recorded = context.recorded](int cue) { return recordedInterfaceSound(recorded, cue); };
     services.stopWatchTime = [state = context.state] { return state != nullptr ? state->player.stopWatch.time() : 0; };
+    // The radar frame's timers: player 1's gang's wanted time (the second timer is not kept in Coney yet).
+    services.wantedTimers = [context = &context](std::size_t player, std::uint64_t nowMs) {
+        std::array<float, 2> timers{};
+        if (player == 0 && context->state != nullptr && context->crimes != nullptr) {
+            timers[0] = context->state->player.crimes.wantedFraction(context->crimes->playerOneGang(), nowMs);
+        }
+        return timers;
+    };
+    services.language = [state = context.state] { return state != nullptr ? state->language : Language::English; };
     return services;
 }
 

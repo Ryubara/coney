@@ -545,6 +545,11 @@ void GameSound::loadBank(std::string_view bank) {
     }
 }
 
+std::string GameSound::loadedBank() const {
+    const SoundEngine* engine = std::as_const(m_sounds).engine();
+    return engine != nullptr ? engine->bankName() : std::string();
+}
+
 void GameSound::playMusic(std::string_view track) { playMusic(crc32(track), true, {}); }
 
 void GameSound::playCue(int cue) {

@@ -124,6 +124,39 @@ TEST_CASE("pause: triangle resumes after the fade and hold, and START is ignored
     CHECK(run.radarsBack == 1);
 }
 
+namespace {
+
+// The audio's side of the banks: the bank in sound RAM, whoever loaded it, and the loads the front end asked for.
+struct BankAudio final : coney::FrontEndAudio {
+    std::string current;
+    std::vector<std::string> loads;
+    void loadBank(std::string_view bank) override {
+        current = bank;
+        loads.emplace_back(bank);
+    }
+    void playMusic(std::string_view /*track*/) override {}
+    void stopMusic() override {}
+    void playCue(int /*cue*/) override {}
+    [[nodiscard]] std::string loadedBank() const override { return current; }
+};
+
+} // namespace
+
+TEST_CASE("pause: closing puts back the level's own bank, not the front end's last", "[pause]") {
+    // The front end loaded `menu`; the level's load then brought in its own bank `sound` without the front end (the
+    // loading screen's end, docs/research/sound.md). Closing the pause must give the level `sound` back.
+    Run run("5 tap start\n20 tap triangle\n");
+    BankAudio audio;
+    run.flow->services().attachAudio(&audio);
+    run.flow->services().loadBank("menu");
+    audio.current = "sound";
+    run.frames(90);
+    REQUIRE(run.stack.topId() == GameplayMode::kId);
+    CHECK(audio.loads == std::vector<std::string>{"menu", std::string(PauseMode::kSoundBank), "sound"});
+    CHECK(audio.current == "sound");
+    CHECK(run.flow->services().bank() == "sound");
+}
+
 TEST_CASE("pause: START closes the menu only after 1.5 s", "[pause]") {
     Run run("5 tap start\n20 tap start\n70 tap start\n");
     run.frames(30);

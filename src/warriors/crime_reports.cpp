@@ -10,8 +10,8 @@ namespace {
 // The gang kinds a report ignores as offenders: the police (1) and the kind that counts as police (0x17).
 constexpr int kPoliceKind = 1;
 constexpr int kPoliceLikeKind = 0x17;
-// The HUD messages the report sends.
-constexpr int kHudNewCrime = 0;
+// The HUD messages the report sends: 7 (show; a constant, not the type) and 0xb (clear).
+constexpr int kHudNewCrime = 7;
 constexpr int kHudWantedOver = 0xb;
 
 // Whether `type` names a crime type.

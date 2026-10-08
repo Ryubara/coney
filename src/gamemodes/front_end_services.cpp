@@ -11,6 +11,16 @@
 namespace coney {
 
 FrontEndServices::FrontEndServices(std::function<void(std::string_view)> log) : m_log(std::move(log)) {}
+
+std::string FrontEndServices::bank() const {
+    if (m_audio != nullptr) {
+        if (std::string loaded = m_audio->loadedBank(); !loaded.empty()) {
+            return loaded;
+        }
+    }
+    return m_bank;
+}
+
 void FrontEndServices::loadBank(std::string_view bank) {
     m_bank = bank;
     write(std::format("sound bank: {}{}\n", bank, m_audio != nullptr ? "" : " (no audio)"));

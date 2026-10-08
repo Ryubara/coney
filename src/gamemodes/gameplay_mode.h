@@ -388,8 +388,8 @@ class GameplayMode final : public GameMode {
     // HUD_Update's choice of player 1's action prompt (docs/research/hud.md#action-prompts), as far as Coney has it:
     // a held human to mug, a downed partner to revive (revivePrompt()), a cuffed human to free (kind 0,
     // uncuffPrompt()), the action object's text (with its hint), a pickable door, a car stereo, a dealer's offer (the
-    // level's promptOffer()); none while he sprays, frees a cuffed human, is in a scene or a mini-game holds him.
-    // **Coney's stand-in**: a talkable human is not chosen yet.
+    // level's promptOffer()), then a talkable human (talkPrompt()); none while he sprays, frees a cuffed human, is in a
+    // scene or a mini-game holds him.
     // @orig 0x001af010 HUD_Update (unknown)
     void updateActionPrompt();
     // Player 1's hiding after the level's step (ai::updateHiding()): the hidden state from the ground he stands on,
@@ -410,6 +410,10 @@ class GameplayMode final : public GameMode {
     // to him within 3 m, not cuffed, in sight; null when none (docs/research/hud.md#action-prompts).
     // @orig 0x00279078 Human_FindRevivableNear (unknown)
     [[nodiscard]] ai::Brain* revivableInReach() const;
+    // The talk prompt (`ActionPrompt_FindNearbyHuman`): the first talkable Warrior or co-op partner within 1.5 m, his
+    // text or `GSTRING.HUD` 9; empty when none.
+    // @orig 0x001acd60 ActionPrompt_FindNearbyHuman (unknown)
+    [[nodiscard]] std::string talkPrompt() const;
     // The revive prompt, `GSTRING.HUD` 4, while a partner is revivable and player 1 holds a flash; empty otherwise.
     [[nodiscard]] std::string revivePrompt() const;
     // Triangle by a cuffed human (`ContextAction_Use` kind 0): `freer` starts the mash; false when none is in reach.

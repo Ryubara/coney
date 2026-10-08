@@ -51,18 +51,27 @@ class CreatedHumans {
     bool add(HumanCreation human);
     /// Every human kept, oldest first.
     [[nodiscard]] const std::vector<HumanCreation>& all() const { return m_humans; }
-    /// The first human created for player `index` (1 for player 1); null when there is none.
+    /// Player `index`'s human (1 for player 1): the one setPlayer() handed the player to, else the first created for
+    /// that player; null when there is none.
     [[nodiscard]] const HumanCreation* player(int index) const;
+    /// Makes the human with `handle` player `index`'s from now on: `HuChangePlayerGang`'s hand-over to another human
+    /// (docs/research/characters.md#level99-handover), after which every lookup of player `index` (his pick-ups and
+    /// thefts, his crew's chief, his teleports) names the new human. A handle no human has changes nothing.
+    void setPlayer(int index, double handle);
     /// The human with `handle`; null when none has it.
     [[nodiscard]] HumanCreation* find(double handle);
     /// Where the human with `handle` stands: where it was last teleported, else where it was made; nothing for a
     /// handle no human has or a human made without a position. The flags' ObjectLocator.
     [[nodiscard]] std::optional<world_objects::Placement> placement(double handle) const;
     /// Forgets every human: a new level starts with none.
-    void clear() { m_humans.clear(); }
+    void clear() {
+        m_humans.clear();
+        m_players.fill(0.0);
+    }
 
   private:
     std::vector<HumanCreation> m_humans;
+    std::array<double, 3> m_players{}; // setPlayer()'s handles by player index; 0: the first creation counts
 };
 
 } // namespace coney

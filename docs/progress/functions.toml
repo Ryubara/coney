@@ -1620,6 +1620,12 @@ subsystem = "GameModes"
 size = 120
 
 [[function]]
+address = 0x001613f0
+name = "LoadScreen_DrawPulse"
+subsystem = "GameModes"
+size = 528
+
+[[function]]
 address = 0x00162598
 name = "LevelLoadScreen_Finish"
 subsystem = "GameModes"
@@ -2591,6 +2597,12 @@ subsystem = "GUI"
 size = 72
 
 [[function]]
+address = 0x001a5e38
+name = "RingArc_Draw"
+subsystem = "GUI"
+size = 544
+
+[[function]]
 address = 0x001a6c58
 name = "WarCommandDisplay_Issue"
 subsystem = "GUI"
@@ -2625,6 +2637,28 @@ address = 0x001a8e30
 name = "Widget::Widget"
 subsystem = "GUI"
 size = 72
+
+[[function]]
+address = 0x001aa720
+name = "HudCrimePanel_OnMessage"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001aa9b0
+name = "HudCrimePanel_Update"
+subsystem = "GUI"
+size = 504
+
+[[function]]
+address = 0x001aaba8
+name = "HudCrimePanel_Render"
+subsystem = "GUI"
+size = 328
+
+[[function]]
+address = 0x001acd60
+name = "ActionPrompt_FindNearbyHuman"
+subsystem = "GUI"
 
 [[function]]
 address = 0x001acee0
@@ -2683,6 +2717,17 @@ address = 0x001b2200
 name = "HUD_AttachPlayer"
 subsystem = "GUI"
 size = 240
+
+[[function]]
+address = 0x001b24d0
+name = "HUD_SetSpinner"
+subsystem = "GUI"
+size = 48
+
+[[function]]
+address = 0x001b2520
+name = "HUD_SetWanted"
+subsystem = "GUI"
 
 [[function]]
 address = 0x001b2e10
@@ -2882,6 +2927,24 @@ address = 0x001b5ff0
 name = "GameState_SetTutorialText"
 subsystem = "GUI"
 size = 16
+
+[[function]]
+address = 0x001b6358
+name = "NumIndicator_Setup"
+subsystem = "GUI"
+size = 904
+
+[[function]]
+address = 0x001b67b8
+name = "NumIndicator_Update"
+subsystem = "GUI"
+size = 1000
+
+[[function]]
+address = 0x001b6ba0
+name = "NumIndicator_Render"
+subsystem = "GUI"
+size = 176
 
 [[function]]
 address = 0x001b7a18
@@ -3825,6 +3888,12 @@ address = 0x00213290
 name = "PlayerHUD_Render"
 subsystem = "GUI"
 size = 1160
+
+[[function]]
+address = 0x00213e68
+name = "PlayerHUD_LayoutTallyMarks"
+subsystem = "GUI"
+size = 720
 
 [[function]]
 address = 0x00214138
@@ -7732,6 +7801,11 @@ subsystem = "Human"
 [[function]]
 address = 0x00304fa8
 name = "GangBrain_OnEvent"
+subsystem = "Human"
+
+[[function]]
+address = 0x003052f0
+name = "WarriorBrain_Think"
 subsystem = "Human"
 
 [[function]]

@@ -42,6 +42,9 @@ class FrontEndAudio {
     virtual void stopMusic() = 0;
     /// Plays front-end sound cue `cue` of the loaded bank.
     virtual void playCue(int cue) = 0;
+    /// The bank in sound RAM as the audio has it, whoever loaded it (a level's own bank comes in at the end of its
+    /// load, not through the front end); empty when the audio cannot tell.
+    [[nodiscard]] virtual std::string loadedBank() const { return {}; }
 };
 
 /// The front end's requests of the audio, the movie player and the script system's calls of Lua functions, in one
@@ -65,9 +68,11 @@ class FrontEndServices final : public MoviePlayer {
     /// @orig 0x0010fa50 AudioManager_LoadBank (unknown)
     void loadBank(std::string_view bank);
     /// Whether `bank` is the bank in sound RAM.
-    [[nodiscard]] bool bankLoaded(std::string_view bank) const { return m_bank == bank; }
-    /// The bank in sound RAM; empty when none was loaded.
-    [[nodiscard]] const std::string& bank() const { return m_bank; }
+    [[nodiscard]] bool bankLoaded(std::string_view bank) const { return this->bank() == bank; }
+    /// The bank in sound RAM: the attached audio's when it can tell (it also knows the level's own bank, loaded at the
+    /// end of a level's load without the front end), else the last one loaded here; empty when none was loaded. The
+    /// pause menu puts this bank back when it closes.
+    [[nodiscard]] std::string bank() const;
 
     /// Starts music track `track`, replacing the current one (`SoundLoopMusicTrack`, `SoundPlayMusicTrack`).
     void playMusic(std::string_view track);

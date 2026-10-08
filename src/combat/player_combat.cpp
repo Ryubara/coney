@@ -107,12 +107,12 @@ void PlayerCombat::release() {
 }
 
 void PlayerCombat::abortTheft() {
-    if (m_mode != CombatMode::Theft) {
-        return;
-    }
+    // A game left behind by a release (a death's) goes too, whatever the mode.
     m_theft.reset();
     m_mash.reset();
-    m_mode = CombatMode::Free;
+    if (m_mode == CombatMode::Theft) {
+        m_mode = CombatMode::Free;
+    }
 }
 
 void PlayerCombat::interrupt() {

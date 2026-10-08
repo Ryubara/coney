@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "hud/stereo_hud.h"
 
+#include <cstdint>
 #include <memory>
 #include <numbers>
 
@@ -109,4 +110,27 @@ TEST_CASE("the stereo panel draws its backdrop, arrow and gauge, then the stick 
     CHECK(minigames.sprites()[1].width == Approx(0.12F));
     CHECK(minigames.sprites()[2].height == Approx(0.025F));
     CHECK(parts.sprites()[1].colour == coney::hud::kStereoRingColour);
+}
+
+TEST_CASE("the stereo panel's ring is mirrored on every update, never flickering", "[hud][stereo]") {
+    auto texture = std::make_shared<coney::test::FakeTexture>(64, 64);
+    coney::graphics::SpriteSheet sheet;
+    sheet.texture = texture;
+    for (int i = 0; i < 8; ++i) {
+        sheet.page.rects.push_back(coney::graphics::UvRect{0.0F, 0.0F, 0.25F, 0.25F});
+    }
+    coney::graphics::SpriteBatch parts(sheet, 16, 10000.0F);
+    coney::hud::HudCanvas canvas;
+    canvas.parts = &parts;
+    StereoHud panel;
+    panel.start(kTarget);
+    // Several consecutive 1/30 s updates: the ring (the second part_page0 sprite) keeps u0 > u1 each time.
+    for (std::uint64_t now = 0; now < 200; now += 33) {
+        panel.update(now);
+        parts.clear();
+        panel.render(canvas, 0);
+        REQUIRE(parts.sprites().size() == 2);
+        CHECK(parts.sprites()[1].uv.u0 == Approx(0.25F));
+        CHECK(parts.sprites()[1].uv.u1 == Approx(0.0F));
+    }
 }
