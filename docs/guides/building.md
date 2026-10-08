@@ -638,6 +638,7 @@ The columns, positions in metres (game axes, z up), angles in degrees, speeds in
 | `cam_distance`, `cam_pitch`, `cam_yaw` | the camera's distance from its look-at point, its pitch above it and the heading its view faces |
 | `band_near`, `target_pitch`, `auto_turn` | the leash band's near edge (the sprint zoom moves it), the target pitch, and the auto-centre rule's turn this step |
 | `command`, `health`, `power` | the command matched this step (0 for none; [Combat](../research/combat.md#commands)), the health and the power meter |
+| `aim_x`, `aim_y`, `aim_z`, `aim_lag` | the aim point the view faces ([Camera](../research/camera.md#aim-point)) and its lag |
 
 `--script-trace FILE` (with `--play-level` and a level) writes what the level's scripts do to `FILE`, one line per
 call: every script binding they call, with its arguments and what it returned (`HUDSetObjective(0, "...", 0, nil)`,
@@ -843,6 +844,7 @@ the next.
 | `release BUTTON...` | let them go from this frame on |
 | `tap BUTTON...` | hold them for this frame only: pressed on it, released on the next |
 | `stick left X Y`, `stick right X Y` | move a stick; X and Y are whole numbers from -100 to 100, right and up positive |
+| `steer [PERCENT] X,Y...` | push the left stick, at PERCENT (1 to 100, default 100) of its reach, toward each world point (metres) in turn as seen from player 1's feet and the camera's heading, recomputed every frame; a point counts as reached within 1 m, and the stick centres at the last one or at the next `stick left` line |
 | `connect`, `disconnect` | plug the pad in or pull it out |
 
 Buttons are `cross`, `circle`, `triangle`, `square`, `l1`, `r1`, `l2`, `r2`, `l3`, `r3`, `start`, `select`, `up`,

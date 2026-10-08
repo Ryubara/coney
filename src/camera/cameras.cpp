@@ -15,9 +15,9 @@ constexpr std::uint8_t kStickRest = 128;
 // The switches a level's camera reset turns off; the rest are on (0x00122b80).
 constexpr std::array<std::size_t, 2> kSwitchesOff{1, 13};
 
-// The follow camera's view: at its position looking at its look-at point, through its lens and `farClip`.
+// The follow camera's view: at its position facing its aim point, through its lens and `farClip`.
 CameraView followView(const FollowCamera& follow, float farClip) {
-    return viewLookingAt(follow.position(), follow.lookAt(), follow.fieldOfView(), follow.nearClip(), farClip);
+    return viewLookingAt(follow.position(), follow.aimPoint(), follow.fieldOfView(), follow.nearClip(), farClip);
 }
 
 } // namespace
@@ -292,6 +292,8 @@ CameraView Cameras::viewOf(CameraRef ref) const {
         return m_win ? m_win->view() : m_view;
     case CameraKind::Path:
         return m_path ? m_path->view() : m_view;
+    case CameraKind::Failed:
+        return m_failed ? m_failed->view() : m_view;
     case CameraKind::None:
         break;
     }
@@ -322,6 +324,10 @@ void Cameras::switchTo(CameraRef ref, float seconds) {
 }
 
 void Cameras::makeActive(double handle, float seconds) {
+    // During a mission failure the death camera stays.
+    if (m_missionFailed && m_current.kind == CameraKind::Failed) {
+        return;
+    }
     const std::optional<CameraRef> ref = find(handle);
     if (!ref) {
         return;
@@ -457,6 +463,18 @@ void Cameras::endScene(float blendSeconds) {
     }
 }
 
+bool Cameras::startFailed(anim::Vec3 feet, const raycast::CollisionMesh* mesh, int yawStep) {
+    if (m_failed) {
+        return false;
+    }
+    // A blend under way is the destination's; the shot replaces whatever is current, with a cut.
+    m_failed.emplace(feet, mesh, yawStep);
+    m_beforeFailed = m_current;
+    ++m_cuts;
+    setCurrent(CameraRef{.kind = CameraKind::Failed, .handle = 0.0});
+    return true;
+}
+
 void Cameras::shake(int level) { m_shake.start(level, m_follow != nullptr && m_follow->combatOn()); }
 
 void Cameras::update(const FollowTarget& target, std::uint8_t rawRightX, std::uint8_t rawRightY,
@@ -480,6 +498,9 @@ void Cameras::update(const FollowTarget& target, std::uint8_t rawRightX, std::ui
     }
     if (m_path && m_current.kind == CameraKind::Path) {
         m_path->update(seconds, m_fired);
+    }
+    if (m_failed && m_current.kind == CameraKind::Failed) {
+        m_failed->update(seconds);
     }
     // A current locked camera keeps its listed humans inside the frame's sides.
     keepHumansInView(mesh);

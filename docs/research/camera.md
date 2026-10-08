@@ -2290,6 +2290,15 @@ cited addresses:
    finished by then, so the stop in step 4 is not reached before the menu (inferred from the two lengths; the menu
    stops the gameplay update, so the shot then holds).
 
+In Coney the death camera is `repo:src/camera/failed_camera.h`, and `Cameras::startFailed()` cuts to it once per
+level. It keeps the base camera's lens (60°, near 0.3, far 60) because its constructor sets none of its own
+(inferred). Other choices:
+
+- **Coney's reading**: it stays straight above the feet as it sinks.
+- **Coney choice**: the screen-effect stop is not read.
+- The tint, blur, HUD, ambience and music parts of the start are not built yet.
+- With one player, the target is always player 1.
+
 ### Mini-game and mugging cameras {#mini-mug}
 
 Both are per-player cameras made on first use; both start only from a single-view follow camera, return to it with a
@@ -2491,6 +2500,19 @@ by `src/human/player.*` and drawn by `--play-level` ([Building](../guides/buildi
   all of it within 0.4 m, `1 − 2 × (d − 0.4)` of it to 0.8 m, 20 % beyond; in the air (a jump or a fall) it
   follows the feet directly. A climb's rise of 2.64 m is followed at 20 % for 6 updates, then in 3 (the last one a
   few millimetres);
+- the view faces the **[aim point](#aim-point)** (`FollowCamera::aimPoint()`, the trace's `aim_x`-`aim_lag`), stepped
+  after the world collision: the lead along the target's facing eased 35% an update (0.365 m ahead standing or walking
+  away, as at runtime), the height from the body point (`Human::bodyPoint()`, the hips' bone 2 times the scale) with
+  its dead band, the running bob and the sprint sway (Coney's own seeded random numbers), the 1.0 m sphere push, the
+  lag from 0.06 and the pull back in plan. **Coney's reading** of the state flags: grabbing (`0xc0`) is holding a
+  victim in a grab's pair; down (`0xe2c00`) is holding one with no pair (a tackle), mounted, grounded, arrested or
+  knocked out; the target counts for the cameras unless dying, dead, knocked out, mounted or arrested (the upgrade
+  and key exception is not built), and a long fall is airborne while not counting or grounded. The long fall's 0.6 and
+  the halving apply to the update's move, not the eased lag (**Coney's reading**); the blocked-wall share uses the main
+  ray's hit face. **Inferred**: the lead's world ray is a mesh ray with no type mask, skipping the see-through
+  materials, and the lead's view direction is taken across the ground (runtime 0.363 m, not the 0.375 m a pitched
+  view gives). Not built: the slope case, the 0.75 s timer after the aim push, the takeover, aiming, other game modes
+  and two targets;
 - the wanted position stays put unless its distance leaves the leash band, 4.8-5.3 m (the default distance and 0.5 m
   more, as in the street), then moves along that line to the band; the camera moves 22% of the way to it each step, held
   inside the hard band (4.56-5.65 m), which widens at once and shrinks by 1% of the difference an update;

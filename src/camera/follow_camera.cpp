@@ -198,6 +198,7 @@ void FollowCamera::configure(const FollowSettings& settings) {
     m_configuredPitch = m_settings.pitchDegrees * kRadians;
     m_targetPitch = std::max(m_configuredPitch, m_lowerPitch);
     m_lookAt = lookAtOf(m_targetFeet);
+    snapAim();
     snapPitch();
     m_wantedFov = m_settings.fieldOfView;
     m_fovRate = std::abs(m_wantedFov - m_fov);
@@ -213,6 +214,7 @@ void FollowCamera::setZoom(FollowZoom preset) {
     }
     // The look-at point snapped, with no ease.
     m_lookAt = lookAtOf(m_targetFeet);
+    snapAim();
     // The band's near edge at the preset, kept within the distances; the zoom step the next preset.
     const FollowSettings& s = m_settings;
     float near = s.minDistance;
@@ -236,6 +238,7 @@ void FollowCamera::setZoom(FollowZoom preset) {
 
 void FollowCamera::setPitch(float degrees) {
     m_lookAt = lookAtOf(m_targetFeet);
+    snapAim();
     m_targetPitch = std::clamp(degrees * kRadians, m_lowerPitch, std::max(m_lowerPitch, upperPitch()));
     snapPitch();
     m_zoomLatched = false;
@@ -280,6 +283,7 @@ void FollowCamera::reset() {
 void FollowCamera::activate() {
     // The look-at point snapped; the camera kept in its direction from it, at its distance clamped to the band.
     m_lookAt = lookAtOf(m_targetFeet);
+    snapAim();
     const anim::Vec3 offset = anim::subtract(m_position, m_lookAt);
     const float distance = std::clamp(anim::length(offset), bandNear(), bandFar());
     m_position = anim::add(m_lookAt, withLength(offset, distance));
@@ -368,6 +372,7 @@ void FollowCamera::place(anim::Vec3 targetFeet, float distance, float viewHeadin
     // The look-at point above the feet, and the camera behind it along the view's heading at the target pitch.
     m_targetFeet = targetFeet;
     m_lookAt = lookAtOf(targetFeet);
+    snapAim();
     const float across = distance * std::cos(m_targetPitch);
     const anim::Vec3 behind{std::sin(viewHeading) * across, -std::cos(viewHeading) * across,
                             distance * std::sin(m_targetPitch)};
@@ -378,6 +383,7 @@ void FollowCamera::place(anim::Vec3 targetFeet, float distance, float viewHeadin
 
 void FollowCamera::placeAt(anim::Vec3 position) {
     m_lookAt = lookAtOf(m_targetFeet);
+    snapAim();
     m_wanted = position;
     m_position = position;
 }
@@ -456,6 +462,8 @@ void FollowCamera::collide(const raycast::CollisionMesh& mesh, anim::Vec3 target
     // The main ray: a hit stops the next update's auto-follow and pulls the camera in short of it.
     if (const auto hit = castViewRay(mesh, m_lookAt, direction, distance, targetFeet); hit) {
         m_viewBlocked = true;
+        m_blockNormal = anim::Vec3{hit->normal.x, hit->normal.y, hit->normal.z};
+        m_blockPoint = anim::add(m_lookAt, anim::scale(direction, hit->t));
         const float pulled = std::max(followTuning().minCollisionDistance, hit->t - followTuning().collisionMargin);
         m_position = anim::add(m_lookAt, anim::scale(direction, std::min(pulled, distance)));
     }
@@ -614,10 +622,161 @@ void FollowCamera::stepHardBand(bool lockHeld) {
     m_hardFar = hardFar > m_hardFar ? hardFar : m_hardFar + (hardFar - m_hardFar) * kHardBandEase;
 }
 
+void FollowCamera::snapAim() {
+    m_aim = m_lookAt;
+    m_leadHeading = m_targetHeading;
+    m_aimLag = kAimLag;
+    m_sway = 0.0F;
+}
+
+float FollowCamera::aimHeight(const FollowTarget& target, float lookAtZ) const {
+    // The body point's height above 1 m, with a dead band of 0.27 m (none while down or in a tackle) and a ramp over
+    // the next 0.27 m.
+    float d = (target.bodyPoint ? target.bodyPoint->z : 1.0F) - 1.0F;
+    const float size = std::abs(d);
+    if (size <= kAimDeadBand) {
+        if (!target.down) {
+            return lookAtZ;
+        }
+        d *= std::max(0.0F, (kAimDeadBand - size) * 0.9F / kAimDeadBand + 0.1F);
+    } else if (size <= 2.0F * kAimDeadBand) {
+        d *= std::min(1.0F, (size - kAimDeadBand) * 0.9F / kAimDeadBand + 0.1F);
+    }
+    // A high look-at offset lowers a falling body's aim further.
+    if (d < 0.0F && m_settings.lookAtHeight > 1.25F) {
+        d -= (m_settings.lookAtHeight - 1.0F) * 0.6F;
+    }
+    // 35% of the way from the old height, or the goal itself where that is not between the look-at height and it.
+    const float goal = lookAtZ + d;
+    const float eased = m_aim.z + (goal - m_aim.z) * kAimHeightShare;
+    return eased >= std::min(lookAtZ, goal) && eased <= std::max(lookAtZ, goal) ? eased : goal;
+}
+
+void FollowCamera::stepAim(const FollowTarget& target, anim::Vec3 cameraBefore, bool wasBlocked,
+                           const raycast::CollisionMesh* mesh, float seconds) {
+    // 1. The lead: a copy of the target's facing eased 35% an update; a ray along it from the look-at point, shorter
+    // the more the facing runs along the view, gives the lead point.
+    // Snapped while the target does not count for the cameras.
+    m_leadHeading =
+        target.counts ? wrapped(m_leadHeading + wrapped(target.heading - m_leadHeading) * kLeadShare) : target.heading;
+    const anim::Vec3 facing{-std::sin(m_leadHeading), std::cos(m_leadHeading), 0.0F};
+    // **Inferred** from the runtime (0.363 m standing behind him, where a view pitched 13° would give 0.375): the
+    // view's direction across the ground.
+    const anim::Vec3 toLookAt = anim::subtract(m_lookAt, cameraBefore);
+    const anim::Vec3 view = withLength(anim::Vec3{toLookAt.x, toLookAt.y, 0.0F}, 1.0F);
+    float lead = std::max(kLeadMin, kLeadBandShare * bandNear());
+    if (m_viewBlocked) {
+        const float wantedDistance = anim::length(anim::subtract(m_wanted, m_lookAt));
+        if (wantedDistance > 1e-3F) {
+            lead *= std::min(1.0F, anim::length(anim::subtract(m_position, m_lookAt)) / wantedDistance);
+        }
+    }
+    if (target.grabbing) {
+        lead *= kLeadGrabbing;
+    }
+    const float along = std::abs(facing.x * view.x + facing.y * view.y);
+    float free = lead - 0.5F * lead * along;
+    // **Inferred**: the world ray (`WorldManager_RayCast`) as a mesh ray with no type mask, skipping the materials
+    // every camera ray skips.
+    if (mesh != nullptr && free > 0.0F) {
+        const raycast::Ray ray{.origin = raycast::Vec3{m_lookAt.x, m_lookAt.y, m_lookAt.z},
+                               .direction = raycast::Vec3{facing.x, facing.y, facing.z},
+                               .length = free};
+        if (const auto hit = mesh->rayCast(ray, kSeeThroughMaterials, 0U)) {
+            free = hit->t;
+        }
+    }
+    anim::Vec3 goal = anim::add(m_lookAt, anim::scale(facing, free - 0.01F));
+
+    // 2. The height: running or sprinting, the old aim point bobs with the hips or sways; otherwise the goal's height
+    // follows the body point.
+    const bool sprinting = target.gait == kGaitSprint;
+    if (sprinting || target.gait == kGaitRun) {
+        if (sprinting) {
+            // A step of 0.125-0.25 of the limit toward the sway's side; past the limit it is held there and turns.
+            m_swayRandom = m_swayRandom * 1664525U + 1013904223U;
+            const float roll = 0.125F + 0.125F * static_cast<float>(m_swayRandom >> 8U) / 16777216.0F;
+            m_sway += m_swayDirection * kSwayLimit * roll;
+            if (std::abs(m_sway) > kSwayLimit) {
+                m_sway = m_swayDirection * kSwayLimit;
+                m_swayDirection = -m_swayDirection;
+            }
+            const anim::Vec3 side = withLength(anim::Vec3{view.y, -view.x, 0.0F}, 1.0F);
+            m_aim = anim::add(m_aim, anim::scale(side, m_sway));
+            m_aim.z += (2.0F * std::abs(m_sway) - kSwayLimit) * 0.6F;
+        } else {
+            const anim::Vec3 body = target.bodyPoint.value_or(anim::Vec3{0.0F, 0.0F, 1.0F});
+            m_aim = anim::add(m_aim, anim::scale(anim::subtract(body, anim::Vec3{0.0F, 0.0F, 1.0F}), kRunBob));
+            m_sway = 0.0F;
+        }
+    } else {
+        goal.z = aimHeight(target, m_lookAt.z);
+    }
+
+    // 3. The push out of the world.
+    if (mesh != nullptr) {
+        const raycast::SpherePushResult pushed =
+            mesh->spherePush(kAimPushRadius, raycast::Vec3{goal.x, goal.y, goal.z}, kSeeThroughMaterials);
+        if (pushed.touched) {
+            goal = anim::Vec3{pushed.centre.x, pushed.centre.y, pushed.centre.z};
+        }
+    }
+
+    // 4. The lag, from 0.06: longer the more the target moves across the view and the faster he goes, its speed share
+    // coming back after a blocked view clears; 2.5 × when a script walks him fast; eased 3% an update.
+    if (wasBlocked && !m_viewBlocked) {
+        m_unblockTimer = kUnblockSeconds;
+    }
+    const float speed = std::hypot(target.velocity.x, target.velocity.y);
+    float across = 1.0F;
+    if (speed > target.walkSpeed && speed > 1e-4F) {
+        const anim::Vec3 ahead = forward();
+        across = std::abs((target.velocity.x * ahead.x + target.velocity.y * ahead.y) / speed);
+    }
+    float lag = kAimLag * (1.0F + (1.0F - across) * 0.5F);
+    if (target.sprintSpeed > 0.0F) {
+        float share = std::max(0.0F, (speed - target.walkSpeed) / target.sprintSpeed);
+        // The timer runs down only while the target is faster than his walk.
+        if (m_unblockTimer > 0.0F && share > 0.0F) {
+            share *= (kUnblockSeconds - m_unblockTimer) * (4.0F / 3.0F);
+            m_unblockTimer = std::max(0.0F, m_unblockTimer - seconds);
+        }
+        lag += share * lag * ((1.0F - across) * 0.5625F + 0.1875F);
+    }
+    if (!target.stickOwned && speed > target.walkSpeed + 0.18F * (target.runSpeed - target.walkSpeed)) {
+        lag *= 2.5F;
+    }
+    m_aimLag += (lag - m_aimLag) * kAimLagEase;
+    // **Coney's reading**: the long fall's 0.6 and the halving for a target that does not count apply to this
+    // update's move, not to the eased value.
+    float share = target.longFall ? kLongFallLag : m_aimLag;
+    if (!target.counts) {
+        share *= 0.5F;
+    }
+    // A wall that holds the camera (steeper than 53.13°) moves it by a share from how far the feet stand in front of
+    // the wall: 30% within 1 m, nothing from 3.5 m.
+    if (m_viewBlocked && std::abs(m_blockNormal.z) < 0.6F) {
+        const float inFront = anim::dot(m_blockNormal, anim::subtract(target.feet, m_blockPoint));
+        share = std::min(1.0F, (3.5F - inFront) * 0.4F) * 0.3F;
+    }
+
+    // 5. The move: the share of the way to the goal, never farther from the look-at point in plan than it.
+    m_aim = anim::add(m_aim, anim::scale(anim::subtract(goal, m_aim), share));
+    const float goalReach = std::hypot(goal.x - m_lookAt.x, goal.y - m_lookAt.y);
+    const float reach = std::hypot(m_aim.x - m_lookAt.x, m_aim.y - m_lookAt.y);
+    if (reach > goalReach && reach > 1e-6F) {
+        const float pull = goalReach / reach;
+        m_aim.x = m_lookAt.x + (m_aim.x - m_lookAt.x) * pull;
+        m_aim.y = m_lookAt.y + (m_aim.y - m_lookAt.y) * pull;
+    }
+}
+
 void FollowCamera::update(const FollowTarget& target, std::uint8_t rawRightX, std::uint8_t rawRightY,
                           const raycast::CollisionMesh* mesh, float seconds) {
     // The camera's view at the start of the update, which the auto-follow rules measure from.
     const anim::Vec3 viewBefore = anim::subtract(m_lookAt, m_position);
+    const anim::Vec3 cameraBefore = m_position;
+    const bool wasBlocked = m_viewBlocked;
     m_lastAutoTurn = 0.0F;
     m_lastFrameTurn = 0.0F;
     observe(target);
@@ -714,6 +873,9 @@ void FollowCamera::update(const FollowTarget& target, std::uint8_t rawRightX, st
     } else if (m_standingUpdates >= kLatchClearUpdates) {
         m_viewLatch = false;
     }
+
+    // The aim point the view faces, from this update's look-at point and the target's body.
+    stepAim(target, cameraBefore, wasBlocked, mesh, seconds);
 
     // 14. Timers and the camera's clock.
     m_inputHold = std::max(0.0F, m_inputHold - seconds);

@@ -1120,6 +1120,14 @@ std::vector<PosedShape> Human::posedStrikeShapes(bool targets) const {
     return posed;
 }
 
+std::optional<anim::Vec3> Human::bodyPoint() const {
+    if (m_skeleton == nullptr) {
+        return std::nullopt;
+    }
+    constexpr std::size_t kHips = 2;
+    return anim::scale(anim::boneTransforms(*m_skeleton, pose())[kHips].t, m_scale);
+}
+
 void Human::testStrikes(std::span<Human* const> victims, const StrikeContact* contact) {
     if (!m_strikes.anyOn() || m_skeleton == nullptr || m_outOfWorld) {
         m_strikesBefore.clear();

@@ -32,7 +32,7 @@ TEST_CASE("the trace header names the columns the original's recorder shares", "
     // coney-tools pcsx2 record writes these names for the same quantities (research/traces/fields.toml), and
     // coney-tools trace diff compares the columns the two traces share by name.
     const std::vector<std::string> names = columns(coney::human::traceHeader());
-    REQUIRE(names.size() == 30);
+    REQUIRE(names.size() == 34);
     CHECK(names.front() == "step");
     constexpr std::array<std::string_view, 20> kShared{
         "x",      "y",      "z",        "heading",      "speed",     "vz",      "gait",      "clip",         "stamina",
@@ -45,5 +45,5 @@ TEST_CASE("the trace header names the columns the original's recorder shares", "
         }
         CHECK(found == 1);
     }
-    CHECK(names.back() == "power");
+    CHECK(names.back() == "aim_lag");
 }

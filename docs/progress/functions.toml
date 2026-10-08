@@ -824,6 +824,30 @@ subsystem = "Camera"
 size = 480
 
 [[function]]
+address = 0x00123630
+name = "CamFailed_Construct"
+subsystem = "Camera"
+size = 136
+
+[[function]]
+address = 0x001236e0
+name = "CamFailed_Activate"
+subsystem = "Camera"
+size = 424
+
+[[function]]
+address = 0x001238a8
+name = "CamFailed_Place"
+subsystem = "Camera"
+size = 760
+
+[[function]]
+address = 0x00123bf0
+name = "CamFailed_Update"
+subsystem = "Camera"
+size = 688
+
+[[function]]
 address = 0x00124d00
 name = "Cam_Follow_Reset"
 subsystem = "Camera"
@@ -4717,6 +4741,11 @@ address = 0x0023b778
 name = "Human_SetSlowMo"
 subsystem = "Human"
 size = 192
+
+[[function]]
+address = 0x0023bde8
+name = "Human_GetBoneTransform"
+subsystem = "Human"
 
 [[function]]
 address = 0x0023bf00

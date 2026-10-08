@@ -38,6 +38,20 @@ camera::FollowTarget followTargetOf(const Human& human, const Pad& pad, std::opt
     // L1 held at the fight target (record flags 0x8 and 0x4), not the stance's own lock-on, which also locks without
     // it.
     const Combatant* lock = padControlled && pad.held(pad::kL1) ? human.fighter().target() : nullptr;
+    // **Coney's reading** of the state flags the aim point reads (docs/research/camera.md#aim-point): holding a victim
+    // in a grab's pair is grabbing (`0xc0`); holding one with no pair (a tackle), lying under a tackle or on the
+    // ground, arrested or knocked out is down (`0xe2c00`).
+    const Fighter& fighter = human.fighter();
+    const bool holding = fighter.held() != nullptr;
+    const bool grabbing = holding && fighter.pairStage() != PairStage::None;
+    const TargetState lying = human.state();
+    const bool down = (holding && !grabbing) || lying == TargetState::Mounted || lying == TargetState::Grounded ||
+                      human.script().arrested || human.script().knockedOut;
+    // Counts for the cameras: not dying or dead, knocked out, tackled or cuffed (**Coney's reading**: arrested; the
+    // upgrade and key that let a cuffed player count are not built). A fall that begins down or limp is a long fall.
+    const bool counts = !human.fighter().health().depleted() && !human.script().knockedOut &&
+                        lying != TargetState::Mounted && !human.script().arrested;
+    const bool longFall = human.airborne() && (!counts || lying == TargetState::Grounded);
     std::optional<anim::Vec3> enemy;
     if (lock != nullptr) {
         enemy = anim::add(lock->position(), anim::scale(lock->velocity(), 0.5F));
@@ -52,7 +66,17 @@ camera::FollowTarget followTargetOf(const Human& human, const Pad& pad, std::opt
                                 .lockHeld = padControlled && pad.held(pad::kL1),
                                 .enemy = enemy,
                                 .secondary = std::nullopt,
-                                .secondaryRange = 0.0F};
+                                .secondaryRange = 0.0F,
+                                .bodyPoint = human.bodyPoint(),
+                                .grabbing = grabbing,
+                                .down = down,
+                                .velocity = human.velocity(),
+                                .walkSpeed = human.speeds().walk,
+                                .runSpeed = human.speeds().run,
+                                .sprintSpeed = human.speeds().sprint,
+                                .stickOwned = padControlled,
+                                .counts = counts,
+                                .longFall = longFall};
 }
 
 } // namespace
@@ -153,7 +177,7 @@ PlayerSnapshot Player::capture() const {
                             .lean = m_human.lean(),
                             .pose = m_human.pose(),
                             .cameraEye = m_camera.position(),
-                            .cameraTarget = m_camera.lookAt(),
+                            .cameraTarget = m_camera.aimPoint(),
                             .fieldOfView = m_camera.fieldOfView(),
                             .nearClip = m_camera.nearClip(),
                             .farClip = camera::kPlayerCameraLens.farClip};

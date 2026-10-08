@@ -28,17 +28,17 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 15.7%](https://img.shields.io/badge/reimplemented-15.7%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 15.8%](https://img.shields.io/badge/reimplemented-15.8%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 ![Understood: 100.0%](https://img.shields.io/badge/understood-100.0%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▏░░░░░░░░░░░░░░░░` | 15.7% of the game's own code (527,124 of 3,354,776 bytes, 1,926 functions) |
+| **Reimplemented** | `███▏░░░░░░░░░░░░░░░░` | 15.8% of the game's own code (529,132 of 3,354,776 bytes, 1,931 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,220 of 3,284,028 bytes; 11,424 of 11,426 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-702 reimplemented function(s) have no size yet and add no bytes.
+703 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -65,7 +65,7 @@ at the top of the repository's `README.md`.
 | --- | --- | --- | --- | --- |
 | `Animation` | `███████░░░░░░░░░░░░░` | 35.0% | 28 | 54,616 |
 | `Audio` | `█▋░░░░░░░░░░░░░░░░░░` | 8.4% | 91 | 57,368 |
-| `Camera` | `▉░░░░░░░░░░░░░░░░░░░` | 4.4% | 63 | 165,680 |
+| `Camera` | `█▏░░░░░░░░░░░░░░░░░░` | 5.6% | 67 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
@@ -73,7 +73,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 106 | 100,440 |
 | `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 12.0% | 79 | 195,624 |
 | `GUI` | `████░░░░░░░░░░░░░░░░` | 19.8% | 231 | 497,416 |
-| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 688 | 1,096,672 |
+| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 689 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 8 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 4 | 79,032 |
@@ -294,6 +294,10 @@ at the top of the repository's `README.md`.
 | `0x00121298` | `Cam_UpdateShake` | `Camera` | not filled in |
 | `0x00122248` | `Camera_SwitchTarget` | `Camera` | 104 |
 | `0x00122548` | `Camera_CanSeePoint` | `Camera` | 480 |
+| `0x00123630` | `CamFailed_Construct` | `Camera` | 136 |
+| `0x001236e0` | `CamFailed_Activate` | `Camera` | 424 |
+| `0x001238a8` | `CamFailed_Place` | `Camera` | 760 |
+| `0x00123bf0` | `CamFailed_Update` | `Camera` | 688 |
 | `0x00124d00` | `Cam_Follow_Reset` | `Camera` | not filled in |
 | `0x00124f38` | `Cam_Follow_PlaceBehind` | `Camera` | not filled in |
 | `0x001250a8` | `Cam_Follow_PlaceAtHeading` | `Camera` | not filled in |
@@ -978,6 +982,7 @@ at the top of the repository's `README.md`.
 | `0x0023b128` | `CNS_SetMissionInfoEnabled` | `Human` | 16 |
 | `0x0023b138` | `Human_TeleportNear` | `Human` | 1,600 |
 | `0x0023b778` | `Human_SetSlowMo` | `Human` | 192 |
+| `0x0023bde8` | `Human_GetBoneTransform` | `Human` | not filled in |
 | `0x0023bf00` | `Human_PickUpObject` | `Human` | not filled in |
 | `0x0023cf88` | `Human_TurnToOver` | `Human` | not filled in |
 | `0x0023d2b8` | `Human_MoveToOver` | `Human` | not filled in |

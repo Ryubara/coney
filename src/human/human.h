@@ -198,6 +198,10 @@ class Human final : public Holdable {
     /// or with `targets` the spine and the head, which a strike is tested against (flag `0x4`). Empty without a
     /// skeleton.
     [[nodiscard]] std::vector<PosedShape> posedStrikeShapes(bool targets) const;
+    /// The body point (`+0x4e0`): the hips' (pose bone 2) position in the body's own frame, z up and facing +y, not
+    /// turned by the heading, times the scale; none without a skeleton (docs/research/camera.md#body-point).
+    /// @orig 0x0023bde8 Human_GetBoneTransform (unknown)
+    [[nodiscard]] std::optional<anim::Vec3> bodyPoint() const;
     /// What a human's switched-on strike shapes meet beyond the humans (the level's objects): `shapes`, posed now.
     /// Humans::setStrikeContact() gives it.
     using StrikeContact = std::function<void(Human& human, std::span<const PosedShape> shapes)>;

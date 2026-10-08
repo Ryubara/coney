@@ -27,7 +27,7 @@ to run it.
 | [Mission 4: Blackout](level34.md) | `level34` | 🚧 In Progress | 0 of 5 | 0 | 17 of 17 |
 | [Mission 5: Real Heavy Rep](level2.md) | `level2` | 🚧 In Progress | 0 of 4 | 0 | 6 of 19 |
 | [Mission 6: Writer's Block](level3.md) | `level3` | 🚧 In Progress | 0 of 5 | 0 | 9 of 22 |
-| [Mission 7: Adios Amigo](level5.md) | `level5` | 🚧 In Progress | 0 of 4 | 0 | 15 of 16 |
+| [Mission 7: Adios Amigo](level5.md) | `level5` | 🚧 In Progress | 1 of 4 | 0 | 15 of 16 |
 | [Mission 8: Encore](level81.md) | `level81` | ⬜ Not Started | 0 of 5 | 0 | 7 of 20 |
 | [Mission 9: Payin' The Cost](level86.md) | `level86` | ⬜ Not Started | 0 of 4 | 0 | 4 of 17 |
 | [Mission 10: Destroyed](level93.md) | `level93` | ⬜ Not Started | 0 of 6 | 0 | 4 of 24 |

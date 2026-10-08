@@ -16,6 +16,7 @@
 #include "camera/camera_lens.h"
 #include "camera/camera_shake.h"
 #include "camera/camera_view.h"
+#include "camera/failed_camera.h"
 #include "camera/follow_camera.h"
 #include "camera/locked_camera.h"
 #include "camera/path_camera.h"
@@ -39,6 +40,7 @@ enum class CameraKind : std::uint8_t {
     Scene,  ///< A scene's camera (type 4), which the scene player moves.
     Win,    ///< The Rumble win camera (`Cam_Win`), which circles the winner.
     Path,   ///< The scripts' path camera (type 3, `Cam_Spline`), which flies through its points.
+    Failed, ///< The death camera (type 12, `Cam_Failed`), the game-over shot.
 };
 
 /// A camera the manager knows: its kind and, for a locked one, its handle.
@@ -167,6 +169,22 @@ class Cameras {
     /// the original's always has one.
     /// @orig 0x0011cb70 Camera_ReversePoizo (unknown)
     bool reversePath(std::string onEnd);
+    /// The game-over shot's start (`Cam_GetFailed(1)` in the gameplay's update): the first time only (while there is
+    /// no death camera yet, `Cam_GetFailed(0)` = 0), makes the death camera over the player whose feet are at `feet`
+    /// (FailedCamera's placement, with `mesh` and `yawStep`), keeps the current camera and cuts to the shot with no
+    /// blend. Returns whether it started now. The caller checks the gates: the mission has failed, the level is not
+    /// an Armies level and no player fell out of the world.
+    /// @orig 0x00158728 Mode1::Update (unknown)
+    /// @orig 0x001236e0 CamFailed_Activate (unknown)
+    bool startFailed(anim::Vec3 feet, const raycast::CollisionMesh* mesh, int yawStep);
+    /// The death camera, once made.
+    [[nodiscard]] const FailedCamera* failed() const { return m_failed ? &*m_failed : nullptr; }
+    /// Whether the mission has failed (game state `+0x14c` = 1), which the gameplay sets each update: while it has and
+    /// the death camera is current, makeActive() switches to nothing (the shot cannot be replaced until a retry clears
+    /// the failure).
+    void setMissionFailed(bool failed) { m_missionFailed = failed; }
+    /// The camera the death camera replaced (`+0x1e4`).
+    [[nodiscard]] CameraRef beforeFailed() const { return m_beforeFailed; }
     /// The path camera, once made.
     [[nodiscard]] const PathCamera* path() const { return m_path ? &*m_path : nullptr; }
     /// The script functions the path camera reached since the last call (its points' and its end's), in order: the
@@ -176,7 +194,8 @@ class Cameras {
     /// `CameraMakeActive(camera, seconds)`: makes the camera with `handle` current, at once with 0 seconds or no
     /// current camera (which runs the follow camera's activation), otherwise through a blend from the view shown now.
     /// While a scene camera is current it replaces the camera on the stack instead. A handle that names no camera
-    /// does nothing.
+    /// does nothing, and so does any call while the death camera is current and the mission has failed
+    /// (setMissionFailed()).
     /// @orig 0x0011ee08 Camera_MakeActive (Cam_ICamera.cpp)
     void makeActive(double handle, float seconds);
     /// `CameraReset(camera)`: the follow camera's reset (FollowCamera::reset()); nothing for a locked camera.
@@ -284,6 +303,9 @@ class Cameras {
     float m_followFarClip = kPlayerCameraLens.farClip;
     std::optional<WinCamera> m_win;
     std::optional<PathCamera> m_path;
+    std::optional<FailedCamera> m_failed;
+    CameraRef m_beforeFailed;
+    bool m_missionFailed = false; // game state +0x14c, for makeActive()'s lock
     double m_pathHandle = 0.0;
     std::vector<std::string> m_fired; // the path camera's functions reached, for takeFired()
     double m_winHandle = 0.0;         // the win camera's handle once made

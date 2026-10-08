@@ -5,6 +5,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <functional>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -24,6 +26,7 @@ struct InputEvent {
         Stick,      ///< Move a stick: `stick` 0 left, 1 right, to `x`, `y`.
         Connect,    ///< Plug the pad in.
         Disconnect, ///< Pull the pad out.
+        Steer,      ///< Push the left stick toward each point of `route` in turn, at `x` per cent.
     };
 
     std::uint64_t frame = 0; ///< The frame (FrameTime::index) the line takes effect on.
@@ -33,7 +36,26 @@ struct InputEvent {
     std::uint8_t stick = 0;    ///< Stick: 0 the left stick, 1 the right.
     int x = 0;                 ///< Stick: -100 (full left) to 100 (full right).
     int y = 0;                 ///< Stick: -100 (full down) to 100 (full up).
+    /// Steer: the world points (metres, x and y) to reach one after the other.
+    std::vector<std::array<float, 2>> route;
 };
+
+/// Where a port's player stands and which way its camera faces, as a `steer` line needs them: the player's feet
+/// (world x and y, metres) and the camera's heading (degrees, the way its view faces; a heading `h` faces
+/// (-sin h, cos h), as the characters' headings do).
+struct SteerView {
+    float x = 0.0F;
+    float y = 0.0F;
+    float cameraHeading = 0.0F;
+};
+
+/// How near (metres) a `steer` line's player must come to a point of its route to go on to the next.
+inline constexpr float kSteerArrival = 1.0F;
+
+/// The left stick (x right, y up, -100 to 100) that sends a player standing as `view` says toward world point
+/// (`targetX`, `targetY`) at `percent` per cent: straight ahead is the camera's heading, so the stick is the target's
+/// bearing turned into the camera's frame.
+[[nodiscard]] std::array<int, 2> steerStick(const SteerView& view, float targetX, float targetY, int percent);
 
 /// Parses an input script: the scripted input of test mode, a Coney format (docs/guides/building.md#input-scripts).
 ///
@@ -48,7 +70,8 @@ struct InputEvent {
 ///
 /// ACTION is `press`, `release` or `tap` followed by button names (`cross`, `circle`, `triangle`, `square`, `l1`,
 /// `r1`, `l2`, `r2`, `l3`, `r3`, `start`, `select`, `up`, `down`, `left`, `right`), `stick left|right X Y` with X and
-/// Y whole numbers from -100 to 100 (y up), `connect` or `disconnect`. The port defaults to p1. Frames must not
+/// Y whole numbers from -100 to 100 (y up), `steer [PERCENT] X,Y...` (the left stick pushed toward each world point
+/// in turn, PERCENT 1 to 100, default 100), `connect` or `disconnect`. The port defaults to p1. Frames must not
 /// decrease from one line to the next. Fails with ErrorCode::Invalid naming the line for anything else.
 [[nodiscard]] std::expected<std::vector<InputEvent>, Error> parseInputScript(std::string_view text);
 
@@ -66,6 +89,9 @@ struct InputEvent {
 /// button has full pressure (255), as a digital button would.
 class ScriptedInput final : public InputSource {
   public:
+    /// Where a port's player and camera are, for `steer` lines; nothing when that port has no player in play.
+    using SteerSource = std::function<std::optional<SteerView>(std::size_t port)>;
+
     /// Plays `events`, which must be in frame order (parseInputScript() guarantees it; CONEY_ASSERT otherwise).
     explicit ScriptedInput(std::vector<InputEvent> events);
 
@@ -73,15 +99,30 @@ class ScriptedInput final : public InputSource {
     /// increasing order (CONEY_ASSERT); a frame skipped still has its lines applied, in order.
     [[nodiscard]] PortSamples sample(std::uint64_t frame) override;
 
+    /// Where `steer` lines read the players and cameras from. Without one, or while it gives nothing for a port,
+    /// a steering port's left stick stays centred.
+    void setSteerSource(SteerSource source) { m_steerSource = std::move(source); }
+
   private:
+    // A `steer` line under way: its points and the next one to reach.
+    struct Route {
+        std::vector<std::array<float, 2>> points;
+        std::size_t next = 0;
+        int percent = 100;
+    };
+
     // Applies one line to the port state.
     void apply(const InputEvent& event);
+    // Sets port `port`'s left stick from its route, ending the route at its last point.
+    void steer(std::size_t port);
 
     std::vector<InputEvent> m_events;
     std::size_t m_next = 0; // the first line not yet applied
     PortSamples m_state{};  // the ports as the lines so far leave them, pressures not yet filled in
-    std::array<std::uint16_t, kPadPorts> m_tapped{}; // buttons to release before the next frame
-    std::uint64_t m_nextFrame = 0;                   // the lowest frame the next sample() may ask for
+    std::array<std::uint16_t, kPadPorts> m_tapped{};      // buttons to release before the next frame
+    std::uint64_t m_nextFrame = 0;                        // the lowest frame the next sample() may ask for
+    std::array<std::optional<Route>, kPadPorts> m_routes; // each port's `steer` line under way
+    SteerSource m_steerSource;
 };
 
 } // namespace coney

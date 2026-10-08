@@ -108,6 +108,28 @@ struct FollowTarget {
     std::optional<anim::Vec3> secondary;
     /// Its range (`+0x3fc`): above 0 the rule acts only within it.
     float secondaryRange = 0.0F;
+    /// The body point (`+0x4e0`): the hips' position in the body's own frame (z up, facing +y, not turned by the
+    /// heading), times the body's scale; the aim point rises and falls with it (docs/research/camera.md#body-point).
+    /// None for a target without a pose: taken as 1 m up, where the aim point stays level.
+    std::optional<anim::Vec3> bodyPoint;
+    /// Grabbing someone from the front or the rear (state flags `0xc0`): the aim point leads by 0.4 as far.
+    bool grabbing = false;
+    /// Tackling, tackled, arrested, knocked out or down (state flags `0xe2c00`): the aim point's height follows the
+    /// body point with no dead band.
+    bool down = false;
+    /// The target's velocity (m/s) and its walk, run and sprint speeds, which the aim point's lag reads.
+    anim::Vec3 velocity;
+    float walkSpeed = 0.0F;
+    float runSpeed = 0.0F;
+    float sprintSpeed = 0.0F;
+    /// The stick moves the target (`+0x1b` of the per-player record): when it does not (a script walks him), a fast
+    /// target's aim point catches up 2.5 × as quickly.
+    bool stickOwned = true;
+    /// The target counts for the cameras (`Camera_HumanCounts`): not dying, dead, knocked out, tackled or cuffed.
+    /// While he does not, the aim point's lead is not eased and its move is halved.
+    bool counts = true;
+    /// A fall that began limp (state flag `0x1000000000`): the aim point moves 60% of the way an update.
+    bool longFall = false;
 };
 
 /// The zoom presets of `CamSetFollowZoom` (docs/research/camera.md#script-calls).
@@ -189,6 +211,26 @@ class FollowCamera {
     static constexpr float kKeepInViewFactor = 0.25F;
     static constexpr float kKeepInViewShare = 0.35F;
     static constexpr float kKeepInViewRate = 4.712F;
+    /// The aim point (docs/research/camera.md#aim-point): the eased facing's share of the way an update; the lead's
+    /// least length and its share of the band's near edge; the grab's lead factor; the dead band on the body point's
+    /// height above 1 m, metres; the height's ease; the push's radius; the lag's base and its ease an update.
+    static constexpr float kLeadShare = 0.35F;
+    static constexpr float kLeadMin = 0.75F;
+    static constexpr float kLeadBandShare = 0.15F;
+    static constexpr float kLeadGrabbing = 0.4F;
+    static constexpr float kAimDeadBand = 0.27F;
+    static constexpr float kAimHeightShare = 0.35F;
+    static constexpr float kAimPushRadius = 1.0F;
+    static constexpr float kAimLag = 0.06F;
+    static constexpr float kAimLagEase = 0.03F;
+    /// Running, the aim point moves by this share of the body point's offset from 1 m up each update; sprinting it
+    /// sways sideways up to kSwayLimit, kSwayLimit × 0.125-0.25 an update.
+    static constexpr float kRunBob = 0.22F;
+    static constexpr float kSwayLimit = 0.028F;
+    /// After a blocked view clears, the lag's speed share comes back over this many seconds (`+0x38c`).
+    static constexpr float kUnblockSeconds = 0.375F;
+    /// The aim point's move an update during a long fall.
+    static constexpr float kLongFallLag = 0.6F;
 
     /// A camera on a target whose feet are at `targetFeet` facing `targetHeading` (radians, 0 facing +y): placed behind
     /// it at the leash band's near edge and the target pitch (**Coney's choice** for the reset, which is not traced).
@@ -285,6 +327,12 @@ class FollowCamera {
     [[nodiscard]] anim::Vec3 lookAt() const { return m_lookAt; }
     /// The unit view direction, from the camera to the look-at point.
     [[nodiscard]] anim::Vec3 forward() const;
+    /// The point the view faces (`+0x240`): it leads the look-at point a little along the target's facing and rises
+    /// and falls with his body, eased twice, so the view's yaw and pitch lag the look-at point
+    /// (docs/research/camera.md#aim-point).
+    [[nodiscard]] anim::Vec3 aimPoint() const { return m_aim; }
+    /// The aim point's lag (`+0x418`): the share of the way to its goal it moves an update.
+    [[nodiscard]] float aimLag() const { return m_aimLag; }
     /// The pitch the camera returns to, radians (`+0x3b4`; positive: above the look-at point, looking down).
     [[nodiscard]] float targetPitch() const { return m_targetPitch; }
     /// The lower pitch limit, radians (`+0x3b0`).
@@ -374,6 +422,17 @@ class FollowCamera {
     // edge back; while on, the enemy framed 27° off centre. Returns whether it turned the camera.
     // @orig 0x0012e9a8 Cam_Follow_FrameEnemy (Cam_Follow.cpp)
     bool combat(const FollowTarget& target, float seconds);
+    // The aim point's step, after the world collision: its goal (the lead along the target's eased facing, the height
+    // with the body point, the push out of the world), its lag, and the move toward the goal. `cameraBefore` is the
+    // camera of the last update (`+0x1e0`).
+    // @orig 0x00130990 Cam_Follow_Collide (Cam_Follow.cpp)
+    void stepAim(const FollowTarget& target, anim::Vec3 cameraBefore, bool wasBlocked,
+                 const raycast::CollisionMesh* mesh, float seconds);
+    // The aim point's goal height from the body point, standing or walking (step 2 of the aim point); `goal` is at
+    // the look-at height.
+    [[nodiscard]] float aimHeight(const FollowTarget& target, float lookAtZ) const;
+    // Puts the aim point on the look-at point and the eased facing on the target's: a camera placed at once.
+    void snapAim();
     // Keep in view: turns toward `point` when it is more than a quarter of the field of view off the view's direction.
     // @orig 0x0012e170 Cam_Follow_KeepInView (Cam_Follow.cpp)
     void keepInView(anim::Vec3 point, float range, float seconds);
@@ -410,15 +469,24 @@ class FollowCamera {
     int m_standingUpdates = 0;         // updates in a row the target has stood (gait 0, on the ground)
     float m_lastAutoTurn = 0.0F;
     float m_lastFrameTurn = 0.0F;
-    float m_configuredPitch;    // +0x30c
-    float m_fov;                // the field of view now
-    float m_wantedFov;          // +0x394
-    float m_fovRate = 0.0F;     // degrees a second (+0x39c)
-    bool m_stickOn = true;      // CamEnable(0)
-    bool m_padStickOn = true;   // 0x0050b1b0[player]: off while the command menu is up
-    bool m_combatOn = false;    // +0x46f
-    float m_combatSaved = 0.0F; // the band's near edge before the combat camera (+0x3cc); 0 for none
-    anim::Vec3 m_targetFeet;    // the target's latest feet and facing
+    float m_configuredPitch;         // +0x30c
+    float m_fov;                     // the field of view now
+    float m_wantedFov;               // +0x394
+    float m_fovRate = 0.0F;          // degrees a second (+0x39c)
+    bool m_stickOn = true;           // CamEnable(0)
+    bool m_padStickOn = true;        // 0x0050b1b0[player]: off while the command menu is up
+    bool m_combatOn = false;         // +0x46f
+    float m_combatSaved = 0.0F;      // the band's near edge before the combat camera (+0x3cc); 0 for none
+    anim::Vec3 m_aim;                // the aim point (+0x240)
+    float m_aimLag = kAimLag;        // +0x418
+    float m_leadHeading = 0.0F;      // the facing of the eased copy of the target's rotation (+0x2e0)
+    float m_sway = 0.0F;             // the sprint's sideways sway, metres (+0x3f8)
+    float m_swayDirection = 1.0F;    // +0x3f4
+    float m_unblockTimer = 0.0F;     // seconds left after a blocked view cleared (+0x38c)
+    std::uint32_t m_swayRandom = 1U; // the sway's random numbers: a fixed seed (test mode)
+    anim::Vec3 m_blockNormal;        // the main ray's hit face this update, while m_viewBlocked
+    anim::Vec3 m_blockPoint;
+    anim::Vec3 m_targetFeet; // the target's latest feet and facing
     float m_targetHeading = 0.0F;
 };
 

@@ -515,3 +515,66 @@ TEST_CASE("a wall on one side swings the camera toward the side with more room",
     free.update(standing(Vec3{40.0F, 40.0F, 0.0F}), kRest, kRest, open.get(), kStep);
     CHECK(wantedYaw(free) == Approx(before).margin(1e-6));
 }
+
+TEST_CASE("the follow camera's aim point leads a standing target along its facing", "[camera]") {
+    // Behind a target facing +y at the street's band (4.8 m): the lead is max(0.75, 0.15 × 4.8) = 0.75, halved by the
+    // facing running along the view, less 0.01; the aim point eases there by its lag of 0.06 an update.
+    FollowCamera camera(Vec3{0.0F, 0.0F, 0.0F}, 0.0F);
+    REQUIRE(camera.aimPoint().y == Approx(camera.lookAt().y));
+    for (int i = 0; i < 300; ++i) {
+        camera.update(standing(Vec3{0.0F, 0.0F, 0.0F}), kRest, kRest, nullptr, kStep);
+    }
+    CHECK(camera.aimLag() == Approx(FollowCamera::kAimLag));
+    CHECK(camera.aimPoint().y - camera.lookAt().y == Approx(0.365F).margin(0.002F));
+    CHECK(camera.aimPoint().x == Approx(camera.lookAt().x).margin(1e-4F));
+    // The body point at 1.035 m is inside the dead band: the aim point stays at the look-at height.
+    CHECK(camera.aimPoint().z == Approx(camera.lookAt().z).margin(1e-4F));
+}
+
+TEST_CASE("the follow camera's aim point rises with the body past the dead band", "[camera]") {
+    FollowCamera camera(Vec3{0.0F, 0.0F, 0.0F}, 0.0F);
+    FollowTarget target = standing(Vec3{0.0F, 0.0F, 0.0F});
+    // The hips 1.4 m up (0.4 above 1 m, a vault): past the 0.27 m dead band, scaled by min(1, 0.13 × 0.9 / 0.27 +
+    // 0.1) = 0.533, so the goal is 0.213 m above the look-at point.
+    target.bodyPoint = Vec3{0.0F, 0.0F, 1.4F};
+    for (int i = 0; i < 400; ++i) {
+        camera.update(target, kRest, kRest, nullptr, kStep);
+    }
+    CHECK(camera.aimPoint().z - camera.lookAt().z == Approx(0.4F * (0.13F * 0.9F / 0.27F + 0.1F)).margin(0.003F));
+    // Knocked down with the hips 0.2 m up: no dead band, d = -0.8 kept beyond 0.54 m, lowered by (1.4 - 1) × 0.6 more.
+    target.bodyPoint = Vec3{0.0F, 0.0F, 0.2F};
+    target.down = true;
+    for (int i = 0; i < 400; ++i) {
+        camera.update(target, kRest, kRest, nullptr, kStep);
+    }
+    CHECK(camera.aimPoint().z - camera.lookAt().z == Approx(-0.8F - 0.24F).margin(0.003F));
+}
+
+TEST_CASE("the follow camera's aim point leads less in a grab and lags more for a scripted run", "[camera]") {
+    FollowCamera camera(Vec3{0.0F, 0.0F, 0.0F}, 0.0F);
+    FollowTarget target = standing(Vec3{0.0F, 0.0F, 0.0F});
+    target.grabbing = true;
+    for (int i = 0; i < 300; ++i) {
+        camera.update(target, kRest, kRest, nullptr, kStep);
+    }
+    CHECK(camera.aimPoint().y - camera.lookAt().y == Approx(0.75F * 0.4F * 0.5F - 0.01F).margin(0.002F));
+
+    // A target the stick does not move, going straight away at 6 m/s (walk 1.6, run 7.8, sprint 10.2): along the view
+    // the lag is 0.06 × (1 + (1 − c) × 0.5) × (1 + (6 − 1.6) / 10.2 × ((1 − c) × 0.5625 + 0.1875)) × 2.5, with c the
+    // cosine of the view's 13° pitch, reached 3% an update.
+    FollowCamera scripted(Vec3{0.0F, 0.0F, 0.0F}, 0.0F);
+    FollowTarget walked = standing(Vec3{0.0F, 0.0F, 0.0F});
+    walked.velocity = Vec3{0.0F, 6.0F, 0.0F};
+    walked.walkSpeed = 1.6F;
+    walked.runSpeed = 7.8F;
+    walked.sprintSpeed = 10.2F;
+    walked.stickOwned = false;
+    for (int i = 0; i < 400; ++i) {
+        scripted.update(walked, kRest, kRest, nullptr, kStep);
+    }
+    const float c = std::cos(13.0F * kDegree);
+    const float across = 1.0F - c;
+    CHECK(scripted.aimLag() ==
+          Approx(0.06F * (1.0F + across * 0.5F) * (1.0F + 4.4F / 10.2F * (across * 0.5625F + 0.1875F)) * 2.5F)
+              .margin(0.001F));
+}

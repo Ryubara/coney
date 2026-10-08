@@ -224,6 +224,7 @@ target_sources(coney_core PRIVATE
     camera/path_camera.cpp
     camera/slow_motion.cpp
     camera/win_camera.cpp
+    camera/failed_camera.cpp
     characters/anim_set.cpp
     human/body.cpp
     human/climb.cpp

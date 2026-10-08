@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "core/input_script.h"
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -85,6 +87,10 @@ TEST_CASE("an input script refuses bad lines and names the line", "[input_script
     CHECK_THAT(refusal("10 stick left 101 0"), ContainsSubstring("-100 to 100"));
     CHECK_THAT(refusal("10 stick left 1.5 0"), ContainsSubstring("-100 to 100"));
     CHECK_THAT(refusal("10 connect now"), ContainsSubstring("no arguments"));
+    CHECK_THAT(refusal("10 steer"), ContainsSubstring("at least one X,Y point"));
+    CHECK_THAT(refusal("10 steer 40"), ContainsSubstring("at least one X,Y point"));
+    CHECK_THAT(refusal("10 steer 0 1,2"), ContainsSubstring("1 to 100"));
+    CHECK_THAT(refusal("10 steer 1,2 3"), ContainsSubstring("not an X,Y point"));
     CHECK_THAT(refusal("20 tap start\n10 tap start"), ContainsSubstring("frame 10 comes after frame 20"));
 }
 
@@ -156,4 +162,68 @@ TEST_CASE("an input script that does not exist is reported as not found", "[inpu
     auto events = coney::loadInputScript("no-such-dir/no-such-script.txt");
     REQUIRE_FALSE(events.has_value());
     CHECK(events.error().code == ErrorCode::NotFound);
+}
+
+TEST_CASE("a steer line parses its reach and route points", "[input_script]") {
+    const std::vector<InputEvent> events = parsed("5 steer 1.5,-2 3,4\n6 steer 40 -61.25,-80\n");
+    REQUIRE(events.size() == 2);
+    CHECK(events[0].action == InputEvent::Action::Steer);
+    CHECK(events[0].x == 100);
+    REQUIRE(events[0].route.size() == 2);
+    CHECK(events[0].route[0][0] == 1.5F);
+    CHECK(events[0].route[0][1] == -2.0F);
+    CHECK(events[1].x == 40);
+    REQUIRE(events[1].route.size() == 1);
+    CHECK(events[1].route[0][0] == -61.25F);
+}
+
+TEST_CASE("the steer stick turns the target's bearing into the camera's frame", "[input_script]") {
+    using Stick = std::array<int, 2>;
+    // Camera heading 0 faces +y: a target ahead is stick up, one at +x is stick right.
+    const coney::SteerView north{.x = 10.0F, .y = 10.0F, .cameraHeading = 0.0F};
+    CHECK(coney::steerStick(north, 10.0F, 20.0F, 50) == Stick{0, 50});
+    CHECK(coney::steerStick(north, 20.0F, 10.0F, 50) == Stick{50, 0});
+    CHECK(coney::steerStick(north, 0.0F, 10.0F, 50) == Stick{-50, 0});
+    CHECK(coney::steerStick(north, 10.0F, 0.0F, 50) == Stick{0, -50});
+    // Camera heading 90 faces -x: a target at -x is straight ahead, one at +y is to the right.
+    const coney::SteerView west{.x = 0.0F, .y = 0.0F, .cameraHeading = 90.0F};
+    CHECK(coney::steerStick(west, -5.0F, 0.0F, 70) == Stick{0, 70});
+    CHECK(coney::steerStick(west, 0.0F, 5.0F, 70) == Stick{70, 0});
+    // Halfway between: both axes at cos 45 of the reach.
+    CHECK(coney::steerStick(north, 15.0F, 15.0F, 100) == Stick{71, 71});
+}
+
+TEST_CASE("a steering port follows its route and centres the stick at the end", "[input_script]") {
+    ScriptedInput input(parsed("0 steer 60 0,10 10,10\n"));
+    coney::SteerView view{.x = 0.0F, .y = 0.0F, .cameraHeading = 0.0F};
+    input.setSteerSource([&view](std::size_t port) -> std::optional<coney::SteerView> {
+        if (port != 0) {
+            return std::nullopt;
+        }
+        return view;
+    });
+    // Heading for the first point: stick up at 60 %.
+    coney::PortSamples samples = input.sample(0);
+    CHECK(samples[0].sticks[2] == coney::stickByteFromPercent(0));
+    CHECK(samples[0].sticks[3] == coney::stickByteFromPercent(-60));
+    // Within a metre of it: on to the second, to the right.
+    view = {.x = 0.2F, .y = 9.5F, .cameraHeading = 0.0F};
+    samples = input.sample(1);
+    CHECK(samples[0].sticks[2] > coney::stickByteFromPercent(55));
+    // At the last point the route ends and the stick centres.
+    view = {.x = 9.6F, .y = 10.1F, .cameraHeading = 0.0F};
+    samples = input.sample(2);
+    CHECK(samples[0].sticks[2] == pad::kStickCentre);
+    CHECK(samples[0].sticks[3] == pad::kStickCentre);
+}
+
+TEST_CASE("a steering port centres without a view and stops at a left stick line", "[input_script]") {
+    ScriptedInput input(parsed("0 steer 0,10\n2 stick left 30 0\n"));
+    CHECK(input.sample(0)[0].sticks[3] == pad::kStickCentre);
+    input.setSteerSource([](std::size_t) -> std::optional<coney::SteerView> { return coney::SteerView{}; });
+    CHECK(input.sample(1)[0].sticks[3] == coney::stickByteFromPercent(-100));
+    const coney::PortSamples samples = input.sample(2);
+    CHECK(samples[0].sticks[2] == coney::stickByteFromPercent(30));
+    CHECK(samples[0].sticks[3] == pad::kStickCentre);
+    CHECK(input.sample(3)[0].sticks[2] == coney::stickByteFromPercent(30));
 }

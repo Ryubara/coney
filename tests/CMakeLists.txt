@@ -90,6 +90,7 @@ add_executable(coney_tests
     platform/disc_rumble_test.cpp
     platform/disc_hub_test.cpp
     platform/disc_level80_test.cpp
+    platform/disc_level5_bar_test.cpp
     platform/disc_level99_audio_test.cpp
     platform/disc_level99_scene_speech_test.cpp
     platform/disc_level99_hud_test.cpp
@@ -211,6 +212,7 @@ target_sources(coney_tests PRIVATE
     camera/cameras_test.cpp
     camera/path_camera_test.cpp
     camera/win_camera_test.cpp
+    camera/failed_camera_test.cpp
     camera/follow_camera_test.cpp
     camera/follow_collision_test.cpp
     camera/follow_script_test.cpp

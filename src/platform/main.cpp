@@ -5,6 +5,7 @@
 
 #include <array>
 #include <charconv>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -14,6 +15,7 @@
 #include <fstream>
 #include <functional>
 #include <memory>
+#include <numbers>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -832,7 +834,22 @@ int main(int argc, char** argv) {
             std::fprintf(stderr, "coney: %s\n", events.error().message.c_str());
             return 1;
         }
-        input = std::make_unique<coney::ScriptedInput>(std::move(*events));
+        auto scripted = std::make_unique<coney::ScriptedInput>(std::move(*events));
+        // `steer` lines read player 1 and his camera from the level in play (a sandbox's or a story level's).
+        scripted->setSteerSource([&playLevel, &levelPlayMode](std::size_t port) -> std::optional<coney::SteerView> {
+            const coney::platform::PlayLevelMode* mode = playLevel ? playLevel.get() : levelPlayMode();
+            if (port != 0 || mode == nullptr) {
+                return std::nullopt;
+            }
+            const coney::anim::Vec3 feet = mode->playerFeet();
+            const coney::anim::Vec3 eye = mode->cameraEye();
+            const coney::anim::Vec3 target = mode->cameraTarget();
+            constexpr float kDegrees = 180.0F / std::numbers::pi_v<float>;
+            return coney::SteerView{.x = feet.x,
+                                    .y = feet.y,
+                                    .cameraHeading = std::atan2(-(target.x - eye.x), target.y - eye.y) * kDegrees};
+        });
+        input = std::move(scripted);
     } else if (renderer.window()) {
         auto started = coney::platform::SdlInput::start();
         if (started) {

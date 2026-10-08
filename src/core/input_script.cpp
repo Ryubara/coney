@@ -4,11 +4,13 @@
 #include <algorithm>
 #include <array>
 #include <charconv>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <format>
 #include <fstream>
 #include <iterator>
+#include <numbers>
 #include <optional>
 #include <span>
 #include <string>
@@ -89,6 +91,44 @@ std::optional<std::uint16_t> buttonBit(std::string_view name) {
     return std::nullopt;
 }
 
+// Parses a route point `X,Y` (metres, decimals allowed).
+std::optional<std::array<float, 2>> parsePoint(std::string_view word) {
+    const std::size_t comma = word.find(',');
+    if (comma == std::string_view::npos) {
+        return std::nullopt;
+    }
+    const std::optional<float> x = parseNumber<float>(word.substr(0, comma));
+    const std::optional<float> y = parseNumber<float>(word.substr(comma + 1));
+    if (!x || !y) {
+        return std::nullopt;
+    }
+    return std::array<float, 2>{*x, *y};
+}
+
+// Parses a `steer` line's arguments, `[PERCENT] X,Y...`, into `event`; returns what is wrong, or an empty string.
+std::string parseSteer(std::span<const std::string_view> args, InputEvent& event) {
+    event.x = 100;
+    if (!args.empty() && args[0].find(',') == std::string_view::npos) {
+        const std::optional<int> percent = parseNumber<int>(args[0]);
+        if (!percent || *percent < 1 || *percent > 100) {
+            return "steer PERCENT must be a whole number from 1 to 100";
+        }
+        event.x = *percent;
+        args = args.subspan(1);
+    }
+    if (args.empty()) {
+        return "steer needs at least one X,Y point";
+    }
+    for (const std::string_view word : args) {
+        const std::optional<std::array<float, 2>> point = parsePoint(word);
+        if (!point) {
+            return std::format("\"{}\" is not an X,Y point", word);
+        }
+        event.route.push_back(*point);
+    }
+    return {};
+}
+
 // Parses the arguments of one line after its action word into `event`; returns what is wrong, or an empty string.
 std::string parseArguments(std::span<const std::string_view> args, InputEvent& event) {
     switch (event.action) {
@@ -120,6 +160,8 @@ std::string parseArguments(std::span<const std::string_view> args, InputEvent& e
         event.y = *y;
         return {};
     }
+    case InputEvent::Action::Steer:
+        return parseSteer(args, event);
     case InputEvent::Action::Connect:
     case InputEvent::Action::Disconnect:
         return args.empty() ? std::string() : "takes no arguments";
@@ -152,6 +194,8 @@ std::string parseLine(std::span<const std::string_view> words, InputEvent& event
         event.action = InputEvent::Action::Tap;
     } else if (action == "stick") {
         event.action = InputEvent::Action::Stick;
+    } else if (action == "steer") {
+        event.action = InputEvent::Action::Steer;
     } else if (action == "connect") {
         event.action = InputEvent::Action::Connect;
     } else if (action == "disconnect") {
@@ -221,6 +265,16 @@ std::uint8_t stickByteFromPercent(int value) {
     return pad::kStickCentre;
 }
 
+std::array<int, 2> steerStick(const SteerView& view, float targetX, float targetY, int percent) {
+    // The target's heading from the player, less the camera's: the stick's angle from straight up, turning left.
+    constexpr float kRadians = std::numbers::pi_v<float> / 180.0F;
+    const float bearing = std::atan2(-(targetX - view.x), targetY - view.y);
+    const float turn = bearing - (view.cameraHeading * kRadians);
+    const float reach = static_cast<float>(percent);
+    const auto clamped = [](float value) { return std::clamp(static_cast<int>(std::lround(value)), -100, 100); };
+    return {clamped(-std::sin(turn) * reach), clamped(std::cos(turn) * reach)};
+}
+
 ScriptedInput::ScriptedInput(std::vector<InputEvent> events) : m_events(std::move(events)) {
     for (std::size_t i = 1; i < m_events.size(); ++i) {
         CONEY_ASSERT(m_events[i - 1].frame <= m_events[i].frame);
@@ -243,12 +297,19 @@ void ScriptedInput::apply(const InputEvent& event) {
         m_tapped.at(event.port) |= event.buttons;
         break;
     case InputEvent::Action::Stick: {
-        // Raw stick bytes are right x, right y, left x, left y; a script's y is up, the byte's is down.
+        // Raw stick bytes are right x, right y, left x, left y; a script's y is up, the byte's is down. A left-stick
+        // line ends any route the port was steering.
         const std::size_t first = event.stick == 0 ? 2 : 0;
+        if (event.stick == 0) {
+            m_routes.at(event.port).reset();
+        }
         port.sticks.at(first) = stickByteFromPercent(event.x);
         port.sticks.at(first + 1) = stickByteFromPercent(-event.y);
         break;
     }
+    case InputEvent::Action::Steer:
+        m_routes.at(event.port) = Route{.points = event.route, .next = 0, .percent = event.x};
+        break;
     case InputEvent::Action::Connect:
         port.connected = true;
         break;
@@ -256,6 +317,39 @@ void ScriptedInput::apply(const InputEvent& event) {
         port.connected = false;
         break;
     }
+}
+
+void ScriptedInput::steer(std::size_t port) {
+    std::optional<Route>& route = m_routes.at(port);
+    if (!route) {
+        return;
+    }
+    // Left stick bytes 2 and 3; centred while there is no view, and when the last point is reached.
+    PadSample& state = m_state.at(port);
+    const auto setStick = [&state](int x, int y) {
+        state.sticks.at(2) = stickByteFromPercent(x);
+        state.sticks.at(3) = stickByteFromPercent(-y);
+    };
+    const std::optional<SteerView> view = m_steerSource ? m_steerSource(port) : std::nullopt;
+    if (!view) {
+        setStick(0, 0);
+        return;
+    }
+    while (route->next < route->points.size()) {
+        const std::array<float, 2>& point = route->points.at(route->next);
+        if (std::hypot(point[0] - view->x, point[1] - view->y) > kSteerArrival) {
+            break;
+        }
+        ++route->next;
+    }
+    if (route->next == route->points.size()) {
+        setStick(0, 0);
+        route.reset();
+        return;
+    }
+    const std::array<float, 2>& point = route->points.at(route->next);
+    const std::array<int, 2> stick = steerStick(*view, point[0], point[1], route->percent);
+    setStick(stick[0], stick[1]);
 }
 
 PortSamples ScriptedInput::sample(std::uint64_t frame) {
@@ -269,6 +363,9 @@ PortSamples ScriptedInput::sample(std::uint64_t frame) {
     }
     while (m_next < m_events.size() && m_events[m_next].frame <= frame) {
         apply(m_events[m_next++]);
+    }
+    for (std::size_t port = 0; port < kPadPorts; ++port) {
+        steer(port);
     }
 
     // A digital button is either released (0) or fully pressed (255).

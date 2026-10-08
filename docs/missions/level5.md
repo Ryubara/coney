@@ -12,14 +12,14 @@ The Warriors try to collect a payment owed to them by Sanchez, a Hurricanes asso
 | --- | --- |
 | Status | 🚧 In Progress |
 | Level | `level5` (story mission 7) |
-| Checkpoints | 0 of 4 built, 0 approved |
+| Checkpoints | 1 of 4 built, 0 approved |
 
 ## Checkpoints {#checkpoints}
 
 | # | Status | Note |
 | --- | --- | --- |
 | 1 | 🚧 In Progress | The scripts run with no error; the checkpoint is not yet played to its end. |
-| 2 | 🚧 In Progress | The scripts run with no error; the bar's room smoke drifts over the screen as the original's does, and the Hurricanes fight the player. Not yet played to its end. |
+| 2 | 🎮 Pending Gameplay Approval | Played to its end with the pad (disc test): the bar's room smoke drifts over the screen as the original's does, the Hurricanes fight the player, and once all eight are down the scene l5_c5 plays and sets checkpoint 3. The surviving Hurricanes stop attacking after a while (AI fight-goal stall, with ai-combat2). |
 | 3 | 🚧 In Progress | The scripts run with no error; the runner's carrot run (GoalRunCarrotRun) is still missing. |
 | 4 | 🚧 In Progress | The scripts run with no error and the boss's HUD bar shows in the right column; the Diego and Vargas fight (TacticBossScenarioA) and the boss rail camera are still missing. |
 
