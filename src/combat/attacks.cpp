@@ -110,6 +110,27 @@ int crossAttack(const SquareInput& input) {
     return anim_id::kAttackX1;
 }
 
+bool throwSet(int set) { return set >= 4 && set <= 6; }
+
+int throwAttack(const SquareInput& input) {
+    // Gait 3 already counts as a run here; a fight stance turns only the walking throw into the standing one.
+    const bool run =
+        input.gait == human::Gait::Jog || input.gait == human::Gait::Run || input.gait == human::Gait::Sprint;
+    const bool walk = input.gait == human::Gait::Walk && !input.fightStance;
+    switch (input.heldSet) {
+    case 4:
+        return run ? anim_id::kBarrelThrowFromRun : walk ? anim_id::kBarrelThrowFromWalk : anim_id::kBarrelThrow;
+    case 5:
+        return run    ? anim_id::kOneHandedThrowFromRun
+               : walk ? anim_id::kOneHandedThrowFromWalk
+                      : anim_id::kOneHandedThrow;
+    case 6:
+        return run ? anim_id::kGhettoThrowFromRun : walk ? anim_id::kGhettoThrowFromWalk : anim_id::kGhettoThrow;
+    default:
+        return anim_id::kNone;
+    }
+}
+
 int armedAttack(const SquareInput& input, bool cross) {
     const AnimSetClips clips = animSetClips(input.heldSet);
     // The run attack first, then the target's state, then the slot's swing.

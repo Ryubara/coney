@@ -451,3 +451,25 @@ TEST_CASE("square at a run plays 24 only with the record's +0x08 clear", "[comba
         CHECK(starts(frames) == Starts{{10, expected}});
     }
 }
+
+TEST_CASE("with a brick in hand square, cross and the charge throw it; mid-throw a press is refused", "[combat]") {
+    Runner runner(nullptr);
+    const auto frames = runner.run("10 tap square\n", 20, [](std::uint64_t, CombatInput& input) { input.animSet = 5; });
+    CHECK(starts(frames) == Starts{{10, anim_id::kOneHandedThrow}});
+    // Cross (on its release) at a walk throws from the walk.
+    Runner walking(nullptr);
+    const auto walked = walking.run("0 stick left 0 50\n5 tap cross\n", 12, [](std::uint64_t, CombatInput& input) {
+        input.animSet = 5;
+        input.gait = Gait::Walk;
+    });
+    CHECK(starts(walked) == Starts{{6, anim_id::kOneHandedThrowFromWalk}});
+    // L2 + cross at a run: the throw from a run, not the charge.
+    Runner running(nullptr);
+    const auto ran =
+        running.run("0 stick left 0 100\n2 press l2\n5 tap cross\n", 8, [](std::uint64_t, CombatInput& input) {
+            input.animSet = 4;
+            input.gait = Gait::Run;
+        });
+    CHECK(!starts(ran).empty());
+    CHECK(starts(ran).front() == std::pair<std::size_t, int>{5, anim_id::kBarrelThrowFromRun});
+}

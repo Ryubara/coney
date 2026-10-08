@@ -206,8 +206,9 @@ float movedOn(const Run& run, int index) {
     return std::hypot(to.x - from.x, to.y - from.y);
 }
 
-// The player's walking sphere (0.485 m): how far short of a wall's face his feet stop.
+// The player's walking sphere (0.4704 m), and the 0.01 m the sweep leaves between it and a wall.
 const float kBodyRadius = coney::human::playerWalkingRadius(coney::human::kPlayerBodyScale);
+const float kContactClear = coney::human::bodyTuning().contactClear;
 
 TEST_CASE("Rembrandt sprints along the parkour lane while L2 and stamina last", "[disc][player][sandbox][traversal]") {
     const char* discPath = discOrSkip();
@@ -328,7 +329,7 @@ TEST_CASE("Rembrandt climbs over a short fence and a fence from a run, not one o
         const Run run = runScript(course, "fence 2.6", "parkour_fence_tall.txt", {-18.0F, 8.0F, 0.0F}, 150);
         CHECK(framesOf(run, Traversal::Climbing) == 0);
         CHECK(framesOf(run, Traversal::Jumping) == 0);
-        CHECK(run.frames.back().position.y == Approx(19.96F - kBodyRadius).margin(0.03));
+        CHECK(run.frames.back().position.y == Approx(19.96F - kBodyRadius - kContactClear).margin(0.03));
     }
 }
 
@@ -360,14 +361,14 @@ TEST_CASE("Rembrandt climbs low walls and blocks standing; ledges too low or too
     SECTION("a 3 m block: above the wall window, no climb") {
         const Run run = runScript(course, "block 3", "parkour_climb_stand.txt", {-30.0F, 51.0F, 0.0F}, 240);
         CHECK(framesOf(run, Traversal::Climbing) == 0);
-        CHECK(run.frames.back().position.y == Approx(53.5F - kBodyRadius).margin(0.03));
+        CHECK(run.frames.back().position.y == Approx(53.5F - kBodyRadius - kContactClear).margin(0.03));
     }
     SECTION("0.5 and 0.65 m ledges: walls to walk into, below the climbs' 0.69 m") {
         for (const float x : {-54.0F, -48.0F}) {
             const Run run = runScript(course, "ledge", "parkour_climb_stand.txt", {x, 32.0F, 0.0F}, 240);
             CHECK(framesOf(run, Traversal::Climbing) == 0);
             CHECK(highest(run) == Approx(0.0F).margin(0.02));
-            CHECK(run.frames.back().position.y == Approx(34.5F - kBodyRadius).margin(0.03));
+            CHECK(run.frames.back().position.y == Approx(34.5F - kBodyRadius - kContactClear).margin(0.03));
         }
     }
     SECTION("a 20 cm kerb is walked onto, a 30 cm one is a wall") {
@@ -377,9 +378,9 @@ TEST_CASE("Rembrandt climbs low walls and blocks standing; ledges too low or too
         const Run ledge = runScript(course, "kerb 30", "parkour_kerb.txt", {-60.0F, 32.0F, 0.0F}, 150);
         CHECK(highest(ledge) == Approx(0.0F).margin(0.02));
         // The sphere, centred its radius + 0.05 up, meets the 30 cm face's top edge before its plane: it stops where
-        // that edge is a radius from its centre.
+        // that edge is a radius from its centre, and the 0.01 m kept clear.
         const float above = kBodyRadius + 0.05F - 0.3F;
         const float edgeStop = std::sqrt((kBodyRadius * kBodyRadius) - (above * above));
-        CHECK(ledge.frames.back().position.y == Approx(34.5F - edgeStop).margin(0.03));
+        CHECK(ledge.frames.back().position.y == Approx(34.5F - edgeStop - kContactClear).margin(0.03));
     }
 }

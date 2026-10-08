@@ -2475,6 +2475,11 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
   0.424 m for 0.255, 0.26 and 0.30 m faces, as at runtime); a face under 0.25 m is walked onto in one update with no
   change of speed or clip. The human keeps the move the walls left as its velocity, so a wall met at a steep angle
   brakes the player.
+  The sweep leaves the sphere 0.01 m clear of the face (`BodyTuning::contactClear`), and carries it round a convex
+  corner whose triangles name their shared edge in flag bits 14-15 (`human::edgeSlide`): along each wall the sphere
+  wraps beyond that edge, `n × up` toward it, × max(move, `r`) a second, its part along the move taken away, for the
+  update only. **Coney's reading** of the passes: the slide is found where the move put the sphere, added once and
+  pushed out as the move is; the pair-or-block test that turns it off is not built.
 - `src/human/jump.*` is the jump's checks and launch ([Jumping](#jump)): faster than 3.3 m/s and the stored gait at
   jog or above, refused when a climbable face lies within 5.5 m; the run or sprint speed forward and 5.5 m/s up.
   A start clip does not stop it.

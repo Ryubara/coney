@@ -102,6 +102,10 @@ class SceneStage final : public scenes::SceneHost {
     /// Sets what places a released human. It is called at the release itself, before the scene's end function
     /// runs (scenes.md#ending), so the end function's own moves (a teleport to a flag) win over the placement.
     void setReleaseHandler(std::function<void(const Release&)> handler) { m_onRelease = std::move(handler); }
+    /// Sets what a human's join goal does to its brain: called with true when the human joins a scene's role
+    /// (`GoalJoinCinematic`) and with false when the scene lets it go (the goal's destroy), so that a pad human's brain
+    /// is off for the scene and on again after it (scenes.md#humans).
+    void setJoinHandler(std::function<void(double, bool)> handler) { m_onJoin = std::move(handler); }
     /// Sets what tells whether a bound human is free to be taken in at the scene's start (not in a grab or a mount);
     /// without one every human is.
     void setFreeTest(std::function<bool(double)> test) { m_isFree = std::move(test); }
@@ -182,6 +186,7 @@ class SceneStage final : public scenes::SceneHost {
     std::map<double, Bound> m_bound;
     std::map<double, Puppet> m_puppets;
     std::function<void(const Release&)> m_onRelease;
+    std::function<void(double, bool)> m_onJoin;
     std::function<bool(double)> m_isFree;
     std::function<void(double, anim::Vec3, anim::Quat)> m_onObjectPose; // where the scene's object moves go
     std::optional<Interpolated<CameraState>> m_camera;

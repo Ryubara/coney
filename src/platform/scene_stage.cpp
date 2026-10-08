@@ -171,6 +171,9 @@ void SceneStage::humanJoin(double human, std::uint32_t /*scene*/, std::size_t ro
     // The model it is drawn as: its own, or none when the play mode draws it.
     const std::string_view roleName = role < m_roleNames.size() ? std::string_view(m_roleNames[role]) : "";
     m_bound[human] = Bound{.role = role, .model = m_modelOf(human, role, roleName), .frame = {}, .fresh = false};
+    if (m_onJoin) {
+        m_onJoin(human, true);
+    }
 }
 
 bool SceneStage::humanReady(double human) {
@@ -237,6 +240,10 @@ void SceneStage::humanRelease(double human, const std::optional<scenes::ScenePos
     }
     if (placed && m_onRelease) {
         m_onRelease(release);
+    }
+    // The join goal is popped: its destroy gives a pad human its brain back, placed or not.
+    if (m_onJoin) {
+        m_onJoin(human, false);
     }
     if (found->second.model.empty()) {
         m_bound.erase(found); // the play mode's own human goes back to it

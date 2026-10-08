@@ -29,9 +29,17 @@ namespace coney::platform {
 /// each axis, which the original's per-axis dead zone (docs/research/frontend.md#pad-record) turns into a length of
 /// about 0.86: under the 0.95 a run needs (docs/research/characters.md), so a full diagonal walked. A DualShock 2
 /// reaches both extremes there (inferred; PCSX2's default analog sensitivity of 1.33 makes up the same difference), so
-/// each point is moved out along its direction until a full circle meets the square's edge; a straight push is
-/// unchanged. A Coney choice for modern gamepads, not the original's behaviour.
+/// each point is moved out along its direction until a full circle meets the square's edge. Its length is first
+/// divided by kStickRim (at most 1), so a stick pushed to its rim reads as a full push. A Coney choice for modern
+/// gamepads, not the original's behaviour.
 [[nodiscard]] std::array<std::uint8_t, 2> stickBytesFromAxes(std::int16_t x, std::int16_t y);
+
+/// The length of an SDL stick (0 to 1) from which it counts as pushed fully: a Coney choice. A modern stick pushed to
+/// its rim often reports 0.92-0.97 rather than 1, and the moves that need the stick beyond 0.95 (the snap attacks of
+/// `level99`'s lesson 7, the run and its attacks, docs/research/combat.md#attacks) then never happened with a real
+/// gamepad; a DualShock 2's output saturates before its rim (and PCSX2's default sensitivity of 1.33 scales a modern
+/// stick past it), so the original's players reached them (docs/research/frontend.md#pad-record).
+inline constexpr float kStickRim = 0.9F;
 
 /// The pressure byte (0-255) for an SDL trigger axis (0 to 32767; negative values count as 0).
 [[nodiscard]] std::uint8_t pressureFromTrigger(std::int16_t axis);

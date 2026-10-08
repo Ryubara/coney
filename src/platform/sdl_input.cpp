@@ -174,9 +174,11 @@ std::uint8_t stickByteFromAxis(std::int16_t axis) {
 std::array<std::uint8_t, 2> stickBytesFromAxes(std::int16_t x, std::int16_t y) {
     const float fx = std::max(-1.0F, static_cast<float>(x) / kStickAxisFull);
     const float fy = std::max(-1.0F, static_cast<float>(y) / kStickAxisFull);
-    // Scale by length / largest axis: a point on the circle of radius r lands on the square of half-side r.
+    // Scale by length / largest axis: a point on the circle of radius r lands on the square of half-side r. The
+    // length is first stretched so that the stick's rim (kStickRim and beyond) reads as a full push.
     const float largest = std::max(std::abs(fx), std::abs(fy));
-    const float scale = largest > 0.0F ? std::min(std::hypot(fx, fy), 1.0F) / largest : 0.0F;
+    const float length = std::min(std::hypot(fx, fy) / kStickRim, 1.0F);
+    const float scale = largest > 0.0F ? length / largest : 0.0F;
     const auto axis = [scale](float value) {
         return static_cast<std::int16_t>(std::clamp(value * scale * kStickAxisFull, -32768.0F, kStickAxisFull));
     };

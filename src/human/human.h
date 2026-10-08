@@ -490,6 +490,12 @@ class Human final : public Holdable {
     /// `radius` reaches. Humans::setBodyContact() gives it; null: nothing.
     using BodyContact = std::function<void(Human& human, anim::Vec3 centre, float radius)>;
     void setBodyContact(const BodyContact* contact) { m_bodyContact = contact; }
+    /// What a walking body slides along beyond the level's walls: the world objects' `BLOCKHUMANS` bodies
+    /// (`Human_OnContact` slides along an object as along the level, docs/research/physics.md#contacts). Given the
+    /// walking sphere's `centre`, `radius` and the update's `move`, the horizontal push out of the body it is deepest
+    /// in, or nothing. Humans::setObjectPush() gives it; null: nothing.
+    using ObjectPush = std::function<std::optional<anim::Vec3>(anim::Vec3 centre, float radius, anim::Vec3 move)>;
+    void setObjectPush(const ObjectPush* push) { m_objectPush = push; }
     /// The breakable objects square may strike from now on (the level's whole panes), given each step.
     void setObjectTargets(std::vector<ObjectTarget> objects) { m_objectTargets = std::move(objects); }
     /// Picks up the object `handle` at `point` with clip `clip` (world_objects::pickupClip()): the clip plays after a
@@ -556,6 +562,9 @@ class Human final : public Holdable {
     [[nodiscard]] bool pickingUp() const { return m_pickUp.has_value(); }
     /// The object whose pick-up reached its clip's event since the last call, once; nothing otherwise.
     [[nodiscard]] std::optional<double> takePickedUp() { return std::exchange(m_pickedUp, std::nullopt); }
+    /// Whether the clip playing passed its release event (type 10, which every throw clip has once) since the last
+    /// call: the throw lets go of the held object then (`Human_ReleaseThrow`, docs/research/objects.md#held).
+    [[nodiscard]] bool takeThrowRelease() { return std::exchange(m_throwRelease, false); }
 
   private:
     // A climb under way: what it climbs, which clip of its chain plays, and the move to its start point.
@@ -592,11 +601,16 @@ class Human final : public Holdable {
     // Keeps the move the walls left (`slid`, against the asked `displacement` at slope `factor`) as the velocity, so a
     // wall met at a steep angle brakes the human (docs/research/characters.md#walls).
     void keepSlidVelocity(anim::Vec3 slid, anim::Vec3 displacement, float factor);
-    // Sweeps the walking body from the feet at `from` by `displacement`, sliding off walls; returns where it ends, or
-    // nothing when it is still blocked after three passes.
+    // Where a walking sweep ends: the feet, and the part of the move from them that the corner slide made.
+    struct Swept {
+        anim::Vec3 feet;
+        anim::Vec3 slide{};
+    };
+    // Sweeps the walking body from the feet at `from` by `displacement`, sliding off walls and round a corner its walls
+    // name; returns where it ends, or nothing when it is still blocked after three passes.
     // @orig 0x0033e278 PhysicsBody_Sweep (unknown)
-    [[nodiscard]] std::optional<anim::Vec3> sweep(const raycast::CollisionMesh& mesh, anim::Vec3 from,
-                                                  anim::Vec3 displacement);
+    [[nodiscard]] std::optional<Swept> sweep(const raycast::CollisionMesh& mesh, anim::Vec3 from,
+                                             anim::Vec3 displacement);
     // Pushes the airborne body (a player's larger sphere) out of the walls it overlaps after moving to `feet`.
     // @orig 0x0021a490 Human_PushOutInAir (unknown)
     [[nodiscard]] std::optional<anim::Vec3> pushOutInAir(const raycast::CollisionMesh& mesh, anim::Vec3 feet);
@@ -633,6 +647,9 @@ class Human final : public Holdable {
     // switched them on ends its window, they go off, as its own off event would have switched them.
     // @orig 0x00101dd8 Anim_FireEvents (unknown)
     void noteStrikeEvents(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
+    // Notes the release event (type 10) of the clip playing when this step's animation passed it, as
+    // noteStrikeEvents() does; takeThrowRelease() reads it.
+    void noteReleaseEvent(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
     // The world placement of the body the strike shapes are posed on.
     [[nodiscard]] BodyPlacement placement() const;
     // Stamina's drain and refill, then the sprint flag, for this update's L2.
@@ -738,9 +755,11 @@ class Human final : public Holdable {
     // Starts a turn to `point` spread over `share` of `clip`'s playing time; nothing when the clip is not loaded.
     void turnOverClip(std::uint32_t clip, anim::Vec3 point, float share);
     std::optional<double> m_pickedUp; // the object a pick-up reached, until takePickedUp()
+    bool m_throwRelease = false;      // a release event passed, until takeThrowRelease()
     ContextAction m_contextAction;
     ContextAction m_firstContextAction;         // tried before m_contextAction (a cuffed human to free)
     const BodyContact* m_bodyContact = nullptr; // setBodyContact(), the step's
+    const ObjectPush* m_objectPush = nullptr;   // setObjectPush(), the step's
     const anim::Skeleton* m_skeleton = nullptr; // setSkeleton()
     StrikeShapes m_strikes;
     // The shapes on as they were posed the update before, in the world: each one's strike is tested along its move

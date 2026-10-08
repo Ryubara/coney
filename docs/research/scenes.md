@@ -633,6 +633,11 @@ starts (1 human holding, 1 held), and finds no human holding, held or grabbed 90
   scene loads and ends at once, its load and end functions called with its id at the scripts' next update.
 - Coney runs a level's start callback before it loads the level (`StartAmbient` binds `l99_c1`'s roles then), so a
   host attached later is told of the humans already joined, at their roles' start marks.
+- The join goal's brain switch is done for player 1 only: his brain is off from the join (`BrDead(brain, 1)`) until
+  the scene lets him go, when the goal's destroy turns it on again (`BrDead(brain, 0)`). This is what gives `level5`'s
+  boss fight the pad back in stage 3: the stage-2 callback switches the brain off and relies on the scene `l5_c8` to
+  turn it on. An AI human's brain is not switched, and a `BrFlush` that drops the join goal before the scene ends does
+  not give the pad back.
 - `ScreenQueueEffect` also goes to the scenes' host in play: the stage owns player 1's view's fades and letterbox,
   which the scene events use too (the original's effect managers are the views', [Graphics](graphics.md)).
 - A role is driven from its clip alone: root motion (section A turned by the heading, all three axes; the host may

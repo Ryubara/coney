@@ -1310,8 +1310,8 @@ int main(int argc, char** argv) {
     if (audio && options->audioTest) {
         printText(audio->summary());
     }
-    // A level played in test mode: what its humans asked to be heard (counts only).
-    if (audio && testMode && levelGameplay) {
+    // A level played in test mode, alone or through the story: what its humans asked to be heard (counts only).
+    if (audio && testMode && (levelGameplay || startUp)) {
         printText(audio->game().summary());
     }
 

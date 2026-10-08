@@ -86,7 +86,7 @@ float walkingRadius(float scale) { return bodyTuning().radius * scale; }
 
 float walkingCentreHeight(float scale) { return walkingRadius(scale) + bodyTuning().footGap; }
 
-float playerWalkingRadius(float scale) { return walkingRadius(scale * bodyTuning().playerFactor); }
+float playerWalkingRadius(float scale) { return walkingRadius(scale * bodyTuning().playerFactor) * scale; }
 
 float playerWalkingCentreHeight(float scale) { return playerWalkingRadius(scale) + bodyTuning().footGap; }
 
@@ -127,62 +127,123 @@ bool wallTooLow(anim::Vec3 a, anim::Vec3 b, anim::Vec3 c, float minHeight) {
     return anim::length(across) < minHeight;
 }
 
+namespace {
+
+// A wall triangle the sphere at `centre` is in front of, as a wall test sees it: its corners (in the order its edges
+// are numbered), its normal turned toward the sphere and the sphere's distance from its plane.
+struct FacingWall {
+    std::array<anim::Vec3, 3> corners;
+    anim::Vec3 normal;
+    float distance = 0.0F;
+    bool flipped = false; // a two-sided triangle met from behind
+};
+
+// Triangle `index` as a wall `filter` keeps for a sphere at `centre`: enabled, not of an excluded material, a wall
+// (|n.z| ≤ kWallNormalZ), the sphere in front of it (either side for a two-sided one), the move going into it, and for
+// a walking body tall enough to be a wall. Nothing otherwise.
+std::optional<FacingWall> keptWall(const raycast::CollisionMesh& mesh, std::uint16_t index, anim::Vec3 centre,
+                                   const WallFilter& filter) {
+    const raycast::CollisionTriangle& triangle = mesh.triangles()[index];
+    if ((triangle.flags & raycast::kTriangleEnabled) == 0 ||
+        std::ranges::find(filter.excludeMaterials, triangle.material) != filter.excludeMaterials.end()) {
+        return std::nullopt;
+    }
+    FacingWall wall;
+    wall.normal = fromMesh(mesh.faceNormal(index));
+    if (anim::length(wall.normal) < 0.5F || std::abs(wall.normal.z) > kWallNormalZ) {
+        return std::nullopt; // degenerate, or a floor or ceiling
+    }
+    const auto vertices = mesh.vertices();
+    for (std::size_t i = 0; i < 3; ++i) {
+        wall.corners.at(i) = fromMesh(vertices[triangle.vertices.at(i)]);
+    }
+    wall.distance = anim::dot(wall.normal, anim::subtract(centre, wall.corners[0]));
+    if (wall.distance < 0.0F) {
+        if ((triangle.flags & raycast::kTriangleTwoSided) == 0) {
+            return std::nullopt; // behind a one-sided wall
+        }
+        wall.normal = anim::scale(wall.normal, -1.0F);
+        wall.distance = -wall.distance;
+        wall.flipped = true;
+    }
+    // Only walls the move goes into, and for a walking body only walls tall enough to be walls.
+    if (anim::length(filter.move) > 0.0F && anim::dot(wall.normal, filter.move) >= -kMoveInto) {
+        return std::nullopt;
+    }
+    if (filter.skipLow && wallTooLow(wall.corners[0], wall.corners[1], wall.corners[2], bodyTuning().minWallHeight)) {
+        return std::nullopt;
+    }
+    return wall;
+}
+
+// How far the sphere at `centre` is from the wall's closest point: face, edge or corner.
+float reachOf(const FacingWall& wall, anim::Vec3 centre) {
+    return anim::distance(centre, closestOnTriangle(centre, wall.corners[0], wall.corners[1], wall.corners[2]));
+}
+
+// The edge a triangle names for the corner slide, in its flag bits 14-15; 3 names none.
+constexpr unsigned kSlideEdgeShift = 14;
+constexpr unsigned kNoSlideEdge = 3;
+
+} // namespace
+
 std::optional<anim::Vec3> nearestWallPush(const raycast::CollisionMesh& mesh, anim::Vec3 centre, float radius,
                                           const WallFilter& filter, std::vector<std::uint16_t>& scratch) {
     trianglesNear(mesh, centre, radius, scratch);
-    const bool anyMove = anim::length(filter.move) > 0.0F;
-    const float minHeight = bodyTuning().minWallHeight;
-
     // The nearest enabled wall whose face, edge or corner the sphere reaches.
     std::optional<anim::Vec3> push;
     float nearest = radius;
-    const auto triangles = mesh.triangles();
-    const auto vertices = mesh.vertices();
     for (const std::uint16_t index : scratch) {
-        const raycast::CollisionTriangle& triangle = triangles[index];
-        if ((triangle.flags & raycast::kTriangleEnabled) == 0 ||
-            std::ranges::find(filter.excludeMaterials, triangle.material) != filter.excludeMaterials.end()) {
-            continue;
-        }
-        anim::Vec3 n = fromMesh(mesh.faceNormal(index));
-        if (anim::length(n) < 0.5F || std::abs(n.z) > kWallNormalZ) {
-            continue; // degenerate, or a floor or ceiling
-        }
-        const anim::Vec3 a = fromMesh(vertices[triangle.vertices[0]]);
-        const anim::Vec3 b = fromMesh(vertices[triangle.vertices[1]]);
-        const anim::Vec3 c = fromMesh(vertices[triangle.vertices[2]]);
-        float distance = anim::dot(n, anim::subtract(centre, a));
-        if (distance < 0.0F) {
-            if ((triangle.flags & raycast::kTriangleTwoSided) == 0) {
-                continue; // behind a one-sided wall
-            }
-            n = anim::scale(n, -1.0F);
-            distance = -distance;
-        }
-        // Only walls the move goes into, and for a walking body only walls tall enough to be walls.
-        if (anyMove && anim::dot(n, filter.move) >= -kMoveInto) {
-            continue;
-        }
-        if (filter.skipLow && wallTooLow(a, b, c, minHeight)) {
+        const auto wall = keptWall(mesh, index, centre, filter);
+        if (!wall) {
             continue;
         }
         // How near the sphere is to the triangle: to its closest point, so that an edge or a corner between two
         // walls holds the body as well as their faces do. The push is along the face's normal.
-        const float reach = anim::distance(centre, closestOnTriangle(centre, a, b, c));
+        const float reach = reachOf(*wall, centre);
         if (reach >= nearest) {
             continue;
         }
         nearest = reach;
         // The walking sweep stops at contact: along the normal until the closest point (on the face, or on an edge
-        // such as a low face's top) is a radius away. The push-out clears the face's plane.
+        // such as a low face's top) is a radius away, and the resolver's back-off beyond. The push-out clears the
+        // face's plane.
         float clear = radius;
         if (filter.toContact) {
-            const float aside = std::max(reach * reach - distance * distance, 0.0F);
+            const float aside = std::max(reach * reach - wall->distance * wall->distance, 0.0F);
             clear = std::sqrt(std::max(radius * radius - aside, 0.0F));
         }
-        push = anim::scale(n, clear - distance);
+        push = anim::scale(wall->normal, clear + filter.keepClear - wall->distance);
     }
     return push;
+}
+
+anim::Vec3 edgeSlide(const raycast::CollisionMesh& mesh, anim::Vec3 centre, float radius, const WallFilter& filter,
+                     std::vector<std::uint16_t>& scratch) {
+    trianglesNear(mesh, centre, radius, scratch);
+    anim::Vec3 sum{};
+    for (const std::uint16_t index : scratch) {
+        const unsigned named = (mesh.triangles()[index].flags >> kSlideEdgeShift) & 3U;
+        if (named == kNoSlideEdge) {
+            continue;
+        }
+        const auto wall = keptWall(mesh, index, centre, filter);
+        if (!wall || wall->flipped || reachOf(*wall, centre) >= radius) {
+            continue;
+        }
+        // Only a sphere beyond the named edge counts: outside that edge's line within the face's plane, which is
+        // where the sphere wraps round it. (One inside every edge is on the face itself.)
+        const anim::Vec3 from = wall->corners.at(named);
+        const anim::Vec3 edge = anim::subtract(wall->corners.at((named + 1) % 3), from);
+        const anim::Vec3 outward = anim::cross(edge, wall->normal);
+        if (anim::dot(outward, centre) <= anim::dot(outward, from)) {
+            continue;
+        }
+        // The wall's tangent n × up, toward the named edge: taken away when the edge rises, added otherwise.
+        const anim::Vec3 tangent = anim::cross(wall->normal, anim::Vec3{0.0F, 0.0F, 1.0F});
+        sum = edge.z > 0.0F ? anim::subtract(sum, tangent) : anim::add(sum, tangent);
+    }
+    return sum;
 }
 
 } // namespace coney::human

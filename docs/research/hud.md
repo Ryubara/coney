@@ -1499,6 +1499,29 @@ is not known. Confirmed (code); names ours.
 
 **The crime message** (`HudCrimePanel_OnMessage`, `0x001aa720`, from `HUD_SetWanted`), confirmed (code) unless marked:
 
+- **Which message.** `HUD_SetWanted`'s own `msg` only picks show (7-9) or clear (anything else); the message shown is
+  always the game state's **last crime type** (`+0x290`), so the index into `CfgCrimeMessage` is a
+  [crime type](../references/crime-types.md). The crime report's last step (`0x0041b8b0`, at `0x0041be44`), when the
+  offender is in player 1's gang, first stores the report's type in `+0x290` unless it already holds 7 (`GangCurfew`)
+  or 12 (`Trespassing`), then calls `HUD_SetWanted(hud, 7, 0)`: a constant, not the type or the crime level. So a
+  plain assault (type 0) shows **`CfgCrimeMessage` 0**, unless a curfew or trespass is still on record, which then
+  keeps showing. `+0x290` is 14 (`NoCrime`) at each level's start (`0x00418d3c`) and again when the gang's wanted time
+  runs out (`Gang_ClearWanted`, `0x00169a20`, which calls `HUD_SetWanted(hud, 0xb, 0)` first). `Crime_UpdateLevel`
+  (`0x0041c028`) sends 8, 7 and `0xb` as the unused crime level steps down; nothing sends 9.
+- **A repeat is not re-sent.** While the `+0x450` widget holds a text, a message whose text is the same
+  (`strcmp`, `0x00430c4c`, returning 0) changes nothing but the visibility, so a second assault while still wanted does
+  not set the centred copy again (it is not restarted).
+- **The first wanted message** of an episode (radar `+0x1c` still 0: at a level's start, `Radar_Setup` `0x001c3e30`,
+  or after any clear) sets `+0x1c` = 1 and plays **interface cue 2**, `vags/misc/hudalarm`
+  ([interface sounds](../references/sound.md#interface-sound)); later reports while it is 1 play nothing. Any other
+  message (the `0xb` of `Gang_ClearWanted`) clears `+0x1c`, so the next crime after the wanted time ran out sounds
+  the alarm again.
+- **The radar's wanted flag changes nothing on screen.** Radar `+0x1c` (HUD `+0x15ec`), `+0x30` (set to 1.0) and
+  `+0x34` (0) are written by `HUD_SetWanted` and `Radar_Setup` only; an instruction scan of `SLUS_212.15` finds no
+  other load of HUD `+0x15ec` (`+0x1600`, `+0x1604`: none) and none of radar `+0x1c`, `+0x30`, `+0x34` in
+  `Radar_Update`, `Radar_Render`, `HUD_Update` or `HUD_Render`. The disc's colour comes from its own state `+0x38`
+  ([Colour](#the-radar-on-screen)), set only by the shadow test. So wanted shows as the blue arcs and the centred
+  text, never on the disc. Inferred: the three fields are left over.
 - The panel's own widget `+0x450` is set up (size `0x0050d380` = 1.0, scale 1.0, colour `0x0050d384` = bytes
   (255, 191, 96, 96), font slot 6) and placed every update at **(0.5, 0.4)** (`0x0050d390`, `0x0050d394`), and `+0x890`
   gets global string `0xe4`, but **nothing draws either**: `HudCrimePanel_Render` draws only the arcs, and no other
@@ -1638,7 +1661,7 @@ neighbours.
 | `0x001b2490` | `HUD_ClearActionPrompt(hud, player)` | no text: the prompt hides ([Action prompts](#action-prompts)) | confirmed (code) |
 | `0x001b24d0` | `HUD_SetSpinner(rate, hud, on)` | `+0x19128` = rate, spinner shown (`+0xe054`, `+0xe058`) = on; also used by the memory-card and preload screens | confirmed (code) |
 | `0x001b2500` | `HUD_ResetWidget15b0` | clears the `+0x15b0` widget's `+0x04` | confirmed (code) |
-| `0x001b2520` | `HUD_SetWanted(hud, msg, player)` | messages 7-9: the radar's wanted flag `+0x1c` (HUD `+0x15ec`) = 1 (the first time also `+0x30` = 1.0, `+0x34` = 0 and interface cue 2) and the radar frame shows the wanted state (`0x001aa720`, game-state byte `+0x290`); other messages clear both | confirmed (code) |
+| `0x001b2520` | `HUD_SetWanted(hud, msg, player)` | messages 7-9: when the radar's wanted flag `+0x1c` (HUD `+0x15ec`) is 0 it becomes 1 and interface cue 2 (`hudalarm`) plays; the radar frame shows crime message `+0x290` of the game state, the last crime type (`0x001aa720`); other messages clear the flag and the message. `+0x30` = 1.0 and `+0x34` = 0 both ways. No code reads the three fields ([The crime message](#fn-radar-frame)) | confirmed (code) |
 | `0x001b2610`, `0x001b2658` | `HUD_RadarEnable`, `HUD_RadarDisable` | one player's radar on or off: `+0x177b0`, radar `+0x04`, blips (`0x001c4388` / `0x001c4448`) | confirmed (code) |
 | `0x001b26a8`, `0x001b2790` | `HUD_RadarSetTintBlue`, `HUD_RadarSetTintGrey` | radar colour state 1 or 0 (`0x001c4500`; radar 0 in a two-player game with one view); state 1 only while the HUD is shown and the human is in neither state `0x00227dd8` nor `0x00223b70` | confirmed (code) |
 | `0x001b28b8`, `0x001b28e8`, `0x001b2918` | `HUD_MugMeterStart`, `_Update`, `_Set` | the player panel's mini-game part (`+0x3480`): `0x001bfcc0`, `0x001bfd30`, `0x001c0640(value)` ([Crimes](crimes.md#mugging)) | confirmed (code) |

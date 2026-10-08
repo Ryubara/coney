@@ -2850,7 +2850,7 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
 - **The pick-up** ([Breakables](#breakables)): the reach is measured in plan from the feet, and the second point the
   search goes round (human `+0x4e0`) is left out; the flag messages (`0x19`) that change what is pickable are not
   modelled. The human does not steer during the clip. Every `TYPE_SPECIAL` is loot (the named mission items are not
-  listed) and item 10's pickup sound is not played. The human's current context record is the nearest object with a
+  listed). The human's current context record is the nearest object with a
   prompt in reach. The clip is the pick-up animation's pair; the drop before a left-handed or hat clip, and the
   anim set pushed for the follow-on, are not modelled. A dropped object lands 0.3 m ahead of the feet, with no fall.
 - **A weapon in hand** ([A bat in hand](#bat), [Moving attacks with something in hand](#armed-moves)): the

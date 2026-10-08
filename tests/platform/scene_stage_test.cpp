@@ -129,6 +129,22 @@ TEST_CASE("a released human is handed to the play mode at the release, at its en
     CHECK(released.size() == 1);
 }
 
+TEST_CASE("a human's join goal switches its brain off at the join and on again at the release", "[scene_stage]") {
+    SceneStage stage = quietStage();
+    std::vector<std::pair<double, bool>> joins;
+    stage.setJoinHandler([&joins](double human, bool joined) { joins.emplace_back(human, joined); });
+    stage.humanJoin(5.0, 1, 0, ScenePose{}, 0);
+    REQUIRE(joins.size() == 1);
+    CHECK(joins[0] == std::pair{5.0, true});
+    // Released without being placed (the scene never took him in): the goal's destroy still gives the brain back.
+    stage.humanRelease(5.0, std::nullopt);
+    REQUIRE(joins.size() == 2);
+    CHECK(joins[1] == std::pair{5.0, false});
+    // A human the scene does not hold has no join goal to destroy.
+    stage.humanRelease(6.0, std::nullopt);
+    CHECK(joins.size() == 2);
+}
+
 TEST_CASE("a scene soundtrack outlives its cinematic's end and stops only on a skip or a give-up",
           "[scene_stage][audio]") {
     // One made-up stereo stream (class flags 0x04, priority 3, two channels); with no stream files it plays virtually,

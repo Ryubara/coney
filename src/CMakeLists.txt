@@ -162,6 +162,8 @@ add_library(coney_core STATIC
     world_objects/hats.cpp
     world_objects/level_objects.cpp
     world_objects/lock_pick.cpp
+    world_objects/loose_objects.cpp
+    world_objects/object_bodies.cpp
     world_objects/nav_links.cpp
     world_objects/object_list.cpp
     world_objects/object_tasks.cpp
@@ -340,6 +342,7 @@ target_sources(coney_core PRIVATE
     combat/rage_awards.cpp
     combat/reactions.cpp
     combat/stick_games.cpp
+    combat/throw_velocity.cpp
     debug/combat_tunables.cpp)
 # Scenes: the in-engine cutscenes' records, slots and player (docs/research/scenes.md).
 target_sources(coney_core PRIVATE

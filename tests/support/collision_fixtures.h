@@ -147,6 +147,21 @@ inline std::vector<Tri> blockAlongY(float x0, float x1, float y0, float y1, floa
     return tris;
 }
 
+/// A building's convex corner at (`x1`, `y0`): its face toward -y over x [x0, x1] and its face toward +x over
+/// y [y0, y1], `height` tall from z = 0. With `named`, the triangles that hold the shared vertical edge name it for the
+/// corner slide in flag bits 14-15 (the disc's way, docs/research/collision.md#triangles), the others name none (3);
+/// without, none does.
+inline std::vector<Tri> convexCorner(float x0, float x1, float y0, float y1, float height, bool named) {
+    constexpr std::uint16_t kNone = 3U << 14U;
+    const auto edge = [&](std::uint16_t index) { return named ? static_cast<std::uint16_t>(index << 14U) : kNone; };
+    return {// Toward -y: the first triangle's edge 1 (v1 → v2) rises up the corner.
+            Tri{{x0, y0, 0}, {x1, y0, 0}, {x1, y0, height}, edge(1), 5, 1},
+            Tri{{x0, y0, 0}, {x1, y0, height}, {x0, y0, height}, kNone, 5, 1},
+            // Toward +x: the second triangle's edge 2 (v2 → v0) falls down the corner.
+            Tri{{x1, y0, 0}, {x1, y1, 0}, {x1, y1, height}, kNone, 5, 1},
+            Tri{{x1, y0, 0}, {x1, y1, height}, {x1, y0, height}, edge(2), 5, 1}};
+}
+
 /// Joins triangle lists.
 inline std::vector<Tri> join(std::vector<Tri> a, const std::vector<Tri>& b) {
     a.insert(a.end(), b.begin(), b.end());

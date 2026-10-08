@@ -5,6 +5,7 @@
 #include "gamemodes/level_pickups.h"
 
 #include <cstddef>
+#include <cstdint>
 #include <expected>
 #include <numbers>
 #include <optional>
@@ -18,6 +19,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/error.h"
+#include "core/name_hash.h"
 #include "gui/global_strings.h"
 #include "scripting/binding_args.h"
 #include "scripting/lua_value.h"
@@ -281,4 +283,32 @@ TEST_CASE("SetInterrogateParam's set 0 overrides the mugging while its time is n
     CHECK(params.value_or(coney::combat::MuggingParams{}).offTargetMs == 20000);
     CHECK(params.value_or(coney::combat::MuggingParams{}).toleranceDegrees == Catch::Approx(40.0F));
     CHECK(params.value_or(coney::combat::MuggingParams{}).gapDegrees == Catch::Approx(60.0F));
+}
+
+TEST_CASE("loot, a won mugging and a dealer's item play the item's pick-up sound once, without a position",
+          "[level_pickups]") {
+    Harness h;
+    coney::LevelPickups pickups(h.scripts, h.state, h.records, h.types);
+    std::vector<std::uint32_t> played;
+    pickups.setSound([&played](std::uint32_t hash) { played.push_back(hash); });
+    h.state.player.inventory.configure(item::kMoney, "dyn_money", 0, "test/money_sound", 0);
+    h.state.player.inventory.configure(item::kStolenLoot, "dyn_store_item", 0, "test/loot_sound", 0);
+    h.state.player.inventory.configure(item::kRevive, "dyn_flash", 0, "none", 0);
+    h.place(5, "dyn_watch", Vec3{10.0F, 11.0F, 0.3F});
+    CHECK(pickups.take(5, 0) == coney::TakeResult::Loot);
+    // The loot's sound alone: the money that comes with it is silent.
+    CHECK(played == std::vector<std::uint32_t>{coney::crc32("test/loot_sound")});
+    int money = 12;
+    pickups.mugPaid(0, money);
+    CHECK(played.back() == coney::crc32("test/money_sound"));
+    // A victim with nothing pays nothing and plays nothing.
+    played.clear();
+    pickups.mugPaid(0, money);
+    CHECK(played.empty());
+    // An item whose sound is `none`, and a dirty dealer who kept the price, play nothing.
+    pickups.dealerSold(0, item::kRevive, 1, 5);
+    pickups.dealerSold(0, item::kMoney, 0, 5);
+    CHECK(played.empty());
+    pickups.dealerSold(0, item::kStolenLoot, 1, 5);
+    CHECK(played == std::vector<std::uint32_t>{coney::crc32("test/loot_sound")});
 }

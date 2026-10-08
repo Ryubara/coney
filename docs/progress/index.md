@@ -28,17 +28,17 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 16.8%](https://img.shields.io/badge/reimplemented-16.8%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 16.9%](https://img.shields.io/badge/reimplemented-16.9%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 ![Understood: 100.0%](https://img.shields.io/badge/understood-100.0%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▍░░░░░░░░░░░░░░░░` | 16.8% of the game's own code (563,308 of 3,354,776 bytes, 2,079 functions) |
+| **Reimplemented** | `███▍░░░░░░░░░░░░░░░░` | 16.9% of the game's own code (567,908 of 3,354,776 bytes, 2,091 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
-| **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,220 of 3,284,028 bytes; 11,424 of 11,426 functions, 100.0%) |
+| **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,192 of 3,284,000 bytes; 11,423 of 11,425 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-845 reimplemented function(s) have no size yet and add no bytes.
+849 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -73,19 +73,19 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 111 | 100,440 |
 | `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 12.0% | 90 | 195,624 |
 | `GUI` | `████░░░░░░░░░░░░░░░░` | 19.8% | 235 | 497,416 |
-| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 776 | 1,096,672 |
-| `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 8 | 12,544 |
+| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 779 | 1,096,672 |
+| `Maths (unnamed)` | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% | 9 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
-| `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 4 | 79,032 |
+| `Physics` | `▌░░░░░░░░░░░░░░░░░░░` | 2.5% | 8 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 12 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 30 | 17,904 |
 | `Scripting` | `██████▏░░░░░░░░░░░░░` | 30.6% | 224 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `███▏░░░░░░░░░░░░░░░░` | 15.8% | 160 | 531,312 |
+| `TaskEngine` | `███▎░░░░░░░░░░░░░░░░` | 16.3% | 163 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 33 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 32 | 22,008 |
-| `Warriors` | `███▊░░░░░░░░░░░░░░░░` | 19.0% | 112 | 54,264 |
+| `Warriors` | `███▉░░░░░░░░░░░░░░░░` | 19.1% | 113 | 54,264 |
 | `Movie` | `██████████████████▍░` | 91.9% | 5 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
 | Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 27,632 |
@@ -103,7 +103,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `████████████████████` | 100.0% | 450 of 450 | 450 | 450 | 98,632 |
 | `Graphics` | `████████████████████` | 100.0% | 630 of 630 | 630 | 630 | 191,888 |
 | `GUI` | `████████████████████` | 100.0% | 1,725 of 1,725 | 1,725 | 1,725 | 492,072 |
-| `Human` | `████████████████████` | 100.0% | 3,313 of 3,313 | 3,313 | 3,313 | 1,080,096 |
+| `Human` | `████████████████████` | 100.0% | 3,312 of 3,312 | 3,312 | 3,312 | 1,080,068 |
 | `Maths (unnamed)` | `████████████████████` | 100.0% | 72 of 72 | 72 | 72 | 12,288 |
 | `Memory` | `████████████████████` | 100.0% | 89 of 89 | 89 | 89 | 15,504 |
 | `Physics` | `████████████████████` | 100.0% | 183 of 183 | 183 | 183 | 78,580 |
@@ -118,7 +118,7 @@ at the top of the repository's `README.md`.
 | `Movie` | `████████████████████` | 100.0% | 11 of 11 | 11 | 11 | 5,136 |
 | `link-once` | `████████████████████` | 100.0% | 651 of 651 | 651 | 651 | 95,912 |
 | Unattributed | `████████████████████` | 100.0% | 44 of 44 | 44 | 44 | 20,936 |
-| **All** | `████████████████████` | 100.0% | 11,424 of 11,426 | 11,426 | 11,424 | 3,284,028 |
+| **All** | `████████████████████` | 100.0% | 11,423 of 11,425 | 11,425 | 11,423 | 3,284,000 |
 
 ## Research coverage
 
@@ -1098,8 +1098,10 @@ at the top of the repository's `README.md`.
 | `0x00255f08` | `MiniGame_Update` | `Human` | not filled in |
 | `0x002562d0` | `Human_DrainMeters` | `Human` | not filled in |
 | `0x00256a60` | `Human_RefillMeters` | `Human` | not filled in |
+| `0x002570e8` | `Human_ComputeThrowVelocity` | `Human` | not filled in |
 | `0x00257f38` | `Human_DropHeld` | `Human` | not filled in |
 | `0x00258330` | `Human_KnockOffHat` | `Human` | 932 |
+| `0x002586d8` | `Human_ReleaseThrow` | `Human` | not filled in |
 | `0x00258a88` | `Human_BreakPair` | `Human` | not filled in |
 | `0x00258e88` | `Human_CanCounterGrab` | `Human` | 624 |
 | `0x002590f8` | `Human_CanCounterTackle` | `Human` | 624 |
@@ -1177,6 +1179,7 @@ at the top of the repository's `README.md`.
 | `0x00287730` | `Player_Special` | `Human` | 392 |
 | `0x002878b8` | `LockPick_JudgePress` | `Human` | 352 |
 | `0x00287a18` | `Player_Cross` | `Human` | 1,480 |
+| `0x002880d8` | `Player_CrossWithWeapon` | `Human` | not filled in |
 | `0x00288ad0` | `Steering_Clear` | `Human` | not filled in |
 | `0x00288b70` | `Steering_SetAvoiding` | `Human` | not filled in |
 | `0x00288be0` | `Steering_SideSign` | `Human` | not filled in |
@@ -1604,6 +1607,7 @@ at the top of the repository's `README.md`.
 | `0x0031af98` | `ScoutTactic_Start` | `Human` | not filled in |
 | `0x0031b030` | `ScoutTactic_Process` | `Human` | not filled in |
 | `0x00320530` | `WarriorAttackTactic_Create` | `Human` | not filled in |
+| `0x00335b08` | `Quat_IntegrateAngular` | `Maths (unnamed)` | 256 |
 | `0x00336a00` | `QuaternionSlerp` | `Maths (unnamed)` | 440 |
 | `0x00336bb8` | `VectorLerp` | `Maths (unnamed)` | 64 |
 | `0x00336bf8` | `QuaternionNlerp` | `Maths (unnamed)` | 160 |
@@ -1612,8 +1616,12 @@ at the top of the repository's `README.md`.
 | `0x003378b0` | `Math_LargerRoot` | `Maths (unnamed)` | not filled in |
 | `0x00337920` | `RayTriangle_OneSided` | `Maths (unnamed)` | not filled in |
 | `0x00337a60` | `RayTriangle_TwoSided` | `Maths (unnamed)` | not filled in |
+| `0x0033d8f0` | `PhysicsVec_Bounce` | `Physics` | 232 |
 | `0x0033e278` | `PhysicsBody_Sweep` | `Physics` | not filled in |
 | `0x0033f110` | `Human_TestStrikes` | `Physics` | not filled in |
+| `0x00340918` | `IPhysics_Step` | `Physics` | 544 |
+| `0x00340b38` | `Settle_NearestAxis` | `Physics` | 464 |
+| `0x00340d08` | `Settle_ComputeTarget` | `Physics` | 728 |
 | `0x003477c0` | `PhysicsBody_PushOutOfWalls` | `Physics` | not filled in |
 | `0x00347c08` | `PhysicsMesh_SweepCapsule` | `Physics` | not filled in |
 | `0x0034f740` | `Collision_MarchRay` | `RayCast` | not filled in |
@@ -1923,7 +1931,9 @@ at the top of the repository's `README.md`.
 | `0x00391d48` | `Obj_CreatePhysicsBody` | `TaskEngine` | 1,648 |
 | `0x00393450` | `WorldObject_TakeHit` | `TaskEngine` | 228 |
 | `0x00393538` | `Thrown_HitObject` | `TaskEngine` | 1,136 |
+| `0x00394050` | `WorldObject_OnContact` | `TaskEngine` | 1,984 |
 | `0x00395020` | `ObjType_IsDoorKind` | `TaskEngine` | not filled in |
+| `0x00395a10` | `WorldObject_Integrate` | `TaskEngine` | 352 |
 | `0x00395b70` | `WorldObject_Update` | `TaskEngine` | 432 |
 | `0x003961d0` | `World_BreakObjectsInRadius` | `TaskEngine` | 448 |
 | `0x00396390` | `BreakObjectsInRadius` | `TaskEngine` | 40 |
@@ -2040,6 +2050,7 @@ at the top of the repository's `README.md`.
 | `0x003fca68` | `SprayTag_Update` | `TaskEngine` | not filled in |
 | `0x003fd420` | `MeleeWeapon_Init` | `TaskEngine` | not filled in |
 | `0x003fe490` | `melee_weapon_HandleMessage` | `TaskEngine` | 552 |
+| `0x003fe6b8` | `MeleeWeapon_Detach` | `TaskEngine` | not filled in |
 | `0x00404c48` | `DynMolotov_OnMessage` | `TaskEngine` | not filled in |
 | `0x00405600` | `DynMolotov_Update` | `TaskEngine` | not filled in |
 | `0x0040c868` | `Level_SetFogColour` | `World` | 160 |
@@ -2167,6 +2178,7 @@ at the top of the repository's `README.md`.
 | `0x0041dd90` | `Game_CheckMultiplayer` | `Warriors` | 40 |
 | `0x0041ddd8` | `Store_Reset` | `Warriors` | 248 |
 | `0x0041e250` | `Inventory_SetItem` | `Warriors` | 208 |
+| `0x0041e320` | `InventoryBlock_GetSound` | `Warriors` | 40 |
 | `0x0041e420` | `Inventory_Count` | `Warriors` | 64 |
 | `0x0041e5b0` | `Inventory_AddItem` | `Warriors` | not filled in |
 | `0x0041ece8` | `Cfg_SetInventoryCallback` | `Warriors` | 40 |

@@ -5,9 +5,11 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <utility>
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "combat/attacks.h"
 #include "core/pad.h"
 
 using coney::platform::pressureFromTrigger;
@@ -66,4 +68,19 @@ TEST_CASE("a modern gamepad's round stick is squared off like a DualShock 2's", 
     CHECK(half > 0.12F);
     CHECK(half < 0.95F);
     CHECK(gameLength(stickBytesFromAxes(4000, 4000)) == 0.0F);
+}
+
+TEST_CASE("a stick pushed to its rim reads as a full push, past the 0.95 a snap and a run need", "[sdl_input]") {
+    // 0.93 of the travel, straight to each side and back: what a real stick at its rim often reports.
+    constexpr auto kRim = static_cast<std::int16_t>(0.93 * 32767);
+    for (const auto& [x, y] : {std::pair<int, int>{kRim, 0}, {-kRim, 0}, {0, kRim}, {0, -kRim}}) {
+        const auto bytes = stickBytesFromAxes(static_cast<std::int16_t>(x), static_cast<std::int16_t>(y));
+        CHECK(gameLength(bytes) > coney::combat::kSnapStick);
+    }
+    // Without the rim the same push falls short: the snaps that never came.
+    CHECK(gameLength({stickByteFromAxis(kRim), stickByteFromAxis(0)}) < coney::combat::kSnapStick);
+    // A push well short of the rim stays a walk.
+    const float part = gameLength(stickBytesFromAxes(static_cast<std::int16_t>(0.6 * 32767), 0));
+    CHECK(part > 0.12F);
+    CHECK(part < coney::combat::kSnapStick);
 }

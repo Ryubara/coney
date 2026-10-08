@@ -592,7 +592,9 @@ flag, not the player's (confirmed (code)). `EnterStore` / `ExitStore` only chang
 **10 s** (gang `+0x5e8` = now + 10,000 ms, `0x00169878`), after making the police hostile to it. `Gang_UpdateWanted`
 (`0x001698f0`) holds it at 10 s from now while `ForceCrimeLevel` is on (game state `+0x28c`); otherwise, once it
 passes, `GangClearWanted`'s work runs (`0x00169a20`): the police are neutral again and, for the player's gang, the HUD
-is told (`0x001b2520` message `0xb`) and the last crime type becomes 14 (`NoCrime`). The HUD shows the time left as a
+is told (`0x001b2520` message `0xb`) and the last crime type becomes 14 (`NoCrime`). While wanted, the HUD shows
+`CfgCrimeMessage` of the last crime type (a plain assault: 0) and the first report of each wanted spell sounds the
+`hudalarm` cue ([HUD: the crime message](hud.md#fn-radar-frame)). The HUD shows the time left as a
 fraction of 10 s (`0x001aa9b0`; full above 0.9). Gang `+0x5f0` is a second timer drawn the same way, and
 `GangIsWanted(gang, false)` tests it. `GangRespond` and `GoalCallGang` set it (`Gang_SetSecondWantedTimer`,
 `0x001698c8`); when it runs out, `Gang_UpdateWanted` (`0x001698f0`) calls the all-clear callback at game state
@@ -762,11 +764,12 @@ clips (685, 686), the hint and the owned byte are not played or set yet. The HUD
 [Starting money](#starting-money) gives (`characters::rollStartingCarry()`, `repo:src/characters/starting_money.h`)
 from its recorded `CfgChar` and `CfgCharClassAttribs` calls with the game's random numbers, and sets the money
 (`HuSetMoney` later overrides it). Player 1's won mugging (`PlayLevelMode::stepMugging()`) moves all the victim's
-money in the deciding update (`LevelPickups::mugPaid()`: item 2 with the money and inventory callbacks); his
+money in the deciding update (`LevelPickups::mugPaid()`: item 2 with the money and inventory callbacks, then item
+2's pick-up sound); his
 `HuSetMugCallback` callback runs with (mugger, 1 or nil) when his end clip (344 or 346) finishes, or at once for a
 let-go or a hit (`LevelPickups::mugEnded()`). **Coney's stand-ins**: a `grp_` object group carries nothing and a
 rolled object is not given to the human; not yet: interrogation, the pocket items, the half-way `no_item` stop, ped
-type 5's 1.5 times, item 2's pick-up sound and the statistic. While he mugs, the HUD's mug meter shows
+type 5's 1.5 times and the statistic. While he mugs, the HUD's mug meter shows
 (`PlayLevelMode::stepMugMeter()`, [HUD: the mug meter](hud.md#mug-meter-layout)).
 
 **The arrest and the uncuffing** (2026-10-07): `HuSetArrested` (`ai::ScriptedHumans::setArrested()`) cuffs the human

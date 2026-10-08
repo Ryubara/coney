@@ -557,6 +557,7 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     applyAnimOverrides();
     const anim::Vec3 before = m_player->human().position();
     giveObjectTargets();
+    stepObjectBodies();
     m_player->update(playerPad, &m_scenery->collision(), m_combatants);
     for (Target& target : m_targets) {
         target.human->step();
@@ -565,6 +566,7 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     stepPickups();
     stepMugMeter(m_player->human(), playerPad);
     stepLockPickDial();
+    stepLooseObjects();
     stepFlash();
     stepObjects();
     stepHats();

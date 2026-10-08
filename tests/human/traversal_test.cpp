@@ -114,18 +114,18 @@ TEST_CASE("a step under 0.25 m is walked onto in one update with no change of sp
     }
 }
 
-TEST_CASE("a face from 0.25 m stops the body where its 0.485 m sphere meets the face's top edge",
+TEST_CASE("a face from 0.25 m stops the body where its 0.4704 m sphere meets the face's top edge",
           "[human][traversal]") {
     // The runtime's stops (docs/research/characters.md#walls): 0.395, 0.399 and 0.423 m from faces 0.255, 0.26 and
-    // 0.30 m tall, sqrt(0.485² − (0.535 − h)²); a 0.5 m ledge and a full wall about 0.485 m.
+    // 0.30 m tall, sqrt(0.4704² − (0.5204 − h)²) + the 0.01 m kept clear; a 0.5 m ledge and a full wall 0.480 m.
     const TestCharacter character;
     struct Case {
         float height;
         float stick;
         float stop;
     };
-    for (const Case c : {Case{0.255F, 1.0F, 0.396F}, Case{0.26F, 0.5F, 0.400F}, Case{0.30F, 0.5F, 0.424F},
-                         Case{0.50F, 0.6F, 0.484F}, Case{3.0F, 0.35F, 0.485F}}) {
+    for (const Case c : {Case{0.255F, 1.0F, 0.398F}, Case{0.26F, 0.5F, 0.402F}, Case{0.30F, 0.5F, 0.426F},
+                         Case{0.50F, 0.6F, 0.480F}, Case{3.0F, 0.35F, 0.480F}}) {
         const auto mesh =
             makeMesh(join(join(floorAt(0.0F, 0.0F, 80.0F, 0.0F, 40.0F), floorAt(c.height, 0.0F, 80.0F, 40.0F, 80.0F)),
                           coney::test::wallFacingMinusY(40.0F, 0.0F, 80.0F, 0.0F, c.height)));
@@ -435,5 +435,26 @@ TEST_CASE("a fence stops a walk, and a running climb carries the body through it
         hold(human, pad(0.0F, 1.0F), 30, mesh.get());
         CHECK(human.speed() == Approx(7.5F));
         CHECK(human.position().y > 43.0F);
+    }
+}
+
+TEST_CASE("walking north into a corner's edge, the body slides round it where the edge is named",
+          "[human][traversal]") {
+    // A building's convex corner at (40, 40), as level5's at (-60.2, -163.7): the player walks due north 0.2 m east of
+    // it, so his sphere meets only the vertical edge. With the edge named the corner slide carries him round it
+    // (docs/research/characters.md#walls, step 6: past in about a second at runtime); a push along the face's normal
+    // alone holds him there.
+    const TestCharacter character;
+    for (const bool named : {true, false}) {
+        const auto mesh = makeMesh(join(ground(), coney::test::convexCorner(30.0F, 40.0F, 40.0F, 50.0F, 3.0F, named)));
+        Human human(character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 0.97F);
+        human.spawn(mesh.get(), Vec3{40.2F, 37.0F, 0.0F}, 0.0F);
+        hold(human, pad(0.0F, 0.5F), 240, mesh.get());
+        if (named) {
+            CHECK(human.position().y > 41.0F);
+            CHECK(human.position().x > 40.0F + 0.47F);
+        } else {
+            CHECK(human.position().y < 40.0F - 0.3F);
+        }
     }
 }

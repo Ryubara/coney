@@ -151,8 +151,15 @@ gamepad reports a circle: about 0.71 of full travel on each axis at a full diago
 the table turns into 0.61 each and a length of about 0.86, so the player walks. W A S D are unaffected (bytes 0 and
 255). **Coney's implementation:** the SDL layer stretches each gamepad stick from the circle onto the square before
 making the bytes (`stickBytesFromAxes`, `src/platform/sdl_input.cpp`: each point scaled by its length over its larger
-axis), so a full diagonal runs as on a PS2; straight pushes and the table above are unchanged. Open: measuring a real
-DualShock 2's diagonal bytes (through PCSX2 with a DualShock 2 adapter, or on hardware).
+axis), so a full diagonal runs as on a PS2; the table above is unchanged. The stick's length is first divided by
+**0.9** (`kStickRim`, at most 1), so a stick at its rim reads as a full push. A modern stick pushed straight to its
+rim often reports 0.92-0.97 of the travel, bytes 249-252, which the table turns into 0.94-0.97: the moves that need
+more than 0.95 then came only now and then. `level99`'s lesson 7 needs the snap attacks (the stick past 0.95 to a
+side, [Attacks](combat.md#attacks)), and with a gamepad they came out as `S1` (12), so the lesson never went on. A
+DualShock 2's output saturates before its rim (inferred, as for the diagonals; PCSX2's sensitivity of 1.33 does the
+same), so the original's players reached 0.95. A Coney choice; `tests/platform/disc_level99_snaps_test.cpp` makes
+the snaps through this mapping with the stick at 0.93. Open: measuring a real DualShock 2's diagonal bytes (through
+PCSX2 with a DualShock 2 adapter, or on hardware).
 
 ### Pad queries
 

@@ -318,6 +318,21 @@ void PlayerCombat::grabOrTackle(const CombatInput& input, CombatOutput& out) {
 }
 
 void PlayerCombat::updateCommands(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out) {
+    // With an object to throw in hand, the dispatcher sends square, cross, the charge and the dive to the throw
+    // (`Player_CrossWithWeapon`) before their own tests. **Coney stand-in**: the attacks' phase gate still refuses it
+    // mid-attack, so a throw cannot cut its own clip.
+    if (throwSet(input.animSet) &&
+        (input.command == command::kSquarePressed || input.command == command::kCrossLongHold ||
+         input.command == command::kL2Cross || input.command == command::kL2Square)) {
+        if ((phaseFlags(input) & kAttackRefusingPhases) == 0) {
+            startAttack(throwAttack(SquareInput{.gait = input.gait,
+                                                .phaseFlags = phaseFlags(input),
+                                                .heldSet = input.animSet,
+                                                .fightStance = input.fightStance}),
+                        tuning, out);
+        }
+        return;
+    }
     switch (input.command) {
     case command::kL2Cross:
     case command::kL2Square:

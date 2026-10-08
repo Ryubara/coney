@@ -113,7 +113,7 @@ TEST_CASE("the game's movement and camera tunables edit the values the game read
     TunableRegistry registry;
     coney::debug::registerGameTunables(registry);
     CHECK(registry.inCategory("Movement").size() == 12);
-    CHECK(registry.inCategory("Body").size() == 5);
+    CHECK(registry.inCategory("Body").size() == 6);
     CHECK(registry.inCategory("Sprint").size() == 3);
     CHECK(registry.inCategory("Jump").size() == 4);
     CHECK(registry.inCategory("Climb").size() == 11);

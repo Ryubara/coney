@@ -57,7 +57,12 @@ void registerGameTunables(TunableRegistry& registry) {
         .describe("Wall faces less tall than this do not stop a walking body; the ground snap lifts it on");
     registry.add("Body", "Player factor", &body.playerFactor)
         .range(0.5, 2, 0.01)
-        .describe("A player's body factor: his walking sphere is the radius times this times the scale (0.485 m)");
+        .describe("A player's body factor: his walking sphere is the radius times this times the scale twice "
+                  "(0.4704 m)");
+    registry.add("Body", "Contact clear", &body.contactClear)
+        .range(0, 0.1, 0.001)
+        .units("m")
+        .describe("How far clear of a wall the walking sweep leaves the sphere");
     registry.add("Body", "Air radius", &body.airRadius)
         .range(0.05, 1.5, 0.01)
         .units("m")

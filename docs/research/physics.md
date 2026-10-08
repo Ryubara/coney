@@ -548,8 +548,18 @@ What follows is inferred from the code above.
 ## Coney's implementation
 
 Coney has the walking body's sweep (`src/human/body.h`, `src/raycast/`) and placed world objects
-(`src/world_objects/`), but no `IPhysics`, no flying objects and no step yet. When objects fly, the settle is a
-per-object tween run on Coney's fixed step, not a separate pass.
+(`src/world_objects/`), but no `IPhysics`. A dropped object's fall, bounces, settle and stop are
+`world_objects::LooseObjects` (`repo:src/world_objects/loose_objects.h`), stepped by the play mode: each 1/30 s step
+runs the object's update, then two settle ticks, so the settle keeps its 11 ticks. Its move is a ray from the body's
+centre against the level mesh, as long as the move plus the box's or sphere's reach that way; humans, cars and other
+objects are not met yet. A thrown object starts the same way with its throw's velocity and spin
+([World objects](objects.md#coneys-implementation)).
+
+The world objects in the world have their bodies (`world_objects::ObjectBodies`,
+`repo:src/world_objects/object_bodies.h`): each type's box or sphere at its object's pose, with its `PHYFLAG` layers,
+remade each step before the humans move. A walking human's sphere slides along the `BLOCKHUMANS` ones after the
+level's walls, as `Human_OnContact` slides along an object (stand-in: pushed out of the deepest body the move goes
+into, in the ground plane, and then out of the walls again; the object does not move).
 
 ## Open questions
 

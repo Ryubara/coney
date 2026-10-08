@@ -3,8 +3,9 @@
 // Checks against the player's own disc that lesson 7 of `level99`'s combat tutorial, the snaps, can be passed: the
 // level plays as `--play-level level99 --checkpoint 1` plays it, headless, driven by an input script through lessons
 // 1-6; once the lesson arms its callback the second wave stands round the player (its four follow slots 1 m around
-// him, docs/research/ai.md#level99-snaps), three snaps (square with the stick at full deflection to a bum's side one
-// update before, from rest) land and score, `P1.SnapsDone` runs and lesson 8 arms its own callback
+// him, docs/research/ai.md#level99-snaps), three snaps made as a player makes them with a gamepad (the stick pushed to
+// the screen's side the bum is on, to a real stick's rim, short of a full push, through the SDL layer's mapping, and
+// square pressed while it is held) land and score, `P1.SnapsDone` runs and lesson 8 arms its own callback
 // (docs/research/scripting.md#level99-lessons). It runs only when the environment variable CONEY_DISC names the disc
 // and skips otherwise; it prints counts only (LEGAL.md).
 
@@ -51,6 +52,7 @@
 #include "human/player.h"
 #include "platform/play_level_mode.h"
 #include "platform/render_engine.h"
+#include "platform/sdl_input.h"
 #include "scenes/scene_disc.h"
 #include "scenes/scene_list.h"
 #include "scenes/scene_player.h"
@@ -74,6 +76,8 @@ constexpr std::uint64_t kArmWait = 3000;
 constexpr std::uint64_t kNextWait = 900;
 // The second wave settles round the player within this distance, metres (1.0-1.4 m in the original).
 constexpr float kSettled = 1.5F;
+// How far a real gamepad stick pushed to its rim reports, of the full travel: short of 1 (0.92-0.97 is common).
+constexpr float kRim = 0.93F;
 
 // The disc named by CONEY_DISC, opened; nothing when it is not set.
 std::optional<coney::io::Wad> openDisc() {
@@ -102,16 +106,28 @@ class LivePad final : public coney::InputSource {
         m_current = std::make_unique<coney::ScriptedInput>(std::move(*events));
     }
 
+    // From the next frame on, port 1's left stick is a gamepad stick at SDL axes (x, y), y down, made into the pad's
+    // bytes as the SDL layer makes them (platform::stickBytesFromAxes); nothing gives the stick back to the script.
+    void gamepadStick(std::optional<std::pair<std::int16_t, std::int16_t>> axes) { m_axes = axes; }
+
     // The next frame the loop will ask for.
     [[nodiscard]] std::uint64_t nextFrame() const { return m_next; }
 
     coney::PortSamples sample(std::uint64_t frame) override {
         m_next = frame + 1;
-        return m_current->sample(frame);
+        coney::PortSamples samples = m_current->sample(frame);
+        if (m_axes) {
+            const std::array<std::uint8_t, 2> bytes =
+                coney::platform::stickBytesFromAxes(m_axes->first, m_axes->second);
+            samples[0].sticks[2] = bytes[0];
+            samples[0].sticks[3] = bytes[1];
+        }
+        return samples;
     }
 
   private:
     std::unique_ptr<coney::ScriptedInput> m_current;
+    std::optional<std::pair<std::int16_t, std::int16_t>> m_axes;
     std::uint64_t m_next = 0;
 };
 
@@ -285,8 +301,10 @@ TEST_CASE("the disc's level99 lesson 7: the second wave surrounds the player and
     CHECK(around.size() == 4);
     CHECK(near == 4);
 
-    // 3. Snaps: each time the stick at full deflection towards a bum off the player's front, from rest, one update
-    // before square, then at rest again; the next one once the snap has played out.
+    // 3. Snaps as a player makes them with a gamepad: the stick pushed straight to the side of the screen the bum is
+    // on (left, right or down), over three updates to its rim (kRim of the travel, short of a full 1, as a real stick
+    // reads there), square pressed while it is held, and the stick let go 12 updates later; the next one once the
+    // snap has played out.
     int tries = 0;
     while (doneCalls == 0 && tries < 8) {
         ++tries;
@@ -303,16 +321,26 @@ TEST_CASE("the disc's level99 lesson 7: the second wave surrounds the player and
             continue;
         }
         const auto [x, y] = stickTowards(*play, *pick);
+        // The screen's side nearest the bum, as SDL axes (y down).
+        const bool across = std::abs(x) >= std::abs(y);
+        const float sideX = across ? (x > 0 ? 1.0F : -1.0F) : 0.0F;
+        const float sideY = across ? 0.0F : (y > 0 ? -1.0F : 1.0F);
         const std::uint64_t at = pad.nextFrame();
-        pad.play(std::format("{} stick left {} {}\n{} tap square\n{} stick left 0 0\n", at, x, y, at + 1, at + 2));
+        pad.play(std::format("{} tap square\n", at + 4));
         for (int i = 0; i < 45; ++i) {
+            const float push = i < 3 ? kRim * static_cast<float>(i + 1) / 3.0F : (i < 16 ? kRim : 0.0F);
+            pad.gamepadStick(std::pair{static_cast<std::int16_t>(sideX * push * 32767.0F),
+                                       static_cast<std::int16_t>(sideY * push * 32767.0F)});
             step();
         }
     }
+    pad.gamepadStick(std::nullopt);
     std::printf("  level99 lesson 7: %d tries, %d snaps landed, %d other strikes, P1.SnapsDone ran %d time(s)\n", tries,
                 snaps, others, doneCalls);
     CHECK(snaps >= 3);
-    CHECK(doneCalls == 1);
+    // Once for the third snap; a snap that strikes two bums at once is two hits, each called back (as in the
+    // original), so the third can be counted twice.
+    CHECK(doneCalls >= 1);
 
     // 4. Lesson 8 (throws) arms its own callback.
     const std::uint64_t doneAt = pad.nextFrame();

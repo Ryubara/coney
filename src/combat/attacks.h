@@ -114,7 +114,7 @@ struct SquareInput {
 /// armedAttack()'s with the set's cross slot. Otherwise: at a run (gait 4 or 5) with no phase bit and the stick beyond
 /// 0.95 the run attack 24; walking (gait 1-3) with the stick at 0.12 or more the walk attack 23; else `X1`. Cross has
 /// no snaps and reads no target (docs/research/combat.md#attacks). **Coney's reading**: square's fields are reused;
-/// cross ignores the target and the snap's. (Sets 4-6 throw instead, `0x002880d8`; Coney has no throws yet.)
+/// cross ignores the target and the snap's. (Sets 4-6 throw instead: throwAttack().)
 /// @orig 0x00287a18 Player_Cross (unknown)
 [[nodiscard]] int crossAttack(const SquareInput& input);
 
@@ -125,6 +125,19 @@ struct SquareInput {
 /// no strike on a grabbed target: a walking player swings where he is. **Coney's reading**: the mugging this branch
 /// may start is not built.
 [[nodiscard]] int armedAttack(const SquareInput& input, bool cross);
+
+/// Whether `set` is a thrown object's: 4 overhead (drums, chairs, amps), 5 one-handed (bricks, bottles) or 6 the ghetto
+/// blaster. With one in hand square, cross, the charge and the dive all throw it (throwAttack()).
+[[nodiscard]] bool throwSet(int set);
+
+/// The throw square, cross, the charge or the dive starts with an object of throwSet() `SquareInput::heldSet` in hand
+/// (docs/research/combat.md#armed-moves), by the gait: at gait 3-5 the set's throw from a run, at gait 2 its throw from
+/// a walk (the standing one in a fight stance), else its standing throw; anim_id::kNone for any other set. Unlike the
+/// run attack, the record's `+0x08` and the stick are not tested. **Coney's reading**: set 5's smash on a human in
+/// reach (473 / 475) and the knife turned into set 5 are not built, and the aiming state (`Human_MoveThrowAim`) is not
+/// entered, so the throw plays at once.
+/// @orig 0x002880d8 Player_CrossWithWeapon (unknown)
+[[nodiscard]] int throwAttack(const SquareInput& input);
 
 /// The clips an anim set puts in the slots the armed square and cross read (docs/research/combat.md#bat): `S1`, `X1`,
 /// the grounded strike and the mounting strike. Set 0 is the defaults.

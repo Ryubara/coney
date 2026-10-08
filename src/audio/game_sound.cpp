@@ -125,10 +125,18 @@ void GameSound::setPitchFactor(float factor) {
 // ---- The humans' sounds ----
 
 std::string GameSound::summary() const {
-    return std::format("game sound: {} animation sounds and {} hit sounds asked for, {} matrix sounds started; {} "
-                       "ambient emitters, {} plays; {} lines said\n",
-                       m_animSounds, m_impactSounds, m_materialSounds.started(), m_emitters.emitterCount(),
-                       m_emitters.plays(), m_speech.said());
+    std::string line =
+        std::format("game sound: {} animation sounds and {} hit sounds asked for, {} matrix sounds started; {} "
+                    "ambient emitters, {} plays; {} lines said",
+                    m_animSounds, m_impactSounds, m_materialSounds.started(), m_emitters.emitterCount(),
+                    m_emitters.plays(), m_speech.said());
+    // What the engine made of the plays: a sound with no record or no sample in the loaded bank stays silent.
+    if (const SoundEngine* engine = m_sounds.engine(); engine != nullptr) {
+        const SoundEngineStats stats = engine->stats();
+        line += std::format("; engine: {} started, {} unknown, {} refused, {} without a sample", stats.started,
+                            stats.unknown, stats.refused, stats.missingSamples);
+    }
+    return line + "\n";
 }
 
 void GameSound::humanSound(const script::HumanSoundCall& call) {

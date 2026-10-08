@@ -6,6 +6,7 @@
 #include <numbers>
 #include <vector>
 
+#include "core/name_hash.h"
 #include "scripting/player_bindings.h"
 #include "warriors/inventory.h"
 
@@ -93,6 +94,7 @@ TakeResult LevelPickups::take(double handle, int player) {
         script::addInventoryItem(m_scripts, m_state, player, item::kStolenLoot, 1, true);
         const auto money = static_cast<int>(std::lround(static_cast<float>(type->value) * kLootMoneyFactor));
         script::addInventoryItem(m_scripts, m_state, player, item::kMoney, money, false);
+        pickupSound(player, item::kStolenLoot);
         m_records.destroy(handle);
         return TakeResult::Loot;
     }
@@ -186,6 +188,9 @@ void LevelPickups::spendItem(int player, int item) { m_state.player.inventory.gi
 
 void LevelPickups::dealerSold(int player, int item, int amount, int price) {
     script::addInventoryItem(m_scripts, m_state, player, item, amount, false);
+    if (amount > 0) {
+        pickupSound(player, item);
+    }
     script::addInventoryItem(m_scripts, m_state, player, item::kMoney, -price, false);
 }
 
@@ -207,7 +212,16 @@ void LevelPickups::mugPaid(int player, int& victimMoney) {
     if (victimMoney > 0) {
         script::addInventoryItem(m_scripts, m_state, player, item::kMoney, victimMoney, true);
         victimMoney = 0;
+        pickupSound(player, item::kMoney);
     }
+}
+
+void LevelPickups::pickupSound(int player, int item) const {
+    const InventoryItem* slot = m_state.player.inventory.slot(player, item);
+    if (!m_play2D || slot == nullptr || slot->sound.empty() || slot->sound == "none") {
+        return;
+    }
+    m_play2D(crc32(slot->sound));
 }
 
 void LevelPickups::mugEnded(double mugger, const std::string& callback, bool success) {

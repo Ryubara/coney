@@ -170,11 +170,12 @@ TEST_CASE("Rembrandt walks up a slope, a stair set and over low ledges to a wall
         // Wall faces under 0.25 m do not stop the walking body and the ground snap lifts the feet on; the 25 cm
         // block's 3 m wide face is two slivers the same rule skips (docs/research/characters.md#walls).
         CHECK(highest(run) == Approx(0.25F).margin(0.02));
-        // The 50 cm block is a wall: the walking sphere (0.485 m for Rembrandt) holds him short of its face at
-        // y = -5.5.
+        // The 50 cm block is a wall: the walking sphere (0.4704 m for Rembrandt, kept 0.01 m clear) holds him short
+        // of its face at y = -5.5.
         const FrameRecord& last = run.frames.back();
         CHECK(last.position.z == Approx(0.0F).margin(0.02));
-        const float stop = -5.5F - coney::human::playerWalkingRadius(coney::human::kPlayerBodyScale);
+        const float stop = -5.5F - coney::human::playerWalkingRadius(coney::human::kPlayerBodyScale) -
+                           coney::human::bodyTuning().contactClear;
         CHECK(last.position.y > stop - 0.03F);
         CHECK(last.position.y < stop + 0.03F);
         CHECK(!last.airborne);

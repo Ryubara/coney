@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -52,15 +53,15 @@ struct Level99 {
     std::unique_ptr<coney::human::PlayerCharacter> character;
 };
 
-// Loads level99 and Rembrandt from the disc CONEY_DISC names; null members when it is not set.
-Level99 loadLevel99(const char* discPath) {
+// Loads `levelName` (level99 unless named) and Rembrandt from the disc CONEY_DISC names.
+Level99 loadLevel99(const char* discPath, const char* levelName = "level99") {
     Level99 loaded;
     auto disc = coney::io::Disc::open(discPath);
     REQUIRE(disc.has_value());
     auto wad = coney::io::Wad::open(std::move(*disc));
     REQUIRE(wad.has_value());
     loaded.wad.emplace(std::move(*wad));
-    auto level = coney::platform::loadLevel(*loaded.wad, "level99", false);
+    auto level = coney::platform::loadLevel(*loaded.wad, levelName, false);
     REQUIRE(level.has_value());
     loaded.level = std::move(*level);
     coney::chunk::ChunkHandlerTable table = coney::chunk::ChunkHandlerTable::withDefaults();
@@ -71,15 +72,16 @@ Level99 loadLevel99(const char* discPath) {
     return loaded;
 }
 
-// Runs `frames` frames of the input script `name` (in tests/support) on a fresh player at level99's start.
-std::vector<FrameRecord> runScript(const Level99& loaded, const std::string& name, std::uint64_t frames) {
+// Runs `frames` frames of the input script `name` (in tests/support) on a fresh player at `at`, or level99's start.
+std::vector<FrameRecord> runScript(const Level99& loaded, const std::string& name, std::uint64_t frames,
+                                   std::optional<coney::human::PlayerStart> at = std::nullopt) {
     const std::filesystem::path path = std::filesystem::path(CONEY_TEST_SUPPORT_DIR) / name;
     auto events = coney::loadInputScript(path.string());
     REQUIRE(events.has_value());
     coney::ScriptedInput input(std::move(*events));
     coney::Pads pads;
     const coney::raycast::CollisionMesh* mesh = loaded.level->collision.get();
-    const auto start = coney::human::researchedPlayerStart("level99");
+    const auto start = at ? at : coney::human::researchedPlayerStart("level99");
     REQUIRE(start.has_value());
     // value_or keeps the access checked for clang-tidy, which does not know REQUIRE stops the test.
     coney::human::Player player(*loaded.character, mesh, start.value_or(coney::human::PlayerStart{}));
@@ -208,4 +210,29 @@ TEST_CASE("running into level99's scenery stops Rembrandt without letting him th
         blocked += record.speed == 0.0F ? 1U : 0U;
     }
     std::printf("level99 run into the scenery: %zu frames, %u at a standstill\n", run.size(), blocked);
+}
+
+TEST_CASE("walking north past level5's building corner at (-60.2, -163.7), Rembrandt slides round its edge",
+          "[disc][player]") {
+    // mission7's walk to level5's bar met this corner 0.2 m east of its vertical edge and stopped dead; the original's
+    // corner slide carries a body round an edge its triangles name (docs/research/characters.md#walls, step 6).
+    const char* discPath = SDL_getenv("CONEY_DISC");
+    if (discPath == nullptr || *discPath == '\0') {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    const Level99 loaded = loadLevel99(discPath, "level5");
+    // Facing north 2.4 m south of the corner, the stick held up at 50 %: a walk due north.
+    const std::vector<FrameRecord> run =
+        runScript(loaded, "level5_corner_walk.txt", 150,
+                  coney::human::PlayerStart{.position = {-60.0F, -166.5F, 0.1F}, .headingDegrees = 0.0F});
+    const FrameRecord& last = run.back();
+    std::printf("level5 corner: ended at (%.3f, %.3f)\n", static_cast<double>(last.position.x),
+                static_cast<double>(last.position.y));
+    CHECK_FALSE(last.airborne);
+    // Past the south face's line and clear of the east face, walking on north.
+    CHECK(last.position.y > -162.5F);
+    CHECK(last.position.x > -60.206F + 0.47F);
+    CHECK(last.speed > 1.0F);
 }

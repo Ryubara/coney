@@ -26,6 +26,7 @@
 #include "world_objects/flags.h"
 #include "world_objects/glass.h"
 #include "world_objects/level_objects.h"
+#include "world_objects/object_types.h"
 
 using coney::script::LuaVm;
 using coney::script::ScriptSystem;
@@ -57,6 +58,7 @@ struct Harness {
     coney::script::RecordedCalls recorded;
     coney::CreatedHumans humans;
     coney::world_objects::WorldFlags flags;
+    coney::world_objects::ObjectTypes types;
     coney::script::BindingContext context;
     ScriptSystem scripts;
 
@@ -67,6 +69,7 @@ struct Harness {
                   .recorded = &recorded,
                   .humans = &humans,
                   .flags = &flags,
+                  .objectTypes = &types,
                   .objects = withObjects ? &objects : nullptr},
           scripts(
               [](std::string_view) -> std::expected<std::vector<std::byte>, coney::Error> {
@@ -224,4 +227,22 @@ TEST_CASE("the lock pick's difficulty is the Warrior class's byte +0x0a less 1",
     CHECK(coney::script::lockPickDifficulty(&h.recorded, 5) == 2); // the last call wins
     CHECK(coney::script::lockPickDifficulty(&h.recorded, 6) == 0); // none recorded
     CHECK(coney::script::lockPickDifficulty(nullptr, 3) == 0);
+}
+
+TEST_CASE("CfgObj keeps a type's body, settle axes and restitution", "[object_bindings][physics]") {
+    Harness h;
+    std::vector<Value> args = cfgObj("dyn_test_brick", "simple_object", 10);
+    args[6] = list({0.0, 0.01, 0.02});
+    args[7] = list({0.07, 0.21, 0.1});
+    args[8] = Value(1.0);  // PHYS_OBB
+    args[9] = Value(13.0); // AXIS_XZ_ROUND
+    args[10] = Value(0.1); // the restitution the scripts call mass
+    h.first("CfgObj", args);
+    const coney::world_objects::ObjectType* type = h.types.find("dyn_test_brick");
+    REQUIRE(type != nullptr);
+    CHECK(type->bodyShape == coney::world_objects::kBodyBox);
+    CHECK(type->axis == 13);
+    CHECK(type->bodySize[1] == 0.21F);
+    CHECK(type->bodyCentre[2] == 0.02F);
+    CHECK(type->restitution == 0.1F);
 }

@@ -351,3 +351,35 @@ TEST_CASE("in a fight stance neither unarmed moving attack plays; the armed run 
     CHECK(squareAttack(in(Gait::Run, 3)) == anim_id::kArmedAttackFromRun);
     CHECK(squareAttack(in(Gait::Walk, 3)) == animSetClips(3).square);
 }
+
+TEST_CASE("an object to throw in hand: the set's throw from a run at gait 3-5, from a walk at 2, else standing",
+          "[combat]") {
+    struct Throws {
+        int set;
+        int standing;
+        int walk;
+        int run;
+    };
+    for (const Throws& t : {Throws{4, 505, 506, 507}, Throws{5, 467, 471, 472}, Throws{6, 551, 552, 553}}) {
+        INFO("set " << t.set);
+        CHECK(throwSet(t.set));
+        const auto at = [&t](Gait gait, bool stance = false) {
+            return throwAttack(SquareInput{.gait = gait, .heldSet = t.set, .fightStance = stance});
+        };
+        CHECK(at(Gait::Standing) == t.standing);
+        CHECK(at(Gait::Sneak) == t.standing);
+        CHECK(at(Gait::Walk) == t.walk);
+        CHECK(at(Gait::Jog) == t.run);
+        CHECK(at(Gait::Run) == t.run);
+        CHECK(at(Gait::Sprint) == t.run);
+        // A fight stance turns only the walking throw into the standing one.
+        CHECK(at(Gait::Walk, true) == t.standing);
+        CHECK(at(Gait::Run, true) == t.run);
+        // The run's phase bits and the stick are not tested.
+        CHECK(throwAttack(SquareInput{.gait = Gait::Run, .phaseFlags = 0x1000000, .heldSet = t.set}) == t.run);
+    }
+    for (const int set : {0, 1, 2, 3, 7}) {
+        CHECK_FALSE(throwSet(set));
+        CHECK(throwAttack(SquareInput{.heldSet = set}) == anim_id::kNone);
+    }
+}

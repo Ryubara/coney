@@ -52,6 +52,9 @@ class Humans {
     void setBrains(BrainsHook brains) { m_brains = std::move(brains); }
     /// Sets what an airborne human's body touches (Human::BodyContact), given to every human it steps; empty: nothing.
     void setBodyContact(Human::BodyContact contact) { m_bodyContact = std::move(contact); }
+    /// Sets what a walking human slides along beyond the walls (Human::ObjectPush), given to every human it steps;
+    /// empty: nothing.
+    void setObjectPush(Human::ObjectPush push) { m_objectPush = std::move(push); }
     /// Sets what a human's switched-on strike shapes meet beyond the humans (Human::testStrikes()); empty: nothing.
     void setStrikeContact(Human::StrikeContact contact) { m_strikeContact = std::move(contact); }
 
@@ -85,6 +88,7 @@ class Humans {
     std::vector<Combatant*> m_scratch; // gatherTargets()'s list
     BrainsHook m_brains;
     Human::BodyContact m_bodyContact;
+    Human::ObjectPush m_objectPush;
     Human::StrikeContact m_strikeContact;
     std::vector<Human*> m_victims; // the strike test's list
     std::uint64_t m_steps = 0;

@@ -48,10 +48,11 @@ NativeFunction makeCfgObj(const BindingContext& context) {
             recorded->add("CfgObj", args);
         }
         if (types != nullptr) {
-            // The arguments by their place (0-based): 3 and 4 the bytes `+0x5a` and `+0x5b`, 12 the material `+0x64`,
-            // 13 the pick-up animation `+0x65`, 18 the kind `+0x86` and 19 the anim set `+0x87`, each kept as a byte;
-            // 11 the body word `+0x5e` (16 bits); 16 the float `+0x70`, a held object's grip; 6 and 7 the body's centre
-            // and size (tables of three numbers) and 8 its shape `+0x84`.
+            // The arguments by their place (0-based): 3 and 4 the bytes `+0x5a` and `+0x5b`, 9 the settle axes
+            // `+0x85`, 12 the material `+0x64`, 13 the pick-up animation `+0x65`, 18 the kind `+0x86` and 19 the anim
+            // set `+0x87`, each kept as a byte; 5 the 16-bit weight `+0x62`; 10 the restitution `+0x88`; 11 the body
+            // word `+0x5e` (16 bits, its `PHYFLAG` layers); 16 the float `+0x70`, a held object's grip; 6 and 7 the
+            // body's centre and size (tables of three numbers) and 8 its shape `+0x84`.
             constexpr std::size_t kBodyCentreArg = 6;
             constexpr std::size_t kBodySizeArg = 7;
             constexpr std::size_t kBodyShapeArg = 8;
@@ -59,6 +60,9 @@ NativeFunction makeCfgObj(const BindingContext& context) {
             constexpr std::size_t kSecondHitsArg = 4;
             constexpr std::size_t kBodyWordArg = 11;
             constexpr std::size_t kMaterialArg = 12;
+            constexpr std::size_t kWeightArg = 5;
+            constexpr std::size_t kAxisArg = 9;
+            constexpr std::size_t kRestitutionArg = 10;
             constexpr std::size_t kPickupAnimArg = 13;
             constexpr std::size_t kObjectKindArg = 18;
             constexpr std::size_t kAnimSetArg = 19;
@@ -89,6 +93,10 @@ NativeFunction makeCfgObj(const BindingContext& context) {
             type.bodyCentre = binding::position(args, kBodyCentreArg).value_or(std::array<float, 3>{});
             type.bodySize = binding::position(args, kBodySizeArg).value_or(std::array<float, 3>{});
             type.bodyShape = byte(kBodyShapeArg);
+            type.axis = byte(kAxisArg);
+            type.restitution = static_cast<float>(binding::number(args, kRestitutionArg));
+            type.weight =
+                static_cast<int>(static_cast<std::uint32_t>(std::trunc(binding::number(args, kWeightArg))) & 0xffffU);
             types->add(std::move(type));
         }
         return binding::none();

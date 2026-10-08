@@ -30,6 +30,17 @@ inline constexpr int kSnapLeft = 27;
 inline constexpr int kSnapBack = 29;
 /// `SWINGABLE_OBJECT_ATTACK_FROM_RUN`: square or cross at a run with a knife, baton or bat (sets 1-3) in hand.
 inline constexpr int kArmedAttackFromRun = 501;
+/// The throws of a held object (docs/research/combat.md#armed-moves): one-handed (set 5), overhead (set 4) and the
+/// ghetto blaster (set 6), standing, from a walk and from a run. Each has one clip event of type 10, the release.
+inline constexpr int kOneHandedThrow = 467;
+inline constexpr int kOneHandedThrowFromWalk = 471;
+inline constexpr int kOneHandedThrowFromRun = 472;
+inline constexpr int kBarrelThrow = 505;
+inline constexpr int kBarrelThrowFromWalk = 506;
+inline constexpr int kBarrelThrowFromRun = 507;
+inline constexpr int kGhettoThrow = 551;
+inline constexpr int kGhettoThrowFromWalk = 552;
+inline constexpr int kGhettoThrowFromRun = 553;
 
 inline constexpr int kGrabComboStrike1 = 51;
 inline constexpr int kGrabComboStrike2 = 53;

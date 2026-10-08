@@ -21,6 +21,7 @@
 #include "camera/camera_lens.h"
 #include "characters/character_types.h"
 #include "characters/dynamic_clips.h"
+#include "combat/stick.h"
 #include "core/error.h"
 #include "core/interpolation.h"
 #include "core/options.h"
@@ -52,6 +53,8 @@
 #include "world_objects/hats.h"
 #include "world_objects/level_objects.h"
 #include "world_objects/lock_pick.h"
+#include "world_objects/loose_objects.h"
+#include "world_objects/object_bodies.h"
 #include "world_objects/object_list.h"
 #include "world_objects/object_tasks.h"
 
@@ -379,6 +382,11 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     bool stepLockPick(const Pad& pad);
     // After the player's step: his object attack's hit sent to its object, then the objects' two 60 Hz ticks.
     void stepObjects();
+    // Player 1's object attack under way (Player_ObjectAttack's clip, 661 or 662, with its object): whether its hit
+    // lands on the object this step. It lands when the clip's strike shapes come on (a car or other object) or strike
+    // it (a pane or door, through strikeObjects()), not at the attack's start (docs/research/combat.md#breakables).
+    // @orig 0x0021b290 Strike_Contact (unknown)
+    [[nodiscard]] std::optional<double> objectAttackLands(const human::Human& human);
     // The strike test's objects (`Strike_Contact`'s object branch, docs/research/combat.md#moving-strikes): `human`'s
     // posed strike `shapes` strike each door or barrier whose enabled triangles they touch, each pane whose body they
     // reach and each strike-target world object (a street prop) whose body (props.h bodyTouches()) they reach, once
@@ -417,8 +425,21 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     void giveObjectTargets();
     // The type of the world object `handle` (a spawn record) when its body makes it a strike target; null otherwise.
     [[nodiscard]] const world_objects::ObjectType* worldObjectType(double handle) const;
+    // The bodies of the world objects in the world this step (their types' CfgObj shapes at their poses), and the
+    // walking humans' slide along the BLOCKHUMANS ones (docs/research/physics.md#bodies).
+    // @orig 0x00391d48 Obj_CreatePhysicsBody (unknown)
+    void stepObjectBodies();
     // Player 1's pick-up that reached its clip's event this step: the object is taken.
     void stepPickups();
+    // Player 1 lets go of `held`: it leaves the hand from where the hand holds it and falls (dropHeld()), or, `thrown`,
+    // flies off with the throw's velocity and spin (docs/research/objects.md#held).
+    // @orig 0x00257f38 Human_DropHeld (unknown)
+    // @orig 0x002586d8 Human_ReleaseThrow (unknown)
+    // @orig 0x003fe6b8 MeleeWeapon_Detach (unknown)
+    void dropHeld(human::Human& human, double held, bool thrown = false);
+    // The loose objects in flight: their fall, bounce and settle (docs/research/physics.md#settle), their poses written
+    // back into their spawn records.
+    void stepLooseObjects();
     // Player 1's mugging: the scripts' record for the next one, and the end of one (the money, the mug callback).
     void stepMugging(human::Human& human);
     // The stereo-theft panel follows player 1's theft: shown from the press, its progress each update with cue 0x22 per
@@ -451,6 +472,10 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // Draws this step's world objects (lit as objects) and the object in player 1's hand at `snapshot`'s pose
     // (docs/research/objects.md#held).
     void drawWorldObjects(const human::PlayerSnapshot& snapshot);
+    // Where object `held` hangs in player 1's hand at `snapshot`'s pose; nothing when it is not a record in the hand
+    // with a pick-up clip's take event (docs/research/objects.md#held).
+    [[nodiscard]] std::optional<world_objects::WorldPose> heldPose(double held,
+                                                                   const human::PlayerSnapshot& snapshot) const;
     // Draws this step's health rings and L1 markers, each under where its human is drawn (`feet` by ring id).
     void drawRings(const std::map<std::uint64_t, anim::Vec3>& feet) const;
 
@@ -579,6 +604,13 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     double m_heldObject = 0.0;             // what player 1 held at the last step (world_objects::kNoObject for nothing)
     world_objects::Cars* m_cars = nullptr; // the level's parked cars, for their stereos; not owned
     std::optional<double> m_theftCar;      // the car whose stereo player 1 is stealing
+    // Player 1's object attack waiting for its strike window (objectAttackLands()).
+    struct ObjectAttack {
+        double object = 0;      // the object it aims at
+        std::uint32_t clip = 0; // its clip, 661 or 662
+        bool shapesOn = false;  // its strike shapes have come on
+    };
+    std::optional<ObjectAttack> m_objectAttack;
     std::vector<world_objects::CarPartBreak> m_carBreaks; // car parts off in the newest step (carBreaks())
     bool m_wasMugging = false;                            // player 1 was mugging at the last step
     std::optional<bool> m_mugEnding;                      // a decided mugging's result, until its end clip finishes
@@ -600,6 +632,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     const world_objects::ObjectTypes* m_objectTypes = nullptr;
     world_objects::ObjectTasks m_objectTasks;
     effects::Triglints m_glints;
+    world_objects::ObjectBodies m_objectBodies;              // this step's world-object bodies
+    world_objects::LooseObjects m_looseObjects;              // the dropped objects falling or settling
+    combat::CombatRandom m_throwRandom{0x7417U};             // a thrown object's spin (a fixed seed)
     std::unique_ptr<world_objects::ObjectList> m_objectList; // before the models that read it
     std::unique_ptr<PlacedObjects> m_placed;
     // The hats: the fittings (read once from the recorded `CfgHat` calls), each human's, the handles worn, those

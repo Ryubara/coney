@@ -586,6 +586,12 @@ void GameplayMode::loadLevel() {
     if (m_context.spawnRecords != nullptr && m_context.objectTypes != nullptr) {
         m_pickups.emplace(m_scripts, m_state, *m_context.spawnRecords, *m_context.objectTypes, m_context.messages);
         m_pickups->setLocator([this](double object) { return promptObjectPosition(object); });
+        // The items' pick-up sounds play 2D through the game's sound, when there is one.
+        m_pickups->setSound([this](std::uint32_t hash) {
+            if (m_context.sound != nullptr) {
+                static_cast<void>(m_context.sound->play2D(hash));
+            }
+        });
     }
     m_shownPrompt.clear();
     m_promptHintObject.reset();

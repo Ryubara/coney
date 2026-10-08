@@ -93,7 +93,7 @@ add_executable(coney_tests
     platform/disc_rumble_test.cpp
     platform/disc_hub_test.cpp
     platform/disc_level80_test.cpp
-    platform/disc_level5_bar_test.cpp
+    platform/disc_level5_fights_test.cpp
     platform/disc_level99_audio_test.cpp
     platform/disc_level99_scene_speech_test.cpp
     platform/disc_level99_hud_test.cpp
@@ -102,7 +102,9 @@ add_executable(coney_tests
     platform/disc_level99_course_test.cpp
     platform/disc_level99_sparring_test.cpp
     platform/disc_level99_change_character_test.cpp
+    platform/disc_level99_street_props_test.cpp
     platform/disc_level99_street_test.cpp
+    platform/disc_level99_store_glass_test.cpp
     platform/disc_level99_world_test.cpp
     platform/disc_story_chain_test.cpp
     platform/disc_story_missions_test.cpp
@@ -184,6 +186,8 @@ add_executable(coney_tests
     world_objects/hats_test.cpp
     world_objects/object_breaks_test.cpp
     world_objects/lock_pick_test.cpp
+    world_objects/loose_objects_test.cpp
+    world_objects/object_bodies_test.cpp
     world_objects/nav_links_test.cpp
     world_objects/object_list_test.cpp
     world_objects/pickups_test.cpp
@@ -263,6 +267,7 @@ target_sources(coney_tests PRIVATE
     combat/rage_awards_test.cpp
     combat/reactions_test.cpp
     combat/stick_games_test.cpp
+    combat/throw_velocity_test.cpp
     debug/combat_tunables_test.cpp)
 # Scenes: the records, the slots and the player (docs/research/scenes.md).
 target_sources(coney_tests PRIVATE

@@ -1,0 +1,3 @@
+# Rembrandt in level5 (tests/human/disc_player_test.cpp), walking due north past the building corner at
+# (-60.2, -163.7) with the stick at 50 %, the camera behind him. Frames are 1/30 s.
+0 stick left 0 50

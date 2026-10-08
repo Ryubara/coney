@@ -80,6 +80,16 @@ void PlayLevelMode::makeStage() {
     });
     // Placed at the release, before the scene's end function can move them on.
     m_stage->setReleaseHandler([this](const SceneStage::Release& release) { placeReleased(release); });
+    // Player 1's brain is off from his join until the scene lets him go, which takes the pad away and gives it back
+    // (BrDead(brain, 1) at the join, BrDead(brain, 0) in the join goal's destroy, scenes.md#humans). So a script that
+    // switched his brain off before a scene (level5's boss stages) has the pad back after it.
+    // @orig 0x002e5300 Goal_JoinCinematic (unknown)
+    // Research: docs/research/scenes.md#humans
+    m_stage->setJoinHandler([this](double human, bool joined) {
+        if (human == m_playerHandle && m_ai != nullptr) {
+            m_ai->playerBrain().setDead(joined);
+        }
+    });
     // A bound object stays where the scene leaves it (scenes.md#ending): its record keeps the place.
     m_stage->setObjectMover([this](double object, anim::Vec3 position, anim::Quat rotation) {
         if (m_pickups != nullptr) {

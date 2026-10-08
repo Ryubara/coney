@@ -179,6 +179,29 @@ void PlayLevelMode::stepRings(const Pad& pad, const WorldView& view, std::uint64
     m_rings.update(frame);
 }
 
+std::optional<world_objects::WorldPose> PlayLevelMode::heldPose(double held,
+                                                                const human::PlayerSnapshot& snapshot) const {
+    // The pick-up clip's take event gives the bone and the local pose, composed with the bone of the snapshot's pose
+    // and the body's placement (the lean left out). **Coney's reading**: the bone's position is not scaled by the
+    // human's scale, as Coney draws the body unscaled.
+    const world_objects::SpawnRecord* record =
+        held != world_objects::kNoObject && m_records != nullptr ? m_records->find(held) : nullptr;
+    const world_objects::ObjectType* type =
+        record != nullptr && m_objectTypes != nullptr ? m_objectTypes->find(record->typeName) : nullptr;
+    const human::PlayerCharacter& character = playerCharacter();
+    const anim::AnimClip* clip =
+        type != nullptr
+            ? character.anims().clip(static_cast<std::size_t>(world_objects::pickupClip(type->pickupAnim, 0.0F)))
+            : nullptr;
+    const std::optional<world_objects::HeldAttachment> attachment =
+        clip != nullptr ? world_objects::heldAttachment(*clip, m_player->human().scale(), type->grip) : std::nullopt;
+    if (!attachment || attachment->bone >= anim::kPoseBones) {
+        return std::nullopt;
+    }
+    const auto bones = anim::boneTransforms(character.skeleton(), snapshot.pose);
+    return world_objects::heldWorldPose(snapshot.feet, snapshot.heading, bones.at(attachment->bone), 1.0F, *attachment);
+}
+
 void PlayLevelMode::drawWorldObjects(const human::PlayerSnapshot& snapshot) {
     if (!m_placed) {
         return;
@@ -205,26 +228,11 @@ void PlayLevelMode::drawWorldObjects(const human::PlayerSnapshot& snapshot) {
             m_placed->place(stereo.handle, stereo.modelHash, stereo.position, stereo.rotation, PlacedObjects::Look{});
         }
     }
-    // The object in player 1's hand (docs/research/objects.md#held): the pick-up clip's take event gives the bone and
-    // the local pose, composed with the bone of this frame's pose and the body's placement (the lean left out).
-    // **Coney's reading**: the bone's position is not scaled by the human's scale, as Coney draws the body unscaled.
+    // The object in player 1's hand (docs/research/objects.md#held).
     const double held = m_player->human().script().heldObject;
-    const world_objects::SpawnRecord* record =
-        held != world_objects::kNoObject && m_records != nullptr ? m_records->find(held) : nullptr;
-    const world_objects::ObjectType* type =
-        record != nullptr && m_objectTypes != nullptr ? m_objectTypes->find(record->typeName) : nullptr;
-    const human::PlayerCharacter& character = playerCharacter();
-    const anim::AnimClip* clip =
-        type != nullptr
-            ? character.anims().clip(static_cast<std::size_t>(world_objects::pickupClip(type->pickupAnim, 0.0F)))
-            : nullptr;
-    const std::optional<world_objects::HeldAttachment> attachment =
-        clip != nullptr ? world_objects::heldAttachment(*clip, m_player->human().scale(), type->grip) : std::nullopt;
-    if (attachment && attachment->bone < anim::kPoseBones) {
-        const auto bones = anim::boneTransforms(character.skeleton(), snapshot.pose);
-        const world_objects::WorldPose pose = world_objects::heldWorldPose(
-            snapshot.feet, snapshot.heading, bones.at(attachment->bone), 1.0F, *attachment);
-        m_placed->place(held, type->modelHash, pose.position, pose.rotation,
+    if (const std::optional<world_objects::WorldPose> pose = heldPose(held, snapshot)) {
+        const world_objects::SpawnRecord* record = m_records->find(held);
+        m_placed->place(held, m_objectTypes->find(record->typeName)->modelHash, pose->position, pose->rotation,
                         PlacedObjects::Look{.tint = record->tint, .sizeCullExempt = true});
     }
     // The spinning icons over the humans that wear one (a dealer's, a script's `HuAttachSpinningIcon`), turning with

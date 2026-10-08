@@ -454,17 +454,66 @@ std::span<const std::uint8_t> Human::passThrough() const {
     return {};
 }
 
-std::optional<anim::Vec3> Human::sweep(const raycast::CollisionMesh& mesh, anim::Vec3 from, anim::Vec3 displacement) {
+std::optional<Human::Swept> Human::sweep(const raycast::CollisionMesh& mesh, anim::Vec3 from, anim::Vec3 displacement) {
     // A body that does not move meets nothing.
-    if (anim::length(displacement) <= 0.0F) {
-        return from;
+    const float length = anim::length(displacement);
+    if (length <= 0.0F) {
+        return Swept{.feet = from};
     }
-    // The player's walking sphere (0.485 m for Rembrandt), 0.05 m clear of the feet, against the walls the move goes
-    // into and that are 0.25 m tall or more; each push slides it along that wall.
-    const WallFilter filter{
-        .move = displacement, .skipLow = true, .excludeMaterials = passThrough(), .toContact = true};
-    return slideOut(mesh, anim::add(from, displacement), playerWalkingRadius(m_scale),
-                    playerWalkingCentreHeight(m_scale), filter, m_nearby);
+    // The player's walking sphere (0.4704 m for Rembrandt), 0.05 m clear of the feet, against the walls the move goes
+    // into and that are 0.25 m tall or more; each push slides it along that wall and leaves it 0.01 m clear.
+    const float radius = playerWalkingRadius(m_scale);
+    const float centreHeight = playerWalkingCentreHeight(m_scale);
+    const WallFilter filter{.move = displacement,
+                            .skipLow = true,
+                            .excludeMaterials = passThrough(),
+                            .toContact = true,
+                            .keepClear = bodyTuning().contactClear};
+    const anim::Vec3 moved = anim::add(from, displacement);
+    const auto feet = slideOut(mesh, moved, radius, centreHeight, filter, m_nearby);
+    if (!feet) {
+        return std::nullopt;
+    }
+    // The corner slide (docs/research/characters.md#walls, steps 6-7): a sphere wrapping round the edge its walls name
+    // is carried along them, toward that edge, max(move, r) a second for this update only (its part along the move
+    // taken away); the stored velocity is not changed by it. **Coney's reading** of the original's passes: the slide
+    // is found where the move put the sphere and added once, then pushed out of the walls it goes into as the move
+    // was; the pair-or-block test that turns it off (`0x00227fd8`) is not built.
+    const anim::Vec3 sum =
+        edgeSlide(mesh, anim::add(moved, anim::Vec3{0.0F, 0.0F, centreHeight}), radius, filter, m_nearby);
+    Swept swept{.feet = *feet};
+    if (anim::length(sum) >= kClear) {
+        const anim::Vec3 along = anim::scale(displacement, 1.0F / length);
+        anim::Vec3 slide = anim::scale(anim::normalise(sum), std::max(length, radius));
+        slide = anim::scale(anim::subtract(slide, anim::scale(along, anim::dot(slide, along))), m_stepSeconds);
+        WallFilter slideFilter = filter;
+        slideFilter.move = anim::add(displacement, slide);
+        const auto slid = slideOut(mesh, anim::add(*feet, slide), radius, centreHeight, slideFilter, m_nearby);
+        if (slid) {
+            swept = Swept{.feet = *slid, .slide = anim::subtract(*slid, *feet)};
+        }
+    }
+    // Then the world objects' bodies the move goes into, each push sliding the sphere along the body, and the walls
+    // again so no push leaves it in one.
+    if (m_objectPush == nullptr || !*m_objectPush) {
+        return swept;
+    }
+    bool pushed = false;
+    for (int pass = 0; pass < kSweepPasses; ++pass) {
+        const std::optional<anim::Vec3> push =
+            (*m_objectPush)(anim::add(swept.feet, anim::Vec3{0.0F, 0.0F, centreHeight}), radius, displacement);
+        if (!push || anim::length(*push) < kClear) {
+            break;
+        }
+        swept.feet = anim::add(swept.feet, *push);
+        pushed = true;
+    }
+    if (pushed) {
+        if (const auto out = slideOut(mesh, swept.feet, radius, centreHeight, filter, m_nearby)) {
+            swept.feet = *out;
+        }
+    }
+    return swept;
 }
 
 std::optional<anim::Vec3> Human::pushOutInAir(const raycast::CollisionMesh& mesh, anim::Vec3 feet) {
@@ -532,9 +581,10 @@ void Human::moveOnGround(const raycast::CollisionMesh& mesh) {
     const anim::Vec3 displacement{m_velocity.x * factor * m_stepSeconds, m_velocity.y * factor * m_stepSeconds, 0.0F};
     anim::Vec3 feet = m_position;
     if (const auto moved = sweep(mesh, m_position, displacement); moved) {
-        feet = *moved;
+        feet = moved->feet;
         m_blockedUpdates = 0;
-        const anim::Vec3 slid = anim::subtract(*moved, m_position);
+        // What the walls left of the move; the corner slide moves the body but not its velocity.
+        const anim::Vec3 slid = anim::subtract(anim::subtract(moved->feet, moved->slide), m_position);
         if (charging && anim::length(slid) < kChargeStopShare * anim::length(displacement)) {
             // The charge met a wall head-on: it goes on to the wall along its own line, with no slide, and stops.
             const anim::Vec3 along = anim::normalise(displacement);
@@ -1072,6 +1122,24 @@ void Human::animate(const raycast::CollisionMesh* mesh) {
     sendWarnings(before, beforeId, beforeTime);
     noteSlowMotion(before, beforeId, beforeTime);
     noteStrikeEvents(before, beforeId, beforeTime);
+    noteReleaseEvent(before, beforeId, beforeTime);
+}
+
+void Human::noteReleaseEvent(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime) {
+    constexpr std::uint16_t kReleaseEvent = 10;
+    const anim::AnimTask* top = m_animator.tasks().top();
+    if (top == nullptr || top->eventClip() == nullptr) {
+        return;
+    }
+    // From the clip's start when it began this step (or another clip took the top), else from where it was.
+    const bool same = top == before && top->animId() == beforeId && top->time() >= beforeTime;
+    const int from = same ? anim::eventFrame(beforeTime) : -1;
+    const int to = anim::eventFrame(top->time());
+    for (const anim::ClipEvent& event : top->eventClip()->events) {
+        if (event.type == kReleaseEvent && event.frame > from && event.frame <= to) {
+            m_throwRelease = true;
+        }
+    }
 }
 
 void Human::noteSlowMotion(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime) {

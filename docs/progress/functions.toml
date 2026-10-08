@@ -5327,6 +5327,11 @@ name = "Human_RefillMeters"
 subsystem = "Human"
 
 [[function]]
+address = 0x002570e8
+name = "Human_ComputeThrowVelocity"
+subsystem = "Human"
+
+[[function]]
 address = 0x00257f38
 name = "Human_DropHeld"
 subsystem = "Human"
@@ -5336,6 +5341,11 @@ address = 0x00258330
 name = "Human_KnockOffHat"
 subsystem = "Human"
 size = 932
+
+[[function]]
+address = 0x002586d8
+name = "Human_ReleaseThrow"
+subsystem = "Human"
 
 [[function]]
 address = 0x00258a88
@@ -5759,6 +5769,11 @@ address = 0x00287a18
 name = "Player_Cross"
 subsystem = "Human"
 size = 1480
+
+[[function]]
+address = 0x002880d8
+name = "Player_CrossWithWeapon"
+subsystem = "Human"
 
 [[function]]
 address = 0x00288ad0
@@ -8028,6 +8043,12 @@ name = "WarriorAttackTactic_Create"
 subsystem = "Human"
 
 [[function]]
+address = 0x00335b08
+name = "Quat_IntegrateAngular"
+subsystem = "Maths (unnamed)"
+size = 256
+
+[[function]]
 address = 0x00336a00
 name = "QuaternionSlerp"
 subsystem = "Maths (unnamed)"
@@ -8071,6 +8092,12 @@ name = "RayTriangle_TwoSided"
 subsystem = "Maths (unnamed)"
 
 [[function]]
+address = 0x0033d8f0
+name = "PhysicsVec_Bounce"
+subsystem = "Physics"
+size = 232
+
+[[function]]
 address = 0x0033e278
 name = "PhysicsBody_Sweep"
 subsystem = "Physics"
@@ -8079,6 +8106,24 @@ subsystem = "Physics"
 address = 0x0033f110
 name = "Human_TestStrikes"
 subsystem = "Physics"
+
+[[function]]
+address = 0x00340918
+name = "IPhysics_Step"
+subsystem = "Physics"
+size = 544
+
+[[function]]
+address = 0x00340b38
+name = "Settle_NearestAxis"
+subsystem = "Physics"
+size = 464
+
+[[function]]
+address = 0x00340d08
+name = "Settle_ComputeTarget"
+subsystem = "Physics"
+size = 728
 
 [[function]]
 address = 0x003477c0
@@ -9840,9 +9885,21 @@ subsystem = "TaskEngine"
 size = 1136
 
 [[function]]
+address = 0x00394050
+name = "WorldObject_OnContact"
+subsystem = "TaskEngine"
+size = 1984
+
+[[function]]
 address = 0x00395020
 name = "ObjType_IsDoorKind"
 subsystem = "TaskEngine"
+
+[[function]]
+address = 0x00395a10
+name = "WorldObject_Integrate"
+subsystem = "TaskEngine"
+size = 352
 
 [[function]]
 address = 0x00395b70
@@ -10497,6 +10554,11 @@ address = 0x003fe490
 name = "melee_weapon_HandleMessage"
 subsystem = "TaskEngine"
 size = 552
+
+[[function]]
+address = 0x003fe6b8
+name = "MeleeWeapon_Detach"
+subsystem = "TaskEngine"
 
 [[function]]
 address = 0x00404c48
@@ -11194,6 +11256,12 @@ address = 0x0041e250
 name = "Inventory_SetItem"
 subsystem = "Warriors"
 size = 208
+
+[[function]]
+address = 0x0041e320
+name = "InventoryBlock_GetSound"
+subsystem = "Warriors"
+size = 40
 
 [[function]]
 address = 0x0041e420

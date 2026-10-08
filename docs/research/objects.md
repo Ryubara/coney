@@ -1430,8 +1430,14 @@ Coney's stand-ins for the world objects, where this page is silent:
   or a scene pinned is drawn whatever its distance and zone. `ObjHide` hides a plain object (`simple_object`'s
   `0x0a` is not a hide). The fade-in over the first second is linear.
 - A held object: the bone's position is not scaled by the human's scale (Coney draws the body unscaled), the lean is
-  left out, only player 1's object is drawn in a hand, and a dropped object lands where the pick-up's drop puts it
-  (no fall from the hand).
+  left out, and only player 1's object is drawn in a hand. A dropped or thrown object falls from the hand
+  ([Physics](physics.md#coneys-implementation)).
+- **Throws** (`repo:src/combat/throw_velocity.h`, `combat::throwAttack`, the play mode's `dropHeld`): square, cross,
+  the charge or the dive with a set 4-6 object plays the throw clip by gait, its type-10 event lets go, and the object
+  leaves the hand's pose with `Human_ComputeThrowVelocity`'s velocity turned by the thrower's heading and the
+  detach's spin. Stand-ins: the target is the fighter's own (no `Player_PickThrowTarget`, no turn to face it), aimed
+  at a fixed head height and from the object's place rather than the hand bone; the aiming state, set 5's smash,
+  hits on humans, wear and breaks on contact, the removal time and the AI's throws are not built.
 
 **Glass and doors**, written from this page and [Crimes](crimes.md#lockpick) (2026-10-06), in `repo:src/world_objects/`:
 
@@ -1454,7 +1460,10 @@ Coney's stand-ins for the world objects, where this page is silent:
   level's `LevelObjects`; the boot scripts' recorded `CfgSetGlassProperties` calls are applied before the level script
   spawns into them. The play mode gives them the level's collision mesh and path data, ticks them twice a step, and
   sends each human's strike-shape contacts to the pane or door the shapes meet
-  ([Combat](combat.md#moving-strikes)). A broken barrier is removed at its next 60-tick
+  ([Combat](combat.md#moving-strikes)). Player 1's object attack (661 / 662) lands when those shapes reach its pane
+  or door, or, for a car or other object, when its strike shapes come on; never at the clip's start. Stand-ins: a
+  pane or door the window passed without touching takes the hit as the window closes, and a clip with no strike
+  events lands it as it ends. A broken barrier is removed at its next 60-tick
   update: its handlers get message 2 (itself, `NilHandle`) and its spawn record goes for good. It draws each swinging
   door's leaves (hinged at
   their positions, `w` the type's `CfgObj` argument 15, swinging by the 28-tick slerp of [Leaves](#leaves)) and each

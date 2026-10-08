@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdint>
 #include <format>
+#include <numbers>
 #include <optional>
 #include <string>
 #include <utility>
@@ -22,6 +23,7 @@
 #include "combat/attacks.h"
 #include "combat/player_combat.h"
 #include "combat/stick_games.h"
+#include "combat/throw_velocity.h"
 #include "hud/hud.h"
 #include "human/fighter.h"
 #include "human/fighter_clips.h"
@@ -36,6 +38,7 @@
 #include "scripting/sound_bindings.h"
 #include "warriors/inventory.h"
 #include "world_objects/glass.h"
+#include "world_objects/object_bodies.h"
 #include "world_objects/props.h"
 
 namespace coney::platform {
@@ -56,8 +59,44 @@ world_objects::PropPose recordPose(const world_objects::SpawnRecord& record) {
         .position = anim::Vec3{record.position[0], record.position[1], record.position[2]},
         .rotation = anim::Quat{record.rotation[0], record.rotation[1], record.rotation[2], record.rotation[3]}};
 }
-// A dropped object lands this far ahead of the feet (Coney's stand-in for its fall from the hand).
-constexpr float kDropAhead = 0.3F;
+// A dropped object is kept within this many metres × the human's scale, less 0.01 m, of him across the ground
+// (docs/research/objects.md#held).
+constexpr float kDropReach = 0.35F;
+constexpr float kDropReachLess = 0.01F;
+// **Coney's stand-in**: an object with no hand pose to fall from (no take event) starts this high above the feet.
+constexpr float kDropHeight = 1.0F;
+// A throw looks for its target this far away: 10 m with an overhead object (set 4), else 20 m
+// (docs/research/objects.md#throws).
+constexpr float kThrowSearchOverhead = 10.0F;
+constexpr float kThrowSearch = 20.0F;
+// **Coney's stand-in** for the target's head bone (bone 6): this high above his feet, times his scale.
+constexpr float kThrowTargetHeight = 1.6F;
+// A thrown object of anim set 1 or 2 (a knife, a baton) spins at this many rad/s about the world's x axis; anything
+// else about z at −k π rad/s, k drawn in [kThrowSpinLeast, kThrowSpinMost] (`MeleeWeapon_Detach`,
+// docs/research/objects.md#held).
+constexpr float kThrowTumble = -4.0F * std::numbers::pi_v<float>;
+constexpr float kThrowSpinLeast = 5.0F;
+constexpr float kThrowSpinMost = 7.0F;
+// The five knives (`dyn_bowie`, `dyn_hunter`, `dyn_tknife`, `dyn_swhbld`, `dyn_swhbld_super`, by their model hashes)
+// take the holder's rotation and tumble at this rate even when dropped (docs/research/objects.md#held).
+constexpr std::array<std::uint32_t, 5> kKnifeModels{0x2a263bb3U, 0x8c6fbfe3U, 0x9babb2c7U, 0x876890ddU, 0x39b7cc9aU};
+constexpr float kKnifeTumble = -8.0F * std::numbers::pi_v<float>;
+
+// The holder's world rotation: his heading about the world's z axis (facing() turns local +y by it).
+anim::Quat headingRotation(float heading) {
+    return anim::Quat{.x = 0.0F, .y = 0.0F, .z = std::sin(heading / 2.0F), .w = std::cos(heading / 2.0F)};
+}
+
+// Whether `animId` is one of the held-object throws, whose release event lets go of what is held.
+bool throwClip(std::uint32_t animId) {
+    constexpr std::array<int, 9> kThrows{
+        combat::anim_id::kOneHandedThrow,        combat::anim_id::kOneHandedThrowFromWalk,
+        combat::anim_id::kOneHandedThrowFromRun, combat::anim_id::kBarrelThrow,
+        combat::anim_id::kBarrelThrowFromWalk,   combat::anim_id::kBarrelThrowFromRun,
+        combat::anim_id::kGhettoThrow,           combat::anim_id::kGhettoThrowFromWalk,
+        combat::anim_id::kGhettoThrowFromRun};
+    return std::ranges::find(kThrows, static_cast<int>(animId)) != kThrows.end();
+}
 // A car stereo's context record (kind 3) reaches this far in the ground plane (`CfgActionDistance`'s default).
 constexpr float kStereoReach = 2.0F;
 // The player's Warrior class byte `+0x0b`, which makes a theft's stage 3 turns (docs/research/combat.md#stereo-theft).
@@ -192,12 +231,14 @@ void PlayLevelMode::bindPickups(LevelPickups* pickups) {
             m_print("pickup: the object's handler took the press\n");
             return true;
         case TriangleResult::Drop: {
-            // At once, with no clip: it lands a little ahead of the feet (Coney's stand-in for its fall).
-            const anim::Vec3 ahead = human::facing(human.heading());
+            // At once, with no clip: it falls from the hand.
             const double held = std::exchange(script.heldObject, world_objects::kNoObject);
             script.heldObjectName.clear();
-            m_pickups->drop(held, anim::Vec3{feet.x + (ahead.x * kDropAhead), feet.y + (ahead.y * kDropAhead), feet.z});
-            m_print(std::format("pickup: dropped object {:.0f}\n", held));
+            dropHeld(human, held);
+            const world_objects::SpawnRecord* record = m_records != nullptr ? m_records->find(held) : nullptr;
+            const std::array<float, 3> from = record != nullptr ? record->position : std::array<float, 3>{};
+            m_print(std::format("pickup: dropped object {:.0f} from ({:.2f}, {:.2f}, {:.3f}), feet at z {:.3f}\n", held,
+                                from[0], from[1], from[2], feet.z));
             return true;
         }
         case TriangleResult::PickUp:
@@ -380,6 +421,31 @@ const world_objects::ObjectType* PlayLevelMode::worldObjectType(double handle) c
                                                                                                         : nullptr;
 }
 
+void PlayLevelMode::stepObjectBodies() {
+    m_objectBodies.clear();
+    if (m_records == nullptr || m_objectTypes == nullptr) {
+        return;
+    }
+    // Each object in the world and not in a hand or on a head whose type has a body and a layer.
+    for (const world_objects::SpawnRecord& record : m_records->all()) {
+        if (record.removed || !m_objectTasks.inWorld(record.handle) || m_wornHats.contains(record.handle) ||
+            (m_pickups != nullptr && m_pickups->inHand(record.handle))) {
+            continue;
+        }
+        const world_objects::ObjectType* type = m_objectTypes->find(record.typeName);
+        if (type == nullptr || type->bodyWord == 0) {
+            continue;
+        }
+        if (const std::optional<world_objects::ObjectBody> body = world_objects::bodyOf(record, *type)) {
+            m_objectBodies.add(*body);
+        }
+    }
+    // A walking human slides along the `BLOCKHUMANS` ones.
+    m_player->humans().setObjectPush([this](anim::Vec3 centre, float radius, anim::Vec3 move) {
+        return m_objectBodies.pushOut(centre, radius, world_objects::kPhyBlockHumans, move);
+    });
+}
+
 void PlayLevelMode::giveObjectTargets() {
     if (m_objects == nullptr) {
         return;
@@ -440,6 +506,16 @@ void PlayLevelMode::stepPickups() {
         m_theftCar.reset();
     }
     stepMugging(human);
+    // A throw's release event lets go of the held object, thrown (Human_ReleaseThrow on event 10).
+    if (human.takeThrowRelease() && throwClip(human.animator().animId()) &&
+        script.heldObject != world_objects::kNoObject) {
+        const double held = std::exchange(script.heldObject, world_objects::kNoObject);
+        script.heldObjectName.clear();
+        dropHeld(human, held, true);
+        const world_objects::LooseObject* flying = m_looseObjects.find(held);
+        const anim::Vec3 v = flying != nullptr ? flying->velocity : anim::Vec3{};
+        m_print(std::format("pickup: threw object {:.0f} at ({:.2f}, {:.2f}, {:.2f}) m/s\n", held, v.x, v.y, v.z));
+    }
     if (const std::optional<double> taken = human.takePickedUp()) {
         const TakeResult result = m_pickups->take(*taken, 0);
         if (result == TakeResult::InHand) {
@@ -451,9 +527,11 @@ void PlayLevelMode::stepPickups() {
                             : result == TakeResult::InHand ? " in hand"
                                                            : ""));
     }
-    // An object let go some other way (HuDropWeapon, ObjDestroy) lands at the feet; the anim set follows the hand.
-    if (m_heldObject != world_objects::kNoObject && m_heldObject != script.heldObject) {
-        m_pickups->drop(m_heldObject, human.position());
+    // An object let go some other way (HuDropWeapon, ObjDestroy) falls from the hand too; the anim set follows the
+    // hand. The triangle drop has already let it go.
+    if (m_heldObject != world_objects::kNoObject && m_heldObject != script.heldObject &&
+        m_pickups->inHand(m_heldObject)) {
+        dropHeld(human, m_heldObject);
     }
     m_heldObject = script.heldObject;
     human.fighter().setAnimSet(m_pickups->animSetOf(script.heldObjectName));
@@ -522,6 +600,128 @@ void PlayLevelMode::stepLockPickDial() {
     }
     const world_objects::LockPickDial& pins = m_lockPick->dial();
     dial.setPins(pins.pins(), std::max(pins.good(), 0));
+}
+
+void PlayLevelMode::dropHeld(human::Human& human, double held, bool thrown) {
+    world_objects::SpawnRecord* record = m_records != nullptr ? m_records->find(held) : nullptr;
+    if (record == nullptr || m_objectTypes == nullptr) {
+        m_pickups->drop(held, human.position());
+        return;
+    }
+    // It starts where the hand holds it, thrown or dropped (a throw from the aiming state, which starts at the aim's
+    // release point, is not built), or above the feet when the hand pose is unknown.
+    const anim::Vec3 feet = human.position();
+    world_objects::WorldPose start =
+        heldPose(held, m_player->current())
+            .value_or(world_objects::WorldPose{
+                .position = {feet.x, feet.y, feet.z + kDropHeight},
+                .rotation = {record->rotation[0], record->rotation[1], record->rotation[2], record->rotation[3]}});
+    // A drop is pulled back across the ground to within reach of the human.
+    const float reach = (kDropReach * human.scale()) - kDropReachLess;
+    const float dx = start.position.x - feet.x;
+    const float dy = start.position.y - feet.y;
+    if (const float across = std::hypot(dx, dy); !thrown && across > reach && across > 0.0F) {
+        start.position.x = feet.x + (dx * reach / across);
+        start.position.y = feet.y + (dy * reach / across);
+    }
+    // The detach (MeleeWeapon_Detach): one of the five knives takes the holder's rotation and tumbles at 8π rad/s,
+    // thrown or dropped. Otherwise a drop gives no velocity and no spin; a throw's velocity
+    // (Human_ComputeThrowVelocity, in the holder's frame) is turned by his rotation, and an object of anim set 1 or 2
+    // takes his rotation and tumbles at 4π, anything else keeps its own and spins about z. Both spins are in the
+    // world's axes.
+    const world_objects::ObjectType* type = m_objectTypes->find(record->typeName);
+    const bool knife = type != nullptr && std::ranges::find(kKnifeModels, type->modelHash) != kKnifeModels.end();
+    anim::Vec3 velocity{};
+    anim::Vec3 spin{};
+    if (thrown) {
+        const anim::Quat holder = headingRotation(human.heading());
+        const anim::Mat34 turn = anim::matrixFromQuat(holder);
+        const int set = m_pickups->animSetOf(record->typeName);
+        combat::ThrowAim aim{.weightFactor =
+                                 combat::throwWeightFactor(type != nullptr ? type->objectKind : 0,
+                                                           type != nullptr ? type->weight : 0, human.scale()),
+                             .fastDefault = human.gait() > human::Gait::Walk && (set == 4 || set == 6)};
+        // At the player's target within the set's search radius, from the hand. **Coney's stand-ins**: the fighter's
+        // target for `Player_PickThrowTarget`'s pick, the held object's place for the posed hand (bone 25), and a
+        // fixed height on the target's scale for his head bone. A player's throw has no spread (flag 0x40000).
+        if (const human::Combatant* target = human.fighter().target(); target != nullptr) {
+            const anim::Vec3 at = target->position();
+            const anim::Vec3 point{at.x, at.y, at.z + (kThrowTargetHeight * target->bodyScale())};
+            const anim::Vec3 world = anim::subtract(point, start.position);
+            const float radius = set == 4 ? kThrowSearchOverhead : kThrowSearch;
+            if (std::hypot(at.x - feet.x, at.y - feet.y) <= radius) {
+                aim.toTarget = anim::transformDirection(anim::inverseRigid(turn), world);
+            }
+        }
+        velocity = anim::transformDirection(turn, combat::throwVelocity(aim));
+        if (set == 1 || set == 2) {
+            start.rotation = holder;
+            spin = anim::Vec3{kThrowTumble, 0.0F, 0.0F};
+        } else if (!knife) {
+            const float k = kThrowSpinLeast + ((kThrowSpinMost - kThrowSpinLeast) * m_throwRandom.unit());
+            spin = anim::Vec3{0.0F, 0.0F, -k * std::numbers::pi_v<float>};
+        }
+    }
+    if (knife) {
+        start.rotation = headingRotation(human.heading());
+        spin = anim::Vec3{kKnifeTumble, 0.0F, 0.0F};
+    }
+    m_pickups->drop(held, start.position);
+    record->rotation = {start.rotation.x, start.rotation.y, start.rotation.z, start.rotation.w};
+    m_looseObjects.start(held, start.position, start.rotation,
+                         type != nullptr ? world_objects::LooseObjects::Kind::of(*type)
+                                         : world_objects::LooseObjects::Kind{},
+                         velocity, spin);
+}
+
+void PlayLevelMode::stepLooseObjects() {
+    if (m_records == nullptr) {
+        m_looseObjects.clear();
+        return;
+    }
+    // An object picked up again or gone from the level leaves the flight (WorldObject_Remove cancels its settle).
+    std::vector<double> gone;
+    for (const auto& [handle, object] : m_looseObjects.all()) {
+        const world_objects::SpawnRecord* record = m_records->find(handle);
+        if (record == nullptr || record->removed || (m_pickups != nullptr && m_pickups->inHand(handle))) {
+            gone.push_back(handle);
+        }
+    }
+    for (const double handle : gone) {
+        m_looseObjects.remove(handle);
+    }
+    // The move meets the level's collision mesh. **Coney stand-in**: humans, cars and other objects (the bodies with
+    // `BLOCKOBJECTS`) are not met yet.
+    const raycast::CollisionMesh* mesh = m_objects != nullptr && m_objects->world.collision != nullptr
+                                             ? m_objects->world.collision
+                                             : &m_scenery->collision();
+    const world_objects::RayTest test = [mesh](anim::Vec3 origin, anim::Vec3 direction,
+                                               float length) -> std::optional<world_objects::RayContact> {
+        const raycast::Ray ray{.origin = {origin.x, origin.y, origin.z},
+                               .direction = {direction.x, direction.y, direction.z},
+                               .length = length};
+        const std::optional<raycast::RayHit> hit = mesh->rayCast(ray, {}, 0);
+        if (!hit) {
+            return std::nullopt;
+        }
+        return world_objects::RayContact{
+            .distance = hit->t, .normal = {hit->normal.x, hit->normal.y, hit->normal.z}, .body = false};
+    };
+    // Each object's pose goes back into its record, which the world objects draw.
+    const auto place = [this](double handle, const world_objects::LooseObject& object) {
+        if (world_objects::SpawnRecord* record = m_records->find(handle)) {
+            record->position = {object.position.x, object.position.y, object.position.z};
+            record->rotation = {object.rotation.x, object.rotation.y, object.rotation.z, object.rotation.w};
+        }
+    };
+    m_looseObjects.step(test, [this, &place](double handle, const world_objects::LooseObject& object) {
+        place(handle, object);
+        m_print(std::format("objects: object {:.0f} came to rest at ({:.2f}, {:.2f}, {:.3f})\n", handle,
+                            object.position.x, object.position.y, object.position.z));
+    });
+    for (const auto& [handle, object] : m_looseObjects.all()) {
+        place(handle, object);
+    }
 }
 
 void PlayLevelMode::stepMugging(human::Human& human) {
@@ -608,10 +808,13 @@ void PlayLevelMode::stepObjects() {
     if (m_objects == nullptr) {
         return;
     }
-    // Player 1's object attack strikes its object; the strike shapes strike the panes and doors they meet in the
-    // humans' step (strikeObjects()).
+    // Player 1's object attack strikes its object when its clip's strike shapes reach it (Strike_Contact), not at the
+    // attack's start: the shapes strike the panes and doors they meet in the humans' step (strikeObjects()).
     const human::Human& human = m_player->human();
-    if (const std::optional<double> attacked = human.fighter().objectHit()) {
+    if (const std::optional<double> aimed = human.fighter().objectHit()) {
+        m_objectAttack = ObjectAttack{.object = *aimed, .clip = human.animator().animId()};
+    }
+    if (const std::optional<double> attacked = objectAttackLands(human)) {
         const anim::Vec3 feet = human.position();
         const anim::Vec3 ahead = human::facing(human.heading());
         // A car takes the hit itself (Strike_Contact calls its hit handler; no message 1), by where the player stands.
@@ -632,10 +835,15 @@ void PlayLevelMode::stepObjects() {
                 }
             }
         } else if (const world_objects::ObjectType* type = worldObjectType(*attacked); type != nullptr) {
-            // A world object (a street prop): its counters, the boxes' message 6 while it was intact, its own hit.
-            const world_objects::SpawnRecord* record = m_records->find(*attacked);
-            strikeProp(playerHandle(), *attacked, *type, world_objects::humanHitKind(false, false),
-                       recordPose(*record).position, ahead, feet, recordPose(*record));
+            // A world object (a street prop): its counters, the boxes' message 6 while it was intact, its own hit;
+            // nothing more when the attack's shapes struck it already (the strike reaches it once).
+            human::StrikeShapes& strikes = m_player->human().strikeShapes();
+            if (!strikes.struck(*attacked) && !m_objects->props.broken(*attacked)) {
+                strikes.markStruck(*attacked);
+                const world_objects::SpawnRecord* record = m_records->find(*attacked);
+                strikeProp(playerHandle(), *attacked, *type, world_objects::humanHitKind(false, false),
+                           recordPose(*record).position, ahead, feet, recordPose(*record));
+            }
         } else {
             const world_objects::GlassPane* pane = m_objects->glass.find(*attacked);
             const bool took = m_objects->humanHit(
@@ -677,6 +885,38 @@ void PlayLevelMode::stepObjects() {
     }
 }
 
+std::optional<double> PlayLevelMode::objectAttackLands(const human::Human& human) {
+    if (!m_objectAttack) {
+        return std::nullopt;
+    }
+    const ObjectAttack attack = *m_objectAttack;
+    const human::StrikeShapes& strikes = human.strikeShapes();
+    // The clip ended. **Coney's stand-in**: a clip whose strike shapes never came on (no strike events) lands its hit
+    // as it ends; one whose window passed without reaching a car or object landed it then.
+    if (human.animator().animId() != attack.clip) {
+        m_objectAttack.reset();
+        return attack.shapesOn ? std::nullopt : std::optional<double>(attack.object);
+    }
+    const bool shaped =
+        m_objects->glass.find(attack.object) != nullptr || m_objects->doors.find(attack.object) != nullptr;
+    if (strikes.anyOn()) {
+        m_objectAttack->shapesOn = true;
+        // A car or other object, which Coney's shapes do not strike: at the first update of the strike window.
+        if (!shaped) {
+            m_objectAttack.reset();
+            return attack.object;
+        }
+        return std::nullopt;
+    }
+    // **Coney's stand-in**: a pane or door the shapes passed without touching takes the hit as the window closes, so
+    // an object attack aimed at it never misses.
+    if (attack.shapesOn) {
+        m_objectAttack.reset();
+        return attack.object;
+    }
+    return std::nullopt;
+}
+
 void PlayLevelMode::strikeObjects(human::Human& human, std::span<const human::PosedShape> shapes) {
     if (m_objects == nullptr || m_objects->world.collision == nullptr) {
         return;
@@ -689,6 +929,10 @@ void PlayLevelMode::strikeObjects(human::Human& human, std::span<const human::Po
     const bool player = &human == &m_player->human();
     const auto strike = [&](double object, anim::Vec3 point, std::uint8_t material) {
         strikes.markStruck(object);
+        // Player 1's object attack aimed here has landed (objectAttackLands() stops waiting).
+        if (player && m_objectAttack && m_objectAttack->object == object) {
+            m_objectAttack.reset();
+        }
         // The object sounds as its type's material before it takes the hit.
         reportStrikeSound(human, material, 1.0F, player);
         const bool took = m_objects->humanHit(

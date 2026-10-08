@@ -179,6 +179,8 @@ class ObjectTasks {
     [[nodiscard]] const std::vector<ObjectDraw>& draws() const { return m_draws; }
     /// The marker of object `handle`; null when it is not a marker in the world.
     [[nodiscard]] const ObjectiveMarker* marker(double handle) const;
+    /// Whether object `handle` is in the world now (streamed in).
+    [[nodiscard]] bool inWorld(double handle) const { return m_tasks.contains(handle); }
     /// How many objects are in the world now.
     [[nodiscard]] std::size_t count() const { return m_tasks.size(); }
     /// Drops every object (the level is unloaded).

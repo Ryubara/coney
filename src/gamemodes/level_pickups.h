@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <cstdint>
 #include <functional>
 #include <optional>
 #include <set>
@@ -76,6 +77,8 @@ class LevelPickups {
     /// Where an object with an interaction prompt but no spawn record is (a tag spot's particle system, a flag);
     /// nothing when it is gone.
     using Locator = std::function<std::optional<anim::Vec3>(double object)>;
+    /// Plays a sound by name hash once, without a position (`PlaySound2DByHash`: the game's sound in a run).
+    using Play2D = std::function<void(std::uint32_t hash)>;
 
     LevelPickups(script::ScriptSystem& scripts, GameState& state, world_objects::SpawnRecords& records,
                  const world_objects::ObjectTypes& types, const script::MessageHandlers* messages = nullptr)
@@ -84,6 +87,8 @@ class LevelPickups {
     /// Locates the prompt objects that are not spawn records: a `SetMsgHandlerEx` on a tag spot (`level87`) or a
     /// flag registers a kind-1 context record just as one on a loose object does (docs/research/crimes.md#triangle).
     void setLocator(Locator locator) { m_locate = std::move(locator); }
+    /// Plays the items' pick-up sounds through `play` from now on (empty: none).
+    void setSound(Play2D play) { m_play2D = std::move(play); }
 
     /// The action object for a player whose feet are at `feet`: of the objects with an interaction prompt, the
     /// nearest within kPromptReach in the ground plane whose height is within kPromptHeight of the feet + 1 m.
@@ -110,13 +115,14 @@ class LevelPickups {
     /// Player `player` (0 or 1) takes object `handle`, at its pick-up clip's event. A `TYPE_SPECIAL` adds item 10
     /// (loot) ×1 with notify, then its value × kLootMoneyFactor in money without, and the record is removed for good.
     /// Any other kind (a bat's 3 among them) is one `Human_PickUpObject` has no case for, so it goes into the hand
-    /// (`0x00227010`): its record stays, held. **Coney choices**: the named mission items (model hashes the original
-    /// checks first) are not listed, so every `TYPE_SPECIAL` is loot; item 10's pickup sound is not played.
+    /// (`0x00227010`): its record stays, held. Loot plays item 10's pick-up sound (pickupSound()). **Coney choice**:
+    /// the named mission items (model hashes the original checks first) are not listed, so every `TYPE_SPECIAL` is
+    /// loot.
     /// @orig 0x0023bf00 Human_PickUpObject (unknown)
     TakeResult take(double handle, int player);
 
-    /// The object `handle` leaves the hand at `at` (a dropped weapon). **Coney stand-in**: it lands where it is put,
-    /// with no physics.
+    /// The object `handle` leaves the hand at `at` (a dropped weapon): no longer held, its record unpinned and moved
+    /// there. Its fall is the play mode's (world_objects::LooseObjects).
     /// @orig 0x00257f38 Human_DropHeld (unknown)
     void drop(double handle, anim::Vec3 at);
 
@@ -128,8 +134,8 @@ class LevelPickups {
     [[nodiscard]] bool inHand(double handle) const { return m_inHand.contains(handle); }
 
     /// Player `player` (0 or 1), human `human`, stole the stereo of car `car`: $15 and a car stereo (item 11), then
-    /// `CfgSetSteroTheftHandler`'s callback with the human and the car. **Coney's reading**: both gifts notify (the
-    /// research does not say).
+    /// `CfgSetSteroTheftHandler`'s callback with the human and the car. **Coney's reading**: both gifts notify, and no
+    /// pick-up sound plays (the research names none).
     /// @orig 0x0022e020 StereoTheft_End (unknown)
     void stereoStolen(int player, double human, double car);
 
@@ -143,8 +149,9 @@ class LevelPickups {
     /// Player `player`'s (0 or 1) score as the HUD's panel shows it (`StatGetScore`).
     [[nodiscard]] int score(int player) const;
     /// A dealer sold player `player` (0 or 1) `amount` of item `item` for `price` dollars: the item given and the price
-    /// taken (an amount of 0: a dirty dealer kept the price). **Coney's reading**: neither notifies the inventory
-    /// callbacks (the research names only the pickup sound, which Coney does not play).
+    /// taken (an amount of 0: a dirty dealer kept the price), and the item's pick-up sound plays when one was given
+    /// (docs/research/ai.md#dealer-buy). **Coney's reading**: neither notifies the inventory callbacks, and "the pickup
+    /// sound" is the item's own (`vags/interface/powerup` for the items the shipped config gives it).
     void dealerSold(int player, int item, int amount, int price);
     /// Player `player` (0 or 1) used one of item `item` (a flash): one fewer, no callbacks.
     void spendItem(int player, int item);
@@ -155,8 +162,8 @@ class LevelPickups {
 
     /// Player `player` (0 or 1) won a mugging of a human no player controls: in the update that reached the required
     /// time, all the victim's `victimMoney` dollars go to the player (item 2, notifying: the money callback, then the
-    /// inventory callbacks) and it is left with none. Nothing for a victim with no money. **Not yet**: a pocket item or
-    /// carried object handed over first, the 1.5 times of ped type 5, item 2's pick-up sound.
+    /// inventory callbacks) and it is left with none, and item 2's pick-up sound plays. Nothing for a victim with no
+    /// money. **Not yet**: a pocket item or carried object handed over first, the 1.5 times of ped type 5.
     /// @orig 0x002856b8 Player_UpdateMugging (unknown)
     void mugPaid(int player, int& victimMoney);
 
@@ -172,6 +179,11 @@ class LevelPickups {
     /// object is stored).
     void placeObject(double handle, anim::Vec3 position, anim::Quat rotation = {});
 
+    /// Plays item `item`'s pick-up sound (inventory entry `+0x24`, set by `CfgInventoryItem`) for player `player` (0 or
+    /// 1), once and without a position; nothing for an item with no sound (empty or `none`) or with no sound output.
+    /// @orig 0x0041e320 InventoryBlock_GetSound (unknown)
+    void pickupSound(int player, int item) const;
+
   private:
     // Where prompt object `object` is: its spawn record's place (none when removed or in a hand), else the locator's.
     [[nodiscard]] std::optional<anim::Vec3> promptPosition(double object) const;
@@ -185,6 +197,7 @@ class LevelPickups {
     const script::MessageHandlers* m_messages;
     std::set<double> m_inHand; // the objects held, whose records stay
     Locator m_locate;          // the prompt objects that are not spawn records
+    Play2D m_play2D;           // the items' pick-up sounds
 };
 
 } // namespace coney
