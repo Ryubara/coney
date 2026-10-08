@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "core/assert.h"
+#include "core/event_log.h"
 #include "scripting/lua_libraries.h"
 
 namespace coney::script {
@@ -101,7 +102,8 @@ void ScriptSystem::create() {
     // Errors leave no trace in the game: both handlers do nothing. Coney logs errors itself (reportError()).
     m_vm->registerFunction("_ERRORMESSAGE", silent);
     m_vm->registerFunction("_ALERT", silent);
-    if (m_trace) {
+    // The bindings are wrapped for a script trace, and for an event log (`--event-log`), where each call is an event.
+    if (m_trace || events::enabled()) {
         wrapBindingsForTrace();
     }
 }
@@ -131,6 +133,7 @@ void ScriptSystem::wrapBindingsForTrace() {
             // The arguments are shown before the call: they live on the VM's stack, which a binding that calls back
             // into the scripts reuses.
             const std::string called = std::format("{}({})", name, tracedArgs(args));
+            events::emit("call", name, tracedArgs(args));
             auto results = function->native(args);
             if (const std::shared_ptr<Log> trace = sink.lock(); trace && *trace) {
                 const std::string shown =
@@ -273,6 +276,9 @@ std::optional<std::vector<Value>> ScriptSystem::callResults(std::string_view nam
     callArgs.insert(callArgs.end(), args.begin(), args.end());
     if (m_trace && *m_trace) {
         (*m_trace)(std::format("> {}({})\n", name, tracedArgs(args)));
+    }
+    if (events::enabled()) {
+        events::emit("callback", name, tracedArgs(args));
     }
     auto result = m_vm->call(function, callArgs);
     noteSkippedCalls();

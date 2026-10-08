@@ -549,6 +549,8 @@ functions named:
 - **Taking the next** (`HintBox_Update`, `0x001cdc80`, each HUD update and also during a freeze, from `GameTimer_Update`
   `0x00145a10`): when no hint shows, the front of the queue becomes the text (`MarkupText_SetText`), its priority goes
   to `+0x3ac`, interface cue `0x15` plays, and the box is laid out ([layout](#hint-box-layout-0x0050eb50)).
+  The queue entry is in `s1` there (`+0x0` the text, `+0x4` the priority byte); `0x001cdf7c`, just after
+  `MarkupText_SetText`, is where the `event-hint` hook logs each hint the moment it shows. Confirmed (runtime).
 - **How long a hint stays** comes **only from its markup** (`MarkupText_IsExpired`, `0x001bb2f0`; when it returns true
   the text is cleared, vtable `+0x6c` = `0x001b9290`, and the next update takes the next hint):
     - `<DISPLAYTIME ms>`: gone `ms` after it was first laid out, timed on the clock at `0x0050b8b8` (inferred: the

@@ -29,6 +29,7 @@ constexpr std::string_view kUsage =
     "             [--trace FILE] [--script-trace FILE] [--scene NAME] [--camera X,Y,Z,QX,QY,QZ,QW[,FOV]]\n"
     "             [--freeze-world]] [--sandbox [NAME]]\n"
     "             [--assets DIR]\n"
+    "             [--event-log FILE] [--pad-pipe]\n"
     "             [--dev-overlay N]\n"
     "             [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]\n"
     "             [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
@@ -65,6 +66,10 @@ constexpr std::string_view kUsage =
     "                     step to FILE, one CSV line per step\n"
     "  --script-trace FILE with --play-level levelN: write every script binding call, and every call\n"
     "                     into the scripts, with its arguments to FILE, one line each\n"
+    "  --event-log FILE   write what a player would notice (binding calls, calls into the scripts,\n"
+    "                     hints, sounds, humans in and out) to FILE, one CSV line per event\n"
+    "  --pad-pipe         read player 1's pad from standard input, one line per frame, after\n"
+    "                     writing what is on screen to standard output; for a driver program\n"
     "  --camera X,Y,Z,QX,QY,QZ,QW[,FOV]\n"
     "                     with --play-level: pin player 1's view for the whole run at the eye X,Y,Z\n"
     "                     (metres, z up) with the camera's orientation quaternion and field of view\n"
@@ -229,6 +234,9 @@ std::expected<void, Error> checkSandbox(const Options& options) {
     }
     if (options.scriptTraceFile.has_value() && !(options.playLevel && !sandboxOfPlayLevel(*options.playLevel))) {
         return invalidArgument("--script-trace needs --play-level with a level: it traces the level's scripts");
+    }
+    if (options.padPipe && options.inputScript.has_value()) {
+        return invalidArgument("--pad-pipe cannot be combined with --input-script: both give the pad");
     }
     if (options.start.has_value() && !options.playLevel.has_value()) {
         return invalidArgument("--start needs --play-level: it places the player");
@@ -528,7 +536,7 @@ std::expected<RenderSize, Error> parseRenderSize(std::string_view text) {
 
 bool isTestMode(const Options& options) {
     return options.headless || !options.loads.empty() || options.frameLimit.has_value() ||
-           options.inputScript.has_value() || options.screenshotPath.has_value();
+           options.inputScript.has_value() || options.padPipe || options.screenshotPath.has_value();
 }
 
 bool activatesWindow(const Options& options) {
@@ -622,6 +630,16 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 !value) {
                 return std::unexpected(std::move(value.error()));
             }
+        } else if (arg == "--event-log") {
+            if (auto value = takeValue(args, i, options.eventLogFile, "--event-log", "the path of a CSV file");
+                !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--pad-pipe") {
+            if (options.padPipe) {
+                return invalidArgument("--pad-pipe given twice");
+            }
+            options.padPipe = true;
         } else if (arg == "--scene") {
             if (auto value = takeValue(args, i, options.scene, "--scene", "a scene's name"); !value) {
                 return std::unexpected(std::move(value.error()));

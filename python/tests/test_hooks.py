@@ -115,7 +115,10 @@ def test_the_repository_hooks_build() -> None:
     assert {"tick-game", "humans-update", "state-code", "call-brains"} <= set(known)
     calls = [hook for hook in known.values() if hook.call]
     others = [hook for hook in known.values() if not hook.call]
-    build([*others, calls[0]])
+    # Hooks of different passes may share an address (the event hooks and the hint ones); each pass builds alone.
+    events = [hook for hook in others if hook.name.startswith("event-")]
+    build([hook for hook in others if hook not in events] + [calls[0]])
+    build(events)
 
 
 def test_a_followed_field_reads_through_the_pointer_of_the_moment(tmp_path: Path) -> None:

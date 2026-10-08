@@ -200,6 +200,19 @@ default (0, `false` or `NULL`), a wrong type as whatever Lua's conversion gives.
 
 The scripts follow the same convention: `global.lua` sets `true = 1` and `false = nil` before anything else.
 
+#### How a binding is called {#binding-call}
+
+Every call from a script into a C binding goes through Lua 4.0's
+`callCclosure` (`0x00328a30`, `(L, closure, base)`): the closure's C function is its word `+0x0` and its upvalue
+count the half-word `+0xe`; the arguments are the stack slots from `base`, 0x10 bytes each (the type tag at `+0x0`: 1
+nil, 2 number, 3 string, 4 table, 5 function; the value at `+0x8`, a double or a pointer, a string's characters at
+`+0x10` of its `TString`). It pushes the upvalues, calls the function with `L` and returns the results' base.
+Confirmed (code), and (runtime) by the `event-call` hook ([Differential
+playthroughs](../guides/research-workflow.md#differential-playthroughs)), which logs the function and the first two
+slots there: slots past the call's arguments hold whatever the stack held, so a reader trims them by the binding's
+arity. The engine's calls the other way, into a script function by name, all look the name up first with
+`FindFunction` (`0x00356e08`, slot `+0x4c` above; `a1` the dotted name), where the `event-callback` hook logs them.
+
 ### Bindings the front end and the script system depend on
 
 The front end needs the results of [`GetPlatform`](../references/bindings/util.md#getplatform),

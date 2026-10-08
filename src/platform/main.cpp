@@ -3,6 +3,7 @@
 // Entry point. SDL_main.h lets SDL provide the right entry on each OS (WinMain on Windows), which is why main lives
 // in src/platform/: it is the one function that is part of the operating-system boundary.
 
+#include <algorithm>
 #include <array>
 #include <charconv>
 #include <cmath>
@@ -14,6 +15,7 @@
 #include <format>
 #include <fstream>
 #include <functional>
+#include <iostream>
 #include <memory>
 #include <numbers>
 #include <optional>
@@ -32,6 +34,7 @@
 #include "core/chunk_system.h"
 #include "core/deferred_input.h"
 #include "core/error.h"
+#include "core/event_log.h"
 #include "core/frame_clock.h"
 #include "core/game_random.h"
 #include "core/game_timer.h"
@@ -68,6 +71,7 @@
 #include "platform/frame_pacer.h"
 #include "platform/game_session.h"
 #include "platform/imgui_overlay.h"
+#include "platform/pad_pipe.h"
 #include "platform/play_level_mode.h"
 #include "platform/profile_folder.h"
 #include "platform/reference_renderer.h"
@@ -264,6 +268,49 @@ int main(int argc, char** argv) {
         printText(coney::usageText());
         return 0;
     }
+
+    // `--event-log` and `--pad-pipe`: the events go to the file, and to the driver as `@ev` lines (a hint's line
+    // breaks become spaces there, one event a line). Opened before anything runs, so the first event is in it; the
+    // guard closes the log before the file goes. With `--play-level` the log starts with the level's fresh Lua state
+    // (the session's `ready`, below) at step 0, so the loading screen's events stay out of it, as they are out of a
+    // playthrough of the original started from a save state.
+    std::shared_ptr<std::ofstream> eventFile;
+    const auto eventsRecording = std::make_shared<bool>(!options->playLevel);
+    if (const std::optional<std::string> eventPath = options->eventLogFile; eventPath) {
+        eventFile = std::make_shared<std::ofstream>(*eventPath, std::ios::binary | std::ios::trunc);
+        if (!*eventFile) {
+            std::fprintf(stderr, "coney: --event-log: cannot write %s\n", eventPath->c_str());
+            return 1;
+        }
+        *eventFile << coney::events::kCsvHeader;
+    }
+    if (eventFile || options->padPipe) {
+        coney::events::setSink(
+            [eventFile, piped = options->padPipe, eventsRecording](std::uint64_t step, std::string_view kind,
+                                                                   std::string_view name, std::string_view detail) {
+                if (!*eventsRecording) {
+                    return;
+                }
+                std::string line = coney::events::csvLine(step, kind, name, detail);
+                if (eventFile) {
+                    *eventFile << line;
+                }
+                if (piped) {
+                    line.pop_back();
+                    std::ranges::replace(line, '\n', ' ');
+                    std::ranges::replace(line, '\r', ' ');
+                    std::cout << "@ev " << line << '\n';
+                }
+            });
+    }
+    struct EventLogGuard {
+        EventLogGuard() = default;
+        EventLogGuard(const EventLogGuard&) = delete;
+        EventLogGuard& operator=(const EventLogGuard&) = delete;
+        EventLogGuard(EventLogGuard&&) = delete;
+        EventLogGuard& operator=(EventLogGuard&&) = delete;
+        ~EventLogGuard() { coney::events::setSink({}); }
+    } const eventLogGuard;
 
     // The order follows the original's start-up where Coney has the subsystem (docs/research/boot.md): the WAD is
     // opened, then the chunk handlers are registered, then the game-mode stack runs.
@@ -550,7 +597,8 @@ int main(int argc, char** argv) {
     // there is a window; a headless run without a script has no pads. Declared after the renderer, so it is destroyed
     // before SDL stops. With `--play-level` a script starts at the level's first frame of play (DeferredInput), so its
     // frames keep their meaning however long the loading screen and an intro movie take.
-    std::unique_ptr<coney::ScriptedInput> levelScript; // the script under the deferred start; before `input`
+    std::unique_ptr<coney::ScriptedInput> levelScript;   // the script under the deferred start; before `input`
+    std::unique_ptr<coney::platform::PadPipe> levelPipe; // the pad pipe under the deferred start; before `input`
     std::unique_ptr<coney::InputSource> input;
     coney::DeferredInput* deferredInput = nullptr;
     // The SDL input, when it is the source: the developer overlay mutes its keyboard.
@@ -584,6 +632,30 @@ int main(int argc, char** argv) {
             input = std::move(deferred);
         } else {
             input = std::move(scripted);
+        }
+    } else if (options->padPipe) {
+        // `--pad-pipe`: a driver program plays player 1 by what it sees of the level in play. With `--play-level` the
+        // pipe starts at the level's first frame of play (DeferredInput), as a script does, so the driver's first view
+        // is of the level and not of its loading screen.
+        auto pipe =
+            std::make_unique<coney::platform::PadPipe>(std::cin, std::cout, [&playLevel, &sessionPlayMode, &session]() {
+                coney::platform::PipeView view;
+                view.mode = playLevel ? playLevel.get() : sessionPlayMode();
+                view.cars = view.mode != nullptr ? view.mode->cars() : nullptr;
+                if (session) {
+                    view.records = &session->flow().spawnRecords();
+                    view.pickups = session->gameplay().pickups();
+                }
+                return view;
+            });
+        if (commandLineLevel) {
+            levelPipe = std::move(pipe);
+            auto deferred =
+                std::make_unique<coney::DeferredInput>(*levelPipe, [&session] { return session && session->inPlay(); });
+            deferredInput = deferred.get();
+            input = std::move(deferred);
+        } else {
+            input = std::move(pipe);
         }
     } else if (renderer.window()) {
         auto started = coney::platform::SdlInput::start();
@@ -696,17 +768,23 @@ int main(int argc, char** argv) {
             session->gameplay().setWorldFrozen(options->freezeWorld);
             // `--script-trace`: every binding call and call into the scripts from the level's Lua state on, to a file
             // the trace keeps open.
-            std::function<void()> ready;
+            // `--event-log` and `--pad-pipe`: the events from here on, counted from step 0.
+            std::shared_ptr<std::ofstream> scriptTraceFile;
             if (const std::optional<std::string> scriptTrace = options->scriptTraceFile; scriptTrace) {
-                auto file = std::make_shared<std::ofstream>(*scriptTrace, std::ios::binary | std::ios::trunc);
-                if (!*file) {
+                scriptTraceFile = std::make_shared<std::ofstream>(*scriptTrace, std::ios::binary | std::ios::trunc);
+                if (!*scriptTraceFile) {
                     std::fprintf(stderr, "coney: --script-trace: cannot write %s\n", scriptTrace->c_str());
                     return 1;
                 }
-                ready = [&session, file] {
-                    session->flow().scripts().traceCalls([file](std::string_view line) { *file << line; });
-                };
             }
+            std::function<void()> ready = [&session, scriptTraceFile, eventsRecording] {
+                if (scriptTraceFile) {
+                    session->flow().scripts().traceCalls(
+                        [file = scriptTraceFile](std::string_view line) { *file << line; });
+                }
+                coney::events::setStep(0);
+                *eventsRecording = true;
+            };
             session->startAtLevel(*commandLineLevel, options->checkpoint.value_or(1), std::move(ready));
         } else {
             session->startStory();
@@ -929,8 +1007,19 @@ int main(int argc, char** argv) {
     std::optional<coney::platform::Window> window = renderer.window();
     // The window's events go past the developer overlay first; while it has the keyboard, the keyboard pad is off.
     coney::FrameHooks hooks;
+    coney::platform::HumanWatch humanWatch; // the humans' events for the event log
     hooks.beginFrame = [&window, &devOverlay, devices, &pendingSandbox, &playSandbox, &pendingStart, &startSessionAt,
-                        &session, &playFramesDone, &deferredInput] {
+                        &session, &playFramesDone, &deferredInput, &humanWatch, &playLevel, &sessionPlayMode,
+                        &eventFile] {
+        // The event log: what the last frame's step did to the humans, then the step the next frame runs.
+        if (coney::events::enabled()) {
+            humanWatch.update(playLevel ? playLevel.get() : sessionPlayMode());
+            coney::events::setStep(coney::events::step() + 1);
+            // Flushed every frame: a driver may end the run by killing Coney, and the log must hold every frame.
+            if (eventFile) {
+                eventFile->flush();
+            }
+        }
         // A sandbox or level the Levels page asked for, between two frames.
         if (pendingSandbox) {
             const std::string name = *pendingSandbox;

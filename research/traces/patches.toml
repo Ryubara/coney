@@ -534,3 +534,38 @@ address = 0x0017450c
 # addu a1,a1,v0; lw v1,0x74(a1)
 original = [0x00a22821, 0x8ca30074]
 log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "s2", name = "drawn" }, { value = "f20", name = "percent" }, { value = "v0", name = "slot" }]
+
+# The event hooks of a differential playthrough (docs/guides/research-workflow.md#differential-playthroughs): what
+# research/traces/events.toml turns into the original's event log.
+
+[hook.event-call]
+description = "Each script binding a Lua script calls (callCclosure, 0x00328a30): the C function, and the first two arguments as type tag, value word and high word, with the text of a string argument (a TString's characters at +0x10)."
+research = "docs/research/scripting.md#binding-call"
+address = 0x00328a30
+# addiu sp,sp,-0x50; sq s0,0x40(sp)
+original = [0x27bdffb0, 0x7fb00040]
+log = [{ value = "[a1 + 0x0]", name = "function" }, { value = "[a2 + 0x0]", name = "t1" }, { value = "[a2 + 0x8]", name = "v1", text = 128, text_offset = 0x10, text_when = "t1=3" }, { value = "[a2 + 0xc]", name = "h1" }, { value = "[a2 + 0x10]", name = "t2" }, { value = "[a2 + 0x18]", name = "v2", text = 128, text_offset = 0x10, text_when = "t2=3" }, { value = "[a2 + 0x1c]", name = "h2" }]
+
+[hook.event-callback]
+description = "Each script function the game looks up by name to call it (ScriptSystem::FindFunction, 0x00356e08): the dotted name."
+research = "docs/research/scripting.md#binding-call"
+address = 0x00356e08
+# addiu sp,sp,-0x100; move t0,zero
+original = [0x27bdff00, 0x0000402d]
+log = [{ value = "a1", name = "name", text = 64 }, "ra"]
+
+[hook.event-hint]
+description = "HintBox_Update taking the next hint off its queue (0x001cdf7c, after MarkupText_SetText): the hint's text, the moment it shows."
+research = "docs/research/hud.md#hints-hudsettutorialtext"
+address = 0x001cdf7c
+# lbu v0,0x4(s1); lui a0,0x60
+original = [0x92220004, 0x3c040060]
+log = [{ value = "[s1 + 0x0]", name = "text", text = 1024 }, { value = "[s1 + 0x4]", name = "priority", type = "u8" }]
+
+[hook.event-sound]
+description = "Each sound started (AudioManager_Play, 0x00111de8): its name hash (a2), its owner handle (a1) and the caller."
+research = "docs/research/sound.md#play"
+address = 0x00111de8
+# addiu sp,sp,-0xb0; sq s2,0x60(sp)
+original = [0x27bdff50, 0x7fb20060]
+log = [{ value = "a2", name = "hash" }, { value = "a1", name = "owner" }, "ra"]

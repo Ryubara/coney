@@ -7,6 +7,7 @@
 #include <utility>
 #include <vector>
 
+#include "core/event_log.h"
 #include "gui/markup.h"
 #include "hud/hud_layout.h"
 
@@ -182,6 +183,8 @@ void HintBox::update(std::uint64_t nowMs, const HudSound& audio) {
         m_times = markupTimesOf(m_showing->text);
         m_shownAtMs = nowMs;
         audio.playCue(kCueHint);
+        // The event log (`--event-log`): a hint as the player starts to see it.
+        events::emit("hint", m_showing->text);
     }
 }
 

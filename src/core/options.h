@@ -161,6 +161,15 @@ struct Options {
     /// file, one line each with its arguments (script::ScriptSystem::traceCalls()), to see where a mission's scripts
     /// wait. Requires playLevel with a level.
     std::optional<std::string> scriptTraceFile;
+    /// `--event-log`: write what a player would notice happening (script binding calls, calls into the scripts,
+    /// hints shown, sounds started, humans appearing and running out of health) to this file, one CSV line per
+    /// event stamped with its step (coney::events), for a differential playthrough against the original
+    /// (docs/guides/research-workflow.md#differential-playthroughs). Works on any path through the game.
+    std::optional<std::string> eventLogFile;
+    /// `--pad-pipe`: take player 1's pad from standard input, one line per frame, after writing what the frame before
+    /// left on screen to standard output (docs/guides/building.md#pad-pipe), so a driver program can play the game
+    /// by what it sees. Test mode; cannot be combined with `--input-script`.
+    bool padPipe = false;
     /// `--assets`: the folder holding Coney's own assets (its `sandbox` folder of layouts and textures), in place of
     /// the `assets` folder beside the executable.
     std::optional<std::string> assetsDir;

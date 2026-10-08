@@ -1,0 +1,18 @@
+description = "level99 checkpoint 2: the store's loot and the car radio, played to the stolen radio"
+research = "docs/research/crimes.md#stereo"
+course = "level99-street"
+updates = 25000
+until = "callback P2.CarRadioStolen"
+after = 90
+
+[original]
+# A state of the original in checkpoint 2 before a loot cabinet, copied from a save state
+# (docs/guides/research-workflow.md#differential-playthroughs); never committed.
+state = "states/l99-cp2-loot.p2s"
+patches = ["scripted-pad", "right-stick", "event-call", "event-callback", "event-hint", "event-sound"]
+friends = ["Ash", "Rembrandt"]
+enemy_brain = 4
+
+[coney]
+level = "level99"
+args = ["--checkpoint", "2"]

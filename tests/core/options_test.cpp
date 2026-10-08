@@ -644,3 +644,21 @@ TEST_CASE("the rumble option refuses a bad mode, listing the valid ones, and bad
     REQUIRE(help.has_value());
     CHECK(help->showHelp);
 }
+
+TEST_CASE("the event log option names the file events are written to, on any path", "[options]") {
+    auto story = parse(std::array<std::string_view, 4>{"--disc", "x", "--event-log", "e.csv"});
+    REQUIRE(story.has_value());
+    CHECK(story->eventLogFile == "e.csv");
+    CHECK_FALSE(parse(std::array<std::string_view, 1>{"--event-log"}).has_value());
+    CHECK(coney::usageText().find("--event-log") != std::string_view::npos);
+}
+
+TEST_CASE("the pad pipe is test mode and takes the place of an input script", "[options]") {
+    auto piped = parse(std::array<std::string_view, 5>{"--disc", "x", "--play-level", "level99", "--pad-pipe"});
+    REQUIRE(piped.has_value());
+    CHECK(piped->padPipe);
+    CHECK(coney::isTestMode(*piped));
+    CHECK_FALSE(
+        parse(std::array<std::string_view, 4>{"--pad-pipe", "--input-script", "s.txt", "--headless"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 2>{"--pad-pipe", "--pad-pipe"}).has_value());
+}

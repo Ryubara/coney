@@ -13,6 +13,7 @@ from typing import Any
 
 from coney_tools import (
     audio_cli,
+    mission_cli,
     missions_render,
     movies_cli,
     natives_cli,
@@ -384,6 +385,27 @@ def _add_trace_commands(groups: Any) -> None:
     diff.add_argument("--shift", type=int, help="compare original step s with Coney step s + SHIFT (default 0)")
     diff.add_argument("--start-frame", action="store_true", help="compare in each player's frame at the first step")
     diff.add_argument("--context", type=int, default=3, help="rows shown each side of a divergence (default 3)")
+    mission = commands.add_parser("mission", help="play a mission scenario's course on one game; write its event log")
+    mission.add_argument("scenario", type=Path, help="a mission scenario TOML (research/traces/missions/)")
+    mission.add_argument("--side", choices=("coney", "original"), required=True, help="the game to play it on")
+    mission.add_argument("--out", type=Path, required=True, help="the event log CSV (outside the repository)")
+    mission.add_argument("--coney", type=Path, help="Coney's executable; default: build/dev/src/platform/coney")
+    mission.add_argument("--disc", help="the disc for Coney; default: game_dir")
+    mission.add_argument("--state", help="the original: another state file (or slot:N) to start from")
+    mission.add_argument("--agent", help="the original: your id; runs under your PCSX2 claim")
+    mission.add_argument("--updates", type=int, help="play at most this many updates (default: the scenario's)")
+    _add_pcsx2_flags(mission)
+    events = commands.add_parser("events-diff", help="compare two event logs in order; exit 1 when Coney lacks some")
+    events.add_argument("original", type=Path, help="the original's event log (trace mission --side original)")
+    events.add_argument("coney", type=Path, help="Coney's event log (coney --event-log, or trace mission)")
+    events.add_argument("--rules", type=Path, help="the rules file; default: research/traces/events.toml")
+    events.add_argument("--kinds", nargs="+", metavar="KIND", help="compare these kinds (default: the rules' list)")
+    events.add_argument("--window", type=int, help="the timing window in updates (default: the rules')")
+    events.add_argument("--limit", type=int, default=40, help="lines shown per list (default 40)")
+    events.add_argument("--labels", type=Path, help="a JSON object of label to text, naming hashed texts")
+    events.add_argument(
+        "--from", dest="first", default="", metavar="EVENT", help="start both logs at their first 'kind name' EVENT"
+    )
 
 
 def _run_progress(args: argparse.Namespace) -> int:
@@ -509,6 +531,17 @@ def _run(args: argparse.Namespace) -> int:
     if args.group == "trace":
         if args.command == "coney":
             return trace_cli.run_coney(args.scenario, args.out, args.coney, args.disc)
+        if args.command == "mission":
+            if args.side == "coney":
+                return mission_cli.run_mission_coney(args.scenario, args.out, args.coney, args.disc, args.updates)
+            flags = (args.pcsx2_dir, args.iso, args.scratch)
+            return mission_cli.run_mission_original(
+                args.scenario, args.out, args.state, flags, args.agent, args.updates
+            )
+        if args.command == "events-diff":
+            return mission_cli.run_events_diff(
+                args.original, args.coney, args.rules, args.kinds, args.window, args.limit, args.labels, args.first
+            )
         options = (args.start, args.end, args.shift, args.start_frame, args.context)
         return trace_cli.run_diff(args.original, args.coney, args.scenario, args.columns, args.tolerance, options)
     if args.group == "config":

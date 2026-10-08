@@ -1,0 +1,18 @@
+description = "level99 checkpoint 1: the combat tutorial's lessons, played to checkpoint 2"
+research = "docs/research/scripting.md#level99-lessons"
+course = "level99-tutorial"
+updates = 40000
+until = "checkpoint SetCheckPoint:2"
+after = 90
+
+[original]
+# A state of the original in checkpoint 1, lesson 1 (the first marker), made by hand (docs/guides/research-workflow.md#differential-
+# playthroughs); never committed.
+state = "states/l99-cp1-lesson1.p2s"
+patches = ["scripted-pad", "right-stick", "event-call", "event-callback", "event-hint", "event-sound"]
+friends = ["Ash", "Rembrandt"]
+enemy_brain = 4
+
+[coney]
+level = "level99"
+args = ["--checkpoint", "1"]

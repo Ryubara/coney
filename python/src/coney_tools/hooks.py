@@ -34,6 +34,12 @@ is a register, an address or another load (`[[a0 + 0xd4] + 0x14]`). A load reads
 `{ value = "...", type = "s16", name = "code" }` (`u8 s8 u16 s16 u32 s32 f32`); the item's text is its column name
 unless `name` gives one. A load from a bad address crashes the game: log only pointers the hooked code itself uses.
 
+An item may also ask for the **text** its value points to: `text = 64` reads up to 64 bytes from the value plus
+`text_offset` (default 0) when the recorder drains the entry, a C string (or UTF-16 when its second byte is 0), into a
+column `<name>_text`; `text_when = "t1=3"` reads it only when the logged value `t1` is 3 (a Lua argument that is a
+string). The text is read a moment after the call, so it suits names and strings the game keeps (interned script
+strings, a hint's text), not a buffer reused at once.
+
 A hook with `call = true` logs nothing: it lets the recorder make the game **call one of its own functions** on the
 game's thread, as a script binding would (a fight started as `GoalFight` starts it). The recorder writes the
 arguments and then the function's address into the call block at CALL_BASE; the next time the game runs the hook,
@@ -45,6 +51,8 @@ still in use.
 
 from __future__ import annotations
 
+import csv
+import io
 import itertools
 import re
 import struct
@@ -64,9 +72,13 @@ CAVE_SIZE = 0x200
 MAX_HOOKS = 64
 #: The ring: a u32 count of entries ever written, then RING_ENTRIES entries of ENTRY_SIZE bytes from RING_BASE + 0x10.
 RING_BASE = 0x000B0000
+#: The EE's main memory size: a text is read only below it.
+EE_MEMORY = 0x02000000
 RING_ENTRIES = 4096
 ENTRY_SIZE = 32
 MAX_VALUES = ENTRY_SIZE // 4 - 1
+#: The longest text a log item may read (LogItem.text).
+MAX_TEXT = 1024
 #: The call block: the function's address (0 when no call waits), six arguments, the result and a count of calls made.
 CALL_BASE = 0x000AF000
 CALL_ARGS = 6
@@ -191,6 +203,9 @@ class LogItem:
     value: str
     name: str
     type: str = "u32"
+    text: int = 0
+    text_offset: int = 0
+    text_when: tuple[str, int] | None = None
 
 
 def _parse_base(text: str, where: str) -> tuple[str, int | str | None, int]:
@@ -358,22 +373,47 @@ def _log_item(raw: object, where: str) -> LogItem:
     if isinstance(raw, str):
         item = LogItem(raw, raw.replace(" ", ""))
     elif isinstance(raw, dict) and isinstance(raw.get("value"), str):
-        unknown = set(raw) - {"value", "name", "type"}
+        unknown = set(raw) - {"value", "name", "type", "text", "text_offset", "text_when"}
         if unknown:
             raise HookError(f"{where}: unknown key(s) {', '.join(sorted(unknown))}")
         kind = str(raw.get("type", "u32"))
         if kind not in LOADS:
             raise HookError(f"{where}: type must be one of {', '.join(LOADS)}")
-        item = LogItem(raw["value"], str(raw.get("name", raw["value"].replace(" ", ""))), kind)
+        text, text_offset = raw.get("text", 0), raw.get("text_offset", 0)
+        if not isinstance(text, int) or not 0 <= text <= MAX_TEXT or not isinstance(text_offset, int):
+            raise HookError(f"{where}: text must be a byte count up to {MAX_TEXT}, text_offset a number")
+        item = LogItem(
+            raw["value"],
+            str(raw.get("name", raw["value"].replace(" ", ""))),
+            kind,
+            text,
+            text_offset,
+            _text_when(raw.get("text_when"), where),
+        )
     else:
         raise HookError(f"{where}: a logged value is a string or a table with a value")
     is_float = bool(_FLOAT.fullmatch(item.value.strip()))
     if is_float and isinstance(raw, str):
         item = LogItem(item.value, item.name, "f32")
+    if item.text and item.type != "u32":
+        raise HookError(f"{where}: only a word (u32) can point to a text")
     if item.type != "u32" and not _LOAD.match(item.value.strip()) and not is_float:
         raise HookError(f"{where}: only a load [...] or a float register takes a type")
     _value_code(item.value, where, item.type)
     return item
+
+
+def _text_when(raw: object, where: str) -> tuple[str, int] | None:
+    """A `text_when = "NAME=VALUE"` condition, or None."""
+    if raw is None:
+        return None
+    if isinstance(raw, str) and "=" in raw:
+        column, _, value = raw.partition("=")
+        try:
+            return column.strip(), int(value, 0)
+        except ValueError:
+            pass
+    raise HookError(f"{where}: text_when must be NAME=NUMBER")
 
 
 def parse_hook(name: str, raw: object, where: str) -> Hook:
@@ -400,6 +440,10 @@ def parse_hook(name: str, raw: object, where: str) -> Hook:
     items = tuple(_log_item(item, f"{where} log {i + 1}") for i, item in enumerate(log))
     if len({item.name for item in items}) != len(items):
         raise HookError(f"{where}: two logged values have the same name")
+    names = {item.name for item in items}
+    for item in items:
+        if item.text_when is not None and item.text_when[0] not in names:
+            raise HookError(f"{where}: text_when names {item.text_when[0]!r}, which the hook does not log")
     call = bool(raw.get("call", False))
     if call and items:
         raise HookError(f"{where}: a call hook logs nothing")
@@ -453,21 +497,40 @@ class HookLog:
     """What the ring gave: each hook's entries (as `(sequence, step, values)`), and the entries lost to overflow."""
 
     hooks: list[Hook]
-    entries: dict[str, list[tuple[int, int, list[Number]]]]
+    entries: dict[str, list[tuple[int, int, list[Number | str]]]]
     lost: int = 0
     seen: int = 0
 
     def csv(self, hook: Hook) -> str:
-        """One hook's entries as CSV: the ring's sequence number, the recorder's step, then each logged value."""
-        lines = [",".join(["seq", "step", *(item.name for item in hook.log)])]
+        """One hook's entries as CSV: the ring's sequence number, the recorder's step, then each logged value, then
+        each text column (quoted as CSV needs)."""
+        texts = [item for item in hook.log if item.text]
+        out = io.StringIO()
+        writer = csv.writer(out, lineterminator="\n")
+        writer.writerow(["seq", "step", *(item.name for item in hook.log), *(f"{item.name}_text" for item in texts)])
         for sequence, step, values in self.entries[hook.name]:
-            cells = [_cell(value, item) for item, value in zip(hook.log, values, strict=True)]
-            lines.append(",".join([str(sequence), str(step), *cells]))
-        return "\n".join(lines) + "\n"
+            numbers = values[: len(hook.log)]
+            cells = [_cell(value, item) for item, value in zip(hook.log, numbers, strict=True)]
+            writer.writerow([sequence, step, *cells, *values[len(hook.log) :]])
+        return out.getvalue()
 
 
-def _cell(value: Number, item: LogItem) -> str:
+def entry_row(hook: Hook, sequence: int, step: int, values: list[Number | str]) -> dict[str, str]:
+    """One entry as the row a reader of its CSV (csv.DictReader) gets: `seq`, `step`, each logged value as the CSV
+    shows it and each text column."""
+    row = {"seq": str(sequence), "step": str(step)}
+    for item, value in zip(hook.log, values, strict=False):
+        row[item.name] = _cell(value, item)
+    texts = [item for item in hook.log if item.text]
+    for item, value in zip(texts, values[len(hook.log) :], strict=False):
+        row[f"{item.name}_text"] = str(value)
+    return row
+
+
+def _cell(value: Number | str, item: LogItem) -> str:
     """A logged value as it goes into the CSV: a float with four decimals, a word in hex, other integers as they are."""
+    if isinstance(value, str):
+        return value
     if isinstance(value, float):
         return f"{value:.4f}"
     return f"{value:#x}" if item.type == "u32" else str(value)
@@ -494,6 +557,7 @@ class RingReader:
             for k in range(ENTRY_SIZE // 8)
         ]
         values = self.memory.batch(reads) if reads else []
+        pending: list[tuple[Hook, list[Number | str], tuple[int, ...]]] = []
         for n in range(first, count):
             chunk = values[(n - first) * 4 : (n - first) * 4 + 4]
             raw = b"".join(v.to_bytes(8, "little") for v in chunk)
@@ -502,10 +566,58 @@ class RingReader:
             if not 1 <= hook_id <= len(self.log.hooks):
                 continue
             hook = self.log.hooks[hook_id - 1]
-            decoded = [_decode(word, item.type) for word, item in zip(words[1:], hook.log, strict=False)]
+            decoded: list[Number | str] = [
+                _decode(word, item.type) for word, item in zip(words[1:], hook.log, strict=False)
+            ]
             self.log.entries[hook.name].append((n, step, decoded))
+            if any(item.text for item in hook.log):
+                pending.append((hook, decoded, words))
         self.log.seen += count - first
         self.done = count
+        self._read_texts(pending)
+
+    def _read_texts(self, pending: list[tuple[Hook, list[Number | str], tuple[int, ...]]]) -> None:
+        """Append each text column to its entry's values, reading every string of the drain in one batch."""
+        wanted: list[tuple[list[Number | str], int, int]] = []
+        for hook, values, words in pending:
+            logged = {item.name: words[k + 1] for k, item in enumerate(hook.log)}
+            for k, item in enumerate(hook.log):
+                if not item.text:
+                    continue
+                address = (words[k + 1] + item.text_offset) & 0xFFFFFFFF
+                when = item.text_when
+                ok = when is None or logged[when[0]] == when[1] & 0xFFFFFFFF
+                wanted.append((values, address if ok and 0 < address < EE_MEMORY - item.text else 0, item.text))
+        reads = [
+            Read(start + 8 * w, 8)
+            for _, address, size in wanted
+            if address
+            for start in [address & ~7]
+            for w in range(_words(address, size))
+        ]
+        raw = iter(self.memory.batch(reads) if reads else [])
+        for values, address, size in wanted:
+            if not address:
+                values.append("")
+                continue
+            start = address & ~7
+            data = b"".join(next(raw).to_bytes(8, "little") for _ in range(_words(address, size)))
+            values.append(decode_text(data[address - start : address - start + size]))
+
+
+def _words(address: int, size: int) -> int:
+    """How many aligned 8-byte reads cover `size` bytes from `address`."""
+    return (address + size - (address & ~7) + 7) // 8
+
+
+def decode_text(data: bytes) -> str:
+    """A string read from the game: UTF-16 when its second byte is 0 (and its first is not), else a C string of bytes
+    (read as Latin-1), each up to its terminator."""
+    if len(data) > 1 and data[0] and not data[1]:
+        units = struct.unpack(f"<{len(data) // 2}H", data[: len(data) // 2 * 2])
+        end = units.index(0) if 0 in units else len(units)
+        return "".join(chr(u) for u in units[:end])
+    return data.split(b"\0", 1)[0].decode("latin-1")
 
 
 def _decode(word: int, kind: str) -> Number:

@@ -3,6 +3,7 @@ add_executable(coney_tests
     camera/camera_lens_test.cpp
     core/chunk_system_test.cpp
     core/deferred_input_test.cpp
+    core/event_log_test.cpp
     core/frame_clock_test.cpp
     core/frame_rate_meter_test.cpp
     core/game_random_test.cpp
@@ -133,6 +134,7 @@ add_executable(coney_tests
     platform/profile_folder_test.cpp
     platform/scene_stage_test.cpp
     platform/sdl_devices_test.cpp
+    platform/pad_pipe_test.cpp
     platform/sdl_input_test.cpp
     platform/window_activation_test.cpp
     platform/sprite_sheets_test.cpp

@@ -479,3 +479,29 @@ and its step, then the rows of both around each divergence. It exits with 0 when
 when one is not and 2 when a trace cannot be read. With `--scenario`, the columns, tolerances, start frame and first
 step (the first update of input) come from the scenario's `[diff]` table; flags override them.
 [Comparing with Coney](research-workflow.md#comparing-with-coney) explains the alignment and the start frame.
+
+```sh
+uv run --project python coney-tools trace mission SCENARIO --side coney|original --out CSV [--coney EXE] [--disc DISC]
+    [--state STATE] [--agent ID] [--updates N]
+```
+
+Plays a mission scenario (`research/traces/missions/*.toml`) on one game with its course, an adaptive pad that plays
+by what is on screen, and writes the game's event log to `CSV` (keep it outside the repository: it holds the game's
+text). `--side coney` runs Coney headless with `--pad-pipe` and `--event-log` (`--coney`, `--disc` as for `trace
+coney`); `--side original` starts PCSX2 on the scenario's state with its patches and event hooks, as `pcsx2 record`
+does, under your claim (`--agent`), and reads the events from the hooks' ring. `--state` starts from another state
+file or `slot:N` (a copy, never the slot itself); `--updates` caps the run. It prints its progress every 1000 updates
+and ends when the scenario's `until` event comes, or at its `updates`.
+
+```sh
+uv run --project python coney-tools trace events-diff ORIGINAL CONEY [--rules RULES] [--kinds KIND ...] [--window N]
+    [--limit N] [--labels JSON] [--from EVENT]
+```
+
+Compares two event logs in order, not frame by frame, by the rules of `research/traces/events.toml` (`--rules` for
+another): the furthest milestone both reached and the one Coney never reached, then the events missing in Coney, the
+extra ones, those out of order, milestones whose spacing differs by more than `--window` updates, and the frequent
+events by count. `--from "kind name"` starts both logs at their first such event, for two runs that began at
+different points of a mission; `--labels` names hashed texts by a JSON object of label to text (a string table read
+from your disc, kept in scratch). It exits with 0 when Coney has every compared event in order, 1 when not.
+[Differential playthroughs](research-workflow.md#differential-playthroughs) explains the method.

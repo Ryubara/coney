@@ -207,6 +207,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] std::string sceneName() const override { return m_scenery->name(); }
     [[nodiscard]] anim::Vec3 playerFeet() const override;
     [[nodiscard]] float playerHeadingDegrees() const override;
+    /// The level's parked cars (their stereos), or null without any.
+    [[nodiscard]] const world_objects::Cars* cars() const { return m_cars; }
     [[nodiscard]] float playerSpeed() const override;
     [[nodiscard]] std::string playerState() const override;
     void teleport(const debug::Place& place) override;

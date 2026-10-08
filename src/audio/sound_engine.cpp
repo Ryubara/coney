@@ -6,6 +6,7 @@
 #include <format>
 #include <utility>
 
+#include "core/event_log.h"
 #include "core/name_hash.h"
 
 namespace coney::audio {
@@ -268,6 +269,10 @@ bool SoundEngine::takeVoice(Task& task) {
 SoundHandle SoundEngine::play(std::uint32_t hash, const SoundPlay& how) {
     if (m_playObserver) {
         m_playObserver(hash);
+    }
+    // The event log (`--event-log`): every sound asked for, started or not, as the original's play call is.
+    if (events::enabled()) {
+        events::emit("sound", std::format("0x{:08x}", hash));
     }
     return startTask(hash, how, false);
 }

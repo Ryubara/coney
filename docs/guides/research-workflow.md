@@ -567,6 +567,15 @@ the wheel updates), `state-code` (record `+0x14`'s setter), `set-command` and `g
 `brain-think`, `brain-event`, `attack-warning`, `try-block`, `block-start`, `skid-test` (the locomotion's run-stop test)
 and `call-brains`.
 
+A logged load can also log the **text** it points to: `text = N` (at most N bytes, up to 1024) reads the string at the
+value plus `text_offset`, and `text_when = "NAME=VALUE"` reads it only when another logged value has that value (a
+script value's type tag, so a number is never read as a pointer). The recorder reads the texts while the game is
+paused for the ring, writes them to a `<name>_text` column, and takes a text whose second byte is zero for UTF-16.
+The event hooks use this: `event-call` (the script VM's call of a C binding, `0x00328a30`, its binding and first two
+arguments), `event-callback` (the engine's look-up of a script function by name before it calls it, `0x00356e08`),
+`event-hint` (the hint box showing a new text, `0x001cdf7c`) and `event-sound` (a sound started, `0x00111de8`, its
+hash).
+
 ### Comparing with Coney {#comparing-with-coney}
 
 `coney-tools trace coney` plays the same scenario on Coney headless (`--play-level` from its `[coney]` table,
@@ -600,6 +609,57 @@ The smoke scenarios reproduce claims of the research pages: `walk60` (the walk s
 (level99 checkpoint 3 with `--start`), and `combat_cross` (`X1` then `XX2` at a puppet civilian 1.5 m away, slot 6, which
 walks in to 1.36 m; on Coney the fight yard's `cross` spawn, a still target 1.05 m away that X1 steers onto alike).
 
+### Differential playthroughs {#differential-playthroughs}
+
+A trace diff compares two games update by update, which holds for a few seconds of walking but not for a mission: the
+AI, load times and the camera move every later event, and a fixed input script falls out of step with the game it
+drives. A **differential playthrough** compares a mission at the level a player notices instead, the **order of
+events**, and drives both games through the same stretch with one **adaptive course**:
+
+1. **Event logs on both sides, at the same semantic points.** Each game writes one CSV line per event (`step, kind,
+   name, detail`): a script binding called, a call into the scripts by name, a hint shown, a sound started, a human
+   appearing, going down or removed. Coney writes them with `--event-log`
+   ([Building](building.md#event-log)); the original's come from hooks at the places that do the same thing (the
+   script VM's binding call, the engine's script look-up, the hint box, the sound start), cited to their addresses on
+   the research pages. A binding's call is the best hook: it is the mission script's own vocabulary, so both games
+   name the event alike without interpretation.
+2. **One course, two games.** The course is a small policy that looks, once an update, at what is on screen (the
+   player and camera, the other humans, the world objects of interest) and at the update's events, and answers with
+   the pad: walk into the marker that is shown, fight the nearest enemy when a lesson is armed, stand before a cabinet
+   and press square then triangle. Both games give the same observation (Coney through `--pad-pipe`, the original from
+   its tables over the emulator's memory interface), so one policy plays both, with the same partial stick
+   deflections. A course plays the player's path: from the state at a checkpoint's start or a save made there, through
+   the level as the Story path sets it up, never from a debug spawn the player cannot reach.
+3. **Compare the order, not the frames** (`coney-tools trace events-diff`). The bindings the rules name become kinds
+   (`tutorial`, `objective`, `checkpoint`, `hint`, `speech`, `spawn`, ...), long texts become hashes and arguments
+   past a binding's arity are dropped. **Milestones** (tutorial steps, checkpoints, objectives, mission ends) are
+   matched in order first and cut both logs into segments; every other kind is matched in order within its segment,
+   so a hint is matched only between the milestones it came between. Sounds compare by set (their order follows the
+   AI's timing), an event repeated within a few updates is one event, and an event seen more than `frequent` times
+   compares by count. The report names the furthest milestone both games reached, the original's next one Coney never
+   reached, and the missing, extra and out-of-order events with their steps; milestones whose spacing differs by more
+   than a window are listed under timing.
+
+A scenario (`research/traces/missions/*.toml`) names the course, the event that ends the run (`until`), the
+original's save state and hooks, and Coney's level and checkpoint:
+
+```sh
+uv run --project python coney-tools trace mission research/traces/missions/level99_cp1.toml --side original --agent YOU --out ../../scratch/cp1-original.csv
+uv run --project python coney-tools trace mission research/traces/missions/level99_cp1.toml --side coney --out ../../scratch/cp1-coney.csv
+uv run --project python coney-tools trace events-diff ../../scratch/cp1-original.csv ../../scratch/cp1-coney.csv
+```
+
+Read a report from the top: where Coney stopped is the first finding, the rest are what the player meets on the way.
+A missing hint or callback names a script path Coney never takes; a milestone far later on Coney than on the original
+names a lesson the course could not finish, which is a Coney bug only once the same course finished it on the
+original. When the two runs start at different points (a save state made inside a checkpoint, Coney at its start),
+`--from "kind name"` starts both logs at the first event they share. The logs hold the game's text: they stay in
+scratch, and `--labels` names the hashed texts from a string table read from your own disc.
+
+Write a course from the player's view only: what a policy cannot see on screen it must not use (a script's internal
+state, a handle number), or it will pass on one game for a reason the other does not share. When the course itself
+fails on the original, fix the course before reading anything into Coney's run.
+
 ## Lessons learned {#lessons-learned}
 
 What past sessions taught, written so that it holds for any game. Multi-agent coordination, the shared machine and
@@ -624,6 +684,10 @@ merging are in [How we work](how-we-work.md#shared-machine); the emulator's mech
   fake game (the hook recorder once labelled every entry one update early until a test with two-message updates
   exposed it), and say in the guide how recordings made before a fix are wrong. When a result is off by a fixed
   amount, suspect the tool before the code.
+- **Compare missions by events, not frames.** Past a few seconds, two games drift apart in time for harmless reasons
+  (AI timing, loads, the camera). Compare the order of the events a player notices instead, drive both with one
+  adaptive policy that plays by what is on screen, and let the first milestone one game never reaches say where to
+  look ([Differential playthroughs](#differential-playthroughs)).
 - **Compare, then localise.** Run the same scenario on both games and diff the traces; the first differing column and
   step says where to read. A difference goes back as a question or a fix, never as a page edit that hides it.
 - **Trace the cause, not the symptom.** A stuck character, a missing effect or a wrong value usually comes from a

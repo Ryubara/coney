@@ -1,0 +1,79 @@
+# How `coney-tools trace events-diff` reads and compares two event logs of a playthrough, and how the original's hook
+# logs become its event log (python/src/coney_tools/events.py; method: docs/guides/research-workflow.md#differential-
+# playthroughs). Names and argument positions only: no game text.
+
+[compare]
+# The kinds compared unless --kinds chooses others. `call` (every binding call) is left out: the AI's and the HUD's
+# per-update calls drown the mission's. The bindings below become their own kinds.
+kinds = [
+    "hint", "tutorial", "objective", "checkpoint", "scene", "hud", "mission", "marker", "handler",
+    "store", "music", "speech", "spawn", "callback", "sound", "human_out",
+]
+# An event (kind and name) seen more often than this in either log is compared by count, not order.
+frequent = 60
+# An event repeated (same kind and name) within this many updates is one event: a burst.
+burst = 15
+# The kinds that mark how far a playthrough got.
+# Not `scene`: ambient scenes (level99's subway trains) play at random.
+progress = ["tutorial", "checkpoint", "objective", "mission"]
+# Kinds compared by which names each log has at all, not by order (their order follows the AI's timing).
+by_set = ["sound"]
+# A matched event whose gap from the event before differs by more than this many updates is listed under timing.
+window = 300
+# Kinds whose names differ between the games by nature (the original names humans, Coney does not).
+unnamed = ["human_in", "human_out", "human_gone"]
+
+[ignore]
+# Callbacks that are bookkeeping, not something a player sees fire.
+callback = []
+
+# Script bindings whose calls a player sees the effect of: the event kind, and which argument (1-based) names the event
+# (0: none). A long text argument (an objective) is named by its hash.
+[calls]
+HUDSetTutorialCallback = { kind = "tutorial", arg = 1 }
+HUDSetObjective = { kind = "objective", arg = 2 }
+SetCheckPoint = { kind = "checkpoint", arg = 1 }
+ScenePlayCinematic = { kind = "scene", arg = 1 }
+ScenePlayFixedScene = { kind = "scene", arg = 1 }
+ScenePlayAnimation = { kind = "scene", arg = 1 }
+HUDSetAnnounceMsg = { kind = "hud", arg = 2 }
+HUDShowMissionSummaryText = { kind = "hud", arg = 1 }
+HUDLaunchMissionComplete = { kind = "mission", arg = 1 }
+HUDLaunchMissionFailed = { kind = "mission", arg = 1 }
+ObjShow = { kind = "marker", arg = 0 }
+ObjDestroy = { kind = "marker", arg = 0 }
+PadSetHandlerEx = { kind = "handler", arg = 1 }
+PadSetHandler = { kind = "handler", arg = 0 }
+EnterStore = { kind = "store", arg = 0 }
+ExitStore = { kind = "store", arg = 0 }
+SoundLoopMusicTrack = { kind = "music", arg = 1 }
+SoundPlayAmbientTrack = { kind = "music", arg = 1 }
+HuSpeak = { kind = "speech", arg = 2 }
+HuSpeakNI = { kind = "speech", arg = 2 }
+HuCreate = { kind = "spawn", arg = 1 }
+GangAddSpawner = { kind = "spawn", arg = 2 }
+
+# The original's hooks (research/traces/patches.toml) and the events their logs give: the kind, and the column that
+# names each event (`binding`: a C function's address, named from research/bindings/; `format = "hex"`: a number).
+# `args` are the Lua arguments a call shows: (type tag, value word, high word, text) columns.
+[[original]]
+hook = "event-call"
+kind = "call"
+binding = "function"
+args = [["t1", "v1", "h1", "v1_text"], ["t2", "v2", "h2", "v2_text"]]
+
+[[original]]
+hook = "event-callback"
+kind = "callback"
+name = "name_text"
+
+[[original]]
+hook = "event-hint"
+kind = "hint"
+name = "text_text"
+
+[[original]]
+hook = "event-sound"
+kind = "sound"
+name = "hash"
+format = "hex"

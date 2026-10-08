@@ -191,7 +191,7 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
       [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps] [--tunables FILE]
       [--no-audio | --audio-test]
       [--skip-movies] [--rumble TYPE [--arena N] [--gang-size N]]
-      [--profiles DIR] [--dev-overlay N] [--no-activate]
+      [--profiles DIR] [--dev-overlay N] [--no-activate] [--event-log FILE] [--pad-pipe]
 ```
 
 Coney draws with librw's OpenGL 3 renderer (an OpenGL 3.3 core context through SDL3; librw falls back to 2.1 or
@@ -697,6 +697,32 @@ order](../research/scripting.md#run-next-mission)), and the level flow loads the
 a script starts with `MenuLoadLevel` (the hub's missions) is played the same way. The unlocks, bank and saved script
 numbers carry from one level to the next, so the story's order holds: 99, 80, 87, the hub (`level95`), 34 and on.
 `--frames` still ends the run.
+
+#### Event logs {#event-log}
+
+`--event-log FILE` writes what a player would notice to `FILE`, one CSV line per event (`step,kind,name,detail`;
+`step` is the update, from 1): every script binding called (`call`, with its arguments as `--script-trace` shows
+them), every call into the scripts by name (`callback`), each hint the hint box shows (`hint`, its text), each sound
+started (`sound`, its hash), and the level's humans other than player 1 appearing, running out of health and being
+removed (`human_in`, `human_out`, `human_gone`). It works in any mode, from the front end on; with `--play-level`
+it starts when the level's Lua state is made, before its scripts run, with the step counted from there, so the
+loading screen's events stay out. The file is flushed every update, so a run that is killed keeps its events. It is
+the Coney side of a [differential playthrough](research-workflow.md#differential-playthroughs). Like
+`--script-trace` it holds the game's own text: keep it out of the repository.
+
+#### The pad pipe {#pad-pipe}
+
+`--pad-pipe` lets a driver program play player 1 by what it sees, in lock step: before each update Coney
+writes one line `@obs {json}` to standard output (the update before's observation: `play`, then while a level is in
+play the player's feet and heading, the camera's eye and target, the other humans as `[x, y, alive, standing,
+enemy]` and the observed world objects as `[type, x, y, shown]`, with car stereos among them), then reads lines from
+standard input until a pad: `observe PREFIX...` chooses the world object types observed from then on, and `pad
+BUTTONS RX RY LX LY` (the buttons in hexadecimal, as an input script's masks, then the four stick bytes, 0x80
+centred) is the pad of the update. With `--play-level` the first observation is of the level's first update of
+play: until then the session loads the level as the story does and the pad rests. With `--event-log` each event is
+also written as `@ev <csv line>`; other lines on standard output are Coney's own messages. At the end of standard
+input the pad is released. It is test mode (one step per update) and cannot be combined with `--input-script`.
+`coney-tools trace mission` drives it.
 
 #### Matched views {#matched-views}
 

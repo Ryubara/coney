@@ -20,6 +20,8 @@ target_sources(coney_platform PRIVATE sandbox_renderer.cpp sandbox_viewer_mode.c
 target_sources(coney_platform PRIVATE reference_renderer.cpp)
 # Pad input from SDL3 gamepads and the keyboard (docs/research/frontend.md#coneys-implementation).
 target_sources(coney_platform PRIVATE sdl_input.cpp)
+# A driver program's pad and the frame's observation (`--pad-pipe`), and the humans for the event log (docs/guides/building.md#pad-pipe).
+target_sources(coney_platform PRIVATE pad_pipe.cpp)
 # A level's particle systems and motion blur, drawn in play (docs/research/particles.md#coneys-implementation).
 target_sources(coney_platform PRIVATE motion_blur_pass.cpp parked_cars.cpp particle_renderer.cpp play_level_effects.cpp
                                       room_smoke_overlay.cpp water_renderer.cpp)
