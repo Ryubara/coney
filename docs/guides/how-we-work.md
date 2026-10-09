@@ -50,8 +50,8 @@ answer lands on the page, not in a private message. Neither role ever puts game 
   holds what, and a claim whose process died is taken over ([Driving PCSX2](research-workflow.md#driving-pcsx2)).
 - **Input over PINE only.** The game is driven by writing pad state into its memory (the `scripted-pad`,
   `right-stick` and `puppet` patches), with analog sticks at realistic partial deflections. No tool brings PCSX2 to
-  the front or types into it, so the machine stays usable; the owner's quick-save slots are read-only, and
-  analysts save states to files.
+  the front or types into it, so the machine stays usable; a maintainer's quick-save slots are read-only,
+  and analysts save states to files.
 - **Traces and frames.** `coney-tools pcsx2 record` and `coney-tools trace` record the same scripted scenario on the
   original and on Coney and diff them; Coney's `--camera`, `--freeze-world` and `--screenshot` flags reproduce a
   reference frame ([coney-tools](coney-tools.md)).
@@ -79,7 +79,7 @@ Many tracks run at once, each owning one subsystem, mission or question:
 
 ## Sharing one machine {#shared-machine}
 
-Many agents and the owner use one computer at the same time. These rules each exist because a past session broke
+Many agents and a maintainer use one computer at the same time. These rules each exist because a past session broke
 something:
 
 - **Never edit the main checkout.** Work in your own worktree and address it with `git -C "<absolute path>"`: a
@@ -92,7 +92,7 @@ something:
   `pkill`): other tracks run the same programs (the game, test runners, the emulator). Stop your own background
   task, or its process tree by id (`taskkill /T /PID <pid>`). Stopping a background task does not always stop the
   children its shell started, so check that nothing of yours is still running.
-- **Keep the owner's machine usable.** Nothing you start may take the keyboard focus or send keystrokes to another
+- **Keep the machine usable.** Nothing you start may take the keyboard focus or send keystrokes to another
   window; drive programs through their own interfaces (for the emulator, see
   [Driving PCSX2](research-workflow.md#driving-pcsx2)). Keep build parallelism moderate, and do not run
   virtual-machine builds locally when the project's CI covers them.
@@ -100,28 +100,39 @@ something:
   (`UV_PROJECT_ENVIRONMENT`) rather than a `.venv` inside a worktree, which every tool and linter would then scan.
 - **Scratch is yours per branch.** Put output in `scratch/<branch>/`; game-derived files (captures, states, dumps,
   screenshots) stay there and are deleted when done.
+- **Generated images, video and audio may be deleted without asking.** Screenshots, frame captures and recordings
+  pile up during reviews; any track may remove the ones the project produced. Write the path literally or guard a
+  variable (`rm -f "${DIR:?}"/*.png`): a path built from a possibly empty variable can delete far more than meant.
 
 ## Testing {#testing}
 
-How every track proves its work, so that what passes for an agent also works for a player.
+Tracks never wait for a person to play their work, so the automated tests stand in for one. Every track proves its
+work the same way: tests that start through the player's path, input driven like a gamepad, an adaptive playthrough
+for every mission checkpoint, and diffs against the original. People play release builds at milestones and their
+findings come back as fixes. The standard, including what "done" means for each kind of work and the checks to run
+before reporting: [Testing](testing.md).
 
-- **Test through the player's path.** A player starts with `coney --disc <path>`, the main menu and Story. Disc
-  tests, playthrough tests and the lines handed to the owner start a level the same way, or through the one level
-  setup that Story, `--play-level`, `--checkpoint` and the debug menu jumps all share. A test that builds its own
-  level setup can pass while the player's path stays broken: missing glass sounds and a mission that stopped after
-  the radio minigame showed up only from Story while direct launches worked.
-- **Play missions, do not replay frames.** Each mission checkpoint gets an adaptive pad
-  [playthrough test](conventions.md#playthrough-tests) that asserts hints, objectives and scenes in the original's
-  order. A checkpoint is not done until it passes.
-- **Diff against the original.** A recorded PS2 run of the same stretch, with the same pad input, is replayed into
-  Coney and the two ordered event lists (hints, objectives, spawns, scenes, sounds) are compared. Whatever Coney
-  lacks or orders differently becomes a fix or a research question.
-- **Stand-ins are debt.** Where a research page is silent, code uses a clearly marked stand-in (`stand-in` or
-  `Coney's choice` in a comment) and the page gets an open question. Most tracks replace stand-ins along the mission
-  path with faithful reimplementations of whole systems; the marks are counted so the debt stays visible.
-- **Machines test continuously, the owner at milestones.** Unit, disc and playthrough tests run on every change and
-  before every merge. The owner plays a release build at milestones from one list of what changed; findings come back
-  as fixes on the owning track, and nobody waits for them.
+## The coordinator {#coordinator}
+
+One agent (or person) runs the work day to day: it keeps the project's state file and each track's state current,
+starts and briefs the tracks, routes questions between them, merges and ships. It works under these rules:
+
+- **Decide and keep going.** The coordinator approves its own designs and plans, and when one item ends it takes the
+  next from the state file instead of asking whether to start. It stops only when a maintainer says so.
+- **Escalate only maintainer decisions:** making the repository public, release tags, force-pushes, legal and licence
+  questions, changes to the installer and launcher (a maintainer approves them before they merge), and changes to
+  these rules.
+- **Keep every gap staffed.** When a track finishes, the next open gap gets a track at once: unfinished fixes,
+  subsystems that differ from the original, missions still to build (several at a time, one per track). The
+  priorities are on the [roadmap](../roadmap.md).
+- **Merge on the automated gate, not on play-tests.** Finished work merges once the [checks](testing.md#local-gate)
+  pass; the coordinator fixes small gate failures (lint, formatting, generated pages) itself instead of sending the
+  work back.
+- **Ship after every merged feature.** Push, build the release locally, and hand the play-testers one list of what
+  changed and how to reach it ([Play-testing](testing.md#play-testing)). Research-only merges need no build.
+- **A lesson becomes a rule in the same commit.** A mistake that cost time (a tool pitfall, a process race) is
+  written into the guide where it applies, generally (why and the method), alongside its fix; briefs only point to
+  it.
 
 ## Merging safely {#merging}
 
@@ -149,8 +160,11 @@ How every track proves its work, so that what passes for an agent also works for
   the files it must not touch, and pastes the standing rules that matter for the work (clean room, input driven like
   a gamepad, never focus the emulator, faithful before extras). An agent knows only what its brief and the repository
   tell it.
-- **Put the right model on the work.** Reverse-engineering work, and implementation that depends on its results, goes
-  to the strongest available model; light, non-RE work (docs, generators) can use a smaller one.
+- **Put the right model on the work.** Reverse-engineering work (Ghidra, disassembly, the emulator, research claims),
+  and implementation that depends on subtle research, goes to the strongest available model; light, non-RE work
+  (doc upkeep, mechanical edits, simple tooling) can use a smaller one. Today that means Claude Opus for the first
+  and Claude Sonnet for the second; Claude Fable is not used for agent work. Name the model explicitly when starting
+  an agent.
 - **Long-running tracks keep going.** They commit in groups, tell the coordinator each group's sha, and continue with
   the next item in scope until it is empty, instead of stopping after one finding.
 - **Report what a reader needs:** commits, what works now and the command that shows it, stand-ins, open items and
@@ -177,5 +191,5 @@ research page cites its address with an evidence level ([The Understood measure]
 ## Where next
 
 - Doing research: [Research workflow](research-workflow.md), then [Ghidra + ghidra-mcp](ghidra.md).
-- Writing code: [Conventions](conventions.md), then [Building and testing](building.md).
+- Writing code: [Conventions](conventions.md), [Testing](testing.md), then [Building and testing](building.md).
 - Writing pages: [Writing these docs](writing-docs.md).

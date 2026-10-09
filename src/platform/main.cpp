@@ -441,8 +441,8 @@ int main(int argc, char** argv) {
     coney::audio::ObjectSounds objectSounds;
     // The game over the disc (platform/game_session.h): the story from boot, the level `--play-level` names and the
     // levels the debug menus jump to all run in it, set up one way
-    // (docs/guides/conventions.md#test-through-the-players- path). Made below when the run plays the game, or by the
-    // debug menus' first level jump.
+    // (docs/guides/testing.md#test-through-the-players-path). Made below when the run plays the game, or by the debug
+    // menus' first level jump.
     std::optional<coney::platform::GameSession> session;
     coney::platform::GameSessionSettings sessionSettings;
     sessionSettings.language = options->language;

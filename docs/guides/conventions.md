@@ -59,6 +59,16 @@ build is worse than the benefit.
 Every build is warning-free, and CI treats warnings as errors (`/W4 /WX` on MSVC; `-Wall -Wextra -Wpedantic
 -Werror` elsewhere). A warning on one compiler is often a real portability bug on another.
 
+### Portability traps {#portability-traps}
+
+Most local builds are MSVC, and CI is the first to try GCC and Clang. These pass on MSVC and fail elsewhere, so
+avoid them from the start:
+
+- **Partial designated initializers** that skip a member in between or initialise out of declaration order.
+- **Parameters taken by value** where clang-tidy wants `const&` (anything bigger than a couple of words).
+- **Unchecked access to an `std::optional`** (`*opt` or `opt->` without a check in the same scope).
+- **`const` locals returned by value**: the `const` blocks the move on return.
+
 ### Build
 
 CMake 3.28 or newer, driven by presets, with Ninja as the generator. Dependencies (SDL3, librw, Catch2) come in
@@ -426,56 +436,8 @@ how it differs from the original's: [Graphics](../research/graphics.md#coneys-im
 ## Tests
 
 Everything that can be tested without the game is written test-first, with Catch2 under `tests/` (mirroring
-`src/`). Format code is tested on small synthetic fixtures **we write** byte by byte, never on files taken from the
-disc. Tests that need the player's disc find it through `coney.local.toml`, skip when it isn't configured, and
-print only aggregates (counts, hashes matched), never content. See
-[LEGAL.md](repo:LEGAL.md#no-game-data).
-
-No run may wait for a click. On Windows, the debug C runtime opens a modal "Debug Assertion Failed!" box for its
-own checks (`front()` on an empty vector, an index out of range), and a run with nobody at the keyboard hangs on it
-until the timeout. `coney` and `coney_tests` call `platform::reportErrorsToConsole()` before anything else, so these
-reports go to stderr and the process ends at once; the `coney.error_dialogs_off` test checks it in MSVC debug
-builds. In tests, check a container's size (`REQUIRE(!starts.empty())`) before reading `front()`, `back()` or an
-index, so a missing value fails one test cleanly instead of ending the whole run.
-
-### Test through the player's path {#test-through-the-players-path}
-
-The game is set up one way. The story from the main menu, `coney --play-level LEVEL --checkpoint N` and the debug
-menus' jumps all run in one `platform::GameSession` (`src/platform/game_session.h`): the start-up flow, gameplay with
-its loading screen, intro movie, pause and mission screens, the play mode, the game's sound and the debug menus'
-services. A direct start differs from the story only in the level and checkpoint it starts at: it skips the movies,
-the legal screen, the memory-card check and the menus, and nothing else. New set-up code goes into the session, never
-into one of the paths.
-
-Disc tests that play a level start it there too: `coney::test::DiscSession` (`repo:tests/support/disc_session.h`) is
-the session as `coney --play-level` runs it in test mode, with the offline sound output and a pad script that starts
-at the level's first frame of play. A test that builds its own gameplay or level scripts (the older `LevelScripts`
-harnesses) checks one subsystem only, and says so; it is not evidence that the game works for the player.
-`repo:tests/platform/disc_game_session_test.cpp` checks that a direct start and a jump from the story's front end
-give `level99` checkpoint 2 the same set-up. Why: the owner found three bugs (no glass sound after a pause, a mission
-that stopped at checkpoint 2, cheats that did nothing) that every test missed, because the tests and `--play-level`
-set the game up differently from the story.
-
-### Mission playthrough tests {#playthrough-tests}
-
-Owner decision: a mission is tested by an **adaptive playthrough**, not by a frame-locked pad script. A driver written
-for the mission plays it through the pad, with analog sticks at realistic deflections, and decides each input from
-what is on screen: the objective marker, which callbacks are armed, where the NPCs stand. The test asserts that
-
-- every hint and help message fires, in the order the original showed them;
-- each objective is detected and completes;
-- scenes play in order;
-- the run reaches the next checkpoint.
-
-The reference order comes from an analyst's recording of the original, written on the research page. A mission
-checkpoint is not done until its playthrough test passes. Level 99's `CourseDriver`
-(`repo:tests/platform/disc_level99_course_test.cpp`) is the example.
-
-Why not a frame-locked script: it replays inputs by step number, so any change to the camera or the AI moves the
-characters a little, the recorded presses then land in the wrong place, and the test fails (or passes by luck) for
-reasons that have nothing to do with the mission. A driver that reads the state and steers toward the marker
-survives those changes, and a failure means the mission really cannot be finished. Like every disc test, it skips
-without a disc and prints only aggregates.
+`src/`). What each kind of work must prove, the rules every test follows (synthetic fixtures, the player's path,
+gamepad input, playthroughs) and where the checks run are in [Testing](testing.md).
 
 ## Python {#python}
 

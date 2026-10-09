@@ -682,7 +682,7 @@ compares the two, column by column ([Comparing with Coney](research-workflow.md#
 
 **The story's own set-up.** A level played with `--play-level` is the story's level, started there directly: it runs in
 the same game session as the story from the main menu and the debug menus' jumps (`src/platform/game_session.h`,
-[Test through the player's path](conventions.md#test-through-the-players-path)), and differs only in skipping the
+[Test through the player's path](testing.md#test-through-the-players-path)), and differs only in skipping the
 start-up movies, the legal screen, the memory-card check and the menus. So it has the loading screen and the level's
 intro movie (`--skip-movies` skips the movie), the pause (START) and the mission screens, the game's sound with the
 level's own bank, and the debug menus' Lua console and Cheats page work on its scripts. An `--input-script` starts on

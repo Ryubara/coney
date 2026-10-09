@@ -2,7 +2,7 @@
 
 The design for the [Enhancements](../roadmap.md#enhancements) milestone: what each graphics option means for *The
 Warriors*, whether it is possible, how Coney's renderer would do it, what it depends on, a rough cost and the order.
-The owner's rule stands: **the faithful look first**. Nothing here is built before graphics research and the
+The rule stands: **the faithful look first**. Nothing here is built before graphics research and the
 faithful renderer are complete. This page only records which choices to make *now* so that the options stay cheap
 later. Every option ships **off** by default and is forced off in test mode, so tests and reference screenshots
 always show the faithful image.
@@ -57,7 +57,7 @@ These are shared by most options. Each one is worth building for the faithful lo
 
 ## Where the settings live {#where-the-settings-live}
 
-Owner decision: the original's menus stay faithful, so every option on this page is a control in Coney's
+Maintainer decision: the original's menus stay faithful, so every option on this page is a control in Coney's
 [debug menus](debug-menu.md), on a *Display* page in both the pad menus and the developer overlay. None goes into
 the game's options screens.
 
@@ -74,7 +74,7 @@ the game's options screens.
 - **Command line.** Flags where they help scripted captures and benchmarks: `--preset faithful|enhanced`,
   `--render-scale`, `--aspect`, `--fov-offset` and `--msaa`, beside the existing `--fps-cap` and `--vsync`. A
   general `--set Display/<name>=<value>` covers the rest.
-- **Coney natives.** The owner plans a FiveM-style script API of Coney's own on top of the game's bindings
+- **Coney natives.** The maintainers plan a FiveM-style script API of Coney's own on top of the game's bindings
   ([Script mods](../roadmap.md#script-mods)). The store therefore exposes every option by its stable
   `Display/<name>` key, with its type and range, through one get/set interface. A native can read or set an option
   later without new plumbing. The natives themselves are designed elsewhere.
@@ -213,7 +213,7 @@ with a manifest. There are three kinds:
 
 ## Decided {#decided}
 
-The owner's decisions (2026-10-07):
+Maintainer decisions (2026-10-07):
 
 - **Model weights**: `coney-tools` may download an upscaling model itself.
 - **Proprietary SDKs**: DLSS and XeSS are allowed as optional plug-ins next to the GPL-3.0-or-later code.

@@ -56,7 +56,7 @@ struct GameSessionSettings {
 /// hooks and, once attachAudio() is called, the game's sound. A story started from the menus (startStory()), a level
 /// started directly (startAtLevel(): `--play-level`, the disc tests) and the debug menus' jumps (jumpToLevel()) all run
 /// in it, so they differ only in the level and checkpoint they start at
-/// (docs/guides/conventions.md#test-through-the-players-path).
+/// (docs/guides/testing.md#test-through-the-players-path).
 ///
 /// Coney's own wiring; each part cites its research where it is made.
 class GameSession {

@@ -12,6 +12,13 @@ we work; `assets/` Coney's own assets (sandbox layouts, CC0 textures; never game
 dependencies. Worktrees go in `../../worktrees/coney/<branch>/`, scratch output
 in `../../scratch/`; game files, emulators and tool installs live beside the repo, never in it.
 
+## How we work
+
+Read `docs/guides/how-we-work.md` before starting: the pipeline, the analyst and implementer roles, the coordinator,
+sharing one machine, merging and briefing agents. Nobody waits for a person to play their work: the automated tests
+are the gate, so every piece of work proves itself as `docs/guides/testing.md` defines ("done" per kind of work, the
+player's path, gamepad input, playthrough tests, the checks to run before reporting).
+
 ## Build and test
 
 - Engine: `cmake --preset dev && cmake --build --preset dev && ctest --preset dev` (Windows: from a shell with the
@@ -30,6 +37,10 @@ in `../../scratch/`; game files, emulators and tool installs live beside the rep
 - **Research claims** carry an evidence level: confirmed (code) at a cited address, confirmed (runtime), inferred,
   or speculative. Addresses are like `0x001490b8` in NTSC-U `SLUS_212.15`. How: `docs/guides/research-workflow.md`.
 - **Reverse-engineering work** (Ghidra, disassembly, PCSX2, research claims) runs on Opus 5.5.
+- **Faithful first:** gameplay matches the original exactly until the game is complete. Coney's own mechanics and
+  enhancements wait (designs may be written now); debug tooling is not a mechanic and is fine.
+- **Never exclude a file from the 512 KB large-file check** in `.pre-commit-config.yaml`: it catches game data
+  committed by mistake. Split big generated data and pages instead.
 - Making the repo public, tagging releases, force-pushing and legal or licence questions are maintainer decisions.
 
 ## Code
@@ -41,7 +52,8 @@ in `../../scratch/`; game files, emulators and tool installs live beside the rep
   private members, long lambdas) and before each step of a long one; comments explain *why*, briefly. Keep the
   engine's test mode possible (fixed timestep, seeded randomness, scripted input): never assume real time, a display
   or a human.
-- Tests for everything testable without the game. Details: `docs/guides/conventions.md`.
+- Tests for everything testable without the game, written first: `docs/guides/testing.md`. Style and the rest:
+  `docs/guides/conventions.md`.
 
 ## Documentation
 
@@ -57,8 +69,8 @@ reruns `coney-tools missions render`. `HANDOFF.md` holds only the current state 
   `platform`, `tools`, `research`, `agents`, `tests`, `legal`, `docs` (list and meanings:
   `.github/commit-conventions.json`, which CI checks PR titles against).
 - A body says what changed for a user or developer and why. An agent ends the message with
-  `Co-Authored-By: <model name> <its noreply address>` (Claude: `Claude Opus 5.5 <noreply@anthropic.com>`); no
-  other email address appears in a message.
+  `Co-Authored-By: <model name> <its noreply address>` (Claude: `Claude Opus 5.5 <noreply@anthropic.com>`) and no
+  other trailer; no other email address appears in a message.
 - No file, code comment or commit message contains the repository's or the docs site's address; only the README
   does. Docs link files outside `docs/` as `repo:<path>`.
 - Work happens on branches; before a push the branch is squashed into feature-sized commits. Only `main` and

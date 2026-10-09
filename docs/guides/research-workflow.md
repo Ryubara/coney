@@ -264,7 +264,7 @@ Fixes and Approved, for missions and checkpoints alike.
 
 **Whose job:** an implementer (human or agent) updates `missions.yaml` in the same commit as mission work: In Progress
 when a checkpoint is started, each checkpoint to Pending Gameplay Approval when it plays to its end, the mission to
-Pending when every checkpoint does, and re-runs `missions render`. Only the owner moves a mission to Needs Fixes or
+Pending when every checkpoint does, and re-runs `missions render`. Only a maintainer moves a mission to Needs Fixes or
 Approved after play-testing it against the original, listing what was off under `issues`; the commit that merges the
 fix moves it back to Pending. An analyst's finding that changes what a mission needs goes on the research page, which
 the entry links.
@@ -325,12 +325,12 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
   exist"), so the launcher boots an NTFS hard link with a plain name in the scratch folder (it copies nothing).
 - **PCSX2 is started only by `coney-tools pcsx2 launch` or `pcsx2 record`, never by hand** (no `pcsx2-qt.exe` from
   a shell, a script or `Start-Process`). The launcher is what keeps PCSX2 from taking the keyboard focus, which
-  interrupts the owner's typing. `pcsx2 launch --agent <id> [<state.p2s>]` starts it on a state file, or with no
+  interrupts whoever is typing. `pcsx2 launch --agent <id> [<state.p2s>]` starts it on a state file, or with no
   state boots the disc and returns once PINE answers; it runs under your claim and leaves PCSX2 running.
 - **How the launcher keeps the focus off** (`repo:python/src/coney_tools/pcsx2_proc.py`, whose docstring says why it
   must stay this way). A no-activate show command alone (`SW_SHOWNOACTIVATE` in `STARTUPINFO`) was not enough: Qt
   ignores it for its first window, and Windows lets a process activate its window when the foreground process
-  started it, which every agent's process tree (under the owner's terminal) is. So the launcher has WMI start PCSX2
+  started it, which every agent's process tree (under the user's terminal) is. So the launcher has WMI start PCSX2
   (`Win32_Process.Create`): its parent is WMI's provider host, outside that tree, with no foreground rights to hand
   down. As a backstop, while `pcsx2 record` runs a guard polls every 50 ms and, if a PCSX2 window is in the
   foreground, hands it back to the window that had it (no input sent, PCSX2 never minimised, so screenshots keep
@@ -349,7 +349,7 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
   `pcsx2 screenshot --copy <name> --out <png>` reads the window by handle (not F8); both are Windows-only and leave
   the focus alone. PCSX2 never takes the focus (the launcher, above), and every copy has `[InputSources] SDL = false` so
   the
-  owner's gamepad cannot drive it; the owner turns SDL on in a copy only to test by hand, and `claim` and `status`
+  user's gamepad cannot drive it; a maintainer turns SDL on in a copy only to test by hand, and `claim` and `status`
   warn when it is on. Claims live in `pcsx2-claims/` of the shared scratch folder (`pcsx2_root` and `pcsx2_claims_dir`
   in `coney.local.toml` move the copies and the claims).
 - **What PINE gives.** Memory reads and writes, game info and save/load state slots. No breakpoints, registers,
@@ -675,7 +675,7 @@ merging are in [How we work](how-we-work.md#shared-machine); the emulator's mech
   deflections, and state the magnitude with every claim that depends on it ("stick 0.5, straight up"). A behaviour
   found only at full deflection is usually not what the player meets.
 - **Input goes through the game's memory, never the window.** Writing pad state over the remote-memory interface (the
-  patches above) is exact, repeatable and leaves the owner's keyboard and focus alone. Use posted window messages only
+  patches above) is exact, repeatable and leaves the user's keyboard and focus alone. Use posted window messages only
   for the rare hotkey, and never move focus.
 - **One sample per update.** Compare games by the update, not by wall-clock time: count the game's own ticks, record
   one row per update, and apply scripted input as each update is seen. Rows labelled by the poll rather than the
@@ -697,7 +697,7 @@ merging are in [How we work](how-we-work.md#shared-machine); the emulator's mech
   skip the menus), and each shortcut that sets the game up its own way hides bugs the player meets: a pause that only
   the real path has, a hand-over between checkpoints that a direct start never plays, a debug service wired to one
   path only. Keep one set-up that every start goes through, differing only in where it starts, and run playthrough
-  tests through it. When the owner sees a bug that a test does not, first ask which path each one took.
+  tests through it. When a play-tester sees a bug that a test does not, first ask which path each one took.
 - **Find a second source for the same function.** Another build of the game (named library calls, inline strings) can
   read faster; cite evidence only at the primary executable's addresses.
 - **Ask the data.** Tables, lists and counts can be read from the disc by tool and printed as counts and hashes;
@@ -707,7 +707,7 @@ merging are in [How we work](how-we-work.md#shared-machine); the emulator's mech
 
 - **Claim before use, release after.** Anything shared and scarce (an emulator copy, a lock) has one user at a time:
   claim it with the tool, release it when done, and close what you started.
-- **Keep the owner's slots read-only.** Quick-save slots, settings and files the owner made are never overwritten;
+- **Keep other people's slots read-only.** Quick-save slots, settings and files someone else made are never overwritten;
   save your own states to files in scratch, and put patched words back before reusing a saved state.
 - **Add names, never undo them.** The shared Ghidra project is written by many analysts: rename and annotate freely,
   but do not revert another analyst's names; a disagreement goes on the page as an open question.

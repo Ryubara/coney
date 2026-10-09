@@ -238,6 +238,7 @@ nav:
   - Guides:
       - How we work: guides/how-we-work.md
       - Building and testing: guides/building.md
+      - Testing: guides/testing.md
       - The sandbox: guides/sandbox.md
       - Local workspace: guides/workspace.md
       - The coney-tools command line: guides/coney-tools.md

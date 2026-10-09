@@ -6,7 +6,7 @@
 // step, the offline sound output with the disc's sound data), its movies skipped. A level started directly plays its
 // pad script from its first frame of play, as `coney --play-level --input-script` plays it; a story plays it from the
 // first frame too, the pad idle until then. Disc playthrough tests start here by default
-// (docs/guides/conventions.md#test-through-the-players-path). They print counts only (LEGAL.md).
+// (docs/guides/testing.md#test-through-the-players-path). They print counts only (LEGAL.md).
 
 #include <cstdint>
 #include <functional>

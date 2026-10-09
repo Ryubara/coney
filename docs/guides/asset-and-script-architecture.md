@@ -1,7 +1,7 @@
 # Asset and script architecture
 
 The design for moving Coney off the original's file formats and onto its own asset store and script runner. The
-owner's rule stands: **the move happens after the game plays 1:1**. Nothing here is built yet. This page draws the
+rule stands: **the move happens after the game plays 1:1**. Nothing here is built yet. This page draws the
 boundaries *now*, so that the faithful work going on today does not add new ties to the PS2 formats, and so that each
 later step changes one layer.
 
@@ -138,7 +138,7 @@ installed folder as soon as the store exists, with no new parser.
 
 ### The install folder {#install-folder}
 
-The owner's decision (2026-10-07): **portable**. Everything lives in the folder the player picks in the installer.
+Maintainer decision (2026-10-07): **portable**. Everything lives in the folder the player picks in the installer.
 Only save data goes to the per-user location (SDL's pref path). No disc or ISO is needed after install. The Xbox ISO
 is preferred for assets, and the PS2 disc fills the gaps and is always the behaviour reference.
 
@@ -307,13 +307,13 @@ An honest list: what each modernisation buys, what has to exist first, and what 
   checks print counts and hashes only. The repository may hold expected counts and SHA-1s, as `extract.py` already
   does.
 - **Nothing the project hosts or links holds game pixels.** The installer and `coney-tools` download Coney and,
-  for upscaling, model weights (owner, 2026-10-07), never game data. Texture packs are shared as original art or
-  as recipes that each player rebuilds from their own disc; players may import a pre-made upscale, but the project
-  never hosts or links one ([Texture packs](enhancements.md#packs)).
+  for upscaling, model weights (maintainer decision, 2026-10-07), never game data. Texture packs are shared as
+  original art or as recipes that each player rebuilds from their own disc; players may import a pre-made upscale,
+  but the project never hosts or links one ([Texture packs](enhancements.md#packs)).
 
 ### Maintainer decisions {#maintainer-decisions}
 
-These are open. This page assumes the first option of each, and the owner decides. Sharing texture packs is
+These are open. This page assumes the first option of each, and a maintainer decides. Sharing texture packs is
 decided ([Enhancements plan: Decided](enhancements.md#decided)).
 
 1. **Clean-room level scripts in the repository.** Coney's Lua rewrites are written from research walks, not copied.
@@ -322,7 +322,7 @@ decided ([Enhancements plan: Decided](enhancements.md#decided)).
    is not that source, but where the line falls is a legal call.
 2. **Game text** (dialogue, subtitles, menu strings): extracted at install and never shipped (current
    recommendation; pending).
-3. **Settings location.** The owner said only save data goes to the pref path, but `coney-tunables.ini` and
+3. **Settings location.** The decision is that only save data goes to the pref path, but `coney-tunables.ini` and
    `coney-imgui.ini` are written there today. Proposal: move them to `<install>/config/`, and keep the pref path
    for `profiles/` only.
 4. **The modding kit** (`open/`, about 9.5 GB): optional at install, or left to `coney-tools extract`.
@@ -352,7 +352,7 @@ data.
 
 ### Deferred, in order {#later}
 
-After the game plays 1:1 ([The whole game](../roadmap.md#the-whole-game) for the core; earlier where the owner
+After the game plays 1:1 ([The whole game](../roadmap.md#the-whole-game) for the core; earlier where a maintainer
 says):
 
 1. **Installer**: `coney-tools install` (copy, verify, `index/install.json`), then the launcher.
