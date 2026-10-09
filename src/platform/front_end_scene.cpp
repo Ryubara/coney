@@ -8,6 +8,7 @@
 #include <rw.h>
 
 #include "camera/camera_lens.h"
+#include "core/assert.h"
 #include "core/game_timer.h"
 #include "platform/play_scenery.h"
 #include "platform/world_viewer_mode.h"
@@ -145,6 +146,7 @@ std::optional<WorldView> FrontEndWorldScene::view() const {
 }
 
 WorldView FrontEndWorldScene::viewAt(float alpha) const {
+    CONEY_ASSERT(m_camera.has_value()); // called only with the scene camera
     const CameraState& a = m_camera->previous();
     const CameraState& b = m_camera->current();
     return sceneCameraWorldView(blend(a.pose, b.pose, alpha), b.lens);
@@ -273,8 +275,9 @@ void FrontEndWorldScene::render(const RenderTime& time, const std::function<void
     // (object flag 0x80) and the small-radius exception are not applied; the wheel's parts are not small.
     const std::function<void()> drawObjects = [this] {
         if (m_objects != nullptr) {
-            m_objects->draw(PlacedObjects::DrawOptions{
-                .render = [this](rw::Atomic* atomic) { m_sceneLighting.drawObjectAtomic(atomic); }});
+            m_objects->draw(PlacedObjects::DrawOptions{.camera = std::nullopt, .render = [this](rw::Atomic* atomic) {
+                                                           m_sceneLighting.drawObjectAtomic(atomic);
+                                                       }});
         }
     };
     m_renderer.render(m_engine, *m_set, m_level.get(), viewAt(time.alpha), m_pendingDistance, nowMs, drawObjects,

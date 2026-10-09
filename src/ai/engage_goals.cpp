@@ -266,7 +266,8 @@ GoalStatus EngageEnemyGoal::process(Brain& brain) {
         const std::vector<Brain*>& slots = target->attackSlots();
         const auto index = static_cast<int>(std::ranges::find(slots, &brain) - slots.begin());
         const float side = index % 2 == 0 ? -1.0F : 1.0F;
-        const float fan = side * static_cast<float>((index + 1) / 2) * kEngageFanDegrees * kDegrees;
+        const int pair = (index + 1) / 2; // whole pairs: 0, 1, 1, 2, 2, ...
+        const float fan = side * static_cast<float>(pair) * kEngageFanDegrees * kDegrees;
         const anim::Vec3 led =
             anim::add(them.position(), anim::scale(human::facing(them.heading() + fan), them.speed()));
         const RoutePlanner* planner = brain.planner();

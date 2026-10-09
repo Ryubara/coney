@@ -16,6 +16,7 @@
 #include "audio/object_sounds.h"
 #include "audio/sound_engine.h"
 #include "characters/character_types.h"
+#include "core/assert.h"
 #include "core/game_random.h"
 #include "fileio/executable.h"
 #include "gamemodes/legal_screen_mode.h"
@@ -214,6 +215,7 @@ void GameSession::attachAudio(AudioOutput* audio) {
     m_objectSounds.setPlayer(&audio->sounds());
     m_objectSounds.setMaterialSounds(&audio->game().materialSounds());
     // A movie's sound on the mixer; a movie stops every other sound.
+    CONEY_ASSERT(m_movieMode.has_value()); // made with the session
     m_movieMode->setMixer(&audio->sounds().mixer());
     m_movieMode->setSoundStop([audio] {
         if (audio::SoundEngine* engine = audio->sounds().engine(); engine != nullptr) {
@@ -303,7 +305,7 @@ std::unique_ptr<scenes::SceneSystem> GameSession::makeScenes() {
                                                  scenes::SceneSystem::ScriptCall{});
 }
 
-void connectDebugServices(debug::DebugServices& services, std::function<GameSession*()> session) {
+void connectDebugServices(debug::DebugServices& services, const std::function<GameSession*()>& session) {
     services.scripts = [session]() -> script::ScriptSystem* {
         GameSession* game = session();
         return game != nullptr ? &game->flow().scripts() : nullptr;

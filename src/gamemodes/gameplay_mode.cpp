@@ -245,7 +245,8 @@ void GameplayMode::endLevel() {
     m_cameras.reset();
     // The level's objects go with it, and with them the level's collision mesh and path data they pointed at.
     m_objects.clear();
-    m_objects.world = world_objects::ObjectWorld{.services = &m_objectServices, .random = &m_state.random};
+    m_objects.world =
+        world_objects::ObjectWorld{.services = &m_objectServices, .random = &m_state.random, .knock = nullptr};
     if (m_context.effects == m_effects.get()) {
         m_context.effects = nullptr;
     }

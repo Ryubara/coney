@@ -86,15 +86,15 @@ TEST_CASE("the stick turns and pitches the aim outside its dead zone, the pitch 
     ThrowAimState aim;
     aim.enter(Vec3{}, 0.0F);
     // Inside the dead zone nothing moves.
-    CHECK_FALSE(aim.step(AimInput{.stickX = 26, .stickY = -26}, AimWorld{}));
+    CHECK_FALSE(aim.step(AimInput{.stickX = 26, .stickY = -26, .followHeading = std::nullopt}, AimWorld{}));
     CHECK(aim.heading() == Approx(0.0F));
     CHECK(aim.pitch() == Approx(kAimStartPitch));
     // Full right: (127 - 25) steps clockwise; full up: as many up.
-    CHECK(aim.step(AimInput{.stickX = 127, .stickY = -127}, AimWorld{}));
+    CHECK(aim.step(AimInput{.stickX = 127, .stickY = -127, .followHeading = std::nullopt}, AimWorld{}));
     CHECK(aim.heading() == Approx(-102 * kAimRate));
     CHECK(aim.pitch() == Approx(kAimStartPitch + (102 * kAimRate)));
     for (int i = 0; i < 100; ++i) {
-        aim.step(AimInput{.stickY = 127}, AimWorld{});
+        aim.step(AimInput{.stickY = 127, .followHeading = std::nullopt}, AimWorld{});
     }
     CHECK(aim.pitch() == Approx(-kAimPitchLimit));
 }
@@ -172,21 +172,21 @@ TEST_CASE("the stick turns him off a human target only after the five frames tha
     // which moves with the heading, so it settles by a few hundredths over them rather than turning with the stick
     // (0.06 rad a frame at full tilt).
     for (int i = 0; i < kAimFaceFrames - 1; ++i) {
-        CHECK_FALSE(aim.step(AimInput{.stickX = 127}, world));
+        CHECK_FALSE(aim.step(AimInput{.stickX = 127, .followHeading = std::nullopt}, world));
         CHECK(aim.heading() == Approx(facing).margin(0.04));
     }
     // Then the stick turns him.
-    CHECK(aim.step(AimInput{.stickX = 127}, world));
+    CHECK(aim.step(AimInput{.stickX = 127, .followHeading = std::nullopt}, world));
     CHECK(aim.heading() < facing);
 }
 
 TEST_CASE("pushed sideways the stick asks pass 1 for a target on that side only", "[combat]") {
     ThrowAimState aim;
     aim.enter(Vec3{}, 0.0F);
-    aim.step(AimInput{.stickX = 60}, humanAt(5.0F, -1));
+    aim.step(AimInput{.stickX = 60, .followHeading = std::nullopt}, humanAt(5.0F, -1));
     CHECK(aim.target() == 0);
     ThrowAimState right;
     right.enter(Vec3{}, 0.0F);
-    right.step(AimInput{.stickX = 60}, humanAt(5.0F, 1));
+    right.step(AimInput{.stickX = 60, .followHeading = std::nullopt}, humanAt(5.0F, 1));
     CHECK(right.target() == 7);
 }

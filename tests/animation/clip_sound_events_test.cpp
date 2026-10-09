@@ -28,7 +28,8 @@ AnimClip soundClip(float length, const std::vector<std::uint16_t>& frames, std::
     AnimClip clip;
     clip.duration = length / anim::kClipFrameRate;
     for (const std::uint16_t frame : frames) {
-        clip.events.push_back(ClipEvent{.frame = frame, .type = kAnimSound, .value = 0, .argument = sound});
+        clip.events.push_back(ClipEvent{
+            .frame = frame, .type = kAnimSound, .value = 0, .argument = sound, .position = {}, .rotation = {}});
     }
     return clip;
 }

@@ -235,8 +235,9 @@ void GameplayMode::updateUncuff() {
     const bool cuffedGone = cuffed == nullptr || !cuffed->human().script().arrested;
     // The meter's fill each update: the meter over its target (HUD_MashMeterUpdate).
     const int target = combat::combatTuning().mashTarget;
-    if (m_context.hud != nullptr && combat.mash() && target > 0) {
-        m_context.hud->mashMeter(0).setFill(static_cast<float>(combat.mash()->meter()) / static_cast<float>(target));
+    const std::optional<combat::ButtonMash>& mash = combat.mash();
+    if (m_context.hud != nullptr && mash && target > 0) {
+        m_context.hud->mashMeter(0).setFill(static_cast<float>(mash->meter()) / static_cast<float>(target));
     }
     if (running && !cuffedGone && freer.uncuffPlaying()) {
         return;

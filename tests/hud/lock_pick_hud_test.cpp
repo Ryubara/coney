@@ -77,8 +77,8 @@ TEST_CASE("a shown lock-pick dial draws three pins, two wedge fans and the face"
     CHECK(batches.minigames.sprites()[1].width == Approx(0.152F));
     CHECK(batches.minigames.sprites()[2].width == Approx(0.114F));
     CHECK(batches.minigames.sprites()[2].position.x == batches.minigames.sprites()[0].position.x);
-    CHECK(batches.shapes.triangles().size() == 64 * 3);
-    CHECK(batches.face.triangles().size() == 32 * 3);
+    CHECK(batches.shapes.triangles().size() == std::size_t{64} * 3);
+    CHECK(batches.face.triangles().size() == std::size_t{32} * 3);
 
     // The good wedge's first segment (straight up) is in colour at its centre and rim, checked through a
     // recording device.
@@ -86,7 +86,7 @@ TEST_CASE("a shown lock-pick dial draws three pins, two wedge fans and the face"
     batches.shapes.render(device, coney::graphics::OverlayCamera{});
     REQUIRE(device.triangles.size() == 1);
     const std::vector<coney::graphics::LogicalVertex>& v = device.triangles[0].vertices;
-    REQUIRE(v.size() == 64 * 3);
+    REQUIRE(v.size() == std::size_t{64} * 3);
     // Segment j is vertices 3j (the centre), 3j + 1 and 3j + 2 (rim vertices j and j + 1). With k = 5, segments 0-4 are
     // solid, 5 fades (rim vertex 6 clear), 6-25 are clear at the rim, 26 fades in (rim vertex 27 coloured), 27-31
     // solid.
@@ -133,7 +133,7 @@ TEST_CASE("the lock-pick pins turn by their angles and go once every pin is done
     dial.setPins({1.0F, 2.0F, 3.0F}, 3);
     dial.render(batches.canvas(), 1);
     CHECK(batches.minigames.sprites().empty());
-    CHECK(batches.shapes.triangles().size() == 64 * 3);
+    CHECK(batches.shapes.triangles().size() == std::size_t{64} * 3);
     // Player 2's shapes sit right of the screen's middle.
     CHECK(LockPickHud::shapeCentre(1).x > 0.0F);
     CHECK(LockPickHud::pinPlace(1).x == Approx(0.9F));

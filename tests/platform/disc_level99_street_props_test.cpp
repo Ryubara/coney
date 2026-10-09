@@ -159,6 +159,9 @@ TEST_CASE("the disc's level99 street: a trash can stops a walker; square and a s
     REQUIRE(type != nullptr);
     const std::optional<coney::world_objects::ObjectBody> body = coney::world_objects::bodyOf(*can, *type);
     REQUIRE(body.has_value());
+    if (!body) {
+        return;
+    }
     CHECK((type->bodyWord & coney::world_objects::kPhyBlockHumans) != 0);
 
     // Player 1 2 m south of it, facing north (the camera turns behind him), then walking north.

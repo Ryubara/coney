@@ -44,7 +44,9 @@ class DiscSession {
     /// Everything set up over `wad` (which must outlive it); the pad script must parse. Movies are skipped unless
     /// `settings` says otherwise.
     DiscSession(const io::Wad& wad, std::string_view padScript,
-                platform::GameSessionSettings settings = platform::GameSessionSettings{.skipMovies = true})
+                const platform::GameSessionSettings& settings = platform::GameSessionSettings{.skipMovies = true,
+                                                                                              .rumble = std::nullopt,
+                                                                                              .profiles = std::nullopt})
         : m_handlers(chunk::ChunkHandlerTable::withDefaults()), m_budget(world::kSectorPoolSize) {
         platform::addTextureDictionaryHandlers(m_handlers);
         platform::addSpriteSheetHandlers(m_handlers);

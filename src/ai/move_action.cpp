@@ -8,6 +8,7 @@
 
 #include "ai/brain.h"
 #include "ai/steering.h"
+#include "core/assert.h"
 #include "human/locomotion.h"
 
 namespace coney::ai {
@@ -304,6 +305,7 @@ ActionStatus MoveAction::finish(Brain& brain) {
 }
 
 ActionStatus MoveAction::jumpLeg(Brain& brain, anim::Vec3 position, anim::Vec3 aim) {
+    CONEY_ASSERT(m_follower.has_value()); // followLeg() calls this only on a follower's jump leg
     // A new leg starts with nothing done.
     if (m_follower->index() != m_jumpIndex) {
         m_jumpIndex = m_follower->index();

@@ -103,15 +103,11 @@ struct Options {
     /// Stop after this many frames; unset means run until the window closes. Tests and CI use it. A frame here is
     /// one fixed 1/30 s step and one render: `--frames` puts Coney in test mode (isTestMode()).
     std::optional<int> frameLimit;
-    /// `--help` was given: print usageText() and exit 0.
-    bool showHelp = false;
     /// `--disc`: the player's disc, a folder (a mounted disc) or an ISO 9660 image, exactly as typed.
     std::optional<std::string> discPath;
     /// `--load`, in the order given: WAD entries to load through the chunk system, each a name or a `0x` hash.
     /// Requires discPath.
     std::vector<std::string> loads;
-    /// `--headless`: no window and librw's NULL renderer, so nothing needs a display or a GPU. CI runs this way.
-    bool headless = false;
     /// `--view-txd`: a WAD entry (a name or a `0x` hash) whose texture dictionaries the viewer shows. Requires
     /// discPath; cannot be combined with `--load`.
     std::optional<std::string> viewTxd;
@@ -149,10 +145,6 @@ struct Options {
     /// `--camera X,Y,Z,QX,QY,QZ,QW[,FOV]`: player 1's view pinned there for the whole run (CameraPin). Requires
     /// playLevel.
     std::optional<CameraPin> cameraPin;
-    /// `--freeze-world`: after the first step of play nothing in the world advances (pedestrians, cars, particles,
-    /// animation, the scripts), so every frame shows the same picture; the scenery still streams round the camera and
-    /// the fixed step still runs. Requires playLevel.
-    bool freezeWorld = false;
     /// `--trace`: write the player's and the follow camera's state after every step of `--play-level` to this file,
     /// one CSV line per step (human::traceLine()), so feel comparisons can be repeated
     /// (docs/guides/building.md#tracing). Requires playLevel.
@@ -166,10 +158,6 @@ struct Options {
     /// event stamped with its step (coney::events), for a differential playthrough against the original
     /// (docs/guides/research-workflow.md#differential-playthroughs). Works on any path through the game.
     std::optional<std::string> eventLogFile;
-    /// `--pad-pipe`: take player 1's pad from standard input, one line per frame, after writing what the frame before
-    /// left on screen to standard output (docs/guides/building.md#pad-pipe), so a driver program can play the game
-    /// by what it sees. Test mode; cannot be combined with `--input-script`.
-    bool padPipe = false;
     /// `--assets`: the folder holding Coney's own assets (its `sandbox` folder of layouts and textures), in place of
     /// the `assets` folder beside the executable.
     std::optional<std::string> assetsDir;
@@ -195,8 +183,6 @@ struct Options {
     /// test aid for checking that the overlay leaves the frame as it found it (docs/guides/debug-menu.md). Ignored
     /// without a window.
     std::optional<int> devOverlayFrames;
-    /// `--language`: the language of the UI strings (`en`, `es`, `fr`, `it`, `de`); English by default.
-    Language language = Language::English;
     /// `--render-references`: the folder to write a reference image of every character, object, car, radar icon and
     /// traced particle effect into (in its `characters`, `objects`, `cars`, `radar` and `particles` folders), then
     /// exit. Requires discPath and a window (not headless); cannot be
@@ -212,6 +198,24 @@ struct Options {
     /// it is on). 30 is the original's rhythm: one step and one render per frame, nothing blended
     /// (docs/guides/building.md#frame-rate). Not in test mode.
     std::optional<int> fpsCap;
+    /// `--rumble TYPE [--arena N] [--gang-size N]`: start a Rumble match of that mode as QUICK RUMBLE does, whatever
+    /// the menu chose. Requires discPath; cannot be combined with `--load`, the viewers, `--play-level` or `--sandbox`.
+    std::optional<RumbleLaunch> rumble;
+    // The flags and the one-byte settings last, so the fields above pack without padding.
+    /// `--help` was given: print usageText() and exit 0.
+    bool showHelp = false;
+    /// `--headless`: no window and librw's NULL renderer, so nothing needs a display or a GPU. CI runs this way.
+    bool headless = false;
+    /// `--freeze-world`: after the first step of play nothing in the world advances (pedestrians, cars, particles,
+    /// animation, the scripts), so every frame shows the same picture; the scenery still streams round the camera and
+    /// the fixed step still runs. Requires playLevel.
+    bool freezeWorld = false;
+    /// `--pad-pipe`: take player 1's pad from standard input, one line per frame, after writing what the frame before
+    /// left on screen to standard output (docs/guides/building.md#pad-pipe), so a driver program can play the game
+    /// by what it sees. Test mode; cannot be combined with `--input-script`.
+    bool padPipe = false;
+    /// `--language`: the language of the UI strings (`en`, `es`, `fr`, `it`, `de`); English by default.
+    Language language = Language::English;
     /// `--vsync on|off`: whether a present waits for the display's vertical blank; on by default. Needs a window.
     bool vsync = true;
     /// `--line-blend on|off`: whether each shown line is the mean of two neighbouring lines, as the PS2's video output
@@ -232,9 +236,6 @@ struct Options {
     /// was mixed at the end; a check of the sound output. Cannot be combined with `--no-audio`, `--load` or
     /// `--render-references`.
     bool audioTest = false;
-    /// `--rumble TYPE [--arena N] [--gang-size N]`: start a Rumble match of that mode as QUICK RUMBLE does, whatever
-    /// the menu chose. Requires discPath; cannot be combined with `--load`, the viewers, `--play-level` or `--sandbox`.
-    std::optional<RumbleLaunch> rumble;
     /// `--skip-movies`: every movie is skipped at once, as if it had ended
     /// (docs/research/movies.md#coneys-implementation).
     bool skipMovies = false;

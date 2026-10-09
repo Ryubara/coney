@@ -6,6 +6,7 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <optional>
 #include <string_view>
 
 #include <catch2/catch_test_macros.hpp>
@@ -175,7 +176,12 @@ TEST_CASE("a boot's item is released when the boot is knocked off, not when remo
     REQUIRE(cars.spawn("car_coupe", Vec3{30, 20, 0}, Quat{}, 2) != nullptr);
     REQUIRE(cars.spawn("car_coupe", Vec3{50, 20, 0}, Quat{}, 3) != nullptr);
     // Car 1 hides a pipe: the record is pinned and moved to the boot on the third weapon hit (0.34 each).
-    REQUIRE(records.add(coney::world_objects::SpawnRecord{.handle = 50, .typeName = "dyn_pipe_a"}) != nullptr);
+    REQUIRE(records.add(coney::world_objects::SpawnRecord{.handle = 50,
+                                                          .typeName = "dyn_pipe_a",
+                                                          .shownMessage = std::nullopt,
+                                                          .model = std::nullopt,
+                                                          .physicsBody = std::nullopt,
+                                                          .breakIn = std::nullopt}) != nullptr);
     cars.placeInTrunk(1, 50, 0);
     CHECK(records.find(50)->pinned);
     CHECK(cars.find(1)->trunkLoaded);

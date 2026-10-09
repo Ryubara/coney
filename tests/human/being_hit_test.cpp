@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <memory>
 #include <numbers>
+#include <optional>
 #include <vector>
 
 #include <catch2/catch_approx.hpp>
@@ -568,7 +569,9 @@ TEST_CASE("a hit reports its sound at the attacker, a charge's body pair first, 
     const coney::human::HumanSound wall{.kind = coney::human::HumanSound::Kind::Impact,
                                         .material1 = material::kFist,
                                         .material2 = 116,
-                                        .volume = 116.0F};
+                                        .volume = 116.0F,
+                                        .at = {},
+                                        .sceneFeet = std::nullopt};
     fight.human().reportSound(wall);
     CHECK(fight.human().takeSounds().size() == 1);
     fight.human().reportSounds(false);

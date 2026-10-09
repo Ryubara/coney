@@ -52,7 +52,8 @@ ObjectHit hitOf(HitKind kind) {
 // One world with its recording services.
 struct Fixture {
     RecordingServices services;
-    ObjectWorld world{.collision = nullptr, .paths = nullptr, .services = &services, .random = nullptr};
+    ObjectWorld world{
+        .collision = nullptr, .paths = nullptr, .services = &services, .random = nullptr, .knock = nullptr};
     Props props;
 
     // A strike of `kind` on object 50 of `type`.
@@ -321,6 +322,9 @@ TEST_CASE("a beer pile hands out a new bottle with its cue on every take and nev
     for (int take = 0; take < kTakes; ++take) {
         const std::optional<double> made = f.props.takeFromPile(50.0, beer, pose, f.world);
         REQUIRE(made.has_value());
+        if (!made) {
+            return;
+        }
         CHECK(*made == 1001.0 + take);
     }
     CHECK(f.services.spawned == std::vector<std::string>(kTakes, "dyn_beerbottle"));

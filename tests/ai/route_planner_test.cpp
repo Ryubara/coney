@@ -322,6 +322,9 @@ TEST_CASE("a start in a hole plans from the hole's nearest edge or a probe; a de
     CHECK(planner.inHole(inHole));
     const std::optional<Vec3> snapped = planner.navPoint(inHole);
     REQUIRE(snapped.has_value());
+    if (!snapped) {
+        return;
+    }
     CHECK(*snapped == Vec3{4.0F, 3.0F, 0.0F});
     CHECK(planner.lineClear(inHole, {4.0F, 5.0F, 0.0F}));
     CHECK(planner.request(inHole, {4.0F, 5.0F, 0.0F}).has_value());
@@ -330,6 +333,9 @@ TEST_CASE("a start in a hole plans from the hole's nearest edge or a probe; a de
     for (const Vec3 point : {Vec3{3.1F, 2.5F, 0.0F}, Vec3{4.0F, 2.1F, 0.0F}, Vec3{4.9F, 2.5F, 0.0F}}) {
         const std::optional<Vec3> start = planner.navPoint(point);
         REQUIRE(start.has_value());
+        if (!start) {
+            return;
+        }
         CHECK(planner.areaAt(*start).has_value());
         CHECK(std::hypot(start->x - point.x, start->y - point.y) <= 1.5F);
     }

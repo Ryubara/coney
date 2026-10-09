@@ -60,8 +60,8 @@ void SoundMatrix::setSounds(Entry* entry, std::uint32_t index,
     }
     // Only the columns the entry was made with hold sounds.
     for (std::uint32_t column = 0; column < entry->columns; ++column) {
-        if (sounds.at(column)) {
-            entry->alternatives[index].at(column) = *sounds.at(column);
+        if (const auto& sound = sounds.at(column)) {
+            entry->alternatives[index].at(column) = *sound;
         }
     }
 }

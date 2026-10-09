@@ -20,7 +20,7 @@ using coney::anim::Vec3;
 namespace {
 
 // The scene on a floor whose half below x = 40 is shadow ground, with `walls` added.
-void useHalfShadow(coney::test::AiScene& scene, std::vector<coney::test::Tri> walls = {}) {
+void useHalfShadow(coney::test::AiScene& scene, const std::vector<coney::test::Tri>& walls = {}) {
     scene.mesh = coney::test::makeMesh(coney::test::join(
         coney::test::join(coney::test::floorAt(0.0F, 0.0F, 40.0F, 0.0F, 80.0F, 1, coney::raycast::kTriangleShadow),
                           coney::test::floorAt(0.0F, 40.0F, 80.0F, 0.0F, 80.0F)),

@@ -180,6 +180,7 @@ TEST_CASE("the hold tactic gives each AI member a hold at his own spot and turns
     std::vector<Brain*> members;
     const int gang = makeCrew(scene, 3, 3.0F, members);
     std::vector<coney::anim::Vec3> spots;
+    spots.reserve(members.size());
     for (const Brain* member : members) {
         spots.push_back(member->human().position());
     }

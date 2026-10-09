@@ -18,6 +18,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include "core/assert.h"
 #include "scenes/letterbox.h"
 #include "scenes/scene_cache.h"
 #include "scenes/scene_player.h"
@@ -182,6 +183,7 @@ struct Harness {
         // skip's flush does (28 fade in, 76 rumble, 74 coloured fade, 27 fade out) and drops (13 sound).
         test::SceneSpec callsSpec = longSpec;
         callsSpec.name = "tst_calls";
+        CONEY_ASSERT(callsSpec.part.camera.has_value()); // twoPartSpec() gives the part a camera track
         callsSpec.part.camera->duration = 3.0F;
         callsSpec.part.camera->events = {test::SceneEventBytes(10, 31),
                                          test::SceneEventBytes(70, 31),

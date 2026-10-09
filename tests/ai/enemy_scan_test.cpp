@@ -104,6 +104,7 @@ TEST_CASE("an enemy out of sight is dropped beyond 3 m and kept within it", "[ai
 TEST_CASE("the schedule scans each brain once an interval, at most five an update", "[ai][scan]") {
     coney::test::AiScene scene;
     std::vector<Brain*> guards;
+    guards.reserve(7);
     for (int k = 0; k < 7; ++k) {
         guards.push_back(&scene.add(Vec3{30.0F + static_cast<float>(k), 60.0F, 0.0F}, 180.0F));
     }

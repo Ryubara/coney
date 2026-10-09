@@ -3,11 +3,14 @@
 
 #include <algorithm>
 #include <charconv>
+#include <limits>
+#include <optional>
 #include <system_error>
 #include <utility>
 #include <vector>
 
 #include "core/event_log.h"
+#include "core/parse_number.h"
 #include "gui/markup.h"
 #include "hud/hud_layout.h"
 
@@ -91,11 +94,10 @@ std::string wrapText(std::string_view text, const gui::TextStyle& style, const g
     if (const std::vector<gui::MarkupToken> tokens = gui::parseMarkup(text);
         !tokens.empty() && tokens.front().kind == gui::MarkupToken::Kind::Tag &&
         tokens.front().tag == gui::MarkupTag::AutoIndent) {
-        float autoWidth = 0.0F;
-        const std::string_view argument = tokens.front().argument;
-        if (const auto [end, error] = std::from_chars(argument.data(), argument.data() + argument.size(), autoWidth);
-            error == std::errc{} && autoWidth > 0.0F) {
-            width = autoWidth;
+        // Through parseDecimal: Apple's libc++ has no floating-point std::from_chars.
+        if (const std::optional<double> autoWidth = parseDecimal(tokens.front().argument);
+            autoWidth && *autoWidth > 0.0 && *autoWidth <= static_cast<double>(std::numeric_limits<float>::max())) {
+            width = static_cast<float>(*autoWidth);
         }
     }
     std::string done;

@@ -136,9 +136,10 @@ TEST_CASE("a placed objects file reads into records, emitters left out", "[picku
     // The emitter line goes to its own callback, in order, taking no record and no handle.
     wo::SpawnRecords again;
     std::vector<std::string> emitters;
-    CHECK(wo::addPlacedObjects(
-              *objects, again, [&next] { return next++; },
-              [&emitters](const wo::PlacedObject& object) { emitters.push_back(object.name); }) == 2);
+    const std::size_t withEmitters = wo::addPlacedObjects(
+        *objects, again, [&next] { return next++; },
+        [&emitters](const wo::PlacedObject& object) { emitters.push_back(object.name); });
+    CHECK(withEmitters == 2);
     REQUIRE(emitters.size() == 1);
     CHECK(emitters[0] == (*objects)[1].name);
     CHECK(again.all()[0].handle == 102);
@@ -173,7 +174,8 @@ TEST_CASE("a weapon pile's type picks what its take hands out and the cue it pla
     CHECK(asked == 3);
     // The pool-ball pile draws once and always makes ball 8.
     int draws = 0;
-    CHECK(pileTake(23, [&draws](int /*below*/) { return ++draws; }).object == "dyn_poolball08_");
+    const coney::world_objects::PileTake ball = pileTake(23, [&draws](int /*below*/) { return ++draws; });
+    CHECK(ball.object == "dyn_poolball08_");
     CHECK(draws == 1);
     // A type its take has no case for is taken itself; the spray-can box makes nothing (yet).
     CHECK(pileTake(2, {}).itself);

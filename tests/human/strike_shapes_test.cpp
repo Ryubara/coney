@@ -101,7 +101,8 @@ TEST_CASE("a segment runs along its bone's x from the offset, turned and moved i
 
 TEST_CASE("the body scale scales offsets, lengths and radii", "[human][strike]") {
     const human::StrikeShapeDef spine = human::strikeShapeDefs()[0];
-    const auto posed = human::poseStrikeShapes(std::array{spine}, bonesAt(Vec3{}), human::BodyPlacement{.scale = 2.0F});
+    const auto posed =
+        human::poseStrikeShapes(std::array{spine}, bonesAt(Vec3{}), human::BodyPlacement{.feet = {}, .scale = 2.0F});
     REQUIRE(posed.size() == 1);
     CHECK(posed[0].a.x == Approx(-0.14F));
     CHECK(posed[0].b.x == Approx(-0.14F + 0.76F));

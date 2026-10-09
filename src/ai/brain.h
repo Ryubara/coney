@@ -545,17 +545,12 @@ class Brain {
     bool listEnemy(Brain& enemy);
 
     human::Human* m_human;
-    BrainType m_type;
-    FightSettings m_settings;
-    combat::CombatRandom m_random;
-    bool m_enabled = true;
     std::uint64_t m_nowMs = 0;
     std::uint64_t m_lastUpdateMs = 0;                                  // +0x30
     std::uint64_t m_updates = 0;                                       // +0x34
     std::uint64_t m_thinks = 0;                                        // +0x38
     std::unique_ptr<Goal> m_reaction;                                  // +0x3c
     std::vector<std::unique_ptr<Goal>> m_goals;                        // +0x40, the top at the back
-    int m_goalBase = -1;                                               // +0x2d
     std::array<std::unique_ptr<Action>, kActionQueueSize> m_actions{}; // +0x68, circular
     std::size_t m_actionCount = 0;                                     // +0x2e
     std::size_t m_actionFront = 0;                                     // +0x2f
@@ -567,43 +562,49 @@ class Brain {
     std::size_t m_slotCount = kDefaultAttackSlots; // +0x1e4
     std::uint64_t m_nextAttackMs = 0;              // +0x1e8
     std::uint64_t m_attackableAtMs = 0;            // +0x1ec
-    int m_attackWarnings = 0;                      // +0x200
-    float m_sightRange = kDefaultSightRange;       // +0x130
-    float m_fieldOfView = kDefaultFieldOfView;     // +0x12c
+    RoutePlanner* m_planner = nullptr;
+    const raycast::CollisionMesh* m_collision = nullptr;
+    SteeringState m_steering; // +0xa0
+    std::size_t m_slot = 0;
+    double m_handle = 0;              // the human's script handle
+    Gang* m_gang = nullptr;           // +0x20c
+    Formation* m_following = nullptr; // +0x212
+    PadControl m_padControl;
+    ScriptServices* m_services = nullptr;
+    FightBook m_fight; // +0x1f0, +0x14a, +0x14b, +0x148
+    // Goals popped while one of them may still be running (a goal's Process can start a new fight, which pops it):
+    // freed once the update is over.
+    std::vector<std::unique_ptr<Goal>> m_retired;
+    // The four-byte fields after the eight-byte ones, and the one-byte ones last, so the fields pack without padding.
+    FightSettings m_settings;
+    combat::CombatRandom m_random;
+    int m_goalBase = -1;                       // +0x2d
+    int m_attackWarnings = 0;                  // +0x200
+    float m_sightRange = kDefaultSightRange;   // +0x130
+    float m_fieldOfView = kDefaultFieldOfView; // +0x12c
     BrainSenses m_senses;
     int m_threatResponse = kDefaultThreatResponse; // +0x21c
     float m_meleeNear = kDefaultMeleeNear;         // +0x13c
     float m_meleeFar = kDefaultMeleeFar;           // +0x140
     int m_goalsRanOut = 0;
-    RoutePlanner* m_planner = nullptr;
-    const raycast::CollisionMesh* m_collision = nullptr;
-    MoveFailure m_moveFailure = MoveFailure::None; // +0x284
-    anim::Vec3 m_moveAim;                          // +0x90
-    float m_moveAimRadius = 0.0F;                  // +0x118
-    SteeringState m_steering;                      // +0xa0
-    std::optional<std::uint32_t> m_routeNode;      // RouteState_CurrentNode of +0xe0
-    std::size_t m_slot = 0;
-    double m_handle = 0;              // the human's script handle
-    int m_characterClass = -1;        // the human's class
-    bool m_dead = false;              // +0x09
-    bool m_givingWay = false;         // +0xcc bit 1
-    bool m_pushingAside = false;      // +0xcc bit 4
-    bool m_knockedOut = false;        // +0x08 cleared
-    bool m_suspended = false;         // +0x0a
-    bool m_wantsWeapon = true;        // +0x265
-    Gang* m_gang = nullptr;           // +0x20c
-    Formation* m_following = nullptr; // +0x212
-    PadControl m_padControl;
-    bool m_downReported = false;
+    anim::Vec3 m_moveAim;                     // +0x90
+    float m_moveAimRadius = 0.0F;             // +0x118
+    std::optional<std::uint32_t> m_routeNode; // RouteState_CurrentNode of +0xe0
+    int m_characterClass = -1;                // the human's class
     int m_seenHealth = -1;
-    ScriptServices* m_services = nullptr;
+    int m_turnBoost = 0; // +0x0b
+    BrainType m_type;
+    bool m_enabled = true;
+    MoveFailure m_moveFailure = MoveFailure::None; // +0x284
+    bool m_dead = false;                           // +0x09
+    bool m_givingWay = false;                      // +0xcc bit 1
+    bool m_pushingAside = false;                   // +0xcc bit 4
+    bool m_knockedOut = false;                     // +0x08 cleared
+    bool m_suspended = false;                      // +0x0a
+    bool m_wantsWeapon = true;                     // +0x265
+    bool m_downReported = false;
     bool m_mayApproach = true; // +0x2d3
-    FightBook m_fight;         // +0x1f0, +0x14a, +0x14b, +0x148
     bool m_attackable = true;  // +0x11f
-    int m_turnBoost = 0;       // +0x0b
-    // Goals popped while one of them may still be running (a goal's Process can start a new fight, which pops it):
-    // freed once the update is over.
-    std::vector<std::unique_ptr<Goal>> m_retired;
 };
 
 /// Delivers `event` to `brain`'s human as `Human_OnEvent` does: its own script handlers first (`SetMsgHandler`, through

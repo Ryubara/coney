@@ -63,16 +63,21 @@ TEST_CASE("a mission's end chooses the next mission and carries the progress on"
         REQUIRE(host.missionCompleteRequested());
         REQUIRE(scripts->completeMission());
         CHECK_FALSE(host.missionCompleteRequested()); // the launch runNextMission makes itself is not a new end
-        REQUIRE(host.nextLevel().has_value());
-        CHECK(*host.nextLevel() == step.next);
+        // A local: clang-tidy cannot follow a check through the host's accessor.
+        const std::optional<std::string> nextLevel = host.nextLevel();
+        REQUIRE(nextLevel.has_value());
+        if (!nextLevel) {
+            return;
+        }
+        CHECK(*nextLevel == step.next);
         CHECK(static_cast<int>(scripts->state().checkPoint) == step.checkpoint);
-        std::printf("  story chain: %s -> %s at checkpoint %d\n", step.level, host.nextLevel()->c_str(),
+        std::printf("  story chain: %s -> %s at checkpoint %d\n", step.level, nextLevel->c_str(),
                     static_cast<int>(scripts->state().checkPoint));
         // The next level's scripts, with the progress carried over.
-        auto next = std::make_unique<coney::LevelScripts>(coney::script::wadScriptSource(*wad), *host.nextLevel(),
+        auto next = std::make_unique<coney::LevelScripts>(coney::script::wadScriptSource(*wad), *nextLevel,
                                                           step.checkpoint, [](std::string_view) {});
         scripts->carryProgressTo(*next);
-        (void)coney::runLevelScript(next->scripts(), next->state(), next->humans(), next->flags(), *host.nextLevel(),
+        (void)coney::runLevelScript(next->scripts(), next->state(), next->humans(), next->flags(), *nextLevel,
                                     &next->spawnRecords());
         scripts = std::move(next);
     }

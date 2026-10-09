@@ -364,7 +364,7 @@ TEST_CASE("an object to throw in hand: the set's throw from a run at gait 3-5, f
         INFO("set " << t.set);
         CHECK(throwSet(t.set));
         const auto at = [&t](Gait gait, bool stance = false) {
-            return throwAttack(SquareInput{.gait = gait, .heldSet = t.set, .fightStance = stance});
+            return throwAttack(SquareInput{.stick = {}, .gait = gait, .heldSet = t.set, .fightStance = stance});
         };
         CHECK(at(Gait::Standing) == t.standing);
         CHECK(at(Gait::Sneak) == t.standing);
@@ -376,10 +376,11 @@ TEST_CASE("an object to throw in hand: the set's throw from a run at gait 3-5, f
         CHECK(at(Gait::Walk, true) == t.standing);
         CHECK(at(Gait::Run, true) == t.run);
         // The run's phase bits and the stick are not tested.
-        CHECK(throwAttack(SquareInput{.gait = Gait::Run, .phaseFlags = 0x1000000, .heldSet = t.set}) == t.run);
+        CHECK(throwAttack(SquareInput{.stick = {}, .gait = Gait::Run, .phaseFlags = 0x1000000, .heldSet = t.set}) ==
+              t.run);
     }
     for (const int set : {0, 1, 2, 3, 7}) {
         CHECK_FALSE(throwSet(set));
-        CHECK(throwAttack(SquareInput{.heldSet = set}) == anim_id::kNone);
+        CHECK(throwAttack(SquareInput{.stick = {}, .heldSet = set}) == anim_id::kNone);
     }
 }

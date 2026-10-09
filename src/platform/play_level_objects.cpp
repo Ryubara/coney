@@ -131,7 +131,8 @@ void reportStrikeSound(human::Human& human, std::uint32_t struck, float volume, 
                                         .volume = volume,
                                         .victimDown = false,
                                         .ownerIsPlayer = player,
-                                        .at = human.position()});
+                                        .at = human.position(),
+                                        .sceneFeet = std::nullopt});
 }
 // The buttons that leave a lock pick running: cross presses, L1, R2, the d-pad and SELECT do nothing to it
 // (docs/research/crimes.md#lockpick); any other press abandons it.
@@ -669,6 +670,9 @@ void PlayLevelMode::stepObjectBodies() {
         }
     }
     for (const auto& [handle, pose] : registers) {
+        if (m_objects == nullptr) {
+            break; // registers were gathered only with the objects there
+        }
         if (const world_objects::ObjectType* type = worldObjectType(handle)) {
             m_objects->props.initCashRegister(handle, *type, pose, m_objects->world);
         }
@@ -779,7 +783,7 @@ void PlayLevelMode::stepPickups() {
         // A weapon pile stays: its take makes a new object, which goes into the hand instead.
         if (const std::optional<double> made = takeFromPile(*taken)) {
             m_print(std::format("pickup: pile {:.0f} gave object {:.0f}\n", *taken, *made));
-            taken = *made;
+            taken = made;
         }
         const TakeResult result = m_pickups->take(*taken, 0);
         if (result == TakeResult::InHand) {
@@ -910,6 +914,8 @@ void PlayLevelMode::dropHeld(human::Human& human, double held, bool thrown) {
         combat::ThrowAim aim{.weightFactor =
                                  combat::throwWeightFactor(type != nullptr ? type->objectKind : 0,
                                                            type != nullptr ? type->weight : 0, human.scale()),
+                             .toTarget = std::nullopt,
+                             .spread = std::nullopt,
                              .fastDefault = human.gait() > human::Gait::Walk && (set == 4 || set == 6)};
         // At the player's target within the set's search radius, from the hand. **Coney's stand-ins**: the fighter's
         // target for `Player_PickThrowTarget`'s pick, the held object's place for the posed hand (bone 25), and a

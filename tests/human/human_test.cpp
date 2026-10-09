@@ -2,8 +2,10 @@
 #include "human/human.h"
 
 #include <cmath>
+#include <cstdint>
 #include <memory>
 #include <numbers>
+#include <optional>
 #include <vector>
 
 #include <catch2/catch_approx.hpp>
@@ -442,7 +444,7 @@ TEST_CASE("a clip's action event (0x41) is reported in the update that passes it
     for (int update = 1; update <= 30; ++update) {
         human.step(stick(0.0F, 0.0F), mesh.get());
         if (human.actionEvent().has_value()) {
-            CHECK(*human.actionEvent() == 665U);
+            CHECK(human.actionEvent() == std::optional<std::uint32_t>{665U});
             ++fired;
             firedAt = update;
         }

@@ -34,7 +34,7 @@ FogSettings settings() {
 TEST_CASE("the fog tops its view up to 20 wisps, 10 every 5 frames, round the camera's target", "[fog]") {
     GroundFog fog;
     // The camera at its target, so no wisp placed within 20 m of the target is more than 20 m from it.
-    const EffectsViewer viewer{.position = Vec3{0, 0, 1}, .target = Vec3{0, 0, 1}};
+    const EffectsViewer viewer{.position = Vec3{0, 0, 1}, .target = Vec3{0, 0, 1}, .window = std::nullopt};
     fog.step(kFrame, viewer); // no fog running: nothing
     CHECK(fog.wisps().empty());
     fog.start(settings());
@@ -62,7 +62,7 @@ TEST_CASE("the fog tops its view up to 20 wisps, 10 every 5 frames, round the ca
 TEST_CASE("a wisp fades in by alpha / steps every 2 ticks and grows from 0 over its first update", "[fog]") {
     GroundFog fog;
     // The camera looks down from 30 m over the target with no view window: every wisp is in view and none near.
-    const EffectsViewer viewer{.position = Vec3{0, 0, 10}, .target = Vec3{0, 0, 0}};
+    const EffectsViewer viewer{.position = Vec3{0, 0, 10}, .target = Vec3{0, 0, 0}, .window = std::nullopt};
     fog.start(settings());
     CHECK(fog.alphaStep() == 10);
     CHECK(fog.fadeUpdates() == 9);
@@ -91,7 +91,7 @@ TEST_CASE("a wisp fades in by alpha / steps every 2 ticks and grows from 0 over 
 
 TEST_CASE("a hidden wisp ends from its third update; a frame draws the first 10 wisps that show", "[fog]") {
     GroundFog fog;
-    const EffectsViewer viewer{.position = Vec3{0, 0, 10}, .target = Vec3{0, 0, 0}};
+    const EffectsViewer viewer{.position = Vec3{0, 0, 10}, .target = Vec3{0, 0, 0}, .window = std::nullopt};
     fog.start(settings());
     for (int i = 0; i < 12; ++i) {
         fog.step(kFrame, viewer);
@@ -133,7 +133,7 @@ TEST_CASE("wisps far from the camera end and near ones are hidden; MaxFogParticl
     CHECK(fog.maxWisps() == GroundFog::kDefaultMaxWisps);
     fog.start(settings());
     fog.setMaxWisps(5);
-    const EffectsViewer viewer{.position = Vec3{0, 0, 1}, .target = Vec3{0, 0, 0}};
+    const EffectsViewer viewer{.position = Vec3{0, 0, 1}, .target = Vec3{0, 0, 0}, .window = std::nullopt};
     fog.step(kFrame, viewer);
     CHECK(fog.wisps().size() == 5);
     for (const GroundFog::Wisp& wisp : fog.wisps()) {
@@ -143,7 +143,7 @@ TEST_CASE("wisps far from the camera end and near ones are hidden; MaxFogParticl
         CHECK(wisp.hidden == ((dx * dx) + (dy * dy) + (dz * dz) < GroundFog::kHideWithin * GroundFog::kHideWithin));
     }
     // The camera moves 100 m away: every old wisp is hidden, then ends; new ones come round the new target.
-    const EffectsViewer away{.position = Vec3{100, 0, 1}, .target = Vec3{100, 0, 0}};
+    const EffectsViewer away{.position = Vec3{100, 0, 1}, .target = Vec3{100, 0, 0}, .window = std::nullopt};
     for (int i = 0; i < 5; ++i) {
         fog.step(kFrame, away);
     }
@@ -162,7 +162,7 @@ TEST_CASE("wisps far from the camera end and near ones are hidden; MaxFogParticl
 TEST_CASE("a wisp drifts toward the camera at drift x 1.75-2.25 m/s, a little to either side", "[fog]") {
     GroundFog fog;
     fog.start(settings());
-    const EffectsViewer viewer{.position = Vec3{0, -10, 2}, .target = Vec3{0, 0, 0}};
+    const EffectsViewer viewer{.position = Vec3{0, -10, 2}, .target = Vec3{0, 0, 0}, .window = std::nullopt};
     fog.step(kFrame, viewer);
     REQUIRE_FALSE(fog.wisps().empty());
     for (const GroundFog::Wisp& wisp : fog.wisps()) {

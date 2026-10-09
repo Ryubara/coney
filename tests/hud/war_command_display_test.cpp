@@ -50,17 +50,18 @@ TEST_CASE("the menu reads the right stick only past its dead zone, with a one-ax
     CHECK_FALSE(warCommandStickAngle(raw(0.0F), raw(0.0F)).has_value());
     CHECK_FALSE(warCommandStickAngle(raw(0.0F), raw(-0.8F)).has_value());
     REQUIRE(warCommandStickAngle(raw(0.0F), raw(-0.9F)).has_value());
-    CHECK(*warCommandStickAngle(128, 0) == Catch::Approx(0.0F).margin(0.5F));
+    // value_or(-1): a missing angle fails the check instead of being read unchecked.
+    CHECK(warCommandStickAngle(128, 0).value_or(-1.0F) == Catch::Approx(0.0F).margin(0.5F));
     // Right (y on 128), down (x on 127) and left (y on 128) read 90°, 180° and 270° (an offset of 128 counts as 90°).
-    CHECK(*warCommandStickAngle(255, 128) == Catch::Approx(90.0F).margin(0.5F));
-    CHECK(*warCommandStickAngle(127, 255) == Catch::Approx(180.0F).margin(0.5F));
-    CHECK(*warCommandStickAngle(0, 128) == Catch::Approx(270.0F).margin(0.5F));
+    CHECK(warCommandStickAngle(255, 128).value_or(-1.0F) == Catch::Approx(90.0F).margin(0.5F));
+    CHECK(warCommandStickAngle(127, 255).value_or(-1.0F) == Catch::Approx(180.0F).margin(0.5F));
+    CHECK(warCommandStickAngle(0, 128).value_or(-1.0F) == Catch::Approx(270.0F).margin(0.5F));
     // Only one axis is read: full right with the y byte at 127 is in the up-right quadrant and reads asin(127/128).
-    CHECK(*warCommandStickAngle(255, 127) == Catch::Approx(82.8F).margin(0.5F));
+    CHECK(warCommandStickAngle(255, 127).value_or(-1.0F) == Catch::Approx(82.8F).margin(0.5F));
     // Straight up from the 127 centre lands in the up-left quadrant at 360°, read as 0°.
-    CHECK(*warCommandStickAngle(127, 0) == Catch::Approx(0.0F).margin(0.5F));
+    CHECK(warCommandStickAngle(127, 0).value_or(-1.0F) == Catch::Approx(0.0F).margin(0.5F));
     // A 45° push of 0.9 up-right reads about 39°: asin of the x offset only.
-    CHECK(*warCommandStickAngle(raw(0.636F), raw(-0.636F)) == Catch::Approx(39.0F).margin(1.0F));
+    CHECK(warCommandStickAngle(raw(0.636F), raw(-0.636F)).value_or(-1.0F) == Catch::Approx(39.0F).margin(1.0F));
 }
 
 TEST_CASE("the highlighted sector reaches 11.25 degrees into its neighbours", "[hud][war-commands]") {

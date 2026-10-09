@@ -43,7 +43,8 @@ void PlayLevelEffects::drawInScene(const world::CameraPose& view) {
 
 void PlayLevelEffects::drawFog(const world::CameraPose& view) {
     const effects::GroundFog& fog = m_effects->fog;
-    if (!fog.settings()) {
+    const std::optional<effects::FogSettings>& settings = fog.settings();
+    if (!settings) {
         return;
     }
     // Camera-facing squares of rectangle 0 (the whole sheet), blended by their alpha with the other 3D sprites.
@@ -57,7 +58,7 @@ void PlayLevelEffects::drawFog(const world::CameraPose& view) {
         sprite.fades = false;
         sprites.push_back(sprite);
     }
-    m_particles.drawSprites(sprites, effects::GroundFog::sheetOf(fog.settings()->sprite), false, view);
+    m_particles.drawSprites(sprites, effects::GroundFog::sheetOf(settings->sprite), false, view);
 }
 
 void PlayLevelEffects::drawWater() {

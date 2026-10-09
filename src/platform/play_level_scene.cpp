@@ -111,7 +111,8 @@ void PlayLevelMode::makeStage() {
         if (body == nullptr) {
             return;
         }
-        human::HumanSound sound{.kind = human::HumanSound::Kind::Anim, .animSound = id};
+        human::HumanSound sound{
+            .kind = human::HumanSound::Kind::Anim, .animSound = id, .at = {}, .sceneFeet = std::nullopt};
         if (feet) {
             sound.sceneFeet = feet;
             sound.sceneGround = body->groundMaterial();

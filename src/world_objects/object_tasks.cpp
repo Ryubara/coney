@@ -153,11 +153,11 @@ void ObjectTasks::step(SpawnRecords& records, const ObjectTypes& types, const St
         if (type == nullptr || !wanted(records, record, view, found != m_tasks.end())) {
             continue;
         }
-        Task task = found != m_tasks.end() ? std::move(found->second) : Task{};
+        Task task = found != m_tasks.end() ? found->second : Task{};
         if (!task.marker && type->className == kObjectiveClass) {
             task.marker.emplace();
         }
-        kept.emplace(record.handle, std::move(task));
+        kept.emplace(record.handle, task);
     }
     m_tasks = std::move(kept);
 
@@ -235,7 +235,11 @@ void ObjectTasks::addDraws(const SpawnRecord& record, const ObjectType& type, co
 
 const ObjectiveMarker* ObjectTasks::marker(double handle) const {
     const auto found = m_tasks.find(handle);
-    return found != m_tasks.end() && found->second.marker ? &*found->second.marker : nullptr;
+    if (found == m_tasks.end()) {
+        return nullptr;
+    }
+    const std::optional<ObjectiveMarker>& marker = found->second.marker;
+    return marker ? &*marker : nullptr;
 }
 
 } // namespace coney::world_objects

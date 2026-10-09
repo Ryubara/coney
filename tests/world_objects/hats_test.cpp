@@ -53,11 +53,17 @@ TEST_CASE("CfgHat fills a set's slots in order and a Warrior's own set comes bef
 
     const std::optional<HatFit> own = fits.find(7, 64, "dyn_abe");
     REQUIRE(own.has_value());
+    if (!own) {
+        return;
+    }
     CHECK_THAT(own->offset.x, WithinAbs(0.0681, 1e-5));
     CHECK_THAT(own->rotation.w, WithinAbs(-0.452, 1e-5));
     // A type that owns no set uses its class's.
     const std::optional<HatFit> classes = fits.find(9, 64, "dyn_abe");
     REQUIRE(classes.has_value());
+    if (!classes) {
+        return;
+    }
     CHECK_THAT(classes->offset.x, WithinAbs(0.1, 1e-6));
     CHECK_FALSE(fits.find(7, 64, "dyn_other").has_value());
     CHECK_FALSE(fits.find(9, 10, "dyn_abe").has_value());
@@ -123,6 +129,9 @@ TEST_CASE("A knocked-off hat flies at 2 m/s turned by the wearer's heading, fall
     }
     CHECK_FALSE(hats.falling(10.0));
     REQUIRE(last.has_value());
+    if (!last) {
+        return;
+    }
     CHECK_THAT(last->position.z, WithinAbs(0.0, 1e-6));
     CHECK(last->position.x > 1.0F);
     // Once landed it is no longer moved.

@@ -600,7 +600,6 @@ int main(int argc, char** argv) {
     std::unique_ptr<coney::ScriptedInput> levelScript;   // the script under the deferred start; before `input`
     std::unique_ptr<coney::platform::PadPipe> levelPipe; // the pad pipe under the deferred start; before `input`
     std::unique_ptr<coney::InputSource> input;
-    coney::DeferredInput* deferredInput = nullptr;
     // The SDL input, when it is the source: the developer overlay mutes its keyboard.
     coney::platform::SdlInput* devices = nullptr;
     if (const std::optional<std::string> scriptPath = options->inputScript; scriptPath) {
@@ -628,7 +627,6 @@ int main(int argc, char** argv) {
             levelScript = std::move(scripted);
             auto deferred = std::make_unique<coney::DeferredInput>(*levelScript,
                                                                    [&session] { return session && session->inPlay(); });
-            deferredInput = deferred.get();
             input = std::move(deferred);
         } else {
             input = std::move(scripted);
@@ -652,7 +650,6 @@ int main(int argc, char** argv) {
             levelPipe = std::move(pipe);
             auto deferred =
                 std::make_unique<coney::DeferredInput>(*levelPipe, [&session] { return session && session->inPlay(); });
-            deferredInput = deferred.get();
             input = std::move(deferred);
         } else {
             input = std::move(pipe);
@@ -1009,8 +1006,7 @@ int main(int argc, char** argv) {
     coney::FrameHooks hooks;
     coney::platform::HumanWatch humanWatch; // the humans' events for the event log
     hooks.beginFrame = [&window, &devOverlay, devices, &pendingSandbox, &playSandbox, &pendingStart, &startSessionAt,
-                        &session, &playFramesDone, &deferredInput, &humanWatch, &playLevel, &sessionPlayMode,
-                        &eventFile] {
+                        &session, &playFramesDone, &humanWatch, &playLevel, &sessionPlayMode, &eventFile] {
         // The event log: what the last frame's step did to the humans, then the step the next frame runs.
         if (coney::events::enabled()) {
             humanWatch.update(playLevel ? playLevel.get() : sessionPlayMode());

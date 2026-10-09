@@ -305,7 +305,11 @@ void Cars::releaseTrunk(Car& car) {
         static_cast<void>(m_records->add(SpawnRecord{.handle = m_nextHandle(),
                                                      .typeName = std::string(kMoneyPickup),
                                                      .position = position,
-                                                     .money = car.trunkMoney}));
+                                                     .shownMessage = std::nullopt,
+                                                     .money = car.trunkMoney,
+                                                     .model = std::nullopt,
+                                                     .physicsBody = std::nullopt,
+                                                     .breakIn = std::nullopt}));
     }
 }
 

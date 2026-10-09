@@ -72,7 +72,12 @@ class PlacedObjects {
 
     /// Puts object `handle`, of the type whose model hash is `modelHash`, at `position` turned by `rotation` (the
     /// game's axes) looking as `look` says, loading the type's model if it is not yet.
-    void place(double handle, std::uint32_t modelHash, anim::Vec3 position, anim::Quat rotation, const Look& look = {});
+    void place(double handle, std::uint32_t modelHash, anim::Vec3 position, anim::Quat rotation, const Look& look);
+    /// Puts object `handle` as above, looking as a default Look says. An overload rather than a default argument: GCC
+    /// and Clang cannot use Look's member initializers in a default argument inside the class that encloses it.
+    void place(double handle, std::uint32_t modelHash, anim::Vec3 position, anim::Quat rotation) {
+        place(handle, modelHash, position, rotation, Look{});
+    }
     /// Shows or hides object `handle` (`simple_object`'s messages 0x12 and 0x13); an unplaced handle is ignored. A
     /// placed object starts shown.
     void setVisible(double handle, bool visible);

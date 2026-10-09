@@ -598,24 +598,50 @@ TEST_CASE("the sound options: --no-audio and --audio-test, never together", "[op
 TEST_CASE("the rumble option names a mode and takes its arena and gang size unless told", "[options]") {
     auto kinghill = parse(std::array<std::string_view, 4>{"--disc", "x", "--rumble", "kinghill"});
     REQUIRE(kinghill.has_value());
-    REQUIRE(kinghill->rumble.has_value());
-    CHECK(kinghill->rumble->gameType == 2);
-    CHECK(kinghill->rumble->arena == 101);
-    CHECK(kinghill->rumble->gangSize == 3);
+    if (!kinghill) {
+        return;
+    }
+    // A local: clang-tidy cannot follow a check through the outer optional.
+    const std::optional<coney::RumbleLaunch> kinghillRumble = kinghill->rumble;
+    REQUIRE(kinghillRumble.has_value());
+    if (!kinghillRumble) {
+        return;
+    }
+    CHECK(kinghillRumble->gameType == 2);
+    CHECK(kinghillRumble->arena == 101);
+    CHECK(kinghillRumble->gangSize == 3);
 
     auto wheelchair = parse(std::array<std::string_view, 6>{"--disc", "x", "--rumble", "wchair", "--arena", "104"});
     REQUIRE(wheelchair.has_value());
-    CHECK(wheelchair->rumble->gameType == 24);
-    CHECK(wheelchair->rumble->arena == 104);
-    CHECK(wheelchair->rumble->gangSize == 1);
+    if (!wheelchair) {
+        return;
+    }
+    // A local: clang-tidy cannot follow a check through the outer optional.
+    const std::optional<coney::RumbleLaunch> wheelchairRumble = wheelchair->rumble;
+    REQUIRE(wheelchairRumble.has_value());
+    if (!wheelchairRumble) {
+        return;
+    }
+    CHECK(wheelchairRumble->gameType == 24);
+    CHECK(wheelchairRumble->arena == 104);
+    CHECK(wheelchairRumble->gangSize == 1);
 
     // A number names the same mode as its name, and the overrides win.
     auto numeric =
         parse(std::array<std::string_view, 8>{"--disc", "x", "--rumble", "3", "--gang-size", "5", "--arena", "132"});
     REQUIRE(numeric.has_value());
-    CHECK(numeric->rumble->gameType == 3);
-    CHECK(numeric->rumble->arena == 132);
-    CHECK(numeric->rumble->gangSize == 5);
+    if (!numeric) {
+        return;
+    }
+    // A local: clang-tidy cannot follow a check through the outer optional.
+    const std::optional<coney::RumbleLaunch> numericRumble = numeric->rumble;
+    REQUIRE(numericRumble.has_value());
+    if (!numericRumble) {
+        return;
+    }
+    CHECK(numericRumble->gameType == 3);
+    CHECK(numericRumble->arena == 132);
+    CHECK(numericRumble->gangSize == 5);
 
     // Unset without the option.
     auto plain = parse(std::array<std::string_view, 2>{"--disc", "x"});

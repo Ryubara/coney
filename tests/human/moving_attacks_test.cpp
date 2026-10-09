@@ -388,7 +388,7 @@ TEST_CASE("the dive takes the nearest human between its reach and far range with
     CHECK(turned(onto, 4) < -20.0F);
     CHECK(turned(onto, 8) == turned(onto, 4));
     // Inside the reach (1.6 m), outside the cone (71 degrees) or beyond the far range (3.4 m): no target, no turn.
-    for (const auto [distance, bearing] : {std::pair{1.6F, 32.0F}, std::pair{2.64F, 71.0F}, std::pair{3.4F, 30.0F}}) {
+    for (const auto& [distance, bearing] : {std::pair{1.6F, 32.0F}, std::pair{2.64F, 71.0F}, std::pair{3.4F, 30.0F}}) {
         INFO(distance << " m at " << bearing << " degrees");
         const MovingAim none = moveAt("square", distance, bearing);
         CHECK_FALSE(none.targeted);
@@ -401,7 +401,7 @@ TEST_CASE("the dive takes the nearest human between its reach and far range with
 
 TEST_CASE("the charge takes no target and never steers, but the stick turns it", "[human][combat][moving]") {
     // A human 3.7 m away 30 degrees right, or 2.0 m at 31: the charge runs straight past him.
-    for (const auto [distance, bearing] : {std::pair{3.7F, 30.0F}, std::pair{2.0F, 31.0F}}) {
+    for (const auto& [distance, bearing] : {std::pair{3.7F, 30.0F}, std::pair{2.0F, 31.0F}}) {
         INFO(distance << " m at " << bearing << " degrees");
         const MovingAim past = moveAt("cross", distance, bearing);
         CHECK_FALSE(past.targeted);

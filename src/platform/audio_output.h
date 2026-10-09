@@ -82,6 +82,8 @@ class AudioOutput final : public debug::AudioControls {
 
   private:
     AudioOutput();
+    // Counts the wait after a failed reopen down; whether a reopen is due now.
+    bool reopenDue();
 
     // The mixer first: the device that calls it must go before it does.
     std::unique_ptr<audio::Mixer> m_mixer;

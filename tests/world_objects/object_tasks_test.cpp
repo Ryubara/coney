@@ -34,13 +34,33 @@ struct Level {
     Level() {
         static_cast<void>(types.add("dyn_w_mission", "dyn_objective", 0));
         static_cast<void>(types.add("dyn_s_crate", "simple_object", 0));
-        static_cast<void>(records.add(SpawnRecord{.handle = 1, .typeName = "dyn_w_mission", .position = {5, 0, 0.3F}}));
-        static_cast<void>(records.add(SpawnRecord{.handle = 2, .typeName = "dyn_s_crate", .position = {0, 5, 0}}));
-        static_cast<void>(records.add(SpawnRecord{.handle = 3, .typeName = "dyn_s_crate", .position = {100, 0, 0}}));
+        static_cast<void>(records.add(SpawnRecord{.handle = 1,
+                                                  .typeName = "dyn_w_mission",
+                                                  .position = {5, 0, 0.3F},
+                                                  .shownMessage = std::nullopt,
+                                                  .model = std::nullopt,
+                                                  .physicsBody = std::nullopt,
+                                                  .breakIn = std::nullopt}));
+        static_cast<void>(records.add(SpawnRecord{.handle = 2,
+                                                  .typeName = "dyn_s_crate",
+                                                  .position = {0, 5, 0},
+                                                  .shownMessage = std::nullopt,
+                                                  .model = std::nullopt,
+                                                  .physicsBody = std::nullopt,
+                                                  .breakIn = std::nullopt}));
+        static_cast<void>(records.add(SpawnRecord{.handle = 3,
+                                                  .typeName = "dyn_s_crate",
+                                                  .position = {100, 0, 0},
+                                                  .shownMessage = std::nullopt,
+                                                  .model = std::nullopt,
+                                                  .physicsBody = std::nullopt,
+                                                  .breakIn = std::nullopt}));
     }
 
     // One step with the camera at the origin and a 60 m draw distance.
-    void step() { tasks.step(records, types, ObjectTasks::StepView{.camera = Vec3{}, .drawDistance = 60.0F}); }
+    void step() {
+        tasks.step(records, types, ObjectTasks::StepView{.camera = Vec3{}, .drawDistance = 60.0F, .inHand = nullptr});
+    }
 
     // This step's draw of `handle` (the column when `column`); null when it is not drawn.
     [[nodiscard]] const ObjectDraw* draw(double handle, bool column = false) const {
@@ -180,6 +200,9 @@ TEST_CASE("a held object hangs from its bone at the take event's offset, slid to
     const std::optional<coney::world_objects::HeldAttachment> held =
         coney::world_objects::heldAttachment(clip, 0.5F, 0.39F);
     REQUIRE(held.has_value());
+    if (!held) {
+        return;
+    }
     CHECK(held->bone == 25);
     CHECK(held->position.x == Approx(0.05F));
     CHECK(held->position.y == Approx(0.39F));

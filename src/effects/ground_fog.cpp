@@ -8,6 +8,8 @@
 #include <numbers>
 #include <vector>
 
+#include "core/assert.h"
+
 namespace coney::effects {
 
 namespace {
@@ -123,6 +125,7 @@ GroundFog::Wisp GroundFog::makeWisp(const EffectsViewer& viewer, float drift) {
 }
 
 bool GroundFog::update(Wisp& wisp, const EffectsViewer& viewer) const {
+    CONEY_ASSERT(m_settings.has_value()); // wisps exist only once the fog is set
     // The shared particle step: the current alpha and size become the previous ones.
     wisp.previousAlpha = wisp.alpha;
     wisp.previousSize = wisp.size;

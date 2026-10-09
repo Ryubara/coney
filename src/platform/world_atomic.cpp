@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <bit>
+#include <cstdint>
 #include <cstring>
 #include <format>
 #include <map>
@@ -35,7 +36,7 @@ rw::int32 dualLayerOffset = -1;
 // A new atomic has no dual layer.
 void* constructDualLayer(void* object, rw::int32 offset, rw::int32 /*size*/) {
     rw::Atomic* none = nullptr;
-    std::memcpy(static_cast<std::byte*>(object) + offset, &none, sizeof(none));
+    std::memcpy(static_cast<std::byte*>(object) + offset, static_cast<const void*>(&none), sizeof(rw::Atomic*));
     return object;
 }
 
@@ -51,7 +52,7 @@ constexpr rw::uint32 kMatFxPluginId = 0x120; // rwID_MATERIALEFFECTSPLUGIN
 rw::int32 dualTextureOffset = -1;
 
 // The effect types a MatFX slot can hold (RenderWare's numbering).
-enum : rw::uint32 { kFxBumpMap = 1, kFxEnvMap = 2, kFxDual = 4 };
+enum : std::uint8_t { kFxBumpMap = 1, kFxEnvMap = 2, kFxDual = 4 };
 
 // A material's dual texture slot, or its value.
 rw::Texture*& dualSlot(void* material) {
@@ -145,7 +146,8 @@ rw::int32 dualTextureStreamSize(void* /*object*/, rw::int32 /*offset*/, rw::int3
 
 // Stores `layer` as `atomic`'s dual layer.
 void setDualLayer(rw::Atomic* atomic, rw::Atomic* layer) {
-    std::memcpy(reinterpret_cast<std::byte*>(atomic) + dualLayerOffset, &layer, sizeof(layer));
+    std::memcpy(reinterpret_cast<std::byte*>(atomic) + dualLayerOffset, static_cast<const void*>(&layer),
+                sizeof(rw::Atomic*));
 }
 
 // Sets the plugin's defaults on a new atomic: scales 1, word 0 (as the original's constructor at 0x00192618 does).
@@ -547,7 +549,8 @@ rw::Atomic* dualLayerOf(const rw::Atomic* atomic) {
         return nullptr;
     }
     rw::Atomic* layer = nullptr;
-    std::memcpy(&layer, reinterpret_cast<const std::byte*>(atomic) + dualLayerOffset, sizeof(layer));
+    std::memcpy(static_cast<void*>(&layer), reinterpret_cast<const std::byte*>(atomic) + dualLayerOffset,
+                sizeof(rw::Atomic*));
     return layer;
 }
 

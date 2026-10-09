@@ -30,6 +30,15 @@ constexpr std::uint8_t kFilterCovered = 1;
 // The plays counter's value that switches the emitter off.
 constexpr int kPlaysOff = -1;
 
+// Takes one play off a limited count (a negative count is unlimited); returns whether that ran the count out.
+bool spendPlay(int& plays) {
+    if (plays < 0) {
+        return false;
+    }
+    --plays;
+    return plays == kPlaysOff;
+}
+
 // The distance from `at` to the nearest listener (infinite with none).
 float nearestDistance(SoundVec at, std::span<const SoundVec> listeners) {
     float best = std::numeric_limits<float>::infinity();
@@ -100,7 +109,7 @@ int AmbientEmitters::add(const AmbientEmitterSetup& setup, SoundEngine& engine) 
     if (m_emitters.size() >= kMaxEmitters) {
         return -1;
     }
-    Emitter e{.setup = setup};
+    Emitter e{.setup = setup, .points = {}};
     e.setup.name = name;
     e.points = {setup.to};
     e.plays = playsByte(setup.plays);
@@ -249,7 +258,7 @@ void AmbientEmitters::update(SoundEngine& engine, const AmbientWorld& world) {
                        now > e.lastMs + (static_cast<double>(e.delay) * 1000.0)) {
                 // Each play takes one off a limited count; the count running out switches it off.
                 if (!playing) {
-                    if (e.plays >= 0 && --e.plays == kPlaysOff) {
+                    if (spendPlay(e.plays)) {
                         e.enabled = false;
                         break;
                     }
@@ -278,7 +287,7 @@ void AmbientEmitters::update(SoundEngine& engine, const AmbientWorld& world) {
             if (!inRange) {
                 outOfRange(e, engine, distance);
             } else if (started < kMaxNewPerUpdate && kindAllows(e, world)) {
-                if (e.plays >= 0 && --e.plays == kPlaysOff) {
+                if (spendPlay(e.plays)) {
                     e.enabled = false;
                     break;
                 }
@@ -293,7 +302,7 @@ void AmbientEmitters::update(SoundEngine& engine, const AmbientWorld& world) {
             } else if (started < kMaxNewPerUpdate && kindAllows(e, world)) {
                 if (e.lastMs + (static_cast<double>(e.delay) * 1000.0) <= now) {
                     // The count running out switches it off after this play.
-                    if (e.plays >= 0 && --e.plays == kPlaysOff) {
+                    if (spendPlay(e.plays)) {
                         e.enabled = false;
                     }
                     playTimed(e, engine, factor, started);

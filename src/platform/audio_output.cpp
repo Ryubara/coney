@@ -47,9 +47,17 @@ std::expected<std::unique_ptr<AudioOutput>, Error> AudioOutput::start(AudioSink 
     return output;
 }
 
+bool AudioOutput::reopenDue() {
+    if (m_reopenWait == 0) {
+        return true;
+    }
+    --m_reopenWait;
+    return m_reopenWait == 0;
+}
+
 void AudioOutput::endFrame(std::uint32_t steps) {
     // A device SDL gave up: open the default again (now, or when the wait after a failed try is over).
-    if (m_device && m_device->lost() && (m_reopenWait == 0 || --m_reopenWait == 0)) {
+    if (m_device && m_device->lost() && reopenDue()) {
         if (m_device->reopen()) {
             ++m_reopens;
         } else {

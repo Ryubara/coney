@@ -279,7 +279,11 @@ std::array<std::uint32_t, kPadPorts> SdlInput::portGamepads() const {
 
 PortSamples SdlInput::sample(std::uint64_t /*frame*/) {
     // SDL's list only after it reported a change, or when a gamepad that failed to open is due another try.
-    const bool retry = m_openRetry > 0 && --m_openRetry == 0;
+    bool retry = false;
+    if (m_openRetry > 0) {
+        --m_openRetry;
+        retry = m_openRetry == 0;
+    }
     if (m_devicesChanged.exchange(false, std::memory_order_acq_rel) || retry) {
         refreshGamepads();
     }

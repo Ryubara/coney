@@ -331,8 +331,11 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
         (animator.animId() == clips::kTackleHit || animator.animId() == clips::kMountingIdle)) {
         mountVictim(animator);
     }
-    if (m_seatUpdates > 0 && m_held != nullptr && --m_seatUpdates == 0) {
-        attachSeat(input, heading);
+    if (m_seatUpdates > 0 && m_held != nullptr) {
+        --m_seatUpdates;
+        if (m_seatUpdates == 0) {
+            attachSeat(input, heading);
+        }
     }
     if (m_mountPending && m_held != nullptr && animator.animId() == clips::kMountingIdle) {
         seatMount(input, animator, heading);
@@ -1011,10 +1014,10 @@ void Fighter::trackTarget(const FighterInput& input, std::uint32_t phase) {
     if (nearest == nullptr || flatDistance(input.position, nearest->position()) > kStanceEnterRange) {
         return;
     }
-    if (m_target == nullptr && (phase & ~kStanceTakeAllowed) == 0) {
-        m_target = nearest;
-    } else if (m_target != nullptr && phase == 0 &&
-               flatDistance(input.position, m_target->position()) > kStanceSwapRange) {
+    const bool takes = m_target == nullptr && (phase & ~kStanceTakeAllowed) == 0;
+    const bool swaps =
+        m_target != nullptr && phase == 0 && flatDistance(input.position, m_target->position()) > kStanceSwapRange;
+    if (takes || swaps) {
         m_target = nearest;
     }
 }

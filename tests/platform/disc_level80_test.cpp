@@ -217,16 +217,17 @@ TEST_CASE("the disc's level80: R2 and the right stick up give the follow order t
     // The intro, skipped, until the script asks for Let's Go and waits for it (WCSetCallback).
     constexpr int kWait = 30 * 60;
     int frame = 0;
-    REQUIRE(level.runUntil(
-        [&level, &frame] {
-            if (level.scripts->state().story.commandCallback.empty()) {
-                constexpr int kTapEvery = 30;
-                level.pad.buttons = (++frame % kTapEvery == 0) ? coney::pad::kCross : 0;
-                return false;
-            }
-            return true;
-        },
-        kWait));
+    // A local, not written inside REQUIRE: clang-tidy reads the whole lambda as part of REQUIRE's condition.
+    const auto tapUntilAsked = [&level, &frame] {
+        if (level.scripts->state().story.commandCallback.empty()) {
+            constexpr int kTapEvery = 30;
+            ++frame;
+            level.pad.buttons = (frame % kTapEvery == 0) ? coney::pad::kCross : 0;
+            return false;
+        }
+        return true;
+    };
+    REQUIRE(level.runUntil(tapUntilAsked, kWait));
     level.pad.buttons = 0;
     CHECK(level.scripts->state().story.commandCallback == "CommandIssued");
     coney::hud::WarCommandDisplay& display = level.scripts->hud().warCommands(0);

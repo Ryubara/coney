@@ -10,17 +10,20 @@
 #include <format>
 #include <fstream>
 #include <iterator>
+#include <limits>
 #include <numbers>
 #include <optional>
 #include <span>
 #include <string>
 #include <string_view>
 #include <system_error>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
 #include "core/assert.h"
 #include "core/pad.h"
+#include "core/parse_number.h"
 
 namespace coney {
 
@@ -73,12 +76,22 @@ std::vector<std::string_view> splitWords(std::string_view line) {
 
 // Parses a whole word as a number of type T; nothing else may follow the digits.
 template <typename T> std::optional<T> parseNumber(std::string_view word) {
-    T value{};
-    const auto parsed = std::from_chars(word.data(), word.data() + word.size(), value);
-    if (parsed.ec != std::errc{} || parsed.ptr != word.data() + word.size()) {
-        return std::nullopt;
+    if constexpr (std::is_floating_point_v<T>) {
+        // Through parseDecimal: Apple's libc++ has no floating-point std::from_chars. A value beyond T's range fails,
+        // as std::from_chars into T would.
+        const std::optional<double> decimal = parseDecimal(word);
+        if (!decimal || std::fabs(*decimal) > static_cast<double>(std::numeric_limits<T>::max())) {
+            return std::nullopt;
+        }
+        return static_cast<T>(*decimal);
+    } else {
+        T value{};
+        const auto parsed = std::from_chars(word.data(), word.data() + word.size(), value);
+        if (parsed.ec != std::errc{} || parsed.ptr != word.data() + word.size()) {
+            return std::nullopt;
+        }
+        return value;
     }
-    return value;
 }
 
 // The bit of one button name, or nullopt for an unknown name.
