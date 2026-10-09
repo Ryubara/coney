@@ -6,6 +6,8 @@
 #include <cstddef>
 #include <cstring>
 #include <filesystem>
+#include <optional>
+#include <string>
 #include <string_view>
 #include <system_error>
 #include <utility>
@@ -50,6 +52,55 @@ void APIENTRY deleteNoTextures(GLsizei /*count*/, const GLuint* /*textures*/) {}
 // The loader's glDeleteTextures from before a NULL engine started, put back when it stops. Only one engine runs at a
 // time.
 PFNGLDELETETEXTURESPROC savedDeleteTextures = nullptr;
+
+// The leading "major.minor" of an OpenGL version string, as major * 10 + minor; 0 when it does not start with one.
+int glVersionOf(std::string_view text) {
+    const std::size_t dot = text.find('.');
+    if (dot == 0 || dot == std::string_view::npos || dot + 1 >= text.size()) {
+        return 0;
+    }
+    int major = 0;
+    for (const char c : text.substr(0, dot)) {
+        if (c < '0' || c > '9') {
+            return 0;
+        }
+        major = (major * 10) + (c - '0');
+    }
+    const char minor = text[dot + 1];
+    if (minor < '0' || minor > '9') {
+        return 0;
+    }
+    return (major * 10) + (minor - '0');
+}
+
+// The version of the OpenGL context librw's GL3 device is about to get, when it is under the 3.3 that device draws
+// with; nothing when it is enough or no context could be made (librw's own attempt then fails and says so). librw asks
+// SDL for a 3.3 core context and never checks what it got, and on Windows SDL hands back an old context when the
+// driver cannot make a 3.3 one (Windows' own OpenGL 1.1 renderer, on a machine with no graphics driver, such as CI's):
+// librw then calls 3.3 functions the context does not have and crashes. So a hidden window makes the same request
+// first and reads the version back.
+std::optional<std::string> openGlTooOld() {
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+    SDL_Window* window = SDL_CreateWindow("", 16, 16, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
+    if (window == nullptr) {
+        return std::nullopt;
+    }
+    std::optional<std::string> tooOld;
+    if (SDL_GLContext context = SDL_GL_CreateContext(window); context != nullptr) {
+        // SDL hands every GL function back untyped.
+        const auto getString = reinterpret_cast<PFNGLGETSTRINGPROC>(SDL_GL_GetProcAddress("glGetString"));
+        const GLubyte* version = getString != nullptr ? getString(GL_VERSION) : nullptr;
+        const std::string_view text = version != nullptr ? reinterpret_cast<const char*>(version) : "";
+        if (glVersionOf(text) < 33) {
+            tooOld = text.empty() ? std::string("unknown") : std::string(text);
+        }
+        SDL_GL_DestroyContext(context);
+    }
+    SDL_DestroyWindow(window);
+    return tooOld;
+}
 
 } // namespace
 
@@ -101,6 +152,11 @@ std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBa
         SDL_free(list);
         if (displays <= 0) {
             return startFailure("finding a display (run with --headless where there is none)", true);
+        }
+        if (const std::optional<std::string> version = openGlTooOld()) {
+            return std::unexpected(Error{ErrorCode::PlatformFailure,
+                                         "could not start the renderer: it needs OpenGL 3.3, and the driver offers " +
+                                             *version + " (run with --headless where there is none)"});
         }
     }
 
