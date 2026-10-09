@@ -14,6 +14,9 @@ not_in_nav: |
   /references/flags/
   /references/lights/
 
+extra_css:
+  - stylesheets/extra.css
+
 theme:
   name: material
   features:
@@ -29,12 +32,12 @@ theme:
   palette:
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: deep orange
+      primary: custom
       accent: amber
       toggle: { icon: material/brightness-4, name: Light mode }
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: deep orange
+      primary: custom
       accent: amber
       toggle: { icon: material/brightness-7, name: Dark mode }
 
