@@ -155,14 +155,14 @@ TEST_CASE("the disc's level99: Change character makes the scripts' player the ty
 
     REQUIRE(mode.changeCharacter(kNewType));
     CHECK(mode.playerType() == kNewType);
-    const std::optional<std::string> model = types.modelFor(kNewType, 1, 99);
-    REQUIRE(model.has_value());
-    CHECK(mode.model() == *model);
+    const std::string model = types.modelFor(kNewType, 1, 99).value_or(std::string());
+    REQUIRE_FALSE(model.empty());
+    CHECK(mode.model() == model);
 
     // A player made as the type from the start, from the same files and class.
     coney::chunk::ChunkHandlerTable handlers = coney::chunk::ChunkHandlerTable::withDefaults();
     coney::characters::addCharacterDataHandlers(handlers);
-    auto character = coney::human::PlayerCharacter::load(*wad, handlers, *model);
+    auto character = coney::human::PlayerCharacter::load(*wad, handlers, model);
     REQUIRE(character.has_value());
     const coney::human::Player fresh(**character, nullptr, coney::human::PlayerStart{},
                                      coney::human::playerClassOf(types, kNewType));

@@ -685,6 +685,7 @@ Particle ParticleSystems::makeFly(const ParticleSystem& system) {
 }
 
 void ParticleSystems::updateFly(Particle& fly, anim::Vec3 centre) {
+    CONEY_ASSERT(fly.fly.has_value()); // only fly sprites update as flies
     Particle::Fly& state = *fly.fly;
     state.grown = true;
     state.a += kFlyStepA;
@@ -696,6 +697,7 @@ void ParticleSystems::updateFly(Particle& fly, anim::Vec3 centre) {
 }
 
 void ParticleSystems::stepFly(Particle& fly, anim::Vec3 centre, float seconds) {
+    CONEY_ASSERT(fly.fly.has_value()); // only fly sprites step as flies
     Particle::Fly& state = *fly.fly;
     state.due -= seconds;
     while (state.due <= kTickSlack) {
