@@ -194,11 +194,11 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
       [--profiles DIR] [--dev-overlay N] [--no-activate] [--event-log FILE] [--pad-pipe]
 ```
 
-Coney draws with librw's OpenGL 3 renderer (an OpenGL 3.3 core context through SDL3; librw falls back to 2.1 or
-OpenGL ES). Where the driver offers less than OpenGL 3.3 (Windows' own OpenGL 1.1 renderer on a machine with no
-graphics driver, such as CI's), Coney stops at start-up with an error that names the version it was offered, since
-SDL would otherwise hand librw the old context and librw would crash. `--frames N` stops after N frames (each one fixed step and one render, see
-[Frame rate](#frame-rate)), which is how tests and scripts run it. `--headless` runs with no window
+Coney draws with librw's OpenGL 3 renderer (an OpenGL 3.3 core context through SDL3; librw falls back to 2.1 or OpenGL
+ES). Where the driver offers less than OpenGL 3.3 (Windows' own OpenGL 1.1 renderer on a machine with no graphics
+driver, such as CI's), Coney stops at start-up with an error that names the version it was offered, since SDL would
+otherwise hand librw the old context and librw would crash. `--frames N` stops after N frames (each one fixed step and
+one render, see [Frame rate](#frame-rate)), which is how tests and scripts run it. `--headless` runs with no window
 and librw's NULL renderer, so it needs neither a display nor a GPU; this is how CI runs it:
 
 ```sh
