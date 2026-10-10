@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "core/assert.h"
 #include "core/game_timer.h"
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/gameplay_mode.h"
@@ -143,6 +144,7 @@ void LevelFlowMode::startFrontEnd() {
 }
 
 void LevelFlowMode::stepMemoryCardScreen(std::uint64_t nowMs, std::uint64_t stepMs) {
+    CONEY_ASSERT(m_cardLoad.has_value()); // stepped only while the card load runs
     LoadingScreen& screen = *m_loadingScreen;
     CardLoad& load = *m_cardLoad;
     if (!load.startMs) {

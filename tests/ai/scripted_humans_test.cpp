@@ -589,9 +589,10 @@ TEST_CASE("HuChangePlayerGang hands player 1 to the new gang's lowest priority; 
 }
 
 TEST_CASE("an anim a human starts twice in one step calls its animation callback once", "[ai][scripted]") {
+    // Declared before the level: the level's destructor detaches itself from the callbacks, so they must outlive it.
+    coney::script::AnimCallbacks callbacks;
     Level level;
     Brain& extra = level.add({44.0F, 40.0F, 0.0F});
-    coney::script::AnimCallbacks callbacks;
     level.scripted->setAnimCallbacks(&callbacks);
     REQUIRE(callbacks.add(extra.handle(), 665, "RageFull"));
     coney::anim::AnimClip clip;

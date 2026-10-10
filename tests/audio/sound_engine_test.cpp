@@ -348,6 +348,7 @@ TEST_CASE("a scene soundtrack takes stereo pair 1+2, never the mono stream chann
     // Five mono streams fill channels 5-9 (the emitters, beds and voices of a level): they never compete with it.
     Rig rig;
     std::vector<SoundHandle> streams;
+    streams.reserve(5);
     for (int i = 0; i < 5; ++i) {
         streams.push_back(rig.engine->play(kImportantStream));
     }

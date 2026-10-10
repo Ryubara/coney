@@ -6,6 +6,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -26,6 +28,12 @@ coney::graphics::SpriteBatch shapesBatch() {
     coney::graphics::SpriteSheet sheet;
     sheet.texture = std::make_shared<coney::test::FakeTexture>(4, 4);
     return coney::graphics::SpriteBatch(sheet, 4, 13000.0F);
+}
+
+// The centred announcement's text, empty when none shows: a checked read clang-tidy can follow.
+std::string centredText(const coney::hud::Hud& hud) {
+    const std::optional<coney::hud::Announcement>& shown = hud.centredAnnouncement();
+    return shown ? shown->text : std::string{};
 }
 
 } // namespace
@@ -56,7 +64,7 @@ TEST_CASE("the wanted arcs grow up both sides of the radar from the bottom, the 
     // Wanted, full: two arcs of 16 segments, two triangles each, in blue; the first vertex straight below the centre.
     panel.update(1.0F, 0.0F);
     panel.render(batch, centre);
-    REQUIRE(batch.triangles().size() == 2U * 16U * 2U * 3U);
+    REQUIRE(batch.triangles().size() == std::size_t{2} * 16U * 2U * 3U);
     CHECK(batch.triangles()[0].colour == coney::hud::kWantedColour);
     CHECK(batch.triangles()[0].position.x == Approx(centre.x));
     CHECK(batch.triangles()[0].position.y < centre.y);
@@ -68,10 +76,10 @@ TEST_CASE("the wanted arcs grow up both sides of the radar from the bottom, the 
     batch.clear();
     panel.update(1.0F, 1.0F);
     panel.render(batch, centre);
-    REQUIRE(batch.triangles().size() == 4U * 16U * 2U * 3U);
+    REQUIRE(batch.triangles().size() == std::size_t{4} * 16U * 2U * 3U);
     CHECK(batch.triangles().back().colour == coney::hud::kSecondTimerColour);
     const float wantedOut = std::fabs(batch.triangles()[1].position.y - centre.y);
-    const float secondIn = std::fabs(batch.triangles()[(2U * 16U * 6U)].position.y - centre.y);
+    const float secondIn = std::fabs(batch.triangles()[(std::size_t{2} * 16U * 6U)].position.y - centre.y);
     CHECK(secondIn == Approx(wantedOut));
 }
 
@@ -89,7 +97,7 @@ TEST_CASE("the HUD draws player 0's radar frame from its gang's wanted time", "[
     hud.update(frame);
     CHECK(hud.crimePanel().wantedShown() == Approx(1.0F));
     hud.render(canvas);
-    CHECK(shapes.triangles().size() == 2U * 16U * 2U * 3U);
+    CHECK(shapes.triangles().size() == std::size_t{2} * 16U * 2U * 3U);
     // Hidden, nothing is drawn.
     shapes.clear();
     hud.hideAll();
@@ -107,21 +115,21 @@ TEST_CASE("a wanted message sounds the alarm once a spell and copies a new crime
     CHECK(hud.wanted());
     CHECK(audio.cues == std::vector<int>{coney::hud::kCueWanted});
     REQUIRE(hud.centredAnnouncement().has_value());
-    CHECK(hud.centredAnnouncement()->text == "assault");
+    CHECK(centredText(hud) == "assault");
     // A repeat while wanted: no alarm and the copy is not restarted, even after something else replaced it.
     hud.setAnnouncement(5, "other", false);
     hud.setWanted(7, "assault");
     CHECK(audio.cues.size() == 1);
-    CHECK(hud.centredAnnouncement()->text == "other");
+    CHECK(centredText(hud) == "other");
     // A different crime text is copied, still without the alarm.
     hud.setWanted(8, "curfew");
     CHECK(audio.cues.size() == 1);
-    CHECK(hud.centredAnnouncement()->text == "curfew");
+    CHECK(centredText(hud) == "curfew");
     // The wanted time runs out (0xb): cleared, the copy left; the next crime sounds the alarm and shows again.
     hud.setWanted(0xb, "");
     CHECK_FALSE(hud.wanted());
-    CHECK(hud.centredAnnouncement()->text == "curfew");
+    CHECK(centredText(hud) == "curfew");
     hud.setWanted(7, "curfew");
     CHECK(audio.cues.size() == 2);
-    CHECK(hud.centredAnnouncement()->text == "curfew");
+    CHECK(centredText(hud) == "curfew");
 }

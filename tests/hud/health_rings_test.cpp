@@ -26,7 +26,7 @@ RingFrame frameAt(std::uint64_t nowMs, float health = 90.0F) {
     RingFrame frame;
     frame.nowMs = nowMs;
     RingPlayer player;
-    player.human = RingHuman{.id = 1, .healthPercent = health, .player = true};
+    player.human = RingHuman{.id = 1, .feet = {}, .healthPercent = health, .player = true};
     frame.players.push_back(player);
     return frame;
 }
@@ -139,7 +139,7 @@ TEST_CASE("nothing while the HUD is hidden", "[health_rings]") {
 TEST_CASE("the target's outer ring fades in over 500 ms; L1 lays the marker under it", "[health_rings]") {
     HealthRings rings;
     RingFrame frame = frameAt(0);
-    frame.players[0].target = RingHuman{.id = 7, .healthPercent = 50.0F};
+    frame.players[0].target = RingHuman{.id = 7, .feet = {}, .healthPercent = 50.0F};
     frame.players[0].holdingL1 = true;
     run(rings, 0, 264, frame);
     REQUIRE(rings.rings().size() == 1); // the target's outer ring only
@@ -197,7 +197,7 @@ TEST_CASE("a boss's health shows in three bands, each filling over its range", "
 
 TEST_CASE("a boss target's outer ring shows its band outside Rumble", "[health_rings]") {
     RingFrame frame = frameAt(0);
-    frame.players[0].target = RingHuman{.id = 7, .healthPercent = 55.0F, .classByte = 100, .boss = true};
+    frame.players[0].target = RingHuman{.id = 7, .feet = {}, .healthPercent = 55.0F, .classByte = 100, .boss = true};
     HealthRings rings;
     run(rings, 0, 600, frame);
     REQUIRE(rings.rings().size() == 1);

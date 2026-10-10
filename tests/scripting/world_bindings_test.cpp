@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstddef>
 #include <expected>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -115,7 +116,12 @@ TEST_CASE("ObjEnableZone switches a zone; ObjShow, ObjHide and ObjDestroy act on
     h.call("ObjEnableZone", {Value(26.0), Value()});
     CHECK_FALSE(h.records.zoneEnabled(26));
 
-    REQUIRE(h.records.add(coney::world_objects::SpawnRecord{.handle = 9, .typeName = "dyn_s_glow"}) != nullptr);
+    REQUIRE(h.records.add(coney::world_objects::SpawnRecord{.handle = 9,
+                                                            .typeName = "dyn_s_glow",
+                                                            .shownMessage = std::nullopt,
+                                                            .model = std::nullopt,
+                                                            .physicsBody = std::nullopt,
+                                                            .breakIn = std::nullopt}) != nullptr);
     h.call("ObjHide", {Value(9.0)});
     CHECK(h.records.find(9)->live); // resolving the handle spawns it
     CHECK(h.records.find(9)->hidden);
@@ -132,9 +138,24 @@ TEST_CASE("ObjShow and ObjHide leave the show message; ObjDestroy with its messa
     Harness h;
     static_cast<void>(h.types.add("dyn_w_mission", "dyn_objective", 0));
     static_cast<void>(h.types.add("dyn_bat_tuff", "melee_weapon", 50));
-    REQUIRE(h.records.add(coney::world_objects::SpawnRecord{.handle = 5, .typeName = "dyn_w_mission"}) != nullptr);
-    REQUIRE(h.records.add(coney::world_objects::SpawnRecord{.handle = 6, .typeName = "dyn_w_mission"}) != nullptr);
-    REQUIRE(h.records.add(coney::world_objects::SpawnRecord{.handle = 7, .typeName = "dyn_bat_tuff"}) != nullptr);
+    REQUIRE(h.records.add(coney::world_objects::SpawnRecord{.handle = 5,
+                                                            .typeName = "dyn_w_mission",
+                                                            .shownMessage = std::nullopt,
+                                                            .model = std::nullopt,
+                                                            .physicsBody = std::nullopt,
+                                                            .breakIn = std::nullopt}) != nullptr);
+    REQUIRE(h.records.add(coney::world_objects::SpawnRecord{.handle = 6,
+                                                            .typeName = "dyn_w_mission",
+                                                            .shownMessage = std::nullopt,
+                                                            .model = std::nullopt,
+                                                            .physicsBody = std::nullopt,
+                                                            .breakIn = std::nullopt}) != nullptr);
+    REQUIRE(h.records.add(coney::world_objects::SpawnRecord{.handle = 7,
+                                                            .typeName = "dyn_bat_tuff",
+                                                            .shownMessage = std::nullopt,
+                                                            .model = std::nullopt,
+                                                            .physicsBody = std::nullopt,
+                                                            .breakIn = std::nullopt}) != nullptr);
     CHECK_FALSE(h.records.find(5)->shownMessage.has_value());
     h.call("ObjShow", {Value(5.0)});
     CHECK(h.records.find(5)->shownMessage == true);

@@ -226,11 +226,24 @@ TEST_CASE("GoalDealer waits while the player is out of range", "[ai][dealer]") {
 TEST_CASE("a dealer's terms follow the table: the flash for $20, weapons for $50, spray paint for $5", "[ai][dealer]") {
     const std::optional<coney::ai::DealTerms> flash = coney::ai::dealTerms(0);
     REQUIRE(flash.has_value());
+    if (!flash) {
+        return;
+    }
     CHECK(flash->item == coney::item::kRevive);
     CHECK(flash->price == 20);
     CHECK(flash->amount == 1);
-    CHECK(coney::ai::dealTerms(1)->price == 50);
-    CHECK(coney::ai::dealTerms(2)->item == coney::item::kSprayPaint);
+    const std::optional<coney::ai::DealTerms> weapons = coney::ai::dealTerms(1);
+    REQUIRE(weapons.has_value());
+    if (!weapons) {
+        return;
+    }
+    CHECK(weapons->price == 50);
+    const std::optional<coney::ai::DealTerms> spray = coney::ai::dealTerms(2);
+    REQUIRE(spray.has_value());
+    if (!spray) {
+        return;
+    }
+    CHECK(spray->item == coney::item::kSprayPaint);
     CHECK_FALSE(coney::ai::dealTerms(3).has_value());
 }
 

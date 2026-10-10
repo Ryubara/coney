@@ -195,7 +195,8 @@ void Fighter::reportHitSound(const IncomingHit& hit, std::uint32_t struck) {
                                       .volume = 1.0F,
                                       .victimDown = false,
                                       .ownerIsPlayer = hit.attackerIsPlayer,
-                                      .at = hit.attacker});
+                                      .at = hit.attacker,
+                                      .sceneFeet = std::nullopt});
     }
     // Only a strike that names its material, on a human with health left, sounds; it sounds at the attacker, his.
     if (hit.strikeMaterial == 0 || m_health.depleted()) {
@@ -207,7 +208,8 @@ void Fighter::reportHitSound(const IncomingHit& hit, std::uint32_t struck) {
                                   .volume = 1.0F,
                                   .victimDown = m_victim.grounded(),
                                   .ownerIsPlayer = hit.attackerIsPlayer,
-                                  .at = hit.attacker});
+                                  .at = hit.attacker,
+                                  .sceneFeet = std::nullopt});
 }
 
 bool Fighter::stepVictim(const FighterInput& input, HumanAnimator& animator) {

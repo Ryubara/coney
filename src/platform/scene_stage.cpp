@@ -221,8 +221,10 @@ void SceneStage::humanAnimSound(double human, std::uint32_t id) {
         return;
     }
     std::optional<anim::Vec3> feet;
-    if (const auto found = m_bound.find(human); found != m_bound.end() && found->second.frame) {
-        feet = found->second.frame->current().feet;
+    if (const auto found = m_bound.find(human); found != m_bound.end()) {
+        if (const auto& frame = found->second.frame) {
+            feet = frame->current().feet;
+        }
     }
     m_onAnimSound(human, id, feet);
 }

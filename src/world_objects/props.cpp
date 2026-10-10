@@ -421,8 +421,11 @@ std::optional<std::uint8_t> Props::counter(double handle) const {
 
 void Props::tick(ObjectWorld& world) {
     for (auto& [handle, prop] : m_props) {
-        if ((prop.broken || prop.spent) && prop.removalIn > 0 && --prop.removalIn == 0) {
-            m_removed.push_back(handle);
+        if ((prop.broken || prop.spent) && prop.removalIn > 0) {
+            --prop.removalIn;
+            if (prop.removalIn == 0) {
+                m_removed.push_back(handle);
+            }
         }
         // A drawer's update (every 60 ticks): once open, the first moves it out, the second spills its money.
         if (prop.drawer == kNoObject || --prop.drawerClock > 0) {

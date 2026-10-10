@@ -40,9 +40,13 @@ std::vector<anim::Vec3> stepSelfBreaks(SpawnRecords& records, float seconds) {
             continue;
         }
         SpawnRecord* record = records.find(found.handle);
-        *record->breakIn -= seconds;
+        std::optional<float>& breakIn = record->breakIn; // the same record as found, so set
+        if (!breakIn) {
+            continue;
+        }
+        *breakIn -= seconds;
         // A little slack, so a whole number of steps reaches the tick count despite rounding.
-        if (*record->breakIn <= 1.0e-4F) {
+        if (*breakIn <= 1.0e-4F) {
             const anim::Vec3 at = positionOf(*record);
             flashes.push_back(anim::Vec3{at.x, at.y, at.z + kMolotovFlashRise});
             broken.push_back(record->handle);

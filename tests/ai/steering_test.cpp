@@ -69,6 +69,9 @@ TEST_CASE("a ray meets a human's disc at its edge, and misses past, behind or be
     // Straight at a human 2 m ahead: met 0.63 m short of him.
     const std::optional<float> straight = ai::rayHitsHuman(origin, {0.0F, 3.0F, 0.0F}, {0.0F, 2.0F, 0.0F});
     REQUIRE(straight.has_value());
+    if (!straight) {
+        return;
+    }
     CHECK(*straight == Approx(2.0F - ai::kBlockerRadius));
     // Too short to reach him (2 m > 1 m + 0.63 m).
     CHECK_FALSE(ai::rayHitsHuman(origin, {0.0F, 1.0F, 0.0F}, {0.0F, 2.0F, 0.0F}).has_value());
@@ -78,6 +81,9 @@ TEST_CASE("a ray meets a human's disc at its edge, and misses past, behind or be
     CHECK_FALSE(ai::rayHitsHuman(origin, {0.0F, 3.0F, 0.0F}, {0.7F, 2.0F, 0.0F}).has_value());
     const std::optional<float> grazing = ai::rayHitsHuman(origin, {0.0F, 3.0F, 0.0F}, {0.5F, 2.0F, 0.0F});
     REQUIRE(grazing.has_value());
+    if (!grazing) {
+        return;
+    }
     CHECK(*grazing == Approx(2.0F - std::sqrt(0.63F * 0.63F - 0.25F)));
     // Starting inside the disc meets it at once; a ray of no length meets nothing.
     CHECK(ai::rayHitsHuman(origin, {0.0F, 1.0F, 0.0F}, {0.0F, 0.3F, 0.0F}).value_or(-1.0F) == 0.0F);
@@ -104,6 +110,7 @@ TEST_CASE("the list round a walker is a plain radius, the walker left out", "[ai
     scene.add(40.0F, 45.0F, 0.0F);
     Brain& behind = scene.add(40.0F, 38.5F, 0.0F);
     std::vector<Brain*> all;
+    all.reserve(scene.brains.size());
     for (std::size_t i = 0; i < scene.brains.size(); ++i) {
         all.push_back(&scene.brains.at(i));
     }
@@ -126,6 +133,9 @@ TEST_CASE("the blocker is the first disc the relative step meets, never behind o
 
     const std::optional<ai::Blocker> blocker = ai::findBlocker(walker, list, at, ahead, {0.0F, 3.0F, 0.0F});
     REQUIRE(blocker.has_value());
+    if (!blocker) {
+        return;
+    }
     CHECK(blocker->brain == &nearer);
     CHECK(blocker->fraction > 0.0F);
     CHECK(blocker->fraction < 1.0F);
@@ -148,6 +158,9 @@ TEST_CASE("a human walking away as fast is no blocker; one walking at the walker
     // Standing: 1.5 m of relative step against a disc 1.37 m out.
     const std::optional<ai::Blocker> standing = ai::findBlocker(walker, list, at, ahead, step);
     REQUIRE(standing.has_value());
+    if (!standing) {
+        return;
+    }
     CHECK(standing->fraction == Approx((2.0F - ai::kBlockerRadius) / 1.5F));
 
     // Walking away at the same speed: no relative step.
@@ -159,6 +172,9 @@ TEST_CASE("a human walking away as fast is no blocker; one walking at the walker
     other.setMoveAim({40.0F, 20.0F, 0.0F}, 0.0F);
     const std::optional<ai::Blocker> headOn = ai::findBlocker(walker, list, at, ahead, step);
     REQUIRE(headOn.has_value());
+    if (!headOn) {
+        return;
+    }
     CHECK(headOn->fraction == Approx((2.0F - ai::kBlockerRadius) / 3.0F));
 
     // His target is never his blocker.
@@ -206,6 +222,9 @@ TEST_CASE("steering passes a standing human 1 m to the side its line passes, and
     // Dead ahead: E (1 m to the walker's right) against the bearing is 0, so he goes left of him.
     const std::optional<Vec3> steered = ai::steerAroundHumans(walker, walkTo(aim, 2.0F));
     REQUIRE(steered.has_value());
+    if (!steered) {
+        return;
+    }
     CHECK(steered->x == Approx(39.0F));
     CHECK(steered->y == Approx(41.5F));
     CHECK(walker.steering().avoiding == &stander);
@@ -232,6 +251,9 @@ TEST_CASE("head-on, steering with right of way goes 1 m aside from the contact; 
     const float t = (2.0F - ai::kBlockerRadius) / 3.0F;
     const std::optional<Vec3> steered = ai::steerAroundHumans(first, walkTo(aim, 2.0F));
     REQUIRE(steered.has_value());
+    if (!steered) {
+        return;
+    }
     CHECK(steered->x == Approx(39.0F));
     CHECK(steered->y == Approx(40.0F + (1.5F * t)));
     CHECK(first.steering().contactPoint.y == Approx(40.0F + (1.5F * t)));
@@ -244,6 +266,9 @@ TEST_CASE("head-on, steering with right of way goes 1 m aside from the contact; 
     const Vec3 back{40.0F, 30.0F, 0.0F};
     const std::optional<Vec3> yielded = ai::steerAroundHumans(second, walkTo(back, 2.0F));
     REQUIRE(yielded.has_value());
+    if (!yielded) {
+        return;
+    }
     CHECK(*yielded == back);
     CHECK(second.steering().avoiding == nullptr);
     CHECK(second.steering().speedOverride() == std::optional<float>{0.0F});
@@ -274,6 +299,9 @@ TEST_CASE("crossing, steering aims where the other will be when they meet, 1 m t
     const float t = (std::sqrt(5.0F) - ai::kBlockerRadius) / std::sqrt(11.25F);
     const std::optional<Vec3> steered = ai::steerAroundHumans(walker, walkTo({40.0F, 60.0F, 0.0F}, 4.0F));
     REQUIRE(steered.has_value());
+    if (!steered) {
+        return;
+    }
     CHECK(steered->x == Approx(41.0F - (1.5F * t) + 1.0F));
     CHECK(steered->y == Approx(42.0F));
 }
@@ -289,6 +317,9 @@ TEST_CASE("two humans heading for the same route node: the one behind follows at
     const Vec3 aim{40.0F, 50.0F, 0.0F};
     const std::optional<Vec3> steered = ai::steerAroundHumans(walker, walkTo(aim, 2.0F));
     REQUIRE(steered.has_value());
+    if (!steered) {
+        return;
+    }
     CHECK(*steered == aim);
     CHECK(walker.steering().overrideLeft == 5);
     CHECK(walker.steering().avoiding == nullptr);
@@ -406,6 +437,9 @@ TEST_CASE("at a shared route node only the human farther from it is held and fol
         const Vec3 node{40.0F, 41.2F, 0.0F};
         const std::optional<Vec3> steered = ai::steerAroundHumans(walker, request(node));
         REQUIRE(steered.has_value());
+        if (!steered) {
+            return;
+        }
         CHECK(*steered == node);
         CHECK(walker.steering().overrideLeft == 5);
         CHECK(walker.steering().avoiding == nullptr);

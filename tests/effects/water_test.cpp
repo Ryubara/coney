@@ -2,6 +2,7 @@
 #include "effects/water.h"
 
 #include <cmath>
+#include <cstddef>
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -32,7 +33,7 @@ TEST_CASE("the water is a 3 x 9 grid placed by its corner and scaled to its size
     water.set(settings());
     REQUIRE(water.placed());
     CHECK(water.vertices().size() == 27);
-    CHECK(Water::indices().size() == 2 * 8 * 6);
+    CHECK(Water::indices().size() == std::size_t{2} * 8 * 6);
     const auto far = water.toWorld({1.0F, 1.0F, 0.0F});
     CHECK(far.x == Catch::Approx(210.0F));
     CHECK(far.y == Catch::Approx(420.0F));
@@ -50,7 +51,7 @@ TEST_CASE("each column waves by sin(i + t), its alpha 225 + 5 sin, and the last 
     CHECK(v[2].position.z == Catch::Approx(v[0].position.z));
     CHECK(v[1 + 3 * 5].position.z == Catch::Approx(v[1].position.z)); // the same down the column
     CHECK(v[2].u == Catch::Approx(4.0F));
-    CHECK(v[3 * 8].v == Catch::Approx(16.0F));
+    CHECK(v[std::size_t{3} * 8].v == Catch::Approx(16.0F));
 }
 
 TEST_CASE("the grid updates every second frame, scrolling the texture", "[effects][water]") {

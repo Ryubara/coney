@@ -174,6 +174,9 @@ TEST_CASE("a dropped brick falls, bounces once, settles and stops on its next fl
         }
     }
     REQUIRE(rested.has_value());
+    if (!rested) {
+        return;
+    }
     CHECK(objects.find(7) == nullptr);
     CHECK(rested->grounded);
     CHECK_FALSE(rested->airborne);
@@ -205,7 +208,7 @@ TEST_CASE("an object whose type has no settle axes never settles", "[world_objec
 
 TEST_CASE("a wall bounces a flying object with no friction and no settle", "[world_objects][physics]") {
     LooseObjects objects;
-    objects.start(4, Vec3{0, 0, 5.0F}, {}, LooseObjects::Kind{.axisMask = kAxisZ, .restitution = 0.1F},
+    objects.start(4, Vec3{0, 0, 5.0F}, {}, LooseObjects::Kind{.axisMask = kAxisZ, .restitution = 0.1F, .shape = {}},
                   Vec3{6.0F, 1.0F, 0});
     const auto wall = [](Vec3 origin, Vec3 direction, float length) -> std::optional<RayContact> {
         if (origin.x > 1.0F || direction.x <= 0.0F) {
@@ -232,7 +235,8 @@ TEST_CASE("with every settle slot busy a landing starts no settle; removing an o
           "[world_objects][physics]") {
     LooseObjects objects;
     for (int i = 0; i < 65; ++i) {
-        objects.start(100 + i, Vec3{static_cast<float>(i), 0, 0.005F}, {}, LooseObjects::Kind{.axisMask = kAxisZ});
+        objects.start(100 + i, Vec3{static_cast<float>(i), 0, 0.005F}, {},
+                      LooseObjects::Kind{.axisMask = kAxisZ, .shape = {}});
     }
     objects.step(floorRay);
     objects.step(floorRay);
@@ -269,6 +273,9 @@ TEST_CASE("a thrown bottle breaks on its first contact; dropped, or of another c
     }
     // It broke where its move met the floor, stopped dead (no bounce), with its thrower kept, and left the flight.
     REQUIRE(broke.has_value());
+    if (!broke) {
+        return;
+    }
     CHECK(brokeHandle == 1);
     CHECK(objects.find(1) == nullptr);
     CHECK(broke->broken);

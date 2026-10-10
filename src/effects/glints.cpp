@@ -83,7 +83,7 @@ void Triglints::sync(std::span<const GlintOwner> owners) {
         auto found = m_triglints.find(owner.object);
         if (found != m_triglints.end()) {
             found->second.moveTo(owner.position);
-            kept.emplace(owner.object, std::move(found->second));
+            kept.emplace(owner.object, found->second);
         } else {
             kept.emplace(owner.object, Triglint(owner.position));
         }

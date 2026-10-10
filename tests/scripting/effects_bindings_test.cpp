@@ -9,6 +9,7 @@
 #include <expected>
 #include <initializer_list>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -258,7 +259,13 @@ TEST_CASE("SetPositionOfWater places the level's water with its size, colour and
     h.first("SetPositionOfWater", {list({-100, 50, -2}), list({0, 0, 0, -1}), Value(300.0), Value(1339.0),
                                    list({0.2, 0.4, 1.0}), Value(0.1), Value(0.25)});
     REQUIRE(h.effects.water.placed());
-    const coney::effects::WaterSettings& s = *h.effects.water.settings();
+    // A local: clang-tidy cannot follow a check through the accessor.
+    const std::optional<coney::effects::WaterSettings> settings = h.effects.water.settings();
+    REQUIRE(settings.has_value());
+    if (!settings) {
+        return;
+    }
+    const coney::effects::WaterSettings& s = *settings;
     CHECK(s.position == coney::anim::Vec3{-100, 50, -2});
     CHECK(s.width == 300.0F);
     CHECK(s.length == 1339.0F);

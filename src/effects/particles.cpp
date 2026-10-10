@@ -670,7 +670,10 @@ Particle ParticleSystems::makeFly(const ParticleSystem& system) {
     fly.size = 0.0F;
     // It fades in from white at alpha 0 and grows from nothing over its first update.
     fly.colour = 0xffffff00U;
-    Particle::Fly& state = fly.fly.emplace();
+    // Assigned, not emplace()d: Clang judges Fly not default-constructible for std::optional while Particle, which
+    // encloses it, is still being defined.
+    fly.fly = Particle::Fly{};
+    Particle::Fly& state = *fly.fly;
     state.a = unit() * 2.0F * std::numbers::pi_v<float>;
     state.b = unit() * 2.0F * std::numbers::pi_v<float>;
     state.interval = kFlyFrames / kFramesPerSecond;
@@ -682,6 +685,7 @@ Particle ParticleSystems::makeFly(const ParticleSystem& system) {
 }
 
 void ParticleSystems::updateFly(Particle& fly, anim::Vec3 centre) {
+    CONEY_ASSERT(fly.fly.has_value()); // only fly sprites update as flies
     Particle::Fly& state = *fly.fly;
     state.grown = true;
     state.a += kFlyStepA;
@@ -693,6 +697,7 @@ void ParticleSystems::updateFly(Particle& fly, anim::Vec3 centre) {
 }
 
 void ParticleSystems::stepFly(Particle& fly, anim::Vec3 centre, float seconds) {
+    CONEY_ASSERT(fly.fly.has_value()); // only fly sprites step as flies
     Particle::Fly& state = *fly.fly;
     state.due -= seconds;
     while (state.due <= kTickSlack) {

@@ -74,7 +74,7 @@ int eventFrame(float seconds) {
     const float frames = seconds * kClipFrameRate;
     const float half = std::floor(frames) + 0.5F;
     if (std::fabs(frames - half) <= kEventFrameSlack) {
-        return half < kFirstTieOnTime ? static_cast<int>(half + 0.5F) : static_cast<int>(half - 0.5F);
+        return half < kFirstTieOnTime ? static_cast<int>(std::floor(half + 0.5F)) : static_cast<int>(half - 0.5F);
     }
     return static_cast<int>(std::floor(frames + 0.5F));
 }

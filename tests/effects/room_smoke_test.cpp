@@ -25,7 +25,9 @@ RoomSmokeSettings scriptSettings() {
 }
 
 // A camera at the origin looking level along +y.
-EffectsViewer level() { return EffectsViewer{.position = {0.0F, 0.0F, 0.0F}, .target = {0.0F, 10.0F, 0.0F}}; }
+EffectsViewer level() {
+    return EffectsViewer{.position = {0.0F, 0.0F, 0.0F}, .target = {0.0F, 10.0F, 0.0F}, .window = std::nullopt};
+}
 
 } // namespace
 
@@ -64,7 +66,9 @@ TEST_CASE("room smoke rides with the camera's tilt and slides as it turns", "[ef
     // Level: GUI y 0.175.
     CHECK(smoke.sprite().guiY == Catch::Approx(0.175F).margin(1e-4F));
     // Looking 60° down is past -50°: the top of the range, -0.25.
-    smoke.step(kStep, EffectsViewer{.position = {0.0F, 0.0F, 0.0F}, .target = {0.0F, 1.0F, -std::sqrt(3.0F)}});
+    smoke.step(kStep, EffectsViewer{.position = {0.0F, 0.0F, 0.0F},
+                                    .target = {0.0F, 1.0F, -std::sqrt(3.0F)},
+                                    .window = std::nullopt});
     CHECK(smoke.sprite().guiY == Catch::Approx(-0.25F).margin(1e-4F));
     // A half turn between ticks slides the haze by twice the heading's change (a half of 0.9999), wrapped: what the
     // drift alone would scroll, plus 0.9999.
@@ -72,7 +76,8 @@ TEST_CASE("room smoke rides with the camera's tilt and slides as it turns", "[ef
     turning.start(scriptSettings());
     turning.step(kStep, level());
     const float before = turning.sprite().u;
-    turning.step(kStep, EffectsViewer{.position = {0.0F, 0.0F, 0.0F}, .target = {0.0F, -10.0F, 0.0F}});
+    turning.step(kStep,
+                 EffectsViewer{.position = {0.0F, 0.0F, 0.0F}, .target = {0.0F, -10.0F, 0.0F}, .window = std::nullopt});
     const float moved = turning.sprite().u - before - turning.drift().scroll;
     const float wrapped = moved - std::floor(moved);
     CHECK((wrapped == Catch::Approx(0.9999F).margin(1e-3F) || wrapped < 1e-3F));

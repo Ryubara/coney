@@ -143,6 +143,9 @@ TEST_CASE("a free attack hits on the update its strike shapes first touch the vi
     strike.run();
     REQUIRE(strike.shapesOn.has_value());
     REQUIRE(strike.hit.has_value());
+    if (!strike.shapesOn || !strike.hit) {
+        return;
+    }
     // The shapes come on at the clip's frame 8, well after the measured S1 contact of 2 updates the old schedule used.
     CHECK(*strike.shapesOn > 2);
     CHECK(*strike.hit == *strike.shapesOn);
@@ -183,7 +186,7 @@ TEST_CASE("square at a human down behind the attacker within the pick's wide pas
     // Player_PickTarget's wide pass (any angle, 2.0 m × 0.7) skips only the knocked out, so it finds a downed human
     // 0.9 m behind, and its state picks 193; 1.6 m behind he is out of every pass and square plays S1
     // (docs/research/combat-moves.md#targeting).
-    for (const auto [behind, wanted] : {std::pair{0.9F, 193U}, std::pair{1.6F, 12U}}) {
+    for (const auto& [behind, wanted] : {std::pair{0.9F, 193U}, std::pair{1.6F, 12U}}) {
         Strike strike(-behind, 0.5F);
         const std::array<std::uint32_t, 1> down{196};
         strike.victim.play(down, 196, coney::human::AnimState::Hold, coney::human::TargetState::Grounded);

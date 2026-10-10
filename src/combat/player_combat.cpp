@@ -325,7 +325,8 @@ void PlayerCombat::updateCommands(const CombatInput& input, const CombatTuning& 
         (input.command == command::kSquarePressed || input.command == command::kCrossLongHold ||
          input.command == command::kL2Cross || input.command == command::kL2Square)) {
         if ((phaseFlags(input) & kAttackRefusingPhases) == 0) {
-            startAttack(throwAttack(SquareInput{.gait = input.gait,
+            startAttack(throwAttack(SquareInput{.stick = {},
+                                                .gait = input.gait,
                                                 .phaseFlags = phaseFlags(input),
                                                 .heldSet = input.animSet,
                                                 .fightStance = input.fightStance}),

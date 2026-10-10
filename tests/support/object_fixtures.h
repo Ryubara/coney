@@ -154,7 +154,7 @@ struct ObjectWorldFixture {
     std::unique_ptr<raycast::CollisionMesh> mesh = objectMesh();
     RecordingServices services;
     GameRandom random;
-    world_objects::ObjectWorld world{mesh.get(), &paths, &services, &random};
+    world_objects::ObjectWorld world{mesh.get(), &paths, &services, &random, nullptr};
     double nextHandle = 100.0;
 
     /// Gives out handles from 100 up.

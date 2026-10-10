@@ -265,7 +265,8 @@ graphics::Rgba Hud::radarColour(std::size_t player) const {
     const float share = std::min(1.0F, static_cast<float>(since) / static_cast<float>(kRadarTintBlendMs));
     // Each channel moved `share` of the way, rounded.
     const auto mix = [share](std::uint8_t a, std::uint8_t b) {
-        return static_cast<std::uint8_t>(std::lround(static_cast<float>(a) + (static_cast<float>(b) - a) * share));
+        return static_cast<std::uint8_t>(
+            std::lround(static_cast<float>(a) + (static_cast<float>(b) - static_cast<float>(a)) * share));
     };
     return graphics::Rgba{mix(from.r, to.r), mix(from.g, to.g), mix(from.b, to.b), mix(from.a, to.a)};
 }

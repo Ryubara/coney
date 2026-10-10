@@ -434,19 +434,14 @@ class Hud {
 
     HudServices m_services;
     std::array<PlayerPanel, kPlayers> m_panels{PlayerPanel(0), PlayerPanel(1)};
-    bool m_visible = true;
     Checklist m_checklist;
     ScrollInQueue m_scrollIn;
     HintBox m_hints;
     std::string m_tutorialCallback;
-    bool m_gameTutorialText = false;
-    bool m_firstObjectiveHintGiven = false;     // the game-state flag 0x40000
     std::optional<Announcement> m_announcement; // HUD +0xe340
     std::optional<Announcement> m_centred;      // HUD +0xe150
     std::array<std::string, kPlayers> m_prompts;
-    bool m_clubActionText = false;
     std::array<ActionCycle, kPlayers> m_cycles{};
-    std::array<bool, kPlayers> m_promptTextHidden{}; // the cycle's start hid the text, until it changes
     std::array<WarCommandDisplay, kPlayers> m_warCommands{};
     std::array<MashMeter, kPlayers> m_mash{};
     std::array<StereoHud, kPlayers> m_stereo{};
@@ -454,12 +449,6 @@ class Hud {
     std::array<LockPickHud, kPlayers> m_lockPick{};
     std::array<FixedCamIcon, kPlayers> m_fixedCam{};
     std::array<TagHud, kPlayers> m_tagPanels{};
-    bool m_letterbox = false;
-    // The letterbox's "restore pending" mark (screen effects +0x1f4): armed by a letterbox move, stamped as the bars
-    // reach 0, and the next step with the bars out shows the HUD.
-    enum class LetterboxRestore : std::uint8_t { Idle, Armed, Stamped };
-    LetterboxRestore m_letterboxRestore = LetterboxRestore::Idle;
-    bool m_radarsAutoOn = false; // HUD +0x177b0: the radars' automatic return has turned them on
     CounterPanels m_counters;
     ScriptedBars m_bars;
     InstructionArrow m_arrow;
@@ -467,15 +456,27 @@ class Hud {
     std::function<std::optional<anim::Vec3>(double)> m_locate;
     std::array<NumIndicator, kNumIndicators> m_indicators{};
     CrimePanel m_crimePanel; // HUD +0x177d0: player 0's radar frame
-    bool m_wanted = false;   // radar +0x1c (HUD +0x15ec)
     std::string m_crimeText; // the radar frame's widget +0x450: the crime message it last took
-    Spinner m_spinner;       // HUD +0xe050
     std::array<TextProgressRow, kTextProgressRows> m_progress{};
     std::array<std::uint32_t, 2> m_progressCounts{}; // 0x00622e44 (slot 0) and 0x00622e40 (slot 1)
     StopWatchDisplay m_stopWatch;
     std::array<PanelOverrides, kPlayers> m_overrides{};
     std::uint64_t m_nowMs = 0;
     int m_levelNumber = 0;
+    // The flags and the one-byte fields last, so the fields above pack without padding.
+    bool m_visible = true;
+    bool m_gameTutorialText = false;
+    bool m_firstObjectiveHintGiven = false; // the game-state flag 0x40000
+    bool m_clubActionText = false;
+    std::array<bool, kPlayers> m_promptTextHidden{}; // the cycle's start hid the text, until it changes
+    bool m_letterbox = false;
+    // The letterbox's "restore pending" mark (screen effects +0x1f4): armed by a letterbox move, stamped as the bars
+    // reach 0, and the next step with the bars out shows the HUD.
+    enum class LetterboxRestore : std::uint8_t { Idle, Armed, Stamped };
+    LetterboxRestore m_letterboxRestore = LetterboxRestore::Idle;
+    bool m_radarsAutoOn = false; // HUD +0x177b0: the radars' automatic return has turned them on
+    bool m_wanted = false;       // radar +0x1c (HUD +0x15ec)
+    Spinner m_spinner;           // HUD +0xe050
 };
 
 } // namespace coney::hud

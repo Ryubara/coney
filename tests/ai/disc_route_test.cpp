@@ -163,6 +163,9 @@ TEST_CASE("level87's routes leave a hole a human stands in: checkpoint 4's start
     CHECK(planner.inHole(start));
     const std::optional<coney::anim::Vec3> snapped = planner.navPoint(start);
     REQUIRE(snapped.has_value());
+    if (!snapped) {
+        return;
+    }
     CHECK(planner.areaAt(*snapped).has_value());
     std::printf("level87: checkpoint 4's start plans from %.2f m away\n",
                 static_cast<double>(std::hypot(snapped->x - start.x, snapped->y - start.y)));

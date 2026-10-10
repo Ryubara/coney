@@ -149,9 +149,11 @@ TEST_CASE("a material pair plays column 2 then column 1 at its volumes; a hit an
     CHECK(sink.played[0].how.volume == Approx(0.8F));
     CHECK(sink.played[1].hash == 21);
     CHECK(sink.played[1].how.volume == Approx(0.5F));
-    REQUIRE(sink.played[1].how.position.has_value());
-    if (sink.played[1].how.position) {
-        CHECK(sink.played[1].how.position->z == Approx(3.0F));
+    // A local: clang-tidy cannot follow a check through the vector's element.
+    const std::optional<coney::audio::SoundVec> position = sink.played[1].how.position;
+    REQUIRE(position.has_value());
+    if (position) {
+        CHECK(position->z == Approx(3.0F));
     }
     CHECK(sink.played[2].hash == 21);
     CHECK(sink.played[2].how.volume == Approx(0.25F));

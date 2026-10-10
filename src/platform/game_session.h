@@ -10,6 +10,7 @@
 #include <string>
 #include <string_view>
 
+#include "core/assert.h"
 #include "core/chunk_system.h"
 #include "core/error.h"
 #include "core/language.h"
@@ -106,7 +107,10 @@ class GameSession {
     /// The play mode of the level in gameplay; null when none is loaded.
     [[nodiscard]] PlayLevelMode* play();
     /// The movie player.
-    [[nodiscard]] movies::MovieMode& movies() { return *m_movieMode; }
+    [[nodiscard]] movies::MovieMode& movies() {
+        CONEY_ASSERT(m_movieMode.has_value()); // made with the session
+        return *m_movieMode;
+    }
     /// Loads a sprite sheet resource by name (or a WAD file name), as the menus do.
     [[nodiscard]] std::expected<graphics::SpriteSheet, Error> loadSheet(std::string_view name) const;
 
@@ -141,6 +145,6 @@ class GameSession {
 /// Points the debug menus' game services (the scripts the Lua console and the Cheats page call into, the recorded
 /// configuration, the game state) at the session `session` returns, whichever way it started; while it returns null
 /// they have none and the menus use their sandbox state. `session` is asked anew each time.
-void connectDebugServices(debug::DebugServices& services, std::function<GameSession*()> session);
+void connectDebugServices(debug::DebugServices& services, const std::function<GameSession*()>& session);
 
 } // namespace coney::platform

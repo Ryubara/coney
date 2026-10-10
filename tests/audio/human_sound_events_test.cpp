@@ -125,8 +125,12 @@ TEST_CASE("a footstep plays the shoe against the remapped ground, twice as loud 
     CHECK(rig.sink.played[0].hash == 502); // column 2 first
     CHECK(rig.sink.played[1].hash == 501);
     CHECK(rig.sink.played[1].how.volume == Approx(1.0F));
-    REQUIRE(rig.sink.played[1].how.position.has_value());
-    CHECK(rig.sink.played[1].how.position->x == Approx(1.0F));
+    const std::optional<SoundVec> stepAt = rig.sink.played[1].how.position;
+    REQUIRE(stepAt.has_value());
+    if (!stepAt) {
+        return;
+    }
+    CHECK(stepAt->x == Approx(1.0F));
 
     // A player's run step on carpet: 1.25 x 0.5 (carpet) x 2 (player).
     rig.sink.played.clear();
@@ -281,12 +285,17 @@ TEST_CASE("a hit plays column 1, a player's columns 1 and 2 doubled, on a downed
                                           .volume = 1.0F,
                                           .victimDown = false,
                                           .ownerIsPlayer = false,
-                                          .at = {4.0F, 5.0F, 6.0F}};
+                                          .at = {4.0F, 5.0F, 6.0F},
+                                          .sceneFeet = std::nullopt};
     rig.events.play(call, HumanTraits{});
     REQUIRE(rig.sink.played.size() == 1);
     CHECK(rig.sink.played[0].hash == 1001);
-    REQUIRE(rig.sink.played[0].how.position.has_value());
-    CHECK(rig.sink.played[0].how.position->x == Approx(4.0F));
+    const std::optional<SoundVec> hitAt = rig.sink.played[0].how.position;
+    REQUIRE(hitAt.has_value());
+    if (!hitAt) {
+        return;
+    }
+    CHECK(hitAt->x == Approx(4.0F));
 
     rig.sink.played.clear();
     call.sound.ownerIsPlayer = true;

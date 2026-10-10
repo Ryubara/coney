@@ -66,7 +66,7 @@ HatFits HatFits::fromRecorded(const script::RecordedCalls& recorded) {
 void HatFits::add(int set, int owner, std::string_view hat, HatFit fit) {
     auto at = std::ranges::lower_bound(m_sets, set, {}, &Set::index);
     if (at == m_sets.end() || at->index != set) {
-        at = m_sets.insert(at, Set{.index = set});
+        at = m_sets.insert(at, Set{.index = set, .slots = {}});
     }
     at->owner = owner;
     if (at->slots.size() < kHatSlots) {

@@ -3,6 +3,7 @@
 // destroy (docs/research/objects.md#dynamic-objects). Synthetic handles.
 #include "world_objects/flag_net.h"
 
+#include <optional>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
@@ -47,7 +48,12 @@ TEST_CASE("zone 0 is on at a level's start and the others off until enabled", "[
 
 TEST_CASE("a destroyed record is gone for good", "[spawn_records]") {
     SpawnRecords records;
-    REQUIRE(records.add(SpawnRecord{.handle = 4, .typeName = "dyn_s_box"}) != nullptr);
+    REQUIRE(records.add(SpawnRecord{.handle = 4,
+                                    .typeName = "dyn_s_box",
+                                    .shownMessage = std::nullopt,
+                                    .model = std::nullopt,
+                                    .physicsBody = std::nullopt,
+                                    .breakIn = std::nullopt}) != nullptr);
     REQUIRE(records.resolve(4) != nullptr);
     CHECK(records.destroy(4));
     CHECK_FALSE(records.find(4)->live);

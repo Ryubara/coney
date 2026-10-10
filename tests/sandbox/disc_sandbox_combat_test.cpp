@@ -384,7 +384,7 @@ TEST_CASE("on the disc, square at a human knocked down beside or behind the play
     // A human with Rembrandt's clips is knocked down (the charge's hit code 0x36) and, lying in 196, put back beside
     // the player, ahead or behind him; square pressed then picks him through Player_PickTarget's wide pass (any angle,
     // 1.4 m), steers the grounded strike onto him and lands it (docs/research/combat-moves.md#targeting).
-    for (const auto [ahead, side] : {std::pair{0.9F, 0.0F}, std::pair{0.6F, 0.9F}, std::pair{-0.9F, 0.3F}}) {
+    for (const auto& [ahead, side] : {std::pair{0.9F, 0.0F}, std::pair{0.6F, 0.9F}, std::pair{-0.9F, 0.3F}}) {
         coney::Pads pads;
         const coney::raycast::CollisionMesh* mesh = yard.world->collision();
         const coney::sandbox::SandboxLayout& layout = yard.world->layout();

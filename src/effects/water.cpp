@@ -4,6 +4,8 @@
 #include <cmath>
 #include <cstddef>
 
+#include "core/assert.h"
+
 namespace coney::effects {
 
 Water::Water() : m_vertices(static_cast<std::size_t>(kColumns * kRows)) {}
@@ -31,7 +33,7 @@ const std::vector<std::uint16_t>& Water::indices() {
     // c (i, j + 1), d (i + 1, j + 1). The water is drawn with culling off, so the winding does not matter.
     static const std::vector<std::uint16_t> list = [] {
         std::vector<std::uint16_t> out;
-        out.reserve(static_cast<std::size_t>((kColumns - 1) * (kRows - 1) * 6));
+        out.reserve(static_cast<std::size_t>(kColumns - 1) * static_cast<std::size_t>(kRows - 1) * 6U);
         for (int j = 0; j + 1 < kRows; ++j) {
             for (int i = 0; i + 1 < kColumns; ++i) {
                 const auto a = static_cast<std::uint16_t>(j * kColumns + i);
@@ -55,6 +57,7 @@ anim::Vec3 Water::toWorld(anim::Vec3 p) const {
 }
 
 void Water::update() {
+    CONEY_ASSERT(m_settings.has_value()); // set() and step() call this only once the water is set
     const WaterSettings& s = *m_settings;
     const float t = m_phase * s.waveSpeed;
     const float u0 = std::fmod(t * kScrollRate, kRepeatsAcross);
@@ -65,7 +68,8 @@ void Water::update() {
         const auto alpha = static_cast<std::uint8_t>(kBaseAlpha + kAlphaSwing * wave);
         const float u = u0 + kRepeatsAcross * static_cast<float>(i) / static_cast<float>(kColumns - 1);
         for (int j = 0; j < kRows; ++j) {
-            WaterVertex& vertex = m_vertices[static_cast<std::size_t>(j * kColumns + i)];
+            WaterVertex& vertex = m_vertices[(static_cast<std::size_t>(j) * static_cast<std::size_t>(kColumns)) +
+                                             static_cast<std::size_t>(i)];
             vertex.position = anim::Vec3{static_cast<float>(i) / static_cast<float>(kColumns - 1),
                                          static_cast<float>(j) / static_cast<float>(kRows - 1), wave * s.waveHeight};
             vertex.colour = {s.colour[0], s.colour[1], s.colour[2], alpha};

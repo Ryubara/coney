@@ -38,7 +38,7 @@ BrainType brainTypeOf(int behaviour) {
 }
 
 Brain::Brain(human::Human& human, BrainType type, const FightSettings& settings, std::uint32_t seed)
-    : m_human(&human), m_type(type), m_settings(settings), m_random(seed) {}
+    : m_human(&human), m_settings(settings), m_random(seed), m_type(type) {}
 
 Brain::~Brain() = default;
 
@@ -561,8 +561,8 @@ void Brain::setMoveHeading(float heading, float speed) {
 
 void Brain::setTurnBoost(int boost) {
     m_turnBoost = boost;
-    if (m_human->record().move.has_value()) {
-        m_human->record().move->turnBoost = boost;
+    if (std::optional<human::BrainMove>& move = m_human->record().move) {
+        move->turnBoost = boost;
     }
 }
 

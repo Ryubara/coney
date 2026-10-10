@@ -15,6 +15,7 @@
 #include "combat/being_hit.h"
 #include "combat/combat_tuning.h"
 #include "combat/lock_on.h"
+#include "core/assert.h"
 #include "core/pad.h"
 #include "core/ps2_float.h"
 #include "human/body.h"
@@ -175,7 +176,8 @@ std::vector<HumanSound> Human::takeSounds() {
     // Clip event 11 carries the animation sound's id in its argument (0 plays nothing).
     for (const anim::ClipEvent& event : m_animator.takeEvents()) {
         if (event.type == kEventAnimSound) {
-            sounds.push_back(HumanSound{.kind = HumanSound::Kind::Anim, .animSound = event.argument});
+            sounds.push_back(HumanSound{
+                .kind = HumanSound::Kind::Anim, .animSound = event.argument, .at = {}, .sceneFeet = std::nullopt});
         }
     }
     sounds.insert(sounds.end(), m_contactSounds.begin(), m_contactSounds.end());
@@ -381,6 +383,9 @@ void Human::aiLocomote(bool gated) {
     constexpr float kMovingAsk = 0.1F;
     const Speeds& speeds = m_animator.speeds();
     const float current = ps2::length(m_velocity.x, m_velocity.y);
+    // Called only with both set (update()).
+    CONEY_ASSERT(m_moveSpeed.has_value());
+    CONEY_ASSERT(m_record.move.has_value());
     const float asked = *m_moveSpeed;
     const bool wounded = m_script.wounded;
     const float target = wounded && asked > kMovingAsk ? speeds.walk : asked;
@@ -866,6 +871,7 @@ bool Human::runStepControl() {
     // plays; it fades in over 0.2 s.
     constexpr float kStepFade = 0.2F;
     const bool stance = m_fighter.lockTarget() != nullptr;
+    CONEY_ASSERT(m_stepRequest.has_value()); // run only with a step asked for
     const StepClip step = stepClipFor(m_stepRequest->heading, m_heading, stance, m_stepRequest->boost);
     m_stepRequest.reset();
     const anim::AnimClip* found = m_animator.anims().clip(step.clip);
@@ -1312,7 +1318,7 @@ anim::Vec3 Human::ledPoint() const {
     auto bones = anim::boneTransforms(*m_skeleton, pose());
     auto& headBone = bones.at(static_cast<std::size_t>(kLedPointBone));
     headBone.t = anim::scale(headBone.t, m_scale);
-    const std::array<StrikeShapeDef, 1> head{StrikeShapeDef{.bone = kLedPointBone}};
+    const std::array<StrikeShapeDef, 1> head{StrikeShapeDef{.bone = kLedPointBone, .offset = {}}};
     return poseStrikeShapes(head, bones, placement()).front().a;
 }
 
