@@ -97,9 +97,3 @@ if you use worktrees. Remove a worktree when its branch is merged: `git worktree
 experiments. It is never committed and nothing depends on it surviving. Prune it when the work that produced a file
 is done, and keep out of it anything you would be sorry to lose; findings belong in
 [research pages](research-workflow.md), not in scratch.
-
-## Until the workspace move
-
-Today the project still runs from a single folder that holds the game files, PCSX2 and the Ghidra databases inside
-the checkout. `.gitignore` keeps a clearly marked `Transitional` block that ignores those folders, and the block is
-deleted when the checkout moves into the layout above. Do not rely on it for new work.

@@ -24,17 +24,6 @@ SLUS_*
 *.BIN
 *.qcow2
 
-# Transitional: these live inside the repo folder until the workspace move; the move deletes this block.
-# Until then the game files, the emulator and the Ghidra databases (which hold the game's code) still sit
-# inside the checkout and must stay ignored.
-/pcsx2*/
-/xemu/
-/tools/*
-!/tools/*.ps1
-!/tools/*.py
-!/tools/scripts/
-/research/ghidra/
-
 # Python venv (docs tooling) and bytecode caches
 /.venv/
 __pycache__/

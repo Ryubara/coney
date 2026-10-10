@@ -1,4 +1,4 @@
-# Ghidra + ghidra-mcp setup (warriors-decomp, PS2)
+# Ghidra + ghidra-mcp setup (The Warriors, PS2)
 
 Set up 2026-10-04. Paths below are `coney.local.toml` keys or workspace-relative; see
 [Local workspace](workspace.md). Verified end to end with a hand-built R5900 blob (see "Verification").
