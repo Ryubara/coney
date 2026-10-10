@@ -945,6 +945,12 @@ Clang 19:
 run-clang-tidy-19 -p build/ci -quiet '^(?!.*_deps).*/(src|tests)/'
 ```
 
+A full pass takes over an hour, so a pull request checks only the files it changes: each changed `.cpp`, plus every
+`.cpp` that includes a changed header, directly or through other headers (`.github/scripts/tidy-files.sh <base>`
+prints the list for a change, or `ALL`). A change to the build setup (`CMakeLists.txt`, `cmake/`, `CMakePresets.json`,
+`.clang-tidy`, the build workflow) and every push to `main`, nightly run and manual run check everything, so a header
+included some unusual way is still caught within a day.
+
 ## Python tools
 
 `python/` is the `coney-tools` package (see [Conventions](conventions.md#python)). [uv](https://docs.astral.sh/uv/)
@@ -995,11 +1001,15 @@ full history (no shallow clone) and is never committed.
 
 ## What CI runs
 
-Every pull request, and every push to `main` or a `release/` branch, runs these GitHub Actions workflows:
+Every pull request, and every push to `main` or a `release/` branch, runs these GitHub Actions workflows. The `build`
+workflow also runs every night on `main` and on demand: open the repository's Actions tab, choose `build`, press
+"Run workflow" and pick a branch that is already on GitHub (or `gh workflow run build.yml --ref <branch>`). A manual
+run checks every file with clang-tidy. On Linux and macOS the jobs compile through ccache and keep its cache between
+runs, so a job recompiles only what changed; each job prints its hit rate at the end.
 
 | Workflow | Jobs |
 | --- | --- |
-| `build` | `ci` preset build and tests on Windows (MSVC), Linux (GCC 13 and Clang 19) and macOS (Apple Clang); `asan` preset on Linux Clang 19 and macOS; clang-tidy; pre-commit over every file |
+| `build` | `ci` preset build and tests on Windows (MSVC), Linux (GCC 13 and Clang 19) and macOS (Apple Clang); `asan` preset on Linux Clang 19 and macOS; clang-tidy (a pull request: changed files only); pre-commit over every file |
 | `python` | ruff, mypy, pytest and `coney-tools repo check` on Windows, Linux and macOS |
 | `docs` | `mkdocs build --strict`, markdownlint over every Markdown file, actionlint over the workflows |
 | `pr` | the pull request title against the commit title rules (pull requests only) |

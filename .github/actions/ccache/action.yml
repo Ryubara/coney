@@ -1,0 +1,44 @@
+# Compile through ccache on Linux and macOS and keep its cache between runs, so a job recompiles only what changed.
+# A runner starts empty, so without this every job recompiles everything, SDL3 and librw included. Windows is left
+# out: MSVC's /Zi debug info writes a shared PDB that ccache cannot cache, so it needs /Z7 first.
+# Call it after the step that installs the packages (on Linux the package index is already updated by then), and
+# print `ccache --show-stats` at the end of the job to see the hit rate.
+name: ccache
+description: Install ccache, route CMake's compiler through it and restore and save its cache.
+
+inputs:
+  key:
+    description: Names this job's cache (its OS and compiler), so unlike builds never share objects.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - if: runner.os == 'Linux'
+      shell: bash
+      run: sudo apt-get install -y ccache
+    - if: runner.os == 'macOS'
+      shell: bash
+      run: brew install ccache
+    # CMake reads these two variables when it first configures; the presets stay untouched, so local builds do not
+    # use ccache unless the developer asks. COMPILERCHECK=content because the compilers are installed fresh on every
+    # run and their modification times mean nothing.
+    - if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        {
+          echo "CMAKE_C_COMPILER_LAUNCHER=ccache"
+          echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache"
+          echo "CCACHE_DIR=$GITHUB_WORKSPACE/.ccache"
+          echo "CCACHE_BASEDIR=$GITHUB_WORKSPACE"
+          echo "CCACHE_COMPILERCHECK=content"
+          echo "CCACHE_MAXSIZE=300M"
+        } >> "$GITHUB_ENV"
+    # One entry per commit: it restores the newest entry of this job (the pull request's own, else main's) and
+    # saves a new one at the end. The 300M cap and the repository's 10 GB limit evict the oldest.
+    - if: runner.os != 'Windows'
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: .ccache
+        key: ccache-${{ inputs.key }}-${{ github.sha }}
+        restore-keys: ccache-${{ inputs.key }}-

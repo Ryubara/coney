@@ -6,6 +6,12 @@ on:
   push:
     branches: [main, "release/**"]
   pull_request:
+  # Run it by hand on a branch that is already on GitHub, without opening a pull request: the Actions tab, this
+  # workflow, "Run workflow", or `gh workflow run build.yml --ref <branch>`. clang-tidy then checks every file.
+  workflow_dispatch:
+  # Every night on main, so what the pull requests' clang-tidy skips (see the clang-tidy job) is still checked.
+  schedule:
+    - cron: "23 7 * * *"
 
 permissions:
   contents: read
@@ -64,6 +70,9 @@ jobs:
       - name: Install Ninja
         if: runner.os == 'macOS'
         run: brew install ninja
+      - uses: ./.github/actions/ccache
+        with:
+          key: ci-${{ matrix.name }}
       - name: Cache the fetched dependencies
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -73,6 +82,9 @@ jobs:
       # -k 0: keep compiling after a failure, so one run lists every error.
       - run: cmake --build --preset ci -- -k 0
       - run: ctest --preset ci
+      - name: Show the ccache hit rate
+        if: always() && runner.os != 'Windows'
+        run: ccache --show-stats
 
   sanitizers:
     name: sanitizers (${{ matrix.name }})
@@ -106,6 +118,9 @@ jobs:
       - name: Install Ninja
         if: runner.os == 'macOS'
         run: brew install ninja
+      - uses: ./.github/actions/ccache
+        with:
+          key: asan-${{ matrix.name }}
       - name: Cache the fetched dependencies
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -114,31 +129,86 @@ jobs:
       - run: cmake --preset asan
       - run: cmake --build --preset asan -- -k 0
       - run: ctest --preset asan
+      - name: Show the ccache hit rate
+        if: always()
+        run: ccache --show-stats
 
+  # A full pass takes over an hour, so a pull request checks only what it changes (see .github/scripts/tidy-files.sh);
+  # pushes to main, the nightly run, a manual run and a change to the build setup check every file. A pull request
+  # with nothing to check (docs only) skips the steps below but the job still passes, so it can be a required check.
   clang-tidy:
     runs-on: ubuntu-24.04
     env:
       CC: clang-19
       CXX: clang++-19
     steps:
+      # Depth 2: a pull request's checkout is a merge commit, and its first parent (HEAD^1) is the branch it merges
+      # into, so `git diff HEAD^1 HEAD` is exactly the pull request's change.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+      - name: Choose the files to check
+        id: files
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT" = pull_request ]; then
+            bash .github/scripts/tidy-files.sh HEAD^1 > "$RUNNER_TEMP/tidy-files.txt"
+          else
+            echo ALL > "$RUNNER_TEMP/tidy-files.txt"
+          fi
+          if [ ! -s "$RUNNER_TEMP/tidy-files.txt" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Nothing for clang-tidy to check."
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "clang-tidy will check:"
+            cat "$RUNNER_TEMP/tidy-files.txt"
+          fi
       - name: Install Ninja, clang-19, clang-scan-deps, clang-tidy-19 and SDL3's build packages
+        if: steps.files.outputs.run == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y ninja-build clang-19 clang-tools-19 clang-tidy-19 libx11-dev libxext-dev \
             libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev libxss-dev libxtst-dev libwayland-dev \
             libxkbcommon-dev libegl1-mesa-dev libgl1-mesa-dev libdbus-1-dev libudev-dev \
             libasound2-dev libpulse-dev libpipewire-0.3-dev
+      - if: steps.files.outputs.run == 'true'
+        uses: ./.github/actions/ccache
+        with:
+          key: clang-tidy
       - name: Cache the fetched dependencies
+        if: steps.files.outputs.run == 'true'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: build/ci/_deps
           key: deps-ci-clang-tidy-${{ hashFiles('cmake/deps.cmake') }}
-      - run: cmake --preset ci
-      # The build job reports compile errors; build what compiles so clang-tidy still checks every file.
-      - run: cmake --build --preset ci -- -k 0 || true
-      # Coney's own sources only (src/ and tests/), never the fetched dependencies under _deps/.
-      - run: run-clang-tidy-19 -p build/ci -quiet '^(?!.*_deps).*/(src|tests)/'
+      - if: steps.files.outputs.run == 'true'
+        run: cmake --preset ci
+      # The build job reports compile errors; build what compiles so clang-tidy still checks every file. The build
+      # is also what generates the headers clang-tidy needs.
+      - if: steps.files.outputs.run == 'true'
+        run: cmake --build --preset ci -- -k 0 || true
+      # CMake may write the ccache launcher into the compile database, and clang-tidy would take "ccache" for the
+      # compiler; strip it (a no-op when it is not there).
+      - name: Remove ccache from the compile database
+        if: steps.files.outputs.run == 'true'
+        run: |
+          sed -i 's|"command": "ccache |"command": "|' build/ci/compile_commands.json
+      # Coney's own sources only (src/ and tests/), never the fetched dependencies under _deps/. A pull request
+      # passes its files as regular expressions anchored at both ends: /src/ai/brain\.cpp$
+      - name: Run clang-tidy
+        if: steps.files.outputs.run == 'true'
+        run: |
+          if [ "$(cat "$RUNNER_TEMP/tidy-files.txt")" = ALL ]; then
+            run-clang-tidy-19 -p build/ci -quiet '^(?!.*_deps).*/(src|tests)/'
+          else
+            mapfile -t patterns < <(sed -e 's/\./\\./g' -e 's|^|/|' -e 's/$/$/' "$RUNNER_TEMP/tidy-files.txt")
+            run-clang-tidy-19 -p build/ci -quiet "${patterns[@]}"
+          fi
+      - name: Show the ccache hit rate
+        if: always() && steps.files.outputs.run == 'true'
+        run: ccache --show-stats
 
   format:
     runs-on: ubuntu-24.04
