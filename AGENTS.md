@@ -76,3 +76,6 @@ reruns `coney-tools missions render`. `HANDOFF.md` holds only the current state 
   does. Docs link files outside `docs/` as `repo:<path>`.
 - Work happens on branches; before a push the branch is squashed into feature-sized commits. Only `main` and
   release branches are pushed.
+- Ask the user you are working for before you push any other branch or open a pull request, and say why (for
+  example, CI only runs on pushes to `main` and on pull requests). A pull request or issue you write carries no
+  tool-attribution line.
