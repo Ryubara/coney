@@ -15,7 +15,8 @@ in `../../scratch/`; game files, emulators and tool installs live beside the rep
 ## How we work
 
 Read `docs/guides/how-we-work.md` before starting: the pipeline, the analyst and implementer roles, the coordinator,
-sharing one machine, merging and briefing agents. Nobody waits for a person to play their work: the automated tests
+sharing one machine and merging. Whoever starts agents follows `docs/guides/agents.md` (fork or fresh, which model,
+briefs, long commands and the prompt cache). Nobody waits for a person to play their work: the automated tests
 are the gate, so every piece of work proves itself as `docs/guides/testing.md` defines ("done" per kind of work, the
 player's path, gamepad input, playthrough tests, the checks to run before reporting).
 

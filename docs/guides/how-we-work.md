@@ -130,6 +130,9 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
   work back.
 - **Ship after every merged feature.** Push, build the release locally, and hand the play-testers one list of what
   changed and how to reach it ([Play-testing](testing.md#play-testing)). Research-only merges need no build.
+- **Keep its own context small.** The coordinator re-reads its whole conversation on every turn: it checkpoints
+  (saves the state, clears, continues from it) before its context limit and before a long break
+  ([Running agents](agents.md#cache)).
 - **A lesson becomes a rule in the same commit.** A mistake that cost time (a tool pitfall, a process race) is
   written into the guide where it applies, generally (why and the method), alongside its fix; briefs only point to
   it.
@@ -156,15 +159,12 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
 
 ## Agents {#agent-conduct}
 
-- **Brief every agent completely.** A brief names the role (analyst or implementer), the worktree, the scope it owns,
-  the files it must not touch, and pastes the standing rules that matter for the work (clean room, input driven like
-  a gamepad, never focus the emulator, faithful before extras). An agent knows only what its brief and the repository
-  tell it.
-- **Put the right model on the work.** Reverse-engineering work (Ghidra, disassembly, the emulator, research claims),
-  and implementation that depends on subtle research, goes to the strongest available model; light, non-RE work
-  (doc upkeep, mechanical edits, simple tooling) can use a smaller one. Today that means Claude Opus for the first
-  and Claude Sonnet for the second; Claude Fable is not used for agent work. Name the model explicitly when starting
-  an agent.
+- **Choose how to run each agent deliberately.** Whether the coordinator does a task itself, forks or starts a
+  fresh agent, which model it gets, how it is briefed and how it runs long commands decide most of what the work
+  costs: [Running agents](agents.md).
+- **An agent knows only what its brief and the repository tell it.** The brief names the role, the model, the
+  worktree, the scope it owns, the files it must not touch and what "done" means, and points at the rules rather than
+  pasting them ([Briefing](agents.md#briefs)).
 - **Long-running tracks keep going.** They commit in groups, tell the coordinator each group's sha, and continue with
   the next item in scope until it is empty, instead of stopping after one finding.
 - **Report what a reader needs:** commits, what works now and the command that shows it, stand-ins, open items and
@@ -192,4 +192,5 @@ research page cites its address with an evidence level ([The Understood measure]
 
 - Doing research: [Research workflow](research-workflow.md), then [Ghidra + ghidra-mcp](ghidra.md).
 - Writing code: [Conventions](conventions.md), [Testing](testing.md), then [Building and testing](building.md).
+- Running agents: [Running agents](agents.md).
 - Writing pages: [Writing these docs](writing-docs.md).
