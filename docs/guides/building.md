@@ -981,7 +981,10 @@ uvx pre-commit run --all-files
 ```
 
 Run that before every commit, or install the hooks once with `uvx pre-commit install` so that `git commit` runs them
-for you. The hooks fix what they can; stage their changes and commit again.
+for you. The hooks fix what they can; stage their changes and commit again. The install also adds a `commit-msg` hook
+that refuses a commit whose title breaks the rules in [AGENTS.md](repo:AGENTS.md) (`area: Verb the rest`, at most 72
+characters); CI checks every commit title of a pull request again, because a clone without the hook cannot be trusted.
+Install it once in each clone; the worktrees of a clone share it.
 
 ## Documentation
 
@@ -1012,7 +1015,7 @@ runs, so a job recompiles only what changed; each job prints its hit rate at the
 | `build` | `ci` preset build and tests on Windows (MSVC), Linux (GCC 13 and Clang 19) and macOS (Apple Clang); `asan` preset on Linux Clang 19 and macOS; clang-tidy (a pull request: changed files only); pre-commit over every file |
 | `python` | ruff, mypy, pytest and `coney-tools repo check` on Windows, Linux and macOS |
 | `docs` | `mkdocs build --strict`, markdownlint over every Markdown file, actionlint over the workflows |
-| `pr` | the pull request title against the commit title rules (pull requests only) |
+| `pr` | the pull request title and every commit title of it against the commit title rules (pull requests only) |
 
 If a job fails, the commands above reproduce it locally. The workflow files under `.github/workflows/` are short and
 list every step.

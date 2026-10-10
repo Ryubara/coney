@@ -5,6 +5,9 @@
 # Never rewritten by a hook: the licence texts, which stay verbatim (LEGAL.md), Coney's and the vendored assets'.
 exclude: ^(LICENSE|docs/LICENSE|assets/sandbox/License\.txt)$
 
+# `pre-commit install` sets up both: the hooks that run on staged files and the one that checks the commit message.
+default_install_hook_types: [pre-commit, commit-msg]
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
@@ -46,3 +49,10 @@ repos:
         entry: '\b(SDL_GetTicks(NS)?|SDL_GetPerformance(Counter|Frequency)|SDL_Delay(NS|Precise)?|steady_clock|system_clock|high_resolution_clock|QueryPerformanceCounter|clock_gettime|timeGetTime|GetTickCount(64)?|sleep_for|sleep_until)\b'
         files: ^(src|tests)/.*\.(h|cpp)$
         exclude: ^src/platform/frame_pacer\.cpp$
+      # The commit title rules of AGENTS.md ("area: Verb the rest", 72 characters), checked by the command CI runs on
+      # pull request titles and commits. Git hands the hook the message file; install it with `uvx pre-commit install`.
+      - id: commit-title
+        name: the commit title follows the commit conventions
+        language: system
+        entry: uv run --project python coney-tools repo check-title
+        stages: [commit-msg]
