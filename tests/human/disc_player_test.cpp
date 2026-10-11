@@ -72,13 +72,10 @@ Level99 loadLevel99(const char* discPath, const char* levelName = "level99") {
     return loaded;
 }
 
-// Runs `frames` frames of the input script `name` (in tests/support) on a fresh player at `at`, or level99's start.
-std::vector<FrameRecord> runScript(const Level99& loaded, const std::string& name, std::uint64_t frames,
+// Runs `frames` frames of the pad events `events` on a fresh player at `at`, or level99's start.
+std::vector<FrameRecord> runEvents(const Level99& loaded, std::vector<coney::InputEvent> events, std::uint64_t frames,
                                    std::optional<coney::human::PlayerStart> at = std::nullopt) {
-    const std::filesystem::path path = std::filesystem::path(CONEY_TEST_SUPPORT_DIR) / name;
-    auto events = coney::loadInputScript(path.string());
-    REQUIRE(events.has_value());
-    coney::ScriptedInput input(std::move(*events));
+    coney::ScriptedInput input(std::move(events));
     coney::Pads pads;
     const coney::raycast::CollisionMesh* mesh = loaded.level->collision.get();
     const auto start = at ? at : coney::human::researchedPlayerStart("level99");
@@ -99,6 +96,23 @@ std::vector<FrameRecord> runScript(const Level99& loaded, const std::string& nam
     }
     CHECK(player.respawns() == 0);
     return records;
+}
+
+// Runs `frames` frames of the input script `name` (in tests/support) on a fresh player at `at`, or level99's start.
+std::vector<FrameRecord> runScript(const Level99& loaded, const std::string& name, std::uint64_t frames,
+                                   std::optional<coney::human::PlayerStart> at = std::nullopt) {
+    const std::filesystem::path path = std::filesystem::path(CONEY_TEST_SUPPORT_DIR) / name;
+    auto events = coney::loadInputScript(path.string());
+    REQUIRE(events.has_value());
+    return runEvents(loaded, events ? std::move(*events) : std::vector<coney::InputEvent>{}, frames, at);
+}
+
+// The same for a pad script given as text.
+std::vector<FrameRecord> runText(const Level99& loaded, std::string_view text, std::uint64_t frames,
+                                 coney::human::PlayerStart at) {
+    auto events = coney::parseInputScript(text);
+    REQUIRE(events.has_value());
+    return runEvents(loaded, events ? std::move(*events) : std::vector<coney::InputEvent>{}, frames, at);
 }
 
 } // namespace
@@ -235,4 +249,55 @@ TEST_CASE("walking north past level5's building corner at (-60.2, -163.7), Rembr
     CHECK(last.position.y > -162.5F);
     CHECK(last.position.x > -60.206F + 0.47F);
     CHECK(last.speed > 1.0F);
+}
+
+TEST_CASE("level3's chase roof at z 10.3: the wall at x 167.4 does not climb, the stairs beside it lead up",
+          "[disc][player][traversal]") {
+    // The rooftop chase (docs/missions/level3.md, checkpoint 4) lands on a roof at z 10.3 after its fifth gap. Its
+    // south part (y 361.5-366.7) is closed at x 167.4 by a 3.6 m wall of material 152 with no climbable flag, taller
+    // than any climb's window (docs/research/characters.md#climb); the way on is the steel stairs beside it (y
+    // 367-369.5, two flights at 33° and a landing) to a platform at z 16.46 and the gallery jump. A pad script that
+    // steered into the wall stood there tapping triangle until it walked back off the roof. Rembrandt stands in for
+    // Snow: both are players on the same collision.
+    const char* discPath = SDL_getenv("CONEY_DISC");
+    if (discPath == nullptr || *discPath == '\0') {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    const Level99 loaded = loadLevel99(discPath, "level3");
+    const auto climbed = [](const std::vector<FrameRecord>& run) {
+        constexpr std::uint32_t kFirstClimbClip = 437;
+        constexpr std::uint32_t kLastClimbClip = 460;
+        return std::ranges::any_of(run, [](const FrameRecord& frame) {
+            return frame.animId >= kFirstClimbClip && frame.animId <= kLastClimbClip;
+        });
+    };
+
+    // Facing east into the wall, the stick up at 90 % (a walk: below the jump's 0.95) and triangle tapped at it.
+    const std::vector<FrameRecord> wall =
+        runText(loaded, "0 stick left 0 90\n40 tap triangle\n60 tap triangle\n80 tap triangle\n", 100,
+                coney::human::PlayerStart{.position = {163.0F, 364.0F, 10.4F}, .headingDegrees = -90.0F});
+    // Facing east at the stairs' foot, the stick up at 100 %: a run up both flights.
+    const std::vector<FrameRecord> stairs =
+        runText(loaded, "0 stick left 0 100\n", 100,
+                coney::human::PlayerStart{.position = {162.0F, 368.0F, 10.4F}, .headingDegrees = -90.0F});
+    REQUIRE(!wall.empty());
+    REQUIRE(!stairs.empty());
+    const FrameRecord& atWall = wall.back();
+    const FrameRecord& up = stairs.back();
+    std::printf("level3 chase roof: at the wall (%.2f, %.2f, %.2f) climbed %d; up the stairs (%.2f, %.2f, %.2f)\n",
+                static_cast<double>(atWall.position.x), static_cast<double>(atWall.position.y),
+                static_cast<double>(atWall.position.z), climbed(wall) ? 1 : 0, static_cast<double>(up.position.x),
+                static_cast<double>(up.position.y), static_cast<double>(up.position.z));
+    CHECK_FALSE(climbed(wall));
+    // Pressed against the wall, not stopped short of it or still at the start (x 163).
+    CAPTURE(static_cast<double>(atWall.position.x));
+    CHECK(atWall.position.x > 166.0F);
+    CHECK(atWall.position.x < 167.4F);
+    CHECK(atWall.position.z < 10.5F);
+    CHECK_FALSE(climbed(stairs));
+    CHECK(up.position.x > 178.0F);
+    CHECK(up.position.z > 16.3F);
+    CHECK_FALSE(up.airborne);
 }
