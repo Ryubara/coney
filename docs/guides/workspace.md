@@ -90,7 +90,8 @@ git worktree add ../../worktrees/coney/<branch> -b <branch>
 A worktree has no `coney.local.toml` of its own, and needs none: every tool run from a worktree (`coney-tools`
 and `tools/start-ghidra-mcp.ps1`) finds the main checkout through git's common dir, reads its `coney.local.toml` and
 resolves the relative paths from the main checkout, so `../../game` is the same `game/` folder from every worktree.
-A worktree that does hold its own copy uses that one instead, with paths relative to the worktree. Remove a worktree when its branch is merged: `git worktree remove ../../worktrees/coney/<branch>`.
+A worktree that does hold its own copy uses that one instead, with paths relative to the worktree. Remove a
+worktree when its branch is merged: `git worktree remove ../../worktrees/coney/<branch>`.
 
 ## Scratch
 
