@@ -18,8 +18,19 @@ Start from a form; blank issues are off.
   research page that covers it, what "done" means (the acceptance test [Testing](testing.md#done) defines for this
   kind of work), a fix list or steps, and the issues it is blocked by (`#12`).
 
-Attach screenshots and short videos by dragging them into the form's "Attachments" box, and attach Coney's log, the
-text it prints in the terminal you started it from, as a `.txt` file.
+### Screenshots {#screenshots}
+
+Every issue has a **Screenshots** section, as every pull request does. It shows the problem: Coney at the place and
+moment it goes wrong and, when there is a capture of it, the original from the same place. When there is nothing to
+show (a sound, a research question, tooling), the section holds one line, `Screenshots: none (<reason>)`, such as
+`Screenshots: none (sound only)`. The forms ask for it; an issue filed from the command line ends with a
+`## Screenshots` section in the same shape.
+
+Drag screenshots and short videos into the form's Screenshots box, and attach Coney's log, the text it prints in the
+terminal you started it from, as a `.txt` file in the bug form's Log box. From the command line,
+`gh issue create --attach ./shots/f.png` (or `gh issue edit N --attach ...`) uploads the file, and a
+`![alt](./shots/f.png)` already in the body is pointed at the upload (gh 2.99 or later). Captures stay in scratch
+and are deleted once uploaded.
 
 ### What may be attached {#media}
 
@@ -103,9 +114,13 @@ under Done are not looked at.
 - **The author** finishes what it can, and for each leftover that is real work or an open question writes its title,
   area, research page and "done" test, in the shape of the [task form](#report), into the message it sends the
   coordinator with the pull request text. It does not write to GitHub ([Working from an issue](#agents)).
-- **The coordinator** files the issue from that text, labels it at triage, and puts the number into the description
-  before the pull request is opened. An item that is already tracked cites its existing issue; one that is finished is
-  ticked and moved to Done; one nobody will do is dropped, not left unchecked.
+- **A leftover a player can see comes with a picture.** For a visible bug, gap or stand-in, the author saves a
+  capture of Coney in its scratch folder's `shots/` (and of the original from PCSX2 when it has one at the same
+  place), names the files in the issue text it sends, and the coordinator files the issue with `--attach`. Pure
+  research questions and tooling work need none.
+- **The coordinator** files the issue from that text with its captures, labels it at triage, and puts the number into
+  the description before the pull request is opened. An item that is already tracked cites its existing issue; one
+  that is finished is ticked and moved to Done; one nobody will do is dropped, not left unchecked.
 - **A follow-up pull request** may be cited in place of an issue when it is already open, but the work it carries
   still ends with `Fixes #N` on the issue that describes it.
 - **The state file keeps no work list.** HANDOFF holds the live state (what runs where, what waits for CI) and issue

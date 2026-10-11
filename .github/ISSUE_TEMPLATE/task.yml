@@ -62,7 +62,11 @@ body:
       description: Issue numbers that must be finished first, such as #12, or leave empty.
       placeholder: "#12"
   - type: textarea
-    id: attachments
+    id: screenshots
     attributes:
-      label: Attachments
-      description: Drag and drop screenshots or a short video of Coney or the original. Never game files, saves or dumps.
+      label: Screenshots
+      description: |
+        Drag and drop screenshots or a short video of Coney, and of the original from the same place when there is one. Never game files, saves or dumps.
+        When there is nothing to show, write one line: `Screenshots: none (<reason>)`, for example `Screenshots: none (research only)`.
+    validations:
+      required: true
