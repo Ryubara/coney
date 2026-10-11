@@ -648,6 +648,8 @@ void Hud::renderPrompt(const HudCanvas& canvas) const {
     style.scale = metricsOfHeight(kPromptTextHeight).width * 30.0F;
     style.colour = kPromptColour;
     style.alignment = gui::TextAlignment::Centre;
+    // Its time since the text was set, which steps the stick tags (the revive prompt's stick picture).
+    style.timeMs = static_cast<std::uint32_t>(m_nowMs - std::min(m_promptSinceMs.at(0), m_nowMs));
     // The base y plus the raise; a prompt of several lines moves up a further step per line.
     const gui::TextLayout measured = gui::layoutText(text, style, canvas.text.fonts);
     // The clubhouse puts the text near the top (HUDEnableClubActionText).
