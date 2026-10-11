@@ -135,12 +135,13 @@ def discover_copies(root: Path) -> list[Copy]:
 def default_registry() -> Registry:
     """The registry for this machine: the copies in `pcsx2_root` and the claims in `pcsx2_claims_dir` from
     coney.local.toml (this checkout's, else the main checkout's), else the main checkout's folder and
-    `<scratch_dir>/pcsx2-claims` (`../../scratch` beside the main checkout when scratch_dir is unset too)."""
+    `pcsx2-claims` in the shared scratch (`../../scratch` beside the main checkout). The default ignores
+    `scratch_dir`: a worktree may point that at its own folder, and its claims would then be invisible to every
+    other agent, which would take over a copy another one holds."""
     root = find_repo_root(Path.cwd())
     main = main_checkout(root)
     paths: dict[str, Path | None] = load_config(root).paths if local_config_file(root) else {}
-    scratch = paths.get("scratch_dir") or (main / ".." / ".." / "scratch").resolve()
-    claims = paths.get("pcsx2_claims_dir") or scratch / "pcsx2-claims"
+    claims = paths.get("pcsx2_claims_dir") or (main / ".." / ".." / "scratch" / "pcsx2-claims").resolve()
     return Registry(paths.get("pcsx2_root") or main, claims)
 
 
