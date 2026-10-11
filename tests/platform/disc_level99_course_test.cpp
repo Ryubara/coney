@@ -215,6 +215,7 @@ TEST_CASE("the disc's level99 combat tutorial: the play-through script passes le
         "TT_20a", "TT_20c", "TT_22a", "TT_22b", "TT_22a", "TT_22b", "TT_22a", "TT_22b", "TT_26a", "TT_26b", "TT_23a",
         "TT_23b", "TT_23e", "TT_23f", "TT_23d", "TT_24a", "TT_24b", "TT_24d", "TT_24e", "TT_25a", "TT_25c", "TT_25e"};
     std::vector<std::string> expected;
+    expected.reserve(kLessonOrder.size());
     for (const std::string_view key : kLessonOrder) {
         expected.push_back(textOf(key));
     }
