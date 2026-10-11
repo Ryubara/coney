@@ -4668,6 +4668,28 @@ distance (0.75 m from the follow code), leader, a turn-with-leader flag, time li
   walk (2). Speed = max(speed of `g`, `v`) × `f`, clamped to [walk speed, 1.25 × sprint speed]. So a follower far
   behind runs, near his slot matches the leader, and slows to a walk on arrival.
 
+**Confirmed (runtime)**, PCSX2 2.9.94, `level80` at the "Let's Go" hint (a state of the scripted-pad and right-stick
+patches), Cleon the player, Vermin and Rembrandt on a landing 19 m away and 4.4 m up; the follow command given with R2
+and the right stick up, then the player driven by the left stick; one sample per update:
+
+- **The run-in.** Vermin planned a route down the stairs (route state `+0x04` set) and asked for **12.81 m/s**, the
+  clamp 1.25 × sprint; his speed climbed through gait 2, 3 and 5. Both stopped 1.8 to 2.4 m from the player.
+- **Walking** (stick 50 % straight down, the player at 1.63 m/s): both walked at **their own walk speed** (1.65 and
+  1.63 m/s), 0.9 to 2.5 m from him: the formula's floor, since *f* is far below 1 so close.
+- **Running** (stick 100 %, 7.80 m/s): neither moved while within 9 m. Vermin passed 9 m at update 366; Rembrandt
+  started at update 381 (12.2 m) and Vermin at 386 (13.9 m), both asking 12.81 m/s; a turn action of mode 3 was
+  queued in between. When the player stopped, the asked speeds fell to 9.48 and 7.62 m/s (gaits 5 and 4), a jog of
+  1.94 m/s about 5 m out, then the walk; they stood 1.6 and 2.9 m from him.
+- **A climb.** With the player put on a crate stack 2.2 m high (the `0x80` ledge links of nodes 860-865), both
+  planned routes over the ledge: Rembrandt's route state went to **4** (a `0x80` climb) 1.6 m from the player and he
+  stood on the stack 0.7 m from him; Vermin's route was **held** (route state `+0x16` = 1) while Rembrandt had the
+  shared node, then climbed (state 4) on his turn. Two seconds later the formation's replan put Rembrandt's slot on
+  the ground: he dropped off (route state **2**) and climbed back up 7 s later.
+
+Speculative: the levels whose level-table id is `0xe`, `0x33`, `0x34` or `0x52` (the Warriors' `0x100` mask while
+following) are `level14`, `level51`, `level52` and `level82`, if the id is the level's number; all four exist on the
+disc (as `level14_2` and so on). Not checked.
+
 #### Automatic commands {#warrior-auto-commands}
 
 What turns a following crew into a fighting one is the chief's own brain. `PlayerBrain_Update` (`0x003035d8`) calls
@@ -5726,7 +5748,9 @@ the disc checks print counts only).
    `+0x2d5`, straight walkable line to the leader) and the failure back-off of 31 updates. *Tests*: a chief walking
    round an L-shaped wall keeps his two followers moving (they reach within 2.5 m of the one ahead); a follower
    within 9 m in line stands; one 12 m behind runs (gait 4 speed × f) and slows to the walk near the slot; across a
-   kind-8 fence pair the follower climbs.
+   kind-8 fence pair the follower climbs. A disc test on `level80` replays the runtime check of
+   [the follow](#warrior-follow): after "Let's Go" the crew asks 12.81 m/s from the landing, stands while the
+   player runs within 9 m, and climbs the crate stack by its `0x80` links when the player stands on it.
 4. **Every 31 updates the aim must stay in sight** ([The move action](#move-action) step 5). Coney never ends a
    move because its waypoint went out of a walkable line, so an AI pushed off its line (by steering, a shove, a
    corner cut) walks into the wall until the stuck test, which a wall slide may never trip. Port the check (ends the
@@ -5783,8 +5807,9 @@ Coney already takes each goal's gait from that table; item 3 is the gap.
   `GangInvincible` sets on a member (`0x0016a000`).
 
 - What sets polygon `+0x02` in the level files (non-zero for most areas with route nodes, [the link
-  kinds](#path-planning)), and the goals that search with the mask `0x13` (`0x002aafd0`, `0x002c1470`). Which
-  levels the level-table ids `0xe`, `0x33`, `0x34` and `0x52` are (the Warriors' `0x100` mask while following).
+  kinds](#path-planning)), and the goals that search with the mask `0x13` (`0x002aafd0`, `0x002c1470`). Whether the
+  level-table ids `0xe`, `0x33`, `0x34` and `0x52` are `level14`, `level51`, `level52` and `level82`
+  ([follow](#warrior-follow)).
 - Which record `+0x08` bits the play-anim action's clip holds (`0x0025a3e0`), its rate for a dynamic clip and its blend
   out; Coney holds `0x80000`.
 - Which climb clips Vermin's fence plays (tall or short fence, standing or running).
