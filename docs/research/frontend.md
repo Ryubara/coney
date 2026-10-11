@@ -650,10 +650,10 @@ Choose Gangs row of [Per screen](#rumble-screens).
   model is that type's own, as for any human of that type ([Characters](characters.md)); nothing on this screen
   chooses a model. A side is rebuilt only once its gang group has no member left (`Gang_GetHeadCountById` < 1).
 - **What it does.** Each fighter gets `Brain_SetDead(h, 1)` (no AI), `Human_SetLockMovement(h, 1)` (`0x00234ef8`,
-  [`HuLockMovement`](characters.md)), human byte `+0x284` = 0 (combat stance off, as on [Swap Soldier](#rm-swap-soldier)),
-  its position set and its heading kept in screen `+0x148 + 4s`. No clip is set by this screen or by `Render`, so it
-  plays its ordinary standing idle (inferred: nothing else gives a dead-brained, locked human a clip).
-  `ResourceMgr_ResetFadeIns` (`0x00189528`) runs after a side is made.
+  [`HuLockMovement`](characters.md)), human byte `+0x284` = 0 (combat stance off, as on
+  [Swap Soldier](#rm-swap-soldier)), its position set and its heading kept in screen `+0x148 + 4s`. No clip is set
+  by this screen or by `Render`, so it plays its ordinary standing idle (inferred: nothing else gives a
+  dead-brained, locked human a clip). `ResourceMgr_ResetFadeIns` (`0x00189528`) runs after a side is made.
 - **When.** A gang or warchief change destroys the side's fighters at once (`RM_ChooseGangs_SelectGang`,
   `0x001ef490`) and marks the side pending; `RM_ChooseGangs_Update` (`0x001efe40`) makes them again **650 ms after
   the side's last input**. While any of a side's fighters is not yet resident (`RumbleHumanCache_AreResident`,

@@ -5343,13 +5343,13 @@ the callback, when it names a function, is called with its handle, the gang's id
 from player 1's camera (Coney has one player, so no second camera refuses a node), the start node the planner's
 route ends use, 17 outward searches, the node then checked against the gang's turf boxes; no node, no spawn this
 update. **Stand-ins**: 7 is placed as 8 with a value of 0, not on a flag as
-[its placement](ai-world.md#spawner-reinforcements) says; the others stand at the spawner; no door opens; the dispatch states 4 and 9
-(no crimes are routed) and the top-up 11 (no gang limits kept) never spawn; `SetSpawnMax` is not read.
-`GangSetMaxConcurrent` changes the limit (16 bits; a negative -n spawns waves of n as [above](#spawners) says, from
-`GangAddSpawner`'s limit too). An off-screen spawner (`GangSetSpawnerMustBeOffScreen`, or added in state 11) skips an
-update while player 1's camera sees the 0.3 m sphere 1.6 m above it ([Off screen](#spawner-unseen)): within the far
-clip, in view and with no wall of the collision mesh on the ray to its centre; **stand-in**: the six-plane frustum is
-taken as a cone of half the field of view widened by the sphere.
+[its placement](ai-world.md#spawner-reinforcements) says; the others stand at the spawner; no door opens; the
+dispatch states 4 and 9 (no crimes are routed) and the top-up 11 (no gang limits kept) never spawn; `SetSpawnMax`
+is not read. `GangSetMaxConcurrent` changes the limit (16 bits; a negative -n spawns waves of n as
+[above](#spawners) says, from `GangAddSpawner`'s limit too). An off-screen spawner (`GangSetSpawnerMustBeOffScreen`,
+or added in state 11) skips an update while player 1's camera sees the 0.3 m sphere 1.6 m above it
+([Off screen](#spawner-unseen)): within the far clip, in view and with no wall of the collision mesh on the ray to its
+centre; **stand-in**: the six-plane frustum is taken as a cone of half the field of view widened by the sphere.
 
 **The scripts' goals at one human** (`src/ai/engage_goals.*`). `GoalMoveToHuman` (6) drops and re-issues a move
 (`MoveAction`, its gait and radius) to where the target is every second, waits 30 updates after a failed route, and

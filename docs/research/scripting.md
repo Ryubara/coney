@@ -1211,16 +1211,17 @@ original's (owner checklist item 17). The script facts are inferred from the dis
 is given.
 
 - **The crowd is one spawner.** `AddRiotCivs1` (`level34.lua`) makes gang `RiotCivs1` (`GangCreate(23, ...)`) with
-  one spawner: `GangAddSpawner(gang, "RiotCivs1", 0, CharCivSpawner, "warr_sw", {−57.1, −53.8, 0}, 180, −1, 100, 10,
-  7, NilHandle, 0, "F.RiotPedSpawn", 30, NilHandle, "nothing")`: no total, a spawn every 100 ms, up to 10 alive, in
-  **state 7**, value 30 ([`GangAddSpawner`](../references/bindings/gang.md#gangaddspawner)). `P1.SetupRiot` adds it at
+  one spawner, `RiotCivs1`, of the civilian spawner type at (−57.1, −53.8, 0). Its arguments that matter: no total
+  (−1), a spawn every 100 ms, up to 10 alive, **state 7**, value 30 and the spawn callback `F.RiotPedSpawn`
+  ([`GangAddSpawner`](../references/bindings/gang.md#gangaddspawner)). `P1.SetupRiot` adds it at
   checkpoints 1-3 with the gang's hit handler `F.RiotPedHit`. At checkpoint 1 it suspends the gang
   (`GangSuspend(gang, true)`) until the intro scene `l34_c1` ends; `P1.EndIntroScene` then wakes it, with the riot
   ambience at 0.15 and the tunnel effects. The player is still underground then: the start is (−4.3, −25.1, −6.2)
   ([Level starts](../references/level-starts.md#start-level34-1)). Later handlers set the limit to 3, 6 or 10
   (`GangSetMaxConcurrent`).
-- **Where its humans appear.** State 7 places each human on a pedestrian flag at least 35 m from the player (up to
-  70 m ahead of the view), out of the camera's sight and clear of the gang's friends
+- **Where its humans appear.** State 7 places each human on a pedestrian flag at least 35 m from the player beside or
+  behind the view, or, ahead, at least the camera's view distance capped at 70 m (so possibly under 35 m), out of the
+  camera's sight and clear of the gang's friends
   ([AI and the world: reinforcements](ai-world.md#spawner-reinforcements), `0x001679e8`). From the subway, the street
   flags are out of sight behind its ceiling, so the original's rioters appear on the streets around the exit.
   Coney places state 7 as state 8 with a value of 0, which takes the nearest route node outside the view cone. In the
@@ -1266,8 +1267,8 @@ acts find targets. The play-test shows these are also missing:
    bar staff hit.
 6. Police: once 1 is in, check that `Cops` appear from the cop scene on and `RiotCops` from `P1.HeadToGate` on. The
    routed crimes (dispatch states 4 and 9) are item 13's work.
-7. A disc playthrough test from checkpoint 1: after `P1.EndIntroScene`, no `RiotCivs1` human within 35 m of the
-   player while he is in the subway, and at least one on the street flags once he comes out.
+7. A disc playthrough test from checkpoint 1: after `P1.EndIntroScene`, no `RiotCivs1` human appears in the subway
+   while the player is in it, and at least one appears on the street flags once he comes out.
 
 ### `level2.lua` (mission 5) {#level2}
 

@@ -53,12 +53,13 @@ entries:
     evidence: inferred
   - id: 7
     name: reinforcements
-    behaviour: "Spawns on a pedestrian flag 35-70 m from the player, out of the camera's sight and clear of the gang's friends."
+    behaviour: "Spawns on a pedestrian flag at least 35 m from the player beside or behind the view, or ahead at least the view distance capped at 70 m (possibly under 35 m), out of the camera's sight and clear of the gang's friends."
     settable: true
     added: 59
     started: 44
     scripts: [level2, level3, level5, level9, level11, level14]
-    evidence: inferred
+    source: "SLUS_212.15, state 7 placement 0x001679e8"
+    evidence: confirmed-code
   - id: 8
     name: "out of sight"
     behaviour: "Spawns out of the camera's sight around the player, `value` metres off."

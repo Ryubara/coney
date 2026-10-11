@@ -23,7 +23,7 @@ A gang's spawners (four per gang, `GangAddSpawner`) make humans according to the
 | <span id="spawner-4"></span>4 | police dispatch | Waits for a crime to be routed to it, then makes a new gang of type 1 (police) named `Responder<n>` and goes to 6; only while the game's police count is under its limit (game state `+0x324` < `+0x326`). Starts with `value` 75. | yes | 11 | | `level5`, `level9`, `level11`, `level14`, `level82`, `level86` |
 | <span id="spawner-5"></span>5 | far from the player | Spawns while player 1 is farther than `value` metres. | yes | 6 | 2 | `level52`, `level83` |
 | <span id="spawner-6"></span>6 | dispatching police | Spawns the police squad out of the camera's sight around the player, `value` metres off; back to 4 once the squad is complete. | no | | | |
-| <span id="spawner-7"></span>7 | reinforcements | Spawns on a pedestrian flag 35-70 m from the player, out of the camera's sight and clear of the gang's friends. | yes | 59 | 44 | `level2`, `level3`, `level5`, `level9`, `level11`, `level14` |
+| <span id="spawner-7"></span>7 | reinforcements | Spawns on a pedestrian flag at least 35 m from the player beside or behind the view, or ahead at least the view distance capped at 70 m (possibly under 35 m), out of the camera's sight and clear of the gang's friends. | yes | 59 | 44 | `level2`, `level3`, `level5`, `level9`, `level11`, `level14` |
 | <span id="spawner-8"></span>8 | out of sight | Spawns out of the camera's sight around the player, `value` metres off. | yes | 27 | 14 | `level3_chase`, `level9`, `level11`, `level11_chapter1`, `level11_chapter3`, `level20` |
 | <span id="spawner-9"></span>9 | gang dispatch | Like 4, without the police limit, and the new gang takes the spawner's gang type and relations; goes to 10. | yes | 15 | | `level5`, `level9`, `level11`, `level14`, `level20`, `level51` |
 | <span id="spawner-10"></span>10 | dispatching gang | Like 6 for the gang made in 9; back to 9. | no | | | |
@@ -34,6 +34,7 @@ A gang's spawners (four per gang, `GangAddSpawner`) make humans according to the
 Evidence levels used: confirmed-code, inferred.
 
 - SLUS_212.15, spawner update 0x001681a0
+- SLUS_212.15, state 7 placement 0x001679e8
 
 ## Fields
 

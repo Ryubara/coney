@@ -60,9 +60,10 @@ What the first stage does before the player can move, inferred from the disassem
    and the bonus timer `F1.Bonus01` (after 5 s, then every second).
 3. **`P1.SetupDest`** sets the start callback `P1.SetupDest02`, which teleports `Ajax2` to its flag and, 100 ms
    later, plays the intro scene `l60_intro` through the stage's own scene runner. The scene brings the picture back
-   (inferred). Its end (`PreCashTheWorld`, then `P1.Start02`) starts the music `music/armies_pt1` and opens a door. 4.5 s later `P1.Start03` makes the rail
-   camera active (`Rail1`): `CamSetupRail("rail", player, 22, {0, −0.25, 1.25}, 0.5, 90)`, six points along y = 39.5
-   from x = 100 to x = −850, then `CamModifyRail(5, −7, 0)` (mode 3, pitch −7°) and `CamModifyRail(7, 0.5)`.
+   (inferred). Its end (`PreCashTheWorld`, then `P1.Start02`) starts the music `music/armies_pt1` and opens a door.
+   4.5 s later `P1.Start03` makes the rail camera active (`Rail1`):
+   `CamSetupRail("rail", player, 22, {0, −0.25, 1.25}, 0.5, 90)`, six points along y = 39.5 from x = 100 to
+   x = −850, then `CamModifyRail(5, −7, 0)` (mode 3, pitch −7°) and `CamModifyRail(7, 0.5)`.
 
 So until the intro scene runs, the screen is black by the script's own choice.
 
