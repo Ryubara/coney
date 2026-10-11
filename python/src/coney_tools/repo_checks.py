@@ -151,12 +151,27 @@ _COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
 _HEADING = re.compile(r"^##[ \t]+(?P<name>\S.*?)[ \t]*$")
 #: What a list item or a task-list item starts with, which is not content (`- `, `- [ ] `, `* [x] `).
 _LIST_MARKER = re.compile(r"^[-*+](?:[ \t]+\[[ xX]\])?[ \t]*")
-#: Something a reader can look at: a Markdown image, an `<img>` tag, or a link to a GitHub attachment (an image or a
-#: video uploaded to the pull request in the browser, which is the only way to attach one).
-_IMAGE = re.compile(
-    r"!\[[^\]\n]*\]\([^)\n]+\)|<img\s[^>]*\bsrc\s*=|https://github\.com/user-attachments/\S+",
-    re.IGNORECASE,
+#: A Markdown image: its target is the angle-bracketed text (which may hold spaces) or the text up to the first space
+#: or `)`; an optional title after the target is ignored.
+_MARKDOWN_IMAGE = re.compile(r"!\[[^\]\n]*\]\(\s*(?:<(?P<angle>[^>\n]*)>|(?P<plain>[^\s)]*))[^)\n]*\)")
+#: An `<img>` tag's `src`, quoted or bare.
+_IMG_SRC = re.compile(
+    r"""<img\s[^>]*?\bsrc\s*=\s*(?:"(?P<dq>[^"]*)"|'(?P<sq>[^']*)'|(?P<bare>[^\s>]+))""", re.IGNORECASE
 )
+#: A whole `<img>` tag.
+_IMG_TAG = re.compile(r"<img\s[^>]*>", re.IGNORECASE)
+#: A bare link to a GitHub attachment (an image or a video that `gh --attach` or the browser uploaded).
+_ATTACHMENT_LINK = re.compile(r"https://github\.com/user-attachments/\S+", re.IGNORECASE)
+#: A target a reader can open: an http(s) URL. Anything else (a relative path, a drive path, `file:`) is a local file.
+_REMOTE = re.compile(r"https?://\S", re.IGNORECASE)
+
+
+#: Code the text may show as it is: a fenced block (``` or ~~~) and an inline code span.
+_CODE = re.compile(r"^[ \t]*(?P<fence>```|~~~).*?^[ \t]*(?P=fence)[^\n]*$|`[^`\n]*`", re.DOTALL | re.MULTILINE)
+#: A URL, whose path may hold anything.
+_URL = re.compile(r"https?://\S+", re.IGNORECASE)
+#: A path on the author's machine in prose: under `scratch/`, up two folders with `../../`, or on a Windows drive.
+_LOCAL_PATH = re.compile(r"(?<![\w-])scratch[/\\]\S*|(?<![\w.])(?:\.\.[/\\]){2,}\S*|(?<![\w])[A-Za-z]:[/\\]\S*")
 
 
 class BodyRulesError(ConfigError):
@@ -307,9 +322,56 @@ def _check_ai_use(section: str, rules: BodyRules) -> list[str]:
     return []
 
 
+def _check_local_paths(text: str) -> list[str]:
+    """Report each path on the author's machine that `text` names outside code, URLs and image references.
+
+    A published description is read by people with none of those files, so it says "the scratch folder", not where it
+    is. The only local paths that belong in a draft are the image references `gh --attach` rewrites to uploads, which
+    `_check_screenshots` handles.
+    """
+    prose = _CODE.sub(" ", text)
+    prose = _MARKDOWN_IMAGE.sub(" ", prose)
+    prose = _IMG_TAG.sub(" ", prose)
+    prose = _URL.sub(" ", prose)
+    found: list[str] = []
+    for match in _LOCAL_PATH.finditer(prose):
+        path = match.group(0).rstrip(".,;:!?)]}'\"")
+        if path not in found:
+            found.append(path)
+    return [
+        f"'{path}' is a local path: a description never names files or folders on your machine "
+        "(say 'the scratch folder'); only images may point at local files, and gh --attach uploads those"
+        for path in found
+    ]
+
+
+def _image_targets(section: str) -> list[str]:
+    """What the Markdown images and `<img>` tags of `section` point at, in order of appearance."""
+    found: list[tuple[int, str]] = []
+    for image in _MARKDOWN_IMAGE.finditer(section):
+        target = image.group("angle") if image.group("angle") is not None else image.group("plain")
+        found.append((image.start(), target.strip()))
+    for tag in _IMG_SRC.finditer(section):
+        target = next(tag.group(name) for name in ("dq", "sq", "bare") if tag.group(name) is not None)
+        found.append((tag.start(), target.strip()))
+    return [target for _, target in sorted(found)]
+
+
 def _check_screenshots(section: str, rules: BodyRules) -> list[str]:
-    """Check the Screenshots section: an image or attachment link, or the `none (reason)` line with a real reason."""
-    if _IMAGE.search(section):
+    """Check the Screenshots section: an uploaded image or video, or the `none (reason)` line with a real reason.
+
+    A picture counts only when it is reachable by a reader: an http(s) URL (a GitHub attachment or any other). An image
+    that points at a local file would show as broken on GitHub, so it is reported with the way to upload it.
+    """
+    targets = _image_targets(section)
+    local = [target for target in targets if not _REMOTE.match(target)]
+    if local:
+        return [
+            f"'## {rules.screenshots_section}': '{target}' is a local file: attach it with gh --attach (gh 2.99+) "
+            "so it uploads"
+            for target in local
+        ]
+    if targets or _ATTACHMENT_LINK.search(section):
         return []
     # The label may be bold (`- **Screenshots:** none (...)`), so the asterisks are dropped before matching.
     none = re.compile(rf"^(?:[-*+]\s+)?{re.escape(rules.screenshots_none)}\s*\((?P<reason>.*)\)$", re.IGNORECASE)
@@ -320,7 +382,7 @@ def _check_screenshots(section: str, rules: BodyRules) -> list[str]:
             if reason and reason not in rules.placeholders:
                 return []
     return [
-        f"'## {rules.screenshots_section}' needs an image (or an attached screenshot or video), "
+        f"'## {rules.screenshots_section}' needs an image (an uploaded screenshot or video), "
         f"or a line '{rules.screenshots_none} (<reason>)' saying why there is nothing to show"
     ]
 
@@ -329,12 +391,14 @@ def check_body(body: str, rules: BodyRules) -> list[str]:
     """Check a pull request description against the template's form.
 
     Every section must be present as a `##` heading, the `filled` ones (Summary, Testing) must hold text of their
-    own, the Screenshots section must hold an image or attachment link or a `Screenshots: none (<reason>)` line, and
-    the AI use section must say who wrote the commits (one of the choices) and, unless a person did, name the model.
+    own, the Screenshots section must hold an image that is an uploaded URL (not a local path) or a
+    `Screenshots: none (<reason>)` line, no text may name a path on the author's machine, and the AI use
+    section must say who wrote the commits (one of the choices) and, unless a person did, name the model.
     HTML comments and unchanged placeholder text count as empty, so the untouched template is refused. Returns one
     reason per broken rule; an empty list means the description passes.
     """
-    sections = _split_sections(strip_comments(body))
+    visible = strip_comments(body)
+    sections = _split_sections(visible)
     problems: list[str] = []
     for name in rules.sections:
         text = sections.get(name.casefold())
@@ -348,4 +412,5 @@ def check_body(body: str, rules: BodyRules) -> list[str]:
     ai_use = sections.get(rules.ai_section.casefold())
     if ai_use is not None:
         problems.extend(_check_ai_use(ai_use, rules))
+    problems.extend(_check_local_paths(visible))
     return problems

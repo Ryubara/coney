@@ -103,7 +103,9 @@ coordinator, who pushes them when CI has room.
   commits are not replayed.
 - **The coordinator keeps the release queue** in its state file and releases units while the agents keep working:
   it checks the queue (`gh run list --status queued` and `--status in_progress`), pushes the branch and opens the
-  pull request with `gh pr create --body-file <PR.md>` when there is room. Priority: engine fixes first, then what
+  pull request with `gh pr create --body-file <PR.md>` when there is room, run from the author's scratch folder with
+  one `--attach ./shots/<file>.png` per capture the text refers to (gh 2.99+;
+  [Capturing and attaching](testing.md#pr-media)). Priority: engine fixes first, then what
   unblocks other work. A pull request runs only the jobs its change can break, so a documentation-only one is cheap
   ([What CI runs](building.md#what-ci-runs)).
 - **A failure CI finds later** (another platform, a check that cannot run locally) goes to the coordinator when it is
@@ -242,7 +244,7 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
   item in scope until it is empty, instead of stopping after one finding.
 - **Report what a reader needs:** commits, what works now and the command that shows it, stand-ins, open items and
   the results of the checks. Short. A pull request's description carries the same as a Testing section (what ran,
-  the numbers) and a Screenshots section (before and after for anything visible, attached and never committed):
+  the numbers) and a Screenshots section (before and after for anything visible, uploaded with `gh --attach` and never committed):
   [What a pull request shows](testing.md#pr-evidence).
 - **Commits carry the agent's own model name** in a `Co-Authored-By` trailer (the format is in
   [Conventions](conventions.md)); an agent never pushes, opens or merges a pull request.

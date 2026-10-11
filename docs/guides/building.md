@@ -214,7 +214,7 @@ Without `--headless`, a machine with no display or no OpenGL fails at start-up w
 `--screenshot PATH` saves the last frame (the one `--frames N` stops at) as a PNG and prints how many of its pixels
 differ from the background and a hash of the frame, so a script can check that something was drawn without keeping
 the image. Keep screenshots of game data out of the repository (`../../scratch/` is the place); they go on a pull
-request as attachments ([What a pull request shows](testing.md#pr-media)).
+request as attachments, uploaded with `gh --attach` ([Capturing and attaching](testing.md#pr-media)).
 
 The STORY profiles are saved as one file each (`profile-1.sav` to `profile-6.sav`) in `profiles` in your data folder
 (`%APPDATA%\Coney\Coney\` on Windows, `~/.local/share/Coney/Coney/` on Linux, `~/Library/Application

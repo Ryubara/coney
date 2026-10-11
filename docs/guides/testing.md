@@ -132,8 +132,9 @@ description that leaves either empty (`coney-tools repo check-body`):
 
 ### Capturing and attaching {#pr-media}
 
-- **Attach, never commit.** Gameplay screenshots and short videos of Coney or of the original are attached to the
-  pull request or issue as GitHub attachments (drag the file into the description box). They are never committed:
+- **Attach, never commit.** Gameplay screenshots and short videos of Coney or of the original are uploaded to the
+  pull request or issue as GitHub attachments, with `gh --attach` (below) or, for a person, by dragging the file into
+  the description box. They are never committed:
   game imagery stays out of git ([LEGAL.md](repo:LEGAL.md#no-game-data)); the only images in the repository are the
   small reference screenshots that page allows. Never attach assets, saves, dumps, executables, BIOS images or game
   text, only pictures of the running game.
@@ -146,11 +147,27 @@ description that leaves either empty (`coney-tools repo check-body`):
   [Driving PCSX2](research-workflow.md#driving-pcsx2)), from a copy you hold a claim on.
 - **Video.** Nothing in Coney or `coney-tools` records video. A short clip is made by hand with a screen recorder; an
   agent uses a few screenshots of the moment instead.
-- **Agents** save every capture in `scratch/<branch>/shots/` and name each in the section of their `PR.md`, one
-  comment line per picture (`shot: before.png`). The coordinator attaches the files and replaces the comments with
-  the images when it opens the pull request, because the `gh` CLI cannot upload attachments. Until then
-  `check-body` refuses the description, which is the reminder. The files are game data: they stay in scratch and are
-  deleted when the pull request is merged ([Sharing one machine](how-we-work.md#shared-machine)).
+- **Agents** keep every capture in `scratch/<branch>/shots/` and write real image references in the pull request
+  text (`PR.md`), paths relative to the scratch folder: `![Coney after](./shots/after.png)`. The coordinator uploads
+  them from that folder, one `--attach` per file, when it opens the pull request:
+
+  ```sh
+  cd scratch/<branch>
+  gh pr create --body-file PR.md --attach ./shots/before.png --attach ./shots/after.png
+  ```
+
+  `gh` replaces each reference whose path matches an `--attach` with the uploaded
+  `https://github.com/user-attachments/assets/...` link (a file the text does not mention is appended); `--attach
+  <file>#<alt>` sets the alt text. `gh pr edit <n> --body-file PR.md --attach ...` does the same later, and
+  `gh pr comment` and `gh issue create` or `comment` take `--attach` too. It needs gh 2.99 or newer (`gh --version`).
+  `check-body` refuses a Markdown image or `<img>` that still points at a local path, which is the reminder to
+  attach it.
+- **No local paths in the text.** A published pull request or issue body never names a file or folder on your
+  machine: no `scratch/...`, `../../...`, `C:\...` or worktree path, and no "files in <folder>". Say "the scratch
+  folder" and describe the picture. The only local paths a draft may hold are the `![alt](./shots/<file>.png)` image
+  references that `gh --attach` rewrites to uploads. `check-body` refuses a body with any other such path in its
+  text; code spans and code blocks are not looked at. The files are game data: they stay in scratch and are deleted when the pull request is merged
+  ([Sharing one machine](how-we-work.md#shared-machine)).
 
 ## Where the checks run {#where}
 

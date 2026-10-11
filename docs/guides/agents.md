@@ -77,7 +77,8 @@ instead of repeating it:
 - the role (analyst, implementer or support), the model, the worktree and the scratch folder;
 - the task and the scope it owns, the files it must not touch, and what "done" means for it
   ([Testing](testing.md#done)), and that it reports it in the pull request's Testing and Screenshots sections, with
-  its captures saved in `scratch/<branch>/shots/` ([What a pull request shows](testing.md#pr-evidence));
+  its captures saved in `scratch/<branch>/shots/` and referenced in `PR.md` as `![alt](./shots/file.png)`
+  ([Capturing and attaching](testing.md#pr-media));
 - "Read `AGENTS.md`, [How we work](how-we-work.md), [Testing](testing.md) and this page first; they override the
   brief";
 - how it runs ([Running without losing the cache](#cache)): it works local-first, never pushes or waits on CI, and

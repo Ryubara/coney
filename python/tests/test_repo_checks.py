@@ -235,13 +235,16 @@ def test_an_empty_testing_section_is_reported(testing: str) -> None:
     "screenshots",
     [
         "![Coney after](https://github.com/user-attachments/assets/1234-abcd)",
-        "![](shot.png)",
+        "![](https://example.invalid/shot.png)",
         '<img width="640" alt="after" src="https://example.invalid/after.png">',
-        "<IMG src='after.png'>",
+        "<IMG src='https://example.invalid/after.png'>",
+        '<img src="https://github.com/user-attachments/assets/1234-abcd" width="320">',
+        '![after](https://example.invalid/after.png "Coney after")',
+        "![after](<https://example.invalid/a b.png>)",
         "Before: https://github.com/user-attachments/assets/1234-abcd\n"
         "After: https://github.com/user-attachments/files/5/x.mp4",
-        "| Before | After |\n| --- | --- |\n| ![b](b.png) | ![a](a.png) |",
-        "- **Coney before:** ...\n- **Coney after:** ![after](after.png)",
+        "| Before | After |\n| --- | --- |\n| ![b](https://example.invalid/b.png) | ![a](http://x.invalid/a.png) |",
+        "- **Coney before:** ...\n- **Coney after:** ![after](https://example.invalid/after.png)",
         "Screenshots: none (no visible change)",
         "screenshots: NONE (docs only)",
         "- **Screenshots:** none (research page only)",
@@ -274,6 +277,72 @@ def test_screenshots_with_an_image_or_a_reason_pass(screenshots: str) -> None:
 def test_screenshots_without_an_image_or_a_reason_are_reported(screenshots: str) -> None:
     problems = check_body(body(screenshots=screenshots), BODY_RULES)
     assert any("'## Screenshots'" in problem and "Screenshots: none" in problem for problem in problems), problems
+
+
+@pytest.mark.parametrize(
+    ("screenshots", "path"),
+    [
+        ("![Coney after](./shots/x.png)", "./shots/x.png"),
+        ("![](shot.png)", "shot.png"),
+        ("![after](shots/after.png)", "shots/after.png"),
+        ('![after](../shots/after.png "Coney after")', "../shots/after.png"),
+        ("![after](<./shots/my after.png>)", "./shots/my after.png"),
+        ("![after](C:\\scratch\\shots\\after.png)", "C:\\scratch\\shots\\after.png"),
+        ("![after](file:///tmp/after.png)", "file:///tmp/after.png"),
+        ('<img alt="after" src="./shots/x.png">', "./shots/x.png"),
+        ("<IMG src='after.png'>", "after.png"),
+        ("![b](https://github.com/user-attachments/assets/1234-abcd)\n![a](./shots/a.png)", "./shots/a.png"),
+        ("Screenshots: none (no visible change)\n![a](./shots/a.png)", "./shots/a.png"),
+    ],
+)
+def test_an_image_that_is_a_local_file_is_reported(screenshots: str, path: str) -> None:
+    problems = check_body(body(screenshots=screenshots), BODY_RULES)
+    expected = f"'{path}' is a local file: attach it with gh --attach (gh 2.99+) so it uploads"
+    assert any("'## Screenshots'" in problem and expected in problem for problem in problems), problems
+
+
+def test_each_local_image_is_reported_once() -> None:
+    problems = check_body(body(screenshots="![b](./shots/b.png)\n![a](./shots/a.png)"), BODY_RULES)
+    assert len([problem for problem in problems if "is a local file" in problem]) == 2
+
+
+@pytest.mark.parametrize(
+    ("summary", "path"),
+    [
+        ("The captures are in scratch/pr-testing-shots/shots.", "scratch/pr-testing-shots/shots"),
+        ("See ../../scratch/x/PR.md for more.", "../../scratch/x/PR.md"),
+        (r"Saved at C:\Repositories\Coney\scratch\x\a.png", r"C:\Repositories\Coney\scratch\x\a.png"),
+        ("Saved at c:/Repositories/Coney/scratch/x/a.png.", "c:/Repositories/Coney/scratch/x/a.png"),
+        (r"Saved at D:\shots", r"D:\shots"),
+        ("The files are in ../../worktrees/coney/x.", "../../worktrees/coney/x"),
+        (r"Built in scratch\build", r"scratch\build"),
+    ],
+)
+def test_a_local_path_in_the_text_is_reported(summary: str, path: str) -> None:
+    problems = check_body(body(summary=summary), BODY_RULES)
+    assert any(f"'{path}' is a local path" in problem for problem in problems), problems
+
+
+def test_a_local_path_in_any_section_is_reported() -> None:
+    problems = check_body(body(testing="- ran it from scratch/pr/x.log: 12 passed"), BODY_RULES)
+    assert any("'scratch/pr/x.log' is a local path" in problem for problem in problems), problems
+
+
+@pytest.mark.parametrize(
+    "summary",
+    [
+        "Run `cd scratch/<branch>` first.",
+        "```sh\ncd scratch/x\ngh pr create --attach ./shots/a.png\n```",
+        "~~~\n" + r"C:\Repositories\Coney" + "\n~~~",
+        "See https://example.invalid/scratch/x and https://example.invalid/a/../../b.",
+        "A scratch folder, kept scratch-free; the base:/ style is not a drive. Time 10:30/11:00.",
+        "![after](./shots/after.png) and <img src='../../x.png'>",
+        r"<!-- C:\Repositories\Coney is only in a comment -->",
+    ],
+)
+def test_code_urls_images_and_comments_are_not_local_paths(summary: str) -> None:
+    problems = check_body(body(summary=summary), BODY_RULES)
+    assert not any("is a local path" in problem for problem in problems), problems
 
 
 def test_screenshots_are_not_looked_for_outside_their_section() -> None:

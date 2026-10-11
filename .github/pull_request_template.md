@@ -31,9 +31,12 @@ Remaining:
 ## Screenshots
 
 <!-- For anything a player can see, show it: Coney before, Coney after and, where it applies, the original
-     (PCSX2) from the same place. Drag a PNG or a short video into this box on GitHub to attach it; never commit
-     it (LEGAL.md). An agent saves its captures in scratch/<branch>/shots/ and names each one in a comment line
-     of this section ("shot: before.png"); the coordinator attaches them when opening the pull request.
+     (PCSX2) from the same place. Write each picture as a Markdown image, `![alt](./shots/file.png)`; it is
+     uploaded with `gh pr create --body-file ... --attach ./shots/file.png` (gh 2.99+), or drag a PNG or a short
+     video into this box on GitHub. Never commit it (LEGAL.md). An agent keeps its captures in
+     scratch/<branch>/shots/ and writes the image references with paths relative to that folder; the coordinator
+     attaches them when opening the pull request. The text never names a path on your machine (no scratch/...,
+     ../../..., C:\...): say "the scratch folder"; only these image references may be local.
      When nothing visible changes, replace the three lines with one: `Screenshots: none (<reason>)`, for example
      `Screenshots: none (no visible change)`. -->
 
