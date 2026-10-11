@@ -43,3 +43,6 @@ __pycache__/
 /.claude/settings.local.json
 /.claude/scheduled_tasks.lock
 /.claude/worktrees/
+
+# The marker an agent creates in its worktree while it works (docs/guides/workspace.md#cleanup)
+/.coney-busy

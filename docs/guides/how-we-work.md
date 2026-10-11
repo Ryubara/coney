@@ -147,6 +147,12 @@ something:
   virtual-machine builds locally when the project's CI covers them. On Windows that means no WSL builds and no
   clang-tidy runs: GitHub CI is the Linux and macOS gate, and a failure there is fixed forward on the branch
   ([CI](building.md#what-ci-runs)).
+- **Keep the drive from filling up.** A build is about 4 GB and every track has its own worktree, so forgotten
+  worktrees fill a drive (once down to 3 GB free, which broke builds). An agent creates a `.coney-busy` file in its
+  worktree when it starts and deletes it when it finishes, and deletes its own `build/` folder when it hands over a
+  unit. The coordinator runs `coney-tools workspace clean --apply` after every merge round (it removes merged
+  worktrees and old build folders, and never touches busy or unmerged work) and `coney-tools workspace disk` before
+  starting builds: below 30 GB free it cleans first ([Cleanup](workspace.md#cleanup)).
 - **Heavy builds take a slot.** A full engine build uses every core, so only a few run at once: the coordinator
   sets the number the machine can take, records it in its state file and gives each building track a slot, staggering
   the rest. Tracks that only read, write docs or drive the emulator need no slot.

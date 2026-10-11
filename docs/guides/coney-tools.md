@@ -596,3 +596,14 @@ Every step already done is skipped; `--dry-run` only prints them. It never downl
 codes: 1 when a prerequisite of the engine is missing, 2 for a usage error. The launchers `bootstrap.sh` and
 `bootstrap.ps1` install uv (a pinned version, with Astral's installer, which adds it to `PATH`) and run it. What each
 step does and the pinned versions: [Bootstrap](workspace.md#bootstrap).
+
+```sh
+uv run --project python coney-tools workspace clean [--apply] [--build-hours N] [--worktree-hours N] [--fetch]
+uv run --project python coney-tools workspace disk [--min-gb N]
+```
+
+`clean` removes the worktrees whose work is merged (with their local branches) and deletes the `build/` folders
+nobody has touched for `--build-hours` (default 12), skipping any worktree holding a `.coney-busy` file; it is a dry
+run without `--apply`, and reports the bytes reclaimed and the free space before and after. `disk` prints the
+workspace drive's free space and exits 1 below `--min-gb` (default 30). Rules and the busy file:
+[Cleanup](workspace.md#cleanup).
