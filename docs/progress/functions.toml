@@ -2216,6 +2216,16 @@ name = "Im2D_DrawTexturedDisc"
 subsystem = "Graphics"
 
 [[function]]
+address = 0x0017bec8
+name = "Im2D_DrawArc"
+subsystem = "Graphics"
+
+[[function]]
+address = 0x0017c308
+name = "Shape2D_DrawQueued"
+subsystem = "Graphics"
+
+[[function]]
 address = 0x0017c508
 name = "Light_InitFromDescriptor"
 subsystem = "Graphics"
@@ -3069,6 +3079,11 @@ address = 0x001b7a18
 name = "LockPickDial_SetDifficulty"
 subsystem = "GUI"
 size = 336
+
+[[function]]
+address = 0x001b7c10
+name = "LockPickDial_ApplyVideoMode"
+subsystem = "GUI"
 
 [[function]]
 address = 0x001b7eb0
