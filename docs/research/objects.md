@@ -782,8 +782,8 @@ addresses cited unless marked.
    a weight; category 14, the Warriors, is not one of the categories 9, 10, 13 that get 0) ([AI: picking the attack
    kind](ai.md#pick-attack)); `Human_CanStartAttack` measures kinds 0, 1 and 5 with the set's clips (set 3: 36, 34,
    35; set 2: 41, 39, 40; set 1: 47, 45, 46), and the fight goal lets an armed fighter attack from anywhere within
-   1.1 × the far range ([AI: objects in an AI's hands](ai.md#ai-objects)). A set 1 throwable lets kinds 0 and 1 reach 12 m
-   (thrown), set 4 15 m, set 5 30 m.
+   1.1 × the far range ([AI: objects in an AI's hands](ai.md#ai-objects)). A set 1 throwable lets kinds 0 and 1 reach
+   12 m (thrown), set 4 15 m, set 5 30 m.
 5. **What he keeps.** Outside co-op a Warrior holding an object of kind 4 or 6 (the overhead props and the ghetto
    blasters) **drops it** once his enemy list is empty and no steal tactic runs (`WarriorBrain_Think` `0x003052f0`,
    step 3); a bat, baton, knife or throwable stays in his hand until he uses, throws or swaps it, or a hit makes him

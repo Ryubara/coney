@@ -2609,7 +2609,8 @@ at the addresses cited unless marked; "teammate" is a human friendly to the play
    (`+0x152`). A hit with no window open opens one of 10 s (the Warrior's brain `+0x2dc` = now + 10000 ms; an
    expired one is cleared with its count, byte `+0x2e4`); each later hit inside it adds 1 to the count, and the hit
    that brings it to 3, **the fourth hit within 10 s** (or the second, while the chief's own brain byte `+0x2e4` shows
-   another Warrior already hitting back), clears the window and makes him push **AttackTarget** (`AttackTargetGoal_Push(him, chief, 20000)`) for
+   another Warrior already hitting back), clears the window and makes him push **AttackTarget**
+   (`AttackTargetGoal_Push(him, chief, 20000)`) for
    20 s, after popping a TauntPlayer goal on top. When the chief is a war chief (`+0x3ac` = 1) with a command in
    force, the command is re-issued as 0 and the chief's command menu is locked (`+0x42e` + player = 1). While one
    hits back, the [player's update](ai.md#think-player) gives every free member within 15 m **TauntPlayer**: the
@@ -2638,7 +2639,8 @@ at the addresses cited unless marked; "teammate" is a human friendly to the play
 5. Thrown bodies strike teammates too (the knockdown with no damage).
 6. With the human blocking in (item 40): head-on contact at a jog or faster for 2 s swaps the two places.
 7. Tests: square into a teammate 0.8 m ahead plays a hit reaction on him and leaves his health unchanged; three such
-   hits within 10 s leave him alone and a fourth starts his AttackTarget on the player; circle with only a teammate in reach plays 71 then 69.
+   hits within 10 s leave him alone and a fourth starts his AttackTarget on the player; circle with only a teammate in
+   reach plays 71 then 69.
    Deferred: runtime (PCSX2, any street level with the crew following, the player behind a standing Warrior, stick
    centred): press square four times 1 s apart and read the Warrior's health, clip ids and goal stack; tap circle
    and read the player's clips (expected 71, 69).
