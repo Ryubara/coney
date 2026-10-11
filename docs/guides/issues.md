@@ -30,14 +30,16 @@ required checkbox that says so. A maintainer deletes an attachment that breaks t
 
 ## Labels {#labels}
 
-The labels live in `.github/labels.yml`, the one source of truth: edit that file, never the labels on GitHub. The
-coordinator makes GitHub match it with `coney-tools repo labels --apply`; without `--apply` the command prints the
+The label scheme follows rust-lang/rust's prefixes (`A-` for the area, `P-` for the priority, `S-` for the status),
+so contributors who know that project recognise it. The labels live in `.github/labels.yml`, the one source of
+truth: edit that file, never the labels on GitHub. The coordinator
+makes GitHub match it with `coney-tools repo labels --apply`; without `--apply` the command prints the
 `gh label create ... --force` commands instead of running them.
 
 | Family | Labels | Meaning |
 | --- | --- | --- |
 | Type | `bug`, `parity`, `task`, `docs`, `enhancement` | What kind of issue it is. `parity` is a difference from the original; `enhancement` is beyond the original and waits until the game is complete ([Faithful first](repo:AGENTS.md)). |
-| Area | `A-combat`, `A-ai`, `A-missions`, `A-hud`, `A-graphics`, `A-audio`, `A-physics`, `A-camera`, `A-tools` | The subsystem. The task form's area list is the same list. |
+| Area | `A-combat`, `A-ai`, `A-missions`, `A-hud`, `A-graphics`, `A-audio`, `A-physics`, `A-camera`, `A-platform`, `A-core`, `A-tools` | The subsystem. The task form's area list is the same list. |
 | Priority | `P-high`, `P-medium`, `P-low` | How soon. Set by the coordinator. |
 | Status | `S-needs-triage`, `S-needs-info`, `S-needs-research`, `S-in-progress`, `S-pending-review`, `S-blocked` | Where the issue is in its life; one at a time. |
 | GitHub's own | `good first issue`, `help wanted`, `duplicate`, `wontfix` | Kept as GitHub names them. |

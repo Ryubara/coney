@@ -34,7 +34,7 @@ labels:
     description: "Area: HUD, menus, text, prompts"
   - name: A-graphics
     color: c5def5
-    description: "Area: rendering, models, textures, effects, lighting"
+    description: "Area: rendering, models, textures, animation, effects, lighting"
   - name: A-audio
     color: c5def5
     description: "Area: sound, music, speech"
@@ -44,6 +44,12 @@ labels:
   - name: A-camera
     color: c5def5
     description: "Area: cameras and cutscenes"
+  - name: A-platform
+    color: c5def5
+    description: "Area: window, input, gamepad, rumble, saves, loading, disc files"
+  - name: A-core
+    color: c5def5
+    description: "Area: engine core: memory, chunks, tasks, scripting runtime"
   - name: A-tools
     color: c5def5
     description: "Area: coney-tools, build, CI, the sandbox"

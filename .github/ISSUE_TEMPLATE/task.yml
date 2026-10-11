@@ -29,6 +29,8 @@ body:
         - A-audio
         - A-physics
         - A-camera
+        - A-platform
+        - A-core
         - A-tools
     validations:
       required: true
