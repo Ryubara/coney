@@ -151,6 +151,7 @@ namespace {
 // A path along x at y = 100: `count` points 3 cells apart from x = 20.
 std::vector<TagCell> straightPath(int count) {
     std::vector<TagCell> path;
+    path.reserve(static_cast<std::size_t>(count));
     for (int i = 0; i < count; ++i) {
         path.push_back(TagCell{20 + (3 * i), 100});
     }
