@@ -681,6 +681,7 @@ subsystem = "Audio"
 address = 0x0011b838
 name = "Camera_GetActiveHandle"
 subsystem = "Camera"
+size = 80
 
 [[function]]
 address = 0x0011b888
@@ -692,41 +693,49 @@ size = 152
 address = 0x0011b920
 name = "Camera_GetPositionByHandle"
 subsystem = "Camera"
+size = 80
 
 [[function]]
 address = 0x0011bad8
 name = "Camera_ResetByHandle"
 subsystem = "Camera"
+size = 192
 
 [[function]]
 address = 0x0011bb98
 name = "Camera_SetClipping"
 subsystem = "Camera"
+size = 176
 
 [[function]]
 address = 0x0011bdc0
 name = "Camera_LockLocked"
 subsystem = "Camera"
+size = 88
 
 [[function]]
 address = 0x0011be18
 name = "Camera_CreateThird"
 subsystem = "Camera"
+size = 400
 
 [[function]]
 address = 0x0011bfa8
 name = "Camera_SetupFollow"
 subsystem = "Camera"
+size = 272
 
 [[function]]
 address = 0x0011c0b8
 name = "CfgFollowCamera"
 subsystem = "Camera"
+size = 440
 
 [[function]]
 address = 0x0011c270
 name = "Camera_TargetList"
 subsystem = "Camera"
+size = 128
 
 [[function]]
 address = 0x0011c2f0
@@ -738,21 +747,25 @@ size = 200
 address = 0x0011c3b8
 name = "Camera_SetFollowPitch"
 subsystem = "Camera"
+size = 184
 
 [[function]]
 address = 0x0011c470
 name = "Camera_SetFollowZoom"
 subsystem = "Camera"
+size = 456
 
 [[function]]
 address = 0x0011c638
 name = "Camera_SetFollowPosition"
 subsystem = "Camera"
+size = 128
 
 [[function]]
 address = 0x0011c6b8
 name = "Camera_CreateFixed"
 subsystem = "Camera"
+size = 416
 
 [[function]]
 address = 0x0011c858
@@ -764,56 +777,67 @@ size = 392
 address = 0x0011c9e0
 name = "Camera_SetupPoizo"
 subsystem = "Camera"
+size = 400
 
 [[function]]
 address = 0x0011cb70
 name = "Camera_ReversePoizo"
 subsystem = "Camera"
+size = 64
 
 [[function]]
 address = 0x0011cbb0
 name = "Camera_AddPoizoPoint"
 subsystem = "Camera"
+size = 184
 
 [[function]]
 address = 0x0011cc68
 name = "Camera_AddPoizoPointCam"
 subsystem = "Camera"
+size = 128
 
 [[function]]
 address = 0x0011cce8
 name = "Camera_SetupRail"
 subsystem = "Camera"
+size = 648
 
 [[function]]
 address = 0x0011cf70
 name = "Camera_SetRailLead"
 subsystem = "Camera"
+size = 296
 
 [[function]]
 address = 0x0011d098
 name = "Camera_AddRailPoint"
 subsystem = "Camera"
+size = 232
 
 [[function]]
 address = 0x0011d228
 name = "Camera_ModifyRail"
 subsystem = "Camera"
+size = 1504
 
 [[function]]
 address = 0x0011dcf0
 name = "Camera_SetFollowSecondary"
 subsystem = "Camera"
+size = 136
 
 [[function]]
 address = 0x0011dd78
 name = "Camera_CanSeeObject"
 subsystem = "Camera"
+size = 224
 
 [[function]]
 address = 0x0011de58
 name = "Camera_EnableFeature"
 subsystem = "Camera"
+size = 592
 
 [[function]]
 address = 0x0011e0a8
@@ -831,16 +855,19 @@ size = 24
 address = 0x0011e878
 name = "Cameras_Update"
 subsystem = "Camera"
+size = 256
 
 [[function]]
 address = 0x0011ee08
 name = "Camera_MakeActive"
 subsystem = "Camera"
+size = 2984
 
 [[function]]
 address = 0x0011fbb0
 name = "Camera_GetPlayerRail"
 subsystem = "Camera"
+size = 232
 
 [[function]]
 address = 0x001202e8
@@ -852,16 +879,19 @@ size = 152
 address = 0x001205e8
 name = "Cam3rdPerson_Update"
 subsystem = "Camera"
+size = 456
 
 [[function]]
 address = 0x001210f8
 name = "Cam_StartShake"
 subsystem = "Camera"
+size = 416
 
 [[function]]
 address = 0x00121298
 name = "Cam_UpdateShake"
 subsystem = "Camera"
+size = 1160
 
 [[function]]
 address = 0x00122248
@@ -903,26 +933,31 @@ size = 688
 address = 0x00124000
 name = "CamFixed_ComputeLookAt"
 subsystem = "Camera"
+size = 584
 
 [[function]]
 address = 0x00124690
 name = "CamFixed_Update"
 subsystem = "Camera"
+size = 232
 
 [[function]]
 address = 0x00124d00
 name = "Cam_Follow_Reset"
 subsystem = "Camera"
+size = 568
 
 [[function]]
 address = 0x00124f38
 name = "Cam_Follow_PlaceBehind"
 subsystem = "Camera"
+size = 368
 
 [[function]]
 address = 0x001250a8
 name = "Cam_Follow_PlaceAtHeading"
 subsystem = "Camera"
+size = 1096
 
 [[function]]
 address = 0x001254f0
@@ -934,11 +969,13 @@ size = 152
 address = 0x00125888
 name = "Cam_Follow_ApplyConfig"
 subsystem = "Camera"
+size = 352
 
 [[function]]
 address = 0x00125cc0
 name = "Cam_Follow_Activate"
 subsystem = "Camera"
+size = 400
 
 [[function]]
 address = 0x00126a30
@@ -968,6 +1005,7 @@ size = 784
 address = 0x00129f88
 name = "Cam_Follow_AutoCentre"
 subsystem = "Camera"
+size = 1144
 
 [[function]]
 address = 0x0012a400
@@ -985,111 +1023,133 @@ size = 376
 address = 0x0012ae58
 name = "Cam_Follow_Update"
 subsystem = "Camera"
+size = 9568
 
 [[function]]
 address = 0x0012d4e8
 name = "Cam_Follow_Pitch"
 subsystem = "Camera"
+size = 416
 
 [[function]]
 address = 0x0012d688
 name = "Cam_Follow_Yaw"
 subsystem = "Camera"
+size = 288
 
 [[function]]
 address = 0x0012d7a8
 name = "Cam_Follow_MoveBand"
 subsystem = "Camera"
+size = 352
 
 [[function]]
 address = 0x0012e170
 name = "Cam_Follow_KeepInView"
 subsystem = "Camera"
+size = 2104
 
 [[function]]
 address = 0x0012e9a8
 name = "Cam_Follow_FrameEnemy"
 subsystem = "Camera"
+size = 680
 
 [[function]]
 address = 0x00130990
 name = "Cam_Follow_Collide"
 subsystem = "Camera"
+size = 16672
 
 [[function]]
 address = 0x001353e0
 name = "CamLocked_BuildOrientation"
 subsystem = "Camera"
+size = 536
 
 [[function]]
 address = 0x00135680
 name = "Cam_Locked_Update"
 subsystem = "Camera"
+size = 592
 
 [[function]]
 address = 0x001358d0
 name = "LockedCam_SetKeptInView"
 subsystem = "Camera"
+size = 144
 
 [[function]]
 address = 0x00135960
 name = "LockedCam_PushInsideSides"
 subsystem = "Camera"
+size = 840
 
 [[function]]
 address = 0x00135ca8
 name = "LockedCam_KeepHumansInView"
 subsystem = "Camera"
+size = 920
 
 [[function]]
 address = 0x0013b2b8
 name = "CamRail_Reset"
 subsystem = "Camera"
+size = 160
 
 [[function]]
 address = 0x0013b780
 name = "CamRail_AppendPoint"
 subsystem = "Camera"
+size = 56
 
 [[function]]
 address = 0x0013d010
 name = "CamRail_Update"
 subsystem = "Camera"
+size = 1696
 
 [[function]]
 address = 0x0013f930
 name = "CamRail_EaseValue"
 subsystem = "Camera"
+size = 128
 
 [[function]]
 address = 0x00142578
 name = "PoizoCam_Reverse"
 subsystem = "Camera"
+size = 280
 
 [[function]]
 address = 0x001426c0
 name = "PoizoCam_Update"
 subsystem = "Camera"
+size = 920
 
 [[function]]
 address = 0x00142a58
 name = "PoizoCam_AddPoint"
 subsystem = "Camera"
+size = 112
 
 [[function]]
 address = 0x00142ac8
 name = "CamSpline_AddPointAngles"
 subsystem = "Camera"
+size = 608
 
 [[function]]
 address = 0x00143078
 name = "Cam_Blend_Start"
 subsystem = "Camera"
+size = 24
 
 [[function]]
 address = 0x00143590
 name = "Cam_Blend_Update"
 subsystem = "Camera"
+size = 904
 
 [[function]]
 address = 0x001439d8

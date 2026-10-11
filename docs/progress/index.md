@@ -28,17 +28,17 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 17.4%](https://img.shields.io/badge/reimplemented-17.4%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 19.1%](https://img.shields.io/badge/reimplemented-19.1%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 ![Understood: 99.9%](https://img.shields.io/badge/understood-99.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.4% of the game's own code (585,352 of 3,354,776 bytes, 2,159 functions) |
+| **Reimplemented** | `███▉░░░░░░░░░░░░░░░░` | 19.1% of the game's own code (641,048 of 3,354,776 bytes, 2,159 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 99.9% named in Ghidra and cited with evidence (3,282,584 of 3,284,276 bytes; 11,421 of 11,426 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-884 reimplemented function(s) have no size yet and add no bytes.
+824 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -65,7 +65,7 @@ at the top of the repository's `README.md`.
 | --- | --- | --- | --- | --- |
 | `Animation` | `███████▏░░░░░░░░░░░░` | 35.5% | 30 | 54,616 |
 | `Audio` | `█▋░░░░░░░░░░░░░░░░░░` | 8.4% | 91 | 57,368 |
-| `Camera` | `█▏░░░░░░░░░░░░░░░░░░` | 5.6% | 81 | 165,680 |
+| `Camera` | `███████▉░░░░░░░░░░░░` | 39.2% | 81 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
@@ -266,85 +266,85 @@ at the top of the repository's `README.md`.
 | `0x0011a170` | `Task_Update` | `Audio` | not filled in |
 | `0x0011b450` | `StereoSlot_Claim` | `Audio` | not filled in |
 | `0x0011b498` | `StereoSlot_Take` | `Audio` | not filled in |
-| `0x0011b838` | `Camera_GetActiveHandle` | `Camera` | not filled in |
+| `0x0011b838` | `Camera_GetActiveHandle` | `Camera` | 80 |
 | `0x0011b888` | `Camera_Delete` | `Camera` | 152 |
-| `0x0011b920` | `Camera_GetPositionByHandle` | `Camera` | not filled in |
-| `0x0011bad8` | `Camera_ResetByHandle` | `Camera` | not filled in |
-| `0x0011bb98` | `Camera_SetClipping` | `Camera` | not filled in |
-| `0x0011bdc0` | `Camera_LockLocked` | `Camera` | not filled in |
-| `0x0011be18` | `Camera_CreateThird` | `Camera` | not filled in |
-| `0x0011bfa8` | `Camera_SetupFollow` | `Camera` | not filled in |
-| `0x0011c0b8` | `CfgFollowCamera` | `Camera` | not filled in |
-| `0x0011c270` | `Camera_TargetList` | `Camera` | not filled in |
+| `0x0011b920` | `Camera_GetPositionByHandle` | `Camera` | 80 |
+| `0x0011bad8` | `Camera_ResetByHandle` | `Camera` | 192 |
+| `0x0011bb98` | `Camera_SetClipping` | `Camera` | 176 |
+| `0x0011bdc0` | `Camera_LockLocked` | `Camera` | 88 |
+| `0x0011be18` | `Camera_CreateThird` | `Camera` | 400 |
+| `0x0011bfa8` | `Camera_SetupFollow` | `Camera` | 272 |
+| `0x0011c0b8` | `CfgFollowCamera` | `Camera` | 440 |
+| `0x0011c270` | `Camera_TargetList` | `Camera` | 128 |
 | `0x0011c2f0` | `Camera_SetFollowHeading` | `Camera` | 200 |
-| `0x0011c3b8` | `Camera_SetFollowPitch` | `Camera` | not filled in |
-| `0x0011c470` | `Camera_SetFollowZoom` | `Camera` | not filled in |
-| `0x0011c638` | `Camera_SetFollowPosition` | `Camera` | not filled in |
-| `0x0011c6b8` | `Camera_CreateFixed` | `Camera` | not filled in |
+| `0x0011c3b8` | `Camera_SetFollowPitch` | `Camera` | 184 |
+| `0x0011c470` | `Camera_SetFollowZoom` | `Camera` | 456 |
+| `0x0011c638` | `Camera_SetFollowPosition` | `Camera` | 128 |
+| `0x0011c6b8` | `Camera_CreateFixed` | `Camera` | 416 |
 | `0x0011c858` | `Camera_CreateWin` | `Camera` | 392 |
-| `0x0011c9e0` | `Camera_SetupPoizo` | `Camera` | not filled in |
-| `0x0011cb70` | `Camera_ReversePoizo` | `Camera` | not filled in |
-| `0x0011cbb0` | `Camera_AddPoizoPoint` | `Camera` | not filled in |
-| `0x0011cc68` | `Camera_AddPoizoPointCam` | `Camera` | not filled in |
-| `0x0011cce8` | `Camera_SetupRail` | `Camera` | not filled in |
-| `0x0011cf70` | `Camera_SetRailLead` | `Camera` | not filled in |
-| `0x0011d098` | `Camera_AddRailPoint` | `Camera` | not filled in |
-| `0x0011d228` | `Camera_ModifyRail` | `Camera` | not filled in |
-| `0x0011dcf0` | `Camera_SetFollowSecondary` | `Camera` | not filled in |
-| `0x0011dd78` | `Camera_CanSeeObject` | `Camera` | not filled in |
-| `0x0011de58` | `Camera_EnableFeature` | `Camera` | not filled in |
+| `0x0011c9e0` | `Camera_SetupPoizo` | `Camera` | 400 |
+| `0x0011cb70` | `Camera_ReversePoizo` | `Camera` | 64 |
+| `0x0011cbb0` | `Camera_AddPoizoPoint` | `Camera` | 184 |
+| `0x0011cc68` | `Camera_AddPoizoPointCam` | `Camera` | 128 |
+| `0x0011cce8` | `Camera_SetupRail` | `Camera` | 648 |
+| `0x0011cf70` | `Camera_SetRailLead` | `Camera` | 296 |
+| `0x0011d098` | `Camera_AddRailPoint` | `Camera` | 232 |
+| `0x0011d228` | `Camera_ModifyRail` | `Camera` | 1,504 |
+| `0x0011dcf0` | `Camera_SetFollowSecondary` | `Camera` | 136 |
+| `0x0011dd78` | `Camera_CanSeeObject` | `Camera` | 224 |
+| `0x0011de58` | `Camera_EnableFeature` | `Camera` | 592 |
 | `0x0011e0a8` | `Camera_SetSplitMode` | `Camera` | 56 |
 | `0x0011e198` | `Camera_AssignReverseButton` | `Camera` | 24 |
-| `0x0011e878` | `Cameras_Update` | `Camera` | not filled in |
-| `0x0011ee08` | `Camera_MakeActive` | `Camera` | not filled in |
-| `0x0011fbb0` | `Camera_GetPlayerRail` | `Camera` | not filled in |
+| `0x0011e878` | `Cameras_Update` | `Camera` | 256 |
+| `0x0011ee08` | `Camera_MakeActive` | `Camera` | 2,984 |
+| `0x0011fbb0` | `Camera_GetPlayerRail` | `Camera` | 232 |
 | `0x001202e8` | `Camera_AnyPlayerCanSeePoint` | `Camera` | 152 |
-| `0x001205e8` | `Cam3rdPerson_Update` | `Camera` | not filled in |
-| `0x001210f8` | `Cam_StartShake` | `Camera` | not filled in |
-| `0x00121298` | `Cam_UpdateShake` | `Camera` | not filled in |
+| `0x001205e8` | `Cam3rdPerson_Update` | `Camera` | 456 |
+| `0x001210f8` | `Cam_StartShake` | `Camera` | 416 |
+| `0x00121298` | `Cam_UpdateShake` | `Camera` | 1,160 |
 | `0x00122248` | `Camera_SwitchTarget` | `Camera` | 104 |
 | `0x00122548` | `Camera_CanSeePoint` | `Camera` | 480 |
 | `0x00123630` | `CamFailed_Construct` | `Camera` | 136 |
 | `0x001236e0` | `CamFailed_Activate` | `Camera` | 424 |
 | `0x001238a8` | `CamFailed_Place` | `Camera` | 760 |
 | `0x00123bf0` | `CamFailed_Update` | `Camera` | 688 |
-| `0x00124000` | `CamFixed_ComputeLookAt` | `Camera` | not filled in |
-| `0x00124690` | `CamFixed_Update` | `Camera` | not filled in |
-| `0x00124d00` | `Cam_Follow_Reset` | `Camera` | not filled in |
-| `0x00124f38` | `Cam_Follow_PlaceBehind` | `Camera` | not filled in |
-| `0x001250a8` | `Cam_Follow_PlaceAtHeading` | `Camera` | not filled in |
+| `0x00124000` | `CamFixed_ComputeLookAt` | `Camera` | 584 |
+| `0x00124690` | `CamFixed_Update` | `Camera` | 232 |
+| `0x00124d00` | `Cam_Follow_Reset` | `Camera` | 568 |
+| `0x00124f38` | `Cam_Follow_PlaceBehind` | `Camera` | 368 |
+| `0x001250a8` | `Cam_Follow_PlaceAtHeading` | `Camera` | 1,096 |
 | `0x001254f0` | `Cam_Follow_StepZoom` | `Camera` | 152 |
-| `0x00125888` | `Cam_Follow_ApplyConfig` | `Camera` | not filled in |
-| `0x00125cc0` | `Cam_Follow_Activate` | `Camera` | not filled in |
+| `0x00125888` | `Cam_Follow_ApplyConfig` | `Camera` | 352 |
+| `0x00125cc0` | `Cam_Follow_Activate` | `Camera` | 400 |
 | `0x00126a30` | `Cam_Follow_EnableSprintZoom` | `Camera` | 56 |
 | `0x00127d88` | `Cam_Follow_LookAt` | `Camera` | 1,296 |
 | `0x00128cf0` | `Cam_Follow_SprintZoom` | `Camera` | 864 |
 | `0x00129c78` | `Cam_Follow_AutoFollow` | `Camera` | 784 |
-| `0x00129f88` | `Cam_Follow_AutoCentre` | `Camera` | not filled in |
+| `0x00129f88` | `Cam_Follow_AutoCentre` | `Camera` | 1,144 |
 | `0x0012a400` | `Cam_Follow_AutoFollowDefault` | `Camera` | 984 |
 | `0x0012aae0` | `Cam_Follow_EaseBand` | `Camera` | 376 |
-| `0x0012ae58` | `Cam_Follow_Update` | `Camera` | not filled in |
-| `0x0012d4e8` | `Cam_Follow_Pitch` | `Camera` | not filled in |
-| `0x0012d688` | `Cam_Follow_Yaw` | `Camera` | not filled in |
-| `0x0012d7a8` | `Cam_Follow_MoveBand` | `Camera` | not filled in |
-| `0x0012e170` | `Cam_Follow_KeepInView` | `Camera` | not filled in |
-| `0x0012e9a8` | `Cam_Follow_FrameEnemy` | `Camera` | not filled in |
-| `0x00130990` | `Cam_Follow_Collide` | `Camera` | not filled in |
-| `0x001353e0` | `CamLocked_BuildOrientation` | `Camera` | not filled in |
-| `0x00135680` | `Cam_Locked_Update` | `Camera` | not filled in |
-| `0x001358d0` | `LockedCam_SetKeptInView` | `Camera` | not filled in |
-| `0x00135960` | `LockedCam_PushInsideSides` | `Camera` | not filled in |
-| `0x00135ca8` | `LockedCam_KeepHumansInView` | `Camera` | not filled in |
-| `0x0013b2b8` | `CamRail_Reset` | `Camera` | not filled in |
-| `0x0013b780` | `CamRail_AppendPoint` | `Camera` | not filled in |
-| `0x0013d010` | `CamRail_Update` | `Camera` | not filled in |
-| `0x0013f930` | `CamRail_EaseValue` | `Camera` | not filled in |
-| `0x00142578` | `PoizoCam_Reverse` | `Camera` | not filled in |
-| `0x001426c0` | `PoizoCam_Update` | `Camera` | not filled in |
-| `0x00142a58` | `PoizoCam_AddPoint` | `Camera` | not filled in |
-| `0x00142ac8` | `CamSpline_AddPointAngles` | `Camera` | not filled in |
-| `0x00143078` | `Cam_Blend_Start` | `Camera` | not filled in |
-| `0x00143590` | `Cam_Blend_Update` | `Camera` | not filled in |
+| `0x0012ae58` | `Cam_Follow_Update` | `Camera` | 9,568 |
+| `0x0012d4e8` | `Cam_Follow_Pitch` | `Camera` | 416 |
+| `0x0012d688` | `Cam_Follow_Yaw` | `Camera` | 288 |
+| `0x0012d7a8` | `Cam_Follow_MoveBand` | `Camera` | 352 |
+| `0x0012e170` | `Cam_Follow_KeepInView` | `Camera` | 2,104 |
+| `0x0012e9a8` | `Cam_Follow_FrameEnemy` | `Camera` | 680 |
+| `0x00130990` | `Cam_Follow_Collide` | `Camera` | 16,672 |
+| `0x001353e0` | `CamLocked_BuildOrientation` | `Camera` | 536 |
+| `0x00135680` | `Cam_Locked_Update` | `Camera` | 592 |
+| `0x001358d0` | `LockedCam_SetKeptInView` | `Camera` | 144 |
+| `0x00135960` | `LockedCam_PushInsideSides` | `Camera` | 840 |
+| `0x00135ca8` | `LockedCam_KeepHumansInView` | `Camera` | 920 |
+| `0x0013b2b8` | `CamRail_Reset` | `Camera` | 160 |
+| `0x0013b780` | `CamRail_AppendPoint` | `Camera` | 56 |
+| `0x0013d010` | `CamRail_Update` | `Camera` | 1,696 |
+| `0x0013f930` | `CamRail_EaseValue` | `Camera` | 128 |
+| `0x00142578` | `PoizoCam_Reverse` | `Camera` | 280 |
+| `0x001426c0` | `PoizoCam_Update` | `Camera` | 920 |
+| `0x00142a58` | `PoizoCam_AddPoint` | `Camera` | 112 |
+| `0x00142ac8` | `CamSpline_AddPointAngles` | `Camera` | 608 |
+| `0x00143078` | `Cam_Blend_Start` | `Camera` | 24 |
+| `0x00143590` | `Cam_Blend_Update` | `Camera` | 904 |
 | `0x001439d8` | `Cam_Win_Start` | `Camera` | 632 |
 | `0x00143c78` | `Cam_Win_Update` | `Camera` | 552 |
 | `0x00143f68` | `Crc32_Hash` | `Core` | 112 |
