@@ -41,8 +41,21 @@ inline constexpr std::uint32_t kFontProportional = 0x04;
 inline constexpr float kShadowOffsetX = 0.0025F;
 inline constexpr float kShadowOffsetY = 0.004F;
 
+/// A rectangle base in place of the sheet's firstGlyph, which the text's `<MONEYFONT>` sets: character `c` is
+/// rectangle `base + (c - origin)`. The original keeps the low 16 bits of the base (`Page_Rect`), so its big_font
+/// value `0xd0100` is rectangle 256 here.
+///
+/// Research: docs/research/gui.md#moneyfont
+struct GlyphBase {
+    int base = 0;   ///< The rectangle of character `origin`.
+    int origin = 0; ///< The character drawn from `base`: `'0'` in part_page0, 1 in big_font.
+
+    friend bool operator==(const GlyphBase&, const GlyphBase&) = default;
+};
+
 /// A sprite sheet used as a font: character `c` (a byte) is rectangle `firstGlyph + c`, and the button and HUD icons
-/// are characters like any other. Measuring and drawing follow the original's text functions.
+/// are characters like any other. Measuring and drawing follow the original's text functions; each takes an optional
+/// GlyphBase that replaces firstGlyph for its characters.
 ///
 /// Research: docs/research/gui.md#text
 class Font {
@@ -54,32 +67,38 @@ class Font {
     /// The sheet.
     [[nodiscard]] const SpriteSheet& sheet() const { return m_sheet; }
 
-    /// The rectangle of `character`, or nothing when the sheet has no rectangle that far (Coney's choice: such a
-    /// character is skipped, taking no room).
-    [[nodiscard]] std::optional<UvRect> glyph(std::uint8_t character) const;
+    /// The rectangle of `character` (firstGlyph + c, or with `base` base.base + (c - base.origin)), or nothing when the
+    /// sheet has no rectangle there (Coney's choice: such a character is skipped, taking no room).
+    [[nodiscard]] std::optional<UvRect> glyph(std::uint8_t character,
+                                              std::optional<GlyphBase> base = std::nullopt) const;
 
     /// The drawn width of `character` in GUI units: w in fixed-width mode; in proportional mode the rectangle's shape
     /// at height h, wPx × w / hPx with wPx and hPx its size in texels rounded (+ 0.5, truncated). 0 for a character
     /// with no rectangle, and for a space (0x20) or 0xac, which are not drawn.
-    [[nodiscard]] float glyphWidth(std::uint8_t character, const FontMetrics& metrics, bool proportional) const;
+    [[nodiscard]] float glyphWidth(std::uint8_t character, const FontMetrics& metrics, bool proportional,
+                                   std::optional<GlyphBase> base = std::nullopt) const;
 
     /// How far `character` moves the pen: its width plus the spacing, or for a space (0x20) or 0xac
     /// (w + spacing) × 0.56, halved in proportional mode. 0 for a character with no rectangle.
-    [[nodiscard]] float advance(std::uint8_t character, const FontMetrics& metrics, bool proportional) const;
+    [[nodiscard]] float advance(std::uint8_t character, const FontMetrics& metrics, bool proportional,
+                                std::optional<GlyphBase> base = std::nullopt) const;
 
     /// The width of `text` in GUI units: the sum of its advances. Only kFontProportional of `flags` matters.
     /// @orig 0x00179958 Font_Measure (unknown)
-    [[nodiscard]] float measure(std::string_view text, const FontMetrics& metrics, std::uint32_t flags) const;
+    [[nodiscard]] float measure(std::string_view text, const FontMetrics& metrics, std::uint32_t flags,
+                                std::optional<GlyphBase> base = std::nullopt) const;
 
     /// Appends one sprite per drawn character of `text` to `out`, the pen starting at GUI x `x` (moved left by the
     /// width plus w / 2 with kFontRightAligned, by half the width with kFontCentred) and every glyph centred on GUI y
     /// `y`. Each glyph is a sprite centred at (pen + (width + spacing) / 2, y) of size (width, h), converted to the
     /// overlay camera's space, with the glyph's rectangle and `colour`. With a non-zero `shadowAlpha`, a black copy
     /// offset by (kShadowOffsetX, kShadowOffsetY) with alpha `shadowAlpha` × colour alpha / 255 comes just before each
-    /// glyph.
+    /// glyph. `base` picks each glyph's rectangle, but the alignment's measure is taken without it, as the original's
+    /// is (docs/research/gui.md#moneyfont).
     /// @orig 0x00179c30 Font_Draw (unknown)
     void draw(std::vector<Sprite>& out, std::string_view text, float x, float y, const FontMetrics& metrics,
-              std::uint32_t flags, Rgba colour, std::uint8_t shadowAlpha = 0) const;
+              std::uint32_t flags, Rgba colour, std::uint8_t shadowAlpha = 0,
+              std::optional<GlyphBase> base = std::nullopt) const;
 
   private:
     explicit Font(SpriteSheet sheet) : m_sheet(std::move(sheet)) {}
