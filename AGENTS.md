@@ -26,6 +26,8 @@ player's path, gamepad input, playthrough tests, the checks to run before report
   MSVC environment, `vcvars64.bat`). Presets `dev`, `release`, `ci` (warnings as errors), `asan` (Linux/macOS).
 - Python: `uv run --project python pytest python/tests`; `uvx pre-commit run --all-files` before committing.
 - Docs: `.venv/Scripts/python -m mkdocs build --strict`. Build details: `docs/guides/building.md`.
+- On Windows, no local WSL builds or clang-tidy runs: GitHub CI is the Linux and macOS gate, and a failure there is
+  fixed forward on the branch.
 
 ## Rules (never broken)
 
@@ -42,7 +44,13 @@ player's path, gamepad input, playthrough tests, the checks to run before report
   enhancements wait (designs may be written now); debug tooling is not a mechanic and is fine.
 - **Never exclude a file from the 512 KB large-file check** in `.pre-commit-config.yaml`: it catches game data
   committed by mistake. Split big generated data and pages instead.
-- Making the repo public, tagging releases, force-pushing and legal or licence questions are maintainer decisions.
+- Making the repo public, tagging releases, force-pushing `main` or someone else's branch, and legal or licence
+  questions are maintainer decisions. An agent may `git push --force-with-lease` its own pull-request branch.
+- **No agent waits on CI.** It pushes, opens the pull request, reports and ends; the coordinator watches CI and sends
+  a failure to a fresh agent (`docs/guides/agents.md`, "When a pull request fails checks").
+- **Limits on one agent's run:** about 45 minutes of waiting in total, or about 300 000 tokens of context. Past
+  either, commit, push, write the state file and report; a fresh agent continues (`docs/guides/agents.md`, "Running
+  without losing the cache").
 
 ## Code
 
