@@ -44,6 +44,9 @@ struct SpawnRecord {
     /// Seconds until its object breaks itself after a destroy message (a molotov's, world_objects::stepSelfBreaks());
     /// nothing while none is pending.
     std::optional<float> breakIn;
+    /// Counts the moves that put the object somewhere new at once (a script's move, a drop from a hand), so a render
+    /// between two steps does not blend across them (world_objects::DrawnPoses). **Coney's own**: rendering only.
+    std::uint32_t jumps = 0;
 };
 
 /// The `ObjectTaskManager`'s spawn records: `ObjSpawn` adds one and returns its handle; resolving the handle (a binding
