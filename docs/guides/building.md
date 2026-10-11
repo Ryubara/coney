@@ -1013,10 +1013,31 @@ runs, so a job recompiles only what changed; each job prints its hit rate at the
 
 | Workflow | Jobs |
 | --- | --- |
-| `build` | `ci` preset build and tests on Windows (MSVC), Linux (GCC 13 and Clang 19) and macOS (Apple Clang); `asan` preset on Linux Clang 19 and macOS; clang-tidy (a pull request: changed files only); pre-commit over every file |
-| `python` | ruff, mypy, pytest and `coney-tools repo check` on Windows, Linux and macOS |
+| `build` | `ci` preset build and tests on Windows (MSVC), Linux (GCC 13 and Clang 19) and macOS (Apple Clang); `asan` preset on Linux Clang 19 and macOS; clang-tidy (a pull request: changed files only); pre-commit over every file; the `build-ok` gate |
+| `python` | ruff, mypy, pytest and `coney-tools repo check` on Windows, Linux and macOS; the `python-ok` gate |
 | `docs` | `mkdocs build --strict`, markdownlint over every Markdown file, actionlint over the workflows |
 | `pr` | the pull request title and every commit title of it against the commit title rules (pull requests only) |
+
+### What a pull request runs {#what-a-pull-request-runs}
+
+Runners are shared (about 20 jobs at once, 5 of them on macOS), so a pull request runs only what its change can break.
+A `changes` job at the start of `build` and `python` decides, with `.github/scripts/ci-scope.sh`:
+
+| Change | `build`, `sanitizers`, `clang-tidy` | `python` | `format`, `docs`, `pr` workflows |
+| --- | --- | --- | --- |
+| Draft pull request (any change) | skipped | skipped | run |
+| Only documentation: `docs/`, `research/` (including `research/traces/`), Markdown files at the top level or in `.github/`, `mkdocs.yml`, `mkdocs_hooks.py`, `requirements-docs.txt`, `.markdownlint*` | skipped | Linux only | run |
+| Anything else (`src/`, `tests/`, `python/`, `cmake/`, `CMakeLists.txt`, `CMakePresets.json`, `.clang-*`, the workflows, `assets/`, a file not listed above) | run | all three OSes | run |
+| Push to `main` or `release/`, nightly run, manual run | run | all three OSes | run |
+
+`python` still runs on Linux for documentation because its repository checks compare `docs/` and `research/` with
+each other (missions, bindings, references, progress), and its tests read `research/traces/`. Marking a draft "Ready
+for review" starts the full run, so open work as a draft while it is unfinished and mark it ready when it should be
+checked. There is no merge queue.
+
+A skipped matrix job reports its name unexpanded (`build (${{ matrix.name }})`), so the per-platform jobs cannot be
+required checks. Each workflow ends with a gate job instead, `build-ok` and `python-ok`, which runs every time and
+fails when a job it covers failed or was cancelled; the ruleset on `main` requires the gates, not the jobs behind them.
 
 If a job fails, the commands above reproduce it locally. The workflow files under `.github/workflows/` are short and
 list every step.
