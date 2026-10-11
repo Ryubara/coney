@@ -468,6 +468,7 @@ void HumanAnimator::choose(const AnimInputs& inputs) {
         case AnimState::Attack:
         case AnimState::Hold:
         case AnimState::CombatWalk:
+        case AnimState::Workout:
             break;
         }
         m_state = next;
