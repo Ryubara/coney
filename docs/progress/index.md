@@ -33,12 +33,12 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.4% of the game's own code (585,352 of 3,354,776 bytes, 2,156 functions) |
+| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.4% of the game's own code (585,352 of 3,354,776 bytes, 2,159 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 99.9% named in Ghidra and cited with evidence (3,282,584 of 3,284,276 bytes; 11,421 of 11,426 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-881 reimplemented function(s) have no size yet and add no bytes.
+884 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -71,8 +71,8 @@ at the top of the repository's `README.md`.
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
 | `FileIO` | `███▍░░░░░░░░░░░░░░░░` | 17.0% | 10 | 7,120 |
 | `GameModes` | `██████▋░░░░░░░░░░░░░` | 33.1% | 117 | 100,440 |
-| `Graphics` | `██▋░░░░░░░░░░░░░░░░░` | 12.8% | 91 | 195,624 |
-| `GUI` | `████▏░░░░░░░░░░░░░░░` | 20.7% | 246 | 497,416 |
+| `Graphics` | `██▋░░░░░░░░░░░░░░░░░` | 12.8% | 93 | 195,624 |
+| `GUI` | `████▏░░░░░░░░░░░░░░░` | 20.7% | 247 | 497,416 |
 | `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.8% | 802 | 1,096,672 |
 | `Maths (unnamed)` | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% | 9 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
@@ -533,6 +533,8 @@ at the top of the repository's `README.md`.
 | `0x0017b2e0` | `GroundRing_DrawQueued` | `Graphics` | 1,480 |
 | `0x0017b8a8` | `Im2D_DrawTexturedRing` | `Graphics` | not filled in |
 | `0x0017bc28` | `Im2D_DrawTexturedDisc` | `Graphics` | not filled in |
+| `0x0017bec8` | `Im2D_DrawArc` | `Graphics` | not filled in |
+| `0x0017c308` | `Shape2D_DrawQueued` | `Graphics` | not filled in |
 | `0x0017c508` | `Light_InitFromDescriptor` | `Graphics` | 392 |
 | `0x0017c840` | `Light_ApplyDescriptor` | `Graphics` | 592 |
 | `0x0017caa8` | `Light_UpdateFlickerAndCorona` | `Graphics` | 1,544 |
@@ -682,6 +684,7 @@ at the top of the repository's `README.md`.
 | `0x001b67b8` | `NumIndicator_Update` | `GUI` | 1,000 |
 | `0x001b6ba0` | `NumIndicator_Render` | `GUI` | 176 |
 | `0x001b7a18` | `LockPickDial_SetDifficulty` | `GUI` | 336 |
+| `0x001b7c10` | `LockPickDial_ApplyVideoMode` | `GUI` | not filled in |
 | `0x001b7eb0` | `LockPickDial_Init` | `GUI` | 968 |
 | `0x001b8428` | `LockPickDial_Show` | `GUI` | 264 |
 | `0x001b8530` | `LockPickDial_Draw` | `GUI` | 2,056 |

@@ -76,11 +76,22 @@ class LockPickHud {
     void setVideoMode(std::uint32_t deviceFlags) { m_deviceFlags = deviceFlags; }
 
     /// Player `player`'s dial in the video mode of device flags `deviceFlags`. Progressive modes have `0x20`, 16:9 ones
-    /// `0x04`; the interlaced 4:3 mode alone moves the shapes off the pins' centre, by (-0.005, +0.005).
+    /// `0x04`; the interlaced 4:3 mode alone moves the shapes off the pins' centre, by (-0.005, +0.005). The centres
+    /// are what Init and ApplyVideoMode write; the radius and pin factors and the shapes' override what Draw writes
+    /// every update.
+    ///
+    /// Research: docs/research/hud.md#lock-pick-dial-layout
+    /// @orig 0x001b7eb0 LockPickDial_Init (unknown)
+    /// @orig 0x001b7c10 LockPickDial_ApplyVideoMode (unknown)
+    /// @orig 0x001b8530 LockPickDial_Draw (unknown)
     [[nodiscard]] static LockPickLayout layout(std::size_t player, std::uint32_t deviceFlags);
     /// Rim vertex `j` (0 to 32) of a shape with radii `radius` (pixels), as an offset from its centre in screen pixels
     /// with y down: radius × (sin a, cos a), a = π − j × 2π / 32, so vertex 0 is straight up and the rim runs
     /// clockwise.
+    ///
+    /// Research: docs/research/hud.md#lock-pick-dial-layout
+    /// @orig 0x0017bec8 Im2D_DrawArc (unknown)
+    /// @orig 0x0017c308 Shape2D_DrawQueued (unknown)
     [[nodiscard]] static graphics::LogicalPoint rimOffset(graphics::LogicalPoint radius, int j);
     /// How many of a wedge's rim vertices on each side of its middle take the colour: floor(32 × `percent` / 100 / 2).
     /// The wedge is that many whole segments each side, then one segment fading to clear; nothing for 0 per cent.

@@ -2651,10 +2651,11 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   the hold), which need two players and the hold's states.
 - **The lock-pick dial** (`repo:src/hud/lock_pick_hud.h`, stepped by `PlayLevelMode::stepLockPickDial()`) as
   [the dial's layout](#lock-pick-dial-layout) says, while player 1 picks a lock: the three pins at the player's centre
-  point at distance 1, turned by their angles (gone once every pin is done), then over every sprite the good and perfect wedges (whole rim vertices
-  coloured, the next segment fading to clear) and the lock face, as 32-segment fans in 640 × 448 pixels with the
-  video mode's horizontal and vertical radii (the interlaced 4:3 mode in play, as the rest of the HUD). The shapes
-  go in two batches sorted above all the HUD's others, so they lie on top of the pins as `Shape2D_DrawQueued` does.
+  point at distance 1, turned by their angles (gone once every pin is done), then over every sprite the good and
+  perfect wedges (whole rim vertices coloured, the next segment fading to clear) and the lock face, as 32-segment
+  fans in 640 × 448 pixels with the video mode's horizontal and vertical radii (the interlaced 4:3 mode in play, as
+  the rest of the HUD). The shapes go in two batches sorted above all the HUD's others, so they lie on top of the
+  pins as `Shape2D_DrawQueued` does.
 - **The fixed-camera icon** (`repo:src/hud/fixed_cam_icon.h`) as [the icon](#hud-fixed-cam-icon) says: while player 1's
   camera is a locked one or camera switch 0 is off, pushing the right stick (a raw byte outside 64-176) shows
   `part_page0` rectangle 87 at (0.9, 0.64), fully opaque while held and fading over 1 s after; any other camera hides
