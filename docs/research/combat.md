@@ -194,6 +194,7 @@ The flags at human `+0xe0` that combat reads, confirmed (code) at the cited func
 
 | Bit | As the victim | As the attacker |
 | --- | --- | --- |
+| `0x8` | woundable (`HuSetWoundable`): health out leaves him wounded, not knocked out ([Defeat](#defeat)); a death reaction plays 205 into the loop 200, and 195 when he is down, instead of 349 (`Human_PlayDeathReaction`, `0x00267b70`). Cleared on the victim by a grab or mount power strike that will defeat him (`0x0027f3b0`, `0x0027ec20`) and by a stealth kill from behind (`Player_StartStealthKill`) | |
 | `0x20` | | the hit takes all the victim's health (`0x0021b290`) |
 | `0x80` | reaction strength capped at 1 (`0x00266d00`) | |
 | `0x100` | never stunned (`0x0026a6d0`) | |
@@ -204,6 +205,9 @@ The flags at human `+0xe0` that combat reads, confirmed (code) at the cited func
 | `0x80000` | | **raging** ([Rage](#rage)) |
 | `0x200000` | | reaction strength +1 (see `0x400`); ignores hit armour |
 | `0x4000000` | spends no power (`0x00226448`) | |
+| `0x1000000` | rubber-neck (`HuRubberNeck`, `0x0023a258`): no reader found; every load of human `+0xe0`-`+0xe7` in the executable (324 functions) was checked, and none tests this bit (inferred: unused) | |
+| `0x40000000` | front-grab block (`HuBlockGrab` sets it with `0x80000000`): `Grab_IntroEnd` (`0x0026c1d8`) refuses a front grab when the victim **or** the grabber has it (the intro ends in 69, the miss); a weapon's paired kill skips a target with it (`0x002880d8`) | the player's own: no spin from a rear grab to the front (`Player_UpdateGrabbing`, `0x0027f3b0`), no return from the mount to the front grab (`0x0027ec20`) |
+| `0x80000000` | rear-grab block (`HuBlockRearGrab`): `Grab_IntroEnd` refuses a rear grab when the victim or the grabber has it; a weapon's paired kill skips a target with it; a grabbed player with it cannot reverse the grab (`Player_UpdateGrabbed`, `0x0027fd68`) | the player's own: no spin to the rear (`0x0027f3b0`); a special attack skips its grab path (`0x00263c90`, [Strong grapple](#strong-grapple)); with `0x40000000` too, a circle tap does nothing (`Player_GrabOrTackle`, `0x00284920`: no intro, no miss, no grounded mount), while circle held still tackles (only `0x100000000` stops that) |
 | `0x400000000` | a block holds even against strength 3 (`0x00269f30`) | |
 | `0x2000000000` | never escapes when the grabber's power runs out | |
 | `0x20000000000` | one hit cannot take health below a fraction of the maximum (`0x00265f70`); it then sets `0x10` | |
@@ -345,9 +349,11 @@ The **Warrior class** record (`CfgWarriorClass`, `0x006b65c0 + c × 14`; class 6
 picked by type: [Power classes](characters.md#power-classes))
 was `4e 00 90 c8 f0 32 73 03 01 01 01 02 03 02`: s16 `+0x00` = 78 is the **rage maximum**, byte `+0x02` = 144 the
 rage gain percentage, `+0x03` = 200 the idle rage decay and `+0x04` = 240 the rage drain while raging (percent of
-the maximum per 20 s), `+0x06` = 115 the player's damage scale, byte `+0x08` picks the mash gain factor and byte
-`+0x0b` the stereo theft's turns, byte `+0x0c` the mugging parameters. Confirmed (runtime) for the bytes; the uses
-confirmed (code) at the functions below.
+the maximum per 20 s), `+0x05` = 50 the player's health percentage, `+0x06` = 115 the player's damage scale, byte
+`+0x07` picks the cuffing hold's times, `+0x08` the mash gain factor, `+0x09` the tagging tuning, `+0x0a` the
+lock-pick difficulty plus 1, `+0x0b` the stereo theft's turns and `+0x0c` the mugging parameters; `+0x0d` is never
+read. Confirmed (runtime) for the bytes; the uses confirmed (code) at the functions below and on [Warrior
+classes](../references/warrior-classes.md), which lists every byte's reader.
 
 ## Behaviour
 
@@ -361,7 +367,10 @@ confirmed (code) at the functions below.
    (`0x0027ffa0`), and returns 0 on command 4 (R1 held), so nothing else runs while R1 is held. This is the sprint's
    "other clear" on [Characters](characters.md#sprint). R1 held is read from the pad record (`0x00147f98`, 0 when
    per-player `+0x19` is −1), so **an AI human never starts a block**: command 4 alone does nothing
-   ([AI](ai.md#block)).
+   ([AI](ai.md#block)). The fight test fails while the human runs or sprints with record `+0x08` clear (gait 4 or
+   5, `0x00223a60`, `0x00223a98`), so **R1 at a run starts no block**: the run goes on and R1 only turns the camera
+   round ([Camera](camera.md#reverse)); the block starts the update the gait drops below 4. Confirmed (code);
+   confirmed (runtime).
 2. The chain (`0x00280630`), then the sprint (`0x0027d5a0`).
 3. The state routes: mugging (`0x100`) → `Player_UpdateMugging`; being mugged (`0x200`) → release; a theft
    (`0x4000000`) → `Player_UpdateTheft`; `0x8000000` / `0x10000000` → nothing; `0x400` → `0x0027ec20` (tackling);
@@ -1954,9 +1963,10 @@ side of mode 3. `Hold_GetParamsB(holder, held)` (`0x00283078`) serves the held p
 one in `0x006cdd78` / `0x006cdd98`. It builds one only when its subject (the holder for the first, the held for the
 second) is a player, and otherwise returns the last one built. The record's layout is the mugging's
 ([Mugging](#mugging)). The choice is by the **player's Warrior class byte `+0x07`** (`CfgWarriorClass`'s seventh
-value, 3 for Rembrandt's class 6 at runtime; its meaning is not traced). `Hold_GetParams` also chooses by the held
-human's category `+0x11b`: 5 and 6-7 are civilian groups (6 also the drunk Destroyers), 9 cops, 10 the tougher cops
-(`cops_ty`), 14 the Warriors. Times are in ms.
+value, 3 for Rembrandt's class 6 at runtime): the class's **cuffing** stat, whose only readers are these two
+functions ([Warrior classes](../references/warrior-classes.md), the "Cuffing" column). `Hold_GetParams` also
+chooses by the held human's category `+0x11b`: 5 and 6-7 are civilian groups (6 also the drunk
+Destroyers), 9 cops, 10 the tougher cops (`cops_ty`), 14 the Warriors. Times are in ms.
 
 `Hold_GetParams` (the holder), every set with bytes `+0x00`-`+0x02` = 160, 75, 255, off-target `+0x0c` = 50,000,
 tolerances `+0x10` = 40° and `+0x14` = 60°, off-target rumble `+0x1c` = 0:
@@ -3489,8 +3499,9 @@ record `0x0051489c + 0x168 + p × 0x5c`. Confirmed (code):
 - **Mode 3, the car radio here**: `0x0027e908`. Rotate the left stick **anticlockwise**, the stick above 0.8 in this
   update and the last, turning less than 90° per update. The angle turned adds to `+0x48`; at each stage's target the
   stage (`+0x4c`) advances after a 250 ms pause; **4 stages** succeed (`0x00278628(h, 1)`, 685 `STEREO_STEAL_END`).
-  The stage target was 6π (3 turns) here, from Warrior byte `+0x0b` (2); 2π applies otherwise (the exact condition
-  is inferred).
+  The stage target was 6π (3 turns) here, from Warrior byte `+0x0b` (2): the target is 2π (one turn) when the byte
+  is 0 or 1, else (byte − 1) × 6π, so 3 turns for 2 and 6 for 3 (`Human_GetClassSpinAngle`, confirmed (code) at
+  `0x0022dd08`).
 
 Any command outside the game's own set (square, circle, R1, L2 and others) **fails** it: 686 `STEREO_STEAL_FAIL`.
 At runtime 1.5 turns per second took 9.6 s to succeed, and one R1 press failed it. Confirmed (runtime).
@@ -4193,3 +4204,18 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
   `moves_finisher_lethal` with the `state-code` hook (record `+0x14`'s setter) logging `ra` on update 56, and if the
   setter is not the writer, search the damage and reaction code (`Human_UpdateActions`, `0x00254e78`, and what it
   calls) for a store that ORs `0x80000000` into `+0x14`.
+  One setter found since (2026-10-11): `Human_PlayDeathReaction` (`0x00267b70`) ends with
+  `Human_SetStateFlag(h, 0x80000000)`, confirmed (code); that it is the one at work on update 56 is inferred.
+- **Killer mode and double damage in a hold** (answered): both apply to every move of a hold. The grab strikes
+  (`Grab_Strike`, `0x0026e5f8`), the paired moves (`Attack_StartPaired`, `0x00262ac8`: power strikes, throws, the
+  mount power strike), `Grab_StartPairedMove` (`0x00263380`) and the mount strikes (`0x00270b38`, `0x00271ef0`) all
+  deal their damage through `Human_DealDamage` (`0x0021d680`) with the attacker passed, and that function applies the
+  attacker's `0x20` (a non-zero hit takes the victim's whole health) before `Human_AddPendingDamage` (`0x00264bd8`)
+  doubles the pending damage for the attacker's `0x4000`. The grab and mount power strikes even double the damage
+  themselves when they test whether it will defeat the victim (`0x0027f3b0`, `0x0027ec20`). Confirmed (code) at the
+  call sites `0x00262f28`, `0x002637cc`, `0x0026e690`, `0x00270f50`, `0x002722d4`. Links that deal 0 stay 0.
+- **A player with both grab-block flags** (answered, [Human flags](#human-flags)): he still tackles. `Player_GrabOrTackle`
+  (`0x00284920`) tests circle held first, refused only by `0x100000000`; the two grab bits together refuse only the
+  circle tap, before anything plays (no intro, no miss, no stance change, no grounded mount or tandem). Either bit
+  alone does not stop the tap there: `Grab_IntroEnd` then refuses the front or rear grab and the intro ends in 69.
+  Confirmed (code).

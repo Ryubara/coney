@@ -1,0 +1,26 @@
+# R1 held at a run: does a block start, and does the look-behind keep working? Research: docs/research/camera.md#reverse
+# and docs/research/combat.md#dispatch. Slot 1 (level99's street, nobody near). The stick at 98 % up gives a run;
+# R1 is held twice at the run, then held while the stick goes back to rest, then let go.
+description = "level99 street: R1 held at a run (stick 98 % up), then held through the stop; gait, speed, block and look-behind"
+research = "docs/research/camera.md#reverse"
+input = "run_block.txt"
+updates = 200
+fields = ["player", "held", "camera"]
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick"]
+
+[coney]
+level = "level99"
+
+# The look-behind: the follow camera's held reverse pad (+0x458) and its pulled-out band flag (+0x455).
+[[field]]
+name = "reverse_pad"
+address = "camera + 0x458"
+type = "u32"
+
+[[field]]
+name = "reverse_band"
+address = "camera + 0x455"
+type = "u8"

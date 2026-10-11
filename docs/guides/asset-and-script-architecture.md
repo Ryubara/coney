@@ -268,6 +268,57 @@ handlers, animation callbacks, trigger events) goes through one `ScriptScheduler
 and the instruction budget. Coroutines later become one more entry kind ("resume coroutine *n*"). Lua 4.0 has none,
 and the research shows the original's scripts waiting only through the schedule and callbacks, never inside a call.
 
+### Coney native candidates {#coney-native-candidates}
+
+The registry of what Coney's engine can do that the original's does not, and that a script could plausibly want.
+Each one would become a native of Coney's own, in the `Coney` table of the [Native API](#script-parts), once mods
+exist ([Script mods](../roadmap.md#script-mods), [Enhancements: Coney natives](enhancements.md#where-the-settings-live)).
+Nothing here is a script binding yet: every entry is a C++ capability today, and none has an `@orig` tag, because
+none reimplements the original. These natives are **Coney's own and never mixed with the original's 956**: they are
+not in `research/bindings/`, not in [Script bindings](../references/bindings/index.md) and not in
+`src/debug/native_signatures.cpp` (all of which describe the original's table), and a mod calls them as
+`Coney.Name`, never as a bare global.
+
+**Why a table here and not a `research/bindings/coney.yaml`.** The masterlist's schema is built around facts about
+the original (the wrapper's address, the functions it calls, an evidence level, usage counts in the shipped
+scripts), and `natives render`, `natives cpp` and the Natives page all read it as the original's table. A Coney file
+would need every one of those fields faked or made optional, and a second origin threaded through three generators,
+for natives that do not exist yet. A table here costs no machinery. When the first one is exposed, the move is the
+`Native` struct above (its `origin` field already says `Coney`), and the generated pages can then grow a "Coney"
+section from that data; this table is its seed.
+
+**Status** is `engine-only` (the C++ exists and no script can reach it) or `exposed` (registered in the `Coney`
+table). Names are proposals and may change before the first is exposed; the C++ entry point is the part to keep
+current. Where a capability has a debug-menu page, the page calls the same entry point, so a native would be one more
+caller, not new logic ([Debug menus: adding a feature](debug-menu.md#adding-a-feature)).
+
+| Proposed native | C++ entry point today | What it does | Status |
+| --- | --- | --- | --- |
+| `Coney.SetFlight(human, speed, climb)` | `human::Human::setFlight(std::optional<Flight>)`, `human::noclipFlight()` (the debug noclip change, not on main yet) | Flies a human by the stick, through walls and floors, with no gravity; `nil` ends it and drops him with the normal physics | engine-only, on its branch |
+| `Coney.SetNoclip(on)` | `debug::PlayControls::setNoclip()`, `human::Player::setNoclip()` (the debug noclip change, not on main yet) | The player's flight as the debug noclip drives it (pad 1 flies him) | engine-only, on its branch |
+| `Coney.TeleportPlayer(x, y, z, heading)` | `human::Player::teleport(mesh, PlayerStart)`, `debug::PlayControls::teleport()` | Puts the player on the ground below a spot, with the camera behind him and nothing to blend from | engine-only |
+| `Coney.SetPlayerFrozen(on)` | `debug::PlayControls::setPlayerFrozen()` | Makes the player ignore the pad, or listen again | engine-only |
+| `Coney.ChangeCharacter(type)` | `human::Player::changeCharacter()`, `debug::PlayControls::changeCharacter()` | Rebuilds the player in place as a `CfgChar` character type: model, moves, class damage, power class, full health | engine-only |
+| `Coney.SetFreeCamera(on)` | `debug::PlayControls::setFreeCamera()`, `world::DebugCamera` | A camera flown by pad 1 while the player stands still | engine-only |
+| `Coney.ResetCamera()` | `human::Player::resetCamera()`, `camera::FollowCamera::place()` | Places the follow camera behind the player again, with nothing to blend from | engine-only |
+| `Coney.SpawnObject(kind, ...)`, `Coney.ClearSpawned()` | `debug::PlayControls::spawn()`, `clearSpawned()`, `debug::spawnables()` | Adds a solid sandbox primitive (crate, wall, ramp, stairs) ahead of the player, or removes them; sandbox only | engine-only |
+| `Coney.SpawnFighter(x, y, z, heading)`, `Coney.ClearFighters()` | `debug::PlayControls::spawnFighter()`, `clearFighters()`; `ai::AiHumans` | Adds or removes AI fighters that fight the player | engine-only |
+| `Coney.SetFightersEngage(on)` | `ai::AiHumans::setEngaging()` | Whether idle fighters take the player on | engine-only |
+| `Coney.SetHudOverride(player, field, value)` | `hud::Hud::overrides()` (`hud::PanelOverrides`) | Shows a chosen rage, score, money or item count on a player's panel instead of his own | engine-only |
+| `Coney.SetPaused(on)`, `Coney.StepOnce()`, `Coney.SetSlowMotion(divisor)` | `debug::TimeControl` | Stops the game's steps, runs one, or runs one step in `divisor`; every step is still 1/30 s | engine-only |
+| `Coney.GetTunable(path)`, `Coney.SetTunable(path, value)`, `Coney.ListTunables()` | `debug::TunableRegistry::value()`, `set()` (applied between steps by `applyPending()`), `categories()` | Reads and writes any named, typed value a subsystem registered, by its `Category/Name` key | engine-only |
+| `Coney.GetOption(key)`, `Coney.SetOption(key, value)` | `debug::TunableRegistry` and the `Display/<name>` keys of [Enhancements](enhancements.md#where-the-settings-live) | The enhancement options (the cutscene letterbox now, more later) by their stable key | engine-only |
+| `Coney.StartLevel(name, checkpoint)` | `StartUpFlow::jumpToLevel()` | Jumps to a level at a checkpoint from the front end or from a level in play | engine-only |
+| `Coney.SetDebugDraw(option, on)` | `debug::DebugDrawOptions`, `PlayLevelMode::setDebugDraw()` | Draws collision, headings, camera and places as lines in the scene | engine-only |
+| `Coney.SetVolume(bus, volume)`, `Coney.SetTestTone(on)` | `debug::AudioControls::setVolume()`, `setTestTone()` | Sets the master or a bus volume; plays Coney's synthesised test tone | engine-only |
+| `Coney.Notice(text)` | `debug::DebugSession::notice()` (the debug noclip change, not on main yet) | Prints a line and shows it as a short notice under the corner lines | engine-only, on its branch |
+| `Coney.TraceCalls(path)` | `script::ScriptSystem::traceCalls()` (`--script-trace`) | Writes every binding call the scripts make, and every call into them, to a log | engine-only |
+
+Not candidates, because a script has no use for them or the original already has the native: the debug menus'
+navigation and front ends; the Lua console (a script can run Lua itself); the test aids `--start`, `--frames`,
+`--input-script` and `--screenshot`; the cheat codes (the original's `DbgEnterCheat` callback already is the native);
+and position, health and gait reads, which the original's `Hu` bindings give.
+
 ### Debug console needs {#console-needs}
 
 What the console ([Debug menus: Lua console](debug-menu.md#lua-console)) needs from these parts:

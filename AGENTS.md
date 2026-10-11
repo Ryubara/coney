@@ -34,7 +34,8 @@ player's path, gamepad input, playthrough tests, the checks to run before report
 - **No game data** anywhere in the repo, issues, fixtures or CI: no executables, BIOS, assets, extracted files or
   dumps. Tests use synthetic fixtures; disc-backed checks print counts and hashes only. Exception: curated
   reference lists (names, ids, values, our own short descriptions) and small reference screenshots of models;
-  never asset files, game text or script source, per `LEGAL.md`.
+  never asset files, game text or script source, per `LEGAL.md`. Issues may also hold gameplay screenshots and
+  short videos of Coney or the original (owner, 2026-10-11), never files, saves, dumps or text.
 - **Clean room:** only analysts read decompiler output or disassembly, and they write `docs/research/` pages that
   cite addresses and short snippets. Engine code is written fresh from those pages, never transcribed.
 - **Research claims** carry an evidence level: confirmed (code) at a cited address, confirmed (runtime), inferred,
@@ -55,6 +56,7 @@ player's path, gamepad input, playthrough tests, the checks to run before report
 - C++23 within MSVC 19.38+, GCC 13+, Clang 17+, Xcode 16+; clang-format (`.clang-format`) decides layout; no
   exceptions: recoverable errors return `std::expected<T, coney::Error>`, broken invariants `CONEY_ASSERT`.
 - Reimplemented code cites the original: `@orig 0x<addr> <Name> (<File>.cpp)`, plus a link to its research page.
+- A Coney-only capability a script could use joins the native-candidates registry: `conventions.md#coney-only`.
 - A doc comment on every public type and function, and a short comment above every other function (helpers,
   private members, long lambdas) and before each step of a long one; comments explain *why*, briefly. Keep the
   engine's test mode possible (fixed timestep, seeded randomness, scripted input): never assume real time, a display

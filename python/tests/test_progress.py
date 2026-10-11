@@ -65,8 +65,8 @@ ROADMAP = """# Roadmap
 | [End](#end) | not started |
 """
 
-# A README or docs page with an empty progress block between hand-written text.
-BLOCK = f"before\n\n{progress_render.MARKER_START}\nold\n{progress_render.MARKER_END}\n\nafter\n"
+# The committed progress page: hand-written text around the marker the docs build fills.
+BLOCK = f"before\n\n{progress_render.PAGE_MARKER}\n\nafter\n"
 
 
 def make_checkout(root: Path, functions: str = "", tags: str = "") -> Path:
@@ -78,7 +78,6 @@ def make_checkout(root: Path, functions: str = "", tags: str = "") -> Path:
     (root / "docs" / "progress" / "functions.toml").write_text(functions, encoding="utf-8")
     (root / "docs" / "progress" / "index.md").write_text(BLOCK, encoding="utf-8")
     (root / "docs" / "roadmap.md").write_text(ROADMAP, encoding="utf-8")
-    (root / "README.md").write_text(BLOCK, encoding="utf-8")
     (root / "src" / "core").mkdir(parents=True)
     (root / "src" / "core" / "thing.h").write_text(tags, encoding="utf-8")
     return root
@@ -111,12 +110,13 @@ def test_percent_and_badge() -> None:
     assert progress_render.badge_url("done", 10, 10).endswith("-green")
 
 
-def test_replace_block_needs_markers() -> None:
-    replaced = progress_render.replace_block(BLOCK, "new", Path("x.md"))
-    assert replaced.startswith("before\n") and replaced.endswith("after\n")
-    assert "old" not in replaced and "\nnew\n" in replaced
-    with pytest.raises(progress.ProgressError, match="no <!-- progress:start -->"):
-        progress_render.replace_block("no markers", "new", Path("x.md"))
+def test_fill_page_needs_exactly_one_marker() -> None:
+    filled = progress_render.fill_page(BLOCK, "new", "x.md")
+    assert filled.startswith("before") and filled.endswith("after" + chr(10))
+    assert progress_render.PAGE_MARKER not in filled and chr(10) + "new" + chr(10) in filled
+    for text in ("no markers", BLOCK + BLOCK):
+        with pytest.raises(progress.ProgressError, match=r"x\.md: needs exactly one <!-- progress:generated -->"):
+            progress_render.fill_page(text, "new", "x.md")
 
 
 # --- the model --------------------------------------------------------------------------------------------------------
@@ -190,43 +190,62 @@ def test_entry_without_tag_and_bad_entries(tmp_path: Path) -> None:
 # --- the commands -----------------------------------------------------------------------------------------------------
 
 
-def test_update_then_check(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
-    """`--check` finds stale blocks, `update` fills them, and a changed input makes them stale again."""
-    monkeypatch.chdir(make_checkout(tmp_path, ONE_FUNCTION, ONE_TAG))
-    assert main(["progress", "update", "--check"]) == 1
-    assert "stale: README.md, docs/progress/index.md" in capsys.readouterr().out
-    assert main(["progress", "update"]) == 0
-    assert main(["progress", "update", "--check"]) == 0
-    readme = (tmp_path / "README.md").read_text(encoding="utf-8")
-    assert "1 of 3 done" in readme and "[Middle](docs/roadmap.md#middle)" in readme
-    assert "4.2% of the game's own code (128 of 3,072 bytes, 1 function)" in readme
-    page = (tmp_path / "docs" / "progress" / "index.md").read_text(encoding="utf-8")
-    assert "| `0x00001010` | `Thing::Do` | `Alpha` | 128 |" in page
-    assert "| `Empty` |" in page and "not placed yet" in page
-    assert "[End](../roadmap.md#end) | not started" in page
-    # A roadmap change makes both blocks stale again.
-    roadmap = tmp_path / "docs" / "roadmap.md"
-    roadmap.write_text(ROADMAP.replace("in progress", "done"), encoding="utf-8")
-    assert main(["progress", "update", "--check"]) == 1
-
-
-def test_update_keeps_crlf(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.chdir(make_checkout(tmp_path))
-    readme = tmp_path / "README.md"
-    readme.write_bytes(BLOCK.replace("\n", "\r\n").encode())
-    assert main(["progress", "update"]) == 0
-    data = readme.read_bytes()
-    assert data.count(b"\r\n") == data.count(b"\n")
-    assert main(["progress", "update", "--check"]) == 0
-
-
-def test_update_refuses_inconsistent_inputs(
+def test_check_passes_on_consistent_inputs_and_fails_otherwise(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    monkeypatch.chdir(make_checkout(tmp_path, tags=ONE_TAG))
-    assert main(["progress", "update"]) == 1
+    """`check` writes nothing; it is 0 for consistent inputs and 1 with each problem listed otherwise."""
+    root = make_checkout(tmp_path, ONE_FUNCTION, ONE_TAG)
+    monkeypatch.chdir(root)
+    assert main(["progress", "check"]) == 0
+    assert "inputs are consistent (1 functions, 3 milestones)" in capsys.readouterr().out
+    assert (root / "docs" / "progress" / "index.md").read_text(encoding="utf-8") == BLOCK  # nothing generated
+    # A tag with no entry is a problem.
+    (root / "src" / "core" / "thing.h").write_text(ONE_TAG + "/// @orig 0x00001300 Other::Fn (unknown)\n")
+    assert main(["progress", "check"]) == 1
+    assert "0x00001300 Other::Fn has no entry in functions.toml" in capsys.readouterr().out
+
+
+def test_render_writes_the_page_and_the_badges(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`render` fills the page's marker and writes one endpoint JSON per badge, leaving the checkout alone."""
+    root = make_checkout(tmp_path / "repo", ONE_FUNCTION, ONE_TAG)
+    monkeypatch.chdir(root)
+    out = tmp_path / "out"
+    assert main(["progress", "render", str(out)]) == 0
+    page = (out / "progress" / "index.md").read_text(encoding="utf-8")
+    assert page.startswith("before") and page.endswith("after" + chr(10)) and progress_render.PAGE_MARKER not in page
+    assert "| `0x00001010` | `Thing::Do` | `Alpha` | 128 |" in page
+    assert "| `Empty` |" in page and "not placed yet" in page
+    assert "4.2% of the game's own code (128 of 3,072 bytes, 1 function)" in page
+    assert "[End](../roadmap.md#end) | not started" in page
+    badges = out / "progress" / "badges"
+    assert sorted(p.name for p in badges.iterdir()) == ["milestones.json", "reimplemented.json", "researched.json"]
+    assert json.loads((badges / "reimplemented.json").read_text(encoding="utf-8")) == {
+        "schemaVersion": 1,
+        "label": "reimplemented",
+        "message": "4.2%",
+        "color": "red",
+    }
+    assert json.loads((badges / "milestones.json").read_text(encoding="utf-8"))["message"] == "1 of 3 done"
+    assert (root / "docs" / "progress" / "index.md").read_text(encoding="utf-8") == BLOCK
+
+
+def test_render_follows_the_inputs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The numbers come from the inputs at render time: a roadmap change moves the milestones badge."""
+    root = make_checkout(tmp_path / "repo", ONE_FUNCTION, ONE_TAG)
+    monkeypatch.chdir(root)
+    (root / "docs" / "roadmap.md").write_text(ROADMAP.replace("in progress", "done"), encoding="utf-8")
+    assert main(["progress", "render", str(tmp_path / "out")]) == 0
+    milestones = json.loads((tmp_path / "out" / "progress" / "badges" / "milestones.json").read_text(encoding="utf-8"))
+    assert milestones["message"] == "2 of 3 done"
+
+
+def test_render_refuses_inconsistent_inputs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(make_checkout(tmp_path / "repo", tags=ONE_TAG))
+    assert main(["progress", "render", str(tmp_path / "out")]) == 1
     assert "has no entry in functions.toml" in capsys.readouterr().out
-    assert "old" in (tmp_path / "README.md").read_text(encoding="utf-8")  # nothing written
+    assert not (tmp_path / "out").exists()  # nothing written
 
 
 def test_show_json(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
@@ -240,13 +259,13 @@ def test_show_json(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pyte
     assert data["subsystems"][-1]["name"] == "unattributed"
 
 
-def test_missing_markers_is_exit_2(
+def test_missing_marker_is_exit_2(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     monkeypatch.chdir(make_checkout(tmp_path))
-    (tmp_path / "README.md").write_text("no block\n", encoding="utf-8")
-    assert main(["progress", "update"]) == 2
-    assert "README.md: no <!-- progress:start -->" in capsys.readouterr().err
+    (tmp_path / "docs" / "progress" / "index.md").write_text("no marker\n", encoding="utf-8")
+    assert main(["progress", "check"]) == 2
+    assert "index.md: needs exactly one <!-- progress:generated -->" in capsys.readouterr().err
 
 
 def test_set_size_replaces_or_adds() -> None:
@@ -471,31 +490,34 @@ def test_measure_by_subsystem_and_backlog(tmp_path: Path) -> None:
     assert progress_research.backlog_file_name("Maths (unnamed)") == "Maths.md"
 
 
-def test_understood_is_rendered_and_checked(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
-    """The bar appears once there is a listing, and a new citation makes the page stale."""
-    root = make_research_checkout(tmp_path)
+def test_understood_is_rendered(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The bar and its badge appear once there is a listing, and a new citation moves them."""
+    root = make_research_checkout(tmp_path / "repo")
     monkeypatch.chdir(root)
-    assert main(["progress", "update"]) == 0
-    page = (root / "docs" / "progress" / "index.md").read_text(encoding="utf-8")
+    out = tmp_path / "out"
+    assert main(["progress", "render", str(out)]) == 0
+    page = (out / "progress" / "index.md").read_text(encoding="utf-8")
     assert "| **Understood** |" in page and "## Understood by subsystem" in page
     assert "1 of 4 functions" in page and "badge/understood-" in page
-    assert main(["progress", "update", "--check"]) == 0
+    understood = out / "progress" / "badges" / "understood.json"
+    assert json.loads(understood.read_text(encoding="utf-8"))["label"] == "understood"
+    before = understood.read_text(encoding="utf-8")
     page_path = root / "docs" / "research" / "alpha.md"
     page_path.write_text(RESEARCH_PAGE.replace("| `Alpha_Step` | |", "| `Alpha_Step` | inferred |"), encoding="utf-8")
-    assert main(["progress", "update", "--check"]) == 1
-    capsys.readouterr()
+    assert main(["progress", "render", str(out)]) == 0
+    assert understood.read_text(encoding="utf-8") != before
     assert main(["progress", "show", "--json"]) == 0
-    assert json.loads(capsys.readouterr().out)["understood"]["functions"] == 2
 
 
 def test_without_a_listing_nothing_is_measured(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    root = make_checkout(tmp_path)
+    root = make_checkout(tmp_path / "repo")
     monkeypatch.chdir(root)
     assert progress.load(root).understanding is None
-    assert main(["progress", "update"]) == 0
-    assert "Understood" not in (root / "README.md").read_text(encoding="utf-8")
+    out = tmp_path / "out"
+    assert main(["progress", "render", str(out)]) == 0
+    page = (out / "progress" / "index.md").read_text(encoding="utf-8")
+    assert "| **Understood** |" not in page and "Not measured yet" in page
+    assert not (out / "progress" / "badges" / "understood.json").exists()
 
 
 def test_backlog_command_writes_one_file_per_subsystem(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
