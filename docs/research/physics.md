@@ -464,16 +464,16 @@ What a walking human meets of another human, confirmed (code) at the cited addre
   `Human_PlayRise` `0x0025e2d8`, clip 199 with `Human_EndDownState` `0x0025e250` as its end callback →
   `Human_GetUp` `0x0022f3c8`) puts the weight back to 1 and touches no body flag either. Confirmed (code).
 - **What gives it back.** Two things only, confirmed (code):
-  - **A new body.** `Human_CreatePhysicsBody` (`0x0021ce08`) frees the body and takes a fresh one from
-    `IPhysics_CreateHumanBody` (`0x0033cc48`), whose flags are `0x8002243f` (`BLOCKHUMANS` included; group 0, so no
-    link survives). `Human_Heal` (`0x0022eb40`) calls it after waking (`Human_WakeUp`) and ending a wound
-    (`Human_EndWounded`), so the human blocks again **from the moment he is healed**: a revive at its end
-    (`Revive_Finish` `0x00274ee0`, not `Revive_Start`), a flash (`Flash_Use` `0x002842e4`), the uncuffing
-    (`Uncuff_MashSuccess` `0x00260910`, `Uncuff_WithKey` `0x00261264`), `HuRevive` (`Human_Revive` `0x002377f8`),
-    and the level's own heals (`Gm_Level_Update` `0x00159004`, `ANGameOver_Toggle`). `Human_AttachInstance` also
-    makes one when the human is set up.
-  - **`Human_Unarrest`** (`0x0022ef58`) sets body flags `0x80000004`: the uncuff paths, `HuSetArrested(false)`
-    (`0x0023774c`) and `Human_EndDownState` when a cuffed human's rise clip ends.
+    - **A new body.** `Human_CreatePhysicsBody` (`0x0021ce08`) frees the body and takes a fresh one from
+      `IPhysics_CreateHumanBody` (`0x0033cc48`), whose flags are `0x8002243f` (`BLOCKHUMANS` included; group 0, so no
+      link survives). `Human_Heal` (`0x0022eb40`) calls it after waking (`Human_WakeUp`) and ending a wound
+      (`Human_EndWounded`), so the human blocks again **from the moment he is healed**: a revive at its end
+      (`Revive_Finish` `0x00274ee0`, not `Revive_Start`), a flash (`Flash_Use` `0x002842e4`), the uncuffing
+      (`Uncuff_MashSuccess` `0x00260910`, `Uncuff_WithKey` `0x00261264`), `HuRevive` (`Human_Revive` `0x002377f8`),
+      and the level's own heals (`Gm_Level_Update` `0x00159004`, `ANGameOver_Toggle`). `Human_AttachInstance` also
+      makes one when the human is set up.
+    - **`Human_Unarrest`** (`0x0022ef58`) sets body flags `0x80000004`: the uncuff paths, `HuSetArrested(false)`
+      (`0x0023774c`) and `Human_EndDownState` when a cuffed human's rise clip ends.
 - **What does not.** `Human_WakeUp` (`0x00230598`) and `Human_EndWounded` (`0x0022fc00`) only re-enable a shape
   and put the push weight back. So a knocked-out human woken without a heal (`HuSetConscious(true)`,
   `Human_SetConscious` `0x00237778`, or `Human_EndDownState`'s knocked-out branch) and a wound ended by

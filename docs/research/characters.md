@@ -1405,7 +1405,8 @@ functions by type (world `+0xe0`, `0x0033d2d8`, which passes −0.65). For type 
    (0.5 / 0.35), so `r` = 0.5 × scale²: Rembrandt (scale 0.97) has `r` = 0.3395 × 1.4286 × 0.97 = **0.4705 m**, and
    the sphere spans 0.05 to 0.99 m above the feet. Confirmed (runtime), PCSX2 2.9.94, the `sweep-radius` hook at
    `0x00347cbc` in the `sweep60` scenario (a copy of slot 1, level99's street, stick 60 % up for 80 updates): all
-   39 calls logged the player's body with shape `+0x40` × body `+0x60` = 0.4850, body `+0x60` = 1.4286 and `Human_GetScale` = 0.9700,
+   39 calls logged the player's body with shape `+0x40` × body `+0x60` = 0.4850, body `+0x60` = 1.4286 and
+   `Human_GetScale` = 0.9700,
    and the hooked `mul.s` multiplies the two. A measured 0.485 m is that product before the second scale; the radius
    the walls see is 0.4705 m. The stops measured before (0.476-0.480 m from a full wall, a wall at an angle and the
    fence of slot 7; the step faces below) sit 0.006-0.010 m beyond where a 0.4705 m sphere touches, which fits a
@@ -2594,7 +2595,8 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
   (0.5 × scale for a player). The walking sphere is stopped where it touches a triangle, so a face lower than its
   centre stops it where it meets the face's top edge, `sqrt((r + clearance)² − (r + 0.05 − h)²)` from the face
   (0.396, 0.399 and 0.422 m for 0.255, 0.26 and 0.30 m faces with the original's fitted 0.006 m, as at runtime); a
-  face under 0.25 m is walked onto in one update with no change of speed or clip. The human keeps the move the walls left as its velocity, so a wall met at a steep angle
+  face under 0.25 m is walked onto in one update with no change of speed or clip. The human keeps the move the walls
+  left as its velocity, so a wall met at a steep angle
   brakes the player.
   The sweep leaves the sphere 0.01 m clear of the face (`BodyTuning::contactClear`), and carries it round a convex
   corner whose triangles name their shared edge in flag bits 14-15 (`human::edgeSlide`): along each wall the sphere

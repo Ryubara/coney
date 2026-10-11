@@ -9,3 +9,10 @@ fields = ["player"]
 [original]
 slot = 1
 patches = ["scripted-pad", "right-stick", "sweep-radius"]
+
+[coney]
+# The same start as walk60 (slot 1 is level99 at checkpoint 3, Rembrandt at the end of a street); the run only logs the
+# original's sweep calls, so Coney's side just has to reach the same place.
+level = "level99"
+args = ["--checkpoint", "3", "--start", "75.155,41.1354,0.2231,91.909,5.3,89.854"]
+settle = 300
