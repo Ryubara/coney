@@ -314,12 +314,13 @@ def _add_xbox_commands(groups: Any) -> None:
 
 def _add_progress_commands(groups: Any) -> None:
     """Register `coney-tools progress ...`."""
-    tracker = groups.add_parser("progress", help="the progress tracker shown in README.md and docs/progress/")
+    tracker = groups.add_parser("progress", help="the progress tracker (docs/progress/, built into the docs site)")
     commands = tracker.add_subparsers(dest="command", required=True)
     show = commands.add_parser("show", help="print how much is reimplemented and researched")
     show.add_argument("--json", action="store_true", help="print everything as JSON")
-    update = commands.add_parser("update", help="regenerate the progress blocks of README.md and the docs page")
-    update.add_argument("--check", action="store_true", help="change nothing; exit 1 when a block is stale")
+    commands.add_parser("check", help="check the tracker's inputs (functions.toml, @orig tags, ranges, roadmap)")
+    render = commands.add_parser("render", help="write the page and badge JSON the docs build publishes, to a folder")
+    render.add_argument("out_dir", type=Path, help="a folder to write progress/index.md and progress/badges/ to")
     sizes = commands.add_parser("sizes", help="check the listed functions' sizes against your own disc")
     sizes.add_argument(
         "disc", nargs="?", help="a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml"
@@ -496,8 +497,10 @@ def _run_progress(args: argparse.Namespace) -> int:
     """Dispatch a `progress` command."""
     if args.command == "show":
         return progress_cli.run_show(args.json)
-    if args.command == "update":
-        return progress_cli.run_update(args.check)
+    if args.command == "check":
+        return progress_cli.run_check()
+    if args.command == "render":
+        return progress_cli.run_render(args.out_dir)
     if args.command == "ghidra":
         return progress_cli.run_ghidra(args.url, args.check)
     if args.command == "backlog":
