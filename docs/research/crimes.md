@@ -586,6 +586,65 @@ with a delay of `CfgBreakAndEnterDelay` (15, 10 or 7 by difficulty). The first g
 8-15 to `0xff` and the gang bits to 31, and restocks the store; its 7 m test is a strobe's distance from the store's
 flag, not the player's (confirmed (code)). `EnterStore` / `ExitStore` only change the screen colour.
 
+#### Which break-ins call the police {#break-in-police}
+
+`GameState_ReportCrime` (`0x0041b8b0`) handles type 1 differently from every other type (its `case 1`), confirmed
+(code) at `0x0041b8b0`, `0x0016df68` and `0x0016dc70`:
+
+1. It looks for the nearest flag of activity `0xe` (a store front) to the report's position
+   (`Flag_FindNearestByActivity`) and goes on only when one exists and lies within **10 m** (squared distance under
+   100). **No store front within
+   10 m: no police, no strobe, nothing robbed.** The wanted timer, hostility and crime callback run before this, but
+   only with an offender (step 2 of [AI: crimes](ai.md#crimes)).
+2. Only when that store is **not yet robbed** (bit 16 of the flag's word `+0xd8` clear) and the call asked for
+   responders (`mode` 1): `Responders_Queue(1, kind 1, count = CfgCrimeResponders(1) (game state +0x295), delay =
+   CfgBreakAndEnterDelay (0x005148a4) seconds, the crime scene, no target, no offender)`. Then the strobe's message
+   `0x12` and the store's buyers switched off ([above](#stores)). A store already robbed only fills in the robbing
+   gang (when the bits hold 31) and scores its leader's crime event; **a second break-in at the same store brings no
+   police** until `ResetStore`.
+3. `Responders_Queue` (`0x0016df68`) does nothing for a count of 0. Otherwise it takes, over all 32 gangs' four
+   spawners, the one in state **4** (police dispatch) or **6** (dispatching) nearest the crime scene whose queue is not
+   full (`+0xb0` < 4), and `Spawner_QueueCall` (`0x0016dc70`) appends the entry: due at now + delay × 1,000 ms, the
+   type, kind and count. **No spawner in state 4 or 6 anywhere: no police.** The spawner then makes a `Responder<n>`
+   gang of type 1 when the entry is due, while the police count is under its limit, and places the squad out of sight
+   ([AI: spawners](ai.md#spawners), steps 4-6).
+
+**Who reports a break-in** and with what, confirmed (code):
+
+| Reporter | Position | Offender | Mode |
+| --- | --- | --- | --- |
+| A lock pick that was not all perfect, or a third abandoned pick (`LockPick_End` `0x0022d908`, both calls) | the picker's position | **none** (`0x006ebd30`), so no wanted time, no police hostility, no callback | 1 |
+| An alarmed pane ([panes](objects.md#pane)) and the others in [AI: crimes](ai.md#crimes) | their own | their own | their own |
+
+So a lock-picked store door brings `CfgCrimeResponders(1)` police after `CfgBreakAndEnterDelay` seconds (15, 10 or 7
+by difficulty), from the nearest police dispatch spawner, only when the door is within 10 m of a store front that
+was not yet robbed; the picker himself is not made wanted by the pick. The counts the scripts set for type 1:
+`config_easy` 2, `level14` 2, `level87` 1, `level95_robinhood` 1 ([Crime types](../references/crime-types.md)).
+Whether the responders then attack the player's gang when the pick reported no offender (no police hostility was
+set) is not traced: the dispatch goal's target is the crime scene (inferred from the queued entry, which carries no
+target).
+
+**Owner item 13 (no police on a break-in)**: Coney's report (`repo:src/warriors/crime_reports.cpp`, checked
+2026-10-11) calls `CrimeServices::queueResponders`, whose only implementation is the interface's empty default, so
+nothing is ever queued; Coney also has no dispatch queue on its spawners (`GameplayMode`'s scout hook logs its call
+only). **Coney fixes**:
+
+1. Build the spawner dispatch queue ([AI: spawners](ai.md#spawners) steps 1, 4-6, [Spawner
+   states](../references/spawner-states.md) 4 and 6): four entries per spawner (time due, type, kind, count, target,
+   point, offender gang), served when due; state 4 makes a `Responder<n>` gang of type 1 while the game's police
+   count is under its limit and goes to 6, which places the squad out of sight and returns to 4 when it is complete.
+2. Implement `queueResponders` in the level's crime services as `Responders_Queue`: nearest spawner in state 4 or 6
+   to the crime scene with a free queue slot, delay in seconds.
+3. Gate type 1 as the original does: responders, the strobe and the buyers only when a store front (activity `0xe`)
+   lies within 10 m of the report and is not yet robbed; today Coney asks for responders before and regardless of
+   the store test.
+4. Report a lock pick's break-in with **no offender** (Coney passes the picker), so the pick sets no wanted time,
+   no hostility and no callback.
+5. Test (pad-driven, a level with a police dispatch spawner and a pickable store door, e.g. `level87`'s stores):
+   pick the door with a non-perfect press, assert a `Responder` gang appears after `CfgBreakAndEnterDelay` seconds
+   with `CfgCrimeResponders(1)` members; a second pick at the same store queues nothing; a pick away from any store
+   front queues nothing.
+
 ### Wanted and the crime level {#wanted}
 
 **Wanted** is per gang, confirmed (code): every crime report with an offender sets the offender's gang wanted for
@@ -811,5 +870,6 @@ the assault statistic is scored once per victim through the service.
 - Who sets mini-game mode 4.
 - The prompt widgets' base position and text style.
 - The lock-picking dial's rate at runtime (one step per drawn frame is inferred).
-- The responder spawn kind of a break-in (type 1) and of a custom crime (type 4).
+- Whether the police a lock-picked break-in calls attack the picker's gang (the pick reports no offender; [Which
+  break-ins call the police](#break-in-police)). Both a break-in and a custom crime queue kind 1.
 - Wiring the report's police hostility, responders and HUD messages to Coney's gangs, spawners and HUD.

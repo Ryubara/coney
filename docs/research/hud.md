@@ -1897,15 +1897,49 @@ on. Confirmed (code).
 
 #### The lock-pick dial layout {#lock-pick-dial-layout}
 
-Per player (`0x0050d670` + player × `0x20`): the pins' GUI position, player 1 (0.09, 0.59) and player 2 (0.9, 0.59),
-and the shapes' centre, (−0.531, −0.075) and (0.519, −0.075). **In the default video mode** (device flag `0x01`
-only) `LockPickDial_Draw` replaces that centre every update with **(−0.565, −0.07)** for player 1 and **(0.546,
-−0.07)** for player 2. Confirmed (code) at `0x001b7eb0`, `0x001b8530`; the other video modes rewrite the entry
-(`0x001b7c10`) and the radius factors `0x0050d6e8`-`0x0050d6fc` (all 1.0 in the default mode).
+Per player (`0x0050d670` + player × `0x20`, 32 bytes): a GUI position (x, 0, y, 0), player 1 (0.09, 0, 0.59) and
+player 2 (0.9, 0, 0.59), then a **centre** (x, y, z, w) in the overlay camera's space, static (−0.531, −0.075, 0, 0)
+and (0.519, −0.075, 0, 0). `LockPickDial_Init` (`0x001b7eb0`) and `LockPickDial_ApplyVideoMode` (`0x001b7c10`)
+rewrite the centre for the video mode before using it (the table below), with z = −1 and w = 1. Confirmed (code).
 
-**The pins**: three `BaseWidget`s, `hud_minigames` rectangle 11 (a brass lock cylinder), grey 191, at the GUI
-position, sizes 0.19, 0.152 and 0.114 (0.19 × (1 − 0.2 i), square in the default mode), depths 8,000, 9,000, 10,000,
-all on one centre. Each turns about its own centre (the widget's position, anchor 0). Only the current pin turns:
+**The pins and the shapes share that centre.** Each pin's `BaseWidget_Setup` first converts the GUI position into its
+sprite position (widget `+0x80`, `BaseWidget_SetPosition` `0x001a2060` through `RwDevice_GuiToOverlay` `0x00195238`:
+(x − 0.5) × 640 / 448, 0.5 − y, −1.1), but `LockPickDial_Init` then **overwrites** `+0x80` with the centre (x, y, −1,
+1) (`0x001b8078`-`0x001b80f8`), and `ApplyVideoMode` does the same. Nothing writes `+0x80` again: the dial's update
+only turns the pins (slot `+0x94`), refreshes their size (`BaseWidget_SetSize` with no conversion) and runs the
+widget update (`BaseWidget_UpdateSize`, which touches the size and anchor, not `+0x80`), and `BaseWidget_RenderAlpha`
+(`0x001a2690`) copies `+0x80` straight into the sprite batch's positions (`Instance_AddSprite` `0x00182de0`). So the
+GUI position (0.09, 0.59) is **never seen**: the pins are drawn at the centre point at **depth 1**, the same depth as
+the shapes. Confirmed (code) at those addresses; it corrects the earlier reading that the pins sit at the GUI
+position at depth 1.1 (14 pixels right of and 5 below the shapes).
+
+| Video mode (device flags, [Graphics](graphics.md#video-mode)) | Centre, player 1 / player 2 (x, y) | Shapes' centre in `LockPickDial_Draw` | Radius factors: wedges x, y; disc x, y; pins w, h |
+| --- | --- | --- | --- |
+| Interlaced 4:3, `0x01` (the default) | (−0.56, −0.075) / (0.545, −0.075) | replaced each update by **(−0.565, −0.07)** / **(0.546, −0.07)** | 1, 1; 1, 1; 1, 1 |
+| Interlaced 16:9, `0x01` + `0x04` | (−0.74, −0.075) / (0.725, −0.075) | the centre | **0.8**, 1; **0.9**, 1; 1, 1 |
+| Progressive 4:3, `0x20` | not rewritten: the static (−0.531, −0.075) / (0.519, −0.075) | the centre | 0.75, 1.1; 0.75, 1.0; 0.6, 0.6 |
+| Progressive 16:9, `0x20` + `0x04` | (−0.62, −0.075) / (0.62, −0.075) | the centre | 0.5, 0.95; 0.5, 0.85; 0.6, 0.6 |
+| PAL `0x02` (speculative name), 4:3 / 16:9 | (−0.385, −0.07) / (0.39, −0.07); (−0.58, −0.05) / (0.58, −0.05) | by its other flags, as above | by its other flags |
+
+Confirmed (code) at `0x001b7eb0`, `0x001b7c10` (the centre) and `0x001b8530` (the factors, rewritten every update:
+`0x0050d6f0`/`0x0050d6f4` the wedges' radius `+0x498`/`+0x49c`, `0x0050d6f8`/`0x0050d6fc` the disc's,
+`0x0050d6e8`/`0x0050d6ec` the pins' width and height). That `+0x498` is the horizontal radius and `+0x49c` the
+vertical one is inferred: the 16:9 modes shrink only `+0x498`, as pixels 1.25 times wider need. `LockPickDial_Draw`
+also has a branch for `0x01` and `0x20` together (4:3: every factor 1; 16:9: wedges 0.85, 1.0, disc 0.75, 0.85, pins
+0.9, 0.9, the disc's y raised by 0.002), a combination the device never sets ([Video mode](graphics.md#video-mode)).
+In progressive 4:3 the static entry's z and w are 0, so the pins would sit at depth 0 unless an earlier mode had
+written −1 and 1 there (open; a port needs only the two interlaced rows).
+
+**On screen, default mode** (projection as for the shapes below): the pins' centre (−0.56, −0.075, −1) lands at
+pixel **(72.8, 257.6)** of 640 × 448 for player 1 and the shapes' (−0.565, −0.07, −1) at (70.6, 255.4): the wedges
+and the lock face sit **2.2 pixels left of and 2.2 above** the pins' centre, concentric to the eye. Player 2: pins
+(560.6, 257.6), shapes (561.0, 255.4). In 16:9 the two centres are the same point. Inferred from the code and the
+runtime view matrix below; no capture of the dial in the original.
+
+**The pins**: three `BaseWidget`s, `hud_minigames` rectangle 11 (a brass lock cylinder), grey 191, at the centre
+point above, sizes 0.19, 0.152 and 0.114 overlay units at depth 1 (0.19 × (1 − 0.2 i) × the pins' factors; square
+in the default mode), depths 8,000, 9,000, 10,000, all on one centre. Each turns about its own centre (anchor 0).
+Only the current pin turns:
 its angle (`+0x454`, radians, starting at π) changes by **0.1 × its speed** per update (speeds 1, 2, 3 by default),
 up or down by its direction byte, wrapped into 0-2π; positive angles turn clockwise on screen
 ([The stereo panel](#stereo-layout)). Drawn while the dial is shown and a pin is left. No text.
@@ -1918,10 +1952,10 @@ overlay camera's view window (0.725 × 0.5 at distance 1, [Graphics](graphics.md
 lands at **screen** (0.110, 0.570) for player 1, pixel (70.6, 255.4) of 640 × 448: the dial stores the centre as
 (x, y, −1, 1) at shape `+0x00` (`0x001b8530`, the `−1` written at dial `+0x488`), and the overlay camera's
 `viewMatrix` read at run time (camera `+0x20`: right (0.6897, 0, 0), up (0, −1, 0), at (−0.5, −0.5, −1), pos 0;
-PCSX2 2.9.94, `level99`) gives screen x = 0.6897 x + 0.5 and y = 0.5 − y at that depth, confirmed (runtime). The pins,
-sprites at depth 1.1, land at screen (0.133, 0.582), pixel (85.0, 260.6). So the wedges' and the disc's centre is
-**14 pixels left of and 5 above** the pins' centre, as the code stands; that the original shows this offset on
-screen was not seen (no capture of the dial).
+PCSX2 2.9.94, `level99`) gives screen x = 0.6897 x + 0.5 and y = 0.5 − y at that depth, confirmed (runtime). The
+pins' sprites use the same camera at the same depth ([above](#lock-pick-dial-layout): their position is the centre
+point, not the GUI position), so the dial's layers are concentric within the 2.2-pixel difference of the default
+mode's override.
 
 **The disc's texture** (`LockPickDial_IsResident`, `0x001b83c0`-`0x001b8404`, confirmed (code)): the u-v centre
 (`+0x4cc`) is rectangle 12's centre and the u radius (`+0x490`, `+0x494`) half its width, with v scaled by the texture's
@@ -1961,6 +1995,26 @@ order; how much the art covers is above).
   (k × 11.25° each side), and the next segment on each side **fades** from the colour to clear across its triangle
   (vertex colours interpolate). Example: 35 % gives k = 5, so 112.5° solid plus a fading 11.25° on each side, not the
   exact 126°.
+
+**Owner item 12 (the dial's layers misplaced)**: Coney's `repo:src/hud/lock_pick_hud.cpp` (checked 2026-10-11)
+draws the pins at the GUI position (0.09, 0.59) through `OverlayCamera::guiToOverlay` (depth 1.1) and the shapes at
+(−0.565, −0.07, 1). That puts the wedges and the lock face 14 pixels left of and 5 above the brass pins, which is the
+red wedge "up and left of the lock" and the keyhole left of the outer ring that the owner saw. The original draws
+the pins at the centre point. **Coney fixes**:
+
+1. Draw the three pins at the player's centre point in overlay space at distance 1, not at the GUI position: 4:3
+   (−0.56, −0.075) for player 1, (0.545, −0.075) for player 2; keep the shapes at (−0.565, −0.07) / (0.546, −0.07).
+   Drop `kPinPlaces`; the GUI position is unused.
+2. Size the pins in overlay units at distance 1 (0.19, 0.152, 0.114), not at the 1.1 of other sprites, so they come
+   out 10 % larger on screen than at depth 1.1.
+3. In Coney's 16:9 view (`graphics::isWideView`), use the interlaced 16:9 row: both centres (−0.74, −0.075) /
+   (0.725, −0.075), wedge radius 40 × 0.8 = 32 px across and 40 px up, lock-face radius 41 × 0.9 = 36.9 px across
+   and 41 up (the pixel radii scaled by the frame's height ÷ 448 as before), pins unchanged in overlay units.
+   `pixelInOverlay()` must use the camera of the mode in force (it now always builds a default 4:3
+   `OverlayCamera`).
+4. Test: for each mode, the projected screen centre of the pins and of the shapes differ by at most 2.5 logical
+   pixels (default mode 2.2 left and 2.2 up; 16:9 none); the pins' projected size at depth 1 is 0.19 / (2 × 0.725) of
+   the width in 4:3.
 
 ### `GUI/HUDLua.cpp`: the scripted bars {#fn-hudlua-bars}
 
