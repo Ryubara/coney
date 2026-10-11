@@ -1,5 +1,7 @@
 # Checks that only make sense on a pull request: its title must follow the commit title rules (AGENTS.md, "Commits
-# and GitHub"; areas and verbs in .github/commit-conventions.json), because it becomes the title of the merged commit. Actions are pinned to a full commit SHA; the tag is in the comment beside it.
+# and GitHub"; areas and verbs in .github/commit-conventions.json), because it becomes the title of the merged commit,
+# and its description must follow the template (.github/pull_request_template.md). Actions are pinned to a full commit
+# SHA; the tag is in the comment beside it.
 name: pr
 
 on:
@@ -9,8 +11,10 @@ on:
 permissions:
   contents: read
 
+# Editing the title or description reruns this workflow. Edits get their own group, so an edit never cancels the run of
+# a push that is still going (its jobs that skip edits would otherwise end up skipped, not checked).
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.action == 'edited' }}
   cancel-in-progress: true
 
 jobs:
@@ -30,7 +34,10 @@ jobs:
   # Every commit of the pull request, not only its title: the branch is merged commit by commit, so each commit title
   # becomes history on main. A local hook (commit-title in .pre-commit-config.yaml) catches it earlier, but only in a
   # clone that installed it.
+  # Skipped when only the title or description was edited (a skipped required check counts as passing); a changed base
+  # branch is an edit that changes HEAD^1..HEAD^2, so it still runs.
   commits:
+    if: github.event.action != 'edited' || github.event.changes.base != null
     runs-on: ubuntu-24.04
     steps:
       # Full history: a pull request's checkout is a merge commit whose parents are the branch it merges into
@@ -68,3 +75,21 @@ jobs:
           printf '%s\n' "$PR_BODY" > "$RUNNER_TEMP/pr-body.md"
           git diff --name-only HEAD^1...HEAD^2 |
             uv run --project python coney-tools repo check-docs --body "$RUNNER_TEMP/pr-body.md"
+
+  # The description must follow the template (.github/pull_request_template.md): its three sections, a Summary with
+  # text, who wrote the commits (one of the template's choices) and, when an AI took part, the model. The rules are in
+  # .github/pr-body-rules.json. Editing the description re-runs the check.
+  body:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      # The description is attacker-controlled: it reaches the checker only through a file written from an
+      # environment variable, never expanded into the script's text. check-body exits 0 (pass), 1 (refused) or 2
+      # (rules file unusable); both failures fail the job.
+      - name: Check the description against the template
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          printf '%s\n' "$PR_BODY" > "$RUNNER_TEMP/pr-body.md"
+          uv run --project python coney-tools repo check-body --body "$RUNNER_TEMP/pr-body.md"
