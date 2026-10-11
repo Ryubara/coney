@@ -533,4 +533,5 @@ Creates the missing folders of the [local workspace](workspace.md), clones the r
 `--fetch ghidra|pcsx2|ghidra-mcp|pcsx2-mcp|all`, downloads the research tools at pinned versions, checked by SHA-256.
 Every step already done is skipped; `--dry-run` only prints them. It never downloads game files or a BIOS. Exit
 codes: 1 when a prerequisite of the engine is missing, 2 for a usage error. The launchers `bootstrap.sh` and
-`bootstrap.ps1` install uv (a pinned version, with Astral's installer, which adds it to `PATH`) and run it. What each step does and the pinned versions: [Bootstrap](workspace.md#bootstrap).
+`bootstrap.ps1` install uv (a pinned version, with Astral's installer, which adds it to `PATH`) and run it. What each
+step does and the pinned versions: [Bootstrap](workspace.md#bootstrap).
