@@ -4233,6 +4233,11 @@ name = "Human_IsInSceneState"
 subsystem = "Human"
 
 [[function]]
+address = 0x00228228
+name = "HumanRecord_AreActionsBlocked"
+subsystem = "Human"
+
+[[function]]
 address = 0x00228448
 name = "Human_HasHeld20080000"
 subsystem = "Human"
