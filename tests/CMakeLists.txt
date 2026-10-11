@@ -195,6 +195,7 @@ add_executable(coney_tests
     world_objects/cars_test.cpp
     world_objects/flags_test.cpp
     world_objects/spinning_icons_test.cpp
+    world_objects/drawn_poses_test.cpp
     world_objects/object_tasks_test.cpp
     world_objects/props_test.cpp
     world_objects/disc_doors_test.cpp

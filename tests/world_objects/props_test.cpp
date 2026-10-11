@@ -7,6 +7,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <functional>
 #include <numbers>
 #include <optional>
 #include <string>
@@ -186,11 +187,17 @@ TEST_CASE("a trash break drops a bottle 0.5 m above the path polygon under the h
     CHECK(f.services.spawned[0] == "dyn_beerbottle");
     CHECK(f.services.spawnedAt[0].x == 1.0F);
     CHECK(f.services.spawnedAt[0].z == 0.5F);
-    REQUIRE(knocked == std::vector<double>{1001.0});
+    // The bottle first, then the four litter pieces, launched along a zero contact vector (struck, not flying): they
+    // drop, only spun.
+    REQUIRE(knocked == std::vector<double>{1001.0, 1002.0, 1003.0, 1004.0, 1005.0});
     CHECK(knocks[0].first.x == 0.0F);
     CHECK(knocks[0].first.z == 0.0F);
     CHECK(knocks[0].second.x == 0.0F);
     CHECK(std::abs(knocks[0].second.y) <= std::numbers::pi_v<float>);
+    for (std::size_t piece = 1; piece < knocks.size(); ++piece) {
+        CHECK(coney::anim::length(knocks[piece].first) == 0.0F);
+        CHECK(coney::anim::length(knocks[piece].second) <= 3.0F * std::numbers::pi_v<float> * 1.75F);
+    }
     // No polygon under the hit (the U's hollow): no bottle.
     Fixture g;
     g.world.paths = &paths;
@@ -478,4 +485,144 @@ TEST_CASE("every hit raises two dust bursts; the crate stack and the bench leave
         f.strike(masksType(0, 1, 0xe42da444U));
         CHECK(f.services.pairs.back() == std::pair<std::uint8_t, std::uint8_t>{47, 23});
     }
+}
+
+namespace {
+
+// A floor contact at (1, 2, 0) with a speed into it of 6 m/s over a 1/30 s update.
+coney::world_objects::PropContact floorContact() {
+    return coney::world_objects::PropContact{.point = {1, 2, 0}, .normal = {0, 0, 1}, .vector = {0, 0, 0.2F}};
+}
+
+// Each knock ObjectWorld::knock gave: the object, its velocity and its spin.
+struct Knock {
+    double object;
+    Vec3 velocity;
+    Vec3 spin;
+};
+
+} // namespace
+
+TEST_CASE("a trash prop broken flying: from 1 m up its contact, without its own sound, pieces launched",
+          "[world_objects][props]") {
+    // docs/research/objects.md#trash-props: a flying break moves the prop 1 m along the unit contact vector and skips
+    // the break's own material pair; its fade_object pieces fly along the vector (x and y only).
+    Fixture f;
+    std::vector<Knock> knocked;
+    f.world.knock = [&knocked](double object, Vec3 velocity, Vec3 spin) {
+        knocked.push_back({object, velocity, spin});
+    };
+    const ObjectType can = overheadType(0xfbf3e3aeU);
+    const PropPose pose{.position = Vec3{1, 2, 0.3F}, .rotation = Quat{}};
+    CHECK(f.props.breakFlying(50.0, can, floorContact(), pose, f.world));
+    CHECK(f.props.broken(50.0));
+    CHECK(f.services.pairs.empty());
+    REQUIRE_FALSE(f.services.spawned.empty());
+    CHECK(f.services.spawned[0] == "dyn_trashcan_b");
+    CHECK(std::abs(f.services.spawnedAt[0].z - 1.3F) < 1e-5F);
+    CHECK(f.services.bodies == std::vector<std::pair<double, bool>>{{50.0, false}});
+    // The dented can and the four litter pieces are launched; straight up gives them no speed, but a spin within 3 pi.
+    REQUIRE(knocked.size() == 5);
+    CHECK(knocked[0].object == 1001.0);
+    for (const Knock& knock : knocked) {
+        CHECK(knock.velocity.x == 0.0F);
+        CHECK(knock.velocity.y == 0.0F);
+        CHECK(knock.velocity.z == 0.0F);
+        CHECK(std::abs(knock.spin.x) <= 3.0F * std::numbers::pi_v<float> + 1e-4F);
+    }
+    // Broken, it takes no second break; it goes the next tick.
+    CHECK_FALSE(f.props.breakFlying(50.0, can, floorContact(), pose, f.world));
+    f.props.tick(f.world);
+    CHECK(f.props.takeRemoved() == std::vector<double>{50.0});
+}
+
+TEST_CASE("a broken prop's pieces fly at 2-5 m/s along the contact vector's x and y, z 0", "[world_objects][props]") {
+    // docs/research/script-types.md#fade-object: FadeObject_Launch normalises the direction, scales x and y by 2-5 each
+    // and sets z to 0.
+    Fixture f;
+    std::vector<Knock> knocked;
+    f.world.knock = [&knocked](double object, Vec3 velocity, Vec3 spin) {
+        knocked.push_back({object, velocity, spin});
+    };
+    const coney::world_objects::PropContact wall{.point = {1, 2, 1}, .normal = {1, 0, 0}, .vector = {0.1F, 0, 0}};
+    CHECK(f.props.breakFlying(50.0, overheadType(0x62502b03U), wall, PropPose{}, f.world));
+    REQUIRE(knocked.size() == 4);
+    for (const Knock& knock : knocked) {
+        CHECK(knock.velocity.x >= 2.0F);
+        CHECK(knock.velocity.x <= 5.0F);
+        CHECK(knock.velocity.y == 0.0F);
+        CHECK(knock.velocity.z == 0.0F);
+    }
+}
+
+TEST_CASE("a struck trash prop's pieces drop: its contact vector is zero", "[world_objects][props]") {
+    // docs/research/objects.md#trash-props: a prop never touched holds (0, 0, 0), so its pieces get no velocity.
+    Fixture f;
+    std::vector<Knock> knocked;
+    f.world.knock = [&knocked](double object, Vec3 velocity, Vec3 spin) {
+        knocked.push_back({object, velocity, spin});
+    };
+    CHECK(f.strike(overheadType(0x62502b03U)).broke);
+    REQUIRE(knocked.size() == 4);
+    CHECK(knocked[0].velocity.x == 0.0F);
+    CHECK(knocked[0].velocity.z == 0.0F);
+}
+
+TEST_CASE("a thrown bottle's break: its dust and 4-8 brown glass pieces", "[world_objects][props]") {
+    // docs/research/script-types.md#thrown-weapon: dyn_beerbottle's glass; another model only the dust.
+    ObjectType bottle;
+    bottle.name = "dyn_beerbottle";
+    bottle.className = std::string(coney::world_objects::kThrownWeaponClass);
+    bottle.modelHash = 0x6effeee0U;
+    Fixture f;
+    Props::thrownEffects(bottle, Vec3{1, 2, 0}, f.world);
+    CHECK(f.services.dusts == 1);
+    CHECK(f.services.shards >= 4);
+    CHECK(f.services.shards <= 8);
+    bottle.modelHash = 0x83baff06U;
+    Fixture g;
+    Props::thrownEffects(bottle, Vec3{1, 2, 0}, g.world);
+    CHECK(g.services.dusts == 1);
+    CHECK(g.services.shards == 0);
+}
+
+TEST_CASE("a lifted cash register broken flying leaves a dyn_cashreg_c holding money, launched along the normal",
+          "[world_objects][props]") {
+    // docs/research/script-types.md#dyn-cashreg: the piece 0.2 x the contact vector off, +0x124 1, three bursts.
+    ObjectType till;
+    till.name = "dyn_cashreg";
+    till.className = std::string(coney::world_objects::kCashRegisterClass);
+    till.value = 16;
+    till.secondHits = 3;
+    till.material = 103;
+    const PropPose pose{.position = Vec3{1, 2, 0.3F}, .rotation = Quat{}};
+    Fixture f;
+    std::vector<Knock> knocked;
+    f.world.knock = [&knocked](double object, Vec3 velocity, Vec3 spin) {
+        knocked.push_back({object, velocity, spin});
+    };
+    f.props.initCashRegister(50.0, till, pose, f.world);
+    REQUIRE(f.props.useCashRegister(50.0, till, f.world));
+    // The counters it keeps between throws.
+    f.props.setCounters(50.0, till, 16, 1);
+    CHECK(f.props.counters(50.0) == std::pair<std::uint8_t, std::uint8_t>{16, 1});
+    CHECK(f.props.breakFlying(50.0, till, floorContact(), pose, f.world));
+    CHECK(f.props.broken(50.0));
+    REQUIRE(f.services.spawned.size() == 2);
+    CHECK(f.services.spawned[1] == "dyn_cashreg_c");
+    CHECK(std::abs(f.services.spawnedAt[1].z - 0.34F) < 1e-5F);
+    CHECK(f.services.values == std::vector<std::pair<double, std::uint32_t>>{{1002.0, 1U}});
+    REQUIRE(knocked.size() == 1);
+    CHECK(knocked[0].object == 1002.0);
+    CHECK(knocked[0].velocity.x == 0.0F);
+    CHECK(knocked[0].velocity.z == 0.0F);
+    CHECK(f.services.bursts == 3);
+    f.props.tick(f.world);
+    CHECK(f.props.takeRemoved() == std::vector<double>{50.0});
+}
+
+TEST_CASE("another class's flying break is the caller's", "[world_objects][props]") {
+    Fixture f;
+    CHECK_FALSE(f.props.breakFlying(50.0, masksType(0, 1), floorContact(), PropPose{}, f.world));
+    CHECK_FALSE(f.props.counters(60.0).has_value());
 }

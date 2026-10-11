@@ -209,6 +209,7 @@ void LevelPickups::drop(double handle, anim::Vec3 at) {
     if (world_objects::SpawnRecord* record = m_records.find(handle)) {
         record->pinned = false;
         record->position = {at.x, at.y, at.z};
+        ++record->jumps;
     }
 }
 

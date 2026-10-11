@@ -11,7 +11,7 @@ the four effect layers the weather bindings start and end. Every view has its ow
 
     All six queue types, thirteen look slots and four layers are listed. The queue's handlers and the layers'
     tags are read from the executable; the looks' numbers are the `CfgScrFx` calls of `config_preload2.lua` (looks 3
-    and 4 have none). Who uses looks 1, 6, 11 and 12 is not traced, nor what looks 0, 3, 4 and 8 are for.
+    and 4 have none). Who uses looks 1, 6, 11 and 12 is not traced.
 
 23 entries. Data: `research/references/screen-effects.yaml`.
 
@@ -34,15 +34,15 @@ the four effect layers the weather bindings start and end. Every view has its ow
 
 | Number | Colour | In (ms) | Out (ms) | Blur | Set by | What |
 | --- | --- | --- | --- | --- | --- | --- |
-| <span id="fx-look-0"></span>0 | 0, 0, 0, 0 | 50 | 3000 | 150 | `0x00284280` | |
+| <span id="fx-look-0"></span>0 | 0, 0, 0, 0 | 50 | 3000 | 150 | `0x00284280` | The flash's ghost grid (`Flash_Use`); ends through look 4 |
 | <span id="fx-look-1"></span>1 | 0, 0, 0, 0 | 0 | 0 | 75 | | |
-| <span id="fx-look-2"></span>2 | 51, 25, 0, 80 | 1000 | 5000 | 150 | `0x00236d28` (sets human flag `0x80000`); ended by `0x00236fb8` and `ScreenQueueEffect(1)` | A dark orange tint a player state turns on (human flag `0x80000`) |
-| <span id="fx-look-3"></span>3 | | | | | after look 2 ends (`0x0018b950`) | |
-| <span id="fx-look-4"></span>4 | | | | | after look 0 ends (`0x0018b950`) | |
+| <span id="fx-look-2"></span>2 | 51, 25, 0, 80 | 1000 | 5000 | 150 | `0x00236d28` (sets human flag `0x80000`); ended by `0x00236fb8` and `ScreenQueueEffect(1)` | Rage: a dark brown tint and the ghost grid of the last frame, strongest at the edges ([the rage look](../research/graphics.md#rage-look)) |
+| <span id="fx-look-3"></span>3 | | | | | after look 2 ends (`0x0018b950`) | Rage's end: the ghost grid fading over 2,500 ms, then look 8 |
+| <span id="fx-look-4"></span>4 | | | | | after look 0 ends (`0x0018b950`) | The flash's end: the ghost grid, flat alpha 200, fading over 1,500 ms, then look 8 |
 | <span id="fx-look-5"></span>5 | | 1250 | 4000 | | `ScreenQueueEffect` 4 and 5 | The blur or glow pulse, drawn through the device's blur slot (`+0x108`) |
 | <span id="fx-look-6"></span>6 | 255, 255, 255, 255 | 30 | 30 | 0 | | A white flash (from its colour and 30 ms times) |
 | <span id="fx-look-7"></span>7 | 0, 0, 0, 0 | 1000 | 5000 | 1 | `EnableHeat` | Heat haze |
-| <span id="fx-look-8"></span>8 | 0, 0, 0, 0 | 0 | 0 | 15 | its out time ends look 3 (`0x0018b950`) | |
+| <span id="fx-look-8"></span>8 | 0, 0, 0, 0 | 0 | 0 | 15 | its out time ends look 3 (`0x0018b950`) | The hand-back: the motion blur turns it into the base look |
 | <span id="fx-look-9"></span>9 | 0, 0, 0, 0 | 0 | 0 | 15 | `SetLevelColour`; `ExitStore` returns to it | The level's colour tint |
 | <span id="fx-look-10"></span>10 | 0, 0, 0, 0 | 0 | 0 | 15 | `EnterStore` | The look inside a store |
 | <span id="fx-look-11"></span>11 | 0, 0, 0, 0 | 0 | 0 | 15 | | |
@@ -61,7 +61,7 @@ the four effect layers the weather bindings start and end. Every view has its ow
 
 ## Sources and evidence
 
-Evidence levels used: confirmed-code, inferred, speculative.
+Evidence levels used: confirmed-code, confirmed-runtime, speculative.
 
 - SLUS_212.15, ScreenEffectsManager.cpp (0x0018b168-0x0018e7c0); config_preload2.lua, CfgScrFx
 

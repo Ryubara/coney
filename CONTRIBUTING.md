@@ -134,3 +134,6 @@ Without write access to the repository, work from a fork:
 ## Agents
 
 AI agents read [AGENTS.md](AGENTS.md) first; it is the single instruction file for every agent in this repository.
+The repository also ships the agent tool configuration (`.mcp.json` for the Ghidra and PCSX2 debugging servers,
+`.claude/agents/` for the roles, `.claude/settings.json` for shared permissions); what each holds and how to set
+it up: [Setting up an agent tool](docs/guides/agents.md#setup).

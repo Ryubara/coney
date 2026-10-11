@@ -192,6 +192,7 @@ void LevelObjectServices::destroyObject(double object) {
 void LevelObjectServices::moveObject(double object, anim::Vec3 at) {
     if (world_objects::SpawnRecord* record = m_records != nullptr ? m_records->find(object) : nullptr) {
         record->position = {at.x, at.y, at.z};
+        ++record->jumps;
     }
 }
 

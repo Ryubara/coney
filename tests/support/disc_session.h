@@ -21,6 +21,7 @@
 
 #include "audio/object_sounds.h"
 #include "audio/sound_engine.h"
+#include "core/assert.h"
 #include "core/chunk_system.h"
 #include "core/deferred_input.h"
 #include "core/game_timer.h"
@@ -37,21 +38,20 @@
 
 namespace coney::test {
 
-/// One run of the game session over the disc with a pad script; nothing runs until startAtLevel() or startStory().
-/// One at a time: a run starts the renderer, which a second run cannot start while the first lives.
+/// One run of the game session over the disc with a pad script or a driver; nothing runs until startAtLevel() or
+/// startStory(). One at a time: a run starts the renderer, which a second run cannot start while the first lives.
 class DiscSession {
   public:
     /// Everything set up over `wad` (which must outlive it); the pad script must parse. Movies are skipped unless
     /// `settings` says otherwise.
     DiscSession(const io::Wad& wad, std::string_view padScript,
                 const platform::GameSessionSettings& settings = defaultSettings())
-        : DiscSession(wad, parsedScript(padScript), settings) {}
-    /// The same with a pad the test steers as it plays (an adaptive playthrough, support/live_pad.h): `pad` (which must
-    /// outlive this) is asked for its frame 0 on the first frame of play.
-    DiscSession(const io::Wad& wad, InputSource& pad, const platform::GameSessionSettings& settings = defaultSettings())
-        : m_handlers(chunk::ChunkHandlerTable::withDefaults()), m_budget(world::kSectorPoolSize) {
-        start(wad, pad, settings);
-    }
+        : DiscSession(wad, parseScript(padScript), nullptr, settings) {}
+    /// The same with player 1's pad from `driver` (which must outlive the run), an adaptive playthrough's pad that
+    /// decides each frame's input from what the game shows (docs/guides/testing.md#playthrough-tests).
+    DiscSession(const io::Wad& wad, InputSource& driver,
+                const platform::GameSessionSettings& settings = defaultSettings())
+        : DiscSession(wad, nullptr, &driver, settings) {}
     DiscSession(const DiscSession&) = delete;
     DiscSession& operator=(const DiscSession&) = delete;
     DiscSession(DiscSession&&) = delete;
@@ -112,26 +112,23 @@ class DiscSession {
     static constexpr std::uint64_t kPlayLimit = 3600;
 
   private:
-    // The settings tests use: movies skipped.
+    // The settings a run uses unless given others: the movies skipped.
     static platform::GameSessionSettings defaultSettings() {
         return platform::GameSessionSettings{.skipMovies = true, .rumble = std::nullopt, .profiles = std::nullopt};
     }
-    // `padScript` parsed (a failed parse fails the test and plays nothing).
-    static std::unique_ptr<ScriptedInput> parsedScript(std::string_view padScript) {
-        auto parsed = parseInputScript(padScript);
+
+    // The pad script `text`, parsed; it must parse.
+    static std::unique_ptr<ScriptedInput> parseScript(std::string_view text) {
+        auto parsed = parseInputScript(text);
         REQUIRE(parsed.has_value());
         return std::make_unique<ScriptedInput>(parsed ? std::move(*parsed) : std::vector<InputEvent>{});
     }
-    // Over a script this session owns.
-    DiscSession(const io::Wad& wad, std::unique_ptr<ScriptedInput> script,
+
+    // The set-up both constructors share: player 1's pad is `script` when given, else `driver`.
+    DiscSession(const io::Wad& wad, std::unique_ptr<ScriptedInput> script, InputSource* driver,
                 const platform::GameSessionSettings& settings)
         : m_handlers(chunk::ChunkHandlerTable::withDefaults()), m_budget(world::kSectorPoolSize),
           m_script(std::move(script)) {
-        start(wad, *m_script, settings);
-    }
-    // The renderer, the sound, the pad (waiting for the first frame of play, as `--play-level` plays one) and the
-    // session.
-    void start(const io::Wad& wad, InputSource& pad, const platform::GameSessionSettings& settings) {
         platform::addTextureDictionaryHandlers(m_handlers);
         platform::addSpriteSheetHandlers(m_handlers);
         auto engine = platform::RenderEngine::start(platform::RenderBackend::Null, {});
@@ -141,7 +138,11 @@ class DiscSession {
         REQUIRE(audio.has_value());
         m_audio = std::move(*audio);
         REQUIRE(m_audio->startEngine(wad).has_value());
-        m_input = std::make_unique<DeferredInput>(pad, [this] { return m_session->inPlay(); });
+        // Exactly one of the two constructors gives a pad; the assertion tells the analyzer the pointer is set.
+        InputSource* pad = m_script != nullptr ? m_script.get() : driver;
+        CONEY_ASSERT(pad != nullptr);
+        // The pad waits for the first frame of play, as `--play-level` plays one.
+        m_input = std::make_unique<DeferredInput>(*pad, [this] { return m_session->inPlay(); });
         m_stack.setInput(m_input.get());
         m_session = std::make_unique<platform::GameSession>(
             *m_engine, m_stack, wad, m_handlers, m_budget, m_strings, m_objectSounds, settings,

@@ -117,7 +117,11 @@ def test_the_repository_hooks_build() -> None:
     others = [hook for hook in known.values() if not hook.call]
     # Hooks of different passes may share an address (the event hooks and the hint ones); each pass builds alone.
     events = [hook for hook in others if hook.name.startswith("event-")]
-    build([hook for hook in others if hook not in events] + [calls[0]])
+    rest = [hook for hook in others if hook not in events]
+    # A run installs at most MAX_HOOKS, and the file holds more than that, so build it in runs of that size.
+    size = hooks.MAX_HOOKS - 1
+    for start in range(0, len(rest), size):
+        build([*rest[start : start + size], calls[0]])
     build(events)
 
 
