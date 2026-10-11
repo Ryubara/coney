@@ -1,0 +1,23 @@
+# A fall from a great height (owner checklist item 48): slot 1 stands Rembrandt in level99's street; at frame 5
+# his feet are put 40 m up and he falls holding the stick at 45 % (a walk). The trace shows the follow camera on the way
+# down: the aim point the view faces and its lag, the view's pitch, the hard band and the long-fall state flag.
+# Research: docs/research/camera.md#long-fall.
+description = "level99 street: the player put 40 m up falls, stick at 45 %; the camera aim point, lag, pitch"
+research = "docs/research/camera.md#long-fall"
+input = "fall_high_stick.txt"
+updates = 150
+fields = ["player", "camera", "fall"]
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick"]
+setup = [ { address = "tf(player) + 0x8", type = "f32", value = "f32(tf(player) + 0x8) + 40", frame = 5, until = 5 } ]
+
+[coney]
+level = "level99"
+args = ["--checkpoint", "3", "--start", "75.155,41.1354,40.2231,91.909,5.3,89.854"]
+settle = 300
+
+[diff]
+columns = ["z", "vz", "cam_z", "cam_pitch", "view_pitch"]
+tolerance = { z = 0.1, vz = 0.05, cam_z = 0.2, cam_pitch = 2.0, view_pitch = 2.0 }

@@ -48,7 +48,7 @@ subject, updated in place, so a reader never has to work out which of two pages 
 3. Link files outside `docs/` (such as `LEGAL.md`) as `repo:<file>`, e.g. `[LEGAL.md](repo:LEGAL.md#clean-room)`:
    the strict build rejects relative links that leave `docs/`, and `mkdocs_hooks.py` turns these into links to the
    file on GitHub. Never write the repository's or the site's address into a file, code comment or commit message;
-   the README is the one exception.
+   the README is the one exception. Name roles, not people or accounts: "a maintainer decision", not who made it.
 4. On a research page, give every non-obvious claim an address or file offset and an evidence level: confirmed
    (code), confirmed (runtime), inferred or speculative. The levels are defined in
    [Research workflow](research-workflow.md#evidence-levels).

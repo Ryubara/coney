@@ -543,12 +543,20 @@ functions named:
   inserts before the first entry with a higher number). When the pool is empty a new hint is dropped. The text is
   kept by pointer, not copied.
 - **Queueing** (`HintBox_Queue(box, text, priority)`, `0x001ce3c0`): a nil text clears the showing hint unless the game
-  is paused. Otherwise the hint is inserted; if a hint is showing and the new priority is **lower** (more urgent), the
-  showing hint is put back in the queue with its own priority and cleared, so the new one shows on the next update and
-  the old one **starts again from the beginning** later. Equal or higher numbers wait.
+  is paused (`MessageHUD_Shutdown`, `0x001b9290`); it does **not** take the next hint, which waits for the next
+  `HintBox_Update`. Otherwise the hint is inserted, with **no check for a duplicate** (the same text twice is two
+  entries). If a hint is showing and the new priority is **lower** (more urgent), the showing hint is put back in the
+  queue with its own priority and cleared, and it **starts again from the beginning** later. Equal or higher numbers
+  wait. Last, when no hint is showing (the box was free, or the urgent one just cleared it), `HintBox_Queue` calls
+  `HintBox_Update` itself (the box's vtable `+0x34`), so the front of the queue **shows in the same call**, with its
+  cue: a script's `HUDSetTutorialText(nil)` then `HUDSetTutorialText(text)` shows `text` at once, in the update the
+  script ran. Confirmed (code) at `0x001ce484`-`0x001ce52c`, and confirmed (runtime): every text set on a free box in
+  level99's lessons 1-8 was shown in the same tick ([The queue at runtime](#hint-queue-runtime)).
 - **Taking the next** (`HintBox_Update`, `0x001cdc80`, each HUD update and also during a freeze, from `GameTimer_Update`
-  `0x00145a10`): when no hint shows, the front of the queue becomes the text (`MarkupText_SetText`), its priority goes
-  to `+0x3ac`, interface cue `0x15` plays, and the box is laid out ([layout](#hint-box-layout-0x0050eb50)).
+  `0x00145a10`, and from `HintBox_Queue` and `HintBox_Withdraw` above): when no hint shows, the front of the queue
+  becomes the text (`MarkupText_SetText`), its priority goes to `+0x3ac`, interface cue `0x15` plays, and the box is
+  laid out ([layout](#hint-box-layout-0x0050eb50)). When a hint shows, it checks the markup's time instead and clears
+  an expired hint; the next one is **not** taken in that call, so it shows one update later.
   The queue entry is in `s1` there (`+0x0` the text, `+0x4` the priority byte); `0x001cdf7c`, just after
   `MarkupText_SetText`, is where the `event-hint` hook logs each hint the moment it shows. Confirmed (runtime).
 - **How long a hint stays** comes **only from its markup** (`MarkupText_IsExpired`, `0x001bb2f0`; when it returns true
@@ -566,9 +574,12 @@ functions named:
   Disc check (counts only): of the hint strings, `config_strings_en.lua` has 7 `<DISPLAYTIME>` tags and `level99.lua` 8
   (2,500-8,000 ms); neither uses `<FREEZE>`, so most hints stay until the script removes them.
 - **Removing:** `HUDFlushTutorialText(p)` (`HintBox_FlushPriority`, `0x001ce748`) removes every queued hint of priority
-  `p`, and the showing one when its priority is `p`; 4 removes all. `HintBox_Withdraw(box, text)` (`0x001ce5c0`)
-  removes one hint by its text pointer (the showing one only when the game is not paused). `HUDCheckTutorialText`
-  (`HintBox_Contains`, `0x001ce550`) is true while the text is showing or queued.
+  `p`, and the showing one when its priority is `p`; 4 removes all. The next hint then waits for the next
+  `HintBox_Update`. `HintBox_Withdraw(box, text)` (`0x001ce5c0`) removes one hint by its text pointer: the showing one
+  through `HintBox_Queue(box, nil)` (so only when the game is not paused) followed by a `HintBox_Update` call, so the
+  next queued hint **shows at once**; a queued one, the first entry with that pointer only. `HUDCheckTutorialText`
+  (`HintBox_Contains`, `0x001ce550`) is true while the text is showing or queued. Texts are compared by pointer;
+  Lua 4 interns its strings, so a script's equal strings are one pointer (inferred). Confirmed (code).
 - **Style:** text colour `0x005fd310` (178, 178, 178, 255) ([GUI](gui.md#colour-table)), markup lines `<CR2>` and
   `<CRM>` enabled; the widget's `+0x1d4` is 0.74 with one player and 0.52 split, or the number after a leading
   `<AUTOINDENT` tag (`0x001bb390`). Read at runtime (PCSX2 2.9.94, copies of quick-save slots 3-8, `level99`): a
@@ -583,6 +594,49 @@ functions named:
 
 The box is hidden while a scroll-in message, an announcement or a mini-game panel shows ([What hides
 what](#the-huds-frame)); it is drawn by `0x001ce8b8` and hidden by `0x001bb2b0`.
+
+#### The queue at runtime {#hint-queue-runtime}
+
+Two plays of `level99` checkpoint 1 (2026-10-11, PCSX2 2.9.94, the state copy `l99-cp1-lesson1` driven by the
+`level99-tutorial` course of [Differential playthroughs](../guides/research-workflow.md#differential-playthroughs),
+3,600 updates each, through lesson 9's set-up), with the hooks `hint-queue` (`HintBox_Queue`), `hint-clear`
+(`MessageHUD_Shutdown` on the box `0x00609250`), `hint-withdraw`, `hint-flush`, `event-hint` (`0x001cdf7c`),
+`tutorial-callback`, `anim-dispatch` and `anim-callback-match` of `repo:research/traces/patches.toml`. Times are taken
+from the tick count each hook logs (`0x005104f4`, two ticks an update). Confirmed (runtime):
+
+- **A text set on a free box shows in the same tick.** All `HintBox_Queue` calls (87 and 89 in the two runs) came
+  from `HUDSetTutorialText` (`Tutorial_QueueText`, return address `0x001b499c`). Of those with a text (40 and 41),
+  all but one found the box empty (a nil just before it, or nothing showing) and were shown within the same call:
+  `MarkupText_SetText`'s own clear (`0x001bb26c`), then the `0x001cdf7c` show, at the same tick. The one is `TT_26b`
+  below; apart from it the queue never held an entry past the call that queued it.
+- **A held hint makes the next wait for its end, plus one update.** `TT_26a` (`<DISPLAYTIME 3000>`) and `TT_26b` were
+  set in one call; `TT_26b` stayed queued while `TT_26a` showed. `HintBox_Update` cleared `TT_26a` 91 updates (182
+  ticks) after it showed, and `TT_26b` showed on the next update, 92 updates after `TT_26a`, the same in both runs.
+- **Duplicates are not dropped.** `P1.StartSnaps` sets the snap text twice in one call (nil, text, nil, text, one
+  tick): the box showed it, cleared it and showed it again, with the cue twice. The two entries never coexist in the
+  queue, because the first is shown before the second is queued.
+- **Nothing else queued.** No `HintBox_QueueGameHint`, no `HUDFlushTutorialText`; `HintBox_Withdraw` ran about
+  3,000 times (from `HUD_WithdrawActionHint`, return address `0x001b3e64`, [Action prompts](#action-prompts)), always
+  with no text (no action hint was queued), so it did nothing.
+
+So in the original a hint queue backs up only behind a hint with a time (`<DISPLAYTIME>`, `<FREEZE>`) or a more urgent
+one, never because two scripts set texts in one update: the last text set in an update is the one on screen at its
+end. The order and timing of lessons 5-8 are in [Scripts](scripting.md#level99-hint-timing).
+
+**Coney's differences** (from `repo:src/hud/hint_box.cpp`, for the implementer):
+
+1. `HintBox::queue` only inserts; the text waits for the next `HintBox::update`. It must show the front of the queue
+   at once, with its cue and its `hint` event, when nothing is showing after the insert (and after an urgent hint
+   cleared the showing one). With that, two nil + text pairs in one update leave nothing queued, as on the original.
+2. `HintBox::withdraw` of the showing text must also take the next hint at once (`HUDSetTutorialText(nil)` and
+   `flush` must not).
+3. `HintBox::update` clears an expired hint and takes the next in the same call; the original takes it on the next
+   update (`TT_26b` 92 updates after `TT_26a`, not 91).
+4. Keep: no duplicate check in `queue`; nil does not take the next hint.
+5. Not the box's: a grab's hold ids must fire their animation callbacks at the connect, 34 updates before the strong
+   grapple's hit is scored ([Animation callbacks](characters.md#anim-callbacks)), so `PlayerState`'s grab hint and
+   `P1.Power`'s `TT_24d` come in different updates, as in the original
+   ([lessons 5-8](scripting.md#level99-hint-timing)).
 
 ### The tutorial callback (`HUDSetTutorialCallback`) {#tutorial-callback}
 
@@ -728,6 +782,12 @@ icon sprite at `+0x480`. Confirmed (code) unless marked:
   number is instead a **sprite word**: `ActionPrompt_SetText` hands it to `ActionPrompt_SetNumberText` (`0x0019f128`) →
   `MessageHUD_SetIcon` (`0x001bb1e0`), which drops the text and shows that sprite in the widget's own box `+0x70`.
   Confirmed (code).
+- **The button glyph** ([MONEYFONT](gui.md#moneyfont)): the context prompts start with `GSTRING.ACTIONBUTTON`,
+  `<MONEYFONT><ST></MONEYFONT>` and a space, concatenated in front of the prompt's words (`config_strings_*.lua`; disc
+  check, counts only). `<ST>` is the character `n`; inside `<MONEYFONT>` the prompt's font slot 3 (`part_page0`)
+  draws it from rectangle 11 + (`'n'` − `'0'`) = **73, the triangle button**, so the original shows "(triangle) Give
+  Weapon". The revive string 4 instead uses `<BIGFONT><MONEYFONT><SDL>`: `big_font` rectangle 256 + (4 − 1) = 259, the
+  animated stick picture. Confirmed (code) at `0x001b9600`, `0x00179958`, `0x00179c30`.
 - **The raise** (`ActionPrompt_SetRaise`, `0x0019f430`, each HUD update) keeps the prompt clear of the texts below it:
   while the hint box shows (box `+0x3a8` set and no scroll-in), raise = 0.05 (`0x0050d500`) − the box's height (`+0x3b0`);
   otherwise −0.02 (`0x0050d504`) − the showing scroll-in's height (scroll-in `+0x578`, 0 when none). A prompt of more
@@ -775,6 +835,14 @@ icon sprite at `+0x480`. Confirmed (code) unless marked:
       when he is the other player (co-op); an AI crew member (`+0x380` = −1) has none.
     - **Order**: after the mug test and before the action object, under the same "free to act" gates; a player who is
       himself knocked out gets no prompt.
+    - **No flash, no prompt beside a downed Warrior.** Without a flash the revive step fails and the steps after it
+      run, but none of them offers a downed Warrior anything: the talk prompt (step 4) needs his `+0x1b2`, and
+      `WarriorBrain_Think` (`0x003052f0`, [the swap prompt](ai.md#think-warrior)) sets it only while
+      `HumanRecord_AreActionsBlocked` (`0x00228228`, state mask `0x7bf9e9f7ff0`) is false for him and his gait
+      (`+0x1a8`) is 0. That mask holds `0x40000`, the knocked-out state (`Human_IsKnockedOut`, `0x00227dd8`, tests
+      exactly `0x40000`), so a knocked-out Warrior's swap prompt ("Give Weapon", strings `0xc`-`0xe`) is cleared on
+      his next think. So beside a downed Warrior the original shows **the revive prompt with a flash, else nothing**
+      (or an action object's prompt in reach). Confirmed (code).
 - **Showing:** no text hides the prompt (`0x001b2490`); a new or changed text restarts it (`ActionPrompt_SetText`,
   `0x0019f1b0`; a text that parses as a number goes through `0x0019f128`). A prompt naming `Spray`, `Flash`, `Blades`
   or `Give Mon...` also wakes the player panel ([Activity](#the-player-panel)).
@@ -1897,15 +1965,49 @@ on. Confirmed (code).
 
 #### The lock-pick dial layout {#lock-pick-dial-layout}
 
-Per player (`0x0050d670` + player × `0x20`): the pins' GUI position, player 1 (0.09, 0.59) and player 2 (0.9, 0.59),
-and the shapes' centre, (−0.531, −0.075) and (0.519, −0.075). **In the default video mode** (device flag `0x01`
-only) `LockPickDial_Draw` replaces that centre every update with **(−0.565, −0.07)** for player 1 and **(0.546,
-−0.07)** for player 2. Confirmed (code) at `0x001b7eb0`, `0x001b8530`; the other video modes rewrite the entry
-(`0x001b7c10`) and the radius factors `0x0050d6e8`-`0x0050d6fc` (all 1.0 in the default mode).
+Per player (`0x0050d670` + player × `0x20`, 32 bytes): a GUI position (x, 0, y, 0), player 1 (0.09, 0, 0.59) and
+player 2 (0.9, 0, 0.59), then a **centre** (x, y, z, w) in the overlay camera's space, static (−0.531, −0.075, 0, 0)
+and (0.519, −0.075, 0, 0). `LockPickDial_Init` (`0x001b7eb0`) and `LockPickDial_ApplyVideoMode` (`0x001b7c10`)
+rewrite the centre for the video mode before using it (the table below), with z = −1 and w = 1. Confirmed (code).
 
-**The pins**: three `BaseWidget`s, `hud_minigames` rectangle 11 (a brass lock cylinder), grey 191, at the GUI
-position, sizes 0.19, 0.152 and 0.114 (0.19 × (1 − 0.2 i), square in the default mode), depths 8,000, 9,000, 10,000,
-all on one centre. Each turns about its own centre (the widget's position, anchor 0). Only the current pin turns:
+**The pins and the shapes share that centre.** Each pin's `BaseWidget_Setup` first converts the GUI position into its
+sprite position (widget `+0x80`, `BaseWidget_SetPosition` `0x001a2060` through `RwDevice_GuiToOverlay` `0x00195238`:
+(x − 0.5) × 640 / 448, 0.5 − y, −1.1), but `LockPickDial_Init` then **overwrites** `+0x80` with the centre
+(x, y, −1, 1) (`0x001b8078`-`0x001b80f8`), and `ApplyVideoMode` does the same. Nothing writes `+0x80` again: the
+dial's update only turns the pins (slot `+0x94`), refreshes their size (`BaseWidget_SetSize` with no conversion)
+and runs the widget update (`BaseWidget_UpdateSize`, which touches the size and anchor, not `+0x80`), and `BaseWidget_RenderAlpha`
+(`0x001a2690`) copies `+0x80` straight into the sprite batch's positions (`Instance_AddSprite` `0x00182de0`). So the
+GUI position (0.09, 0.59) is **never seen**: the pins are drawn at the centre point at **depth 1**, the same depth as
+the shapes. Confirmed (code) at those addresses; it corrects the earlier reading that the pins sit at the GUI
+position at depth 1.1 (14 pixels right of and 5 below the shapes).
+
+| Video mode (device flags, [Graphics](graphics.md#video-mode)) | Centre, player 1 / player 2 (x, y) | Shapes' centre in `LockPickDial_Draw` | Radius factors: wedges x, y; disc x, y; pins w, h |
+| --- | --- | --- | --- |
+| Interlaced 4:3, `0x01` (the default) | (−0.56, −0.075) / (0.545, −0.075) | replaced each update by **(−0.565, −0.07)** / **(0.546, −0.07)** | 1, 1; 1, 1; 1, 1 |
+| Interlaced 16:9, `0x01` + `0x04` | (−0.74, −0.075) / (0.725, −0.075) | the centre | **0.8**, 1; **0.9**, 1; 1, 1 |
+| Progressive 4:3, `0x20` | not rewritten: the static (−0.531, −0.075) / (0.519, −0.075) | the centre | 0.75, 1.1; 0.75, 1.0; 0.6, 0.6 |
+| Progressive 16:9, `0x20` + `0x04` | (−0.62, −0.075) / (0.62, −0.075) | the centre | 0.5, 0.95; 0.5, 0.85; 0.6, 0.6 |
+| PAL `0x02` (speculative name), 4:3 / 16:9 | (−0.385, −0.07) / (0.39, −0.07); (−0.58, −0.05) / (0.58, −0.05) | by its other flags, as above | by its other flags |
+
+Confirmed (code) at `0x001b7eb0`, `0x001b7c10` (the centre) and `0x001b8530` (the factors, rewritten every update:
+`0x0050d6f0`/`0x0050d6f4` the wedges' radius `+0x498`/`+0x49c`, `0x0050d6f8`/`0x0050d6fc` the disc's,
+`0x0050d6e8`/`0x0050d6ec` the pins' width and height). That `+0x498` is the horizontal radius and `+0x49c` the
+vertical one is inferred: the 16:9 modes shrink only `+0x498`, as pixels 1.25 times wider need. `LockPickDial_Draw`
+also has a branch for `0x01` and `0x20` together (4:3: every factor 1; 16:9: wedges 0.85, 1.0, disc 0.75, 0.85, pins
+0.9, 0.9, the disc's y raised by 0.002), a combination the device never sets ([Video mode](graphics.md#video-mode)).
+In progressive 4:3 the static entry's z and w are 0, so the pins would sit at depth 0 unless an earlier mode had
+written −1 and 1 there (open; a port needs only the two interlaced rows).
+
+**On screen, default mode** (projection as for the shapes below): the pins' centre (−0.56, −0.075, −1) lands at
+pixel **(72.8, 257.6)** of 640 × 448 for player 1 and the shapes' (−0.565, −0.07, −1) at (70.6, 255.4): the wedges
+and the lock face sit **2.2 pixels left of and 2.2 above** the pins' centre, concentric to the eye. Player 2: pins
+(560.6, 257.6), shapes (561.0, 255.4). In 16:9 the two centres are the same point. Inferred from the code and the
+runtime view matrix below; no capture of the dial in the original.
+
+**The pins**: three `BaseWidget`s, `hud_minigames` rectangle 11 (a brass lock cylinder), grey 191, at the centre
+point above, sizes 0.19, 0.152 and 0.114 overlay units at depth 1 (0.19 × (1 − 0.2 i) × the pins' factors; square
+in the default mode), depths 8,000, 9,000, 10,000, all on one centre. Each turns about its own centre (anchor 0).
+Only the current pin turns:
 its angle (`+0x454`, radians, starting at π) changes by **0.1 × its speed** per update (speeds 1, 2, 3 by default),
 up or down by its direction byte, wrapped into 0-2π; positive angles turn clockwise on screen
 ([The stereo panel](#stereo-layout)). Drawn while the dial is shown and a pin is left. No text.
@@ -1918,10 +2020,10 @@ overlay camera's view window (0.725 × 0.5 at distance 1, [Graphics](graphics.md
 lands at **screen** (0.110, 0.570) for player 1, pixel (70.6, 255.4) of 640 × 448: the dial stores the centre as
 (x, y, −1, 1) at shape `+0x00` (`0x001b8530`, the `−1` written at dial `+0x488`), and the overlay camera's
 `viewMatrix` read at run time (camera `+0x20`: right (0.6897, 0, 0), up (0, −1, 0), at (−0.5, −0.5, −1), pos 0;
-PCSX2 2.9.94, `level99`) gives screen x = 0.6897 x + 0.5 and y = 0.5 − y at that depth, confirmed (runtime). The pins,
-sprites at depth 1.1, land at screen (0.133, 0.582), pixel (85.0, 260.6). So the wedges' and the disc's centre is
-**14 pixels left of and 5 above** the pins' centre, as the code stands; that the original shows this offset on
-screen was not seen (no capture of the dial).
+PCSX2 2.9.94, `level99`) gives screen x = 0.6897 x + 0.5 and y = 0.5 − y at that depth, confirmed (runtime). The
+pins' sprites use the same camera at the same depth ([above](#lock-pick-dial-layout): their position is the centre
+point, not the GUI position), so the dial's layers are concentric within the 2.2-pixel difference of the default
+mode's override.
 
 **The disc's texture** (`LockPickDial_IsResident`, `0x001b83c0`-`0x001b8404`, confirmed (code)): the u-v centre
 (`+0x4cc`) is rectangle 12's centre and the u radius (`+0x490`, `+0x494`) half its width, with v scaled by the texture's
@@ -1961,6 +2063,26 @@ order; how much the art covers is above).
   (k × 11.25° each side), and the next segment on each side **fades** from the colour to clear across its triangle
   (vertex colours interpolate). Example: 35 % gives k = 5, so 112.5° solid plus a fading 11.25° on each side, not the
   exact 126°.
+
+**Owner item 12 (the dial's layers misplaced)**: Coney's `repo:src/hud/lock_pick_hud.cpp` (checked 2026-10-11)
+draws the pins at the GUI position (0.09, 0.59) through `OverlayCamera::guiToOverlay` (depth 1.1) and the shapes at
+(−0.565, −0.07, 1). That puts the wedges and the lock face 14 pixels left of and 5 above the brass pins, which is the
+red wedge "up and left of the lock" and the keyhole left of the outer ring that the owner saw. The original draws
+the pins at the centre point. **Coney fixes**:
+
+1. Draw the three pins at the player's centre point in overlay space at distance 1, not at the GUI position: 4:3
+   (−0.56, −0.075) for player 1, (0.545, −0.075) for player 2; keep the shapes at (−0.565, −0.07) / (0.546, −0.07).
+   Drop `kPinPlaces`; the GUI position is unused.
+2. Size the pins in overlay units at distance 1 (0.19, 0.152, 0.114), not at the 1.1 of other sprites, so they come
+   out 10 % larger on screen than at depth 1.1.
+3. In Coney's 16:9 view (`graphics::isWideView`), use the interlaced 16:9 row: both centres (−0.74, −0.075) /
+   (0.725, −0.075), wedge radius 40 × 0.8 = 32 px across and 40 px up, lock-face radius 41 × 0.9 = 36.9 px across
+   and 41 up (the pixel radii scaled by the frame's height ÷ 448 as before), pins unchanged in overlay units.
+   `pixelInOverlay()` must use the camera of the mode in force (it now always builds a default 4:3
+   `OverlayCamera`).
+4. Test: for each mode, the projected screen centre of the pins and of the shapes differ by at most 2.5 logical
+   pixels (default mode 2.2 left and 2.2 up; 16:9 none); the pins' projected size at depth 1 is 0.19 / (2 × 0.725) of
+   the width in 4:3.
 
 ### `GUI/HUDLua.cpp`: the scripted bars {#fn-hudlua-bars}
 
@@ -2488,6 +2610,19 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   second text
   (`SetMsgHandlerEx`'s `prompt2`)
   is queued as a priority-0 hint while it is in reach and withdrawn when it changes or leaves.
+- **Coney differs: the prompt's button** (owner item 9, "n Give Weapon"). The layout (`repo:src/gui/text_layout.cpp`)
+  skips `<MONEYFONT>`, so the `<ST>` of `GSTRING.ACTIONBUTTON` draws as the letter `n` (`part_page0` firstGlyph 94 +
+  `'n'`). **Fix for the implementer**: make `<MONEYFONT>` set a glyph base for the runs until `</MONEYFONT>`: in the
+  `part_page0` slot (Coney's `kTextFontSlot`, the original's slot 3) rectangle = 11 + (c − `'0'`); in `big_font`
+  (slot 6) rectangle = 256 + (c − 1); none in other slots ([MONEYFONT](gui.md#moneyfont)). Also give the stick tags
+  (`<SDD>`, `<SDL>`, `<SDR>`, `<SDU>`) their characters 3-6 alternating with 2 every `0x0050e6e4` ms, and add the
+  icon tags 23-31 (`<RARREST>` … `<RCALLGANG>`, [the tag table](gui.md#markup)) to `repo:src/gui/markup.cpp`.
+- **Coney differs: the prompt beside a downed Warrior** (owner item 8, "no revive prompt"). Coney's revive step
+  matches the original (a flash is needed), but its swap prompt (`repo:src/ai/swap_prompt.h`) leaves out the blocked
+  test, so a knocked-out Warrior stays talkable and Coney shows "Give Weapon" where the original shows nothing (no
+  flash) or the revive prompt (with one). **Fix for the implementer**: clear the swap prompt (talkable, its text)
+  while the Warrior or the player is knocked out, or better, model `HumanRecord_AreActionsBlocked`'s mask
+  ([No flash, no prompt](#action-prompts)); a playthrough test should hold a flash to see string 4.
 - **The stereo-theft panel** (`repo:src/hud/stereo_hud.h`, stepped by `PlayLevelMode::stepStereoPanel()`) as
   [the stereo panel on screen](#stereo-layout) says: up from the triangle press, the arrow round the backdrop's
   corners by stage, the gauge sized and turned by the angle turned and dropping by a doubling step while a stage is
@@ -2644,7 +2779,8 @@ stand-in**: the chase HUD is not built or drawn (no level script creates it), so
 
 - Which character each name-banner sheet (records `0x1f`-`0x32`) names, beyond Rembrandt (`0x2f`).
 - The handcuff and key counters' icon rectangles, and the counters' exact text offsets.
-- The action prompts' text alignment and icon sprite; what `0x00225ff0` tests; a runtime look at a shown prompt.
+- What `0x00225ff0` tests; a runtime look at a shown prompt (the alignment and the button glyph are answered:
+  [Action prompts](#action-prompts)).
 - Which event raises each of the game's own hints (the 19 callers of `HintBox_QueueGameHint`).
 - **The caption pager** (HUD `+0x18e60`, [GUI](gui.md#fn-subtitle)): which script or mode creates it and whose
   command 1 steps the captions (`0x001cb340`).
