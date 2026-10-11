@@ -162,12 +162,12 @@ description that leaves either empty (`coney-tools repo check-body`):
   `gh pr comment` and `gh issue create` or `comment` take `--attach` too. It needs gh 2.99 or newer (`gh --version`).
   `check-body` refuses a Markdown image or `<img>` that still points at a local path, which is the reminder to
   attach it.
-- **No local paths in the text.** A published pull request or issue body never names a file or folder on your
-  machine: no `scratch/...`, `../../...`, `C:\...` or worktree path, and no "files in <folder>". Say "the scratch
-  folder" and describe the picture. The only local paths a draft may hold are the `![alt](./shots/<file>.png)` image
-  references that `gh --attach` rewrites to uploads. `check-body` refuses a body with any other such path in its
-  text; code spans and code blocks are not looked at. The files are game data: they stay in scratch and are deleted when the pull request is merged
-  ([Sharing one machine](how-we-work.md#shared-machine)).
+- **No local paths in the text.** A published pull request or issue body never names a file or folder on your machine:
+  no `scratch/...`, `../../...`, `C:\...` or worktree path, and no "files in <folder>". Say "the scratch folder" and
+  describe the picture. The only local paths a draft may hold are the `![alt](./shots/<file>.png)` image references that
+  `gh --attach` rewrites to uploads. `check-body` refuses a body with any other such path in its text; code spans and
+  code blocks are not looked at. The files are game data: they stay in scratch and are deleted when the pull request is
+  merged ([Sharing one machine](how-we-work.md#shared-machine)).
 
 ## Where the checks run {#where}
 

@@ -32,13 +32,12 @@ git diff --name-only main... | uv run --project python coney-tools repo check-do
 ```
 
 CI also checks the pull request description against [the template](.github/pull_request_template.md), including one
-created with `gh pr create --body-file`, and reruns when you edit it. The description needs the five sections
-(Summary, Checklist, Testing, Screenshots, AI use); a Summary and a Testing section with text; in Screenshots an
-image (a link to an uploaded screenshot or video; a local file path is refused) or a line `Screenshots: none (<reason>)`; one of the template's choices
-after "Commits written by:" and, unless a person wrote the commits, a model after "Model:". Text left as the template
-has it counts as empty. The sections, choices and placeholder text are in
-[.github/pr-body-rules.json](.github/pr-body-rules.json). To check a
-description yourself:
+created with `gh pr create --body-file`, and reruns when you edit it. The description needs the five sections (Summary,
+Checklist, Testing, Screenshots, AI use); a Summary and a Testing section with text; in Screenshots an image (a link to
+an uploaded screenshot or video; a local file path is refused) or a line `Screenshots: none (<reason>)`; one of the
+template's choices after "Commits written by:" and, unless a person wrote the commits, a model after "Model:". Text left
+as the template has it counts as empty. The sections, choices and placeholder text are in
+[.github/pr-body-rules.json](.github/pr-body-rules.json). To check a description yourself:
 
 ```sh
 uv run --project python coney-tools repo check-body --body description.md
