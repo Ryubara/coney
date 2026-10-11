@@ -10,7 +10,7 @@ A game function counts as understood when both hold:
 
 The names and sizes come from a committed listing, docs/progress/ghidra-functions.tsv, exported from Ghidra by
 `coney-tools progress ghidra`: addresses, sizes and our own names only, which LEGAL.md allows as reference data.
-The citations are read from the docs on every `progress update`, so a research page that cites a function moves
+The citations are read from the docs on every docs build, so a research page that cites a function moves
 the bar in the same commit. docs/guides/research-workflow.md#understood says how to refresh the listing.
 """
 

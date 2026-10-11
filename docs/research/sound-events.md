@@ -151,7 +151,7 @@ allows; "1.5 at a player" means volume 1.5 when the human's target is a player, 
 | 82 `cmd_rage` | `rage` (160) | 1 | yes | yes | | confirmed (code) |
 | 95 `cmd_boss` | `roar` (167) | 1 | yes | yes | | confirmed (code) |
 | 103 `cmd_kiyap` | `kiyap` (176) | 1.5 at a player | yes | yes | gesture | confirmed (code) |
-| 139 `cmd_fire` | `onfire` (107) | 1 | yes | yes | only while the human burns (`+0x19b`) | confirmed (code) |
+| 139 `cmd_fire` | `onfire` (107) | 1 | yes | yes | only while his on-fire shout is on (human byte `+0x19b`, 1 at spawn, [`HuEnableOnFire`](../references/bindings/character.md#huenableonfire)); the byte is the shout's switch, not a burning state: its only readers are this event (`0x00220044`) and `Human_StartBurning` (`0x002192d8`), both gating command 107 | confirmed (code) |
 | 146 `sprayface` | `sprayface` (203) | 1 | yes | yes | | confirmed (code) |
 
 `cmd_throw` in the level whose record `+0x04` is 31 at checkpoint 6, for a gang member (brain `+0x04` = 3): volume 3,
@@ -492,7 +492,10 @@ Lines played by name or by voice-table hash, not by command, confirmed (code):
   (`0x002f2230`): fixed lines of those fights.
 - **Idle dialogue** (`Human_PlayIdleDialogLine`, `0x00220430`, from `WarriorFollowTactic_Process`): the human's next
   line of a name built from his voice set, the level's number, the checkpoint and his counter `+0x196` (up to `+0x197`
-  lines, wrapping to 1).
+  lines, wrapping to 1). The lines live in `vags/character/voices/<voice>/` as `l<level>_c<checkpoint>_idle_<NN>`.
+  At spawn `Human_Init` (`0x002184ec`-`0x00218560`) looks up lines 01, 02 and 03 for the current level and
+  checkpoint (`Sound_FindByName`, `0x00110d78`): `+0x197` starts as the number found (0-3) and `+0x196` as 1 when
+  any is found; `HuSetIdleDialogMaxIter` overrides the count. Confirmed (code).
 - **Scene and clip events** 12 and 70 (human messages `0x8c`, `0xc6`): a speech line by hash at volume 1; 14 and 71
   (`0x8e`, `0xc7`): a positional sound by hash at the human, replacing the sound in his `+0x168`; 69 (`0xc5`) stops
   that sound (`Human_HandleMessage`, `0x00245920`).
