@@ -1095,8 +1095,8 @@ See [Tasks: The base task object](#task-object).
 | `0x003a4428` | `ScriptObj_GetPoseB` | Object pose getter; exact use not traced. | speculative |
 | `0x003a4478` | `ScriptObj_GetPoseC` | Object pose getter; exact use not traced. | speculative |
 | `0x003a45a0` | `ScriptObj_EmptyStub` | Empty stub. | confirmed (code) |
-| `0x003a4608` | `ScriptObj_CameraCall1d4` | Calls camera method +0x1d4 (likely a shake). | inferred |
-| `0x003a4668` | `ScriptObj_CameraCall1dc` | Calls camera method +0x1dc (likely a shake). | inferred |
+| `0x003a4608` | `ScriptObj_SetCameraWorldShakeLevel` | A player camera's shake slot 0 level (camera vtable `+0x1d4`, `+0x1a8`; [Camera](camera.md#world-shake)). | confirmed (code) |
+| `0x003a4668` | `ScriptObj_SetCameraWorldShakeTime` | A player camera's shake slot 0 time (camera vtable `+0x1dc`, `+0x1b4`; [Camera](camera.md#world-shake)). | confirmed (code) |
 | `0x003a4b88` | `ScriptObj_GetUserValue` | Returns a script object's user value. | confirmed (code) |
 | `0x003a4d90` | `Vec_PickConstant` | Returns one of two constant vectors. | speculative |
 | `0x003a50e0` | `Camera_IsPointInPlayerView` | Says whether a point is in a player's view. | confirmed (code) |

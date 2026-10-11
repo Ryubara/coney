@@ -2470,6 +2470,71 @@ so each axis stays within ±`A` / 2 m and changes smoothly (half the last offset
 passes its **aim point** `+0x240` (`0x0012cf94`, just before `Mat_LookAt`), so its shake turns the view and does not
 move the camera; with no point given the base adds it to the look-at point `+0x180`.
 
+#### Shakes from the world: the passing train {#world-shake}
+
+Set dressing shakes the cameras through **slot 0**, the slot of a shake with no human, with any amplitude and time,
+not through the three levels. Two one-instruction methods of the base camera (every camera class keeps them,
+`0x00535510` and `0x00535d50` alike): vtable `+0x1d4` (`0x004db180`, `swc1 f12, 0x1a8(a0)`) sets slot 0's level
+amplitude `+0x1a8`, and `+0x1dc` (`0x004db188`, `swc1 f12, 0x1b4(a0)`) its time `+0x1b4`; the script-object helpers
+`ScriptObj_SetCameraWorldShakeLevel` (`0x003a4608`) and `ScriptObj_SetCameraWorldShakeTime` (`0x003a4668`) call them on a player's current
+camera. Neither touches the rumble base `+0x1d0` or the view switch `+0x1d7`. Confirmed (code).
+
+**The train** (`part_train_sound`, `PartTrainSound_Update` `0x003db690`, [Script types](script-types.md#subway-train)):
+the sound object that travels with a subway or elevated train. While it is within 60 m of a camera, each of its
+updates (every 5 updates there; every 60 when farther than 120 m) does, for every view:
+
+- level amplitude = **(60 − d) × 0.004237288** (= 0.25 / 59), `d` the distance in metres from that view's camera
+  (vtable `+0x21c`) to the train sound, so 0 at 60 m and 0.25 at 1 m; **0.25** flat when within 1 m of any camera;
+- time = **0.95 s**.
+
+So nothing triggers it but distance: no script call, no sound event, no animation event. The shake then runs through
+the usual update ([above](#shake)): the current amplitude eases 65 % a camera update toward the level, the time
+counts down, and because the train re-arms the time every 5 updates (about 0.17 s) it never runs out while the train
+is in range; the level follows the distance, rising as the train comes and falling as it goes. Once out of range the
+last level holds for the rest of its 0.95 s, then the current decays × 0.6 an update to 0. The view offset is the
+shake's own (each axis `A × (0.5 × o_last + 0.5 × (u − 0.5))`, so within ±`A` / 2 m, smoothed by half the last
+offset), added to the follow camera's aim point, so **the view turns slightly; the camera does not move**. It needs
+`+0x1d7` set (the camera constructor `0x00120868` sets it to 1; a shake started with view 0 clears it until the next
+view-1 shake) and switch 6 on.
+
+**No pad rumble**: `Cam_UpdateShake` (`0x00121298`) finds the pad of slot *k* from the player list only for *k* ≥ 1
+(slot 0 keeps pad −1), so slot 0 never writes the rumble bytes. Confirmed (code); confirmed (runtime) below.
+
+**Runtime** (confirmed (runtime), PCSX2 2.9.94, a copy of quick-save slot 6 in `level99`, player standing, the
+player camera `*(0x005d9150)` read every 33 ms, 2026-10-10). `level99`'s subway (six `dyn_s_train_med_full` cars and
+the `part_train_sound`, moved by the scene `Coney_Sub1` or `Coney_Sub2`; each run's return function schedules the
+next 30 s later) passed three times, at game times 557.4 s, 604.2 s and 650.8 s (46.6 s apart: the scene plus the
+30 s wait). Each pass:
+
+- slot 0's level rose from 0.004 to a peak of **0.106** (the closest approach, 60 − 0.106 / 0.004237 = **35 m**) and
+  fell back, with the time at 0.883-0.950 s throughout (re-armed every 5 updates); the train was within 60 m for about
+  **3.2 s**, then the last level held for 0.95 s and decayed; about 4.2 s of shake in all;
+- the current amplitude followed the level within one or two updates (0.0027 on the first update at a level of
+  0.0041, then 65 % of the gap each update);
+- the view offset (`+0x190`) stayed within **±0.026 m** per axis (the bound at the peak is ±0.053 m), changing every
+  update (30 Hz);
+- `+0x1d7` was 1, switch 6 (`0x0050b1d0`) 1, and the pad's rumble bytes (`0x005dd810 + 0x40` / `+0x41`) **0 on every
+  sample**, with the pad's actuators enabled (`+0x4c` = 1).
+
+**The other world shakes** on slot 0 (confirmed (code), the arguments at the cited calls): `PartPelhamSubway_Update`
+(`0x003da744`) and `PartLevel2Subway_Update` (`0x003d9bcc`) set a level of **0.02** for **4 s** on each view's
+camera while within 30 m and 50 m of one; also `PartExplosionScreenShake_Init`, `PartMotorbikeGang`'s message and
+update, `PartPlasterDrop_OnMessage`, `SubPlasterDrop_Init` and `SubShk_Update` (arguments not traced).
+
+**Coney status and the fix for the implementer** (Coney as of `781d7768`): `camera::CameraShake`
+(`repo:src/camera/camera_shake.h`) has one shake started at levels 1-3 only; there is no slot 0, no way to set an
+amplitude and time from the world, and no `part_train_sound` behaviour (the particle systems do not know the type).
+To do:
+
+- give the shake slot 0 (or a second shake on the camera manager) with `setWorldShake(amplitude, seconds)`, the
+  original's `+0x1d4` / `+0x1dc`; its current is summed with the human slots and the total capped at the largest
+  level ([Slots and the view offset](#shake)); it never rumbles the pad;
+- a `part_train_sound` behaviour: within 60 m of the player camera, every 5 updates, level = (60 − d) × 0.25 / 59
+  (0.25 within 1 m) and time 0.95 s; plus its sound ([Script types](script-types.md#subway-train));
+- `part_pelham_subway` and `part_level2_subway` when those levels come: 0.02 for 4 s within 30 m / 50 m;
+- replace Coney's stand-in offset (`kOffsetScale`) with the original's form above, now known: it decides how much the
+  view moves (at the train's peak about ±2.6 cm on the aim point).
+
 ### Slow motion {#slow-motion}
 
 `0x005148a0` (`CfgFollowCamera`'s last argument, 0.2 in `global.lua`) scales **the characters' step**: an animation
