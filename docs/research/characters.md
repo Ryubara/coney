@@ -1638,7 +1638,8 @@ the first that succeeds. Confirmed (code):
 1. a **climb** (`Climb_TryStart`, [below](#climb)), if human flag `0x20000000` is clear and the stick is above 0.12;
 2. a **context action** (`0x002811f0`), if L2 is not held;
 3. a **jump** (`Player_TryJump`, `0x002829e8`), if human flag `0x10000000` is clear and the stick is above **0.95**;
-4. an object action (`0x00226ff0`, `0x00257f38`), if L2 is not held.
+4. the **drop** of what is in hand (`Human_DropHeld`, `0x00257f38`), if L2 is not held
+   ([Triangle with something in hand](#triangle-held)).
 
 Nothing happens while state flags `0x7bf9e9f7ff0` or record `+0x08` flags `0x5cfeafb` are set.
 
@@ -1686,6 +1687,55 @@ at runtime for Vermin (3.5 m/s up, 9.55 m/s across a 4.1 m gap); the rest is in
 
 **In an input script**: `stick left 0 100`, wait until the run start is over and the speed is above 3.3 m/s, then
 `tap triangle`; add `press l2` beforehand for a sprint jump.
+
+#### Triangle with something in hand {#triangle-held}
+
+Owner checklist item 2 (an early press at a wall drops the weapon instead of climbing). The four tries above, read
+again for a held object; confirmed (code) at `Player_UpdateActions` (`0x0027c120`, both its triangle blocks),
+`Climb_TryStart` (`0x002826f0`), `Climb_Start` (`0x00281c20`), `Player_TriangleAction` (`0x002811f0`),
+`ContextAction_Use` (`0x0024d530`) and `Human_PickUpSearch` (`0x0024d810`):
+
+1. **There is no buffer.** Command 10 is one sample ([Commands](combat.md#commands)) and each try runs once, on that
+   update. An "early" climb is only the long ray: 4.5 m ahead for a player (human flag `0x2`) at gait 4 or 5, else
+   1.5 m.
+2. **The climb comes first and ignores what is in hand.** `Climb_TryStart` refuses only on record `+0x08`
+   `0x84240`; nothing about a held object. When the climb starts, `Climb_Start` **drops** an object of held set 4
+   (overhead: barrels, crates) always, and one of set 6 (the ghetto blaster) unless `CfgClimbWithGhetto`
+   (`0x00510250`) is set; a weapon (sets 1-3) or a one-handed throwable (5) stays in hand through the climb.
+3. **A press slightly out of reach is swallowed.** `Climb_Start` returns "done" for a player (per-player `+0x1b` not
+   0), without climbing, when the face is beyond the clip's maximum distance but closer than twice a clip's reach
+   (which clip's reach the decompiler hides; [open question](#open-questions)), and when the space at the top is not
+   clear (`Climb_IsSpaceClear`). The dispatcher then returns with nothing more: **no jump and no drop**. An AI gets
+   "not done".
+4. **The context action never drops for a player with nothing to take.** `Player_TriangleAction` → `ContextAction_Use`
+   → (no context record) the pick-up search. With an object found and something in hand (not kind 12 or 24), it
+   drops what is held and sets human `+0x5b8`; the history-hold triangle (`0xb`, 7 samples) then takes the new one
+   (`Player_TriangleAction` again, `+0x5b8` cleared). With **nothing found**, a pad-controlled human gets 0 (no
+   drop); only an AI (`+0x1b` = 0) drops here.
+5. **The jump**: refused while carrying held set 4 or 6 (`Human_HoldsKind4Or6`), in a fight stance, at 3.3 m/s or
+   less, or with a climbable face within 5.5 m ([above](#jump)). A weapon does not refuse it.
+6. **Only then the drop**: with L2 not held and an object in hand, `Human_DropHeld` (`0x00257f38`) and `+0x5b8` = 1.
+
+So with a bat at a run toward a climbable wall: within 4.5 m (and inside the clips' distances) he climbs with the bat;
+just beyond the clips' distance the press may be swallowed; farther but within 5.5 m nothing climbs or jumps and the
+**bat drops** (the original does this too); beyond 5.5 m, at a run, he **jumps with the bat**. Empty-handed, the last
+two cases do nothing and jump.
+
+**Coney fixes** (item 2; today `PlayLevelMode`'s context action returns `TriangleResult::Drop` at try 2, before the
+jump, `src/platform/play_level_objects.cpp`):
+
+1. Remove the drop from the context action for the player: with nothing to take it returns "nothing" (an AI keeps
+   the drop there). With an object to take and something in hand, drop and remember the swap (`+0x5b8`); the
+   triangle history hold (7 samples) picks the new object up.
+2. Add try 4 in `Human::tryActions` (`src/human/human.cpp`): after a refused jump, with L2 not held and an object in
+   hand, drop it.
+3. The climb with an object: keep weapons and set-5 objects in hand; drop set 4, and set 6 unless
+   `CfgClimbWithGhetto`. Check that a player carrying a weapon at a run is gait 4 or 5 for the 4.5 m ray (a slower
+   armed run speed must not shorten the reach to 1.5 m).
+4. Add the swallow of try 3 when Coney's climb distances say "too far by less than twice the reach": the press ends
+   there.
+5. Tests: with a bat, at a run, triangle 3 m before a climbable fence climbs and keeps the bat; 5 m before it drops the
+   bat; 8 m before in the open it jumps and keeps the bat; with a barrel (set 4) the climb drops it.
 
 ### Climbing {#climb}
 
@@ -2897,13 +2947,18 @@ default ids are known, [Anim slots](#anim-slots)), and the
 - **Step height at runtime** (answered): steps up to 0.245 m are walked onto in one update, from 0.255 m they stop
   the body ([Walls and steps](#walls)), measured on a test step made in the mesh. Still open: a real kerb in a later
   level, as corroboration.
-- **The context action** (`0x002811f0`) and the object action (`0x00226ff0`) that triangle also starts: doors,
-  pick-ups, which objects.
+- **The context action** (`0x002811f0`) and the object action that triangle also starts (partly answered,
+  [Triangle with something in hand](#triangle-held)): the object action is the drop of what is in hand; the context
+  action is the context records and the pick-up search ([Crimes](crimes.md#triangle)). Doors and which objects are
+  still open.
 - **The air turn's gait** (partly answered): 4° per update from a run and a sprint alike, which is the non-player
   column's run value at `0x005101c4` (inferred: `Human_AirControl` reads the other column); not read in the code.
 - **Climb reaches** (partly answered): Coney reads Rembrandt's type-8 vectors ([Coney's implementation](#coneys-implementation));
   still open: which two clips `r1` and `r2` belong to (Coney's reading: the standing and running first clips), and
-  `CfgClimbWithGhetto`'s effect.
+  which clip's reach `Climb_Start`'s "too far by less than twice the reach" swallow uses
+  ([Triangle with something in hand](#triangle-held)). Answered: `CfgClimbWithGhetto` keeps the ghetto blaster (held
+  set 6) in hand through a climb; without it the climb drops it, and always drops a set-4 object (`Climb_Start`,
+  `0x00281c20`, confirmed (code)).
 - **The landing's threshold**: why the landing contact is taken only once the feet start an update about 0.17 m
   below the floor ([When the landing happens](#falling)). The contact path is traced (the resolution `0x0033d9d8`
   acts on the first contact by fraction) and does not explain it; a runtime log of the contacts is needed.

@@ -115,8 +115,10 @@ kind order 0-5 and the first record that passes wins. A record passes when its o
 the ground plane and its height is within 1.5 m of the human's waist (feet + 1.0), it has no other user, and for a
 stereo (kind 3) the stereo is not below the human's feet. Confirmed (code) at `0x00417ed0`, `0x004180b0`.
 
-**Triangle pressed** (command `0xa`, [Commands](combat.md#commands)) runs `Player_TriangleAction` before a climb is
-tried, confirmed (code) at `0x0027c120`, `0x002811f0`:
+**Triangle pressed** (command `0xa`, [Commands](combat.md#commands)) runs `Player_TriangleAction` **after** a climb
+is tried for a pad-controlled human (an AI's triangle runs it alone), and before the jump and the drop
+([Triangle with something in hand](characters.md#triangle-held)); an earlier reading here had it before the climb.
+Confirmed (code) at `0x0027c120`, `0x002811f0`:
 
 1. Nothing while a move or a state blocks it (state mask `0x7bf9e9f7ff0`, record `+0x08` mask `0x2fefefff`).
 2. A human with no player number standing by a cuffed player uses a key (item 6) if either holds one
@@ -129,8 +131,10 @@ tried, confirmed (code) at `0x0027c120`, `0x002811f0`:
    the subject); a true result ends the press. Confirmed (code), and at runtime for a kind-1 bat.
 5. Otherwise the pick-up search (`0x0024d810`, objects within 1.5 m; only while `0x005109a0` is set). It too sends
    message 0 to every object it gathers, before its filters, and a true result ends it; then it takes one
-   ([Breakables](combat.md#breakables), [A bat in hand](combat.md#bat)), or, with something in hand and nothing to
-   take, drops it (`0x00257f38`).
+   ([Breakables](combat.md#breakables), [A bat in hand](combat.md#bat)). With something in hand and an object to
+   take, it drops what is held (`0x00257f38`) and sets human `+0x5b8`, so the triangle hold takes the new one. With
+   nothing to take, only an AI drops here; a pad-controlled human gets 0 and the dispatcher goes on to the jump, then
+   the drop (`0x0024d810`, confirmed (code); an earlier reading had every human drop here).
 
 **The prompt** (two text widgets per player at HUD `+0x6b40`, `0x590` each;
 [HUD](hud.md#announcements-and-other-messages)) is chosen every frame by `HUD_Update` (`0x001af010`), confirmed (code):

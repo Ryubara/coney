@@ -892,7 +892,8 @@ bums. Points an implementer needs:
 - **6**: from the rear hold the hit is scored with the spin's id 80, not 57, so only a front grab passes the first step.
 - **10**: the rage special is cross + square while raging (645 / 647); the last step wants the extension of the rage
   power strike in a grab (63 → 65) or of the rage power strike in the mount (231 → 233); both use the + 2 of
-  `Player_UpdatePowerMove` (inferred for the mount). **What arms `P1.RageMoves`** (the step order):
+  `Player_UpdatePowerMove` (confirmed (code) for the mount too: [the mount's power strike](combat.md#mount-power)
+  puts the mounter in state `0x1000`, which the dispatcher sends there). **What arms `P1.RageMoves`** (the step order):
     1. `P1.WeaponsDone` clears the tutorial callback and starts the section 2000 ms later.
     2. `P1.SetupRageMode` makes rage gains possible again (`HuSetPreventRage(false)`). It sets the meter to 0.5 and
        locks it, and it registers the rage handlers: enter `P1.EnterRageMode`, exit `P1.ExitRageMode`, full
@@ -983,10 +984,69 @@ Points a playthrough test needs:
   texts also show whenever the player's state calls for them. In lesson 6, a circle at a bum lying on the ground
   showed `TT_19e` and went into the pick-up, where the power strike does not start. So how often they show depends on
   the driver: assert the lesson texts in order, and allow the `TT_19*` texts between them.
+- **The state hints** (`SetupStateCallbacks`, `UpdateStateCallbacks`, `PlayerState` and `StateSwitch` in
+  `level99.lua`; [below](#level99-state-hints)) decide which of the two a step shows: the grab or pick-up hint when
+  the player is idle or mounted, the lesson text while he holds someone.
 - **Repeats**: `TT_25c`, `TT_25e` and `TT_25k` are shown again for each counted move. A test that checks the order
   should merge consecutive repeats.
 - **The `<DISPLAYTIME>` texts** (`TT_26a`, `TT_28e`, `TT_28h`) hold the box for about 90 updates. The next text set
   with them waits in the queue that long.
+
+#### The state hints, and what lesson 6 counts {#level99-state-hints}
+
+The analyst question "`P1.PowerMove`: `TT_19a` or `TT_24e`?" and owner checklist item 33's hint order. Inferred from
+the disassembly of `level99.lua` (main/29-main/34) and `level99_combat.lua` (main/30, main/31): names, ids and
+the order of calls only.
+
+**The mechanism.** `SetupStateCallbacks(idle, mount, frontGrab, rearGrab)` registers the anim callback
+`PlayerState` on five of the player's clips: `ANIM_FIGHT_IDLE`, `ANIM_NORMAL_IDLE`, `ANIM_MOUNTING_IDLE` (210),
+`ANIM_GRAB_HOLD_FROM_FRONT` (82) and `ANIM_GRAB_HOLD_FROM_REAR` (84) ([anim callbacks](characters.md#anim-callbacks)).
+It stores the four texts in globals and calls `StateSwitch(STATE)` at once. `UpdateStateCallbacks` stores four new
+texts and calls `StateSwitch(STATE)`; `RemoveStateCallbacks` stops the switching (`DISABLED`) and clears the text;
+`DisableStateCallbacks` deletes the five callbacks.
+
+`PlayerState(h, anim)`, when one of those clips **starts**: either idle → `STATE` = `IDLE`, 210 → `MOUNT`, 82 →
+`FGRAB`, 84 → `RGRAB`. It first saves the old state, sets the **new** one, and only when the two differ (and the
+switching is on) calls `StateSwitch(STATE)` with the new state. `StateSwitch` clears the hint and shows the text stored
+for that state. So the text always describes the state the player is **now** in, never the one he left.
+
+**Lesson 6** (`P1.SetupPowerMoves`, then the callback `P1.PowerMove`):
+
+| | idle | mounted | front hold | rear hold |
+| --- | --- | --- | --- | --- |
+| set-up | `TT_19a` (tap circle to grab) | `TT_19e` (circle to pick up) | `TT_24d` (the power move) | `TT_24d` |
+| after the first power strike | `TT_19a` | `TT_19e` | `TT_24e` (the extended power move) | `TT_24e` |
+
+`P1.PowerMove(anim)` keeps `tPower3 = {ANIM_GRAB_POWER_01_STRIKE_01, ANIM_GRAB_POWER_01_STRIKE_02}` = {57, 59}. Step
+1 counts only 57: Rembrandt's line `l99_t1_017` and `UpdateStateCallbacks(TT_19a, TT_19e, TT_24e, TT_24e)`. Step 2
+counts only 59: `BrDead(player, true)`, `RemoveStateCallbacks`, the callback cleared, `P1.PowerMovesDone` 2500 ms
+later. Any other id is ignored.
+
+So the answer is **both, by state**: `TT_19a` is the idle text all through the lesson, `TT_24e` the holding text
+after the first power strike. The lesson counts **only the grab's power strike from the front hold** (57, then its
+extension 59): the standing cross + square (653, lesson 5's special), the mount's power strike (225) and a power
+strike from the rear hold (scored as 80, [the power strike](combat.md#grabbing)) never count. The texts that read like
+a standing move are only ever shown while the player holds someone, and a player who lets go is told to grab.
+
+**What the owner saw in Coney** (item 33, steps 1-7): standing he got the power-move text; grabbing, the grab hint;
+mounted, the power-move text; picked up again, the pick-up hint; let go, the power-move text; grabbed, the grab
+hint; after 57 standing, `TT_24e`. Every one is the text of the state he had just **left**. Coney runs the script
+itself (`src/scripting/anim_callbacks.h`), so the lag is in what reaches `PlayerState`: an anim callback fired one
+clip late, for the clip that just ended, or the five ids not fired when a chain or an end hook starts them (82 after
+the connect, 210 after 118, the idle after a paired clip). Not traced in Coney. The original's run in [the hints in order](#level99-hints) shows `TT_24d` at 1916 because lesson 5
+ends in the strong grapple's hold (82), so `STATE` is `FGRAB` when lesson 6 sets up.
+
+**Coney fixes** (item 33 (a) and (b); the hint box itself is on [HUD](hud.md)):
+
+1. Fire the anim callbacks on the update a clip **starts**, with that clip's id, whether it was started directly,
+   by a chain or by an end hook ([anim callbacks](characters.md#anim-callbacks)); 82, 84, 210 and both idles must
+   each reach `PlayerState` once per start. A unit test: grab (82 fires), mount (210 fires), get off (an idle fires),
+   in that order, with nothing stale.
+2. `SetupStateCallbacks` and `UpdateStateCallbacks` show the text for the current `STATE` at once (the state kept
+   from the earlier lessons, not reset to idle).
+3. The lesson-6 callback counts 57 then 59 only; Coney's standing cross + square must not reach it as 57.
+4. Playthrough test (level99 cp1): in lesson 6, standing shows `TT_19a`; front hold shows `TT_24d`; after 57, back
+   in the hold or holding, `TT_24e`; mounted `TT_19e`; and only 57 → 59 from a front hold advances.
 
 #### Checkpoints 2 and 3 {#level99-checkpoints}
 

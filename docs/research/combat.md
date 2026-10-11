@@ -1267,6 +1267,70 @@ updates back to 210. Level 99's tutorial follows this through two callbacks: `Ad
 "PlayerState")` shows the mount's prompt when 210 starts, and `HUDSetTutorialCallback("P1.BasicAttacks")`, which
 receives each hit's anim id, wants 219 or 221 and then 223 before it calls `P1.BasicAttacksDone`.
 
+#### The mount's power strike ends the mount {#mount-power}
+
+Cross held and square pressed in the mount (owner checklist item 32) is **not** a mount strike: it ends the mount
+and leaves the mounter standing in the fight stance and the victim on the ground. Confirmed (code) at the addresses
+cited; the clip events read from the disc (numbers only).
+
+1. **The start** (`Player_UpdateMounting`, `0x0027ec20`): with more than 0.25 of the power meter, a player calls
+   `Attack_StartPaired(mounter, victim, 225, 1, 0x400000)` (231 while raging, human `+0xe0` `0x80000`); with 0.25 or
+   less he gets off instead (`Mount_GetOff`). The mount's own strikes (219 / 221 / 223) go through
+   `Mount_StartStrike` and stay in the mount; only the power strike and the knife or bottle attacks (488, 496 with
+   the held set 1) go through `Attack_StartPaired`.
+2. **The mount is ended at once** (`Attack_StartPaired`, `0x00262ac8`): it spends 0.25 of the power, then calls
+   `Grab_BreakOnHit(mounter, victim, 226)` (`0x0022b960`). The mounter is tackling (state `0x400`), so
+   `Tackle_End(mounter, victim)` (`0x0022c388`) clears the mount's states `0x400` / `0x800` and pops style `0xc`.
+   Then the pair is linked as a **paired move**: state `0x1000` on the mounter, `0x2000` on the victim, both push
+   weights 1e9, one new body group for both (the counter at `*0x00597198 + 0x10`, body `+0x3c`) and body flag
+   `0x200`. Because 226 has a type-7 (knockdown) event, the victim gets move style `0xf` (down).
+3. **The mounter's clips**: 225 holding `+0x08` `0x7` (an attack's phases), with the end hook
+   `Attack_OnPairedClipEnd` (`0x002629a8`), chained to the looping **fight-stance idle** (the anim record's `+0x54`,
+   anim state `0xb`). No mounting idle 210 follows.
+4. **The victim's clips**: 226 holding `0x400000` with the end hook `Pair_OnVictimClipEnd` (`0x00262a38`), then,
+   because 226's knockdown value is 0 (`Anim_GetKnockdownValue`, `0x00101a60`: the first type-7 event's word), held
+   `0x2000` and **198** (the knockdown's follow-up), then the looping **grounded idle** (record `+0x28`, anim state
+   0). He lies there and gets up by the ordinary ground time ([Reactions](#reactions)). The damage ([damage table](#damage-table) index 37; Rembrandt's
+   value in [Combat moves](combat-moves.md#frame-data)) is dealt on the start update; a lethal one plays the
+   death reaction instead.
+5. **The extension**: the mounter is now in state `0x1000`, so the dispatcher sends him to `Player_UpdatePowerMove`
+   (`0x0027df38`) as after a grab's power strike: square or cross while 225 holds the window `0x2` plays **227** (233
+   after 231), victim 228 (234), at most twice (record `+0xbc` < 2). This settles the mount part of `level99`'s
+   lesson 10 ([scripting](scripting.md#level99-lessons)): 231 → 233 comes from the same + 2.
+6. **The end**: `Attack_OnPairedClipEnd` scores the move, lets the crowd taunt and calls `Throw_ClearLink`
+   (`0x0022bce0`): the mounter's `0x1000` and link are cleared and his push weight and body group restored; then
+   `Throw_ClearVictimLink` (`0x0022bdc0`) clears the victim's `0x2000` and puts him down or stuns him by his state.
+   Nothing re-links the mount: getting back on top takes a new circle at the grounded victim (the grounded mount,
+   `Mount_StartOnGrounded`, `0x00271b30`).
+
+Clips (Rembrandt's set `warr_re_header`; the generic set has `gen_mount_power20_*` in the same ids): 225
+`gen_mount_power10_p1`, 226 `gen_mount_power10_react_p1` (type-7 event, word 0, at frame 0), 227 / 228 `_p2` /
+`_react_p2` (type 7, word 0), 231 / 232 `gen_mount_power13_p1` / `_react_p1` (type 7, word 0).
+
+**Deferred: runtime.** The whole sequence has not been watched. Steps for PCSX2 (when it is free): a copy of slot 6,
+PoizoCiv 1 m ahead; circle tapped at update 10 (the grab), circle at 60 (the mount, 118 lasts 65 updates), then at
+140 cross held and square pressed 2 updates later, both released 4 updates after, stick centred (0, 0) throughout.
+Expect the player's clip 225 then 358 or the stance idle with state `0x1` (no `0x400`), the victim 226, 198, then
+the grounded idle and a get-up about 2 s (his class's ground time) later. A second run adds cross taps every 8 updates
+from 160 to see 227 / 228.
+
+**Coney fixes** (item 32; today `Fighter::playMountAction` plays the power strike like a mount strike, back to 210 /
+207, so the player stands up at 225's end and snaps back into the pin):
+
+1. In `PlayerCombat::updateMounting`, a `MountAction::PowerStrike` ends the mount on its start update: the combat
+   mode leaves `Mounting`, the pair stops being a mount (no seat, no mounted target state) and becomes a paired move
+   (the mounter "throwing", the victim "thrown", [state flags](#state-flags) `0x1000` / `0x2000`).
+2. The mounter plays 225 (231 raging) chained to the fight-stance idle, not to 210; the victim plays 226 (232) with
+   held `0x400000`, then 198 with held `0x2000`, then the grounded idle, and is down (style `0xf`) with the ordinary
+   ground timer running from the knockdown.
+3. Square or cross in 225's window plays 227 / 228 (233 / 234) through the same extension code as the grab's
+   57 → 59, at most two extensions; 229 is the filler clip and never plays.
+4. When the mounter's clip ends: clear the paired link on both and leave the victim on the ground; a circle at him
+   is the grounded mount again.
+5. Test (no disc needed, synthetic clips): mount, power strike, run to the end; assert the mounter is standing in the
+   fight-stance idle, not mounting, the victim is grounded and not mounted, and no frame after the strike shows 210 /
+   207. A level99 cp1 playthrough step can assert the same on the hobo.
+
 ### Grabbed, and breaking free {#grabbed}
 
 **When the player is grabbed** (`Player_UpdateGrabbed`, `0x0027fd68`, the grabber at human `+0xc4`), confirmed
@@ -1895,6 +1959,81 @@ armour, the held flags `0x1c16a40` or human flag `0x800` cancel the reaction:
     - Otherwise the pair stays and plays a paired hit reaction (front 133, rear 123), except that a heavy or crushing
       hit (hit-code strength ≥ 2) without held `0x2000` ends the grab and stuns the victim first.
     - The grabber hit by a third human is `HitReact_WhileGrabbing` (`0x00268ea8`) and loses 0.6 of his power.
+
+#### Moves a hit cannot stop: the dive, the charge and the paired moves {#protected-moves}
+
+No "in a sync move" flag exists. What protects a human in a dive, a charge, a power move, a finisher or a tandem is
+the record `+0x08` **held flags** those moves' clip tasks hold ([Held flags](tasks.md#held-flags)), read in three
+places. Confirmed (code) at the addresses cited; owner checklist items 25 and 29.
+
+**Who holds what** (each bit is held by the clip task for the clip's whole length, then cleared with it):
+
+| Move | Holder | Held flags | Where |
+| --- | --- | --- | --- |
+| the dive (L2 + square at a run, clip 1) | the diver | `0x400000`, push sphere off | `Player_StartDive` (`0x00264878`) |
+| the charge (L2 + cross, clip 0) | the charger | `0x1000000` (confirmed (runtime), [the fence run](#moving-strikes)) | `Player_StartCharge` (`0x00264a80`) |
+| a paired move: the grab's power strike 57 / 63 (front: `Attack_StartPaired`; rear: `Grab_StartPairedMove` from the spin 80), its extensions 59 / 65 and the mount's 225 / 227 / 231 (`Player_UpdatePowerMove`, `Player_UpdateMounting`), the armed grab and mount moves (484-496), the paired specials; the throws (`Player_Throw`) were not checked | the victim | `0x400000` (the argument each of those calls passes, `Player_UpdateGrabbing` `0x0027f3b0`), plus `0x2000` on a knockdown follow-up | `Attack_StartPaired` (`0x00262ac8`), `Grab_StartPairedMove` (`0x00263380`) |
+| the same | the attacker | `0x7` (an attack's phases) or the caller's flag | the same |
+| a tandem ([Combat moves](combat-moves.md#tandem)) | attacker and grabber / victim | `0x800000` / `0x400000` (and `0x80000` when the end has no knockdown) | `Tandem_Start` (`0x0026f860`) |
+
+**1. No AI starts an attack on him.** `Human_CanStartAttack` (`0x00224778`, [An AI's attacks](#ai-attacks), test 1)
+refuses every kind against a target holding any of **`0xc08200`** (`0x800000`, `0x400000`, `0x8000`, `0x200`), except
+for the target's own partner (target state `0x2000` and attacker state `0x1000`). The fight goal then picks again and
+waits ([AI](ai.md#fight-order)), and the attack action's start asks the same test, so a queued attack does not start
+either. So a diver, a power move's or finisher's victim and the three humans of a tandem are left alone; a charger
+(`0x1000000` is not in the mask) is not.
+
+**2. No grab or tackle by a player.** `Human_CanBeGrabbed` (`0x002256a0`) refuses held `0x8fc57a60`, which has
+`0x1000000`, `0x800000` and `0x400000`.
+
+**3. A hit lands but cannot make him react.** `Strike_Contact` never asks; the strike test skips only the same body
+group, so the two humans of a pair (one group, `Grab_BreakOnHit`) do not strike each other with stray shapes while a
+third human's shapes do. In `Human_ApplyPendingDamage` (`0x00265f70`) the health drops as usual, then a victim holding
+any of **`0x1c16a40`** (`0x1000000`, `0x800000`, `0x400000`, `0x10000`, `0x4000`, `0x2000`, `0x800`, `0x200`, `0x40`)
+has his pending damage cleared with **no reaction**: the dive, the charge, the paired clip and the tandem play on.
+
+**4. A lethal hit waits.** At the top of `Human_ApplyPendingDamage`, a human in state `0x800000` or `0x80000000`
+plays `Human_PlayLethalReaction` at once, unless he holds any of **`0xc12200`** (`0x800000`, `0x400000`, `0x10000`,
+`0x2000`, `0x200`): then the ordinary path runs, the health drops, and no reaction (lethal or other) plays while the
+flags are held. Which code sets state `0x800000` (inferred: the damage message, human vtable `+0x44`, when the damage
+is defeating) and what plays the death once the paired clip ends were not traced. Inferred: the victim finishes the
+paired clip and dies after it. **Deferred: runtime**: a copy of slot 6 with PoizoCiv at 60 health and an ally
+(`moves_tandem`'s Ash) told to attack him, the player's front grab and power strike timed so Ash's `X1` lands during
+57 / 58; record PoizoCiv's health, state word, held flags and clip every update until his death clip.
+
+**When the order matters** (`Humans_Update` step 9, [Tasks](tasks.md#humans-update); `Human_UpdateActions`,
+`0x00254e78`): each human applies its pending damage **before** its dispatcher runs, and a reaction returns before
+the dispatcher. The strike tests run earlier in the step (after each move). So:
+
+- A hit that reaches a player on the update he presses L2 + square wins: the reaction plays, the dispatcher does not
+  run, the one-sample command is lost, and there is no dive.
+- From the dive's first update (`Player_StartDive` sets `0x400000` on the update of the press) no hit can stop it:
+  AIs do not start attacks on him, a swing already under way still takes health but plays no reaction, and the dive
+  runs its 2 s with its strike shapes on from k2 to k24 ([the table](#moving-strikes)).
+- When the diver's shapes and the target's swing meet on the same update, both get pending damage; the diver plays
+  on, the target reacts to the dive's crushing hit code `0x3a` ([Hit codes](#hit-codes)) before its own dispatcher
+  could start anything new.
+
+**Coney fixes** (items 25 and 29):
+
+1. `ai::startGuardOf` (`src/ai/attack_views.cpp`) never sets `StartGuard::targetHeldBusy`: set it from the target's
+   held flags `0xc08200` (Coney: the target is diving, is the victim of a paired move or power move, is in a tandem,
+   or holds a block's `0x8000` / `0x200`), and `targetPinned` for the partner exception (target "thrown" `0x2000`,
+   attacker "throwing" `0x1000`). This stops teammates and enemies starting attacks on a finisher's victim (item 29)
+   and on a diving player (item 25).
+2. In the victim path (`Fighter` hit handling, `src/human/fighter_victim.cpp`), after the health drops and before
+   the reaction: a victim whose animator holds any of `0x1c16a40` takes the health and plays no reaction and is not
+   interrupted. The dive's clip must hold `0x400000` (`combat::kPhaseDive`), the charge's `0x1000000`, and a paired
+   move's victim `0x400000`; check that `m_combat.interrupt()` is not reached for them.
+3. A lethal hit on a victim holding any of `0xc12200` does not start the dying reaction or break the pair at once:
+   keep the health at 0 (or below) and let the paired clip finish; then play the death (inferred; mark it a
+   **Coney reading** until the runtime check above).
+4. The grab search of a player refuses a target holding `0x8fc57a60` (diving, charging, in a pair).
+5. Order: apply a human's pending damage before its own commands in the same update, and drop that update's command
+   when a reaction starts.
+6. Tests: (a) a player diving at an AI that is mid-swing: the dive plays its whole clip and the AI is knocked down;
+   (b) a hit landing on the press update cancels the dive; (c) an AI Warrior next to the player's front-grab power
+   strike does not start an attack on the victim while 57 / 59 play (assert no attack command with that target).
 
 ### Reactions: stun, knockdown and getting up {#reactions}
 
