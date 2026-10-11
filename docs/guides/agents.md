@@ -5,6 +5,10 @@ but the context the agent carries and how often it has to re-write it. This page
 follows each time it hands out work: who does it, which model, how it is briefed, and how it runs so that its
 prompt cache survives. The conduct rules for agents are in [How we work](how-we-work.md#agent-conduct).
 
+**Every dispatch decision weighs the cache.** Tokens are a budget: before the coordinator starts, forks, resumes or
+re-briefs an agent, or picks its model, it asks what that costs in cache writes and picks the cheapest way that still
+gets the work right. The rules below are that question answered for the usual cases.
+
 ## What a run costs {#cost}
 
 An agent re-sends its whole context (instructions, tools, brief and everything it has read or done) with every
@@ -89,6 +93,23 @@ instead of repeating it:
 - **Keep the coordinator small.** The coordinator re-reads its whole conversation on every turn and is the context a
   fork would inherit. It checkpoints (saves the state, clears, continues from it) before its context limit and before
   a long break, and never forks once its context is large.
+
+## When a pull request fails checks {#ci-failures}
+
+A failing check is a small, well-defined task, so it goes to a **fresh agent with a tight brief**, not back to the
+agent that wrote the pull request. Messaging that agent re-writes its whole context (rule 2 in
+[What a run costs](#cost)), often hundreds of thousands of tokens, for a fix of a few lines.
+
+1. The coordinator reads only the failure: `gh pr checks <n>` for which checks failed, then the end of the failing
+   job's log (`gh run view <id> --log-failed`, last lines). It does not read the whole log.
+2. If the fix is a few tool calls (a long line, a title, a missing `Docs: none`), the coordinator does it itself.
+3. Otherwise it starts a fresh agent on the pull request's branch, in the branch's worktree, with a brief of the
+   branch, the failing check, the log lines that matter and "done" (the check passes locally and the branch is
+   pushed). The model follows [Which model](#models): Haiku or Sonnet for a lint, format, title or docs failure with a
+   clear message; Opus when the cause is unknown or the failure is a test or build in code that needs judgement.
+4. Several failures with the same cause go to one agent; unrelated failures that are each quick go to separate small
+   agents that can run side by side.
+5. If the same check fails a second time, escalate a model, as above, instead of repeating the same fix.
 
 ## Checking a run {#check}
 
