@@ -26,7 +26,15 @@ from coney_tools import (
     xbox_cli,
 )
 from coney_tools.config import PATH_KEYS, ConfigError, find_repo_root, load_config
-from coney_tools.repo_checks import check_docs, check_pointer_files, check_title, first_line, load_title_rules
+from coney_tools.repo_checks import (
+    check_body,
+    check_docs,
+    check_pointer_files,
+    check_title,
+    first_line,
+    load_body_rules,
+    load_title_rules,
+)
 
 
 def _config_show() -> int:
@@ -90,6 +98,25 @@ def _repo_check_docs(body_file: str | None) -> int:
     return 0
 
 
+def _repo_check_body(body_file: str | None) -> int:
+    """Check the pull request description in `body_file` (`-` or none reads stdin); 1 when refused."""
+    rules = load_body_rules(find_repo_root(Path.cwd()))
+    if body_file is None or body_file == "-":
+        body = sys.stdin.read()
+    else:
+        try:
+            body = Path(body_file).read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as error:
+            print(f"coney-tools: {body_file}: cannot be read ({error})", file=sys.stderr)
+            return 2
+    problems = check_body(body, rules)
+    if problems:
+        print(f"body refused: {'; '.join(problems)} (see .github/pull_request_template.md)")
+        return 1
+    print("body: ok")
+    return 0
+
+
 def _build_parser() -> argparse.ArgumentParser:
     """Build the parser for every group and command; each group's commands are registered by its own helper."""
     parser = argparse.ArgumentParser(prog="coney-tools", description="Coney's own automation.")
@@ -108,6 +135,12 @@ def _build_parser() -> argparse.ArgumentParser:
         "check-docs", help="check that a pull request which changes code also changes the docs (changed paths on stdin)"
     )
     check_docs_parser.add_argument("--body", help="a file holding the pull request description (for `Docs: none`)")
+    check_body_parser = repo_commands.add_parser(
+        "check-body", help="check a pull request description against the template: sections, summary, AI use"
+    )
+    check_body_parser.add_argument(
+        "--body", help="a file holding the pull request description; - or omitted reads stdin"
+    )
     _add_wad_commands(groups)
     _add_extract_command(groups)
     _add_audio_commands(groups)
@@ -572,6 +605,8 @@ def _run(args: argparse.Namespace) -> int:
         return _repo_check_title(args.file)
     if args.command == "check-docs":
         return _repo_check_docs(args.body)
+    if args.command == "check-body":
+        return _repo_check_body(args.body)
     return _repo_check()
 
 

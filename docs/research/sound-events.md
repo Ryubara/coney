@@ -260,7 +260,12 @@ Confirmed (code):
   record `+0x0c` is `0x10001` (kind 4, the windows), `[2 GLASS][2 GLASS]` otherwise (kind 6).
 - **Explosion**: an exploding hit prepares `vags/fire/car_explodes<n>`, `n` random 1-3, at the car
   (`Sound_PrepareAtByName`, kept at car `+0x12fc`), and `Car_DoExplode` (`0x0038ab50`) starts it.
-  `Car_StartExplosionLaunch` (`0x0038b1f8`) plays `vags/vehicles/shocks_squeak_<n>` (`n` 1-3) at the car.
+- **Shocks**: every hit by a human or by an object a human holds (not a thrown one) first starts a rock of the car
+  away from the hit (`Car_StartHitRock`, `0x0038b1f8`; the rock is inferred from the fields it sets), strength 2
+  bare-handed, 4 for a human with flag `0x400000` and 3 for a held object, which plays
+  `vags/vehicles/shocks_squeak_0<n>` (`n` random 1-3) at the car. It is skipped while the hitter's `+0x568` is set
+  (for a held object, the parts this swing has hit; inferred: once per swing). So a window smash plays a squeak
+  with the glass; `0xe77006e7` and `0x90773671` are `_02` and `_03` ([the hashes](#objects)).
 - **Loose parts** (`Car_UpdateLoosePart`, `0x00387f18`): a part's impact above 4 m/s plays
   `Sound_PlayMaterialPair(1 / (n + 1), 119 CAR_PART, triangle material)` (`n` the part's byte `+0x97`) and
   `(…, 120 CAR_PART_STREAM, …)`;
@@ -306,6 +311,22 @@ pitch 1, duckable). Glass panes, doors and barriers are on [World objects](objec
   (`SubFadeFlame_Init` `0x003c7de0`), the level-51 bus `vags/cutscenes/l51/bus_idle_02` (`PartTruckSound_Update`
   `0x003fce60`). Swinging and sliding doors play their record's hashes (`Sound_PlayHashAt` `0x003a6ee8`; the store
   door's first hit `0xcf6586b2`).
+- **Trains and sparks.** `PartTrainSound_Update` (`0x003db690`) starts a sound only while its last one has ended
+  and a camera is within 80 m: in the levels whose id is `0x1f` or `0x57`, one of `vags/vehicles/train_pass1`-`5`
+  (`0x005145f0`) when a camera is within 10 m or nothing blocks the 100 m ray from the train to the player; in every
+  other level one of `vags/vehicles/subway_squeak1`-`5` (`0x00514608`) when a camera is within 40 m. It picks one
+  of the five at random each time (`Random_Int(4)` is 0 to 4) and moves it with the train. The subway sparks
+  (`PartSSubwaySparks_OnMessage` `0x003db368`, table `0x005145d8`) and each `sub_spark_effect` burst
+  (`SubSparkEffect_Update` `0x003e1648`, table `0x00514620`) play one of five entries at random, each entry
+  `vags/ambient/sparks/spark1` or `spark6` (3:2 for the subway sparks, 2:3 for the bursts), banked in `sound`,
+  `armies`, `gallery` and `level81`. Confirmed (code) at the addresses cited; the names are confirmed (name hash):
+  each is the CRC-32 of the name, whose last 16 characters stand before its record in the sound list's debug copy
+  ([Xbox assets](xbox-assets.md#sound)).
+- **The hashes, by name** (confirmed (name hash): the CRC-32 of each name matches, and the tables hold them in this
+  order): `0x00514608` holds `subway_squeak1`-`5` as `0xc2fff866`, `0x5bf6a9dc`, `0x2cf1994a`, `0xb2950ce9`,
+  `0xc5923c7f`; the sparks tables hold `spark1` `0x0c9417aa` and `spark6` `0x92f08209`; `shocks_squeak_02` and
+  `_03` are `0xe77006e7` and `0x90773671`. These are the nine sounds of level99's checkpoint 2 that had no name;
+  that its trains squeak rather than pass fits level99 not being level `0x1f` or `0x57` (inferred).
 
 ## Speech the game says {#speech}
 
