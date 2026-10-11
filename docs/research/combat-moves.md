@@ -558,9 +558,10 @@ front; record Ash's command and clip ids every update: expect command `0xd`, the
    released into the fight stance.
 2. Route an attack command (square, cross, circle tap or hold) from **any** fighter, player or AI, through the tandem
    test before the grab, as the original's dispatcher does.
-3. AI: drop the **Coney stand-in** in `ai::targetViewOf` that leaves out a rear hold for kind 22; allow kind 22 at a
-   rear-held target only from its front cone, keep the +200 weight, and let the queued grab become the tandem. A
-   front-held target stays refused.
+3. AI: kind 22 at a rear-held target already passes (`ai::targetViewOf` leaves the rear hold out of
+   `grabRefused`, and `attack_choice.cpp` checks the front cone). Two gaps remain: set `heldC12200` in the target
+   view from the held flags `0xc12200` (a **Coney stand-in** today: never set, always false), and let the queued
+   grab become the tandem instead of an ordinary grab. A front-held target stays refused.
 4. The held flags of the three (`0x800000` / `0x400000`) feed the start guard of [Moves a hit cannot
    stop](combat.md#protected-moves), so others leave them alone.
 5. Test: an AI ally in front of the player's rear hold picks kind 22 and starts the tandem (assert the three clips

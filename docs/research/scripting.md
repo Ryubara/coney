@@ -1033,8 +1033,9 @@ mounted, the power-move text; picked up again, the pick-up hint; let go, the pow
 hint; after 57 standing, `TT_24e`. Every one is the text of the state he had just **left**. Coney runs the script
 itself (`src/scripting/anim_callbacks.h`), so the lag is in what reaches `PlayerState`: an anim callback fired one
 clip late, for the clip that just ended, or the five ids not fired when a chain or an end hook starts them (82 after
-the connect, 210 after 118, the idle after a paired clip). Not traced in Coney. The original's run in [the hints in order](#level99-hints) shows `TT_24d` at 1916 because lesson 5
-ends in the strong grapple's hold (82), so `STATE` is `FGRAB` when lesson 6 sets up.
+the connect, 210 after 118, the idle after a paired clip). Not traced in Coney. The original's run in
+[the hints in order](#level99-hints) shows `TT_24d` at 1916 because lesson 5 ends in the strong grapple's hold (82),
+so `STATE` is `FGRAB` when lesson 6 sets up.
 
 **Coney fixes** (item 33 (a) and (b); the hint box itself is on [HUD](hud.md)):
 

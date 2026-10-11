@@ -1290,9 +1290,9 @@ cited; the clip events read from the disc (numbers only).
 4. **The victim's clips**: 226 holding `0x400000` with the end hook `Pair_OnVictimClipEnd` (`0x00262a38`), then,
    because 226's knockdown value is 0 (`Anim_GetKnockdownValue`, `0x00101a60`: the first type-7 event's word), held
    `0x2000` and **198** (the knockdown's follow-up), then the looping **grounded idle** (record `+0x28`, anim state
-   0). He lies there and gets up by the ordinary ground time ([Reactions](#reactions)). The damage ([damage table](#damage-table) index 37; Rembrandt's
-   value in [Combat moves](combat-moves.md#frame-data)) is dealt on the start update; a lethal one plays the
-   death reaction instead.
+   0). He lies there and gets up by the ordinary ground time ([Reactions](#reactions)). The damage
+   ([damage table](#damage-table) index 37; Rembrandt's value in [Combat moves](combat-moves.md#frame-data)) is
+   dealt on the start update; a lethal one plays the death reaction instead.
 5. **The extension**: the mounter is now in state `0x1000`, so the dispatcher sends him to `Player_UpdatePowerMove`
    (`0x0027df38`) as after a grab's power strike: square or cross while 225 holds the window `0x2` plays **227** (233
    after 231), victim 228 (234), at most twice (record `+0xbc` < 2). This settles the mount part of `level99`'s
@@ -1645,7 +1645,9 @@ not worn: only its message 1 breaks it ([Losing it](#bat)). 501's damage, hit co
 measured.
 
 **Losing it.** Triangle with nothing to take drops the held bat at once, with no clip (`0x00257f38`, falling from the
-hand under physics: [Drop](objects.md#held)); confirmed (runtime). A weapon **breaks** only on its message 1
+hand under physics: [Drop](objects.md#held)); confirmed (runtime). For a player that standing drop comes from the
+dispatcher's last step, after the climb, context action and jump tries
+([step 6](characters.md#triangle-held)). A weapon **breaks** only on its message 1
 (`0x003fd600`): shatter particles, hidden (`0x100000`), message 7 to its holder (data `+0x18`; the human's message 7
 pops sets 1-5), and state −5 deletes it on its next update. Confirmed (code); what sends message 1 is not traced. At
 runtime 12 bat hits on a civilian (64 damage each, 34 and 37 alternating) never broke it and its handler saw no message
