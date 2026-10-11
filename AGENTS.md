@@ -34,7 +34,8 @@ player's path, gamepad input, playthrough tests, the checks to run before report
 - **No game data** anywhere in the repo, issues, fixtures or CI: no executables, BIOS, assets, extracted files or
   dumps. Tests use synthetic fixtures; disc-backed checks print counts and hashes only. Exception: curated
   reference lists (names, ids, values, our own short descriptions) and small reference screenshots of models;
-  never asset files, game text or script source, per `LEGAL.md`.
+  never asset files, game text or script source, per `LEGAL.md`. Issues may also hold gameplay screenshots and
+  short videos of Coney or the original (owner, 2026-10-11), never files, saves, dumps or text.
 - **Clean room:** only analysts read decompiler output or disassembly, and they write `docs/research/` pages that
   cite addresses and short snippets. Engine code is written fresh from those pages, never transcribed.
 - **Research claims** carry an evidence level: confirmed (code) at a cited address, confirmed (runtime), inferred,

@@ -1,0 +1,66 @@
+name: Task
+description: A piece of work for a maintainer or an agent (a fix, a feature, a research question)
+title: "Task: "
+labels: ["task", "S-needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A task is written so that someone with no other context can do it. An agent may be given only "issue #N".
+        Never put game data in an issue: no assets, extracted files, saves, dumps, executables, BIOS or game text.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What is wrong or missing, and why it matters, in a short paragraph.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: The subsystem; the coordinator sets the matching label.
+      options:
+        - A-combat
+        - A-ai
+        - A-missions
+        - A-hud
+        - A-graphics
+        - A-audio
+        - A-physics
+        - A-camera
+        - A-tools
+    validations:
+      required: true
+  - type: input
+    id: research
+    attributes:
+      label: Research page
+      description: The page under docs/research that covers this, with the section, or "none yet" when an analyst must study the original first.
+      placeholder: "for example research/physics.md#human-contacts"
+  - type: textarea
+    id: done
+    attributes:
+      label: What "done" means
+      description: The acceptance test, as docs/guides/testing.md defines it for this kind of work (for a bug fix, a test that fails before the fix and passes after it).
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Fix list or steps
+      description: What to check or change, in order, as a checklist.
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+  - type: input
+    id: blocked-by
+    attributes:
+      label: Blocked by
+      description: Issue numbers that must be finished first, such as #12, or leave empty.
+      placeholder: "#12"
+  - type: textarea
+    id: attachments
+    attributes:
+      label: Attachments
+      description: Drag and drop screenshots or a short video of Coney or the original. Never game files, saves or dumps.
