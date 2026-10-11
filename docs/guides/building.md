@@ -16,6 +16,9 @@ before you have a disc image at all.
 | Git | yes | yes | yes |
 | [uv](https://docs.astral.sh/uv/) | for the Python tools and pre-commit | same | same |
 
+`coney-tools workspace init` (or the `bootstrap.sh` and `bootstrap.ps1` launchers) checks this table on your machine
+and prints what is missing ([Bootstrap](workspace.md#bootstrap)).
+
 The C++ dependencies (SDL3, librw, Dear ImGui, Catch2, FFmpeg) are not installed by hand: CMake downloads them on the
 first configure,
 at the exact commits pinned in `cmake/deps.cmake`. That first configure needs network access and takes a few

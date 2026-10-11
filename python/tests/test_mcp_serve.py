@@ -35,8 +35,17 @@ def which_none(name: str) -> str | None:
 
 def test_ghidra_runs_the_bridge_from_the_configured_checkout(tmp_path: Path) -> None:
     command, env = server_command("ghidra-mcp", paths(ghidra_mcp_repo=tmp_path), which_all, {})
-    assert command == ["/bin/uv", "run", "--frozen", "--quiet", "--directory", str(tmp_path), "bridge-mcp-ghidra",
-                       "--transport", "stdio"]  # fmt: skip
+    assert command == [
+        "/bin/uv",
+        "run",
+        "--frozen",
+        "--quiet",
+        "--directory",
+        str(tmp_path),
+        "bridge-mcp-ghidra",
+        "--transport",
+        "stdio",
+    ]
     assert env["GHIDRA_MCP_URL"] == GHIDRA_MCP_URL
     # Claude Code only sees tool groups that exist when it connects.
     assert env["GHIDRA_MCP_LAZY"] == "0"
@@ -148,10 +157,19 @@ def test_serve_from_a_worktree_uses_the_main_checkouts_config(tmp_path: Path, mo
     (main_checkout / "coney.local.example.toml").write_text("", encoding="utf-8")
     (main_checkout / "coney.local.toml").write_text('pcsx2_mcp_dir = "../../tools/pcsx2-mcp"\n', encoding="utf-8")
     worktree = tmp_path / "worktrees" / "coney" / "branch"
-    env = {**os.environ, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@example.invalid",
-           "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@example.invalid"}  # fmt: skip
-    for args in (["init", "-q"], ["add", "coney.local.example.toml"], ["commit", "-q", "-m", "x"],
-                 ["worktree", "add", "-q", "--detach", str(worktree)]):  # fmt: skip
+    env = {
+        **os.environ,
+        "GIT_AUTHOR_NAME": "t",
+        "GIT_AUTHOR_EMAIL": "t@example.invalid",
+        "GIT_COMMITTER_NAME": "t",
+        "GIT_COMMITTER_EMAIL": "t@example.invalid",
+    }
+    for args in (
+        ["init", "-q"],
+        ["add", "coney.local.example.toml"],
+        ["commit", "-q", "-m", "x"],
+        ["worktree", "add", "-q", "--detach", str(worktree)],
+    ):
         subprocess.run(["git", "-C", str(main_checkout), *args], check=True, capture_output=True, env=env)
     monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(worktree))
     monkeypatch.setattr(mcp_serve.shutil, "which", which_all)

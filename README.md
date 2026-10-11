@@ -75,6 +75,12 @@ git clone https://github.com/Ryubara/coney.git
 cd coney
 ```
 
+To set up the whole workspace around a clone (the sibling folders for your disc and tools, `coney.local.toml`, a
+check of everything below and, if you ask, the research tools), clone into `<workspace>/repos/coney` and run
+`./bootstrap.sh` there, or `powershell -ExecutionPolicy Bypass -File bootstrap.ps1` on Windows. With no clone yet,
+download `bootstrap.sh` alone and run `sh bootstrap.sh --repo-url https://github.com/Ryubara/coney.git` in an empty
+folder. See [Local workspace](docs/guides/workspace.md#bootstrap).
+
 ### Build and test
 
 **On Windows**, the compiler, CMake and Ninja are only on the `PATH` in a shell that has the MSVC environment loaded.
