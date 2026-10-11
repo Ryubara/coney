@@ -12,7 +12,6 @@ from __future__ import annotations
 import json
 import os
 import re
-import shlex
 import shutil
 import subprocess
 from collections.abc import Iterable, Sequence
@@ -298,7 +297,9 @@ def _entry_command(entry: dict[str, Any]) -> list[str]:
     if isinstance(entry.get("arguments"), list):
         command = [str(part) for part in entry["arguments"]]
     else:
-        command = shlex.split(str(entry.get("command", "")), posix=os.name != "nt")
+        text = str(entry.get("command", ""))
+        # Not shlex: POSIX rules would read the backslashes of a Windows path as escapes.
+        command = [text[start:end] for start, end in _token_spans(text)]
     return command[1:] if command and _is_launcher(command[0]) else command
 
 

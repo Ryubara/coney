@@ -8,8 +8,8 @@ movies' headers, [`xbox`](#xbox), which reads the Xbox disc's archive, [`progres
 progress tables of the README and the docs current, [`natives`](#natives), which renders the script-binding
 masterlist, [`refs`](#refs), which builds the game reference lists, [`missions`](#missions), which builds the mission
 status pages, and [`pcsx2`](#pcsx2) and [`trace`](#trace), which record the original's per-update traces in PCSX2 and
-compare them with Coney's. Everything is read in place and streamed, so the 1.4 GB WAD is never loaded into memory. The format is described in
-[WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
+compare them with Coney's. Everything is read in place and streamed, so the 1.4 GB WAD is never loaded into
+memory. The format is described in [WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
 
 Run the commands from inside the checkout:
 
