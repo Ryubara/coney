@@ -2425,6 +2425,112 @@ state's handle at `+0x264` (restarted when it is still playing, `0x004194b8`); w
 `level99`'s last lesson waits for this command through `PadSetHandlerEx` (the handler receives it even when
 `EnableCommand` has turned it off, [Commands](#commands)).
 
+#### Everything rage does {#rage-effects}
+
+One list of what changes from the moment rage starts to after it ends, for the implementer. Confirmed (code) at the
+cited functions unless marked; the runtime checks used PCSX2 2.9.94 on a copy of quick-save slot 6 (`level99`,
+Rembrandt), with the scripted-pad patch, rage started by writing the meter full (78) and the hold timer, then L1 + R1
+held for 0.3 s (2026-10-10).
+
+**Start** (`Rage_Enter` `0x00284340` → `Human_StartRageMode` `0x00236d28`), in this order:
+
+1. **Sound**: `vags/misc/rage_mode_06` starts, 2D (`GameState_PlayRageSound` `0x004194b8`). It is usually already
+   prepared: `Human_UpdateMeters` (`0x002562d0`) prepares it through `RageSound_Prepare` (`0x00419460`) while the
+   meter is above 90 % of its maximum and no one rages, and stops it again below that (runtime: the handle at game
+   state `+0x264` appeared as soon as the meter, written full, fell under the hold timer's decay at 75 of 78).
+2. A pair the player is in is broken first (`Human_BreakPair`), then the clip 643 `RAGE_START` plays full-body,
+   holding `0x2000` (`0x0025a8c0`), unless the player is still paired, down (state `0xe0000`) or holds a busy flag;
+   rage starts either way.
+3. **The script's enter handler** (`CfgRageHandlers`' first name, `0x006b6830`) with `(human, flag)`, the flag true
+   when no one else rages (game state `+0x268` below 1). `global.lua` registers `SetRageMode`, which turns on, by
+   binding: `HuSetGodMode` (`0x10`), `HuSetUnstunnable` (`0x100`), `HuSetReducedReact` (`0x200`),
+   `HuSetIncreasedReact` (`0x200000`), `HuSetUngrabbable` (`0x40`), `HuSetUngroundable` (`0x80`) and `HuSetKeepWeapon`
+   (`0x2000`) on the human (and unlocks the meter when the rage cheat is on). The `level99` combat lesson swaps in its
+   own handlers that set the same seven flags and also queue a motion blur of 150 over 1 s (read from the disc's
+   scripts). Runtime: the player's `+0xe0` had `0x10` from the update rage started to the update it ended.
+4. Human flag `0x80000` set, `+0x648` (the hold timer) = 0, `+0x64c` = now.
+5. **The screen look**: `ScreenFx_StartLook(manager of the player's view, 2)` (`0x0018b7d0`): the rage tint and the
+   wobbling ghost of the last frame ([Graphics: the rage look](graphics.md#rage-look)).
+6. **The camera** shakes at level 1 (its vtable `+0x15c`, [Camera](camera.md)), with the pad's rumble.
+7. `RageSound_AddRager` (`0x00419718`): the count of raging humans at game state `+0x268` goes up by one.
+
+**While raging**:
+
+- **Meter**: drains at the Warrior class byte `+0x04` (9.36 a second for class 6); no gain, no decay hold. Runtime: 76
+  → 0 in about 8.1 s (look 2 from game time 581.34 s, ended by 589.41 s).
+- **What the player deals**: the same damage (no bonus); every hit causes a reaction because the attacker is raging
+  (hit armour does not apply, `Human_ApplyPendingDamage` `0x00265f70`) and, through `0x200000`, one step stronger
+  ([Human flags](#human-flags)); the power strike is 63 (and 231 when mounted, which also deals its damage at once,
+  `Player_UpdateGrabbing` at `0x0027f524`), the special 645 / 647, the strong grapple's strike 649 / 651; no power
+  spent or drained; the player's grabs cannot be struggled out of, escaped (`0x002258f0`, `0x00225830`), countered
+  (`Human_CanCounterGrab` `0x00258f40` refuses a raging grabber) or counter-tackled (`Human_CanCounterTackle`, the
+  same test at `0x002591e8`).
+- **What the player takes**, through the enter handler's flags: no damage (god mode: `Human_ApplyPendingDamage`
+  zeroes the pending damage while `+0xe0` has `0x10`, except a hit by a world object of `ObjectAttribs` kind `0x1d` or
+  `0x22`), never stunned (`0x100`), reaction one step weaker (`0x200`), reaction strength at most 1, so never knocked
+  down (`0x80`), cannot be grabbed (`0x40`), keeps his weapon (`0x2000`). Without the handler (none registered),
+  only the code's own rules hold:
+    - a hit on a raging player who is grabbing (record `+0x08` `0x10`) plays no reaction, the damage still lands
+      (`0x00265f70`, the test before the hit-armour one);
+    - a raging human cannot be set on fire (`Human_Ignite` `0x0022fce8` returns at once);
+    - a gunman's shot at a raging human deals a tenth of its damage, rounded (`trunc(d × 0.1 + 0.5)`,
+      `ShooterGoal_Fire` `0x002f1d60`).
+- **Movement**: no change. Runtime: with the left stick at 0.8 to the side for 2.5 s the speed `+0x1ac` settled at
+  1.629 m/s and the clip at 408 both raging and not (mean 0.907 and 0.912 m/s over the last 1.4 s). No locomotion
+  function tests `0x80000` (a search of every `lui …, 0x8` beside a `+0xe0` load found only the readers listed here).
+- **Sound**: the rage sound runs on; `RageSound_RestartIfRaging` (`0x00419630`, every frame from `0x0041a370`)
+  starts it again if it has ended while a player still rages. No other sound and **no music change**: none of the
+  rage functions calls the music system (inferred from the code read, not checked by ear).
+- **HUD**: the name banner and the meter in the raging colour (217, 158, 12), the target ring's inner arc showing
+  rage ([HUD](hud.md#the-rage-meter)).
+
+**End** (`Human_EndRageMode(human, instant)` `0x00236fb8`), when the meter reaches 0 (`Human_UpdateMeters`), on
+`Human_ReleaseAll` and at a scene's start (`SceneTask_Start`), all gradual (`instant` 0); and **at once** (`instant`
+1) on the pause menu's opening (`GameMenu_Open` `0x001d1aa0`), `Humans_EndAllRage`, `HuSetRageMode(human, false)` and
+a fade-out queued with `ScreenQueueEffect(1)` (`0x0018d4c8`):
+
+1. `RageSound_RemoveRager`: the count goes down; at 0 `RageSound_Stop` (`0x00419758`) fades the rage sound out over
+   2,000 ms.
+2. For a player: the one-shot `vags/misc/rage_ends_01` (`RageSound_PlayEnd` `0x00419400`), and
+   `ScreenFx_EndLook(manager, 2)` (gradual) or `(manager, 3)` (instant) ([Graphics](graphics.md#rage-look)).
+3. **The script's exit handler** with `(human, flag)`: `ClrRageMode` clears the seven flags (and, with the rage
+   cheat, refills and locks the meter shortly after through `TurnOnRageCheat`, scheduled at 33). Runtime: `0x10`
+   cleared on the update the meter reached 0.
+4. `+0x648` = 0 and flag `0x80000` cleared. The meter stays at 0; it fills again only from new hits.
+
+**The meter full, before rage** (`CfgRageHandlers`' third name, `RageFull` in `global.lua`): called with
+`(human, true)` the first time the meter fills (`Human_AddRage`) and with `(human, false)` when the hold timer runs
+out with the meter still unspent (`Human_UpdateMeters`, the latch at the per-player record `+0x58`); the
+`global.lua` version queues the motion blur at **75** over 1 s for true and back to **15** over 1 s for false. A rage
+started before the hold ran out clears the latch without the false call (the rage look's own blur then takes over).
+The HUD's own full-meter cue (`rage_indicator_02` and the flashing) is on [HUD](hud.md#the-rage-meter).
+
+**Defined but unused**: `global.lua` also defines `CameraRage` (the follow camera at 1 m with a field of view of
+100) and `TurnOnRagelight` / `TurnOffRagelight` (both world lights to an orange (1, 0.75, 0)); no script chunk calls
+any of the three (each name occurs once in the 467 chunks, at its definition). Not part of the original's rage.
+
+**Coney status and the fix for the implementer** (Coney as of `781d7768`):
+
+- Done: the meter, its gains, drain and decay (`repo:src/combat/meters.h`), L1 + R1 from the block, the moves 63,
+  231, 645 / 647, 649 / 651, no power in rage, the rage handlers called with the original's flag
+  (`ScriptedHumans::runRageHandlers`), the seven flags' bindings, the HUD's colours and full-meter sound, the camera
+  shake.
+- **Screen effect (missing; item 26)**: implement look 2 on the raging player's view exactly as
+  [Graphics: the rage look](graphics.md#rage-look): the tint blend to (51, 25, 0, 80) over 1.0 s, the 9 × 9 ghost
+  grid at a blur alpha of 150, then on the end the 2.5 s grid fade, the 5 s tint and blur blends back to the base
+  look, or the instant snap for the instant ends above. `effects::ScreenTint` today models only looks 9 and 10.
+- **Sounds (missing; item 26)**: `vags/misc/rage_mode_06` on start (2D, held in one game-wide handle, restarted if it
+  ends while a player rages, faded out over 2 s when the last rager ends); `vags/misc/rage_ends_01` once at each
+  player's end. Prepare-at-90 % is a loading detail; starting it on rage is enough.
+- **`RageFull(human, false)`**: Coney calls the full handler only when the meter fills; add the false call when the
+  hold timer runs out on an unspent full meter, or the 75 blur stays on.
+- **Rage start outside a block**: the original starts it from any free state ([Commands](#commands)); Coney only from
+  the block ([Coney's differences](combat-diffs.md)).
+- **Check, not yet traced in Coney**: god mode (`kGod`) is honoured by `Fighter::takePending`; make sure the other six
+  flags are read where the original reads them (unstunnable, reduced and increased reaction, ungrabbable,
+  ungroundable, keep weapon), that a raging grabber cannot be countered (`fighter_victim.cpp` reads the victim's own
+  rage there), and, when fire and gunmen arrive, the two code-only rules above.
+
 ### Target selection {#targets}
 
 `Player_PickTarget(range, h)` (`0x0027a6c0`), confirmed (code):
