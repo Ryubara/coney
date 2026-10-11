@@ -1,0 +1,108 @@
+name: Bug report
+description: Something in Coney is broken, or behaves differently from the original game
+title: "Bug: "
+labels: ["bug", "S-needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting. The more exactly we can repeat what you did, the sooner it is fixed.
+
+        **Never attach game files**: no disc images, BIOS images, extracted assets, save files or game text.
+        Screenshots and short videos of the game are welcome (see "Attachments" below).
+  - type: input
+    id: version
+    attributes:
+      label: Coney version or commit
+      description: The version or commit of your build (the name of the archive you downloaded, or `git rev-parse --short HEAD` in your checkout).
+      placeholder: "for example 581ca04f"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "for example Windows 11, Ubuntu 24.04, macOS 15"
+  - type: input
+    id: gpu
+    attributes:
+      label: Graphics card and driver
+      placeholder: "for example NVIDIA RTX 3060, driver 560"
+  - type: input
+    id: controller
+    attributes:
+      label: Controller
+      description: Which gamepad, or keyboard.
+      placeholder: "for example DualSense over USB"
+  - type: dropdown
+    id: started
+    attributes:
+      label: How did you start the game?
+      options:
+        - Story
+        - "--play-level"
+        - Debug menu jump
+        - Rumble
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: mission
+    attributes:
+      label: Mission and checkpoint
+      description: Where it happens, if you know (the level name such as level2, or the mission number, and the checkpoint).
+      placeholder: "for example level2, checkpoint 3"
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Numbered, starting from launching Coney. Say which buttons you pressed.
+      placeholder: |
+        1. Start with `--play-level level2`
+        2. Walk to the hangout door
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: position
+    attributes:
+      label: Position and heading
+      description: If you know it, from the debug menu's corner lines (x, y, z and heading). It lets us stand in the same place.
+      placeholder: "x -186.24, y 94.98, z -194.38, heading 83.6"
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happens
+      description: What you see, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: original
+    attributes:
+      label: What the original game does
+      description: Optional. If you have played the original on a PS2 or in an emulator, say what happens there (this tells us whether Coney differs from it).
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: How often does it happen?
+      options:
+        - Always
+        - Often
+        - Sometimes
+        - Once
+    validations:
+      required: true
+  - type: textarea
+    id: attachments
+    attributes:
+      label: Attachments
+      description: |
+        Drag and drop screenshots or a short video of Coney (or of the original) into this box. Also attach Coney's log: the text it prints in the terminal you started it from (copy it into a `.txt` file).
+        Gameplay screenshots and short videos are fine; files from the game are not.
+  - type: checkboxes
+    id: no-game-files
+    attributes:
+      label: No game files
+      options:
+        - label: "I attached no game files: no disc images, BIOS, extracted assets, save files or game text."
+          required: true

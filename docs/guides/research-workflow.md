@@ -784,12 +784,12 @@ listed in the backlog. Citations on the [source map](../research/source-map.md) 
 wrapper counts through its `evidence` in `research/bindings`.
 
 The names, sizes and plate flags come from `docs/progress/ghidra-functions.tsv`, exported from Ghidra; the
-citations are read from the pages on every `progress update`. After renaming functions in Ghidra, refresh both
+citations are read from the pages on every docs build. After renaming functions in Ghidra, refresh both
 (ghidra-mcp on `:8090` must be running; the export only reads):
 
 ```sh
 uv run --project python coney-tools progress ghidra    # re-export the listing (--check: exit 1 when stale)
-uv run --project python coney-tools progress update    # regenerate the bars; CI runs it with --check
+uv run --project python coney-tools progress check     # the inputs agree; the docs build writes the bars
 uv run --project python coney-tools progress backlog "<scratch>/research-backlog"   # per-subsystem to-do lists
 ```
 

@@ -2,7 +2,8 @@
 ## Summary
 
 <!-- One short paragraph: what this changes and why. If the change needs no documentation, add a line `Docs: none`
-     (CI refuses a change under src/ or python/src/ without a docs change, unless this line is here). -->
+     (CI refuses a change under src/ or python/src/ without a docs change, unless this line is here).
+     If this finishes an issue, add a line `Fixes #<number>` (one per issue): merging then closes it. -->
 
 ## Checklist
 

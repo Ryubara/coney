@@ -211,7 +211,8 @@ uv run --project python coney-tools xbox names XBOX_DISC ../../scratch/xbox-name
 
 ## progress {#progress}
 
-The [Progress](../progress/index.md) page and the Progress section of `README.md` are generated from three inputs:
+The [Progress](../progress/index.md) page and the badges in the Progress section of `README.md` are generated from
+three inputs:
 `docs/progress/functions.toml` (the original functions Coney reimplements), `docs/progress/totals.toml` (the
 denominators, copied from the [source map](../research/source-map.md)) and the status table of the
 [roadmap](../roadmap.md). The page says what the numbers mean; this section says how to run the commands.
@@ -225,19 +226,29 @@ Prints the reimplemented and researched shares, the milestones and the subsystem
 `functions.toml` and the `@orig` tags in `src/` disagree, and lists each problem.
 
 ```sh
-uv run --project python coney-tools progress update [--check]
+uv run --project python coney-tools progress check
 ```
 
-Rewrites the generated block between `<!-- progress:start -->` and `<!-- progress:end -->` in `README.md` and in
-`docs/progress/index.md`; the text outside the markers is never touched. Run it after changing any of the inputs and
-commit the result with the change. With `--check` it writes nothing and exits with 1 when a block is stale; CI runs
-it that way. It refuses to write while the inputs disagree:
+Checks the inputs and exits with 1 when they disagree; CI runs it. Nothing generated is committed: the tables of the
+progress page and the README's badge data are produced by the documentation build (`mkdocs_hooks.py`), which
+publishes them from `main`, so pull requests never conflict on them. `check` fails on:
 
 * an `@orig` tag in `src/` with no `[[function]]` in `functions.toml`, or the other way round, or the two naming the
   function differently;
 * a `subsystem` that is not the one whose range in `totals.toml` holds the address (the message names the right
   one; outside every range it is `unattributed`);
-* an address inside middleware or outside `.text`, an address listed twice, or sizes that overlap.
+* an address inside middleware or outside `.text`, an address listed twice, or sizes that overlap;
+* a progress page without its single `<!-- progress:generated -->` marker, where the build puts the tables.
+
+`mkdocs build --strict` shows the tables on the page locally too, and fails on the same problems.
+
+```sh
+uv run --project python coney-tools progress render <folder>
+```
+
+Writes the progress page as the build fills it (`progress/index.md`) and the badge files (`progress/badges/*.json`,
+shields.io endpoint JSON that the README's badges read) to `<folder>`, to look at them without a docs build. It
+refuses to write while the inputs disagree, as `check` finds.
 
 ```sh
 uv run --project python coney-tools progress sizes [DISC] [--fill]

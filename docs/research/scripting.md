@@ -2115,8 +2115,9 @@ handler component, as for `TriggerSphereEnable`).
 - Binding arguments the [script bindings](../references/bindings/index.md) reference marks as not understood yet: which
   bit of `PadSetHandler`'s mask is which PS2 button; who sends messages 0, 6, 7 and 9-`0x19` and what their extra values
   mean (the arguments are in [Message handlers](#message-handlers)); the scene-play flags (`ScenePlay` and its
-  relatives) beyond their `global.lua` names; most fields of the large `Cfg*` records (`CfgChar`, `CfgPowerClass`,
-  `CfgWarriorClass`), which are written through computed addresses with no reader found yet. Each would move up from
+  relatives) beyond their `global.lua` names; most fields of the large `Cfg*` records (`CfgChar`, `CfgPowerClass`),
+  which are written through computed addresses with no reader found yet (`CfgWarriorClass`'s are all traced:
+  [Warrior classes](../references/warrior-classes.md)). Each would move up from
   inferred once a reader or a runtime observation is found.
 - **Hint texts set twice in one frame** (owner checklist item 33b): answered by the original's runtime trace
   ([The queue at runtime](hud.md#hint-queue-runtime), [lessons 5-8](#level99-hint-timing)): a text set on a free box

@@ -196,8 +196,9 @@ function with no original counterpart (our own glue, a helper the original inlin
 
 **Every tag is counted.** In the same commit as the code, add a `[[function]]` block for each newly tagged original
 function to `docs/progress/functions.toml` (address, original name, subsystem and, when known, size), then run
-`uv run --project python coney-tools progress update` and commit the regenerated tables. CI fails when a tag and the
-file disagree. `coney-tools progress sizes --fill` finds a size from your own disc. Details:
+`uv run --project python coney-tools progress check`. Nothing generated is committed: the progress page's tables
+come from the docs build. CI fails when a tag and the file disagree. `coney-tools progress sizes --fill` finds a
+size from your own disc. Details:
 [the progress commands](coney-tools.md#progress) and [Progress](../progress/index.md). Rekit's
 `rekit research check` matches the tags against the research database in both directions, so a tag with a wrong
 address, or a reimplemented symbol with no tag, is caught by CI once that check is in place.
@@ -253,6 +254,23 @@ private:
 
 } // namespace coney::io
 ```
+
+## Coney-only capabilities {#coney-only}
+
+Some code has no counterpart in the original: a debug tool, a test aid, an enhancement. When such a capability is
+something a script could plausibly want (flying a human, teleporting, spawning, pausing, reading or writing a
+tunable), it is a future native of Coney's own ([Script mods](../roadmap.md#script-mods)), so two rules apply:
+
+- **Register it in the same commit.** Add a row to
+  [Coney native candidates](asset-and-script-architecture.md#coney-native-candidates): a proposed `Coney.Name`, the
+  C++ entry point, what it does and its status (`engine-only` until a script can call it). When it is exposed, change
+  the status in the same commit as the registration. A capability that no script could use (a front end, a test aid
+  such as `--frames`) is not listed.
+- **Keep its C++ API apart from reimplemented code.** The entry point is its own function, with no `@orig` tag and a
+  doc comment that says it is Coney's own and the original has nothing like it (`Human::setFlight()` is the model).
+  Never hang it on an `@orig` function, add a flag to one, or let one call it: the original's behaviour must read the
+  same with every Coney capability off. Its natives live in the `Coney` table and never appear in
+  `research/bindings/`, which describes only the original's 956.
 
 ## Errors
 

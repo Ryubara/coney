@@ -27,7 +27,7 @@ holds a camera by handle; the type says which class the handle is.
 | <span id="cam-type-3"></span>3 | `Cam_Spline` | `CamSetupPoizo` | 6 | `level14.lua`, `level3_chase.lua`, `level55_punkfight.lua`, `level87_chap1_tutorial.lua`, `level87_chap4_street2.lua`, `level9_chap3_escape.lua` | The scripted camera path (`CamSetupPoizo`, `CamAddPoizoPoint`) | |
 | <span id="cam-type-4"></span>4 | `Cam_Scene` | | | | The camera of scenes and in-engine movies; game time is not capped while it is current ([Boot](../research/boot.md#timers)) | Made by the scene start `0x0039d870`, `0x00354558` and the movie player `0x0042a938`. |
 | <span id="cam-type-5"></span>5 | `Cam_Transition` | `CameraMakeActive` | 627 | `36763710`, `670ba2b0`, `6ecd70b0`, `d26c7832`, `f2ede7bf`, `global.lua` | The blend between the previous and the new camera (`CameraMakeActive` with a blend time) | |
-| <span id="cam-type-6"></span>6 | `Cam_Power` | | | | The power-move camera, made by `0x00101dd8` while switch 9 is on | |
+| <span id="cam-type-6"></span>6 | `Cam_Power` | | | | The power-move camera: a finisher clip's frame events (`0x39` begin, `0x3b` shot, `0x3a` cut, `0x3d` end, read by `0x00101dd8`) cut it to fixed shots while switch 9 is on | |
 | <span id="cam-type-7"></span>7 | `Cam_Mug` | | | | The mugging camera, made by human code (`0x0022cb00`) | |
 | <span id="cam-type-8"></span>8 | `Cam_Mini` | | | | The mini-game camera (its name string is `Minigame`), made by human code (`0x0022d030`) | |
 | <span id="cam-type-9"></span>9 | `Cam_Rail` | `CamSetupRail` | 46 | `level11_chapter6.lua`, `level2.lua`, `level3_chase.lua`, `level51_chapter8.lua`, `level51_chapter9.lua`, `level54.lua` | A camera that runs along a rail of points after its target (`CamAddRailPoint`) | |
@@ -51,7 +51,7 @@ holds a camera by handle; the type says which class the handle is.
 | <span id="cam-switch-6"></span>6 | `0x0050b1d0` | `global` | 1 | 7 | `level60.lua`, `level61.lua`, `level62.lua`, `level63.lua`, `level64.lua` | Camera shake: off, the shake offset is not added to the view (the pad still rumbles) |
 | <span id="cam-switch-7"></span>7 | `0x0050b2ac` | `global` | 1 | 1 | `level54_park.lua` | Leading rail modes: on, the camera stands off the rail, the lead (`+0x35c`) from the target in plan; off, it stays on the rail |
 | <span id="cam-switch-8"></span>8 | `0x0050b2b0` | `global` | 1 | 1 | `level81_chase.lua` | Part of the rail camera's choice of targets; not traced |
-| <span id="cam-switch-9"></span>9 | `0x0050b1d4` | `global` | 1 | 3 | `level55_subway.lua`, `level99_lesson2.lua` | Lets a power move's animation event `0x39` switch to the power camera (type 6) |
+| <span id="cam-switch-9"></span>9 | `0x0050b1d4` | `global` | 1 | 3 | `level55_subway.lua`, `level99_lesson2.lua` | Lets a power move's animation events (`0x39` begin, `0x3b` shot, `0x3a` cut) use the power camera (type 6); the end `0x3d` ignores it |
 | <span id="cam-switch-10"></span>10 | `0x0050b248`, `0x0050b249` | `both pads` | 1 | 1 | `level55_punkfight.lua` | Auto-follow: the follow camera swings behind the player |
 | <span id="cam-switch-11"></span>11 | `0x0050b23c` | `global` | 1 | | | The look-behind button: off, the reverse-camera button never turns the view round (`Human_SetWheelchairControl` clears it) |
 | <span id="cam-switch-12"></span>12 | `0x0050b2b4` | `global` | 1 | 2 | `level82_chapter5.lua`, `level93_chapter6.lua` | Part of the rail camera's choice of targets: off, a player is a target only while he still counts |
