@@ -3446,14 +3446,95 @@ So, with the clips loaded, **event 0 starts the pair, and the dealer's `money_ta
 which does step 6 when `+0x45` is set ([Combat](combat.md#rage)). A second event 0 during the pair completes it at
 once. Confirmed (code) at `0x002c74d8` and `0x002473bc`; the frame from the disc's clip.
 
-**Attacked** (`DealerBrain_OnHit` `0x00302ff0`, events `0x10` and 1): a help call to his gang (30 m); then, when the
-dealer is not down and his top goal is the dealer goal, goal 1, or a Spectate goal without a fight goal, and his brain
-is not type 2: with `GoalDealer` on the stack its state becomes **5** and its **run chance** `+0x3a` is rolled (50 %
-without the goal). `Random_Int(100)` below it → a flee goal (`DealerFlee_Push` `0x002c88a8` → `0x002c8970`, vtable
-`0x00540c30`): after 25-50 ms he steps back to 2-4 m from the attacker, then runs at gait 5 to the nearest flag of
-activity 8 (`0x00416f08`) with line 9. Otherwise threat response 2, `Brain_Fight` for 15 s, and the same goal with
-its "fight" byte set, which after the step back puts `dyn_swhbld_super` in his hand and ends. So the run chance is
-read only when he is attacked.
+**Attacked** (`DealerBrain_OnHit` `0x00302ff0`, events `0x10` and 1), confirmed (code) at the addresses cited:
+
+1. An attacker throwing at him first gets `Brain_CallForHelp`; when that is answered, nothing more.
+2. An attacker whose brain is a **Warrior** (type 3) and no threat to the dealer counts only when the dealer is the
+   Warrior gang's chosen target (gang `+0x10`); otherwise nothing more.
+3. A help call (`Gang_BroadcastHelpCall`, 30 m). It is event `0x14` ([Help calls](#help-calls)), which every other
+   dealer **drops** ([Dealers](#think-dealer)), so it moves no other seller.
+4. When he may react (`DealerBrain_CanReactToHit` `0x00302df8`: not down or dead, and his top goal is the dealer goal
+   (`0x80`), goal 1, or a Spectate goal (`0x10`) while he has no fight goal) and **the attacker's** brain is not a gang
+   soldier's (type 2; the old reading "his brain" was wrong, the test reads the attacker's brain): with `GoalDealer` on
+   the stack its state becomes **5** and its **run chance** `+0x3a` is rolled (50 % without the goal), in
+   `DealerBrain_FleeOrFight` (`0x00302eb0`). A later hit finds the reaction goal or the fight on top and rolls nothing.
+    - `Random_Int(100)` below the chance: **flee**. A `DealerReaction` goal (`DealerFlee_Push` `0x002c88a8` →
+      `0x002c8970`, type `0x81`, vtable `0x00540c30`) with the fight byte clear.
+    - Otherwise, against a non-friendly attacker: **fight**. When the attacker is no threat yet the two gangs are made
+      enemies (`Brain_MakeGangsEnemies`), threat response (`+0x21c`) 2, `Brain_Fight(dealer, attacker, 15000, 0)`
+      (the dealer gang has no tactic, so FindEnemy, Melee and Fight are pushed), then the same `DealerReaction` goal
+      on top with the fight byte set.
+5. A non-friendly attacker raises the brain's `+0x200` (the [block](#block)'s trigger).
+
+**The reaction goal** (`DealerFleeGoal_Process` `0x002c8af0`): after the Start's 25-50 ms wait (his line
+9 `scream`, or a turn to the attacker) he enters the fight stance and backs off to 2-4 m from the attacker
+(`MoveToHumanAction`), saying speech command 17 when fighting, or 9 when fleeing and he holds an attack slot on the
+attacker. Then:
+
+- **Fight**: `Human_PlaceItemInHand(dealer, dyn_swhbld_super)`, the switchblade, and the goal ends. The fight goals
+  under it take over: he fights the attacker with the knife. When they end, `DealerBrain_Think` sets the threat
+  response back to 0 and `GoalDealer` resumes in **state 5**: once his line ends he runs (gait 5) to the nearest flag
+  of activity 8 and leaves (`GoalMoveToExitFlag`, [the exit](ai-goals.md#goal-ped-reaction)). The knife stays in
+  his hand; nothing removes it.
+- **Flee**: gait 5, the taunt stopped, and a `GoalMoveToExitFlag` to the nearest flag of activity 8 (with line 9 if
+  he held an attack slot). He leaves the world the same way.
+
+So **a seller attacked once never sells again**, whichever way the roll goes; the level's spawner brings a new one.
+The run chance is read only when he is attacked.
+
+##### One seller or all {#dealer-attacked}
+
+The original keeps the whole reaction **per seller**. Confirmed (code) at the addresses above:
+
+- The state (5), the roll and the reaction goal live in the attacked dealer's own `GoalDealer` and brain.
+- The help call is event `0x14`, which `DealerBrain_OnEvent` drops, and the dealers' gang has no tactic to take it.
+- The fight branch makes the dealers' **gang** an enemy of the attacker's gang. That bit is shared by every dealer of
+  the gang, but nothing in a dealer reads it: `DealerBrain_Think` pushes no fight on enemies, the dealer handler drops
+  the new-enemy event `0xb`, and `DealerGoal_Process` never tests gang relations. Kind 24 (`0x18`) gangs whose
+  members all have threat response 0 are made neutral with the kind-0 gangs again (`Gang_CheckNeutralRule`
+  `0x00169d30`) once the fighter is calm.
+- The **wary scan** (`DealerGoal_Process` step 6) does not use enemies either. It takes the nearest **other gang that
+  has a member under attack** (`Gangs_FindNearestAttacked` `0x0016c978`: any member's attacker list non-empty,
+  nearest by gang centre), then that gang's member nearest the dealer, and acts only when he is within **4 m** (16 is
+  the squared distance) of the dealer, the dealer within 4 m of home, the member has attackers and is in sight. It is
+  a seller watching a brawl at his stall, not a seller afraid of an enemy gang.
+
+In `level87` all sellers share one gang, `GangCreate(24, "Dealers", 0, 0)` (`AddDealers`), filled by two spawners
+whose callback `df.DealerSpawner` walks each to its flag; `df.RestoreDealersBrains` then gives `GoalDealer(h, type, 10,
+run, dirty)`. `StartFactory` passes **run 25** for the spray sellers and **10** for the flash seller; dirty 0, or 40 for
+flash and weapons sellers on difficulty 2 and up. Chapter 2's first spray seller is re-given `GoalDealer(h, 2, 10, 50,
+0)`. The gang's message 2 (`df.DealerDied`; inferred: sent when a seller dies or leaves) restarts his spawner after
+20 s.
+`level99`'s flash dealer has run chance 0, so he always pulls the knife.
+
+**Coney status and fix** (`repo:src/ai/dealer_goal.*`, `repo:src/ai/brain_events.cpp`; checked 2026-10-11):
+
+- Coney has no `DealerBrain_OnHit`: a dealer's event 1 and `0x10` go to the shared handler, which makes the dealer
+  gang and the player's gang enemies and calls for help. Nothing flees, fights or pulls a knife; `GoalDealer` is never
+  told and keeps selling.
+- **Item 7 (every seller stops):** Coney's wary scan (`nearestEnemy`, `kWaryDistance` 16) reads 16 as metres and tests
+  gang **enemies**. After one hit the shared handler makes the whole dealer gang the player's enemy, so every seller
+  with the player within 16 m pushes a wary Spectate goal every 2 s and stops offering. Fix: as the original, the
+  nearest other gang with a member under attack, that member within 4 m of the dealer (16 squared), the dealer
+  within 4 m of home, the member's attacker list non-empty and in sight.
+- **Item 15 (the knife):** add a dealer type handler with `DealerBrain_OnHit` as above (the Warrior and throw tests,
+  the 30 m help call, `CanReactToHit`, the gang-soldier attacker exception, state 5, the roll), the `DealerReaction`
+  goal (type `0x81`: the wait, the back-off to 2-4 m, the switchblade or the exit flag), `Brain_Fight` for 15000 ms
+  with threat response 2, and `GoalDealer`'s state 5 run to the activity-8 flag once the fight is over.
+- Keep the dealer handler dropping events `0xb` and `0x14`.
+
+**Suggested tests** (synthetic, `coney_tests "[dealer]"`):
+
+1. Two dealers in one kind-24 gang 30 m apart; the player hits dealer A. B's `GoalDealer` stays in state 1 and still
+   offers the prompt to a player at 1.5 m; B pushes no Spectate goal.
+2. Wary scan: a member of another gang under attack 3.5 m from a dealer at home → Spectate pushed; at 5 m, or with no
+   attackers on him, or an enemy-gang member at 3 m who is not under attack → nothing.
+3. Run chance 0 (`level99`'s flash dealer), seeded: one hit → `DealerReaction` with the fight byte, after the back-off
+   `dyn_swhbld_super` in hand, a fight goal on the player, threat response 2; once the fight ends, state 5 and a
+   `GoalMoveToExitFlag` to the nearest activity-8 flag at gait 5.
+4. Run chance 100: one hit → flee, no knife, `GoalMoveToExitFlag` at gait 5; a second hit rolls nothing.
+5. A gang soldier (type 2) hitting a dealer: help call only, state unchanged.
+6. Through the player's path: `level87` checkpoint 2, the pad's square on a spray seller; the other seller still sells.
 
 #### GoalRiot {#riot}
 
@@ -3871,6 +3952,122 @@ Class details, confirmed (code) unless marked:
   (`Goal_CallGang`, radius `range` or twice the member's brain `+0x140`).
 - **Vandalize** / **Steal**: each member's goal takes the zone, the delay and `leaderRange`; the vandal brain's
   `+0x28d` is set. Vandalize's code 1 comes from `0x0039a580(zone)` reporting nothing left to break.
+
+#### Attacking on sight {#aggro-on-sight}
+
+Why an enemy-gang member attacks the player he sees, and what holds him back. Confirmed (code) at the addresses
+cited; the `level87` facts are from its scripts on the disc.
+
+**The chain.**
+
+1. **The scan.** Every AI brain, in `Brain_UpdateGoals`, runs `Brain_MaybeScanEnemies` (`0x0028fa18`): every 2 s near
+   the camera, every 8 s in the fight stance or farther than 30 m from it, at most 5 scans in one update. It lists
+   the members of enemy gangs within the sight range (brain `+0x130`, 30 m when made; `HuSetLOSRange`), in front
+   (field of view `+0x12c`, 110° when made; `BrSetFOV`) unless within the near radius, and in line of sight
+   ([The enemy scan](#enemy-scan), [Sight](#sight)). The gangs must be enemies first: `GangMakeEnemies`, or a script
+   form's `Enemies`.
+2. **A new enemy** goes to the scanner's own event handler as event `0xb` (11): his script handlers, then
+   `Gang_OnEvent`, which hands it to the gang's tactic, then his brain ([Events and
+   GangSetMsgHandler](#gang-events)). `Brain_AddEnemy` sends the same event when the tactic's `+0x3c` flag is 0
+   (types `0x12` and up).
+3. **A gang with no tactic**: the gang soldier's think (`GangBrain_Think` step 3, [Gang soldiers](#think-gang)) pushes
+   the fight (`Brain_PushFightGoal(−1)`) as soon as his threat response (`+0x21c`) is not 0 and his enemy list is
+   not empty. That is the plain "attack on sight". The shared handler's event `0xb` also sends a 20 m help call
+   flagged "new enemy" ([The shared event handler](#shared-events)).
+4. **A gang with a tactic**: `Brain_PushFightGoal` returns at once, so the think starts no fight
+   ([Tactics](#tactics)). The tactic turns the event into a callback code instead: HanginOut, Idle, Wander,
+   TravelPath, MoveToFlag, Vandalize and Steal turn event 11 from one of their own members into code **3
+   `TacSeeEnemy`** (`HanginOutTactic_OnEvent` `0x00312580`, `IdleTactic_OnEvent` `0x00315228`), event 1 into 5, 16
+   into 6 and event 10 (`Brain_MaybeSpotPlayers`) into 4 `TacSeePlayer`. Confront answers its own process codes (1
+   inside the critical range, or no route and the other leader in view; 7 inside the approach range; 2 leaving it; 9
+   the target gone) and events 1 → 5, 16 → 6 ([The scripted tactics](#tactic-kinds)).
+5. **The script decides.** The callback is the Lua `Strategy(gang, code)` of the strategy library (`global.lua`),
+   which calls the gang's `StrategyPreset(gang, code, state)`. Each preset is a table from the current tactic and the
+   code to the next tactic; a code the table does not name does nothing. So under a tactic, **whether a member
+   attacks on sight is the script's choice**, made through code 3.
+
+A HanginOut tactic without `fullAware` narrows each member's sight to the leader's range × 0.75 and his field of view
+− 20° (`HanginOutTactic_SetAwareness` `0x00311c78`), so a hanging-out Destroyer spots the player from 22.5 m at most.
+
+**`level87` (Mission 3: Payback).** `GangSetup(form)` (`global.lua`) makes every Destroyer gang (kind 19) an enemy
+of `GangWarriors` (the form's `Enemies`), keeps the threat response of 2 (no form sets `SetThreat`) and starts the
+form's `DefaultTactic` (HANGINGOUT when none, nothing when `Halt` is set) with the callback `"Strategy"`. The
+presets' rows that matter (code → next tactic; 5 and 6, a hit or an attack warning, give ATTACK in every row):
+
+| Preset | Row (tactic) | 3 `TacSeeEnemy` | Other codes |
+| --- | --- | --- | --- |
+| `StratHunter` (the default) | HANGINGOUT, MOVETOFLAG | CONFRONT | 4 nothing; 8 → HANGINGOUT |
+| `StratHunter` | IDLE | **ATTACK** | 4 nothing |
+| `StratHunter` | CONFRONT | - | **1 → ATTACK**; 2 → PURSUE; 7 nothing; 9 → HANGINGOUT |
+| `StratHunter` | PURSUE / ATTACK | - | 7 → ATTACK, 9 → HANGINGOUT / 9 → PURSUE |
+| `StratAggressive` | any but ATTACK, PURSUE, CONFRONT | CONFRONT | 7 → CONFRONT; others → CONFRONT |
+| `StratRunAround` | WANDERWALK | CONFRONT | CONFRONT as `StratHunter`'s, 9 → WANDERWALK |
+| `StratHomeIn` | HOMEIN | CONFRONT | 8 → HANGINGOUT; CONFRONT 1 → ATTACK, 2 and 9 → HOMEIN |
+| `StratManPile` | HANGINGOUT / MANPILE | MANPILE / - | MANPILE 1 → ATTACK |
+| `StratPassive` | any but ATTACK, CONFRONT | CONFRONT | 7 → CONFRONT; CONFRONT 1 → ATTACK, 2 and 9 → the default |
+
+CONFRONT walks the gang up to the Warriors' leader in formation (`TacticConfront(gang, GangWarriors, approach,
+critical, mode, ...)`) and its code 1 at the critical range turns it into ATTACK (`TacticAttack`: threat response 2
+and a Melee goal for every member). So the usual Mission 3 sequence is: **seen → CONFRONT (the walk-up and the spot
+line) → ATTACK at 2-3 m**; a hit at any point → ATTACK at once.
+
+| Gang (form) | Tactic | Preset | Sight changes | What starts the fight |
+| --- | --- | --- | --- | --- |
+| `EarlyDest` (back alleys, `EDForm`) | CONFRONT from the start (14 m, 2 m, `WalkAggressive`) | Hunter | - | Confront's code 1 at 2 m, no sighting needed |
+| `LiquorDest` (chapter 2's drunks) | IDLE | Hunter | `HuSetLOSRange` 4, `HuBlockLook` | code 3 within 4 m → ATTACK |
+| `Wander` (2 min after the drunks die) | WANDERWALK | RunAround | - | code 3 → CONFRONT → ATTACK |
+| `Chairs` (chapter 4, roof chairs) | HANGINGOUT | Aggressive | narrowed (not `FullAware`) | code 3 → CONFRONT → ATTACK |
+| `Roofers` (chapter 4) | IDLE | Hunter | - | code 3 → ATTACK |
+| `HStairs` (chapter 4, on the stairs) | IDLE | Hunter | `HuSetLOSRange` 1 | a hit (5, 6), or the player within 1 m |
+| `RoofPursuit` (chapter 4) | HOMEIN (to where the player was) | HomeIn | - | code 3 → CONFRONT → ATTACK |
+| `Event7`, `FlameTosser` (chapter 4) | none at set-up (`Halt`) | ManPile / Hunter | `FlameTosser`: 1 m, `BrDead` | their chapter's own script |
+| the stoops (`SetUpStoop`) | USEFLAG (5 m, view 15 m) | Passive | - | Use-flag's code 7 → CONFRONT (`Hold`) → ATTACK |
+
+`RespondOff` (HStairs, Roofers, Chairs, RoofPursuit, FlameTosser) only stops the tactic sending a member to help a
+fight it hears about; it does not stop code 3. No form holds a gang passive by its threat response; the passive ones
+are held by a short sight (`HuSetLOSRange` 1 or 4) or by `Halt`.
+
+**Coney status and fix** (checked 2026-10-11, `repo:src/ai`; item 5 of the owner's list):
+
+- Coney runs the enemy scan only for members under TacticScout (`ScoutTactic::update` →
+  `ScanSchedule::maybeScan`); `Brains::update` and `Brain::think` never scan. So no Destroyer under HANGINGOUT, IDLE,
+  WANDERWALK or HOMEIN ever gets event 11, no code 3 reaches `Strategy`, and the gang stays in its tactic until a hit
+  (codes 5 and 6) turns it to ATTACK. That is exactly "they see the player and do nothing until he attacks".
+- Nothing sends event 10 (`kEventSawPlayer` has no sender), so code 4 never fires; `level87`'s presets ignore it, but
+  other levels' may not.
+- A gang soldier with no tactic never fights an enemy in his list: Coney has no `GangBrain_Think` step 3.
+- The rest of the chain is in place: `codeOf` maps the events to codes, `StoryTactic::event` and
+  `Tactic::fireCallback` call the Lua callback, `Brain::pushFightGoals` refuses under a tactic, and the scan itself
+  (`scanEnemies`) sends event `0xb` to the human's handlers.
+
+Fix, in order:
+
+1. Call the scan (`ScanSchedule::maybeScan`) for every AI brain in the brain update, as `Brain_UpdateGoals` does,
+   with the 5-per-update budget and the 2 s / 8 s interval (detail level and fight stance), not only for scouts.
+2. Add `GangBrain_Think` step 3 (and the cop's and Warriors' equivalents, [Brain types](#brain-type-handlers)): with
+   threat response, no fight goal and a non-empty enemy list, `pushFightGoals`.
+3. HanginOut's awareness (× 0.75, − 20° unless `fullAware`) at its Start, undone at its End.
+4. Then `Brain_MaybeSpotPlayers` (event 10, code 4) for completeness.
+
+**Suggested tests** (synthetic unless named):
+
+1. A kind-19 gang under TacticHanginOut with a recording callback, enemies with the player's gang; the player 15 m in
+   front in the open: one call with code 3 within 2 s. The player behind him beyond 3 m, beyond 22.5 m, or behind a
+   wall: no call. With `fullAware`: called at 25 m.
+2. The same under TacticIdle with `HuSetLOSRange(h, 4)`: the player at 5 m → nothing; at 3.5 m → code 3.
+3. A type-2 soldier in a gang with no tactic and the player in sight: a fight goal on the player at his next think;
+   under any tactic: none.
+4. The scan budget: eight brains due in one update, five scan, the other three on the next.
+5. `level87`'s strategy library with the disc's scripts (`[disc]`): a HANGINGOUT gang given code 3 is moved to
+   CONFRONT; CONFRONT given code 1 to ATTACK; IDLE given code 3 to ATTACK.
+6. The player's path (`[disc][story]`): `level87` from its checkpoint 2 start, the pad's left stick at about 60 %
+   toward a Destroyer group without pressing an attack; within 10 s a Destroyer has a fight goal on the player and
+   the player takes a hit.
+
+**Runtime.** Not observed in PCSX2 for this page: no save state reaches Mission 3 yet, and getting there means
+playing two missions. A check for later, from such a state: log the tactic callback (`0x00306938`, the gang id and
+the code) while the player walks into a hanging-out group's view; the expected order is 3, then 7 and 1 from
+Confront, then the ATTACK tactic's members in Melee.
 
 #### The boss fights {#boss-fights}
 
