@@ -204,13 +204,60 @@ std::optional<world_objects::WorldPose> PlayLevelMode::heldPose(double held,
     return world_objects::heldWorldPose(snapshot.feet, snapshot.heading, bones.at(attachment->bone), 1.0F, *attachment);
 }
 
-void PlayLevelMode::drawWorldObjects(const human::PlayerSnapshot& snapshot) {
+void PlayLevelMode::recordDrawnPoses() {
+    // Under the ids the objects are placed by in drawWorldObjects(), a marker's column at its handle + 0.5; an
+    // object's jumps (a script's move, a drop) start a new generation, which is not blended across.
+    m_drawnPoses.commit();
+    for (const world_objects::ObjectDraw& draw : m_objectTasks.draws()) {
+        const world_objects::SpawnRecord* record = m_records != nullptr ? m_records->find(draw.handle) : nullptr;
+        m_drawnPoses.record(draw.handle + (draw.column ? 0.5 : 0.0),
+                            world_objects::WorldPose{draw.position, draw.rotation},
+                            record != nullptr ? record->jumps : 0U);
+    }
+    if (m_objects != nullptr) {
+        for (const world_objects::DoorDraw& door : world_objects::doorDraws(m_objects->doors)) {
+            m_drawnPoses.record(door.handle, world_objects::WorldPose{door.position, door.rotation});
+        }
+    }
+}
+
+std::vector<PlayLevelMode::IconDraw> PlayLevelMode::iconDraws() const {
+    // Turning with the game time of the HUD's newest step (docs/research/ai.md#dealer-icon); hidden while the
+    // letterbox is up (all but dyn_cross).
+    std::vector<IconDraw> icons;
+    const bool letterbox = m_stage->barHeight(m_hud->hud().nowMs()) > 0.0F;
+    for (const human::Human* human : m_player->humans().humans()) {
+        const std::string& icon = human->script().icon;
+        if (icon.empty() || !human->alive() || (letterbox && world_objects::hiddenByLetterbox(icon))) {
+            continue;
+        }
+        icons.push_back(IconDraw{
+            .human = human,
+            .name = icon,
+            .pose = world_objects::spinningIconPose(icon, human->position(), human->heading(), m_hud->hud().nowMs())});
+    }
+    return icons;
+}
+
+void PlayLevelMode::recordIconPoses() {
+    m_iconPoses.commit();
+    for (const IconDraw& icon : iconDraws()) {
+        m_iconPoses.record(icon.human, world_objects::WorldPose{icon.pose.position, icon.pose.rotation});
+    }
+}
+
+void PlayLevelMode::drawWorldObjects(const human::PlayerSnapshot& snapshot, float alpha) {
     if (!m_placed) {
         return;
     }
     m_placed->clear();
+    // Each object between its last two steps' poses (Coney's smoothing for displays faster than the step; exactly the
+    // newest at alpha 1).
     for (const world_objects::ObjectDraw& draw : m_objectTasks.draws()) {
-        m_placed->place(draw.handle + (draw.column ? 0.5 : 0.0), draw.modelHash, draw.position, draw.rotation,
+        const double id = draw.handle + (draw.column ? 0.5 : 0.0);
+        const world_objects::WorldPose pose =
+            m_drawnPoses.drawn(id, world_objects::WorldPose{draw.position, draw.rotation}, alpha);
+        m_placed->place(id, draw.modelHash, pose.position, pose.rotation,
                         PlacedObjects::Look{.tint = draw.tint,
                                             .fadeDistance = draw.fadeDistance,
                                             .sizeCullExempt = draw.sizeCullExempt,
@@ -220,7 +267,9 @@ void PlayLevelMode::drawWorldObjects(const human::PlayerSnapshot& snapshot) {
     if (m_objects != nullptr) {
         for (const world_objects::DoorDraw& door : world_objects::doorDraws(m_objects->doors)) {
             const bool listed = m_objectList != nullptr && m_objectList->findByHash(door.modelHash) != nullptr;
-            m_placed->place(door.handle, listed ? door.modelHash : door.fallbackHash, door.position, door.rotation,
+            const world_objects::WorldPose pose =
+                m_drawnPoses.drawn(door.handle, world_objects::WorldPose{door.position, door.rotation}, alpha);
+            m_placed->place(door.handle, listed ? door.modelHash : door.fallbackHash, pose.position, pose.rotation,
                             PlacedObjects::Look{.tint = door.tint});
         }
     }
@@ -237,20 +286,14 @@ void PlayLevelMode::drawWorldObjects(const human::PlayerSnapshot& snapshot) {
         m_placed->place(held, m_objectTypes->find(record->typeName)->modelHash, pose->position, pose->rotation,
                         PlacedObjects::Look{.tint = record->tint, .sizeCullExempt = true});
     }
-    // The spinning icons over the humans that wear one (a dealer's, a script's `HuAttachSpinningIcon`), turning with
-    // the game time of the newest step (docs/research/ai.md#dealer-icon). Their ids are negative, apart from the
-    // handles.
+    // The spinning icons over the humans that wear one (a dealer's, a script's `HuAttachSpinningIcon`), blended
+    // between their last two steps' poses like the objects. Their ids are negative, apart from the handles.
     double iconId = kIconIdBase;
-    const bool letterbox = m_stage->barHeight(m_hud->hud().nowMs()) > 0.0F;
-    for (const human::Human* human : m_player->humans().humans()) {
-        const std::string& icon = human->script().icon;
-        // Hidden while the letterbox is up (all but dyn_cross).
-        if (icon.empty() || !human->alive() || (letterbox && world_objects::hiddenByLetterbox(icon))) {
-            continue;
-        }
-        const world_objects::IconPose pose =
-            world_objects::spinningIconPose(icon, human->position(), human->heading(), m_hud->hud().nowMs());
-        m_placed->place(iconId, crc32(icon), pose.position, pose.rotation, PlacedObjects::Look{.sizeCullExempt = true});
+    for (const IconDraw& icon : iconDraws()) {
+        const world_objects::WorldPose pose =
+            m_iconPoses.drawn(icon.human, world_objects::WorldPose{icon.pose.position, icon.pose.rotation}, alpha);
+        m_placed->place(iconId, crc32(icon.name), pose.position, pose.rotation,
+                        PlacedObjects::Look{.sizeCullExempt = true});
         iconId -= 1.0;
     }
     drawHats();

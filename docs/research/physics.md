@@ -412,7 +412,15 @@ So `+0x14` is the classic sort-and-sweep bound: the step's refresh keeps it from
    (`0x00341840`).
 2. **Against the mesh** (`0x0033d340`): the first shape's mesh sweep (`+0xe0` by type, through `0x0033d2d8` with
    the wall threshold −0.65). For a human (type mask `0x40`) in the air, also the landing segment (`0x0023e408`),
-   whose hit becomes a contact flagged `0x80`.
+   whose hit becomes a contact flagged `0x80`. **Faces are one-sided unless flagged.** In the capsule's mesh sweep
+   (`PhysicsMesh_SweepCapsule` `0x00347c08`) a triangle is read only for its enabled bit (`0x00347de0`, no type-bit
+   mask, so a door's `0x400` or `0x40` changes nothing), then: a wall (`|n.z|` ≤ 0.65, `0x00347e60`); the side test
+   `n·c − n·v0 < 1e-6` (`0x00347ec0`), where `c` is the sphere's centre at the **start** of the move (the shape's
+   `+0x50`, read at `0x00347c80`, raised by `r + 0.05`), skips a one-sided triangle (flag `0x2` clear, `0x00347edc`)
+   and turns a two-sided one to face the sphere (`0x00343c90`, `0x00347ee4`); then the move must go into the face,
+   `n·move < −0.001` (`0x00347f2c`). So a one-sided wall stops a body only from its front, and a body that starts
+   behind it passes. Confirmed (code). What makes the level's doors block from both sides is the door's init setting
+   flag `0x2` ([Objects](objects.md#door-blocking)).
 3. **Against the bodies** (`PhysicsBody_SweepHumanMask`, `0x0033d498`): the candidates of the swept box whose
    **body flags** (`+0x40`; the type mask is −1) share a bit with a mask that depends on the mover
    ([collision layers](#layers)): 2 `BLOCKOBJECTS` for a non-human; for a human 4 `BLOCKHUMANS`, or `0x44` (and
@@ -453,9 +461,32 @@ What a walking human meets of another human, confirmed (code) at the cited addre
   uncuff end hooks), as does `Human_StartFall` (`0x0023dc58`). A scene sets one group on the humans it plays
   (`SceneTask_Start` `0x0039d870`, cleared by `SceneTask_End`). The ignore lists ([below](#ignore-lists)) serve
   strikes, not the walk.
-- **Health gone** (`Human_OnHealthOut` `0x002674c0`): a human knocked out or wounded loses `BLOCKHUMANS`, so walkers
-  pass over him; a dead one (state `0x100000000`) has his body freed unless airborne. What gives `BLOCKHUMANS` back
-  on getting up is not traced.
+- **Who loses `BLOCKHUMANS`.** Body flag `0x4` is cleared (with the re-pose flag `0x80000000` set) by
+  `Human_KnockOut` (`0x00230328`), `Human_StartWounded` (`0x0022fa78`), `Human_OnHealthOut` (`0x002674c0`, again
+  after either) and `Human_Arrest` (`0x0022ec18`, the cuffs), so walkers pass over a human knocked out, wounded or
+  cuffed; a dead one (state `0x100000000`) has his body freed unless airborne. Confirmed (code) at the cited
+  addresses; no other `& ~4` in the executable reaches a human's body flags (searched by the mask's `li -5`).
+- **A knockdown keeps it.** `Human_KnockDown` (`0x0022f100`, state `0x80000`, the heavy reactions) writes no body
+  flag: it sets the push weight to 1e9 (attribute 7), so a grounded human **still blocks** walkers, who slide along
+  him without moving him, from the fall until he stands. Getting up (`Human_UpdateDown` `0x00256a60` →
+  `Human_PlayRise` `0x0025e2d8`, clip 199 with `Human_EndDownState` `0x0025e250` as its end callback →
+  `Human_GetUp` `0x0022f3c8`) puts the weight back to 1 and touches no body flag either. Confirmed (code).
+- **What gives it back.** Two things only, confirmed (code):
+    - **A new body.** `Human_CreatePhysicsBody` (`0x0021ce08`) frees the body and takes a fresh one from
+      `IPhysics_CreateHumanBody` (`0x0033cc48`), whose flags are `0x8002243f` (`BLOCKHUMANS` included; group 0, so no
+      link survives). `Human_Heal` (`0x0022eb40`) calls it after waking (`Human_WakeUp`) and ending a wound
+      (`Human_EndWounded`), so the human blocks again **from the moment he is healed**: a revive at its end
+      (`Revive_Finish` `0x00274ee0`, not `Revive_Start`), a flash (`Flash_Use` `0x002842e4`), the uncuffing
+      (`Uncuff_MashSuccess` `0x00260910`, `Uncuff_WithKey` `0x00261264`), `HuRevive` (`Human_Revive` `0x002377f8`),
+      and the level's own heals (`Gm_Level_Update` `0x00159004`, `ANGameOver_Toggle`). `Human_AttachInstance` also
+      makes one when the human is set up.
+    - **`Human_Unarrest`** (`0x0022ef58`) sets body flags `0x80000004`: the uncuff paths, `HuSetArrested(false)`
+      (`0x0023774c`) and `Human_EndDownState` when a cuffed human's rise clip ends.
+- **What does not.** `Human_WakeUp` (`0x00230598`) and `Human_EndWounded` (`0x0022fc00`) only re-enable a shape
+  and put the push weight back. So a knocked-out human woken without a heal (`HuSetConscious(true)`,
+  `Human_SetConscious` `0x00237778`, or `Human_EndDownState`'s knocked-out branch) and a wound ended by
+  `HuSetWounded(false)` or `Human_ResetForMode` stand up **without** `BLOCKHUMANS`, and walkers keep passing through
+  them until something heals or unarrests them. Confirmed (code); not seen at runtime.
 - **The answer** (`Human_OnContact` `0x00219d50`): a charging capsule (shape flag `0x2`) or an airborne mover not yet
   ignoring the other strikes him (`Strike_Contact`, then ignores him) and slides (1); otherwise **4**, `0x20004` in
   the air. So walking into a human slides along him and pushes him by half of the move into him (code 4 above),
@@ -467,7 +498,11 @@ What a walking human meets of another human, confirmed (code) at the cited addre
   direction · the normal < −0.8). A cop, a civilian, or a human of the pusher's side (friendly, and the pusher at a jog
   or faster) starts a timer at `+0x56c` / `+0x570` (10 s, or 2.1 s for a friend); a second push after 2 s deals
   `Human_DealDamage` (unfriendly) or asks `Human_CanPush` (friendly) and clears it. A bum under `BumLogic` ignores it.
-  The reaction's meaning is inferred.
+  `Human_CanPush` (`0x002320a0`) refuses when either is in a fight stance, holds any of the held flags `0x2fefefff` or
+  any state of `0x7bf9e9f7ff0`; otherwise it **swaps the two places**: each human's transform is set to the other's
+  position with its own rotation (vtable `+0x6c`), so a player who keeps walking into a free teammate at a jog or
+  faster for 2 s ends up on the other side of him ([Combat: teammates](combat.md#teammates)). Confirmed (code); the
+  arguments of the `Human_DealDamage` call for a cop or civilian were not read.
 
 The mover's own velocity is cut by the slide only when it is a player ([Sweeping a body](#sweep)).
 
@@ -615,7 +650,20 @@ remade each step before the humans move. A walking human's sphere slides along t
 level's walls, as `Human_OnContact` slides along an object (stand-in: pushed out of the deepest body the move goes
 into, in the ground plane, and then out of the walls again; the object does not move).
 
+The walking body's wall test (`src/human/body.cpp`, `nearestWallPush`) is a push-out at the end of the move, not a
+sweep: it decides which side of a wall the sphere is on, and flips a two-sided wall, from the centre **after** the
+move, where the original uses the centre before it ([Sweeping a body](#sweep)). For walls a step never crosses
+(moves are under 0.3 m and the radius about 0.47 m) the two agree; the hangout's doors that the player walks through
+one way are not this but the lost spawn flags ([Objects](objects.md#coneys-implementation)).
+
 ## Open questions
+
+- Hangout railing vault (checklist item 46: the vault plays but the player stays put): not explained by the door
+  flags above, which only doors and panes write. The climb's pass-through (materials 30, 31 and 122 ignored while
+  record `+0x08` has `0x40`, [Characters](characters.md#walls)) and the railing triangles' material in `level95.lev`
+  are where to look next; not traced in this pass. A lead: of the clubhouse's triangles (z between −200 and −185 in
+  `level95.lev`) only 2 are material 122 and 7 material 31, against 137 of 7 (`LAMPOST`) and 56 of 3 (`STEEL`), so a
+  railing built of another material keeps its wall during the vault unless the original passes it some other way.
 
 - How an object of a type with `axis` 0 comes to rest: nothing in its contact handler clears airborne, so it would
   keep bouncing at interval 2 (inferred); the throwable ones (`dyn_lawnchair_a`, `_b`) break on their first contact

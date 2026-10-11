@@ -293,6 +293,29 @@ in a level ([Characters](#characters): each mesh twice, the second pass `0x45` a
 and fog value 255 (no fog). The sprites carry fog value 254 with `FOGCOL` black. Confirmed (runtime), PCSX2 GS dumps
 of both screens.
 
+## Drawing between steps {#interpolation}
+
+The original draws one frame per simulation step, at 30 a second (the step is 1/30 s), so nothing it draws is ever
+between two steps. Coney steps at the same rate at any display rate, and a frame that falls between two steps draws
+what moves blended `alpha` of the way from the step before to the newest
+([Update and render](../guides/conventions.md#update-and-render)). This is **Coney's rendering choice, not gameplay**:
+the simulation never reads it, and at alpha 1 (test mode, `--fps-cap 30`) every helper returns the newest step's value
+bit for bit, so lockstep draws exactly what the original would.
+
+Blended: the camera (follow, scene and free), every human's feet, heading and pose (player, targets, AI fighters,
+scene puppets), the draw distance, and the world objects. The world objects (`world_objects::DrawnPoses`,
+`repo:src/world_objects/drawn_poses.h`) keep the pose each one was drawn at on the last two steps, by the id it is
+drawn under, and are drawn with the position lerped and the rotation slerped between them: the objects the object
+tasks draw (thrown and dropped objects in flight, objective markers' discs and columns), the door leaves and barriers,
+and the spinning icons over humans. The object in a hand and the hats follow the blended human that holds or wears
+them. An object with no pose on the step before (just spawned, just let go of, back in reach) is drawn where it is,
+and so is a jump: a script's move or a drop counts on its spawn record (`SpawnRecord::jumps`) and is not blended
+across, nor is a move of more than 10 m in one step (nothing in the game moves at 300 m/s).
+
+Not blended yet, and drawn as the newest step has them: the particles and debris sprites (each would need its
+position on the step before kept from the step it is made in), and the cars and their stereos, which stand still in
+Coney.
+
 ## Output {#output}
 
 The frame buffer is presented as an interlaced field-mode picture (`SMODE2` 1, `PMODE` `0x8067`): both read circuits

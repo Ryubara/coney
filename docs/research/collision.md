@@ -126,6 +126,10 @@ Flags, confirmed (code) at `0x00350778` and `0x00351468` unless stated:
 | 11 (`0x0800`) | testable while disabled, if the query's mask has `0x800` |
 | 12-15 | a value 1 to 15; never read by the queries on this page (meaning unknown). The physics sweep of a walking body reads bits 14-15 as an index (`0x00347c08`, not traced) |
 
+Bit 1 is almost never set on the disc: doors and glass panes set it on their own triangles when they spawn
+(`Collision_SetTriangleTwoSided` `0x003a4768`, [Objects](objects.md#door-blocking)), so until then a doorway is a
+one-sided wall.
+
 **Disc check (corroboration), triangles with each bit:** bit 0 all 150,567; bit 1 4; bit 2 2,717; bit 3 4,231; bit 4
 1,052; bit 5 17,421; bit 6 0; bit 7 16,316; bit 8 20,231; bit 9 4,786; bit 10 3,989; bit 11 4.
 
@@ -251,6 +255,27 @@ normal in game axes: 39,531 face up (`n.z > cos 15°`), 5,060 down and 105,976 a
 the mesh is in game axes with z up. Every vertex has `w` = 1.0; no index is out of range; the `0x52` and `0x07` sizes
 match the header's counts; `+0x98` equals the lowest vertex `z` everywhere. `level118`'s header is odd: a `y` scale of
 0 and a non-zero `u16` at `+0x76` (its grid still has `nx·ny·nz` entries).
+
+### The hangout's railings {#hangout-railings}
+
+`level95`'s mesh (`level95.lev` on the disc, 5,943 triangles) holds the clubhouse interior far below the
+street, between z −200 and −180. The balcony floor is at z −194.38 (material 16) and the room below at −197.52
+to −197.58 (material 5). Read from the disc, 2026-10-10:
+
+- **The railings** along the balcony's edge are **material 7** (`LAMPOST`) with flags `0xa1` (enabled, bit 5 and
+  bit 7, **climbable**) and top bits 1, 3, 12, 13 or 15: triangles 2614-2619 (face 0.90 m tall, from
+  −194.38 to −193.48, at x ≈ −165 facing −x and along y ≈ 99 facing −y) and 2620-2623 (at x ≈ −162.2 facing
+  −x; 2622-2623 follow the stairs down to −197.56). All are **one-sided**, facing the balcony, and the floor behind
+  each is 3.1 to 3.2 m lower. The only other climbable faces inside are a 1.09 m box (1290-1299, materials 3,
+  5, 6 and 15).
+- **The fence materials** inside are few: 2 triangles of material 122 (2721-2722, nearly flat, by the stairs' head)
+  and 7 of material 31 (the balcony's edge faces below the railings, facing the room below). None is climbable.
+
+So a climb over a hangout railing meets material 7, which `Human_OnContact` does not skip; the original passes it
+because no sweep runs while climbing over ([Characters](characters.md#climb)). Outside the clubhouse, the level's
+climbable short faces (0.69 to 1.7 m tall, flag `0x80` or `0x4`) are of materials 0, 1, 3, 5, 6, 12, 13, 15, 41,
+47, 116 and 122, so most are not fence materials either (material 30's 96 wall triangles there are all 1.7 m
+tall or more).
 
 ## Coney's implementation
 

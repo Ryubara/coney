@@ -1,0 +1,6 @@
+# Circle at 10 grabs PoizoCiv from the front (the holds 82 / 83 from about 36); cross held from 42, square tapped at
+# 44, cross released at 48: the power strike 57 / 58. Ash's X1 is written at 47-49 by the scenario. Stick centred.
+10 tap circle
+42 press cross
+44 tap square
+48 release cross

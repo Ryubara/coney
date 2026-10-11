@@ -74,6 +74,7 @@ Paths are relative to the repository root or absolute. The keys and their defaul
 | `scratch_dir` | `../../scratch` | captures and tool output |
 | `jdk_home` | none: you must set it | a JDK 21 home, needed to run Ghidra |
 | `ghidra_mcp_repo` | none: you must set it | a built ghidra-mcp checkout, used read-only |
+| `pcsx2_mcp_dir` | none | PCSX2-MCP's Node.js server (`dist/index.js`) or the release folder holding it; only for the `pcsx2` agent server |
 
 Each line is `key = "value"`; a `#` starts a comment. A tool that needs a folder that does not exist stops with an
 error naming the key, the path it resolved and the config file it used, so a wrong entry is easy to find.

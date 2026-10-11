@@ -2,7 +2,10 @@
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`), static analysis only
 (Ghidra), and a disc check (2026-10-06) of the car models and the Object List, reported as counts, sizes and frame
-positions, with Coney's renders of the models. No runtime claims.
+positions, with Coney's renders of the models. Runtime: the colour (below) and, 2026-10-10, PCSX2 2.9.94, a copy of the
+owner's slot 6 (`level99`), the scenarios `car_punch` and `car_glance` (`repo:research/traces/scenarios/`): squares
+and plain punches at the sedan in car slot 2, its parts' damage and its rock read each update
+([What can hit a car](#hit-volumes)).
 
 ## Purpose
 
@@ -81,7 +84,15 @@ Fields of the car task besides the [task head](tasks.md#task-object), confirmed 
 | `+0x11f0` | removed (hidden) parts, one bit per part (`Car_RemovePartBits`, a quiet explosion) |
 | `+0x11f4` | parts flying off as loose pieces (`0x0038a010`); `Car_OpenPart` refuses them |
 | `+0x11f8` | parts that are off: damage reached 1, or removed |
+| `+0x11ec` | parts already hit once: a part's first hit plays its effect ([Hit effects](#hit-effects)); cleared only by `CarMakeGoodAsNew` (`Car_ResetParts`, `0x003875e8`) |
+| `+0x1200` | updates left before a car set on fire explodes (120 when a molotov hits, [What can hit a car](#hit-volumes)) |
+| `+0x1204` | the handle of its stereo (`CarSpawnRadio`), released when it explodes |
 | `+0x1208` | the handle of whoever last damaged it, scored when it explodes |
+| `+0x1210` | the handle of the police car's `part_copcar_lights`, ended when the roof (part 1) comes off |
+| `+0x1220`-`+0x12c0`, `+0x12d0` | the rock after a hit ([The rock](#rock)) |
+| `+0x12d6` | rocking; `+0x12d7` counts the settled sub-steps that end it |
+| `+0x12d8` | s16, the gang that may damage it, `0x19` anyone (`CarCanBeDamagedBy`, `0x0038e030`) |
+| `+0x12fc` | the prepared `vags/fire/car_explodes<n>` sound |
 | `+0x12d5` | exploded (`Car_DoExplode`; `Car_TryExplode` refuses a car with it) |
 | `+0x12e8`, `+0x12ec` | paint colour, two copies (`Car_SetColour`) |
 | `+0x1300` | the render object; `+0x1308` dirty |
@@ -353,16 +364,18 @@ The handler:
 1. Ignores the hit while the car is exploding (`+0x12d5`, `+0x1200`); a car whose s16 `+0x12d8` is not `0x19` takes
    hits only from members of the gang with that id (gang `+0x2c`).
 2. Picks the parts: for a plain human hit (record `+0x08` without `0x400000`), from **where the attacker stands**
-   (`0x0038b8d0`, the tables above, no facing test; a player above the car's position skips the cabin table for
-   the inner bands); for a human with `0x400000` (the charge, inferred) and for thrown objects, from the contact
-   point (`+0x60`) in the body or cabin table by the physics box struck. Thrown objects drop the windows from body
+   (`0x0038b8d0`, the tables above, no facing test; a player whose feet are above the car's position takes the
+   cabin table in body bands 1-4 whatever his y, instead of only within the cabin's length); for a human with
+   `0x400000` (the charge, inferred) and for thrown objects, from the contact point (`+0x60`) in the body or cabin
+   table by the physics box struck ([What can hit a car](#hit-volumes)). Thrown objects drop the windows from body
    hits (`0xffd57fff`) and the doors from cabin hits (`0xffeabfff`).
 3. For a plain or object hit, an intact window protects its door: with 15, 17, 19 or 21 in the mask and not yet
    broken (kept bits `+0x11f8`), its door (14, 16, 18, 20) is dropped from this hit. So the **first square at the
    front-left door breaks window 15 only**; later ones dent door 14.
 4. Damages each part (0.115 a plain human hit, 0.51 a `0x400000` hit, 0.34 an object; the windows break at once),
-   broadcasts message `0x19` per part, plays a part's first-hit effect (`0x0038a830`: windows 15/19 effect 4 along
-   −x, 17/21 along +x) and reports to `0x002936a8` (30 m) and `0x00413018` (not traced).
+   broadcasts message `0x19` per part, plays a part's first-hit effect (`0x0038a830`: windows 15/19 effect 4 along −x,
+   17/21 along +x) and reports the 30 m noise (`AI_ReportNoise`, `0x002936a8`) and message 6 to the volume boxes around
+   the striker (`VolumeBoxes_SendDamageMessage`, `0x00413018`).
 
 `Strike_Contact` then counts a player's car hit (statistic event `0xb`) when it reached a part not already broken.
 
@@ -378,6 +391,187 @@ moves the stereo to the same offset, and the boot item to the vec4 at `0x0057e4b
 car (0.00, −2.34, −0.01), police car (0.00, −2.26, −0.02), wagon and van 0, the coupe (0.00, −2.34, −0.05)) while
 the boot is shut. Both vectors are 0x20 and 0x10 bytes before the type record as this page counts it. The cars of
 `level99` stand at z 1.04-1.09, so the origin is about 1 m above the ground and the stereo about 1.15 m up.
+
+### What can hit a car {#hit-volumes}
+
+A car is struck through its **physics body**, the two boxes of [the type record](#type-record) (box 1 the lower body,
+box 2 the cabin, [Physics](physics.md#cars)): whatever touches one of them calls the car's hit handler `Car_OnHit`
+(`0x0038bea0`, vtable `0x00544c08` `+0x104`). There is no other hit volume and no per-part shape: the part a hit
+damages comes from the zone tables, never from the part's own box. Confirmed (code) at the addresses cited.
+
+**Who strikes, and what each does.** `Car_OnHit` sorts the striker into four kinds by the hit record's object
+(`+0x00`) and takes a damage per part, a rock strength ([The rock](#rock)) and a way to pick the parts:
+
+| Kind | Striker | Damage a part | Rock | Parts from | Then |
+| --- | --- | --- | --- | --- | --- |
+| 3 | a human, any strike (punch, kick, the square's object attack) | 0.115 | 2.0 | **where he stands** (`Car_GetHitZone`, the zone tables, no facing test) | an intact window shields its door |
+| 2 | a human with held flag `0x400000` (the charge or dive, inferred) | 0.51 | 4.0 | the contact point, always the body table, column 0 at x ≤ 0 else 2 (no middle) | no window shield: door and window together |
+| 1 | a world object someone holds (a melee weapon) | 0.34 | 3.0 | the contact point, the body or cabin table by the box struck | only the parts on the holder's side; each part once per swing |
+| 0 | a world object nobody holds (thrown, rolling) | 0.34 | none | the contact point, as kind 1; the body table drops the windows (`0xffd57fff`), the cabin table the doors (`0xffeabfff`) | an intact window shields its door |
+
+- **A human's strike** reaches the car through the [strike test](combat.md#moving-strikes): `Human_TestStrikes`
+  (`0x0033f110`) tests the clip's enabled strike shapes against every body near the human, the car's body included
+  (an object's body is tested against its own shapes, here the two boxes), and the first overlap calls
+  `Strike_Contact` (`0x0021b290`), which sees a car (`Car_FromObject`, type word `0x100000`) and calls `Car_OnHit`.
+  So **any punch or kick whose hand, forearm, foot or shin overlaps either box hits the car**, whether the car is
+  the square's target or not; the square's object attack (661 / 662, [Breakables](combat.md#breakables)) is only the
+  way the player aims at it. Once struck, the body goes on the striking body's contact list and is not struck again
+  until the shapes go off. **Confirmed (runtime)** (`car_glance`): the player 0.14 m beside the sedan's right side,
+  facing 55° away from it (so the car fails the target's facing test), pressed square: the plain `S1` (clip 12)
+  broke window 21 five updates after it started, and a second `S1` reached door 20 (its first-hit bit); the car
+  rocked both times. Standing at the car's y = −0.08 m, just behind the −0.034 threshold, both hits took the rear
+  door's zone (20, 21), not the front door beside his hand.
+- **The parts come from the striker's feet, not from the hand.** For kind 3 the contact point is not used: standing
+  beside the front door, every hit reaches the front door's zone wherever the fist lands. The square's aim point
+  ([Targeting a car](#windows)) only decides the clip (661 at the feet, 662 at 1.5 m for glass).
+- **A charge** (kind 2) takes no middle column: the contact point's x picks the left (x ≤ 0) or right column of the
+  body table, whatever box it struck. It damages a door and its window together.
+- **A held weapon** (kind 1) keeps a mask of the parts this swing has already reached in the holder's `+0x568`
+  (one bit per part; set to −1 when the car is exploding); the first time a swing reaches any part it reports the
+  30 m noise and message 6. Of the zone's parts it keeps only those on the holder's side: when the holder's x along
+  the car's first axis is below the contact point's, the +x parts (9, 11, 13, 16, 17, 20, 21, 24, 25, 27, 29) are
+  dropped (`0xd7ccd5ff`), else the −x parts (8, 10, 12, 14, 15, 18, 19, 26, 28; `0xebf32aff`).
+- **A molotov** (an object whose attribs kind `+0x86` is 8) damages nothing. It makes the `0x0057e350` particle
+  system at the car (direction (0, 0, 1)), sets `+0x1200` = 120, prepares `vags/fire/car_explodes<n>` (`n` 1-3) at
+  the car into `+0x12fc`, sends message `0x19` `(car, thrower, -1, 0)`, and for a player thrower keeps his handle in
+  `+0x1208` and counts crime 11 (`Stats_AddCrime(…, 0xb, 1)`); then the 30 m noise and message 6. The car's update
+  counts `+0x1200` down once per update and calls `Car_DoExplode` at 0 ([Explosion](#explode)).
+- **The gang lock**: a car whose `+0x12d8` is not `0x19` ignores a striker (or holder, or thrower) whose gang
+  (brain `+0x20c` → `+0x2c`) differs. `CarCanBeDamagedBy(car, gang)` (`lua_CarCanBeDamagedBy` `0x00378790` →
+  `0x0038e030`) sets it.
+- **The contact point** (hit record `+0x60`, x and y) is read against the type's thresholds without any transform,
+  so it is in the car's frame (inferred). Bit 1 (the roof) is **not** dropped on this path: a thrown object, a
+  weapon or a charge reaching a cabin band whose mask holds 1 takes the roof off at once (its record flag `0x10`),
+  and the roof coming off ends a police car's `part_copcar_lights` (message `0x15`, then its vtable `+0x4c`;
+  `Car_AddPartDamage` `0x0038a4d8`). Confirmed (code); not seen at runtime.
+- **After the parts**, for each part 1-29 reached, not removed, flying or off: parts 1-25 take the damage
+  (`Car_AddPartDamage`), parts 26-29 are only marked removed and off (`+0x11f0`, `+0x11f8`). A part among 4, 5, 10-14,
+  16, 18 and 20 whose damage crosses 0.5 in this hit (its dent) plays `Sound_PlayMaterialPair(1, 129 CAR_DAMAGE,
+  129 CAR_DAMAGE)` at the hit point ([Sound events](sound-events.md#cars)). Message `0x19` and the first-hit effect
+  follow as [Explosion](#explode) and [Hit effects](#hit-effects) say. The handler returns the parts reached
+  outside the glass, and `Strike_Contact` plays the impact sound (9, or `0x1a` for a charge) on material 13 when it
+  returns any, at volume 0.5 for a player, 1 for an AI human.
+- **What the hit gives the player.** `Strike_Contact` counts crime 11 for a player when the hit reached a part not
+  yet off (and for every player when the striker is a Warrior whose gang leader is a player). A held human slammed
+  into the car (`0x1400000`, the throw into an object) takes 100 pending damage (one less than his health when he
+  would die and the state flag `0x800000000` is set), the camera shakes, and his thrower gains style 3 and rage.
+  The car pays nothing itself: its money is the boot item ([Parts](#parts)) and the stereo
+  ([Windows, hits and the stereo](#windows), [Crimes](crimes.md#stereo)). There is **no car alarm**: the only
+  alarm sound (`vags/ambient/alarms/alarmbell_loop`, `alarm_emitter`) belongs to scripts' sound emitters
+  (`Sound_AddScriptEmitter`), and no car code plays it. Confirmed (code).
+
+**Runtime: squares at a door** (`car_punch`, confirmed (runtime)). The player held 0.44 m outside the sedan's right
+side beside its front door (the car's x = +1.64, y = +0.03), facing it, square every 30 to 60 updates (an attack
+and its recovery take 60):
+
+| Square | Clip | Lands (updates after the press) | Result |
+| --- | --- | --- | --- |
+| 1 | 662 (aim point 1.5 m up, window 17 intact) | 13 | window 17 off (damage 1, bit `0x20000` in `+0x11f8` and `+0x11ec`); the door shielded |
+| 2-10 | 661 (only door 16 left in the zone) | 10 | door 16 + 0.115 each: 0.115, 0.23, ... 0.92; the 6th square crosses 0.5 (the dent); the 10th takes it to 1: the door is off and **flies** (bit `0x10000` in `+0x11f8` and `+0x11f4`) |
+| 11 | 12 (`S1`) | | nothing left in the zone, so no car target: a plain punch, which reaches no part |
+
+The cabin's mask (17) and the body's (16, 17) give the same parts here, as the tables say. Each hit rocked the car.
+Without the feet held, each attack's recovery (clip 389) steps the player back about 0.5 m; after two hits he stood
+1.1-1.2 m out, beyond the car target's 1 m, and the next squares were plain `S1`s that did not reach the car.
+
+### The rock {#rock}
+
+A hit of kind 1-3 whose striker's `+0x568` is 0 makes the car rock (`Car_StartHitRock`, `0x0038b1f8`, confirmed
+(code)): a point under a 4 m spring is pushed down, and the car tilts by the spring's angle.
+
+1. From the car's position towards the hit point (unit `d`), the point `p` = position + `d` with z = 0 (`+0x1230`),
+   its velocity 0, a push of (0, 0, −strength) in its force (`+0x1240`: 2 a human, 3 a weapon, 4 a charge), and an
+   anchor 4 m above it (`+0x1290`, z = 4.0). The tilt axis (`+0x180`) is `d` × (0, 0, 1), normalised.
+2. Spring 0.05, damping 0.05, rest length 4.0 (`+0x1270`, `+0x1274`, `+0x1278`); `+0x12d6` = 1, the car's rotation
+   restarts from its resting one (`+0x190`), the car updates every tick, and `vags/vehicles/shocks_squeak_0<n>`
+   (`n` 1-3) plays at the car (volume 1).
+3. Each update (`CarTask_Update`, `0x00388c80`), six sub-steps: the force (the push only in the first) less gravity
+   0.03 / 4 in z, plus the spring along `p` − anchor, −((length − 4) × 0.05 + (relative velocity · offset) × 0.05) ×
+   0.5; the velocity gains the force / (4 × mass), the mass 0.8 for types 0-4 and 1.0 for Sully's car (`0x00512b94`);
+   `p` moves by velocity / 4. The rotation is the resting one turned about the axis by atan2(`p`.z, 4) × 0.05. When
+   the vertical velocity has been under 1e-5 for more than four sub-steps, the rock ends.
+
+Confirmed (runtime) (`car_punch`): `p`.z dips to −1.51 at the hit and −1.71 three updates later, swings back to +0.13
+and settles at **−0.30** after about 30 updates; the rock flag clears 47 updates after the hit. The tilt peaks near
+1.2° and the car **stays leaning about 0.2°** towards the side hit (the quaternion's x and y 0.0015, −0.0011 long
+after). The stereo and the boot item ride the tilt (their offsets are turned by the rotation each update).
+
+### Type tables {#type-tables}
+
+The zone tables and boxes of all six types, read from the type records (`0x0057e4c0 + 0x5f0 × type`), confirmed
+(code) from the data. Box sizes are full sizes (`Car_StartHitRock` and `Car_GetHitZone` halve `+0x00`); offsets are
+from the car's position. Every type has the body's x columns at −0.6 / 0.6 and the cabin's split at 0.
+
+| Type | Box 1 (size; offset) | Box 2, the cabin | Body y thresholds | Cabin y thresholds |
+| --- | --- | --- | --- | --- |
+| 0 `car_osedan` | 2.399 × 6.05 × 1.084; (0, 0, −0.419) | 2.399 × 2.614 × 0.452; (0, −0.281, 0.352) | 2.716, 1.028, −0.034, −1.597, −2.778 | 1.207, 1.007, 0, −1.007, −1.207 |
+| 1 `car_coupe` | 2.14 × 5.27 × 1.05; (0, 0.094, −0.37) | 2.14 × 2.2 × 0.39; (0, −0.28, 0.35) | 2.271, 0.781, −0.7, −0.7, −2.271 | 0.52, 0.32, 0, −0.32, −0.52 |
+| 2 `car_wagon` | 2.27 × 6.08 × 1.08; (0, 0, −0.4) | 2.27 × 3.6 × 0.42; (0, −0.72, 0.352) | 2.88, 1.027, −0.034, −1.039, −2.483 | 1.795, 1.595, 0.97, 0, 0 |
+| 3 `car_copcar` | 2.48 × 5.98 × 1.11; (0, 0, −0.39) | 2.48 × 2.63 × 0.46; (0, −0.281, 0.39) | 2.7, 1.028, −0.034, −1.597, −2.7 | 1.207, 1.007, 0, −1.007, −1.207 |
+| 4 `car_van` | 2.48 × 5.43 × 1.52; (0, 0, −0.52) | 2.48 × 4.74 × 0.69; (0, −0.281, 0.59) | 2.51, 2.019, 0.702, −0.742, −2.458 | 1.7, 1.6, 0, 0, −2.0 |
+| 5 `car_sullycar` | 2.0 × 5.224 × 1.101; (0, 0.02, −0.416) | 2.0 × 2.891 × 0.566; (0, −0.649, 0.418) | 2.394, 0.846, −0.708, −1.57, −2.171 | 0.44, 0, −0.697, −1.144, −1.579 |
+
+A band is the count of thresholds the y is below (`Table_BandIndexBelow`, `0x00389f40`: band 0 at or above the
+first); equal thresholds make an empty band (the coupe's body band 3, the wagon's cabin band 4, the van's cabin
+band 3). The cabin table applies only while |y| is under half box 2's length (`+0x24`), measured from the car's
+position, not from box 2's offset.
+
+**The masks.** The police car and Sully's car use the sedan's masks exactly ([the sedan's table](#windows)); the
+sedan's cabin masks also hold bit 1, the roof, in every band but band 4 (`7, 19` / `7, 21`), which the standing
+path drops and the contact path keeps. The others differ from the sedan in these rows (parts per column, x ≤ −0.6 /
+middle / x > 0.6 for the body, x ≤ 0 / x > 0 for the cabin):
+
+| Type | Table, band | Parts |
+| --- | --- | --- |
+| coupe | body 3 | 14, 15 / 14-17 / 16, 17 (its doors again: no rear doors) |
+| wagon | body 4 | 12 / 12, 13 / 13 (no boot in the middle) |
+| wagon | cabin 4, 5 | 1, 12 / 1, 12; 1, 12 / 1, 13 (no rear glass 7) |
+| van | body 3 | 1 / 1, 5 / 5 |
+| van | body 4 | 12 / 12, 13 / 13 |
+| van | body 5 | 3, 18, 19, 28 / 3, 18-21 / 3, 20, 21, 29 (the rear doors at the back) |
+| van | cabin 0-5 | 6 / 6; 6, 15 / 6, 17; 15 / 17; 1, 12 / 5, 13; 1, 12 / 1, 13; 18, 19 / 20, 21 |
+
+**All broken** (message `0x19` with −2): the parts 1-21 for every type (`0x3ffffe`) but the coupe, 1-17 (`0x3fffe`),
+and the van, all but 0 and 7 (`0x3fff7e`).
+
+**The part records** are the same in every type except the boxes below and the van's flags: its boot (5) and side
+panels 12 and 13 have `+0x01` = `0x18` (off at the first damage, never flying), and its parts 18-21 have side bits
+`0x20` (the back). The `+0x01` bytes elsewhere: 0 body `0x00`, 1 roof `0x18`, 2-3 bumpers `0x02`, 4 bonnet `0x07`,
+5 boot `0x06`, 6-9 `0x18`, 10-13 `0x02`, doors 14 and 18 `0x46`, 16 and 20 `0x26`, windows `0x18`, wheels `0x04`.
+Part boxes (m; the sedan's are in [Cars](../references/cars.md#part), and Sully's car's are the sedan's):
+
+| Part | Coupe | Wagon | Police car | Van |
+| --- | --- | --- | --- | --- |
+| 1 | 2.01 × 1.78 × 0.54 | 0 | 0 | 0.35 × 1.45 × 1.40 |
+| 2 | 2.36 × 0.35 × 0.70 | 2.34 × 0.19 × 0.73 | 2.30 × 0.28 × 0.39 | 2.15 × 0.26 × 0.68 |
+| 3 | 2.34 × 0.40 × 0.66 | 2.31 × 0.31 × 0.50 | 2.18 × 0.43 × 0.28 | 2.22 × 0.29 × 0.42 |
+| 4 | 1.94 × 1.87 × 0.42 | 2.07 × 1.90 × 0.55 | 2.01 × 1.83 × 0.32 | 1.71 × 0.66 × 0.64 |
+| 5 | 1.74 × 1.24 × 1.20 | 1.91 × 0.83 × 1.08 | 1.74 × 1.19 × 0.23 | 0.57 × 1.45 × 1.40 |
+| 6 | 1.86 × 0.60 × 0.37 | 2.02 × 0.66 × 0.40 | 1.91 × 0.68 × 0.41 | 1.84 × 0.47 × 0.49 |
+| 7 | 1.18 × 0.30 × 0.18 | 1.72 × 0.46 × 0.48 | 1.68 × 0.40 × 0.29 | 0.18 × 0.02 × 0.03 |
+| 8, 9 | 1.03 × 0.23 × 0.30 | 0.95 × 0.11 × 0.44 | 1.01 × 0.10 × 0.33 (9: 0.09) | 0.91 × 0 × 0.44 |
+| 10 | 1.95 × 0.82 × 0.52 | 1.96 × 0.79 × 0.42 | 1.75 × 0.80 × 0.31 | 0.77 × 0.77 × 0.39 |
+| 11 | 1.95 × 0.82 × 0.52 | 1.96 × 0.79 × 0.42 | 1.73 × 0.85 × 0.26 | 0.77 × 0.77 × 0.39 |
+| 12 | 1.81 × 0.83 × 0.37 | 2.15 × 1.16 × 0.39 | 1.76 × 0.73 × 0.27 | 1.68 × 1.39 × 0.40 |
+| 13 | 1.81 × 0.83 × 0.37 | 2.14 × 1.16 × 0.38 | 1.76 × 0.73 × 0.26 | 1.68 × 1.39 × 0.40 |
+| 14 | 1.37 × 1.26 × 0.52 | 1.28 × 1.08 × 0.47 | 1.22 × 1.18 × 0.43 | 1.31 × 1.83 × 0.78 |
+| 15 | 0 | 0.15 × 0.95 × 0.40 | 0.18 × 0.96 × 0.41 | 1.07 × 0.48 × 0.14 |
+| 16 | 1.37 × 1.26 × 0.52 | 1.29 × 1.08 × 0.53 | 1.22 × 1.18 × 0.47 | 1.31 × 1.83 × 0.78 |
+| 17 | 0 | 0.15 × 0.95 × 0.40 | 0.18 × 0.96 × 0.41 | 1.07 × 0.48 × 0.14 |
+| 18 | 0 | 1.30 × 1.03 × 0.57 | 1.22 × 1.18 × 0.41 | 0.81 × 1.52 × 0.31 |
+| 19 | 0 | 0.30 × 0.91 × 0.43 | 0.17 × 0.87 × 0.41 | 0.50 × 0.51 × 0.15 |
+| 20 | 0 | 1.30 × 0.58 × 1.03 | 1.22 × 1.18 × 0.41 | 0.74 × 1.51 × 0.34 |
+| 21 | 0 | 0.30 × 0.91 × 0.43 | 0.31 × 0.88 × 0.47 | 0.50 × 0.51 × 0.15 |
+| 22-25 | 0.76 × 0.76 × 0.27 | 0.76 × 0.76 × 0.27 | 0.76 × 0.76 × 0.27 | 0.79 × 0.79 × 0.28 |
+
+A zero box belongs to a part the model does not use (the coupe's rear doors and its window parts, the roof of most
+types); the part still sits in the zone masks, so a coupe's door zone still breaks "window 15" as a part.
+
+**Hit bits 26-29** have no part record and no atomic. They sit only in the body table's front corner bands (26 left,
+27 right) and back corner bands (28 left, 29 right); a hit marks them removed and off, and their first hit sprays
+pale glass (kind 1) at the front and dark red glass (kind 2) at the back ([Hit effects](#hit-effects)). So they are
+the lamps' glass, front lamps and tail lights, with nothing drawn (inferred from the masks and effects). The
+explosion marks them too.
 
 ### Colour {#colour}
 
@@ -460,11 +654,12 @@ Coney's stand-ins, where this page is silent:
 
 - Cars take the objects' lights, chosen per atomic rather than once for the car; the environment map (the car's
   second texture resource) and the first second's fade-in are not drawn.
-- Every type uses the sedan's zone tables and box (the others' are not on the page yet); the car pass's candidate
-  joins the object targets, nearest first, rather than coming before them.
-- Not yet in a car hit: the gang lock (`+0x12d8`), the exploding car, a player above the car skipping the cabin
-  table, the charge's and thrown objects' contact-point zones, a molotov's fire (its `-1, 0` message) and the
-  statistic.
+- Every type uses the sedan's zone tables and box ([Type tables](#type-tables) now has them all); the car pass's
+  candidate joins the object targets, nearest first, rather than coming before them.
+- Only the square's object attack hits a car, and not yet: the gang lock (`+0x12d8`), the exploding car, a player
+  above the car taking the cabin table, the charge's, weapons' and thrown objects' contact-point hits, a molotov's
+  fire (its `-1, 0` message), the rock, the dent and squeak sounds and the statistic
+  ([The fix](#coney-fix)).
 - The money pickup's 15 s life is not applied.
 - A name that is not one of the six types still makes a car, which draws nothing.
 - The explosion's pieces flying off (the car shows every part's damaged form where it was), effects, sound, 300
@@ -472,16 +667,78 @@ Coney's stand-ins, where this page is silent:
   number, and both the car's handler and the general one are called (which the manager's slots reach, and in which
   order, is not on the page). A car with `+0x1200` set is not skipped.
 
+### Coney status and the fix for the implementer {#coney-fix}
+
+Checked 2026-10-10 by playing `car_punch` and `car_glance` on Coney (`level99` checkpoint 4, the release build of
+`main`) beside the same car. The owner's report, "no destruction, only the glass breaks, and hits must land on very
+particular spots", comes from these gaps:
+
+- **Only the square's object attack hits a car.** `PlayLevelMode::stepObjects()` passes a car hit to
+  `Cars::humanHit()` only when player 1's object attack aimed at the car lands; the strike shapes never test the
+  car. So the car must be the square's target: within 1 m of its box, faced within 45° of a face's normal, before any
+  human target. In `car_punch` Coney matched the original for the two aimed squares (662 broke window 17, 661 reached
+  door 16), but in `car_glance` its two `S1`s beside the car hit nothing, where the original's broke window 21 and
+  reached door 20. In the original any punch or kick that touches a box hits ([What can hit a car](#hit-volumes)).
+- **Every type uses the sedan's tables and box**, so on a coupe, wagon or van the zones, the 1 m target margin and
+  the aim point are in the wrong places ([Type tables](#type-tables)).
+- **Damage builds slowly and shows little**: a door takes 0.115 a punch, dents at the 5th hit and comes off at the
+  9th, which the original shares; but Coney draws no flying door (it keeps the damaged form in place), plays no dent
+  sound or squeak and no rock, so the hits between look like nothing.
+- Not built: the charge, weapon and thrown-object hits (contact point, damages, side mask, the roof), the gang lock,
+  the player-on-top cabin rule, the molotov's fire and countdown, the explosion's pieces, effects, sound and area
+  damage, crime 11, the car-slam damage, and the money pickup's 15 s life.
+
+**The fix, as pull requests** (each with its tests first; the parity scenarios are `car_punch` and `car_glance`):
+
+1. **Strikes hit cars.** In the humans' strike step (`strikeObjects()`), test the striking shapes against each car's
+   two boxes (box 1 and box 2 at the car's pose, sizes and offsets per type) as for any object body; the first
+   overlap calls `Cars::humanHit()` with the striker's feet (kind 3: parts by where he stands) and puts the car on
+   the shapes' struck list. The square's object attack then needs no special path: its clip's shapes strike the car
+   like any other clip. Keep `carTargetable()` / `carAimPoint()` for the aim only. Tests: a unit test that a hand
+   sphere overlapping box 1 beside the rear door damages parts 20/21 (window first) from feet at the car's
+   y = −0.08; one that a shape 0.1 m short of the box hits nothing; one that a car struck once per window is not
+   struck again until the shapes go off. Playthrough: `car_glance` on level99 checkpoint 4 asserts window 21 breaks
+   on the first square.
+2. **Per-type tables.** Replace `zonesOf()`'s stand-in with the six types' boxes, thresholds, masks (with bit 1),
+   part boxes, part flags (the van's `0x18`) and all-broken masks; add the player-on-top rule (cabin table forced
+   in body bands 1-4 when his feet are above the car's position). Tests: per type, a table-driven test of the zone
+   at a few points (the coupe's band 3 gives 14-17, the van's back gives its rear doors 18-21, the wagon's middle
+   band 4 gives 12, 13); the all-broken message per type.
+3. **Contact-point hits.** Kinds 2, 1 and 0: the charge (0.51, body table, two columns, no window shield), a held
+   weapon (0.34, the holder's side only, each part once per swing via a per-human mask cleared when the shapes go
+   off), a thrown object (0.34, no windows from the body, no doors from the cabin); the roof coming off ending the
+   police lights; the gang lock (`CarCanBeDamagedBy`); the molotov (fire particle, 120-update countdown, the
+   prepared sound, message `(car, thrower, -1, 0)`, crime 11). Tests: each kind's parts and damage from a synthetic
+   contact; a molotov car explodes on the 120th update; a locked car ignores another gang.
+4. **Feedback: rock and sounds.** The rock of [The rock](#rock) (state per car, six sub-steps an update, ends on
+   settling, leaves the lean), `shocks_squeak_0<n>` at its start, the dent sound (129 × 129 when a part among 4, 5,
+   10-14, 16, 18, 20 crosses 0.5), the strike's impact sound on material 13 at volume 0.5 for the player. Tests: the
+   rock's `p`.z sequence for a strength-2 push (−1.51, −1.71, settling at −0.30 within 30 updates, ending by 47)
+   within 0.01; the dent sound once on the 5th door hit.
+5. **Flying pieces.** A part with record flag `0x02` coming off by a hit flies ([What is drawn](#drawn),
+   [Physics](physics.md#cars)): bumpers, panels 10-13, doors with their windows, and the wheels when blown. Tests:
+   the piece's launch speed range and its removal after 360 ticks.
+6. **The explosion's effects** (separate files from the particles track): fireball and screen shake, the sound, the
+   heat wave, 300 damage within 5 m, glass within 10 m, the AI event, the statistic, the box shrink, the hubcap and
+   wreck flags, and its pieces with `sub_flaming_debris`. Tests: who takes the 300 (a human 4.9 m away with a clear
+   line does, one behind a wall does not).
+7. **Crime 11 and the slam**: a player's car hit that reaches an intact part counts crime 11 ([Crimes](crimes.md));
+   a held human thrown into the car takes 100 pending damage. Tests: one crime per such hit, none for a hit on parts
+   already off.
+
 ## Open questions
 
 - What sets the draw mask `+0x11fc`. (Answered: the part record's `+0x20` is the bounce restitution, and a flying
   piece lasts 360 ticks before `0x00387f18` removes it; [Physics](physics.md#cars).)
-- What the object a car holds at `+0x1204` is (released when it explodes; part 15 coming off makes it pickable).
+- What the object a car holds at `+0x1204` is (answered: its stereo, [The car object](#car-object)).
 - The lookup that takes a car to its Object List record.
 - Which lights a car takes (the objects' selection is named, not its result; the boxes of the collision:
   [Physics](physics.md#cars)).
 - Where a car's stereo sits (answered: [Windows, hits and the stereo](#windows)) and the effect kinds of message
-  `0x3f` (answered: [Hit effects](#hit-effects)). Still open: what `0x002936a8` and `0x00413018` report for a car hit,
-  what clears `+0x11ec`, and which parts hit bits 26-29 stand for.
-- The zone thresholds, masks and boxes of the coupe, wagon, police car, van and Sully's car (Coney uses the
-  sedan's).
+  `0x3f` (answered: [Hit effects](#hit-effects)). Answered too: `0x002936a8` and `0x00413018` are the 30 m noise
+  and message 6 to the volume boxes; `+0x11ec` is cleared only by `CarMakeGoodAsNew`; hit bits 26-29 are the lamps'
+  glass ([Type tables](#type-tables)).
+- The zone thresholds, masks and boxes of the other types (answered: [Type tables](#type-tables)).
+- Whether the contact point `+0x60` of an object's or a charge's hit is in the car's frame (inferred), and the
+  charge, a weapon and a thrown bottle against a car, at runtime (a door's 9th hit and flight: answered,
+  [What can hit a car](#hit-volumes)).
