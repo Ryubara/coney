@@ -74,7 +74,7 @@ Many tracks run at once, each owning one subsystem, mission or question:
 - **Pull requests merge one at a time**, by the maintainer or the approving review, never by the agent that wrote
   them. Each pull request is squash-merged once every required check passes (tests, generators, docs build), so it
   lands on `main` as one commit; work-in-progress commits on the branch are dropped by the squash and need no
-  tidying first.
+  tidying first. Pushes are rationed by [CI capacity](agents.md#ci-capacity).
 - **The pull request is the track's live status** ([below](#pr-status)); anything else a track must keep (a scratch
   note, a log path) lives on disk in the scratch folder, not in anyone's head.
 
@@ -83,7 +83,8 @@ Many tracks run at once, each owning one subsystem, mission or question:
 Each track's pull request tells anyone what is done and what is left, so a stopped track is resumed from it.
 
 - **Open it as a draft at the first push:** `gh pr create --draft`, the body from
-  `.github/pull_request_template.md`. Keep pushes to meaningful milestones: each push runs CI.
+  `.github/pull_request_template.md`. Keep pushes to meaningful milestones: each push runs CI
+  ([CI capacity](agents.md#ci-capacity)).
 - **Keep the body current on every push.** Under Checklist, a **Done** list and a **Remaining** list (checkboxes).
   The body replaces local resume notes: when an agent stops, a fresh agent resumes from the Remaining list and the
   branch ([Running agents](agents.md)), not from the dead agent's context.

@@ -112,6 +112,19 @@ agent that wrote the pull request. Messaging that agent re-writes its whole cont
    agents that can run side by side.
 5. If the same check fails a second time, escalate a model, as above, instead of repeating the same fix.
 
+## CI capacity {#ci-capacity}
+
+GitHub Actions on this repo runs about 20 jobs at once (5 of them macOS), shared by every agent's pull requests. A
+full code pull request queues 4 builds plus sanitizers (about 20 minutes), so every agent is responsible for CI load:
+
+1. **Run every local check that applies before each push** (pre-commit, pytest, `mkdocs build --strict`, ctest for
+   code), so CI never fails on something a local run would catch.
+2. **Push at milestones, not every commit.** Each push starts a run (and cancels the pull request's previous one).
+3. **Look at the queue before opening a pull request or pushing, and report the counts:**
+   `gh run list --status queued --limit 50 --json databaseId --jq length`, and the same with `--status in_progress`.
+   If the queue is long, batch the remaining work into one later push instead of several.
+4. **The coordinator watches the queue** and orders merges and pushes.
+
 ## Checking a run {#check}
 
 Claude Code writes each agent's transcript to
