@@ -988,6 +988,56 @@ Points a playthrough test needs:
 - **The `<DISPLAYTIME>` texts** (`TT_26a`, `TT_28e`, `TT_28h`) hold the box for about 90 updates. The next text set
   with them waits in the queue that long.
 
+#### Hint timing, lessons 5-8 {#level99-hint-timing}
+
+Every hint call, shown hint and callback of lessons 5-8 over two plays of the original (2026-10-11, PCSX2 2.9.94, the
+same course and state as above, 3,600 updates each), by update from `P1.SetupPowerAttacks`, the call that starts
+lesson 5. Updates are tick counts halved, so two events in one update are exact; where the runs differ the second
+run's update follows a slash. "set" is a `HUDSetTutorialText` call, "shown" the `0x001cdf7c` show, "anim" an
+[animation callback](characters.md#anim-callbacks) and "tutorial" the [tutorial callback](hud.md#tutorial-callback)
+with its anim id. Method and hooks: [The queue at runtime](hud.md#hint-queue-runtime). Confirmed (runtime).
+
+| Update | Lesson | What ran | Hint calls | Shown, in that update |
+| --- | --- | --- | --- | --- |
+| 0 | 4 → 5 | tutorial 17, `P1.HeavyCombos` (lesson 4 done); `P1.SetupPowerAttacks` | nil | nothing |
+| 29 | 5 | scheduled from the set-up | nil, `TT_24a` | `TT_24a` |
+| 52 | 5 | tutorial 653, `P1.Power` step 1 | nil, `TT_24b` | `TT_24b` |
+| 157 | 5 | the strong grapple connects: anim 82, `PlayerState` | nil, `TT_19b` | `TT_19b` |
+| 191 | 5 → 6 | the hold plays, its hit scored: tutorial 82, `P1.Power` step 2 | nil, nil, `TT_24d` | `TT_24d` |
+| 195 | 6 | the course's next press mounts: anim 210, `PlayerState` | nil, `TT_19e` | `TT_19e` |
+| 270 / 269, 298 / 297 | 6 | tutorial 223 (mount strikes), not counted | | |
+| 347 | 6 | a grab connects: anim 82, `PlayerState` | nil, `TT_24d` | `TT_24d` |
+| 392 / 393 | 6 | the power strike: anim 358 (its follow-on idle), `PlayerState`; then tutorial 57, `P1.PowerMove` step 1 | nil, `TT_19a`; nil, `TT_19a` | `TT_19a` twice |
+| 420 / 421 | 6 | tutorial 59, `P1.PowerMove` step 2, `P1.PowerMovesDone` | nil | nothing |
+| 603 | 7 | the scene's end (`PreCashTheWorld`) | nil, `TT_25a` | `TT_25a` |
+| 752 | 7 | `ClearMessage` (scheduled 5,000 ms after `TT_25a`); `P1.StartSnaps` | nil; nil, `TT_25c`, nil, `TT_25c` | `TT_25c` twice |
+| 761 / 762 | 7 | tutorial 11 (a cross), not counted | | |
+| 907; 953 / 908 | 7 | tutorial 25 or 27, `P1.Snaps` (first and second snap) | nil, `TT_25c` each | `TT_25c` each |
+| 1043 / 1042 | 7 → 8 | the third snap: `P1.Snaps`, `P1.SnapsDone` | nil, `TT_19a` | `TT_19a` |
+| 1091 | 8 | a grab connects: anim 82, `PlayerState` | nil, `TT_25e` | `TT_25e` |
+| 1137 / 1137 | 8 | the throw: anim 358, `PlayerState`; then tutorial 151, `P1.Throws` | nil, `TT_19a`; nil, `TT_25e` | `TT_19a`, then `TT_25e` |
+| 1194 | 8 | a grab connects: anim 82, `PlayerState` | nil, `TT_25e` | `TT_25e` |
+| 1240 / 1241 | 8 | the throw: anim 358, `PlayerState`; tutorial 151, `P1.Throws`, `P1.ThrowsDone` | nil, `TT_25e`; nil | `TT_25e`, then the box empty |
+
+(`TT_25b` and `TT_25c`, and `TT_25d` and `TT_25e`, are the same text; the table names the ones the lesson table above
+uses.) What a test can rely on:
+
+- **No lateness**: every text was shown in the update its `HUDSetTutorialText` call ran (0 updates late), because a
+  nil cleared the box first and the box then showed the new text at once
+  ([Queueing](hud.md#hints-hudsettutorialtext)). The only late text in lessons 1-8 is `TT_26b` (lesson 3), queued
+  behind `TT_26a`'s `<DISPLAYTIME 3000>` and shown 92 updates after it. So a playthrough test can assert that each
+  lesson text shows in the update its callback ran, and that the box is never more than one text behind.
+- **`PlayerState` and the lesson callbacks never share an update in lesson 5**: the grab's anim callback runs at the
+  connect, 34 updates before the hit `P1.Power` counts (157 and 191 above, both runs). They do share one in lessons 6
+  and 8, where the follow-on idle 358 is built when the strike or throw starts; there `PlayerState` runs first and
+  the lesson's text is the one left showing.
+- **The last text of an update is what the player sees.** In lesson 5 the course's mount at 195 replaced `TT_24d`
+  after 4 updates; a player who stays in the hold keeps it. Grab hints (`TT_19*`) between lesson texts depend on the
+  driver, as above.
+- `TT_24e` (the extended power move) did not show in these runs: `P1.PowerMove`'s step 1 set `TT_19a` (grab again)
+  instead, where the 2026-10-07 run above showed `TT_24e`. Which state of the player or the bum picks between them is
+  not traced (open).
+
 #### Checkpoints 2 and 3 {#level99-checkpoints}
 
 `level99_lesson1` (`P2`, checkpoint 2, the street) and `level99_lesson2` (`P3`, checkpoint 3, the run to the
