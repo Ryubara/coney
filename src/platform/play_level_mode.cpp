@@ -450,6 +450,7 @@ void PlayLevelMode::stepFrozen(const FrameTime& frame) {
     const WorldView stepView = stepSceneryView(frame);
     m_scenery->findVisible(stepView);
     stepWorldObjects(stepView.pose.position, stepView, 0);
+    recordDrawnPoses();
     ++m_stats.frames;
 }
 
@@ -589,6 +590,7 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     m_scenery->findVisible(stepView);
     // The world objects round the camera, after the scripts and the scenes moved them.
     stepWorldObjects(eye, stepView, static_cast<std::uint32_t>(std::lround(frame.seconds * 1000.0)));
+    recordDrawnPoses();
     // The HUD's step (docs/research/hud.md#the-huds-frame), with the player's rage on panel 0.
     hud::HudFrame hudFrame;
     hudFrame.nowMs = millisecondsOf(frame.gameTicks);
@@ -637,6 +639,7 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
                         m_pickups->carried(0, item::kHandcuffs), m_pickups->carried(0, item::kHandcuffKey)};
     }
     m_hud->step(hudFrame);
+    recordIconPoses();
     // The health rings, after the HUD's step: hidden with it.
     stepRings(playerPad, stepView, hudFrame.nowMs);
     ++m_stats.frames;
@@ -790,10 +793,10 @@ void PlayLevelMode::render(const RenderTime& time) {
         }
     };
     // Between the `s` and the `d` world (step 7): the humans, the cars' opaque parts, the world objects.
-    const auto drawObjects = [this, &drawCars, &snapshot] {
+    const auto drawObjects = [this, &drawCars, &snapshot, alpha] {
         drawCharacter();
         drawCars(graphics::CarPass::Opaque);
-        drawWorldObjects(snapshot);
+        drawWorldObjects(snapshot, alpha);
     };
     // After the `d` world, as the world pass orders it (docs/research/world.md#a-frame, steps 9-10): the water, then
     // the see-through panes and the cars' glass, then the effects; then, as the sprite batches after the whole world

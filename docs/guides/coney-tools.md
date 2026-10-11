@@ -1,13 +1,14 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers eleven groups:
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers twelve groups:
 `wad`, which reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**,
 [`extract`](#extract), which turns every asset of the disc into open formats, [`audio`](#audio),
 which reads its sound data, [`movies`](#movies), which reads the movies' headers, [`xbox`](#xbox), which
 reads the Xbox disc's archive, [`progress`](#progress), which keeps the progress tables of the README and the docs
 current, [`natives`](#natives), which renders the script-binding masterlist, [`refs`](#refs), which builds the
 game reference lists, [`missions`](#missions), which builds the mission status pages, and [`pcsx2`](#pcsx2) and
-[`trace`](#trace), which record the original's per-update traces in PCSX2 and compare them with Coney's.
+[`trace`](#trace), which record the original's per-update traces in PCSX2 and compare them with Coney's, and
+[`mcp`](#mcp), which starts the debugging servers for agent tools.
 Everything is read in place and streamed, so the 1.4 GB WAD is never loaded into memory. The format is described in
 [WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
 
@@ -505,3 +506,17 @@ events by count. `--from "kind name"` starts both logs at their first such event
 different points of a mission; `--labels` names hashed texts by a JSON object of label to text (a string table read
 from your disc, kept in scratch). It exits with 0 when Coney has every compared event in order, 1 when not.
 [Differential playthroughs](research-workflow.md#differential-playthroughs) explains the method.
+
+## mcp {#mcp}
+
+```sh
+uv run --project python coney-tools mcp serve ghidra-mcp|pcsx2
+```
+
+Runs one of the debugging servers that the repository's `.mcp.json` registers for agent tools, with stdin and stdout
+passed through to it: `ghidra-mcp` is ghidra-mcp's Python bridge from `ghidra_mcp_repo` (run by uv, talking to the
+headless server on port 8090 unless `GHIDRA_MCP_URL` says otherwise), `pcsx2` is PCSX2-MCP's Node.js server from
+`pcsx2_mcp_dir`. The checkout is `CLAUDE_PROJECT_DIR` when the agent tool sets it, else the current folder; a worktree
+reads the main checkout's `coney.local.toml`. A missing key, folder or program (`uv`, `node`) prints one line on
+stderr and exits with code 2, so a server that is not installed fails without affecting the others. Why and how it is
+set up: [Setting up an agent tool](agents.md#setup).

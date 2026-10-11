@@ -80,6 +80,12 @@ constexpr float kThrowTargetHeight = 1.6F;
 constexpr float kThrowTumble = -4.0F * std::numbers::pi_v<float>;
 constexpr float kThrowSpinLeast = 5.0F;
 constexpr float kThrowSpinMost = 7.0F;
+// A hit counter at this value never wears.
+constexpr std::uint8_t kUnwearable = 0xff;
+// A flying object's plain bounce on the level sounds only for its first kImpactSounds impacts, and only above
+// kImpactSoundSpeed m/s (WorldObject_OnImpact, docs/research/sound-events.md#objects).
+constexpr int kImpactSounds = 3;
+constexpr float kImpactSoundSpeed = 2.0F;
 // The five knives (`dyn_bowie`, `dyn_hunter`, `dyn_tknife`, `dyn_swhbld`, `dyn_swhbld_super`, by their model hashes)
 // take the holder's rotation and tumble at this rate even when dropped (docs/research/objects.md#held).
 constexpr std::array<std::uint32_t, 5> kKnifeModels{0x2a263bb3U, 0x8c6fbfe3U, 0x9babb2c7U, 0x876890ddU, 0x39b7cc9aU};
@@ -952,11 +958,17 @@ void PlayLevelMode::dropHeld(human::Human& human, double held, bool thrown) {
     }
     m_pickups->drop(held, start.position);
     record->rotation = {start.rotation.x, start.rotation.y, start.rotation.z, start.rotation.w};
-    // A throw names its thrower (the last holder, +0x11c), whom its break's message 6 is from.
-    m_looseObjects.start(held, start.position, start.rotation,
-                         type != nullptr ? world_objects::LooseObjects::Kind::of(*type)
-                                         : world_objects::LooseObjects::Kind{},
-                         velocity, spin, thrown ? handleOf(human) : 0.0);
+    // A throw names its thrower (the last holder, +0x11c), whom its break's message 6 is from. The flight starts from
+    // the counters the object kept (a lifted register worn by earlier throws).
+    world_objects::LooseObjects::Kind kind =
+        type != nullptr ? world_objects::LooseObjects::Kind::of(*type) : world_objects::LooseObjects::Kind{};
+    if (m_objects != nullptr) {
+        if (const auto kept = m_objects->props.counters(held)) {
+            kind.counter = kept->first;
+            kind.secondCounter = kept->second;
+        }
+    }
+    m_looseObjects.start(held, start.position, start.rotation, kind, velocity, spin, thrown ? handleOf(human) : 0.0);
 }
 
 void PlayLevelMode::stepLooseObjects() {
@@ -1014,22 +1026,45 @@ void PlayLevelMode::stepLooseObjects() {
         test,
         [this, &place](double handle, const world_objects::LooseObject& object) {
             place(handle, object);
+            // The counters it wore in flight stay with it (a register spends one per throw).
+            const world_objects::SpawnRecord* record = m_records->find(handle);
+            const world_objects::ObjectType* type =
+                record != nullptr && m_objectTypes != nullptr ? m_objectTypes->find(record->typeName) : nullptr;
+            if (type != nullptr && m_objects != nullptr &&
+                (object.counter != kUnwearable || object.secondCounter != kUnwearable)) {
+                m_objects->props.setCounters(handle, *type, object.counter, object.secondCounter);
+            }
             m_print(std::format("objects: object {:.0f} came to rest at ({:.2f}, {:.2f}, {:.3f})\n", handle,
                                 object.position.x, object.position.y, object.position.z));
         },
         [this, &place](double handle, const world_objects::LooseObject& object) {
             place(handle, object);
-            thrownBreak(handle, object);
+            flyingBreak(handle, object);
+        },
+        [this](double handle, const world_objects::LooseObject& /*object*/, const world_objects::LooseImpact& impact) {
+            impactSound(handle, impact);
         });
     for (const auto& [handle, object] : m_looseObjects.all()) {
         place(handle, object);
     }
 }
 
-void PlayLevelMode::thrownBreak(double handle, const world_objects::LooseObject& object) {
-    // The dust a broken thrown weapon raises at the hit point (`Particles_Dust`), metres.
-    constexpr float kBreakDust = 1.6F;
-    // The impact's two material pairs: (its, its) at full volume, (its, the surface's) at half.
+void PlayLevelMode::impactSound(double handle, const world_objects::LooseImpact& impact) {
+    const world_objects::SpawnRecord* record = m_records->find(handle);
+    const world_objects::ObjectType* type =
+        record != nullptr && m_objectTypes != nullptr ? m_objectTypes->find(record->typeName) : nullptr;
+    world_objects::ObjectServices* services = m_objects != nullptr ? m_objects->world.services : nullptr;
+    // Its material against the surface's at 1 / (n + 1), for the first three impacts and above 2 m/s. **Coney's
+    // reading**: the speed is the object's as it met the surface (the research does not say which speed).
+    if (type == nullptr || services == nullptr || impact.index >= kImpactSounds || impact.speed <= kImpactSoundSpeed) {
+        return;
+    }
+    services->playMaterialPair(type->material, impact.contact.material, impact.point,
+                               1.0F / static_cast<float>(impact.index + 1));
+}
+
+void PlayLevelMode::flyingBreak(double handle, const world_objects::LooseObject& object) {
+    // The impact's two material pairs: (its, its) at full volume, (its, the surface's) at half / (n + 1).
     constexpr float kOwnPairVolume = 1.0F;
     constexpr float kSurfacePairVolume = 0.5F;
     world_objects::SpawnRecord* record = m_records->find(handle);
@@ -1037,27 +1072,43 @@ void PlayLevelMode::thrownBreak(double handle, const world_objects::LooseObject&
         record != nullptr && m_objectTypes != nullptr ? m_objectTypes->find(record->typeName) : nullptr;
     world_objects::ObjectServices* services = m_objects != nullptr ? m_objects->world.services : nullptr;
     const anim::Vec3 at = object.breakPoint;
-    m_print(std::format("objects: thrown object {:.0f} broke at ({:.2f}, {:.2f}, {:.3f})\n", handle, at.x, at.y, at.z));
+    m_print(std::format("objects: flying object {:.0f} broke at ({:.2f}, {:.2f}, {:.3f})\n", handle, at.x, at.y, at.z));
     // WorldObject_OnImpact on the level mesh: the sounds, then message 6 to the boxes the thrower stands in, with the
-    // object where its move left it. **Coney's stand-in**: a body contact plays nothing (no body is met yet).
+    // object where its move left it. **Coney's stand-ins**: a body contact plays nothing (no body is met yet); the
+    // pairs' fallbacks (116 `BRICKWALL`, then 5, when a pair plays nothing) and `CHAIR`'s 0.1 straight down are not
+    // built.
     if (services != nullptr) {
         if (type != nullptr && !object.breakContact.body) {
             services->playMaterialPair(type->material, type->material, at, kOwnPairVolume);
-            services->playMaterialPair(type->material, object.breakContact.material, at, kSurfacePairVolume);
+            services->playMaterialPair(type->material, object.breakContact.material, at,
+                                       kSurfacePairVolume / static_cast<float>(object.impacts + 1));
         }
         if (object.thrower != world_objects::kNoObject) {
             services->damageDone(object.thrower, handle);
         }
     }
-    // ThrownWeapon_Break (message 1): the object at the hit point, its dust; it goes at its next update.
-    // **Coney's stand-in**: the coloured glass pieces and rubble by model are not made.
-    if (record != nullptr) {
-        record->position = {at.x, at.y, at.z};
+    if (type == nullptr || m_objects == nullptr) {
+        return;
     }
-    if (services != nullptr) {
-        services->dust(at, kBreakDust);
+    // WorldObject_Break's message 1, by class. A thrown_weapon (ThrownWeapon_Break): the object at the hit point, its
+    // dust and pieces; it goes at its next update.
+    if (type->className == world_objects::kThrownWeaponClass) {
+        if (record != nullptr) {
+            record->position = {at.x, at.y, at.z};
+        }
+        world_objects::Props::thrownEffects(*type, at, m_objects->world);
+        m_brokenThrown.push_back(handle);
+        return;
     }
-    m_brokenThrown.push_back(handle);
+    // An overhead_weapon or a cash register: its own break, and it goes through the props' removals.
+    const world_objects::PropContact contact{
+        .point = at, .normal = anim::normalise(object.breakContact.normal), .vector = object.contactVector};
+    const world_objects::PropPose pose{.position = object.position, .rotation = object.rotation};
+    if (m_objects->props.breakFlying(handle, *type, contact, pose, m_objects->world)) {
+        return;
+    }
+    // **Coney's stand-in**: another class's message 1 is not built; the object lies where it broke, worn out.
+    m_objects->props.setCounters(handle, *type, object.counter, object.secondCounter);
 }
 
 void PlayLevelMode::stepMugging(human::Human& human) {

@@ -86,8 +86,11 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
   thrown body does not strike its own thrower.
 - **The mounted victim** cannot struggle (250), get the mounter off or reverse (242 / 243)
   ([The mounted victim](combat-moves.md#mounted-victim)).
-- **The mount's power strike** stops at its first part: the extensions (227 / 229, 233 / 235) a press in the window
-  plays are missing ([The mount](combat.md#mount)).
+- **The mount's power strike** stops at its first part: the extensions (227 / 228, 233 / 234; 229 is a filler that
+  never plays) a press in the window plays are missing ([The mount](combat.md#mount)).
+- **The mount's power strike does not end the mount**: in the original the strike breaks the pin (the mounter stands
+  in the fight stance, the victim stays grounded and is no longer mounted); Coney goes back to the mount (210 / 207)
+  ([The mount](combat.md#mount)).
 - **Circle with no target** does not search at far × 1.25 for a grab or tackle target in every case
   ([Grab and tackle](combat.md#grab), step 2).
 - **Escapes**: human flag `0x20000` (got off at once) is not modelled; the release clips by side are partly stand-ins

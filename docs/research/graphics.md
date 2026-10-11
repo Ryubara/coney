@@ -454,7 +454,8 @@ truncated (`0x0017a258`). `ScreenTint::blendTintTo` is `ScreenFx_BlendTintTo` (`
 game-over shot and `CamUseDeathCamera` blend to `ScreenTint::kGameOver`, `0xd0000014`) and `finishBlend` its finish
 (`0x0018cb78`). **Coney's readings**: `SetLevelColour` switches at once (look 9's in time is 0); the blend is timed
 by the fixed steps, not the original's real-time clock (they differ only while paused or slowed); the other looks'
-tints (rage, heat, the follower looks) are not modelled, so the tint is always the base look's or the last blend's.
+tints (rage, heat, the follower looks) are not modelled, so the tint is always the base look's or the last blend's
+([The rage look](#rage-look) lists what rage needs).
 
 **The blur pulse** (`effects::BlurPulse`, `repo:src/effects/blur_pulse.h`, drawn by `RenderEngine::blurScreen`):
 `start(seconds, delayMs)` and `end(seconds)` are `ScreenFx_StartBlurPulse` (`0x0018d058`) forward and reversed,
@@ -490,6 +491,58 @@ its grid cell round the camera. `EndGarbage` stops it. **Coney's readings**: the
 is lifted, tumbled or pushed at the start; a piece's orientation is one tilt value; a piece that lands is put on the
 hit; the pieces are not drawn yet (they are cards, not the renderer's camera-facing sprites).
 
+#### The rage look {#rage-look}
+
+What the screen does while a player rages ([Combat: everything rage does](combat.md#rage-effects)): look 2 on the
+screen-effects manager of the player's view (`0x005fdeb8[player]`), a warm dark tint plus a shimmering ghost of the
+last frame that is strongest at the screen's edges. Look 2's numbers come from `CfgScrFx` in `config_preload2.lua`
+([look 2](../references/screen-effects.md#fx-look-2)): tint (51, 25, 0, 80), in 1,000 ms, out 5,000 ms, blur alpha
+150. Confirmed (code) at the cited functions; confirmed (runtime) where marked, PCSX2 2.9.94, a copy of quick-save
+slot 6 (`level99`, base look 9 with the tint (7, 20, 30, 43)), the manager read every 100 ms (2026-10-10).
+
+**Start** (`ScreenFx_StartLook(manager, 2)` `0x0018b7d0`, from `Human_StartRageMode`): the current look becomes 2
+(`+0x198`, `+0x19c` = 0; the base look `+0x194` is kept), and both blends start on the real-time clock over look 2's
+in time, **1.0 s**:
+
+- the **tint** (`ScreenFx_BlendTintTo`, [Tint blend](#tint-blend)) from the level's colour to `0x50001933`, that is
+  (51, 25, 0) at alpha 80, drawn as As = 80 × 128 / 255 = **40** of 128: about 31 % of the way to a dark brown;
+- the **motion blur** (`ScreenFx_BlendBlurTo` `0x0018c8c8`) from its colour to `0x96ffffff`, white at alpha 150.
+
+Runtime: the tint went `0x34161512`, `0x38131517`, ... `0x4e011831` at 100 ms steps and was `0x50001933` 0.8 s after
+the first sample; the blur target was `0x96ffffff` from the first.
+
+**Each frame while raging** (`ScreenFx_Render` `0x0018dac0`: blur pulse, tint, fade, letterbox, motion blur; the
+screen effects go before the HUD):
+
+1. The **tint**: one full-view quad of the current colour, `SRCALPHA` / `INVSRCALPHA` ([Level
+   tint](rendering.md#tint)). `ScreenFx_DrawTint` (`0x0018ca50`) skips it while the look is 2 and `+0x1b8` is 0, but
+   only `ScreenFx_Construct` and `ScreenFx_ResetAll` (`0x0018c260`) write `+0x1b8`, both with 1, so the rage tint is
+   always drawn (runtime: `+0x1b8` was 1 throughout).
+2. The **ghost grid** ([Motion blur](#motion-blur), step 4): look 2 is one of the grid looks, so the last frame is
+   laid over the new one as the 9 × 9 grid, its texture coordinates wobbling by sin and cos of a phase growing 0.5 a
+   frame × 0.001 × ±0.9 × 3 (`0x0050cdfc`, `0x0050cdf8`, `0x0050ce1c`), its vertices white with alpha 0 in the centre
+   rising to 224 at the corners, nearest filtering, `SRCALPHA` / `INVSRCALPHA`. The blur alpha of 150 only turns the
+   grid on and hides the rain layer (111 or more). So the middle of the screen is sharp and the edges smear and
+   swim, as in a tunnel.
+
+**End, gradual** (`ScreenFx_EndLook(manager, 2)` `0x0018b950`, the meter running out): the current look becomes **3**;
+the tint blends back to the base look's tint and the blur to the base look's alpha, both over look 2's **out time,
+5.0 s**. Look 3 is still a grid look, and the grid (`0x00193298`) fades its wobble and alpha by `1 − elapsed / 2500
+ms` (`0x0050ce0c` = 2,500, the start kept at `0x0050ce20`); past 2,500 ms the look becomes 8, which
+`ScreenFx_DrawMotionBlur` turns back into the base look. From then on the base look (9) draws the blur as the single
+full-view quad at the still-falling blur alpha, so a faint even ghost (alpha about 73 falling to 0) lingers for the
+remaining 2.5 s; the tint keeps blending for the full 5 s. Runtime: from the end (game time 589.41 s) the grid fade
+`0x0050ce14` fell 0.973, 0.933, ... 0.039 at 100 ms steps, the corner vertex alpha from 224 to 8 with it; the look
+was 3 until 591.85 s and 9 from 591.95 s; the tint went from `0x50001933` toward `0x2b1e1407` and was `0x3119140e`
+at 593.58 s, 4.2 s in.
+
+**End, at once** (`ScreenFx_EndLook(manager, 3)`, for the instant ends listed on
+[Combat](combat.md#rage-effects), the pause menu among them): the current look becomes the base look and both blends
+use look 8's out time, 0, so the tint and blur snap back on the next frame with no grid fade.
+
+So look 3 is rage's fading grid and look 8 the hand-back to the base look; look 4 does the same for look 0 (the
+flash's look, `Flash_Use`) over 1,500 ms (`0x0050ce10`).
+
 #### Motion blur {#motion-blur}
 
 Each view, after its tint and fade, `ScreenFx_DrawMotionBlur` (`0x0018c408`) lays the **last frame** over the new
@@ -507,12 +560,15 @@ one, confirmed (code):
    write. A port with one back buffer must keep the last presented frame itself.
 4. **Looks 0, 2, 3, 4 and 7** draw it as a **9 × 9 grid** (slots `+0xf8`, `+0x100`; `0x00193298`, `0x001939b8`):
    each frame every vertex's texture coordinates move by sin and cos of a phase (+0.5 a frame) × 0.001 × 0.9 with a
-   random sign × 5 (look 0) or 3 (the others), clamped to the rectangle, so the old frame shimmers. The vertices'
-   alpha comes from a 9-byte table at `0x0050ce30` by the distance from the centre (10 in the centre, 50, 180, 225
-   up to 252 at the corners; that the index is `|dx| + |dy|` is inferred), flat 200 in look 4, so the edges show
-   the most. Looks 3 and 4 also fade the wobble and alpha out over 2,500 and 1,500 ms from their start; then the
-   current look becomes 8 and the manager goes back to its base look. Texture filter nearest, vertex alpha,
-   `SRCALPHA` / `INVSRCALPHA`.
+   random sign × 5 (look 0) or 3 (the others), clamped to the rectangle, so the old frame shimmers. A vertex's
+   alpha is `(d × table[d]) & 0xff` × the fade, with `d` = `|column − 4| + |row − 4|` (0-8) and the 9-byte table at
+   `0x0050ce30` (10, 50, 180, 225, 230, 240, 240, 250, 252; the `mult` and `andi 0xff` at `0x00193a58`), flat 200 in
+   look 4: so by `d` **0, 50, 104, 163, 152, 176, 160, 214, 224**, clear in the centre and strongest at the corners.
+   Confirmed (runtime): those nine values were the vertex alphas at `0x005fe030 + i × 0x40 + 0x2c` during rage ([The
+   rage look](#rage-look)). The blur colour's own alpha only switches the grid on (not 0) and hides the rain (111 or
+   more); it does not scale the vertices. Looks 3 and 4 also fade the wobble and alpha out over 2,500 and 1,500 ms from
+   their start; then the current look becomes 8 and the manager goes back to its base look. Texture filter nearest,
+   vertex alpha, `SRCALPHA` / `INVSRCALPHA`.
 5. **Other looks** draw one quad (slots `+0xe0`, `+0xe8`) with the blended colour, so the old frame shows at the
    blur's alpha everywhere ([Screen quads](#2d-drawing)).
 
@@ -980,17 +1036,44 @@ No other state is set, so Z test, Z write and vertex-alpha blending are the worl
 alpha is `0x80` (confirmed from the disc), so the vertex grey 127 shows the texture's own light grey (150) almost
 unchanged, the red (170, 43, 43) tints it to about (199, 50, 50), and alphas 127-143 leave the texture's alpha as it
 is (opaque texels solid, the faint texels a light haze). Whether RenderWare's PS2 pipeline passes prelit colours to
-the GS unscaled was not read; deferred: runtime (PCSX2: level80 checkpoint 3 with a bottle, hold L1 with the left
-stick centred, sample the arc's pixels with nothing targeted and with the aim on the `dyn_w_mission` marker, pitch
-about 0.14 rad as on [Objects: throws](objects.md#throws)).
+the GS unscaled was not read. The measurement below supersedes this prediction: the arc shows far darker (grey about
+50, red about 68) and half transparent.
+
+**On screen, measured** (confirmed (runtime), PCSX2 2.9.94 at its native resolution, window captures of 1575 × 930;
+`level80` checkpoint 3 reached by the checkpoint jump from slot 6, the hold-up command given, the thrower on the roof
+at (−244.3, 268.0, 5.7) with the lesson's bottle, L1 pressed, the aim moved with the left stick at 0.3 in 2-update
+steps; the camera is the lesson's fixed `ThrowCam`, so frames with the arc in different places share a background):
+
+- **Not hit** (pitch 0.154 rad, heading 79°, the arc crossing a dark wall and a lit window): against the same pixels
+  without the arc, the arc raised a background of about 20 by **+13** and lowered one of about 90 by **−17.5**, the
+  same in the three channels apart from the background's own tint. Fitting out = α·C + (1 − α)·bg to the two gives
+  **C ≈ 50 and α ≈ 0.44** (averaged over the band's pixels, edges included); the arc crosses over (neither lighter
+  nor darker) where the background is about 45-50. So the grey arc reads as a dim, half-transparent band.
+- **Hit** (the aim on the `dyn_w_mission` marker, pitch 0.154 rad, heading 58.6°, `+0x634` the marker; the hint
+  became "Press X to throw"): over a background of about (16-20, 16-20, 18-22) the band rose by **+21 to +30 in red
+  and 0 to +4 in green and blue** from pixel to pixel. With the same α that is C ≈ 66-87 in red and 18-27 in green
+  and blue; the low end of the rise (about +22 red, +0 to +1 green and blue) gives C ≈ (67-69, 17-20, 17-20).
+- **Both fit one linear rule**: on-screen colour ≈ **0.39 × the vertex colour** per channel (127 → 50; 170 → 67,
+  43 → 17), at this distance (the band 10-20 pixels wide, the texture's pattern not resolved). For the red band the
+  rule fits the low end of the measured range; its brighter pixels (up to about 87 red) sit above it.
+
+What this leaves open: the 0.39 is the vertex colour's scale times the filtered texture colour, and the filtered
+colour depends on the colour stored in the transparent palette entry, which was not read. A 128 = 1.0 reading needs a
+filtered texel of about 50 (the transparent texels' colour near black, so the 150 grey is diluted), a 255 = 1.0
+reading about 100; the alpha (about 0.44) is also higher than the palette's average alpha predicts in either reading,
+so how RenderWare's pipeline hands the prelit colour and alpha to the GS is still not settled from the pixels. Next
+step: read palette entry 2's colour from the disc, or capture with the arc close to the camera so that opaque texels
+show unfiltered.
 
 **Owner item 31 (the arc)**: the first Coney arc (on the `throw-arc` branch, 2026-10-11) used
 stand-in values that differ from the above. **Coney fixes**:
 
-1. Colours (127, 127, 127) not hit and (170, 43, 43) hit, read with 128 = 1.0 (so about the texture's grey and a
-   strong red), instead of (170, 170, 170, 160) and (220, 30, 30, 160).
-2. Alpha per pair as above (0 at the hand, then 127 + trunc(16 × min(i ÷ count, 1)), 128 = 1.0) instead of a fade
-   over three points to a fixed 160.
+1. Colours (127, 127, 127) not hit and (170, 43, 43) hit, instead of (170, 170, 170, 160) and (220, 30, 30, 160).
+   Whatever scale Coney uses, match the measured look: at the lesson's distance the grey band shows as about colour
+   50 at alpha 0.44 over the scene, the red band as about (68, 18, 18) at the same alpha (above); a brighter arc,
+   such as the texture's grey at full strength, does not match the original.
+2. Alpha per pair as above (0 at the hand, then 127 + trunc(16 × min(i ÷ count, 1))) instead of a fade over three
+   points to a fixed 160. Whether 128 or 255 is 1.0 is not settled (above); match the measured alpha of about 0.44.
 3. Always 18 pairs: points up to count − 1, the rest collapsed on point count − 1, the last pair at the end point.
 4. Texture `aimthrow` from WAD entry `./ee_files/646320484`, wrapping, with u 0 → 1 across and v = 15 − pair along
    (one repeat per segment); untextured only when the file is missing.

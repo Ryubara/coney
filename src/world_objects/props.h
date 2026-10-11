@@ -5,6 +5,7 @@
 #include <map>
 #include <optional>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "animation/anim_math.h"
@@ -27,8 +28,13 @@ inline constexpr std::string_view kThrownWeaponClass = "thrown_weapon";
 inline constexpr std::string_view kCashRegisterClass = "dyn_cashreg";
 inline constexpr std::string_view kCashDrawerType = "dyn_cashreg_b";
 inline constexpr std::string_view kMoneyType = "dyn_money";
-/// The broken cash register's model.
+/// The broken cash register's model, and the piece a lifted one leaves when it breaks (a `fade_object`).
 inline constexpr std::uint32_t kCashRegisterBrokenModel = 0x59026f53U;
+inline constexpr std::string_view kCashRegisterPiece = "dyn_cashreg_c";
+/// The class of a broken prop's loose pieces, which fly when launched, stop dead on landing and later fade.
+inline constexpr std::string_view kFadeObjectClass = "fade_object";
+/// The material that wears on every contact whatever its class (`GUITAR`).
+inline constexpr std::uint8_t kGuitarMaterial = 154;
 
 /// A collision body's flags from its type's word `+0x5e`: bit `0x1` gives `0x2`, `0x2` → `0x4`, `0x4` → `0x10`,
 /// `0x8` → `0x8`, `0x10` → `0x40`, `0x20` → `0x20`, `0x40` → `0x2000`, `0x80` → `0x10000`, `0x100` → `0x20000`, on top
@@ -55,6 +61,13 @@ struct PropPose {
     anim::Quat rotation;
 };
 
+/// The contact a flying object broke on, as `WorldObject_Break` passes it to the class's message 1.
+struct PropContact {
+    anim::Vec3 point;  ///< Where the move met the surface (contact `+0x90`): the hit point.
+    anim::Vec3 normal; ///< The surface's unit normal, out of it (contact `+0x50`): the hit's direction.
+    anim::Vec3 vector; ///< The contact vector (`+0xb0`): the normal × the speed into the surface × the update.
+};
+
 /// What one strike did to a prop.
 struct PropStrike {
     bool intactBefore = false; ///< Neither counter was 0 before it: the strike was damage done (message 6).
@@ -75,19 +88,22 @@ struct PropStrike {
 /// An `overhead_weapon` prop (a trash can, bags) breaks on any strike (`OverheadWeapon_Break`): its pieces by model,
 /// its dust and splinters, a trash set's bottle (a `dyn_beerbottle` 0.5 m above the path polygon under the hit point,
 /// knocked loose through ObjectWorld::knock with a random spin), its material pair (at 0.65 when the attacker ran into
-/// it, ObjectHit::runIn), and it goes the next tick. **Coney's stand-ins** there: the pieces rest where they are
-/// spawned and never fade; the litter system's pieces, the brown splat, the splinters' colours, the camera test and the
-/// path-polygon flag are left out; the path polygon's height is the mean of its vertices' heights; the cardboard set's
-/// 8 debris pieces are 8 splinters; and a litter piece's offset is each axis drawn in ±0.43, ±0.43 and 0-0.83 m (the
-/// research leaves the draw's use open).
+/// it, ObjectHit::runIn), and it goes the next tick. Its `fade_object` pieces (the dented can, the park bin's piece,
+/// the litter) are launched through ObjectWorld::knock (launchPiece()). **Coney's stand-ins** there: the pieces never
+/// fade (message `0x15` and the age are not built); the litter system's pieces, the brown splat, the splinters'
+/// colours, the camera test and the path-polygon flag are left out; the path polygon's height is the mean of its
+/// vertices' heights; the cardboard set's 8 debris pieces are 8 splinters; and a litter piece's offset is each axis
+/// drawn in ±0.43, ±0.43 and 0-0.83 m (the research leaves the draw's use open).
 ///
 /// A cash register (`dyn_cashreg`) makes its drawer (`dyn_cashreg_b`) when it comes into the world
 /// (initCashRegister()), and takes 2 + 8 × kind from its hit points (its type's `+0x5a`, 16): a surviving hit sounds
 /// its material against concrete and raises dust at the hit; the breaking one swaps its broken model, sounds its
 /// material against itself, opens its drawer and stops it being a strike target, and it stays, still solid. The drawer
 /// updates every 60 ticks: at its first update after the open it jumps 0.35 m out along its local y, at its second it
-/// spills a `dyn_money` 0.22 m above it holding $25-50. **Coney's stand-ins** there: the dust is
-/// ObjectServices::burst(); the game state flag that silences the hit sound is left out.
+/// spills a `dyn_money` 0.22 m above it holding $25-50. A lifted register that breaks flying (breakFlying()) leaves a
+/// `dyn_cashreg_c` piece holding money to come, launched along the contact's normal. **Coney's stand-ins** there: the
+/// dust is ObjectServices::burst(); the game state flag that silences the hit sound is left out; the piece's contact
+/// offset is left out, and its money is not spilled (the piece's age is not built).
 ///
 /// Research: docs/research/objects.md#breakable-props, docs/research/objects.md#riot-prop-breaks,
 /// docs/research/objects.md#trash-props, docs/research/script-types.md#dyn-cashreg
@@ -115,6 +131,28 @@ class Props {
     /// kDrawerTicks. Nothing for another class or a register already made.
     /// @orig 0x003c04e0 DynCashreg_Init (unknown)
     void initCashRegister(double handle, const ObjectType& type, const PropPose& pose, ObjectWorld& world);
+    /// `WorldObject_Break`'s message 1 (kind −1, the contact's normal and point) to the object `handle` of `type`,
+    /// which broke flying at `pose` on `contact` (its sounds are the contact's, played before): an `overhead_weapon`
+    /// breaks from 1 m along the unit contact vector without its own material pair, its pieces launched along that
+    /// vector; a cash register takes its breaking hit (kind −1 empties its hit points): with its drawer, its broken
+    /// model and the drawer opened, and lifted (no drawer) its `dyn_cashreg_c` piece launched along the normal, and it
+    /// goes the next tick. The body goes (ObjectServices::setBody()). False for any other class, which is the caller's;
+    /// the props that go are told by takeRemoved().
+    /// @orig 0x00393e20 WorldObject_Break (unknown)
+    bool breakFlying(double handle, const ObjectType& type, const PropContact& contact, const PropPose& pose,
+                     ObjectWorld& world);
+    /// A `thrown_weapon`'s break effects at the hit point `point` (`ThrownWeapon_Break`): the dust, then by model; a
+    /// `dyn_beerbottle` adds 4-8 brown glass pieces of 0.025-0.045 within 0.04 m of the point. **Coney's stand-in**:
+    /// the glass pieces are shards that do not fly (ObjectServices::spawnShard()), and the other models' rubble,
+    /// glass and bursts are left out.
+    /// @orig 0x004034b8 ThrownWeapon_Break (unknown)
+    static void thrownEffects(const ObjectType& type, anim::Vec3 point, ObjectWorld& world);
+    /// The counters (`+0x10d`, `+0x10e`) the object `handle` has kept, which a flight starts from; nothing for an
+    /// object with no state yet (its type's).
+    [[nodiscard]] std::optional<std::pair<std::uint8_t, std::uint8_t>> counters(double handle) const;
+    /// A flight of the object `handle` of `type` wore its counters to `counter` and `secondCounter`: they are kept.
+    void setCounters(double handle, const ObjectType& type, std::uint8_t counter, std::uint8_t secondCounter);
+
     /// The cash register `handle`'s drawer; kNoObject for none (not made yet, or gone).
     [[nodiscard]] double drawerOf(double handle) const;
     /// Triangle's message 0 to the cash register `handle` of `type`: its drawer is deleted whatever happens
@@ -207,10 +245,21 @@ class Props {
     // @orig 0x003b7a88 DynMasks_OnHit (unknown)
     static bool masksHit(Prop& prop, const ObjectType& type, const ObjectHit& hit, const PropPose& pose,
                          ObjectWorld& world);
-    // An overhead_weapon prop's message 1: it breaks, whatever the hit.
+    // An overhead_weapon prop's message 1: it breaks, whatever the hit; a flying one skips its own sound. Its pieces
+    // are launched along `contactVector` (+0xb0; zero for a prop never touched, whose pieces drop).
     // @orig 0x003ffe90 OverheadWeapon_Break (unknown)
     static void overheadBreak(Prop& prop, const ObjectType& type, const ObjectHit& hit, const PropPose& pose,
-                              ObjectWorld& world);
+                              ObjectWorld& world, bool flying = false, anim::Vec3 contactVector = {});
+    // A broken prop's piece `piece` (ScriptObj_SpawnThrownDebris's message 0x30, then FadeObject_Launch): a spin of
+    // +-3 pi rad/s on each axis, and a velocity of the unit `contactVector` x 1-1.5, its x and y each x 2-5, z 0.
+    // @orig 0x003a5530 ScriptObj_SpawnThrownDebris (unknown)
+    // @orig 0x003c6ae0 FadeObject_Launch (unknown)
+    static void launchPiece(double piece, anim::Vec3 contactVector, ObjectWorld& world);
+    // A lifted cash register's breaking hit: its dyn_cashreg_c piece, launched along the hit, three dust bursts, and
+    // it goes the next tick.
+    // @orig 0x003c06b0 DynCashreg_OnMessage (unknown)
+    static void cashRegisterPiece(Prop& prop, const ObjectHit& hit, const PropPose& pose, anim::Vec3 vector,
+                                  ObjectWorld& world);
     // A cash register's message 1: its hit points, the sound and dust, and when they run out its broken model and its
     // drawer opened.
     // @orig 0x003c06b0 DynCashreg_OnMessage (unknown)

@@ -67,6 +67,28 @@ What the first stage does before the player can move, inferred from the disassem
 
 So until the intro scene runs, the screen is black by the script's own choice.
 
+### The original's first frames {#first-frames}
+
+At `level60` checkpoint 1 (confirmed (runtime), PCSX2 2.9.94, 2026-10-11; reached by the game's checkpoint jump from a
+story save (slot 6), not from the hub trophy, so what the hub shows before the load is not covered; window captures
+about every 4 s, timed by the game's 60 Hz tick count `0x005104f4`, which starts again at the level; pad idle
+throughout, left stick centred (0, 0)):
+
+| Tick (s) | What shows |
+| --- | --- |
+| before 1 | the load screen: the Armies of the Night art with **"STAGE ONE"** and a red progress bar (two captures, about 7 s) |
+| 365-1251 (6-21 s) | the intro scene, no HUD: a fixed side view of a garage under a red graffiti "W", pedestrians walking past, then the shutter rising on a car with Swan standing inside |
+| 1667 (28 s) | play: Swan on the pavement in front of the garage, the same side-on view; the HUD on (below) |
+| 1667-7527 | nothing moves while the pad is idle; the timer counts down **one a second** (98 at 1667, 00 at 7527: 98 in 97.7 s) |
+| 7543 (126 s) | **"CONTINUE?"** in red over the scene, "Press the START button to continue" below it |
+
+The HUD in play: top left Swan's portrait, his name and a seven-digit score (0000000) over a green health bar; top
+centre the two-digit **timer** (starting at 99); top right **"PRESS THE START BUTTON TO JOIN"**, blinking; at the right
+edge **"GO"** with an arrow pointing right, blinking; bottom right **"CREDITS: 07"** (`HUDANSetCredit(7)`). So the idle
+stage runs a 99-second timer that ends in the continue screen without any fight ([HUD: the Armies
+panel](hud.md#fn-anhud) for the panel's code). Which script call starts the timer and the `P1.Start03` timing were not
+traced here.
+
 ## In Coney {#coney}
 
 Read in the engine and seen in a run of the 2026-10-10 release build (`--play-level level60`, 600 steps, pad idle).
@@ -108,12 +130,8 @@ The minimum to show Armies of the Night instead of a black screen, in order:
    the stage's own screen and not in the story's mission-failed one.
 6. **Tests:** a disc test that `level60` at checkpoint 1 reaches `P1.Start03` with the rail camera active and mode 3
    set; a debug-menu test that no listed level fails to load; and, once the hub path exists, a playthrough from the
-   trophy.
-
-Deferred, runtime: what the original's first frames show at `level60` checkpoint 1 (the black hold, the intro
-scene, the first frame of `lock01`), to compare with Coney's. PCSX2 steps: a save with the five flashbacks complete,
-the hub trophy for Armies of the Night chosen with cross, then frame captures every second from the load screen's
-end to `P1.Start03` (about 10 s), pad idle (left stick centred, 0, 0).
+   trophy. With the pad idle, compare with [the original's first frames](#first-frames): the load screen, the intro
+   scene, play with the full HUD at about 28 s, the timer at one a second and "CONTINUE?" at about 126 s.
 
 ## Open questions {#open-questions}
 
