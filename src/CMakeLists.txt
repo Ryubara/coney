@@ -250,6 +250,7 @@ target_sources(coney_core PRIVATE
     human/locomotion_gate.cpp
     human/jump.cpp
     human/locomotion.cpp
+    human/workout.cpp
     human/pair_placement.cpp
     human/fighter.cpp
     human/fighter_counter.cpp

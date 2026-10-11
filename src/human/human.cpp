@@ -303,7 +303,10 @@ void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float
     m_fighter.setBrokenHold(broken);
     m_announced.clear();
     endClimb();
-    if (m_animator.state() != AnimState::Idle) {
+    // A workout's clips stay: workout.StartWorkout teleports the player onto the station's flag before HuWorkout, but
+    // Coney applies a script's teleport of player 1 at the end of the frame, after the workout may have begun
+    // (docs/research/workouts.md#start).
+    if (m_animator.state() != AnimState::Idle && !m_script.workingOut) {
         m_animator.stopToIdle();
     }
     // Creation's snap: a ray from 1 m above, 2.5 m down; on a hit the feet go 0.01 above it.

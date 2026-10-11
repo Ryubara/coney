@@ -192,3 +192,27 @@ TEST_CASE("the start hook hears each anim id a task starts: a change and a clip 
     stack.change(std::make_unique<LoopTask>(loop, 388, 1.0F, 0U), 0.15F);
     CHECK(started == std::vector<std::uint32_t>{413, 408, 388});
 }
+
+TEST_CASE("a gait blend counts each wrap of its leading clip and plays at the rate it is set to", "[anim_task]") {
+    // The workout's loop blend: its wraps are the repetitions (docs/research/workouts.md#repetitions).
+    const AnimClip slow = testClip(2.0F, 0.0F);
+    const AnimClip fast = testClip(1.0F, 0.0F);
+    const std::array<GaitClip, 5> clips{GaitClip{&slow, 693}, GaitClip{&fast, 694}, GaitClip{&fast, 695},
+                                        GaitClip{&fast, 695}, GaitClip{&fast, 695}};
+    GaitBlendTask blend(clips, 0.0F, 16.0F, 1.0F, coney::anim::kTaskContinuous | coney::anim::kTaskNoRootVelocity);
+    // The slow clip leads: 2 s a wrap at rate 1.
+    for (int i = 0; i < 59; ++i) {
+        blend.advance(1.0F / 30.0F);
+    }
+    CHECK(blend.wraps() == 0);
+    blend.advance(1.0F / 30.0F);
+    blend.advance(1.0F / 30.0F);
+    CHECK(blend.wraps() == 1);
+    CHECK(blend.lowerTime() == Approx(1.0F / 30.0F).margin(1e-3));
+    // At half the rate a wrap takes twice as long.
+    blend.setRate(0.5F);
+    for (int i = 0; i < 119; ++i) {
+        blend.advance(1.0F / 30.0F);
+    }
+    CHECK(blend.wraps() == 2);
+}

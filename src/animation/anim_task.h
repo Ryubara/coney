@@ -106,6 +106,8 @@ class AnimTask {
     /// time() over duration(), 0 for an empty clip.
     [[nodiscard]] float normalisedTime() const;
     [[nodiscard]] float rate() const { return m_rate; }
+    /// Sets the playback rate (`+0x0c`), as the workout's update sets its loop blend's each update.
+    void setRate(float rate) { m_rate = rate; }
     [[nodiscard]] std::uint32_t flags() const { return m_flags; }
 
   protected:
@@ -213,6 +215,12 @@ class GaitBlendTask final : public AnimTask {
     [[nodiscard]] std::size_t lowerIndex() const;
     /// Whether the upper clip leads: while the value falls toward the target or its fraction is above 0.875.
     [[nodiscard]] bool upperLeads() const;
+    /// How many times the leading clip has wrapped since the task began: where the original calls the blend's wrap
+    /// callback (`+0x40`/`+0x44`, the workout's repetition), its owner counts the wraps of each advance instead.
+    [[nodiscard]] std::uint32_t wraps() const { return m_wraps; }
+    /// The lower clip of the pair and its time now (the workout's timing factor reads them).
+    [[nodiscard]] const AnimClip& lowerClip() const { return *m_clips[lowerIndex()].clip; }
+    [[nodiscard]] float lowerTime() const;
 
   private:
     std::array<GaitClip, 5> m_clips;
@@ -220,6 +228,7 @@ class GaitBlendTask final : public AnimTask {
     float m_target;
     float m_valueSpeed;
     float m_phase;
+    std::uint32_t m_wraps = 0;
 };
 
 /// Moves the record `+0x08` word `flags` for one event of `type` in the clip of `task`, which holds bits on it

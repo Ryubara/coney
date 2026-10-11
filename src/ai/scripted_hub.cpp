@@ -19,6 +19,7 @@
 #include "human/human.h"
 #include "human/human_flags.h"
 #include "human/locomotion.h"
+#include "human/workout.h"
 
 namespace coney::ai {
 
@@ -26,21 +27,28 @@ namespace {
 
 // An AI human's handcuffs are kept between 0 and 9.
 constexpr int kMaxCuffs = 9;
-// The workout's end clip, and the pad's commands: cross pressed pumps (0x12), triangle pressed quits (10).
-constexpr int kWorkoutEndAnim = 692;
+// The pad's commands in a workout: cross pressed pumps (0x12), triangle pressed quits (10).
 constexpr combat::CommandId kPumpCommand = combat::command::kCrossPressed;
 constexpr combat::CommandId kQuitCommand = combat::command::kTrianglePressed;
-// A player's effort is 0-1, used × 3 as an AI's blend.
-constexpr float kPlayerBlendScale = 3.0F;
 // A gang's message handler slots (`+0xe4`, 26 of them).
 constexpr int kGangMessages = 26;
 
 // A vector as a hub point.
 script::HubPoint pointOf(anim::Vec3 v) { return script::HubPoint{v.x, v.y, v.z}; }
 
-// The phase of a player's effort (0, 1 or 2): which of the three loop clips it is on.
-std::size_t phaseOf(float effort) {
-    return static_cast<std::size_t>(std::clamp(static_cast<int>(effort * kPlayerBlendScale), 0, 2));
+// The workout's tables as CfgWorkoutParams left them (none before it runs).
+human::WorkoutParams paramsOf(const WorkoutSettings* settings) {
+    human::WorkoutParams params;
+    if (settings == nullptr) {
+        return params;
+    }
+    params.gain = settings->rates[0];
+    params.decay = settings->rates[1];
+    for (std::size_t i = 0; i < params.hold.size(); ++i) {
+        params.hold.at(i) = static_cast<int>(settings->rates[2].at(i));
+    }
+    params.factor = settings->factor;
+    return params;
 }
 
 } // namespace
@@ -182,7 +190,7 @@ void ScriptedHub::playDynAnim(double human, std::string_view anim) {
 void ScriptedHub::workout(const script::WorkoutCall& call) {
     // NOLINTNEXTLINE(bugprone-exception-escape): copying the captures can only fail on allocation
     onBrain(call.human, [this, call](Brain& brain) {
-        if (m_scripted->locate(call.equipment) == std::nullopt) {
+        if (call.equipment != brain.handle() && m_scripted->locate(call.equipment) == std::nullopt) {
             return;
         }
         WorkoutRun run;
@@ -193,12 +201,15 @@ void ScriptedHub::workout(const script::WorkoutCall& call) {
 }
 
 void ScriptedHub::endWorkout(Brain& brain) {
+    // Human_EndWorkout: the state flag cleared, the loop stopped, the end callback; then the exit clip.
+    const auto found = m_workouts.find(brain.handle());
+    const anim::AnimClip* exit = found != m_workouts.end() ? m_scripted->namedClip(found->second.clips[1]) : nullptr;
     brain.human().script().workingOut = false;
     m_workouts.erase(brain.handle());
-    static_cast<void>(m_scripted->playClip(brain, kWorkoutEndAnim));
     if (m_lookups.workout != nullptr) {
         callBack(m_lookups.workout->onEnd, brain.handle());
     }
+    brain.human().endWorkoutClips(exit);
 }
 
 void ScriptedHub::stopWorkout(double human) {
@@ -208,10 +219,11 @@ void ScriptedHub::stopWorkout(double human) {
             return;
         }
         if (found->second.begun) {
-            endWorkout(brain);
+            // Action 0x1c: the next workout update ends it.
+            found->second.ending = true;
         } else {
             // A start that has not begun goes back to state 0, with no end callback.
-            m_workouts.erase(found);
+            found->second.gone = true;
         }
     });
 }
@@ -220,7 +232,7 @@ void ScriptedHub::setWorkoutBlend(double human, float blend) {
     onBrain(human, [this, blend](Brain& brain) {
         const auto found = m_workouts.find(brain.handle());
         if (found != m_workouts.end() && found->second.begun) {
-            found->second.blend = blend;
+            found->second.effort.setEffort(blend);
         }
     });
 }
@@ -380,71 +392,86 @@ void ScriptedHub::update(std::uint64_t nowMs) {
     updateFlight();
 }
 
-void ScriptedHub::updateWorkouts(std::uint64_t nowMs) {
+void ScriptedHub::updateWorkouts(std::uint64_t /*nowMs*/) {
     const WorkoutSettings* settings = m_lookups.workout;
     std::vector<Brain*> ended;
-    for (auto it = m_workouts.begin(); it != m_workouts.end();) {
+    for (auto it = m_workouts.begin(); it != m_workouts.end(); ++it) {
         Brain* brain = m_scripted->brain(it->first);
         WorkoutRun& run = it->second;
         if (brain == nullptr) {
-            it = m_workouts.erase(it);
+            run.gone = true;
             continue;
         }
         human::Human& body = brain->human();
         if (!run.begun) {
-            // The start: within reach of the equipment the human turns to it and begins; out of reach it gives up.
-            const std::optional<anim::Vec3> equipment = m_scripted->locate(run.equipment);
-            const bool reach = equipment && std::hypot(equipment->x - body.position().x,
-                                                       equipment->y - body.position().y) <= kWorkoutReach;
-            if (!reach) {
-                it = m_workouts.erase(it);
-                continue;
+            if (!beginWorkout(*brain, run)) {
+                run.gone = true;
             }
-            body.face(*equipment);
-            body.script().workingOut = true;
-            run.begun = true;
-            run.blend = 1.0F;
-            run.effort = 1.0F / kPlayerBlendScale;
-            run.nextRepMs = nowMs + kRepMs;
-            if (settings != nullptr) {
-                callBack(settings->onStart, it->first);
-            }
-            ++it;
             continue;
         }
-        // A player pumps with cross (the step of the effort's phase) and quits with triangle; the effort decays
-        // otherwise (**Coney stand-in**: the decay is the second table's value of the phase per update).
-        if (brain->type() == BrainType::Player && !brain->dead()) {
+        // The loop, once the enter clip has handed over to it (the enter clip changes nothing): a pad's human pumps
+        // and quits, a human no pad drives follows the effort the script wrote; the blend gets the target and rate,
+        // and each wrap of its leading clip is a repetition.
+        if (anim::GaitBlendTask* loop = body.workoutLoop(); loop != nullptr && !run.ending) {
+            const human::WorkoutParams params = paramsOf(settings);
             const combat::CommandId command = body.record().command;
-            if (command == kQuitCommand) {
-                ended.push_back(brain);
-                ++it;
-                continue;
+            const human::WorkoutStep step =
+                body.record().padDriven
+                    ? run.effort.padUpdate(params, loop->value(), loop->lowerTime(), loop->lowerClip().duration,
+                                           command == kPumpCommand, command == kQuitCommand)
+                    : run.effort.aiUpdate(params, loop->value());
+            loop->setTarget(step.target);
+            loop->setRate(step.rate);
+            for (; run.wraps < loop->wraps(); ++run.wraps) {
+                if (settings != nullptr) {
+                    callBack(settings->onRep, it->first);
+                }
             }
-            const std::size_t phase = phaseOf(run.effort);
-            if (settings != nullptr) {
-                run.effort += command == kPumpCommand ? settings->rates[0].at(phase) : -settings->rates[1].at(phase);
-            }
-            run.effort = std::min(run.effort, 1.0F);
-            run.blend = run.effort * kPlayerBlendScale;
-            if (run.effort <= 0.0F) {
-                ended.push_back(brain);
-                ++it;
-                continue;
-            }
+            run.ending = run.ending || step.end;
         }
-        // The repetitions: one every kRepMs at an effort of 1, faster or slower with it.
-        if (nowMs >= run.nextRepMs && run.blend > 0.0F) {
-            if (settings != nullptr) {
-                callBack(settings->onRep, it->first);
-            }
-            run.nextRepMs = nowMs + static_cast<std::uint64_t>(static_cast<float>(kRepMs) / std::max(run.blend, 0.1F));
+        // Action 0x1c (the end above, or HuStopWorkout, maybe from the repetition's own callback): Human_EndWorkout.
+        if (run.ending) {
+            ended.push_back(brain);
         }
-        ++it;
     }
+    std::erase_if(m_workouts, [](const auto& entry) { return entry.second.gone; });
     for (Brain* brain : ended) {
         endWorkout(*brain);
     }
+}
+
+bool ScriptedHub::beginWorkout(Brain& brain, WorkoutRun& run) {
+    human::Human& body = brain.human();
+    // The reach: the scripts make the player his own target, at distance 0. **Coney stand-in** for any other target:
+    // within kWorkoutReach of it, for the start clip's attack-table reach (AttackTable_GetFarRange(h, 691)).
+    const bool self = run.equipment == brain.handle();
+    const std::optional<anim::Vec3> equipment = self ? std::optional<anim::Vec3>{} : m_scripted->locate(run.equipment);
+    if (!self && (!equipment ||
+                  std::hypot(equipment->x - body.position().x, equipment->y - body.position().y) > kWorkoutReach)) {
+        return false;
+    }
+    // All five clips must load, or nothing starts.
+    std::array<const anim::AnimClip*, 5> clips{};
+    for (std::size_t i = 0; i < clips.size(); ++i) {
+        clips.at(i) = m_scripted->namedClip(run.clips.at(i));
+        if (clips.at(i) == nullptr) {
+            return false;
+        }
+    }
+    // Human_AlignToObject: toward another target (with himself as the target, the facing TeleportToFlag gave stays).
+    if (equipment) {
+        body.face(*equipment);
+    }
+    body.playWorkout(*clips[0], {clips[2], clips[3], clips[4]});
+    body.script().workingOut = true;
+    run.begun = true;
+    run.effort = human::WorkoutEffort{};
+    run.wraps = 0;
+    // Human_StartWorkout: the state flag, then the start callback.
+    if (m_lookups.workout != nullptr) {
+        callBack(m_lookups.workout->onStart, brain.handle());
+    }
+    return true;
 }
 
 void ScriptedHub::updateEnemyCounts() {

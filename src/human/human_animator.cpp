@@ -352,6 +352,38 @@ void HumanAnimator::playScripted(const anim::AnimClip& clip, std::uint32_t animI
     m_state = AnimState::Attack;
 }
 
+void HumanAnimator::playWorkout(const anim::AnimClip& enter, const std::array<const anim::AnimClip*, 3>& loops) {
+    const std::array<anim::GaitClip, 5> clips{
+        anim::GaitClip{loops[0], kAnimWorkoutLoop}, anim::GaitClip{loops[1], kAnimWorkoutLoop + 1},
+        anim::GaitClip{loops[2], kAnimWorkoutLoop + 2}, anim::GaitClip{loops[2], kAnimWorkoutLoop + 2},
+        anim::GaitClip{loops[2], kAnimWorkoutLoop + 2}};
+    auto blend = std::make_unique<anim::GaitBlendTask>(clips, 0.0F, kWorkoutBlendSpeed, 1.0F,
+                                                       anim::kTaskContinuous | anim::kTaskNoRootVelocity);
+    m_tasks.change(std::make_unique<anim::ClipThenNextTask>(enter, kAnimWorkoutEnter, 1.0F, 0U, std::move(blend)),
+                   kWorkoutFade);
+    m_state = AnimState::Workout;
+}
+
+anim::GaitBlendTask* HumanAnimator::workoutLoop() const {
+    if (m_state != AnimState::Workout) {
+        return nullptr;
+    }
+    auto* blend = dynamic_cast<anim::GaitBlendTask*>(m_tasks.top());
+    return blend != nullptr && blend->animId() >= kAnimWorkoutLoop ? blend : nullptr;
+}
+
+void HumanAnimator::endWorkout(const anim::AnimClip* exit) {
+    if (m_state != AnimState::Workout) {
+        return;
+    }
+    if (exit != nullptr) {
+        playScripted(*exit, kAnimWorkoutExit, 1.0F, kCombatFade, HeldFlags{});
+        return;
+    }
+    buildIdle();
+    m_state = AnimState::Idle;
+}
+
 void HumanAnimator::playCombatWalk(std::uint32_t walk) {
     std::uint32_t id = walk;
     if (clip(id) == nullptr) {
@@ -385,7 +417,7 @@ bool HumanAnimator::settling() const {
 
 void HumanAnimator::choose(const AnimInputs& inputs) {
     // A held combat pose stays until combat plays something else.
-    if (m_state == AnimState::Hold || m_state == AnimState::CombatWalk) {
+    if (m_state == AnimState::Hold || m_state == AnimState::CombatWalk || m_state == AnimState::Workout) {
         return;
     }
     // An action's clips play out (but a move's closing 389 gives way to a move asked for); then the state is whatever

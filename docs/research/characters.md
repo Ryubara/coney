@@ -2805,12 +2805,11 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   `SetDynamicAnimation` does each: the file listed twice is one entry, so twelve files are listed.
 - **The hub's hold on a human** (`level95`; `src/scripting/hub_bindings.*`, acting through `ai::ScriptedHub`): money,
   death, character class and voice set are read; the scale, name, cuffs, muggable, pedestrian reaction,
-  unarrestable, combat mode, gear and tackle block are set. **Workouts** (`HuWorkout`): the human faces the equipment
-  and works out (no movement or fighting) with the start, repetition and end callbacks; a player pumps with cross and
-  quits with triangle, the effort decaying by `CfgWorkoutParams`' second table. **Stand-ins**: a workout begins within
-  1.5 m of the equipment, a repetition lasts 1.5 s at an effort of 1, and no workout or dynamic clip plays; combat
-  mode and the gear are kept, their context actions not built. The original's workouts, every station and why
-  Coney's start does nothing: [Workouts](workouts.md).
+  unarrestable, combat mode, gear and tackle block are set. **Workouts** (`HuWorkout`): the enter clip into a loop
+  blend of the three workout clips, the effort pumped with cross and decaying by `CfgWorkoutParams`' tables, a
+  repetition each wrap of the loop, the end on triangle or when worn down, then the exit clip
+  ([Workouts](workouts.md#coney), `human::WorkoutEffort`). **Stand-ins**: another human's equipment is reached within
+  1.5 m; no dynamic clip plays; combat mode and the gear are kept, their context actions not built.
 - **Names**: `@orig` names for addresses the research describes but does not name (such as `Human_SnapToGround`,
   `GaitBlend_Advance`, `PhysicsBody_PushOutOfWalls`) are Coney's.
 

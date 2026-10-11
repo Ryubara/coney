@@ -293,9 +293,19 @@ the disc `repo:tests/platform/disc_hub_workout_test.cpp`). AI fighters keep faci
 stance walk strafes ([AI: The move action](ai.md#move-action)). The headings were not the cause: the goal and
 `TeleportToFlag` both read a flag's degrees as Coney's heading (the turn θ about `+z`, [Flags](flags.md#position)).
 
-What Coney has besides: the `HuWorkout` binding with stand-ins
-([Characters](characters.md#coneys-implementation)): a start within 1.5 m, a fixed 1.5 s repetition at an effort
-of 1, no clips, the effort decaying by the decay table; `CfgWorkoutParams` keeps the 1.8 as a float.
+**The cycle games in Coney** (2026-10-11): `HuWorkout` follows [The engine side](#engine). A workout begins once all
+five clips load (the level's clip source, by the names the script gives) and, for the player who is his own target,
+at any distance; the enter clip plays, then a gait blend over the slow, mid and fast clips at 16 units a second whose
+target and rate `human::WorkoutEffort` sets each update from the station's `CfgWorkoutParams` tables (the pumps, the
+hold counter, the 0.03 decay and its 0.3 share below a third, the end on triangle or when worn down). Each wrap of the
+blend's leading clip calls the repetition callback; the end clears the flag, calls the end callback and plays the exit
+clip. `repo:tests/human/workout_test.cpp` checks the rules (the run-down ends 58-68 updates into the loop, the
+runtime's 63) and `repo:tests/platform/disc_hub_workout_test.cpp` plays each cycle station through the pad: five
+repetitions 25-45 updates apart at a press every 4 updates, the rank's unlock and the prompt back with `Rank: 1/10`;
+at the chin-ups also a run-down with no repetition and a quit with triangle. **Stand-ins and choices**: another
+human's equipment is reached within 1.5 m (the start clip's attack-table reach is not read); the blend starts at
+value 0; `Human_AlignToObject` turns a human only toward another target; Coney applies a script's teleport of player
+1 at the end of the frame, after the workout may have begun, so a teleport keeps a running workout's clips.
 
 ## Notes for implementers
 
@@ -304,8 +314,9 @@ of 1, no clips, the effort decaying by the decay table; `CfgWorkoutParams` keeps
 - **All**: make `GoalMoveToFlag` with `faceFlag` arrive for the player (done, [Coney](#coney)); keep `TeleportToFlag`
   exact; `HuWorkout`'s target is the player himself, so drop the 1.5 m reach stand-in (the reach test passes at 0).
   `CfgWorkoutParams`' fourth argument is a flag (non-zero → 1.0), so the timing factor is always 1.
-- **Chin-ups, push-ups, sit-ups** (`Human_UpdateWorkout` as in [The engine side](#engine)): play the enter clip 691
-  then a gait blend over 693-695 (speed 16 units/s, unrounded target 3 × effort − 1, or 0 below an effort of 1/3);
+- **Chin-ups, push-ups, sit-ups** (done, [Coney](#coney); `Human_UpdateWorkout` as in [The engine side](#engine)):
+  play the enter clip 691 then a gait blend over 693-695 (speed 16 units/s, unrounded target 3 × effort − 1, or 0
+  below an effort of 1/3);
   effort starts at 1 (the script's 1.5 is capped) with a hold counter of 6; a cross press sets the counter to
   `hold[L]` and adds `gain[L]` on that many updates; otherwise decay 0.03 (× 0.3 below 1/3); the rate is 1, or
   3 × effort + 2 × decay once the blend is at 0; end on triangle or when that rate fell to 3 × decay; a repetition is
