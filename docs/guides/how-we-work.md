@@ -151,6 +151,8 @@ something:
   (`UV_PROJECT_ENVIRONMENT`) rather than a `.venv` inside a worktree, which every tool and linter would then scan.
 - **Scratch is yours per branch.** Put output in `scratch/<branch>/`; game-derived files (captures, states, dumps,
   screenshots) stay there and are deleted when done.
+- **Your own tooling and records stay yours.** State files (`HANDOFF.md`, `STATUS.md`), personal scripts, launchers,
+  editor or agent settings and notes live beside the repository, never in it: the repository holds only the project.
 - **Generated images, video and audio may be deleted without asking.** Screenshots, frame captures and recordings
   pile up during reviews; any track may remove the ones the project produced. Write the path literally or guard a
   variable (`rm -f "${DIR:?}"/*.png`): a path built from a possibly empty variable can delete far more than meant.

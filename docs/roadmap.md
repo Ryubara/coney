@@ -217,6 +217,18 @@ without mods is unchanged.
 **Done when** a test mod from the mods folder runs at a level start, calls documented bindings (spawning a character
 and moving the camera, say) and the game runs the same with the mods folder empty.
 
+## Custom content
+
+Coney loads content made outside the game: maps built in Blender (glTF, from blockouts to finished levels) and
+character models brought from other games the player owns, given an existing character's moveset (the first test:
+CJ from *GTA: San Andreas* with Cleon's moves). Coney's own bindings (see [Script mods](#script-mods)) expose what
+the original never had, such as loading this content, graphics settings and input rebinding. Content from other
+games is the player's own game data: it is converted on the player's machine and never enters the repository, its
+fixtures or CI. Like every enhancement, this waits until the game plays faithfully; designs may be written now.
+
+**Done when** a Blender-made map loads as a level the player can walk, and an imported character plays with an
+existing moveset.
+
 ## Xbox assets (optional)
 
 A player who also owns the Xbox version gives the installer that disc too: `coney-tools extract --xbox` takes its
