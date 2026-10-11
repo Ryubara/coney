@@ -1036,17 +1036,44 @@ No other state is set, so Z test, Z write and vertex-alpha blending are the worl
 alpha is `0x80` (confirmed from the disc), so the vertex grey 127 shows the texture's own light grey (150) almost
 unchanged, the red (170, 43, 43) tints it to about (199, 50, 50), and alphas 127-143 leave the texture's alpha as it
 is (opaque texels solid, the faint texels a light haze). Whether RenderWare's PS2 pipeline passes prelit colours to
-the GS unscaled was not read; deferred: runtime (PCSX2: level80 checkpoint 3 with a bottle, hold L1 with the left
-stick centred, sample the arc's pixels with nothing targeted and with the aim on the `dyn_w_mission` marker, pitch
-about 0.14 rad as on [Objects: throws](objects.md#throws)).
+the GS unscaled was not read. The measurement below supersedes this prediction: the arc shows far darker (grey about
+50, red about 68) and half transparent.
+
+**On screen, measured** (confirmed (runtime), PCSX2 2.9.94 at its native resolution, window captures of 1575 × 930;
+`level80` checkpoint 3 reached by the checkpoint jump from slot 6, the hold-up command given, the thrower on the roof
+at (−244.3, 268.0, 5.7) with the lesson's bottle, L1 pressed, the aim moved with the left stick at 0.3 in 2-update
+steps; the camera is the lesson's fixed `ThrowCam`, so frames with the arc in different places share a background):
+
+- **Not hit** (pitch 0.154 rad, heading 79°, the arc crossing a dark wall and a lit window): against the same pixels
+  without the arc, the arc raised a background of about 20 by **+13** and lowered one of about 90 by **−17.5**, the
+  same in the three channels apart from the background's own tint. Fitting out = α·C + (1 − α)·bg to the two gives
+  **C ≈ 50 and α ≈ 0.44** (averaged over the band's pixels, edges included); the arc crosses over (neither lighter
+  nor darker) where the background is about 45-50. So the grey arc reads as a dim, half-transparent band.
+- **Hit** (the aim on the `dyn_w_mission` marker, pitch 0.154 rad, heading 58.6°, `+0x634` the marker; the hint
+  became "Press X to throw"): over a background of about (16-20, 16-20, 18-22) the band rose by **+21 to +30 in red
+  and 0 to +4 in green and blue** from pixel to pixel. With the same α that is C ≈ 66-87 in red and 18-27 in green
+  and blue; the low end of the rise (about +22 red, +0 to +1 green and blue) gives C ≈ (67-69, 17-20, 17-20).
+- **Both fit one linear rule**: on-screen colour ≈ **0.39 × the vertex colour** per channel (127 → 50; 170 → 67,
+  43 → 17), at this distance (the band 10-20 pixels wide, the texture's pattern not resolved). For the red band the
+  rule fits the low end of the measured range; its brighter pixels (up to about 87 red) sit above it.
+
+What this leaves open: the 0.39 is the vertex colour's scale times the filtered texture colour, and the filtered
+colour depends on the colour stored in the transparent palette entry, which was not read. A 128 = 1.0 reading needs a
+filtered texel of about 50 (the transparent texels' colour near black, so the 150 grey is diluted), a 255 = 1.0
+reading about 100; the alpha (about 0.44) is also higher than the palette's average alpha predicts in either reading,
+so how RenderWare's pipeline hands the prelit colour and alpha to the GS is still not settled from the pixels. Next
+step: read palette entry 2's colour from the disc, or capture with the arc close to the camera so that opaque texels
+show unfiltered.
 
 **Owner item 31 (the arc)**: the first Coney arc (on the `throw-arc` branch, 2026-10-11) used
 stand-in values that differ from the above. **Coney fixes**:
 
-1. Colours (127, 127, 127) not hit and (170, 43, 43) hit, read with 128 = 1.0 (so about the texture's grey and a
-   strong red), instead of (170, 170, 170, 160) and (220, 30, 30, 160).
-2. Alpha per pair as above (0 at the hand, then 127 + trunc(16 × min(i ÷ count, 1)), 128 = 1.0) instead of a fade
-   over three points to a fixed 160.
+1. Colours (127, 127, 127) not hit and (170, 43, 43) hit, instead of (170, 170, 170, 160) and (220, 30, 30, 160).
+   Whatever scale Coney uses, match the measured look: at the lesson's distance the grey band shows as about colour
+   50 at alpha 0.44 over the scene, the red band as about (68, 18, 18) at the same alpha (above); a brighter arc,
+   such as the texture's grey at full strength, does not match the original.
+2. Alpha per pair as above (0 at the hand, then 127 + trunc(16 × min(i ÷ count, 1))) instead of a fade over three
+   points to a fixed 160. Whether 128 or 255 is 1.0 is not settled (above); match the measured alpha of about 0.44.
 3. Always 18 pairs: points up to count − 1, the rest collapsed on point count − 1, the last pair at the end point.
 4. Texture `aimthrow` from WAD entry `./ee_files/646320484`, wrapping, with u 0 → 1 across and v = 15 − pair along
    (one repeat per segment); untextured only when the file is missing.

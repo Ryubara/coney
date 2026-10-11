@@ -9,6 +9,48 @@ prompt cache survives. The conduct rules for agents are in [How we work](how-we-
 re-briefs an agent, or picks its model, it asks what that costs in cache writes and picks the cheapest way that still
 gets the work right. The rules below are that question answered for the usual cases.
 
+## Setting up an agent tool {#setup}
+
+The rules every agent follows are in [AGENTS.md](repo:AGENTS.md) and these guides, whatever tool runs the agent.
+The repository also ships the configuration that lets an agent tool use the project's debugging servers and roles,
+so a fresh clone gets the same setup as the maintainer's machine:
+
+| File | What it holds | Read by |
+| --- | --- | --- |
+| `AGENTS.md` (and `CLAUDE.md`, `GEMINI.md`, which only import it) | The rules | Most agent tools |
+| `.mcp.json` | The debugging servers: `ghidra-mcp` (the shared Ghidra project) and `pcsx2` (the emulator over PINE) | Claude Code; other tools take the same two commands in their own MCP config |
+| `.claude/agents/` | The roles: `analyst`, `implementer`, `reviewer`, `research-reviewer` | Claude Code |
+| `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and builds allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)) | Claude Code |
+
+**The servers.** `.mcp.json` holds no paths. Each entry runs `coney-tools mcp serve <name>`, which finds the server
+through `coney.local.toml` (`ghidra_mcp_repo` and `pcsx2_mcp_dir`, see [Local workspace](workspace.md)) and runs it
+over stdin and stdout, from the main checkout or any worktree. The entries run `uv run --isolated --frozen`: uv keeps
+the launcher's environment in its own cache rather than a `python/.venv` in each worktree, and never rewrites
+`uv.lock`. The ghidra-mcp bridge runs with `uv run --frozen` in the ghidra-mcp checkout, which uses that checkout's
+own `.venv` and lock file and changes nothing else in it. A server that is not installed stops at once with one line
+naming the missing key or program; the agent tool shows it as failed and everything else works. `ghidra-mcp` also
+needs its headless server running ([Ghidra + ghidra-mcp](ghidra.md)), and `pcsx2` needs Node.js 18 or newer. Claude
+Code asks once whether to use the project's servers. A server of the same name registered in your local scope
+(`claude mcp add -s local`) takes precedence over the project's; one in your user scope does not.
+
+**The roles.** Each file in `.claude/agents/` names a role from [How we work](how-we-work.md) and points at the
+guides that role reads; it holds no rules of its own. The analyst and the research reviewer are set to Opus, which
+AGENTS.md requires for reverse engineering; the others take whatever model the coordinator names
+([Which model](#models)). The implementer and the code reviewer have the Ghidra and PCSX2 MCP tools withheld
+(`disallowedTools` names each server, which removes all of its tools). That is a guard against reaching for them,
+not the clean room itself: they still have a shell, and the rule that keeps them out of the original's code is
+AGENTS.md's. Effort, turn and token limits are each user's own settings and stay out of the repository.
+
+**The permissions.** The allowed commands are the project's own read-mostly ones: `coney-tools config show`, the
+`repo` checks, the generators, pytest, ruff, mypy, pre-commit and the CMake presets. Commands that start or drive
+PCSX2 (`coney-tools pcsx2 ...`), and git beyond Claude Code's own read-only detection, still ask. The refusals match
+on spelling (`taskkill /IM` is refused, `taskkill.exe /Im` or a piped `Stop-Process` is not), so they catch honest
+mistakes; they are not a security boundary.
+
+Another agent tool needs only its own MCP entries for the two servers (the same
+`uv run --isolated --frozen --project python coney-tools mcp serve <name>` command, run from the checkout) and reads
+the rules from `AGENTS.md`.
+
 ## What a run costs {#cost}
 
 An agent re-sends its whole context (instructions, tools, brief and everything it has read or done) with every
@@ -76,12 +118,18 @@ instead of repeating it:
 
 - the role (analyst, implementer or support), the model, the worktree and the scratch folder;
 - the task and the scope it owns, the files it must not touch, and what "done" means for it
-  ([Testing](testing.md#done));
+  ([Testing](testing.md#done)), and that it reports it in the pull request's Testing and Screenshots sections, with
+  its captures saved in `scratch/<branch>/shots/` and referenced in `PR.md` as `![alt](./shots/file.png)`
+  ([Capturing and attaching](testing.md#pr-media));
 - "Read `AGENTS.md`, [How we work](how-we-work.md), [Testing](testing.md) and this page first; they override the
   brief";
 - how it runs ([Running without losing the cache](#cache)): it works local-first, never pushes or waits on CI, and
   hands each finished unit to the [release queue](how-we-work.md#release-queue);
 - only the facts the agent cannot find in the repository (a log path, a question to answer, the state file).
+
+A brief may be just "issue #N": the issue holds the steps, the screenshots and the acceptance test, and the agent
+reads it as [Issues](issues.md#agents) describes. Naming the number is cheaper than pasting the issue, and the
+issue stays the one place to read it.
 
 ## Running without losing the cache {#cache}
 

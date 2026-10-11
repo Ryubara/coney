@@ -8,7 +8,8 @@ of work, the rules every test follows, and where the checks run. How to build an
 
 ## What "done" means {#done}
 
-A piece of work is done when the evidence in this table exists and passes. Report it with the work.
+A piece of work is done when the evidence in this table exists and passes. Report it with the work: in the pull
+request's Testing and Screenshots sections ([What a pull request shows](#pr-evidence)).
 
 | Work | Evidence |
 | --- | --- |
@@ -90,8 +91,14 @@ the objective marker, which callbacks are armed, where the NPCs stand. The test 
 - the run reaches the next checkpoint.
 
 The reference order comes from an analyst's recording of the original, written on the research page. A mission
-checkpoint is not done until its playthrough test passes. Level 99's `CourseDriver`
-(`repo:tests/platform/disc_level99_course_test.cpp`) is the example.
+checkpoint is not done until its playthrough test passes. The level3 chase's `RouteDriver`
+(`repo:tests/platform/disc_story_playthrough_test.cpp`) is the example: route legs (run to a point, climb, sprint
+jump) followed by reading where the player stands, through the game session (`DiscSession` takes a driver).
+
+A driver writes stick bytes as an input script does (`stickByteFromPercent`): each axis has its own dead zone round
+the centre, so a byte mapped linearly over 0-255 reads back smaller than meant. A full diagonal laid out that way
+reads about 0.86, under the run's 0.95, and the player only walks (found when the level3 chase driver walked instead
+of running).
 
 Why not a frame-locked script: it replays inputs by step number, so any change to the camera or the AI moves the
 characters a little, the recorded presses then land in the wrong place, and the test fails (or passes by luck) for
@@ -111,17 +118,91 @@ Where a research page is silent, code uses a clearly marked stand-in (`stand-in`
 the page gets an open question. A test may pass on a stand-in, but the stand-in stays counted until a faithful
 reimplementation replaces it.
 
+## What a pull request shows {#pr-evidence}
+
+A reviewer should see what was tested and what the result looks like without running anything. The pull request
+description ([the template](repo:.github/pull_request_template.md)) has two sections for it, and CI refuses a
+description that leaves either empty (`coney-tools repo check-body`):
+
+- **Testing** says what was run and what came out: the commands (the build preset, `ctest`, `pytest`,
+  `mkdocs build --strict`), the tests added or changed, any disc, [playthrough](#playthrough-tests) or
+  [trace-diff](#diff-against-the-original) run, and the results as counts, pass or fail and numbers ("612 passed, 0
+  failed", "reached checkpoint 4 in 1,830 updates", "14 of 14 positions match"). Disc runs print aggregates only
+  ([above](#no-game-data)). For a docs-only or research change, list the checks that ran (pre-commit, the docs build)
+  and the runtime evidence behind the claims (the PCSX2 trace or memory read, with its address and evidence level).
+  What could not be tested yet is listed as such, with the reason and the exact steps for whoever can.
+- **Screenshots** shows anything a player can see, before and after: Coney before the change, Coney after it and,
+  where the original has the same view, the original in PCSX2 from the same place, so a reader can compare them. When
+  nothing visible changes, the section is one line, `Screenshots: none (<reason>)`, for example `Screenshots: none
+  (no visible change)` or `Screenshots: none (research page only)`.
+
+### Capturing and attaching {#pr-media}
+
+- **Attach, never commit.** Gameplay screenshots and short videos of Coney or of the original are uploaded to the
+  pull request or issue as GitHub attachments, with `gh --attach` (below) or, for a person, by dragging the file into
+  the description box. They are never committed:
+  game imagery stays out of git ([LEGAL.md](repo:LEGAL.md#no-game-data)); the only images in the repository are the
+  small reference screenshots that page allows. Never attach assets, saves, dumps, executables, BIOS images or game
+  text, only pictures of the running game.
+- **Coney.** `coney --screenshot PATH` saves the last frame of a test-mode run as a PNG. To line a frame up with the
+  original's, pin the view with `--camera`, `--freeze-world` and `--render-size 640x448`
+  ([Matched views](building.md#matched-views)). `--screenshot` needs a window, so the run is not `--headless`. Take
+  the "before" shot from a build of `main` (or the branch point) and the "after" shot from the branch, with the same
+  options.
+- **The original.** `coney-tools pcsx2 screenshot --copy NAME --out PNG` writes a PCSX2 copy's picture (Windows only;
+  [Driving PCSX2](research-workflow.md#driving-pcsx2)), from a copy you hold a claim on.
+- **Video.** Nothing in Coney or `coney-tools` records video. A short clip is made by hand with a screen recorder; an
+  agent uses a few screenshots of the moment instead.
+- **Agents** keep every capture in `scratch/<branch>/shots/` and write real image references in the pull request
+  text (`PR.md`), paths relative to the scratch folder: `![Coney after](./shots/after.png)`. The coordinator uploads
+  them from that folder, one `--attach` per file, when it opens the pull request:
+
+  ```sh
+  cd scratch/<branch>
+  gh pr create --body-file PR.md --attach ./shots/before.png --attach ./shots/after.png
+  ```
+
+  `gh` replaces each reference whose path matches an `--attach` with the uploaded
+  `https://github.com/user-attachments/assets/...` link (a file the text does not mention is appended); `--attach
+  <file>#<alt>` sets the alt text. `gh pr edit <n> --body-file PR.md --attach ...` does the same later, and
+  `gh pr comment` and `gh issue create` or `comment` take `--attach` too. It needs gh 2.99 or newer (`gh --version`).
+  `check-body` refuses a Markdown image or `<img>` that still points at a local path, which is the reminder to
+  attach it.
+- **No local paths in the text.** A published pull request or issue body never names a file or folder on your machine:
+  no `scratch/...`, `../../...`, `C:\...` or worktree path, and no "files in <folder>". Say "the scratch folder" and
+  describe the picture. The only local paths a draft may hold are the `![alt](./shots/<file>.png)` image references that
+  `gh --attach` rewrites to uploads. `check-body` refuses a body with any other such path in its text; code spans and
+  code blocks are not looked at. The files are game data: they stay in scratch and are deleted when the pull request is
+  merged ([Sharing one machine](how-we-work.md#shared-machine)).
+
 ## Where the checks run {#where}
 
 ### The local gate {#local-gate}
 
-Before reporting work or merging it, in your own worktree:
+Before reporting work or merging it, in your own worktree, run the one command that checks what CI would fail on for
+the files you touched, and fix what it prints:
+
+```sh
+uv run --project python coney-tools check changed
+```
+
+It runs pre-commit on the changed files, clang-tidy with the GCC and Clang warnings on the files CI's pull-request job
+would check (a changed header through the `.cpp` files that include it), `mkdocs build --strict` when docs changed,
+pytest and mypy when `python/` changed, and `repo check`; it needs a `build/dev` that was configured once
+(`cmake --preset dev`, no build). It catches what MSVC lets through: a designated initializer that skips a field
+(`-Wmissing-designated-field-initializers`), an unchecked `std::optional` access
+(`bugprone-unchecked-optional-access`). [The command's page](coney-tools.md#check) has the options. It does not
+replace the list below, which is the whole gate, and it leaves to CI the warnings only GCC emits, macOS, the
+sanitizers and the full clang-tidy pass; a change to the build setup is checked on its changed files only.
+
+The whole gate:
 
 - **Engine changes:** the `ci` preset build and `ctest --preset ci` with the disc configured (Windows: from a shell
   with the MSVC environment).
-- **Python:** `ruff check`, `ruff format --check`, `mypy` and `pytest` on `python/`; `coney-tools repo check`; and
-  every generator's `--check` (`progress update`, `natives render`, `natives coney`, `natives cpp`, `refs render`,
-  `missions render`). Rerun a generator without `--check` when you change what it reads.
+- **Python:** `ruff check`, `ruff format --check`, `mypy` and `pytest` on `python/`; `coney-tools repo check`;
+  `coney-tools progress check` (the progress inputs; its tables are built into the docs, not committed); and every
+  generator's `--check` (`natives render`, `natives coney`, `natives cpp`, `refs render`, `missions render`). Rerun a
+  generator without `--check` when you change what it reads.
 - **Everything:** `uvx pre-commit run --all-files` leaves the tree unchanged, markdownlint passes, and
   `mkdocs build --strict` passes.
 

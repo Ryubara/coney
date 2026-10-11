@@ -694,7 +694,7 @@ Made by `Spawn_SubDebris` ([Spawn helpers](#spawn-helpers)).
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
 | `0x003c21a8` | `SubDebris_Init` | `sub_debris` init | pops material, sprite, colour, size, life and speed; a negative size means a model piece; speed 5-9 along its direction | confirmed (code) |
-| `0x003c24e8` | `SubDebris_Update` | `sub_debris` update | shrinks a model piece over its life; airborne until it lands (`0x20000000`), then a material sound (`Sound_PlayMaterialPair`), lies flat; at the end of its life fades and is done | confirmed (code) |
+| `0x003c24e8` | `SubDebris_Update` | `sub_debris` update | shrinks a model piece over its life; airborne until it lands (`0x20000000`), then a material sound (`Sound_PlayMaterialPair`), lies flat; a **burning piece (kind 2) that lands on a floor** (contact normal z above 0.9) makes one `sub_fade_flame` there (`0x003c2820`: scale 0.1-0.22, 60-89 frames, the piece's material), the explosion's floor fires ([level80's opening fire](scripting.md#level80-arrest-fire)); at the end of its life fades and is done | confirmed (code); the flames confirmed (runtime), 53 and 44 of 60 pieces in two plays |
 | `0x003c2a48` | `SubDebris_OnMessage` | `sub_debris` message | `0x27` sets the material and kind 2 | confirmed (code) |
 
 ### `part_water` and `sub_water` {#part-water}

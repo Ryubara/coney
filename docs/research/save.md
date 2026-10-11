@@ -59,7 +59,7 @@ scratch memory file and keeps its length (`ss + 0x108`), **0x504 = 1,284 bytes**
 | `0x000` | 4 | version, always `0x11` | | `0x11` |
 | `0x004` | 8 | the name, no terminator when 8 characters long | slot `+0x04` | the typed name |
 | `0x00c` | 4 | "story finished on HARDCORE SOLDIER" (unlocks the fourth difficulty, [below](#story-screens)) | slot `+0x28` | 0 |
-| `0x010` | 0x168 | the per-mission best records: 30 × 12 bytes, indexed by the level record's mission byte (`+0x0c`): `+0` best score, `+4` a running total, `+8` a grade byte, `+9` a percentage byte | stats object `0x006fe490 + 0x300` (`0x00423098`, `0x004231b8`) | zeros |
+| `0x010` | 0x168 | the per-mission best records: 30 × 12 bytes, indexed by the level record's mission byte (`+0x0c`): `+0` best score, `+4` a running total (the statistics screen shows it as the mission's time in seconds, `GameStats_FormatTime`, [Front end](frontend.md#game-stats)), `+8` a grade byte, `+9` a percentage byte | stats object `0x006fe490 + 0x300` (`0x00423098`, `0x004231b8`) | zeros |
 | `0x178` | 0x50 | the unlockables' **locked** bits, 640 (a set bit is locked) | `0x006fe8f8` | all ones |
 | `0x1c8` | 0x50 | a second 640-bit set of the unlockables (the "new" marks, inferred) | `0x006fe948` | zeros |
 | `0x218` | 0x254 | the Rumble custom-gang store ([Front end](frontend.md#rumble-gangs); written and read by `0x00202fc0` / `0x00203040`, confirmed (code)) | `0x0063ef80` | zeros |

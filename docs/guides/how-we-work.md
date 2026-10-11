@@ -71,8 +71,10 @@ a stray `git add`, and every worktree shares the same tools. Details: [Local wor
 Many tracks run at once, each owning one subsystem, mission or question:
 
 - **One branch and one worktree per track**, under `worktrees/coney/<branch>/`. Nobody edits the main checkout.
-- **Small shared files are regenerated, not hand-merged**: binding pages, progress bars and similar files come from
-  generators that the merge reruns.
+- **Small shared files are regenerated, not hand-merged**: binding pages and similar files come from generators
+  that the merge reruns. Files every pull request would change are not committed at all: the progress tables and the
+  README's badges are produced by the docs build ([Measuring progress](#measuring-progress)), so a merge to `main`
+  never makes another pull request conflict on them.
 - **Pull requests merge one at a time**, by the maintainer or a coordinator the maintainer has allowed to, never by
   the agent that wrote them. Before merging, the coordinator checks more than CI: the title, one feature per pull
   request, the description, docs and tests that go with the change, and a diff that holds only that change. Each
@@ -103,7 +105,9 @@ coordinator, who pushes them when CI has room.
   commits are not replayed.
 - **The coordinator keeps the release queue** in its state file and releases units while the agents keep working:
   it checks the queue (`gh run list --status queued` and `--status in_progress`), pushes the branch and opens the
-  pull request with `gh pr create --body-file <PR.md>` when there is room. Priority: engine fixes first, then what
+  pull request with `gh pr create --body-file <PR.md>` when there is room, run from the author's scratch folder with
+  one `--attach ./shots/<file>.png` per capture the text refers to (gh 2.99+;
+  [Capturing and attaching](testing.md#pr-media)). Priority: engine fixes first, then what
   unblocks other work. A pull request runs only the jobs its change can break, so a documentation-only one is cheap
   ([What CI runs](building.md#what-ci-runs)).
 - **A failure CI finds later** (another platform, a check that cannot run locally) goes to the coordinator when it is
@@ -159,13 +163,21 @@ something:
   pile up during reviews; any track may remove the ones the project produced. Write the path literally or guard a
   variable (`rm -f "${DIR:?}"/*.png`): a path built from a possibly empty variable can delete far more than meant.
 
+## Issues {#issues}
+
+Bugs and tasks are tracked as issues, opened from a form and labelled by type, area, priority and status. The
+coordinator triages them and is the only one who writes to GitHub; an agent reads an issue (`gh issue view N
+--comments`) and is often briefed with just its number. A pull request that finishes one says `Fixes #N`, so merging
+closes it. The whole process: [Issues](issues.md).
+
 ## Testing {#testing}
 
 Tracks never wait for a person to play their work, so the automated tests stand in for one. Every track proves its
 work the same way: tests that start through the player's path, input driven like a gamepad, an adaptive playthrough
 for every mission checkpoint, and diffs against the original. People play release builds at milestones and their
 findings come back as fixes. The standard, including what "done" means for each kind of work and the checks to run
-before reporting: [Testing](testing.md).
+before reporting: [Testing](testing.md). A pull request shows the result: what was run with its numbers, and
+before and after screenshots of anything visible ([What a pull request shows](testing.md#pr-evidence)).
 
 ## The coordinator {#coordinator}
 
@@ -240,7 +252,9 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
 - **Long-running tracks keep going.** They hand each finished unit to the release queue and continue with the next
   item in scope until it is empty, instead of stopping after one finding.
 - **Report what a reader needs:** commits, what works now and the command that shows it, stand-ins, open items and
-  the results of the checks. Short.
+  the results of the checks. Short. A pull request's description carries the same as a Testing section (what ran,
+  the numbers) and a Screenshots section (before and after for anything visible, uploaded with `gh --attach` and never committed):
+  [What a pull request shows](testing.md#pr-evidence).
 - **Commits carry the agent's own model name** in a `Co-Authored-By` trailer (the format is in
   [Conventions](conventions.md)); an agent never pushes, opens or merges a pull request.
 
@@ -258,11 +272,16 @@ that names the subsystems.
 
 A function counts as understood when it has a meaningful name and plate comment in the shared Ghidra project and a
 research page cites its address with an evidence level ([The Understood measure](research-workflow.md#understood)).
-`coney-tools progress` turns that into the [progress page](../progress/index.md) and a per-subsystem backlog.
+`coney-tools progress` turns that into the [progress page](../progress/index.md) and a per-subsystem backlog. The
+page's tables and the README's badge data are generated by the docs build and published from `main`; a pull request
+changes only their inputs (`docs/progress/functions.toml`, the research pages, the roadmap), never a table, and CI
+runs `coney-tools progress check` on those. If a branch from before this change conflicts on `README.md` or
+`docs/progress/index.md`, take `main`'s version of both.
 
 ## Where next
 
 - Doing research: [Research workflow](research-workflow.md), then [Ghidra + ghidra-mcp](ghidra.md).
 - Writing code: [Conventions](conventions.md), [Testing](testing.md), then [Building and testing](building.md).
 - Running agents: [Running agents](agents.md).
+- Bugs and tasks: [Issues](issues.md) (forms, labels, triage, working from an issue).
 - Writing pages: [Writing these docs](writing-docs.md).

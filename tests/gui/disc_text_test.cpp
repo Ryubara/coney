@@ -104,4 +104,37 @@ TEST_CASE("the text fonts load with every glyph the tags use and lay out every H
                 sprites, lines, skipped, empty);
     CHECK(laidOut == 388);
     CHECK(sprites > 0);
+
+    // Owner items 9 and 24b (docs/research/gui.md#moneyfont, docs/research/rumble.md#intro): the swap prompts 0xc-0xe
+    // start with GSTRING.ACTIONBUTTON, whose <ST> inside <MONEYFONT> is part_page0 rectangle 73 (the triangle); the
+    // revive prompt 4 draws a big_font stick picture (rectangles 256-261); the rumble prompt 0x25, laid out as its
+    // usage line in part_page0, draws the cross button.
+    const auto drawsRect = [](const coney::gui::TextLayout& layout, const coney::graphics::Font& font, int slot,
+                              std::size_t first, std::size_t last) {
+        std::size_t found = 0;
+        for (const coney::gui::TextSprite& sprite : layout.sprites) {
+            for (std::size_t rect = first; rect <= last && rect < font.sheet().page.rects.size(); ++rect) {
+                found += sprite.fontSlot == slot && sprite.sprite.uv == font.sheet().page.rect(rect) ? 1 : 0;
+            }
+        }
+        return found;
+    };
+    std::size_t triangles = 0;
+    for (const std::uint32_t id : {0xcU, 0xdU, 0xeU}) {
+        triangles += drawsRect(coney::gui::layoutText(strings.get(id), coney::gui::TextStyle{}, fonts), *textFont,
+                               coney::gui::kTextFontSlot, 73, 73);
+    }
+    const std::size_t sticks = drawsRect(coney::gui::layoutText(strings.get(4), coney::gui::TextStyle{}, fonts), *big,
+                                         coney::gui::kBigFontSlot, 256, 261);
+    const coney::gui::TextLayout rumble = coney::gui::layoutText(strings.get(0x25), coney::gui::TextStyle{}, fonts);
+    std::size_t crosses = 0;
+    for (const coney::gui::TextSprite& sprite : rumble.sprites) {
+        crosses += sprite.sprite.uv == textFont->glyph(0x9e) ? 1 : 0;
+    }
+    std::printf("prompt glyphs: %zu triangles in the 3 swap prompts, %zu stick pictures in the revive prompt, %zu "
+                "crosses in the rumble prompt\n",
+                triangles, sticks, crosses);
+    CHECK(triangles == 3);
+    CHECK(sticks >= 1);
+    CHECK(crosses >= 1);
 }

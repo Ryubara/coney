@@ -194,6 +194,7 @@ The flags at human `+0xe0` that combat reads, confirmed (code) at the cited func
 
 | Bit | As the victim | As the attacker |
 | --- | --- | --- |
+| `0x8` | woundable (`HuSetWoundable`): health out leaves him wounded, not knocked out ([Defeat](#defeat)); a death reaction plays 205 into the loop 200, and 195 when he is down, instead of 349 (`Human_PlayDeathReaction`, `0x00267b70`). Cleared on the victim by a grab or mount power strike that will defeat him (`0x0027f3b0`, `0x0027ec20`) and by a stealth kill from behind (`Player_StartStealthKill`) | |
 | `0x20` | | the hit takes all the victim's health (`0x0021b290`) |
 | `0x80` | reaction strength capped at 1 (`0x00266d00`) | |
 | `0x100` | never stunned (`0x0026a6d0`) | |
@@ -204,6 +205,9 @@ The flags at human `+0xe0` that combat reads, confirmed (code) at the cited func
 | `0x80000` | | **raging** ([Rage](#rage)) |
 | `0x200000` | | reaction strength +1 (see `0x400`); ignores hit armour |
 | `0x4000000` | spends no power (`0x00226448`) | |
+| `0x1000000` | rubber-neck (`HuRubberNeck`, `0x0023a258`): no reader found; every load of human `+0xe0`-`+0xe7` in the executable (324 functions) was checked, and none tests this bit (inferred: unused) | |
+| `0x40000000` | front-grab block (`HuBlockGrab` sets it with `0x80000000`): `Grab_IntroEnd` (`0x0026c1d8`) refuses a front grab when the victim **or** the grabber has it (the intro ends in 69, the miss); a weapon's paired kill skips a target with it (`0x002880d8`) | the player's own: no spin from a rear grab to the front (`Player_UpdateGrabbing`, `0x0027f3b0`), no return from the mount to the front grab (`0x0027ec20`) |
+| `0x80000000` | rear-grab block (`HuBlockRearGrab`): `Grab_IntroEnd` refuses a rear grab when the victim or the grabber has it; a weapon's paired kill skips a target with it; a grabbed player with it cannot reverse the grab (`Player_UpdateGrabbed`, `0x0027fd68`) | the player's own: no spin to the rear (`0x0027f3b0`); a special attack skips its grab path (`0x00263c90`, [Strong grapple](#strong-grapple)); with `0x40000000` too, a circle tap does nothing (`Player_GrabOrTackle`, `0x00284920`: no intro, no miss, no grounded mount), while circle held still tackles (only `0x100000000` stops that) |
 | `0x400000000` | a block holds even against strength 3 (`0x00269f30`) | |
 | `0x2000000000` | never escapes when the grabber's power runs out | |
 | `0x20000000000` | one hit cannot take health below a fraction of the maximum (`0x00265f70`); it then sets `0x10` | |
@@ -345,9 +349,11 @@ The **Warrior class** record (`CfgWarriorClass`, `0x006b65c0 + c × 14`; class 6
 picked by type: [Power classes](characters.md#power-classes))
 was `4e 00 90 c8 f0 32 73 03 01 01 01 02 03 02`: s16 `+0x00` = 78 is the **rage maximum**, byte `+0x02` = 144 the
 rage gain percentage, `+0x03` = 200 the idle rage decay and `+0x04` = 240 the rage drain while raging (percent of
-the maximum per 20 s), `+0x06` = 115 the player's damage scale, byte `+0x08` picks the mash gain factor and byte
-`+0x0b` the stereo theft's turns, byte `+0x0c` the mugging parameters. Confirmed (runtime) for the bytes; the uses
-confirmed (code) at the functions below.
+the maximum per 20 s), `+0x05` = 50 the player's health percentage, `+0x06` = 115 the player's damage scale, byte
+`+0x07` picks the cuffing hold's times, `+0x08` the mash gain factor, `+0x09` the tagging tuning, `+0x0a` the
+lock-pick difficulty plus 1, `+0x0b` the stereo theft's turns and `+0x0c` the mugging parameters; `+0x0d` is never
+read. Confirmed (runtime) for the bytes; the uses confirmed (code) at the functions below and on [Warrior
+classes](../references/warrior-classes.md), which lists every byte's reader.
 
 ## Behaviour
 
@@ -361,7 +367,10 @@ confirmed (code) at the functions below.
    (`0x0027ffa0`), and returns 0 on command 4 (R1 held), so nothing else runs while R1 is held. This is the sprint's
    "other clear" on [Characters](characters.md#sprint). R1 held is read from the pad record (`0x00147f98`, 0 when
    per-player `+0x19` is −1), so **an AI human never starts a block**: command 4 alone does nothing
-   ([AI](ai.md#block)).
+   ([AI](ai.md#block)). The fight test fails while the human runs or sprints with record `+0x08` clear (gait 4 or
+   5, `0x00223a60`, `0x00223a98`), so **R1 at a run starts no block**: the run goes on and R1 only turns the camera
+   round ([Camera](camera.md#reverse)); the block starts the update the gait drops below 4. Confirmed (code);
+   confirmed (runtime).
 2. The chain (`0x00280630`), then the sprint (`0x0027d5a0`).
 3. The state routes: mugging (`0x100`) → `Player_UpdateMugging`; being mugged (`0x200`) → release; a theft
    (`0x4000000`) → `Player_UpdateTheft`; `0x8000000` / `0x10000000` → nothing; `0x400` → `0x0027ec20` (tackling);
@@ -1334,7 +1343,7 @@ receives each hit's anim id, wants 219 or 221 and then 223 before it calls `P1.B
 
 Cross held and square pressed in the mount (owner checklist item 32) is **not** a mount strike: it ends the mount
 and leaves the mounter standing in the fight stance and the victim on the ground. Confirmed (code) at the addresses
-cited; the clip events read from the disc (numbers only).
+cited, and (runtime) as below; the clip events read from the disc (numbers only).
 
 1. **The start** (`Player_UpdateMounting`, `0x0027ec20`): with more than 0.25 of the power meter, a player calls
    `Attack_StartPaired(mounter, victim, 225, 1, 0x400000)` (231 while raging, human `+0xe0` `0x80000`); with 0.25 or
@@ -1349,16 +1358,18 @@ cited; the clip events read from the disc (numbers only).
    `0x200`. Because 226 has a type-7 (knockdown) event, the victim gets move style `0xf` (down).
 3. **The mounter's clips**: 225 holding `+0x08` `0x7` (an attack's phases), with the end hook
    `Attack_OnPairedClipEnd` (`0x002629a8`), chained to the looping **fight-stance idle** (the anim record's `+0x54`,
-   anim state `0xb`). No mounting idle 210 follows.
+   anim state `0xb`; 358 for Rembrandt at runtime). No mounting idle 210 follows.
 4. **The victim's clips**: 226 holding `0x400000` with the end hook `Pair_OnVictimClipEnd` (`0x00262a38`), then,
-   because 226's knockdown value is 0 (`Anim_GetKnockdownValue`, `0x00101a60`: the first type-7 event's word), held
-   `0x2000` and **198** (the knockdown's follow-up), then the looping **grounded idle** (record `+0x28`, anim state
-   0). He lies there and gets up by the ordinary ground time ([Reactions](#reactions)). The damage
-   ([damage table](#damage-table) index 37; Rembrandt's value in [Combat moves](combat-moves.md#frame-data)) is
-   dealt on the start update; a lethal one plays the death reaction instead.
+   by the code, when 226's knockdown value is 0 (`Anim_GetKnockdownValue`, `0x00101a60`: the first type-7 event's
+   word), held `0x2000` and **198** (the knockdown's follow-up), then the looping **grounded idle** (record `+0x28`,
+   anim state 0). At runtime 198 did not play: 226 went straight to the grounded idle 196 (below). He lies there
+   and gets up by the ordinary ground time ([Reactions](#reactions)). The damage ([damage table](#damage-table)
+   index 37; Rembrandt's value in [Combat moves](combat-moves.md#frame-data)) is dealt on the start update (the
+   health field showed it one update later at runtime); a lethal one plays the death reaction instead.
 5. **The extension**: the mounter is now in state `0x1000`, so the dispatcher sends him to `Player_UpdatePowerMove`
    (`0x0027df38`) as after a grab's power strike: square or cross while 225 holds the window `0x2` plays **227** (233
-   after 231), victim 228 (234), at most twice (record `+0xbc` < 2). This settles the mount part of `level99`'s
+   after 231), victim 228 (234), at most twice (record `+0xbc` < 2; one in practice: 227 opens no window, below).
+   This settles the mount part of `level99`'s
    lesson 10 ([scripting](scripting.md#level99-lessons)): 231 → 233 comes from the same + 2.
 6. **The end**: `Attack_OnPairedClipEnd` scores the move, lets the crowd taunt and calls `Throw_ClearLink`
    (`0x0022bce0`): the mounter's `0x1000` and link are cleared and his push weight and body group restored; then
@@ -1370,12 +1381,32 @@ Clips (Rembrandt's set `warr_re_header`; the generic set has `gen_mount_power20_
 `gen_mount_power10_p1`, 226 `gen_mount_power10_react_p1` (type-7 event, word 0, at frame 0), 227 / 228 `_p2` /
 `_react_p2` (type 7, word 0), 231 / 232 `gen_mount_power13_p1` / `_react_p1` (type 7, word 0).
 
-**Deferred: runtime.** The whole sequence has not been watched. Steps for PCSX2 (when it is free): a copy of slot 6,
-PoizoCiv 1 m ahead; circle tapped at update 10 (the grab), circle at 60 (the mount, 118 lasts 65 updates), then at
-140 cross held and square pressed 2 updates later, both released 4 updates after, stick centred (0, 0) throughout.
-Expect the player's clip 225 then 358 or the stance idle with state `0x1` (no `0x400`), the victim 226, 198, then
-the grounded idle and a get-up about 2 s (his class's ground time) later. A second run adds cross taps every 8 updates
-from 160 to see 227 / 228.
+**At runtime** (confirmed (runtime), PCSX2 2.9.94, scenarios `moves_mount_power` and `moves_mount_power_ext`: a copy
+of slot 6, PoizoCiv a puppet 1.0 m ahead with 600 health, the player's power 400; circle at update 10 (the front
+grab, 72 / 73 then the holds 82 / 83), circle at 60 (118 / 119, then 210 / 207 at 126), cross held from 140 with
+square tapped at 142; stick centred (0, 0) throughout; hooks `paired-start` and `anim-dispatch`):
+
+| Update | Mounter | Victim |
+| --- | --- | --- |
+| 143 | `Attack_StartPaired(player, victim, 225, 1, 0x400000)` from `Player_UpdateMounting` (return `0x0027ee78`); 225, state `0x405` → `0x1005`, phase `0x1`; power 346 → 245 (0.25 of 400 spent, plus the drain); 358 queued after 225 | 226, state `0x801` → `0x2001`; the grounded idle 196 queued after it |
+| 144 | | 79 damage (600 → 521): Rembrandt's 225 value, scored one update after the start |
+| 167 | phase `0x2` (the extension window) | |
+| 187 | phase `0x4` | |
+| 223 | 225 ends after **80 updates**; **358** (the fight stance's idle), state `0x5`: no `0x400`, no `0x1000`; power refilling | **196** (grounded idle), state `0x180001` (down and stunned), 0.88 m away; **no 198** |
+| 283 | | rises with **199**, 60 updates (2.0 s) after landing |
+| 311 | | 356, then 357 and his ambient clips |
+
+So the mount ends for good at the strike's start and nothing returns either body to 210 / 207. One difference from
+step 4 above: **198 never played**; the anim-id hook saw the victim take only 196 as 226's follow-up, so the
+`Anim_GetKnockdownValue` word for 226 was not 0 at runtime and `Attack_StartPaired` took the branch without 198 (why
+the word differs from the one read off the disc is open).
+
+**The extension** (`moves_mount_power_ext`: as above, then cross tapped every 8 updates from 160 to 216): the tap at
+160 came before the window and did nothing; the tap at 168 started `Attack_StartPaired(player, victim, 227, 1,
+0x400000)` from `Player_UpdatePowerMove` (return `0x0027dff0`) on update 169: 227 / 228, **no power spent**, another
+79 damage (521 → 442) on update 170, 196 queued again for the victim. 227 ran 60 updates and opened no window `0x2`,
+so the later taps did nothing and **one extension is all a mount power strike gets** (the counter's limit of two is
+not reached). At 229 the mounter stood in 358 (state `0x5`), the victim lay in 196 and rose with 199 at 289 (2.0 s).
 
 **Coney fixes** (item 32; today `Fighter::playMountAction` plays the power strike like a mount strike, back to 210 /
 207, so the player stands up at 225's end and snaps back into the pin):
@@ -1384,10 +1415,10 @@ from 160 to see 227 / 228.
    mode leaves `Mounting`, the pair stops being a mount (no seat, no mounted target state) and becomes a paired move
    (the mounter "throwing", the victim "thrown", [state flags](#state-flags) `0x1000` / `0x2000`).
 2. The mounter plays 225 (231 raging) chained to the fight-stance idle, not to 210; the victim plays 226 (232) with
-   held `0x400000`, then 198 with held `0x2000`, then the grounded idle, and is down (style `0xf`) with the ordinary
-   ground timer running from the knockdown.
+   held `0x400000`, then the grounded idle (196; no 198, as seen at runtime), and is down (style `0xf`) with the
+   ordinary ground timer running from the knockdown.
 3. Square or cross in 225's window plays 227 / 228 (233 / 234) through the same extension code as the grab's
-   57 → 59, at most two extensions; 229 is the filler clip and never plays.
+   57 → 59; 227 opens no window of its own, so one extension (seen at runtime); 229 is the filler clip and never plays.
 4. When the mounter's clip ends: clear the paired link on both and leave the victim on the ground; a circle at him
    is the grounded mount again.
 5. Test (no disc needed, synthetic clips): mount, power strike, run to the end; assert the mounter is standing in the
@@ -1932,9 +1963,10 @@ side of mode 3. `Hold_GetParamsB(holder, held)` (`0x00283078`) serves the held p
 one in `0x006cdd78` / `0x006cdd98`. It builds one only when its subject (the holder for the first, the held for the
 second) is a player, and otherwise returns the last one built. The record's layout is the mugging's
 ([Mugging](#mugging)). The choice is by the **player's Warrior class byte `+0x07`** (`CfgWarriorClass`'s seventh
-value, 3 for Rembrandt's class 6 at runtime; its meaning is not traced). `Hold_GetParams` also chooses by the held
-human's category `+0x11b`: 5 and 6-7 are civilian groups (6 also the drunk Destroyers), 9 cops, 10 the tougher cops
-(`cops_ty`), 14 the Warriors. Times are in ms.
+value, 3 for Rembrandt's class 6 at runtime): the class's **cuffing** stat, whose only readers are these two
+functions ([Warrior classes](../references/warrior-classes.md), the "Cuffing" column). `Hold_GetParams` also
+chooses by the held human's category `+0x11b`: 5 and 6-7 are civilian groups (6 also the drunk
+Destroyers), 9 cops, 10 the tougher cops (`cops_ty`), 14 the Warriors. Times are in ms.
 
 `Hold_GetParams` (the holder), every set with bytes `+0x00`-`+0x02` = 160, 75, 255, off-target `+0x0c` = 50,000,
 tolerances `+0x10` = 40° and `+0x14` = 60°, off-target rumble `+0x1c` = 0:
@@ -2120,10 +2152,28 @@ has his pending damage cleared with **no reaction**: the dive, the charge, the p
 plays `Human_PlayLethalReaction` at once, unless he holds any of **`0xc12200`** (`0x800000`, `0x400000`, `0x10000`,
 `0x2000`, `0x200`): then the ordinary path runs, the health drops, and no reaction (lethal or other) plays while the
 flags are held. Which code sets state `0x800000` (inferred: the damage message, human vtable `+0x44`, when the damage
-is defeating) and what plays the death once the paired clip ends were not traced. Inferred: the victim finishes the
-paired clip and dies after it. **Deferred: runtime**: a copy of slot 6 with PoizoCiv at 60 health and an ally
-(`moves_tandem`'s Ash) told to attack him, the player's front grab and power strike timed so Ash's `X1` lands during
-57 / 58; record PoizoCiv's health, state word, held flags and clip every update until his death clip.
+is defeating) and what plays the death once the paired clip ends were not traced.
+
+**At runtime the victim finishes his paired clip and only then goes down** (confirmed (runtime), PCSX2 2.9.94,
+scenario `moves_finisher_lethal`: a copy of slot 6, PoizoCiv a puppet at 60 health 1.0 m ahead, Ash, the player's
+ally, a puppet placed 0.9 m behind him; the player's front grab (circle at 10) and power strike (cross held from 42,
+square at 44), Ash given `X1` (`0x12`, `0x10`, 0) at 47-49; stick centred; hooks `paired-start`, `anim-dispatch`,
+`strike-contact`):
+
+| Update | Player | PoizoCiv |
+| --- | --- | --- |
+| 45 | `Attack_StartPaired(…, 57, 1, 0x400000)`: 57, state `0x1005` | 58, state `0x2001`, held `0x400000` |
+| 46 | | 57 damage: 60 → 3 |
+| 56 | | Ash's `X1` (`Strike_Contact`, Ash → PoizoCiv): 23 damage, 3 → **−20**; state `0x80002001` (`0x80000000` set); **no reaction**, 58 plays on |
+| 89 | 57 ends: 358, state `0x5` | still 58, state `0x80000001` (the pair's `0x2000` cleared) |
+| 117 | | 58 ends (72 updates); **286** (the low reaction) with held `0x2000`, health set to **1** |
+| 149 | | **349**, state **`0x40000`**: knocked out, not dead ([Defeat](#defeat)) |
+
+So the lethal hit took the health below 0 at once but changed nothing the player sees until the victim's own paired
+clip (58, which outlasts the attacker's 57 by 28 updates) ended; then he fell (286, 32 updates) and lay knocked out.
+The record's state `0x80000000` is the mark the hit leaves while the reaction waits (the "state `0x80000000`" of the
+test above; which code sets it is still not traced). A civilian with the flags of this one is knocked out, with
+health 1 (inferred: `HitReact_WhileOut`, `0x002686e8`, which sets health 1), rather than killed.
 
 **When the order matters** (`Humans_Update` step 9, [Tasks](tasks.md#humans-update); `Human_UpdateActions`,
 `0x00254e78`): each human applies its pending damage **before** its dispatcher runs, and a reaction returns before
@@ -2150,8 +2200,10 @@ the dispatcher. The strike tests run earlier in the step (after each move). So:
    interrupted. The dive's clip must hold `0x400000` (`combat::kPhaseDive`), the charge's `0x1000000`, and a paired
    move's victim `0x400000`; check that `m_combat.interrupt()` is not reached for them.
 3. A lethal hit on a victim holding any of `0xc12200` does not start the dying reaction or break the pair at once:
-   keep the health at 0 (or below) and let the paired clip finish; then play the death (inferred; mark it a
-   **Coney reading** until the runtime check above).
+   keep the health below 0 and let the victim's own paired clip finish (not the attacker's: 58 outlasts 57); then
+   the victim falls with the low reaction (286 for a hit from behind, the reactions table) and goes down by
+   [Defeat](#defeat)'s rules: a civilian like PoizoCiv knocked out with health 1, idle 349 (confirmed (runtime),
+   above). Test: a third human's lethal hit during 57 / 58 leaves the victim in 58 to its end, then down.
 4. The grab search of a player refuses a target holding `0x8fc57a60` (diving, charging, in a pair).
 5. Order: apply a human's pending damage before its own commands in the same update, and drop that update's command
    when a reaction starts.
@@ -2908,9 +2960,74 @@ at the addresses cited unless marked; "teammate" is a human friendly to the play
 6. **Walking and sprinting into a teammate** is the physics' contact 4: he is slid along and pushed by half the move
    ([Physics: human contacts](physics.md#human-contacts)); there is **no knockdown** from running into anyone
    (only the charge's capsule and an airborne body strike, `Human_OnContact` `0x00219d50`), and the charge's strike
-   on a teammate is a hit as in 3. A player who keeps walking head-on into a teammate at a jog or faster for 2 s
-   **trades places** with him (`Human_OnPushContact` `0x00219b08` → `Human_CanPush` `0x002320a0`, which sets each
-   one's position to the other's when neither is in a fight stance, busy or held).
+   on a teammate is a hit as in 3. A player who walks head-on into a teammate at a jog or faster and is still doing
+   so 2 s later **trades places** with him (`Human_OnPushContact` `0x00219b08` → `Human_CanPush` `0x002320a0`, which
+   sets each one's position to the other's when neither is in a fight stance, busy or held). In detail, confirmed
+   (code) at `0x00219b08`: the contact counts only when the pusher is a player, his gait (`+0x1a8`) is 3 or more and
+   his push is head-on (the dot of the two unit vectors below −0.8); the first such contact stores the time in the
+   teammate's `+0x570` and a deadline of **now + 2100 ms** in `+0x56c`; a later counting contact at least 2000 ms
+   after the first calls `Human_CanPush`, and a swap clears both. The second contact must also come before 2.1 s:
+   every update `Human_StateUpdate` clears both words once the game time is past the deadline (confirmed (code) at
+   `0x002405e0`-`0x00240604`), so the swap needs a counting contact in a window of 2.0-2.1 s after the first, about
+   three updates.
+
+**At runtime** (2026-10-11, PCSX2, confirmed (runtime)). Level80 checkpoint 2 was entered from a level99 state by
+setting mode 8's level ([the runtime order](scripting.md#level80-hints)). Cleon was the player, with Vermin, Rembrandt
+and Ajax following (`FollowPlayer`, goal 50). Input was the scripted pad of
+[Driving PCSX2](../guides/research-workflow.md#driving-pcsx2), hooks `strike-contact`, `hit-by-chief`, `hit-reaction`,
+`attack-target-push`, `push-contact` and `can-push` of `repo:research/traces/patches.toml`, with Vermin's record and
+brain read every update:
+
+- **Hits 1-3 land with a reaction and no health lost.** Cleon walked to 0.85 m from Vermin (stick 0.5, aimed at
+  him), the stick went to 0.2 towards him for one update, then square was tapped (`ANIM_ATTACK_S1`, 12). Each tap
+  logged `Strike_Contact(Cleon, Vermin)` and `Hit_PlayReaction` on Vermin, who played 272 (`ANIM_REACT_SMALL_HIGH_FRONT`)
+  and kept 1800 health. This held for every hit before the fourth, in both runs.
+- **Level80 locks the commands, and that blocks the hit-back.** In the first run (four taps 1 s apart, two of
+  which reached him) `WarriorBrain_OnHitByChief` ran on each hit but opened no window: game state `+0x418` for player
+  0 was 1, because `level80.lua`'s chapters 1-4 call `WCLockCommands(player, true)` in their set-ups and only chapter
+  4's clean-up unlocks it. **No Warrior hits back anywhere in mission 1 of `level80`.** For the second run the byte was
+  written to 0, as `WCLockCommands(player, false)` leaves it.
+- **The fourth hit starts the hit-back.** With the commands unlocked, five hits 24 updates apart: the first set
+  Vermin's `+0x2dc` to the game time + 10000 ms; the second and third raised `+0x2e4` to 1 and 2; the fourth (2.4 s
+  after the first) cleared both and called `AttackTargetGoal_Push(Vermin, Cleon, 20000)`. The chief's own brain
+  `+0x2e4` became 1. The next update Vermin had **Fight** (`0xf`, target Cleon) on top of AttackTarget, on top of
+  FollowPlayer.
+- **The fourth hit hurts.** The fourth and fifth hits each took **22** health from Vermin (1800 → 1778 → 1756): once
+  he hits back he is no longer treated as a friend, so the pending damage is applied (inferred: the friend test of
+  `Human_ApplyPendingDamage` was not traced at runtime).
+- **He fights for real.** Vermin's punches cost Cleon 209 health each (1530 → 346 in 22 s). Cleon's target
+  became Vermin. The goal stack went back to FollowPlayer 661 updates (22.0 s) after the push, AttackTarget and
+  Fight together.
+- **Sprinting into a teammate knocks no one down.** Cleon sprinted at Vermin from 5.1 m with L2 held and the stick
+  at full deflection, re-aimed at him every 2 updates and scaled so its larger axis is 1.0 (a diagonal of plain
+  components falls under the sprint's 0.95). He reached gait 5 at 10.25 m/s. At contact the player stopped dead
+  (0.06 m/s two updates later). Vermin played 402 (`ANIM_MOVEMENT_STEP_BACKWARD`), with no reaction, no state bits of
+  a fall and no health lost. An earlier run that met him at gait 4 (8.26 m/s, the sprint still speeding up) gave
+  the same. `Human_OnPushContact` ran on Vermin at every contact.
+- **Walking into one pushes him; a walking player seldom gets to the swap.** At a walk (stick 0.75 or 0.9 re-aimed,
+  gait 2, 1.63 m/s) the player shoves him along at about half his speed, and an idle Warrior often steps aside first
+  (400 `ANIM_MOVEMENT_STEP_RIGHT`). Running in (gait 3-4) started the timer: `+0x570` = the time, `+0x56c` = time +
+  2100. But the contact brought the player down to gait 0-1, so no counting contact came 2.0 s later, and the
+  deadline was cleared on time. `Human_CanPush` was never called in five runs: a player cannot keep a counting
+  contact going for 2 s, so in play the swap is rare.
+- **The swap itself** (a second pass, 2026-10-11, level80 checkpoint 2 entered the same way, commands still
+  locked, hooks `push-contact` and `can-push`). Cleon ran at Vermin from 4.6 m, stick 1.0 re-aimed every update,
+  no L2: gait 3 from the 7th update, gait 4 from the 14th. At 1.46 m the test aged Vermin's timer over PINE
+  (`+0x570` = the game time − 2050 ms, `+0x56c` = the game time + 400 ms), as a first contact 2.05 s earlier would
+  have left it. Two updates later the contact came at gait 4: `Human_OnPushContact(Vermin, …)` then
+  `Human_CanPush(Vermin, Cleon)` from `0x00219d18`, on the same update. Vermin's position became exactly Cleon's
+  (−189.45, 168.24), Cleon's became Vermin's (about (−190.2, 167.7)), each kept his own heading, and both timer words
+  were 0 the next sample. Vermin played no reaction and went on following.
+- **Circle with only a teammate in reach is a grab miss.** Cleon walked to 0.81 m from Vermin (stick 0.5, aimed at
+  him), the stick went to 0.2 towards him for one update, then circle was tapped. His target was none (`+0xc8`
+  −1). `Grab_Start(Cleon, mode 0, base 72)` ran (hook `grab-start`) and 71 and 69 were queued the same update (hook
+  `anim-dispatch`); 21 updates later (71's 5 and 69's 16) he was back in the idle 388. Vermin played nothing and
+  lost no health.
+- **The complaint is said.** Two square taps at Vermin from 0.77-0.83 m, Cleon with no target: each logged
+  `Strike_Contact(Cleon, Vermin)`, `WarriorBrain_OnHitByChief` and reaction 272 on Vermin, and
+  **`Human_SayCommand(Vermin, 0x58, …)`** (`0x002205e0`) from `Strike_Contact` (return `0x0021b4a0`, hook
+  `say-command`) on the same update. Vermin's health stayed 1800. Whether the line is heard (the speech system may
+  drop it) was not checked.
 
 **Coney fixes** (owner item 10; the blocking itself is owner item 40, physics.md#human-contacts):
 
@@ -2921,16 +3038,20 @@ at the addresses cited unless marked; "teammate" is a human friendly to the play
    teammate plays 71 then 69 and connects with nothing.
 3. A hit on a friend: impact and hit effect, no health lost (unless both are players), the reaction by hit code as
    for an enemy, the complaint line `0x58` for a Warrior hit by a player with no target.
-4. Port `WarriorBrain_OnHitByChief`: the 10 s window, the fourth hit, AttackTarget on the chief for 20 s, the
-   taunting ring while it lasts, the command reset and menu lock.
+4. Port `WarriorBrain_OnHitByChief`: the 10 s window, the fourth hit, AttackTarget on the chief for 20 s with Fight
+   on top, the taunting ring while it lasts, the command reset and menu lock. Gate it on the commands lock
+   (`WCLockCommands`, which Coney keeps as `StoryState::noRetaliation`, set by `makeWcLockCommands` in
+   `repo:src/scripting/story_bindings.cpp`, and which replaces the stand-in in `warriorEvent`,
+   `repo:src/ai/brain_events.cpp`), so in `level80` no Warrior ever hits back; apply the damage of the fourth hit on
+   (the Warrior is no longer a friend).
 5. Thrown bodies strike teammates too (the knockdown with no damage).
-6. With the human blocking in (item 40): head-on contact at a jog or faster for 2 s swaps the two places.
-7. Tests: square into a teammate 0.8 m ahead plays a hit reaction on him and leaves his health unchanged; three such
-   hits within 10 s leave him alone and a fourth starts his AttackTarget on the player; circle with only a teammate in
-   reach plays 71 then 69.
-   Deferred: runtime (PCSX2, any street level with the crew following, the player behind a standing Warrior, stick
-   centred): press square four times 1 s apart and read the Warrior's health, clip ids and goal stack; tap circle
-   and read the player's clips (expected 71, 69).
+6. With the human blocking in (item 40): a head-on contact at gait 3 or more starts a 2 s wait, and another such
+   contact 2.0-2.1 s after the first swaps the two places (both bounds confirmed (code), the swap seen at runtime).
+7. Tests: square into a teammate 0.8 m ahead plays reaction 272 on him and leaves his health unchanged; three such
+   hits within 10 s leave him alone and a fourth starts his AttackTarget and Fight on the player and costs him the
+   hit's damage; in `level80` (commands locked) the fourth hit starts nothing; a sprint into a teammate stops the
+   player and knocks nobody down; circle with only a teammate in reach plays 71 then 69 and leaves him alone (seen
+   at runtime); a square that touches him makes him say `0x58`.
 
 #### The fight stance {#fight-stance}
 
@@ -3378,8 +3499,9 @@ record `0x0051489c + 0x168 + p × 0x5c`. Confirmed (code):
 - **Mode 3, the car radio here**: `0x0027e908`. Rotate the left stick **anticlockwise**, the stick above 0.8 in this
   update and the last, turning less than 90° per update. The angle turned adds to `+0x48`; at each stage's target the
   stage (`+0x4c`) advances after a 250 ms pause; **4 stages** succeed (`0x00278628(h, 1)`, 685 `STEREO_STEAL_END`).
-  The stage target was 6π (3 turns) here, from Warrior byte `+0x0b` (2); 2π applies otherwise (the exact condition
-  is inferred).
+  The stage target was 6π (3 turns) here, from Warrior byte `+0x0b` (2): the target is 2π (one turn) when the byte
+  is 0 or 1, else (byte − 1) × 6π, so 3 turns for 2 and 6 for 3 (`Human_GetClassSpinAngle`, confirmed (code) at
+  `0x0022dd08`).
 
 Any command outside the game's own set (square, circle, R1, L2 and others) **fails** it: 686 `STEREO_STEAL_FAIL`.
 At runtime 1.5 turns per second took 9.6 s to succeed, and one R1 press failed it. Confirmed (runtime).
@@ -4066,3 +4188,28 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
   breaks the pair.
 - **The clips' `+0x44` flags** (paired `0x1`, tackle `0x20`, grab `0x40`): which clips carry the tackle flag
   ([Strong grapple](#strong-grapple)).
+- **226's knockdown word at runtime**: the disc's 226 has its type-7 word 0, which would queue 198, yet at runtime
+  `Attack_StartPaired` took the branch without 198 ([The mount power strike](#mount-power)). To find out,
+  rerun `moves_mount_power` with a hook at `Anim_GetKnockdownValue` (`0x00101a60`) logging its argument and return on
+  update 143, and read the clip it was handed in memory: a different set (the generic `gen_mount_power20_*` rather
+  than Rembrandt's) or another event than the first type-7 one would explain it.
+- **Who sets state `0x80000000`**: the lethal hit during a paired move leaves it on the victim's record `+0x14`
+  ([Moves a hit cannot stop](#protected-moves)), but the setter was not traced. To find out, rerun
+  `moves_finisher_lethal` with the `state-code` hook (record `+0x14`'s setter) logging `ra` on update 56, and if the
+  setter is not the writer, search the damage and reaction code (`Human_UpdateActions`, `0x00254e78`, and what it
+  calls) for a store that ORs `0x80000000` into `+0x14`.
+  One setter found since (2026-10-11): `Human_PlayDeathReaction` (`0x00267b70`) ends with
+  `Human_SetStateFlag(h, 0x80000000)`, confirmed (code); that it is the one at work on update 56 is inferred.
+- **Killer mode and double damage in a hold** (answered): both apply to every move of a hold. The grab strikes
+  (`Grab_Strike`, `0x0026e5f8`), the paired moves (`Attack_StartPaired`, `0x00262ac8`: power strikes, throws, the
+  mount power strike), `Grab_StartPairedMove` (`0x00263380`) and the mount strikes (`0x00270b38`, `0x00271ef0`) all
+  deal their damage through `Human_DealDamage` (`0x0021d680`) with the attacker passed, and that function applies the
+  attacker's `0x20` (a non-zero hit takes the victim's whole health) before `Human_AddPendingDamage` (`0x00264bd8`)
+  doubles the pending damage for the attacker's `0x4000`. The grab and mount power strikes even double the damage
+  themselves when they test whether it will defeat the victim (`0x0027f3b0`, `0x0027ec20`). Confirmed (code) at the
+  call sites `0x00262f28`, `0x002637cc`, `0x0026e690`, `0x00270f50`, `0x002722d4`. Links that deal 0 stay 0.
+- **A player with both grab-block flags** (answered, [Human flags](#human-flags)): he still tackles. `Player_GrabOrTackle`
+  (`0x00284920`) tests circle held first, refused only by `0x100000000`; the two grab bits together refuse only the
+  circle tap, before anything plays (no intro, no miss, no stance change, no grounded mount or tandem). Either bit
+  alone does not stop the tap there: `Grab_IntroEnd` then refuses the front or rear grab and the intro ends in 69.
+  Confirmed (code).

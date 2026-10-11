@@ -360,15 +360,14 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
   with `pcsx2 release --agent <your id>`, which also closes your PCSX2. `pcsx2 status` shows who holds what, built
   from the live claims and processes; a claim whose process is gone is stale and the next `claim` takes it over.
   `pcsx2 launch` and `pcsx2 record` take `--agent` and run under your claim (making one if you hold none). Input to the
-  game is over PINE only (scripted
-  pad input, the stick table below); no tool takes the keyboard focus. When a hotkey is unavoidable (Space to
-  pause), `pcsx2 keys --agent <id> --copy <name> space` posts the key to that copy's window by handle, and
-  `pcsx2 screenshot --copy <name> --out <png>` reads the window by handle (not F8); both are Windows-only and leave
-  the focus alone. PCSX2 never takes the focus (the launcher, above), and every copy has `[InputSources] SDL = false` so
-  the
-  user's gamepad cannot drive it; a maintainer turns SDL on in a copy only to test by hand, and `claim` and `status`
-  warn when it is on. Claims live in `pcsx2-claims/` of the shared scratch folder (`pcsx2_root` and `pcsx2_claims_dir`
-  in `coney.local.toml` move the copies and the claims).
+  game is over PINE only (scripted pad input, the stick table below); no tool takes the keyboard focus. When a hotkey is
+  unavoidable (Space to pause), `pcsx2 keys --agent <id> --copy <name> space` posts the key to that copy's window by
+  handle, and `pcsx2 screenshot --copy <name> --out <png>` reads the window by handle (not F8); both are Windows-only
+  and leave the focus alone. PCSX2 never takes the focus (the launcher, above), and every copy has `[InputSources] SDL =
+  false` so the user's gamepad cannot drive it; a maintainer turns SDL on in a copy only to test by hand, and `claim`
+  and `status` warn when it is on. Claims live in `pcsx2-claims/` of the main checkout's shared scratch folder
+  (`../../scratch`), never a worktree's own `scratch_dir`, so every worktree sees them (`pcsx2_root` and
+  `pcsx2_claims_dir` in `coney.local.toml` move the copies and the claims).
 - **What PINE gives.** Memory reads and writes, game info and save/load state slots. No breakpoints, registers,
   pause or frame capture. PCSX2 serves one PINE client at a time, so a second client (a script of your own) blocks
   while the MCP server is connected.
@@ -588,7 +587,10 @@ the wheel updates), `state-code` (record `+0x14`'s setter), `set-command` and `g
 `brain-think`, `brain-event`, `attack-warning`, `try-block`, `block-start`, `skid-test` (the locomotion's run-stop test)
 and `call-brains`. The hint-queue pass added `hint-queue`, `hint-clear`, `hint-withdraw` and `hint-flush` (the hint
 box's queue, [HUD](../research/hud.md#hint-queue-runtime)) and `anim-dispatch` and `anim-callback-match` (who starts
-which anim id and which script callback it runs). Two hooks at one address cannot be installed together (`hint-show`
+which anim id and which script callback it runs). The level80 passes added the teammate hooks (`hit-by-chief`,
+`hit-reaction`, `attack-target-push`, `push-contact`, `can-push`, `say-command`) and the fire hooks (`ember-init`,
+`burn-init`, `fade-flame-init`, `debris-flame` and their update hooks). One run installs at most 64 hooks, fewer than
+the file holds, so name only the ones a pass needs. Two hooks at one address cannot be installed together (`hint-show`
 and `event-hint` are the same place): pick one, and add any extra value it needs to the one you keep. When the update
 of an entry matters, log the tick count and use it: in that pass one Lua call's four `HintBox_Queue` entries, all at
 one tick, were labelled with two consecutive steps.
@@ -782,12 +784,12 @@ listed in the backlog. Citations on the [source map](../research/source-map.md) 
 wrapper counts through its `evidence` in `research/bindings`.
 
 The names, sizes and plate flags come from `docs/progress/ghidra-functions.tsv`, exported from Ghidra; the
-citations are read from the pages on every `progress update`. After renaming functions in Ghidra, refresh both
+citations are read from the pages on every docs build. After renaming functions in Ghidra, refresh both
 (ghidra-mcp on `:8090` must be running; the export only reads):
 
 ```sh
 uv run --project python coney-tools progress ghidra    # re-export the listing (--check: exit 1 when stale)
-uv run --project python coney-tools progress update    # regenerate the bars; CI runs it with --check
+uv run --project python coney-tools progress check     # the inputs agree; the docs build writes the bars
 uv run --project python coney-tools progress backlog "<scratch>/research-backlog"   # per-subsystem to-do lists
 ```
 
