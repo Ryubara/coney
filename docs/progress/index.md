@@ -28,12 +28,12 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 17.4%](https://img.shields.io/badge/reimplemented-17.4%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 17.5%](https://img.shields.io/badge/reimplemented-17.5%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 ![Understood: 100.0%](https://img.shields.io/badge/understood-100.0%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.4% of the game's own code (585,352 of 3,354,776 bytes, 2,156 functions) |
+| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.5% of the game's own code (586,980 of 3,354,776 bytes, 2,161 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,192 of 3,284,000 bytes; 11,423 of 11,425 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
@@ -73,7 +73,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▋░░░░░░░░░░░░░` | 33.1% | 117 | 100,440 |
 | `Graphics` | `██▋░░░░░░░░░░░░░░░░░` | 12.8% | 91 | 195,624 |
 | `GUI` | `████▏░░░░░░░░░░░░░░░` | 20.7% | 246 | 497,416 |
-| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.8% | 802 | 1,096,672 |
+| `Human` | `███▋░░░░░░░░░░░░░░░░` | 17.9% | 807 | 1,096,672 |
 | `Maths (unnamed)` | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% | 9 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `▌░░░░░░░░░░░░░░░░░░░` | 2.5% | 10 | 79,032 |
@@ -1167,10 +1167,14 @@ at the top of the repository's `README.md`.
 | `0x0026dd08` | `Player_Throw` | `Human` | 2,288 |
 | `0x0026ef68` | `Grab_MountClipEnd` | `Human` | not filled in |
 | `0x00273a68` | `Tag_SayNearbyLine` | `Human` | not filled in |
+| `0x00273c60` | `Tag_UpdatePlayer` | `Human` | 832 |
 | `0x00273ff0` | `TagGame_CatmullRom` | `Human` | not filled in |
 | `0x002741d8` | `TagGame_Init` | `Human` | not filled in |
-| `0x00274710` | `TagGame_Track` | `Human` | not filled in |
+| `0x00274638` | `Tag_GetChargeLeft` | `Human` | 216 |
+| `0x00274710` | `TagGame_SpendPaint` | `Human` | not filled in |
+| `0x002748a0` | `TagGame_IsOnTrack` | `Human` | 8 |
 | `0x002748a8` | `TagGame_Update` | `Human` | not filled in |
+| `0x00274e38` | `Tag_GetProgress` | `Human` | 168 |
 | `0x00275678` | `Attack_SteerLed` | `Human` | not filled in |
 | `0x00276008` | `Attack_TurnToTarget` | `Human` | not filled in |
 | `0x002761c8` | `Attack_SteerToTarget` | `Human` | not filled in |
@@ -1179,6 +1183,7 @@ at the top of the repository's `README.md`.
 | `0x00277248` | `Human_AlignToVictimFacing` | `Human` | not filled in |
 | `0x00277958` | `Pair_CheckPlace` | `Human` | 456 |
 | `0x00278018` | `Tag_StartSprayClips` | `Human` | not filled in |
+| `0x00278210` | `Tag_RestartSprayClips` | `Human` | 404 |
 | `0x00279078` | `Human_FindRevivableNear` | `Human` | not filled in |
 | `0x00279f50` | `Player_CarTargetFilter` | `Human` | not filled in |
 | `0x0027a4b0` | `Player_FindAttackTarget` | `Human` | not filled in |

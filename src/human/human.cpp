@@ -907,7 +907,8 @@ bool Human::startTagSpray(anim::Vec3 point) {
 }
 
 void Human::restartTagSpray() {
-    // 337, then the loop 335 again (Tag_RestartSprayClips); a body playing no spray clip is left alone.
+    // 337, then the loop 335 again (Tag_RestartSprayClips); a body playing no spray clip is left alone. Its drop of a
+    // set 4 or 6 weapon has nothing to do here: one was dropped as the spray began and nothing is picked up during it.
     if (!tagSprayPlaying() || m_animator.clip(clips::kTaggingRestart) == nullptr) {
         return;
     }

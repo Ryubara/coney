@@ -5733,6 +5733,12 @@ name = "Tag_SayNearbyLine"
 subsystem = "Human"
 
 [[function]]
+address = 0x00273c60
+name = "Tag_UpdatePlayer"
+subsystem = "Human"
+size = 832
+
+[[function]]
 address = 0x00273ff0
 name = "TagGame_CatmullRom"
 subsystem = "Human"
@@ -5743,14 +5749,32 @@ name = "TagGame_Init"
 subsystem = "Human"
 
 [[function]]
-address = 0x00274710
-name = "TagGame_Track"
+address = 0x00274638
+name = "Tag_GetChargeLeft"
 subsystem = "Human"
+size = 216
+
+[[function]]
+address = 0x00274710
+name = "TagGame_SpendPaint"
+subsystem = "Human"
+
+[[function]]
+address = 0x002748a0
+name = "TagGame_IsOnTrack"
+subsystem = "Human"
+size = 8
 
 [[function]]
 address = 0x002748a8
 name = "TagGame_Update"
 subsystem = "Human"
+
+[[function]]
+address = 0x00274e38
+name = "Tag_GetProgress"
+subsystem = "Human"
+size = 168
 
 [[function]]
 address = 0x00275678
@@ -5794,6 +5818,12 @@ size = 456
 address = 0x00278018
 name = "Tag_StartSprayClips"
 subsystem = "Human"
+
+[[function]]
+address = 0x00278210
+name = "Tag_RestartSprayClips"
+subsystem = "Human"
+size = 404
 
 [[function]]
 address = 0x00279078

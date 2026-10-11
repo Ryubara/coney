@@ -14,7 +14,7 @@ using TagColour = std::array<std::uint8_t, 4>;
 
 /// Every human's colour from `Human_Init`: bytes `50 07 05 20`, a dark maroon (80, 7, 5) on the HUD and the mist
 /// (32, 5, 7) at alpha 80.
-/// @orig 0x00218770 Human_Init (unknown)
+/// @orig 0x00218008 Human_Init (unknown)
 inline constexpr TagColour kDefaultTagColour{0x50, 0x07, 0x05, 0x20};
 /// The colour `Human_Init` gives instead to a human whose class has brain kind 4 (a civilian) and `+0x3b8` = 1
 /// (`CfgChar`'s women): bytes `ff ef ef ef`.

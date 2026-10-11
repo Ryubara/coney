@@ -7,6 +7,7 @@
 #include <format>
 #include <optional>
 #include <span>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -76,6 +77,15 @@ void GameplayMode::startTag(double human, double tag, double flag) {
     m_scripted->storyHost().lockMovement(human, true);
     m_tagIntro = TagIntro{.human = human, .tag = tag, .flag = flag};
     auto* scripted = dynamic_cast<ScriptedPlayer*>(m_level.get());
+    // Tag_StartSprayClips drops a held object of anim set 4 (overhead) or 6 (ghetto) first; a club (set 3: a pipe, a
+    // bat, a crowbar) stays in the hand.
+    if (scripted != nullptr && m_pickups) {
+        const std::string held = scripted->heldObjectType();
+        if (!held.empty() && tagDropsHeld(m_pickups->animSetOf(held))) {
+            m_log(std::format("tag: player drops his {} to spray\n", held));
+            scripted->dropHeldForTag();
+        }
+    }
     const std::optional<anim::Vec3> at = promptObjectPosition(tag);
     const bool clips =
         scripted != nullptr && at.has_value() && scripted->startTagSpray(std::array<float, 3>{at->x, at->y, at->z});
