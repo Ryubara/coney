@@ -1,9 +1,9 @@
 # Punching a parked car. On the original, slot 6 (level99): the player is put 0.44 m outside the right side of the
 # sedan in car slot 2 at (41.23, 44.76), whose front faces -x, beside its front door (the car's own x = +1.64 m,
-# y = 0.03 m), facing the car (heading 180), and presses square 16 times (11 start an attack, the rest fall in one); his feet are held there (the attacks
-# step him back). Coney: checkpoint 4, where no scene holds the pad. Which parts each hit reaches, the window
-# breaking on the first, the door's damage per hit, its dent at 0.5, its coming off and flying at the 10th square,
-# and the car's rock.
+# y = 0.03 m), facing the car (heading 180), and presses square 16 times (11 start an attack, the rest fall in
+# one); his feet are held there (the attacks step him back). Coney: checkpoint 4, where no scene holds the pad.
+# Which parts each hit reaches, the window breaking on the first, the door's damage per hit, its dent at 0.5, its
+# coming off and flying at the 10th attack, and the car's rock.
 description = "squares at a parked sedan's front-right door: parts hit, damage per hit, window, dent, rock"
 research = "docs/research/cars.md#windows"
 input = "car_punch.txt"
