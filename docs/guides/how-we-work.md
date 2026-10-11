@@ -170,6 +170,12 @@ coordinator triages them and is the only one who writes to GitHub; an agent read
 --comments`) and is often briefed with just its number. A pull request that finishes one says `Fixes #N`, so merging
 closes it. The whole process: [Issues](issues.md).
 
+**Leftovers are issues, not notes.** An agent that finishes a unit with work still undone lists each leftover in its
+message to the coordinator (title, area, research page, what "done" means), and the coordinator files the issue and
+writes its number into the pull request's Remaining list; CI refuses an unchecked Remaining item with no `#123`
+([Leftovers become issues](issues.md#leftovers)). The state file (`HANDOFF.md`) keeps only the live state and issue
+numbers, never a list of work to do: the work list is the open issues.
+
 ## Testing {#testing}
 
 Tracks never wait for a person to play their work, so the automated tests stand in for one. Every track proves its
