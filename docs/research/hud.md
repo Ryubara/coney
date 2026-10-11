@@ -103,7 +103,7 @@ confirmed (code) at `0x001ad588`, `0x001ae980`, `0x001af010` and `0x001b1688` un
 | `+0x0010` | a per-human widget fed by `HUD_TagAddHuman` / `_TagRemoveHuman` (role not traced) | `0x0019fbb0` / `0x0019fda0` (levels below 100) / `0x001a03a8` |
 | `+0x15b0` | a small widget hidden by `HideHud` (`+0x08`) | `0x001a8ed8` / `0x001a8f90` |
 | `+0x15d0`, `+0x3f10` | the two radars (`0x2940` bytes each); positions `+0x3f00`, `+0x6840` | `Radar_Setup` / `0x001c5210` / `Radar_Render` |
-| `+0x6850` | the stopwatch, at (0.5, 0.135) | `0x001cd578` / `StopWatchHud_Update*` / `0x001bb1c0` |
+| `+0x6850` | the stopwatch, made at (0.5, 0.135) and moved by `StopWatchHud_ApplyVideoMode` (`0x001cd400`): on screen in the default mode its minutes form stands at the top right, right-aligned (confirmed (runtime) at the gym's heavy bag, [Workouts](workouts.md#hud)) | `0x001cd578` / `StopWatchHud_Update*` / `0x001bb1c0` |
 | `+0x6b40`, `+0x70d0` | the [action prompts](#action-prompts) | `ActionPrompt_Setup` |
 | `+0x7660` | a widget (role not traced) | `0x001bb650` / `0x001bbbb0` / `0x001bb8a8` |
 | `+0x8960` | the score board | `0x001c2638` |

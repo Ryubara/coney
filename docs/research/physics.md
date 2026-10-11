@@ -88,7 +88,7 @@ Confirmed (code) at `0x0033c288` and the step. Pool sizes are counts × bytes.
 | `+0x4be20` / `+0x4c720` | 18 × 0x80 / 36 × 0x90 | cars: bodies, boxes |
 | `+0x4db60` | 30 × 0x60 | 2.0 m spheres: the humans' push spheres |
 | `+0x4e6a0` | 64 × 0x30 | settle slots (below) |
-| `+0x4f2a0`-`+0x4f3f0` | | the punch bag's body set: a human body, one segment (bone 3, radius 0.35, length 1.5) and a capsule |
+| `+0x4f2a0`-`+0x4f3f0` | | the punch bag's body set: a human body, one segment (bone 3, radius 0.35, length 1.5, no offset, along the bone's x) and a capsule (radius 0.35, height 1.787 m); [Bodies](#bodies) |
 | `+0x4f450`-`+0x4f45c` | vector | every live body, by index (body `+0x20`) |
 
 The 60 human body sets match the 60 human slots ([AI humans](ai.md)), inferred. Who allocates from which pool is
@@ -168,6 +168,18 @@ bit `0x8`. Flags by kind: human `0x8002243f`, punch bag `0x8000243f`, world obje
 joins the human list (`0x003407a0`; next `+0xc8`, previous `+0xcc`) and gets its scale (`0x00341f28`). The punch bag is
 the human class `0x1cc` (`HeavyBag`, [Characters](../references/characters.md)): `0x0021ce08` gives it its own body set
 instead of one of the 60.
+
+**The punch bag's shapes** (`IPhysics_CreatePunchBagBody`, `0x0033cb08`: the capsule on, the bone shapes off), read at
+runtime (PCSX2 2.9.94, `level95`, the bag at rest with its origin at height −197.567; confirmed (runtime), the posing
+confirmed (code) at `0x00343810` and `0x00343518`):
+
+| Shape | Bone | Offset `+0x10` | Size | Posed |
+| --- | --- | --- | --- | --- |
+| segment (type 4, inline at body set `+0xe0`, also listed at a pool copy) | 3 | (0, 0, 0) | radius 0.35, length 1.5 | start = bone 3's position, 2.15 m above the origin; end = start + bone 3's **local x axis** × 1.5, which at rest points straight down (end 0.65 m above the origin, 0.05 m off the vertical); so it swings with the bag |
+| capsule (type 3) | none | (0, 0, 0) | radius 0.35, height 1.787 m | base on the bag's origin; the height is recomputed each update as for a human (bone 6's height + 0.2 × scale) |
+
+The segment is what strikes meet ([Combat](combat.md#moving-strikes)); the capsule is what sweeps and pushes meet
+([Workouts](workouts.md#bag-target)).
 
 `PhysicsBody_Update` (`0x00341c10`), when the body is dirty or flag `0x800` is set: pose every shape (shape vtable
 `+0x28`), recompute the AABB from the shapes (`0x00341638`, `0x003417c0`), re-sort (`0x00340628`), clear the dirty
