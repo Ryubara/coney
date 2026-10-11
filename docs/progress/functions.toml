@@ -7830,6 +7830,42 @@ name = "LeadChaseGoal_Process"
 subsystem = "Human"
 
 [[function]]
+address = 0x002e1140
+name = "Goal_RunCarrot"
+subsystem = "Human"
+size = 240
+
+[[function]]
+address = 0x002e1230
+name = "RunCarrotGoal_Init"
+subsystem = "Human"
+size = 240
+
+[[function]]
+address = 0x002e1320
+name = "RunCarrotGoal_Start"
+subsystem = "Human"
+size = 16
+
+[[function]]
+address = 0x002e1330
+name = "RunCarrotGoal_End"
+subsystem = "Human"
+size = 88
+
+[[function]]
+address = 0x002e13c0
+name = "RunCarrotGoal_UpdateSpeed"
+subsystem = "Human"
+size = 552
+
+[[function]]
+address = 0x002e15e8
+name = "RunCarrotGoal_Process"
+subsystem = "Human"
+size = 376
+
+[[function]]
 address = 0x002e1760
 name = "Goal_DevilRun"
 subsystem = "Human"
@@ -9326,6 +9362,12 @@ size = 160
 address = 0x00360ac8
 name = "GoalLeadChase"
 subsystem = "Scripting"
+
+[[function]]
+address = 0x00360c10
+name = "GoalRunCarrotRun"
+subsystem = "Scripting"
+size = 388
 
 [[function]]
 address = 0x00360d98

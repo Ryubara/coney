@@ -135,6 +135,8 @@ class ScriptedStory final : public script::StoryBindingHost {
     void goalLeadChase(const script::LeadChaseCall& call) override;
     /// `GoalDevilRun`: a DevilRunGoal along the path pushed.
     void goalDevilRun(const script::DevilRunCall& call) override;
+    /// `GoalRunCarrotRun`: a RunCarrotGoal along the path pushed.
+    void goalRunCarrot(const script::RunCarrotCall& call) override;
     /// `GoalBigLedgeThrower`: a BigLedgeThrowerGoal pushed. **Coney stand-in**: the anim name is not applied.
     void goalBigLedgeThrower(const script::LedgeThrowerCall& call) override;
     /// A bum in its bum goal plays its reaction clip (anim 668 for types 1 and 2, 669 for type 0).
