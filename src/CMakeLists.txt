@@ -424,6 +424,7 @@ target_sources(coney_core PRIVATE
 # The in-game HUD: the player panels, hints, objectives, counters, the arrow and the radar (docs/research/hud.md).
 target_sources(coney_core PRIVATE
     hud/counter_panels.cpp
+    hud/credits.cpp
     hud/crime_panel.cpp
     hud/war_command_display.cpp
     hud/counting_number.cpp

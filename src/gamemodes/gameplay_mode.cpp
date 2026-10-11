@@ -778,6 +778,11 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
     updateHiding();
     m_scripts.setTime(nowMs);
     callPadHandler();
+    // The end credits' last widget gone: the overlay pass's call of the Lua `CreditEnd` (Credits_Update,
+    // docs/research/frontend.md#fn-credits), one step after the HUD's update that ended them.
+    if (m_context.hud != nullptr && m_context.hud->credits().takeEnded()) {
+        m_scripts.call("CreditEnd");
+    }
     // The path camera's functions reached in the step.
     if (m_cameras) {
         for (const std::string& function : m_cameras->takeFired()) {

@@ -2430,8 +2430,27 @@ What the implementer still needs:
   the list is the binding table in `src/scripting/script_bindings.cpp` ([Scripts](scripting.md#coneys-implementation)).
 - For the background: the scene's lights, the level's dependency list and packs.
 
+**The end credits** (`repo:src/hud/credits.h`, `Credits`, the HUD's `credits()`), written from
+[`GUI/Credits.cpp`](#fn-credits): `PreloadCredits` gives a fresh list, runs `credits.lua` (whose `CfgCredits` calls
+append the lines, style 4 stored as 2) and readies the pool of 70 hidden text widgets; `ShowCredits` starts the scroll
+when loaded. The HUD steps it at the start of every update and draws it at the start of every render, before the
+hidden and letterbox checks, since the original runs it in the overlay pass; the step is one 0.0025 move per update of
+Coney's fixed 1/30 s step. A line starts below the one before while two or more widgets are free, and gives its widgets
+back once its `y + height` is above −0.1; when no widget shows, the scroll shuts down and gameplay calls the Lua
+`CreditEnd` at its next step (`GameplayMode`). Coney's choices, each in the open questions below: a centred line shows
+its first text (its second when the first is empty); a new role resets the shared-role count to 1; the pen starts at
+y 1.1, or at the first live line's centre (half its height to its bottom), and every other line adds its whole height
+and its gap; a line's height is one line of its text size; the flag `0x0063083c` is not kept. Tests:
+`repo:tests/hud/credits_test.cpp`, the bindings in `repo:tests/scripting/hud_bindings_test.cpp`, and
+`repo:tests/platform/disc_credits_test.cpp`, which runs the disc's `credits.lua` in `level99` started as
+`--play-level` starts it and scrolls it to its `CreditEnd`.
+
 ## Open questions
 
+- **The end credits' layout** ([`GUI/Credits.cpp`](#fn-credits)): which text a centred line (styles 0, 2 and 3)
+  shows when both are given; whether a new role resets the shared-role count `+0x18c` to 1; where `Credits_Update`'s
+  pen starts and how a started line's height adds to it; how the widgets' height `+0xb4` is measured; what the flag
+  `0x0063083c` set while the credits run is read for.
 - **Mode 6 at boot** (answered for an unformatted card: no dialog, see [the flow](#mode-flow)): still open with no
   card, a formatted card without a save and a card with a save.
 - **Rumble mode** (answered for the entry, the way to the arena, the screens, the 23 values, the data's source, WAR

@@ -2986,6 +2986,114 @@ subsystem = "GUI"
 size = 72
 
 [[function]]
+address = 0x001a8fb8
+name = "Credits_AddLine"
+subsystem = "GUI"
+size = 320
+
+[[function]]
+address = 0x001a90f8
+name = "Credits_Construct"
+subsystem = "GUI"
+size = 56
+
+[[function]]
+address = 0x001a9130
+name = "Credits_Load"
+subsystem = "GUI"
+size = 848
+
+[[function]]
+address = 0x001a9480
+name = "Credits_Start"
+subsystem = "GUI"
+size = 100
+
+[[function]]
+address = 0x001a94e8
+name = "Credits_Shutdown"
+subsystem = "GUI"
+size = 280
+
+[[function]]
+address = 0x001a9608
+name = "Credits_CountFreeWidgets"
+subsystem = "GUI"
+size = 108
+
+[[function]]
+address = 0x001a9678
+name = "Credits_FindFreeWidget"
+subsystem = "GUI"
+size = 120
+
+[[function]]
+address = 0x001a96f0
+name = "Credits_LayoutCentred"
+subsystem = "GUI"
+size = 208
+
+[[function]]
+address = 0x001a97c0
+name = "Credits_LayoutRole"
+subsystem = "GUI"
+size = 204
+
+[[function]]
+address = 0x001a9890
+name = "Credits_LayoutName"
+subsystem = "GUI"
+size = 204
+
+[[function]]
+address = 0x001a9960
+name = "Credits_AssignWidgets"
+subsystem = "GUI"
+size = 280
+
+[[function]]
+address = 0x001a9a78
+name = "Credits_PlaceNewLine"
+subsystem = "GUI"
+size = 244
+
+[[function]]
+address = 0x001a9b70
+name = "Credits_ScrollLine"
+subsystem = "GUI"
+size = 216
+
+[[function]]
+address = 0x001a9c48
+name = "Credits_LineHeight"
+subsystem = "GUI"
+size = 60
+
+[[function]]
+address = 0x001a9c88
+name = "Credits_UpdateLine"
+subsystem = "GUI"
+size = 240
+
+[[function]]
+address = 0x001a9d78
+name = "Credits_GapAfter"
+subsystem = "GUI"
+size = 276
+
+[[function]]
+address = 0x001a9e90
+name = "Credits_Update"
+subsystem = "GUI"
+size = 632
+
+[[function]]
+address = 0x001aa108
+name = "Credits_Render"
+subsystem = "GUI"
+size = 300
+
+[[function]]
 address = 0x001aa720
 name = "HudCrimePanel_OnMessage"
 subsystem = "GUI"
@@ -3104,6 +3212,18 @@ address = 0x001b2e10
 name = "HudManager_SetRadarRange"
 subsystem = "GUI"
 size = 36
+
+[[function]]
+address = 0x001b38b8
+name = "HUD_LoadCredits"
+subsystem = "GUI"
+size = 32
+
+[[function]]
+address = 0x001b38d8
+name = "HUD_StartCredits"
+subsystem = "GUI"
+size = 32
 
 [[function]]
 address = 0x001b3f98
@@ -3296,6 +3416,18 @@ address = 0x001b5f88
 name = "ShowRumbleModeIntro"
 subsystem = "GUI"
 size = 40
+
+[[function]]
+address = 0x001b5fb0
+name = "HUD_PreloadCredits"
+subsystem = "GUI"
+size = 32
+
+[[function]]
+address = 0x001b5fd0
+name = "HUD_ShowCredits"
+subsystem = "GUI"
+size = 32
 
 [[function]]
 address = 0x001b5ff0
@@ -11068,6 +11200,12 @@ address = 0x0036ed48
 name = "ShowRumbleModeIntro"
 subsystem = "Scripting"
 size = 192
+
+[[function]]
+address = 0x0036ee48
+name = "lua_CfgCredits"
+subsystem = "Scripting"
+size = 128
 
 [[function]]
 address = 0x0036eec8
