@@ -1397,13 +1397,20 @@ at shape `+0x40`, 1.886 at `+0x44`; read at runtime), and the physics world hand
 functions by type (world `+0xe0`, `0x0033d2d8`, which passes −0.65). For type 3 that is
 `PhysicsMesh_SweepCapsule` (`0x00347c08`), which treats the body as **one sphere** for walls. Confirmed (code):
 
-1. **The sphere**: radius `r` = shape `+0x40` × body `+0x60` × the human's scale (`0x0021d020`: `+0x65c`),
-   centre **`r + 0.05` above the feet**. For the player, body `+0x60` (and `+0x64`) is **1.4286** (0.5 / 0.35)
-   and the shape's `+0x40` reads 0.3395 (0.35 × 0.97), so `r` = 0.3395 × 1.4286 = **0.485 m** (0.470 m if the scale
-   were applied a second time; the stops below fit 0.485) and the sphere spans 0.05 to 1.02 m above the feet.
-   Confirmed (runtime): the fields read in the street save, and the player stopped 0.480 m from three faces (a wall
-   head-on, a wall at an angle and the fence of slot 7). Only a player's body has `+0x60` = 1.4286
-   (`Human_CreatePhysicsBody` `0x0021ce08` for a brain of type 0, `Human_MakePlayer` `0x00229c40`;
+1. **The sphere**: radius `r` = shape `+0x40` × body `+0x60` × the human's scale (`Human_GetScale` `0x0021d020`:
+   `+0x65c`, or 1.0 in a scene state when it is under 1.1), centre **`r + 0.05` above the feet**
+   (`0x00347c98`-`0x00347cd8`). The shape's `+0x40` is itself 0.35 × the scale (`Human_GetCapsuleRadius`
+   `0x00219860`, written by `PhysicsBody_ApplyHumanScale` `0x00341f28`), so **the scale counts twice**:
+   `r` = 0.35 × scale² × body `+0x60`. Confirmed (code). For the player, body `+0x60` (and `+0x64`) is **1.4286**
+   (0.5 / 0.35), so `r` = 0.5 × scale²: Rembrandt (scale 0.97) has `r` = 0.3395 × 1.4286 × 0.97 = **0.4705 m**, and
+   the sphere spans 0.05 to 0.99 m above the feet. Confirmed (runtime), PCSX2 2.9.94, the `sweep-radius` hook at
+   `0x00347cbc` in the `sweep60` scenario (a copy of slot 1, level99's street, stick 60 % up for 80 updates): all
+   39 calls logged the player's body with shape `+0x40` × body `+0x60` = 0.4850, body `+0x60` = 1.4286 and `Human_GetScale` = 0.9700,
+   and the hooked `mul.s` multiplies the two. A measured 0.485 m is that product before the second scale; the radius
+   the walls see is 0.4705 m. The stops measured before (0.476-0.480 m from a full wall, a wall at an angle and the
+   fence of slot 7; the step faces below) sit 0.006-0.010 m beyond where a 0.4705 m sphere touches, which fits a
+   small clearance left by the sweep (inferred; where it comes from is not traced). Only a player's body has
+   `+0x60` = 1.4286 (`Human_CreatePhysicsBody` `0x0021ce08` for a brain of type 0, `Human_MakePlayer` `0x00229c40`;
    `Human_ReleasePlayer` `0x0022a2a8` puts back 1.0, [Physics](physics.md#sweep)). **Every AI human's is 1.0**, so
    its sphere is shape `+0x40` (0.35 × its class scale) × its scale: 0.350 m for Vermin, 0.357 m for level99's bums
    and civilians of scale 1.01 (fields read in slot 6). Confirmed (code), values confirmed (runtime).
@@ -1422,7 +1429,7 @@ functions by type (world `+0xe0`, `0x0033d2d8`, which passes −0.65). For type 
 
 So on the ground the original has **no step height of its own**: a wall face shorter than 0.25 m is not a wall, and
 the ground snap (1.0 m up, above) then lifts the feet onto it; any face 0.25 m or taller that reaches into the sphere
-(0.05-1.02 m above the feet for the player) stops the body. A kerb of 0.2 m is walked onto; a ledge of 0.5 m or
+(0.05-0.99 m above the feet for the player) stops the body. A kerb of 0.2 m is walked onto; a ledge of 0.5 m or
 0.75 m is a wall to walk into and needs a climb (a short wall from 0.7 m, [Climbing](#climb)) or a jump.
 
 **The step at runtime** (confirmed (runtime), PCSX2 2.9.94, a copy of slot 1 in `level99`'s world, 2026-10-05). The
@@ -1439,9 +1446,12 @@ the camera so that the move pointed straight at the face:
 | 0.255 m | 100 % | stopped 0.395 m short of the face, idle with the stick held |
 | 0.260, 0.300 m | 50 % | stopped 0.399 m and 0.423 m short of the face |
 
-So the 0.25 m test is exact, and the stopping distances are those of the 0.485 m sphere centred 0.535 m above the feet
-touching the face's top edge: `sqrt(0.485² − (0.535 − h)²)` gives 0.396, 0.400 and 0.424 m for `h` = 0.255, 0.26
-and 0.30. Against a full-height wall the same walk stopped 0.476 m from it.
+So the 0.25 m test is exact, and the stopping distances are those of the 0.4705 m sphere centred 0.5205 m above the
+feet touching the face's top edge with about 0.006 m to spare: `sqrt(0.4765² − (0.5205 − h)²)` gives 0.396, 0.399
+and 0.422 m for `h` = 0.255, 0.26 and 0.30, and against a full-height wall the same walk stopped 0.476 m from it
+(0.4705 + 0.006). The clearance is fitted to these four stops (inferred). An earlier reading fitted the three step
+stops to a 0.485 m sphere without clearance, but that missed the full wall by 0.009 m, and the radius is 0.4705 m
+(step 1).
 
 **Sliding along a wall** (confirmed (runtime), slot 1): the velocity the sweep leaves after sliding is the human's
 velocity, so the next update's current speed is its length and the 0.8 m/s gain starts from there. Running into a
@@ -1523,7 +1533,7 @@ put the move about 64° from north toward the west. Every run took the line onto
 
 | Run | What happened |
 | --- | --- |
-| walk, stick 60 % | 1.63 m/s on the street. On 679 the walk was turned about 30° north along 680's foot, at 0.41 m/s across the ground and 0.29 m/s up: the feet followed 679's surface (ground normal 0.664 every update) while the slid velocity held `z` 0.36. The sphere's distance to 680 fell from 0.48 to 0.33 m (radius 0.485). After 3.5 s at z 1.44 the body passed 680 onto faces with `n.z` 0.77 at 1.107 m/s across the ground (1.63 × 0.6797, the slope rule), crested at z 2.01 and walked down the far side, including a face with `n.z` 0.54 at full walk, onto the street |
+| walk, stick 60 % | 1.63 m/s on the street. On 679 the walk was turned about 30° north along 680's foot, at 0.41 m/s across the ground and 0.29 m/s up: the feet followed 679's surface (ground normal 0.664 every update) while the slid velocity held `z` 0.36. The sphere's distance to 680 fell from 0.48 to 0.33 m (radius 0.4705). After 3.5 s at z 1.44 the body passed 680 onto faces with `n.z` 0.77 at 1.107 m/s across the ground (1.63 × 0.6797, the slope rule), crested at z 2.01 and walked down the far side, including a face with `n.z` 0.54 at full walk, onto the street |
 | run, stick 100 % | the same: stopped for an update at 679's foot, then 0.55 m/s up 679 along 680, then a run at 7.80 m/s over the crest at z 2.28 |
 | walk, stick 60 %, body `+0x60` set to 1.0 (radius 0.34, an AI's size if its `+0x60` is 1.0) | the same path: up 679 along 680 (distance to 680 0.32 down to 0.20 m), over at z 2.36, down the other side |
 
@@ -2578,13 +2588,13 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
 - `src/human/stamina.*` is the stamina meter ([Sprint and stamina](#sprint)): the drain at the sprint gait, the
   refill and the gait, airborne and "run with L2" blocks, and `Player_UpdateSprint`'s rule (L2 held and stamina not
   0, asked again every update).
-- `src/human/body.*` is the walking body of [Walls and steps](#walls): the sphere of 0.35 × scale (× 1.4286 for
-  the player: 0.485 m) centred 0.05 above its radius, wall triangles `|n.z|` ≤ 0.65 that the move goes into, the
+- `src/human/body.*` is the walking body of [Walls and steps](#walls): the sphere of 0.35 × scale² (× 1.4286 for
+  the player: 0.4705 m) centred 0.05 above its radius, wall triangles `|n.z|` ≤ 0.65 that the move goes into, the
   0.25 m low-and-thin rule, the fence materials passed through while climbing over, and the airborne push-out sphere
   (0.5 × scale for a player). The walking sphere is stopped where it touches a triangle, so a face lower than its
-  centre stops it where it meets the face's top edge, `sqrt(0.485² − (0.535 − h)²)` from the face (0.396, 0.400 and
-  0.424 m for 0.255, 0.26 and 0.30 m faces, as at runtime); a face under 0.25 m is walked onto in one update with no
-  change of speed or clip. The human keeps the move the walls left as its velocity, so a wall met at a steep angle
+  centre stops it where it meets the face's top edge, `sqrt((r + clearance)² − (r + 0.05 − h)²)` from the face
+  (0.396, 0.399 and 0.422 m for 0.255, 0.26 and 0.30 m faces with the original's fitted 0.006 m, as at runtime); a
+  face under 0.25 m is walked onto in one update with no change of speed or clip. The human keeps the move the walls left as its velocity, so a wall met at a steep angle
   brakes the player.
   The sweep leaves the sphere 0.01 m clear of the face (`BodyTuning::contactClear`), and carries it round a convex
   corner whose triangles name their shared edge in flag bits 14-15 (`human::edgeSlide`): along each wall the sphere
@@ -2836,7 +2846,7 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   with no fade-in of that speed: the walk start 0.762 m/s on every one of its 12 moving updates, the run start 2.77,
   2.49, 2.56, … and the run stop 2.24, 5.00, 5.10, … ([Per update](#locomotion)). A first update slower by 0.75 (the
   start clips' playback rate) or a stop that ramps from 0.31 m/s is a difference to remove.
-- **Walls**: a sphere of radius 0.35 × scale × body `+0x60` (1.4286 for the player: 0.485 m), centred that radius
+- **Walls**: a sphere of radius 0.35 × scale² × body `+0x60` (1.4286 for the player: 0.4705 m), centred that radius
   plus 0.05 above the feet, swept along the move; the slid velocity is kept, so a steep wall brakes the player;
   wall triangles less than 0.25 m tall are not walls, which is all the step-up there is ([Walls and steps](#walls)).
 - **Sprint** is L2 **held** with the stick above 0.95: cleared every update and set again while L2 is down and

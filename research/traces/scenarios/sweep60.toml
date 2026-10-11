@@ -1,0 +1,11 @@
+# The walking sweep's sphere: stick 60 % up from standing in level99's street (slot 1), logging each sweep's radius
+# factors with the sweep-radius hook. Research: docs/research/characters.md#walls (the player's 0.4705 m sphere).
+description = "level99 street: walk 60 % up, logging the walking sweep sphere's radius factors"
+research = "docs/research/characters.md#walls"
+input = "walk60.txt"
+updates = 80
+fields = ["player"]
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick", "sweep-radius"]
