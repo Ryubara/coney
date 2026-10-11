@@ -8,8 +8,7 @@
 
 namespace coney::gui {
 
-/// A markup tag, numbered by its index in the original's table of 66 tags (`0x0050d718`). Indices 23-31 are HUD icons
-/// whose names are not researched yet; Coney cannot recognise them until they are.
+/// A markup tag, numbered by its index in the original's table of 66 tags (`0x0050d718`).
 ///
 /// Research: docs/research/gui.md#markup
 enum class MarkupTag : std::uint8_t {
@@ -35,12 +34,21 @@ enum class MarkupTag : std::uint8_t {
     Cr3 = 19, ///< `<CR3 f>`
     Crm = 20,
     AutoIndent = 21,
-    Fist = 22,
+    Fist = 22,      ///< `<FIST>`, the first HUD icon (22-32): a character each, drawn with the current font
+    RArrest = 23,   ///< `<RARREST>`
+    RDead = 24,     ///< `<RDEAD>`
+    BObj = 25,      ///< `<BOBJ>`
+    RObj = 26,      ///< `<ROBJ>`
+    YObj = 27,      ///< `<YOBJ>`
+    RFlash = 28,    ///< `<RFLASH>`
+    RSpray = 29,    ///< `<RSPRAY>`
+    RPedRat = 30,   ///< `<RPEDRAT>`
+    RCallGang = 31, ///< `<RCALLGANG>`
     BgCircle = 32,
     ButtonSquare = 33,         ///< `<S>`
     ButtonCircle = 34,         ///< `<O>`
     ButtonTriangle = 35,       ///< `<T>`
-    ButtonSquareTriangle = 36, ///< `<ST>`
+    ButtonSquareTriangle = 36, ///< `<ST>`: the character `n`; inside `<MONEYFONT>`, the triangle button
     ButtonCross = 37,          ///< `<X>`
     ButtonStart = 38,
     ButtonSelect = 39,
@@ -79,6 +87,17 @@ enum class MarkupTag : std::uint8_t {
 /// The character a glyph tag stands for (a button, an icon, `=` for `<MONEYPLUS>`, `<` for `<MONEYMINUS>`), drawn
 /// with the current font; nothing for a tag that is not a glyph or whose character is not known.
 [[nodiscard]] std::optional<std::uint8_t> markupCharacter(MarkupTag tag);
+
+/// How long an animated stick tag shows each of its two characters, ms.
+inline constexpr std::uint32_t kStickGlyphPeriodMs = 500;
+
+/// The character an animated stick tag (`<SDD>`, `<SDL>`, `<SDR>`, `<SDU>`) stands for `timeMs` after its text was
+/// first shown: its own (3, 4, 5, 6) and 2 by turns, each for kStickGlyphPeriodMs. Inside `big_font`'s
+/// `<MONEYFONT>` these are the stick pictures. Nothing for any other tag. **Coney's choice**: the own character
+/// shows first (the widget's stick timer `+0x1dc` is not traced).
+///
+/// Research: docs/research/gui.md#moneyfont
+[[nodiscard]] std::optional<std::uint8_t> stickCharacter(MarkupTag tag, std::uint32_t timeMs);
 
 /// One piece of marked-up text.
 struct MarkupToken {

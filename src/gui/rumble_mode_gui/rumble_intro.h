@@ -16,6 +16,7 @@
 #include "gui/global_strings.h"
 #include "gui/menu_input.h"
 #include "gui/text_widget.h"
+#include "gui/usage_info.h"
 #include "gui/widget.h"
 
 namespace coney::gui {
@@ -52,11 +53,13 @@ enum class RumbleIntroPhase : std::uint8_t {
 ///    picks a random `dj_start_01`-`10`, which plays with the last word. kCountdownMs after its start the screen
 ///    calls `onDone` and closes.
 ///
-/// Coney's stand-ins (docs/research/rumble.md#open-questions): the layout (the names centred on big_font at y 0.35 and
-/// 0.55, the separator "VS" at 0.45, the prompt at 0.7, the countdown at 0.45, all white) and the separator's text are
-/// not on the page; the gang line is named with the plain decimal pack number; "nearly opaque" is kPromptTakeLevel;
-/// the screen effects 0 the intro queues and the countdown's first sound are left out; with no voice lengths a line
-/// lasts kStandInVoiceMs.
+/// The layout (`RM_Intro_Init`): the names are centred grey (kMenuGrey) big_font lines at size 2.5, the countdown
+/// one at (0.5, 0.5), and the prompt a UsageInfo (part_page0, size 1.0, grey, centred) at (0.5, 0.88), so its `<X>`
+/// is the cross button. Coney's stand-ins (docs/research/rumble.md#open-questions): where the names sit
+/// (`RM_Intro_LayoutNames` is not traced: here y 0.35 and 0.55) and the separator, a sprite in the original (here
+/// the text "VS" at y 0.45, grey, size 1.0); the gang line is named with the plain decimal pack number; "nearly opaque"
+/// is kPromptTakeLevel; the screen effects 0 the intro queues and the countdown's first sound are left out; with no
+/// voice lengths a line lasts kStandInVoiceMs.
 ///
 /// Research: docs/research/rumble.md#intro
 /// @orig 0x001f9418 RM_Intro_Open (unknown)
@@ -78,12 +81,16 @@ class RumbleIntro : public Widget {
     /// The strings: the prompt and the countdown's last word.
     static constexpr std::uint32_t kPromptString = 0x25;
     static constexpr std::uint32_t kGoString = 0x3f;
-    /// Coney's stand-in layout.
+    /// The names' and the countdown's font size (`0x0050f488`) and the prompt's (a usage line's).
+    static constexpr float kNameScale = 2.5F;
+    static constexpr float kPromptScale = UsageInfo::kScale;
+    /// The prompt's and the countdown's centres (`0x0050f494`: 0.88).
+    static constexpr float kPromptY = 0.88F;
+    static constexpr float kCountdownY = 0.5F;
+    /// Coney's stand-in layout of the names and the separator.
     static constexpr float kFirstNameY = 0.35F;
     static constexpr float kSeparatorY = 0.45F;
     static constexpr float kSecondNameY = 0.55F;
-    static constexpr float kPromptY = 0.7F;
-    static constexpr float kCountdownY = 0.45F;
     static constexpr std::string_view kSeparatorText = "VS";
 
     /// Shows strings from `strings` (null: empty), plays through `sounds`, draws its random choices from `random`
@@ -137,8 +144,8 @@ class RumbleIntro : public Widget {
     void startPrompt(std::uint64_t nowMs);
     // String `id`, or empty without strings.
     [[nodiscard]] std::string_view string(std::uint32_t id) const;
-    // Sets `text` up as one of the intro's centred white big_font lines at `y`, showing `value`.
-    static void setupLine(TextWidget& text, float y, std::string_view value);
+    // Sets `text` up as one of the intro's centred grey big_font lines at `y` and size `scale`, showing `value`.
+    static void setupLine(TextWidget& text, float y, float scale, std::string_view value);
 
     const GlobalStrings* m_strings = nullptr;
     RumbleIntroSounds m_sounds;
@@ -163,7 +170,7 @@ class RumbleIntro : public Widget {
     bool m_namesHidden = false;
     std::vector<std::unique_ptr<TextWidget>> m_nameTexts;      // one per name
     std::vector<std::unique_ptr<TextWidget>> m_separatorTexts; // one between each two names
-    TextWidget m_prompt;
+    UsageInfo m_prompt;
     TextWidget m_countdown;
 };
 

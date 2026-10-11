@@ -1854,7 +1854,7 @@ are [listed with the bars](#scripted-bars).
 | `0x001b8278` | `LockPickDial_Shutdown` | slot `+0x68`: shuts the pins down, releases the centre batch, `+0x478` = `+0x0c` = 0 | confirmed (code) |
 | `0x001b8320` | `LockPickDial_IsResident` | true once the pins' and the centre's sheets are resident (`0x001a8ea8`); then rectangle `0xc` of the centre sheet gives the disc's UV centre (`+0x4cc`) and radius (`+0x490`, `+0x494`) | confirmed (code) |
 | `0x001b8428` | `LockPickDial_Show(dial, on)` | on: pins back to π, the loop `vags/misc/lock_spins_01` started (handle `+0x450`), `vags/misc/click_open1` prepared (`0x00622e48`), pin 0, counters 0; off: both stopped; `+0x478` = on | confirmed (code) |
-| `0x001b8530` | `LockPickDial_Draw` | slot `+0x30` (the update): waits for residency; turns the current pin by 0.1 × its speed (wrapping in 0-2π); queues two band arcs and the textured centre disc (`0x0017c2a8`, the 2D shape queue `0x005fd9f0`, at most 6) at the player's layout ([Lock picking](crimes.md#lockpick)) | confirmed (code) |
+| `0x001b8530` | `LockPickDial_Draw` | slot `+0x30` (the update, 30 times a second: confirmed (runtime), [Lock picking](crimes.md#lockpick)): waits for residency; turns the current pin by 0.1 × its speed (wrapping in 0-2π); queues two band arcs and the textured centre disc (`0x0017c2a8`, the 2D shape queue `0x005fd9f0`, at most 6) at the player's layout ([Lock picking](crimes.md#lockpick)) | confirmed (code) |
 | `0x001b8d38` | `LockPickDial_Judge` | 2 perfect (next pin, `click_01` and `click_open1`), 1 good (next pin, `click_open1`), 0 miss (`click_01`, every pin back to π, pin 0) | confirmed (code) |
 | `0x001b8ed0` | `LockPickDial_Render` | slot `+0x38`: while resident, shown and a pin is left (`+0x468` < 3), the three pins | confirmed (code) |
 | `0x001b8f50`, `0x001b8f78` | `HUDLua_StaticInit`, `HUDLua_GlobalCtor` | the file's static initialiser (`0x00622e48` = −1) and its global-constructor stub (in the constructor list at `0x00534108`) | confirmed (code) |
@@ -2010,7 +2010,12 @@ in the default mode), depths 8,000, 9,000, 10,000, all on one centre. Each turns
 Only the current pin turns:
 its angle (`+0x454`, radians, starting at π) changes by **0.1 × its speed** per update (speeds 1, 2, 3 by default),
 up or down by its direction byte, wrapped into 0-2π; positive angles turn clockwise on screen
-([The stereo panel](#stereo-layout)). Drawn while the dial is shown and a pin is left. No text.
+([The stereo panel](#stereo-layout)). Drawn while the dial is shown and a pin is left. No text. The start angle is
+the constant **3.14** (`0x0050d6e4` = `0x4048f5c3`, written by `LockPickDial_Draw` and used by `LockPickDial_Show`
+and the miss in `LockPickDial_Judge`), not π, confirmed (code); at 3.14 every pin's notch points straight down. A pin
+held at 4.71 shows its notch at 9 o'clock, so positive angles turn clockwise and the notch's screen angle, clockwise
+from 12 o'clock, is the pin's angle: confirmed (runtime), PCSX2 2.9.94, owner slot 3 (speed 0 written to `+0x458`,
+the angle to pin 0's rotation `+0xe0`).
 
 **The shapes** (`Shape2D_Queue` → `Shape2D_DrawQueued` `0x0017c308`, drawn in the viewport pass with RwIm2D):
 the centre is the point (x, y, −1) in the **overlay camera's** space, projected to screen pixels
@@ -2031,14 +2036,23 @@ width ÷ height (`+0x4d8`), so the circle inscribed in the whole rectangle is st
 much of that circle the lock-face art fills decides how big the face looks, and with it how much of the wedges it
 hides.
 
+**The disc is upright, not turned** (`Im2D_DrawTexturedDisc` `0x0017bc28`, confirmed (code); confirmed (runtime)
+by the keyhole, which stands vertical with its round end up). Each rim vertex has a position angle b and a texture
+angle a, both stepping by −2π / 32: the position is centre + (rx sin b, ry cos b) in pixels (y down), the texture
+point (cu + ru cos a, cv − rv sin a) (v down). The dial passes a = 0 (`+0x4a0`) and b = π/2 (`+0x4a4`), so
+b = a + π/2 all the way round, and (cos a, −sin a) = (sin b, cos b): the texture point moves in the same direction
+as the screen point. The π/2 only reconciles the two formulas; a port that writes both with one angle uses
+u = cu + ru sin b and v = cv + rv cos b, with no turn. (An earlier reading here said "turned by π/2".)
+
 | Shape | What | Radius (px) | Colour (0-255) | Extent |
 | --- | --- | --- | --- | --- |
 | Band 1 | an untextured **wedge** (a fan from the centre) | 40 (`0x0050d6c0`) | (191, 16, 16), alpha 100 (`0x0050d6b4`) | `0x0050d6b8` per cent of the circle (35, 27 or 20 by difficulty) |
 | Band 2 | the same, drawn over band 1 | 40 | (50, 7, 7), alpha 100 | `0x0050d6bc` per cent (14, 12 or 9.2) |
-| Centre disc | a textured disc, the whole circle | 41 (`0x0050d6b0`) | (191, 191, 191, 255) | `hud_minigames` rectangle 12 (the lock face with its keyhole), mapped by the rectangle's centre and radius, turned by π/2 |
+| Centre disc | a textured disc, the whole circle | 41 (`0x0050d6b0`) | (191, 191, 191, 255) | `hud_minigames` rectangle 12 (the lock face with its keyhole), mapped by the rectangle's centre and radius, **upright** (below) |
 
-Both wedges are centred on angle π, which with y down on screen is **straight up** from the centre (12 o'clock); the
-segments outside the wedge are drawn with a zero colour, so only the wedge shows (whole segments, below). Which band is
+Both wedges start at angle π, which with y down on screen is **straight up** from the centre (12 o'clock); the
+segments outside the wedge are drawn with a zero colour, so only the wedge shows. Flat shading makes each wedge an odd
+number of whole segments, half a segment off 12 o'clock towards 11 (Extent, below). Which band is
 the good zone and which the perfect one follows from the sizes (band 1 the larger good zone, band 2 the perfect one;
 inferred, the judge's bounds are on [Crimes: lock picking](crimes.md#lockpick)). The disc is queued last, over the
 wedges; where its texture is transparent (outside the lock-face art) the wedges show through (inferred from the draw
@@ -2059,10 +2073,78 @@ order; how much the art covers is above).
 - **Extent.** `Im2D_DrawArc` (`0x0017bec8`) colours whole rim vertices: with n = 32 segments and p the per cent, k =
   floor(n × p / 100 / 2); rim vertex j (0 to n, starting at the wedge's middle) gets the colour when j ≤ k, and, with
   the mirror flag `+0xb8` the dial sets, also when n − j ≤ k; every other rim vertex gets colour 0 (alpha 0), while the
-  fan's centre vertex keeps the colour. With p = 0 (k = 0) nothing is coloured. So the solid part is 2k whole segments
-  (k × 11.25° each side), and the next segment on each side **fades** from the colour to clear across its triangle
-  (vertex colours interpolate). Example: 35 % gives k = 5, so 112.5° solid plus a fading 11.25° on each side, not the
-  exact 126°.
+  fan's centre vertex keeps the colour. With p = 0 (k = 0) nothing is coloured. Rim vertex j sits at angle π − j ×
+  2π / n, so j = 1, 2, ... run **clockwise** on screen from 12 o'clock and n − 1, n − 2, ... counter-clockwise.
+- **Shading: flat, so no fades.** The fan is drawn by `Im2DDrawer_Draw` (`0x001965d8`), which sets RenderWare's
+  render state 7 (`rwRENDERSTATESHADEMODE`) to its last argument; `Im2D_DrawArc` and `Im2D_DrawTexturedDisc` pass 1,
+  `rwSHADEMODEFLAT` (the draw ends by setting it back to 2, Gouraud), confirmed (code). On the GS a flat triangle takes
+  the colour of its **last** vertex, so the fan triangle between rim vertices j and j + 1 is wholly coloured when
+  vertex j + 1 is and wholly clear when it is not; the centre vertex's colour is never seen. The coloured triangles
+  are j = 0 to k − 1 (k segments clockwise of 12 o'clock) and j = n − k − 1 to n − 1 (**k + 1** segments
+  counter-clockwise): **2k + 1 solid segments with hard radial edges, from −(k + 1) × 11.25° to +k × 11.25°**, and
+  nothing outside them. Example: 27 % (difficulty 1) gives k = 4, a wedge from −56.25° to +45° (101.25°); 12 % gives
+  k = 1, −22.5° to +11.25°. Confirmed (runtime), PCSX2 2.9.94 at native resolution, owner slot 3 at difficulty 1:
+  sampled round the centre at radii 22-36 pixels, band 1's edges sit at −56.7° and +44.5° and band 2's at −22.5° and
+  +10.5° at every radius, with no gradient across either edge. (An earlier reading here had 2k solid segments and a
+  fading segment on each side, from Gouraud shading.)
+- **Colour on screen.** Fitting out = α × C + (1 − α) × background over 672 pixels of band 1 alone (the frame with the
+  dial against the same frame without it, pins moved off) gives **α = 0.39, C = (189, 15, 16)**: alpha 100 ÷ 255 and
+  the colour (191, 16, 16) as stored, with no PS2 128-is-one doubling. Band 2 over band 1 gives α = 0.63 and C =
+  (102, 9, 9), which is band 2 (50, 7, 7) at 100 ÷ 255 over band 1, as the two-layer blend predicts (1 − 0.61² =
+  0.63). Confirmed (runtime), same capture.
+- **The drawn wedge is wider than the judge's window.** At difficulty 1 a press is good with the notch from
+  −33.4° to +32.7° of 12 o'clock (5.70 and 0.57 rad) and perfect from −19.1° to +6.9° (5.95 and 0.12 rad, read at
+  run time from `0x0050d6c4`-`0x0050d6d0` and `0x0050d70c`; [Crimes](crimes.md#lockpick)), while the red reaches
+  −56.25° to +45° and the dark band −22.5° to +11.25°; so the notch can be on red and still miss. Inferred from the
+  code's bounds and the measured geometry; a faithful port keeps both as they are.
+
+#### The dial next to the original (2026-10-11) {#lock-pick-dial-compared}
+
+**The original's capture.** PCSX2 2.9.94 at native resolution (window 1240 × 930 for the 640 × 448 frame), the
+interlaced 4:3 mode (device flags `0x01`), owner slot 3 (a store door; it is not pickable there, the kind-2 list of
+the context registry is empty). The dial was shown by writing 1 to player 1's dial `+0x478` (HUD `0x00600840` +
+`0xf420` = `0x0060fc60`, so `0x006100d8`): `LockPickDial_Draw` then turns pin 0 and queues the shapes exactly as in a
+pick, since nothing it draws reads the mini-game's state; the difficulty in force was 1 (directions (+, −, +), bands
+27 % and 12 %, left from an earlier `HUD_LockPickStart`). The pins were moved off (their `+0x80` x) for the wedge
+measurements and put back. **Coney's**: the `lockpick-dial` branch (pull request #52), `--play-level level80
+--checkpoint 3 --start -241.9,228.8,1.3,183`, triangle tapped at frame 150 (difficulty 1), frames 170-215,
+`--render-size 1280x896`; both frames scaled to 1280 × 896 (twice 640 × 448) before comparing.
+
+**What matches** (measured on those frames): the dial's place (shapes' centre at pixel (70.6, 255.4)) and size; the
+three pins concentric with the face, their dark ring lines at the same radii within 1 pixel (about 16, 22-23, 30-31
+and 40-41 pixels from the centre on both sides); the lock face's size (about 31 pixels across its dark rim); the
+order (pins under the wedges, the face over both); the pins' turning direction and their notches pointing down at
+rest; the stored colours and alphas. Neither game draws text, a button glyph or a stick indicator with the dial. A
+press changes nothing on screen but the pins: a good or perfect press leaves the judged pin where it stopped and
+starts the next one from its own angle (`LockPickDial_Judge` copies the next pin's rotation into `+0x454`), a miss
+puts every pin back at 3.14 and pin 0 turns again, and the end of the pick hides the dial with no closing frame
+(`LockPick_End` `0x0022d908` → `HUD_LockPickEnd`); confirmed (code), not captured.
+
+**Coney differs** (checked against `repo:src/hud/lock_pick_hud.cpp` on the `lockpick-dial` branch, commit `803e1de5`):
+
+1. **The lock face is turned a quarter turn**: its keyhole lies on its side with the round end to the right; the
+   original's stands upright, round end up. Cause: Coney maps rim vertex angle a to the texture at a + π/2
+   (`kFaceTurn`), from the earlier "turned by π/2" on this page. Fix: the texture point of a rim vertex at angle a is
+   (cu + ru sin a, cv + rv cos a), the same direction as its screen offset (`Im2D_DrawTexturedDisc`
+   [above](#lock-pick-dial-layout)); drop `kFaceTurn`. Test: the texture point of the rim vertex straight up on
+   screen is the top of rectangle 12's circle (v = cv − rv).
+2. **The wedges are Gouraud-shaded**: each has 2k solid segments, symmetric about 12 o'clock, with a segment on each
+   side fading to clear, so its edges are soft and band 2 barely shows. The original is flat-shaded: every fan
+   triangle takes the colour of its second rim vertex, giving 2k + 1 solid segments from −(k + 1) × 11.25° to
+   +k × 11.25° with hard edges (difficulty 1: band 1 −56.25° to +45°, band 2 −22.5° to +11.25°; the dark band 2 reads
+   as a distinct centre stripe). Fix: give the triangle (centre, rim j, rim j + 1) the colour of rim vertex j + 1 on all
+   three of its vertices, and skip it when that colour is clear. Test: for each difficulty, which of the 32 triangles
+   are coloured (difficulty 1, band 1: j = 0-3 and 27-31; band 2: j = 0 and 30-31), and no triangle has vertices of
+   two colours.
+3. **A red haze covers the whole dial**: Coney's fan gives the centre vertex the wedge's colour, so every clear
+   segment fades from red at the centre to clear at the rim, tinting the pins below and beside the face (measured
+   below the face, 16-22 pixels out: red minus green 14 on Coney, 3 on the original). Same cause and fix as 2: under
+   flat shading the centre vertex's colour is never seen.
+4. **The pins' rest angle is π, not 3.14** (a 0.09° difference, not visible; listed for completeness). Fix: use 3.14
+   where the pins start and where a miss puts them back.
+
+**Open**: how many times a second the dial's update (`LockPickDial_Draw`, the HUD's update slot) runs, and so how
+fast a pin turns in seconds, was not measured; the code turns it 0.1 × speed per call.
 
 **Owner item 12 (the dial's layers misplaced)**: Coney's `repo:src/hud/lock_pick_hud.cpp` (checked 2026-10-11)
 draws the pins at the GUI position (0.09, 0.59) through `OverlayCamera::guiToOverlay` (depth 1.1) and the shapes at
@@ -2610,19 +2692,18 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   second text
   (`SetMsgHandlerEx`'s `prompt2`)
   is queued as a priority-0 hint while it is in reach and withdrawn when it changes or leaves.
-- **Coney differs: the prompt's button** (owner item 9, "n Give Weapon"). The layout (`repo:src/gui/text_layout.cpp`)
-  skips `<MONEYFONT>`, so the `<ST>` of `GSTRING.ACTIONBUTTON` draws as the letter `n` (`part_page0` firstGlyph 94 +
-  `'n'`). **Fix for the implementer**: make `<MONEYFONT>` set a glyph base for the runs until `</MONEYFONT>`: in the
-  `part_page0` slot (Coney's `kTextFontSlot`, the original's slot 3) rectangle = 11 + (c − `'0'`); in `big_font`
-  (slot 6) rectangle = 256 + (c − 1); none in other slots ([MONEYFONT](gui.md#moneyfont)). Also give the stick tags
-  (`<SDD>`, `<SDL>`, `<SDR>`, `<SDU>`) their characters 3-6 alternating with 2 every `0x0050e6e4` ms, and add the
-  icon tags 23-31 (`<RARREST>` … `<RCALLGANG>`, [the tag table](gui.md#markup)) to `repo:src/gui/markup.cpp`.
-- **Coney differs: the prompt beside a downed Warrior** (owner item 8, "no revive prompt"). Coney's revive step
-  matches the original (a flash is needed), but its swap prompt (`repo:src/ai/swap_prompt.h`) leaves out the blocked
-  test, so a knocked-out Warrior stays talkable and Coney shows "Give Weapon" where the original shows nothing (no
-  flash) or the revive prompt (with one). **Fix for the implementer**: clear the swap prompt (talkable, its text)
-  while the Warrior or the player is knocked out, or better, model `HumanRecord_AreActionsBlocked`'s mask
-  ([No flash, no prompt](#action-prompts)); a playthrough test should hold a flash to see string 4.
+- **The prompt's button** (owner item 9, "n Give Weapon", fixed): the layout (`repo:src/gui/text_layout.cpp`) gives
+  `<MONEYFONT>` its rectangle base ([MONEYFONT](gui.md#moneyfont)), so the `<ST>` of `GSTRING.ACTIONBUTTON` draws
+  `part_page0` rectangle 73, the triangle; the stick tags alternate their characters and the icon tags 23-31 are
+  known (`repo:src/gui/markup.h`). Tests: `repo:tests/hud/hud_test.cpp` (a prompt starting with the action button),
+  `repo:tests/gui/text_layout_test.cpp`, and the disc check `"[disc][text]"`, which finds the triangle in all three
+  swap prompts (`0xc`-`0xe`) and a stick picture in the revive prompt 4.
+- **The prompt beside a downed Warrior** (owner item 8, "no revive prompt"): Coney's revive step matches the original (a
+  flash is needed), and the swap prompt (`repo:src/ai/swap_prompt.h`) now has the blocked test, for the Warrior and the
+  player alike, as far as Coney models the mask's states (knocked out, by health or by a script, arrested, wounded), so
+  beside a downed Warrior no "Give Weapon" shows. A Warrior's brain that a script knocked out is off in Coney (BrDead),
+  so its think clears the prompt instead (`Brain::think`). Still to do: a playthrough test holding a flash to see string
+  4 (crew revive belongs to the revive work), and the player's own knocked-out gate on the other prompt steps.
 - **The stereo-theft panel** (`repo:src/hud/stereo_hud.h`, stepped by `PlayLevelMode::stepStereoPanel()`) as
   [the stereo panel on screen](#stereo-layout) says: up from the triangle press, the arrow round the backdrop's
   corners by stage, the gauge sized and turned by the angle turned and dropping by a doubling step while a stage is

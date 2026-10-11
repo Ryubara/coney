@@ -2723,15 +2723,15 @@ GoalRiot](../../research/ai.md#riot).
 ## GoalRunCarrotRun {#goalruncarrotrun}
 
 ```lua
-GoalRunCarrotRun(human, path, start, reverse, gait, radius, chasers, distance, keepAhead)
+GoalRunCarrotRun(human, path, mode, reverse, gait, radius, chasers, distance, keepAhead)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the runner; a bad handle does nothing. |
 | 2 | `path` | userdata (only read when given) | The path to run (a `Path_...` value); read only when more than one argument is passed. |
-| 3 | `start` | number, truncated to an integer | Index of the path point to start from, as in GoalTravelPath. |
-| 4 | `reverse` | boolean (nil or 0 is false) | true to run the path backwards (inferred, as in GoalTravelPath). |
+| 3 | `mode` | number, truncated to an integer | What happens at the end of the path, exactly as GoalTravelPath's third argument: 0 stop (the goal ends), 1 loop, 2 walk it back. It is stored in the TravelPath sub-goal's `+0x14`, which GoalTravelPath_NextPoint reads. |
+| 4 | `reverse` | boolean (nil or 0 is false) | true starts at the last point and runs the path backwards, as in GoalTravelPath (the same sub-goal field `+0x18`). |
 | 5 | `gait` | number, truncated to an integer | Base gait id (scripts use 4 run or 5 sprint); its speed is the floor of the runner's speed. |
 | 6 | `radius` | number (single precision) | Arrival radius at each path point in metres. |
 | 7 | `chasers` | number, truncated to an integer | Gang id of the chasers (scripts pass the Warriors' gang); the nearest of its up to 16 members is measured. |
@@ -2741,15 +2741,17 @@ GoalRunCarrotRun(human, path, start, reverse, gait, radius, chasers, distance, k
 **Returns** nothing.
 
 Pushes a run-carrot goal on the human: it runs the path point to point like GoalTravelPath (a TravelPath sub-goal plus a
-move-to-point goal per point) and ends when the path runs out. Each update it finds the nearest member of the chasing
-gang and sets its speed to the gait's speed plus up to 6 m/s: by default the boost is `1 - d/distance` when that chaser
-is closer than `distance` (so a caught-up carrot sprints away), with `keepAhead` it is `min((d - distance) * 0.2, 1)`.
-It also raises a brain byte (`+0x0b`, 0/2/3 for boosts of 0, up to 0.5, above 0.5) that is restored when the goal ends:
-the brain's turn boost, so the runner turns 3 or 4 times as fast while a chaser is close.
+move-to-point goal per point) and, with mode 0, ends when the path runs out. Each update it finds the nearest member of
+the chasing gang and sets its speed to the gait's speed plus up to 6 m/s: by default the boost is `1 - d/distance` when
+that chaser is closer than `distance` (so a caught-up carrot sprints away), with `keepAhead` it is `min((d - distance) *
+0.2, 1)`. It also raises a brain byte (`+0x0b`, 0/2/3 for boosts of 0, up to 0.5, above 0.5) that is restored when the
+goal ends: the brain's turn boost, so the runner turns 3 or 4 times as fast while a chaser is close.
 
 **Notes.** Speed is recomputed only every fourth update (brain `+0x34 & 3` clear). Brain `+0x0b` (Brain_SetTurnBoost
 0x0028cdf8) multiplies an AI human's turn limit by (b + 1); see the AI page (Brain bytes). No chaser alive: speed stays
-the gait's.
+the gait's. Arguments 2-6 go unchanged to GoalTravelPath_Init (0x002e0748) through RunCarrotGoal_Init (0x002e1230), in
+the same registers as GoalTravelPath's binding passes them, so the third is the end mode, not a start index (confirmed
+(code) at the wrapper 0x00360c10 and 0x002e12b8-0x002e12dc).
 
 - **Evidence:** confirmed (code) at `0x002e1140`, `0x002e1230`, `0x002e13c0`, `0x002e15e8`; detail: traced
 - **Wrapper** `0x00360c10` (registered by `RegisterBindings`); **calls** `0x002e1140` `Goal_RunCarrot`, `0x002e1230`
