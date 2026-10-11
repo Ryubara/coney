@@ -373,9 +373,9 @@ The handler:
    broken (kept bits `+0x11f8`), its door (14, 16, 18, 20) is dropped from this hit. So the **first square at the
    front-left door breaks window 15 only**; later ones dent door 14.
 4. Damages each part (0.115 a plain human hit, 0.51 a `0x400000` hit, 0.34 an object; the windows break at once),
-   broadcasts message `0x19` per part, plays a part's first-hit effect (`0x0038a830`: windows 15/19 effect 4 along
-   −x, 17/21 along +x) and reports the 30 m noise (`AI_ReportNoise`, `0x002936a8`) and message 6 to the volume boxes around the striker
-   (`VolumeBoxes_SendDamageMessage`, `0x00413018`).
+   broadcasts message `0x19` per part, plays a part's first-hit effect (`0x0038a830`: windows 15/19 effect 4 along −x,
+   17/21 along +x) and reports the 30 m noise (`AI_ReportNoise`, `0x002936a8`) and message 6 to the volume boxes around
+   the striker (`VolumeBoxes_SendDamageMessage`, `0x00413018`).
 
 `Strike_Contact` then counts a player's car hit (statistic event `0xb`) when it reached a part not already broken.
 
