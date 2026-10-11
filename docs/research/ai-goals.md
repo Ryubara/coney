@@ -2142,7 +2142,8 @@ fleeing, `+0x34` the train record, `+0x38` the next action clear, `+0x3d` dive):
 
 1. **Each update** (`0x002f9c88`): the goal ends (2) when `TrainRecord_IsNearSegment` (`0x004138f0`) says he is no
    longer inside the train's box and within its radius of a segment. That test also sets `+0x3d` when he is more than
-   0.5 m inside the radius and within 10 m of the record's point `+0x149` (the last point set with no gap; inferred: the train's front). Until he flees, his actions are
+   0.5 m inside the radius and within 10 m of the record's point `+0x149` (the last point set with no gap; inferred: the
+   train's front). Until he flees, his actions are
    cleared every 250 ms. With `+0x3d` set, a finished front action is cleared. When the brain has no pending
    sub-goal (`+0x2e` below 1), his position is projected on the track (`TrainRecord_ProjectPoint`, `0x00413a90`,
    [Trains](objects.md#trains)), then the side flight is tried, and failing that the flight along the track.
@@ -2160,7 +2161,8 @@ fleeing, `+0x34` the train record, `+0x38` the next action clear, `+0x3d` dive):
    (`0x002f95e0`, gait 5; from standing he takes the heading and gait 4 at once). `+0x33` is set and the actions are no
    longer cleared.
 5. **Along the track** (`RunFromTrainGoal_FleeAlongTrack`, `0x002f9980`), when neither side passes: the target is the
-   train's own point at index `+0x30`, the **start** of the segment that holds his projection (its lower index), dropped to the ground by a 4 m ray down when one hits, and raised 0.1 m; he
+   train's own point at index `+0x30`, the **start** of the segment that holds his projection (its lower index), dropped
+   to the ground by a 4 m ray down when one hits, and raised 0.1 m; he
    sprints to it. Without a projection (`+0x32` 0: in front of the first point, or past the second-to-last, see
    [Trains](objects.md#trains)) he does nothing that update.
 

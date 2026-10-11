@@ -146,7 +146,8 @@ of a human that is working out. Confirmed (code).
 
 `Workout_CallRep` is the gait blend's wrap callback, so a repetition is each time the
 **leading** cursor of the blend wraps ([Gait blend](formats/animation.md#gait-blend)): the length of a repetition is
-one cycle of the blend's shared normalised time, which runs at the leading clip's pace each update ([below](#rep-length)). Confirmed (code); confirmed (runtime):
+one cycle of the blend's shared normalised time, which runs at the leading clip's pace each update
+([below](#rep-length)). Confirmed (code); confirmed (runtime):
 
 | Station | Slow / mid / fast clip (s, read from the cursors) | Repetition, pumping every 4 updates | Every 6 updates (chin-ups) |
 | --- | --- | --- | --- |
