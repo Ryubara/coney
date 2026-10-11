@@ -76,8 +76,10 @@ state of the work (local, never committed).
   other trailer; no other email address appears in a message.
 - No file, code comment or commit message contains the repository's or the docs site's address; only the README
   does. Docs link files outside `docs/` as `repo:<path>`.
-- Work happens on branches; before a push the branch is squashed into feature-sized commits. Only `main` and
-  release branches are pushed.
-- Ask the user you are working for before you push any other branch or open a pull request, and say why (for
-  example, CI only runs on pushes to `main` and on pull requests). A pull request or issue you write carries no
-  tool-attribution line.
+- Work happens on branches, one pull request per feature. `main` takes no direct pushes: it is protected, and a
+  pull request must pass every required check. A pull request is **squash-merged**, so it becomes one commit on
+  `main` with the pull request's title; commits on the branch need not be tidy.
+- An agent pushes its branch and opens a pull request without asking, and starts the description from
+  `.github/pull_request_template.md` (`gh pr create` does not fill it in when given a body). An agent never merges a
+  pull request: the maintainer, or the approving review, does. A pull request or issue you write carries no
+  "Generated with" line; the template's AI use section is where the model is named.

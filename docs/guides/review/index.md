@@ -14,8 +14,8 @@ it covers.
 
 ## How a review works
 
-- **One reviewer per change**, who did not write it, plus **a commit review before a branch is pushed or merged**,
-  which reads the branch's squashed commits (see [Commits](commits.md)).
+- **One reviewer per change**, who did not write it, plus **a commit review before a pull request is merged**,
+  which reads its title and commits (see [Commits](commits.md)).
 - **The reviewer reports and never edits.** It does not fix a finding, not even a typo; the author does, in a
   follow-up commit. A reviewer that fixes things hides what was wrong from the next reader and from the history.
 - **The reviewer reads the diff and the files it touches**, not the implementer's summary of them. Run the checks
