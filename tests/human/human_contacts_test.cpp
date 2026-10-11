@@ -215,9 +215,10 @@ TEST_CASE("a grab links the pair: they pass through each other and neither can b
                                              .buttons = frame.buttons,
                                              .targets = targets},
                     mesh.get());
-        other.step(
-            coney::human::HumanInput{.cameraForward = Vec3{0.0F, 1.0F, 0.0F}, .command = coney::combat::command::kNone},
-            mesh.get());
+        other.step(coney::human::HumanInput{.cameraForward = Vec3{0.0F, 1.0F, 0.0F},
+                                            .command = coney::combat::command::kNone,
+                                            .targets = {}},
+                   mesh.get());
         if (player.linkedWith(other)) {
             nearest = std::min(nearest, apart(player, other));
         }
