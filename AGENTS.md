@@ -26,6 +26,8 @@ player's path, gamepad input, playthrough tests, the checks to run before report
   MSVC environment, `vcvars64.bat`). Presets `dev`, `release`, `ci` (warnings as errors), `asan` (Linux/macOS).
 - Python: `uv run --project python pytest python/tests`; `uvx pre-commit run --all-files` before committing.
 - Docs: `.venv/Scripts/python -m mkdocs build --strict`. Build details: `docs/guides/building.md`.
+- On Windows, no local WSL builds or clang-tidy runs: GitHub CI is the Linux and macOS gate, and a failure there is
+  fixed forward on the branch.
 
 ## Rules (never broken)
 
@@ -42,7 +44,11 @@ player's path, gamepad input, playthrough tests, the checks to run before report
   enhancements wait (designs may be written now); debug tooling is not a mechanic and is fine.
 - **Never exclude a file from the 512 KB large-file check** in `.pre-commit-config.yaml`: it catches game data
   committed by mistake. Split big generated data and pages instead.
-- Making the repo public, tagging releases, force-pushing and legal or licence questions are maintainer decisions.
+- Making the repo public, tagging releases, force-pushing `main` or someone else's branch, and legal or licence
+  questions are maintainer decisions. Whoever pushes a pull-request branch may `git push --force-with-lease` it.
+- **Local first; no agent pushes or waits on CI.** An agent commits, runs every applicable local check, writes each
+  pull request's title and description to its scratch folder and tells the coordinator, who pushes from a release
+  queue when CI has room (`docs/guides/how-we-work.md`, "Local first: the release queue").
 
 ## Code
 
@@ -79,7 +85,10 @@ state of the work (local, never committed).
 - Work happens on branches, one pull request per feature. `main` takes no direct pushes: it is protected, and a
   pull request must pass every required check. A pull request is **squash-merged**, so it becomes one commit on
   `main` with the pull request's title; commits on the branch need not be tidy.
-- An agent pushes its branch and opens a pull request without asking, and starts the description from
-  `.github/pull_request_template.md` (`gh pr create` does not fill it in when given a body). An agent never merges a
-  pull request: the maintainer, or the approving review, does. A pull request or issue you write carries no
+- A pull request description starts from `.github/pull_request_template.md` (`gh pr create` does not fill it in
+  when given a body). Agents write it to a file; the coordinator opens the pull request. An agent never merges a
+  pull request: the maintainer does, or a coordinator the maintainer has allowed to, and only by squash once every
+  required check passes and the pull request follows these rules. A pull request or issue you write carries no
   "Generated with" line; the template's AI use section is where the model is named.
+- A track's status lives in `STATUS.md` in its scratch folder, not in a draft pull request
+  (`docs/guides/how-we-work.md`, "Track status").

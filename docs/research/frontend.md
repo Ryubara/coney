@@ -633,6 +633,65 @@ character. Confirmed (code) unless marked; positions are the default mode's (GUI
 camera, brain dead; its handle goes to `0x001fe2c0`. No fighter was seen on the Game Mode or Game Type screens at
 runtime (inferred: hidden by the opaque background).
 
+#### The Choose Gangs fighters {#rm-choose-gangs-fighters}
+
+What stands behind each gang name on Choose Gangs (owner checklist item 23). Coney draws nothing there yet
+([Coney's implementation](#coneys-implementation)). Confirmed (code) unless marked; the layout values are in the
+Choose Gangs row of [Per screen](#rumble-screens).
+
+- **Who.** `RM_ChooseGangs_SpawnFighters` (`0x001ef150`) makes one human per shown member: side *s* shows roster
+  entries 0 to *n* − 1 of its gang record (`+0x08 + s × 0x24`, nine 4-byte character types), with *n* =
+  min(`gangSize`, 5) kept at screen `+0x1dc`. Each type is the roster's after `RM_ResolveCharType` (`0x001ec490`), so
+  a locked character shows as its stand-in. **Entry 0 is the warchief**: left / right rotate the roster
+  (`0x001ec028` / `0x001ec130`), which changes which character is entry 0, and `RM_Roster_SlotToMember`
+  (`0x001ebfc0`) puts member 0 in the centre of the nine-slot display. So in 1 ON 1 (`gangSize` 1) each side shows its
+  warchief alone; in WAR PARTY the warchief and the next four.
+- **Which model.** `Human_Create(gang, "RM_HUMAN_%d", type, position, 0, 0, gang id, 0)` with the character type: the
+  model is that type's own, as for any human of that type ([Characters](characters.md)); nothing on this screen
+  chooses a model. A side is rebuilt only once its gang group has no member left (`Gang_GetHeadCountById` < 1).
+- **What it does.** Each fighter gets `Brain_SetDead(h, 1)` (no AI), `Human_SetLockMovement(h, 1)` (`0x00234ef8`,
+  [`HuLockMovement`](characters.md)), human byte `+0x284` = 0 (combat stance off, as on
+  [Swap Soldier](#rm-swap-soldier)), its position set and its heading kept in screen `+0x148 + 4s`. No clip is set
+  by this screen or by `Render`, so it plays its ordinary standing idle (inferred: nothing else gives a
+  dead-brained, locked human a clip). `ResourceMgr_ResetFadeIns` (`0x00189528`) runs after a side is made.
+- **When.** A gang or warchief change destroys the side's fighters at once (`RM_ChooseGangs_SelectGang`,
+  `0x001ef490`) and marks the side pending; `RM_ChooseGangs_Update` (`0x001efe40`) makes them again **650 ms after
+  the side's last input**. While any of a side's fighters is not yet resident (`RumbleHumanCache_AreResident`,
+  `0x001fe300`), `Render` (`0x001f0420`) draws the **dummy fighter** ([above](#rm-dummy), type `0x160`) at each of
+  that side's positions, turned to the side's heading, and shows the side's loading spinner (the sprite above the
+  name box).
+- **First frame.** When a resident fighter is first drawn (its instance's fade stamp `+0x2c` still 0), `Render`
+  stamps instance `+0x30` with the real-time clock (`0x0050b8b8`, inferred: the start of its fade-in), and the
+  **side's first fighter says speech command 17 `cheer2`** ([Speech](../references/speech.md#speech-command-17)):
+  `Human_SayCommand(20.0, h, 0x11, 0, 0, 1, null, 1)` with byte `0x00512c14` set to 1 around the call (its reader
+  not traced). Inferred: once per fighter, since the stamp is no longer 0 after that frame.
+- **Where it is drawn.** After the first widgets, `Render` flushes the 2D pass (`0x00185d20`) and draws each
+  fighter with `Human_RenderWithAttachments`, so the fighters stand in front of the gang-logo picture. The name boxes,
+  badges, bars and arrows are drawn after them. The GS dumps show them drawn
+  like characters in a level, Z test GEQUAL, no fog ([Rendering](rendering.md)). The positions are camera-space points
+  turned into world space through `RM_Camera` ([The mode around the screens](#rumble-screens)): 5.7 m ahead, 1.05 m
+  down, side 1 at x −1.15 and side 2 at +1.15, the others stepping out and back as the Choose Gangs row says. The
+  mode's two lights stand at the camera + (0, 8, 0).
+
+**Coney fixes (item 23).**
+
+1. Give the Rumble menu mode an `RM_Camera` when the screens are ready: a locked camera at the front end's active
+   camera position, field of view 50°, heading 160.229°, pitch and roll 0, near 0.1, far 100. The world behind can
+   stay undrawn: the gang-logo picture is opaque.
+2. On Choose Gangs, keep each side's fighters: types = roster entries 0 to min(`gangSize`, 5) − 1 after the stand-in
+   table, created in a gang of their own per side, brain dead, movement locked, combat stance off, facing the camera,
+   at the camera-space positions above taken through `RM_Camera`.
+3. On a gang or warchief change, remove the side's fighters at once and make them again 650 ms after the side's last
+   input. Draw the dummy fighter (type `0x160`) at the positions and spin the side's loading sprite until the models
+   are loaded.
+4. Draw the fighters over the background, after a first group of widgets and the 2D flush; `Render` then draws the
+   name boxes, badges, bars and arrows over them. Use the menu's two lights, depth test on and no fog; the fighters
+   stand in their idle clip.
+5. When a side's first fighter is first drawn, have it say speech command 17 (`cheer2`).
+6. Tests: with synthetic rosters, the chooser asks for *n* fighters per side with the right types and positions
+   after 650 ms and none before; rotating left or right changes fighter 0's type to the new entry 0; 1 ON 1 makes one
+   fighter per side.
+
 ### InitLevel
 
 `0x0015fe90` (`GameModes/InitLevel.cpp`), used for the front end and every game level, in this order (confirmed
@@ -2185,7 +2244,8 @@ grid at 0.84, size 1.15, dim grey, with message `0x77` at (0.5, 0.78); Choose Ga
 `0xf` for back. **Coney's choices:** Game Mode's entries are stacked 0.03 apart without backdrops or scroll arrows
 (sheet-table record 28 is not named); the Game Type entries are joined by `" : "`, as the message box's choices are;
 Choose Area lists its arenas' labels in a centred `ScrollingMenu` instead of the framed previews in rows of three;
-Choose Gangs has no name boxes, badges, arrows, bars or 3D fighters, and its cursors still wrap; a title string the
+Choose Gangs has no name boxes, badges, arrows, bars or 3D fighters ([what the fighters
+need](#rm-choose-gangs-fighters)), and its cursors still wrap; a title string the
 strings do not hold falls back to the screen's name. Screenshots on the disc match the measured title and usage
 positions.
 

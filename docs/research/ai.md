@@ -4349,9 +4349,9 @@ uses are in [Spawner states](../references/spawner-states.md). Confirmed (code):
    `Responder<n>` is made: of type 1 for 4, only while the game's count `+0x324` is under `+0x326`, of the spawner's own
    type for 9, which also takes its owner's friend and enemy masks. The state becomes 6 (from 4) or 10 (from 9), and
    returns once the entry's squad is complete; an entry whose byte `+0x17` is 3 may also start `Tactic_RiotCop`.
-5. **Place** the human: 6, 8 and 10 out of the camera's view ([below](#spawner-placement), `0x001673b8`); 7 out of
-   view and sent to the gang's first live member (`0x001679e8`, the second part inferred); the others at the
-   spawner.
+5. **Place** the human: 6, 8 and 10 out of the camera's view ([below](#spawner-placement), `0x001673b8`); 7 on a
+   pedestrian flag out of view ([AI and the world](ai-world.md#spawner-reinforcements), `0x001679e8`); the others at
+   the spawner.
 6. **Spawn** (`0x00167ea8`, named `<spawner><count>`), open the spawner's door, count it.
 
 **The type** (`0x0016d810`): the spawner keeps an index at `+0x4c` into its ten types (`+0x24`). Each spawn first
@@ -4462,10 +4462,15 @@ player's last crime type, `+0x294 + type` the responders per type (`CfgCrimeResp
 4. **Responders**, when `mode` is 1: `0x0016df68(type, kind, count, ...)` queues the crime on the nearest spawner of
    any gang in state 4 or 6 ([Spawners](#spawners)); kind 1 for types 0, 2, 3, 5, 8, 11 and 13, kind 3 for 9; count
    the type's responders, or `count` itself for type 4. Types 6, 7, 10, 12 and 14 send none. For types 0, 2, 3 and 8
-   the offender's gang also notes the time (gang `+0x5f4`, a wanted timer, inferred).
-5. Type 1 also marks the nearest store flag (kind `0xe`) robbed and sends message `0x12` to the `strobe` object
-   nearest it (within 36, 6 m if squared). Types 0, 2 and 8 score a statistic for a player offender against a victim
-   of brain kind 1, 4 or 5, once per victim (`0x004ed948` on `0x006fe490`; a statistic, inferred).
+   the offender's gang also notes the time (gang `+0x5f4`, a wanted timer, inferred). Type 1 (kind 1) queues only
+   in step 5.
+5. Type 1 acts only when the nearest store front (activity `0xe`) lies within 10 m (squared distance under 100).
+   When that store is not yet robbed, it queues its responders with a delay of `CfgBreakAndEnterDelay` and no
+   offender (`mode` 1 only), sends message `0x12` to the `strobe` nearest the store's flag when that one is within
+   6 m (squared distance under 36), and switches the store's buyers off; robbed or not, the store is then marked
+   robbed. Details: [Crimes: which break-ins call the police](crimes.md#break-in-police). Types 0, 2 and 8 score a
+   statistic for a player offender against a victim of brain kind 1, 4 or 5, once per victim (`0x004ed948` on
+   `0x006fe490`; a statistic, inferred).
 6. When the offender is in player 1's gang, `+0x290` takes the type unless it holds 7 or 12, and the HUD is told
    (`0x001b2520`).
 
@@ -5584,14 +5589,14 @@ the callback, when it names a function, is called with its handle, the gang's id
 6, 8 and 10 place the human out of sight as [above](#spawner-placement) and [the search](#spawner-search) say:
 from player 1's camera (Coney has one player, so no second camera refuses a node), the start node the planner's
 route ends use, 17 outward searches, the node then checked against the gang's turf boxes; no node, no spawn this
-update. **Stand-ins**: 7 is placed as 8 with a value of 0 (`0x001679e8` is not on the page) and does not send its
-human to the gang's first live member; the others stand at the spawner; no door opens; the dispatch states 4 and 9
-(no crimes are routed) and the top-up 11 (no gang limits kept) never spawn; `SetSpawnMax` is not read.
-`GangSetMaxConcurrent` changes the limit (16 bits; a negative -n spawns waves of n as [above](#spawners) says, from
-`GangAddSpawner`'s limit too). An off-screen spawner (`GangSetSpawnerMustBeOffScreen`, or added in state 11) skips an
-update while player 1's camera sees the 0.3 m sphere 1.6 m above it ([Off screen](#spawner-unseen)): within the far
-clip, in view and with no wall of the collision mesh on the ray to its centre; **stand-in**: the six-plane frustum is
-taken as a cone of half the field of view widened by the sphere.
+update. **Stand-ins**: 7 is placed as 8 with a value of 0, not on a flag as
+[its placement](ai-world.md#spawner-reinforcements) says; the others stand at the spawner; no door opens; the
+dispatch states 4 and 9 (no crimes are routed) and the top-up 11 (no gang limits kept) never spawn; `SetSpawnMax`
+is not read. `GangSetMaxConcurrent` changes the limit (16 bits; a negative -n spawns waves of n as
+[above](#spawners) says, from `GangAddSpawner`'s limit too). An off-screen spawner (`GangSetSpawnerMustBeOffScreen`,
+or added in state 11) skips an update while player 1's camera sees the 0.3 m sphere 1.6 m above it
+([Off screen](#spawner-unseen)): within the far clip, in view and with no wall of the collision mesh on the ray to its
+centre; **stand-in**: the six-plane frustum is taken as a cone of half the field of view widened by the sphere.
 
 **The scripts' goals at one human** (`src/ai/engage_goals.*`). `GoalMoveToHuman` (6) drops and re-issues a move
 (`MoveAction`, its gait and radius) to where the target is every second, waits 30 updates after a failed route, and
