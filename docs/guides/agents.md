@@ -79,6 +79,8 @@ instead of repeating it:
   ([Testing](testing.md#done));
 - "Read `AGENTS.md`, [How we work](how-we-work.md), [Testing](testing.md) and this page first; they override the
   brief";
+- the limits on its run ([Running without losing the cache](#cache)): it never waits on CI, and it hands over at
+  about 45 minutes of waiting or about 300 000 tokens of context;
 - only the facts the agent cannot find in the repository (a log path, a question to answer, the state file).
 
 ## Running without losing the cache {#cache}
@@ -90,6 +92,14 @@ instead of repeating it:
 - **Keep tool output small.** Print counts, the failing lines and the end of a log, never a whole log: every line an
   agent reads stays in its context for the rest of the task.
 - **Do not message a finished agent.** Start a new one from its report and the track's state file.
+- **No agent waits on CI.** An agent pushes its branch, opens the pull request, reports and ends. The coordinator
+  watches CI and sends a failure to a fresh agent ([When a pull request fails checks](#ci-failures)). An agent that
+  sat idle past its cache lifetime would re-write its whole context, often hundreds of thousands of tokens, when it
+  resumed.
+- **Limits on one agent's run.** An agent that would wait more than about 45 minutes in total (builds, sweeps,
+  emulator runs), or whose context passes about 300 000 tokens, commits and pushes what it has, writes its state to
+  its log or state file and reports. A fresh agent continues from that report. The coordinator briefs every agent
+  with these limits ([Briefing](#briefs)).
 - **Keep the coordinator small.** The coordinator re-reads its whole conversation on every turn and is the context a
   fork would inherit. It checkpoints (saves the state, clears, continues from it) before its context limit and before
   a long break, and never forks once its context is large.
@@ -97,8 +107,10 @@ instead of repeating it:
 ## When a pull request fails checks {#ci-failures}
 
 A failing check is a small, well-defined task, so it goes to a **fresh agent with a tight brief**, not back to the
-agent that wrote the pull request. Messaging that agent re-writes its whole context (rule 2 in
-[What a run costs](#cost)), often hundreds of thousands of tokens, for a fix of a few lines.
+agent that wrote the pull request. That agent has already ended: it pushed, opened the pull request and reported
+without waiting for CI, because an agent idle past its cache lifetime re-writes its whole context when it resumes.
+Messaging it re-writes that context (rule 2 in [What a run costs](#cost)), often hundreds of thousands of tokens, for
+a fix of a few lines. The coordinator is the one that watches CI.
 
 1. The coordinator reads only the failure: `gh pr checks <n>` for which checks failed, then the end of the failing
    job's log (`gh run view <id> --log-failed`, last lines). It does not read the whole log.
@@ -110,6 +122,19 @@ agent that wrote the pull request. Messaging that agent re-writes its whole cont
 4. Several failures with the same cause go to one agent; unrelated failures that are each quick go to separate small
    agents that can run side by side.
 5. If the same check fails a second time, escalate a model, as above, instead of repeating the same fix.
+
+## CI capacity {#ci-capacity}
+
+GitHub Actions on this repo runs about 20 jobs at once (5 of them macOS), shared by every agent's pull requests. A
+full code pull request queues 4 builds plus sanitizers (about 20 minutes), so every agent is responsible for CI load:
+
+1. **Run every local check that applies before each push** (pre-commit, pytest, `mkdocs build --strict`, ctest for
+   code), so CI never fails on something a local run would catch.
+2. **Push at milestones, not every commit.** Each push starts a run (and cancels the pull request's previous one).
+3. **Look at the queue before opening a pull request or pushing, and report the counts:**
+   `gh run list --status queued --limit 50 --json databaseId --jq length`, and the same with `--status in_progress`.
+   If the queue is long, batch the remaining work into one later push instead of several.
+4. **The coordinator watches the queue** and orders merges and pushes.
 
 ## Checking a run {#check}
 

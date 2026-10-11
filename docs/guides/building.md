@@ -1020,5 +1020,8 @@ runs, so a job recompiles only what changed; each job prints its hit rate at the
 | `docs` | `mkdocs build --strict`, markdownlint over every Markdown file, actionlint over the workflows |
 | `pr` | the pull request title and every commit title of it against the commit title rules, that code changes come with docs changes, and the description against the template (pull requests only; editing the title or description reruns it) |
 
-If a job fails, the commands above reproduce it locally. The workflow files under `.github/workflows/` are short and
-list every step.
+On Windows, do not run WSL builds or clang-tidy locally to stand in for the Linux and macOS jobs: GitHub CI is that
+gate, and a failure there is fixed forward on the branch.
+
+If a job fails, the commands above reproduce it locally on the platform you are on. The workflow files under
+`.github/workflows/` are short and list every step.

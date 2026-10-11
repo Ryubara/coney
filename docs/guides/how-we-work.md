@@ -71,12 +71,31 @@ Many tracks run at once, each owning one subsystem, mission or question:
 - **One branch and one worktree per track**, under `worktrees/coney/<branch>/`. Nobody edits the main checkout.
 - **Small shared files are regenerated, not hand-merged**: binding pages, progress bars and similar files come from
   generators that the merge reruns.
-- **Pull requests merge one at a time**, by the maintainer or the approving review, never by the agent that wrote
-  them. Each pull request is squash-merged once every required check passes (tests, generators, docs build), so it
+- **Pull requests merge one at a time**, by the maintainer or a coordinator the maintainer has allowed to, never by
+  the agent that wrote them. Before merging, the coordinator checks more than CI: the title, one feature per pull
+  request, the description, docs and tests that go with the change, and a diff that holds only that change. Each
+  pull request is squash-merged once every required check passes (tests, generators, docs build), so it
   lands on `main` as one commit; work-in-progress commits on the branch are dropped by the squash and need no
-  tidying first.
-- **State lives on disk, not in anyone's head.** Each track keeps a short state file (role, branch tip, done, next,
-  open questions) in the scratch folder, so another person or agent can take it over cold.
+  tidying first. Pushes are rationed by [CI capacity](agents.md#ci-capacity).
+- **The pull request is the track's live status** ([below](#pr-status)); anything else a track must keep (a scratch
+  note, a log path) lives on disk in the scratch folder, not in anyone's head.
+
+## A pull request is the live status {#pr-status}
+
+Each track's pull request tells anyone what is done and what is left, so a stopped track is resumed from it.
+
+- **Open it as a draft at the first push:** `gh pr create --draft`, the body from
+  `.github/pull_request_template.md`. Keep pushes to meaningful milestones: each push runs CI
+  ([CI capacity](agents.md#ci-capacity)).
+- **Keep the body current on every push.** Under Checklist, a **Done** list and a **Remaining** list (checkboxes).
+  The body replaces local resume notes: when an agent stops, a fresh agent resumes from the Remaining list and the
+  branch ([Running agents](agents.md)), not from the dead agent's context.
+- **Mark it ready when Remaining is empty** (or what is left is deferred to an open item or issue named in the
+  body): `gh pr ready <n>`. The coordinator reviews and merges only ready (non-draft) pull requests.
+- **Agents never merge and never wait for CI.** A failing check on a ready pull request goes to the coordinator,
+  or to a fresh agent ([When a pull request fails checks](agents.md#ci-failures)).
+- **The body is public:** the clean-room rules of a research page apply (addresses and short findings, no
+  decompiler output).
 
 ## Sharing one machine {#shared-machine}
 
@@ -96,7 +115,9 @@ something:
 - **Keep the machine usable.** Nothing you start may take the keyboard focus or send keystrokes to another
   window; drive programs through their own interfaces (for the emulator, see
   [Driving PCSX2](research-workflow.md#driving-pcsx2)). Keep build parallelism moderate, and do not run
-  virtual-machine builds locally when the project's CI covers them.
+  virtual-machine builds locally when the project's CI covers them. On Windows that means no WSL builds and no
+  clang-tidy runs: GitHub CI is the Linux and macOS gate, and a failure there is fixed forward on the branch
+  ([CI](building.md#what-ci-runs)).
 - **Keep Python out of the tree.** Use a private virtual environment in your scratch folder
   (`UV_PROJECT_ENVIRONMENT`) rather than a `.venv` inside a worktree, which every tool and linter would then scan.
 - **Scratch is yours per branch.** Put output in `scratch/<branch>/`; game-derived files (captures, states, dumps,
@@ -120,15 +141,15 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
 
 - **Decide and keep going.** The coordinator approves its own designs and plans, and when one item ends it takes the
   next from the state file instead of asking whether to start. It stops only when a maintainer says so.
-- **Escalate only maintainer decisions:** making the repository public, release tags, force-pushes, legal and licence
-  questions, changes to the installer and launcher (a maintainer approves them before they merge), and changes to
-  these rules.
+- **Escalate only maintainer decisions:** making the repository public, release tags, force-pushes of `main` or of
+  someone else's branch, legal and licence questions, changes to the installer and launcher (a maintainer approves
+  them before they merge), and changes to these rules.
 - **Keep every gap staffed.** When a track finishes, the next open gap gets a track at once: unfinished fixes,
   subsystems that differ from the original, missions still to build (several at a time, one per track). The
   priorities are on the [roadmap](../roadmap.md).
-- **Merge on the automated gate, not on play-tests.** Finished work merges once the [checks](testing.md#local-gate)
-  pass; the coordinator fixes small gate failures (lint, formatting, generated pages) itself instead of sending the
-  work back.
+- **Merge on the automated gate, not on play-tests.** Ready (non-draft) pull requests merge once the
+  [checks](testing.md#local-gate) pass; the coordinator fixes small gate failures (lint, formatting, generated
+  pages) itself instead of sending the work back.
 - **Ship after every merged feature.** Push, build the release locally, and hand the play-testers one list of what
   changed and how to reach it ([Play-testing](testing.md#play-testing)). Research-only merges need no build.
 - **Keep its own context small.** The coordinator re-reads its whole conversation on every turn: it checkpoints
@@ -154,6 +175,9 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
   side and rerun the generator; resolve prose pages by hand, keeping both sides' claims.
 - **Run the full checks on the merged result,** including the platform builds CI will run, before pushing; fix
   failures forward rather than leaving `main` red. Before editing a page many tracks share, rebase on `main` first.
+- **Rebuild the release build after an engine merge.** When a merged change touches the engine, the coordinator
+  builds the `release` preset ([Build and test](building.md#build-and-test)) from the updated `main`, so the
+  maintainer can play the latest `main`. A merge that changes only docs or research needs no build.
 - **Do not wait.** When a commit is finished and you are sure of it, report its sha in one line and go on to the next
   item in your scope. Never block on a merge, a rebase, a manual test or an answer: use a clearly marked stand-in or
   take the next unblocked item. Test findings come back later as fixes.
@@ -166,12 +190,20 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
 - **An agent knows only what its brief and the repository tell it.** The brief names the role, the model, the
   worktree, the scope it owns, the files it must not touch and what "done" means, and points at the rules rather than
   pasting them ([Briefing](agents.md#briefs)).
+- **No agent waits on CI.** An agent pushes its branch, opens the pull request, reports and ends. The coordinator
+  watches CI and sends a failure to a fresh agent ([When a pull request fails checks](agents.md#ci-failures)); an
+  agent idle past its cache lifetime re-writes its whole context, often hundreds of thousands of tokens, when it
+  resumes.
+- **Limits on one agent's run.** An agent that would wait more than about 45 minutes in total (builds, sweeps,
+  emulator runs), or whose context passes about 300 000 tokens, commits and pushes what it has, writes its state to
+  its log or state file and reports; a fresh agent continues from that report. Coordinators brief every agent with
+  these limits ([Running agents](agents.md#cache)).
 - **Long-running tracks keep going.** They commit in groups, tell the coordinator each group's sha, and continue with
   the next item in scope until it is empty, instead of stopping after one finding.
 - **Report what a reader needs:** commits, what works now and the command that shows it, stand-ins, open items and
   the results of the checks. Short.
 - **Commits carry the agent's own model name** in a `Co-Authored-By` trailer (the format is in
-  [Conventions](conventions.md)); nobody pushes or merges except the coordinator.
+  [Conventions](conventions.md)); an agent pushes its own branch and never merges.
 
 ## Starting on another game {#another-game}
 
