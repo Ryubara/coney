@@ -687,3 +687,65 @@ type = "u32"
 name = "prop_tint"                        # +0xc8, the tint word (alpha in the low byte)
 address = "prop + 0xc8"
 type = "u32"
+
+# The follow camera on a fall: the aim point the view faces (+0x240) and its lag (+0x418), the view's pitch (camera to
+# the aim point), the hard band (+0x33c/+0x340), and the player's state word (record +0x00; the long fall is
+# `0x1000000000`, state_hi & 0x10), held flags (+0x08; falling `0x400000`) and state code (+0x14; 26 the fall).
+# Research: docs/research/camera.md#long-fall.
+[[fall]]
+name = "aim_x"
+address = "camera + 0x240"
+type = "f32"
+
+[[fall]]
+name = "aim_y"
+address = "camera + 0x244"
+type = "f32"
+
+[[fall]]
+name = "aim_z"
+address = "camera + 0x248"
+type = "f32"
+
+[[fall]]
+name = "aim_lag"                          # +0x418
+address = "camera + 0x418"
+type = "f32"
+
+[[fall]]
+name = "view_pitch"                       # the view's pitch, camera to aim point; positive looks up
+formula = "deg(atan2(aim_z - cam_z, hypot(aim_x - cam_x, aim_y - cam_y)))"
+
+[[fall]]
+name = "aim_above"                        # how far the aim point is above the look-at point
+formula = "aim_z - look_z"
+
+[[fall]]
+name = "hard_near"                        # +0x33c, the hard band's near edge
+address = "camera + 0x33c"
+type = "f32"
+
+[[fall]]
+name = "hard_far"                         # +0x340, the hard band's far edge
+address = "camera + 0x340"
+type = "f32"
+
+[[fall]]
+name = "state"
+address = "rec(player) + 0x0"
+type = "u32"
+
+[[fall]]
+name = "state_hi"
+address = "rec(player) + 0x4"
+type = "u32"
+
+[[fall]]
+name = "code"
+address = "rec(player) + 0x14"
+type = "s32"
+
+[[fall]]
+name = "pad_1b"                           # per-player record +0x1b: 0 doubles the aim lag x 2.5 for a fast target
+address = "prec(player) + 0x1b"
+type = "u8"

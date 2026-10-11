@@ -543,12 +543,20 @@ functions named:
   inserts before the first entry with a higher number). When the pool is empty a new hint is dropped. The text is
   kept by pointer, not copied.
 - **Queueing** (`HintBox_Queue(box, text, priority)`, `0x001ce3c0`): a nil text clears the showing hint unless the game
-  is paused. Otherwise the hint is inserted; if a hint is showing and the new priority is **lower** (more urgent), the
-  showing hint is put back in the queue with its own priority and cleared, so the new one shows on the next update and
-  the old one **starts again from the beginning** later. Equal or higher numbers wait.
+  is paused (`MessageHUD_Shutdown`, `0x001b9290`); it does **not** take the next hint, which waits for the next
+  `HintBox_Update`. Otherwise the hint is inserted, with **no check for a duplicate** (the same text twice is two
+  entries). If a hint is showing and the new priority is **lower** (more urgent), the showing hint is put back in the
+  queue with its own priority and cleared, and it **starts again from the beginning** later. Equal or higher numbers
+  wait. Last, when no hint is showing (the box was free, or the urgent one just cleared it), `HintBox_Queue` calls
+  `HintBox_Update` itself (the box's vtable `+0x34`), so the front of the queue **shows in the same call**, with its
+  cue: a script's `HUDSetTutorialText(nil)` then `HUDSetTutorialText(text)` shows `text` at once, in the update the
+  script ran. Confirmed (code) at `0x001ce484`-`0x001ce52c`, and confirmed (runtime): every text set on a free box in
+  level99's lessons 1-8 was shown in the same tick ([The queue at runtime](#hint-queue-runtime)).
 - **Taking the next** (`HintBox_Update`, `0x001cdc80`, each HUD update and also during a freeze, from `GameTimer_Update`
-  `0x00145a10`): when no hint shows, the front of the queue becomes the text (`MarkupText_SetText`), its priority goes
-  to `+0x3ac`, interface cue `0x15` plays, and the box is laid out ([layout](#hint-box-layout-0x0050eb50)).
+  `0x00145a10`, and from `HintBox_Queue` and `HintBox_Withdraw` above): when no hint shows, the front of the queue
+  becomes the text (`MarkupText_SetText`), its priority goes to `+0x3ac`, interface cue `0x15` plays, and the box is
+  laid out ([layout](#hint-box-layout-0x0050eb50)). When a hint shows, it checks the markup's time instead and clears
+  an expired hint; the next one is **not** taken in that call, so it shows one update later.
   The queue entry is in `s1` there (`+0x0` the text, `+0x4` the priority byte); `0x001cdf7c`, just after
   `MarkupText_SetText`, is where the `event-hint` hook logs each hint the moment it shows. Confirmed (runtime).
 - **How long a hint stays** comes **only from its markup** (`MarkupText_IsExpired`, `0x001bb2f0`; when it returns true
@@ -566,9 +574,12 @@ functions named:
   Disc check (counts only): of the hint strings, `config_strings_en.lua` has 7 `<DISPLAYTIME>` tags and `level99.lua` 8
   (2,500-8,000 ms); neither uses `<FREEZE>`, so most hints stay until the script removes them.
 - **Removing:** `HUDFlushTutorialText(p)` (`HintBox_FlushPriority`, `0x001ce748`) removes every queued hint of priority
-  `p`, and the showing one when its priority is `p`; 4 removes all. `HintBox_Withdraw(box, text)` (`0x001ce5c0`)
-  removes one hint by its text pointer (the showing one only when the game is not paused). `HUDCheckTutorialText`
-  (`HintBox_Contains`, `0x001ce550`) is true while the text is showing or queued.
+  `p`, and the showing one when its priority is `p`; 4 removes all. The next hint then waits for the next
+  `HintBox_Update`. `HintBox_Withdraw(box, text)` (`0x001ce5c0`) removes one hint by its text pointer: the showing one
+  through `HintBox_Queue(box, nil)` (so only when the game is not paused) followed by a `HintBox_Update` call, so the
+  next queued hint **shows at once**; a queued one, the first entry with that pointer only. `HUDCheckTutorialText`
+  (`HintBox_Contains`, `0x001ce550`) is true while the text is showing or queued. Texts are compared by pointer;
+  Lua 4 interns its strings, so a script's equal strings are one pointer (inferred). Confirmed (code).
 - **Style:** text colour `0x005fd310` (178, 178, 178, 255) ([GUI](gui.md#colour-table)), markup lines `<CR2>` and
   `<CRM>` enabled; the widget's `+0x1d4` is 0.74 with one player and 0.52 split, or the number after a leading
   `<AUTOINDENT` tag (`0x001bb390`). Read at runtime (PCSX2 2.9.94, copies of quick-save slots 3-8, `level99`): a
@@ -583,6 +594,49 @@ functions named:
 
 The box is hidden while a scroll-in message, an announcement or a mini-game panel shows ([What hides
 what](#the-huds-frame)); it is drawn by `0x001ce8b8` and hidden by `0x001bb2b0`.
+
+#### The queue at runtime {#hint-queue-runtime}
+
+Two plays of `level99` checkpoint 1 (2026-10-11, PCSX2 2.9.94, the state copy `l99-cp1-lesson1` driven by the
+`level99-tutorial` course of [Differential playthroughs](../guides/research-workflow.md#differential-playthroughs),
+3,600 updates each, through lesson 9's set-up), with the hooks `hint-queue` (`HintBox_Queue`), `hint-clear`
+(`MessageHUD_Shutdown` on the box `0x00609250`), `hint-withdraw`, `hint-flush`, `event-hint` (`0x001cdf7c`),
+`tutorial-callback`, `anim-dispatch` and `anim-callback-match` of `repo:research/traces/patches.toml`. Times are taken
+from the tick count each hook logs (`0x005104f4`, two ticks an update). Confirmed (runtime):
+
+- **A text set on a free box shows in the same tick.** All `HintBox_Queue` calls (87 and 89 in the two runs) came
+  from `HUDSetTutorialText` (`Tutorial_QueueText`, return address `0x001b499c`). Of those with a text (40 and 41),
+  all but one found the box empty (a nil just before it, or nothing showing) and were shown within the same call:
+  `MarkupText_SetText`'s own clear (`0x001bb26c`), then the `0x001cdf7c` show, at the same tick. The one is `TT_26b`
+  below; apart from it the queue never held an entry past the call that queued it.
+- **A held hint makes the next wait for its end, plus one update.** `TT_26a` (`<DISPLAYTIME 3000>`) and `TT_26b` were
+  set in one call; `TT_26b` stayed queued while `TT_26a` showed. `HintBox_Update` cleared `TT_26a` 91 updates (182
+  ticks) after it showed, and `TT_26b` showed on the next update, 92 updates after `TT_26a`, the same in both runs.
+- **Duplicates are not dropped.** `P1.StartSnaps` sets the snap text twice in one call (nil, text, nil, text, one
+  tick): the box showed it, cleared it and showed it again, with the cue twice. The two entries never coexist in the
+  queue, because the first is shown before the second is queued.
+- **Nothing else queued.** No `HintBox_QueueGameHint`, no `HUDFlushTutorialText`; `HintBox_Withdraw` ran about
+  3,000 times (from `HUD_WithdrawActionHint`, return address `0x001b3e64`, [Action prompts](#action-prompts)), always
+  with no text (no action hint was queued), so it did nothing.
+
+So in the original a hint queue backs up only behind a hint with a time (`<DISPLAYTIME>`, `<FREEZE>`) or a more urgent
+one, never because two scripts set texts in one update: the last text set in an update is the one on screen at its
+end. The order and timing of lessons 5-8 are in [Scripts](scripting.md#level99-hint-timing).
+
+**Coney's differences** (from `repo:src/hud/hint_box.cpp`, for the implementer):
+
+1. `HintBox::queue` only inserts; the text waits for the next `HintBox::update`. It must show the front of the queue
+   at once, with its cue and its `hint` event, when nothing is showing after the insert (and after an urgent hint
+   cleared the showing one). With that, two nil + text pairs in one update leave nothing queued, as on the original.
+2. `HintBox::withdraw` of the showing text must also take the next hint at once (`HUDSetTutorialText(nil)` and
+   `flush` must not).
+3. `HintBox::update` clears an expired hint and takes the next in the same call; the original takes it on the next
+   update (`TT_26b` 92 updates after `TT_26a`, not 91).
+4. Keep: no duplicate check in `queue`; nil does not take the next hint.
+5. Not the box's: a grab's hold ids must fire their animation callbacks at the connect, 34 updates before the strong
+   grapple's hit is scored ([Animation callbacks](characters.md#anim-callbacks)), so `PlayerState`'s grab hint and
+   `P1.Power`'s `TT_24d` come in different updates, as in the original
+   ([lessons 5-8](scripting.md#level99-hint-timing)).
 
 ### The tutorial callback (`HUDSetTutorialCallback`) {#tutorial-callback}
 
@@ -728,6 +782,12 @@ icon sprite at `+0x480`. Confirmed (code) unless marked:
   number is instead a **sprite word**: `ActionPrompt_SetText` hands it to `ActionPrompt_SetNumberText` (`0x0019f128`) →
   `MessageHUD_SetIcon` (`0x001bb1e0`), which drops the text and shows that sprite in the widget's own box `+0x70`.
   Confirmed (code).
+- **The button glyph** ([MONEYFONT](gui.md#moneyfont)): the context prompts start with `GSTRING.ACTIONBUTTON`,
+  `<MONEYFONT><ST></MONEYFONT>` and a space, concatenated in front of the prompt's words (`config_strings_*.lua`; disc
+  check, counts only). `<ST>` is the character `n`; inside `<MONEYFONT>` the prompt's font slot 3 (`part_page0`)
+  draws it from rectangle 11 + (`'n'` − `'0'`) = **73, the triangle button**, so the original shows "(triangle) Give
+  Weapon". The revive string 4 instead uses `<BIGFONT><MONEYFONT><SDL>`: `big_font` rectangle 256 + (4 − 1) = 259, the
+  animated stick picture. Confirmed (code) at `0x001b9600`, `0x00179958`, `0x00179c30`.
 - **The raise** (`ActionPrompt_SetRaise`, `0x0019f430`, each HUD update) keeps the prompt clear of the texts below it:
   while the hint box shows (box `+0x3a8` set and no scroll-in), raise = 0.05 (`0x0050d500`) − the box's height (`+0x3b0`);
   otherwise −0.02 (`0x0050d504`) − the showing scroll-in's height (scroll-in `+0x578`, 0 when none). A prompt of more
@@ -775,6 +835,14 @@ icon sprite at `+0x480`. Confirmed (code) unless marked:
       when he is the other player (co-op); an AI crew member (`+0x380` = −1) has none.
     - **Order**: after the mug test and before the action object, under the same "free to act" gates; a player who is
       himself knocked out gets no prompt.
+    - **No flash, no prompt beside a downed Warrior.** Without a flash the revive step fails and the steps after it
+      run, but none of them offers a downed Warrior anything: the talk prompt (step 4) needs his `+0x1b2`, and
+      `WarriorBrain_Think` (`0x003052f0`, [the swap prompt](ai.md#think-warrior)) sets it only while
+      `HumanRecord_AreActionsBlocked` (`0x00228228`, state mask `0x7bf9e9f7ff0`) is false for him and his gait
+      (`+0x1a8`) is 0. That mask holds `0x40000`, the knocked-out state (`Human_IsKnockedOut`, `0x00227dd8`, tests
+      exactly `0x40000`), so a knocked-out Warrior's swap prompt ("Give Weapon", strings `0xc`-`0xe`) is cleared on
+      his next think. So beside a downed Warrior the original shows **the revive prompt with a flash, else nothing**
+      (or an action object's prompt in reach). Confirmed (code).
 - **Showing:** no text hides the prompt (`0x001b2490`); a new or changed text restarts it (`ActionPrompt_SetText`,
   `0x0019f1b0`; a text that parses as a number goes through `0x0019f128`). A prompt naming `Spray`, `Flash`, `Blades`
   or `Give Mon...` also wakes the player panel ([Activity](#the-player-panel)).
@@ -2282,11 +2350,14 @@ pixels per unit).
 - the **path**: `part_page0` rectangle 64, size 0.015, one per path point (tag `+0x26c`, byte pairs; count `+0x268`)
   except the last 3, grey 100 + 155 × i / n, alpha 255 (darker at the start);
 - the **painted cells**: rectangle 62, size 0.03, one per painted cell (tag `+0x0c`, byte pairs; count `+0x08`), in the
-  player's colour (human `+0x640`) at alpha 205;
+  tagger's colour (human `+0x640`: its bytes 0-2 as r, g, b, by default (80, 7, 5); [Crimes](crimes.md#tag-look))
+  at alpha 205;
 - the **cursor**: rectangle 63, size 0.04, at the tag's `+0x4f0`, two **floats** (x, y) in grid cells, so it moves
   smoothly between cells and is not snapped (inferred: the stick-driven cursor of [the stick game](crimes.md)). Its
   colour fades between white and black, alpha 255, over 250 ms, reversing every 250 ms (game clock mod 500,
-  `Colour_LerpRatio` `0x00338240`), and is plain white while the game is paused (`Tag_IsPaused`, `0x002748a0`);
+  `Colour_LerpRatio` `0x00338240`), and is plain white while the cursor is **on track** (`TagGame_IsOnTrack`,
+  `0x002748a0`, the game's `+0x500`). It is not a pause flag: the cursor flashes while off the path and through a
+  slip's pause ([Crimes](crimes.md#tag-coney-fixes));
 - the **frame**, the widget of `TagHud_Setup` (`part_page0` rectangle 93, colour (191, 191, 191, **191**), depth
   11,000): its position is set in overlay space (flag 0) at origin + (0.01, 0.07), size 0.07 (a widget size, the overlay
   height). Its alpha 191 is fixed at setup and it is drawn with the rest of the panel, so it shows on every frame the
@@ -2485,6 +2556,19 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   second text
   (`SetMsgHandlerEx`'s `prompt2`)
   is queued as a priority-0 hint while it is in reach and withdrawn when it changes or leaves.
+- **Coney differs: the prompt's button** (owner item 9, "n Give Weapon"). The layout (`repo:src/gui/text_layout.cpp`)
+  skips `<MONEYFONT>`, so the `<ST>` of `GSTRING.ACTIONBUTTON` draws as the letter `n` (`part_page0` firstGlyph 94 +
+  `'n'`). **Fix for the implementer**: make `<MONEYFONT>` set a glyph base for the runs until `</MONEYFONT>`: in the
+  `part_page0` slot (Coney's `kTextFontSlot`, the original's slot 3) rectangle = 11 + (c − `'0'`); in `big_font`
+  (slot 6) rectangle = 256 + (c − 1); none in other slots ([MONEYFONT](gui.md#moneyfont)). Also give the stick tags
+  (`<SDD>`, `<SDL>`, `<SDR>`, `<SDU>`) their characters 3-6 alternating with 2 every `0x0050e6e4` ms, and add the
+  icon tags 23-31 (`<RARREST>` … `<RCALLGANG>`, [the tag table](gui.md#markup)) to `repo:src/gui/markup.cpp`.
+- **Coney differs: the prompt beside a downed Warrior** (owner item 8, "no revive prompt"). Coney's revive step
+  matches the original (a flash is needed), but its swap prompt (`repo:src/ai/swap_prompt.h`) leaves out the blocked
+  test, so a knocked-out Warrior stays talkable and Coney shows "Give Weapon" where the original shows nothing (no
+  flash) or the revive prompt (with one). **Fix for the implementer**: clear the swap prompt (talkable, its text)
+  while the Warrior or the player is knocked out, or better, model `HumanRecord_AreActionsBlocked`'s mask
+  ([No flash, no prompt](#action-prompts)); a playthrough test should hold a flash to see string 4.
 - **The stereo-theft panel** (`repo:src/hud/stereo_hud.h`, stepped by `PlayLevelMode::stepStereoPanel()`) as
   [the stereo panel on screen](#stereo-layout) says: up from the triangle press, the arrow round the backdrop's
   corners by stage, the gauge sized and turned by the angle turned and dropping by a doubling step while a stage is
@@ -2515,8 +2599,9 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
 - **The tagging panel** (`repo:src/hud/tag_hud.h`, set by `GameplayMode::updateTagPanel()`) as
   [the tagging panel](#fn-after-subtitle) says, while player 1 sprays: the path's dots but the last three, grey from
   100 to 255, the painted cells in his `HuTagColor` at alpha 205, the cursor between cells fading white to black and
-  back over 500 ms (white while the game pauses), the charge bar shrinking down to its fixed bottom, and the frame at
-  alpha 191; gone when the spray ends.
+  back over 500 ms (white while the game pauses; the original is white while on track, [the
+  fix](crimes.md#tag-coney-fixes)), the charge bar shrinking down to its fixed bottom, and the frame at alpha 191;
+  gone when the spray ends.
 - **The gang-count indicator** (`repo:src/hud/num_indicator.h`) as [the indicator](#gang-count-indicator) says: the
   shared one (`HUDSetNumIndicator` player 2), in a level numbered 100 or more, draws the blue header (sheet-table record
   `0x20e`, French `0x20f`, German `0x210`) with its two black shadows at (0.06, 0.944) and the gang's living members as
@@ -2639,7 +2724,8 @@ stand-in**: the chase HUD is not built or drawn (no level script creates it), so
 
 - Which character each name-banner sheet (records `0x1f`-`0x32`) names, beyond Rembrandt (`0x2f`).
 - The handcuff and key counters' icon rectangles, and the counters' exact text offsets.
-- The action prompts' text alignment and icon sprite; what `0x00225ff0` tests; a runtime look at a shown prompt.
+- What `0x00225ff0` tests; a runtime look at a shown prompt (the alignment and the button glyph are answered:
+  [Action prompts](#action-prompts)).
 - Which event raises each of the game's own hints (the 19 callers of `HintBox_QueueGameHint`).
 - **The caption pager** (HUD `+0x18e60`, [GUI](gui.md#fn-subtitle)): which script or mode creates it and whose
   command 1 steps the captions (`0x001cb340`).
