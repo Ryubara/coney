@@ -1,0 +1,59 @@
+# The mount's power strike and its extensions (cross taps in 225's window): grab PoizoCiv 1.0 m ahead (circle), mount
+# (circle), then cross held and square. Research: docs/research/combat.md#mount-power. The hooks log
+# Attack_StartPaired and the anim ids each human takes, so the clips of both bodies are seen in order.
+description = "slot 6: grab and mount PoizoCiv 1.0 m ahead, cross held + square, then cross taps every 8 updates: the power strike's extensions"
+research = "docs/research/combat.md#mount-power"
+input = "moves_mount_power_ext.txt"
+updates = 330
+fields = ["player", "held"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "puppet", "paired-start", "anim-dispatch"]
+let = { enemy = 'human("PoizoCiv")' }
+setup = [
+  { address = "rec(player) + 0x144", type = "s16", value = "900", frame = 0, until = 0 },
+  { address = "rec(player) + 0x148", type = "s16", value = "400", frame = 0, until = 0 },
+  { address = "rec(enemy) + 0x144", type = "s16", value = "600", frame = 0, until = 0 },
+  { address = "prec(enemy) + 0x1e", type = "u8", value = "0", frame = 0, until = 0 },
+  { address = "tf(enemy) + 0x0", type = "f32", value = "f32(tf(player)) - 1.0 * sin(heading(player))", until = 9 },
+  { address = "tf(enemy) + 0x4", type = "f32", value = "f32(tf(player) + 4) + 1.0 * cos(heading(player))", until = 9 },
+  { address = "tf(enemy) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 9 },
+  { address = "tf(enemy) + 0x18", type = "f32", value = "sin((heading(player) + pi) / 2)", until = 9 },
+  { address = "tf(enemy) + 0x1c", type = "f32", value = "cos((heading(player) + pi) / 2)", until = 9 },
+]
+
+[coney]
+level = "sandbox:combat"
+args = ["--spawn", "start"]
+
+[[field]]
+name = "target_clip"
+address = "rec(enemy) + 0x20"
+type = "s32"
+
+[[field]]
+name = "target_state"
+address = "rec(enemy) + 0x0"
+type = "u32"
+
+[[field]]
+name = "target_health"
+address = "rec(enemy) + 0x144"
+type = "s16"
+
+[[field]]
+name = "target_x"
+address = "tf(enemy) + 0x0"
+type = "f32"
+hidden = true
+
+[[field]]
+name = "target_y"
+address = "tf(enemy) + 0x4"
+type = "f32"
+hidden = true
+
+[[field]]
+name = "target_distance"
+formula = "hypot(target_x - x, target_y - y)"

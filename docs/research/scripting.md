@@ -1213,6 +1213,25 @@ Nothing on the way slows him for the jump, confirmed (code):
 - An AI starts a jump at any gait, from a run too, with no run-up test (`Human_BeginJump`, `0x0023db48`), and the
   landing here is level with the take-off, so it is a jump, not the slowing drop ([Jumps and drops](ai.md#path-planning)).
 
+**At runtime** (2026-10-11, PCSX2, confirmed (runtime); scenario `vermin_window_jump` in
+`repo:research/traces/scenarios/`, the owner's slot 9 copied, hook `event-call`). The player runs at the window with the
+stick at 100 % straight ahead and taps triangle 59 updates in, as in `glass_jump`, lands at x 44.5, then stands still.
+Vermin's human `+0x1a8` (gait), `+0x1ac` (speed), position and top goal were read every update:
+
+- **First leg.** `GoalMoveToFlag` (Vermin, `fStop[3]`) was called 80 updates in, as the player came down. The top goal
+  was MoveToFlag (vtable `0x00542130`). From 82 updates in Vermin went gait 2 → 3 (87) → **4** (95), and from about 101
+  updates in held **7.80 m/s**, the run speed, with clip 410 (`ANIM_MOVEMENT_RUN`). Gait 4 and 7.80 m/s held on every
+  update up to the take-off at 135, at (50.74, −2.83), 3.3 m before the panes at x 47.4. Then came gait 5 and the jump clip
+  434: 0.318 m an update across the ground (9.55 m/s), 3.5 m/s up at the start, 0.523 m/s less each update. He
+  crossed x 47.4 in the air (z 4.58-4.53, 0.4 m above the take-off) and landed at 153 at x 45.01 (clip 435), then
+  walked on and stopped at `fStop[3]` (41.46, 2.63) about 220 updates in.
+- **Second leg.** `GoalMoveToFlag` again at 300 (`P3.FinishRun`), gait 4 from 328 at 7.80 m/s up to the take-off at
+  346 (y 8.95). The jump went 9.40 m/s along y with 5.0 m/s up; he landed at 369 (y 16.15) and stopped at `fStop[4]`
+  (41.50, 19.44).
+- So the gait is **4 (run)** right up to the take-off on both legs, with no slowing before the window; the gait-5
+  reading during the jump is the jump's own speed (above 9.02 m/s, the gait-5 bound for Rembrandt's speeds, confirmed
+  (code) at `0x0022aeb0`, [Speed classes](characters.md#speed-classes)), not a sprint order.
+
 Coney fixes (item 42):
 
 1. Map `GoalMoveToFlag`'s gait 4 to the run gait and keep it through a route's jump leg: the move's speed is the
@@ -1436,7 +1455,32 @@ only) are inferred; scene data is read from the disc's `l80_c5` records (numbers
 - **A human in a grab is skipped.** The scene's start leaves out a bound human that is grabbing, grabbed, mounting or
   mounted: not posed, not counted, its fight going on ([Scenes: humans](scenes.md#humans), confirmed (code)). A cop
   with Snow in a hold at that moment would stay out of the scene in the original too; with auto-escape and god mode
-  on Snow, how often that happens is **deferred: runtime** (below).
+  on Snow, how often that happens was checked at runtime (below): not once in 60 s of the fight.
+- **At runtime all ten were taken in** (2026-10-11, PCSX2, confirmed (runtime)). Level80 checkpoint 2 was entered as
+  in [the runtime order](#level80-hints) and Cleon teleported to (−191, 224) (`Object_Teleport`, call hook). He walked
+  towards (−195.3, 225.2) with the stick at 0.5, aimed at the point and re-aimed every 2 updates. The cops were set on
+  Snow as he came into `vSnowCowboyTrigger`. `l80_c5`'s header went to state 4 on the update of `ScenePlayCinematic`
+  and to state 5 the next. At that first playing update `+0x1e` was **10**, with all 10 roles bound and no one skipped
+  for a grab. One run only, with the scene started a few seconds after the cops engaged.
+- **No one grabs in the gate fight, so no one is left out** (a second run, 2026-10-11, PCSX2, confirmed (runtime);
+  checkpoint 2 entered the same way, hooks `strike-contact`, `hit-reaction` and `grab-start`). `vSnowCowboyTrigger` is
+  a box from (−195.7, 210.8, 1.1) to (−184.2, 218.0, 4.6) (read from the volume object behind the script's handle),
+  across the street south of the gate: a player walking up from the checkpoint start passes it well before he is
+  within 2 m of `fSnowCowboyTrigger`, and `GangMakeEnemies` and `GangEngageEnemy(cops, Snow)` came the update Cleon
+  stepped in at (−190.6, 217.8). (A player teleported to (−191, 224), north of it, starts the scene without ever
+  setting the cops on Snow: the first run here did.) Cleon then stood still for 1,800 updates (60 s) while the cops,
+  Snow and Cowboy fought (strikes both ways, reactions, the Destroyers joining). Sampled every update, none of Snow,
+  Cowboy and the four cops ever had a grab or mount bit (`0xcf0` of record `+0x14`), and `Grab_Start` was never
+  called. The scene started at Cleon's walk to the flag with all ten humans taken in. So with this AI a cop holding
+  Snow at the scene's start does not happen in practice; the skip is a code path only.
+- **The batons after the scene** (same run, the four records of `dyn_baton` to `dyn_baton03` read every 15-20
+  updates from the scene's end, through `Objects` and the `ObjectTaskManager`'s records): before the scene none is
+  spawned (the scene's `SceneAddObject` spawns them); `DestroyCopWeapons` destroyed one held object per cop at the
+  start. At the scene's end, 3 updates after and at 1 s, **only `dyn_baton01` was live**, lying at its track's end
+  (−194.51, 233.02, 1.25); the other three records were marked removed (`+0x24` bit `0x40000`) when `GangDelete`
+  took their cops. `dyn_baton01` was removed between 174 and 193 updates (5.8-6.4 s) after the scene's end, so
+  about 30 s after its drop at frame 279, and at 40 s and later no baton was left. `dyn_baton04` and `05` (the
+  level's others) never spawned in this stretch.
 
 Coney fixes (item 36):
 
@@ -1468,31 +1512,50 @@ Coney fixes (item 36):
 - What lasts is what the explosion's **six embers** leave where they land ([Explosions](script-types.md#part-explosion),
   confirmed (code) at `0x003c3c08`, `0x003c3da8`): each ember lives 25-40 **updates** at a random interval of 1-3
   ticks (about 0.4-2 s) and drops a `sub_flames` puff behind it every update; on landing on a surface that is not a
-  wall it makes a **`sub_burn`** scorch (interval 180 ticks, four steps: about 9 s shown, 12-15 s alive, with an AI
+  wall it makes a **`sub_burn`** scorch (interval 180 ticks, four steps: 12.0 s alive at runtime, below, with an AI
   no-go sphere of 0.5-0.75 m) and a **`sub_fade_flame`** on it (60-89 frames at 2-3 ticks, then a fade: about
   4-6 s), the first ember's flame with the looping `vags/fire/fire_small_loop`. Three explosions so leave up to
   eighteen small fires on the clubhouse's ledges and floor for several seconds, while the flash, fireballs and debris
   are over in about 2 s.
+- **At runtime** (2026-10-11, PCSX2, confirmed (runtime); three plays of the unskipped intro, entered at `level80`
+  checkpoint 1 as in [the runtime order](#level80-hints)). The hooks `ember-init`, `ember-update`, `burn-init`,
+  `burn-update`, `fade-flame-init` and `fade-flame-update` of `repo:research/traces/patches.toml` logged the three
+  explosions about 650 updates into `l80_c1`, 5 and 4 updates apart, with six embers each. The tasks lived as follows:
+    - **Embers: 2-5 updates (3-9 ticks)**, never their 25-40. Each starts 0.7 m above its flag (z 6.8 at
+      `fExplosion1`) and falls about 0.6 m onto the sill or floor, so it lands almost at once and ends there.
+    - **Scorches (`sub_burn`): 18, one per ember, each 721 ticks (12.0 s)** from its creation to its last update.
+      That is five updates: the creation and four steps of 180 ticks.
+    - **Flames on the embers (`sub_fade_flame`): 18, 287-361 ticks (4.8-6.0 s)** each, on the ember's landing spot.
+    - **More flames, not from the embers**: another 46-53 `sub_fade_flame` per play. They start 20-60 updates after
+      the explosions, scattered up to about 6 m round the flags at floor height (z 5.7-6.0), and each lives 278-374
+      ticks (4.6-6.2 s). They come from the explosion's **burning debris** (below).
+    - **Their source** (a second pass, 2026-10-11, two more plays, hooks `ember-init`, `burn-init`,
+      `fade-flame-init` and `debris-flame`): each explosion's twenty large `sub_debris` are made burning (message
+      `0x27`, kind 2, [Explosions](script-types.md#part-explosion)), and one that lands on a floor (its contact
+      normal's z above 0.9) makes a `sub_fade_flame` where it lies ([`sub_debris`](script-types.md#sub-debris)).
+      The two plays made 71 and 62 fade flames: 18 from the embers and **53 and 44** from landed debris, of 60
+      burning pieces, all between 20 and 63 updates after the first explosion at z 5.6-7.0. Every flame is
+      accounted for.
+
+  So fire is still burning near the flags 3 s after the last explosion, the flames are gone by 6.2 s and the scorches
+  at 12.0 s, and nothing is left at 20 s.
 
 Coney fixes (item 28):
 
 1. Give the explosion's embers the original's life: 25-40 updates of 1-3 ticks each (Coney counts 25-40 ticks, about
-   half), and a `sub_flames` puff each update.
+   half), and a `sub_flames` puff each update. Here they land after 2-5 updates, so what the player sees is the
+   landing: an ember that ends on landing must still leave the scorch and flame of fix 2.
 2. On an ember's landing make the `sub_burn` (with its no-go sphere) and the `sub_fade_flame` on it as above, the
    first ember's flame with its loop sound; Coney's embers end on landing with nothing behind.
-3. Test: after `C1.ExplodeAtFlag`, fire particles are still live near the flag 3 s later and none 20 s later.
+3. Make the explosion's twenty large debris pieces burning (kind 2) and give each that lands on a floor a
+   `sub_fade_flame` where it lies ([`sub_debris`](script-types.md#sub-debris)): about 15-18 more small fires per
+   explosion, scattered a few metres round it, 20-60 updates after it.
+4. Test: after `C1.ExplodeAtFlag`, six scorches and six flames are made where its embers land, and one flame per
+   burning debris piece that lands on a floor; the flames are gone between 4.6 and 6.2 s and the scorches at
+   12.0 s, and no fire particle is left 20 s later.
 
-**Deferred: runtime** (PCSX2 held elsewhere; the steps for whoever has it):
-
-- Item 36: from a `level80` checkpoint-2 state (enter via mode 8's level as in [the runtime order](#level80-hints)),
-  teleport Cleon (`Object_Teleport` `0x00385bb8`, call hook) just outside `fSnowCowboyTrigger`, walk in with the left
-  stick at 0.5 up, and read `l80_c5`'s header `+0x1e` (humans in the scene) at its first playing update and each
-  role's `+0x50` binding; expected 10, else note which role was skipped and whether that human was in a pair
-  (record `+0x08` / state bits `0xcf0`). After the scene, count live `dyn_baton` objects at 1 s and 40 s.
-- Item 28: after the intro (unskipped), count live particle tasks named `sub_burn`, `sub_fade_flame` and
-  `sub_flames` within 5 m of `fExplosion1`-`3` every second for 20 s.
-- Item 42: level99 checkpoint 3 state at `P3.Player2Jumps` (the player's window jump, stick 100 % up, as in
-  [the jump](objects.md#pane-break)); record Vermin's gait and speed each update until he lands past x 47.4.
+**Deferred: runtime**: none left; item 36's batons and holds and item 28's extra flames were checked in the second
+pass above.
 
 ### `level34.lua` (mission 4) {#level34}
 
@@ -1713,6 +1776,12 @@ from the disassembly of `level3.lua` and its five chapter scripts; bindings on
    leaving the box (message 4, which also returns to the rail camera). `vbJumpWarn` boxes show a jump prompt
    (`HUDTurnOnActionCycleAnim`) for 1.5 s. Falling into `vChaseKill` (kind 0) fades and fails the mission (`MF_4`);
    a pursuer there dies, a Warrior is warped to the gallery.
+   **The way across the last roofs**, read from the disc's collision mesh (inferred; not checked in the original): the
+   jump from `vbJumpWarn_08`'s roof (z 13.2, edge at x 150.5) lands on a roof at z 10.3 (y 361-369.5). Its south
+   part is closed at x 167.4 (y 361.5-366.7) by a wall 3.6 m tall, material 152 with no climbable flag, so no climb
+   takes it ([Characters: climbing](characters.md#climb)). The way on is the steel stairs beside it (material 3,
+   y 367-369.5): two 33° flights with a landing from x 167 to 177.5, a platform at z 16.46 to x 193, then the jump in
+   `vbJumpWarn_09` over the gap (x 193.5-200.5) to the gallery's roof (z 14.4) and `vbEnterGallery` (x 200.8-208.8).
 7. **`ch4.EnterGallery`** (`vbEnterGallery`, kind 2): objective done, handlers off, the chase gangs removed,
    tireless and fast-climber cleared, the jump scene, then the Warriors warped to the gallery and `NextMission`.
 

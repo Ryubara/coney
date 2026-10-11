@@ -1,0 +1,4 @@
+# Run at the window at full stick, jump a metre before the edge (as glass_jump), then stand still.
+5 stick left 0 100
+59 tap triangle
+110 stick left 0 0
