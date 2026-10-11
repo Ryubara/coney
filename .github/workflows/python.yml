@@ -1,11 +1,14 @@
-# Lint, type-check and test the coney_tools package, then run its repository checks, on all three OSes.
+# Lint, type-check and test the coney_tools package, then run its repository checks, on all three OSes (Linux only
+# for a documentation-only pull request, none for a draft: see the changes job).
 # Actions are pinned to a full commit SHA; the tag is in the comment beside it.
 name: python
 
 on:
   push:
     branches: [main, "release/**"]
+  # ready_for_review: a draft skips python (see the changes job), so marking it ready runs it.
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: read
@@ -15,13 +18,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # What this run needs (.github/scripts/ci-scope.sh): every OS, except Linux only for a pull request that changes
+  # only documentation (the repository checks below read docs/ and research/, so they still run) and nothing for a
+  # draft.
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      python: ${{ steps.scope.outputs.python }}
+      python-os: ${{ steps.scope.outputs.python-os }}
+    steps:
+      # Depth 2: a pull request's checkout is a merge commit whose first parent (HEAD^1) is the branch it merges into.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+      - id: scope
+        env:
+          EVENT: ${{ github.event_name }}
+          DRAFT: ${{ github.event.pull_request.draft || false }}
+        run: bash .github/scripts/ci-scope.sh
+
   python:
     name: python (${{ matrix.os }})
+    needs: changes
+    if: needs.changes.outputs.python == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-2022, macos-15]
+        os: ${{ fromJSON(needs.changes.outputs.python-os) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
@@ -43,3 +67,20 @@ jobs:
       - run: uv run --project python coney-tools refs render --check
       # The mission status pages (docs/missions/) must match research/missions.yaml.
       - run: uv run --project python coney-tools missions render --check
+
+  # The one required check for python: the matrix's OSes vary by change and a skipped matrix job reports its name
+  # unexpanded, so "python (macos-15)" cannot be required. Passes when python passed or was skipped on purpose, fails
+  # when it (or the changes job) failed or was cancelled.
+  python-ok:
+    if: always()
+    needs: [changes, python]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check the results of the needed jobs
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Results: $RESULTS"
+          case " $RESULTS " in
+            *" failure "* | *" cancelled "*) exit 1 ;;
+          esac
