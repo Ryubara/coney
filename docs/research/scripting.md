@@ -1403,6 +1403,12 @@ Points a playthrough test needs:
 - **The passing-train scene** (`Coney_Sub3`/`Coney_Sub4`, `ScenePlayFixedScene`) played every ~30 s throughout; it
   is not a mission scene.
 - **The stolen objects** (step 3.5) come from the crew under the wreck order alone; the player only picked the lock.
+  The store is the pharmacy: its store front `storePharmacy01` (activity 14, group 24) stands about 2 m inside the
+  front door, so the player waiting there keeps it within the steal tactic's 12 m, and its stock is the 23 owned
+  objects of zone 24 ([Owned items](crimes.md#owned-items); disc check, counts only). What counts is message 7, a
+  take of an owned object ([Taking owned items](crimes.md#owned-items)): wrecking the store counts for nothing (a
+  strike or a break sends message 6, and the step waits on message 7 alone), while the player taking stock himself with
+  triangle runs the same `Item_TakeOwned` and so should count (inferred from the code path; not seen at runtime).
 
 #### The arrest scene and the opening fire (owner checklist 28, 36) {#level80-arrest-fire}
 

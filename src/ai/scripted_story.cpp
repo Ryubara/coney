@@ -19,6 +19,7 @@
 #include "ai/route_planner.h"
 #include "ai/scripted_brains.h"
 #include "ai/scripted_goals.h"
+#include "ai/steal_goals.h"
 #include "ai/story_goals.h"
 #include "ai/story_tactics.h"
 #include "ai/tactic_attack.h"
@@ -695,6 +696,13 @@ bool ScriptedStory::startWarriorCommand(double chief, int command, bool /*forced
     // whose brain `+0x2d5` is set gets the hiding tactic (`0x003128a0`) instead, which Coney does not build yet.
     if (command == kCrewHold) {
         m_scripted->owner().gangs().setTactic(crew->id(), std::make_unique<WarriorHoldTactic>(chief, *m_scripted));
+        return true;
+    }
+    // Steal / wreck: the steal tactic, which gives the members their goals on its first process.
+    if (command == kCrewSteal) {
+        m_scripted->owner().gangs().setTactic(
+            crew->id(), std::make_unique<WarriorStealTactic>(chief, *m_scripted, m_scripted->owner().formations(),
+                                                             m_scripted->items()));
         return true;
     }
     // The crew's last orders end, then each AI member takes the command's.

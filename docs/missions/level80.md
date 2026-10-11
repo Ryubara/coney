@@ -13,7 +13,7 @@ Warriors' burner outside their hangout, which sets up the next mission.
 | --- | --- |
 | Status | 🚧 In Progress |
 | Level | `level80` (story mission 2) |
-| Checkpoints | 0 of 4 built, 0 approved |
+| Checkpoints | 1 of 4 built, 0 approved |
 
 ## Checkpoints {#checkpoints}
 
@@ -21,7 +21,7 @@ Warriors' burner outside their hangout, which sets up the next mission.
 | --- | --- | --- |
 | 1 | 🚧 In Progress | The intro, skipped, gives the screen back; holding R2 and pushing the right stick to Let's Go gives the follow order (CommandIssued runs). Vermin and Rembrandt come down the stairs to the player, and after the script's staging (EndStartCam re-adds the crew to gang 0) they follow him again (`coney_tests "[commands]"`). Open: a Warrior who steps round the other on the landing can slide along its railing for a few seconds before taking the stairs. |
 | 2 | 🚧 In Progress | Driven by the pad to the arrest scene and "Free Cowboy and Snow"; triangle by each shows the uncuff prompt and the L1-R1 mash frees him, and checkpoint 3 follows (`coney_tests "[uncuff]"`). Each cuffed Warrior wears the cuffs icon until he is freed. Not yet: the crew's follow after. |
-| 3 | 🚧 In Progress | Plays from the player's path past Fox's scene (l80_c6), the Hold Up order (R2, right stick down) and the throw lesson: triangle at the beer pile gives Cleon a bottle, L1 aims it (throwControl), the stick brings the arc onto the marker (HuIsAimingAt) and cross throws; the bottle passes the marker and breaks beyond it in vBottleBox, the cops are distracted and Fox's second scene (l80_c6_b) plays; then the Wreck'em order (R2, right stick down-left) and the front door's lock pick (`coney_tests "[throw]"`). Not yet: the crew's ten thefts (their Steal tactic stands), so MS_C3_4 and the back door do not follow. |
+| 3 | 🎮 Pending Gameplay Approval | Plays from the player's path past Fox's scene (l80_c6), the Hold Up order (R2, right stick down) and the throw lesson: triangle at the beer pile gives Cleon a bottle, L1 aims it (throwControl), the stick brings the arc onto the marker (HuIsAimingAt) and cross throws; the bottle passes the marker and breaks beyond it in vBottleBox, the cops are distracted and Fox's second scene (l80_c6_b) plays; then the Wreck'em order (R2, right stick down-left) and the front door's lock pick (`coney_tests "[throw]"`). Then the crew steals under the wreck order: at the store front (storePharmacy01) the WarriorSteal tactic hands each Warrior an owned object of the store's zone and he fetches it (GetItem); each take is a theft that reaches vStealTrigger as message 7, and the tenth brings MS_C3_4 and the back door, whose lock picked gives checkpoint 4 (`coney_tests "[steal]"`). Stand-ins: the wreck with no store, the crew's answering line and the theft's crime score and witnesses. |
 | 4 | 🚧 In Progress | Reaches Cochise and Swan's scene; the fight needs the Wreck'em All order and the crew's tactics. |
 
 ## What it needs {#needs}

@@ -105,10 +105,13 @@ TriangleOutcome LevelPickups::triangle(double human, anim::Vec3 feet, anim::Vec3
     return TriangleOutcome{.result = holding ? TriangleResult::Drop : TriangleResult::Nothing, .choice = {}};
 }
 
-TakeResult LevelPickups::take(double handle, int player) {
+TakeResult LevelPickups::take(double handle, int player, double taker) {
     world_objects::SpawnRecord* record = m_records.find(handle);
     if (record == nullptr || record->removed || m_inHand.contains(handle)) {
         return TakeResult::Gone;
+    }
+    if (record->owned) {
+        takeOwned(*record, taker);
     }
     const world_objects::ObjectType* type = m_types.find(record->typeName);
     if (type != nullptr && type->objectKind == world_objects::kObjectKindSpecial) {
@@ -120,7 +123,42 @@ TakeResult LevelPickups::take(double handle, int player) {
     // Into the hand: the record stays, pinned as the search pinned the winner.
     record->pinned = true;
     m_inHand.insert(handle);
+    m_holders[handle] = taker;
     return TakeResult::InHand;
+}
+
+TakeResult LevelPickups::takeByAi(double handle, double taker) {
+    world_objects::SpawnRecord* record = m_records.find(handle);
+    if (record == nullptr || record->removed || m_inHand.contains(handle)) {
+        return TakeResult::Gone;
+    }
+    if (record->owned) {
+        takeOwned(*record, taker);
+    }
+    const world_objects::ObjectType* type = m_types.find(record->typeName);
+    if (type != nullptr && type->objectKind == world_objects::kObjectKindSpecial) {
+        m_records.destroy(handle);
+        return TakeResult::Loot;
+    }
+    record->pinned = true;
+    m_inHand.insert(handle);
+    m_holders[handle] = taker;
+    return TakeResult::InHand;
+}
+
+void LevelPickups::takeOwned(world_objects::SpawnRecord& record, double taker) {
+    record.owned = false;
+    if (m_ownedTaken) {
+        m_ownedTaken(taker, record.handle, positionOf(record));
+    }
+}
+
+std::optional<double> LevelPickups::holderOf(double handle) const {
+    if (!m_inHand.contains(handle)) {
+        return std::nullopt;
+    }
+    const auto found = m_holders.find(handle);
+    return found != m_holders.end() ? found->second : 0.0;
 }
 
 void LevelPickups::giveLoot(int player, const world_objects::ObjectType& type) {
@@ -206,6 +244,7 @@ void LevelPickups::drop(double handle, anim::Vec3 at) {
     if (m_inHand.erase(handle) == 0) {
         return;
     }
+    m_holders.erase(handle);
     if (world_objects::SpawnRecord* record = m_records.find(handle)) {
         record->pinned = false;
         record->position = {at.x, at.y, at.z};

@@ -5,10 +5,11 @@
 // right stick, gives the follow order the script waits for (`WCSetCallback("CommandIssued")`,
 // docs/research/hud.md#warrior-command-menu); at checkpoint 2 the two cuffed Warriors offer the uncuff prompt and the
 // L1-R1 mash frees each, which the script hears as event 17 and moves on to checkpoint 3
-// (docs/research/crimes.md#uncuffing); at checkpoint 3 an adaptive pad playthrough of the throw lesson and the store's
-// front door asserts its hints, objectives and scenes in the original's order (docs/research/scripting.md#level80,
-// docs/research/objects.md#throws). It runs only when the environment variable CONEY_DISC names the disc and skips
-// otherwise; it prints counts only (LEGAL.md).
+// (docs/research/crimes.md#uncuffing); at checkpoint 3 an adaptive pad playthrough of the throw lesson, the store's
+// front door, the crew's thefts under the wreck order and the back door asserts its hints, objectives and scenes in
+// the original's order through checkpoint 4 (docs/research/scripting.md#level80, docs/research/objects.md#throws,
+// docs/research/ai-code.md#t2-warrior-steal). It runs only when the environment variable CONEY_DISC names the disc and
+// skips otherwise; it prints counts only (LEGAL.md).
 
 #include <algorithm>
 #include <array>
@@ -451,9 +452,16 @@ TEST_CASE("the disc's level80: the cuffed Warriors offer the uncuff prompt and t
 namespace {
 
 // The hints and objectives checkpoint 3 shows, by their keys in the level's text (docs/research/scripting.md#level80):
-// the reference order of the analyst's run, steps 3.1 to 3.4.
+// the reference order of the analyst's run, steps 3.1 to 4.1.
 constexpr std::array<std::string_view, 7> kHintKeys{"TT_5", "TT_25", "TT_26", "TT_27", "TT_28", "TT_29", "TT_7"};
-constexpr std::array<std::string_view, 5> kObjectiveKeys{"MS_C3_1", "MS_C3_1a", "MS_C3_2", "MS_C3_3", "MS_C3_4"};
+constexpr std::array<std::string_view, 6> kObjectiveKeys{"MS_C3_1", "MS_C3_1a", "MS_C3_2",
+                                                         "MS_C3_3", "MS_C3_4",  "MS_C4_1"};
+// The store the crew robs: its object zone (its store front `storePharmacy01`'s group) and the thefts MS_C3_4 waits
+// for (docs/research/scripting.md#level80, step 3.5).
+constexpr std::uint32_t kStoreZone = 24;
+constexpr std::ptrdiff_t kThefts = 10;
+// The left stick's deflection for the walk through the store: a partial push, as a player walks.
+constexpr float kPartialStick = 0.6F;
 constexpr std::array<std::string_view, 2> kSceneNames{"l80_c6", "l80_c6_b"};
 
 // What a run showed, in order: each hint, objective and scene when it appears, by its key (a text the scripts did not
@@ -553,8 +561,8 @@ float aimStick(int steps) {
 
 } // namespace
 
-TEST_CASE("the disc's level80 checkpoint 3: Fox, the Hold Up order, the bottle thrown from the aim, then the store",
-          "[disc][story][throw]") {
+TEST_CASE("the disc's level80 checkpoint 3: Fox, Hold Up, the bottle thrown from the aim, the thefts, the back door",
+          "[disc][story][throw][steal]") {
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -591,14 +599,15 @@ TEST_CASE("the disc's level80 checkpoint 3: Fox, the Hold Up order, the bottle t
         REQUIRE(flag != nullptr);
         return coney::anim::Vec3{flag->position[0], flag->position[1], flag->position[2]};
     };
-    // Walks player 1 towards `to` with the left stick at 70 % until `done`, at most kWait frames.
-    const auto walkTo = [&level](coney::anim::Vec3 to, const std::function<bool()>& done) {
+    // Walks player 1 towards `to` with the left stick at `deflection` (70 % unless given) until `done`, at most kWait
+    // frames.
+    const auto walkTo = [&level](coney::anim::Vec3 to, const std::function<bool()>& done, float deflection = 0.7F) {
         const bool reached = level.runUntil(
             [&] {
                 if (done()) {
                     return true;
                 }
-                const auto [x, y] = stickTowards(*level.play(), to, 0.7F);
+                const auto [x, y] = stickTowards(*level.play(), to, deflection);
                 level.pad.leftX = x;
                 level.pad.leftY = y;
                 return false;
@@ -729,49 +738,90 @@ TEST_CASE("the disc's level80 checkpoint 3: Fox, the Hold Up order, the bottle t
     }
     REQUIRE(store);
 
-    // 3.5: at the front door (teleported to its marker's flag, as the analyst's run), triangle starts the lock pick
-    // and cross is pressed as each pin turns through the middle of its good band.
+    // Triangle at a lock starts the pick, and cross is pressed as each pin turns through the middle of its good band;
+    // true once the dial is over.
+    const auto pickLock = [&level, &dump] {
+        level.pad.buttons = coney::pad::kTriangle;
+        level.run(1);
+        level.pad.buttons = 0;
+        level.run(1);
+        if (level.play()->lockPick() == nullptr) {
+            dump();
+            return false;
+        }
+        const bool over = level.runUntil(
+            [&] {
+                const coney::world_objects::LockPick* running = level.play()->lockPick();
+                if (running == nullptr) {
+                    return true;
+                }
+                // The good band wraps through 0: from goodHigh up to 2π and from 0 to goodLow, each a margin inside.
+                constexpr float kMargin = 0.35F;
+                const coney::world_objects::LockPickDial& dial = running->dial();
+                const coney::world_objects::PinBands& bands =
+                    coney::world_objects::kPinBands.at(static_cast<std::size_t>(dial.difficulty()));
+                const float angle = dial.pins().at(static_cast<std::size_t>(dial.currentPin()));
+                const bool inBand = angle >= bands.goodHigh + kMargin || angle <= bands.goodLow - kMargin;
+                level.pad.buttons = inBand && level.pad.buttons == 0 ? coney::pad::kCross : 0;
+                return false;
+            },
+            kWait);
+        level.pad.buttons = 0;
+        return over;
+    };
+    // The store's owned stock still on its shelves (zone 24, ObjSpawn flag 2).
+    const auto stock = [&level] {
+        return std::ranges::count_if(
+            level.scripts->spawnRecords().all(),
+            [](const coney::world_objects::SpawnRecord& r) { return r.zone == kStoreZone && r.owned && !r.removed; });
+    };
+    const auto stockBefore = stock();
+    CHECK(stockBefore >= kThefts);
+
+    // 3.5: at the front door (teleported to its marker's flag, as the analyst's run), the lock is picked.
     const coney::anim::Vec3 front = flagAt("fStoreFront");
     level.play()->teleportPlayer(
         coney::world_objects::Placement{.position = {front.x, front.y, front.z}, .headingDegrees = 183.0F});
     level.run(10);
-    level.pad.buttons = coney::pad::kTriangle;
-    level.run(1);
-    level.pad.buttons = 0;
-    level.run(1);
-    const coney::world_objects::LockPick* pick = level.play()->lockPick();
-    if (pick == nullptr) {
-        dump();
-    }
-    REQUIRE(pick != nullptr);
-    const bool picked = level.runUntil(
-        [&] {
-            const coney::world_objects::LockPick* running = level.play()->lockPick();
-            if (running == nullptr) {
-                return true;
-            }
-            // The good band wraps through 0: from goodHigh up to 2π and from 0 to goodLow, each a margin inside.
-            constexpr float kMargin = 0.35F;
-            const coney::world_objects::LockPickDial& dial = running->dial();
-            const coney::world_objects::PinBands& bands =
-                coney::world_objects::kPinBands.at(static_cast<std::size_t>(dial.difficulty()));
-            const float angle = dial.pins().at(static_cast<std::size_t>(dial.currentPin()));
-            const bool inBand = angle >= bands.goodHigh + kMargin || angle <= bands.goodLow - kMargin;
-            level.pad.buttons = inBand && level.pad.buttons == 0 ? coney::pad::kCross : 0;
-            return false;
-        },
-        kWait);
-    level.pad.buttons = 0;
-    REQUIRE(picked);
+    REQUIRE(pickLock());
     CHECK(level.logged("lock pick: picked"));
-    // FrontDoorPicked ran: it issues the wreck order again for the crew's thefts. **Known gap**: the crew's Steal
-    // tactic stands (ai/story_tactics.h), so the ten thefts MS_C3_4 waits for, and the back door, do not follow yet.
+    // FrontDoorPicked issues the wreck order again: at the store front the crew steals (WarriorSteal), and the tenth
+    // theft (message 7 on vStealTrigger) brings MS_C3_4 and the back door. The player only waits at the door, as in
+    // the analyst's run.
     level.run(30);
     CHECK(level.scripts->state().characters.lastWarriorCommand.at(0) == 5);
+    const bool stolen = level.runUntil([&shown] { return shown.objective == "MS_C3_4"; }, kWait);
+    if (!stolen) {
+        dump();
+    }
+    REQUIRE(stolen);
+    const auto taken = stockBefore - stock();
+    CHECK(taken >= kThefts);
+    CHECK(level.play()->player().human().script().heldObject == 0.0); // the player took nothing himself
+
+    // 3.6: the back door, walked to with the left stick at 60 % through the store, its lock picked; checkpoint 4
+    // follows and chapter 4's first objective shows.
+    const coney::anim::Vec3 back = flagAt("fStoreBack");
+    // There once the lock's prompt is offered (a pickable door in reach).
+    const auto atBackDoor = [&level] { return level.play()->promptOffer().lock.has_value(); };
+    const bool reachedBack = walkTo(back, atBackDoor, kPartialStick);
+    if (!reachedBack) {
+        dump();
+    }
+    REQUIRE(reachedBack);
+    level.run(10);
+    REQUIRE(pickLock());
+    const bool chapter4 =
+        level.runUntil([&] { return level.checkPoint() == 4.0 && shown.objective == "MS_C4_1"; }, kWait);
+    if (!chapter4) {
+        dump();
+    }
+    REQUIRE(chapter4);
 
     // In order, as the analyst's run showed them (docs/research/scripting.md#level80); each counted the first time.
-    const std::vector<std::string> expected{"MS_C3_1", "l80_c6", "TT_5",  "MS_C3_1a", "TT_25", "MS_C3_2", "TT_26",
-                                            "TT_27",   "TT_28",  "TT_29", "l80_c6_b", "TT_7",  "MS_C3_3"};
+    const std::vector<std::string> expected{"MS_C3_1",  "l80_c6", "TT_5",    "MS_C3_1a", "TT_25",
+                                            "MS_C3_2",  "TT_26",  "TT_27",   "TT_28",    "TT_29",
+                                            "l80_c6_b", "TT_7",   "MS_C3_3", "MS_C3_4",  "MS_C4_1"};
     std::vector<std::string> seen;
     for (const std::string& key : shown.order) {
         if (std::ranges::find(expected, key) != expected.end() && std::ranges::find(seen, key) == seen.end()) {
@@ -780,6 +830,7 @@ TEST_CASE("the disc's level80 checkpoint 3: Fox, the Hold Up order, the bottle t
     }
     CHECK(seen == expected);
     CHECK(level.scripts->scripts().errors() == 0);
-    std::printf("  level80 checkpoint 3: %zu hints, objectives and scenes in order, last objective %s\n", seen.size(),
-                shown.objective.c_str());
+    std::printf("  level80 checkpoint 3: %zu hints, objectives and scenes in order, %td of the store's stock stolen, "
+                "checkpoint %.0f\n",
+                seen.size(), taken, level.checkPoint());
 }

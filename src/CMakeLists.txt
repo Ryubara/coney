@@ -37,6 +37,7 @@ add_library(coney_core STATIC
     gamemodes/loading_screen.cpp
     gamemodes/level_flow_mode.cpp
     gamemodes/level_object_services.cpp
+    gamemodes/level_items.cpp
     gamemodes/level_pickups.cpp
     gamemodes/level_start.cpp
     gamemodes/load_entry_mode.cpp
@@ -283,6 +284,7 @@ target_sources(coney_core PRIVATE
     ai/brains.cpp
     ai/chase_goals.cpp
     ai/crew.cpp
+    ai/steal_goals.cpp
     ai/dealer_goal.cpp
     ai/engage_goals.cpp
     ai/melee_goal.cpp

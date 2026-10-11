@@ -20,6 +20,7 @@
 #include "core/pads.h"
 #include "effects/level_effects.h"
 #include "gamemodes/game_mode.h"
+#include "gamemodes/level_items.h"
 #include "gamemodes/level_object_services.h"
 #include "gamemodes/level_pickups.h"
 #include "gamemodes/level_start.h"
@@ -327,6 +328,9 @@ class GameplayMode final : public GameMode {
     void updateBoxes(std::uint64_t nowMs);
     // Message 6 to every volume box `human` stands in: he damaged `object` (docs/research/scripting.md#triggers).
     void sendDamageMessage(double human, double object);
+    // Message 7, (taker, object), to every volume box round `at`: `taker` took the owned `object` that stood there
+    // (docs/research/crimes.md#owned-items).
+    void sendTheftMessage(double taker, double object, anim::Vec3 at);
     // The radios' update (Radio_Update): their sounds through the game's sound, the player's place and the progress.
     void updateRadios();
     // The particle systems' light types in the level's light manager: one point light, in its colour this step, for
@@ -505,6 +509,7 @@ class GameplayMode final : public GameMode {
     double m_tagTicks = 0.0;                      // 60 Hz ticks not yet given to the tag spots
     world_objects::FlagNet m_flagNet;             // the level's flag network (FlagNetAddLink)
     std::optional<LevelPickups> m_pickups;        // over the context's spawn records and object types
+    std::optional<LevelItems> m_items;            // the AI's view of the same objects (the steal command's)
     std::string m_shownPrompt;                    // the action prompt updateActionPrompt() last set
     std::optional<double> m_promptHintObject;     // the action object whose hint updateActionPrompt() queued
     std::string m_promptHint;                     // that hint

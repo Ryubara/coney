@@ -427,3 +427,59 @@ TEST_CASE("loot, a won mugging and a dealer's item play the item's pick-up sound
     pickups.dealerSold(0, item::kStolenLoot, 1, 5);
     CHECK(played == std::vector<std::uint32_t>{coney::crc32("test/loot_sound")});
 }
+
+TEST_CASE("an object spawned with flag 2 is owned, and taking it is a theft told once with taker and place",
+          "[level_pickups][steal]") {
+    // docs/research/crimes.md#owned-items: Item_TakeOwned runs when an owned object is taken, which clears it.
+    Harness h;
+    coney::LevelPickups pickups(h.scripts, h.state, h.records, h.types);
+    struct Theft {
+        double taker;
+        double object;
+        Vec3 at;
+    };
+    std::vector<Theft> thefts;
+    pickups.setOwnedTaken([&thefts](double taker, double object, Vec3 at) { thefts.push_back({taker, object, at}); });
+    wo::SpawnRecord stock;
+    stock.handle = 5;
+    stock.typeName = "dyn_watch";
+    stock.position = {1.0F, 2.0F, 2.5F};
+    stock.flags = wo::kSpawnOwned;
+    REQUIRE(h.records.add(stock) != nullptr);
+    CHECK(h.records.find(5)->owned);
+    h.place(6, "dyn_watch", Vec3{1.0F, 3.0F, 2.5F});
+    CHECK_FALSE(h.records.find(6)->owned);
+
+    // The player's take of the owned watch: his loot, and the theft.
+    CHECK(pickups.take(5, 0, 40.0) == coney::TakeResult::Loot);
+    REQUIRE(thefts.size() == 1);
+    CHECK(thefts[0].taker == 40.0);
+    CHECK(thefts[0].object == 5.0);
+    CHECK(thefts[0].at.z == 2.5F);
+    // A watch nobody owns is no theft.
+    CHECK(pickups.take(6, 0, 40.0) == coney::TakeResult::Loot);
+    CHECK(thefts.size() == 1);
+}
+
+TEST_CASE("an AI's take of loot removes it with nothing given, and a weapon goes into his hand",
+          "[level_pickups][steal]") {
+    Harness h;
+    coney::LevelPickups pickups(h.scripts, h.state, h.records, h.types);
+    int thefts = 0;
+    pickups.setOwnedTaken([&thefts](double /*taker*/, double /*object*/, Vec3 /*at*/) { ++thefts; });
+    h.place(5, "dyn_watch", Vec3{10.0F, 11.0F, 0.3F})->owned = true;
+    h.place(7, "dyn_bat_tuff", Vec3{10.0F, 11.5F, 0.3F})->owned = true;
+
+    CHECK(pickups.takeByAi(5, 31.0) == coney::TakeResult::Loot);
+    CHECK(h.records.find(5)->removed);
+    CHECK(h.state.player.inventory.count(0, item::kStolenLoot) == 0);
+    CHECK(h.items.empty());
+    CHECK(pickups.takeByAi(7, 31.0) == coney::TakeResult::InHand);
+    CHECK(pickups.holderOf(7) == std::optional<double>(31.0));
+    CHECK(thefts == 2);
+    // A second take finds it in hand; the drop frees it.
+    CHECK(pickups.takeByAi(7, 32.0) == coney::TakeResult::Gone);
+    pickups.drop(7, Vec3{10.0F, 12.0F, 0.0F});
+    CHECK_FALSE(pickups.holderOf(7).has_value());
+    CHECK_FALSE(h.records.find(7)->owned);
+}
