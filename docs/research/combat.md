@@ -4066,3 +4066,9 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
   breaks the pair.
 - **The clips' `+0x44` flags** (paired `0x1`, tackle `0x20`, grab `0x40`): which clips carry the tackle flag
   ([Strong grapple](#strong-grapple)).
+- **Killer and double damage in a hold**: whether the moves in a grab (`Grab_Strike`), the power strikes and the
+  throws reach `Human_AddPendingDamage`'s doubling and `Strike_Contact`'s killer rule. Coney applies both to free
+  strikes only ([Human flags](#human-flags)).
+- **A player with both grab-block flags** (`0x40000000` and `0x80000000`, `HuBlockGrab`): whether
+  `Player_GrabOrTackle` (`0x00284920`) also refuses the tackle, and whether the refused tap plays the intro and the
+  miss. Coney refuses the grab only, and plays nothing.

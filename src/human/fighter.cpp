@@ -461,6 +461,7 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
         m_candidate = strongGrappleTarget(input);
     }
     in.grabTargetInReach = m_candidate != nullptr;
+    in.grabBlocked = hasFlag(flag::kBlockFrontGrab) && hasFlag(flag::kBlockRearGrab);
     // Square with the stick asking for a snap: the snap's own search. The current target found means no snap.
     if (input.command == combat::command::kSquarePressed && combat::snapForStick(input.stick) != id::kNone) {
         Combatant* found = snapTarget(input);
@@ -620,8 +621,8 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
         }
         consumed = true;
     }
-    if (out.grabPowerOut && hurt() && m_held != nullptr) {
-        // Out of power while hurt: the victim escapes rather than being let go.
+    if (out.grabPowerOut && m_held != nullptr && powerOutEscape(*m_held)) {
+        // Out of power: a victim with the escape flags, or held by a hurt grabber, escapes rather than being let go.
         victimEscapes(input, animator);
         consumed = true;
     } else if (out.grabAction != combat::GrabAction::None) {
@@ -919,6 +920,14 @@ void Fighter::strikeContact(Combatant& victim, int animId, anim::Vec3 position, 
         m_shapeStrikes.push_back(m_strikes.back());
         m_strikes.pop_back();
     }
+}
+
+bool Fighter::powerOutEscape(const Combatant& victim) const {
+    const std::uint64_t flags = victim.flags();
+    if ((flags & (flag::kDoubleDamage | flag::kAutoEscape)) != 0) {
+        return true;
+    }
+    return hurt() && (flags & flag::kNoEscape) == 0;
 }
 
 void Fighter::applyHit(Combatant& victim, int animId, int damage, bool heldMove, anim::Vec3 attacker,

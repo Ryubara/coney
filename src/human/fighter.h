@@ -535,8 +535,12 @@ class Fighter {
     void seatMount(const FighterInput& input, const HumanAnimator& animator, float heading);
     // The seat's slide is over: the victim is attached where it lies.
     void attachSeat(const FighterInput& input, float heading);
-    // The grab broke at 0 power with the player hurt, or the victim won its escape roll (applyHeldReport()): the
-    // victim escapes (100 / 112), the player is knocked down and stunned (101 / 113 from the victim's set).
+    // Whether a victim escapes when the grab's power runs out (`Human_UpdateMeters` `0x002562d0`): it has flag 0x4000
+    // or 0x20000, or the grabber is hurt and it lacks 0x2000000000 (docs/research/combat.md#grabbed).
+    [[nodiscard]] bool powerOutEscape(const Combatant& victim) const;
+    // The grab broke at 0 power and the victim escapes (powerOutEscape()), or it won its escape roll
+    // (applyHeldReport()): the victim escapes (100 / 112), the player is knocked down and stunned (101 / 113 from the
+    // victim's set).
     // @orig 0x0026cc18 Grab_Escape (unknown)
     void victimEscapes(const FighterInput& input, HumanAnimator& animator);
     // Lets go of the victim: the let-go clips (95 / 94) with `letGo`, else straight to the idles (a release, the

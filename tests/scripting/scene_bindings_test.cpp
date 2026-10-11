@@ -236,3 +236,27 @@ TEST_CASE("SceneAddObject resolves the object's spawn record, which goes live an
     h.value("SceneAddObject", {id, Value(21.0), Value(0.0)});
     CHECK(records.find(21.0) == nullptr);
 }
+
+TEST_CASE("HuIsInScene answers 1 for a human holding a role while its scene starts and plays, nil after",
+          "[scripting][scenes]") {
+    Harness h;
+    const Value id = h.value("ScenePreload", {Value("tst_c1"), Value()});
+    h.system.update(33, 0);
+    h.value("GoalJoinCinematic", {Value(12.0), id, Value(0.0), Value(0.0), Value(1.0)});
+    h.value("ScenePlayCinematic",
+            {id, Value(0.0), Value(), Value(1.0), Value(1.0), Value(), Value(), Value(-1.0), Value(), Value()});
+    CHECK(h.value("HuIsInScene", {Value(12.0)}).number() == 1.0);
+    CHECK(h.value("HuIsInScene", {Value(14.0)}).isNil());
+    std::uint64_t now = 33;
+    for (int i = 0; i < 60 && h.value("SceneDone", {id}).isNil(); ++i) {
+        now += 33;
+        h.system.update(now, 0);
+    }
+    REQUIRE(h.value("SceneDone", {id}).number() == 1.0);
+    // Its task ends on the updates after (the slot freed): the role is no longer held.
+    for (int i = 0; i < 10; ++i) {
+        now += 33;
+        h.system.update(now, 0);
+    }
+    CHECK(h.value("HuIsInScene", {Value(12.0)}).isNil());
+}
