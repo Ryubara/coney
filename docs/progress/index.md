@@ -33,12 +33,12 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.4% of the game's own code (585,352 of 3,354,776 bytes, 2,156 functions) |
+| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.4% of the game's own code (585,352 of 3,354,776 bytes, 2,157 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,192 of 3,284,000 bytes; 11,423 of 11,425 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-881 reimplemented function(s) have no size yet and add no bytes.
+882 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -72,7 +72,7 @@ at the top of the repository's `README.md`.
 | `FileIO` | `███▍░░░░░░░░░░░░░░░░` | 17.0% | 10 | 7,120 |
 | `GameModes` | `██████▋░░░░░░░░░░░░░` | 33.1% | 117 | 100,440 |
 | `Graphics` | `██▋░░░░░░░░░░░░░░░░░` | 12.8% | 91 | 195,624 |
-| `GUI` | `████▏░░░░░░░░░░░░░░░` | 20.7% | 246 | 497,416 |
+| `GUI` | `████▏░░░░░░░░░░░░░░░` | 20.7% | 247 | 497,416 |
 | `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.8% | 802 | 1,096,672 |
 | `Maths (unnamed)` | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% | 9 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
@@ -632,6 +632,7 @@ at the top of the repository's `README.md`.
 | `0x001acd60` | `ActionPrompt_FindNearbyHuman` | `GUI` | not filled in |
 | `0x001acee0` | `HUD::HUD` | `GUI` | 1,704 |
 | `0x001ad588` | `HUD_LevelSetUp` | `GUI` | not filled in |
+| `0x001ae980` | `HUD_ShutdownLevel` | `GUI` | not filled in |
 | `0x001aef50` | `HUD_IsPlayerStickPushed` | `GUI` | not filled in |
 | `0x001af010` | `HUD_Update` | `GUI` | 9,776 |
 | `0x001b1688` | `HUD_Render` | `GUI` | 2,224 |

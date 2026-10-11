@@ -1639,3 +1639,17 @@ handler component, as for `TriggerSphereEnable`).
   relatives) beyond their `global.lua` names; most fields of the large `Cfg*` records (`CfgChar`, `CfgPowerClass`,
   `CfgWarriorClass`), which are written through computed addresses with no reader found yet. Each would move up from
   inferred once a reader or a runtime observation is found.
+- **Hint texts set twice in one frame** (owner checklist item 33b): in Coney's `level99` course run two
+  `HUDSetTutorialText(nil)` + text pairs still land between two hint-box steps in two places, and the box then shows
+  every later text one late (a grab hint `TT_19*` in place of the lesson's) until a frame clears without setting:
+  at lesson 5's end (the strong grapple's hold 82), `PlayerState`'s animation callback sets the hold's grab hint and
+  `P1.Power` sets `TT_24d` in the same step; and `P1.StartSnaps` sets the snap text twice in one call. Does the
+  original also queue two there, or does something keep it from backing up: is `PlayerState` called for the
+  player's 82 at all when the hold is a paired task, whose dispatch runs for the other human
+  ([Animation callbacks](characters.md#anim-callbacks)); does `HintBox_Queue` show a hint at once when the box is
+  free, or drop a text already queued? A runtime trace of the hint queue (`+0x290`) over lessons 5-8 answers it.
+- **The stale throw hint** (owner checklist item 38): the owner saw `level80`'s `TT_25` (lure the cops with a bottle)
+  stay through step 3.4 until the Wreck'em order. Coney's checkpoint 3 test (teleports to the roof, the scene
+  skipped or played out, the lesson box left and re-entered) shows the box empty when the bottle breaks and `TT_7`
+  next. Not reproduced; the backlog above is the likely cause (a lesson text queued behind another and shown after
+  the next clear).

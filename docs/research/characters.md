@@ -1327,6 +1327,13 @@ addresses given:
   `HUDSetTutorialText(nil)` and a hint, and the second nil found nothing showing yet, so one hint stayed queued per
   double start. The box backed up behind them, and the Targeting and Light Combos hints never showed
   ([Hints](hud.md#hints-hudsettutorialtext)).
+- **Coney's order in a step** (inferred from the original's frame, [A frame of play](level-loading.md#a-frame-of-play)):
+  the animation callbacks run before the [tutorial callback](hud.md#tutorial-callback), since the original calls
+  that one when the victim applies the damage, with the id the attacker has already started; then the hint box
+  steps, where the original's `HUD_Update` stands; then the scheduled calls. Coney's HUD step comes before the
+  callbacks, so without the second hint-box step a text a callback set was still queued when a scheduled call's
+  `HUDSetTutorialText(nil)` ran, and the next text waited behind it: from `level99`'s lesson 6 on, the box showed
+  each grab hint (`TT_19*`) one text late, in place of the lesson's (owner checklist item 33b).
 
 ### Moving, standing on the ground and falling {#ground}
 
