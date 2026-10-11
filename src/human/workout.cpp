@@ -8,8 +8,8 @@ namespace coney::human {
 
 namespace {
 
-// Below a third of full effort the slow clip plays alone, slowing down; the decay there is cut to 0.3 of its value.
-constexpr float kLowEffort = 1.0F / 3.0F;
+// Below a third of full effort (3 × effort < 1) the slow clip plays alone, slowing down; the decay there is cut to 0.3
+// of its value.
 constexpr float kLowDecayShare = 0.3F;
 constexpr std::size_t kLevels = 3;
 
