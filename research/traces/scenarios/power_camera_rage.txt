@@ -1,0 +1,25 @@
+# Rage first (the meter written full at frame 0; L1 + R1 together, 643 RAGE_START plays about 2.1 s), then as
+# power_camera_ext.txt 70 updates later: grab with circle, the raging power strike (63), cross taps for its extension
+# (65). Stick centred. Frames are character updates of 1/30 s.
+4 press l1 r1
+8 release l1 r1
+80 tap circle
+130 press cross
+132 tap square
+136 release cross
+150 tap cross
+156 tap cross
+162 tap cross
+168 tap cross
+174 tap cross
+180 tap cross
+186 tap cross
+192 tap cross
+198 tap cross
+204 tap cross
+210 tap cross
+216 tap cross
+222 tap cross
+228 tap cross
+234 tap cross
+240 tap cross
