@@ -345,9 +345,11 @@ The **Warrior class** record (`CfgWarriorClass`, `0x006b65c0 + c × 14`; class 6
 picked by type: [Power classes](characters.md#power-classes))
 was `4e 00 90 c8 f0 32 73 03 01 01 01 02 03 02`: s16 `+0x00` = 78 is the **rage maximum**, byte `+0x02` = 144 the
 rage gain percentage, `+0x03` = 200 the idle rage decay and `+0x04` = 240 the rage drain while raging (percent of
-the maximum per 20 s), `+0x06` = 115 the player's damage scale, byte `+0x08` picks the mash gain factor and byte
-`+0x0b` the stereo theft's turns, byte `+0x0c` the mugging parameters. Confirmed (runtime) for the bytes; the uses
-confirmed (code) at the functions below.
+the maximum per 20 s), `+0x05` = 50 the player's health percentage, `+0x06` = 115 the player's damage scale, byte
+`+0x07` picks the cuffing hold's times, `+0x08` the mash gain factor, `+0x09` the tagging tuning, `+0x0a` the
+lock-pick difficulty plus 1, `+0x0b` the stereo theft's turns and `+0x0c` the mugging parameters; `+0x0d` is never
+read. Confirmed (runtime) for the bytes; the uses confirmed (code) at the functions below and on [Warrior
+classes](../references/warrior-classes.md), which lists every byte's reader.
 
 ## Behaviour
 
@@ -1954,9 +1956,10 @@ side of mode 3. `Hold_GetParamsB(holder, held)` (`0x00283078`) serves the held p
 one in `0x006cdd78` / `0x006cdd98`. It builds one only when its subject (the holder for the first, the held for the
 second) is a player, and otherwise returns the last one built. The record's layout is the mugging's
 ([Mugging](#mugging)). The choice is by the **player's Warrior class byte `+0x07`** (`CfgWarriorClass`'s seventh
-value, 3 for Rembrandt's class 6 at runtime; its meaning is not traced). `Hold_GetParams` also chooses by the held
-human's category `+0x11b`: 5 and 6-7 are civilian groups (6 also the drunk Destroyers), 9 cops, 10 the tougher cops
-(`cops_ty`), 14 the Warriors. Times are in ms.
+value, 3 for Rembrandt's class 6 at runtime): the class's **cuffing** stat, whose only readers are these two
+functions ([Warrior classes](../references/warrior-classes.md), the "Cuffing" column). `Hold_GetParams` also
+chooses by the held human's category `+0x11b`: 5 and 6-7 are civilian groups (6 also the drunk
+Destroyers), 9 cops, 10 the tougher cops (`cops_ty`), 14 the Warriors. Times are in ms.
 
 `Hold_GetParams` (the holder), every set with bytes `+0x00`-`+0x02` = 160, 75, 255, off-target `+0x0c` = 50,000,
 tolerances `+0x10` = 40° and `+0x14` = 60°, off-target rumble `+0x1c` = 0:
@@ -3489,8 +3492,9 @@ record `0x0051489c + 0x168 + p × 0x5c`. Confirmed (code):
 - **Mode 3, the car radio here**: `0x0027e908`. Rotate the left stick **anticlockwise**, the stick above 0.8 in this
   update and the last, turning less than 90° per update. The angle turned adds to `+0x48`; at each stage's target the
   stage (`+0x4c`) advances after a 250 ms pause; **4 stages** succeed (`0x00278628(h, 1)`, 685 `STEREO_STEAL_END`).
-  The stage target was 6π (3 turns) here, from Warrior byte `+0x0b` (2); 2π applies otherwise (the exact condition
-  is inferred).
+  The stage target was 6π (3 turns) here, from Warrior byte `+0x0b` (2): the target is 2π (one turn) when the byte
+  is 0 or 1, else (byte − 1) × 6π, so 3 turns for 2 and 6 for 3 (`Human_GetClassSpinAngle`, confirmed (code) at
+  `0x0022dd08`).
 
 Any command outside the game's own set (square, circle, R1, L2 and others) **fails** it: 686 `STEREO_STEAL_FAIL`.
 At runtime 1.5 turns per second took 9.6 s to succeed, and one R1 press failed it. Confirmed (runtime).
