@@ -126,6 +126,10 @@ Flags, confirmed (code) at `0x00350778` and `0x00351468` unless stated:
 | 11 (`0x0800`) | testable while disabled, if the query's mask has `0x800` |
 | 12-15 | a value 1 to 15; never read by the queries on this page (meaning unknown). The physics sweep of a walking body reads bits 14-15 as an index (`0x00347c08`, not traced) |
 
+Bit 1 is almost never set on the disc: doors and glass panes set it on their own triangles when they spawn
+(`Collision_SetTriangleTwoSided` `0x003a4768`, [Objects](objects.md#door-blocking)), so until then a doorway is a
+one-sided wall.
+
 **Disc check (corroboration), triangles with each bit:** bit 0 all 150,567; bit 1 4; bit 2 2,717; bit 3 4,231; bit 4
 1,052; bit 5 17,421; bit 6 0; bit 7 16,316; bit 8 20,231; bit 9 4,786; bit 10 3,989; bit 11 4.
 
