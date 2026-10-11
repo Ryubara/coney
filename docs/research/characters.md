@@ -932,9 +932,36 @@ at once: far from the camera there is no turn limit and none of the clips below.
   `0x1000080`, and 4° / 6° in the two special states (`0x00227f68`, `0x00227f40`); the gait words are multiplied
   by brain `+0x0b` + 1 (divided by 1 − `+0x0b` when it is negative, `0x002212d0`). The turn decides the facing; the
   velocity is the new facing × the speed, so an AI runs wide arcs (a run turns 120° per second).
+    - **Which word.** Each pair is (player, AI); `Human_MaxTurn` takes the AI word, the pair's second (`+4`), for a
+      human with no player slot (`+0x1b0` = −1) or whose brain is dead (`+0x09`). The stance's AI word is
+      **`0x005101dc`** (24° in `.data`); nothing in the executable stores to it. `CfgSetTurnRates` (`0x0023a7a0`,
+      script `0x0035e140`) writes only the six **player** words `0x005101b0`, `0x005101b8`, ... `0x005101d8`
+      (degrees in [0, 90), × π/180), so its sixth argument (24 in `config_preload2.lua`) sets the player's stance
+      turn, `0x005101d8`, and never an AI's. The two are equal in play only because both are 24. Confirmed (code) at
+      `0x00221520` and `0x0023a964`.
+    - **Wounded first.** The hurt test (state `0x10000`) comes before the stance test, so a hurt AI in a fight
+      stance turns a quarter of `0x005101b4` (1.5°): **0.375° per update**, not 24°. While hurt it also turns with
+      the brain's speed at 0, and never starts a turn on the spot. Confirmed (code) at `0x002213d8`, `0x00243848`.
 - **In a fight stance** the velocity is instead along the line to the point (it **strafes**: the facing follows
   `+0x110`, the feet go to `+0x90`), and record `+0xdc` gets the direction of the movement relative to the facing,
-  0 to 2π (`0x002726d8`), which drives the eight-direction blend ([Clip selection](#clip-selection)).
+  0 to 2π (`0x002726d8`), which drives the eight-direction blend ([Clip selection](#clip-selection)). In detail
+  (confirmed (code) at `0x00243848`): the speed is the stance walk when the brain's `+0x114` is above 0.1 and 0
+  otherwise (step 2 above), the direction is the unit vector from the human's position to `+0x90` (speed 0 when the
+  point is on him), and the turn toward `+0x110` runs whenever `+0x114` is above 0, so an ask between 0 and 0.1 turns
+  him without moving him. Wounded comes first: a hurt human in a stance gets the walk speed, not the stance walk.
+
+**The move request is rebuilt every update** (confirmed (code)). `Brain_UpdateGoals` (`0x0028fbb0`, every brain,
+every character step) begins with `Brain_StopMove` (`0x0028ac18`): `+0x114` = 0 and `+0x110` = the human's current
+facing (from his rotation). It leaves `+0x90` and `+0x118` alone. The brains run before this control in the same
+step ([Tasks](tasks.md#humans-update), steps 5 and 8), so the control sees only what a goal or action wrote in this
+update; nothing a finished goal or action wrote survives into the next update. With nothing written, the AI asks for
+speed 0 along its own facing: no velocity, no turn, and no turn on the spot (the heading error is 0). A stale `+0x90`
+does nothing then, because the speed is 0. The only writers of `+0x110` are the reset, the movement actions (move
+`0x002fc5c0`, move-to-human `0x002fd4e8` and its abort `0x002fd0a8`, `0x002fe740`, the shuffle `0x002feb48`, the turn
+`0x002fdd08`, the step `0x002fe3a8`), the route legs (`0x0029b848`, `0x0029baa8`, `0x0029bca0`) and a few goals that
+are not fights (pedestrian reaction, avoid enemies, the ledge thrower, run from the train, the phone, the parlay) and the
+player's brain (`0x003035d8`); found by a scan of every store to `+0x110`.
+
 - **Held flag `0x20000000`** (a turn clip playing, below) or any of `0x110c0880`, or the state code 5 or 6 (a start
   clip): no velocity; the clip moves the body.
 - The vertical velocity is kept (`+0x3a0`), and the lean (`0x00248df0`) gets the heading change, as for a player.
