@@ -951,6 +951,10 @@ prints the list for a change, or `ALL`). A change to the build setup (`CMakeList
 `.clang-tidy`, the build workflow) and every push to `main`, nightly run and manual run check everything, so a header
 included some unusual way is still caught within a day.
 
+`coney-tools check changed` runs the pull request's pass for you: the same file selection, clang-tidy from
+the Visual Studio LLVM folder over the `build/dev` compile database, and the GCC and Clang warnings that MSVC does
+not report ([the local gate](testing.md#local-gate), [its options](coney-tools.md#check)).
+
 ## Python tools
 
 `python/` is the `coney-tools` package (see [Conventions](conventions.md#python)). [uv](https://docs.astral.sh/uv/)

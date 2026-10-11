@@ -1,7 +1,7 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers eleven groups:
-`wad`, which reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**,
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers twelve groups:
+[`check`](#check), which runs what CI would fail on for the files a change touched, `wad`, which reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**,
 [`extract`](#extract), which turns every asset of the disc into open formats, [`audio`](#audio),
 which reads its sound data, [`movies`](#movies), which reads the movies' headers, [`xbox`](#xbox), which
 reads the Xbox disc's archive, [`progress`](#progress), which keeps the progress tables of the README and the docs
@@ -505,3 +505,42 @@ events by count. `--from "kind name"` starts both logs at their first such event
 different points of a mission; `--labels` names hashed texts by a JSON object of label to text (a string table read
 from your disc, kept in scratch). It exits with 0 when Coney has every compared event in order, 1 when not.
 [Differential playthroughs](research-workflow.md#differential-playthroughs) explains the method.
+
+## check {#check}
+
+```sh
+uv run --project python coney-tools check changed [--base origin/main] [--build-dir build/dev] [--only STEP ...]
+    [--skip STEP ...] [--jobs N] [--clang-tidy PATH]
+```
+
+The local gate for the files a change touched ([Testing](testing.md#local-gate)): run it in your worktree before you
+hand a unit over. The changed files are everything added or modified since your branch left `--base` (the merge
+base), committed or not, with untracked files. Each step runs only when the change touches what it checks, prints one
+line, and any failure makes the command exit 1:
+
+| Step | Runs when | What it does |
+| --- | --- | --- |
+| `repo` | always | `repo check`: the agent pointer files |
+| `pre-commit` | a file changed | `pre-commit run --files` on the changed files: clang-format, ruff, whitespace, the 512 KB guard, the real-clock rule |
+| `clang-tidy` | C++ under `src/` or `tests/` changed | clang-tidy on the files CI's pull-request job would check, with the compiler warnings the GCC and Clang builds enable |
+| `docs` | `docs/`, `research/`, `mkdocs.yml`, the MkDocs hooks or `requirements-docs.txt` changed | `mkdocs build --strict` into a throwaway folder |
+| `python` | `python/` changed | `pytest python/tests` and `mypy python/src python/tests` |
+
+**Which files clang-tidy checks.** The same rules as CI (`.github/scripts/tidy-files.sh`): a changed `.cpp` itself, a
+changed header through every `.cpp` that includes it, directly or through other headers. A test keeps the two in
+agreement. When the build or tidy setup changed (`CMakeLists.txt`, `cmake/`, `CMakePresets.json`, `.clang-tidy`, the
+build workflow) CI checks every file, an hour's work; the command says so and checks the changed ones only.
+
+**How it runs clang-tidy.** With the repository's `.clang-tidy` and the `compile_commands.json` of `--build-dir`
+(every preset writes one; configuring is enough, no build, and a stale or missing entry is reported with the
+`cmake --preset dev` to rerun). It finds clang-tidy 19 as `clang-tidy-19` or `clang-tidy` on `PATH`, or in the Visual
+Studio LLVM folder that `vswhere` names, or from `--clang-tidy`. The compile database of an MSVC build makes
+clang-tidy run in clang-cl mode, where MSVC's `/W4` misses what GCC and Clang reject (a designated initializer that
+leaves a field out, `-Wmissing-designated-field-initializers`). So the command adds `-Wall -Wextra -Wpedantic` (the
+flags of `cmake/coney_target.cmake`, passed as `/clang:-W...` in that mode) and lets the compiler's diagnostics
+through the `-*` of `.clang-tidy`; with the config's `WarningsAsErrors` they fail like CI's `-Werror`. `--jobs` runs
+that many files at once (default: half the cores).
+
+`--only` and `--skip` take step names, for a rerun of the one that failed. The command prints at most 40 lines of a
+failing step; run the step's tool by hand for the rest. What stays CI's: warnings only GCC emits, macOS, the
+sanitizers and the full clang-tidy pass (see [the local gate](testing.md#local-gate)).

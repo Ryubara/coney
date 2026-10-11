@@ -13,6 +13,7 @@ from typing import Any
 
 from coney_tools import (
     audio_cli,
+    check_cli,
     mission_cli,
     missions_render,
     movies_cli,
@@ -141,6 +142,7 @@ def _build_parser() -> argparse.ArgumentParser:
     check_body_parser.add_argument(
         "--body", help="a file holding the pull request description; - or omitted reads stdin"
     )
+    _add_check_commands(groups)
     _add_wad_commands(groups)
     _add_extract_command(groups)
     _add_audio_commands(groups)
@@ -153,6 +155,27 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_pcsx2_commands(groups)
     _add_trace_commands(groups)
     return parser
+
+
+def _add_check_commands(groups: Any) -> None:
+    """Register `coney-tools check ...`."""
+    group = groups.add_parser("check", help="the local gate: what CI would fail on, for the files a change touched")
+    commands = group.add_subparsers(dest="command", required=True)
+    changed = commands.add_parser(
+        "changed",
+        help="clang-tidy (with GCC/Clang warnings), pre-commit, docs, Python and repo checks on what changed",
+    )
+    changed.add_argument("--base", default="origin/main", help="the branch the change is measured from")
+    changed.add_argument("--build-dir", default="build/dev", help="the build folder holding compile_commands.json")
+    changed.add_argument("--only", action="append", choices=check_cli.STEPS, help="run only this step (repeatable)")
+    changed.add_argument("--skip", action="append", choices=check_cli.STEPS, help="leave this step out (repeatable)")
+    changed.add_argument(
+        "--jobs",
+        type=int,
+        default=max(1, (os.cpu_count() or 2) // 2),
+        help="clang-tidy processes at once (default: half the cores)",
+    )
+    changed.add_argument("--clang-tidy", help="the clang-tidy to use; default: clang-tidy-19, Visual Studio's, PATH")
 
 
 def _add_wad_commands(groups: Any) -> None:
@@ -546,6 +569,8 @@ def _run_pcsx2(args: argparse.Namespace) -> int:
 
 def _run(args: argparse.Namespace) -> int:
     """Dispatch to the chosen command and return its exit status."""
+    if args.group == "check":
+        return check_cli.run_changed(args.base, args.build_dir, args.only, args.skip, args.jobs, args.clang_tidy)
     if args.group == "wad":
         return _run_wad(args)
     if args.group == "xbox":
