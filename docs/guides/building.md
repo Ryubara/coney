@@ -74,6 +74,10 @@ The compiler and those tools are on `PATH` only inside a shell with the MSVC env
 For a Visual Studio install, replace `BuildTools` with your edition (`Community`, `Professional` or `Enterprise`)
 and `Program Files (x86)` with `Program Files`. Every `cmake` and `ctest` command below runs from that shell.
 
+In Git Bash, MSYS converts arguments that look like paths: a `C:\...` argument to `sed` or `git show
+origin/main:<file>` can arrive mangled. Set `MSYS_NO_PATHCONV=1` for such a command, or write the script to a file
+and run it, rather than quoting backslashes through a heredoc.
+
 ### Linux
 
 On Ubuntu 24.04 (other distributions have the same packages under similar names):

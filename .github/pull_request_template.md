@@ -6,9 +6,9 @@
 
 ## Checklist
 
-<!-- The live status: keep both lists current on every push. Done is what this pull request finishes; Remaining is
-     what a fresh agent would pick up (empty, or deferred to a named issue, means mark it ready: `gh pr ready`). No
-     what is still to do. -->
+<!-- Done is what this pull request finishes. Remaining is what it leaves for later, each item named where it
+     will happen (a follow-up pull request or an issue); leave it empty when nothing is left. A track's working
+     status lives in its scratch STATUS.md, not here. -->
 
 Done:
 

@@ -24,6 +24,12 @@ This page is kept current: a milestone's status changes in the same commit as th
 | [The whole game](#the-whole-game) | not started |
 | [Online multiplayer](#online-multiplayer) | not started |
 
+## Current priorities {#priorities}
+
+Research until every function of the original is understood and every asset can be read from the disc; beside it,
+all in on graphics (the original's exact look, no glitches) and combat (every move exact). Enhancements are designed
+now and built only once the graphics match the original ([Enhancements](#enhancements)).
+
 ## Foundations
 
 The build on Windows, Linux and macOS, CI, the `coney` executable (a window and a headless test mode), the
