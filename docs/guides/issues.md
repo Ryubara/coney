@@ -90,3 +90,23 @@ A brief may be just "issue #N" ([Briefing](agents.md#briefs)); the issue holds t
   (the finding, the question for the reporter, the status change) in its message to the coordinator.
 - **HANDOFF lists only issue numbers in flight.** The coordinator's state file names an issue by number and track,
   for example "#31, bug-doors, in progress"; the title and details stay on the issue, so there is one place to read.
+
+## Leftovers become issues {#leftovers}
+
+A pull request that leaves work undone does not leave it in its description, which nobody reads after the merge. Every
+unchecked item under **Remaining** in the description carries the number of the issue (or the follow-up pull request)
+that holds it, such as `- [ ] The heavy bag's combo game (#109)`. CI's `body` check refuses a description with an
+unchecked item that has no `#123` in it (`coney-tools repo check-body`, rules in `.github/pr-body-rules.json`). Wrapped
+lines belong to the item above them; checked items, prose (`None.`), the template's `...` placeholder and everything
+under Done are not looked at.
+
+- **The author** finishes what it can, and for each leftover that is real work or an open question writes its title,
+  area, research page and "done" test, in the shape of the [task form](#report), into the message it sends the
+  coordinator with the pull request text. It does not write to GitHub ([Working from an issue](#agents)).
+- **The coordinator** files the issue from that text, labels it at triage, and puts the number into the description
+  before the pull request is opened. An item that is already tracked cites its existing issue; one that is finished is
+  ticked and moved to Done; one nobody will do is dropped, not left unchecked.
+- **A follow-up pull request** may be cited in place of an issue when it is already open, but the work it carries
+  still ends with `Fixes #N` on the issue that describes it.
+- **The state file keeps no work list.** HANDOFF holds the live state (what runs where, what waits for CI) and issue
+  numbers, never the leftovers themselves; a leftover that exists only in HANDOFF is lost when the file is cleared.

@@ -202,6 +202,10 @@ class BodyRules:
     model_label: str
     #: What a person writes after `model_label` when no model applies; not enough when an AI took part.
     model_none: str
+    #: The section that holds the Done and Remaining lists.
+    remaining_section: str
+    #: The start of the line that opens the list of what the pull request leaves for later (`Remaining`).
+    remaining_label: str
 
 
 def _strings(value: object, what: str) -> tuple[str, ...]:
@@ -244,7 +248,10 @@ def load_body_rules(root: Path) -> BodyRules:
     screenshots = data.get("screenshots")
     screenshots_section = _text(screenshots, "section", "screenshots")
     screenshots_none = _text(screenshots, "none", "screenshots")
-    unknown = [name for name in (*filled, ai_section, screenshots_section) if name not in sections]
+    remaining = data.get("remaining")
+    remaining_section = _text(remaining, "section", "remaining")
+    remaining_label = _text(remaining, "label", "remaining")
+    unknown = [name for name in (*filled, ai_section, screenshots_section, remaining_section) if name not in sections]
     if unknown:
         raise BodyRulesError(f"{BODY_RULES_FILE}: {', '.join(unknown)} is not one of the 'sections'")
     if no_ai not in choices:
@@ -261,6 +268,8 @@ def load_body_rules(root: Path) -> BodyRules:
         no_ai=no_ai,
         model_label=_text(model, "label", "ai_use.model"),
         model_none=_text(model, "none", "ai_use.model"),
+        remaining_section=remaining_section,
+        remaining_label=remaining_label,
     )
 
 
@@ -320,6 +329,62 @@ def _check_ai_use(section: str, rules: BodyRules) -> list[str]:
     if not model or model in rules.placeholders or model.casefold() == rules.model_none.casefold():
         return [f"AI use: '{rules.model_label}' is empty; name the model, since an AI took part"]
     return []
+
+
+#: An unchecked task-list item, `- [ ] text`.
+_OPEN_ITEM = re.compile(r"^[ \t]*[-*+][ \t]+\[ \][ \t]*(?P<text>.*)$")
+
+#: A line that opens a labelled list (`Done:`, `Remaining (later units):`), which ends the list before it.
+_LIST_LABEL = re.compile(r"^[ \t]*\**[A-Za-z][^:\n]*:\**[ \t]*$")
+
+#: A reference to an issue or pull request, `#123`.
+_NUMBER_REFERENCE = re.compile(r"(?<![\w&/])#\d+\b")
+
+
+def _remaining_items(section: str, rules: BodyRules) -> list[str]:
+    """The text of each unchecked item under the section's Remaining line (wrapped lines joined), placeholders aside."""
+    label = rules.remaining_label.rstrip(":").casefold()
+    items: list[list[str]] = []
+    inside = False
+    continuing = False
+    for line in section.splitlines():
+        stripped = line.strip()
+        if _LIST_LABEL.match(line):
+            inside = stripped.strip("*").casefold().startswith(label)
+            continuing = False
+            continue
+        if not inside:
+            continue
+        item = _OPEN_ITEM.match(line)
+        if item:
+            items.append([item.group("text").strip()])
+            continuing = True
+        elif continuing and stripped and line[:1] in (" ", "\t") and not _LIST_MARKER.match(stripped):
+            # A wrapped line belongs to the item above it, so a number on the second line counts.
+            items[-1].append(stripped)
+        else:
+            continuing = False
+    texts = [" ".join(parts) for parts in items]
+    return [text for text in texts if text and text not in rules.placeholders]
+
+
+def _check_remaining(section: str, rules: BodyRules) -> list[str]:
+    """Refuse an unchecked Remaining item that names no issue or pull request.
+
+    Work a pull request leaves undone is tracked where everyone can see it, not in a description that stops being read
+    once the pull request merges. Each item carries the number of the issue (or the follow-up pull request) that holds
+    it, such as `#123`; the coordinator files the issue when an agent has none.
+    """
+    problems: list[str] = []
+    for text in _remaining_items(section, rules):
+        if not _NUMBER_REFERENCE.search(text):
+            shown = text if len(text) <= 60 else text[:57] + "..."
+            label = rules.remaining_label.rstrip(":")
+            problems.append(
+                f"'## {rules.remaining_section}': the {label} item '{shown}' names no issue "
+                "or pull request; add its number (for example #123), or tick it off if it is done"
+            )
+    return problems
 
 
 def _check_local_paths(text: str) -> list[str]:
@@ -393,7 +458,8 @@ def check_body(body: str, rules: BodyRules) -> list[str]:
     Every section must be present as a `##` heading, the `filled` ones (Summary, Testing) must hold text of their
     own, the Screenshots section must hold an image that is an uploaded URL (not a local path) or a
     `Screenshots: none (<reason>)` line, no text may name a path on the author's machine, and the AI use
-    section must say who wrote the commits (one of the choices) and, unless a person did, name the model.
+    section must say who wrote the commits (one of the choices) and, unless a person did, name the model, and every
+    unchecked item under Remaining must name an issue or pull request (`#123`).
     HTML comments and unchanged placeholder text count as empty, so the untouched template is refused. Returns one
     reason per broken rule; an empty list means the description passes.
     """
@@ -412,5 +478,8 @@ def check_body(body: str, rules: BodyRules) -> list[str]:
     ai_use = sections.get(rules.ai_section.casefold())
     if ai_use is not None:
         problems.extend(_check_ai_use(ai_use, rules))
+    checklist = sections.get(rules.remaining_section.casefold())
+    if checklist is not None:
+        problems.extend(_check_remaining(checklist, rules))
     problems.extend(_check_local_paths(visible))
     return problems
