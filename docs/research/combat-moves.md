@@ -415,7 +415,7 @@ of `0x7bf9e9f4300` or record `+0x08` any of `0x100101f`; the buffered chain pres
 3. **Snap** (stick above 0.95, more than 45° off the facing, a snap target): 25 / 27 / 29
    ([Combat](combat.md#attacks)).
 4. Re-pick the target (`Player_PickTarget(2.0)`, [Targets](#targeting)) when a pad player has none, or it is
-   farther than **3 m** (`0x005104c0` = 9, squared). No human but an
+   farther than **2.5 m** (`0x005104c0`, 6.25 squared as `CfgDistances` sets it). No human but an
    object → `Player_ObjectAttack` ([Combat](combat.md#breakables)).
 5. **Low target** (`Human_IsHighOrBusy`, `0x00225200`): the attacker's point stands more than 1.3 and less than
    1.8 m above the target's (`Object_HeightDiff` `0x00229a10`: attacker's z minus target's, of the point each
@@ -668,7 +668,7 @@ which takes the human's **handle**, called on the game's thread; PoizoCiv facing
 | `0x39` | `Player_ArmedSpecial` | throw the melee weapon (as `0x22`) |
 | `0x33` | `Player_OnCommand33` (`0x00281188`) | the pick-up search |
 | `0x32` | `Player_OnCommand32` (`0x002832c8`) | uncuff with a key |
-| `0x27` | `Player_TryRevive` (`0x00286ba8`) | revive a downed Warrior with a flash (665, `use` at k24) |
+| `0x27` | `Player_TryRevive` (`0x00286ba8`) | revive a downed Warrior with a flash: 351 then 353 on the reviver, 354 on the revived ([Combat](combat.md#revive)); also d-pad left in the street's tables |
 | 5 (as L2 held) | `Player_UpdateGrabbing` / `Player_UpdateMounting` (`PlayerCmd_IsLetGo` `0x0027bf08`) | in a grab, let go (95 / 94); in the mount, get off (244 / 245, the victim rises with 199). The Grabbing and Mounting reaction goals send it every update near a train ([AI](ai.md#fight-reactions)) |
 | `0x19` | `Player_UpdateGrabbing` (`PlayerCmd_IsGrabSpin` `0x0027bd98`, as R1 pressed) | spin the grab: front to rear 78 / 79, rear to front 80 / 81 ([Combat](combat.md#grabbing)). The Grabbing goal sends it to turn a front-held victim to his attackers |
 

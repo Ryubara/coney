@@ -147,7 +147,8 @@ Confirmed (code); offsets with "runtime" were checked on Rembrandt.
 
 | Offset | Meaning |
 | --- | --- |
-| `+0x00` | the pad's buttons (8 bytes copied from the pad record's `+0x08`, [Front end](frontend.md#pad-record)) |
+| `+0x00` | 8 bytes copied from the pad record's `+0x08` ([Front end](frontend.md#pad-record)): the left stick's x and y as two floats (y up), not turned by the camera (the tagging stick game reads them so, `0x002748a8`) |
+| `+0x1c`, `+0x1d` | the rumble: a slip in the tagging game writes 255 and 1, an on-track update 0 and 0 (inferred from [Tagging](crimes.md#tagging)) |
 | `+0x08`, `+0x0c` | stick angle, two buffers (radians, `atan2` of the camera-turned stick) |
 | `+0x10`, `+0x14` | stick magnitude, two buffers, clamped to 1 |
 | `+0x18` | which buffer is current (toggles 0/1 each update; the other is the previous update's) |
@@ -1319,14 +1320,30 @@ addresses given:
 - **Not one-shot**: the slot stays until `DelAnimCallback(human, anim)` (`0x0023ab80`; the first slot whose id matches
   and whose flag is set or whose handle is the human's) or the next `InitLevel`.
 - A paired task (`0x00108450`, `0x00108a78`) looks the id up in **the other human's** instance, so the dispatch runs
-  for that human (inferred from the instance used).
+  for that human. Confirmed (runtime): at a strong grapple's connect the victim's 658, started by `PairedTask_Init`
+  (`0x00108a78`, caller `0x00108af4`), was dispatched for the **player** (the grabber, whose set holds 658).
+- **A follow-on task fires when it is built, not when it starts playing.** At a grab's connect, `Grab_Connect`
+  ([Combat](combat.md#grab-posing)) builds the connecting clip and, under it, the hold's four-clip mix (type 11,
+  `AnimTaskFourMix_Construct`, `0x00106f50`) on both stacks in the same update; the four-mix's constructor takes its
+  clips (82 and 86 for the grabber, 83 and 87 for the victim) and so fires the callbacks of the **hold ids at the
+  connect**, the length of the connecting clip before the hold plays. Confirmed (runtime), PCSX2 2.9.94, `level99`
+  checkpoint 1 (hooks `anim-dispatch` and `anim-callback-match`, [the queue at runtime](hud.md#hint-queue-runtime)):
+  for each grab the dispatch of 82 for the player (from `0x00106fe0`) and of 83 for the victim came in the tick the
+  connecting clip started (657 from `AnimTaskChained_Construct`, `0x00105990`); in the strong grapple the hold played
+  and the tutorial callback received 82 **34 updates later**, and no second dispatch of 82 came when the hold began.
+  So level99's `PlayerState` (registered on the player's 82 and 84) runs at the connect, and lesson 5's
+  `P1.Power` (the hit scored with 82, [Strong grapple](combat.md#strong-grapple)) 34 updates after it, never in the
+  same update. A plain grab fires 82 at its connect the same way (lessons 2, 6 and 8).
 - **Coney's implementation** (`ScriptedBrains::runAnimCallbacks`): the starts are gathered over the characters' step
   and the callbacks called after it. A human that starts the same id more than once in one step gets **one** call
   (**Coney's reading**). Coney hands a chain over to its loop in every layer, the fading ones too, so two attack chains
   ending in the fight idle 358 started it twice in one update. `level99`'s `PlayerState` then ran twice: each time
   `HUDSetTutorialText(nil)` and a hint, and the second nil found nothing showing yet, so one hint stayed queued per
   double start. The box backed up behind them, and the Targeting and Light Combos hints never showed
-  ([Hints](hud.md#hints-hudsettutorialtext)).
+  ([Hints](hud.md#hints-hudsettutorialtext)). **Differs from the original**: a grab's hold ids (82 / 83, 84 / 85)
+  must fire at the connect, when the hold is set up under the connecting clip, not when the hold begins (above);
+  in Coney's `level99` course run they fired when the hold played, the update the strong grapple's damage is scored,
+  which put `PlayerState`'s grab hint and `P1.Power`'s `TT_24d` in one update.
 
 ### Moving, standing on the ground and falling {#ground}
 
@@ -1397,13 +1414,21 @@ at shape `+0x40`, 1.886 at `+0x44`; read at runtime), and the physics world hand
 functions by type (world `+0xe0`, `0x0033d2d8`, which passes −0.65). For type 3 that is
 `PhysicsMesh_SweepCapsule` (`0x00347c08`), which treats the body as **one sphere** for walls. Confirmed (code):
 
-1. **The sphere**: radius `r` = shape `+0x40` × body `+0x60` × the human's scale (`0x0021d020`: `+0x65c`),
-   centre **`r + 0.05` above the feet**. For the player, body `+0x60` (and `+0x64`) is **1.4286** (0.5 / 0.35)
-   and the shape's `+0x40` reads 0.3395 (0.35 × 0.97), so `r` = 0.3395 × 1.4286 = **0.485 m** (0.470 m if the scale
-   were applied a second time; the stops below fit 0.485) and the sphere spans 0.05 to 1.02 m above the feet.
-   Confirmed (runtime): the fields read in the street save, and the player stopped 0.480 m from three faces (a wall
-   head-on, a wall at an angle and the fence of slot 7). Only a player's body has `+0x60` = 1.4286
-   (`Human_CreatePhysicsBody` `0x0021ce08` for a brain of type 0, `Human_MakePlayer` `0x00229c40`;
+1. **The sphere**: radius `r` = shape `+0x40` × body `+0x60` × the human's scale (`Human_GetScale` `0x0021d020`:
+   `+0x65c`, or 1.0 in a scene state when it is under 1.1), centre **`r + 0.05` above the feet**
+   (`0x00347c98`-`0x00347cd8`). The shape's `+0x40` is itself 0.35 × the scale (`Human_GetCapsuleRadius`
+   `0x00219860`, written by `PhysicsBody_ApplyHumanScale` `0x00341f28`), so **the scale counts twice**:
+   `r` = 0.35 × scale² × body `+0x60`. Confirmed (code). For the player, body `+0x60` (and `+0x64`) is **1.4286**
+   (0.5 / 0.35), so `r` = 0.5 × scale²: Rembrandt (scale 0.97) has `r` = 0.3395 × 1.4286 × 0.97 = **0.4705 m**, and
+   the sphere spans 0.05 to 0.99 m above the feet. Confirmed (runtime), PCSX2 2.9.94, the `sweep-radius` hook at
+   `0x00347cbc` in the `sweep60` scenario (a copy of slot 1, level99's street, stick 60 % up for 80 updates): all
+   39 calls logged the player's body with shape `+0x40` × body `+0x60` = 0.4850, body `+0x60` = 1.4286 and
+   `Human_GetScale` = 0.9700,
+   and the hooked `mul.s` multiplies the two. A measured 0.485 m is that product before the second scale; the radius
+   the walls see is 0.4705 m. The stops measured before (0.476-0.480 m from a full wall, a wall at an angle and the
+   fence of slot 7; the step faces below) sit 0.006-0.010 m beyond where a 0.4705 m sphere touches, which fits a
+   small clearance left by the sweep (inferred; where it comes from is not traced). Only a player's body has
+   `+0x60` = 1.4286 (`Human_CreatePhysicsBody` `0x0021ce08` for a brain of type 0, `Human_MakePlayer` `0x00229c40`;
    `Human_ReleasePlayer` `0x0022a2a8` puts back 1.0, [Physics](physics.md#sweep)). **Every AI human's is 1.0**, so
    its sphere is shape `+0x40` (0.35 × its class scale) × its scale: 0.350 m for Vermin, 0.357 m for level99's bums
    and civilians of scale 1.01 (fields read in slot 6). Confirmed (code), values confirmed (runtime).
@@ -1422,7 +1447,7 @@ functions by type (world `+0xe0`, `0x0033d2d8`, which passes −0.65). For type 
 
 So on the ground the original has **no step height of its own**: a wall face shorter than 0.25 m is not a wall, and
 the ground snap (1.0 m up, above) then lifts the feet onto it; any face 0.25 m or taller that reaches into the sphere
-(0.05-1.02 m above the feet for the player) stops the body. A kerb of 0.2 m is walked onto; a ledge of 0.5 m or
+(0.05-0.99 m above the feet for the player) stops the body. A kerb of 0.2 m is walked onto; a ledge of 0.5 m or
 0.75 m is a wall to walk into and needs a climb (a short wall from 0.7 m, [Climbing](#climb)) or a jump.
 
 **The step at runtime** (confirmed (runtime), PCSX2 2.9.94, a copy of slot 1 in `level99`'s world, 2026-10-05). The
@@ -1439,9 +1464,12 @@ the camera so that the move pointed straight at the face:
 | 0.255 m | 100 % | stopped 0.395 m short of the face, idle with the stick held |
 | 0.260, 0.300 m | 50 % | stopped 0.399 m and 0.423 m short of the face |
 
-So the 0.25 m test is exact, and the stopping distances are those of the 0.485 m sphere centred 0.535 m above the feet
-touching the face's top edge: `sqrt(0.485² − (0.535 − h)²)` gives 0.396, 0.400 and 0.424 m for `h` = 0.255, 0.26
-and 0.30. Against a full-height wall the same walk stopped 0.476 m from it.
+So the 0.25 m test is exact, and the stopping distances are those of the 0.4705 m sphere centred 0.5205 m above the
+feet touching the face's top edge with about 0.006 m to spare: `sqrt(0.4765² − (0.5205 − h)²)` gives 0.396, 0.399
+and 0.422 m for `h` = 0.255, 0.26 and 0.30, and against a full-height wall the same walk stopped 0.476 m from it
+(0.4705 + 0.006). The clearance is fitted to these four stops (inferred). An earlier reading fitted the three step
+stops to a 0.485 m sphere without clearance, but that missed the full wall by 0.009 m, and the radius is 0.4705 m
+(step 1).
 
 **Sliding along a wall** (confirmed (runtime), slot 1): the velocity the sweep leaves after sliding is the human's
 velocity, so the next update's current speed is its length and the 0.8 m/s gain starts from there. Running into a
@@ -1523,7 +1551,7 @@ put the move about 64° from north toward the west. Every run took the line onto
 
 | Run | What happened |
 | --- | --- |
-| walk, stick 60 % | 1.63 m/s on the street. On 679 the walk was turned about 30° north along 680's foot, at 0.41 m/s across the ground and 0.29 m/s up: the feet followed 679's surface (ground normal 0.664 every update) while the slid velocity held `z` 0.36. The sphere's distance to 680 fell from 0.48 to 0.33 m (radius 0.485). After 3.5 s at z 1.44 the body passed 680 onto faces with `n.z` 0.77 at 1.107 m/s across the ground (1.63 × 0.6797, the slope rule), crested at z 2.01 and walked down the far side, including a face with `n.z` 0.54 at full walk, onto the street |
+| walk, stick 60 % | 1.63 m/s on the street. On 679 the walk was turned about 30° north along 680's foot, at 0.41 m/s across the ground and 0.29 m/s up: the feet followed 679's surface (ground normal 0.664 every update) while the slid velocity held `z` 0.36. The sphere's distance to 680 fell from 0.48 to 0.33 m (radius 0.4705). After 3.5 s at z 1.44 the body passed 680 onto faces with `n.z` 0.77 at 1.107 m/s across the ground (1.63 × 0.6797, the slope rule), crested at z 2.01 and walked down the far side, including a face with `n.z` 0.54 at full walk, onto the street |
 | run, stick 100 % | the same: stopped for an update at 679's foot, then 0.55 m/s up 679 along 680, then a run at 7.80 m/s over the crest at z 2.28 |
 | walk, stick 60 %, body `+0x60` set to 1.0 (radius 0.34, an AI's size if its `+0x60` is 1.0) | the same path: up 679 along 680 (distance to 680 0.32 down to 0.20 m), over at z 2.36, down the other side |
 
@@ -1640,6 +1668,13 @@ the first that succeeds. Confirmed (code):
 3. a **jump** (`Player_TryJump`, `0x002829e8`), if human flag `0x10000000` is clear and the stick is above **0.95**;
 4. the **drop** of what is in hand (`Human_DropHeld`, `0x00257f38`), if L2 is not held
    ([Triangle with something in hand](#triangle-held)).
+
+The object action is the **drop**: `0x00226ff0` is `Human_GetHeldObject` (`+0x338`) and `0x00257f38` is
+`Human_DropHeld`, which gives the held object back its physics body and clears the hand. Confirmed (code). There is
+no jump buffer in this order: triangle is acted on in the update it is pressed. So, inferred from the order and the
+jump's refusal while carrying a class 4 or 6 object: triangle with a weapon in hand and the stick pushed toward a
+climbable wall that is still out of the climb's reach (the climb fails, the jump is refused) **drops the weapon**, as
+checklist item 2 reports of Coney; whether that is what the original does at runtime is not checked.
 
 Nothing happens while state flags `0x7bf9e9f7ff0` or record `+0x08` flags `0x5cfeafb` are set.
 
@@ -1789,7 +1824,13 @@ jump, `src/platform/play_level_objects.cpp`):
   snap. The teleport at P1's end goes through body vtable `+0x1c` with no sweep, `0x4000` stops the body re-posing
   (`0x003422d0`), and `Human_GetPosition` returns `+0x2c0` while `0x40` is set. So a climbed face of any material
   (a parapet of material 107 with triangle flag `0x80`, say) stops the body only during P1; the skip of materials 30,
-  31 and 122 in `Human_OnContact` covers only contacts that still reach it. Confirmed (code).
+  31 and 122 in `Human_OnContact` covers only contacts that still reach it. Confirmed (code): the branch is
+  `Human_HasHeld40` (`0x0023d8c8`, the test before `Vec4_Add(..., +0x2f0)` and `Object_SetPosition`); the sweep
+  and `Human_SnapToGround` sit only on the other branch. Confirmed (runtime) on a railing of material 7, below.
+- **Over a drop there is no third clip.** When P2 ends with nothing under the feet (a railing above a lower floor),
+  the next update's ground snap misses and the human falls: the fall clip **428** (record `+0x08` `0x400000`) in
+  place of P3, gravity from the third update, the landing (436) on the floor below. Confirmed (runtime), the hangout
+  railing below; that the switch is `Human_SnapToGround`'s miss starting the fall is inferred.
 - **The first clip runs during the move.** The same call sets the move to the start point (`0x0023d2b8`: over 1/60 s,
   or 1/15 s when the turn `0x0023cf88` takes 1/30 s) and installs the three clip tasks (`0x00105990`, `0x001754e8`),
   so P1's clock starts on the climb's first update, not after the move. Confirmed (code). At runtime (the slot 7
@@ -1818,6 +1859,24 @@ runtime were seen):
 | short wall, standing (455, 456, 457) | stick 0.5, triangle | 455 for 0.3 s (`0x80000`); at 456's start the feet **jumped** 1.06 m forward and **1.29 m up** in one update onto the trash can; 456 for 0.6 s (`0x40`), 457 for about 0.6 s, then the walk |
 | wall, standing (449, 450, 451) | stick 0.5, triangle, on the trash can | 449 for 0.37 s; at 450's start the feet jumped 0.98 m forward and 2.4 m up, and the ground snap settled them on the roof (2.64 m above the start) over the next updates; 450 for 1.4 s, 451 for 0.37 s |
 | short wall onto a car | stick 0.5, triangle | as the trash can, 1.48 m up |
+| short fence over the hangout railing (443, 444, then the fall), per update | stick 0.5, triangle every 2 updates | below |
+
+**The hangout railing** (confirmed (runtime), PCSX2 2.9.94, 2026-10-10, scenario `railing_vault`: level95, Cleon put
+on the clubhouse balcony at (−172.0, 98.3, −194.38) facing +y, 0.63 m from the railing's face, stick 0.5 straight
+up from update 60, triangle every 2 updates from 66). The railing is 0.90 m tall, material 7 (`LAMPOST`) with
+triangle flag `0x80`, its face at y ≈ 98.93, and the floor behind it is 3.20 m lower
+([Collision](collision.md#hangout-railings)):
+
+| Updates | Clip, record `+0x08` | The body |
+| --- | --- | --- |
+| 61-66 | 413, `0x10000000` | the walk start stops against the railing at y 98.44 (0.49 m from the face) |
+| 67-79 (13) | 443, `0x80000` | 0.04 m back toward the start point, then forward to 98.443 |
+| 80-98 (19) | 444, `0x40` | through the railing at up to 1.64 m/s, y 98.443 to **99.326** (0.40 m past the face), the feet **at the balcony's height** all the way (z −194.378) over the drop |
+| 99-118 (20) | 428, `0x400000` | the fall: z held for 2 updates, then `vz` −0.5227 per update; at 102 pushed 0.17 m on to y 99.50, clear of the railing's back; 445 never plays |
+| 119 | 436 | landed on the floor below (z −197.576), 3.20 m down, 0.57 m past the face; then the landing and the walk |
+
+So the railing's triangles do not stop the body during 444, though material 7 is not among the materials
+`Human_OnContact` skips: the wall sweep is not run at all ([above](#climb)).
 
 The vertical part of a climb is the single move at P2's start: the feet do not rise during P1 or P2.
 
@@ -2628,13 +2687,14 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
 - `src/human/stamina.*` is the stamina meter ([Sprint and stamina](#sprint)): the drain at the sprint gait, the
   refill and the gait, airborne and "run with L2" blocks, and `Player_UpdateSprint`'s rule (L2 held and stamina not
   0, asked again every update).
-- `src/human/body.*` is the walking body of [Walls and steps](#walls): the sphere of 0.35 × scale (× 1.4286 for
-  the player: 0.485 m) centred 0.05 above its radius, wall triangles `|n.z|` ≤ 0.65 that the move goes into, the
+- `src/human/body.*` is the walking body of [Walls and steps](#walls): the sphere of 0.35 × scale² (× 1.4286 for
+  the player: 0.4705 m) centred 0.05 above its radius, wall triangles `|n.z|` ≤ 0.65 that the move goes into, the
   0.25 m low-and-thin rule, the fence materials passed through while climbing over, and the airborne push-out sphere
   (0.5 × scale for a player). The walking sphere is stopped where it touches a triangle, so a face lower than its
-  centre stops it where it meets the face's top edge, `sqrt(0.485² − (0.535 − h)²)` from the face (0.396, 0.400 and
-  0.424 m for 0.255, 0.26 and 0.30 m faces, as at runtime); a face under 0.25 m is walked onto in one update with no
-  change of speed or clip. The human keeps the move the walls left as its velocity, so a wall met at a steep angle
+  centre stops it where it meets the face's top edge, `sqrt((r + clearance)² − (r + 0.05 − h)²)` from the face
+  (0.396, 0.399 and 0.422 m for 0.255, 0.26 and 0.30 m faces with the original's fitted 0.006 m, as at runtime); a
+  face under 0.25 m is walked onto in one update with no change of speed or clip. The human keeps the move the walls
+  left as its velocity, so a wall met at a steep angle
   brakes the player.
   The sweep leaves the sphere 0.01 m clear of the face (`BodyTuning::contactClear`), and carries it round a convex
   corner whose triangles name their shared edge in flag bits 14-15 (`human::edgeSlide`): along each wall the sphere
@@ -2800,7 +2860,22 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   found; fences go by the second clip's own root motion, as the runtime's 441 carried the body through.
 - **Climbing over** lasts the second clip: from the re-probe at the first clip's end to the third clip's start (at
   runtime 441 had record `+0x08` `0x40` and 442 did not). Meanwhile the fence materials (30, 31, 122) are not walls,
-  and not ground for the snap and the landing, so a low fence's top does not lift the feet.
+  and not ground for the snap and the landing, so a low fence's top does not lift the feet. **This differs from the
+  original and breaks the hangout railing** (checklist item 46): the original runs no wall sweep and no ground snap
+  while `0x40` is set, so a climbed face of any material lets the body through, but Coney still sweeps the walking
+  sphere with only 30, 31 and 122 left out. The hangout's railings are material 7 with flag `0x80`
+  ([Collision](collision.md#hangout-railings)), so 443 and 444 play and the sweep holds the body 0.48 m in front of the
+  face: the vault ends on the same side. A climbed face that is any other material with flag `0x80` or `0x4` (car
+  shells are material 0) does the same. And had the body passed, Coney's snap would find no ground over the 3.2 m
+  drop part-way through 444, so the climb would end in the idle at once (`followClimb`'s airborne end) instead of the
+  fall at 444's end. **Fix:** while climbing over, skip `sweep` and `snapToGround` and move the feet by the velocity
+  and the clip's root motion, height included (`Human_Move`'s `0x40` branch); from the third clip on, move as now,
+  and when the snap then finds no ground start the fall (anim state 26, the fall clip, 428 at runtime) in place of
+  the idle and the third clip. **Test:** a synthetic railing of material 7 with flag `0x80`, 0.9 m tall and
+  one-sided toward the player, on the edge of a floor with another 3.2 m lower behind it: the player standing 0.6 m
+  from it, the stick at 50 % toward it and triangle, plays 443 and 444, is past the railing's back at 444's end with
+  the feet still at the upper floor's height, never plays 445, then falls and lands on the lower floor beyond the
+  railing; the same railing over level ground ends on the far side with 445 played.
 - **The re-probe** at the first clip's end accepts any triangle, not only a climbable one.
 - **The climb's fade**: none; the first clip moves the body at its full root speed from its first update after the
   move (5.79 m/s on the 2 m fence, as at runtime). The update the chain goes on to its second or third clip moves
@@ -2859,7 +2934,8 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   and works out (no movement or fighting) with the start, repetition and end callbacks; a player pumps with cross and
   quits with triangle, the effort decaying by `CfgWorkoutParams`' second table. **Stand-ins**: a workout begins within
   1.5 m of the equipment, a repetition lasts 1.5 s at an effort of 1, and no workout or dynamic clip plays; combat
-  mode and the gear are kept, their context actions not built.
+  mode and the gear are kept, their context actions not built. The original's workouts, every station and why
+  Coney's start does nothing: [Workouts](workouts.md).
 - **Names**: `@orig` names for addresses the research describes but does not name (such as `Human_SnapToGround`,
   `GaitBlend_Advance`, `PhysicsBody_PushOutOfWalls`) are Coney's.
 
@@ -2886,7 +2962,7 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   with no fade-in of that speed: the walk start 0.762 m/s on every one of its 12 moving updates, the run start 2.77,
   2.49, 2.56, … and the run stop 2.24, 5.00, 5.10, … ([Per update](#locomotion)). A first update slower by 0.75 (the
   start clips' playback rate) or a stop that ramps from 0.31 m/s is a difference to remove.
-- **Walls**: a sphere of radius 0.35 × scale × body `+0x60` (1.4286 for the player: 0.485 m), centred that radius
+- **Walls**: a sphere of radius 0.35 × scale² × body `+0x60` (1.4286 for the player: 0.4705 m), centred that radius
   plus 0.05 above the feet, swept along the move; the slid velocity is kept, so a steep wall brakes the player;
   wall triangles less than 0.25 m tall are not walls, which is all the step-up there is ([Walls and steps](#walls)).
 - **Sprint** is L2 **held** with the stick above 0.95: cleared every update and set again while L2 is down and
@@ -2919,8 +2995,8 @@ read them yet.
 
 ## Open questions
 
-- The workout's reach and timing: how near the equipment the start clip (691) begins, and how the loop clips'
-  length sets a repetition.
+- **The workout's reach and timing** (answered): the scripts make the player his own target, so the reach always
+  passes, and a repetition is each wrap of the loop blend's leading clip ([Workouts](workouts.md#repetitions)).
 - Where god mode (`0x10`) is tested: Coney drops the damage and still plays the reaction.
 - What the arrest (state `0x20000`) plays and allows, and which human states `HuIsAlive`'s mask `0x180050000` names.
 
