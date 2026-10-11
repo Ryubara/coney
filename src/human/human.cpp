@@ -723,19 +723,20 @@ void Human::combatWalk(const Combatant& target, bool gated) {
     // The facing. A pad's human faces the target every update, and so does an AI's stance walk, which strafes round
     // its foe (MoveMeleeAction step 6, docs/research/ai.md#move-action). A player whose pad a script took (per-player
     // `+0x1b` clear, his brain set dead) is moved by Human_UpdateControl instead (docs/research/ai.md#ai-turn):
-    // asked to move, he turns toward the brain's heading by the fight stance's AI word; stopped, more than 15° off it,
-    // he turns on the spot (**Coney stand-in** as in aiLocomote(): the standing step instead of the turn clips
-    // 395-398); within 15°, or with no move asked (Brain_StopMove leaves the heading at his facing), he keeps his
-    // facing. So a script's turn steers a player locked on a foe, as the workouts' GoalMoveToFlag at the heavy bag
-    // needs (docs/research/workouts.md#coney). **Coney choice**: an AI human keeps facing its target, as Coney's
-    // brains do not carry the strafe flag (brain `+0x11c`) that tells a strafe from a plain move; the grabbing,
-    // blocking and ducking row of Human_MaxTurn does not apply here, those states take holdForCombat() instead.
+    // asked to move (or wounded), he turns toward the brain's heading by the fight stance's AI word (0.375° wounded);
+    // stopped, more than 15° off it, he turns on the spot (**Coney stand-in** as in aiLocomote(): the standing step
+    // instead of the turn clips 395-398); within 15°, or with no move asked (Brain_StopMove leaves the heading at his
+    // facing), he keeps his facing. So a script's turn steers a player locked on a foe, as the workouts' GoalMoveToFlag
+    // at the heavy bag needs (docs/research/workouts.md#coney). **Coney choice**: an AI human keeps facing its target,
+    // as Coney's brains do not carry the strafe flag (brain `+0x11c`) that tells a strafe from a plain move; the
+    // grabbing, blocking and ducking row of Human_MaxTurn does not apply here, those states take holdForCombat()
+    // instead.
     if (!m_record.padDriven && m_profile.player) {
         constexpr float kTurnOnSpotAngle = 15.0F * kPi / 180.0F;
         if (m_record.move.has_value()) {
             const float error = wrapAngle(m_record.move->heading - m_heading);
             float limit = 0.0F;
-            if (m_record.move->speed > 0.0F) {
+            if (m_record.move->speed > 0.0F || m_script.wounded) {
                 limit = aiFightStanceTurn(m_script.wounded);
             } else if (std::fabs(error) > kTurnOnSpotAngle) {
                 limit = aiMaxTurn(Gait::Standing, m_record.move->turnBoost, m_script.wounded);

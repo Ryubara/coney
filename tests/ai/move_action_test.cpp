@@ -428,6 +428,11 @@ TEST_CASE("locked on a foe, a pad's human and an AI face it; a player under scri
         player.setMoveHeading(radians(90.0F), 0.0F);
         scene.run(1);
         CHECK(off(player, radians(80.0F)) < 1e-3F);
+        // Wounded he turns even stopped within 15 degrees, by the wounded 0.375 degrees.
+        player.human().script().wounded = true;
+        player.setMoveHeading(radians(90.0F), 0.0F);
+        scene.run(1);
+        CHECK(off(player, radians(80.375F)) < 1e-3F);
     }
 }
 

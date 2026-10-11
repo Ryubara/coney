@@ -5123,12 +5123,12 @@ human whose last move failed runs straight at
   (`human::Human::combatWalk`), a pad's player and an AI face it each update (an AI's stance walk strafes, step 6
   of the move-to-human action; **Coney choice**: Coney's brains carry no strafe flag `+0x11c`, so every AI move in
   the stance faces the foe); a player whose pad a script took turns by the brain's heading instead: 24° an update
-  asked to move, the standing step (stand-in for the turn clips) stopped more than 15° off, else not at all. The move's corner speed predicts the
-  turn with the same steps. **Stand-in**: a standing human more than 15° off turns at the standing step instead of
-  playing turn clips 395-398. Every search uses the mask `0xff`; a leg of kind 8 or `0x80` is a climb: the human runs at
-  the waypoint (gait 4) and tries the player's climb start toward it each update (`PlayerRecord::climbToward`), giving
-  up after 31 failed updates; a leg whose avoid bit is set is refused, but for a charge. `level99`'s Vermin climbs his
-  fence this way.
+  asked to move (or wounded), the standing step (stand-in for the turn clips) stopped more than 15° off, else not at
+  all. The move's corner speed predicts the turn with the same steps. **Stand-in**: a standing human more than 15°
+  off turns at the standing step instead of playing turn clips 395-398. Every search uses the mask `0xff`; a leg of
+  kind 8 or `0x80` is a climb: the human runs at the waypoint (gait 4) and tries the player's climb start toward it
+  each update (`PlayerRecord::climbToward`), giving up after 31 failed updates; a leg whose avoid bit is set is
+  refused, but for a charge. `level99`'s Vermin climbs his fence this way.
 - **Neighbour sectors** (`Sectors`, `repo:src/ai/sectors.h`, `Brain::sectors`): eight 45° sectors per brain (0 ahead,
   rising anticlockwise in Coney's headings, the mirror of the game's clockwise order: **to fix**; an edge goes
   to the lower index on the left half), rebuilt when the caller's age (1000 or 500
