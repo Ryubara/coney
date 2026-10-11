@@ -65,6 +65,8 @@ constexpr std::uint64_t kAimEvery = 40;
 constexpr std::uint64_t kTapEvery = 10;
 // Within this distance (metres) of the nearest foe the player stops walking and fights where he stands.
 constexpr float kFightRange = 2.5F;
+// A preferred foe standing within this distance (metres) of the player is fought before a nearer one.
+constexpr float kPreferRange = 6.0F;
 
 // The disc named by CONEY_DISC, opened; nothing when it is not set.
 std::optional<coney::io::Wad> openDisc() {
@@ -134,9 +136,11 @@ struct FightRun {
 };
 
 // Plays `level5` at `checkpoint` as --play-level does, the pad fighting every human whose name starts with one of
-// `foes`, until `done` holds or `lastFrame`. The log is shown when `done` never held.
+// `foes`, those starting with `prefer` (none when empty) first while one stands within kPreferRange, until `done` holds
+// or `lastFrame`. The log is shown when `done` never held.
 FightRun playFight(const coney::io::Wad& wad, int checkpoint, std::vector<std::string_view> foes,
-                   std::uint64_t lastFrame, const std::function<bool(coney::LevelScripts&)>& done) {
+                   std::string_view prefer, std::uint64_t lastFrame,
+                   const std::function<bool(coney::LevelScripts&)>& done) {
     FightRun run;
     auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
     REQUIRE(engine.has_value());
@@ -196,9 +200,14 @@ FightRun playFight(const coney::io::Wad& wad, int checkpoint, std::vector<std::s
     coney::ScriptedInput pad(std::move(*events));
     const auto play = [&gameplay] { return dynamic_cast<const coney::platform::PlayLevelMode*>(gameplay.level()); };
     // The foes made so far (a stage may make more), looked up afresh on each use.
-    const auto foeBrains = [&scripts, &foes](const coney::platform::PlayLevelMode& level) {
+    // With `preferred`, only the foes whose name starts with `prefer`.
+    const auto foeBrains = [&scripts, &foes, prefer](const coney::platform::PlayLevelMode& level,
+                                                     bool preferred = false) {
         std::vector<const coney::ai::Brain*> found;
         for (const coney::HumanCreation& human : scripts.humans().all()) {
+            if (preferred && (prefer.empty() || !std::string_view(human.name).starts_with(prefer))) {
+                continue;
+            }
             for (const std::string_view prefix : foes) {
                 if (std::string_view(human.name).starts_with(prefix)) {
                     if (const coney::ai::Brain* brain = brainNamed(level, human.handle); brain != nullptr) {
@@ -210,25 +219,32 @@ FightRun playFight(const coney::io::Wad& wad, int checkpoint, std::vector<std::s
         }
         return found;
     };
-    // The nearest foe still standing, where player 1's feet are.
+    // The nearest foe still standing, where player 1's feet are: a preferred one within kPreferRange before any other.
     const auto nearestFoe = [&play, &foeBrains]() -> std::optional<coney::anim::Vec3> {
         const coney::platform::PlayLevelMode* level = play();
         if (level == nullptr) {
             return std::nullopt;
         }
         const coney::anim::Vec3 feet = level->playerFeet();
-        std::optional<coney::anim::Vec3> nearest;
-        for (const coney::ai::Brain* brain : foeBrains(*level)) {
-            if (brain->human().health().value() <= 0) {
-                continue;
+        const auto nearestOf = [&feet](const std::vector<const coney::ai::Brain*>& brains) {
+            std::optional<coney::anim::Vec3> nearest;
+            for (const coney::ai::Brain* brain : brains) {
+                if (brain->human().health().value() <= 0) {
+                    continue;
+                }
+                const coney::anim::Vec3 at = brain->human().position();
+                if (!nearest ||
+                    std::hypot(at.x - feet.x, at.y - feet.y) < std::hypot(nearest->x - feet.x, nearest->y - feet.y)) {
+                    nearest = at;
+                }
             }
-            const coney::anim::Vec3 at = brain->human().position();
-            if (!nearest ||
-                std::hypot(at.x - feet.x, at.y - feet.y) < std::hypot(nearest->x - feet.x, nearest->y - feet.y)) {
-                nearest = at;
-            }
+            return nearest;
+        };
+        if (const std::optional<coney::anim::Vec3> preferred = nearestOf(foeBrains(*level, true));
+            preferred && std::hypot(preferred->x - feet.x, preferred->y - feet.y) < kPreferRange) {
+            return preferred;
         }
-        return nearest;
+        return nearestOf(foeBrains(*level));
     };
     // Whether the nearest standing foe is within kFightRange of player 1.
     const auto inReach = [&play, &nearestFoe] {
@@ -299,7 +315,7 @@ TEST_CASE("the disc's level5: the bar fight, won with the pad, moves the mission
     }
     // The Hurricanes of both bar gangs: the humans the chapter names `HurrB...`.
     double checkPoint = 0.0;
-    const FightRun run = playFight(*wad, 2, {"HurrB"}, 15000, [&checkPoint](coney::LevelScripts& scripts) {
+    const FightRun run = playFight(*wad, 2, {"HurrB"}, {}, 15000, [&checkPoint](coney::LevelScripts& scripts) {
         checkPoint = scripts.state().checkPoint;
         return checkPoint >= 3;
     });
@@ -316,10 +332,15 @@ TEST_CASE("the disc's level5: the boss fight, won with the pad, ends the mission
         SKIP("CONEY_DISC is not set: no disc to check");
     }
     bool complete = false;
-    const FightRun run = playFight(*wad, 4, {"Diego", "Vargas"}, 15000, [&complete](coney::LevelScripts& scripts) {
-        complete = scripts.host().missionCompleteRequested();
-        return complete;
-    });
+    // Vargas first when he is near: stage 3 holds him at 67 % and 34 % until he tires, which only the hits he takes
+    // bring, and ends once neither boss stands (docs/research/ai.md#boss-diego-vargas). Fighting whoever was nearest,
+    // the pad could beat on Diego, in front now that humans meet, while Vargas waited at his cap until the player
+    // went down.
+    const FightRun run =
+        playFight(*wad, 4, {"Diego", "Vargas"}, "Vargas", 15000, [&complete](coney::LevelScripts& scripts) {
+            complete = scripts.host().missionCompleteRequested();
+            return complete;
+        });
     std::printf("  level5 boss fight: mission complete %d at frame %llu, %zu bosses, %d standing, player 1 health %d\n",
                 complete ? 1 : 0, static_cast<unsigned long long>(run.frame), run.foes, run.standing, run.health);
     CHECK(complete);
