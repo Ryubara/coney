@@ -892,7 +892,8 @@ bums. Points an implementer needs:
 - **6**: from the rear hold the hit is scored with the spin's id 80, not 57, so only a front grab passes the first step.
 - **10**: the rage special is cross + square while raging (645 / 647); the last step wants the extension of the rage
   power strike in a grab (63 → 65) or of the rage power strike in the mount (231 → 233); both use the + 2 of
-  `Player_UpdatePowerMove` (inferred for the mount). **What arms `P1.RageMoves`** (the step order):
+  `Player_UpdatePowerMove` (confirmed (code) for the mount too: [the mount's power strike](combat.md#mount-power)
+  puts the mounter in state `0x1000`, which the dispatcher sends there). **What arms `P1.RageMoves`** (the step order):
     1. `P1.WeaponsDone` clears the tutorial callback and starts the section 2000 ms later.
     2. `P1.SetupRageMode` makes rage gains possible again (`HuSetPreventRage(false)`). It sets the meter to 0.5 and
        locks it, and it registers the rage handlers: enter `P1.EnterRageMode`, exit `P1.ExitRageMode`, full
@@ -983,10 +984,70 @@ Points a playthrough test needs:
   texts also show whenever the player's state calls for them. In lesson 6, a circle at a bum lying on the ground
   showed `TT_19e` and went into the pick-up, where the power strike does not start. So how often they show depends on
   the driver: assert the lesson texts in order, and allow the `TT_19*` texts between them.
+- **The state hints** (`SetupStateCallbacks`, `UpdateStateCallbacks`, `PlayerState` and `StateSwitch` in
+  `level99.lua`; [below](#level99-state-hints)) decide which of the two a step shows: the grab or pick-up hint when
+  the player is idle or mounted, the lesson text while he holds someone.
 - **Repeats**: `TT_25c`, `TT_25e` and `TT_25k` are shown again for each counted move. A test that checks the order
   should merge consecutive repeats.
 - **The `<DISPLAYTIME>` texts** (`TT_26a`, `TT_28e`, `TT_28h`) hold the box for about 90 updates. The next text set
   with them waits in the queue that long.
+
+#### The state hints, and what lesson 6 counts {#level99-state-hints}
+
+The analyst question "`P1.PowerMove`: `TT_19a` or `TT_24e`?" and owner checklist item 33's hint order. Inferred from
+the disassembly of `level99.lua` (main/29-main/34) and `level99_combat.lua` (main/30, main/31): names, ids and
+the order of calls only.
+
+**The mechanism.** `SetupStateCallbacks(idle, mount, frontGrab, rearGrab)` registers the anim callback
+`PlayerState` on five of the player's clips: `ANIM_FIGHT_IDLE`, `ANIM_NORMAL_IDLE`, `ANIM_MOUNTING_IDLE` (210),
+`ANIM_GRAB_HOLD_FROM_FRONT` (82) and `ANIM_GRAB_HOLD_FROM_REAR` (84) ([anim callbacks](characters.md#anim-callbacks)).
+It stores the four texts in globals and calls `StateSwitch(STATE)` at once. `UpdateStateCallbacks` stores four new
+texts and calls `StateSwitch(STATE)`; `RemoveStateCallbacks` stops the switching (`DISABLED`) and clears the text;
+`DisableStateCallbacks` deletes the five callbacks.
+
+`PlayerState(h, anim)`, when one of those clips **starts**: either idle → `STATE` = `IDLE`, 210 → `MOUNT`, 82 →
+`FGRAB`, 84 → `RGRAB`. It first saves the old state, sets the **new** one, and only when the two differ (and the
+switching is on) calls `StateSwitch(STATE)` with the new state. `StateSwitch` clears the hint and shows the text stored
+for that state. So the text always describes the state the player is **now** in, never the one he left.
+
+**Lesson 6** (`P1.SetupPowerMoves`, then the callback `P1.PowerMove`):
+
+| | idle | mounted | front hold | rear hold |
+| --- | --- | --- | --- | --- |
+| set-up | `TT_19a` (tap circle to grab) | `TT_19e` (circle to pick up) | `TT_24d` (the power move) | `TT_24d` |
+| after the first power strike | `TT_19a` | `TT_19e` | `TT_24e` (the extended power move) | `TT_24e` |
+
+`P1.PowerMove(anim)` keeps `tPower3 = {ANIM_GRAB_POWER_01_STRIKE_01, ANIM_GRAB_POWER_01_STRIKE_02}` = {57, 59}. Step
+1 counts only 57: Rembrandt's line `l99_t1_017` and `UpdateStateCallbacks(TT_19a, TT_19e, TT_24e, TT_24e)`. Step 2
+counts only 59: `BrDead(player, true)`, `RemoveStateCallbacks`, the callback cleared, `P1.PowerMovesDone` 2500 ms
+later. Any other id is ignored.
+
+So the answer is **both, by state**: `TT_19a` is the idle text all through the lesson, `TT_24e` the holding text
+after the first power strike. The lesson counts **only the grab's power strike from the front hold** (57, then its
+extension 59): the standing cross + square (653, lesson 5's special), the mount's power strike (225) and a power
+strike from the rear hold (scored as 80, [the power strike](combat.md#grabbing)) never count. The texts that read like
+a standing move are only ever shown while the player holds someone, and a player who lets go is told to grab.
+
+**What the owner saw in Coney** (item 33, steps 1-7): standing he got the power-move text; grabbing, the grab hint;
+mounted, the power-move text; picked up again, the pick-up hint; let go, the power-move text; grabbed, the grab
+hint; after 57 standing, `TT_24e`. Every one is the text of the state he had just **left**. Coney runs the script
+itself (`src/scripting/anim_callbacks.h`), so the lag is in what reaches `PlayerState`: an anim callback fired one
+clip late, for the clip that just ended, or the five ids not fired when a chain or an end hook starts them (82 after
+the connect, 210 after 118, the idle after a paired clip). Not traced in Coney. The original's run in
+[the hints in order](#level99-hints) shows `TT_24d` at 1916 because lesson 5 ends in the strong grapple's hold (82),
+so `STATE` is `FGRAB` when lesson 6 sets up.
+
+**Coney fixes** (item 33 (a) and (b); the hint box itself is on [HUD](hud.md)):
+
+1. Fire the anim callbacks on the update a clip **starts**, with that clip's id, whether it was started directly,
+   by a chain or by an end hook ([anim callbacks](characters.md#anim-callbacks)); 82, 84, 210 and both idles must
+   each reach `PlayerState` once per start. A unit test: grab (82 fires), mount (210 fires), get off (an idle fires),
+   in that order, with nothing stale.
+2. `SetupStateCallbacks` and `UpdateStateCallbacks` show the text for the current `STATE` at once (the state kept
+   from the earlier lessons, not reset to idle).
+3. The lesson-6 callback counts 57 then 59 only; Coney's standing cross + square must not reach it as 57.
+4. Playthrough test (level99 cp1): in lesson 6, standing shows `TT_19a`; front hold shows `TT_24d`; after 57, back
+   in the hold or holding, `TT_24e`; mounted `TT_19e`; and only 57 → 59 from a front hold advances.
 
 #### Hint timing, lessons 5-8 {#level99-hint-timing}
 
@@ -1035,8 +1096,9 @@ uses.) What a test can rely on:
   after 4 updates; a player who stays in the hold keeps it. Grab hints (`TT_19*`) between lesson texts depend on the
   driver, as above.
 - `TT_24e` (the extended power move) did not show in these runs: `P1.PowerMove`'s step 1 set `TT_19a` (grab again)
-  instead, where the 2026-10-07 run above showed `TT_24e`. Which state of the player or the bum picks between them is
-  not traced (open).
+  instead, where the 2026-10-07 run above showed `TT_24e`. The [state hints](#level99-state-hints) explain it: the
+  follow-on idle 358 had already set `STATE` to idle when step 1 ran, and the idle text is `TT_19a`; a player still in
+  the hold gets `TT_24e`. Inferred.
 
 #### Checkpoints 2 and 3 {#level99-checkpoints}
 
@@ -1150,6 +1212,25 @@ Nothing on the way slows him for the jump, confirmed (code):
   jump itself is not a corner ([Moving: the move action](ai.md#move-action)).
 - An AI starts a jump at any gait, from a run too, with no run-up test (`Human_BeginJump`, `0x0023db48`), and the
   landing here is level with the take-off, so it is a jump, not the slowing drop ([Jumps and drops](ai.md#path-planning)).
+
+**At runtime** (2026-10-11, PCSX2, confirmed (runtime); scenario `vermin_window_jump` in
+`repo:research/traces/scenarios/`, the owner's slot 9 copied, hook `event-call`). The player runs at the window with the
+stick at 100 % straight ahead and taps triangle 59 updates in, as in `glass_jump`, lands at x 44.5, then stands still.
+Vermin's human `+0x1a8` (gait), `+0x1ac` (speed), position and top goal were read every update:
+
+- **First leg.** `GoalMoveToFlag` (Vermin, `fStop[3]`) was called 80 updates in, as the player came down. The top goal
+  was MoveToFlag (vtable `0x00542130`). From 82 updates in Vermin went gait 2 → 3 (87) → **4** (95), and from about 101
+  updates in held **7.80 m/s**, the run speed, with clip 410 (`ANIM_MOVEMENT_RUN`). Gait 4 and 7.80 m/s held on every
+  update up to the take-off at 135, at (50.74, −2.83), 3.3 m before the panes at x 47.4. Then came gait 5 and the jump clip
+  434: 0.318 m an update across the ground (9.55 m/s), 3.5 m/s up at the start, 0.523 m/s less each update. He
+  crossed x 47.4 in the air (z 4.58-4.53, 0.4 m above the take-off) and landed at 153 at x 45.01 (clip 435), then
+  walked on and stopped at `fStop[3]` (41.46, 2.63) about 220 updates in.
+- **Second leg.** `GoalMoveToFlag` again at 300 (`P3.FinishRun`), gait 4 from 328 at 7.80 m/s up to the take-off at
+  346 (y 8.95). The jump went 9.40 m/s along y with 5.0 m/s up; he landed at 369 (y 16.15) and stopped at `fStop[4]`
+  (41.50, 19.44).
+- So the gait is **4 (run)** right up to the take-off on both legs, with no slowing before the window; the gait-5
+  reading during the jump is the jump's own speed (above 9.02 m/s, the gait-5 bound for Rembrandt's speeds, confirmed
+  (code) at `0x0022aeb0`, [Speed classes](characters.md#speed-classes)), not a sprint order.
 
 Coney fixes (item 42):
 
@@ -1374,7 +1455,32 @@ only) are inferred; scene data is read from the disc's `l80_c5` records (numbers
 - **A human in a grab is skipped.** The scene's start leaves out a bound human that is grabbing, grabbed, mounting or
   mounted: not posed, not counted, its fight going on ([Scenes: humans](scenes.md#humans), confirmed (code)). A cop
   with Snow in a hold at that moment would stay out of the scene in the original too; with auto-escape and god mode
-  on Snow, how often that happens is **deferred: runtime** (below).
+  on Snow, how often that happens was checked at runtime (below): not once in 60 s of the fight.
+- **At runtime all ten were taken in** (2026-10-11, PCSX2, confirmed (runtime)). Level80 checkpoint 2 was entered as
+  in [the runtime order](#level80-hints) and Cleon teleported to (−191, 224) (`Object_Teleport`, call hook). He walked
+  towards (−195.3, 225.2) with the stick at 0.5, aimed at the point and re-aimed every 2 updates. The cops were set on
+  Snow as he came into `vSnowCowboyTrigger`. `l80_c5`'s header went to state 4 on the update of `ScenePlayCinematic`
+  and to state 5 the next. At that first playing update `+0x1e` was **10**, with all 10 roles bound and no one skipped
+  for a grab. One run only, with the scene started a few seconds after the cops engaged.
+- **No one grabs in the gate fight, so no one is left out** (a second run, 2026-10-11, PCSX2, confirmed (runtime);
+  checkpoint 2 entered the same way, hooks `strike-contact`, `hit-reaction` and `grab-start`). `vSnowCowboyTrigger` is
+  a box from (−195.7, 210.8, 1.1) to (−184.2, 218.0, 4.6) (read from the volume object behind the script's handle),
+  across the street south of the gate: a player walking up from the checkpoint start passes it well before he is
+  within 2 m of `fSnowCowboyTrigger`, and `GangMakeEnemies` and `GangEngageEnemy(cops, Snow)` came the update Cleon
+  stepped in at (−190.6, 217.8). (A player teleported to (−191, 224), north of it, starts the scene without ever
+  setting the cops on Snow: the first run here did.) Cleon then stood still for 1,800 updates (60 s) while the cops,
+  Snow and Cowboy fought (strikes both ways, reactions, the Destroyers joining). Sampled every update, none of Snow,
+  Cowboy and the four cops ever had a grab or mount bit (`0xcf0` of record `+0x14`), and `Grab_Start` was never
+  called. The scene started at Cleon's walk to the flag with all ten humans taken in. So with this AI a cop holding
+  Snow at the scene's start does not happen in practice; the skip is a code path only.
+- **The batons after the scene** (same run, the four records of `dyn_baton` to `dyn_baton03` read every 15-20
+  updates from the scene's end, through `Objects` and the `ObjectTaskManager`'s records): before the scene none is
+  spawned (the scene's `SceneAddObject` spawns them); `DestroyCopWeapons` destroyed one held object per cop at the
+  start. At the scene's end, 3 updates after and at 1 s, **only `dyn_baton01` was live**, lying at its track's end
+  (−194.51, 233.02, 1.25); the other three records were marked removed (`+0x24` bit `0x40000`) when `GangDelete`
+  took their cops. `dyn_baton01` was removed between 174 and 193 updates (5.8-6.4 s) after the scene's end, so
+  about 30 s after its drop at frame 279, and at 40 s and later no baton was left. `dyn_baton04` and `05` (the
+  level's others) never spawned in this stretch.
 
 Coney fixes (item 36):
 
@@ -1406,31 +1512,50 @@ Coney fixes (item 36):
 - What lasts is what the explosion's **six embers** leave where they land ([Explosions](script-types.md#part-explosion),
   confirmed (code) at `0x003c3c08`, `0x003c3da8`): each ember lives 25-40 **updates** at a random interval of 1-3
   ticks (about 0.4-2 s) and drops a `sub_flames` puff behind it every update; on landing on a surface that is not a
-  wall it makes a **`sub_burn`** scorch (interval 180 ticks, four steps: about 9 s shown, 12-15 s alive, with an AI
+  wall it makes a **`sub_burn`** scorch (interval 180 ticks, four steps: 12.0 s alive at runtime, below, with an AI
   no-go sphere of 0.5-0.75 m) and a **`sub_fade_flame`** on it (60-89 frames at 2-3 ticks, then a fade: about
   4-6 s), the first ember's flame with the looping `vags/fire/fire_small_loop`. Three explosions so leave up to
   eighteen small fires on the clubhouse's ledges and floor for several seconds, while the flash, fireballs and debris
   are over in about 2 s.
+- **At runtime** (2026-10-11, PCSX2, confirmed (runtime); three plays of the unskipped intro, entered at `level80`
+  checkpoint 1 as in [the runtime order](#level80-hints)). The hooks `ember-init`, `ember-update`, `burn-init`,
+  `burn-update`, `fade-flame-init` and `fade-flame-update` of `repo:research/traces/patches.toml` logged the three
+  explosions about 650 updates into `l80_c1`, 5 and 4 updates apart, with six embers each. The tasks lived as follows:
+    - **Embers: 2-5 updates (3-9 ticks)**, never their 25-40. Each starts 0.7 m above its flag (z 6.8 at
+      `fExplosion1`) and falls about 0.6 m onto the sill or floor, so it lands almost at once and ends there.
+    - **Scorches (`sub_burn`): 18, one per ember, each 721 ticks (12.0 s)** from its creation to its last update.
+      That is five updates: the creation and four steps of 180 ticks.
+    - **Flames on the embers (`sub_fade_flame`): 18, 287-361 ticks (4.8-6.0 s)** each, on the ember's landing spot.
+    - **More flames, not from the embers**: another 46-53 `sub_fade_flame` per play. They start 20-60 updates after
+      the explosions, scattered up to about 6 m round the flags at floor height (z 5.7-6.0), and each lives 278-374
+      ticks (4.6-6.2 s). They come from the explosion's **burning debris** (below).
+    - **Their source** (a second pass, 2026-10-11, two more plays, hooks `ember-init`, `burn-init`,
+      `fade-flame-init` and `debris-flame`): each explosion's twenty large `sub_debris` are made burning (message
+      `0x27`, kind 2, [Explosions](script-types.md#part-explosion)), and one that lands on a floor (its contact
+      normal's z above 0.9) makes a `sub_fade_flame` where it lies ([`sub_debris`](script-types.md#sub-debris)).
+      The two plays made 71 and 62 fade flames: 18 from the embers and **53 and 44** from landed debris, of 60
+      burning pieces, all between 20 and 63 updates after the first explosion at z 5.6-7.0. Every flame is
+      accounted for.
+
+  So fire is still burning near the flags 3 s after the last explosion, the flames are gone by 6.2 s and the scorches
+  at 12.0 s, and nothing is left at 20 s.
 
 Coney fixes (item 28):
 
 1. Give the explosion's embers the original's life: 25-40 updates of 1-3 ticks each (Coney counts 25-40 ticks, about
-   half), and a `sub_flames` puff each update.
+   half), and a `sub_flames` puff each update. Here they land after 2-5 updates, so what the player sees is the
+   landing: an ember that ends on landing must still leave the scorch and flame of fix 2.
 2. On an ember's landing make the `sub_burn` (with its no-go sphere) and the `sub_fade_flame` on it as above, the
    first ember's flame with its loop sound; Coney's embers end on landing with nothing behind.
-3. Test: after `C1.ExplodeAtFlag`, fire particles are still live near the flag 3 s later and none 20 s later.
+3. Make the explosion's twenty large debris pieces burning (kind 2) and give each that lands on a floor a
+   `sub_fade_flame` where it lies ([`sub_debris`](script-types.md#sub-debris)): about 15-18 more small fires per
+   explosion, scattered a few metres round it, 20-60 updates after it.
+4. Test: after `C1.ExplodeAtFlag`, six scorches and six flames are made where its embers land, and one flame per
+   burning debris piece that lands on a floor; the flames are gone between 4.6 and 6.2 s and the scorches at
+   12.0 s, and no fire particle is left 20 s later.
 
-**Deferred: runtime** (PCSX2 held elsewhere; the steps for whoever has it):
-
-- Item 36: from a `level80` checkpoint-2 state (enter via mode 8's level as in [the runtime order](#level80-hints)),
-  teleport Cleon (`Object_Teleport` `0x00385bb8`, call hook) just outside `fSnowCowboyTrigger`, walk in with the left
-  stick at 0.5 up, and read `l80_c5`'s header `+0x1e` (humans in the scene) at its first playing update and each
-  role's `+0x50` binding; expected 10, else note which role was skipped and whether that human was in a pair
-  (record `+0x08` / state bits `0xcf0`). After the scene, count live `dyn_baton` objects at 1 s and 40 s.
-- Item 28: after the intro (unskipped), count live particle tasks named `sub_burn`, `sub_fade_flame` and
-  `sub_flames` within 5 m of `fExplosion1`-`3` every second for 20 s.
-- Item 42: level99 checkpoint 3 state at `P3.Player2Jumps` (the player's window jump, stick 100 % up, as in
-  [the jump](objects.md#pane-break)); record Vermin's gait and speed each update until he lands past x 47.4.
+**Deferred: runtime**: none left; item 36's batons and holds and item 28's extra flames were checked in the second
+pass above.
 
 ### `level34.lua` (mission 4) {#level34}
 
@@ -1651,6 +1776,12 @@ from the disassembly of `level3.lua` and its five chapter scripts; bindings on
    leaving the box (message 4, which also returns to the rail camera). `vbJumpWarn` boxes show a jump prompt
    (`HUDTurnOnActionCycleAnim`) for 1.5 s. Falling into `vChaseKill` (kind 0) fades and fails the mission (`MF_4`);
    a pursuer there dies, a Warrior is warped to the gallery.
+   **The way across the last roofs**, read from the disc's collision mesh (inferred; not checked in the original): the
+   jump from `vbJumpWarn_08`'s roof (z 13.2, edge at x 150.5) lands on a roof at z 10.3 (y 361-369.5). Its south
+   part is closed at x 167.4 (y 361.5-366.7) by a wall 3.6 m tall, material 152 with no climbable flag, so no climb
+   takes it ([Characters: climbing](characters.md#climb)). The way on is the steel stairs beside it (material 3,
+   y 367-369.5): two 33° flights with a landing from x 167 to 177.5, a platform at z 16.46 to x 193, then the jump in
+   `vbJumpWarn_09` over the gap (x 193.5-200.5) to the gallery's roof (z 14.4) and `vbEnterGallery` (x 200.8-208.8).
 7. **`ch4.EnterGallery`** (`vbEnterGallery`, kind 2): objective done, handlers off, the chase gangs removed,
    tireless and fast-climber cleared, the jump scene, then the Warriors warped to the gallery and `NextMission`.
 
