@@ -583,8 +583,9 @@ perfect, or a third abandoned pick. The report ([AI: crimes](ai.md#crimes)), con
 buyers and browsers are switched off, the nearest `strobe` within 6 m gets message `0x12`, and responders are queued
 with a delay of `CfgBreakAndEnterDelay` (15, 10 or 7 by difficulty). The first gang to rob a store scores crime event
 4-1 for its leader when he is a player. `ResetStore` (`0x0041ddd8`) clears the robbed bit, sets the group word's bits
-8-15 to `0xff` and the gang bits to 31, and restocks the store; its 7 m test is a strobe's distance from the store's
-flag, not the player's (confirmed (code)). `EnterStore` / `ExitStore` only change the screen colour.
+8-15 to `0xff` and the gang bits to 31, and restocks the store; its 7 m test (squared distance under 49, message
+`0x13`) is a strobe's distance from the store's flag, not the player's (confirmed (code)). The two strobe distances
+differ in the code: a break-in reaches a strobe within 6 m of the store's flag, a reset one within 7 m. `EnterStore` / `ExitStore` only change the screen colour.
 
 #### Which break-ins call the police {#break-in-police}
 
@@ -593,8 +594,7 @@ flag, not the player's (confirmed (code)). `EnterStore` / `ExitStore` only chang
 
 1. It looks for the nearest flag of activity `0xe` (a store front) to the report's position
    (`Flag_FindNearestByActivity`) and goes on only when one exists and lies within **10 m** (squared distance under
-   100). **No store front within
-   10 m: no police, no strobe, nothing robbed.** The wanted timer, hostility and crime callback run before this, but
+   100). **No store front within 10 m: no police, no strobe, nothing robbed.** The wanted timer, hostility and crime callback run before this, but
    only with an offender (step 2 of [AI: crimes](ai.md#crimes)).
 2. Only when that store is **not yet robbed** (bit 16 of the flag's word `+0xd8` clear) and the call asked for
    responders (`mode` 1): `Responders_Queue(1, kind 1, count = CfgCrimeResponders(1) (game state +0x295), delay =

@@ -984,7 +984,7 @@ the GS unscaled was not read; deferred: runtime (PCSX2: level80 checkpoint 3 wit
 stick centred, sample the arc's pixels with nothing targeted and with the aim on the `dyn_w_mission` marker, pitch
 about 0.14 rad as on [Objects: throws](objects.md#throws)).
 
-**Owner item 31 (the arc)**: the first Coney arc (the `throw-arc` work, `graphics::throwArcStrip()`, 2026-10-11) used
+**Owner item 31 (the arc)**: the first Coney arc (on the `throw-arc` branch, 2026-10-11) used
 stand-in values that differ from the above. **Coney fixes**:
 
 1. Colours (127, 127, 127) not hit and (170, 43, 43) hit, read with 128 = 1.0 (so about the texture's grey and a
