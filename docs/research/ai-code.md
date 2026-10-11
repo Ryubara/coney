@@ -379,7 +379,7 @@ Following a planned route leg by leg, including climb, jump and smash legs; see
 | `0x0029a358` | `RouteState_Construct` | helper | constructs a route-following state | confirmed (code) |
 | `0x0029a3c0` | `RouteState_GetPoint` | helper | the point of the current waypoint | confirmed (code) |
 | `0x0029aa20` | `RouteState_Stop` | helper | stops following unless mid-leg; frees the route, index none | inferred |
-| `0x0029aa78` | `RouteState_SetFlag` | helper | sets byte `+0x11` | speculative |
+| `0x0029aa78` | `RouteState_SetFlag` | helper | sets byte `+0x11`, "move on now" ([Following a route](ai.md#route-follow)) | confirmed (code) |
 | `0x0029afe0` | `RouteState_CheckArrival` | helper | on a walking leg, measures the progress to the waypoint; done legs go to state 5 | inferred |
 | `0x0029b238` | `Route_NodeCount` | helper | the number of nodes in a route | confirmed (code) |
 | `0x0029b248` | `RouteState_CurrentNode` | helper | the node at the current index | confirmed (code) |

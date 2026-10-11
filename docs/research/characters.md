@@ -2498,7 +2498,7 @@ the human code reads.
 | `0x002446a8` | `Human_SetButtonTapParam` | Sets `+0x6bc` for the button-tap control. | confirmed (code) |
 | `0x002446b0` | `Human_SetThrowAimState` | Enters throw aiming: the control function and the aim point. | confirmed (code) |
 | `0x00247a08` | `Human_SetFallStartPoint` | `+0x2c0` = the given point when it is on the nav mesh, else `+0x2b0`. | confirmed (code) |
-| `0x00247a50` | `Nav_StraightDistance` | The distance to a point when it lies on the nav mesh and a walkable line reaches it, else 0; AI move goals use it. | confirmed (code) |
+| `0x00247a50` | `Nav_WalkDistanceTo` | The straight distance to a point a walkable line reaches, else the length of a route planned to it ([AI](ai.md#warrior-follow)); 0 with no area or no route. | confirmed (code) |
 | `0x00247fc0` | `Human_StrikeShapeOn` | Turns a strike shape on (message 0x8f). | confirmed (code) |
 | `0x00248110` | `Human_StrikeShapeOff` | Turns a strike shape off (message 0x90). | confirmed (code) |
 | `0x002482e0` | `Human_CanHeadLook` | Whether the head may turn to look. | confirmed (code) |
