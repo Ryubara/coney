@@ -39,12 +39,17 @@ void Human::setFlight(std::optional<Flight> flight) {
 }
 
 void Human::fly() {
+    // Only called while flying; the check is what the optional access below relies on.
+    if (!m_flight.has_value()) {
+        return;
+    }
+    const Flight& flight = *m_flight;
     // The stick as the locomotion reads it (turned by the camera, the game's dead zone), as a velocity across the
     // ground, plus the climb. No wall, ground, gravity or clip root motion acts on it.
     const float push = m_intent.magnitude > locomotionTuning().stickDeadZone ? m_intent.magnitude : 0.0F;
     const float stickHeading = m_intent.angle - std::numbers::pi_v<float> / 2.0F;
-    const anim::Vec3 across = anim::scale(facing(stickHeading), push * m_flight->speed);
-    m_velocity = anim::Vec3{across.x, across.y, m_flight->climb};
+    const anim::Vec3 across = anim::scale(facing(stickHeading), push * flight.speed);
+    m_velocity = anim::Vec3{across.x, across.y, flight.climb};
     m_position = anim::add(m_position, anim::scale(m_velocity, m_stepSeconds));
     // He faces where he flies, at once; standing still in the air he keeps his heading.
     if (push > 0.0F) {
