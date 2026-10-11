@@ -30,6 +30,7 @@ implemented in Coney and 1 are traced. The full list is on [the coverage page](.
 Research:
 
 - [Story order and what loads each level](../research/scripting.md#run-next-mission)
+- [Armies of the Night: the way in, the pieces and what Coney needs](../research/armies.md)
 
 ## Run it in Coney {#run}
 

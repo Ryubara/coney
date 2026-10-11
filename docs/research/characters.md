@@ -147,7 +147,8 @@ Confirmed (code); offsets with "runtime" were checked on Rembrandt.
 
 | Offset | Meaning |
 | --- | --- |
-| `+0x00` | the pad's buttons (8 bytes copied from the pad record's `+0x08`, [Front end](frontend.md#pad-record)) |
+| `+0x00` | 8 bytes copied from the pad record's `+0x08` ([Front end](frontend.md#pad-record)): the left stick's x and y as two floats (y up), not turned by the camera (the tagging stick game reads them so, `0x002748a8`) |
+| `+0x1c`, `+0x1d` | the rumble: a slip in the tagging game writes 255 and 1, an on-track update 0 and 0 (inferred from [Tagging](crimes.md#tagging)) |
 | `+0x08`, `+0x0c` | stick angle, two buffers (radians, `atan2` of the camera-turned stick) |
 | `+0x10`, `+0x14` | stick magnitude, two buffers, clamped to 1 |
 | `+0x18` | which buffer is current (toggles 0/1 each update; the other is the previous update's) |
@@ -1319,14 +1320,30 @@ addresses given:
 - **Not one-shot**: the slot stays until `DelAnimCallback(human, anim)` (`0x0023ab80`; the first slot whose id matches
   and whose flag is set or whose handle is the human's) or the next `InitLevel`.
 - A paired task (`0x00108450`, `0x00108a78`) looks the id up in **the other human's** instance, so the dispatch runs
-  for that human (inferred from the instance used).
+  for that human. Confirmed (runtime): at a strong grapple's connect the victim's 658, started by `PairedTask_Init`
+  (`0x00108a78`, caller `0x00108af4`), was dispatched for the **player** (the grabber, whose set holds 658).
+- **A follow-on task fires when it is built, not when it starts playing.** At a grab's connect, `Grab_Connect`
+  ([Combat](combat.md#grab-posing)) builds the connecting clip and, under it, the hold's four-clip mix (type 11,
+  `AnimTaskFourMix_Construct`, `0x00106f50`) on both stacks in the same update; the four-mix's constructor takes its
+  clips (82 and 86 for the grabber, 83 and 87 for the victim) and so fires the callbacks of the **hold ids at the
+  connect**, the length of the connecting clip before the hold plays. Confirmed (runtime), PCSX2 2.9.94, `level99`
+  checkpoint 1 (hooks `anim-dispatch` and `anim-callback-match`, [the queue at runtime](hud.md#hint-queue-runtime)):
+  for each grab the dispatch of 82 for the player (from `0x00106fe0`) and of 83 for the victim came in the tick the
+  connecting clip started (657 from `AnimTaskChained_Construct`, `0x00105990`); in the strong grapple the hold played
+  and the tutorial callback received 82 **34 updates later**, and no second dispatch of 82 came when the hold began.
+  So level99's `PlayerState` (registered on the player's 82 and 84) runs at the connect, and lesson 5's
+  `P1.Power` (the hit scored with 82, [Strong grapple](combat.md#strong-grapple)) 34 updates after it, never in the
+  same update. A plain grab fires 82 at its connect the same way (lessons 2, 6 and 8).
 - **Coney's implementation** (`ScriptedBrains::runAnimCallbacks`): the starts are gathered over the characters' step
   and the callbacks called after it. A human that starts the same id more than once in one step gets **one** call
   (**Coney's reading**). Coney hands a chain over to its loop in every layer, the fading ones too, so two attack chains
   ending in the fight idle 358 started it twice in one update. `level99`'s `PlayerState` then ran twice: each time
   `HUDSetTutorialText(nil)` and a hint, and the second nil found nothing showing yet, so one hint stayed queued per
   double start. The box backed up behind them, and the Targeting and Light Combos hints never showed
-  ([Hints](hud.md#hints-hudsettutorialtext)).
+  ([Hints](hud.md#hints-hudsettutorialtext)). **Differs from the original**: a grab's hold ids (82 / 83, 84 / 85)
+  must fire at the connect, when the hold is set up under the connecting clip, not when the hold begins (above);
+  in Coney's `level99` course run they fired when the hold played, the update the strong grapple's damage is scored,
+  which put `PlayerState`'s grab hint and `P1.Power`'s `TT_24d` in one update.
 
 ### Moving, standing on the ground and falling {#ground}
 
@@ -1649,7 +1666,15 @@ the first that succeeds. Confirmed (code):
 1. a **climb** (`Climb_TryStart`, [below](#climb)), if human flag `0x20000000` is clear and the stick is above 0.12;
 2. a **context action** (`0x002811f0`), if L2 is not held;
 3. a **jump** (`Player_TryJump`, `0x002829e8`), if human flag `0x10000000` is clear and the stick is above **0.95**;
-4. an object action (`0x00226ff0`, `0x00257f38`), if L2 is not held.
+4. the **drop** of what is in hand (`Human_DropHeld`, `0x00257f38`), if L2 is not held
+   ([Triangle with something in hand](#triangle-held)).
+
+The object action is the **drop**: `0x00226ff0` is `Human_GetHeldObject` (`+0x338`) and `0x00257f38` is
+`Human_DropHeld`, which gives the held object back its physics body and clears the hand. Confirmed (code). There is
+no jump buffer in this order: triangle is acted on in the update it is pressed. So, inferred from the order and the
+jump's refusal while carrying a class 4 or 6 object: triangle with a weapon in hand and the stick pushed toward a
+climbable wall that is still out of the climb's reach (the climb fails, the jump is refused) **drops the weapon**, as
+checklist item 2 reports of Coney; whether that is what the original does at runtime is not checked.
 
 Nothing happens while state flags `0x7bf9e9f7ff0` or record `+0x08` flags `0x5cfeafb` are set.
 
@@ -1697,6 +1722,55 @@ at runtime for Vermin (3.5 m/s up, 9.55 m/s across a 4.1 m gap); the rest is in
 
 **In an input script**: `stick left 0 100`, wait until the run start is over and the speed is above 3.3 m/s, then
 `tap triangle`; add `press l2` beforehand for a sprint jump.
+
+#### Triangle with something in hand {#triangle-held}
+
+Owner checklist item 2 (an early press at a wall drops the weapon instead of climbing). The four tries above, read
+again for a held object; confirmed (code) at `Player_UpdateActions` (`0x0027c120`, both its triangle blocks),
+`Climb_TryStart` (`0x002826f0`), `Climb_Start` (`0x00281c20`), `Player_TriangleAction` (`0x002811f0`),
+`ContextAction_Use` (`0x0024d530`) and `Human_PickUpSearch` (`0x0024d810`):
+
+1. **There is no buffer.** Command 10 is one sample ([Commands](combat.md#commands)) and each try runs once, on that
+   update. An "early" climb is only the long ray: 4.5 m ahead for a player (human flag `0x2`) at gait 4 or 5, else
+   1.5 m.
+2. **The climb comes first and ignores what is in hand.** `Climb_TryStart` refuses only on record `+0x08`
+   `0x84240`; nothing about a held object. When the climb starts, `Climb_Start` **drops** an object of held set 4
+   (overhead: barrels, crates) always, and one of set 6 (the ghetto blaster) unless `CfgClimbWithGhetto`
+   (`0x00510250`) is set; a weapon (sets 1-3) or a one-handed throwable (5) stays in hand through the climb.
+3. **A press slightly out of reach is swallowed.** `Climb_Start` returns "done" for a player (per-player `+0x1b` not
+   0), without climbing, when the face is beyond the clip's maximum distance but closer than twice a clip's reach
+   (which clip's reach the decompiler hides; [open question](#open-questions)), and when the space at the top is not
+   clear (`Climb_IsSpaceClear`). The dispatcher then returns with nothing more: **no jump and no drop**. An AI gets
+   "not done".
+4. **The context action never drops for a player with nothing to take.** `Player_TriangleAction` → `ContextAction_Use`
+   → (no context record) the pick-up search. With an object found and something in hand (not kind 12 or 24), it
+   drops what is held and sets human `+0x5b8`; the history-hold triangle (`0xb`, 7 samples) then takes the new one
+   (`Player_TriangleAction` again, `+0x5b8` cleared). With **nothing found**, a pad-controlled human gets 0 (no
+   drop); only an AI (`+0x1b` = 0) drops here.
+5. **The jump**: refused while carrying held set 4 or 6 (`Human_HoldsKind4Or6`), in a fight stance, at 3.3 m/s or
+   less, or with a climbable face within 5.5 m ([above](#jump)). A weapon does not refuse it.
+6. **Only then the drop**: with L2 not held and an object in hand, `Human_DropHeld` (`0x00257f38`) and `+0x5b8` = 1.
+
+So with a bat at a run toward a climbable wall: within 4.5 m (and inside the clips' distances) he climbs with the bat;
+just beyond the clips' distance the press may be swallowed; farther but within 5.5 m nothing climbs or jumps and the
+**bat drops** (the original does this too); beyond 5.5 m, at a run, he **jumps with the bat**. Empty-handed, the last
+two cases do nothing and jump.
+
+**Coney fixes** (item 2; today `PlayLevelMode`'s context action returns `TriangleResult::Drop` at try 2, before the
+jump, `src/platform/play_level_objects.cpp`):
+
+1. Remove the drop from the context action for the player: with nothing to take it returns "nothing" (an AI keeps
+   the drop there). With an object to take and something in hand, drop and remember the swap (`+0x5b8`); the
+   triangle history hold (7 samples) picks the new object up.
+2. Add try 4 in `Human::tryActions` (`src/human/human.cpp`): after a refused jump, with L2 not held and an object in
+   hand, drop it.
+3. The climb with an object: keep weapons and set-5 objects in hand; drop set 4, and set 6 unless
+   `CfgClimbWithGhetto`. Check that a player carrying a weapon at a run is gait 4 or 5 for the 4.5 m ray (a slower
+   armed run speed must not shorten the reach to 1.5 m).
+4. Add the swallow of try 3 when Coney's climb distances say "too far by less than twice the reach": the press ends
+   there.
+5. Tests: with a bat, at a run, triangle 3 m before a climbable fence climbs and keeps the bat; 5 m before it drops the
+   bat; 8 m before in the open it jumps and keeps the bat; with a barrel (set 4) the climb drops it.
 
 ### Climbing {#climb}
 
@@ -1750,7 +1824,13 @@ at runtime for Vermin (3.5 m/s up, 9.55 m/s across a 4.1 m gap); the rest is in
   snap. The teleport at P1's end goes through body vtable `+0x1c` with no sweep, `0x4000` stops the body re-posing
   (`0x003422d0`), and `Human_GetPosition` returns `+0x2c0` while `0x40` is set. So a climbed face of any material
   (a parapet of material 107 with triangle flag `0x80`, say) stops the body only during P1; the skip of materials 30,
-  31 and 122 in `Human_OnContact` covers only contacts that still reach it. Confirmed (code).
+  31 and 122 in `Human_OnContact` covers only contacts that still reach it. Confirmed (code): the branch is
+  `Human_HasHeld40` (`0x0023d8c8`, the test before `Vec4_Add(..., +0x2f0)` and `Object_SetPosition`); the sweep
+  and `Human_SnapToGround` sit only on the other branch. Confirmed (runtime) on a railing of material 7, below.
+- **Over a drop there is no third clip.** When P2 ends with nothing under the feet (a railing above a lower floor),
+  the next update's ground snap misses and the human falls: the fall clip **428** (record `+0x08` `0x400000`) in
+  place of P3, gravity from the third update, the landing (436) on the floor below. Confirmed (runtime), the hangout
+  railing below; that the switch is `Human_SnapToGround`'s miss starting the fall is inferred.
 - **The first clip runs during the move.** The same call sets the move to the start point (`0x0023d2b8`: over 1/60 s,
   or 1/15 s when the turn `0x0023cf88` takes 1/30 s) and installs the three clip tasks (`0x00105990`, `0x001754e8`),
   so P1's clock starts on the climb's first update, not after the move. Confirmed (code). At runtime (the slot 7
@@ -1779,6 +1859,24 @@ runtime were seen):
 | short wall, standing (455, 456, 457) | stick 0.5, triangle | 455 for 0.3 s (`0x80000`); at 456's start the feet **jumped** 1.06 m forward and **1.29 m up** in one update onto the trash can; 456 for 0.6 s (`0x40`), 457 for about 0.6 s, then the walk |
 | wall, standing (449, 450, 451) | stick 0.5, triangle, on the trash can | 449 for 0.37 s; at 450's start the feet jumped 0.98 m forward and 2.4 m up, and the ground snap settled them on the roof (2.64 m above the start) over the next updates; 450 for 1.4 s, 451 for 0.37 s |
 | short wall onto a car | stick 0.5, triangle | as the trash can, 1.48 m up |
+| short fence over the hangout railing (443, 444, then the fall), per update | stick 0.5, triangle every 2 updates | below |
+
+**The hangout railing** (confirmed (runtime), PCSX2 2.9.94, 2026-10-10, scenario `railing_vault`: level95, Cleon put
+on the clubhouse balcony at (−172.0, 98.3, −194.38) facing +y, 0.63 m from the railing's face, stick 0.5 straight
+up from update 60, triangle every 2 updates from 66). The railing is 0.90 m tall, material 7 (`LAMPOST`) with
+triangle flag `0x80`, its face at y ≈ 98.93, and the floor behind it is 3.20 m lower
+([Collision](collision.md#hangout-railings)):
+
+| Updates | Clip, record `+0x08` | The body |
+| --- | --- | --- |
+| 61-66 | 413, `0x10000000` | the walk start stops against the railing at y 98.44 (0.49 m from the face) |
+| 67-79 (13) | 443, `0x80000` | 0.04 m back toward the start point, then forward to 98.443 |
+| 80-98 (19) | 444, `0x40` | through the railing at up to 1.64 m/s, y 98.443 to **99.326** (0.40 m past the face), the feet **at the balcony's height** all the way (z −194.378) over the drop |
+| 99-118 (20) | 428, `0x400000` | the fall: z held for 2 updates, then `vz` −0.5227 per update; at 102 pushed 0.17 m on to y 99.50, clear of the railing's back; 445 never plays |
+| 119 | 436 | landed on the floor below (z −197.576), 3.20 m down, 0.57 m past the face; then the landing and the walk |
+
+So the railing's triangles do not stop the body during 444, though material 7 is not among the materials
+`Human_OnContact` skips: the wall sweep is not run at all ([above](#climb)).
 
 The vertical part of a climb is the single move at P2's start: the feet do not rise during P1 or P2.
 
@@ -2400,7 +2498,7 @@ the human code reads.
 | `0x002446a8` | `Human_SetButtonTapParam` | Sets `+0x6bc` for the button-tap control. | confirmed (code) |
 | `0x002446b0` | `Human_SetThrowAimState` | Enters throw aiming: the control function and the aim point. | confirmed (code) |
 | `0x00247a08` | `Human_SetFallStartPoint` | `+0x2c0` = the given point when it is on the nav mesh, else `+0x2b0`. | confirmed (code) |
-| `0x00247a50` | `Nav_StraightDistance` | The distance to a point when it lies on the nav mesh and a walkable line reaches it, else 0; AI move goals use it. | confirmed (code) |
+| `0x00247a50` | `Nav_WalkDistanceTo` | The straight distance to a point a walkable line reaches, else the length of a route planned to it ([AI](ai.md#warrior-follow)); 0 with no area or no route. | confirmed (code) |
 | `0x00247fc0` | `Human_StrikeShapeOn` | Turns a strike shape on (message 0x8f). | confirmed (code) |
 | `0x00248110` | `Human_StrikeShapeOff` | Turns a strike shape off (message 0x90). | confirmed (code) |
 | `0x002482e0` | `Human_CanHeadLook` | Whether the head may turn to look. | confirmed (code) |
@@ -2762,7 +2860,22 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   found; fences go by the second clip's own root motion, as the runtime's 441 carried the body through.
 - **Climbing over** lasts the second clip: from the re-probe at the first clip's end to the third clip's start (at
   runtime 441 had record `+0x08` `0x40` and 442 did not). Meanwhile the fence materials (30, 31, 122) are not walls,
-  and not ground for the snap and the landing, so a low fence's top does not lift the feet.
+  and not ground for the snap and the landing, so a low fence's top does not lift the feet. **This differs from the
+  original and breaks the hangout railing** (checklist item 46): the original runs no wall sweep and no ground snap
+  while `0x40` is set, so a climbed face of any material lets the body through, but Coney still sweeps the walking
+  sphere with only 30, 31 and 122 left out. The hangout's railings are material 7 with flag `0x80`
+  ([Collision](collision.md#hangout-railings)), so 443 and 444 play and the sweep holds the body 0.48 m in front of the
+  face: the vault ends on the same side. A climbed face that is any other material with flag `0x80` or `0x4` (car
+  shells are material 0) does the same. And had the body passed, Coney's snap would find no ground over the 3.2 m
+  drop part-way through 444, so the climb would end in the idle at once (`followClimb`'s airborne end) instead of the
+  fall at 444's end. **Fix:** while climbing over, skip `sweep` and `snapToGround` and move the feet by the velocity
+  and the clip's root motion, height included (`Human_Move`'s `0x40` branch); from the third clip on, move as now,
+  and when the snap then finds no ground start the fall (anim state 26, the fall clip, 428 at runtime) in place of
+  the idle and the third clip. **Test:** a synthetic railing of material 7 with flag `0x80`, 0.9 m tall and
+  one-sided toward the player, on the edge of a floor with another 3.2 m lower behind it: the player standing 0.6 m
+  from it, the stick at 50 % toward it and triangle, plays 443 and 444, is past the railing's back at 444's end with
+  the feet still at the upper floor's height, never plays 445, then falls and lands on the lower floor beyond the
+  railing; the same railing over level ground ends on the far side with 445 played.
 - **The re-probe** at the first clip's end accepts any triangle, not only a climbable one.
 - **The climb's fade**: none; the first clip moves the body at its full root speed from its first update after the
   move (5.79 m/s on the 2 m fence, as at runtime). The update the chain goes on to its second or third clip moves
@@ -2821,7 +2934,8 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   and works out (no movement or fighting) with the start, repetition and end callbacks; a player pumps with cross and
   quits with triangle, the effort decaying by `CfgWorkoutParams`' second table. **Stand-ins**: a workout begins within
   1.5 m of the equipment, a repetition lasts 1.5 s at an effort of 1, and no workout or dynamic clip plays; combat
-  mode and the gear are kept, their context actions not built.
+  mode and the gear are kept, their context actions not built. The original's workouts, every station and why
+  Coney's start does nothing: [Workouts](workouts.md).
 - **Names**: `@orig` names for addresses the research describes but does not name (such as `Human_SnapToGround`,
   `GaitBlend_Advance`, `PhysicsBody_PushOutOfWalls`) are Coney's.
 
@@ -2881,8 +2995,8 @@ read them yet.
 
 ## Open questions
 
-- The workout's reach and timing: how near the equipment the start clip (691) begins, and how the loop clips'
-  length sets a repetition.
+- **The workout's reach and timing** (answered): the scripts make the player his own target, so the reach always
+  passes, and a repetition is each wrap of the loop blend's leading clip ([Workouts](workouts.md#repetitions)).
 - Where god mode (`0x10`) is tested: Coney drops the damage and still plays the reaction.
 - What the arrest (state `0x20000`) plays and allows, and which human states `HuIsAlive`'s mask `0x180050000` names.
 
@@ -2909,13 +3023,18 @@ default ids are known, [Anim slots](#anim-slots)), and the
 - **Step height at runtime** (answered): steps up to 0.245 m are walked onto in one update, from 0.255 m they stop
   the body ([Walls and steps](#walls)), measured on a test step made in the mesh. Still open: a real kerb in a later
   level, as corroboration.
-- **The context action** (`0x002811f0`) and the object action (`0x00226ff0`) that triangle also starts: doors,
-  pick-ups, which objects.
+- **The context action** (`0x002811f0`) and the object action that triangle also starts (partly answered,
+  [Triangle with something in hand](#triangle-held)): the object action is the drop of what is in hand; the context
+  action is the context records and the pick-up search ([Crimes](crimes.md#triangle)). Doors and which objects are
+  still open.
 - **The air turn's gait** (partly answered): 4° per update from a run and a sprint alike, which is the non-player
   column's run value at `0x005101c4` (inferred: `Human_AirControl` reads the other column); not read in the code.
 - **Climb reaches** (partly answered): Coney reads Rembrandt's type-8 vectors ([Coney's implementation](#coneys-implementation));
   still open: which two clips `r1` and `r2` belong to (Coney's reading: the standing and running first clips), and
-  `CfgClimbWithGhetto`'s effect.
+  which clip's reach `Climb_Start`'s "too far by less than twice the reach" swallow uses
+  ([Triangle with something in hand](#triangle-held)). Answered: `CfgClimbWithGhetto` keeps the ghetto blaster (held
+  set 6) in hand through a climb; without it the climb drops it, and always drops a set-4 object (`Climb_Start`,
+  `0x00281c20`, confirmed (code)).
 - **The landing's threshold**: why the landing contact is taken only once the feet start an update about 0.17 m
   below the floor ([When the landing happens](#falling)). The contact path is traced (the resolution `0x0033d9d8`
   acts on the first contact by fraction) and does not explain it; a runtime log of the contacts is needed.

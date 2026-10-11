@@ -17,7 +17,7 @@ request. The provider caches that context:
 - **A cache read** (the context unchanged since the last request) is cheap, and barely counts toward a subscription's
   limits.
 - **A cache write** (the context stored for the first time, or again after the cache was lost) is what uses up the
-  limits. A write is as big as the whole context: an agent 300 000 tokens into a task re-writes 300 000 tokens.
+  limits. A write is as big as the whole context: an agent deep into a task re-writes everything it has read and done.
 
 So the questions for every agent are how big its context will grow and how many times it will have to be written.
 A cache is lost, and the next request re-writes everything, when:
@@ -80,6 +80,8 @@ instead of repeating it:
   its captures saved in `scratch/<branch>/shots/` ([What a pull request shows](testing.md#pr-evidence));
 - "Read `AGENTS.md`, [How we work](how-we-work.md), [Testing](testing.md) and this page first; they override the
   brief";
+- how it runs ([Running without losing the cache](#cache)): it works local-first, never pushes or waits on CI, and
+  hands each finished unit to the [release queue](how-we-work.md#release-queue);
 - only the facts the agent cannot find in the repository (a log path, a question to answer, the state file).
 
 ## Running without losing the cache {#cache}
@@ -90,27 +92,53 @@ instead of repeating it:
   run that takes longer.
 - **Keep tool output small.** Print counts, the failing lines and the end of a log, never a whole log: every line an
   agent reads stays in its context for the rest of the task.
-- **Do not message a finished agent.** Start a new one from its report and the track's state file.
+- **Do not message a finished agent.** Start a new one from its report and the track's
+  [STATUS.md](how-we-work.md#status).
+- **No agent waits on CI.** An agent commits locally, runs the local checks, hands each finished unit to the
+  coordinator's [release queue](how-we-work.md#release-queue) and goes on; it never pushes. The coordinator pushes,
+  watches CI and sends a failure to a fresh agent ([When a pull request fails checks](#ci-failures)). An agent that
+  sat idle past its cache lifetime would re-write its whole context, often hundreds of thousands of tokens, when it
+  resumed.
 - **Keep the coordinator small.** The coordinator re-reads its whole conversation on every turn and is the context a
-  fork would inherit. It checkpoints (saves the state, clears, continues from it) before its context limit and before
-  a long break, and never forks once its context is large.
+  fork would inherit. It saves the state, clears and continues from it at a natural boundary, and never forks once
+  its context is large.
 
 ## When a pull request fails checks {#ci-failures}
 
 A failing check is a small, well-defined task, so it goes to a **fresh agent with a tight brief**, not back to the
-agent that wrote the pull request. Messaging that agent re-writes its whole context (rule 2 in
-[What a run costs](#cost)), often hundreds of thousands of tokens, for a fix of a few lines.
+agent that wrote the pull request. That agent has moved on or ended: it handed the unit to the release queue
+without waiting for CI, because an agent idle past its cache lifetime re-writes its whole context when it resumes.
+Messaging it re-writes that context (rule 2 in [What a run costs](#cost)), often hundreds of thousands of tokens, for
+a fix of a few lines. The coordinator is the one that watches CI.
 
 1. The coordinator reads only the failure: `gh pr checks <n>` for which checks failed, then the end of the failing
    job's log (`gh run view <id> --log-failed`, last lines). It does not read the whole log.
 2. If the fix is a few tool calls (a long line, a title, a missing `Docs: none`), the coordinator does it itself.
 3. Otherwise it starts a fresh agent on the pull request's branch, in the branch's worktree, with a brief of the
-   branch, the failing check, the log lines that matter and "done" (the check passes locally and the branch is
-   pushed). The model follows [Which model](#models): Haiku or Sonnet for a lint, format, title or docs failure with a
-   clear message; Opus when the cause is unknown or the failure is a test or build in code that needs judgement.
+   branch, the failing check, the log lines that matter and "done" (the check passes locally and the fix is
+   committed; the coordinator pushes it). The model follows [Which model](#models): Haiku or Sonnet for a lint,
+   format, title or docs failure with a clear message; Opus when the cause is unknown or the failure is a test or
+   build in code that needs judgement.
 4. Several failures with the same cause go to one agent; unrelated failures that are each quick go to separate small
    agents that can run side by side.
 5. If the same check fails a second time, escalate a model, as above, instead of repeating the same fix.
+
+## CI capacity {#ci-capacity}
+
+GitHub Actions on this repository runs about 20 jobs at once (5 of them on macOS), shared by every pull request, and a
+full code pull request queues 4 builds plus sanitizers (about 20 minutes). A queue that backs up blocks every merge,
+and an agent waiting on it re-writes its context. So CI never holds an agent back:
+
+1. **Agents work local-first.** They commit, run every local check that applies and hand each pull-request-sized
+   unit to the coordinator ([The release queue](how-we-work.md#release-queue)). CI should only find what the local
+   platform cannot see.
+2. **Only the coordinator pushes.** Before releasing a unit it looks at the queue,
+   `gh run list --status queued --limit 50 --json databaseId --jq length` and the same with `--status in_progress`,
+   and releases when there is room: engine fixes first, then what unblocks other work.
+3. **Each push starts a run** and cancels the pull request's previous one, so a branch is pushed once it is ready,
+   not after every commit.
+4. **A pull request runs only the jobs its change can break** ([What CI runs](building.md#what-ci-runs)), so
+   documentation-only units are cheap to release.
 
 ## Checking a run {#check}
 

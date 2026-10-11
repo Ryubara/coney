@@ -303,6 +303,22 @@ address = 0x001ce9a8
 original = [0x27bdffd0, 0x7fb10010]
 log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a1", name = "anim" }, { value = "[a0 + 0x3a0]", name = "name" }]
 
+[hook.workout-rep]
+description = "Each call of Workout_CallRep (0x00234768, the gait blend's wrap callback during a workout): the human and its effort (+0x670)."
+research = "docs/research/workouts.md#repetitions"
+address = 0x00234768
+# addiu sp,sp,-0x60; lui v0,0x51
+original = [0x27bdffa0, 0x3c020051]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a0", name = "human" }, { value = "[a0 + 0x670]", name = "effort", type = "f32" }, { value = "[a0 + 0x674]", name = "hold" }]
+
+[hook.workout-end]
+description = "Each call of Human_EndWorkout (0x0022d380, state 0x1c or HuStopWorkout): the human, its effort (+0x670) and the caller."
+research = "docs/research/workouts.md#the-end"
+address = 0x0022d380
+# addiu sp,sp,-0x20; ori a1,zero,0x8000
+original = [0x27bdffe0, 0x34058000]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }, { value = "[a0 + 0x670]", name = "effort", type = "f32" }]
+
 [hook.object-handler]
 description = "Each call of the script handler component's message entry (0x00384c38, a world object's vtable +0x44 and Human_OnEvent reach it): the component, the message number and its subject (+0x24)."
 research = "docs/research/scripting.md#message-handlers"
@@ -478,6 +494,54 @@ address = 0x001cdf7c
 # lbu v0,0x4(s1); lui a0,0x60
 original = [0x92220004, 0x3c040060]
 log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "[s1 + 0x0]", name = "text" }, { value = "[s1 + 0x4]", name = "priority", type = "u8" }]
+
+[hook.hint-queue]
+description = "Each call of HintBox_Queue (0x001ce3c0, HUDSetTutorialText and the game's own queueing): the text (0 for nil) and its priority, with the box's showing text pointer (+0x68) and priority (+0x3ac) before the call."
+research = "docs/research/hud.md#hint-queue-runtime"
+address = 0x001ce3c0
+# addiu sp,sp,-0x40; move t0,a1
+original = [0x27bdffc0, 0x00a0402d]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a1", name = "text", text = 128 }, { value = "a2", name = "priority" }, { value = "[a0 + 0x68]", name = "showing" }, { value = "[a0 + 0x3ac]", name = "showing_priority", type = "u8" }]
+
+[hook.hint-clear]
+description = "Each call of MessageHUD_Shutdown (0x001b9290, the markup text's clear, vtable +0x6c): the widget and the caller; the hint box is 0x00609250."
+research = "docs/research/hud.md#hint-queue-runtime"
+address = 0x001b9290
+# addiu sp,sp,-0x40; sq s0,0x30(sp)
+original = [0x27bdffc0, 0x7fb00030]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "widget" }, { value = "[a0 + 0x68]", name = "text" }]
+
+[hook.hint-withdraw]
+description = "Each call of HintBox_Withdraw (0x001ce5c0): the text pointer withdrawn, and the box's showing text."
+research = "docs/research/hud.md#hint-queue-runtime"
+address = 0x001ce5c0
+# addiu sp,sp,-0x80; sq s1,0x60(sp)
+original = [0x27bdff80, 0x7fb10060]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a1", name = "text" }, { value = "[a0 + 0x68]", name = "showing" }]
+
+[hook.hint-flush]
+description = "Each call of HintBox_FlushPriority (0x001ce748, HUDFlushTutorialText): the priority flushed, and the box's showing text."
+research = "docs/research/hud.md#hint-queue-runtime"
+address = 0x001ce748
+# addiu sp,sp,-0xc0; sq s2,0x90(sp)
+original = [0x27bdff40, 0x7fb20090]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a1", name = "priority" }, { value = "[a0 + 0x68]", name = "showing" }]
+
+[hook.anim-dispatch]
+description = "Each call of AnimCallback_Dispatch (0x0023ac50, from CharacterInstance_GetAnim 0x00175080 when an anim id is taken for playing): the human, its player number (+0x1b0, low byte; 0 for player 1), the anim id, and the caller of CharacterInstance_GetAnim (its saved ra at [sp])."
+research = "docs/research/characters.md#anim-callbacks"
+address = 0x0023ac50
+# addiu sp,sp,-0x80; lui v0,0x6b
+original = [0x27bdff80, 0x3c02006b]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }, { value = "[a0 + 0x1b0]", name = "player" }, { value = "a1", name = "anim" }, { value = "[sp + 0x0]", name = "caller" }]
+
+[hook.anim-callback-match]
+description = "AnimCallback_Dispatch finding a matching slot (0x0023acb8, before the name look-up): the human, the anim id and the slot's name."
+research = "docs/research/characters.md#anim-callbacks"
+address = 0x0023acb8
+# lw a2,0x2b04(s4); lw a1,0x0(s0)
+original = [0x8e862b04, 0x8e050000]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "s3", name = "human" }, { value = "s5", name = "anim" }, { value = "[s0 + 0x0]", name = "name", text = 64 }]
 
 [hook.hit-effect]
 description = "Each call of Human_SpawnHitEffect (0x0021d928): the attacker, the victim and the blocking flag (t1) of a strike, throw or blast on a human; the return address tells which (Strike_Contact, ThrownObject_HitHuman, Explosion_DamageHumansInRadius)."

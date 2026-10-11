@@ -1,0 +1,30 @@
+# The hangout's balcony railing (level95's clubhouse, owner checklist item 46): the player is put 0.6 m in front of
+# the 0.9 m railing of material 7 (LAMPOST, triangle flag 0x80) that runs along y = 99 above the 3.2 m drop to the
+# floor below, facing it; the stick at 50 % toward it and triangle: the short-fence climb (443, 444, 445), where the
+# body goes and when it falls. Research: docs/research/characters.md#climb. The state is any level95 state (one on
+# the street was used), copied under <scratch>/pcsx2/re-railing/ with the scripted-pad words put back; the setup
+# moves the player into the clubhouse. On Coney the hangout's arrival script moves the player after --start (to
+# (-185.2, 112.7) and walks him in), so its trace does not start at the railing yet.
+description = "level95 clubhouse railing: a standing short-fence climb over a material-7 railing above a 3.2 m drop"
+research = "docs/research/characters.md#climb"
+input = "railing_vault.txt"
+updates = 160
+fields = ["player", "camera"]
+
+[original]
+state = "re-railing/l95out.p2s"
+patches = ["scripted-pad", "right-stick"]
+setup = [
+  # Into the clubhouse, on the balcony floor (z -194.38), 0.6 m short of the railing's face, facing +y.
+  { address = "tf(player) + 0x0", type = "f32", value = "-172.0", frame = 0, until = 4 },
+  { address = "tf(player) + 0x4", type = "f32", value = "98.3", frame = 0, until = 4 },
+  { address = "tf(player) + 0x8", type = "f32", value = "-194.3", frame = 0, until = 4 },
+  { address = "tf(player) + 0x10", type = "f32", value = "0", frame = 0, until = 4 },
+  { address = "tf(player) + 0x14", type = "f32", value = "0", frame = 0, until = 4 },
+  { address = "tf(player) + 0x18", type = "f32", value = "0", frame = 0, until = 4 },
+  { address = "tf(player) + 0x1c", type = "f32", value = "1", frame = 0, until = 4 },
+]
+
+[coney]
+level = "level95"
+args = ["--start", "-172.0,98.3,-194.38,0,4.8,0"]

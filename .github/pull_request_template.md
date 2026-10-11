@@ -6,8 +6,9 @@
 
 ## Checklist
 
-<!-- The features or tasks this pull request covers. Tick what it finishes; leave the rest unticked so a reader sees
-     what is still to do. -->
+<!-- Done is what this pull request finishes. Remaining is what it leaves for later, each item named where it
+     will happen (a follow-up pull request or an issue); leave it empty when nothing is left. A track's working
+     status lives in its scratch STATUS.md, not here. -->
 
 Done:
 
