@@ -1,19 +1,25 @@
 <!-- markdownlint-disable-file MD041 -- a pull request body starts at the second heading level -->
-## What and why
+## Summary
 
-<!-- One paragraph: what this changes and why. -->
+<!-- One short paragraph: what this changes and why. If the change needs no documentation, add a line `Docs: none`
+     (CI refuses a change under src/ or python/src/ without a docs change, unless this line is here). -->
 
 ## Checklist
 
-- [ ] Title follows `area: Verb the rest` (AGENTS.md, Commits and GitHub)
-- [ ] Agent-written commits name the model in `Co-Authored-By: <model name> <its noreply address>`, with no
-  other email address
-- [ ] No game data, extracted files or dumps (LEGAL.md)
-- [ ] Engine code written from docs/research, not from decompiler output (LEGAL.md#clean-room)
-- [ ] Docs and comments updated; `mkdocs build --strict` passes. A change under `src/` or `python/src/` needs a
-  change under `docs/` or `research/`, or a line `Docs: none` in this description
-- [ ] Tests added or updated
+<!-- The features or tasks this pull request covers. Tick what it finishes; leave the rest unticked so a reader sees
+     what is still to do. -->
+
+Done:
+
+- [x] ...
+
+Remaining:
+
+- [ ] ...
 
 ## AI use
 
-<!-- Which agents or models helped, if any. -->
+<!-- Who made the changes in this pull request, not who opened it. -->
+
+- **Made by:** <!-- person / AI / AI with the person's edits -->
+- **Model or tool:** <!-- for example Claude Sonnet 5.5, or n/a -->
