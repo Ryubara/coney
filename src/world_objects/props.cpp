@@ -62,6 +62,28 @@ constexpr float kRunInVolume = 0.65F;
 constexpr float kOverheadDustRise = 0.5F;
 // A draw in [-1, 1] in this many steps each side.
 constexpr int kOffsetSteps = 1000;
+// A flying overhead_weapon's break first moves it this far along the contact's unit vector.
+constexpr float kFlyingBreakLift = 1.0F;
+// A thrown_weapon's break's dust radius.
+constexpr float kThrownDustRadius = 1.6F;
+// A broken prop's piece (ScriptObj_SpawnThrownDebris) is spun up to 3 pi rad/s on each axis.
+constexpr float kPieceSpin = 3.0F * std::numbers::pi_v<float>;
+// The beer bottle's break: 4-8 brown glass pieces of 0.025-0.045 within 0.04 m of the hit point.
+constexpr std::uint32_t kBeerBottleModel = 0x6effeee0U;
+constexpr int kGlassLeast = 4;
+constexpr int kGlassSpread = 4;
+constexpr float kGlassOffset = 0.04F;
+constexpr float kGlassLeastSize = 0.025F;
+constexpr float kGlassSizeSpread = 0.02F;
+constexpr std::uint32_t kBottleGlassColour = 0x6f4d42ffU;
+// A lifted register's piece: placed 0.2 x the contact vector from the register, holding 1 (+0x124: money to come);
+// its launch scales the direction's x and y by 2-5 (FadeObject_Launch); the third dust burst within 0.25 m.
+constexpr float kPieceContactShare = 0.2F;
+constexpr std::uint32_t kPieceHoldsMoney = 1;
+constexpr float kLaunchLeast = 2.0F;
+constexpr float kLaunchSpread = 3.0F;
+constexpr float kPieceDustSpread = 0.25F;
+
 // The one model whose break sounds its material against tin (`TINBOX`).
 constexpr std::uint32_t kTinBreakModel = 0xe42da444U;
 constexpr std::uint8_t kTinMaterial = 23;
@@ -260,7 +282,7 @@ bool Props::masksHit(Prop& prop, const ObjectType& type, const ObjectHit& hit, c
 }
 
 void Props::overheadBreak(Prop& prop, const ObjectType& type, const ObjectHit& hit, const PropPose& pose,
-                          ObjectWorld& world) {
+                          ObjectWorld& world, bool flying, anim::Vec3 contactVector) {
     // Broken whatever the hit: its counter 0, and it goes at its next update, the next tick.
     prop.broken = true;
     prop.counter = 0;
@@ -275,10 +297,12 @@ void Props::overheadBreak(Prop& prop, const ObjectType& type, const ObjectHit& h
     services->dust(dustAt, kSecondDustRadius);
     const bool trash =
         prop.modelHash == kTrashCanModel || prop.modelHash == kBagsModel || prop.modelHash == kParkTrashModel;
+    // Each piece is launched as it is made (ScriptObj_SpawnThrownDebris). **Coney's stand-in**: the dented can's and
+    // the park bin's message 0x15 (fade soon) is not built.
     if (prop.modelHash == kTrashCanModel) {
-        static_cast<void>(services->spawnObject(kTrashCanPiece, pose.position, pose.rotation));
+        launchPiece(services->spawnObject(kTrashCanPiece, pose.position, pose.rotation), contactVector, world);
     } else if (prop.modelHash == kParkTrashModel) {
-        static_cast<void>(services->spawnObject(kParkTrashPiece, pose.position, pose.rotation));
+        launchPiece(services->spawnObject(kParkTrashPiece, pose.position, pose.rotation), contactVector, world);
     }
     if (trash) {
         services->splinters(hit.point, kTrashSplinters);
@@ -290,16 +314,136 @@ void Props::overheadBreak(Prop& prop, const ObjectType& type, const ObjectHit& h
             const float x = randomSigned(world.random) * kTrashBitSpread;
             const float y = randomSigned(world.random) * kTrashBitSpread;
             const float z = (randomSigned(world.random) + 1.0F) / 2.0F * kTrashBitRise;
-            static_cast<void>(
-                services->spawnObject(bit, anim::transformPoint(turn, anim::Vec3{x, y, z}), anim::Quat{}));
+            launchPiece(services->spawnObject(bit, anim::transformPoint(turn, anim::Vec3{x, y, z}), anim::Quat{}),
+                        contactVector, world);
         }
     } else if (prop.modelHash == kPaperStackModel) {
         services->splinters(hit.point, kCardboardPieces);
     } else {
         services->splinters(hit.point, kDefaultSplinters);
     }
-    // At 0.65 of its volume when the attacker broke it by running into it.
-    playPair(world, type.material, type.material, hit.point, hit.runIn ? kRunInVolume : 1.0F);
+    // At 0.65 of its volume when the attacker broke it by running into it; none when it broke flying (the contact's
+    // sound stands for it).
+    if (!flying) {
+        playPair(world, type.material, type.material, hit.point, hit.runIn ? kRunInVolume : 1.0F);
+    }
+}
+
+void Props::launchPiece(double piece, anim::Vec3 contactVector, ObjectWorld& world) {
+    if (piece == kNoObject || !world.knock) {
+        return;
+    }
+    // The knock: the unit contact vector (zero for a zero vector, as the PS2's normalise gives) x 1-1.5, spun on each
+    // axis. FadeObject_Launch normalises the direction again, so the 1-1.5 drops out.
+    const anim::Vec3 d = anim::length(contactVector) > 0.0F ? anim::normalise(contactVector) : anim::Vec3{};
+    const anim::Vec3 spin{randomSigned(world.random) * kPieceSpin, randomSigned(world.random) * kPieceSpin,
+                          randomSigned(world.random) * kPieceSpin};
+    // FadeObject_Launch: the direction's x and y each x 2-5, z 0.
+    const float x = kLaunchLeast + (((randomSigned(world.random) + 1.0F) / 2.0F) * kLaunchSpread);
+    const float y = kLaunchLeast + (((randomSigned(world.random) + 1.0F) / 2.0F) * kLaunchSpread);
+    world.knock(piece, anim::Vec3{d.x * x, d.y * y, 0.0F}, spin);
+}
+
+void Props::thrownEffects(const ObjectType& type, anim::Vec3 point, ObjectWorld& world) {
+    ObjectServices* services = world.services;
+    if (services == nullptr) {
+        return;
+    }
+    // The dust, then the model's pieces: the beer bottle's brown glass.
+    services->dust(point, kThrownDustRadius);
+    if (type.modelHash == kBeerBottleModel) {
+        const int pieces = kGlassLeast + randomBelow(world.random, kGlassSpread + 1);
+        for (int piece = 0; piece < pieces; ++piece) {
+            const anim::Vec3 at{point.x + (randomSigned(world.random) * kGlassOffset),
+                                point.y + (randomSigned(world.random) * kGlassOffset),
+                                point.z + (randomSigned(world.random) * kGlassOffset)};
+            const float size = kGlassLeastSize + (((randomSigned(world.random) + 1.0F) / 2.0F) * kGlassSizeSpread);
+            services->spawnShard(at, size, kBottleGlassColour);
+        }
+    }
+}
+
+void Props::cashRegisterPiece(Prop& prop, const ObjectHit& hit, const PropPose& pose, anim::Vec3 vector,
+                              ObjectWorld& world) {
+    // It is done once the piece is out (+0x11): it goes at its next update.
+    prop.removalIn = 1;
+    ObjectServices* services = world.services;
+    if (services == nullptr) {
+        return;
+    }
+    // The piece 0.2 x the contact vector from it in its rotation, holding the money to come (+0x124 = 1).
+    // Coney's stand-in: the contact offset the original adds is left out.
+    const anim::Vec3 at = anim::add(pose.position, anim::scale(vector, kPieceContactShare));
+    const double piece = services->spawnObject(kCashRegisterPiece, at, pose.rotation);
+    if (piece != kNoObject) {
+        services->setValue(piece, kPieceHoldsMoney);
+        // Launched along the hit (FadeObject_Launch): x and y of the unit direction each x 2-5, z 0, no spin.
+        const anim::Vec3 d = anim::length(hit.direction) > 0.0F ? anim::normalise(hit.direction) : anim::Vec3{};
+        const float x = kLaunchLeast + (((randomSigned(world.random) + 1.0F) / 2.0F) * kLaunchSpread);
+        const float y = kLaunchLeast + (((randomSigned(world.random) + 1.0F) / 2.0F) * kLaunchSpread);
+        if (world.knock) {
+            world.knock(piece, anim::Vec3{d.x * x, d.y * y, 0.0F}, anim::Vec3{});
+        }
+    }
+    // Three dust bursts: two at the register, the third up to 0.25 m off on each axis.
+    services->burst(pose.position);
+    services->burst(pose.position);
+    services->burst(anim::Vec3{pose.position.x + (randomSigned(world.random) * kPieceDustSpread),
+                               pose.position.y + (randomSigned(world.random) * kPieceDustSpread),
+                               pose.position.z + (((randomSigned(world.random) + 1.0F) / 2.0F) * kPieceDustSpread)});
+}
+
+std::optional<std::pair<std::uint8_t, std::uint8_t>> Props::counters(double handle) const {
+    const auto found = m_props.find(handle);
+    if (found == m_props.end()) {
+        return std::nullopt;
+    }
+    return std::pair{found->second.counter, found->second.secondCounter};
+}
+
+void Props::setCounters(double handle, const ObjectType& type, std::uint8_t counter, std::uint8_t secondCounter) {
+    Prop& prop = stateOf(handle, type);
+    prop.counter = counter;
+    prop.secondCounter = secondCounter;
+}
+
+bool Props::breakFlying(double handle, const ObjectType& type, const PropContact& contact, const PropPose& pose,
+                        ObjectWorld& world) {
+    Prop& prop = stateOf(handle, type);
+    if (prop.broken || (!prop.overhead && !prop.cashRegister)) {
+        return false;
+    }
+    // Message 1: the contact's normal as the direction, its point as the hit point, kind -1.
+    const ObjectHit hit{.attacker = kNoObject,
+                        .kind = HitKind::Plain,
+                        .point = contact.point,
+                        .direction = contact.normal,
+                        .attackerAt = {},
+                        .runIn = false};
+    if (prop.overhead) {
+        // Flying, it is first moved 1 m along the unit contact vector; its pieces start from there.
+        const anim::Vec3 lift = anim::length(contact.vector) > 0.0F ? anim::normalise(contact.vector) : contact.normal;
+        const PropPose moved{.position = anim::add(pose.position, anim::scale(lift, kFlyingBreakLift)),
+                             .rotation = pose.rotation};
+        overheadBreak(prop, type, hit, moved, world, true, contact.vector);
+    } else {
+        // Kind -1 empties its hit points: broken, with its broken model; lifted, its drawer is gone, so the piece.
+        prop.hitpoints = 0;
+        prop.broken = true;
+        prop.modelHash = kCashRegisterBrokenModel;
+        if (prop.drawer != kNoObject) {
+            if (world.services != nullptr) {
+                world.services->setModel(handle, kCashRegisterBrokenModel);
+            }
+            prop.drawerOpenUpdates = 0;
+        } else {
+            cashRegisterPiece(prop, hit, pose, contact.vector, world);
+        }
+    }
+    if (world.services != nullptr) {
+        world.services->setBody(handle, false);
+    }
+    return true;
 }
 
 bool Props::cashRegisterHit(double handle, Prop& prop, const ObjectType& type, const ObjectHit& hit,

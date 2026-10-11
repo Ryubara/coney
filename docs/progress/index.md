@@ -33,12 +33,12 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.5% of the game's own code (586,980 of 3,354,776 bytes, 2,161 functions) |
+| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.5% of the game's own code (586,980 of 3,354,776 bytes, 2,164 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 99.9% named in Ghidra and cited with evidence (3,282,584 of 3,284,276 bytes; 11,421 of 11,426 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-881 reimplemented function(s) have no size yet and add no bytes.
+884 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -81,7 +81,7 @@ at the top of the repository's `README.md`.
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 30 | 17,904 |
 | `Scripting` | `██████▏░░░░░░░░░░░░░` | 30.6% | 224 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `███▍░░░░░░░░░░░░░░░░` | 17.1% | 177 | 531,312 |
+| `TaskEngine` | `███▍░░░░░░░░░░░░░░░░` | 17.1% | 180 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 33 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 32 | 22,008 |
@@ -2048,6 +2048,7 @@ at the top of the repository's `README.md`.
 | `0x003a50e0` | `Camera_IsPointInPlayerView` | `TaskEngine` | not filled in |
 | `0x003a51f8` | `Cameras_IsPointVisibleAny` | `TaskEngine` | not filled in |
 | `0x003a5280` | `Cameras_IsWithinRange` | `TaskEngine` | not filled in |
+| `0x003a5530` | `ScriptObj_SpawnThrownDebris` | `TaskEngine` | not filled in |
 | `0x003ac4d0` | `Radio_Setup` | `TaskEngine` | not filled in |
 | `0x003ac600` | `Radio_SetMode` | `TaskEngine` | not filled in |
 | `0x003ad440` | `Radio_Update` | `TaskEngine` | not filled in |
@@ -2066,6 +2067,8 @@ at the top of the repository's `README.md`.
 | `0x003c4c38` | `SubFireball_Update` | `TaskEngine` | not filled in |
 | `0x003c54b8` | `SubExplode_Update` | `TaskEngine` | not filled in |
 | `0x003c55e8` | `ScriptType_Find` | `TaskEngine` | not filled in |
+| `0x003c61d8` | `FadeObject_Update` | `TaskEngine` | not filled in |
+| `0x003c6ae0` | `FadeObject_Launch` | `TaskEngine` | not filled in |
 | `0x003ca658` | `Fog3D_WispInit` | `TaskEngine` | not filled in |
 | `0x003ca9d8` | `Fog3D_WispUpdate` | `TaskEngine` | not filled in |
 | `0x003cadd8` | `Fog3D_EmitterUpdate` | `TaskEngine` | not filled in |

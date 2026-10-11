@@ -10650,6 +10650,11 @@ name = "Cameras_IsWithinRange"
 subsystem = "TaskEngine"
 
 [[function]]
+address = 0x003a5530
+name = "ScriptObj_SpawnThrownDebris"
+subsystem = "TaskEngine"
+
+[[function]]
 address = 0x003ac4d0
 name = "Radio_Setup"
 subsystem = "TaskEngine"
@@ -10745,6 +10750,16 @@ subsystem = "TaskEngine"
 [[function]]
 address = 0x003c55e8
 name = "ScriptType_Find"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x003c61d8
+name = "FadeObject_Update"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x003c6ae0
+name = "FadeObject_Launch"
 subsystem = "TaskEngine"
 
 [[function]]
