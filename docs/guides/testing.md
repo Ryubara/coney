@@ -179,7 +179,23 @@ description that leaves either empty (`coney-tools repo check-body`):
 
 ### The local gate {#local-gate}
 
-Before reporting work or merging it, in your own worktree:
+Before reporting work or merging it, in your own worktree, run the one command that checks what CI would fail on for
+the files you touched, and fix what it prints:
+
+```sh
+uv run --project python coney-tools check changed
+```
+
+It runs pre-commit on the changed files, clang-tidy with the GCC and Clang warnings on the files CI's pull-request job
+would check (a changed header through the `.cpp` files that include it), `mkdocs build --strict` when docs changed,
+pytest and mypy when `python/` changed, and `repo check`; it needs a `build/dev` that was configured once
+(`cmake --preset dev`, no build). It catches what MSVC lets through: a designated initializer that skips a field
+(`-Wmissing-designated-field-initializers`), an unchecked `std::optional` access
+(`bugprone-unchecked-optional-access`). [The command's page](coney-tools.md#check) has the options. It does not
+replace the list below, which is the whole gate, and it leaves to CI the warnings only GCC emits, macOS, the
+sanitizers and the full clang-tidy pass; a change to the build setup is checked on its changed files only.
+
+The whole gate:
 
 - **Engine changes:** the `ci` preset build and `ctest --preset ci` with the disc configured (Windows: from a shell
   with the MSVC environment).
