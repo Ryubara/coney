@@ -40,7 +40,7 @@ TEST_CASE("the Missions page lists the missions and jumps to a checkpoint throug
     DebugSession session(tunables, services, nullptr);
     const auto page = session.model().openPage("Missions");
     REQUIRE(page != nullptr);
-    REQUIRE(page->items().size() == 18);
+    REQUIRE(page->items().size() == 28); // the 18 story missions, then the 10 bonus missions
     CHECK(page->items().front().label == "1. New Blood");
     CHECK(page->items().front().detail == "level99, 3 cp");
     // The tenth mission's page has its six checkpoints.
@@ -64,4 +64,39 @@ TEST_CASE("the Missions page says so when the run cannot start a mission", "[deb
     const auto sub = page->items().front().open();
     sub->find("Checkpoint 1")->run();
     CHECK(session.log().last(1).front() == "missions: cannot start a mission in this run");
+}
+
+// Owner item 19 (issue #85): Armies of the Night had no way in from the debug menus but a level-table record that
+// cannot load (docs/research/armies.md#coney-fixes).
+TEST_CASE("the Missions page lists the flashbacks and Armies of the Night after the story and starts a stage",
+          "[debug]") {
+    const auto& bonus = coney::debug::bonusMissions();
+    for (const coney::debug::BonusMission& mission : bonus) {
+        CHECK(mission.checkpoints >= 1);
+        CHECK_FALSE(mission.label.empty());
+    }
+    TunableRegistry tunables;
+    std::vector<std::pair<std::string, int>> started;
+    DebugServices services;
+    services.loadLevelAt = [&started](std::string_view name, int checkpoint) {
+        started.emplace_back(std::string(name), checkpoint);
+        return true;
+    };
+    DebugSession session(tunables, services, nullptr);
+    const auto page = session.model().openPage("Missions");
+    REQUIRE(page != nullptr);
+    REQUIRE(page->items().size() == 28);
+    CHECK(page->items()[18].label == "Flashback 1");
+    const coney::debug::MenuItem& armies = page->items()[23];
+    CHECK(armies.label == "Armies of the Night 1");
+    CHECK(armies.detail == "level60, 3 cp");
+    REQUIRE(armies.open);
+    const auto sub = armies.open();
+    CHECK(sub->find("Checkpoint 4") == nullptr);
+    const coney::debug::MenuItem* first = sub->find("Checkpoint 1");
+    REQUIRE(first != nullptr);
+    first->run();
+    REQUIRE(started.size() == 1);
+    CHECK(started.front() == std::pair<std::string, int>{"level60", 1});
+    CHECK(page->items().back().detail == "level64, 4 cp");
 }

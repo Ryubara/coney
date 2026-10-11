@@ -101,19 +101,24 @@ That run is an observation of Coney, not of the original:
   `HUDLaunchANGameOver`, `HUDSetANBossTexture`, `CfgBaseChanceToBlock`. The run goes on past them.
 - The rail's settings 5, 6 and 7 do nothing (`repo:src/camera/rail_camera.h`), so the rail camera does not trail the
   fighters as mode 3 does.
-- `characters::isArmiesLevel` takes levels 60-64 (`repo:src/characters/character_class.cpp`); the original's test
-  takes 60-69.
-- The debug menu's Levels page lists every record of the level table, `101 armies` among them
-  (`repo:src/debug/pages_scripts.cpp`). Coney looks for that record's world under its name: `--play-level armies`
-  stops with "no streamed world is called armiess, armiesd or armies". Chosen from a running game, the level flow
-  has nothing to show. This is the likeliest black screen: the entry reads like "Armies of the Night", but the
-  original cannot load it either.
-- The Missions page lists only the 18 story missions (`repo:src/debug/story_missions.cpp`), and nothing outside the
-  hub's trophies loads `level60`.
+- `characters::isArmiesLevel` takes levels 60-69, as the original's test does (`repo:src/characters/character_class.cpp`;
+  it took 60-64 until the fix for item 19).
+- **The black screen (item 19)**, reproduced in a disc test (`repo:tests/platform/disc_armies_test.cpp`): the debug
+  menu's Levels page listed every record of the level table, `101 armies` among them. Chosen from a level in play,
+  the level flow loaded a record with no `armies.lua`, no objects and no streamed world ("no streamed world is called
+  armiess, armiesd or armies"), so nothing played and the screen stayed black. `level60` itself, started directly or
+  jumped to from the front end or a level in play, loads, plays `l60_intro` and goes on with the picture clear (the
+  stage's fade level 0 throughout 1,500 frames in each of the three ways). Since the fix the Levels page leaves out a
+  record with no `.lev` on the disc and names it under "No level file", a jump to one is refused with a log line
+  (`GameSession::levelLoads`), and the Missions page lists the five flashbacks and the five Armies stages after the
+  story (`repo:src/debug/story_missions.cpp`).
+- After the intro, Coney shows the street in front of the garage in a fixed view with no HUD: the Armies HUD, the
+  timer, the continue screen and the rail's mode 3 are not built (the fixes below from step 3).
 
 ## Coney fixes (item 19) {#coney-fixes}
 
-The minimum to show Armies of the Night instead of a black screen, in order:
+The minimum to show Armies of the Night instead of a black screen, in order. Steps 1 and 2 and the 60-69 test of
+step 4 are done (the black screen was step 1's record); the rest is open:
 
 1. **Debug Levels page:** do not offer a record that cannot load. Skip, or mark and refuse with a log line, a record
    with no `.lev` of its name: `armies`, and the other test records with no level file. That is what the original's

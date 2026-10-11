@@ -59,9 +59,10 @@ constexpr int kFirstWarriorPowerClass = 58;
 // The power class a Warriors type outside the groups plays with.
 constexpr int kOtherWarriorPowerClass = 7;
 
-// The Armies of the Night levels.
+// The level numbers the original takes for Armies of the Night: 60-69, though only 60-64 are on the disc
+// (docs/research/armies.md#what-it-is).
 constexpr int kFirstArmiesLevel = 60;
-constexpr int kLastArmiesLevel = 64;
+constexpr int kLastArmiesLevel = 69;
 
 } // namespace
 

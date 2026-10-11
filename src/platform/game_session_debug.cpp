@@ -31,6 +31,11 @@ void connectDebugServices(debug::DebugServices& services, const std::function<Ga
         GameSession* game = session();
         return game != nullptr && game->playDebugMovie(name, captions);
     };
+    // The Play pages list only the levels whose level file is on the disc (with no session, every one).
+    services.levelLoads = [session](std::string_view name) {
+        const GameSession* game = session();
+        return game == nullptr || game->levelLoads(name);
+    };
 }
 
 } // namespace coney::platform

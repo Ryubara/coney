@@ -452,6 +452,7 @@ if(CONEY_DEBUG_TOOLS)
         gamemodes/text_viewer_mode_test.cpp
         gui/debug_menu_view_test.cpp
         platform/disc_anim_player_test.cpp
+        platform/disc_armies_test.cpp
         platform/disc_change_character_test.cpp
         platform/disc_debug_clear_fighters_test.cpp
         platform/disc_debug_fighter_sounds_test.cpp

@@ -98,7 +98,7 @@ class GameSession {
     /// level's Lua state is fresh, before its scripts).
     void startAtLevel(std::string_view level, int checkpoint, std::function<void()> ready = {});
     /// The debug menus' jump to `level` at `checkpoint`, carried out at the next beginFrame(); false, changing nothing,
-    /// when the level table has no such level.
+    /// when the level table has no such level or it cannot load (levelLoads(); a log line says so).
     bool jumpToLevel(std::string_view level, int checkpoint);
     /// The debug menu's movie (docs/guides/debug-menu.md#movies): plays `name` over whatever runs at the next
     /// beginFrame(), as a MovieRequest::debug (the game held beneath it, its sound held and given back, played even
@@ -107,6 +107,9 @@ class GameSession {
     bool playDebugMovie(std::string_view name, bool captions);
     /// The movies on the disc (discMovies()), read once.
     [[nodiscard]] const std::vector<std::string>& discMovieNames();
+    /// Whether level `level` can load: its level file `<level>.lev` is on the disc, which the original's level load
+    /// reads (docs/research/armies.md#coney-fixes). The level table's test record `armies` has none.
+    [[nodiscard]] bool levelLoads(std::string_view level) const;
     /// Carries out a jump or a debug movie asked for since the last frame. Call it between frames, outside any step.
     void beginFrame();
 

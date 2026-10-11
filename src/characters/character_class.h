@@ -26,8 +26,10 @@ struct CharacterClass {
 /// class's record. So a player made as type 2 is drawn as type 1's model, while type 32 keeps its own.
 [[nodiscard]] int modelRecordType(int type, int playerIndex);
 
-/// Whether level number `levelNumber` is one of the Armies of the Night bonus levels (60-64), which draw every
-/// character with its `<model>_a` model (`CfgChar`'s `+0x114`).
+/// Whether level number `levelNumber` is one of the Armies of the Night bonus levels (the original takes 60-69; the
+/// disc has 60-64), which draw every character with its `<model>_a` model (`CfgChar`'s `+0x114`).
+/// @orig 0x0041d110 Level_IsArmies (unknown)
+/// Research: docs/research/armies.md#what-it-is
 [[nodiscard]] bool isArmiesLevel(int levelNumber);
 
 /// The model name argument of type `type`'s `CfgChar` call (`warr_re_cv` for 32); nothing when the type has no call.

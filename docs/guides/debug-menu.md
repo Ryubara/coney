@@ -134,7 +134,7 @@ The Display page's *Debug UI scale* overrides the choice: *Auto* (the rule above
 | Lua console | a Lua line to run in the script state, a file to run, and the output |
 | Cheats | the 27 retail cheat codes, each sent to the script's cheat callback |
 | Levels | the levels to play (or the level table's, in the front end), a name to type, and the sandbox layouts |
-| Missions | the story's 18 missions in order (number, title, level, checkpoints); choose a mission, then a checkpoint, to start it there |
+| Missions | the story's 18 missions in order (number, title, level, checkpoints), then the five flashbacks and the five Armies of the Night stages; choose a mission, then a checkpoint, to start it there |
 | Movies | the disc's [movies](#movies) with what plays each; choose one to watch it full screen with its captions, then carry on where you were |
 | Player | where the player is and how it moves (plotted), his character type and a change of it, freezing him, the [noclip](#noclip) and its hotkey, teleports |
 | Camera | the follow camera's eye, target and distance (plotted), a reset behind the player, the free camera, its values |
@@ -188,7 +188,12 @@ loads; at the front end or in the sandbox the page reports that it is not set.
 
 **Levels.** In the game (the story from the front end, or a `--play-level` run, which is the same game session), the
 level table holds the game's levels (filled by `CfgLevelName`); choosing one jumps there at checkpoint 1 at the start
-of the next frame, as the Missions page does (below). In a sandbox and the other modes run with a disc, the page lists
+of the next frame, as the Missions page does (below). A record whose level file (`<name>.lev`) is not on the disc
+cannot load, in the original as in Coney ([Level loading](../research/level-loading.md)): it is not offered but named
+under *No level file*, and a jump to it typed by name is refused with a log line. With the retail disc that is 47 of
+the 114 records: the world-only levels (`level70`-`level74`, `level90`, `level91`, `level94`, `level96`-`level98` and
+four more) and the test records, among them `101 armies`, which is not Armies of the Night (its stages are on the
+Missions page) and left a black screen when it was offered. In a sandbox and the other modes run with a disc, the page lists
 instead every level with a streamed world on the disc (`level0` to `level199`,
 79 of them); choosing one, or typing its name, starts the game there as `--play-level` does, at the start of the next
 frame, in place of the
@@ -203,7 +208,9 @@ of the next frame, then sets the
 checkpoint (`SetCheckPoint`), asks the level flow for the level as `runNextMission` does, and closes everything above
 the level flow: the front end's menus or a movie, or the level in play and its pause. The level flow starts the level on
 its next step, from the front end or from inside a level (`StartUpFlow::jumpToLevel`). A level the level table does not
-have yet (before the preloads at the legal screen fill it) is refused and the page says so. The list is
+have yet (before the preloads at the legal screen fill it) is refused and the page says so. After the story come the
+bonus missions the hub's clubhouse trophies start: *Flashback 1* to *5* and *Armies of the Night 1* to *5*
+(`level60`-`level64`, [Armies of the Night](../research/armies.md)), tagged the same way. The lists are
 `src/debug/story_missions.cpp`, which a Python test checks against `research/missions.yaml` and the [levels
 list](../references/levels.md). The hub (`level95`) between the missions is not listed: the Levels page loads it.
 

@@ -60,6 +60,9 @@ struct DebugServices {
     /// The levels the play mode can play (`level2`), listed on the Levels page in place of the game state's level
     /// table; empty: the table is listed.
     std::function<std::vector<std::string>()> playableLevels;
+    /// Whether the level-table record `name` can load: its level file (`<name>.lev`) is on the disc. The Levels page
+    /// leaves out a record that cannot (the test record `armies`); empty: every record is listed.
+    std::function<bool(std::string_view name)> levelLoads;
     /// Where the Tunables page saves and loads overrides (`coney-tunables.ini` in the user's config folder, or the
     /// `--tunables` file); empty: no saving.
     std::string tunablesFile;
