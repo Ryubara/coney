@@ -533,7 +533,7 @@ cited unless marked:
    attack action writes command `0xd` (circle tapped, [AI](ai.md#attack-action)); the dispatcher's
    `Player_GrabOrTackle` (`0x00284920`) keeps the brain's target (it searches only for brain type 0), finds
    `Tandem_CanStart` true and calls `Tandem_Start(AI, victim, grabber)`. So the AI's "grab" at a rear-held enemy
-   **is** the tandem. Inferred as a whole (each link is confirmed (code); no AI tandem was watched).
+   **is** the tandem. Each link is confirmed (code); the whole is confirmed (runtime) below.
 2. **Who holds.** Only a rear hold allows it: the player's own rear hold (after R1's spin, or a grab that connects
    from behind) or an AI's. A front-held enemy refuses kind 22 (state `0x10` is in the grab's refusing mask
    `0x7bfdc8f7fd0`); teammates hit him with ordinary strikes instead, and a third human's hit breaks the hold
@@ -547,9 +547,29 @@ cited unless marked:
 5. **Scoring**: `Grab_ScoreMove` for the grabber (the set's base id) and the attacker (base + 2), skipped when the
    victim has human flag `0x10` (the demi-god floor reached).
 
-**Deferred: runtime**: confirm an AI tandem. A copy of slot 6 with Ash as the player's ally (`moves_tandem`), the
-player grabs PoizoCiv and spins him to the rear hold with R1 (stick centred), Ash told to attack PoizoCiv from in
-front; record Ash's command and clip ids every update: expect command `0xd`, then 165 / 171 / 177 on Ash.
+**An AI tandem at runtime** (confirmed (runtime), PCSX2 2.9.94, scenario `moves_tandem_ai`: a copy of slot 6, the
+player grabs PoizoCiv (600 health) 1.0 m ahead with circle at update 10 and spins him to the rear hold with R1 at 45
+(78 / 79, then 84 / 85 from 74); at 74-78 Ash is placed 1.3 m in front of PoizoCiv facing him, his brain made a
+type-2 brain (below), the two gangs made enemies and `GoalFight(Ash, PoizoCiv)` called; stick centred; hooks
+`set-command`, `anim-dispatch`, `call-brains`):
+
+| Update | Ash (the AI) | The player (grabber) | PoizoCiv |
+| --- | --- | --- | --- |
+| 79-84 | the fight goal's walk-in (372 / 379), state `0x3` | rear hold 84 | 85 |
+| 85 | **command `0xd`** written by `AttackAction_Start` (`0x002fa9a8`, at `0x002fac98`); **165**, state `0x1003` | **163**, state `0x1005`, held `0x800000` | **164**, state `0x182001` |
+| 121 | the end clip 168 | 166 | 167; **400 damage** (600 → 200) at the intro's end |
+| 169 | | let go into the fight stance (358, state `0x5`) | |
+| 178-181 | 358, then on with the fight | | 355, then the grounded idle 196 |
+| 190 | command `0x37`: the grounded strike 193 (20 damage) | | |
+
+So the AI's attack action does pick the tandem at a rear-held enemy it faces, through command `0xd`, and the set was
+163-168 (the unarmed first set) on the first try. Step 1's chain is confirmed (runtime) end to end, with the timings
+of step 4: the intro runs 36 updates, the damage lands at its end, the grabber is let go 48 updates after that.
+
+Caveat, open: Ash's own brain in this state is type 3 (the Warriors' think, `0x003052f0`); with it, `GoalFight`
+pushed the goals but Ash stood idle for 180 updates and wrote no command, so the run gave him the type-2 handlers
+(as `civ_approach` does for PoizoCiv). Whether a Warrior teammate's own think reaches the attack action against a
+rear-held enemy (in a real fight, or after an `IssueWarriorCommand` attack order) was not watched.
 
 **Coney fixes** (item 18):
 
@@ -974,6 +994,11 @@ The moves Coney plays and where they differ from the table above: [Combat differ
   on the left. That target was pinned while walking, so the steer's lead may explain it ([Contact](#reach)); not
   rerun against a still target.
 - Why the tandem intro ran 51 updates, not 36.
+- Whether a Warrior's own type-3 brain (the Warriors' think, `0x003052f0`) starts a tandem: in `moves_tandem_ai` Ash
+  with that brain stood idle, so the run gave him type-2 handlers ([An AI tandem at runtime](#tandem-ai)). To find out,
+  rerun the scenario without the brain writes and give Ash an attack order on PoizoCiv once he is in the rear hold,
+  through the call hook on `GameState_IssueWarriorCommandFor` (`0x0041dc80`, behind the script binding
+  `IssueWarriorCommand`), logging `set-command` for Ash's command `0xd`.
 - The PS2 FPU's rounding toward zero is assumed, not read from the FPU's control, for the late ties ([Reading the
   tables](#reading)). A run of a rate-0.9 clip with a tie (an event at frame 5 or 14) would check it.
 - 490 `KNIFE_ATTACK_FROM_RUN`, 18 `ATTACK_SSX3_HOLD` and the `_02` snaps: no code path plays them here (20 is the
