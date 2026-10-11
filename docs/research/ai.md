@@ -2205,10 +2205,10 @@ two areas refuses them (inferred: "on the graph").
       (so a saturated total is always over the cap). The step's cost, in this order:
         1. *c* = 3D distance × 16 (truncated);
         2. only while `0x0051059c` = 1 (the script's `ClimbFilter(on)`, `Climb_SetFilter` `0x002511b8`) and the mask
-           lacks `0x100`, **one** of: + 200 when the record's flags have 8; else + 320 when they have `0x80`; else
-           + 80 when they have 4, unless they also have `0x40` and the avoid bit is set (then nothing);
-        3. + 1600 when the record's avoid bit (bit 31) is set;
-        4. + 40 × *u* − 8 when *u*, the use count (C `+0x1f`) of the **expanded** node, is not 0 (nothing when it is
+           lacks `0x100`, **one** of: + 200 when the record's flags have 8; else + 320 when they have `0x80`;
+           else + 80 when they have 4, unless they also have `0x40` and the avoid bit is set (then nothing);
+        3. add 1600 when the record's avoid bit (bit 31) is set;
+        4. add 40 × *u* − 8 when *u*, the use count (C `+0x1f`) of the **expanded** node, is not 0 (nothing when it is
            0). The expanded node is the one the step enters in walking order (the record lives on it), so this
            spreads AIs over parallel routes.
 
