@@ -2136,6 +2136,36 @@ off the track.
 | `0x002f9c18` | `RunFromTrainGoal_End` | End | restores the turn boost and flags | confirmed (code) |
 | `0x002f9c88` | `RunFromTrainGoal_Process` | Process | ends when the train is no longer near; clears actions every 250 ms; projects his point on the track and flees | confirmed (code) |
 
+How he picks where to run, confirmed (code) at the functions above (goal fields: `+0x10` the target, `+0x20` his
+projection on the track, `+0x30` / `+0x31` that segment's two point indices, `+0x32` projection found, `+0x33`
+fleeing, `+0x34` the train record, `+0x38` the next action clear, `+0x3d` dive):
+
+1. **Each update** (`0x002f9c88`): the goal ends (2) when `TrainRecord_IsNearSegment` (`0x004138f0`) says he is no
+   longer inside the train's box and within its radius of a segment. That test also sets `+0x3d` when he is more than
+   0.5 m inside the radius and within 10 m of the record's point `+0x149` (the last point set with no gap; inferred: the
+   train's front). Until he flees, his actions are
+   cleared every 250 ms. With `+0x3d` set, a finished front action is cleared. When the brain has no pending
+   sub-goal (`+0x2e` below 1), his position is projected on the track (`TrainRecord_ProjectPoint`, `0x00413a90`,
+   [Trains](objects.md#trains)), then the side flight is tried, and failing that the flight along the track.
+2. **The sides** (`RunFromTrainGoal_TryFlee`, `0x002f96d0`), only with a projection: the direction is from the
+   projection to him, normalised (the away direction). He tries that side first and the opposite one second, unless
+   he stands within 0.5 m of the projection: then the side he faces comes first (his facing's dot with the away
+   direction below 0 puts the opposite side first).
+3. **The probe** (`RunFromTrainGoal_IsSafePoint`, `0x002f93b0`), per side: a world ray from his position raised
+   **2 m** (up vector `0x00511740`), **10 m** along the side's direction. No hit: the candidate is 10 m out. A hit:
+   the candidate stops 0.5 m short of it and is refused when it lies within the train's radius (`+0x144`) + 0.5 m of
+   the projection. Then a ray **4 m straight down** from the candidate (down vector `0x00511770`) must hit ground (so
+   ground at most 2 m below his own height); the target is 0.1 m above that hit, and the side is taken only when he
+   can walk straight to it (`Human_CanWalkStraightTo`, the train check included).
+4. **The run**: with `+0x3d` set he dives (`DiveAction_Init` with the away direction); otherwise he sprints there
+   (`0x002f95e0`, gait 5; from standing he takes the heading and gait 4 at once). `+0x33` is set and the actions are no
+   longer cleared.
+5. **Along the track** (`RunFromTrainGoal_FleeAlongTrack`, `0x002f9980`), when neither side passes: the target is the
+   train's own point at index `+0x30`, the **start** of the segment that holds his projection (its lower index), dropped
+   to the ground by a 4 m ray down when one hits, and raised 0.1 m; he
+   sprints to it. Without a projection (`+0x32` 0: in front of the first point, or past the second-to-last, see
+   [Trains](objects.md#trains)) he does nothing that update.
+
 ### Action base {#goal-action-base}
 
 The first function of the action code after the goals.

@@ -2958,27 +2958,28 @@ CfgWarriorClass(classId, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `classId` | number, truncated to an integer | Warrior index 0-8 (one per playable Warrior); selects a 14-byte record at 0x006b65c0 + classId x 14. |
-| 2 | `s1` | number, truncated to an unsigned integer | Stat stored as a byte at +0x05. |
-| 3 | `s2` | number, truncated to an unsigned integer | Stat stored as a byte at +0x06. |
-| 4 | `s3` | number, truncated to an unsigned integer | Stat stored as 16 bits at +0x00. |
-| 5 | `s4` | number, truncated to an unsigned integer | Stat byte at +0x02. |
-| 6 | `s5` | number, truncated to an unsigned integer | Stat byte at +0x03. |
-| 7 | `s6` | number, truncated to an unsigned integer | Stat byte at +0x04. |
-| 8 | `s7` | number, truncated to an unsigned integer | Byte at +0x07 (1-2). |
-| 9 | `s8` | number, truncated to an unsigned integer | Byte at +0x08 (1-3). |
-| 10 | `s9` | number, truncated to an unsigned integer | Byte at +0x09 (1-3). |
-| 11 | `s10` | number, truncated to an unsigned integer | Byte at +0x0a. |
-| 12 | `s11` | number, truncated to an unsigned integer | Byte at +0x0b. |
-| 13 | `s12` | number, truncated to an unsigned integer | Byte at +0x0c. |
-| 14 | `s13` | number, truncated to an unsigned integer | Byte at +0x0d. |
+| 1 | `classId` | number, truncated to an integer | Warrior class 0-9 (0-8 one per playable Warrior, 9 everyone else); selects a 14-byte record at 0x006b65c0 + classId x 14. |
+| 2 | `s1` | number, truncated to an unsigned integer | Byte +0x05: a player's health and its maximum in percent (0x00229c40; divided back at 0x0022a2a8). |
+| 3 | `s2` | number, truncated to an unsigned integer | Byte +0x06: a player's attack damage scale in percent (0x00229c40, 0x00217a98, 0x00236038); the pause Stats screen's Strength bar. |
+| 4 | `s3` | number, truncated to an unsigned integer | 16 bits at +0x00: the rage maximum (0x00223260). |
+| 5 | `s4` | number, truncated to an unsigned integer | Byte +0x02: the rage gain percentage (0x00264cf8). |
+| 6 | `s5` | number, truncated to an unsigned integer | Byte +0x03: idle rage decay, percent of the maximum per 20 s (0x002562d0). |
+| 7 | `s6` | number, truncated to an unsigned integer | Byte +0x04: rage drain while raging, percent of the maximum per 20 s (0x002562d0). |
+| 8 | `s7` | number, truncated to an unsigned integer | Byte +0x07, cuffing (1-3): picks the cuffing hold's stick-game times, 2, 3 or any other (0x00282b68, 0x00283078). |
+| 9 | `s8` | number, truncated to an unsigned integer | Byte +0x08, mash (1-3): the uncuff mash's gain per alternation, 1 x 1.5, 3 x 0.7, any other x 1 (0x0027e6d8). |
+| 10 | `s9` | number, truncated to an unsigned integer | Byte +0x09, tagging (1-3): the tagging game's tuning row, 0 as 1 and above 3 as 3 (0x002739d8). |
+| 11 | `s10` | number, truncated to an unsigned integer | Byte +0x0a, lock pick (1-3): the lock-pick dial's difficulty plus 1 (0x0022d790). |
+| 12 | `s11` | number, truncated to an unsigned integer | Byte +0x0b, stereo (1-3): the stereo theft's turns per stage, 1 for 0-1, else 3 x (n - 1) (0x0022dd08). |
+| 13 | `s12` | number, truncated to an unsigned integer | Byte +0x0c, mugging (1-3): picks the mugging stick game's times, 2, 3 or any other (0x00284ca0). |
+| 14 | `s13` | number, truncated to an unsigned integer | Byte +0x0d: stored, never read. |
 
 **Returns** nothing.
 
-Fills one playable Warrior's class record (stats as bytes and one 16-bit value) for the current difficulty; the
-difficulty configs set all nine.
+Fills one Warrior class record (stats as bytes and one 16-bit value) for the current difficulty; the difficulty configs
+set all nine playable classes, config_preload2.lua class 9.
 
-**Notes.** Layout confirmed (code) at 0x00228a70; the stat meanings are not traced.
+**Notes.** Layout confirmed (code) at 0x00228a70. Every reader goes through 0x00222b58; each byte's use is confirmed
+(code) at the cited address, and +0x0d has none ([Warrior classes](../../references/warrior-classes.md)).
 
 - **Evidence:** confirmed (code) at `0x00228a70`; detail: traced
 - **Wrapper** `0x00369d10` (registered by `RegisterBindings`); **calls** `0x00228a70` `Cfg_SetWarriorClass`

@@ -296,6 +296,97 @@ from the runtime: PM_Light's bar starts at x 0); fill colour `+0x28`, fill fract
 
 **`ScrollingMenu`** (`0x001e1338`, vtable `0x0053bfc8`), the Rumble lists: [Front end](frontend.md#rumble-screens).
 
+### The pause header: `CircledTextHeader` {#circled-text-header}
+
+The big header at the top of the story pause menu (the mission's title after one to three circled characters, the level
+name under it) is the class we call **`CircledTextHeader`** (constructor `0x001e7f50`, vtable `0x0053ca00`), a subclass
+of `IconTextHeader` (`0x001e77a0`, [function index](#fn-after-controlmenuhud)). It has **one instance**, the pause
+menu's top header at `0x006340c0`, built by `PauseMenu_StaticInit` (`0x001dfc80`, the only caller of the constructor)
+with the text "Current Objectives" (`0x108`); the two other pause headers (`0x00634c70`, `0x00634fe0`) are plain
+`IconTextHeader`s. Confirmed (code). The front-end screens that pass the allocator tag `CircledTextHeader` (mission
+select `0x001bc5a8` and `0x001bd838`, game stats `0x002155a8`) allocate `0x600` bytes and construct a
+[`CircledText`](#fn-circledtext) (`0x001d0aa8`) in them, a different and smaller class: the tag is only a name.
+Confirmed (code) at those call sites.
+
+**Parts** (offsets from the object; confirmed (code) at `0x001e7f50`, `0x001e7898`, `0x001e8368`):
+
+| Offset | Part | Set up as |
+| --- | --- | --- |
+| `+0x20` / `+0x30` | position (x at `+0x20`, y at `+0x28`) and box (width at `+0x30`) | the caller's |
+| `+0x360` | text offset (x at `+0x360`, y at `+0x368`) | the caller's |
+| `+0x50` | the child (the pause menu passes its current-objectives checklist) | placed under the header ([Layout](#circled-text-header-layout)) |
+| `+0x70` | the label, a markup text (`IconTextHeader`'s) | size 1.0, grey `0x005fd310`, font slot 3, the constructor's text |
+| `+0x260` | rule A, a `BaseWidget` (`IconTextHeader`'s) | the caller's sprite word, size 0.1, depth 8,000, grey `0x005fd310` |
+| `+0x390` | rule B, a `BaseWidget` | the same sprite word, depth 8,000, grey `0x005fd310` |
+| `+0x490` + `0x100` × i, i < 3 | three circles, `BaseWidget`s | `part_page0` rectangle 84 (sprite word `0x54`), depth 8,500, **black** (`0x005fd260`), size 0.082 × the circle scale |
+| `+0x790` + `0xd0` × i, i < 3 | a one-character `TextWidget` in each circle | font slot 4, `Font_Size(1.561)` |
+| `+0xa00` | the title, a `TextWidget` | font slot 4, `Font_Size(2.23)`, grey `0x005fd310` |
+| `+0xad0` | the subtitle, a `TextWidget` | font slot 4, `Font_Size(1.561)`, grey `0x005fd310` |
+| `+0x370` | the title's characters (the text after the `:`) | |
+| `+0xba0` | the number of circles in use | |
+
+The pause menu sets it up (`0x001dbee0`) at position (0.5, 0.22) (16:9: (0.5, 0.18)), box width 0.5, text offset
+(0.01, −0.01) and sprite word 10 (`part_page0` rectangle 10) for both rules. Confirmed (code).
+
+**The text** (`CircledTextHeader_SetTitle`, `0x001e8ee0`): the string is split at its first `:`. Every character before
+it gets a circle of its own, in order; the `:` itself (when it is not the first character) adds one more circle whose
+character is `@` + the checkpoint (game state `+0x33a`, so checkpoint 1 shows `A`, 2 `B`); what follows the `:` is the
+title. Nothing bounds the count at three. The **last** circle is then coloured red `0x005fd328` (170, 43, 43). The
+subtitle is always the current level's name (the level record at game state `+0x14d4` + `0x84` × `+0x56dc`, name at
+`+0x49`). Confirmed (code). The pause menu passes the game state's mission title (`+0x134`), or the Rumble mode's title
+in a Rumble level, after colouring all three circles with the level's colour ([Pause](pause.md#the-top-header)); so a
+mission title of the form `<number>:<title>` shows the number in a circle of the level's colour and the checkpoint
+letter in a red one (runtime, `level99` checkpoint 2: a circled `1` and `B`, [Pause](pause.md#opening-the-menu)).
+That the mission titles have that form is inferred from this code and that screenshot.
+
+**Colours.** `SetCircleColour` (`0x001e85e8`) and `SetLetterColour` (`0x001e8658`) colour all three circles or
+characters. Every `Update` sets each used character back to **opaque black**, so a letter colour set from outside lasts
+until the next update only (confirmed (code); in effect the characters are always black, inferred).
+
+**Drawing** (`Render` `0x001e8d00`; the pause menu calls `RenderColoured`, slot `+0xd0`, `0x001e8dd0`, with grey
+`0x005fd320` or `0x005fd310` and the menu's fade alpha): the label in the given colour with shadow byte `0x80`, the
+child, then for each used circle the circle and its character (no shadow), rule B, the title and the subtitle (shadow
+`0x80`). `RenderColoured` changes only the alpha of the circles, characters, rule, title and subtitle. **Rule A is
+updated but never drawn**: neither `Render` nor `IconTextHeader`'s draws `+0x260`. The label, rule A and the child are
+hidden on the pause grid (`IconTextHeader_SetVisible(0)`, `0x001e7ea8`). Confirmed (code).
+
+#### Layout {#circled-text-header-layout}
+
+`CircledTextHeader_Update` (`0x001e86c8`) places every part each update from the position (X, Y), the box width W, the
+text offset (ox, oy) and the factors below, in GUI coordinates ([HUD: coordinates](hud.md#coordinates)). Confirmed
+(code):
+
+- rule A: centre (X + 0.035, Y + 0.105), size 0.57 × 0.007 (device-converted);
+- rule B: centre (X + 0.035, (Y − 0.07) × **a**), the same size;
+- with `h` rule A's height (`+0x2f4`, 0.007) and `t` the title's line height (`TextWidget` `+0xb4`: `h + lineGap` of
+  `Font_Size(2.23)`, [Text](#text), 0.091 in 4:3), `y0` = Y − h / 2 + t + oy − 0.045 − 0.151;
+- the subtitle (`Font_Size(1.7)`) at (0.257, (`y0` + 0.075) × **b**);
+- the circles from x = 0.272 (an absolute x, not relative to X), each step 0.051: the character at (x, `y0` × **d**),
+  `Font_Size(1.7)`, and its circle centred at (x + the character's width / 2, `y0` × **c**), size 0.082 × **s**
+  square;
+- the title (`Font_Size(2.23)`) after the last circle at (x, `y0` × **d**), or at x 0.255 when there is no circle;
+- the label at (X − W / 2 + ox − 0.005, (Y + h / 2 − its height / 2 + oy + 0.1) × **e**);
+- the child at (the label's x + 0.005, (Y + h / 2 + 0.02 + 0.1 + g) × **f**), with g = −0.015 (−0.025 with flag `0x02`
+  alone; `0x001e7898`).
+
+The factors per video mode (`CircledTextHeader_ApplyVideoMode`, `0x001e81c0`, run at the top of every update; device
+flags as on [Graphics](graphics.md#video-mode)):
+
+| Flags | a `0x0050f2fc` | b `0x0050f300` | c `0x0050f304` | d `0x0050f308` | e `0x0050f30c` | f `0x0050f310` | s `0x0050f2dc` |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| default, and progressive 4:3 (`0x20`) | 0.9 | 0.95 | 0.78 | 0.68 | 1.0 | 1.0 | 1.2 (static) |
+| `0x04` without `0x02` or `0x08` (16:9) | 0.6 | 0.67 | 0.1 | 0 | 1.0 | 1.0 | 1.2 (static) |
+| `0x02` without `0x04` | 1.49 | 1.63 | 2.4 | 2.3 | 1.1 | 1.1 | 0.84 |
+| `0x02` with `0x04` | 1.15 | 1.25 | 1.4 | 1.3 | 1.1 | 1.1 | 0.84 |
+
+`s` is written only in the `0x02` modes and never restored, so after such a mode the circles would stay at 0.84
+(inferred). The function also writes `0x0050f314` (0.082, or 0.05 with `0x02`), which the update does not read.
+
+**Worked example** (inferred, computed from the constants above): on the pause grid in the default mode (X, Y = 0.5,
+0.22), `y0` ≈ 0.102, so the title and the circle characters sit at y ≈ 0.069 and the circles' centres at 0.079, rule B
+at 0.135, the subtitle at (0.257, 0.168) and rule A (not drawn) at 0.325. In the 16:9 row the factor **d** is 0, which
+would put the title's centre on y 0; whether the original shows that is an open question (no 16:9 screenshot yet).
+
 ### The markup text widget's fields {#markup-text-fields}
 
 `MessageHUD` (`0x001b8f98`, about `0x1e4` bytes), confirmed (code) at the functions of
@@ -938,8 +1029,10 @@ widget at `+0x40`, a 0x95-byte text buffer at `+0x230`, its rectangle at `+0x30`
 `0x001d0aa8`-`0x001d16e8`, in the TU that ends at the stub `0x001d2de0` with the `GameMenu` base. A widget class
 (vtable `0x0053b390`, `0x5fc` bytes; our name) drawing a text after up to two **circled characters**: a back sprite
 (`+0x140`), two circle sprites (`+0x250` + `0x100` × i) each with a one-character `TextWidget` (`+0x450` + `0xd0` ×
-i), and the main `TextWidget` (`+0x60`). The mission-select and game-stats screens build it; the allocator tag
-`CircledTextHeader` they pass is probably its owner's class (inferred). Fields: circle width/height `+0x5f0`/`+0x5f4`,
+i), and the main `TextWidget` (`+0x60`). The mission-select and game-stats screens build it in `0x600`-byte blocks
+they allocate with the tag `CircledTextHeader`, which is only a name: the class of that name is the pause menu's
+header ([The pause header](#circled-text-header)), confirmed (code) at the constructor calls `0x001bc5a8`,
+`0x001bd838` and `0x002155a8`. Fields: circle width/height `+0x5f0`/`+0x5f4`,
 circle count `+0x5f8`, text offset `+0x30`, circle offset `+0x240`, colours `+0x130` (normal, `0x005fd320`) and `+0x134`
 (focused, `0x005fd318`), reveal `+0x50`.
 
@@ -1075,8 +1168,8 @@ screens: the boxed text base of the HUD's scroll-in texts, the three header clas
 | `0x001e7d78`, `0x001e7df0` | `IconTextHeader_Render`, `_RenderColoured` | slots `+0x38`/`+0xd0`: grey `0x005fd310` shadow `0x80`, or a given colour | confirmed (code) |
 | `0x001e7e58`, `0x001e7e78`, `0x001e7ea8` | `IconTextHeader_SetText`, `_ShowChild`, `_SetVisible` | text `+0x70`; child slot `+0x40`; visible flags | confirmed (code) |
 | `0x001e7ef8` | `IconTextHeader_IsReady` | slot `+0xb8`: sprite batch `+0x324` and batches 3, 6 | confirmed (code) |
-| `0x001e7f50`, `0x001e8020`, `0x001e8120` | `CircledTextHeader_Construct`, `_Destroy`, `_Shutdown` | vtable `0x0053ca00`, the pause screens' headers: sprite `+0x390`, 3 circles `+0x490`, 3 letters `+0x790`, title `+0xa00`, subtitle `+0xad0` | confirmed (code) |
-| `0x001e81c0` | `CircledTextHeader_ApplyVideoMode` | globals `0x0050f2fc`-`0x0050f314`, scale `0x0050f2dc` | confirmed (code) |
+| `0x001e7f50`, `0x001e8020`, `0x001e8120` | `CircledTextHeader_Construct`, `_Destroy`, `_Shutdown` | vtable `0x0053ca00`, the pause menu's top header only ([The pause header](#circled-text-header)): rule B `+0x390`, 3 circles `+0x490`, 3 letters `+0x790`, title `+0xa00`, subtitle `+0xad0` | confirmed (code) |
+| `0x001e81c0` | `CircledTextHeader_ApplyVideoMode` | the layout factors per video mode ([Layout](#circled-text-header-layout)) | confirmed (code) |
 | `0x001e8368` | `CircledTextHeader_Setup` | slot `+0xa8`: title size 2.23, subtitle 1.561, font slot 4; circles sprite `0x54` (rect 84), `0x005fd260`, depth 8500, size 0.082 x scale | confirmed (code) |
 | `0x001e85e8`, `0x001e8658` | `CircledTextHeader_SetCircleColour`, `_SetLetterColour` | the three circles or letters | confirmed (code) |
 | `0x001e86c8` | `CircledTextHeader_Update` | slot `+0x30`: used circles spaced `0x0050f324`, black letters, title after, subtitle under, child | confirmed (code) |
@@ -1168,23 +1261,27 @@ runs about 42,600 Lua instructions and skips 1,796 binding calls.
   the reveal fraction is not implemented yet.
 - **Markup** (`src/gui/markup.h`): the tag table by index, with the characters of the glyph tags; `parseMarkup`
   splits a text at `<` ... `>`. A tag name compares exactly; a `<` with no `>` after it is text; a name not in the
-  table (and the nine HUD icon tags 23-31, whose names are not on this page) is skipped and counted.
-- **Layout** (`src/gui/text_layout.h`, `layoutText`, `TextWidget_Layout` `0x001b9600`): measures each line's runs,
-  grows the box to the widest line, places each line by its alignment and draws each run with `Font::draw` into sprites
-  tagged with their font slot; `addTextSprites` hands them to each slot's batch. It implements `COLOR` (alpha × the
-  widget's fade), `SIZE`, `PULSE`, `DISPLAYTIME` (hidden after, fading over the last second), `BIGFONT` (slot 6),
-  `MONEYPLUS`/`MINUS`, the alignments, `CR`, `CR2`, `CR3 f`, `CRM`, every glyph tag and the closing tags; `SOUND` names
-  and the largest `FREEZE` are reported for the audio layer and the timer; `BOLD`, `MONEYFONT`, `BGFONT`, `AUTOINDENT`
-  and the animated stick tags have no effect yet. Lines break at the `CR` tags and, for a multi-line widget given a
-  wrap width (the message box, `RM_No2ndController`'s 0.6), before a word that would pass it; how the original breaks
-  is not researched, so Coney breaks only at spaces. Coney's choices: a closing tag restores the value before its
-  opening tag; a line takes the alignment in effect at its first character, centring and right-aligning inside the box
-  (`CCENTER` and `RRIGHT` act as `CENTER` and `RIGHT`); `CR2` and `CRM` always break; `PULSE ms` scales the colour by
-  1 + 0.5 × sin(2π t / ms); the style's y is the first line's centre line. **The text font:** a text starts in slot 2,
-  a `part_page0` instance, and `<BIGFONT>` switches to slot 6, `big_font` (Coney's choice, from the data: in
-  `part_page0`, first glyph 94, characters `0x91`-`0xa0` are exactly the button pictures of the tag table, while in
-  `big_font` they are empty but for a triangle at `0x9c`; `big_font`'s rectangles 256-261 hold a circle and five d-pad
-  pictures. Inferred from viewing the sheets with `--view-sheet`).
+  table is skipped and counted. All 66 names are known, the HUD icon tags 22-32 with their characters;
+  `stickCharacter` gives an animated stick tag's character for the text's time (its own first, Coney's choice).
+- **Layout** (`src/gui/text_layout.h`, `layoutText`, `TextWidget_Layout` `0x001b9600`): measures each line's runs, grows
+  the box to the widest line, places each line by its alignment and draws each run with `Font::draw` into sprites tagged
+  with their font slot; `addTextSprites` hands them to each slot's batch. It implements `COLOR` (alpha × the widget's
+  fade), `SIZE`, `PULSE`, `DISPLAYTIME` (hidden after, fading over the last second), `BIGFONT` (slot 6),
+  `MONEYPLUS`/`MINUS`, `MONEYFONT` ([MONEYFONT](#moneyfont): a `graphics::GlyphBase`, its base 256 or 11 chosen at
+  the tag and its origin by each run's slot, so base + (c − 1) in `big_font` and base + (c − `0`) otherwise; it goes
+  to `Font::measure` and `Font::draw`, and the alignment's measure in `Font::draw` is taken without it, as the
+  original's), the animated stick tags, the alignments, `CR`, `CR2`, `CR3 f`,
+  `CRM`, every glyph tag and the closing tags; `SOUND` names and the largest `FREEZE` are reported for the audio layer
+  and the timer; `BOLD`, `BGFONT` and `AUTOINDENT` have no effect yet. Lines break at the `CR` tags and, for a
+  multi-line widget given a wrap width (the message box, `RM_No2ndController`'s 0.6), before a word that would pass it;
+  how the original breaks is not researched, so Coney breaks only at spaces. Coney's choices: a closing tag restores the
+  value before its opening tag; a line takes the alignment in effect at its first character, centring and right-aligning
+  inside the box (`CCENTER` and `RRIGHT` act as `CENTER` and `RIGHT`); `CR2` and `CRM` always break; `PULSE ms` scales
+  the colour by 1 + 0.5 × sin(2π t / ms); the style's y is the first line's centre line. **The text font:** a text
+  starts in slot 2, a `part_page0` instance, and `<BIGFONT>` switches to slot 6, `big_font` (Coney's choice, from the
+  data: in `part_page0`, first glyph 94, characters `0x91`-`0xa0` are exactly the button pictures of the tag table,
+  while in `big_font` they are empty but for a triangle at `0x9c`; `big_font`'s rectangles 256-261 hold a circle and
+  five d-pad pictures. Inferred from viewing the sheets with `--view-sheet`).
 - **The screen flow** (`src/gui/screen_flow_controller.h`, `ScreenFlowController`, `ScreenFlowState`), as
   [above](#screen-flow): per-screen transitions (`0x001c8010`), push (`0x001c80e8`), pop (`0x001c82e8`), unwind
   (`0x001c81e8`) and update (`0x001c83c8`) with the results "stay" (`-0x100`) and "back" (`-0xff`); a code without a
@@ -1218,9 +1315,11 @@ runs about 42,600 Lua instructions and skips 1,796 binding calls.
 
 **Disc check (NTSC-U, 2026-10-04, counts only):** `coney_tests "[disc][sprite_sheets]"` finds 7 fonts among the 1,335
 sheets (4 with a rectangle for all 256 bytes), all loading as fonts; `"[disc][text]"` loads `big_font` (262
-rectangles over 512 × 256) and `part_page0` (371, first glyph 94), finds a rectangle for all 21 glyph tags' characters
-in both, and lays out all 388 English HUD strings: 10,675 sprites on 400 lines, 89 tags skipped (unknown names such
-as `BOBJ`, `YOBJ`, `ROBJ`, and the tags with no effect yet), no string empty.
+rectangles over 512 × 256) and `part_page0` (371, first glyph 94), finds a rectangle for all 30 glyph tags' characters
+in both, and lays out all 388 English HUD strings: 10,682 sprites on 400 lines, 32 tags skipped (the tags with no
+effect yet), no string empty. Rerun 2026-10-11 with `<MONEYFONT>` built: the swap prompts `0xc`-`0xe` draw
+`part_page0` rectangle 73 (the triangle) once each, the revive prompt 4 one `big_font` stick picture (256-261), and
+the rumble prompt `0x25` in `part_page0` one cross.
 
 TODO for the analysts, found while implementing:
 
@@ -1258,16 +1357,13 @@ TODO for the analysts, found while implementing:
   `TextWidget` draw with before any `<BIGFONT>`? Coney takes slot 2 (`part_page0`), the sheet whose characters
   `0x91`-`0xa0` are the button pictures (above). Still open: what the explicit base of the two
   `Font_Measure`/`Font_Draw` call sites (slot 6 with -1, slot 3 with `-'0'`) draws.
-- **`<MONEYFONT>`:** the glyph base `0xd0100` (font 6) or `0xb` (font 3): which rectangles does it select? The strings
-  wrap button tags in it (`<MONEYFONT><ST></MONEYFONT>`, 25 times in English); `part_page0`'s icons below its first
-  glyph (fists, faces, W badges) look like its targets. Coney ignores it.
-- **HUD icon tags 23-31:** their names and characters. The English strings use `<BOBJ>`, `<YOBJ>` and `<ROBJ>`, which
-  are not among the names on this page.
+- **`<MONEYFONT>`** (answered and built, [MONEYFONT](#moneyfont)).
+- **HUD icon tags 23-31** (answered and built, [the tag table](#markup)).
 - **Layout details** (answered in [the tag table](#markup): `CCENTER` / `RRIGHT`, `CRM`, the closing tags and
   `PULSE`'s triangle swing; and the y is the first line's centre, confirmed (runtime) for the light widget). `<BOLD>` and
-  `<AUTOINDENT>` answered too (the tag table). Still open: the two characters of each animated stick tag; whether the
-  shadow is drawn per
-  glyph (Coney) or under the whole string first.
+  `<AUTOINDENT>` answered too (the tag table). The stick tags' characters are answered
+  ([MONEYFONT](#moneyfont)); still open: which of the two shows first; whether the shadow is drawn per glyph (Coney)
+  or under the whole string first.
 - Names: the `@orig` tags call `0x00179808`, `0x00179958` and `0x00179c30` `Font_Size`, `Font_Measure` and
   `Font_Draw`, and `0x001b9600` `TextWidget_Layout`, all with file `(unknown)`.
 - **Widget geometry** (answered, [The widget classes](#widget-classes)): a sprite widget's anchor is chosen per
@@ -1286,7 +1382,7 @@ What the implementer still needs:
   the worlds an instance can live in (3D overlay, 2D overlay), where the original's pass finds its batches.
 - The widget base's other slots (the rectangle, active, the text reveal) and `BaseWidget`'s timed fade.
 - Text widgets around the layout: the reveal fraction, `<SOUND>` played once, `<FREEZE>` on the game timer, and
-  the open tags above (`MONEYFONT` first: the menus use it around every button glyph).
+  the open tags above.
 
 ## Open questions
 

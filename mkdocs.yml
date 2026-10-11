@@ -241,6 +241,7 @@ nav:
   - Guides:
       - How we work: guides/how-we-work.md
       - Running agents: guides/agents.md
+      - Issues: guides/issues.md
       - Building and testing: guides/building.md
       - Testing: guides/testing.md
       - The sandbox: guides/sandbox.md

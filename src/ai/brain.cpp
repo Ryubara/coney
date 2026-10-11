@@ -99,9 +99,17 @@ void Brain::think(std::uint64_t nowMs) {
     if (!m_dead && (m_type == BrainType::Cop || m_type == BrainType::Gang || m_type == BrainType::Warrior)) {
         thinkTackle(*this);
     }
-    // A Warrior's step 7: the swap prompt beside a player.
-    if (!m_dead && m_type == BrainType::Warrior) {
-        thinkSwapPrompt(*this);
+    // A Warrior's step 7: the swap prompt beside a player. The original's Warrior still thinks while knocked out and
+    // clears it then; Coney turns a script-downed brain off (BrDead), so such a brain clears it here. Coney's choice:
+    // another dead brain (a script's BrDead) keeps whatever the script set.
+    if (m_type == BrainType::Warrior) {
+        if (m_dead) {
+            if (m_human->script().knockedOut) {
+                m_human->script().talkable = false;
+            }
+        } else {
+            thinkSwapPrompt(*this);
+        }
     }
 }
 
