@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(uv run --project python coney-tools *)",
+      "Bash(uv run --project python pytest *)",
+      "Bash(uv run --project python ruff *)",
+      "Bash(uv run --project python mypy *)",
+      "Bash(uvx pre-commit run *)",
+      "Bash(cmake --preset *)",
+      "Bash(cmake --build --preset *)",
+      "Bash(ctest --preset *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "PowerShell(uv run --project python coney-tools *)",
+      "PowerShell(uv run --project python pytest *)",
+      "PowerShell(git status *)",
+      "PowerShell(git diff *)",
+      "PowerShell(git log *)"
+    ],
+    "deny": [
+      "Bash(git stash *)",
+      "Bash(pkill *)",
+      "Bash(killall *)",
+      "Bash(taskkill /IM *)",
+      "Bash(taskkill /im *)",
+      "PowerShell(git stash *)",
+      "PowerShell(taskkill /IM *)",
+      "PowerShell(taskkill /im *)",
+      "PowerShell(Stop-Process -Name *)"
+    ]
+  }
+}

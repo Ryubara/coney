@@ -9,6 +9,37 @@ prompt cache survives. The conduct rules for agents are in [How we work](how-we-
 re-briefs an agent, or picks its model, it asks what that costs in cache writes and picks the cheapest way that still
 gets the work right. The rules below are that question answered for the usual cases.
 
+## Setting up an agent tool {#setup}
+
+The rules every agent follows are in [AGENTS.md](repo:AGENTS.md) and these guides, whatever tool runs the agent.
+The repository also ships the configuration that lets an agent tool use the project's debugging servers and roles,
+so a fresh clone gets the same setup as the maintainer's machine:
+
+| File | What it holds | Read by |
+| --- | --- | --- |
+| `AGENTS.md` (and `CLAUDE.md`, `GEMINI.md`, which only import it) | The rules | Most agent tools |
+| `.mcp.json` | The debugging servers: `ghidra-mcp` (the shared Ghidra project) and `pcsx2` (the emulator over PINE) | Claude Code; other tools take the same two commands in their own MCP config |
+| `.claude/agents/` | The roles: `analyst`, `implementer`, `reviewer`, `research-reviewer` | Claude Code |
+| `.claude/settings.json` | Shared permissions: the project's own test and build commands allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)) | Claude Code |
+
+**The servers.** `.mcp.json` holds no paths. Each entry runs `coney-tools mcp serve <name>`, which finds the server
+through `coney.local.toml` (`ghidra_mcp_repo` and `pcsx2_mcp_dir`, see [Local workspace](workspace.md)) and runs it
+over stdin and stdout, from the main checkout or any worktree. A server that is not installed stops at once with one
+line naming the missing key or program; the agent tool shows it as failed and everything else works. `ghidra-mcp`
+also needs its headless server running ([Ghidra + ghidra-mcp](ghidra.md)), and `pcsx2` needs Node.js 18 or newer.
+Claude Code asks once whether to use the project's servers; a server of the same name registered in your own
+settings takes precedence over the project's.
+
+**The roles.** Each file in `.claude/agents/` names a role from [How we work](how-we-work.md) and points at the
+guides that role reads; it holds no rules of its own. The analyst and the research reviewer are set to Opus, which
+AGENTS.md requires for reverse engineering; the others take whatever model the coordinator names
+([Which model](#models)). The implementer and the code reviewer have no access to the Ghidra and PCSX2 tools, so the
+clean room holds by tool access as well as by rule. Effort, turn and token limits are each user's own settings and
+stay out of the repository.
+
+Another agent tool needs only its own MCP entries for the two servers (the same `uv run --project python
+coney-tools mcp serve <name>` command, run from the checkout) and reads the rules from `AGENTS.md`.
+
 ## What a run costs {#cost}
 
 An agent re-sends its whole context (instructions, tools, brief and everything it has read or done) with every
