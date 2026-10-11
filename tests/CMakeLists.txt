@@ -101,6 +101,7 @@ add_executable(coney_tests
     platform/disc_level5_boss_camera_test.cpp
     platform/disc_level5_fights_test.cpp
     platform/disc_level99_audio_test.cpp
+    platform/disc_level99_heap_test.cpp
     platform/disc_level99_scene_speech_test.cpp
     platform/disc_level99_hud_test.cpp
     platform/disc_level99_story_sounds_test.cpp

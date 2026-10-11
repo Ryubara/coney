@@ -91,9 +91,11 @@ anim::Vec3 flatUnit(anim::Vec3 v) {
 bool movesAtOnce(ClimbKind kind) { return kind == ClimbKind::Wall || kind == ClimbKind::ShortWall; }
 
 // Pushes a sphere of `radius`, centred `centreHeight` above the feet at `feet`, out of the walls `filter` keeps, up
-// to three times; returns where the feet end, or nothing when the sphere is still in a wall after that.
+// to three times; returns where the feet end, or nothing when the sphere is still in a wall after that. Each push's
+// direction, the wall's normal, is added to `normals` when given.
 std::optional<anim::Vec3> slideOut(const raycast::CollisionMesh& mesh, anim::Vec3 feet, float radius,
-                                   float centreHeight, const WallFilter& filter, std::vector<std::uint16_t>& scratch) {
+                                   float centreHeight, const WallFilter& filter, std::vector<std::uint16_t>& scratch,
+                                   std::vector<anim::Vec3>* normals = nullptr) {
     for (int pass = 0; pass <= kSweepPasses; ++pass) {
         const anim::Vec3 centre = anim::add(feet, anim::Vec3{0.0F, 0.0F, centreHeight});
         const auto push = nearestWallPush(mesh, centre, radius, filter, scratch);
@@ -102,6 +104,9 @@ std::optional<anim::Vec3> slideOut(const raycast::CollisionMesh& mesh, anim::Vec
         }
         if (pass == kSweepPasses) {
             break;
+        }
+        if (normals != nullptr) {
+            normals->push_back(anim::normalise(*push));
         }
         feet = anim::add(feet, *push);
     }
@@ -485,22 +490,34 @@ std::span<const std::uint8_t> Human::passThrough() const {
 }
 
 std::optional<Human::Swept> Human::sweep(const raycast::CollisionMesh& mesh, anim::Vec3 from, anim::Vec3 displacement) {
+    m_contacts.clear();
     // A body that does not move meets nothing.
-    const float length = anim::length(displacement);
-    if (length <= 0.0F) {
+    if (anim::length(displacement) <= 0.0F) {
         return Swept{.feet = from};
     }
-    // The player's walking sphere (0.4704 m for Rembrandt), 0.05 m clear of the feet, against the walls the move goes
-    // into and that are 0.25 m tall or more; each push slides it along that wall and leaves it 0.01 m clear.
-    const float radius = playerWalkingRadius(m_scale);
-    const float centreHeight = playerWalkingCentreHeight(m_scale);
-    const WallFilter filter{.move = displacement,
-                            .skipLow = true,
-                            .excludeMaterials = passThrough(),
-                            .toContact = true,
-                            .keepClear = bodyTuning().contactClear};
-    const anim::Vec3 moved = anim::add(from, displacement);
-    const auto feet = slideOut(mesh, moved, radius, centreHeight, filter, m_nearby);
+    // The walking sphere (0.4704 m for Rembrandt, about 0.35 m for an AI human, whose body +0x60 is 1.0), 0.05 m clear
+    // of the feet, against the walls the move goes into and that are 0.25 m tall or more; each push slides it along
+    // that wall and leaves it 0.01 m clear.
+    const float radius = m_profile.player ? playerWalkingRadius(m_scale) : aiWalkingRadius(m_scale);
+    const float centreHeight = radius + bodyTuning().footGap;
+    WallFilter filter{.move = displacement,
+                      .skipLow = true,
+                      .excludeMaterials = passThrough(),
+                      .toContact = true,
+                      .keepClear = bodyTuning().contactClear};
+    // A wall face the sphere already touches is a contact at fraction 0 (docs/research/characters.md#slopes): the move
+    // loses only its part into the face, in 3D, and nothing pushes the sphere out, so a move into a face leaning back
+    // rises along it and the snap then puts the feet on what is under them. The faces it meets on the way are pushed
+    // to contact below, as before.
+    const anim::Vec3 move = slideAlongTouchedFaces(mesh, anim::add(from, anim::Vec3{0.0F, 0.0F, centreHeight}), radius,
+                                                   displacement, filter, m_nearby, &m_contacts);
+    const float length = anim::length(move);
+    if (length <= kClear) {
+        return Swept{.feet = from};
+    }
+    filter.move = move;
+    const anim::Vec3 moved = anim::add(from, move);
+    const auto feet = slideOut(mesh, moved, radius, centreHeight, filter, m_nearby, &m_contacts);
     if (!feet) {
         return std::nullopt;
     }
@@ -513,11 +530,11 @@ std::optional<Human::Swept> Human::sweep(const raycast::CollisionMesh& mesh, ani
         edgeSlide(mesh, anim::add(moved, anim::Vec3{0.0F, 0.0F, centreHeight}), radius, filter, m_nearby);
     Swept swept{.feet = *feet};
     if (anim::length(sum) >= kClear) {
-        const anim::Vec3 along = anim::scale(displacement, 1.0F / length);
+        const anim::Vec3 along = anim::scale(move, 1.0F / length);
         anim::Vec3 slide = anim::scale(anim::normalise(sum), std::max(length, radius));
         slide = anim::scale(anim::subtract(slide, anim::scale(along, anim::dot(slide, along))), m_stepSeconds);
         WallFilter slideFilter = filter;
-        slideFilter.move = anim::add(displacement, slide);
+        slideFilter.move = anim::add(move, slide);
         const auto slid = slideOut(mesh, anim::add(*feet, slide), radius, centreHeight, slideFilter, m_nearby);
         if (slid) {
             swept = Swept{.feet = *slid, .slide = anim::subtract(*slid, *feet)};
@@ -531,15 +548,16 @@ std::optional<Human::Swept> Human::sweep(const raycast::CollisionMesh& mesh, ani
     bool pushed = false;
     for (int pass = 0; pass < kSweepPasses; ++pass) {
         const std::optional<anim::Vec3> push =
-            (*m_objectPush)(*this, anim::add(swept.feet, anim::Vec3{0.0F, 0.0F, centreHeight}), radius, displacement);
+            (*m_objectPush)(*this, anim::add(swept.feet, anim::Vec3{0.0F, 0.0F, centreHeight}), radius, move);
         if (!push || anim::length(*push) < kClear) {
             break;
         }
+        m_contacts.push_back(anim::normalise(*push));
         swept.feet = anim::add(swept.feet, *push);
         pushed = true;
     }
     if (pushed) {
-        if (const auto out = slideOut(mesh, swept.feet, radius, centreHeight, filter, m_nearby)) {
+        if (const auto out = slideOut(mesh, swept.feet, radius, centreHeight, filter, m_nearby, &m_contacts)) {
             swept.feet = *out;
         }
     }
@@ -623,7 +641,7 @@ void Human::moveOnGround(const raycast::CollisionMesh& mesh) {
             m_velocity.y = 0.0F;
             m_chargeStopped = true;
         } else {
-            keepSlidVelocity(slid, displacement, factor);
+            slideVelocity();
         }
     } else {
         // Blocked: the body stays and its horizontal velocity goes.
@@ -634,17 +652,21 @@ void Human::moveOnGround(const raycast::CollisionMesh& mesh) {
     snapToGround(mesh, feet);
 }
 
-void Human::keepSlidVelocity(anim::Vec3 slid, anim::Vec3 displacement, float factor) {
-    // Only a move the walls changed: the velocity becomes the move the sweep allowed, never longer than it was, so the
-    // next update's speed starts from what the wall left of it.
-    const anim::Vec3 change{slid.x - displacement.x, slid.y - displacement.y, 0.0F};
-    if (anim::length(change) < kClear || factor <= 0.0F) {
+void Human::slideVelocity() {
+    // Each contact takes from the velocity its part into the wall, in 3D, only when it goes in; the z this leaves goes
+    // with the next update's (docs/research/characters.md#slopes, step 3). Along a wall the velocity keeps its part
+    // along it however far the sweep pushed the body out, so a body the snap lowers into a face that leans back is not
+    // slowed by being pushed out of it again.
+    // Only a player's body has the flag (`0x400`) that writes the slid velocity back; an AI asks for its full speed
+    // again each update, so a slide never brakes it (docs/research/physics.md#sweep).
+    if (!m_profile.player) {
         return;
     }
-    const float before = std::hypot(m_velocity.x, m_velocity.y);
-    anim::Vec3 velocity{slid.x / (factor * m_stepSeconds), slid.y / (factor * m_stepSeconds), 0.0F};
-    if (const float after = anim::length(velocity); after > before && after > 0.0F) {
-        velocity = anim::scale(velocity, before / after);
+    anim::Vec3 velocity{m_velocity.x, m_velocity.y, 0.0F};
+    for (const anim::Vec3 normal : m_contacts) {
+        if (const float into = anim::dot(velocity, normal); into < 0.0F) {
+            velocity = anim::subtract(velocity, anim::scale(normal, into));
+        }
     }
     m_velocity.x = velocity.x;
     m_velocity.y = velocity.y;

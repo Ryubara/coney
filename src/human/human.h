@@ -634,15 +634,17 @@ class Human final : public Holdable {
     void moveOnGround(const raycast::CollisionMesh& mesh);
     // Moves a falling human, landing on a floor it passed on the update before.
     void moveInAir(const raycast::CollisionMesh& mesh);
-    // Keeps the move the walls left (`slid`, against the asked `displacement` at slope `factor`) as the velocity, so a
-    // wall met at a steep angle brakes the human (docs/research/characters.md#walls).
-    void keepSlidVelocity(anim::Vec3 slid, anim::Vec3 displacement, float factor);
+    // Slides the velocity along the walls the last sweep met (m_contacts): each takes the velocity's part into it, so a
+    // wall met at a steep angle brakes the human (docs/research/characters.md#walls, #slopes).
+    // @orig 0x0033d870 Vec_RemoveNormalPart (unknown)
+    void slideVelocity();
     // Where a walking sweep ends: the feet, and the part of the move from them that the corner slide made.
     struct Swept {
         anim::Vec3 feet;
         anim::Vec3 slide{};
     };
-    // Sweeps the walking body from the feet at `from` by `displacement`, sliding off walls and round a corner its walls
+    // Sweeps the walking body from the feet at `from` by `displacement`, sliding along a wall face it already touches
+    // (rising along one that leans back, docs/research/characters.md#slopes), off walls and round a corner its walls
     // name; returns where it ends, or nothing when it is still blocked after three passes.
     // @orig 0x0033e278 PhysicsBody_Sweep (unknown)
     [[nodiscard]] std::optional<Swept> sweep(const raycast::CollisionMesh& mesh, anim::Vec3 from,
@@ -812,6 +814,7 @@ class Human final : public Holdable {
     std::vector<ObjectTarget> m_objectTargets; // the breakable objects square may strike
     std::optional<ClimbProbe> m_climbProbe;
     std::vector<std::uint16_t> m_nearby; // scratch for the wall test
+    std::vector<anim::Vec3> m_contacts;  // the normals of the walls the last walking sweep slid along, for the velocity
 };
 
 } // namespace coney::human

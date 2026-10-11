@@ -180,6 +180,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] std::span<human::TargetHuman* const> targets() const { return m_targetPointers; }
     /// The AI fighters.
     [[nodiscard]] const ai::AiHumans& fighters() const { return *m_ai; }
+    /// The AI fighters, to steer: a disc test gives one an order as a script would.
+    [[nodiscard]] ai::AiHumans& fighters() { return *m_ai; }
     /// Player 1's throw aim (docs/research/objects.md#throws).
     [[nodiscard]] const combat::ThrowAimState& throwAim() const { return m_throwAim; }
     /// Player 1's lock pick under way; null when none runs (docs/research/crimes.md#lockpick).
