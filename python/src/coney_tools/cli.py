@@ -26,6 +26,7 @@ from coney_tools import (
     trace_cli,
     wad_cli,
     workspace,
+    workspace_clean,
     workspace_fetch,
     xbox_cli,
 )
@@ -143,7 +144,8 @@ def _build_parser() -> argparse.ArgumentParser:
     config = groups.add_parser("config", help="local configuration (coney.local.toml)")
     config.add_subparsers(dest="command", required=True).add_parser("show", help="show the configured paths")
     group = groups.add_parser("workspace", help="the local workspace beside the checkout (docs/guides/workspace.md)")
-    init = group.add_subparsers(dest="command", required=True).add_parser(
+    workspace_commands = group.add_subparsers(dest="command", required=True)
+    init = workspace_commands.add_parser(
         "init", help="create the workspace folders, clone, write coney.local.toml and check the prerequisites"
     )
     init.add_argument("--workspace", type=Path, help="the workspace folder (default: found from the checkout)")
@@ -156,6 +158,34 @@ def _build_parser() -> argparse.ArgumentParser:
         help="also download a research tool at its pinned version (repeatable; never a BIOS or game files)",
     )
     init.add_argument("--dry-run", action="store_true", help="print the steps without doing any")
+    clean = workspace_commands.add_parser(
+        "clean", help="remove merged worktrees and old build folders (a dry run unless --apply)"
+    )
+    clean.add_argument("--workspace", type=Path, help="the workspace folder (default: found from the checkout)")
+    clean.add_argument("--apply", action="store_true", help="act; without it, only report what would be done")
+    clean.add_argument(
+        "--build-hours",
+        type=float,
+        default=workspace_clean.DEFAULT_BUILD_HOURS,
+        help="delete build/ folders of worktrees untouched this many hours (default: %(default)g)",
+    )
+    clean.add_argument(
+        "--worktree-hours",
+        type=float,
+        default=workspace_clean.DEFAULT_WORKTREE_HOURS,
+        help="remove merged worktrees only when untouched this many hours (default: %(default)g)",
+    )
+    clean.add_argument("--fetch", action="store_true", help="git fetch origin main first, so merges are current")
+    disk = workspace_commands.add_parser(
+        "disk", help="print the free space of the workspace drive; exit 1 below --min-gb"
+    )
+    disk.add_argument("--workspace", type=Path, help="the workspace folder (default: found from the checkout)")
+    disk.add_argument(
+        "--min-gb",
+        type=float,
+        default=workspace_clean.DEFAULT_MIN_GB,
+        help="the free space in GB below which the exit code is 1 (default: %(default)g)",
+    )
     mcp = groups.add_parser("mcp", help="the debugging servers that .mcp.json registers for agents")
     serve = mcp.add_subparsers(dest="command", required=True).add_parser(
         "serve", help="run a server found through coney.local.toml, over stdin and stdout"
@@ -670,6 +700,12 @@ def _run(args: argparse.Namespace) -> int:
         return trace_cli.run_diff(args.original, args.coney, args.scenario, args.columns, args.tolerance, options)
     if args.group == "config":
         return _config_show()
+    if args.group == "workspace" and args.command == "clean":
+        return workspace_clean.run_clean(
+            Path.cwd(), args.workspace, args.apply, args.build_hours, args.worktree_hours, args.fetch
+        )
+    if args.group == "workspace" and args.command == "disk":
+        return workspace_clean.run_disk(Path.cwd(), args.workspace, args.min_gb)
     if args.group == "workspace":
         return workspace.run_init(Path.cwd(), args.workspace, args.repo_url, args.fetch, args.dry_run)
     if args.group == "mcp":

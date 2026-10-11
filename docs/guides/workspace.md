@@ -164,7 +164,49 @@ A worktree has no `coney.local.toml` of its own, and needs none: every tool run 
 and `tools/start-ghidra-mcp.ps1`) finds the main checkout through git's common dir, reads its `coney.local.toml` and
 resolves the relative paths from the main checkout, so `../../game` is the same `game/` folder from every worktree.
 A worktree that does hold its own copy uses that one instead, with paths relative to the worktree. Remove a
-worktree when its branch is merged: `git worktree remove ../../worktrees/coney/<branch>`.
+worktree when its branch is merged: `coney-tools workspace clean` does it for you ([Cleanup](#cleanup)).
+
+## Cleanup and free space {#cleanup}
+
+A build of the engine is about 4 GB per preset (`build/dev`, `build/ci`) and each track has a worktree, so unremoved
+worktrees fill a drive quickly: once about ninety of them left 3 GB free and broke builds. Two commands keep that from
+happening; run them from the main checkout or any worktree.
+
+```sh
+uv run --project python coney-tools workspace clean [--apply] [--build-hours N] [--worktree-hours N] [--fetch]
+uv run --project python coney-tools workspace disk [--min-gb N]
+```
+
+**`workspace clean`** is a dry run until `--apply` is given. It lists every worktree under `worktrees/coney/` and
+what it would do, then the bytes it would reclaim; with `--apply` it acts and prints the free space before and after.
+
+* **Removes a worktree** (`git worktree remove`, then its local branch) when all of these hold: no uncommitted
+  changes (untracked files count), no `.coney-busy` file, not locked by git, not the folder you run it from, untouched
+  for `--worktree-hours` (default 1, so a branch just created from `main` is not taken for a merged one), and every
+  commit is merged. A branch is merged when `origin/main` contains it, or when `gh pr list --state merged --head
+  <branch>` shows a pull request whose head is the branch's tip or a later commit; squash merges leave the branch's
+  commits out of `main`, so `git branch --merged` alone would keep them all. Without `gh` (or when it fails), only
+  what `origin/main` contains counts, so run `git fetch` (or pass `--fetch`) first; the rest is kept, never guessed.
+* **Deletes `build/`** (generated, ignored by git) from every worktree that is not busy and has not been touched for
+  `--build-hours` (default 12): the newest modification time of its tracked and untracked files, of git's `HEAD` for
+  it and of the build folder and the entries one and two levels in (a running build writes there). Sources are never
+  touched this way, so it also applies to a worktree with uncommitted or unmerged work.
+* **Never touches** the main checkout, a worktree outside `worktrees/`, or folders git does not know as worktrees (it
+  only names them; the loose files and logs in `worktrees/coney/` are for you to delete). A worktree whose folder is
+  gone has its record pruned.
+* Read-only files (git's packs, some tools' output) are cleared before deleting, and long Windows paths work.
+
+**The busy file.** An agent creates an empty `.coney-busy` in its worktree root as it starts and deletes it when it is
+done (`touch .coney-busy`; it is in `.gitignore`). While it exists, `clean` leaves that worktree and its `build/`
+entirely alone, however old its files look: use it for any stretch where files may not change for hours (a long
+build, a test sweep, a wait on the emulator). A file left behind by a dead agent protects its worktree for good;
+delete it once you know the work is over.
+
+**`workspace disk`** prints the free space of the workspace's drive and exits 1 below `--min-gb` (default 30), for
+hooks and scripts (`coney-tools workspace disk || coney-tools workspace clean --apply`). The coordinator runs
+`clean --apply` after every merge round, and agents delete their own `build/` when they finish a unit
+([Briefing](agents.md#briefs)). `scratch/` is not cleaned automatically: prune built docs sites, logs and captures
+there yourself (below).
 
 ## Scratch
 
