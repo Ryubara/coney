@@ -413,7 +413,10 @@ code keeps to these rules:
   a playhead, a fade) as an `Interpolated<T>` (`src/core/interpolation.h`): `commit()` at the start of each update,
   change `current()`, and in `render()` blend `previous()` and `current()` with `lerp`, `lerpAngle` (the short way
   round) or `lerpLooping` (a looping playhead); a rotation is blended as a rotation, never as a matrix. Use `reset()`
-  for a jump that must not be blended (a teleport, a new clip). Discrete state (a menu's selection, text, the GUI's
+  for a jump that must not be blended (a teleport, a new clip). A set of things that come and go (world objects,
+  doors, icons) keeps a `world_objects::DrawnPoses` instead: `commit()`, then `record()` each one's pose in the
+  update, and `drawn()` in `render()`; what is new or jumped is drawn unblended
+  ([Drawing between steps](../research/rendering.md#interpolation)). Discrete state (a menu's selection, text, the GUI's
   sprite list for the step) is drawn as the newest step has it. Every helper returns the newest value exactly at
   alpha 1, so lockstep draws exactly what the simulation holds.
 - **Pads are read once per step**, by the stack, before the update. The platform's input source keeps every press

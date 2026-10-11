@@ -53,6 +53,7 @@
 #include "world/debug_camera.h"
 #include "world/sector_budget.h"
 #include "world_objects/cars.h"
+#include "world_objects/drawn_poses.h"
 #include "world_objects/hats.h"
 #include "world_objects/level_objects.h"
 #include "world_objects/lock_pick.h"
@@ -61,6 +62,7 @@
 #include "world_objects/object_list.h"
 #include "world_objects/object_tasks.h"
 #include "world_objects/pickups.h"
+#include "world_objects/spinning_icons.h"
 
 namespace rw {
 struct Texture;
@@ -538,9 +540,21 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     void stepGlints(const WorldView& view, int ticks);
     // The health rings' step: player 1 and his target, the triggers from `pad`, the camera's heading from `view`.
     void stepRings(const Pad& pad, const WorldView& view, std::uint64_t nowMs);
-    // Draws this step's world objects (lit as objects) and the object in player 1's hand at `snapshot`'s pose
-    // (docs/research/objects.md#held).
-    void drawWorldObjects(const human::PlayerSnapshot& snapshot);
+    // Records where this step's world objects and doors are, for render() to blend from (after stepWorldObjects()).
+    void recordDrawnPoses();
+    // One spinning icon drawn this step: the human wearing it, its model's name and its pose.
+    struct IconDraw {
+        const human::Human* human = nullptr;
+        std::string name;
+        world_objects::IconPose pose;
+    };
+    // The spinning icons over the humans that wear one, as of the HUD's newest step.
+    [[nodiscard]] std::vector<IconDraw> iconDraws() const;
+    // Records where this step's spinning icons are, for render() to blend from (after the HUD's step).
+    void recordIconPoses();
+    // Draws the world objects (lit as objects) `alpha` of the way from the step before to the newest, and the object
+    // in player 1's hand at `snapshot`'s pose (docs/research/objects.md#held).
+    void drawWorldObjects(const human::PlayerSnapshot& snapshot, float alpha);
     // Where object `held` hangs in player 1's hand at `snapshot`'s pose; nothing when it is not a record in the hand
     // with a pick-up clip's take event (docs/research/objects.md#held).
     [[nodiscard]] std::optional<world_objects::WorldPose> heldPose(double held,
@@ -703,6 +717,10 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     world_objects::SpawnRecords* m_records = nullptr;
     const world_objects::ObjectTypes* m_objectTypes = nullptr;
     world_objects::ObjectTasks m_objectTasks;
+    // The world objects' and doors' poses at the last two steps, by their draw id, and the spinning icons' by their
+    // human, for a render between steps (docs/research/rendering.md#interpolation).
+    world_objects::DrawnPoses<double> m_drawnPoses;
+    world_objects::DrawnPoses<const human::Human*> m_iconPoses;
     effects::Triglints m_glints;
     world_objects::ObjectBodies m_objectBodies; // this step's world-object bodies
     combat::ThrowAimState m_throwAim;           // player 1's throw aim
