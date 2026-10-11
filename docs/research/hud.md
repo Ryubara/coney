@@ -2007,10 +2007,10 @@ runtime view matrix below; no capture of the dial in the original.
 **The pins**: three `BaseWidget`s, `hud_minigames` rectangle 11 (a brass lock cylinder), grey 191, at the centre
 point above, sizes 0.19, 0.152 and 0.114 overlay units at depth 1 (0.19 × (1 − 0.2 i) × the pins' factors; square
 in the default mode), depths 8,000, 9,000, 10,000, all on one centre. Each turns about its own centre (anchor 0).
-Only the current pin turns: its angle (`+0x454`, radians, starting at 3.14, below) changes by **0.1 × its speed** per
-update (speeds 1, 2, 3 by default), up or down by its direction byte, wrapped into 0-2π; positive angles turn
-clockwise on screen ([The stereo panel](#stereo-layout)). Drawn while the dial is shown and a pin is left. No text.
-The start angle is
+Only the current pin turns:
+its angle (`+0x454`, radians, starting at 3.14, below) changes by **0.1 × its speed** per update (speeds 1, 2, 3 by default),
+up or down by its direction byte, wrapped into 0-2π; positive angles turn clockwise on screen
+([The stereo panel](#stereo-layout)). Drawn while the dial is shown and a pin is left. No text. The start angle is
 the constant **3.14** (`0x0050d6e4` = `0x4048f5c3`, written by `LockPickDial_Draw` and used by `LockPickDial_Show`
 and the miss in `LockPickDial_Judge`), not π, confirmed (code); at 3.14 every pin's notch points straight down. A pin
 held at 4.71 shows its notch at 9 o'clock, so positive angles turn clockwise and the notch's screen angle, clockwise

@@ -1,16 +1,15 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers twelve groups:
-`wad`, which reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**,
-[`extract`](#extract), which turns every asset of the disc into open formats, [`audio`](#audio),
-which reads its sound data, [`movies`](#movies), which reads the movies' headers, [`xbox`](#xbox), which
-reads the Xbox disc's archive, [`progress`](#progress), which keeps the progress tables of the README and the docs
-current, [`natives`](#natives), which renders the script-binding masterlist, [`refs`](#refs), which builds the
-game reference lists, [`missions`](#missions), which builds the mission status pages, and [`pcsx2`](#pcsx2) and
-[`trace`](#trace), which record the original's per-update traces in PCSX2 and compare them with Coney's, and
-[`mcp`](#mcp), which starts the debugging servers for agent tools.
-Everything is read in place and streamed, so the 1.4 GB WAD is never loaded into memory. The format is described in
-[WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers thirteen groups:
+[`check`](#check), which runs what CI would fail on for the files a change touched, `wad`, which reads the game's
+archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**, [`extract`](#extract), which turns every asset of
+the disc into open formats, [`audio`](#audio), which reads its sound data, [`movies`](#movies), which reads the movies'
+headers, [`xbox`](#xbox), which reads the Xbox disc's archive, [`progress`](#progress), which keeps the progress tables
+of the README and the docs current, [`natives`](#natives), which renders the script-binding masterlist, [`refs`](#refs),
+which builds the game reference lists, [`missions`](#missions), which builds the mission status pages, [`pcsx2`](#pcsx2)
+and [`trace`](#trace), which record the original's per-update traces in PCSX2 and compare them with Coney's, and
+[`mcp`](#mcp), which starts the debugging servers for agent tools. Everything is read in place and streamed, so the 1.4
+GB WAD is never loaded into memory. The format is described in [WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
 
 Run the commands from inside the checkout:
 
@@ -405,7 +404,8 @@ recorded (only while that process is still a PCSX2) and drops the claim; another
 `status` lists every copy with its holder, the time, the port, whether PCSX2 runs (by pid or port) and stale claims;
 it warns about copies whose ini has `[InputSources] SDL = true`. The copies are the `pcsx2*` folders with an
 `inis/PCSX2.ini` under `pcsx2_root` (default: the main checkout), the claims are under `pcsx2_claims_dir` (default:
-`pcsx2-claims/` in the scratch folder, beside the main checkout's `../../scratch`).
+`pcsx2-claims/` in the shared scratch folder, the main checkout's `../../scratch`, whatever a worktree's
+`scratch_dir` says, so every worktree sees the same claims).
 
 ```sh
 uv run --project python coney-tools pcsx2 keys --agent ID --copy NAME KEY [KEY...] [--hold-ms N] [--gap-ms N]
@@ -506,6 +506,56 @@ events by count. `--from "kind name"` starts both logs at their first such event
 different points of a mission; `--labels` names hashed texts by a JSON object of label to text (a string table read
 from your disc, kept in scratch). It exits with 0 when Coney has every compared event in order, 1 when not.
 [Differential playthroughs](research-workflow.md#differential-playthroughs) explains the method.
+
+## check {#check}
+
+```sh
+uv run --project python coney-tools check changed [--base origin/main] [--build-dir build/dev] [--only STEP ...]
+    [--skip STEP ...] [--jobs N] [--clang-tidy PATH]
+```
+
+The local gate for the files a change touched ([Testing](testing.md#local-gate)): run it in your worktree before you
+hand a unit over. The changed files are everything added or modified since your branch left `--base` (the merge
+base), committed or not, with untracked files. Each step runs only when the change touches what it checks, prints one
+line, and any failure makes the command exit 1:
+
+| Step | Runs when | What it does |
+| --- | --- | --- |
+| `repo` | always | `repo check`: the agent pointer files |
+| `pre-commit` | a file changed | `pre-commit run --files` on the changed files: clang-format, ruff, whitespace, the 512 KB guard, the real-clock rule |
+| `clang-tidy` | C++ under `src/` or `tests/` changed | clang-tidy on the files CI's pull-request job would check, with the compiler warnings the GCC and Clang builds enable |
+| `docs` | `docs/`, `research/`, `mkdocs.yml`, the MkDocs hooks or `requirements-docs.txt` changed | `mkdocs build --strict` into a throwaway folder |
+| `python` | `python/` changed | `pytest python/tests` and `mypy python/src python/tests` |
+
+**Which files clang-tidy checks.** The same rules as CI (`.github/scripts/tidy-files.sh`): a changed `.cpp` itself, a
+changed header through every `.cpp` that includes it, directly or through other headers. A test keeps the two in
+agreement. When the build or tidy setup changed (`CMakeLists.txt`, `cmake/`, `CMakePresets.json`, `.clang-tidy`, the
+build workflow) CI checks every file, an hour's work; the command says so and checks the changed ones only.
+
+**How it runs clang-tidy.** With the repository's `.clang-tidy` and the `compile_commands.json` of `--build-dir`
+(every preset writes one; configuring is enough, no build, and a stale or missing entry is reported with the
+`cmake --preset dev` to rerun). It finds clang-tidy 19 as `clang-tidy-19` on `PATH`, in Homebrew's `llvm@19`, in the
+Visual Studio LLVM folder that `vswhere` names, or as `clang-tidy` on `PATH` or in Homebrew's `llvm` (the first of
+version 19 wins; another version is used with a note), or from `--clang-tidy`. A `ccache` or `sccache` launcher in
+the database is removed from the copy clang-tidy reads, as CI's job does. The compile database of an MSVC build makes
+clang-tidy run in clang-cl mode, where MSVC's `/W4` misses what GCC and Clang reject (a designated initializer that
+leaves a field out, `-Wmissing-designated-field-initializers`). So the command adds `-Wall -Wextra -Wpedantic` (the
+flags of `cmake/coney_target.cmake`, passed as `/clang:-W...` in that mode) and lets the compiler's diagnostics
+through the `-*` of `.clang-tidy`; with the config's `WarningsAsErrors` they fail like CI's `-Werror`. `--jobs` runs
+that many files at once (default: half the cores).
+
+**Linux and macOS: use a Clang database.** On Windows the `dev` preset uses MSVC and the command adapts. On Linux the
+default compiler is GCC, whose database can carry flags clang-tidy rejects, and CI tidies a Clang 19 build. The
+command notes a GCC database; configure a Clang one once, beside `build/dev`, and point the command at it:
+
+```sh
+CC=clang-19 CXX=clang++-19 cmake --preset dev -B build/tidy   # macOS: the Apple or Homebrew clang
+uv run --project python coney-tools check changed --build-dir build/tidy
+```
+
+`--only` and `--skip` take step names, for a rerun of the one that failed. The command prints at most 40 lines of a
+failing step; run the step's tool by hand for the rest. What stays CI's: warnings only GCC emits, macOS, the
+sanitizers and the full clang-tidy pass (see [the local gate](testing.md#local-gate)).
 
 ## mcp {#mcp}
 
