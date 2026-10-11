@@ -1313,10 +1313,12 @@ only) are inferred; scene data is read from the disc's `l80_c5` records (numbers
   agreeing with this. Which object a `0x36` takes is not traced (the start sets only the first type-9 target);
   inferred from the values that it is the slot named.
 - **After the scene** (`EndSnowCowboyScene`): `ObjDestroy` on `dyn_cowboy`, `dyn_snow`, `dyn_warr_cb` and the four
-  cuffs (a held object is let go first, [ObjDestroy](../references/bindings/world.md#objdestroy)); shadows back on; Snow and
+  cuffs (a held object is let go first, [ObjDestroy](../references/bindings/world.md#objdestroy)); shadows back on; Snow
+  and
   Cowboy teleported to `fArrestedSnow` / `fArrestedCowboy`, arrested (`HuSetArrested`), made Warriors; then
   **`RemoveGang(GangSnowCowboyCops)`** (`GangDelete`): the four cops are destroyed at once **with their held objects**
-  ([GangDelete](../references/bindings/gang.md#gangdelete)). So the three batons still in a cop's hand go with the cops, and the
+  ([GangDelete](../references/bindings/gang.md#gangdelete)). So the three batons still in a cop's hand go with the cops,
+  and the
   only baton left is `dyn_baton01` on the floor, gone when its removal time runs out (about 30 s after frame 279,
   some 5-6 s after the scene's 33.7 s end; inferred from the drop's timer). The script never destroys a baton itself.
 - **A human in a grab is skipped.** The scene's start leaves out a bound human that is grabbing, grabbed, mounting or
