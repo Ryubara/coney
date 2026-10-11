@@ -1214,6 +1214,20 @@ set by `Cam_Follow_StaticInit` (`0x00134ab0`):
 While the button is held the framing rules and auto-follow are off (update step 9) and the lag is skipped until the
 view is pulled out (step 18).
 
+**R1 at a run looks behind and does not block.** The reverse button is R1, which also blocks
+([Combat](combat.md#dispatch)), but the block's fight test `Human_CanFight` (`0x00224f28`) fails while the human
+runs or sprints free: gait `+0x1a8` 4 (`0x00223a60`) or 5 (`0x00223a98`) with record `+0x08` clear. Confirmed
+(code). So at a run R1 leaves the gait, the speed and the run clip alone and only turns the view; the block starts
+on the first update the gait drops below 4 with R1 still held. Confirmed (runtime), PCSX2 2.9.94, scenario
+`run_block` (level99's street, slot 1; stick 98 % straight up, R1 held at the run twice, then held while the stick
+went back to rest):
+
+| Update | Gait, speed | Clip, state | Camera |
+| --- | --- | --- | --- |
+| R1 pressed at the run (51) | 4, 7.80 m/s, unchanged for the 40 held updates | 410 (the run), state 0, record `+0x08` 0 | `+0x458` = 0 (pad 0) and `+0x455` = 1 on the first held update; the yaw jumped from 90.9° to −89.0° that update; the band's near edge (`+0x32c`) 4.8 → 6.1 m |
+| R1 let go (91) | 4, 7.80 m/s | 410 | `+0x458` back to 255, `+0x455` 0, the yaw back to 91.0° at once, the near edge 4.8 m |
+| The stick to rest with R1 held (141) | 0, 0 m/s that update | **606** `BLOCK_SUSTAIN`, state `0x8001`, record `+0x08` `0x80000` for 5 updates | the look ends that update (`+0x458` 255, the yaw back behind) |
+
 ### Ledges {#ledge}
 
 When the player walks off an edge, the camera turns to show the drop. Confirmed (code):
@@ -3259,6 +3273,11 @@ position, and `CamSetFollowPos` puts the follow camera at a point at once.
 
 ## Open questions
 
+- **R1 at a run: block or look-behind?** (answered, [Looking behind](#reverse)): the block's fight test fails at a
+  run or sprint, so R1 keeps gait 4, the 7.80 m/s and the run clip and turns the view; the block starts the update
+  the gait drops below 4. Confirmed (code) at `0x00224f28`; confirmed (runtime).
+- **The look-behind's band** at a run: the near edge `+0x32c` read 6.1 m while R1 was held (from 4.8), not the 8.5 m
+  `0x0012d7a8` is given; which field holds the 8.5 m is open.
 - **The circling rate** (answered): the original circles at about 190°/s at a run and 143°/s at a walk; the 122°/s
   and 127°/s first given were the rule's share ([In the street](#street)). The rule's `a` is measured from the
   camera's orientation, which faces the aim point. Measured that way, the formula matches the turn exactly.
