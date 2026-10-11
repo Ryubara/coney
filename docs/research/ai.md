@@ -1835,7 +1835,8 @@ them grabs.
 - **The warning.** `+0x200` is a **count** of attack warnings since the last update: the default event handler
   (`0x00292d80`) adds one for each event `0x10`, as do `0x002ff898`, `0x00302ff0` and `0x00304070`, and
   `Brain_Update` clears it (`0x0028f914`). Event `0x10` comes from `0x0021d5c0`, called by `Attack_Start` (call at
-  `0x0026267c`) and the square path (`0x00287594`), which sends it to a human only if `0x002223e8` passes: within the
+  `0x0026267c`) and the square path (`0x00287594`), each time to the attack's target alone ([Combat: attack
+  warnings](combat.md#attack-warnings)), which it reaches only if `0x002223e8` passes: within the
   brain's range `+0x130` and its **field of view** `+0x12c` (half-angle, radians), or 2 m when the attacker's brain
   `+0x2d4` is set, and then a line of sight (`0x00222288`). Confirmed (code); the counting confirmed (runtime).
 - **When** (`Goal_TryBlock`, `0x0029f098`): only when the brain's `+0x200` is not 0, that is when an attack on the

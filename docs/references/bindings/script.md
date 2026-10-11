@@ -333,7 +333,7 @@ SetMsgHandler(object, message, callback)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `object` | number, truncated to an unsigned integer | Handle of the object or human whose messages to watch. |
-| 2 | `message` | number, truncated to an integer | Message number, 0-25 (for example 3 when a human enters a volume box or trigger sphere, 4 when it leaves, 8 when an AI arrives at a flag, 18 for a death); 0 also clears the object's interaction prompt first (see SetMsgHandlerEx). |
+| 2 | `message` | number, truncated to an integer | Message number, 0-25 (for example 3 when a human enters a volume box or trigger sphere, 4 when it leaves, 8 when an AI arrives at a flag, 18 for a death); 0 also clears the object's interaction prompt first, whatever the callback (see SetMsgHandlerEx; confirmed at runtime at the gym). |
 | 3 | `callback` | string | Name of the Lua function to call (dotted names allowed), or nil to remove the handler. |
 
 **Returns** nothing.
@@ -366,16 +366,17 @@ SetMsgHandlerEx(object, message, callback, prompt, prompt2)
 | 2 | `message` | number, truncated to an integer | Message number; 0 is the interaction (the scripts pass 0). |
 | 3 | `callback` | string | Lua function name to call, or nil. |
 | 4 | `prompt` | string | Text of the on-screen prompt shown when the player can interact (a string, often a `GSTRING` entry); nil or empty for none. |
-| 5 | `prompt2` | string | A second text, kept in the context record's `+0x14`; what reads it is not traced. |
+| 5 | `prompt2` | string | A second text, kept in the context record's `+0x14` and shown in the hint box while the player can interact; given alone (prompt nil), it still makes the record. |
 
 **Returns** nothing.
 
 Like SetMsgHandler but also gives the object an interaction prompt, the 'press to talk' text shown when the player is
 close; used for doors, bouncers and tags.
 
-**Notes.** With message 0 and a non-empty prompt the object's prompt is set (vtable `+0x124`); otherwise its prompt is
-cleared (`+0x12c`). On a world object the prompt is a kind-1 context record (1.1 m), which triangle hands to the
-message-0 callback ([Scripts](../../research/scripting.md#message-handlers)).
+**Notes.** With message 0 and a callback, a non-empty prompt or a non-empty second text sets the object's prompt (vtable
+`+0x124`; with the prompt nil the record has no prompt and only the second text shows); a nil callback, or both texts
+nil or empty, clears it (`+0x12c`). On a world object the prompt is a kind-1 context record (1.1 m), which triangle
+hands to the message-0 callback ([Scripts](../../research/scripting.md#message-handlers)).
 
 - **Evidence:** confirmed (code) at `0x00386168`; detail: traced
 - **Wrapper** `0x0036d348` (registered by `RegisterBindings`); **calls** `0x00386168`

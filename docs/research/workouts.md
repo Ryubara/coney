@@ -60,9 +60,12 @@ A time of 0 means no clock (rank 1 of the cycle games). Every station call passe
    triangle within the action distance, which `vbWorkout_01`'s enter and leave handlers set to 1.8 m and back to
    1.1 m (`CfgActionDistance(1, ...)`). Confirmed (code); confirmed (runtime): the hint shows beside each station.
 2. **`worksetup.StartWorkout(flag, human)`**, for a player only: `workFlag` = the flag's index; clears the flag's
-   handler; `HuDropWeapon`; when a Warrior occupies `fWorkout[k]`, swaps him to `fWatchWork[k]` (on difficulty 3 he
-   also drops the bat he was given); the player says voice line 201 (`workout`); `DeactivateWarchief`; the player's
-   message 1 (damage) goes to `worksetup.PlayerTakesDamage`; `fWorkout[k]`'s message 8 (arrival) to
+   handler with `SetMsgHandler(flag, 0, nil)`, which also **unregisters the flag's context record**
+   (`Script_SetMsgHandler`, `0x00386298`, calls the object's `+0x12c` for message 0 whatever the callback; a flag's is
+   `Flag_UnregisterContext`, `0x00415d90`), so the station's prompt and hint leave the screen at once;
+   `HuDropWeapon`; when a Warrior occupies `fWorkout[k]`, swaps him to `fWatchWork[k]` (on difficulty 3 he
+   also drops the bat he was given); the player says voice line 201 (`workout`); `DeactivateWarchief`;
+   the player's message 1 (damage) goes to `worksetup.PlayerTakesDamage`; `fWorkout[k]`'s message 8 (arrival) to
    `worksetup.DoWorkout`; **`GoalMoveToFlag(player, fWorkout[k], 2, 0, 0, 0.5, 0, true, false)`** (walk, radius
    0.5 m, face the flag's heading); `ScheduleFunc("worksetup.TimeOut", 5000)`; loads `level95_workout` with
    `workout.Setup` as its callback (or calls `workout.Setup` when it is loaded). Confirmed (code).
@@ -74,8 +77,10 @@ A time of 0 means no clock (rank 1 of the cycle games). Every station call passe
 4. **`workout.StartWorkout`**: flushes `worksetup.TimeOut`; `HuSetPushable(player, false)`; the player's damage
    message 1 to `workout.PlayerTakesDamage` (which times the workout out); `rankPassed` =
    `worksetup.BuildWorkoutMessage(type, false)` (the rank being attempted), capped at `checkpoint`; gives
-   `fWorkout[type]` a message-0 handler whose hint is the "press triangle to quit" text, its function
-   `workout.ForceQuit` for the bag and `workout.NoHandler` (nothing) for the cycle games; cuts to `workout.cam`
+   `fWorkout[type]` a message-0 handler with `SetMsgHandlerEx(fWorkout[type], 0, f, nil, hint)`: no prompt, only the
+   second text (the station's name, rank and the "press triangle to quit" line), its function `f`
+   `workout.ForceQuit` for the bag and `workout.NoHandler` (nothing) for the cycle games
+   ([Triangle quits the bag](#bag-quit)); cuts to `workout.cam`
    (`curCam` = 1); **`TeleportToFlag(player, fWorkout[type], -1)`** (the player stands exactly on the flag, facing its
    heading); calls the station's start function (`CalloutCombos01` for the bag, `StartCycleGame` for the others).
    Confirmed (code).
@@ -229,12 +234,53 @@ No `HuWorkout`: the player fights the bag human with his own attacks. Confirmed 
 - **The clock**: `W_SetStopWatch(timeTable[rank] × 1000, 0, "workout.WorkoutTimeOut")`, shown with a label. At 0,
   without `DelayedWin`: `TimedOut`, the quit handler cleared, and for the bag `WorkoutTimeOut2` 600 ms later
   (`ForceQuit`); for a cycle game `HuStopWorkout(player)`. Damage to the player does the same.
-- **Triangle** quits through `fWorkout[1]`'s message-0 handler (`workout.ForceQuit`).
+- **Triangle** quits through `fWorkout[1]`'s message-0 handler (`workout.ForceQuit`): [below](#bag-quit).
 
 Confirmed (runtime): with triangle pressed beside the bag the game started (locked camera, the clock counting down from
 0:26, the counter `0/10`, the called-out buttons over the bag); square pressed every 9 updates gave the tutorial
 callback anim ids 12, 16, then 19 or 20, about every 11 updates, three per chain; with the combo called out being
 `X1`, `XS2`, no combo was landed.
+
+### Triangle quits the bag {#bag-quit}
+
+`SetMsgHandlerEx` with a nil prompt does **not** clear the context record when the second text is set: the binding
+(`Script_SetMsgHandlerEx`, `0x00386168`) clears it (`+0x12c`) only when the callback is nil, or when both the prompt
+and the second text are nil or empty; otherwise it registers it (`+0x124`, `Flag_RegisterContext` `0x00415d40`, once
+per flag) with the prompt nil and the hint at `+0x14` (`ContextActions_Register`, `0x00417ca0`, kind 1). So
+`fWorkout[1]` gets a **kind-1 record with no prompt**. Every update the player's record is picked as for any other
+([Crimes: triangle](crimes.md#triangle)): he stands on the flag (the reach was raised to 1.8 m by the gym's volume
+box), so it passes. Then:
+
+- **The HUD** (`HUD_Update`, `0x001af010`): a record with a second text queues it in the hint box at priority 0 when
+  it changes, and the prompt widget takes the record's `+0x10`, which is null, so `HUD_ClearActionPrompt` runs: **no
+  prompt over the bag, the quit hint in the hint box** (bottom left: the station's name, `Rank: n/10` and the quit
+  line). Confirmed (code), and at runtime.
+- **Triangle** reaches `ContextAction_Use` (`0x0024d530`), which for kind 1 sends the flag message 0
+  (`Flag_OnMessage`, `0x00416038` → `ScriptHandler_Deliver`), and the handler calls `workout.ForceQuit`. The press is
+  taken in the fight stance with pad movement locked (no attack or block runs first). Confirmed (code), and at runtime.
+
+Confirmed (runtime, PCSX2 2.9.94, `level95` checkpoint 2, the player put beside the bag's start flag, triangle tapped
+over the `scripted-pad` patch): the start flag's record left the kind-1 list within 2 updates of the press (the other
+three stations' records stayed); 45 updates after the press the player's current record (`+0x660`) was the
+`fWorkout[1]` flag's, prompt `0`, hint set; triangle tapped 120 updates after the start gave the start flag's record
+(prompt set) back 3 updates later, with the follow camera, no clock and the start prompt and hint on screen, well
+before the 26 s clock ran out.
+
+### The bag as a target {#bag-target}
+
+- **The player's target.** After the first square at the bag, the player's target handle (`+0xc8`) is the bag's
+  (its handle, human `+0x90`); before it, `NilHandle`. His health rings show under him while he fights the bag; the
+  bag shows none. Confirmed (runtime).
+- **What a strike meets.** The bag (`IPhysics_CreatePunchBagBody`, `0x0033cb08`; the body set at IPhysics
+  `+0x4f2a0`) has one **segment** on bone 3 and a **capsule**; its human bone shapes are off. Read at runtime with the
+  bag at rest (origin at height −197.567): the segment's offset (`+0x10`) is (0, 0, 0), so its start is bone 3's
+  position, **2.15 m above the bag's origin**; its end is 1.5 m along **bone 3's local x axis**, which at rest points
+  straight down (end 0.65 m above the origin, 0.05 m off the vertical); radius 0.35. The capsule (no bone, offset 0)
+  stands on the bag's origin with radius 0.35 and **height 1.787 m** (`+0x44`; a human capsule's height is bone 6's
+  height + 0.2 × scale, recomputed every update by `PhysicsCapsule_Pose`, `0x00343518`). Confirmed (code) at
+  `0x00343810`, values confirmed (runtime). Details: [Physics](physics.md#bodies).
+- **Who is warned.** A punch at the bag warns the bag alone ([Combat: attack warnings](combat.md#attack-warnings)):
+  nobody else in the gym hears it.
 
 ### Boxer {#boxer}
 
@@ -249,14 +295,21 @@ Confirmed (code), the layout confirmed (runtime) at the bag:
 
 - **The counter**: `HUDGetNewPH(2, LEVEL95.WLABEL[type])` (a counter panel of kind 2, label then `value/max`,
   [HUD](hud.md#fn-hud-bars-panels)), its maximum `repTable[rank]` and its value the repetitions or combos landed.
-- **The clock** when `timeTable[rank]` > 0 (not rank 1 of the cycle games): the stopwatch with a label.
+- **The clock** when `timeTable[rank]` > 0 (not rank 1 of the cycle games): the stopwatch with a label, in its
+  minutes form (`0:26`) at the top right, right-aligned, with the counter panel under it: the place
+  `StopWatchHud_ApplyVideoMode` gives, (1.0, 0.24), not the HUD table's (0.5, 0.135)
+  ([HUD](hud.md#hud-object)). Confirmed (runtime, default video mode): the clock's right edge stood at 0.95 of
+  the picture's width and its middle at 0.26 of its height.
+- **The health rings** under the player while he fights the bag ([The bag as a target](#bag-target)).
 - **The cross icon** for the cycle games: `HUDTurnOnActionCycleAnim(4, 0.1, 6, 79, 79)`, the cross button blinking where
   the action prompt stands, from `Started` to `CycleQuit`.
 - **The called-out combo** for the bag: the centred announcement.
 - **No effort meter.** Nothing on the HUD shows the effort: the player sees it as the loop clip's speed (slow, mid,
   fast, then slowing down).
-- The prompt beside the station: the station's name, a line of text and `Rank: n/10`; while working out, the
-  station's quit hint.
+- The prompt beside the station: the station's name over the station, and in the hint box a line of text and
+  `Rank: n/10`; while working out, no prompt and the station's quit hint in the hint box
+  ([Triangle quits the bag](#bag-quit)). The start prompt is gone from the press on (step 2 of
+  [Starting a workout](#start)).
 
 ## Ranks and what they give {#ranks}
 
@@ -328,7 +381,11 @@ of 1, no clips, the effort decaying by the decay table; `CfgWorkoutParams` keeps
   end. Use the station's own tables (above). The level index is `floor(v + 0.5)` of the blend's value.
 - **Heavy bag**: no `HuWorkout`; the bag human must take hits so that `HUDSetTutorialCallback`'s function gets each
   hit's anim id (already in Coney); `CfgPlayerCombatWalkOnly(1)` and `HuLockPadMovement` keep the player at the bag;
-  the three cameras switch by octant in the script; the stopwatch must call `workout.WorkoutTimeOut` at 0.
+  the three cameras switch by octant in the script; the stopwatch must call `workout.WorkoutTimeOut` at 0. Strike
+  the bag on its segment (bone 3, no offset, along the bone's local x, which hangs down; radius 0.35, length 1.5) and
+  sweep against its capsule (radius 0.35, height 1.787 m from its origin). `SetMsgHandlerEx` must register a kind-1
+  record when only the second text is given (that record is the bag's quit), and `SetMsgHandler(obj, 0, ...)` must
+  unregister the object's record. Warn only the attack's target ([Combat](combat.md#attack-warnings)).
 - **HUD**: the counter panel (kind 2), the stopwatch, the blinking cross icon, the centred combo call-out; no meter.
 - **Ranks and rewards**: `UM_Unlock(95, 1, offset + rank − 1)` must reach the unlock records and survive a save; the
   power (× 1.1) and stamina (× 1.2) upgrades of type 6 data 11 and 12 must be read where the maxima are computed.

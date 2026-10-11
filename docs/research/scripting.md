@@ -327,9 +327,15 @@ returns that result. Confirmed (code).
 **The interaction prompt.** [`SetMsgHandlerEx`](../references/bindings/script.md#setmsghandlerex) (`0x00386168`)
 with message 0 and a non-empty prompt also calls the object's `+0x124`; a world object's (`0x00391c98`) registers,
 when it has none yet (`+0x130`), a **kind-1 context record** holding the prompt (`+0x10`) and the second text
-(`+0x14`), reach 1.1 m ([Crimes: context records](crimes.md#context-records)). A nil callback or an empty prompt
-calls `+0x12c` (`0x00391ce8` → `0x00417df8`), which unregisters the record and clears any player's current record
-(`+0x660`) that pointed at it. Triangle by the object then sends it message 0 with the human as the subject
+(`+0x14`), reach 1.1 m ([Crimes: context records](crimes.md#context-records)). The record is registered too when the
+prompt is nil or empty but the second text is not: it then has no prompt, and the HUD shows only the second text, in
+the hint box (the heavy bag's quit, [Workouts](workouts.md#bag-quit)). A nil callback, or a prompt and second text
+both nil or empty, calls `+0x12c` (`0x00391ce8` → `0x00417df8`; a flag's `Flag_UnregisterContext` `0x00415d90`), which
+unregisters the record and clears any player's current record (`+0x660`) that pointed at it. Plain
+**`SetMsgHandler` with message 0** (`Script_SetMsgHandler`, `0x00386298`) calls the same `+0x12c` before setting the
+slot, whatever the callback, so it always removes the object's prompt. Confirmed (code), and at runtime at the gym
+(`worksetup.StartWorkout`'s `SetMsgHandler(fStartWorkout[k], 0, nil)` took the station's record off the list within
+2 updates). Triangle by the object then sends it message 0 with the human as the subject
 ([Crimes: triangle](crimes.md#triangle), step 4); a true result ends the press, anything else lets the game's own
 pick-up go on. Confirmed (code), and at runtime (slot 1, a bat 1 m ahead of the player given a handler by a call):
 the call registered a kind-1 record, the player's `+0x660` took it the next update, and triangle delivered message 0
