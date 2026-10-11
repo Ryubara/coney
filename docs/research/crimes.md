@@ -282,8 +282,9 @@ record. Triangle at it starts the game, confirmed (code) at `0x0022d790`:
    Each frame the current pin turns by 0.1 rad × its speed and wraps in 0-2π; the speeds are 1, 2 and 3, and the
    directions by difficulty are (+, +, +), (+, −, +) and (−, +, −). The step runs once per character update, 30 times
    a second, so a pin turns once in 62.8 steps (2.09 s), 31.4 (1.05 s) and 20.9 (0.70 s). Confirmed (runtime),
-   PCSX2 2.9.94: with the dial shown on a copy of quick-save slot 3 (player 0's dial `0x0060fc60`, `+0x478` written 1), the angle `+0x454` of pin 0 (speed 1) grew
-   by exactly 0.1 every second 60 Hz tick (`0x005104f4`), 90 steps in 180 ticks, wrapping 6.24 → 0.0568.
+   PCSX2 2.9.94: with the dial shown on a copy of quick-save slot 3 (player 0's dial `0x0060fc60`, `+0x478`
+   written 1), the angle `+0x454` of pin 0 (speed 1) grew by exactly 0.1 every second 60 Hz tick (`0x005104f4`),
+   90 steps in 180 ticks, wrapping 6.24 → 0.0568.
 3. **Cross pressed** (`0x12`) judges the current pin's angle θ (`LockPickDial_Judge`): **good** when θ is at least
    the upper bound or at most the lower one, **perfect** inside the narrower bands, otherwise a **miss**:
 
