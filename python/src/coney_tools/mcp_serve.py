@@ -40,14 +40,15 @@ def _require_dir(key: str, path: Path | None, what: str) -> Path:
 
 
 def _ghidra_command(paths: Mapping[str, Path | None], which: Which, env: Mapping[str, str]) -> list[str]:
-    """ghidra-mcp's Python bridge, run by uv from the configured ghidra-mcp checkout (which uv never modifies
-    beyond its own environment)."""
+    """ghidra-mcp's Python bridge, run by uv from the configured ghidra-mcp checkout (uv keeps the bridge's
+    environment in that checkout's own .venv)."""
     repo = _require_dir("ghidra_mcp_repo", paths["ghidra_mcp_repo"], "the ghidra-mcp bridge")
     # `uv run` sets UV to its own path, so the bridge runs under the uv that started coney-tools.
     uv = env.get("UV") or which("uv")
     if not uv:
         raise ConfigError("uv is not on PATH, so the ghidra-mcp bridge cannot start (https://docs.astral.sh/uv/)")
-    return [uv, "run", "--quiet", "--directory", str(repo), "bridge-mcp-ghidra", "--transport", "stdio"]
+    # --frozen: install from ghidra-mcp's own uv.lock and never rewrite it; the checkout is shared and read-only to us.
+    return [uv, "run", "--frozen", "--quiet", "--directory", str(repo), "bridge-mcp-ghidra", "--transport", "stdio"]
 
 
 def _pcsx2_command(paths: Mapping[str, Path | None], which: Which) -> list[str]:
@@ -96,4 +97,9 @@ def run_serve(name: str) -> int:
     command, extra = server_command(name, config.paths, shutil.which, os.environ)
     # Nothing may reach stdout before the server starts: it carries the protocol.
     sys.stdout.flush()
-    return subprocess.run(command, env={**os.environ, **extra}, check=False).returncode
+    return _run_server(command, {**os.environ, **extra})
+
+
+def _run_server(command: list[str], env: dict[str, str]) -> int:
+    """Run the server with this process's stdin and stdout and return its exit status (tests replace it)."""
+    return subprocess.run(command, env=env, check=False).returncode

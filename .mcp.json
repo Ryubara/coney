@@ -2,11 +2,11 @@
   "mcpServers": {
     "ghidra-mcp": {
       "command": "uv",
-      "args": ["run", "--quiet", "--project", "${CLAUDE_PROJECT_DIR:-.}/python", "coney-tools", "mcp", "serve", "ghidra-mcp"]
+      "args": ["run", "--isolated", "--frozen", "--quiet", "--project", "${CLAUDE_PROJECT_DIR:-.}/python", "coney-tools", "mcp", "serve", "ghidra-mcp"]
     },
     "pcsx2": {
       "command": "uv",
-      "args": ["run", "--quiet", "--project", "${CLAUDE_PROJECT_DIR:-.}/python", "coney-tools", "mcp", "serve", "pcsx2"]
+      "args": ["run", "--isolated", "--frozen", "--quiet", "--project", "${CLAUDE_PROJECT_DIR:-.}/python", "coney-tools", "mcp", "serve", "pcsx2"]
     }
   }
 }

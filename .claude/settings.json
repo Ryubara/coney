@@ -2,7 +2,12 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
-      "Bash(uv run --project python coney-tools *)",
+      "Bash(uv run --project python coney-tools config show*)",
+      "Bash(uv run --project python coney-tools repo check*)",
+      "Bash(uv run --project python coney-tools missions render*)",
+      "Bash(uv run --project python coney-tools natives render*)",
+      "Bash(uv run --project python coney-tools refs render*)",
+      "Bash(uv run --project python coney-tools progress show*)",
       "Bash(uv run --project python pytest *)",
       "Bash(uv run --project python ruff *)",
       "Bash(uv run --project python mypy *)",
@@ -10,15 +15,9 @@
       "Bash(cmake --preset *)",
       "Bash(cmake --build --preset *)",
       "Bash(ctest --preset *)",
-      "Bash(git status *)",
-      "Bash(git diff *)",
-      "Bash(git log *)",
-      "Bash(git show *)",
-      "PowerShell(uv run --project python coney-tools *)",
-      "PowerShell(uv run --project python pytest *)",
-      "PowerShell(git status *)",
-      "PowerShell(git diff *)",
-      "PowerShell(git log *)"
+      "PowerShell(uv run --project python coney-tools config show*)",
+      "PowerShell(uv run --project python coney-tools repo check*)",
+      "PowerShell(uv run --project python pytest *)"
     ],
     "deny": [
       "Bash(git stash *)",

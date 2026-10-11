@@ -2,10 +2,13 @@
 """Tests for coney_tools.mcp_serve: the debugging servers that .mcp.json starts through coney-tools."""
 
 import json
+import os
+import subprocess
 from pathlib import Path
 
 import pytest
 
+from coney_tools import mcp_serve
 from coney_tools.cli import main
 from coney_tools.config import PATH_KEYS, ConfigError
 from coney_tools.mcp_serve import GHIDRA_MCP_URL, SERVERS, server_command
@@ -32,7 +35,7 @@ def which_none(name: str) -> str | None:
 
 def test_ghidra_runs_the_bridge_from_the_configured_checkout(tmp_path: Path) -> None:
     command, env = server_command("ghidra-mcp", paths(ghidra_mcp_repo=tmp_path), which_all, {})
-    assert command == ["/bin/uv", "run", "--quiet", "--directory", str(tmp_path), "bridge-mcp-ghidra",
+    assert command == ["/bin/uv", "run", "--frozen", "--quiet", "--directory", str(tmp_path), "bridge-mcp-ghidra",
                        "--transport", "stdio"]  # fmt: skip
     assert env["GHIDRA_MCP_URL"] == GHIDRA_MCP_URL
     # Claude Code only sees tool groups that exist when it connects.
@@ -113,10 +116,64 @@ def test_serve_finds_the_checkout_from_claude_project_dir(
     assert "nowhere" in capsys.readouterr().err
 
 
+def make_pcsx2_server(folder: Path) -> Path:
+    """A made-up PCSX2-MCP server folder; returns its script."""
+    (folder / "dist").mkdir(parents=True)
+    script = folder / "dist" / "index.js"
+    script.write_text("", encoding="utf-8")
+    return script
+
+
+def test_serve_passes_the_servers_exit_status_through(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    make_pcsx2_server(tmp_path / "server")
+    (tmp_path / "coney.local.example.toml").write_text("", encoding="utf-8")
+    (tmp_path / "coney.local.toml").write_text('pcsx2_mcp_dir = "server"\n', encoding="utf-8")
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path))
+    monkeypatch.setattr(mcp_serve.shutil, "which", which_all)
+    ran: list[list[str]] = []
+
+    def fake_run(command: list[str], env: dict[str, str]) -> int:
+        ran.append(command)
+        return 3
+
+    monkeypatch.setattr(mcp_serve, "_run_server", fake_run)
+    assert main(["mcp", "serve", "pcsx2"]) == 3
+    assert ran == [["/bin/node", str((tmp_path / "server" / "dist" / "index.js").resolve())]]
+
+
+def test_serve_from_a_worktree_uses_the_main_checkouts_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    script = make_pcsx2_server(tmp_path / "tools" / "pcsx2-mcp")
+    main_checkout = tmp_path / "repos" / "coney"
+    main_checkout.mkdir(parents=True)
+    (main_checkout / "coney.local.example.toml").write_text("", encoding="utf-8")
+    (main_checkout / "coney.local.toml").write_text('pcsx2_mcp_dir = "../../tools/pcsx2-mcp"\n', encoding="utf-8")
+    worktree = tmp_path / "worktrees" / "coney" / "branch"
+    env = {**os.environ, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@example.invalid",
+           "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@example.invalid"}  # fmt: skip
+    for args in (["init", "-q"], ["add", "coney.local.example.toml"], ["commit", "-q", "-m", "x"],
+                 ["worktree", "add", "-q", "--detach", str(worktree)]):  # fmt: skip
+        subprocess.run(["git", "-C", str(main_checkout), *args], check=True, capture_output=True, env=env)
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(worktree))
+    monkeypatch.setattr(mcp_serve.shutil, "which", which_all)
+    ran: list[list[str]] = []
+
+    def fake_run(command: list[str], env: dict[str, str]) -> int:
+        ran.append(command)
+        return 0
+
+    monkeypatch.setattr(mcp_serve, "_run_server", fake_run)
+    assert main(["mcp", "serve", "pcsx2"]) == 0
+    # ../../tools resolves from the main checkout, not from the worktree three levels deeper.
+    assert ran == [["/bin/node", str(script.resolve())]]
+
+
 def test_the_committed_mcp_json_starts_every_server_through_coney_tools() -> None:
     servers = json.loads((REPO / ".mcp.json").read_text(encoding="utf-8"))["mcpServers"]
     assert set(servers) == set(SERVERS)
     for name, entry in servers.items():
         assert entry["args"][-3:] == ["mcp", "serve", name]
+        # --isolated keeps the launcher's environment out of the checkout (no python/.venv in every worktree);
+        # --frozen never rewrites uv.lock.
+        assert "--isolated" in entry["args"] and "--frozen" in entry["args"]
         # No machine's paths in the repository: everything is found through coney.local.toml.
         assert not any(":\\" in arg or arg.startswith("/") for arg in entry["args"])
