@@ -1303,6 +1303,12 @@ from the disassembly of `level3.lua` and its five chapter scripts; bindings on
    leaving the box (message 4, which also returns to the rail camera). `vbJumpWarn` boxes show a jump prompt
    (`HUDTurnOnActionCycleAnim`) for 1.5 s. Falling into `vChaseKill` (kind 0) fades and fails the mission (`MF_4`);
    a pursuer there dies, a Warrior is warped to the gallery.
+   **The way across the last roofs**, read from the disc's collision mesh (inferred; not checked in the original): the
+   jump from `vbJumpWarn_08`'s roof (z 13.2, edge at x 150.5) lands on a roof at z 10.3 (y 361-369.5). Its south
+   part is closed at x 167.4 (y 361.5-366.7) by a wall 3.6 m tall, material 152 with no climbable flag, so no climb
+   takes it ([Characters: climbing](characters.md#climb)). The way on is the steel stairs beside it (material 3,
+   y 367-369.5): two 33° flights with a landing from x 167 to 177.5, a platform at z 16.46 to x 193, then the jump in
+   `vbJumpWarn_09` over the gap (x 193.5-200.5) to the gallery's roof (z 14.4) and `vbEnterGallery` (x 200.8-208.8).
 7. **`ch4.EnterGallery`** (`vbEnterGallery`, kind 2): objective done, handlers off, the chase gangs removed,
    tireless and fast-climber cleared, the jump scene, then the Warriors warped to the gallery and `NextMission`.
 

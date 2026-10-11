@@ -37,38 +37,20 @@
 
 namespace coney::test {
 
-/// One run of the game session over the disc with a pad script; nothing runs until startAtLevel() or startStory().
-/// One at a time: a run starts the renderer, which a second run cannot start while the first lives.
+/// One run of the game session over the disc with a pad script or a driver; nothing runs until startAtLevel() or
+/// startStory(). One at a time: a run starts the renderer, which a second run cannot start while the first lives.
 class DiscSession {
   public:
     /// Everything set up over `wad` (which must outlive it); the pad script must parse. Movies are skipped unless
     /// `settings` says otherwise.
     DiscSession(const io::Wad& wad, std::string_view padScript,
-                const platform::GameSessionSettings& settings = platform::GameSessionSettings{.skipMovies = true,
-                                                                                              .rumble = std::nullopt,
-                                                                                              .profiles = std::nullopt})
-        : m_handlers(chunk::ChunkHandlerTable::withDefaults()), m_budget(world::kSectorPoolSize) {
-        platform::addTextureDictionaryHandlers(m_handlers);
-        platform::addSpriteSheetHandlers(m_handlers);
-        auto engine = platform::RenderEngine::start(platform::RenderBackend::Null, {});
-        REQUIRE(engine.has_value());
-        m_engine = std::move(*engine);
-        auto audio = platform::AudioOutput::start(platform::AudioSink::Offline);
-        REQUIRE(audio.has_value());
-        m_audio = std::move(*audio);
-        REQUIRE(m_audio->startEngine(wad).has_value());
-        auto parsed = parseInputScript(padScript);
-        REQUIRE(parsed.has_value());
-        m_script = std::make_unique<ScriptedInput>(std::move(*parsed));
-        // The pad script waits for the first frame of play, as `--play-level` plays one.
-        m_input = std::make_unique<DeferredInput>(*m_script, [this] { return m_session->inPlay(); });
-        m_stack.setInput(m_input.get());
-        m_session = std::make_unique<platform::GameSession>(
-            *m_engine, m_stack, wad, m_handlers, m_budget, m_strings, m_objectSounds, settings,
-            [this](std::string_view line) { m_log.emplace_back(line); });
-        m_session->attachAudio(m_audio.get());
-        m_timer.setFixedStep(true);
-    }
+                const platform::GameSessionSettings& settings = defaultSettings())
+        : DiscSession(wad, parseScript(padScript), nullptr, settings) {}
+    /// The same with player 1's pad from `driver` (which must outlive the run), an adaptive playthrough's pad that
+    /// decides each frame's input from what the game shows (docs/guides/testing.md#playthrough-tests).
+    DiscSession(const io::Wad& wad, InputSource& driver,
+                const platform::GameSessionSettings& settings = defaultSettings())
+        : DiscSession(wad, nullptr, &driver, settings) {}
     DiscSession(const DiscSession&) = delete;
     DiscSession& operator=(const DiscSession&) = delete;
     DiscSession(DiscSession&&) = delete;
@@ -129,6 +111,43 @@ class DiscSession {
     static constexpr std::uint64_t kPlayLimit = 3600;
 
   private:
+    // The settings a run uses unless given others: the movies skipped.
+    static platform::GameSessionSettings defaultSettings() {
+        return platform::GameSessionSettings{.skipMovies = true, .rumble = std::nullopt, .profiles = std::nullopt};
+    }
+
+    // The pad script `text`, parsed; it must parse.
+    static std::unique_ptr<ScriptedInput> parseScript(std::string_view text) {
+        auto parsed = parseInputScript(text);
+        REQUIRE(parsed.has_value());
+        return std::make_unique<ScriptedInput>(parsed ? std::move(*parsed) : std::vector<InputEvent>{});
+    }
+
+    // The set-up both constructors share: player 1's pad is `script` when given, else `driver`.
+    DiscSession(const io::Wad& wad, std::unique_ptr<ScriptedInput> script, InputSource* driver,
+                const platform::GameSessionSettings& settings)
+        : m_handlers(chunk::ChunkHandlerTable::withDefaults()), m_budget(world::kSectorPoolSize),
+          m_script(std::move(script)) {
+        platform::addTextureDictionaryHandlers(m_handlers);
+        platform::addSpriteSheetHandlers(m_handlers);
+        auto engine = platform::RenderEngine::start(platform::RenderBackend::Null, {});
+        REQUIRE(engine.has_value());
+        m_engine = std::move(*engine);
+        auto audio = platform::AudioOutput::start(platform::AudioSink::Offline);
+        REQUIRE(audio.has_value());
+        m_audio = std::move(*audio);
+        REQUIRE(m_audio->startEngine(wad).has_value());
+        InputSource& pad = m_script != nullptr ? *m_script : *driver;
+        // The pad waits for the first frame of play, as `--play-level` plays one.
+        m_input = std::make_unique<DeferredInput>(pad, [this] { return m_session->inPlay(); });
+        m_stack.setInput(m_input.get());
+        m_session = std::make_unique<platform::GameSession>(
+            *m_engine, m_stack, wad, m_handlers, m_budget, m_strings, m_objectSounds, settings,
+            [this](std::string_view line) { m_log.emplace_back(line); });
+        m_session->attachAudio(m_audio.get());
+        m_timer.setFixedStep(true);
+    }
+
     chunk::ChunkHandlerTable m_handlers;
     std::unique_ptr<platform::RenderEngine> m_engine;
     gui::GlobalStrings m_strings;
