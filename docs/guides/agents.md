@@ -63,6 +63,8 @@ sends a branch through CI three times, costs more than a stronger one that gets 
 | **Claude Haiku** | Mechanical work with a clear check and nothing to decide | Running a command and reporting the result, measurements, renames, regenerating pages, simple searches |
 
 Claude Fable is not used for agent work. Always name the model when starting an agent; never rely on the default.
+Name the reasoning effort too: Opus runs at `medium` and Sonnet at `high`. The default is not documented, and a fork
+always runs at the coordinator's effort. Each request in an agent's transcript records the effort it ran at.
 
 **Escalate on signals, not on hope.** Move a task up a model when the agent fails the same check twice, has to make
 a call the page does not settle, or touches a subsystem it was not briefed on. Record which model did which kind of
