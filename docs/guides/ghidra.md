@@ -12,7 +12,7 @@ Set up 2026-10-04. Paths below are `coney.local.toml` keys or workspace-relative
 | JDK 21 | `jdk_home` (no default; a system `java` may be older: always set `JAVA_HOME` to this JDK) |
 | ghidra-mcp v7.0.0 (shared, read-only) | `ghidra_mcp_repo` (no default; jar `target\GhidraMCPHeadless.jar` + Python bridge). Do not rebuild, pull or edit it: other projects may depend on it. |
 | Server start script (ours) | `tools\start-ghidra-mcp.ps1` |
-| Ghidra project the server keeps open | `<ghidra_projects>\warriors.gpr` (default `../../ghidra`) |
+| Ghidra project the server keeps open | project name `warriors`: the files `warriors.gpr` and `warriors.rep` inside the folder `ghidra_projects` (default `../../ghidra`, so `<ghidra_projects>\warriors.gpr`) |
 
 Language id: **`r5900:LE:32:default`** (compiler spec `default`; processor `MIPS-R5900`, from `emotionengine.ldefs`).
 
@@ -39,13 +39,26 @@ you did not start.
 ## Start / stop the server
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File tools\start-ghidra-mcp.ps1        # 127.0.0.1:8090, project <ghidra_projects>\warriors
+powershell -ExecutionPolicy Bypass -File tools\start-ghidra-mcp.ps1        # 127.0.0.1:8090, project warriors in <ghidra_projects>
 ```
 
+It works from the main checkout and from any worktree: `coney.local.toml` is untracked, so a worktree has none, and
+the script then reads the main checkout's (found through git's common dir) and resolves relative paths from the
+main checkout. A worktree that holds its own copy uses that one. Run it as is; do not copy the config into a worktree
+or pass paths to work around a "Ghidra install not found" error (fix the config instead).
+
+If a server already answers on the port (`/check_connection`), the script says so and exits 0 instead of starting a
+second server on the same project (two servers on one project fight over its lock), so starting it again is safe.
+`-DryRun` prints the checkout, config file and paths it would use, and whether a server is up, without starting
+anything.
+
 Options: `-Port`, `-ProjectDir`, `-ProjectName`, `-BindAddress` (leave loopback), `-McpRepo` (overrides
-`ghidra_mcp_repo`). The script reads `ghidra_install`, `ghidra_projects`, `jdk_home` and `ghidra_mcp_repo` from
-`coney.local.toml` (double- or single-quoted values) and stops with an error naming the key and the resolved path when
-one is missing. It follows the
+`ghidra_mcp_repo`), `-DryRun`. `-ProjectDir` is the **folder** that holds the project files (default: `ghidra_projects`,
+for example `C:\Repositories\Coney\ghidra`) and `-ProjectName` is the project's **name** (`warriors`): the project is
+`<ProjectDir>\<ProjectName>.gpr` with its `.rep` folder beside it, so `-ProjectDir ...\ghidra\warriors` is wrong. You
+rarely need either. The script reads `ghidra_install`, `ghidra_projects`, `jdk_home` and `ghidra_mcp_repo` from
+`coney.local.toml` (double- or single-quoted values) and stops with an error naming the key, the resolved path, the
+checkout it ran from and the config file it used when one is missing. It follows the
 shared `start-headless.ps1` logic (which targets another project's Ghidra install) with: this project's GhidraHome,
 extension jars added to the classpath, project created via `/create_project` on first start, and the java PID written to
 `<ghidra_projects>\ghidra-mcp-8090.pid`.
