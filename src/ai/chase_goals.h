@@ -202,7 +202,8 @@ inline constexpr float kCarrotKeepAheadRate = 0.2F;
 /// its speed to the gait's plus up to kCarrotBoostSpeed by carrotBoost(), which a running move takes at once, and its
 /// turn boost to the saved one plus carrotTurnBoost(); End restores the turn boost. No live chaser: the gait's speed.
 /// **Coney's reading**: the third argument is the path's end mode, as GoalTravelPath's third is (the binding's page
-/// calls it a start index "as in GoalTravelPath"); distances are measured across the ground.
+/// calls it a start index "as in GoalTravelPath"); distances are measured across the ground. **Coney stand-in**: the
+/// hostile flag Init sets (goal `+0x25`) is not modelled, since what reads it is not on the page.
 /// @orig 0x002e1230 RunCarrotGoal_Init (unknown)
 class RunCarrotGoal final : public Goal {
   public:

@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // `GoalRunCarrotRun` (ai/chase_goals.h, docs/references/bindings/ai.md#goalruncarrotrun): the boost rule from the
 // nearest chaser's distance, the turn boost it gives, and the goal from Lua over a synthetic scene: the carrot runs its
-// path at its gait's speed with no chaser near, faster with one inside the distance, restores its turn boost and ends
-// past the last point. Handles: 1 the player, 2 and up the AI humans, 100 and up the flags.
+// path at its gait's speed with no chaser near, faster (and farther) with one inside the distance, restores its turn
+// boost when it ends past the last point or is flushed. Handles: 1 the player, 2 and up the AI humans, 100 and up the
+// flags.
 #include <cstddef>
 #include <expected>
 #include <memory>
@@ -188,4 +189,39 @@ TEST_CASE("GoalRunCarrotRun on a handle with no human does nothing", "[ai][carro
     const Value route = level.path({{40.0F, 46.0F, 0.0F}});
     level.runCarrot(99.0, route, 0, 13.0);
     CHECK(level.scene.player().topGoal() == nullptr);
+}
+
+TEST_CASE("a chaser inside the distance makes the carrot cover more ground than with none", "[ai][carrot]") {
+    // The y the carrot reaches in 60 updates along a long path, with the player (its only chaser) 2 m behind or far.
+    const auto reach = [](bool chased) {
+        Level level;
+        Brain& carrot = level.add({40.0F, 40.0F, 0.0F});
+        const Value route = level.path({{40.0F, 140.0F, 0.0F}});
+        const int warriors = level.scripted->gangCreate(1, "Warriors");
+        level.scripted->gangAddMember(warriors, 1.0);
+        level.scene.player().human().place({40.0F, chased ? 38.0F : 0.0F, 0.0F}, 0.0F);
+        level.runCarrot(2.0, route, warriors, 13.0);
+        level.scene.run(60);
+        return carrot.human().position().y;
+    };
+    const float alone = reach(false);
+    const float chased = reach(true);
+    CHECK(alone > 40.5F);
+    CHECK(chased > alone + 0.5F);
+}
+
+TEST_CASE("a carrot flushed while its turn boost is raised gets its saved turn boost back", "[ai][carrot]") {
+    Level level;
+    Brain& carrot = level.add({40.0F, 40.0F, 0.0F});
+    const Value route = level.path({{40.0F, 80.0F, 0.0F}});
+    const int warriors = level.scripted->gangCreate(1, "Warriors");
+    level.scripted->gangAddMember(warriors, 1.0);
+    level.scene.player().human().place({40.0F, 38.0F, 0.0F}, 0.0F);
+    const int savedTurn = carrot.turnBoost();
+    level.runCarrot(2.0, route, warriors, 13.0);
+    level.scene.run(8);
+    REQUIRE(carrot.turnBoost() >= savedTurn + 2);
+    carrot.flush();
+    CHECK(carrot.topGoal() == nullptr);
+    CHECK(carrot.turnBoost() == savedTurn);
 }
