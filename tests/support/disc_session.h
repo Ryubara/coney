@@ -21,6 +21,7 @@
 
 #include "audio/object_sounds.h"
 #include "audio/sound_engine.h"
+#include "core/assert.h"
 #include "core/chunk_system.h"
 #include "core/deferred_input.h"
 #include "core/game_timer.h"
@@ -137,9 +138,11 @@ class DiscSession {
         REQUIRE(audio.has_value());
         m_audio = std::move(*audio);
         REQUIRE(m_audio->startEngine(wad).has_value());
-        InputSource& pad = m_script != nullptr ? *m_script : *driver;
+        // Exactly one of the two constructors gives a pad; the assertion tells the analyzer the pointer is set.
+        InputSource* pad = m_script != nullptr ? m_script.get() : driver;
+        CONEY_ASSERT(pad != nullptr);
         // The pad waits for the first frame of play, as `--play-level` plays one.
-        m_input = std::make_unique<DeferredInput>(pad, [this] { return m_session->inPlay(); });
+        m_input = std::make_unique<DeferredInput>(*pad, [this] { return m_session->inPlay(); });
         m_stack.setInput(m_input.get());
         m_session = std::make_unique<platform::GameSession>(
             *m_engine, m_stack, wad, m_handlers, m_budget, m_strings, m_objectSounds, settings,
