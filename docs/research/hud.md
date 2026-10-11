@@ -637,9 +637,9 @@ end. The order and timing of lessons 5-8 are in [Scripts](scripting.md#level99-h
    ([Animation callbacks](characters.md#anim-callbacks)), so `PlayerState`'s grab hint and `P1.Power`'s `TT_24d` come
    in different updates, as in the original ([lessons 5-8](scripting.md#level99-hint-timing)).
 
-The disc tests that check it: `repo:tests/platform/disc_level99_course_test.cpp` (lessons 1-8, no text left queued
-except behind a `<DISPLAYTIME>` hint) and `repo:tests/platform/disc_level80_story_test.cpp` (`level80`'s hints at each
-checkpoint through the game session).
+The disc test that checks it is `repo:tests/platform/disc_level99_course_test.cpp`: lessons 1-8 with no text left
+queued except behind a `<DISPLAYTIME>` hint, lesson 5's grab hint 34 frames before `TT_24d` (the original's 34
+updates) and `P1.StartSnaps`'s text shown twice in one frame.
 
 ### The tutorial callback (`HUDSetTutorialCallback`) {#tutorial-callback}
 
