@@ -163,6 +163,13 @@ something:
   pile up during reviews; any track may remove the ones the project produced. Write the path literally or guard a
   variable (`rm -f "${DIR:?}"/*.png`): a path built from a possibly empty variable can delete far more than meant.
 
+## Issues {#issues}
+
+Bugs and tasks are tracked as issues, opened from a form and labelled by type, area, priority and status. The
+coordinator triages them and is the only one who writes to GitHub; an agent reads an issue (`gh issue view N
+--comments`) and is often briefed with just its number. A pull request that finishes one says `Fixes #N`, so merging
+closes it. The whole process: [Issues](issues.md).
+
 ## Testing {#testing}
 
 Tracks never wait for a person to play their work, so the automated tests stand in for one. Every track proves its
@@ -276,4 +283,5 @@ runs `coney-tools progress check` on those. If a branch from before this change 
 - Doing research: [Research workflow](research-workflow.md), then [Ghidra + ghidra-mcp](ghidra.md).
 - Writing code: [Conventions](conventions.md), [Testing](testing.md), then [Building and testing](building.md).
 - Running agents: [Running agents](agents.md).
+- Bugs and tasks: [Issues](issues.md) (forms, labels, triage, working from an issue).
 - Writing pages: [Writing these docs](writing-docs.md).
