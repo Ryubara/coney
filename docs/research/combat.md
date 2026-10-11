@@ -2580,6 +2580,39 @@ magnitude and then walks the pair backward at 1.125 m/s (front hold) or about 1.
 grab](#grab-turn). So a 35 % stick moves a grab not at all, a fight stance at 3.429 m/s, and the free player at the
 walk speed.
 
+**What an attack does to the lock** (the armed run sweep 501 and the moving attacks; confirmed (code) at the
+addresses cited):
+
+- **The pick is not a lock.** `Player_Square`'s armed branch (`0x00286cc8`, held set 1-3) calls
+  `Player_PickTarget(2.5 m)` and stores the result as the target (`Human_SetTargetObject`) for a pad player, at a run
+  too; the unarmed 23 and 24 do the same with 2.0 m. None of them calls `Player_EnterStance` or `Player_LockOn` on
+  that path: the armed run branch goes straight to `Player_StartCharge(h, 501)`.
+- **No pull and no turn.** `Player_StartCharge` (`0x00264a80`), which plays 23, 24 and 501, only warns the target
+  (`Human_WarnOfAttack`) and pushes the clip holding `0x1000000`: no `Attack_SteerToTarget`, no turn, no slide.
+- **No stance logic during the clip.** `0x1000000` is inside the dispatcher's busy gate `0x5c7fee0`
+  (`Player_UpdateActions`, `0x0027c120`), so `Player_UpdateStanceOrIdle` / `Player_UpdateSprint` (`0x0027ce90`) do
+  not run while 501 plays: nothing enters the stance or locks during the sweep.
+- **After the clip, running keeps it free.** The gait is human `+0x1a8`, set from the speed by
+  `Human_SetMoveVelocity` (`0x0023cf00`). With the run resumed (gait 4, `+0x08` clear) `Human_IsRunningFree` holds,
+  `Player_UpdateSprint` returns early (and, as the player is not in a stance, drops nothing). The target stays in
+  `+0xc8`, but the movement state is still the free `Human_PlayerLocomotion` (`0x00240e38`), which turns to the
+  stick: a stored target alone never steers the player. Only `Player_LockOn` (`0x00280158`) installs the lock-on
+  movement `Human_FightStanceMove` (`0x00241b90`), and only from step 3 of the stance update (nearest enemy within
+  2 m, not running) or L1.
+- **The lock-on movement faces the target only within 3 m.** `Human_FightStanceMove` treats the target as absent when
+  its distance² is above `0x005104c0` (= 9.0, 3 m) unless `Human_IsLocked` (state `0x8` and `0x4`, L1), or when the
+  target lacks type bits `0x100040`; then it turns toward the stick, capped per update by `Human_MaxTurn`, instead of
+  snapping to the target. With no target at all it hands control back to `0x00240e38`.
+
+**Where Coney differs** (as of this branch's base): `Fighter::steer()` exempts only the charge (id 0), so 23, 24 and
+501 pick a target and turn and slide onto it (`steerOnto`); and `Fighter::lockTarget()` treats any target as a lock,
+so the target an attack picked puts the player in `Human::combatWalk` as soon as the clip ends. `combatWalk` sets the
+heading straight to the target every update (no cap, at any distance up to 2.5 m) and moves at the combat-walk speed,
+so the gait is never Run and `trackTarget`'s "running drops it" never fires: walking past the enemy swings the heading
+round it every update (the spin). Open: what dropped the target at 3.09 m in the backward-walk run above (not
+`Player_UpdateSprint`, which keeps a target within 6 m); what the enemy filter `0x002791b0` (no function defined in
+Ghidra there) accepts, which decides whether walking past a civilian locks (owner item 14).
+
 **Turning into an attack** (`Attack_Start`, `0x002625a8`): with the target within the attack's far range, it tells
 the target (`0x0021d5c0`) and steers with `0x002761c8`: turn and slide so that the target, moved by its velocity over
 the time to the hit + 0.1 s, sits at the clip's reach (+0.07 m for a target scaled above 1.1, -0.1 m from behind).
