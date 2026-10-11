@@ -144,7 +144,7 @@ nav:
           - "AI code index: brains, actions and tactics": research/ai-code.md
           - "AI goals: the code of every goal class": research/ai-goals.md
           - "AI and the world: objects, cars, doors and climbs": research/ai-world.md
-          - "AI pathing: holes, claims and status": research/ai-pathing.md
+          - "AI pathing: holes, claims, jumps and status": research/ai-pathing.md
           - Cars: research/cars.md
           - Camera: research/camera.md
           - Scenes (cutscenes): research/scenes.md
