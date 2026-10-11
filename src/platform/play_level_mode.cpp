@@ -950,9 +950,28 @@ bool PlayLevelMode::startTagSpray(const std::array<float, 3>& point) {
     return m_player->human().startTagSpray(anim::Vec3{point[0], point[1], point[2]});
 }
 
+std::string PlayLevelMode::heldObjectType() const {
+    const human::ScriptState& script = m_player->human().script();
+    return script.heldObject != world_objects::kNoObject ? script.heldObjectName : std::string();
+}
+
+void PlayLevelMode::dropHeldForTag() {
+    // Out of the hand at once, with no clip: it falls from where the hand holds it.
+    human::Human& human = m_player->human();
+    human::ScriptState& script = human.script();
+    if (script.heldObject == world_objects::kNoObject) {
+        return;
+    }
+    const double held = std::exchange(script.heldObject, world_objects::kNoObject);
+    script.heldObjectName.clear();
+    dropHeld(human, held);
+}
+
 bool PlayLevelMode::tagSprayLooping() const { return m_player->human().tagSprayLooping(); }
 
 bool PlayLevelMode::tagSprayPlaying() const { return m_player->human().tagSprayPlaying(); }
+
+void PlayLevelMode::restartTagSpray() { m_player->human().restartTagSpray(); }
 
 void PlayLevelMode::endTagSpray() { m_player->human().endTagSpray(); }
 

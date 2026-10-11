@@ -286,8 +286,8 @@ void ScriptedStory::setWounded(double human, bool wounded) {
     });
 }
 
-void ScriptedStory::setTagColour(double human, std::uint32_t rgba) {
-    onBrain(human, [rgba](Brain& brain) { brain.human().script().tagColour = rgba; });
+void ScriptedStory::setTagColour(double human, const std::array<std::uint8_t, 4>& bytes) {
+    onBrain(human, [bytes](Brain& brain) { brain.human().script().tagColour = bytes; });
 }
 
 void ScriptedStory::tag(double human, double tag, double flag) {

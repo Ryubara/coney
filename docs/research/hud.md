@@ -2740,9 +2740,10 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   or rail camera, so only the locked camera and the switch show it.
 - **The tagging panel** (`repo:src/hud/tag_hud.h`, set by `GameplayMode::updateTagPanel()`) as
   [the tagging panel](#fn-after-subtitle) says, while player 1 sprays: the path's dots but the last three, grey from
-  100 to 255, the painted cells in his `HuTagColor` at alpha 205, the cursor between cells fading white to black and
-  back over 500 ms (white while the game pauses; the original is white while on track, [the
-  fix](crimes.md#tag-coney-fixes)), the charge bar shrinking down to its fixed bottom, and the frame at alpha 191;
+  100 to 255, the painted cells in bytes 0-2 of his tag colour (`HuTagColor`; by default the dark maroon (80, 7, 5)) at
+  alpha 205, the cursor between cells plain white while on track and fading white to black and back over 500 ms off
+  it (and through a slip's pause, which keeps the flag), the charge bar (draining through pauses too) in the same
+  colour shrinking down to its fixed bottom, and the frame at alpha 191;
   gone when the spray ends.
 - **The gang-count indicator** (`repo:src/hud/num_indicator.h`) as [the indicator](#gang-count-indicator) says: the
   shared one (`HUDSetNumIndicator` player 2), in a level numbered 100 or more, draws the blue header (sheet-table record

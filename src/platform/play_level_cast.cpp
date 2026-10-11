@@ -13,6 +13,7 @@
 #include "ai/ai_config.h"
 #include "ai/scripted_brains.h"
 #include "characters/character_types.h"
+#include "human/tag_colour.h"
 #include "platform/play_level_mode.h"
 #include "scripting/sound_bindings.h"
 
@@ -81,6 +82,11 @@ ai::Brain* PlayLevelMode::castHuman(const HumanCreation& human) {
     const std::array<float, 3>& p = *human.position;
     ai::Brain& brain = m_ai->spawn(*look.character, config, &m_scenery->collision(), anim::Vec3{p[0], p[1], p[2]},
                                    human.headingDegrees);
+    // Human_Init's tag colour: a civilian woman's is ff ef ef ef, everyone else keeps the default. **Coney's
+    // reading**: the class's brain kind before the `+0x19d` remap (the remap is not on the page).
+    if (config.fighter.brain == ai::BrainType::Civilian && type != nullptr && type->female.value_or(0) == 1) {
+        brain.human().script().tagColour = human::kFemaleCivilianTagColour;
+    }
     FighterMesh mesh;
     mesh.character = look.character;
     mesh.mesh = std::make_unique<CharacterMesh>(look.character->assets().model, look.texture);

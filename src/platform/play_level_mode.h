@@ -276,10 +276,16 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     void teleportPlayer(const world_objects::Placement& placement) override;
     /// ScriptedPlayer: player 1's spray clips for a tag at `point`.
     bool startTagSpray(const std::array<float, 3>& point) override;
+    /// ScriptedPlayer: player 1's held object falls from his hand as a spray begins.
+    void dropHeldForTag() override;
+    /// ScriptedPlayer: the type name of the object in player 1's hand.
+    [[nodiscard]] std::string heldObjectType() const override;
     /// ScriptedPlayer: whether player 1's spray loop plays.
     [[nodiscard]] bool tagSprayLooping() const override;
     /// ScriptedPlayer: whether player 1's spray clips still play.
     [[nodiscard]] bool tagSprayPlaying() const override;
+    /// ScriptedPlayer: player 1's spray clips restart (337, then the loop) as a pause begins.
+    void restartTagSpray() override;
     /// ScriptedPlayer: player 1's spray clips end.
     void endTagSpray() override;
     /// ScriptedPlayer: what player 1 can act on for the action prompt: nothing during a mugging, a theft or a lock

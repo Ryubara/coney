@@ -31,7 +31,9 @@
 #include "scripting/script_system.h"
 #include "support/lua_fixtures.h"
 #include "support/recording_device.h"
+#include "support/tag_driver.h"
 #include "warriors/tag_game.h"
+#include "world_objects/object_types.h"
 
 using coney::script::Value;
 
@@ -59,13 +61,19 @@ std::map<std::string, std::vector<std::byte>, std::less<>> tagScripts() {
     return files;
 }
 
-// A loaded level that does nothing.
-class EmptyLevel final : public coney::GameMode {
+// A level standing in for the play mode: player 1 has no spray clips (his stick game starts at once), and the drops of
+// his held object (`held`) as a spray begins are counted.
+class SprayLevel final : public coney::GameMode, public coney::ScriptedPlayer {
   public:
     [[nodiscard]] std::uint32_t id() const override { return 0x1ff; }
     coney::ModeResult update(coney::GameModeStack& /*stack*/, const coney::FrameTime& /*frame*/) override {
         return coney::ModeResult::Stay;
     }
+    void teleportPlayer(const coney::world_objects::Placement& /*placement*/) override {}
+    void dropHeldForTag() override { ++drops; }
+    [[nodiscard]] std::string heldObjectType() const override { return held; }
+    std::string held; // the type name of what player 1 holds
+    int drops = 0;
 };
 
 // Pad 1 with the left stick the test sets, in [-1, 1] with y up.
@@ -106,6 +114,7 @@ struct TagRun {
     std::vector<std::vector<double>> started; // each TagStarted call's arguments
     std::vector<std::vector<double>> ended;   // each OnTagEnd call's arguments
     bool sessionAtStart = false;              // whether the stick game was live when TagStarted ran
+    SprayLevel* level = nullptr;              // the level gameplay made
     double player = 0;
     StickPad pad;
     coney::GameModeStack stack;
@@ -124,9 +133,11 @@ struct TagRun {
         gameplay = std::make_unique<coney::GameplayMode>(
             device, scripts.scripts(), scripts.context(), scripts.state(), scripts.humans(), scripts.flags(),
             scripts.recorded(),
-            [](const coney::LevelStart& /*start*/,
-               const coney::ScriptedCast& /*cast*/) -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
-                return std::make_unique<EmptyLevel>();
+            [this](const coney::LevelStart& /*start*/, const coney::ScriptedCast& /*cast*/)
+                -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
+                auto made = std::make_unique<SprayLevel>();
+                level = made.get();
+                return made;
             },
             [](std::string_view) {});
         gameplay->setLevel("level1");
@@ -151,11 +162,16 @@ struct TagRun {
         call("CfgTagStartCallback", {Value(std::string("TagStarted"))});
         REQUIRE(scripts.context().messages != nullptr);
         scripts.context().messages->set(player, 0xe, "OnTagEnd");
-        // A three-point pattern along the grid's x.
+        // A nine-point pattern along the grid's x, 25 cells apart (short segments, as the scripts' patterns have: the
+        // curve's hook past the last point stays small).
         scripts.state().story.tagPattern = {};
-        const std::vector<float> points{20.0F, 20.0F, 120.0F, 20.0F, 220.0F, 20.0F};
+        std::vector<float> points;
+        for (int i = 0; i < 9; ++i) {
+            points.push_back(20.0F + (25.0F * static_cast<float>(i)));
+            points.push_back(20.0F);
+        }
         std::ranges::copy(points, scripts.state().story.tagPattern.begin());
-        scripts.state().story.tagPatternCount = 3;
+        scripts.state().story.tagPatternCount = 9;
     }
 
     // Runs `count` frames of play.
@@ -205,17 +221,12 @@ TEST_CASE("HuTag with paint starts the stick game, calls the start callback with
     CHECK(run.sessionAtStart);
     CHECK(run.ended.empty());
 
-    // The left stick traces the pattern a few points ahead of the progress until the game ends.
+    // The left stick traces the pattern ahead of the progress, at 0.8 deflection, until the game ends.
     constexpr int kMaxFrames = 30 * 60;
-    constexpr std::size_t kLead = 3;
     for (int frame = 0; frame < kMaxFrames && run.gameplay->tagSession() != nullptr; ++frame) {
-        const coney::TagGame& game = run.gameplay->tagSession()->game();
-        const coney::TagCell target = game.path()[std::min(game.progress() + kLead, game.path().size() - 1)];
-        const float dx = static_cast<float>(target.x) - game.cursorX();
-        const float dy = static_cast<float>(target.y) - game.cursorY();
-        const float length = std::hypot(dx, dy);
-        run.pad.x = length > 0.5F ? dx / length : 0.0F;
-        run.pad.y = length > 0.5F ? dy / length : 0.0F;
+        const auto [x, y] = coney::test::tagStick(run.gameplay->tagSession()->game());
+        run.pad.x = x;
+        run.pad.y = y;
         run.frames(1);
     }
     CHECK(run.gameplay->tagSession() == nullptr);
@@ -225,4 +236,25 @@ TEST_CASE("HuTag with paint starts the stick game, calls the start callback with
     const coney::world_objects::TagSpot* spot = run.gameplay->tagSpots().find(kTag);
     REQUIRE(spot != nullptr);
     CHECK(spot->fraction == 1.0F);
+}
+
+TEST_CASE("a spray drops a held overhead or ghetto weapon first; a club stays in the hand", "[gameplay][tag]") {
+    // Returns how many drops player 1's spray asked for while he held an object of anim set `set`.
+    const auto dropsHolding = [](int set) {
+        TagRun run;
+        run.scripts.state().player.inventory.setSprayPaint(0, 3);
+        coney::world_objects::ObjectType type;
+        type.name = "dyn_test_weapon";
+        type.animSet = set;
+        run.scripts.objectTypes().add(type);
+        REQUIRE(run.level != nullptr);
+        run.level->held = type.name;
+        run.call("HuTag", {Value(run.player), Value(kTag), Value(kFlag)});
+        REQUIRE(run.gameplay->tagSession() != nullptr);
+        return run.level->drops;
+    };
+    CHECK(dropsHolding(3) == 0); // a pipe, a bat, a crowbar
+    CHECK(dropsHolding(4) == 1); // OVERHEAD_WEAPON_SET
+    CHECK(dropsHolding(6) == 1); // GHETTO_SET
+    CHECK(dropsHolding(0) == 0);
 }
