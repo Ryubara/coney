@@ -258,6 +258,7 @@
     The store is confirmed (code) at 0x0023a258; no reader of the human flag (as opposed to the state flag of the same
     value) was found, so its effect is open.
   usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false, levels: [54]}
+  coney: implemented
 
 - name: HuBlockLook
   wrapper: 0x00358b98
@@ -478,6 +479,7 @@
   notes: >-
     An unresolved handle does nothing; the grab code that tests the two bits was not found here.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [93]}
+  coney: implemented
 
 - name: HuBlockRearGrab
   wrapper: 0x00359140
@@ -496,6 +498,7 @@
   notes: >-
     A blocked grab simply does not continue past the intro; no other reaction was seen.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [52]}
+  coney: implemented
 
 - name: HuBlockFrontGrab
   wrapper: 0x003591a0
@@ -914,6 +917,7 @@
     Effects of the flag: [Combat](../../research/combat.md#human-flags). Weapon and thrown hits go through the same
     damage path (inferred).
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [83]}
+  coney: implemented
 
 - name: HuSetUnarrestable
   wrapper: 0x00359ae0
@@ -1096,6 +1100,7 @@
     The store is confirmed (code); the readers of bit 0x8 in `+0xe0` were not found in this pass, so the effect is
     inferred from the name.
   usage: {chunks: 20, calls: 117, boot: false, mission1: false, result_used: false, levels: [86, 55, 92, 83, 20, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: HuSetRevivable
   wrapper: 0x0035ab60
@@ -1576,6 +1581,7 @@
     Human `+0x280` is also read as an attachment by the movement code (characters.md); scene binding:
     [Scenes](../../research/scenes.md). A human with no record (`+0xd4` = 0) and `+0x280` = -1 gives nil.
   usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: true, levels: [20]}
+  coney: implemented
 
 - name: HuIsArrested
   wrapper: 0x0035b6b8
@@ -1625,6 +1631,7 @@
   notes: >-
     What makes a spot a hiding spot (the callers at 0x0023e6e8 and 0x0023eab8) was not traced.
   usage: {chunks: 4, calls: 5, boot: false, mission1: false, result_used: true, levels: [51, 82, 20]}
+  coney: implemented
 
 - name: HuIsMugged
   wrapper: 0x0035b7a8
@@ -1712,6 +1719,7 @@
   notes: >-
     Only melee strikes read the bit as far as traced; thrown objects and HuSetDamage are not affected.
   usage: {chunks: 4, calls: 7, boot: false, mission1: false, result_used: false, levels: [81, 93, 83]}
+  coney: implemented
 
 - name: HuSetGodMode
   wrapper: 0x0035b9e0
@@ -1968,6 +1976,7 @@
   notes: >-
     Works for players too (their brain's slots fill when AIs attack them). A stale target handle counts as no target.
   usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: true, levels: [20]}
+  coney: implemented
 
 - name: HuSetCombatMode
   wrapper: 0x0035c030
@@ -2083,6 +2092,7 @@
     The store and default are confirmed; the hearing checks that read `+0x134` were not isolated in this pass, so the
     exact use (inferred: the radius for noise events such as fights and breaking glass) stays open.
   usage: {chunks: 5, calls: 7, boot: false, mission1: false, result_used: false, levels: [86, 31, 84, 20]}
+  coney: implemented
 
 - name: HuSetHelpHearRange
   wrapper: 0x0035c2f0
@@ -2102,6 +2112,7 @@
     The brain's reset (0x0028a570) sets it to 20 m and the general range to 50 m. The help call's senders include
     GangBrain_OnEvent and Player_UpdateMugging (both callers of 0x00293640).
   usage: {chunks: 2, calls: 8, boot: false, mission1: false, result_used: false, levels: [9, 82]}
+  coney: implemented
 
 - name: HuExitWorld
   wrapper: 0x0035c368
@@ -3421,6 +3432,7 @@
     A live world object's handle also gives true (the table holds humans and objects alike; characters.md#the-human-object).
     -1 gives nil.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: true, levels: [92]}
+  coney: implemented
 
 - name: Teleport
   wrapper: 0x0036cbc0

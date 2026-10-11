@@ -28,12 +28,12 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 17.4%](https://img.shields.io/badge/reimplemented-17.4%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 17.5%](https://img.shields.io/badge/reimplemented-17.5%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 ![Understood: 99.9%](https://img.shields.io/badge/understood-99.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.4% of the game's own code (585,352 of 3,354,776 bytes, 2,159 functions) |
+| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.5% of the game's own code (587,520 of 3,354,776 bytes, 2,184 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 99.9% named in Ghidra and cited with evidence (3,282,584 of 3,284,276 bytes; 11,421 of 11,426 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
@@ -73,13 +73,13 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▋░░░░░░░░░░░░░` | 33.1% | 117 | 100,440 |
 | `Graphics` | `██▋░░░░░░░░░░░░░░░░░` | 12.8% | 91 | 195,624 |
 | `GUI` | `████▏░░░░░░░░░░░░░░░` | 20.7% | 246 | 497,416 |
-| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.8% | 802 | 1,096,672 |
+| `Human` | `███▋░░░░░░░░░░░░░░░░` | 17.9% | 814 | 1,096,672 |
 | `Maths (unnamed)` | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% | 9 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `▌░░░░░░░░░░░░░░░░░░░` | 2.5% | 10 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 12 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 30 | 17,904 |
-| `Scripting` | `██████▏░░░░░░░░░░░░░` | 30.6% | 224 | 197,192 |
+| `Scripting` | `██████▎░░░░░░░░░░░░░` | 31.1% | 237 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `███▍░░░░░░░░░░░░░░░░` | 17.1% | 180 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
@@ -950,11 +950,14 @@ at the top of the repository's `README.md`.
 | `0x002355e0` | `Human_IsGrabbed` | `Human` | not filled in |
 | `0x00235628` | `Human_IsAlive` | `Human` | 96 |
 | `0x00235688` | `Human_IsDead` | `Human` | 64 |
+| `0x002356c8` | `Human_IsInScene` | `Human` | 64 |
 | `0x00235718` | `Human_IsArrested` | `Human` | 64 |
 | `0x00235758` | `Human_IsPlayer` | `Human` | 64 |
+| `0x00235798` | `Human_IsHidden` | `Human` | 64 |
 | `0x00235890` | `Human_GetCharType` | `Human` | 56 |
 | `0x002359a0` | `Human_SetDemiGodMode` | `Human` | 136 |
 | `0x00235a28` | `Human_SetGodMode` | `Human` | 96 |
+| `0x00235a88` | `Human_SetKillerMode` | `Human` | 96 |
 | `0x00235b68` | `Human_SetFastClimber` | `Human` | 96 |
 | `0x00235bc8` | `Human_SetUngrabbable` | `Human` | 96 |
 | `0x00235c28` | `Human_SetUngroundable` | `Human` | 96 |
@@ -962,6 +965,7 @@ at the top of the repository's `README.md`.
 | `0x00235ce8` | `Human_SetIncreasedReact` | `Human` | 104 |
 | `0x00235d50` | `Human_SetReducedReact` | `Human` | 96 |
 | `0x00235db0` | `Human_SetRevivable` | `Human` | not filled in |
+| `0x00235e10` | `Human_SetDoubleDamage` | `Human` | 96 |
 | `0x00235e70` | `Human_SetUnarrestable` | `Human` | 160 |
 | `0x00236038` | `Human_ApplyDamageModifier` | `Human` | not filled in |
 | `0x00236188` | `Human_SetUnlockedGear` | `Human` | 96 |
@@ -980,16 +984,20 @@ at the top of the repository's `README.md`.
 | `0x00237388` | `Human_SetKeepHat` | `Human` | not filled in |
 | `0x00237468` | `Human_SetNoThrowWeapon` | `Human` | 112 |
 | `0x00237628` | `Human_SetWounded` | `Human` | 120 |
+| `0x002376a0` | `Human_SetWoundable` | `Human` | 96 |
 | `0x00237700` | `Human_SetArrested` | `Human` | 120 |
 | `0x00237778` | `Human_SetConscious` | `Human` | 128 |
 | `0x002377f8` | `Human_Revive` | `Human` | 80 |
 | `0x00237848` | `Human_SetHealth` | `Human` | not filled in |
 | `0x002378a8` | `Human_SetHealthPercent` | `Human` | 176 |
 | `0x00237958` | `Human_SetBlockJump` | `Human` | not filled in |
+| `0x00237a28` | `Human_BlockGrab` | `Human` | 112 |
+| `0x00237b00` | `Human_SetBlockRearGrab` | `Human` | 112 |
 | `0x00237b70` | `Human_SetBlockTackle` | `Human` | 112 |
 | `0x00237c38` | `Human_GetHealthPercent` | `Human` | 64 |
 | `0x00237d08` | `Human_GetHeldObjectType` | `Human` | not filled in |
 | `0x00237d48` | `Human_GetHeldObject` | `Human` | 112 |
+| `0x00237db8` | `Human_IsInCombat` | `Human` | 72 |
 | `0x00237e70` | `Human_Kill` | `Human` | not filled in |
 | `0x00238030` | `Human_SetShadow` | `Human` | not filled in |
 | `0x00238078` | `Human_SetName` | `Human` | 72 |
@@ -1000,6 +1008,8 @@ at the top of the repository's `README.md`.
 | `0x002381f0` | `Human_RemoveItemInPocket` | `Human` | 64 |
 | `0x00238230` | `Human_SetCarriedItemName` | `Human` | 88 |
 | `0x002383a0` | `Human_SetLOSRange` | `Human` | not filled in |
+| `0x002383e8` | `Human_SetHearRange` | `Human` | 72 |
+| `0x00238430` | `Human_SetHelpHearRange` | `Human` | 72 |
 | `0x00238478` | `Human_ExitWorld` | `Human` | not filled in |
 | `0x00238540` | `Human_PlaceItemInHand` | `Human` | 184 |
 | `0x002385f8` | `Human_PlaceHatOnHead` | `Human` | 68 |
@@ -1034,6 +1044,7 @@ at the top of the repository's `README.md`.
 | `0x00239f20` | `Human_SetInterrogation` | `Human` | not filled in |
 | `0x0023a1b0` | `Human_SetCombatMode` | `Human` | 96 |
 | `0x0023a210` | `Human_SetNormalMode` | `Human` | 72 |
+| `0x0023a258` | `Human_SetRubberNeck` | `Human` | 104 |
 | `0x0023a2c0` | `Human_SetBlockLook` | `Human` | not filled in |
 | `0x0023a328` | `Human_SetForceLook` | `Human` | not filled in |
 | `0x0023a3b8` | `Human_SetLookTarget` | `Human` | 168 |
@@ -1266,6 +1277,7 @@ at the top of the repository's `README.md`.
 | `0x0028fe28` | `Brain_RunActions` | `Human` | 104 |
 | `0x0028fe90` | `Brain_GetSectors` | `Human` | not filled in |
 | `0x00290328` | `Brain_MakeGangsEnemies` | `Human` | not filled in |
+| `0x002904a0` | `Brain_IsEngaged` | `Human` | 60 |
 | `0x002906b8` | `Brain_CheckAttack` | `Human` | 1,912 |
 | `0x00290e78` | `Brain_SetAttackableTime` | `Human` | 48 |
 | `0x00290ea8` | `Brain_IsAttackableBy` | `Human` | not filled in |
@@ -1733,8 +1745,19 @@ at the top of the repository's `README.md`.
 | `0x00357a68` | `preLoadFile` | `Scripting` | 312 |
 | `0x00358428` | `HuCreate` | `Scripting` | 480 |
 | `0x00358608` | `HuDelete` | `Scripting` | 56 |
+| `0x00358b38` | `HuRubberNeck` | `Scripting` | 96 |
+| `0x003590e0` | `HuBlockGrab` | `Scripting` | 96 |
+| `0x00359140` | `HuBlockRearGrab` | `Scripting` | 96 |
+| `0x00359a80` | `HuSetDoubleDamage` | `Scripting` | 96 |
+| `0x0035ab00` | `HuSetWoundable` | `Scripting` | 96 |
 | `0x0035b398` | `HuGetGang` | `Scripting` | 88 |
+| `0x0035b668` | `HuIsInScene` | `Scripting` | 76 |
+| `0x0035b758` | `HuIsHidden` | `Scripting` | 76 |
+| `0x0035b980` | `HuSetKillerMode` | `Scripting` | 96 |
 | `0x0035bbc8` | `HuSetMaxHealth` | `Scripting` | 120 |
+| `0x0035bfe0` | `HuInCombat` | `Scripting` | 76 |
+| `0x0035c278` | `HuSetHearRange` | `Scripting` | 116 |
+| `0x0035c2f0` | `HuSetHelpHearRange` | `Scripting` | 116 |
 | `0x0035d218` | `HuSwitchPlayer` | `Scripting` | 120 |
 | `0x0035e5d0` | `CfgHUDMessage` | `Scripting` | not filled in |
 | `0x0035eb78` | `BrDead` | `Scripting` | 96 |
@@ -1819,6 +1842,7 @@ at the top of the repository's `README.md`.
 | `0x0036bac0` | `GetRumbleModeGangName` | `Scripting` | 80 |
 | `0x0036bb10` | `CfgSetDatabaseSizes` | `Scripting` | 424 |
 | `0x0036ca18` | `GetPosition` | `Scripting` | 112 |
+| `0x0036cb70` | `IsAHuman` | `Scripting` | 76 |
 | `0x0036cdc0` | `TeleportToFlag` | `Scripting` | 152 |
 | `0x0036d008` | `TriggerSphereEnable` | `Scripting` | not filled in |
 | `0x0036d068` | `TriggerSphereSetRadius` | `Scripting` | not filled in |
@@ -1921,6 +1945,7 @@ at the top of the repository's `README.md`.
 | `0x00385950` | `Object_GetTypeBits` | `Scripting` | 80 |
 | `0x003859f0` | `Obj_GetTypeName` | `Scripting` | 96 |
 | `0x00385a50` | `Object_GetPosition` | `Scripting` | 184 |
+| `0x00385b90` | `IsHumanHandle` | `Scripting` | 36 |
 | `0x00385bb8` | `Object_Teleport` | `Scripting` | 216 |
 | `0x00385db0` | `Object_TeleportToFlag` | `Scripting` | 248 |
 | `0x00385ea8` | `Objects_TestDistance` | `Scripting` | not filled in |

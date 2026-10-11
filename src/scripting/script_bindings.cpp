@@ -21,6 +21,7 @@
 #include "scripting/binding_args.h"
 #include "scripting/camera_bindings.h"
 #include "scripting/car_bindings.h"
+#include "scripting/character_bindings.h"
 #include "scripting/config_strings.h"
 #include "scripting/effects_bindings.h"
 #include "scripting/gang_bindings.h"
@@ -917,6 +918,19 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("SoundPreLoad"),
     real("SoundStart"),
     real("StartRoomSmoke"),
+    // The later missions' characters (character_bindings.h).
+    real("HuBlockGrab"),
+    real("HuBlockRearGrab"),
+    real("HuInCombat"),
+    real("HuIsHidden"),
+    real("HuIsInScene"),
+    real("HuRubberNeck"),
+    real("HuSetDoubleDamage"),
+    real("HuSetHearRange"),
+    real("HuSetHelpHearRange"),
+    real("HuSetKillerMode"),
+    real("HuSetWoundable"),
+    real("IsAHuman"),
     // The story's second and third missions (story_bindings.h).
     real("TacticAvoidEnemies"),
     real("TacticBossScenarioA"),
@@ -1405,6 +1419,7 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
                      std::ranges::find(kHumanBindings, info.name) != kHumanBindings.end() ||
                      std::ranges::find(kEffectsBindings, info.name) != kEffectsBindings.end() ||
                      std::ranges::find(kCarBindings, info.name) != kCarBindings.end() ||
+                     std::ranges::find(kCharacterBindings, info.name) != kCharacterBindings.end() ||
                      std::ranges::find(kHudBindings, info.name) != kHudBindings.end() ||
                      std::ranges::find(kWorldBindings, info.name) != kWorldBindings.end() ||
                      std::ranges::find(kStoryBindings, info.name) != kStoryBindings.end() ||
@@ -1424,6 +1439,7 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
     addPlayerBindings(scripts, vm, context);
     addSoundBindings(scripts, vm, context);
     addHudBindings(vm, context);
+    addCharacterBindings(vm, context);
     // With no scene system at the call (a test, the menus, a mode that plays no scenes), the stand-in keeps the
     // scripts' scene flow moving.
     addSceneBindings(vm, context,

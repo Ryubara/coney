@@ -452,7 +452,9 @@ class Fighter {
     // Lands a hit of attack `animId` and `damage`, and gives the rage it earns.
     void landHit(int animId, int damage, const FighterInput& input, const HumanAnimator& animator);
     // Applies a hit of attack `animId` and `damage` to `victim` from `attacker` (`heldMove`: a move in a hold, which
-    // plays its own victim clips), counts it and gives the rage it earns at `nowMs`; `animator` is the attacker's.
+    // plays its own victim clips), counts it and gives the rage it earns at `nowMs`; `animator` is the attacker's. A
+    // free hit of a killer (human flag 0x20) takes all the victim's health and double damage (0x4000) doubles it.
+    // @orig 0x00264bd8 Human_AddPendingDamage (unknown)
     void applyHit(Combatant& victim, int animId, int damage, bool heldMove, anim::Vec3 attacker, std::uint64_t nowMs,
                   const HumanAnimator& animator);
     // The striking material of attack `animId` (record `range`, may be null) for its hit sound: the limb its clip

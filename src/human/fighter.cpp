@@ -924,15 +924,25 @@ void Fighter::strikeContact(Combatant& victim, int animId, anim::Vec3 position, 
 void Fighter::applyHit(Combatant& victim, int animId, int damage, bool heldMove, anim::Vec3 attacker,
                        std::uint64_t nowMs, const HumanAnimator& animator) {
     const combat::AnimRange* range = m_ranges != nullptr ? m_ranges->find(clips::clipOf(animId)) : nullptr;
+    // A free strike of a killer (flag 0x20, `Strike_Contact`) takes all the victim's health, and double damage (flag
+    // 0x4000, `Human_AddPendingDamage`) doubles it. **Coney's reading**: a move in a hold is the grab's own damage
+    // path (`Grab_Strike`), which the page gives its own doubling, so neither applies to it.
+    const bool doubled = !heldMove && hasFlag(flag::kDoubleDamage);
+    if (!heldMove && hasFlag(flag::kKiller)) {
+        damage = victim.health().value();
+    }
+    if (doubled) {
+        damage *= 2;
+    }
     // A move in a hold plays its own victim clips; a free hit picks the victim's reaction. A player's hits ignore
-    // hit armour.
+    // hit armour, as do double damage's.
     victim.hit(IncomingHit{.damage = damage,
                            .attackAnim = animId,
                            .code = range != nullptr ? range->kind : 0,
                            .flags = range != nullptr ? range->flags : std::uint16_t{0},
                            .attacker = attacker,
                            .react = !heldMove,
-                           .ignoresArmour = m_player || hasFlag(flag::kIncreasedReact),
+                           .ignoresArmour = m_player || hasFlag(flag::kIncreasedReact) || doubled,
                            .attackerFlag200000 = hasFlag(flag::kIncreasedReact),
                            .attackerIsPlayer = m_player,
                            .strikeMaterial = strikeMaterialOf(animId, range, animator),

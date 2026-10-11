@@ -78,6 +78,25 @@ inline constexpr std::uint64_t kNoTarget = 0x100000000000;
 /// Triangle never starts a jump (`HuBlockJump`, `0x00237958`: `Player_TryJump` is skipped); a climb, a context action
 /// or an object action can still take the press.
 inline constexpr std::uint64_t kBlockJump = 0x10000000;
+/// Woundable (`HuSetWoundable`, `0x002376a0`; `Human_MakePlayer` clears it): from the name, it can be left wounded
+/// rather than only knocked out. No reader is on the page, so Coney only keeps it.
+inline constexpr std::uint64_t kWoundable = 0x8;
+/// Killer mode (`HuSetKillerMode`): every strike it lands takes all the victim's health (`Strike_Contact`
+/// `0x0021b290`, docs/research/combat.md#damage).
+inline constexpr std::uint64_t kKiller = 0x20;
+/// Double damage (`HuSetDoubleDamage`): its hits deal twice their damage and ignore hit armour
+/// (`Human_AddPendingDamage` `0x00264bd8`); as a grabbed victim it escapes when the grabber's power runs out.
+inline constexpr std::uint64_t kDoubleDamage = 0x4000;
+/// Rubber-necking (`HuRubberNeck`, `0x0023a258`): from the name, it stops and stares at nearby events. No reader is
+/// on the page, so Coney only keeps it.
+inline constexpr std::uint64_t kRubberNeck = 0x1000000;
+/// No grab from the front involving it (`HuBlockFrontGrab`, `HuBlockGrab`). **Coney stand-in**: the grab code that
+/// tests it is not on the page, so Coney only keeps it.
+inline constexpr std::uint64_t kBlockFrontGrab = 0x40000000;
+/// No grab from behind involving it, as grabber or victim (`HuBlockRearGrab`, `HuBlockGrab`; read by
+/// `Grab_IntroEnd` `0x0026c1d8`). **Coney stand-in**: Coney decides a grab's side as its intro starts and the blocked
+/// grab's end is not on the page, so Coney only keeps it.
+inline constexpr std::uint64_t kBlockRearGrab = 0x80000000;
 /// `HuSetAutoCombat` (`0x00234118`): no reader of the bit is on the page, so Coney only keeps it.
 inline constexpr std::uint64_t kAutoCombat = 0x200000000000;
 

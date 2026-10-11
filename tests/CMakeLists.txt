@@ -251,6 +251,7 @@ target_sources(coney_tests PRIVATE
     human/body_test.cpp
     human/climb_test.cpp
     human/combat_test.cpp
+    human/damage_flags_test.cpp
     human/combat_timing_test.cpp
     human/moving_attacks_test.cpp
     human/being_hit_test.cpp
@@ -338,6 +339,7 @@ target_sources(coney_tests PRIVATE
     ai/route_planner_test.cpp
     ai/scripted_goals_test.cpp
     ai/scripted_hub_test.cpp
+    ai/scripted_character_test.cpp
     ai/scripted_humans_test.cpp
     ai/riot_goals_test.cpp
     ai/scripted_story_test.cpp
