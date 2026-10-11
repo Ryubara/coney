@@ -1357,7 +1357,8 @@ colours in their light record (`+0x80` and `+0x84`, the colour drawn) and a radi
 `part_pelham_subway` runs a train's passing effects along a fixed path: a static table (`TaskTypes_InitConstantTables`,
 run once at start-up) holds 13 points at `0x006f2ea0` (16 bytes each; x 54 to 84, y 250 down to −80, z 4), and
 `0x005145b0` the update interval for each point. Each run starts at point 8 and steps along the points; at each step
-it may spawn a `subway_loop` sound and a `sub_spark_effect` and, within 30 m of a camera, shakes it (0.02, rate 4).
+it may spawn a `subway_loop` sound and a `sub_spark_effect` and, within 30 m of a camera, shakes it (level 0.02 for
+4 s, [Camera](camera.md#world-shake)).
 The same constructor fills the spark direction table at `0x006f2f30` (16 unit vectors) used by
 `sub_car_spark_emitter`. `part_train_sound` and `part_train_splat` are the train's sound and a body hit by it.
 
@@ -1377,7 +1378,7 @@ The same constructor fills the spark direction table at `0x006f2f30` (16 unit ve
 | `0x003db4e0` | `PartSSubwaySparks_Update` | `part_s_subway_sparks` update | done once its burst counter is −1 | confirmed (code) |
 | `0x003db518` | `PartTrainSound_Init` | `part_train_sound` init | hidden, update every 2, sound and timers cleared | confirmed (code) |
 | `0x003db5c0` | `PartTrainSound_OnMessage` | `part_train_sound` message | `0x12`: starts its sound once; 8: clears flag `0x10` | confirmed (code) |
-| `0x003db690` | `PartTrainSound_Update` | `part_train_sound` update | moves the sound; picks one of five sounds from the table `0x005145f0` (`train_pass1`-`5`, levels whose id is `0x1f` or `0x57`) or `0x00514608` (`subway_squeak1`-`5`; [Sound events](sound-events.md#objects)); each view's camera shakes by (60 − distance) × 0.00424 (0.25 near), rate 0.95; 1 in 100 a `sub_spark_effect` | confirmed (code); which levels the two ids are not traced |
+| `0x003db690` | `PartTrainSound_Update` | `part_train_sound` update | moves the sound; picks one of five sounds from the table `0x005145f0` (`train_pass1`-`5`, levels whose id is `0x1f` or `0x57`) or `0x00514608` (`subway_squeak1`-`5`; [Sound events](sound-events.md#objects)); the camera-shake page counted four sounds per table, unresolved against the five listed by Sound events; within 60 m each view's camera shakes by (60 − distance) × 0.00424 (0.25 within 1 m) for 0.95 s, re-armed every 5 updates, no rumble ([Camera](camera.md#world-shake)); 1 in 100 a `sub_spark_effect` | confirmed (code); which levels the two ids are not traced |
 | `0x003dbb48` | `SubTrainSplat_Init` | `sub_train_splat` init | a blood drop: size 0.45, colours `0x20050500` / `0x20050580`, random rectangle, life 180 ticks | confirmed (code) |
 | `0x003dbcf0` | `SubTrainSplat_Update` | `sub_train_splat` update | random growth at birth; when its direction meets a surface (an absolute dot product of 0.9 or more with up or forward) its size drops to 0.4 ×; ends after step 3 or when the pool is short | confirmed (code); "landing" inferred |
 | `0x003dc018` | `SubBloodGout_Init` | `sub_blood_gout` init | pops sprite and direction, size 0.25, 25-40 drops to throw | confirmed (code) |
