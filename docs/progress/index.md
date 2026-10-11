@@ -28,17 +28,17 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 17.4%](https://img.shields.io/badge/reimplemented-17.4%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 17.7%](https://img.shields.io/badge/reimplemented-17.7%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 ![Understood: 100.0%](https://img.shields.io/badge/understood-100.0%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.4% of the game's own code (585,352 of 3,354,776 bytes, 2,156 functions) |
+| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.7% of the game's own code (593,576 of 3,354,776 bytes, 2,165 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,192 of 3,284,000 bytes; 11,423 of 11,425 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-881 reimplemented function(s) have no size yet and add no bytes.
+882 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -73,10 +73,10 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▋░░░░░░░░░░░░░` | 33.1% | 117 | 100,440 |
 | `Graphics` | `██▋░░░░░░░░░░░░░░░░░` | 12.8% | 91 | 195,624 |
 | `GUI` | `████▏░░░░░░░░░░░░░░░` | 20.7% | 246 | 497,416 |
-| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.8% | 802 | 1,096,672 |
+| `Human` | `███▋░░░░░░░░░░░░░░░░` | 17.9% | 804 | 1,096,672 |
 | `Maths (unnamed)` | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% | 9 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
-| `Physics` | `▌░░░░░░░░░░░░░░░░░░░` | 2.5% | 10 | 79,032 |
+| `Physics` | `██▍░░░░░░░░░░░░░░░░░` | 11.7% | 17 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 12 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 30 | 17,904 |
 | `Scripting` | `██████▏░░░░░░░░░░░░░` | 30.6% | 224 | 197,192 |
@@ -907,6 +907,7 @@ at the top of the repository's `README.md`.
 | `0x0022a770` | `Gang_PickSwitchMember` | `Human` | 528 |
 | `0x0022ae40` | `Human_SpeedForGait` | `Human` | 112 |
 | `0x0022aeb0` | `Human_GaitOfVelocity` | `Human` | not filled in |
+| `0x0022c760` | `Grab_Link` | `Human` | not filled in |
 | `0x0022ceb8` | `Mugging_End` | `Human` | not filled in |
 | `0x0022d3f8` | `Uncuff_BeginMash` | `Human` | not filled in |
 | `0x0022d790` | `LockPick_Start` | `Human` | 376 |
@@ -1157,6 +1158,7 @@ at the top of the repository's `README.md`.
 | `0x00265dd0` | `Rage_NoteHit` | `Human` | 416 |
 | `0x00265f70` | `Human_ApplyPendingDamage` | `Human` | not filled in |
 | `0x00266d00` | `Hit_PickReaction` | `Human` | not filled in |
+| `0x002674c0` | `Human_OnHealthOut` | `Human` | 944 |
 | `0x00269f30` | `Human_BlockHit` | `Human` | not filled in |
 | `0x0026a6d0` | `Human_PlayReaction` | `Human` | 1,824 |
 | `0x0026b0a0` | `Hit_PickReaction` | `Human` | not filled in |
@@ -1558,7 +1560,7 @@ at the top of the repository's `README.md`.
 | `0x002fb9e8` | `MoveAction_Init` | `Human` | 248 |
 | `0x002fbd18` | `MoveAction_CornerTrial` | `Human` | 472 |
 | `0x002fc158` | `MoveAction_CornerSpeed` | `Human` | 472 |
-| `0x002fc330` | `MoveAction_Stuck` | `Human` | 184 |
+| `0x002fc330` | `MoveAction_CheckStuck` | `Human` | 184 |
 | `0x002fc420` | `MoveAction_Start` | `Human` | 320 |
 | `0x002fc5c0` | `MoveAction_Update` | `Human` | 2,000 |
 | `0x002fcd90` | `Move_CornerSpeedLimit` | `Human` | not filled in |
@@ -1659,16 +1661,23 @@ at the top of the repository's `README.md`.
 | `0x003378b0` | `Math_LargerRoot` | `Maths (unnamed)` | not filled in |
 | `0x00337920` | `RayTriangle_OneSided` | `Maths (unnamed)` | not filled in |
 | `0x00337a60` | `RayTriangle_TwoSided` | `Maths (unnamed)` | not filled in |
+| `0x0033d498` | `PhysicsBody_SweepHumanMask` | `Physics` | 640 |
+| `0x0033d870` | `Vec_RemoveNormalPart` | `Physics` | 128 |
 | `0x0033d8f0` | `PhysicsVec_Bounce` | `Physics` | 232 |
+| `0x0033d9d8` | `PhysicsBody_ResolveContacts` | `Physics` | 2,208 |
 | `0x0033e278` | `PhysicsBody_Sweep` | `Physics` | not filled in |
 | `0x0033f110` | `Human_TestStrikes` | `Physics` | not filled in |
 | `0x00340918` | `IPhysics_Step` | `Physics` | 544 |
 | `0x00340b38` | `Settle_NearestAxis` | `Physics` | 464 |
 | `0x00340d08` | `Settle_ComputeTarget` | `Physics` | 728 |
 | `0x00343518` | `PhysicsCapsule_Pose` | `Physics` | not filled in |
+| `0x00343cd8` | `PhysicsSweep_CapsuleCapsule` | `Physics` | 1,012 |
 | `0x003477c0` | `PhysicsBody_PushOutOfWalls` | `Physics` | not filled in |
 | `0x00347c08` | `PhysicsMesh_SweepCapsule` | `Physics` | not filled in |
 | `0x00349a60` | `Sweep_SphereCapsule` | `Physics` | not filled in |
+| `0x0034e3b8` | `SphereSweep_Edge` | `Physics` | 536 |
+| `0x0034e5d0` | `SphereSweep_VertexRegion` | `Physics` | 612 |
+| `0x0034ee60` | `Sweep_SphereTriangle` | `Physics` | 2,144 |
 | `0x0034f740` | `Collision_MarchRay` | `RayCast` | not filled in |
 | `0x0034f950` | `Collision_DropToGround` | `RayCast` | not filled in |
 | `0x0034fa28` | `Collision_DropToMarkedGround` | `RayCast` | not filled in |

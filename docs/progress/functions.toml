@@ -4283,6 +4283,11 @@ name = "Human_GaitOfVelocity"
 subsystem = "Human"
 
 [[function]]
+address = 0x0022c760
+name = "Grab_Link"
+subsystem = "Human"
+
+[[function]]
 address = 0x0022ceb8
 name = "Mugging_End"
 subsystem = "Human"
@@ -5675,6 +5680,12 @@ subsystem = "Human"
 address = 0x00266d00
 name = "Hit_PickReaction"
 subsystem = "Human"
+
+[[function]]
+address = 0x002674c0
+name = "Human_OnHealthOut"
+subsystem = "Human"
+size = 944
 
 [[function]]
 address = 0x00269f30
@@ -7893,7 +7904,7 @@ size = 472
 
 [[function]]
 address = 0x002fc330
-name = "MoveAction_Stuck"
+name = "MoveAction_CheckStuck"
 subsystem = "Human"
 size = 184
 
@@ -8438,10 +8449,28 @@ name = "RayTriangle_TwoSided"
 subsystem = "Maths (unnamed)"
 
 [[function]]
+address = 0x0033d498
+name = "PhysicsBody_SweepHumanMask"
+subsystem = "Physics"
+size = 640
+
+[[function]]
+address = 0x0033d870
+name = "Vec_RemoveNormalPart"
+subsystem = "Physics"
+size = 128
+
+[[function]]
 address = 0x0033d8f0
 name = "PhysicsVec_Bounce"
 subsystem = "Physics"
 size = 232
+
+[[function]]
+address = 0x0033d9d8
+name = "PhysicsBody_ResolveContacts"
+subsystem = "Physics"
+size = 2208
 
 [[function]]
 address = 0x0033e278
@@ -8477,6 +8506,12 @@ name = "PhysicsCapsule_Pose"
 subsystem = "Physics"
 
 [[function]]
+address = 0x00343cd8
+name = "PhysicsSweep_CapsuleCapsule"
+subsystem = "Physics"
+size = 1012
+
+[[function]]
 address = 0x003477c0
 name = "PhysicsBody_PushOutOfWalls"
 subsystem = "Physics"
@@ -8490,6 +8525,24 @@ subsystem = "Physics"
 address = 0x00349a60
 name = "Sweep_SphereCapsule"
 subsystem = "Physics"
+
+[[function]]
+address = 0x0034e3b8
+name = "SphereSweep_Edge"
+subsystem = "Physics"
+size = 536
+
+[[function]]
+address = 0x0034e5d0
+name = "SphereSweep_VertexRegion"
+subsystem = "Physics"
+size = 612
+
+[[function]]
+address = 0x0034ee60
+name = "Sweep_SphereTriangle"
+subsystem = "Physics"
+size = 2144
 
 [[function]]
 address = 0x0034f740
