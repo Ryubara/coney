@@ -11,6 +11,7 @@
 #include <string_view>
 #include <vector>
 
+#include "core/language.h"
 #include "graphics/render_device.h"
 #include "graphics/sprite_batch.h"
 #include "gui/base_widget.h"
@@ -55,6 +56,11 @@ struct PauseMenuSetup {
     /// Which Rumble quit `0x001fe1a8` picks (`PauseGoToRMIHangout` when set, else `PauseGoToRMIQuick`), and whether
     /// the Rumble Quit screen offers To Hangout (set) or To Main Menu. Coney's stand-in: the caller's guess.
     bool rumbleFromHangout = false;
+    Language language = Language::English; ///< The game state's language (`+0x120`), which moves some places.
+    /// The video mode's device flags `0x04` (16:9) and `0x02`, which pick the screens' layouts. Coney's stand-in: the
+    /// pause mode leaves both unset (Coney has no video-mode setting yet), so the default 4:3 layout is used.
+    bool widescreen = false;
+    bool flag02 = false;
     std::array<std::vector<std::string>, 3> objectives{}; ///< Current, bonus and overview lists (`HUDSetObjective`).
 };
 

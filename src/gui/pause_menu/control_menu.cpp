@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "gui/pause_menu/control_menu.h"
 
+#include <algorithm>
 #include <string>
 #include <utility>
 #include <vector>
@@ -18,27 +19,48 @@ constexpr int kRefusedCue = 0xe;
 constexpr int kBackCue = 0xf;
 constexpr int kRevealCue = 0xd;
 
-// The pad picture's place and size (overlay units), confirmed (code) at `0x001e4130`.
+// The pad picture's centre x (overlay units), confirmed (code) at `0x001e4130`.
 constexpr float kPictureX = 0.5F;
-constexpr float kPictureY = 0.58F;
-constexpr float kPictureWidth = 0.51F;
-constexpr float kPictureHeight = 0.45F;
-
-// Coney's stand-ins (docs/research/pause.md#open-questions): the label table `0x0050ef20` and the tips' place
-// `0x0050eef0`/`0x0050eef4` are not given. The labels sit in two columns beside the picture, the tips under the
-// title, one line apart, their text wrapped to the list's width.
-constexpr float kLabelRightX = 0.24F; // the right-aligned labels end here
-constexpr float kLabelLeftX = 0.76F;  // the left-aligned labels start here
-constexpr float kLabelTop = 0.42F;
-constexpr float kLabelStep = 0.05F;
-constexpr float kLabelSize = 0.9F;
-constexpr float kTipsTop = 0.35F;
-constexpr float kTipStep = 0.04F;
-constexpr float kTipSize = 1.0F;
-constexpr float kTipWrap = 0.48F;
-constexpr float kTipTextGap = 0.01F; // between a tip and its text, and after the text
 
 } // namespace
+
+ControlLayout ControlLayout::forMode(Language language, bool widescreen, bool flag02) {
+    ControlLayout layout;
+    if (flag02 && !widescreen) {
+        // The second table, `0x0050f000`: label 1 at 0.22 for every language but English, the picture shorter.
+        layout.leftColumnX = 0.24F;
+        layout.rightColumnX = 0.76F;
+        layout.rows = {0.385F, 0.415F, 0.477F, 0.51F, 0.545F, 0.575F, 0.625F};
+        layout.labelOneX = language == Language::English ? layout.leftColumnX : 0.22F;
+        if (language == Language::German) {
+            layout.labelOneX = 0.20F;
+        }
+        layout.pictureY = 0.55F;
+        layout.pictureHeight = 0.34F;
+    } else {
+        // The table `0x0050ef20`: label 1 moved for German and French.
+        if (language == Language::German) {
+            layout.labelOneX = 0.215F;
+        }
+    }
+    if (language == Language::French) {
+        layout.labelOneX = 0.16F;
+    }
+    if (flag02 && widescreen) {
+        layout.pictureY = 0.575F;
+    }
+    // 16:9 (flag 0x04 without 0x08): a narrower picture and a longer list.
+    if (widescreen) {
+        layout.pictureWidth = 0.5F;
+        layout.visibleTips = 10;
+        layout.tipClipHeight = 0.58F;
+        layout.tipSpacing = 0.007F;
+    } else if (flag02) {
+        layout.visibleTips = 9;
+        layout.tipSpacing = 0.007F;
+    }
+    return layout;
+}
 
 ControlMenu::ControlMenu() { m_picture.setVisible(true); }
 
@@ -51,10 +73,11 @@ void ControlMenu::playCue(int cue) const {
 }
 
 void ControlMenu::open(const GlobalStrings* strings, MenuInput& input, std::function<void(int cue)> playCue,
-                       std::uint64_t nowMs) {
+                       std::uint64_t nowMs, const ControlLayout& layout) {
     namespace s = control_strings;
     m_strings = strings;
     m_playCue = std::move(playCue);
+    m_layout = layout;
     m_selected = 0;
     m_page = ControlPage::None;
     m_nowMs = nowMs;
@@ -68,30 +91,47 @@ void ControlMenu::open(const GlobalStrings* strings, MenuInput& input, std::func
         m_entries.at(i).setText(string(i == 0 ? s::kController : s::kTutorial));
     }
     colourEntries();
-    // The pages' title (ControlPage_Init: size 1.3, `0x005fd310`); its place is Coney's stand-in.
-    m_title.setup(TextWidgetSetup{.x = kEntryX, .y = kEntryY, .scale = kEntrySize, .colour = kMenuGrey});
+    // The pages' title (ControlPage_Init).
+    m_title.setup(TextWidgetSetup{
+        .x = kTitleX, .y = kTitleY, .scale = kEntrySize, .colour = kMenuGrey, .fontSlot = kTitleFontSlot});
 
-    // ControllerPage_Init: the picture and the labels on each side of it.
-    m_picture.setup(BaseWidgetSetup{.x = kPictureX, .y = kPictureY, .height = kPictureHeight, .width = kPictureWidth});
+    // ControllerPage_Init: the picture and the labels on each side of it, from the layout's table; a label that
+    // wraps with `<CR>` grows downward from its row into the gap under it.
+    m_picture.setup(BaseWidgetSetup{
+        .x = kPictureX, .y = layout.pictureY, .height = layout.pictureHeight, .width = layout.pictureWidth});
     for (std::size_t i = 0; i < kControllerLabels; ++i) {
-        const float y = kLabelTop + (kLabelStep * static_cast<float>(i));
-        TextWidget& right = m_labels.at(i);
+        const float y = layout.rows.at(i);
+        TextWidget& left = m_labels.at(i);
+        left.setup(TextWidgetSetup{.x = i == 1 ? layout.labelOneX : layout.leftColumnX,
+                                   .y = y,
+                                   .scale = kLabelSize,
+                                   .colour = kMenuGrey,
+                                   .alignment = TextAlignment::Right,
+                                   .fontSlot = kLabelFontSlot});
+        left.setText(string(s::kLeftColumn + static_cast<std::uint32_t>(i)));
+        TextWidget& right = m_labels.at(kControllerLabels + i);
         right.setup(TextWidgetSetup{
-            .x = kLabelRightX, .y = y, .scale = kLabelSize, .colour = kMenuGrey, .alignment = TextAlignment::Right});
-        right.setText(string(s::kRightLabels + static_cast<std::uint32_t>(i)));
-        TextWidget& left = m_labels.at(kControllerLabels + i);
-        left.setup(TextWidgetSetup{.x = kLabelLeftX, .y = y, .scale = kLabelSize, .colour = kMenuGrey});
-        left.setText(string(s::kLeftLabels + static_cast<std::uint32_t>(i)));
+            .x = layout.rightColumnX, .y = y, .scale = kLabelSize, .colour = kMenuGrey, .fontSlot = kLabelFontSlot});
+        right.setText(string(s::kRightColumn + static_cast<std::uint32_t>(i)));
     }
 
-    // TutorialPage_Init: the tips, the first focused, ten visible from the pause menu.
+    // TutorialPage_Init: the tips, the first focused, the layout's count visible.
     for (std::size_t i = 0; i < kTutorialTips; ++i) {
-        m_tipTitles.at(i).setup(TextWidgetSetup{.x = kEntryX, .y = kTipsTop, .scale = kTipSize, .colour = kDimGrey});
+        m_tipTitles.at(i).setup(TextWidgetSetup{.x = kTipsX,
+                                                .y = kTipsY,
+                                                .scale = kTipSize,
+                                                .colour = kDimGrey,
+                                                .fontSlot = kTipFontSlot,
+                                                .wrapWidth = kTipWrap});
         m_tipTitles.at(i).setText(string(s::kTipTitles + static_cast<std::uint32_t>(i)));
     }
-    m_description.setup(
-        TextWidgetSetup{.x = kEntryX, .y = kTipsTop, .scale = kTipSize, .colour = kMenuGrey, .wrapWidth = kTipWrap});
-    m_tips.setup(ScrollingMenuSetup{.visible = kVisibleTips,
+    m_description.setup(TextWidgetSetup{.x = kTipsX,
+                                        .y = kTipsY,
+                                        .scale = kTipSize,
+                                        .colour = kMenuGrey,
+                                        .fontSlot = kTipFontSlot,
+                                        .wrapWidth = kTipWrap});
+    m_tips.setup(ScrollingMenuSetup{.visible = layout.visibleTips,
                                     .moveCue = kMoveCue,
                                     .playCue = [this](int cue) { this->playCue(cue); }},
                  kTutorialTips);
@@ -113,6 +153,7 @@ void ControlMenu::focusTip(std::uint64_t nowMs) {
     m_description.setText(string(control_strings::kTipTexts + static_cast<std::uint32_t>(m_tips.selected())));
     m_focusMs = nowMs;
     m_descriptionShown = false;
+    m_reveal = 0.0F;
     setFade(m_fade);
 }
 
@@ -198,10 +239,13 @@ bool ControlMenu::tutorialCommand(MenuCommand command, std::uint64_t nowMs) {
 
 void ControlMenu::update(const GuiFrame& frame) {
     m_nowMs = frame.timeMs;
-    // The focused tip's text, once it has been focused long enough.
+    // The focused tip's text unfolds once it has been focused long enough, a step a frame (cue 0xd as it starts).
     if (m_page == ControlPage::Tutorial && !m_descriptionShown && frame.timeMs - m_focusMs >= kDescriptionDelayMs) {
         m_descriptionShown = true;
         playCue(kRevealCue);
+    }
+    if (m_descriptionShown && m_reveal < 1.0F) {
+        m_reveal = std::min(1.0F, m_reveal + kRevealStep);
     }
     for (TextWidget& entry : m_entries) {
         entry.update(frame);
@@ -243,23 +287,29 @@ void ControlMenu::render(const GuiCanvas& canvas) const {
         return;
     case ControlPage::Tutorial: {
         m_title.render(canvas);
-        // The visible tips stacked from the top, the shown text under the focused one, within the clip height.
-        float y = kTipsTop;
+        // The visible tips stacked from the list's place, `tipSpacing` apart, the focused one's text unfolding
+        // under it; only tips that end inside the clip height are drawn. A text's y is its first line's centre, so
+        // the next item's centre is one height further down.
+        float y = kTipsY;
         const std::size_t first = m_tips.firstVisible();
         for (std::size_t i = first; i < first + m_tips.visibleCount(); ++i) {
-            // Only whole lines inside the clip height.
-            if (y + kTipStep - kTipsTop > kTipClipHeight) {
+            TextWidget& tip = m_tipTitles.at(i);
+            const float height = tip.layout(canvas).height;
+            if (y + height - kTipsY > m_layout.tipClipHeight) {
                 break;
             }
-            TextWidget& tip = m_tipTitles.at(i);
             tip.style().y = y;
             tip.render(canvas);
-            y += kTipStep;
+            y += height;
             if (i == m_tips.selected() && m_descriptionShown) {
+                y += kDescriptionGap;
                 m_description.style().y = y;
-                m_description.render(canvas);
-                y += m_description.layout(canvas).height + kTipTextGap;
+                if (m_reveal >= 1.0F) {
+                    m_description.render(canvas);
+                }
+                y += m_description.layout(canvas).height * m_reveal;
             }
+            y += m_layout.tipSpacing;
         }
         return;
     }
@@ -285,7 +335,7 @@ std::vector<std::string> ControlMenu::lines() const {
         const std::size_t first = m_tips.firstVisible();
         for (std::size_t i = first; i < first + m_tips.visibleCount(); ++i) {
             out.push_back(m_tipTitles.at(i).text());
-            if (i == m_tips.selected() && m_descriptionShown) {
+            if (i == m_tips.selected() && m_reveal >= 1.0F) {
                 out.push_back(m_description.text());
             }
         }

@@ -309,7 +309,9 @@ void PauseMenu::selectItem(PauseItem item, std::uint64_t nowMs) {
         return;
     case PauseItem::Controls:
         // `ControlMenuHUD_Open`, with the pausing player's input.
-        m_controls.open(m_strings, m_input, [this](int cue) { playCue(cue); }, nowMs);
+        m_controls.open(
+            m_strings, m_input, [this](int cue) { playCue(cue); }, nowMs,
+            ControlLayout::forMode(m_setup.language, m_setup.widescreen, m_setup.flag02));
         openScreen(PauseScreen::Controls, 0);
         return;
     case PauseItem::Restart:

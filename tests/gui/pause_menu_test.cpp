@@ -392,3 +392,16 @@ TEST_CASE("mission failed: Last checkpoint ends at once; Quit asks first", "[pau
     quitDriver.tap(coney::pad::kCross);
     CHECK(quit.outcome() == PauseOutcome::QuitToMainMenu);
 }
+
+TEST_CASE("pause menu: the Controls screen takes its layout from the language and video mode the menu opens with",
+          "[pause_menu][controls]") {
+    PauseMenuSetup setup;
+    setup.language = coney::Language::French;
+    setup.widescreen = true;
+    Paused paused(99, setup);
+    paused.selectItem(PauseItem::Controls);
+    paused.driver.tap(coney::pad::kCross);
+    REQUIRE(paused.menu.screen() == PauseScreen::Controls);
+    CHECK(paused.menu.controls().label(1).style().x == Catch::Approx(0.16F));
+    CHECK(paused.menu.controls().tips().visibleCount() == 10);
+}

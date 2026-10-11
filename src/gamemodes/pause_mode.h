@@ -199,6 +199,8 @@ class PauseMode final : public GameMode {
 
     /// The menu.
     [[nodiscard]] const gui::PauseMenu& menu() const { return m_menu; }
+    /// The canvas the menu renders into (its fonts, for tests that measure the menu's texts).
+    [[nodiscard]] const gui::GuiCanvas& canvas() const { return m_layer.canvas(); }
     /// The START cool-down (`+0x20ac`).
     [[nodiscard]] int cooldown() const { return m_cooldown; }
     /// The player who paused (`+0x1bc0`).

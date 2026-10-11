@@ -199,6 +199,7 @@ ModeResult PauseMode::update(GameModeStack& stack, const FrameTime& frame) {
         m_openPending = false;
         m_frozen = RenderTime{.alpha = 1.0F, .gameTicks = frame.gameTicks - frame.stepTicks, .index = 0};
         gui::PauseMenuSetup setup;
+        setup.language = m_state.language;
         if (const LevelRecord* record = m_state.levels.at(m_state.currentLevel)) {
             setup.level = static_cast<int>(record->number);
         }
