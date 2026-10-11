@@ -1334,7 +1334,7 @@ receives each hit's anim id, wants 219 or 221 and then 223 before it calls `P1.B
 
 Cross held and square pressed in the mount (owner checklist item 32) is **not** a mount strike: it ends the mount
 and leaves the mounter standing in the fight stance and the victim on the ground. Confirmed (code) at the addresses
-cited; the clip events read from the disc (numbers only).
+cited, and (runtime) as below; the clip events read from the disc (numbers only).
 
 1. **The start** (`Player_UpdateMounting`, `0x0027ec20`): with more than 0.25 of the power meter, a player calls
    `Attack_StartPaired(mounter, victim, 225, 1, 0x400000)` (231 while raging, human `+0xe0` `0x80000`); with 0.25 or
@@ -1349,16 +1349,18 @@ cited; the clip events read from the disc (numbers only).
    `0x200`. Because 226 has a type-7 (knockdown) event, the victim gets move style `0xf` (down).
 3. **The mounter's clips**: 225 holding `+0x08` `0x7` (an attack's phases), with the end hook
    `Attack_OnPairedClipEnd` (`0x002629a8`), chained to the looping **fight-stance idle** (the anim record's `+0x54`,
-   anim state `0xb`). No mounting idle 210 follows.
+   anim state `0xb`; 358 for Rembrandt at runtime). No mounting idle 210 follows.
 4. **The victim's clips**: 226 holding `0x400000` with the end hook `Pair_OnVictimClipEnd` (`0x00262a38`), then,
-   because 226's knockdown value is 0 (`Anim_GetKnockdownValue`, `0x00101a60`: the first type-7 event's word), held
-   `0x2000` and **198** (the knockdown's follow-up), then the looping **grounded idle** (record `+0x28`, anim state
-   0). He lies there and gets up by the ordinary ground time ([Reactions](#reactions)). The damage
-   ([damage table](#damage-table) index 37; Rembrandt's value in [Combat moves](combat-moves.md#frame-data)) is
-   dealt on the start update; a lethal one plays the death reaction instead.
+   by the code, when 226's knockdown value is 0 (`Anim_GetKnockdownValue`, `0x00101a60`: the first type-7 event's
+   word), held `0x2000` and **198** (the knockdown's follow-up), then the looping **grounded idle** (record `+0x28`,
+   anim state 0). At runtime 198 did not play: 226 went straight to the grounded idle 196 (below). He lies there
+   and gets up by the ordinary ground time ([Reactions](#reactions)). The damage ([damage table](#damage-table)
+   index 37; Rembrandt's value in [Combat moves](combat-moves.md#frame-data)) is dealt on the start update (the
+   health field showed it one update later at runtime); a lethal one plays the death reaction instead.
 5. **The extension**: the mounter is now in state `0x1000`, so the dispatcher sends him to `Player_UpdatePowerMove`
    (`0x0027df38`) as after a grab's power strike: square or cross while 225 holds the window `0x2` plays **227** (233
-   after 231), victim 228 (234), at most twice (record `+0xbc` < 2). This settles the mount part of `level99`'s
+   after 231), victim 228 (234), at most twice (record `+0xbc` < 2; one in practice: 227 opens no window, below).
+   This settles the mount part of `level99`'s
    lesson 10 ([scripting](scripting.md#level99-lessons)): 231 → 233 comes from the same + 2.
 6. **The end**: `Attack_OnPairedClipEnd` scores the move, lets the crowd taunt and calls `Throw_ClearLink`
    (`0x0022bce0`): the mounter's `0x1000` and link are cleared and his push weight and body group restored; then
@@ -1370,12 +1372,32 @@ Clips (Rembrandt's set `warr_re_header`; the generic set has `gen_mount_power20_
 `gen_mount_power10_p1`, 226 `gen_mount_power10_react_p1` (type-7 event, word 0, at frame 0), 227 / 228 `_p2` /
 `_react_p2` (type 7, word 0), 231 / 232 `gen_mount_power13_p1` / `_react_p1` (type 7, word 0).
 
-**Deferred: runtime.** The whole sequence has not been watched. Steps for PCSX2 (when it is free): a copy of slot 6,
-PoizoCiv 1 m ahead; circle tapped at update 10 (the grab), circle at 60 (the mount, 118 lasts 65 updates), then at
-140 cross held and square pressed 2 updates later, both released 4 updates after, stick centred (0, 0) throughout.
-Expect the player's clip 225 then 358 or the stance idle with state `0x1` (no `0x400`), the victim 226, 198, then
-the grounded idle and a get-up about 2 s (his class's ground time) later. A second run adds cross taps every 8 updates
-from 160 to see 227 / 228.
+**At runtime** (confirmed (runtime), PCSX2 2.9.94, scenarios `moves_mount_power` and `moves_mount_power_ext`: a copy
+of slot 6, PoizoCiv a puppet 1.0 m ahead with 600 health, the player's power 400; circle at update 10 (the front
+grab, 72 / 73 then the holds 82 / 83), circle at 60 (118 / 119, then 210 / 207 at 126), cross held from 140 with
+square tapped at 142; stick centred (0, 0) throughout; hooks `paired-start` and `anim-dispatch`):
+
+| Update | Mounter | Victim |
+| --- | --- | --- |
+| 143 | `Attack_StartPaired(player, victim, 225, 1, 0x400000)` from `Player_UpdateMounting` (return `0x0027ee78`); 225, state `0x405` → `0x1005`, phase `0x1`; power 346 → 245 (0.25 of 400 spent, plus the drain); 358 queued after 225 | 226, state `0x801` → `0x2001`; the grounded idle 196 queued after it |
+| 144 | | 79 damage (600 → 521): Rembrandt's 225 value, scored one update after the start |
+| 167 | phase `0x2` (the extension window) | |
+| 187 | phase `0x4` | |
+| 223 | 225 ends after **80 updates**; **358** (the fight stance's idle), state `0x5`: no `0x400`, no `0x1000`; power refilling | **196** (grounded idle), state `0x180001` (down and stunned), 0.88 m away; **no 198** |
+| 283 | | rises with **199**, 60 updates (2.0 s) after landing |
+| 311 | | 356, then 357 and his ambient clips |
+
+So the mount ends for good at the strike's start and nothing returns either body to 210 / 207. One difference from
+step 4 above: **198 never played**; the anim-id hook saw the victim take only 196 as 226's follow-up, so the
+`Anim_GetKnockdownValue` word for 226 was not 0 at runtime and `Attack_StartPaired` took the branch without 198 (why
+the word differs from the one read off the disc is open).
+
+**The extension** (`moves_mount_power_ext`: as above, then cross tapped every 8 updates from 160 to 216): the tap at
+160 came before the window and did nothing; the tap at 168 started `Attack_StartPaired(player, victim, 227, 1,
+0x400000)` from `Player_UpdatePowerMove` (return `0x0027dff0`) on update 169: 227 / 228, **no power spent**, another
+79 damage (521 → 442) on update 170, 196 queued again for the victim. 227 ran 60 updates and opened no window `0x2`,
+so the later taps did nothing and **one extension is all a mount power strike gets** (the counter's limit of two is
+not reached). At 229 the mounter stood in 358 (state `0x5`), the victim lay in 196 and rose with 199 at 289 (2.0 s).
 
 **Coney fixes** (item 32; today `Fighter::playMountAction` plays the power strike like a mount strike, back to 210 /
 207, so the player stands up at 225's end and snaps back into the pin):
@@ -1384,10 +1406,10 @@ from 160 to see 227 / 228.
    mode leaves `Mounting`, the pair stops being a mount (no seat, no mounted target state) and becomes a paired move
    (the mounter "throwing", the victim "thrown", [state flags](#state-flags) `0x1000` / `0x2000`).
 2. The mounter plays 225 (231 raging) chained to the fight-stance idle, not to 210; the victim plays 226 (232) with
-   held `0x400000`, then 198 with held `0x2000`, then the grounded idle, and is down (style `0xf`) with the ordinary
-   ground timer running from the knockdown.
+   held `0x400000`, then the grounded idle (196; no 198, as seen at runtime), and is down (style `0xf`) with the
+   ordinary ground timer running from the knockdown.
 3. Square or cross in 225's window plays 227 / 228 (233 / 234) through the same extension code as the grab's
-   57 → 59, at most two extensions; 229 is the filler clip and never plays.
+   57 → 59; 227 opens no window of its own, so one extension (seen at runtime); 229 is the filler clip and never plays.
 4. When the mounter's clip ends: clear the paired link on both and leave the victim on the ground; a circle at him
    is the grounded mount again.
 5. Test (no disc needed, synthetic clips): mount, power strike, run to the end; assert the mounter is standing in the
@@ -2120,10 +2142,28 @@ has his pending damage cleared with **no reaction**: the dive, the charge, the p
 plays `Human_PlayLethalReaction` at once, unless he holds any of **`0xc12200`** (`0x800000`, `0x400000`, `0x10000`,
 `0x2000`, `0x200`): then the ordinary path runs, the health drops, and no reaction (lethal or other) plays while the
 flags are held. Which code sets state `0x800000` (inferred: the damage message, human vtable `+0x44`, when the damage
-is defeating) and what plays the death once the paired clip ends were not traced. Inferred: the victim finishes the
-paired clip and dies after it. **Deferred: runtime**: a copy of slot 6 with PoizoCiv at 60 health and an ally
-(`moves_tandem`'s Ash) told to attack him, the player's front grab and power strike timed so Ash's `X1` lands during
-57 / 58; record PoizoCiv's health, state word, held flags and clip every update until his death clip.
+is defeating) and what plays the death once the paired clip ends were not traced.
+
+**At runtime the victim finishes his paired clip and only then goes down** (confirmed (runtime), PCSX2 2.9.94,
+scenario `moves_finisher_lethal`: a copy of slot 6, PoizoCiv a puppet at 60 health 1.0 m ahead, Ash, the player's
+ally, a puppet placed 0.9 m behind him; the player's front grab (circle at 10) and power strike (cross held from 42,
+square at 44), Ash given `X1` (`0x12`, `0x10`, 0) at 47-49; stick centred; hooks `paired-start`, `anim-dispatch`,
+`strike-contact`):
+
+| Update | Player | PoizoCiv |
+| --- | --- | --- |
+| 45 | `Attack_StartPaired(…, 57, 1, 0x400000)`: 57, state `0x1005` | 58, state `0x2001`, held `0x400000` |
+| 46 | | 57 damage: 60 → 3 |
+| 56 | | Ash's `X1` (`Strike_Contact`, Ash → PoizoCiv): 23 damage, 3 → **−20**; state `0x80002001` (`0x80000000` set); **no reaction**, 58 plays on |
+| 89 | 57 ends: 358, state `0x5` | still 58, state `0x80000001` (the pair's `0x2000` cleared) |
+| 117 | | 58 ends (72 updates); **286** (the low reaction) with held `0x2000`, health set to **1** |
+| 149 | | **349**, state **`0x40000`**: knocked out, not dead ([Defeat](#defeat)) |
+
+So the lethal hit took the health below 0 at once but changed nothing the player sees until the victim's own paired
+clip (58, which outlasts the attacker's 57 by 28 updates) ended; then he fell (286, 32 updates) and lay knocked out.
+The record's state `0x80000000` is the mark the hit leaves while the reaction waits (the "state `0x80000000`" of the
+test above; which code sets it is still not traced). A civilian with the flags of this one is knocked out, with
+health 1 (inferred: `HitReact_WhileOut`, `0x002686e8`, which sets health 1), rather than killed.
 
 **When the order matters** (`Humans_Update` step 9, [Tasks](tasks.md#humans-update); `Human_UpdateActions`,
 `0x00254e78`): each human applies its pending damage **before** its dispatcher runs, and a reaction returns before
@@ -2150,8 +2190,10 @@ the dispatcher. The strike tests run earlier in the step (after each move). So:
    interrupted. The dive's clip must hold `0x400000` (`combat::kPhaseDive`), the charge's `0x1000000`, and a paired
    move's victim `0x400000`; check that `m_combat.interrupt()` is not reached for them.
 3. A lethal hit on a victim holding any of `0xc12200` does not start the dying reaction or break the pair at once:
-   keep the health at 0 (or below) and let the paired clip finish; then play the death (inferred; mark it a
-   **Coney reading** until the runtime check above).
+   keep the health below 0 and let the victim's own paired clip finish (not the attacker's: 58 outlasts 57); then
+   the victim falls with the low reaction (286 for a hit from behind, the reactions table) and goes down by
+   [Defeat](#defeat)'s rules: a civilian like PoizoCiv knocked out with health 1, idle 349 (confirmed (runtime),
+   above). Test: a third human's lethal hit during 57 / 58 leaves the victim in 58 to its end, then down.
 4. The grab search of a player refuses a target holding `0x8fc57a60` (diving, charging, in a pair).
 5. Order: apply a human's pending damage before its own commands in the same update, and drop that update's command
    when a reaction starts.
@@ -4066,3 +4108,13 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
   breaks the pair.
 - **The clips' `+0x44` flags** (paired `0x1`, tackle `0x20`, grab `0x40`): which clips carry the tackle flag
   ([Strong grapple](#strong-grapple)).
+- **226's knockdown word at runtime**: the disc's 226 has its type-7 word 0, which would queue 198, yet at runtime
+  `Attack_StartPaired` took the branch without 198 ([The mount power strike](#mount-power)). To find out,
+  rerun `moves_mount_power` with a hook at `Anim_GetKnockdownValue` (`0x00101a60`) logging its argument and return on
+  update 143, and read the clip it was handed in memory: a different set (the generic `gen_mount_power20_*` rather
+  than Rembrandt's) or another event than the first type-7 one would explain it.
+- **Who sets state `0x80000000`**: the lethal hit during a paired move leaves it on the victim's record `+0x14`
+  ([Moves a hit cannot stop](#protected-moves)), but the setter was not traced. To find out, rerun
+  `moves_finisher_lethal` with the `state-code` hook (record `+0x14`'s setter) logging `ra` on update 56, and if the
+  setter is not the writer, search the damage and reaction code (`Human_UpdateActions`, `0x00254e78`, and what it
+  calls) for a store that ORs `0x80000000` into `+0x14`.
