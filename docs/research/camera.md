@@ -487,7 +487,8 @@ code at the cited addresses:
 - **Right stick** (`0x00129050`): returns at once while `0x0050b1b0[player]` or switch 0 (`0x0050b1b8[player]`) is
   0, so neither the stick nor the zoom buttons act.
 - **Look-behind** (switch 11, `0x0050b23c`, confirmed (code) at `0x0012b4b4`): passed to `0x00129050` as its eighth
-  argument (forced to 0 unless the player runs or sprints, and while he is tagging: [The right stick](#right-stick)). With it 0 the reverse-camera button
+  argument (forced to 0 unless the player runs or sprints, and while he is tagging:
+  [The right stick](#right-stick)). With it 0 the reverse-camera button
   (`0x0050b230`) never turns the view round, and a press on a button shared with the zoom counts as a zoom tap.
   `Human_SetWheelchairControl` clears it.
 - **Power camera** (switch 9, `0x0050b1d4`): an animation event of type `0x39` (`0x00101dd8`) switches a player whose
@@ -1201,9 +1202,9 @@ Only while the game mode on top is 1 (play, inferred), switch 11 is on and the p
 `+0x458`; letting go clears it, and so does the gate closing while it is held (`0x00129050` at
 `0x001292a4`-`0x001292e8`: the look-behind ends on the update the player slows to a walk, stops or starts an attack,
 as if R1 were let go). Confirmed (code). So **R1 never turns the camera round from a standstill, a walk or a fight
-stance**: a player blocking (standing, gait 0) or locked on (the combat walk is gait 3, [Combat](combat.md#fight-stance)) gets no
-look-behind, and R1 is free for the block. Not checked at runtime. `0x001298c0`, confirmed (code), with the 75° and 45° cosines
-set by `Cam_Follow_StaticInit` (`0x00134ab0`):
+stance**: a player blocking (standing, gait 0) or locked on (the combat walk is gait 3,
+[Combat](combat.md#fight-stance)) gets no look-behind, and R1 is free for the block. Not checked at runtime.
+`0x001298c0`, confirmed (code), with the 75° and 45° cosines set by `Cam_Follow_StaticInit` (`0x00134ab0`):
 
 1. **First held update**: the band's near edge is saved in `+0x35c`. When the angle between the player's facing and
    the camera's reversed forward is more than **75°** (the usual case: the camera behind the player), the band is
