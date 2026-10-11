@@ -456,6 +456,11 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
   (`0x000b0000`) and runs the two instructions. The recorder reads the ring every poll and writes one CSV per hook
   ([Hooks](#hooks)). A **call hook** makes the game call one of its own functions on its own thread, as a script
   binding would: that is how a fight is started on a pedestrian (`GoalFight`'s `0x002b2b90`) for the AI checks.
+- **Absolute paths from a worktree.** Give `pcsx2 launch` and `pcsx2 record` absolute `--iso`, `--scratch` and
+  `--state` paths when you run them from a worktree: PCSX2 opens the disc link relative to its own folder, so a
+  relative path fails ("Requested filename ... does not exist" in its `logs/emulog.txt`) and the tool only reports
+  that the state did not run within 60 s. A state that already holds a patch (`scripted-pad` in most saved states)
+  is refused by that patch: leave it out of the scenario's `patches`.
 - **Leave the quick-save slots alone.** Load existing slots read-only (they may hold someone else's test spots), and
   keep your own states as files in your scratch folder, made as above. PINE can only save to a slot number: when a
   state must be saved from a running game, save it to an empty slot above 10 and move the file to your scratch folder
@@ -589,7 +594,8 @@ and `call-brains`. The hint-queue pass added `hint-queue`, `hint-clear`, `hint-w
 box's queue, [HUD](../research/hud.md#hint-queue-runtime)) and `anim-dispatch` and `anim-callback-match` (who starts
 which anim id and which script callback it runs). The level80 passes added the teammate hooks (`hit-by-chief`,
 `hit-reaction`, `attack-target-push`, `push-contact`, `can-push`, `say-command`) and the fire hooks (`ember-init`,
-`burn-init`, `fade-flame-init`, `debris-flame` and their update hooks). One run installs at most 64 hooks, fewer than
+`burn-init`, `fade-flame-init`, `debris-flame` and their update hooks); the revive pass added `revive-start` and
+`revive-finish` ([Combat](../research/combat.md#revive-runtime)). One run installs at most 64 hooks, fewer than
 the file holds, so name only the ones a pass needs. Two hooks at one address cannot be installed together (`hint-show`
 and `event-hint` are the same place): pick one, and add any extra value it needs to the one you keep. When the update
 of an entry matters, log the tick count and use it: in that pass one Lua call's four `HintBox_Queue` entries, all at

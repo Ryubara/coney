@@ -213,6 +213,27 @@ The flags at human `+0xe0` that combat reads, confirmed (code) at the cited func
 | `0x20000000000` | one hit cannot take health below a fraction of the maximum (`0x00265f70`); it then sets `0x10` | |
 | `0x100000000000` | never picked as a target (tested by `0x00227d78` in the filter `0x00279410`; not `HuSetNoAutoLock`, which sets `0x8000000000`, a bit with no reader found) | |
 
+**The flags a human starts with** come from its brain type (`Human_Init`, `0x00218008`, the stores at `0x00218cfc`
+and `0x00218dac`; confirmed (code)). The word is zeroed, then:
+
+| Brain type | Flags set | Also |
+| --- | --- | --- |
+| 0 (the player) | `0x2000000`, then `0x2` and `0x4` | cuff count `+0x378` = 0 |
+| 3 (a Warrior) | `0x2` and **`0x4` (revivable)** | cuff count 0 |
+| 1 (a cop) | `0x2000` and `0x40000` | cuff count 1 |
+| 5 (a dealer) | `0x2000` and `0x40000` | |
+| any other | `0x8` (woundable) with a 1-in-2 chance (`Random_IntBelow(2)` = 0), never for a class whose `+0x11b` is 13 | cuff count −1 |
+
+`Human_ApplyClassFlags` (`0x00222c98`) then copies the class record's switches over bits `0x80`, `0x200`, `0x400`,
+`0x200000`, `0x400000`, `0x800000000`, `0x1000000000` and `0x2000000000`. Giving a player back to the AI
+(`Human_ReleasePlayer`, `0x0022a2a8`) clears `0x2`, `0x4` and `0x2000000` and sets `0x2` and `0x4` again for brain
+type 0 or 3 (`0x2000` for type 1) before the class switches. So **every Warrior is revivable from the moment he is
+made**; `Human_MakePlayer` sets `0x4` too, and the only other writer of the bit is the script binding `HuSetRevivable`
+(`Human_SetRevivable`, `0x00235db0`). Every 64-bit store to human `+0xe0` in the executable was checked (174 `sd`,
+no `sw`), and none other sets or clears `0x4`. Confirmed (runtime), PCSX2 2.9.94, `level80` checkpoint 1 (the "Let's
+Go" lesson, before any script call): Vermin, Rembrandt and Ajax (brain type 3) had flags `0x7` in their low bits,
+Cleon (type 0) `…0207`, Ajax's girl (type 4) `0x2000000009`.
+
 ### The Anim Range List and damage {#damage-table}
 
 Every attack's base **damage is the Anim Range List's `+0x0a`** as the human holds it
@@ -2288,7 +2309,8 @@ addresses:
    - Any other human without `0x4` is **knocked out** (`Human_KnockOut`, `0x00230328`) and drops what it carries.
      It is **dead** instead (state `0x100000000`, record `+0xf0` = 0) when the source of the last hit (record `+0xd0`)
      is an object of kind 29.
-   - **With `0x4`**: knocked out, with record `+0xf0` 14 s later still.
+   - **With `0x4`**: knocked out, with record `+0xf0` 14 s later still. Confirmed (runtime), `level80`: Vermin's
+     `+0xf0` became now + **28,000 ms** (`Human_KnockOut`'s 14 s plus these 14 s).
 3. A cuffed human's idle becomes 323 `ANIM_ARRESTED_DEAD`.
 4. For a player, the players of the same gang who are knocked out get the same `+0xf0`.
 
@@ -2894,16 +2916,26 @@ given:
 1. **Refused** when the reviver has any held flag or a state flag of `0x7bf9e9f7ff0`, when
    `Human_FindRevivableNear` (`0x00279078`) finds nobody, or when the downed human has any held flag.
 2. **The way**: when `Human_IsWayClearTo(reviver, downed)` (`0x0021c0a8`) fails, a downed AI human (`+0x1b0` = −1)
-   is refused, and a downed player only accepts a reviver whose brain is type 3 (a Warrior).
-3. **The flash**: the reviver's panel inventory (`+0x380`) holds item 1, or the downed human's does (only a co-op
-   partner has one); else refused. Then `Revive_Start` and the command is used (returns 1).
+   is refused, and a downed player only accepts a reviver whose brain is type 3 (a Warrior). The test sweeps a
+   **capsule of radius 0.2 m**, as tall as the reviver's own capsule (`Human_GetCapsuleHeight`) and posed on him, along
+   the vector from his transform position to the downed human's (`IPhysics_CollideShape`, collision mask `0x2803`,
+   his own body skipped); the way is clear when nothing is hit or the first thing hit is the downed human. It fails
+   at once (not clear) while the reviver is grabbed, the downed human has no character instance (`+0xd8`) or the
+   reviver has no physics body (`+0x1a0`).
+3. **The flash**: `Inventory_GetCount(inventory, slot, 1)` for the reviver's player slot (`+0x380`), else for the
+   downed human's; an AI human's slot is −1, which the inventory refuses (count 0). So an AI Warrior can only revive
+   a downed **player who holds a flash**, and player 1 only with his own flash (or a co-op partner's). Else refused.
+   Then `Revive_Start` and the command is used (returns 1).
 
 `Revive_Start(reviver, downed)` (`0x002752a0`):
 
 - Both get the same new pair id (a counter at `*0x00597198 + 0x10`, wrapping to 1) at their record `+0x3c`, and
   both their vtable slot `+0xe4` is called with (1e9, 7) (not traced; reset with 1.0 at the finish).
 - `Attack_SteerLed(0.1, reviver, downed, 0, 351)` puts the reviver in place for clip 351
-  ([the led steer](#led-steer)).
+  ([the led steer](#led-steer); the 0.1 is not read): over 351's time to its first event + 0.1 s he **turns** to the
+  line to the downed human's head (less 351's direction offset, `AttackTable_GetOffset`) and **slides** to the point
+  that lies 351's reach (the Anim Range List's `+0x04` for anim 351, `AttackTable_GetReach`, `0x002544a0`) short of
+  that head, both at an even rate ([runtime](#revive-runtime): about 0.70 m from him, 12° off the line).
 - The reviver says **76 `revive_reasure`** (`Human_SayCommand(1.0, reviver, 76, none, interrupt, …)`).
 - His animation stack gets, bottom up: **351 `gen_revive_begin`** with the finish callback (`Revive_Finish`,
   `0x00274ee0`) on its end, chained to **353 `gen_revive_end`**, chained to his idle loop (out of the fight stance
@@ -2911,7 +2943,12 @@ given:
   top. Clip 352 (`gen_revive_cycle`) is not used. Push sphere off; held flag `0x8000000`; each is the other's
   partner (`Human_SetPartner`).
 
-`Revive_Finish(reviver)` (`0x00274ee0`), when 351 ends:
+`Revive_Finish(reviver)` (`0x00274ee0`), when 351 ends **however it ends**: the callback is the chained clip task's,
+and the task's clean-up runs it on the clip's end, on a cut-off and on the task's release
+(`AnimTaskChained_Release`, `0x00105f78`, and [the task types](animation.md#task-types): resolve the human, clear the
+task's held flags, run the callback, clear it), so a hit or anything else that cuts 351 short still spends the flash
+and heals, once. Confirmed (code); the normal end confirmed (runtime: the call came from the release, `0x00106040`);
+a cut-short 351 was not staged at runtime.
 
 1. Both partners cleared, both `+0xe4` calls with (1.0, 7), both pair ids 0.
 2. **One flash is spent**: the downed human's when his inventory has one, else the reviver's
@@ -2924,6 +2961,39 @@ given:
 So the whole revive is clip 351 on the reviver (the flash spent and the heal at its end), then 353 on him and 354 on
 the revived together.
 
+**Who can be revived.** Every Warrior: `Human_Init` gives brain type 3 the revivable flag `0x4` when he is made
+([Human flags](#human-flags)), so a crew Warrior downed in any fight of any mission is revivable unless a script
+clears it with `HuSetRevivable(h, false)`. Confirmed (code); confirmed (runtime) on `level80` below. `level80`'s own two
+`HuSetRevivable` calls (checkpoint 3) are for humans of brain type 2; the crew needs none.
+
+#### At runtime {#revive-runtime}
+
+Confirmed (runtime), PCSX2 2.9.94, `level80` checkpoint 1 after the "Let's Go" lesson (R2 and the right stick up 80 %
+gave command 0, which hands control back and brings Vermin and Rembrandt down to Cleon); scenario
+`repo:research/traces/scenarios/revive_crew.toml` with the hooks `revive-start`, `revive-finish`, `anim-dispatch` and
+`say-command`. Vermin was put in front of Cleon at update 270, his health set to 0 and `Human_OnHealthOut` called on
+him at 281 (he stays standing: the fall is a fight's reaction clip, not this function), Cleon given one flash, then
+d-pad left tapped once (the stick at rest). Two runs, Vermin 0.97 m and 1.66 m away:
+
+- **The prompt**: string 4 ("Revive" with the d-pad picture) showed while Cleon stood beside the knocked-out Vermin
+  with the flash, before the press.
+- **The press**: the update that read it had command `0x27`, `Revive_Start(Cleon, Vermin)` from `Player_TryRevive`
+  (return address `0x00286ca0`), line 76 on Cleon, and Cleon's clip 351 with record `+0x08` = `0x8000000`. The clips
+  taken that update, in order: 388 (idle), 389, 353, 351 (the chain built bottom up).
+- **351 lasted 21 updates (0.70 s)** in both runs. On the 22nd update `Revive_Finish` ran: the flash count went 1 to 0,
+  Vermin's health 0 to 1800 (his maximum), line 75 on Vermin, Cleon's clip 353 and Vermin's 354. **From the press to
+  the heal: 0.70 s.**
+- **353 lasted 33 updates (1.10 s)**, then **389 25 updates (0.83 s)**, then idle 388; `+0x08` went back to 0 when
+  353 ended. Cleon was out of the fight stance, so 389 came before the idle as the chain says.
+- **354 lasted 72 updates (2.40 s)** on Vermin, then 389, which his brain cut after one update with its own clips
+  (turns 400 / 401, then idle).
+- **The steer**: Cleon's heading changed for 25 updates at an even rate (1.52° and 1.06° an update) and ended **11-13°
+  to the left of** the line to where Vermin stood (105.7° against 93.0°, 94.3° against 82.9°). He **slid**: from 0.97 m
+  he ended 0.71 m from Vermin, from 1.66 m 0.71 m too (up to 1.75 m/s), so 351 has a reach and the stand point sits
+  about **0.70 m** from the downed human. 353 then carried him back to 1.1-1.16 m and 389 to 1.15-1.29 m (their own
+  root motion).
+- **Knocked out with `0x4`**: the wake time `+0xf0` was now + 28 s ([Defeat](#defeat)).
+
 **Coney** builds it for player 1 (`repo:src/gamemodes/gameplay_revive.cpp`, `repo:src/human/human_revive.cpp`, the
 tests as `combat::mayRevive` in `repo:src/combat/revive.h`): d-pad left beside a revivable partner, the tests above,
 76, the chain 351, 353 and the idle (through 389 out of the stance) holding `0x8000000`, and at 351's end the flash,
@@ -2933,25 +3003,25 @@ nor the revive came (owner item 8). Readings and stand-ins:
 
 - **Blocked** is the swap prompt's reading of the state mask (knocked out, cuffed, wounded) plus anything that keeps
   him off his feet (down, held, in the air); "any held flag" is the record bits his clips hold.
-- **The way** is taken as clear (**stand-in**: the 0.2 m capsule sweep of `Human_IsWayClearTo` is not built; the
-  search has already found him in sight).
-- **The led steer** only turns the reviver to the downed human's head over 0.1 s; he does not slide (**Coney's
-  reading**: whether the Anim Range List gives 351 a reach is not on this page).
+- **The way** is taken as clear (**stand-in**: the 0.2 m capsule sweep of `Human_IsWayClearTo` above is not built;
+  the search has already found him in sight).
+- **The led steer** only turns the reviver to the downed human's head over 0.1 s; he does not slide. **Differs**: the
+  original turns and slides him over 351's first-event time + 0.1 s to 351's reach (about 0.70 m) from the head, at
+  [the runtime figures](#revive-runtime).
 - The pair ids, `Human_SetPartner`, the `+0xe4` calls and the push spheres have no counterpart.
-- **A 351 cut short** (a hit) spends nothing and heals nobody (**Coney's reading**).
+- **A 351 cut short** (a hit) spends nothing and heals nobody. **Differs**: the original still runs `Revive_Finish`
+  (above).
 - The revived plays 354 then his idle, without 389 and without holding `0x8000`.
+- **The crew's flag**: Coney's humans start with no flags but a player's, so a crew Warrior is revivable only when a
+  script flags him (the disc test calls `HuSetRevivable`). **Differs**: the original's `Human_Init` sets `0x2` and `0x4`
+  on every brain-type-3 human ([Human flags](#human-flags)), which is what owner item 8 needs.
 - Not built: an AI Warrior reviving ([SaveHuman](ai-goals.md#goal-save-human)), a co-op partner's flash.
 
 Open questions (research needed):
 
-- **What makes a crew Warrior revivable** (human flag `0x4`). In Coney's `level80` the crew (brain type 3 in player 1's
-  gang) never gets it: `Human_MakePlayer` sets it only on players, and the level's own `HuSetRevivable` calls (two, at
-  checkpoint 3) are for type-2 humans, not the crew. So in Coney a Warrior downed in a fight is not revivable unless a
-  script flags him; the disc test flags him with `HuSetRevivable` itself. Which code sets it on the crew in the
-  original (a brain type's set-up, a gang join, a config record), or whether the crew there is revivable at all?
-- Does `Revive_Finish` run when something cuts 351 short?
-- Does the Anim Range List give 351 a reach and the led flag?
-- At runtime: the clip order 351 then 353 with 354, and the time from the press to the heal (issue #76).
+- At runtime, a 351 cut short by a hit: the code says `Revive_Finish` still runs; not yet staged.
+- What `Revive_Start`'s vtable `+0xe4` calls with (1e9, 7) and (1.0, 7) set (inferred: the push weight, as
+  `Human_KnockOut` gives 1e9).
 
 ### Target selection {#targets}
 

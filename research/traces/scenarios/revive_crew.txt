@@ -1,0 +1,8 @@
+# The "Let's Go" lesson first (Cleon's stick is locked until the follow command): R2 held, the right stick up 80 %
+# picks command 0, which hands control back and brings Vermin and Rembrandt down to Cleon. Vermin is knocked out at
+# update 281 (the scenario's call); Cleon taps d-pad left once at 300. Frames are character updates of 1/30 s.
+5 press r2
+15 stick right 0 80
+35 stick right 0 0
+40 release r2
+300 tap left
