@@ -2530,12 +2530,12 @@ move the camera; with no point given the base adds it to the look-at point `+0x1
 
 #### Shakes from the world: the passing train {#world-shake}
 
-Set dressing shakes the cameras through **slot 0**, the slot of a shake with no human, with any amplitude and time,
-not through the three levels. Two one-instruction methods of the base camera (every camera class keeps them,
-`0x00535510` and `0x00535d50` alike): vtable `+0x1d4` (`0x004db180`, `swc1 f12, 0x1a8(a0)`) sets slot 0's level
-amplitude `+0x1a8`, and `+0x1dc` (`0x004db188`, `swc1 f12, 0x1b4(a0)`) its time `+0x1b4`; the script-object helpers
-`ScriptObj_SetCameraWorldShakeLevel` (`0x003a4608`) and `ScriptObj_SetCameraWorldShakeTime` (`0x003a4668`) call them on a player's current
-camera. Neither touches the rumble base `+0x1d0` or the view switch `+0x1d7`. Confirmed (code).
+Set dressing shakes the cameras through **slot 0**, the slot of a shake with no human, with any amplitude and time, not
+through the three levels. Two one-instruction methods of the base camera (every camera class keeps them, `0x00535510`
+and `0x00535d50` alike): vtable `+0x1d4` (`0x004db180`, `swc1 f12, 0x1a8(a0)`) sets slot 0's level amplitude `+0x1a8`,
+and `+0x1dc` (`0x004db188`, `swc1 f12, 0x1b4(a0)`) its time `+0x1b4`; the script-object helpers
+`ScriptObj_SetCameraWorldShakeLevel` (`0x003a4608`) and `ScriptObj_SetCameraWorldShakeTime` (`0x003a4668`) call them on
+a player's current camera. Neither touches the rumble base `+0x1d0` or the view switch `+0x1d7`. Confirmed (code).
 
 **The train** (`part_train_sound`, `PartTrainSound_Update` `0x003db690`, [Script types](script-types.md#subway-train)):
 the sound object that travels with a subway or elevated train. While it is within 60 m of a camera, each of its
