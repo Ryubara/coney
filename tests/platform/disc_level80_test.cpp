@@ -707,10 +707,22 @@ TEST_CASE("the disc's level80 checkpoint 3: Fox, the Hold Up order, the bottle t
         dump();
     }
     REQUIRE(distracted);
+    // The bottle's break clears the throw lesson's text and flushes its poll: no hint of it is left showing or
+    // queued to come back in step 3.4 (owner checklist item 38: "throw a bottle" stayed up until the Mayhem order).
+    const coney::hud::HintBox& box = level.scripts->hud().hints();
+    CHECK_FALSE(box.showing().has_value());
+    CHECK(box.queued().empty());
+    const std::size_t hintsBefore = shown.order.size();
     REQUIRE(skipToPad(level, kWait));
 
-    // 3.4: TT_7 asks for the Wreck'em order: R2 held, the right stick down-left.
+    // 3.4: TT_7 asks for the Wreck'em order: R2 held, the right stick down-left. It is the next hint shown.
     REQUIRE(level.runUntil([&] { return hinted("TT_7"); }, kWait));
+    {
+        std::vector<std::string> between(shown.order.begin() + static_cast<std::ptrdiff_t>(hintsBefore),
+                                         shown.order.end());
+        std::erase_if(between, [](const std::string& key) { return !key.starts_with("TT_"); });
+        CHECK(between == std::vector<std::string>{"TT_7"});
+    }
     level.pad.buttons = coney::pad::kR2;
     level.run(2);
     level.pad.rightX = -0.67F;
@@ -728,6 +740,9 @@ TEST_CASE("the disc's level80 checkpoint 3: Fox, the Hold Up order, the bottle t
         dump();
     }
     REQUIRE(store);
+    // The order cleared TT_7, and nothing older took its place.
+    CHECK_FALSE(box.showing().has_value());
+    CHECK(box.queued().empty());
 
     // 3.5: at the front door (teleported to its marker's flag, as the analyst's run), triangle starts the lock pick
     // and cross is pressed as each pin turns through the middle of its good band.

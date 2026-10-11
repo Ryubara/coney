@@ -2657,6 +2657,13 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   steps. **Coney's placement**: the restore mark is the view's (`0x0018d910`), run in `HUD_Update` from
   `HudFrame::letterbox`. Play's suspend and resume (`GameplayMode`) hide the HUD under a mode pushed over play and
   show it again unless player 1 holds a scene role; `0x005e5580` and game state `+0x14c` are not checked.
+  `levelShutDown` (`HUD_ShutdownLevel`, `0x001ae980`) runs from `GameplayMode::endLevel`, the one teardown every way
+  out of a level goes through (a debug jump, the story's next mission, a restart, leaving to the menus): every part
+  the level set up or a script filled goes (the hints queued and showing, the tutorial callback, the objectives and
+  their messages, the announcements, the prompts, bars, counters, stopwatch, mini-game panels and the radar's blips),
+  so no hint or objective of one mission survives into the next. **Coney's choice**: the game-state switches the HUD
+  object holds for Coney (the game's tutorial hints, `W_GameState + 0x56e2`; the first-objective hint's flag), the
+  shown flag and the spinner are kept, as they are not the level's; the next `levelSetUp` hides both anyway.
 - **`hud::PlayerPanel`**: the [layout](#the-player-panel-layout-0x0050fa10), the banner by type, the
   [meter](#the-rage-meter) (caps and strips of `part_page0` 54-57, one-texel inset, the full meter's pulse and sound,
   `FlashRageBar`), the [score and money](#score-and-money) counting by a sixteenth plus one with their popups,

@@ -176,6 +176,15 @@ class Hud {
     /// (RadarState::scriptOn), and it ends with hideAll(), so a level starts with the HUD hidden.
     /// @orig 0x001ad588 HUD_LevelSetUp (HUDInterface.cpp)
     void levelSetUp();
+    /// The HUD's per-level shut-down, from the level's unload: every part a level set up or a script filled goes
+    /// (the hints queued and showing, the tutorial callback, the objectives and their messages, the announcements,
+    /// the prompts, the counter panels and bars, the stopwatch, the mini-game panels, the radar's blips and map), so
+    /// whichever way the next level starts (the story, a direct start, a debug jump, a restart) it starts clean. What
+    /// outlives a level stays: the services, the game clock, the game-state switches it holds (the game's tutorial
+    /// hints, the first-objective hint given), whether the HUD is shown and the spinner.
+    /// Research: docs/research/hud.md#hud-object
+    /// @orig 0x001ae980 HUD_ShutdownLevel (HUDInterface.cpp)
+    void levelShutDown();
     /// `HideHud`: hides both panels and the HUD (`+0x177a0` = 0). Nothing is saved: each part keeps its own flags (a
     /// radar keeps its "on" flag, and is simply not drawn while the HUD is hidden).
     /// @orig 0x001b1f38 HUD_HideAll (unknown)
@@ -204,6 +213,16 @@ class Hud {
     [[nodiscard]] ScrollInQueue& scrollIn() { return m_scrollIn; }
     [[nodiscard]] const ScrollInQueue& scrollIn() const { return m_scrollIn; }
 
+    /// The hint box's step (HintBox::update) at game time `nowMs`, unless the letterbox held the HUD's last step.
+    /// Gameplay calls it after the step's script callbacks and before the scheduled calls, where the original's
+    /// `HUD_Update` runs in its frame (after the simulation, whose animation and tutorial callbacks set texts, and
+    /// before `ScriptSystem::Update`; docs/research/level-loading.md#a-frame-of-play), because Coney's own HUD step
+    /// comes before those callbacks: a text a callback sets shows before a scheduled call's `HUDSetTutorialText(nil)`.
+    void updateHints(std::uint64_t nowMs) {
+        if (!m_letterbox) {
+            m_hints.update(nowMs, m_services.sound);
+        }
+    }
     /// The hint box.
     [[nodiscard]] HintBox& hints() { return m_hints; }
     [[nodiscard]] const HintBox& hints() const { return m_hints; }

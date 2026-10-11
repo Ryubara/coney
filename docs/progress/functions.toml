@@ -2775,6 +2775,11 @@ name = "HUD_LevelSetUp"
 subsystem = "GUI"
 
 [[function]]
+address = 0x001ae980
+name = "HUD_ShutdownLevel"
+subsystem = "GUI"
+
+[[function]]
 address = 0x001aef50
 name = "HUD_IsPlayerStickPushed"
 subsystem = "GUI"
