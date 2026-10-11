@@ -1904,10 +1904,10 @@ rewrite the centre for the video mode before using it (the table below), with z 
 
 **The pins and the shapes share that centre.** Each pin's `BaseWidget_Setup` first converts the GUI position into its
 sprite position (widget `+0x80`, `BaseWidget_SetPosition` `0x001a2060` through `RwDevice_GuiToOverlay` `0x00195238`:
-(x − 0.5) × 640 / 448, 0.5 − y, −1.1), but `LockPickDial_Init` then **overwrites** `+0x80` with the centre (x, y, −1,
-1) (`0x001b8078`-`0x001b80f8`), and `ApplyVideoMode` does the same. Nothing writes `+0x80` again: the dial's update
-only turns the pins (slot `+0x94`), refreshes their size (`BaseWidget_SetSize` with no conversion) and runs the
-widget update (`BaseWidget_UpdateSize`, which touches the size and anchor, not `+0x80`), and `BaseWidget_RenderAlpha`
+(x − 0.5) × 640 / 448, 0.5 − y, −1.1), but `LockPickDial_Init` then **overwrites** `+0x80` with the centre
+(x, y, −1, 1) (`0x001b8078`-`0x001b80f8`), and `ApplyVideoMode` does the same. Nothing writes `+0x80` again: the
+dial's update only turns the pins (slot `+0x94`), refreshes their size (`BaseWidget_SetSize` with no conversion)
+and runs the widget update (`BaseWidget_UpdateSize`, which touches the size and anchor, not `+0x80`), and `BaseWidget_RenderAlpha`
 (`0x001a2690`) copies `+0x80` straight into the sprite batch's positions (`Instance_AddSprite` `0x00182de0`). So the
 GUI position (0.09, 0.59) is **never seen**: the pins are drawn at the centre point at **depth 1**, the same depth as
 the shapes. Confirmed (code) at those addresses; it corrects the earlier reading that the pins sit at the GUI
