@@ -19,7 +19,7 @@ from pathlib import Path
 
 from coney_tools import hooks as hook_tools
 from coney_tools import pcsx2_claims, pcsx2_proc, pcsx2_state
-from coney_tools.config import ConfigError, find_repo_root, load_config
+from coney_tools.config import ConfigError, find_repo_root, load_config, local_config_file
 from coney_tools.game_memory import GAME_TIME_OFFSET, GAME_TIMER_POINTER, GameMemory
 from coney_tools.hooks import Hook, HookError
 from coney_tools.pcsx2_state import Patch, StateError
@@ -49,7 +49,7 @@ def _config_paths() -> dict[str, Path | None]:
     try:
         return load_config(root).paths
     except ConfigError:
-        if (root / "coney.local.toml").is_file():
+        if local_config_file(root) is not None:
             raise
         return {}
 
