@@ -16,6 +16,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
@@ -194,8 +195,10 @@ class Gym {
             return waypoints;
         }
         auto plan = planner->request(player().position(), point);
-        if (plan && plan->route) {
-            for (const std::uint32_t node : plan->route->nodes()) {
+        // Moved into a local optional so the check and the use are one variable (clang-tidy cannot follow the plan's).
+        const std::optional<coney::ai::Route> route = plan ? std::move(plan->route) : std::nullopt;
+        if (route) {
+            for (const std::uint32_t node : route->nodes()) {
                 waypoints.push_back(planner->map().nodes()[node].position);
             }
         }
