@@ -145,9 +145,8 @@ TEST_CASE("a wall face the sphere already touches takes only the move's part int
 
     // Past the face's edge at x = 50 with that edge within the radius (0.44 m), it slides along the face's plane as
     // over the face; past it out of reach (0.72 m), not touching (0.48 m off) or moving away, the move is untouched.
-    const Vec3 pastEdge =
-        coney::human::slideAlongTouchedFaces(*mesh, inFront(Vec3{50.2F, 40.3125F, 0.5F}, 0.39F), radius, move, walking,
-                                             scratch);
+    const Vec3 pastEdge = coney::human::slideAlongTouchedFaces(*mesh, inFront(Vec3{50.2F, 40.3125F, 0.5F}, 0.39F),
+                                                               radius, move, walking, scratch);
     CHECK(pastEdge.x == Approx(slid.x));
     CHECK(pastEdge.z == Approx(slid.z));
     const auto unchanged = [&](Vec3 at, Vec3 m) {

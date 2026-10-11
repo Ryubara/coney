@@ -77,8 +77,8 @@ struct ScriptState {
     std::uint64_t disabledCommands = 0;
     /// When the wound's 14 s run out (see `wounded`).
     std::uint64_t woundedUntilMs = 0;
-    /// Can be pushed aside by others (`+0x3bf`, `HuSetPushable`). **Coney stand-in**: Coney's bodies do not push
-    /// each other yet, so it is only kept.
+    /// Can be pushed aside by others (`+0x3bf`, `HuSetPushable`): when false its body has flag `0x200`, and another
+    /// human walking into it slides along it without moving it (docs/research/physics.md#human-contacts).
     bool pushable = true;
     /// Can be picked as a target, as its gang allows (brain `+0x120`, `GangSetTargetable`): kept on the human so the
     /// target search, which sees humans, reads it.

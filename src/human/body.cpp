@@ -217,8 +217,8 @@ bool touchesAtStart(const FacingWall& wall, anim::Vec3 centre, float radius) {
     const anim::Vec3 from = wall.corners.at(edge);
     const anim::Vec3 along = anim::subtract(wall.corners.at((edge + 1) % 3), from);
     const float lengthSq = anim::dot(along, along);
-    const float t = lengthSq > 0.0F ? std::clamp(anim::dot(anim::subtract(centre, from), along) / lengthSq, 0.0F, 1.0F)
-                                    : 0.0F;
+    const float t =
+        lengthSq > 0.0F ? std::clamp(anim::dot(anim::subtract(centre, from), along) / lengthSq, 0.0F, 1.0F) : 0.0F;
     return anim::distance(centre, anim::add(from, anim::scale(along, t))) <= radius;
 }
 

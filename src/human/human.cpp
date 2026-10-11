@@ -7,6 +7,7 @@
 #include <memory>
 #include <numbers>
 #include <optional>
+#include <utility>
 
 #include "animation/anim_clip.h"
 #include "animation/anim_task.h"
@@ -495,6 +496,12 @@ std::optional<Human::Swept> Human::sweep(const raycast::CollisionMesh& mesh, ani
     if (anim::length(displacement) <= 0.0F) {
         return Swept{.feet = from};
     }
+    // The other humans' capsules first. **Coney's choice**: the original sorts the humans' and the walls' contacts of
+    // a pass by fraction together; here the humans take their part of the move before the walls take theirs.
+    displacement = meetHumans(from, displacement);
+    if (anim::length(displacement) <= kClear) {
+        return Swept{.feet = from};
+    }
     // The walking sphere (0.4704 m for Rembrandt, about 0.35 m for an AI human, whose body +0x60 is 1.0), 0.05 m clear
     // of the feet, against the walls the move goes into and that are 0.25 m tall or more; each push slides it along
     // that wall and leaves it 0.01 m clear.
@@ -564,6 +571,76 @@ std::optional<Human::Swept> Human::sweep(const raycast::CollisionMesh& mesh, ani
     return swept;
 }
 
+UprightCapsule Human::uprightCapsule() const {
+    // **Coney's choice**: the 2 m upright capsule the strikes take too, not posed from the head bone each time.
+    return UprightCapsule{.feet = m_position, .top = kStrikeCapsuleHeight * m_scale, .radius = capsuleRadius()};
+}
+
+bool Human::blocksHumans() const {
+    // Health out (knocked out, wounded or none left) takes BLOCKHUMANS away; the stand-in gives it back once he is
+    // none of those (see the declaration).
+    return !m_outOfWorld && !m_fighter.health().depleted() && !m_script.knockedOut && !m_script.wounded;
+}
+
+bool Human::linkedWith(const Human& other) const {
+    const Holdable* self = this;
+    const Holdable* that = &other;
+    return (m_fighter.held() != nullptr && m_fighter.held() == that) ||
+           (other.m_fighter.held() != nullptr && other.m_fighter.held() == self);
+}
+
+float Human::pushWeight() const {
+    // Every link sets both humans' weight to 1e9, and so does an arrest.
+    constexpr float kImmovable = 1e9F;
+    return m_fighter.inPair() || m_script.arrested ? kImmovable : 1.0F;
+}
+
+anim::Vec3 Human::meetHumans(anim::Vec3 from, anim::Vec3 move) {
+    if (m_otherHumans.empty()) {
+        return move;
+    }
+    // A charging capsule (its strike flag on) strikes the human it meets and only slides (code 1); every other walk
+    // pushes him too (code 4). The strike itself is the capsule strike's test (testStrikes()).
+    const bool striking = m_strikes.capsuleOn();
+    UprightCapsule self = uprightCapsule();
+    self.feet = from;
+    anim::Vec3 at = from;
+    anim::Vec3 left = move;
+    for (int pass = 0; pass < kSweepPasses && anim::length(left) > kClear; ++pass) {
+        // The nearest contact along what is left of the move.
+        Human* met = nullptr;
+        std::optional<CapsuleContact> first;
+        for (Human* other : m_otherHumans) {
+            if (other == nullptr || other == this || !other->blocksHumans() || linkedWith(*other)) {
+                continue;
+            }
+            const auto contact = sweepCapsules(self, left, other->uprightCapsule());
+            if (contact && (!first || contact->fraction < first->fraction)) {
+                first = contact;
+                met = other;
+            }
+        }
+        if (!first) {
+            break;
+        }
+        // Code 4: half of this pass's move into him goes into his pending push-out, over his weight, unless he is not
+        // pushable (body flag 0x200).
+        if (!striking && met->pushable()) {
+            met->addPush(contactPush(left, first->normal, met->pushWeight()));
+        }
+        // Code 1: to the contact, then the rest without its part into him.
+        at = anim::add(at, anim::scale(left, first->fraction));
+        self.feet = at;
+        anim::Vec3 rest = anim::scale(left, 1.0F - first->fraction);
+        if (const float into = anim::dot(rest, first->normal); into < 0.0F) {
+            rest = anim::subtract(rest, anim::scale(first->normal, into));
+        }
+        m_contacts.push_back(first->normal);
+        left = rest;
+    }
+    return anim::add(anim::subtract(at, from), left);
+}
+
 std::optional<anim::Vec3> Human::pushOutInAir(const raycast::CollisionMesh& mesh, anim::Vec3 feet) {
     // A player's push-out sphere is 0.5 × scale, centred its radius plus 0.05 above the feet, out of every wall.
     const float radius = bodyTuning().airRadius * m_scale;
@@ -616,17 +693,22 @@ void Human::moveOnGround(const raycast::CollisionMesh& mesh) {
     // On the ground the velocity has no z: walking climbs only through the snap. A slope slows the human, uphill and
     // downhill alike.
     m_velocity.z = 0.0F;
-    // A charge stopped dead against a wall stays stopped until its clip ends.
+    // The push-out other humans' walks left goes with this move, on top of the velocity's
+    // (docs/research/physics.md#sweep).
+    const anim::Vec3 push = std::exchange(m_pendingPush, anim::Vec3{});
+    // A charge stopped dead against a wall stays stopped until its clip ends; only a push moves it.
     const bool charging = m_animator.animId() == static_cast<std::uint32_t>(combat::anim_id::kRunningAttackCharge);
     m_chargeStopped = m_chargeStopped && charging;
     if (m_chargeStopped) {
         m_velocity.x = 0.0F;
         m_velocity.y = 0.0F;
-        snapToGround(mesh, m_position);
+        const auto pushed = sweep(mesh, m_position, push);
+        snapToGround(mesh, pushed ? pushed->feet : m_position);
         return;
     }
     const float factor = slopeFactor(m_groundNormal.z);
-    const anim::Vec3 displacement{m_velocity.x * factor * m_stepSeconds, m_velocity.y * factor * m_stepSeconds, 0.0F};
+    const anim::Vec3 displacement{m_velocity.x * factor * m_stepSeconds + push.x,
+                                  m_velocity.y * factor * m_stepSeconds + push.y, 0.0F};
     anim::Vec3 feet = m_position;
     if (const auto moved = sweep(mesh, m_position, displacement); moved) {
         feet = moved->feet;
@@ -673,7 +755,8 @@ void Human::slideVelocity() {
 }
 
 void Human::moveInAir(const raycast::CollisionMesh& mesh) {
-    const anim::Vec3 displacement = anim::scale(m_velocity, m_stepSeconds);
+    const anim::Vec3 push = std::exchange(m_pendingPush, anim::Vec3{});
+    const anim::Vec3 displacement = anim::add(anim::scale(m_velocity, m_stepSeconds), anim::Vec3{push.x, push.y, 0.0F});
     anim::Vec3 feet = anim::add(m_position, displacement);
     // Walls still push the airborne body: move across, push out, then fall straight.
     const anim::Vec3 across{m_position.x + displacement.x, m_position.y + displacement.y, m_position.z};
@@ -1459,6 +1542,7 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
     if (m_fighter.holdAttached()) {
         m_velocity = anim::Vec3{};
         m_lastTurn = 0.0F;
+        m_pendingPush = anim::Vec3{};
         return;
     }
     // 2. The root motion the animation's pose carries.
@@ -1541,7 +1625,9 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
             moveOnGround(*mesh);
         }
     } else {
-        m_position = anim::add(m_position, anim::scale(m_velocity, m_stepSeconds));
+        // No level: nothing is met, but a push still moves the body.
+        m_position = anim::add(anim::add(m_position, anim::scale(m_velocity, m_stepSeconds)),
+                               std::exchange(m_pendingPush, anim::Vec3{}));
     }
     // A climb whose ground went away is over: the human falls.
     if (m_climbRun && m_airborne) {

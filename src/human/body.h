@@ -86,11 +86,11 @@ struct WallFilter {
 /// face that the sphere at `centre` of `radius` already touches taken away, in 3D, up to three passes. A face counts
 /// when `filter` keeps it for the move left so far, its plane is at most `radius` from the centre, and the centre
 /// lies over the face or past one edge whose segment is within `radius` (past a corner never counts), the slide
-/// then going along the face's own plane either way; a face slid along no longer takes the move in and is skipped. Nothing pushes
-/// the sphere out of such a face, so a move into a face that leans back (`n.z` up to 0.65) rises along it, and a
-/// body that overlaps a face stays as deep in it. Each face slid along adds its normal to `normals` when given (the
-/// velocity slides along the same faces). **Coney's choice**: of several faces touched at once the one whose plane is
-/// nearest the centre goes first (the original resolves the contacts of one pass in an order not traced).
+/// then going along the face's own plane either way; a face slid along no longer takes the move in and is skipped.
+/// Nothing pushes the sphere out of such a face, so a move into a face that leans back (`n.z` up to 0.65) rises along
+/// it, and a body that overlaps a face stays as deep in it. Each face slid along adds its normal to `normals` when
+/// given (the velocity slides along the same faces). **Coney's choice**: of several faces touched at once the one whose
+/// plane is nearest the centre goes first (the original resolves the contacts of one pass in an order not traced).
 /// @orig 0x0034ee60 Sweep_SphereTriangle (unknown)
 /// @orig 0x0033d870 Vec_RemoveNormalPart (unknown)
 [[nodiscard]] anim::Vec3 slideAlongTouchedFaces(const raycast::CollisionMesh& mesh, anim::Vec3 centre, float radius,

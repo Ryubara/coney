@@ -215,11 +215,15 @@ TEST_CASE("the disc's level99 street: a trash can stops a walker; square and a s
     REQUIRE(cans.size() + squareBags.size() >= 1);
     for (const std::vector<double>* broken : {&cans, &squareBags}) {
         for (const double struck : *broken) {
-            const coney::world_objects::SpawnRecord* struckRecord = scripts.spawnRecords().find(struck);
-            REQUIRE(struckRecord != nullptr);
-            CHECK(struckRecord->removed);
+            const coney::world_objects::SpawnRecord* record = scripts.spawnRecords().find(struck);
+            REQUIRE(record != nullptr);
+            CHECK(record->removed);
         }
     }
+    // The bottle below is looked for beside the first prop broken.
+    const coney::world_objects::SpawnRecord* struckRecord =
+        scripts.spawnRecords().find(cans.empty() ? squareBags.front() : cans.front());
+    REQUIRE(struckRecord != nullptr);
     CHECK(count("dyn_trashcan_b") == dentedBefore + static_cast<std::ptrdiff_t>(cans.size()));
     // Its bottle fell from 0.5 m above the street and came to rest on it.
     const coney::world_objects::SpawnRecord* bottle = nullptr;

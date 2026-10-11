@@ -90,7 +90,8 @@ class Humans {
     Human::BodyContact m_bodyContact;
     Human::ObjectPush m_objectPush;
     Human::StrikeContact m_strikeContact;
-    std::vector<Human*> m_victims; // the strike test's list
+    std::vector<Human*> m_victims;     // the strike test's list
+    std::vector<Human*> m_contactList; // the humans the walking bodies meet this step (Human::setHumanContacts())
     std::uint64_t m_steps = 0;
 };
 

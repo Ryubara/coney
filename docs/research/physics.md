@@ -455,7 +455,7 @@ What a walking human meets of another human, confirmed (code) at the cited addre
   strikes, not the walk.
 - **Health gone** (`Human_OnHealthOut` `0x002674c0`): a human knocked out or wounded loses `BLOCKHUMANS`, so walkers
   pass over him; a dead one (state `0x100000000`) has his body freed unless airborne. What gives `BLOCKHUMANS` back
-  on getting up is not traced.
+  on getting up is not traced ([Open questions](#open-questions)).
 - **The answer** (`Human_OnContact` `0x00219d50`): a charging capsule (shape flag `0x2`) or an airborne mover not yet
   ignoring the other strikes him (`Strike_Contact`, then ignores him) and slides (1); otherwise **4**, `0x20004` in
   the air. So walking into a human slides along him and pushes him by half of the move into him (code 4 above),
@@ -615,8 +615,30 @@ remade each step before the humans move. A walking human's sphere slides along t
 level's walls, as `Human_OnContact` slides along an object (stand-in: pushed out of the deepest body the move goes
 into, in the ground plane, and then out of the walls again; the object does not move).
 
+Humans meet each other as [Human contacts](#human-contacts) describes (`human::sweepCapsules` and
+`human::contactPush`, `repo:src/human/human_contacts.h`; `Human::meetHumans`). The characters' step
+(`human::Humans::update`) gives every human the step's list of humans, and a walking human's sweep first meets their
+upright capsules (0.35 × scale, 2 m tall): the nearest contact stops the capsule there and the rest of the move
+slides along the other human (code 1), and, unless the mover charges, the one met gets half of the move into him over
+his push weight (1e9 while in a pair or arrested) as a pending push for his own next move (code 4), unless a script
+made him unpushable (`HuSetPushable(false)`). A player's velocity loses its part into the human, as against a wall.
+Skipped: a human who is knocked out, wounded, out of health or out of the world, and the human this one holds or is
+held by (a grab, tackle, mount or mugging), so a linked pair passes through each other. What differs, each marked in
+the code:
+
+- **Coney's choice**: the humans take their part of the move before the walls take theirs, where the original sorts
+  both kinds of contact of a pass by fraction together; a capsule already within reach is met at fraction 0 by a move
+  that goes further in (the capsule sweep's start case is not traced).
+- **Stand-in**: `BLOCKHUMANS` comes back as soon as the human is no longer knocked out, wounded or out of health
+  ([open question](#open-questions)).
+- **Not yet**: an airborne body meets no human (a jump's strike and code 1 against a human); a scene's shared group;
+  the pushed human's reaction (`Human_OnPushContact`'s timers and damage).
+
 ## Open questions
 
 - How an object of a type with `axis` 0 comes to rest: nothing in its contact handler clears airborne, so it would
   keep bouncing at interval 2 (inferred); the throwable ones (`dyn_lawnchair_a`, `_b`) break on their first contact
   (runtime).
+- What gives a human `BLOCKHUMANS` (body flag `0x4`) back when he gets up after `Human_OnHealthOut` (`0x002674c0`)
+  took it away ([Human contacts](#human-contacts)). Coney's stand-in gives it back as soon as he is neither knocked out,
+  nor wounded, nor out of health (`Human::blocksHumans`).
