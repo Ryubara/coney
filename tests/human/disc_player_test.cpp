@@ -291,6 +291,9 @@ TEST_CASE("level3's chase roof at z 10.3: the wall at x 167.4 does not climb, th
                 static_cast<double>(atWall.position.z), climbed(wall) ? 1 : 0, static_cast<double>(up.position.x),
                 static_cast<double>(up.position.y), static_cast<double>(up.position.z));
     CHECK_FALSE(climbed(wall));
+    // Pressed against the wall, not stopped short of it or still at the start (x 163).
+    CAPTURE(static_cast<double>(atWall.position.x));
+    CHECK(atWall.position.x > 166.0F);
     CHECK(atWall.position.x < 167.4F);
     CHECK(atWall.position.z < 10.5F);
     CHECK_FALSE(climbed(stairs));

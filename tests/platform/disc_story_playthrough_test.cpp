@@ -109,6 +109,7 @@ class RouteDriver final : public coney::InputSource {
             break;
         case Move::Jump:
             pad.buttons |= coney::pad::kL2;
+            // The route runs east, so "past the take-off" is feet.x >= leg.x.
             if (onGround && feet.x >= leg.x && !m_sawMove) {
                 pad.buttons |= coney::pad::kTriangle;
             }
@@ -247,9 +248,12 @@ TEST_CASE("the disc's level3 rooftop chase, driven by the pad, reaches the galle
                 failed() ? "failed" : "not failed");
     if (play != nullptr) {
         const coney::anim::Vec3 feet = play->player().human().position();
-        std::printf("  player 1 at (%.1f, %.1f, %.1f)\n", feet.x, feet.y, feet.z);
+        std::printf("  player 1 at (%.1f, %.1f, %.1f), health %d\n", static_cast<double>(feet.x),
+                    static_cast<double>(feet.y), static_cast<double>(feet.z), play->player().human().health().value());
     }
     CHECK(errors == 0);
     CHECK_FALSE(failed());
     CHECK(state.checkPoint == 5);
+    REQUIRE(play != nullptr);
+    CHECK(play->player().human().health().value() > 0);
 }
