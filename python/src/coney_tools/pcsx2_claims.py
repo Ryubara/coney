@@ -21,7 +21,6 @@ import os
 import re
 import shutil
 import socket
-import subprocess
 import time
 import uuid
 from collections.abc import Callable
@@ -30,7 +29,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from coney_tools import pcsx2_proc
-from coney_tools.config import ConfigError, find_repo_root, load_config
+from coney_tools.config import ConfigError, find_repo_root, load_config, local_config_file, main_checkout
 from coney_tools.pine import DEFAULT_PORT
 
 #: A claim with no process to show for it is stale after this many seconds (4 hours).
@@ -133,30 +132,13 @@ def discover_copies(root: Path) -> list[Copy]:
     return sorted(found, key=lambda copy: (copy.name != "pcsx2", copy.name))
 
 
-def main_checkout(root: Path) -> Path:
-    """The main checkout of the repository at `root` (a worktree's `.git` points back to it); `root` itself when it
-    is the main one or git cannot say."""
-    result = subprocess.run(
-        ["git", "-C", str(root), "rev-parse", "--path-format=absolute", "--git-common-dir"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    common = Path(result.stdout.strip()) if result.returncode == 0 and result.stdout.strip() else None
-    return common.parent if common is not None and common.name == ".git" else root
-
-
 def default_registry() -> Registry:
     """The registry for this machine: the copies in `pcsx2_root` and the claims in `pcsx2_claims_dir` from
     coney.local.toml (this checkout's, else the main checkout's), else the main checkout's folder and
     `<scratch_dir>/pcsx2-claims` (`../../scratch` beside the main checkout when scratch_dir is unset too)."""
     root = find_repo_root(Path.cwd())
     main = main_checkout(root)
-    paths: dict[str, Path | None] = {}
-    for candidate in (root, main):
-        if (candidate / "coney.local.toml").is_file():
-            paths = load_config(candidate).paths
-            break
+    paths: dict[str, Path | None] = load_config(root).paths if local_config_file(root) else {}
     scratch = paths.get("scratch_dir") or (main / ".." / ".." / "scratch").resolve()
     claims = paths.get("pcsx2_claims_dir") or scratch / "pcsx2-claims"
     return Registry(paths.get("pcsx2_root") or main, claims)

@@ -76,7 +76,7 @@ Paths are relative to the repository root or absolute. The keys and their defaul
 | `ghidra_mcp_repo` | none: you must set it | a built ghidra-mcp checkout, used read-only |
 
 Each line is `key = "value"`; a `#` starts a comment. A tool that needs a folder that does not exist stops with an
-error naming the key and the path it resolved, so a wrong entry is easy to find.
+error naming the key, the path it resolved and the config file it used, so a wrong entry is easy to find.
 
 ## Worktrees
 
@@ -87,9 +87,11 @@ main checkout and share its siblings. From the repository root:
 git worktree add ../../worktrees/coney/<branch> -b <branch>
 ```
 
-A worktree has no `coney.local.toml` of its own. Copy the main checkout's file into it; the default relative
-paths then need one more level (`../../../`) unless you use absolute paths, so absolute paths are the easier choice
-if you use worktrees. Remove a worktree when its branch is merged: `git worktree remove ../../worktrees/coney/<branch>`.
+A worktree has no `coney.local.toml` of its own, and needs none: every tool run from a worktree (`coney-tools`
+and `tools/start-ghidra-mcp.ps1`) finds the main checkout through git's common dir, reads its `coney.local.toml` and
+resolves the relative paths from the main checkout, so `../../game` is the same `game/` folder from every worktree.
+A worktree that does hold its own copy uses that one instead, with paths relative to the worktree. Remove a
+worktree when its branch is merged: `git worktree remove ../../worktrees/coney/<branch>`.
 
 ## Scratch
 
