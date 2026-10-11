@@ -588,7 +588,10 @@ the wheel updates), `state-code` (record `+0x14`'s setter), `set-command` and `g
 `brain-think`, `brain-event`, `attack-warning`, `try-block`, `block-start`, `skid-test` (the locomotion's run-stop test)
 and `call-brains`. The hint-queue pass added `hint-queue`, `hint-clear`, `hint-withdraw` and `hint-flush` (the hint
 box's queue, [HUD](../research/hud.md#hint-queue-runtime)) and `anim-dispatch` and `anim-callback-match` (who starts
-which anim id and which script callback it runs). Two hooks at one address cannot be installed together (`hint-show`
+which anim id and which script callback it runs). The level80 passes added the teammate hooks (`hit-by-chief`,
+`hit-reaction`, `attack-target-push`, `push-contact`, `can-push`, `say-command`) and the fire hooks (`ember-init`,
+`burn-init`, `fade-flame-init`, `debris-flame` and their update hooks). One run installs at most 64 hooks, fewer than
+the file holds, so name only the ones a pass needs. Two hooks at one address cannot be installed together (`hint-show`
 and `event-hint` are the same place): pick one, and add any extra value it needs to the one you keep. When the update
 of an entry matters, log the tick count and use it: in that pass one Lua call's four `HintBox_Queue` entries, all at
 one tick, were labelled with two consecutive steps.

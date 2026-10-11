@@ -90,12 +90,19 @@ the objective marker, which callbacks are armed, where the NPCs stand. The test 
 - the run reaches the next checkpoint.
 
 The reference order comes from an analyst's recording of the original, written on the research page. A mission
-checkpoint is not done until its playthrough test passes. Level 99's `CourseDriver`
-(`repo:tests/platform/disc_level99_course_test.cpp`) is the example. A driver plays through
+checkpoint is not done until its playthrough test passes. Two drivers are the examples. The level3 chase's `RouteDriver`
+(`repo:tests/platform/disc_story_playthrough_test.cpp`): route legs (run to a point, climb, sprint jump) followed by
+reading where the player stands, through the game session (`DiscSession` takes a driver). Level 99's `CourseDriver`
+(`repo:tests/platform/disc_level99_course_test.cpp`) is the other. A driver plays through
 `coney::test::DiscSession` given a `LivePad` (`repo:tests/support/live_pad.h`), which it steers one frame at a time:
 the hub's `Gym` driver (`repo:tests/platform/disc_hub_workout_test.cpp`) walks the player along the level's path data
 with the stick at 60 %, plans again when he stops moving, and plays each gym station from what the scripts and the
 player show.
+
+A driver writes stick bytes as an input script does (`stickByteFromPercent`): each axis has its own dead zone round
+the centre, so a byte mapped linearly over 0-255 reads back smaller than meant. A full diagonal laid out that way
+reads about 0.86, under the run's 0.95, and the player only walks (found when the level3 chase driver walked instead
+of running).
 
 Why not a frame-locked script: it replays inputs by step number, so any change to the camera or the AI moves the
 characters a little, the recorded presses then land in the wrong place, and the test fails (or passes by luck) for

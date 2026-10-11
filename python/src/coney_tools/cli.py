@@ -13,6 +13,7 @@ from typing import Any
 
 from coney_tools import (
     audio_cli,
+    mcp_serve,
     mission_cli,
     missions_render,
     movies_cli,
@@ -124,6 +125,11 @@ def _build_parser() -> argparse.ArgumentParser:
     groups = parser.add_subparsers(dest="group", required=True)
     config = groups.add_parser("config", help="local configuration (coney.local.toml)")
     config.add_subparsers(dest="command", required=True).add_parser("show", help="show the configured paths")
+    mcp = groups.add_parser("mcp", help="the debugging servers that .mcp.json registers for agents")
+    serve = mcp.add_subparsers(dest="command", required=True).add_parser(
+        "serve", help="run a server found through coney.local.toml, over stdin and stdout"
+    )
+    serve.add_argument("name", choices=mcp_serve.SERVERS)
     repo = groups.add_parser("repo", help="repository checks")
     repo_commands = repo.add_subparsers(dest="command", required=True)
     repo_commands.add_parser("check", help="check the agent pointer files")
@@ -601,6 +607,8 @@ def _run(args: argparse.Namespace) -> int:
         return trace_cli.run_diff(args.original, args.coney, args.scenario, args.columns, args.tolerance, options)
     if args.group == "config":
         return _config_show()
+    if args.group == "mcp":
+        return mcp_serve.run_serve(args.name)
     if args.command == "check-title":
         return _repo_check_title(args.file)
     if args.command == "check-docs":

@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Loose objects in flight (world_objects/loose_objects.h): the settle's eased turn and its target, the bodies' reach,
-// and a dropped object's fall, bounce, settle and stop over a synthetic flat floor at z = 0; a thrown bottle's break on
-// its first contact.
+// and a dropped object's fall, bounce, settle and stop over a synthetic flat floor at z = 0; the wear by class (a
+// thrown bottle's break on its first contact, a trash can's on any), the impacts' reports and a fade piece's landing.
 #include "world_objects/loose_objects.h"
 
 #include <cmath>
 #include <numbers>
 #include <optional>
+#include <vector>
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -295,16 +296,102 @@ TEST_CASE("a thrown bottle breaks on its first contact; dropped, or of another c
     }
     CHECK_FALSE(droppedBroke);
 
-    // Thrown, a brick of another class (Coney wears only thrown_weapon) bounces whole too.
+    // Thrown, an object of another class with two hits spends one on the throw's first contact and bounces whole.
     ObjectType other = bottle;
     other.className = "simple_object";
+    other.value = 2;
     LooseObjects thrownOther;
     thrownOther.start(3, Vec3{0, 0, 1.0F}, {}, LooseObjects::Kind::of(other), velocity, {}, kThrower);
     bool otherBroke = false;
-    for (int i = 0; i < 20; ++i) {
+    // Stepped until its first contact (a fall of 1 m takes some 14 steps).
+    for (int i = 0; i < 60 && thrownOther.find(3) != nullptr && thrownOther.find(3)->thrown; ++i) {
         thrownOther.step(floorRay, {}, [&](double, const LooseObject&) { otherBroke = true; });
     }
     CHECK_FALSE(otherBroke);
+    REQUIRE(thrownOther.find(3) != nullptr);
+    CHECK(thrownOther.find(3)->counter == 1);
+    CHECK_FALSE(thrownOther.find(3)->thrown);
     // A type whose hit count is 0 never wears.
     CHECK(LooseObjects::Kind::of(brickType()).counter == 0xff);
+}
+
+TEST_CASE("an overhead_weapon or a guitar wears on every contact, thrown or dropped",
+          "[world_objects][physics][throw]") {
+    // docs/research/objects.md#throws: the class overhead_weapon and the material GUITAR (154) wear on any contact.
+    ObjectType can = brickType();
+    can.className = "overhead_weapon";
+    can.value = 1;
+    ObjectType guitar = brickType();
+    guitar.className = "melee_weapon";
+    guitar.material = 154;
+    guitar.value = 1;
+    CHECK(LooseObjects::Kind::of(can).wearsAlways);
+    CHECK(LooseObjects::Kind::of(guitar).wearsAlways);
+    CHECK_FALSE(LooseObjects::Kind::of(brickType()).wearsAlways);
+    for (const ObjectType& type : {can, guitar}) {
+        LooseObjects dropped;
+        dropped.start(1, Vec3{0, 0, 1.0F}, {}, LooseObjects::Kind::of(type));
+        std::optional<LooseObject> broke;
+        for (int i = 0; i < 30 && dropped.find(1) != nullptr; ++i) {
+            dropped.step(floorRay, {}, [&](double, const LooseObject& object) { broke = object; });
+        }
+        REQUIRE(broke.has_value());
+        if (broke) {
+            CHECK(broke->thrower == 0);
+            // Its contact vector: the floor's normal x the speed into it x the update.
+            CHECK(broke->contactVector.x == 0.0F);
+            CHECK(broke->contactVector.z > 0.0F);
+        }
+    }
+}
+
+TEST_CASE("each level contact that does not break an object is reported with its count and speed",
+          "[world_objects][physics][sound]") {
+    // docs/research/sound-events.md#objects: WorldObject_OnImpact's plain bounce, counted per object (n).
+    LooseObjects objects;
+    objects.start(1, Vec3{0, 0, 2.0F}, {}, LooseObjects::Kind::of(brickType()));
+    std::vector<coney::world_objects::LooseImpact> impacts;
+    for (int i = 0; i < 60 && objects.find(1) != nullptr; ++i) {
+        objects.step(
+            floorRay, {}, {},
+            [&](double handle, const LooseObject& /*object*/, const coney::world_objects::LooseImpact& impact) {
+                CHECK(handle == 1);
+                impacts.push_back(impact);
+            });
+    }
+    REQUIRE(impacts.size() >= 2);
+    CHECK(impacts[0].index == 0);
+    CHECK(impacts[1].index == 1);
+    // It fell 2 m: about 7.9 m/s when it met the floor, far less on the next contact.
+    CHECK(impacts[0].speed > 7.0F);
+    CHECK(impacts[1].speed < impacts[0].speed);
+    CHECK(impacts[0].point.z == Approx(0.0F).margin(1e-4));
+}
+
+TEST_CASE("a fade_object piece stops dead on the update after it lands", "[world_objects][physics][fade]") {
+    // docs/research/script-types.md#fade-object: the landing zeroes the velocity and spin; it falls from rest.
+    ObjectType piece = brickType();
+    piece.className = "fade_object";
+    ObjectType plain = brickType();
+    LooseObjects objects;
+    objects.start(1, Vec3{0, 0, 0.5F}, {}, LooseObjects::Kind::of(piece), Vec3{4.0F, 0, 0}, Vec3{0, 0, 9.0F});
+    objects.start(2, Vec3{0, 0, 0.5F}, {}, LooseObjects::Kind::of(plain), Vec3{4.0F, 0, 0}, Vec3{0, 0, 9.0F});
+    CHECK(objects.find(1)->fades);
+    CHECK_FALSE(objects.find(2)->fades);
+    // Step until each has met the floor once, then once more.
+    for (int i = 0; i < 30 && (objects.find(1)->impacts == 0 || objects.find(2)->impacts == 0); ++i) {
+        objects.step(floorRay);
+    }
+    REQUIRE(objects.find(1) != nullptr);
+    REQUIRE(objects.find(2) != nullptr);
+    const float pieceX = objects.find(1)->position.x;
+    objects.step(floorRay);
+    const LooseObject* landed = objects.find(1);
+    REQUIRE(landed != nullptr);
+    CHECK(landed->velocity.x == 0.0F);
+    CHECK(landed->angularVelocity.z == 0.0F);
+    CHECK(landed->position.x == Approx(pieceX));
+    // The plain object slides on.
+    REQUIRE(objects.find(2) != nullptr);
+    CHECK(objects.find(2)->velocity.x > 0.0F);
 }

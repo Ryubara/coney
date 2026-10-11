@@ -1,0 +1,7 @@
+# Squares then crosses beside a parked sedan while facing 55 degrees off its side, so that the car is not the
+# square's target (the facing test needs 45 degrees or less): do plain strikes that touch the car still hit it?
+# Research: docs/research/cars.md#hit-volumes. The stick stays at rest.
+20 tap square
+60 tap square
+100 tap cross
+140 tap cross

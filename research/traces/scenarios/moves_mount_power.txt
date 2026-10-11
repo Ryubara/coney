@@ -1,0 +1,7 @@
+# Circle at 10 grabs, circle at 60 mounts from the front hold (118 lasts 65 updates), then cross held from 140,
+# square tapped at 142, cross released at 146. Stick centred throughout. Frames are character updates of 1/30 s.
+10 tap circle
+60 tap circle
+140 press cross
+142 tap square
+146 release cross

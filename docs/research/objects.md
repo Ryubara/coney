@@ -1845,8 +1845,8 @@ Coney's stand-ins for the world objects, where this page is silent:
   the charge or the dive with a set 4-6 object plays the throw clip by gait, its type-10 event lets go, and the object
   leaves the hand's pose with `Human_ComputeThrowVelocity`'s velocity turned by the thrower's heading and the
   detach's spin. Stand-ins: the target is the fighter's own (no `Player_PickThrowTarget`, no turn to face it), aimed
-  at a fixed head height and from the object's place rather than the hand bone; set 5's smash, hits on humans, the
-  wear of anything but a thrown `thrown_weapon`, the removal time and the AI's throws are not built.
+  at a fixed head height and from the object's place rather than the hand bone; set 5's smash, hits on humans, a
+  held object's wear, the removal time and the AI's throws are not built.
 - **The aiming state** ([above](#throws); `repo:src/combat/throw_aim.h`, the play mode's `stepThrowAim`): L1 with a
   set 5 object and no lock enters it (466 into 469; the stick stops walking him), the raw left stick turns him (470
   while it does) and pitches the aim, the first frame takes the follow camera's heading, and each frame the arc's 18
@@ -1855,14 +1855,34 @@ Coney's stand-ins for the world objects, where this page is silent:
   release point with the aim's velocity. Stand-ins: the sweeps are sampled every 0.1 m along a segment (not
   `IPhysics_CollideShape`), humans are 2 m upright capsules, cars are not met, a target's point is a fixed head
   height, and the lock-on's friendly case is not modelled (Coney's lock never takes a friend). The arc is not drawn.
-- **A thrown bottle's break** ([above](#throws); `world_objects::LooseObjects`, the play mode's `thrownBreak`): a throw
-  sets the flying object's body flag 1 and keeps its thrower; its first contact with the level mesh takes one hit
-  (`WorldObject_TakeHit`, the second counter first), and a `thrown_weapon` (hits 1) breaks there: no bounce, the
-  material pairs (its, its) at 1.0 and (its, the surface's) at 0.5, message 6 to the boxes its thrower stands in with
-  the object where its move left it, then the object at the hit point with dust of radius 1.6, removed at the next
-  step. Stand-ins: the flight meets the level mesh only (no body, so no human or car contact), the coloured glass
-  pieces and rubble by model are not made, and only `thrown_weapon` wears (an `overhead_weapon`'s wear on every
-  contact, `GUITAR`'s and a held object's are not built).
+- **Wear and breaks in flight** ([above](#throws); `world_objects::LooseObjects`, `world_objects::Props::breakFlying`,
+  the play mode's `flyingBreak`): a throw sets the flying object's body flag 1 and keeps its thrower. Each contact
+  with the level mesh first takes one hit (`WorldObject_TakeHit`, the second counter first) as the table above says:
+  an `overhead_weapon` or a `GUITAR` object on every contact, thrown or dropped; any other on a throw's first contact
+  only, the flag then cleared. The contact that leaves a counter at 0 breaks it: no bounce, the material pairs (its,
+  its) at 1.0 and (its, the surface's) at 0.5 / (n + 1), message 6 to the boxes its thrower stands in with the object
+  where its move left it, then its class's message 1: a `thrown_weapon` goes to the hit point with dust of radius 1.6
+  (a `dyn_beerbottle` adds 4-8 brown glass pieces) and is removed at the next step; an `overhead_weapon` breaks from
+  1 m along the unit contact vector without its own pair, its pieces launched along that vector; a lifted cash
+  register leaves its `dyn_cashreg_c` launched along the contact normal. The counters an object wore stay with it
+  between flights (a register spends one per throw). Stand-ins: the flight meets the level mesh only (no body, so no
+  human or car contact); the glass pieces are shards that do not fly, and the other models' rubble, glass and bursts
+  are not made; the pairs' fallbacks (116, then 5) and `CHAIR`'s 0.1 straight down are not built; another class's
+  message 1 is not built, so such an object lies where it broke; the impact count `n` is counted per flight; and a
+  held object's wear and the test against a world object already spent are not built.
+- **Impact sounds and the pieces' flight** ([Sound events](sound-events.md#objects),
+  [Script types: `fade_object`](script-types.md#fade-object); the play mode's `impactSound`): every loose object's
+  level contact that does not break it plays its material against the surface's at 1 / (n + 1), for its first three
+  impacts above 2 m/s. A broken trash prop's `fade_object` pieces (the dented can, the park bin's piece, the litter)
+  and a register's piece are launched as loose objects: velocity the unit contact vector's x and y each × 2-5, z 0,
+  spin ±3π rad/s on each axis (none for the register's piece), so a struck standing prop's pieces drop straight down;
+  on the update after a level contact a piece stops dead and falls from rest. Their landings sound through the same
+  impacts, by each piece's type material against the surface's, through the sound bank's material-pair table. Which
+  samples those pairs pick for the pieces (`garbpart_01`-`06`, `debris_part_01`-`03`, `bottledrop1`/`2`,
+  `woodsplinter_01`, `smallboardpart_01`/`02`, `wood_drops_01`/`02`, `chairli8`, `chairy3`, `deep_debris_01`) is
+  not on these pages yet (open question). Stand-ins: the speed tested against 2 m/s is the object's speed as it meets the
+  surface (the research does not say which); the pieces never fade (message `0x15`, the age and the view test are not
+  built), and the register's piece spills no money.
 - **Weapon piles** ([above](#weapon-piles); `world_objects::pileTake`, `world_objects::Props::takeFromPile`, the play
   mode's `takeFromPile`): a `dyn_pile` is pickable; player 1's pick-up of one makes the object its type hands out at
   the pile, plays the take cue there as a 3D sound, and puts the new object in his hand while the pile stays.
@@ -1983,9 +2003,11 @@ can or the park bin's piece at its pose; for the can, the bags and the park bin,
 the four litter pieces, and the `dyn_beerbottle` 0.5 m above the path polygon under the hit point (none off the
 polygons), in the prop's rotation, falling as a loose object with a spin of (0, a, b), a and b in ±π; the paper stack's
 8 debris pieces, or 44 splinters for another model; then its material against itself, at 0.65 of its volume when the
-attacker ran into it. It loses its body at once and is removed the next tick. A human above jog whose walking sphere
+attacker ran into it. It loses its body at once and is removed the next tick. The pieces are launched as loose objects
+along its contact vector (zero when struck standing, so they drop) and stop dead on landing (Wear and breaks in flight,
+above); a thrown or dropped can or bags breaks on its first contact. A human above jog whose walking sphere
 meets a `RUNTARGET` body (the bags, the paper stack) strikes it with a plain hit at the next step, once. Coney's
-stand-ins: the pieces rest where they are made and never fade; the litter system's pieces, the splat, the splinters'
+stand-ins: the pieces never fade; the litter system's pieces, the splat, the splinters'
 colours, the camera test and the path-polygon flag 8 are not built; the polygon's height under the hit point is the
 mean of its vertices' heights; the hobo variants' food is not dropped; the paper stack's
 debris pieces are splinters; a litter piece's offset is drawn in ±0.43, ±0.43 and 0-0.83 m; and the sprinter is not
@@ -2004,8 +2026,9 @@ Player 1 takes money by walking over it ([Walking over a power-up](player-state.
 LevelPickups' native message): its drawer is deleted whatever happens, and unless it is broken or already lifted it
 asks to be picked up (`0x14`), so the press lifts it with its pick-up animation's clip (2: 503, or 504 above 0.8 m);
 a broken one refuses and the search passes it over. Coney's stand-ins: the dust is a burst; the game state flag that
-silences the hit sound is not built; a lifted register's break (its `dyn_cashreg_c` piece and money) is not built
-yet; and the walk-over's touch is [Player state](player-state.md#coneys-implementation)'s. In `level99` at checkpoint
+silences the hit sound is not built; a lifted register's break makes its `dyn_cashreg_c` piece (Wear and breaks in
+flight, above) without the contact offset, and the piece spills no money (its age is not built); and the walk-over's
+touch is [Player state](player-state.md#coneys-implementation)'s. In `level99` at checkpoint
 2 the store's register stands at (53.23, 57.26, 1.63); eight squares from the shop floor south of it break it, the
 money lies behind the counter, and walking into it from there takes it; triangle from the same spot instead deletes
 the drawer and lifts the register with clip 504 (disc checks, 2026-10-08).
@@ -2038,6 +2061,14 @@ the drawer and lifts the register with clip 504 (disc checks, 2026-10-08).
 - What a cabin door's leaves do once it breaks, and where the wreck pieces and boards appear.
 - Cash register ([Script types](script-types.md#dyn-cashreg)): how many throws or swings break a lifted register at
   runtime.
+- Impact sounds ([Sound events](sound-events.md#objects)): which speed `WorldObject_OnImpact` tests against 2 m/s
+  (the object's speed, or its speed into the surface; Coney uses the first), and whether its count `+0x13c` is ever
+  reset (Coney counts per flight). Which materials the `fade_object` pieces (`dyn_trashcan_b`, `dyn_parktrash_aa`,
+  the `dyn_trashbit_*`, `dyn_cashreg_c`) have, and which samples their pairs against the level's surfaces play (the
+  debris sounds `garbpart_*`, `debris_part_*`, `smallboardpart_*`, `wood_drops_*` and the others): Coney plays the
+  pair the type table gives and has no check that it matches.
+- Wear ([Wear on contact](#throws)): what message 1 does for a thrown object of a class other than `thrown_weapon`,
+  `overhead_weapon` and `dyn_cashreg` whose counters run out (a `melee_weapon` with hits); Coney leaves it lying.
 - Moving into a pane ([Moving into a pane](#pane-break)): which clip events switch the strike shapes on in a jump.
   (Answered on [Combat](combat.md#moving-strikes): the strike shapes' sizes and events, record `+0x08` bit `0x800`,
   and a knock-back flight, which is not airborne. Human vtable `+0x10c`, `0x00227180`: any non-human body may be
