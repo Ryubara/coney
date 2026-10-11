@@ -4,6 +4,7 @@
 // callbacks run each frame. Also the time controls, whose steps never change length.
 #include "debug/input_gate.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
@@ -136,4 +137,73 @@ TEST_CASE("time control pauses, steps one at a time and runs slow motion as fewe
     CHECK(time.steps() == 5);
     time.setSlowMotion(100);
     CHECK(time.slowMotion() == TimeControl::kMaxDivisor);
+}
+
+TEST_CASE("a hotkey fires once per press of its chord, in either order, and the game never sees the chord",
+          "[debug][noclip]") {
+    MenuModel model;
+    MenuNavigator nav(model);
+    FakeInput source;
+    InputGate gate(&source, nav);
+    bool armed = true;
+    int fired = 0;
+    gate.addHotkey(coney::debug::kNoclipChord, [&armed] { return armed; }, [&fired] { ++fired; });
+    std::uint64_t frame = 0;
+    // The game's view of port 1 for `buttons` held this frame.
+    const auto step = [&](std::uint16_t buttons) {
+        source.next[0] = held(buttons);
+        return gate.sample(frame++)[0].buttons;
+    };
+
+    // R3 held first is gameplay's until d-pad left completes the chord; then both are hidden while held.
+    CHECK(step(pad::kR3) == pad::kR3);
+    CHECK(step(pad::kR3 | pad::kLeft) == 0);
+    CHECK(fired == 1);
+    CHECK(step(pad::kR3 | pad::kLeft | pad::kCross) == pad::kCross); // held on: no second toggle
+    CHECK(fired == 1);
+    // Left let go and pressed again with R3 still held: a second press, a second toggle.
+    CHECK(step(pad::kR3) == 0);
+    CHECK(step(pad::kR3 | pad::kLeft) == 0);
+    CHECK(fired == 2);
+    // Each button is hidden until it is itself let go.
+    CHECK(step(pad::kLeft) == 0);
+    CHECK(step(0) == 0);
+    CHECK(step(pad::kLeft) == pad::kLeft);
+
+    // The other order: left held, then R3.
+    CHECK(step(pad::kLeft | pad::kR3) == 0);
+    CHECK(fired == 3);
+    CHECK(step(0) == 0);
+
+    // The pressure of a hidden d-pad left is hidden too.
+    source.next[0] = held(pad::kR3 | pad::kLeft);
+    source.next[0].pressure.at(static_cast<std::size_t>(pad::Pressure::Left)) = 255;
+    const PortSamples pressed = gate.sample(frame++);
+    CHECK(pressed[0].pressure.at(static_cast<std::size_t>(pad::Pressure::Left)) == 0);
+    CHECK(fired == 4);
+    CHECK(step(0) == 0);
+
+    // Unarmed, the chord is plain input and nothing fires.
+    armed = false;
+    CHECK(step(pad::kR3) == pad::kR3);
+    CHECK(step(pad::kR3 | pad::kLeft) == (pad::kR3 | pad::kLeft));
+    CHECK(fired == 4);
+}
+
+TEST_CASE("a hotkey does not fire while the menu is open", "[debug][noclip]") {
+    MenuModel model;
+    model.addPage("Page", [](coney::debug::MenuPage&) {});
+    MenuNavigator nav(model);
+    FakeInput source;
+    InputGate gate(&source, nav);
+    int fired = 0;
+    gate.addHotkey(coney::debug::kNoclipChord, [] { return true; }, [&fired] { ++fired; });
+    source.next[0] = held(pad::kL3 | pad::kR3);
+    (void)gate.sample(0);
+    REQUIRE(nav.isOpen());
+    source.next[0] = held(0);
+    (void)gate.sample(1);
+    source.next[0] = held(pad::kR3 | pad::kLeft);
+    (void)gate.sample(2);
+    CHECK(fired == 0);
 }

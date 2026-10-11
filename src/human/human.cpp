@@ -1525,6 +1525,11 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
     } else {
         m_lastStick.magnitude *= kLastStickFadePerStep;
     }
+    // Flying (the debug noclip) replaces the rest: no brain, no collision, no gravity.
+    if (m_flight) {
+        fly();
+        return;
+    }
     // A brain's move replaces the stick: its heading as the stick's direction, pushed fully while it moves.
     m_moveSpeed.reset();
     if (m_record.move.has_value()) {

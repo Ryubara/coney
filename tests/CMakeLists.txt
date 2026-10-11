@@ -111,6 +111,7 @@ add_executable(coney_tests
     platform/disc_level99_powerups_test.cpp
     platform/disc_level99_sparring_test.cpp
     platform/disc_level99_change_character_test.cpp
+    platform/disc_level99_noclip_test.cpp
     platform/disc_level99_car_climb_test.cpp
     platform/disc_level99_street_props_test.cpp
     platform/disc_game_session_test.cpp
@@ -248,6 +249,7 @@ target_sources(coney_tests PRIVATE
     camera/follow_script_test.cpp
     human/disc_player_test.cpp
     human/human_test.cpp
+    human/flight_test.cpp
     human/hiding_test.cpp
     human/body_test.cpp
     human/climb_test.cpp

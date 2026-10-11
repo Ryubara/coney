@@ -45,6 +45,14 @@
 
 namespace coney::human {
 
+/// How a flying human moves this update (Human::setFlight(), the debug menu's noclip; Coney's own tool, the original
+/// has none): the left stick flies it across the ground as it walks it, turned by the camera, at `speed` for a full
+/// push, and it rises at `climb` (negative: descends).
+struct Flight {
+    float speed = 0.0F; ///< Metres a second across the ground with the stick pushed fully.
+    float climb = 0.0F; ///< Metres a second upward; negative descends.
+};
+
 /// What the human is given each update: the left stick, the camera's view direction, which turns it, the two
 /// buttons traversal reads, and combat's command, buttons and targets.
 struct HumanInput {
@@ -417,6 +425,15 @@ class Human final : public Holdable {
     [[nodiscard]] GrabbedReport takeGrabbedReport() override { return m_fighter.takeHeldReport(); }
     /// Moves it there and stops it (its velocity goes).
     void place(anim::Vec3 position, float headingRadians) override;
+    /// Flies the human while `flight` is set (the debug menu's noclip, docs/guides/debug-menu.md#noclip; Coney's own,
+    /// with no counterpart in the original): each state update moves it by the record's stick, turned by the camera
+    /// with the game's dead zone, at the flight's speed, and by its climb, with no collision, gravity, falling or
+    /// landing, facing where it flies across the ground; its clips do not move it. Starting a flight lets go of a pair,
+    /// a climb or a jump and stands it in the idle; ending one (nullopt) leaves it standing where it is, so the next
+    /// update's ground test drops it from there with the normal physics. Set it each update to change the speeds.
+    void setFlight(std::optional<Flight> flight);
+    /// Whether it flies (setFlight()).
+    [[nodiscard]] bool flying() const { return m_flight.has_value(); }
     /// An AI's jump (`Human_BeginJump` with argument 1, then `Human_LaunchJump`, docs/research/ai.md#route-jump): from
     /// any gait, standing too, launched at `velocity` with the jump's clip. Refused (false) in the air, while climbing,
     /// or while the record `+0x08` holds any of kAiJumpRefuseFlags.
@@ -756,6 +773,8 @@ class Human final : public Holdable {
     void followClimb(const raycast::CollisionMesh* mesh);
     // Ends a climb.
     void endClimb();
+    // The state update while flying (setFlight()): the move by the stick and the climb, through everything.
+    void fly();
 
     PlayerRecord m_record;
     ScriptState m_script;
@@ -799,6 +818,7 @@ class Human final : public Holdable {
     std::vector<HumanSound> m_contactSounds;       // reportSound()
     std::uint16_t m_groundFlags = 0;               // the last ground snap's triangle flags
     bool m_hidden = false;                         // state 0x200000
+    std::optional<Flight> m_flight;                // setFlight(): flying, and how
     std::optional<std::uint64_t> m_hideGraceUntil; // record +0x114: the grace's end, ms
     float m_lastLandingSpeed = 0.0F;
     std::uint32_t m_landings = 0;

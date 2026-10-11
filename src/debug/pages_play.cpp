@@ -197,6 +197,15 @@ void addPlayerPage(DebugSession& session) {
                          session, "Frozen", [](const PlayControls& p) { return p.playerFrozen(); },
                          [](PlayControls& p, bool on) { p.setPlayerFrozen(on); }))
                 .withHelp("The player ignores the pad and stands still.");
+            page.add(playToggle(
+                         session, "Noclip", [](const PlayControls& p) { return p.noclip(); },
+                         [&session](PlayControls& /*p*/, bool on) { session.setNoclip(on); }))
+                .withHelp("Fly through walls and floors: left stick across as walking, R2 up, L2 down, R1 held "
+                          "fast. Off drops him from where he is.");
+            page.add(toggleItem(
+                         "Noclip hotkey (R3 + D-pad left)", [&session] { return session.noclipHotkey(); },
+                         [&session](bool on) { session.setNoclipHotkey(on); }))
+                .withHelp("While on, R3 + d-pad left (keyboard: H + left arrow) toggles the noclip in play.");
             page.add(submenuItem("Teleport", [&session] {
                          auto sub = std::make_shared<MenuPage>("Teleport");
                          fillTeleport(*sub, session);
@@ -217,7 +226,7 @@ void addPlayerPage(DebugSession& session) {
             }));
             page.add(logItem("Log", [&session] { return session.log().last(3); }));
         },
-        "The player: where, how fast, his character type, frozen, teleports.");
+        "The player: where, how fast, his character type, frozen, noclip, teleports.");
 }
 
 void addCameraPage(DebugSession& session) {

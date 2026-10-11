@@ -246,6 +246,7 @@ target_sources(coney_core PRIVATE
     human/human_sounds.cpp
     human/human_animator.cpp
     human/human_held.cpp
+    human/human_flight.cpp
     human/human_hiding.cpp
     human/human_script.cpp
     human/humans.cpp
