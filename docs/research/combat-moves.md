@@ -499,10 +499,13 @@ A **tandem** is a three-person move: a player strikes a victim another human hol
 `Tandem_CanStart` (`0x00258e10`), `Tandem_Start` (`0x0026f860`), `Tandem_LinkThree` (`0x0022b1a0`),
 `Tandem_AlignThree` (`0x00277458`) and `Tandem_OnVictimIntroEnd` (`0x0026f780`):
 
-- **Started by the player only**, from square, cross, circle tapped or circle held, when the target is held from
-  the rear (by anyone: a gang member or another player), the attacker stands within 45° of the victim's front, and
-  the victim's held flags have none of `0xc12200`. Square and cross test it after the target-state strikes; circle
-  tests it before grabbing ([Combat](combat.md#grab), step 3).
+- **Started from square, cross, circle tapped or circle held**, when the target is held from the rear (state
+  `0x20`, by anyone: a gang member or another player), the attacker stands within 45° of the victim's front
+  (`Human_GetSideOf(victim, attacker, 1)` = 0), and the victim's held flags have none of `0xc12200`. Square and cross
+  test it after the target-state strikes; circle tests it before grabbing ([Combat](combat.md#grab), step 3). The
+  three callers (`Player_Square`, `Player_Cross`, `Player_GrabOrTackle`) are the only ones, and none tests for a
+  pad: they are the dispatcher's, which an AI human runs too ([An AI's attacks](combat.md#ai-attacks)). An earlier
+  reading here said "the player only"; that is corrected below.
 - **The set**: a bat or baton in hand → 181-186; a knife → 187-192; otherwise 163-168, 169-174 or 175-180 at random.
   Each set has an intro and an end for the grabber, victim and attacker (ids +0 to +5).
 - The three are linked and placed by the set's pair offsets. At the **end of the victim's intro** the attacker's
@@ -516,6 +519,53 @@ At runtime (`moves_tandem`: Ash, the player's ally, given the grab command at Po
 in 85): square played the set 1 on the next update, the player's 165 and the victim's 164 for **51** updates (not
 the 36 of their clips), then 168 / 167; the victim lost **400** (50 + 350) on the first update of 167. Confirmed
 (runtime).
+
+#### Who starts a tandem, and how an AI chooses it {#tandem-ai}
+
+Owner checklist item 18 (a gang member holds an enemy; the teammates stand by). Confirmed (code) at the addresses
+cited unless marked:
+
+1. **An AI teammate starts it through the grab.** The fight goal's attack pick (`Brain_PickAttack`, `0x0028e708`,
+   [AI](ai.md#pick-attack)) adds **+200** to kind 22 (the grab) when the target is grabbed from the rear (step 4.7),
+   and more when several attackers share him (step 4.5). `Human_CanStartAttack` (`0x00224778`) allows kind 22 at a
+   target in state `0x20` **only from in front of him** (`0x002672d0`), the same 45° front cone `Tandem_CanStart`
+   asks, and refuses a target holding `0xc12200`'s overlap `0xc08200` (a victim already in a paired move). The
+   attack action writes command `0xd` (circle tapped, [AI](ai.md#attack-action)); the dispatcher's
+   `Player_GrabOrTackle` (`0x00284920`) keeps the brain's target (it searches only for brain type 0), finds
+   `Tandem_CanStart` true and calls `Tandem_Start(AI, victim, grabber)`. So the AI's "grab" at a rear-held enemy
+   **is** the tandem. Inferred as a whole (each link is confirmed (code); no AI tandem was watched).
+2. **Who holds.** Only a rear hold allows it: the player's own rear hold (after R1's spin, or a grab that connects
+   from behind) or an AI's. A front-held enemy refuses kind 22 (state `0x10` is in the grab's refusing mask
+   `0x7bfdc8f7fd0`); teammates hit him with ordinary strikes instead, and a third human's hit breaks the hold
+   ([Attacking a busy target](combat.md#busy-target)).
+3. **The player as the attacker** starts it with square, cross or circle at a rear-held enemy he faces.
+4. **What the three play**: the set by the attacker's held object (a bat or baton 181-186, a knife 187-192, else
+   163-168, 169-174 or 175-180 at random); held `0x800000` on the attacker and the grabber, `0x400000` on the victim
+   (so no one else starts an attack on any of the three, [Moves a hit cannot stop](combat.md#protected-moves)); the
+   grabber is let go into the fight stance at the end. The victim's damage (the attacker's intro and end values) is
+   pending until his intro ends; lethal, his death reaction plays from the end clip.
+5. **Scoring**: `Grab_ScoreMove` for the grabber (the set's base id) and the attacker (base + 2), skipped when the
+   victim has human flag `0x10` (the demi-god floor reached).
+
+**Deferred: runtime**: confirm an AI tandem. A copy of slot 6 with Ash as the player's ally (`moves_tandem`), the
+player grabs PoizoCiv and spins him to the rear hold with R1 (stick centred), Ash told to attack PoizoCiv from in
+front; record Ash's command and clip ids every update: expect command `0xd`, then 165 / 171 / 177 on Ash.
+
+**Coney fixes** (item 18):
+
+1. Build the tandem ([combat-diffs](combat-diffs.md) lists it as not built): `Tandem_CanStart` and `Tandem_Start` as
+   above, three linked bodies placed by the set's pair offsets, the damage at the victim's intro end, the grabber
+   released into the fight stance.
+2. Route an attack command (square, cross, circle tap or hold) from **any** fighter, player or AI, through the tandem
+   test before the grab, as the original's dispatcher does.
+3. AI: kind 22 at a rear-held target already passes (`ai::targetViewOf` leaves the rear hold out of
+   `grabRefused`, and `attack_choice.cpp` checks the front cone). Two gaps remain: set `heldC12200` in the target
+   view from the held flags `0xc12200` (a **Coney stand-in** today: never set, always false), and let the queued
+   grab become the tandem instead of an ordinary grab. A front-held target stays refused.
+4. The held flags of the three (`0x800000` / `0x400000`) feed the start guard of [Moves a hit cannot
+   stop](combat.md#protected-moves), so others leave them alone.
+5. Test: an AI ally in front of the player's rear hold picks kind 22 and starts the tandem (assert the three clips
+   and the victim's damage at the intro end); in front of a front hold it does not.
 
 ### Stealth: hiding and the stealth kill {#stealth}
 
