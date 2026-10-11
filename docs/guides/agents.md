@@ -76,7 +76,8 @@ instead of repeating it:
 
 - the role (analyst, implementer or support), the model, the worktree and the scratch folder;
 - the task and the scope it owns, the files it must not touch, and what "done" means for it
-  ([Testing](testing.md#done));
+  ([Testing](testing.md#done)), and that it reports it in the pull request's Testing and Screenshots sections, with
+  its captures saved in `scratch/<branch>/shots/` ([What a pull request shows](testing.md#pr-evidence));
 - "Read `AGENTS.md`, [How we work](how-we-work.md), [Testing](testing.md) and this page first; they override the
   brief";
 - only the facts the agent cannot find in the repository (a log path, a question to answer, the state file).

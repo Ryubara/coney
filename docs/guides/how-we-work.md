@@ -111,7 +111,8 @@ Tracks never wait for a person to play their work, so the automated tests stand 
 work the same way: tests that start through the player's path, input driven like a gamepad, an adaptive playthrough
 for every mission checkpoint, and diffs against the original. People play release builds at milestones and their
 findings come back as fixes. The standard, including what "done" means for each kind of work and the checks to run
-before reporting: [Testing](testing.md).
+before reporting: [Testing](testing.md). A pull request shows the result: what was run with its numbers, and
+before and after screenshots of anything visible ([What a pull request shows](testing.md#pr-evidence)).
 
 ## The coordinator {#coordinator}
 
@@ -169,7 +170,9 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
 - **Long-running tracks keep going.** They commit in groups, tell the coordinator each group's sha, and continue with
   the next item in scope until it is empty, instead of stopping after one finding.
 - **Report what a reader needs:** commits, what works now and the command that shows it, stand-ins, open items and
-  the results of the checks. Short.
+  the results of the checks. Short. A pull request's description carries the same as a Testing section (what ran,
+  the numbers) and a Screenshots section (before and after for anything visible, attached and never committed):
+  [What a pull request shows](testing.md#pr-evidence).
 - **Commits carry the agent's own model name** in a `Co-Authored-By` trailer (the format is in
   [Conventions](conventions.md)); nobody pushes or merges except the coordinator.
 

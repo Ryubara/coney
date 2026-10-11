@@ -8,7 +8,8 @@ of work, the rules every test follows, and where the checks run. How to build an
 
 ## What "done" means {#done}
 
-A piece of work is done when the evidence in this table exists and passes. Report it with the work.
+A piece of work is done when the evidence in this table exists and passes. Report it with the work: in the pull
+request's Testing and Screenshots sections ([What a pull request shows](#pr-evidence)).
 
 | Work | Evidence |
 | --- | --- |
@@ -110,6 +111,46 @@ differently becomes a fix or a research question. The runs start through the pla
 Where a research page is silent, code uses a clearly marked stand-in (`stand-in` or `Coney's choice` in a comment) and
 the page gets an open question. A test may pass on a stand-in, but the stand-in stays counted until a faithful
 reimplementation replaces it.
+
+## What a pull request shows {#pr-evidence}
+
+A reviewer should see what was tested and what the result looks like without running anything. The pull request
+description ([the template](repo:.github/pull_request_template.md)) has two sections for it, and CI refuses a
+description that leaves either empty (`coney-tools repo check-body`):
+
+- **Testing** says what was run and what came out: the commands (the build preset, `ctest`, `pytest`,
+  `mkdocs build --strict`), the tests added or changed, any disc, [playthrough](#playthrough-tests) or
+  [trace-diff](#diff-against-the-original) run, and the results as counts, pass or fail and numbers ("612 passed, 0
+  failed", "reached checkpoint 4 in 1,830 updates", "14 of 14 positions match"). Disc runs print aggregates only
+  ([above](#no-game-data)). For a docs-only or research change, list the checks that ran (pre-commit, the docs build)
+  and the runtime evidence behind the claims (the PCSX2 trace or memory read, with its address and evidence level).
+  What could not be tested yet is listed as such, with the reason and the exact steps for whoever can.
+- **Screenshots** shows anything a player can see, before and after: Coney before the change, Coney after it and,
+  where the original has the same view, the original in PCSX2 from the same place, so a reader can compare them. When
+  nothing visible changes, the section is one line, `Screenshots: none (<reason>)`, for example `Screenshots: none
+  (no visible change)` or `Screenshots: none (research page only)`.
+
+### Capturing and attaching {#pr-media}
+
+- **Attach, never commit.** Gameplay screenshots and short videos of Coney or of the original are attached to the
+  pull request or issue as GitHub attachments (drag the file into the description box). They are never committed:
+  game imagery stays out of git ([LEGAL.md](repo:LEGAL.md#no-game-data)); the only images in the repository are the
+  small reference screenshots that page allows. Never attach assets, saves, dumps, executables, BIOS images or game
+  text, only pictures of the running game.
+- **Coney.** `coney --screenshot PATH` saves the last frame of a test-mode run as a PNG. To line a frame up with the
+  original's, pin the view with `--camera`, `--freeze-world` and `--render-size 640x448`
+  ([Matched views](building.md#matched-views)). `--screenshot` needs a window, so the run is not `--headless`. Take
+  the "before" shot from a build of `main` (or the branch point) and the "after" shot from the branch, with the same
+  options.
+- **The original.** `coney-tools pcsx2 screenshot --copy NAME --out PNG` writes a PCSX2 copy's picture (Windows only;
+  [Driving PCSX2](research-workflow.md#driving-pcsx2)), from a copy you hold a claim on.
+- **Video.** Nothing in Coney or `coney-tools` records video. A short clip is made by hand with a screen recorder; an
+  agent uses a few screenshots of the moment instead.
+- **Agents** save every capture in `scratch/<branch>/shots/` and name each in the section of their `PR.md`, one
+  comment line per picture (`shot: before.png`). The coordinator attaches the files and replaces the comments with
+  the images when it opens the pull request, because the `gh` CLI cannot upload attachments. Until then
+  `check-body` refuses the description, which is the reminder. The files are game data: they stay in scratch and are
+  deleted when the pull request is merged ([Sharing one machine](how-we-work.md#shared-machine)).
 
 ## Where the checks run {#where}
 

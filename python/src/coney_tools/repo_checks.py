@@ -151,6 +151,12 @@ _COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
 _HEADING = re.compile(r"^##[ \t]+(?P<name>\S.*?)[ \t]*$")
 #: What a list item or a task-list item starts with, which is not content (`- `, `- [ ] `, `* [x] `).
 _LIST_MARKER = re.compile(r"^[-*+](?:[ \t]+\[[ xX]\])?[ \t]*")
+#: Something a reader can look at: a Markdown image, an `<img>` tag, or a link to a GitHub attachment (an image or a
+#: video uploaded to the pull request in the browser, which is the only way to attach one).
+_IMAGE = re.compile(
+    r"!\[[^\]\n]*\]\([^)\n]+\)|<img\s[^>]*\bsrc\s*=|https://github\.com/user-attachments/\S+",
+    re.IGNORECASE,
+)
 
 
 class BodyRulesError(ConfigError):
@@ -167,6 +173,10 @@ class BodyRules:
     filled: tuple[str, ...]
     #: Lines of template text that count as empty when left unchanged (HTML comments always do).
     placeholders: tuple[str, ...]
+    #: The section that holds the screenshots (or the line saying there are none).
+    screenshots_section: str
+    #: The start of the line that says there is nothing to show, followed by the reason in parentheses.
+    screenshots_none: str
     #: The section that holds the two AI use lines.
     ai_section: str
     written_by_label: str
@@ -216,7 +226,10 @@ def load_body_rules(root: Path) -> BodyRules:
     ai_section = _text(ai_use, "section", "ai_use")
     choices = _strings(written_by.get("choices") if isinstance(written_by, dict) else None, "ai_use.written_by.choices")
     no_ai = _text(written_by, "no_ai", "ai_use.written_by")
-    unknown = [name for name in (*filled, ai_section) if name not in sections]
+    screenshots = data.get("screenshots")
+    screenshots_section = _text(screenshots, "section", "screenshots")
+    screenshots_none = _text(screenshots, "none", "screenshots")
+    unknown = [name for name in (*filled, ai_section, screenshots_section) if name not in sections]
     if unknown:
         raise BodyRulesError(f"{BODY_RULES_FILE}: {', '.join(unknown)} is not one of the 'sections'")
     if no_ai not in choices:
@@ -225,6 +238,8 @@ def load_body_rules(root: Path) -> BodyRules:
         sections=sections,
         filled=filled,
         placeholders=tuple(placeholders),
+        screenshots_section=screenshots_section,
+        screenshots_none=screenshots_none,
         ai_section=ai_section,
         written_by_label=_text(written_by, "label", "ai_use.written_by"),
         choices=choices,
@@ -292,11 +307,30 @@ def _check_ai_use(section: str, rules: BodyRules) -> list[str]:
     return []
 
 
+def _check_screenshots(section: str, rules: BodyRules) -> list[str]:
+    """Check the Screenshots section: an image or attachment link, or the `none (reason)` line with a real reason."""
+    if _IMAGE.search(section):
+        return []
+    # The label may be bold (`- **Screenshots:** none (...)`), so the asterisks are dropped before matching.
+    none = re.compile(rf"^(?:[-*+]\s+)?{re.escape(rules.screenshots_none)}\s*\((?P<reason>.*)\)$", re.IGNORECASE)
+    for line in section.splitlines():
+        found = none.match(line.replace("**", "").strip())
+        if found:
+            reason = found.group("reason").strip()
+            if reason and reason not in rules.placeholders:
+                return []
+    return [
+        f"'## {rules.screenshots_section}' needs an image (or an attached screenshot or video), "
+        f"or a line '{rules.screenshots_none} (<reason>)' saying why there is nothing to show"
+    ]
+
+
 def check_body(body: str, rules: BodyRules) -> list[str]:
     """Check a pull request description against the template's form.
 
-    Every section must be present as a `##` heading, the `filled` ones (Summary) must hold text of their own, the
-    AI use section must say who wrote the commits (one of the choices) and, unless a person did, name the model.
+    Every section must be present as a `##` heading, the `filled` ones (Summary, Testing) must hold text of their
+    own, the Screenshots section must hold an image or attachment link or a `Screenshots: none (<reason>)` line, and
+    the AI use section must say who wrote the commits (one of the choices) and, unless a person did, name the model.
     HTML comments and unchanged placeholder text count as empty, so the untouched template is refused. Returns one
     reason per broken rule; an empty list means the description passes.
     """
@@ -308,6 +342,9 @@ def check_body(body: str, rules: BodyRules) -> list[str]:
             problems.append(f"missing the section '## {name}'")
         elif name in rules.filled and _is_blank(text, rules):
             problems.append(f"'## {name}' is empty (a comment or the template's placeholder does not count)")
+    screenshots = sections.get(rules.screenshots_section.casefold())
+    if screenshots is not None:
+        problems.extend(_check_screenshots(screenshots, rules))
     ai_use = sections.get(rules.ai_section.casefold())
     if ai_use is not None:
         problems.extend(_check_ai_use(ai_use, rules))

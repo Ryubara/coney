@@ -21,6 +21,10 @@ Get the messages with `git log --format=%B <base>..<tip>`.
   agent name.
 - [ ] **A breaking change** to a public interface ends the title with `(BREAKING)` and says what breaks in the body.
 - [ ] **The body** says what changed for a user or developer and why, wrapped at 72 columns.
+- [ ] **The pull request description shows the testing and the result:** the Testing section lists what ran and
+  the numbers (for research, the checks and the runtime evidence), and the Screenshots section has before and after
+  images for anything visible (attached, never committed) or `Screenshots: none (<reason>)`
+  ([What a pull request shows](../testing.md#pr-evidence)).
 - [ ] **Agent-written work** ends with `Co-Authored-By: <model name> <its noreply address>` (Claude:
   `Claude Opus 5.5 <noreply@anthropic.com>`). There is **no other email address in the message**, and no personal
   data or machine path.
