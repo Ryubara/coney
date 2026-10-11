@@ -365,9 +365,11 @@ heading; its Process finishes when the scene has. Its End restores an AI brain; 
 
 **At the start** each bound human that is free (below) and not already in a scene: counted in (`+0x1e`), `+0x280` =
 scene id, its brain's actions cleared, its state reset, record `+0x08` `0x2000` set, its scene transform set to the
-scene's position and rotation, message 10 sent to its held object's task; a held object named by clip event 9
-is taken from the object slots
-(`0x00227080`); then its clip is pushed as three animation tasks with the end callback `0x003a00b8`, looping when the
+scene's position and rotation, message 10 sent to its held object's task; its **pick target** (`+0x33c`,
+`Human_SetObjectTarget` `0x00227080`) set to the scene object in the slot that the value (`+0x04`, read by
+`Clip_GetEventValue` `0x00101ce0`) of its clip's first type-9 event names, so the clip's own event 9 later takes that
+object into the hand ([Objects in a hand](objects.md#held); `l80_c5`'s cops hold their batons this way,
+[Scripts](scripting.md#level80-arrest-fire)); then its clip is pushed as three animation tasks with the end callback `0x003a00b8`, looping when the
 scene loops, streaming when it has segments, blended in over 0.3 s only for a non-cinematic scene placed on its humans
 (and not in game modes 8 and `0xb`); the instance is put in mode 3. Confirmed (code) at `0x0039d870`.
 
