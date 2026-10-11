@@ -1,0 +1,64 @@
+# Plain strikes beside a parked car. On the original, slot 6 (level99): the player is put 0.14 m outside the right
+# side of the sedan in car slot 2 at (41.23, 44.76), whose front faces -x, beside its front door, facing 55 degrees
+# off the car (heading 235), so that the car fails the square's facing test, and taps square twice and cross twice.
+# Whether the plain strikes that touch the car damage it, and which parts.
+description = "plain strikes beside a parked sedan, facing 55 degrees off its side: do they hit it?"
+research = "docs/research/cars.md#hit-volumes"
+input = "car_glance.txt"
+updates = 200
+fields = ["player"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick"]
+let = { car = 'u32(u32(0x005971b4) + 4) + 2 * 0x1310' }
+setup = [
+  { address = "tf(player) + 0x0", type = "f32", value = "41.2", frame = 0, until = 2 },
+  { address = "tf(player) + 0x4", type = "f32", value = "46.1", frame = 0, until = 2 },
+  { address = "tf(player) + 0x18", type = "f32", value = "0.887", frame = 0, until = 2 },
+  { address = "tf(player) + 0x1c", type = "f32", value = "-0.4617", frame = 0, until = 2 },
+]
+
+[coney]
+level = "level99"
+args = ["--checkpoint", "4", "--start", "41.2,46.1,0.22,235"]
+
+[[field]]
+name = "door16"
+address = "car + 0xc30"
+type = "f32"
+
+[[field]]
+name = "window17"
+address = "car + 0xcd0"
+type = "f32"
+
+[[field]]
+name = "parts_off"
+address = "car + 0x11f8"
+type = "u32"
+
+[[field]]
+name = "first_hit"
+address = "car + 0x11ec"
+type = "u32"
+
+[[field]]
+name = "rocking"
+address = "car + 0x12d6"
+type = "u8"
+
+[[field]]
+name = "rock_z"
+address = "car + 0x1238"
+type = "f32"
+
+[[field]]
+name = "car_qz"
+address = "car + 0x28"
+type = "f32"
+
+[[field]]
+name = "car_qw"
+address = "car + 0x2c"
+type = "f32"

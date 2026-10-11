@@ -68,14 +68,14 @@ A forced stop leaves `warriors.lock`; the next start opens the project fine anyw
 
 Check: `Invoke-RestMethod http://127.0.0.1:8090/check_connection` -> `Connection OK - GhidraMCP Headless Server v7.0.0-headless`.
 
-## MCP registration (Claude Code, local scope, this project only)
+## MCP registration
 
-```sh
-claude mcp add ghidra-mcp -s local -e GHIDRA_MCP_URL=http://127.0.0.1:8090 -e GHIDRA_MCP_LAZY=0 -- uv run --directory <ghidra_mcp_repo> bridge-mcp-ghidra --transport stdio
-```
-
-`GHIDRA_MCP_LAZY=0` loads all tool groups at connect (Claude Code does not pick up groups loaded later). Start the
-server **before** the Claude Code session. Tools: `ToolSearch select:mcp__ghidra-mcp__<name>`.
+The repository's `.mcp.json` registers the bridge for Claude Code as `ghidra-mcp`: it runs
+`coney-tools mcp serve ghidra-mcp`, which starts `bridge-mcp-ghidra --transport stdio` from `ghidra_mcp_repo` with
+`GHIDRA_MCP_URL=http://127.0.0.1:8090` (unless you set another) and `GHIDRA_MCP_LAZY=0`
+([Setting up an agent tool](agents.md#setup)). `GHIDRA_MCP_LAZY=0` loads all tool groups at connect (Claude Code does
+not pick up groups loaded later). Start the server **before** the Claude Code session. Tools:
+`ToolSearch select:mcp__ghidra-mcp__<name>`.
 
 ## Call sequence
 

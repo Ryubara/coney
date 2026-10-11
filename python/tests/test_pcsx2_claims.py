@@ -355,3 +355,49 @@ def test_dpi_awareness_is_set_once_on_windows_and_never_elsewhere(monkeypatch: p
     assert pcsx2_proc.ensure_dpi_aware() is True
     assert calls == [ctypes.c_void_p(-4).value]
     pcsx2_proc.ensure_dpi_aware.cache_clear()
+
+
+# -- the shared claims folder
+
+
+def fake_checkouts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, worktree_config: str) -> tuple[Path, Path]:
+    """A main checkout and a worktree (each holding the example file that marks a checkout), the process inside the
+    worktree, whose own coney.local.toml holds `worktree_config`; returns (main, worktree)."""
+    main = tmp_path / "repos" / "coney"
+    worktree = tmp_path / "worktrees" / "coney" / "branch"
+    for checkout in (main, worktree):
+        checkout.mkdir(parents=True)
+        (checkout / "coney.local.example.toml").write_text("", encoding="utf-8")
+    (worktree / "coney.local.toml").write_text(worktree_config, encoding="utf-8")
+    monkeypatch.setattr(pcsx2_claims, "main_checkout", lambda root: main)
+    monkeypatch.chdir(worktree)
+    return main, worktree
+
+
+def test_a_worktree_with_its_own_scratch_still_shares_the_claims_folder(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    main, _ = fake_checkouts(tmp_path, monkeypatch, 'scratch_dir = "own-scratch"\n')
+
+    registry = pcsx2_claims.default_registry()
+
+    # `../../scratch` beside the main checkout, never the worktree's scratch_dir: every worktree sees one place.
+    assert registry.claims_dir == (main / ".." / ".." / "scratch" / "pcsx2-claims").resolve()
+    assert registry.root == main
+
+
+def test_a_worktree_without_a_config_file_shares_the_claims_folder(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    main, worktree = fake_checkouts(tmp_path, monkeypatch, "")
+    (worktree / "coney.local.toml").unlink()
+
+    assert pcsx2_claims.default_registry().claims_dir == (main / ".." / ".." / "scratch" / "pcsx2-claims").resolve()
+
+
+def test_an_explicit_claims_folder_is_honoured(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _, worktree = fake_checkouts(
+        tmp_path, monkeypatch, 'scratch_dir = "own-scratch"\npcsx2_claims_dir = "somewhere/claims"\n'
+    )
+
+    assert pcsx2_claims.default_registry().claims_dir == (worktree / "somewhere" / "claims").resolve()

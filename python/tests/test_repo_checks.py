@@ -145,9 +145,11 @@ def test_the_real_rules_load_and_accept_a_real_title() -> None:
 
 REPO = Path(__file__).resolve().parents[2]
 BODY_RULES = BodyRules(
-    sections=("Summary", "Checklist", "AI use"),
-    filled=("Summary",),
-    placeholders=("...",),
+    sections=("Summary", "Checklist", "Testing", "Screenshots", "AI use"),
+    filled=("Summary", "Testing"),
+    placeholders=("...", "<reason>"),
+    screenshots_section="Screenshots",
+    screenshots_none="Screenshots: none",
     ai_section="AI use",
     written_by_label="Commits written by:",
     choices=("a person", "an AI", "an AI, edited by a person", "a person, with AI help"),
@@ -158,10 +160,20 @@ BODY_RULES = BodyRules(
 CHECKLIST = "Done:\n\n- [x] The check\n\nRemaining:\n\n- [ ] Nothing\n"
 
 
-def body(summary: str = "Adds a check.", written_by: str = "an AI", model: str = "Claude Sonnet 5.5") -> str:
+NO_SHOTS = "Screenshots: none (a docs-only change, nothing visible)"
+
+
+def body(
+    summary: str = "Adds a check.",
+    written_by: str = "an AI",
+    model: str = "Claude Sonnet 5.5",
+    testing: str = "- `pytest python/tests`: 120 passed",
+    screenshots: str = NO_SHOTS,
+) -> str:
     """A description in the template's form; the arguments fill the parts the checks read."""
     return (
         f"## Summary\n\n{summary}\n\n## Checklist\n\n{CHECKLIST}\n"
+        f"## Testing\n\n{testing}\n\n## Screenshots\n\n{screenshots}\n\n"
         f"## AI use\n\n- **Commits written by:** {written_by}\n- **Model:** {model}\n"
     )
 
@@ -183,7 +195,7 @@ def test_windows_line_endings_and_extra_text_pass() -> None:
     assert check_body(text, BODY_RULES) == []
 
 
-@pytest.mark.parametrize("section", ["Summary", "Checklist", "AI use"])
+@pytest.mark.parametrize("section", ["Summary", "Checklist", "Testing", "Screenshots", "AI use"])
 def test_a_missing_section_is_reported(section: str) -> None:
     problems = check_body(body().replace(f"## {section}\n", ""), BODY_RULES)
     assert any(f"missing the section '## {section}'" in problem for problem in problems), problems
@@ -200,7 +212,7 @@ def test_a_heading_inside_a_comment_does_not_count() -> None:
 
 
 def test_an_empty_body_reports_every_section() -> None:
-    assert len(check_body("", BODY_RULES)) == 3
+    assert len(check_body("", BODY_RULES)) == 5
 
 
 @pytest.mark.parametrize("summary", ["", "   ", "<!-- One short paragraph. -->", "<!--\nmany\nlines\n-->", "..."])
@@ -211,6 +223,136 @@ def test_an_empty_summary_is_reported(summary: str) -> None:
 
 def test_an_empty_checklist_is_not_refused() -> None:
     assert check_body(body().replace(CHECKLIST, ""), BODY_RULES) == []
+
+
+@pytest.mark.parametrize("testing", ["", "   ", "<!-- What was run and the results. -->", "- ...", "..."])
+def test_an_empty_testing_section_is_reported(testing: str) -> None:
+    problems = check_body(body(testing=testing), BODY_RULES)
+    assert any("'## Testing' is empty" in problem for problem in problems), problems
+
+
+@pytest.mark.parametrize(
+    "screenshots",
+    [
+        "![Coney after](https://github.com/user-attachments/assets/1234-abcd)",
+        "![](https://example.invalid/shot.png)",
+        '<img width="640" alt="after" src="https://example.invalid/after.png">',
+        "<IMG src='https://example.invalid/after.png'>",
+        '<img src="https://github.com/user-attachments/assets/1234-abcd" width="320">',
+        '![after](https://example.invalid/after.png "Coney after")',
+        "![after](<https://example.invalid/a b.png>)",
+        "Before: https://github.com/user-attachments/assets/1234-abcd\n"
+        "After: https://github.com/user-attachments/files/5/x.mp4",
+        "| Before | After |\n| --- | --- |\n| ![b](https://example.invalid/b.png) | ![a](http://x.invalid/a.png) |",
+        "- **Coney before:** ...\n- **Coney after:** ![after](https://example.invalid/after.png)",
+        "Screenshots: none (no visible change)",
+        "screenshots: NONE (docs only)",
+        "- **Screenshots:** none (research page only)",
+        "Screenshots: none (the change is a log line (not shown))",
+    ],
+)
+def test_screenshots_with_an_image_or_a_reason_pass(screenshots: str) -> None:
+    assert check_body(body(screenshots=screenshots), BODY_RULES) == []
+
+
+@pytest.mark.parametrize(
+    "screenshots",
+    [
+        "",
+        "   ",
+        "<!-- shot: before.png -->",
+        "<!--\nScreenshots: none (no visible change)\n-->",
+        "...",
+        "- **Coney before:** ...\n- **Coney after:** ...\n- **Original (PCSX2):** ...",
+        "Screenshots: none",
+        "Screenshots: none ()",
+        "Screenshots: none (   )",
+        "Screenshots: none (<reason>)",
+        "Screenshots: none (...)",
+        "Screenshots: nothing (no change)",
+        "I will add a screenshot later.",
+        "[a link](https://example.invalid/after.png)",
+    ],
+)
+def test_screenshots_without_an_image_or_a_reason_are_reported(screenshots: str) -> None:
+    problems = check_body(body(screenshots=screenshots), BODY_RULES)
+    assert any("'## Screenshots'" in problem and "Screenshots: none" in problem for problem in problems), problems
+
+
+@pytest.mark.parametrize(
+    ("screenshots", "path"),
+    [
+        ("![Coney after](./shots/x.png)", "./shots/x.png"),
+        ("![](shot.png)", "shot.png"),
+        ("![after](shots/after.png)", "shots/after.png"),
+        ('![after](../shots/after.png "Coney after")', "../shots/after.png"),
+        ("![after](<./shots/my after.png>)", "./shots/my after.png"),
+        ("![after](C:\\scratch\\shots\\after.png)", "C:\\scratch\\shots\\after.png"),
+        ("![after](file:///tmp/after.png)", "file:///tmp/after.png"),
+        ('<img alt="after" src="./shots/x.png">', "./shots/x.png"),
+        ("<IMG src='after.png'>", "after.png"),
+        ("![b](https://github.com/user-attachments/assets/1234-abcd)\n![a](./shots/a.png)", "./shots/a.png"),
+        ("Screenshots: none (no visible change)\n![a](./shots/a.png)", "./shots/a.png"),
+    ],
+)
+def test_an_image_that_is_a_local_file_is_reported(screenshots: str, path: str) -> None:
+    problems = check_body(body(screenshots=screenshots), BODY_RULES)
+    expected = f"'{path}' is a local file: attach it with gh --attach (gh 2.99+) so it uploads"
+    assert any("'## Screenshots'" in problem and expected in problem for problem in problems), problems
+
+
+def test_each_local_image_is_reported_once() -> None:
+    problems = check_body(body(screenshots="![b](./shots/b.png)\n![a](./shots/a.png)"), BODY_RULES)
+    assert len([problem for problem in problems if "is a local file" in problem]) == 2
+
+
+@pytest.mark.parametrize(
+    ("summary", "path"),
+    [
+        ("The captures are in scratch/pr-testing-shots/shots.", "scratch/pr-testing-shots/shots"),
+        ("See ../../scratch/x/PR.md for more.", "../../scratch/x/PR.md"),
+        (r"Saved at C:\Repositories\Coney\scratch\x\a.png", r"C:\Repositories\Coney\scratch\x\a.png"),
+        ("Saved at c:/Repositories/Coney/scratch/x/a.png.", "c:/Repositories/Coney/scratch/x/a.png"),
+        (r"Saved at D:\shots", r"D:\shots"),
+        ("The files are in ../../worktrees/coney/x.", "../../worktrees/coney/x"),
+        (r"Built in scratch\build", r"scratch\build"),
+    ],
+)
+def test_a_local_path_in_the_text_is_reported(summary: str, path: str) -> None:
+    problems = check_body(body(summary=summary), BODY_RULES)
+    assert any(f"'{path}' is a local path" in problem for problem in problems), problems
+
+
+def test_a_local_path_in_any_section_is_reported() -> None:
+    problems = check_body(body(testing="- ran it from scratch/pr/x.log: 12 passed"), BODY_RULES)
+    assert any("'scratch/pr/x.log' is a local path" in problem for problem in problems), problems
+
+
+@pytest.mark.parametrize(
+    "summary",
+    [
+        "Run `cd scratch/<branch>` first.",
+        "```sh\ncd scratch/x\ngh pr create --attach ./shots/a.png\n```",
+        "~~~\n" + r"C:\Repositories\Coney" + "\n~~~",
+        "See https://example.invalid/scratch/x and https://example.invalid/a/../../b.",
+        "A scratch folder, kept scratch-free; the base:/ style is not a drive. Time 10:30/11:00.",
+        "![after](./shots/after.png) and <img src='../../x.png'>",
+        r"<!-- C:\Repositories\Coney is only in a comment -->",
+    ],
+)
+def test_code_urls_images_and_comments_are_not_local_paths(summary: str) -> None:
+    problems = check_body(body(summary=summary), BODY_RULES)
+    assert not any("is a local path" in problem for problem in problems), problems
+
+
+def test_screenshots_are_not_looked_for_outside_their_section() -> None:
+    text = body(screenshots="").replace("## Testing", "![x](x.png)\n\n## Testing")
+    assert any("'## Screenshots'" in problem for problem in check_body(text, BODY_RULES))
+
+
+def test_a_missing_screenshots_section_is_reported_once() -> None:
+    text = body().replace("## Screenshots\n", "")
+    assert len(check_body(text, BODY_RULES)) == 1
 
 
 @pytest.mark.parametrize("written_by", ["", " ", "<!-- a person / an AI -->", "..."])
@@ -277,12 +419,20 @@ AI_USE = {
     "written_by": {"label": "Written by:", "choices": ["a person", "an AI"], "no_ai": "a person"},
     "model": {"label": "Model:", "none": "n/a"},
 }
-GOOD_BODY_RULES = {"sections": ["Summary", "AI use"], "filled": ["Summary"], "placeholders": ["..."], "ai_use": AI_USE}
+SCREENSHOTS = {"section": "Screenshots", "none": "Screenshots: none"}
+GOOD_BODY_RULES = {
+    "sections": ["Summary", "Screenshots", "AI use"],
+    "filled": ["Summary"],
+    "placeholders": ["..."],
+    "screenshots": SCREENSHOTS,
+    "ai_use": AI_USE,
+}
 
 
 def test_body_rules_are_read_from_the_rules_file(tmp_path: Path) -> None:
     rules = load_body_rules(write_body_rules(tmp_path, GOOD_BODY_RULES))
-    assert rules.sections == ("Summary", "AI use") and rules.filled == ("Summary",)
+    assert rules.sections == ("Summary", "Screenshots", "AI use") and rules.filled == ("Summary",)
+    assert rules.screenshots_section == "Screenshots" and rules.screenshots_none == "Screenshots: none"
     assert rules.choices == ("a person", "an AI") and rules.no_ai == "a person"
     assert rules.written_by_label == "Written by:" and rules.model_label == "Model:"
 
@@ -304,6 +454,9 @@ def altered(**changes: object) -> dict[str, object]:
         altered(filled="Summary"),
         altered(placeholders=None),
         altered(ai_use=None),
+        altered(screenshots=None),
+        altered(screenshots={"section": "Other", "none": "Screenshots: none"}),
+        altered(screenshots={"section": "Screenshots", "none": ""}),
         altered(ai_use={**AI_USE, "section": "Other"}),
         altered(ai_use={**AI_USE, "model": {"label": "", "none": "n/a"}}),
         altered(ai_use={**AI_USE, "written_by": {"label": "W:", "choices": [], "no_ai": "x"}}),
@@ -333,6 +486,8 @@ def test_the_unchanged_template_is_refused() -> None:
     problems = check_body(read_template(), load_body_rules(REPO))
     assert any("'## Summary' is empty" in problem for problem in problems), problems
     assert any("'Commits written by:' is empty" in problem for problem in problems), problems
+    assert any("'## Testing' is empty" in problem for problem in problems), problems
+    assert any("'## Screenshots'" in problem for problem in problems), problems
 
 
 def test_the_template_matches_the_rules() -> None:
@@ -350,6 +505,8 @@ def test_the_template_matches_the_rules() -> None:
 
 def test_a_filled_in_template_passes() -> None:
     filled = read_template().replace("## Summary\n", "## Summary\n\nAdds a check.\n", 1)
+    filled = filled.replace("## Testing\n", "## Testing\n\n- `pytest`: 3 passed\n", 1)
+    filled = filled.replace("## Screenshots\n", "## Screenshots\n\nScreenshots: none (no visible change)\n", 1)
     filled = re.sub(r"(\*\*Commits written by:\*\*) <!--.*?-->", r"\1 an AI", filled)
     filled = re.sub(r"(\*\*Model:\*\*) <!--.*?-->", r"\1 Claude Sonnet 5.5", filled)
     assert check_body(filled, load_body_rules(REPO)) == []

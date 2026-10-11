@@ -38,3 +38,8 @@ __pycache__/
 .mypy_cache/
 .pytest_cache/
 /python/.venv/
+
+# Claude Code: per-user settings and session files; the shared ones (.claude/settings.json, .claude/agents/) are tracked
+/.claude/settings.local.json
+/.claude/scheduled_tasks.lock
+/.claude/worktrees/

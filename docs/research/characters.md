@@ -932,9 +932,36 @@ at once: far from the camera there is no turn limit and none of the clips below.
   `0x1000080`, and 4° / 6° in the two special states (`0x00227f68`, `0x00227f40`); the gait words are multiplied
   by brain `+0x0b` + 1 (divided by 1 − `+0x0b` when it is negative, `0x002212d0`). The turn decides the facing; the
   velocity is the new facing × the speed, so an AI runs wide arcs (a run turns 120° per second).
+    - **Which word.** Each pair is (player, AI); `Human_MaxTurn` takes the AI word, the pair's second (`+4`), for a
+      human with no player slot (`+0x1b0` = −1) or whose brain is dead (`+0x09`). The stance's AI word is
+      **`0x005101dc`** (24° in `.data`); nothing in the executable stores to it. `CfgSetTurnRates` (`0x0023a7a0`,
+      script `0x0035e140`) writes only the six **player** words `0x005101b0`, `0x005101b8`, ... `0x005101d8`
+      (degrees in [0, 90), × π/180), so its sixth argument (24 in `config_preload2.lua`) sets the player's stance
+      turn, `0x005101d8`, and never an AI's. The two are equal in play only because both are 24. Confirmed (code) at
+      `0x00221520` and `0x0023a964`.
+    - **Wounded first.** The hurt test (state `0x10000`) comes before the stance test, so a hurt AI in a fight
+      stance turns a quarter of `0x005101b4` (1.5°): **0.375° per update**, not 24°. While hurt it also turns with
+      the brain's speed at 0, and never starts a turn on the spot. Confirmed (code) at `0x002213d8`, `0x00243848`.
 - **In a fight stance** the velocity is instead along the line to the point (it **strafes**: the facing follows
   `+0x110`, the feet go to `+0x90`), and record `+0xdc` gets the direction of the movement relative to the facing,
-  0 to 2π (`0x002726d8`), which drives the eight-direction blend ([Clip selection](#clip-selection)).
+  0 to 2π (`0x002726d8`), which drives the eight-direction blend ([Clip selection](#clip-selection)). In detail
+  (confirmed (code) at `0x00243848`): the speed is the stance walk when the brain's `+0x114` is above 0.1 and 0
+  otherwise (step 2 above), the direction is the unit vector from the human's position to `+0x90` (speed 0 when the
+  point is on him), and the turn toward `+0x110` runs whenever `+0x114` is above 0, so an ask between 0 and 0.1 turns
+  him without moving him. Wounded comes first: a hurt human in a stance gets the walk speed, not the stance walk.
+
+**The move request is rebuilt every update** (confirmed (code)). `Brain_UpdateGoals` (`0x0028fbb0`, every brain,
+every character step) begins with `Brain_StopMove` (`0x0028ac18`): `+0x114` = 0 and `+0x110` = the human's current
+facing (from his rotation). It leaves `+0x90` and `+0x118` alone. The brains run before this control in the same
+step ([Tasks](tasks.md#humans-update), steps 5 and 8), so the control sees only what a goal or action wrote in this
+update; nothing a finished goal or action wrote survives into the next update. With nothing written, the AI asks for
+speed 0 along its own facing: no velocity, no turn, and no turn on the spot (the heading error is 0). A stale `+0x90`
+does nothing then, because the speed is 0. The only writers of `+0x110` are the reset, the movement actions (move
+`0x002fc5c0`, move-to-human `0x002fd4e8` and its abort `0x002fd0a8`, `0x002fe740`, the shuffle `0x002feb48`, the turn
+`0x002fdd08`, the step `0x002fe3a8`), the route legs (`0x0029b848`, `0x0029baa8`, `0x0029bca0`) and a few goals that
+are not fights (pedestrian reaction, avoid enemies, the ledge thrower, run from the train, the phone, the parlay) and the
+player's brain (`0x003035d8`); found by a scan of every store to `+0x110`.
+
 - **Held flag `0x20000000`** (a turn clip playing, below) or any of `0x110c0880`, or the state code 5 or 6 (a start
   clip): no velocity; the clip moves the body.
 - The vertical velocity is kept (`+0x3a0`), and the lean (`0x00248df0`) gets the heading change, as for a player.
@@ -1666,7 +1693,8 @@ the first that succeeds. Confirmed (code):
 1. a **climb** (`Climb_TryStart`, [below](#climb)), if human flag `0x20000000` is clear and the stick is above 0.12;
 2. a **context action** (`0x002811f0`), if L2 is not held;
 3. a **jump** (`Player_TryJump`, `0x002829e8`), if human flag `0x10000000` is clear and the stick is above **0.95**;
-4. an object action (`0x00226ff0`, `0x00257f38`), if L2 is not held.
+4. the **drop** of what is in hand (`Human_DropHeld`, `0x00257f38`), if L2 is not held
+   ([Triangle with something in hand](#triangle-held)).
 
 The object action is the **drop**: `0x00226ff0` is `Human_GetHeldObject` (`+0x338`) and `0x00257f38` is
 `Human_DropHeld`, which gives the held object back its physics body and clears the hand. Confirmed (code). There is
@@ -1721,6 +1749,55 @@ at runtime for Vermin (3.5 m/s up, 9.55 m/s across a 4.1 m gap); the rest is in
 
 **In an input script**: `stick left 0 100`, wait until the run start is over and the speed is above 3.3 m/s, then
 `tap triangle`; add `press l2` beforehand for a sprint jump.
+
+#### Triangle with something in hand {#triangle-held}
+
+Owner checklist item 2 (an early press at a wall drops the weapon instead of climbing). The four tries above, read
+again for a held object; confirmed (code) at `Player_UpdateActions` (`0x0027c120`, both its triangle blocks),
+`Climb_TryStart` (`0x002826f0`), `Climb_Start` (`0x00281c20`), `Player_TriangleAction` (`0x002811f0`),
+`ContextAction_Use` (`0x0024d530`) and `Human_PickUpSearch` (`0x0024d810`):
+
+1. **There is no buffer.** Command 10 is one sample ([Commands](combat.md#commands)) and each try runs once, on that
+   update. An "early" climb is only the long ray: 4.5 m ahead for a player (human flag `0x2`) at gait 4 or 5, else
+   1.5 m.
+2. **The climb comes first and ignores what is in hand.** `Climb_TryStart` refuses only on record `+0x08`
+   `0x84240`; nothing about a held object. When the climb starts, `Climb_Start` **drops** an object of held set 4
+   (overhead: barrels, crates) always, and one of set 6 (the ghetto blaster) unless `CfgClimbWithGhetto`
+   (`0x00510250`) is set; a weapon (sets 1-3) or a one-handed throwable (5) stays in hand through the climb.
+3. **A press slightly out of reach is swallowed.** `Climb_Start` returns "done" for a player (per-player `+0x1b` not
+   0), without climbing, when the face is beyond the clip's maximum distance but closer than twice a clip's reach
+   (which clip's reach the decompiler hides; [open question](#open-questions)), and when the space at the top is not
+   clear (`Climb_IsSpaceClear`). The dispatcher then returns with nothing more: **no jump and no drop**. An AI gets
+   "not done".
+4. **The context action never drops for a player with nothing to take.** `Player_TriangleAction` → `ContextAction_Use`
+   → (no context record) the pick-up search. With an object found and something in hand (not kind 12 or 24), it
+   drops what is held and sets human `+0x5b8`; the history-hold triangle (`0xb`, 7 samples) then takes the new one
+   (`Player_TriangleAction` again, `+0x5b8` cleared). With **nothing found**, a pad-controlled human gets 0 (no
+   drop); only an AI (`+0x1b` = 0) drops here.
+5. **The jump**: refused while carrying held set 4 or 6 (`Human_HoldsKind4Or6`), in a fight stance, at 3.3 m/s or
+   less, or with a climbable face within 5.5 m ([above](#jump)). A weapon does not refuse it.
+6. **Only then the drop**: with L2 not held and an object in hand, `Human_DropHeld` (`0x00257f38`) and `+0x5b8` = 1.
+
+So with a bat at a run toward a climbable wall: within 4.5 m (and inside the clips' distances) he climbs with the bat;
+just beyond the clips' distance the press may be swallowed; farther but within 5.5 m nothing climbs or jumps and the
+**bat drops** (the original does this too); beyond 5.5 m, at a run, he **jumps with the bat**. Empty-handed, the last
+two cases do nothing and jump.
+
+**Coney fixes** (item 2; today `PlayLevelMode`'s context action returns `TriangleResult::Drop` at try 2, before the
+jump, `src/platform/play_level_objects.cpp`):
+
+1. Remove the drop from the context action for the player: with nothing to take it returns "nothing" (an AI keeps
+   the drop there). With an object to take and something in hand, drop and remember the swap (`+0x5b8`); the
+   triangle history hold (7 samples) picks the new object up.
+2. Add try 4 in `Human::tryActions` (`src/human/human.cpp`): after a refused jump, with L2 not held and an object in
+   hand, drop it.
+3. The climb with an object: keep weapons and set-5 objects in hand; drop set 4, and set 6 unless
+   `CfgClimbWithGhetto`. Check that a player carrying a weapon at a run is gait 4 or 5 for the 4.5 m ray (a slower
+   armed run speed must not shorten the reach to 1.5 m).
+4. Add the swallow of try 3 when Coney's climb distances say "too far by less than twice the reach": the press ends
+   there.
+5. Tests: with a bat, at a run, triangle 3 m before a climbable fence climbs and keeps the bat; 5 m before it drops the
+   bat; 8 m before in the open it jumps and keeps the bat; with a barrel (set 4) the climb drops it.
 
 ### Climbing {#climb}
 
@@ -2448,7 +2525,7 @@ the human code reads.
 | `0x002446a8` | `Human_SetButtonTapParam` | Sets `+0x6bc` for the button-tap control. | confirmed (code) |
 | `0x002446b0` | `Human_SetThrowAimState` | Enters throw aiming: the control function and the aim point. | confirmed (code) |
 | `0x00247a08` | `Human_SetFallStartPoint` | `+0x2c0` = the given point when it is on the nav mesh, else `+0x2b0`. | confirmed (code) |
-| `0x00247a50` | `Nav_StraightDistance` | The distance to a point when it lies on the nav mesh and a walkable line reaches it, else 0; AI move goals use it. | confirmed (code) |
+| `0x00247a50` | `Nav_WalkDistanceTo` | The straight distance to a point a walkable line reaches, else the length of a route planned to it ([AI](ai.md#warrior-follow)); 0 with no area or no route. | confirmed (code) |
 | `0x00247fc0` | `Human_StrikeShapeOn` | Turns a strike shape on (message 0x8f). | confirmed (code) |
 | `0x00248110` | `Human_StrikeShapeOff` | Turns a strike shape off (message 0x90). | confirmed (code) |
 | `0x002482e0` | `Human_CanHeadLook` | Whether the head may turn to look. | confirmed (code) |
@@ -2981,13 +3058,18 @@ default ids are known, [Anim slots](#anim-slots)), and the
 - **Step height at runtime** (answered): steps up to 0.245 m are walked onto in one update, from 0.255 m they stop
   the body ([Walls and steps](#walls)), measured on a test step made in the mesh. Still open: a real kerb in a later
   level, as corroboration.
-- **The context action** (`0x002811f0`) and the object action (`0x00226ff0`) that triangle also starts: doors,
-  pick-ups, which objects.
+- **The context action** (`0x002811f0`) and the object action that triangle also starts (partly answered,
+  [Triangle with something in hand](#triangle-held)): the object action is the drop of what is in hand; the context
+  action is the context records and the pick-up search ([Crimes](crimes.md#triangle)). Doors and which objects are
+  still open.
 - **The air turn's gait** (partly answered): 4° per update from a run and a sprint alike, which is the non-player
   column's run value at `0x005101c4` (inferred: `Human_AirControl` reads the other column); not read in the code.
 - **Climb reaches** (partly answered): Coney reads Rembrandt's type-8 vectors ([Coney's implementation](#coneys-implementation));
   still open: which two clips `r1` and `r2` belong to (Coney's reading: the standing and running first clips), and
-  `CfgClimbWithGhetto`'s effect.
+  which clip's reach `Climb_Start`'s "too far by less than twice the reach" swallow uses
+  ([Triangle with something in hand](#triangle-held)). Answered: `CfgClimbWithGhetto` keeps the ghetto blaster (held
+  set 6) in hand through a climb; without it the climb drops it, and always drops a set-4 object (`Climb_Start`,
+  `0x00281c20`, confirmed (code)).
 - **The landing's threshold**: why the landing contact is taken only once the feet start an update about 0.17 m
   below the floor ([When the landing happens](#falling)). The contact path is traced (the resolution `0x0033d9d8`
   acts on the first contact by fraction) and does not explain it; a runtime log of the contacts is needed.

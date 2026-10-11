@@ -1,0 +1,67 @@
+# Vermin's run to the window after the player's jump (level99 checkpoint 3, P3.Player2Jumps): slot 9 stands
+# Rembrandt on the roof in sight of the gap; the player runs at the window and jumps through it as in glass_jump, then
+# stands still while Vermin is sent from fVerminWait to fStop[3] across the same window (GoalMoveToFlag gait 4).
+# Vermin's gait, speed and position each update show whether he runs up to the take-off.
+# Research: docs/research/scripting.md#level99-p2-vermin-fence.
+description = "level99 rooftop: after the player's window jump, Vermin's gait and speed up to and through his own jump"
+research = "docs/research/scripting.md#level99-p2-vermin-fence"
+input = "vermin_window_jump.txt"
+updates = 700
+fields = ["player"]
+
+[original]
+slot = 9
+patches = ["scripted-pad", "right-stick", "event-call"]
+let = { vermin = 'human("Vermin")' }
+
+[coney]
+level = "level99"
+args = ["--checkpoint", "3", "--start", "63.6,-1.9,4.2016,88"]
+# Checkpoint 3 opens with Vermin's fence lesson, which holds the pad for about 9 s; the slot starts after it.
+settle = 300
+
+[[field]]
+name = "v_x"
+address = "tf(vermin) + 0x0"
+type = "f32"
+
+[[field]]
+name = "v_y"
+address = "tf(vermin) + 0x4"
+type = "f32"
+
+[[field]]
+name = "v_z"
+address = "tf(vermin) + 0x8"
+type = "f32"
+
+[[field]]
+name = "v_gait"                           # human +0x1a8, 0 standing to 5 sprint
+address = "vermin + 0x1a8"
+type = "s32"
+
+[[field]]
+name = "v_speed"                          # human +0x1ac, the speed across the ground
+address = "vermin + 0x1ac"
+type = "f32"
+
+[[field]]
+name = "v_vz"                             # human +0x3a0, the vertical speed
+address = "vermin + 0x3a0"
+type = "f32"
+
+[[field]]
+name = "v_move_speed"                     # brain +0x114, the speed the move asks for
+address = "brain(vermin) + 0x114"
+type = "f32"
+
+[[field]]
+name = "v_clip"
+address = "rec(vermin) + 0x20"
+type = "s32"
+
+[[field]]
+name = "v_goal_vt"                        # the top goal's vtable (brain +0x40[+0x2c], goal +0x0c)
+address = "u32(brain(vermin) + 0x40 + 4 * s8(brain(vermin) + 0x2c)) + 0xc"
+type = "u32"
+follow = true

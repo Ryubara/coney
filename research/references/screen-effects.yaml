@@ -10,7 +10,7 @@ about: |
 complete: |
   All six queue types, thirteen look slots and four layers are listed. The queue's handlers and the layers'
   tags are read from the executable; the looks' numbers are the `CfgScrFx` calls of `config_preload2.lua` (looks 3
-  and 4 have none). Who uses looks 1, 6, 11 and 12 is not traced, nor what looks 0, 3, 4 and 8 are for.
+  and 4 have none). Who uses looks 1, 6, 11 and 12 is not traced.
 defaults: {source: "SLUS_212.15, ScreenEffectsManager.cpp (0x0018b168-0x0018e7c0); config_preload2.lua, CfgScrFx", evidence: confirmed-code}
 entries:
   - id: queue-0
@@ -61,6 +61,7 @@ entries:
     hold_ms: 100
     value2: 2500
     set_by: "`0x00284280`"
+    meaning: "The flash's ghost grid (`Flash_Use`); ends through look 4"
   - id: look-1
     kind: look
     number: 1
@@ -80,16 +81,18 @@ entries:
     hold_ms: 20000
     value2: 5000
     set_by: "`0x00236d28` (sets human flag `0x80000`); ended by `0x00236fb8` and `ScreenQueueEffect(1)`"
-    meaning: "A dark orange tint a player state turns on (human flag `0x80000`)"
-    evidence: inferred
+    meaning: "Rage: a dark brown tint and the ghost grid of the last frame, strongest at the edges ([the rage look](../research/graphics.md#rage-look))"
+    evidence: confirmed-runtime
   - id: look-3
     kind: look
     number: 3
     set_by: "after look 2 ends (`0x0018b950`)"
+    meaning: "Rage's end: the ghost grid fading over 2,500 ms, then look 8"
   - id: look-4
     kind: look
     number: 4
     set_by: "after look 0 ends (`0x0018b950`)"
+    meaning: "The flash's end: the ghost grid, flat alpha 200, fading over 1,500 ms, then look 8"
   - id: look-5
     kind: look
     number: 5
@@ -132,6 +135,7 @@ entries:
     hold_ms: 0
     value2: 0
     set_by: "its out time ends look 3 (`0x0018b950`)"
+    meaning: "The hand-back: the motion blur turns it into the base look"
   - id: look-9
     kind: look
     number: 9
