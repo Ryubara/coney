@@ -2424,6 +2424,47 @@ state's handle at `+0x264` (restarted when it is still playing, `0x004194b8`); w
 `level99`'s last lesson waits for this command through `PadSetHandlerEx` (the handler receives it even when
 `EnableCommand` has turned it off, [Commands](#commands)).
 
+### Reviving a downed Warrior {#revive}
+
+The prompt (HUD string 4) and who can be revived are on [HUD: action prompts](hud.md#action-prompts); this is the
+action. **D-pad left** pressed makes command `0x27` ([the street's tables](#commands), confirmed (runtime)), which
+`Player_TryRevive` (`0x00286ba8`) handles; an AI Warrior reaches the same function through
+[SaveHuman](ai-goals.md#goal-save-human) (inferred from its brain-type test below). Confirmed (code) at the addresses
+given:
+
+1. **Refused** when the reviver has any held flag or a state flag of `0x7bf9e9f7ff0`, when
+   `Human_FindRevivableNear` (`0x00279078`) finds nobody, or when the downed human has any held flag.
+2. **The way**: when `Human_IsWayClearTo(reviver, downed)` (`0x0021c0a8`) fails, a downed AI human (`+0x1b0` = −1)
+   is refused, and a downed player only accepts a reviver whose brain is type 3 (a Warrior).
+3. **The flash**: the reviver's panel inventory (`+0x380`) holds item 1, or the downed human's does (only a co-op
+   partner has one); else refused. Then `Revive_Start` and the command is used (returns 1).
+
+`Revive_Start(reviver, downed)` (`0x002752a0`):
+
+- Both get the same new pair id (a counter at `*0x00597198 + 0x10`, wrapping to 1) at their record `+0x3c`, and
+  both their vtable slot `+0xe4` is called with (1e9, 7) (not traced; reset with 1.0 at the finish).
+- `Attack_SteerLed(0.1, reviver, downed, 0, 351)` puts the reviver in place for clip 351
+  ([the led steer](#led-steer)).
+- The reviver says **76 `revive_reasure`** (`Human_SayCommand(1.0, reviver, 76, none, interrupt, …)`).
+- His animation stack gets, bottom up: **351 `gen_revive_begin`** with the finish callback (`Revive_Finish`,
+  `0x00274ee0`) on its end, chained to **353 `gen_revive_end`**, chained to his idle loop (out of the fight stance
+  through 389 `gen_trans_combat_to_neutral`, idle set 0; in the stance, idle set `0xb`); a blend-out over 0.01 s on
+  top. Clip 352 (`gen_revive_cycle`) is not used. Push sphere off; held flag `0x8000000`; each is the other's
+  partner (`Human_SetPartner`).
+
+`Revive_Finish(reviver)` (`0x00274ee0`), when 351 ends:
+
+1. Both partners cleared, both `+0xe4` calls with (1.0, 7), both pair ids 0.
+2. **One flash is spent**: the downed human's when his inventory has one, else the reviver's
+   (`Inventory_AddItem(…, 1, −1)`).
+3. Interface cue **23** (the flash sound, as [`Flash_Use`](#rage)); the revived says **75 `revive_thank`**;
+   `Human_Heal(revived, 1)` wakes him and fills his health ([`Flash_Use`](#rage) above).
+4. The revived gets up with **354 `gen_revive`** as a pair task bound to the reviver (flag `0x8000`), chained to his
+   idle loop (through 389 out of the stance), push sphere off, held flag `0x8000`.
+
+So the whole revive is clip 351 on the reviver (the flash spent and the heal at its end), then 353 on him and 354 on
+the revived together. Coney: [the gaps](ai.md#crew-gaps).
+
 ### Target selection {#targets}
 
 `Player_PickTarget(range, h)` (`0x0027a6c0`), confirmed (code):

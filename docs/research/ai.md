@@ -4290,17 +4290,24 @@ and the game itself go through one dispatcher, `0x0041c4e0(state, chief, command
 1. Nothing while commands are locked (game state `+0x411`), the player's menu is locked (`+0x42e` + player), the
    command is disabled for the player (`+0x41e` + player × 7 + command, `WCEnableCommand`; the player is human
    `+0x1b0`) or the human is not a war chief.
-2. The command becomes the player's last (`+0x41c` + player). Unforced, giving the current command again only
-   repeats its line (`0x0041cc40`) and, for 0 under a tactic of type `0x12`, calls `0x003114e0` on it.
+2. The command becomes the player's last (`+0x41c` + player). **Unforced** (the menu): the chief is *quiet* when a
+   line of his is still playing (his speech handle resolves) and his `+0x194` is clear. Then the **range check**
+   (`WarChief_CheckCrewInRange`, `0x0041c338`): when the gang's nearest other member is more than 50 m away (squared
+   distance over 2500), the command is **refused** and, unless quiet, the chief says **18 `range`**, or **92
+   `range2`** when any member is cuffed or knocked out (`Human_SayCommand(1.0, chief, …, no interrupt)`); game state
+   `+0x414` + player records the refusal. Within range, giving the current command again (the tactic's `+0x18`
+   clear) only repeats its line (`WarChief_SayCommand`, `0x0041cc40`) and, for 0 under a tactic of type `0x12`,
+   calls `0x003114e0` on it. **Forced**, only defend (2) goes through the range check (quietly).
 3. Otherwise the gang's tactic is cleared and the command's started: 0 `0x00310e00` (given 9.0), 1 `0x00320530`
    (unforced, the chief also plays clip 0x2a4 or 0x2a8, and the gang's target is set from his), 2 `Tactic_Defend`
    around the chief (clip 0x2a3 or 0x2a7), 3 `0x00313400` (the standing tactic of type 3, [the first
    mission](#level99)) or `0x003128a0` for a gang whose brain `+0x2d5` is set, 4 `0x00319570` (given 75.0), 5
    `0x00320b60`; 6 starts nothing.
-4. The chief says the command's line (`0x0041cc40`, [Speech](../references/speech.md)): 0 `follow` (`follow_hide`
-   while `0x00228168` holds, hiding inferred), 1 `attack`, 2 `defend`, 3 `hold` (`holdhide`), 4 `scatter`, 5
-   `steal` when the nearest thing of kind `0xe` is closer than 64 (8 m if that is a squared distance, inferred) and
-   `0x0039a580` accepts it, else `vandal`; 6 none.
+4. The chief says the command's line (`WarChief_SayCommand`, `0x0041cc40`, [below](#warrior-command-lines)): 0
+   `follow` (`follow_hide` while hidden in shadow, `Human_IsHiddenInShadow` `0x00228168`), 1 `attack`, 2 `defend`,
+   3 `hold` (`holdhide`), 4 `scatter`, 5 `steal` when the nearest store flag (activity `0xe`) is closer than 64 (8 m
+   if that is a squared distance, inferred) and its zone still has objects (`ObjZone_HasObjects`, `0x0039a580`),
+   else `vandal`; 6 none. **A forced command says nothing**, and neither does a quiet one (step 2).
 
 The command tactics, by command (constructor, vtable, type id; confirmed (code)):
 
@@ -4345,6 +4352,44 @@ with line `0x85`. None of their Process functions ever ends the tactic (they ret
   the chief and reachable is picked again; its zone's objects are clustered (1 m). Members get WarriorVandalSteal
   (`0x83`), which steals from the zone's clusters (an object is claimed for 5 s when no enemy stands within 1.5 m of it)
   or, with no store, wrecks what is near.
+
+#### The chief's line and the crew's answer {#warrior-command-lines}
+
+Every order the player gives from the menu is heard twice: the chief says the order, then one Warrior answers once
+the chief's line has ended. Confirmed (code) at `0x0041c4e0`, `0x0041cc40`, `0x003069f0`, `0x003208e8`,
+`0x003209d0`, `0x00319f70`, `0x00310768`:
+
+- **The order** (`WarChief_SayCommand(state, chief, quiet, line)`): by the player's last command (`+0x41a`),
+  `Human_SayCommand(1.5, chief, line, no callback, interrupt, 0, no target, 1)`: 0 → 2 `follow` (86 `follow_hide`
+  while hidden in shadow), 1 → 1 `attack`, 2 → 3 `defend`, 3 → 4 `hold` (70 `holdhide` while hidden), 4 → 158
+  `scatter`, 5 → 5 `steal` or 6 `vandal` (step 4 above), 6 → nothing. Lines 1-6, 18, 70, 86 and 158 are the ones
+  that free a stream channel first ([Sound: speech](sound.md#speech)). With `quiet` set (a forced dispatch, or the
+  chief already speaking) nothing is said. Game state `+0x416` + player is then set to 1 when no line is playing
+  (quiet, or the line found no sound), 0 when it plays.
+- **The gesture** (unforced only, step 3): attack plays 676 `cmd_wreckemall_combat` in the fight stance or 680
+  `cmd_wreckemall_neutral` out of it; defend 675 `cmd_watchmyback_combat` or 679 `cmd_watchmyback_neutral`
+  (`Human_PlayActionClip(chief, clip, 2.0, 0)`); not while the chief has a held flag of `0x2fefefff`, a state flag of
+  `0x7bf9e9f7ff0` or an object of kind 4 or 6 in hand. Follow and hold have only `missing_anim_filler` clips (677,
+  678, 681, 682) and play none.
+- **The answer** (`Tactic_SayAckLine(tactic, line)`, `0x003069f0`): each command tactic's Start notes whether the
+  chief's line is playing (the chief is a player, `+0x416` + player is 0 and his speech handle `+0x178` resolves).
+  Only then, on the first Process after that line has ended, one member answers; with no line, the answer is
+  skipped. The member: with at least two living members, over the 16 slots, each non-player member other than the
+  leader who is not busy (`Human_IsBusy`) and whose actions are not blocked; the first such is taken and each later
+  one replaces him at 50 %. `Human_SayCommand(1.0, member, line, no callback, no interrupt, 1, no target, 1)`.
+  Lines: follow 131 `follow_resp`, attack 132 `attack_resp`, defend 130 `defend_resp`, hold 133 `hold_resp`, scatter
+  159 `scatter_resp`, steal 141 `steal_resp` at a store, else 140 `vandal_resp`.
+
+So the automatic commands ([below](#warrior-auto-commands)), the scripts' `WCIssueCommand(…, true)` and the level
+start are silent: only the menu (and an unforced `IssueWarriorCommand`) makes the chief and the crew speak.
+
+**Hiding in shadow** (`Player_UpdateHideOrder`, `0x0023e7e0`, and `Human_SetHiddenState`, `0x0023e6e8`; confirmed
+(code)): while player 1 (`*0x0051489c + 0x228`) is in shadow (human `+0x1ac` is 0.0), not busy, his gang able to
+help, his last command neither hold nor scatter, and no member under attack or his command follow, a timer starts:
+500 ms, or under follow the time the nearest hiding member (brain `+0x2d5` set) needs to run to him at gait 4, plus
+500 ms. When it passes, the last command is kept in `0x0051480c` and **hold (3) is dispatched forced**; with his
+brain's `+0x2d5` set that is the [hide tactic](#warrior-hide) (`0x13`). Leaving the shadow re-dispatches the kept
+command, forced, when the gang's tactic is still the hide. Both are silent.
 
 #### The default command: follow {#warrior-follow}
 
@@ -5416,6 +5461,69 @@ that held him ends, once no scene camera is up; it unlocks his menu every 10 upd
 his far melee range (**stand-in**: Coney's player brain keeps no target, so his attackers stand in for it); under
 attack or defend, follow again 1.5 s after no member of the gang has an enemy. Defend on a rear grab, mug or tag,
 the player modes 2 and 3 and steal at a store are not built. `GangStartSpawner` switches a spawner ([above](#spawners)).
+
+### Warrior commands, revive and the weapon swap: the gaps {#crew-gaps}
+
+Coney against the original, command by command (owner checklist items 11, 16, 8 and 37), as of this page's commit.
+The menu itself (`repo:src/hud/war_command_display.cpp`, `repo:src/gamemodes/gameplay_war_commands.cpp`) matches
+[HUD](hud.md#warrior-command-menu): every slot reaches the dispatcher (`dispatchWarriorCommand`,
+`repo:src/scripting/story_bindings.cpp`), which hands the tactic to `ScriptedStory::startWarriorCommand`
+(`repo:src/ai/scripted_story.cpp`). The original's columns: [Warrior commands](#warrior-commands) and
+[the lines](#warrior-command-lines).
+
+| Command (menu slot) | Original tactic and members' goal | Chief's line / answer | Coney | Where |
+| --- | --- | --- | --- | --- |
+| 0 follow (up) | `WarriorFollowTactic` (`0x12`, 9 m): `FollowPlayer` mode 3; a repeat adds `FollowFormation` (`0x003114e0`) | 2 `follow` (86 hidden) / 131 | **partial**: tactic and goals built; no line, no answer, no repeat | `repo:src/ai/crew.cpp` |
+| 1 attack (up-left) | `WarriorAttackTactic` (1): `FollowAndAttack` on the chief; dogs `AvoidEnemies`; gang's shared target from the chief's | 1 `attack` / 132; gesture 676 / 680 | **partial**: tactic and goal built; no line, answer, gesture or shared target; dogs attack | `repo:src/ai/crew.cpp` |
+| 2 defend (up-right) | `Tactic_Defend` round the chief (2.25 m): [`FollowAndDefend`](ai-goals.md#goal-follow-and-defend), which fights and [rescues](ai-goals.md#goal-save-human) a cuffed or knocked-out chief | 3 `defend` / 130; gesture 675 / 679 | **stand-in**: each member gets `GoalTrackHuman` (2 m), which never attacks and never rescues | `repo:src/ai/scripted_story.cpp` |
+| 3 hold (down) | `WarriorHoldTactic` (3): `HoldPosition` 1.5 m; hide (`0x13`): [`Hide`](ai-goals.md#goal-hide) at wall points | 4 `hold` (70 hidden) / 133 | **partial**: the hold built; the hide is not (the hold stands in); no line, no answer | `repo:src/ai/crew.cpp` |
+| 4 scatter (down-right) | `WarriorScatterTactic` (`0x25`, 75 m): [`Scatter`](ai-goals.md#goal-scatter) to hiding flags | 158 `scatter` / 159 | **missing**: the tactic is cleared and each member flushed, so the crew **stands still** | `repo:src/ai/scripted_story.cpp` |
+| 5 wreck (down-left) | `WarriorStealTactic` (`0x26`): [`WarriorVandalSteal`](ai-goals.md#goal-warrior-vandal-steal) | 5 `steal` / 141, or 6 `vandal` / 140 | **missing**: as scatter, the crew stands still | `repo:src/ai/scripted_story.cpp` |
+| 6 (no slot) | nothing; recorded as last | none | **works** | `repo:src/scripting/story_bindings.cpp` |
+
+Around the commands:
+
+| Behaviour | Original | Coney |
+| --- | --- | --- |
+| Crew out of range | unforced (and forced defend): nearest member beyond 50 m refuses the command; 18 `range` / 92 `range2` | **missing**: always given |
+| Forced and quiet orders | forced commands and a chief already speaking say nothing | silent always (no lines at all) |
+| Repeating the current order | unforced: line again, no rebuild | refused silently (matches, minus the line) |
+| [Automatic commands](#warrior-auto-commands) | follow → attack / defend / steal; attack, defend → follow; steal → follow beyond 15 m | **partial**: follow → attack and back only (`CrewOrders`, `repo:src/ai/crew.h`) |
+| Hiding in shadow | forced hold (hide) after 500 ms or the run time; the old command back on leaving | **missing** |
+| Revive ([Combat](combat.md#revive)) | d-pad left (command `0x27`) near a revivable downed member with a flash: 351, 353 / 354, flash spent, healed, 76 / 75 | **missing**: the prompt shows (`GameplayMode::revivePrompt`, `repo:src/gamemodes/gameplay_uncuff.cpp`) but command `0x27` has no handler; only d-pad right's flash on oneself exists (`repo:src/platform/play_level_objects.cpp`); no AI rescue (`SaveHuman`) |
+| [Weapon swap](#warrior-swap) | instant; the object is attached to the bone of the low pick-up clip's first type-9 event and drawn there; 146 `give_me` | **partial**: the hands swap, the anim set follows, the line plays; the Warrior's object is **not drawn** |
+
+**Item 37: the given weapon.** In the original the swap puts the object in the Warrior's hand exactly as
+`HuPlaceItemInHand` does (`Human_PlaceObjectInHandByPickupClip`, `0x0024c6d8`: the bone and offset of the low pick-up
+clip's first type-9 event, message `0x1b` take, his anim set applied), so it hangs from that bone like the player's
+([Objects: in a hand](objects.md#held)). **He fights with it**, confirmed (code): his anim set is the weapon's, so the
+same pad commands his attacks press play the armed swings ([Combat](combat.md#armed-moves)); the attack pick adds the
+armed bonus to the strikes ([Picking the attack](#pick-attack)); armed fighters fight from anywhere within 1.1 × the
+far range ([pick-ups: using](#warrior-pickups)). He keeps a knife, baton or bat; outside co-op an object of kind 4
+or 6 is **dropped** at his next think with no enemies unless the steal tactic runs
+([Think, step 3](#think-warrior)). In Coney, `ai::swapHeldObjects` (`repo:src/ai/swap_prompt.cpp`) moves the handle
+and `PlayLevelMode::trySwap` (`repo:src/platform/play_level_objects.cpp`) sets his anim set, so his attack pick
+counts him armed (`repo:src/ai/attack_views.cpp`); but `PlayLevelMode::drawWorldObjects`
+(`repo:src/platform/play_level_world.cpp`) places only **player 1's** held object (`heldPose` takes the player's
+snapshot), so nothing is drawn in the Warrior's hand. Whether his swings then hit with the weapon's clips and wear
+it was not run (Coney reading); the kind 4 / 6 drop is not built.
+
+**Fix for the implementer**, in the order the player notices:
+
+1. **Scatter and wreck** do nothing (the crew freezes): build `WarriorScatterTactic` with the `Scatter` goal and
+   `WarriorStealTactic` with `WarriorVandalSteal` ([Warrior commands](#warrior-scatter), [steal](#warrior-steal));
+   add the steal automatic command and its return to follow.
+2. **The voice lines** (item 16): call the chief's line from the dispatcher for unforced orders (volume 1.5,
+   interrupting; the hidden variants), note in each command tactic whether it plays, and have one free member answer
+   when it ends ([the lines](#warrior-command-lines)); Coney's `sayCommand` service already takes volume and
+   interrupt. Add the attack and defend gestures (676 / 680, 675 / 679).
+3. **Defend**: replace `GoalTrackHuman` with `Tactic_Defend` round the chief and `FollowAndDefend`, so the crew
+   fights for him and (with `SaveHuman`) frees or revives him.
+4. **Draw the Warrior's weapon** (item 37): place every human's held object at his own pose, not only player 1's
+   (the same bone and offset as the swap's placement); then add the kind 4 / 6 drop rule.
+5. **Revive** (item 8): handle command `0x27` with `Player_TryRevive`'s tests and the 351 / 353 / 354 sequence, the
+   flash spent from the downed human's inventory first, the heal, cue 23 and lines 76 / 75.
+6. **The 50 m range refusal** with 18 / 92, then the hide tactic and the hide-in-shadow order.
 
 **The fourth mission's brain and human calls** (`src/scripting/mission4_bindings.*`, for `level34`). `BrSetPedType`
 keeps the low 16 bits at the brain (**stand-in**: neither the civilian brain nor the mugging reads it yet).
