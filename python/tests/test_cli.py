@@ -158,9 +158,10 @@ def body_checkout(tmp_path: Path) -> Path:
     (tmp_path / "coney.local.example.toml").write_text("", encoding="utf-8")
     (tmp_path / ".github").mkdir()
     rules = {
-        "sections": ["Summary", "AI use"],
+        "sections": ["Summary", "Screenshots", "AI use"],
         "filled": ["Summary"],
         "placeholders": ["..."],
+        "screenshots": {"section": "Screenshots", "none": "Screenshots: none"},
         "ai_use": {
             "section": "AI use",
             "written_by": {"label": "By:", "choices": ["a person", "an AI"], "no_ai": "a person"},
@@ -171,7 +172,10 @@ def body_checkout(tmp_path: Path) -> Path:
     return tmp_path
 
 
-GOOD_BODY = "## Summary\n\nAdds a check.\n\n## AI use\n\n- By: an AI\n- Model: Claude Sonnet 5.5\n"
+GOOD_BODY = (
+    "## Summary\n\nAdds a check.\n\n## Screenshots\n\nScreenshots: none (no change)\n\n"
+    "## AI use\n\n- By: an AI\n- Model: Claude Sonnet 5.5\n"
+)
 
 
 def test_check_body_passes_with_exit_0(

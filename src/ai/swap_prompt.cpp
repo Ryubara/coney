@@ -22,6 +22,15 @@ namespace {
 // Whether the human holds an object. **Coney's reading**: the object in its hands (`+0x338`).
 bool holds(const human::Human& human) { return human.script().heldObject != world_objects::kNoObject; }
 
+// Whether a human's actions are blocked (`HumanRecord_AreActionsBlocked`, state mask `0x7bf9e9f7ff0`), as far as
+// Coney models his states: knocked out (`0x40000`, his health gone or a script's), arrested (`0x20000`) or wounded
+// (`0x10000`) are all in the mask. **Coney's reading**: the mask's other states are not modelled.
+// @orig 0x00228228 HumanRecord_AreActionsBlocked (unknown)
+bool actionsBlocked(const human::Human& human) {
+    const human::ScriptState& script = human.script();
+    return human.fighter().health().depleted() || script.knockedOut || script.arrested || script.wounded;
+}
+
 // The nearest player brain within the swap's reach of `brain`, or null.
 const Brain* nearestPlayer(const Brain& brain) {
     const Brain* nearest = nullptr;
@@ -42,8 +51,8 @@ const Brain* nearestPlayer(const Brain& brain) {
 std::uint32_t swapString(const Brain& warrior, const Brain& player) {
     const human::Human& self = warrior.human();
     const human::Human& them = player.human();
-    // The player: below a jog.
-    if (them.gait() >= human::Gait::Jog) {
+    // The player: free to act and below a jog.
+    if (actionsBlocked(them) || them.gait() >= human::Gait::Jog) {
         return 0;
     }
     // One of the two holds an object.
@@ -52,7 +61,11 @@ std::uint32_t swapString(const Brain& warrior, const Brain& player) {
     if (!heHolds && !playerHolds) {
         return 0;
     }
-    // The Warrior: standing, in the player's gang, nobody attacking him, in front of the player.
+    // The Warrior: free to act (a downed Warrior offers nothing), standing, in the player's gang, nobody attacking
+    // him, in front of the player.
+    if (actionsBlocked(self)) {
+        return 0;
+    }
     const bool attacked = std::ranges::any_of(warrior.attackSlots(), [](const Brain* slot) { return slot != nullptr; });
     if (self.gait() != human::Gait::Standing || warrior.gang() == nullptr || warrior.gang() != player.gang() ||
         attacked || combat::victimSide(them.position(), them.heading(), self.position()) != combat::Side::Front) {

@@ -218,7 +218,8 @@ Without `--headless`, a machine with no display or no OpenGL fails at start-up w
 
 `--screenshot PATH` saves the last frame (the one `--frames N` stops at) as a PNG and prints how many of its pixels
 differ from the background and a hash of the frame, so a script can check that something was drawn without keeping
-the image. Keep screenshots of game data out of the repository (`../../scratch/` is the place).
+the image. Keep screenshots of game data out of the repository (`../../scratch/` is the place); they go on a pull
+request as attachments, uploaded with `gh --attach` ([Capturing and attaching](testing.md#pr-media)).
 
 The STORY profiles are saved as one file each (`profile-1.sav` to `profile-6.sav`) in `profiles` in your data folder
 (`%APPDATA%\Coney\Coney\` on Windows, `~/.local/share/Coney/Coney/` on Linux, `~/Library/Application
@@ -960,6 +961,12 @@ prints the list for a change, or `ALL`). A change to the build setup (`CMakeList
 `.clang-tidy`, the build workflow) and every push to `main`, nightly run and manual run check everything, so a header
 included some unusual way is still caught within a day.
 
+`coney-tools check changed` runs the pull request's pass for you: the same file selection, clang-tidy from
+the Visual Studio LLVM folder (macOS: Homebrew's `llvm@19`) over the `build/dev` compile database, and the GCC and
+Clang warnings that MSVC does not report ([the local gate](testing.md#local-gate), [its options](coney-tools.md#check)).
+On Linux, where `dev` builds with GCC, configure a Clang database for it once:
+`CC=clang-19 CXX=clang++-19 cmake --preset dev -B build/tidy`, then pass `--build-dir build/tidy`.
+
 ## Python tools
 
 `python/` is the `coney-tools` package (see [Conventions](conventions.md#python)). [uv](https://docs.astral.sh/uv/)
@@ -976,8 +983,9 @@ uv run --project python mypy python/src python/tests
 [Local workspace](workspace.md) explains each one). `coney-tools repo check-title` checks a commit or pull request
 title against the commit rules in [CONTRIBUTING.md](repo:CONTRIBUTING.md#commits), `coney-tools repo check-docs`
 that a change to the code also changes the docs ([Research workflow](research-workflow.md#writing-up-a-finding)), and
-`coney-tools repo check-body` that a pull request description follows the template
-([CONTRIBUTING.md](repo:CONTRIBUTING.md#setting-up)).
+`coney-tools repo check-body` that a pull request description follows the template, including its Testing and
+Screenshots sections ([CONTRIBUTING.md](repo:CONTRIBUTING.md#setting-up),
+[What a pull request shows](testing.md#pr-evidence)).
 `coney-tools wad` reads the archive on your own disc (`info`, `list`, `extract`, `names`), `coney-tools pcsx2` and
 `coney-tools trace` record the original's per-update traces in PCSX2 and compare them with Coney's; [The coney-tools
 command line](coney-tools.md) shows how to run each command.

@@ -1168,23 +1168,27 @@ runs about 42,600 Lua instructions and skips 1,796 binding calls.
   the reveal fraction is not implemented yet.
 - **Markup** (`src/gui/markup.h`): the tag table by index, with the characters of the glyph tags; `parseMarkup`
   splits a text at `<` ... `>`. A tag name compares exactly; a `<` with no `>` after it is text; a name not in the
-  table (and the nine HUD icon tags 23-31, whose names are not on this page) is skipped and counted.
-- **Layout** (`src/gui/text_layout.h`, `layoutText`, `TextWidget_Layout` `0x001b9600`): measures each line's runs,
-  grows the box to the widest line, places each line by its alignment and draws each run with `Font::draw` into sprites
-  tagged with their font slot; `addTextSprites` hands them to each slot's batch. It implements `COLOR` (alpha × the
-  widget's fade), `SIZE`, `PULSE`, `DISPLAYTIME` (hidden after, fading over the last second), `BIGFONT` (slot 6),
-  `MONEYPLUS`/`MINUS`, the alignments, `CR`, `CR2`, `CR3 f`, `CRM`, every glyph tag and the closing tags; `SOUND` names
-  and the largest `FREEZE` are reported for the audio layer and the timer; `BOLD`, `MONEYFONT`, `BGFONT`, `AUTOINDENT`
-  and the animated stick tags have no effect yet. Lines break at the `CR` tags and, for a multi-line widget given a
-  wrap width (the message box, `RM_No2ndController`'s 0.6), before a word that would pass it; how the original breaks
-  is not researched, so Coney breaks only at spaces. Coney's choices: a closing tag restores the value before its
-  opening tag; a line takes the alignment in effect at its first character, centring and right-aligning inside the box
-  (`CCENTER` and `RRIGHT` act as `CENTER` and `RIGHT`); `CR2` and `CRM` always break; `PULSE ms` scales the colour by
-  1 + 0.5 × sin(2π t / ms); the style's y is the first line's centre line. **The text font:** a text starts in slot 2,
-  a `part_page0` instance, and `<BIGFONT>` switches to slot 6, `big_font` (Coney's choice, from the data: in
-  `part_page0`, first glyph 94, characters `0x91`-`0xa0` are exactly the button pictures of the tag table, while in
-  `big_font` they are empty but for a triangle at `0x9c`; `big_font`'s rectangles 256-261 hold a circle and five d-pad
-  pictures. Inferred from viewing the sheets with `--view-sheet`).
+  table is skipped and counted. All 66 names are known, the HUD icon tags 22-32 with their characters;
+  `stickCharacter` gives an animated stick tag's character for the text's time (its own first, Coney's choice).
+- **Layout** (`src/gui/text_layout.h`, `layoutText`, `TextWidget_Layout` `0x001b9600`): measures each line's runs, grows
+  the box to the widest line, places each line by its alignment and draws each run with `Font::draw` into sprites tagged
+  with their font slot; `addTextSprites` hands them to each slot's batch. It implements `COLOR` (alpha × the widget's
+  fade), `SIZE`, `PULSE`, `DISPLAYTIME` (hidden after, fading over the last second), `BIGFONT` (slot 6),
+  `MONEYPLUS`/`MINUS`, `MONEYFONT` ([MONEYFONT](#moneyfont): a `graphics::GlyphBase`, its base 256 or 11 chosen at
+  the tag and its origin by each run's slot, so base + (c − 1) in `big_font` and base + (c − `0`) otherwise; it goes
+  to `Font::measure` and `Font::draw`, and the alignment's measure in `Font::draw` is taken without it, as the
+  original's), the animated stick tags, the alignments, `CR`, `CR2`, `CR3 f`,
+  `CRM`, every glyph tag and the closing tags; `SOUND` names and the largest `FREEZE` are reported for the audio layer
+  and the timer; `BOLD`, `BGFONT` and `AUTOINDENT` have no effect yet. Lines break at the `CR` tags and, for a
+  multi-line widget given a wrap width (the message box, `RM_No2ndController`'s 0.6), before a word that would pass it;
+  how the original breaks is not researched, so Coney breaks only at spaces. Coney's choices: a closing tag restores the
+  value before its opening tag; a line takes the alignment in effect at its first character, centring and right-aligning
+  inside the box (`CCENTER` and `RRIGHT` act as `CENTER` and `RIGHT`); `CR2` and `CRM` always break; `PULSE ms` scales
+  the colour by 1 + 0.5 × sin(2π t / ms); the style's y is the first line's centre line. **The text font:** a text
+  starts in slot 2, a `part_page0` instance, and `<BIGFONT>` switches to slot 6, `big_font` (Coney's choice, from the
+  data: in `part_page0`, first glyph 94, characters `0x91`-`0xa0` are exactly the button pictures of the tag table,
+  while in `big_font` they are empty but for a triangle at `0x9c`; `big_font`'s rectangles 256-261 hold a circle and
+  five d-pad pictures. Inferred from viewing the sheets with `--view-sheet`).
 - **The screen flow** (`src/gui/screen_flow_controller.h`, `ScreenFlowController`, `ScreenFlowState`), as
   [above](#screen-flow): per-screen transitions (`0x001c8010`), push (`0x001c80e8`), pop (`0x001c82e8`), unwind
   (`0x001c81e8`) and update (`0x001c83c8`) with the results "stay" (`-0x100`) and "back" (`-0xff`); a code without a
@@ -1218,9 +1222,11 @@ runs about 42,600 Lua instructions and skips 1,796 binding calls.
 
 **Disc check (NTSC-U, 2026-10-04, counts only):** `coney_tests "[disc][sprite_sheets]"` finds 7 fonts among the 1,335
 sheets (4 with a rectangle for all 256 bytes), all loading as fonts; `"[disc][text]"` loads `big_font` (262
-rectangles over 512 × 256) and `part_page0` (371, first glyph 94), finds a rectangle for all 21 glyph tags' characters
-in both, and lays out all 388 English HUD strings: 10,675 sprites on 400 lines, 89 tags skipped (unknown names such
-as `BOBJ`, `YOBJ`, `ROBJ`, and the tags with no effect yet), no string empty.
+rectangles over 512 × 256) and `part_page0` (371, first glyph 94), finds a rectangle for all 30 glyph tags' characters
+in both, and lays out all 388 English HUD strings: 10,682 sprites on 400 lines, 32 tags skipped (the tags with no
+effect yet), no string empty. Rerun 2026-10-11 with `<MONEYFONT>` built: the swap prompts `0xc`-`0xe` draw
+`part_page0` rectangle 73 (the triangle) once each, the revive prompt 4 one `big_font` stick picture (256-261), and
+the rumble prompt `0x25` in `part_page0` one cross.
 
 TODO for the analysts, found while implementing:
 
@@ -1258,16 +1264,13 @@ TODO for the analysts, found while implementing:
   `TextWidget` draw with before any `<BIGFONT>`? Coney takes slot 2 (`part_page0`), the sheet whose characters
   `0x91`-`0xa0` are the button pictures (above). Still open: what the explicit base of the two
   `Font_Measure`/`Font_Draw` call sites (slot 6 with -1, slot 3 with `-'0'`) draws.
-- **`<MONEYFONT>`:** the glyph base `0xd0100` (font 6) or `0xb` (font 3): which rectangles does it select? The strings
-  wrap button tags in it (`<MONEYFONT><ST></MONEYFONT>`, 25 times in English); `part_page0`'s icons below its first
-  glyph (fists, faces, W badges) look like its targets. Coney ignores it.
-- **HUD icon tags 23-31:** their names and characters. The English strings use `<BOBJ>`, `<YOBJ>` and `<ROBJ>`, which
-  are not among the names on this page.
+- **`<MONEYFONT>`** (answered and built, [MONEYFONT](#moneyfont)).
+- **HUD icon tags 23-31** (answered and built, [the tag table](#markup)).
 - **Layout details** (answered in [the tag table](#markup): `CCENTER` / `RRIGHT`, `CRM`, the closing tags and
   `PULSE`'s triangle swing; and the y is the first line's centre, confirmed (runtime) for the light widget). `<BOLD>` and
-  `<AUTOINDENT>` answered too (the tag table). Still open: the two characters of each animated stick tag; whether the
-  shadow is drawn per
-  glyph (Coney) or under the whole string first.
+  `<AUTOINDENT>` answered too (the tag table). The stick tags' characters are answered
+  ([MONEYFONT](#moneyfont)); still open: which of the two shows first; whether the shadow is drawn per glyph (Coney)
+  or under the whole string first.
 - Names: the `@orig` tags call `0x00179808`, `0x00179958` and `0x00179c30` `Font_Size`, `Font_Measure` and
   `Font_Draw`, and `0x001b9600` `TextWidget_Layout`, all with file `(unknown)`.
 - **Widget geometry** (answered, [The widget classes](#widget-classes)): a sprite widget's anchor is chosen per
@@ -1286,7 +1289,7 @@ What the implementer still needs:
   the worlds an instance can live in (3D overlay, 2D overlay), where the original's pass finds its batches.
 - The widget base's other slots (the rectangle, active, the text reveal) and `BaseWidget`'s timed fade.
 - Text widgets around the layout: the reveal fraction, `<SOUND>` played once, `<FREEZE>` on the game timer, and
-  the open tags above (`MONEYFONT` first: the menus use it around every button glyph).
+  the open tags above.
 
 ## Open questions
 
