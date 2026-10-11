@@ -27,8 +27,8 @@ class MoveToHumanAction final : public Action {
     [[nodiscard]] ActionStatus start(Brain& brain) override;
     /// Done (the move stopped) when the target is gone, within the stop distance, or the limit has passed; otherwise
     /// the move heads for the target at the run speed beyond kRunDistance and the walk speed within it (the human's
-    /// gait speeds, `0x0022ae40`). **Coney choice**: straight at the target; the path areas and the steering round
-    /// other humans (`0x002fc158`, `0x00289138`) are not built.
+    /// gait speeds, `0x0022ae40`), aiming 2 m along the way (Brain::setMoveAim()). **Coney choice**: straight at the
+    /// target; the path areas and the steering round other humans (`0x002fc158`, `0x00289138`) are not built.
     [[nodiscard]] ActionStatus update(Brain& brain) override;
     /// Stops the move; never refused.
     [[nodiscard]] bool abort(Brain& brain) override;

@@ -4183,6 +4183,12 @@ name = "Human_TurnToFacePoint"
 subsystem = "Human"
 
 [[function]]
+address = 0x00221cd8
+name = "Human_TurnToFaceObject"
+subsystem = "Human"
+size = 256
+
+[[function]]
 address = 0x002221e0
 name = "Human_CanWalkStraightTo"
 subsystem = "Human"
@@ -6266,6 +6272,12 @@ subsystem = "Human"
 address = 0x0028b358
 name = "Brain_ScanEnemies"
 subsystem = "Human"
+
+[[function]]
+address = 0x0028ac18
+name = "Brain_StopMove"
+subsystem = "Human"
+size = 80
 
 [[function]]
 address = 0x0028bf00
@@ -10912,7 +10924,7 @@ size = 460
 
 [[function]]
 address = 0x003a4768
-name = "Triangle_MakeTwoSided"
+name = "Collision_SetTriangleTwoSided"
 subsystem = "TaskEngine"
 size = 88
 

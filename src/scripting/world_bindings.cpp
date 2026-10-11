@@ -2,13 +2,13 @@
 #include "scripting/world_bindings.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <numbers>
 #include <span>
 
-#include "raycast/collision_mesh.h"
 #include "scripting/ai_bindings.h"
 #include "scripting/binding_args.h"
 #include "scripting/human_bindings.h"
@@ -228,18 +228,19 @@ NativeFunction makeFlagEnable(const BindingContext& context) {
 // @orig 0x0034fba0 CollisionMesh_SetEnabledInVolume (unknown)
 NativeFunction makeChangeCollision(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
-        if (context->boxes == nullptr || context->objects == nullptr || context->objects->world.collision == nullptr) {
+        if (context->boxes == nullptr || context->objects == nullptr) {
             return binding::none();
         }
         const world_objects::VolumeBox* box = context->boxes->find(handleArg(args, 0));
         if (box == nullptr) {
             return binding::none();
         }
-        const raycast::Vec3 low{std::min(box->low[0], box->high[0]), std::min(box->low[1], box->high[1]),
-                                std::min(box->low[2], box->high[2])};
-        const raycast::Vec3 high{std::max(box->low[0], box->high[0]), std::max(box->low[1], box->high[1]),
-                                 std::max(box->low[2], box->high[2])};
-        context->objects->world.collision->setEnabledInBox(low, high, booleanArg(args, 1, false));
+        const std::array<float, 3> low{std::min(box->low[0], box->high[0]), std::min(box->low[1], box->high[1]),
+                                       std::min(box->low[2], box->high[2])};
+        const std::array<float, 3> high{std::max(box->low[0], box->high[0]), std::max(box->low[1], box->high[1]),
+                                        std::max(box->low[2], box->high[2])};
+        // Kept as well as applied: the start-up script runs before the play mode binds the level's mesh.
+        world_objects::setTrianglesEnabledInBox(context->objects->world, low, high, booleanArg(args, 1, false));
         return binding::none();
     };
 }

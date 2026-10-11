@@ -66,13 +66,18 @@ struct HumanInput {
     std::span<Combatant* const> targets;                ///< The humans that can be fought.
 };
 
-/// A brain's move (brain `+0x110`, `+0x114`): the heading and speed the locomotion follows in place of the stick for a
-/// human a brain drives (docs/research/ai.md#moving).
+/// A brain's move (brain `+0x110`, `+0x114`, `+0x90`): the heading and speed the locomotion follows in place of the
+/// stick for a human a brain drives, and the point a fight stance walks it to (docs/research/ai.md#moving). The brain
+/// clears it at the start of each update (ai::Brain::update()), so it holds only what this update's goals and actions
+/// wrote.
 struct BrainMove {
     float heading = 0.0F; ///< Radians, 0 facing +y.
     float speed = 0.0F;   ///< m/s; 0 stands.
     /// The brain's turn boost (`+0x0b`): its gait turn limits × (boost + 1), or ÷ (1 − boost) below 0.
     int turnBoost = 0;
+    /// The point the move aims at (`+0x90`, ai::Brain::setMoveAim()): in a fight stance the feet walk along the line
+    /// to it while the facing follows `heading` (docs/research/characters.md#ai-locomotion).
+    anim::Vec3 aim;
 };
 
 /// A human's per-player record (`0x00660f50 + i × 0x2c`, docs/research/ai.md#brain): what drives it each update. A
@@ -720,11 +725,17 @@ class Human final : public Holdable {
     // The stick step is skipped (combat's states, or the human is busy): the clip and an attack's slide move the body;
     // a block turns toward the stick in place (the shuffle); a standing grab turns and walks the pair by the stick.
     void holdForCombat();
-    // Locked onto `target`: faces it and walks at the combat walk's speed along the stick without turning, in the
+    // Locked onto `target`: a pad-driven human faces it and walks at the combat walk's speed along the stick, in the
     // combat-walk clip of the stick's angle from the facing; with the velocity `gated`, it only faces the target and
-    // the clip playing goes on.
+    // the clip playing goes on. A human no pad drives runs aiCombatWalk() instead.
     // @orig 0x00241b90 Human_FightStanceMove (unknown)
     void combatWalk(const Combatant& target, bool gated);
+    // The AI's fight stance (docs/research/characters.md#ai-locomotion): the facing turns to the brain's heading at
+    // aiStanceTurn() while the move asks for a speed (always when wounded), and does not follow the target; the feet
+    // strafe along the line to the move's point at the stance walk (the walk when wounded) when it asks for more than
+    // 0.1, else stand. With the velocity `gated`, it only turns.
+    // @orig 0x00243848 Human_UpdateControl (unknown)
+    void aiCombatWalk(bool gated);
     // Combat's update from the record: the stick turned into the facing frame, the game time, the targets.
     void fight(std::span<Combatant* const> targets, const raycast::CollisionMesh* mesh);
     // The attacker's side of a warning: an event 0x24 or 0x26 of the clip playing that this step's animation passed

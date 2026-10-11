@@ -1,42 +1,114 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "world_objects/object_services.h"
 
+#include <algorithm>
 #include <cmath>
 #include <numbers>
+#include <vector>
 
 #include "core/game_random.h"
 #include "raycast/collision_mesh.h"
 
 namespace coney::world_objects {
 
-void setTrianglesEnabled(raycast::CollisionMesh* mesh, std::span<const std::uint32_t> triangles, bool on) {
-    if (mesh == nullptr) {
+namespace {
+
+// Applies one triangle's write to `mesh`; an index outside it is skipped.
+void applyWrite(raycast::CollisionMesh& mesh, std::uint32_t index, const TriangleWrite& write) {
+    const std::span<raycast::CollisionTriangle> all = mesh.mutableTriangles();
+    if (index >= all.size()) {
         return;
     }
-    const std::span<raycast::CollisionTriangle> all = mesh->mutableTriangles();
-    for (const std::uint32_t index : triangles) {
-        if (index >= all.size()) {
-            continue;
-        }
-        std::uint16_t& flags = all[index].flags;
-        flags = on ? static_cast<std::uint16_t>(flags | raycast::kTriangleEnabled)
-                   : static_cast<std::uint16_t>(flags & ~raycast::kTriangleEnabled);
+    raycast::CollisionTriangle& triangle = all[index];
+    triangle.flags = static_cast<std::uint16_t>(triangle.flags | write.bits);
+    if (write.material >= 0) {
+        triangle.material = static_cast<std::uint8_t>(write.material);
+    }
+    if (write.enabled == 1) {
+        triangle.flags = static_cast<std::uint16_t>(triangle.flags | raycast::kTriangleEnabled);
+    } else if (write.enabled == 0) {
+        triangle.flags = static_cast<std::uint16_t>(triangle.flags & ~raycast::kTriangleEnabled);
     }
 }
 
-void markTriangles(raycast::CollisionMesh* mesh, std::span<const std::uint32_t> triangles, std::uint16_t flags,
-                   int material) {
-    if (mesh == nullptr) {
+// Switches the triangles of `mesh` wholly inside `write`'s box.
+void applyBox(raycast::CollisionMesh& mesh, const BoxWrite& write) {
+    mesh.setEnabledInBox(raycast::Vec3{write.low[0], write.low[1], write.low[2]},
+                         raycast::Vec3{write.high[0], write.high[1], write.high[2]}, write.on);
+}
+
+} // namespace
+
+void ObjectWorld::bindCollision(raycast::CollisionMesh* mesh) {
+    collision = mesh;
+    if (collision == nullptr) {
         return;
     }
-    const std::span<raycast::CollisionTriangle> all = mesh->mutableTriangles();
-    for (const std::uint32_t index : triangles) {
-        if (index >= all.size()) {
-            continue;
+    // The bits and materials first: they only add, so their order does not matter.
+    for (const auto& [index, write] : triangleWrites) {
+        applyWrite(*collision, index, TriangleWrite{.bits = write.bits, .material = write.material});
+    }
+    // Then the switches on and off, single triangles and boxes together, in the order they were made.
+    struct Switch {
+        std::uint32_t order;
+        const BoxWrite* box;
+        std::uint32_t index;
+        int enabled;
+    };
+    std::vector<Switch> switches;
+    for (const auto& [index, write] : triangleWrites) {
+        if (write.enabled >= 0) {
+            switches.push_back(
+                Switch{.order = write.enabledOrder, .box = nullptr, .index = index, .enabled = write.enabled});
         }
-        all[index].flags = static_cast<std::uint16_t>(all[index].flags | flags);
+    }
+    for (const BoxWrite& box : boxWrites) {
+        switches.push_back(Switch{.order = box.order, .box = &box, .index = 0, .enabled = -1});
+    }
+    std::ranges::sort(switches, {}, &Switch::order);
+    for (const Switch& next : switches) {
+        if (next.box != nullptr) {
+            applyBox(*collision, *next.box);
+        } else {
+            applyWrite(*collision, next.index, TriangleWrite{.enabled = next.enabled});
+        }
+    }
+}
+
+void ObjectWorld::clearWrites() {
+    triangleWrites.clear();
+    boxWrites.clear();
+    nextWriteOrder = 1;
+}
+
+void setTrianglesEnabled(ObjectWorld& world, std::span<const std::uint32_t> triangles, bool on) {
+    for (const std::uint32_t index : triangles) {
+        TriangleWrite& kept = world.triangleWrites[index];
+        kept.enabled = on ? 1 : 0;
+        kept.enabledOrder = world.nextWriteOrder++;
+        if (world.collision != nullptr) {
+            applyWrite(*world.collision, index, TriangleWrite{.enabled = on ? 1 : 0});
+        }
+    }
+}
+
+void setTrianglesEnabledInBox(ObjectWorld& world, std::array<float, 3> low, std::array<float, 3> high, bool on) {
+    const BoxWrite write{.low = low, .high = high, .on = on, .order = world.nextWriteOrder++};
+    world.boxWrites.push_back(write);
+    if (world.collision != nullptr) {
+        applyBox(*world.collision, write);
+    }
+}
+
+void markTriangles(ObjectWorld& world, std::span<const std::uint32_t> triangles, std::uint16_t flags, int material) {
+    for (const std::uint32_t index : triangles) {
+        TriangleWrite& kept = world.triangleWrites[index];
+        kept.bits = static_cast<std::uint16_t>(kept.bits | flags);
         if (material >= 0) {
-            all[index].material = static_cast<std::uint8_t>(material);
+            kept.material = material;
+        }
+        if (world.collision != nullptr) {
+            applyWrite(*world.collision, index, TriangleWrite{.bits = flags, .material = material});
         }
     }
 }
