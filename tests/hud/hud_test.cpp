@@ -46,7 +46,7 @@ void step(Hud& hud, std::uint64_t nowMs) {
 
 // A canvas drawing every font slot and the flat quads into recorded batches.
 struct Canvas {
-    coney::graphics::Font font = coney::test::testFont();
+    coney::graphics::Font font = coney::test::testFont(262); // as many as big_font: the stick pictures too
     coney::graphics::SpriteBatch text{font.sheet(), 8192, 10000.0F};
     coney::graphics::SpriteBatch flat{coney::graphics::SpriteSheet{}, 64, 8000.0F};
     coney::hud::HudCanvas canvas;
@@ -577,4 +577,32 @@ TEST_CASE("a context prompt's GSTRING.ACTIONBUTTON draws the triangle button, no
     const coney::graphics::UvRect triangle = canvas.font.sheet().page.rect(73);
     CHECK(sprites.front().uv == triangle);
     CHECK(std::ranges::none_of(sprites, [&](const auto& s) { return s.uv == canvas.font.glyph('n'); }));
+}
+
+TEST_CASE("the revive prompt's stick picture alternates with the prompt's own time", "[hud]") {
+    // HUD string 4's form: <SDL> in big_font's money font is rectangle 259 (its character 4), then 257 (character 2),
+    // by turns every 500 ms, counted from when the prompt's text was set (the widget's stick timer).
+    Hud hud = makeHud(nullptr);
+    const coney::graphics::UvRect own = Canvas{}.font.sheet().page.rect(259);
+    const coney::graphics::UvRect off = Canvas{}.font.sheet().page.rect(257);
+    const auto stickAt = [&hud](std::uint64_t nowMs) {
+        step(hud, nowMs);
+        Canvas canvas;
+        hud.render(canvas.canvas);
+        const auto& sprites = canvas.text.sprites();
+        REQUIRE_FALSE(sprites.empty());
+        return sprites.back().uv;
+    };
+    step(hud, 10000);
+    const std::string revive = "<BIGFONT><MONEYFONT><SDL></MONEYFONT></BIGFONT>";
+    hud.setActionPrompt(0, revive);
+    CHECK(stickAt(10000) == own);
+    CHECK(stickAt(10499) == own);
+    CHECK(stickAt(10500) == off);
+    CHECK(stickAt(11000) == own);
+    // The same text again keeps its time; a new text starts it over.
+    hud.setActionPrompt(0, revive);
+    CHECK(stickAt(11600) == off);
+    hud.setActionPrompt(0, revive + " ");
+    CHECK(stickAt(11700) == own);
 }

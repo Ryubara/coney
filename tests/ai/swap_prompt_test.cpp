@@ -162,3 +162,20 @@ TEST_CASE("a Warrior whose brain is off clears his swap prompt on his next think
     s.scene.run(5);
     CHECK_FALSE(s.warrior->human().script().talkable);
 }
+
+TEST_CASE("a knocked-out player is offered no swap either", "[ai][swap]") {
+    // Step 7 also needs the player free to act (docs/research/ai.md#think-warrior, "the nearest player ..., not
+    // blocked").
+    SwapScene s;
+    coney::human::Human& player = s.scene.player().human();
+    player.script().heldObject = 7.0;
+    coney::ai::thinkSwapPrompt(*s.warrior);
+    REQUIRE(s.warrior->human().script().talkable);
+    player.script().knockedOut = true;
+    coney::ai::thinkSwapPrompt(*s.warrior);
+    CHECK_FALSE(s.warrior->human().script().talkable);
+    player.script().knockedOut = false;
+    player.fighter().health().set(0);
+    coney::ai::thinkSwapPrompt(*s.warrior);
+    CHECK_FALSE(s.warrior->human().script().talkable);
+}

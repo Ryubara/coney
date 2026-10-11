@@ -22,7 +22,7 @@ namespace {
 // Whether the human holds an object. **Coney's reading**: the object in its hands (`+0x338`).
 bool holds(const human::Human& human) { return human.script().heldObject != world_objects::kNoObject; }
 
-// Whether the Warrior's actions are blocked (`HumanRecord_AreActionsBlocked`, state mask `0x7bf9e9f7ff0`), as far as
+// Whether a human's actions are blocked (`HumanRecord_AreActionsBlocked`, state mask `0x7bf9e9f7ff0`), as far as
 // Coney models his states: knocked out (`0x40000`, his health gone or a script's), arrested (`0x20000`) or wounded
 // (`0x10000`) are all in the mask. **Coney's reading**: the mask's other states are not modelled.
 // @orig 0x00228228 HumanRecord_AreActionsBlocked (unknown)
@@ -51,8 +51,8 @@ const Brain* nearestPlayer(const Brain& brain) {
 std::uint32_t swapString(const Brain& warrior, const Brain& player) {
     const human::Human& self = warrior.human();
     const human::Human& them = player.human();
-    // The player: below a jog.
-    if (them.gait() >= human::Gait::Jog) {
+    // The player: free to act and below a jog.
+    if (actionsBlocked(them) || them.gait() >= human::Gait::Jog) {
         return 0;
     }
     // One of the two holds an object.

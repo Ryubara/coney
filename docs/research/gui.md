@@ -1174,9 +1174,10 @@ runs about 42,600 Lua instructions and skips 1,796 binding calls.
   the box to the widest line, places each line by its alignment and draws each run with `Font::draw` into sprites tagged
   with their font slot; `addTextSprites` hands them to each slot's batch. It implements `COLOR` (alpha × the widget's
   fade), `SIZE`, `PULSE`, `DISPLAYTIME` (hidden after, fading over the last second), `BIGFONT` (slot 6),
-  `MONEYPLUS`/`MINUS`, `MONEYFONT` ([MONEYFONT](#moneyfont): a `graphics::GlyphBase` of 256 + (c − 1) in `big_font`,
-  11 + (c − `0`) in a `part_page0` widget, which `Font::measure` and `Font::draw` take; the alignment's measure in
-  `Font::draw` is taken without it, as the original's), the animated stick tags, the alignments, `CR`, `CR2`, `CR3 f`,
+  `MONEYPLUS`/`MINUS`, `MONEYFONT` ([MONEYFONT](#moneyfont): a `graphics::GlyphBase`, its base 256 or 11 chosen at
+  the tag and its origin by each run's slot, so base + (c − 1) in `big_font` and base + (c − `0`) otherwise; it goes
+  to `Font::measure` and `Font::draw`, and the alignment's measure in `Font::draw` is taken without it, as the
+  original's), the animated stick tags, the alignments, `CR`, `CR2`, `CR3 f`,
   `CRM`, every glyph tag and the closing tags; `SOUND` names and the largest `FREEZE` are reported for the audio layer
   and the timer; `BOLD`, `BGFONT` and `AUTOINDENT` have no effect yet. Lines break at the `CR` tags and, for a
   multi-line widget given a wrap width (the message box, `RM_No2ndController`'s 0.6), before a word that would pass it;

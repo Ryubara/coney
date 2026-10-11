@@ -216,3 +216,20 @@ TEST_CASE("addTextSprites fills each slot's batch", "[text_layout]") {
     CHECK(small.sprites().size() == 1);
     CHECK(big.sprites().size() == 1);
 }
+
+TEST_CASE("<MONEYFONT> keeps its base across a font change, counting from the drawing slot's origin", "[text_layout]") {
+    // The original picks the base at the tag (by the slot in use then) and the character origin at draw time (by the
+    // run's slot): 1 in big_font, '0' elsewhere (docs/research/gui.md#moneyfont).
+    const Font font = coney::test::testFont(262);
+    const FontLookup fonts = [&font](int) -> const Font* { return &font; };
+    // Base 11 (chosen in part_page0), drawn in big_font: <SDL> (4) is 11 + (4 - 1).
+    TextLayout layout = layoutText("<MONEYFONT><BIGFONT><SDL>", inSlot(kTextFontSlot), fonts);
+    REQUIRE(layout.sprites.size() == 1);
+    CHECK(layout.sprites[0].fontSlot == kBigFontSlot);
+    CHECK(layout.sprites[0].sprite.uv == font.sheet().page.rect(14));
+    // Base 256 (chosen in big_font), drawn back in part_page0: '5' is 256 + ('5' - '0').
+    layout = layoutText("<BIGFONT><MONEYFONT></BIGFONT>5", inSlot(kTextFontSlot), fonts);
+    REQUIRE(layout.sprites.size() == 1);
+    CHECK(layout.sprites[0].fontSlot == kTextFontSlot);
+    CHECK(layout.sprites[0].sprite.uv == font.sheet().page.rect(261));
+}

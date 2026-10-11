@@ -19,10 +19,13 @@ namespace {
 constexpr std::uint32_t kDisplayFadeMs = 1000;
 // `<PULSE>` swings the colour between these factors.
 constexpr float kPulseSwing = 0.5F;
-// The rectangle bases `<MONEYFONT>` sets: in part_page0 rectangle 11 is character `0`; in big_font rectangle 256
-// (the low 16 bits of the original's `0xd0100`) is character 1 (docs/research/gui.md#moneyfont).
-constexpr graphics::GlyphBase kTextMoneyBase{.base = 11, .origin = '0'};
-constexpr graphics::GlyphBase kBigMoneyBase{.base = 256, .origin = 1};
+// The rectangle bases `<MONEYFONT>` sets: 11 in a part_page0 widget, 256 in big_font (the low 16 bits of the
+// original's `0xd0100`). The character each counts from is the slot's at draw time: 1 in big_font, `0` in any other
+// (docs/research/gui.md#moneyfont).
+constexpr int kTextMoneyBase = 11;
+constexpr int kBigMoneyBase = 256;
+constexpr int kBigMoneyOrigin = 1;
+constexpr int kTextMoneyOrigin = '0';
 
 // A whole number of milliseconds, or nothing.
 std::optional<std::uint32_t> parseMs(std::string_view text) {
@@ -153,12 +156,22 @@ class LayoutBuilder {
     }
 
   private:
+    // The money font's base for characters drawn now: the base `<MONEYFONT>` chose, counted from the current slot's
+    // origin.
+    [[nodiscard]] std::optional<graphics::GlyphBase> glyphBase() const {
+        if (!m_moneyBase) {
+            return std::nullopt;
+        }
+        const int origin = m_slot.current() == kBigFontSlot ? kBigMoneyOrigin : kTextMoneyOrigin;
+        return graphics::GlyphBase{.base = *m_moneyBase, .origin = origin};
+    }
+
     // The width of `text` in the current font and size.
     [[nodiscard]] float measure(std::string_view text) const {
         const graphics::FontMetrics metrics = graphics::fontMetrics(m_style.scale * m_size.current());
         const graphics::Font* font = m_fonts ? m_fonts(m_slot.current()) : nullptr;
         const std::uint32_t flags = m_style.proportional ? graphics::kFontProportional : 0;
-        return font != nullptr ? font->measure(text, metrics, flags, m_moneyBase) : 0.0F;
+        return font != nullptr ? font->measure(text, metrics, flags, glyphBase()) : 0.0F;
     }
 
     // Adds characters with the current font, size and colour to the current line.
@@ -173,8 +186,8 @@ class LayoutBuilder {
             line.alignment = m_alignment.current();
         }
         const std::uint32_t flags = m_style.proportional ? graphics::kFontProportional : 0;
-        const float width = font != nullptr ? font->measure(text, metrics, flags, m_moneyBase) : 0.0F;
-        m_runs.push_back(Run{m_slot.current(), m_moneyBase, metrics, effectiveColour(), std::string(text),
+        const float width = font != nullptr ? font->measure(text, metrics, flags, glyphBase()) : 0.0F;
+        m_runs.push_back(Run{m_slot.current(), glyphBase(), metrics, effectiveColour(), std::string(text),
                              m_lines.size() - 1, line.width});
         line.width += width;
     }
@@ -349,7 +362,7 @@ class LayoutBuilder {
     Stacked<graphics::Rgba> m_colour;
     Stacked<std::uint32_t> m_pulse;
     Stacked<TextAlignment> m_alignment;
-    std::optional<graphics::GlyphBase> m_moneyBase; // set by <MONEYFONT>, cleared by </MONEYFONT>
+    std::optional<int> m_moneyBase; // the rectangle base <MONEYFONT> set, cleared by </MONEYFONT>
     float m_displayFactor = 1.0F;
     std::vector<Run> m_runs;
     std::vector<Line> m_lines;

@@ -84,11 +84,12 @@ using FontLookup = std::function<const graphics::Font*(int slot)>;
 /// skippedTags; a wrap breaks only at spaces, dropping the spaces at the break (how the multi-line widgets break is
 /// not researched).
 ///
-/// `<MONEYFONT>` draws every character up to `</MONEYFONT>` from another rectangle base (graphics::GlyphBase): when
-/// the font in use is big_font, rectangle 256 + (c - 1); else, in a part_page0 widget (its own slot not kBigFontSlot;
-/// every other Coney slot is part_page0), rectangle 11 + (c - `'0'`). So the `<ST>` (`n`) that starts the context
-/// prompts is rectangle 73, the triangle button. The stick tags give their characters by `timeMs`
-/// (stickCharacter()).
+/// `<MONEYFONT>` draws every character up to `</MONEYFONT>` from another rectangle base (graphics::GlyphBase), chosen
+/// at the tag: 256 when the font in use is big_font, else 11 in a part_page0 widget (its own slot not kBigFontSlot;
+/// every other Coney slot is part_page0), else none. Each character counts from its run's slot when drawn: rectangle
+/// base + (c - 1) in big_font, base + (c - `'0'`) in any other, so a font change inside `<MONEYFONT>` keeps the base
+/// and changes the origin, as in the original. So the `<ST>` (`n`) that starts the context prompts is rectangle 73,
+/// the triangle button. The stick tags give their characters by `timeMs` (stickCharacter()).
 ///
 /// Research: docs/research/gui.md#text, docs/research/gui.md#moneyfont
 /// @orig 0x001b9600 TextWidget_Layout (unknown)

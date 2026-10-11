@@ -2562,12 +2562,12 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   known (`repo:src/gui/markup.h`). Tests: `repo:tests/hud/hud_test.cpp` (a prompt starting with the action button),
   `repo:tests/gui/text_layout_test.cpp`, and the disc check `"[disc][text]"`, which finds the triangle in all three
   swap prompts (`0xc`-`0xe`) and a stick picture in the revive prompt 4.
-- **The prompt beside a downed Warrior** (owner item 8, "no revive prompt"): Coney's revive step matches the original
-  (a flash is needed), and the swap prompt (`repo:src/ai/swap_prompt.h`) now has the blocked test as far as Coney
-  models the mask's states (knocked out, by health or by a script, arrested, wounded), so beside a downed Warrior no
-  "Give Weapon" shows. A Warrior's brain that a script knocked out is off in Coney (BrDead), so its think clears the
-  prompt instead (`Brain::think`). Still to do: a playthrough test holding a flash to see string 4 (crew revive
-  belongs to the revive work), and the player's own knocked-out gate on the prompt steps.
+- **The prompt beside a downed Warrior** (owner item 8, "no revive prompt"): Coney's revive step matches the original (a
+  flash is needed), and the swap prompt (`repo:src/ai/swap_prompt.h`) now has the blocked test, for the Warrior and the
+  player alike, as far as Coney models the mask's states (knocked out, by health or by a script, arrested, wounded), so
+  beside a downed Warrior no "Give Weapon" shows. A Warrior's brain that a script knocked out is off in Coney (BrDead),
+  so its think clears the prompt instead (`Brain::think`). Still to do: a playthrough test holding a flash to see string
+  4 (crew revive belongs to the revive work), and the player's own knocked-out gate on the other prompt steps.
 - **The stereo-theft panel** (`repo:src/hud/stereo_hud.h`, stepped by `PlayLevelMode::stepStereoPanel()`) as
   [the stereo panel on screen](#stereo-layout) says: up from the triangle press, the arrow round the backdrop's
   corners by stage, the gauge sized and turned by the angle turned and dropping by a doubling step while a stage is
