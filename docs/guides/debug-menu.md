@@ -112,7 +112,7 @@ Dear ImGui (MIT licence) is pinned in `cmake/deps.cmake` and used only in `src/p
 | Cheats | the 27 retail cheat codes, each sent to the script's cheat callback |
 | Levels | the levels to play (or the level table's, in the front end), a name to type, and the sandbox layouts |
 | Missions | the story's 18 missions in order (number, title, level, checkpoints); choose a mission, then a checkpoint, to start it there |
-| Player | where the player is and how it moves (plotted), his character type and a change of it, freezing him, teleports |
+| Player | where the player is and how it moves (plotted), his character type and a change of it, freezing him, the [noclip](#noclip) and its hotkey, teleports |
 | Camera | the follow camera's eye, target and distance (plotted), a reset behind the player, the free camera, its values |
 | Spawner | objects put in front of the player in a sandbox: a crate, a fence, a wall, a ramp, stairs, a pillar, a ball |
 | AI fighters | AI humans that fight the player: spawn one in front of him, the engaging toggle, their state, clear them |
@@ -203,6 +203,33 @@ it says so.
 **Debug draw** switches lines the play mode draws into the scene, tested against depth: the collision triangles within
 a radius of the player as a wireframe (at most 6,000), a cross at his feet with his heading and velocity, the ground's
 normal, the follow camera's wanted position and look-at point, and the scene's places with their headings.
+
+### Noclip {#noclip}
+
+The Player page's *Noclip* lets the player fly through walls and floors, to reach any spot of a level quickly or look
+at a place no path leads to. It is Coney's own debug tool (the original has none) and changes nothing while it is off.
+While it is on, pad 1 flies him and does nothing else in the game: no attacks, jumps, climbs, pick-ups or throws.
+
+| Pad | Keyboard | Does |
+| --- | --- | --- |
+| left stick | W A S D | fly across the ground, relative to the camera as a walk is, at up to 6 m/s; he faces where he flies |
+| R2 | 3 | rise, by how far the trigger is pulled (up to 6 m/s) |
+| L2 | 1 | descend, by how far the trigger is pulled (up to 6 m/s) |
+| R1 held | E | fly four times as fast (24 m/s) |
+| right stick | none | turn the follow camera round him, as in play |
+
+He has no collision, no gravity and no falling or landing, so no fall hurts him; let go of everything and he hovers.
+Switched off, he is dropped from where he stands with the normal physics: on the ground if it is under his feet, else
+he falls to whatever is below. A short notice, *Noclip on* or *Noclip off*, shows under the corner lines for 90 frames.
+
+*Noclip hotkey (R3 + D-pad left)*, off by default, makes **R3 and d-pad left together** (keyboard: **H and the left
+arrow**) switch the noclip in play, whichever is pressed first, once per press. The input gate
+(`src/debug/input_gate.h`) catches the chord before the game: from the moment both are held neither reaches the game
+until it is let go, so the d-pad press neither enters a cheat code nor acts in a fight. (An R3 held first reaches the
+game until the left completes the chord, as a lone R3 always does.) With the option off the chord is ordinary input. It
+does not fire while the menu is open. The flight is `human::Human::setFlight()` with the speeds of
+`human::noclipFlight()`, stepped at the fixed 1/30 s like everything else, so a scripted run (`--input-script`) flies
+the same path every time.
 
 ## Tunables {#tunables}
 

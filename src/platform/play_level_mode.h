@@ -222,6 +222,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] std::vector<debug::Place> places() const override { return m_scenery->places(); }
     [[nodiscard]] bool playerFrozen() const override { return m_frozen; }
     void setPlayerFrozen(bool frozen) override { m_frozen = frozen; }
+    [[nodiscard]] bool canNoclip() const override { return true; }
+    [[nodiscard]] bool noclip() const override { return m_player->noclip(); }
+    void setNoclip(bool on) override { m_player->setNoclip(on); }
     [[nodiscard]] anim::Vec3 cameraEye() const override;
     [[nodiscard]] anim::Vec3 cameraTarget() const override;
     void resetCamera() override { m_player->resetCamera(); }
