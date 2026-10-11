@@ -517,6 +517,22 @@ void ScriptedStory::goalDevilRun(const script::DevilRunCall& call) {
     });
 }
 
+void ScriptedStory::goalRunCarrot(const script::RunCarrotCall& call) {
+    onBrain(call.human, [this, call](Brain& brain) {
+        const WorldPath* found = path(call.path);
+        std::vector<double> points = found != nullptr ? found->points : std::vector<double>{};
+        const RunCarrotOrder order{.mode = call.mode,
+                                   .reverse = call.reverse,
+                                   .gait = call.gait,
+                                   .radius = call.radius,
+                                   .chasers = call.chasers,
+                                   .distance = call.distance,
+                                   .keepAhead = call.keepAhead};
+        brain.pushGoal(
+            std::make_unique<RunCarrotGoal>(std::move(points), order, *m_scripted, m_scripted->owner().gangs()));
+    });
+}
+
 void ScriptedStory::goalBigLedgeThrower(const script::LedgeThrowerCall& call) {
     // NOLINTNEXTLINE(bugprone-exception-escape): copying the captures can only fail on allocation
     onBrain(call.human, [this, call](Brain& brain) {
