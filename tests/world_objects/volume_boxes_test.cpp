@@ -128,3 +128,17 @@ TEST_CASE("damage done from inside reaches every enabled kind-0 box the human st
     boxes.sendDamage({1, 1, -5}, [&heard](double box) { heard.push_back(box); });
     CHECK(heard.empty());
 }
+
+TEST_CASE("a theft reaches every enabled kind-0 box round the object's spot", "[volume_boxes][steal]") {
+    // docs/research/crimes.md#owned-items: Item_TakeOwned tells the boxes whose inside test holds for the spot.
+    VolumeBoxes boxes;
+    boxes.add(70, "vStealTrigger", 0, {-249.4F, 217.9F, 1.1F}, {12.4F, 10.2F, 3.5F}, true);
+    boxes.add(71, "vTurf", 3, {-249.4F, 217.9F, 1.1F}, {12.4F, 10.2F, 3.5F}, true);
+    boxes.add(72, "vOff", 0, {-249.4F, 217.9F, 1.1F}, {12.4F, 10.2F, 3.5F}, false);
+    std::vector<double> heard;
+    boxes.sendTheft({-240.0F, 218.6F, 2.5F}, [&heard](double box) { heard.push_back(box); });
+    CHECK(heard == std::vector<double>{70});
+    heard.clear();
+    boxes.sendTheft({-230.0F, 218.6F, 2.5F}, [&heard](double box) { heard.push_back(box); });
+    CHECK(heard.empty());
+}

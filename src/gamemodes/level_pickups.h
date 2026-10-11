@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <optional>
 #include <set>
 #include <span>
@@ -136,8 +137,21 @@ class LevelPickups {
     /// (`0x00227010`): its record stays, held. Loot plays item 10's pick-up sound (pickupSound()). **Coney choice**:
     /// the named mission items (model hashes the original checks first) are not listed, so every `TYPE_SPECIAL` is
     /// loot.
+    /// `taker` is the player's human (0 for none known); an owned object's take is a theft (ownedTaken()).
     /// @orig 0x0023bf00 Human_PickUpObject (unknown)
-    TakeResult take(double handle, int player);
+    TakeResult take(double handle, int player, double taker = 0.0);
+    /// An AI human, `taker`, takes object `handle` at its pick-up clip's event, as take() does but with no player: a
+    /// `TYPE_SPECIAL` is removed for good with nothing given (**Coney's reading**: Human_PickUpObject's loot is a
+    /// player's inventory; what an AI's take of one gives is not on the page), any other kind goes into his hand. An
+    /// owned object's take is a theft (ownedTaken()).
+    TakeResult takeByAi(double handle, double taker);
+    /// The theft's receiver: told (taker, object, where it was) each time an owned object is taken, after its owned
+    /// state is cleared. Empty: nobody is told.
+    using OwnedTaken = std::function<void(double taker, double object, anim::Vec3 at)>;
+    void setOwnedTaken(OwnedTaken taken) { m_ownedTaken = std::move(taken); }
+    /// The human holding object `handle` (as take() or takeByAi() were told; 0 when the taker was not named), nothing
+    /// when it is in no hand.
+    [[nodiscard]] std::optional<double> holderOf(double handle) const;
 
     /// A power-up player `player` (0 or 1) took by walking over it: its object, the item it gave (whose pick-up sound
     /// plays) and how many.
@@ -251,7 +265,12 @@ class LevelPickups {
     world_objects::SpawnRecords& m_records;
     const world_objects::ObjectTypes& m_types;
     const script::MessageHandlers* m_messages;
+    // An owned object `record` taken by `taker`: no longer owned, and the theft told (Item_TakeOwned).
+    void takeOwned(world_objects::SpawnRecord& record, double taker);
+
     std::set<double> m_inHand;           // the objects held, whose records stay
+    std::map<double, double> m_holders;  // who holds each object in m_inHand (0: not named)
+    OwnedTaken m_ownedTaken;             // the thefts' receiver
     Locator m_locate;                    // the prompt objects that are not spawn records
     std::function<bool(double)> m_spent; // objects no longer pickable
     NativeMessage m_native;              // the classes' own message 0

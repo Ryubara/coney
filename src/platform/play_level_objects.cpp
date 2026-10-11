@@ -792,7 +792,7 @@ void PlayLevelMode::stepPickups() {
             m_print(std::format("pickup: pile {:.0f} gave object {:.0f}\n", *taken, *made));
             taken = made;
         }
-        const TakeResult result = m_pickups->take(*taken, 0);
+        const TakeResult result = m_pickups->take(*taken, 0, playerHandle());
         if (result == TakeResult::InHand) {
             script.heldObject = *taken;
             script.heldObjectName = m_pickups->typeOf(*taken);

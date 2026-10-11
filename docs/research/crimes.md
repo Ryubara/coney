@@ -1023,6 +1023,16 @@ gang's follow after a release and `0x00280fd8`.
 Coney's choices: a break-in and a custom crime queue kind-1 responders (the break-in after `CfgBreakAndEnterDelay`);
 the assault statistic is scored once per victim through the service.
 
+**Owned items** (`repo:src/world_objects/spawn_records.h`, `repo:src/gamemodes/level_pickups.h`, 2026-10-11): a spawn
+record made with `ObjSpawn` flag 2 (record bit `0x80000`, `WorldObject_SetOwnedFromFlags` `0x00392510`) is owned; in
+`level80` that is the pharmacy's stock, the 23 objects of zone 24 with flags 2 in its placed-objects list (disc check,
+NTSC-U, counts only). Whoever takes one, the player with triangle or a Warrior fetching it, clears it and the theft goes
+to every enabled kind-0 volume box round the object's spot as message 7, `(taker, object)`
+(`VolumeBoxes::sendTheft`, `repo:src/world_objects/volume_boxes.h`); an AI's take of a `TYPE_SPECIAL` removes it with
+nothing given. **Coney's readings**: the page names the inside test (`0x00412a18`) but not which boxes are asked nor
+whether the point is the object's or the taker's, so they are the boxes message 6 asks and the object's spot. Not yet:
+the witnesses' message 7 and alert, the crime score 4-8 and the lines 128 / 143.
+
 ## Open questions
 
 - Which objects register context records of kinds 1, 4 and 5, and with what second value.
@@ -1032,5 +1042,11 @@ the assault statistic is scored once per victim through the service.
 - Whether the police a lock-picked break-in calls attack the picker's gang (the pick reports no offender; [Which
   break-ins call the police](#break-in-police)). Both a break-in and a custom crime queue kind 1.
 - Wiring the report's police hostility, responders and HUD messages to Coney's gangs, spawners and HUD.
+- `Item_TakeOwned` (`0x00412dc8`): which objects its message 7 goes to (the volume boxes round the spot, as `level80`'s
+  `vStealTrigger` count shows, the humans who see it, or both), whether the point tested is the object's or the
+  taker's, and its argument order. Coney sends it to the kind-0 boxes containing the object
+  ([Coney's implementation](#coneys-implementation)).
+- What an AI human's take of a `TYPE_SPECIAL` gives (`Human_PickUpObject` adds loot to a player's inventory; a Warrior
+  led by a player scores the theft for every player).
 - Whether `Tag_UpdatePlayer` sends the tag `0x41` with `Tag_GetProgress`'s 1.0 when the game ends unfinished
   (`+0x4fc`: out of paint, or a 301st cell), which would show the wall tag whole though it is not marked sprayed.

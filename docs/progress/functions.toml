@@ -7354,6 +7354,42 @@ name = "HoldPositionGoal_Process"
 subsystem = "Human"
 
 [[function]]
+address = 0x002bec58
+name = "WarriorVandalStealGoal_Init"
+subsystem = "Human"
+size = 96
+
+[[function]]
+address = 0x002becb8
+name = "WarriorVandalStealGoal_Start"
+subsystem = "Human"
+size = 120
+
+[[function]]
+address = 0x002bed30
+name = "WarriorVandalStealGoal_Resume"
+subsystem = "Human"
+size = 128
+
+[[function]]
+address = 0x002bee08
+name = "WarriorVandalStealGoal_End"
+subsystem = "Human"
+size = 112
+
+[[function]]
+address = 0x002bee78
+name = "WarriorVandalStealGoal_TryFetch"
+subsystem = "Human"
+size = 672
+
+[[function]]
+address = 0x002bf748
+name = "WarriorVandalStealGoal_Process"
+subsystem = "Human"
+size = 1280
+
+[[function]]
 address = 0x002c0430
 name = "FindEnemyGoal_Init"
 subsystem = "Human"
@@ -7742,6 +7778,36 @@ address = 0x002dc578
 name = "MoveToHumanGoal_Process"
 subsystem = "Human"
 size = 400
+
+[[function]]
+address = 0x002dc7a0
+name = "GetItemGoal_Init"
+subsystem = "Human"
+size = 88
+
+[[function]]
+address = 0x002dc7f8
+name = "GetItemGoal_Start"
+subsystem = "Human"
+size = 184
+
+[[function]]
+address = 0x002dc8b0
+name = "GetItemGoal_Resume"
+subsystem = "Human"
+size = 296
+
+[[function]]
+address = 0x002dc9d8
+name = "GetItemGoal_End"
+subsystem = "Human"
+size = 32
+
+[[function]]
+address = 0x002dc9f8
+name = "GetItemGoal_Process"
+subsystem = "Human"
+size = 1744
 
 [[function]]
 address = 0x002de380
@@ -8633,6 +8699,78 @@ subsystem = "Human"
 address = 0x00320530
 name = "WarriorAttackTactic_Create"
 subsystem = "Human"
+
+[[function]]
+address = 0x00320b60
+name = "WarriorStealTactic_Create"
+subsystem = "Human"
+size = 128
+
+[[function]]
+address = 0x00320be0
+name = "WarriorStealTactic_Init"
+subsystem = "Human"
+size = 136
+
+[[function]]
+address = 0x00320c68
+name = "WarriorStealTactic_ClusterZone"
+subsystem = "Human"
+size = 200
+
+[[function]]
+address = 0x00320d30
+name = "WarriorStealTactic_GiveGoals"
+subsystem = "Human"
+size = 200
+
+[[function]]
+address = 0x00320df8
+name = "WarriorStealTactic_GiveMemberGoal"
+subsystem = "Human"
+size = 560
+
+[[function]]
+address = 0x00321028
+name = "WarriorStealTactic_PickStore"
+subsystem = "Human"
+size = 344
+
+[[function]]
+address = 0x003211a8
+name = "WarriorStealTactic_Start"
+subsystem = "Human"
+size = 152
+
+[[function]]
+address = 0x00321240
+name = "WarriorStealTactic_End"
+subsystem = "Human"
+size = 40
+
+[[function]]
+address = 0x00321268
+name = "WarriorStealTactic_Process"
+subsystem = "Human"
+size = 192
+
+[[function]]
+address = 0x00321328
+name = "WarriorStealTactic_OnEvent"
+subsystem = "Human"
+size = 176
+
+[[function]]
+address = 0x00321540
+name = "WarriorSteal_ClaimObject"
+subsystem = "Human"
+size = 608
+
+[[function]]
+address = 0x003217a0
+name = "StealClusters_Reset"
+subsystem = "Human"
+size = 104
 
 [[function]]
 address = 0x00335b08
@@ -10606,6 +10744,12 @@ subsystem = "TaskEngine"
 size = 1648
 
 [[function]]
+address = 0x00392510
+name = "WorldObject_SetOwnedFromFlags"
+subsystem = "TaskEngine"
+size = 16
+
+[[function]]
 address = 0x003932c8
 name = "OverheadWeapon_ContactDamage"
 subsystem = "TaskEngine"
@@ -10830,6 +10974,12 @@ address = 0x00399d88
 name = "ObjectTaskManager_UpdateSpawns"
 subsystem = "TaskEngine"
 size = 1336
+
+[[function]]
+address = 0x0039aa40
+name = "ObjZone_ListObjects"
+subsystem = "TaskEngine"
+size = 224
 
 [[function]]
 address = 0x0039b020
@@ -11584,6 +11734,12 @@ address = 0x00412c40
 name = "VolumeBox_SetRotation"
 subsystem = "WorldObjects"
 size = 96
+
+[[function]]
+address = 0x00412dc8
+name = "Item_TakeOwned"
+subsystem = "WorldObjects"
+size = 592
 
 [[function]]
 address = 0x00413018

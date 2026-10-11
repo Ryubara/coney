@@ -1423,6 +1423,16 @@ the zone (−1 none), `+0x2a` the chief's line playing, `+0x2b` the answer said.
 | `0x003217a0` | `StealClusters_Reset` | reset | on a full reset (1, `0xffff`): sets the ten handles of each of the 20 entries at `0x006eb318` (`0x30` bytes) to −1 (inferred: the cluster records) | inferred |
 | `0x00321808` | `StealClusters_ResetAll` | reset | calls `StealClusters_Reset` with 1 and `0xffff` | confirmed (code) |
 
+**Coney** (`repo:src/ai/steal_goals.h`, 2026-10-11): `WarriorStealTactic`, `WarriorVandalStealGoal` (its fetch and its
+stay with the leader), `GetItemGoal` and the clusters and claims (`StealClusters`), over the level's store fronts and
+owned objects (`ai::ItemServices`, `repo:src/gamemodes/level_items.h`); command 5 starts the tactic. **Coney
+stand-ins**, each an open question here: `Points_Cluster`'s clustering (Coney: an object joins the first cluster whose
+first object lies within 1 m) and the order `0x00433fd8` walks the clusters in (Coney: nearest centre first); the
+store's reach test (`Nav_CanReach`; Coney: distance only); the gait WarriorVandalSteal's fetch walks at (Coney: 4);
+the AI's pick-up action (`PickUpItemAction`, `0x21`; Coney plays the player's pick-up clip for the object's height);
+and GetItem's standing point (Coney: the planner's navigation point under the object at the human's height). Not
+built: the wreck with no store, the answering line, the fidget clips, dogs' AvoidEnemies and the two-player rule.
+
 ### Attack sub-tactics {#t2-sub-tactics}
 
 Short orders TacticAttack's Process starts every 7 s (`AttackTactic_StartSubTactic` `0x00307a10`,
