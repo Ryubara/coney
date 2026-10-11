@@ -2,6 +2,10 @@
   "sections": ["Summary", "Checklist", "Testing", "Screenshots", "AI use"],
   "filled": ["Summary", "Testing"],
   "placeholders": ["...", "<reason>"],
+  "remaining": {
+    "section": "Checklist",
+    "label": "Remaining:"
+  },
   "screenshots": {
     "section": "Screenshots",
     "none": "Screenshots: none"
