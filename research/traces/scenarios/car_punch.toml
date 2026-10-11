@@ -1,0 +1,65 @@
+# Punching a parked car. On the original, slot 6 (level99): the player is put 0.44 m outside the right side of the
+# sedan in car slot 2 at (41.23, 44.76), whose front faces -x, beside its front door (the car's own x = +1.64 m,
+# y = 0.03 m), facing the car (heading 180), and taps square twelve times; his feet are held there (the attacks
+# step him back). Coney: checkpoint 4, where no scene holds the pad. Which parts each hit reaches, the window
+# breaking on the first, the door's damage per hit, its dent at 0.5 and its coming off, and the car's rock.
+description = "twelve squares at a parked sedan's front-right door: parts hit, damage per hit, window, dent, rock"
+research = "docs/research/cars.md#windows"
+input = "car_punch.txt"
+updates = 400
+fields = ["player"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick"]
+let = { car = 'u32(u32(0x005971b4) + 4) + 2 * 0x1310' }
+setup = [
+  { address = "tf(player) + 0x0", type = "f32", value = "41.2", frame = 0, until = 399 },
+  { address = "tf(player) + 0x4", type = "f32", value = "46.4", frame = 0, until = 399 },
+  { address = "tf(player) + 0x18", type = "f32", value = "1.0", frame = 0, until = 2 },
+  { address = "tf(player) + 0x1c", type = "f32", value = "0.0", frame = 0, until = 2 },
+]
+
+[coney]
+level = "level99"
+args = ["--checkpoint", "4", "--start", "41.2,46.4,0.22,180"]
+
+[[field]]
+name = "door16"
+address = "car + 0xc30"
+type = "f32"
+
+[[field]]
+name = "window17"
+address = "car + 0xcd0"
+type = "f32"
+
+[[field]]
+name = "parts_off"
+address = "car + 0x11f8"
+type = "u32"
+
+[[field]]
+name = "first_hit"
+address = "car + 0x11ec"
+type = "u32"
+
+[[field]]
+name = "rocking"
+address = "car + 0x12d6"
+type = "u8"
+
+[[field]]
+name = "rock_z"
+address = "car + 0x1238"
+type = "f32"
+
+[[field]]
+name = "car_qx"
+address = "car + 0x20"
+type = "f32"
+
+[[field]]
+name = "car_qy"
+address = "car + 0x24"
+type = "f32"

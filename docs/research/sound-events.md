@@ -258,9 +258,11 @@ Confirmed (code):
   glass shatter (`SubGlass_Update`, `0x003e4cb8`) plays `Sound_PlayMaterialPairAt` (`0x00117280`, volume 1) at the
   burst, before any camera culling of the effect: `[88 GLASS_SMALL][88 GLASS_SMALL]` for a small burst or one whose
   record `+0x0c` is `0x10001` (kind 4, the windows), `[2 GLASS][2 GLASS]` otherwise (kind 6).
-- **Explosion**: an exploding hit prepares `vags/fire/car_explodes<n>`, `n` random 1-3, at the car
+- **Explosion**: a molotov's hit prepares `vags/fire/car_explodes<n>`, `n` random 1-3, at the car
   (`Sound_PrepareAtByName`, kept at car `+0x12fc`), and `Car_DoExplode` (`0x0038ab50`) starts it.
-  `Car_StartExplosionLaunch` (`0x0038b1f8`) plays `vags/vehicles/shocks_squeak_<n>` (`n` 1-3) at the car.
+- **The rock**: a hit by a human or a held weapon starts the car rocking (`Car_StartHitRock`, `0x0038b1f8`, the
+  only caller is `Car_OnHit`; [Cars: the rock](cars.md#rock)), which plays `vags/vehicles/shocks_squeak_0<n>`
+  (`n` 1-3) at the car. (An earlier reading put this in the explosion; the explosion does not call it.)
 - **Loose parts** (`Car_UpdateLoosePart`, `0x00387f18`): a part's impact above 4 m/s plays
   `Sound_PlayMaterialPair(1 / (n + 1), 119 CAR_PART, triangle material)` (`n` the part's byte `+0x97`) and
   `(…, 120 CAR_PART_STREAM, …)`;
