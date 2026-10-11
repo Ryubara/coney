@@ -32,8 +32,8 @@ if TYPE_CHECKING:
 DATA_DIR = Path("docs/progress")
 TOTALS_FILE = DATA_DIR / "totals.toml"
 FUNCTIONS_FILE = DATA_DIR / "functions.toml"
+#: The committed page; the docs build fills its marker with the generated tables (progress_render.PAGE_MARKER).
 PAGE_FILE = DATA_DIR / "index.md"
-README_FILE = Path("README.md")
 ROADMAP_FILE = Path("docs/roadmap.md")
 SOURCE_DIR = Path("src")
 

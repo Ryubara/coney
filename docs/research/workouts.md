@@ -146,13 +146,39 @@ of a human that is working out. Confirmed (code).
 
 `Workout_CallRep` is the gait blend's wrap callback, so a repetition is each time the
 **leading** cursor of the blend wraps ([Gait blend](formats/animation.md#gait-blend)): the length of a repetition is
-the leading loop clip's duration ÷ the rate. Confirmed (code); confirmed (runtime):
+one cycle of the blend's shared normalised time, which runs at the leading clip's pace each update
+([below](#rep-length)). Confirmed (code); confirmed (runtime):
 
 | Station | Slow / mid / fast clip (s, read from the cursors) | Repetition, pumping every 4 updates | Every 6 updates (chin-ups) |
 | --- | --- | --- | --- |
 | Chin-ups | 2.167 / 1.667 / 1.000 | 37 updates (1.23 s), effort 0.94-1.0, *v* 1.8-2.0 | 62-65 updates (≈2.1 s), effort ≈0.55, *v* ≈0.6-0.8 |
 | Push-ups | 2.000 / 1.500 / 0.933 | 30-31 updates (1.0 s), effort 1.0, *v* 2.0 | - |
 | Sit-ups | not reached / 1.833 / 1.200 | 39-40 updates (1.3 s), effort 0.97-1.0 | - |
+
+#### What sets the length {#rep-length}
+
+Answered 2026-10-11. A repetition is not one clip's duration: the blend's shared normalised
+time advances by 1/30 s of whichever clip **leads** that update, and the pump rhythm moves *v* off 2.0, so the slower
+mid clip leads on some updates. Confirmed (code) at `0x0010a5b8` and confirmed (runtime), PCSX2 2.9.94, re-reading
+the per-update cursor logs of the runs above (the lower cursor's time and clip every update, pumping every 4
+updates). Every update's step in normalised time was exactly 1/(30 × *d*) of one of the two clips, *d* its duration:
+the anim step is 1/30 s and the task rate 1.0 throughout, so the earlier "0.03 s per update" fit was a coincidence.
+
+- **Why *v* leaves 2.0.** The target is 3 × effort − 1 ([the engine side](#engine)), and the effort drops 0.03 on
+  the update the hold counter runs out, so *v* follows it to 1.91 (and to 1.82 at chin-ups) one update later and
+  comes back on the pump. The blend's speed (16 units/s) covers those steps in one update.
+- **Which clip leads** ([Gait blend](formats/animation.md#gait-blend)): on the update *v* drops from 2.0 to 1.91 the
+  pair changes to mid + fast and the **mid** clip leads, because the 0.875 test uses the value and pair from before
+  the move (fraction 0); on 1.82 → 1.91 (rising, old fraction 0.82) the mid clip leads too; on 1.91 → 1.82 and
+  1.91 → 2.0 the fast clip leads.
+- **The lengths that follow.** Push-ups, per 4 updates: three fast steps and one mid, 3/28 + 1/45 of a cycle, so a
+  repetition takes 30.9 updates (measured 30-31; the fast clip alone would take 28). Sit-ups: 3/36 + 1/55, 39.4
+  updates (measured 39-40; 36 alone). Chin-ups: two fast and two mid steps, 2/30 + 2/50, 37.5 updates (measured 37;
+  30 alone). With the [wrap rule](formats/animation.md#gait-blend) (a cursor wraps when its rounded frame reaches
+  the clip's last, carrying the overshoot plus half a frame) the counts alternate, 30 / 31 and 39 / 40.
+
+So a reimplementation that picks the leader from the new value, or keeps *v* at 2.0 while pumping, runs the fast
+clip alone and its repetitions come out about 0.9 × as long as the original's (28 / 30.9).
 
 **The effort at runtime** (confirmed (runtime)): `Started` writes 1.5, which the first loop update caps to 1.0 (the
 hold counter of 6 is still running); the enter clip (≈24 updates at chin-ups) changes nothing. Without pumps the
@@ -342,3 +368,7 @@ walk to each station with the stick at a partial deflection, then:
   files.
 - `Human_AlignToObject` with the human as its own target (a zero direction): what it does to the heading (the player
   is already on the flag, facing its heading).
+- **Coney's repetitions at 0.9 × the original's** (answered, [What sets the length](#rep-length)): the anim step is
+  1/30 s and the rate 1.0; the mid clip leads the blend on the updates the pump rhythm takes *v* below 2.0, which
+  lengthens the cycle to 30.9 (push-ups), 39.4 (sit-ups) and 37.5 (chin-ups) updates. Confirmed (code) at
+  `0x0010a5b8`, confirmed (runtime).

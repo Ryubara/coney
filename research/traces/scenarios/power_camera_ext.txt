@@ -1,0 +1,22 @@
+# As power_camera.txt, then cross taps every 6 updates from 80 to 170: the extension parts (59, then 61) start when
+# the power strike's window 0x2 opens. Stick centred. Frames are character updates of 1/30 s.
+10 tap circle
+60 press cross
+62 tap square
+66 release cross
+80 tap cross
+86 tap cross
+92 tap cross
+98 tap cross
+104 tap cross
+110 tap cross
+116 tap cross
+122 tap cross
+128 tap cross
+134 tap cross
+140 tap cross
+146 tap cross
+152 tap cross
+158 tap cross
+164 tap cross
+170 tap cross

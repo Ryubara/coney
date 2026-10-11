@@ -1,0 +1,4 @@
+# Issues start from a form (bug.yml for players, task.yml for maintainers and agents), never from a blank page.
+# No contact links: a link would put the project's address in a file, and only the README carries it. The guides
+# on how to report and what the labels mean are docs/guides/issues.md on the documentation site.
+blank_issues_enabled: false
