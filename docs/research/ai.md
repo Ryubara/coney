@@ -1017,8 +1017,9 @@ What turns a fighter toward his target once the run-in is over. Confirmed (code)
       Update writes nothing in the update it ends (in the band, no circling), and its Abort re-aims `+0x110` only for
       a "no stance" class.
     - the **attack's own turn**: the attack starts (`0x00261c80`, `0x00262368`, `0x00261a08`, the grab `0x0026c548`,
-      the tackle `0x002707a8`) turn him to his target (the brain's, [Combat](combat.md#ai-attacks)) with `Human_TurnToFaceObject`, and the steer onto
-      the target (`Attack_SteerToTarget`, [Combat](combat.md#ai-attacks)) runs to the clip's first event.
+      the tackle `0x002707a8`) turn him to his target (the brain's, [Combat](combat.md#ai-attacks)) with
+      `Human_TurnToFaceObject`, and the steer onto the target (`Attack_SteerToTarget`,
+      [Combat](combat.md#ai-attacks)) runs to the clip's first event.
 - **Otherwise nothing.** In a fight stance with no movement action running, `+0x110` is his facing and his speed 0:
   the control neither turns him nor starts a turn on the spot, and he does not track the target (no lock-on
   turn: that is the player's stance control, which an AI never runs). Inferred from the above: a fighter who

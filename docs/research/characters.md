@@ -961,6 +961,7 @@ does nothing then, because the speed is 0. The only writers of `+0x110` are the 
 `0x002fdd08`, the step `0x002fe3a8`), the route legs (`0x0029b848`, `0x0029baa8`, `0x0029bca0`) and a few goals that
 are not fights (pedestrian reaction, avoid enemies, the ledge thrower, run from the train, the phone, the parlay) and the
 player's brain (`0x003035d8`); found by a scan of every store to `+0x110`.
+
 - **Held flag `0x20000000`** (a turn clip playing, below) or any of `0x110c0880`, or the state code 5 or 6 (a start
   clip): no velocity; the clip moves the body.
 - The vertical velocity is kept (`+0x3a0`), and the lean (`0x00248df0`) gets the heading change, as for a player.
