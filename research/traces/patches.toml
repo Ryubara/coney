@@ -634,6 +634,96 @@ address = 0x00111de8
 original = [0x27bdff50, 0x7fb20060]
 log = [{ value = "a2", name = "hash" }, { value = "a1", name = "owner" }, "ra"]
 
+# The runtime-checks pass of 2026-10-11 (docs/research/combat.md#teammates, docs/research/scripting.md#level80-arrest-fire).
+
+[hook.hit-by-chief]
+description = "Each call of WarriorBrain_OnHitByChief (0x00306190, from a Warrior brain's event 1): the brain and its arguments, with the brain's hit-back window end (+0x2dc) and count (+0x2e4) before the call."
+research = "docs/research/combat.md#teammates"
+address = 0x00306190
+# addiu sp,sp,-0x60; sq s0,0x50(sp)
+original = [0x27bdffa0, 0x7fb00050]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a0", name = "brain" }, { value = "a1", name = "a1" }, { value = "a2", name = "a2" }, { value = "[a0 + 0x2dc]", name = "window" }, { value = "[a0 + 0x2e4]", name = "count", type = "u8" }]
+
+[hook.hit-reaction]
+description = "Each call of Hit_PlayReaction (0x0026b0a0, a standing human's reaction to a hit): its arguments and the caller."
+research = "docs/research/combat.md#teammates"
+address = 0x0026b0a0
+# addiu sp,sp,-0x50; sq s3,0x10(sp)
+original = [0x27bdffb0, 0x7fb30010]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "a0" }, { value = "a1", name = "a1" }, { value = "a2", name = "a2" }]
+
+[hook.attack-target-push]
+description = "Each call of AttackTargetGoal_Push (0x002aeda0): the human given the goal, its target and the time limit."
+research = "docs/research/combat.md#teammates"
+address = 0x002aeda0
+# addiu sp,sp,-0x50; sq s2,0x20(sp)
+original = [0x27bdffb0, 0x7fb20020]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }, { value = "a1", name = "target" }, { value = "a2", name = "limit" }]
+
+[hook.push-contact]
+description = "Each call of Human_OnPushContact (0x00219b08, a human walking into a friendly one): both humans."
+research = "docs/research/physics.md#human-contacts"
+address = 0x00219b08
+# addiu sp,sp,-0xa0; sq s0,0x90(sp)
+original = [0x27bdff60, 0x7fb00090]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a0", name = "human" }, { value = "a1", name = "other" }]
+
+[hook.can-push]
+description = "Each call of Human_CanPush (0x002320a0, from Human_OnPushContact): its two humans; a call means the 2 s head-on contact ran out."
+research = "docs/research/physics.md#human-contacts"
+address = 0x002320a0
+# addiu sp,sp,-0x80; sq s1,0x60(sp)
+original = [0x27bdff80, 0x7fb10060]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }, { value = "a1", name = "other" }]
+
+[hook.ember-init]
+description = "Each sub_explosion_embers made (SubExplosionEmbers_Init, 0x003c3c08): its two arguments."
+research = "docs/research/script-types.md#part-explosion"
+address = 0x003c3c08
+# addiu sp,sp,-0xe0; sq s0,0xc0(sp)
+original = [0x27bdff20, 0x7fb000c0]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a0", name = "a0" }, { value = "a1", name = "a1" }]
+
+[hook.ember-update]
+description = "Each update of a sub_explosion_embers (SubExplosionEmbers_Update, 0x003c3da8): the task and its position."
+research = "docs/research/script-types.md#part-explosion"
+address = 0x003c3da8
+# addiu sp,sp,-0x910; sq s3,0x8d0(sp)
+original = [0x27bdf6f0, 0x7fb308d0]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a0", name = "task" }, { value = "[a0 + 0x10]", name = "x", type = "f32" }, { value = "[a0 + 0x14]", name = "y", type = "f32" }, { value = "[a0 + 0x18]", name = "z", type = "f32" }]
+
+[hook.burn-init]
+description = "Each sub_burn made (0x003c40a0): its two arguments and the caller (TaskPool_Create, 0x0039c698, for every type)."
+research = "docs/research/script-types.md#sub-burn"
+address = 0x003c40a0
+# addiu sp,sp,-0xc0; sq s0,0xa0(sp)
+original = [0x27bdff40, 0x7fb000a0]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "a0" }, { value = "a1", name = "a1" }]
+
+[hook.burn-update]
+description = "Each update of a sub_burn (SubBurn_Update, 0x003c4280): the task and its position."
+research = "docs/research/script-types.md#sub-burn"
+address = 0x003c4280
+# addiu sp,sp,-0x4d0; sq s0,0x4b0(sp)
+original = [0x27bdfb30, 0x7fb004b0]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a0", name = "task" }, { value = "[a0 + 0x10]", name = "x", type = "f32" }, { value = "[a0 + 0x14]", name = "y", type = "f32" }, { value = "[a0 + 0x18]", name = "z", type = "f32" }]
+
+[hook.fade-flame-init]
+description = "Each sub_fade_flame made (0x003c7de0): its two arguments and the caller (TaskPool_Create, 0x0039c698, for every type)."
+research = "docs/research/script-types.md#part-explosion"
+address = 0x003c7de0
+# addiu sp,sp,-0xd0; sq s0,0xb0(sp)
+original = [0x27bdff30, 0x7fb000b0]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "a0" }, { value = "a1", name = "a1" }]
+
+[hook.fade-flame-update]
+description = "Each update of a sub_fade_flame (0x003c80d8): the task and its position."
+research = "docs/research/script-types.md#part-explosion"
+address = 0x003c80d8
+# addiu sp,sp,-0x900; sq s2,0x890(sp)
+original = [0x27bdf700, 0x7fb20890]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a0", name = "task" }, { value = "[a0 + 0x10]", name = "x", type = "f32" }, { value = "[a0 + 0x14]", name = "y", type = "f32" }, { value = "[a0 + 0x18]", name = "z", type = "f32" }]
+
 [hook.sweep-radius]
 description = "Each walking sweep's sphere in PhysicsMesh_SweepCapsule (0x00347c08), before the scale multiplies it: the body, shape +0x40 x body +0x60 (f1), body +0x60 (f3) and Human_GetScale's result (f0); the radius is f1 x f0."
 research = "docs/research/characters.md#walls"
@@ -641,3 +731,19 @@ address = 0x00347cbc
 # mul.s f1,f1,f0; sw t1,0x47a8(sp)
 original = [0x46000842, 0xafa947a8]
 log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "t0", name = "body" }, { value = "f1", name = "r_unscaled", type = "f32" }, { value = "f3", name = "b60", type = "f32" }, { value = "f0", name = "scale", type = "f32" }]
+
+[hook.debris-flame]
+description = "A burning sub_debris landing on a floor making its sub_fade_flame (SubDebris_Update, 0x003c2820, before the flame's ScriptType_CreateByName): the debris task, its kind (+0x24 of its data) and its position."
+research = "docs/research/script-types.md#sub-debris"
+address = 0x003c2820
+# lq v0,0x10(s5); addiu s1,s7,-0x4748
+original = [0x7aa20010, 0x26f1b8b8]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "s5", name = "task" }, { value = "[s6 + 0x24]", name = "kind" }, { value = "[s5 + 0x10]", name = "x" }, { value = "[s5 + 0x14]", name = "y" }, { value = "[s5 + 0x18]", name = "z" }]
+
+[hook.say-command]
+description = "Each call of Human_SayCommand (0x002205e0, a human told to say a speech command): the caller, the human and the command (0x58 the friend's complaint of Strike_Contact)."
+research = "docs/research/combat.md#teammates"
+address = 0x002205e0
+# addiu sp,sp,-0xc0; sq s0,0xa0(sp)
+original = [0x27bdff40, 0x7fb000a0]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }, { value = "a1", name = "command" }]

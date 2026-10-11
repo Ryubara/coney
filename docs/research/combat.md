@@ -2908,9 +2908,74 @@ at the addresses cited unless marked; "teammate" is a human friendly to the play
 6. **Walking and sprinting into a teammate** is the physics' contact 4: he is slid along and pushed by half the move
    ([Physics: human contacts](physics.md#human-contacts)); there is **no knockdown** from running into anyone
    (only the charge's capsule and an airborne body strike, `Human_OnContact` `0x00219d50`), and the charge's strike
-   on a teammate is a hit as in 3. A player who keeps walking head-on into a teammate at a jog or faster for 2 s
-   **trades places** with him (`Human_OnPushContact` `0x00219b08` → `Human_CanPush` `0x002320a0`, which sets each
-   one's position to the other's when neither is in a fight stance, busy or held).
+   on a teammate is a hit as in 3. A player who walks head-on into a teammate at a jog or faster and is still doing
+   so 2 s later **trades places** with him (`Human_OnPushContact` `0x00219b08` → `Human_CanPush` `0x002320a0`, which
+   sets each one's position to the other's when neither is in a fight stance, busy or held). In detail, confirmed
+   (code) at `0x00219b08`: the contact counts only when the pusher is a player, his gait (`+0x1a8`) is 3 or more and
+   his push is head-on (the dot of the two unit vectors below −0.8); the first such contact stores the time in the
+   teammate's `+0x570` and a deadline of **now + 2100 ms** in `+0x56c`; a later counting contact at least 2000 ms
+   after the first calls `Human_CanPush`, and a swap clears both. The second contact must also come before 2.1 s:
+   every update `Human_StateUpdate` clears both words once the game time is past the deadline (confirmed (code) at
+   `0x002405e0`-`0x00240604`), so the swap needs a counting contact in a window of 2.0-2.1 s after the first, about
+   three updates.
+
+**At runtime** (2026-10-11, PCSX2, confirmed (runtime)). Level80 checkpoint 2 was entered from a level99 state by
+setting mode 8's level ([the runtime order](scripting.md#level80-hints)). Cleon was the player, with Vermin, Rembrandt
+and Ajax following (`FollowPlayer`, goal 50). Input was the scripted pad of
+[Driving PCSX2](../guides/research-workflow.md#driving-pcsx2), hooks `strike-contact`, `hit-by-chief`, `hit-reaction`,
+`attack-target-push`, `push-contact` and `can-push` of `repo:research/traces/patches.toml`, with Vermin's record and
+brain read every update:
+
+- **Hits 1-3 land with a reaction and no health lost.** Cleon walked to 0.85 m from Vermin (stick 0.5, aimed at
+  him), the stick went to 0.2 towards him for one update, then square was tapped (`ANIM_ATTACK_S1`, 12). Each tap
+  logged `Strike_Contact(Cleon, Vermin)` and `Hit_PlayReaction` on Vermin, who played 272 (`ANIM_REACT_SMALL_HIGH_FRONT`)
+  and kept 1800 health. This held for every hit before the fourth, in both runs.
+- **Level80 locks the commands, and that blocks the hit-back.** In the first run (four taps 1 s apart, two of
+  which reached him) `WarriorBrain_OnHitByChief` ran on each hit but opened no window: game state `+0x418` for player
+  0 was 1, because `level80.lua`'s chapters 1-4 call `WCLockCommands(player, true)` in their set-ups and only chapter
+  4's clean-up unlocks it. **No Warrior hits back anywhere in mission 1 of `level80`.** For the second run the byte was
+  written to 0, as `WCLockCommands(player, false)` leaves it.
+- **The fourth hit starts the hit-back.** With the commands unlocked, five hits 24 updates apart: the first set
+  Vermin's `+0x2dc` to the game time + 10000 ms; the second and third raised `+0x2e4` to 1 and 2; the fourth (2.4 s
+  after the first) cleared both and called `AttackTargetGoal_Push(Vermin, Cleon, 20000)`. The chief's own brain
+  `+0x2e4` became 1. The next update Vermin had **Fight** (`0xf`, target Cleon) on top of AttackTarget, on top of
+  FollowPlayer.
+- **The fourth hit hurts.** The fourth and fifth hits each took **22** health from Vermin (1800 → 1778 → 1756): once
+  he hits back he is no longer treated as a friend, so the pending damage is applied (inferred: the friend test of
+  `Human_ApplyPendingDamage` was not traced at runtime).
+- **He fights for real.** Vermin's punches cost Cleon 209 health each (1530 → 346 in 22 s). Cleon's target
+  became Vermin. The goal stack went back to FollowPlayer 661 updates (22.0 s) after the push, AttackTarget and
+  Fight together.
+- **Sprinting into a teammate knocks no one down.** Cleon sprinted at Vermin from 5.1 m with L2 held and the stick
+  at full deflection, re-aimed at him every 2 updates and scaled so its larger axis is 1.0 (a diagonal of plain
+  components falls under the sprint's 0.95). He reached gait 5 at 10.25 m/s. At contact the player stopped dead
+  (0.06 m/s two updates later). Vermin played 402 (`ANIM_MOVEMENT_STEP_BACKWARD`), with no reaction, no state bits of
+  a fall and no health lost. An earlier run that met him at gait 4 (8.26 m/s, the sprint still speeding up) gave
+  the same. `Human_OnPushContact` ran on Vermin at every contact.
+- **Walking into one pushes him; a walking player seldom gets to the swap.** At a walk (stick 0.75 or 0.9 re-aimed,
+  gait 2, 1.63 m/s) the player shoves him along at about half his speed, and an idle Warrior often steps aside first
+  (400 `ANIM_MOVEMENT_STEP_RIGHT`). Running in (gait 3-4) started the timer: `+0x570` = the time, `+0x56c` = time +
+  2100. But the contact brought the player down to gait 0-1, so no counting contact came 2.0 s later, and the
+  deadline was cleared on time. `Human_CanPush` was never called in five runs: a player cannot keep a counting
+  contact going for 2 s, so in play the swap is rare.
+- **The swap itself** (a second pass, 2026-10-11, level80 checkpoint 2 entered the same way, commands still
+  locked, hooks `push-contact` and `can-push`). Cleon ran at Vermin from 4.6 m, stick 1.0 re-aimed every update,
+  no L2: gait 3 from the 7th update, gait 4 from the 14th. At 1.46 m the test aged Vermin's timer over PINE
+  (`+0x570` = the game time − 2050 ms, `+0x56c` = the game time + 400 ms), as a first contact 2.05 s earlier would
+  have left it. Two updates later the contact came at gait 4: `Human_OnPushContact(Vermin, …)` then
+  `Human_CanPush(Vermin, Cleon)` from `0x00219d18`, on the same update. Vermin's position became exactly Cleon's
+  (−189.45, 168.24), Cleon's became Vermin's (about (−190.2, 167.7)), each kept his own heading, and both timer words
+  were 0 the next sample. Vermin played no reaction and went on following.
+- **Circle with only a teammate in reach is a grab miss.** Cleon walked to 0.81 m from Vermin (stick 0.5, aimed at
+  him), the stick went to 0.2 towards him for one update, then circle was tapped. His target was none (`+0xc8`
+  −1). `Grab_Start(Cleon, mode 0, base 72)` ran (hook `grab-start`) and 71 and 69 were queued the same update (hook
+  `anim-dispatch`); 21 updates later (71's 5 and 69's 16) he was back in the idle 388. Vermin played nothing and
+  lost no health.
+- **The complaint is said.** Two square taps at Vermin from 0.77-0.83 m, Cleon with no target: each logged
+  `Strike_Contact(Cleon, Vermin)`, `WarriorBrain_OnHitByChief` and reaction 272 on Vermin, and
+  **`Human_SayCommand(Vermin, 0x58, …)`** (`0x002205e0`) from `Strike_Contact` (return `0x0021b4a0`, hook
+  `say-command`) on the same update. Vermin's health stayed 1800. Whether the line is heard (the speech system may
+  drop it) was not checked.
 
 **Coney fixes** (owner item 10; the blocking itself is owner item 40, physics.md#human-contacts):
 
@@ -2921,16 +2986,20 @@ at the addresses cited unless marked; "teammate" is a human friendly to the play
    teammate plays 71 then 69 and connects with nothing.
 3. A hit on a friend: impact and hit effect, no health lost (unless both are players), the reaction by hit code as
    for an enemy, the complaint line `0x58` for a Warrior hit by a player with no target.
-4. Port `WarriorBrain_OnHitByChief`: the 10 s window, the fourth hit, AttackTarget on the chief for 20 s, the
-   taunting ring while it lasts, the command reset and menu lock.
+4. Port `WarriorBrain_OnHitByChief`: the 10 s window, the fourth hit, AttackTarget on the chief for 20 s with Fight
+   on top, the taunting ring while it lasts, the command reset and menu lock. Gate it on the commands lock
+   (`WCLockCommands`, which Coney keeps as `StoryState::noRetaliation`, set by `makeWcLockCommands` in
+   `repo:src/scripting/story_bindings.cpp`, and which replaces the stand-in in `warriorEvent`,
+   `repo:src/ai/brain_events.cpp`), so in `level80` no Warrior ever hits back; apply the damage of the fourth hit on
+   (the Warrior is no longer a friend).
 5. Thrown bodies strike teammates too (the knockdown with no damage).
-6. With the human blocking in (item 40): head-on contact at a jog or faster for 2 s swaps the two places.
-7. Tests: square into a teammate 0.8 m ahead plays a hit reaction on him and leaves his health unchanged; three such
-   hits within 10 s leave him alone and a fourth starts his AttackTarget on the player; circle with only a teammate in
-   reach plays 71 then 69.
-   Deferred: runtime (PCSX2, any street level with the crew following, the player behind a standing Warrior, stick
-   centred): press square four times 1 s apart and read the Warrior's health, clip ids and goal stack; tap circle
-   and read the player's clips (expected 71, 69).
+6. With the human blocking in (item 40): a head-on contact at gait 3 or more starts a 2 s wait, and another such
+   contact 2.0-2.1 s after the first swaps the two places (both bounds confirmed (code), the swap seen at runtime).
+7. Tests: square into a teammate 0.8 m ahead plays reaction 272 on him and leaves his health unchanged; three such
+   hits within 10 s leave him alone and a fourth starts his AttackTarget and Fight on the player and costs him the
+   hit's damage; in `level80` (commands locked) the fourth hit starts nothing; a sprint into a teammate stops the
+   player and knocks nobody down; circle with only a teammate in reach plays 71 then 69 and leaves him alone (seen
+   at runtime); a square that touches him makes him say `0x58`.
 
 #### The fight stance {#fight-stance}
 
