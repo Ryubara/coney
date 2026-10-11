@@ -412,8 +412,7 @@ TEST_CASE("a player under script control turns on the spot to the flag's heading
     CHECK(std::fabs(coney::human::wrapAngle(player.human().heading() - radians(93.0F))) <= coney::ai::kFaceFlagAngle);
 }
 
-TEST_CASE("locked on a foe, a pad's human faces it; a player under script control follows his brain",
-          "[ai][turn]") {
+TEST_CASE("locked on a foe, a pad's human faces it; a player under script control follows his brain", "[ai][turn]") {
     // Human_FightStanceMove and Human_UpdateControl (docs/research/ai.md#fight-facing, characters.md#ai-locomotion):
     // the pad's player faces his lock target each update; a player whose pad a script took runs the AI's stance
     // control, so he turns by the brain's heading: 24 degrees an update asked to move, the standing step (12) stopped
