@@ -84,8 +84,8 @@ entries:
     vtable: 0x00536b10
     size: 0x0340
     made: "one per player, `0x0011fc98` (array `0x005d9188`)"
-    meaning: "The power-move camera, made by `0x00101dd8` while switch 9 is on"
-    evidence: inferred
+    meaning: "The power-move camera: a finisher clip's frame events (`0x39` begin, `0x3b` shot, `0x3a` cut, `0x3d` end, read by `0x00101dd8`) cut it to fixed shots while switch 9 is on"
+    evidence: confirmed-code
   - id: type-7
     kind: type
     number: 7
@@ -267,7 +267,7 @@ entries:
     read_by: "`0x00101dd8` (power camera)"
     calls: 3
     scripts: [level55_subway.lua, level99_lesson2.lua]
-    meaning: "Lets a power move's animation event `0x39` switch to the power camera (type 6)"
+    meaning: "Lets a power move's animation events (`0x39` begin, `0x3b` shot, `0x3a` cut) use the power camera (type 6); the end `0x3d` ignores it"
     evidence: confirmed-code
   - id: switch-10
     kind: switch

@@ -2,12 +2,14 @@
 
 No file names the repository's or the site's address: they come from the build. Pages link files outside `docs/` as
 `repo:<path>`, which this hook turns into a link to that file on the default branch of the repository the site is
-built from. It also adds the Changelog page, written from the git history at build time.
+built from. It also adds the Changelog page, written from the git history at build time, fills the progress page's
+tables and writes the README's badge data (shields.io endpoint JSON) into the site, so none of those is committed.
 """
 
 import os
 import re
 import subprocess
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -45,8 +47,55 @@ def on_config(config):
     return config
 
 
-def on_page_markdown(markdown, config, **_):
-    """Rewrites `repo:<path>` links to the file on the default branch, before MkDocs validates links."""
+# The progress tracker's state for this build, read in on_files and used by on_page_markdown.
+_progress_state = None
+
+# The committed progress page, whose marker the build fills.
+_PROGRESS_PAGE = "progress/index.md"
+
+
+def load_progress(root):
+    """The progress tracker's state for the checkout at `root`, from `coney_tools` in `python/src`.
+
+    The docs build installs only MkDocs, so the tracker is imported from the checkout instead of from an installed
+    package. Raises RuntimeError, naming the problems, when the tracker's inputs disagree with each other.
+    """
+    src = str(Path(root) / "python" / "src")
+    if src not in sys.path:
+        sys.path.insert(0, src)
+    from coney_tools import progress
+    from coney_tools.config import ConfigError
+
+    try:
+        state = progress.load(Path(root))
+    except ConfigError as error:
+        raise RuntimeError(str(error)) from error
+    if state.problems:
+        raise RuntimeError("the progress inputs disagree:\n  " + "\n  ".join(state.problems))
+    return state
+
+
+def fill_progress_page(markdown, state):
+    """The progress page's Markdown with its marker replaced by the generated tables of `state`."""
+    from coney_tools import progress_render
+
+    return progress_render.fill_page(markdown, progress_render.render_page(state), _PROGRESS_PAGE)
+
+
+def progress_badge_files(state):
+    """The README's badges as {path in the site: JSON text}, one shields.io endpoint file each."""
+    from coney_tools import progress_render
+
+    return {f"{progress_render.BADGES_DIR}/{name}": text for name, text in progress_render.badge_files(state).items()}
+
+
+def on_page_markdown(markdown, config, page=None, **_):
+    """Rewrites `repo:<path>` links to the file on the default branch, before MkDocs validates links.
+
+    On the progress page it first replaces the marker with the generated tables.
+    """
+    if page is not None and page.file.src_uri == _PROGRESS_PAGE and _progress_state is not None:
+        markdown = fill_progress_page(markdown, _progress_state)
     base = config.get("repo_url")
     if not base:
         # No repository to point at (a copy without git): an empty anchor keeps the strict build passing.
@@ -126,11 +175,19 @@ def _git_commits(root):
 
 
 def on_files(files, config):
-    """Adds the virtual `changelog.md` page, so no generated file lives in the repository."""
+    """Adds the virtual `changelog.md` page and the progress badge files, so no generated file is committed."""
     # Imported here so the rendering function can be tested without MkDocs installed.
+    from mkdocs.exceptions import PluginError
     from mkdocs.structure.files import File
 
+    global _progress_state
     root = Path(config.config_file_path).parent
+    try:
+        _progress_state = load_progress(root)
+    except (RuntimeError, ImportError, OSError) as error:
+        raise PluginError(f"progress: {error}") from error
+    for uri, text in progress_badge_files(_progress_state).items():
+        files.append(File.generated(config, uri, content=text))
     commits, note = _git_commits(root)
     content = render_changelog(commits or [], config.get("repo_url"), note)
     files.append(File.generated(config, "changelog.md", content=content))

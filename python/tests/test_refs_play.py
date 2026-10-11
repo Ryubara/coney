@@ -82,7 +82,8 @@ def test_warrior_classes_name_the_warriors_and_their_power_class() -> None:
     scripts = {"config_easy.lua": ChunkFacts(calls=[_call("CfgWarriorClass", 6.0, *stats)])}
     (entry,) = refs_play.warrior_classes(scripts)
     assert entry["warrior"] == "Rembrandt, Ash" and entry["power_class"] == 64 and 30 in entry["types"]
-    assert entry["v05"] == 1 and entry["rage_max"] == 3 and entry["v0d"] == 13
+    assert entry["health_scale"] == 1 and entry["rage_max"] == 3 and entry["v0d"] == 13
+    assert entry["cuffing"] == 7 and entry["tagging"] == 9 and entry["lock_pick"] == 10
 
 
 def test_attacks_list_kinds_then_tables() -> None:

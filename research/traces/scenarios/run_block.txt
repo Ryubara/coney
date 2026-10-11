@@ -1,0 +1,7 @@
+# R1 held at a run, twice, then held through the stop. Frames are character updates of 1/30 s.
+5 stick left 0 98
+50 press r1
+90 release r1
+110 press r1
+140 stick left 0 0
+180 release r1

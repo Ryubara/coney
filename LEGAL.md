@@ -31,6 +31,11 @@ never include the assets themselves (model, texture, sound or movie files, or te
 text (subtitles, dialogue, menu strings beyond short labels) or script source, and they are never a file copied out of
 the disc.
 
+**Issue attachments**, decided 2026-10-11: gameplay screenshots and short videos of Coney or of the original may
+be attached to issues, to show a bug. Still never asset files, save files, dumps, executables, BIOS images, disc
+images, the game's text or script source; they are not committed to the repository either (a research page describes
+what they show).
+
 ## Clean room
 
 Ghidra pseudocode and disassembly are for reading, by analyst agents and by humans doing research. Analysts read the
