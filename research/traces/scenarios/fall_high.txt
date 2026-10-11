@@ -1,0 +1,2 @@
+# No input: he falls from where the setup put him (frame 5) and lands.
+0 stick left 0 0

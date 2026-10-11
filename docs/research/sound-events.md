@@ -260,9 +260,13 @@ Confirmed (code):
   record `+0x0c` is `0x10001` (kind 4, the windows), `[2 GLASS][2 GLASS]` otherwise (kind 6).
 - **Explosion**: a molotov's hit prepares `vags/fire/car_explodes<n>`, `n` random 1-3, at the car
   (`Sound_PrepareAtByName`, kept at car `+0x12fc`), and `Car_DoExplode` (`0x0038ab50`) starts it.
-- **The rock**: a hit by a human or a held weapon starts the car rocking (`Car_StartHitRock`, `0x0038b1f8`, the
-  only caller is `Car_OnHit`; [Cars: the rock](cars.md#rock)), which plays `vags/vehicles/shocks_squeak_0<n>`
-  (`n` 1-3) at the car. (An earlier reading put this in the explosion; the explosion does not call it.)
+- **The rock** (shocks): a hit by a human or by an object a human holds (not a thrown one) starts the car rocking away
+  from the hit (`Car_StartHitRock`, `0x0038b1f8`, the only caller is `Car_OnHit`; [Cars: the rock](cars.md#rock); the
+  rock itself is inferred from the fields it sets), strength 2 bare-handed, 4 for a human with flag `0x400000` and 3
+  for a held object, which plays `vags/vehicles/shocks_squeak_0<n>` (`n` random 1-3) at the car. It is skipped while
+  the hitter's `+0x568` is set (for a held object, the parts this swing has hit; inferred: once per swing). So a
+  window smash plays a squeak with the glass; `0xe77006e7` and `0x90773671` are `_02` and `_03` ([the
+  hashes](#objects)). (An earlier reading put this in the explosion; the explosion does not call it.)
 - **Loose parts** (`Car_UpdateLoosePart`, `0x00387f18`): a part's impact above 4 m/s plays
   `Sound_PlayMaterialPair(1 / (n + 1), 119 CAR_PART, triangle material)` (`n` the part's byte `+0x97`) and
   `(…, 120 CAR_PART_STREAM, …)`;
@@ -308,6 +312,22 @@ pitch 1, duckable). Glass panes, doors and barriers are on [World objects](objec
   (`SubFadeFlame_Init` `0x003c7de0`), the level-51 bus `vags/cutscenes/l51/bus_idle_02` (`PartTruckSound_Update`
   `0x003fce60`). Swinging and sliding doors play their record's hashes (`Sound_PlayHashAt` `0x003a6ee8`; the store
   door's first hit `0xcf6586b2`).
+- **Trains and sparks.** `PartTrainSound_Update` (`0x003db690`) starts a sound only while its last one has ended
+  and a camera is within 80 m: in the levels whose id is `0x1f` or `0x57`, one of `vags/vehicles/train_pass1`-`5`
+  (`0x005145f0`) when a camera is within 10 m or nothing blocks the 100 m ray from the train to the player; in every
+  other level one of `vags/vehicles/subway_squeak1`-`5` (`0x00514608`) when a camera is within 40 m. It picks one
+  of the five at random each time (`Random_Int(4)` is 0 to 4) and moves it with the train. The subway sparks
+  (`PartSSubwaySparks_OnMessage` `0x003db368`, table `0x005145d8`) and each `sub_spark_effect` burst
+  (`SubSparkEffect_Update` `0x003e1648`, table `0x00514620`) play one of five entries at random, each entry
+  `vags/ambient/sparks/spark1` or `spark6` (3:2 for the subway sparks, 2:3 for the bursts), banked in `sound`,
+  `armies`, `gallery` and `level81`. Confirmed (code) at the addresses cited; the names are confirmed (name hash):
+  each is the CRC-32 of the name, whose last 16 characters stand before its record in the sound list's debug copy
+  ([Xbox assets](xbox-assets.md#sound)).
+- **The hashes, by name** (confirmed (name hash): the CRC-32 of each name matches, and the tables hold them in this
+  order): `0x00514608` holds `subway_squeak1`-`5` as `0xc2fff866`, `0x5bf6a9dc`, `0x2cf1994a`, `0xb2950ce9`,
+  `0xc5923c7f`; the sparks tables hold `spark1` `0x0c9417aa` and `spark6` `0x92f08209`; `shocks_squeak_02` and
+  `_03` are `0xe77006e7` and `0x90773671`. These are the nine sounds of level99's checkpoint 2 that had no name;
+  that its trains squeak rather than pass fits level99 not being level `0x1f` or `0x57` (inferred).
 
 ## Speech the game says {#speech}
 
@@ -502,6 +522,58 @@ Confirmed (code). 2D sounds are `PlaySound2DByHash` / `ByName` with flags 0, 0 a
 | The "go" sign | `vags/misc/bleep27` while it shows, one at a time, not while paused | `GoSign_Render` `0x0019ed28` | confirmed (code) |
 | A counter panel's bonus | `vags/interface/menu/bonuspart_01` | `CounterPanels_SetValue` `0x001c3280` | confirmed (code) |
 | The angry breathing | `CfgBreathingSound`'s sound, 2D, its handle kept | `Breathing_Start` `0x00419030` | confirmed (code) |
+
+### The pick-up sound's lifetime {#pickup-sound}
+
+**The sounds.** `config_preload2.lua` gives the money, the flash, the spray can and the other power-ups the pick-up
+sound `vags/interface/powerup` and the mission items `vags/interface/mission_item` ([Inventory
+items](../references/inventory.md)). From the disc (`coney-tools audio list sounds`, and the bank samples' frame flags
+read by a scratch script; counts and flags only), corroborated against the code's loop test (`Sound_IsLooping`
+`0x0010f2c8`, class flag `0x01`):
+
+| Sound | Hash | Kind | Class, flags | Priority | Volume | Rate | Size | ADPCM frame flags |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `vags/interface/powerup` | `0x7b3534e9` | bank sample (in `sound`, `armies`, `level3`, `level81`, `spookorama` and four more banks, all alike) | 4, **`0x00`: not looping**, not positional | 12 | 69 % | 18,000 Hz | 3,760 bytes, 235 frames | frame 232 `0x01` (end), frame 233 `0x07`, the rest 0 |
+| `vags/interface/mission_item` | `0x814828dd` | bank sample (five banks) | 4, `0x00` | 12 | 69 % | 15,000 Hz | 1,712 bytes, 107 frames | frame 104 `0x01`, frame 105 `0x07` |
+
+So neither sound loops by its class, and each sample is a standard one-shot: the frame flagged `0x01` alone (end,
+without repeat) ends the voice there, and the frame after it, flagged `0x07` (loop start, repeat, end), is the usual
+silent padding frame that loops on itself if a voice ever reaches it (inferred from the SPU2's ADPCM flags; Coney's
+`decodeAdpcm(..., stopAtEnd = true)` stops at the first end flag, as it should).
+
+**How the original plays and releases it**, confirmed (code):
+
+1. `Human_PickUpObject` (`0x0023bf00`; each item's call, e.g. at `0x0023c174`) plays the item's sound with
+   `PlaySound2DByHash(mgr, hash, 0, 0, duckable 1)` (`0x0010fcd8`): no position, the default (null) owner, and the
+   returned handle is **discarded** (the next instruction reloads its registers): nobody can stop it, and nothing has
+   to. The dealer's and the mugging's plays (table above) are 2D as well; whether they keep the handle was not
+   checked.
+2. `AudioManager_Play` starts the bank sample on a free SPU2 voice (13-47) or a victim's ([Starting a
+   sound](sound.md#play)); being class `0x00`, no loop is requested.
+3. Each update `Tasks_Update` (`0x00112b10`) frees a real task when its state is 2 or 3 or when the device reports
+   its voice idle (`AudioDevice_VoiceState`, slot `+0x108`, `0x0014d168` → `MS_GetVoiceState`), which happens when
+   the SPU2 reaches the end flag. A virtual task (no voice) is freed when its length, 0 whole seconds for these
+   (`AudioDevice_Duration` rounds down), has passed, so at once.
+
+So the original's pick-up sound ends on its own after about 0.37 s (`powerup`: 232 frames × 28 samples ÷ 18,000 Hz)
+or 0.2 s (`mission_item`), whatever happens to the picked-up object; it is not tied to the object, the human or the
+pause.
+
+**Owner item 22 (the pick-up sound looping until paused)**: nothing in the data or the original's code loops these
+sounds, so the loop is Coney's. Coney decodes the sample to its end flag and gives a bank sample loop points only
+for a looping class (`repo:src/audio/sound_bank.cpp`), so the data is not the cause either; what remains is the
+engine side. **Coney fixes**:
+
+1. Reproduce with `--event-log` and look at the `sound` events: many `0x7b3534e9` plays (one a step) mean the pick-up
+   is re-triggered (a pick-up, purchase or mugging path firing every update, or a record not removed), not a loop;
+   one play means a voice that never ends.
+2. For the one-play case, check that a mixer voice playing a `PcmSound` with no loop points ends at its last frame
+   and that `SoundEngine::update` frees its task (`!m_mixer.isPlaying(...)`), and that a voice reused after a
+   steal, or a looping sound's voice handle reused by the pick-up, keeps neither the old loop points nor the old
+   task (the symptom fits a looping voice that lost its owner: pausing stops every voice, so it ends there).
+3. Test: play `0x7b3534e9` through `GameSound::play2D` on the offline device and step past 0.4 s: the voice has
+   ended and the task is free; with every voice busy (a steal), the same holds; a looping class sound stopped by
+   handle while a pick-up starts does not leave either playing.
 
 ## World one-shots {#world}
 

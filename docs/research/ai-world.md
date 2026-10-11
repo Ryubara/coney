@@ -14,7 +14,7 @@ here, not repeated.
 | Topic | Where it is covered |
 | --- | --- |
 | Which goal fetches an object, the object search, letting go | [AI: Fetching an object](ai.md#get-item), [Objects in an AI's hands](ai.md#ai-objects) |
-| World flags (activities) | [AI: World flags](ai.md#ai-flags) |
+| World flags (activities) | [AI: World flags](ai.md#ai-flags); reinforcements spawned on them: [below](#spawner-reinforcements) |
 | Hiding, cars and trains in brief | [AI: Cover, cars and trains](ai.md#ai-hazards) |
 | Route links: climbs, jumps, doors, charges | [AI: Following a route](ai.md#route-follow), [Jump legs](ai.md#route-jump) |
 | How the scripts drive the AI | [AI: How the scripts drive the AI](ai.md#script-control) |
@@ -247,6 +247,61 @@ An AI never opens a closed door on its own. Confirmed (code) at the addresses ci
     - otherwise the door is told to open again every 500 ms.
 
   [AI: Spawners](ai.md#spawners) gives the slot's other fields.
+
+### Where a reinforcement spawner puts its humans {#spawner-reinforcements}
+
+A spawner in state 7 ("reinforcements", [Spawner states](../references/spawner-states.md)) does not spawn at its own
+position: `Spawner_PlaceState7` (`0x001679e8`) puts each human on a **pedestrian flag** (the flag list of
+[AI: World flags](ai.md#ai-flags)), out of the camera's sight and away from the player. It is the placement of every
+spawner `level34` runs ([Scripts: level34](scripting.md#level34-start)), and of states 7 in `level2`, `level3`,
+`level5`, `level9`, `level11` and `level14`. One try per spawner update; a failed try spawns nothing that update.
+Confirmed (code) at the addresses cited unless marked:
+
+1. **Camera and player.** The camera of the spawner's player (`+0xe1`; player 1's when that one has none) and
+   that player's human (game state `+0x228 + 4 × player`); no camera, no spawn.
+2. **The aim.** The origin is the camera's position (vtable `+0x21c`) with its z replaced by the player's feet z
+   (position table `0x00714b00`). The forward is the camera's y axis (vtable `+0xac`, then `0x003363b0`) with z set
+   to 0 and not normalised again. *h* = (field of view (vtable `+0x2ac`) × 0.5 + 10)° in radians. One angle θ =
+   `Random_FloatRange2(0, 2π)` (`0x00335420`).
+3. **The distance** *d*: when θ lies in [*h*, 2π − *h*] (beside or behind the view) **35 m**; otherwise (ahead,
+   inside the cone) the camera's view distance (vtable `+0x20c`) capped at **70 m** (`0x0050cc60`). Code at
+   `0x00167b74`-`0x00167ba8`.
+4. **The aim point** = origin + *d* × the forward turned by θ about the vertical (the quaternion axis at
+   `0x00511740`).
+5. **The flag.** `FlagList_FindNearest(d, aim point, player's feet, type, 0)` (`0x002adac0`): of the listed flags
+   (`0x006e9440`, 128 entries of 20 bytes) that have an activity (`+0xd4` ≠ 0), lie **at least *d* from the player's
+   feet** (3D) and suit the character class of the spawner's **first type** (slot 0 of `+0x24`, through
+   `FlagNet_GetMask` `0x002a7538`: a flag whose mask `+0xd8` is 0 suits anyone, and so does a class whose mask is
+   `0x20`), the one **nearest the aim point**. No flag, no spawn. The human stands on that flag's position.
+6. **Turf.** The flag must lie in one of the gang's turf boxes (`Gang_IsPointInTurf` `0x001652e8`; a gang with no
+   turf takes any, [AI: Out of sight](ai.md#spawner-placement)).
+7. **Unseen.** `Camera_CanSeePoint(0.3, d, camera, flag + 1.6 m up)` (`0x00122548`, [Off screen](ai.md#spawner-unseen))
+   must not answer 1. With two players, the other player's camera must not see it either, at its view distance capped
+   at 70 m and raised to at least 35 m.
+8. **Not crowded.** With z back on the flag, the gang's first member that still resolves (16 handles at gang
+   `+0x48`) is the reference. A gang with none passes. Otherwise `Humans_ListNear` (`0x0029c6d0`, radius 5 m passed
+   in `f12`) lists the humans near the flag that are friendly to him (`Filter_IsFriendly` `0x0029c3f8`). Any one
+   there refuses the spot. Code at `0x00167db0`-`0x00167e44`.
+
+Nothing in this function sends the human anywhere: the first live member is only the friendliness reference. What a
+reinforcement does next is its spawn callback's business (`level34`'s give a riot goal or a flag-net walk). The
+[Spawners](ai.md#spawners) summary used to say the human is sent to that member; this reading replaces it.
+
+**In Coney** (`repo:src/ai/spawners.cpp`, `Spawners::spawnOne`): state 7 is placed as state 8 with a value of 0, by
+the outward route search from the player's node. With a value of 0, any node outside the view cone qualifies,
+however close, so the human appears beside the player on whatever route graph the player stands on. In `level34`
+that is the subway the mission starts in (owner checklist item 17).
+
+**Coney fixes (state 7).**
+
+1. Give state 7 its own placement, the steps above: one random angle a try, 35 m beside or behind, up to 70 m ahead,
+   the nearest suitable pedestrian flag to the aim point at least that far from the player, in the gang's turf,
+   unseen from 1.6 m above, and no human friendly to the gang's first live member within 5 m.
+2. Spawn nothing in an update whose try fails, so the spawner tries again on its next update.
+3. Leave the human where the flag is: no walk to the first live member.
+4. Tests: synthetic flags and camera. A flag inside 35 m behind the player is never chosen. The chosen flag is the
+   nearest qualifying one to the aim point. A flag in view, outside the turf, or with a friend within 5 m refuses the
+   spot. No flag means no spawn.
 
 ### Reacting to the world {#reactions}
 
