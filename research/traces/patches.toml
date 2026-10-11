@@ -303,6 +303,22 @@ address = 0x001ce9a8
 original = [0x27bdffd0, 0x7fb10010]
 log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a1", name = "anim" }, { value = "[a0 + 0x3a0]", name = "name" }]
 
+[hook.workout-rep]
+description = "Each call of Workout_CallRep (0x00234768, the gait blend's wrap callback during a workout): the human and its effort (+0x670)."
+research = "docs/research/workouts.md#repetitions"
+address = 0x00234768
+# addiu sp,sp,-0x60; lui v0,0x51
+original = [0x27bdffa0, 0x3c020051]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a0", name = "human" }, { value = "[a0 + 0x670]", name = "effort", type = "f32" }, { value = "[a0 + 0x674]", name = "hold" }]
+
+[hook.workout-end]
+description = "Each call of Human_EndWorkout (0x0022d380, state 0x1c or HuStopWorkout): the human, its effort (+0x670) and the caller."
+research = "docs/research/workouts.md#the-end"
+address = 0x0022d380
+# addiu sp,sp,-0x20; ori a1,zero,0x8000
+original = [0x27bdffe0, 0x34058000]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }, { value = "[a0 + 0x670]", name = "effort", type = "f32" }]
+
 [hook.object-handler]
 description = "Each call of the script handler component's message entry (0x00384c38, a world object's vtable +0x44 and Human_OnEvent reach it): the component, the message number and its subject (+0x24)."
 research = "docs/research/scripting.md#message-handlers"
