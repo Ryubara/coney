@@ -29,16 +29,16 @@ at the top of the repository's `README.md`.
 ## Overall
 
 ![Reimplemented: 17.4%](https://img.shields.io/badge/reimplemented-17.4%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
-![Understood: 100.0%](https://img.shields.io/badge/understood-100.0%25-green)
+![Understood: 99.9%](https://img.shields.io/badge/understood-99.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.4% of the game's own code (585,352 of 3,354,776 bytes, 2,156 functions) |
+| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.4% of the game's own code (585,352 of 3,354,776 bytes, 2,159 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
-| **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,468 of 3,284,276 bytes; 11,424 of 11,426 functions, 100.0%) |
+| **Understood** | `████████████████████` | 99.9% named in Ghidra and cited with evidence (3,282,584 of 3,284,276 bytes; 11,421 of 11,426 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-881 reimplemented function(s) have no size yet and add no bytes.
+884 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -81,7 +81,7 @@ at the top of the repository's `README.md`.
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 30 | 17,904 |
 | `Scripting` | `██████▏░░░░░░░░░░░░░` | 30.6% | 224 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `███▍░░░░░░░░░░░░░░░░` | 17.1% | 177 | 531,312 |
+| `TaskEngine` | `███▍░░░░░░░░░░░░░░░░` | 17.1% | 180 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 33 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 32 | 22,008 |
@@ -100,7 +100,7 @@ at the top of the repository's `README.md`.
 | `Core` | `████████████████████` | 100.0% | 22 of 22 | 22 | 22 | 2,816 |
 | `Device/ps2` | `████████████████████` | 100.0% | 316 of 316 | 316 | 316 | 59,940 |
 | `FileIO` | `████████████████████` | 100.0% | 58 of 58 | 58 | 58 | 6,780 |
-| `GameModes` | `████████████████████` | 100.0% | 450 of 450 | 450 | 450 | 98,632 |
+| `GameModes` | `███████████████████▉` | 99.1% | 447 of 450 | 450 | 447 | 98,632 |
 | `Graphics` | `████████████████████` | 100.0% | 630 of 630 | 630 | 630 | 191,888 |
 | `GUI` | `████████████████████` | 100.0% | 1,725 of 1,725 | 1,725 | 1,725 | 492,072 |
 | `Human` | `████████████████████` | 100.0% | 3,313 of 3,313 | 3,313 | 3,313 | 1,080,344 |
@@ -118,7 +118,7 @@ at the top of the repository's `README.md`.
 | `Movie` | `████████████████████` | 100.0% | 11 of 11 | 11 | 11 | 5,136 |
 | `link-once` | `████████████████████` | 100.0% | 651 of 651 | 651 | 651 | 95,912 |
 | Unattributed | `████████████████████` | 100.0% | 44 of 44 | 44 | 44 | 20,936 |
-| **All** | `████████████████████` | 100.0% | 11,424 of 11,426 | 11,426 | 11,424 | 3,284,276 |
+| **All** | `████████████████████` | 99.9% | 11,421 of 11,426 | 11,426 | 11,421 | 3,284,276 |
 
 ## Research coverage
 
@@ -2043,6 +2043,7 @@ at the top of the repository's `README.md`.
 | `0x003a50e0` | `Camera_IsPointInPlayerView` | `TaskEngine` | not filled in |
 | `0x003a51f8` | `Cameras_IsPointVisibleAny` | `TaskEngine` | not filled in |
 | `0x003a5280` | `Cameras_IsWithinRange` | `TaskEngine` | not filled in |
+| `0x003a5530` | `ScriptObj_SpawnThrownDebris` | `TaskEngine` | not filled in |
 | `0x003ac4d0` | `Radio_Setup` | `TaskEngine` | not filled in |
 | `0x003ac600` | `Radio_SetMode` | `TaskEngine` | not filled in |
 | `0x003ad440` | `Radio_Update` | `TaskEngine` | not filled in |
@@ -2061,6 +2062,8 @@ at the top of the repository's `README.md`.
 | `0x003c4c38` | `SubFireball_Update` | `TaskEngine` | not filled in |
 | `0x003c54b8` | `SubExplode_Update` | `TaskEngine` | not filled in |
 | `0x003c55e8` | `ScriptType_Find` | `TaskEngine` | not filled in |
+| `0x003c61d8` | `FadeObject_Update` | `TaskEngine` | not filled in |
+| `0x003c6ae0` | `FadeObject_Launch` | `TaskEngine` | not filled in |
 | `0x003ca658` | `Fog3D_WispInit` | `TaskEngine` | not filled in |
 | `0x003ca9d8` | `Fog3D_WispUpdate` | `TaskEngine` | not filled in |
 | `0x003cadd8` | `Fog3D_EmitterUpdate` | `TaskEngine` | not filled in |

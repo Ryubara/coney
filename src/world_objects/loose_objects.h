@@ -14,10 +14,12 @@
 // what its move meets, and on its first floor contact starts a "settle", a short eased turn onto its nearest face run
 // on the 60 Hz physics tick; its next floor contact once the settle is done stops it. The original runs the fall in
 // the world object's own update and the settle in the physics step; Coney runs both from one fixed 1/30 s step (one
-// update, then two settle ticks), which gives the same sequence. A thrown object wears on its first contact, which
-// breaks a bottle, a brick or a ball.
+// update, then two settle ticks), which gives the same sequence. An object wears on its contacts by its class (an
+// `overhead_weapon` on every contact, the others on the first one after a throw), which breaks a bottle or a trash
+// can; a broken prop's `fade_object` pieces fly as loose objects and stop dead on landing.
 // Research: docs/research/physics.md#settle, docs/research/physics.md#movers, docs/research/physics.md#step,
-// docs/research/physics.md#attributes, docs/research/objects.md#held, docs/research/objects.md#throws
+// docs/research/physics.md#attributes, docs/research/objects.md#held, docs/research/objects.md#throws,
+// docs/research/script-types.md#fade-object, docs/research/sound-events.md#objects
 
 namespace coney::world_objects {
 
@@ -102,8 +104,17 @@ struct LooseObject {
     std::optional<SettleTurn> settle;
     /// Body flag `1`: a throw set it, so the next contact wears the object (once per throw).
     bool thrown = false;
-    /// Whether the object's class wears on such a contact (**Coney's reading**, the classes built: `thrown_weapon`).
-    bool wears = false;
+    /// The object wears on every contact, thrown or not: an `overhead_weapon`, or the `GUITAR` material.
+    bool wearsAlways = false;
+    /// A `fade_object` piece: on the update after a level contact it stops dead (FadeObject_Update's landing).
+    bool fades = false;
+    /// A level contact was met (object flag `0x20000000`): a fade piece's next update is its landing.
+    bool landing = false;
+    /// `+0xb0`, the last contact's vector: its normal × the speed into the surface × the update's length, out of the
+    /// surface; zero before any contact.
+    anim::Vec3 contactVector;
+    /// `+0x13c`, the level impacts so far (**Coney's stand-in**: counted per flight, not per object).
+    int impacts = 0;
     double thrower = 0;                ///< `+0x11c`, the last holder: who threw it; 0 for none.
     std::uint8_t counter = 0xff;       ///< `+0x10d`, its hits left (`0xff` never wears).
     std::uint8_t secondCounter = 0xff; ///< `+0x10e`, the hits a flying or held object spends first.
@@ -117,14 +128,23 @@ struct LooseObject {
     [[nodiscard]] int interval() const { return airborne || settling ? 2 : 20; }
 };
 
+/// One contact of a flight with the level mesh that did not break the object (`WorldObject_OnImpact`'s plain bounce):
+/// where, on what, how fast the object was moving, and how many level impacts it had before (`n`).
+struct LooseImpact {
+    anim::Vec3 point;
+    RayContact contact;
+    float speed = 0.0F; ///< The object's speed as it met the surface, m/s.
+    int index = 0;      ///< `n`: the level impacts before this one.
+};
+
 /// The loose objects in flight, by handle. Stepped once per fixed 1/30 s step; an object that comes to rest leaves.
 ///
 /// **Coney's stand-ins**: the shape's move is a ray from its centre along the move, as long as the move plus the
 /// shape's reach that way, and a contact leaves the shape kBackOff in front of the surface however shallow the move
 /// went into it (the original sweeps the shape, and leaves a contact under 0.01 m deep where it is). An object of a
 /// type with `axis` 0 never settles, so it never stops (as in the original, inferred); the scripts' throwable ones
-/// break on their first contact. Only the wear of a thrown `thrown_weapon` is built (an `overhead_weapon`'s wear on
-/// every contact, the `GUITAR` material's and a held object's are not).
+/// break on their first contact. A held object's wear is not built (a held object meets nothing here), nor the test
+/// against a world object already spent.
 ///
 /// Research: docs/research/physics.md#settle, docs/research/physics.md#movers
 class LooseObjects {
@@ -146,15 +166,18 @@ class LooseObjects {
     /// Settle ticks (60 Hz) per step (1/30 s).
     static constexpr int kTicksPerStep = 2;
 
-    /// What an object leaves a hand with: its type's settle axes, restitution and body, and its counters (`0xff` for a
-    /// type value of 0, which never wears) and whether its class wears on a thrown contact.
+    /// What an object leaves a hand with: its type's settle axes, restitution and body; its counters (`0xff` for a
+    /// type value of 0, which never wears; a caller puts in the object's own when earlier throws wore them); whether
+    /// it wears on every contact (an `overhead_weapon` or `GUITAR`) rather than on a throw's first only; and whether it
+    /// is a `fade_object` piece.
     struct Kind {
         int axisMask = 0;
         float restitution = 0.0F;
         LooseShape shape;
         std::uint8_t counter = 0xff;
         std::uint8_t secondCounter = 0xff;
-        bool wears = false;
+        bool wearsAlways = false;
+        bool fades = false;
 
         /// The kind of an object of `type`.
         [[nodiscard]] static Kind of(const ObjectType& type);
@@ -175,9 +198,11 @@ class LooseObjects {
     /// One step: each object's update (fall, move, contact), then kTicksPerStep settle ticks. Objects that came to
     /// rest are reported to `rested` (may be empty) with their final state and leave; objects a contact broke
     /// (LooseObject::broken) are reported to `broke` (may be empty) and leave too: their class's break is the
-    /// caller's.
+    /// caller's. Each level contact that did not break its object is reported to `impacted` (may be empty) for its
+    /// sound.
     void step(const RayTest& ray, const std::function<void(double, const LooseObject&)>& rested = {},
-              const std::function<void(double, const LooseObject&)>& broke = {});
+              const std::function<void(double, const LooseObject&)>& broke = {},
+              const std::function<void(double, const LooseObject&, const LooseImpact&)>& impacted = {});
 
     /// The object `handle` in flight; null when it is not.
     [[nodiscard]] const LooseObject* find(double handle) const;
@@ -189,13 +214,16 @@ class LooseObjects {
     void clear() { m_objects.clear(); }
 
   private:
-    // One object's update: gravity, its move and what the move met.
+    // One object's update: a fade piece's landing, gravity, its move and what the move met; a level contact that
+    // did not break it goes into `impact`.
     // @orig 0x00395a10 WorldObject_Integrate (unknown)
-    void update(LooseObject& object, const RayTest& ray);
-    // A contact at `point` (where the move's ray met the surface) with `contact.normal`: the answer of the world
-    // object's contact handler, carried out.
+    void update(LooseObject& object, const RayTest& ray, std::optional<LooseImpact>& impact);
+    // A contact at `point` (where the move's ray met the surface) with `contact.normal` in an update of `dt` seconds:
+    // the answer of the world object's contact handler, carried out; a level contact that did not break the object
+    // goes into `impact`.
     // @orig 0x00394050 WorldObject_OnContact (unknown)
-    void contact(LooseObject& object, anim::Vec3 point, const RayContact& contact);
+    void contact(LooseObject& object, anim::Vec3 point, const RayContact& contact, float dt,
+                 std::optional<LooseImpact>& impact);
 
     std::map<double, LooseObject> m_objects;
 };

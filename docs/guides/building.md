@@ -79,6 +79,10 @@ The compiler and those tools are on `PATH` only inside a shell with the MSVC env
 For a Visual Studio install, replace `BuildTools` with your edition (`Community`, `Professional` or `Enterprise`)
 and `Program Files (x86)` with `Program Files`. Every `cmake` and `ctest` command below runs from that shell.
 
+In Git Bash, MSYS converts arguments that look like paths: a `C:\...` argument to `sed` or `git show
+origin/main:<file>` can arrive mangled. Set `MSYS_NO_PATHCONV=1` for such a command, or write the script to a file
+and run it, rather than quoting backslashes through a heredoc.
+
 ### Linux
 
 On Ubuntu 24.04 (other distributions have the same packages under similar names):
@@ -1025,6 +1029,9 @@ runs, so a job recompiles only what changed; each job prints its hit rate at the
 | `docs` | `mkdocs build --strict`, markdownlint over every Markdown file, actionlint over the workflows |
 | `pr` | the pull request title and every commit title of it against the commit title rules, that code changes come with docs changes, and the description against the template (pull requests only; editing the title or description reruns it) |
 
+On Windows, do not run WSL builds or clang-tidy locally to stand in for the Linux and macOS jobs: GitHub CI is that
+gate, and a failure there is fixed forward on the branch.
+
 ### What a pull request runs {#what-a-pull-request-runs}
 
 Runners are shared (about 20 jobs at once, 5 of them on macOS), so a pull request runs only what its change can break.
@@ -1046,5 +1053,5 @@ A skipped matrix job reports its name unexpanded (`build (${{ matrix.name }})`),
 required checks. Each workflow ends with a gate job instead, `build-ok` and `python-ok`, which runs every time and
 fails when a job it covers failed or was cancelled; the ruleset on `main` requires the gates, not the jobs behind them.
 
-If a job fails, the commands above reproduce it locally. The workflow files under `.github/workflows/` are short and
-list every step.
+If a job fails, the commands above reproduce it locally on the platform you are on. The workflow files under
+`.github/workflows/` are short and list every step.

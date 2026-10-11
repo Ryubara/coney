@@ -122,6 +122,7 @@ nav:
           - In-game HUD: research/hud.md
           - Pause menu and mission failed: research/pause.md
           - Rumble mode: research/rumble.md
+          - Armies of the Night: research/armies.md
           - Particles and script types: research/particles.md
           - "Script types: the code of every type": research/script-types.md
           - Level loading: research/level-loading.md
@@ -143,6 +144,7 @@ nav:
           - "AI code index: brains, actions and tactics": research/ai-code.md
           - "AI goals: the code of every goal class": research/ai-goals.md
           - "AI and the world: objects, cars, doors and climbs": research/ai-world.md
+          - "AI pathing: holes, claims, jumps and status": research/ai-pathing.md
           - Cars: research/cars.md
           - Camera: research/camera.md
           - Scenes (cutscenes): research/scenes.md

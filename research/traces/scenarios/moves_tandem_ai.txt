@@ -1,0 +1,4 @@
+# Circle at 10 grabs PoizoCiv from the front (the holds 82 / 83 from about 36); R1 tapped at 45 spins him to the rear
+# hold (78 / 79, then 84 / 85). Ash is placed and given the fight by the scenario at 74-78. Stick centred throughout.
+10 tap circle
+45 tap r1
