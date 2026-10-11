@@ -22,11 +22,14 @@ inline constexpr std::uint32_t kSwapPlayerHolds = 0xe;
 inline constexpr float kSwapReach = 1.5F;
 
 /// Step 7 of a Warrior's think, the swap prompt: the human is talkable (`+0x1b2`) exactly when the nearest player
-/// within 1.5 m stands at a gait below jog, one of the two holds an object, and this Warrior stands (gait 0) in the
-/// player's gang with no attacker slots taken on him and in front of the player (`Human_GetSideOf` = 0); then its
-/// prompt is `GSTRING.HUD` 0xc (both hold), 0xd (he holds) or 0xe (the player holds), which replaces any text of its
-/// own. **Coney's stand-ins**: the blocked and held-flag tests and the sparring byte (`+0x2e5`) and `+0x121` are not
-/// modelled, so they pass or fail as if clear; the two-player swap (`PlayerBrain_Think`) is not built.
+/// within 1.5 m is free to act and stands at a gait below jog, one of the two holds an object, and this Warrior stands
+/// (gait 0) in the player's gang with no attacker slots taken on him, in front of the player (`Human_GetSideOf` = 0)
+/// and free to act; then its prompt is `GSTRING.HUD` 0xc (both hold), 0xd (he holds) or 0xe (the player holds), which
+/// replaces any text of its own. "Free to act" is `HumanRecord_AreActionsBlocked` false: not knocked out, arrested or
+/// wounded, so a downed Warrior offers no "Give Weapon". A Warrior whose brain is off (BrDead, a script's knock-out) is
+/// not talkable. **Coney's stand-ins**: the blocked mask's other states (for the player and the Warrior alike), the
+/// held-flag test, the sparring byte (`+0x2e5`) and `+0x121` are not modelled, so they pass or fail as if clear; the
+/// two-player swap (`PlayerBrain_Think`) is not built.
 ///
 /// Research: docs/research/ai.md#think-warrior, docs/research/hud.md#talk-prompt
 /// @orig 0x003052f0 WarriorBrain_Think (unknown)

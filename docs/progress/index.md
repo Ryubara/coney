@@ -33,12 +33,12 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▉░░░░░░░░░░░░░░░░` | 19.1% of the game's own code (641,048 of 3,354,776 bytes, 2,159 functions) |
+| **Reimplemented** | `███▉░░░░░░░░░░░░░░░░` | 19.1% of the game's own code (641,048 of 3,354,776 bytes, 2,160 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 99.9% named in Ghidra and cited with evidence (3,282,584 of 3,284,276 bytes; 11,421 of 11,426 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-824 reimplemented function(s) have no size yet and add no bytes.
+825 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -73,7 +73,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▋░░░░░░░░░░░░░` | 33.1% | 117 | 100,440 |
 | `Graphics` | `██▋░░░░░░░░░░░░░░░░░` | 12.8% | 91 | 195,624 |
 | `GUI` | `████▏░░░░░░░░░░░░░░░` | 20.7% | 246 | 497,416 |
-| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.8% | 802 | 1,096,672 |
+| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.8% | 803 | 1,096,672 |
 | `Maths (unnamed)` | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% | 9 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `▌░░░░░░░░░░░░░░░░░░░` | 2.5% | 10 | 79,032 |
@@ -898,6 +898,7 @@ at the top of the repository's `README.md`.
 | `0x00227a90` | `Human_ExitThrowAim` | `Human` | 156 |
 | `0x00227b30` | `Human_EnterThrowAim` | `Human` | 72 |
 | `0x00227d28` | `Human_IsInSceneState` | `Human` | not filled in |
+| `0x00228228` | `HumanRecord_AreActionsBlocked` | `Human` | not filled in |
 | `0x00228448` | `Human_HasHeld20080000` | `Human` | not filled in |
 | `0x00228d70` | `Cfg_AddHatFit` | `Human` | 244 |
 | `0x00229570` | `Human_BannerKind` | `Human` | 176 |

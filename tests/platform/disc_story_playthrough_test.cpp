@@ -1,148 +1,259 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // Checks against the player's own disc that the story's missions play through, as `coney --play-level NAME
-// --checkpoint N --input-script FILE` plays them: gameplay over the play mode with the scenes, the level's scripts as
-// the story reaches them, and a pad script (tests/support) driving player 1 with the analog sticks and buttons as a
-// player would. A run passes when the scripts reach the next checkpoint or the mission's end with no script error and
-// no failed mission. They run only when the environment variable CONEY_DISC names the disc and skip otherwise; they
-// print counts only (LEGAL.md).
+// --checkpoint N` plays them (the game session, tests/support/disc_session.h), driven by an adaptive pad: a driver that
+// reads where player 1 stands and what he is doing each frame and steers him with the analog sticks and buttons as a
+// player would (docs/guides/testing.md#playthrough-tests). A run passes when the scripts reach the next checkpoint with
+// no script error and no failed mission. They run only when the environment variable CONEY_DISC names the disc and skip
+// otherwise; they print counts only (LEGAL.md).
 
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
-#include <expected>
-#include <filesystem>
 #include <functional>
-#include <memory>
 #include <optional>
+#include <span>
 #include <string>
-#include <string_view>
 #include <utility>
-#include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "core/game_random.h"
-#include "core/game_timer.h"
+#include "animation/anim_math.h"
 #include "core/input_script.h"
-#include "fileio/executable.h"
+#include "core/pad.h"
+#include "core/pads.h"
 #include "fileio/wad.h"
-#include "gamemodes/game_mode_stack.h"
-#include "gamemodes/gameplay_mode.h"
-#include "gamemodes/level_start.h"
+#include "human/human.h"
+#include "human/player.h"
 #include "platform/play_level_mode.h"
-#include "platform/render_engine.h"
-#include "scenes/scene_disc.h"
-#include "scenes/scene_list.h"
-#include "scenes/scene_player.h"
-#include "scripting/script_system.h"
 #include "support/disc_play_fixtures.h"
-#include "world/sector_budget.h"
+#include "support/disc_session.h"
 
 namespace {
 
-// What one scripted run reached.
-struct Playthrough {
-    bool loaded = false;
-    std::uint64_t scriptErrors = 0;
-    int checkpoint = 0;                       // GetCheckPoint() when the run ended
-    std::optional<int> missionComplete;       // HUDLaunchMissionComplete's kind, once called
-    std::optional<std::string> missionFailed; // HUDLaunchMissionFailed's reason, once called
-    int health = 0;                           // player 1's at the end
-    std::vector<std::string> errors;          // the scripts' error lines
+using coney::human::Traversal;
+
+// What a leg of a route asks of the driver.
+enum class Move : std::uint8_t {
+    Run,   // run at full deflection to the point; done within kArrived of it
+    Climb, // walk at kClimbStick toward the point beyond a face, tapping triangle near it; done once a climb has ended
+    Jump, // sprint (L2 held) along the leg's line and tap triangle from the point's x on; done once the jump has landed
 };
 
-// Plays `level` at `checkpoint` for `frames` frames with the pad script `script` (in tests/support), as main's
-// `--play-level` sets it up: the scripts with the game's random table and the preloads' turning, gameplay with the
-// scenes, the play mode as the scripts' cast configures it.
-Playthrough play(const coney::io::Wad& wad, std::string_view level, int checkpoint, const std::string& script,
-                 std::uint64_t frames) {
-    Playthrough run;
-    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
-    REQUIRE(engine.has_value());
-    if (!engine) {
-        return run;
-    }
-    coney::platform::RenderEngine& renderer = **engine;
-    coney::world::SectorBudget budget(coney::world::kSectorPoolSize);
-    std::vector<std::string> log;
-    const std::function<void(std::string_view)> print = [&log](std::string_view line) { log.emplace_back(line); };
+// One leg of a route: what to do and its point on the roofs (x, y; game axes, metres).
+struct Leg {
+    Move move = Move::Run;
+    float x = 0.0F;
+    float y = 0.0F;
+};
 
-    // The scripts as main's levelScriptsFor makes them.
-    coney::LevelScriptOptions options;
-    auto table = coney::io::readExecutableWords(wad.disc(), coney::GameRandom::kExecutableName,
-                                                coney::GameRandom::kTableAddress, coney::GameRandom::kTableSize);
-    if (table) {
-        options.randomTable = *table;
-    }
-    coney::LevelScripts scripts(coney::script::wadScriptSource(wad), level, checkpoint, print, options);
-    coney::applyTurnConfig(scripts.recorded());
+// How close to a Run leg's point counts as there, m.
+constexpr float kArrived = 1.0F;
+// The stick's deflection on the way to a climb: below the jump's 0.95 (docs/research/characters.md#jump), so a tap
+// that finds no climbable face never jumps, and above the climb's 0.12.
+constexpr float kClimbStick = 0.9F;
+// How far from a Climb leg's point triangle starts being tapped, m: the point lies 1.5-2 m beyond the face, and a
+// standing climb takes a face within about 1.2 m (docs/research/characters.md#climb).
+constexpr float kClimbTapWithin = 4.0F;
+// Frames between triangle taps while a climb or a jump is wanted.
+constexpr int kTapEvery = 6;
+// How far past a Jump leg's take-off x the driver aims along the leg's line, m.
+constexpr float kJumpLead = 20.0F;
 
-    auto sceneList = coney::scenes::loadSceneList(wad);
-    REQUIRE(sceneList.has_value());
-    coney::GameplayMode gameplay(renderer, scripts.scripts(), scripts.context(), scripts.state(), scripts.humans(),
-                                 scripts.flags(), scripts.recorded(),
-                                 coney::test::playLoader(renderer, wad, budget, print), print);
-    gameplay.setLevel(std::string(level));
-    gameplay.setSceneMaker([&wad, &sceneList] {
-        return std::make_unique<coney::scenes::SceneSystem>(*sceneList, coney::scenes::wadSceneSource(wad),
-                                                            coney::scenes::SceneSystem::ScriptCall{});
-    });
+// A pad driven by what player 1 is doing: it follows `route` leg by leg, turning each wanted direction into the left
+// stick by the shown camera's heading (the stick moves the player relative to the camera,
+// docs/research/characters.md#input).
+class RouteDriver final : public coney::InputSource {
+  public:
+    // `player` gives player 1 once the level plays (null before).
+    RouteDriver(std::span<const Leg> route, std::function<const coney::human::Player*()> player)
+        : m_route(route), m_player(std::move(player)) {}
 
-    const std::filesystem::path path = std::filesystem::path(CONEY_TEST_SUPPORT_DIR) / script;
-    auto events = coney::loadInputScript(path.string());
-    REQUIRE(events.has_value());
-    if (!events) {
-        return run;
-    }
-    coney::ScriptedInput pad(std::move(*events));
-    coney::GameModeStack stack;
-    stack.setInput(&pad);
-    stack.push(gameplay);
-    coney::GameTimer timer;
-    timer.setFixedStep(true);
-    stack.runUntilEmpty(timer, {}, frames);
+    coney::PortSamples sample(std::uint64_t /*frame*/) override {
+        coney::PortSamples samples{};
+        coney::PadSample& pad = samples[0];
+        pad.connected = true;
+        const coney::human::Player* player = m_player();
+        if (player == nullptr || done()) {
+            return samples;
+        }
+        ++m_frame;
+        const coney::human::Human& human = player->human();
+        advance(human);
+        if (done()) {
+            return samples;
+        }
+        const Leg& leg = m_route[m_leg];
+        const coney::anim::Vec3 feet = human.position();
+        // Where to steer: the leg's point, or for a jump a point well past the take-off on the leg's line.
+        const float aimX = leg.move == Move::Jump ? leg.x + kJumpLead : leg.x;
+        const float dx = aimX - feet.x;
+        const float dy = leg.y - feet.y;
+        const float reach = std::hypot(leg.x - feet.x, leg.y - feet.y);
+        const float deflection = leg.move == Move::Climb ? kClimbStick : 1.0F;
+        steer(pad, *player, dx, dy, deflection);
 
-    const auto* playMode = dynamic_cast<const coney::platform::PlayLevelMode*>(gameplay.level());
-    run.loaded = playMode != nullptr;
-    run.scriptErrors = scripts.scripts().errors();
-    run.checkpoint = static_cast<int>(scripts.state().checkPoint);
-    run.missionComplete = scripts.host().missionComplete();
-    run.missionFailed = scripts.host().missionFailed();
-    if (playMode != nullptr) {
-        run.health = playMode->player().human().fighter().health().value();
+        // Buttons: L2 held for a jump's run-up; triangle tapped near a climb's face or past a jump's take-off.
+        const bool tapFrame = m_frame % kTapEvery == 0;
+        const bool onGround = human.traversal() == Traversal::None && !human.airborne();
+        switch (leg.move) {
+        case Move::Run:
+            break;
+        case Move::Climb:
+            if (tapFrame && onGround && reach < kClimbTapWithin) {
+                pad.buttons |= coney::pad::kTriangle;
+            }
+            break;
+        case Move::Jump:
+            pad.buttons |= coney::pad::kL2;
+            // The route runs east, so "past the take-off" is feet.x >= leg.x.
+            if (onGround && feet.x >= leg.x && !m_sawMove) {
+                pad.buttons |= coney::pad::kTriangle;
+            }
+            break;
+        }
+        return samples;
     }
-    for (const std::string& line : log) {
-        if (line.starts_with("script error")) {
-            run.errors.push_back(line);
+
+    // Whether every leg is done.
+    [[nodiscard]] bool done() const { return m_leg >= m_route.size(); }
+    // The legs done.
+    [[nodiscard]] std::size_t legsDone() const { return m_leg; }
+    // Climbs and jumps made.
+    [[nodiscard]] int climbs() const { return m_climbs; }
+    [[nodiscard]] int jumps() const { return m_jumps; }
+
+  private:
+    // Moves on past the legs `human` has finished: a run once he is at its point, a climb or a jump once one began
+    // and he is back on his feet.
+    void advance(const coney::human::Human& human) {
+        while (!done()) {
+            const Leg& leg = m_route[m_leg];
+            const Traversal traversal = human.traversal();
+            bool finished = false;
+            switch (leg.move) {
+            case Move::Run:
+                finished = std::hypot(leg.x - human.position().x, leg.y - human.position().y) < kArrived;
+                break;
+            case Move::Climb:
+                m_sawMove = m_sawMove || traversal == Traversal::Climbing;
+                finished = m_sawMove && traversal == Traversal::None;
+                m_climbs += finished ? 1 : 0;
+                break;
+            case Move::Jump:
+                m_sawMove = m_sawMove || traversal == Traversal::Jumping;
+                finished = m_sawMove && (traversal == Traversal::None || traversal == Traversal::RunStop);
+                m_jumps += finished ? 1 : 0;
+                break;
+            }
+            if (!finished) {
+                return;
+            }
+            ++m_leg;
+            m_sawMove = false;
         }
     }
-    return run;
-}
+
+    // Sets the left stick to move toward (dx, dy) at `deflection`, turned by the shown camera's heading: up is the
+    // camera's view along the ground, right its right.
+    static void steer(coney::PadSample& pad, const coney::human::Player& player, float dx, float dy, float deflection) {
+        const coney::human::PlayerSnapshot& shot = player.current();
+        float fx = shot.cameraTarget.x - shot.cameraEye.x;
+        float fy = shot.cameraTarget.y - shot.cameraEye.y;
+        const float forward = std::hypot(fx, fy);
+        const float wanted = std::hypot(dx, dy);
+        if (forward < 1e-4F || wanted < 1e-4F) {
+            return;
+        }
+        fx /= forward;
+        fy /= forward;
+        const float up = ((dx * fx) + (dy * fy)) / wanted;
+        const float right = ((dx * fy) - (dy * fx)) / wanted;
+        pad.sticks[2] = raw(right * deflection);
+        pad.sticks[3] = raw(-up * deflection);
+    }
+
+    // The raw byte for `value` in [-1, 1] as an input script writes it: each axis has its own dead zone round the
+    // centre (core/pad.h), so the value is laid out past it, as the pad reads it back (pad::stickValue).
+    static std::uint8_t raw(float value) {
+        return coney::stickByteFromPercent(static_cast<int>(std::lround(std::clamp(value, -1.0F, 1.0F) * 100.0F)));
+    }
+
+    std::span<const Leg> m_route;
+    std::function<const coney::human::Player*()> m_player;
+    std::size_t m_leg = 0;
+    bool m_sawMove = false;
+    int m_climbs = 0;
+    int m_jumps = 0;
+    std::uint64_t m_frame = 0;
+};
+
+// The rooftop chase's route from vbStartRail to vbEnterGallery (docs/missions/level3.md, checkpoint 4), east along the
+// roofs at y 361-369: the climbs (short walls, walls and two fences) and the sprint jumps over the gaps, each
+// `vbJumpWarn` box's. Past the last-but-one jump the roof at z 10.3 is closed by a 3.6 m wall that nothing climbs
+// (x 167.4, y 361.5-366.7); the way on is the steel stairs beside it (y 367-369.5), up to the platform at z 16.5 and
+// the jump to the gallery's roof.
+constexpr std::array kChaseRoute{
+    Leg{Move::Run, -212.0F, 363.7F},  Leg{Move::Climb, -205.5F, 363.5F}, Leg{Move::Climb, -200.5F, 363.3F},
+    Leg{Move::Run, -163.0F, 363.4F},  Leg{Move::Climb, -157.5F, 362.8F}, Leg{Move::Run, -136.0F, 361.8F},
+    Leg{Move::Jump, -131.0F, 361.7F}, Leg{Move::Run, -112.0F, 363.8F},   Leg{Move::Climb, -106.5F, 364.1F},
+    Leg{Move::Run, -100.0F, 364.5F},  Leg{Move::Climb, -94.5F, 364.7F},  Leg{Move::Run, -88.5F, 364.8F},
+    Leg{Move::Climb, -83.0F, 364.9F}, Leg{Move::Run, -79.5F, 364.9F},    Leg{Move::Climb, -74.5F, 364.9F},
+    Leg{Move::Jump, -64.5F, 364.9F},  Leg{Move::Run, 15.0F, 364.8F},     Leg{Move::Jump, 18.5F, 364.8F},
+    Leg{Move::Run, 50.0F, 365.1F},    Leg{Move::Run, 66.0F, 367.4F},     Leg{Move::Climb, 74.5F, 367.5F},
+    Leg{Move::Run, 92.0F, 365.0F},    Leg{Move::Climb, 96.0F, 365.0F},   Leg{Move::Jump, 100.5F, 365.0F},
+    Leg{Move::Run, 134.0F, 364.7F},   Leg{Move::Climb, 139.5F, 364.8F},  Leg{Move::Jump, 149.5F, 364.8F},
+    Leg{Move::Run, 164.5F, 368.2F},   Leg{Move::Run, 178.0F, 368.2F},    Leg{Move::Jump, 191.5F, 368.2F},
+    Leg{Move::Run, 206.0F, 368.2F},
+};
+
+// How long the chase may take before it counts as stuck: 3 minutes of frames.
+constexpr std::uint64_t kChaseLimit = 5400;
 
 } // namespace
 
-// Hidden ([.]), a known gap: the frame-locked recording no longer climbs the ledge at (166.9, 366.3, 10.3) since the
-// AI and movement changes merged with it, so Snow falls short of the gallery. Run it by name until the recording is
-// redone (or the climb fixed).
-TEST_CASE("the disc's level3 rooftop chase, driven by the pad, reaches the gallery", "[.][disc][story][playthrough]") {
+TEST_CASE("the disc's level3 rooftop chase, driven by the pad, reaches the gallery", "[disc][story][playthrough]") {
     // docs/research/scripting.md#level3: the AI walks Snow to vbStartRail, the stick then runs him east along the
     // roofs, and vbEnterGallery hands over to the gallery chapter (SetCheckPoint(5)). A fall fails the mission.
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
     }
-    constexpr std::uint64_t kFrames = 3700;
-    const Playthrough run = play(*wad, "level3", 4, "level3_chase.txt", kFrames);
-    REQUIRE(run.loaded);
-    for (const std::string& error : run.errors) {
-        UNSCOPED_INFO(error);
+    coney::test::DiscSession* session = nullptr;
+    RouteDriver driver(kChaseRoute, [&session]() -> const coney::human::Player* {
+        coney::platform::PlayLevelMode* play = session != nullptr ? session->session().play() : nullptr;
+        return play != nullptr ? &play->player() : nullptr;
+    });
+    coney::test::DiscSession run(*wad, driver);
+    session = &run;
+    run.session().startAtLevel("level3", 4);
+    REQUIRE(run.runUntilPlay());
+
+    const auto failed = [&run] {
+        return std::ranges::any_of(run.log(),
+                                   [](const std::string& line) { return line.starts_with("mission failed"); });
+    };
+    const auto& state = run.session().flow().state();
+    run.runUntil([&] { return state.checkPoint >= 5 || failed(); }, kChaseLimit);
+
+    const coney::platform::PlayLevelMode* play = run.session().play();
+    const std::uint64_t errors = run.session().flow().scripts().errors();
+    std::printf("  level3 checkpoint 4 chase: checkpoint %.0f after %llu frames of play, legs %zu of %zu, climbs %d, "
+                "jumps %d, %llu script errors, %s\n",
+                state.checkPoint, static_cast<unsigned long long>(run.playFrames()), driver.legsDone(),
+                kChaseRoute.size(), driver.climbs(), driver.jumps(), static_cast<unsigned long long>(errors),
+                failed() ? "failed" : "not failed");
+    if (play != nullptr) {
+        const coney::anim::Vec3 feet = play->player().human().position();
+        std::printf("  player 1 at (%.1f, %.1f, %.1f), health %d\n", static_cast<double>(feet.x),
+                    static_cast<double>(feet.y), static_cast<double>(feet.z), play->player().human().health().value());
     }
-    CHECK(run.scriptErrors == 0);
-    CHECK_FALSE(run.missionFailed.has_value());
-    CHECK(run.checkpoint == 5);
-    CHECK(run.health > 0);
-    std::printf("  level3 checkpoint 4 chase: checkpoint %d after %llu frames, %llu script errors, health %d, %s%s\n",
-                run.checkpoint, static_cast<unsigned long long>(kFrames),
-                static_cast<unsigned long long>(run.scriptErrors), run.health,
-                run.missionFailed ? "failed: " : "not failed", run.missionFailed ? run.missionFailed->c_str() : "");
+    CHECK(errors == 0);
+    CHECK_FALSE(failed());
+    CHECK(state.checkPoint == 5);
+    REQUIRE(play != nullptr);
+    CHECK(play->player().human().health().value() > 0);
 }
