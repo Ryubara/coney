@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import subprocess
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
@@ -48,15 +49,49 @@ def find_repo_root(start: Path) -> Path:
     raise ConfigError(f"{start}: not inside a Coney checkout (no {EXAMPLE_FILE} in it or any parent folder)")
 
 
-def load_config(root: Path) -> Config:
-    """Read `root / "coney.local.toml"`.
+def main_checkout(root: Path) -> Path:
+    """The main checkout of the repository at `root` (a worktree's `.git` points back to it); `root` itself when it
+    is the main one or git cannot say."""
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "--path-format=absolute", "--git-common-dir"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return root
+    common = Path(result.stdout.strip()) if result.returncode == 0 and result.stdout.strip() else None
+    return common.parent if common is not None and common.name == ".git" else root
 
-    Relative paths resolve against `root`. Raises ConfigError for a missing or unreadable file, invalid TOML, an
-    unknown key (a typo silently ignored would point a tool at the wrong folder) or a value of the wrong type.
+
+def local_config_file(root: Path) -> Path | None:
+    """The `coney.local.toml` that applies to the checkout at `root`, or None when there is none.
+
+    The file is untracked, so a worktree has none of its own: the main checkout's is used (a worktree that holds
+    its own copy keeps using that one). Relative paths inside it resolve against the folder that holds it, so a
+    worktree sees the same folders as the main checkout.
     """
-    path = root / LOCAL_FILE
-    if not path.is_file():
-        raise ConfigError(f"no {LOCAL_FILE} in {root}; copy {EXAMPLE_FILE} and edit it")
+    for candidate in dict.fromkeys((root, main_checkout(root))):
+        if (candidate / LOCAL_FILE).is_file():
+            return candidate / LOCAL_FILE
+    return None
+
+
+def load_config(root: Path) -> Config:
+    """Read the `coney.local.toml` of the checkout at `root` (see `local_config_file`: a worktree reads the main
+    checkout's).
+
+    Relative paths resolve against the folder that holds the file. Raises ConfigError for a missing or unreadable
+    file, invalid TOML, an unknown key (a typo silently ignored would point a tool at the wrong folder) or a value
+    of the wrong type.
+    """
+    path = local_config_file(root)
+    if path is None:
+        main = main_checkout(root)
+        where = str(root) if main == root else f"{root} or the main checkout {main}"
+        raise ConfigError(f"no {LOCAL_FILE} in {where}; copy {EXAMPLE_FILE} and edit it")
+    root = path.parent
     try:
         with path.open("rb") as handle:
             data = tomllib.load(handle)
