@@ -45,6 +45,7 @@ Research:
 - [Story order and what loads each level](../research/scripting.md#run-next-mission)
 - [The fourth mission's brain and human calls](../research/ai.md#coney)
 - [Spawners](../research/ai.md#spawners)
+- [The riot's crowd, and what Coney lacks](../research/scripting.md#level34-start)
 - [Cars](../research/cars.md)
 
 ## Run it in Coney {#run}
