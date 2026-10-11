@@ -458,3 +458,37 @@ TEST_CASE("walking north into a corner's edge, the body slides round it where th
         }
     }
 }
+
+TEST_CASE("walking into a face that leans back beside a rising floor, the body slides up along it and over the top",
+          "[human][traversal]") {
+    // A heap as level99's gravel (docs/research/characters.md#slopes): a floor rising north at 1 in 2 (n.z 0.89) from
+    // the street at y = 30 to a top at z = 1.5 at y = 33, east of x = 40; west of it a face leaning back with
+    // n (0.806, -0.265, 0.530), too steep to be floor, whose foot is the floor's west edge; the top behind both. The
+    // player walks at 60 % into the face 20° off its normal, toward the top. At runtime such a walk slid along the
+    // face's foot up the floor and over the heap.
+    const TestCharacter character;
+    using coney::test::Tri;
+    const float faceTopX = 40.0F - 1.5F / 1.5208F; // where the face reaches z = 1.5 at y = 30
+    std::vector<Tri> heap{
+        // The rising floor, and the street south of it.
+        Tri{{40.0F, 30.0F, 0.0F}, {50.0F, 30.0F, 0.0F}, {50.0F, 33.0F, 1.5F}},
+        Tri{{40.0F, 30.0F, 0.0F}, {50.0F, 33.0F, 1.5F}, {40.0F, 33.0F, 1.5F}},
+        // The leaning face: from its foot along the floor's edge up to the top.
+        Tri{{40.0F, 30.0F, 0.0F}, {40.0F, 33.0F, 1.5F}, {faceTopX, 30.0F, 1.5F}},
+        // The top behind the face, and north of everything.
+        Tri{{30.0F, 30.0F, 1.5F}, {faceTopX, 30.0F, 1.5F}, {40.0F, 33.0F, 1.5F}},
+        Tri{{30.0F, 30.0F, 1.5F}, {40.0F, 33.0F, 1.5F}, {30.0F, 33.0F, 1.5F}},
+        // The heap's south side.
+        Tri{{faceTopX, 30.0F, 0.0F}, {40.0F, 30.0F, 0.0F}, {faceTopX, 30.0F, 1.5F}},
+    };
+    heap = join(join(join(heap, floorAt(0.0F, 30.0F, 50.0F, 20.0F, 30.0F)), floorAt(1.5F, 30.0F, 50.0F, 33.0F, 40.0F)),
+                coney::test::wallFacingMinusY(30.0F, 30.0F, faceTopX, 0.0F, 1.5F));
+    const auto mesh = makeMesh(heap);
+    Human human(character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 0.97F);
+    human.spawn(mesh.get(), Vec3{40.8F, 30.4F, 0.2F}, 0.0F);
+    // 20° off the face's normal toward the top: (-0.786, 0.619) at 60 %.
+    hold(human, pad(-0.786F * 0.6F, 0.619F * 0.6F), 240, mesh.get());
+    CHECK_FALSE(human.airborne());
+    CHECK(human.position().z == Approx(1.5F).margin(0.01));
+    CHECK(human.position().x < 39.0F);
+}

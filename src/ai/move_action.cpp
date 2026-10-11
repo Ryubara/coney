@@ -289,10 +289,12 @@ float MoveAction::cornerTrial(const Brain& brain, anim::Vec3 corner, anim::Vec3 
 }
 
 bool MoveAction::stuck(anim::Vec3 position) {
-    if (++m_movingSteps < kStuckSteps) {
+    // On the update after kStuckSteps, the distance in 3D: a climb up a slope counts its height
+    // (docs/research/ai.md#move-action).
+    if (++m_movingSteps <= kStuckSteps) {
         return false;
     }
-    const bool covered = planDistance(m_stuckFrom, position) >= kStuckDistance;
+    const bool covered = anim::distance(m_stuckFrom, position) >= kStuckDistance;
     m_movingSteps = 0;
     m_stuckFrom = position;
     return !covered;

@@ -34,6 +34,9 @@ void Humans::remove(const Human& human) {
     }
     (*found)->setBodyContact(nullptr);
     (*found)->setObjectPush(nullptr);
+    (*found)->setHumanContacts({});
+    // The others' list this step no longer holds it.
+    std::ranges::replace(m_contactList, *found, nullptr);
     const auto slot = std::distance(m_humans.begin(), found);
     m_humans.erase(found);
     m_padControlled.erase(m_padControlled.begin() + slot);
@@ -77,6 +80,12 @@ void Humans::update(const raycast::CollisionMesh* mesh, std::span<Combatant* con
     // 3. Every human's animation, then 4. every human's state update.
     for (Human* human : m_humans) {
         human->animate(mesh);
+    }
+    // Every walking body meets the others' capsules (docs/research/physics.md#human-contacts), from a list of its own
+    // so that a human added during the pass does not move it.
+    m_contactList = m_humans;
+    for (Human* human : m_humans) {
+        human->setHumanContacts(m_contactList);
     }
     // Each human's strike test runs in its state update, after its move (the humans it fights, and the level's
     // objects).

@@ -29,7 +29,7 @@ inline constexpr float kMoveHeightGap = 1.5F;
 inline constexpr float kTurnOnSpotAngle = 0.5236F;
 /// A human moving slower than this stands, for the turn on the spot (**Coney choice**, m/s).
 inline constexpr float kStandingSpeed = 0.05F;
-/// The stuck test: every this many updates of moving, less than kStuckDistance covered fails the move.
+/// The stuck test: on the update after this many of moving, less than kStuckDistance covered (in 3D) fails the move.
 inline constexpr std::uint32_t kStuckSteps = 60;
 inline constexpr float kStuckDistance = 0.2F;
 /// The corner speed looks at corners farther than this from the human.
@@ -135,7 +135,7 @@ class MoveAction final : public Action {
     // @orig 0x0023e090 Human_Land (unknown)
     [[nodiscard]] std::optional<ActionStatus> landed(Brain& brain, anim::Vec3 position);
     // The stuck test, once per update of moving.
-    // @orig 0x002fc330 MoveAction_Stuck (unknown)
+    // @orig 0x002fc330 MoveAction_CheckStuck (unknown)
     [[nodiscard]] bool stuck(anim::Vec3 position);
     // Ends the move: the human stands.
     [[nodiscard]] static ActionStatus finish(Brain& brain);

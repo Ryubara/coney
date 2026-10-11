@@ -25,6 +25,7 @@
 #include "human/fighter.h"
 #include "human/holdable.h"
 #include "human/human_animator.h"
+#include "human/human_contacts.h"
 #include "human/human_flags.h"
 #include "human/locomotion.h"
 #include "human/locomotion_gate.h"
@@ -524,6 +525,30 @@ class Human final : public Holdable {
     using ObjectPush =
         std::function<std::optional<anim::Vec3>(const Human& walker, anim::Vec3 centre, float radius, anim::Vec3 move)>;
     void setObjectPush(const ObjectPush* push) { m_objectPush = push; }
+    /// The humans its walking body meets (docs/research/physics.md#human-contacts): the characters' step gives every
+    /// human its list each update (Humans::update()); the list may hold this human and null slots, which are skipped.
+    /// Empty (the default): it meets none.
+    void setHumanContacts(std::span<Human* const> humans) { m_otherHumans = humans; }
+    /// Whether its capsule blocks other humans' walks: body flag `0x4` `BLOCKHUMANS`, which a human loses when his
+    /// health runs out, knocked out or wounded (`Human_OnHealthOut`). **Coney stand-in**: what gives the flag back
+    /// when he gets up is not traced, so it is back as soon as he is neither knocked out, nor wounded, nor out of
+    /// health.
+    /// @orig 0x002674c0 Human_OnHealthOut (unknown)
+    [[nodiscard]] bool blocksHumans() const;
+    /// Whether it and `other` are linked, so their walks pass through each other: one holds the other in a grab, a
+    /// tackle, a mount or a mugging (the link's group number at body `+0x3c`, `Grab_Link` and the rest). **Coney
+    /// stand-in**: the scenes' shared group is not set.
+    /// @orig 0x0022c760 Grab_Link (unknown)
+    [[nodiscard]] bool linkedWith(const Human& other) const;
+    /// Its push weight (attribute 7, `+0x27c`): 1e9 while it must not move (linked in a pair, or arrested), else 1.
+    [[nodiscard]] float pushWeight() const;
+    /// Whether another human's walk pushes it: not when a script made it unpushable (`HuSetPushable(false)`, body flag
+    /// `0x200`), when it is only slid along.
+    [[nodiscard]] bool pushable() const { return m_script.pushable; }
+    /// The push-out other humans' contacts left for its next move (body `+0x50`), added to that move and cleared.
+    [[nodiscard]] anim::Vec3 pendingPush() const { return m_pendingPush; }
+    /// Adds `push` to pendingPush() (a contact's code 4, human::contactPush()).
+    void addPush(anim::Vec3 push) { m_pendingPush = anim::add(m_pendingPush, push); }
     /// The breakable objects square may strike from now on (the level's whole panes), given each step.
     void setObjectTargets(std::vector<ObjectTarget> objects) { m_objectTargets = std::move(objects); }
     /// Picks up the object `handle` at `point` with clip `clip` (world_objects::pickupClip()): the clip plays after a
@@ -634,19 +659,30 @@ class Human final : public Holdable {
     void moveOnGround(const raycast::CollisionMesh& mesh);
     // Moves a falling human, landing on a floor it passed on the update before.
     void moveInAir(const raycast::CollisionMesh& mesh);
-    // Keeps the move the walls left (`slid`, against the asked `displacement` at slope `factor`) as the velocity, so a
-    // wall met at a steep angle brakes the human (docs/research/characters.md#walls).
-    void keepSlidVelocity(anim::Vec3 slid, anim::Vec3 displacement, float factor);
+    // Slides the velocity along the walls the last sweep met (m_contacts): each takes the velocity's part into it, so a
+    // wall met at a steep angle brakes the human (docs/research/characters.md#walls, #slopes).
+    // @orig 0x0033d870 Vec_RemoveNormalPart (unknown)
+    void slideVelocity();
     // Where a walking sweep ends: the feet, and the part of the move from them that the corner slide made.
     struct Swept {
         anim::Vec3 feet;
         anim::Vec3 slide{};
     };
-    // Sweeps the walking body from the feet at `from` by `displacement`, sliding off walls and round a corner its walls
+    // Sweeps the walking body from the feet at `from` by `displacement`, sliding along a wall face it already touches
+    // (rising along one that leans back, docs/research/characters.md#slopes), off walls and round a corner its walls
     // name; returns where it ends, or nothing when it is still blocked after three passes.
     // @orig 0x0033e278 PhysicsBody_Sweep (unknown)
     [[nodiscard]] std::optional<Swept> sweep(const raycast::CollisionMesh& mesh, anim::Vec3 from,
                                              anim::Vec3 displacement);
+    // The humans the walking capsule meets moving from the feet at `from` by `move` (docs/research/physics.md
+    // #human-contacts), up to three passes: the nearest contact stops the capsule at it, the rest of the move slides
+    // along the other (code 1), and, unless this capsule strikes (a charge), the other is given half of the pass's move
+    // into him as his pending push (code 4). Returns the move left, which the walls then take; each contact's normal
+    // goes to m_contacts.
+    // @orig 0x0033d498 PhysicsBody_SweepHumanMask (unknown)
+    [[nodiscard]] anim::Vec3 meetHumans(anim::Vec3 from, anim::Vec3 move);
+    // Its capsule as another human's sweep meets it.
+    [[nodiscard]] UprightCapsule uprightCapsule() const;
     // Pushes the airborne body (a player's larger sphere) out of the walls it overlaps after moving to `feet`.
     // @orig 0x0021a490 Human_PushOutInAir (unknown)
     [[nodiscard]] std::optional<anim::Vec3> pushOutInAir(const raycast::CollisionMesh& mesh, anim::Vec3 feet);
@@ -812,6 +848,9 @@ class Human final : public Holdable {
     std::vector<ObjectTarget> m_objectTargets; // the breakable objects square may strike
     std::optional<ClimbProbe> m_climbProbe;
     std::vector<std::uint16_t> m_nearby; // scratch for the wall test
+    std::vector<anim::Vec3> m_contacts;  // the normals of the walls the last walking sweep slid along, for the velocity
+    std::span<Human* const> m_otherHumans; // setHumanContacts(), the step's
+    anim::Vec3 m_pendingPush{};            // addPush(): others' pushes, for the next move
 };
 
 } // namespace coney::human
