@@ -26,10 +26,10 @@ TEST_CASE("marked-up text splits into text runs and tags with arguments", "[mark
 }
 
 TEST_CASE("unknown tags are kept by name and a lone < is text", "[markup]") {
-    const std::vector<MarkupToken> tokens = parseMarkup("a<BOBJ>b < c");
+    const std::vector<MarkupToken> tokens = parseMarkup("a<NOPE>b < c");
     REQUIRE(tokens.size() == 3);
     CHECK(tokens[1].kind == MarkupToken::Kind::UnknownTag);
-    CHECK(tokens[1].text == "BOBJ");
+    CHECK(tokens[1].text == "NOPE");
     CHECK(tokens[2].text == "b < c");
 }
 
@@ -45,4 +45,44 @@ TEST_CASE("tag names match exactly and glyph tags give their characters", "[mark
     CHECK(markupCharacter(MarkupTag::MoneyMinus) == '<');
     CHECK(!markupCharacter(MarkupTag::LeftStick).has_value());
     CHECK(!markupCharacter(MarkupTag::Color).has_value());
+}
+
+TEST_CASE("the HUD icon tags 22-32 are known, each with its character", "[markup]") {
+    // docs/research/gui.md#markup: <FIST> ... <BGCIRCLE>, characters ':', '>', '?', ';', '@', 'A', 'B', 'C', 'E', 'F',
+    // 'y'.
+    CHECK(findMarkupTag("RARREST") == MarkupTag::RArrest);
+    CHECK(findMarkupTag("RDEAD") == MarkupTag::RDead);
+    CHECK(findMarkupTag("BOBJ") == MarkupTag::BObj);
+    CHECK(findMarkupTag("ROBJ") == MarkupTag::RObj);
+    CHECK(findMarkupTag("YOBJ") == MarkupTag::YObj);
+    CHECK(findMarkupTag("RFLASH") == MarkupTag::RFlash);
+    CHECK(findMarkupTag("RSPRAY") == MarkupTag::RSpray);
+    CHECK(findMarkupTag("RPEDRAT") == MarkupTag::RPedRat);
+    CHECK(findMarkupTag("RCALLGANG") == MarkupTag::RCallGang);
+    CHECK(static_cast<int>(MarkupTag::RArrest) == 23);
+    CHECK(static_cast<int>(MarkupTag::RCallGang) == 31);
+    CHECK(markupCharacter(MarkupTag::Fist) == ':');
+    CHECK(markupCharacter(MarkupTag::RArrest) == '>');
+    CHECK(markupCharacter(MarkupTag::RDead) == '?');
+    CHECK(markupCharacter(MarkupTag::BObj) == ';');
+    CHECK(markupCharacter(MarkupTag::RObj) == '@');
+    CHECK(markupCharacter(MarkupTag::YObj) == 'A');
+    CHECK(markupCharacter(MarkupTag::RFlash) == 'B');
+    CHECK(markupCharacter(MarkupTag::RSpray) == 'C');
+    CHECK(markupCharacter(MarkupTag::RPedRat) == 'E');
+    CHECK(markupCharacter(MarkupTag::RCallGang) == 'F');
+    CHECK(markupCharacter(MarkupTag::BgCircle) == 'y');
+}
+
+TEST_CASE("the stick tags alternate their own character with 2 every 500 ms", "[markup]") {
+    using coney::gui::stickCharacter;
+    CHECK(stickCharacter(MarkupTag::StickDown, 0) == 3);
+    CHECK(stickCharacter(MarkupTag::StickLeft, 0) == 4);
+    CHECK(stickCharacter(MarkupTag::StickRight, 499) == 5);
+    CHECK(stickCharacter(MarkupTag::StickUp, 0) == 6);
+    CHECK(stickCharacter(MarkupTag::StickLeft, 500) == 2);
+    CHECK(stickCharacter(MarkupTag::StickLeft, 999) == 2);
+    CHECK(stickCharacter(MarkupTag::StickLeft, 1000) == 4);
+    CHECK(!stickCharacter(MarkupTag::ButtonCross, 0).has_value());
+    CHECK(!stickCharacter(MarkupTag::LeftStick, 0).has_value());
 }

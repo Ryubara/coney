@@ -16,23 +16,27 @@ namespace coney::test {
 /// Texels of the fake font texture, both ways.
 inline constexpr int kFontTextureSize = 128;
 
-/// A font whose every character is an 8 x 16-texel glyph, except `W`, which is 16 x 16. Glyph `c` sits at
-/// u0 = (c % 16) × 8 texels, so each character's rectangle is distinct. The first glyph is 0.
-inline graphics::SpriteSheet testFontSheet() {
+/// A font of `rectangles` rectangles (256 by default, one per character) whose every rectangle is an 8 x 16-texel
+/// glyph, except `W`, which is 16 x 16, and those past 255, which are 12 x 16. Rectangle `c` sits at
+/// u0 = (c % 16) × 8 texels, v0 = ((c / 16) % 8) × 16, so rectangles 0-127 are distinct and those past 255 (big_font's
+/// six `<MONEYFONT>` pictures stand there) differ from every other by their width. The first glyph is 0.
+inline graphics::SpriteSheet testFontSheet(std::size_t rectangles = 256) {
     graphics::SpriteSheet sheet;
     sheet.page.firstGlyph = 0;
     constexpr float kTexel = 1.0F / kFontTextureSize;
-    for (std::size_t c = 0; c < 256; ++c) {
+    for (std::size_t c = 0; c < rectangles; ++c) {
         const float u0 = static_cast<float>(c % 16) * 8.0F * kTexel;
         const float v0 = static_cast<float>((c / 16) % 8) * 16.0F * kTexel;
-        const float width = (c == 'W' ? 16.0F : 8.0F) * kTexel;
-        sheet.page.rects.push_back(graphics::UvRect{u0, v0, u0 + width, v0 + 16.0F * kTexel});
+        const float widthTexels = c == 'W' ? 16.0F : (c > 255 ? 12.0F : 8.0F);
+        sheet.page.rects.push_back(graphics::UvRect{u0, v0, u0 + (widthTexels * kTexel), v0 + 16.0F * kTexel});
     }
     sheet.texture = std::make_shared<FakeTexture>(kFontTextureSize, kFontTextureSize);
     return sheet;
 }
 
-/// testFontSheet() as a font.
-inline graphics::Font testFont() { return graphics::Font::fromSheet(testFontSheet()).value(); }
+/// testFontSheet(`rectangles`) as a font.
+inline graphics::Font testFont(std::size_t rectangles = 256) {
+    return graphics::Font::fromSheet(testFontSheet(rectangles)).value();
+}
 
 } // namespace coney::test

@@ -1060,29 +1060,36 @@ values are the default mode's (other modes set other globals at `0x005100e0`-`0x
   1.1, depth 8,000. Its colour moves from red (150, 50, 50) to green (50, 150, 50) to blue (50, 50, 150) and back,
   each step a linear blend over 5,000 ms (`0x0051011c`, colours `0x00640c60`).
 - **Summary** (a `ScrollingTextWidget` at (0.01, 0.06), text built by `0x00215150`): the title (string `0x60`,
-  size 1.6, big font, grey 178), then four lines in size 1.2 of a grey (80, 80, 80) label and a value:
-    - `0x61` and the completion percentage: the unlockable records found over all of them (`0x004245d8`, records of
-      kinds other than 1 and 4 and types other than 0, 5, 7-11), × 100, rounded (`0x0042c718`);
-    - `0x63` and missions done / missions listed (the list's missions, below, over the listed levels less the three
-      special entries);
-    - `0x64` and `0x62` and the two other found / total counts of `0x004245d8`;
-    - `0x66` and the total time, the sum of the missions' times, formatted as hours and minutes (`0x00214f58`), in gold
-      (128, 100, 0).
-  A value is drawn in red (134, 26, 26) when it is complete (100 %, or found = total), otherwise gold (128, 100, 0),
+  size 1.6, big font, grey 178), then five lines in size 1.2, each a grey (80, 80, 80) label and a value. The counts
+  come from `Unlocks_CountUnlocked` (`0x004245d8`, [Unlockables: the counts](player-state.md#unlockable-counts));
+  confirmed (code) from the `sprintf` arguments at `0x002153b4`-`0x00215458`:
+    - `0x61` and the **completion percentage**: unlocked / total of the counted records (types 1, 2, 3, 4 and 6 whose
+      level byte is not 1 or 4), × 100, **truncated** (`Float_ToUInt`, `0x0042c718`), followed by `%`;
+    - `0x63` and missions done / missions listed (`+0x94` over the listed levels less the three special entries);
+    - `0x64` and the **group-1 items**: distinct (level, item) pairs of group-1 records of those types, unlocked /
+      total;
+    - `0x62` and the counted records again, unlocked / total (the numbers behind the percentage);
+    - `0x66` and the total time, the sum of the missions' times plus slot 0's, formatted as hours and minutes
+      (`0x00214f58`), in gold (128, 100, 0).
+  A value is drawn in red (134, 26, 26) when it is complete (100 %, or unlocked = total), otherwise gold (128, 100, 0),
   or purple (106, 65, 131) for the `0x64` line.
 - **Mission list** (a `ScrollingMenu` at (0.185, 0.45), built by `0x002155a8`): the level records of game state
   `+0x14d4` (`0x84` bytes each, count `+0x56d4`) whose byte `+0x0c` is set, except levels 61-65 and 102-137, sorted;
   each shown when the level is complete (`Unlocks_IsLevelComplete`), and levels 95 and 101 always. Each entry is a
-  `CircledTextHeader` (sprite word `0x180002`, record 24, size 1.7 text) followed by a `GameStatsSubItem`:
+  [`CircledText`](gui.md#fn-circledtext) (allocated under the tag `CircledTextHeader`; sprite word `0x180002`, record
+  24, size 1.7 text) followed by a `GameStatsSubItem`:
     - the header's text is the level's name (record `+0x49`) and its number (record `+0x24` up to a `:`, three
       characters at most) in the colour of record `+0x7c` (`0x0041f298`), purple when the number is 0; levels 95, 60 and
       101 show strings `0x73`, `0x74` and `0x75` instead;
     - the sub-item's picture is the level record's sprite word `+0x80` (`0x180001`, `0x180000` and `0x180003` for the
-      three special entries) in the batch `0x00215490` picks; its text (`0x00216eb0`) has up to five lines: the score
-      (`0x6d`, gold, with the goal `0x6e` in red after it when the score is below it; red alone otherwise), three found
-      / total lines (`0x6f`, `0x70`, `0x64`) for the level's unlockables (`0x00424298`, a line left out when its total
-      is 0), and the time (`0x66`, gold); empty lines pad every block to the same height. The score and the time are the
-      level's record in the stats object (`0x00423050`: `0x6fe490` + `0x300` + 12 × the level's slot); levels 95 and 101
+      three special entries) in the batch `0x00215490` picks; its text (`0x00216eb0`) has up to five lines, in this
+      order: the score (`0x6d`, gold, with the goal `0x6e` in red after it when the score is below it; red alone
+      otherwise), then three unlocked / total lines from `Unlockables_GetLevelTargets` (`0x00424298`,
+      [the counts](player-state.md#unlockable-counts)): `0x64` the level's group-1 items (purple until complete),
+      `0x6f` its character-type records (type 4) and `0x70` its arena records (type 2) (gold until complete; red when
+      complete); a line is left out when its total is 0; then the time (`0x66`, gold). Empty lines pad every block to
+      five. Confirmed (code) from the format at `0x0055a3a0` and its arguments. The score and the time are the level's
+      record in the stats object (`0x00423050`: `0x6fe490` + `0x300` + 12 × the level's slot); levels 95 and 101
       have no score line.
 - **Usage text** (`UsageInfo`, string `0x19`) at (0.01, 0.94).
 - **Input:** back closes the screen (`0x00159520(1)`; the mode then runs the `onClose` callback); accept does
@@ -1208,6 +1215,52 @@ list of the missions already completed, each with its checkpoints. The object (v
 `+0x14d4` (`0x84` bytes each, count `+0x56d4`; level `+0x04`, checkpoint count `+0x08`, name `+0x49`, icon sprite
 `+0x78`, `+0x80` passed to the entry). The rest of the file is HUD code ([HUD](hud.md#fn-missionselecthud-hud)).
 
+**Layout** (`MissionSelect_Init` `0x001bcdd8` writes the globals per video mode, `MissionSelect_Build` `0x001bc5a8` and
+`MissionSelect_FillArea` `0x001bd838` use them; GUI coordinates; confirmed (code)):
+
+- background: centred at (0.5, 0.5), size **bg**, grey 144, sheet-table record 20 rectangle 0; the gang logo over it
+  at the same place, size **logo**, white, `gang_logos` rectangle 11 with a shadow; the frame, size **frame**, grey 128;
+- the area title: a [`CircledText`](gui.md#fn-circledtext) at (**x**, **y**), text offset (**tx**, **ty**), circle
+  offset 0.008, circles 0.055 × 0.055, `Font_Size(1.25)`, back sprite record 20 rectangle 1, circles rectangle 3;
+- the area's mission list: a `ScrollingMenu` at (**x**, **y** + **ty** + 0.01), item gap 0.01; each entry a
+  `CircledText` with circles **cw** × **ch**, text offset (**tx**, **ty**), circle offset (0.008, −0.002),
+  `Font_Size(0.92)`, the mission's name as its text and the level record's label (`LevelRecord_GetLabel`) circled, the
+  circles in the area's colour (`LevelRecord_GetAreaColour`) or purple (106, 65, 131) when the label is empty, the
+  back black; its description is the mission's `MS_Mission` tile, set up with **cw** × **ch** and the height **tile**;
+- the usage line (string `0x20`) left-aligned at (**ux**, **uy**).
+
+With the alternative sheet (record 21, `0x0050e894` = 1) the title and entries use rectangles 1 and 2 and the frame 3.
+
+| Global | Meaning | Default | 16:9 (`0x04`) | Progressive (`0x20`, static values) | `0x02` | `0x02` + `0x04` |
+| --- | --- | --- | --- | --- | --- | --- |
+| `0x0050e850` / `0x0050e854` | **x**, **y** | 0.8, 0.083 | 0.852, 0.022 | 0.78, 0.077 | 0.785, 0.173 | 0.843, 0.153 |
+| `0x0050e858` / `0x0050e85c` | **tx**, **ty** | 0.44, 0.074 | 0.52, 0.083 | 0.415, 0.065 | 0.43, 0.057 | 0.508, 0.067 |
+| `0x0050e86c` | **tile** | 0.35 | 0.423 | 0.415 | 0.27 | 0.25 |
+| `0x0050e870` / `0x0050e874` | **cw**, **ch** | 0.045, 0.07 | 0.057, 0.08 | 0.05, 0.07 | 0.04, 0.056 | 0.04, 0.056 |
+| `0x0050e878` | **bg** | 1.12 | 1.64 | 1.05 | 1.05 | 1.6 |
+| `0x0050e880` | **logo** | 0.8 | 0.8 | 0.8 | 0.6 | 0.6 |
+| `0x0050e888` | **frame** | 0.0147 | 0.0147 | 0.0147 | 0.01 | 0.012 |
+| `0x0050e88c` / `0x0050e890` | **ux**, **uy** | 0, 0.81 | −0.1, 0.85 | 0.03, 0.83 | 0.045, 0.75 | −0.08, 0.76 |
+| `0x0050e894` | alternative sheet | 0 | 1 | 1 | 0 | 1 |
+
+`0x0050e87c` (1.05 by default) and `0x0050e884` (1.4286, 2.0 with `0x02`) are written too but read elsewhere (not
+traced). The tile's back-strip factor `0x0050ecd4` is 0.745, 0.755 with 16:9, 0.77 with `0x02`, 0.69 with `0x02` +
+`0x04` (`0x001d31e8`; progressive mode leaves the static value).
+
+**Input.** On the area menu (`MissionSelect_OnMenuCommand`, `0x001be070`, jump table `0x00554c50`): up shows the next
+area and down the previous one (cue 4, or `0xe` and the refused flag at either end); left and right are not taken;
+accept moves the focus to the area's mission list (`ScrollingMenu_Focus`, cue 8); back cancels the screen
+(`MissionSelect_SetCancelled(1)`, `0x0050c75c`). In the mission list (`MissionSelect_OnListCommand`): up and down move
+between the missions (the menu's own input) until accept **opens** the selected mission (its tile highlighted); then up
+and down step its checkpoint letter down and up within the record's checkpoint count, a second accept **starts** it,
+and back closes the mission (or, when none is open, returns the focus to the area menu), cue `0xf`. Confirmed (code).
+
+**The tiles' lines** (`MSMission_Setup`, `0x001d31e8`): line 1 is string `0x6d` and the mission's best score, red
+(134, 26, 26) once it reaches the level's score target, gold (128, 100, 0) below it; line 2 is string `0x64` and the
+level's group-1 items unlocked / total, red when complete, purple (106, 65, 131) otherwise, or a fixed text when the
+level has none (both from `Unlockables_GetLevelTargets`, [the counts](player-state.md#unlockable-counts)). Confirmed
+(code).
+
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
 | `0x001bc028` | `MSMission_Delete` | deleting destructor: the entry widget at `+0x10` | confirmed (code) |
@@ -1275,7 +1328,7 @@ Confirmed (code).
 | --- | --- | --- | --- |
 | `0x001d2e00` / `0x001d2e80` | `MSMission_Construct` / `_Destroy` | the parts above | confirmed (code) |
 | `0x001d2f10` | `MSMission_CreateParts` | back black, depth 7,500; picture white, depth 9,000.65; the two lines size 1.0, base size 0.9, colour `0x005fd310`, alignment 5; the letter; the frame (colour `0x005fd328`, shadow on, hidden) sized by the frame size kept at `0x0062a18c`/`0x0062a190` | confirmed (code) |
-| `0x001d31e8` | `MSMission_Setup` | slot `+0xc0`: rectangle, index, picture sprite (`+0x64`), frame sprite (`+0x170`); line 1 = string `0x6d` with the mission's score (`0x00423050`) in markup colour `861A1AFF` when it reaches the target from the unlockables (`0x00424298`), else `806400FF`; line 2 = string 100 with a count, `861A1AFF` when complete, else `6A4183FF`, or a fixed line when the level has none | confirmed (code) |
+| `0x001d31e8` | `MSMission_Setup` | slot `+0xc0`: rectangle, index, picture sprite (`+0x64`), frame sprite (`+0x170`); line 1 = string `0x6d` with the mission's score (`0x00423050`) in markup colour `861A1AFF` when it reaches the target from the unlockables (`0x00424298`), else `806400FF`; line 2 = string 100 with the level's group-1 items unlocked / total ([the counts](player-state.md#unlockable-counts)), `861A1AFF` when complete, else `6A4183FF`, or a fixed line when the level has none | confirmed (code) |
 | `0x001d34b0`, `0x001d34e8` | `MSMission_SetLetter`, `_SetHighlight` | slots `+0xc8`, `+0xd8` | confirmed (code) |
 | `0x001d34f0` | `MSMission_Shutdown` | slot `+0x68` | confirmed (code) |
 | `0x001d3558`, `0x001d35a0` | `MSMission_IsReady`, `_GetRect` | slots `+0x88` (created and the picture's batch resident, cached), `+0x70` (height × reveal) | confirmed (code) |

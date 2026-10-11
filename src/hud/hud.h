@@ -229,11 +229,13 @@ class Hud {
 
     /// Sets player `player`'s action prompt (`ActionPrompt_SetText`); empty for none. In the original `HUD_Update`
     /// picks it each frame from what the player can act on; Coney's game code (or the debug menu) sets it.
-    /// A new or changed text restarts the prompt: shown again even while its cycle hid it.
+    /// A new or changed text restarts the prompt: shown again even while its cycle hid it, and its time (the stick
+    /// tags' alternation, the widget's stick timer `+0x1dc` in the original) counts again from now.
     /// @orig 0x0019f1b0 ActionPrompt_SetText (unknown)
     void setActionPrompt(std::size_t player, std::string text) {
         if (text != m_prompts.at(player)) {
             m_promptTextHidden.at(player) = false;
+            m_promptSinceMs.at(player) = m_nowMs;
         }
         m_prompts.at(player) = std::move(text);
     }
@@ -462,6 +464,7 @@ class Hud {
     StopWatchDisplay m_stopWatch;
     std::array<PanelOverrides, kPlayers> m_overrides{};
     std::uint64_t m_nowMs = 0;
+    std::array<std::uint64_t, kPlayers> m_promptSinceMs{}; // when each prompt's text last changed (game ms)
     int m_levelNumber = 0;
     // The flags and the one-byte fields last, so the fields above pack without padding.
     bool m_visible = true;

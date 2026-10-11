@@ -15,7 +15,7 @@ struct TagName {
 };
 
 // The tags whose names docs/research/gui.md#markup gives, by index.
-constexpr std::array<TagName, 57> kTagNames{{
+constexpr std::array<TagName, 66> kTagNames{{
     {"COLOR", MarkupTag::Color},
     {"SIZE", MarkupTag::Size},
     {"PULSE", MarkupTag::Pulse},
@@ -39,6 +39,15 @@ constexpr std::array<TagName, 57> kTagNames{{
     {"CRM", MarkupTag::Crm},
     {"AUTOINDENT", MarkupTag::AutoIndent},
     {"FIST", MarkupTag::Fist},
+    {"RARREST", MarkupTag::RArrest},
+    {"RDEAD", MarkupTag::RDead},
+    {"BOBJ", MarkupTag::BObj},
+    {"ROBJ", MarkupTag::RObj},
+    {"YOBJ", MarkupTag::YObj},
+    {"RFLASH", MarkupTag::RFlash},
+    {"RSPRAY", MarkupTag::RSpray},
+    {"RPEDRAT", MarkupTag::RPedRat},
+    {"RCALLGANG", MarkupTag::RCallGang},
     {"BGCIRCLE", MarkupTag::BgCircle},
     {"S", MarkupTag::ButtonSquare},
     {"O", MarkupTag::ButtonCircle},
@@ -82,10 +91,19 @@ struct TagCharacter {
 };
 
 // The characters of the glyph tags, from docs/research/gui.md#markup.
-constexpr std::array<TagCharacter, 21> kTagCharacters{{
+constexpr std::array<TagCharacter, 30> kTagCharacters{{
     {MarkupTag::MoneyPlus, '='},
     {MarkupTag::MoneyMinus, '<'},
     {MarkupTag::Fist, ':'},
+    {MarkupTag::RArrest, '>'},
+    {MarkupTag::RDead, '?'},
+    {MarkupTag::BObj, ';'},
+    {MarkupTag::RObj, '@'},
+    {MarkupTag::YObj, 'A'},
+    {MarkupTag::RFlash, 'B'},
+    {MarkupTag::RSpray, 'C'},
+    {MarkupTag::RPedRat, 'E'},
+    {MarkupTag::RCallGang, 'F'},
     {MarkupTag::BgCircle, 'y'},
     {MarkupTag::ButtonSquare, 0x9f},
     {MarkupTag::ButtonCircle, 0x9d},
@@ -124,6 +142,16 @@ std::optional<std::uint8_t> markupCharacter(MarkupTag tag) {
         }
     }
     return std::nullopt;
+}
+
+std::optional<std::uint8_t> stickCharacter(MarkupTag tag, std::uint32_t timeMs) {
+    // Down, left, right, up: characters 3-6, in tag order.
+    if (tag < MarkupTag::StickDown || tag > MarkupTag::StickUp) {
+        return std::nullopt;
+    }
+    constexpr std::uint8_t kOffCharacter = 2;
+    const auto own = static_cast<std::uint8_t>(3 + (static_cast<int>(tag) - static_cast<int>(MarkupTag::StickDown)));
+    return (timeMs / kStickGlyphPeriodMs) % 2 == 0 ? own : kOffCharacter;
 }
 
 std::vector<MarkupToken> parseMarkup(std::string_view text) {
