@@ -32,7 +32,79 @@ Everything that is not source code lives outside the repository, next to it:
   leftovers to trip over.
 * **Reuse.** One Ghidra install, one emulator and one scratch area serve the main checkout and every worktree.
 
-## Creating the folders
+## Bootstrap {#bootstrap}
+
+`coney-tools workspace init` sets the workspace up for you. Two small launchers install
+[uv](https://docs.astral.sh/uv/) when it is missing and run it: `bootstrap.sh` on Linux and macOS, `bootstrap.ps1` on
+Windows. From a fresh clone at `<workspace>/repos/coney`:
+
+```sh
+./bootstrap.sh                                               # Linux, macOS
+powershell -ExecutionPolicy Bypass -File bootstrap.ps1       # Windows
+```
+
+When uv is missing, a launcher runs Astral's installer for the uv version pinned at its top
+(`astral.sh/uv/<version>/install.sh`, or `install.ps1` on Windows). That installer puts uv in `~/.local/bin`
+(`%USERPROFILE%\.local\bin` on Windows) and adds it to your `PATH`: in your shell profiles (`.profile`, `.bashrc`,
+`.zshrc`, ...) on Linux and macOS, in your user `PATH` on Windows. Set `UV_NO_MODIFY_PATH=1` first to keep your
+profiles as they are, or install uv yourself.
+
+Or with no clone yet, from the folder that should become the workspace, with the launcher downloaded on its own and
+the repository's address from the README: `sh bootstrap.sh --repo-url URL`. Inside a checkout the command is also
+`uv run --project python coney-tools workspace init`. It:
+
+1. creates the folders of [the layout](#the-layout) that are missing;
+2. clones the repository into `repos/coney` when run outside a checkout (`--repo-url`);
+3. downloads the research tools you ask for with `--fetch` (below);
+4. writes `repos/coney/coney.local.toml` from the example when there is none, filling in `jdk_home` when it finds a
+   JDK 21, and `ghidra_mcp_repo` and `pcsx2_mcp_dir` when those tools are in `tools/`;
+5. checks the prerequisites ([Building and testing](building.md#what-you-need)): Git, the C++ compiler, CMake 3.28+
+   and Ninja, which the engine needs, and a JDK 21 and Node.js 18+, which only the research tools need. It prints what
+   is missing and what to install; it installs none of it.
+
+Every step that is already done is skipped, so running it again is safe; an existing `coney.local.toml` is never
+changed. `--dry-run` prints the steps without doing any. `--workspace DIR` names the workspace instead of finding it
+around the checkout (a checkout must sit in a workspace's `repos/` folder). The exit code is 1 when the engine's
+prerequisites are missing, 2 for a usage error, 0 otherwise.
+
+**Never your game or firmware.** The bootstrapper never downloads or asks for game files or a BIOS
+([LEGAL.md](repo:LEGAL.md)). Put your own disc image in `game/`, and the BIOS dumped from your own console in PCSX2's
+`bios/` folder.
+
+### Fetching the research tools {#fetch}
+
+Analysts need Ghidra and PCSX2 (implementers need neither). `--fetch TOOL` (repeatable, or `--fetch all`) downloads
+each from its own project's GitHub releases at the version below, checks it against the SHA-256 pinned in
+`python/src/coney_tools/workspace_fetch.py` and unpacks it; downloads are kept in `scratch/downloads/`. Every file
+of a tool is downloaded and checked before any is unpacked, and the tool's folder appears only once it is complete,
+so a failed or interrupted fetch leaves nothing half-installed: run the command again to retry it. An archive entry
+that would land outside the tool's folder is refused.
+
+| `--fetch` | What | Into | Licence |
+| --- | --- | --- | --- |
+| `ghidra` | Ghidra 12.1.4, with the Emotion Engine extension v2.1.38 (built for 12.1.4) in its `Ghidra/Extensions/` | `tools/ghidra_12.1.4_PUBLIC` | Apache-2.0 both |
+| `pcsx2` | PCSX2 2.9.94: the Windows build (made portable with `portable.txt`), the Linux AppImage or the macOS app | `emulators/pcsx2` | GPL-3.0 |
+| `ghidra-mcp` | ghidra-mcp's repository at the commit Coney was set up with (7.0.0 pre-release) | `tools/ghidra-mcp` | Apache-2.0 |
+| `pcsx2-mcp` | PCSX2-MCP 1.0.0's Node.js server only (plain JavaScript, so it runs on every platform) | `tools/pcsx2-mcp` | GPL-3.0 |
+
+What is left to do by hand, which the command reminds you of:
+
+* **Ghidra:** compile the extension's `r5900.sla` once, as [Ghidra + ghidra-mcp](ghidra.md) shows.
+* **ghidra-mcp:** build its headless server (`target/GhidraMCPHeadless.jar`) as its README says; the agent bridge
+  runs from the source as it is.
+* **PCSX2:** your BIOS, and PINE enabled in its settings ([Driving PCSX2](research-workflow.md#driving-pcsx2)). The
+  PCSX2-MCP release also holds a modified PCSX2 for Windows; Coney does not use it and the bootstrapper does not
+  install it.
+
+The Windows PCSX2 is a 7z archive, which Python cannot read; the command extracts it with the `tar` that Windows 11
+ships. An older Windows 10 `tar` may not read 7z: then the fetch stops with tar's error, and you extract the archive
+from `scratch/downloads/` into `emulators/pcsx2` by hand (with 7-Zip) and create an empty `portable.txt` beside
+`pcsx2-qt.exe`.
+
+To move to newer versions, change the pins (URL and SHA-256, or the commit) in `workspace_fetch.py`; GitHub shows
+each release asset's SHA-256.
+
+## Creating the folders by hand
 
 From the folder where you want the workspace (any name works):
 

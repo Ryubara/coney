@@ -14,6 +14,7 @@
 #include "ai/move_action.h"
 #include "ai/move_to_flag_goal.h"
 #include "ai/script_services.h"
+#include "ai/story_goals.h"
 #include "ai/turn_action.h"
 #include "human/locomotion.h"
 
@@ -325,6 +326,98 @@ GoalStatus DevilRunGoal::process(Brain& brain) {
                                                              .flagKind = false});
         move->setSpeed(std::max(m_speed, gaitSpeed(brain.human().speeds(), kWalkGait)));
         brain.queueAction(std::move(move));
+    }
+    return GoalStatus::Stop;
+}
+
+// ---- RunCarrotGoal ----
+
+float carrotBoost(const RunCarrotOrder& order, std::optional<float> d) {
+    if (!d) {
+        return 0.0F;
+    }
+    if (order.keepAhead) {
+        return *d > order.distance ? std::min((*d - order.distance) * kCarrotKeepAheadRate, 1.0F) : 0.0F;
+    }
+    return order.distance > 0.0F && *d < order.distance ? 1.0F - (*d / order.distance) : 0.0F;
+}
+
+int carrotTurnBoost(float boost) {
+    constexpr float kHalf = 0.5F;
+    if (boost <= 0.0F) {
+        return 0;
+    }
+    return boost <= kHalf ? 2 : 3;
+}
+
+RunCarrotGoal::RunCarrotGoal(std::vector<double> points, const RunCarrotOrder& order, FlagServices& services,
+                             const Gangs& gangs)
+    : Goal(GoalType::RunCarrot), m_points(std::move(points)), m_order(order), m_services(&services), m_gangs(&gangs),
+      m_step(order.reverse ? -1 : 1) {}
+
+void RunCarrotGoal::start(Brain& brain) {
+    m_savedTurnBoost = brain.turnBoost();
+    m_speed = gaitSpeed(brain.human().speeds(), m_order.gait);
+}
+
+void RunCarrotGoal::end(Brain& brain) {
+    brain.setTurnBoost(m_savedTurnBoost);
+    if (m_move != nullptr) {
+        m_move->end(brain);
+        m_move.reset();
+    }
+}
+
+std::optional<float> RunCarrotGoal::nearestChaser(const Brain& brain) const {
+    const Gang* gang = m_gangs->find(m_order.chasers);
+    if (gang == nullptr) {
+        return std::nullopt;
+    }
+    std::optional<float> nearest;
+    for (const Brain* member : gang->members()) {
+        if (member == &brain || !member->human().alive()) {
+            continue;
+        }
+        if (const float d = brain.distanceTo(*member); !nearest || d < *nearest) {
+            nearest = d;
+        }
+    }
+    return nearest;
+}
+
+GoalStatus RunCarrotGoal::process(Brain& brain) {
+    // The pace, on the updates the brain's count has its two low bits clear: the speed and the turn boost.
+    if ((brain.updates() & kCarrotPaceMask) == 0) {
+        const float boost = carrotBoost(m_order, nearestChaser(brain));
+        m_speed = gaitSpeed(brain.human().speeds(), m_order.gait) + (kCarrotBoostSpeed * boost);
+        brain.setTurnBoost(m_savedTurnBoost + carrotTurnBoost(boost));
+    }
+    // The point to run to: the next one once the last move is done; past the path's end the run is over.
+    if (m_move == nullptr) {
+        const int next = travelPathNext(m_current, static_cast<int>(m_points.size()), m_order.mode, m_step);
+        if (next < 0) {
+            return GoalStatus::Done;
+        }
+        m_current = next;
+        m_move = std::make_unique<MoveToFlagGoal>(MoveToFlagOrder{.flag = m_points.at(static_cast<std::size_t>(next)),
+                                                                  .gait = m_order.gait,
+                                                                  .angleDegrees = 0.0F,
+                                                                  .distance = 0.0F,
+                                                                  .radius = m_order.radius,
+                                                                  .intervalMs = 0,
+                                                                  .faceFlag = false,
+                                                                  .option = false},
+                                                  *m_services);
+        m_move->start(brain);
+    }
+    const GoalStatus moving = m_move->process(brain);
+    // A running move takes the carrot's speed at once.
+    if (auto* move = dynamic_cast<MoveAction*>(brain.frontAction()); move != nullptr) {
+        move->setSpeed(m_speed);
+    }
+    if (moving == GoalStatus::Done) {
+        m_move->end(brain);
+        m_move.reset();
     }
     return GoalStatus::Stop;
 }

@@ -20,18 +20,18 @@ The Warriors try to collect a payment owed to them by Sanchez, a Hurricanes asso
 | --- | --- | --- |
 | 1 | 🚧 In Progress | The scripts run with no error; the checkpoint is not yet played to its end. |
 | 2 | 🎮 Pending Gameplay Approval | Played to its end with the pad (disc test): the bar's room smoke drifts over the screen as the original's does, the Hurricanes fight the player, and once all eight are down the scene l5_c5 plays and sets checkpoint 3. The surviving Hurricanes stop attacking after a while (AI fight-goal stall, with ai-combat2). |
-| 3 | 🚧 In Progress | The scripts run with no error; the runner's carrot run (GoalRunCarrotRun) is still missing. |
+| 3 | 🚧 In Progress | The scripts run with no error; Sanchez runs each path of his run ahead of the Warriors (GoalRunCarrotRun: faster and turning quicker the closer the nearest Warrior is inside 13 m). The checkpoint is not yet played to its end. |
 | 4 | 🚧 In Progress | Played to its end with the pad (disc test): Diego and Vargas fight through the three stages of TacticBossScenarioA, the boss's HUD bars show in the right column, and the end scene l5_c3 ends the mission (HUDLaunchMissionComplete). The boss rail camera (CamSetupRail) takes the screen after the opening (disc test). |
 
 ## What it needs {#needs}
 
-Its scripts can call 274 script bindings. 16 of them are new, which no earlier level of the story calls: 15 are
+Its scripts can call 274 script bindings. 16 of them are new, which no earlier level of the story calls: 16 are
 implemented in Coney and 16 are traced. The full list is on [the coverage page](../references/bindings/story.md#level5).
 
 | Family | New bindings | In Coney |
 | --- | --- | --- |
 | [Characters](../references/bindings/character.md) | 4 | 4 |
-| [AI](../references/bindings/ai.md) | 4 | 3 |
+| [AI](../references/bindings/ai.md) | 4 | 4 |
 | [World and objects](../references/bindings/world.md) | 3 | 3 |
 | [Effects and lighting](../references/bindings/effects.md) | 2 | 2 |
 | [Sound and music](../references/bindings/sound.md) | 2 | 2 |

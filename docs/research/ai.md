@@ -5955,3 +5955,5 @@ the wait, and its animation name is kept, not applied.
   `*(0x0051489c) + 0x56e3` that lets every AI counter is.
 - What stopped Vermin's route jump at the `level99` window (x 47.76, by the panes at x 47.40) in the window-jump
   state, and whether a normal play-through clears it first; a jump that lands on its point is not yet seen at runtime.
+- What reads `RunCarrotGoal`'s hostile flag (goal `+0x25`, set by `RunCarrotGoal_Init` `0x002e1230`,
+  [AI goals](ai-goals.md#by-address)); Coney does not model it.

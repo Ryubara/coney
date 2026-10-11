@@ -77,6 +77,12 @@ class MoveToExitFlagGoal final : public Goal {
     std::uint64_t m_nextCheckMs = 0;
 };
 
+/// A travel path's next point after `current` (-1 before the first) among `count`: forwards for `step` +1, backwards
+/// for -1; at the end mode 1 loops, mode 2 turns round (flipping `step`), mode 0 gives -1, done (so does an empty
+/// path).
+/// @orig 0x002e07d0 TravelPathGoal_NextPoint (unknown)
+[[nodiscard]] int travelPathNext(int current, int count, int mode, int& step);
+
 /// `GoalTravelPath`'s goal (type 0x38): walks the human along a path's points in order, a MoveToFlagGoal pushed for
 /// each; at the end mode 0 ends it, 1 loops to the first point, 2 turns round. A point the services cannot find is
 /// skipped (the MoveToFlagGoal ends at once). **Coney choice**: a path with no points ends at once.
@@ -89,7 +95,6 @@ class TravelPathGoal final : public Goal {
     /// Each time it is processed with no sub-goal over it: the next point (the first when none yet), pushed as a
     /// MoveToFlagGoal; done past the last point in mode 0.
     /// @orig 0x002e0968 TravelPathGoal_Process (unknown)
-    /// @orig 0x002e07d0 TravelPathGoal_NextPoint (unknown)
     [[nodiscard]] GoalStatus process(Brain& brain) override;
 
     /// The index of the point it is walking to (-1 before the first).

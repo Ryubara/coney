@@ -815,8 +815,13 @@ TEST_CASE("locked onto a target with no move, an AI keeps its facing while the t
         return coney::human::headingOf(coney::anim::subtract(other.human().position(), brain.human().position()));
     };
     const float bearingBefore = bearing();
-    // He walks up +y beside him for a second.
-    const HeldMove walk{.heading = 0.0F, .speed = other.human().speeds().walk, .aim = std::nullopt};
+    const Vec3 standing = brain.human().position();
+    // He walks 1.8 m up +y beside him, within the 2.5 m that keeps the lock. The hit left him in a fight stance too,
+    // where the feet go to his brain's aim point (+0x90), not along the heading
+    // (docs/research/characters.md#ai-locomotion), so the walk aims there. With the aim left stale he strafed into the
+    // AI along x and, now that humans meet (docs/research/physics.md#human-contacts), pushed him along, so the bearing
+    // never changed.
+    const HeldMove walk{.heading = 0.0F, .speed = other.human().speeds().walk, .aim = Vec3{45.9F, 42.8F, 0.0F}};
     REQUIRE(other.queueAction(std::make_unique<HoldMoveAction>(walk)));
     bool lockHeld = true;
     scene.runUntil(
@@ -824,6 +829,8 @@ TEST_CASE("locked onto a target with no move, an AI keeps its facing while the t
     CHECK(lockHeld);
     CHECK(std::fabs(turnedDegrees(bearingBefore, bearing())) > 30.0F);
     CHECK(brain.human().heading() == facing);
+    // Beside him, not through him: nobody pushed the AI.
+    CHECK(planDistance(brain.human().position(), standing) < 0.01F);
 }
 
 TEST_CASE("locked, a brain's move turns an AI 24 degrees an update and strafes him to its point", "[ai][move]") {

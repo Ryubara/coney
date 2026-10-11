@@ -346,6 +346,7 @@ target_sources(coney_tests PRIVATE
     ai/route_planner_test.cpp
     ai/scripted_goals_test.cpp
     ai/scripted_hub_test.cpp
+    ai/run_carrot_test.cpp
     ai/scripted_character_test.cpp
     ai/scripted_humans_test.cpp
     ai/riot_goals_test.cpp

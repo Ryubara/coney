@@ -971,6 +971,7 @@
     RunCarrotGoal_Init (0x002e1230), in the same registers as GoalTravelPath's binding passes them, so the third is the
     end mode, not a start index (confirmed (code) at the wrapper 0x00360c10 and 0x002e12b8-0x002e12dc).
   usage: {chunks: 4, calls: 10, boot: false, mission1: false, result_used: false, levels: [5, 84, 20]}
+  coney: implemented
 
 - name: GoalDevilRun
   wrapper: 0x00360d98
