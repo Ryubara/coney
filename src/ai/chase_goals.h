@@ -4,15 +4,18 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
 
 #include "ai/goal.h"
+#include "ai/move_to_flag_goal.h"
 #include "animation/anim_math.h"
 
-// The goals the story's fifth and sixth missions add: guarding a flag, leading a chase along a path, the paced runner
-// of the rooftop and street chases (`GoalDevilRun`) and the balcony boss who throws from a ledge. Each is driven by its
+// The goals the story's fifth to seventh missions add: guarding a flag, leading a chase along a path, the paced runner
+// of the rooftop and street chases (`GoalDevilRun`), the carrot that runs ahead of its chasers (`GoalRunCarrotRun`) and
+// the balcony boss who throws from a ledge. Each is driven by its
 // brain as the other scripted goals are (ai/goal.h); the flags and paths come in through FlagServices.
 // Research: docs/references/bindings/ai.md, docs/research/ai.md#scripted
 
@@ -164,6 +167,76 @@ class DevilRunGoal final : public Goal {
     float m_speed = 0.0F;
     int m_savedThreat = 0;
     float m_savedFieldOfView = 0.0F;
+};
+
+/// `GoalRunCarrotRun(human, path, mode, reverse, gait, radius, chasers, distance, keepAhead)`'s numbers.
+struct RunCarrotOrder {
+    int mode = 0;           ///< The path's end mode, as GoalTravelPath's (0 stop, 1 loop, 2 ping-pong).
+    bool reverse = false;   ///< Runs the path backwards.
+    int gait = 4;           ///< Its slowest speed is this gait's; the move to each point runs at it.
+    float radius = 1.0F;    ///< Arrival radius at each point, metres.
+    int chasers = 0;        ///< The gang whose nearest live member it measures.
+    float distance = 10.0F; ///< The reference distance, metres.
+    bool keepAhead = false; ///< Speeds up the farther the chaser is beyond `distance`, not the nearer within it.
+};
+
+/// The run-carrot measures its pace on the updates whose brain count has these bits clear (every fourth).
+inline constexpr std::uint64_t kCarrotPaceMask = 3;
+/// The most the carrot's speed rises above its gait's, m/s, at a boost of 1.
+inline constexpr float kCarrotBoostSpeed = 6.0F;
+/// With `keepAhead`, the boost grows this much per metre beyond the distance (full 5 m past it).
+inline constexpr float kCarrotKeepAheadRate = 0.2F;
+
+/// The carrot's boost, 0 to 1, from the nearest chaser's distance `d` (none: no live chaser, 0): by default
+/// `1 - d / distance` inside the distance and 0 beyond it; with `keepAhead` `min((d - distance) * 0.2, 1)` beyond it
+/// and 0 within it.
+/// @orig 0x002e13c0 RunCarrotGoal_UpdateSpeed (unknown)
+[[nodiscard]] float carrotBoost(const RunCarrotOrder& order, std::optional<float> d);
+/// What the carrot adds to its saved turn boost for a boost: 0 for none, 2 up to 0.5, 3 above
+/// (docs/research/ai.md#brain-boosts).
+[[nodiscard]] int carrotTurnBoost(float boost);
+
+/// `GoalRunCarrotRun`'s goal (type 0x4a, docs/research/ai-goals.md#goal-travel-path): the carrot runs a path point to
+/// point as GoalTravelPath does, with a move-to-flag goal of its own for each point at the order's gait and radius, and
+/// ends when the path runs out. On every fourth update it measures the nearest live member of the chasing gang and sets
+/// its speed to the gait's plus up to kCarrotBoostSpeed by carrotBoost(), which a running move takes at once, and its
+/// turn boost to the saved one plus carrotTurnBoost(); End restores the turn boost. No live chaser: the gait's speed.
+/// **Coney's reading**: the third argument is the path's end mode, as GoalTravelPath's third is (the binding's page
+/// calls it a start index "as in GoalTravelPath"); distances are measured across the ground.
+/// @orig 0x002e1230 RunCarrotGoal_Init (unknown)
+class RunCarrotGoal final : public Goal {
+  public:
+    /// Along `points` (flag handles, found through `services`) with `order`, its chasers found in `gangs` (both must
+    /// outlive it).
+    RunCarrotGoal(std::vector<double> points, const RunCarrotOrder& order, FlagServices& services, const Gangs& gangs);
+    /// Saves the turn boost; the speed starts at the gait's.
+    /// @orig 0x002e1320 RunCarrotGoal_Start (unknown)
+    void start(Brain& brain) override;
+    /// Restores the turn boost and ends the move to the current point.
+    /// @orig 0x002e1330 RunCarrotGoal_End (unknown)
+    void end(Brain& brain) override;
+    /// The pace on every fourth update, then the move to the current point, the next one once it is reached.
+    /// @orig 0x002e15e8 RunCarrotGoal_Process (unknown)
+    [[nodiscard]] GoalStatus process(Brain& brain) override;
+
+    /// The speed it runs at, m/s.
+    [[nodiscard]] float speed() const { return m_speed; }
+    /// The index of the point it runs to (-1 before the first).
+    [[nodiscard]] int current() const { return m_current; }
+
+  private:
+    // The distance across the ground to the nearest live member of the chasing gang, or none.
+    [[nodiscard]] std::optional<float> nearestChaser(const Brain& brain) const;
+
+    std::vector<double> m_points;
+    RunCarrotOrder m_order;
+    FlagServices* m_services;
+    const Gangs* m_gangs;
+    std::unique_ptr<MoveToFlagGoal> m_move; // the move to the current point
+    int m_current = -1;
+    int m_step;
+    float m_speed = 0.0F;
+    int m_savedTurnBoost = 0;
 };
 
 /// `GoalBigLedgeThrower(human, targets, objects, cycles, delayMs, taunt, anim)`'s values.

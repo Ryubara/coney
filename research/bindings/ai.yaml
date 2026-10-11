@@ -969,6 +969,7 @@
     0x0028cdf8) multiplies an AI human's turn limit by (b + 1); see the AI page (Brain bytes).
     No chaser alive: speed stays the gait's.
   usage: {chunks: 4, calls: 10, boot: false, mission1: false, result_used: false, levels: [5, 84, 20]}
+  coney: implemented
 
 - name: GoalDevilRun
   wrapper: 0x00360d98

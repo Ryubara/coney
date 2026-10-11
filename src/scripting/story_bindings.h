@@ -25,7 +25,7 @@
 namespace coney::script {
 
 /// The bindings registered here; installBindings() registers them with addStoryBindings().
-inline constexpr std::array<std::string_view, 97> kStoryBindings{"AddPath",
+inline constexpr std::array<std::string_view, 98> kStoryBindings{"AddPath",
                                                                  "BrSetFOV",
                                                                  "BrSetInvestigateResponse",
                                                                  "BrSetReactToViolence",
@@ -63,6 +63,7 @@ inline constexpr std::array<std::string_view, 97> kStoryBindings{"AddPath",
                                                                  "GoalMelee",
                                                                  "GoalMoveToExitFlag",
                                                                  "GoalPlayDynIdle",
+                                                                 "GoalRunCarrotRun",
                                                                  "GoalThrowObject",
                                                                  "GoalTravelPath",
                                                                  "HuAreActionsBlocked",
@@ -176,6 +177,19 @@ struct DevilRunCall {
     float maxSpeed = 0.0F;
     float urgency = 0.0F;
     bool hostile = false;
+};
+
+/// `GoalRunCarrotRun(human, path, mode, reverse, gait, radius, chasers, distance, keepAhead)`.
+struct RunCarrotCall {
+    double human = 0;
+    double path = 0;        ///< The path's handle; 0 for none.
+    int mode = 0;           ///< The path's end mode, as GoalTravelPath's.
+    bool reverse = false;   ///< Runs the path backwards.
+    int gait = 0;           ///< The base gait.
+    float radius = 0.0F;    ///< Arrival radius at each point, metres.
+    int chasers = 0;        ///< The chasing gang.
+    float distance = 0.0F;  ///< The reference distance, metres.
+    bool keepAhead = false; ///< Speeds up the farther the chaser falls behind.
 };
 
 /// `GoalBigLedgeThrower(human, targets, objects, cycles, delayMs, taunt, anim)`.
@@ -388,6 +402,8 @@ class StoryBindingHost {
     virtual void goalLeadChase(const LeadChaseCall& /*call*/) {}
     /// `GoalDevilRun`.
     virtual void goalDevilRun(const DevilRunCall& /*call*/) {}
+    /// `GoalRunCarrotRun`.
+    virtual void goalRunCarrot(const RunCarrotCall& /*call*/) {}
     /// `GoalBigLedgeThrower`.
     virtual void goalBigLedgeThrower(const LedgeThrowerCall& /*call*/) {}
     /// `GoalPlayDynIdle`.

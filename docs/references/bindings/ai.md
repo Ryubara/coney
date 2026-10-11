@@ -2756,7 +2756,7 @@ the gait's.
   `RunCarrotGoal_Init`, `0x002e13c0` `RunCarrotGoal_UpdateSpeed`, `0x002e15e8` `RunCarrotGoal_Process`
 - **Used by** 4 of 467 script chunks (10 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level5`](story.md#level5) (mission 7)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalShopkeeper {#goalshopkeeper}
 

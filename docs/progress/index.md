@@ -28,12 +28,12 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 17.5%](https://img.shields.io/badge/reimplemented-17.5%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 17.6%](https://img.shields.io/badge/reimplemented-17.6%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 ![Understood: 99.9%](https://img.shields.io/badge/understood-99.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.5% of the game's own code (587,520 of 3,354,776 bytes, 2,184 functions) |
+| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.6% of the game's own code (589,420 of 3,354,776 bytes, 2,191 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 99.9% named in Ghidra and cited with evidence (3,282,584 of 3,284,276 bytes; 11,421 of 11,426 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
@@ -73,13 +73,13 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▋░░░░░░░░░░░░░` | 33.1% | 117 | 100,440 |
 | `Graphics` | `██▋░░░░░░░░░░░░░░░░░` | 12.8% | 91 | 195,624 |
 | `GUI` | `████▏░░░░░░░░░░░░░░░` | 20.7% | 246 | 497,416 |
-| `Human` | `███▋░░░░░░░░░░░░░░░░` | 17.9% | 814 | 1,096,672 |
+| `Human` | `███▋░░░░░░░░░░░░░░░░` | 18.0% | 820 | 1,096,672 |
 | `Maths (unnamed)` | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% | 9 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `▌░░░░░░░░░░░░░░░░░░░` | 2.5% | 10 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 12 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 30 | 17,904 |
-| `Scripting` | `██████▎░░░░░░░░░░░░░` | 31.1% | 237 | 197,192 |
+| `Scripting` | `██████▎░░░░░░░░░░░░░` | 31.3% | 238 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `███▍░░░░░░░░░░░░░░░░` | 17.1% | 180 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
@@ -1517,6 +1517,12 @@ at the top of the repository's `README.md`.
 | `0x002e0a78` | `Goal_LeadChase` | `Human` | not filled in |
 | `0x002e0b48` | `LeadChaseGoal_Init` | `Human` | not filled in |
 | `0x002e0dc8` | `LeadChaseGoal_Process` | `Human` | not filled in |
+| `0x002e1140` | `Goal_RunCarrot` | `Human` | 240 |
+| `0x002e1230` | `RunCarrotGoal_Init` | `Human` | 240 |
+| `0x002e1320` | `RunCarrotGoal_Start` | `Human` | 16 |
+| `0x002e1330` | `RunCarrotGoal_End` | `Human` | 88 |
+| `0x002e13c0` | `RunCarrotGoal_UpdateSpeed` | `Human` | 552 |
+| `0x002e15e8` | `RunCarrotGoal_Process` | `Human` | 376 |
 | `0x002e1760` | `Goal_DevilRun` | `Human` | not filled in |
 | `0x002e1850` | `DevilRunGoal_Init` | `Human` | not filled in |
 | `0x002e18d8` | `DevilRunGoal_Start` | `Human` | not filled in |
@@ -1779,6 +1785,7 @@ at the top of the repository's `README.md`.
 | `0x003603a8` | `GoalAddressPerson` | `Scripting` | 264 |
 | `0x00360690` | `GoalTrackHuman` | `Scripting` | 160 |
 | `0x00360ac8` | `GoalLeadChase` | `Scripting` | not filled in |
+| `0x00360c10` | `GoalRunCarrotRun` | `Scripting` | 388 |
 | `0x00360d98` | `GoalDevilRun` | `Scripting` | not filled in |
 | `0x00360f28` | `GoalGuardFlag` | `Scripting` | not filled in |
 | `0x003610a8` | `GoalFight` | `Scripting` | 168 |
