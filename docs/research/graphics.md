@@ -982,6 +982,81 @@ Each pass stores `opaque` at the instance's `+0x41`, selects the objects' lights
    RenderWare's current camera, so that the reflection follows the view, is inferred.
 6. Draw it with the saved render callback (`0x005fd030`), then set the material's texture back to none.
 
+### The throw-aim arc {#throw-arc}
+
+While a player aims a throw (L1, [Objects: throws](objects.md#throws)) a textured ribbon shows the flight from his
+hand. One arc record per player (game state `+0x5740 + 0x30 × p`, [code](#code-textures)). Confirmed (code) at the
+addresses cited unless marked.
+
+**The model** (`ThrowArc_Create`, `0x0018f268`):
+
+- One clump, one atomic, one geometry made with `RpGeometryCreate(36, 34, 0x0d)`: **36 vertices (18 pairs) and 34
+  triangles** (two per pair of pairs, 17 quads), flags triangle strip, textured and prelit; no normals and no
+  lighting flag, so the arc is unlit: its colour is the vertex colour times the texture. The bounding sphere is
+  radius 100 at the origin, so it is never culled.
+- One material, surface properties (1, 1, 1), texture **`aimthrow_tex`**: the WAD file named the decimal CRC-32 of
+  that name, `646320484` (entry 3,276 of `WARRIORS.DIR`, name hash `0x3f103fcb` of `./ee_files/646320484`, 1,552
+  bytes), loaded once and kept (`0x005971b0`). It is a texture dictionary of one PS2 texture, **`aimthrow`, 32 × 64,
+  4-bit palettised, linear filtering, wrap in u and v**. Its palette uses three entries: 0 = light grey (150, 150,
+  150) at alpha `0x0e` (about 11 % of the PS2's `0x80` = opaque), 1 = the same grey fully opaque, 2 = transparent;
+  of the 2,048 texels 62 % are transparent, 31 % the faint grey and 6 % opaque (counted from the disc; the texels'
+  layout is in the PS2's swizzled order and was not unswizzled here, so the pattern's shape is not described).
+- Texture coordinates, fixed: pair i has u = 0 on its left vertex and 1 on its right, and **v = 15 − i** (15 at the
+  hand down to −2 at the end), so the texture repeats once per segment along the arc (wrapping).
+
+**Each aiming frame** `Human_TraceThrowAim` (`0x0018fee0`) traces the arc ([Objects: throws](objects.md#throws)) and
+calls `ThrowArc_BuildStrip(arc, local points, world points, count, hit)` (`0x0018fa68`):
+
+- **Points.** The 18 kept points (one every sixth 1/60 s step), in the thrower's frame relative to the release point
+  (`Mat_TransformPoint` by the inverse of his facing and that point). `count` is 18 when the trace met nothing; when
+  it ended at a contact in segment k it is k, with point k moved to the contact.
+- **Pairs.** Pair 0 at point 0, pairs 1 to count − 1 at their points, pairs count to 16 all at point count − 1
+  (degenerate triangles), pair 17 at point count (the end or the contact). So the ribbon always has 18 pairs and ends
+  where the trace ended.
+- **Width.** Each pair is the point ± **0.08 m** along the thrower's right axis (his frame's x): a flat ribbon
+  **0.16 m wide**, level across, in the vertical plane of his facing. The model's axes are stored as (x, z, −y) and
+  `ThrowArc_PlaceAtHand` (`0x0018f628`) builds the clump's frame from his facing and the release point (hand
+  `+0x610` + facing × (0.3009, −0.6354, 1.5865)) with the matching swap, so the ribbon lands on the traced points
+  (the swap's cancelling is inferred from the two functions' matrices).
+- **Colour** (RenderWare's RGBA bytes): **(127, 127, 127)** when `hit` is 0 and **(170, 43, 43)** when it is set.
+  `hit` is the object the trace ended on: the human target, or the first body (world object, car) it met; it is
+  null for the level mesh or nothing. That is the object whose task becomes `+0x634`, so the arc is red exactly while
+  `HuIsAimingAt` would be true of something (inferred: every task has the type bit `+0x634` needs).
+- **Alpha** by pair: pair 0 (at the hand) **0**; every other pair i: **127 + trunc(16 × min(i ÷ count, 1))**, so the
+  collapsed pairs and the end pair of a cut arc get 143. With count 18 the pairs 0-17 get 0, 127, 128, 129, 130, 131,
+  132, 133, 134, 135, 135, 136, 137, 138, 139, 140, 141, 142: the ribbon fades in over its first segment only and then
+  rises slightly toward the end.
+
+**Drawing** (`ThrowArc_Render`, `0x00190588`, from `ThrowArcs_RenderAll` `0x00419da0` in the world pass): only
+while the human's move function is `Human_MoveThrowAim` (`+0x1c0`, with no move id, `+0x1be` = −1) and he holds a
+world object; for each camera view: culling off (`RwRenderStateSet(CULLMODE, NONE)`), then the clump is rendered.
+No other state is set, so Z test, Z write and vertex-alpha blending are the world pass's defaults (inferred).
+
+**On screen** (inferred): the PS2's GS treats a vertex colour or alpha of `0x80` as 1.0, and the palette's opaque
+alpha is `0x80` (confirmed from the disc), so the vertex grey 127 shows the texture's own light grey (150) almost
+unchanged, the red (170, 43, 43) tints it to about (199, 50, 50), and alphas 127-143 leave the texture's alpha as it
+is (opaque texels solid, the faint texels a light haze). Whether RenderWare's PS2 pipeline passes prelit colours to
+the GS unscaled was not read; deferred: runtime (PCSX2: level80 checkpoint 3 with a bottle, hold L1 with the left
+stick centred, sample the arc's pixels with nothing targeted and with the aim on the `dyn_w_mission` marker, pitch
+about 0.14 rad as on [Objects: throws](objects.md#throws)).
+
+**Owner item 31 (the arc)**: the first Coney arc (on the `throw-arc` branch, 2026-10-11) used
+stand-in values that differ from the above. **Coney fixes**:
+
+1. Colours (127, 127, 127) not hit and (170, 43, 43) hit, read with 128 = 1.0 (so about the texture's grey and a
+   strong red), instead of (170, 170, 170, 160) and (220, 30, 30, 160).
+2. Alpha per pair as above (0 at the hand, then 127 + trunc(16 × min(i ÷ count, 1)), 128 = 1.0) instead of a fade
+   over three points to a fixed 160.
+3. Always 18 pairs: points up to count − 1, the rest collapsed on point count − 1, the last pair at the end point.
+4. Texture `aimthrow` from WAD entry `./ee_files/646320484`, wrapping, with u 0 → 1 across and v = 15 − pair along
+   (one repeat per segment); untextured only when the file is missing.
+5. Width ± 0.08 m along the thrower's right axis (his facing), not the chord's perpendicular in plan (the same while
+   the arc stays in his facing's plane; the right axis is what the original uses).
+6. Culling off; drawn in the world pass while the aiming move runs and a world object is held.
+7. Test: for a trace of 18 points with no hit, the strip has 36 vertices, alphas (0, 127, 128, ..., 141, 142) and
+   colour (127, 127, 127); with a contact in segment 5 the pairs 5-16 coincide with point 4 and pair 17 is the
+   contact; with a hit the colour is (170, 43, 43).
+
 ### Distance: fades and level of detail {#lod}
 
 What changes with distance, from the draw paths read (confirmed (code) for each item; that there is nothing else is
@@ -1491,11 +1566,11 @@ Confirmed (code) at each address unless a row says otherwise.
 | `0x0018eb10` | `ResourceMgr_RequestTextures` | request, type 4; a resident one only has its stamp renewed | confirmed (code) |
 | `0x0018ec00` | `ResourceMgr_FreeTextures` | free, type 4: a holder with no references is destroyed and leaves the map | confirmed (code) |
 | `0x0018f230` | `ThrowArc_Clear` | a cleared arc record (0x30 bytes: clump, atomic, material, human, start and end points); one per player in the game state at `+0x5740` | confirmed (code) |
-| `0x0018f268` | `ThrowArc_Create` | the arc's model: texture `aimthrow_tex` (loaded once, `0x005971b0`), a strip of 18 vertex pairs and 32 triangles in one material | confirmed (code) |
+| `0x0018f268` | `ThrowArc_Create` | the arc's model: texture `aimthrow_tex` (loaded once, `0x005971b0`), 36 vertices (18 pairs) and 34 triangles, prelit and unlit, in one material ([The throw-aim arc](#throw-arc)) | confirmed (code) |
 | `0x0018f628` | `ThrowArc_PlaceAtHand` | puts the arc's frame at the human's hand (position `+0x610` plus its facing `+0x620` turned by a fixed offset) | confirmed (code) |
 | `0x0018f7b0` | `ThrowArc_SetHuman` | `+0x0c` (from `PlayerList_Add`) | confirmed (code) |
 | `0x0018f7b8` | `ThrowArc_TargetFilter` | the sweep's callback: for a player, a human counts unless it is an ally (`0x00222a90`) or lies on the other side from the one the left stick pushes (dead zone 26) | confirmed (code); the side test inferred |
-| `0x0018fa68` | `ThrowArc_BuildStrip(arc, points, count, hit)` | writes the arc's points as a strip 0.16 m wide, fading in from the hand; one colour when `hit` is set and another when not | confirmed (code) |
+| `0x0018fa68` | `ThrowArc_BuildStrip(arc, points, count, hit)` | writes the arc's points as a strip 0.16 m wide: alpha 0 at the hand, then 127-143; (127, 127, 127) or, when `hit` is set, (170, 43, 43) ([The throw-aim arc](#throw-arc)) | confirmed (code) |
 | `0x0018fee0` | `Human_TraceThrowAim` | each frame of the aiming state (`0x00244770`): steps the throw from the hand at 1/60 s with gravity (z speed − 0.2613 a step) for 108 steps, keeps every sixth point (18), sweeps a sphere of half the object's size along them, stops at the first non-friendly AI human (human `+0x638`) unless a body with `THROWNWEAPONTARGET` or the level mesh comes first (that body is `+0x634`; [Objects: throws](objects.md#throws)), and rebuilds the strip | confirmed (code) |
 | `0x00190588` | `ThrowArc_Render` | from `WorldManager_Render`, while its human is in the aiming state: draws the clump in each view with back-face culling off | confirmed (code) |
 | `0x001906e8`, `0x00190770` | `ChunkReader_TextureDictionaryTid`, `ChunkReader_RenderwareTextureDic` | [Chunk system](chunk-system.md) | confirmed (code) |
