@@ -121,14 +121,16 @@ TEST_CASE("the tutorial bindings queue, check, flush and keep the callback", "[s
     coney::hud::Hud hud;
     Harness harness(&hud);
     harness.call("HUDSetTutorialText", {Value("Press X")});
-    REQUIRE(hud.hints().queued().size() == 1);
-    CHECK(hud.hints().queued().front().priority == 1);
+    // Shown at once on the free box.
+    REQUIRE(hud.hints().showing().has_value());
+    CHECK(hud.hints().showing()->priority == 1);
     CHECK(harness.value("HUDCheckTutorialText", {Value("Press X")}).number() == 1.0);
     harness.call("HUDSetTutorialText", {Value("Later"), Value(3.0)});
     harness.call("HUDFlushTutorialText", {Value(3.0)});
-    CHECK(hud.hints().queued().size() == 1);
-    harness.call("HUDFlushTutorialText", {});
+    CHECK(hud.hints().showing().has_value());
     CHECK(hud.hints().queued().empty());
+    harness.call("HUDFlushTutorialText", {});
+    CHECK_FALSE(hud.hints().showing().has_value());
     harness.call("HUDSetTutorialCallback", {Value("P1.BasicAttacks")});
     CHECK(hud.tutorialCallback() == "P1.BasicAttacks");
     harness.call("HUDSetTutorialCallback", {Value()});

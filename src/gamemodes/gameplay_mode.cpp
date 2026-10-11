@@ -796,9 +796,8 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
     updateTagPanel();
     updateActionPrompt();
     runPlayerFrame(m_state, m_scripts, stack.pads(), nowMs, &m_objectServices.crimeServices());
-    // The hint box steps where the original's HUD update stands in its frame, after this step's callbacks and before
-    // the scheduled calls: a text a callback set shows now, so a scheduled call's clear removes it and does not leave
-    // it queued behind the next one (the box one text late; owner checklist item 33b).
+    // The hint box's one step, where the original's HUD update stands in its frame: after this step's callbacks and
+    // before the scheduled calls (a text set on a free box has already shown, in the call that set it).
     if (m_context.hud != nullptr) {
         m_context.hud->updateHints(nowMs);
     }

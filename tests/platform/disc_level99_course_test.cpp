@@ -3,9 +3,11 @@
 // Checks against the player's own disc that mission 1's play-through script passes `level99`'s combat tutorial up to
 // its throw lesson: the level plays as `--play-level level99 --checkpoint 1` plays it, headless, driven by the pad of
 // kLessonsScript and then kCourseScript (lessons 7-12), and lessons 7-8's tutorial callbacks must arm in order (the
-// snaps, the throws) with no script error (docs/research/scripting.md#level99-lessons). It runs only when the
-// environment variable CONEY_DISC names the disc and skips otherwise; it prints counts and callback names only
-// (LEGAL.md).
+// snaps, the throws) with no script error (docs/research/scripting.md#level99-lessons). The hint box must show the
+// lesson texts in the original's order, never hold a text behind a hint with no time of its own, show lesson 5's grab
+// hint at the strong grapple's connect, frames before `TT_24d`, and `P1.StartSnaps`'s text twice in one frame
+// (docs/research/scripting.md#level99-hint-timing). It runs only when the environment variable CONEY_DISC names
+// the disc and skips otherwise; it prints counts, keys and callback names only (LEGAL.md).
 //
 // **Known gap**: lessons 9-12 (the bats, the rage moves, the second wave) and checkpoint 2 are not checked. The pad
 // script is frame-locked: its bat swings and the second wave land only when every bum stands where an earlier Coney AI
@@ -39,6 +41,7 @@
 #include "characters/character_types.h"
 #include "combat/anim_ids.h"
 #include "core/error.h"
+#include "core/event_log.h"
 #include "core/game_random.h"
 #include "core/game_timer.h"
 #include "core/input_script.h"
@@ -161,6 +164,18 @@ TEST_CASE("the disc's level99 combat tutorial: the play-through script passes le
     std::vector<std::string> shownTexts;
     std::size_t mostQueued = 0; // the longest the box's queue grew behind a showing hint
     std::uint64_t frame = 0;
+    // Every show, by frame, from the event log's `hint` events: a text shown twice in one frame is two shows.
+    std::vector<std::pair<std::uint64_t, std::string>> shows;
+    coney::events::setSink(
+        [&shows, &frame](std::uint64_t, std::string_view kind, std::string_view name, std::string_view) {
+            if (kind == "hint") {
+                shows.emplace_back(frame, std::string(name));
+            }
+        });
+    // Frames on which a text waited in the queue behind a hint with no time of its own: in the original only a
+    // `<DISPLAYTIME>` hint holds the box, and its successor waits one update after it ends (nothing showing then),
+    // docs/research/hud.md#hint-queue-runtime.
+    std::size_t backedUp = 0;
     for (; frame < kCourseEnd + kCheckpointWait && (armed.empty() || armed.back() != "P1.RageMoves"); ++frame) {
         stack.runUntilEmpty(timer, {}, 1);
         if (const std::optional<coney::hud::Hint>& showing = hud.hints().showing();
@@ -168,6 +183,10 @@ TEST_CASE("the disc's level99 combat tutorial: the play-through script passes le
             shownTexts.push_back(showing->text);
         }
         mostQueued = std::max(mostQueued, hud.hints().queued().size());
+        if (const std::optional<coney::hud::Hint>& showing = hud.hints().showing();
+            !hud.hints().queued().empty() && showing && showing->text.find("<DISPLAYTIME") == std::string::npos) {
+            ++backedUp;
+        }
         if (const std::string& callback = hud.tutorialCallback();
             !callback.empty() && (armed.empty() || armed.back() != callback)) {
             armed.push_back(callback);
@@ -230,4 +249,44 @@ TEST_CASE("the disc's level99 combat tutorial: the play-through script passes le
     }
     CHECK(matched == expected.size());
     CHECK(scripts.scripts().errors() == 0);
+    coney::events::setSink({});
+
+    // Lessons 5-8 as the original's two runs timed them (docs/research/scripting.md#level99-hint-timing), by key.
+    const auto keyOf = [&texts](std::string_view text) {
+        for (const std::string_view key : {"TT_19a", "TT_19b", "TT_19c", "TT_19d", "TT_19e", "TT_19f", "TT_19g",
+                                           "TT_24a", "TT_24b", "TT_24d", "TT_24e", "TT_25a", "TT_25c", "TT_25e"}) {
+            if (texts->field(key).string() == text) {
+                return std::string(key);
+            }
+        }
+        return std::string();
+    };
+    const auto firstShow = [&shows, &keyOf](std::string_view key, std::size_t from = 0) {
+        for (std::size_t i = from; i < shows.size(); ++i) {
+            if (keyOf(shows[i].second) == key) {
+                return i;
+            }
+        }
+        return shows.size();
+    };
+    std::printf("  level99 course: %zu shows, %zu frames with a text queued behind an untimed hint\n", shows.size(),
+                backedUp);
+    CHECK(backedUp == 0);
+    // Lesson 5's end: the strong grapple's connect fires PlayerState (82), which shows the front hold's grab hint,
+    // and P1.Power's TT_24d comes later, when the hit is scored with 82: never in one frame (157 and 191 there).
+    const std::size_t powerB = firstShow("TT_24b");
+    const std::size_t powerD = firstShow("TT_24d", powerB);
+    REQUIRE(powerD < shows.size());
+    REQUIRE(powerD > powerB + 1);
+    const auto& grabHint = shows.at(powerD - 1);
+    CHECK(keyOf(grabHint.second).starts_with("TT_19"));
+    CHECK(grabHint.first < shows.at(powerD).first);
+    // P1.StartSnaps: nil, TT_25c, nil, TT_25c in one call, the text shown twice in that frame and nothing queued.
+    const std::size_t snaps = firstShow("TT_25c");
+    REQUIRE(snaps + 1 < shows.size());
+    CHECK(shows.at(snaps + 1).first == shows.at(snaps).first);
+    CHECK(keyOf(shows.at(snaps + 1).second) == "TT_25c");
+    std::printf("  level99 course: TT_24d %llu frames after the grab hint; TT_25c shown twice in frame %llu\n",
+                static_cast<unsigned long long>(shows.at(powerD).first - grabHint.first),
+                static_cast<unsigned long long>(shows.at(snaps).first));
 }

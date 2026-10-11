@@ -51,6 +51,10 @@ class Holdable : public Combatant {
     /// clips, docs/research/formats/animation.md#paired-tasks), then its own `loop`, as play() does otherwise.
     virtual void playPaired(std::span<const std::uint32_t> clips, const characters::AnimSet& attacker,
                             std::uint32_t loop, AnimState state, TargetState targetState) = 0;
+    /// Reports the start of the loop its playing chain ends in now, not when it plays: a grab's connect builds the
+    /// victim's hold under its reaction (docs/research/characters.md#anim-callbacks). Nothing for one with no animation
+    /// callbacks (the default).
+    virtual void announceFollowOn() {}
     /// Attached, the grabber places it each update and nothing else moves it; detached, its clips' root motion does.
     virtual void setAttached(bool attached) = 0;
     [[nodiscard]] virtual bool attached() const = 0;

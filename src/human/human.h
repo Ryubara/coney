@@ -419,6 +419,7 @@ class Human final : public Holdable {
               TargetState targetState) override;
     void playPaired(std::span<const std::uint32_t> clips, const characters::AnimSet& attacker, std::uint32_t loop,
                     AnimState state, TargetState targetState) override;
+    void announceFollowOn() override { m_animator.announceFollowOn(); }
     void setAttached(bool attached) override { m_fighter.setHoldAttached(attached); }
     [[nodiscard]] bool attached() const override { return m_fighter.holdAttached(); }
     void keepHold() override { m_fighter.keepHold(); }
