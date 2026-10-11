@@ -415,18 +415,7 @@ walk to each station with the stick at a partial deflection, then:
 - Where Coney's player turn toward the flag goes wrong ([Coney](#coney)).
 - `Human_AlignToObject` with the human as its own target (a zero direction): what it does to the heading (the player
   is already on the flag, facing its heading).
-<<<<<<< ours
-- Coney's repetitions run about 0.9 × the runtime length. What is known (2026-10-11): the gait blend's task rate is
-  1.0 at runtime (logged every update, push-ups), `GaitBlend_Advance` (`0x0010a5b8`) advances the leading cursor by
-  rate × dt, and `AnimCursor_Advance` (`0x001044a0`) wraps when `round((t + dt) × 30)` reaches `round(d × 30)`,
-  carrying the overshoot `1/60 − (d − t − dt)` into the new loop. Speculative: the runtime lengths fit the fast clip's
-  duration at 0.03 s per update rather than 1/30 (push-ups 0.933 s → 31 updates, measured 30-31; sit-ups 1.2 s → 40,
-  measured 39-40), as if the anim dt were 0.9 × the update or the clip durations read from the cursors were short.
-  Needed: a per-update trace of the **leading** cursor's time and clip (the earlier log read whichever cursor it
-  found first, so its time steps are mixed).
-=======
 - **Coney's repetitions at 0.9 × the original's** (answered, [What sets the length](#rep-length)): the anim step is
   1/30 s and the rate 1.0; the mid clip leads the blend on the updates the pump rhythm takes *v* below 2.0, which
   lengthens the cycle to 30.9 (push-ups), 39.4 (sit-ups) and 37.5 (chin-ups) updates. Confirmed (code) at
   `0x0010a5b8`, confirmed (runtime).
->>>>>>> theirs
