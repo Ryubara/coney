@@ -289,6 +289,15 @@ def test_detached_head_worktree_that_is_merged_is_removed(space: Space) -> None:
     assert entry.branch is None
 
 
+def test_detached_head_with_unmerged_commits_is_kept(space: Space) -> None:
+    path = space.worktree("loose-work", commits=1)
+    git(path, "checkout", "-q", "--detach")
+    space.touch(path, OLD)
+    entry = space.entries()["loose-work"]
+    assert not entry.remove
+    assert "detached HEAD with 1 commit" in entry.why
+
+
 def test_read_only_files_and_deep_paths_are_deleted(space: Space) -> None:
     path = space.worktree("ro", commits=1, build=10)
     deep = path / "build" / "dev" / ("d" * 60) / ("e" * 60) / ("f" * 60) / ("g" * 60) / ("h" * 60)

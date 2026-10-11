@@ -307,7 +307,9 @@ def assess(tree: GitWorktree, settings: Settings) -> Entry:
             entry.why = f"cannot compare with {settings.base}"
         elif ahead > 0:
             heads = settings.merged_heads(tree.branch) if tree.branch else None
-            if heads is None:
+            if tree.branch is None:
+                entry.why = f"detached HEAD with {ahead} commit(s) not in {settings.base}"
+            elif heads is None:
                 entry.why = f"{ahead} commit(s) not in {settings.base}; GitHub not asked"
             elif _covered_by_merged_pr(path, heads):
                 entry.why = "pull request merged"
