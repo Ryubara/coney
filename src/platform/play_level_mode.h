@@ -491,15 +491,21 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // @orig 0x003fe6b8 MeleeWeapon_Detach (unknown)
     void dropHeld(human::Human& human, double held, bool thrown = false);
     // The loose objects in flight: their fall, bounce and settle (docs/research/physics.md#settle), their poses written
-    // back into their spawn records; a thrown bottle, brick or ball breaks on its first contact (thrownBreak()).
+    // back into their spawn records, each level impact's sound (impactSound()); an object that wears out on a contact
+    // breaks (flyingBreak()).
     void stepLooseObjects();
-    // A thrown `thrown_weapon`'s break at its contact (docs/research/objects.md#throws): the impact's material pairs on
-    // the level mesh, message 6 from the boxes its thrower stands in, then the class's break (its place at the hit
-    // point, the dust); it goes at the next step.
+    // A flying object's level contact that did not break it (docs/research/sound-events.md#objects): its material
+    // against the surface's at 1 / (n + 1), for its first three impacts above 2 m/s.
+    // @orig 0x003939a8 WorldObject_OnImpact (unknown)
+    void impactSound(double handle, const world_objects::LooseImpact& impact);
+    // A flying object's break at its contact (docs/research/objects.md#throws): the impact's material pairs on the
+    // level mesh, message 6 from the boxes its thrower stands in, then its class's break: a `thrown_weapon` at the hit
+    // point with its dust and glass, gone at the next step; an `overhead_weapon` or a cash register through
+    // Props::breakFlying().
     // @orig 0x003939a8 WorldObject_OnImpact (unknown)
     // @orig 0x00393e20 WorldObject_Break (unknown)
     // @orig 0x004034b8 ThrownWeapon_Break (unknown)
-    void thrownBreak(double handle, const world_objects::LooseObject& object);
+    void flyingBreak(double handle, const world_objects::LooseObject& object);
     // Player 1's mugging: the scripts' record for the next one, and the end of one (the money, the mug callback).
     void stepMugging(human::Human& human);
     // The stereo-theft panel follows player 1's theft: shown from the press, its progress each update with cue 0x22 per
