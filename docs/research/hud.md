@@ -2084,6 +2084,15 @@ the pins at the centre point. **Coney fixes**:
    pixels (default mode 2.2 left and 2.2 up; 16:9 none); the pins' projected size at depth 1 is 0.19 / (2 × 0.725) of
    the width in 4:3.
 
+**Status (2026-10-11): fixed in Coney.** `LockPickHud::layout(player, deviceFlags)` gives each mode's pins' and
+shapes' centres (at distance 1), the wedges' and the face's (rx, ry) in pixels and the pins' factors, for the four
+rows above; the pins are drawn at the centre point at depth 1 (fixes 1 and 2), and every rim vertex is the pixel
+centre + (rx sin a, ry cos a), converted through the mode's overlay camera (`setVideoMode`, fix 3). The tests in
+`repo:tests/hud/lock_pick_hud_test.cpp` check fix 4. Left out: the PAL rows and the `0x01` + `0x20` branch (Coney has
+neither). **Open**: Coney's HUD layer always draws the 2D pass in the 4:3 logical screen through the 4:3 overlay
+camera, even beside a wide 3D view, so the play mode keeps the dial in the interlaced 4:3 mode; the 16:9 row takes
+effect once the HUD as a whole gets a 16:9 mode.
+
 ### `GUI/HUDLua.cpp`: the scripted bars {#fn-hudlua-bars}
 
 The bar functions of `HUDEnableBar`, `HUDSetBarPercentage` and `HUDSetBarProperty`, [Scripted bars](#scripted-bars).
@@ -2641,9 +2650,10 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   since the start against `+0x134`. Not yet: modes 1-3 (a player victim and
   the hold), which need two players and the hold's states.
 - **The lock-pick dial** (`repo:src/hud/lock_pick_hud.h`, stepped by `PlayLevelMode::stepLockPickDial()`) as
-  [the dial's layout](#lock-pick-dial-layout) says, while player 1 picks a lock: the three pins turned by their
-  angles (gone once every pin is done), then over every sprite the good and perfect wedges (whole rim vertices
-  coloured, the next segment fading to clear) and the lock face, as 32-segment fans in 640 × 448 pixels. The shapes
+  [the dial's layout](#lock-pick-dial-layout) says, while player 1 picks a lock: the three pins at the player's centre
+  point at distance 1, turned by their angles (gone once every pin is done), then over every sprite the good and perfect wedges (whole rim vertices
+  coloured, the next segment fading to clear) and the lock face, as 32-segment fans in 640 × 448 pixels with the
+  video mode's horizontal and vertical radii (the interlaced 4:3 mode in play, as the rest of the HUD). The shapes
   go in two batches sorted above all the HUD's others, so they lie on top of the pins as `Shape2D_DrawQueued` does.
 - **The fixed-camera icon** (`repo:src/hud/fixed_cam_icon.h`) as [the icon](#hud-fixed-cam-icon) says: while player 1's
   camera is a locked one or camera switch 0 is off, pushing the right stick (a raw byte outside 64-176) shows

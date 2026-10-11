@@ -3,7 +3,9 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdint>
 
+#include "graphics/overlay_camera.h"
 #include "hud/hud_canvas.h"
 #include "hud/hud_layout.h"
 
@@ -29,6 +31,28 @@ inline constexpr std::array<float, 3> kLockPerfectPercent{14.0F, 12.0F, 9.2F};
 /// The shapes' circles are drawn in 32 segments.
 inline constexpr int kLockSegments = 32;
 
+/// The device flags that choose the dial's layout (docs/research/graphics.md#video-mode): interlaced (`0x01`, the
+/// default mode alone), 16:9 (`0x04`) and progressive (`0x20`).
+inline constexpr std::uint32_t kDeviceInterlaced = 0x01;
+inline constexpr std::uint32_t kDeviceWide = 0x04;
+inline constexpr std::uint32_t kDeviceProgressive = 0x20;
+
+/// Where one player's dial goes in one video mode and how its parts are scaled: what `LockPickDial_Init` and
+/// `LockPickDial_ApplyVideoMode` write for the mode, and what `LockPickDial_Draw` rewrites every update.
+struct LockPickLayout {
+    /// The pins' centre: a point at distance 1 in the overlay camera's space (the GUI position is never used).
+    graphics::OverlayPoint pinCentre;
+    /// The wedges' and the lock face's centre, at the same distance; 2.2 pixels from the pins' in the default mode.
+    graphics::OverlayPoint shapeCentre;
+    /// The wedges' horizontal and vertical radii, in screen pixels.
+    graphics::LogicalPoint wedgeRadius;
+    /// The lock face's horizontal and vertical radii, in screen pixels.
+    graphics::LogicalPoint faceRadius;
+    /// The pins' width and height factors (their sizes are kLockPinSize shrinking by kLockPinShrink a pin).
+    float pinWidth = 1.0F;
+    float pinHeight = 1.0F;
+};
+
 /// One player's lock-pick dial (HUD `+0xf420` + player × `0x540`): three pins of shrinking size turning about one
 /// centre, each by its own angle, with two red wedges at 12 o'clock (the good and the perfect zone) and the lock face
 /// drawn over them. The play mode shows it while the player picks a lock and gives it the pins' angles each update;
@@ -46,10 +70,18 @@ class LockPickHud {
     /// is left, which hides the pins).
     void setPins(const std::array<float, kLockPinCount>& angles, int current);
 
-    /// Where player `player`'s pins sit (GUI).
-    [[nodiscard]] static GuiPoint pinPlace(std::size_t player);
-    /// Where player `player`'s shapes are centred: a point at distance 1 in the overlay camera's space (default mode).
-    [[nodiscard]] static graphics::OverlayPoint shapeCentre(std::size_t player);
+    /// Lays the dial out for the video mode of device flags `deviceFlags` (kDeviceInterlaced, the default, and the
+    /// rest): the mode's centres, radii and pin factors, and the overlay camera it is drawn through.
+    /// @orig 0x001b7c10 LockPickDial_ApplyVideoMode (unknown)
+    void setVideoMode(std::uint32_t deviceFlags) { m_deviceFlags = deviceFlags; }
+
+    /// Player `player`'s dial in the video mode of device flags `deviceFlags`. Progressive modes have `0x20`, 16:9 ones
+    /// `0x04`; the interlaced 4:3 mode alone moves the shapes off the pins' centre, by (-0.005, +0.005).
+    [[nodiscard]] static LockPickLayout layout(std::size_t player, std::uint32_t deviceFlags);
+    /// Rim vertex `j` (0 to 32) of a shape with radii `radius` (pixels), as an offset from its centre in screen pixels
+    /// with y down: radius × (sin a, cos a), a = π − j × 2π / 32, so vertex 0 is straight up and the rim runs
+    /// clockwise.
+    [[nodiscard]] static graphics::LogicalPoint rimOffset(graphics::LogicalPoint radius, int j);
     /// How many of a wedge's rim vertices on each side of its middle take the colour: floor(32 × `percent` / 100 / 2).
     /// The wedge is that many whole segments each side, then one segment fading to clear; nothing for 0 per cent.
     [[nodiscard]] static int wedgeVertices(float percent);
@@ -62,11 +94,14 @@ class LockPickHud {
 
   private:
     // One wedge: the whole 32-segment fan, rim vertices within `percent` of 12 o'clock coloured, the rest clear.
-    static void renderWedge(graphics::SpriteBatch& batch, graphics::OverlayPoint centre, float percent,
+    static void renderWedge(graphics::SpriteBatch& batch, const graphics::OverlayCamera& camera,
+                            graphics::OverlayPoint centre, graphics::LogicalPoint radius, float percent,
                             graphics::Rgba colour);
     // The lock face: a textured 32-segment disc over the sheet rectangle's inscribed circle, turned a quarter.
-    static void renderFace(graphics::SpriteBatch& batch, graphics::OverlayPoint centre);
+    static void renderFace(graphics::SpriteBatch& batch, const graphics::OverlayCamera& camera,
+                           graphics::OverlayPoint centre, graphics::LogicalPoint radius);
 
+    std::uint32_t m_deviceFlags = kDeviceInterlaced;
     bool m_shown = false;
     int m_difficulty = 0;
     std::array<float, kLockPinCount> m_angles{};

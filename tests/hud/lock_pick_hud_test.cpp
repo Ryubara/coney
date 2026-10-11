@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "hud/lock_pick_hud.h"
 
+#include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
-#include <numbers>
 #include <vector>
 
 #include <catch2/catch_approx.hpp>
@@ -12,10 +13,17 @@
 #include "support/recording_device.h"
 
 using Catch::Approx;
+using coney::graphics::LogicalPoint;
+using coney::graphics::OverlayCamera;
+using coney::graphics::OverlayPoint;
 using coney::graphics::Rgba;
 using coney::graphics::SpriteBatch;
 using coney::graphics::SpriteSheet;
+using coney::hud::kDeviceInterlaced;
+using coney::hud::kDeviceProgressive;
+using coney::hud::kDeviceWide;
 using coney::hud::LockPickHud;
+using coney::hud::LockPickLayout;
 
 namespace {
 
@@ -135,6 +143,146 @@ TEST_CASE("the lock-pick pins turn by their angles and go once every pin is done
     CHECK(batches.minigames.sprites().empty());
     CHECK(batches.shapes.triangles().size() == std::size_t{64} * 3);
     // Player 2's shapes sit right of the screen's middle.
-    CHECK(LockPickHud::shapeCentre(1).x > 0.0F);
-    CHECK(LockPickHud::pinPlace(1).x == Approx(0.9F));
+    CHECK(LockPickHud::layout(1, kDeviceInterlaced).shapeCentre.x > 0.0F);
+}
+
+TEST_CASE("the lock-pick dial's centres follow the video mode", "[hud][lockpick]") {
+    // Interlaced 4:3 (the default): the pins at (-0.56, -0.075), the shapes moved to (-0.565, -0.07) every update.
+    const LockPickLayout p1 = LockPickHud::layout(0, kDeviceInterlaced);
+    CHECK(p1.pinCentre == OverlayPoint{-0.56F, -0.075F, 1.0F});
+    CHECK(p1.shapeCentre == OverlayPoint{-0.565F, -0.07F, 1.0F});
+    const LockPickLayout p2 = LockPickHud::layout(1, kDeviceInterlaced);
+    CHECK(p2.pinCentre == OverlayPoint{0.545F, -0.075F, 1.0F});
+    CHECK(p2.shapeCentre == OverlayPoint{0.546F, -0.07F, 1.0F});
+    // Interlaced 16:9: one centre for both layers.
+    const std::uint32_t wide = kDeviceInterlaced | kDeviceWide;
+    CHECK(LockPickHud::layout(0, wide).pinCentre == OverlayPoint{-0.74F, -0.075F, 1.0F});
+    CHECK(LockPickHud::layout(0, wide).shapeCentre == OverlayPoint{-0.74F, -0.075F, 1.0F});
+    CHECK(LockPickHud::layout(1, wide).pinCentre == OverlayPoint{0.725F, -0.075F, 1.0F});
+    CHECK(LockPickHud::layout(1, wide).shapeCentre == OverlayPoint{0.725F, -0.075F, 1.0F});
+    // Progressive 4:3 keeps the static entry; progressive 16:9 has its own.
+    CHECK(LockPickHud::layout(0, kDeviceProgressive).pinCentre == OverlayPoint{-0.531F, -0.075F, 1.0F});
+    CHECK(LockPickHud::layout(1, kDeviceProgressive).shapeCentre == OverlayPoint{0.519F, -0.075F, 1.0F});
+    CHECK(LockPickHud::layout(0, kDeviceProgressive | kDeviceWide).pinCentre == OverlayPoint{-0.62F, -0.075F, 1.0F});
+    CHECK(LockPickHud::layout(1, kDeviceProgressive | kDeviceWide).shapeCentre == OverlayPoint{0.62F, -0.075F, 1.0F});
+}
+
+TEST_CASE("the lock-pick dial's radii and pin factors follow the video mode", "[hud][lockpick]") {
+    // Wedges 40 px and face 41 px, times each mode's (x, y) factors; the pins' width and height factors.
+    struct Row {
+        std::uint32_t flags;
+        float wedgeX, wedgeY, faceX, faceY, pinW, pinH;
+    };
+    const std::vector<Row> rows{
+        {kDeviceInterlaced, 1.0F, 1.0F, 1.0F, 1.0F, 1.0F, 1.0F},
+        {kDeviceInterlaced | kDeviceWide, 0.8F, 1.0F, 0.9F, 1.0F, 1.0F, 1.0F},
+        {kDeviceProgressive, 0.75F, 1.1F, 0.75F, 1.0F, 0.6F, 0.6F},
+        {kDeviceProgressive | kDeviceWide, 0.5F, 0.95F, 0.5F, 0.85F, 0.6F, 0.6F},
+    };
+    for (const Row& row : rows) {
+        CAPTURE(row.flags);
+        const LockPickLayout layout = LockPickHud::layout(0, row.flags);
+        CHECK(layout.wedgeRadius.x == Approx(40.0F * row.wedgeX));
+        CHECK(layout.wedgeRadius.y == Approx(40.0F * row.wedgeY));
+        CHECK(layout.faceRadius.x == Approx(41.0F * row.faceX));
+        CHECK(layout.faceRadius.y == Approx(41.0F * row.faceY));
+        CHECK(layout.pinWidth == Approx(row.pinW));
+        CHECK(layout.pinHeight == Approx(row.pinH));
+    }
+}
+
+TEST_CASE("a lock-pick rim vertex is the centre plus (rx sin a, ry cos a) in pixels", "[hud][lockpick]") {
+    // a = pi - j x 2 pi / 32 with y down on screen: rim vertex 0 straight up, 8 to the right (a = pi / 2), 16 straight
+    // down, 24 to the left.
+    const LogicalPoint radius{32.0F, 40.0F};
+    const LogicalPoint up = LockPickHud::rimOffset(radius, 0);
+    CHECK(up.x == Approx(0.0F).margin(1e-4));
+    CHECK(up.y == Approx(-40.0F));
+    const LogicalPoint side = LockPickHud::rimOffset(radius, 8);
+    CHECK(side.x == Approx(32.0F));
+    CHECK(side.y == Approx(0.0F).margin(1e-4));
+    const LogicalPoint down = LockPickHud::rimOffset(radius, 16);
+    CHECK(down.x == Approx(0.0F).margin(1e-4));
+    CHECK(down.y == Approx(40.0F));
+    const LogicalPoint other = LockPickHud::rimOffset(radius, 24);
+    CHECK(other.x == Approx(-32.0F));
+    // Every rim vertex lies on the ellipse.
+    for (int j = 0; j <= coney::hud::kLockSegments; ++j) {
+        const LogicalPoint v = LockPickHud::rimOffset(radius, j);
+        CHECK(((v.x / 32.0F) * (v.x / 32.0F)) + ((v.y / 40.0F) * (v.y / 40.0F)) == Approx(1.0F));
+    }
+}
+
+TEST_CASE("the lock-pick pins and shapes are concentric on screen", "[hud][lockpick]") {
+    // The pins sit at the centre point at depth 1, not at the GUI position; in the default mode the shapes are 2.2
+    // pixels left of and above them, in 16:9 on the same point.
+    for (const std::uint32_t flags : {kDeviceInterlaced, kDeviceInterlaced | kDeviceWide}) {
+        const OverlayCamera camera = OverlayCamera::forMode((flags & kDeviceWide) != 0);
+        for (std::size_t player = 0; player < 2; ++player) {
+            CAPTURE(flags, player);
+            const LockPickLayout layout = LockPickHud::layout(player, flags);
+            const LogicalPoint pins = camera.project(layout.pinCentre);
+            const LogicalPoint shapes = camera.project(layout.shapeCentre);
+            CHECK(std::abs(pins.x - shapes.x) <= 2.5F);
+            CHECK(std::abs(pins.y - shapes.y) <= 2.5F);
+        }
+    }
+    const OverlayCamera camera;
+    const LockPickLayout p1 = LockPickHud::layout(0, kDeviceInterlaced);
+    CHECK(camera.project(p1.pinCentre).x == Approx(72.8F).margin(0.05));
+    CHECK(camera.project(p1.pinCentre).y == Approx(257.6F).margin(0.05));
+    CHECK(camera.project(p1.shapeCentre).x - camera.project(p1.pinCentre).x == Approx(-2.2F).margin(0.05));
+    CHECK(camera.project(p1.shapeCentre).y - camera.project(p1.pinCentre).y == Approx(-2.24F).margin(0.05));
+}
+
+TEST_CASE("the lock-pick pins are drawn at the centre point at depth 1", "[hud][lockpick]") {
+    Batches batches;
+    LockPickHud dial;
+    dial.show(true, 0);
+    dial.render(batches.canvas(), 0);
+    REQUIRE(batches.minigames.sprites().size() == 3);
+    const LockPickLayout layout = LockPickHud::layout(0, kDeviceInterlaced);
+    const OverlayCamera camera;
+    for (const coney::graphics::Sprite& pin : batches.minigames.sprites()) {
+        CHECK(pin.position == layout.pinCentre);
+    }
+    // The largest pin is 0.19 / (2 x 0.725) of the screen's width across, and square.
+    const coney::graphics::Sprite& largest = batches.minigames.sprites()[0];
+    const LogicalPoint size = camera.projectSize(largest.width, largest.height, largest.position.z);
+    CHECK(size.x == Approx(0.19F / 1.45F * 640.0F));
+    CHECK(largest.width == Approx(largest.height));
+
+    // The wedges are centred on the shapes' centre, 2.2 pixels from the pins'.
+    coney::test::RecordingDevice device;
+    batches.shapes.render(device, camera);
+    REQUIRE(device.triangles.size() == 1);
+    REQUIRE(!device.triangles[0].vertices.empty());
+    const LogicalPoint shapes = camera.project(layout.shapeCentre);
+    CHECK(device.triangles[0].vertices[0].x == Approx(shapes.x).margin(0.01));
+    CHECK(device.triangles[0].vertices[0].y == Approx(shapes.y).margin(0.01));
+}
+
+TEST_CASE("a lock-pick dial in 16:9 narrows its shapes", "[hud][lockpick]") {
+    Batches batches;
+    LockPickHud dial;
+    dial.setVideoMode(kDeviceInterlaced | kDeviceWide);
+    dial.show(true, 0);
+    dial.render(batches.canvas(), 0);
+    const OverlayCamera camera = OverlayCamera::forMode(true);
+    coney::test::RecordingDevice device;
+    batches.shapes.render(device, camera);
+    REQUIRE(device.triangles.size() == 1);
+    const std::vector<coney::graphics::LogicalVertex>& v = device.triangles[0].vertices;
+    REQUIRE(v.size() > 26);
+    // Rim vertex 0 is 40 pixels up; rim vertex 8 (segment 7's second rim vertex, index 3 x 7 + 2) 32 pixels across.
+    CHECK(v[0].y - v[1].y == Approx(40.0F).margin(0.01));
+    CHECK(v[23].x - v[0].x == Approx(32.0F).margin(0.01));
+    // The face: 41 pixels up and 36.9 across.
+    coney::test::RecordingDevice faceDevice;
+    batches.face.render(faceDevice, camera);
+    REQUIRE(faceDevice.triangles.size() == 1);
+    const std::vector<coney::graphics::LogicalVertex>& f = faceDevice.triangles[0].vertices;
+    REQUIRE(f.size() > 26);
+    CHECK(f[0].y - f[1].y == Approx(41.0F).margin(0.01));
+    CHECK(f[23].x - f[0].x == Approx(36.9F).margin(0.01));
 }
