@@ -62,9 +62,10 @@ A time of 0 means no clock (rank 1 of the cycle games). Every station call passe
 2. **`worksetup.StartWorkout(flag, human)`**, for a player only: `workFlag` = the flag's index; clears the flag's
    handler with `SetMsgHandler(flag, 0, nil)`, which also **unregisters the flag's context record**
    (`Script_SetMsgHandler`, `0x00386298`, calls the object's `+0x12c` for message 0 whatever the callback; a flag's is
-   `Flag_UnregisterContext`, `0x00415d90`), so the station's prompt and hint leave the screen at once; `HuDropWeapon`; when a Warrior occupies `fWorkout[k]`, swaps him to `fWatchWork[k]` (on difficulty 3 he
-   also drops the bat he was given); the player says voice line 201 (`workout`); `DeactivateWarchief`; the player's
-   message 1 (damage) goes to `worksetup.PlayerTakesDamage`; `fWorkout[k]`'s message 8 (arrival) to
+   `Flag_UnregisterContext`, `0x00415d90`), so the station's prompt and hint leave the screen at once;
+   `HuDropWeapon`; when a Warrior occupies `fWorkout[k]`, swaps him to `fWatchWork[k]` (on difficulty 3 he
+   also drops the bat he was given); the player says voice line 201 (`workout`); `DeactivateWarchief`;
+   the player's message 1 (damage) goes to `worksetup.PlayerTakesDamage`; `fWorkout[k]`'s message 8 (arrival) to
    `worksetup.DoWorkout`; **`GoalMoveToFlag(player, fWorkout[k], 2, 0, 0, 0.5, 0, true, false)`** (walk, radius
    0.5 m, face the flag's heading); `ScheduleFunc("worksetup.TimeOut", 5000)`; loads `level95_workout` with
    `workout.Setup` as its callback (or calls `workout.Setup` when it is loaded). Confirmed (code).

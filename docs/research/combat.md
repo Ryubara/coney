@@ -844,8 +844,8 @@ humans to warn them: every one of its 23 call sites passes a single human, the m
 
 **What others hear.** Only indirectly: the warned human's shared handler (`0x00292d80`) makes the gangs enemies and
 sends a **help call** within 20 m (`Gang_BroadcastHelpCall`, `0x00293640`: event `0x14` through `AI_AlertNearby`,
-naming the attacker) when the warning passes its own sight test ([AI: events](ai-code.md#brain-events)). A human who is not
-the target never gets `0x10`, so never counts `+0x200`, blocks or counters for it.
+naming the attacker) when the warning passes its own sight test ([AI: events](ai-code.md#brain-events)). A human
+who is not the target never gets `0x10`, so never counts `+0x200`, blocks or counters for it.
 
 **The `level5` bosses** ([AI: Diego and Vargas](ai.md#boss-diego-vargas)). `BigBrawlerGoal_OnAttackWarning`
 (`0x002e8858`) acts on `0x10` only in state 2 and not while tired, and then: when the goal holds actions and the front
