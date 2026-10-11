@@ -1,0 +1,17 @@
+{
+  "sections": ["Summary", "Checklist", "AI use"],
+  "filled": ["Summary"],
+  "placeholders": ["..."],
+  "ai_use": {
+    "section": "AI use",
+    "written_by": {
+      "label": "Commits written by:",
+      "choices": ["a person", "an AI", "an AI, edited by a person", "a person, with AI help"],
+      "no_ai": "a person"
+    },
+    "model": {
+      "label": "Model:",
+      "none": "n/a"
+    }
+  }
+}

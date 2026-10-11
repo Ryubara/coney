@@ -1,11 +1,14 @@
 # Build and test the engine on every supported OS and compiler, under the sanitizers and clang-tidy, and check the
-# formatting. Actions are pinned to a full commit SHA; the tag is in the comment beside it.
+# formatting. A draft pull request, or one that changes only documentation, skips all but the formatting (see the
+# changes job). Actions are pinned to a full commit SHA; the tag is in the comment beside it.
 name: build
 
 on:
   push:
     branches: [main, "release/**"]
+  # ready_for_review: a draft runs only the cheap checks (see the changes job), so marking it ready runs the rest.
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
   # Run it by hand on a branch that is already on GitHub, without opening a pull request: the Actions tab, this
   # workflow, "Run workflow", or `gh workflow run build.yml --ref <branch>`. clang-tidy then checks every file.
   workflow_dispatch:
@@ -25,8 +28,27 @@ concurrency:
 # least 202002L, which Clang first reports in version 19, so Clang 18 cannot compile Coney's use of std::expected.
 # clang-tools-19 brings clang-scan-deps-19, which CMake needs to scan C++23 sources for modules when using Clang.
 jobs:
+  # What this run needs (.github/scripts/ci-scope.sh): everything, except on a draft pull request or one that changes
+  # only documentation, where build, sanitizers and clang-tidy are skipped without taking a runner.
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      full: ${{ steps.scope.outputs.full }}
+    steps:
+      # Depth 2: a pull request's checkout is a merge commit whose first parent (HEAD^1) is the branch it merges into.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+      - id: scope
+        env:
+          EVENT: ${{ github.event_name }}
+          DRAFT: ${{ github.event.pull_request.draft || false }}
+        run: bash .github/scripts/ci-scope.sh
+
   build:
     name: build (${{ matrix.name }})
+    needs: changes
+    if: needs.changes.outputs.full == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -88,6 +110,8 @@ jobs:
 
   sanitizers:
     name: sanitizers (${{ matrix.name }})
+    needs: changes
+    if: needs.changes.outputs.full == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -135,8 +159,10 @@ jobs:
 
   # A full pass takes over an hour, so a pull request checks only what it changes (see .github/scripts/tidy-files.sh);
   # pushes to main, the nightly run, a manual run and a change to the build setup check every file. A pull request
-  # with nothing to check (docs only) skips the steps below but the job still passes, so it can be a required check.
+  # with no source file to check (a test or data change, say) skips the steps below but the job still passes.
   clang-tidy:
+    needs: changes
+    if: needs.changes.outputs.full == 'true'
     runs-on: ubuntu-24.04
     env:
       CC: clang-19
@@ -216,3 +242,21 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       - run: uvx pre-commit run --all-files --show-diff-on-failure
+
+  # The one required check for the jobs above. A skipped matrix job reports its name unexpanded ("build
+  # (${{ matrix.name }})"), so "build (windows-msvc)" could never be a required check that a docs-only pull request
+  # satisfies; this job always runs, passes when every needed job passed or was skipped on purpose, and fails when one
+  # failed or was cancelled (including the changes job, which would skip the rest).
+  build-ok:
+    if: always()
+    needs: [changes, build, sanitizers, clang-tidy]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check the results of the needed jobs
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Results: $RESULTS"
+          case " $RESULTS " in
+            *" failure "* | *" cancelled "*) exit 1 ;;
+          esac

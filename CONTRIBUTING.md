@@ -31,6 +31,17 @@ line `Docs: none` in the description when the change needs no documentation. To 
 git diff --name-only main... | uv run --project python coney-tools repo check-docs
 ```
 
+CI also checks the pull request description against [the template](.github/pull_request_template.md), including one
+created with `gh pr create --body-file`, and reruns when you edit it. The description needs the three sections
+(Summary, Checklist, AI use), a Summary with text, one of the template's choices after "Commits written by:" and,
+unless a person wrote the commits, a model after "Model:". Text left as the template has it counts as empty. The
+sections, choices and placeholder text are in [.github/pr-body-rules.json](.github/pr-body-rules.json). To check a
+description yourself:
+
+```sh
+uv run --project python coney-tools repo check-body --body description.md
+```
+
 To build the documentation:
 
 ```sh
@@ -103,7 +114,7 @@ The person who submits or merges the work answers for it. The full rule is in [L
 - CI must pass.
 - Fill in the pull request template: a summary, a checklist of what the pull request finishes and what is still to
   do, and who wrote the work in the commits (a person, an AI, or both) and with which model. Who opened the pull
-  request does not matter there.
+  request does not matter there. CI refuses a description that leaves out a section or an answer.
 - Keep a pull request to one subject. Unrelated changes belong in separate pull requests.
 
 ### Working from a fork
