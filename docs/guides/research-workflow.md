@@ -8,6 +8,19 @@ go and how to write them up.
 The pages themselves live in `docs/research/`, one living page per subsystem or file format. How to lay a page out
 is in [Writing these docs](writing-docs.md#subsystem-page).
 
+## Before you research {#upstream}
+
+Check what already exists before starting a question, in the merged pages and in work that is not merged yet:
+
+1. Search `docs/research/` (`git grep -i <term> -- docs/research research`) for a page that already covers it.
+2. List the open pull requests (`gh pr list`) and search their branches: `git fetch`, then
+   `git log --oneline origin/<branch> -- docs/research` and `git grep -i <term> origin/<branch> -- docs/research`.
+   Another track may have the finding written up, or be part-way through it.
+3. If something covers the question, extend that page or branch (or wait for it to merge) instead of writing a second
+   account of the same thing; if it disagrees with what you find, say so on the page with both evidence levels.
+
+Only a question that nothing covers starts new research.
+
 ## Clean room {#clean-room}
 
 Coney is a clean-room reimplementation: the code has the same observable behaviour as the original but its own
@@ -377,6 +390,10 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
   run of F8 presses (one a second, or faster) and look at the screenshots afterwards. Data drawn in one frame
   usually survives in memory until reused: a sprite batch's arrays keep the last frame's sprites after its count is
   reset, which is how the draw-order keys and colours were read.
+- **Staging a fight.** To study the player being hit, write a pedestrian's position and heading over PINE so it
+  stands in front of the player, then force its commands and animations so it attacks or grabs: a controlled run that
+  repeats exactly. The front end's Rumble mode (quick rumble) is the fallback for live AI fights. Either way, save the
+  starting point as a state file of your own.
 - **Patching code to see something.** A code write lands before the recompiler first compiles the block if the
   function has not run yet; the legal screen's placement was measured by patching its clear colour to blue and
   halving its size factors, and the start-up movies were skipped by making their skip check (`0x0042a820`) return 1.

@@ -34,6 +34,8 @@ Get the messages with `git log --format=%B <base>..<tip>`.
 - [ ] **The pull request is one feature:** its title is the commit that lands on `main` (the merge is a squash), so
   it follows the title rules, and unrelated changes belong in a separate pull request. Commits inside it may be
   work in progress; they are dropped by the squash.
+- [ ] **The pull request title's area is that of the change's main subject:** its tests and docs do not change the
+  area. A pull request that really holds two features in two areas is split into two pull requests.
 
 ## Severity examples
 
