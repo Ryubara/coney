@@ -147,7 +147,8 @@ Confirmed (code); offsets with "runtime" were checked on Rembrandt.
 
 | Offset | Meaning |
 | --- | --- |
-| `+0x00` | the pad's buttons (8 bytes copied from the pad record's `+0x08`, [Front end](frontend.md#pad-record)) |
+| `+0x00` | 8 bytes copied from the pad record's `+0x08` ([Front end](frontend.md#pad-record)): the left stick's x and y as two floats (y up), not turned by the camera (the tagging stick game reads them so, `0x002748a8`) |
+| `+0x1c`, `+0x1d` | the rumble: a slip in the tagging game writes 255 and 1, an on-track update 0 and 0 (inferred from [Tagging](crimes.md#tagging)) |
 | `+0x08`, `+0x0c` | stick angle, two buffers (radians, `atan2` of the camera-turned stick) |
 | `+0x10`, `+0x14` | stick magnitude, two buffers, clamped to 1 |
 | `+0x18` | which buffer is current (toggles 0/1 each update; the other is the previous update's) |

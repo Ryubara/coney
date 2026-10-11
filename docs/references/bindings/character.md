@@ -4595,17 +4595,18 @@ HuTagColor(human, colour)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the tagger; a handle that is not a human does nothing. |
-| 2 | `colour` | table of 4 numbers (t[1]..t[4]) | Colour {r, g, b, a}, each a whole number 0-255 as the scripts pass. Written back unchanged. |
+| 2 | `colour` | table of 4 numbers (t[1]..t[4]) | Colour {t1, t2, t3, t4}, each a whole number 0-255; the scripts write it as {r, g, b, a}, which the spray mist reads as written and the HUD reversed. Written back unchanged. |
 
 **Returns** nothing.
 
-Sets the colour of the paint a human sprays when tagging (human `+0x640`, packed bytes a, b, g, r from the low byte up).
-Each element is multiplied by 255 twice (here and in the packer `0x0017aca8`) and the low byte of the result kept; since
-255 × 255 = 65025 leaves 1 modulo 256, a whole number 0-255 comes out unchanged, so the scripts' 0-255 values work
-exactly.
+Sets the colour of the paint a human sprays when tagging (human `+0x640`): bytes t4, t3, t2, t1 in memory order. Each
+element is multiplied by 255 twice (here and in the packer `0x0017aca8`) and the low byte of the result kept; since 255
+× 255 = 65025 leaves 1 modulo 256, a whole number 0-255 comes out unchanged. The two readers take the bytes in opposite
+orders: the tagging panel draws bytes 0-2 as r, g, b, (t4, t3, t2), while the spray mist reads the word as 0xRRGGBBAA
+with alpha in byte 0, (t1, t2, t3) at alpha t4 ([Crimes: what the player sees](../../research/crimes.md#tag-look)).
 
-**Notes.** 0-1 fractions give near-black bytes (1.0 gives 1, 0.5 gives 0); negatives give 0. Who reads `+0x640` (the tag
-drawing) is not traced.
+**Notes.** 0-1 fractions give near-black bytes (1.0 gives 1, 0.5 gives 0); negatives give 0. A human never given a
+colour keeps `Human_Init`'s bytes 50 07 05 20 (HUD (80, 7, 5), mist (32, 5, 7) at alpha 80; confirmed (runtime)).
 
 - **Evidence:** confirmed (code) at `0x00239080`; detail: traced
 - **Wrapper** `0x0035ccf0` (registered by `RegisterBindings`); **calls** `0x00239080` `Human_SetTagColour`

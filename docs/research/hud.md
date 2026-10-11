@@ -2296,11 +2296,14 @@ pixels per unit).
 - the **path**: `part_page0` rectangle 64, size 0.015, one per path point (tag `+0x26c`, byte pairs; count `+0x268`)
   except the last 3, grey 100 + 155 × i / n, alpha 255 (darker at the start);
 - the **painted cells**: rectangle 62, size 0.03, one per painted cell (tag `+0x0c`, byte pairs; count `+0x08`), in the
-  player's colour (human `+0x640`) at alpha 205;
+  tagger's colour (human `+0x640`: its bytes 0-2 as r, g, b, by default (80, 7, 5); [Crimes](crimes.md#tag-look))
+  at alpha 205;
 - the **cursor**: rectangle 63, size 0.04, at the tag's `+0x4f0`, two **floats** (x, y) in grid cells, so it moves
   smoothly between cells and is not snapped (inferred: the stick-driven cursor of [the stick game](crimes.md)). Its
   colour fades between white and black, alpha 255, over 250 ms, reversing every 250 ms (game clock mod 500,
-  `Colour_LerpRatio` `0x00338240`), and is plain white while the game is paused (`Tag_IsPaused`, `0x002748a0`);
+  `Colour_LerpRatio` `0x00338240`), and is plain white while the cursor is **on track** (`TagGame_IsOnTrack`,
+  `0x002748a0`, the game's `+0x500`). It is not a pause flag: the cursor flashes while off the path and through a
+  slip's pause ([Crimes](crimes.md#tag-coney-fixes));
 - the **frame**, the widget of `TagHud_Setup` (`part_page0` rectangle 93, colour (191, 191, 191, **191**), depth
   11,000): its position is set in overlay space (flag 0) at origin + (0.01, 0.07), size 0.07 (a widget size, the overlay
   height). Its alpha 191 is fixed at setup and it is drawn with the rest of the panel, so it shows on every frame the
@@ -2542,8 +2545,9 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
 - **The tagging panel** (`repo:src/hud/tag_hud.h`, set by `GameplayMode::updateTagPanel()`) as
   [the tagging panel](#fn-after-subtitle) says, while player 1 sprays: the path's dots but the last three, grey from
   100 to 255, the painted cells in his `HuTagColor` at alpha 205, the cursor between cells fading white to black and
-  back over 500 ms (white while the game pauses), the charge bar shrinking down to its fixed bottom, and the frame at
-  alpha 191; gone when the spray ends.
+  back over 500 ms (white while the game pauses; the original is white while on track, [the
+  fix](crimes.md#tag-coney-fixes)), the charge bar shrinking down to its fixed bottom, and the frame at alpha 191;
+  gone when the spray ends.
 - **The gang-count indicator** (`repo:src/hud/num_indicator.h`) as [the indicator](#gang-count-indicator) says: the
   shared one (`HUDSetNumIndicator` player 2), in a level numbered 100 or more, draws the blue header (sheet-table record
   `0x20e`, French `0x20f`, German `0x210`) with its two black shadows at (0.06, 0.944) and the gang's living members as
