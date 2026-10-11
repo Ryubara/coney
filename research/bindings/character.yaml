@@ -3101,8 +3101,13 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    If the next line's file is missing, line 1 is played and the index goes to 2. Human_Init gives `+0x197` a value
-    from the character setup (0x002184ec), not traced further.
+    If the next line's file is missing, line 1 is played and the index goes to 2. The starting values come from
+    Human_Init (0x002184ec-0x00218560): `+0x197` is set to 0, then for line numbers 1, 2 and 3 the name
+    `vags/character/voices/<voice>/l<level>_c<checkpoint>_idle_<NN>` is built (voice: human `+0x3b0`; level: the
+    current level table entry's number; checkpoint: game state `+0x33a`) and looked up in the loaded sounds
+    (Sound_FindByName, 0x00110d78); each one found adds 1 to `+0x197` and sets `+0x196` to 1. So a crew member
+    starts with as many lines as exist among 01-03 (at most 3) and his counter at 1; the script's count replaces
+    it. Confirmed (code).
   usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false, levels: [9, 83]}
 
 - name: HuActionDialog

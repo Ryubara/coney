@@ -9,6 +9,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "support/tag_driver.h"
 #include "warriors/inventory.h"
 #include "warriors/tag_game.h"
 #include "warriors/tag_session.h"
@@ -119,10 +120,13 @@ TEST_CASE("a player's tag session paints the spot from the inventory's paint", "
     CHECK_FALSE(coney::TagSession::hasPaint(inventory, 0));
     inventory.setSprayPaint(0, 2);
     REQUIRE(coney::TagSession::hasPaint(inventory, 0));
-    constexpr std::array<float, 4> kLine{20.0F, 100.0F, 220.0F, 100.0F};
-    coney::TagSession session(spots, inventory, 0, kHuman, kTag, coney::tagPath(kLine, 2), coney::tagTuning(3));
+    // Nine points 25 cells apart along x (short segments, as the scripts' patterns have).
+    constexpr std::array<float, 18> kLine{20.0F,  100.0F, 45.0F,  100.0F, 70.0F,  100.0F, 95.0F,  100.0F, 120.0F,
+                                          100.0F, 145.0F, 100.0F, 170.0F, 100.0F, 195.0F, 100.0F, 220.0F, 100.0F};
+    coney::TagSession session(spots, inventory, 0, kHuman, kTag, coney::tagPath(kLine, 9), coney::tagTuning(3));
     for (int i = 0; i < 2000 && !session.ended(); ++i) {
-        session.update(1.0F, 0.0F, 16);
+        const auto [x, y] = coney::test::tagStick(session.game());
+        session.update(x, y, 16);
         if (!session.ended()) {
             CHECK(spots.find(kTag)->fraction == session.game().fraction());
         }
@@ -142,10 +146,31 @@ TEST_CASE("an abandoned session late in a charge spends it", "[tag_spots]") {
                               coney::TagTuning{.chargeMs = 100, .pauseMs = 0, .cellsPerMs = 0.0F});
     session.update(0.0F, 0.0F, 30);
     session.update(0.0F, 0.0F, 30);
-    session.update(0.0F, 0.0F, 30); // 10 ms of the 100 left
+    session.update(0.0F, 0.0F, 30);
+    session.update(0.0F, 0.0F, 30); // the first update stamped the charge: 10 ms of the 100 left
     session.abandon();
     CHECK_FALSE(session.end().finished);
     CHECK(session.end().wastedCharge);
     CHECK(inventory.count(0, coney::item::kSprayPaint) == 1);
     CHECK(spots.find(kTag)->fraction < 1.0F);
+}
+
+TEST_CASE("one can of paint gives one charge: taking the last can ends the session", "[tag_spots]") {
+    TagSpots spots;
+    coney::Inventory inventory;
+    inventory.setSprayPaint(0, 1);
+    constexpr std::array<float, 4> kLine{20.0F, 100.0F, 220.0F, 100.0F};
+    coney::TagSession session(spots, inventory, 0, kHuman, kTag, coney::tagPath(kLine, 2),
+                              coney::TagTuning{.chargeMs = 100, .pauseMs = 0, .cellsPerMs = 0.0F});
+    int updates = 0;
+    while (!session.ended() && updates < 50) {
+        session.update(0.0F, 0.0F, 30);
+        ++updates;
+    }
+    REQUIRE(session.ended());
+    // The first update stamps the charge at 30 ms; at 150 ms it has run out and the next takes the can.
+    CHECK(updates == 5);
+    CHECK(inventory.count(0, coney::item::kSprayPaint) == 0);
+    CHECK_FALSE(session.end().finished);
+    CHECK_FALSE(session.end().wastedCharge);
 }

@@ -2,13 +2,16 @@
 ## Summary
 
 <!-- One short paragraph: what this changes and why. If the change needs no documentation, add a line `Docs: none`
-     (CI refuses a change under src/ or python/src/ without a docs change, unless this line is here). -->
+     (CI refuses a change under src/ or python/src/ without a docs change, unless this line is here).
+     If this finishes an issue, add a line `Fixes #<number>` (one per issue): merging then closes it. -->
 
 ## Checklist
 
-<!-- Done is what this pull request finishes. Remaining is what it leaves for later, each item named where it
-     will happen (a follow-up pull request or an issue); leave it empty when nothing is left. A track's working
-     status lives in its scratch STATUS.md, not here. -->
+<!-- Done is what this pull request finishes. Remaining is what it leaves for later, and each unchecked item
+     must name the issue or follow-up pull request that holds it, as `#123`: CI refuses one that does not. An
+     agent that has no issue for a leftover reports it to the coordinator, who files it; write the number once
+     it exists. Leave Remaining empty when nothing is left. A track's working status lives in its scratch
+     STATUS.md, not here. -->
 
 Done:
 

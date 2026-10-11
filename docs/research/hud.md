@@ -103,7 +103,7 @@ confirmed (code) at `0x001ad588`, `0x001ae980`, `0x001af010` and `0x001b1688` un
 | `+0x0010` | a per-human widget fed by `HUD_TagAddHuman` / `_TagRemoveHuman` (role not traced) | `0x0019fbb0` / `0x0019fda0` (levels below 100) / `0x001a03a8` |
 | `+0x15b0` | a small widget hidden by `HideHud` (`+0x08`) | `0x001a8ed8` / `0x001a8f90` |
 | `+0x15d0`, `+0x3f10` | the two radars (`0x2940` bytes each); positions `+0x3f00`, `+0x6840` | `Radar_Setup` / `0x001c5210` / `Radar_Render` |
-| `+0x6850` | the stopwatch, at (0.5, 0.135) | `0x001cd578` / `StopWatchHud_Update*` / `0x001bb1c0` |
+| `+0x6850` | the stopwatch, made at (0.5, 0.135) and moved by `StopWatchHud_ApplyVideoMode` (`0x001cd400`): on screen in the default mode its minutes form stands at the top right, right-aligned (confirmed (runtime) at the gym's heavy bag, [Workouts](workouts.md#hud)) | `0x001cd578` / `StopWatchHud_Update*` / `0x001bb1c0` |
 | `+0x6b40`, `+0x70d0` | the [action prompts](#action-prompts) | `ActionPrompt_Setup` |
 | `+0x7660` | a widget (role not traced) | `0x001bb650` / `0x001bbbb0` / `0x001bb8a8` |
 | `+0x8960` | the score board | `0x001c2638` |
@@ -1854,7 +1854,7 @@ are [listed with the bars](#scripted-bars).
 | `0x001b8278` | `LockPickDial_Shutdown` | slot `+0x68`: shuts the pins down, releases the centre batch, `+0x478` = `+0x0c` = 0 | confirmed (code) |
 | `0x001b8320` | `LockPickDial_IsResident` | true once the pins' and the centre's sheets are resident (`0x001a8ea8`); then rectangle `0xc` of the centre sheet gives the disc's UV centre (`+0x4cc`) and radius (`+0x490`, `+0x494`) | confirmed (code) |
 | `0x001b8428` | `LockPickDial_Show(dial, on)` | on: pins back to π, the loop `vags/misc/lock_spins_01` started (handle `+0x450`), `vags/misc/click_open1` prepared (`0x00622e48`), pin 0, counters 0; off: both stopped; `+0x478` = on | confirmed (code) |
-| `0x001b8530` | `LockPickDial_Draw` | slot `+0x30` (the update): waits for residency; turns the current pin by 0.1 × its speed (wrapping in 0-2π); queues two band arcs and the textured centre disc (`0x0017c2a8`, the 2D shape queue `0x005fd9f0`, at most 6) at the player's layout ([Lock picking](crimes.md#lockpick)) | confirmed (code) |
+| `0x001b8530` | `LockPickDial_Draw` | slot `+0x30` (the update, 30 times a second: confirmed (runtime), [Lock picking](crimes.md#lockpick)): waits for residency; turns the current pin by 0.1 × its speed (wrapping in 0-2π); queues two band arcs and the textured centre disc (`0x0017c2a8`, the 2D shape queue `0x005fd9f0`, at most 6) at the player's layout ([Lock picking](crimes.md#lockpick)) | confirmed (code) |
 | `0x001b8d38` | `LockPickDial_Judge` | 2 perfect (next pin, `click_01` and `click_open1`), 1 good (next pin, `click_open1`), 0 miss (`click_01`, every pin back to π, pin 0) | confirmed (code) |
 | `0x001b8ed0` | `LockPickDial_Render` | slot `+0x38`: while resident, shown and a pin is left (`+0x468` < 3), the three pins | confirmed (code) |
 | `0x001b8f50`, `0x001b8f78` | `HUDLua_StaticInit`, `HUDLua_GlobalCtor` | the file's static initialiser (`0x00622e48` = −1) and its global-constructor stub (in the constructor list at `0x00534108`) | confirmed (code) |
@@ -2657,6 +2657,13 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   steps. **Coney's placement**: the restore mark is the view's (`0x0018d910`), run in `HUD_Update` from
   `HudFrame::letterbox`. Play's suspend and resume (`GameplayMode`) hide the HUD under a mode pushed over play and
   show it again unless player 1 holds a scene role; `0x005e5580` and game state `+0x14c` are not checked.
+  `levelShutDown` (`HUD_ShutdownLevel`, `0x001ae980`) runs from `GameplayMode::endLevel`, the one teardown every way
+  out of a level goes through (a debug jump, the story's next mission, a restart, leaving to the menus): every part
+  the level set up or a script filled goes (the hints queued and showing, the tutorial callback, the objectives and
+  their messages, the announcements, the prompts, bars, counters, stopwatch, mini-game panels and the radar's blips),
+  so no hint or objective of one mission survives into the next. **Coney's choice**: the game-state switches the HUD
+  object holds for Coney (the game's tutorial hints, `W_GameState + 0x56e2`; the first-objective hint's flag), the
+  shown flag and the spinner are kept, as they are not the level's; the next `levelSetUp` hides both anyway.
 - **`hud::PlayerPanel`**: the [layout](#the-player-panel-layout-0x0050fa10), the banner by type, the
   [meter](#the-rage-meter) (caps and strips of `part_page0` 54-57, one-texel inset, the full meter's pulse and sound,
   `FlashRageBar`), the [score and money](#score-and-money) counting by a sixteenth plus one with their popups,
@@ -2692,19 +2699,18 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   second text
   (`SetMsgHandlerEx`'s `prompt2`)
   is queued as a priority-0 hint while it is in reach and withdrawn when it changes or leaves.
-- **Coney differs: the prompt's button** (owner item 9, "n Give Weapon"). The layout (`repo:src/gui/text_layout.cpp`)
-  skips `<MONEYFONT>`, so the `<ST>` of `GSTRING.ACTIONBUTTON` draws as the letter `n` (`part_page0` firstGlyph 94 +
-  `'n'`). **Fix for the implementer**: make `<MONEYFONT>` set a glyph base for the runs until `</MONEYFONT>`: in the
-  `part_page0` slot (Coney's `kTextFontSlot`, the original's slot 3) rectangle = 11 + (c − `'0'`); in `big_font`
-  (slot 6) rectangle = 256 + (c − 1); none in other slots ([MONEYFONT](gui.md#moneyfont)). Also give the stick tags
-  (`<SDD>`, `<SDL>`, `<SDR>`, `<SDU>`) their characters 3-6 alternating with 2 every `0x0050e6e4` ms, and add the
-  icon tags 23-31 (`<RARREST>` … `<RCALLGANG>`, [the tag table](gui.md#markup)) to `repo:src/gui/markup.cpp`.
-- **Coney differs: the prompt beside a downed Warrior** (owner item 8, "no revive prompt"). Coney's revive step
-  matches the original (a flash is needed), but its swap prompt (`repo:src/ai/swap_prompt.h`) leaves out the blocked
-  test, so a knocked-out Warrior stays talkable and Coney shows "Give Weapon" where the original shows nothing (no
-  flash) or the revive prompt (with one). **Fix for the implementer**: clear the swap prompt (talkable, its text)
-  while the Warrior or the player is knocked out, or better, model `HumanRecord_AreActionsBlocked`'s mask
-  ([No flash, no prompt](#action-prompts)); a playthrough test should hold a flash to see string 4.
+- **The prompt's button** (owner item 9, "n Give Weapon", fixed): the layout (`repo:src/gui/text_layout.cpp`) gives
+  `<MONEYFONT>` its rectangle base ([MONEYFONT](gui.md#moneyfont)), so the `<ST>` of `GSTRING.ACTIONBUTTON` draws
+  `part_page0` rectangle 73, the triangle; the stick tags alternate their characters and the icon tags 23-31 are
+  known (`repo:src/gui/markup.h`). Tests: `repo:tests/hud/hud_test.cpp` (a prompt starting with the action button),
+  `repo:tests/gui/text_layout_test.cpp`, and the disc check `"[disc][text]"`, which finds the triangle in all three
+  swap prompts (`0xc`-`0xe`) and a stick picture in the revive prompt 4.
+- **The prompt beside a downed Warrior** (owner item 8, "no revive prompt"): Coney's revive step matches the original (a
+  flash is needed), and the swap prompt (`repo:src/ai/swap_prompt.h`) now has the blocked test, for the Warrior and the
+  player alike, as far as Coney models the mask's states (knocked out, by health or by a script, arrested, wounded), so
+  beside a downed Warrior no "Give Weapon" shows. A Warrior's brain that a script knocked out is off in Coney (BrDead),
+  so its think clears the prompt instead (`Brain::think`). Still to do: a playthrough test holding a flash to see string
+  4 (crew revive belongs to the revive work), and the player's own knocked-out gate on the other prompt steps.
 - **The stereo-theft panel** (`repo:src/hud/stereo_hud.h`, stepped by `PlayLevelMode::stepStereoPanel()`) as
   [the stereo panel on screen](#stereo-layout) says: up from the triangle press, the arrow round the backdrop's
   corners by stage, the gauge sized and turned by the angle turned and dropping by a doubling step while a stage is
@@ -2734,9 +2740,10 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   or rail camera, so only the locked camera and the switch show it.
 - **The tagging panel** (`repo:src/hud/tag_hud.h`, set by `GameplayMode::updateTagPanel()`) as
   [the tagging panel](#fn-after-subtitle) says, while player 1 sprays: the path's dots but the last three, grey from
-  100 to 255, the painted cells in his `HuTagColor` at alpha 205, the cursor between cells fading white to black and
-  back over 500 ms (white while the game pauses; the original is white while on track, [the
-  fix](crimes.md#tag-coney-fixes)), the charge bar shrinking down to its fixed bottom, and the frame at alpha 191;
+  100 to 255, the painted cells in bytes 0-2 of his tag colour (`HuTagColor`; by default the dark maroon (80, 7, 5)) at
+  alpha 205, the cursor between cells plain white while on track and fading white to black and back over 500 ms off
+  it (and through a slip's pause, which keeps the flag), the charge bar (draining through pauses too) in the same
+  colour shrinking down to its fixed bottom, and the frame at alpha 191;
   gone when the spray ends.
 - **The gang-count indicator** (`repo:src/hud/num_indicator.h`) as [the indicator](#gang-count-indicator) says: the
   shared one (`HUDSetNumIndicator` player 2), in a level numbered 100 or more, draws the blue header (sheet-table record

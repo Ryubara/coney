@@ -37,6 +37,7 @@ from coney_tools.repo_checks import (
     load_body_rules,
     load_title_rules,
 )
+from coney_tools.repo_labels import apply_labels, gh_script, load_labels
 
 
 def _config_show() -> int:
@@ -60,6 +61,19 @@ def _repo_check() -> int:
         return 1
     print("pointer files: ok")
     return 0
+
+
+def _repo_labels(apply: bool, repo: str | None) -> int:
+    """Print the `gh` commands that create the labels of .github/labels.yml, or run them with `apply`; 1 on failure."""
+    labels = load_labels(find_repo_root(Path.cwd()))
+    if not apply:
+        print("\n".join(gh_script(labels, repo)))
+        return 0
+    failed = apply_labels(labels, repo)
+    for name in failed:
+        print(f"label failed: {name}", file=sys.stderr)
+    print(f"labels: {len(labels) - len(failed)} of {len(labels)} synced")
+    return 1 if failed else 0
 
 
 def _repo_check_title(file: str) -> int:
@@ -149,6 +163,11 @@ def _build_parser() -> argparse.ArgumentParser:
         "--body", help="a file holding the pull request description; - or omitted reads stdin"
     )
     _add_check_commands(groups)
+    labels_parser = repo_commands.add_parser(
+        "labels", help="print the gh commands for the issue labels of .github/labels.yml, or sync them with --apply"
+    )
+    labels_parser.add_argument("--apply", action="store_true", help="create or update the labels through gh now")
+    labels_parser.add_argument("--repo", help="OWNER/NAME to sync; default: the repository gh finds from the checkout")
     _add_wad_commands(groups)
     _add_extract_command(groups)
     _add_audio_commands(groups)
@@ -314,12 +333,13 @@ def _add_xbox_commands(groups: Any) -> None:
 
 def _add_progress_commands(groups: Any) -> None:
     """Register `coney-tools progress ...`."""
-    tracker = groups.add_parser("progress", help="the progress tracker shown in README.md and docs/progress/")
+    tracker = groups.add_parser("progress", help="the progress tracker (docs/progress/, built into the docs site)")
     commands = tracker.add_subparsers(dest="command", required=True)
     show = commands.add_parser("show", help="print how much is reimplemented and researched")
     show.add_argument("--json", action="store_true", help="print everything as JSON")
-    update = commands.add_parser("update", help="regenerate the progress blocks of README.md and the docs page")
-    update.add_argument("--check", action="store_true", help="change nothing; exit 1 when a block is stale")
+    commands.add_parser("check", help="check the tracker's inputs (functions.toml, @orig tags, ranges, roadmap)")
+    render = commands.add_parser("render", help="write the page and badge JSON the docs build publishes, to a folder")
+    render.add_argument("out_dir", type=Path, help="a folder to write progress/index.md and progress/badges/ to")
     sizes = commands.add_parser("sizes", help="check the listed functions' sizes against your own disc")
     sizes.add_argument(
         "disc", nargs="?", help="a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml"
@@ -496,8 +516,10 @@ def _run_progress(args: argparse.Namespace) -> int:
     """Dispatch a `progress` command."""
     if args.command == "show":
         return progress_cli.run_show(args.json)
-    if args.command == "update":
-        return progress_cli.run_update(args.check)
+    if args.command == "check":
+        return progress_cli.run_check()
+    if args.command == "render":
+        return progress_cli.run_render(args.out_dir)
     if args.command == "ghidra":
         return progress_cli.run_ghidra(args.url, args.check)
     if args.command == "backlog":
@@ -634,6 +656,8 @@ def _run(args: argparse.Namespace) -> int:
         return _config_show()
     if args.group == "mcp":
         return mcp_serve.run_serve(args.name)
+    if args.command == "labels":
+        return _repo_labels(args.apply, args.repo)
     if args.command == "check-title":
         return _repo_check_title(args.file)
     if args.command == "check-docs":

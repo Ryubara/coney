@@ -947,8 +947,8 @@
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the runner; a bad handle does nothing."}
     - {name: path, lua: userdata, desc: "The path to run (a `Path_...` value); read only when more than one argument is passed."}
-    - {name: start, lua: number, ctype: int, desc: "Index of the path point to start from, as in GoalTravelPath."}
-    - {name: reverse, lua: boolean, desc: "true to run the path backwards (inferred, as in GoalTravelPath)."}
+    - {name: mode, lua: number, ctype: int, desc: "What happens at the end of the path, exactly as GoalTravelPath's third argument: 0 stop (the goal ends), 1 loop, 2 walk it back. It is stored in the TravelPath sub-goal's `+0x14`, which GoalTravelPath_NextPoint reads."}
+    - {name: reverse, lua: boolean, desc: "true starts at the last point and runs the path backwards, as in GoalTravelPath (the same sub-goal field `+0x18`)."}
     - {name: gait, lua: number, ctype: int, desc: "Base gait id (scripts use 4 run or 5 sprint); its speed is the floor of the runner's speed."}
     - {name: radius, lua: number, ctype: float, desc: "Arrival radius at each path point in metres."}
     - {name: chasers, lua: number, ctype: int, desc: "Gang id of the chasers (scripts pass the Warriors' gang); the nearest of its up to 16 members is measured."}
@@ -956,7 +956,7 @@
     - {name: keepAhead, lua: boolean, desc: "true flips the rule: the runner speeds up the farther the nearest chaser is beyond `distance` (full boost 5 m past it). Scripts leave it unset."}
   description: >-
     Pushes a run-carrot goal on the human: it runs the path point to point like GoalTravelPath (a TravelPath sub-goal
-    plus a move-to-point goal per point) and ends when the path runs out. Each update it finds the nearest member of
+    plus a move-to-point goal per point) and, with mode 0, ends when the path runs out. Each update it finds the nearest member of
     the chasing gang and sets its speed to the gait's speed plus up to 6 m/s: by default the boost is
     `1 - d/distance` when that chaser is closer than `distance` (so a caught-up carrot sprints away), with
     `keepAhead` it is `min((d - distance) * 0.2, 1)`. It also raises a brain byte (`+0x0b`, 0/2/3 for boosts of
@@ -967,7 +967,9 @@
   notes: >-
     Speed is recomputed only every fourth update (brain `+0x34 & 3` clear). Brain `+0x0b` (Brain_SetTurnBoost
     0x0028cdf8) multiplies an AI human's turn limit by (b + 1); see the AI page (Brain bytes).
-    No chaser alive: speed stays the gait's.
+    No chaser alive: speed stays the gait's. Arguments 2-6 go unchanged to GoalTravelPath_Init (0x002e0748) through
+    RunCarrotGoal_Init (0x002e1230), in the same registers as GoalTravelPath's binding passes them, so the third is the
+    end mode, not a start index (confirmed (code) at the wrapper 0x00360c10 and 0x002e12b8-0x002e12dc).
   usage: {chunks: 4, calls: 10, boot: false, mission1: false, result_used: false, levels: [5, 84, 20]}
   coney: implemented
 

@@ -369,8 +369,8 @@ class StoryBindingHost {
     virtual void setPedType(double /*human*/, std::uint16_t /*type*/) {}
     /// `HuSetWounded(human, on)`: wounding also flushes the brain's goals and actions.
     virtual void setWounded(double /*human*/, bool /*wounded*/) {}
-    /// `HuTagColor`: the colour word.
-    virtual void setTagColour(double /*human*/, std::uint32_t /*rgba*/) {}
+    /// `HuTagColor`: the human's `+0x640` bytes as the binding writes them (human::tagColourFromScript()).
+    virtual void setTagColour(double /*human*/, const std::array<std::uint8_t, 4>& /*bytes*/) {}
     /// `HuTag(human, tag, flag)`: the human sprays `tag` from `flag`.
     virtual void tag(double /*human*/, double /*tag*/, double /*flag*/) {}
     /// `HuSetInterrogation`: the human's four speech files, the success callback (empty: not interrogable) and its

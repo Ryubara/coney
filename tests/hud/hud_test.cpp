@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The HUD object (docs/research/hud.md): hints, objectives and their messages, announcements, what hides what, counter
 // panels, the instruction arrow, the radars, showing and hiding, on synthetic data.
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -45,7 +46,7 @@ void step(Hud& hud, std::uint64_t nowMs) {
 
 // A canvas drawing every font slot and the flat quads into recorded batches.
 struct Canvas {
-    coney::graphics::Font font = coney::test::testFont();
+    coney::graphics::Font font = coney::test::testFont(262); // as many as big_font: the stick pictures too
     coney::graphics::SpriteBatch text{font.sheet(), 8192, 10000.0F};
     coney::graphics::SpriteBatch flat{coney::graphics::SpriteSheet{}, 64, 8000.0F};
     coney::hud::HudCanvas canvas;
@@ -561,4 +562,91 @@ TEST_CASE("the action cycle hides the prompt's text and draws its button at the 
     hud.render(canvas.canvas);
     CHECK_FALSE(canvas.text.sprites().empty());
     CHECK(parts.sprites().empty());
+}
+
+TEST_CASE("the level's shut-down clears every hint, objective and panel the level left, and keeps the game's",
+          "[hud]") {
+    // docs/research/hud.md#hud-object: UnloadLevel's HUD_ShutdownLevel runs every part's shutdown; the hint box's
+    // clears its text, both lists and the tutorial callback.
+    Hud hud = makeHud(nullptr);
+    REQUIRE(hud.attachPlayer(0, 32) == 0);
+    hud.setGameTutorialText(true);
+    hud.hints().queue("lesson", 1);
+    step(hud, 100);
+    hud.hints().queue("queued", 3);
+    REQUIRE(hud.hints().showing().has_value());
+    hud.setTutorialCallback("P1.BasicAttacks");
+    hud.setObjective(0, "objective", 0, true, 0);
+    REQUIRE(hud.checklist().slots[0].has_value());
+    hud.setAnnouncement(5, "centred", false);
+    hud.setActionPrompt(0, "prompt");
+    hud.enableArrow(true, 0.5F, 0.5F, 0.0F);
+    hud.showStopWatch(true, "time");
+    hud.radar().blips.try_emplace(7.0, coney::hud::RadarBlip{});
+    hud.showAll();
+
+    hud.levelShutDown();
+    CHECK_FALSE(hud.hints().showing().has_value());
+    CHECK(hud.hints().queued().empty());
+    CHECK(hud.tutorialCallback().empty());
+    CHECK_FALSE(hud.checklist().slots[0].has_value());
+    CHECK_FALSE(hud.centredAnnouncement().has_value());
+    CHECK(hud.actionPrompt(0).empty());
+    CHECK_FALSE(hud.arrow().on);
+    CHECK_FALSE(hud.stopWatch().shown);
+    CHECK(hud.radar().blips.empty());
+    // The panel is free for the next level's player.
+    CHECK(hud.attachPlayer(0, 32) == 0);
+    // The game state's switch, the services and the shown flag outlive the level.
+    CHECK(hud.gameTutorialText());
+    CHECK(hud.services().hudString(1) == "H1");
+    CHECK(hud.visible());
+    // A hint the next level queues shows as before.
+    hud.hints().queue("next", 1);
+    step(hud, 200);
+    REQUIRE(hud.hints().showing().has_value());
+    CHECK(hud.hints().showing().value_or(coney::hud::Hint{}).text == "next");
+}
+
+TEST_CASE("a context prompt's GSTRING.ACTIONBUTTON draws the triangle button, not the letter n", "[hud]") {
+    // Owner item 9 ("n Give Weapon"): the prompt strings start with <MONEYFONT><ST></MONEYFONT> and a space, and in the
+    // prompt's part_page0 font the <ST> character n inside <MONEYFONT> is rectangle 11 + ('n' - '0') = 73.
+    Hud hud = makeHud(nullptr);
+    Canvas canvas;
+    hud.setActionPrompt(0, "<MONEYFONT><ST></MONEYFONT> Give Weapo");
+    step(hud, 0);
+    hud.render(canvas.canvas);
+    const auto& sprites = canvas.text.sprites();
+    REQUIRE(sprites.size() == 10);
+    const coney::graphics::UvRect triangle = canvas.font.sheet().page.rect(73);
+    CHECK(sprites.front().uv == triangle);
+    CHECK(std::ranges::none_of(sprites, [&](const auto& s) { return s.uv == canvas.font.glyph('n'); }));
+}
+
+TEST_CASE("the revive prompt's stick picture alternates with the prompt's own time", "[hud]") {
+    // HUD string 4's form: <SDL> in big_font's money font is rectangle 259 (its character 4), then 257 (character 2),
+    // by turns every 500 ms, counted from when the prompt's text was set (the widget's stick timer).
+    Hud hud = makeHud(nullptr);
+    const coney::graphics::UvRect own = Canvas{}.font.sheet().page.rect(259);
+    const coney::graphics::UvRect off = Canvas{}.font.sheet().page.rect(257);
+    const auto stickAt = [&hud](std::uint64_t nowMs) {
+        step(hud, nowMs);
+        Canvas canvas;
+        hud.render(canvas.canvas);
+        const auto& sprites = canvas.text.sprites();
+        REQUIRE_FALSE(sprites.empty());
+        return sprites.back().uv;
+    };
+    step(hud, 10000);
+    const std::string revive = "<BIGFONT><MONEYFONT><SDL></MONEYFONT></BIGFONT>";
+    hud.setActionPrompt(0, revive);
+    CHECK(stickAt(10000) == own);
+    CHECK(stickAt(10499) == own);
+    CHECK(stickAt(10500) == off);
+    CHECK(stickAt(11000) == own);
+    // The same text again keeps its time; a new text starts it over.
+    hud.setActionPrompt(0, revive);
+    CHECK(stickAt(11600) == off);
+    hud.setActionPrompt(0, revive + " ");
+    CHECK(stickAt(11700) == own);
 }

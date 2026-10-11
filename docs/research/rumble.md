@@ -257,10 +257,12 @@ The update (`0x001fad40`) runs four phases (byte `+0xe4`), confirmed (code):
   glyph of `part_page0` (characters `0x91`-`0xa0`, [Markup](gui.md#markup)).
 - **The countdown**: a text widget at (0.5, 0.5), size 2.5, grey `0x005fd310`, font slot 6, centred, hidden.
 
-**Coney differs** (owner item 24b, "press  to start" with an empty gap): `repo:src/gui/rumble_mode_gui/rumble_intro.cpp`
-(`setupLine`) draws the prompt like a name, in `big_font`, white, at y 0.7; `big_font` has no picture for the
-`<X>` character, so the button is a gap. **Fix for the implementer**: build the prompt as a usage line (font slot
-`part_page0`, size 1.0, grey 178, centred) at (0.5, 0.88); the names and countdown in grey 178 at size 2.5.
+**Fixed in Coney** (owner item 24b, "press  to start" with an empty gap): Coney drew the prompt like a name, in
+`big_font`, which has no picture for the `<X>` character, so the button was a gap. The intro
+(`repo:src/gui/rumble_mode_gui/rumble_intro.cpp`) now builds the prompt as a usage line (`part_page0`, size 1.0,
+grey 178, centred) at (0.5, 0.88), and the names and countdown in grey 178 at size 2.5, the countdown at (0.5, 0.5).
+Tests: `repo:tests/gui/rumble_mode_gui/rumble_match_screens_test.cpp` and the disc check `"[disc][text]"` (the cross
+in string `0x25`).
 
 **The world keeps running under the intro.** The screen is only a HUD widget: `HUD_Update` (`0x001af010`) updates it
 (`0x001fad40`) after `Gm_Level_Update` (`0x00158728`) has already ticked the tasks and the game mode
@@ -497,7 +499,7 @@ wheelchair's clips and the give-way action.
 - What the sound call on `"menu"` (`0x0010fa50`) does when the result screen's choices appear.
 - The countdown's first sound (`+0xfc` of the intro, loaded before the screen opens).
 - The intro's layout after `RM_Intro_LayoutNames` (the set-up is [answered](#intro)), the separator sprite's picture
-  and how long each announcer line lasts (Coney: centred white big_font, "VS", 1.5 s per line without lengths).
+  and how long each announcer line lasts (Coney: names at y 0.35 and 0.55, "VS" as text, 1.5 s a line without lengths).
 - The intro's screen effects 0 (left out by Coney) and how opaque the prompt is when the screen takes the pad
   (Coney: 0.95).
 - The result screen's two lines' font, scale and colour, and the grids' rows (Coney: one row of two).

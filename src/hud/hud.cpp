@@ -78,6 +78,21 @@ void Hud::levelSetUp() {
     hideAll();
 }
 
+void Hud::levelShutDown() {
+    // HUD_ShutdownLevel runs every part's shutdown (the hint box's clears its text, both lists and the tutorial
+    // callback; the panels lose their attachment); a fresh HUD is that, less what is not the level's.
+    Hud fresh(std::move(m_services));
+    fresh.m_nowMs = m_nowMs;
+    fresh.m_levelNumber = m_levelNumber;
+    // W_GameState's switches, which Coney keeps here: the game state outlives the level.
+    fresh.m_gameTutorialText = m_gameTutorialText;
+    fresh.m_firstObjectiveHintGiven = m_firstObjectiveHintGiven;
+    // Shown or hidden and the spinner are the screen's, not the level's: the next set-up hides both.
+    fresh.m_visible = m_visible;
+    fresh.m_spinner = m_spinner;
+    *this = std::move(fresh);
+}
+
 void Hud::hideAll() {
     // The Armies of the Night exception (game state +0x14c) does not arise in Coney's levels yet.
     for (PlayerPanel& panel : m_panels) {
@@ -648,6 +663,8 @@ void Hud::renderPrompt(const HudCanvas& canvas) const {
     style.scale = metricsOfHeight(kPromptTextHeight).width * 30.0F;
     style.colour = kPromptColour;
     style.alignment = gui::TextAlignment::Centre;
+    // Its time since the text was set, which steps the stick tags (the revive prompt's stick picture).
+    style.timeMs = static_cast<std::uint32_t>(m_nowMs - std::min(m_promptSinceMs.at(0), m_nowMs));
     // The base y plus the raise; a prompt of several lines moves up a further step per line.
     const gui::TextLayout measured = gui::layoutText(text, style, canvas.text.fonts);
     // The clubhouse puts the text near the top (HUDEnableClubActionText).

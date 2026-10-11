@@ -156,8 +156,10 @@ BODY_RULES = BodyRules(
     no_ai="a person",
     model_label="Model:",
     model_none="n/a",
+    remaining_section="Checklist",
+    remaining_label="Remaining:",
 )
-CHECKLIST = "Done:\n\n- [x] The check\n\nRemaining:\n\n- [ ] Nothing\n"
+CHECKLIST = "Done:\n\n- [x] The check\n\nRemaining:\n\n- [ ] The follow-up (#123)\n"
 
 
 NO_SHOTS = "Screenshots: none (a docs-only change, nothing visible)"
@@ -420,21 +422,24 @@ AI_USE = {
     "model": {"label": "Model:", "none": "n/a"},
 }
 SCREENSHOTS = {"section": "Screenshots", "none": "Screenshots: none"}
+REMAINING = {"section": "Checklist", "label": "Remaining:"}
 GOOD_BODY_RULES = {
-    "sections": ["Summary", "Screenshots", "AI use"],
+    "sections": ["Summary", "Checklist", "Screenshots", "AI use"],
     "filled": ["Summary"],
     "placeholders": ["..."],
     "screenshots": SCREENSHOTS,
     "ai_use": AI_USE,
+    "remaining": REMAINING,
 }
 
 
 def test_body_rules_are_read_from_the_rules_file(tmp_path: Path) -> None:
     rules = load_body_rules(write_body_rules(tmp_path, GOOD_BODY_RULES))
-    assert rules.sections == ("Summary", "Screenshots", "AI use") and rules.filled == ("Summary",)
+    assert rules.sections == ("Summary", "Checklist", "Screenshots", "AI use") and rules.filled == ("Summary",)
     assert rules.screenshots_section == "Screenshots" and rules.screenshots_none == "Screenshots: none"
     assert rules.choices == ("a person", "an AI") and rules.no_ai == "a person"
     assert rules.written_by_label == "Written by:" and rules.model_label == "Model:"
+    assert rules.remaining_section == "Checklist" and rules.remaining_label == "Remaining:"
 
 
 def altered(**changes: object) -> dict[str, object]:
@@ -457,6 +462,9 @@ def altered(**changes: object) -> dict[str, object]:
         altered(screenshots=None),
         altered(screenshots={"section": "Other", "none": "Screenshots: none"}),
         altered(screenshots={"section": "Screenshots", "none": ""}),
+        altered(remaining=None),
+        altered(remaining={"section": "Other", "label": "Remaining:"}),
+        altered(remaining={"section": "Checklist", "label": ""}),
         altered(ai_use={**AI_USE, "section": "Other"}),
         altered(ai_use={**AI_USE, "model": {"label": "", "none": "n/a"}}),
         altered(ai_use={**AI_USE, "written_by": {"label": "W:", "choices": [], "no_ai": "x"}}),
@@ -510,3 +518,80 @@ def test_a_filled_in_template_passes() -> None:
     filled = re.sub(r"(\*\*Commits written by:\*\*) <!--.*?-->", r"\1 an AI", filled)
     filled = re.sub(r"(\*\*Model:\*\*) <!--.*?-->", r"\1 Claude Sonnet 5.5", filled)
     assert check_body(filled, load_body_rules(REPO)) == []
+
+
+# --- the Remaining list names an issue or pull request -----------------------------------------------------------
+
+
+def checklist_body(remaining: str, done: str = "- [x] The check\n") -> str:
+    """A description whose Checklist holds `done` under Done and `remaining` under Remaining."""
+    return body().replace(CHECKLIST, f"Done:\n\n{done}\nRemaining:\n\n{remaining}")
+
+
+def test_a_remaining_item_with_an_issue_number_passes() -> None:
+    assert check_body(checklist_body("- [ ] Add the second unit (#123)\n- [ ] #45: the third\n"), BODY_RULES) == []
+
+
+def test_a_remaining_item_without_a_number_is_refused() -> None:
+    problems = check_body(checklist_body("- [ ] Add the second unit\n- [ ] Add the third (#7)\n"), BODY_RULES)
+    assert len(problems) == 1
+    assert "'Add the second unit'" in problems[0] and "#123" in problems[0], problems
+
+
+def test_every_unnumbered_remaining_item_is_reported() -> None:
+    assert len(check_body(checklist_body("- [ ] One\n- [ ] Two\n- [ ] Three (#3)\n"), BODY_RULES)) == 2
+
+
+def test_a_number_on_the_wrapped_line_of_an_item_counts() -> None:
+    assert check_body(checklist_body("- [ ] A long item that wraps\n  onto a second line (#99)\n"), BODY_RULES) == []
+
+
+def test_a_number_in_the_next_item_does_not_count_for_the_one_before() -> None:
+    problems = check_body(checklist_body("- [ ] No number here\n- [ ] Has one (#5)\n"), BODY_RULES)
+    assert len(problems) == 1 and "No number here" in problems[0]
+
+
+def test_a_number_in_a_word_or_a_path_is_not_a_reference() -> None:
+    for text in ("The item#12", "See docs/a.md#12", "Entity &#12;", "Version 4 (no number)"):
+        assert check_body(checklist_body(f"- [ ] {text}\n"), BODY_RULES), text
+
+
+def test_a_remaining_item_may_cite_a_pull_request() -> None:
+    assert check_body(checklist_body("- [ ] The rest lands in the follow-up pull request #88\n"), BODY_RULES) == []
+
+
+def test_checked_items_and_prose_under_remaining_are_not_refused() -> None:
+    assert check_body(checklist_body("None.\n"), BODY_RULES) == []
+    assert check_body(checklist_body("- [x] Finished after all\n"), BODY_RULES) == []
+
+
+def test_an_empty_remaining_list_and_the_template_placeholder_pass() -> None:
+    assert check_body(checklist_body(""), BODY_RULES) == []
+    assert check_body(checklist_body("- [ ] ...\n"), BODY_RULES) == []
+
+
+def test_unchecked_items_under_done_are_not_refused() -> None:
+    assert check_body(checklist_body("", done="- [ ] Not ticked yet\n"), BODY_RULES) == []
+
+
+def test_a_remaining_heading_with_a_note_or_bold_still_counts() -> None:
+    for heading in ("Remaining (later units):", "**Remaining:**"):
+        text = checklist_body("- [ ] Later\n").replace("Remaining:", heading)
+        assert check_body(text, BODY_RULES), heading
+
+
+def test_remaining_items_in_a_comment_are_ignored() -> None:
+    assert check_body(checklist_body("<!-- - [ ] Not an item -->\n"), BODY_RULES) == []
+
+
+def test_a_list_after_remaining_ends_it() -> None:
+    text = checklist_body("- [ ] Later (#2)\n").replace(
+        "\n## Testing", "\nNotes:\n\n- [ ] Not a remaining item\n\n## Testing"
+    )
+    assert check_body(text, BODY_RULES) == []
+
+
+def test_the_real_rules_read_the_checklist_section() -> None:
+    rules = load_body_rules(REPO)
+    assert rules.remaining_section == "Checklist" and rules.remaining_label == "Remaining:"
+    assert rules.remaining_section in rules.sections

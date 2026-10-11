@@ -1,0 +1,6 @@
+# Grab PoizoCiv with circle, then the power strike: cross pressed, square 2 updates later, both released 4 updates
+# after (combat.md#power-strike's runtime input). No extension. Stick centred. Frames are character updates of 1/30 s.
+10 tap circle
+60 press cross
+62 tap square
+66 release cross

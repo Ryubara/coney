@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "graphics/font.h"
 
+#include <string_view>
 #include <vector>
 
 #include <catch2/catch_approx.hpp>
@@ -102,4 +103,28 @@ TEST_CASE("Font_Draw aligns by the measured width and puts each shadow first", "
     CHECK(shadowed[0].position.x - shadowed[1].position.x ==
           Approx(OverlayCamera::guiWidthToOverlay(coney::graphics::kShadowOffsetX)));
     CHECK(shadowed[1].position.y - shadowed[0].position.y == Approx(coney::graphics::kShadowOffsetY));
+}
+
+TEST_CASE("Font_Draw with a glyph base aligns by the width measured without it", "[font]") {
+    // The original's Font_Draw measures the string for its alignment with no base, then draws each glyph from the base
+    // (docs/research/gui.md#moneyfont). In proportional mode the money rectangles past 255 are wider (12 texels) than
+    // the plain ones (8), so the two widths differ.
+    const Font font = testFont(262);
+    const FontMetrics m = fontMetrics(1.0F);
+    const coney::graphics::GlyphBase base{.base = 256, .origin = 1};
+    const std::string_view text = "\x02\x03";
+    const float plain = font.measure(text, m, kFontProportional);
+    REQUIRE(font.measure(text, m, kFontProportional, base) > plain);
+    std::vector<Sprite> left;
+    std::vector<Sprite> centred;
+    std::vector<Sprite> right;
+    font.draw(left, text, 0.5F, 0.5F, m, kFontProportional, coney::graphics::kWhite, 0, base);
+    font.draw(centred, text, 0.5F, 0.5F, m, kFontProportional | kFontCentred, coney::graphics::kWhite, 0, base);
+    font.draw(right, text, 0.5F, 0.5F, m, kFontProportional | kFontRightAligned, coney::graphics::kWhite, 0, base);
+    REQUIRE(left.size() == 2);
+    CHECK(left[0].uv == font.sheet().page.rect(257));
+    CHECK(left[1].uv == font.sheet().page.rect(258));
+    const float scale = OverlayCamera::guiWidthToOverlay(1.0F);
+    CHECK(left[0].position.x - centred[0].position.x == Approx(plain / 2 * scale));
+    CHECK(left[0].position.x - right[0].position.x == Approx((plain + m.width / 2) * scale));
 }

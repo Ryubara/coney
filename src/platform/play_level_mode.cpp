@@ -543,8 +543,12 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
         m_freeCamera->current().update(pad, static_cast<float>(frame.seconds));
     }
     static const Pad kStill;
-    const bool picking = !m_frozen && !m_freeCamera && !sceneHoldsPlayer() && stepLockPick(pad);
+    // In the noclip the pad flies him (human::Player::update()) and works nothing else: no lock pick, throw aim or
+    // mugging.
+    const bool noclip = m_player->noclip();
+    const bool picking = !noclip && !m_frozen && !m_freeCamera && !sceneHoldsPlayer() && stepLockPick(pad);
     const Pad& playerPad = m_frozen || m_freeCamera || sceneHoldsPlayer() || picking ? kStill : pad;
+    const Pad& actionPad = noclip ? kStill : playerPad;
 
     // The characters' update, then the cameras' (human::Player keeps that order).
     applyAnimOverrides();
@@ -557,8 +561,8 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     }
     m_ai->capture();
     stepPickups();
-    stepThrowAim(playerPad);
-    stepMugMeter(m_player->human(), playerPad);
+    stepThrowAim(actionPad);
+    stepMugMeter(m_player->human(), actionPad);
     stepLockPickDial();
     stepLooseObjects();
     stepFlash();
@@ -594,7 +598,7 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     // The HUD's step (docs/research/hud.md#the-huds-frame), with the player's rage on panel 0.
     hud::HudFrame hudFrame;
     hudFrame.nowMs = millisecondsOf(frame.gameTicks);
-    hudFrame.pads.at(0) = &playerPad;
+    hudFrame.pads.at(0) = &actionPad;
     // The fixed-camera icon: a locked camera (type 1) or switch 0 off ignores the right stick. Coney has no fixed (0),
     // transition (5) or rail (9) camera.
     if (const camera::Cameras* cameras = m_cast.cameras; cameras != nullptr) {
@@ -910,8 +914,11 @@ float PlayLevelMode::playerSpeed() const { return m_player->human().speed(); }
 std::string PlayLevelMode::playerState() const {
     const human::Human& human = m_player->human();
     return std::format("{}, clip {}, {}, {}, stamina {}/{}{}", gaitName(human.gait()), human.animator().animId(),
-                       human.airborne() ? "airborne" : "grounded", human::traversalName(human.traversal()),
-                       human.stamina().value(), human.stamina().maximum(), human.sprinting() ? ", sprint" : "");
+                       human.flying()     ? "noclip"
+                       : human.airborne() ? "airborne"
+                                          : "grounded",
+                       human::traversalName(human.traversal()), human.stamina().value(), human.stamina().maximum(),
+                       human.sprinting() ? ", sprint" : "");
 }
 
 void PlayLevelMode::teleport(const debug::Place& place) {
@@ -950,9 +957,28 @@ bool PlayLevelMode::startTagSpray(const std::array<float, 3>& point) {
     return m_player->human().startTagSpray(anim::Vec3{point[0], point[1], point[2]});
 }
 
+std::string PlayLevelMode::heldObjectType() const {
+    const human::ScriptState& script = m_player->human().script();
+    return script.heldObject != world_objects::kNoObject ? script.heldObjectName : std::string();
+}
+
+void PlayLevelMode::dropHeldForTag() {
+    // Out of the hand at once, with no clip: it falls from where the hand holds it.
+    human::Human& human = m_player->human();
+    human::ScriptState& script = human.script();
+    if (script.heldObject == world_objects::kNoObject) {
+        return;
+    }
+    const double held = std::exchange(script.heldObject, world_objects::kNoObject);
+    script.heldObjectName.clear();
+    dropHeld(human, held);
+}
+
 bool PlayLevelMode::tagSprayLooping() const { return m_player->human().tagSprayLooping(); }
 
 bool PlayLevelMode::tagSprayPlaying() const { return m_player->human().tagSprayPlaying(); }
+
+void PlayLevelMode::restartTagSpray() { m_player->human().restartTagSpray(); }
 
 void PlayLevelMode::endTagSpray() { m_player->human().endTagSpray(); }
 

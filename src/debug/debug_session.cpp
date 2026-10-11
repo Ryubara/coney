@@ -17,6 +17,15 @@ DebugSession::DebugSession(TunableRegistry& tunables, DebugServices services, In
     // Between two steps: the queued tunable changes land, then the channels take their sample.
     m_gate.addBetweenSteps([this] { m_tunables.applyPending(); });
     m_gate.addBetweenSteps([this] { m_model.sampleChannels(); });
+    // A notice counts down by frames.
+    m_gate.addBetweenSteps([this] { m_noticeFramesLeft = m_noticeFramesLeft > 0 ? m_noticeFramesLeft - 1 : 0; });
+    // R3 + d-pad left flips the noclip while the Player page's hotkey option is on.
+    m_gate.addHotkey(
+        kNoclipChord, [this] { return m_noclipHotkey; },
+        [this] {
+            const PlayControls* p = play();
+            setNoclip(p == nullptr || !p->noclip());
+        });
 
     addTimePage(*this);
     addTunablesPage(*this);
@@ -68,6 +77,26 @@ void DebugSession::print(std::string line) {
     m_log.add(std::move(line));
 }
 
+void DebugSession::notice(std::string text) {
+    print(text);
+    m_notice = std::move(text);
+    m_noticeFramesLeft = kNoticeFrames;
+}
+
+void DebugSession::setNoclip(bool on) {
+    PlayControls* p = play();
+    if (p == nullptr) {
+        print("noclip: no player");
+        return;
+    }
+    if (!p->canNoclip()) {
+        print("noclip: not in this mode");
+        return;
+    }
+    p->setNoclip(on);
+    notice(on ? "Noclip on" : "Noclip off");
+}
+
 std::vector<std::string> DebugSession::cornerLines() const {
     std::vector<std::string> lines;
     if (m_display.frameStats) {
@@ -99,6 +128,10 @@ std::vector<std::string> DebugSession::cornerLines() const {
         } else {
             lines.emplace_back("coordinates: no player");
         }
+    }
+    // The last notice, while it lasts.
+    if (m_noticeFramesLeft > 0) {
+        lines.push_back(m_notice);
     }
     return lines;
 }

@@ -88,7 +88,7 @@ Confirmed (code) at `0x0033c288` and the step. Pool sizes are counts × bytes.
 | `+0x4be20` / `+0x4c720` | 18 × 0x80 / 36 × 0x90 | cars: bodies, boxes |
 | `+0x4db60` | 30 × 0x60 | 2.0 m spheres: the humans' push spheres |
 | `+0x4e6a0` | 64 × 0x30 | settle slots (below) |
-| `+0x4f2a0`-`+0x4f3f0` | | the punch bag's body set: a human body, one segment (bone 3, radius 0.35, length 1.5) and a capsule |
+| `+0x4f2a0`-`+0x4f3f0` | | the punch bag's body set: a human body, one segment (bone 3, radius 0.35, length 1.5, no offset, along the bone's x) and a capsule (radius 0.35, height 1.787 m); [Bodies](#bodies) |
 | `+0x4f450`-`+0x4f45c` | vector | every live body, by index (body `+0x20`) |
 
 The 60 human body sets match the 60 human slots ([AI humans](ai.md)), inferred. Who allocates from which pool is
@@ -168,6 +168,18 @@ bit `0x8`. Flags by kind: human `0x8002243f`, punch bag `0x8000243f`, world obje
 joins the human list (`0x003407a0`; next `+0xc8`, previous `+0xcc`) and gets its scale (`0x00341f28`). The punch bag is
 the human class `0x1cc` (`HeavyBag`, [Characters](../references/characters.md)): `0x0021ce08` gives it its own body set
 instead of one of the 60.
+
+**The punch bag's shapes** (`IPhysics_CreatePunchBagBody`, `0x0033cb08`: the capsule on, the bone shapes off), read at
+runtime (PCSX2 2.9.94, `level95`, the bag at rest with its origin at height −197.567; confirmed (runtime), the posing
+confirmed (code) at `0x00343810` and `0x00343518`):
+
+| Shape | Bone | Offset `+0x10` | Size | Posed |
+| --- | --- | --- | --- | --- |
+| segment (type 4, inline at body set `+0xe0`, also listed at a pool copy) | 3 | (0, 0, 0) | radius 0.35, length 1.5 | start = bone 3's position, 2.15 m above the origin; end = start + bone 3's **local x axis** × 1.5, which at rest points straight down (end 0.65 m above the origin, 0.05 m off the vertical); so it swings with the bag |
+| capsule (type 3) | none | (0, 0, 0) | radius 0.35, height 1.787 m | base on the bag's origin; the height is recomputed each update as for a human (bone 6's height + 0.2 × scale) |
+
+The segment is what strikes meet ([Combat](combat.md#moving-strikes)); the capsule is what sweeps and pushes meet
+([Workouts](workouts.md#bag-target)).
 
 `PhysicsBody_Update` (`0x00341c10`), when the body is dirty or flag `0x800` is set: pose every shape (shape vtable
 `+0x28`), recompute the AABB from the shapes (`0x00341638`, `0x003417c0`), re-sort (`0x00340628`), clear the dirty
@@ -659,6 +671,26 @@ sweep: it decides which side of a wall the sphere is on, and flips a two-sided w
 move, where the original uses the centre before it ([Sweeping a body](#sweep)). For walls a step never crosses
 (moves are under 0.3 m and the radius about 0.47 m) the two agree; the hangout's doors that the player walks through
 one way are not this but the lost spawn flags ([Objects](objects.md#coneys-implementation)).
+
+Humans meet each other as [Human contacts](#human-contacts) describes (`human::sweepCapsules` and
+`human::contactPush`, `repo:src/human/human_contacts.h`; `Human::meetHumans`). The characters' step
+(`human::Humans::update`) gives every human the step's list of humans, and a walking human's sweep first meets their
+upright capsules (0.35 × scale, 2 m tall): the nearest contact stops the capsule there and the rest of the move
+slides along the other human (code 1), and, unless the mover charges, the one met gets half of the move into him over
+his push weight (1e9 while in a pair or arrested) as a pending push for his own next move (code 4), unless a script
+made him unpushable (`HuSetPushable(false)`). A player's velocity loses its part into the human, as against a wall.
+Skipped: a human who is knocked out, wounded, out of health or out of the world, and the human this one holds or is
+held by (a grab, tackle, mount or mugging), so a linked pair passes through each other. What differs, each marked in
+the code:
+
+- **Coney's choice**: the humans take their part of the move before the walls take theirs, where the original sorts
+  both kinds of contact of a pass by fraction together; a capsule already within reach is met at fraction 0 by a move
+  that goes further in (the capsule sweep's start case is not traced).
+- **Stand-in**: `BLOCKHUMANS` comes back as soon as the human is no longer knocked out, wounded or out of health.
+  The original ([Human contacts](#human-contacts), "Who loses `BLOCKHUMANS`") gives it back only when he is healed or
+  unarrested, never by waking or ending a wound alone, and also takes it from a cuffed human; a knockdown keeps it.
+- **Not yet**: an airborne body meets no human (a jump's strike and code 1 against a human); a scene's shared group;
+  the pushed human's reaction (`Human_OnPushContact`'s timers and damage).
 
 ## Open questions
 

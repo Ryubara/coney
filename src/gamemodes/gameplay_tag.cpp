@@ -7,6 +7,7 @@
 #include <format>
 #include <optional>
 #include <span>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -18,6 +19,7 @@
 #include "characters/character_class.h"
 #include "gamemodes/gameplay_mode.h"
 #include "hud/hud.h"
+#include "human/tag_colour.h"
 #include "scripting/object_bindings.h"
 #include "scripting/sound_bindings.h"
 #include "scripting/story_bindings.h"
@@ -75,6 +77,15 @@ void GameplayMode::startTag(double human, double tag, double flag) {
     m_scripted->storyHost().lockMovement(human, true);
     m_tagIntro = TagIntro{.human = human, .tag = tag, .flag = flag};
     auto* scripted = dynamic_cast<ScriptedPlayer*>(m_level.get());
+    // Tag_StartSprayClips drops a held object of anim set 4 (overhead) or 6 (ghetto) first; a club (set 3: a pipe, a
+    // bat, a crowbar) stays in the hand.
+    if (scripted != nullptr && m_pickups) {
+        const std::string held = scripted->heldObjectType();
+        if (!held.empty() && tagDropsHeld(m_pickups->animSetOf(held))) {
+            m_log(std::format("tag: player drops his {} to spray\n", held));
+            scripted->dropHeldForTag();
+        }
+    }
     const std::optional<anim::Vec3> at = promptObjectPosition(tag);
     const bool clips =
         scripted != nullptr && at.has_value() && scripted->startTagSpray(std::array<float, 3>{at->x, at->y, at->z});
@@ -142,7 +153,14 @@ void GameplayMode::updateTagging(const Pads& pads, double seconds) {
     const auto elapsedMs = static_cast<std::uint32_t>(std::lround(seconds * kMillisecondsPerSecond));
     if (!m_tagSession->ended()) {
         m_tagSession->update(pad.leftX(), pad.leftY(), elapsedMs);
-        if (m_tagSession->game().events().slipped) {
+        const TagGame::Events& events = m_tagSession->game().events();
+        // A pause began: the spray clips restart (Tag_RestartSprayClips).
+        if ((events.slipped || events.chargeSpent) && !m_tagSession->ended()) {
+            if (auto* scripted = dynamic_cast<ScriptedPlayer*>(m_level.get())) {
+                scripted->restartTagSpray();
+            }
+        }
+        if (events.slipped) {
             m_log("tag: slipped off the pattern\n");
             const HumanCreation* tagger = m_humans.find(m_tagSession->human());
             if (tagger != nullptr && tagger->tagCheer) {
@@ -241,18 +259,15 @@ void GameplayMode::updateTagPanel() {
     state.painted = cells(game.painted());
     state.cursorX = game.cursorX();
     state.cursorY = game.cursorY();
-    // Tag_GetChargeLeft: the share of the current charge left; a whole charge once it has run out (the next one).
-    const std::uint32_t chargeMs = game.tuning().chargeMs;
-    state.chargeLeft = chargeMs == 0 || game.chargeLeftMs() == 0
-                           ? 1.0F
-                           : static_cast<float>(game.chargeLeftMs()) / static_cast<float>(chargeMs);
-    state.paused = game.pauseLeftMs() > 0;
-    // The paint's colour, HuTagColor's 0xRRGGBBAA on the tagger (human +0x640).
-    if (m_scripted != nullptr && m_scripted->player() != nullptr) {
-        const std::uint32_t rgba = m_scripted->player()->human().script().tagColour;
-        state.colour = graphics::Rgba{static_cast<std::uint8_t>(rgba >> 24U), static_cast<std::uint8_t>(rgba >> 16U),
-                                      static_cast<std::uint8_t>(rgba >> 8U), static_cast<std::uint8_t>(rgba)};
-    }
+    // Tag_GetChargeLeft: the share of the current charge left (it drains through pauses too).
+    state.chargeLeft = game.chargeLeft();
+    state.onTrack = game.onTrack();
+    // The paint's colour: bytes 0-2 of the tagger's +0x640 (by default the dark maroon (80, 7, 5)).
+    const human::TagColour colour = m_scripted != nullptr && m_scripted->player() != nullptr
+                                        ? m_scripted->player()->human().script().tagColour
+                                        : human::kDefaultTagColour;
+    const std::array<std::uint8_t, 3> rgb = human::tagHudRgb(colour);
+    state.colour = graphics::Rgba{rgb[0], rgb[1], rgb[2], 255};
     panel.set(std::move(state));
 }
 

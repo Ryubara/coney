@@ -36,7 +36,9 @@ created with `gh pr create --body-file`, and reruns when you edit it. The descri
 Checklist, Testing, Screenshots, AI use); a Summary and a Testing section with text; in Screenshots an image (a link to
 an uploaded screenshot or video; a local file path is refused) or a line `Screenshots: none (<reason>)`; one of the
 template's choices after "Commits written by:" and, unless a person wrote the commits, a model after "Model:". Text left
-as the template has it counts as empty. The sections, choices and placeholder text are in
+as the template has it counts as empty. Each unchecked item under "Remaining:" in the Checklist must name an issue or
+follow-up pull request (`#123`); file an issue for what you leave undone
+([Issues](docs/guides/issues.md#leftovers)). The sections, choices and placeholder text are in
 [.github/pr-body-rules.json](.github/pr-body-rules.json). To check a description yourself:
 
 ```sh

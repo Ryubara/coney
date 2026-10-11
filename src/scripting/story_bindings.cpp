@@ -13,6 +13,7 @@
 
 #include "camera/cameras.h"
 #include "human/human_flags.h"
+#include "human/tag_colour.h"
 #include "scripting/ai_bindings.h"
 #include "scripting/binding_args.h"
 #include "scripting/human_bindings.h"
@@ -474,20 +475,20 @@ NativeFunction makeHuTag(const BindingContext& context) {
     });
 }
 
-// `HuTagColor(human, {r, g, b, a})`: each element × 255 twice and its low byte kept (a whole 0-255 comes out as it
-// is), packed with r in the top byte.
+// `HuTagColor(human, {t1, t2, t3, t4})`: each element × 255 twice and its low byte kept (a whole 0-255 comes out as it
+// is), written to the human's `+0x640` as t4, t3, t2, t1: the HUD reads (t4, t3, t2), the mist (t1, t2, t3) at alpha
+// t4 (docs/research/crimes.md#tag-look).
 // @orig 0x00239080 Human_SetTagColour (unknown)
 NativeFunction makeHuTagColor(const BindingContext& context) {
     return storyCall(context, [](StoryBindingHost& host, std::span<const Value> args) {
         const std::array<double, 4> colour = tableArg<4>(args, 1);
-        std::uint32_t packed = 0;
-        for (const double component : colour) {
-            const double scaled = component * 255.0 * 255.0;
-            const auto byte =
-                scaled <= 0.0 ? 0U : static_cast<std::uint32_t>(static_cast<std::uint64_t>(scaled) & 0xffU);
-            packed = (packed << 8U) | byte;
+        std::array<std::uint8_t, 4> t{};
+        for (std::size_t i = 0; i < colour.size(); ++i) {
+            const double scaled = colour.at(i) * 255.0 * 255.0;
+            t.at(i) =
+                scaled <= 0.0 ? std::uint8_t{0} : static_cast<std::uint8_t>(static_cast<std::uint64_t>(scaled) & 0xffU);
         }
-        host.setTagColour(handleArg(args, 0), packed);
+        host.setTagColour(handleArg(args, 0), human::tagColourFromScript(t[0], t[1], t[2], t[3]));
     });
 }
 

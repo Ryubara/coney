@@ -4,6 +4,7 @@
 // Synthetic scripts and objects.
 #include "scripting/mission4_bindings.h"
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <expected>
@@ -18,6 +19,7 @@
 
 #include "core/error.h"
 #include "gui/global_strings.h"
+#include "human/tag_colour.h"
 #include "scripting/ai_bindings.h"
 #include "scripting/binding_args.h"
 #include "scripting/lua_value.h"
@@ -60,6 +62,9 @@ class KeepingStory final : public coney::script::StoryBindingHost {
   public:
     void setPedType(double human, std::uint16_t type) override { pedTypes.emplace_back(human, type); }
     void setWounded(double human, bool wounded) override { wounds.emplace_back(human, wounded); }
+    void setTagColour(double /*human*/, const std::array<std::uint8_t, 4>& bytes) override {
+        tagColours.push_back(bytes);
+    }
     void setSpawnerMaxConcurrent(int gang, std::string_view name, int count) override {
         limits.push_back(std::to_string(gang) + ":" + std::string(name) + ":" + std::to_string(count));
     }
@@ -70,6 +75,7 @@ class KeepingStory final : public coney::script::StoryBindingHost {
     std::vector<std::string> offScreen;
     std::vector<std::pair<double, std::uint16_t>> pedTypes;
     std::vector<std::pair<double, bool>> wounds;
+    std::vector<std::array<std::uint8_t, 4>> tagColours;
 };
 
 // An AI host whose story host is KeepingStory.
@@ -259,4 +265,26 @@ TEST_CASE("ChangeBlocker blocks the area whose centre is nearest the point, and 
     h.call("ChangeBlocker", {point(50.0F, 5.0F, 0.0F)});
     CHECK((h.paths.polygons()[0].flags & coney::world::kPathPolygonExcluded) == 0);
     CHECK((h.paths.polygons()[1].flags & coney::world::kPathPolygonExcluded) == 0);
+}
+
+TEST_CASE("HuTagColor writes t4, t3, t2, t1: the HUD reads (t4, t3, t2), the mist (t1, t2, t3) at alpha t4",
+          "[mission4_bindings]") {
+    Harness h(overlapping());
+    auto colour = std::make_shared<coney::script::Table>();
+    for (int i = 1; i <= 4; ++i) {
+        REQUIRE(colour->set(Value(static_cast<double>(i)), Value(static_cast<double>(i))));
+    }
+    h.call("HuTagColor", {Value(5.0), Value(std::move(colour))});
+    REQUIRE(h.ai.keeping.tagColours.size() == 1);
+    const coney::human::TagColour bytes = h.ai.keeping.tagColours.front();
+    CHECK(bytes == coney::human::TagColour{4, 3, 2, 1});
+    CHECK(coney::human::tagHudRgb(bytes) == std::array<std::uint8_t, 3>{4, 3, 2});
+    CHECK(coney::human::tagMistRgba(bytes) == 0x01020304U);
+}
+
+TEST_CASE("a human never given a tag colour paints dark maroon on the HUD and its mist at alpha 80",
+          "[mission4_bindings]") {
+    const coney::human::TagColour colour = coney::human::kDefaultTagColour;
+    CHECK(coney::human::tagHudRgb(colour) == std::array<std::uint8_t, 3>{80, 7, 5});
+    CHECK(coney::human::tagMistRgba(colour) == 0x20050750U);
 }

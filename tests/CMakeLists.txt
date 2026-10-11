@@ -101,6 +101,7 @@ add_executable(coney_tests
     platform/disc_level5_boss_camera_test.cpp
     platform/disc_level5_fights_test.cpp
     platform/disc_level99_audio_test.cpp
+    platform/disc_level99_heap_test.cpp
     platform/disc_level99_scene_speech_test.cpp
     platform/disc_level99_hud_test.cpp
     platform/disc_level99_story_sounds_test.cpp
@@ -110,6 +111,7 @@ add_executable(coney_tests
     platform/disc_level99_powerups_test.cpp
     platform/disc_level99_sparring_test.cpp
     platform/disc_level99_change_character_test.cpp
+    platform/disc_level99_noclip_test.cpp
     platform/disc_level99_car_climb_test.cpp
     platform/disc_level99_street_props_test.cpp
     platform/disc_game_session_test.cpp
@@ -247,6 +249,7 @@ target_sources(coney_tests PRIVATE
     camera/follow_script_test.cpp
     human/disc_player_test.cpp
     human/human_test.cpp
+    human/flight_test.cpp
     human/hiding_test.cpp
     human/body_test.cpp
     human/climb_test.cpp
@@ -267,6 +270,7 @@ target_sources(coney_tests PRIVATE
     human/traversal_test.cpp
     human/turn_and_slide_test.cpp
     human/humans_test.cpp
+    human/human_contacts_test.cpp
     human/strike_hits_test.cpp
     human/locomotion_gate_test.cpp)
 # Combat (docs/research/combat.md).

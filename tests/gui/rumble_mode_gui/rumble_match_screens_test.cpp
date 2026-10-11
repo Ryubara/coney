@@ -8,15 +8,22 @@
 #include <string_view>
 #include <vector>
 
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/pad.h"
 #include "gamemodes/rumble_result_mode.h"
+#include "graphics/font.h"
+#include "graphics/sprite_batch.h"
 #include "gui/global_strings.h"
 #include "gui/pause_menu/pause_menu.h"
 #include "gui/rumble_mode_gui/rumble_intro.h"
 #include "gui/rumble_mode_gui/rumble_result_menu.h"
+#include "gui/text_layout.h"
+#include "gui/widget.h"
+#include "support/font_fixtures.h"
 
+using Catch::Approx;
 using coney::Pad;
 using coney::PadSample;
 using coney::gui::GlobalStrings;
@@ -243,4 +250,53 @@ TEST_CASE("rumble intro: closing it ends it without onDone", "[rumble]") {
     CHECK_FALSE(intro.intro.isOpen());
     intro.driver.idleUntil(10'000 + 10'000);
     CHECK(intro.done.empty());
+}
+
+TEST_CASE("rumble intro: the prompt is a grey usage line at (0.5, 0.88) whose <X> draws the cross button", "[rumble]") {
+    // Owner item 24b ("press  to start" with a gap): the prompt is a UsageInfo in part_page0 (Coney's text slot) at
+    // size 1.0, not a big_font line; big_font here has no rectangle for the cross character 0x9e, as on the disc.
+    Intro intro;
+    intro.strings.set(RumbleIntro::kPromptString, "pr<X>s");
+    const coney::graphics::Font text = coney::test::testFont();
+    const coney::graphics::Font big = coney::test::testFont(0x9e);
+    coney::graphics::SpriteBatch textBatch(text.sheet(), 256, 10000.0F);
+    coney::graphics::SpriteBatch bigBatch(big.sheet(), 256, 10000.0F);
+    const coney::gui::GuiCanvas canvas{
+        .fonts = [&](int slot) -> const coney::graphics::Font* {
+            return slot == coney::gui::kBigFontSlot ? &big : &text;
+        },
+        .textBatch = [&](int slot) { return slot == coney::gui::kBigFontSlot ? &bigBatch : &textBatch; },
+    };
+    intro.intro.open("RumbleGo", {}, {0, 1}, intro.driver.nowMs);
+    intro.driver.idleUntil(10'000 + RumbleIntro::kPromptFadeMs + 100);
+    REQUIRE(intro.intro.phase() == RumbleIntroPhase::Prompt);
+    intro.intro.render(canvas);
+    CHECK(bigBatch.sprites().empty());
+    const auto& sprites = textBatch.sprites();
+    // Each glyph comes after its drop shadow: "p", "r", the cross, "s".
+    REQUIRE(sprites.size() == 8);
+    CHECK(sprites[5].uv == text.glyph(0x9e));
+    CHECK(sprites[5].colour.r == 178);
+    CHECK(sprites[5].colour.g == 178);
+    CHECK(sprites[5].height == Approx(coney::graphics::fontMetrics(RumbleIntro::kPromptScale).height));
+    CHECK(0.5F - sprites[5].position.y == Approx(RumbleIntro::kPromptY));
+    CHECK(RumbleIntro::kPromptY == Approx(0.88F));
+}
+
+TEST_CASE("rumble intro: the names and the countdown are grey big_font lines at size 2.5", "[rumble]") {
+    Intro intro;
+    const coney::graphics::Font font = coney::test::testFont();
+    coney::graphics::SpriteBatch textBatch(font.sheet(), 256, 10000.0F);
+    coney::graphics::SpriteBatch bigBatch(font.sheet(), 256, 10000.0F);
+    const coney::gui::GuiCanvas canvas{
+        .fonts = [&](int) -> const coney::graphics::Font* { return &font; },
+        .textBatch = [&](int slot) { return slot == coney::gui::kBigFontSlot ? &bigBatch : &textBatch; },
+    };
+    intro.intro.open("RumbleGo", std::vector<std::string>{"AB"}, {0, 1}, intro.driver.nowMs);
+    intro.driver.idleUntil(10'000 + RumbleIntro::kNameFadeMs + 100);
+    intro.intro.render(canvas);
+    REQUIRE(bigBatch.sprites().size() == 4); // two glyphs, each after its shadow
+    CHECK(bigBatch.sprites()[1].colour.r == 178);
+    CHECK(bigBatch.sprites()[1].height == Approx(coney::graphics::fontMetrics(RumbleIntro::kNameScale).height));
+    CHECK(RumbleIntro::kNameScale == Approx(2.5F));
 }

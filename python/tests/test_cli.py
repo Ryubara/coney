@@ -158,8 +158,9 @@ def body_checkout(tmp_path: Path) -> Path:
     (tmp_path / "coney.local.example.toml").write_text("", encoding="utf-8")
     (tmp_path / ".github").mkdir()
     rules = {
-        "sections": ["Summary", "Screenshots", "AI use"],
+        "sections": ["Summary", "Checklist", "Screenshots", "AI use"],
         "filled": ["Summary"],
+        "remaining": {"section": "Checklist", "label": "Remaining:"},
         "placeholders": ["..."],
         "screenshots": {"section": "Screenshots", "none": "Screenshots: none"},
         "ai_use": {
@@ -173,7 +174,8 @@ def body_checkout(tmp_path: Path) -> Path:
 
 
 GOOD_BODY = (
-    "## Summary\n\nAdds a check.\n\n## Screenshots\n\nScreenshots: none (no change)\n\n"
+    "## Summary\n\nAdds a check.\n\n## Checklist\n\nRemaining:\n\n- [ ] Later (#12)\n\n"
+    "## Screenshots\n\nScreenshots: none (no change)\n\n"
     "## AI use\n\n- By: an AI\n- Model: Claude Sonnet 5.5\n"
 )
 
@@ -208,6 +210,16 @@ def test_check_body_refuses_with_exit_1_and_one_line(
     out = capsys.readouterr().out.strip().splitlines()
     assert len(out) == 1 and out[0].startswith("body refused: ")
     assert "'## Summary' is empty" in out[0] and "'## AI use'" in out[0]
+
+
+def test_check_body_refuses_a_remaining_item_without_a_number(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(body_checkout(tmp_path))
+    monkeypatch.setattr("sys.stdin", io.StringIO(GOOD_BODY.replace("- [ ] Later (#12)", "- [ ] Later")))
+    assert main(["repo", "check-body"]) == 1
+    out = capsys.readouterr().out
+    assert "names no issue or pull request" in out and "'Later'" in out
 
 
 def test_check_body_with_an_unreadable_file_exits_2(

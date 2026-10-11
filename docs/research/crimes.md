@@ -280,8 +280,10 @@ record. Triangle at it starts the game, confirmed (code) at `0x0022d790`:
    handles; the HUD dial is shown at the difficulty of the Warrior class's byte `+0x0a` less 1 (0-2).
 2. **The dial** (`LockPickDial_Draw`): three pins, all starting at π. Each frame the current pin turns by 0.1 rad ×
    its speed and wraps in 0-2π; the speeds are 1, 2 and 3, and the directions by difficulty are (+, +, +), (+, −, +)
-   and (−, +, −). At 30 frames a second a pin turns once in about 2.1, 1.05 and 0.7 s (the rate is inferred from the
-   frame rate).
+   and (−, +, −). The step runs once per character update, 30 times a second, so a pin turns once in 62.8 steps
+   (2.09 s), 31.4 (1.05 s) and 20.9 (0.70 s). Confirmed (runtime), PCSX2 2.9.94: with the dial shown on a copy of
+   quick-save slot 3 (player 0's dial `0x0060fc60`, `+0x478` written 1), the angle `+0x454` of pin 0 (speed 1) grew
+   by exactly 0.1 every second 60 Hz tick (`0x005104f4`), 90 steps in 180 ticks, wrapping 6.24 → 0.0568.
 3. **Cross pressed** (`0x12`) judges the current pin's angle θ (`LockPickDial_Judge`): **good** when θ is at least
    the upper bound or at most the lower one, **perfect** inside the narrower bands, otherwise a **miss**:
 
@@ -596,7 +598,10 @@ the progress. Confirmed (code) unless marked:
 
 The checklist items (2026-10-10): the paint is black, no mist, no paint on the wall, a short near-black smear on the
 HUD, a dark charge bar, the Warrior not turned to the wall and still holding a pipe, and the tag ending just before
-the W is complete. Causes and fixes, for the implementer:
+the W is complete. Causes and fixes, for the implementer.
+
+**Done** (2026-10-11): 1-5, and 8 but the turn with no intro clip, which Coney makes at once (**Coney's reading**: a
+missing clip plays for 0 s). **Not yet**: 6 (the mist) and 7 (the wall tag).
 
 1. **Ends early** (`TagGame::update`, `repo:src/warriors/tag_game.cpp`): Coney finishes at
    `progress + 4 >= size − 1` (p ≥ count − 5), two points early, and its tracking picks the **nearest** point in
@@ -921,35 +926,46 @@ reporting. `EnterStore` / `ExitStore` switch the [screen tint](graphics.md#looks
 its callback's name.
 
 **Tagging** (`repo:src/warriors/tag_game.h`, `repo:src/warriors/tag_session.h`, `repo:src/world_objects/tag_spots.h`,
-2026-10-06): `tagPath()` samples `HuTagPattern`'s points along the Catmull-Rom curve into grid cells and `TagGame` is
-the [stick game](#tagging) on it (cursor, ramp, painting, track window, slips, charges, finish), tuned by `tagTuning()`
-from the Warrior class's byte `+0x09` (`script::tagDifficulty()`). `TagSpots` keeps each spot's record and answers its
-messages ([Tag spots](#tag-spots)): `CfgTagSettings` and `ProcessTag` reach it for a particle system's handle only, the
-fade runs every second 60 Hz tick, and `spray()` is a CPU tagger's step (Rumble's Tag battle). `TagSession` is one
-player's spray: the paint from inventory item 3, the fraction sent to the spot (message `0x41`) as the game goes, and
-`Tag_End`'s spot side and wasted charge. In gameplay (`repo:src/gamemodes/gameplay_tag.cpp`) `HuTag` for player 1 with
-paint locks his movement where he stands and plays 334, turning him to the tag over half its length, then the loop 335
-(`Human::startTagSpray()`); when the loop starts, the session runs on pad 1's left stick, the spot gets its tagger
-(message `0x00`, which starts its own fade in) and `CfgTagStartCallback`'s function is called with (tagger, tag, flag)
-and no result asked ([above](#tag-callbacks)); an AI tagger's starts at once. A body something else takes during the
-intro ends it unsprayed (**Coney's reading**). Without paint he says 37 `nopaint` and gets event 14 with the tag and 0.
-At the end the pad is freed, a finish has a crew mate say 83 `tagdone` and the tagger gets event 14 (the tag and whether
-it was finished); a snap-back off the pattern has one say 80 `tagcheer` while the tagger's tag cheer is on
-(`HuEnableTagCheer`). The crew mate is picked as [Tag_SayNearbyLine](sound-events.md#tag-lines) does: only while player
-1 (Coney's war chief) last ordered defend, from his gang's members in slot order that are not the leader or a player,
-are free to act, have no actions queued and stand within his far melee range, each later one replacing the pick on a
-roll of 50 or more; the pick speaks only when his `HuEnableTagDone` switch is on. The story reaches `HuTag` through the
-spot's flag: the script gives the flag (activity 12) a message-0 handler and a prompt with `SetMsgHandlerEx`, a kind-1
-[context record](#context-records). Coney locates such a record's object whether it is a spawn record, a flag or a
-particle system (`LevelPickups::actionObject()`), shows its text as player 1's [action prompt](hud.md#action-prompts)
-and hands it triangle, whose handler calls `HuTag`. **Coney's stand-ins**: any picked crew mate may gesture (the gesture
-slots are not kept), and the busy test is the actions-blocked one; the spray clips stop at the end (back to the idle);
-an AI human given `HuTag` becomes the spot's tagger at once (its fade in) without walking to the flag (`GoalTag`
-walks him there first, [AI](ai.md#coney)). A spot telling an AI tagger he is done (message `0x13`, at the end of its fade
-or when hidden) ends his spray as `Tag_End` does: he gets event 14 with the tag and whether it is fully painted
-(**Coney's reading**: the human's handling of `0x13` is not traced). Not yet: the
-slip's rumble, the bonus event on a clean finish, the spray particles and the tag's drawing, the HUD grid, hint `0x10`,
-and buttons other than the stick ending a session.
+2026-10-06): `tagPath()` samples `HuTagPattern`'s points along the Catmull-Rom curve into grid cells and
+`TagGame` is the [stick game](#tagging) on it, tuned by `tagTuning()` from the Warrior class's byte `+0x09`
+(`script::tagDifficulty()`), in the steps' order (2026-10-11): the paint first in every update, paused or not, so
+the charge drains through pauses; the cursor past a squared stick of 0.04, its ramp restarted from the end of each
+new charge's pause (not a slip's); tracking on the truncated cell, near a point behind (the progress kept) or at the
+first near one from the progress on; the off-track count kept until a slip or a new charge, a count above 4 slipping
+at the next moving update before tracking; the finish at p ≥ count − 3 and the fraction p / count. `TagSpots`
+keeps each spot's record and answers its messages ([Tag spots](#tag-spots)): `CfgTagSettings` and `ProcessTag` reach
+it for a particle system's handle only, the fade runs every second 60 Hz tick, and `spray()` is a CPU tagger's step
+(Rumble's Tag battle). `TagSession` is one player's spray: the paint from inventory item 3 (taking the last can ends
+it, so n cans give n charges), the fraction sent to the spot (message `0x41`) as the game goes, and `Tag_End`'s spot
+side and wasted charge. In gameplay (`repo:src/gamemodes/gameplay_tag.cpp`) `HuTag` for player 1 with paint locks
+his movement where he stands, drops a held object of anim set 4 or 6 (a club stays in the hand, `tagDropsHeld()`)
+and plays 334, turning him to the tag over half its length, then the loop 335, and 337 then 335 again when a pause
+begins (`Human::startTagSpray()`); when the loop starts, the session runs on pad 1's left stick, the spot gets its
+tagger (message `0x00`, which starts its own fade in) and `CfgTagStartCallback`'s function is called with (tagger,
+tag, flag) and no result asked ([above](#tag-callbacks)); an AI tagger's starts at once. A body something else takes
+during the intro ends it unsprayed (**Coney's reading**). Without paint he says 37 `nopaint` and gets event 14 with
+the tag and 0.  At the end the pad is freed, a finish has a crew mate say 83 `tagdone` and the tagger gets event 14
+(the tag and whether it was finished); a snap-back off the pattern has one say 80 `tagcheer` while the tagger's tag
+cheer is on (`HuEnableTagCheer`). The crew mate is picked as [Tag_SayNearbyLine](sound-events.md#tag-lines) does:
+only while player 1 (Coney's war chief) last ordered defend, from his gang's members in slot order that are not the
+leader or a player, are free to act, have no actions queued and stand within his far melee range, each later one
+replacing the pick on a roll of 50 or more; the pick speaks only when his `HuEnableTagDone` switch is on. The story
+reaches `HuTag` through the spot's flag: the script gives the flag (activity 12) a message-0 handler and a prompt
+with `SetMsgHandlerEx`, a kind-1 [context record](#context-records). Coney locates such a record's object whether
+it is a spawn record, a flag or a particle system (`LevelPickups::actionObject()`), shows its text as player 1's
+[action prompt](hud.md#action-prompts) and hands it triangle, whose handler calls `HuTag`. **Coney's stand-ins**:
+any picked crew mate may gesture (the gesture slots are not kept), and the busy test is the actions-blocked one;
+the spray clips stop at the end (back to the idle); an AI human given `HuTag` becomes the spot's tagger at once
+(its fade in) without walking to the flag (`GoalTag` walks him there first, [AI](ai.md#coney)). A spot telling
+an AI tagger he is done (message `0x13`, at the end of its fade or when hidden) ends his spray as `Tag_End` does:
+he gets event 14 with the tag and whether it is fully painted (**Coney's reading**: the human's handling of `0x13`
+is not traced). Each human's tag colour (`repo:src/human/tag_colour.h`, 2026-10-11) is the four bytes of `+0x640`:
+`Human_Init`'s `50 07 05 20` (a civilian woman's `ff ef ef ef`; **Coney's reading**: the brain kind before the
+`+0x19d` remap), which `HuTagColor` overwrites with t4, t3, t2, t1; the HUD draws bytes 0-2 and the mist will read
+the word with alpha in byte 0 ([above](#tag-look)). An unfinished end (no cans, a 301st cell) leaves the spot at
+p / count, not `Tag_GetProgress`'s 1.0 (**Coney's reading**: whether `0x41` carries that 1.0 before the end is not on
+the page). Not yet: the slip's rumble, the bonus event on a clean finish, the spray particles and the tag's
+drawing, hint `0x10`, and buttons other than the stick ending a session.
 
 **Car stereos** (`repo:src/world_objects/cars.h`, 2026-10-06): `CarSpawnRadio` puts a stereo in a parked car;
 breaking window 15 ([Cars](cars.md#windows)), or a type-12 pane within 2 m (`ObjectServices::freeCarStereos`), frees
@@ -1015,3 +1031,5 @@ the assault statistic is scored once per victim through the service.
 - Whether the police a lock-picked break-in calls attack the picker's gang (the pick reports no offender; [Which
   break-ins call the police](#break-in-police)). Both a break-in and a custom crime queue kind 1.
 - Wiring the report's police hostility, responders and HUD messages to Coney's gangs, spawners and HUD.
+- Whether `Tag_UpdatePlayer` sends the tag `0x41` with `Tag_GetProgress`'s 1.0 when the game ends unfinished
+  (`+0x4fc`: out of paint, or a 301st cell), which would show the wall tag whole though it is not marked sprayed.

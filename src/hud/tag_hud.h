@@ -54,7 +54,7 @@ struct TagPanelState {
     float cursorX = 0.0F;              ///< The cursor, in grid cells (not snapped to a cell).
     float cursorY = 0.0F;
     float chargeLeft = 1.0F; ///< The share of the current charge of paint left, 0-1.
-    bool paused = false;     ///< The game is paused after a slip or a spent charge.
+    bool onTrack = true;     ///< The cursor was near the path at the last tracking (`+0x500`).
     graphics::Rgba colour;   ///< The tagger's paint colour (`HuTagColor`).
 };
 
@@ -73,9 +73,9 @@ class TagHud {
 
     /// The panel's origin for player `player` in the overlay camera's space: GUI (0.01, 0.70) or (0.76, 0.70).
     [[nodiscard]] static graphics::OverlayPoint origin(std::size_t player);
-    /// The cursor's colour at game time `nowMs`: white, fading to black over 250 ms and back over the next 250 ms;
-    /// white while `paused`.
-    [[nodiscard]] static graphics::Rgba cursorColour(std::uint64_t nowMs, bool paused);
+    /// The cursor's colour at game time `nowMs`: plain white while `onTrack`; off track (and through a slip's pause,
+    /// which keeps the flag) white fading to black over 250 ms and back over the next 250 ms.
+    [[nodiscard]] static graphics::Rgba cursorColour(std::uint64_t nowMs, bool onTrack);
 
     /// Adds player `player`'s panel to `canvas.parts` while it is shown: the path, the painted cells, the cursor, the
     /// charge bar and the frame.

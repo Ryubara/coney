@@ -127,6 +127,10 @@ instead of repeating it:
   hands each finished unit to the [release queue](how-we-work.md#release-queue);
 - only the facts the agent cannot find in the repository (a log path, a question to answer, the state file).
 
+A brief may be just "issue #N": the issue holds the steps, the screenshots and the acceptance test, and the agent
+reads it as [Issues](issues.md#agents) describes. Naming the number is cheaper than pasting the issue, and the
+issue stays the one place to read it.
+
 ## Running without losing the cache {#cache}
 
 - **Never sit inside a long command.** Builds, test sweeps, emulator runs and CI waits that take more than a few

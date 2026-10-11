@@ -979,7 +979,8 @@ uv run --project python mypy python/src python/tests
 title against the commit rules in [CONTRIBUTING.md](repo:CONTRIBUTING.md#commits), `coney-tools repo check-docs`
 that a change to the code also changes the docs ([Research workflow](research-workflow.md#writing-up-a-finding)), and
 `coney-tools repo check-body` that a pull request description follows the template, including its Testing and
-Screenshots sections ([CONTRIBUTING.md](repo:CONTRIBUTING.md#setting-up),
+Screenshots sections and an issue or pull request number on every unchecked Remaining item
+([CONTRIBUTING.md](repo:CONTRIBUTING.md#setting-up),
 [What a pull request shows](testing.md#pr-evidence)).
 `coney-tools wad` reads the archive on your own disc (`info`, `list`, `extract`, `names`), `coney-tools pcsx2` and
 `coney-tools trace` record the original's per-update traces in PCSX2 and compare them with Coney's; [The coney-tools
