@@ -225,7 +225,7 @@ Confirmed (code) at each address:
 | `0x0010bf40` | `AmbientManager_Reset` | the same without the handles (from `0x00110f58`) | confirmed (code) |
 | `0x0010d2f8` | `AmbientManager_ClearEmitters` | zeroes all 512 emitters (default transforms) and the count | confirmed (code) |
 | `0x0010d398` | `AmbientManager_ClearActive` | clears every emitter's `+0x8c` (enabled) word | confirmed (code) |
-| `0x0010be40` | `AmbientManager_MarkEvent` | stamps the game clock (`*(0x0050b734) + 0x38`) into `+0x1b78c`, or 2 s before it when already set (from the AI, `0x002936a8`) | confirmed (code); what the event is not traced |
+| `0x0010be40` | `AmbientManager_MarkEvent` | stamps the game clock (`*(0x0050b734) + 0x38`) into `+0x1b78c`, or 2 s before it when already set; its only caller is `AI_ReportNoise` (`0x002936a8`) for a noise of 10 m or more ([Sound](sound.md)) | confirmed (code) |
 | `0x0010be78` | `AmbientManager_UpdateTimers` | `+0x1b788` = 1 from 2 s to 15 s after that stamp; `+0x1b790` = 1 while the game state's `+0x40c` is 1 and for 5 s after | confirmed (code) |
 | `0x0010bf90` | `Ambient_GetVolume` | 0.75 while the game state's `+0x410` is set, else 1.0 | confirmed (code) |
 | `0x0010c098` | `Ambient_GetDuck` | 0.5 when `0x0010def8` reports a sound and the state's `+0x40c` is not 2, else 1.0 | confirmed (code) |

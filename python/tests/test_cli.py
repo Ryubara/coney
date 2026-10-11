@@ -2,6 +2,7 @@
 """Tests for coney_tools.cli: exit codes and output of each command."""
 
 import io
+import json
 from pathlib import Path
 
 import pytest
@@ -150,3 +151,74 @@ def test_check_docs_with_an_unreadable_body_exits_2(
     monkeypatch.setattr("sys.stdin", io.StringIO("src/core/a.cpp\n"))
     assert main(["repo", "check-docs", "--body", str(tmp_path / "missing.md")]) == 2
     assert "cannot be read" in capsys.readouterr().err
+
+
+def body_checkout(tmp_path: Path) -> Path:
+    """A made-up checkout whose description rules ask for a Summary and an AI use section."""
+    (tmp_path / "coney.local.example.toml").write_text("", encoding="utf-8")
+    (tmp_path / ".github").mkdir()
+    rules = {
+        "sections": ["Summary", "AI use"],
+        "filled": ["Summary"],
+        "placeholders": ["..."],
+        "ai_use": {
+            "section": "AI use",
+            "written_by": {"label": "By:", "choices": ["a person", "an AI"], "no_ai": "a person"},
+            "model": {"label": "Model:", "none": "n/a"},
+        },
+    }
+    (tmp_path / ".github" / "pr-body-rules.json").write_text(json.dumps(rules), encoding="utf-8")
+    return tmp_path
+
+
+GOOD_BODY = "## Summary\n\nAdds a check.\n\n## AI use\n\n- By: an AI\n- Model: Claude Sonnet 5.5\n"
+
+
+def test_check_body_passes_with_exit_0(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(body_checkout(tmp_path))
+    (tmp_path / "body.md").write_text(GOOD_BODY, encoding="utf-8")
+    assert main(["repo", "check-body", "--body", "body.md"]) == 0
+    assert capsys.readouterr().out.strip() == "body: ok"
+
+
+def test_check_body_reads_stdin_when_given_no_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.chdir(body_checkout(tmp_path))
+    monkeypatch.setattr("sys.stdin", io.StringIO(GOOD_BODY))
+    assert main(["repo", "check-body"]) == 0
+
+
+def test_check_body_reads_stdin_for_a_dash(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.chdir(body_checkout(tmp_path))
+    monkeypatch.setattr("sys.stdin", io.StringIO(GOOD_BODY))
+    assert main(["repo", "check-body", "--body", "-"]) == 0
+
+
+def test_check_body_refuses_with_exit_1_and_one_line(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(body_checkout(tmp_path))
+    monkeypatch.setattr("sys.stdin", io.StringIO("## Summary\n\n<!-- placeholder -->\n"))
+    assert main(["repo", "check-body"]) == 1
+    out = capsys.readouterr().out.strip().splitlines()
+    assert len(out) == 1 and out[0].startswith("body refused: ")
+    assert "'## Summary' is empty" in out[0] and "'## AI use'" in out[0]
+
+
+def test_check_body_with_an_unreadable_file_exits_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(body_checkout(tmp_path))
+    assert main(["repo", "check-body", "--body", "missing.md"]) == 2
+    assert "cannot be read" in capsys.readouterr().err
+
+
+def test_check_body_with_unusable_rules_exits_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    (tmp_path / "coney.local.example.toml").write_text("", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr("sys.stdin", io.StringIO(GOOD_BODY))
+    assert main(["repo", "check-body"]) == 2
+    assert "pr-body-rules.json" in capsys.readouterr().err

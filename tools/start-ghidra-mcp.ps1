@@ -7,15 +7,24 @@
     extension) and a JDK 21.
 
 .DESCRIPTION
-    Every machine-specific path comes from coney.local.toml at the repository root (copy
-    coney.local.example.toml; see docs/guides/workspace.md). Keys read here:
+    Works from any checkout or worktree. Every machine-specific path comes from coney.local.toml (copy
+    coney.local.example.toml; see docs/guides/workspace.md). That file is untracked, so a worktree has none of its
+    own: the script uses the one in the checkout it runs from if there is one, else the MAIN checkout's (found with
+    git's common dir), and resolves relative paths against the folder that holds the file. Keys read here:
       * ghidra_install   Ghidra 12.1.4 with the Emotion Engine extension
       * ghidra_projects  folder that holds the Ghidra project
       * jdk_home         JDK 21 home (no default: it must be set)
       * ghidra_mcp_repo  a built ghidra-mcp checkout (no default); also settable with -McpRepo
-    Relative paths are resolved against the repository root. A missing key falls back to the
-    defaults in coney.local.example.toml, except jdk_home and ghidra_mcp_repo. A path that does not
-    exist makes the script stop with an error naming the key and the resolved path.
+    A missing key falls back to the defaults in coney.local.example.toml, except jdk_home and
+    ghidra_mcp_repo. A path that does not exist makes the script stop with an error naming the key, the
+    resolved path, the checkout it ran from and the config file it used.
+
+    If a server already answers on the port, the script says so and exits 0 without starting a second one (two
+    servers on one project fight over its lock). -DryRun resolves and checks everything, prints it and exits
+    without starting anything.
+
+    -ProjectDir is the FOLDER that holds the project files (default: ghidra_projects, e.g. Coney\ghidra),
+    -ProjectName the project's name (default warriors): the files are <ProjectDir>\<ProjectName>.gpr and .rep.
 
     The launch logic follows the headless script shipped with ghidra-mcp, which cannot be reused as
     is because it points at another project's Ghidra install. Differences:
@@ -30,6 +39,8 @@
 
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File tools\start-ghidra-mcp.ps1
+    # check what it would use, starting nothing:
+    powershell -ExecutionPolicy Bypass -File tools\start-ghidra-mcp.ps1 -DryRun
     # stop: Stop-Process -Id (Get-Content <ghidra_projects>\ghidra-mcp-8090.pid)
 #>
 param(
@@ -37,18 +48,40 @@ param(
     [string]$BindAddress = "127.0.0.1",
     [string]$ProjectDir = "",
     [string]$ProjectName = "warriors",
-    [string]$McpRepo = ""
+    [string]$McpRepo = "",
+    [switch]$DryRun
 )
 
 $ErrorActionPreference = "Stop"
 
 $RepoRoot = Split-Path $PSScriptRoot -Parent
 
+# The main checkout: the parent of git's common dir (a worktree's .git points back to it). The checkout itself when
+# it is the main one or git cannot say.
+function Get-MainCheckout([string]$Root) {
+    try {
+        $common = (& git -C $Root rev-parse --path-format=absolute --git-common-dir 2>$null | Select-Object -First 1)
+        if ($LASTEXITCODE -eq 0 -and $common -and (Split-Path $common -Leaf) -eq ".git") {
+            return [System.IO.Path]::GetFullPath((Join-Path $common ".."))
+        }
+    } catch { }
+    return $Root
+}
+
+# coney.local.toml is untracked, so a worktree has none: use this checkout's own file if it has one, else the main
+# checkout's. Relative paths resolve against the folder that holds the file (the main checkout when there is none).
+$MainRoot = Get-MainCheckout $RepoRoot
+$ConfigFile = $null
+foreach ($candidate in @($RepoRoot, $MainRoot)) {
+    if (Test-Path (Join-Path $candidate "coney.local.toml")) { $ConfigFile = Join-Path $candidate "coney.local.toml"; break }
+}
+$ConfigBase = if ($ConfigFile) { Split-Path $ConfigFile -Parent } else { $MainRoot }
+$ConfigNote = if ($ConfigFile) { "config file $ConfigFile" } else { "no coney.local.toml in $RepoRoot or $MainRoot (defaults)" }
+
 # Read simple `key = "value"` or `key = 'value'` lines from coney.local.toml (TOML's literal strings let Windows
 # paths skip backslash escapes, and coney-tools accepts both); ignore comments and blank lines.
 $Config = @{}
-$ConfigFile = Join-Path $RepoRoot "coney.local.toml"
-if (Test-Path $ConfigFile) {
+if ($ConfigFile) {
     foreach ($line in Get-Content $ConfigFile) {
         if ($line -match '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(?:"(?<v>[^"]*)"|''(?<v>[^'']*)'')') {
             $Config[$Matches[1]] = $Matches['v']
@@ -67,15 +100,27 @@ function Resolve-ConfigPath([string]$Key, [string]$Override = "") {
     $value = $Override
     if (-not $value) { $value = $Config[$Key] }
     if (-not $value) { $value = $Defaults[$Key] }
-    if (-not $value) { throw "$Key is not set. Add it to coney.local.toml (see docs/guides/workspace.md)." }
-    if (-not [System.IO.Path]::IsPathRooted($value)) { $value = Join-Path $RepoRoot $value }
+    if (-not $value) { throw "$Key is not set. Add it to coney.local.toml (see docs/guides/workspace.md). Ran from checkout $RepoRoot; $ConfigNote." }
+    if (-not [System.IO.Path]::IsPathRooted($value)) { $value = Join-Path $ConfigBase $value }
     return [System.IO.Path]::GetFullPath($value)
 }
 
 function Assert-Exists([string]$Key, [string]$Path, [string]$What) {
     if (-not (Test-Path $Path)) {
-        throw "$Key`: $What not found at $Path. Fix $Key in coney.local.toml (see docs/guides/workspace.md)."
+        throw "$Key`: $What not found at $Path. Fix $Key in coney.local.toml (see docs/guides/workspace.md). Ran from checkout $RepoRoot; $ConfigNote."
     }
+}
+
+# True when a GhidraMCP server already answers on the port.
+function Test-ServerUp([string]$Address, [int]$Number) {
+    try { $null = Invoke-RestMethod -Uri "http://${Address}:${Number}/check_connection" -TimeoutSec 2; return $true } catch { return $false }
+}
+
+# A server on the port already: leave it alone (a second one on the same project would fight over its lock).
+$ServerUp = Test-ServerUp $BindAddress $Port
+if ($ServerUp -and -not $DryRun) {
+    Write-Host "A GhidraMCP server already answers on ${BindAddress}:${Port} (http://${BindAddress}:${Port}/check_connection); not starting another."
+    exit 0
 }
 
 $GhidraHome = Resolve-ConfigPath "ghidra_install"
@@ -100,6 +145,9 @@ foreach ($pat in @("Framework\*\lib\*.jar", "Features\*\lib\*.jar", "Processors\
 }
 $classpath = [string]::Join(";", $jars)
 
+Write-Host "Checkout      : $RepoRoot"
+Write-Host "Main checkout : $MainRoot"
+Write-Host "Config        : $ConfigNote"
 Write-Host "JAVA_HOME     : $JdkHome"
 Write-Host "GHIDRA_HOME   : $GhidraHome"
 Write-Host "Headless jar  : $HeadlessJar"
@@ -108,6 +156,12 @@ Write-Host "Project dir   : $ProjectDir"
 Write-Host "Bind          : ${BindAddress}:${Port}"
 
 $Gpr = Join-Path $ProjectDir "$ProjectName.gpr"
+if ($DryRun) {
+    Write-Host "Project       : $Gpr ($(if (Test-Path $Gpr) { 'exists' } else { 'does not exist yet' }))"
+    Write-Host "Server on ${BindAddress}:${Port}: $(if ($ServerUp) { 'already running' } else { 'not running' })"
+    Write-Host "Dry run: nothing started."
+    exit 0
+}
 $javaArgs = @(
     "-Dghidra.home=$GhidraHome",
     "-Dapplication.name=GhidraMCP",
