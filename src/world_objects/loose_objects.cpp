@@ -10,7 +10,8 @@
 
 #include "world_objects/props.h"
 
-// Research: docs/research/physics.md#settle, docs/research/physics.md#movers, docs/research/objects.md#throws
+// Research: docs/research/physics.md#settle, docs/research/physics.md#movers, docs/research/objects.md#throws,
+// docs/research/script-types.md#fade-object
 
 namespace coney::world_objects {
 
@@ -127,7 +128,8 @@ LooseObjects::Kind LooseObjects::Kind::of(const ObjectType& type) {
                 .shape = LooseShape::of(type),
                 .counter = counterOf(type.value),
                 .secondCounter = counterOf(type.secondHits),
-                .wears = type.className == kThrownWeaponClass};
+                .wearsAlways = type.className == kOverheadWeaponClass || type.material == kGuitarMaterial,
+                .fades = type.className == kFadeObjectClass};
 }
 
 void LooseObjects::start(double handle, anim::Vec3 position, anim::Quat rotation, const Kind& kind, anim::Vec3 velocity,
@@ -142,18 +144,24 @@ void LooseObjects::start(double handle, anim::Vec3 position, anim::Quat rotation
     object.restitution = kind.restitution;
     object.counter = kind.counter;
     object.secondCounter = kind.secondCounter;
-    object.wears = kind.wears;
+    object.wearsAlways = kind.wearsAlways;
+    object.fades = kind.fades;
     object.thrower = thrower;
     object.thrown = thrower != 0;
     m_objects.insert_or_assign(handle, object);
 }
 
 void LooseObjects::step(const RayTest& ray, const std::function<void(double, const LooseObject&)>& rested,
-                        const std::function<void(double, const LooseObject&)>& broke) {
+                        const std::function<void(double, const LooseObject&)>& broke,
+                        const std::function<void(double, const LooseObject&, const LooseImpact&)>& impacted) {
     // The objects' updates first (the wheel), then the physics step's settle ticks, as one 1/30 s step holds them.
     for (auto& [handle, object] : m_objects) {
         if (object.airborne) {
-            update(object, ray);
+            std::optional<LooseImpact> impact;
+            update(object, ray, impact);
+            if (impact && impacted) {
+                impacted(handle, object, *impact);
+            }
         }
     }
     // A broken object leaves the flight: what the break does is its class's.
@@ -204,7 +212,17 @@ std::size_t LooseObjects::settlesInUse() const {
         std::ranges::count_if(m_objects, [](const auto& entry) { return entry.second.settle.has_value(); }));
 }
 
-void LooseObjects::update(LooseObject& object, const RayTest& ray) {
+void LooseObjects::update(LooseObject& object, const RayTest& ray, std::optional<LooseImpact>& impact) {
+    // A fade piece's landing, on the update after a level contact: it stops dead and falls from rest from here (on
+    // flat ground its next floor contact settles it).
+    // @orig 0x003c61d8 FadeObject_Update (unknown)
+    if (object.landing) {
+        object.landing = false;
+        if (object.fades) {
+            object.velocity = {};
+            object.angularVelocity = {};
+        }
+    }
     // The update after the holder let go, and every update while a settle turns the object, lasts 1/60 s; the others
     // their interval of 2 ticks.
     const float dt = object.firstUpdate || object.settling ? kShortUpdateSeconds : kUpdateSeconds;
@@ -219,7 +237,7 @@ void LooseObjects::update(LooseObject& object, const RayTest& ray) {
         const std::optional<RayContact> hit =
             ray ? ray(centre, d, length + object.shape.reach(object.rotation, d)) : std::nullopt;
         if (hit) {
-            contact(object, anim::add(centre, anim::scale(d, hit->distance)), *hit);
+            contact(object, anim::add(centre, anim::scale(d, hit->distance)), *hit, dt, impact);
         } else {
             object.position = anim::add(object.position, move);
         }
@@ -230,17 +248,22 @@ void LooseObjects::update(LooseObject& object, const RayTest& ray) {
     }
 }
 
-void LooseObjects::contact(LooseObject& object, anim::Vec3 point, const RayContact& contact) {
+void LooseObjects::contact(LooseObject& object, anim::Vec3 point, const RayContact& contact, float dt,
+                           std::optional<LooseImpact>& impact) {
     const anim::Vec3 n = anim::normalise(contact.normal);
     const bool floor = !contact.body && n.z > kFloorNormalZ;
+    // The contact vector +0xb0: the normal × the speed into the surface × the update's length.
+    const float speed = anim::length(object.velocity);
+    object.contactVector = anim::scale(n, std::max(0.0F, -anim::dot(object.velocity, n)) * dt);
     // Moved back to kBackOff in front of the surface.
     const float reach = object.shape.reach(object.rotation, anim::scale(n, -1.0F));
     const anim::Vec3 centre = anim::add(point, anim::scale(n, reach + kBackOff));
     object.position = anim::subtract(centre, turnBy(object.rotation, object.shape.centre));
-    // The wear first (OverheadWeapon_ContactDamage): a thrown object takes one hit, a flying object's second counter
-    // first, and its body flag 1 goes, so it wears once per throw.
+    // The wear first (OverheadWeapon_ContactDamage): an overhead_weapon or a guitar on every contact, any other object
+    // on a throw's first, its body flag 1 then going, so it wears once per throw; a flying object's second counter
+    // goes first.
     // @orig 0x003932c8 OverheadWeapon_ContactDamage (unknown)
-    if (object.thrown && object.wears) {
+    if (object.thrown || object.wearsAlways) {
         takeHit(object.counter, object.secondCounter, -1, false, true);
     }
     object.thrown = false;
@@ -253,6 +276,14 @@ void LooseObjects::contact(LooseObject& object, anim::Vec3 point, const RayConta
         object.angularVelocity = {};
         object.airborne = false;
         return;
+    }
+    // A level contact that did not break it: WorldObject_OnImpact's plain bounce (its sound is the caller's), counted,
+    // and object flag 0x20000000 for a fade piece's landing.
+    // @orig 0x003939a8 WorldObject_OnImpact (unknown)
+    if (!contact.body) {
+        impact = LooseImpact{.point = point, .contact = contact, .speed = speed, .index = object.impacts};
+        ++object.impacts;
+        object.landing = true;
     }
     // A settled object's floor contact (answer 0x10003): it stops, at rest.
     if (floor && object.settled) {
