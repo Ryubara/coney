@@ -3,6 +3,7 @@
 
 import os
 import subprocess
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -89,6 +90,13 @@ def test_fill_config_sets_only_empty_keys_and_keeps_comments() -> None:
     # A key that already has a value keeps it.
     assert 'game_dir        = "../../game"' in text
     assert 'ghidra_mcp_repo = ""' in text
+
+
+@pytest.mark.parametrize("value", ["C:/Users/O'Brien/jdk-21", r'C:\a "b"\jdk'])
+def test_fill_config_writes_any_path_as_valid_toml(value: str) -> None:
+    # A literal string cannot hold a ', so such a path is written as an escaped basic string.
+    text = fill_config(EXAMPLE, {"jdk_home": value})
+    assert tomllib.loads(text)["jdk_home"] == value
 
 
 def test_init_makes_the_workspace_clones_and_writes_the_config(

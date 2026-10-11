@@ -79,14 +79,23 @@ def fill_config(example: str, values: Mapping[str, str]) -> str:
     """`example` (the text of coney.local.example.toml) with each empty key that `values` names set to its value.
 
     Keys that already have a value, and the comments, are kept. Values are written as TOML literal strings, so
-    Windows paths need no escapes.
+    Windows paths need no escapes; one a literal string cannot hold (a `'`) becomes an escaped basic string.
     """
 
     def replace(match: re.Match[str]) -> str:
         value = values.get(match.group("key"))
-        return f"{match.group('head')}'{value}'" if value else match.group(0)
+        return f"{match.group('head')}{_toml_string(value)}" if value else match.group(0)
 
     return _EMPTY_KEY.sub(replace, example)
+
+
+def _toml_string(value: str) -> str:
+    """`value` as a TOML string: literal when it can be, else basic with `\\` and `"` escaped."""
+    if "'" not in value and not any(ord(char) < 0x20 or char == "\x7f" for char in value):
+        return f"'{value}'"
+    escaped = value.replace("\\", "\\\\").replace('"', '\\"')
+    escaped = "".join(f"\\u{ord(char):04x}" if ord(char) < 0x20 or char == "\x7f" else char for char in escaped)
+    return f'"{escaped}"'
 
 
 def gather_checks(jdk_home: Path | None) -> list[Check]:
@@ -101,7 +110,7 @@ def _relative(layout: Layout, path: Path) -> str:
 
 def _clone(url: str, dest: Path) -> None:
     """Clone the repository at `url` into `dest`."""
-    done = subprocess.run(["git", "clone", url, str(dest)], capture_output=True, text=True, check=False)
+    done = subprocess.run(["git", "clone", "--", url, str(dest)], capture_output=True, text=True, check=False)
     if done.returncode != 0:
         raise ConfigError(f"git clone {url}: {done.stderr.strip()}")
 

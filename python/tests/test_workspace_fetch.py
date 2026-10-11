@@ -73,9 +73,39 @@ def test_unpack_takes_only_the_named_subfolder(tmp_path: Path) -> None:
 
 def test_unpack_reads_tar_xz(tmp_path: Path) -> None:
     archive = tmp_path / "a.tar.xz"
-    archive.write_bytes(make_tar_xz({"App.app/Contents/Info.plist": b"p"}))
+    archive.write_bytes(make_tar_xz({"top/bin/tool": b"t"}))
     unpack(archive, tmp_path / "out")
-    assert (tmp_path / "out" / "Contents" / "Info.plist").read_bytes() == b"p"
+    assert (tmp_path / "out" / "bin" / "tool").read_bytes() == b"t"
+
+
+def test_unpack_keeps_a_single_top_level_app_bundle(tmp_path: Path) -> None:
+    # macOS PCSX2's archive is one PCSX2-v2.9.94.app folder: stripping it would leave a bare Contents/.
+    archive = tmp_path / "a.tar.xz"
+    archive.write_bytes(make_tar_xz({"PCSX2-v2.app/Contents/Info.plist": b"p"}))
+    unpack(archive, tmp_path / "out")
+    assert (tmp_path / "out" / "PCSX2-v2.app" / "Contents" / "Info.plist").read_bytes() == b"p"
+
+
+@pytest.mark.parametrize("entry", ["../escaped", "/absolute", "C:/absolute"])
+def test_unpack_refuses_a_zip_entry_outside_the_folder(tmp_path: Path, entry: str) -> None:
+    if entry.startswith("C:") and os.name != "nt":
+        pytest.skip("a drive letter is only absolute on Windows")
+    archive = tmp_path / "a.zip"
+    archive.write_bytes(make_zip({"top/ok": b"x", entry: b"bad"}))
+    with pytest.raises(ConfigError, match="outside"):
+        unpack(archive, tmp_path / "work" / "out")
+    assert not (tmp_path / "work" / "out").exists()
+    assert not (tmp_path / "escaped").exists()
+
+
+@pytest.mark.parametrize("entry", ["../escaped", "top/../../escaped"])
+def test_unpack_refuses_a_tar_entry_outside_the_folder(tmp_path: Path, entry: str) -> None:
+    archive = tmp_path / "a.tar.xz"
+    archive.write_bytes(make_tar_xz({"top/ok": b"x", entry: b"bad"}))
+    with pytest.raises(ConfigError, match="outside"):
+        unpack(archive, tmp_path / "work" / "out")
+    assert not (tmp_path / "work" / "out").exists()
+    assert not (tmp_path / "escaped").exists()
 
 
 def test_fetch_file_checks_the_hash_and_reuses_the_download(tmp_path: Path) -> None:
@@ -92,6 +122,18 @@ def test_fetch_file_refuses_a_wrong_hash_and_keeps_nothing(tmp_path: Path) -> No
     pin = pin_for("a.zip", b"expected")
     with pytest.raises(ConfigError, match="SHA-256"):
         fetch_file(pin, tmp_path, FakeWeb({pin.url: b"tampered"}))
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_fetch_file_leaves_no_part_file_when_the_download_fails(tmp_path: Path) -> None:
+    pin = pin_for("a.zip", b"expected")
+
+    def broken(url: str, out: Path) -> None:
+        out.write_bytes(b"half")
+        raise TimeoutError("timed out")
+
+    with pytest.raises(TimeoutError):
+        fetch_file(pin, tmp_path, broken)
     assert list(tmp_path.iterdir()) == []
 
 
@@ -114,6 +156,36 @@ def test_ghidra_installs_the_extension_into_ghidra(tmp_path: Path) -> None:
     fetch_tool("ghidra", dest, "linux", tmp_path / "cache", web, pins)
     assert (dest / "support" / "analyzeHeadless").is_file()
     assert (dest / "Ghidra" / "Extensions" / "ghidra-emotionengine-reloaded" / "extension.properties").is_file()
+
+
+def test_a_failed_extension_download_leaves_no_ghidra_behind(tmp_path: Path) -> None:
+    # A half-installed Ghidra would be skipped as "exists" by every later run, so it must never be left.
+    ghidra = make_zip({"ghidra_9_PUBLIC/support/analyzeHeadless": b"g"})
+    pins = [pin_for("ghidra.zip", ghidra), pin_for("ee.zip", b"extension")]
+    web = FakeWeb({pins[0].url: ghidra, pins[1].url: b"tampered"})
+    dest = tmp_path / "tools" / "ghidra_9_PUBLIC"
+    with pytest.raises(ConfigError, match="SHA-256"):
+        fetch_tool("ghidra", dest, "linux", tmp_path / "cache", web, pins)
+    assert not (tmp_path / "tools").exists() or list((tmp_path / "tools").iterdir()) == []
+
+
+def test_a_failed_unpack_leaves_nothing_in_the_destination(tmp_path: Path) -> None:
+    ghidra = make_zip({"ghidra_9_PUBLIC/support/analyzeHeadless": b"g"})
+    extension = make_zip({"../escaped": b"e"})
+    pins = [pin_for("ghidra.zip", ghidra), pin_for("ee.zip", extension)]
+    web = FakeWeb({pins[0].url: ghidra, pins[1].url: extension})
+    dest = tmp_path / "tools" / "ghidra_9_PUBLIC"
+    with pytest.raises(ConfigError, match="outside"):
+        fetch_tool("ghidra", dest, "linux", tmp_path / "cache", web, pins)
+    assert list((tmp_path / "tools").iterdir()) == []
+
+
+def test_pcsx2_on_macos_keeps_its_app_bundle(tmp_path: Path) -> None:
+    data = make_tar_xz({"PCSX2-v2.app/Contents/MacOS/PCSX2": b"bin"})
+    pins = [pin_for("pcsx2-macos-Qt.tar.xz", data)]
+    dest = tmp_path / "emulators" / "pcsx2"
+    fetch_tool("pcsx2", dest, "macos", tmp_path / "cache", FakeWeb({pins[0].url: data}), pins)
+    assert (dest / "PCSX2-v2.app" / "Contents" / "MacOS" / "PCSX2").read_bytes() == b"bin"
 
 
 def test_pcsx2_on_linux_is_an_executable_appimage(tmp_path: Path) -> None:

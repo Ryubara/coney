@@ -136,7 +136,8 @@ def _sha256(path: Path) -> str:
 def fetch_file(pin: Pin, cache: Path, download: Downloader) -> Path:
     """The pinned file, downloaded into `cache` unless a copy with the right hash is already there.
 
-    Raises ConfigError when the download's SHA-256 differs from the pin (and deletes it).
+    Raises ConfigError when the download's SHA-256 differs from the pin. The partial download (`.part`) is deleted
+    whenever it does not become the cached file: a wrong hash, a network error, a timeout or Ctrl-C.
     """
     cache.mkdir(parents=True, exist_ok=True)
     target = cache / pin.url.rsplit("/", 1)[-1]
@@ -144,12 +145,15 @@ def fetch_file(pin: Pin, cache: Path, download: Downloader) -> Path:
         return target
     partial = target.with_name(target.name + ".part")
     print(f"  downloading {pin.url}", flush=True)
-    download(pin.url, partial)
-    actual = _sha256(partial)
-    if actual != pin.digest:
-        partial.unlink()
-        raise ConfigError(f"{pin.url}: SHA-256 is {actual}, expected {pin.digest}; nothing was installed")
-    partial.replace(target)
+    try:
+        download(pin.url, partial)
+        actual = _sha256(partial)
+        if actual != pin.digest:
+            raise ConfigError(f"{pin.url}: SHA-256 is {actual}, expected {pin.digest}; nothing was installed")
+        partial.replace(target)
+    except BaseException:
+        partial.unlink(missing_ok=True)
+        raise
     return target
 
 
@@ -164,9 +168,14 @@ def _extract(archive: Path, into: Path) -> None:
             zipped.extractall(into)
     elif name.endswith((".tar.xz", ".tar.gz")):
         with tarfile.open(archive) as tarred:
-            tarred.extractall(into, filter="data")
+            try:
+                # The "data" filter refuses entries (and links) that leave `into`, absolute links and devices.
+                tarred.extractall(into, filter="data")
+            except tarfile.FilterError as error:
+                raise ConfigError(f"{archive}: an entry points outside the folder or is unsafe ({error})") from error
     elif name.endswith(".7z"):
-        # Python cannot read 7z; Windows 10 and later ship bsdtar as `tar`, which can.
+        # Python cannot read 7z. Only the Windows PCSX2 is a 7z, and Windows 11's `tar` (bsdtar) reads it; an older
+        # Windows 10 tar may not, and then the user extracts it by hand (docs/guides/workspace.md#fetch).
         done = subprocess.run(
             ["tar", "-xf", str(archive), "-C", str(into)], capture_output=True, text=True, check=False
         )
@@ -179,16 +188,18 @@ def _extract(archive: Path, into: Path) -> None:
 def unpack(archive: Path, dest: Path, subfolder: str | None = None) -> None:
     """Unpack `archive` into the new folder `dest`.
 
-    A single top-level folder in the archive is stripped (`ghidra_12.1.4_PUBLIC/...` lands in `dest` itself). With
-    `subfolder`, only that folder of the archive is kept, wherever it sits below the top.
+    A single top-level folder in the archive is stripped (`ghidra_12.1.4_PUBLIC/...` lands in `dest` itself), unless
+    it is a macOS app bundle (`PCSX2-v2.9.94.app`), which only works whole. With `subfolder`, only that folder of
+    the archive is kept, wherever it sits below the top.
     """
     dest.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=dest.parent, prefix=f".{dest.name}-") as temp:
         root = Path(temp)
         _extract(archive, root)
         entries = list(root.iterdir())
-        if len(entries) == 1 and entries[0].is_dir() and entries[0].name != subfolder:
-            root = entries[0]
+        single = entries[0] if len(entries) == 1 and entries[0].is_dir() else None
+        if single is not None and single.name != subfolder and not single.name.endswith(".app"):
+            root = single
         if subfolder is not None:
             root = root / subfolder
             if not root.is_dir():
@@ -200,7 +211,7 @@ def _clone(pin: Pin, dest: Path) -> None:
     """Clone the pinned repository into `dest` and check out the pinned commit."""
     dest.parent.mkdir(parents=True, exist_ok=True)
     for command in (
-        ["git", "clone", "--quiet", pin.url, str(dest)],
+        ["git", "clone", "--quiet", "--", pin.url, str(dest)],
         ["git", "-C", str(dest), "checkout", "--quiet", "--detach", pin.digest],
     ):
         done = subprocess.run(command, capture_output=True, text=True, check=False)
@@ -211,16 +222,30 @@ def _clone(pin: Pin, dest: Path) -> None:
 def fetch_tool(
     tool: str, dest: Path, platform: str, cache: Path, download: Downloader, pins: Sequence[Pin] | None = None
 ) -> None:
-    """Install `tool` into `dest` (which must not exist yet) from its pins (`PINS` unless given)."""
+    """Install `tool` into `dest` (which must not exist yet) from its pins (`PINS` unless given).
+
+    `dest` appears whole or not at all: `init` skips a tool whose folder exists, so a half-installed one (Ghidra
+    without its extension) would never be repaired. Every file is downloaded and checked before anything is
+    unpacked, the tool is built in a hidden folder beside `dest`, and that folder is renamed to `dest` at the end.
+    """
     pins = list(pins) if pins is not None else PINS[tool](platform)
+    files = [] if tool == "ghidra-mcp" else [fetch_file(pin, cache, download) for pin in pins]
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=dest.parent, prefix=f".{dest.name}-") as temp:
+        staging = Path(temp) / dest.name
+        _install(tool, pins, files, staging, platform)
+        staging.replace(dest)
+
+
+def _install(tool: str, pins: Sequence[Pin], files: Sequence[Path], dest: Path, platform: str) -> None:
+    """Build `tool` in the new folder `dest` from its checked downloads `files` (one per pin)."""
     if tool == "ghidra-mcp":
         _clone(pins[0], dest)
         return
-    first = fetch_file(pins[0], cache, download)
+    first = files[0]
     if tool == "ghidra":
         unpack(first, dest)
-        extension = fetch_file(pins[1], cache, download)
-        unpack(extension, dest / "Ghidra" / "Extensions" / "ghidra-emotionengine-reloaded")
+        unpack(files[1], dest / "Ghidra" / "Extensions" / "ghidra-emotionengine-reloaded")
     elif tool == "pcsx2-mcp":
         unpack(first, dest, subfolder="pcsx2-mcp-server")
     elif first.name.endswith(".AppImage"):

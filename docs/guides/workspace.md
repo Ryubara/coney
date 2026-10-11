@@ -43,6 +43,12 @@ Windows. From a fresh clone at `<workspace>/repos/coney`:
 powershell -ExecutionPolicy Bypass -File bootstrap.ps1       # Windows
 ```
 
+When uv is missing, a launcher runs Astral's installer for the uv version pinned at its top
+(`astral.sh/uv/<version>/install.sh`, or `install.ps1` on Windows). That installer puts uv in `~/.local/bin`
+(`%USERPROFILE%\.local\bin` on Windows) and adds it to your `PATH`: in your shell profiles (`.profile`, `.bashrc`,
+`.zshrc`, ...) on Linux and macOS, in your user `PATH` on Windows. Set `UV_NO_MODIFY_PATH=1` first to keep your
+profiles as they are, or install uv yourself.
+
 Or with no clone yet, from the folder that should become the workspace, with the launcher downloaded on its own and
 the repository's address from the README: `sh bootstrap.sh --repo-url URL`. Inside a checkout the command is also
 `uv run --project python coney-tools workspace init`. It:
@@ -69,7 +75,10 @@ prerequisites are missing, 2 for a usage error, 0 otherwise.
 
 Analysts need Ghidra and PCSX2 (implementers need neither). `--fetch TOOL` (repeatable, or `--fetch all`) downloads
 each from its own project's GitHub releases at the version below, checks it against the SHA-256 pinned in
-`python/src/coney_tools/workspace_fetch.py` and unpacks it; downloads are kept in `scratch/downloads/`.
+`python/src/coney_tools/workspace_fetch.py` and unpacks it; downloads are kept in `scratch/downloads/`. Every file
+of a tool is downloaded and checked before any is unpacked, and the tool's folder appears only once it is complete,
+so a failed or interrupted fetch leaves nothing half-installed: run the command again to retry it. An archive entry
+that would land outside the tool's folder is refused.
 
 | `--fetch` | What | Into | Licence |
 | --- | --- | --- | --- |
@@ -86,6 +95,11 @@ What is left to do by hand, which the command reminds you of:
 * **PCSX2:** your BIOS, and PINE enabled in its settings ([Driving PCSX2](research-workflow.md#driving-pcsx2)). The
   PCSX2-MCP release also holds a modified PCSX2 for Windows; Coney does not use it and the bootstrapper does not
   install it.
+
+The Windows PCSX2 is a 7z archive, which Python cannot read; the command extracts it with the `tar` that Windows 11
+ships. An older Windows 10 `tar` may not read 7z: then the fetch stops with tar's error, and you extract the archive
+from `scratch/downloads/` into `emulators/pcsx2` by hand (with 7-Zip) and create an empty `portable.txt` beside
+`pcsx2-qt.exe`.
 
 To move to newer versions, change the pins (URL and SHA-256, or the commit) in `workspace_fetch.py`; GitHub shows
 each release asset's SHA-256.

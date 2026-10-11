@@ -17,7 +17,9 @@ before you have a disc image at all.
 | [uv](https://docs.astral.sh/uv/) | for the Python tools and pre-commit | same | same |
 
 `coney-tools workspace init` (or the `bootstrap.sh` and `bootstrap.ps1` launchers) checks this table on your machine
-and prints what is missing ([Bootstrap](workspace.md#bootstrap)).
+and prints what is missing ([Bootstrap](workspace.md#bootstrap)). When uv itself is missing, the launchers install a
+pinned version of it with Astral's installer, which adds uv to your `PATH` (shell profiles on Linux and macOS, user
+`PATH` on Windows).
 
 The C++ dependencies (SDL3, librw, Dear ImGui, Catch2, FFmpeg) are not installed by hand: CMake downloads them on the
 first configure,

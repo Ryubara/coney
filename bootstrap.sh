@@ -8,9 +8,13 @@
 # On its own:       sh bootstrap.sh --repo-url URL [--workspace DIR] [...]   (clones the repository)
 set -eu
 
+# The uv release installed when uv is missing. Astral's installer for that version downloads uv into ~/.local/bin
+# and adds it to PATH in your shell profiles (.profile, .bashrc, .zshrc, ...); set UV_NO_MODIFY_PATH=1 to stop that.
+uv_version=0.13.0
+
 if ! command -v uv >/dev/null 2>&1; then
-    echo "bootstrap: installing uv (https://docs.astral.sh/uv/)"
-    curl -LsSf https://astral.sh/uv/install.sh | sh
+    echo "bootstrap: installing uv $uv_version (https://docs.astral.sh/uv/); it adds itself to PATH in your shell profiles"
+    curl -LsSf "https://astral.sh/uv/$uv_version/install.sh" | sh
     PATH="$HOME/.local/bin:$PATH"
     export PATH
 fi
