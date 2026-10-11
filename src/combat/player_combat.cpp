@@ -306,6 +306,11 @@ void PlayerCombat::grabOrTackle(const CombatInput& input, CombatOutput& out) {
         return;
     }
     const bool tackle = input.command == command::kCircleHeld;
+    // A player with both grab-block flags cannot start a grab (`HuBlockGrab`). **Coney's reading**: the tap does
+    // nothing at all (no intro, no miss) and the tackle is still allowed; the page names only the grab.
+    if (!tackle && input.grabBlocked) {
+        return;
+    }
     m_chain.cancel();
     out.startAnim = tackle ? anim_id::kTacklePlayerIntro : anim_id::kGrabPlayerIntro;
     if (!input.grabTargetInReach) {

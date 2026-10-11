@@ -1140,7 +1140,7 @@ widget; it has no path string of its own and is placed here by address (inferred
 | `0x001e2e40` | `ScrollingMenu_Render` | slot `+0x38`: the visible items, one more in state 3 | confirmed (code) |
 | `0x001e2f40`, `0x001e2f98` | `ScrollingTextWidget_Construct`, `_Destroy` | 0x270 bytes, vtable `0x0053c2c8`; MessageHUD text `+0x70` | confirmed (code); file inferred |
 | `0x001e2fe8` | `ScrollingTextWidget_Setup` | slot `+0xc0`: position `+0x20`, size `+0x30`, offset `+0x60`; text width = size x, colour `0x005fd310`; focus colour `+0x260` = `0x005fd310` | confirmed (code) |
-| `0x001e3070` | `ScrollingTextWidget_SetText` | slot `+0xc8` (time, text, instant): optional timed reveal (`MessageHUD_ReadAutoIndent`); height `+0x38` = text height | confirmed (code) |
+| `0x001e3070` | `ScrollingTextWidget_SetText` | slot `+0xc8` (wrapWidth, text, always): the wrap width goes to `MessageHUD_ReadAutoIndent` (`+0x1d4`, unless the text starts with `<AUTOINDENT f>`), when it is above 0 or the last argument is set; height `+0x38` = text height | confirmed (code) |
 | `0x001e3140`, `0x001e31e0` | `ScrollingTextWidget_SetMetrics`, `_Shutdown` | slots `+0xd0`/`+0x68`: `MessageHUD_SetMetrics` wrap box; shuts the text down | confirmed (code) |
 | `0x001e3248` | `ScrollingTextWidget_GetRect` | slot `+0x70`: `+0x30`, height times reveal | confirmed (code) |
 | `0x001e32a0` | `ScrollingTextWidget_Update` | slot `+0x30`: text at x - width / 2 + offset; crop `+0x1f4` = max(0, height - text height); visible while reveal > 0 | confirmed (code) |

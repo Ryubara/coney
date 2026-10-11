@@ -131,6 +131,20 @@ class DebugSession {
 
     /// Prints `line` to the session's log and to the log callback.
     void print(std::string line);
+    /// Prints `text` (print()) and shows it as a short notice under the corner lines (cornerLines()) for the next
+    /// kNoticeFrames frames, with the menu open or closed; a newer notice replaces it.
+    void notice(std::string text);
+    /// How many frames a notice() shows: about a second and a half at 60 frames a second. Counted in frames the gate
+    /// samples, never in real time, so a scripted run sees the same.
+    static constexpr int kNoticeFrames = 90;
+
+    /// Whether the noclip hotkey (kNoclipChord, R3 + d-pad left) toggles the player's noclip in play; off until the
+    /// Player page switches it on.
+    [[nodiscard]] bool noclipHotkey() const { return m_noclipHotkey; }
+    void setNoclipHotkey(bool on) { m_noclipHotkey = on; }
+    /// Switches the player's noclip (PlayControls::setNoclip()) to `on` with a notice saying so; with no player, or
+    /// one who cannot noclip, only prints why.
+    void setNoclip(bool on);
 
     /// The lines the Display page's corner overlays show now, top first: the frame stats and the FPS counter, each
     /// while switched on. A front end draws them in the top-right corner, with the menu open or closed.
@@ -149,6 +163,9 @@ class DebugSession {
     DebugLog m_log;
     LuaConsole m_console;
     std::unique_ptr<SandboxScripts> m_sandbox;
+    bool m_noclipHotkey = false;
+    std::string m_notice;       // notice()'s text
+    int m_noticeFramesLeft = 0; // frames it still shows
 };
 
 } // namespace coney::debug

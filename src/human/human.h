@@ -25,6 +25,7 @@
 #include "human/fighter.h"
 #include "human/holdable.h"
 #include "human/human_animator.h"
+#include "human/human_contacts.h"
 #include "human/human_flags.h"
 #include "human/locomotion.h"
 #include "human/locomotion_gate.h"
@@ -44,6 +45,14 @@
 
 namespace coney::human {
 
+/// How a flying human moves this update (Human::setFlight(), the debug menu's noclip; Coney's own tool, the original
+/// has none): the left stick flies it across the ground as it walks it, turned by the camera, at `speed` for a full
+/// push, and it rises at `climb` (negative: descends).
+struct Flight {
+    float speed = 0.0F; ///< Metres a second across the ground with the stick pushed fully.
+    float climb = 0.0F; ///< Metres a second upward; negative descends.
+};
+
 /// What the human is given each update: the left stick, the camera's view direction, which turns it, the two
 /// buttons traversal reads, and combat's command, buttons and targets.
 struct HumanInput {
@@ -57,13 +66,18 @@ struct HumanInput {
     std::span<Combatant* const> targets;                ///< The humans that can be fought.
 };
 
-/// A brain's move (brain `+0x110`, `+0x114`): the heading and speed the locomotion follows in place of the stick for a
-/// human a brain drives (docs/research/ai.md#moving).
+/// A brain's move (brain `+0x110`, `+0x114`, `+0x90`): the heading and speed the locomotion follows in place of the
+/// stick for a human a brain drives, and the point a fight stance walks it to (docs/research/ai.md#moving). The brain
+/// clears it at the start of each update (ai::Brain::update()), so it holds only what this update's goals and actions
+/// wrote.
 struct BrainMove {
     float heading = 0.0F; ///< Radians, 0 facing +y.
     float speed = 0.0F;   ///< m/s; 0 stands.
     /// The brain's turn boost (`+0x0b`): its gait turn limits × (boost + 1), or ÷ (1 − boost) below 0.
     int turnBoost = 0;
+    /// The point the move aims at (`+0x90`, ai::Brain::setMoveAim()): in a fight stance the feet walk along the line
+    /// to it while the facing follows `heading` (docs/research/characters.md#ai-locomotion).
+    anim::Vec3 aim;
 };
 
 /// A human's per-player record (`0x00660f50 + i × 0x2c`, docs/research/ai.md#brain): what drives it each update. A
@@ -416,6 +430,15 @@ class Human final : public Holdable {
     [[nodiscard]] GrabbedReport takeGrabbedReport() override { return m_fighter.takeHeldReport(); }
     /// Moves it there and stops it (its velocity goes).
     void place(anim::Vec3 position, float headingRadians) override;
+    /// Flies the human while `flight` is set (the debug menu's noclip, docs/guides/debug-menu.md#noclip; Coney's own,
+    /// with no counterpart in the original): each state update moves it by the record's stick, turned by the camera
+    /// with the game's dead zone, at the flight's speed, and by its climb, with no collision, gravity, falling or
+    /// landing, facing where it flies across the ground; its clips do not move it. Starting a flight lets go of a pair,
+    /// a climb or a jump and stands it in the idle; ending one (nullopt) leaves it standing where it is, so the next
+    /// update's ground test drops it from there with the normal physics. Set it each update to change the speeds.
+    void setFlight(std::optional<Flight> flight);
+    /// Whether it flies (setFlight()).
+    [[nodiscard]] bool flying() const { return m_flight.has_value(); }
     /// An AI's jump (`Human_BeginJump` with argument 1, then `Human_LaunchJump`, docs/research/ai.md#route-jump): from
     /// any gait, standing too, launched at `velocity` with the jump's clip. Refused (false) in the air, while climbing,
     /// or while the record `+0x08` holds any of kAiJumpRefuseFlags.
@@ -429,7 +452,7 @@ class Human final : public Holdable {
     // it. Each acts at once; the flags and the state keep across spawn().
 
     /// The flag word (human `+0xe0`, human/human_flags.h), kept by its fighter.
-    [[nodiscard]] std::uint64_t flags() const { return m_fighter.flags(); }
+    [[nodiscard]] std::uint64_t flags() const override { return m_fighter.flags(); }
     [[nodiscard]] bool hasFlag(std::uint64_t bit) const { return m_fighter.hasFlag(bit); }
     /// Sets (`on`) or clears the bits of `bits`.
     void setFlag(std::uint64_t bits, bool on) { m_fighter.setFlag(bits, on); }
@@ -524,6 +547,30 @@ class Human final : public Holdable {
     using ObjectPush =
         std::function<std::optional<anim::Vec3>(const Human& walker, anim::Vec3 centre, float radius, anim::Vec3 move)>;
     void setObjectPush(const ObjectPush* push) { m_objectPush = push; }
+    /// The humans its walking body meets (docs/research/physics.md#human-contacts): the characters' step gives every
+    /// human its list each update (Humans::update()); the list may hold this human and null slots, which are skipped.
+    /// Empty (the default): it meets none.
+    void setHumanContacts(std::span<Human* const> humans) { m_otherHumans = humans; }
+    /// Whether its capsule blocks other humans' walks: body flag `0x4` `BLOCKHUMANS`, which a human loses when his
+    /// health runs out, knocked out or wounded (`Human_OnHealthOut`). **Coney stand-in**: what gives the flag back
+    /// when he gets up is not traced, so it is back as soon as he is neither knocked out, nor wounded, nor out of
+    /// health.
+    /// @orig 0x002674c0 Human_OnHealthOut (unknown)
+    [[nodiscard]] bool blocksHumans() const;
+    /// Whether it and `other` are linked, so their walks pass through each other: one holds the other in a grab, a
+    /// tackle, a mount or a mugging (the link's group number at body `+0x3c`, `Grab_Link` and the rest). **Coney
+    /// stand-in**: the scenes' shared group is not set.
+    /// @orig 0x0022c760 Grab_Link (unknown)
+    [[nodiscard]] bool linkedWith(const Human& other) const;
+    /// Its push weight (attribute 7, `+0x27c`): 1e9 while it must not move (linked in a pair, or arrested), else 1.
+    [[nodiscard]] float pushWeight() const;
+    /// Whether another human's walk pushes it: not when a script made it unpushable (`HuSetPushable(false)`, body flag
+    /// `0x200`), when it is only slid along.
+    [[nodiscard]] bool pushable() const { return m_script.pushable; }
+    /// The push-out other humans' contacts left for its next move (body `+0x50`), added to that move and cleared.
+    [[nodiscard]] anim::Vec3 pendingPush() const { return m_pendingPush; }
+    /// Adds `push` to pendingPush() (a contact's code 4, human::contactPush()).
+    void addPush(anim::Vec3 push) { m_pendingPush = anim::add(m_pendingPush, push); }
     /// The breakable objects square may strike from now on (the level's whole panes), given each step.
     void setObjectTargets(std::vector<ObjectTarget> objects) { m_objectTargets = std::move(objects); }
     /// Picks up the object `handle` at `point` with clip `clip` (world_objects::pickupClip()): the clip plays after a
@@ -583,13 +630,18 @@ class Human final : public Holdable {
     void turnToFace(anim::Vec3 point, float seconds);
     /// Starts a tag's spray clips (`Tag_StartSprayClips`): 334 `ANIM_TAGGING_INTRO`, then the loop 335, turning to face
     /// the tag at `point` over half of 334's length (`Human_TurnToFacePoint`); the human stays where he stands.
-    /// Returns false when the intro clip is not loaded. docs/research/crimes.md#tag-callbacks
+    /// Returns false when the intro clip is not loaded (he then turns to the tag at once).
+    /// docs/research/crimes.md#tag-look
     /// @orig 0x00278018 Tag_StartSprayClips (unknown)
     bool startTagSpray(anim::Vec3 point);
+    /// A pause of the stick game began (a slip or a new charge): 337, then the loop 335 again.
+    /// @orig 0x00278210 Tag_RestartSprayClips (unknown)
+    void restartTagSpray();
     /// Whether the spray's intro is over and its loop plays: the moment the stick game goes live (the intro's end hook
     /// `0x00277ed8`).
     [[nodiscard]] bool tagSprayLooping() const;
-    /// Whether the spray's clips still play (the intro or the loop): false once something else took the body.
+    /// Whether the spray's clips still play (the intro, the loop or the restart): false once something else took the
+    /// body.
     [[nodiscard]] bool tagSprayPlaying() const;
     /// The spray is over: a spray clip still playing leaves for the idle. **Coney's reading**: what the original
     /// plays at Tag_End is not on the page.
@@ -634,19 +686,30 @@ class Human final : public Holdable {
     void moveOnGround(const raycast::CollisionMesh& mesh);
     // Moves a falling human, landing on a floor it passed on the update before.
     void moveInAir(const raycast::CollisionMesh& mesh);
-    // Keeps the move the walls left (`slid`, against the asked `displacement` at slope `factor`) as the velocity, so a
-    // wall met at a steep angle brakes the human (docs/research/characters.md#walls).
-    void keepSlidVelocity(anim::Vec3 slid, anim::Vec3 displacement, float factor);
+    // Slides the velocity along the walls the last sweep met (m_contacts): each takes the velocity's part into it, so a
+    // wall met at a steep angle brakes the human (docs/research/characters.md#walls, #slopes).
+    // @orig 0x0033d870 Vec_RemoveNormalPart (unknown)
+    void slideVelocity();
     // Where a walking sweep ends: the feet, and the part of the move from them that the corner slide made.
     struct Swept {
         anim::Vec3 feet;
         anim::Vec3 slide{};
     };
-    // Sweeps the walking body from the feet at `from` by `displacement`, sliding off walls and round a corner its walls
+    // Sweeps the walking body from the feet at `from` by `displacement`, sliding along a wall face it already touches
+    // (rising along one that leans back, docs/research/characters.md#slopes), off walls and round a corner its walls
     // name; returns where it ends, or nothing when it is still blocked after three passes.
     // @orig 0x0033e278 PhysicsBody_Sweep (unknown)
     [[nodiscard]] std::optional<Swept> sweep(const raycast::CollisionMesh& mesh, anim::Vec3 from,
                                              anim::Vec3 displacement);
+    // The humans the walking capsule meets moving from the feet at `from` by `move` (docs/research/physics.md
+    // #human-contacts), up to three passes: the nearest contact stops the capsule at it, the rest of the move slides
+    // along the other (code 1), and, unless this capsule strikes (a charge), the other is given half of the pass's move
+    // into him as his pending push (code 4). Returns the move left, which the walls then take; each contact's normal
+    // goes to m_contacts.
+    // @orig 0x0033d498 PhysicsBody_SweepHumanMask (unknown)
+    [[nodiscard]] anim::Vec3 meetHumans(anim::Vec3 from, anim::Vec3 move);
+    // Its capsule as another human's sweep meets it.
+    [[nodiscard]] UprightCapsule uprightCapsule() const;
     // Pushes the airborne body (a player's larger sphere) out of the walls it overlaps after moving to `feet`.
     // @orig 0x0021a490 Human_PushOutInAir (unknown)
     [[nodiscard]] std::optional<anim::Vec3> pushOutInAir(const raycast::CollisionMesh& mesh, anim::Vec3 feet);
@@ -662,13 +725,17 @@ class Human final : public Holdable {
     // The stick step is skipped (combat's states, or the human is busy): the clip and an attack's slide move the body;
     // a block turns toward the stick in place (the shuffle); a standing grab turns and walks the pair by the stick.
     void holdForCombat();
-    // Locked onto `target`: faces it (a player whose pad a script took turns by his brain's heading instead, as
-    // Human_UpdateControl turns a human no pad drives) and walks at the combat walk's speed along the stick without
-    // turning, in the combat-walk clip of the stick's angle from the facing; with the velocity `gated`, it only turns
-    // and the clip playing goes on.
+    // Locked onto `target`: a pad-driven human faces it and walks at the combat walk's speed along the stick, in the
+    // combat-walk clip of the stick's angle from the facing; with the velocity `gated`, it only faces the target and
+    // the clip playing goes on. A human no pad drives runs aiCombatWalk() instead.
     // @orig 0x00241b90 Human_FightStanceMove (unknown)
-    // @orig 0x00243848 Human_UpdateControl (unknown)
     void combatWalk(const Combatant& target, bool gated);
+    // The AI's fight stance (docs/research/characters.md#ai-locomotion): the facing turns to the brain's heading at
+    // aiStanceTurn() while the move asks for a speed (always when wounded), and does not follow the target; the feet
+    // strafe along the line to the move's point at the stance walk (the walk when wounded) when it asks for more than
+    // 0.1, else stand. With the velocity `gated`, it only turns.
+    // @orig 0x00243848 Human_UpdateControl (unknown)
+    void aiCombatWalk(bool gated);
     // Combat's update from the record: the stick turned into the facing frame, the game time, the targets.
     void fight(std::span<Combatant* const> targets, const raycast::CollisionMesh* mesh);
     // The attacker's side of a warning: an event 0x24 or 0x26 of the clip playing that this step's animation passed
@@ -717,6 +784,8 @@ class Human final : public Holdable {
     void followClimb(const raycast::CollisionMesh* mesh);
     // Ends a climb.
     void endClimb();
+    // The state update while flying (setFlight()): the move by the stick and the climb, through everything.
+    void fly();
 
     PlayerRecord m_record;
     ScriptState m_script;
@@ -760,6 +829,7 @@ class Human final : public Holdable {
     std::vector<HumanSound> m_contactSounds;       // reportSound()
     std::uint16_t m_groundFlags = 0;               // the last ground snap's triangle flags
     bool m_hidden = false;                         // state 0x200000
+    std::optional<Flight> m_flight;                // setFlight(): flying, and how
     std::optional<std::uint64_t> m_hideGraceUntil; // record +0x114: the grace's end, ms
     float m_lastLandingSpeed = 0.0F;
     std::uint32_t m_landings = 0;
@@ -814,6 +884,9 @@ class Human final : public Holdable {
     std::vector<ObjectTarget> m_objectTargets; // the breakable objects square may strike
     std::optional<ClimbProbe> m_climbProbe;
     std::vector<std::uint16_t> m_nearby; // scratch for the wall test
+    std::vector<anim::Vec3> m_contacts;  // the normals of the walls the last walking sweep slid along, for the velocity
+    std::span<Human* const> m_otherHumans; // setHumanContacts(), the step's
+    anim::Vec3 m_pendingPush{};            // addPush(): others' pushes, for the next move
 };
 
 } // namespace coney::human

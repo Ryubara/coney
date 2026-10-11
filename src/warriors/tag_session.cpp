@@ -37,6 +37,12 @@ TagGame::Result TagSession::update(float stickX, float stickY, std::uint32_t ela
     }
     const TagGame::Result result = m_game.update(stickX, stickY, elapsedMs, [this] { return spendCharge(); });
     m_spots->setFraction(m_tag, m_game.fraction());
+    // Tag_UpdatePlayer ends the game once the cans are gone: the first charge takes none, each new one takes one, so
+    // n cans give n charges.
+    if (result == TagGame::Result::Playing && !hasPaint(*m_inventory, m_player)) {
+        abandon();
+        return m_game.result();
+    }
     if (result != TagGame::Result::Playing) {
         finish();
     }

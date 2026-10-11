@@ -133,10 +133,10 @@ float aiMaxTurn(Gait gait, int boost, bool wounded) {
     return (boost >= 0 ? degrees * (b + 1.0F) : degrees / (1.0F - b)) * kDegrees;
 }
 
-float aiFightStanceTurn(bool wounded) {
-    // The fight stance's AI word; the wounded row comes first in Human_MaxTurn's order.
-    constexpr float kFightStance = 24.0F;
-    return wounded ? aiMaxTurn(Gait::Standing, 0, true) : kFightStance * kDegrees;
+float aiStanceTurn(bool wounded) {
+    // The AI word of the stance's pair (0x005101dc).
+    constexpr float kStance = 24.0F;
+    return wounded ? aiMaxTurn(Gait::Standing, 0, true) : kStance * kDegrees;
 }
 
 float aiApproachSpeed(float current, float asked) {

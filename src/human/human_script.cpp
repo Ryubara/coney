@@ -32,8 +32,8 @@ void Human::setArrested(bool arrested) {
         return;
     }
     m_script.arrested = arrested;
-    // Arrested, it stops and whatever it was doing ends; released, it stands up again into the idle. **Coney's
-    // reading**: the push weight (1e9 while cuffed) is not kept, as Coney's bodies do not push each other yet.
+    // Arrested, it stops and whatever it was doing ends; released, it stands up again into the idle. While arrested
+    // its push weight is 1e9 (pushWeight()), so other humans' walks do not move it.
     m_velocity.x = 0.0F;
     m_velocity.y = 0.0F;
     m_fighter.setNormal(m_animator, false);

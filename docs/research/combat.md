@@ -830,6 +830,43 @@ So a press in `0x4` is dropped by its path, and one in `0x40000` by the dispatch
 the velocity mask) while it runs; the state code `+0x14` = 5 written then only means turning in place
 ([Tasks](tasks.md#locomotion-gate)).
 
+### Attack warnings: who hears an attack coming {#attack-warnings}
+
+**One human per warning: the target.** `Human_WarnOfAttack(victim, attacker, id)` (`0x0021d5c0`) sends event `0x10`
+to the one victim it is given, and only when that victim can see the attacker (`Human_CanSeeHuman`, `0x002223e8`,
+with the victim's field of view `+0x12c` and sight range, or 2 m when the attacker's brain `+0x2d4` is set, then a
+line of sight); it also makes the victim drop carried props unless cuffed. Nothing in the game loops over nearby
+humans to warn them: every one of its 23 call sites passes a single human, the move's target. Confirmed (code):
+
+- **`Attack_Start`** (`0x002625a8`, the call at `0x00262674`) warns its current target (`Human_GetTarget`), and only
+  when that target is within the clip's far range; out of range it turns to the target and warns no one; with no
+  target, no one.
+- **The square path** (`Player_Square`, `0x00286cc8`): each branch warns the human it is about to attack. The call at
+  `0x0028758c` (the standing square in a fight stance, before the `S1` start at `0x002876f0`) warns the target it has
+  just kept or re-picked (`Player_PickTarget`) before testing for a grounded, busy or grabbed target; the snap attacks
+  warn their snap target (`0x00287454`, `0x002874c4`, `0x002874fc`); the run and walk charges and the
+  run-up attacks warn the picked target (`0x00286e3c`, `0x00286fe0`, `0x002870d0`, `0x00287174`). The standing square
+  then reaches `Attack_Start`, so its one target is warned twice in the same update (brain `+0x200` counts 2).
+- The rest pass the move's target too: `Player_Cross` (`0x00287b74`, `0x00287cc8`), the charge (`0x00264b30`), grabs
+  and tackles (`Player_GrabOrTackle`, `Player_UpdateGrabbing`), the mug, the tandem and mount starts, the melee throw
+  and the throw's release.
+
+**What others hear.** Only indirectly: the warned human's shared handler (`0x00292d80`) makes the gangs enemies and
+sends a **help call** within 20 m (`Gang_BroadcastHelpCall`, `0x00293640`: event `0x14` through `AI_AlertNearby`,
+naming the attacker) when the warning passes its own sight test ([AI: events](ai-code.md#brain-events)). A human
+who is not the target never gets `0x10`, so never counts `+0x200`, blocks or counters for it.
+
+**The `level5` bosses** ([AI: Diego and Vargas](ai.md#boss-diego-vargas)). `BigBrawlerGoal_OnAttackWarning`
+(`0x002e8858`) acts on `0x10` only in state 2 and not while tired, and then: when the goal holds actions and the front
+one is of type 1 (`MoveTo`) or 2, **clears the action queue**; counters an escapable grab or tackle from his current
+enemy (command 3); makes the attacker his target when he has no enemy or his enemy is an AI human (a player enemy is
+kept); and, with the attacker within 1.5 m, 10 % health or more, no held flag `0x2000` and the queue cleared, sets the
+no-reaction flag `0x800`, says line 11 or 14 and plays 653 (the shove). Confirmed (code). So in the original only the
+boss being attacked does any of this. Inferred, for Coney's broadcast: every attack the player starts at one boss
+also reaches the other, clearing the other's queued move each time, so the boss who
+is not being hit rarely closes in; a test that wins only with the broadcast depends on that, and should win the
+original's way, with the second boss free to attack.
+
 ### Block (and no dodge) {#block}
 
 **R1 held** on a pad, in a fight stance, blocks (an AI human cannot block, [AI](ai.md#block)): anim state 21 then 606
@@ -4188,6 +4225,12 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
   breaks the pair.
 - **The clips' `+0x44` flags** (paired `0x1`, tackle `0x20`, grab `0x40`): which clips carry the tackle flag
   ([Strong grapple](#strong-grapple)).
+- **Killer and double damage in a hold**: whether the moves in a grab (`Grab_Strike`), the power strikes and the
+  throws reach `Human_AddPendingDamage`'s doubling and `Strike_Contact`'s killer rule. Coney applies both to free
+  strikes only ([Human flags](#human-flags)).
+- **A player with both grab-block flags** (`0x40000000` and `0x80000000`, `HuBlockGrab`): whether
+  `Player_GrabOrTackle` (`0x00284920`) also refuses the tackle, and whether the refused tap plays the intro and the
+  miss. Coney refuses the grab only, and plays nothing.
 - **226's knockdown word at runtime**: the disc's 226 has its type-7 word 0, which would queue 198, yet at runtime
   `Attack_StartPaired` took the branch without 198 ([The mount power strike](#mount-power)). To find out,
   rerun `moves_mount_power` with a hook at `Anim_GetKnockdownValue` (`0x00101a60`) logging its argument and return on

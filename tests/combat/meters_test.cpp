@@ -56,11 +56,10 @@ TEST_CASE("pending damage keeps the update's largest hit and its kind", "[combat
     CHECK(pending.damage() == 0);
 }
 
-TEST_CASE("a strike's damage is its anim's range list value, doubled or quartered", "[combat]") {
+TEST_CASE("a strike's damage is its anim's range list value, or a quarter of it", "[combat]") {
     AnimRangeList ranges = rangesWithDamage(20, 36);
     CHECK(strikeDamage(ranges, 16) == 36);
-    CHECK(strikeDamage(ranges, 16, true) == 72);
-    CHECK(strikeDamage(ranges, 16, false, true) == 9);
+    CHECK(strikeDamage(ranges, 16, true) == 9);
     CHECK(strikeDamage(ranges, 300) == 0);
     CHECK(strikeDamage(ranges, -1) == 0);
     // The class's damage table overrides the file's value.

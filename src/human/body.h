@@ -82,6 +82,21 @@ struct WallFilter {
                                                         float radius, const WallFilter& filter,
                                                         std::vector<std::uint16_t>& scratch);
 
+/// The walking sweep's contact at fraction 0 (docs/research/characters.md#slopes): `move` with the part into each wall
+/// face that the sphere at `centre` of `radius` already touches taken away, in 3D, up to three passes. A face counts
+/// when `filter` keeps it for the move left so far, its plane is at most `radius` from the centre, and the centre
+/// lies over the face or past one edge whose segment is within `radius` (past a corner never counts), the slide
+/// then going along the face's own plane either way; a face slid along no longer takes the move in and is skipped.
+/// Nothing pushes the sphere out of such a face, so a move into a face that leans back (`n.z` up to 0.65) rises along
+/// it, and a body that overlaps a face stays as deep in it. Each face slid along adds its normal to `normals` when
+/// given (the velocity slides along the same faces). **Coney's choice**: of several faces touched at once the one whose
+/// plane is nearest the centre goes first (the original resolves the contacts of one pass in an order not traced).
+/// @orig 0x0034ee60 Sweep_SphereTriangle (unknown)
+/// @orig 0x0033d870 Vec_RemoveNormalPart (unknown)
+[[nodiscard]] anim::Vec3 slideAlongTouchedFaces(const raycast::CollisionMesh& mesh, anim::Vec3 centre, float radius,
+                                                anim::Vec3 move, WallFilter filter, std::vector<std::uint16_t>& scratch,
+                                                std::vector<anim::Vec3>* normals = nullptr);
+
 /// The corner slide's direction for a walking sphere at `centre` of `radius` (docs/research/characters.md#walls, step
 /// 6): over the walls `filter` keeps that the sphere reaches **beyond the edge its triangle names** in flag bits 14-15
 /// (0: v0→v1, 1: v1→v2, 2: v2→v0, 3: none), the wall's tangent `n × up`, taken away when that edge rises and added
@@ -102,5 +117,8 @@ struct WallFilter {
 [[nodiscard]] float playerWalkingRadius(float scale);
 /// A player's walking sphere's centre height above the feet: its radius plus 0.05.
 [[nodiscard]] float playerWalkingCentreHeight(float scale);
+/// An AI human's walking sphere radius for a human of `scale`: its body `+0x60` is 1.0, so 0.35 × scale × the scale
+/// again, as the player's (0.357 m for level99's bums at 1.01; docs/research/characters.md#walls, step 1).
+[[nodiscard]] float aiWalkingRadius(float scale);
 
 } // namespace coney::human

@@ -203,19 +203,27 @@ TEST_CASE("the disc's level99 street: a trash can stops a walker; square and a s
             return r.typeName == name && !r.removed;
         });
     };
-    // Square by the can breaks the trash prop it picks (the can, or bags beside it) on the strike
-    // (docs/research/objects.md#trash-props): it is gone, and a can leaves its dented can.
+    // Square by the can breaks the trash props it reaches (the can, the bags beside it, or both: any strike breaks one
+    // at once, docs/research/objects.md#trash-props): each is gone, and a can leaves its dented can. Which it reaches
+    // depends on where the walk into the can left him, sliding along it.
     const std::ptrdiff_t dentedBefore = count("dyn_trashcan_b");
     stack.runUntilEmpty(timer, {}, 700 - 640);
     const std::vector<double> cans = breaks("dyn_trashcan");
     const std::vector<double> squareBags = breaks("dyn_gbags");
     std::printf("  level99 street: square by the can: %zu cans and %zu bags broken, dented cans %td\n", cans.size(),
                 squareBags.size(), count("dyn_trashcan_b") - dentedBefore);
-    REQUIRE(cans.size() + squareBags.size() == 1);
-    const double struck = cans.empty() ? squareBags.front() : cans.front();
-    const coney::world_objects::SpawnRecord* struckRecord = scripts.spawnRecords().find(struck);
+    REQUIRE(cans.size() + squareBags.size() >= 1);
+    for (const std::vector<double>* broken : {&cans, &squareBags}) {
+        for (const double struck : *broken) {
+            const coney::world_objects::SpawnRecord* record = scripts.spawnRecords().find(struck);
+            REQUIRE(record != nullptr);
+            CHECK(record->removed);
+        }
+    }
+    // The bottle below is looked for beside the first prop broken.
+    const coney::world_objects::SpawnRecord* struckRecord =
+        scripts.spawnRecords().find(cans.empty() ? squareBags.front() : cans.front());
     REQUIRE(struckRecord != nullptr);
-    CHECK(struckRecord->removed);
     CHECK(count("dyn_trashcan_b") == dentedBefore + static_cast<std::ptrdiff_t>(cans.size()));
     // Its bottle fell from 0.5 m above the street and came to rest on it.
     const coney::world_objects::SpawnRecord* bottle = nullptr;

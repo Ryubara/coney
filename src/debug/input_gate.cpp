@@ -26,9 +26,22 @@ PortSamples InputGate::sample(std::uint64_t frame) {
     if (wasOpen && !chord) {
         m_navigator.apply(m_menuInput.read(m_rawPad));
     }
-    if (wasOpen || m_navigator.isOpen() || chord) {
+    const bool menuBusy = wasOpen || m_navigator.isOpen() || chord;
+    if (menuBusy) {
         // Everything held now stays hidden from the game until it is let go, even after the menu closes.
         m_hidden |= held;
+    }
+    // The hotkeys, in play only: each fires on the frame its chord is first complete, in either order, and its
+    // buttons stay hidden until let go, so the game never acts on them.
+    for (Hotkey& key : m_hotkeys) {
+        const bool down = (held & key.chord) == key.chord;
+        if (down && !key.held && !menuBusy && key.armed && key.armed()) {
+            m_hidden |= key.chord;
+            if (key.fire) {
+                key.fire();
+            }
+        }
+        key.held = down;
     }
     m_hidden &= held;
 

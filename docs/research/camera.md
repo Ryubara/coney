@@ -253,7 +253,7 @@ The base camera's own methods, the frustum, the views and the shake, `0x00120868
 | `0x00128678` | `Cam_Follow_AimView` | One player target with `+0x454` set: heading target 15° off the player's per-player aim vector (record `+0x5750`), upper pitch limit 50°, lower limit from (0.075 - offset z) / max distance (at least -20°), and a pitch override; raises the turn rate up to 4x while the view is far off (inferred: an aiming view). | inferred |
 | `0x00128b20` | `Cam_Follow_HeadLook` | Turns the player's head toward the camera heading while the right stick turns the camera (within 150° of the facing). [Head look](#head-look). | confirmed (code) |
 | `0x00128cf0` | `Cam_Follow_SprintZoom` | Sprint zoom: pulls the band in to the minimum and the target pitch to 7° while sprinting, back 250 ms after. [sprint zoom](#sprint-zoom). | confirmed (code) |
-| `0x00129050` | `Cam_Follow_RightStick` | Right stick yaw/pitch rates, zoom and centre buttons, look-behind (reverse) button into `+0x458`. [right stick](#right-stick). | confirmed (code) |
+| `0x00129050` | `Cam_Follow_RightStick` | Right stick yaw/pitch rates, zoom and centre buttons, look-behind (reverse) button into `+0x458`. 2,160 bytes (`0x00129050`-`0x001298bf`, 540 instructions, one `jr ra` at the end); the next function is `Cam_Follow_LookBehind` at `0x001298c0`. [right stick](#right-stick). | confirmed (code) |
 | `0x001298c0` | `Cam_Follow_LookBehind` | Look-behind while the reverse button is held (`+0x458` = pad): compares the target's facing with the view; past 75° pulls the band out to 8.5 m (`+0x455`, band saved in `+0x35c`), back within 45° restores it, and swings the view to face the player. | confirmed (code) |
 | `0x00129c78` | `Cam_Follow_AutoFollow` | Auto-follow gate: picks the default (`0x0012a400`) or auto-centre (`0x00129f88`) rule. [heading](#heading). | confirmed (code) |
 | `0x00129f88` | `Cam_Follow_AutoCentre` | Auto-centre rule: rate from the angle between the facing and the view. [heading](#heading). | confirmed (code) |
@@ -487,7 +487,8 @@ code at the cited addresses:
 - **Right stick** (`0x00129050`): returns at once while `0x0050b1b0[player]` or switch 0 (`0x0050b1b8[player]`) is
   0, so neither the stick nor the zoom buttons act.
 - **Look-behind** (switch 11, `0x0050b23c`, confirmed (code) at `0x0012b4b4`): passed to `0x00129050` as its eighth
-  argument (forced to 0 while the player is tagging: [The right stick](#right-stick)). With it 0 the reverse-camera button
+  argument (forced to 0 unless the player runs or sprints, and while he is tagging:
+  [The right stick](#right-stick)). With it 0 the reverse-camera button
   (`0x0050b230`) never turns the view round, and a press on a button shared with the zoom counts as a zoom tap.
   `Human_SetWheelchairControl` clears it.
 - **Power camera** (switch 9, `0x0050b1d4`, one flag for both players): read only by `Anim_FireFrameEvents`
@@ -1160,8 +1161,13 @@ camera options `0x0050b1b0` and `0x0050b1b8` allow it.
       member pointer at `0x00548a00`). Both options are 0 in the image and only those two bindings write them, which
       no script calls, so in the shipped game the argument is always 0 (inferred): the stick always turns the camera.
       When set, it also skips the pitch.
-    - **Eighth argument (look-behind)**: switch 11, but 0 while the first target is tagging (`0x002238c0`, state
-      `0x2000000`) and either there is one target or the second is tagging too (`s5`, `0x0012b2b0`-`0x0012b2d8`).
+    - **Eighth argument (look-behind)**: switch 11, but 0 unless the target **runs or sprints** and 0 while it is
+      tagging (`0x0012b4a0`-`0x0012b4b8`). "Runs or sprints" is the update's local flag (stack `+0x1e4`, cleared at
+      `0x0012aff8`) that the [sprint detection](#sprint-zoom) sets: the first target's gait `+0x1a8` is 5
+      (`0x00223a98`) or 4 (`0x00223a60`) with record `+0x08` clear (no attack or held state), and with two targets
+      the second as well (`0x0012b310`-`0x0012b3ac`); a target at gait 0 skips the tests; the takeover `+0x465`
+      clears it (`0x0012b428`). Tagging is the first target's state `0x2000000` (`0x002238c0`) with one target, or
+      both targets' (`s5`, `0x0012b2b0`-`0x0012b2d8`).
     - **Ninth argument (pitch allowed)**: the stick's pitch acts only when the views shown equal the player cameras
       (`0x0050b198` = `0x0050b19c`) or the camera has one target.
     - The whole call is skipped when the camera has no target (`+0x444` = 0).
@@ -1195,9 +1201,14 @@ to 0 (none) for the wheelchair mini-game.
 
 #### Looking behind {#reverse}
 
-Only while the game mode on top is 1 (play, inferred) and switch 11 is on, holding the reverse button stores the
-pad in `+0x458`; letting go clears it (`0x00129050`). `0x001298c0`, confirmed (code), with the 75° and 45° cosines
-set by `Cam_Follow_StaticInit` (`0x00134ab0`):
+Only while the game mode on top is 1 (play, inferred), switch 11 is on and the player **runs or sprints** (gait 4 or
+5 with record `+0x08` clear, [the eighth argument](#right-stick)), holding the reverse button stores the pad in
+`+0x458`; letting go clears it, and so does the gate closing while it is held (`0x00129050` at
+`0x001292a4`-`0x001292e8`: the look-behind ends on the update the player slows to a walk, stops or starts an attack,
+as if R1 were let go). Confirmed (code). So **R1 never turns the camera round from a standstill, a walk or a fight
+stance**: a player blocking (standing, gait 0) or locked on (the combat walk is gait 3,
+[Combat](combat.md#fight-stance)) gets no look-behind, and R1 is free for the block. Not checked at runtime.
+`0x001298c0`, confirmed (code), with the 75° and 45° cosines set by `Cam_Follow_StaticInit` (`0x00134ab0`):
 
 1. **First held update**: the band's near edge is saved in `+0x35c`. When the angle between the player's facing and
    the camera's reversed forward is more than **75°** (the usual case: the camera behind the player), the band is
@@ -3273,6 +3284,12 @@ position, and `CamSetFollowPos` puts the follow camera at a point at once.
 
 ## Open questions
 
+- **Look-behind in a fight** (answered, [Looking behind](#reverse)): R1 turns the view round only while the player
+  runs or sprints (gait 4 or 5, record `+0x08` clear), so never while he blocks or walks locked on. Confirmed (code)
+  at `0x0012b4a0`; a runtime check (R1 held at a standstill, at a walk and at a run) is still to be made.
+- **The size of `Cam_Follow_RightStick`** (answered): 2,160 bytes, `0x00129050`-`0x001298bf`, ending with its only
+  `jr ra`; nothing calls or jumps to `0x00129100` (176 bytes in, the `addiu` that completes the address of switch 0
+  `0x0050b1b8` after a `lui`), so that address is not a function start. Confirmed (code).
 - **R1 at a run: block or look-behind?** (answered, [Looking behind](#reverse)): the block's fight test fails at a
   run or sprint, so R1 keeps gait 4, the 7.80 m/s and the run clip and turns the view; the block starts the update
   the gait drops below 4. Confirmed (code) at `0x00224f28`; confirmed (runtime).

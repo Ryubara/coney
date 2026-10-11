@@ -452,7 +452,9 @@ class Fighter {
     // Lands a hit of attack `animId` and `damage`, and gives the rage it earns.
     void landHit(int animId, int damage, const FighterInput& input, const HumanAnimator& animator);
     // Applies a hit of attack `animId` and `damage` to `victim` from `attacker` (`heldMove`: a move in a hold, which
-    // plays its own victim clips), counts it and gives the rage it earns at `nowMs`; `animator` is the attacker's.
+    // plays its own victim clips), counts it and gives the rage it earns at `nowMs`; `animator` is the attacker's. A
+    // free hit of a killer (human flag 0x20) takes all the victim's health and double damage (0x4000) doubles it.
+    // @orig 0x00264bd8 Human_AddPendingDamage (unknown)
     void applyHit(Combatant& victim, int animId, int damage, bool heldMove, anim::Vec3 attacker, std::uint64_t nowMs,
                   const HumanAnimator& animator);
     // The striking material of attack `animId` (record `range`, may be null) for its hit sound: the limb its clip
@@ -533,8 +535,12 @@ class Fighter {
     void seatMount(const FighterInput& input, const HumanAnimator& animator, float heading);
     // The seat's slide is over: the victim is attached where it lies.
     void attachSeat(const FighterInput& input, float heading);
-    // The grab broke at 0 power with the player hurt, or the victim won its escape roll (applyHeldReport()): the
-    // victim escapes (100 / 112), the player is knocked down and stunned (101 / 113 from the victim's set).
+    // Whether a victim escapes when the grab's power runs out (`Human_UpdateMeters` `0x002562d0`): it has flag 0x4000
+    // or 0x20000, or the grabber is hurt and it lacks 0x2000000000 (docs/research/combat.md#grabbed).
+    [[nodiscard]] bool powerOutEscape(const Combatant& victim) const;
+    // The grab broke at 0 power and the victim escapes (powerOutEscape()), or it won its escape roll
+    // (applyHeldReport()): the victim escapes (100 / 112), the player is knocked down and stunned (101 / 113 from the
+    // victim's set).
     // @orig 0x0026cc18 Grab_Escape (unknown)
     void victimEscapes(const FighterInput& input, HumanAnimator& animator);
     // Lets go of the victim: the let-go clips (95 / 94) with `letGo`, else straight to the idles (a release, the

@@ -80,7 +80,24 @@ camera::FollowTarget followTargetOf(const Human& human, const Pad& pad, std::opt
                                 .longFall = longFall};
 }
 
+// How far trigger `button` is pulled, 0 to 1: its pressure, or a full pull for a held button that reports none (a
+// script's or a digital pad's). A pressure under a few counts is a trigger at rest.
+float triggerPull(const Pad& pad, pad::Pressure which, std::uint16_t button) {
+    constexpr std::uint8_t kRestPressure = 8;
+    const std::uint8_t pressure = pad.pressure().at(static_cast<std::size_t>(which));
+    if (pressure >= kRestPressure) {
+        return static_cast<float>(pressure) / 255.0F;
+    }
+    return pad.held(button) ? 1.0F : 0.0F;
+}
+
 } // namespace
+
+Flight noclipFlight(const Pad& pad) {
+    const float scale = pad.held(pad::kR1) ? kNoclipSpeed * kNoclipFastFactor : kNoclipSpeed;
+    const float rise = triggerPull(pad, pad::Pressure::R2, pad::kR2) - triggerPull(pad, pad::Pressure::L2, pad::kL2);
+    return Flight{.speed = scale, .climb = rise * scale};
+}
 
 std::optional<PlayerStart> researchedPlayerStart(std::string_view level) {
     if (level == "level99") {
@@ -267,9 +284,20 @@ void Player::setPadControlled(bool padControlled) {
     m_humans.setPadControlled(*m_driven, padControlled);
 }
 
+void Player::setNoclip(bool on) {
+    m_noclip = on;
+    // Off, the human stands where he is and the next update's physics drops him; on, he hovers until the pad flies him.
+    m_driven->setFlight(on ? std::optional<Flight>(Flight{}) : std::nullopt);
+}
+
 void Player::drive(Human& human) {
     if (&human == m_driven) {
         return;
+    }
+    // The noclip goes with the pad: the human left behind drops, the new one flies.
+    if (m_noclip) {
+        m_driven->setFlight(std::nullopt);
+        human.setFlight(Flight{});
     }
     // The human left behind keeps only what its brain writes; the new one takes the pad as it stands, with no
     // command history carried over.
@@ -287,10 +315,12 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
     // The buttons are matched even with the pad locked; a locked pad's human does not act on them (HuLockPad), and a
     // command disabled for it is kept pending, not acted on (EnableCommand). Both still reach the pad handler
     // (docs/references/bindings/input.md#padsethandlerex).
+    // In the noclip the buttons fly him and nothing else: the matcher sees none, so no command starts or waits.
     const ScriptState& script = m_driven->script();
-    const std::uint16_t buttons = script.padLocked ? std::uint16_t{0} : pad.buttons();
+    const std::uint16_t padButtons = m_noclip ? std::uint16_t{0} : pad.buttons();
+    const std::uint16_t buttons = script.padLocked ? std::uint16_t{0} : padButtons;
     const combat::CommandId matched =
-        m_matcher.update(pad.buttons(), m_tables, combat::combatTuning().historyHoldSamples, script.disabledCommands);
+        m_matcher.update(padButtons, m_tables, combat::combatTuning().historyHoldSamples, script.disabledCommands);
     const combat::CommandId command = script.padLocked ? combat::command::kNone : matched;
     const combat::CommandId padCommand = matched != combat::command::kNone ? matched : m_matcher.pending();
     // The pad into the human's per-player record, its stick turned by the camera as it stood after the last update;
@@ -298,7 +328,16 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
     // Then the characters' step, and the cameras last.
     // Without the pad the record keeps only the brain's move, which the brains write in the step.
     const anim::Vec3 cameraForward = m_cameras != nullptr ? camera::viewForward(m_cameras->view()) : m_camera.forward();
-    if (m_padControlled) {
+    if (m_noclip) {
+        // The noclip: the stick and the camera fly him (Human::fly()), the triggers and R1 set the flight; no lock,
+        // brain or button holds him.
+        PlayerRecord flying;
+        flying.stickX = pad.leftX();
+        flying.stickY = pad.leftY();
+        flying.cameraForward = cameraForward;
+        m_driven->record() = flying;
+        m_driven->setFlight(noclipFlight(pad));
+    } else if (m_padControlled) {
         // A locked stick reads as centred (HuLockPadMovement); the buttons still act. In a throw's aim the stick turns
         // and pitches the aim instead (combat::ThrowAimState reads the pad itself).
         const bool stickFree = !script.movementLocked && !script.throwAiming;

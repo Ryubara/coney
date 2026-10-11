@@ -46,13 +46,15 @@ struct CombatInput {
     int animSet = 0;                ///< The held object's anim set (SquareInput::heldSet); 0 with nothing in hand.
     bool fightStance = false;       ///< In a fight stance (SquareInput::fightStance).
     bool grabTargetInReach = false; ///< The search found someone to grab for this circle or circle + cross.
-    bool snapTarget = false;        ///< The snap's search found a human that is not the target (SquareInput).
-    ChainTargets chain;             ///< What the chain's next step reads of the targets (AttackChain::update()).
-    bool fromRear = false;          ///< Holding the victim from behind.
-    bool wallInReach = false;       ///< A wall within a throw's reach.
-    bool victimMuggable = false;    ///< The held victim may be mugged.
-    bool victimInPlace = true;      ///< The held victim stands in its place for a move in the hold.
-    bool helpless = false;          ///< Reacting to a hit, stunned, down or held: only the meters run.
+    /// Both grab-block flags on the player (`0x40000000` and `0x80000000`, `HuBlockGrab`): circle starts no grab.
+    bool grabBlocked = false;
+    bool snapTarget = false;     ///< The snap's search found a human that is not the target (SquareInput).
+    ChainTargets chain;          ///< What the chain's next step reads of the targets (AttackChain::update()).
+    bool fromRear = false;       ///< Holding the victim from behind.
+    bool wallInReach = false;    ///< A wall within a throw's reach.
+    bool victimMuggable = false; ///< The held victim may be mugged.
+    bool victimInPlace = true;   ///< The held victim stands in its place for a move in the hold.
+    bool helpless = false;       ///< Reacting to a hit, stunned, down or held: only the meters run.
     /// The record's `+0x08` as the update starts: the bits the clips playing hold (docs/research/tasks.md#held-flags),
     /// an attack's phases among them, which every reader below tests with its own mask.
     std::uint32_t phase = 0;

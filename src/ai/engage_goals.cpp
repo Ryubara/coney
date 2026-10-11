@@ -36,6 +36,8 @@ bool down(const Brain& brain) {
 
 // Below this speed a stopping human stands, m/s.
 constexpr float kStoppedSpeed = 0.05F;
+// The stop's turn to the target, seconds (the 0.3 passed to `0x00221cd8`).
+constexpr float kStopTurnSeconds = 0.3F;
 // A turn of the target beyond this re-plans the run, radians (45 degrees).
 constexpr float kReplanTurn = std::numbers::pi_v<float> / 4.0F;
 // Degrees to radians.
@@ -156,7 +158,10 @@ GoalStatus EngageEnemyGoal::process(Brain& brain) {
         if (human.speed() > kStoppedSpeed) {
             return GoalStatus::Stop;
         }
-        brain.setMoveHeading(human::headingOf(anim::subtract(target->human().position(), human.position())), 0.0F);
+        // A timed body turn over 0.3 s, not the brain's move, which the next update clears
+        // (docs/research/ai.md#fight-facing).
+        // @orig 0x00221cd8 Human_TurnToFaceObject (unknown)
+        brain.human().turnToFace(target->human().position(), kStopTurnSeconds);
         return arrive(brain, *target);
     }
     // 4. Every 2 s, the nearest enemy close by instead of a target beyond the far range.
