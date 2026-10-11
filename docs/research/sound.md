@@ -393,6 +393,19 @@ all while game-state flag 2 is set or the load screen is up (`+0x24270`). For ea
 4. **Kind gates**: a `_DAM_` emitter plays only from 2 s to 15 s after the AI's event stamp
    (`AmbientManager_MarkEvent`, [Animation](animation.md#ambient)) and not while the fight timer is on; a `_FHT_` one
    only while the fight timer is on (mood 1 and 5 s after).
+   **The stamp** (manager `+0x1b78c`): every noise of **10 m or more** (`AI_ReportNoise`, `0x002936a8`,
+   [Stealth](stealth.md)) marks it before the noise goes out, whatever its source or kind; a smaller noise does
+   not. `AI_ReportNoise` is the mark's only caller (one call, at `0x002936f0`, ahead of `AI_AlertNearby`), so
+   nothing else stamps it. The mark writes the game clock (milliseconds, `*(0x0050b734) + 0x38`) when the stamp is
+   0, and the clock **minus 2 s** when any stamp is set,
+   wherever it is in the window, so a second noise opens the window at once and it closes 13 s later. Each audio
+   update (`AmbientManager_UpdateTimers`, `0x0010be78`, before the once-a-second gate) sets the window flag
+   `+0x1b788` when the clock is more than 2 s past the stamp, and clears flag and stamp once it is more than 15 s
+   past. The noises: 30 m from a strike's contact, a car hit or explosion and a thrown or world object's contact;
+   a thrown object hitting a human, a world object's impact and a body landing after a climb use their sound's far
+   distance (15 m or 30 m when there is none), so they mark only when that is 10 m or more. Confirmed (code) at
+   `0x002936a8`, `0x0010be40`, `0x0010be78` and the callers' arguments; the mark's callers from Ghidra's
+   references.
 5. **Play**, by mode, at most **two new sounds per update** over all emitters:
     - **1, 2**: when the delay has passed and nothing is playing, take one play, play the next sound (the table slots
       **in turn**, from the random start) at a random one of the points, positional and duckable, at the emitter's
@@ -1407,7 +1420,6 @@ runs `<name>_preload.lua` when the name changes; `HuSay` speaks a line with no c
   0.5 s). Which callers pass the play call's tenth argument (task `+0xe4`) and what the IOP does with it.
 - Whether a scene soundtrack holds the dialogue alone or a full mix, and what the 20 unused stereo sounds are.
 - The IOP side (`IOP.IRX`): the exact SPU2 voice assignment of streams and its mixing.
-- What the AI's ambient event stamp (`0x002936a8`) marks.
 - Who ends the bank deferral (`+0x3fa58`).
 - The blocked lines of `0x00114c98`: a hand-written list for levels 11, 20, 31, 34, 82, 83, 84, 92 and 95 (some
   by checkpoint, game state `+0x33a`), each naming voice sets, commands and 1-based lines; not yet tabulated.

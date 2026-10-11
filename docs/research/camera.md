@@ -827,11 +827,12 @@ With one target that is a player (with any other target, only a 1.0 m sphere pus
 3. **Push.** Unless the camera aims, `P` is pushed out of the world by a sphere of radius 1.0 (0.95 with two targets ×
    the target's scale; `CollisionMesh_SpherePush`).
 4. **Lag** `+0x418`, worked out afresh each update from 0.06: × (1 + (1 − `c`) × 0.5) where `c` = `|unit(velocity) ·
-   camera forward|` once the target is faster than his walk speed (else `c` = 1); + `s` × it × ((1 − `c`) × 0.5625 +
-   0.1875) with `s` = (horizontal speed − walk speed) ÷ sprint speed (≥ 0; `s` is scaled by (0.75 − `+0x38c`) × 4/3
-   while the timer `+0x38c` runs down, set to 0.375 s after a blocked view clears and 0.75 s after a sphere push ends);
-   × 2.5 when the target is faster than walk + 18% of (run − walk) and either the stick is not his (`+0x1b` of the
-   per-player record 0) or the new aim would overshoot `P`; × 1.25 when slower and the latches `+0x45b`/`+0x45d` are set
+   camera forward|`, both in **3D** (the velocity's z too), once the target is faster than his walk speed (else `c` =
+   1); + `s` × it × ((1 − `c`) × 0.5625 + 0.1875) with `s` = (horizontal speed − walk speed) ÷ sprint speed (≥ 0; `s`
+   is scaled by (0.75 − `+0x38c`) × 4/3 while the timer `+0x38c` runs down, set to 0.375 s after a blocked view clears
+   and 0.75 s after a sphere push ends); × 2.5 when the target's **3D** speed is above walk + 18% of (run − walk) and
+   either the new aim point would end farther from `P` than the look-at point is, or the stick is not his (`+0x1b` of
+   the per-player record 0) ([below](#long-fall)); × 1.25 when slower and the latches `+0x45b`/`+0x45d` are set
    on a slope (`+0x460`). Then `+0x418` = last update's value + 3% of the difference; 0.6 while the human has state flag
    `0x1000000000` (a long fall); at least 0.8 when the main ray is blocked while aiming; at least 0.3 during a takeover;
    halved while the target does not count or the game mode is not 1. Runtime: 0.061 standing, 0.14-0.16 running.
@@ -858,12 +859,16 @@ this update, `P` the pushed lead point):
   last (`+0x45a`, this update's result kept at the end of the step). With any other target the push in question is
   the 1.0 m push of the old aim point. It **counts down by `dt` only while `s` > 0** (the target faster than his
   walk), so it waits while he stands.
-- **The overshoot test** (the ×2.5): with `new` = `old` + (`P` − `old`) × the lag being built, it compares squared
-  **3D** distances: (|`P` − `old`|² > 10⁻⁵ or the slope latch `+0x460`) and |`P` − `old`|² < |`P` − `new`|². That
-  holds only for a lag outside 0-2, which the build never reaches (inferred), so in play the ×2.5 comes from the
-  other case: the target not pad-controlled (per-player record `+0x1b` = 0). The ×1.25 needs the target at or below
-  walk + 18% of (run − walk), the latch bytes `+0x45b` or `+0x45d` set (`+0x458` & `0xff00ff000000`) and the slope
-  latch `+0x460`.
+- **The overshoot test** (the ×2.5), confirmed (code) at `0x00133dcc`-`0x00133ec8` and confirmed (runtime) by the
+  `fall_high` trace ([Long falls](#long-fall)): the speed it compares is the **3D** speed (`sp+0x35c`, `vmul.xyz` at
+  `0x00130f90`; the `s` above uses the horizontal one, `sp+0x358`, `vmul.xy` at `0x00130f68`). With `new` = `old` +
+  (`P` − `old`) × the lag being built, it compares squared 3D distances: (|`P` − look-at|² > 10⁻⁵ or the slope latch
+  `+0x460`) and |`P` − look-at|² < |`P` − `new`|², so the lag is × 2.5 whenever this update's aim point would still be
+  farther from `P` than the look-at point is (about 0.36 m, the lead); only when that fails is the per-player record's
+  `+0x1b` read (0: × 2.5). (This page used to read the first distance as |`P` − `old`|, which made the test never hold;
+  the subtrahend at `0x00133df4` is the pointer at `sp+0x3b4`, the look-at point `+0x180`.) The ×1.25 needs the target
+  at or below walk + 18% of (run − walk), the latch bytes `+0x45b` or `+0x45d` set (`+0x458` & `0xff00ff000000`) and
+  the slope latch `+0x460`.
 - **The blocked-wall share** replaces the lag in step 5 when the main ray's hit holds the camera (`+0x45b`), the
   camera does not aim, and the hit face is steep: |normal `z`| < **0.6** (`0x005d91cc`, steeper than 53.13°). Its
   "feet's distance in front" is the target's transform position (his feet) against the **hit face's plane**:
@@ -891,6 +896,59 @@ the runtime value standing (inferred from that match).
 **When**: in the human's state update, after the state function and the head look and before the root motion and the
 move. The cameras update at the end of the same 30 Hz step ([Coney](#coneys-implementation)), so the camera reads this
 update's value; whether the clip time has already been advanced in this step when the cache is built is not traced.
+
+### Long falls {#long-fall}
+
+Owner checklist item 48 asked what the follow camera does when the player falls from a great height. **There is no
+long-fall camera for a plain fall**: the long-fall state flag `0x1000000000` (aim lag 0.6, update step 19's wider hard
+band) is set only when a fall starts limp or while the drop's held flag `0x400000` is still set, and a 40 m fall
+does not set it. What keeps the view on the player is the [aim point](#aim-point)'s lag, which climbs from 0.06 toward
+about 0.21 because a fall is fast in 3D.
+
+**The trace** (confirmed (runtime), PCSX2 2.9.94, 2026-10-10, scenarios `repo:research/traces/scenarios/fall_high.toml`
+and `fall_high_stick.toml`, field set `fall` of `repo:research/traces/fields.toml`): slot 1, Rembrandt in `level99`'s
+street; at frame 5 his feet are put 40 m up and he falls for 71 updates (2.4 s), to 34 m/s. Every update:
+
+- **State**: the drop starts at once (clip 428, anim state 26 by `Human_BuildFallClip` `0x0025d020`, held flag
+  `0x400000` for 4 updates, state `0x800000000` falling). The state word's `0x1000000000` (`state_hi` `0x10`) is
+  **never** set, with the stick at rest or at 45 %: the fall clip is built once. The landing gives state `0x80001`
+  (knocked down) and clip 294 with the stick at rest, the roll 436 with it held.
+- **Look-at point** `+0x180`: follows the feet + 1.4 m exactly, every update ([step 5](#update)).
+- **Aim lag** `+0x418`: from the update the fall passes about 3 m/s, the value built each update is 0.06 × (1 + (1 −
+  `c`) × 0.5) × **2.5** = 0.211-0.224 (`c` 0.03-0.2: the fall runs across the view; the ratio to 0.06 × (1 + (1 − `c`)
+  × 0.5) is 2.50 ± 0.03 at every sampled update); eased 3% an update, the stored lag reads 0.061 (step 12), 0.077 (18),
+  0.121 (30), 0.161 (48), 0.188 (72). The ×2.5 is the overshoot test's: the per-player record's `+0x1b` is 1
+  throughout.
+- **Aim point** `+0x240`: trails above the look-at point by 0.23 m (step 12), 1.6 (24), 2.7 (36), 3.4 (48), 4.1 (60)
+  and 4.7 m at 34 m/s (72): about v / 30 × (1 − lag) / lag.
+- **Camera, the stick at rest**: 4.4-5.4 m from the look-at point, pitched 13° above it at the start, 25° (step 30),
+  38° (48) and 51° (74), as its 22 % position lag leaves it above the falling look-at point; the view's pitch (camera
+  to aim point) goes from −13° to +10° (+14° on the last update in the air). No reset behind the player (step 7's 30 m
+  limit is not reached once falling), and the hard band only eases in (far edge 5.65 to 5.01 m).
+- **Camera, the stick at 45 %**: the target pitch drops to 7° and the camera keeps 3.5 m from the look-at point, near
+  its height, so the aim point's trail tilts the view up: +16° (step 30), +38° (42), +46° (54), +55° (72). The original
+  looks up a good way too in a long fall with the stick held, but its view stays under about 55°.
+
+#### Coney's difference {#long-fall-coney}
+
+Inferred, from `repo:src/camera/follow_camera.cpp` (`stepAim()`) and `repo:src/human/player.cpp`
+(`followTargetOf()`): Coney builds the lag from the **horizontal** speed only. `c` is 1 while the horizontal speed is
+under the walk speed, and the ×2.5 needs `!stickOwned` and a horizontal speed above walk + 18% of (run − walk), with no
+overshoot test. In a straight fall the horizontal speed is about 0, so the lag stays **0.06**, and at 35 m/s the aim
+point settles about 1.167 × 0.94 / 0.06 ≈ **18 m** above the look-at point (11 m at 20 m/s) instead of under 5 m. With
+the camera 3.5-5 m from the look-at point the view then faces nearly straight up: the owner's "camera flies up".
+Coney's `longFall` (airborne while not counting or grounded) is not the cause: the original does not set it on a plain
+fall either. (Coney's headless `--trace` could not show this: with the release build of 2026-10-10 the trace's camera
+columns stayed constant even in the `walk60` scenario.)
+
+The fix for the implementer: in `stepAim()`, take `c` from the 3D velocity against the camera's 3D forward, with its
+gate on the 3D speed; keep `s` on the horizontal speed; gate the ×2.5 on the 3D speed and apply it when |`P` −
+look-at|² > 10⁻⁵ (or the slope latch) and |`P` − look-at|² < |`P` − `new`|² (`new` = the old aim point + (`P` − the
+old aim point) × the lag being built), else when the stick is not the player's. Test: a synthetic follow-camera test
+with the target falling straight down 1.167 m an update (35 m/s) for 70 updates from rest: the lag passes 0.18 and the
+aim point stays under 5 m above the look-at point (the trace: 0.188 and 4.7 m at step 72), and the view's pitch with
+the camera held 3.5 m away at the look-at height stays under 60°. The overshoot test also applies at a run, so rerun
+the `walk60` and `run_circle` diffs afterwards (the runtime lag there is 0.14-0.16).
 
 ### Climbs {#climbs}
 
@@ -2578,7 +2636,8 @@ by `src/human/player.*` and drawn by `--play-level` ([Building](../guides/buildi
   after the world collision: the lead along the target's facing eased 35% an update (0.365 m ahead standing or walking
   away, as at runtime), the height from the body point (`Human::bodyPoint()`, the hips' bone 2 times the scale) with
   its dead band, the running bob and the sprint sway (Coney's own seeded random numbers), the 1.0 m sphere push, the
-  lag from 0.06 and the pull back in plan. **Coney's reading** of the state flags: grabbing (`0xc0`) is holding a
+  lag from 0.06 (from the horizontal speed only, unlike the original: [Long falls](#long-fall-coney)) and
+  the pull back in plan. **Coney's reading** of the state flags: grabbing (`0xc0`) is holding a
   victim in a grab's pair; down (`0xe2c00`) is holding one with no pair (a tackle), mounted, grounded, arrested or
   knocked out; the target counts for the cameras unless dying, dead, knocked out, mounted or arrested (the upgrade
   and key exception is not built), and a long fall is airborne while not counting or grounded. The long fall's 0.6 and

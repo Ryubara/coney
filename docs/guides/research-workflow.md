@@ -569,7 +569,12 @@ no floating-point arguments (`call-brains` is at `Brains_Update`, before the bra
 runtime-checks pass: `tick-game` and `humans-update` (the play step and the character step), `wheel-update` (each object
 the wheel updates), `state-code` (record `+0x14`'s setter), `set-command` and `get-command` (per-player `+0x20`),
 `brain-think`, `brain-event`, `attack-warning`, `try-block`, `block-start`, `skid-test` (the locomotion's run-stop test)
-and `call-brains`.
+and `call-brains`. The hint-queue pass added `hint-queue`, `hint-clear`, `hint-withdraw` and `hint-flush` (the hint
+box's queue, [HUD](../research/hud.md#hint-queue-runtime)) and `anim-dispatch` and `anim-callback-match` (who starts
+which anim id and which script callback it runs). Two hooks at one address cannot be installed together (`hint-show`
+and `event-hint` are the same place): pick one, and add any extra value it needs to the one you keep. When the update
+of an entry matters, log the tick count and use it: in that pass one Lua call's four `HintBox_Queue` entries, all at
+one tick, were labelled with two consecutive steps.
 
 A logged load can also log the **text** it points to: `text = N` (at most N bytes, up to 1024) reads the string at the
 value plus `text_offset`, and `text_when = "NAME=VALUE"` reads it only when another logged value has that value (a
@@ -746,7 +751,8 @@ A finding is done when someone else can use it without asking you. For each one:
 8. **Ship the docs with the code.** CI refuses a pull request that changes `src/` or `python/src/` without changing
    anything under `docs/` or `research/`. A change that needs no documentation (a refactor, a rename) says so with a
    line `Docs: none` in the pull request description; editing the description re-runs the check. Check it yourself with
-   `git diff --name-only main... | uv run --project python coney-tools repo check-docs`. Counts quoted in a page by
+   `git diff --name-only main... | uv run --project python coney-tools repo check-docs`. (The description itself is
+   checked against the pull request template by `coney-tools repo check-body`.) Counts quoted in a page by
    hand are held to the data by tests and by `{count}` in the reference lists ([above](#reference-lists)).
 
 ## The Understood measure {#understood}
