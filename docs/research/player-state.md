@@ -139,8 +139,7 @@ What each type's data is:
 Which records are **new** (not yet seen in a menu) is a separate bit set at `0x006fe948` (`Unlockables_IsDirty` /
 `Unlockables_ClearDirty`). `UM_GetUnlockablesByType` fills the unused entries of its result with 65535 and does not
 check the 32-entry bound (`0x00423eb0`). Confirmed (code). No engine code reads `extra`; only `UM_GetRecordData`
-returns it. A counter at `0x004245d8` counts the unlocked
-records of types 1-4 and 6 only (a completion count, inferred).
+returns it. What the menus count is under [The counts the menus show](#unlockable-counts).
 
 Type 6, by data id (confirmed (code) at the tests cited; ids 1, 2 and 16-28 are tested only by scripts, 3 and 4 by
 the hub, [World flags](flags.md)):
@@ -155,6 +154,58 @@ the hub, [World flags](flags.md)):
 | 10 | after four $1 payments a bum takes $10 and joins the gang (`0x002ac728`; joining inferred) | | |
 
 The bytes are `CfgWarriorUpgrade`'s four (`0x006b6650`; 10, 20, 10 and 20 in `config_preload2.lua`).
+
+#### The counts the menus show {#unlockable-counts}
+
+Four functions count records for the statistics, mission-select and Rumble screens. Each walks every record in index
+order; "unlocked" is the record's bit clear in `0x006fe8f8` (`Unlockables_IsUnlocked`, `0x00424098`). Confirmed (code)
+at the addresses given.
+
+- **`Unlocks_IsLevelComplete(level)`** (`0x004241d8`): lists the records with that level and group 0
+  (`Unlockables_ListByLevelGroup`, `0x00423de0`, at most 32) and answers with the first one whose item is 0: the level
+  is complete when its `(level, 0, 0)` record is unlocked. The mission-select and statistics screens list only
+  complete levels; `Unlocks_IsAnyUnlocked` (`0x00424540`, the fourth-difficulty test, [Save](save.md#slots)) asks it
+  for every level record whose mission byte is 1-23.
+- **`Unlocks_CountUnlocked(&groupUnlocked, &groupTotal, &unlocked, &total)`** (`0x004245d8`), the statistics screen's
+  summary ([Front end](frontend.md#game-stats)):
+    - `total` / `unlocked`: the records of types 1, 2, 3, 4 and 6 (Rumble modes, arenas, gangs, character types,
+      upgrades) whose **level** byte is neither 1 nor 4; the completion percentage is `unlocked` × 100 / `total`,
+      truncated;
+    - `groupTotal` / `groupUnlocked`: among the records of those five types in **group 1** (any level), the distinct
+      (level, item) pairs; only the first record of each pair is tested for `groupUnlocked`.
+- **`Unlockables_GetLevelTargets(level, &scoreTarget, &charUnlocked, &charTotal, &arenaUnlocked, &arenaTotal,
+  &groupUnlocked, &groupTotal)`** (`0x00424298`), one mission's line on the statistics and mission-select screens.
+  The records it looks at are the level's, where level 60 stands for 60-64 (the Armies of the Night stages) and 101
+  for 101-137; of those only groups 0 and 1 count:
+    - `scoreTarget` = the highest item among the group-0 records × 1000 (the score the screens compare the best score
+      with);
+    - `charTotal` / `charUnlocked`: the type-4 records; `arenaTotal` / `arenaUnlocked`: the type-2 records;
+    - `groupTotal` / `groupUnlocked`: the distinct items of the group-1 records of types 1, 2, 3, 4 and 6.
+- **`Unlockables_CountCharacters(&unlocked, &total)`** (`0x004247d0`): every type-4 record; the Rumble soldier
+  screen's `n/total` ([Front end](frontend.md#rm-swap-soldier)).
+
+**On the NTSC-U disc** (corroboration, counted from the 610 records of the [Unlockables](../references/unlockables.md)
+list, inferred until checked at runtime): the completion count covers 469 records (365 type 4, 46 type 3, 29 type 2,
+20 type 6, 9 type 1; it leaves out the eight type-6 records of levels 1 and 4), and there are 40 distinct group-1
+(level, item) pairs. Per level, `Unlockables_GetLevelTargets` gives:
+
+| Level | Score target | Type 4 | Type 2 | Group-1 items | Level | Score target | Type 4 | Type 2 | Group-1 items |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2 | 7,000 | 12 | 2 | 2 | 52 | 8,000 | 7 | 0 | 1 |
+| 3 | 8,000 | 18 | 1 | 0 | 54 | 2,000 | 1 | 1 | 0 |
+| 5 | 7,000 | 15 | 4 | 2 | 55 | 2,000 | 13 | 1 | 0 |
+| 9 | 15,000 | 18 | 1 | 1 | 60 (60-64) | 0 | 12 | 3 | 0 |
+| 11 | 11,000 | 28 | 1 | 1 | 80 | 2,000 | 10 | 0 | 0 |
+| 14 | 15,000 | 29 | 1 | 3 | 81 | 2,000 | 2 | 1 | 0 |
+| 20 | 9,000 | 29 | 2 | 1 | 82 | 9,000 | 18 | 1 | 0 |
+| 31 | 9,000 | 10 | 3 | 1 | 83 | 7,000 | 13 | 1 | 2 |
+| 34 | 12,000 | 24 | 1 | 2 | 84 | 2,000 | 20 | 0 | 0 |
+| 51 | 7,000 | 18 | 1 | 2 | 86 | 1,000 | 14 | 1 | 0 |
+| 87 | 17,000 | 22 | 0 | 3 | 92 | 6,000 | 2 | 1 | 1 |
+| 93 | 8,000 | 4 | 1 | 1 | 95 | 0 | 2 | 0 | 17 |
+| 99 | 5,000 | 1 | 0 | 0 | | | | | |
+
+That a group-0 record with item n > 0 is the reward for a best score of n × 1000 is inferred from the target alone.
 
 ### Statistics {#statistics}
 

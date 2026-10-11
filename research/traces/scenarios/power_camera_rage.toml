@@ -1,0 +1,350 @@
+# The power-move camera (Cam_Power, type 6) through a grab power strike: grab PoizoCiv 1.0 m ahead (circle), then cross
+# held and square (the power strike, anim id 57); power_camera_ext adds cross taps in its window (the extension, 59) and
+# power_camera_rage starts rage first (63, then 65). Read every update: the current camera (0x005d9150), its view, the
+# power camera's state (0x005d9188: shot count, current and alternate shot, valid mask, mode, the human's transform at the
+# begin and the eight stored shots). Research: docs/research/camera.md#power-camera.
+description = "slot 6: rage (L1 + R1, meter full), grab PoizoCiv, cross held + square (63), then cross taps (65): a second cut"
+research = "docs/research/camera.md#power-camera"
+input = "power_camera_rage.txt"
+updates = 300
+fields = ["player"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "puppet"]
+let = { enemy = 'human("PoizoCiv")' }
+setup = [
+  { address = "rec(player) + 0x148", type = "s16", value = "400", frame = 0, until = 0 },
+  { address = "player + 0x650", type = "s32", value = "78", frame = 0, until = 0 },
+  { address = "rec(enemy) + 0x144", type = "s16", value = "900", frame = 0, until = 0 },
+  { address = "prec(enemy) + 0x1e", type = "u8", value = "0", frame = 0, until = 0 },
+  { address = "tf(enemy) + 0x0", type = "f32", value = "f32(tf(player)) - 1.0 * sin(heading(player))", until = 79 },
+  { address = "tf(enemy) + 0x4", type = "f32", value = "f32(tf(player) + 4) + 1.0 * cos(heading(player))", until = 79 },
+  { address = "tf(enemy) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 79 },
+  { address = "tf(enemy) + 0x18", type = "f32", value = "sin((heading(player) + pi) / 2)", until = 79 },
+  { address = "tf(enemy) + 0x1c", type = "f32", value = "cos((heading(player) + pi) / 2)", until = 79 },
+]
+
+[coney]
+level = "sandbox:combat"
+args = ["--spawn", "start"]
+
+[[field]]
+name = "cur_vtable"                       # the current camera's class: 0x535d50 follow, 0x536b10 power
+address = "u32(0x005d9150) + 0x0"
+type = "u32"
+follow = true
+
+[[field]]
+name = "cur_x"
+address = "u32(0x005d9150) + 0x10"
+type = "f32"
+follow = true
+
+[[field]]
+name = "cur_y"
+address = "u32(0x005d9150) + 0x14"
+type = "f32"
+follow = true
+
+[[field]]
+name = "cur_z"
+address = "u32(0x005d9150) + 0x18"
+type = "f32"
+follow = true
+
+[[field]]
+name = "cur_qx"
+address = "u32(0x005d9150) + 0x20"
+type = "f32"
+follow = true
+
+[[field]]
+name = "cur_qy"
+address = "u32(0x005d9150) + 0x24"
+type = "f32"
+follow = true
+
+[[field]]
+name = "cur_qz"
+address = "u32(0x005d9150) + 0x28"
+type = "f32"
+follow = true
+
+[[field]]
+name = "cur_qw"
+address = "u32(0x005d9150) + 0x2c"
+type = "f32"
+follow = true
+
+[[field]]
+name = "cur_fov"
+address = "u32(0x005d9150) + 0x44"
+type = "f32"
+follow = true
+
+[[field]]
+name = "cur_near"
+address = "u32(0x005d9150) + 0x50"
+type = "f32"
+follow = true
+
+[[field]]
+name = "cur_far"
+address = "u32(0x005d9150) + 0x54"
+type = "f32"
+follow = true
+
+[[field]]
+name = "cur_look_x"
+address = "u32(0x005d9150) + 0x180"
+type = "f32"
+follow = true
+
+[[field]]
+name = "cur_look_y"
+address = "u32(0x005d9150) + 0x184"
+type = "f32"
+follow = true
+
+[[field]]
+name = "cur_look_z"
+address = "u32(0x005d9150) + 0x188"
+type = "f32"
+follow = true
+
+[[field]]
+name = "pc_mode"
+address = "u32(0x005d9188) + 0x330"
+type = "s8"
+follow = true
+
+[[field]]
+name = "pc_count"
+address = "u32(0x005d9188) + 0x331"
+type = "s8"
+follow = true
+
+[[field]]
+name = "pc_cur"
+address = "u32(0x005d9188) + 0x332"
+type = "s8"
+follow = true
+
+[[field]]
+name = "pc_alt"
+address = "u32(0x005d9188) + 0x333"
+type = "s8"
+follow = true
+
+[[field]]
+name = "pc_mask"
+address = "u32(0x005d9188) + 0x32c"
+type = "u16"
+follow = true
+
+[[field]]
+name = "pc_unplaced"
+address = "u32(0x005d9188) + 0x32e"
+type = "u8"
+follow = true
+
+[[field]]
+name = "pc_inmove"
+address = "u32(0x005d9188) + 0x32f"
+type = "u8"
+follow = true
+
+[[field]]
+name = "pc_hx"
+address = "u32(0x005d9188) + 0x260"
+type = "f32"
+follow = true
+
+[[field]]
+name = "pc_hy"
+address = "u32(0x005d9188) + 0x264"
+type = "f32"
+follow = true
+
+[[field]]
+name = "pc_hz"
+address = "u32(0x005d9188) + 0x268"
+type = "f32"
+follow = true
+
+[[field]]
+name = "pc_hqz"
+address = "u32(0x005d9188) + 0x308"
+type = "f32"
+follow = true
+
+[[field]]
+name = "pc_hqw"
+address = "u32(0x005d9188) + 0x30c"
+type = "f32"
+follow = true
+
+[[field]]
+name = "shot0_x"
+address = "u32(0x005d9188) + 0x1e0"
+type = "f32"
+follow = true
+
+[[field]]
+name = "shot0_y"
+address = "u32(0x005d9188) + 0x1e4"
+type = "f32"
+follow = true
+
+[[field]]
+name = "shot0_z"
+address = "u32(0x005d9188) + 0x1e8"
+type = "f32"
+follow = true
+
+[[field]]
+name = "shot1_x"
+address = "u32(0x005d9188) + 0x1f0"
+type = "f32"
+follow = true
+
+[[field]]
+name = "shot1_y"
+address = "u32(0x005d9188) + 0x1f4"
+type = "f32"
+follow = true
+
+[[field]]
+name = "shot1_z"
+address = "u32(0x005d9188) + 0x1f8"
+type = "f32"
+follow = true
+
+[[field]]
+name = "shot2_x"
+address = "u32(0x005d9188) + 0x200"
+type = "f32"
+follow = true
+
+[[field]]
+name = "shot2_y"
+address = "u32(0x005d9188) + 0x204"
+type = "f32"
+follow = true
+
+[[field]]
+name = "shot2_z"
+address = "u32(0x005d9188) + 0x208"
+type = "f32"
+follow = true
+
+[[field]]
+name = "shot3_x"
+address = "u32(0x005d9188) + 0x210"
+type = "f32"
+follow = true
+
+[[field]]
+name = "shot3_y"
+address = "u32(0x005d9188) + 0x214"
+type = "f32"
+follow = true
+
+[[field]]
+name = "shot3_z"
+address = "u32(0x005d9188) + 0x218"
+type = "f32"
+follow = true
+
+[[field]]
+name = "shot4_x"
+address = "u32(0x005d9188) + 0x220"
+type = "f32"
+follow = true
+
+[[field]]
+name = "shot4_y"
+address = "u32(0x005d9188) + 0x224"
+type = "f32"
+follow = true
+
+[[field]]
+name = "shot4_z"
+address = "u32(0x005d9188) + 0x228"
+type = "f32"
+follow = true
+
+[[field]]
+name = "shot5_x"
+address = "u32(0x005d9188) + 0x230"
+type = "f32"
+follow = true
+
+[[field]]
+name = "shot5_y"
+address = "u32(0x005d9188) + 0x234"
+type = "f32"
+follow = true
+
+[[field]]
+name = "shot5_z"
+address = "u32(0x005d9188) + 0x238"
+type = "f32"
+follow = true
+
+[[field]]
+name = "shot6_x"
+address = "u32(0x005d9188) + 0x240"
+type = "f32"
+follow = true
+
+[[field]]
+name = "shot6_y"
+address = "u32(0x005d9188) + 0x244"
+type = "f32"
+follow = true
+
+[[field]]
+name = "shot6_z"
+address = "u32(0x005d9188) + 0x248"
+type = "f32"
+follow = true
+
+[[field]]
+name = "shot7_x"
+address = "u32(0x005d9188) + 0x250"
+type = "f32"
+follow = true
+
+[[field]]
+name = "shot7_y"
+address = "u32(0x005d9188) + 0x254"
+type = "f32"
+follow = true
+
+[[field]]
+name = "shot7_z"
+address = "u32(0x005d9188) + 0x258"
+type = "f32"
+follow = true
+
+[[field]]
+name = "shot_counter"                     # 0x0050b2a0, the rotating start index of the shot choice
+address = "0x0050b2a0"
+type = "s32"
+
+[[field]]
+name = "slowmo_step"                      # 0x005102cc, the characters' step
+address = "0x005102cc"
+type = "f32"
+
+[[field]]
+name = "target_clip"
+address = "rec(enemy) + 0x20"
+type = "s32"
+
+[[field]]
+name = "pc_ptr"                           # 0x005d9188, player 0's power camera; 0 while none exists
+address = "0x005d9188"
+type = "u32"

@@ -3,14 +3,17 @@
 
 // The game session as `coney` runs it, for the disc tests that play a level: the session (platform/game_session.h)
 // the story, `--play-level` and the debug menus' jumps all run in, headless (the null renderer), in test mode (fixed
-// step, the offline sound output with the disc's sound data), its movies skipped. A level started directly plays its
+// step, the offline sound output with the disc's sound data), its movies skipped; the pad script's `steer` lines
+// steer player 1 as `coney --input-script` steers him. A level started directly plays its
 // pad script from its first frame of play, as `coney --play-level --input-script` plays it; a story plays it from the
 // first frame too, the pad idle until then. Disc playthrough tests start here by default
 // (docs/guides/testing.md#test-through-the-players-path). They print counts only (LEGAL.md).
 
+#include <cmath>
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <numbers>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -31,6 +34,7 @@
 #include "gui/global_strings.h"
 #include "platform/audio_output.h"
 #include "platform/game_session.h"
+#include "platform/play_level_mode.h"
 #include "platform/render_engine.h"
 #include "platform/sprite_sheets.h"
 #include "platform/texture_dictionary.h"
@@ -138,6 +142,22 @@ class DiscSession {
         REQUIRE(audio.has_value());
         m_audio = std::move(*audio);
         REQUIRE(m_audio->startEngine(wad).has_value());
+        // `steer` lines read player 1 and his camera from the level in play, as `coney --input-script` does.
+        if (m_script != nullptr) {
+            m_script->setSteerSource([this](std::size_t port) -> std::optional<SteerView> {
+                const platform::PlayLevelMode* mode = m_session != nullptr ? m_session->play() : nullptr;
+                if (port != 0 || mode == nullptr) {
+                    return std::nullopt;
+                }
+                const anim::Vec3 feet = mode->playerFeet();
+                const anim::Vec3 eye = mode->cameraEye();
+                const anim::Vec3 target = mode->cameraTarget();
+                constexpr float kDegrees = 180.0F / std::numbers::pi_v<float>;
+                return SteerView{.x = feet.x,
+                                 .y = feet.y,
+                                 .cameraHeading = std::atan2(-(target.x - eye.x), target.y - eye.y) * kDegrees};
+            });
+        }
         // Exactly one of the two constructors gives a pad; the assertion tells the analyzer the pointer is set.
         InputSource* pad = m_script != nullptr ? m_script.get() : driver;
         CONEY_ASSERT(pad != nullptr);

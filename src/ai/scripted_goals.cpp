@@ -34,7 +34,10 @@ GoalStatus BackoffGoal::process(Brain& brain) {
     }
     // Too near: walk straight away from the other human; far enough: stand.
     if (brain.distanceTo(*from) < m_distance) {
-        const anim::Vec3 away = anim::subtract(brain.human().position(), from->human().position());
+        const anim::Vec3 position = brain.human().position();
+        const anim::Vec3 away = anim::subtract(position, from->human().position());
+        // Its aim along the way too, so that in a fight stance the feet go where it faces.
+        brain.setMoveAim(anim::add(position, away), 0.0F);
         brain.setMove(away, gaitSpeed(brain.human().speeds(), kWalkGait));
     } else {
         brain.stopMove();

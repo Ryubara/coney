@@ -16,6 +16,10 @@ namespace coney::debug {
 /// keyboard, F4 holds both (src/platform/sdl_input.cpp), and so do F and H together.
 inline constexpr std::uint16_t kMenuChord = pad::kL3 | pad::kR3;
 
+/// Port 1's noclip hotkey, held together: R3 and d-pad left (docs/guides/debug-menu.md#noclip). On a keyboard, H and
+/// the left arrow.
+inline constexpr std::uint16_t kNoclipChord = pad::kR3 | pad::kLeft;
+
 /// Sits between the input source and the game: each frame it takes port 1's sample, lets the pad menu read it, and
 /// hands the game what the game may see.
 ///
@@ -26,6 +30,9 @@ inline constexpr std::uint16_t kMenuChord = pad::kL3 | pad::kR3;
 ///   never reaches gameplay. Port 2 always passes through.
 /// - **After the menu closes**, the buttons still held (the circle that closed it) stay hidden from the game until
 ///   they are let go, so closing never presses anything in play.
+/// - **Hotkeys** (addHotkey()): with the menu closed, a hotkey's chord fires on the frame its buttons are first all
+///   held together, whichever was pressed first, once per press, while it is armed; its buttons are then hidden from
+///   the game until each is let go. Unarmed, the chord is plain gameplay input.
 /// - **Between steps**: after the menu's input, the gate runs the between-steps callbacks (the tunables' queued
 ///   changes, the channels' samples), so the game's next step sees one consistent set of values.
 ///
@@ -38,6 +45,11 @@ class InputGate final : public InputSource {
 
     /// Adds a callback run once per frame after the menu's input, before the game's step.
     void addBetweenSteps(std::function<void()> callback) { m_betweenSteps.push_back(std::move(callback)); }
+    /// Adds a hotkey: `fire` runs when port 1's `chord` buttons are first all held together while `armed` says yes and
+    /// the menu is closed, before the game's step; see the class comment.
+    void addHotkey(std::uint16_t chord, std::function<bool()> armed, std::function<void()> fire) {
+        m_hotkeys.push_back(Hotkey{.chord = chord, .armed = std::move(armed), .fire = std::move(fire)});
+    }
 
     /// The sample of frame `frame` with the menu's share taken out, as described above.
     [[nodiscard]] PortSamples sample(std::uint64_t frame) override;
@@ -50,6 +62,14 @@ class InputGate final : public InputSource {
     [[nodiscard]] std::uint16_t hiddenButtons() const { return m_hidden; }
 
   private:
+    // One addHotkey(): its buttons, when it may fire and what it does, and whether its chord was held last frame.
+    struct Hotkey {
+        std::uint16_t chord = 0;
+        std::function<bool()> armed;
+        std::function<void()> fire;
+        bool held = false;
+    };
+
     InputSource* m_inner;
     MenuNavigator& m_navigator;
     PadMenuInput m_menuInput;
@@ -58,6 +78,7 @@ class InputGate final : public InputSource {
     bool m_chordHeld = false;   // both chord buttons were held last frame
     std::uint16_t m_hidden = 0; // buttons hidden from the game until released
     std::vector<std::function<void()>> m_betweenSteps;
+    std::vector<Hotkey> m_hotkeys;
 };
 
 } // namespace coney::debug

@@ -245,8 +245,8 @@ TEST_CASE("an AI turns a constant 12, 6, 4 or 2.5 degrees an update by gait, tim
 }
 
 TEST_CASE("in the fight stance an AI word of 24 degrees an update applies, 0.375 wounded", "[locomotion][ai]") {
-    CHECK(coney::human::aiFightStanceTurn(false) == Approx(24.0F * kDegree));
-    CHECK(coney::human::aiFightStanceTurn(true) == Approx(0.375F * kDegree));
+    CHECK(coney::human::aiStanceTurn(false) == Approx(24.0F * kDegree));
+    CHECK(coney::human::aiStanceTurn(true) == Approx(0.375F * kDegree));
 }
 
 TEST_CASE("an AI starts at 2 m/s, gains 1.067 an update until 2 m/s short, then 0.267, and slows 1.067 an update",

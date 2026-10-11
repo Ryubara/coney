@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The `coney-tools progress ...` commands: show, update, sizes, ghidra and backlog."""
+"""The `coney-tools progress ...` commands: show, check, render, sizes, ghidra and backlog."""
 
 from __future__ import annotations
 
@@ -47,42 +47,68 @@ def run_show(as_json: bool) -> int:
 
 
 def _normalise(text: str) -> str:
-    """`text` with LF line endings, so a CRLF checkout compares equal to the generated block."""
+    """`text` with LF line endings, so a CRLF checkout compares equal to the generated text."""
     return text.replace("\r\n", "\n")
 
 
-def run_update(check_only: bool) -> int:
-    """Regenerate the README's and the docs page's progress blocks; with `check_only`, 1 when either is stale."""
-    root = find_repo_root(Path.cwd())
+def _load_checked(root: Path) -> progress.Progress | None:
+    """The tracker's state for `root`, or None (after printing the problems) when the inputs disagree."""
     state = progress.load(root)
     if state.problems:
         _report_problems(state.problems)
+        return None
+    return state
+
+
+def _page_template(root: Path) -> str:
+    """The committed docs/progress/index.md, which holds the marker the build fills in."""
+    path = root / progress.PAGE_FILE
+    try:
+        return _normalise(path.read_bytes().decode("utf-8"))
+    except (OSError, UnicodeDecodeError) as error:
+        raise ConfigError(f"{path}: cannot be read ({error})") from error
+
+
+def run_check() -> int:
+    """Validate the inputs and that the docs build can render them; 1 when they disagree.
+
+    Nothing generated is committed (the docs build writes the tables and the badge data), so this is what CI runs:
+    functions.toml against the @orig tags in src/ and the source map's ranges, the roadmap's status table, and the
+    page's marker.
+    """
+    root = find_repo_root(Path.cwd())
+    state = _load_checked(root)
+    if state is None:
+        print("progress: fix the problems above")
+        return 1
+    progress_render.fill_page(_page_template(root), progress_render.render_page(state), progress.PAGE_FILE.as_posix())
+    progress_render.badge_files(state)
+    print(f"progress: inputs are consistent ({len(state.functions)} functions, {len(state.milestones)} milestones)")
+    return 0
+
+
+def run_render(out_dir: Path) -> int:
+    """Write what the docs build publishes to `out_dir`: the filled page and the badge JSON files.
+
+    For looking at the numbers without a docs build; nothing under the checkout changes.
+    """
+    root = find_repo_root(Path.cwd())
+    state = _load_checked(root)
+    if state is None:
         print("progress: fix the problems above first")
         return 1
-    targets = {
-        progress.README_FILE: progress_render.render_readme(state),
-        progress.PAGE_FILE: progress_render.render_page(state),
-    }
-    stale = []
-    for relative, block in targets.items():
-        path = root / relative
-        try:
-            raw = path.read_bytes().decode("utf-8")
-        except (OSError, UnicodeDecodeError) as error:
-            raise ConfigError(f"{path}: cannot be read ({error})") from error
-        current = _normalise(raw)
-        wanted = progress_render.replace_block(current, block, relative)
-        if wanted == current:
-            continue
-        stale.append(relative.as_posix())
-        if not check_only:
-            # Keep the file's own line endings, so a Windows checkout with CRLF does not see every line change.
-            out = wanted.replace("\n", "\r\n") if "\r\n" in raw else wanted
-            path.write_bytes(out.encode("utf-8"))
-    if check_only and stale:
-        print(f"progress: stale: {', '.join(stale)}; run `uv run --project python coney-tools progress update`")
-        return 1
-    print(f"progress: {'updated ' + ', '.join(stale) if stale else 'up to date'}")
+    page = progress_render.fill_page(
+        _page_template(root), progress_render.render_page(state), progress.PAGE_FILE.as_posix()
+    )
+    badges = progress_render.badge_files(state)
+    try:
+        (out_dir / progress_render.BADGES_DIR).mkdir(parents=True, exist_ok=True)
+        (out_dir / "progress" / "index.md").write_text(page, encoding="utf-8")
+        for name, text in badges.items():
+            (out_dir / progress_render.BADGES_DIR / name).write_text(text, encoding="utf-8")
+    except OSError as error:
+        raise ConfigError(f"{out_dir}: cannot be written ({error})") from error
+    print(f"progress: wrote progress/index.md and {len(badges)} badge files to {out_dir}")
     return 0
 
 
@@ -123,7 +149,7 @@ def run_sizes(disc_arg: str | None, fill: bool) -> int:
     with disc.open(wad.ELF_FILE) as handle:
         executable = elf.read_elf(handle.read())
     starts = elf.function_starts(executable)
-    # Edit with LF and write back with the file's own line endings, as run_update does.
+    # Edit with LF and write back with the file's own line endings, so a CRLF checkout does not change every line.
     text = path.read_bytes().decode("utf-8")
     newline = "\r\n" if "\r\n" in text else "\n"
     text = text.replace("\r\n", "\n")
@@ -171,7 +197,7 @@ def run_ghidra(url: str | None, check_only: bool) -> int:
         print(f"ghidra: {progress_research.LISTING_FILE.as_posix()} is stale; run `coney-tools progress ghidra`")
         return 1
     path.write_bytes(text.encode("utf-8"))
-    print(f"ghidra: wrote {progress_research.LISTING_FILE.as_posix()}; now run `coney-tools progress update`")
+    print(f"ghidra: wrote {progress_research.LISTING_FILE.as_posix()}; the docs build now uses it")
     return 0
 
 

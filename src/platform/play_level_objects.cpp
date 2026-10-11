@@ -171,7 +171,8 @@ void PlayLevelMode::bindObjects(world_objects::LevelObjects* objects, const scri
     if (m_objects == nullptr) {
         return;
     }
-    m_objects->world.collision = m_scenery->objectCollision();
+    // The doors and panes the level script spawned before the mesh was loaded write their triangle flags now.
+    m_objects->world.bindCollision(m_scenery->objectCollision());
     m_objects->world.paths = m_scenery->objectPaths();
     // An object knocked loose (a broken trash can's bottle) flies from its record's pose as a loose object.
     m_objects->world.knock = [this](double object, anim::Vec3 velocity, anim::Vec3 spin) {

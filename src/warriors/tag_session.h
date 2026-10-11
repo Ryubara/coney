@@ -40,8 +40,9 @@ class TagSession {
     [[nodiscard]] static bool hasPaint(const Inventory& inventory, int player);
 
     /// One update of the stick game with the left stick at (`stickX`, `stickY`) and `elapsedMs` gone: the spot's
-    /// fraction follows the game (message `0x41`). Returns the game's state; when it leaves Playing the session has
-    /// ended (end()).
+    /// fraction follows the game (message `0x41`), and with the last can taken the game ends unfinished. Returns the
+    /// game's state; when it leaves Playing the session has ended (end()).
+    /// @orig 0x00273c60 Tag_UpdatePlayer (unknown)
     TagGame::Result update(float stickX, float stickY, std::uint32_t elapsedMs);
     /// The session ends unfinished at once (the player did something else, or the level ended).
     void abandon();

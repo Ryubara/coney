@@ -45,14 +45,16 @@ TagPanelState game() {
 
 } // namespace
 
-TEST_CASE("the tag panel's cursor fades white to black and back over 500 ms", "[hud][tag]") {
+TEST_CASE("the tag panel's cursor is white on track and fades white to black and back over 500 ms off it",
+          "[hud][tag]") {
     CHECK(TagHud::cursorColour(0, false) == Rgba{255, 255, 255, 255});
     CHECK(TagHud::cursorColour(250, false) == Rgba{0, 0, 0, 255});
     CHECK(TagHud::cursorColour(125, false).r == 128);
     CHECK(TagHud::cursorColour(375, false).r == 128);
     CHECK(TagHud::cursorColour(500, false) == Rgba{255, 255, 255, 255});
-    // White while paused.
+    // Plain white on track, whatever the time.
     CHECK(TagHud::cursorColour(250, true) == Rgba{255, 255, 255, 255});
+    CHECK(TagHud::cursorColour(125, true) == Rgba{255, 255, 255, 255});
 }
 
 TEST_CASE("the tag panel's origin is the GUI point in overlay space", "[hud][tag]") {

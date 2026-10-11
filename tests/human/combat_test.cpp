@@ -687,3 +687,50 @@ TEST_CASE("the grab's mount leaves the victim where its clip put it and slides t
     CHECK(std::fabs(std::remainder(fight.target().heading() - fight.human().heading() - std::numbers::pi_v<float>,
                                    2.0F * std::numbers::pi_v<float>)) < 0.02F);
 }
+
+TEST_CASE("the spray's intro turns the tagger to the tag over its first half, then loops; a pause restarts it",
+          "[human][combat]") {
+    const FightCharacter character;
+    Fight fight(character, 6.0F);
+    // The tag to his right: a quarter turn clockwise, over the first half of 334's playing time.
+    REQUIRE(fight.human().startTagSpray(Vec3{42.0F, 40.0F, 1.0F}));
+    std::vector<float> headings;
+    std::vector<std::uint32_t> played;
+    std::size_t introUpdates = 0;
+    fight.run("", 90, [&](std::uint64_t) {
+        headings.push_back(fight.human().heading());
+        const std::uint32_t now = fight.human().animator().animId();
+        if (now == 334) {
+            ++introUpdates;
+        }
+        if (played.empty() || played.back() != now) {
+            played.push_back(now);
+        }
+    });
+    const float quarter = -std::numbers::pi_v<float> / 2.0F;
+    REQUIRE(introUpdates >= 10);
+    // Turning a step each update until half the intro has played, then held.
+    const std::size_t half = (introUpdates + 1) / 2;
+    CHECK(headings[(half / 2) - 1] < -0.3F);
+    CHECK(headings[(half / 2) - 1] > quarter + 0.3F);
+    CHECK(headings[half - 2] > quarter + 1e-3F);
+    CHECK(headings[half] == Approx(quarter).margin(1e-4));
+    CHECK(headings.back() == Approx(quarter).margin(1e-4));
+    REQUIRE(played.size() >= 2);
+    CHECK(played[0] == 334);
+    CHECK(played[1] == 335);
+    CHECK(fight.human().tagSprayLooping());
+    // A slip's or a new charge's pause: 337, then the loop again.
+    fight.human().restartTagSpray();
+    played.clear();
+    fight.run("", 30, [&](std::uint64_t) {
+        const std::uint32_t now = fight.human().animator().animId();
+        if (played.empty() || played.back() != now) {
+            played.push_back(now);
+        }
+    });
+    REQUIRE(played.size() >= 2);
+    CHECK(played[0] == 337);
+    CHECK(played[1] == 335);
+    CHECK(fight.human().tagSprayPlaying());
+}

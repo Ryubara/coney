@@ -118,12 +118,18 @@ instead of repeating it:
 
 - the role (analyst, implementer or support), the model, the worktree and the scratch folder;
 - the task and the scope it owns, the files it must not touch, and what "done" means for it
-  ([Testing](testing.md#done));
+  ([Testing](testing.md#done)), and that it reports it in the pull request's Testing and Screenshots sections, with
+  its captures saved in `scratch/<branch>/shots/` and referenced in `PR.md` as `![alt](./shots/file.png)`
+  ([Capturing and attaching](testing.md#pr-media));
 - "Read `AGENTS.md`, [How we work](how-we-work.md), [Testing](testing.md) and this page first; they override the
   brief";
 - how it runs ([Running without losing the cache](#cache)): it works local-first, never pushes or waits on CI, and
   hands each finished unit to the [release queue](how-we-work.md#release-queue);
 - only the facts the agent cannot find in the repository (a log path, a question to answer, the state file).
+
+A brief may be just "issue #N": the issue holds the steps, the screenshots and the acceptance test, and the agent
+reads it as [Issues](issues.md#agents) describes. Naming the number is cheaper than pasting the issue, and the
+issue stays the one place to read it.
 
 ## Running without losing the cache {#cache}
 

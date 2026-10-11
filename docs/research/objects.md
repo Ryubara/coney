@@ -1754,7 +1754,11 @@ brain that is not in state 1 and not cuffed, and within the radius of a segment,
 (`+0x2e0`); if its brain has no goal of type 7 it drops a type-`0xf` goal on top and pushes the dodge goal
 (`0x002f9358`, given the record and the nearest point). The dodge goal uses `0x004138f0` (still within the radius of
 a segment, and whether it is more than 0.5 m inside and within 10 m of the front point) and `0x00413a90` (the
-point's projection on the first segment long enough to hold it, and that segment's two indices). `Trains_IsPathClear`
+point's projection on the first segment long enough to hold it, and that segment's two indices: it walks the
+segments from point 0, measures the point along each one's direction, gives up (0) as soon as the point lies before
+a segment's start, and takes the first segment whose length is greater; it ignores the gap flags and never tries the
+last segment, so with fewer than three points it finds nothing; the dodge goal's use:
+[RunFromTrain](ai-goals.md#goal-run-from-train)). `Trains_IsPathClear`
 (`0x00414188`) asks each running train (`TrainRecord_IsPathClear`, `0x00413c48`) whether a move from one point to
 another passes within its radius of a segment; [AI](ai.md) movement checks it. The record's constructor is
 `0x00413848`. Confirmed (code).
@@ -1928,24 +1932,27 @@ Coney's stand-ins for the world objects, where this page is silent:
   --play-level level2` hands all of them to the play mode; three plain punches (4 damage each) break a 10-hitpoint
   `dyn_door_fence` barrier.
 
-**Where Coney differs: the spawn's triangle flags are lost** (found 2026-10-10, checklist item 30). `Doors::spawn`
-and the pane spawn mark their triangles through `ObjectWorld::collision` (`markTriangles`,
-`repo:src/world_objects/object_services.cpp`), which does nothing while that pointer is null. `GameplayMode` runs the
-level script, and so every `SpawnDoor` and `SpawnBreakableGlass`, **before** the level's scenery is loaded;
-`PlayLevelMode::bindObjects` (`repo:src/platform/play_level_objects.cpp`) sets `world.collision` only afterwards
-(`coney --play-level level95` prints the script's player start, then `level95.lev: 5943 collision triangles`, then
-`objects: 79 glass panes, 22 doors and barriers`). So every door and barrier keeps the disc's one-sided triangles
-(and no `0x400` / `0x40` bits or material), and every pane keeps its own (no `GLASS`, one-sided). What the player
-meets ([How a closed door stops a human](#door-blocking)): he walks out through a door whose face looks away from
-him and is stopped by it on the way back. Seen in a headless run of Coney (`level95` checkpoint 1, the stick at 60 %
-to −x from (−184.92, 95.45) after the entrance walk): the feet crossed door 10's plane (x −187.63) at about 3.3 m/s
-without a contact. A replay of Coney's own wall test (`nearestWallPush`) on the disc's triangles reproduces it both
-ways: outward it passes; inward it stops at x −188.107, a radius and the 0.01 m back-off from the plane; with flag
-`0x2` set on 729 and 730 it stops at x −187.146 going out. **The fix:** apply each door's and pane's triangle flags
-once the mesh is bound (replay the marks in `bindObjects`, or keep them with the door and pane and apply them when
-`world.collision` is set), and the same for any other spawn-time write to the mesh (`CamGhostDoor`'s `0x200`, a
-door's enabled bit). A disc test that spawns `level95` and checks triangles 729 and 730 for `0x2 | 0x400` would hold
-it.
+**The spawn's triangle writes reach the mesh bound later** (fixed for checklist item 30; found 2026-10-10).
+`GameplayMode` runs the level script, and so every `SpawnDoor` and `SpawnBreakableGlass`, **before** the play mode has
+loaded the level's mesh (`coney --play-level level95` prints the script's player start, then `level95.lev: 5943
+collision triangles`, then `objects: 79 glass panes, 22 doors and barriers`). Until the fix, `markTriangles` did
+nothing while `ObjectWorld::collision` was null, so every door and barrier kept the disc's one-sided triangles (and no
+`0x400` / `0x40` bits or material) and every pane its own (no `GLASS`, one-sided): the player walked out through a
+door whose face looked away from him and was stopped by it on the way back (door 10, from (−184.92, 95.45) at 60 %
+stick: the feet crossed its plane at x −187.63 at about 3.3 m/s; inward he stopped at x −188.107, a radius and the
+0.01 m back-off from the plane). Now every write the objects make to a triangle (`markTriangles`: the two-sided, door,
+breakable, testable-while-disabled and `CamGhostDoor` bits and the material; `setTrianglesEnabled`: the enabled bit) is
+kept in `ObjectWorld::triangleWrites` as well as applied to a bound mesh, and `ObjectWorld::bindCollision`
+(`repo:src/world_objects/object_services.cpp`, called by `PlayLevelMode::bindObjects` and with null when the mode
+ends) applies them all to the mesh it binds, so a freshly loaded mesh carries the same flags as the original's live
+one. A script's `ChangeCollision` (a volume box's triangles switched on or off) is kept the same way
+(`ObjectWorld::boxWrites`), since which triangles lie inside is known only with a mesh; the bind applies the bits and
+materials, then every switch on or off, single triangles and boxes, in the order they were made. The level's unload
+(`LevelObjects::clear`) forgets them all. Tests: `repo:tests/world_objects/door_blocking_test.cpp` (a synthetic
+doorway walked into from both sides at 60 % stick, closed, opened by `OpenDoor` and closed again; a barrier; a glass
+pane; box switches in order with single ones; the writes on a second mesh; the unload) and
+`repo:tests/platform/disc_hub_doors_test.cpp` (`level95` checkpoint 1 through the game session: door 10's triangles
+carry `0x2 | 0x400`, and player 1 steered at it from inside and from outside stops short of its plane both times).
 
 Coney's stand-ins, where this page is silent:
 

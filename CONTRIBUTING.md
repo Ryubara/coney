@@ -32,11 +32,14 @@ git diff --name-only main... | uv run --project python coney-tools repo check-do
 ```
 
 CI also checks the pull request description against [the template](.github/pull_request_template.md), including one
-created with `gh pr create --body-file`, and reruns when you edit it. The description needs the three sections
-(Summary, Checklist, AI use), a Summary with text, one of the template's choices after "Commits written by:" and,
-unless a person wrote the commits, a model after "Model:". Text left as the template has it counts as empty. The
-sections, choices and placeholder text are in [.github/pr-body-rules.json](.github/pr-body-rules.json). To check a
-description yourself:
+created with `gh pr create --body-file`, and reruns when you edit it. The description needs the five sections (Summary,
+Checklist, Testing, Screenshots, AI use); a Summary and a Testing section with text; in Screenshots an image (a link to
+an uploaded screenshot or video; a local file path is refused) or a line `Screenshots: none (<reason>)`; one of the
+template's choices after "Commits written by:" and, unless a person wrote the commits, a model after "Model:". Text left
+as the template has it counts as empty. Each unchecked item under "Remaining:" in the Checklist must name an issue or
+follow-up pull request (`#123`); file an issue for what you leave undone
+([Issues](docs/guides/issues.md#leftovers)). The sections, choices and placeholder text are in
+[.github/pr-body-rules.json](.github/pr-body-rules.json). To check a description yourself:
 
 ```sh
 uv run --project python coney-tools repo check-body --body description.md
@@ -113,8 +116,9 @@ The person who submits or merges the work answers for it. The full rule is in [L
   the commit it becomes also reverts as one. The commits inside it still follow the title rules (CI checks them).
 - CI must pass.
 - Fill in the pull request template: a summary, a checklist of what the pull request finishes and what is still to
-  do, and who wrote the work in the commits (a person, an AI, or both) and with which model. Who opened the pull
-  request does not matter there. CI refuses a description that leaves out a section or an answer.
+  do, what you tested and the results, before and after screenshots of anything a player can see (attach them to the
+  pull request; never commit them), and who wrote the work in the commits (a person, an AI, or both) and with which
+  model. Who opened the pull request does not matter there. CI refuses a description that leaves out a section or an answer.
 - Keep a pull request to one subject. Unrelated changes belong in separate pull requests.
 
 ### Working from a fork

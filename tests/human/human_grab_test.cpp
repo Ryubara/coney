@@ -2,11 +2,14 @@
 // The player grabbing and tackling another human, not a sandbox target (human/holdable.h,
 // docs/research/combat.md#grab, docs/research/combat.md#grab-posing): the grab holds the human, the reaction goal
 // its brain gets follows its state, the hold's moves and the throw land on it, a human with flag 0x40 cannot be
-// grabbed, and a human gone from the level or freed by a script ends the hold. Synthetic clips; the player's stick and
+// grabbed, the grab-block flags stop a grab of their side, the power-out escape follows the victim's flags, and a human
+// gone from the level or freed by a script ends the hold. Synthetic clips; the player's stick and
 // buttons come from input scripts.
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
+#include <format>
 #include <functional>
 #include <memory>
 #include <span>
@@ -76,6 +79,8 @@ class HumanFight {
                               m_mesh.get());
             }
             if (!m_removed) {
+                const std::span<coney::human::Combatant* const> otherTargets =
+                    otherFightsPlayer ? std::span{m_playerTarget} : std::span<coney::human::Combatant* const>{};
                 m_other.step(
                     coney::human::HumanInput{.stickX = 0.0F,
                                              .stickY = 0.0F,
@@ -84,7 +89,7 @@ class HumanFight {
                                              .actionPressed = false,
                                              .command = otherCommand ? otherCommand(m_frame) : combat::command::kNone,
                                              .buttons = 0,
-                                             .targets = {}},
+                                             .targets = otherTargets},
                     m_mesh.get());
             }
             each(m_frame++);
@@ -105,6 +110,8 @@ class HumanFight {
     Human& other() { return m_other; }
     // The other human's command on each update (its brain's, in play): none when empty.
     std::function<combat::CommandId(std::uint64_t)> otherCommand;
+    // The other human has the player as its target (an AI's attacks land on him).
+    bool otherFightsPlayer = false;
     // The damage the other human has taken.
     [[nodiscard]] int damageTaken() const {
         return m_other.fighter().health().maximum() - m_other.fighter().health().value();
@@ -115,6 +122,7 @@ class HumanFight {
     Human m_player;
     Human m_other;
     std::vector<coney::human::Combatant*> m_targets;
+    std::array<coney::human::Combatant*, 1> m_playerTarget{&m_player};
     combat::CommandTables m_tables = combat::CommandTables::street();
     combat::CommandMatcher m_matcher;
     bool m_removed = false;
@@ -430,4 +438,119 @@ TEST_CASE("a throw toward a wall within the side's reach is the wall throw", "[h
     const std::vector<std::uint32_t> open = throwClips({});
     CHECK(std::ranges::find(open, 147U) != open.end());
     CHECK(std::ranges::find(open, 155U) == open.end());
+}
+
+TEST_CASE("a grab-block flag on either human stops a grab of its side at the intro's end; the miss plays on",
+          "[human][combat]") {
+    const FightCharacter character;
+    // Whether the player's circle tap at the other human ends in a hold.
+    const auto grabs = [&](bool fromRear, std::uint64_t playerFlags, std::uint64_t otherFlags) {
+        HumanFight fight(character, 1.5F);
+        if (fromRear) {
+            // Facing away from the player: the grab comes from behind.
+            fight.place(fight.other(), Vec3{40.0F, 41.5F, 0.0F});
+        }
+        fight.player().setFlag(playerFlags, true);
+        fight.other().setFlag(otherFlags, true);
+        bool missed = false;
+        fight.run("5 tap circle\n", 40, [&](std::uint64_t /*frame*/) {
+            missed = missed || fight.player().animator().animId() == combat::anim_id::kGrabMiss;
+        });
+        const bool held = fight.player().fighter().held() != nullptr && fight.other().state() == TargetState::Held;
+        CHECK(missed != held);
+        return held;
+    };
+    CHECK(grabs(false, 0, 0));
+    CHECK(grabs(true, 0, 0));
+    // The front bit stops a front grab from either side of it, and leaves the rear grab alone.
+    CHECK_FALSE(grabs(false, 0, flag::kBlockFrontGrab));
+    CHECK_FALSE(grabs(false, flag::kBlockFrontGrab, 0));
+    CHECK(grabs(true, 0, flag::kBlockFrontGrab));
+    // The rear bit the same for rear grabs.
+    CHECK_FALSE(grabs(true, 0, flag::kBlockRearGrab));
+    CHECK_FALSE(grabs(true, flag::kBlockRearGrab, 0));
+    CHECK(grabs(false, 0, flag::kBlockRearGrab));
+}
+
+TEST_CASE("a player with both grab-block flags starts no grab; his tackle still goes", "[human][combat]") {
+    const FightCharacter character;
+    {
+        HumanFight fight(character, 1.5F);
+        fight.player().setFlag(flag::kBlockFrontGrab | flag::kBlockRearGrab, true);
+        bool intro = false;
+        fight.run("5 tap circle\n", 40, [&](std::uint64_t /*frame*/) {
+            intro = intro || fight.player().animator().animId() == combat::anim_id::kGrabPlayerIntro;
+        });
+        CHECK_FALSE(intro);
+        CHECK(fight.player().fighter().held() == nullptr);
+        CHECK(fight.player().fighter().combat().mode() == combat::CombatMode::Free);
+    }
+    {
+        HumanFight fight(character, 2.0F);
+        fight.player().setFlag(flag::kBlockFrontGrab | flag::kBlockRearGrab, true);
+        fight.run("5 press circle\n15 release circle\n", 50);
+        CHECK(fight.other().state() == TargetState::Mounted);
+    }
+}
+
+TEST_CASE("out of power, a victim with double damage or auto-escape escapes; with no-escape it is let go",
+          "[human][combat]") {
+    const FightCharacter character;
+    // Grabs the other human with `otherFlags`, hurts the player when `hurt`, empties the power; whether the victim
+    // escaped (the player down) rather than being let go.
+    const auto escapes = [&](std::uint64_t otherFlags, bool hurt) {
+        HumanFight fight(character, 1.5F);
+        fight.other().setFlag(otherFlags, true);
+        fight.run("5 tap circle\n", 40);
+        REQUIRE(fight.player().fighter().pairStage() == coney::human::PairStage::Attached);
+        if (hurt) {
+            fight.player().fighter().health().apply(800);
+        }
+        fight.player().fighter().combat().power().set(0);
+        fight.run("", 3);
+        CHECK(fight.player().fighter().held() == nullptr);
+        CHECK(fight.other().state() == TargetState::Standing);
+        return fight.player().fighter().victim().grounded();
+    };
+    CHECK_FALSE(escapes(0, false));
+    CHECK(escapes(flag::kDoubleDamage, false));
+    CHECK(escapes(flag::kAutoEscape, false));
+    CHECK(escapes(0, true));
+    CHECK_FALSE(escapes(flag::kNoEscape, true));
+    // The escape flags win over no-escape.
+    CHECK(escapes(flag::kDoubleDamage | flag::kNoEscape, true));
+}
+
+TEST_CASE("an AI attacker's double damage gets through the player's hit armour", "[human][combat]") {
+    const FightCharacter character;
+    // The other human squares the player at update 5; the player squares at update `wind`. The player's armoured hit
+    // count and the damage he took.
+    struct Result {
+        int armoured = 0;
+        int damage = 0;
+    };
+    const auto exchange = [&](std::uint64_t wind, bool doubled) {
+        HumanFight fight(character, 1.2F);
+        fight.otherFightsPlayer = true;
+        fight.other().setFlag(flag::kDoubleDamage, doubled);
+        fight.otherCommand = [](std::uint64_t frame) {
+            return frame == 5 ? combat::command::kSquarePressed : combat::command::kNone;
+        };
+        fight.run(std::format("{} tap square\n", wind), 40);
+        const auto& health = fight.player().fighter().health();
+        return Result{.armoured = fight.player().fighter().hitsArmoured(), .damage = health.maximum() - health.value()};
+    };
+    // The first timing at which the plain hit is armoured: the player is winding up as it lands.
+    std::uint64_t wind = 0;
+    for (; wind < 20; ++wind) {
+        if (exchange(wind, false).armoured == 1) {
+            break;
+        }
+    }
+    REQUIRE(wind < 20);
+    const Result plain = exchange(wind, false);
+    const Result doubled = exchange(wind, true);
+    CHECK(plain.damage > 0);
+    CHECK(doubled.armoured == 0);
+    CHECK(doubled.damage == 2 * plain.damage);
 }

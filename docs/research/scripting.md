@@ -327,9 +327,15 @@ returns that result. Confirmed (code).
 **The interaction prompt.** [`SetMsgHandlerEx`](../references/bindings/script.md#setmsghandlerex) (`0x00386168`)
 with message 0 and a non-empty prompt also calls the object's `+0x124`; a world object's (`0x00391c98`) registers,
 when it has none yet (`+0x130`), a **kind-1 context record** holding the prompt (`+0x10`) and the second text
-(`+0x14`), reach 1.1 m ([Crimes: context records](crimes.md#context-records)). A nil callback or an empty prompt
-calls `+0x12c` (`0x00391ce8` → `0x00417df8`), which unregisters the record and clears any player's current record
-(`+0x660`) that pointed at it. Triangle by the object then sends it message 0 with the human as the subject
+(`+0x14`), reach 1.1 m ([Crimes: context records](crimes.md#context-records)). The record is registered too when the
+prompt is nil or empty but the second text is not: it then has no prompt, and the HUD shows only the second text, in
+the hint box (the heavy bag's quit, [Workouts](workouts.md#bag-quit)). A nil callback, or a prompt and second text
+both nil or empty, calls `+0x12c` (`0x00391ce8` → `0x00417df8`; a flag's `Flag_UnregisterContext` `0x00415d90`), which
+unregisters the record and clears any player's current record (`+0x660`) that pointed at it. Plain
+**`SetMsgHandler` with message 0** (`Script_SetMsgHandler`, `0x00386298`) calls the same `+0x12c` before setting the
+slot, whatever the callback, so it always removes the object's prompt. Confirmed (code), and at runtime at the gym
+(`worksetup.StartWorkout`'s `SetMsgHandler(fStartWorkout[k], 0, nil)` took the station's record off the list within
+2 updates). Triangle by the object then sends it message 0 with the human as the subject
 ([Crimes: triangle](crimes.md#triangle), step 4); a true result ends the press, anything else lets the game's own
 pick-up go on. Confirmed (code), and at runtime (slot 1, a bat 1 m ahead of the player given a handler by a call):
 the call registered a kind-1 record, the player's `+0x660` took it the next update, and triangle delivered message 0
@@ -1776,6 +1782,15 @@ from the disassembly of `level3.lua` and its five chapter scripts; bindings on
    leaving the box (message 4, which also returns to the rail camera). `vbJumpWarn` boxes show a jump prompt
    (`HUDTurnOnActionCycleAnim`) for 1.5 s. Falling into `vChaseKill` (kind 0) fades and fails the mission (`MF_4`);
    a pursuer there dies, a Warrior is warped to the gallery.
+   **A fence across the roof**: at x 85.18 (y 363.67-371.10, z 15.03-17.62), between two posts of the level mesh
+   that leave no gap, stands a row of three `dyn_door_fence` barriers (door numbers 4, 6 and 10, 10 hitpoints each,
+   two triangles each). Read from the disc's `SpawnDoor` placements and mesh in Coney (numbers only, 2026-10-11).
+   No chapter script opens them; as every barrier they are two-sided from their spawn and stop a walker from
+   either side ([How a closed door stops a human](objects.md#door-blocking)), so the way on is to break one: a
+   charge or a dive (16) breaks one in a hit, three plain hits do too, and it lets him through at its next update
+   ([Barriers](objects.md#barriers)). Inferred from the confirmed (code) barrier behaviour; the chase was not played
+   in the original to see which hit a player uses. (Before Coney kept the barriers' spawn-time triangle writes,
+   their one-sided triangles let Snow walk through from the west.)
    **The way across the last roofs**, read from the disc's collision mesh (inferred; not checked in the original): the
    jump from `vbJumpWarn_08`'s roof (z 13.2, edge at x 150.5) lands on a roof at z 10.3 (y 361-369.5). Its south
    part is closed at x 167.4 (y 361.5-366.7) by a wall 3.6 m tall, material 152 with no climbable flag, so no climb
@@ -2115,6 +2130,24 @@ handler component, as for `TriggerSphereEnable`).
 - Binding arguments the [script bindings](../references/bindings/index.md) reference marks as not understood yet: which
   bit of `PadSetHandler`'s mask is which PS2 button; who sends messages 0, 6, 7 and 9-`0x19` and what their extra values
   mean (the arguments are in [Message handlers](#message-handlers)); the scene-play flags (`ScenePlay` and its
-  relatives) beyond their `global.lua` names; most fields of the large `Cfg*` records (`CfgChar`, `CfgPowerClass`,
-  `CfgWarriorClass`), which are written through computed addresses with no reader found yet. Each would move up from
+  relatives) beyond their `global.lua` names; most fields of the large `Cfg*` records (`CfgChar`, `CfgPowerClass`),
+  which are written through computed addresses with no reader found yet (`CfgWarriorClass`'s are all traced:
+  [Warrior classes](../references/warrior-classes.md)). Each would move up from
   inferred once a reader or a runtime observation is found.
+- **Hint texts set twice in one frame** (owner checklist item 33b): answered by the original's runtime trace
+  ([The queue at runtime](hud.md#hint-queue-runtime), [lessons 5-8](#level99-hint-timing)): a text set on a free box
+  shows within the same call, so two `HUDSetTutorialText(nil)` + text pairs in one update never back up, and a grab's
+  hold ids fire their animation callbacks at the connect, 34 updates before `P1.Power` ([Animation
+  callbacks](characters.md#anim-callbacks)). Coney's `level99` course run still had two pairs land between two
+  hint-box steps in two places, and the box then showed every later text one late (a grab hint `TT_19*` in place of
+  the lesson's) until a frame cleared without setting: at lesson 5's end (the strong grapple's hold 82),
+  `PlayerState`'s animation callback set the hold's grab hint and `P1.Power` set `TT_24d` in the same step; and
+  `P1.StartSnaps` sets the snap text twice in one call. The second hint-box step in `GameplayMode` (Coney's order in
+  a step, [Animation callbacks](characters.md#anim-callbacks)) keeps that from backing up; what is left to do is the
+  rest of [Coney's differences](hud.md#hint-queue-runtime): `HintBox::queue` showing at once, and the hold ids firing
+  at the connect.
+- **The stale throw hint** (owner checklist item 38): the owner saw `level80`'s `TT_25` (lure the cops with a bottle)
+  stay through step 3.4 until the Wreck'em order. Coney's checkpoint 3 test (teleports to the roof, the scene
+  skipped or played out, the lesson box left and re-entered) shows the box empty when the bottle breaks and `TT_7`
+  next. Not reproduced; the backlog above is the likely cause (a lesson text queued behind another and shown after
+  the next clear).

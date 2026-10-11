@@ -62,7 +62,9 @@ std::optional<script::HumanStatus> ScriptedHumans::status(double handle) const {
                                        .gangType = 0xffff,
                                        .heldObject = 0.0,
                                        .hat = 0.0,
-                                       .soundCommands = true};
+                                       .soundCommands = true,
+                                       .hidden = false,
+                                       .inCombat = false};
         }
         return std::nullopt;
     }
@@ -74,7 +76,19 @@ std::optional<script::HumanStatus> ScriptedHumans::status(double handle) const {
                                .gangType = brain->gang() != nullptr ? brain->gang()->kind() : 0xffff,
                                .heldObject = human.script().heldObject,
                                .hat = human.script().hat,
-                               .soundCommands = human.script().soundCommands};
+                               .soundCommands = human.script().soundCommands,
+                               .hidden = human.hidden(),
+                               .inCombat = !brain->attackSlots().empty() || brain->target() != nullptr};
+}
+
+void ScriptedHumans::setHearRange(double human, bool help, float range) {
+    onBrain(human, [help, range](Brain& brain) {
+        if (help) {
+            brain.senses().helpHearRange = range;
+        } else {
+            brain.senses().hearRange = range;
+        }
+    });
 }
 
 void ScriptedHumans::setFlags(double human, std::uint64_t bits, bool on) {

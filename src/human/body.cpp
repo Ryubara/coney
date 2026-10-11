@@ -13,6 +13,8 @@ namespace {
 constexpr float kVerticalEdge = 0.8F;
 // The move must go into a wall by more than this (n · move below its negative) for the wall to count.
 constexpr float kMoveInto = 0.001F;
+// The sweep tests a move against the walls up to this many times (`PhysicsBody_Sweep`'s passes).
+constexpr int kTouchPasses = 3;
 
 raycast::Vec3 toMesh(anim::Vec3 v) { return raycast::Vec3{v.x, v.y, v.z}; }
 anim::Vec3 fromMesh(raycast::Vec3 v) { return anim::Vec3{v.x, v.y, v.z}; }
@@ -89,6 +91,8 @@ float walkingCentreHeight(float scale) { return walkingRadius(scale) + bodyTunin
 float playerWalkingRadius(float scale) { return walkingRadius(scale * bodyTuning().playerFactor) * scale; }
 
 float playerWalkingCentreHeight(float scale) { return playerWalkingRadius(scale) + bodyTuning().footGap; }
+
+float aiWalkingRadius(float scale) { return walkingRadius(scale) * scale; }
 
 bool wallTooLow(anim::Vec3 a, anim::Vec3 b, anim::Vec3 c, float minHeight) {
     const std::array<anim::Vec3, 3> corners{a, b, c};
@@ -181,6 +185,43 @@ float reachOf(const FacingWall& wall, anim::Vec3 centre) {
     return anim::distance(centre, closestOnTriangle(centre, wall.corners[0], wall.corners[1], wall.corners[2]));
 }
 
+// Whether a sphere at `centre` of `radius`, already within `radius` of the wall's plane, touches it at the start of a
+// move: a contact at fraction 0 (docs/research/characters.md#slopes, step 1). The centre is sorted by the triangle's
+// three edges: inside all three, it is over the face; outside one, only when that edge's segment already passes
+// within the radius; outside two (past a corner) never: a corner inside the sphere gives no contact, and any other
+// case is swept, not met at the start. The edge tests are taken against the third corner's side, so the winding does
+// not matter.
+// @orig 0x0034ee60 Sweep_SphereTriangle (unknown)
+// @orig 0x0034e3b8 SphereSweep_Edge (unknown)
+// @orig 0x0034e5d0 SphereSweep_VertexRegion (unknown)
+bool touchesAtStart(const FacingWall& wall, anim::Vec3 centre, float radius) {
+    int outside = 0;
+    std::size_t edge = 0;
+    for (std::size_t k = 0; k < 3; ++k) {
+        const anim::Vec3 from = wall.corners.at(k);
+        const anim::Vec3 across = anim::cross(anim::subtract(wall.corners.at((k + 1) % 3), from), wall.normal);
+        const float third = anim::dot(across, anim::subtract(wall.corners.at((k + 2) % 3), from));
+        const float here = anim::dot(across, anim::subtract(centre, from));
+        if ((third >= 0.0F && here < 0.0F) || (third < 0.0F && here > 0.0F)) {
+            ++outside;
+            edge = k;
+        }
+    }
+    if (outside == 0) {
+        return true;
+    }
+    if (outside > 1) {
+        return false;
+    }
+    // Outside one edge: that edge's segment within the radius of the centre.
+    const anim::Vec3 from = wall.corners.at(edge);
+    const anim::Vec3 along = anim::subtract(wall.corners.at((edge + 1) % 3), from);
+    const float lengthSq = anim::dot(along, along);
+    const float t =
+        lengthSq > 0.0F ? std::clamp(anim::dot(anim::subtract(centre, from), along) / lengthSq, 0.0F, 1.0F) : 0.0F;
+    return anim::distance(centre, anim::add(from, anim::scale(along, t))) <= radius;
+}
+
 // The edge a triangle names for the corner slide, in its flag bits 14-15; 3 names none.
 constexpr unsigned kSlideEdgeShift = 14;
 constexpr unsigned kNoSlideEdge = 3;
@@ -216,6 +257,38 @@ std::optional<anim::Vec3> nearestWallPush(const raycast::CollisionMesh& mesh, an
         push = anim::scale(wall->normal, clear + filter.keepClear - wall->distance);
     }
     return push;
+}
+
+anim::Vec3 slideAlongTouchedFaces(const raycast::CollisionMesh& mesh, anim::Vec3 centre, float radius, anim::Vec3 move,
+                                  WallFilter filter, std::vector<std::uint16_t>& scratch,
+                                  std::vector<anim::Vec3>* normals) {
+    trianglesNear(mesh, centre, radius, scratch);
+    for (int pass = 0; pass < kTouchPasses && anim::length(move) > 0.0F; ++pass) {
+        // Each pass sees only the walls the move left so far still goes into: a face already slid along is skipped.
+        filter.move = move;
+        std::optional<FacingWall> touched;
+        for (const std::uint16_t index : scratch) {
+            const auto wall = keptWall(mesh, index, centre, filter);
+            if (!wall || wall->distance > radius) {
+                continue;
+            }
+            if (!touchesAtStart(*wall, centre, radius)) {
+                continue;
+            }
+            if (!touched || wall->distance < touched->distance) {
+                touched = wall;
+            }
+        }
+        if (!touched) {
+            break;
+        }
+        // The slide: the part of the move into the face goes, in 3D, so a move into a leaning face rises along it.
+        move = anim::subtract(move, anim::scale(touched->normal, anim::dot(move, touched->normal)));
+        if (normals != nullptr) {
+            normals->push_back(touched->normal);
+        }
+    }
+    return move;
 }
 
 anim::Vec3 edgeSlide(const raycast::CollisionMesh& mesh, anim::Vec3 centre, float radius, const WallFilter& filter,

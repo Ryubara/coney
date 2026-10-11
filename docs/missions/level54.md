@@ -27,12 +27,12 @@ A mission of the film's night. Finishing it unlocks more soldiers of other gangs
 
 ## What it needs {#needs}
 
-Its scripts can call 241 script bindings. 7 of them are new, which no earlier level of the story calls: 1 are
+Its scripts can call 241 script bindings. 7 of them are new, which no earlier level of the story calls: 2 are
 implemented in Coney and 7 are traced. The full list is on [the coverage page](../references/bindings/story.md#level54).
 
 | Family | New bindings | In Coney |
 | --- | --- | --- |
-| [Characters](../references/bindings/character.md) | 4 | 1 |
+| [Characters](../references/bindings/character.md) | 4 | 2 |
 | [AI](../references/bindings/ai.md) | 2 | 0 |
 | [Sound and music](../references/bindings/sound.md) | 1 | 0 |
 

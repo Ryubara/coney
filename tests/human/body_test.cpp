@@ -110,3 +110,55 @@ TEST_CASE("the walking push leaves the sphere 0.01 m clear of the face", "[human
     }
     CHECK(coney::human::playerWalkingRadius(0.97F) == Approx(0.4704F).margin(1e-4));
 }
+
+TEST_CASE("a wall face the sphere already touches takes only the move's part into it, so the move rises along it",
+          "[human][body]") {
+    // A face leaning back with n (0, -0.848, 0.530), steep enough to be a wall (n.z under 0.65), from y = 40 at z = 0
+    // to y = 40.9375 at z = 1.5 over x 30-50; and a sheer wall facing -y at y = 60
+    // (docs/research/characters.md#slopes).
+    const std::vector<coney::test::Tri> leaning{
+        coney::test::Tri{{30.0F, 40.0F, 0.0F}, {50.0F, 40.0F, 0.0F}, {50.0F, 40.9375F, 1.5F}, 0, 5, 1},
+        coney::test::Tri{{30.0F, 40.0F, 0.0F}, {50.0F, 40.9375F, 1.5F}, {30.0F, 40.9375F, 1.5F}, 0, 5, 1}};
+    const auto mesh = coney::test::makeMesh(
+        coney::test::join(leaning, coney::test::wallFacingMinusY(60.0F, 30.0F, 50.0F, 0.0F, 3.0F)));
+    std::vector<std::uint16_t> scratch;
+    const float radius = 0.4704F;
+    const Vec3 normal{0.0F, -0.848F, 0.530F};
+    const WallFilter walking{.move = Vec3{}, .skipLow = true, .excludeMaterials = {}, .toContact = true};
+    // The centre 0.39 m in front of the face's point (40, 40.3125, 0.5), inside its triangles.
+    const auto inFront = [&](Vec3 onFace, float distance) {
+        return Vec3{onFace.x, onFace.y + normal.y * distance, onFace.z + normal.z * distance};
+    };
+    const Vec3 centre = inFront(Vec3{40.0F, 40.3125F, 0.5F}, 0.39F);
+
+    // 20° off the face's normal: the part across the face stays, the part into it goes, and the move rises.
+    const Vec3 move{0.0171F, 0.0470F, 0.0F};
+    const Vec3 slid = coney::human::slideAlongTouchedFaces(*mesh, centre, radius, move, walking, scratch);
+    CHECK(slid.x == Approx(0.0171F));
+    CHECK(slid.y * normal.y + slid.z * normal.z == Approx(0.0F).margin(1e-4));
+    CHECK(slid.z == Approx(0.0211F).margin(2e-4));
+    // Head-on it still rises along the leaning face.
+    const Vec3 headOn =
+        coney::human::slideAlongTouchedFaces(*mesh, centre, radius, Vec3{0, 0.05F, 0}, walking, scratch);
+    CHECK(headOn.x == Approx(0.0F).margin(1e-6));
+    CHECK(headOn.z > 0.02F);
+
+    // Past the face's edge at x = 50 with that edge within the radius (0.44 m), it slides along the face's plane as
+    // over the face; past it out of reach (0.72 m), not touching (0.48 m off) or moving away, the move is untouched.
+    const Vec3 pastEdge = coney::human::slideAlongTouchedFaces(*mesh, inFront(Vec3{50.2F, 40.3125F, 0.5F}, 0.39F),
+                                                               radius, move, walking, scratch);
+    CHECK(pastEdge.x == Approx(slid.x));
+    CHECK(pastEdge.z == Approx(slid.z));
+    const auto unchanged = [&](Vec3 at, Vec3 m) {
+        const Vec3 out = coney::human::slideAlongTouchedFaces(*mesh, at, radius, m, walking, scratch);
+        return out.x == Approx(m.x) && out.y == Approx(m.y) && out.z == Approx(m.z);
+    };
+    CHECK(unchanged(inFront(Vec3{40.0F, 40.3125F, 0.5F}, 0.48F), move));
+    CHECK(unchanged(inFront(Vec3{50.6F, 40.3125F, 0.5F}, 0.39F), move));
+    CHECK(unchanged(centre, Vec3{0.0F, -0.05F, 0.0F}));
+
+    // A sheer wall touched head-on takes the whole move.
+    const Vec3 atWall = coney::human::slideAlongTouchedFaces(*mesh, Vec3{40.0F, 59.6F, 1.0F}, radius, Vec3{0, 0.05F, 0},
+                                                             walking, scratch);
+    CHECK(coney::anim::length(atWall) == Approx(0.0F).margin(1e-6));
+}

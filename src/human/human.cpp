@@ -7,6 +7,7 @@
 #include <memory>
 #include <numbers>
 #include <optional>
+#include <utility>
 
 #include "animation/anim_clip.h"
 #include "animation/anim_task.h"
@@ -91,9 +92,11 @@ anim::Vec3 flatUnit(anim::Vec3 v) {
 bool movesAtOnce(ClimbKind kind) { return kind == ClimbKind::Wall || kind == ClimbKind::ShortWall; }
 
 // Pushes a sphere of `radius`, centred `centreHeight` above the feet at `feet`, out of the walls `filter` keeps, up
-// to three times; returns where the feet end, or nothing when the sphere is still in a wall after that.
+// to three times; returns where the feet end, or nothing when the sphere is still in a wall after that. Each push's
+// direction, the wall's normal, is added to `normals` when given.
 std::optional<anim::Vec3> slideOut(const raycast::CollisionMesh& mesh, anim::Vec3 feet, float radius,
-                                   float centreHeight, const WallFilter& filter, std::vector<std::uint16_t>& scratch) {
+                                   float centreHeight, const WallFilter& filter, std::vector<std::uint16_t>& scratch,
+                                   std::vector<anim::Vec3>* normals = nullptr) {
     for (int pass = 0; pass <= kSweepPasses; ++pass) {
         const anim::Vec3 centre = anim::add(feet, anim::Vec3{0.0F, 0.0F, centreHeight});
         const auto push = nearestWallPush(mesh, centre, radius, filter, scratch);
@@ -102,6 +105,9 @@ std::optional<anim::Vec3> slideOut(const raycast::CollisionMesh& mesh, anim::Vec
         }
         if (pass == kSweepPasses) {
             break;
+        }
+        if (normals != nullptr) {
+            normals->push_back(anim::normalise(*push));
         }
         feet = anim::add(feet, *push);
     }
@@ -489,22 +495,40 @@ std::span<const std::uint8_t> Human::passThrough() const {
 }
 
 std::optional<Human::Swept> Human::sweep(const raycast::CollisionMesh& mesh, anim::Vec3 from, anim::Vec3 displacement) {
+    m_contacts.clear();
     // A body that does not move meets nothing.
-    const float length = anim::length(displacement);
-    if (length <= 0.0F) {
+    if (anim::length(displacement) <= 0.0F) {
         return Swept{.feet = from};
     }
-    // The player's walking sphere (0.4704 m for Rembrandt), 0.05 m clear of the feet, against the walls the move goes
-    // into and that are 0.25 m tall or more; each push slides it along that wall and leaves it 0.01 m clear.
-    const float radius = playerWalkingRadius(m_scale);
-    const float centreHeight = playerWalkingCentreHeight(m_scale);
-    const WallFilter filter{.move = displacement,
-                            .skipLow = true,
-                            .excludeMaterials = passThrough(),
-                            .toContact = true,
-                            .keepClear = bodyTuning().contactClear};
-    const anim::Vec3 moved = anim::add(from, displacement);
-    const auto feet = slideOut(mesh, moved, radius, centreHeight, filter, m_nearby);
+    // The other humans' capsules first. **Coney's choice**: the original sorts the humans' and the walls' contacts of
+    // a pass by fraction together; here the humans take their part of the move before the walls take theirs.
+    displacement = meetHumans(from, displacement);
+    if (anim::length(displacement) <= kClear) {
+        return Swept{.feet = from};
+    }
+    // The walking sphere (0.4704 m for Rembrandt, about 0.35 m for an AI human, whose body +0x60 is 1.0), 0.05 m clear
+    // of the feet, against the walls the move goes into and that are 0.25 m tall or more; each push slides it along
+    // that wall and leaves it 0.01 m clear.
+    const float radius = m_profile.player ? playerWalkingRadius(m_scale) : aiWalkingRadius(m_scale);
+    const float centreHeight = radius + bodyTuning().footGap;
+    WallFilter filter{.move = displacement,
+                      .skipLow = true,
+                      .excludeMaterials = passThrough(),
+                      .toContact = true,
+                      .keepClear = bodyTuning().contactClear};
+    // A wall face the sphere already touches is a contact at fraction 0 (docs/research/characters.md#slopes): the move
+    // loses only its part into the face, in 3D, and nothing pushes the sphere out, so a move into a face leaning back
+    // rises along it and the snap then puts the feet on what is under them. The faces it meets on the way are pushed
+    // to contact below, as before.
+    const anim::Vec3 move = slideAlongTouchedFaces(mesh, anim::add(from, anim::Vec3{0.0F, 0.0F, centreHeight}), radius,
+                                                   displacement, filter, m_nearby, &m_contacts);
+    const float length = anim::length(move);
+    if (length <= kClear) {
+        return Swept{.feet = from};
+    }
+    filter.move = move;
+    const anim::Vec3 moved = anim::add(from, move);
+    const auto feet = slideOut(mesh, moved, radius, centreHeight, filter, m_nearby, &m_contacts);
     if (!feet) {
         return std::nullopt;
     }
@@ -517,11 +541,11 @@ std::optional<Human::Swept> Human::sweep(const raycast::CollisionMesh& mesh, ani
         edgeSlide(mesh, anim::add(moved, anim::Vec3{0.0F, 0.0F, centreHeight}), radius, filter, m_nearby);
     Swept swept{.feet = *feet};
     if (anim::length(sum) >= kClear) {
-        const anim::Vec3 along = anim::scale(displacement, 1.0F / length);
+        const anim::Vec3 along = anim::scale(move, 1.0F / length);
         anim::Vec3 slide = anim::scale(anim::normalise(sum), std::max(length, radius));
         slide = anim::scale(anim::subtract(slide, anim::scale(along, anim::dot(slide, along))), m_stepSeconds);
         WallFilter slideFilter = filter;
-        slideFilter.move = anim::add(displacement, slide);
+        slideFilter.move = anim::add(move, slide);
         const auto slid = slideOut(mesh, anim::add(*feet, slide), radius, centreHeight, slideFilter, m_nearby);
         if (slid) {
             swept = Swept{.feet = *slid, .slide = anim::subtract(*slid, *feet)};
@@ -535,19 +559,90 @@ std::optional<Human::Swept> Human::sweep(const raycast::CollisionMesh& mesh, ani
     bool pushed = false;
     for (int pass = 0; pass < kSweepPasses; ++pass) {
         const std::optional<anim::Vec3> push =
-            (*m_objectPush)(*this, anim::add(swept.feet, anim::Vec3{0.0F, 0.0F, centreHeight}), radius, displacement);
+            (*m_objectPush)(*this, anim::add(swept.feet, anim::Vec3{0.0F, 0.0F, centreHeight}), radius, move);
         if (!push || anim::length(*push) < kClear) {
             break;
         }
+        m_contacts.push_back(anim::normalise(*push));
         swept.feet = anim::add(swept.feet, *push);
         pushed = true;
     }
     if (pushed) {
-        if (const auto out = slideOut(mesh, swept.feet, radius, centreHeight, filter, m_nearby)) {
+        if (const auto out = slideOut(mesh, swept.feet, radius, centreHeight, filter, m_nearby, &m_contacts)) {
             swept.feet = *out;
         }
     }
     return swept;
+}
+
+UprightCapsule Human::uprightCapsule() const {
+    // **Coney's choice**: the 2 m upright capsule the strikes take too, not posed from the head bone each time.
+    return UprightCapsule{.feet = m_position, .top = kStrikeCapsuleHeight * m_scale, .radius = capsuleRadius()};
+}
+
+bool Human::blocksHumans() const {
+    // Health out (knocked out, wounded or none left) takes BLOCKHUMANS away; the stand-in gives it back once he is
+    // none of those (see the declaration).
+    return !m_outOfWorld && !m_fighter.health().depleted() && !m_script.knockedOut && !m_script.wounded;
+}
+
+bool Human::linkedWith(const Human& other) const {
+    const Holdable* self = this;
+    const Holdable* that = &other;
+    return (m_fighter.held() != nullptr && m_fighter.held() == that) ||
+           (other.m_fighter.held() != nullptr && other.m_fighter.held() == self);
+}
+
+float Human::pushWeight() const {
+    // Every link sets both humans' weight to 1e9, and so does an arrest.
+    constexpr float kImmovable = 1e9F;
+    return m_fighter.inPair() || m_script.arrested ? kImmovable : 1.0F;
+}
+
+anim::Vec3 Human::meetHumans(anim::Vec3 from, anim::Vec3 move) {
+    if (m_otherHumans.empty()) {
+        return move;
+    }
+    // A charging capsule (its strike flag on) strikes the human it meets and only slides (code 1); every other walk
+    // pushes him too (code 4). The strike itself is the capsule strike's test (testStrikes()).
+    const bool striking = m_strikes.capsuleOn();
+    UprightCapsule self = uprightCapsule();
+    self.feet = from;
+    anim::Vec3 at = from;
+    anim::Vec3 left = move;
+    for (int pass = 0; pass < kSweepPasses && anim::length(left) > kClear; ++pass) {
+        // The nearest contact along what is left of the move.
+        Human* met = nullptr;
+        std::optional<CapsuleContact> first;
+        for (Human* other : m_otherHumans) {
+            if (other == nullptr || other == this || !other->blocksHumans() || linkedWith(*other)) {
+                continue;
+            }
+            const auto contact = sweepCapsules(self, left, other->uprightCapsule());
+            if (contact && (!first || contact->fraction < first->fraction)) {
+                first = contact;
+                met = other;
+            }
+        }
+        if (!first) {
+            break;
+        }
+        // Code 4: half of this pass's move into him goes into his pending push-out, over his weight, unless he is not
+        // pushable (body flag 0x200).
+        if (!striking && met->pushable()) {
+            met->addPush(contactPush(left, first->normal, met->pushWeight()));
+        }
+        // Code 1: to the contact, then the rest without its part into him.
+        at = anim::add(at, anim::scale(left, first->fraction));
+        self.feet = at;
+        anim::Vec3 rest = anim::scale(left, 1.0F - first->fraction);
+        if (const float into = anim::dot(rest, first->normal); into < 0.0F) {
+            rest = anim::subtract(rest, anim::scale(first->normal, into));
+        }
+        m_contacts.push_back(first->normal);
+        left = rest;
+    }
+    return anim::add(anim::subtract(at, from), left);
 }
 
 std::optional<anim::Vec3> Human::pushOutInAir(const raycast::CollisionMesh& mesh, anim::Vec3 feet) {
@@ -602,17 +697,22 @@ void Human::moveOnGround(const raycast::CollisionMesh& mesh) {
     // On the ground the velocity has no z: walking climbs only through the snap. A slope slows the human, uphill and
     // downhill alike.
     m_velocity.z = 0.0F;
-    // A charge stopped dead against a wall stays stopped until its clip ends.
+    // The push-out other humans' walks left goes with this move, on top of the velocity's
+    // (docs/research/physics.md#sweep).
+    const anim::Vec3 push = std::exchange(m_pendingPush, anim::Vec3{});
+    // A charge stopped dead against a wall stays stopped until its clip ends; only a push moves it.
     const bool charging = m_animator.animId() == static_cast<std::uint32_t>(combat::anim_id::kRunningAttackCharge);
     m_chargeStopped = m_chargeStopped && charging;
     if (m_chargeStopped) {
         m_velocity.x = 0.0F;
         m_velocity.y = 0.0F;
-        snapToGround(mesh, m_position);
+        const auto pushed = sweep(mesh, m_position, push);
+        snapToGround(mesh, pushed ? pushed->feet : m_position);
         return;
     }
     const float factor = slopeFactor(m_groundNormal.z);
-    const anim::Vec3 displacement{m_velocity.x * factor * m_stepSeconds, m_velocity.y * factor * m_stepSeconds, 0.0F};
+    const anim::Vec3 displacement{m_velocity.x * factor * m_stepSeconds + push.x,
+                                  m_velocity.y * factor * m_stepSeconds + push.y, 0.0F};
     anim::Vec3 feet = m_position;
     if (const auto moved = sweep(mesh, m_position, displacement); moved) {
         feet = moved->feet;
@@ -627,7 +727,7 @@ void Human::moveOnGround(const raycast::CollisionMesh& mesh) {
             m_velocity.y = 0.0F;
             m_chargeStopped = true;
         } else {
-            keepSlidVelocity(slid, displacement, factor);
+            slideVelocity();
         }
     } else {
         // Blocked: the body stays and its horizontal velocity goes.
@@ -638,24 +738,29 @@ void Human::moveOnGround(const raycast::CollisionMesh& mesh) {
     snapToGround(mesh, feet);
 }
 
-void Human::keepSlidVelocity(anim::Vec3 slid, anim::Vec3 displacement, float factor) {
-    // Only a move the walls changed: the velocity becomes the move the sweep allowed, never longer than it was, so the
-    // next update's speed starts from what the wall left of it.
-    const anim::Vec3 change{slid.x - displacement.x, slid.y - displacement.y, 0.0F};
-    if (anim::length(change) < kClear || factor <= 0.0F) {
+void Human::slideVelocity() {
+    // Each contact takes from the velocity its part into the wall, in 3D, only when it goes in; the z this leaves goes
+    // with the next update's (docs/research/characters.md#slopes, step 3). Along a wall the velocity keeps its part
+    // along it however far the sweep pushed the body out, so a body the snap lowers into a face that leans back is not
+    // slowed by being pushed out of it again.
+    // Only a player's body has the flag (`0x400`) that writes the slid velocity back; an AI asks for its full speed
+    // again each update, so a slide never brakes it (docs/research/physics.md#sweep).
+    if (!m_profile.player) {
         return;
     }
-    const float before = std::hypot(m_velocity.x, m_velocity.y);
-    anim::Vec3 velocity{slid.x / (factor * m_stepSeconds), slid.y / (factor * m_stepSeconds), 0.0F};
-    if (const float after = anim::length(velocity); after > before && after > 0.0F) {
-        velocity = anim::scale(velocity, before / after);
+    anim::Vec3 velocity{m_velocity.x, m_velocity.y, 0.0F};
+    for (const anim::Vec3 normal : m_contacts) {
+        if (const float into = anim::dot(velocity, normal); into < 0.0F) {
+            velocity = anim::subtract(velocity, anim::scale(normal, into));
+        }
     }
     m_velocity.x = velocity.x;
     m_velocity.y = velocity.y;
 }
 
 void Human::moveInAir(const raycast::CollisionMesh& mesh) {
-    const anim::Vec3 displacement = anim::scale(m_velocity, m_stepSeconds);
+    const anim::Vec3 push = std::exchange(m_pendingPush, anim::Vec3{});
+    const anim::Vec3 displacement = anim::add(anim::scale(m_velocity, m_stepSeconds), anim::Vec3{push.x, push.y, 0.0F});
     anim::Vec3 feet = anim::add(m_position, displacement);
     // Walls still push the airborne body: move across, push out, then fall straight.
     const anim::Vec3 across{m_position.x + displacement.x, m_position.y + displacement.y, m_position.z};
@@ -723,32 +828,62 @@ void Human::holdForCombat() {
     }
 }
 
+void Human::aiCombatWalk(bool gated) {
+    // The brain's move this update; none is speed 0 along the facing (Brain_StopMove's), so no turn and no step.
+    constexpr float kMovingAsk = 0.1F;
+    constexpr float kTurnClipAngle = 15.0F * kPi / 180.0F;
+    const bool moving = m_moveSpeed.has_value() && m_record.move.has_value();
+    const float asked = moving ? *m_moveSpeed : 0.0F;
+    const float wanted = moving ? m_record.move->heading : m_heading;
+    const bool wounded = m_script.wounded;
+    // The turn to the brain's heading: whenever it asks for a speed (or the human is wounded, at the wounded rate) at
+    // the AI's stance word; at speed 0 and more than 15° off, the turn on the spot (**Coney stand-in**: its stance
+    // clips are not played, so the human turns at the standing word, as aiLocomote() does).
+    const float error = wrapAngle(wanted - m_heading);
+    float limit = 0.0F;
+    if (asked > 0.0F || wounded) {
+        limit = aiStanceTurn(wounded);
+    } else if (moving && std::fabs(error) > kTurnClipAngle) {
+        limit = aiMaxTurn(Gait::Standing, m_record.move->turnBoost, false);
+    }
+    m_heading = std::fabs(error) <= limit ? wanted : wrapAngle(m_heading + std::copysign(limit, error));
+    m_turn = TurnState{};
+    if (gated) {
+        m_velocity = anim::Vec3{0.0F, 0.0F, m_velocity.z};
+        return;
+    }
+    // The speed: the stance walk when asked for more than 0.1, else 0; wounded comes first, the walk speed.
+    float speed = 0.0F;
+    if (wounded) {
+        speed = asked > kMovingAsk ? m_animator.speeds().walk : asked;
+    } else if (asked > kMovingAsk) {
+        speed = combat::combatTuning().combatWalkSpeed;
+    }
+    // The feet strafe along the line to the move's point, whatever the facing; on the point, they stand.
+    const anim::Vec3 to = moving ? anim::subtract(m_record.move->aim, m_position) : anim::Vec3{};
+    const float distance = std::hypot(to.x, to.y);
+    const float newSpeed = distance > 1e-4F ? aiApproachSpeed(ps2::length(m_velocity.x, m_velocity.y), speed) : 0.0F;
+    if (newSpeed <= 0.0F) {
+        m_velocity = anim::Vec3{0.0F, 0.0F, m_velocity.z};
+        m_animator.playCombatWalk(kAnimFightIdle);
+        return;
+    }
+    m_velocity = anim::Vec3{to.x / distance * newSpeed, to.y / distance * newSpeed, m_velocity.z};
+    // The clip by the movement's angle from the facing, clockwise (record +0xdc).
+    const float clockwise = -wrapAngle(headingOf(to) - m_heading) * 180.0F / kPi;
+    m_animator.playCombatWalk(static_cast<std::uint32_t>(combat::combatWalkClip(clockwise)));
+}
+
 void Human::combatWalk(const Combatant& target, bool gated) {
-    // The facing. A pad's human faces the target every update, and so does an AI's stance walk, which strafes round
-    // its foe (MoveMeleeAction step 6, docs/research/ai.md#move-action). A player whose pad a script took (per-player
-    // `+0x1b` clear, his brain set dead) is moved by Human_UpdateControl instead (docs/research/ai.md#ai-turn):
-    // asked to move (or wounded), he turns toward the brain's heading by the fight stance's AI word (0.375° wounded);
-    // stopped, more than 15° off it, he turns on the spot (**Coney stand-in** as in aiLocomote(): the standing step
-    // instead of the turn clips 395-398); within 15°, or with no move asked (Brain_StopMove leaves the heading at his
-    // facing), he keeps his facing. So a script's turn steers a player locked on a foe, as the workouts' GoalMoveToFlag
-    // at the heavy bag needs (docs/research/workouts.md#coney). **Coney choice**: an AI human keeps facing its target,
-    // as Coney's brains do not carry the strafe flag (brain `+0x11c`) that tells a strafe from a plain move; the
-    // grabbing, blocking and ducking row of Human_MaxTurn does not apply here, those states take holdForCombat()
-    // instead.
-    if (!m_record.padDriven && m_profile.player) {
-        constexpr float kTurnOnSpotAngle = 15.0F * kPi / 180.0F;
-        if (m_record.move.has_value()) {
-            const float error = wrapAngle(m_record.move->heading - m_heading);
-            float limit = 0.0F;
-            if (m_record.move->speed > 0.0F || m_script.wounded) {
-                limit = aiFightStanceTurn(m_script.wounded);
-            } else if (std::fabs(error) > kTurnOnSpotAngle) {
-                limit = aiMaxTurn(Gait::Standing, m_record.move->turnBoost, m_script.wounded);
-            }
-            m_heading =
-                std::fabs(error) <= limit ? m_record.move->heading : wrapAngle(m_heading + std::copysign(limit, error));
-        }
-    } else if (const anim::Vec3 to = anim::subtract(target.position(), m_position); std::hypot(to.x, to.y) > 1e-4F) {
+    // A human no pad drives runs the AI's stance control: its brain's move, never the target, turns it
+    // (docs/research/ai.md#fight-facing).
+    if (!m_record.padDriven) {
+        aiCombatWalk(gated);
+        return;
+    }
+    // The player faces the target every update.
+    const anim::Vec3 to = anim::subtract(target.position(), m_position);
+    if (std::hypot(to.x, to.y) > 1e-4F) {
         m_heading = headingOf(to);
     }
     m_turn = TurnState{};
@@ -919,15 +1054,26 @@ bool Human::runStepControl() {
 }
 
 bool Human::startTagSpray(anim::Vec3 point) {
+    // The turn to the tag is spread over half the intro's playing time. **Coney's reading**: with no intro clip the
+    // play time is 0, so he turns at once (the original still turns) and the caller starts the stick game.
+    constexpr float kHalf = 0.5F;
+    m_velocity = anim::Vec3{};
     if (m_animator.clip(clips::kTaggingIntro) == nullptr) {
+        turnToFace(point, 0.0F);
         return false;
     }
-    // The turn to the tag is spread over half the intro's playing time.
-    constexpr float kHalf = 0.5F;
     turnOverClip(clips::kTaggingIntro, point, kHalf);
     m_animator.playCombat(clips::one(clips::kTaggingIntro), clips::kTaggingLoop, AnimState::Hold, kCombatFade);
-    m_velocity = anim::Vec3{};
     return true;
+}
+
+void Human::restartTagSpray() {
+    // 337, then the loop 335 again (Tag_RestartSprayClips); a body playing no spray clip is left alone. Its drop of a
+    // set 4 or 6 weapon has nothing to do here: one was dropped as the spray began and nothing is picked up during it.
+    if (!tagSprayPlaying() || m_animator.clip(clips::kTaggingRestart) == nullptr) {
+        return;
+    }
+    m_animator.playCombat(clips::one(clips::kTaggingRestart), clips::kTaggingLoop, AnimState::Hold, kCombatFade);
 }
 
 void Human::startUncuff(anim::Vec3 cuffed, float mashFactor) {
@@ -973,7 +1119,8 @@ void Human::endUncuffReact(const Human& freer, bool freed) {
 bool Human::tagSprayLooping() const { return m_animator.animId() == clips::kTaggingLoop; }
 
 bool Human::tagSprayPlaying() const {
-    return m_animator.animId() == clips::kTaggingIntro || m_animator.animId() == clips::kTaggingLoop;
+    const std::uint32_t id = m_animator.animId();
+    return id == clips::kTaggingIntro || id == clips::kTaggingLoop || id == clips::kTaggingRestart;
 }
 
 void Human::endTagSpray() {
@@ -1434,6 +1581,11 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
     } else {
         m_lastStick.magnitude *= kLastStickFadePerStep;
     }
+    // Flying (the debug noclip) replaces the rest: no brain, no collision, no gravity.
+    if (m_flight) {
+        fly();
+        return;
+    }
     // A brain's move replaces the stick: its heading as the stick's direction, pushed fully while it moves.
     m_moveSpeed.reset();
     if (m_record.move.has_value()) {
@@ -1463,6 +1615,7 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
     if (m_fighter.holdAttached()) {
         m_velocity = anim::Vec3{};
         m_lastTurn = 0.0F;
+        m_pendingPush = anim::Vec3{};
         return;
     }
     // 2. The root motion the animation's pose carries.
@@ -1545,7 +1698,9 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
             moveOnGround(*mesh);
         }
     } else {
-        m_position = anim::add(m_position, anim::scale(m_velocity, m_stepSeconds));
+        // No level: nothing is met, but a push still moves the body.
+        m_position = anim::add(anim::add(m_position, anim::scale(m_velocity, m_stepSeconds)),
+                               std::exchange(m_pendingPush, anim::Vec3{}));
     }
     // A climb whose ground went away is over: the human falls.
     if (m_climbRun && m_airborne) {

@@ -32,26 +32,26 @@ void steps(LockPickDial& dial, int n) {
 TEST_CASE("the dial: only the current pin turns, by 0.1 rad times its speed", "[world_objects][lockpick]") {
     LockPickDial dial(1);
     steps(dial, 5);
-    CHECK(dial.pins()[0] == Catch::Approx(std::numbers::pi + 0.5).margin(1e-4));
-    CHECK(dial.pins()[1] == Catch::Approx(std::numbers::pi));
+    CHECK(dial.pins()[0] == Catch::Approx(3.14 + 0.5).margin(1e-4));
+    CHECK(dial.pins()[1] == Catch::Approx(3.14));
     // Difficulty 2 turns the first pin backwards, wrapping below 0.
     LockPickDial hard(2);
     steps(hard, 32);
-    CHECK(hard.pins()[0] == Catch::Approx(std::numbers::pi - 3.2 + 2.0 * std::numbers::pi).margin(1e-4));
+    CHECK(hard.pins()[0] == Catch::Approx(3.14 - 3.2 + 2.0 * std::numbers::pi).margin(1e-4));
     CHECK(LockPickDial(7).difficulty() == 2);
 }
 
 TEST_CASE("three good presses open the lock; a miss starts over", "[world_objects][lockpick]") {
     LockPickDial dial(0);
-    CHECK(dial.press() == PinPress::Miss); // π is in no band
+    CHECK(dial.press() == PinPress::Miss); // 3.14, the rest angle, is in no band
     CHECK(dial.good() == 0);
     steps(dial, 24); // 5.54: good
     CHECK(dial.press() == PinPress::Good);
     CHECK(dial.currentPin() == 1);
-    steps(dial, 3); // the second pin at π + 0.6: a miss puts every pin back
+    steps(dial, 3); // the second pin at 3.14 + 0.6: a miss puts every pin back
     CHECK(dial.press() == PinPress::Miss);
     CHECK(dial.good() == 0);
-    CHECK(dial.pins()[0] == Catch::Approx(std::numbers::pi));
+    CHECK(dial.pins()[0] == Catch::Approx(3.14));
     steps(dial, 24);
     CHECK(dial.press() == PinPress::Good);
     steps(dial, 12); // speed 2

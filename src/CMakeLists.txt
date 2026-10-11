@@ -200,6 +200,7 @@ target_sources(coney_core PRIVATE
     effects/blur_pulse.cpp
     scripting/effects_bindings.cpp
     scripting/car_bindings.cpp
+    scripting/character_bindings.cpp
     world_objects/car_hits.cpp
     world_objects/cars.cpp)
 # Characters: the animation format and player, and the character resources (docs/research/characters.md).
@@ -242,9 +243,11 @@ target_sources(coney_core PRIVATE
     human/body.cpp
     human/climb.cpp
     human/human.cpp
+    human/human_contacts.cpp
     human/human_sounds.cpp
     human/human_animator.cpp
     human/human_held.cpp
+    human/human_flight.cpp
     human/human_hiding.cpp
     human/human_script.cpp
     human/humans.cpp

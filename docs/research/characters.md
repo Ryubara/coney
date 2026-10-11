@@ -1371,6 +1371,13 @@ addresses given:
   must fire at the connect, when the hold is set up under the connecting clip, not when the hold begins (above);
   in Coney's `level99` course run they fired when the hold played, the update the strong grapple's damage is scored,
   which put `PlayerState`'s grab hint and `P1.Power`'s `TT_24d` in one update.
+- **Coney's order in a step** (inferred from the original's frame, [A frame of play](level-loading.md#a-frame-of-play)):
+  the animation callbacks run before the [tutorial callback](hud.md#tutorial-callback), since the original calls
+  that one when the victim applies the damage, with the id the attacker has already started; then the hint box
+  steps, where the original's `HUD_Update` stands; then the scheduled calls. Coney's HUD step comes before the
+  callbacks, so without the second hint-box step a text a callback set was still queued when a scheduled call's
+  `HUDSetTutorialText(nil)` ran, and the next text waited behind it: from `level99`'s lesson 6 on, the box showed
+  each grab hint (`TT_19*`) one text late, in place of the lesson's (owner checklist item 33b).
 
 ### Moving, standing on the ground and falling {#ground}
 
@@ -2720,9 +2727,17 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
   (0.5 × scale for a player). The walking sphere is stopped where it touches a triangle, so a face lower than its
   centre stops it where it meets the face's top edge, `sqrt((r + clearance)² − (r + 0.05 − h)²)` from the face
   (0.396, 0.399 and 0.422 m for 0.255, 0.26 and 0.30 m faces with the original's fitted 0.006 m, as at runtime); a
-  face under 0.25 m is walked onto in one update with no change of speed or clip. The human keeps the move the walls
-  left as its velocity, so a wall met at a steep angle
-  brakes the player.
+  face under 0.25 m is walked onto in one update with no change of speed or clip. An AI human's sphere is
+  0.35 × scale × scale (`human::aiWalkingRadius`, its body `+0x60` being 1.0). For a player each wall or object the
+  sweep slides along takes from the velocity its part into it (`v −= (v · n) n`, the slide response), so a wall met
+  at a steep angle brakes him; the velocity is not rebuilt from where the pushes left the body. An AI's velocity is
+  never braked by a slide. A wall face the sphere already reaches at the start of the move (the centre over the
+  face, or past one edge whose segment is within the radius; never past a corner) takes only the move's part into
+  it, along the face's own plane in 3D, and does not push the sphere out (`human::slideAlongTouchedFaces`, the
+  fraction-0 contact), so a move into a face leaning back rises along it. **Known gap**: at `level99`'s gravel heap
+  a bum walking the path's leg (his walk 0.557 m/s) stalls at the face's foot
+  (`repo:tests/platform/disc_level99_heap_test.cpp`, hidden), while a player at the runtime's angle crosses; the
+  original's run used Vermin at 1.654 m/s.
   The sweep leaves the sphere 0.01 m clear of the face (`BodyTuning::contactClear`), and carries it round a convex
   corner whose triangles name their shared edge in flag bits 14-15 (`human::edgeSlide`): along each wall the sphere
   wraps beyond that edge, `n × up` toward it, × max(move, `r`) a second, its part along the move taken away, for the
