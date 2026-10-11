@@ -569,3 +569,11 @@ address = 0x00111de8
 # addiu sp,sp,-0xb0; sq s2,0x60(sp)
 original = [0x27bdff50, 0x7fb20060]
 log = [{ value = "a2", name = "hash" }, { value = "a1", name = "owner" }, "ra"]
+
+[hook.sweep-radius]
+description = "Each walking sweep's sphere in PhysicsMesh_SweepCapsule (0x00347c08), before the scale multiplies it: the body, shape +0x40 x body +0x60 (f1), body +0x60 (f3) and Human_GetScale's result (f0); the radius is f1 x f0."
+research = "docs/research/characters.md#walls"
+address = 0x00347cbc
+# mul.s f1,f1,f0; sw t1,0x47a8(sp)
+original = [0x46000842, 0xafa947a8]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "t0", name = "body" }, { value = "f1", name = "r_unscaled", type = "f32" }, { value = "f3", name = "b60", type = "f32" }, { value = "f0", name = "scale", type = "f32" }]

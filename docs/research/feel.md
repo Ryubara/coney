@@ -56,7 +56,7 @@ were corrected in place where the runs contradicted them.
 | Root-motion speed of a clip that moves the body | walk start 0.762 m/s, landing 436 4.230 m/s | 0.786, 4.361 | Coney 3.1 % fast: the original scales root motion by the body scale (0.97) | multiply root motion by `Human::scale()` |
 | Walk / run / sprint speed | 1.629 / 7.801 / 10.245 m/s | the same | none | |
 | Gain per update | 0.8 m/s | 0.8 m/s | none | |
-| Walking body: distance kept from a wall face | **0.480 m** (two walls and the fence) | 0.34 m | 0.14 m closer in Coney | the player's sphere is 0.35 × **1.4286** (body `+0x60`) × 0.97 = **0.485** m: `BodyTuning::radius` 0.5 for a player |
+| Walking body: distance kept from a wall face | **0.480 m** (two walls and the fence) | 0.34 m | 0.14 m closer in Coney | the player's sphere is 0.35 × **1.4286** (body `+0x60`) × 0.97 × 0.97 (the scale counts twice) = **0.4705** m: `BodyTuning::radius` 0.5 for a player |
 | Running into a wall 60-70° off its line | speed drops to the slide's share (4.0, 1.5, 0.86, 0.65, 0.56, …, 0.40 m/s) and the player ends in the **idle** pressing the stick | keeps 7.80 m/s and slides along the wall at about 6.9 m/s | Coney slides, the original stops | keep the swept (slid) velocity as the next update's current speed (the speed is its length) |
 | Jump during the run start | allowed once faster than 3.3 m/s (tap at 3.35 m/s jumped) | refused until the start clip ends | Coney late | drop the start-clip test from the jump |
 | Run jump: arc | 5.5 m/s up, apex 1.06 m, the same per-update heights | the same | none | |
@@ -128,8 +128,9 @@ run read per update; the turn values are also confirmed (code), below.
   0.75, 0.65, 0.55, 0.47, 0.39, 0.30, 0.20 m/s), 1.63 m in all, the facing held. A walk released stops at once with
   the idle (35, 60 and 80 % sticks), as Coney does.
 - **Walls.** The player's physics body has `+0x60` = `+0x64` = 1.4286 (= 0.5 / 0.35) in the save, and its shape's
-  radius `+0x40` is 0.3395 (0.35 × 0.97); the walking sphere is therefore 0.485 m, and the measured stops were 0.480 m
-  from the face (a straight wall, an angled wall and the fence). After a blocked move the velocity is the slid
+  radius `+0x40` is 0.3395 (0.35 × 0.97); times the scale again (0.97) makes the walking sphere 0.4705 m
+  ([Characters](characters.md#walls)), and the measured stops were 0.480 m from the face (a straight wall, an angled
+  wall and the fence). After a blocked move the velocity is the slid
   velocity, so the next update's speed starts from its length: running at 20° off a wall's normal settled at
   `0.8 k / (1 − k)` with `k` = sin 20° (0.42 m/s measured, 0.416 predicted) until the speed fell under a quarter of
   the sneak-walk speed (0.396 m/s) and the idle played. Confirmed (runtime), slot 1; the body fields read from the
@@ -153,7 +154,7 @@ The fixes below are in Coney ([Characters](characters.md#coneys-implementation),
 | Walk start speed (35 % and 60 %) | 0.762 m/s on all 12 moving updates | the same |
 | Run start speeds | 2.773, 2.486, 2.558, 2.629, 2.844, 3.346, 3.895, 4.540, 5.112, 5.399, 5.614, 5.686 | the same but the 6th and 10th (3.251, 5.543): see below |
 | Run stop speeds | 2.244, 4.996, 5.101, 5.229, 5.382, 4.193, 3.190, … | 2.244, 4.996, 5.101, 5.229, 5.382, 3.894, 3.190, …: the same but the 6th and 10th |
-| Walking body | 0.485 m sphere, steep walls brake | the same |
+| Walking body | 0.4705 m sphere, steep walls brake | the same |
 | Step under 0.25 m; stop at a taller face | walked onto in one update, speed and clip unchanged; stops 0.396 / 0.400 / 0.424 m from 0.255 / 0.26 / 0.30 m faces | the same |
 | Jump during the run start | from 3.3 m/s | the same |
 | Run jump: air time, last airborne height, landing update | 24 updates, −0.19 m, 7.80 m/s | 24, −0.19 m, 7.80 m/s, then 436 at 4.23 m/s for 10 more |
@@ -196,8 +197,8 @@ The fixes in order of how much they change the feel:
    [Camera](camera.md#sprint-zoom), starting at gait 5 and going back 250 ms after it); upper pitch limit 40°.
 4. **Run stop after a run**: the skid at gait 4 plays 417 with its root motion, as after a sprint; a reversal skids
    too.
-5. **Walls**: the player's walking sphere 0.485 m; keep the slid velocity, so running into a wall at a steep angle
-   brakes to a near stop and the idle.
+5. **Walls**: the player's walking sphere 0.4705 m (0.5 × scale²); keep the slid velocity, so running into a wall
+   at a steep angle brakes to a near stop and the idle.
 6. **Camera collision**: the rays skip materials 30 (`LOW_FENCE`), 122 (`RAILING`) and 107 (`CHAINLINK_NOCLIMB`)
    and keep the main ray's rule for disabled
    triangles; the look-at point's move per update is limited by its length (20 % above 0.8 m, a share falling from
@@ -206,7 +207,7 @@ The fixes in order of how much they change the feel:
    × the body scale (0.97) from the clip's first moving update, with no ramp; jump allowed during a start clip; land
    on the first update that starts with the feet 0.17 m or more below the floor, with the horizontal speed kept on
    that update ([Characters](characters.md#falling)); the fence climb's first clip ends against the fence
-   (0.485 m), and its clock runs from the climb's first update, through the two snap updates, with no fade-in (11
+   (about 0.48 m), and its clock runs from the climb's first update, through the two snap updates, with no fade-in (11
    updates in all); the first update of 441 and 442 does not move the body ([Characters](characters.md#climb)).
 
 ## Open questions
@@ -214,8 +215,8 @@ The fixes in order of how much they change the feel:
 - **A `--trace` option for `coney`** (answered): `--play-level NAME --trace FILE` writes those columns per update
   ([Building](../guides/building.md#tracing)).
 - **The 0.25 m step at runtime** (answered): a test step made in the street's collision mesh was walked onto at
-  0.10-0.245 m in one update and stopped the player from 0.255 m, at the distances the 0.485 m sphere predicts
-  ([Characters](characters.md#walls)). A real kerb in a later level would corroborate it.
+  0.10-0.245 m in one update and stopped the player from 0.255 m, at the distances the 0.4705 m sphere predicts
+  with about 0.006 m clearance ([Characters](characters.md#walls)). A real kerb in a later level would corroborate it.
 - **The auto-follow option's default** (answered): 1 for both bytes, so the auto-centre rule runs on a fresh boot
   ([Details](#details-behind-the-table)); the default rule (`0x0012a400`) runs only after the options menu turns it
   off. Still open: what a new profile saves. The "not seen" reading at `level99` checkpoint 1 is the blocked-view

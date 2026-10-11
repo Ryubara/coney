@@ -453,9 +453,32 @@ What a walking human meets of another human, confirmed (code) at the cited addre
   uncuff end hooks), as does `Human_StartFall` (`0x0023dc58`). A scene sets one group on the humans it plays
   (`SceneTask_Start` `0x0039d870`, cleared by `SceneTask_End`). The ignore lists ([below](#ignore-lists)) serve
   strikes, not the walk.
-- **Health gone** (`Human_OnHealthOut` `0x002674c0`): a human knocked out or wounded loses `BLOCKHUMANS`, so walkers
-  pass over him; a dead one (state `0x100000000`) has his body freed unless airborne. What gives `BLOCKHUMANS` back
-  on getting up is not traced.
+- **Who loses `BLOCKHUMANS`.** Body flag `0x4` is cleared (with the re-pose flag `0x80000000` set) by
+  `Human_KnockOut` (`0x00230328`), `Human_StartWounded` (`0x0022fa78`), `Human_OnHealthOut` (`0x002674c0`, again
+  after either) and `Human_Arrest` (`0x0022ec18`, the cuffs), so walkers pass over a human knocked out, wounded or
+  cuffed; a dead one (state `0x100000000`) has his body freed unless airborne. Confirmed (code) at the cited
+  addresses; no other `& ~4` in the executable reaches a human's body flags (searched by the mask's `li -5`).
+- **A knockdown keeps it.** `Human_KnockDown` (`0x0022f100`, state `0x80000`, the heavy reactions) writes no body
+  flag: it sets the push weight to 1e9 (attribute 7), so a grounded human **still blocks** walkers, who slide along
+  him without moving him, from the fall until he stands. Getting up (`Human_UpdateDown` `0x00256a60` →
+  `Human_PlayRise` `0x0025e2d8`, clip 199 with `Human_EndDownState` `0x0025e250` as its end callback →
+  `Human_GetUp` `0x0022f3c8`) puts the weight back to 1 and touches no body flag either. Confirmed (code).
+- **What gives it back.** Two things only, confirmed (code):
+    - **A new body.** `Human_CreatePhysicsBody` (`0x0021ce08`) frees the body and takes a fresh one from
+      `IPhysics_CreateHumanBody` (`0x0033cc48`), whose flags are `0x8002243f` (`BLOCKHUMANS` included; group 0, so no
+      link survives). `Human_Heal` (`0x0022eb40`) calls it after waking (`Human_WakeUp`) and ending a wound
+      (`Human_EndWounded`), so the human blocks again **from the moment he is healed**: a revive at its end
+      (`Revive_Finish` `0x00274ee0`, not `Revive_Start`), a flash (`Flash_Use` `0x002842e4`), the uncuffing
+      (`Uncuff_MashSuccess` `0x00260910`, `Uncuff_WithKey` `0x00261264`), `HuRevive` (`Human_Revive` `0x002377f8`),
+      and the level's own heals (`Gm_Level_Update` `0x00159004`, `ANGameOver_Toggle`). `Human_AttachInstance` also
+      makes one when the human is set up.
+    - **`Human_Unarrest`** (`0x0022ef58`) sets body flags `0x80000004`: the uncuff paths, `HuSetArrested(false)`
+      (`0x0023774c`) and `Human_EndDownState` when a cuffed human's rise clip ends.
+- **What does not.** `Human_WakeUp` (`0x00230598`) and `Human_EndWounded` (`0x0022fc00`) only re-enable a shape
+  and put the push weight back. So a knocked-out human woken without a heal (`HuSetConscious(true)`,
+  `Human_SetConscious` `0x00237778`, or `Human_EndDownState`'s knocked-out branch) and a wound ended by
+  `HuSetWounded(false)` or `Human_ResetForMode` stand up **without** `BLOCKHUMANS`, and walkers keep passing through
+  them until something heals or unarrests them. Confirmed (code); not seen at runtime.
 - **The answer** (`Human_OnContact` `0x00219d50`): a charging capsule (shape flag `0x2`) or an airborne mover not yet
   ignoring the other strikes him (`Strike_Contact`, then ignores him) and slides (1); otherwise **4**, `0x20004` in
   the air. So walking into a human slides along him and pushes him by half of the move into him (code 4 above),
