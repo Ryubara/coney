@@ -22,8 +22,12 @@ constexpr float kWallStep = 0.1F;
 bool wallAt(const raycast::CollisionMesh& mesh, anim::Vec3 feet, float height, anim::Vec3 move,
             std::vector<std::uint16_t>& scratch) {
     const WallFilter filter{.move = move, .skipLow = true, .excludeMaterials = {}};
-    for (float up = kWayClearRadius; up <= std::max(kWayClearRadius, height - kWayClearRadius) + 1e-4F;
-         up += 2.0F * kWayClearRadius) {
+    // The spheres' centres from one radius above the feet, a diameter apart, the last no higher than one radius
+    // below the top (at least one).
+    const float span = std::max(0.0F, height - (2.0F * kWayClearRadius));
+    const int spheres = 1 + static_cast<int>(std::floor((span / (2.0F * kWayClearRadius)) + 1e-4F));
+    for (int i = 0; i < spheres; ++i) {
+        const float up = kWayClearRadius + (2.0F * kWayClearRadius * static_cast<float>(i));
         const anim::Vec3 centre{feet.x, feet.y, feet.z + up};
         if (nearestWallPush(mesh, centre, kWayClearRadius, filter, scratch).has_value()) {
             return true;
