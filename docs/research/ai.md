@@ -4152,9 +4152,9 @@ uses are in [Spawner states](../references/spawner-states.md). Confirmed (code):
    `Responder<n>` is made: of type 1 for 4, only while the game's count `+0x324` is under `+0x326`, of the spawner's own
    type for 9, which also takes its owner's friend and enemy masks. The state becomes 6 (from 4) or 10 (from 9), and
    returns once the entry's squad is complete; an entry whose byte `+0x17` is 3 may also start `Tactic_RiotCop`.
-5. **Place** the human: 6, 8 and 10 out of the camera's view ([below](#spawner-placement), `0x001673b8`); 7 out of
-   view and sent to the gang's first live member (`0x001679e8`, the second part inferred); the others at the
-   spawner.
+5. **Place** the human: 6, 8 and 10 out of the camera's view ([below](#spawner-placement), `0x001673b8`); 7 on a
+   pedestrian flag out of view ([AI and the world](ai-world.md#spawner-reinforcements), `0x001679e8`); the others at
+   the spawner.
 6. **Spawn** (`0x00167ea8`, named `<spawner><count>`), open the spawner's door, count it.
 
 **The type** (`0x0016d810`): the spawner keeps an index at `+0x4c` into its ten types (`+0x24`). Each spawn first
@@ -5342,8 +5342,8 @@ the callback, when it names a function, is called with its handle, the gang's id
 6, 8 and 10 place the human out of sight as [above](#spawner-placement) and [the search](#spawner-search) say:
 from player 1's camera (Coney has one player, so no second camera refuses a node), the start node the planner's
 route ends use, 17 outward searches, the node then checked against the gang's turf boxes; no node, no spawn this
-update. **Stand-ins**: 7 is placed as 8 with a value of 0 (`0x001679e8` is not on the page) and does not send its
-human to the gang's first live member; the others stand at the spawner; no door opens; the dispatch states 4 and 9
+update. **Stand-ins**: 7 is placed as 8 with a value of 0, not on a flag as
+[its placement](ai-world.md#spawner-reinforcements) says; the others stand at the spawner; no door opens; the dispatch states 4 and 9
 (no crimes are routed) and the top-up 11 (no gang limits kept) never spawn; `SetSpawnMax` is not read.
 `GangSetMaxConcurrent` changes the limit (16 bits; a negative -n spawns waves of n as [above](#spawners) says, from
 `GangAddSpawner`'s limit too). An off-screen spawner (`GangSetSpawnerMustBeOffScreen`, or added in state 11) skips an

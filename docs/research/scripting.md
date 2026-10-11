@@ -1203,6 +1203,72 @@ flag, the money and inventory callbacks, the mugging callback, gang tactics' cal
 police answering a forced crime level ([Crimes](crimes.md)). Type bit `0x400` is a glass pane ([Tasks](tasks.md));
 which prop counts how often: [Breakable props](objects.md#breakable-props).
 
+#### The riot's crowd, and what Coney lacks {#level34-start}
+
+Why Coney's riot fills the subway the player starts in with humans, and what the mission needs to look like the
+original's (owner checklist item 17). The script facts are inferred from the disassembly of `level34.lua` and
+`level34_riot.lua`, `level34_gate.lua` and `level34_park.lua`; the engine facts are confirmed (code) where an address
+is given.
+
+- **The crowd is one spawner.** `AddRiotCivs1` (`level34.lua`) makes gang `RiotCivs1` (`GangCreate(23, ...)`) with
+  one spawner: `GangAddSpawner(gang, "RiotCivs1", 0, CharCivSpawner, "warr_sw", {−57.1, −53.8, 0}, 180, −1, 100, 10,
+  7, NilHandle, 0, "F.RiotPedSpawn", 30, NilHandle, "nothing")`: no total, a spawn every 100 ms, up to 10 alive, in
+  **state 7**, value 30 ([`GangAddSpawner`](../references/bindings/gang.md#gangaddspawner)). `P1.SetupRiot` adds it at
+  checkpoints 1-3 with the gang's hit handler `F.RiotPedHit`. At checkpoint 1 it suspends the gang
+  (`GangSuspend(gang, true)`) until the intro scene `l34_c1` ends; `P1.EndIntroScene` then wakes it, with the riot
+  ambience at 0.15 and the tunnel effects. The player is still underground then: the start is (−4.3, −25.1, −6.2)
+  ([Level starts](../references/level-starts.md#start-level34-1)). Later handlers set the limit to 3, 6 or 10
+  (`GangSetMaxConcurrent`).
+- **Where its humans appear.** State 7 places each human on a pedestrian flag at least 35 m from the player (up to
+  70 m ahead of the view), out of the camera's sight and clear of the gang's friends
+  ([AI and the world: reinforcements](ai-world.md#spawner-reinforcements), `0x001679e8`). From the subway, the street
+  flags are out of sight behind its ceiling, so the original's rioters appear on the streets around the exit.
+  Coney places state 7 as state 8 with a value of 0, which takes the nearest route node outside the view cone. In the
+  subway that is a node on its tracks, next to the player. **This is the subway crowd.**
+- **Every crowd and police squad of the mission is state 7.** The other spawners are added in state 0 at their
+  parked positions and started later with `GangStartSpawner(gang, name, 7, value)`. They are the rival rioters
+  `RiotRogues` and `RiotMoonrunners` (value 30, while a player is in section 2) and the wanted gangs `CopRogues`,
+  `CopMoonrunners` and `CopPanzers`, and the police `Cops` (value 60, from the cop scene `l34_c3` on and again in
+  `level34_gate`). The level police `RiotCops` (50) start at `P1.HeadToGate` and in `level34_gate`. So the same
+  placement decides where every gang and every cop of the riot appears.
+- **What each rioter does** (`F.RiotPedSpawn(human, gang, name)`): violence reaction off, threat and investigate
+  responses 0. While `bRiotPeds` is true, 75 % get `GoalRiot(h, 10, 100, 2, 0, 0)` ([GoalRiot](ai.md#riot)) and 25 %
+  `FlagNetTraverse(h, 1, 100)` (the 34-node pedestrian net that `RunLevel` sets up). While it is false, all walk the
+  net. In both cases 3 in 10 get a random object of `tCivObjects` in hand (`HuPlaceItemInHand`). `bRiotPeds` is set
+  true when `level34.lua` loads. `P1.SetupSection1` sets it false for the intro, and `P1.StoreObjectives` sets it
+  true again once the car flippers' scene has run. So from the loot objective on, most of the crowd riots.
+
+**Against `missions.yaml`.** Its notes for `level34` record the intro, the loot, the radio and mugging objectives,
+the props, the rioters' decisions and the riot waves as working, and leave one question: how the smash and loot
+acts find targets. The play-test shows these are also missing:
+
+| What the original does | Coney now | Page |
+| --- | --- | --- |
+| State 7 places every crowd, gang and police human out of sight on a pedestrian flag | placed as state 8 with value 0: at the player's side, on the subway tracks at the start | [reinforcements](ai-world.md#spawner-reinforcements) |
+| A rioter's smash finds a vandalisable object with a stand point; a loot finds a store flag (activity 14) whose group still has objects | nothing found (the question in `missions.yaml`) | [GoalRiot](ai.md#riot) |
+| The looters wreck zones 51 and 29 (`TacticVandalize`), and the Panzers rob the pharmacy (`TacticSteal`) | both kinds are `StationTactic`: the members stand (`repo:src/ai/story_tactics.cpp`) | [AI: tactics](ai.md#tactics) |
+| The roof throwers and bar staff throw bottles, speakers, TVs, boxes and drum kits (`GoalStationaryThrower`) | the clip plays, nothing leaves the hand (`repo:src/ai/riot_goals.h`) | [GoalStationaryThrower](../references/bindings/ai.md#goalstationarythrower) |
+| Police: the `Cops` and `RiotCops` spawners (state 7), and at checkpoint 4 a forced crime level with a crime at the cop search flag | the spawners place their cops as above; the dispatch states 4 and 9 never spawn (no crimes are routed: checklist item 13) | [Spawners](ai.md#spawners), [Crimes](crimes.md) |
+| The Warriors' R2 commands | not every command works (checklist item 11) | [AI: Warrior commands](ai.md#warrior-commands) |
+
+**Coney fixes (item 17).**
+
+1. Build state 7's placement ([its fix list](ai-world.md#spawner-reinforcements)). This one change moves the
+   subway crowd onto the streets, and the rival gangs and the police with it.
+2. Check the crowd's tasks once it spawns where it should. `F.RiotPedSpawn` must receive (handle, gang id, spawner
+   name). `FlagNetTraverse` must walk the 34-node net, and `GoalRiot` must roam, decide and leave in the gang's turf
+   (`RiotCivs1` has no turf box, so the turf gate always passes).
+3. Give the riot's smash and loot acts their targets: vandalisable world objects with a reachable stand point, and the
+   store flags (activity 14) with objects left in their group ([GoalRiot](ai.md#riot) states 1 and 2).
+4. Build `TacticVandalize` (members wreck the zone's objects; code 1 once nothing is left) and `TacticSteal` in
+   place of the standing stand-in.
+5. Let `GoalStationaryThrower`'s throws release their object (the thrown-object physics), so the roof throwers and
+   bar staff hit.
+6. Police: once 1 is in, check that `Cops` appear from the cop scene on and `RiotCops` from `P1.HeadToGate` on. The
+   routed crimes (dispatch states 4 and 9) are item 13's work.
+7. A disc playthrough test from checkpoint 1: after `P1.EndIntroScene`, no `RiotCivs1` human within 35 m of the
+   player while he is in the subway, and at least one on the street flags once he comes out.
+
 ### `level2.lua` (mission 5) {#level2}
 
 Story mission 5, loaded from the hub's checkpoint 2: the Warriors (six, Cleon player 1 and Fox player 2) against the

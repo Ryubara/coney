@@ -53,7 +53,7 @@ entries:
     evidence: inferred
   - id: 7
     name: reinforcements
-    behaviour: "Spawns around the player out of the camera's sight and sends each human to the gang's first live member."
+    behaviour: "Spawns on a pedestrian flag 35-70 m from the player, out of the camera's sight and clear of the gang's friends."
     settable: true
     added: 59
     started: 44
