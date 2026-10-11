@@ -291,6 +291,21 @@ TEST_CASE("The player's workout on himself: cross pumps it, left alone it runs d
         CHECK(level.notes.back() == 1.0);
         CHECK_FALSE(player.human().script().workingOut);
     }
+    SECTION("a clip played over the loop does not stop the workout: triangle still ends it") {
+        // Human_EndWorkout stops the blend only if it is on top: the update goes on without it.
+        level.call("HuWorkout", workoutArgs(1.0, 1.0));
+        play(30, 4);
+        REQUIRE(player.human().workoutLoop() != nullptr);
+        player.human().playScripted(clips.clips.at("w_slow"), 999, 1.0F, 0.1F, coney::human::HeldFlags{});
+        play(1, 0);
+        REQUIRE(player.human().workoutLoop() == nullptr);
+        REQUIRE(hub.workoutOf(1.0) != nullptr);
+        const std::size_t notes = level.notes.size();
+        play(1, 0, true);
+        CHECK(hub.workoutOf(1.0) == nullptr);
+        CHECK(level.notes.size() == notes + 1);
+        CHECK_FALSE(player.human().script().workingOut);
+    }
     SECTION("triangle quits at once") {
         level.call("HuWorkout", workoutArgs(1.0, 1.0));
         play(30, 4);

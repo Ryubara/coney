@@ -59,6 +59,8 @@ struct WorkoutRun {
     bool gone = false;           ///< Dropped without an end (a start that never began).
     human::WorkoutEffort effort; ///< The effort `+0x670` and hold counter `+0x674`.
     std::uint32_t wraps = 0;     ///< The loop's wraps already called back as repetitions.
+    bool looping = false;        ///< The enter clip has handed over to the loop: the update runs from then on.
+    float value = 0.0F;          ///< The loop's value when last seen on top (*v* while another clip covers it).
 };
 
 /// The hub bindings' host on the brains a level's scripts drive.
@@ -111,6 +113,8 @@ class ScriptedHub final : public script::HubBindingHost {
     /// humans play no clip by id from outside their dispatcher yet). Refused for a human out of health.
     /// @orig 0x00238948 Human_PlayDynAnim (unknown)
     void playDynAnim(double human, std::string_view anim) override;
+    /// `HuWorkout`: the five clips, the target and the start (action `0x1b`), which the next update begins. The
+    /// binding's Ghidra name repeats that of the start it leads to (beginWorkout(), `0x0022d348`).
     /// @orig 0x00238bd8 Human_StartWorkout (unknown)
     void workout(const script::WorkoutCall& call) override;
     /// @orig 0x00238d30 Human_StopWorkout (unknown)
@@ -165,12 +169,14 @@ class ScriptedHub final : public script::HubBindingHost {
     void onBrain(double handle, const std::function<void(Brain&)>& body);
     // Calls the Lua function `name` with the human's handle, when it is set.
     void callBack(const std::string& name, double handle);
-    // Ends `brain`'s workout: the flag cleared and the end callback called.
+    // Ends `brain`'s workout: the flag cleared, the end callback called, then the exit clip (the loop stopped only
+    // when it is on top). @orig 0x0022d380 Human_EndWorkout (unknown)
     void endWorkout(Brain& brain);
     // One update of the workouts.
     void updateWorkouts(std::uint64_t nowMs);
     // The start (action 0x1b) of `run` on `brain`: the reach and the five clips, then the clips, the flag and the
     // start callback; false when it cannot start (the action goes back to 0).
+    // @orig 0x0022d348 Human_StartWorkout (unknown)
     bool beginWorkout(Brain& brain, WorkoutRun& run);
     // One update of the players' enemy counts.
     void updateEnemyCounts();

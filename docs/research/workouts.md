@@ -301,11 +301,25 @@ hold counter, the 0.03 decay and its 0.3 share below a third, the end on triangl
 blend's leading clip calls the repetition callback; the end clears the flag, calls the end callback and plays the exit
 clip. `repo:tests/human/workout_test.cpp` checks the rules (the run-down ends 58-68 updates into the loop, the
 runtime's 63) and `repo:tests/platform/disc_hub_workout_test.cpp` plays each cycle station through the pad: five
-repetitions 25-45 updates apart at a press every 4 updates, the rank's unlock and the prompt back with `Rank: 1/10`;
-at the chin-ups also a run-down with no repetition and a quit with triangle. **Stand-ins and choices**: another
-human's equipment is reached within 1.5 m (the start clip's attack-table reach is not read); the blend starts at
-value 0; `Human_AlignToObject` turns a human only toward another target; Coney applies a script's teleport of player
-1 at the end of the frame, after the workout may have begun, so a teleport keeps a running workout's clips.
+repetitions at a press every 4 updates, each gap within 3 updates of the runtime's or a little below (Coney's 33-34
+at the chin-ups, 28 at the push-ups and 36 at the sit-ups against the runtime's 37, 30-31 and 39-40: an open question
+below), the rank's unlock and the prompt back with `Rank: 1/10`; at the chin-ups also a
+run-down with no repetition ending 58-68 updates into the loop, and triangle ending the loop on the update it is
+pressed. **Stand-ins and choices**:
+
+- Another human's equipment is reached within 1.5 m (the start clip's attack-table reach is not read).
+- The blend starts at value 0.
+- `Human_AlignToObject` turns a human only toward another target.
+- Coney applies a script's teleport of player 1 at the end of the frame, after the workout may have begun, so every
+  spawn of a human that is working out keeps its clips.
+- The update runs from the loop's first update on, whether or not the loop is on top: `Human_EndWorkout` stops the
+  blend only if it is on top, so a clip played over it (a hit reaction, a script's clip) leaves the workout running;
+  meanwhile *v* is the loop's last value and only the effort, the pumps and the end run, so triangle still ends it
+  (inferred: the code that skips the update during the enter clip is not on this page).
+- Not done: the start's push sphere off (Coney's bodies push nothing aside yet) and the held flag `0x2000` on the
+  start's chain and on the exit clip (`Human_PlayActionClip(h, 692, 0x2000, 0)`; in Coney's task flags `0x2000` is
+  the duck's counter phase, so the bit's meaning here needs reading first); the exit clip fades in at the combat
+  fade.
 
 ## Notes for implementers
 
@@ -348,6 +362,12 @@ walk to each station with the stick at a partial deflection, then:
    assert `UM_Unlock(95, 1, 9)` (or 10) and the power (stamina) maximum raised.
 
 ## Open questions
+
+- Why Coney's repetitions, pumped every 4 updates, come about a tenth sooner than the original's (33-34, 28 and 36
+  updates against 37, 30-31 and 39-40 at the chin-ups, push-ups and sit-ups). The ratio is close to 0.9, the rate
+  `CfgAnimSpeeds` gives clips with range flag `0x2000` ([Animation: Playback rate](formats/animation.md#playback-rate)),
+  so the loop may play at that rate (speculative); a runtime read of the blend task's rate `+0x0c` during a workout
+  would settle it.
 
 - The slow clip of the sit-ups (not reached at runtime) and the enter and exit clips' lengths: read them from the clip
   files.

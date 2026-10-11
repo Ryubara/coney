@@ -409,22 +409,33 @@ void ScriptedHub::updateWorkouts(std::uint64_t /*nowMs*/) {
             }
             continue;
         }
-        // The loop, once the enter clip has handed over to it (the enter clip changes nothing): a pad's human pumps
-        // and quits, a human no pad drives follows the effort the script wrote; the blend gets the target and rate,
-        // and each wrap of its leading clip is a repetition.
-        if (anim::GaitBlendTask* loop = body.workoutLoop(); loop != nullptr && !run.ending) {
+        // The update, once the enter clip has handed over to the loop (the enter clip changes nothing): a pad's human
+        // pumps and quits, a human no pad drives follows the effort the script wrote; the blend gets the target and
+        // rate, and each wrap of its leading clip is a repetition. **Coney choice**: the update does not need the loop
+        // on top (Human_EndWorkout stops the blend only "if it is on top", so the workout outlives a clip played over
+        // it): with another clip on top, *v* is the loop's last value and only the effort, the pumps and the end run,
+        // so triangle still ends it and a workout can never be stuck.
+        anim::GaitBlendTask* loop = body.workoutLoop();
+        if (loop != nullptr) {
+            run.looping = true;
+            run.value = loop->value();
+        }
+        if (run.looping && !run.ending) {
             const human::WorkoutParams params = paramsOf(settings);
             const combat::CommandId command = body.record().command;
-            const human::WorkoutStep step =
-                body.record().padDriven
-                    ? run.effort.padUpdate(params, loop->value(), loop->lowerTime(), loop->lowerClip().duration,
-                                           command == kPumpCommand, command == kQuitCommand)
-                    : run.effort.aiUpdate(params, loop->value());
-            loop->setTarget(step.target);
-            loop->setRate(step.rate);
-            for (; run.wraps < loop->wraps(); ++run.wraps) {
-                if (settings != nullptr) {
-                    callBack(settings->onRep, it->first);
+            const float lowerTime = loop != nullptr ? loop->lowerTime() : 0.0F;
+            const float lowerDuration = loop != nullptr ? loop->lowerClip().duration : 0.0F;
+            const human::WorkoutStep step = body.record().padDriven
+                                                ? run.effort.padUpdate(params, run.value, lowerTime, lowerDuration,
+                                                                       command == kPumpCommand, command == kQuitCommand)
+                                                : run.effort.aiUpdate(params, run.value);
+            if (loop != nullptr) {
+                loop->setTarget(step.target);
+                loop->setRate(step.rate);
+                for (; run.wraps < loop->wraps(); ++run.wraps) {
+                    if (settings != nullptr) {
+                        callBack(settings->onRep, it->first);
+                    }
                 }
             }
             run.ending = run.ending || step.end;

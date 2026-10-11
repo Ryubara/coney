@@ -303,9 +303,10 @@ void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float
     m_fighter.setBrokenHold(broken);
     m_announced.clear();
     endClimb();
-    // A workout's clips stay: workout.StartWorkout teleports the player onto the station's flag before HuWorkout, but
-    // Coney applies a script's teleport of player 1 at the end of the frame, after the workout may have begun
-    // (docs/research/workouts.md#start).
+    // A working-out human's clips stay, on every spawn (not only a teleport's): workout.StartWorkout teleports the
+    // player onto the station's flag before HuWorkout, but Coney applies a script's teleport of player 1 at the end of
+    // the frame, after the workout may have begun (docs/research/workouts.md#start). Any other spawn of a human that
+    // is working out (a respawn, a character change) keeps them too, until the workout ends.
     if (m_animator.state() != AnimState::Idle && !m_script.workingOut) {
         m_animator.stopToIdle();
     }

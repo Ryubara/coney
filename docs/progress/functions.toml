@@ -4288,6 +4288,18 @@ name = "Mugging_End"
 subsystem = "Human"
 
 [[function]]
+address = 0x0022d348
+name = "Human_StartWorkout"
+subsystem = "Human"
+size = 52
+
+[[function]]
+address = 0x0022d380
+name = "Human_EndWorkout"
+subsystem = "Human"
+size = 120
+
+[[function]]
 address = 0x0022d3f8
 name = "Uncuff_BeginMash"
 subsystem = "Human"

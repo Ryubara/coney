@@ -41,28 +41,33 @@ namespace {
 using coney::anim::Vec3;
 
 // The stations' prompt flags (fStartWorkout[k]) and workout flags (fWorkout[k]) as the research gives them, metres.
-// Each has its unlock offset (the rank's records start there).
+// Each has its unlock offset (the rank's records start there) and, for a cycle station, the span of updates between
+// two repetitions pumped every 4 updates: the runtime's (37 at the chin-ups, 30-31 at the push-ups, 39-40 at the
+// sit-ups, docs/research/workouts.md#repetitions) and 3 either side, for the blend's value near but not at 2. Coney's
+// repetitions come about a tenth sooner (an open question on that page), so the chin-ups' span reaches down to 32.
 struct Station {
     std::string_view name;
     Vec3 prompt;
     Vec3 workout;
     int unlockOffset = 0;
+    std::uint64_t repGapMin = 0;
+    std::uint64_t repGapMax = 0;
 };
 constexpr std::array<Station, 4> kStations{{
-    {"heavy bag", {-174.8F, 106.0F, -197.5F}, {-175.5F, 106.0F, -197.4F}, 11},
-    {"chin-ups", {-181.0F, 106.4F, -197.5F}, {-181.0F, 105.7F, -197.5F}, 31},
-    {"push-ups", {-174.0F, 109.6F, -197.4F}, {-174.0F, 109.0F, -197.4F}, 41},
-    {"sit-ups", {-177.2F, 109.5F, -197.4F}, {-177.2F, 108.7F, -197.4F}, 51},
+    {"heavy bag", {-174.8F, 106.0F, -197.5F}, {-175.5F, 106.0F, -197.4F}, 11, 0, 0},
+    {"chin-ups", {-181.0F, 106.4F, -197.5F}, {-181.0F, 105.7F, -197.5F}, 31, 32, 40},
+    {"push-ups", {-174.0F, 109.6F, -197.4F}, {-174.0F, 109.0F, -197.4F}, 41, 27, 34},
+    {"sit-ups", {-177.2F, 109.5F, -197.4F}, {-177.2F, 108.7F, -197.4F}, 51, 36, 43},
 }};
 
 // Frames the walk onto fWorkout[k] may take (worksetup.TimeOut quits after 5 s), the engine's start after it (the
-// workout file's load and StartTimeOut's 1.5 s), the prompt's return (DelayQuit's 1.5 s and more), and the span of
-// frames between two repetitions pumped every 4 updates (30-40 at runtime, docs/research/workouts.md#repetitions).
+// workout file's load and StartTimeOut's 1.5 s), the prompt's return (DelayQuit's 1.5 s and more), and the updates
+// from the loop's start to the end with no presses (63 at runtime, docs/research/workouts.md#repetitions).
 constexpr int kArrivalFrames = 60;
 constexpr int kStartFrames = 60;
 constexpr int kPromptFrames = 150;
-constexpr std::uint64_t kRepGapMin = 25;
-constexpr std::uint64_t kRepGapMax = 45;
+constexpr int kRunDownMin = 58;
+constexpr int kRunDownMax = 68;
 
 // How far the stick is pushed while walking (a walk, below the run's 0.95), and how near the driver goes to a
 // waypoint before taking the next, and to the prompt before it stops: inside the context action's 1.8 m.
@@ -224,6 +229,8 @@ struct CycleRun {
     std::vector<std::uint64_t> repFrames; // the frames of play each workout.DoRep came on
     bool started = false;
     bool ended = false;
+    int loopAt = -1; // the frame (from the call's start) the loop first played, after the enter clip
+    int endAt = -1;  // the frame the end callback came on
 };
 
 // Starts the station whose prompt the player stands at: triangle, then the walk onto fWorkout[k] (message 8) and
@@ -243,10 +250,16 @@ CycleRun playCycle(Gym& gym, std::size_t from, int every, int limit, int quitAt 
         const bool quit = i == quitAt;
         const bool pump = every > 0 && i % every == 0;
         gym.frame(0, 0, quit ? "triangle" : (pump ? "cross" : ""));
+        if (run.loopAt < 0 && gym.player().workoutLoop() != nullptr) {
+            run.loopAt = i;
+        }
         while (gym.traced(from, "> workout.DoRep(") > run.repFrames.size()) {
             run.repFrames.push_back(gym.playFrames());
         }
         run.ended = gym.traced(from, "> workout.CycleQuit(") > 0;
+        if (run.ended) {
+            run.endAt = i;
+        }
     }
     return run;
 }
@@ -313,8 +326,9 @@ TEST_CASE("the disc's level95: the cycle stations play through the pad: start, p
         CHECK(pumped.repFrames.size() == 5);
         for (std::size_t r = 1; r < pumped.repFrames.size(); ++r) {
             const std::uint64_t gap = pumped.repFrames[r] - pumped.repFrames[r - 1];
-            CHECK(gap >= kRepGapMin);
-            CHECK(gap <= kRepGapMax);
+            INFO("repetition " << r << ": " << gap << " updates");
+            CHECK(gap >= station.repGapMin);
+            CHECK(gap <= station.repGapMax);
         }
         CHECK(gym.traced(from, std::format("UM_Unlock(95, 1, {})", station.unlockOffset)) == 1);
         CHECK(gym.traced(from, "HuStopWorkout(") == 1);
@@ -322,8 +336,12 @@ TEST_CASE("the disc's level95: the cycle stations play through the pad: start, p
         REQUIRE(promptBack(gym, from));
         CHECK(gym.traced(from, "Rank: 1/10") > 0);
         CHECK_FALSE(gym.player().script().workingOut);
-        std::printf("  level95 %s: %zu repetitions pumped, unlocked %zu\n", std::string(station.name).c_str(),
-                    pumped.repFrames.size(), gym.traced(from, "UM_Unlock(95, 1,"));
+        std::string gaps;
+        for (std::size_t r = 1; r < pumped.repFrames.size(); ++r) {
+            gaps += std::format(" {}", pumped.repFrames[r] - pumped.repFrames[r - 1]);
+        }
+        std::printf("  level95 %s: %zu repetitions pumped, gaps%s, unlocked %zu\n", std::string(station.name).c_str(),
+                    pumped.repFrames.size(), gaps.c_str(), gym.traced(from, "UM_Unlock(95, 1,"));
         if (k != 1) {
             continue;
         }
@@ -334,16 +352,22 @@ TEST_CASE("the disc's level95: the cycle stations play through the pad: start, p
         const CycleRun ranDown = playCycle(gym, from, 0, 300);
         CHECK(ranDown.ended);
         CHECK(ranDown.repFrames.empty());
+        REQUIRE(ranDown.loopAt >= 0);
+        CHECK(ranDown.endAt - ranDown.loopAt >= kRunDownMin);
+        CHECK(ranDown.endAt - ranDown.loopAt <= kRunDownMax);
         CHECK(gym.traced(from, "UM_Unlock(") == 0);
         REQUIRE(promptBack(gym, from));
 
-        // 4. Quit: triangle during the loop ends it at once, the rank unchanged.
+        // 4. Quit: triangle during the loop ends it on that update, the rank unchanged.
         REQUIRE(startCycle(gym, from));
         const CycleRun quit = playCycle(gym, from, 4, 300, 60);
         CHECK(quit.ended);
+        CHECK(quit.loopAt >= 0);
+        CHECK(quit.loopAt < 60);
+        CHECK(quit.endAt == 60);
         CHECK(gym.traced(from, "UM_Unlock(") == 0);
         REQUIRE(promptBack(gym, from));
-        std::printf("  level95 chin-ups: run down %zu repetitions, quit ended %d\n", ranDown.repFrames.size(),
-                    quit.ended ? 1 : 0);
+        std::printf("  level95 chin-ups: run down %zu repetitions in %d updates of loop, quit ended %d at %d\n",
+                    ranDown.repFrames.size(), ranDown.endAt - ranDown.loopAt, quit.ended ? 1 : 0, quit.endAt);
     }
 }

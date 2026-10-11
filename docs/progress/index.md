@@ -28,12 +28,12 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 17.4%](https://img.shields.io/badge/reimplemented-17.4%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 17.5%](https://img.shields.io/badge/reimplemented-17.5%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 ![Understood: 99.9%](https://img.shields.io/badge/understood-99.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.4% of the game's own code (585,352 of 3,354,776 bytes, 2,156 functions) |
+| **Reimplemented** | `███▌░░░░░░░░░░░░░░░░` | 17.5% of the game's own code (585,524 of 3,354,776 bytes, 2,158 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 99.9% named in Ghidra and cited with evidence (3,282,584 of 3,284,276 bytes; 11,421 of 11,426 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
@@ -73,7 +73,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▋░░░░░░░░░░░░░` | 33.1% | 117 | 100,440 |
 | `Graphics` | `██▋░░░░░░░░░░░░░░░░░` | 12.8% | 91 | 195,624 |
 | `GUI` | `████▏░░░░░░░░░░░░░░░` | 20.7% | 246 | 497,416 |
-| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.8% | 802 | 1,096,672 |
+| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.8% | 804 | 1,096,672 |
 | `Maths (unnamed)` | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% | 9 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `▌░░░░░░░░░░░░░░░░░░░` | 2.5% | 10 | 79,032 |
@@ -908,6 +908,8 @@ at the top of the repository's `README.md`.
 | `0x0022ae40` | `Human_SpeedForGait` | `Human` | 112 |
 | `0x0022aeb0` | `Human_GaitOfVelocity` | `Human` | not filled in |
 | `0x0022ceb8` | `Mugging_End` | `Human` | not filled in |
+| `0x0022d348` | `Human_StartWorkout` | `Human` | 52 |
+| `0x0022d380` | `Human_EndWorkout` | `Human` | 120 |
 | `0x0022d3f8` | `Uncuff_BeginMash` | `Human` | not filled in |
 | `0x0022d790` | `LockPick_Start` | `Human` | 376 |
 | `0x0022d908` | `LockPick_End` | `Human` | 824 |
