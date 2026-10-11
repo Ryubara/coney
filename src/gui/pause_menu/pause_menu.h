@@ -17,6 +17,7 @@
 #include "gui/global_strings.h"
 #include "gui/menu_input.h"
 #include "gui/option_grid.h"
+#include "gui/pause_menu/control_menu.h"
 #include "gui/pause_menu/pause_items.h"
 #include "gui/pause_menu/yes_no_box.h"
 #include "gui/text_widget.h"
@@ -76,10 +77,11 @@ struct PauseMenuSetup {
 ///   closed() and outcome() says what to do.
 ///
 /// Coney's stand-ins (docs/research/pause.md#coneys-implementation): the Stats screen is never available (Coney has no
-/// character stats), so Stats opens nothing; the Options and Controls screens are lists of their entries' names that
-/// do nothing on accept (`OptionMenu.cpp`, `ControlMenuHUD.cpp` not researched); the headers (`CircledTextHeader`),
-/// the objective lists and the Restart and Quit screens are centred texts at Coney's positions and colours; the menu
-/// waits for no sound before it closes; the co-op quit (Player 2 / All) is not offered (Coney has one player).
+/// character stats), so Stats opens nothing; the Options screen is a list of its entries' names that does nothing on
+/// accept (`OptionMenu.cpp` not yet implemented); the Controls screen is ControlMenu; the headers
+/// (`CircledTextHeader`), the objective lists and the Restart and Quit screens are centred texts at Coney's positions
+/// and colours; the menu waits for no sound before it closes; the co-op quit (Player 2 / All) is not offered (Coney has
+/// one player).
 ///
 /// Research: docs/research/pause.md
 /// @orig 0x001db3c0 PauseMenu_Construct (unknown)
@@ -127,6 +129,8 @@ class PauseMenu : public Widget {
     void setSoundSink(std::function<void(int cue)> playCue);
     /// Draws the background through `batch` (not owned; null: no background).
     void setBackgroundBatch(graphics::SpriteBatch* batch) { m_background.setBatch(batch); }
+    /// Draws the Controls screen's pad picture into `batch` (ControlMenu::kPictureRecord's sheet); null draws none.
+    void setControllerBatch(graphics::SpriteBatch* batch) { m_controls.setPictureBatch(batch); }
 
     /// Opens the menu at game time `nowMs` as `setup` says.
     /// @orig 0x001dbee0 PauseMenu_Open (unknown)
@@ -168,10 +172,12 @@ class PauseMenu : public Widget {
     /// The texts of the open screen's lines, as drawn (for tests and the log).
     [[nodiscard]] std::vector<std::string> screenLines() const;
 
-    /// The Options and Controls screens' entries (Coney's stand-in lists, docs/research/pause.md#the-items-screens).
+    /// The Controls screen.
+    [[nodiscard]] const ControlMenu& controls() const { return m_controls; }
+
+    /// The Options screen's entries (Coney's stand-in list, docs/research/pause.md#the-items-screens).
     static constexpr std::array<std::string_view, 7> kOptionsEntries{
         "Lighting", "Camera", "Audio", "Video", "Subtitles", "Vibration", "Restore Default"};
-    static constexpr std::array<std::string_view, 2> kControlsEntries{"Controller", "Tutorial"};
 
   private:
     // The quit destination the Quit screen offers at index i.
@@ -216,6 +222,7 @@ class PauseMenu : public Widget {
     OptionGrid m_grid;
     UsageInfo m_usage;
     YesNoBox m_yesNo;
+    ControlMenu m_controls;
     std::vector<QuitChoice> m_quitChoices;
 
     PauseScreen m_screen = PauseScreen::Grid;

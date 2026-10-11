@@ -72,6 +72,12 @@ class MenuLayer {
     void load(const PauseSheetLoader& loadSheet, const PauseRecordLoader& loadRecord,
               std::optional<std::uint32_t> record, std::size_t capacity, float depth,
               const std::function<void(std::string_view)>& log, std::string_view who);
+    /// Loads a second sheet, of record `record`, into a batch of `capacity` at `depth` (the pause menu's pad picture);
+    /// `log` gets a line when it fails. Released with the rest.
+    void loadSecond(const PauseRecordLoader& loadRecord, std::uint32_t record, std::size_t capacity, float depth,
+                    const std::function<void(std::string_view)>& log, std::string_view who);
+    /// The second sheet's batch; null when it did not load.
+    [[nodiscard]] graphics::SpriteBatch* second() { return m_second ? &*m_second : nullptr; }
     /// Releases everything load() made.
     void release();
 
@@ -93,6 +99,7 @@ class MenuLayer {
     std::optional<graphics::SpriteBatch> m_textBatch;
     std::optional<graphics::SpriteBatch> m_bigBatch;
     std::optional<graphics::SpriteBatch> m_sprites;
+    std::optional<graphics::SpriteBatch> m_second;
     graphics::OverlayCamera m_camera;
     graphics::OverlayPass m_pass;
     gui::GuiCanvas m_canvas{

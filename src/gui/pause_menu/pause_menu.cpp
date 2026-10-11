@@ -146,6 +146,7 @@ void PauseMenu::animate(std::uint64_t nowMs) {
     }
     m_usage.setFade(fade);
     m_yesNo.setFade(fade);
+    m_controls.setFade(fade);
     m_grid.setFade(fade);
 }
 
@@ -175,6 +176,9 @@ void PauseMenu::update(const GuiFrame& frame) {
     }
     m_grid.update(frame);
     m_usage.update(frame);
+    if (m_screen == PauseScreen::Controls) {
+        m_controls.update(frame);
+    }
     m_yesNo.update(frame);
 
     // Nothing is taken while closing.
@@ -219,6 +223,14 @@ void PauseMenu::onGridCommand(MenuCommand command, std::uint64_t nowMs) {
 }
 
 void PauseMenu::onScreenCommand(MenuCommand command, std::uint64_t nowMs) {
+    // The Controls screen takes every command; leaving it gives the grid its input back.
+    if (m_screen == PauseScreen::Controls) {
+        if (m_controls.handle(command, nowMs)) {
+            closeScreen();
+            m_grid.takeFocus(m_input, nowMs);
+        }
+        return;
+    }
     switch (command) {
     case MenuCommand::Back:
         playCue(kBackCue);
@@ -260,7 +272,7 @@ void PauseMenu::onScreenCommand(MenuCommand command, std::uint64_t nowMs) {
             }
             ask(pause_strings::kQuitQuestion);
         }
-        // The Objectives, Options and Controls screens do nothing on accept here.
+        // The Objectives and Options screens do nothing on accept here.
         (void)nowMs;
         return;
     case MenuCommand::Left:
@@ -296,6 +308,8 @@ void PauseMenu::selectItem(PauseItem item, std::uint64_t nowMs) {
         openScreen(PauseScreen::Options, 0);
         return;
     case PauseItem::Controls:
+        // `ControlMenuHUD_Open`, with the pausing player's input.
+        m_controls.open(m_strings, m_input, [this](int cue) { playCue(cue); }, nowMs);
         openScreen(PauseScreen::Controls, 0);
         return;
     case PauseItem::Restart:
@@ -346,7 +360,7 @@ std::size_t PauseMenu::screenEntries() const {
     case PauseScreen::Options:
         return kOptionsEntries.size();
     case PauseScreen::Controls:
-        return kControlsEntries.size();
+        return 0;
     case PauseScreen::Restart:
         return 2;
     case PauseScreen::Quit:
@@ -419,12 +433,12 @@ void PauseMenu::refreshScreen() {
         }
         return;
     }
-    case PauseScreen::Options:
-    case PauseScreen::Controls: {
-        const bool options = m_screen == PauseScreen::Options;
-        const std::size_t count = options ? kOptionsEntries.size() : kControlsEntries.size();
-        for (std::size_t i = 0; i < count; ++i) {
-            const std::string_view name = options ? kOptionsEntries.at(i) : kControlsEntries.at(i);
+    case PauseScreen::Controls:
+        // ControlMenu draws itself.
+        return;
+    case PauseScreen::Options: {
+        for (std::size_t i = 0; i < kOptionsEntries.size(); ++i) {
+            const std::string_view name = kOptionsEntries.at(i);
             addLine(name, kEntryY + (kEntryPitch * static_cast<float>(i)), i == m_selection ? kChosenWhite : kDimGrey,
                     kBigFontSlot, 1.0F);
         }
@@ -464,6 +478,9 @@ void PauseMenu::refreshScreen() {
 }
 
 std::vector<std::string> PauseMenu::screenLines() const {
+    if (m_screen == PauseScreen::Controls) {
+        return m_controls.lines();
+    }
     std::vector<std::string> lines;
     lines.reserve(m_lines.size());
     for (const std::unique_ptr<TextWidget>& line : m_lines) {
@@ -482,6 +499,9 @@ void PauseMenu::render(const GuiCanvas& canvas) const {
     }
     for (const std::unique_ptr<TextWidget>& line : m_lines) {
         line->render(canvas);
+    }
+    if (m_screen == PauseScreen::Controls) {
+        m_controls.render(canvas);
     }
     m_yesNo.render(canvas);
     m_grid.render(canvas);

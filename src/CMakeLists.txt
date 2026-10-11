@@ -93,6 +93,7 @@ add_library(coney_core STATIC
     gui/pause_menu/mission_failed_menu.cpp
     gui/pause_menu/pause_items.cpp
     gui/pause_menu/pause_menu.cpp
+    gui/pause_menu/control_menu.cpp
     gui/pause_menu/yes_no_box.cpp
     gui/profile_management_gui/pm_controller.cpp
     gui/profile_management_gui/pm_extras.cpp

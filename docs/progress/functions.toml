@@ -3988,6 +3988,84 @@ subsystem = "GUI"
 size = 224
 
 [[function]]
+address = 0x001e3520
+name = "ControlPage_Init"
+subsystem = "GUI"
+size = 180
+
+[[function]]
+address = 0x001e3828
+name = "TutorialPage_Init"
+subsystem = "GUI"
+size = 1388
+
+[[function]]
+address = 0x001e3e60
+name = "TutorialPage_OnCommand"
+subsystem = "GUI"
+size = 112
+
+[[function]]
+address = 0x001e3f38
+name = "TutorialPage_Render"
+subsystem = "GUI"
+size = 96
+
+[[function]]
+address = 0x001e4130
+name = "ControllerPage_Init"
+subsystem = "GUI"
+size = 1040
+
+[[function]]
+address = 0x001e4618
+name = "ControllerPage_OnCommand"
+subsystem = "GUI"
+size = 164
+
+[[function]]
+address = 0x001e4820
+name = "ControllerPage_Render"
+subsystem = "GUI"
+size = 232
+
+[[function]]
+address = 0x001e4908
+name = "ControlMenuHUD_Construct"
+subsystem = "GUI"
+size = 128
+
+[[function]]
+address = 0x001e4a30
+name = "ControlMenuHUD_Open"
+subsystem = "GUI"
+size = 1016
+
+[[function]]
+address = 0x001e4f18
+name = "ControlMenuHUD_OnCommand"
+subsystem = "GUI"
+size = 532
+
+[[function]]
+address = 0x001e5130
+name = "ControlMenuHUD_Update"
+subsystem = "GUI"
+size = 452
+
+[[function]]
+address = 0x001e52f8
+name = "ControlMenuHUD_SetAlpha"
+subsystem = "GUI"
+size = 8
+
+[[function]]
+address = 0x001e5300
+name = "ControlMenuHUD_Render"
+subsystem = "GUI"
+size = 312
+
+[[function]]
 address = 0x001e95c0
 name = "MenuInput_Dispatch"
 subsystem = "GUI"

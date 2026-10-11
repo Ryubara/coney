@@ -768,7 +768,17 @@ grids, the Yes/No box and the leaving actions follow this page; tests in `repo:t
 Coney stand-ins, each an open question below:
 
 - The headers (`CircledTextHeader`), the objective lists and the Restart and Quit screens are centred texts at Coney's
-  positions and colours; the Options and Controls screens are lists of their entries' names that do nothing on accept.
+  positions and colours; the Options screen is a list of its entries' names that does nothing on accept.
+- The Controls screen (`repo:src/gui/pause_menu/control_menu.h`, `ControlMenu`, written from
+  [`GUI/ControlMenuHUD.cpp`](#fn-controlmenuhud)) has the entries, the cues, the pages and their strings, the pad
+  picture (sheet-table record `0x18f`, loaded by the pause mode) and the tips' 550 ms text delay as this page gives
+  them; Coney's stand-ins are the places the page names only by address: the pages' title at the entries' place
+  (`0x0050eee4`, `0x0050eee8`), the 14 labels in two columns beside the picture at size 0.9 (the table `0x0050ef20`;
+  the language shift of label 1 is not applied), the tips' list at (0.26, 0.35), 0.04 apart, size 1.0, the text
+  wrapped to 0.48 (`0x0050eef0`, `0x0050eef4`; the item's offsets `+0x78`, `+0x7c`), shown at once when due rather
+  than revealed, and only whole tips inside the 0.5 clip drawn. Tests: `repo:tests/gui/control_menu_test.cpp`,
+  `repo:tests/gui/pause_menu_test.cpp` and `repo:tests/platform/disc_pause_controls_test.cpp` (START, the left stick
+  at 70 % and cross in `level99` started as `--play-level` starts it).
 - The Stats screen is never available (Coney has no character stats), so Stats opens nothing.
 - The menu does not wait for its last cue to end before it pops.
 - The tint is a black quad rising to opaque over 1.4 s, under the menu; the mission-failed fade is the mode's own.
@@ -782,6 +792,7 @@ Coney stand-ins, each an open question below:
 
 ## Open questions
 
+<<<<<<< ours
 - The Stats screen ([answered](#stats-screen) for its layout, values and availability; the flag `+0x3bb8` is taken to
   be what `PauseStats_Setup`'s slot `+0x44` call sets, inferred). Still open: the meaning of the 0.55 passed to
   `MessageHUD_ReadAutoIndent`, the unused floats t6-t9 of the difficulty table, the `0x08` and `0x02` layouts, and a
@@ -792,6 +803,14 @@ Coney stand-ins, each an open question below:
 - The Controls screen and the Options menu (answered: [The Options screen](#options),
   [The Controls screen](#controls-layout)). Still open: which Controller-page labels are two lines long (the strings),
   what the device flags `0x02` and `0x08` mean for the per-mode layouts, and a runtime check of the Options layout.
+=======
+- The Stats screen's class (`0x001e5498`, menu `+0x3bb0`): its layout and when `+0x3bb8` is unset.
+- The header widget (`CircledTextHeader`, `0x001e7f50`): its layout and the two coloured circles left of the title.
+- The Controls screen's places (`ControlMenuHUD.cpp`): the values of the title place `0x0050eee4`/`0x0050eee8`, the
+  label table `0x0050ef20` (and `0x0050f000`), the tips' place `0x0050eef0`/`0x0050eef4`, the tips' size and step,
+  the description's offsets (`+0x78`, `+0x7c`) and reveal step (`+0x70`), and the entries' font slot.
+- The Options menu (`OptionMenu.cpp`): its layout, and each page's item labels (string ids) and places.
+>>>>>>> theirs
 - The mission-failed items' actions (`0x001d2018` and the vtable `0x0053b598`). The Rumble result screen (mode
   0x14) is on [Rumble](rumble.md#result-screen).
 - What the menu's write to the screen-effects managers' `+0x214` does on close.
