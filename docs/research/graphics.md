@@ -563,12 +563,12 @@ one, confirmed (code):
    random sign × 5 (look 0) or 3 (the others), clamped to the rectangle, so the old frame shimmers. A vertex's
    alpha is `(d × table[d]) & 0xff` × the fade, with `d` = `|column − 4| + |row − 4|` (0-8) and the 9-byte table at
    `0x0050ce30` (10, 50, 180, 225, 230, 240, 240, 250, 252; the `mult` and `andi 0xff` at `0x00193a58`), flat 200 in
-   look 4: so by `d` **0, 50, 104, 163, 152, 176, 160, 214, 224**, clear in the centre and strongest at the
-   corners. Confirmed (runtime): those nine values were the vertex alphas at `0x005fe030 + i × 0x40 + 0x2c` during
-   rage ([The rage look](#rage-look)). The blur colour's own alpha only switches the grid on (not 0) and hides the
-   rain (111 or more); it does not scale the vertices. Looks 3 and 4 also fade the wobble and alpha out over 2,500 and 1,500 ms from their start; then the
-   current look becomes 8 and the manager goes back to its base look. Texture filter nearest, vertex alpha,
-   `SRCALPHA` / `INVSRCALPHA`.
+   look 4: so by `d` **0, 50, 104, 163, 152, 176, 160, 214, 224**, clear in the centre and strongest at the corners.
+   Confirmed (runtime): those nine values were the vertex alphas at `0x005fe030 + i × 0x40 + 0x2c` during rage ([The
+   rage look](#rage-look)). The blur colour's own alpha only switches the grid on (not 0) and hides the rain (111 or
+   more); it does not scale the vertices. Looks 3 and 4 also fade the wobble and alpha out over 2,500 and 1,500 ms from
+   their start; then the current look becomes 8 and the manager goes back to its base look. Texture filter nearest,
+   vertex alpha, `SRCALPHA` / `INVSRCALPHA`.
 5. **Other looks** draw one quad (slots `+0xe0`, `+0xe8`) with the blended colour, so the old frame shows at the
    blur's alpha everywhere ([Screen quads](#2d-drawing)).
 

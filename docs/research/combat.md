@@ -2484,8 +2484,8 @@ held for 0.3 s (2026-10-10).
   rage ([HUD](hud.md#the-rage-meter)).
 
 **End** (`Human_EndRageMode(human, instant)` `0x00236fb8`), when the meter reaches 0 (`Human_UpdateMeters`), on
-`Human_ReleaseAll` and at a scene's start (`SceneTask_Start`), all gradual (`instant` 0); and **at once** (`instant`
-1) on the pause menu's opening (`GameMenu_Open` `0x001d1aa0`), `Humans_EndAllRage`, `HuSetRageMode(human, false)` and
+`Human_ReleaseAll` and at a scene's start (`SceneTask_Start`), all gradual (`instant` 0); and **at once** (`instant` 1)
+on the pause menu's opening (`GameMenu_Open` `0x001d1aa0`), `Humans_EndAllRage`, `HuSetRageMode(human, false)` and
 a fade-out queued with `ScreenQueueEffect(1)` (`0x0018d4c8`):
 
 1. `RageSound_RemoveRager`: the count goes down; at 0 `RageSound_Stop` (`0x00419758`) fades the rage sound out over
