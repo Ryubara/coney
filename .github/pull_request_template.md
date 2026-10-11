@@ -19,7 +19,7 @@ Remaining:
 
 ## AI use
 
-<!-- Who made the changes in this pull request, not who opened it. -->
+<!-- Who wrote the work in this pull request's commits (code, docs, tests), not who opened the pull request. -->
 
-- **Made by:** <!-- person / AI / AI with the person's edits -->
-- **Model or tool:** <!-- for example Claude Sonnet 5.5, or n/a -->
+- **Commits written by:** <!-- a person / an AI / an AI, edited by a person / a person, with AI help -->
+- **Model:** <!-- the model that wrote them, for example Claude Opus 5.5; n/a when a person wrote them -->

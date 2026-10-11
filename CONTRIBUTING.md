@@ -102,7 +102,8 @@ The person who submits or merges the work answers for it. The full rule is in [L
 - A pull request with several features is shaped into one commit per feature before review, and is rebase-merged.
 - CI must pass.
 - Fill in the pull request template: a summary, a checklist of what the pull request finishes and what is still to
-  do, and who made the changes (a person, an AI, or both) and with which model.
+  do, and who wrote the work in the commits (a person, an AI, or both) and with which model. Who opened the pull
+  request does not matter there.
 - Keep a pull request to one subject. Unrelated changes belong in separate pull requests.
 
 ## Agents
