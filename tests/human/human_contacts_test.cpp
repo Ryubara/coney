@@ -89,8 +89,11 @@ TEST_CASE("two upright capsules meet where their axes are the two radii apart, w
     // Head-on: met 0.6895 m short of the other's axis, the normal back at the mover.
     const auto headOn = coney::human::sweepCapsules(mover, Vec3{0.0F, 2.0F, 0.0F}, other);
     REQUIRE(headOn.has_value());
-    CHECK(headOn->fraction == Approx((2.0F - 0.6895F) / 2.0F));
-    CHECK(headOn->normal.y == Approx(-1.0F));
+    // The if repeats the REQUIRE for clang-tidy, which cannot see that a failed REQUIRE ends the test.
+    if (headOn) {
+        CHECK(headOn->fraction == Approx((2.0F - 0.6895F) / 2.0F));
+        CHECK(headOn->normal.y == Approx(-1.0F));
+    }
     // Short of it, past it on one side, or the heights apart (the mover 2 m up): not met.
     CHECK_FALSE(coney::human::sweepCapsules(mover, Vec3{0.0F, 1.0F, 0.0F}, other).has_value());
     CHECK_FALSE(
@@ -105,8 +108,10 @@ TEST_CASE("two upright capsules meet where their axes are the two radii apart, w
     const UprightCapsule inside{.feet = Vec3{0.0F, 1.5F, 0.0F}, .top = 1.8F, .radius = 0.3395F};
     const auto atOnce = coney::human::sweepCapsules(inside, Vec3{0.0F, 0.1F, 0.0F}, other);
     REQUIRE(atOnce.has_value());
-    CHECK(atOnce->fraction == 0.0F);
-    CHECK(atOnce->normal.y == Approx(-1.0F));
+    if (atOnce) {
+        CHECK(atOnce->fraction == 0.0F);
+        CHECK(atOnce->normal.y == Approx(-1.0F));
+    }
     CHECK_FALSE(coney::human::sweepCapsules(inside, Vec3{0.0F, -0.1F, 0.0F}, other).has_value());
 }
 
