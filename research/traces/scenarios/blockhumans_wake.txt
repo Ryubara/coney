@@ -1,0 +1,2 @@
+# Nothing pressed: the calls do the work.
+235 stick left 0 0

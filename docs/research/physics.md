@@ -498,7 +498,26 @@ What a walking human meets of another human, confirmed (code) at the cited addre
   and put the push weight back. So a knocked-out human woken without a heal (`HuSetConscious(true)`,
   `Human_SetConscious` `0x00237778`, or `Human_EndDownState`'s knocked-out branch) and a wound ended by
   `HuSetWounded(false)` or `Human_ResetForMode` stand up **without** `BLOCKHUMANS`, and walkers keep passing through
-  them until something heals or unarrests them. Confirmed (code); not seen at runtime.
+  them until something heals or unarrests them. Confirmed (code).
+- **Seen at runtime** (confirmed (runtime), PCSX2 2.9.94, a copy of slot 6, 2026-10-11, scenario
+  `repo:research/traces/scenarios/blockhumans_wake.toml`). PoizoCiv, standing, his body flags `0x2223f`, was put
+  through six direct calls on the game's thread 40 updates apart, his body pointer and body `+0x40` read every
+  update:
+
+    | Call | Body flags after it | `BLOCKHUMANS` |
+    | --- | --- | --- |
+    | `Human_KnockOut(him, 0)` | `0x2203b` | off |
+    | `Human_WakeUp(him, 0)` (where `HuSetConscious(true)` and a knocked-out rise end) | `0x2203b`, unchanged | still off |
+    | `Human_Heal(him, 0)` | `0x2203f` | **on** |
+    | `Human_StartWounded(him)` | `0x2203b` | off |
+    | `Human_EndWounded(him)` (where `HuSetWounded(false)` ends) | `0x2203b`, unchanged | still off |
+    | `Human_Heal(him, 0)` | `0x2203f` | **on** |
+
+  The heal's new body took the same pool slot (the pointer did not change). So waking and ending a wound leave him
+  passable, and only the heal gives the flag back, as the code says. The knock-out also took bit `0x200` (not
+  pushable) away, which `Human_KnockOut`'s own writes do not: what cleared it in that update is not traced, and the
+  heal's new body did not have it either (`Human_CreatePhysicsBody` sets it only when `+0x3bf` is 0; that byte was
+  not read).
 - **The answer** (`Human_OnContact` `0x00219d50`): a charging capsule (shape flag `0x2`) or an airborne mover not yet
   ignoring the other strikes him (`Strike_Contact`, then ignores him) and slides (1); otherwise **4**, `0x20004` in
   the air. So walking into a human slides along him and pushes him by half of the move into him (code 4 above),
