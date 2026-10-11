@@ -77,7 +77,7 @@ struct BrainMove {
     int turnBoost = 0;
     /// The point the move aims at (`+0x90`, ai::Brain::setMoveAim()): in a fight stance the feet walk along the line
     /// to it while the facing follows `heading` (docs/research/characters.md#ai-locomotion).
-    anim::Vec3 aim;
+    anim::Vec3 aim{};
 };
 
 /// A human's per-player record (`0x00660f50 + i × 0x2c`, docs/research/ai.md#brain): what drives it each update. A
