@@ -129,27 +129,33 @@ TravelPathGoal::TravelPathGoal(std::vector<double> points, int mode, bool revers
     : Goal(GoalType::TravelPath), m_points(std::move(points)), m_mode(mode), m_step(reverse ? -1 : 1), m_gait(gait),
       m_radius(radius), m_services(&services) {}
 
+int travelPathNext(int current, int count, int mode, int& step) {
+    if (count <= 0) {
+        return -1;
+    }
+    if (current < 0) {
+        return step > 0 ? 0 : count - 1;
+    }
+    const int next = current + step;
+    if (next >= 0 && next < count) {
+        return next;
+    }
+    if (mode == 1) {
+        return step > 0 ? 0 : count - 1;
+    }
+    if (mode == 2) {
+        step = -step;
+        return count > 1 ? current + step : current;
+    }
+    return -1;
+}
+
 GoalStatus TravelPathGoal::process(Brain& brain) {
-    if (m_points.empty()) {
+    const int next = travelPathNext(m_current, static_cast<int>(m_points.size()), m_mode, m_step);
+    if (next < 0) {
         return GoalStatus::Done;
     }
-    const int count = static_cast<int>(m_points.size());
-    if (m_current < 0) {
-        m_current = m_step > 0 ? 0 : count - 1;
-    } else {
-        int next = m_current + m_step;
-        if (next < 0 || next >= count) {
-            if (m_mode == 1) {
-                next = m_step > 0 ? 0 : count - 1;
-            } else if (m_mode == 2) {
-                m_step = -m_step;
-                next = count > 1 ? m_current + m_step : m_current;
-            } else {
-                return GoalStatus::Done;
-            }
-        }
-        m_current = next;
-    }
+    m_current = next;
     static_cast<void>(goalMoveToFlag(
         brain,
         MoveToFlagOrder{.flag = m_points.at(static_cast<std::size_t>(m_current)), .gait = m_gait, .radius = m_radius},

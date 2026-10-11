@@ -1,15 +1,16 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers thirteen groups:
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers fourteen groups:
 [`check`](#check), which runs what CI would fail on for the files a change touched, `wad`, which reads the game's
 archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**, [`extract`](#extract), which turns every asset of
 the disc into open formats, [`audio`](#audio), which reads its sound data, [`movies`](#movies), which reads the movies'
 headers, [`xbox`](#xbox), which reads the Xbox disc's archive, [`progress`](#progress), which keeps the progress tables
 of the README and the docs current, [`natives`](#natives), which renders the script-binding masterlist, [`refs`](#refs),
 which builds the game reference lists, [`missions`](#missions), which builds the mission status pages, [`pcsx2`](#pcsx2)
-and [`trace`](#trace), which record the original's per-update traces in PCSX2 and compare them with Coney's, and
-[`mcp`](#mcp), which starts the debugging servers for agent tools. Everything is read in place and streamed, so the 1.4
-GB WAD is never loaded into memory. The format is described in [WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
+and [`trace`](#trace), which record the original's per-update traces in PCSX2 and compare them with Coney's,
+[`mcp`](#mcp), which starts the debugging servers for agent tools, and [`workspace`](#workspace), which sets up the
+local workspace. Everything is read in place and streamed, so the 1.4 GB WAD is never loaded into memory. The format
+is described in [WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
 
 Run the commands from inside the checkout:
 
@@ -581,3 +582,17 @@ headless server on port 8090 unless `GHIDRA_MCP_URL` says otherwise), `pcsx2` is
 reads the main checkout's `coney.local.toml`. A missing key, folder or program (`uv`, `node`) prints one line on
 stderr and exits with code 2, so a server that is not installed fails without affecting the others. Why and how it is
 set up: [Setting up an agent tool](agents.md#setup).
+
+## workspace {#workspace}
+
+```sh
+uv run --project python coney-tools workspace init [--workspace DIR] [--repo-url URL] [--fetch TOOL ...] [--dry-run]
+```
+
+Creates the missing folders of the [local workspace](workspace.md), clones the repository when run outside one
+(`--repo-url`), writes `coney.local.toml` from the example when there is none, checks the prerequisites and, with
+`--fetch ghidra|pcsx2|ghidra-mcp|pcsx2-mcp|all`, downloads the research tools at pinned versions, checked by SHA-256.
+Every step already done is skipped; `--dry-run` only prints them. It never downloads game files or a BIOS. Exit
+codes: 1 when a prerequisite of the engine is missing, 2 for a usage error. The launchers `bootstrap.sh` and
+`bootstrap.ps1` install uv (a pinned version, with Astral's installer, which adds it to `PATH`) and run it. What each
+step does and the pinned versions: [Bootstrap](workspace.md#bootstrap).

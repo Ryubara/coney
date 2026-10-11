@@ -77,6 +77,13 @@ void Brain::update(std::uint64_t nowMs) {
     // suspended brain or gang keeps only the time.
     const bool runsGoals = m_type != BrainType::Player || m_dead;
     const bool held = m_suspended || (m_gang != nullptr && m_gang->suspended());
+    // The move is asked for again every update (Brain_StopMove, the first call of Brain_UpdateGoals, even when the
+    // rest is skipped): the human stands along its facing unless a goal or an action writes it below
+    // (docs/research/characters.md#ai-locomotion). Nothing a finished goal or action wrote outlives its update.
+    // @orig 0x0028ac18 Brain_StopMove (unknown)
+    if (runsGoals) {
+        stopMove();
+    }
     if (runsGoals && !held && !m_knockedOut && !m_human->airborne() && !m_human->fighter().health().depleted()) {
         // The reaction goal, else the goal stack; then the actions.
         if (!updateReactionGoal()) {
@@ -559,12 +566,13 @@ void Brain::press(combat::CommandId command) { m_human->record().command = comma
 void Brain::setMove(anim::Vec3 way, float speed) {
     const float length = std::hypot(way.x, way.y);
     const float heading = length > 1e-4F ? human::headingOf(way) : m_human->heading();
-    m_human->record().move = human::BrainMove{.heading = heading, .speed = speed, .turnBoost = m_turnBoost};
+    m_human->record().move =
+        human::BrainMove{.heading = heading, .speed = speed, .turnBoost = m_turnBoost, .aim = m_moveAim};
 }
 
 void Brain::setMoveHeading(float heading, float speed) {
-    m_human->record().move =
-        human::BrainMove{.heading = human::wrapAngle(heading), .speed = speed, .turnBoost = m_turnBoost};
+    m_human->record().move = human::BrainMove{
+        .heading = human::wrapAngle(heading), .speed = speed, .turnBoost = m_turnBoost, .aim = m_moveAim};
 }
 
 void Brain::setTurnBoost(int boost) {
@@ -577,6 +585,10 @@ void Brain::setTurnBoost(int boost) {
 void Brain::setMoveAim(anim::Vec3 point, float radius) {
     m_moveAim = point;
     m_moveAimRadius = radius;
+    // A move already written this update aims there too, whichever of the two its writer set first.
+    if (std::optional<human::BrainMove>& move = m_human->record().move) {
+        move->aim = point;
+    }
 }
 
 void Brain::stopMove() { m_human->record().move.reset(); }

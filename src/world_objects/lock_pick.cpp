@@ -22,7 +22,7 @@ std::size_t tableIndex(int difficulty) { return static_cast<std::size_t>(difficu
 
 LockPickDial::LockPickDial(int difficulty) : m_difficulty(std::clamp(difficulty, 0, kMaxDifficulty)) { resetPins(); }
 
-void LockPickDial::resetPins() { m_pins.fill(std::numbers::pi_v<float>); }
+void LockPickDial::resetPins() { m_pins.fill(kPinRest); }
 
 void LockPickDial::step() {
     if (state() != LockPickState::Running) {

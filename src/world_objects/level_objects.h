@@ -47,8 +47,9 @@ class LevelObjects {
     [[nodiscard]] std::optional<anim::Vec3> positionOf(double object) const;
 
     /// `CamGhostDoor(door)`: the camera passes through the door from now on: its two collision triangles take type bit
-    /// `0x200`, which the camera's rays skip, until the level's mesh is loaded again. Only a door of the door kinds
-    /// (`TYPE_DOOR`, `TYPE_BREAKABLE_DOOR`, `TYPE_BREAKANDENTER_DOOR`, `TYPE_SLIDING_DOOR`); false for another handle.
+    /// `0x200`, which the camera's rays skip, until the level ends (a mesh bound again takes it too). Only a door of
+    /// the door kinds (`TYPE_DOOR`, `TYPE_BREAKABLE_DOOR`, `TYPE_BREAKANDENTER_DOOR`, `TYPE_SLIDING_DOOR`); false for
+    /// another handle.
     /// Research: docs/references/bindings/camera.md#camghostdoor
     /// @orig 0x003973a0 Door_SetCameraGhost (unknown)
     bool ghostForCamera(double door);
@@ -57,7 +58,7 @@ class LevelObjects {
         doors.tick(world);
         props.tick(world);
     }
-    /// Forgets the level's panes, doors and struck props (its unload).
+    /// Forgets the level's panes, doors and struck props and their triangle writes (its unload).
     void clear();
 
   private:

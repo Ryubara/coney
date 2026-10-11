@@ -59,7 +59,7 @@ bool LevelObjects::ghostForCamera(double object) {
     if (door == nullptr || !isDoorKind(door->objectType)) {
         return false;
     }
-    markTriangles(world.collision, door->triangles, kCameraGhostBit);
+    markTriangles(world, door->triangles, kCameraGhostBit);
     return true;
 }
 
@@ -84,6 +84,8 @@ void LevelObjects::clear() {
     glass.clearPanes();
     doors.clear();
     props.clear();
+    // Their triangle writes go too: a mesh bound later must not take a gone level's flags.
+    world.clearWrites();
 }
 
 HitKind thrownHitKind(int objectType, int animSet, bool molotov) {

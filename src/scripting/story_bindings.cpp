@@ -597,6 +597,24 @@ NativeFunction makeGoalDevilRun(const BindingContext& context) {
     });
 }
 
+// `GoalRunCarrotRun(human, path, mode, reverse, gait, radius, chasers, distance, keepAhead)`: the path only when
+// given.
+// @orig 0x00360c10 GoalRunCarrotRun (unknown)
+// @orig 0x002e1140 Goal_RunCarrot (unknown)
+NativeFunction makeGoalRunCarrotRun(const BindingContext& context) {
+    return storyCall(context, [](StoryBindingHost& host, std::span<const Value> args) {
+        host.goalRunCarrot(RunCarrotCall{.human = handleArg(args, 0),
+                                         .path = absent(args, 1) ? kNilHandle : handleArg(args, 1),
+                                         .mode = intArg(args, 2),
+                                         .reverse = boolArg(args, 3),
+                                         .gait = intArg(args, 4),
+                                         .radius = floatArg(args, 5),
+                                         .chasers = intArg(args, 6),
+                                         .distance = floatArg(args, 7),
+                                         .keepAhead = boolArg(args, 8)});
+    });
+}
+
 // `GoalBigLedgeThrower(human, targets, objects, cycles, delayMs, taunt, anim)`.
 // @orig 0x00363b38 GoalBigLedgeThrower (unknown)
 // @orig 0x002edf20 Goal_BigLedgeThrower (unknown)
@@ -995,6 +1013,7 @@ void addStoryBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& co
     vm.registerFunction("GoalGuardFlag", makeGoalGuardFlag(context));
     vm.registerFunction("GoalLeadChase", makeGoalLeadChase(context));
     vm.registerFunction("GoalDevilRun", makeGoalDevilRun(context));
+    vm.registerFunction("GoalRunCarrotRun", makeGoalRunCarrotRun(context));
     vm.registerFunction("GoalBigLedgeThrower", makeGoalBigLedgeThrower(context));
     vm.registerFunction("GoalPlayDynIdle", makeGoalPlayDynIdle(context));
     // `GoalMelee(human, target)`: NilHandle (the default) lets it pick.

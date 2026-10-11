@@ -2216,6 +2216,16 @@ name = "Im2D_DrawTexturedDisc"
 subsystem = "Graphics"
 
 [[function]]
+address = 0x0017bec8
+name = "Im2D_DrawArc"
+subsystem = "Graphics"
+
+[[function]]
+address = 0x0017c308
+name = "Shape2D_DrawQueued"
+subsystem = "Graphics"
+
+[[function]]
 address = 0x0017c508
 name = "Light_InitFromDescriptor"
 subsystem = "Graphics"
@@ -3069,6 +3079,11 @@ address = 0x001b7a18
 name = "LockPickDial_SetDifficulty"
 subsystem = "GUI"
 size = 336
+
+[[function]]
+address = 0x001b7c10
+name = "LockPickDial_ApplyVideoMode"
+subsystem = "GUI"
 
 [[function]]
 address = 0x001b7eb0
@@ -4166,6 +4181,12 @@ size = 332
 address = 0x00221c20
 name = "Human_TurnToFacePoint"
 subsystem = "Human"
+
+[[function]]
+address = 0x00221cd8
+name = "Human_TurnToFaceObject"
+subsystem = "Human"
+size = 256
 
 [[function]]
 address = 0x002221e0
@@ -6268,6 +6289,12 @@ name = "Brain_ScanEnemies"
 subsystem = "Human"
 
 [[function]]
+address = 0x0028ac18
+name = "Brain_StopMove"
+subsystem = "Human"
+size = 80
+
+[[function]]
 address = 0x0028bf00
 name = "Brain_GetSightRange"
 subsystem = "Human"
@@ -7806,6 +7833,42 @@ name = "LeadChaseGoal_Process"
 subsystem = "Human"
 
 [[function]]
+address = 0x002e1140
+name = "Goal_RunCarrot"
+subsystem = "Human"
+size = 240
+
+[[function]]
+address = 0x002e1230
+name = "RunCarrotGoal_Init"
+subsystem = "Human"
+size = 240
+
+[[function]]
+address = 0x002e1320
+name = "RunCarrotGoal_Start"
+subsystem = "Human"
+size = 16
+
+[[function]]
+address = 0x002e1330
+name = "RunCarrotGoal_End"
+subsystem = "Human"
+size = 88
+
+[[function]]
+address = 0x002e13c0
+name = "RunCarrotGoal_UpdateSpeed"
+subsystem = "Human"
+size = 552
+
+[[function]]
+address = 0x002e15e8
+name = "RunCarrotGoal_Process"
+subsystem = "Human"
+size = 376
+
+[[function]]
 address = 0x002e1760
 name = "Goal_DevilRun"
 subsystem = "Human"
@@ -9302,6 +9365,12 @@ size = 160
 address = 0x00360ac8
 name = "GoalLeadChase"
 subsystem = "Scripting"
+
+[[function]]
+address = 0x00360c10
+name = "GoalRunCarrotRun"
+subsystem = "Scripting"
+size = 388
 
 [[function]]
 address = 0x00360d98
@@ -10912,7 +10981,7 @@ size = 460
 
 [[function]]
 address = 0x003a4768
-name = "Triangle_MakeTwoSided"
+name = "Collision_SetTriangleTwoSided"
 subsystem = "TaskEngine"
 size = 88
 

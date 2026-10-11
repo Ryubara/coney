@@ -1853,9 +1853,9 @@ are [listed with the bars](#scripted-bars).
 | `0x001b7eb0`, `0x001b7c10` | `LockPickDial_Init(dial, player)`, `LockPickDial_ApplyVideoMode` | from the HUD's set-up / the options' video change (`0x001d8258`): the player's layout entry (`0x0050d670` + player × `0x20`, [below](#lock-pick-dial-layout)) for the video mode, the three pins (sheet 10 rectangle 11, grey 191, rotation π, sizes 0.19 × (1 − 0.2 i)), the centre batch, the disc record, player `+0x474`, hidden | confirmed (code) |
 | `0x001b8278` | `LockPickDial_Shutdown` | slot `+0x68`: shuts the pins down, releases the centre batch, `+0x478` = `+0x0c` = 0 | confirmed (code) |
 | `0x001b8320` | `LockPickDial_IsResident` | true once the pins' and the centre's sheets are resident (`0x001a8ea8`); then rectangle `0xc` of the centre sheet gives the disc's UV centre (`+0x4cc`) and radius (`+0x490`, `+0x494`) | confirmed (code) |
-| `0x001b8428` | `LockPickDial_Show(dial, on)` | on: pins back to π, the loop `vags/misc/lock_spins_01` started (handle `+0x450`), `vags/misc/click_open1` prepared (`0x00622e48`), pin 0, counters 0; off: both stopped; `+0x478` = on | confirmed (code) |
+| `0x001b8428` | `LockPickDial_Show(dial, on)` | on: pins back to 3.14, the loop `vags/misc/lock_spins_01` started (handle `+0x450`), `vags/misc/click_open1` prepared (`0x00622e48`), pin 0, counters 0; off: both stopped; `+0x478` = on | confirmed (code) |
 | `0x001b8530` | `LockPickDial_Draw` | slot `+0x30` (the update, 30 times a second: confirmed (runtime), [Lock picking](crimes.md#lockpick)): waits for residency; turns the current pin by 0.1 × its speed (wrapping in 0-2π); queues two band arcs and the textured centre disc (`0x0017c2a8`, the 2D shape queue `0x005fd9f0`, at most 6) at the player's layout ([Lock picking](crimes.md#lockpick)) | confirmed (code) |
-| `0x001b8d38` | `LockPickDial_Judge` | 2 perfect (next pin, `click_01` and `click_open1`), 1 good (next pin, `click_open1`), 0 miss (`click_01`, every pin back to π, pin 0) | confirmed (code) |
+| `0x001b8d38` | `LockPickDial_Judge` | 2 perfect (next pin, `click_01` and `click_open1`), 1 good (next pin, `click_open1`), 0 miss (`click_01`, every pin back to 3.14, pin 0) | confirmed (code) |
 | `0x001b8ed0` | `LockPickDial_Render` | slot `+0x38`: while resident, shown and a pin is left (`+0x468` < 3), the three pins | confirmed (code) |
 | `0x001b8f50`, `0x001b8f78` | `HUDLua_StaticInit`, `HUDLua_GlobalCtor` | the file's static initialiser (`0x00622e48` = −1) and its global-constructor stub (in the constructor list at `0x00534108`) | confirmed (code) |
 
@@ -2008,7 +2008,7 @@ runtime view matrix below; no capture of the dial in the original.
 point above, sizes 0.19, 0.152 and 0.114 overlay units at depth 1 (0.19 × (1 − 0.2 i) × the pins' factors; square
 in the default mode), depths 8,000, 9,000, 10,000, all on one centre. Each turns about its own centre (anchor 0).
 Only the current pin turns:
-its angle (`+0x454`, radians, starting at π) changes by **0.1 × its speed** per update (speeds 1, 2, 3 by default),
+its angle (`+0x454`, radians, starting at 3.14, below) changes by **0.1 × its speed** per update (speeds 1, 2, 3 by default),
 up or down by its direction byte, wrapped into 0-2π; positive angles turn clockwise on screen
 ([The stereo panel](#stereo-layout)). Drawn while the dial is shown and a pin is left. No text. The start angle is
 the constant **3.14** (`0x0050d6e4` = `0x4048f5c3`, written by `LockPickDial_Draw` and used by `LockPickDial_Show`
@@ -2120,28 +2120,31 @@ starts the next one from its own angle (`LockPickDial_Judge` copies the next pin
 puts every pin back at 3.14 and pin 0 turns again, and the end of the pick hides the dial with no closing frame
 (`LockPick_End` `0x0022d908` → `HUD_LockPickEnd`); confirmed (code), not captured.
 
-**Coney differs** (checked against `repo:src/hud/lock_pick_hud.cpp` on the `lockpick-dial` branch, commit `803e1de5`):
+**Coney differed** (checked against `repo:src/hud/lock_pick_hud.cpp` on the `lockpick-dial` branch, commit
+`803e1de5`); all four are **fixed** on that branch (pull request #52), each with a test in
+`repo:tests/hud/lock_pick_hud_test.cpp` or `repo:tests/world_objects/lock_pick_test.cpp`:
 
-1. **The lock face is turned a quarter turn**: its keyhole lies on its side with the round end to the right; the
-   original's stands upright, round end up. Cause: Coney maps rim vertex angle a to the texture at a + π/2
-   (`kFaceTurn`), from the earlier "turned by π/2" on this page. Fix: the texture point of a rim vertex at angle a is
+1. **The lock face was turned a quarter turn** (fixed): its keyhole lay on its side with the round end to the right;
+   the original's stands upright, round end up. Cause: Coney mapped rim vertex angle a to the texture at a + π/2
+   (`kFaceTurn`), from the earlier "turned by π/2" on this page. Now the texture point of a rim vertex at angle a is
    (cu + ru sin a, cv + rv cos a), the same direction as its screen offset (`Im2D_DrawTexturedDisc`
-   [above](#lock-pick-dial-layout)); drop `kFaceTurn`. Test: the texture point of the rim vertex straight up on
-   screen is the top of rectangle 12's circle (v = cv − rv).
-2. **The wedges are Gouraud-shaded**: each has 2k solid segments, symmetric about 12 o'clock, with a segment on each
-   side fading to clear, so its edges are soft and band 2 barely shows. The original is flat-shaded: every fan
-   triangle takes the colour of its second rim vertex, giving 2k + 1 solid segments from −(k + 1) × 11.25° to
+   [above](#lock-pick-dial-layout)), and `kFaceTurn` is gone. Test: the rim vertex straight up on screen shows the
+   top of rectangle 12's circle (v = cv − rv).
+2. **The wedges were Gouraud-shaded** (fixed): each had 2k solid segments, symmetric about 12 o'clock, with a segment
+   on each side fading to clear, so its edges were soft and band 2 barely showed. The original is flat-shaded: every
+   fan triangle takes the colour of its second rim vertex, giving 2k + 1 solid segments from −(k + 1) × 11.25° to
    +k × 11.25° with hard edges (difficulty 1: band 1 −56.25° to +45°, band 2 −22.5° to +11.25°; the dark band 2 reads
-   as a distinct centre stripe). Fix: give the triangle (centre, rim j, rim j + 1) the colour of rim vertex j + 1 on all
-   three of its vertices, and skip it when that colour is clear. Test: for each difficulty, which of the 32 triangles
-   are coloured (difficulty 1, band 1: j = 0-3 and 27-31; band 2: j = 0 and 30-31), and no triangle has vertices of
-   two colours.
-3. **A red haze covers the whole dial**: Coney's fan gives the centre vertex the wedge's colour, so every clear
-   segment fades from red at the centre to clear at the rim, tinting the pins below and beside the face (measured
-   below the face, 16-22 pixels out: red minus green 14 on Coney, 3 on the original). Same cause and fix as 2: under
-   flat shading the centre vertex's colour is never seen.
-4. **The pins' rest angle is π, not 3.14** (a 0.09° difference, not visible; listed for completeness). Fix: use 3.14
-   where the pins start and where a miss puts them back.
+   as a distinct centre stripe). Now the triangle (centre, rim j, rim j + 1) has the colour of rim vertex j + 1 on all
+   three of its vertices and is skipped when that colour is clear (`LockPickHud::wedgeSegment`). Test: for each
+   difficulty, which of the 32 triangles are coloured (difficulty 1, band 1: j = 0-3 and 27-31; band 2: j = 0 and
+   30-31), and no triangle has vertices of two colours.
+3. **A red haze covered the whole dial** (fixed with 2): Coney's fan gave the centre vertex the wedge's colour, so
+   every clear segment faded from red at the centre to clear at the rim, tinting the pins below and beside the face
+   (measured below the face, 16-22 pixels out: red minus green 14 on Coney, 3 on the original). Under flat shading
+   the centre vertex's colour is never seen, and clear segments are no longer drawn.
+4. **The pins' rest angle was π, not 3.14** (fixed; a 0.09° difference, not visible). Both the dial
+   (`LockPickHud::show`) and the mini-game (`LockPickDial`, where the pins start and where a miss puts them back) now
+   use 3.14.
 
 **Open**: how many times a second the dial's update (`LockPickDial_Draw`, the HUD's update slot) runs, and so how
 fast a pin turns in seconds, was not measured; the code turns it 0.1 × speed per call.
@@ -2150,7 +2153,7 @@ fast a pin turns in seconds, was not measured; the code turns it 0.1 × speed pe
 draws the pins at the GUI position (0.09, 0.59) through `OverlayCamera::guiToOverlay` (depth 1.1) and the shapes at
 (−0.565, −0.07, 1). That puts the wedges and the lock face 14 pixels left of and 5 above the brass pins, which is the
 red wedge "up and left of the lock" and the keyhole left of the outer ring that the owner saw. The original draws
-the pins at the centre point. **Coney fixes**:
+the pins at the centre point. **Coney fixes** (done in pull request #52):
 
 1. Draw the three pins at the player's centre point in overlay space at distance 1, not at the GUI position: 4:3
    (−0.56, −0.075) for player 1, (0.545, −0.075) for player 2; keep the shapes at (−0.565, −0.07) / (0.546, −0.07).
@@ -2165,6 +2168,15 @@ the pins at the centre point. **Coney fixes**:
 4. Test: for each mode, the projected screen centre of the pins and of the shapes differ by at most 2.5 logical
    pixels (default mode 2.2 left and 2.2 up; 16:9 none); the pins' projected size at depth 1 is 0.19 / (2 × 0.725) of
    the width in 4:3.
+
+**Status (2026-10-11): fixed in Coney.** `LockPickHud::layout(player, deviceFlags)` gives each mode's pins' and
+shapes' centres (at distance 1), the wedges' and the face's (rx, ry) in pixels and the pins' factors, for the four
+rows above; the pins are drawn at the centre point at depth 1 (fixes 1 and 2), and every rim vertex is the pixel
+centre + (rx sin a, ry cos a), converted through the mode's overlay camera (`setVideoMode`, fix 3). The tests in
+`repo:tests/hud/lock_pick_hud_test.cpp` check fix 4. Left out: the PAL rows and the `0x01` + `0x20` branch (Coney has
+neither). **Open**: Coney's HUD layer always draws the 2D pass in the 4:3 logical screen through the 4:3 overlay
+camera, even beside a wide 3D view, so the play mode keeps the dial in the interlaced 4:3 mode; the 16:9 row takes
+effect once the HUD as a whole gets a 16:9 mode.
 
 ### `GUI/HUDLua.cpp`: the scripted bars {#fn-hudlua-bars}
 
@@ -2733,10 +2745,12 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   since the start against `+0x134`. Not yet: modes 1-3 (a player victim and
   the hold), which need two players and the hold's states.
 - **The lock-pick dial** (`repo:src/hud/lock_pick_hud.h`, stepped by `PlayLevelMode::stepLockPickDial()`) as
-  [the dial's layout](#lock-pick-dial-layout) says, while player 1 picks a lock: the three pins turned by their
-  angles (gone once every pin is done), then over every sprite the good and perfect wedges (whole rim vertices
-  coloured, the next segment fading to clear) and the lock face, as 32-segment fans in 640 × 448 pixels. The shapes
-  go in two batches sorted above all the HUD's others, so they lie on top of the pins as `Shape2D_DrawQueued` does.
+  [the dial's layout](#lock-pick-dial-layout) says, while player 1 picks a lock: the three pins at the player's centre
+  point at distance 1, turned by their angles (gone once every pin is done), then over every sprite the good and
+  perfect wedges (whole rim vertices coloured, the next segment fading to clear) and the lock face, as 32-segment
+  fans in 640 × 448 pixels with the video mode's horizontal and vertical radii (the interlaced 4:3 mode in play, as
+  the rest of the HUD). The shapes go in two batches sorted above all the HUD's others, so they lie on top of the
+  pins as `Shape2D_DrawQueued` does.
 - **The fixed-camera icon** (`repo:src/hud/fixed_cam_icon.h`) as [the icon](#hud-fixed-cam-icon) says: while player 1's
   camera is a locked one or camera switch 0 is off, pushing the right stick (a raw byte outside 64-176) shows
   `part_page0` rectangle 87 at (0.9, 0.64), fully opaque while held and fading over 1 s after; any other camera hides

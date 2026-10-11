@@ -19,7 +19,9 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include "ai/action.h"
 #include "ai/ai_config.h"
+#include "ai/attack_action.h"
 #include "ai/brain.h"
 #include "ai/brains.h"
 #include "ai/move_to_flag_goal.h"
@@ -28,6 +30,7 @@
 #include "ai/route_planner.h"
 #include "ai/scripted_brains.h"
 #include "ai/turn_action.h"
+#include "combat/combat_tuning.h"
 #include "human/human.h"
 #include "human/humans.h"
 #include "human/locomotion.h"
@@ -74,8 +77,9 @@ struct MoveScene {
         brains.setPlanner(&planner);
     }
 
-    // A human with its feet at `feet` facing `headingDegrees` (0 faces +y, 90 faces -x), with a gang brain.
-    Brain& add(Vec3 feet, float headingDegrees) {
+    // A human with its feet at `feet` facing `headingDegrees` (0 faces +y, 90 faces -x), with a brain of `type` (a
+    // gang's unless given).
+    Brain& add(Vec3 feet, float headingDegrees, coney::ai::BrainType type = coney::ai::BrainType::Gang) {
         humans.push_back(std::make_unique<Human>(character.anims, coney::human::AnimSlots::player(),
                                                  coney::test::identityBind(), 1.0F, &character.ranges));
         Human& made = *humans.back();
@@ -83,8 +87,7 @@ struct MoveScene {
             coney::human::FighterProfile{.player = false, .powerClass = coney::ai::kWarriorPowerClass, .health = 1400});
         made.spawn(mesh.get(), feet, headingDegrees);
         step.add(made, false);
-        return brains.add(made, coney::ai::BrainType::Gang, coney::ai::FightSettings{},
-                          static_cast<std::uint32_t>(humans.size()));
+        return brains.add(made, type, coney::ai::FightSettings{}, static_cast<std::uint32_t>(humans.size()));
     }
 
     // Steps until `done` holds or `limit` steps have run; calls `each` after every step. Returns the steps run.
@@ -103,6 +106,32 @@ struct MoveScene {
             step.update(mesh.get());
         }
     }
+};
+
+// A move the test sets, written into the brain every update as the original's actions write theirs: the brain's
+// update clears the move before its goals and actions run (docs/research/characters.md#ai-locomotion).
+struct HeldMove {
+    float heading = 0.0F;    // radians, 0 facing +y
+    float speed = 0.0F;      // m/s
+    std::optional<Vec3> aim; // the point (+0x90) the stance walk strafes to; none leaves the brain's
+};
+
+// The action that writes a HeldMove each update and never ends.
+class HoldMoveAction final : public coney::ai::Action {
+  public:
+    explicit HoldMoveAction(const HeldMove& move) : m_move(&move) {}
+
+    // Writes the move this update.
+    [[nodiscard]] coney::ai::ActionStatus update(Brain& brain) override {
+        if (m_move->aim) {
+            brain.setMoveAim(*m_move->aim, 0.0F);
+        }
+        brain.setMoveHeading(m_move->heading, m_move->speed);
+        return coney::ai::ActionStatus::Running;
+    }
+
+  private:
+    const HeldMove* m_move;
 };
 
 // The front action as a move; null when it is not one.
@@ -539,12 +568,14 @@ TEST_CASE("a running AI turns 4 degrees an update, 8 with a turn boost of 1, and
     Brain& brain = scene.add({20.0F, 20.0F, 0.0F}, 0.0F);
     const float run = brain.human().speeds().run;
     // Up to a run along +y, then asked to run along -x.
-    scene.runUntil(60, [] { return false; }, [&] { brain.setMoveHeading(0.0F, run); });
+    HeldMove held{.heading = 0.0F, .speed = run, .aim = std::nullopt};
+    REQUIRE(brain.queueAction(std::make_unique<HoldMoveAction>(held)));
+    scene.run(60);
     REQUIRE(brain.human().gait() == coney::human::Gait::Run);
     const auto turnSteps = [&](int boost) {
         brain.setTurnBoost(boost);
         const float before = brain.human().heading();
-        brain.setMoveHeading(radians(90.0F), run);
+        held.heading = radians(90.0F);
         scene.runUntil(1, [] { return true; }, [] {});
         const float first = coney::human::wrapAngle(brain.human().heading() - before);
         const float mid = brain.human().heading();
@@ -579,4 +610,193 @@ TEST_CASE("a move steers round a human standing on its line and still arrives", 
     // He went round: off the line, never through the stander's disc.
     CHECK(widest > 0.3F);
     CHECK(nearest > 0.5F);
+}
+
+TEST_CASE("a brain's move lasts one update: the next update asks for nothing unless it is written again",
+          "[ai][move]") {
+    // Brain_UpdateGoals starts with Brain_StopMove (docs/research/characters.md#ai-locomotion).
+    MoveScene scene;
+    Brain& brain = scene.add({20.0F, 20.0F, 0.0F}, 0.0F);
+    brain.setMoveHeading(radians(90.0F), 2.0F);
+    REQUIRE(brain.human().record().move.has_value());
+    scene.run(1);
+    CHECK_FALSE(brain.human().record().move.has_value());
+    // An action that writes it each update keeps it.
+    const HeldMove held{.heading = radians(90.0F), .speed = 2.0F, .aim = std::nullopt};
+    REQUIRE(brain.queueAction(std::make_unique<HoldMoveAction>(held)));
+    scene.run(3);
+    const auto& kept = brain.human().record().move;
+    REQUIRE(kept.has_value());
+    if (kept.has_value()) {
+        CHECK(kept->speed == 2.0F);
+    }
+}
+
+namespace {
+
+// Locks `brain`'s human onto `other`'s: an attack on him makes him the fighter's target. Waits for the attack to be
+// over; then neither starts a fight of his own, which would push a goal and clear the actions.
+void lockOnto(MoveScene& scene, Brain& brain, Brain& other) {
+    scene.step.setOpposition([](const Human& /*one*/, const Human& /*other*/) { return true; });
+    brain.setTarget(&other);
+    REQUIRE(brain.queueAction(std::make_unique<coney::ai::AttackAction>(1, 0)));
+    scene.runUntil(
+        120,
+        [&] {
+            return brain.human().fighter().lockTarget() != nullptr &&
+                   !coney::human::stickBusy(brain.human().gateInput()) && brain.human().animator().flags() == 0;
+        },
+        [] {});
+    REQUIRE(brain.human().fighter().lockTarget() != nullptr);
+    brain.setTarget(nullptr);
+    brain.setThreatResponse(0);
+    other.setThreatResponse(0);
+    // Whatever the hit started in him (a fight back) goes; both settle before the test asks anything.
+    other.flush();
+    brain.flush();
+    const auto settled = [](const Human& human) {
+        return !coney::human::stickBusy(human.gateInput()) && human.animator().flags() == 0 &&
+               !human.fighter().holdsMovement(human.animator());
+    };
+    scene.runUntil(120, [&] { return settled(brain.human()) && settled(other.human()); }, [] {});
+    REQUIRE(settled(brain.human()));
+    REQUIRE(settled(other.human()));
+    REQUIRE(brain.human().fighter().lockTarget() != nullptr);
+}
+
+// The heading change from `before` to `after`, degrees.
+float turnedDegrees(float before, float after) {
+    return coney::human::wrapAngle(after - before) * 180.0F / std::numbers::pi_v<float>;
+}
+
+// Restores the player's stance turn (a debug tunable) when it goes.
+struct StanceTurnScope {
+    float saved = coney::human::locomotionTuning().stanceTurnDegrees;
+    StanceTurnScope() = default;
+    StanceTurnScope(const StanceTurnScope&) = delete;
+    StanceTurnScope& operator=(const StanceTurnScope&) = delete;
+    StanceTurnScope(StanceTurnScope&&) = delete;
+    StanceTurnScope& operator=(StanceTurnScope&&) = delete;
+    ~StanceTurnScope() { coney::human::locomotionTuning().stanceTurnDegrees = saved; }
+};
+
+} // namespace
+
+TEST_CASE("locked onto a target, a move turns away from it and walks to its point", "[ai][move]") {
+    // The stance faces the brain's heading, not the target (docs/research/characters.md#ai-locomotion): a move whose
+    // point lies behind the human, its target in front, turns on the spot and strafes there. Facing the target, the
+    // turn could never finish and the move would stand for good (the level5 Vargas stall).
+    MoveScene scene;
+    Brain& brain = scene.add({45.0F, 41.0F, 0.0F}, -90.0F);                               // facing +x
+    Brain& other = scene.add({45.9F, 41.0F, 0.0F}, 90.0F, coney::ai::BrainType::Warrior); // in front of him
+    lockOnto(scene, brain, other);
+    // Behind him, near enough that the target is kept (2.5 m).
+    brain.queueAction(moveTo({43.6F, 41.0F, 0.0F}, 0.3F));
+    bool lockHeld = true;
+    float widest = 0.0F;
+    float heading = brain.human().heading();
+    const int steps = scene.runUntil(
+        300, [&] { return brain.actionCount() == 0; },
+        [&] {
+            lockHeld = lockHeld && brain.human().fighter().lockTarget() != nullptr;
+            widest = std::max(widest, std::fabs(turnedDegrees(heading, brain.human().heading())));
+            heading = brain.human().heading();
+        });
+    CHECK(steps < 300);
+    CHECK(lockHeld);
+    CHECK(brain.moveFailure() == MoveFailure::None);
+    CHECK(planDistance(brain.human().position(), Vec3{43.6F, 41.0F, 0.0F}) <= 0.5F);
+    // Never more than the stance's 24° in an update.
+    CHECK(widest <= 24.0F + 1e-3F);
+}
+
+TEST_CASE("locked onto a target with no move, an AI keeps its facing while the target walks round him", "[ai][move]") {
+    // Nothing turns a fighter to his target but a move or an attack (docs/research/ai.md#fight-facing).
+    MoveScene scene;
+    Brain& brain = scene.add({45.0F, 41.0F, 0.0F}, -90.0F);
+    Brain& other = scene.add({45.9F, 41.0F, 0.0F}, 90.0F, coney::ai::BrainType::Warrior);
+    lockOnto(scene, brain, other);
+    const float facing = brain.human().heading();
+    const auto bearing = [&] {
+        return coney::human::headingOf(coney::anim::subtract(other.human().position(), brain.human().position()));
+    };
+    const float bearingBefore = bearing();
+    // He walks up +y beside him for a second.
+    const HeldMove walk{.heading = 0.0F, .speed = other.human().speeds().walk, .aim = std::nullopt};
+    REQUIRE(other.queueAction(std::make_unique<HoldMoveAction>(walk)));
+    bool lockHeld = true;
+    scene.runUntil(
+        30, [] { return false; }, [&] { lockHeld = lockHeld && brain.human().fighter().lockTarget() != nullptr; });
+    CHECK(lockHeld);
+    CHECK(std::fabs(turnedDegrees(bearingBefore, bearing())) > 30.0F);
+    CHECK(brain.human().heading() == facing);
+}
+
+TEST_CASE("locked, a brain's move turns an AI 24 degrees an update and strafes him to its point", "[ai][move]") {
+    // The stance (docs/research/characters.md#ai-locomotion): the turn toward the brain's heading runs whenever it asks
+    // for a speed, at the AI's own word (0x005101dc), which the player's tuning never changes; the feet go along the
+    // line to the point at the stance walk when it asks for more than 0.1, else stand.
+    const StanceTurnScope scope;
+    coney::human::locomotionTuning().stanceTurnDegrees = 10.0F; // the player's: not the AI's
+    MoveScene scene;
+    Brain& brain = scene.add({45.0F, 41.0F, 0.0F}, -90.0F);
+    Brain& other = scene.add({45.9F, 41.0F, 0.0F}, 90.0F, coney::ai::BrainType::Warrior);
+    lockOnto(scene, brain, other);
+    const float facing = brain.human().heading();
+    const Vec3 at = brain.human().position();
+    // Asked to face 90° to his left, his point on him: he turns 24° an update and stays where he is.
+    HeldMove held{.heading = facing + radians(90.0F), .speed = brain.human().speeds().walk, .aim = at};
+    REQUIRE(brain.queueAction(std::make_unique<HoldMoveAction>(held)));
+    std::vector<float> turns;
+    for (int k = 0; k < 4; ++k) {
+        const float before = brain.human().heading();
+        scene.run(1);
+        turns.push_back(turnedDegrees(before, brain.human().heading()));
+    }
+    CHECK(turns[0] == Catch::Approx(24.0F).margin(1e-3));
+    CHECK(turns[1] == Catch::Approx(24.0F).margin(1e-3));
+    CHECK(turns[2] == Catch::Approx(24.0F).margin(1e-3));
+    CHECK(turns[3] == Catch::Approx(18.0F).margin(1e-3));
+    CHECK(planDistance(brain.human().position(), at) < 0.05F);
+    REQUIRE(brain.human().fighter().lockTarget() != nullptr);
+    // Asked for 0.05 m/s: still turned (back toward the target), not moved.
+    held.heading = facing;
+    held.speed = 0.05F;
+    held.aim = Vec3{at.x, at.y + 5.0F, at.z};
+    const float before = brain.human().heading();
+    scene.run(1);
+    CHECK(turnedDegrees(before, brain.human().heading()) == Catch::Approx(-24.0F).margin(1e-3));
+    CHECK(planDistance(brain.human().position(), at) < 0.05F);
+    // Asked to walk: he strafes up +y to the point while he faces the target, at the stance walk in the end.
+    held.speed = brain.human().speeds().walk;
+    scene.run(20);
+    CHECK(brain.human().heading() == Catch::Approx(facing).margin(1e-4));
+    CHECK(brain.human().position().y - at.y > 1.0F);
+    CHECK(std::fabs(brain.human().position().x - at.x) < 0.05F);
+    CHECK(brain.human().speed() == Catch::Approx(coney::combat::combatTuning().combatWalkSpeed).margin(0.01));
+    REQUIRE(brain.human().fighter().lockTarget() != nullptr);
+}
+
+TEST_CASE("locked and wounded, an AI turns 0.375 degrees an update, even asked to stand, and walks", "[ai][move]") {
+    // The hurt test comes first (docs/research/characters.md#ai-locomotion): a quarter of 1.5° an update whatever the
+    // speed, no turn on the spot, and the walk speed rather than the stance walk.
+    MoveScene scene;
+    Brain& brain = scene.add({45.0F, 41.0F, 0.0F}, -90.0F);
+    Brain& other = scene.add({45.9F, 41.0F, 0.0F}, 90.0F, coney::ai::BrainType::Warrior);
+    lockOnto(scene, brain, other);
+    // **Coney's test**: the mark alone (HuSetWounded would end the stance first).
+    brain.human().script().wounded = true;
+    const float facing = brain.human().heading();
+    const Vec3 at = brain.human().position();
+    HeldMove held{.heading = facing + radians(90.0F), .speed = 0.0F, .aim = at};
+    REQUIRE(brain.queueAction(std::make_unique<HoldMoveAction>(held)));
+    scene.run(1);
+    CHECK(turnedDegrees(facing, brain.human().heading()) == Catch::Approx(0.375F).margin(1e-3));
+    held.speed = brain.human().speeds().walk;
+    held.aim = Vec3{at.x, at.y + 5.0F, at.z};
+    const float before = brain.human().heading();
+    scene.run(10);
+    CHECK(turnedDegrees(before, brain.human().heading()) == Catch::Approx(3.75F).margin(1e-2));
+    CHECK(brain.human().speed() == Catch::Approx(brain.human().speeds().walk).margin(0.01));
+    CHECK(brain.human().position().y > at.y + 0.3F);
 }

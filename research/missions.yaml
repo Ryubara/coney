@@ -173,7 +173,7 @@ missions:
         1: {status: in-progress, note: "Plays to checkpoint 2 driven by the pad: the walk past the Moonrunners and Panzers to the showdown's marker."}
         2: {status: in-progress, note: "Plays to checkpoint 3 driven by the pad: Poizo's pan, then the Warriors' five-piece burner tagged at the wall (five stick games) wins the showdown. The rival painters run GoalTag; they tag only once the tactics stop flushing a member's goals at their start (re-human dc040b31)."}
         3: {status: in-progress, note: "No script error; waits on the car message handler and object indices (being built for level34)."}
-        4: {status: in-progress, note: "Plays to its end driven by an adaptive pad (the `[playthrough]` disc test's RouteDriver, through the game session): the AI walks Snow to the rail's start box, then the stick, L2 and triangle run, climb and jump him across the roofs leg by leg (10 climbs, 6 sprint jumps), up the steel stairs beside the unclimbable wall on the z 10.3 roof, and over the last gap to the gallery box, which hands over to checkpoint 5. The Warriors follow on the default command. No recording of the original yet, so the hints' order is not compared."}
+        4: {status: in-progress, note: "Plays to its end driven by an adaptive pad (the `[playthrough]` disc test's RouteDriver, through the game session): the AI walks Snow to the rail's start box, then the stick, L2 and triangle run, climb and jump him across the roofs leg by leg (10 climbs, 6 sprint jumps), charge (L2 and cross) through the row of fence barriers at x 85.2 that closes the roof, up the steel stairs beside the unclimbable wall on the z 10.3 roof, and over the last gap to the gallery box, which hands over to checkpoint 5. The Warriors follow on the default command. No recording of the original yet, so the hints' order is not compared."}
         5: {status: in-progress, note: "Runs headless with no script error and every binding it calls; not yet checked to its end."}
     research:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
@@ -196,7 +196,7 @@ missions:
       each:
         1: {status: in-progress, note: "The scripts run with no error; the checkpoint is not yet played to its end."}
         2: {status: pending-approval, note: "Played to its end with the pad (disc test): the bar's room smoke drifts over the screen as the original's does, the Hurricanes fight the player, and once all eight are down the scene l5_c5 plays and sets checkpoint 3. The surviving Hurricanes stop attacking after a while (AI fight-goal stall, with ai-combat2)."}
-        3: {status: in-progress, note: "The scripts run with no error; the runner's carrot run (GoalRunCarrotRun) is still missing."}
+        3: {status: in-progress, note: "The scripts run with no error; Sanchez runs each path of his run ahead of the Warriors (GoalRunCarrotRun: faster and turning quicker the closer the nearest Warrior is inside 13 m). The checkpoint is not yet played to its end."}
         4: {status: in-progress, note: "Played to its end with the pad (disc test): Diego and Vargas fight through the three stages of TacticBossScenarioA, the boss's HUD bars show in the right column, and the end scene l5_c3 ends the mission (HUDLaunchMissionComplete). The boss rail camera (CamSetupRail) takes the screen after the opening (disc test)."}
     research:
       - {title: "The mission's scripts, checkpoint by checkpoint", path: "research/scripting.md#level5"}
