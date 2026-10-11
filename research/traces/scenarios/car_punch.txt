@@ -1,4 +1,4 @@
-# Square taps at a parked sedan's front-right door, one every 30 updates so that each is a fresh S1 (no chain).
+# Square taps at a parked sedan's front-right door, 30 to 60 updates apart so that each is a fresh attack (no chain).
 # Research: docs/research/cars.md#windows. The stick stays at rest.
 20 tap square
 50 tap square
@@ -12,3 +12,8 @@
 290 tap square
 320 tap square
 350 tap square
+380 tap square
+440 tap square
+500 tap square
+560 tap square
+620 tap square

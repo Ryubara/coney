@@ -1,12 +1,13 @@
 # Punching a parked car. On the original, slot 6 (level99): the player is put 0.44 m outside the right side of the
 # sedan in car slot 2 at (41.23, 44.76), whose front faces -x, beside its front door (the car's own x = +1.64 m,
-# y = 0.03 m), facing the car (heading 180), and taps square twelve times; his feet are held there (the attacks
+# y = 0.03 m), facing the car (heading 180), and presses square 16 times (11 start an attack, the rest fall in one); his feet are held there (the attacks
 # step him back). Coney: checkpoint 4, where no scene holds the pad. Which parts each hit reaches, the window
-# breaking on the first, the door's damage per hit, its dent at 0.5 and its coming off, and the car's rock.
-description = "twelve squares at a parked sedan's front-right door: parts hit, damage per hit, window, dent, rock"
+# breaking on the first, the door's damage per hit, its dent at 0.5, its coming off and flying at the 10th square,
+# and the car's rock.
+description = "squares at a parked sedan's front-right door: parts hit, damage per hit, window, dent, rock"
 research = "docs/research/cars.md#windows"
 input = "car_punch.txt"
-updates = 400
+updates = 680
 fields = ["player"]
 
 [original]
@@ -14,8 +15,8 @@ slot = 6
 patches = ["scripted-pad", "right-stick"]
 let = { car = 'u32(u32(0x005971b4) + 4) + 2 * 0x1310' }
 setup = [
-  { address = "tf(player) + 0x0", type = "f32", value = "41.2", frame = 0, until = 399 },
-  { address = "tf(player) + 0x4", type = "f32", value = "46.4", frame = 0, until = 399 },
+  { address = "tf(player) + 0x0", type = "f32", value = "41.2", frame = 0, until = 679 },
+  { address = "tf(player) + 0x4", type = "f32", value = "46.4", frame = 0, until = 679 },
   { address = "tf(player) + 0x18", type = "f32", value = "1.0", frame = 0, until = 2 },
   { address = "tf(player) + 0x1c", type = "f32", value = "0.0", frame = 0, until = 2 },
 ]
@@ -63,3 +64,8 @@ type = "f32"
 name = "car_qy"
 address = "car + 0x24"
 type = "f32"
+
+[[field]]
+name = "parts_flying"
+address = "car + 0x11f4"
+type = "u32"

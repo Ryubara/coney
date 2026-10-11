@@ -461,17 +461,18 @@ damages comes from the zone tables, never from the part's own box. Confirmed (co
   (`Sound_AddScriptEmitter`), and no car code plays it. Confirmed (code).
 
 **Runtime: squares at a door** (`car_punch`, confirmed (runtime)). The player held 0.44 m outside the sedan's right
-side beside its front door (the car's x = +1.64, y = +0.03), facing it, square every 30 updates:
+side beside its front door (the car's x = +1.64, y = +0.03), facing it, square every 30 to 60 updates (an attack
+and its recovery take 60):
 
 | Square | Clip | Lands (updates after the press) | Result |
 | --- | --- | --- | --- |
 | 1 | 662 (aim point 1.5 m up, window 17 intact) | 13 | window 17 off (damage 1, bit `0x20000` in `+0x11f8` and `+0x11ec`); the door shielded |
-| 2-6 | 661 (only door 16 left in the zone) | 10 | door 16 + 0.115 each: 0.115, 0.23, 0.345, 0.46, 0.575; the 6th square crosses 0.5 (the dent) |
+| 2-10 | 661 (only door 16 left in the zone) | 10 | door 16 + 0.115 each: 0.115, 0.23, ... 0.92; the 6th square crosses 0.5 (the dent); the 10th takes it to 1: the door is off and **flies** (bit `0x10000` in `+0x11f8` and `+0x11f4`) |
+| 11 | 12 (`S1`) | | nothing left in the zone, so no car target: a plain punch, which reaches no part |
 
 The cabin's mask (17) and the body's (16, 17) give the same parts here, as the tables say. Each hit rocked the car.
 Without the feet held, each attack's recovery (clip 389) steps the player back about 0.5 m; after two hits he stood
-1.1-1.2 m out, beyond the car target's 1 m, and the next squares were plain `S1`s that did not reach the car. The
-door would come off at its 9th hit (1.035).
+1.1-1.2 m out, beyond the car target's 1 m, and the next squares were plain `S1`s that did not reach the car.
 
 ### The rock {#rock}
 
@@ -739,4 +740,5 @@ particular spots", comes from these gaps:
   glass ([Type tables](#type-tables)).
 - The zone thresholds, masks and boxes of the other types (answered: [Type tables](#type-tables)).
 - Whether the contact point `+0x60` of an object's or a charge's hit is in the car's frame (inferred), and the
-  door's 9th hit and flight, the charge, a weapon and a thrown bottle against a car, at runtime.
+  charge, a weapon and a thrown bottle against a car, at runtime (a door's 9th hit and flight: answered,
+  [What can hit a car](#hit-volumes)).
