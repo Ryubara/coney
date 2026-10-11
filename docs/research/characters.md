@@ -1320,14 +1320,30 @@ addresses given:
 - **Not one-shot**: the slot stays until `DelAnimCallback(human, anim)` (`0x0023ab80`; the first slot whose id matches
   and whose flag is set or whose handle is the human's) or the next `InitLevel`.
 - A paired task (`0x00108450`, `0x00108a78`) looks the id up in **the other human's** instance, so the dispatch runs
-  for that human (inferred from the instance used).
+  for that human. Confirmed (runtime): at a strong grapple's connect the victim's 658, started by `PairedTask_Init`
+  (`0x00108a78`, caller `0x00108af4`), was dispatched for the **player** (the grabber, whose set holds 658).
+- **A follow-on task fires when it is built, not when it starts playing.** At a grab's connect, `Grab_Connect`
+  ([Combat](combat.md#grab-posing)) builds the connecting clip and, under it, the hold's four-clip mix (type 11,
+  `AnimTaskFourMix_Construct`, `0x00106f50`) on both stacks in the same update; the four-mix's constructor takes its
+  clips (82 and 86 for the grabber, 83 and 87 for the victim) and so fires the callbacks of the **hold ids at the
+  connect**, the length of the connecting clip before the hold plays. Confirmed (runtime), PCSX2 2.9.94, `level99`
+  checkpoint 1 (hooks `anim-dispatch` and `anim-callback-match`, [the queue at runtime](hud.md#hint-queue-runtime)):
+  for each grab the dispatch of 82 for the player (from `0x00106fe0`) and of 83 for the victim came in the tick the
+  connecting clip started (657 from `AnimTaskChained_Construct`, `0x00105990`); in the strong grapple the hold played
+  and the tutorial callback received 82 **34 updates later**, and no second dispatch of 82 came when the hold began.
+  So level99's `PlayerState` (registered on the player's 82 and 84) runs at the connect, and lesson 5's
+  `P1.Power` (the hit scored with 82, [Strong grapple](combat.md#strong-grapple)) 34 updates after it, never in the
+  same update. A plain grab fires 82 at its connect the same way (lessons 2, 6 and 8).
 - **Coney's implementation** (`ScriptedBrains::runAnimCallbacks`): the starts are gathered over the characters' step
   and the callbacks called after it. A human that starts the same id more than once in one step gets **one** call
   (**Coney's reading**). Coney hands a chain over to its loop in every layer, the fading ones too, so two attack chains
   ending in the fight idle 358 started it twice in one update. `level99`'s `PlayerState` then ran twice: each time
   `HUDSetTutorialText(nil)` and a hint, and the second nil found nothing showing yet, so one hint stayed queued per
   double start. The box backed up behind them, and the Targeting and Light Combos hints never showed
-  ([Hints](hud.md#hints-hudsettutorialtext)).
+  ([Hints](hud.md#hints-hudsettutorialtext)). **Differs from the original**: a grab's hold ids (82 / 83, 84 / 85)
+  must fire at the connect, when the hold is set up under the connecting clip, not when the hold begins (above);
+  in Coney's `level99` course run they fired when the hold played, the update the strong grapple's damage is scored,
+  which put `PlayerState`'s grab hint and `P1.Power`'s `TT_24d` in one update.
 
 ### Moving, standing on the ground and falling {#ground}
 

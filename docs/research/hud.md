@@ -543,12 +543,20 @@ functions named:
   inserts before the first entry with a higher number). When the pool is empty a new hint is dropped. The text is
   kept by pointer, not copied.
 - **Queueing** (`HintBox_Queue(box, text, priority)`, `0x001ce3c0`): a nil text clears the showing hint unless the game
-  is paused. Otherwise the hint is inserted; if a hint is showing and the new priority is **lower** (more urgent), the
-  showing hint is put back in the queue with its own priority and cleared, so the new one shows on the next update and
-  the old one **starts again from the beginning** later. Equal or higher numbers wait.
+  is paused (`MessageHUD_Shutdown`, `0x001b9290`); it does **not** take the next hint, which waits for the next
+  `HintBox_Update`. Otherwise the hint is inserted, with **no check for a duplicate** (the same text twice is two
+  entries). If a hint is showing and the new priority is **lower** (more urgent), the showing hint is put back in the
+  queue with its own priority and cleared, and it **starts again from the beginning** later. Equal or higher numbers
+  wait. Last, when no hint is showing (the box was free, or the urgent one just cleared it), `HintBox_Queue` calls
+  `HintBox_Update` itself (the box's vtable `+0x34`), so the front of the queue **shows in the same call**, with its
+  cue: a script's `HUDSetTutorialText(nil)` then `HUDSetTutorialText(text)` shows `text` at once, in the update the
+  script ran. Confirmed (code) at `0x001ce484`-`0x001ce52c`, and confirmed (runtime): every text set on a free box in
+  level99's lessons 1-8 was shown in the same tick ([The queue at runtime](#hint-queue-runtime)).
 - **Taking the next** (`HintBox_Update`, `0x001cdc80`, each HUD update and also during a freeze, from `GameTimer_Update`
-  `0x00145a10`): when no hint shows, the front of the queue becomes the text (`MarkupText_SetText`), its priority goes
-  to `+0x3ac`, interface cue `0x15` plays, and the box is laid out ([layout](#hint-box-layout-0x0050eb50)).
+  `0x00145a10`, and from `HintBox_Queue` and `HintBox_Withdraw` above): when no hint shows, the front of the queue
+  becomes the text (`MarkupText_SetText`), its priority goes to `+0x3ac`, interface cue `0x15` plays, and the box is
+  laid out ([layout](#hint-box-layout-0x0050eb50)). When a hint shows, it checks the markup's time instead and clears
+  an expired hint; the next one is **not** taken in that call, so it shows one update later.
   The queue entry is in `s1` there (`+0x0` the text, `+0x4` the priority byte); `0x001cdf7c`, just after
   `MarkupText_SetText`, is where the `event-hint` hook logs each hint the moment it shows. Confirmed (runtime).
 - **How long a hint stays** comes **only from its markup** (`MarkupText_IsExpired`, `0x001bb2f0`; when it returns true
@@ -566,9 +574,12 @@ functions named:
   Disc check (counts only): of the hint strings, `config_strings_en.lua` has 7 `<DISPLAYTIME>` tags and `level99.lua` 8
   (2,500-8,000 ms); neither uses `<FREEZE>`, so most hints stay until the script removes them.
 - **Removing:** `HUDFlushTutorialText(p)` (`HintBox_FlushPriority`, `0x001ce748`) removes every queued hint of priority
-  `p`, and the showing one when its priority is `p`; 4 removes all. `HintBox_Withdraw(box, text)` (`0x001ce5c0`)
-  removes one hint by its text pointer (the showing one only when the game is not paused). `HUDCheckTutorialText`
-  (`HintBox_Contains`, `0x001ce550`) is true while the text is showing or queued.
+  `p`, and the showing one when its priority is `p`; 4 removes all. The next hint then waits for the next
+  `HintBox_Update`. `HintBox_Withdraw(box, text)` (`0x001ce5c0`) removes one hint by its text pointer: the showing one
+  through `HintBox_Queue(box, nil)` (so only when the game is not paused) followed by a `HintBox_Update` call, so the
+  next queued hint **shows at once**; a queued one, the first entry with that pointer only. `HUDCheckTutorialText`
+  (`HintBox_Contains`, `0x001ce550`) is true while the text is showing or queued. Texts are compared by pointer;
+  Lua 4 interns its strings, so a script's equal strings are one pointer (inferred). Confirmed (code).
 - **Style:** text colour `0x005fd310` (178, 178, 178, 255) ([GUI](gui.md#colour-table)), markup lines `<CR2>` and
   `<CRM>` enabled; the widget's `+0x1d4` is 0.74 with one player and 0.52 split, or the number after a leading
   `<AUTOINDENT` tag (`0x001bb390`). Read at runtime (PCSX2 2.9.94, copies of quick-save slots 3-8, `level99`): a
@@ -583,6 +594,49 @@ functions named:
 
 The box is hidden while a scroll-in message, an announcement or a mini-game panel shows ([What hides
 what](#the-huds-frame)); it is drawn by `0x001ce8b8` and hidden by `0x001bb2b0`.
+
+#### The queue at runtime {#hint-queue-runtime}
+
+Two plays of `level99` checkpoint 1 (2026-10-11, PCSX2 2.9.94, the state copy `l99-cp1-lesson1` driven by the
+`level99-tutorial` course of [Differential playthroughs](../guides/research-workflow.md#differential-playthroughs),
+3,600 updates each, through lesson 9's set-up), with the hooks `hint-queue` (`HintBox_Queue`), `hint-clear`
+(`MessageHUD_Shutdown` on the box `0x00609250`), `hint-withdraw`, `hint-flush`, `event-hint` (`0x001cdf7c`),
+`tutorial-callback`, `anim-dispatch` and `anim-callback-match` of `repo:research/traces/patches.toml`. Times are taken
+from the tick count each hook logs (`0x005104f4`, two ticks an update). Confirmed (runtime):
+
+- **A text set on a free box shows in the same tick.** All `HintBox_Queue` calls (87 and 89 in the two runs) came
+  from `HUDSetTutorialText` (`Tutorial_QueueText`, return address `0x001b499c`). Of those with a text (40 and 41),
+  all but one found the box empty (a nil just before it, or nothing showing) and were shown within the same call:
+  `MarkupText_SetText`'s own clear (`0x001bb26c`), then the `0x001cdf7c` show, at the same tick. The one is `TT_26b`
+  below; apart from it the queue never held an entry past the call that queued it.
+- **A held hint makes the next wait for its end, plus one update.** `TT_26a` (`<DISPLAYTIME 3000>`) and `TT_26b` were
+  set in one call; `TT_26b` stayed queued while `TT_26a` showed. `HintBox_Update` cleared `TT_26a` 91 updates (182
+  ticks) after it showed, and `TT_26b` showed on the next update, 92 updates after `TT_26a`, the same in both runs.
+- **Duplicates are not dropped.** `P1.StartSnaps` sets the snap text twice in one call (nil, text, nil, text, one
+  tick): the box showed it, cleared it and showed it again, with the cue twice. The two entries never coexist in the
+  queue, because the first is shown before the second is queued.
+- **Nothing else queued.** No `HintBox_QueueGameHint`, no `HUDFlushTutorialText`; `HintBox_Withdraw` ran about
+  3,000 times (from `HUD_WithdrawActionHint`, return address `0x001b3e64`, [Action prompts](#action-prompts)), always
+  with no text (no action hint was queued), so it did nothing.
+
+So in the original a hint queue backs up only behind a hint with a time (`<DISPLAYTIME>`, `<FREEZE>`) or a more urgent
+one, never because two scripts set texts in one update: the last text set in an update is the one on screen at its
+end. The order and timing of lessons 5-8 are in [Scripts](scripting.md#level99-hint-timing).
+
+**Coney's differences** (from `repo:src/hud/hint_box.cpp`, for the implementer):
+
+1. `HintBox::queue` only inserts; the text waits for the next `HintBox::update`. It must show the front of the queue
+   at once, with its cue and its `hint` event, when nothing is showing after the insert (and after an urgent hint
+   cleared the showing one). With that, two nil + text pairs in one update leave nothing queued, as on the original.
+2. `HintBox::withdraw` of the showing text must also take the next hint at once (`HUDSetTutorialText(nil)` and
+   `flush` must not).
+3. `HintBox::update` clears an expired hint and takes the next in the same call; the original takes it on the next
+   update (`TT_26b` 92 updates after `TT_26a`, not 91).
+4. Keep: no duplicate check in `queue`; nil does not take the next hint.
+5. Not the box's: a grab's hold ids must fire their animation callbacks at the connect, 34 updates before the strong
+   grapple's hit is scored ([Animation callbacks](characters.md#anim-callbacks)), so `PlayerState`'s grab hint and
+   `P1.Power`'s `TT_24d` come in different updates, as in the original
+   ([lessons 5-8](scripting.md#level99-hint-timing)).
 
 ### The tutorial callback (`HUDSetTutorialCallback`) {#tutorial-callback}
 
