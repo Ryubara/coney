@@ -235,9 +235,10 @@ void GameplayMode::endLevel() {
     // The level first: its humans are what the brains refer to, its player what the cameras follow. Then the cameras,
     // whose locator reads the scripts' hold, then the hold, then the brains it holds.
     m_level.reset();
-    // The radar's blips stop locating the level's objects.
+    // UnloadLevel's HUD shut-down: the level's hints, objectives, bars, timers and blips go with it (the radar stops
+    // locating its objects), so every start of the next level, however it comes, finds the HUD clean.
     if (m_context.hud != nullptr) {
-        m_context.hud->setRadarLocator({});
+        m_context.hud->levelShutDown();
     }
     if (m_context.cameras == m_cameras.get()) {
         m_context.cameras = nullptr;
@@ -759,7 +760,6 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
     updateRevive();
     updateHiding();
     m_scripts.setTime(nowMs);
-    callTutorialCallback();
     callPadHandler();
     // The path camera's functions reached in the step.
     if (m_cameras) {
@@ -770,6 +770,12 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
     if (m_scripted) {
         reportHumanSounds();
         m_scripted->runAnimCallbacks();
+        // The tutorial callback after the animation callbacks: the original calls it when the victim applies the
+        // damage, with the id the attacker has already started (so that start's animation callback ran first), and a
+        // lesson that moves on (level99's lesson 5 into 6 on the grapple's hold 82) sets its next text for the state
+        // that callback recorded. The other order queued two texts in one step and left the hint box one text
+        // behind (docs/research/hud.md#tutorial-callback, docs/research/characters.md#anim-callbacks).
+        callTutorialCallback();
         m_scripted->humanHost().runRageHandlers();
         m_scripted->storyHost().update();
         stepCrew(nowMs);
@@ -791,6 +797,12 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
     updateTagPanel();
     updateActionPrompt();
     runPlayerFrame(m_state, m_scripts, stack.pads(), nowMs, &m_objectServices.crimeServices());
+    // The hint box steps where the original's HUD update stands in its frame, after this step's callbacks and before
+    // the scheduled calls: a text a callback set shows now, so a scheduled call's clear removes it and does not leave
+    // it queued behind the next one (the box one text late; owner checklist item 33b).
+    if (m_context.hud != nullptr) {
+        m_context.hud->updateHints(nowMs);
+    }
     m_scripts.update(nowMs, frame.seconds);
     if (m_effects) {
         // The objects that break themselves this step (a molotov set off by BreakObjectsInRadius) make their flash.

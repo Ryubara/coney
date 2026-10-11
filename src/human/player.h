@@ -126,6 +126,18 @@ struct PlayerClass {
 /// as the original writes the class's damage when any human is made (docs/research/combat.md#damage-table).
 [[nodiscard]] PlayerClass playerClassOf(const characters::CharacterTypes& types, int type);
 
+/// The noclip's flying speed across the ground with the left stick pushed fully, and its rise and descent with a
+/// trigger pulled fully, in metres a second: **Coney's choice**, a little under the run's 7.5 so that a short push
+/// places him exactly (docs/guides/debug-menu.md#noclip).
+inline constexpr float kNoclipSpeed = 6.0F;
+/// How many times faster he flies with R1 held: **Coney's choice**, to cross a level in seconds.
+inline constexpr float kNoclipFastFactor = 4.0F;
+
+/// How the noclip flies the player for `pad` (port 1): kNoclipSpeed across the ground (the stick sets the share), R2
+/// rising and L2 descending by how far each trigger is pulled (its pressure; a held button with no pressure, as a
+/// script gives, is a full pull), both times kNoclipFastFactor while R1 is held.
+[[nodiscard]] Flight noclipFlight(const Pad& pad);
+
 /// Player 1: the human and its follow camera.
 class Player {
   public:
@@ -171,6 +183,13 @@ class Player {
     void setPadControlled(bool padControlled);
     /// Whether the pad drives the human (true until setPadControlled(false)).
     [[nodiscard]] bool padControlled() const { return m_padControlled; }
+    /// Switches the debug noclip on or off (docs/guides/debug-menu.md#noclip; Coney's own, no original counterpart).
+    /// While it is on, update() flies the driven human by the pad (noclipFlight(), Human::setFlight()) with the stick
+    /// turned by the camera as for a walk, through walls and floors with no gravity, and no button acts in the game;
+    /// the right stick still turns the camera. Off, he drops from where he is with the normal physics.
+    void setNoclip(bool on);
+    /// Whether the noclip is on.
+    [[nodiscard]] bool noclip() const { return m_noclip; }
     /// Whether the camera frames his fight after the last update (`Camera_IsCombatFraming`, `0x00233c50`): the pad
     /// holds L1 at his fight target and he is not in a grab (docs/research/sound-events.md#players).
     [[nodiscard]] bool combatFraming() const { return m_combatFraming; }
@@ -224,6 +243,7 @@ class Player {
     camera::Cameras* m_cameras = nullptr; // the manager the follow camera belongs to; null steps it alone
     std::uint32_t m_respawns = 0;
     bool m_padControlled = true;
+    bool m_noclip = false;               // noclip()
     bool m_combatFraming = false;        // combatFraming()
     std::optional<float> m_nearestEnemy; // the distance to the nearest enemy, none with no enemies
     PlayerSnapshot m_previous;

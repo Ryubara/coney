@@ -4,6 +4,7 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -14,6 +15,8 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include "core/pad.h"
+#include "core/pads.h"
 #include "debug/debug_session.h"
 #include "debug/menu_model.h"
 #include "debug/play_controls.h"
@@ -46,6 +49,9 @@ class FakePlay final : public coney::debug::PlayControls {
     }
     [[nodiscard]] bool playerFrozen() const override { return frozen; }
     void setPlayerFrozen(bool on) override { frozen = on; }
+    [[nodiscard]] bool canNoclip() const override { return noclipHere; }
+    [[nodiscard]] bool noclip() const override { return flying; }
+    void setNoclip(bool on) override { flying = on; }
     [[nodiscard]] coney::anim::Vec3 cameraEye() const override { return {0.0F, -3.0F, 1.5F}; }
     [[nodiscard]] coney::anim::Vec3 cameraTarget() const override { return {0.0F, 0.0F, 1.5F}; }
     void resetCamera() override { ++resets; }
@@ -84,6 +90,8 @@ class FakePlay final : public coney::debug::PlayControls {
     int teleports = 0;
     int resets = 0;
     bool frozen = false;
+    bool noclipHere = true;
+    bool flying = false;
     bool free = false;
     bool spawnable = true;
     std::vector<coney::sandbox::Primitive> spawned;
@@ -371,4 +379,73 @@ TEST_CASE("the Coordinates toggle shows player 1's feet and heading, and says so
     DebugSession bare(tunables, servicesOver(nullptr), nullptr);
     bare.display().coordinates = true;
     CHECK(bare.cornerLines() == std::vector<std::string>{"coordinates: no player"});
+}
+
+namespace {
+
+// An input source that gives back whatever the test put in `next`.
+class FakeInput final : public coney::InputSource {
+  public:
+    coney::PortSamples next{};
+    coney::PortSamples sample(std::uint64_t /*frame*/) override { return next; }
+};
+
+} // namespace
+
+TEST_CASE("the Player page switches the noclip with a notice, and its hotkey only while that is on",
+          "[debug][noclip]") {
+    TunableRegistry tunables;
+    FakePlay play;
+    FakeInput input;
+    DebugSession session(tunables, servicesOver(&play), &input);
+    const auto page = session.model().openPage("Player");
+    REQUIRE(page != nullptr);
+    std::uint64_t frame = 0;
+    // One frame through the gate with port 1 holding `buttons`; what the game sees of it.
+    const auto frameHolding = [&](std::uint16_t buttons) {
+        input.next[0].connected = true;
+        input.next[0].buttons = buttons;
+        return session.gate().sample(frame++)[0].buttons;
+    };
+
+    // The menu's toggle, with the notice under the corner lines.
+    CHECK_FALSE(itemOn(*page, "Noclip").getBool());
+    itemOn(*page, "Noclip").setBool(true);
+    CHECK(play.flying);
+    CHECK(itemOn(*page, "Noclip").getBool());
+    CHECK(session.cornerLines() == std::vector<std::string>{"Noclip on"});
+    itemOn(*page, "Noclip").setBool(false);
+    CHECK_FALSE(play.flying);
+    CHECK(session.cornerLines() == std::vector<std::string>{"Noclip off"});
+    // The notice goes after its frames.
+    for (int i = 0; i < DebugSession::kNoticeFrames; ++i) {
+        (void)frameHolding(0);
+    }
+    CHECK(session.cornerLines().empty());
+
+    // The hotkey is off by default: the chord is the game's.
+    CHECK_FALSE(itemOn(*page, "Noclip hotkey (R3 + D-pad left)").getBool());
+    CHECK(frameHolding(coney::pad::kR3 | coney::pad::kLeft) == (coney::pad::kR3 | coney::pad::kLeft));
+    CHECK_FALSE(play.flying);
+    (void)frameHolding(0);
+
+    // On, each press toggles the noclip, and the game never sees the chord.
+    itemOn(*page, "Noclip hotkey (R3 + D-pad left)").setBool(true);
+    CHECK(frameHolding(coney::pad::kR3) == coney::pad::kR3);
+    CHECK(frameHolding(coney::pad::kR3 | coney::pad::kLeft) == 0);
+    CHECK(play.flying);
+    CHECK(session.cornerLines() == std::vector<std::string>{"Noclip on"});
+    CHECK(frameHolding(coney::pad::kR3 | coney::pad::kLeft) == 0);
+    CHECK(play.flying);
+    (void)frameHolding(0);
+    CHECK(frameHolding(coney::pad::kLeft) == coney::pad::kLeft);
+    CHECK(frameHolding(coney::pad::kLeft | coney::pad::kR3) == 0);
+    CHECK_FALSE(play.flying);
+    CHECK(session.cornerLines() == std::vector<std::string>{"Noclip off"});
+
+    // A mode that cannot noclip is left alone, and says so.
+    (void)frameHolding(0);
+    play.noclipHere = false;
+    (void)frameHolding(coney::pad::kR3 | coney::pad::kLeft);
+    CHECK_FALSE(play.flying);
 }

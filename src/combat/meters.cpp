@@ -50,14 +50,11 @@ int PendingDamage::applyTo(Health& health) {
     return taken;
 }
 
-int strikeDamage(const AnimRangeList& ranges, int animId, bool doubled, bool quartered) {
+int strikeDamage(const AnimRangeList& ranges, int animId, bool quartered) {
     if (animId < 0) {
         return 0;
     }
     int damage = ranges.damage(static_cast<std::size_t>(animId));
-    if (doubled) {
-        damage *= 2;
-    }
     if (quartered) {
         damage /= 4;
     }

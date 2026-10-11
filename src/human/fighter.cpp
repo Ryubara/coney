@@ -461,6 +461,7 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
         m_candidate = strongGrappleTarget(input);
     }
     in.grabTargetInReach = m_candidate != nullptr;
+    in.grabBlocked = hasFlag(flag::kBlockFrontGrab) && hasFlag(flag::kBlockRearGrab);
     // Square with the stick asking for a snap: the snap's own search. The current target found means no snap.
     if (input.command == combat::command::kSquarePressed && combat::snapForStick(input.stick) != id::kNone) {
         Combatant* found = snapTarget(input);
@@ -620,8 +621,8 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
         }
         consumed = true;
     }
-    if (out.grabPowerOut && hurt() && m_held != nullptr) {
-        // Out of power while hurt: the victim escapes rather than being let go.
+    if (out.grabPowerOut && m_held != nullptr && powerOutEscape(*m_held)) {
+        // Out of power: a victim with the escape flags, or held by a hurt grabber, escapes rather than being let go.
         victimEscapes(input, animator);
         consumed = true;
     } else if (out.grabAction != combat::GrabAction::None) {
@@ -921,18 +922,36 @@ void Fighter::strikeContact(Combatant& victim, int animId, anim::Vec3 position, 
     }
 }
 
+bool Fighter::powerOutEscape(const Combatant& victim) const {
+    const std::uint64_t flags = victim.flags();
+    if ((flags & (flag::kDoubleDamage | flag::kAutoEscape)) != 0) {
+        return true;
+    }
+    return hurt() && (flags & flag::kNoEscape) == 0;
+}
+
 void Fighter::applyHit(Combatant& victim, int animId, int damage, bool heldMove, anim::Vec3 attacker,
                        std::uint64_t nowMs, const HumanAnimator& animator) {
     const combat::AnimRange* range = m_ranges != nullptr ? m_ranges->find(clips::clipOf(animId)) : nullptr;
+    // A free strike of a killer (flag 0x20, `Strike_Contact`) takes all the victim's health, and double damage (flag
+    // 0x4000, `Human_AddPendingDamage`) doubles it. **Coney's reading**: a move in a hold is the grab's own damage
+    // path (`Grab_Strike`), which the page gives its own doubling, so neither applies to it.
+    const bool doubled = !heldMove && hasFlag(flag::kDoubleDamage);
+    if (!heldMove && hasFlag(flag::kKiller)) {
+        damage = victim.health().value();
+    }
+    if (doubled) {
+        damage *= 2;
+    }
     // A move in a hold plays its own victim clips; a free hit picks the victim's reaction. A player's hits ignore
-    // hit armour.
+    // hit armour, as do double damage's.
     victim.hit(IncomingHit{.damage = damage,
                            .attackAnim = animId,
                            .code = range != nullptr ? range->kind : 0,
                            .flags = range != nullptr ? range->flags : std::uint16_t{0},
                            .attacker = attacker,
                            .react = !heldMove,
-                           .ignoresArmour = m_player || hasFlag(flag::kIncreasedReact),
+                           .ignoresArmour = m_player || hasFlag(flag::kIncreasedReact) || doubled,
                            .attackerFlag200000 = hasFlag(flag::kIncreasedReact),
                            .attackerIsPlayer = m_player,
                            .strikeMaterial = strikeMaterialOf(animId, range, animator),

@@ -37,6 +37,7 @@
 #include "gamemodes/start_up_flow.h"
 #include "gui/global_strings.h"
 #include "gui/profile_management_gui/pm_new_game_screens.h"
+#include "hud/hud.h"
 #include "scenes/scene_player.h"
 #include "scripting/script_system.h"
 #include "support/fixtures.h"
@@ -343,6 +344,56 @@ TEST_CASE("mission complete: kind 2 reloads the current level", "[story_start]")
     CHECK(run.stack.topId() == GameplayMode::kId);
     CHECK(run.starts.size() == 2);
     CHECK(run.starts.back().level == "level1");
+}
+
+TEST_CASE("every start of a level finds the HUD clean: a debug jump and a reload drop the last level's hints",
+          "[story_start][hud]") {
+    // Owner checklist item 35: a hint on screen and an objective set, then a jump to the next mission through the debug
+    // menu (or a restart): none of it may survive into the new level (docs/research/hud.md#hud-object, UnloadLevel's
+    // HUD shut-down).
+    StoryRun run(storyScript(), false);
+    run.frames(420);
+    run.untilTopLeaves(coney::ProfileManagerMode::kId);
+    run.frames(3);
+    REQUIRE(run.stack.topId() == GameplayMode::kId);
+    REQUIRE(run.starts.size() == 1);
+
+    // Mission A leaves a hint showing, one queued, an objective line and a tutorial callback.
+    const auto dirty = [&run] {
+        coney::hud::Hud& hud = run.flow->hud();
+        hud.hints().queue("mission A's hint", 1);
+        // The fake level does not step the HUD: the box takes the first hint here, as a frame of play would.
+        hud.hints().update(0, coney::hud::HudSound{});
+        hud.hints().queue("mission A's next hint", 1);
+        hud.setObjective(0, "mission A's objective", 0, true, 0);
+        hud.setTutorialCallback("P1.BasicAttacks");
+    };
+    const auto clean = [&run] {
+        const coney::hud::Hud& hud = run.flow->hud();
+        CHECK_FALSE(hud.hints().showing().has_value());
+        CHECK(hud.hints().queued().empty());
+        CHECK_FALSE(hud.checklist().slots[0].has_value());
+        CHECK(hud.tutorialCallback().empty());
+    };
+    dirty();
+    run.frames(1);
+    REQUIRE(run.flow->hud().hints().showing().has_value());
+
+    // The debug menus' jump: the level flow starts the level again and gameplay loads it.
+    REQUIRE(run.flow->jumpToLevel("level1", 2));
+    run.frames(3);
+    REQUIRE(run.stack.topId() == GameplayMode::kId);
+    REQUIRE(run.starts.size() == 2);
+    clean();
+
+    // A restart (mission complete kind 2 reloads the level) does the same.
+    dirty();
+    run.frames(1);
+    run.flow->missionComplete().launch(MissionCompleteMode::kKindReloadLevel);
+    run.frames(3);
+    REQUIRE(run.stack.topId() == GameplayMode::kId);
+    REQUIRE(run.starts.size() == 3);
+    clean();
 }
 
 TEST_CASE("a level's scripts run alone give player 1's start for the checkpoint asked for", "[story_start]") {

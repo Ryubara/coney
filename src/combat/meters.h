@@ -63,12 +63,12 @@ class PendingDamage {
     int m_kind = 0;
 };
 
-/// A hit's damage: anim `animId`'s Anim Range List damage, doubled when the attacker deals double damage (human flag
-/// `0x4000`) and quartered for class `0x80` against brain type 3.
+/// A hit's damage: anim `animId`'s Anim Range List damage, quartered for class `0x80` against brain type 3. Double
+/// damage (human flag `0x4000`) is applied where the hit lands, human::Fighter::applyHit().
 ///
 /// Not yet here: a held weapon's bonus and the player's upgrade percentages (Coney has neither yet).
 /// @orig 0x0021b290 Strike_Contact (unknown)
-[[nodiscard]] int strikeDamage(const AnimRangeList& ranges, int animId, bool doubled = false, bool quartered = false);
+[[nodiscard]] int strikeDamage(const AnimRangeList& ranges, int animId, bool quartered = false);
 
 /// The power meter (record `+0x148`): grab strikes and throws spend it, it drains while grabbing or tackling and
 /// refills otherwise.

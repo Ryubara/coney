@@ -57,6 +57,7 @@ inline constexpr std::uint32_t kStereoStealIntro = 683; ///< `STEREO_STEAL_INTRO
 inline constexpr std::uint32_t kStereoStealLoop = 684;  ///< The stereo theft's loop while the stick turns.
 inline constexpr std::uint32_t kTaggingIntro = 334;     ///< `ANIM_TAGGING_INTRO`: the spray's start.
 inline constexpr std::uint32_t kTaggingLoop = 335;      ///< The spray's loop while the stick game runs.
+inline constexpr std::uint32_t kTaggingRestart = 337;   ///< The spray's restart when a pause begins.
 // A throw's aiming state, move style `0x13` (docs/research/objects.md#throws).
 inline constexpr std::uint32_t kThrowAimEnter = 466; ///< `gen_1hand_throw_enter`, move style `0x13`'s block start.
 inline constexpr std::uint32_t kThrowAimCycle = 469; ///< `gen_1hand_throw_cycle`, its idles and block sustain.

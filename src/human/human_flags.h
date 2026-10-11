@@ -78,6 +78,28 @@ inline constexpr std::uint64_t kNoTarget = 0x100000000000;
 /// Triangle never starts a jump (`HuBlockJump`, `0x00237958`: `Player_TryJump` is skipped); a climb, a context action
 /// or an object action can still take the press.
 inline constexpr std::uint64_t kBlockJump = 0x10000000;
+/// Woundable (`HuSetWoundable`, `0x002376a0`; `Human_MakePlayer` clears it): from the name, it can be left wounded
+/// rather than only knocked out. No reader is on the page, so Coney only keeps it.
+inline constexpr std::uint64_t kWoundable = 0x8;
+/// Killer mode (`HuSetKillerMode`): every strike it lands takes all the victim's health (`Strike_Contact`
+/// `0x0021b290`, docs/research/combat.md#damage).
+inline constexpr std::uint64_t kKiller = 0x20;
+/// Double damage (`HuSetDoubleDamage`): its hits deal twice their damage and ignore hit armour
+/// (`Human_AddPendingDamage` `0x00264bd8`); as a grabbed victim it escapes when the grabber's power runs out
+/// (`Human_UpdateMeters` `0x002562d0`, Fighter's power-out branch).
+inline constexpr std::uint64_t kDoubleDamage = 0x4000;
+/// Never escapes when its grabber's power runs out, even from a hurt grabber (`HuSetNoEscape`, `0x002562d0`).
+inline constexpr std::uint64_t kNoEscape = 0x2000000000;
+/// Rubber-necking (`HuRubberNeck`, `0x0023a258`): from the name, it stops and stares at nearby events. No reader is
+/// on the page, so Coney only keeps it.
+inline constexpr std::uint64_t kRubberNeck = 0x1000000;
+/// No grab from the front involving it, as grabber or victim (`HuBlockFrontGrab`, `HuBlockGrab`): at the intro's end
+/// (`Grab_IntroEnd` `0x0026c1d8`) a front grab with this bit on either human does not go on, the miss plays on. A
+/// player with both block bits starts no grab at all (`Player_GrabOrTackle` `0x00284920`).
+inline constexpr std::uint64_t kBlockFrontGrab = 0x40000000;
+/// No grab from behind involving it, as grabber or victim (`HuBlockRearGrab`, `HuBlockGrab`): the rear grab's
+/// counterpart of kBlockFrontGrab at the same intro end.
+inline constexpr std::uint64_t kBlockRearGrab = 0x80000000;
 /// `HuSetAutoCombat` (`0x00234118`): no reader of the bit is on the page, so Coney only keeps it.
 inline constexpr std::uint64_t kAutoCombat = 0x200000000000;
 

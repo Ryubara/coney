@@ -101,6 +101,8 @@ struct HumanStatus {
     double heldObject = 0;      ///< `HuGetHeldObject`: NilHandle (0) for none.
     double hat = 0;             ///< `HuHasHat`: the hat worn, NilHandle (0) for none.
     bool soundCommands = true;  ///< May say speech commands (`HuEnableSoundCommands`).
+    bool hidden = false;        ///< `HuIsHidden`: hidden in a shadow.
+    bool inCombat = false;      ///< `HuInCombat`: an attacker holds a slot on it, or its brain has a target.
 };
 
 /// `HuSetLookTarget(human, target, ms, weight, flagA, flagB)` as the binding reads it.
@@ -224,6 +226,8 @@ class HumanBindingHost {
     virtual void setSoundCommands(double /*human*/, bool /*on*/) {}
     /// `HuPutItemInPocket` (item 0 and count 0 for `HuRemoveItemInPocket`).
     virtual void setPocket(double /*human*/, int /*item*/, int /*count*/) {}
+    /// `HuSetHearRange` (`help` false) and `HuSetHelpHearRange` (`help` true): one of the brain's two hearing ranges.
+    virtual void setHearRange(double /*human*/, bool /*help*/, float /*range*/) {}
     /// `HuSetLookTarget`.
     virtual void setLookTarget(const LookTargetCall& /*call*/) {}
     /// `HuTeleportNearHuman`.

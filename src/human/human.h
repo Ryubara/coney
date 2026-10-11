@@ -25,6 +25,7 @@
 #include "human/fighter.h"
 #include "human/holdable.h"
 #include "human/human_animator.h"
+#include "human/human_contacts.h"
 #include "human/human_flags.h"
 #include "human/locomotion.h"
 #include "human/locomotion_gate.h"
@@ -43,6 +44,14 @@
 // Research: docs/research/characters.md, docs/research/tasks.md#humans-update
 
 namespace coney::human {
+
+/// How a flying human moves this update (Human::setFlight(), the debug menu's noclip; Coney's own tool, the original
+/// has none): the left stick flies it across the ground as it walks it, turned by the camera, at `speed` for a full
+/// push, and it rises at `climb` (negative: descends).
+struct Flight {
+    float speed = 0.0F; ///< Metres a second across the ground with the stick pushed fully.
+    float climb = 0.0F; ///< Metres a second upward; negative descends.
+};
 
 /// What the human is given each update: the left stick, the camera's view direction, which turns it, the two
 /// buttons traversal reads, and combat's command, buttons and targets.
@@ -416,6 +425,15 @@ class Human final : public Holdable {
     [[nodiscard]] GrabbedReport takeGrabbedReport() override { return m_fighter.takeHeldReport(); }
     /// Moves it there and stops it (its velocity goes).
     void place(anim::Vec3 position, float headingRadians) override;
+    /// Flies the human while `flight` is set (the debug menu's noclip, docs/guides/debug-menu.md#noclip; Coney's own,
+    /// with no counterpart in the original): each state update moves it by the record's stick, turned by the camera
+    /// with the game's dead zone, at the flight's speed, and by its climb, with no collision, gravity, falling or
+    /// landing, facing where it flies across the ground; its clips do not move it. Starting a flight lets go of a pair,
+    /// a climb or a jump and stands it in the idle; ending one (nullopt) leaves it standing where it is, so the next
+    /// update's ground test drops it from there with the normal physics. Set it each update to change the speeds.
+    void setFlight(std::optional<Flight> flight);
+    /// Whether it flies (setFlight()).
+    [[nodiscard]] bool flying() const { return m_flight.has_value(); }
     /// An AI's jump (`Human_BeginJump` with argument 1, then `Human_LaunchJump`, docs/research/ai.md#route-jump): from
     /// any gait, standing too, launched at `velocity` with the jump's clip. Refused (false) in the air, while climbing,
     /// or while the record `+0x08` holds any of kAiJumpRefuseFlags.
@@ -429,7 +447,7 @@ class Human final : public Holdable {
     // it. Each acts at once; the flags and the state keep across spawn().
 
     /// The flag word (human `+0xe0`, human/human_flags.h), kept by its fighter.
-    [[nodiscard]] std::uint64_t flags() const { return m_fighter.flags(); }
+    [[nodiscard]] std::uint64_t flags() const override { return m_fighter.flags(); }
     [[nodiscard]] bool hasFlag(std::uint64_t bit) const { return m_fighter.hasFlag(bit); }
     /// Sets (`on`) or clears the bits of `bits`.
     void setFlag(std::uint64_t bits, bool on) { m_fighter.setFlag(bits, on); }
@@ -524,6 +542,30 @@ class Human final : public Holdable {
     using ObjectPush =
         std::function<std::optional<anim::Vec3>(const Human& walker, anim::Vec3 centre, float radius, anim::Vec3 move)>;
     void setObjectPush(const ObjectPush* push) { m_objectPush = push; }
+    /// The humans its walking body meets (docs/research/physics.md#human-contacts): the characters' step gives every
+    /// human its list each update (Humans::update()); the list may hold this human and null slots, which are skipped.
+    /// Empty (the default): it meets none.
+    void setHumanContacts(std::span<Human* const> humans) { m_otherHumans = humans; }
+    /// Whether its capsule blocks other humans' walks: body flag `0x4` `BLOCKHUMANS`, which a human loses when his
+    /// health runs out, knocked out or wounded (`Human_OnHealthOut`). **Coney stand-in**: what gives the flag back
+    /// when he gets up is not traced, so it is back as soon as he is neither knocked out, nor wounded, nor out of
+    /// health.
+    /// @orig 0x002674c0 Human_OnHealthOut (unknown)
+    [[nodiscard]] bool blocksHumans() const;
+    /// Whether it and `other` are linked, so their walks pass through each other: one holds the other in a grab, a
+    /// tackle, a mount or a mugging (the link's group number at body `+0x3c`, `Grab_Link` and the rest). **Coney
+    /// stand-in**: the scenes' shared group is not set.
+    /// @orig 0x0022c760 Grab_Link (unknown)
+    [[nodiscard]] bool linkedWith(const Human& other) const;
+    /// Its push weight (attribute 7, `+0x27c`): 1e9 while it must not move (linked in a pair, or arrested), else 1.
+    [[nodiscard]] float pushWeight() const;
+    /// Whether another human's walk pushes it: not when a script made it unpushable (`HuSetPushable(false)`, body flag
+    /// `0x200`), when it is only slid along.
+    [[nodiscard]] bool pushable() const { return m_script.pushable; }
+    /// The push-out other humans' contacts left for its next move (body `+0x50`), added to that move and cleared.
+    [[nodiscard]] anim::Vec3 pendingPush() const { return m_pendingPush; }
+    /// Adds `push` to pendingPush() (a contact's code 4, human::contactPush()).
+    void addPush(anim::Vec3 push) { m_pendingPush = anim::add(m_pendingPush, push); }
     /// The breakable objects square may strike from now on (the level's whole panes), given each step.
     void setObjectTargets(std::vector<ObjectTarget> objects) { m_objectTargets = std::move(objects); }
     /// Picks up the object `handle` at `point` with clip `clip` (world_objects::pickupClip()): the clip plays after a
@@ -594,13 +636,18 @@ class Human final : public Holdable {
     void turnToFace(anim::Vec3 point, float seconds);
     /// Starts a tag's spray clips (`Tag_StartSprayClips`): 334 `ANIM_TAGGING_INTRO`, then the loop 335, turning to face
     /// the tag at `point` over half of 334's length (`Human_TurnToFacePoint`); the human stays where he stands.
-    /// Returns false when the intro clip is not loaded. docs/research/crimes.md#tag-callbacks
+    /// Returns false when the intro clip is not loaded (he then turns to the tag at once).
+    /// docs/research/crimes.md#tag-look
     /// @orig 0x00278018 Tag_StartSprayClips (unknown)
     bool startTagSpray(anim::Vec3 point);
+    /// A pause of the stick game began (a slip or a new charge): 337, then the loop 335 again.
+    /// @orig 0x00278210 Tag_RestartSprayClips (unknown)
+    void restartTagSpray();
     /// Whether the spray's intro is over and its loop plays: the moment the stick game goes live (the intro's end hook
     /// `0x00277ed8`).
     [[nodiscard]] bool tagSprayLooping() const;
-    /// Whether the spray's clips still play (the intro or the loop): false once something else took the body.
+    /// Whether the spray's clips still play (the intro, the loop or the restart): false once something else took the
+    /// body.
     [[nodiscard]] bool tagSprayPlaying() const;
     /// The spray is over: a spray clip still playing leaves for the idle. **Coney's reading**: what the original
     /// plays at Tag_End is not on the page.
@@ -645,19 +692,30 @@ class Human final : public Holdable {
     void moveOnGround(const raycast::CollisionMesh& mesh);
     // Moves a falling human, landing on a floor it passed on the update before.
     void moveInAir(const raycast::CollisionMesh& mesh);
-    // Keeps the move the walls left (`slid`, against the asked `displacement` at slope `factor`) as the velocity, so a
-    // wall met at a steep angle brakes the human (docs/research/characters.md#walls).
-    void keepSlidVelocity(anim::Vec3 slid, anim::Vec3 displacement, float factor);
+    // Slides the velocity along the walls the last sweep met (m_contacts): each takes the velocity's part into it, so a
+    // wall met at a steep angle brakes the human (docs/research/characters.md#walls, #slopes).
+    // @orig 0x0033d870 Vec_RemoveNormalPart (unknown)
+    void slideVelocity();
     // Where a walking sweep ends: the feet, and the part of the move from them that the corner slide made.
     struct Swept {
         anim::Vec3 feet;
         anim::Vec3 slide{};
     };
-    // Sweeps the walking body from the feet at `from` by `displacement`, sliding off walls and round a corner its walls
+    // Sweeps the walking body from the feet at `from` by `displacement`, sliding along a wall face it already touches
+    // (rising along one that leans back, docs/research/characters.md#slopes), off walls and round a corner its walls
     // name; returns where it ends, or nothing when it is still blocked after three passes.
     // @orig 0x0033e278 PhysicsBody_Sweep (unknown)
     [[nodiscard]] std::optional<Swept> sweep(const raycast::CollisionMesh& mesh, anim::Vec3 from,
                                              anim::Vec3 displacement);
+    // The humans the walking capsule meets moving from the feet at `from` by `move` (docs/research/physics.md
+    // #human-contacts), up to three passes: the nearest contact stops the capsule at it, the rest of the move slides
+    // along the other (code 1), and, unless this capsule strikes (a charge), the other is given half of the pass's move
+    // into him as his pending push (code 4). Returns the move left, which the walls then take; each contact's normal
+    // goes to m_contacts.
+    // @orig 0x0033d498 PhysicsBody_SweepHumanMask (unknown)
+    [[nodiscard]] anim::Vec3 meetHumans(anim::Vec3 from, anim::Vec3 move);
+    // Its capsule as another human's sweep meets it.
+    [[nodiscard]] UprightCapsule uprightCapsule() const;
     // Pushes the airborne body (a player's larger sphere) out of the walls it overlaps after moving to `feet`.
     // @orig 0x0021a490 Human_PushOutInAir (unknown)
     [[nodiscard]] std::optional<anim::Vec3> pushOutInAir(const raycast::CollisionMesh& mesh, anim::Vec3 feet);
@@ -726,6 +784,8 @@ class Human final : public Holdable {
     void followClimb(const raycast::CollisionMesh* mesh);
     // Ends a climb.
     void endClimb();
+    // The state update while flying (setFlight()): the move by the stick and the climb, through everything.
+    void fly();
 
     PlayerRecord m_record;
     ScriptState m_script;
@@ -769,6 +829,7 @@ class Human final : public Holdable {
     std::vector<HumanSound> m_contactSounds;       // reportSound()
     std::uint16_t m_groundFlags = 0;               // the last ground snap's triangle flags
     bool m_hidden = false;                         // state 0x200000
+    std::optional<Flight> m_flight;                // setFlight(): flying, and how
     std::optional<std::uint64_t> m_hideGraceUntil; // record +0x114: the grace's end, ms
     float m_lastLandingSpeed = 0.0F;
     std::uint32_t m_landings = 0;
@@ -823,6 +884,9 @@ class Human final : public Holdable {
     std::vector<ObjectTarget> m_objectTargets; // the breakable objects square may strike
     std::optional<ClimbProbe> m_climbProbe;
     std::vector<std::uint16_t> m_nearby; // scratch for the wall test
+    std::vector<anim::Vec3> m_contacts;  // the normals of the walls the last walking sweep slid along, for the velocity
+    std::span<Human* const> m_otherHumans; // setHumanContacts(), the step's
+    anim::Vec3 m_pendingPush{};            // addPush(): others' pushes, for the next move
 };
 
 } // namespace coney::human

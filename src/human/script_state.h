@@ -8,6 +8,8 @@
 #include <string>
 #include <string_view>
 
+#include "human/tag_colour.h"
+
 // What the level scripts keep on a human besides its flags (human/human_flags.h): the arrest, the pad's lock and its
 // disabled commands, the money and the item it carries, the callbacks, the marker icon, the head-look and the
 // animation overrides. Each field cites where the original keeps it. Some only wait for a subsystem Coney does not
@@ -71,14 +73,14 @@ struct ScriptState {
     /// The blob shadow drawn (character instance `+0x2b4`, `HuShadow`). **Coney choice** until set (the default is not
     /// traced): drawn.
     bool shadow = true;
-    /// The paint colour it tags with (`+0x640`, `HuTagColor`), `0xRRGGBBAA`.
-    std::uint32_t tagColour = 0;
+    /// The paint colour it tags with (`+0x640`, `HuTagColor`), its four bytes in memory order (human/tag_colour.h).
+    TagColour tagColour = kDefaultTagColour;
     /// The commands disabled for the pad that drives the human (`EnableCommand`), a bit per command id 1-63.
     std::uint64_t disabledCommands = 0;
     /// When the wound's 14 s run out (see `wounded`).
     std::uint64_t woundedUntilMs = 0;
-    /// Can be pushed aside by others (`+0x3bf`, `HuSetPushable`). **Coney stand-in**: Coney's bodies do not push
-    /// each other yet, so it is only kept.
+    /// Can be pushed aside by others (`+0x3bf`, `HuSetPushable`): when false its body has flag `0x200`, and another
+    /// human walking into it slides along it without moving it (docs/research/physics.md#human-contacts).
     bool pushable = true;
     /// Can be picked as a target, as its gang allows (brain `+0x120`, `GangSetTargetable`): kept on the human so the
     /// target search, which sees humans, reads it.
