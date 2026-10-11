@@ -728,6 +728,12 @@ icon sprite at `+0x480`. Confirmed (code) unless marked:
   number is instead a **sprite word**: `ActionPrompt_SetText` hands it to `ActionPrompt_SetNumberText` (`0x0019f128`) →
   `MessageHUD_SetIcon` (`0x001bb1e0`), which drops the text and shows that sprite in the widget's own box `+0x70`.
   Confirmed (code).
+- **The button glyph** ([MONEYFONT](gui.md#moneyfont)): the context prompts start with `GSTRING.ACTIONBUTTON`,
+  `<MONEYFONT><ST></MONEYFONT>` and a space, concatenated in front of the prompt's words (`config_strings_*.lua`; disc
+  check, counts only). `<ST>` is the character `n`; inside `<MONEYFONT>` the prompt's font slot 3 (`part_page0`)
+  draws it from rectangle 11 + (`'n'` − `'0'`) = **73, the triangle button**, so the original shows "(triangle) Give
+  Weapon". The revive string 4 instead uses `<BIGFONT><MONEYFONT><SDL>`: `big_font` rectangle 256 + (4 − 1) = 259, the
+  animated stick picture. Confirmed (code) at `0x001b9600`, `0x00179958`, `0x00179c30`.
 - **The raise** (`ActionPrompt_SetRaise`, `0x0019f430`, each HUD update) keeps the prompt clear of the texts below it:
   while the hint box shows (box `+0x3a8` set and no scroll-in), raise = 0.05 (`0x0050d500`) − the box's height (`+0x3b0`);
   otherwise −0.02 (`0x0050d504`) − the showing scroll-in's height (scroll-in `+0x578`, 0 when none). A prompt of more
@@ -775,6 +781,14 @@ icon sprite at `+0x480`. Confirmed (code) unless marked:
       when he is the other player (co-op); an AI crew member (`+0x380` = −1) has none.
     - **Order**: after the mug test and before the action object, under the same "free to act" gates; a player who is
       himself knocked out gets no prompt.
+    - **No flash, no prompt beside a downed Warrior.** Without a flash the revive step fails and the steps after it
+      run, but none of them offers a downed Warrior anything: the talk prompt (step 4) needs his `+0x1b2`, and
+      `WarriorBrain_Think` (`0x003052f0`, [the swap prompt](ai.md#think-warrior)) sets it only while
+      `HumanRecord_AreActionsBlocked` (`0x00228228`, state mask `0x7bf9e9f7ff0`) is false for him and his gait
+      (`+0x1a8`) is 0. That mask holds `0x40000`, the knocked-out state (`Human_IsKnockedOut`, `0x00227dd8`, tests
+      exactly `0x40000`), so a knocked-out Warrior's swap prompt ("Give Weapon", strings `0xc`-`0xe`) is cleared on
+      his next think. So beside a downed Warrior the original shows **the revive prompt with a flash, else nothing**
+      (or an action object's prompt in reach). Confirmed (code).
 - **Showing:** no text hides the prompt (`0x001b2490`); a new or changed text restarts it (`ActionPrompt_SetText`,
   `0x0019f1b0`; a text that parses as a number goes through `0x0019f128`). A prompt naming `Spray`, `Flash`, `Blades`
   or `Give Mon...` also wakes the player panel ([Activity](#the-player-panel)).
@@ -2485,6 +2499,19 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   second text
   (`SetMsgHandlerEx`'s `prompt2`)
   is queued as a priority-0 hint while it is in reach and withdrawn when it changes or leaves.
+- **Coney differs: the prompt's button** (owner item 9, "n Give Weapon"). The layout (`repo:src/gui/text_layout.cpp`)
+  skips `<MONEYFONT>`, so the `<ST>` of `GSTRING.ACTIONBUTTON` draws as the letter `n` (`part_page0` firstGlyph 94 +
+  `'n'`). **Fix for the implementer**: make `<MONEYFONT>` set a glyph base for the runs until `</MONEYFONT>`: in the
+  `part_page0` slot (Coney's `kTextFontSlot`, the original's slot 3) rectangle = 11 + (c − `'0'`); in `big_font`
+  (slot 6) rectangle = 256 + (c − 1); none in other slots ([MONEYFONT](gui.md#moneyfont)). Also give the stick tags
+  (`<SDD>`, `<SDL>`, `<SDR>`, `<SDU>`) their characters 3-6 alternating with 2 every `0x0050e6e4` ms, and add the
+  icon tags 23-31 (`<RARREST>` … `<RCALLGANG>`, [the tag table](gui.md#markup)) to `repo:src/gui/markup.cpp`.
+- **Coney differs: the prompt beside a downed Warrior** (owner item 8, "no revive prompt"). Coney's revive step
+  matches the original (a flash is needed), but its swap prompt (`repo:src/ai/swap_prompt.h`) leaves out the blocked
+  test, so a knocked-out Warrior stays talkable and Coney shows "Give Weapon" where the original shows nothing (no
+  flash) or the revive prompt (with one). **Fix for the implementer**: clear the swap prompt (talkable, its text)
+  while the Warrior or the player is knocked out, or better, model `HumanRecord_AreActionsBlocked`'s mask
+  ([No flash, no prompt](#action-prompts)); a playthrough test should hold a flash to see string 4.
 - **The stereo-theft panel** (`repo:src/hud/stereo_hud.h`, stepped by `PlayLevelMode::stepStereoPanel()`) as
   [the stereo panel on screen](#stereo-layout) says: up from the triangle press, the arrow round the backdrop's
   corners by stage, the gauge sized and turned by the angle turned and dropping by a doubling step while a stage is
@@ -2639,7 +2666,8 @@ stand-in**: the chase HUD is not built or drawn (no level script creates it), so
 
 - Which character each name-banner sheet (records `0x1f`-`0x32`) names, beyond Rembrandt (`0x2f`).
 - The handcuff and key counters' icon rectangles, and the counters' exact text offsets.
-- The action prompts' text alignment and icon sprite; what `0x00225ff0` tests; a runtime look at a shown prompt.
+- What `0x00225ff0` tests; a runtime look at a shown prompt (the alignment and the button glyph are answered:
+  [Action prompts](#action-prompts)).
 - Which event raises each of the game's own hints (the 19 callers of `HintBox_QueueGameHint`).
 - **The caption pager** (HUD `+0x18e60`, [GUI](gui.md#fn-subtitle)): which script or mode creates it and whose
   command 1 steps the captions (`0x001cb340`).
