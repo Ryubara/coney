@@ -3446,14 +3446,95 @@ So, with the clips loaded, **event 0 starts the pair, and the dealer's `money_ta
 which does step 6 when `+0x45` is set ([Combat](combat.md#rage)). A second event 0 during the pair completes it at
 once. Confirmed (code) at `0x002c74d8` and `0x002473bc`; the frame from the disc's clip.
 
-**Attacked** (`DealerBrain_OnHit` `0x00302ff0`, events `0x10` and 1): a help call to his gang (30 m); then, when the
-dealer is not down and his top goal is the dealer goal, goal 1, or a Spectate goal without a fight goal, and his brain
-is not type 2: with `GoalDealer` on the stack its state becomes **5** and its **run chance** `+0x3a` is rolled (50 %
-without the goal). `Random_Int(100)` below it → a flee goal (`DealerFlee_Push` `0x002c88a8` → `0x002c8970`, vtable
-`0x00540c30`): after 25-50 ms he steps back to 2-4 m from the attacker, then runs at gait 5 to the nearest flag of
-activity 8 (`0x00416f08`) with line 9. Otherwise threat response 2, `Brain_Fight` for 15 s, and the same goal with
-its "fight" byte set, which after the step back puts `dyn_swhbld_super` in his hand and ends. So the run chance is
-read only when he is attacked.
+**Attacked** (`DealerBrain_OnHit` `0x00302ff0`, events `0x10` and 1), confirmed (code) at the addresses cited:
+
+1. An attacker throwing at him first gets `Brain_CallForHelp`; when that is answered, nothing more.
+2. An attacker whose brain is a **Warrior** (type 3) and no threat to the dealer counts only when the dealer is the
+   Warrior gang's chosen target (gang `+0x10`); otherwise nothing more.
+3. A help call (`Gang_BroadcastHelpCall`, 30 m). It is event `0x14` ([Help calls](#help-calls)), which every other
+   dealer **drops** ([Dealers](#think-dealer)), so it moves no other seller.
+4. When he may react (`DealerBrain_CanReactToHit` `0x00302df8`: not down or dead, and his top goal is the dealer goal
+   (`0x80`), goal 1, or a Spectate goal (`0x10`) while he has no fight goal) and **the attacker's** brain is not a gang
+   soldier's (type 2; the old reading "his brain" was wrong, the test reads the attacker's brain): with `GoalDealer` on
+   the stack its state becomes **5** and its **run chance** `+0x3a` is rolled (50 % without the goal), in
+   `DealerBrain_FleeOrFight` (`0x00302eb0`). A later hit finds the reaction goal or the fight on top and rolls nothing.
+    - `Random_Int(100)` below the chance: **flee**. A `DealerReaction` goal (`DealerFlee_Push` `0x002c88a8` →
+      `0x002c8970`, type `0x81`, vtable `0x00540c30`) with the fight byte clear.
+    - Otherwise, against a non-friendly attacker: **fight**. When the attacker is no threat yet the two gangs are made
+      enemies (`Brain_MakeGangsEnemies`), threat response (`+0x21c`) 2, `Brain_Fight(dealer, attacker, 15000, 0)`
+      (the dealer gang has no tactic, so FindEnemy, Melee and Fight are pushed), then the same `DealerReaction` goal
+      on top with the fight byte set.
+5. A non-friendly attacker raises the brain's `+0x200` (the [block](#block)'s trigger).
+
+**The reaction goal** (`DealerFleeGoal_Process` `0x002c8af0`): after the Start's 25-50 ms wait (his line
+9 `scream`, or a turn to the attacker) he enters the fight stance and backs off to 2-4 m from the attacker
+(`MoveToHumanAction`), saying speech command 17 when fighting, or 9 when fleeing and he holds an attack slot on the
+attacker. Then:
+
+- **Fight**: `Human_PlaceItemInHand(dealer, dyn_swhbld_super)`, the switchblade, and the goal ends. The fight goals
+  under it take over: he fights the attacker with the knife. When they end, `DealerBrain_Think` sets the threat
+  response back to 0 and `GoalDealer` resumes in **state 5**: once his line ends he runs (gait 5) to the nearest flag
+  of activity 8 and leaves (`GoalMoveToExitFlag`, [the exit](ai-goals.md#goal-ped-reaction)). The knife stays in
+  his hand; nothing removes it.
+- **Flee**: gait 5, the taunt stopped, and a `GoalMoveToExitFlag` to the nearest flag of activity 8 (with line 9 if
+  he held an attack slot). He leaves the world the same way.
+
+So **a seller attacked once never sells again**, whichever way the roll goes; the level's spawner brings a new one.
+The run chance is read only when he is attacked.
+
+##### One seller or all {#dealer-attacked}
+
+The original keeps the whole reaction **per seller**. Confirmed (code) at the addresses above:
+
+- The state (5), the roll and the reaction goal live in the attacked dealer's own `GoalDealer` and brain.
+- The help call is event `0x14`, which `DealerBrain_OnEvent` drops, and the dealers' gang has no tactic to take it.
+- The fight branch makes the dealers' **gang** an enemy of the attacker's gang. That bit is shared by every dealer of
+  the gang, but nothing in a dealer reads it: `DealerBrain_Think` pushes no fight on enemies, the dealer handler drops
+  the new-enemy event `0xb`, and `DealerGoal_Process` never tests gang relations. Kind 24 (`0x18`) gangs whose
+  members all have threat response 0 are made neutral with the kind-0 gangs again (`Gang_CheckNeutralRule`
+  `0x00169d30`) once the fighter is calm.
+- The **wary scan** (`DealerGoal_Process` step 6) does not use enemies either. It takes the nearest **other gang that
+  has a member under attack** (`Gangs_FindNearestAttacked` `0x0016c978`: any member's attacker list non-empty,
+  nearest by gang centre), then that gang's member nearest the dealer, and acts only when he is within **4 m** (16 is
+  the squared distance) of the dealer, the dealer within 4 m of home, the member has attackers and is in sight. It is
+  a seller watching a brawl at his stall, not a seller afraid of an enemy gang.
+
+In `level87` all sellers share one gang, `GangCreate(24, "Dealers", 0, 0)` (`AddDealers`), filled by two spawners
+whose callback `df.DealerSpawner` walks each to its flag; `df.RestoreDealersBrains` then gives `GoalDealer(h, type, 10,
+run, dirty)`. `StartFactory` passes **run 25** for the spray sellers and **10** for the flash seller; dirty 0, or 40 for
+flash and weapons sellers on difficulty 2 and up. Chapter 2's first spray seller is re-given `GoalDealer(h, 2, 10, 50,
+0)`. The gang's message 2 (`df.DealerDied`; inferred: sent when a seller dies or leaves) restarts his spawner after
+20 s.
+`level99`'s flash dealer has run chance 0, so he always pulls the knife.
+
+**Coney status and fix** (`repo:src/ai/dealer_goal.*`, `repo:src/ai/brain_events.cpp`; checked 2026-10-11):
+
+- Coney has no `DealerBrain_OnHit`: a dealer's event 1 and `0x10` go to the shared handler, which makes the dealer
+  gang and the player's gang enemies and calls for help. Nothing flees, fights or pulls a knife; `GoalDealer` is never
+  told and keeps selling.
+- **Item 7 (every seller stops):** Coney's wary scan (`nearestEnemy`, `kWaryDistance` 16) reads 16 as metres and tests
+  gang **enemies**. After one hit the shared handler makes the whole dealer gang the player's enemy, so every seller
+  with the player within 16 m pushes a wary Spectate goal every 2 s and stops offering. Fix: as the original, the
+  nearest other gang with a member under attack, that member within 4 m of the dealer (16 squared), the dealer
+  within 4 m of home, the member's attacker list non-empty and in sight.
+- **Item 15 (the knife):** add a dealer type handler with `DealerBrain_OnHit` as above (the Warrior and throw tests,
+  the 30 m help call, `CanReactToHit`, the gang-soldier attacker exception, state 5, the roll), the `DealerReaction`
+  goal (type `0x81`: the wait, the back-off to 2-4 m, the switchblade or the exit flag), `Brain_Fight` for 15000 ms
+  with threat response 2, and `GoalDealer`'s state 5 run to the activity-8 flag once the fight is over.
+- Keep the dealer handler dropping events `0xb` and `0x14`.
+
+**Suggested tests** (synthetic, `coney_tests "[dealer]"`):
+
+1. Two dealers in one kind-24 gang 30 m apart; the player hits dealer A. B's `GoalDealer` stays in state 1 and still
+   offers the prompt to a player at 1.5 m; B pushes no Spectate goal.
+2. Wary scan: a member of another gang under attack 3.5 m from a dealer at home → Spectate pushed; at 5 m, or with no
+   attackers on him, or an enemy-gang member at 3 m who is not under attack → nothing.
+3. Run chance 0 (`level99`'s flash dealer), seeded: one hit → `DealerReaction` with the fight byte, after the back-off
+   `dyn_swhbld_super` in hand, a fight goal on the player, threat response 2; once the fight ends, state 5 and a
+   `GoalMoveToExitFlag` to the nearest activity-8 flag at gait 5.
+4. Run chance 100: one hit → flee, no knife, `GoalMoveToExitFlag` at gait 5; a second hit rolls nothing.
+5. A gang soldier (type 2) hitting a dealer: help call only, state unchanged.
+6. Through the player's path: `level87` checkpoint 2, the pad's square on a spray seller; the other seller still sells.
 
 #### GoalRiot {#riot}
 
@@ -3872,6 +3953,122 @@ Class details, confirmed (code) unless marked:
 - **Vandalize** / **Steal**: each member's goal takes the zone, the delay and `leaderRange`; the vandal brain's
   `+0x28d` is set. Vandalize's code 1 comes from `0x0039a580(zone)` reporting nothing left to break.
 
+#### Attacking on sight {#aggro-on-sight}
+
+Why an enemy-gang member attacks the player he sees, and what holds him back. Confirmed (code) at the addresses
+cited; the `level87` facts are from its scripts on the disc.
+
+**The chain.**
+
+1. **The scan.** Every AI brain, in `Brain_UpdateGoals`, runs `Brain_MaybeScanEnemies` (`0x0028fa18`): every 2 s near
+   the camera, every 8 s in the fight stance or farther than 30 m from it, at most 5 scans in one update. It lists
+   the members of enemy gangs within the sight range (brain `+0x130`, 30 m when made; `HuSetLOSRange`), in front
+   (field of view `+0x12c`, 110° when made; `BrSetFOV`) unless within the near radius, and in line of sight
+   ([The enemy scan](#enemy-scan), [Sight](#sight)). The gangs must be enemies first: `GangMakeEnemies`, or a script
+   form's `Enemies`.
+2. **A new enemy** goes to the scanner's own event handler as event `0xb` (11): his script handlers, then
+   `Gang_OnEvent`, which hands it to the gang's tactic, then his brain ([Events and
+   GangSetMsgHandler](#gang-events)). `Brain_AddEnemy` sends the same event when the tactic's `+0x3c` flag is 0
+   (types `0x12` and up).
+3. **A gang with no tactic**: the gang soldier's think (`GangBrain_Think` step 3, [Gang soldiers](#think-gang)) pushes
+   the fight (`Brain_PushFightGoal(−1)`) as soon as his threat response (`+0x21c`) is not 0 and his enemy list is
+   not empty. That is the plain "attack on sight". The shared handler's event `0xb` also sends a 20 m help call
+   flagged "new enemy" ([The shared event handler](#shared-events)).
+4. **A gang with a tactic**: `Brain_PushFightGoal` returns at once, so the think starts no fight
+   ([Tactics](#tactics)). The tactic turns the event into a callback code instead: HanginOut, Idle, Wander,
+   TravelPath, MoveToFlag, Vandalize and Steal turn event 11 from one of their own members into code **3
+   `TacSeeEnemy`** (`HanginOutTactic_OnEvent` `0x00312580`, `IdleTactic_OnEvent` `0x00315228`), event 1 into 5, 16
+   into 6 and event 10 (`Brain_MaybeSpotPlayers`) into 4 `TacSeePlayer`. Confront answers its own process codes (1
+   inside the critical range, or no route and the other leader in view; 7 inside the approach range; 2 leaving it; 9
+   the target gone) and events 1 → 5, 16 → 6 ([The scripted tactics](#tactic-kinds)).
+5. **The script decides.** The callback is the Lua `Strategy(gang, code)` of the strategy library (`global.lua`),
+   which calls the gang's `StrategyPreset(gang, code, state)`. Each preset is a table from the current tactic and the
+   code to the next tactic; a code the table does not name does nothing. So under a tactic, **whether a member
+   attacks on sight is the script's choice**, made through code 3.
+
+A HanginOut tactic without `fullAware` narrows each member's sight to the leader's range × 0.75 and his field of view
+− 20° (`HanginOutTactic_SetAwareness` `0x00311c78`), so a hanging-out Destroyer spots the player from 22.5 m at most.
+
+**`level87` (Mission 3: Payback).** `GangSetup(form)` (`global.lua`) makes every Destroyer gang (kind 19) an enemy
+of `GangWarriors` (the form's `Enemies`), keeps the threat response of 2 (no form sets `SetThreat`) and starts the
+form's `DefaultTactic` (HANGINGOUT when none, nothing when `Halt` is set) with the callback `"Strategy"`. The
+presets' rows that matter (code → next tactic; 5 and 6, a hit or an attack warning, give ATTACK in every row):
+
+| Preset | Row (tactic) | 3 `TacSeeEnemy` | Other codes |
+| --- | --- | --- | --- |
+| `StratHunter` (the default) | HANGINGOUT, MOVETOFLAG | CONFRONT | 4 nothing; 8 → HANGINGOUT |
+| `StratHunter` | IDLE | **ATTACK** | 4 nothing |
+| `StratHunter` | CONFRONT | - | **1 → ATTACK**; 2 → PURSUE; 7 nothing; 9 → HANGINGOUT |
+| `StratHunter` | PURSUE / ATTACK | - | 7 → ATTACK, 9 → HANGINGOUT / 9 → PURSUE |
+| `StratAggressive` | any but ATTACK, PURSUE, CONFRONT | CONFRONT | 7 → CONFRONT; others → CONFRONT |
+| `StratRunAround` | WANDERWALK | CONFRONT | CONFRONT as `StratHunter`'s, 9 → WANDERWALK |
+| `StratHomeIn` | HOMEIN | CONFRONT | 8 → HANGINGOUT; CONFRONT 1 → ATTACK, 2 and 9 → HOMEIN |
+| `StratManPile` | HANGINGOUT / MANPILE | MANPILE / - | MANPILE 1 → ATTACK |
+| `StratPassive` | any but ATTACK, CONFRONT | CONFRONT | 7 → CONFRONT; CONFRONT 1 → ATTACK, 2 and 9 → the default |
+
+CONFRONT walks the gang up to the Warriors' leader in formation (`TacticConfront(gang, GangWarriors, approach,
+critical, mode, ...)`) and its code 1 at the critical range turns it into ATTACK (`TacticAttack`: threat response 2
+and a Melee goal for every member). So the usual Mission 3 sequence is: **seen → CONFRONT (the walk-up and the spot
+line) → ATTACK at 2-3 m**; a hit at any point → ATTACK at once.
+
+| Gang (form) | Tactic | Preset | Sight changes | What starts the fight |
+| --- | --- | --- | --- | --- |
+| `EarlyDest` (back alleys, `EDForm`) | CONFRONT from the start (14 m, 2 m, `WalkAggressive`) | Hunter | - | Confront's code 1 at 2 m, no sighting needed |
+| `LiquorDest` (chapter 2's drunks) | IDLE | Hunter | `HuSetLOSRange` 4, `HuBlockLook` | code 3 within 4 m → ATTACK |
+| `Wander` (2 min after the drunks die) | WANDERWALK | RunAround | - | code 3 → CONFRONT → ATTACK |
+| `Chairs` (chapter 4, roof chairs) | HANGINGOUT | Aggressive | narrowed (not `FullAware`) | code 3 → CONFRONT → ATTACK |
+| `Roofers` (chapter 4) | IDLE | Hunter | - | code 3 → ATTACK |
+| `HStairs` (chapter 4, on the stairs) | IDLE | Hunter | `HuSetLOSRange` 1 | a hit (5, 6), or the player within 1 m |
+| `RoofPursuit` (chapter 4) | HOMEIN (to where the player was) | HomeIn | - | code 3 → CONFRONT → ATTACK |
+| `Event7`, `FlameTosser` (chapter 4) | none at set-up (`Halt`) | ManPile / Hunter | `FlameTosser`: 1 m, `BrDead` | their chapter's own script |
+| the stoops (`SetUpStoop`) | USEFLAG (5 m, view 15 m) | Passive | - | Use-flag's code 7 → CONFRONT (`Hold`) → ATTACK |
+
+`RespondOff` (HStairs, Roofers, Chairs, RoofPursuit, FlameTosser) only stops the tactic sending a member to help a
+fight it hears about; it does not stop code 3. No form holds a gang passive by its threat response; the passive ones
+are held by a short sight (`HuSetLOSRange` 1 or 4) or by `Halt`.
+
+**Coney status and fix** (checked 2026-10-11, `repo:src/ai`; item 5 of the owner's list):
+
+- Coney runs the enemy scan only for members under TacticScout (`ScoutTactic::update` →
+  `ScanSchedule::maybeScan`); `Brains::update` and `Brain::think` never scan. So no Destroyer under HANGINGOUT, IDLE,
+  WANDERWALK or HOMEIN ever gets event 11, no code 3 reaches `Strategy`, and the gang stays in its tactic until a hit
+  (codes 5 and 6) turns it to ATTACK. That is exactly "they see the player and do nothing until he attacks".
+- Nothing sends event 10 (`kEventSawPlayer` has no sender), so code 4 never fires; `level87`'s presets ignore it, but
+  other levels' may not.
+- A gang soldier with no tactic never fights an enemy in his list: Coney has no `GangBrain_Think` step 3.
+- The rest of the chain is in place: `codeOf` maps the events to codes, `StoryTactic::event` and
+  `Tactic::fireCallback` call the Lua callback, `Brain::pushFightGoals` refuses under a tactic, and the scan itself
+  (`scanEnemies`) sends event `0xb` to the human's handlers.
+
+Fix, in order:
+
+1. Call the scan (`ScanSchedule::maybeScan`) for every AI brain in the brain update, as `Brain_UpdateGoals` does,
+   with the 5-per-update budget and the 2 s / 8 s interval (detail level and fight stance), not only for scouts.
+2. Add `GangBrain_Think` step 3 (and the cop's and Warriors' equivalents, [Brain types](#brain-type-handlers)): with
+   threat response, no fight goal and a non-empty enemy list, `pushFightGoals`.
+3. HanginOut's awareness (× 0.75, − 20° unless `fullAware`) at its Start, undone at its End.
+4. Then `Brain_MaybeSpotPlayers` (event 10, code 4) for completeness.
+
+**Suggested tests** (synthetic unless named):
+
+1. A kind-19 gang under TacticHanginOut with a recording callback, enemies with the player's gang; the player 15 m in
+   front in the open: one call with code 3 within 2 s. The player behind him beyond 3 m, beyond 22.5 m, or behind a
+   wall: no call. With `fullAware`: called at 25 m.
+2. The same under TacticIdle with `HuSetLOSRange(h, 4)`: the player at 5 m → nothing; at 3.5 m → code 3.
+3. A type-2 soldier in a gang with no tactic and the player in sight: a fight goal on the player at his next think;
+   under any tactic: none.
+4. The scan budget: eight brains due in one update, five scan, the other three on the next.
+5. `level87`'s strategy library with the disc's scripts (`[disc]`): a HANGINGOUT gang given code 3 is moved to
+   CONFRONT; CONFRONT given code 1 to ATTACK; IDLE given code 3 to ATTACK.
+6. The player's path (`[disc][story]`): `level87` from its checkpoint 2 start, the pad's left stick at about 60 %
+   toward a Destroyer group without pressing an attack; within 10 s a Destroyer has a fight goal on the player and
+   the player takes a hit.
+
+**Runtime.** Not observed in PCSX2 for this page: no save state reaches Mission 3 yet, and getting there means
+playing two missions. A check for later, from such a state: log the tactic callback (`0x00306938`, the gang id and
+the code) while the player walks into a hanging-out group's view; the expected order is 3, then 7 and 1 from
+Confront, then the ATTACK tactic's members in Melee.
+
 #### The boss fights {#boss-fights}
 
 Every boss fight on the disc sets one of the `TacticBossScenarioA`-`H` tactics, and each gives the boss an ordinary
@@ -4152,9 +4349,9 @@ uses are in [Spawner states](../references/spawner-states.md). Confirmed (code):
    `Responder<n>` is made: of type 1 for 4, only while the game's count `+0x324` is under `+0x326`, of the spawner's own
    type for 9, which also takes its owner's friend and enemy masks. The state becomes 6 (from 4) or 10 (from 9), and
    returns once the entry's squad is complete; an entry whose byte `+0x17` is 3 may also start `Tactic_RiotCop`.
-5. **Place** the human: 6, 8 and 10 out of the camera's view ([below](#spawner-placement), `0x001673b8`); 7 out of
-   view and sent to the gang's first live member (`0x001679e8`, the second part inferred); the others at the
-   spawner.
+5. **Place** the human: 6, 8 and 10 out of the camera's view ([below](#spawner-placement), `0x001673b8`); 7 on a
+   pedestrian flag out of view ([AI and the world](ai-world.md#spawner-reinforcements), `0x001679e8`); the others at
+   the spawner.
 6. **Spawn** (`0x00167ea8`, named `<spawner><count>`), open the spawner's door, count it.
 
 **The type** (`0x0016d810`): the spawner keeps an index at `+0x4c` into its ten types (`+0x24`). Each spawn first
@@ -4265,10 +4462,15 @@ player's last crime type, `+0x294 + type` the responders per type (`CfgCrimeResp
 4. **Responders**, when `mode` is 1: `0x0016df68(type, kind, count, ...)` queues the crime on the nearest spawner of
    any gang in state 4 or 6 ([Spawners](#spawners)); kind 1 for types 0, 2, 3, 5, 8, 11 and 13, kind 3 for 9; count
    the type's responders, or `count` itself for type 4. Types 6, 7, 10, 12 and 14 send none. For types 0, 2, 3 and 8
-   the offender's gang also notes the time (gang `+0x5f4`, a wanted timer, inferred).
-5. Type 1 also marks the nearest store flag (kind `0xe`) robbed and sends message `0x12` to the `strobe` object
-   nearest it (within 36, 6 m if squared). Types 0, 2 and 8 score a statistic for a player offender against a victim
-   of brain kind 1, 4 or 5, once per victim (`0x004ed948` on `0x006fe490`; a statistic, inferred).
+   the offender's gang also notes the time (gang `+0x5f4`, a wanted timer, inferred). Type 1 (kind 1) queues only
+   in step 5.
+5. Type 1 acts only when the nearest store front (activity `0xe`) lies within 10 m (squared distance under 100).
+   When that store is not yet robbed, it queues its responders with a delay of `CfgBreakAndEnterDelay` and no
+   offender (`mode` 1 only), sends message `0x12` to the `strobe` nearest the store's flag when that one is within
+   6 m (squared distance under 36), and switches the store's buyers off; robbed or not, the store is then marked
+   robbed. Details: [Crimes: which break-ins call the police](crimes.md#break-in-police). Types 0, 2 and 8 score a
+   statistic for a player offender against a victim of brain kind 1, 4 or 5, once per victim (`0x004ed948` on
+   `0x006fe490`; a statistic, inferred).
 6. When the offender is in player 1's gang, `+0x290` takes the type unless it holds 7 or 12, and the HUD is told
    (`0x001b2520`).
 
@@ -4290,17 +4492,24 @@ and the game itself go through one dispatcher, `0x0041c4e0(state, chief, command
 1. Nothing while commands are locked (game state `+0x411`), the player's menu is locked (`+0x42e` + player), the
    command is disabled for the player (`+0x41e` + player × 7 + command, `WCEnableCommand`; the player is human
    `+0x1b0`) or the human is not a war chief.
-2. The command becomes the player's last (`+0x41c` + player). Unforced, giving the current command again only
-   repeats its line (`0x0041cc40`) and, for 0 under a tactic of type `0x12`, calls `0x003114e0` on it.
+2. The command becomes the player's last (`+0x41c` + player). **Unforced** (the menu): the chief is *quiet* when a
+   line of his is still playing (his speech handle resolves) and his `+0x194` is clear. Then the **range check**
+   (`WarChief_CheckCrewInRange`, `0x0041c338`): when the gang's nearest other member is more than 50 m away (squared
+   distance over 2500), the command is **refused** and, unless quiet, the chief says **18 `range`**, or **92
+   `range2`** when any member is cuffed or knocked out (`Human_SayCommand(1.0, chief, …, no interrupt)`); game state
+   `+0x414` + player records the refusal. Within range, giving the current command again (the tactic's `+0x18`
+   clear) only repeats its line (`WarChief_SayCommand`, `0x0041cc40`) and, for 0 under a tactic of type `0x12`,
+   calls `0x003114e0` on it. **Forced**, only defend (2) goes through the range check (quietly).
 3. Otherwise the gang's tactic is cleared and the command's started: 0 `0x00310e00` (given 9.0), 1 `0x00320530`
    (unforced, the chief also plays clip 0x2a4 or 0x2a8, and the gang's target is set from his), 2 `Tactic_Defend`
    around the chief (clip 0x2a3 or 0x2a7), 3 `0x00313400` (the standing tactic of type 3, [the first
    mission](#level99)) or `0x003128a0` for a gang whose brain `+0x2d5` is set, 4 `0x00319570` (given 75.0), 5
    `0x00320b60`; 6 starts nothing.
-4. The chief says the command's line (`0x0041cc40`, [Speech](../references/speech.md)): 0 `follow` (`follow_hide`
-   while `0x00228168` holds, hiding inferred), 1 `attack`, 2 `defend`, 3 `hold` (`holdhide`), 4 `scatter`, 5
-   `steal` when the nearest thing of kind `0xe` is closer than 64 (8 m if that is a squared distance, inferred) and
-   `0x0039a580` accepts it, else `vandal`; 6 none.
+4. The chief says the command's line (`WarChief_SayCommand`, `0x0041cc40`, [below](#warrior-command-lines)): 0
+   `follow` (`follow_hide` while hidden in shadow, `Human_IsHiddenInShadow` `0x00228168`), 1 `attack`, 2 `defend`,
+   3 `hold` (`holdhide`), 4 `scatter`, 5 `steal` when the nearest store flag (activity `0xe`) is closer than 64 (8 m
+   if that is a squared distance, inferred) and its zone still has objects (`ObjZone_HasObjects`, `0x0039a580`),
+   else `vandal`; 6 none. **A forced command says nothing**, and neither does a quiet one (step 2).
 
 The command tactics, by command (constructor, vtable, type id; confirmed (code)):
 
@@ -4345,6 +4554,44 @@ with line `0x85`. None of their Process functions ever ends the tactic (they ret
   the chief and reachable is picked again; its zone's objects are clustered (1 m). Members get WarriorVandalSteal
   (`0x83`), which steals from the zone's clusters (an object is claimed for 5 s when no enemy stands within 1.5 m of it)
   or, with no store, wrecks what is near.
+
+#### The chief's line and the crew's answer {#warrior-command-lines}
+
+Every order the player gives from the menu is heard twice: the chief says the order, then one Warrior answers once
+the chief's line has ended. Confirmed (code) at `0x0041c4e0`, `0x0041cc40`, `0x003069f0`, `0x003208e8`,
+`0x003209d0`, `0x00319f70`, `0x00310768`:
+
+- **The order** (`WarChief_SayCommand(state, chief, quiet, line)`): by the player's last command (`+0x41a`),
+  `Human_SayCommand(1.5, chief, line, no callback, interrupt, 0, no target, 1)`: 0 → 2 `follow` (86 `follow_hide`
+  while hidden in shadow), 1 → 1 `attack`, 2 → 3 `defend`, 3 → 4 `hold` (70 `holdhide` while hidden), 4 → 158
+  `scatter`, 5 → 5 `steal` or 6 `vandal` (step 4 above), 6 → nothing. Lines 1-6, 18, 70, 86 and 158 are the ones
+  that free a stream channel first ([Sound: speech](sound.md#speech)). With `quiet` set (a forced dispatch, or the
+  chief already speaking) nothing is said. Game state `+0x416` + player is then set to 1 when no line is playing
+  (quiet, or the line found no sound), 0 when it plays.
+- **The gesture** (unforced only, step 3): attack plays 676 `cmd_wreckemall_combat` in the fight stance or 680
+  `cmd_wreckemall_neutral` out of it; defend 675 `cmd_watchmyback_combat` or 679 `cmd_watchmyback_neutral`
+  (`Human_PlayActionClip(chief, clip, 2.0, 0)`); not while the chief has a held flag of `0x2fefefff`, a state flag of
+  `0x7bf9e9f7ff0` or an object of kind 4 or 6 in hand. Follow and hold have only `missing_anim_filler` clips (677,
+  678, 681, 682) and play none.
+- **The answer** (`Tactic_SayAckLine(tactic, line)`, `0x003069f0`): each command tactic's Start notes whether the
+  chief's line is playing (the chief is a player, `+0x416` + player is 0 and his speech handle `+0x178` resolves).
+  Only then, on the first Process after that line has ended, one member answers; with no line, the answer is
+  skipped. The member: with at least two living members, over the 16 slots, each non-player member other than the
+  leader who is not busy (`Human_IsBusy`) and whose actions are not blocked; the first such is taken and each later
+  one replaces him at 50 %. `Human_SayCommand(1.0, member, line, no callback, no interrupt, 1, no target, 1)`.
+  Lines: follow 131 `follow_resp`, attack 132 `attack_resp`, defend 130 `defend_resp`, hold 133 `hold_resp`, scatter
+  159 `scatter_resp`, steal 141 `steal_resp` at a store, else 140 `vandal_resp`.
+
+So the automatic commands ([below](#warrior-auto-commands)), the scripts' `WCIssueCommand(…, true)` and the level
+start are silent: only the menu (and an unforced `IssueWarriorCommand`) makes the chief and the crew speak.
+
+**Hiding in shadow** (`Player_UpdateHideOrder`, `0x0023e7e0`, and `Human_SetHiddenState`, `0x0023e6e8`; confirmed
+(code)): while player 1 (`*0x0051489c + 0x228`) is in shadow (human `+0x1ac` is 0.0), not busy, his gang able to
+help, his last command neither hold nor scatter, and no member under attack or his command follow, a timer starts:
+500 ms, or under follow the time the nearest hiding member (brain `+0x2d5` set) needs to run to him at gait 4, plus
+500 ms. When it passes, the last command is kept in `0x0051480c` and **hold (3) is dispatched forced**; with his
+brain's `+0x2d5` set that is the [hide tactic](#warrior-hide) (`0x13`). Leaving the shadow re-dispatches the kept
+command, forced, when the gang's tactic is still the hide. Both are silent.
 
 #### The default command: follow {#warrior-follow}
 
@@ -5346,14 +5593,14 @@ the callback, when it names a function, is called with its handle, the gang's id
 6, 8 and 10 place the human out of sight as [above](#spawner-placement) and [the search](#spawner-search) say:
 from player 1's camera (Coney has one player, so no second camera refuses a node), the start node the planner's
 route ends use, 17 outward searches, the node then checked against the gang's turf boxes; no node, no spawn this
-update. **Stand-ins**: 7 is placed as 8 with a value of 0 (`0x001679e8` is not on the page) and does not send its
-human to the gang's first live member; the others stand at the spawner; no door opens; the dispatch states 4 and 9
-(no crimes are routed) and the top-up 11 (no gang limits kept) never spawn; `SetSpawnMax` is not read.
-`GangSetMaxConcurrent` changes the limit (16 bits; a negative -n spawns waves of n as [above](#spawners) says, from
-`GangAddSpawner`'s limit too). An off-screen spawner (`GangSetSpawnerMustBeOffScreen`, or added in state 11) skips an
-update while player 1's camera sees the 0.3 m sphere 1.6 m above it ([Off screen](#spawner-unseen)): within the far
-clip, in view and with no wall of the collision mesh on the ray to its centre; **stand-in**: the six-plane frustum is
-taken as a cone of half the field of view widened by the sphere.
+update. **Stand-ins**: 7 is placed as 8 with a value of 0, not on a flag as
+[its placement](ai-world.md#spawner-reinforcements) says; the others stand at the spawner; no door opens; the
+dispatch states 4 and 9 (no crimes are routed) and the top-up 11 (no gang limits kept) never spawn; `SetSpawnMax`
+is not read. `GangSetMaxConcurrent` changes the limit (16 bits; a negative -n spawns waves of n as
+[above](#spawners) says, from `GangAddSpawner`'s limit too). An off-screen spawner (`GangSetSpawnerMustBeOffScreen`,
+or added in state 11) skips an update while player 1's camera sees the 0.3 m sphere 1.6 m above it
+([Off screen](#spawner-unseen)): within the far clip, in view and with no wall of the collision mesh on the ray to its
+centre; **stand-in**: the six-plane frustum is taken as a cone of half the field of view widened by the sphere.
 
 **The scripts' goals at one human** (`src/ai/engage_goals.*`). `GoalMoveToHuman` (6) drops and re-issues a move
 (`MoveAction`, its gait and radius) to where the target is every second, waits 30 updates after a failed route, and
@@ -5420,6 +5667,69 @@ that held him ends, once no scene camera is up; it unlocks his menu every 10 upd
 his far melee range (**stand-in**: Coney's player brain keeps no target, so his attackers stand in for it); under
 attack or defend, follow again 1.5 s after no member of the gang has an enemy. Defend on a rear grab, mug or tag,
 the player modes 2 and 3 and steal at a store are not built. `GangStartSpawner` switches a spawner ([above](#spawners)).
+
+### Warrior commands, revive and the weapon swap: the gaps {#crew-gaps}
+
+Coney against the original, command by command (owner checklist items 11, 16, 8 and 37), as of this page's commit.
+The menu itself (`repo:src/hud/war_command_display.cpp`, `repo:src/gamemodes/gameplay_war_commands.cpp`) matches
+[HUD](hud.md#warrior-command-menu): every slot reaches the dispatcher (`dispatchWarriorCommand`,
+`repo:src/scripting/story_bindings.cpp`), which hands the tactic to `ScriptedStory::startWarriorCommand`
+(`repo:src/ai/scripted_story.cpp`). The original's columns: [Warrior commands](#warrior-commands) and
+[the lines](#warrior-command-lines).
+
+| Command (menu slot) | Original tactic and members' goal | Chief's line / answer | Coney | Where |
+| --- | --- | --- | --- | --- |
+| 0 follow (up) | `WarriorFollowTactic` (`0x12`, 9 m): `FollowPlayer` mode 3; a repeat adds `FollowFormation` (`0x003114e0`) | 2 `follow` (86 hidden) / 131 | **partial**: tactic and goals built; no line, no answer, no repeat | `repo:src/ai/crew.cpp` |
+| 1 attack (up-left) | `WarriorAttackTactic` (1): `FollowAndAttack` on the chief; dogs `AvoidEnemies`; gang's shared target from the chief's | 1 `attack` / 132; gesture 676 / 680 | **partial**: tactic and goal built; no line, answer, gesture or shared target; dogs attack | `repo:src/ai/crew.cpp` |
+| 2 defend (up-right) | `Tactic_Defend` round the chief (2.25 m): [`FollowAndDefend`](ai-goals.md#goal-follow-and-defend), which fights and [rescues](ai-goals.md#goal-save-human) a cuffed or knocked-out chief | 3 `defend` / 130; gesture 675 / 679 | **stand-in**: each member gets `GoalTrackHuman` (2 m), which never attacks and never rescues | `repo:src/ai/scripted_story.cpp` |
+| 3 hold (down) | `WarriorHoldTactic` (3): `HoldPosition` 1.5 m; hide (`0x13`): [`Hide`](ai-goals.md#goal-hide) at wall points | 4 `hold` (70 hidden) / 133 | **partial**: the hold built; the hide is not (the hold stands in); no line, no answer | `repo:src/ai/crew.cpp` |
+| 4 scatter (down-right) | `WarriorScatterTactic` (`0x25`, 75 m): [`Scatter`](ai-goals.md#goal-scatter) to hiding flags | 158 `scatter` / 159 | **missing**: the tactic is cleared and each member flushed, so the crew **stands still** | `repo:src/ai/scripted_story.cpp` |
+| 5 wreck (down-left) | `WarriorStealTactic` (`0x26`): [`WarriorVandalSteal`](ai-goals.md#goal-warrior-vandal-steal) | 5 `steal` / 141, or 6 `vandal` / 140 | **missing**: as scatter, the crew stands still | `repo:src/ai/scripted_story.cpp` |
+| 6 (no slot) | nothing; recorded as last | none | **works** | `repo:src/scripting/story_bindings.cpp` |
+
+Around the commands:
+
+| Behaviour | Original | Coney |
+| --- | --- | --- |
+| Crew out of range | unforced (and forced defend): nearest member beyond 50 m refuses the command; 18 `range` / 92 `range2` | **missing**: always given |
+| Forced and quiet orders | forced commands and a chief already speaking say nothing | silent always (no lines at all) |
+| Repeating the current order | unforced: line again, no rebuild | refused silently (matches, minus the line) |
+| [Automatic commands](#warrior-auto-commands) | follow → attack / defend / steal; attack, defend → follow; steal → follow beyond 15 m | **partial**: follow → attack and back only (`CrewOrders`, `repo:src/ai/crew.h`) |
+| Hiding in shadow | forced hold (hide) after 500 ms or the run time; the old command back on leaving | **missing** |
+| Revive ([Combat](combat.md#revive)) | d-pad left (command `0x27`) near a revivable downed member with a flash: 351, 353 / 354, flash spent, healed, 76 / 75 | **missing**: the prompt shows (`GameplayMode::revivePrompt`, `repo:src/gamemodes/gameplay_uncuff.cpp`) but command `0x27` has no handler; only d-pad right's flash on oneself exists (`repo:src/platform/play_level_objects.cpp`); no AI rescue (`SaveHuman`) |
+| [Weapon swap](#warrior-swap) | instant; the object is attached to the bone of the low pick-up clip's first type-9 event and drawn there; 146 `give_me` | **partial**: the hands swap, the anim set follows, the line plays; the Warrior's object is **not drawn** |
+
+**Item 37: the given weapon.** In the original the swap puts the object in the Warrior's hand exactly as
+`HuPlaceItemInHand` does (`Human_PlaceObjectInHandByPickupClip`, `0x0024c6d8`: the bone and offset of the low pick-up
+clip's first type-9 event, message `0x1b` take, his anim set applied), so it hangs from that bone like the player's
+([Objects: in a hand](objects.md#held)). **He fights with it**, confirmed (code): his anim set is the weapon's, so the
+same pad commands his attacks press play the armed swings ([Combat](combat.md#armed-moves)); the attack pick adds the
+armed bonus to the strikes ([Picking the attack](#pick-attack)); armed fighters fight from anywhere within 1.1 × the
+far range ([pick-ups: using](#warrior-pickups)). He keeps a knife, baton or bat; outside co-op an object of kind 4
+or 6 is **dropped** at his next think with no enemies unless the steal tactic runs
+([Think, step 3](#think-warrior)). In Coney, `ai::swapHeldObjects` (`repo:src/ai/swap_prompt.cpp`) moves the handle
+and `PlayLevelMode::trySwap` (`repo:src/platform/play_level_objects.cpp`) sets his anim set, so his attack pick
+counts him armed (`repo:src/ai/attack_views.cpp`); but `PlayLevelMode::drawWorldObjects`
+(`repo:src/platform/play_level_world.cpp`) places only **player 1's** held object (`heldPose` takes the player's
+snapshot), so nothing is drawn in the Warrior's hand. Whether his swings then hit with the weapon's clips and wear
+it was not run (Coney reading); the kind 4 / 6 drop is not built.
+
+**Fix for the implementer**, in the order the player notices:
+
+1. **Scatter and wreck** do nothing (the crew freezes): build `WarriorScatterTactic` with the `Scatter` goal and
+   `WarriorStealTactic` with `WarriorVandalSteal` ([Warrior commands](#warrior-scatter), [steal](#warrior-steal));
+   add the steal automatic command and its return to follow.
+2. **The voice lines** (item 16): call the chief's line from the dispatcher for unforced orders (volume 1.5,
+   interrupting; the hidden variants), note in each command tactic whether it plays, and have one free member answer
+   when it ends ([the lines](#warrior-command-lines)); Coney's `sayCommand` service already takes volume and
+   interrupt. Add the attack and defend gestures (676 / 680, 675 / 679).
+3. **Defend**: replace `GoalTrackHuman` with `Tactic_Defend` round the chief and `FollowAndDefend`, so the crew
+   fights for him and (with `SaveHuman`) frees or revives him.
+4. **Draw the Warrior's weapon** (item 37): place every human's held object at his own pose, not only player 1's
+   (the same bone and offset as the swap's placement); then add the kind 4 / 6 drop rule.
+5. **Revive** (item 8): handle command `0x27` with `Player_TryRevive`'s tests and the 351 / 353 / 354 sequence, the
+   flash spent from the downed human's inventory first, the heal, cue 23 and lines 76 / 75.
+6. **The 50 m range refusal** with 18 / 92, then the hide tactic and the hide-in-shadow order.
 
 **The fourth mission's brain and human calls** (`src/scripting/mission4_bindings.*`, for `level34`). `BrSetPedType`
 keeps the low 16 bits at the brain (**stand-in**: neither the civilian brain nor the mugging reads it yet).

@@ -754,6 +754,58 @@ from the senders of messages `0x1b` and `0x32` above (all clip events or the scr
 the human's alpha (confirmed (code)). In the normal draw an attached object skips the small-size fade and is drawn
 only within its parent's `ObjShow` distance ([Drawing](#tint)).
 
+#### A weapon given to a Warrior {#given-weapon}
+
+What a crew member does with a weapon the player hands him by triangle (the "Give Weapon" prompt, owner item 37).
+The hand-over itself is [AI: the weapon swap](ai.md#warrior-swap); this is what follows. Confirmed (code) at the
+addresses cited unless marked.
+
+1. **It is in his hand, attached and drawn like the player's.** The swap places the object with
+   `Human_PlaceObjectInHandByPickupClip` (`0x0024c6d8`), the same path as `HuPlaceItemInHand`: the first type-9 event
+   of the low pick-up clip of the type's `pickup_anim` gives the bone and offset (bone 25, the right hand, for 461, 481
+   and 498; [Combat: a bat in hand](combat.md#bat)), and message `0x1b` **take** attaches the object to the
+   Warrior (`+0x54` bit `0x10`, parent, pose bone) and puts it in his `+0x338`; message 3 applies its anim set. There
+   is nothing player-only in any of this, and `HuRender` (`0x00237e98`) draws every human's attached objects after
+   the human, so the weapon shows in the Warrior's hand on the next draw, posed by his bone cache. A left-hand or hat
+   object (`pickup_anim` 5 or 6) has no type-9 event and stays on the ground (inferred, as for the scripted
+   placement). The prompt that later offers it back ("Get Weapon", HUD string `0xd`, he holds) reads the same
+   `+0x338` ([AI: the Warriors' think](ai.md#think-warrior), step 7).
+2. **He fights with it.** An AI attacks through the player's dispatcher ([Combat: an AI's
+   attacks](combat.md#ai-attacks)), and square and cross choose their clip by the **held object's set**
+   (`0x00231a80`, [Combat: moving attacks with something in hand](combat.md#armed-moves)), so a Warrior holding a
+   bat (set 3) swings 34 / 36 (37 at a grounded target), a baton (set 2) 39 / 41, a knife (set 1) 45 / 47.
+3. **The damage** is that clip's [damage table](combat.md#damage-table) value plus the weapon's: `Strike_Contact`
+   (`0x0021b290`) adds the object type's `CfgObj` u16 `+0x58` and multiplies by the attacker's class record's first
+   float when the held world object's body flags have `0x10000` (the melee weapons). The same `Strike_Contact` serves
+   the player, so a given bat hits as hard in a Warrior's hand as in the player's, scaled by his own class.
+4. **His choices change too.** `Brain_PickAttack` adds the **armed bonus** (+100 to every candidate of kinds 0-9 with
+   a weight; category 14, the Warriors, is not one of the categories 9, 10, 13 that get 0) ([AI: picking the attack
+   kind](ai.md#pick-attack)); `Human_CanStartAttack` measures kinds 0, 1 and 5 with the set's clips (set 3: 36, 34,
+   35; set 2: 41, 39, 40; set 1: 47, 45, 46), and the fight goal lets an armed fighter attack from anywhere within
+   1.1 × the far range ([AI: objects in an AI's hands](ai.md#ai-objects)). A set 1 throwable lets kinds 0 and 1 reach
+   12 m (thrown), set 4 15 m, set 5 30 m.
+5. **What he keeps.** Outside co-op a Warrior holding an object of kind 4 or 6 (the overhead props and the ghetto
+   blasters) **drops it** once his enemy list is empty and no steal tactic runs (`WarriorBrain_Think` `0x003052f0`,
+   step 3); a bat, baton, knife or throwable stays in his hand until he uses, throws or swaps it, or a hit makes him
+   drop a swung weapon (`Human_ApplyPendingDamage` `0x00265f70`: `Human_DropHeld` when he is swinging it, or holds a
+   set 1 object in clip 602).
+
+**Coney fixes** (owner item 37; the hand-over works, the member holds the object, `play_level_objects.cpp` gives him
+its anim set):
+
+1. Draw every human's held object, not only player 1's: Coney's world-object draw places just
+   `m_player->human().script().heldObject` (`play_level_world.cpp`); each AI human's `script().heldObject` needs the
+   same attached pose (his hand bone from his own pose, his scale, the type's grip slide `CfgObj` `+0x70`).
+2. Attach the given object to the receiver's right hand with the pick-up clip's type-9 offset, as the player's
+   pick-up does, and leave a left-hand or hat object on the ground.
+3. Check that an AI fighter with a held set picks its square / cross clips from the held object's set (34 / 36 for a
+   bat) and that `Strike_Contact`'s weapon bonus (`CfgObj` `+0x58` × class float) applies to AI attackers.
+4. Add the armed bonus to Coney's attack pick and the set's clips to its reach test, if missing.
+5. Drop a held kind 4 or 6 object from a Warrior with no enemies outside co-op.
+6. Test: give a bat to a Warrior; assert he holds it, its world pose equals his transform ∘ scaled hand bone ∘ local
+   on the next draw, and an attack of his on an enemy plays 34 or 36 and deals the bat clip's damage plus the bat's
+   bonus.
+
 ### Throws {#throws}
 
 Confirmed (code) unless marked. Gravity in flight is 15.68 m/s² (the aim trace steps the z speed by −0.2613 per
@@ -1412,6 +1464,37 @@ the door to the navigation links carrying it ([Navigation links](#nav-links)):
 `DisableDoorLink` / `EnableDoorLink` do the same by position for the nearest `0x10` link within 5 m and its
 reverse. Confirmed (code).
 
+### How a closed door stops a human {#door-blocking}
+
+A closed door is **two triangles of the level's own collision mesh**, not a body. `SpawnDoor` names them (its fourth
+argument, two triangle indices), and the door's init writes their flags **in the live level mesh** (the world
+manager `0x005147c4` → `+0x40` level → `+4` mesh): `DoorSwinging_Init` (`0x003fb5f8`) calls
+`Collision_SetTriangleTwoSided` (`0x003a4768`, flag `0x2`) on both, `CollisionMesh_OrTriangleTypeBits`
+(`0x003a4a40`) with `0x400` (and `0x800` for the cabin doors), `CollisionTri_SetFlag40` (`0x003a49e8`) with
+hitpoints, and `CollisionTri_SetMaterial` (`0x003a4a98`). Confirmed (code). `Collision_SetTriangleTwoSided` has ten
+callers, every one an object init that owns triangles: the swinging door, the barrier classes (`0x003b2f40`,
+`0x003b3250`, `0x003b4128`, `0x003b5498`, `0x003b57d0`, `0x003b6220`), `dyn_door_barricade` (`0x003f6018`),
+`dyn_door_sliding` (`0x003f5d10`) and the glass pane (`0x003e29e8`). Nothing else is needed: the walking sweep
+meets them like any wall ([Characters](characters.md#walls), [Physics](physics.md#sweep)), and it tests no type bit, so
+`0x400` and `0x40` do not exempt them. A `dyn_door_swinging` type has `shape` `NONE` (the steel doors, the gates) or an
+`OBB` (`dyn_door_store`, the cabin doors), but no `PHYFLAG` that a walker's sweep selects, so the triangles are what
+stop him. Inferred from the layers ([Physics](physics.md#layers)); the per-type flags were not read at runtime.
+
+**Why two-sided matters.** On the disc a door's triangles are ordinary one-sided triangles: of the 150,567 triangles
+of the 64 level files only 4 carry flag `0x2` ([Collision](collision.md#triangles)). The walking sweep skips a
+one-sided wall whose front the sphere is behind (`0x00347edc`), so before the init a doorway is a wall from one side
+only. In `level95` the clubhouse's five exits (`dyn_door_stlslot` numbers 4, 10, 11, 16 and 22) are such pairs; door
+10 (triangles 729 and 730, at x −187.63, y 93.99 to 96.16, z −194.31 to −191.99) faces −x, out of the clubhouse, so
+from inside the player is behind it. Read from the disc (2026-10-10, `level95.lev` and the `SpawnDoor` calls of
+`level95.lua`, numbers only). The init's two-sided bit is what closes the doorway from both sides.
+
+**When it opens.** Only the door's own state machine switches the triangles: state command 5
+(`DisableDoorCollision`, also step 4 of an opening, [states](#door-states)) clears their enabled bit, command 6 sets
+it; a breakable door or barrier clears it when it breaks ([Breaking a door](#door-break), [Barriers](#barriers)).
+A script that opens a hangout exit (`OpenDoorAnimated` in `level95.lua`'s exit handler on the `fClubexit_<n>` flag)
+goes through that same machine. Confirmed (code) for the commands at `0x003fbba0`; the exit handler's order of calls is
+read from the script's constants, inferred.
+
 ### Breakable props {#breakable-props}
 
 The street props `level34`'s riot meter counts ([Scripts](scripting.md#level34)) are world objects (run-time type
@@ -1825,6 +1908,25 @@ Coney's stand-ins for the world objects, where this page is silent:
   --play-level level2` hands all of them to the play mode; three plain punches (4 damage each) break a 10-hitpoint
   `dyn_door_fence` barrier.
 
+**Where Coney differs: the spawn's triangle flags are lost** (found 2026-10-10, checklist item 30). `Doors::spawn`
+and the pane spawn mark their triangles through `ObjectWorld::collision` (`markTriangles`,
+`repo:src/world_objects/object_services.cpp`), which does nothing while that pointer is null. `GameplayMode` runs the
+level script, and so every `SpawnDoor` and `SpawnBreakableGlass`, **before** the level's scenery is loaded;
+`PlayLevelMode::bindObjects` (`repo:src/platform/play_level_objects.cpp`) sets `world.collision` only afterwards
+(`coney --play-level level95` prints the script's player start, then `level95.lev: 5943 collision triangles`, then
+`objects: 79 glass panes, 22 doors and barriers`). So every door and barrier keeps the disc's one-sided triangles
+(and no `0x400` / `0x40` bits or material), and every pane keeps its own (no `GLASS`, one-sided). What the player
+meets ([How a closed door stops a human](#door-blocking)): he walks out through a door whose face looks away from
+him and is stopped by it on the way back. Seen in a headless run of Coney (`level95` checkpoint 1, the stick at 60 %
+to −x from (−184.92, 95.45) after the entrance walk): the feet crossed door 10's plane (x −187.63) at about 3.3 m/s
+without a contact. A replay of Coney's own wall test (`nearestWallPush`) on the disc's triangles reproduces it both
+ways: outward it passes; inward it stops at x −188.107, a radius and the 0.01 m back-off from the plane; with flag
+`0x2` set on 729 and 730 it stops at x −187.146 going out. **The fix:** apply each door's and pane's triangle flags
+once the mesh is bound (replay the marks in `bindObjects`, or keep them with the door and pane and apply them when
+`world.collision` is set), and the same for any other spawn-time write to the mesh (`CamGhostDoor`'s `0x200`, a
+door's enabled bit). A disc test that spawns `level95` and checks triangles 729 and 730 for `0x2 | 0x400` would hold
+it.
+
 Coney's stand-ins, where this page is silent:
 
 - A leaf model is `dyn_dr_` and the type name after `dyn_door_`; a door model the Object List lacks draws `dyn_dr_`
@@ -1910,6 +2012,9 @@ the drawer and lifts the register with clip 504 (disc checks, 2026-10-08).
 
 ## Open questions
 
+- Door blocking ([How a closed door stops a human](#door-blocking)): confirm at runtime that a `level95` exit door's
+  triangles carry `0x2 | 0x400` after the level starts, and read the `PHYFLAG`s of the door types with an `OBB` body
+  (`dyn_door_store`, the cabin doors) to settle whether their body ever meets a walker.
 - Which search mask admits `0x40` links.
 - What human state 26 (the animated open) plays and when it sends the door `0x0b`; what fills a player's interaction
   record (`+0x660`) for a door.

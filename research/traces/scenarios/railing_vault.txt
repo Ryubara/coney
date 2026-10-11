@@ -1,0 +1,7 @@
+# Stand still while the camera settles behind the player, then the stick at 50 % straight up (toward the railing)
+# and triangle, tapped every 2 updates for a while.
+60 stick left 0 50
+66 tap triangle
+68 tap triangle
+70 tap triangle
+72 tap triangle
