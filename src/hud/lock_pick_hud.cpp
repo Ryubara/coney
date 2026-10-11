@@ -35,10 +35,6 @@ constexpr ModeFactors kInterlacedWideFactors{0.8F, 1.0F, 0.9F, 1.0F, 1.0F, 1.0F}
 constexpr ModeFactors kProgressiveFactors{0.75F, 1.1F, 0.75F, 1.0F, 0.6F, 0.6F};
 constexpr ModeFactors kProgressiveWideFactors{0.5F, 0.95F, 0.5F, 0.85F, 0.6F, 0.6F};
 
-// The lock face's texture is turned a quarter turn.
-constexpr float kFaceTurn = kPi / 2.0F;
-// A rim vertex outside a wedge: colour 0, alpha 0.
-constexpr graphics::Rgba kClear{0, 0, 0, 0};
 // The pins' and the shapes' distance in front of the overlay camera.
 constexpr float kDialDepth = 1.0F;
 
@@ -71,7 +67,7 @@ void LockPickHud::show(bool on, int difficulty) {
     m_shown = on;
     m_difficulty = std::clamp(difficulty, 0, 2);
     if (on) {
-        m_angles.fill(kPi);
+        m_angles.fill(kLockPinRest);
         m_current = 0;
     }
 }
@@ -112,22 +108,28 @@ int LockPickHud::wedgeVertices(float percent) {
     return static_cast<int>(std::floor(static_cast<float>(kLockSegments) * percent / 100.0F / 2.0F));
 }
 
+bool LockPickHud::wedgeSegment(float percent, int j) {
+    if (percent <= 0.0F) {
+        return false;
+    }
+    // Rim vertex j + 1 is coloured within k vertices of 12 o'clock on either side (the dial's mirror flag).
+    const int k = wedgeVertices(percent);
+    const int rim = j + 1;
+    return rim <= k || kLockSegments - rim <= k;
+}
+
 void LockPickHud::renderWedge(graphics::SpriteBatch& batch, const graphics::OverlayCamera& camera,
                               graphics::OverlayPoint centre, graphics::LogicalPoint radius, float percent,
                               graphics::Rgba colour) {
-    if (percent <= 0.0F) {
-        return;
-    }
-    // Rim vertex j takes the colour within k of the middle on either side (the dial's mirror flag); the centre always
-    // has it, so the segments next to the wedge fade to clear and the rest fade from the centre outwards.
-    const int k = wedgeVertices(percent);
-    const auto rim = [&](int j) {
-        const bool inside = j <= k || kLockSegments - j <= k;
-        return graphics::OverlayVertex{rimPoint(camera, centre, radius, j), 0.0F, 0.0F, inside ? colour : kClear};
-    };
+    // Flat shading: the triangle (centre, rim j, rim j + 1) is all rim j + 1's colour, so the centre's colour is never
+    // seen and the wedge's edges are hard. A clear segment draws nothing.
     const graphics::OverlayVertex middle{centre, 0.0F, 0.0F, colour};
     for (int j = 0; j < kLockSegments; ++j) {
-        batch.addTriangle(middle, rim(j), rim(j + 1));
+        if (!wedgeSegment(percent, j)) {
+            continue;
+        }
+        batch.addTriangle(middle, {rimPoint(camera, centre, radius, j), 0.0F, 0.0F, colour},
+                          {rimPoint(camera, centre, radius, j + 1), 0.0F, 0.0F, colour});
     }
 }
 
@@ -137,8 +139,9 @@ void LockPickHud::renderFace(graphics::SpriteBatch& batch, const graphics::Overl
     if (kLockFaceRect >= sheet.page.rects.size()) {
         return;
     }
-    // The rectangle's centre and half-size give the texture's circle; each rim vertex shows the point at its angle
-    // turned by a quarter.
+    // The rectangle's centre and half-size give the texture's circle; each rim vertex shows the point in the same
+    // direction as its screen offset, so the keyhole stands upright (Im2D_DrawTexturedDisc's two angles differ by
+    // pi / 2 only to reconcile its two formulas).
     const graphics::UvRect rect = sheet.page.rect(kLockFaceRect);
     const float cu = (rect.u0 + rect.u1) / 2.0F;
     const float cv = (rect.v0 + rect.v1) / 2.0F;
@@ -146,8 +149,8 @@ void LockPickHud::renderFace(graphics::SpriteBatch& batch, const graphics::Overl
     const float rv = (rect.v1 - rect.v0) / 2.0F;
     const auto rim = [&](int j) {
         const float a = rimAngle(j);
-        return graphics::OverlayVertex{rimPoint(camera, centre, radius, j), cu + (ru * std::sin(a + kFaceTurn)),
-                                       cv + (rv * std::cos(a + kFaceTurn)), kLockPinColour};
+        return graphics::OverlayVertex{rimPoint(camera, centre, radius, j), cu + (ru * std::sin(a)),
+                                       cv + (rv * std::cos(a)), kLockPinColour};
     };
     const graphics::OverlayVertex middle{centre, cu, cv, kLockPinColour};
     for (int j = 0; j < kLockSegments; ++j) {

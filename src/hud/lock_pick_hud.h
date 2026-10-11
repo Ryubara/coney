@@ -19,6 +19,8 @@ inline constexpr std::size_t kLockPinCount = 3;
 inline constexpr float kLockPinSize = 0.19F;
 inline constexpr float kLockPinShrink = 0.2F;
 inline constexpr graphics::Rgba kLockPinColour{191, 191, 191, 255};
+/// The pins' rest angle (radians): the constant 3.14, not π, where Show starts them and a miss puts them back.
+inline constexpr float kLockPinRest = 3.14F;
 /// The shapes' radii in 640 × 448 screen pixels (Coney's logical pixels): the two wedges and the centre disc.
 inline constexpr float kLockBandRadius = 40.0F;
 inline constexpr float kLockFaceRadius = 41.0F;
@@ -62,13 +64,15 @@ struct LockPickLayout {
 /// @orig 0x001b7eb0 LockPickDial_Init (unknown)
 class LockPickHud {
   public:
-    /// Shows the dial at `difficulty` (0-2, the wedges' sizes) with every pin at π, or hides it.
+    /// Shows the dial at `difficulty` (0-2, the wedges' sizes) with every pin at kLockPinRest, or hides it.
     /// @orig 0x001b8428 LockPickDial_Show (unknown)
     void show(bool on, int difficulty = 0);
     [[nodiscard]] bool shown() const { return m_shown; }
     /// This update's pin angles (radians, clockwise on screen) and the pin the next press judges (3 or more when none
     /// is left, which hides the pins).
     void setPins(const std::array<float, kLockPinCount>& angles, int current);
+    /// The pins' angles in force (radians).
+    [[nodiscard]] const std::array<float, kLockPinCount>& pins() const { return m_angles; }
 
     /// Lays the dial out for the video mode of device flags `deviceFlags` (kDeviceInterlaced, the default, and the
     /// rest): the mode's centres, radii and pin factors, and the overlay camera it is drawn through.
@@ -94,8 +98,13 @@ class LockPickHud {
     /// @orig 0x0017c308 Shape2D_DrawQueued (unknown)
     [[nodiscard]] static graphics::LogicalPoint rimOffset(graphics::LogicalPoint radius, int j);
     /// How many of a wedge's rim vertices on each side of its middle take the colour: floor(32 × `percent` / 100 / 2).
-    /// The wedge is that many whole segments each side, then one segment fading to clear; nothing for 0 per cent.
     [[nodiscard]] static int wedgeVertices(float percent);
+    /// Whether fan segment `j` (0-31, between rim vertices j and j + 1) belongs to a wedge of `percent`: the original
+    /// draws flat-shaded, so each segment takes rim vertex j + 1's colour, and a wedge of k vertices each side is the
+    /// 2k + 1 whole segments from -(k + 1) to +k segments off 12 o'clock (half a segment towards 11).
+    ///
+    /// Research: docs/research/hud.md#lock-pick-dial-layout
+    [[nodiscard]] static bool wedgeSegment(float percent, int j);
 
     /// Adds player `player`'s dial while it is shown: the pins, largest first (`canvas.minigames`), then over every
     /// sprite the two wedges (`canvas.shapes`) and the lock face (`canvas.shapeFace`), in the original's queue order.
@@ -104,11 +113,11 @@ class LockPickHud {
     void render(const HudCanvas& canvas, std::size_t player) const;
 
   private:
-    // One wedge: the whole 32-segment fan, rim vertices within `percent` of 12 o'clock coloured, the rest clear.
+    // One wedge: its fan segments (wedgeSegment), each one solid colour; the clear ones are not drawn.
     static void renderWedge(graphics::SpriteBatch& batch, const graphics::OverlayCamera& camera,
                             graphics::OverlayPoint centre, graphics::LogicalPoint radius, float percent,
                             graphics::Rgba colour);
-    // The lock face: a textured 32-segment disc over the sheet rectangle's inscribed circle, turned a quarter.
+    // The lock face: a textured 32-segment disc over the sheet rectangle's inscribed circle, upright.
     static void renderFace(graphics::SpriteBatch& batch, const graphics::OverlayCamera& camera,
                            graphics::OverlayPoint centre, graphics::LogicalPoint radius);
 

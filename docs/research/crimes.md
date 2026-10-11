@@ -278,10 +278,10 @@ record. Triangle at it starts the game, confirmed (code) at `0x0022d790`:
 1. Mode 2, both counters 0; state `0x4000000`; the human's target is the door; the first time (tutorial hints on),
    hint `0x14`; the **start callback** (`CfgSetLockPickHandler`'s first name) runs with the human's and the door's
    handles; the HUD dial is shown at the difficulty of the Warrior class's byte `+0x0a` less 1 (0-2).
-2. **The dial** (`LockPickDial_Draw`): three pins, all starting at π. Each frame the current pin turns by 0.1 rad ×
-   its speed and wraps in 0-2π; the speeds are 1, 2 and 3, and the directions by difficulty are (+, +, +), (+, −, +)
-   and (−, +, −). At 30 frames a second a pin turns once in about 2.1, 1.05 and 0.7 s (the rate is inferred from the
-   frame rate).
+2. **The dial** (`LockPickDial_Draw`): three pins, all starting at 3.14 (not π, [HUD](hud.md#lock-pick-dial-layout)).
+   Each frame the current pin turns by 0.1 rad × its speed and wraps in 0-2π; the speeds are 1, 2 and 3, and the
+   directions by difficulty are (+, +, +), (+, −, +) and (−, +, −). At 30 frames a second a pin turns once in about
+   2.1, 1.05 and 0.7 s (the rate is inferred from the frame rate).
 3. **Cross pressed** (`0x12`) judges the current pin's angle θ (`LockPickDial_Judge`): **good** when θ is at least
    the upper bound or at most the lower one, **perfect** inside the narrower bands, otherwise a **miss**:
 
@@ -292,7 +292,7 @@ record. Triangle at it starts the game, confirmed (code) at `0x0022d790`:
    | 2 | θ ≥ 5.90 or θ ≤ 0.35 (338°-20°) | θ ≥ 6.05 (347°-0°) |
 
    A good press adds 1 to `+0x42` (a perfect one also to `+0x44`) and moves on to the next pin; a miss resets both
-   counters, puts every pin back at π, plays a click and runs the **stage-fail callback** with the human and the door.
+   counters, puts every pin back at 3.14, plays a click and runs the **stage-fail callback** with the human and the door.
    Confirmed (code) at `0x002878b8`, `0x001b8d38`; the band values are set by `0x001b7a18`.
 4. **Triangle**, or any command outside cross, L1, R2, the d-pad and SELECT's combinations, sets `+0x42` to −1:
    the pick is abandoned.

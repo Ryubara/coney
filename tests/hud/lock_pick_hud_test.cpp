@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <numbers>
 #include <vector>
 
 #include <catch2/catch_approx.hpp>
@@ -74,47 +75,80 @@ TEST_CASE("a hidden lock-pick dial draws nothing", "[hud][lockpick]") {
     CHECK(batches.face.triangles().empty());
 }
 
-TEST_CASE("a shown lock-pick dial draws three pins, two wedge fans and the face", "[hud][lockpick]") {
+TEST_CASE("a lock-pick wedge is flat-shaded: whole segments, half a segment off 12 o'clock", "[hud][lockpick]") {
+    // Fan triangle j (rim vertices j and j + 1) takes rim vertex j + 1's colour, so a wedge of k vertices each side is
+    // the 2k + 1 segments from -(k + 1) x 11.25 to +k x 11.25 degrees. Difficulty 1: band 1 (27 %) is j = 0-3 and 27-31
+    // (-56.25 to +45 degrees), band 2 (12 %) j = 0 and 30-31 (-22.5 to +11.25).
+    const auto covered = [](float percent) {
+        std::vector<int> js;
+        for (int j = 0; j < coney::hud::kLockSegments; ++j) {
+            if (LockPickHud::wedgeSegment(percent, j)) {
+                js.push_back(j);
+            }
+        }
+        return js;
+    };
+    CHECK(covered(27.0F) == std::vector<int>{0, 1, 2, 3, 27, 28, 29, 30, 31});
+    CHECK(covered(12.0F) == std::vector<int>{0, 30, 31});
+    CHECK(covered(35.0F) == std::vector<int>{0, 1, 2, 3, 4, 26, 27, 28, 29, 30, 31});
+    CHECK(covered(14.0F) == std::vector<int>{0, 1, 29, 30, 31});
+    CHECK(covered(20.0F) == std::vector<int>{0, 1, 2, 28, 29, 30, 31});
+    CHECK(covered(9.2F) == std::vector<int>{0, 30, 31});
+    CHECK(covered(0.0F).empty());
+}
+
+TEST_CASE("a shown lock-pick dial draws three pins, two flat wedges and the face", "[hud][lockpick]") {
+    // Per difficulty: the good wedge's and the perfect wedge's segments (2k + 1 each), clear segments skipped.
+    struct Row {
+        int difficulty;
+        std::size_t good;
+        std::size_t perfect;
+    };
+    for (const Row row : {Row{0, 11, 5}, Row{1, 9, 3}, Row{2, 7, 3}}) {
+        CAPTURE(row.difficulty);
+        Batches batches;
+        LockPickHud dial;
+        dial.show(true, row.difficulty);
+        dial.render(batches.canvas(), 0);
+        // Three pins, largest first, all on one centre; the wedges' triangles; one 32-segment face.
+        REQUIRE(batches.minigames.sprites().size() == 3);
+        CHECK(batches.minigames.sprites()[0].width == Approx(0.19F));
+        CHECK(batches.minigames.sprites()[1].width == Approx(0.152F));
+        CHECK(batches.minigames.sprites()[2].width == Approx(0.114F));
+        CHECK(batches.minigames.sprites()[2].position.x == batches.minigames.sprites()[0].position.x);
+        const std::vector<coney::graphics::OverlayVertex>& tris = batches.shapes.triangles();
+        REQUIRE(tris.size() == (row.good + row.perfect) * 3);
+        CHECK(batches.face.triangles().size() == std::size_t{32} * 3);
+        // Every triangle is one solid colour, the centre's included (so no red haze fades out from the centre), the
+        // good wedge's first, then the perfect one's over it; none is clear.
+        for (std::size_t t = 0; t < tris.size() / 3; ++t) {
+            CAPTURE(t);
+            const Rgba expected = t < row.good ? coney::hud::kLockGoodColour : coney::hud::kLockPerfectColour;
+            CHECK(tris[3 * t].colour == expected);
+            CHECK(tris[(3 * t) + 1].colour == expected);
+            CHECK(tris[(3 * t) + 2].colour == expected);
+        }
+    }
+
+    // Difficulty 1 through a recording device: the first triangle is segment 0, from straight up (rim vertex 0, 40
+    // pixels above the centre) clockwise; the good wedge's last is segment 31, ending straight up.
     Batches batches;
     LockPickHud dial;
-    dial.show(true, 0);
+    dial.show(true, 1);
     dial.render(batches.canvas(), 0);
-    // Three pins, largest first, all on one centre; two 32-segment wedges; one 32-segment face.
-    REQUIRE(batches.minigames.sprites().size() == 3);
-    CHECK(batches.minigames.sprites()[0].width == Approx(0.19F));
-    CHECK(batches.minigames.sprites()[1].width == Approx(0.152F));
-    CHECK(batches.minigames.sprites()[2].width == Approx(0.114F));
-    CHECK(batches.minigames.sprites()[2].position.x == batches.minigames.sprites()[0].position.x);
-    CHECK(batches.shapes.triangles().size() == std::size_t{64} * 3);
-    CHECK(batches.face.triangles().size() == std::size_t{32} * 3);
-
-    // The good wedge's first segment (straight up) is in colour at its centre and rim, checked through a
-    // recording device.
     coney::test::RecordingDevice device;
     batches.shapes.render(device, coney::graphics::OverlayCamera{});
     REQUIRE(device.triangles.size() == 1);
     const std::vector<coney::graphics::LogicalVertex>& v = device.triangles[0].vertices;
-    REQUIRE(v.size() == std::size_t{64} * 3);
-    // Segment j is vertices 3j (the centre), 3j + 1 and 3j + 2 (rim vertices j and j + 1). With k = 5, segments 0-4 are
-    // solid, 5 fades (rim vertex 6 clear), 6-25 are clear at the rim, 26 fades in (rim vertex 27 coloured), 27-31
-    // solid.
-    const Rgba good = coney::hud::kLockGoodColour;
-    const Rgba clear{0, 0, 0, 0};
-    CHECK(v[0].colour == good);
-    CHECK(v[1].colour == good);
-    CHECK(v[14].colour == good);
-    CHECK(v[16].colour == good);
-    CHECK(v[17].colour == clear);
-    CHECK(v[46].colour == clear);
-    CHECK(v[45].colour == good);
-    CHECK(v[79].colour == clear);
-    CHECK(v[80].colour == good);
-    // Rim vertex 0 lies straight above the centre, 40 pixels up.
+    REQUIRE(v.size() == std::size_t{12} * 3);
     CHECK(v[1].x == Approx(v[0].x).margin(0.01));
     CHECK(v[0].y - v[1].y == Approx(40.0F).margin(0.01));
+    CHECK(v[2].x > v[1].x);
+    CHECK(v[(3 * 8) + 2].x == Approx(v[0].x).margin(0.01));
+    CHECK(v[(3 * 8) + 1].x < v[0].x);
 }
 
-TEST_CASE("the lock-pick face maps the rectangle's circle, turned a quarter", "[hud][lockpick]") {
+TEST_CASE("the lock-pick face maps the rectangle's circle upright", "[hud][lockpick]") {
     Batches batches;
     LockPickHud dial;
     dial.show(true, 2);
@@ -123,15 +157,28 @@ TEST_CASE("the lock-pick face maps the rectangle's circle, turned a quarter", "[
     batches.face.render(device, coney::graphics::OverlayCamera{});
     REQUIRE(device.triangles.size() == 1);
     const std::vector<coney::graphics::LogicalVertex>& v = device.triangles[0].vertices;
-    // The centre shows the rectangle's middle; rim vertex 0 (straight up, angle pi) shows angle 3 pi / 2 of the
-    // texture's circle: the rectangle's left edge, half way down.
+    // The centre shows the rectangle's middle; rim vertex 0 (straight up on screen) shows the top of the texture's
+    // circle (v = cv - rv), so the keyhole stands upright.
     CHECK(v[0].u == Approx(0.75F));
     CHECK(v[0].v == Approx(0.75F));
-    CHECK(v[1].u == Approx(0.5F));
-    CHECK(v[1].v == Approx(0.75F).margin(1e-5));
+    CHECK(v[1].u == Approx(0.75F).margin(1e-5));
+    CHECK(v[1].v == Approx(0.5F));
     CHECK(v[1].colour == coney::hud::kLockPinColour);
+    // Rim vertex 8 (segment 7's second rim vertex, straight right on screen) shows the circle's right edge.
+    CHECK(v[(3 * 7) + 2].u == Approx(1.0F));
+    CHECK(v[(3 * 7) + 2].v == Approx(0.75F).margin(1e-5));
     // 41 pixels from the centre.
     CHECK(v[0].y - v[1].y == Approx(41.0F).margin(0.01));
+}
+
+TEST_CASE("the lock-pick pins rest at 3.14, not pi", "[hud][lockpick]") {
+    // The original's rest angle is the constant 3.14 (docs/research/hud.md#lock-pick-dial-layout).
+    LockPickHud dial;
+    dial.setPins({1.0F, 2.0F, 3.0F}, 1);
+    dial.show(true, 0);
+    for (const float angle : dial.pins()) {
+        CHECK(angle == 3.14F);
+    }
 }
 
 TEST_CASE("the lock-pick pins turn by their angles and go once every pin is done", "[hud][lockpick]") {
@@ -141,7 +188,7 @@ TEST_CASE("the lock-pick pins turn by their angles and go once every pin is done
     dial.setPins({1.0F, 2.0F, 3.0F}, 3);
     dial.render(batches.canvas(), 1);
     CHECK(batches.minigames.sprites().empty());
-    CHECK(batches.shapes.triangles().size() == std::size_t{64} * 3);
+    CHECK(batches.shapes.triangles().size() == std::size_t{12} * 3);
     // Player 2's shapes sit right of the screen's middle.
     CHECK(LockPickHud::layout(1, kDeviceInterlaced).shapeCentre.x > 0.0F);
 }
@@ -273,10 +320,11 @@ TEST_CASE("a lock-pick dial in 16:9 narrows its shapes", "[hud][lockpick]") {
     batches.shapes.render(device, camera);
     REQUIRE(device.triangles.size() == 1);
     const std::vector<coney::graphics::LogicalVertex>& v = device.triangles[0].vertices;
-    REQUIRE(v.size() > 26);
-    // Rim vertex 0 is 40 pixels up; rim vertex 8 (segment 7's second rim vertex, index 3 x 7 + 2) 32 pixels across.
+    REQUIRE(v.size() > 14);
+    // Rim vertex 0 is 40 pixels up; rim vertex 5 (segment 4's second rim vertex, index 3 x 4 + 2, at 56.25 degrees
+    // clockwise from 12 o'clock) 32 x sin(56.25 degrees) pixels across.
     CHECK(v[0].y - v[1].y == Approx(40.0F).margin(0.01));
-    CHECK(v[23].x - v[0].x == Approx(32.0F).margin(0.01));
+    CHECK(v[14].x - v[0].x == Approx(32.0F * std::sin(5.0F * std::numbers::pi_v<float> / 16.0F)).margin(0.01));
     // The face: 41 pixels up and 36.9 across.
     coney::test::RecordingDevice faceDevice;
     batches.face.render(faceDevice, camera);
