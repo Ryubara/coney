@@ -91,7 +91,10 @@ the objective marker, which callbacks are armed, where the NPCs stand. The test 
 
 The reference order comes from an analyst's recording of the original, written on the research page. A mission
 checkpoint is not done until its playthrough test passes. Level 99's `CourseDriver`
-(`repo:tests/platform/disc_level99_course_test.cpp`) is the example.
+(`repo:tests/platform/disc_level99_course_test.cpp`) is the example. A driver plays through `coney::test::DiscSession` given a `LivePad`
+(`repo:tests/support/live_pad.h`), which it steers one frame at a time: the hub's `Gym` driver
+(`repo:tests/platform/disc_hub_workout_test.cpp`) walks the player along the level's path data with the stick at 60 %,
+plans again when he stops moving, and plays each gym station from what the scripts and the player show.
 
 Why not a frame-locked script: it replays inputs by step number, so any change to the camera or the AI moves the
 characters a little, the recorded presses then land in the wrong place, and the test fails (or passes by luck) for

@@ -28,6 +28,7 @@
 #include "ai/route_planner.h"
 #include "ai/scripted_brains.h"
 #include "ai/turn_action.h"
+#include "combat/commands.h"
 #include "human/human.h"
 #include "human/humans.h"
 #include "human/locomotion.h"
@@ -74,17 +75,18 @@ struct MoveScene {
         brains.setPlanner(&planner);
     }
 
-    // A human with its feet at `feet` facing `headingDegrees` (0 faces +y, 90 faces -x), with a gang brain.
-    Brain& add(Vec3 feet, float headingDegrees) {
+    // A human with its feet at `feet` facing `headingDegrees` (0 faces +y, 90 faces -x), with a brain of `type` (a
+    // gang brain unless given), driven by a pad when `padControlled`.
+    Brain& add(Vec3 feet, float headingDegrees, coney::ai::BrainType type = coney::ai::BrainType::Gang,
+               bool padControlled = false) {
         humans.push_back(std::make_unique<Human>(character.anims, coney::human::AnimSlots::player(),
                                                  coney::test::identityBind(), 1.0F, &character.ranges));
         Human& made = *humans.back();
         made.setFighterProfile(
             coney::human::FighterProfile{.player = false, .powerClass = coney::ai::kWarriorPowerClass, .health = 1400});
         made.spawn(mesh.get(), feet, headingDegrees);
-        step.add(made, false);
-        return brains.add(made, coney::ai::BrainType::Gang, coney::ai::FightSettings{},
-                          static_cast<std::uint32_t>(humans.size()));
+        step.add(made, padControlled);
+        return brains.add(made, type, coney::ai::FightSettings{}, static_cast<std::uint32_t>(humans.size()));
     }
 
     // Steps until `done` holds or `limit` steps have run; calls `each` after every step. Returns the steps run.
@@ -333,6 +335,38 @@ TEST_CASE("GoalMoveToFlag walks to the flag, turns to its heading, arrives and t
     CHECK(scripted.arrivals() == 1);
     CHECK(planDistance(brain.human().position(), {48.0F, 41.0F, 0.0F}) <= 0.45F);
     CHECK(std::fabs(coney::human::wrapAngle(brain.human().heading() - radians(90.0F))) <= coney::ai::kFaceFlagAngle);
+}
+
+TEST_CASE("a player under script control turns on the spot to the flag's heading and arrives (the workouts' walk)",
+          "[ai][flag]") {
+    // worksetup.StartWorkout: DeactivateWarchief (BrDead(player, true): the pad given up, the goals run), then
+    // GoalMoveToFlag(player, fWorkout[k], walk, 0, 0, 0.5, 0, faceFlag = true). The player already stands inside the
+    // radius, facing -90 degrees, and the flag faces 93 (the heavy bag's): only the turn is left. The bag, a human
+    // 0.7 m ahead of him, is his fight target, so he stands in the fight stance locked on it
+    // (docs/research/workouts.md#coney).
+    MoveScene scene;
+    coney::world_objects::WorldFlags flags;
+    flags.createPool(4);
+    const double flag = flags.add(100.0, "fWorkout", {41.2F, 41.0F, 0.0F}, 93.0F).handle;
+    coney::ai::ScriptedBrains scripted(scene.brains, flags);
+    Brain& player = scene.add({41.0F, 41.0F, 0.0F}, -90.0F, coney::ai::BrainType::Player, true);
+    scene.add({41.7F, 41.0F, 0.0F}, 90.0F);
+    // A punch at the bag makes it his target.
+    player.human().record().command = coney::combat::command::kSquarePressed;
+    scene.run(1);
+    player.human().record().command = coney::combat::command::kNone;
+    scene.run(60);
+    REQUIRE(player.human().fighter().lockTarget() != nullptr);
+    // DeactivateWarchief: the pad given up.
+    scene.step.setPadControlled(player.human(), false);
+    player.setDead(true);
+    scripted.bind(1.0, player);
+    scripted.goalMoveToFlag(moveToFlagCall(1.0, flag, 0.5F, true));
+    // In the original the walk and turn took 12 updates; message 8 must come well within worksetup.TimeOut's 5 s.
+    const int steps = scene.runUntil(150, [&] { return scripted.arrivals() == 1; }, [] {});
+    CHECK(scripted.arrivals() == 1);
+    CHECK(steps < 60);
+    CHECK(std::fabs(coney::human::wrapAngle(player.human().heading() - radians(93.0F))) <= coney::ai::kFaceFlagAngle);
 }
 
 TEST_CASE("GoalMoveToFlag aims at an offset from the flag, ends when its flag goes, and plans again after a short move",

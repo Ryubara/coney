@@ -114,6 +114,7 @@ add_executable(coney_tests
     platform/disc_level99_street_props_test.cpp
     platform/disc_game_session_test.cpp
     platform/disc_level99_handover_test.cpp
+    platform/disc_hub_workout_test.cpp
     platform/disc_level99_street_test.cpp
     platform/disc_level99_store_glass_test.cpp
     platform/disc_level99_store_register_test.cpp

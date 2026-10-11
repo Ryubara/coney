@@ -278,9 +278,18 @@ queueing the face-the-flag turn, never arrives and never sends message 8; `works
 5 s later `worksetup.TimeOut` quits (`workout.ForceQuit`, the prompt rebuilt). `HuWorkout` and the bag's
 `CalloutCombos01` are never reached. The same call with `faceFlag = false` (run from the debug menu's Lua console)
 sent message 8 on the next update. In the original the player walks there and turns (action code 3, 12 updates).
-Every cycle station fails the same way. Either the turn the goal queues does not steer a pad-controlled player in
-Coney, or the flag's heading is compared in another convention than the human's (the player stood at −90° after
-`TeleportToFlag` to a flag of heading 93°): the implementer should check both.
+Every cycle station fails the same way.
+
+**The cause, found and fixed** (Coney, 2026-10-11): `DeactivateWarchief` sets the player's brain dead, so the pad is
+given up and the goal runs, but the player stands in the fight stance locked on a foe (the bag, or any fighter near),
+and Coney's fight-stance walk (`Human::combatWalk`) turned every human it holds to face the lock target each update,
+whatever the brain asked. The turn action was overridden on every update; once it gave up, the goal queued another.
+In the original a human no pad drives (per-player `+0x1b` = 0) is moved by `Human_UpdateControl`, which turns it
+toward the brain's heading by the fight stance's AI word (24° an update) and leaves the facing alone when no move is
+asked ([AI: Turning](ai.md#ai-turn)); only a pad's human faces its lock target. Coney now does the same, so the turn
+steers and the goal arrives (`repo:tests/ai/move_action_test.cpp`, and on the disc
+`repo:tests/platform/disc_hub_workout_test.cpp`). The headings were not the cause: the goal and `TeleportToFlag` both
+read a flag's degrees as Coney's heading (the turn θ about `+z`, [Flags](flags.md#position)).
 
 What Coney has besides: the `HuWorkout` binding with stand-ins
 ([Characters](characters.md#coneys-implementation)): a start within 1.5 m, a fixed 1.5 s repetition at an effort
@@ -290,7 +299,7 @@ of 1, no clips, the effort decaying by the decay table; `CfgWorkoutParams` keeps
 
 **Per station:**
 
-- **All**: make `GoalMoveToFlag` with `faceFlag` arrive for the player ([Coney](#coney)); keep `TeleportToFlag`
+- **All**: make `GoalMoveToFlag` with `faceFlag` arrive for the player (done, [Coney](#coney)); keep `TeleportToFlag`
   exact; `HuWorkout`'s target is the player himself, so drop the 1.5 m reach stand-in (the reach test passes at 0).
   `CfgWorkoutParams`' fourth argument is a flag (non-zero → 1.0), so the timing factor is always 1.
 - **Chin-ups, push-ups, sit-ups** (`Human_UpdateWorkout` as in [The engine side](#engine)): play the enter clip 691
@@ -329,6 +338,5 @@ walk to each station with the stick at a partial deflection, then:
 
 - The slow clip of the sit-ups (not reached at runtime) and the enter and exit clips' lengths: read them from the clip
   files.
-- Where Coney's player turn toward the flag goes wrong ([Coney](#coney)).
 - `Human_AlignToObject` with the human as its own target (a zero direction): what it does to the heading (the player
   is already on the flag, facing its heading).

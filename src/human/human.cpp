@@ -720,9 +720,19 @@ void Human::holdForCombat() {
 }
 
 void Human::combatWalk(const Combatant& target, bool gated) {
-    // Faces the target every update.
-    const anim::Vec3 to = anim::subtract(target.position(), m_position);
-    if (std::hypot(to.x, to.y) > 1e-4F) {
+    // A pad's human faces the target every update. One no pad drives (per-player `+0x1b` clear: an AI, or a player
+    // whose brain a script set dead) is moved by Human_UpdateControl instead, which turns it toward the brain's heading
+    // by the fight stance's AI word, and with no move asked keeps its facing (docs/research/ai.md#ai-turn): so a
+    // script's turn steers a player locked on a foe and the facing it ends on stays, as the workouts' GoalMoveToFlag at
+    // the heavy bag needs (docs/research/workouts.md#coney).
+    if (!m_record.padDriven) {
+        if (m_record.move.has_value()) {
+            const float error = wrapAngle(m_record.move->heading - m_heading);
+            const float limit = aiFightStanceTurn(m_script.wounded);
+            m_heading =
+                std::fabs(error) <= limit ? m_record.move->heading : wrapAngle(m_heading + std::copysign(limit, error));
+        }
+    } else if (const anim::Vec3 to = anim::subtract(target.position(), m_position); std::hypot(to.x, to.y) > 1e-4F) {
         m_heading = headingOf(to);
     }
     m_turn = TurnState{};
