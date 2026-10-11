@@ -441,18 +441,18 @@ TEST_CASE("locked on a foe, a pad's human faces it; a player under script contro
         player.human().place(player.human().position(), radians(0.0F));
         scene.run(1);
         CHECK(off(player, radians(0.0F)) < 1e-3F);
-        // Stopped, 90 degrees off: the standing step of 12 degrees an update.
-        player.setMoveHeading(radians(90.0F), 0.0F);
+        // Stopped, 90 degrees off: the standing step of 12 degrees an update. The brain's update clears the move, so
+        // an action writes it each update.
+        const HeldMove held{.heading = radians(90.0F), .speed = 0.0F, .aim = std::nullopt};
+        REQUIRE(player.queueAction(std::make_unique<HoldMoveAction>(held)));
         scene.run(1);
         CHECK(off(player, radians(12.0F)) < 1e-3F);
         // Stopped within 15 degrees: nothing turns.
         player.human().place(player.human().position(), radians(80.0F));
-        player.setMoveHeading(radians(90.0F), 0.0F);
         scene.run(1);
         CHECK(off(player, radians(80.0F)) < 1e-3F);
         // Wounded he turns even stopped within 15 degrees, by the wounded 0.375 degrees.
         player.human().script().wounded = true;
-        player.setMoveHeading(radians(90.0F), 0.0F);
         scene.run(1);
         CHECK(off(player, radians(80.375F)) < 1e-3F);
     }
