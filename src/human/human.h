@@ -364,6 +364,8 @@ class Human final : public Holdable {
     [[nodiscard]] float bodyScale() const override { return m_scale; }
     /// The radius of its collision capsule (the shape's `+0x40`, 0.35 m, × its scale): human::walkingRadius().
     [[nodiscard]] float capsuleRadius() const { return walkingRadius(m_scale); }
+    /// Its capsule as another human's sweep meets it, and as the way-clear test (human::wayClear()) takes it.
+    [[nodiscard]] UprightCapsule uprightCapsule() const;
     /// `HuSetScale`: the body's scale, not range-checked. Coney's body (its capsule, its walls' radius, its root
     /// motion) is sized from the scale at each use, so the body follows at once.
     /// @orig 0x0023b0e0 Human_SetScale (unknown)
@@ -624,16 +626,17 @@ class Human final : public Holdable {
     /// The cuffed human's end: freed, 333 `ANIM_ARREST_RELEASE_END_REACT` paired to `freer` then his idle; still
     /// cuffed, back to 320.
     void endUncuffReact(const Human& freer, bool freed);
-    /// The reviver's half of a revive (docs/research/combat.md#revive): he turns to the downed human at `downed` over
-    /// 0.1 s and plays 351 `gen_revive_begin`, then 353 `gen_revive_end`, then his idle (through 389 out of the fight
-    /// stance, the fight idle in it), after a 0.01 s blend, each clip holding `0x8000000`.
-    void startRevive(anim::Vec3 downed);
+    /// The reviver's half of a revive (docs/research/combat.md#revive): the led steer turns him to `downed`'s head and
+    /// slides him to 351's reach from it over 351's time to its first event + 0.1 s (Fighter::steerRevive()), and he
+    /// plays 351 `gen_revive_begin`, then 353 `gen_revive_end`, then his idle (through 389 out of the fight stance, the
+    /// fight idle in it), after a 0.01 s blend, each clip holding `0x8000000`.
+    void startRevive(const Combatant& downed);
     /// Whether 351 `gen_revive_begin` plays: the revive's first clip, at whose end the flash is spent.
     [[nodiscard]] bool reviveBeginPlaying() const;
     /// Whether 353 `gen_revive_end` plays: 351 ended and the reviver goes on to his idle.
     [[nodiscard]] bool reviveEndPlaying() const;
     /// The revived human's half: healed in full (wounding over, his health back, up from the ground, as `HuRevive`)
-    /// and up with 354 `gen_revive` paired to `reviver`, then his idle.
+    /// and up with 354 `gen_revive` paired to `reviver` holding `0x8000`, then 389 and his idle.
     void playRevived(const Human& reviver);
     /// Turns to face `point` over `seconds` of updates, whatever plays (`Human_TurnToFacePoint`); the human stays where
     /// he stands. A Warrior handed a swap turns to the presser this way.
@@ -719,8 +722,6 @@ class Human final : public Holdable {
     // goes to m_contacts.
     // @orig 0x0033d498 PhysicsBody_SweepHumanMask (unknown)
     [[nodiscard]] anim::Vec3 meetHumans(anim::Vec3 from, anim::Vec3 move);
-    // Its capsule as another human's sweep meets it.
-    [[nodiscard]] UprightCapsule uprightCapsule() const;
     // Pushes the airborne body (a player's larger sphere) out of the walls it overlaps after moving to `feet`.
     // @orig 0x0021a490 Human_PushOutInAir (unknown)
     [[nodiscard]] std::optional<anim::Vec3> pushOutInAir(const raycast::CollisionMesh& mesh, anim::Vec3 feet);

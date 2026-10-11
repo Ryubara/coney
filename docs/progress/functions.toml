@@ -4063,6 +4063,11 @@ subsystem = "Human"
 size = 3488
 
 [[function]]
+address = 0x0021c0a8
+name = "Human_IsWayClearTo"
+subsystem = "Human"
+
+[[function]]
 address = 0x0021c570
 name = "Human_CanSeeObject"
 subsystem = "Human"
@@ -4354,6 +4359,11 @@ subsystem = "Human"
 [[function]]
 address = 0x00229c40
 name = "Human_MakePlayer"
+subsystem = "Human"
+
+[[function]]
+address = 0x0022a2a8
+name = "Human_ReleasePlayer"
 subsystem = "Human"
 
 [[function]]

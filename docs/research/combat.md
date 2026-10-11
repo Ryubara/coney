@@ -2996,30 +2996,42 @@ d-pad left tapped once (the stick at rest). Two runs, Vermin 0.97 m and 1.66 m a
 
 **Coney** builds it for player 1 (`repo:src/gamemodes/gameplay_revive.cpp`, `repo:src/human/human_revive.cpp`, the
 tests as `combat::mayRevive` in `repo:src/combat/revive.h`): d-pad left beside a revivable partner, the tests above,
-76, the chain 351, 353 and the idle (through 389 out of the stance) holding `0x8000000`, and at 351's end the flash,
-cue 23, 75, the full heal and 354. A Warrior downed in a fight (his health gone) counts as knocked out, as one a script
-knocked out does; before this only the script's mark was read, so beside a Warrior downed in a fight neither the prompt
-nor the revive came (owner item 8). Readings and stand-ins:
+76, the led steer, the chain 351, 353 and the idle (through 389 out of the stance) holding `0x8000000`, and at 351's
+end, however it ends, the flash, cue 23, 75, the full heal and 354, 389 and the idle on the revived, holding `0x8000`.
+Every Warrior and every player is made revivable: `ai::startingFlags` gives a human its brain type's flags of the
+table in [Human flags](#human-flags) as its brain is made (`Brains::add`), and `ai::releasedFlags` those of a player
+handed back to the AI (`AiHumans::switchPlayer`). A Warrior downed in a fight (his health gone) counts as knocked out,
+as one a script knocked out does. So beside a crew Warrior downed in any fight the prompt shows with a flash and
+d-pad left revives him, with no script call (owner item 8). The disc test `repo:tests/platform/disc_revive_test.cpp`
+downs a `level80` Warrior with a strike, walks player 1 to him by the stick at 60 % and revives him: 351 ran 22
+updates, 353 34, 389 25 and the revived's 354 73, each counted with the update it starts (the runtime read 21, 33, 25
+and 72), the steer turned him over 25 updates to 8.8° left of the
+line to the head at the press (351's direction on the disc is 10° to the right; the runtime 11-13°), and he ended
+0.81 m from the head (351's reach 1.04 m less its root motion; the runtime 0.70-0.71 m from a standing Warrior).
+Readings and stand-ins:
 
 - **Blocked** is the swap prompt's reading of the state mask (knocked out, cuffed, wounded) plus anything that keeps
-  him off his feet (down, held, in the air); "any held flag" is the record bits his clips hold.
-- **The way** is taken as clear (**stand-in**: the 0.2 m capsule sweep of `Human_IsWayClearTo` above is not built;
-  the search has already found him in sight).
-- **The led steer** only turns the reviver to the downed human's head over 0.1 s; he does not slide. **Differs**: the
-  original turns and slides him over 351's first-event time + 0.1 s to 351's reach (about 0.70 m) from the head, at
-  [the runtime figures](#revive-runtime).
+  him off his feet (down, held, in the air), which covers the way test's "grabbed"; "any held flag" is the record bits
+  his clips hold.
+- **The way** (`human::wayClear`, `repo:src/human/way_clear.h`): the 0.2 m capsule, as tall as the reviver's own
+  (Coney's 2 m upright capsule on his scale), swept from his feet to the downed human's against the other humans'
+  capsules and the level's walls (triangles the walking sweep counts, tested every 0.1 m of the way). **Coney's
+  reading** of mask `0x2803`: humans and walls; objects, cars and glass panes are not swept.
+- **The led steer** (`Fighter::steerRevive`) turns him to the line to the downed human's head, less 351's direction,
+  and slides him to 351's reach from it, both over 351's time to its first event + 0.1 s, as an attack's led steer.
 - The pair ids, `Human_SetPartner`, the `+0xe4` calls and the push spheres have no counterpart.
-- **A 351 cut short** (a hit) spends nothing and heals nobody. **Differs**: the original still runs `Revive_Finish`
-  (above).
-- The revived plays 354 then his idle, without 389 and without holding `0x8000`.
-- **The crew's flag**: Coney's humans start with no flags but a player's, so a crew Warrior is revivable only when a
-  script flags him (the disc test calls `HuSetRevivable`). **Differs**: the original's `Human_Init` sets `0x2` and `0x4`
-  on every brain-type-3 human ([Human flags](#human-flags)), which is what owner item 8 needs.
-- Not built: an AI Warrior reviving ([SaveHuman](ai-goals.md#goal-save-human)), a co-op partner's flash.
+- The revived's 389 is taken from the reviver's anim set (the whole get-up is one paired chain).
+- **Human_Init's other flags**: cops and dealers get `0x2000` and `0x40000`; **stand-in**: the 1-in-2 woundable `0x8`
+  of the other brain types is not given (no Coney code reads it, and the roll would shift every seeded run).
+- **Not built**: waking a knocked-out human on his own at record `+0xf0` (28 s for a revivable one, [Defeat](#defeat));
+  the page has the time stamped but not what reads it. An AI Warrior reviving ([SaveHuman](ai-goals.md#goal-save-human))
+  and a co-op partner's flash.
 
 Open questions (research needed):
 
 - At runtime, a 351 cut short by a hit: the code says `Revive_Finish` still runs; not yet staged.
+- What reads record `+0xf0` (the wake time `Human_OnHealthOut` and `Human_KnockOut` stamp): whether a knocked-out
+  Warrior gets up on his own when it passes, and with what health.
 - What `Revive_Start`'s vtable `+0xe4` calls with (1e9, 7) and (1.0, 7) set (inferred: the push weight, as
   `Human_KnockOut` gives 1e9).
 

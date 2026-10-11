@@ -8,6 +8,8 @@
 namespace coney::ai {
 
 Brain& Brains::add(human::Human& human, BrainType type, const FightSettings& settings, std::uint32_t seed) {
+    // The flags its brain type gives a human as it is made (Human_Init), on top of what it has.
+    human.setFlag(startingFlags(type), true);
     m_brains.push_back(std::make_unique<Brain>(human, type, settings, seed));
     m_brains.back()->setSlot(m_brains.size() - 1);
     m_brains.back()->setPlanner(m_planner);
