@@ -122,6 +122,7 @@ nav:
           - In-game HUD: research/hud.md
           - Pause menu and mission failed: research/pause.md
           - Rumble mode: research/rumble.md
+          - Armies of the Night: research/armies.md
           - Particles and script types: research/particles.md
           - "Script types: the code of every type": research/script-types.md
           - Level loading: research/level-loading.md
@@ -130,6 +131,7 @@ nav:
           - Characters: research/characters.md
           - "Animation system: code": research/animation.md
           - Inventory, unlockables and statistics: research/player-state.md
+          - "Workouts: the hangout gym": research/workouts.md
           - Profiles, options and saving: research/save.md
           - Combat: research/combat.md
           - "Combat moves: table and frame data": research/combat-moves.md

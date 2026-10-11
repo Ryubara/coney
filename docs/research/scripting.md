@@ -988,6 +988,56 @@ Points a playthrough test needs:
 - **The `<DISPLAYTIME>` texts** (`TT_26a`, `TT_28e`, `TT_28h`) hold the box for about 90 updates. The next text set
   with them waits in the queue that long.
 
+#### Hint timing, lessons 5-8 {#level99-hint-timing}
+
+Every hint call, shown hint and callback of lessons 5-8 over two plays of the original (2026-10-11, PCSX2 2.9.94, the
+same course and state as above, 3,600 updates each), by update from `P1.SetupPowerAttacks`, the call that starts
+lesson 5. Updates are tick counts halved, so two events in one update are exact; where the runs differ the second
+run's update follows a slash. "set" is a `HUDSetTutorialText` call, "shown" the `0x001cdf7c` show, "anim" an
+[animation callback](characters.md#anim-callbacks) and "tutorial" the [tutorial callback](hud.md#tutorial-callback)
+with its anim id. Method and hooks: [The queue at runtime](hud.md#hint-queue-runtime). Confirmed (runtime).
+
+| Update | Lesson | What ran | Hint calls | Shown, in that update |
+| --- | --- | --- | --- | --- |
+| 0 | 4 → 5 | tutorial 17, `P1.HeavyCombos` (lesson 4 done); `P1.SetupPowerAttacks` | nil | nothing |
+| 29 | 5 | scheduled from the set-up | nil, `TT_24a` | `TT_24a` |
+| 52 | 5 | tutorial 653, `P1.Power` step 1 | nil, `TT_24b` | `TT_24b` |
+| 157 | 5 | the strong grapple connects: anim 82, `PlayerState` | nil, `TT_19b` | `TT_19b` |
+| 191 | 5 → 6 | the hold plays, its hit scored: tutorial 82, `P1.Power` step 2 | nil, nil, `TT_24d` | `TT_24d` |
+| 195 | 6 | the course's next press mounts: anim 210, `PlayerState` | nil, `TT_19e` | `TT_19e` |
+| 270 / 269, 298 / 297 | 6 | tutorial 223 (mount strikes), not counted | | |
+| 347 | 6 | a grab connects: anim 82, `PlayerState` | nil, `TT_24d` | `TT_24d` |
+| 392 / 393 | 6 | the power strike: anim 358 (its follow-on idle), `PlayerState`; then tutorial 57, `P1.PowerMove` step 1 | nil, `TT_19a`; nil, `TT_19a` | `TT_19a` twice |
+| 420 / 421 | 6 | tutorial 59, `P1.PowerMove` step 2, `P1.PowerMovesDone` | nil | nothing |
+| 603 | 7 | the scene's end (`PreCashTheWorld`) | nil, `TT_25a` | `TT_25a` |
+| 752 | 7 | `ClearMessage` (scheduled 5,000 ms after `TT_25a`); `P1.StartSnaps` | nil; nil, `TT_25c`, nil, `TT_25c` | `TT_25c` twice |
+| 761 / 762 | 7 | tutorial 11 (a cross), not counted | | |
+| 907; 953 / 908 | 7 | tutorial 25 or 27, `P1.Snaps` (first and second snap) | nil, `TT_25c` each | `TT_25c` each |
+| 1043 / 1042 | 7 → 8 | the third snap: `P1.Snaps`, `P1.SnapsDone` | nil, `TT_19a` | `TT_19a` |
+| 1091 | 8 | a grab connects: anim 82, `PlayerState` | nil, `TT_25e` | `TT_25e` |
+| 1137 / 1137 | 8 | the throw: anim 358, `PlayerState`; then tutorial 151, `P1.Throws` | nil, `TT_19a`; nil, `TT_25e` | `TT_19a`, then `TT_25e` |
+| 1194 | 8 | a grab connects: anim 82, `PlayerState` | nil, `TT_25e` | `TT_25e` |
+| 1240 / 1241 | 8 | the throw: anim 358, `PlayerState`; tutorial 151, `P1.Throws`, `P1.ThrowsDone` | nil, `TT_25e`; nil | `TT_25e`, then the box empty |
+
+(`TT_25b` and `TT_25c`, and `TT_25d` and `TT_25e`, are the same text; the table names the ones the lesson table above
+uses.) What a test can rely on:
+
+- **No lateness**: every text was shown in the update its `HUDSetTutorialText` call ran (0 updates late), because a
+  nil cleared the box first and the box then showed the new text at once
+  ([Queueing](hud.md#hints-hudsettutorialtext)). The only late text in lessons 1-8 is `TT_26b` (lesson 3), queued
+  behind `TT_26a`'s `<DISPLAYTIME 3000>` and shown 92 updates after it. So a playthrough test can assert that each
+  lesson text shows in the update its callback ran, and that the box is never more than one text behind.
+- **`PlayerState` and the lesson callbacks never share an update in lesson 5**: the grab's anim callback runs at the
+  connect, 34 updates before the hit `P1.Power` counts (157 and 191 above, both runs). They do share one in lessons 6
+  and 8, where the follow-on idle 358 is built when the strike or throw starts; there `PlayerState` runs first and
+  the lesson's text is the one left showing.
+- **The last text of an update is what the player sees.** In lesson 5 the course's mount at 195 replaced `TT_24d`
+  after 4 updates; a player who stays in the hold keeps it. Grab hints (`TT_19*`) between lesson texts depend on the
+  driver, as above.
+- `TT_24e` (the extended power move) did not show in these runs: `P1.PowerMove`'s step 1 set `TT_19a` (grab again)
+  instead, where the 2026-10-07 run above showed `TT_24e`. Which state of the player or the bum picks between them is
+  not traced (open).
+
 #### Checkpoints 2 and 3 {#level99-checkpoints}
 
 `level99_lesson1` (`P2`, checkpoint 2, the street) and `level99_lesson2` (`P3`, checkpoint 3, the run to the
@@ -1035,8 +1085,124 @@ Points an implementer needs:
   the jump end for a centred stick (436 follows a held one, [Characters](characters.md#jump)), slid to a stop 0.57 m
   on, then turned on the spot about 164° (heading 88° to −108.6°, clip 398) in 14 updates and stood idle. If player
   2 drops out while player 1 waits at the window, `level99.lua`'s drop-out handler runs `P3.Player2Jumps` itself.
-- **3.5**: who sends a barrier's script message 2 is not traced; its class update (`0x003b3220`) reports done once the
-  barrier has broken (data `+0x00`), which is inferred to make the object system send it.
+- **3.5**: a barrier's message 2 is its **removal**, not its hit: the class update (`0x003b3220`, every 60 ticks)
+  reports a broken barrier and `WorldObject_Remove` (`0x00391c10`) sends message 2, up to 1 s after the breaking hit
+  ([Barriers](objects.md#barriers), confirmed (code) and (runtime) there).
+
+#### Player 2, Vermin's runs and the fence (owner checklist 41-44) {#level99-p2-vermin-fence}
+
+What the original does where Coney was seen to differ (owner checklist items 41-44, 2026-10-08). The script facts
+are read from the disassembly of `level99.lua`, `level99_lesson1.lua` and `level99_lesson2.lua` (names, ids and
+values only) and are inferred unless marked; the engine facts are cited.
+
+**Item 41: Ash in a one-player game.** Ash exists in **every** checkpoint, one-player games included, and is kept
+out of sight; he never joins unless a second pad does.
+
+- Each checkpoint's Warriors function (`AddWarriors2` for 1, `AddWarriors` for 2, `AddWarriors1` for 3) makes
+  Rembrandt with `HuCreate(..., player 1, ...)` and Ash with `HuCreate(..., player 2, ...)` at **z −8.5**, 8.8 m
+  below the street ((−285.5, 125.1), (66.2, 52.7), (68, 52.7)); the drop-out flags `fAshTeleport1` / `2` are at
+  z −8.5 too. `HuCreate`'s ground snap is a 2.5 m ray down from 1 m above the given point
+  ([Characters: creation](characters.md#creation)), which finds nothing that deep, so Ash stays there. Confirmed (code)
+  for the snap; the positions are the script's.
+- `HuCreate`'s player argument only makes a player when it is **1**; 2 is stored as the hand-over priority `+0x1b1`
+  and Ash is an ordinary AI human, so `HuIsAPlayer(Ash)` (player slot `+0x1b0` not −1) is **false** until a second
+  player joins. Confirmed (code) at `0x00233d60`, `0x00235758`.
+- Checkpoint 2's set-up (`level99_lesson1.lua`, run after `RunLevel` names `player2 = Warriors.Ash`): when
+  `HuIsAPlayer(player2)` is false it removes his radar blip (`HUDDeleteRadarObject`) and **suspends his brain**
+  (`BrSuspend(player2, true)`); either way it registers `F.Player2Join` with `SetPlayer2Callback` (a `global.lua`
+  helper the multiplayer callback `InventoryPlayer2` calls on). The scene `l99_c2` binds Ash as its fourth human only
+  when `HuIsAPlayer(player2)`, else `NilHandle`. Every later step that moves player 2 (`fStoreFront2`,
+  `fStreetCenter2`, `fRoofTeleport2`, `fBreakFencePoizo2`, `fHitDealer2`, ...) is guarded by the same test.
+- **Joining.** Only `GameState_SyncPlayers` (`0x0041a460`) makes player 2: when joining is allowed (`+0x56e8`,
+  `CfgMultiplayerJoin`) and a second pad comes in, it takes the player gang's next human by hand-over priority
+  (`Gang_PickNextPlayer`; Ash's 2), calls `Human_MakePlayer` and then the multiplayer callback with (Ash, true)
+  (`0x0041b148`); a pad leaving releases him (`Human_ReleasePlayer`) and calls it with (Ash, false). Confirmed (code).
+  `F.Player2Join(h, true)` resumes his brain, adds his blip and puts him beside Rembrandt (`HuTeleportNearHuman`);
+  with false it suspends him again and sends him back to `fAshTeleport2` (z −8.5).
+
+Coney fixes (item 41):
+
+1. `HuIsAPlayer` must be false for a human made with player argument 2 (or anything but 1) until a second player
+   joins. Coney's answer for a human the scripts made before the level's humans exist
+   (`ScriptedHumans::status`, `repo:src/ai/scripted_humans.cpp`) is `playerIndex > 0`, which makes Ash a player
+   during the set-ups that run then; it should be true only for the human that became player 1.
+2. Keep Ash where `HuCreate` puts him: no snap that lifts him from z −8.5 onto the street (the original's ray only
+   looks 1.5 m below the point), and his suspended brain must not walk him anywhere.
+3. A player 2 is made only by a second pad joining (with `CfgMultiplayerJoin` allowing it), then the callback runs
+   with (Ash, true); never by the level set-up.
+4. Test: the one-player Story path into checkpoint 2 (from the `l99_c1` wheel scene's hand-over, and a checkpoint-2
+   start) leaves Ash at z −8.5 with his brain suspended, off the radar and out of `l99_c2`; with a second pad joined,
+   `F.Player2Join` puts him beside Rembrandt.
+
+**Item 42: Vermin runs to both jumps.** After the player's window jump, `P3.Player2Jumps` sends Vermin from
+`fVerminWait` (62.8, −3.3, 4.3) to `fStop[3]` (41.3, 2.8, 4.3) with `GoalMoveToFlag(Vermin, fStop[3], 4, 0, 0, 0.3,
+0, true)`: **gait 4, run**, arrival 0.3 m, then the flag's heading (127°). That leg crosses the window (the panes at
+x 47.4) at the same height, so on the route it is a jump leg. `P3.FinishRun` sends him on to `fStop[4]` (41.5, 19.4,
+4.2) with gait 4 again, through `vVerminJumps`. The only walk order in the checkpoint after the fences is `fStop[6]`
+(gait 2, item 43). The gait ids are those of `GoalMoveToFlag` (2 walk, 3 jog, 4 run, 5 sprint,
+[bindings](../references/bindings/ai.md)).
+
+Nothing on the way slows him for the jump, confirmed (code):
+
+- The move's corner speed (`MoveAction_CornerSpeed`, `0x002fc158`) simulates only the points that
+  `MoveAction_CollectPoints` (`0x002fbd18`) gathers, and that stops at the first link with bit `0x4` or `0x80`
+  (a jump or drop link): the take-off point is the last point considered and nothing past the window is, so the
+  jump itself is not a corner ([Moving: the move action](ai.md#move-action)).
+- An AI starts a jump at any gait, from a run too, with no run-up test (`Human_BeginJump`, `0x0023db48`), and the
+  landing here is level with the take-off, so it is a jump, not the slowing drop ([Jumps and drops](ai.md#path-planning)).
+
+Coney fixes (item 42):
+
+1. Map `GoalMoveToFlag`'s gait 4 to the run gait and keep it through a route's jump leg: the move's speed is the
+   gait's speed up to the take-off point.
+2. Leave the jump out of the corner-speed look-ahead: collect corner points only up to the first link with bit `0x4`
+   or `0x80`, so the turn after the landing does not brake the run-up.
+3. Test (level99 checkpoint 3): from `P3.Player2Jumps`, Vermin's gait is Run (and his speed the run speed) for the
+   updates before he leaves the ground at the window, and again on the `fStop[4]` leg.
+
+**Item 43: where Vermin faces in the fence lesson.** `P3.WoodenFences` (the player entering `vAlmostDone`) flushes
+Vermin and teleports him to `fStop[5]` (29.5, 6.4, 0.3) with heading −1, so **the flag's heading, 273°**; the game's
+heading grows clockwise from +y and faces `(sin h, cos h)` ([Characters](characters.md#step-control)), so he faces
+(−1.00, 0.05), **−x, towards the locked camera `VerminFencePoizo`** (25.282, 6.984, 2.012), not towards the fences.
+He then speaks and plays `point_left.anm` (`GoalPlayDynAnimation`); facing −x his left is −y, where the two fences
+stand (`dyn_door_fence02` at (23.6, −6.67), `03` at (27.98, −6.67)), so the gesture points at them. Its callback
+`P3.ShowFence` cuts to `BreakFencePoizo` and, 3 s later, `P3.BreakFence` gives control back
+(`CamSetFollowAngle(-10)`), arms both fences' message 2 and sends Vermin walking (**gait 2**) to `fStop[6]` (21.4,
+−4.1, 0.3) with the face-flag on: there he turns to its 139°, facing (0.66, −0.75), **straight at
+`dyn_door_fence02`** (2.2 m east and 2.6 m south of the flag). The player is put at `fBreakFencePoizo` (26.1, 3.8),
+heading 184°, facing the fences.
+
+Coney fixes (item 43):
+
+1. `TeleportToFlag(h, flag, -1)` turns the human to the flag's own heading in the game's clockwise sense
+   (heading 273° faces −x); check that Coney's flag headings are not taken anticlockwise (273° would then face +x,
+   away from the camera, and `point_left` would point north, away from the fences).
+2. After `P3.BreakFence`, Vermin walks to `fStop[6]` and turns to 139° on arrival (`faceFlag`).
+3. Test (level99 checkpoint 3): during the point, Vermin's heading is 273° ± 5° (the game's sense); after his walk,
+   139° ± 15° at `fStop[6]`.
+
+**Item 44: what waits for the fence.** Nothing in 3.5 fades the screen. `P3.WoodenFences` letterboxes in
+(`ScreenQueueEffect(2, 1)`) and `P3.BreakFence` letterboxes out (`ScreenQueueEffect(3, 1)`) before the player can
+move; from then on only the fences' message 2 goes on: `P3.FenceBroken` (either fence) clears the hint, Vermin's blip
+and icon, sets the global time-to-live to 1000 ms and the player's money to at least $20, and schedules
+`P3.DealerPoizo` **0.5 s** later. `P3.DealerPoizo` **cuts** (`CameraMakeActive(DealerPoizo, 0)`, no fade) to the
+dealer's locked camera, teleports the players to `fHitDealer` / `2` and Vermin to `fDealer`, shows `TT_9` and arms
+the dealer's trigger sphere. Message 2 itself comes only from the fence's removal, 3-17 updates after the breaking
+hit at runtime ([Barriers](objects.md#barriers)); the charge's start, its run-up and a hit that leaves hitpoints send
+nothing. So the order is: the hit that breaks a fence (one charge, 10 hitpoints, kind 2) → the fence removed and
+message 2 → 0.5 s → the cut and the dealer set-up.
+
+Coney fixes (item 44):
+
+1. Find what fades when the charge starts: no binding call of the checkpoint does (the event log of the run shows
+   every `ScreenQueueEffect`), so the fade comes from Coney's own code on the charge (a scene or camera transition, a
+   respawn or reset fade, the player falling) and must go.
+2. Send a barrier's message 2 only from its removal after it has broken (the 60-tick class update), never on the
+   charge's start or on a hit that leaves hitpoints.
+3. `P3.DealerPoizo` runs 0.5 s after `P3.FenceBroken` and cuts to the dealer camera without a fade.
+4. Test (level99 checkpoint 3): from the charge's start until the fence is removed, no screen effect is queued and
+   `P3.FenceBroken` has not run; the dealer camera and `fHitDealer` placement come 15 updates (0.5 s) after the
+   removal.
 
 ### `level80.lua` (mission 2) {#level80}
 
@@ -1151,6 +1317,121 @@ Points a playthrough test needs:
   is not a mission scene.
 - **The stolen objects** (step 3.5) come from the crew under the wreck order alone; the player only picked the lock.
 
+#### The arrest scene and the opening fire (owner checklist 28, 36) {#level80-arrest-fire}
+
+What the original does where Coney was seen to differ (owner checklist items 28 and 36, 2026-10-08). Script facts
+from the disassembly of `level80.lua`, `level80_chapter1.lua` and `level80_chapter2.lua` (names, ids and values
+only) are inferred; scene data is read from the disc's `l80_c5` records (numbers only); engine facts are cited.
+
+**Item 36: who is in `l80_c5` and what happens to the batons and cuffs.**
+
+- **Every actor is an in-world human, none is scene-only.** `level80.lua`'s `AddSnowCowboy` makes Snow (type 34) and
+  Cowboy (19) by the gate, `AddSnowCowboyCops` four cops (`Cop1` type 253, `Cop2` 254, `Cop4` 253, `Cop3` 256) in their
+  own gang. Chapter 2's `Setup` makes them all god-mode, gives Snow and Cowboy auto-escape, and spawns two scene
+  props, `dyn_cowboy` and `dyn_snow`. A player in `vSnowCowboyTrigger` sets the cops on Snow
+  (`GangMakeEnemies`, `GangEngageEnemy`), so a fight is going on when the objective is reached.
+- **Before the scene** (`SnowCowboySceneTriggered`, then `RunSnowCowboyScene` 1 s later): the gate opens, the Warriors
+  are suspended for the fade (`DeactivateWarriors`, undone before the scene), **`DestroyCopWeapons` destroys whatever
+  each cop holds** (`HuGetHeldObject` then `ObjDestroy`, so their own weapons never reach the scene), and the six
+  scene humans' shadows go off (`HuShadow(h, false)`).
+- **The binding.** `SuperRunScene` gets ten humans, bound to roles 0-9 in order by `GoalJoinCinematic`
+  ([`global.lua`'s `gPlayCutScene`](scenes.md#superrunscene)): Cleon, Rembrandt, Vermin, Ajax, **Cowboy, Snow, Cop1,
+  Cop2, Cop3, Cop4**, against the roles `cl`, `re`, `ve`, `aj`, `warrcb`, `warrsn`, `cops01`-`04`; and ten objects
+  bound to object slots 0-9 by `SceneAddObject`: `dyn_cowboy`, `dyn_snow`, `dyn_baton`, `dyn_baton01`-`03`,
+  `dyn_cuffs_c`, `dyn_cuffs_c01`-`03` (the header's slot names are `cowboy`, `snow`, `baton`, `baton01`-`03`,
+  `cuffs_c04`, `cuffs_c05`, `cuffs_c01`, `cuffs_c02`). The batons and cuffs are not spawned by the chapter's scripts;
+  they are the level's own objects (in its `Objects` table).
+- **The props go into hands by clip events.** When the scene starts each bound human's **pick target** (`+0x33c`,
+  `Human_SetObjectTarget` `0x00227080`) is set to the scene object in the slot named by the value (`+0x04`) of the
+  first type-9 event of its role clip (`Clip_GetEventValue` `0x00101ce0`, from the scene start `0x0039d870`);
+  confirmed (code). The event then fires in the clip and the human **takes** that object into bone 25 (message
+  `0x89`, take `0x1b`, no grip slide in a scene, [Objects in a hand](objects.md#held)). In `l80_c5` (disc, frames from
+  the scene's start, 1,010 in all):
+
+  | Role | Human | Events | So |
+  | --- | --- | --- | --- |
+  | 6 `cops01` | Cop1 | 9 → slot 2, frame 0 | holds `dyn_baton` from the start |
+  | 7 `cops02` | Cop2 | 9 → slot 5, frame 0 | holds `dyn_baton03` |
+  | 8 `cops03` | Cop3 | 9 → slot 4, frame 0 | holds `dyn_baton02` |
+  | 9 `cops04` | Cop4 | 9 → slot 3, frame 0; **10 at frame 279** | holds `dyn_baton01`, **drops it** at 9.3 s |
+  | 4 `warrcb` | Cowboy | 9 → slot 7 at 404; `0x36` (value 6, bone 19) at 462 | takes cuffs `cuffs_c05` in the right hand, then `cuffs_c04` in the left |
+  | 5 `warrsn` | Snow | `0x36` (value 9, bone 19) and 9 → slot 8, both at 443 | takes `cuffs_c02` and `cuffs_c01` |
+
+  Event 10 in a scene is a drop (`0x00257f38`: a physics body, falls from the hand, and a removal time of the global
+  time-to-live, 30 s from `config_preload2.lua`; [Objects in a hand](objects.md#held)). `dyn_baton01`'s track
+  ends on the floor (−194.51, 233.02, 1.25), the other three batons' at hand height beside their cops' end marks,
+  agreeing with this. Which object a `0x36` takes is not traced (the start sets only the first type-9 target);
+  inferred from the values that it is the slot named.
+- **After the scene** (`EndSnowCowboyScene`): `ObjDestroy` on `dyn_cowboy`, `dyn_snow`, `dyn_warr_cb` and the four
+  cuffs (a held object is let go first, [ObjDestroy](../references/bindings/world.md#objdestroy)); shadows back on; Snow
+  and
+  Cowboy teleported to `fArrestedSnow` / `fArrestedCowboy`, arrested (`HuSetArrested`), made Warriors; then
+  **`RemoveGang(GangSnowCowboyCops)`** (`GangDelete`): the four cops are destroyed at once **with their held objects**
+  ([GangDelete](../references/bindings/gang.md#gangdelete)). So the three batons still in a cop's hand go with the cops,
+  and the
+  only baton left is `dyn_baton01` on the floor, gone when its removal time runs out (about 30 s after frame 279,
+  some 5-6 s after the scene's 33.7 s end; inferred from the drop's timer). The script never destroys a baton itself.
+- **A human in a grab is skipped.** The scene's start leaves out a bound human that is grabbing, grabbed, mounting or
+  mounted: not posed, not counted, its fight going on ([Scenes: humans](scenes.md#humans), confirmed (code)). A cop
+  with Snow in a hold at that moment would stay out of the scene in the original too; with auto-escape and god mode
+  on Snow, how often that happens is **deferred: runtime** (below).
+
+Coney fixes (item 36):
+
+1. Find why Snow (role 5) and the cops (roles 6-9) are not posed: log, at `l80_c5`'s start, each role's handle and
+   whether the stage's free test (`PlayLevelMode`'s `setFreeTest`, `repo:src/platform/play_level_scene.cpp`) took it.
+   A cop in a pair with Snow is skipped by design; a human Coney does not know as cast (no brain for the handle), a
+   role left unbound by `GoalJoinCinematic`, or a pair Coney's fight never ends (Snow's auto-escape) are Coney bugs.
+2. Before the scene, `DestroyCopWeapons` must remove what each cop holds (`HuGetHeldObject` returning the held
+   weapon).
+3. Act on role-clip events 9, `0x36` and 10 for scene objects: at the start set each human's pick target from its
+   clip's first type-9 value (an object slot), take the object into the event's bone at the event's offset when the
+   event fires (no grip slide), and drop it on a type-10 event (physics body, removal after the global time-to-live).
+   While held, draw the object from the hand, not from its track.
+4. `GangDelete` destroys each member's held object with it, so `RemoveGang(GangSnowCowboyCops)` takes the three held
+   batons; `ObjDestroy` of a held cuff lets go of it first.
+5. Test (level80 checkpoint 2, the Story path): during `l80_c5` all ten roles are bound and posed (Snow and the four
+   cops among them) and each cop holds his baton from frame 0; after the scene no cop, no cuff and no held baton
+   remain, and at most `dyn_baton01` lies on the floor until its 30 s timer ends.
+
+**Item 28: the opening fire.** The fire is the molotov explosions' own aftermath, not a scene effect:
+
+- `l80_c1` has no particle events (its tracks carry only lens, caption, fade, intro-card and type-31 events; disc).
+  Its three type-31 events call `EndIntroScene` with 3, 2 and 1, and each call `ObjDestroy`s one club pane and runs
+  `C1.ExplodeAtFlag` at `fExplosion1` / `2` / `3` (about (−181 to −184, 85 to 87, 5.8 to 6.3)):
+  `ObjSpawn("dyn_molotv")` there and `BreakObjectsInRadius(molotov, 0.5)`, so the bottle breaks itself into one
+  `sub_explode` 0.7 m up, whose second stage makes a `part_explosion` ([the Molotov](script-types.md#molotov)). The
+  level script makes no fire of its own (the looping `FireContinued` re-explosion every 9 s is in the `SCENETEST`
+  debug path only).
+- What lasts is what the explosion's **six embers** leave where they land ([Explosions](script-types.md#part-explosion),
+  confirmed (code) at `0x003c3c08`, `0x003c3da8`): each ember lives 25-40 **updates** at a random interval of 1-3
+  ticks (about 0.4-2 s) and drops a `sub_flames` puff behind it every update; on landing on a surface that is not a
+  wall it makes a **`sub_burn`** scorch (interval 180 ticks, four steps: about 9 s shown, 12-15 s alive, with an AI
+  no-go sphere of 0.5-0.75 m) and a **`sub_fade_flame`** on it (60-89 frames at 2-3 ticks, then a fade: about
+  4-6 s), the first ember's flame with the looping `vags/fire/fire_small_loop`. Three explosions so leave up to
+  eighteen small fires on the clubhouse's ledges and floor for several seconds, while the flash, fireballs and debris
+  are over in about 2 s.
+
+Coney fixes (item 28):
+
+1. Give the explosion's embers the original's life: 25-40 updates of 1-3 ticks each (Coney counts 25-40 ticks, about
+   half), and a `sub_flames` puff each update.
+2. On an ember's landing make the `sub_burn` (with its no-go sphere) and the `sub_fade_flame` on it as above, the
+   first ember's flame with its loop sound; Coney's embers end on landing with nothing behind.
+3. Test: after `C1.ExplodeAtFlag`, fire particles are still live near the flag 3 s later and none 20 s later.
+
+**Deferred: runtime** (PCSX2 held elsewhere; the steps for whoever has it):
+
+- Item 36: from a `level80` checkpoint-2 state (enter via mode 8's level as in [the runtime order](#level80-hints)),
+  teleport Cleon (`Object_Teleport` `0x00385bb8`, call hook) just outside `fSnowCowboyTrigger`, walk in with the left
+  stick at 0.5 up, and read `l80_c5`'s header `+0x1e` (humans in the scene) at its first playing update and each
+  role's `+0x50` binding; expected 10, else note which role was skipped and whether that human was in a pair
+  (record `+0x08` / state bits `0xcf0`). After the scene, count live `dyn_baton` objects at 1 s and 40 s.
+- Item 28: after the intro (unskipped), count live particle tasks named `sub_burn`, `sub_fade_flame` and
+  `sub_flames` within 5 m of `fExplosion1`-`3` every second for 20 s.
+- Item 42: level99 checkpoint 3 state at `P3.Player2Jumps` (the player's window jump, stick 100 % up, as in
+  [the jump](objects.md#pane-break)); record Vermin's gait and speed each update until he lands past x 47.4.
+
 ### `level34.lua` (mission 4) {#level34}
 
 Story mission 4, loaded from the hub's checkpoint 1: the riot. Vermin is player 1, Snow player 2, Ash the third
@@ -1202,6 +1483,73 @@ standing in it damages something (the box tests the human's position, not the ob
 flag, the money and inventory callbacks, the mugging callback, gang tactics' callback codes (1, 5, 6, 9) and the
 police answering a forced crime level ([Crimes](crimes.md)). Type bit `0x400` is a glass pane ([Tasks](tasks.md));
 which prop counts how often: [Breakable props](objects.md#breakable-props).
+
+#### The riot's crowd, and what Coney lacks {#level34-start}
+
+Why Coney's riot fills the subway the player starts in with humans, and what the mission needs to look like the
+original's (owner checklist item 17). The script facts are inferred from the disassembly of `level34.lua` and
+`level34_riot.lua`, `level34_gate.lua` and `level34_park.lua`; the engine facts are confirmed (code) where an address
+is given.
+
+- **The crowd is one spawner.** `AddRiotCivs1` (`level34.lua`) makes gang `RiotCivs1` (`GangCreate(23, ...)`) with
+  one spawner, `RiotCivs1`, of the civilian spawner type at (−57.1, −53.8, 0). Its arguments that matter: no total
+  (−1), a spawn every 100 ms, up to 10 alive, **state 7**, value 30 and the spawn callback `F.RiotPedSpawn`
+  ([`GangAddSpawner`](../references/bindings/gang.md#gangaddspawner)). `P1.SetupRiot` adds it at
+  checkpoints 1-3 with the gang's hit handler `F.RiotPedHit`. At checkpoint 1 it suspends the gang
+  (`GangSuspend(gang, true)`) until the intro scene `l34_c1` ends; `P1.EndIntroScene` then wakes it, with the riot
+  ambience at 0.15 and the tunnel effects. The player is still underground then: the start is (−4.3, −25.1, −6.2)
+  ([Level starts](../references/level-starts.md#start-level34-1)). Later handlers set the limit to 3, 6 or 10
+  (`GangSetMaxConcurrent`).
+- **Where its humans appear.** State 7 places each human on a pedestrian flag at least 35 m from the player beside or
+  behind the view, or, ahead, at least the camera's view distance capped at 70 m (so possibly under 35 m), out of the
+  camera's sight and clear of the gang's friends
+  ([AI and the world: reinforcements](ai-world.md#spawner-reinforcements), `0x001679e8`). From the subway, the street
+  flags are out of sight behind its ceiling, so the original's rioters appear on the streets around the exit.
+  Coney places state 7 as state 8 with a value of 0, which takes the nearest route node outside the view cone. In the
+  subway that is a node on its tracks, next to the player. **This is the subway crowd.**
+- **Every crowd and police squad of the mission is state 7.** The other spawners are added in state 0 at their
+  parked positions and started later with `GangStartSpawner(gang, name, 7, value)`. They are the rival rioters
+  `RiotRogues` and `RiotMoonrunners` (value 30, while a player is in section 2) and the wanted gangs `CopRogues`,
+  `CopMoonrunners` and `CopPanzers`, and the police `Cops` (value 60, from the cop scene `l34_c3` on and again in
+  `level34_gate`). The level police `RiotCops` (50) start at `P1.HeadToGate` and in `level34_gate`. So the same
+  placement decides where every gang and every cop of the riot appears.
+- **What each rioter does** (`F.RiotPedSpawn(human, gang, name)`): violence reaction off, threat and investigate
+  responses 0. While `bRiotPeds` is true, 75 % get `GoalRiot(h, 10, 100, 2, 0, 0)` ([GoalRiot](ai.md#riot)) and 25 %
+  `FlagNetTraverse(h, 1, 100)` (the 34-node pedestrian net that `RunLevel` sets up). While it is false, all walk the
+  net. In both cases 3 in 10 get a random object of `tCivObjects` in hand (`HuPlaceItemInHand`). `bRiotPeds` is set
+  true when `level34.lua` loads. `P1.SetupSection1` sets it false for the intro, and `P1.StoreObjectives` sets it
+  true again once the car flippers' scene has run. So from the loot objective on, most of the crowd riots.
+
+**Against `missions.yaml`.** Its notes for `level34` record the intro, the loot, the radio and mugging objectives,
+the props, the rioters' decisions and the riot waves as working, and leave one question: how the smash and loot
+acts find targets. The play-test shows these are also missing:
+
+| What the original does | Coney now | Page |
+| --- | --- | --- |
+| State 7 places every crowd, gang and police human out of sight on a pedestrian flag | placed as state 8 with value 0: at the player's side, on the subway tracks at the start | [reinforcements](ai-world.md#spawner-reinforcements) |
+| A rioter's smash finds a vandalisable object with a stand point; a loot finds a store flag (activity 14) whose group still has objects | nothing found (the question in `missions.yaml`) | [GoalRiot](ai.md#riot) |
+| The looters wreck zones 51 and 29 (`TacticVandalize`), and the Panzers rob the pharmacy (`TacticSteal`) | both kinds are `StationTactic`: the members stand (`repo:src/ai/story_tactics.cpp`) | [AI: tactics](ai.md#tactics) |
+| The roof throwers and bar staff throw bottles, speakers, TVs, boxes and drum kits (`GoalStationaryThrower`) | the clip plays, nothing leaves the hand (`repo:src/ai/riot_goals.h`) | [GoalStationaryThrower](../references/bindings/ai.md#goalstationarythrower) |
+| Police: the `Cops` and `RiotCops` spawners (state 7), and at checkpoint 4 a forced crime level with a crime at the cop search flag | the spawners place their cops as above; the dispatch states 4 and 9 never spawn (no crimes are routed: checklist item 13) | [Spawners](ai.md#spawners), [Crimes](crimes.md) |
+| The Warriors' R2 commands | not every command works (checklist item 11) | [AI: Warrior commands](ai.md#warrior-commands) |
+
+**Coney fixes (item 17).**
+
+1. Build state 7's placement ([its fix list](ai-world.md#spawner-reinforcements)). This one change moves the
+   subway crowd onto the streets, and the rival gangs and the police with it.
+2. Check the crowd's tasks once it spawns where it should. `F.RiotPedSpawn` must receive (handle, gang id, spawner
+   name). `FlagNetTraverse` must walk the 34-node net, and `GoalRiot` must roam, decide and leave in the gang's turf
+   (`RiotCivs1` has no turf box, so the turf gate always passes).
+3. Give the riot's smash and loot acts their targets: vandalisable world objects with a reachable stand point, and the
+   store flags (activity 14) with objects left in their group ([GoalRiot](ai.md#riot) states 1 and 2).
+4. Build `TacticVandalize` (members wreck the zone's objects; code 1 once nothing is left) and `TacticSteal` in
+   place of the standing stand-in.
+5. Let `GoalStationaryThrower`'s throws release their object (the thrown-object physics), so the roof throwers and
+   bar staff hit.
+6. Police: once 1 is in, check that `Cops` appear from the cop scene on and `RiotCops` from `P1.HeadToGate` on. The
+   routed crimes (dispatch states 4 and 9) are item 13's work.
+7. A disc playthrough test from checkpoint 1: after `P1.EndIntroScene`, no `RiotCivs1` human appears in the subway
+   while the player is in it, and at least one appears on the street flags once he comes out.
 
 ### `level2.lua` (mission 5) {#level2}
 
@@ -1639,15 +1987,18 @@ handler component, as for `TriggerSphereEnable`).
   relatives) beyond their `global.lua` names; most fields of the large `Cfg*` records (`CfgChar`, `CfgPowerClass`,
   `CfgWarriorClass`), which are written through computed addresses with no reader found yet. Each would move up from
   inferred once a reader or a runtime observation is found.
-- **Hint texts set twice in one frame** (owner checklist item 33b): in Coney's `level99` course run two
-  `HUDSetTutorialText(nil)` + text pairs still land between two hint-box steps in two places, and the box then shows
-  every later text one late (a grab hint `TT_19*` in place of the lesson's) until a frame clears without setting:
-  at lesson 5's end (the strong grapple's hold 82), `PlayerState`'s animation callback sets the hold's grab hint and
-  `P1.Power` sets `TT_24d` in the same step; and `P1.StartSnaps` sets the snap text twice in one call. Does the
-  original also queue two there, or does something keep it from backing up: is `PlayerState` called for the
-  player's 82 at all when the hold is a paired task, whose dispatch runs for the other human
-  ([Animation callbacks](characters.md#anim-callbacks)); does `HintBox_Queue` show a hint at once when the box is
-  free, or drop a text already queued? A runtime trace of the hint queue (`+0x290`) over lessons 5-8 answers it.
+- **Hint texts set twice in one frame** (owner checklist item 33b): answered by the original's runtime trace
+  ([The queue at runtime](hud.md#hint-queue-runtime), [lessons 5-8](#level99-hint-timing)): a text set on a free box
+  shows within the same call, so two `HUDSetTutorialText(nil)` + text pairs in one update never back up, and a grab's
+  hold ids fire their animation callbacks at the connect, 34 updates before `P1.Power` ([Animation
+  callbacks](characters.md#anim-callbacks)). Coney's `level99` course run still had two pairs land between two
+  hint-box steps in two places, and the box then showed every later text one late (a grab hint `TT_19*` in place of
+  the lesson's) until a frame cleared without setting: at lesson 5's end (the strong grapple's hold 82),
+  `PlayerState`'s animation callback set the hold's grab hint and `P1.Power` set `TT_24d` in the same step; and
+  `P1.StartSnaps` sets the snap text twice in one call. The second hint-box step in `GameplayMode` (Coney's order in
+  a step, [Animation callbacks](characters.md#anim-callbacks)) keeps that from backing up; what is left to do is the
+  rest of [Coney's differences](hud.md#hint-queue-runtime): `HintBox::queue` showing at once, and the hold ids firing
+  at the connect.
 - **The stale throw hint** (owner checklist item 38): the owner saw `level80`'s `TT_25` (lure the cops with a bottle)
   stay through step 3.4 until the Wreck'em order. Coney's checkpoint 3 test (teleports to the roof, the scene
   skipped or played out, the lesson box left and re-entered) shows the box empty when the bottle breaks and `TT_7`

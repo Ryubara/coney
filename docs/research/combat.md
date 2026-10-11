@@ -328,8 +328,7 @@ Read at runtime in the street; the setters are on the [config bindings](../refer
 | `0x005101e4`-`0x005101f0` | 0, 15, 15, 2 | `CfgBurnRates`: power drained per second blocking, grabbing, tackling, and in a further grab state |
 | `0x005102b8` / `0x005102bc` / `0x005102c0` | 1000 / 15 / 250 | `CfgButtonMash`: target, decay per update, press gain (used halved); only theft mode 1 reads them |
 | `0x005104ac` / `0x005104b0` / `0x005104b4` / `0x005104b8` | 0 / 0 / 0 / 1 | `CfgLockOn`, auto-combat, `CfgAutoLock`, `CfgAutoLockAndCombat` |
-| `0x005104c0` | 6.25 | a target farther than 2.5 m (squared) is dropped |
-| `0x005104bc` | 4, 6.25, 9 | `CfgDistances`, squared (2, 2.5, 3 m) |
+| `0x005104bc` / `0x005104c0` / `0x005104c4` | 4 / 6.25 / 9 | `CfgDistances` (`Cfg_SetCombatDistances`, `0x0023a630`), squared: 2, 2.5 and 3 m as `config_preload2.lua` sets them at boot (the executable's initial values 4 / 9 / 36, 2, 3 and 6 m, never apply in play); the stance's enter, swap and keep distances ([Fight stance](#fight-stance)) |
 | `0x005108d8` / `0x005108e0` / `0x005108e4` | 25 / 1.0 / 0.1 | `CfgRagePoints`: the cap, and the factors below and above it |
 | `0x00510798` / `0x00510898` | 64 s32 each | the reaction and block reaction tables ([Hit codes](#hit-codes), [Block](#block)) |
 | `0x0051096c` / `0x00510970` | 0.9425, 2 | target search: the half-angle (54°) and the height difference limit (m) |
@@ -381,7 +380,7 @@ confirmed (code) at the functions below.
 ### Attacks and chains {#attacks}
 
 **Square** (`Player_Square`, `0x00286cc8`) takes a target from `Player_PickTarget(0x40000000, h)` (in the fight stance
-it keeps the current target within 2.87 m and searches only without one or beyond; cross always searches,
+it keeps the current target within 2.5 m, `0x005104c0`, and searches only without one or beyond; cross always searches,
 [Combat moves](combat-moves.md#targeting)), then, confirmed
 (code):
 
@@ -614,9 +613,10 @@ one sphere of 0.8 m; for an object with `0x20000` one sphere of half its smalles
   body group (`+0x3c`, when not 0), one already on the striking body's contact list, a body with flag `0x8` whose
   owner has `0x4000000`, and one **behind the level**: a ray from 1 m above the human's root to the body's centre
   (`WorldManager_RayCast`, mask `0x48`, or `0x8` for a body with `0x40`) must hit nothing. The friend test comes
-  after, in `Strike_Contact`: against a friend (`Human_IsFriendly`) the hit is sent with "may react" off, a Warrior
-  (brain type 3) struck by a player who has no target may complain (speech command `0x58`), and
-  `Human_ApplyPendingDamage` drops the damage unless both are players ([Damage](#damage), step 3).
+  after, in `Strike_Contact`: against a friend (`Human_IsFriendly`) the hit event goes out with its hostile byte
+  (`+0x11`) clear (the "may react" value `+0x11a` is unchanged), a Warrior (brain type 3) struck by a player who has
+  no target may complain (speech command `0x58`), and `Human_ApplyPendingDamage` drops the damage unless both are
+  players ([Damage](#damage), step 3) but still plays the reaction ([Teammates](#teammates)).
 - **When a clip is cut** before its off event, the shapes still go off: every animation task gives its clip back
   through `CharacterInstance_ReleaseClip` (`0x00175120`) when it ends, is replaced or chains on, and for a clip with
   descriptor flag **`0x4`** that runs `Human_StrikeAllOff` (all ten shapes and the capsule's `0x2` off). Flag `0x4` is
@@ -1186,6 +1186,69 @@ the holds and strikes and carried only the spins' and connects' root motion (78:
   `+0x17c` became 1.125, the grab movement style's walk speed, `0x00254078`) and about 1.22 m/s in the rear hold.
   The victim kept the hold's offsets (front 1.012 ahead, 0.379 right; rear 0.222, −0.097).
 
+#### The hold walk: clips, speed and turning {#hold-walk}
+
+What plays while the grabber walks the pair, from the front or from behind (owner item 21). Confirmed (code) at the
+addresses cited unless marked.
+
+1. **Refused while busy.** `Human_MoveGrabbing` (`0x00245310`) runs for a grabbing or mugging human with a player's
+   controls (per-player `+0x1b`); it sets no velocity while the human is busy (`Human_IsBusy`), in a scene state or
+   **mugging**, or while the stick is at 0.95 or less. So a mugging pair never walks, and a part-tilted stick does
+   nothing (no slow walk).
+2. **Velocity.** After the turn above, the new heading `h'` (the old one moved by at most `r` toward stick + 180°) gives
+   the velocity **−speed × facing(h')**, with the height kept at human `+0x3a0`: the pair always walks straight
+   backward from the grabber's facing, so while the turn is under way the path curves, and once turned it runs along
+   the stick. `speed` is record `+0x170`, the walk speed the movement style's walk clip gives
+   (`Human_ComputeGaitSpeeds`, called at the end of `Human_ApplyMoveStyle` `0x00253688`).
+3. **The movement styles of a hold** (`Human_ApplyMoveStyle`): the connect's link (`Grab_Link`, `0x0022c730`) pushes
+   **style 7** on the grabber and **style 8** on the victim for a front grab, **9 / 10** for a rear one; the spins
+   replace them (`Grab_SpinToRear` `0x0026d570` and `Mug_Start` `0x002729a8` set 9 / 10, `Grab_SpinToFront`
+   `0x0026ec10` / `0x0026d998` set 7 / 8). Each style writes the idle (slots 0 and `0xb`) and the walk slots:
+
+    | Style | Who | Idle (slots 0, `0xb`) | Walk (slots) | Also |
+    | --- | --- | --- | --- | --- |
+    | 7 | grabber, front | 82 `GRAB_HOLD_FROM_FRONT` | 86 `GRAB_FRONT_WALK_BACKWARD` (`gen_grab_front_pull`) in slots 4-7 | slots `0x10` / `0x11` = 51 / 55, the grab strikes |
+    | 8 | victim, front | 83 `GRAB_HELD_FROM_FRONT` | 87 `GRAB_FRONT_WALK_BACKWARD_REACT` (`gen_grab_front_pull_react`) in slots 4-6 | |
+    | 9 | grabber, rear | 84 `GRAB_HOLD_FROM_REAR` | 88 `GRAB_REAR_WALK_BACKWARD` (`gen_grab_back_pull`) in slots 4-6 | |
+    | 10 | victim, rear | 85 `GRAB_HELD_FROM_REAR` | 89 `GRAB_REAR_WALK_BACKWARD_REACT` (`gen_grab_back_pull_react`) in slots 4-6 | |
+
+    So the grabber's walk speed is clip 86's root speed from the front (1.125 m/s at runtime, above) and 88's from
+    behind (about 1.22 m/s); the jog, run and sprint slots hold the same clip, so there is no faster gait in a hold.
+4. **The hold is a four-clip task on both bodies.** The spins and the connect push, on each body, a type 11 four-clip
+   mix ([Animation](animation.md)) of **slot 0 (the hold idle) and slot 4 (the walk) three times**, with task flags
+   `0xc1` (no root velocity: the clips do not move the bodies) and anim state 4 (`Grab_SpinToRear` builds it with
+   value 0 and speed 2.0). When the move state is rebuilt for a grabbing or grabbed human, `Human_BuildMoveState`
+   (`0x0025f4d0`) skips the gait blend and calls `Human_BuildPairedFourMix` (`0x0025af90`), which rebuilds that
+   four-clip task **on the human and on its partner** (`+0xc4`) on the same update, after a fade of 1/15 s (0.1 s
+   more with held flag `0x40000000`), starting at value 1 (the walk). The mix's target is the speed over the walk
+   speed, clamped to 0-1 ([Clip selection](characters.md#clip-selection)), so standing plays the hold idle, walking
+   plays the walk clip alone, and the blend eases between them at the task's speed.
+5. **The victim's walk.** The victim moves by `Human_MoveAttached` (`0x00244e78`): its place is the grabber's
+   transform composed with the stored hold offset, swept against the world up to three times, and the velocity it
+   reports is **the grabber's** (the grabber's vtable `+0x94`). So its own four-clip task sees the same speed and
+   plays 87 (front) or 89 (rear) in step with the grabber's 86 / 88 (inferred from the shared speed: the two tasks
+   are separate and only start together). When the third sweep is still blocked the victim keeps its previous
+   transform and the grabber is set back with a zero velocity, so the pair stops at a wall (the grabber's part
+   inferred from the vtable calls `+0x9c`, `+0xb4`, `+0x74`).
+6. **How the pair turns.** Only the grabber turns (the rate above); the victim has no heading of its own in the hold:
+   it is the grabber's rotation × the stored relative rotation, so it swings round the grabber on the hold's offset
+   (from behind 0.24 m, 23.5° to the left; from the front 1.08 m, 20.6° to the right, [the offsets](#grab-posing)).
+
+**Coney fixes** (owner item 21; Coney's `Fighter::moveGrab` already turns and moves the pair):
+
+1. Give the grabber movement style 7 (front) or 9 (rear) and the victim 8 or 10 for the whole hold, and switch them
+   on every spin (78 / 79 to 9 / 10, 80 / 81 to 7 / 8), as the table says.
+2. Play the hold as a two-clip blend per body (hold idle ↔ walk clip: 82 ↔ 86 and 83 ↔ 87 from the front, 84 ↔ 88
+   and 85 ↔ 89 from behind), target = speed / walk speed clamped to 0-1, started on both bodies on the same update
+   when the pair starts or stops walking, with no root motion from the clips.
+3. Feed the victim the grabber's velocity (not zero), so its blend follows the grabber's.
+4. Take the walk speed from the style's walk clip (86 from the front, 88 from behind) instead of the fixed 1.125 and
+   1.22 m/s tunables, and walk only with the stick above 0.95, straight backward from the grabber's new facing.
+5. No walk while mugging; stop the pair when the victim's sweep against the world fails.
+6. Tests: a rear hold with a full stick plays 88 on the grabber and 89 on the victim within one update of each other,
+   moves at clip 88's speed directly away from the grabber's facing, and returns to 84 / 85 when the stick is
+   released; a stick at 0.9 neither turns nor moves the pair.
+
 **The tackle's mount** (confirmed (runtime), and from the disc's events): after the tackle (5 / 6 from the front,
 7 / 8) the pair is in 210 `MOUNTING_IDLE` / 207 `MOUNTED_IDLE` with the victim **0.032 m ahead and 0.120 m to the
 mounter's left**, its heading the mounter's + 180°. That is the record's offset for 210 × its reach, which
@@ -1615,17 +1678,76 @@ to the progress (`+0x12c`), a new target
 angle comes each time the progress passes a multiple of `+0x08`, the victim's lines come at half of `+0x04`, and
 reaching `+0x04` succeeds; leaving the target goes through 3 back to 4. "On target" is the stick above 0.5 and within
 `+0x10` of the angle; the pad's rumble gets byte `+0x02` on target and byte `+0x1c` otherwise (player record `+0x1c`,
-inferred: the motor). A mugger no player controls fails when game time passes record `+0x134` instead.
+inferred: the motor). **Against an AI victim** (victim `+0x1b0` = −1) every update also checks the victim's time
+limit: once game time passes record `+0x134` the game goes to 5 with the result 0, a failure (the victim has broken
+free), and bar 1 of the mug meter shows the time since the start over that limit ([Mug
+difficulty](#mug-difficulty)). An earlier reading had this test for a mugger no player controls; it is the victim's
+side that decides it (`0x002856b8`, `uStack_b8` = the victim is a player).
 
 **`SetInterrogateParam`** (`0x002854b0`) overrides the record for every mugging while its `timeA` is non-zero (set
 0-2 at `0x00510a18`, read by `0x00284ca0`; sets 3-5 at `0x00510a38` serve a player victim, `0x002853a8`). Its
 arguments fill, in order: bytes `+0x00`, `+0x01`, `+0x02` (the on-target rumble), `+0x04` required, `+0x08` period,
 `+0x0c` off-target allowance, `+0x10` tolerance (degrees, stored in radians), `+0x14` the re-roll gap (degrees),
-`+0x18` (not read by the update), `+0x1c` the off-target rumble. `level99_lesson1`'s mugging lesson passes
+`+0x18` the victim's **time limit** (read once, when the mugging starts, [below](#mug-difficulty)), `+0x1c` the
+off-target rumble. `level99_lesson1`'s mugging lesson passes
 (160, 75, 255, 5000, 2500, 20000, 40, 60, 20000, 0, set 0): **5 s on target, a new angle every 2.5 s of it, 20 s off
 target allowed, 40° of tolerance, each new angle at least 80° from the last**; it passes all zeros after the lesson,
 which gives the per-class defaults back. Confirmed (code); bytes `+0x00` and `+0x01` are read only by the hold's games
 (below).
+
+#### Mug difficulty: who is hard to mug {#mug-difficulty}
+
+How hard a mugging is comes from the record `Mug_GetParams` (`0x00284ca0`) builds for the pair, which differs by the
+**victim's category** (`CfgChar` byte `+0x11b` of the victim's class, [characters reference](../references/characters.md))
+and the **mugger's Warrior class mugging byte** (`+0x0c`, the "Mugging" column of the [Warrior
+classes](../references/warrior-classes.md)). Confirmed (code) at `0x00284ca0`, `0x0022cd78`, `0x002856b8`:
+
+1. **When the record is built.** `Grab_StartMug` (`0x0022cd78`, from the end of the 338 intro, `Mug_OnStartEnd`
+   `0x00272878`) stamps the start (record `+0x130`, both sides) and, for a player mugger, sets his limit `+0x134` =
+   start + the record's **`+0x18`**. `Player_UpdateMugging` asks for the record again every update.
+2. **Which record.** While `SetInterrogateParam`'s set 0 has a required time (`0x00510a1c` ≠ 0) it is used as is.
+   Otherwise, for a player mugger, a table in the code fills a record at `0x006cddb8`; a mugger who is not a player
+   gets set 0 unchanged. Bytes `+0x00`-`+0x02` are 160, 75, 255, the off-target allowance `+0x0c` is always **50000
+   ms**, the tolerance `+0x10` 50° and the re-roll gap `+0x14` 60° (`0x3f5f66f4`, `0x3f860a92`), the off-target
+   rumble `+0x1c` 0. The rest, in ms, as **required on target / period (a new angle per this much progress) / the
+   victim's limit**:
+
+    | Victim category (`+0x11b`) | Mugging byte 2 | Mugging byte 3 | Any other byte (1) |
+    | --- | --- | --- | --- |
+    | 15 (drug dealers, `civl_dr_*`, `civl_sp_*`, `civl_we_*`) | 2750 / 750 / **4500** | 2750 / 750 / **5000** | 2750 / 750 / **4500** |
+    | 5, 9, 10 (workers and rioters `civl_*_ma*`, the cops) | 3500 / 2000 / 5500 | 6000 / 1200 / 10000 | 5000 / 2000 / 8250 |
+    | 14 (the Warriors: the other player) | 4000 / 1334 / 7000 | 4000 / 1334 / 7000 | 4000 / 1334 / 7000 |
+    | 6, 7 (bums, drunks) | 4000 / 2000 / 13000 | 5000 / 2500 / 13000 | 3000 / 3000 / 10000 |
+    | any other, `flag_14b` set (women, hookers, ...) | 4000 / 2000 / 10000 | 5000 / 2500 / 10000 | 3000 / 1500 / 10000 |
+    | any other, `flag_14b` clear (civilians, gang members, pimps, shopkeepers) | 5000 / 1250 / 11000 | 3000 / 1000 / 7000 | 5000 / 2000 / 10000 |
+
+    `flag_14b` is the class's byte `+0x14b`. The category labels are our reading of the types in each
+    ([characters reference](../references/characters.md): category 15 is exactly the brain-kind-5 dealer types). The
+    Warrior classes' bytes: on normal Ajax, Snow and Swan 1; Cleon, Cochise, Cowboy and Vermin 2; Fox and Rembrandt 3
+    (every class 2 on easy; [Warrior classes](../references/warrior-classes.md) for hard).
+3. **What decides it.** The mugger wins on reaching the required time on target; against an AI victim he loses once
+   the victim's limit has passed since the start, whatever the progress (the off-target allowance of 50 s never comes
+   first). So the **slack** is the limit minus the required time, and the target angle jumps (at least 80° away) each
+   period of progress: a dealer gives **1.75-2.25 s of slack and a new angle every 0.75 s** (three to four jumps to
+   catch in 2.75 s), a civilian with byte 2 gives 6 s of slack and a jump every 1.25 s, and a bum 9 s. That is the
+   "dealers are hard" of the owner's report: the victim's bar (bar 1, amber) fills over 4.5 s.
+4. **The other player as victim** (`+0x1b0` set) has no limit: the race is mode 1 against his own record
+   (`Mug_GetPlayerVictimParams`, `0x002853a8`, [the other stick games](#other-stick-games)).
+5. **The payout** is the same for all (the victim's money, × 1.5 for a dealer brain, [Crimes](crimes.md#mugging)).
+
+**Coney fixes** (owner item 27; Coney runs every mugging with one record, `CombatTuning`'s 5000 / 2500 / 50000, and
+no victim limit):
+
+1. Build the record per mugging from the table above, by the victim's `CfgChar` category and `flag_14b` and the
+   player's Warrior class mugging byte (from the difficulty's `CfgWarriorClass`), keeping `SetInterrogateParam`'s
+   override first when its required time is non-zero.
+2. Add the victim's limit: stamp the start when the mugging proper begins (after 338 / 339) and fail the mugging
+   (346 / 347, result 0) once game time passes start + `+0x18`, for an AI victim only.
+3. Drive the mug meter's bar 1 with (now − start) / (limit − start), as `Player_UpdateMugging` does.
+4. Keep the 50 s off-target allowance as it is; it is the same for every victim.
+5. Tests: with Rembrandt (byte 3 on normal) a category-15 victim fails at 5000 ms with the stick off target, and
+   succeeds with the stick on each new angle within the update it appears; a category-4 civilian with `flag_14b`
+   clear gives 3000 / 1000 / 7000; `SetInterrogateParam(…, 20000 …)` gives a 20 s limit.
 
 #### The other stick games: mug meter modes 1-3 {#other-stick-games}
 
@@ -2425,6 +2547,47 @@ state's handle at `+0x264` (restarted when it is still playing, `0x004194b8`); w
 `level99`'s last lesson waits for this command through `PadSetHandlerEx` (the handler receives it even when
 `EnableCommand` has turned it off, [Commands](#commands)).
 
+### Reviving a downed Warrior {#revive}
+
+The prompt (HUD string 4) and who can be revived are on [HUD: action prompts](hud.md#action-prompts); this is the
+action. **D-pad left** pressed makes command `0x27` ([the street's tables](#commands), confirmed (runtime)), which
+`Player_TryRevive` (`0x00286ba8`) handles; an AI Warrior reaches the same function through
+[SaveHuman](ai-goals.md#goal-save-human) (inferred from its brain-type test below). Confirmed (code) at the addresses
+given:
+
+1. **Refused** when the reviver has any held flag or a state flag of `0x7bf9e9f7ff0`, when
+   `Human_FindRevivableNear` (`0x00279078`) finds nobody, or when the downed human has any held flag.
+2. **The way**: when `Human_IsWayClearTo(reviver, downed)` (`0x0021c0a8`) fails, a downed AI human (`+0x1b0` = −1)
+   is refused, and a downed player only accepts a reviver whose brain is type 3 (a Warrior).
+3. **The flash**: the reviver's panel inventory (`+0x380`) holds item 1, or the downed human's does (only a co-op
+   partner has one); else refused. Then `Revive_Start` and the command is used (returns 1).
+
+`Revive_Start(reviver, downed)` (`0x002752a0`):
+
+- Both get the same new pair id (a counter at `*0x00597198 + 0x10`, wrapping to 1) at their record `+0x3c`, and
+  both their vtable slot `+0xe4` is called with (1e9, 7) (not traced; reset with 1.0 at the finish).
+- `Attack_SteerLed(0.1, reviver, downed, 0, 351)` puts the reviver in place for clip 351
+  ([the led steer](#led-steer)).
+- The reviver says **76 `revive_reasure`** (`Human_SayCommand(1.0, reviver, 76, none, interrupt, …)`).
+- His animation stack gets, bottom up: **351 `gen_revive_begin`** with the finish callback (`Revive_Finish`,
+  `0x00274ee0`) on its end, chained to **353 `gen_revive_end`**, chained to his idle loop (out of the fight stance
+  through 389 `gen_trans_combat_to_neutral`, idle set 0; in the stance, idle set `0xb`); a blend-out over 0.01 s on
+  top. Clip 352 (`gen_revive_cycle`) is not used. Push sphere off; held flag `0x8000000`; each is the other's
+  partner (`Human_SetPartner`).
+
+`Revive_Finish(reviver)` (`0x00274ee0`), when 351 ends:
+
+1. Both partners cleared, both `+0xe4` calls with (1.0, 7), both pair ids 0.
+2. **One flash is spent**: the downed human's when his inventory has one, else the reviver's
+   (`Inventory_AddItem(…, 1, −1)`).
+3. Interface cue **23** (the flash sound, as [`Flash_Use`](#rage)); the revived says **75 `revive_thank`**;
+   `Human_Heal(revived, 1)` wakes him and fills his health ([`Flash_Use`](#rage) above).
+4. The revived gets up with **354 `gen_revive`** as a pair task bound to the reviver (flag `0x8000`), chained to his
+   idle loop (through 389 out of the stance), push sphere off, held flag `0x8000`.
+
+So the whole revive is clip 351 on the reviver (the flash spent and the heal at its end), then 353 on him and 354 on
+the revived together. Coney: [the gaps](ai.md#crew-gaps).
+
 ### Target selection {#targets}
 
 `Player_PickTarget(range, h)` (`0x0027a6c0`), confirmed (code):
@@ -2456,6 +2619,72 @@ state's handle at `+0x264` (restarted when it is still playing, `0x004194b8`); w
    and 31 add their own bits first. Which object types set those bits is on [World objects](objects.md). The square
    then plays [`Player_ObjectAttack`](#breakables) on the object picked.
 
+#### Teammates: what the player may do to his own crew {#teammates}
+
+Owner item 10 asks what the original allows against the player's own Warriors outside the hangout. Confirmed (code)
+at the addresses cited unless marked; "teammate" is a human friendly to the player (`Human_IsFriendly`, `0x00222a90`,
+`Brain_IsFriendly`) and in his gang (brain `+0x20c`).
+
+1. **No pick ever names a teammate.** Every human filter of the player's searches refuses friends and the same gang
+   before anything else: the attack picks (`TargetFilter_Enemy` `0x00279410`, `TargetFilter_EnemyStanding`
+   `0x00279568`, the any-angle pass `0x002797b0`), the grab and tackle search (`Player_FindCounterTarget`,
+   `0x0027ac30`, the same three filters in that order), the stance's nearest enemy (threats only) and the L1 lock
+   (`0x002792c8`). So square and cross swing along the stick or the facing with no target and no steer.
+2. **So a teammate cannot be grabbed or tackled.** `Grab_Start`'s intro ends in nothing without a target
+   (`Grab_IntroEnd`, `0x0026c1d8`, returns at once when `Human_GetTarget` is empty): 71 then 69 `GRAB_MISS` plays even
+   with a teammate right in front. No grab, so no throw and no mount of a teammate. The hangout's sparring Warriors
+   are grabbable because they are another gang: `level99` creates them in `CombatWarriors` and calls
+   `GangMakeEnemies(Warriors, CombatWarriors)` ([AI: the sparring fight](ai.md#level99-fight)).
+3. **A swing that touches a teammate does land.** The strike test takes every body, allies too
+   ([Moving strikes](#moving-strikes)), so `Strike_Contact` (`0x0021b290`) runs on the teammate: impact sound, hit
+   effect, the damage stored as pending through `Human_DealDamage` (`0x0021d680`) with the event's hostile byte
+   clear; with the player having no target, a free Warrior who may gesture and has more than 10 % health says speech
+   command `0x58` (a complaint). In `Human_ApplyPendingDamage` (`0x00265f70`) the friend's pending damage is set to
+   0 (an AI victim, or an AI attacker), so **no health is lost**, but the code goes on to the reaction by state
+   (`Hit_PlayReaction` `0x0026b0a0` for a standing one): **the teammate flinches or falls** as from an enemy's hit of
+   that hit code, and hit armour and the other gates apply as usual. Two players hurt each other for real.
+4. **A Warrior hit by his chief hits back** (`WarriorBrain_OnHitByChief`, `0x00306190`, from the brain's event 1,
+   which every hit sends): only when the hitter is a player whose Warrior commands are not locked (game state
+   `+0x418` + player), the Warrior has no fight goal, is not cuffed, not sparring (`+0x2e5`) and counts no hostiles
+   (`+0x152`). A hit with no window open opens one of 10 s (the Warrior's brain `+0x2dc` = now + 10000 ms; an
+   expired one is cleared with its count, byte `+0x2e4`); each later hit inside it adds 1 to the count, and the hit
+   that brings it to 3, **the fourth hit within 10 s** (or the second, while the chief's own brain byte `+0x2e4` shows
+   another Warrior already hitting back), clears the window and makes him push **AttackTarget**
+   (`AttackTargetGoal_Push(him, chief, 20000)`) for
+   20 s, after popping a TauntPlayer goal on top. When the chief is a war chief (`+0x3ac` = 1) with a command in
+   force, the command is re-issued as 0 and the chief's command menu is locked (`+0x42e` + player = 1). While one
+   hits back, the [player's update](ai.md#think-player) gives every free member within 15 m **TauntPlayer**: the
+   taunting ring.
+5. **Throws into teammates.** A thrown enemy strikes every body he flies into ([Throws](#throws)): he is no friend
+   of the teammate, so the bystander takes the crushing high reaction (300-303, a knockdown) with no health lost
+   (the −60 is never applied).
+6. **Walking and sprinting into a teammate** is the physics' contact 4: he is slid along and pushed by half the move
+   ([Physics: human contacts](physics.md#human-contacts)); there is **no knockdown** from running into anyone
+   (only the charge's capsule and an airborne body strike, `Human_OnContact` `0x00219d50`), and the charge's strike
+   on a teammate is a hit as in 3. A player who keeps walking head-on into a teammate at a jog or faster for 2 s
+   **trades places** with him (`Human_OnPushContact` `0x00219b08` → `Human_CanPush` `0x002320a0`, which sets each
+   one's position to the other's when neither is in a fight stance, busy or held).
+
+**Coney fixes** (owner item 10; the blocking itself is owner item 40, physics.md#human-contacts):
+
+1. Run the strike test against every human body, not only the opposed ones: Coney's `Humans::opposed` (the
+   `AiHumans` opposition, `!Gangs::friends`) currently gates the strike test as well as the targets, which is why the
+   player's punches pass through teammates.
+2. Keep friends out of every target pick, the grab and tackle search and the locks, as now; a grab next to a
+   teammate plays 71 then 69 and connects with nothing.
+3. A hit on a friend: impact and hit effect, no health lost (unless both are players), the reaction by hit code as
+   for an enemy, the complaint line `0x58` for a Warrior hit by a player with no target.
+4. Port `WarriorBrain_OnHitByChief`: the 10 s window, the fourth hit, AttackTarget on the chief for 20 s, the
+   taunting ring while it lasts, the command reset and menu lock.
+5. Thrown bodies strike teammates too (the knockdown with no damage).
+6. With the human blocking in (item 40): head-on contact at a jog or faster for 2 s swaps the two places.
+7. Tests: square into a teammate 0.8 m ahead plays a hit reaction on him and leaves his health unchanged; three such
+   hits within 10 s leave him alone and a fourth starts his AttackTarget on the player; circle with only a teammate in
+   reach plays 71 then 69.
+   Deferred: runtime (PCSX2, any street level with the crew following, the player behind a standing Warrior, stick
+   centred): press square four times 1 s apart and read the Warrior's health, clip ids and goal stack; tap circle
+   and read the player's clips (expected 71, 69).
+
 #### The fight stance {#fight-stance}
 
 **The fight stance is record `+0x00` bit `0x1` or `0x2`** (`0x00228340` tests `0x3`). Confirmed (code) at the cited
@@ -2474,9 +2703,10 @@ addresses:
   instead, and a scene drops the target). Distances are compared squared; "drop the target" is `0x00226f70` (refused
   while locked, state `0x8` and `0x4`) and "take" is `0x00226c30` (refused while locked, and for a human the target
   filter `0x00227d78` rejects). Confirmed (code), in this order:
-  0. **The nearest enemy** (`Player_FindNearestEnemy`, `0x0027b1a0`): the humans within **6 m** (`0x005104c4` = 36)
-     that the enemy filter `0x002791b0` accepts, nearest first, kept if `0x0021c240` agrees; with none, the current
-     target unless it is down (state `0x80000000` or `0x100000000`, or `0x00227dd8`). It also writes record `+0xd4` /
+  0. **The nearest enemy** (`Player_FindNearestEnemy`, `0x0027b1a0`): the humans within **3 m** (`0x005104c4`, 9
+     in play) that the enemy filter `TargetFilter_StanceEnemy` (`0x002791b0`, threats only: "What an attack does
+     to the lock" below) accepts, nearest first, kept if `0x0021c240` agrees; with none, the current target
+     unless it is down (state `0x80000000` or `0x100000000`, or `0x00227dd8`). It also writes record `+0xd4` /
      `+0xd8`. A current target that is down, knocked out or in a scene is dropped (and the lock bit `0x8` cleared)
      unless it is flying in a knockdown (`+0x08` `0x400000`).
   1. **The sprint**: state `0x1000000` is cleared, then set again while L2 is held with stamina (record `+0x14a`)
@@ -2488,7 +2718,7 @@ addresses:
      below), `Player_ExitStanceAndLock` (`0x002801e8`: `0x5` cleared, the combo count zeroed and, from the lock-on
      movement state, back to the free one), and a state code of `0xe` becomes 7.
   3. **An enemy within 2 m enters it**: when the movement state is not the lock-on one (`Human_FightStanceMove`), the
-     state word lacks `0x200000`, and the nearest enemy is within **2 m** (`0x005104bc` = 4) or the player is locked:
+     state word lacks `0x200000`, and the nearest enemy is within **2 m** (`0x005104bc`, 4) or the player is locked:
      nothing with an object of set 4 in hand; else `0x1008000` cleared, `Player_EnterStance` (`0x00280068`:
      `0x00230140`, then `0x1` if clear; `0x00230140` clears state `0x200000`, setting `0x20000000` when he is then free
      and still, and zeroes record `+0x114`), the nearest taken as the target (when there is none yet and `+0x08` has
@@ -2496,8 +2726,8 @@ addresses:
      `0x200000000000`, the lock (`Player_LockOn`, `0x00280158`: state `0x5`, and the lock-on movement state through
      `0x00221038`).
   4. **It holds** while the target timer (record `+0xf4`) runs and a target is kept; or, with the nearest within 2 m
-     and the target beyond **3 m** (`0x005104c0` = 9), the target is swapped for the nearest when `+0x08` is clear;
-     or the target is within 6 m.
+     and the target beyond **2.5 m** (`0x005104c0`, 6.25 in play), the target is swapped for the nearest when `+0x08`
+     is clear; or the target is within **3 m** (`0x005104c4`, 9 in play).
   5. **It ends** once the timer has run out, `+0x08` is clear and he is neither locked nor in state `0x8` with
      `0x200000` (`0x00227cd8`): the target is dropped; a stance in the lock-on or the free movement state is left
      through `0x002801e8` (a state code `0xe` → 7). Then, outside state `0x200000`, the nearest human on the brain's
@@ -2527,15 +2757,18 @@ back from update 20): with **L2 pressed at update 20**, the target went on the u
 wind-up), state `0x1000005`; on the first update after the clip (43) the movement state was the free one and the
 state word `0x1000000`, and Rembrandt turned to the stick at 22.5° per update and ran off (410 at 7.8 m/s by update
 50), never toward the target. **Without L2** he stayed locked (state `0x5`, `0x00241b90`) and walked backward facing
-the target (385, then 384, at 3.43 m/s) for 14 updates, until the target was dropped at 3.09 m (what dropped it there
-was not traced), then turned and ran. So a player who holds L2 after an attack never walks toward the old target.
+the target (385, then 384, at 3.43 m/s) for 14 updates, until the target was dropped at 3.09 m, then turned and
+ran. That drop is step 5 above: the first update with the target beyond the 3 m keep distance (`0x005104c4`, 9 in
+play) once the stance timer had run out (confirmed (code); the timer at that update was not read). So a player who
+holds L2 after an attack never walks toward the old target.
 
 **Lock-on** is the fight stance's movement state `0x00241b90` (the normal one is `0x00240e38`), confirmed (code):
 the human is **locked** when it has a human or object target and either L1 is held (`CfgLockOn`), or `CfgAutoLock`,
 `CfgAutoLockAndCombat` (1 in the street) or auto-combat is on. Locked, it **turns to face the target every update**
 and the stick (dead zone 0.12) moves it without turning, the stick's angle from the facing (record `+0xdc`) picking
 the combat-walk clips 380-387; unlocked, it turns to the stick. Blocking stops the movement. A target farther than
-2.5 m is dropped unless record `+0x00` has `0x8` or `0x4`.
+2.5 m (`0x005104c0`, 6.25 in play) is not dropped here but **ignored** unless `Human_IsLocked` (state `0x8` and
+`0x4`, L1): the walk turns to the stick as unlocked; the drop is the stance update's, at 3 m (step 5 above).
 
 **L1**: pressed (`0x0027da10`) or held (`0x0027dc00`), it sets record `+0x00` `0x8`, enters the stance and picks a
 target; released (command 8, `0x00227b98`), it clears `0xc` and opens a 264 ms window in which a second tap picks and
@@ -2555,7 +2788,8 @@ not the script's):
 | --- | --- | --- | --- | --- | --- | --- |
 | Clip | 380 forward | 381 forward right | 382 right | 383 back right | 384 back | 387 forward left |
 
-A target that the walk took beyond 2.5 m was dropped and the player went back to the walk start 413.
+A target that the walk took beyond 2.5 m was dropped and the player went back to the walk start 413 (by the code the
+walk ignores the target beyond 2.5 m and the stance drops it beyond 3 m; that run did not tell the two apart).
 
 **Combat-walk speed.** `0x00241b90` normalises the stick vector (dead zone 0.12) and multiplies it by `0x00221710`'s
 speed, so the stick's deflection does not change the speed (confirmed (code)). The clips 380-387 each cover 2.4 m in
@@ -2579,6 +2813,62 @@ for is the stick's direction × 3.429 every update (`0x00241b90`, record `+0x164
 magnitude and then walks the pair backward at 1.125 m/s (front hold) or about 1.22 m/s (rear hold), as in [Moving a
 grab](#grab-turn). So a 35 % stick moves a grab not at all, a fight stance at 3.429 m/s, and the free player at the
 walk speed.
+
+**What an attack does to the lock** (the armed run sweep 501 and the moving attacks; confirmed (code) at the
+addresses cited):
+
+- **The pick is not a lock.** `Player_Square`'s armed branch (`0x00286cc8`, held set 1-3) calls
+  `Player_PickTarget(2.5 m)` and stores the result as the target (`Human_SetTargetObject`) for a pad player, at a run
+  too; the unarmed 23 and 24 do the same with 2.0 m. None of them calls `Player_EnterStance` or `Player_LockOn` on
+  that path: the armed run branch goes straight to `Player_StartCharge(h, 501)`.
+- **No pull and no turn.** `Player_StartCharge` (`0x00264a80`), which plays 23, 24 and 501, only warns the target
+  (`Human_WarnOfAttack`) and pushes the clip holding `0x1000000`: no `Attack_SteerToTarget`, no turn, no slide.
+- **No stance logic during the clip.** `0x1000000` is inside the dispatcher's busy gate `0x5c7fee0`
+  (`Player_UpdateActions`, `0x0027c120`), so `Player_UpdateStanceOrIdle` / `Player_UpdateSprint` (`0x0027ce90`) do
+  not run while 501 plays: nothing enters the stance or locks during the sweep.
+- **After the clip, running keeps it free.** The gait is human `+0x1a8`, set from the speed by
+  `Human_SetMoveVelocity` (`0x0023cf00`). With the run resumed (gait 4, `+0x08` clear) `Human_IsRunningFree` holds,
+  `Player_UpdateSprint` returns early (and, as the player is not in a stance, drops nothing). The target stays in
+  `+0xc8`, but the movement state is still the free `Human_PlayerLocomotion` (`0x00240e38`), which turns to the
+  stick: a stored target alone never steers the player. Only `Player_LockOn` (`0x00280158`) installs the lock-on
+  movement `Human_FightStanceMove` (`0x00241b90`), and only from step 3 of the stance update (nearest enemy within
+  2 m, not running) or L1.
+- **The lock-on movement faces the target only within 2.5 m.** `Human_FightStanceMove` treats the target as absent
+  when its distance² is above `0x005104c0` (6.25 in play, 2.5 m) unless `Human_IsLocked` (state `0x8` and `0x4`, L1;
+  the auto-lock's state `0x5` is not enough), or when the target lacks type bits `0x100040`; then it turns toward the
+  stick, capped per update by `Human_MaxTurn`, instead of snapping to the target. With no target at all it hands
+  control back to `0x00240e38`. The stance update drops the target beyond 3 m once its timer has run out (step 5).
+- **Only a threat is auto-locked.** The stance's nearest-enemy search (`Player_FindNearestEnemy`, `0x0027b1a0`, 3 m)
+  filters with `TargetFilter_StanceEnemy` (`0x002791b0`, a function defined on this branch): the other must be a human
+  whose object query (vtable `+0xf4`) holds, targetable (`0x00227d78`: not flag `0x100000000000`), not friendly
+  (`Human_IsFriendly`, `0x00222a90`), not a pad player, within 2 m in height (`0x00510970`), **a threat**
+  (`Human_IsThreatTo`, `0x00222a48`: `Brain_IsThreat`, the two gangs are enemies or both are players), and neither
+  down nor dead (`0x00227e60`), nor in state `0xe0000` (`0x00223b48`), nor holding `0x40` (`0x00223c10`). A neutral
+  civilian, whose gang is no enemy of the Warriors, is refused, so **walking past a civilian never enters the stance
+  or locks** (owner item 14); one does once his gang has been made an enemy (a civilian of kind 3 who fights back,
+  `Hostile_Attack`, [AI goals](ai-goals.md)). The attack picks are wider: `TargetFilter_Enemy` (`0x00279410`) and
+  `0x00279568` skip only allies and the same gang, so square still picks and hits a civilian, without locking.
+
+**Where Coney differs** (as of this branch's base), and the fix for the implementer:
+
+- **The spin (item 34).** `Fighter::steer()` exempts only the charge (id 0), so 23, 24 and 501 pick a target and turn
+  and slide onto it (`steerOnto`); and `Fighter::lockTarget()` treats any target as a lock, so the target an attack
+  picked puts the player in `Human::combatWalk` as soon as the clip ends. `combatWalk` sets the heading straight to
+  the target every update (no cap, out to 2.5 m) and moves at the combat-walk speed, so the gait is never Run and
+  `trackTarget`'s "running drops it" never fires: walking past the enemy swings the heading round it every update.
+- **The civilian lock (item 14).** The player's targets list (`Humans::gatherTargets` with `AiHumans`' opposition
+  `!Gangs::friends`) holds every non-friend, neutral civilians included, and `trackTarget`'s stance step takes the
+  nearest of them within 2 m (`kStanceEnterRange`), searching 6 m (`kStanceTrackRange`) where the original searches 3 m.
+- **Fix.** (1) Play 23, 24 and 501 as `Player_StartCharge` does: warn the picked target, no steer or slide. (2) Keep
+  the target and the lock apart: an attack's pick only stores a target; the lock-on movement (`combatWalk`) runs only
+  after the stance step (nearest threat within 2 m, not running, outside an attack) or L1, and ends on running,
+  sprinting or L2 as `Player_UpdateSprint` does. (3) In the lock-on walk face the target only within 2.5 m (or while
+  L1 locks); beyond it turn to the stick at most `Human_MaxTurn` per update. (4) Drop the target beyond 3 m once the
+  stance timer has run out; search the stance's nearest enemy within 3 m and only among threats (gangs enemies, both
+  players), keeping the wider list for the attack picks. Take 2 / 2.5 / 3 m from `CfgDistances`, not the executable's
+  defaults. Tests: a bat sweep at a full run past an enemy 1.5 m to the side keeps the heading on the stick for all of
+  501 and the run resumes with no lock; a stick at 60 % walking past a neutral civilian at 1 m never locks or turns;
+  the same past an enemy-gang member within 2 m locks and faces him.
 
 **Turning into an attack** (`Attack_Start`, `0x002625a8`): with the target within the attack's far range, it tells
 the target (`0x0021d5c0`) and steers with `0x002761c8`: turn and slide so that the target, moved by its velocity over
@@ -2667,7 +2957,7 @@ human `+0x1b0` = −1), confirmed (code) at the addresses cited:
   (`Human_SyncTargetFromBrain`, `0x00226ee8`). Square (`0x00286cc8`) and cross (`0x00287a18`) call
   `Player_PickTarget` only for a player, so an AI strikes its brain's target; square alone falls back to
   `Player_PickTarget` (2 m, the nearest foe within 54° of the facing, [Target selection](#targets)) when that target
-  is more than **2.87 m** away (distance² above `0x005104c0` = 8.25). The steer onto the target is the player's
+  is more than **2.5 m** away (distance² above `0x005104c0`, 6.25 in play). The steer onto the target is the player's
   ([Turning into an attack](#fight-stance)).
 - **The stick.** `Player_GetAimHeading` (`0x0021d1a0`) and the snap test read the per-player record's stick, which an
   AI's attack action clears and then writes only when the action has an angle (magnitude 1.0,
@@ -3032,6 +3322,7 @@ alignment helpers and revives.
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
 | `0x002790a8` | `Target_AngleFromAimHeading` | The absolute angle between the heading to another and record +0xd4 (the heading the pick wrote), 0 to pi. | confirmed (code) |
+| `0x002791b0` | `TargetFilter_StanceEnemy` | The stance's nearest-enemy filter: a targetable, unfriendly, non-pad human within 2 m in height who is a threat (gangs enemies), not down, dead or held; a neutral civilian is refused. | confirmed (code) |
 | `0x002792c8` | `TargetFilter_LockFirst` | The L1 search's first filter (6 m, 63 degrees): a targetable human of another gang, not friendly, not down or airborne, within the angle; a player's own record decides some cases. | confirmed (code) |
 | `0x002797b0` | `TargetFilter_AnyAngle` | An enemy human at any angle: other gang, not friendly, within 2 m of height, not down or airborne. | confirmed (code) |
 | `0x002798c0` | `TargetFilter_AlongFirst` | Human_FindTargetAlong's first filter: an enemy human within the angle, not down, without some held flags. | confirmed (code) |

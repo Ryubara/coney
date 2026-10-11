@@ -130,6 +130,7 @@ missions:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
       - {title: "The fourth mission's brain and human calls", path: "research/ai.md#coney"}
       - {title: "Spawners", path: "research/ai.md#spawners"}
+      - {title: "The riot's crowd, and what Coney lacks", path: "research/scripting.md#level34-start"}
       - {title: "Cars", path: "research/cars.md"}
     questions:
       - "How Coney's objects and stores give the riot's smash and loot acts their targets (the original's are on the AI page)."
@@ -446,6 +447,7 @@ missions:
       default: not-started
     research:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+      - {title: "Armies of the Night: the way in, the pieces and what Coney needs", path: "research/armies.md"}
   - level: 61
     group: armies
     slot: Armies of the Night 2
@@ -458,6 +460,7 @@ missions:
       default: not-started
     research:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+      - {title: "Armies of the Night: the way in, the pieces and what Coney needs", path: "research/armies.md"}
   - level: 62
     group: armies
     slot: Armies of the Night 3
@@ -470,6 +473,7 @@ missions:
       default: not-started
     research:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+      - {title: "Armies of the Night: the way in, the pieces and what Coney needs", path: "research/armies.md"}
   - level: 63
     group: armies
     slot: Armies of the Night 4
@@ -482,6 +486,7 @@ missions:
       default: not-started
     research:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+      - {title: "Armies of the Night: the way in, the pieces and what Coney needs", path: "research/armies.md"}
   - level: 64
     group: armies
     slot: Armies of the Night 5
@@ -494,3 +499,4 @@ missions:
       default: not-started
     research:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+      - {title: "Armies of the Night: the way in, the pieces and what Coney needs", path: "research/armies.md"}
