@@ -97,12 +97,26 @@ The person who submits or merges the work answers for it. The full rule is in [L
 
 ## Pull requests
 
-- A pull request with one feature is squash-merged, and the pull request title becomes the commit title, so it
-  follows the same `area: Verb the rest` format.
-- A pull request with several features is shaped into one commit per feature before review, and is rebase-merged.
+- Every pull request is squash-merged: its commits become one commit on `main`, and the pull request title becomes
+  the commit title, so it follows the same `area: Verb the rest` format. A pull request holds one feature, so that
+  the commit it becomes also reverts as one. The commits inside it still follow the title rules (CI checks them).
 - CI must pass.
 - Fill in the pull request template: what and why, the checklist, and which AI tools helped, if any.
 - Keep a pull request to one subject. Unrelated changes belong in separate pull requests.
+
+### Working from a fork
+
+Without write access to the repository, work from a fork:
+
+1. Fork the repository on GitHub, clone your fork, and add the project's repository as a second remote called
+   `upstream`.
+2. Create a branch from `main` for each change, never work on your fork's `main`: `git switch -c <branch>`.
+3. Run the checks above, commit with titles in the `area: Verb the rest` form, and push the branch to your fork.
+4. Open a pull request from your branch into the project's `main`; GitHub offers it as a banner on the project's page.
+   A maintainer approves CI for a first-time contributor, then the pull request is reviewed and squash-merged.
+5. Push further commits to the same branch to update the pull request. Run `git fetch upstream` and rebase on
+   `upstream/main` if it conflicts. Leave "Allow edits by maintainers" on, so a maintainer can fix a small thing
+   in place.
 
 ## Agents
 

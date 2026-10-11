@@ -1,6 +1,6 @@
 # Commit review checklist
 
-For a reviewer of a branch's commits before it is pushed, or of a pull request. The title rules are in the
+For a reviewer of a pull request's title and commits before it is squash-merged. The title rules are in the
 "Commits and GitHub" section of [AGENTS.md](repo:AGENTS.md); the areas,
 with what each covers, and the verbs are in
 [`.github/commit-conventions.json`](repo:.github/commit-conventions.json),
@@ -31,13 +31,13 @@ Get the messages with `git log --format=%B <base>..<tip>`.
 
 ## Checklist, across the branch
 
-- [ ] **The branch is squashed into feature-sized commits:** no work-in-progress commits and no fix of a fix; a fix
-  to a feature on the same branch is folded into it.
-- [ ] **The order is buildable:** no commit depends on a later one.
+- [ ] **The pull request is one feature:** its title is the commit that lands on `main` (the merge is a squash), so
+  it follows the title rules, and unrelated changes belong in a separate pull request. Commits inside it may be
+  work in progress; they are dropped by the squash.
 
 ## Severity examples
 
 - **Critical:** a commit that does not build or fails the checks; game data in a commit.
 - **Important:** a title outside the areas, or over 72 characters; an email address other than the agent's noreply
-  one; a fix-of-a-fix left unsquashed.
+  one; a pull request that mixes unrelated features.
 - **Minor:** a body wrapped past 72 columns; a body that is vague about why.
