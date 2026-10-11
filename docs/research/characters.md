@@ -2809,7 +2809,8 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   and works out (no movement or fighting) with the start, repetition and end callbacks; a player pumps with cross and
   quits with triangle, the effort decaying by `CfgWorkoutParams`' second table. **Stand-ins**: a workout begins within
   1.5 m of the equipment, a repetition lasts 1.5 s at an effort of 1, and no workout or dynamic clip plays; combat
-  mode and the gear are kept, their context actions not built.
+  mode and the gear are kept, their context actions not built. The original's workouts, every station and why
+  Coney's start does nothing: [Workouts](workouts.md).
 - **Names**: `@orig` names for addresses the research describes but does not name (such as `Human_SnapToGround`,
   `GaitBlend_Advance`, `PhysicsBody_PushOutOfWalls`) are Coney's.
 
@@ -2869,8 +2870,8 @@ read them yet.
 
 ## Open questions
 
-- The workout's reach and timing: how near the equipment the start clip (691) begins, and how the loop clips'
-  length sets a repetition.
+- **The workout's reach and timing** (answered): the scripts make the player his own target, so the reach always
+  passes, and a repetition is each wrap of the loop blend's leading clip ([Workouts](workouts.md#repetitions)).
 - Where god mode (`0x10`) is tested: Coney drops the damage and still plays the reaction.
 - What the arrest (state `0x20000`) plays and allows, and which human states `HuIsAlive`'s mask `0x180050000` names.
 
