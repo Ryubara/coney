@@ -774,6 +774,7 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
         m_frozenStepDone = true;
     }
     updateUncuff();
+    updateRevive();
     updateHiding();
     m_scripts.setTime(nowMs);
     callPadHandler();

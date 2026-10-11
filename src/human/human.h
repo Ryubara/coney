@@ -624,6 +624,17 @@ class Human final : public Holdable {
     /// The cuffed human's end: freed, 333 `ANIM_ARREST_RELEASE_END_REACT` paired to `freer` then his idle; still
     /// cuffed, back to 320.
     void endUncuffReact(const Human& freer, bool freed);
+    /// The reviver's half of a revive (docs/research/combat.md#revive): he turns to the downed human at `downed` over
+    /// 0.1 s and plays 351 `gen_revive_begin`, then 353 `gen_revive_end`, then his idle (through 389 out of the fight
+    /// stance, the fight idle in it), after a 0.01 s blend, each clip holding `0x8000000`.
+    void startRevive(anim::Vec3 downed);
+    /// Whether 351 `gen_revive_begin` plays: the revive's first clip, at whose end the flash is spent.
+    [[nodiscard]] bool reviveBeginPlaying() const;
+    /// Whether 353 `gen_revive_end` plays: 351 ended and the reviver goes on to his idle.
+    [[nodiscard]] bool reviveEndPlaying() const;
+    /// The revived human's half: healed in full (wounding over, his health back, up from the ground, as `HuRevive`)
+    /// and up with 354 `gen_revive` paired to `reviver`, then his idle.
+    void playRevived(const Human& reviver);
     /// Turns to face `point` over `seconds` of updates, whatever plays (`Human_TurnToFacePoint`); the human stays where
     /// he stands. A Warrior handed a swap turns to the presser this way.
     /// @orig 0x00221c20 Human_TurnToFacePoint (unknown)

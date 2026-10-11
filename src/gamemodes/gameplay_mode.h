@@ -443,6 +443,19 @@ class GameplayMode final : public GameMode {
     [[nodiscard]] std::string talkPrompt() const;
     // The revive prompt, `GSTRING.HUD` 4, while a partner is revivable and player 1 holds a flash; empty otherwise.
     [[nodiscard]] std::string revivePrompt() const;
+    // The revive (gameplay_revive.cpp, docs/research/combat.md#revive). Each frame after the level's step: d-pad left
+    // (command 0x27) tries a revive, and a revive under way finishes when the reviver's 351 ends, or is dropped when
+    // something else took his body or the downed human went.
+    void updateRevive();
+    // D-pad left: `reviver` (player 1) revives the partner revivableInReach() finds when the tests pass, says 76 and
+    // plays his clips; false when refused.
+    // @orig 0x00286ba8 Player_TryRevive (unknown)
+    // @orig 0x002752a0 Revive_Start (unknown)
+    bool tryRevive(ai::Brain& reviver);
+    // 351 ended: a flash spent (the downed human's first), cue 23, the revived says 75, is healed and gets up with
+    // 354.
+    // @orig 0x00274ee0 Revive_Finish (unknown)
+    void finishRevive(ai::Brain& reviver, ai::Brain& revived);
     // Triangle by a cuffed human (`ContextAction_Use` kind 0): `freer` starts the mash; false when none is in reach.
     bool startUncuff(human::Human& freer);
     // Each frame after the level's step: installs the triangle hook on player 1, and ends a mash that has an outcome,
@@ -513,6 +526,12 @@ class GameplayMode final : public GameMode {
         double cuffed = 0;
     };
     std::optional<Uncuff> m_uncuff;
+    // A revive under way: the reviver's and the downed human's handles, until the reviver's 351 ends.
+    struct Revive {
+        double reviver = 0;
+        double downed = 0;
+    };
+    std::optional<Revive> m_revive;
     const human::Human* m_uncuffHooked = nullptr; // the human the triangle hook is on
     double m_tagTicks = 0.0;                      // 60 Hz ticks not yet given to the tag spots
     world_objects::FlagNet m_flagNet;             // the level's flag network (FlagNetAddLink)

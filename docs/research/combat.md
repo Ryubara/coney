@@ -2922,7 +2922,36 @@ given:
    idle loop (through 389 out of the stance), push sphere off, held flag `0x8000`.
 
 So the whole revive is clip 351 on the reviver (the flash spent and the heal at its end), then 353 on him and 354 on
-the revived together. Coney: [the gaps](ai.md#crew-gaps).
+the revived together.
+
+**Coney** builds it for player 1 (`repo:src/gamemodes/gameplay_revive.cpp`, `repo:src/human/human_revive.cpp`, the
+tests as `combat::mayRevive` in `repo:src/combat/revive.h`): d-pad left beside a revivable partner, the tests above,
+76, the chain 351, 353 and the idle (through 389 out of the stance) holding `0x8000000`, and at 351's end the flash,
+cue 23, 75, the full heal and 354. A Warrior downed in a fight (his health gone) counts as knocked out, as one a script
+knocked out does; before this only the script's mark was read, so beside a Warrior downed in a fight neither the prompt
+nor the revive came (owner item 8). Readings and stand-ins:
+
+- **Blocked** is the swap prompt's reading of the state mask (knocked out, cuffed, wounded) plus anything that keeps
+  him off his feet (down, held, in the air); "any held flag" is the record bits his clips hold.
+- **The way** is taken as clear (**stand-in**: the 0.2 m capsule sweep of `Human_IsWayClearTo` is not built; the
+  search has already found him in sight).
+- **The led steer** only turns the reviver to the downed human's head over 0.1 s; he does not slide (**Coney's
+  reading**: whether the Anim Range List gives 351 a reach is not on this page).
+- The pair ids, `Human_SetPartner`, the `+0xe4` calls and the push spheres have no counterpart.
+- **A 351 cut short** (a hit) spends nothing and heals nobody (**Coney's reading**).
+- The revived plays 354 then his idle, without 389 and without holding `0x8000`.
+- Not built: an AI Warrior reviving ([SaveHuman](ai-goals.md#goal-save-human)), a co-op partner's flash.
+
+Open questions (research needed):
+
+- **What makes a crew Warrior revivable** (human flag `0x4`). In Coney's `level80` the crew (brain type 3 in player 1's
+  gang) never gets it: `Human_MakePlayer` sets it only on players, and the level's own `HuSetRevivable` calls (two, at
+  checkpoint 3) are for type-2 humans, not the crew. So in Coney a Warrior downed in a fight is not revivable unless a
+  script flags him; the disc test flags him with `HuSetRevivable` itself. Which code sets it on the crew in the
+  original (a brain type's set-up, a gang join, a config record), or whether the crew there is revivable at all?
+- Does `Revive_Finish` run when something cuts 351 short?
+- Does the Anim Range List give 351 a reach and the led flag?
+- At runtime: the clip order 351 then 353 with 354, and the time from the press to the heal (issue #76).
 
 ### Target selection {#targets}
 

@@ -2700,14 +2700,15 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   mugs, steals a stereo or picks a lock; a held human set up for interrogation gives `GSTRING.HUD` 0 (interrogate,
   whatever he carries), one with money or a pocket item who may be mugged gives
   `GSTRING.HUD` 1; else a knocked-out partner to revive gives 4 (`GameplayMode::revivableInReach()`: the nearest
-  revivable human friendly to him within 3 m, not cuffed, in sight, while player 1 holds a flash; the states
-  `0x80000000` and `0x100000000` are not modelled); else the context records by kind: an action object's own text
-  (1), a pickable door 15 (2), a freed car stereo 16 (3), a dealer's offer (4: his type's prompt, 6 for the flash,
-  while his goal registers it, from the greeting on, within 1.75 m). A prompt naming the dealers' goods wakes the
-  player panel. Last, a [talkable](#talk-prompt) Warrior or co-op partner within 1.5 m (`GameplayMode::talkPrompt()`)
+  revivable human friendly to him within 3 m, knocked out (his health gone or a script's), not cuffed, in sight,
+  while player 1 holds a flash; the states `0x80000000` and `0x100000000` are not modelled); else the context
+  records by kind: an action object's own text (1), a pickable door 15 (2), a freed car stereo 16 (3), a dealer's
+  offer (4: his type's prompt, 6 for the flash, while his goal registers it, from the greeting on, within 1.75 m).
+  A prompt naming the dealers' goods wakes the player panel.
+  Last, a [talkable](#talk-prompt) Warrior or co-op partner within 1.5 m (`GameplayMode::talkPrompt()`)
   gives the swap string his brain's think set ([AI](ai.md#coney): `GSTRING.HUD` 0xc-0xe while one of the two holds
-  an object), else his own text (`ScriptState::talkText`), else HUD string 9; triangle swaps ([AI](ai.md#coney)). The action
-  object's
+  an object), else his own text (`ScriptState::talkText`), else HUD string 9; triangle swaps ([AI](ai.md#coney)).
+  The action object's
   second text
   (`SetMsgHandlerEx`'s `prompt2`)
   is queued as a priority-0 hint while it is in reach and withdrawn when it changes or leaves.
@@ -2717,12 +2718,16 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   known (`repo:src/gui/markup.h`). Tests: `repo:tests/hud/hud_test.cpp` (a prompt starting with the action button),
   `repo:tests/gui/text_layout_test.cpp`, and the disc check `"[disc][text]"`, which finds the triangle in all three
   swap prompts (`0xc`-`0xe`) and a stick picture in the revive prompt 4.
-- **The prompt beside a downed Warrior** (owner item 8, "no revive prompt"): Coney's revive step matches the original (a
-  flash is needed), and the swap prompt (`repo:src/ai/swap_prompt.h`) now has the blocked test, for the Warrior and the
-  player alike, as far as Coney models the mask's states (knocked out, by health or by a script, arrested, wounded), so
-  beside a downed Warrior no "Give Weapon" shows. A Warrior's brain that a script knocked out is off in Coney (BrDead),
-  so its think clears the prompt instead (`Brain::think`). Still to do: a playthrough test holding a flash to see string
-  4 (crew revive belongs to the revive work), and the player's own knocked-out gate on the other prompt steps.
+- **The prompt beside a downed Warrior** (owner item 8, "no revive prompt"): Coney's revive step read only a script's
+  knock-out, so a Warrior downed in a fight (his health gone) gave no prompt; it now counts both, a flash is still
+  needed, and d-pad left revives him ([Combat: revive](combat.md#revive)). He must also be revivable (flag `0x4`),
+  which Coney's crew is not unless a script says so: an open question on that page. The disc test
+  `repo:tests/platform/disc_revive_test.cpp` flags a `level80` Warrior with `HuSetRevivable`, downs him, walks player 1
+  to him with the stick at 60 % and sees no prompt without a flash, string 4 with one, then the revive. The swap prompt
+  (`repo:src/ai/swap_prompt.h`) has the blocked test, for the Warrior and the player alike, as far as Coney models
+  the mask's states (knocked out, by health or by a script, arrested, wounded), so beside a downed Warrior no "Give
+  Weapon" shows. A Warrior's brain that a script knocked out is off in Coney (BrDead), so its think clears the prompt
+  instead (`Brain::think`). Still to do: the player's own knocked-out gate on the other prompt steps.
 - **The stereo-theft panel** (`repo:src/hud/stereo_hud.h`, stepped by `PlayLevelMode::stepStereoPanel()`) as
   [the stereo panel on screen](#stereo-layout) says: up from the triangle press, the arrow round the backdrop's
   corners by stage, the gauge sized and turned by the angle turned and dropping by a doubling step while a stage is
