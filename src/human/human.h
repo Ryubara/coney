@@ -447,7 +447,7 @@ class Human final : public Holdable {
     // it. Each acts at once; the flags and the state keep across spawn().
 
     /// The flag word (human `+0xe0`, human/human_flags.h), kept by its fighter.
-    [[nodiscard]] std::uint64_t flags() const { return m_fighter.flags(); }
+    [[nodiscard]] std::uint64_t flags() const override { return m_fighter.flags(); }
     [[nodiscard]] bool hasFlag(std::uint64_t bit) const { return m_fighter.hasFlag(bit); }
     /// Sets (`on`) or clears the bits of `bits`.
     void setFlag(std::uint64_t bits, bool on) { m_fighter.setFlag(bits, on); }

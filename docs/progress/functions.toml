@@ -4598,6 +4598,12 @@ subsystem = "Human"
 size = 64
 
 [[function]]
+address = 0x002356c8
+name = "Human_IsInScene"
+subsystem = "Human"
+size = 64
+
+[[function]]
 address = 0x00235718
 name = "Human_IsArrested"
 subsystem = "Human"
@@ -4606,6 +4612,12 @@ size = 64
 [[function]]
 address = 0x00235758
 name = "Human_IsPlayer"
+subsystem = "Human"
+size = 64
+
+[[function]]
+address = 0x00235798
+name = "Human_IsHidden"
 subsystem = "Human"
 size = 64
 
@@ -4624,6 +4636,12 @@ size = 136
 [[function]]
 address = 0x00235a28
 name = "Human_SetGodMode"
+subsystem = "Human"
+size = 96
+
+[[function]]
+address = 0x00235a88
+name = "Human_SetKillerMode"
 subsystem = "Human"
 size = 96
 
@@ -4667,6 +4685,12 @@ size = 96
 address = 0x00235db0
 name = "Human_SetRevivable"
 subsystem = "Human"
+
+[[function]]
+address = 0x00235e10
+name = "Human_SetDoubleDamage"
+subsystem = "Human"
+size = 96
 
 [[function]]
 address = 0x00235e70
@@ -4775,6 +4799,12 @@ subsystem = "Human"
 size = 120
 
 [[function]]
+address = 0x002376a0
+name = "Human_SetWoundable"
+subsystem = "Human"
+size = 96
+
+[[function]]
 address = 0x00237700
 name = "Human_SetArrested"
 subsystem = "Human"
@@ -4809,6 +4839,18 @@ name = "Human_SetBlockJump"
 subsystem = "Human"
 
 [[function]]
+address = 0x00237a28
+name = "Human_BlockGrab"
+subsystem = "Human"
+size = 112
+
+[[function]]
+address = 0x00237b00
+name = "Human_SetBlockRearGrab"
+subsystem = "Human"
+size = 112
+
+[[function]]
 address = 0x00237b70
 name = "Human_SetBlockTackle"
 subsystem = "Human"
@@ -4830,6 +4872,12 @@ address = 0x00237d48
 name = "Human_GetHeldObject"
 subsystem = "Human"
 size = 112
+
+[[function]]
+address = 0x00237db8
+name = "Human_IsInCombat"
+subsystem = "Human"
+size = 72
 
 [[function]]
 address = 0x00237e70
@@ -4886,6 +4934,18 @@ size = 88
 address = 0x002383a0
 name = "Human_SetLOSRange"
 subsystem = "Human"
+
+[[function]]
+address = 0x002383e8
+name = "Human_SetHearRange"
+subsystem = "Human"
+size = 72
+
+[[function]]
+address = 0x00238430
+name = "Human_SetHelpHearRange"
+subsystem = "Human"
+size = 72
 
 [[function]]
 address = 0x00238478
@@ -5080,6 +5140,12 @@ address = 0x0023a210
 name = "Human_SetNormalMode"
 subsystem = "Human"
 size = 72
+
+[[function]]
+address = 0x0023a258
+name = "Human_SetRubberNeck"
+subsystem = "Human"
+size = 104
 
 [[function]]
 address = 0x0023a2c0
@@ -6383,6 +6449,12 @@ subsystem = "Human"
 address = 0x00290328
 name = "Brain_MakeGangsEnemies"
 subsystem = "Human"
+
+[[function]]
+address = 0x002904a0
+name = "Brain_IsEngaged"
+subsystem = "Human"
+size = 60
 
 [[function]]
 address = 0x002906b8
@@ -9016,16 +9088,82 @@ subsystem = "Scripting"
 size = 56
 
 [[function]]
+address = 0x00358b38
+name = "HuRubberNeck"
+subsystem = "Scripting"
+size = 96
+
+[[function]]
+address = 0x003590e0
+name = "HuBlockGrab"
+subsystem = "Scripting"
+size = 96
+
+[[function]]
+address = 0x00359140
+name = "HuBlockRearGrab"
+subsystem = "Scripting"
+size = 96
+
+[[function]]
+address = 0x00359a80
+name = "HuSetDoubleDamage"
+subsystem = "Scripting"
+size = 96
+
+[[function]]
+address = 0x0035ab00
+name = "HuSetWoundable"
+subsystem = "Scripting"
+size = 96
+
+[[function]]
 address = 0x0035b398
 name = "HuGetGang"
 subsystem = "Scripting"
 size = 88
 
 [[function]]
+address = 0x0035b668
+name = "HuIsInScene"
+subsystem = "Scripting"
+size = 76
+
+[[function]]
+address = 0x0035b758
+name = "HuIsHidden"
+subsystem = "Scripting"
+size = 76
+
+[[function]]
+address = 0x0035b980
+name = "HuSetKillerMode"
+subsystem = "Scripting"
+size = 96
+
+[[function]]
 address = 0x0035bbc8
 name = "HuSetMaxHealth"
 subsystem = "Scripting"
 size = 120
+
+[[function]]
+address = 0x0035bfe0
+name = "HuInCombat"
+subsystem = "Scripting"
+size = 76
+
+[[function]]
+address = 0x0035c278
+name = "HuSetHearRange"
+subsystem = "Scripting"
+size = 116
+
+[[function]]
+address = 0x0035c2f0
+name = "HuSetHelpHearRange"
+subsystem = "Scripting"
+size = 116
 
 [[function]]
 address = 0x0035d218
@@ -9502,6 +9640,12 @@ address = 0x0036ca18
 name = "GetPosition"
 subsystem = "Scripting"
 size = 112
+
+[[function]]
+address = 0x0036cb70
+name = "IsAHuman"
+subsystem = "Scripting"
+size = 76
 
 [[function]]
 address = 0x0036cdc0
@@ -10093,6 +10237,12 @@ address = 0x00385a50
 name = "Object_GetPosition"
 subsystem = "Scripting"
 size = 184
+
+[[function]]
+address = 0x00385b90
+name = "IsHumanHandle"
+subsystem = "Scripting"
+size = 36
 
 [[function]]
 address = 0x00385bb8

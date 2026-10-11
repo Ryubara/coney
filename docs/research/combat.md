@@ -4225,6 +4225,12 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
   breaks the pair.
 - **The clips' `+0x44` flags** (paired `0x1`, tackle `0x20`, grab `0x40`): which clips carry the tackle flag
   ([Strong grapple](#strong-grapple)).
+- **Killer and double damage in a hold**: whether the moves in a grab (`Grab_Strike`), the power strikes and the
+  throws reach `Human_AddPendingDamage`'s doubling and `Strike_Contact`'s killer rule. Coney applies both to free
+  strikes only ([Human flags](#human-flags)).
+- **A player with both grab-block flags** (`0x40000000` and `0x80000000`, `HuBlockGrab`): whether
+  `Player_GrabOrTackle` (`0x00284920`) also refuses the tackle, and whether the refused tap plays the intro and the
+  miss. Coney refuses the grab only, and plays nothing.
 - **226's knockdown word at runtime**: the disc's 226 has its type-7 word 0, which would queue 198, yet at runtime
   `Attack_StartPaired` took the branch without 198 ([The mount power strike](#mount-power)). To find out,
   rerun `moves_mount_power` with a hook at `Anim_GetKnockdownValue` (`0x00101a60`) logging its argument and return on
