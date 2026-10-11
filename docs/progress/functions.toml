@@ -2524,10 +2524,22 @@ subsystem = "Graphics"
 size = 80
 
 [[function]]
+address = 0x0018fa68
+name = "ThrowArc_BuildStrip"
+subsystem = "Graphics"
+size = 1144
+
+[[function]]
 address = 0x0018fee0
 name = "Human_TraceThrowAim"
 subsystem = "Graphics"
 size = 1704
+
+[[function]]
+address = 0x00190588
+name = "ThrowArc_Render"
+subsystem = "Graphics"
+size = 352
 
 [[function]]
 address = 0x001906e8

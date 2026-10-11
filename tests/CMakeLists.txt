@@ -54,6 +54,7 @@ add_executable(coney_tests
     graphics/font_test.cpp
     graphics/frame_stats_test.cpp
     graphics/car_draw_test.cpp
+    graphics/throw_arc_test.cpp
     graphics/human_blood_test.cpp
     graphics/human_lighting_test.cpp
     graphics/light_manager_test.cpp

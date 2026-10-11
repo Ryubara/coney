@@ -1858,6 +1858,7 @@ Coney's stand-ins for the world objects, where this page is silent:
   meets is kept for `HuIsAimingAt`, `HuGetControlName` gives `throwControl`, and a throw from the aim leaves from the
   release point with the aim's velocity. Stand-ins: the sweeps are sampled every 0.1 m along a segment (not
   `IPhysics_CollideShape`), humans are 2 m upright capsules, cars are not met, a target's point is a fixed head
+<<<<<<< HEAD
   height, and the lock-on's friendly case is not modelled (Coney's lock never takes a friend). The arc is not drawn.
 - **Wear and breaks in flight** ([above](#throws); `world_objects::LooseObjects`, `world_objects::Props::breakFlying`,
   the play mode's `flyingBreak`): a throw sets the flying object's body flag 1 and keeps its thrower. Each contact
@@ -1887,6 +1888,18 @@ Coney's stand-ins for the world objects, where this page is silent:
   not on these pages yet (open question). Stand-ins: the speed tested against 2 m/s is the object's speed as it meets the
   surface (the research does not say which); the pieces never fade (message `0x15`, the age and the view test are not
   built), and the register's piece spills no money.
+=======
+  height, and the lock-on's friendly case is not modelled (Coney's lock never takes a friend). The arc is drawn
+  with stand-in colours and fade ([Graphics](graphics.md#coneys-implementation)).
+- **A thrown bottle's break** ([above](#throws); `world_objects::LooseObjects`, the play mode's `thrownBreak`): a throw
+  sets the flying object's body flag 1 and keeps its thrower; its first contact with the level mesh takes one hit
+  (`WorldObject_TakeHit`, the second counter first), and a `thrown_weapon` (hits 1) breaks there: no bounce, the
+  material pairs (its, its) at 1.0 and (its, the surface's) at 0.5, message 6 to the boxes its thrower stands in with
+  the object where its move left it, then the object at the hit point with dust of radius 1.6, removed at the next
+  step. Stand-ins: the flight meets the level mesh only (no body, so no human or car contact), the coloured glass
+  pieces and rubble by model are not made, and only `thrown_weapon` wears (an `overhead_weapon`'s wear on every
+  contact, `GUITAR`'s and a held object's are not built).
+>>>>>>> 54931d7c (graphics: Add the throw-aim arc while aiming with L1)
 - **Weapon piles** ([above](#weapon-piles); `world_objects::pileTake`, `world_objects::Props::takeFromPile`, the play
   mode's `takeFromPile`): a `dyn_pile` is pickable; player 1's pick-up of one makes the object its type hands out at
   the pile, plays the take cue there as a 3D sound, and puts the new object in his hand while the pile stays.

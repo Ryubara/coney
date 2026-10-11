@@ -47,6 +47,7 @@
 #include "platform/render_engine.h"
 #include "platform/scene_stage.h"
 #include "platform/texture_dictionary.h"
+#include "platform/throw_arc_renderer.h"
 #include "platform/world_renderer.h"
 #include "sandbox/sandbox_world.h"
 #include "warriors/created_humans.h"
@@ -536,6 +537,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // the arc's segments, humans are upright capsules, a human target's point is a fixed head height.
     // @orig 0x0027da10 Player_OnL1Pressed (unknown)
     void stepThrowAim(const Pad& pad);
+    // Draws player 1's throw-aim arc while he aims, `alpha` of the way from the step before's arc to the newest, red
+    // while it meets a target (docs/research/graphics.md#code-textures).
+    void drawThrowArc(float alpha);
     // The lock-pick dial follows player 1's pick: shown at its difficulty while it runs, with the pins' angles and the
     // pin the next press judges (docs/research/hud.md#lock-pick-dial-layout).
     void stepLockPickDial();
@@ -739,8 +743,10 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     world_objects::DrawnPoses<double> m_drawnPoses;
     world_objects::DrawnPoses<const human::Human*> m_iconPoses;
     effects::Triglints m_glints;
-    world_objects::ObjectBodies m_objectBodies; // this step's world-object bodies
-    combat::ThrowAimState m_throwAim;           // player 1's throw aim
+    world_objects::ObjectBodies m_objectBodies;   // this step's world-object bodies
+    combat::ThrowAimState m_throwAim;             // player 1's throw aim
+    std::vector<anim::Vec3> m_previousArc;        // the arc's points on the step before (none: not aiming)
+    std::unique_ptr<ThrowArcRenderer> m_throwArc; // made when the arc is first drawn
     // The RUNTARGET bodies running humans met last step: (the human's handle, his feet, the object), struck next step.
     std::vector<std::tuple<double, anim::Vec3, double>> m_runContacts;
     world_objects::LooseObjects m_looseObjects;              // the dropped objects falling or settling

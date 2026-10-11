@@ -1907,6 +1907,17 @@ What is still to do:
   ([The streamed world](world.md#coneys-implementation)); the level world, PVS and occluders do not.
 - The 16:9 option: a 16:9 logical screen shape, the overlay view-window scale 1.1 and the `_w` legal screens.
 
+**The throw-aim arc** ([above](#code-textures)) is drawn while player 1 aims a throw with L1
+(`graphics::throwArcStrip()`, `repo:src/graphics/throw_arc.h`; `platform::ThrowArcRenderer`): a strip 0.16 m wide
+along the aim trace's kept points up to where the arc ended, two vertices a point, faded in from the hand, culling
+off, red while the trace meets a target (`+0x634` set, what `HuIsAimingAt` reads) and grey otherwise. Its texture is
+the WAD file named by the decimal CRC-32 of `aimthrow_tex` (inferred from the water's naming), untextured when that
+does not load. A render between two steps draws it between their arcs
+([Update and render](../guides/conventions.md#update-and-render)). **Coney's stand-ins**, each an open question
+below: the two colours and their alpha, the fade's length (three points), the strip lying level across the arc, its
+texture coordinates (u across, v along 0 to 1), and its render state and place in the frame (Z tested, not written,
+alpha blended, no fog, after the cars' glass).
+
 The implementers' TODOs from the runtime answers (2026-10-04) are done: the overlay camera's view window is
 0.725 × 0.5 and the legal screen overfills the screen as above; its colour was already white.
 
@@ -1917,6 +1928,12 @@ Still for the analysts:
 
 ## Open questions
 
+- **The throw-aim arc's look** (`ThrowArc_Create` `0x0018f268`, `ThrowArc_BuildStrip` `0x0018fa68`,
+  `ThrowArc_Render` `0x00190588`): the colours (RGBA) for `hit` set and clear; how many points the fade from the
+  hand covers and its curve; which way the 0.16 m runs (level across the arc, or facing the camera); the strip's
+  texture coordinates; which file `aimthrow_tex` is loaded from (`0x005971b0`) and what the texture shows; the
+  material's blend, Z write and fog; where `ThrowArcs_RenderAll` (`0x00419da0`) falls in the frame; and whether `hit`
+  is `+0x634` set or `+0x638` (a human only). Coney's stand-ins: [Coney's implementation](#coneys-implementation).
 - **Exact legal-screen placement** (answered): it overfills the screen by 6.8 % across and 1.1 % down, centred
   ([Placement](#first-screen)).
 - **Mode flag `0x02`.** Read as PAL from the 24.5 frames-a-second threshold and the `_euro` screen; nothing that sets
