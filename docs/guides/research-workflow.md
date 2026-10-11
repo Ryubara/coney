@@ -367,8 +367,9 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
   the focus alone. PCSX2 never takes the focus (the launcher, above), and every copy has `[InputSources] SDL = false` so
   the
   user's gamepad cannot drive it; a maintainer turns SDL on in a copy only to test by hand, and `claim` and `status`
-  warn when it is on. Claims live in `pcsx2-claims/` of the shared scratch folder (`pcsx2_root` and `pcsx2_claims_dir`
-  in `coney.local.toml` move the copies and the claims).
+  warn when it is on. Claims live in `pcsx2-claims/` of the main checkout's shared scratch folder (`../../scratch`), never a
+  worktree's own `scratch_dir`, so every worktree sees them (`pcsx2_root` and `pcsx2_claims_dir` in `coney.local.toml`
+  move the copies and the claims).
 - **What PINE gives.** Memory reads and writes, game info and save/load state slots. No breakpoints, registers,
   pause or frame capture. PCSX2 serves one PINE client at a time, so a second client (a script of your own) blocks
   while the MCP server is connected.

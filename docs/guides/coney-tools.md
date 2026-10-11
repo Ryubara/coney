@@ -404,7 +404,8 @@ recorded (only while that process is still a PCSX2) and drops the claim; another
 `status` lists every copy with its holder, the time, the port, whether PCSX2 runs (by pid or port) and stale claims;
 it warns about copies whose ini has `[InputSources] SDL = true`. The copies are the `pcsx2*` folders with an
 `inis/PCSX2.ini` under `pcsx2_root` (default: the main checkout), the claims are under `pcsx2_claims_dir` (default:
-`pcsx2-claims/` in the scratch folder, beside the main checkout's `../../scratch`).
+`pcsx2-claims/` in the shared scratch folder, the main checkout's `../../scratch`, whatever a worktree's
+`scratch_dir` says, so every worktree sees the same claims).
 
 ```sh
 uv run --project python coney-tools pcsx2 keys --agent ID --copy NAME KEY [KEY...] [--hold-ms N] [--gap-ms N]

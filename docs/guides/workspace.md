@@ -70,7 +70,7 @@ Paths are relative to the repository root or absolute. The keys and their defaul
 | `ghidra_projects` | `../../ghidra` | local Ghidra projects |
 | `pcsx2_dir` | `../../emulators/pcsx2` | portable PCSX2 with PINE enabled |
 | `pcsx2_root` | the main checkout | folder holding the `pcsx2`, `pcsx2-b`, ... copies that `coney-tools pcsx2 claim` hands out |
-| `pcsx2_claims_dir` | `<scratch_dir>/pcsx2-claims` | where those claims live; one place every worktree sees |
+| `pcsx2_claims_dir` | `pcsx2-claims` in the main checkout's `../../scratch` | where those claims live; one place every worktree sees, whatever its `scratch_dir` |
 | `scratch_dir` | `../../scratch` | captures and tool output |
 | `jdk_home` | none: you must set it | a JDK 21 home, needed to run Ghidra |
 | `ghidra_mcp_repo` | none: you must set it | a built ghidra-mcp checkout, used read-only |
