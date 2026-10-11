@@ -997,6 +997,33 @@ block try before the range checks and left out the tackle try.
 `Brain_QueueAttack`'s first argument is the **stick angle** in radians, −1 for none. It is written with the command
 ([The attack action](#attack-action)).
 
+#### Facing the target in a fight {#fight-facing}
+
+What turns a fighter toward his target once the run-in is over. Confirmed (code) at the addresses cited.
+
+- **Nothing carries over from EngageEnemy.** Its End (`0x002af8d0`) only clears the actions and restores the turn
+  boost; its stop (`0x002afa08`) clears the actions, sets gait 0 and, once the human stands, turns him to the
+  target with a timed body turn (`Human_TurnToFaceObject` `0x00221cd8`, 0.3 s), which does not use brain `+0x110`.
+  Whatever it left in the brain's move fields is wiped by the next update's `Brain_StopMove` (`0x0028ac18`, the first
+  call of `Brain_UpdateGoals`): speed `+0x114` = 0 and heading `+0x110` = the human's own facing
+  ([Characters](characters.md#ai-locomotion)).
+- **The fight goal never writes the move.** `FightGoal_Process` (`0x002b3ab0`), its reposition, tackle and grab tries,
+  the attack action (`0x002fad70`, which only asks gait 4 for a charge kind) and the block goal store nothing to
+  `+0x110` or `+0x90`.
+- **So the facing follows the target only through these:**
+    - the **move-to-human action** ([MoveMelee](#move-melee)), which the fight goal queues to close to reach and the
+      reposition queues every time it waits: while it moves him, `+0x110` is the heading to the target and the
+      speed a gait (above 0.1), so he turns toward the target by the stance's 24° per update while he strafes. Its
+      Update writes nothing in the update it ends (in the band, no circling), and its Abort re-aims `+0x110` only for
+      a "no stance" class.
+    - the **attack's own turn**: the attack starts (`0x00261c80`, `0x00262368`, `0x00261a08`, the grab `0x0026c548`,
+      the tackle `0x002707a8`) turn him to his target (the brain's, [Combat](combat.md#ai-attacks)) with `Human_TurnToFaceObject`, and the steer onto
+      the target (`Attack_SteerToTarget`, [Combat](combat.md#ai-attacks)) runs to the clip's first event.
+- **Otherwise nothing.** In a fight stance with no movement action running, `+0x110` is his facing and his speed 0:
+  the control neither turns him nor starts a turn on the spot, and he does not track the target (no lock-on
+  turn: that is the player's stance control, which an AI never runs). Inferred from the above: a fighter who
+  stands in his band with no side to circle to keeps his last facing until the next move or attack.
+
 #### The reach of a kind {#attack-reach}
 
 `Attack_ReachSquared(d², A, kind)` (`0x00230d00`) gives the square of how close A must be to start `kind`. The fight
@@ -1975,14 +2002,16 @@ the player's word for a pad human whose brain is not dead, the **AI word** other
 | sprinting (gait 5) | `0x005101b8` | 2.5° | yes |
 | running (gait 4) | `0x005101c0` | 4° | yes |
 | jogging (gait 3) | `0x005101c8` | 6° | yes |
-| fight stance | `0x005101d8` | 24° | no |
+| fight stance | `0x005101d8` (AI word `0x005101dc`) | 24° | no |
 | held flags `0x1000080` | `0x005101b8` × 0.25 | 0.625° | no |
 | otherwise (walk, stand) | `0x005101d0` | 12° | yes |
 
 "Boost applies": the gait rows go through `Human_GetTurnRateForGait` (`0x002212d0`), which multiplies the AI word by
 the [turn boost](#brain-boosts) `+0x0b` (× (b + 1), or ÷ (1 − b) when negative); the other rows do not. At 30 Hz a
 walking AI turns 360°/s, a running one 120°/s, unboosted. Confirmed (code); the AI words are `.data` values that
-`CfgSetTurnRates` does not change.
+`CfgSetTurnRates` does not change: it writes only each pair's first (player) word, so its sixth argument is the
+player's stance turn (`0x005101d8`), and an AI's is always `0x005101dc`'s 24° ([Characters](characters.md#ai-locomotion)).
+The rows are tested top down, so a wounded AI turns 0.375° per update even in a fight stance.
 
 #### The move action {#move-action}
 
@@ -2078,8 +2107,9 @@ counter, `+0x20` the time limit (made absolute at Start), `+0x24` "no stance" (c
        vector (gait at least 2) and steps toward 0 likewise.
     5. **Done** when `d²` lies in the band, the side counter is 0 and |radial counter| < 6. After the time limit,
        done once both counters are 0.
-    6. Brain `+0x110` = the heading of the move for a "no stance" human; otherwise he keeps facing the human while
-       he steps (inferred from the vectors: the stance walk strafes). The aim point `+0x90` = his position + 2 × the
+    6. Brain `+0x110` = the heading of the move for a "no stance" human; otherwise the heading **to the human**
+       (confirmed (code), the store at `0x002fd9b4`), so he turns to face him at the stance rate while the stance
+       walk strafes him along the move. The aim point `+0x90` = his position + 2 × the
        move direction, radius 0; brain `+0x11c` (strafe) = not "no stance"; the gait goes to `Brain_SetMoveGait`.
 - **The side** (`0x002fd158`, from the mover's [sector record](#neighbour-sectors), at most 1 s old): keep circling
   while the sector the mover is heading into is free; else prefer whichever of sectors 2 and 6 (beside the human) is
