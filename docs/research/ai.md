@@ -4462,10 +4462,15 @@ player's last crime type, `+0x294 + type` the responders per type (`CfgCrimeResp
 4. **Responders**, when `mode` is 1: `0x0016df68(type, kind, count, ...)` queues the crime on the nearest spawner of
    any gang in state 4 or 6 ([Spawners](#spawners)); kind 1 for types 0, 2, 3, 5, 8, 11 and 13, kind 3 for 9; count
    the type's responders, or `count` itself for type 4. Types 6, 7, 10, 12 and 14 send none. For types 0, 2, 3 and 8
-   the offender's gang also notes the time (gang `+0x5f4`, a wanted timer, inferred).
-5. Type 1 also marks the nearest store flag (kind `0xe`) robbed and sends message `0x12` to the `strobe` object
-   nearest it (within 36, 6 m if squared). Types 0, 2 and 8 score a statistic for a player offender against a victim
-   of brain kind 1, 4 or 5, once per victim (`0x004ed948` on `0x006fe490`; a statistic, inferred).
+   the offender's gang also notes the time (gang `+0x5f4`, a wanted timer, inferred). Type 1 (kind 1) queues only
+   in step 5.
+5. Type 1 acts only when the nearest store front (activity `0xe`) lies within 10 m (squared distance under 100).
+   When that store is not yet robbed, it queues its responders with a delay of `CfgBreakAndEnterDelay` and no
+   offender (`mode` 1 only), sends message `0x12` to the `strobe` nearest the store's flag when that one is within
+   6 m (squared distance under 36), and switches the store's buyers off; robbed or not, the store is then marked
+   robbed. Details: [Crimes: which break-ins call the police](crimes.md#break-in-police). Types 0, 2 and 8 score a
+   statistic for a player offender against a victim of brain kind 1, 4 or 5, once per victim (`0x004ed948` on
+   `0x006fe490`; a statistic, inferred).
 6. When the offender is in player 1's gang, `+0x290` takes the type unless it holds 7 or 12, and the HUD is told
    (`0x001b2520`).
 
