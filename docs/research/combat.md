@@ -723,7 +723,10 @@ whose sweep loses more than half its move to a wall stops dead until its clip en
 stand for its body until its removal. In Coney's play-through the charge strikes the fence on its 11th update, 1.06 m
 from the line, and stops 0.51 m from it 3 updates later; the original also strikes on its 11th update, but at 0.55 m,
 and stops 1 update later at 0.42 m. The AI does not charge a human yet (its attack pick takes only the square and cross
-strikes and the snap), so the charge against a human is untested in play. Not made yet: the level mesh's impact sound, a
+strikes and the snap). The player's sprint charge and dive into a human are tested in play
+([`disc_sprint_attacks_test.cpp`](repo:tests/platform/disc_sprint_attacks_test.cpp): level99, a spawned fighter
+9 m ahead, the stick at 98 %): each strikes him once and plays its whole clip (27 and 62 updates in Coney, 27 and 61 in the original) with no
+reaction of the attacker's ([Moves a hit cannot stop](#protected-moves)). Not made yet: the level mesh's impact sound, a
 car struck by the shapes, and the weapon spheres of a held object.
 
 #### The capsule strike {#capsule-strike}
@@ -2225,6 +2228,27 @@ the dispatcher. The strike tests run earlier in the step (after each move). So:
   on, the target reacts to the dive's crushing hit code `0x3a` ([Hit codes](#hit-codes)) before its own dispatcher
   could start anything new.
 
+**A sprint charge or dive into a standing human, at runtime** (confirmed (runtime), PCSX2 2.9.94, scenarios
+[`charge_human`](repo:research/traces/scenarios/charge_human.toml) and
+[`dive_human`](repo:research/traces/scenarios/dive_human.toml): a copy of slot 6, PoizoCiv kept 4 m in front of the
+player and facing him until update 30; L2 held and the stick at 98 % straight ahead from update 5, cross or square
+tapped at 30; hooks `strike-contact` and `anim-dispatch`):
+
+| | The charge (cross) | The dive (square) |
+| --- | --- | --- |
+| The move | 0 from update 31 to 57: **27 updates, its whole clip**; held `0x1000000` throughout | 1 from 31 to 91: **61 updates, its whole clip**; held `0x400000` throughout |
+| The attacker's speed | 7.45 m/s, 4.4-6.3 m/s from update 36, then 0 from update 42, 1.65 m from PoizoCiv, to the clip's end | 7.9-11.7 m/s, then 0 from update 40, 1.65 m from him |
+| The attacker's strike contacts (`0x0033f210`, from `Human_TestStrikes`) | updates 41-47 | updates 34-51 |
+| The attacker's health | 314 throughout | 314 throughout |
+| What follows | 388 at update 58 | 389 at update 92 |
+| PoizoCiv | 600 → 405 and 294 at update 61, then 198 | the same, at the same update |
+
+Neither attacker played a reaction or lost health: the move ran its whole clip. The run did not
+test a flung victim striking the attacker, because this PoizoCiv took the damage and reacted only at update 61, after
+the clip 428 he was playing in the saved state had ended (the same update in both runs, so tied to his clip, not to the
+strike; inferred). By the code above, such a strike on a charger or a diver takes its health (the extreme reactions'
+20) and plays no reaction (confirmed (code) at `0x00265f70`).
+
 **Coney fixes** (items 25 and 29):
 
 1. `ai::startGuardOf` (`src/ai/attack_views.cpp`) never sets `StartGuard::targetHeldBusy`: set it from the target's
@@ -2232,10 +2256,13 @@ the dispatcher. The strike tests run earlier in the step (after each move). So:
    or holds a block's `0x8000` / `0x200`), and `targetPinned` for the partner exception (target "thrown" `0x2000`,
    attacker "throwing" `0x1000`). This stops teammates and enemies starting attacks on a finisher's victim (item 29)
    and on a diving player (item 25).
-2. In the victim path (`Fighter` hit handling, `src/human/fighter_victim.cpp`), after the health drops and before
-   the reaction: a victim whose animator holds any of `0x1c16a40` takes the health and plays no reaction and is not
-   interrupted. The dive's clip must hold `0x400000` (`combat::kPhaseDive`), the charge's `0x1000000`, and a paired
-   move's victim `0x400000`; check that `m_combat.interrupt()` is not reached for them.
+2. **Done for the charge and the dive** (`Fighter::takePending`, `combat::heldCancelsReaction()`): after the health
+   drops, a victim whose clip holds any of `0x1c16a40` plays no reaction and is not interrupted. Before it, a charge
+   into a human broke off on impact and the charger fell: the victim's crushing mid reaction (296-299) switches every
+   strike shape on and its flung body struck the charger for 20 with a heavy high hit, which played 292-295 on him
+   (owner report, 2026-10-11). The dive escaped only by chance (inferred): its crushing high hit gives 300-303, which
+   strike with the spine and head alone. Still to do: a paired move's victim holding `0x400000` (Coney's paired clips hold no
+   such flag yet).
 3. A lethal hit on a victim holding any of `0xc12200` does not start the dying reaction or break the pair at once:
    keep the health below 0 and let the victim's own paired clip finish (not the attacker's: 58 outlasts 57); then
    the victim falls with the low reaction (286 for a hit from behind, the reactions table) and goes down by
@@ -3913,7 +3940,10 @@ reaction early. Ducking, square or cross pressed or held while 616's own `0x25` 
 counter, played on the next update by the side the target stands on: 617 front, 618 right, 619 back, 620 left. Each
 update the largest pending hit then lands in the original's order: a duck lets it pass; a held block cancels it with
 its block reaction unless the hit breaks it (strength 3, or attacks 26-34); the damage is taken as it is, held at the
-health floor (a hit cannot take him below 25 % of his maximum); a grabber hit by a third human loses power; winding up
+health floor (a hit cannot take him below 25 % of his maximum); a grabber hit by a third human loses power; a hit that
+does not end him while his clip holds any of `0x1c16a40` (the charge, the run attack and a landing `0x1000000`, the
+dive `0x400000`, the counter `0x2000`) only takes its health and the move plays on
+([Moves a hit cannot stop](#protected-moves)); winding up
 (`+0x08` `0x1`) or in the chain window (`0x2`) his hit armour holds against a non-player, non-raging attacker not
 playing 617-620, so the damage lands and his attack goes on; otherwise the reaction plays and his attack is lost. A
 plain reaction returns to the fight idle; a stun hit holds him 200 ms, then 357 when the reaction's clip has ended
