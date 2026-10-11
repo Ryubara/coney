@@ -2134,18 +2134,18 @@ handler component, as for `TriggerSphereEnable`).
   which are written through computed addresses with no reader found yet (`CfgWarriorClass`'s are all traced:
   [Warrior classes](../references/warrior-classes.md)). Each would move up from
   inferred once a reader or a runtime observation is found.
-- **Hint texts set twice in one frame** (owner checklist item 33b): answered by the original's runtime trace
-  ([The queue at runtime](hud.md#hint-queue-runtime), [lessons 5-8](#level99-hint-timing)): a text set on a free box
-  shows within the same call, so two `HUDSetTutorialText(nil)` + text pairs in one update never back up, and a grab's
-  hold ids fire their animation callbacks at the connect, 34 updates before `P1.Power` ([Animation
-  callbacks](characters.md#anim-callbacks)). Coney's `level99` course run still had two pairs land between two
-  hint-box steps in two places, and the box then showed every later text one late (a grab hint `TT_19*` in place of
-  the lesson's) until a frame cleared without setting: at lesson 5's end (the strong grapple's hold 82),
-  `PlayerState`'s animation callback set the hold's grab hint and `P1.Power` set `TT_24d` in the same step; and
-  `P1.StartSnaps` sets the snap text twice in one call. The second hint-box step in `GameplayMode` (Coney's order in
-  a step, [Animation callbacks](characters.md#anim-callbacks)) keeps that from backing up; what is left to do is the
-  rest of [Coney's differences](hud.md#hint-queue-runtime): `HintBox::queue` showing at once, and the hold ids firing
-  at the connect.
+- **Hint texts set twice in one frame** (owner checklist item 33b). (Answered by the original's runtime trace,
+  [The queue at runtime](hud.md#hint-queue-runtime) and [lessons 5-8](#level99-hint-timing), two runs: neither of the
+  two places where Coney's `level99` course run queued two texts in one step backs up in the original.
+  **Lesson 5's end**: `PlayerState`'s animation callback on the strong grapple's hold 82 runs at the connect (update
+  157, `TT_19b` shown) and `P1.Power` sets `TT_24d` when the hit is scored with 82 (update 191), 34 updates apart in
+  both runs, so the two texts never share an update; confirmed (runtime), the dispatch of 82 from the four-clip mix's
+  constructor (`0x00106fe0`, [Animation callbacks](characters.md#anim-callbacks)). **`P1.StartSnaps`**: its
+  `HUDSetTutorialText` calls (nil, `TT_25c`, nil, `TT_25c`) ran in one tick; each text found the box free and showed
+  within its own call, so the box showed the snap text, cleared it and showed it again, with the cue twice, and
+  nothing stayed queued; confirmed (runtime) at the show `0x001cdf7c`, as `HintBox_Queue` reads (confirmed (code) at
+  `0x001ce484`-`0x001ce52c`). In both runs the queue held no entry past the call that queued it, apart from `TT_26b`
+  behind a `<DISPLAYTIME>` hint. What Coney must change for it: [Coney's differences](hud.md#hint-queue-runtime).)
 - **The stale throw hint** (owner checklist item 38): the owner saw `level80`'s `TT_25` (lure the cops with a bottle)
   stay through step 3.4 until the Wreck'em order. Coney's checkpoint 3 test (teleports to the roof, the scene
   skipped or played out, the lesson box left and re-entered) shows the box empty when the bottle breaks and `TT_7`
