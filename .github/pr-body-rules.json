@@ -1,7 +1,11 @@
 {
-  "sections": ["Summary", "Checklist", "AI use"],
-  "filled": ["Summary"],
-  "placeholders": ["..."],
+  "sections": ["Summary", "Checklist", "Testing", "Screenshots", "AI use"],
+  "filled": ["Summary", "Testing"],
+  "placeholders": ["...", "<reason>"],
+  "screenshots": {
+    "section": "Screenshots",
+    "none": "Screenshots: none"
+  },
   "ai_use": {
     "section": "AI use",
     "written_by": {
