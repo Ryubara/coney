@@ -66,6 +66,7 @@ std::optional<double> StealClusters::claim(const Brain& human, const ItemService
     const anim::Vec3 at = human.human().position();
     // The clusters in the order they are walked: nearest centre first (the stand-in for the sort).
     std::vector<StealCluster*> order;
+    order.reserve(m_clusters.size());
     for (StealCluster& cluster : m_clusters) {
         order.push_back(&cluster);
     }
