@@ -5818,6 +5818,16 @@ name = "TagGame_Update"
 subsystem = "Human"
 
 [[function]]
+address = 0x00274ee0
+name = "Revive_Finish"
+subsystem = "Human"
+
+[[function]]
+address = 0x002752a0
+name = "Revive_Start"
+subsystem = "Human"
+
+[[function]]
 address = 0x00275678
 name = "Attack_SteerLed"
 subsystem = "Human"
@@ -6040,6 +6050,11 @@ address = 0x002856b8
 name = "Player_UpdateMugging"
 subsystem = "Human"
 size = 3736
+
+[[function]]
+address = 0x00286ba8
+name = "Player_TryRevive"
+subsystem = "Human"
 
 [[function]]
 address = 0x00286cc8

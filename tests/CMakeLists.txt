@@ -98,6 +98,7 @@ add_executable(coney_tests
     platform/disc_rumble_test.cpp
     platform/disc_hub_test.cpp
     platform/disc_level80_test.cpp
+    platform/disc_revive_test.cpp
     platform/disc_level5_boss_camera_test.cpp
     platform/disc_level5_fights_test.cpp
     platform/disc_level99_audio_test.cpp
@@ -247,6 +248,7 @@ target_sources(coney_tests PRIVATE
     camera/follow_script_test.cpp
     human/disc_player_test.cpp
     human/human_test.cpp
+    human/human_revive_test.cpp
     human/hiding_test.cpp
     human/body_test.cpp
     human/climb_test.cpp
@@ -283,6 +285,7 @@ target_sources(coney_tests PRIVATE
     combat/meters_test.cpp
     combat/player_combat_test.cpp
     combat/rage_awards_test.cpp
+    combat/revive_test.cpp
     combat/reactions_test.cpp
     combat/stick_games_test.cpp
     combat/throw_aim_test.cpp

@@ -7,6 +7,7 @@
 #include <vector>
 
 namespace coney::human {
+class Human;
 struct ScriptState;
 } // namespace coney::human
 
@@ -34,6 +35,13 @@ inline constexpr float kSwapReach = 1.5F;
 /// Research: docs/research/ai.md#think-warrior, docs/research/hud.md#talk-prompt
 /// @orig 0x003052f0 WarriorBrain_Think (unknown)
 void thinkSwapPrompt(Brain& brain);
+
+/// Whether a human's actions are blocked (`HumanRecord_AreActionsBlocked`, state mask `0x7bf9e9f7ff0`), as far as
+/// Coney models his states: knocked out (`0x40000`, his health gone or a script's), arrested (`0x20000`) or wounded
+/// (`0x10000`) are all in the mask. **Coney's reading**: the mask's other states are not modelled. The swap prompt and
+/// the revive ask it.
+/// @orig 0x00228228 HumanRecord_AreActionsBlocked (unknown)
+[[nodiscard]] bool actionsBlocked(const human::Human& human);
 
 /// The speech command the presser says after a swap that left him holding something: 146 `give_me`.
 inline constexpr std::uint32_t kGiveMeCommand = 146;

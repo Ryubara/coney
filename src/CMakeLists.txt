@@ -29,6 +29,7 @@ add_library(coney_core STATIC
     gamemodes/game_mode_stack.cpp
     gamemodes/gameplay_mode.cpp
     gamemodes/gameplay_tag.cpp
+    gamemodes/gameplay_revive.cpp
     gamemodes/gameplay_uncuff.cpp
     gamemodes/gameplay_war_commands.cpp
     gamemodes/system_music.cpp
@@ -245,6 +246,7 @@ target_sources(coney_core PRIVATE
     human/human_sounds.cpp
     human/human_animator.cpp
     human/human_held.cpp
+    human/human_revive.cpp
     human/human_hiding.cpp
     human/human_script.cpp
     human/humans.cpp
@@ -345,6 +347,7 @@ target_sources(coney_core PRIVATE
     combat/meters.cpp
     combat/player_combat.cpp
     combat/rage_awards.cpp
+    combat/revive.cpp
     combat/reactions.cpp
     combat/stick_games.cpp
     combat/throw_aim.cpp
