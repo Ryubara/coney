@@ -285,11 +285,13 @@ given up and the goal runs, but the player stands in the fight stance locked on 
 and Coney's fight-stance walk (`Human::combatWalk`) turned every human it holds to face the lock target each update,
 whatever the brain asked. The turn action was overridden on every update; once it gave up, the goal queued another.
 In the original a human no pad drives (per-player `+0x1b` = 0) is moved by `Human_UpdateControl`, which turns it
-toward the brain's heading by the fight stance's AI word (24° an update) and leaves the facing alone when no move is
-asked ([AI: Turning](ai.md#ai-turn)); only a pad's human faces its lock target. Coney now does the same, so the turn
-steers and the goal arrives (`repo:tests/ai/move_action_test.cpp`, and on the disc
-`repo:tests/platform/disc_hub_workout_test.cpp`). The headings were not the cause: the goal and `TeleportToFlag` both
-read a flag's degrees as Coney's heading (the turn θ about `+z`, [Flags](flags.md#position)).
+toward the brain's heading: by the fight stance's AI word (24° an update) when asked to move, with a turn on the spot
+when stopped more than 15° off, not at all within 15° ([AI: Speed control and Turning](ai.md#ai-turn)). Coney now
+turns a player whose pad a script took that way (the turn on the spot at the standing step, as for every AI, a
+stand-in for the turn clips), so the goal's turn steers and it arrives (`repo:tests/ai/move_action_test.cpp`, and on
+the disc `repo:tests/platform/disc_hub_workout_test.cpp`). AI fighters keep facing their foe in the stance, as their
+stance walk strafes ([AI: The move action](ai.md#move-action)). The headings were not the cause: the goal and
+`TeleportToFlag` both read a flag's degrees as Coney's heading (the turn θ about `+z`, [Flags](flags.md#position)).
 
 What Coney has besides: the `HuWorkout` binding with stand-ins
 ([Characters](characters.md#coneys-implementation)): a start within 1.5 m, a fixed 1.5 s repetition at an effort

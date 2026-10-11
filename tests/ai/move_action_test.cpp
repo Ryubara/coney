@@ -89,6 +89,23 @@ struct MoveScene {
         return brains.add(made, type, coney::ai::FightSettings{}, static_cast<std::uint32_t>(humans.size()));
     }
 
+    // A player (fighter profile `player`) with the player's brain, his pad driving him, at `feet` facing
+    // `headingDegrees`.
+    Brain& addPlayer(Vec3 feet, float headingDegrees) {
+        Brain& brain = add(feet, headingDegrees, coney::ai::BrainType::Player, true);
+        brain.human().setFighterProfile(
+            coney::human::FighterProfile{.player = true, .powerClass = coney::ai::kWarriorPowerClass, .health = 1400});
+        return brain;
+    }
+
+    // A punch from `brain`'s human makes the nearest foe ahead his fight target; the attack then plays out.
+    void lockOn(Brain& brain) {
+        brain.human().record().command = coney::combat::command::kSquarePressed;
+        step.update(mesh.get());
+        brain.human().record().command = coney::combat::command::kNone;
+        run(60);
+    }
+
     // Steps until `done` holds or `limit` steps have run; calls `each` after every step. Returns the steps run.
     template <typename Done, typename Each> int runUntil(int limit, Done done, Each each) {
         for (int k = 1; k <= limit; ++k) {
@@ -349,24 +366,69 @@ TEST_CASE("a player under script control turns on the spot to the flag's heading
     flags.createPool(4);
     const double flag = flags.add(100.0, "fWorkout", {41.2F, 41.0F, 0.0F}, 93.0F).handle;
     coney::ai::ScriptedBrains scripted(scene.brains, flags);
-    Brain& player = scene.add({41.0F, 41.0F, 0.0F}, -90.0F, coney::ai::BrainType::Player, true);
+    Brain& player = scene.addPlayer({41.0F, 41.0F, 0.0F}, -90.0F);
     scene.add({41.7F, 41.0F, 0.0F}, 90.0F);
-    // A punch at the bag makes it his target.
-    player.human().record().command = coney::combat::command::kSquarePressed;
-    scene.run(1);
-    player.human().record().command = coney::combat::command::kNone;
-    scene.run(60);
+    scene.lockOn(player);
     REQUIRE(player.human().fighter().lockTarget() != nullptr);
     // DeactivateWarchief: the pad given up.
     scene.step.setPadControlled(player.human(), false);
     player.setDead(true);
     scripted.bind(1.0, player);
     scripted.goalMoveToFlag(moveToFlagCall(1.0, flag, 0.5F, true));
-    // In the original the walk and turn took 12 updates; message 8 must come well within worksetup.TimeOut's 5 s.
+    // The 177 degrees at the standing step, then message 8, well within worksetup.TimeOut's 5 s (in the original the
+    // walk to the flag and the turn took 12 updates, docs/research/workouts.md#start).
     const int steps = scene.runUntil(150, [&] { return scripted.arrivals() == 1; }, [] {});
     CHECK(scripted.arrivals() == 1);
-    CHECK(steps < 60);
+    CHECK(steps < 30);
     CHECK(std::fabs(coney::human::wrapAngle(player.human().heading() - radians(93.0F))) <= coney::ai::kFaceFlagAngle);
+}
+
+TEST_CASE("locked on a foe, a pad's human and an AI face it; a player under script control follows his brain",
+          "[ai][turn]") {
+    // Human_FightStanceMove and Human_UpdateControl (docs/research/ai.md#ai-turn, #move-action): the pad's player
+    // faces his lock target each update and an AI's stance walk strafes facing its foe, whatever heading the brain
+    // writes; a player whose pad a script took turns by the brain's heading: 24 degrees an update asked to move, the
+    // standing step (12) stopped more than 15 degrees off, nothing within 15 degrees or with no move asked.
+    MoveScene scene;
+    Brain& player = scene.addPlayer({41.0F, 41.0F, 0.0F}, -90.0F);
+    Brain& foe = scene.add({42.0F, 41.0F, 0.0F}, 90.0F);
+    scene.lockOn(player);
+    scene.lockOn(foe);
+    REQUIRE(player.human().fighter().lockTarget() != nullptr);
+    REQUIRE(foe.human().fighter().lockTarget() != nullptr);
+    const float toFoe = radians(-90.0F); // +x
+    const float toPlayer = radians(90.0F);
+    const auto off = [](const Brain& brain, float heading) {
+        return std::fabs(coney::human::wrapAngle(brain.human().heading() - heading));
+    };
+
+    SECTION("the pad's player snaps back to face his target") {
+        player.human().place(player.human().position(), radians(90.0F));
+        scene.run(1);
+        CHECK(off(player, toFoe) < 1e-3F);
+    }
+    SECTION("an AI faces its foe while its brain moves it another way") {
+        foe.setMoveHeading(radians(0.0F), 0.0F);
+        scene.run(1);
+        CHECK(off(foe, toPlayer) < 1e-3F);
+    }
+    SECTION("a player under script control turns by his brain's heading") {
+        scene.step.setPadControlled(player.human(), false);
+        player.setDead(true);
+        // No move asked: he keeps his facing.
+        player.human().place(player.human().position(), radians(0.0F));
+        scene.run(1);
+        CHECK(off(player, radians(0.0F)) < 1e-3F);
+        // Stopped, 90 degrees off: the standing step of 12 degrees an update.
+        player.setMoveHeading(radians(90.0F), 0.0F);
+        scene.run(1);
+        CHECK(off(player, radians(12.0F)) < 1e-3F);
+        // Stopped within 15 degrees: nothing turns.
+        player.human().place(player.human().position(), radians(80.0F));
+        player.setMoveHeading(radians(90.0F), 0.0F);
+        scene.run(1);
+        CHECK(off(player, radians(80.0F)) < 1e-3F);
+    }
 }
 
 TEST_CASE("GoalMoveToFlag aims at an offset from the flag, ends when its flag goes, and plans again after a short move",

@@ -137,6 +137,7 @@ struct TurnState {
 
 /// An AI human's turn limit per update in the fight stance, radians: the AI word `0x005101d8`, 24°, which no turn boost
 /// changes; a wounded human turns 0.375° (docs/research/ai.md#ai-turn).
+/// @orig 0x002213d8 Human_MaxTurn (unknown)
 [[nodiscard]] float aiFightStanceTurn(bool wounded);
 
 /// An AI human's speed this update from `current` toward the brain's `asked` speed, m/s (`Human_UpdateControl`,

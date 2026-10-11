@@ -5119,9 +5119,11 @@ human whose last move failed runs straight at
   locomotion unchanged): a constant turn step by gait (12° walking or standing, 6° jogging, 4° running, 2.5° sprinting,
   0.375° wounded) times the turn boost plus one, or divided by one minus a negative boost (`Brain::setTurnBoost`,
   [`+0x0b`](#brain-boosts)), with no easing; a speed that starts at the asked speed up to 2 m/s, gains 8 m/s² (32 while
-  more than 2 m/s short) and loses 32 m/s²; a wounded human asked to move walks. In the fight stance (locked on a
-  foe) such a human turns toward the brain's heading by 24° an update and otherwise keeps its facing; only a pad's
-  human faces its lock target each update (`human::Human::combatWalk`). The move's corner speed predicts the
+  more than 2 m/s short) and loses 32 m/s²; a wounded human asked to move walks. Locked on a foe
+  (`human::Human::combatWalk`), a pad's player and an AI face it each update (an AI's stance walk strafes, step 6
+  of the move-to-human action; **Coney choice**: Coney's brains carry no strafe flag `+0x11c`, so every AI move in
+  the stance faces the foe); a player whose pad a script took turns by the brain's heading instead: 24° an update
+  asked to move, the standing step (stand-in for the turn clips) stopped more than 15° off, else not at all. The move's corner speed predicts the
   turn with the same steps. **Stand-in**: a standing human more than 15° off turns at the standing step instead of
   playing turn clips 395-398. Every search uses the mask `0xff`; a leg of kind 8 or `0x80` is a climb: the human runs at
   the waypoint (gait 4) and tries the player's climb start toward it each update (`PlayerRecord::climbToward`), giving

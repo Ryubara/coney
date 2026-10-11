@@ -662,10 +662,12 @@ class Human final : public Holdable {
     // The stick step is skipped (combat's states, or the human is busy): the clip and an attack's slide move the body;
     // a block turns toward the stick in place (the shuffle); a standing grab turns and walks the pair by the stick.
     void holdForCombat();
-    // Locked onto `target`: faces it and walks at the combat walk's speed along the stick without turning, in the
-    // combat-walk clip of the stick's angle from the facing; with the velocity `gated`, it only faces the target and
-    // the clip playing goes on.
+    // Locked onto `target`: faces it (a player whose pad a script took turns by his brain's heading instead, as
+    // Human_UpdateControl turns a human no pad drives) and walks at the combat walk's speed along the stick without
+    // turning, in the combat-walk clip of the stick's angle from the facing; with the velocity `gated`, it only turns
+    // and the clip playing goes on.
     // @orig 0x00241b90 Human_FightStanceMove (unknown)
+    // @orig 0x00243848 Human_UpdateControl (unknown)
     void combatWalk(const Combatant& target, bool gated);
     // Combat's update from the record: the stick turned into the facing frame, the game time, the targets.
     void fight(std::span<Combatant* const> targets, const raycast::CollisionMesh* mesh);
