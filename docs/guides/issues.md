@@ -14,9 +14,40 @@ Start from a form; blank issues are off.
   the [debug menu](debug-menu.md) if you know them, what happens, what the original game does (optional, but it
   tells us whether Coney differs from it), and how often it happens. The exact steps matter most: a bug that can be
   repeated is a bug that can get a regression test ([Testing](testing.md#done)).
-- **Task** (`.github/ISSUE_TEMPLATE/task.yml`) is for maintainers and agents. It asks for a summary, the area, the
-  research page that covers it, what "done" means (the acceptance test [Testing](testing.md#done) defines for this
-  kind of work), a fix list or steps, and the issues it is blocked by (`#12`).
+- **Task** (`.github/ISSUE_TEMPLATE/task.yml`) is for maintainers and agents. It asks for a summary that opens with the
+  problem ([Writing an issue a newcomer can read](#writing)), the area, the research page that covers it, what "done"
+  means (the acceptance test [Testing](testing.md#done) defines for this kind of work), a fix list or steps, and the
+  issues it is blocked by (`#12`).
+
+### Writing an issue a newcomer can read {#writing}
+
+An issue is read by someone with no other context: a player, a contributor on their first day, an agent briefed with
+only "issue #N". Write it so that the first screenful answers *what is wrong or missing, and what is the state now*.
+
+- **Problem first.** The first sentence of the Summary (or the "What happens" of a bug) says in plain words what is
+  wrong or missing for the player or the developer. The current state comes second. Never start from the pull
+  request that left the work ("Pull request #55 adds ..."): the issue is about the problem, and that pull request is
+  provenance. It goes on the `From:` line, which names where the issue came from and nothing more.
+- **State the status as it is.** When the text names a pull request or another issue, check it with `gh pr view N`
+  or `gh issue view N` and say what it is: merged, open (not merged yet), closed without merging. Write "merged",
+  never "(open)" for a pull request that has landed, and tick the checklist item it finished. A leftover is usually
+  filed while its pull request is still open, so that wording goes stale when it merges: describe what the
+  repository does and lacks rather than only what a pull request will do, and the coordinator fixes the statuses of
+  the issues that cite a pull request when it merges ([Merging safely](how-we-work.md#merging)).
+- **Link every page by a relative link.** A research page or guide is written as a Markdown link that works from an
+  issue page, with the path in the repository as its text:
+  `[docs/guides/workspace.md](../blob/main/docs/guides/workspace.md)`, and `#anchor` after the path when a section
+  is meant (check the heading's `{#id}` exists). Check the page exists on `main`
+  (`git cat-file -e origin/main:<path>`); a page or section that exists only on an unreleased branch is
+  named in plain text with a note that it is not on `main` yet. Source files can be linked the same way. GitHub's
+  file view opens the page at the top for an `{#id}` anchor, so name the section in words too. Never write the
+  repository's or the documentation site's full address anywhere ([AGENTS.md](repo:AGENTS.md)).
+- **Make each checklist item a step someone can verify.** "Windows 10 extraction route" becomes "Document or automate
+  PCSX2's 7z extraction on Windows 10, whose `tar` cannot unpack it". Say what to do, to what, and how you will know
+  it is done; tick the item (`- [x]`) when it is done and name the pull request that did it.
+- **Write numbers and names, not shorthand.** An issue refers to `#123` for issues and pull requests, to the
+  research page with its section, and to the item numbers of the owner's play-test by their text; a word like "the
+  unit", "the stack" or a branch name alone means nothing to a newcomer.
 
 ### Screenshots {#screenshots}
 
@@ -113,14 +144,18 @@ under Done are not looked at.
 
 - **The author** finishes what it can, and for each leftover that is real work or an open question writes its title,
   area, research page and "done" test, in the shape of the [task form](#report), into the message it sends the
-  coordinator with the pull request text. It does not write to GitHub ([Working from an issue](#agents)).
+  coordinator with the pull request text. It follows [Writing an issue a newcomer can read](#writing): the problem
+  first, not "the pull request leaves ..."; pages as relative links; each checklist item a verifiable step. It does
+  not write to GitHub ([Working from an issue](#agents)).
 - **A leftover a player can see comes with a picture.** For a visible bug, gap or stand-in, the author saves a
   capture of Coney in its scratch folder's `shots/` (and of the original from PCSX2 when it has one at the same
   place), names the files in the issue text it sends, and the coordinator files the issue with `--attach`. Pure
   research questions and tooling work need none.
 - **The coordinator** files the issue from that text with its captures, labels it at triage, and puts the number into
-  the description before the pull request is opened. An item that is already tracked cites its existing issue; one
-  that is finished is ticked and moved to Done; one nobody will do is dropped, not left unchecked.
+  the description before the pull request is opened. It rewrites a draft that reads like a copy of the pull request,
+  and when the pull request merges it updates the statuses in every issue that cites it. An item that is already
+  tracked cites its existing issue; one that is finished is ticked and moved to Done; one nobody will do is dropped,
+  not left unchecked.
 - **A follow-up pull request** may be cited in place of an issue when it is already open, but the work it carries
   still ends with `Fixes #N` on the issue that describes it.
 - **The state file keeps no work list.** HANDOFF holds the live state (what runs where, what waits for CI) and issue

@@ -7,12 +7,16 @@ body:
     attributes:
       value: |
         A task is written so that someone with no other context can do it. An agent may be given only "issue #N".
+        Start with the problem, link pages with relative links, and say whether the pull request it came from is
+        merged or open (see "Writing an issue a newcomer can read" in docs/guides/issues.md).
         Never put game data in an issue: no assets, extracted files, saves, dumps, executables, BIOS or game text.
   - type: textarea
     id: summary
     attributes:
       label: Summary
-      description: What is wrong or missing, and why it matters, in a short paragraph.
+      description: |
+        Start with the problem or goal in plain words: what is wrong or missing, for the player or the developer, and why it matters. Then say where the work stands now (what exists, what a pull request did). Name the pull request or issue it came from only as the source, and say whether it is merged, open or closed.
+      placeholder: "for example: The pause menu's Options screen is a stand-in. ..."
     validations:
       required: true
   - type: dropdown
@@ -38,8 +42,8 @@ body:
     id: research
     attributes:
       label: Research page
-      description: The page under docs/research that covers this, with the section, or "none yet" when an analyst must study the original first.
-      placeholder: "for example research/physics.md#human-contacts"
+      description: The page under docs/research that covers this, with the section, as a relative link that works from an issue page, or "none yet" when an analyst must study the original first. A page that exists only on an unreleased branch is named in plain text and marked as such.
+      placeholder: "for example [docs/research/physics.md#human-contacts](../blob/main/docs/research/physics.md#human-contacts)"
   - type: textarea
     id: done
     attributes:
@@ -51,9 +55,9 @@ body:
     id: steps
     attributes:
       label: Fix list or steps
-      description: What to check or change, in order, as a checklist.
+      description: What to check or change, in order, as a checklist. Each item is a concrete step someone can verify, not a label.
       placeholder: |
-        - [ ] ...
+        - [ ] Document or automate PCSX2's 7z extraction on Windows 10, whose tar cannot unpack it
         - [ ] ...
   - type: input
     id: blocked-by
