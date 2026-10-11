@@ -83,3 +83,5 @@ state of the work (local, never committed).
   `.github/pull_request_template.md` (`gh pr create` does not fill it in when given a body). An agent never merges a
   pull request: the maintainer, or the approving review, does. A pull request or issue you write carries no
   "Generated with" line; the template's AI use section is where the model is named.
+- A pull request is the track's live status: open it as a draft at the first push, keep its Done and Remaining
+  lists current, mark it ready when done (`docs/guides/how-we-work.md`).

@@ -75,8 +75,24 @@ Many tracks run at once, each owning one subsystem, mission or question:
   them. Each pull request is squash-merged once every required check passes (tests, generators, docs build), so it
   lands on `main` as one commit; work-in-progress commits on the branch are dropped by the squash and need no
   tidying first.
-- **State lives on disk, not in anyone's head.** Each track keeps a short state file (role, branch tip, done, next,
-  open questions) in the scratch folder, so another person or agent can take it over cold.
+- **The pull request is the track's live status** ([below](#pr-status)); anything else a track must keep (a scratch
+  note, a log path) lives on disk in the scratch folder, not in anyone's head.
+
+## A pull request is the live status {#pr-status}
+
+Each track's pull request tells anyone what is done and what is left, so a stopped track is resumed from it.
+
+- **Open it as a draft at the first push:** `gh pr create --draft`, the body from
+  `.github/pull_request_template.md`. Keep pushes to meaningful milestones: each push runs CI.
+- **Keep the body current on every push.** Under Checklist, a **Done** list and a **Remaining** list (checkboxes).
+  The body replaces local resume notes: when an agent stops, a fresh agent resumes from the Remaining list and the
+  branch ([Running agents](agents.md)), not from the dead agent's context.
+- **Mark it ready when Remaining is empty** (or what is left is deferred to an open item or issue named in the
+  body): `gh pr ready <n>`. The coordinator reviews and merges only ready (non-draft) pull requests.
+- **Agents never merge and never wait for CI.** A failing check on a ready pull request goes to the coordinator,
+  or to a fresh agent ([When a pull request fails checks](agents.md#ci-failures)).
+- **The body is public:** the clean-room rules of a research page apply (addresses and short findings, no
+  decompiler output).
 
 ## Sharing one machine {#shared-machine}
 
@@ -126,9 +142,9 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
 - **Keep every gap staffed.** When a track finishes, the next open gap gets a track at once: unfinished fixes,
   subsystems that differ from the original, missions still to build (several at a time, one per track). The
   priorities are on the [roadmap](../roadmap.md).
-- **Merge on the automated gate, not on play-tests.** Finished work merges once the [checks](testing.md#local-gate)
-  pass; the coordinator fixes small gate failures (lint, formatting, generated pages) itself instead of sending the
-  work back.
+- **Merge on the automated gate, not on play-tests.** Ready (non-draft) pull requests merge once the
+  [checks](testing.md#local-gate) pass; the coordinator fixes small gate failures (lint, formatting, generated
+  pages) itself instead of sending the work back.
 - **Ship after every merged feature.** Push, build the release locally, and hand the play-testers one list of what
   changed and how to reach it ([Play-testing](testing.md#play-testing)). Research-only merges need no build.
 - **Keep its own context small.** The coordinator re-reads its whole conversation on every turn: it checkpoints

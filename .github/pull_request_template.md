@@ -6,7 +6,8 @@
 
 ## Checklist
 
-<!-- The features or tasks this pull request covers. Tick what it finishes; leave the rest unticked so a reader sees
+<!-- The live status: keep both lists current on every push. Done is what this pull request finishes; Remaining is
+     what a fresh agent would pick up (empty, or deferred to a named issue, means mark it ready: `gh pr ready`). No
      what is still to do. -->
 
 Done:

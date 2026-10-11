@@ -89,7 +89,8 @@ instead of repeating it:
   run that takes longer.
 - **Keep tool output small.** Print counts, the failing lines and the end of a log, never a whole log: every line an
   agent reads stays in its context for the rest of the task.
-- **Do not message a finished agent.** Start a new one from its report and the track's state file.
+- **Do not message a finished agent.** Start a new one from its report and the pull request's Remaining list
+  ([live status](how-we-work.md#pr-status)).
 - **Keep the coordinator small.** The coordinator re-reads its whole conversation on every turn and is the context a
   fork would inherit. It checkpoints (saves the state, clears, continues from it) before its context limit and before
   a long break, and never forks once its context is large.
