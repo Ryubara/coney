@@ -533,7 +533,7 @@ See [Cars: Explosion](cars.md#explode).
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
-| `0x0038b1f8` | `Car_StartExplosionLaunch` | Starts the upward launch of an exploding car. | confirmed (code) |
+| `0x0038b1f8` | `Car_StartHitRock` | Starts a car's rock away from a hit by a human or a held object and plays `shocks_squeak` ([Sound events](sound-events.md#cars)); not the explosion. | confirmed (code); the rock inferred |
 | `0x0038dfa0` | `Car_Explode` | Explodes a car. | confirmed (code) |
 
 ### Cars: Parts {#code-cars-parts}

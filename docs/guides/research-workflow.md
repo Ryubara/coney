@@ -8,6 +8,19 @@ go and how to write them up.
 The pages themselves live in `docs/research/`, one living page per subsystem or file format. How to lay a page out
 is in [Writing these docs](writing-docs.md#subsystem-page).
 
+## Before you research {#upstream}
+
+Check what already exists before starting a question, in the merged pages and in work that is not merged yet:
+
+1. Search `docs/research/` (`git grep -i <term> -- docs/research research`) for a page that already covers it.
+2. List the open pull requests (`gh pr list`) and search their branches: `git fetch`, then
+   `git log --oneline origin/<branch> -- docs/research` and `git grep -i <term> origin/<branch> -- docs/research`.
+   Another track may have the finding written up, or be part-way through it.
+3. If something covers the question, extend that page or branch (or wait for it to merge) instead of writing a second
+   account of the same thing; if it disagrees with what you find, say so on the page with both evidence levels.
+
+Only a question that nothing covers starts new research.
+
 ## Clean room {#clean-room}
 
 Coney is a clean-room reimplementation: the code has the same observable behaviour as the original but its own
@@ -377,6 +390,10 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
   run of F8 presses (one a second, or faster) and look at the screenshots afterwards. Data drawn in one frame
   usually survives in memory until reused: a sprite batch's arrays keep the last frame's sprites after its count is
   reset, which is how the draw-order keys and colours were read.
+- **Staging a fight.** To study the player being hit, write a pedestrian's position and heading over PINE so it
+  stands in front of the player, then force its commands and animations so it attacks or grabs: a controlled run that
+  repeats exactly. The front end's Rumble mode (quick rumble) is the fallback for live AI fights. Either way, save the
+  starting point as a state file of your own.
 - **Patching code to see something.** A code write lands before the recompiler first compiles the block if the
   function has not run yet; the legal screen's placement was measured by patching its clear colour to blue and
   halving its size factors, and the start-up movies were skipped by making their skip check (`0x0042a820`) return 1.
@@ -569,7 +586,12 @@ no floating-point arguments (`call-brains` is at `Brains_Update`, before the bra
 runtime-checks pass: `tick-game` and `humans-update` (the play step and the character step), `wheel-update` (each object
 the wheel updates), `state-code` (record `+0x14`'s setter), `set-command` and `get-command` (per-player `+0x20`),
 `brain-think`, `brain-event`, `attack-warning`, `try-block`, `block-start`, `skid-test` (the locomotion's run-stop test)
-and `call-brains`.
+and `call-brains`. The hint-queue pass added `hint-queue`, `hint-clear`, `hint-withdraw` and `hint-flush` (the hint
+box's queue, [HUD](../research/hud.md#hint-queue-runtime)) and `anim-dispatch` and `anim-callback-match` (who starts
+which anim id and which script callback it runs). Two hooks at one address cannot be installed together (`hint-show`
+and `event-hint` are the same place): pick one, and add any extra value it needs to the one you keep. When the update
+of an entry matters, log the tick count and use it: in that pass one Lua call's four `HintBox_Queue` entries, all at
+one tick, were labelled with two consecutive steps.
 
 A logged load can also log the **text** it points to: `text = N` (at most N bytes, up to 1024) reads the string at the
 value plus `text_offset`, and `text_when = "NAME=VALUE"` reads it only when another logged value has that value (a
@@ -746,7 +768,8 @@ A finding is done when someone else can use it without asking you. For each one:
 8. **Ship the docs with the code.** CI refuses a pull request that changes `src/` or `python/src/` without changing
    anything under `docs/` or `research/`. A change that needs no documentation (a refactor, a rename) says so with a
    line `Docs: none` in the pull request description; editing the description re-runs the check. Check it yourself with
-   `git diff --name-only main... | uv run --project python coney-tools repo check-docs`. Counts quoted in a page by
+   `git diff --name-only main... | uv run --project python coney-tools repo check-docs`. (The description itself is
+   checked against the pull request template by `coney-tools repo check-body`.) Counts quoted in a page by
    hand are held to the data by tests and by `{count}` in the reference lists ([above](#reference-lists)).
 
 ## The Understood measure {#understood}

@@ -464,19 +464,43 @@ calls no script itself.
    integers and their low byte kept, so pattern values are **grid cells 0-255** directly (no scaling; larger values
    wrap). A sample joins the path when its squared distance from the last one kept is more than 6 (the first is
    compared with (0, 0)); at most 300 samples, so at most 300 path points. The tag's painted fraction (its `+0xc8`,
-   [tag spots](#tag-spots)) × the path length sets where on the path the player starts (0 for a fresh tag).
-2. The **cursor** moves with the left stick when it is past 0.2: by stick × elapsed ms (at most 30) × the speed,
-   ramping linearly from 0 over the first 2 s; it stays inside the grid. Each cell at least 2 away from every cell
-   already painted is painted.
-3. The cursor is **on track** within 6 cells of a path point no more than 4 points ahead of or behind the progress;
-   progress moves to the nearest such point. Off track for more than 4 updates while the stick moves, the cursor
-   snaps back to the path at the progress, the controller rumbles, and the game pauses for the pause time; a crew
-   member may comment (speech 80 `tagcheer`, when the tagger's `+0x19c` is set; [who
-   speaks](sound-events.md#tag-lines)).
-4. **Paint**: each charge lasts the charge time; when it runs out the next charge is spent (item 3 − 1), the cursor
-   snaps back and the game pauses. With no charge left the tag ends unfinished.
-5. **Finished** when the progress is within 4 points of the path's end; painting 300 cells first ends it unfinished.
-6. Any command outside the game's own (or no paint) ends it.
+   [tag spots](#tag-spots)) × the path length, truncated, is the start index s (0 for a fresh tag). Every path point
+   is also copied into the painted list, whose count is set to s, so a half-sprayed tag shows its first s points
+   already painted. The cursor starts on point s.
+2. The **cursor** moves with the left stick when its squared length is at least 0.04 (0.2): by stick × elapsed ms ×
+   the speed, the elapsed time being the game clock since the last unpaused update, at most 30 ms. The speed ramps
+   linearly from 0 over 2 s from the **ramp start** (`+0x51c`: the first update, and again at each new charge, see
+   4; a slip does not restart it). The cursor stays inside 0-255 on both axes. The stick is the per-player record's
+   `+0x00` / `+0x04` floats (the pad's raw stick, not turned by the camera). The cell under the cursor (both floats
+   truncated) is painted when its squared distance from every painted cell is at least 4 (`+0x04`); a 301st cell
+   ends the game (5).
+3. **Tracking** (`+0x500`, `TagGame_IsOnTrack`), with p the progress index and the cursor's truncated cell; "near" is
+   a squared distance below 36 (within 6 cells):
+    - near any of the 4 points **behind** (p − 4 to p − 1): on track, p unchanged (progress never goes back);
+    - else the **first** of p, p + 1, p + 2, p + 3 (not beyond the last point) that is near: on track, and p becomes
+      that index. Point p itself is tried first, so p stays put while the cursor is within 6 cells of it and moves
+      on only once the cursor has left that circle (not to the nearest point: to the first one in order);
+    - else off track: the **off-track count** (`+0x510`) goes up by one if the stick moved this update.
+
+   The count is **not** reset by coming back on track: it is cleared only by a slip or a new charge. At the start
+   of a moving update, after painting and before tracking, a count above 4 is a **slip**: the cursor snaps to point
+   p, the count is cleared, the game pauses for the pause time (`+0x514` = clock + pause), the pad rumbles (per-player
+   `+0x1d` = 1, `+0x1c` = 255) and a crew member may comment (speech 80 `tagcheer`, when the tagger's `+0x19c` is
+   set; [who speaks](sound-events.md#tag-lines)). So five off-track moving updates since the last slip (30 Hz: about
+   a sixth of a second in all, not necessarily in a row) make the sixth moving update slip.
+4. **Paint** (`TagGame_SpendPaint`, `0x00274710`, run first in **every** update, paused ones included, so the charge
+   keeps draining through a pause): the first update stamps the charge start (`+0x518`); when the charge time has
+   passed, a new charge starts: the cursor snaps to point p, the off-track count is cleared, the game pauses and
+   the ramp restarts from the end of the pause; then one can is taken (item 3 − 1) if there is one, else the game is
+   over (`+0x4fc` = 1, progress set to the path count). The first charge takes no can when it starts, but
+   `Tag_UpdatePlayer` ends the game once the can count is 0, so n cans give n charges.
+5. **Finished** (`Tag_IsComplete`, `Tag_GetProgress` `0x00274e38`) when the path count < p + 4, that is
+   **p ≥ count − 3**: the third point from the end, which is where the drawn guide ends (the panel leaves the last 3
+   points out, [HUD](hud.md#fn-after-subtitle)). The progress is then 1.0; below it is p / count, the value sent to
+   the tag each update. Painting a 301st cell or running out of cans also makes it 1.0 but sets `+0x4fc`, which
+   `Tag_UpdatePlayer` treats as unfinished.
+6. Any command outside the game's own (`PlayerCmd_IsOtherInput`), no cans left, or the action becoming `0x18` ends
+   it. A paused update (before `+0x514`) runs only step 4.
 
 The **tuning**, by the Warrior class's byte `+0x09` (1-3, 0 counting as 1), from the table at `0x00510918`, unless
 `HuTagDifficulty` sets its own (no script does):
@@ -495,6 +519,116 @@ of the current charge left, one more charge is spent. The tagger's flag is freed
 (the tag's handle and whether it was finished, through its own vtable `+0x44`) and the **tag object** (human
 `+0x36c`) gets message `0x13`. Hint `0x10` in level `0x57`.
 Tagging is crime type 10, which sends no responders ([Crime types](../references/crime-types.md)).
+
+#### What the player sees: body, paint, mist and the wall {#tag-look}
+
+**The body.** `Tag_StartSprayClips` (`0x00278018`, from `Tag_UpdatePlayer` on the first update in action `0x17`)
+drops the held object only when its type's anim set (`+0x87`) is 4 (`OVERHEAD_WEAPON_SET`) or 6 (`GHETTO_SET`)
+(`Human_HoldsKind4Or6`). A pipe (`dyn_pipe_a`), a bat or a crowbar is set 3 (`CLUB_WEAPON_SET`, disc check of
+`CfgObj`'s 20th argument) and **stays in the hand**; what 334/335 do with it is not traced. It queues 334
+`ANIM_TAGGING_INTRO` (end hook `Tag_OnIntroEnd`), then the loop 335 (loop hook `Tag_StartSprayEffect`), sets held
+flag `0x400` (meaning not traced) and calls `Human_TurnToFacePoint(0.5 × the play time of 334, human, the tag's
+point)`: the turn to the tag object's position is spread over the first half of the intro. Confirmed (code). When a
+pause begins (a slip or a new charge; `TagGame_IsPaused` `0x002745e8` turns on during the update),
+`Tag_RestartSprayClips` (`0x00278210`) plays 337 and then the loop 335 again, with the same hooks.
+
+**The paint colour** is the tagger's human `+0x640`, four bytes. `Human_Init` (`0x00218770`) stores bytes
+`50 07 05 20` (in memory order) for everyone; a human whose class has brain kind 4 (`+0x11a`, after the `+0x19d`
+remap) and `+0x3b8` = 1 gets `ff ef ef ef` instead (`0x002187b0`). `HuTagColor(h, {t1, t2, t3, t4})` writes
+t4, t3, t2, t1 in that byte order (`0x00239080`: `f12` = t4 to byte 0 in `Colour_PackFloat` `0x0017aca8`). The
+two readers take the bytes in **opposite orders**:
+
+- the **HUD** (`TagHud_Render` `0x001cb798`) keeps bytes 0-2 and puts its own alpha in byte 3 (sprite colours are
+  r, g, b, a in memory: the path's grey is `CONCAT13(0xff, c c c)`): painted cells (rgb, 205), the charge bar
+  (rgb, 255). So the HUD shows (t4, t3, t2); the default is **(80, 7, 5)**, a dark maroon;
+- the **particles** read the word as `0xRRGGBBAA` with alpha in the low byte (`SprayMist_Init` `0x003aad68` keeps
+  `colour & 0xffffff00` as the previous colour, fading in from alpha 0): the mist is (t1, t2, t3) at alpha t4, the
+  scripts' `{r, g, b, a}` read as written; the default is **(32, 5, 7) at alpha 80**.
+
+Confirmed (code) at the addresses; the default **confirmed (runtime)** (PCSX2 2.9.94, PINE, a copy of quick-save slot
+6, `level99`): every human in use, the player included, had bytes `50 07 05 20` at `+0x640`. The scripts' values
+(disc check, counts only): level 34's Moon tagger `{0, 0, 40, 200}`, level 93's Destroyer tagger
+`{121, 155, 213, 75}`, a level 2 dancer `{75, 175, 0, 25}`; level 87 colours only `sguy` (`DEST_SPRAY`), never the
+player, so **the player's paint is the default** in mission 3.
+
+**The spray mist**, confirmed (code):
+
+- `Tag_StartSpray` (`0x0022e610`) and `Tag_StartSprayEffect` (`0x00277f28`, each time the loop 335 starts) create a
+  **`sub_spr`** (`0x003aa900`) and play `vags/character/spray_loopx28` on the tagger. The `sub_spr` is attached to
+  the tagger at **attach point `0x13`** (the arguments, popped in reverse: the mode 1, the rotation, the position,
+  the attach point `0x13`, the human, the colour `+0x640`). Every 2 ticks for 3 updates (`0x003aaa40`) it makes
+  two **`spray_mist`** at the attach point, each with a random velocity of −0.025 to 0.025 on each axis, in the
+  colour above.
+- `spray_mist` (`0x003aad68`, update `0x003aaf28`): `part_page1` (batch 4) rectangle 42-44 at random, size 0.05,
+  random spin ±90°, an update every 2 ticks; it grows 0.015-0.03 a step, fades and slows at step 5, is done at 6.
+- On the wall: each update's progress message `0x41` (below) makes the tag spawn mist **at the paint's leading
+  edge** while the progress is between 0.03 and 0.95 (`SprayTag_SpawnMist`, `0x003fbe98`): with (w, h) the tag's
+  extent (particle `+0xa0`, `+0xa4`; where it is set is not traced), x = (progress + a random 0-0.03) × w − w/2
+  along the tag's own axis, a column of max(1, ⌊h / r⌋ − 1) puffs from the bottom (−h/2) up in steps of r = a random
+  0.6-0.7, each a `spray_mist` in the **tagger's** colour, flagged to start at step 4 at size 0.45 (a quick big
+  puff). It stops when the particle pool is full or the point fails `Effects_CanSpawnAt(25 m, 20 m)`.
+
+**The paint on the wall** is not drawn stroke by stroke: the tag object is one **pre-made image** whose opacity is
+the progress. Confirmed (code) unless marked:
+
+- `SprayTag_Init` (`0x003fc600`): the spot is placed 0.5 m along its own +y from the spawn point, then a ray of
+  10 m back along −y (`0x003a36e0`) finds the wall; on a hit it moves to the hit point + 0.05 × its +y and its
+  rotation is built from the wall's normal (inferred: the global vectors 1 and 2 read after the ray are the hit
+  point and normal). Its sprite batch (`SprayTag_SetSprite` `0x003fc218`) is `PTank_New(depth 10, sprite, position,
+  1, flags, 255)` with the sprite word `0x50000` until `CfgTagSettings` sets one, and the task's flags `0x00508001`;
+  bit 0 of the flags makes the batch format 2 where the camera-facing fog uses 0 (`0x003a4e88`; inferred: an
+  **oriented quad lying on the wall**). `CfgTagSettings`' third argument (`+0xc0`, 0.5 by default; 0.8-3.5 in the
+  scripts) is the task's size field ([Particles](particles.md#task-fields)), so it is the image's size (inferred).
+- The drawn opacity is `+0xc8`, set from the painted fraction `+0x10` (`Task_SetFieldC8`). During the stick game
+  `Tag_UpdatePlayer` (`0x00273c60`) sends the tag message `0x41` with `Tag_GetProgress` **every update**, so the
+  image fades in evenly as the progress goes (0 to 1 over the path; 1.0 at the finish, then `0x19` state 3 keeps it).
+  A spot not finished keeps its fraction, and the next spray starts at that point of the path (step 1).
+- The image's own colours are drawn with the task colour (white by default, `0x005fd268` = `0xffffffff` at runtime),
+  so the wall tag does not take the paint colour: a Warriors' tag is its texture. Level 87's club wall is three
+  layered tags (`CfgTagSettings` sheet records `0x1fe`, `0x200`, `0x202`, size 3.5; prompts "base", "fill",
+  "detail"); its earlier spots use the default sprite.
+
+#### Coney status and fixes {#tag-coney-fixes}
+
+The checklist items (2026-10-10): the paint is black, no mist, no paint on the wall, a short near-black smear on the
+HUD, a dark charge bar, the Warrior not turned to the wall and still holding a pipe, and the tag ending just before
+the W is complete. Causes and fixes, for the implementer:
+
+1. **Ends early** (`TagGame::update`, `repo:src/warriors/tag_game.cpp`): Coney finishes at
+   `progress + 4 >= size − 1` (p ≥ count − 5), two points early, and its tracking picks the **nearest** point in
+   ±4, so the progress can jump up to four points ahead at once. Use step 5's p ≥ count − 3 and step 3's tracking
+   (back 4 without moving p, forward first match from p, squared distance < 36 on the truncated cell).
+2. **Off-track count**: cumulative until a slip or a new charge (step 3), not reset when back on track; the slip is
+   tested at the start of the next moving update after painting.
+3. **Charge during a pause**: the charge time keeps running through slip and charge pauses (step 4); the ramp
+   restarts at each new charge, measured on the game clock from the end of its pause.
+4. **Paint colour**: give every human the `Human_Init` default (bytes `50 07 05 20`; `ff ef ef ef` for the brain-kind
+   4 case) instead of 0, and keep `+0x640` as the four bytes `HuTagColor` writes (t4, t3, t2, t1). The HUD's painted
+   cells and charge bar use bytes 0-2 (default (80, 7, 5)); the mist uses `0xRRGGBBAA` with alpha in byte 0
+   (default (32, 5, 7, 80)). Coney's `HuTagColor` now packs t1 into the red byte of both, which is right for the mist
+   only (`repo:src/scripting/story_bindings.cpp`, `repo:src/gamemodes/gameplay_tag.cpp`).
+5. **Cursor colour** (`TagHud::cursorColour`, `repo:src/hud/tag_hud.cpp`): plain white while **on track**
+   (`+0x500`), flashing white and black while off track; the pause does not choose it (Coney passes
+   `pauseLeftMs > 0`). During a slip pause the flag keeps its last value (off track), so the cursor flashes.
+6. **Mist**: the `sub_spr` burst at attach point `0x13` when the spray starts and each time the loop 335 starts, and
+   the wall's leading-edge column on every progress message, as above; `spray_mist`'s numbers are in
+   [Script types](script-types.md#emitters).
+7. **The wall tag**: draw each `part_spray_tag` as its sprite (the `CfgTagSettings` sheet and rectangle, `0x50000`
+   by default) on a quad on the wall after the ray snap, sized by `+0xc0`, at opacity = its painted fraction; feed it
+   the progress each update (Coney's `TagSession` already sends `0x41`).
+8. **Turn and weapon**: the turn to the tag over half of 334 should be checked with a test (the play-tester saw
+   none); when 334 is missing Coney skips the clips and so the turn too (`GameplayMode::startTag`), where the
+   original still turns. A held pipe staying in the hand is **faithful**; drop only anim sets 4 and 6. Restart the
+   clips with 337 when a pause begins.
+
+**Tests** (synthetic, no game data): a straight 20-point path finishes when p reaches 17 and not at 15 or 16; a
+cursor within 6 cells of point p and of p + 1 leaves p unchanged; a cursor near p − 2 keeps p; five off-track moving
+updates split by on-track ones make the next moving update slip; a charge that ends inside a slip pause starts the
+next charge on time; the ramp restarts after a new charge but not after a slip; `HuTagColor(h, {1, 2, 3, 4})` gives
+HUD rgb (4, 3, 2) and mist `0x01020304`; a human never given a colour draws HUD cells (80, 7, 5, 205); the cursor is
+white on track and flashes off track and during a slip pause; the wall tag's opacity equals the progress after each
+update and stays 1.0 after a finish; a human holding a set-3 object keeps it at the spray's start, one holding a
+set-4 object drops it.
 
 #### The script callbacks {#tag-callbacks}
 
@@ -583,8 +717,68 @@ perfect, or a third abandoned pick. The report ([AI: crimes](ai.md#crimes)), con
 buyers and browsers are switched off, the nearest `strobe` within 6 m gets message `0x12`, and responders are queued
 with a delay of `CfgBreakAndEnterDelay` (15, 10 or 7 by difficulty). The first gang to rob a store scores crime event
 4-1 for its leader when he is a player. `ResetStore` (`0x0041ddd8`) clears the robbed bit, sets the group word's bits
-8-15 to `0xff` and the gang bits to 31, and restocks the store; its 7 m test is a strobe's distance from the store's
-flag, not the player's (confirmed (code)). `EnterStore` / `ExitStore` only change the screen colour.
+8-15 to `0xff` and the gang bits to 31, and restocks the store; its 7 m test (squared distance under 49, message
+`0x13`) is a strobe's distance from the store's flag, not the player's (confirmed (code)). The two strobe distances
+differ in the code: a break-in reaches a strobe within 6 m of the store's flag, a reset one within 7 m. `EnterStore` /
+`ExitStore` only change the screen colour.
+
+#### Which break-ins call the police {#break-in-police}
+
+`GameState_ReportCrime` (`0x0041b8b0`) handles type 1 differently from every other type (its `case 1`), confirmed
+(code) at `0x0041b8b0`, `0x0016df68` and `0x0016dc70`:
+
+1. It looks for the nearest flag of activity `0xe` (a store front) to the report's position
+   (`Flag_FindNearestByActivity`) and goes on only when one exists and lies within **10 m** (squared distance under
+   100). **No store front within 10 m: no police, no strobe, nothing robbed.** The wanted timer, hostility and
+   crime callback run before this, but only with an offender (step 2 of [AI: crimes](ai.md#crimes)).
+2. Only when that store is **not yet robbed** (bit 16 of the flag's word `+0xd8` clear) and the call asked for
+   responders (`mode` 1): `Responders_Queue(1, kind 1, count = CfgCrimeResponders(1) (game state +0x295), delay =
+   CfgBreakAndEnterDelay (0x005148a4) seconds, the crime scene, no target, no offender)`. Then the strobe's message
+   `0x12` and the store's buyers switched off ([above](#stores)). A store already robbed only fills in the robbing
+   gang (when the bits hold 31) and scores its leader's crime event; **a second break-in at the same store brings no
+   police** until `ResetStore`.
+3. `Responders_Queue` (`0x0016df68`) does nothing for a count of 0. Otherwise it takes, over all 32 gangs' four
+   spawners, the one in state **4** (police dispatch) or **6** (dispatching) nearest the crime scene whose queue is not
+   full (`+0xb0` < 4), and `Spawner_QueueCall` (`0x0016dc70`) appends the entry: due at now + delay × 1,000 ms, the
+   type, kind and count. **No spawner in state 4 or 6 anywhere: no police.** The spawner then makes a `Responder<n>`
+   gang of type 1 when the entry is due, while the police count is under its limit, and places the squad out of sight
+   ([AI: spawners](ai.md#spawners), steps 4-6).
+
+**Who reports a break-in** and with what, confirmed (code):
+
+| Reporter | Position | Offender | Mode |
+| --- | --- | --- | --- |
+| A lock pick that was not all perfect, or a third abandoned pick (`LockPick_End` `0x0022d908`, both calls) | the picker's position | **none** (`0x006ebd30`), so no wanted time, no police hostility, no callback | 1 |
+| An alarmed pane ([panes](objects.md#pane)) and the others in [AI: crimes](ai.md#crimes) | their own | their own | their own |
+
+So a lock-picked store door brings `CfgCrimeResponders(1)` police after `CfgBreakAndEnterDelay` seconds (15, 10 or 7
+by difficulty), from the nearest police dispatch spawner, only when the door is within 10 m of a store front that
+was not yet robbed; the picker himself is not made wanted by the pick. The counts the scripts set for type 1:
+`config_easy` 2, `level14` 2, `level87` 1, `level95_robinhood` 1 ([Crime types](../references/crime-types.md)).
+Whether the responders then attack the player's gang when the pick reported no offender (no police hostility was
+set) is not traced: the dispatch goal's target is the crime scene (inferred from the queued entry, which carries no
+target).
+
+**Owner item 13 (no police on a break-in)**: Coney's report (`repo:src/warriors/crime_reports.cpp`, checked
+2026-10-11) calls `CrimeServices::queueResponders`, whose only implementation is the interface's empty default, so
+nothing is ever queued; Coney also has no dispatch queue on its spawners (`GameplayMode`'s scout hook logs its call
+only). **Coney fixes**:
+
+1. Build the spawner dispatch queue ([AI: spawners](ai.md#spawners) steps 1, 4-6, [Spawner
+   states](../references/spawner-states.md) 4 and 6): four entries per spawner (time due, type, kind, count, target,
+   point, offender gang), served when due; state 4 makes a `Responder<n>` gang of type 1 while the game's police
+   count is under its limit and goes to 6, which places the squad out of sight and returns to 4 when it is complete.
+2. Implement `queueResponders` in the level's crime services as `Responders_Queue`: nearest spawner in state 4 or 6
+   to the crime scene with a free queue slot, delay in seconds.
+3. Gate type 1 as the original does: responders, the strobe and the buyers only when a store front (activity `0xe`)
+   lies within 10 m of the report and is not yet robbed; today Coney asks for responders before and regardless of
+   the store test.
+4. Report a lock pick's break-in with **no offender** (Coney passes the picker), so the pick sets no wanted time,
+   no hostility and no callback.
+5. Test (pad-driven, a level with a police dispatch spawner and a pickable store door, e.g. `level87`'s stores):
+   pick the door with a non-perfect press, assert a `Responder` gang appears after `CfgBreakAndEnterDelay` seconds
+   with `CfgCrimeResponders(1)` members; a second pick at the same store queues nothing; a pick away from any store
+   front queues nothing.
 
 ### Wanted and the crime level {#wanted}
 
@@ -649,13 +843,16 @@ The start and end of each mode of the [mini-game record](#mini-game-record), the
 | `0x00273fc0` | `Vec2_Add` | The sum of two 2D vectors. | confirmed (code) |
 | `0x00273ff0` | `Tag_CatmullRomPoint` | A point on the uniform Catmull-Rom curve through the pattern points ([Tagging](#tagging)). | confirmed (code) |
 | `0x00274188` | `Tag_SetPatternPoints` | Copies the pattern's count and 64 (x, y) points to 0x00510914 / 0x006cd978. | confirmed (code) |
-| `0x002745e8` | `Tag_HasStickGame` | Whether the stick game record's +0x514 is set. | confirmed (code) |
+| `0x002741d8` | `TagGame_Init` | Builds the stick game: the path from the pattern, the painted list, the start index from the tag's painted fraction, window 4, paint spacing 4 ([Tagging](#tagging)). | confirmed (code) |
+| `0x002745e8` | `TagGame_IsPaused` | Whether the stick game is paused (+0x514, the clock until which it waits after a slip or a new charge, is set). | confirmed (code) |
 | `0x002745f8` | `Tag_IsComplete` | Whether the tag's progress has reached 1.0. | confirmed (code) |
 | `0x00274638` | `Tag_GetChargeLeft` | The charge left: 1 - elapsed / the difficulty's time, from +0x518. | confirmed (code) |
-| `0x002748a0` | `Tag_IsPaused` | The stick game's paused flag (+0x500). | confirmed (code) |
-| `0x00274e38` | `Tag_GetProgress` | The painted fraction +0x508 / +0x268 (1.0 once +0x508 + +0x264 reaches it). | confirmed (code) |
+| `0x00274710` | `TagGame_SpendPaint` | Every update: the share of the charge left; at its end a new charge (snap, pause, ramp restart) and one can, or the end with none left. | confirmed (code) |
+| `0x002748a0` | `TagGame_IsOnTrack` | The stick game's on-track flag (+0x500); the HUD cursor is plain white while it is set. | confirmed (code) |
+| `0x002748a8` | `TagGame_Update` | One update of the stick game: charge, pause, cursor, painting, slip, tracking ([Tagging](#tagging)). | confirmed (code) |
+| `0x00274e38` | `Tag_GetProgress` | The painted fraction +0x508 / +0x268 (1.0 once +0x508 + +0x264 exceeds +0x268). | confirmed (code) |
 | `0x00277ed8` | `Tag_OnIntroEnd` | End hook of 334 ANIM_TAGGING_INTRO: starts the spray when the tag still exists, else ends the spray clips. | confirmed (code) |
-| `0x00277f28` | `Tag_StartSprayEffect` | While tagging: sends message 0x13 with the player colour, and starts the spray voice and particle. | confirmed (code) |
+| `0x00277f28` | `Tag_StartSprayEffect` | Loop hook of 335: while tagging, a `sub_spr` mist burst at attach point 0x13 in the tagger's colour and the spray voice ([What the player sees](#tag-look)). | confirmed (code) |
 | `0x00278210` | `Tag_RestartSprayClips` | Requeues the spray clips (the spray effect hook) when the tag still exists, dropping a kind 4 or 6 weapon. | confirmed (code) |
 | `0x002783b0` | `Tag_EndSprayClips` | The spray's end clip and the idle (the stance idle in a fight stance), then Tag_End. | confirmed (code) |
 
@@ -811,5 +1008,6 @@ the assault statistic is scored once per victim through the service.
 - Who sets mini-game mode 4.
 - The prompt widgets' base position and text style.
 - The lock-picking dial's rate at runtime (one step per drawn frame is inferred).
-- The responder spawn kind of a break-in (type 1) and of a custom crime (type 4).
+- Whether the police a lock-picked break-in calls attack the picker's gang (the pick reports no offender; [Which
+  break-ins call the police](#break-in-police)). Both a break-in and a custom crime queue kind 1.
 - Wiring the report's police hostility, responders and HUD messages to Coney's gangs, spawners and HUD.
