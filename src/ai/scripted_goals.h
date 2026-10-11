@@ -22,7 +22,10 @@ class ScriptServices;
 
 /// `GoalBackoff`'s goal: keep `distance` from another human, for `timeMs` (-1 for no limit) or until `BrClearBackoff`
 /// or `BrFlush` ends it. **Coney stand-in** for its process (not traced): while nearer than the distance the human
-/// walks straight away from the other, else it stands; it is done once its time is up or the other is gone.
+/// walks straight away from the other, else it stands; it is done once its time is up or the other is gone. The
+/// original's process keeps a distance band with the move-to-human action (2 s) and looks at him
+/// (docs/research/ai-goals.md#goal-backoff): in a fight stance it backs off facing him, where the stand-in turns its
+/// back (its move's heading is the way away) and walks off.
 /// @orig 0x002d92e8 BackoffGoal_Init (unknown)
 class BackoffGoal final : public Goal {
   public:

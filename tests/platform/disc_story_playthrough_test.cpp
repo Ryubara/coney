@@ -41,6 +41,7 @@ enum class Move : std::uint8_t {
     Run,   // run at full deflection to the point; done within kArrived of it
     Climb, // walk at kClimbStick toward the point beyond a face, tapping triangle near it; done once a climb has ended
     Jump, // sprint (L2 held) along the leg's line and tap triangle from the point's x on; done once the jump has landed
+    Charge, // sprint (L2 held) along the leg's line and tap cross from the point's x on; done once the charge has ended
 };
 
 // One leg of a route: what to do and its point on the roofs (x, y; game axes, metres).
@@ -58,10 +59,13 @@ constexpr float kClimbStick = 0.9F;
 // How far from a Climb leg's point triangle starts being tapped, m: the point lies 1.5-2 m beyond the face, and a
 // standing climb takes a face within about 1.2 m (docs/research/characters.md#climb).
 constexpr float kClimbTapWithin = 4.0F;
-// Frames between triangle taps while a climb or a jump is wanted.
+// Frames between button taps while a climb, a jump or a charge is wanted.
 constexpr int kTapEvery = 6;
-// How far past a Jump leg's take-off x the driver aims along the leg's line, m.
+// How far past a Jump or Charge leg's take-off x the driver aims along the leg's line, m.
 constexpr float kJumpLead = 20.0F;
+// The attack record's bit a run attack or a charge holds (`+0x08` & 0x1000000, docs/research/combat.md#run-attacks):
+// with L2 held it is the charge, so a Charge leg's charge has ended once it clears.
+constexpr std::uint32_t kChargeRecordBit = 0x1000000;
 
 // A pad driven by what player 1 is doing: it follows `route` leg by leg, turning each wanted direction into the left
 // stick by the shown camera's heading (the stick moves the player relative to the camera,
@@ -88,15 +92,16 @@ class RouteDriver final : public coney::InputSource {
         }
         const Leg& leg = m_route[m_leg];
         const coney::anim::Vec3 feet = human.position();
-        // Where to steer: the leg's point, or for a jump a point well past the take-off on the leg's line.
-        const float aimX = leg.move == Move::Jump ? leg.x + kJumpLead : leg.x;
+        // Where to steer: the leg's point, or for a jump or a charge a point well past the take-off on the leg's line.
+        const float aimX = leg.move == Move::Jump || leg.move == Move::Charge ? leg.x + kJumpLead : leg.x;
         const float dx = aimX - feet.x;
         const float dy = leg.y - feet.y;
         const float reach = std::hypot(leg.x - feet.x, leg.y - feet.y);
         const float deflection = leg.move == Move::Climb ? kClimbStick : 1.0F;
         steer(pad, *player, dx, dy, deflection);
 
-        // Buttons: L2 held for a jump's run-up; triangle tapped near a climb's face or past a jump's take-off.
+        // Buttons: L2 held for a jump's or a charge's run-up; triangle tapped near a climb's face or past a jump's
+        // take-off; cross tapped past a charge's (L2 held, then cross pressed: the charge, combat.md#run-attacks).
         const bool tapFrame = m_frame % kTapEvery == 0;
         const bool onGround = human.traversal() == Traversal::None && !human.airborne();
         switch (leg.move) {
@@ -114,6 +119,12 @@ class RouteDriver final : public coney::InputSource {
                 pad.buttons |= coney::pad::kTriangle;
             }
             break;
+        case Move::Charge:
+            pad.buttons |= coney::pad::kL2;
+            if (tapFrame && onGround && feet.x >= leg.x && !m_sawMove) {
+                pad.buttons |= coney::pad::kCross;
+            }
+            break;
         }
         return samples;
     }
@@ -122,13 +133,14 @@ class RouteDriver final : public coney::InputSource {
     [[nodiscard]] bool done() const { return m_leg >= m_route.size(); }
     // The legs done.
     [[nodiscard]] std::size_t legsDone() const { return m_leg; }
-    // Climbs and jumps made.
+    // Climbs, jumps and charges made.
     [[nodiscard]] int climbs() const { return m_climbs; }
     [[nodiscard]] int jumps() const { return m_jumps; }
+    [[nodiscard]] int charges() const { return m_charges; }
 
   private:
     // Moves on past the legs `human` has finished: a run once he is at its point, a climb or a jump once one began
-    // and he is back on his feet.
+    // and he is back on his feet, a charge once one began and ended.
     void advance(const coney::human::Human& human) {
         while (!done()) {
             const Leg& leg = m_route[m_leg];
@@ -148,6 +160,13 @@ class RouteDriver final : public coney::InputSource {
                 finished = m_sawMove && (traversal == Traversal::None || traversal == Traversal::RunStop);
                 m_jumps += finished ? 1 : 0;
                 break;
+            case Move::Charge: {
+                const bool charging = (human.gateInput().flags & kChargeRecordBit) != 0;
+                m_sawMove = m_sawMove || charging;
+                finished = m_sawMove && !charging;
+                m_charges += finished ? 1 : 0;
+                break;
+            }
             }
             if (!finished) {
                 return;
@@ -188,6 +207,7 @@ class RouteDriver final : public coney::InputSource {
     bool m_sawMove = false;
     int m_climbs = 0;
     int m_jumps = 0;
+    int m_charges = 0;
     std::uint64_t m_frame = 0;
 };
 
@@ -195,7 +215,9 @@ class RouteDriver final : public coney::InputSource {
 // roofs at y 361-369: the climbs (short walls, walls and two fences) and the sprint jumps over the gaps, each
 // `vbJumpWarn` box's. Past the last-but-one jump the roof at z 10.3 is closed by a 3.6 m wall that nothing climbs
 // (x 167.4, y 361.5-366.7); the way on is the steel stairs beside it (y 367-369.5), up to the platform at z 16.5 and
-// the jump to the gallery's roof.
+// the jump to the gallery's roof. At x 85.2 a row of three `dyn_door_fence` barriers (numbers 4, 6 and 10, 10
+// hitpoints) closes the roof from post to post: two-sided, they stop him from either side until one breaks, and a
+// charge (16) breaks one in a hit (docs/research/objects.md#barriers), so he charges through the middle of number 10.
 constexpr std::array kChaseRoute{
     Leg{Move::Run, -212.0F, 363.7F},  Leg{Move::Climb, -205.5F, 363.5F}, Leg{Move::Climb, -200.5F, 363.3F},
     Leg{Move::Run, -163.0F, 363.4F},  Leg{Move::Climb, -157.5F, 362.8F}, Leg{Move::Run, -136.0F, 361.8F},
@@ -204,10 +226,10 @@ constexpr std::array kChaseRoute{
     Leg{Move::Climb, -83.0F, 364.9F}, Leg{Move::Run, -79.5F, 364.9F},    Leg{Move::Climb, -74.5F, 364.9F},
     Leg{Move::Jump, -64.5F, 364.9F},  Leg{Move::Run, 15.0F, 364.8F},     Leg{Move::Jump, 18.5F, 364.8F},
     Leg{Move::Run, 50.0F, 365.1F},    Leg{Move::Run, 66.0F, 367.4F},     Leg{Move::Climb, 74.5F, 367.5F},
-    Leg{Move::Run, 92.0F, 365.0F},    Leg{Move::Climb, 96.0F, 365.0F},   Leg{Move::Jump, 100.5F, 365.0F},
-    Leg{Move::Run, 134.0F, 364.7F},   Leg{Move::Climb, 139.5F, 364.8F},  Leg{Move::Jump, 149.5F, 364.8F},
-    Leg{Move::Run, 164.5F, 368.2F},   Leg{Move::Run, 178.0F, 368.2F},    Leg{Move::Jump, 191.5F, 368.2F},
-    Leg{Move::Run, 206.0F, 368.2F},
+    Leg{Move::Charge, 81.5F, 365.0F}, Leg{Move::Run, 92.0F, 365.0F},     Leg{Move::Climb, 96.0F, 365.0F},
+    Leg{Move::Jump, 100.5F, 365.0F},  Leg{Move::Run, 134.0F, 364.7F},    Leg{Move::Climb, 139.5F, 364.8F},
+    Leg{Move::Jump, 149.5F, 364.8F},  Leg{Move::Run, 164.5F, 368.2F},    Leg{Move::Run, 178.0F, 368.2F},
+    Leg{Move::Jump, 191.5F, 368.2F},  Leg{Move::Run, 206.0F, 368.2F},
 };
 
 // How long the chase may take before it counts as stuck: 3 minutes of frames.
@@ -242,10 +264,10 @@ TEST_CASE("the disc's level3 rooftop chase, driven by the pad, reaches the galle
     const coney::platform::PlayLevelMode* play = run.session().play();
     const std::uint64_t errors = run.session().flow().scripts().errors();
     std::printf("  level3 checkpoint 4 chase: checkpoint %.0f after %llu frames of play, legs %zu of %zu, climbs %d, "
-                "jumps %d, %llu script errors, %s\n",
+                "jumps %d, charges %d, %llu script errors, %s\n",
                 state.checkPoint, static_cast<unsigned long long>(run.playFrames()), driver.legsDone(),
-                kChaseRoute.size(), driver.climbs(), driver.jumps(), static_cast<unsigned long long>(errors),
-                failed() ? "failed" : "not failed");
+                kChaseRoute.size(), driver.climbs(), driver.jumps(), driver.charges(),
+                static_cast<unsigned long long>(errors), failed() ? "failed" : "not failed");
     if (play != nullptr) {
         const coney::anim::Vec3 feet = play->player().human().position();
         std::printf("  player 1 at (%.1f, %.1f, %.1f), health %d\n", static_cast<double>(feet.x),

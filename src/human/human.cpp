@@ -824,8 +824,60 @@ void Human::holdForCombat() {
     }
 }
 
+void Human::aiCombatWalk(bool gated) {
+    // The brain's move this update; none is speed 0 along the facing (Brain_StopMove's), so no turn and no step.
+    constexpr float kMovingAsk = 0.1F;
+    constexpr float kTurnClipAngle = 15.0F * kPi / 180.0F;
+    const bool moving = m_moveSpeed.has_value() && m_record.move.has_value();
+    const float asked = moving ? *m_moveSpeed : 0.0F;
+    const float wanted = moving ? m_record.move->heading : m_heading;
+    const bool wounded = m_script.wounded;
+    // The turn to the brain's heading: whenever it asks for a speed (or the human is wounded, at the wounded rate) at
+    // the AI's stance word; at speed 0 and more than 15° off, the turn on the spot (**Coney stand-in**: its stance
+    // clips are not played, so the human turns at the standing word, as aiLocomote() does).
+    const float error = wrapAngle(wanted - m_heading);
+    float limit = 0.0F;
+    if (asked > 0.0F || wounded) {
+        limit = aiStanceTurn(wounded);
+    } else if (moving && std::fabs(error) > kTurnClipAngle) {
+        limit = aiMaxTurn(Gait::Standing, m_record.move->turnBoost, false);
+    }
+    m_heading = std::fabs(error) <= limit ? wanted : wrapAngle(m_heading + std::copysign(limit, error));
+    m_turn = TurnState{};
+    if (gated) {
+        m_velocity = anim::Vec3{0.0F, 0.0F, m_velocity.z};
+        return;
+    }
+    // The speed: the stance walk when asked for more than 0.1, else 0; wounded comes first, the walk speed.
+    float speed = 0.0F;
+    if (wounded) {
+        speed = asked > kMovingAsk ? m_animator.speeds().walk : asked;
+    } else if (asked > kMovingAsk) {
+        speed = combat::combatTuning().combatWalkSpeed;
+    }
+    // The feet strafe along the line to the move's point, whatever the facing; on the point, they stand.
+    const anim::Vec3 to = moving ? anim::subtract(m_record.move->aim, m_position) : anim::Vec3{};
+    const float distance = std::hypot(to.x, to.y);
+    const float newSpeed = distance > 1e-4F ? aiApproachSpeed(ps2::length(m_velocity.x, m_velocity.y), speed) : 0.0F;
+    if (newSpeed <= 0.0F) {
+        m_velocity = anim::Vec3{0.0F, 0.0F, m_velocity.z};
+        m_animator.playCombatWalk(kAnimFightIdle);
+        return;
+    }
+    m_velocity = anim::Vec3{to.x / distance * newSpeed, to.y / distance * newSpeed, m_velocity.z};
+    // The clip by the movement's angle from the facing, clockwise (record +0xdc).
+    const float clockwise = -wrapAngle(headingOf(to) - m_heading) * 180.0F / kPi;
+    m_animator.playCombatWalk(static_cast<std::uint32_t>(combat::combatWalkClip(clockwise)));
+}
+
 void Human::combatWalk(const Combatant& target, bool gated) {
-    // Faces the target every update.
+    // A human no pad drives runs the AI's stance control: its brain's move, never the target, turns it
+    // (docs/research/ai.md#fight-facing).
+    if (!m_record.padDriven) {
+        aiCombatWalk(gated);
+        return;
+    }
+    // The player faces the target every update.
     const anim::Vec3 to = anim::subtract(target.position(), m_position);
     if (std::hypot(to.x, to.y) > 1e-4F) {
         m_heading = headingOf(to);

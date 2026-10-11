@@ -52,6 +52,7 @@ enum class GoalType : std::uint8_t {
     FindEnemy = 0x41,          ///< FindEnemyGoal: looks for an enemy to fight.
     AreaWalker = 0x47,         ///< AreaWalkerGoal: strolls round a centre.
     LeadChase = 0x49,          ///< LeadChaseGoal: leads a chaser along a path.
+    RunCarrot = 0x4a,          ///< RunCarrotGoal: runs a path ahead of a chasing gang.
     BumLogic = 0x4f,           ///< BumLogicGoal.
     Peddler = 0x50,            ///< PeddlerGoal: a vendor beckoning passers-by.
     Riot = 0x54,               ///< RiotGoal: roams, smashes, loots and picks fights, then leaves.

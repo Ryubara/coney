@@ -287,7 +287,7 @@ const Door& Doors::spawn(double handle, const DoorSpawn& spawn, const ObjectType
             door.interval = kCabinInterval;
             door.countdown = kCabinInterval;
         }
-        markTriangles(world.collision, door.triangles, flags, door.material);
+        markTriangles(world, door.triangles, flags, door.material);
         if (door.setup.marksLinks) {
             links.setKindByNumber(door.number, link_kind::kBreakable);
         }
@@ -295,8 +295,7 @@ const Door& Doors::spawn(double handle, const DoorSpawn& spawn, const ObjectType
             pickableOn(door, world);
         }
     } else if (door.doorClass == DoorClass::Barrier) {
-        markTriangles(world.collision, door.triangles,
-                      raycast::kTriangleTwoSided | kTriangleBreakableBit | kTriangleDoorBit);
+        markTriangles(world, door.triangles, raycast::kTriangleTwoSided | kTriangleBreakableBit | kTriangleDoorBit);
         if (info != nullptr && info->className != kUnmarkedBarrierClass) {
             links.setKindByNumber(door.number, link_kind::kBreakable);
         }
@@ -342,7 +341,7 @@ void Doors::runCommand(Door& door, int command, ObjectWorld& world) {
         runCommand(door, door_command::kEnableCollision, world);
         return;
     case door_command::kEnableCollision:
-        setTrianglesEnabled(world.collision, door.triangles, true);
+        setTrianglesEnabled(world, door.triangles, true);
         if (world.services != nullptr) {
             world.services->setBody(door.handle, true);
         }
@@ -350,7 +349,7 @@ void Doors::runCommand(Door& door, int command, ObjectWorld& world) {
         return;
     case door_command::kDisableCollision:
         links.openByNumber(door.number);
-        setTrianglesEnabled(world.collision, door.triangles, false);
+        setTrianglesEnabled(world, door.triangles, false);
         if (world.services != nullptr) {
             world.services->setBody(door.handle, false);
         }
@@ -516,7 +515,7 @@ void Doors::hitStore(Door& door, const ObjectHit& hit, ObjectWorld& world) {
     }
     playSound(door, kDoorHitSound, world);
     playPair(world, material::kGlass, material::kGlass, door.position);
-    setTrianglesEnabled(world.collision, door.triangles, false);
+    setTrianglesEnabled(world, door.triangles, false);
     openAway(door, hit.attackerAt, world);
 }
 
@@ -575,7 +574,7 @@ void Doors::hitSplinters(Door& door, const ObjectHit& hit, ObjectWorld& world) {
 }
 
 void Doors::wreck(Door& door, ObjectWorld& world) {
-    setTrianglesEnabled(world.collision, door.triangles, false);
+    setTrianglesEnabled(world, door.triangles, false);
     if (world.services != nullptr) {
         for (const std::string_view piece : door.setup.wreck) {
             if (!piece.empty()) {
@@ -599,7 +598,7 @@ void Doors::hitBarrier(Door& door, const ObjectHit& hit, ObjectWorld& world) {
     // triangles in Coney's level mesh, so they go off only at the removal, unless the body goes now (wall_a) or the
     // barrier is never removed (dyn_door_vargas).
     if (door.type == kWallA || door.type == kVargas) {
-        setTrianglesEnabled(world.collision, door.triangles, false);
+        setTrianglesEnabled(world, door.triangles, false);
     }
     NavLinks(world.paths).openByNumber(door.number);
     if (world.services != nullptr) {
@@ -674,7 +673,7 @@ void Doors::tick(ObjectWorld& world) {
             door.countdown = door.interval;
             if (door.broken) {
                 door.removed = true;
-                setTrianglesEnabled(world.collision, door.triangles, false);
+                setTrianglesEnabled(world, door.triangles, false);
                 m_removed.push_back(door.handle);
             }
             continue;

@@ -96,6 +96,7 @@ add_executable(coney_tests
     platform/disc_change_character_test.cpp
     platform/disc_sprite_sheets_test.cpp
     platform/disc_rumble_test.cpp
+    platform/disc_hub_doors_test.cpp
     platform/disc_hub_test.cpp
     platform/disc_level80_test.cpp
     platform/disc_level5_boss_camera_test.cpp
@@ -201,6 +202,7 @@ add_executable(coney_tests
     world_objects/props_test.cpp
     world_objects/disc_doors_test.cpp
     world_objects/disc_object_list_test.cpp
+    world_objects/door_blocking_test.cpp
     world_objects/doors_test.cpp
     world_objects/glass_test.cpp
     world_objects/hats_test.cpp
@@ -344,6 +346,7 @@ target_sources(coney_tests PRIVATE
     ai/route_planner_test.cpp
     ai/scripted_goals_test.cpp
     ai/scripted_hub_test.cpp
+    ai/run_carrot_test.cpp
     ai/scripted_character_test.cpp
     ai/scripted_humans_test.cpp
     ai/riot_goals_test.cpp

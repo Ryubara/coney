@@ -18,6 +18,7 @@
 #include "ai/route_planner.h"
 #include "ai/sectors.h"
 #include "ai/targeting.h"
+#include "animation/anim_math.h"
 #include "combat/player_combat.h"
 #include "combat/reactions.h"
 #include "human/fighter.h"
@@ -243,6 +244,12 @@ GoalStatus FightGoal::process(Brain& brain) {
         const RepositionRing band = repositionRing(ring);
         if (distance > band.outer) {
             brain.queueAction(std::make_unique<MoveToHumanAction>(band.limitMs, band.outer));
+        } else {
+            // **Coney stand-in** for the band-keeping move while it waits in the ring: the original's circles him
+            // with the heading to him written each update (docs/research/ai.md#move-melee); standing here, the human
+            // only turns to him (the brain's move is cleared every update, so nothing else would).
+            brain.setMoveHeading(human::headingOf(anim::subtract(target->human().position(), brain.human().position())),
+                                 0.0F);
         }
         return GoalStatus::Stop;
     }

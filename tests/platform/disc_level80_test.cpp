@@ -420,8 +420,12 @@ TEST_CASE("the disc's level80: the cuffed Warriors offer the uncuff prompt and t
     REQUIRE(player != nullptr);
     const auto facingHim = [&level, warrior] {
         // Once he stands (the freed Warriors walk off at first), 1 m east of him, facing west (heading 90 degrees
-        // faces -x), for a think or two.
+        // faces -x), for a think or two. His goals are held meanwhile (the brain suspended, as BrSuspend does; his
+        // thinks still run the prompt's test): moved off his formation slot by the teleport, his follow goal would
+        // otherwise run him back to it, out of the swap's reach.
+        warrior->setSuspended(false);
         REQUIRE(level.runUntil([warrior] { return warrior->human().gait() == coney::human::Gait::Standing; }, kWait));
+        warrior->setSuspended(true);
         const coney::anim::Vec3 at = warrior->human().position();
         level.play()->teleportPlayer(
             coney::world_objects::Placement{.position = {at.x + 1.0F, at.y, at.z}, .headingDegrees = 90.0F});
@@ -447,6 +451,7 @@ TEST_CASE("the disc's level80: the cuffed Warriors offer the uncuff prompt and t
     facingHim();
     CHECK_FALSE(warrior->human().script().talkable);
     CHECK(level.scripts->hud().actionPrompt(0).empty());
+    warrior->setSuspended(false);
 }
 
 namespace {

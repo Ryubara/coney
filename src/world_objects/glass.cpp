@@ -81,7 +81,7 @@ const GlassPane& GlassPanes::spawn(double handle, const GlassSpawn& spawn, Objec
     pane.polygon = links.polygonAt(pane.centre);
 
     // Its triangles two-sided with material GLASS; its sprite and colour by type.
-    markTriangles(world.collision, pane.triangles, raycast::kTriangleTwoSided, material::kGlass);
+    markTriangles(world, pane.triangles, raycast::kTriangleTwoSided, material::kGlass);
     pane.sprite = spawn.type == glass_type::kStained ? kStainedSprite : (entry.sprite & kSpriteRectMask);
     pane.colour = spawn.type == glass_type::kInvisible ? 0U : kPaneColour;
     if (entry.alarm) {
@@ -90,7 +90,7 @@ const GlassPane& GlassPanes::spawn(double handle, const GlassSpawn& spawn, Objec
     // Types 17 and 18 start broken with their triangles off; 18 also opens its polygon.
     if (spawn.type == glass_type::kPreBroken || spawn.type == glass_type::kPreBrokenGap) {
         pane.broken = true;
-        setTrianglesEnabled(world.collision, pane.triangles, false);
+        setTrianglesEnabled(world, pane.triangles, false);
         if (spawn.type == glass_type::kPreBrokenGap && pane.polygon) {
             links.setPolygonExcluded(*pane.polygon, true);
         }
@@ -154,7 +154,7 @@ void GlassPanes::shatter(GlassPane& pane, bool markBroken, ObjectWorld& world) {
         }
     }
     shatterEffect(pane, world);
-    setTrianglesEnabled(world.collision, pane.triangles, false);
+    setTrianglesEnabled(world, pane.triangles, false);
     if (markBroken) {
         // White and faint: no longer whole, the pane never gets its body back.
         pane.colour = kBrokenPaneColour;
