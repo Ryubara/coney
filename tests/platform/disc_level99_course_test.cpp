@@ -156,11 +156,18 @@ TEST_CASE("the disc's level99 combat tutorial: the play-through script passes le
     timer.setFixedStep(true);
     coney::hud::Hud& hud = scripts.hud();
 
-    // Each tutorial callback the lessons arm, in order, until checkpoint 2.
+    // Each tutorial callback the lessons arm, in order, until checkpoint 2; and each text the hint box shows, in order.
     std::vector<std::string> armed;
+    std::vector<std::string> shownTexts;
+    std::size_t mostQueued = 0; // the longest the box's queue grew behind a showing hint
     std::uint64_t frame = 0;
     for (; frame < kCourseEnd + kCheckpointWait && (armed.empty() || armed.back() != "P1.RageMoves"); ++frame) {
         stack.runUntilEmpty(timer, {}, 1);
+        if (const std::optional<coney::hud::Hint>& showing = hud.hints().showing();
+            showing && (shownTexts.empty() || shownTexts.back() != showing->text)) {
+            shownTexts.push_back(showing->text);
+        }
+        mostQueued = std::max(mostQueued, hud.hints().queued().size());
         if (const std::string& callback = hud.tutorialCallback();
             !callback.empty() && (armed.empty() || armed.back() != callback)) {
             armed.push_back(callback);
@@ -183,5 +190,44 @@ TEST_CASE("the disc's level99 combat tutorial: the play-through script passes le
         at = std::find(at, armed.end(), callback);
         CHECK(at != armed.end());
     }
+
+    // The lesson texts the hint box showed, in the original's order up to the throw lesson
+    // (docs/research/scripting.md#level99-hints): the grab hints (TT_19*) the player's state brings up are left out
+    // and repeats merged, as the page says. A text the lessons set only after a grab hint that was still queued would
+    // show late, behind it, and break the order (owner checklist item 33b).
+    const std::shared_ptr<coney::script::Table> texts = scripts.scripts().vm().global("LEVEL99").table();
+    REQUIRE(texts != nullptr);
+    const auto textOf = [&texts](std::string_view key) {
+        return std::string(texts->field(key).string().value_or(std::string_view{}));
+    };
+    std::vector<std::string> grabHints;
+    for (const std::string_view key : {"TT_19a", "TT_19b", "TT_19c", "TT_19d", "TT_19e", "TT_19f", "TT_19g"}) {
+        grabHints.push_back(textOf(key));
+    }
+    std::vector<std::string> lessonTexts;
+    for (const std::string& text : shownTexts) {
+        if (std::ranges::find(grabHints, text) == grabHints.end() &&
+            (lessonTexts.empty() || lessonTexts.back() != text)) {
+            lessonTexts.push_back(text);
+        }
+    }
+    constexpr std::array<std::string_view, 22> kLessonOrder{
+        "TT_20a", "TT_20c", "TT_22a", "TT_22b", "TT_22a", "TT_22b", "TT_22a", "TT_22b", "TT_26a", "TT_26b", "TT_23a",
+        "TT_23b", "TT_23e", "TT_23f", "TT_23d", "TT_24a", "TT_24b", "TT_24d", "TT_24e", "TT_25a", "TT_25c", "TT_25e"};
+    std::vector<std::string> expected;
+    expected.reserve(kLessonOrder.size());
+    for (const std::string_view key : kLessonOrder) {
+        expected.push_back(textOf(key));
+    }
+    std::size_t matched = 0;
+    while (matched < expected.size() && matched < lessonTexts.size() && lessonTexts[matched] == expected[matched]) {
+        ++matched;
+    }
+    std::printf("  level99 course: %zu hint texts shown, %zu of %zu lesson texts in order, queue at most %zu\n",
+                shownTexts.size(), matched, expected.size(), mostQueued);
+    if (matched < expected.size()) {
+        UNSCOPED_INFO("the first lesson text out of order is " << kLessonOrder.at(matched));
+    }
+    CHECK(matched == expected.size());
     CHECK(scripts.scripts().errors() == 0);
 }

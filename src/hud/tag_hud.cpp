@@ -32,8 +32,8 @@ graphics::OverlayPoint TagHud::origin(std::size_t player) {
     return graphics::OverlayCamera::guiToOverlay(gui.x, gui.y);
 }
 
-graphics::Rgba TagHud::cursorColour(std::uint64_t nowMs, bool paused) {
-    if (paused) {
+graphics::Rgba TagHud::cursorColour(std::uint64_t nowMs, bool onTrack) {
+    if (onTrack) {
         return graphics::kWhite;
     }
     // A triangle wave over 500 ms: white at 0, black at 250, white again at 500.
@@ -75,7 +75,7 @@ void TagHud::render(const HudCanvas& canvas, std::size_t player, std::uint64_t n
     // 3. The cursor, between cells as it moves.
     if (kTagCursorRect < rects) {
         parts->addSprite(at(base, state.cursorX * kTagCellStep, state.cursorY * kTagCellStep, kTagCursorSize,
-                            kTagCursorSize, sheet.page.rect(kTagCursorRect), cursorColour(nowMs, state.paused)));
+                            kTagCursorSize, sheet.page.rect(kTagCursorRect), cursorColour(nowMs, state.onTrack)));
     }
     // 4. The charge bar: its bottom fixed, its centre half its height above, so it shrinks down as the paint goes.
     if (kTagBarRect < rects) {

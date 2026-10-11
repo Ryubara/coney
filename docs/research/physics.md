@@ -672,6 +672,26 @@ move, where the original uses the centre before it ([Sweeping a body](#sweep)). 
 (moves are under 0.3 m and the radius about 0.47 m) the two agree; the hangout's doors that the player walks through
 one way are not this but the lost spawn flags ([Objects](objects.md#coneys-implementation)).
 
+Humans meet each other as [Human contacts](#human-contacts) describes (`human::sweepCapsules` and
+`human::contactPush`, `repo:src/human/human_contacts.h`; `Human::meetHumans`). The characters' step
+(`human::Humans::update`) gives every human the step's list of humans, and a walking human's sweep first meets their
+upright capsules (0.35 × scale, 2 m tall): the nearest contact stops the capsule there and the rest of the move
+slides along the other human (code 1), and, unless the mover charges, the one met gets half of the move into him over
+his push weight (1e9 while in a pair or arrested) as a pending push for his own next move (code 4), unless a script
+made him unpushable (`HuSetPushable(false)`). A player's velocity loses its part into the human, as against a wall.
+Skipped: a human who is knocked out, wounded, out of health or out of the world, and the human this one holds or is
+held by (a grab, tackle, mount or mugging), so a linked pair passes through each other. What differs, each marked in
+the code:
+
+- **Coney's choice**: the humans take their part of the move before the walls take theirs, where the original sorts
+  both kinds of contact of a pass by fraction together; a capsule already within reach is met at fraction 0 by a move
+  that goes further in (the capsule sweep's start case is not traced).
+- **Stand-in**: `BLOCKHUMANS` comes back as soon as the human is no longer knocked out, wounded or out of health.
+  The original ([Human contacts](#human-contacts), "Who loses `BLOCKHUMANS`") gives it back only when he is healed or
+  unarrested, never by waking or ending a wound alone, and also takes it from a cuffed human; a knockdown keeps it.
+- **Not yet**: an airborne body meets no human (a jump's strike and code 1 against a human); a scene's shared group;
+  the pushed human's reaction (`Human_OnPushContact`'s timers and damage).
+
 ## Open questions
 
 - Hangout railing vault (checklist item 46: the vault plays but the player stays put): not explained by the door

@@ -702,7 +702,7 @@ Sets or clears both grab-block bits of the human's flag word (`+0xe0`) at once: 
 - **Wrapper** `0x003590e0` (registered by `RegisterBindings`); **calls** `0x00237a28` `Human_BlockGrab`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level93`](story.md#level93) (mission 10)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuBlockJump {#hublockjump}
 
@@ -781,7 +781,7 @@ both flags cannot start a grab at all (Player_GrabOrTackle, 0x00284920).
 - **Wrapper** `0x00359140` (registered by `RegisterBindings`); **calls** `0x00237b00` `Human_SetBlockRearGrab`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level52`](story.md#level52) (mission 15)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuBlockTackle {#hublocktackle}
 
@@ -1686,7 +1686,7 @@ target.
   `Brain_IsEngaged`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level20`](story.md#level20) (flashback 4)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuIsAimingAt {#huisaimingat}
 
@@ -1849,7 +1849,7 @@ height ([Camera](../../research/camera.md#update)).
 - **Wrapper** `0x0035b758` (registered by `RegisterBindings`); **calls** `0x00235798` `Human_IsHidden`
 - **Used by** 4 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 3 of 28 levels, first [`level51`](story.md#level51) (mission 14)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuIsInScene {#huisinscene}
 
@@ -1875,7 +1875,7 @@ it carries the in-scene state flag 0x800000 that the scene player sets on bound 
   `Human_IsInSceneState`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level20`](story.md#level20) (flashback 4)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuIsMugged {#huismugged}
 
@@ -2404,7 +2404,7 @@ same value) was found, so its effect is open.
 - **Wrapper** `0x00358b38` (registered by `RegisterBindings`); **calls** `0x0023a258` `Human_SetRubberNeck`
 - **Used by** 2 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level54`](story.md#level54) (mission 16)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSay {#husay}
 
@@ -2788,7 +2788,7 @@ same damage path (inferred).
 - **Wrapper** `0x00359a80` (registered by `RegisterBindings`); **calls** `0x00235e10` `Human_SetDoubleDamage`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level83`](story.md#level83) (flashback 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetFastClimber {#husetfastclimber}
 
@@ -2978,7 +2978,7 @@ the exact use (inferred: the radius for noise events such as fights and breaking
 - **Wrapper** `0x0035c278` (registered by `RegisterBindings`); **calls** `0x002383e8` `Human_SetHearRange`
 - **Used by** 5 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level86`](story.md#level86) (mission 9)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetHelpHearRange {#husethelphearrange}
 
@@ -3004,7 +3004,7 @@ GangBrain_OnEvent and Player_UpdateMugging (both callers of 0x00293640).
 - **Wrapper** `0x0035c2f0` (registered by `RegisterBindings`); **calls** `0x00238430` `Human_SetHelpHearRange`
 - **Used by** 2 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level9`](story.md#level9) (mission 13)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetIdleAnim {#husetidleanim}
 
@@ -3191,7 +3191,7 @@ scripts give it to a few scripted killers.
 - **Wrapper** `0x0035b980` (registered by `RegisterBindings`); **calls** `0x00235a88` `Human_SetKillerMode`
 - **Used by** 4 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level81`](story.md#level81) (mission 8)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetLockedRage {#husetlockedrage}
 
@@ -4323,7 +4323,7 @@ is inferred from the name.
 - **Wrapper** `0x0035ab00` (registered by `RegisterBindings`); **calls** `0x002376a0` `Human_SetWoundable`
 - **Used by** 20 of 467 script chunks (117 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 10 of 28 levels, first [`level86`](story.md#level86) (mission 9)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetWounded {#husetwounded}
 
@@ -4851,7 +4851,7 @@ characters.md#the-human-object). -1 gives nil.
   `Handle_Resolve`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level92`](story.md#level92) (flashback 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## IssueWarriorCommand {#issuewarriorcommand}
 

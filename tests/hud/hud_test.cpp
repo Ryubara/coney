@@ -564,6 +564,50 @@ TEST_CASE("the action cycle hides the prompt's text and draws its button at the 
     CHECK(parts.sprites().empty());
 }
 
+TEST_CASE("the level's shut-down clears every hint, objective and panel the level left, and keeps the game's",
+          "[hud]") {
+    // docs/research/hud.md#hud-object: UnloadLevel's HUD_ShutdownLevel runs every part's shutdown; the hint box's
+    // clears its text, both lists and the tutorial callback.
+    Hud hud = makeHud(nullptr);
+    REQUIRE(hud.attachPlayer(0, 32) == 0);
+    hud.setGameTutorialText(true);
+    hud.hints().queue("lesson", 1);
+    step(hud, 100);
+    hud.hints().queue("queued", 3);
+    REQUIRE(hud.hints().showing().has_value());
+    hud.setTutorialCallback("P1.BasicAttacks");
+    hud.setObjective(0, "objective", 0, true, 0);
+    REQUIRE(hud.checklist().slots[0].has_value());
+    hud.setAnnouncement(5, "centred", false);
+    hud.setActionPrompt(0, "prompt");
+    hud.enableArrow(true, 0.5F, 0.5F, 0.0F);
+    hud.showStopWatch(true, "time");
+    hud.radar().blips.try_emplace(7.0, coney::hud::RadarBlip{});
+    hud.showAll();
+
+    hud.levelShutDown();
+    CHECK_FALSE(hud.hints().showing().has_value());
+    CHECK(hud.hints().queued().empty());
+    CHECK(hud.tutorialCallback().empty());
+    CHECK_FALSE(hud.checklist().slots[0].has_value());
+    CHECK_FALSE(hud.centredAnnouncement().has_value());
+    CHECK(hud.actionPrompt(0).empty());
+    CHECK_FALSE(hud.arrow().on);
+    CHECK_FALSE(hud.stopWatch().shown);
+    CHECK(hud.radar().blips.empty());
+    // The panel is free for the next level's player.
+    CHECK(hud.attachPlayer(0, 32) == 0);
+    // The game state's switch, the services and the shown flag outlive the level.
+    CHECK(hud.gameTutorialText());
+    CHECK(hud.services().hudString(1) == "H1");
+    CHECK(hud.visible());
+    // A hint the next level queues shows as before.
+    hud.hints().queue("next", 1);
+    step(hud, 200);
+    REQUIRE(hud.hints().showing().has_value());
+    CHECK(hud.hints().showing().value_or(coney::hud::Hint{}).text == "next");
+}
+
 TEST_CASE("a context prompt's GSTRING.ACTIONBUTTON draws the triangle button, not the letter n", "[hud]") {
     // Owner item 9 ("n Give Weapon"): the prompt strings start with <MONEYFONT><ST></MONEYFONT> and a space, and in the
     // prompt's part_page0 font the <ST> character n inside <MONEYFONT> is rectangle 11 + ('n' - '0') = 73.

@@ -2131,3 +2131,20 @@ handler component, as for `TriggerSphereEnable`).
   which are written through computed addresses with no reader found yet (`CfgWarriorClass`'s are all traced:
   [Warrior classes](../references/warrior-classes.md)). Each would move up from
   inferred once a reader or a runtime observation is found.
+- **Hint texts set twice in one frame** (owner checklist item 33b): answered by the original's runtime trace
+  ([The queue at runtime](hud.md#hint-queue-runtime), [lessons 5-8](#level99-hint-timing)): a text set on a free box
+  shows within the same call, so two `HUDSetTutorialText(nil)` + text pairs in one update never back up, and a grab's
+  hold ids fire their animation callbacks at the connect, 34 updates before `P1.Power` ([Animation
+  callbacks](characters.md#anim-callbacks)). Coney's `level99` course run still had two pairs land between two
+  hint-box steps in two places, and the box then showed every later text one late (a grab hint `TT_19*` in place of
+  the lesson's) until a frame cleared without setting: at lesson 5's end (the strong grapple's hold 82),
+  `PlayerState`'s animation callback set the hold's grab hint and `P1.Power` set `TT_24d` in the same step; and
+  `P1.StartSnaps` sets the snap text twice in one call. The second hint-box step in `GameplayMode` (Coney's order in
+  a step, [Animation callbacks](characters.md#anim-callbacks)) keeps that from backing up; what is left to do is the
+  rest of [Coney's differences](hud.md#hint-queue-runtime): `HintBox::queue` showing at once, and the hold ids firing
+  at the connect.
+- **The stale throw hint** (owner checklist item 38): the owner saw `level80`'s `TT_25` (lure the cops with a bottle)
+  stay through step 3.4 until the Wreck'em order. Coney's checkpoint 3 test (teleports to the roof, the scene
+  skipped or played out, the lesson box left and re-entered) shows the box empty when the bottle breaks and `TT_7`
+  next. Not reproduced; the backlog above is the likely cause (a lesson text queued behind another and shown after
+  the next clear).

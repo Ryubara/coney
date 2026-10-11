@@ -80,6 +80,8 @@ class ScriptedHumans final : public script::HumanBindingHost {
     void setPocket(double human, int item, int count) override;
     /// Kept while both humans (or the target object) exist.
     void setLookTarget(const script::LookTargetCall& call) override;
+    /// The brain's noise range (`+0x134`) or help-call range (`+0x138`), as given (BrainSenses).
+    void setHearRange(double human, bool help, float range) override;
     /// Puts an AI human beside `near`: on its right, the two bodies' radii apart, at its height, keeping its heading.
     /// **Coney choice**: the original's search for a free spot is not traced; player 1 is not moved (his teleports
     /// are the level's, gamemodes/gameplay_mode.h).

@@ -84,6 +84,13 @@ class PlayControls {
     [[nodiscard]] virtual bool playerFrozen() const = 0;
     /// Makes the player ignore the pad, or listen to it again.
     virtual void setPlayerFrozen(bool frozen) = 0;
+    /// Whether the player can noclip here (docs/guides/debug-menu.md#noclip). A mode without it keeps the defaults.
+    [[nodiscard]] virtual bool canNoclip() const { return false; }
+    /// Whether the noclip is on: pad 1 flies the player through walls and floors with no gravity (left stick across
+    /// the ground as for a walk, R2 up, L2 down, R1 fast), and no other button acts in the game.
+    [[nodiscard]] virtual bool noclip() const { return false; }
+    /// Switches the noclip on, or off, which drops the player from where he is with the normal physics.
+    virtual void setNoclip(bool /*on*/) {}
 
     /// The follow camera's eye.
     [[nodiscard]] virtual anim::Vec3 cameraEye() const = 0;

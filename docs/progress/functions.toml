@@ -2775,6 +2775,11 @@ name = "HUD_LevelSetUp"
 subsystem = "GUI"
 
 [[function]]
+address = 0x001ae980
+name = "HUD_ShutdownLevel"
+subsystem = "GUI"
+
+[[function]]
 address = 0x001aef50
 name = "HUD_IsPlayerStickPushed"
 subsystem = "GUI"
@@ -4348,6 +4353,11 @@ name = "Human_GaitOfVelocity"
 subsystem = "Human"
 
 [[function]]
+address = 0x0022c760
+name = "Grab_Link"
+subsystem = "Human"
+
+[[function]]
 address = 0x0022ceb8
 name = "Mugging_End"
 subsystem = "Human"
@@ -4588,6 +4598,12 @@ subsystem = "Human"
 size = 64
 
 [[function]]
+address = 0x002356c8
+name = "Human_IsInScene"
+subsystem = "Human"
+size = 64
+
+[[function]]
 address = 0x00235718
 name = "Human_IsArrested"
 subsystem = "Human"
@@ -4596,6 +4612,12 @@ size = 64
 [[function]]
 address = 0x00235758
 name = "Human_IsPlayer"
+subsystem = "Human"
+size = 64
+
+[[function]]
+address = 0x00235798
+name = "Human_IsHidden"
 subsystem = "Human"
 size = 64
 
@@ -4614,6 +4636,12 @@ size = 136
 [[function]]
 address = 0x00235a28
 name = "Human_SetGodMode"
+subsystem = "Human"
+size = 96
+
+[[function]]
+address = 0x00235a88
+name = "Human_SetKillerMode"
 subsystem = "Human"
 size = 96
 
@@ -4657,6 +4685,12 @@ size = 96
 address = 0x00235db0
 name = "Human_SetRevivable"
 subsystem = "Human"
+
+[[function]]
+address = 0x00235e10
+name = "Human_SetDoubleDamage"
+subsystem = "Human"
+size = 96
 
 [[function]]
 address = 0x00235e70
@@ -4765,6 +4799,12 @@ subsystem = "Human"
 size = 120
 
 [[function]]
+address = 0x002376a0
+name = "Human_SetWoundable"
+subsystem = "Human"
+size = 96
+
+[[function]]
 address = 0x00237700
 name = "Human_SetArrested"
 subsystem = "Human"
@@ -4799,6 +4839,18 @@ name = "Human_SetBlockJump"
 subsystem = "Human"
 
 [[function]]
+address = 0x00237a28
+name = "Human_BlockGrab"
+subsystem = "Human"
+size = 112
+
+[[function]]
+address = 0x00237b00
+name = "Human_SetBlockRearGrab"
+subsystem = "Human"
+size = 112
+
+[[function]]
 address = 0x00237b70
 name = "Human_SetBlockTackle"
 subsystem = "Human"
@@ -4820,6 +4872,12 @@ address = 0x00237d48
 name = "Human_GetHeldObject"
 subsystem = "Human"
 size = 112
+
+[[function]]
+address = 0x00237db8
+name = "Human_IsInCombat"
+subsystem = "Human"
+size = 72
 
 [[function]]
 address = 0x00237e70
@@ -4876,6 +4934,18 @@ size = 88
 address = 0x002383a0
 name = "Human_SetLOSRange"
 subsystem = "Human"
+
+[[function]]
+address = 0x002383e8
+name = "Human_SetHearRange"
+subsystem = "Human"
+size = 72
+
+[[function]]
+address = 0x00238430
+name = "Human_SetHelpHearRange"
+subsystem = "Human"
+size = 72
 
 [[function]]
 address = 0x00238478
@@ -5070,6 +5140,12 @@ address = 0x0023a210
 name = "Human_SetNormalMode"
 subsystem = "Human"
 size = 72
+
+[[function]]
+address = 0x0023a258
+name = "Human_SetRubberNeck"
+subsystem = "Human"
+size = 104
 
 [[function]]
 address = 0x0023a2c0
@@ -5742,6 +5818,12 @@ name = "Hit_PickReaction"
 subsystem = "Human"
 
 [[function]]
+address = 0x002674c0
+name = "Human_OnHealthOut"
+subsystem = "Human"
+size = 944
+
+[[function]]
 address = 0x00269f30
 name = "Human_BlockHit"
 subsystem = "Human"
@@ -5798,6 +5880,12 @@ name = "Tag_SayNearbyLine"
 subsystem = "Human"
 
 [[function]]
+address = 0x00273c60
+name = "Tag_UpdatePlayer"
+subsystem = "Human"
+size = 832
+
+[[function]]
 address = 0x00273ff0
 name = "TagGame_CatmullRom"
 subsystem = "Human"
@@ -5808,14 +5896,32 @@ name = "TagGame_Init"
 subsystem = "Human"
 
 [[function]]
-address = 0x00274710
-name = "TagGame_Track"
+address = 0x00274638
+name = "Tag_GetChargeLeft"
 subsystem = "Human"
+size = 216
+
+[[function]]
+address = 0x00274710
+name = "TagGame_SpendPaint"
+subsystem = "Human"
+
+[[function]]
+address = 0x002748a0
+name = "TagGame_IsOnTrack"
+subsystem = "Human"
+size = 8
 
 [[function]]
 address = 0x002748a8
 name = "TagGame_Update"
 subsystem = "Human"
+
+[[function]]
+address = 0x00274e38
+name = "Tag_GetProgress"
+subsystem = "Human"
+size = 168
 
 [[function]]
 address = 0x00275678
@@ -5859,6 +5965,12 @@ size = 456
 address = 0x00278018
 name = "Tag_StartSprayClips"
 subsystem = "Human"
+
+[[function]]
+address = 0x00278210
+name = "Tag_RestartSprayClips"
+subsystem = "Human"
+size = 404
 
 [[function]]
 address = 0x00279078
@@ -6337,6 +6449,12 @@ subsystem = "Human"
 address = 0x00290328
 name = "Brain_MakeGangsEnemies"
 subsystem = "Human"
+
+[[function]]
+address = 0x002904a0
+name = "Brain_IsEngaged"
+subsystem = "Human"
+size = 60
 
 [[function]]
 address = 0x002906b8
@@ -8024,7 +8142,7 @@ size = 472
 
 [[function]]
 address = 0x002fc330
-name = "MoveAction_Stuck"
+name = "MoveAction_CheckStuck"
 subsystem = "Human"
 size = 184
 
@@ -8641,10 +8759,28 @@ name = "RayTriangle_TwoSided"
 subsystem = "Maths (unnamed)"
 
 [[function]]
+address = 0x0033d498
+name = "PhysicsBody_SweepHumanMask"
+subsystem = "Physics"
+size = 640
+
+[[function]]
+address = 0x0033d870
+name = "Vec_RemoveNormalPart"
+subsystem = "Physics"
+size = 128
+
+[[function]]
 address = 0x0033d8f0
 name = "PhysicsVec_Bounce"
 subsystem = "Physics"
 size = 232
+
+[[function]]
+address = 0x0033d9d8
+name = "PhysicsBody_ResolveContacts"
+subsystem = "Physics"
+size = 2208
 
 [[function]]
 address = 0x0033e278
@@ -8680,6 +8816,12 @@ name = "PhysicsCapsule_Pose"
 subsystem = "Physics"
 
 [[function]]
+address = 0x00343cd8
+name = "PhysicsSweep_CapsuleCapsule"
+subsystem = "Physics"
+size = 1012
+
+[[function]]
 address = 0x003477c0
 name = "PhysicsBody_PushOutOfWalls"
 subsystem = "Physics"
@@ -8693,6 +8835,24 @@ subsystem = "Physics"
 address = 0x00349a60
 name = "Sweep_SphereCapsule"
 subsystem = "Physics"
+
+[[function]]
+address = 0x0034e3b8
+name = "SphereSweep_Edge"
+subsystem = "Physics"
+size = 536
+
+[[function]]
+address = 0x0034e5d0
+name = "SphereSweep_VertexRegion"
+subsystem = "Physics"
+size = 612
+
+[[function]]
+address = 0x0034ee60
+name = "Sweep_SphereTriangle"
+subsystem = "Physics"
+size = 2144
 
 [[function]]
 address = 0x0034f740
@@ -9066,16 +9226,82 @@ subsystem = "Scripting"
 size = 56
 
 [[function]]
+address = 0x00358b38
+name = "HuRubberNeck"
+subsystem = "Scripting"
+size = 96
+
+[[function]]
+address = 0x003590e0
+name = "HuBlockGrab"
+subsystem = "Scripting"
+size = 96
+
+[[function]]
+address = 0x00359140
+name = "HuBlockRearGrab"
+subsystem = "Scripting"
+size = 96
+
+[[function]]
+address = 0x00359a80
+name = "HuSetDoubleDamage"
+subsystem = "Scripting"
+size = 96
+
+[[function]]
+address = 0x0035ab00
+name = "HuSetWoundable"
+subsystem = "Scripting"
+size = 96
+
+[[function]]
 address = 0x0035b398
 name = "HuGetGang"
 subsystem = "Scripting"
 size = 88
 
 [[function]]
+address = 0x0035b668
+name = "HuIsInScene"
+subsystem = "Scripting"
+size = 76
+
+[[function]]
+address = 0x0035b758
+name = "HuIsHidden"
+subsystem = "Scripting"
+size = 76
+
+[[function]]
+address = 0x0035b980
+name = "HuSetKillerMode"
+subsystem = "Scripting"
+size = 96
+
+[[function]]
 address = 0x0035bbc8
 name = "HuSetMaxHealth"
 subsystem = "Scripting"
 size = 120
+
+[[function]]
+address = 0x0035bfe0
+name = "HuInCombat"
+subsystem = "Scripting"
+size = 76
+
+[[function]]
+address = 0x0035c278
+name = "HuSetHearRange"
+subsystem = "Scripting"
+size = 116
+
+[[function]]
+address = 0x0035c2f0
+name = "HuSetHelpHearRange"
+subsystem = "Scripting"
+size = 116
 
 [[function]]
 address = 0x0035d218
@@ -9552,6 +9778,12 @@ address = 0x0036ca18
 name = "GetPosition"
 subsystem = "Scripting"
 size = 112
+
+[[function]]
+address = 0x0036cb70
+name = "IsAHuman"
+subsystem = "Scripting"
+size = 76
 
 [[function]]
 address = 0x0036cdc0
@@ -10143,6 +10375,12 @@ address = 0x00385a50
 name = "Object_GetPosition"
 subsystem = "Scripting"
 size = 184
+
+[[function]]
+address = 0x00385b90
+name = "IsHumanHandle"
+subsystem = "Scripting"
+size = 36
 
 [[function]]
 address = 0x00385bb8

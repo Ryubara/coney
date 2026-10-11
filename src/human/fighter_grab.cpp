@@ -241,9 +241,12 @@ void Fighter::connect(const FighterInput& input, HumanAnimator& animator, float 
     const float listed = m_ranges != nullptr ? m_ranges->farRange(clip) : 0.0F;
     const float far = (listed > 0.0F ? listed : kConnectFarRange) * kPlayerFarScale;
     const PairAlignment align = alignPair(input.position, m_held->position(), reach, far, m_rear);
-    if (!align.inRange || m_held->state() != TargetState::Standing) {
-        // Too far, or no longer on its feet (a human the intro left free may have gone down): the grab fails, the
-        // miss plays on; the victim was never stopped.
+    // The grab-block flag of the grab's side on either human (`Grab_IntroEnd`): the grab does not go on.
+    const std::uint64_t block = m_rear ? flag::kBlockRearGrab : flag::kBlockFrontGrab;
+    const bool blocked = hasFlag(block) || (m_held->flags() & block) != 0;
+    if (!align.inRange || blocked || m_held->state() != TargetState::Standing) {
+        // Too far, blocked, or no longer on its feet (a human the intro left free may have gone down): the grab
+        // fails, the miss plays on; the victim was never stopped.
         const std::array<std::uint32_t, 2> miss{clips::kGrabMiss, clips::kNormalFromFight};
         animator.playCombat(miss, clips::kIdle, AnimState::Attack, clips::kPairFade, clips::kGrabHolds);
         m_combat.release();

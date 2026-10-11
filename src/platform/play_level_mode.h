@@ -182,6 +182,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] std::span<human::TargetHuman* const> targets() const { return m_targetPointers; }
     /// The AI fighters.
     [[nodiscard]] const ai::AiHumans& fighters() const { return *m_ai; }
+    /// The AI fighters, to steer: a disc test gives one an order as a script would.
+    [[nodiscard]] ai::AiHumans& fighters() { return *m_ai; }
     /// Player 1's throw aim (docs/research/objects.md#throws).
     [[nodiscard]] const combat::ThrowAimState& throwAim() const { return m_throwAim; }
     /// Player 1's lock pick under way; null when none runs (docs/research/crimes.md#lockpick).
@@ -222,6 +224,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] std::vector<debug::Place> places() const override { return m_scenery->places(); }
     [[nodiscard]] bool playerFrozen() const override { return m_frozen; }
     void setPlayerFrozen(bool frozen) override { m_frozen = frozen; }
+    [[nodiscard]] bool canNoclip() const override { return true; }
+    [[nodiscard]] bool noclip() const override { return m_player->noclip(); }
+    void setNoclip(bool on) override { m_player->setNoclip(on); }
     [[nodiscard]] anim::Vec3 cameraEye() const override;
     [[nodiscard]] anim::Vec3 cameraTarget() const override;
     void resetCamera() override { m_player->resetCamera(); }
@@ -274,10 +279,16 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     void teleportPlayer(const world_objects::Placement& placement) override;
     /// ScriptedPlayer: player 1's spray clips for a tag at `point`.
     bool startTagSpray(const std::array<float, 3>& point) override;
+    /// ScriptedPlayer: player 1's held object falls from his hand as a spray begins.
+    void dropHeldForTag() override;
+    /// ScriptedPlayer: the type name of the object in player 1's hand.
+    [[nodiscard]] std::string heldObjectType() const override;
     /// ScriptedPlayer: whether player 1's spray loop plays.
     [[nodiscard]] bool tagSprayLooping() const override;
     /// ScriptedPlayer: whether player 1's spray clips still play.
     [[nodiscard]] bool tagSprayPlaying() const override;
+    /// ScriptedPlayer: player 1's spray clips restart (337, then the loop) as a pause begins.
+    void restartTagSpray() override;
     /// ScriptedPlayer: player 1's spray clips end.
     void endTagSpray() override;
     /// ScriptedPlayer: what player 1 can act on for the action prompt: nothing during a mugging, a theft or a lock
