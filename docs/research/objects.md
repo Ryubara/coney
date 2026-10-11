@@ -1754,7 +1754,11 @@ brain that is not in state 1 and not cuffed, and within the radius of a segment,
 (`+0x2e0`); if its brain has no goal of type 7 it drops a type-`0xf` goal on top and pushes the dodge goal
 (`0x002f9358`, given the record and the nearest point). The dodge goal uses `0x004138f0` (still within the radius of
 a segment, and whether it is more than 0.5 m inside and within 10 m of the front point) and `0x00413a90` (the
-point's projection on the first segment long enough to hold it, and that segment's two indices). `Trains_IsPathClear`
+point's projection on the first segment long enough to hold it, and that segment's two indices: it walks the
+segments from point 0, measures the point along each one's direction, gives up (0) as soon as the point lies before
+a segment's start, and takes the first segment whose length is greater; it ignores the gap flags and never tries the
+last segment, so with fewer than three points it finds nothing; the dodge goal's use:
+[RunFromTrain](ai-goals.md#goal-run-from-train)). `Trains_IsPathClear`
 (`0x00414188`) asks each running train (`TrainRecord_IsPathClear`, `0x00413c48`) whether a move from one point to
 another passes within its radius of a segment; [AI](ai.md) movement checks it. The record's constructor is
 `0x00413848`. Confirmed (code).

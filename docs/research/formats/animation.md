@@ -412,8 +412,12 @@ Each advance:
 2. The pair is clip `floor(v)` and clip `floor(v) + 1` (the floor uses 0.995, 1.995, 2.995 as its steps). When the pair
    changes, the clip that comes in starts at the **same normalised time** (time / duration) as the one it joins.
 3. One cursor **leads**: it advances by `rate × dt` and the other is set to the same normalised time, so the two feet
-   stay in step. The lower clip leads, except when *v* is falling (above the target) or the fraction `v − floor(v)` is
-   over 0.875, when the upper one leads. The leading cursor's events fire, the other's are muted (flag `0x10`).
+   stay in step. With the new value's fraction `v − floor(v)` below 0.01 the lower clip leads (and plays alone);
+   from 0.995 the upper one. Otherwise the upper one leads when *v* is still above the target after the move
+   (falling), or when the fraction **before the move** (the old value less the old pair's index) was over 0.875; else
+   the lower one. So on the update the pair changes downward (2.0 → 1.91, say) the new lower clip leads, whatever the
+   new fraction. Confirmed (code) at `0x0010a5b8`; confirmed (runtime) at the gym's workouts
+   ([Workouts](../workouts.md#rep-length)). The leading cursor's events fire, the other's are muted (flag `0x10`).
 4. Sampling: fraction below 0.01, the lower clip alone; above 0.995, the upper alone; otherwise both, blended with the
    fraction as the upper clip's weight (`0x001054a8` → `Pose_BlendPartial`).
 
