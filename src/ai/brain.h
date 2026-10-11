@@ -236,10 +236,11 @@ class Brain {
     // --- The update (docs/research/ai.md#update-goals).
 
     /// One update at game time `nowMs`: for a type-0 brain (the player's) only its books, unless it is dead; for every
-    /// other type, and a dead player's, Brain_UpdateGoals: skipped while the human is airborne, out of health, its gang
-    /// is suspended or the brain is; the reaction goal when the human's state calls for one, else the goal stack; then
-    /// the actions. The human's attack announcements within the range and field of view are delivered at the start
-    /// as events `0x10` (deliverEvent()), which count the warnings (`+0x200`); the count is cleared at the end.
+    /// other type, and a dead player's, Brain_UpdateGoals: the move cleared first (stopMove()), then skipped while the
+    /// human is airborne, out of health, its gang is suspended or the brain is; the reaction goal when the human's
+    /// state calls for one, else the goal stack; then the actions. The human's attack announcements within the range
+    /// and field of view are delivered at the start as events `0x10` (deliverEvent()), which count the warnings
+    /// (`+0x200`); the count is cleared at the end.
     /// @orig 0x0028f8b8 Brain_Update (unknown)
     /// @orig 0x0028fbb0 Brain_UpdateGoals (unknown)
     void update(std::uint64_t nowMs);
@@ -441,7 +442,8 @@ class Brain {
     void press(combat::CommandId command);
     /// Sets the move the human's locomotion follows in place of a stick (brain `+0x110` heading, `+0x114` speed): along
     /// `way` across the ground (world axes; its length is ignored) at `speed` m/s. A move action writes no stick
-    /// (docs/research/ai.md#moving).
+    /// (docs/research/ai.md#moving). It lasts this update only: the next update() clears it first. The move aims at
+    /// moveAim() (`+0x90`), the point a fight stance walks the human to.
     void setMove(anim::Vec3 way, float speed);
     /// The same along `heading` (radians, 0 facing +y). At speed 0 the human turns on the spot to it.
     void setMoveHeading(float heading, float speed);
@@ -452,7 +454,8 @@ class Brain {
     [[nodiscard]] int turnBoost() const { return m_turnBoost; }
     /// Asks the human to climb this update toward `direction` (the route's climb leg).
     void requestClimb(anim::Vec3 direction);
-    /// Stops the move: the human stands (its speed 0).
+    /// Stops the move: the human stands (its speed 0) along its facing.
+    /// @orig 0x0028ac18 Brain_StopMove (unknown)
     void stopMove();
 
     // --- Moving over the level (docs/research/ai.md#moving).

@@ -1776,6 +1776,15 @@ from the disassembly of `level3.lua` and its five chapter scripts; bindings on
    leaving the box (message 4, which also returns to the rail camera). `vbJumpWarn` boxes show a jump prompt
    (`HUDTurnOnActionCycleAnim`) for 1.5 s. Falling into `vChaseKill` (kind 0) fades and fails the mission (`MF_4`);
    a pursuer there dies, a Warrior is warped to the gallery.
+   **A fence across the roof**: at x 85.18 (y 363.67-371.10, z 15.03-17.62), between two posts of the level mesh
+   that leave no gap, stands a row of three `dyn_door_fence` barriers (door numbers 4, 6 and 10, 10 hitpoints each,
+   two triangles each). Read from the disc's `SpawnDoor` placements and mesh in Coney (numbers only, 2026-10-11).
+   No chapter script opens them; as every barrier they are two-sided from their spawn and stop a walker from
+   either side ([How a closed door stops a human](objects.md#door-blocking)), so the way on is to break one: a
+   charge or a dive (16) breaks one in a hit, three plain hits do too, and it lets him through at its next update
+   ([Barriers](objects.md#barriers)). Inferred from the confirmed (code) barrier behaviour; the chase was not played
+   in the original to see which hit a player uses. (Before Coney kept the barriers' spawn-time triangle writes,
+   their one-sided triangles let Snow walk through from the west.)
    **The way across the last roofs**, read from the disc's collision mesh (inferred; not checked in the original): the
    jump from `vbJumpWarn_08`'s roof (z 13.2, edge at x 150.5) lands on a roof at z 10.3 (y 361-369.5). Its south
    part is closed at x 167.4 (y 361.5-366.7) by a wall 3.6 m tall, material 152 with no climbable flag, so no climb

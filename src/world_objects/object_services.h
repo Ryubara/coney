@@ -4,9 +4,11 @@
 #include <array>
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <span>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "animation/anim_math.h"
 
@@ -163,8 +165,27 @@ class ObjectServices {
     virtual void lockPickClick(double /*human*/) {}
 };
 
+/// What the panes, doors and barriers have written to one triangle of the level mesh: the flag bits they added, the
+/// material they gave it and whether they last switched it on or off. Kept so the writes can be applied to a mesh bound
+/// later (ObjectWorld::bindCollision).
+struct TriangleWrite {
+    std::uint16_t bits = 0;         ///< Flag bits added (two-sided, the door bits, the camera's ghost bit).
+    int material = -1;              ///< The material set last; negative: none.
+    int enabled = -1;               ///< 1 switched on last, 0 switched off last, negative: never switched.
+    std::uint32_t enabledOrder = 0; ///< When it was switched last, in ObjectWorld::nextWriteOrder's count.
+};
+
+/// `ChangeCollision`'s switch of every triangle wholly inside a box, kept like a TriangleWrite: which triangles lie
+/// inside is known only once a mesh is bound.
+struct BoxWrite {
+    std::array<float, 3> low{};  ///< The box's low corner.
+    std::array<float, 3> high{}; ///< The box's high corner.
+    bool on = false;             ///< Switched on (true) or off.
+    std::uint32_t order = 0;     ///< When, in ObjectWorld::nextWriteOrder's count.
+};
+
 /// The world the panes and doors change. The pointers may be null (a host without that part): what would change it
-/// is skipped.
+/// is skipped, except the collision triangles, whose writes are kept and applied once a mesh is bound.
 struct ObjectWorld {
     raycast::CollisionMesh* collision = nullptr; ///< The level's static collision mesh, whose triangles they own.
     world::PathMap* paths = nullptr;             ///< The level's navigation links (the path data's D records).
@@ -173,16 +194,34 @@ struct ObjectWorld {
     /// Knocks an object loose (message `0x30`): it flies from where its record stands at `velocity` (m/s), spinning at
     /// `spin` (rad/s); empty: nothing moves it.
     std::function<void(double object, anim::Vec3 velocity, anim::Vec3 spin)> knock;
+    /// Every triangle write the objects have made, by triangle index (markTriangles, setTrianglesEnabled).
+    std::map<std::uint32_t, TriangleWrite> triangleWrites{};
+    /// Every box switch the scripts have made (setTrianglesEnabledInBox), in order.
+    std::vector<BoxWrite> boxWrites{};
+    /// The count that orders the switches on and off: the last one made wins when they are applied again.
+    std::uint32_t nextWriteOrder = 1;
+
+    /// Binds the level's collision mesh (null unbinds it) and applies every triangle write made so far to it. The
+    /// level script spawns the doors and panes before the play mode has loaded the level's mesh, and a mode that
+    /// starts again binds a freshly loaded one; the original writes the live mesh at spawn
+    /// (docs/research/objects.md#door-blocking), so the mesh must carry the same flags whenever it is bound.
+    void bindCollision(raycast::CollisionMesh* mesh);
+    /// Forgets every triangle and box write (the level's objects are gone); the bound mesh keeps what it was given.
+    void clearWrites();
 };
 
-/// Switches the collision triangles `triangles` (indices into `mesh`) on or off; indices outside the mesh are skipped.
-/// A null `mesh` does nothing.
-void setTrianglesEnabled(raycast::CollisionMesh* mesh, std::span<const std::uint32_t> triangles, bool on);
+/// Switches the collision triangles `triangles` (indices into the level mesh) on or off; indices outside the mesh are
+/// skipped. Applied to `world.collision` when bound, and kept in `world.triangleWrites` for a mesh bound later.
+void setTrianglesEnabled(ObjectWorld& world, std::span<const std::uint32_t> triangles, bool on);
+
+/// Switches every triangle of the level mesh wholly inside the box from `low` to `high` on or off (`ChangeCollision`).
+/// Applied to `world.collision` when bound, and kept in `world.boxWrites` for a mesh bound later.
+void setTrianglesEnabledInBox(ObjectWorld& world, std::array<float, 3> low, std::array<float, 3> high, bool on);
 
 /// Adds the flag bits `flags` to the triangles `triangles` and, when `material` is not negative, sets their material
-/// byte. A null `mesh` does nothing.
-/// @orig 0x003a4768 Triangle_MakeTwoSided (unknown)
-void markTriangles(raycast::CollisionMesh* mesh, std::span<const std::uint32_t> triangles, std::uint16_t flags,
+/// byte. Applied to `world.collision` when bound, and kept in `world.triangleWrites` for a mesh bound later.
+/// @orig 0x003a4768 Collision_SetTriangleTwoSided (unknown)
+void markTriangles(ObjectWorld& world, std::span<const std::uint32_t> triangles, std::uint16_t flags,
                    int material = -1);
 
 /// A random whole number in [0, n - 1] from `random` (`0x003353b8`); 0 without one.

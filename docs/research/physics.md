@@ -657,8 +657,8 @@ into, in the ground plane, and then out of the walls again; the object does not 
 The walking body's wall test (`src/human/body.cpp`, `nearestWallPush`) is a push-out at the end of the move, not a
 sweep: it decides which side of a wall the sphere is on, and flips a two-sided wall, from the centre **after** the
 move, where the original uses the centre before it ([Sweeping a body](#sweep)). For walls a step never crosses
-(moves are under 0.3 m and the radius about 0.47 m) the two agree; the hangout's doors that the player walks through
-one way are not this but the lost spawn flags ([Objects](objects.md#coneys-implementation)).
+(moves are under 0.3 m and the radius about 0.47 m) the two agree; the hangout's doors that the player walked through
+one way were not this but the spawn's lost triangle flags, now fixed ([Objects](objects.md#coneys-implementation)).
 
 ## Open questions
 

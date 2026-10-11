@@ -135,6 +135,12 @@ struct TurnState {
 /// @orig 0x002212d0 Human_GetTurnRateForGait (unknown)
 [[nodiscard]] float aiMaxTurn(Gait gait, int boost, bool wounded);
 
+/// An AI human's turn limit per update in a fight stance, radians: the stance's AI word `0x005101dc`, 24°, which
+/// nothing writes (`CfgSetTurnRates` sets only the player's, stanceTurn()) and no turn boost scales; a wounded human
+/// turns 0.375°, as the hurt test comes first (docs/research/characters.md#ai-locomotion).
+/// @orig 0x002213d8 Human_MaxTurn (unknown)
+[[nodiscard]] float aiStanceTurn(bool wounded);
+
 /// An AI human's speed this update from `current` toward the brain's `asked` speed, m/s (`Human_UpdateControl`,
 /// docs/research/characters.md#ai-locomotion): from rest min(asked, 2.0); speeding up 0.267 m/s an update (8 m/s²),
 /// or 1.067 (32 m/s²) while that would still leave more than 2 m/s to go, never past `asked`; slowing down 1.067 an

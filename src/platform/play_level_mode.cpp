@@ -301,7 +301,7 @@ PlayLevelMode::~PlayLevelMode() {
     m_mesh.reset();    // before the dictionaries, whose texture it holds
     // The level's objects outlive the mode (they are gameplay's), its collision mesh and path data do not.
     if (m_objects != nullptr) {
-        m_objects->world.collision = nullptr;
+        m_objects->world.bindCollision(nullptr);
         m_objects->world.paths = nullptr;
         m_objects->world.knock = nullptr;
     }

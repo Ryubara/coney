@@ -5457,10 +5457,25 @@ human whose last move failed runs straight at
   [`+0x0b`](#brain-boosts)), with no easing; a speed that starts at the asked speed up to 2 m/s, gains 8 m/s² (32 while
   more than 2 m/s short) and loses 32 m/s²; a wounded human asked to move walks. The move's corner speed predicts the
   turn with the same steps. **Stand-in**: a standing human more than 15° off turns at the standing step instead of
-  playing turn clips 395-398. Every search uses the mask `0xff`; a leg of kind 8 or `0x80` is a climb: the human runs at
-  the waypoint (gait 4) and tries the player's climb start toward it each update (`PlayerRecord::climbToward`), giving
-  up after 31 failed updates; a leg whose avoid bit is set is refused, but for a charge. `level99`'s Vermin climbs his
-  fence this way.
+  playing turn clips 395-398. `Brain::update` clears the move first (`Brain::stopMove`, as `Brain_StopMove` starts
+  `Brain_UpdateGoals`), so the human follows only what this update's goals and actions wrote. In a fight stance (the
+  fighter locked onto a target) a human no pad drives runs `Human::aiCombatWalk`
+  ([An AI's locomotion](characters.md#ai-locomotion)): the facing turns to the brain's heading at the AI's own stance
+  word (24°, `human::aiStanceTurn`, which the player's tuning does not change) whenever the move asks for a speed, at
+  the standing step (the stand-in above) when it stands more than 15° off, and 0.375° whatever the speed when wounded;
+  the feet go along the line to the move's point (`Brain::setMoveAim`, `+0x90`) at the combat-walk speed (the walk when
+  wounded) when it asks for more than 0.1. With no move the human keeps its facing: it does not track its target. The
+  move-to-human action aims 2 m along its way, as `MoveMelee` does. **Stand-in**: the fight goal's reposition,
+  standing within its ring, turns the human to its target (the move's heading, at speed 0), where the original's
+  band-keeping move circles him facing him; without it the `level5` bosses kept whatever facing their last attack
+  left and the pad-driven boss-fight disc test lost the fight. EngageEnemy's stop turns the human to its target
+  with the 0.3 s body turn (`Human::turnToFace`), not with the move. Only a pad's human faces its target every update.
+  Before (found 2026-10-11) the stance faced the target, so a move that had to turn first asked for speed 0 for good:
+  `level5`'s Vargas, sent to his flag by his BigBrawler with the player beside him, stood at his 67 % cap. Tests:
+  `repo:tests/ai/move_action_test.cpp` ("locked onto a target, ..." and the cases after it).
+  Every search uses the mask `0xff`; a leg of kind 8 or `0x80` is a climb: the human runs at the waypoint (gait 4) and
+  tries the player's climb start toward it each update (`PlayerRecord::climbToward`), giving up after 31 failed updates;
+  a leg whose avoid bit is set is refused, but for a charge. `level99`'s Vermin climbs his fence this way.
 - **Neighbour sectors** (`Sectors`, `repo:src/ai/sectors.h`, `Brain::sectors`): eight 45° sectors per brain (0 ahead,
   rising anticlockwise in Coney's headings, the mirror of the game's clockwise order: **to fix**; an edge goes
   to the lower index on the left half), rebuilt when the caller's age (1000 or 500
@@ -5657,7 +5672,9 @@ inside its own update or callback is freed after the gangs' update, as the origi
 
 **The character bindings' goals and gangs** (`src/ai/scripted_humans.*`, `src/ai/scripted_goals.*`). `GoalBackoff`
 (`0x9b`), `GoalBumLogic` (`0x4f`) and `GoalMoveToUseFlag` (4) are built from their constructors; **stand-ins** for their
-unread Process: the back-off walks straight away from the other human while nearer than its distance, the bum stands
+unread Process: the back-off walks straight away from the other human while nearer than its distance (in a fight
+stance it turns its back to him; the original keeps a band with the move-to-human action and faces him,
+[Backoff](ai-goals.md#goal-backoff)), the bum stands
 still and never calls back, and the use-flag goal walks to the flag as `GoalMoveToFlag` does, facing its heading, then
 stands there (the flag reserved until the goal ends). `GangInvincible` sets god mode on the members and on later
 ones; `GangSetTargetable` sets each member's targetable byte, kept on the human. `GangAddSpawner` keeps up to four

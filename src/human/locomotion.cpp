@@ -133,6 +133,12 @@ float aiMaxTurn(Gait gait, int boost, bool wounded) {
     return (boost >= 0 ? degrees * (b + 1.0F) : degrees / (1.0F - b)) * kDegrees;
 }
 
+float aiStanceTurn(bool wounded) {
+    // The AI word of the stance's pair (0x005101dc).
+    constexpr float kStance = 24.0F;
+    return wounded ? aiMaxTurn(Gait::Standing, 0, true) : kStance * kDegrees;
+}
+
 float aiApproachSpeed(float current, float asked) {
     constexpr float kStep = 1.0F / 30.0F;
     if (current <= 0.0F) {
