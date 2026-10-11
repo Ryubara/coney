@@ -412,7 +412,15 @@ So `+0x14` is the classic sort-and-sweep bound: the step's refresh keeps it from
    (`0x00341840`).
 2. **Against the mesh** (`0x0033d340`): the first shape's mesh sweep (`+0xe0` by type, through `0x0033d2d8` with
    the wall threshold −0.65). For a human (type mask `0x40`) in the air, also the landing segment (`0x0023e408`),
-   whose hit becomes a contact flagged `0x80`.
+   whose hit becomes a contact flagged `0x80`. **Faces are one-sided unless flagged.** In the capsule's mesh sweep
+   (`PhysicsMesh_SweepCapsule` `0x00347c08`) a triangle is read only for its enabled bit (`0x00347de0`, no type-bit
+   mask, so a door's `0x400` or `0x40` changes nothing), then: a wall (`|n.z|` ≤ 0.65, `0x00347e60`); the side test
+   `n·c − n·v0 < 1e-6` (`0x00347ec0`), where `c` is the sphere's centre at the **start** of the move (the shape's
+   `+0x50`, read at `0x00347c80`, raised by `r + 0.05`), skips a one-sided triangle (flag `0x2` clear, `0x00347edc`)
+   and turns a two-sided one to face the sphere (`0x00343c90`, `0x00347ee4`); then the move must go into the face,
+   `n·move < −0.001` (`0x00347f2c`). So a one-sided wall stops a body only from its front, and a body that starts
+   behind it passes. Confirmed (code). What makes the level's doors block from both sides is the door's init setting
+   flag `0x2` ([Objects](objects.md#door-blocking)).
 3. **Against the bodies** (`PhysicsBody_SweepHumanMask`, `0x0033d498`): the candidates of the swept box whose
    **body flags** (`+0x40`; the type mask is −1) share a bit with a mask that depends on the mover
    ([collision layers](#layers)): 2 `BLOCKOBJECTS` for a non-human; for a human 4 `BLOCKHUMANS`, or `0x44` (and
@@ -638,7 +646,20 @@ remade each step before the humans move. A walking human's sphere slides along t
 level's walls, as `Human_OnContact` slides along an object (stand-in: pushed out of the deepest body the move goes
 into, in the ground plane, and then out of the walls again; the object does not move).
 
+The walking body's wall test (`src/human/body.cpp`, `nearestWallPush`) is a push-out at the end of the move, not a
+sweep: it decides which side of a wall the sphere is on, and flips a two-sided wall, from the centre **after** the
+move, where the original uses the centre before it ([Sweeping a body](#sweep)). For walls a step never crosses
+(moves are under 0.3 m and the radius about 0.47 m) the two agree; the hangout's doors that the player walks through
+one way are not this but the lost spawn flags ([Objects](objects.md#coneys-implementation)).
+
 ## Open questions
+
+- Hangout railing vault (checklist item 46: the vault plays but the player stays put): not explained by the door
+  flags above, which only doors and panes write. The climb's pass-through (materials 30, 31 and 122 ignored while
+  record `+0x08` has `0x40`, [Characters](characters.md#walls)) and the railing triangles' material in `level95.lev`
+  are where to look next; not traced in this pass. A lead: of the clubhouse's triangles (z between −200 and −185 in
+  `level95.lev`) only 2 are material 122 and 7 material 31, against 137 of 7 (`LAMPOST`) and 56 of 3 (`STEEL`), so a
+  railing built of another material keeps its wall during the vault unless the original passes it some other way.
 
 - How an object of a type with `axis` 0 comes to rest: nothing in its contact handler clears airborne, so it would
   keep bouncing at interval 2 (inferred); the throwable ones (`dyn_lawnchair_a`, `_b`) break on their first contact
