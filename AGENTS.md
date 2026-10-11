@@ -89,5 +89,6 @@ state of the work (local, never committed).
   `main` with the pull request's title; commits on the branch need not be tidy.
 - An agent pushes its branch and opens a pull request without asking, and starts the description from
   `.github/pull_request_template.md` (`gh pr create` does not fill it in when given a body). An agent never merges a
-  pull request: the maintainer, or the approving review, does. A pull request or issue you write carries no
+  pull request: the maintainer does, or a coordinator the maintainer has allowed to, and only by squash once every
+  required check passes and the pull request follows these rules. A pull request or issue you write carries no
   "Generated with" line; the template's AI use section is where the model is named.
