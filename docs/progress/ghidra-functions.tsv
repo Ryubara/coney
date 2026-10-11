@@ -5210,6 +5210,7 @@
 0x00279050	40	Human_FindFreeable	1
 0x00279078	40	Human_FindRevivableNear	0
 0x002790a8	252	Target_AngleFromAimHeading	1
+0x002791b0	276	TargetFilter_StanceEnemy	1
 0x002792c8	328	TargetFilter_LockFirst	1
 0x00279410	344	TargetFilter_Enemy	1
 0x00279568	308	TargetFilter_EnemyStanding	1

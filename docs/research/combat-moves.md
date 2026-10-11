@@ -415,7 +415,7 @@ of `0x7bf9e9f4300` or record `+0x08` any of `0x100101f`; the buffered chain pres
 3. **Snap** (stick above 0.95, more than 45° off the facing, a snap target): 25 / 27 / 29
    ([Combat](combat.md#attacks)).
 4. Re-pick the target (`Player_PickTarget(2.0)`, [Targets](#targeting)) when a pad player has none, or it is
-   farther than **3 m** (`0x005104c0` = 9, squared). No human but an
+   farther than **2.5 m** (`0x005104c0`, 6.25 squared as `CfgDistances` sets it). No human but an
    object → `Player_ObjectAttack` ([Combat](combat.md#breakables)).
 5. **Low target** (`Human_IsHighOrBusy`, `0x00225200`): the attacker's point stands more than 1.3 and less than
    1.8 m above the target's (`Object_HeightDiff` `0x00229a10`: attacker's z minus target's, of the point each
