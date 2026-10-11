@@ -2001,18 +2001,17 @@ a "flag kind `0x12`" bit.
     3. With a route: done within the radius; aim at the route's current waypoint ([Following](#route-follow)).
     4. **Dynamic obstacles** (`0x00414188`, 4 records of `0x150` at `0x006f3a10`): a blocked segment → speed 0 and
        a 1000 ms wait.
-    5. Every 31 updates the point must still be in sight, else done. Done when within 1 m in plan but more than
-       1.5 m apart in height.
+    5. Every 31 updates (counter `+0x4d`) the **current aim** (the route's waypoint, or the destination without a
+       route) must still pass `Human_CanWalkStraightTo` (`0x002221e0`), else done (2) with `+0x284` left at 0, so the
+       goal plans again. Done (2) when the aim is within 1 m in plan, more than 1.5 m away in 3D, the human is not
+       airborne (`0x00227f90`) and the direction to the aim lies within 20° of straight up or down (a point on a
+       floor above or below). Confirmed (code) at `0x002fc854`-`0x002fc984`.
     6. **Steering** round other humans ([below](#steering)) may replace the aim by a detour point (radius 0.3).
        Steering is not reached on every update; see "The speed and the legs" below.
     7. Heading = the direction to the aim, or to the object `+0x3c` when set; write `+0x90`, `+0x118` and `+0x110`.
     8. **Speed**: with an object to face, the gait's speed. Otherwise turn on the spot (speed 0) while stopped and
-       more than 30° off; else the **corner speed** (`0x002fc158`): each of the next 3 waypoints' corners
-       (`0x002fbd18`) farther than 0.35 m is simulated at a trial speed (`0x0022aae8`, `0x002fbef0`; 4 to 7 sample
-       points by turn radius, bands 3, 5 and 7 m), and every predicted point must lie in a path polygon
-       (`0x00250708`, `0x0024f718`); each failure lowers the trial speed by 1 + 0.75 × the detail level `+0x333`,
-       down to the walking speed. It keeps the first corner's speed `+0x0c`, the second's `+0x44` and a braking
-       distance² `+0x48`, and uses `+0x0c` while farther than that, else `+0x44`, never above the gait's speed.
+       more than 30° off; else the **corner speed** ([below](#corner-speed)): `+0x0c` while the squared distance to
+       the aim is at least the braking distance² `+0x48`, else `+0x44`, never above the gait's speed.
     9. **Stuck** (`MoveAction_CheckStuck` `0x002fc330`): while the asked speed is above 0 a counter (`+0x4e`) counts
        updates (speed 0 resets it); on the 61st, less than 0.2 m covered since the saved point, measured in **3D**
        (`Vec_DistSq`, height included), → brain `+0x284` = 3, done; else the point is saved again and the count
@@ -2052,6 +2051,48 @@ a "flag kind `0x12`" bit.
   starts the move in the same think with no gap, and a longer one leaves up to 7 thinks at speed 0; the control
   slows a walk to rest in two updates and restarts it at once at the walking speed
   ([Characters](characters.md#ai-locomotion)).
+
+#### The corner speed {#corner-speed}
+
+How fast a routed AI may take the next corners. Confirmed (code) at the addresses cited; not measured.
+
+- **When** (the move action's speed step): recomputed when the counter `+0x4c`, which counts down each update, runs
+  past 0, or when the aim has moved more than 0.07 m (squared 0.005) from the aim saved at `+0x20` at the last
+  recompute. After a recompute the counter is 10 when the first corner's speed is above 0, else 0, and the aim is
+  saved. So about every 11 updates while moving, and at once when the waypoint changes.
+- **The points** (`MoveAction_CollectPoints` `0x002fbd18`, at most 3): the human's position; the steering's detour
+  point when one is running (brain `+0xc4`); then the route's waypoints from the current one, **claiming each**
+  ([Waypoint claims](#route-claims)): a waypoint entered by a kind-4 or `0x80` link stops the list before it, one
+  entered by a link whose flags are exactly `0x10` or `0x40` is the last one listed; then the destination when there
+  is room.
+- **The two corners** (`MoveAction_CornerSpeed` `0x002fc158`), with *v* the human's speed (`+0x1ac`) and *c* the
+  move's speed cap:
+    - corner 1 is points 0 → 1: when they are more than 0.35 m apart (squared 0.1225), `+0x0c` =
+      `MoveAction_TrialSpeed(v, c, points 0 and 1)`, else `+0x0c` = *c*;
+    - corner 2 is points 1 → 2 (only with 3 points, and when more than 0.35 m apart): `+0x44` =
+      `MoveAction_TrialSpeed(v, +0x0c, points 1 and 2)`, else *c*;
+    - **the braking distance**: when `+0x44` < `+0x0c`, with *t* = (`+0x0c` − `+0x44`) / 32 (the time to shed the
+      difference at 32 m/s², the AI's braking rate), *d* = `+0x0c` × *t* − 16 *t*², and `+0x48` = *d*². Otherwise
+      `+0x48` = 0 (the second corner's speed is never used).
+- **`MoveAction_TrialSpeed(v, trial, from, to)`** (`0x002fbef0`):
+    1. the human's right vector (his facing crossed with up, `0x00511740`), and
+       `Move_CornerSpeedLimit` (`0x002fcd90`): the radius of the circle tangent to the facing at *from* through *to*
+       (`Math_CircleRadius2D`), the speed whose per-update turn at that radius is the gait's turn step
+       (2*R* sin(ω/2) × 30), stepping the gait down while a lower gait allows as much; the trial is the smaller of
+       that and *trial*, but at least the walking speed;
+    2. sub-steps per output point *k* by the current speed *v*: 4 above 7 m/s, 5 above 5, 6 above 3, else 7; times
+       (2 × detail + 1); the output points number 10 − detail (the detail level `+0x333`);
+    3. `Human_SimulateMove` (`0x0022aae8`) plays the walk toward *to* one update at a time: the speed moves toward the
+       trial (−32 m/s² × 1/30 down; +8 m/s² × 1/30 up, +24 more while over 2 m/s short; from rest it starts at
+       min(trial, 2)), the heading turns toward *to* by at most the gait's turn step (`Human_GetTurnRateForGait`,
+       boost included), and the human moves speed/30 along it; it records a point every *k* sub-steps and stops early
+       once the heading is within 0.005 rad of the direction to *to* or *to* is within one step;
+    4. each recorded point must have an area and a clear line to the next (`Nav_FindArea`, `Nav_LineClearWithin`
+       `0x0024f718`); a failure lowers the trial by 1 + 0.75 × detail and simulates again, until it is at or below
+       the walking speed, which is then returned; the first trial that passes is returned.
+
+So a running AI brakes for a tight corner by the time the arc would leave the path polygons, and starts braking for the
+second corner at the distance a 32 m/s² stop needs.
 
 #### The move-to-human action (MoveMelee) {#move-melee}
 
@@ -2106,8 +2147,32 @@ initialiser (`0x0029a388`) sets it, nothing in the move action or `GoalMoveToFla
 change it put `0xff` back in their End. So a scripted move admits every link kind on the disc (1, 2, 4, 8, `0x10`,
 `0x80`); only `0x100` is outside it. Confirmed (code) at the writers, and at runtime
 ([Vermin's fence](#route-follow)). The other writers: `0x13` in the Start of the goals at `0x002aafd0` and
-`0x002c1470`, `0xbf` (no `0x40`) after a failed move in `0x002ab4b8`, and `| 0x100` for brain type 3 (`0x002cc908`)
-and for the formation in four levels (`FollowFormationGoal_Start`, `0x002dfe30`).
+`0x002c1470`, `0xbf` (no `0x40`) after a failed move in `0x002ab4b8`, and `| 0x100` for a Warrior (brain type 3) in
+`GoalHide`'s Start (`HideGoal_StartMask` `0x002cc908`) and, in `FollowFormationGoal_Start` (`0x002dfe30`), for a
+Warrior on the levels whose level-table id (`+0x04` of the `0x84`-byte entry) is `0xe`, `0x33`, `0x34` or `0x52`.
+Confirmed (code).
+
+**Mask bit `0x100` is not a link kind.** No D record on the disc has it (the counts below), so it admits nothing. What
+it does is switch off the [ClimbFilter](#path-planning) extra costs in the edge cost and the `0x80` re-search in step
+5: a Warrior hiding, or following on those four levels, takes climbs at their plain distance. Confirmed (code) at
+`0x00251890` and `0x002511c8`; the disc count is a check of the files.
+
+**The link kinds on the disc** (NTSC-U, all 64 `.lev` files' path data, counts only, 2026-10-11; "one-way" is a D
+record with no record of the same kind back). The meanings are inferred from the geometry and the follower's handlers:
+
+| Kind | Links | One-way | Length in plan | Height change along the step | Meaning |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 238,422 | almost none | median 3.3 m | ±9.4 m at most, median 0 | walked |
+| 2 | 2,126 | 64 | median 0.64 m | −1.5 to +3.2 m | walked (a short joint, often between two areas; no code treats it apart from 1) |
+| 4 | 5,890 | 5,372 | median 0.8 m, at most 15.9 m | 91 % go down, median −1.6 m | jump or drop ([Jump legs](#route-jump)) |
+| 8 | 982 | none | always 1.0 m | always 0 | climb over a fence or wall: a pair of nodes 1 m apart, one each side |
+| `0x10` | 746 | none | always 1.4 m | always 0 | a door; every one has the avoid bit set in the file |
+| `0x80` | 4,730 | all | always 0.8 m | median +1.4 m | climb up onto a ledge; its way back is a kind-4 drop |
+
+No link on the disc has `0x40` or `0x100`; the charge kind `0x40` is given at run time by a breakable door or pane
+([Objects](objects.md#nav-links)). Polygon `s16 +0x02` (summed into the area's first path at load) is non-zero in
+1,257 of the 1,754 areas, 1,251 of which own route nodes; 60 areas own nodes but have 0 there, so a request between
+two areas refuses them (inferred: "on the graph").
 
 1. Find the human's polygon (`Human_GetNavPolygon` `0x00247958`, cached at human `+0x1b4` with its point at `+0x2b0`;
    fallbacks `0x002505b0`, `0x0024e218`; see [A point in a hole](#path-holes)). None → `+0x284` = 1, fail.
@@ -2119,24 +2184,62 @@ and for the formation in four levels (`FollowFormationGoal_Start`, `0x002dfe30`)
 3. Otherwise both ends must be in one polygon, or both polygons must be on the graph (polygon `s16 +0x02` ≠ 0;
    inferred meaning). Each end's node is the nearest of its polygon's nodes (the A record's count and first index)
    that it reaches in a straight line (`0x00251150` → `0x00250e98`, `0x0024f290`), trying up to 30 by distance.
-4. **A\*** (`0x00251a70`), from the destination's node to the start's, so the parent links read in walking order:
-    - the open list is a binary min-heap on f; costs are `u16` in 1/16 m; the heuristic is the straight distance × 16
-      (`0x002517b0`);
-    - an edge is skipped when its flags (the low 16 bits of the D record's word) share nothing with the mask, or its
-      cost reaches 65000 (`0x005105a4`); the search fails on an empty heap or at 128 nodes;
-    - **edge cost** (`0x00251890`) = distance × 16, + 200 for edge flag 8 (the D record's kind bit, not path flag
-      8), + 320 for `0x80` and + 80 for 4 (these three
-      only when `0x0051059c` = 1 and the mask lacks `0x100`), + 1600 when the word's bit 31 is set, and + (40 × routes
-      already through the node − 8), saturating at `0xffff`. The last term spreads AIs over parallel routes.
-      `0x0051059c` is the script's `ClimbFilter(on)` (`Climb_SetFilter`, `0x002511b8`).
-5. `0x002511c8` retries a failed search with `mask | 0x8c` only when the mask (without `0x100`) is not `0xff`, so
-   never for the default mask; when the route uses a `0x80` edge (under the condition of the extra costs) it
-   searches again without `0x80`, capped at the first cost, and keeps the cheaper route.
-6. **Building** (`0x002513a8`; a pool of 32 routes of `0x110` bytes at `0x006ca250`, a count then `s16` node
-   indices): leading nodes the start reaches directly are skipped (only when `0x005105a0` = 0), the chain is shortened
-   by looking up to 4 nodes ahead for one that links back, trailing nodes are dropped while the destination is
-   reachable from the node before, and each node's use count (C `+0x1f`) is raised; freeing the route
-   (`0x00251680`) lowers it.
+4. **A\*** (`Route_AStar` `0x00251a70`), from the destination's node to the start's, so the parent links read in
+   walking order. Confirmed (code):
+    - **Before**: every node's parent (C `+0x1c`) is set to none (`0xffff`, `PathNodes_ResetParents`); the open heap
+      and the closed list are emptied. The first node gets g 0, h, f = h and no parent.
+    - **The open list** is a binary min-heap of node indices keyed on f (C `+0x16`), at most **1000** entries
+      (`PathHeap_Push`; a sift-up moves a parent down only while the new f is strictly smaller, so equal f keep the
+      older entry above). **The closed list** holds at most **3000** nodes (`PathList_Add`). Either one full ends
+      the search as a failure.
+    - **A step**: pop the lowest f, append it to the closed list, save its g and write `0xfabc` into its g (that
+      value marks "closed"). If it is the start's node, the search is over. Otherwise, for each of its D records in
+      file order, skip the neighbour when its g reads `0xfabc` (closed), when the record's flags (low 16 bits of the
+      word) share nothing with the mask, or when the new g (below) is **65000 or more** (`0x005105a4`; the cap is on
+      the running total, not on the edge). A neighbour already on the heap with a g no larger than the new g is
+      skipped too. Otherwise its g, parent and h (`Nav_Heuristic` `0x002517b0`) are written, f = g + h, and it is
+      sifted up (already on the heap) or pushed (a node off the heap is pushed whatever its old g says).
+    - **Costs** are `u16` in 1/16 m. A distance is the **3D** distance between the two nodes' positions × 16,
+      truncated to an integer (the heuristic too).
+    - **The new g** (`Nav_EdgeCost` `0x00251890`) = the expanded node's g + the step's cost, saturating at `0xffff`
+      (so a saturated total is always over the cap). The step's cost, in this order:
+        1. *c* = 3D distance × 16 (truncated);
+        2. only while `0x0051059c` = 1 (the script's `ClimbFilter(on)`, `Climb_SetFilter` `0x002511b8`) and the mask
+           lacks `0x100`, **one** of: + 200 when the record's flags have 8; else + 320 when they have `0x80`; else
+           + 80 when they have 4, unless they also have `0x40` and the avoid bit is set (then nothing);
+        3. + 1600 when the record's avoid bit (bit 31) is set;
+        4. + 40 × *u* − 8 when *u*, the use count (C `+0x1f`) of the **expanded** node, is not 0 (nothing when it is
+           0). The expanded node is the one the step enters in walking order (the record lives on it), so this
+           spreads AIs over parallel routes.
+
+      Each addition wraps at 16 bits; only the final sum with g saturates.
+    - **The end**: the search fails on an empty heap. When it reaches the start's node, that node's g is put back, and
+      the chain of parents is counted: a chain of **129 nodes or more fails** (a route holds at most 128 node
+      indices: `0x110` bytes less the count and the three words at the end). Then, success or failure, every node on
+      the closed list gets g = 0 (`PathNodes_ClearOpenMarks`), the start's node included.
+
+   "Fails at 128 nodes" is therefore the **route's length**, not the open list: a search may visit up to 3000 nodes.
+5. `Route_Find` (`0x002511c8`) retries a failed search with `mask | 0x8c` only when the mask (without `0x100`) is not
+   `0xff`, so never for the default mask. When `0x0051059c` ≠ 0, the (possibly widened) mask has `0x80` and lacks
+   `0x100`, and the route found steps over a `0x80` link, it searches again without `0x80`, with the cap
+   `0x005105a4` set for that search to the f (C `+0x16`) of the first route's first node and put back to 65000 after.
+   It then keeps the second route only when its first node's g (C `+0x18`) is lower than the first route's first
+   node's g. Confirmed (code). Both g values are read after the second search, and every node on a found chain was
+   closed and so has g = 0 by then: the comparison is 0 < 0, and **the first route (with its `0x80` climb) is always
+   kept** (inferred from the code; not seen at run time).
+6. **Building** (`Route_Build` `0x002513a8`; a pool of 32 routes of `0x110` bytes at `0x006ca250`, taken from slot 31
+   down; `+0x00` the count, then up to 128 `s16` node indices, `+0x104` the start's node, `+0x108` the last node,
+   `+0x10c` the destination's area). Confirmed (code):
+    - **Leading cut** (only when `0x005105a0` = 0; no code writes it, so always): from the start's node, move the
+      route's first node along the parents while the walkable line (mask 0) from the start point to the next node
+      passes; it may stop on the destination's node.
+    - **Shortcuts**: from each node *a* in turn, the nodes 2, 3, 4 and 5 ahead are tried, but never the route's last
+      node; the farthest of them whose D records name *a* (a link from *a* into it, of any kind and whatever the mask)
+      becomes *a*'s next node. It moves on to the new next node and stops when it or the node after it is the last.
+    - **Trailing cut**: while more than one node is left, drop the last node when the walkable line passes **from the
+      destination point** (in the destination's area) to the node before it. The line runs from the destination,
+      not toward it.
+    - Each node's use count (C `+0x1f`) is raised; freeing the route (`0x00251680`) lowers it.
 
 The polygons come in **areas**, an outline and its holes ([Path data](level-loading.md#path-data)); the human's
 polygon and a node's polygon are an area's first path. **Path flag 8** (`u16` at polygon `+0x48`, bit 3) takes a
@@ -2180,9 +2283,15 @@ polygon out of every test below, so an opened door's hole stops cutting the area
 - **A node in a straight line** (`0x0024f290`, the end-node search's test): refused when a hazard sphere blocks it
   (`0x00221f80`) or when the segment crosses an edge of any of the area's polygons without flag 8 or the mask (0
   there).
-- **A point's area** (`0x00250708`): `0x00250760` takes the first area, by the area list (`+0x24`), whose first path
-  lacks flag 8, whose `+0x4a` equals the byte of the ground found by a ray down from 0.4 m above the point, and whose
-  box (+0.35 m) holds it; then the inside test `0x0024ea60` over its polygons, skipping flags 8 and `0x10`.
+- **A point's area** (`0x00250708`): `Nav_FindAreaCandidate` (`0x00250760`) casts one ray through the world's
+  collision (`WorldManager_RayCast`, `*0x005147c4`) from **0.4 m above** the point, straight down, **4 m long** (so
+  it finds ground down to 3.6 m below the point). No hit, or no path data, → no area. Otherwise it walks the area
+  list (`0x00510588`, then each first path's `+0x24`) and takes the first area whose first path has its `u16 +0x4a`
+  equal to the hit's **area byte** (hit record `+0x2e`: the collision triangle's byte `+0x09`,
+  [Collision](collision.md)), whose box widened by 0.35 m holds the point in plan, whose `s16 +0x00` (vertex count) is
+  1 or more and whose flags lack 8. Then the inside test `0x0024ea60` over its polygons, skipping flags 8 and `0x10`.
+  Confirmed (code). The first triangle the ray meets decides: a point on a walkway finds the walkway's byte, and a
+  point under one finds the ground's unless the walkway is less than 0.4 m above it.
 
 `0x00251d28` is a second A* search that stops at the first node beyond a distance outside a cone of
 directions, skipping bit-31 edges; its one caller places spawned humans out of sight ([The search](#spawner-search)).
@@ -2227,16 +2336,52 @@ Confirmed (code) at the addresses unless marked.
 
 #### Following a route {#route-follow}
 
-`0x0029aa88` gives the current waypoint (done at state 5). Every 6th call, or when asked, `0x0029b6d8` moves on: it
-skips waypoints already reachable in a straight line (`0x0029b4b8`), for legs over 5 m only when the turn against the
-previous leg is under about 135°, and sets the waypoint radius to 0.25 m; at the end it frees the route. Confirmed
-(code).
+**The route state** (brain `+0xe0`): `+0x00` the brain, `+0x04` the route, `+0x08` the waypoint radius, `+0x0c` the
+state (1 jumping, 2 dropping, 3 climbing, 4 climbing a `0x80` ledge, 5 finished), `+0x10` `s8` the waypoint index,
+`+0x11` "move on now", `+0x12` "the leg is new", `+0x13` the climb's failed tries, `+0x14` the edge mask, `+0x16`
+"held at the node", `+0x17` the skip counter. Confirmed (code) at the readers below.
+
+**`Route_Follow`** (`0x0029aa88`), called by the move action every update it is not busy (step 3 of
+[the move action](#move-action)), in order. Confirmed (code):
+
+1. State 5 → return 2 (the route is over). Otherwise the state is set back to **0** on every call (so a jump, drop
+   or climb state lasts only until the next call after the human is free again).
+2. **Skip check**: unless "move on now" is set, the skip counter counts calls; on the call where it was already 6 (the
+   **7th**), `Route_SkipReachable` (`0x0029b4b8`) tests the current waypoint and, when it may be skipped, sets "move on
+   now"; the counter goes back to 0.
+3. **Moving on**: with "move on now" set, `Route_Advance` (`0x0029b6d8`): "the leg is new" = 1, the flags and both
+   counters cleared, the index + 1, then while waypoints are left, each that `Route_SkipReachable` passes is skipped
+   too; the first that is not becomes current: unless the leg into it is of kind 4, the human's claims are released
+   (`Nav_ReleaseClaims`, [below](#route-claims)); the radius becomes 0.25 m; brain `+0x90` = its point,
+   `+0x118` = 0.25. Past the last waypoint the route is freed (`RouteState_Release`) and `Route_Follow` returns 1 (go
+   on straight to the destination).
+4. **The legs**: *in* = the flags of the link from the previous waypoint to the current one (0 at index 0), *out* =
+   from the current one to the next (0 at the last).
+5. **Claims and busy links** (only at the detail level `+0x333` < 2): claim the current waypoint's node
+   (`Nav_ClaimWaypoint`, with *out*); when it is granted, the *out* link and then the *in* link must not be busy (kind
+   4: `Route_IsLinkBusy` `0x0029a3f0`; else kind `0x80`: `0x0029a6c8`; other kinds are never busy). Refused or busy →
+   "held" = 1 and, when the human is within **2 m (3D)** of the waypoint's point, the aim is that point with radius
+   0, the move is stopped (`Brain_StopMove`) and `Route_Follow` returns 0. Granted and free → "held" = 0.
+6. **A new leg** (index > 0, "the leg is new" = 1): *in* has 8 or `0x80` → the climb handler; else *in* has 4 → the
+   jump handler; else, when the link's avoid bit is set, `0x40` → the charge, any other → refused (brain `+0x284` = 4
+   for `0x10`, else 2) and return 2; otherwise "the leg is new" = 0. The climb and jump are tested **before** the avoid
+   bit, so a climb or jump link with the avoid bit is still climbed or jumped.
+7. When *out* has 8 or `0x80`, `Route_TryClimbNear` (`0x0029b9b0`, the fast climber's early climb) decides the
+   result; otherwise 1 (keep walking to the waypoint).
+
+**`Route_SkipReachable(i)`** (`0x0029b4b8`): only when the link into waypoint *i* (a kind-1 link for *i* = 0) and the
+link out of it both have kind 1 or 2 (flags & 3), and *i* is not the last waypoint. Then it passes when the human can
+walk straight to waypoint *i* + 1's node (`Human_CanWalkStraightTo` `0x002221e0`, from where he stands). Confirmed
+(code). There is a turn test that never refuses: when the leg into *i* (from *i* − 1's node to *i*'s) is longer than
+5 m (3D), the code compares the cosine between two unit vectors with cos 135° (−0.707), but both vectors are that
+same leg (`0x0029b56c`-`0x0029b654` subtract the same two node positions twice), so the cosine is 1 and the skip goes
+ahead. Confirmed (code) from the disassembly. A port must not add a turn limit here.
 
 **When the straight line is tested** (confirmed (code); each call is the walkable-line test of
 [Path planning](#path-planning) with the mask 0):
 
 - **Asking for a route** (`0x0029a8c0`): from the human's position to the point; passing means no route at all.
-- **Skipping a waypoint** (`0x0029b4b8`, every 6th update and when `0x0029b6d8` moves on): waypoint *i* + 1 is tried
+- **Skipping a waypoint** (`0x0029b4b8`, every 7th call and when `0x0029b6d8` moves on): waypoint *i* + 1 is tried
   from where the human stands (`0x002221e0`), and only when the links into waypoint *i* and out of it are both of
   kind 1 or 2 (word & 3); the first waypoint counts as reached by a kind-1 link. So a waypoint at either end of a
   climb, jump, door or charge link is never skipped, and the human walks to it whatever the line test says.
@@ -2255,7 +2400,7 @@ Confirmed (code) at `0x0029ad04`-`0x0029adb8`:
 
 | Leg's kind | What the follower does | Handler |
 | --- | --- | --- |
-| 8 or `0x80` | a **climb** (8 a fence or wall, `0x80` the same taken at a run) | `0x0029b848` |
+| 8 or `0x80` | a **climb** (8 over a fence or wall, `0x80` up onto a ledge; [the kinds on the disc](#path-planning)) | `0x0029b848` |
 | 4 | a **jump** (route state 1) or a **drop** off the edge (state 2), [Jump legs](#route-jump) | `0x0029baa8` |
 | any, avoid bit (31) set, `0x40` | the **charge** at a breakable door or pane ([Objects](objects.md#nav-links)) | `0x0029bca0` |
 | any other, avoid bit set | refused: brain `+0x284` = 4 for kind `0x10` (a closed door), else 2; the move ends | |
@@ -2267,14 +2412,46 @@ turns the body to it (`0x0021b100`) and calls `Climb_TryStart` (`0x002826f0`), t
 state `+0x0c` = 3 (kind 8) or 4 (kind `0x80`), brain `+0x11d` = 1, and the clips play; otherwise it runs on at gait 4
 (`0x0028aac0`) and tries again, giving up (move done) after 31 failed updates (counter `+0x13`, cleared when the
 waypoint changes). When the **next** leg is 8 or `0x80`, a human with flag `0x2` (human `+0xe0`, a fast climber,
-`HuSetFastClimber`) running faster than gait 3 starts the climb early, within 4.5 m of the waypoint (`0x0029b9b0`).
+`HuSetFastClimber`) whose gait (human `+0x1a8`) is above 3 starts the climb early, within 4.5 m (3D) of the **next**
+waypoint (`Route_TryClimbNear` `0x0029b9b0`): on success the state is 3, the route moves on at once
+(`Route_Advance`), brain `+0x11d` = 1 and "the leg is new" = 0.
 
-Before a leg of kind 4 or `0x80`, with the detail level `+0x333` < 2, the link must be clear: another human on it
-(`0x0029a3f0`, `0x0029a6c8`, [Jump legs](#route-jump)) makes this one hold with speed 0 when within 2 m of the
-waypoint. Every waypoint is
-also claimed in a table of 40 `{node, human}` at `0x006ce978` (`0x00293e40`): the nearer human keeps it and the
-other is told to wait (`0x00294088`); a kind-4 link with a queue (`0x002510f8`) goes to one of the 20 queue records
-at `0x006cde30` instead ([Queues](#queues)). Confirmed (code); the queue's waiting is inferred.
+**How a climb ends** (confirmed (code)). A climb that starts sets the brain's arrival flag `+0x11d` itself. While the
+climb clips play, the human is busy and the move action returns at its first test, so nothing else runs. On the first
+update after the climb, `MoveAction_Update` finds `+0x11d` set (`0x002fc674`), clears it, and asks the route to move
+on (`0x0029aa78` sets "move on now"); `Route_Follow` then puts the state back to 0 and `Route_Advance` makes the
+waypoint after the climb's far node current. The climb's far node (the waypoint the climb leg entered) is passed
+without being walked to: the climb itself carried the human over it. The arrival test `Brain_CheckMoveArrival`
+(`0x0023f9d0`) only ever sets `+0x11d` (when it is 0 and the front action is a move); only the move action clears it,
+and when a steering detour is running the flag ends the detour (`0x00288ad0`) instead of moving the route on.
+
+##### Waypoint claims {#route-claims}
+
+Two humans on one route node take turns: the nearer goes first and the other holds within 2 m. Confirmed (code) at
+the addresses cited.
+
+- **The table**: 40 entries of `{node pointer, human handle}` at `0x006ce978`, with an in-use bit mask at
+  `0x006ceab8`.
+- **`Nav_ClaimWaypoint(human, node, out-link flags)`** (`0x00293e40`):
+    1. When the out-link has kind 4 and the node has a jump partner (`NavNode_GetQueueNode` `0x002510f8`, C byte
+       `+0x1e`), the claim goes to the node's jump queue instead (`Queue_ClaimForNode` `0x00293d08`: the node's queue,
+       or a new one of the 20 at `0x006cde30` with its points laid, [Queues](#queues)); the answer is the queue's.
+    2. Otherwise an entry for the node is looked for. Held by this human → **granted** (1). Held by a handle that no
+       longer resolves → it is taken over, **granted**. Held by another human: when this human is strictly nearer
+       the node (3D, from both humans' positions in the position table) it takes the entry, the other's claims are
+       all released (`Nav_ReleaseClaims`), and the answer is still **refused** (0) for this update; otherwise refused.
+    3. No entry for the node: a free entry is filled with this human, **granted**. A full table also grants.
+- **`Nav_ReleaseClaims(human)`** (`0x00294088`): frees every entry the human holds and takes him out of every jump
+  queue (a queue left empty is freed).
+- **Who claims**: `Route_Follow` claims the current waypoint each call (step 5 above), and the corner-speed look-ahead
+  (`MoveAction_CollectPoints` `0x002fbd18`, [The move action](#move-action)) claims each of the next waypoints it
+  collects. Moving on releases all of the human's claims, unless the new leg is a jump.
+- **Effect**: of two Warriors walking one route, the farther stops within 2 m of each shared node and waits there
+  ("held", route state `+0x16` = 1, speed 0) until the nearer has moved on past it and released it; the steering
+  ([Steering](#steering) step 15) reads the same "held" flag.
+- **Busy links**: before a leg of kind 4 or `0x80`, with the detail level `+0x333` < 2, the link must be clear:
+  another human on it (`Route_IsLinkBusy` `0x0029a3f0`, `0x0029a6c8`, [Jump legs](#route-jump)) makes this one hold
+  the same way. The queue's waiting is inferred.
 
 **Confirmed (runtime)**, PCSX2 2.9.94, `level99` reloaded at checkpoint 3 (call hook, [below](#level99-save)) with
 no input: Vermin (brain 5), set at (47.49, 42.97) by the script's `GoalMoveToFlag(Vermin, fVerminFencePoizo, 4, -1,
@@ -4415,9 +4592,20 @@ So `level80`'s `EndStartCam` works in the original by its own `GangAddMember` ca
 `GangBrFlush(0)`, `GangBrDead(0, nil)`, then `GangAddMember(0, −1, h)` for the player and both Warriors. Each add
 re-runs `GiveGoals`. The player's add also clears and resets the leader before the Warriors' adds; the Warriors' own
 adds give everyone the follow again.
-**`GoalFollowPlayer`'s Process** (`0x002de7c0`): done (2) when the leader is gone. Every 31 updates while the
-follower is not in fight mode, or when it lost a straight walkable line to the leader, it pushes
-`FollowFormation(0.75 m, leader)` (`0x002dfba8`), which walks it to its formation slot. Its **fight mode**
+**`GoalFollowPlayer`'s Process** (`0x002de7c0`): done (2) when the leader is gone. The init (`0x002de380`) stores
+the distance **squared** (`+0x14`; 81 for the tactic's 9 m). Each update, confirmed (code):
+
+1. While brain `+0x284` (the last move's failure) is set, a counter (`+0x24`) counts up; at 31 or more both are
+   cleared. So after a failed walk the follower waits about a second before it tries again.
+2. **Stand or follow.** It **stands** (no new goal) when all of these hold: the leader is within the distance
+   (9 m; 10 m in fight mode), its own brain `+0x2d5` equals the leader's (both set or both clear), and it can walk
+   straight to the leader (`Human_CanWalkStraightToHuman`, the walkable line with the trains' test). Otherwise, while
+   the counter is 0, it pushes **`FollowFormation(0.75 m, leader, turn-with-leader 1, no time limit)`**
+   (`0x002dfba8`) and returns; that goal runs on top until it ends ([below](#warrior-follow)).
+3. With actions queued it returns. Otherwise the fight mode, or the idle behaviour below.
+
+So a Warrior stands still anywhere within 9 m of the chief as long as a straight walkable line joins them, and only
+walks when the chief gets farther, turns a corner, or crosses a fence. Its **fight mode**
 (`0x002de650`) is on for a Warrior when a player's brain `+0x2e4` is set (a Warrior is hitting back at a chief who
 hit him, `WarriorBrain_OnHitByChief` `0x00306190`), or when a member of its gang has attackers and its own brain
 `+0x152` (inferred: how many hold it as an enemy) is not 0; it is off while one of its own attackers is a player. In
@@ -4451,15 +4639,28 @@ distance (0.75 m from the follow code), leader, a turn-with-leader flag, time li
     3. Every *n* updates (*n* a random 2-7 drawn at init) the leader's gait is noted; "the leader just stopped" = it
        was above 3 and is now below 3. Unless he just stopped, nothing more while a check time (now + 1000 ms) has
        not passed and actions are queued.
-    4. The follow point: its slot point, radius = the arrival distance; without one, the follower ahead of him in
-       the formation's queue, radius 2.5 m.
-    5. No straight walkable distance to the point (`Nav_StraightDistance`): a counter starts; every 15th count with
-       no nav polygon or no reachable node near the point, a breakable object within 1.5 m is smashed
-       (VandalizeItem); he waits until the counter reaches 30.
-    6. The leader standing (his speed gives gait 0) and the follower within the radius: done (2).
-    7. Beyond 0.2 m: a move action to the point (radius 0.1 m at a slot, else 2.5 m) at the speed below, or the
-       running move's speed and radius updated. A new move by a follower who has attackers (brain `+0x1a4`) and a
-       clear `+0x2d5` also turns him to face the point and raises his start boost by one.
+    4. The follow point (`Formation_GetFollowPoint`): its slot's world point, radius = the arrival distance (0.75
+       m); **without a usable slot, the position of the human it queues behind** (the follower ahead of it in the
+       formation's queue, or the leader; `Formation_GetAhead`), radius **2.5 m**, and from here on that human's
+       speed stands in for the leader's.
+    5. **Can it get there** (`Nav_WalkDistanceTo` `0x00247a50`; Ghidra's old name `Nav_StraightDistance` was
+       wrong): the straight distance when a walkable line from the human's nav point reaches the point; otherwise,
+       when both ends have an area and both areas are on the graph (or it is one area), the **length of a route**
+       planned with the brain's mask (`Route_Find` between the two ends' nearest reachable nodes, then
+       `Path_LengthFrom`, the route freed at once). It fails only when the point has no area or no route exists.
+       On failure a counter (`+0x2a`) is set to 1 and it waits; each update the counter counts up, and on every
+       15th count, when the human has no nav polygon or no node reachable near the point, a breakable object within
+       1.5 m is smashed (`VandalizeItem` pushed); at 30 it tests again. A success clears the counter.
+    6. The leader (or the human ahead) standing (his speed gives gait 0) and the walk distance below the radius:
+       done (2). With the leader standing, the move's option bit is 0; otherwise 1.
+    7. Beyond 0.2 m (walk distance): a move action to the point (radius 0.1 m at a slot, else 2.5 m) at the speed
+       below, or the running move's speed and radius updated. The move plans its own route
+       ([Path planning](#path-planning)), so a follower crosses fences, climbs and drops by the route's links. A
+       new move by a follower who has attackers (brain `+0x1a4`) and a clear `+0x2d5` also turns him to face the
+       point and raises his start boost by one.
+
+    The distance `d` used for the speed and the radius tests is the **walk distance** from step 5 (the route's
+    length when the point is round a corner or over a fence), not the straight one.
 - **The speed** (`FollowFormation_PickSpeed` `0x002dfef8`), with `d` the distance, `v` the leader's speed capped at
   1.25 × the sprint speed: within the arrival distance, `v`. Beyond it, `f` = 0.1 × (`d` − arrival distance); when
   `v` < 2 m/s, `f` += 4 × `f` × max(`v` − walk speed, 0); `f` += 1 when `v` > 2 m/s, the leader's `+0x2d5` is set, or
@@ -5250,8 +5451,8 @@ the objects' search rather than among them by distance; the two-player swap is n
 **Coney choices for moving.** The inside test counts an edge going down in y as +1 (the sign under which the route
 nodes lie in their polygons; the clockwise polygons then contain nothing). A polygon's A record takes the next nodes
 in order (the counts add up to the C records in every file; `+0x08` does not always hold the running index).
-"Fails at 128 nodes" is the open list's size (counted as nodes closed, a third of
-`level99`'s reachable pairs failed). The use term is 40 × uses − 8 on the node entered; `0x0051059c` is 1 and
+Coney caps the open list at 128 nodes and adds the use term (40 × uses − 8, also at 0 uses) on the neighbour; both
+differ from the original ([Pathing: status and fixes](#pathing-fixes), items 1 and 2). `0x0051059c` is 1 and
 `0x005105a0` 0. An end off every polygon counts on the nearest within 1 m and takes its nearest node; the shortcut
 takes any edge that links back. The walkable line crosses every edge of the two areas rather than the slab lists',
 finds the start's area from the point, and has no hazard spheres (Coney has no fire to add them). A point's area
@@ -5492,6 +5693,81 @@ fights the chaser (the melee and engage-enemy goals are not built) and the urgen
 thrower has no objects to pick up or throw yet, so each throw is a turn to the nearest enemy (or a target flag) and
 the wait, and its animation name is kept, not applied.
 
+### Pathing: status and fixes {#pathing-fixes}
+
+The owner's play-test (2026-10) found that Warriors lose the player across alleys and that AI humans walk into walls
+where the original takes a climb. Comparing Coney's `repo:src/ai/route_planner.cpp`, `route_follower.cpp`,
+`move_action.cpp`, `crew.cpp` and `formations.cpp` with the sections above gives the list below. Each item is one
+small pull request, in the order to do them: the first three are the likely causes of what was seen. Each names the
+section it implements and a test written first (synthetic path maps, as in `repo:tests/ai/route_planner_test.cpp`;
+the disc checks print counts only).
+
+1. **A\*'s limits** ([Path planning](#path-planning) step 4). Coney fails a search once 128 nodes are on the open
+   list (`kMaxSearchNodes`); the original allows 1000 on the open heap and 3000 closed, and fails only when the
+   **route** would have more than 128 nodes. This made a third of `level99`'s reachable pairs fail, so a planner
+   that should cross the map found no route (a likely cause of `level87` checkpoint 4's "no route out of the street").
+   Also: the 65000 cap is on the running g, not on one edge; distances are 3D, truncated to whole 1/16 m per edge.
+   *Tests*: a 600-node grid whose only way round passes 300 nodes plans a route; a 140-node corridor fails (route
+   over 128); the disc check's "failed, linked" count for `level99` drops to 0 (`[disc][routes]`).
+2. **The edge cost** (step 4, "The new g"). The three ClimbFilter extras are exclusive (8, else `0x80`, else 4, and
+   4 not with `0x40` + avoid), not added together; the use term is 40 × *u* − 8 only when *u* > 0, and *u* is the
+   use count of the **expanded** node (the one whose record it is), not the neighbour's. *Tests*: an edge with flags
+   `0x8c` costs distance + 200; a node with 0 uses adds nothing; two routes through one node make a third prefer a
+   parallel way (cost compare on a two-lane map).
+3. **FollowFormation and FollowPlayer** ([The default command: follow](#warrior-follow)). Coney's
+   `FollowFormationGoal` ends when the follower has no slot, and a slot is usable only when the leader sees its
+   point, so a crew stops as soon as the chief turns a corner or crosses a fence. The original then follows the human
+   ahead in the formation's queue (radius 2.5 m) and keeps going. Port, in this order: the follow point with the
+   queue fallback; `Nav_WalkDistanceTo` (straight distance, else the planned route's length; fail only with no area
+   or no route) and its 30-update wait with the vandalise check every 15; done only when the leader stands and the
+   walk distance is within the radius; the speed from `FollowFormation_PickSpeed` (replace the 3 m run/walk
+   stand-in) using the walk distance; the move refreshed once a second or when the leader just stopped. In
+   `FollowPlayerGoal` replace "back to the slot every 31 updates" with the stand-or-follow test (within 9 m, same
+   `+0x2d5`, straight walkable line to the leader) and the failure back-off of 31 updates. *Tests*: a chief walking
+   round an L-shaped wall keeps his two followers moving (they reach within 2.5 m of the one ahead); a follower
+   within 9 m in line stands; one 12 m behind runs (gait 4 speed × f) and slows to the walk near the slot; across a
+   kind-8 fence pair the follower climbs.
+4. **Every 31 updates the aim must stay in sight** ([The move action](#move-action) step 5). Coney never ends a
+   move because its waypoint went out of a walkable line, so an AI pushed off its line (by steering, a shove, a
+   corner cut) walks into the wall until the stuck test, which a wall slide may never trip. Port the check (ends the
+   move with `+0x284` = 0, so the goal plans again), the clearing of `+0x284` at the start of every move update, and
+   the climb's give-up after 31 tries ending the move without a failure code (Coney sets "stuck", which ends
+   FollowFormation). *Tests*: a human whose waypoint is put behind a wall by a teleport ends its move within 31
+   updates and the goal replans; a failed climb leaves `moveFailure()` at none.
+5. **Following details** ([Following a route](#route-follow)). The skip check runs on every **7th** call and its
+   counter restarts whenever the route moves on; the skip needs both links of the waypoint to be kind 1 or 2 (Coney
+   only excludes jump legs, so it may skip a climb's or a door's waypoint); there is no turn limit on long legs
+   (remove `kLongLeg` / `kSkipTurnLimit`: the original's test always passes); the arrival test subtracts one
+   update's travel (speed / 30) for **every** waypoint, in 3D unless within 1 m; a new leg tests climb and jump
+   before the avoid bit. *Tests*: per rule, a two-leg route on a synthetic map.
+6. **Waypoint claims** ([Waypoint claims](#route-claims)): the 40-entry table, the nearer human takes over (the
+   other's claims all released, the taker refused for that update), hold within 2 m (3D) with speed 0, release on
+   moving on except into a jump, and the corner look-ahead's claims. Replaces the steering's stand-in for "held".
+   *Tests*: two humans on one route, the farther holds within 2 m of the shared node until the nearer passes it;
+   a vanished holder's claim is taken at once.
+7. **The corner speed** ([The corner speed](#corner-speed)): the braking distance is the 32 m/s² stopping distance
+   ((v₁ − v₂)/32 = *t*, *d* = v₁*t* − 16*t*²), not 0.5 s at the first speed; the simulation's sub-steps by the current
+   speed (4/5/6/7), points every *k* sub-steps, early stop when aligned; recompute every 11 updates or when the aim
+   moves. *Tests*: v₁ 7.8, v₂ 3.4 → *d* = 0.77 m (*t* = 0.1375 s); a straight route keeps the run speed.
+8. **Areas from the ground** ([Path planning](#path-planning), "A point's area"): the ray starts 0.4 m above the
+   point and is 4 m long (Coney: from the point, 10 m), and the first area of the list whose byte, box (+0.35 m),
+   vertex count and flags match is the candidate. *Tests*: a point 3.7 m above a floor finds no area; a point
+   0.3 m below a walkway's surface finds the walkway's area.
+9. **The retry without `0x80`** (step 5): the second route is never kept in the original (both g read 0); Coney keeps
+   the cheaper one. Keep the first route. **Route building** (step 6): shortcuts never to the last node; the
+   trailing cut's line runs from the destination to the node. *Tests*: a chain whose last node links back to the
+   first keeps its middle nodes.
+10. **Formation slot points** ([Formations](#formations)): drop each slot's point to the ground (a ray from 1.9 m
+    above to 5.9 m below) instead of keeping the leader's height, and test usability with the line from the leader
+    (`Human_CanWalkStraightTo`). *Test*: a leader on a kerb 0.3 m up gives slots on the road their road height.
+11. **The stuck test** ([The move action](#move-action) step 9): 3D distance, on the 61st counted update. *Test*: a
+    human climbing a steep heap 0.2 m per 60 updates in height is not stuck.
+
+**Gait choice** (when an AI walks, jogs, runs or sprints) is per goal, not per distance, except in the follow code:
+the table in [Gaits and speeds](#ai-gaits) gives each goal's gait, the corner speed lowers it before tight corners,
+a climb leg runs at gait 4, and `FollowFormation_PickSpeed` blends the leader's speed with the distance (item 3).
+Coney already takes each goal's gait from that table; item 3 is the gap.
+
 ## Open questions {#open-questions}
 
 - Movement and world use: MoveToUseFlag's clip states once he is on the flag; the pedestrian's flag re-use timer
@@ -5501,25 +5777,19 @@ the wait, and its animation name is kept, not applied.
   tackle meter brain `+0x148` besides the fight goal, and what brain `+0x28f` controls.
 - The per-gang `CfgGang` values 2, 3, 5, 7 and 8 (attackers at once, tackle and rear-grab chances) as
   `config_preload2.lua` sets them; the target's pattern bytes `+0x5d0` / `+0x5d1`.
-- Which byte of the ground triangle `0x00250760` matches against a path's `+0x4a` (Coney reads the area byte), and
-  the length of its downward ray.
 - `GoalBumLogic`'s begging (type 2's prompt, the chance, the callback, the 12 s timer) and what sets `+0x36`; what
   `GoalBackoff`, `GoalMoveToUseFlag` and the pedestrian goal (`0x69`, with its two variants
   and `FlagNetTraverse`'s flags) do each update (Process), and the use-flag goal's two floats; what
   `GangInvincible` sets on a member (`0x0016a000`).
 
-- Link kind 2 and mask bit `0x100` in play, polygon `+0x02`, the globals `0x005105a0` and `0x005112b4`, and the
-  goals that search with the mask `0x13` (`0x002aafd0`, `0x002c1470`).
+- What sets polygon `+0x02` in the level files (non-zero for most areas with route nodes, [the link
+  kinds](#path-planning)), and the goals that search with the mask `0x13` (`0x002aafd0`, `0x002c1470`). Which
+  levels the level-table ids `0xe`, `0x33`, `0x34` and `0x52` are (the Warriors' `0x100` mask while following).
 - Which record `+0x08` bits the play-anim action's clip holds (`0x0025a3e0`), its rate for a dynamic clip and its blend
   out; Coney holds `0x80000`.
-- Which climb clips Vermin's fence plays (tall or short fence, standing or running) and how the climb's end moves
-  the follower to the next waypoint (route state 3 → 0).
-- A\*'s "fails at 128 nodes": nodes closed, or the open heap's size? And the use term: (40 × uses) − 8, or
-  40 × (uses − 8), and on which node of the edge?
+- Which climb clips Vermin's fence plays (tall or short fence, standing or running).
 - Which edge sign the inside test counts +1, and what the clockwise polygons (most of them, nearly all with polygon
   flag 1 or 2) are for if they contain nothing.
-- The move action's braking distance `+0x48` (how it is worked out) and how a corner's arc is predicted
-  (`0x0022aae8`, `0x002fbef0`).
 - The formation's assignment mode `+0x275`, and `GoalFollowPlayer`'s modes 1, 2 and 4.
 - What reads the turn action's `+0x10` (`ActLookAt`'s turn value) and the play-anim action's flag (loop or hold?).
 - What the rip-off's `gen_push` clip does to the buyer ([Buying](#dealer-buy)).
