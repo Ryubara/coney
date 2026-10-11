@@ -467,7 +467,11 @@ What a walking human meets of another human, confirmed (code) at the cited addre
   direction · the normal < −0.8). A cop, a civilian, or a human of the pusher's side (friendly, and the pusher at a jog
   or faster) starts a timer at `+0x56c` / `+0x570` (10 s, or 2.1 s for a friend); a second push after 2 s deals
   `Human_DealDamage` (unfriendly) or asks `Human_CanPush` (friendly) and clears it. A bum under `BumLogic` ignores it.
-  The reaction's meaning is inferred.
+  `Human_CanPush` (`0x002320a0`) refuses when either is in a fight stance, holds any of the held flags `0x2fefefff` or
+  any state of `0x7bf9e9f7ff0`; otherwise it **swaps the two places**: each human's transform is set to the other's
+  position with its own rotation (vtable `+0x6c`), so a player who keeps walking into a free teammate at a jog or
+  faster for 2 s ends up on the other side of him ([Combat: teammates](combat.md#teammates)). Confirmed (code); the
+  arguments of the `Human_DealDamage` call for a cop or civilian were not read.
 
 The mover's own velocity is cut by the slide only when it is a player ([Sweeping a body](#sweep)).
 

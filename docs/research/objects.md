@@ -754,6 +754,58 @@ from the senders of messages `0x1b` and `0x32` above (all clip events or the scr
 the human's alpha (confirmed (code)). In the normal draw an attached object skips the small-size fade and is drawn
 only within its parent's `ObjShow` distance ([Drawing](#tint)).
 
+#### A weapon given to a Warrior {#given-weapon}
+
+What a crew member does with a weapon the player hands him by triangle (the "Give Weapon" prompt, owner item 37).
+The hand-over itself is [AI: the weapon swap](ai.md#warrior-swap); this is what follows. Confirmed (code) at the
+addresses cited unless marked.
+
+1. **It is in his hand, attached and drawn like the player's.** The swap places the object with
+   `Human_PlaceObjectInHandByPickupClip` (`0x0024c6d8`), the same path as `HuPlaceItemInHand`: the first type-9 event
+   of the low pick-up clip of the type's `pickup_anim` gives the bone and offset (bone 25, the right hand, for 461, 481
+   and 498; [Combat: a bat in hand](combat.md#bat)), and message `0x1b` **take** attaches the object to the
+   Warrior (`+0x54` bit `0x10`, parent, pose bone) and puts it in his `+0x338`; message 3 applies its anim set. There
+   is nothing player-only in any of this, and `HuRender` (`0x00237e98`) draws every human's attached objects after
+   the human, so the weapon shows in the Warrior's hand on the next draw, posed by his bone cache. A left-hand or hat
+   object (`pickup_anim` 5 or 6) has no type-9 event and stays on the ground (inferred, as for the scripted
+   placement). The prompt that later offers it back ("Get Weapon", HUD string `0xd`, he holds) reads the same
+   `+0x338` ([AI: the Warriors' think](ai.md#think-warrior), step 7).
+2. **He fights with it.** An AI attacks through the player's dispatcher ([Combat: an AI's
+   attacks](combat.md#ai-attacks)), and square and cross choose their clip by the **held object's set**
+   (`0x00231a80`, [Combat: moving attacks with something in hand](combat.md#armed-moves)), so a Warrior holding a
+   bat (set 3) swings 34 / 36 (37 at a grounded target), a baton (set 2) 39 / 41, a knife (set 1) 45 / 47.
+3. **The damage** is that clip's [damage table](combat.md#damage-table) value plus the weapon's: `Strike_Contact`
+   (`0x0021b290`) adds the object type's `CfgObj` u16 `+0x58` and multiplies by the attacker's class record's first
+   float when the held world object's body flags have `0x10000` (the melee weapons). The same `Strike_Contact` serves
+   the player, so a given bat hits as hard in a Warrior's hand as in the player's, scaled by his own class.
+4. **His choices change too.** `Brain_PickAttack` adds the **armed bonus** (+100 to every candidate of kinds 0-9 with
+   a weight; category 14, the Warriors, is not one of the categories 9, 10, 13 that get 0) ([AI: picking the attack
+   kind](ai.md#pick-attack)); `Human_CanStartAttack` measures kinds 0, 1 and 5 with the set's clips (set 3: 36, 34,
+   35; set 2: 41, 39, 40; set 1: 47, 45, 46), and the fight goal lets an armed fighter attack from anywhere within
+   1.1 × the far range ([AI: objects in an AI's hands](ai.md#ai-objects)). A set 1 throwable lets kinds 0 and 1 reach 12 m
+   (thrown), set 4 15 m, set 5 30 m.
+5. **What he keeps.** Outside co-op a Warrior holding an object of kind 4 or 6 (the overhead props and the ghetto
+   blasters) **drops it** once his enemy list is empty and no steal tactic runs (`WarriorBrain_Think` `0x003052f0`,
+   step 3); a bat, baton, knife or throwable stays in his hand until he uses, throws or swaps it, or a hit makes him
+   drop a swung weapon (`Human_ApplyPendingDamage` `0x00265f70`: `Human_DropHeld` when he is swinging it, or holds a
+   set 1 object in clip 602).
+
+**Coney fixes** (owner item 37; the hand-over works, the member holds the object, `play_level_objects.cpp` gives him
+its anim set):
+
+1. Draw every human's held object, not only player 1's: Coney's world-object draw places just
+   `m_player->human().script().heldObject` (`play_level_world.cpp`); each AI human's `script().heldObject` needs the
+   same attached pose (his hand bone from his own pose, his scale, the type's grip slide `CfgObj` `+0x70`).
+2. Attach the given object to the receiver's right hand with the pick-up clip's type-9 offset, as the player's
+   pick-up does, and leave a left-hand or hat object on the ground.
+3. Check that an AI fighter with a held set picks its square / cross clips from the held object's set (34 / 36 for a
+   bat) and that `Strike_Contact`'s weapon bonus (`CfgObj` `+0x58` × class float) applies to AI attackers.
+4. Add the armed bonus to Coney's attack pick and the set's clips to its reach test, if missing.
+5. Drop a held kind 4 or 6 object from a Warrior with no enemies outside co-op.
+6. Test: give a bat to a Warrior; assert he holds it, its world pose equals his transform ∘ scaled hand bone ∘ local
+   on the next draw, and an attack of his on an enemy plays 34 or 36 and deals the bat clip's damage plus the bat's
+   bonus.
+
 ### Throws {#throws}
 
 Confirmed (code) unless marked. Gravity in flight is 15.68 m/s² (the aim trace steps the z speed by −0.2613 per
