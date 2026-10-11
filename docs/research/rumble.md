@@ -242,6 +242,26 @@ The update (`0x001fad40`) runs four phases (byte `+0xe4`), confirmed (code):
    clear; "3" plays a sound and loads a random `dj_start_01`-`10`, which plays with the last word. After **4,000 ms**
    the screen calls the Lua function `onDone` with no arguments and closes.
 
+**The layout** (`RM_Intro_Init`, `0x001f9558`), confirmed (code) unless marked; each point goes through
+`Camera_AdjustScreenPoint` for the screen's shape:
+
+- **The names**: multi-line text widgets in font slot 6 (`big_font`), size **2.5** (`0x0050f488`), grey `0x005fd310`
+  (178, 178, 178, 255), centred, from (0.5, 0.12) with a pitch of 0.11 (`0x0050f48c`; 0.15 in one other video mode);
+  `RM_Intro_LayoutNames` then places them (not traced).
+- **The separator** between two names is not text: a sprite widget (word `0x1d0000`) of the intro's own sprite batch
+  (`+0x60`), depth 11,000, colour `0x005fd310`. Inferred: the "VS" picture.
+- **The prompt** is a **`UsageInfo`** ([GUI](gui.md#widget-classes)), not a big-font line: `UsageInfo_Setup`
+  (`0x001ceb40`, centred) at (0.5, **0.88**) (`0x0050f494`: 0.88 in the data and in every video mode `RM_Intro_Init`
+  sets), colour `0x005fd310`, its text global string `0x25`, then hidden until phase 2. So it is drawn in font slot 3
+  (`part_page0`) at size 1.0, where the string's bare `<X>` (disc check, no `<MONEYFONT>`) is the cross-button
+  glyph of `part_page0` (characters `0x91`-`0xa0`, [Markup](gui.md#markup)).
+- **The countdown**: a text widget at (0.5, 0.5), size 2.5, grey `0x005fd310`, font slot 6, centred, hidden.
+
+**Coney differs** (owner item 24b, "press  to start" with an empty gap): `repo:src/gui/rumble_mode_gui/rumble_intro.cpp`
+(`setupLine`) draws the prompt like a name, in `big_font`, white, at y 0.7; `big_font` has no picture for the
+`<X>` character, so the button is a gap. **Fix for the implementer**: build the prompt as a usage line (font slot
+`part_page0`, size 1.0, grey 178, centred) at (0.5, 0.88); the names and countdown in grey 178 at size 2.5.
+
 **The world keeps running under the intro.** The screen is only a HUD widget: `HUD_Update` (`0x001af010`) updates it
 (`0x001fad40`) after `Gm_Level_Update` (`0x00158728`) has already ticked the tasks and the game mode
 (`TaskManager_Tick`, `GameMode_Tick`) for the frame, and nothing in that frame reads whether the intro is open. The
@@ -423,8 +443,8 @@ wheelchair's clips and the give-way action.
 - The win camera's stop condition (`0x005fdeb8 + 0x1d8` / `+0x1dc`) and the base camera slots `+0x194` / `+0x1ac`.
 - What the sound call on `"menu"` (`0x0010fa50`) does when the result screen's choices appear.
 - The countdown's first sound (`+0xfc` of the intro, loaded before the screen opens).
-- The intro's layout (where the names, separator, prompt and countdown sit, their font and colour), the separator's
-  text and how long each announcer line lasts (Coney: centred white big_font, "VS", 1.5 s per line without lengths).
+- The intro's layout after `RM_Intro_LayoutNames` (the set-up is [answered](#intro)), the separator sprite's picture
+  and how long each announcer line lasts (Coney: centred white big_font, "VS", 1.5 s per line without lengths).
 - The intro's screen effects 0 (left out by Coney) and how opaque the prompt is when the screen takes the pad
   (Coney: 0.95).
 - The result screen's two lines' font, scale and colour, and the grids' rows (Coney: one row of two).

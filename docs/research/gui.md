@@ -1298,8 +1298,8 @@ What the implementer still needs:
   name, `882067645`; on the NTSC-U disc it has 7 rectangles over a 512 × 512 texture, rectangle 5 the gang collage.
 - **`firstGlyph` of `part_page0` (94) and `part_page1` (20)**: which text uses them, and the two explicit-base call
   sites in `Font_Measure`/`Font_Draw`.
-- **`<MONEYFONT>`**: the glyph base it sets (`0xd0100` for font 6, `0xb` for font 3) looks like a packed value; how
-  it is used is not worked out.
+- **`<MONEYFONT>`** (answered, [MONEYFONT](#moneyfont)): a rectangle base for the glyphs, 11 in `part_page0` and
+  256 in `big_font` (`Page_Rect` keeps the low 16 bits of `0xd0100`).
 - **The message box** (answered for the layout and input: [Front end](frontend.md#message-box)): its file.
 - **`OptionGrid`** (answered, [The widget classes](#widget-classes)): the owner reads the code itself
   (`0x001d43f0(grid, 0x001d43e8(grid))`). Still open: setup's `a2` (`+0xa8`) and the item flags argument (4).
