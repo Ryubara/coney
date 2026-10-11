@@ -49,9 +49,6 @@ player's path, gamepad input, playthrough tests, the checks to run before report
 - **Local first; no agent pushes or waits on CI.** An agent commits, runs every applicable local check, writes each
   pull request's title and description to its scratch folder and tells the coordinator, who pushes from a release
   queue when CI has room (`docs/guides/how-we-work.md`, "Local first: the release queue").
-- **Limits on one agent's run:** about 45 minutes of waiting in total, or about 300 000 tokens of context. Past
-  either, commit, write the scratch `STATUS.md` and report; a fresh agent continues (`docs/guides/agents.md`,
-  "Running without losing the cache").
 
 ## Code
 

@@ -9,8 +9,10 @@ you are about to do that step.
 
 Every feature goes through the same steps:
 
-1. **Read the code.** An analyst studies the original executable `SLUS_212.15` in Ghidra: names the functions,
-   writes plate comments and works out what each one does.
+1. **Read the code.** Before starting, an analyst checks `docs/research/` and the open pull requests for existing or
+   in-flight coverage and extends it ([Before you research](research-workflow.md#upstream)). Then the analyst studies
+   the original executable `SLUS_212.15` in Ghidra: names the functions, writes plate comments and works out what
+   each one does.
 2. **Watch it run.** Where the code alone is unclear, the analyst checks it in the original game running in PCSX2:
    memory reads and writes, scripted input, per-update traces and reference frames.
 3. **Write it down.** The finding goes on a research page in `docs/research/`, in prose, with the address it comes
@@ -185,9 +187,8 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
   changed and how to reach it ([Play-testing](testing.md#play-testing)). Research-only merges need no build.
 - **Resume what was interrupted.** A usage limit, an account switch or a cleared session can stop agents mid-task;
   the coordinator restarts each stopped track as a fresh agent from its `STATUS.md` and branch before taking new work.
-- **Keep its own context small.** The coordinator re-reads its whole conversation on every turn: it checkpoints
-  (saves the state, clears, continues from it) before its context limit and before a long break
-  ([Running agents](agents.md#cache)).
+- **Keep its own context small.** The coordinator re-reads its whole conversation on every turn: it saves the state,
+  clears and continues from it at a natural boundary ([Running agents](agents.md#cache)).
 - **A lesson becomes a rule in the same commit.** A mistake that cost time (a tool pitfall, a process race) is
   written into the guide where it applies, generally (why and the method), alongside its fix; briefs only point to
   it.
@@ -216,6 +217,10 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
   was added to `.github/workflows/pr.yml` never runs it, and a required check that never reports blocks the pull
   request for good. Add the job, wait until every open pull request's branch includes it (rebase or merge `main`
   into the old ones), then add it to the required checks of the ruleset on `main`.
+- **Later: a merge queue.** The ruleset on `main` has "require branches to be up to date" off to save CI time, so two
+  pull requests that each pass can still break `main` together (a semantic conflict). Once there are regular outside
+  contributors, turn on GitHub's merge queue for `main`: it tests each pull request on top of the ones queued ahead
+  of it before merging.
 - **Do not wait.** When a commit is finished and you are sure of it, report its sha in one line and go on to the next
   item in your scope. Never block on a merge, a rebase, a manual test or an answer: use a clearly marked stand-in or
   take the next unblocked item. Test findings come back later as fixes.
@@ -232,10 +237,6 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
   [release queue](#release-queue); the coordinator pushes, watches CI and sends a failure to a fresh agent
   ([When a pull request fails checks](agents.md#ci-failures)). An agent idle past its cache lifetime re-writes its
   whole context, often hundreds of thousands of tokens, when it resumes.
-- **Limits on one agent's run.** An agent that would wait more than about 45 minutes in total (builds, sweeps,
-  emulator runs), or whose context passes about 300 000 tokens, commits what it has, writes its
-  [STATUS.md](#status) and reports; a fresh agent continues from there. Coordinators brief every agent with these
-  limits ([Running agents](agents.md#cache)).
 - **Long-running tracks keep going.** They hand each finished unit to the release queue and continue with the next
   item in scope until it is empty, instead of stopping after one finding.
 - **Report what a reader needs:** commits, what works now and the command that shows it, stand-ins, open items and

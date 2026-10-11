@@ -17,7 +17,7 @@ request. The provider caches that context:
 - **A cache read** (the context unchanged since the last request) is cheap, and barely counts toward a subscription's
   limits.
 - **A cache write** (the context stored for the first time, or again after the cache was lost) is what uses up the
-  limits. A write is as big as the whole context: an agent 300 000 tokens into a task re-writes 300 000 tokens.
+  limits. A write is as big as the whole context: an agent deep into a task re-writes everything it has read and done.
 
 So the questions for every agent are how big its context will grow and how many times it will have to be written.
 A cache is lost, and the next request re-writes everything, when:
@@ -63,8 +63,6 @@ sends a branch through CI three times, costs more than a stronger one that gets 
 | **Claude Haiku** | Mechanical work with a clear check and nothing to decide | Running a command and reporting the result, measurements, renames, regenerating pages, simple searches |
 
 Claude Fable is not used for agent work. Always name the model when starting an agent; never rely on the default.
-Name the reasoning effort too: Opus runs at `medium` and Sonnet at `high`. The default is not documented, and a fork
-always runs at the coordinator's effort. Each request in an agent's transcript records the effort it ran at.
 
 **Escalate on signals, not on hope.** Move a task up a model when the agent fails the same check twice, has to make
 a call the page does not settle, or touches a subsystem it was not briefed on. Record which model did which kind of
@@ -81,9 +79,8 @@ instead of repeating it:
   ([Testing](testing.md#done));
 - "Read `AGENTS.md`, [How we work](how-we-work.md), [Testing](testing.md) and this page first; they override the
   brief";
-- the limits on its run ([Running without losing the cache](#cache)): it works local-first, never pushes or waits
-  on CI, hands each finished unit to the [release queue](how-we-work.md#release-queue), and hands over at about 45
-  minutes of waiting or about 300 000 tokens of context;
+- how it runs ([Running without losing the cache](#cache)): it works local-first, never pushes or waits on CI, and
+  hands each finished unit to the [release queue](how-we-work.md#release-queue);
 - only the facts the agent cannot find in the repository (a log path, a question to answer, the state file).
 
 ## Running without losing the cache {#cache}
@@ -101,13 +98,9 @@ instead of repeating it:
   watches CI and sends a failure to a fresh agent ([When a pull request fails checks](#ci-failures)). An agent that
   sat idle past its cache lifetime would re-write its whole context, often hundreds of thousands of tokens, when it
   resumed.
-- **Limits on one agent's run.** An agent that would wait more than about 45 minutes in total (builds, sweeps,
-  emulator runs), or whose context passes about 300 000 tokens, commits what it has, writes its STATUS.md and
-  reports. A fresh agent continues from that report. The coordinator briefs every agent
-  with these limits ([Briefing](#briefs)).
 - **Keep the coordinator small.** The coordinator re-reads its whole conversation on every turn and is the context a
-  fork would inherit. It checkpoints (saves the state, clears, continues from it) before its context limit and before
-  a long break, and never forks once its context is large.
+  fork would inherit. It saves the state, clears and continues from it at a natural boundary, and never forks once
+  its context is large.
 
 ## When a pull request fails checks {#ci-failures}
 

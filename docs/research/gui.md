@@ -348,7 +348,7 @@ layout code (`0x001b9600`) compares the text after a `<` with each in turn and a
 | 5 | `<DISPLAYTIME ms>` | the text disappears after `ms`; in its last 1,000 ms its alpha is the remaining ms × 0.255 |
 | 6 | `<BOLD>` | no effect: the layout has no case for it (confirmed (code) at `0x001b9600`) |
 | 7 | `<BIGFONT>` | font slot 6 (`big_font`) |
-| 8 | `<MONEYFONT>` | an icon font (glyph base set from the font) |
+| 8 | `<MONEYFONT>` | the icon ("money") font: until `</MONEYFONT>`, every character is drawn from another rectangle base (below, [MONEYFONT](#moneyfont)) |
 | 9 | `<BGFONT>` | glyphs on a background (creates an instance over sheet 0, depth 8,000) |
 | 10, 11 | `<MONEYPLUS>`, `<MONEYMINUS>` | the icon characters `=` and `<` |
 | 12-16 | `<CENTER>`, `<CCENTER>`, `<RIGHT>`, `<RRIGHT>`, `<LEFT>` | alignment: `CENTER` (flags 6) and `RIGHT` (5) shift the whole line by its measured width; `CCENTER` and `RRIGHT` pass the same flags to each `Font_Draw` run, aligning each run about the pen; `LEFT` is 4 |
@@ -361,7 +361,32 @@ layout code (`0x001b9600`) compares the text after a `<` with each in turn and a
 | 56-65 | `</COLOR>`, `</SIZE>`, `</PULSE>`, `</BOLD>`, `</BIGFONT>`, `</MONEYFONT>`, `</BGFONT>`, `</CENTER>`, `</RIGHT>`, `</LEFT>` | restore: `</COLOR>` the widget's colour, `</SIZE>` `Font_Size(1.0)` (not the base size), `</BIGFONT>` the saved font |
 
 A glyph tag is replaced by its one-character string (`"%c"`) and drawn like text, so the button icons are ordinary
-characters of the font sheet.
+characters of the font sheet. The HUD icon tags 22-32 are, in order: `<FIST>`, `<RARREST>`, `<RDEAD>`, `<BOBJ>`,
+`<ROBJ>`, `<YOBJ>`, `<RFLASH>`, `<RSPRAY>`, `<RPEDRAT>`, `<RCALLGANG>`, `<BGCIRCLE>` (the table at `0x0050d718`, 61
+bytes a name). Confirmed (code).
+
+#### `<MONEYFONT>` {#moneyfont}
+
+Confirmed (code) at `0x001b9600` (`MessageHUD_Layout`), `0x00179958` (`Font_Measure`), `0x00179c30` (`Font_Draw`),
+`0x00181e38` (`Page_Rect`):
+
+- `<MONEYFONT>` sets the widget's glyph base (`+0x198`): **`0xd0100`** when the current font slot is 6 (`big_font`,
+  inside `<BIGFONT>` or a slot-6 widget), else **`0xb`** when the widget's own slot (`+0x19c`) is 3 (`part_page0`);
+  otherwise nothing. `</MONEYFONT>` sets it back to -1. Every run and glyph between the two is measured and drawn with
+  that base.
+- With a base, `Font_Measure` and `Font_Draw` use rectangle **base + (c − `'0'`)** in slot 3 and **base + (c − 1)** in
+  slot 6, instead of `firstGlyph + c`; `Page_Rect` keeps only the low 16 bits, so `0xd0100` is rectangle **256**.
+- So in `part_page0` the money font starts at rectangle 11 for `'0'`: `<MONEYPLUS>` `=` is 24, `<MONEYMINUS>` `<` 23,
+  and **`<ST>`, the character `n`, is rectangle 73: the triangle button** (the same rectangle the scripts pass to
+  `HUDTurnOnActionCycleAnim` as the triangle, [HUD](hud.md#action-prompts); inferred-corroborated). `<ST>` appears only
+  inside `<MONEYFONT>`; without it, it is the letter n. The icon tags `<BOBJ>` `;` → 22, `<ROBJ>` `@` → 27, `<YOBJ>` `A`
+  → 28 likewise.
+- In `big_font` the animated stick tags give characters 2-6 (each alternates its own character with 2 every period
+  `0x0050e6e4`: `<SDD>` 3, `<SDL>` 4, `<SDR>` 5, `<SDU>` 6), drawn as rectangles 257-261: the stick pictures. HUD string
+  4 (revive) uses `<SIZE 1.5><BIGFONT><MONEYFONT><SDL>...`.
+- `GSTRING.ACTIONBUTTON` (`config_strings_*.lua`) is `<MONEYFONT><ST></MONEYFONT>` plus a space, and is concatenated
+  in front of the action-prompt strings. Disc check: counts only.
+- Quirk: `Font_Draw`'s own alignment measure is taken with base -1 (only `<CCENTER>`/`<RRIGHT>` runs use it).
 
 ## Behaviour
 
@@ -1273,8 +1298,8 @@ What the implementer still needs:
   name, `882067645`; on the NTSC-U disc it has 7 rectangles over a 512 × 512 texture, rectangle 5 the gang collage.
 - **`firstGlyph` of `part_page0` (94) and `part_page1` (20)**: which text uses them, and the two explicit-base call
   sites in `Font_Measure`/`Font_Draw`.
-- **`<MONEYFONT>`**: the glyph base it sets (`0xd0100` for font 6, `0xb` for font 3) looks like a packed value; how
-  it is used is not worked out.
+- **`<MONEYFONT>`** (answered, [MONEYFONT](#moneyfont)): a rectangle base for the glyphs, 11 in `part_page0` and
+  256 in `big_font` (`Page_Rect` keeps the low 16 bits of `0xd0100`).
 - **The message box** (answered for the layout and input: [Front end](frontend.md#message-box)): its file.
 - **`OptionGrid`** (answered, [The widget classes](#widget-classes)): the owner reads the code itself
   (`0x001d43f0(grid, 0x001d43e8(grid))`). Still open: setup's `a2` (`+0xa8`) and the item flags argument (4).
