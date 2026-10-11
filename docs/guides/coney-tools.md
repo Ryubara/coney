@@ -1,14 +1,14 @@
 # The coney-tools command line
 
 `coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers twelve groups:
-[`check`](#check), which runs what CI would fail on for the files a change touched, `wad`, which reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**,
-[`extract`](#extract), which turns every asset of the disc into open formats, [`audio`](#audio),
-which reads its sound data, [`movies`](#movies), which reads the movies' headers, [`xbox`](#xbox), which
-reads the Xbox disc's archive, [`progress`](#progress), which keeps the progress tables of the README and the docs
-current, [`natives`](#natives), which renders the script-binding masterlist, [`refs`](#refs), which builds the
-game reference lists, [`missions`](#missions), which builds the mission status pages, and [`pcsx2`](#pcsx2) and
-[`trace`](#trace), which record the original's per-update traces in PCSX2 and compare them with Coney's.
-Everything is read in place and streamed, so the 1.4 GB WAD is never loaded into memory. The format is described in
+[`check`](#check), which runs what CI would fail on for the files a change touched, `wad`, which reads the game's
+archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**, [`extract`](#extract), which turns every asset of
+the disc into open formats, [`audio`](#audio), which reads its sound data, [`movies`](#movies), which reads the
+movies' headers, [`xbox`](#xbox), which reads the Xbox disc's archive, [`progress`](#progress), which keeps the
+progress tables of the README and the docs current, [`natives`](#natives), which renders the script-binding
+masterlist, [`refs`](#refs), which builds the game reference lists, [`missions`](#missions), which builds the mission
+status pages, and [`pcsx2`](#pcsx2) and [`trace`](#trace), which record the original's per-update traces in PCSX2 and
+compare them with Coney's. Everything is read in place and streamed, so the 1.4 GB WAD is never loaded into memory. The format is described in
 [WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
 
 Run the commands from inside the checkout:
@@ -533,13 +533,24 @@ build workflow) CI checks every file, an hour's work; the command says so and ch
 
 **How it runs clang-tidy.** With the repository's `.clang-tidy` and the `compile_commands.json` of `--build-dir`
 (every preset writes one; configuring is enough, no build, and a stale or missing entry is reported with the
-`cmake --preset dev` to rerun). It finds clang-tidy 19 as `clang-tidy-19` or `clang-tidy` on `PATH`, or in the Visual
-Studio LLVM folder that `vswhere` names, or from `--clang-tidy`. The compile database of an MSVC build makes
+`cmake --preset dev` to rerun). It finds clang-tidy 19 as `clang-tidy-19` on `PATH`, in Homebrew's `llvm@19`, in the
+Visual Studio LLVM folder that `vswhere` names, or as `clang-tidy` on `PATH` or in Homebrew's `llvm` (the first of
+version 19 wins; another version is used with a note), or from `--clang-tidy`. A `ccache` or `sccache` launcher in
+the database is removed from the copy clang-tidy reads, as CI's job does. The compile database of an MSVC build makes
 clang-tidy run in clang-cl mode, where MSVC's `/W4` misses what GCC and Clang reject (a designated initializer that
 leaves a field out, `-Wmissing-designated-field-initializers`). So the command adds `-Wall -Wextra -Wpedantic` (the
 flags of `cmake/coney_target.cmake`, passed as `/clang:-W...` in that mode) and lets the compiler's diagnostics
 through the `-*` of `.clang-tidy`; with the config's `WarningsAsErrors` they fail like CI's `-Werror`. `--jobs` runs
 that many files at once (default: half the cores).
+
+**Linux and macOS: use a Clang database.** On Windows the `dev` preset uses MSVC and the command adapts. On Linux the
+default compiler is GCC, whose database can carry flags clang-tidy rejects, and CI tidies a Clang 19 build. The
+command notes a GCC database; configure a Clang one once, beside `build/dev`, and point the command at it:
+
+```sh
+CC=clang-19 CXX=clang++-19 cmake --preset dev -B build/tidy   # macOS: the Apple or Homebrew clang
+uv run --project python coney-tools check changed --build-dir build/tidy
+```
 
 `--only` and `--skip` take step names, for a rerun of the one that failed. The command prints at most 40 lines of a
 failing step; run the step's tool by hand for the rest. What stays CI's: warnings only GCC emits, macOS, the

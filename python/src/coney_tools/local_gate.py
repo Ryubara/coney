@@ -39,6 +39,11 @@ WARNING_FLAGS: tuple[str, ...] = ("-Wall", "-Wextra", "-Wpedantic")
 SOURCE_PATHSPECS: tuple[str, ...] = ("src/*.cpp", "src/*.h", "tests/*.cpp", "tests/*.h")
 #: Changes under these paths need the documentation build.
 DOCS_PATHS: tuple[str, ...] = ("docs/", "research/", "mkdocs.yml", "mkdocs_hooks.py", "requirements-docs.txt")
+#: Where Homebrew installs formulae: Apple silicon, then Intel.
+HOMEBREW_PREFIXES: tuple[str, ...] = ("/opt/homebrew", "/usr/local")
+#: Compiler launchers CMake may put before the compiler in a compile database; clang-tidy would take one for the
+#: compiler (CI's sed strips `ccache` for the same reason).
+COMPILER_LAUNCHERS: frozenset[str] = frozenset({"ccache", "sccache"})
 #: Lines of tool output kept per failing step; the rest is a rerun away.
 MAX_OUTPUT_LINES = 40
 #: Lines clang-tidy prints about its own work, not about the code.
@@ -183,23 +188,39 @@ def _visual_studio_tidy_candidates() -> list[Path]:
     return [path for path in reversed(found) if path.is_file()]
 
 
-def find_clang_tidy(explicit: str | None = None) -> tuple[Path, int | None]:
-    """Find a clang-tidy and its major version: `explicit`, else `clang-tidy-19`, Visual Studio's, then `clang-tidy`.
+def _homebrew_tidy_candidates(versioned: bool) -> list[Path]:
+    """The clang-tidy of Homebrew's `llvm@19` (versioned) or unversioned `llvm` formula, on Apple silicon and Intel."""
+    formula = f"llvm@{TIDY_MAJOR}" if versioned else "llvm"
+    found = [Path(prefix) / "opt" / formula / "bin" / "clang-tidy" for prefix in HOMEBREW_PREFIXES]
+    return [path for path in found if path.is_file()]
 
-    CI runs version 19, so a binary of that version wins over a first match of another one. Raises ConfigError when
-    there is none, with the way to get one.
+
+def _path_tidy(name: str) -> list[Path]:
+    """The program `name` on PATH as a one-item list, or nothing."""
+    located = shutil.which(name)
+    return [Path(located)] if located is not None else []
+
+
+def find_clang_tidy(explicit: str | None = None) -> tuple[Path, int | None]:
+    """Find a clang-tidy and its major version.
+
+    `explicit` wins. Otherwise the candidates are tried in this order: `clang-tidy-19` on PATH, Homebrew's `llvm@19`,
+    Visual Studio's LLVM, `clang-tidy` on PATH, Homebrew's unversioned `llvm`. CI runs version 19, so the first
+    candidate of that version is returned; with none, the first candidate found is, and the caller notes the
+    difference. Raises ConfigError when there is none, with the way to get one.
     """
     if explicit is not None:
         path = Path(explicit)
         if not path.is_file():
             raise ConfigError(f"--clang-tidy {explicit}: no such file")
         return path, _tidy_major(path)
-    candidates: list[Path] = []
-    for name in (f"clang-tidy-{TIDY_MAJOR}", "clang-tidy"):
-        located = shutil.which(name)
-        if located is not None:
-            candidates.append(Path(located))
-    candidates[1:1] = _visual_studio_tidy_candidates()
+    candidates = [
+        *_path_tidy(f"clang-tidy-{TIDY_MAJOR}"),
+        *_homebrew_tidy_candidates(versioned=True),
+        *_visual_studio_tidy_candidates(),
+        *_path_tidy("clang-tidy"),
+        *_homebrew_tidy_candidates(versioned=False),
+    ]
     seen: set[Path] = set()
     first: tuple[Path, int | None] | None = None
     for path in candidates:
@@ -213,8 +234,8 @@ def find_clang_tidy(explicit: str | None = None) -> tuple[Path, int | None]:
             first = (path, major)
     if first is None:
         raise ConfigError(
-            f"no clang-tidy found: put clang-tidy-{TIDY_MAJOR} on PATH, or on Windows install the Visual Studio "
-            "'C++ Clang tools' component (docs/guides/building.md#clang-tidy)"
+            f"no clang-tidy found: put clang-tidy-{TIDY_MAJOR} on PATH (macOS: `brew install llvm@{TIDY_MAJOR}`), or "
+            "on Windows install the Visual Studio 'C++ Clang tools' component (docs/guides/building.md#clang-tidy)"
         )
     return first
 
@@ -232,20 +253,69 @@ def load_tidy_checks(root: Path) -> str:
     return re.sub(r"\s+", "", checks)
 
 
+def _token_spans(command: str) -> list[tuple[int, int]]:
+    """The (start, end) of each whitespace-separated argument of a command string, a quoted run kept whole.
+
+    A backslash before a double quote makes it a literal quote, as in POSIX shells and the Windows C runtime.
+    """
+    spans: list[tuple[int, int]] = []
+    start: int | None = None
+    quoted = False
+    index = 0
+    while index < len(command):
+        char = command[index]
+        if char == "\\" and command[index + 1 : index + 2] == '"':
+            start = index if start is None else start
+            index += 2
+            continue
+        if char == '"':
+            quoted = not quoted
+            start = index if start is None else start
+        elif char.isspace() and not quoted:
+            if start is not None:
+                spans.append((start, index))
+                start = None
+        elif start is None:
+            start = index
+        index += 1
+    if start is not None:
+        spans.append((start, len(command)))
+    return spans
+
+
+def _program_name(token: str) -> str:
+    """The lower-case file name of a program argument, without its folder or a trailing `.exe`."""
+    return re.split(r"[\\/]", token.strip('"'))[-1].lower().removesuffix(".exe")
+
+
+def _is_launcher(token: str) -> bool:
+    """True when an argument names a compiler launcher such as ccache."""
+    return _program_name(token) in COMPILER_LAUNCHERS
+
+
 def _entry_command(entry: dict[str, Any]) -> list[str]:
-    """The compiler command line of a compile database entry, split into arguments."""
+    """The compiler command line of a compile database entry, split into arguments, a launcher dropped."""
     if isinstance(entry.get("arguments"), list):
-        return [str(part) for part in entry["arguments"]]
-    return shlex.split(str(entry.get("command", "")), posix=os.name != "nt")
+        command = [str(part) for part in entry["arguments"]]
+    else:
+        command = shlex.split(str(entry.get("command", "")), posix=os.name != "nt")
+    return command[1:] if command and _is_launcher(command[0]) else command
 
 
 def uses_clang_cl_driver(entry: dict[str, Any]) -> bool:
     """True when the entry compiles with cl.exe or clang-cl, so clang-tidy reads its flags in clang-cl's syntax."""
     command = _entry_command(entry)
-    if not command:
-        return False
-    program = re.split(r"[\\/]", command[0].strip('"'))[-1].lower()
-    return program in ("cl", "cl.exe", "clang-cl", "clang-cl.exe")
+    return bool(command) and _program_name(command[0]) in ("cl", "clang-cl")
+
+
+def uses_gcc_driver(entry: dict[str, Any]) -> bool:
+    """True when the entry compiles with GCC (`gcc`, `g++`, versioned or with a target triplet in front).
+
+    CI's clang-tidy reads a Clang compile database; some of GCC's flags (module and dependency-format options) make
+    clang-tidy fail before it checks anything.
+    """
+    command = _entry_command(entry)
+    return bool(command) and re.fullmatch(r"(?:[\w.]+-)*(?:gcc|g\+\+)(?:-\d+)?", _program_name(command[0])) is not None
 
 
 def warning_args(clang_cl: bool) -> list[str]:
@@ -289,31 +359,57 @@ def missing_from_database(root: Path, files: Iterable[str], database: dict[str, 
     return [name for name in files if comparable(root / name) not in database]
 
 
-def without_missing_response_files(database: dict[str, dict[str, Any]], directory: Path) -> Path:
-    """Write a copy of the database into `directory` with each unreadable `@file` argument removed; return the folder.
+def _response_file_exists(token: str, base: Path) -> bool | None:
+    """For an `@file` argument (`"@file"` or `@"file"` too) whether its file is there; None for any other argument."""
+    bare = token.strip('"')
+    if not bare.startswith("@"):
+        return None
+    return (base / bare[1:].strip('"')).is_file()
 
-    CMake lists the module map of every source as `@...modmap`, a file only a build writes. clang-tidy cannot read
-    one that is not there, and it carries nothing a check needs, so a configure without a build still works.
+
+def _cleaned_command(command: str, base: Path) -> str:
+    """A command string without its compiler launcher and without each `@file` argument whose file is not there.
+
+    The string stays a string, quoting and all: clang-tidy splits it by the platform's own rules, which differ from
+    shlex's (a Windows `-DNAME=` value with escaped quotes). Arguments are found with the quotes in mind, so a path
+    with spaces in quotes is one argument.
+    """
+    drop: list[tuple[int, int]] = []
+    for position, (start, end) in enumerate(_token_spans(command)):
+        token = command[start:end]
+        if (position == 0 and _is_launcher(token)) or _response_file_exists(token, base) is False:
+            # Take the whitespace after the argument with it, so the others keep their spacing (quoted runs too).
+            while end < len(command) and command[end].isspace():
+                end += 1
+            drop.append((start, end))
+    kept: list[str] = []
+    cursor = 0
+    for start, end in drop:
+        kept.append(command[cursor:start])
+        cursor = end
+    kept.append(command[cursor:])
+    return "".join(kept).strip()
+
+
+def without_missing_response_files(database: dict[str, dict[str, Any]], directory: Path) -> Path:
+    """Write a cleaned copy of the database into `directory`; return the folder.
+
+    Two things come out of each entry. CMake lists the module map of every source as `@...modmap`, a file only a build
+    writes; clang-tidy cannot read one that is not there and it carries nothing a check needs, so a configure without
+    a build still works. And a `ccache` or `sccache` launcher before the compiler, which clang-tidy would take for the
+    compiler (CI's job strips it with sed).
     """
     cleaned: list[dict[str, Any]] = []
     for entry in database.values():
         base = Path(str(entry["directory"]))
-
-        def unreadable(token: str, base: Path = base) -> bool:
-            """True for an `@file` argument whose file is not there."""
-            return token.startswith("@") and not (base / token[1:].strip('"')).is_file()
-
         changed = dict(entry)
         if isinstance(entry.get("arguments"), list):
-            changed["arguments"] = [part for part in entry["arguments"] if not unreadable(str(part))]
+            arguments = [str(part) for part in entry["arguments"]]
+            if arguments and _is_launcher(arguments[0]):
+                arguments = arguments[1:]
+            changed["arguments"] = [part for part in arguments if _response_file_exists(part, base) is not False]
         else:
-            # The command line stays a string, quoting and all: the tool splits it by the platform's own rules,
-            # which differ from shlex's (a Windows `-DNAME=\"value\"`).
-            changed["command"] = re.sub(
-                r"(?<=\s)@\S+",
-                lambda found: "" if unreadable(found.group(0)) else found.group(0),
-                str(entry.get("command", "")),
-            )
+            changed["command"] = _cleaned_command(str(entry.get("command", "")), base)
         cleaned.append(changed)
     (directory / "compile_commands.json").write_text(json.dumps(cleaned), encoding="utf-8")
     return directory

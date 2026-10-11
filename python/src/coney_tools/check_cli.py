@@ -8,6 +8,7 @@ touches what it checks; the command prints one line per step and exits 1 when an
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import tempfile
 import time
@@ -22,6 +23,10 @@ from coney_tools.repo_checks import check_pointer_files
 
 #: The steps, in the order they run and print; `--only` and `--skip` take these names.
 STEPS: tuple[str, ...] = ("repo", "pre-commit", "clang-tidy", "docs", "python")
+#: Characters of file names handed to one `pre-commit run --files`; Windows refuses a command line over ~32,000.
+COMMAND_LINE_BUDGET = 20000
+#: Lines of a failed clang-tidy run shown when nothing in it looks like a diagnostic.
+FALLBACK_TAIL_LINES = 30
 
 
 def _timed(name: str, work: Callable[[], StepResult]) -> StepResult:
@@ -52,25 +57,50 @@ def _step_repo(root: Path) -> StepResult:
     )
 
 
+def _chunks(names: list[str], budget: int = COMMAND_LINE_BUDGET) -> list[list[str]]:
+    """`names` in order, split so each group's names (and a separating space each) stay within `budget` characters."""
+    groups: list[list[str]] = []
+    used = 0
+    for name in names:
+        if not groups or used + len(name) + 1 > budget:
+            groups.append([])
+            used = 0
+        groups[-1].append(name)
+        used += len(name) + 1
+    return groups
+
+
 def _step_pre_commit(root: Path, changed: list[str]) -> StepResult:
     """pre-commit on the changed files (formatting, hygiene, the no-real-clock rule, the 512 KB guard)."""
     if not changed:
         return _skipped("pre-commit", "no changed files")
     runner = ["uvx", "pre-commit"] if shutil.which("uvx") else ["pre-commit"]
-    code, output = local_gate.run_command([*runner, "run", "--files", *changed], root)
-    if code == 0:
+    # A big change would overflow the command line limit of Windows, so the files go in groups.
+    failures: list[str] = []
+    failed = False
+    for group in _chunks(changed):
+        code, output = local_gate.run_command([*runner, "run", "--files", *group], root)
+        if code != 0:
+            failed = True
+            failures.extend(output.splitlines())
+    if not failed:
         return StepResult("pre-commit", True, f"{len(changed)} files")
     # A hook that rewrote a file fails once; the rerun passes. Say so, since the files changed under the agent.
-    lines = [line for line in output.splitlines() if line.strip()]
+    lines = [line for line in failures if line.strip()]
     if any("files were modified by this hook" in line for line in lines):
         lines.append("hooks rewrote files: review `git diff`, then run this command again")
     return StepResult("pre-commit", False, "failed", output=_tail(lines))
 
 
-def _tidy_one(command: list[str], root: Path, source: str) -> tuple[str, int, list[str]]:
-    """Run clang-tidy on one source; returns the source, the exit code and its meaningful output lines."""
+def _tidy_one(command: list[str], root: Path, source: str) -> tuple[str, int, list[str], list[str]]:
+    """Run clang-tidy on one source; returns the source, the exit code, its meaningful output lines and all of them."""
     code, output = local_gate.run_command(command, root)
-    return source, code, local_gate.tidy_output(output)
+    return source, code, local_gate.tidy_output(output), [line for line in output.splitlines() if line.strip()]
+
+
+def _is_diagnostic(line: str) -> bool:
+    """True for a clang-tidy output line worth showing: an indented code excerpt, a file location or an error."""
+    return line.startswith(("  ", "/")) or re.match(r"[A-Za-z]:", line) is not None or "error" in line.lower()
 
 
 def _step_tidy(root: Path, changed: list[str], build_dir: Path, jobs: int, clang_tidy: str | None) -> StepResult:
@@ -90,28 +120,37 @@ def _step_tidy(root: Path, changed: list[str], build_dir: Path, jobs: int, clang
     checks = local_gate.load_tidy_checks(root)
     first = database[local_gate.comparable(root / sources[0])]
     extra = local_gate.warning_args(local_gate.uses_clang_cl_driver(first))
+    notes: list[str] = []
+    if local_gate.uses_gcc_driver(first):
+        notes.append(
+            f"note: {build_dir} is a GCC compile database; CI tidies a Clang one and clang-tidy can reject GCC-only "
+            f"flags. Configure one with `CC=clang-{local_gate.TIDY_MAJOR} CXX=clang++-{local_gate.TIDY_MAJOR} "
+            "cmake --preset dev -B build/tidy` and pass `--build-dir build/tidy`"
+        )
     with tempfile.TemporaryDirectory(prefix="coney-tidy-") as scratch:
         database_dir = local_gate.without_missing_response_files(database, Path(scratch))
         commands = [(local_gate.clean_tidy_command(tool, database_dir, checks, extra, name), name) for name in sources]
         with ThreadPoolExecutor(max_workers=max(1, min(jobs, len(commands)))) as pool:
             results = list(pool.map(lambda item: _tidy_one(item[0], root, item[1]), commands))
-    failed = [(name, lines) for name, code, lines in results if code != 0]
+    failed = [(name, lines, everything) for name, code, lines, everything in results if code != 0]
     version = f"clang-tidy {major}" if major is not None else "clang-tidy"
-    notes = (
-        [] if major == local_gate.TIDY_MAJOR else [f"note: CI runs clang-tidy {local_gate.TIDY_MAJOR}, this is {major}"]
-    )
+    if major != local_gate.TIDY_MAJOR:
+        notes.append(f"note: CI runs clang-tidy {local_gate.TIDY_MAJOR}, this is {major}")
     if not failed:
         return StepResult("clang-tidy", True, f"{len(sources)} files ({version})", output=tuple(notes))
     lines: list[str] = []
     untouched = 0
-    for name, found in failed:
+    for name, found, everything in failed:
         # A file reached through a changed header can fail for a reason that is not the change's.
         if name in changed:
             lines.append(f"{name}:")
         else:
             lines.append(f"{name} (not edited; it includes a changed header):")
             untouched += 1
-        lines.extend(f"  {line[:200]}" for line in found if line.startswith(("  ", "C:", "/")) or "error" in line)
+        shown = [line for line in found if _is_diagnostic(line)]
+        # A crash, or a message in a form the filter does not know, must not leave a failure with nothing to read.
+        shown = shown or everything[-FALLBACK_TAIL_LINES:]
+        lines.extend(f"  {line[:200]}" for line in shown)
     if untouched:
         lines.append(
             "note: a finding in a file you did not edit can come from MSVC's standard library, which CI's libstdc++ "
