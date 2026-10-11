@@ -199,9 +199,10 @@ The whole gate:
 
 - **Engine changes:** the `ci` preset build and `ctest --preset ci` with the disc configured (Windows: from a shell
   with the MSVC environment).
-- **Python:** `ruff check`, `ruff format --check`, `mypy` and `pytest` on `python/`; `coney-tools repo check`; and
-  every generator's `--check` (`progress update`, `natives render`, `natives coney`, `natives cpp`, `refs render`,
-  `missions render`). Rerun a generator without `--check` when you change what it reads.
+- **Python:** `ruff check`, `ruff format --check`, `mypy` and `pytest` on `python/`; `coney-tools repo check`;
+  `coney-tools progress check` (the progress inputs; its tables are built into the docs, not committed); and every
+  generator's `--check` (`natives render`, `natives coney`, `natives cpp`, `refs render`, `missions render`). Rerun a
+  generator without `--check` when you change what it reads.
 - **Everything:** `uvx pre-commit run --all-files` leaves the tree unchanged, markdownlint passes, and
   `mkdocs build --strict` passes.
 

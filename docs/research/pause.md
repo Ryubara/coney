@@ -99,7 +99,7 @@ Default video mode, [GUI coordinates](hud.md#coordinates). Confirmed (code) at `
 | Part | Where |
 | --- | --- |
 | background | sheet record 12 rectangle 5 (sprite word `0xc0005`), centred at (0.5, 0.5), size 1.05 (0.9 when the device's slot `+0xb8` is set), depth 7,000, white tinted by the colour cycle |
-| three headers | `CircledTextHeader`s (`0x001e7f50`, `0x001e77a0`) at y 0.22, 0.46 and 0.68; built with "Current Objectives" (`0x108`), "Bonus Objectives" (`0x107`) and "Overview" (`0x106`), their texts swapped per screen (the top one shows the mission's title on the grid, "OPTIONS" `0x116` on Options, "CONTROLS" `0x173` on Controls) |
+| three headers | the top one a `CircledTextHeader` ([GUI: the pause header](gui.md#circled-text-header)), the other two `IconTextHeader`s (`0x001e77a0`), at y 0.22, 0.46 and 0.68 (16:9: 0.18, 0.42, 0.64), x 0.5, box width 0.5; built with "Current Objectives" (`0x108`), "Bonus Objectives" (`0x107`) and "Overview" (`0x106`), their texts swapped per screen (the top one shows the mission's title on the grid, "OPTIONS" `0x116` on Options, "CONTROLS" `0x173` on Controls) |
 | item grid | rows of 3 and 4 items (3 and 3 in `level95`, the hangout, and in Rumble levels), centred on x 0.5, first row at y 0.86, font scale 1.15, grey `0x005fd320`, font slot 3, a `" : "` after every item but the last of a row |
 | usage line | centred at (0.5, 0.97) |
 | Yes/No box | the question at (0.26, 0.55), the answers at (0.6, 0.75) (`0x0050ee10`-`0x0050ee1c`) |
@@ -180,6 +180,30 @@ When the game state's `+0x11c` is set, it opens straight onto the Options screen
 rises from 0 to 255 over the first 3,000 ms. Confirmed (code); the cycle confirmed (runtime: screenshots a few seconds
 apart show the tagged background purple, blue, green and red-brown).
 
+### The top header {#the-top-header}
+
+The header above the grid is the menu's one `CircledTextHeader`; its parts, text rules, drawing and layout per video
+mode are on [GUI: the pause header](gui.md#circled-text-header). What the pause menu feeds it (`PauseMenu_Open`,
+`0x001dbee0`), confirmed (code):
+
+- **Text:** the game state's mission title (`+0x134`), or the Rumble mode's title in a Rumble level; the subtitle is
+  the level's name.
+- **Drawing:** on the grid only the top header is drawn, through `RenderColoured` in grey `0x005fd320` (80, 80, 80)
+  with the menu's fade alpha (`PauseMenu_Render`, `0x001df700`); that colour reaches only the hidden label, so the
+  circles keep their colours and the title and subtitle stay grey 178.
+- **Circle colour:** all three circles take the colour `PauseMenu_GetLevelColour` (`0x001db928`) gives the current
+  level's number (the level record's `+0x04`), from the table below, tested in order, the first list that holds the
+  level deciding. The header then turns its last circle red. With gold the menu also asks for black letters, which the
+  header draws anyway.
+
+| Levels | Colour (RGB) |
+| --- | --- |
+| 92, 51, 31, 9, 55 | (37, 100, 60) green |
+| 20, 11, 34, 54, 3 | (38, 61, 94) blue |
+| 80, 82, 83, 93, 7, 87 | (76, 53, 44) brown |
+| 99, 81, 86, 84, 2, 52, 5, 14 (the list also names 80 and 83, which the brown list catches first) | (186, 139, 53) gold |
+| any other | (0, 0, 0) black |
+
 ### Input
 
 The grid ([OptionGrid](gui.md#widget-classes)) passes every command to `PauseMenu_OnCommand` (`0x001dee00`) first.
@@ -205,8 +229,8 @@ anywhere once 1,500 ms (`0x0050ee8c`) have passed since it opened (`+0x3ba4`). C
   lists are the checklists `HUDSetObjective` fills ([HUD: objectives](hud.md#objectives-hudsetobjective)). Usage line
   `0x19` (up/down select, triangle back). Selected header gold (current) or purple (bonus), the others grey.
 - **Stats** (1): only when the Stats screen is available (`+0x3bb8`): the character's portrait, the name banner, four
-  bars (Strength `0xf3`, Stamina `0xf4`, Health `0xf5`, Rage `0xf6`) and a description paragraph. Otherwise nothing
-  opens.
+  bars (Strength `0xf3`, Stamina `0xf4`, Health `0xf5`, Rage `0xf6`) and a description paragraph
+  ([The Stats screen](#stats-screen)). Otherwise nothing opens.
 - **Options** (2): opens the Options menu (`0x0062a1a0`, `OptionMenu.cpp`) inside the pause menu, header "OPTIONS"
   (`0x116`). Runtime: Lighting, Camera, Audio, Video, Subtitles, Vibration, Restore Default.
 - **Controls** (3): header "CONTROLS" (`0x173`) and the Controls screen (`ControlMenuHUD.cpp`); runtime: two entries,
@@ -232,6 +256,73 @@ flags and close. Confirmed (code).
 **`+0x1bac`** (`0x0041d1b0`) is set in 15 story levels (numbers 34, 2, 3, 5, 81, 86, 31, 14, 9, 51, 82, 92, 83, 20 and
 11) and in any level the stats object (`0x006fe998`, `0x004241d8`) marks; confirmed (code). That these are the
 missions played after the hangout opens is inferred.
+
+### The Stats screen {#stats-screen}
+
+The Stats item shows the pausing player's Warrior: a portrait, a name banner, four bars and a description. The screen
+is a `GameMenu` subclass at menu `+0x3bb0` ([function index](#fn-after-controlmenuhud)), set up on every pause by
+`PauseStats_Setup` (`0x001e5618`) and placed by `PauseStats_Update` (`0x001e6778`). Confirmed (code) unless marked.
+
+**Who and whether.** The human is the pausing player's (game state `+0x228` + 4 × the player). Its portrait kind
+(`Human_GetPortraitKind`, `0x00229570`, by character type) picks the pictures and the text; only kinds 0-8, the nine
+Warriors below, have a screen. Any other kind (Ash, Lynx, the extra soldier, anyone else) makes it unavailable, and the
+Stats item then opens nothing:
+
+| Kind | Character types | Warrior | Portrait sprite word | Banner sprite word | Description string |
+| --- | --- | --- | --- | --- | --- |
+| 0 | 5, 7, 8, 9, 10 | Swan | `0x310000` | `0x1970000` | `0xf2` |
+| 1 | 15, 17 | Cochise | `0x220000` | `0x1920000` | `0xec` |
+| 2 | 18, 20, 188 | Cowboy | `0x230000` | `0x1930000` | `0xed` |
+| 3 | 11, 13, 14 | Ajax | `0x1f0000` | `0x1900000` | `0xea` |
+| 4 | 30, 32 | Rembrandt | `0x2f0000` | `0x1950000` | `0xf0` |
+| 5 | 21, 23, 24, 25 | Fox | `0x240000` | `0x1940000` | `0xee` |
+| 6 | 26, 28, 29, 191 | Vermin | `0x320000` | `0x1980000` | `0xef` |
+| 7 | 33, 35, 36, 37, 190 | Snow | `0x300000` | `0x1960000` | `0xf1` |
+| 8 | 1, 3, 4, 189 | Cleon | `0x210000` | `0x1910000` | `0xeb` |
+
+The other kinds: 9 (types 38-40, Ash), 10 (43, 44), 11 (45-48, Lynx), 12 (any type without a crew slot) or 20 + the
+human's slot byte `+0x1b0`. The Warrior names come from [Characters](../references/characters.md).
+
+**Layout** (default video mode, GUI coordinates; base B = (0.5, 0.5), `0x0050f110`/`0x0050f118`; a size factor k =
+1.0, `0x0050f104`):
+
+| Part | Where and how |
+| --- | --- |
+| portrait (`+0x7b0`) | left edge (anchor 1) at B + (−0.08, −0.2) = (0.42, 0.3), size 0.09 × k (`0x0050f130`), depth 15,000, tinted (150, 30, 30) (`0x0063ee30`) |
+| two shadows (`+0x8b0`, `+0x9b0`) | the portrait's sprite in black at alpha 128, depth 11,000, offset (+0.0025, +0.004) and (−0.001, −0.002) (`0x0050f2a8`-`0x0050f2b4`) |
+| banner (`+0xab0`) | centred at B + (−0.17, −0.099) = (0.33, 0.401), size 0.3 × k (`0x0050f150`), white, depth 11,000 |
+| four bars (`HudGenericBar`, `+0xbb0` + `0x3f0` × i) | left edge at B + (0.14, −0.11 + 0.05 i) = (0.64, 0.39 / 0.44 / 0.49 / 0.54), 0.22 × 0.025 (× k), fill (150, 30, 30) (`0x0063ee38`), back (37, 37, 37), sprite word `0x30036` (`menu_system` rectangle 54) |
+| the bars' labels | left-aligned at x 0.38 (`0x0050f2b8`), y B + −0.08, −0.03, 0.02, 0.07 = 0.42, 0.47, 0.52, 0.57 (`0x0050f178`, `0x0050f1a8`, `0x0050f1d8`, `0x0050f208`): Strength `0xf3`, Stamina `0xf4`, Health `0xf5`, Rage `0xf6` |
+| description (`+0x1b70`) | a markup text at B + (−0.24, 0.1) = (0.26, 0.6), size 1.0, grey `0x005fd310`, font slot 3; then `MessageHUD_ReadAutoIndent` (`0x001bb390`) with 0.55 (pause.md's earlier "reveal 0.55 s"; meaning not traced) |
+
+Other video modes: with device flag `0x04` alone (16:9) only B's y changes, to 0.45; flag `0x08` (not `0x02`) and the
+two `0x02` modes rewrite most offsets and set k = 0.7 (`0x02` modes), values in `0x001e5618` not listed here.
+
+**The bars' values**, each a fill from 0 to 1. `d` is the difficulty byte (game state `+0x154`) clamped to 2, and
+`t0`-`t9` the ten floats of the table at `0x0050f230` + `0x28` × `d`:
+
+| d | t0 | t1 | t2 | t3 | t4 | t5 | t6-t9 (not read here) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 0 | 110 | 228 | 460 | 715 | 25 | 160 | 65, 123, 78, 150 |
+| 1 | 75 | 192 | 260 | 600 | 25 | 160 | 45, 100, 78, 150 |
+| 2 | 60 | 168 | 360 | 660 | 25 | 160 | 30, 53, 78, 150 |
+
+- **Strength** = (`damage_scale` − t0) / (t1 − t0), not clamped: `damage_scale` is byte `+0x06` of the human's
+  [Warrior class](../references/warrior-classes.md) record.
+- **Stamina** = (power maximum + stamina maximum − t2 + t4) / (t3 + t5 − t2 + t4), at most 1; the two maxima as the
+  game computes them for the human (`Human_GetMaxPower`, `Human_StaminaMax` `0x00223188`, so the upgrades count,
+  [Unlockables](player-state.md#unlockables)).
+- **Health** = byte `+0x40` of the human's [power class](../references/power-classes.md) record (the `v40` field) / 100,
+  at most 1. This is the only reader of that byte found so far.
+- **Rage** = the human's rage maximum (`Human_GetRageMax`) / 150, at most 1.
+
+That t0-t1 bracket the nine Warriors' `damage_scale` per difficulty (easy's 150-190 give 0.34-0.68) suggests index 0 is
+easy, 1 normal, 2 hard and above (inferred).
+
+**Input** (`PauseStats_OnCommand`, `0x001e6698`): up and down page the description (`MessageHUD_PageUp` /
+`_PageDown`, cue 4, or `0xe` when it cannot move), left and right only play `0xe`, back plays `0xf` and closes the
+screen. The screen waits for its pictures (`PauseStats_IsReady`: both portrait batches resident, or 10 s) before it is
+placed, and is drawn with the menu's fade alpha (`PauseStats_SetAlpha`).
 
 ### Leaving {#leaving}
 
@@ -521,7 +612,7 @@ tutorial tips page. Both pages derive from a small `ControlPage` base and are st
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
 | `0x001e5498`, `0x001e5540` | `PauseStats_Construct`, `_Destroy` | portrait `+0x7b0`, shadows `+0x8b0`/`+0x9b0`, banner `+0xab0`, 4 HudGenericBars `+0xbb0`, description `+0x1b70` | confirmed (code) |
-| `0x001e5618` | `PauseStats_Setup` | from `PauseMenu_Open`: per-mode globals `0x0050f104`-`0x0050f2b8`; human of game state `+0x228`; class 0-8 picks portrait, banner and string `0xea`-`0xf2`, else unavailable; bars Strength `0xf3`, Stamina `0xf4`, Health `0xf5`, Rage `0xf6` normalised by difficulty table `0x0050f230` (0x28 per difficulty, game state `+0x154`); description reveal 0.55 s | confirmed (code) |
+| `0x001e5618` | `PauseStats_Setup` | [The Stats screen](#stats-screen); from `PauseMenu_Open`: per-mode globals `0x0050f104`-`0x0050f2b8`; human of game state `+0x228`; class 0-8 picks portrait, banner and string `0xea`-`0xf2`, else unavailable; bars Strength `0xf3`, Stamina `0xf4`, Health `0xf5`, Rage `0xf6` normalised by difficulty table `0x0050f230` (0x28 per difficulty, game state `+0x154`); description reveal 0.55 s | confirmed (code) |
 | `0x001e6530`, `0x001e6600` | `PauseStats_Shutdown`, `_IsReady` | releases; ready after 10 s or when both portrait batches are resident | confirmed (code) |
 | `0x001e6698` | `PauseStats_OnCommand` | table `0x005568e0`: up/down `MessageHUD_PageUp`/`PageDown` (cue 4, `0xe` when stuck), left/right `0xe`, back `0xf` and `+0x7a0` = 1 | confirmed (code) |
 | `0x001e6778` | `PauseStats_Update` | portrait at base + (-0.08, -0.2), banner + (-0.17, -0.099), bars at + (0.14, -0.11 + 0.05 i) 0.22 x 0.025 fill `0x0063ee38`, description + (-0.24, 0.1) | confirmed (code) |
@@ -574,8 +665,13 @@ Coney stand-ins, each an open question below:
 
 ## Open questions
 
-- The Stats screen's class (`0x001e5498`, menu `+0x3bb0`): its layout and when `+0x3bb8` is unset.
-- The header widget (`CircledTextHeader`, `0x001e7f50`): its layout and the two coloured circles left of the title.
+- The Stats screen ([answered](#stats-screen) for its layout, values and availability; the flag `+0x3bb8` is taken to
+  be what `PauseStats_Setup`'s slot `+0x44` call sets, inferred). Still open: the meaning of the 0.55 passed to
+  `MessageHUD_ReadAutoIndent`, the unused floats t6-t9 of the difficulty table, the `0x08` and `0x02` layouts, and a
+  runtime screenshot to check the computed positions and the portrait's red tint.
+- The header widget ([answered](gui.md#circled-text-header): one to three circles, the level's colour and a
+  red checkpoint circle). Still open: a screenshot of the 16:9 pause menu (the layout's title factor is 0 there) and
+  whether the menu's mission titles always have the `<number>:<title>` form.
 - The Controls screen (`ControlMenuHUD.cpp`) and the Options menu (`OptionMenu.cpp`): their layouts and items.
 - The mission-failed items' actions (`0x001d2018` and the vtable `0x0053b598`). The Rumble result screen (mode
   0x14) is on [Rumble](rumble.md#result-screen).

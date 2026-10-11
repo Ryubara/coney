@@ -52,7 +52,7 @@ copied ([LEGAL.md](repo:LEGAL.md#no-game-data), "Reference lists").
 | [Inventory items](inventory.md) | 23 | All 23 slots are listed; 15 have an object in `config_preload2.lua` and `level20` reconfigures three. |
 | [Unlockables](unlockables.md) | 610 | All 610 records are listed with every field, grouped by type. |
 | [Power classes](power-classes.md) | 254 | Every class each difficulty sets is listed with every argument: 51 classes (0-10, 13-66 with gaps), 50 in Rumble. Every script sets class 39 twice; the second call wins and is the one listed. |
-| [Warrior classes](warrior-classes.md) | 46 | Every class each difficulty sets is listed with every argument (nine per difficulty and the boot class 9). |
+| [Warrior classes](warrior-classes.md) | 46 | Every class each difficulty sets is listed with every argument (nine per difficulty and the boot class 9), and every byte's reader is traced. |
 | [Attack kinds and tables](attacks.md) | 187 | All 45 kinds, every `CfgAttackDelay` (44 kinds; kind 4 and 18 have none, and kind 17 is set twice) and the Rumble scripts' weights are listed, and every 45-entry table at boot and as each difficulty redefines it. |
 | [Hat fittings](hats.md) | 908 | All 908 fittings of `config_preload2.lua` are listed: 28 sets, one per Warriors model, 14 to 43 hats each. |
 | [Rumble roster](rumble.md) | 450 | All 9 modes, 29 arenas, 46 gangs and 366 characters are listed (the characters are set in four scripts, in two copies; both agree). |
