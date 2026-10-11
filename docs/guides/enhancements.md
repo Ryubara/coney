@@ -120,6 +120,9 @@ player's Xbox disc ([Xbox assets](../research/xbox-assets.md)).
 
 ### Lighting and post-processing
 
+Realtime shadows, per-pixel lighting and reflections have their own design page:
+[Realtime lighting design](realtime-lighting.md). The rows below stay the summary.
+
 | Option | What it means here | Feasible | Approach | Depends on | Cost |
 | --- | --- | --- | --- | --- | --- |
 | Shadow quality | Faithful: a faint 1 m blob under each human. Upgrade: humans and objects casting onto the world | **partly** | Keep the blob as *Faithful*. *Enhanced*: one shadow map from the level's object directional light (`level99`: the moonlight), casters = humans and objects, receivers multiply their final colour (the world is prelit, so the shadow darkens baked light, a plausible fake). Lamp shadows are not worth it (lamps light only objects) | F3; check what `GraphicsShadowXBox` did (**Xbox** research, optional) | M |
