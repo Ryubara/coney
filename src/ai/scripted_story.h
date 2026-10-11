@@ -98,7 +98,7 @@ class ScriptedStory final : public script::StoryBindingHost {
     void setPedType(double human, std::uint16_t type) override;
     /// Human::setWounded(), and on wounding the brain flushed (Brain::flush()).
     void setWounded(double human, bool wounded) override;
-    void setTagColour(double human, std::uint32_t rgba) override;
+    void setTagColour(double human, const std::array<std::uint8_t, 4>& bytes) override;
     /// What `HuTag` starts: the human, the tag spot and the flag he sprays from.
     using TagHandler = std::function<void(double human, double tag, double flag)>;
     /// The tagging `HuTag` hands its calls to (the play mode's, which runs the player's stick game).

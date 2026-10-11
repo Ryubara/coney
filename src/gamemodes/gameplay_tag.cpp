@@ -18,6 +18,7 @@
 #include "characters/character_class.h"
 #include "gamemodes/gameplay_mode.h"
 #include "hud/hud.h"
+#include "human/tag_colour.h"
 #include "scripting/object_bindings.h"
 #include "scripting/sound_bindings.h"
 #include "scripting/story_bindings.h"
@@ -142,7 +143,14 @@ void GameplayMode::updateTagging(const Pads& pads, double seconds) {
     const auto elapsedMs = static_cast<std::uint32_t>(std::lround(seconds * kMillisecondsPerSecond));
     if (!m_tagSession->ended()) {
         m_tagSession->update(pad.leftX(), pad.leftY(), elapsedMs);
-        if (m_tagSession->game().events().slipped) {
+        const TagGame::Events& events = m_tagSession->game().events();
+        // A pause began: the spray clips restart (Tag_RestartSprayClips).
+        if ((events.slipped || events.chargeSpent) && !m_tagSession->ended()) {
+            if (auto* scripted = dynamic_cast<ScriptedPlayer*>(m_level.get())) {
+                scripted->restartTagSpray();
+            }
+        }
+        if (events.slipped) {
             m_log("tag: slipped off the pattern\n");
             const HumanCreation* tagger = m_humans.find(m_tagSession->human());
             if (tagger != nullptr && tagger->tagCheer) {
@@ -241,18 +249,15 @@ void GameplayMode::updateTagPanel() {
     state.painted = cells(game.painted());
     state.cursorX = game.cursorX();
     state.cursorY = game.cursorY();
-    // Tag_GetChargeLeft: the share of the current charge left; a whole charge once it has run out (the next one).
-    const std::uint32_t chargeMs = game.tuning().chargeMs;
-    state.chargeLeft = chargeMs == 0 || game.chargeLeftMs() == 0
-                           ? 1.0F
-                           : static_cast<float>(game.chargeLeftMs()) / static_cast<float>(chargeMs);
-    state.paused = game.pauseLeftMs() > 0;
-    // The paint's colour, HuTagColor's 0xRRGGBBAA on the tagger (human +0x640).
-    if (m_scripted != nullptr && m_scripted->player() != nullptr) {
-        const std::uint32_t rgba = m_scripted->player()->human().script().tagColour;
-        state.colour = graphics::Rgba{static_cast<std::uint8_t>(rgba >> 24U), static_cast<std::uint8_t>(rgba >> 16U),
-                                      static_cast<std::uint8_t>(rgba >> 8U), static_cast<std::uint8_t>(rgba)};
-    }
+    // Tag_GetChargeLeft: the share of the current charge left (it drains through pauses too).
+    state.chargeLeft = game.chargeLeft();
+    state.onTrack = game.onTrack();
+    // The paint's colour: bytes 0-2 of the tagger's +0x640 (by default the dark maroon (80, 7, 5)).
+    const human::TagColour colour = m_scripted != nullptr && m_scripted->player() != nullptr
+                                        ? m_scripted->player()->human().script().tagColour
+                                        : human::kDefaultTagColour;
+    const std::array<std::uint8_t, 3> rgb = human::tagHudRgb(colour);
+    state.colour = graphics::Rgba{rgb[0], rgb[1], rgb[2], 255};
     panel.set(std::move(state));
 }
 

@@ -79,6 +79,9 @@ class ScriptedPlayer {
     [[nodiscard]] virtual bool tagSprayLooping() const { return true; }
     /// Whether player 1's spray clips still play (false: something else took the body).
     [[nodiscard]] virtual bool tagSprayPlaying() const { return true; }
+    /// A pause of player 1's stick game began (a slip or a new charge): his spray clips restart
+    /// (Human::restartTagSpray()).
+    virtual void restartTagSpray() {}
     /// Player 1's spray is over: his spray clips end (Human::endTagSpray()).
     virtual void endTagSpray() {}
     /// What player 1 can act on this frame besides the scripts' action objects (kind 1), for the action prompt.

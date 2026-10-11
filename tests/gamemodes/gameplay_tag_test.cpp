@@ -31,6 +31,7 @@
 #include "scripting/script_system.h"
 #include "support/lua_fixtures.h"
 #include "support/recording_device.h"
+#include "support/tag_driver.h"
 #include "warriors/tag_game.h"
 
 using coney::script::Value;
@@ -151,11 +152,16 @@ struct TagRun {
         call("CfgTagStartCallback", {Value(std::string("TagStarted"))});
         REQUIRE(scripts.context().messages != nullptr);
         scripts.context().messages->set(player, 0xe, "OnTagEnd");
-        // A three-point pattern along the grid's x.
+        // A nine-point pattern along the grid's x, 25 cells apart (short segments, as the scripts' patterns have: the
+        // curve's hook past the last point stays small).
         scripts.state().story.tagPattern = {};
-        const std::vector<float> points{20.0F, 20.0F, 120.0F, 20.0F, 220.0F, 20.0F};
+        std::vector<float> points;
+        for (int i = 0; i < 9; ++i) {
+            points.push_back(20.0F + (25.0F * static_cast<float>(i)));
+            points.push_back(20.0F);
+        }
         std::ranges::copy(points, scripts.state().story.tagPattern.begin());
-        scripts.state().story.tagPatternCount = 3;
+        scripts.state().story.tagPatternCount = 9;
     }
 
     // Runs `count` frames of play.
@@ -205,17 +211,12 @@ TEST_CASE("HuTag with paint starts the stick game, calls the start callback with
     CHECK(run.sessionAtStart);
     CHECK(run.ended.empty());
 
-    // The left stick traces the pattern a few points ahead of the progress until the game ends.
+    // The left stick traces the pattern ahead of the progress, at 0.8 deflection, until the game ends.
     constexpr int kMaxFrames = 30 * 60;
-    constexpr std::size_t kLead = 3;
     for (int frame = 0; frame < kMaxFrames && run.gameplay->tagSession() != nullptr; ++frame) {
-        const coney::TagGame& game = run.gameplay->tagSession()->game();
-        const coney::TagCell target = game.path()[std::min(game.progress() + kLead, game.path().size() - 1)];
-        const float dx = static_cast<float>(target.x) - game.cursorX();
-        const float dy = static_cast<float>(target.y) - game.cursorY();
-        const float length = std::hypot(dx, dy);
-        run.pad.x = length > 0.5F ? dx / length : 0.0F;
-        run.pad.y = length > 0.5F ? dy / length : 0.0F;
+        const auto [x, y] = coney::test::tagStick(run.gameplay->tagSession()->game());
+        run.pad.x = x;
+        run.pad.y = y;
         run.frames(1);
     }
     CHECK(run.gameplay->tagSession() == nullptr);

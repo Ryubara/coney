@@ -277,6 +277,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     /// ScriptedPlayer: whether player 1's spray clips still play.
     [[nodiscard]] bool tagSprayPlaying() const override;
     /// ScriptedPlayer: player 1's spray clips end.
+    void restartTagSpray() override;
     void endTagSpray() override;
     /// ScriptedPlayer: what player 1 can act on for the action prompt: nothing during a mugging, a theft or a lock
     /// pick; else a held human to mug, a pickable door, a freed car stereo and a dealer's offer in reach.

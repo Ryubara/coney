@@ -893,15 +893,25 @@ bool Human::runStepControl() {
 }
 
 bool Human::startTagSpray(anim::Vec3 point) {
+    // The turn to the tag is spread over half the intro's playing time. **Coney's reading**: with no intro clip the
+    // play time is 0, so he turns at once (the original still turns) and the caller starts the stick game.
+    constexpr float kHalf = 0.5F;
+    m_velocity = anim::Vec3{};
     if (m_animator.clip(clips::kTaggingIntro) == nullptr) {
+        turnToFace(point, 0.0F);
         return false;
     }
-    // The turn to the tag is spread over half the intro's playing time.
-    constexpr float kHalf = 0.5F;
     turnOverClip(clips::kTaggingIntro, point, kHalf);
     m_animator.playCombat(clips::one(clips::kTaggingIntro), clips::kTaggingLoop, AnimState::Hold, kCombatFade);
-    m_velocity = anim::Vec3{};
     return true;
+}
+
+void Human::restartTagSpray() {
+    // 337, then the loop 335 again (Tag_RestartSprayClips); a body playing no spray clip is left alone.
+    if (!tagSprayPlaying() || m_animator.clip(clips::kTaggingRestart) == nullptr) {
+        return;
+    }
+    m_animator.playCombat(clips::one(clips::kTaggingRestart), clips::kTaggingLoop, AnimState::Hold, kCombatFade);
 }
 
 void Human::startUncuff(anim::Vec3 cuffed, float mashFactor) {
@@ -947,7 +957,8 @@ void Human::endUncuffReact(const Human& freer, bool freed) {
 bool Human::tagSprayLooping() const { return m_animator.animId() == clips::kTaggingLoop; }
 
 bool Human::tagSprayPlaying() const {
-    return m_animator.animId() == clips::kTaggingIntro || m_animator.animId() == clips::kTaggingLoop;
+    const std::uint32_t id = m_animator.animId();
+    return id == clips::kTaggingIntro || id == clips::kTaggingLoop || id == clips::kTaggingRestart;
 }
 
 void Human::endTagSpray() {

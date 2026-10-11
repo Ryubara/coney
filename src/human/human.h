@@ -583,13 +583,18 @@ class Human final : public Holdable {
     void turnToFace(anim::Vec3 point, float seconds);
     /// Starts a tag's spray clips (`Tag_StartSprayClips`): 334 `ANIM_TAGGING_INTRO`, then the loop 335, turning to face
     /// the tag at `point` over half of 334's length (`Human_TurnToFacePoint`); the human stays where he stands.
-    /// Returns false when the intro clip is not loaded. docs/research/crimes.md#tag-callbacks
+    /// Returns false when the intro clip is not loaded (he then turns to the tag at once).
+    /// docs/research/crimes.md#tag-look
     /// @orig 0x00278018 Tag_StartSprayClips (unknown)
     bool startTagSpray(anim::Vec3 point);
+    /// A pause of the stick game began (a slip or a new charge): 337, then the loop 335 again.
+    /// @orig 0x00278210 Tag_RestartSprayClips (unknown)
+    void restartTagSpray();
     /// Whether the spray's intro is over and its loop plays: the moment the stick game goes live (the intro's end hook
     /// `0x00277ed8`).
     [[nodiscard]] bool tagSprayLooping() const;
-    /// Whether the spray's clips still play (the intro or the loop): false once something else took the body.
+    /// Whether the spray's clips still play (the intro, the loop or the restart): false once something else took the
+    /// body.
     [[nodiscard]] bool tagSprayPlaying() const;
     /// The spray is over: a spray clip still playing leaves for the idle. **Coney's reading**: what the original
     /// plays at Tag_End is not on the page.

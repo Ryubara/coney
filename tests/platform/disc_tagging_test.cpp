@@ -45,6 +45,7 @@
 #include "scripting/config_strings.h"
 #include "scripting/message_handlers.h"
 #include "scripting/script_system.h"
+#include "support/tag_driver.h"
 #include "warriors/tag_game.h"
 #include "world/sector_budget.h"
 
@@ -204,19 +205,14 @@ TEST_CASE("the disc's level87 offers its first tag spot, starts the stick game a
     const std::size_t pathPoints = session->game().path().size();
     const double tag = session->tag();
 
-    // The left stick steers the cursor along the pattern, a few points ahead of the progress, until the game ends.
+    // The left stick steers the cursor along the pattern ahead of the progress, at 0.8 deflection, until the game
+    // ends.
     constexpr int kMaxFrames = 30 * 120;
-    constexpr std::size_t kLead = 3;
     int frames = 0;
     while (gameplay.tagSession() != nullptr && frames < kMaxFrames) {
-        const coney::TagGame& game = gameplay.tagSession()->game();
-        const std::vector<coney::TagCell>& path = game.path();
-        const coney::TagCell target = path[std::min(game.progress() + kLead, path.size() - 1)];
-        const float dx = static_cast<float>(target.x) - game.cursorX();
-        const float dy = static_cast<float>(target.y) - game.cursorY();
-        const float length = std::hypot(dx, dy);
-        pad.leftX = length > 0.5F ? dx / length : 0.0F;
-        pad.leftY = length > 0.5F ? dy / length : 0.0F;
+        const auto [x, y] = coney::test::tagStick(gameplay.tagSession()->game());
+        pad.leftX = x;
+        pad.leftY = y;
         run(1);
         ++frames;
     }

@@ -3,8 +3,6 @@
 
 #include <algorithm>
 #include <array>
-#include <cmath>
-#include <optional>
 #include <utility>
 
 namespace coney {
@@ -28,10 +26,10 @@ float catmullRom(float a, float b, float c, float d, float t) {
            (c * ((-1.5F * t3) + (2.0F * t2) + (0.5F * t))) + (d * ((0.5F * t3) - (0.5F * t2)));
 }
 
-// The squared distance between a point and a cell.
-float distanceSquared(float x, float y, TagCell cell) {
-    const float dx = x - static_cast<float>(cell.x);
-    const float dy = y - static_cast<float>(cell.y);
+// The squared distance between two cells.
+int distanceSquared(TagCell a, TagCell b) {
+    const int dx = a.x - b.x;
+    const int dy = a.y - b.y;
     return (dx * dx) + (dy * dy);
 }
 
@@ -81,45 +79,111 @@ std::vector<TagCell> tagPath(std::span<const float> pattern, std::size_t count) 
 }
 
 TagGame::TagGame(std::vector<TagCell> path, float fraction, TagTuning tuning)
-    : m_path(std::move(path)), m_tuning(tuning), m_chargeLeftMs(tuning.chargeMs) {
+    : m_path(std::move(path)), m_tuning(tuning) {
     if (m_path.empty()) {
         m_result = Result::Unfinished;
         return;
     }
-    // The tag's painted fraction sets where on the path the player starts.
+    // The tag's painted fraction sets where on the path the player starts, and the path's points before it show as
+    // already painted.
     const auto start = static_cast<std::size_t>(std::clamp(fraction, 0.0F, 1.0F) * static_cast<float>(m_path.size()));
     m_progress = std::min(start, m_path.size() - 1);
+    m_painted.assign(m_path.begin(), m_path.begin() + static_cast<std::ptrdiff_t>(m_progress));
     m_cursorX = static_cast<float>(m_path[m_progress].x);
     m_cursorY = static_cast<float>(m_path[m_progress].y);
 }
 
 float TagGame::fraction() const {
-    return m_path.empty()
-               ? 0.0F
-               : static_cast<float>(m_progress) / static_cast<float>(m_path.size() - 1 == 0 ? 1 : m_path.size() - 1);
+    if (m_result == Result::Finished) {
+        return 1.0F;
+    }
+    return m_path.empty() ? 0.0F : static_cast<float>(m_progress) / static_cast<float>(m_path.size());
+}
+
+std::uint32_t TagGame::chargeLeftMs() const {
+    const std::uint64_t used = m_started ? m_clockMs - m_chargeStartMs : 0;
+    return used >= m_tuning.chargeMs ? 0 : static_cast<std::uint32_t>(m_tuning.chargeMs - used);
+}
+
+std::uint32_t TagGame::pauseLeftMs() const {
+    return m_pauseUntilMs > m_clockMs ? static_cast<std::uint32_t>(m_pauseUntilMs - m_clockMs) : 0;
+}
+
+float TagGame::chargeLeft() const {
+    return m_tuning.chargeMs == 0 ? 0.0F : static_cast<float>(chargeLeftMs()) / static_cast<float>(m_tuning.chargeMs);
 }
 
 bool TagGame::wastesCharge() const {
     return m_result == Result::Unfinished &&
-           static_cast<float>(m_chargeLeftMs) < kWasteShare * static_cast<float>(m_tuning.chargeMs);
+           static_cast<float>(chargeLeftMs()) < kWasteShare * static_cast<float>(m_tuning.chargeMs);
 }
 
 void TagGame::snapBack() {
     m_cursorX = static_cast<float>(m_path[m_progress].x);
     m_cursorY = static_cast<float>(m_path[m_progress].y);
-    m_pauseLeftMs = m_tuning.pauseMs;
     m_offTrack = 0;
+    m_pauseUntilMs = m_clockMs + m_tuning.pauseMs;
 }
 
-void TagGame::paint() {
+bool TagGame::paint() {
     const TagCell cell{static_cast<int>(m_cursorX), static_cast<int>(m_cursorY)};
-    const bool clear = std::ranges::all_of(m_painted, [cell](TagCell other) {
-        const int dx = cell.x - other.x;
-        const int dy = cell.y - other.y;
-        return (dx * dx) + (dy * dy) >= kPaintSpacing * kPaintSpacing;
-    });
-    if (clear) {
-        m_painted.push_back(cell);
+    const bool clear = std::ranges::all_of(
+        m_painted, [cell](TagCell other) { return distanceSquared(cell, other) >= kPaintSpacing * kPaintSpacing; });
+    if (!clear) {
+        return true;
+    }
+    if (m_painted.size() >= kMaxPoints) {
+        return false;
+    }
+    m_painted.push_back(cell);
+    return true;
+}
+
+void TagGame::spendPaint(const SpendCharge& spend) {
+    // The first update stamps the charge's start and the ramp's; the first charge takes no can.
+    if (!m_started) {
+        m_started = true;
+        m_chargeStartMs = m_clockMs;
+        m_rampStartMs = m_clockMs;
+        return;
+    }
+    if (m_clockMs - m_chargeStartMs < m_tuning.chargeMs) {
+        return;
+    }
+    // A new charge: back on the progress, the count cleared, a pause, the ramp again from the pause's end; then a can
+    // is taken, and with none the game is over.
+    m_chargeStartMs = m_clockMs;
+    snapBack();
+    m_rampStartMs = m_pauseUntilMs;
+    m_events.chargeSpent = true;
+    if (!spend || !spend()) {
+        m_result = Result::Unfinished;
+    }
+}
+
+void TagGame::track(bool moving) {
+    const TagCell cell{static_cast<int>(m_cursorX), static_cast<int>(m_cursorY)};
+    const auto near = [this, cell](std::size_t i) { return distanceSquared(cell, m_path[i]) < kTrackDistanceSquared; };
+    const auto window = static_cast<std::size_t>(kTrackWindow);
+    // Near a point behind: on track, and the progress never goes back.
+    for (std::size_t i = m_progress > window ? m_progress - window : 0; i < m_progress; ++i) {
+        if (near(i)) {
+            m_onTrack = true;
+            return;
+        }
+    }
+    // The first near point from the progress on (not the nearest): the progress moves there.
+    const std::size_t last = std::min(m_progress + window, m_path.size());
+    for (std::size_t i = m_progress; i < last; ++i) {
+        if (near(i)) {
+            m_onTrack = true;
+            m_progress = i;
+            return;
+        }
+    }
+    m_onTrack = false;
+    if (moving) {
+        ++m_offTrack;
     }
 }
 
@@ -128,62 +192,38 @@ TagGame::Result TagGame::update(float stickX, float stickY, std::uint32_t elapse
     if (m_result != Result::Playing) {
         return m_result;
     }
-    const std::uint32_t step = std::min(elapsedMs, kMaxStepMs);
-    // A pause after a slip or a new charge holds everything.
-    if (m_pauseLeftMs > 0) {
-        m_pauseLeftMs = m_pauseLeftMs > step ? m_pauseLeftMs - step : 0;
+    m_clockMs += elapsedMs;
+    // 1. The paint, in every update: the charge drains through pauses too.
+    spendPaint(spend);
+    if (m_result != Result::Playing || m_clockMs < m_pauseUntilMs) {
         return m_result;
     }
-    m_playedMs += step;
-    // The charge in use runs down; when it is out the next is spent, or the game ends unfinished.
-    if (step >= m_chargeLeftMs) {
-        m_chargeLeftMs = 0;
-        if (!spend || !spend()) {
-            m_result = Result::Unfinished;
-            return m_result;
-        }
-        m_events.chargeSpent = true;
-        m_chargeLeftMs = m_tuning.chargeMs;
-        snapBack();
-        return m_result;
-    }
-    m_chargeLeftMs -= step;
-    // The cursor follows the stick past the dead zone, its speed ramping up over the first 2 s; each cell far
-    // enough from the painted ones is painted.
-    const bool moving = std::hypot(stickX, stickY) > kDeadZone;
+    // 2. The cursor follows the stick past the dead zone, by the time since the last unpaused update (at most 30 ms)
+    // and the speed ramping up over 2 s; each cell far enough from the painted ones is painted.
+    const auto step = static_cast<std::uint32_t>(std::min<std::uint64_t>(m_clockMs - m_lastPlayedMs, kMaxStepMs));
+    m_lastPlayedMs = m_clockMs;
+    const bool moving = (stickX * stickX) + (stickY * stickY) >= kDeadZoneSquared;
     if (moving) {
-        const float ramp = std::min(1.0F, static_cast<float>(m_playedMs) / static_cast<float>(kRampMs));
+        const float sinceRamp = static_cast<float>(m_clockMs - std::min(m_clockMs, m_rampStartMs));
+        const float ramp = std::min(1.0F, sinceRamp / static_cast<float>(kRampMs));
         const float distance = static_cast<float>(step) * m_tuning.cellsPerMs * ramp;
         m_cursorX = std::clamp(m_cursorX + (stickX * distance), 0.0F, kGridMax);
         m_cursorY = std::clamp(m_cursorY + (stickY * distance), 0.0F, kGridMax);
-        paint();
-        if (m_painted.size() >= kMaxPoints) {
+        if (!paint()) {
             m_result = Result::Unfinished;
             return m_result;
         }
-    }
-    // On track: the nearest path point within 6 cells and 4 points of the progress becomes the progress.
-    const auto window = static_cast<std::ptrdiff_t>(kTrackWindow);
-    const auto here = static_cast<std::ptrdiff_t>(m_progress);
-    const std::ptrdiff_t first = std::max<std::ptrdiff_t>(0, here - window);
-    const std::ptrdiff_t last = std::min<std::ptrdiff_t>(static_cast<std::ptrdiff_t>(m_path.size()) - 1, here + window);
-    std::optional<std::size_t> nearest;
-    float best = static_cast<float>(kTrackCells * kTrackCells);
-    for (std::ptrdiff_t i = first; i <= last; ++i) {
-        const float d = distanceSquared(m_cursorX, m_cursorY, m_path[static_cast<std::size_t>(i)]);
-        if (d <= best) {
-            best = d;
-            nearest = static_cast<std::size_t>(i);
+        // 3. Five off-track moving updates since the last slip or charge: this one slips, before tracking, so the
+        // on-track flag keeps its last value (off track) through the pause.
+        if (m_offTrack > kOffTrackUpdates) {
+            m_events.slipped = true;
+            snapBack();
+            return m_result;
         }
     }
-    if (nearest) {
-        m_progress = *nearest;
-        m_offTrack = 0;
-    } else if (moving && ++m_offTrack > kOffTrackUpdates) {
-        m_events.slipped = true;
-        snapBack();
-    }
-    if (m_progress + static_cast<std::size_t>(kFinishWindow) >= m_path.size() - 1) {
+    // 4. Tracking, and the finish at the third point from the end.
+    track(moving);
+    if (m_path.size() < m_progress + static_cast<std::size_t>(kFinishWindow)) {
         m_result = Result::Finished;
     }
     return m_result;

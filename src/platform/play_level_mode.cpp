@@ -30,6 +30,7 @@
 #include "scenes/scene_list.h"
 #include "scenes/scene_player.h"
 #include "warriors/inventory.h"
+#include "warriors/tag_game.h"
 
 namespace coney::platform {
 
@@ -944,12 +945,22 @@ void PlayLevelMode::teleportPlayer(const world_objects::Placement& placement) {
 }
 
 bool PlayLevelMode::startTagSpray(const std::array<float, 3>& point) {
-    return m_player->human().startTagSpray(anim::Vec3{point[0], point[1], point[2]});
+    // An overhead or ghetto weapon leaves the hand first; a club (a pipe, a bat, a crowbar) stays in it.
+    human::Human& human = m_player->human();
+    human::ScriptState& script = human.script();
+    if (script.heldObject != world_objects::kNoObject && tagDropsHeld(human.fighter().animSet())) {
+        const double held = std::exchange(script.heldObject, world_objects::kNoObject);
+        script.heldObjectName.clear();
+        dropHeld(human, held);
+    }
+    return human.startTagSpray(anim::Vec3{point[0], point[1], point[2]});
 }
 
 bool PlayLevelMode::tagSprayLooping() const { return m_player->human().tagSprayLooping(); }
 
 bool PlayLevelMode::tagSprayPlaying() const { return m_player->human().tagSprayPlaying(); }
+
+void PlayLevelMode::restartTagSpray() { m_player->human().restartTagSpray(); }
 
 void PlayLevelMode::endTagSpray() { m_player->human().endTagSpray(); }
 
