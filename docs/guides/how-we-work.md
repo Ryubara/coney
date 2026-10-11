@@ -71,8 +71,10 @@ Many tracks run at once, each owning one subsystem, mission or question:
 - **One branch and one worktree per track**, under `worktrees/coney/<branch>/`. Nobody edits the main checkout.
 - **Small shared files are regenerated, not hand-merged**: binding pages, progress bars and similar files come from
   generators that the merge reruns.
-- **Pull requests merge one at a time**, by the maintainer or the approving review, never by the agent that wrote
-  them. Each pull request is squash-merged once every required check passes (tests, generators, docs build), so it
+- **Pull requests merge one at a time**, by the maintainer or a coordinator the maintainer has allowed to, never by
+  the agent that wrote them. Before merging, the coordinator checks more than CI: the title, one feature per pull
+  request, the description, docs and tests that go with the change, and a diff that holds only that change. Each
+  pull request is squash-merged once every required check passes (tests, generators, docs build), so it
   lands on `main` as one commit; work-in-progress commits on the branch are dropped by the squash and need no
   tidying first.
 - **State lives on disk, not in anyone's head.** Each track keeps a short state file (role, branch tip, done, next,
