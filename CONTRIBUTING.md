@@ -101,7 +101,9 @@ The person who submits or merges the work answers for it. The full rule is in [L
   the commit title, so it follows the same `area: Verb the rest` format. A pull request holds one feature, so that
   the commit it becomes also reverts as one. The commits inside it still follow the title rules (CI checks them).
 - CI must pass.
-- Fill in the pull request template: what and why, the checklist, and which AI tools helped, if any.
+- Fill in the pull request template: a summary, a checklist of what the pull request finishes and what is still to
+  do, and who wrote the work in the commits (a person, an AI, or both) and with which model. Who opened the pull
+  request does not matter there.
 - Keep a pull request to one subject. Unrelated changes belong in separate pull requests.
 
 ### Working from a fork
