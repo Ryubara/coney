@@ -25,6 +25,8 @@ from coney_tools import (
     refs_cli,
     trace_cli,
     wad_cli,
+    workspace,
+    workspace_fetch,
     xbox_cli,
 )
 from coney_tools.config import PATH_KEYS, ConfigError, find_repo_root, load_config
@@ -140,6 +142,20 @@ def _build_parser() -> argparse.ArgumentParser:
     groups = parser.add_subparsers(dest="group", required=True)
     config = groups.add_parser("config", help="local configuration (coney.local.toml)")
     config.add_subparsers(dest="command", required=True).add_parser("show", help="show the configured paths")
+    group = groups.add_parser("workspace", help="the local workspace beside the checkout (docs/guides/workspace.md)")
+    init = group.add_subparsers(dest="command", required=True).add_parser(
+        "init", help="create the workspace folders, clone, write coney.local.toml and check the prerequisites"
+    )
+    init.add_argument("--workspace", type=Path, help="the workspace folder (default: found from the checkout)")
+    init.add_argument("--repo-url", help="the repository to clone when not run inside a checkout")
+    init.add_argument(
+        "--fetch",
+        action="append",
+        default=[],
+        choices=[*workspace_fetch.TOOLS, "all"],
+        help="also download a research tool at its pinned version (repeatable; never a BIOS or game files)",
+    )
+    init.add_argument("--dry-run", action="store_true", help="print the steps without doing any")
     mcp = groups.add_parser("mcp", help="the debugging servers that .mcp.json registers for agents")
     serve = mcp.add_subparsers(dest="command", required=True).add_parser(
         "serve", help="run a server found through coney.local.toml, over stdin and stdout"
@@ -654,6 +670,8 @@ def _run(args: argparse.Namespace) -> int:
         return trace_cli.run_diff(args.original, args.coney, args.scenario, args.columns, args.tolerance, options)
     if args.group == "config":
         return _config_show()
+    if args.group == "workspace":
+        return workspace.run_init(Path.cwd(), args.workspace, args.repo_url, args.fetch, args.dry_run)
     if args.group == "mcp":
         return mcp_serve.run_serve(args.name)
     if args.command == "labels":
