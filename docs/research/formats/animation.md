@@ -113,6 +113,22 @@ and rotation as above, and `+0x14` a three-letter code (`bld`, `pch`, `blo`, `du
 into the type name `sub_` + code for `Human_SpawnAnimEffect` (`0x0021de48`, [Combat: hit blood](../combat.md#hit-blood)).
 Survey: type 11 is the most common (4,287 events); 344 distinct type-`0x21` events, 122 of them `bld`.
 
+**Event types documented elsewhere.** `Anim_FireFrameEvents` (`0x00101dd8`) compares the type against a chain of
+constants and handles each in place; these pages say what a type does and what it reads from the event:
+
+| Type | Meaning | Reads | Page |
+| --- | --- | --- | --- |
+| `0x20` | camera shake on a player's current camera (the power camera during a power move) | `+0x04` as a 32-bit word, the level (`lw a2,0x4(s1)` at `0x00103540`) | [Camera: shake](../camera.md#shake) |
+| `0x2e` / `0x2f` | slow motion on / off (a player's clip) | nothing | [Camera: slow motion](../camera.md#slow-motion) |
+| `0x39` | **power camera: begin** | `+0x06` s16 mode (1 one shot, else 2 alternating) | [Power-camera events](../camera.md#power-events) |
+| `0x3b` | **power camera: add a shot** | `+0x04` s16 (must be 0), `+0x06` s16 slot 0-7, `+0x08` position, `+0x0e` quaternion | [Power-camera events](../camera.md#power-events) |
+| `0x3a` | **power camera: cut** | `+0x08` as a 32-bit float, the field of view (−1.0 on the disc: 50°) | [Power-camera events](../camera.md#power-events) |
+| `0x3d` | **power camera: end** | nothing | [Power-camera events](../camera.md#power-events) |
+
+Confirmed (code) at the cited handlers (`0x00102ac8`, `0x00102fbc`, `0x00102ea0`, `0x001032a8` for the four power
+camera types); the shot's position and quaternion use the scaling above, in the frame of the human the camera
+follows (x right, y forward, z up from the feet).
+
 ### The pose
 
 A sampled pose is `0x240` bytes: two translations (the root velocity and the root translation) and 34 rotations, one
