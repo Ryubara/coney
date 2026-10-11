@@ -369,6 +369,59 @@ workers) that belong to this page, by address.
 | --- | --- | --- | --- |
 | `0x0041a3e0` / `0x0041a400` | `GameState_IsVibrationActive` / `GameState_GetVibrationOption` | pad p's vibration option (byte `+0x56de + p`, [Save](save.md)); the first also needs byte `+0x56e0`; read by the pad code (`0x00149668`), the option menu and `Profile_Write` | confirmed (code) |
 
+## Starting a match: the music and the wait {#match-start}
+
+What happens to the front end's music between the Choose Area launch and the fight, and how long the player waits
+after accepting the prompt (owner checklist items 24 a and c; the prompt's missing button glyph, 24 b, is the HUD
+text's glyph handling).
+
+**The music** is stopped twice and then cut. Confirmed (code) unless marked:
+
+1. The launch sets "started" (`0x0050f4e0`). Mode 0x11's update then stops the music with `Sound_StopMusicTrack`
+   (`0x00110528`) and queues a 1.5 s screen fade-out ([The mode around the screens](frontend.md#rumble-screens)).
+   That stop fades each playing channel out over **one bar** of its track ([Music](sound.md#music)).
+2. `Menu.startRumbleMode(n)` stops the music again and stops the Wonder Wheel scene before `MenuLoadLevel`
+   ([From QUICK RUMBLE to an arena fight](frontend.md#quick-rumble), step 4; inferred, from the script).
+3. Mode 8 finishes the front end with `Menu.onFinish` and `UnloadLevel(0)` (`0x001607b8`). Before anything is freed,
+   `UnloadLevel` calls `Ambient_Reset`, then **`Sound_StopAllMusic`** (call at `0x00160888` → `0x00110548` →
+   `Music_StopAll` `0x0010ddd8`: the queued request dropped, both playing channels stopped and reset **at once**),
+   then `Sound_StopAll`. So a track still fading is cut before the arena loads. Mode 1's `Exit` does the same on the
+   way out of a level ([Level loading](level-loading.md#unload)).
+4. The arena loads under the load screen, whose only sounds are its bank's two loops ([Banks](sound.md#banks)).
+5. In the arena **no music plays until the countdown ends**: [`FinishCountdown`](#arena-script) starts it, a random
+   `Music[1]` track (Survival's own). The intro's announcer lines and stings are 2D sounds, not music (inferred,
+   from the scripts).
+
+**The wait.** From the prompt's accept to the fight is the `dj_ready` line plus **4,000 ms**
+([The intro and countdown](#intro), phases 2-4: confirmed (code); about 5 s at runtime, confirmed (runtime)). Before
+that, the screen ignores the pad: during the names (each waits for its announcer line and the `dj_vs` line), and
+for the prompt's 1,000 ms fade until it is nearly opaque. Accept is menu command 4, **cross on release**
+([Input on the front end](frontend.md#input)); START does nothing here, since the intro holds the pause menu's START
+cool-down. Confirmed (code) at `0x001f9d78` (accept on event 4 only) and `0x001fa740`.
+
+**In Coney** (read in the engine): `RumbleMenuMode` stops the music when the menus end in a start
+(`repo:src/gamemodes/rumble_menu_mode.cpp`). That stop fades over a bar, and `LevelFlowMode::finishFrontEnd`
+(`repo:src/gamemodes/level_flow_mode.cpp`), Coney's `UnloadLevel(0)`, stops no music, sound or ambience, so nothing
+cuts the front end's track. The intro (`repo:src/gui/rumble_mode_gui/rumble_intro.cpp`) follows the phases above,
+with a 1,500 ms stand-in for any announcer line whose length it does not know.
+
+**Coney fixes (items 24 a and c).**
+
+1. Make `finishFrontEnd` do what `UnloadLevel` does to sound before the level goes: reset the ambience, stop all
+   music at once (the queued request and both channels, no fade), then stop every sound. Do the same when gameplay
+   is left (mode 1's `Exit`), so a level's music never runs into the next.
+2. Keep the menu's start-time stop (one-bar fade) as it is. Check that the music player is still updated during
+   the menu's 1.5 s fade-out, so that fade can run.
+3. Start no music in the arena before `FinishCountdown` calls it. Check with `--event-log` on a QUICK RUMBLE pad
+   script: the menu track's `stopped` line before the load, and no `music:` line between the load and the end of
+   the countdown.
+4. The wait: a test with a fixed step that accept-to-`FinishCountdown` is the ready line's length + 4,000 ms
+   (5,500 ms with the stand-in), and that the countdown's words show each second. If the measured time is longer,
+   suspect the voice-length lookup (`RumbleIntroSounds::playVoice`), not the countdown.
+5. Accept only cross, on release, once the prompt holds the pad. Presses during the names or the prompt's fade are
+   dropped, as in the original. That is faithful, though it can feel like a delay.
+6. A level-flow test: a looping track started in the front end has stopped when the arena's first frame runs.
+
 ## Coney's implementation {#coney}
 
 A Brawl (1 ON 1 or WAR PARTY) plays to its end, won or lost ([Building: QUICK RUMBLE](../guides/building.md)): the

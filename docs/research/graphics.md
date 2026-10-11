@@ -454,7 +454,8 @@ truncated (`0x0017a258`). `ScreenTint::blendTintTo` is `ScreenFx_BlendTintTo` (`
 game-over shot and `CamUseDeathCamera` blend to `ScreenTint::kGameOver`, `0xd0000014`) and `finishBlend` its finish
 (`0x0018cb78`). **Coney's readings**: `SetLevelColour` switches at once (look 9's in time is 0); the blend is timed
 by the fixed steps, not the original's real-time clock (they differ only while paused or slowed); the other looks'
-tints (rage, heat, the follower looks) are not modelled, so the tint is always the base look's or the last blend's.
+tints (rage, heat, the follower looks) are not modelled, so the tint is always the base look's or the last blend's
+([The rage look](#rage-look) lists what rage needs).
 
 **The blur pulse** (`effects::BlurPulse`, `repo:src/effects/blur_pulse.h`, drawn by `RenderEngine::blurScreen`):
 `start(seconds, delayMs)` and `end(seconds)` are `ScreenFx_StartBlurPulse` (`0x0018d058`) forward and reversed,
@@ -490,6 +491,58 @@ its grid cell round the camera. `EndGarbage` stops it. **Coney's readings**: the
 is lifted, tumbled or pushed at the start; a piece's orientation is one tilt value; a piece that lands is put on the
 hit; the pieces are not drawn yet (they are cards, not the renderer's camera-facing sprites).
 
+#### The rage look {#rage-look}
+
+What the screen does while a player rages ([Combat: everything rage does](combat.md#rage-effects)): look 2 on the
+screen-effects manager of the player's view (`0x005fdeb8[player]`), a warm dark tint plus a shimmering ghost of the
+last frame that is strongest at the screen's edges. Look 2's numbers come from `CfgScrFx` in `config_preload2.lua`
+([look 2](../references/screen-effects.md#fx-look-2)): tint (51, 25, 0, 80), in 1,000 ms, out 5,000 ms, blur alpha
+150. Confirmed (code) at the cited functions; confirmed (runtime) where marked, PCSX2 2.9.94, a copy of quick-save
+slot 6 (`level99`, base look 9 with the tint (7, 20, 30, 43)), the manager read every 100 ms (2026-10-10).
+
+**Start** (`ScreenFx_StartLook(manager, 2)` `0x0018b7d0`, from `Human_StartRageMode`): the current look becomes 2
+(`+0x198`, `+0x19c` = 0; the base look `+0x194` is kept), and both blends start on the real-time clock over look 2's
+in time, **1.0 s**:
+
+- the **tint** (`ScreenFx_BlendTintTo`, [Tint blend](#tint-blend)) from the level's colour to `0x50001933`, that is
+  (51, 25, 0) at alpha 80, drawn as As = 80 × 128 / 255 = **40** of 128: about 31 % of the way to a dark brown;
+- the **motion blur** (`ScreenFx_BlendBlurTo` `0x0018c8c8`) from its colour to `0x96ffffff`, white at alpha 150.
+
+Runtime: the tint went `0x34161512`, `0x38131517`, ... `0x4e011831` at 100 ms steps and was `0x50001933` 0.8 s after
+the first sample; the blur target was `0x96ffffff` from the first.
+
+**Each frame while raging** (`ScreenFx_Render` `0x0018dac0`: blur pulse, tint, fade, letterbox, motion blur; the
+screen effects go before the HUD):
+
+1. The **tint**: one full-view quad of the current colour, `SRCALPHA` / `INVSRCALPHA` ([Level
+   tint](rendering.md#tint)). `ScreenFx_DrawTint` (`0x0018ca50`) skips it while the look is 2 and `+0x1b8` is 0, but
+   only `ScreenFx_Construct` and `ScreenFx_ResetAll` (`0x0018c260`) write `+0x1b8`, both with 1, so the rage tint is
+   always drawn (runtime: `+0x1b8` was 1 throughout).
+2. The **ghost grid** ([Motion blur](#motion-blur), step 4): look 2 is one of the grid looks, so the last frame is
+   laid over the new one as the 9 × 9 grid, its texture coordinates wobbling by sin and cos of a phase growing 0.5 a
+   frame × 0.001 × ±0.9 × 3 (`0x0050cdfc`, `0x0050cdf8`, `0x0050ce1c`), its vertices white with alpha 0 in the centre
+   rising to 224 at the corners, nearest filtering, `SRCALPHA` / `INVSRCALPHA`. The blur alpha of 150 only turns the
+   grid on and hides the rain layer (111 or more). So the middle of the screen is sharp and the edges smear and
+   swim, as in a tunnel.
+
+**End, gradual** (`ScreenFx_EndLook(manager, 2)` `0x0018b950`, the meter running out): the current look becomes **3**;
+the tint blends back to the base look's tint and the blur to the base look's alpha, both over look 2's **out time,
+5.0 s**. Look 3 is still a grid look, and the grid (`0x00193298`) fades its wobble and alpha by `1 − elapsed / 2500
+ms` (`0x0050ce0c` = 2,500, the start kept at `0x0050ce20`); past 2,500 ms the look becomes 8, which
+`ScreenFx_DrawMotionBlur` turns back into the base look. From then on the base look (9) draws the blur as the single
+full-view quad at the still-falling blur alpha, so a faint even ghost (alpha about 73 falling to 0) lingers for the
+remaining 2.5 s; the tint keeps blending for the full 5 s. Runtime: from the end (game time 589.41 s) the grid fade
+`0x0050ce14` fell 0.973, 0.933, ... 0.039 at 100 ms steps, the corner vertex alpha from 224 to 8 with it; the look
+was 3 until 591.85 s and 9 from 591.95 s; the tint went from `0x50001933` toward `0x2b1e1407` and was `0x3119140e`
+at 593.58 s, 4.2 s in.
+
+**End, at once** (`ScreenFx_EndLook(manager, 3)`, for the instant ends listed on
+[Combat](combat.md#rage-effects), the pause menu among them): the current look becomes the base look and both blends
+use look 8's out time, 0, so the tint and blur snap back on the next frame with no grid fade.
+
+So look 3 is rage's fading grid and look 8 the hand-back to the base look; look 4 does the same for look 0 (the
+flash's look, `Flash_Use`) over 1,500 ms (`0x0050ce10`).
+
 #### Motion blur {#motion-blur}
 
 Each view, after its tint and fade, `ScreenFx_DrawMotionBlur` (`0x0018c408`) lays the **last frame** over the new
@@ -507,12 +560,15 @@ one, confirmed (code):
    write. A port with one back buffer must keep the last presented frame itself.
 4. **Looks 0, 2, 3, 4 and 7** draw it as a **9 × 9 grid** (slots `+0xf8`, `+0x100`; `0x00193298`, `0x001939b8`):
    each frame every vertex's texture coordinates move by sin and cos of a phase (+0.5 a frame) × 0.001 × 0.9 with a
-   random sign × 5 (look 0) or 3 (the others), clamped to the rectangle, so the old frame shimmers. The vertices'
-   alpha comes from a 9-byte table at `0x0050ce30` by the distance from the centre (10 in the centre, 50, 180, 225
-   up to 252 at the corners; that the index is `|dx| + |dy|` is inferred), flat 200 in look 4, so the edges show
-   the most. Looks 3 and 4 also fade the wobble and alpha out over 2,500 and 1,500 ms from their start; then the
-   current look becomes 8 and the manager goes back to its base look. Texture filter nearest, vertex alpha,
-   `SRCALPHA` / `INVSRCALPHA`.
+   random sign × 5 (look 0) or 3 (the others), clamped to the rectangle, so the old frame shimmers. A vertex's
+   alpha is `(d × table[d]) & 0xff` × the fade, with `d` = `|column − 4| + |row − 4|` (0-8) and the 9-byte table at
+   `0x0050ce30` (10, 50, 180, 225, 230, 240, 240, 250, 252; the `mult` and `andi 0xff` at `0x00193a58`), flat 200 in
+   look 4: so by `d` **0, 50, 104, 163, 152, 176, 160, 214, 224**, clear in the centre and strongest at the corners.
+   Confirmed (runtime): those nine values were the vertex alphas at `0x005fe030 + i × 0x40 + 0x2c` during rage ([The
+   rage look](#rage-look)). The blur colour's own alpha only switches the grid on (not 0) and hides the rain (111 or
+   more); it does not scale the vertices. Looks 3 and 4 also fade the wobble and alpha out over 2,500 and 1,500 ms from
+   their start; then the current look becomes 8 and the manager goes back to its base look. Texture filter nearest,
+   vertex alpha, `SRCALPHA` / `INVSRCALPHA`.
 5. **Other looks** draw one quad (slots `+0xe0`, `+0xe8`) with the blended colour, so the old frame shows at the
    blur's alpha everywhere ([Screen quads](#2d-drawing)).
 
@@ -925,6 +981,108 @@ Each pass stores `opaque` at the instance's `+0x41`, selects the objects' lights
    **dual** material (4) gets that second texture as its dual texture (`0x00465810`). That `0x0070ad18` is
    RenderWare's current camera, so that the reflection follows the view, is inferred.
 6. Draw it with the saved render callback (`0x005fd030`), then set the material's texture back to none.
+
+### The throw-aim arc {#throw-arc}
+
+While a player aims a throw (L1, [Objects: throws](objects.md#throws)) a textured ribbon shows the flight from his
+hand. One arc record per player (game state `+0x5740 + 0x30 × p`, [code](#code-textures)). Confirmed (code) at the
+addresses cited unless marked.
+
+**The model** (`ThrowArc_Create`, `0x0018f268`):
+
+- One clump, one atomic, one geometry made with `RpGeometryCreate(36, 34, 0x0d)`: **36 vertices (18 pairs) and 34
+  triangles** (two per pair of pairs, 17 quads), flags triangle strip, textured and prelit; no normals and no
+  lighting flag, so the arc is unlit: its colour is the vertex colour times the texture. The bounding sphere is
+  radius 100 at the origin, so it is never culled.
+- One material, surface properties (1, 1, 1), texture **`aimthrow_tex`**: the WAD file named the decimal CRC-32 of
+  that name, `646320484` (entry 3,276 of `WARRIORS.DIR`, name hash `0x3f103fcb` of `./ee_files/646320484`, 1,552
+  bytes), loaded once and kept (`0x005971b0`). It is a texture dictionary of one PS2 texture, **`aimthrow`, 32 × 64,
+  4-bit palettised, linear filtering, wrap in u and v**. Its palette uses three entries: 0 = light grey (150, 150,
+  150) at alpha `0x0e` (about 11 % of the PS2's `0x80` = opaque), 1 = the same grey fully opaque, 2 = transparent;
+  of the 2,048 texels 62 % are transparent, 31 % the faint grey and 6 % opaque (counted from the disc; the texels'
+  layout is in the PS2's swizzled order and was not unswizzled here, so the pattern's shape is not described).
+- Texture coordinates, fixed: pair i has u = 0 on its left vertex and 1 on its right, and **v = 15 − i** (15 at the
+  hand down to −2 at the end), so the texture repeats once per segment along the arc (wrapping).
+
+**Each aiming frame** `Human_TraceThrowAim` (`0x0018fee0`) traces the arc ([Objects: throws](objects.md#throws)) and
+calls `ThrowArc_BuildStrip(arc, local points, world points, count, hit)` (`0x0018fa68`):
+
+- **Points.** The 18 kept points (one every sixth 1/60 s step), in the thrower's frame relative to the release point
+  (`Mat_TransformPoint` by the inverse of his facing and that point). `count` is 18 when the trace met nothing; when
+  it ended at a contact in segment k it is k, with point k moved to the contact.
+- **Pairs.** Pair 0 at point 0, pairs 1 to count − 1 at their points, pairs count to 16 all at point count − 1
+  (degenerate triangles), pair 17 at point count (the end or the contact). So the ribbon always has 18 pairs and ends
+  where the trace ended.
+- **Width.** Each pair is the point ± **0.08 m** along the thrower's right axis (his frame's x): a flat ribbon
+  **0.16 m wide**, level across, in the vertical plane of his facing. The model's axes are stored as (x, z, −y) and
+  `ThrowArc_PlaceAtHand` (`0x0018f628`) builds the clump's frame from his facing and the release point (hand
+  `+0x610` + facing × (0.3009, −0.6354, 1.5865)) with the matching swap, so the ribbon lands on the traced points
+  (the swap's cancelling is inferred from the two functions' matrices).
+- **Colour** (RenderWare's RGBA bytes): **(127, 127, 127)** when `hit` is 0 and **(170, 43, 43)** when it is set.
+  `hit` is the object the trace ended on: the human target, or the first body (world object, car) it met; it is
+  null for the level mesh or nothing. That is the object whose task becomes `+0x634`, so the arc is red exactly while
+  `HuIsAimingAt` would be true of something (inferred: every task has the type bit `+0x634` needs).
+- **Alpha** by pair: pair 0 (at the hand) **0**; every other pair i: **127 + trunc(16 × min(i ÷ count, 1))**, so the
+  collapsed pairs and the end pair of a cut arc get 143. With count 18 the pairs 0-17 get 0, 127, 128, 129, 130, 131,
+  132, 133, 134, 135, 135, 136, 137, 138, 139, 140, 141, 142: the ribbon fades in over its first segment only and then
+  rises slightly toward the end.
+
+**Drawing** (`ThrowArc_Render`, `0x00190588`, from `ThrowArcs_RenderAll` `0x00419da0` in the world pass): only
+while the human's move function is `Human_MoveThrowAim` (`+0x1c0`, with no move id, `+0x1be` = −1) and he holds a
+world object; for each camera view: culling off (`RwRenderStateSet(CULLMODE, NONE)`), then the clump is rendered.
+No other state is set, so Z test, Z write and vertex-alpha blending are the world pass's defaults (inferred).
+
+**On screen** (inferred): the PS2's GS treats a vertex colour or alpha of `0x80` as 1.0, and the palette's opaque
+alpha is `0x80` (confirmed from the disc), so the vertex grey 127 shows the texture's own light grey (150) almost
+unchanged, the red (170, 43, 43) tints it to about (199, 50, 50), and alphas 127-143 leave the texture's alpha as it
+is (opaque texels solid, the faint texels a light haze). Whether RenderWare's PS2 pipeline passes prelit colours to
+the GS unscaled was not read. The measurement below supersedes this prediction: the arc shows far darker (grey about
+50, red about 68) and half transparent.
+
+**On screen, measured** (confirmed (runtime), PCSX2 2.9.94 at its native resolution, window captures of 1575 × 930;
+`level80` checkpoint 3 reached by the checkpoint jump from slot 6, the hold-up command given, the thrower on the roof
+at (−244.3, 268.0, 5.7) with the lesson's bottle, L1 pressed, the aim moved with the left stick at 0.3 in 2-update
+steps; the camera is the lesson's fixed `ThrowCam`, so frames with the arc in different places share a background):
+
+- **Not hit** (pitch 0.154 rad, heading 79°, the arc crossing a dark wall and a lit window): against the same pixels
+  without the arc, the arc raised a background of about 20 by **+13** and lowered one of about 90 by **−17.5**, the
+  same in the three channels apart from the background's own tint. Fitting out = α·C + (1 − α)·bg to the two gives
+  **C ≈ 50 and α ≈ 0.44** (averaged over the band's pixels, edges included); the arc crosses over (neither lighter
+  nor darker) where the background is about 45-50. So the grey arc reads as a dim, half-transparent band.
+- **Hit** (the aim on the `dyn_w_mission` marker, pitch 0.154 rad, heading 58.6°, `+0x634` the marker; the hint
+  became "Press X to throw"): over a background of about (16-20, 16-20, 18-22) the band rose by **+21 to +30 in red
+  and 0 to +4 in green and blue** from pixel to pixel. With the same α that is C ≈ 66-87 in red and 18-27 in green
+  and blue; the low end of the rise (about +22 red, +0 to +1 green and blue) gives C ≈ (67-69, 17-20, 17-20).
+- **Both fit one linear rule**: on-screen colour ≈ **0.39 × the vertex colour** per channel (127 → 50; 170 → 67,
+  43 → 17), at this distance (the band 10-20 pixels wide, the texture's pattern not resolved). For the red band the
+  rule fits the low end of the measured range; its brighter pixels (up to about 87 red) sit above it.
+
+What this leaves open: the 0.39 is the vertex colour's scale times the filtered texture colour, and the filtered
+colour depends on the colour stored in the transparent palette entry, which was not read. A 128 = 1.0 reading needs a
+filtered texel of about 50 (the transparent texels' colour near black, so the 150 grey is diluted), a 255 = 1.0
+reading about 100; the alpha (about 0.44) is also higher than the palette's average alpha predicts in either reading,
+so how RenderWare's pipeline hands the prelit colour and alpha to the GS is still not settled from the pixels. Next
+step: read palette entry 2's colour from the disc, or capture with the arc close to the camera so that opaque texels
+show unfiltered.
+
+**Owner item 31 (the arc)**: the first Coney arc (on the `throw-arc` branch, 2026-10-11) used
+stand-in values that differ from the above. **Coney fixes**:
+
+1. Colours (127, 127, 127) not hit and (170, 43, 43) hit, instead of (170, 170, 170, 160) and (220, 30, 30, 160).
+   Whatever scale Coney uses, match the measured look: at the lesson's distance the grey band shows as about colour
+   50 at alpha 0.44 over the scene, the red band as about (68, 18, 18) at the same alpha (above); a brighter arc,
+   such as the texture's grey at full strength, does not match the original.
+2. Alpha per pair as above (0 at the hand, then 127 + trunc(16 × min(i ÷ count, 1))) instead of a fade over three
+   points to a fixed 160. Whether 128 or 255 is 1.0 is not settled (above); match the measured alpha of about 0.44.
+3. Always 18 pairs: points up to count − 1, the rest collapsed on point count − 1, the last pair at the end point.
+4. Texture `aimthrow` from WAD entry `./ee_files/646320484`, wrapping, with u 0 → 1 across and v = 15 − pair along
+   (one repeat per segment); untextured only when the file is missing.
+5. Width ± 0.08 m along the thrower's right axis (his facing), not the chord's perpendicular in plan (the same while
+   the arc stays in his facing's plane; the right axis is what the original uses).
+6. Culling off; drawn in the world pass while the aiming move runs and a world object is held.
+7. Test: for a trace of 18 points with no hit, the strip has 36 vertices, alphas (0, 127, 128, ..., 141, 142) and
+   colour (127, 127, 127); with a contact in segment 5 the pairs 5-16 coincide with point 4 and pair 17 is the
+   contact; with a hit the colour is (170, 43, 43).
 
 ### Distance: fades and level of detail {#lod}
 
@@ -1435,11 +1593,11 @@ Confirmed (code) at each address unless a row says otherwise.
 | `0x0018eb10` | `ResourceMgr_RequestTextures` | request, type 4; a resident one only has its stamp renewed | confirmed (code) |
 | `0x0018ec00` | `ResourceMgr_FreeTextures` | free, type 4: a holder with no references is destroyed and leaves the map | confirmed (code) |
 | `0x0018f230` | `ThrowArc_Clear` | a cleared arc record (0x30 bytes: clump, atomic, material, human, start and end points); one per player in the game state at `+0x5740` | confirmed (code) |
-| `0x0018f268` | `ThrowArc_Create` | the arc's model: texture `aimthrow_tex` (loaded once, `0x005971b0`), a strip of 18 vertex pairs and 32 triangles in one material | confirmed (code) |
+| `0x0018f268` | `ThrowArc_Create` | the arc's model: texture `aimthrow_tex` (loaded once, `0x005971b0`), 36 vertices (18 pairs) and 34 triangles, prelit and unlit, in one material ([The throw-aim arc](#throw-arc)) | confirmed (code) |
 | `0x0018f628` | `ThrowArc_PlaceAtHand` | puts the arc's frame at the human's hand (position `+0x610` plus its facing `+0x620` turned by a fixed offset) | confirmed (code) |
 | `0x0018f7b0` | `ThrowArc_SetHuman` | `+0x0c` (from `PlayerList_Add`) | confirmed (code) |
 | `0x0018f7b8` | `ThrowArc_TargetFilter` | the sweep's callback: for a player, a human counts unless it is an ally (`0x00222a90`) or lies on the other side from the one the left stick pushes (dead zone 26) | confirmed (code); the side test inferred |
-| `0x0018fa68` | `ThrowArc_BuildStrip(arc, points, count, hit)` | writes the arc's points as a strip 0.16 m wide, fading in from the hand; one colour when `hit` is set and another when not | confirmed (code) |
+| `0x0018fa68` | `ThrowArc_BuildStrip(arc, points, count, hit)` | writes the arc's points as a strip 0.16 m wide: alpha 0 at the hand, then 127-143; (127, 127, 127) or, when `hit` is set, (170, 43, 43) ([The throw-aim arc](#throw-arc)) | confirmed (code) |
 | `0x0018fee0` | `Human_TraceThrowAim` | each frame of the aiming state (`0x00244770`): steps the throw from the hand at 1/60 s with gravity (z speed − 0.2613 a step) for 108 steps, keeps every sixth point (18), sweeps a sphere of half the object's size along them, stops at the first non-friendly AI human (human `+0x638`) unless a body with `THROWNWEAPONTARGET` or the level mesh comes first (that body is `+0x634`; [Objects: throws](objects.md#throws)), and rebuilds the strip | confirmed (code) |
 | `0x00190588` | `ThrowArc_Render` | from `WorldManager_Render`, while its human is in the aiming state: draws the clump in each view with back-face culling off | confirmed (code) |
 | `0x001906e8`, `0x00190770` | `ChunkReader_TextureDictionaryTid`, `ChunkReader_RenderwareTextureDic` | [Chunk system](chunk-system.md) | confirmed (code) |

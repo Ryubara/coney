@@ -130,6 +130,7 @@ missions:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
       - {title: "The fourth mission's brain and human calls", path: "research/ai.md#coney"}
       - {title: "Spawners", path: "research/ai.md#spawners"}
+      - {title: "The riot's crowd, and what Coney lacks", path: "research/scripting.md#level34-start"}
       - {title: "Cars", path: "research/cars.md"}
     questions:
       - "How Coney's objects and stores give the riot's smash and loot acts their targets (the original's are on the AI page)."
@@ -172,7 +173,7 @@ missions:
         1: {status: in-progress, note: "Plays to checkpoint 2 driven by the pad: the walk past the Moonrunners and Panzers to the showdown's marker."}
         2: {status: in-progress, note: "Plays to checkpoint 3 driven by the pad: Poizo's pan, then the Warriors' five-piece burner tagged at the wall (five stick games) wins the showdown. The rival painters run GoalTag; they tag only once the tactics stop flushing a member's goals at their start (re-human dc040b31)."}
         3: {status: in-progress, note: "No script error; waits on the car message handler and object indices (being built for level34)."}
-        4: {status: in-progress, note: "Plays to its end from a pad script (tests/support/level3_chase.txt, its disc test `[playthrough]`): the AI walks Snow to the rail's start box, then the stick, L2 and triangle run, climb and jump him across the roofs to the gallery box, which hands over to checkpoint 5. The Warriors follow on the default command."}
+        4: {status: in-progress, note: "Plays to its end driven by an adaptive pad (the `[playthrough]` disc test's RouteDriver, through the game session): the AI walks Snow to the rail's start box, then the stick, L2 and triangle run, climb and jump him across the roofs leg by leg (10 climbs, 6 sprint jumps), up the steel stairs beside the unclimbable wall on the z 10.3 roof, and over the last gap to the gallery box, which hands over to checkpoint 5. The Warriors follow on the default command. No recording of the original yet, so the hints' order is not compared."}
         5: {status: in-progress, note: "Runs headless with no script error and every binding it calls; not yet checked to its end."}
     research:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
@@ -446,6 +447,7 @@ missions:
       default: not-started
     research:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+      - {title: "Armies of the Night: the way in, the pieces and what Coney needs", path: "research/armies.md"}
   - level: 61
     group: armies
     slot: Armies of the Night 2
@@ -458,6 +460,7 @@ missions:
       default: not-started
     research:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+      - {title: "Armies of the Night: the way in, the pieces and what Coney needs", path: "research/armies.md"}
   - level: 62
     group: armies
     slot: Armies of the Night 3
@@ -470,6 +473,7 @@ missions:
       default: not-started
     research:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+      - {title: "Armies of the Night: the way in, the pieces and what Coney needs", path: "research/armies.md"}
   - level: 63
     group: armies
     slot: Armies of the Night 4
@@ -482,6 +486,7 @@ missions:
       default: not-started
     research:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+      - {title: "Armies of the Night: the way in, the pieces and what Coney needs", path: "research/armies.md"}
   - level: 64
     group: armies
     slot: Armies of the Night 5
@@ -494,3 +499,4 @@ missions:
       default: not-started
     research:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+      - {title: "Armies of the Night: the way in, the pieces and what Coney needs", path: "research/armies.md"}

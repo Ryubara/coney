@@ -1,0 +1,77 @@
+# A lethal hit from a third human during a paired move: the player grabs PoizoCiv (a puppet at 60 health) from the
+# front and starts the power strike 57; Ash (the player's ally, a puppet) stands behind PoizoCiv and is given X1 at
+# him while 57 / 58 plays. Does the victim die at once or only when the paired clip ends?
+# Research: docs/research/combat.md#protected-moves ("A lethal hit waits").
+description = "slot 6: power strike 57 on PoizoCiv at 60 health while Ash's X1 lands on him: when the lethal hit plays"
+research = "docs/research/combat.md#protected-moves"
+input = "moves_finisher_lethal.txt"
+updates = 200
+fields = ["player", "held"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "puppet", "paired-start", "anim-dispatch", "strike-contact"]
+let = { enemy = 'human("PoizoCiv")', other = 'human("Ash")' }
+setup = [
+  { address = "rec(player) + 0x144", type = "s16", value = "900", frame = 0, until = 0 },
+  { address = "rec(player) + 0x148", type = "s16", value = "400", frame = 0, until = 0 },
+  { address = "rec(enemy) + 0x144", type = "s16", value = "60", frame = 0, until = 0 },
+  { address = "prec(enemy) + 0x1e", type = "u8", value = "0", frame = 0, until = 0 },
+  { address = "prec(other) + 0x1e", type = "u8", value = "0", frame = 0, until = 0 },
+  { address = "tf(enemy) + 0x0", type = "f32", value = "f32(tf(player)) - 1.0 * sin(heading(player))", until = 9 },
+  { address = "tf(enemy) + 0x4", type = "f32", value = "f32(tf(player) + 4) + 1.0 * cos(heading(player))", until = 9 },
+  { address = "tf(enemy) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 9 },
+  { address = "tf(enemy) + 0x18", type = "f32", value = "sin((heading(player) + pi) / 2)", until = 9 },
+  { address = "tf(enemy) + 0x1c", type = "f32", value = "cos((heading(player) + pi) / 2)", until = 9 },
+  # Ash 0.9 m behind PoizoCiv (on the far side from the player), facing him, from the front hold on.
+  { address = "tf(other) + 0x0", type = "f32", value = "f32(tf(enemy)) - 0.9 * sin(heading(player))", frame = 38, until = 40 },
+  { address = "tf(other) + 0x4", type = "f32", value = "f32(tf(enemy) + 4) + 0.9 * cos(heading(player))", frame = 38, until = 40 },
+  { address = "tf(other) + 0x8", type = "f32", value = "f32(tf(enemy) + 8)", frame = 38, until = 40 },
+  { address = "tf(other) + 0x18", type = "f32", value = "sin((heading(player) + pi) / 2)", frame = 38, until = 40 },
+  { address = "tf(other) + 0x1c", type = "f32", value = "cos((heading(player) + pi) / 2)", frame = 38, until = 40 },
+  { address = "other + 0xc8", type = "u32", value = "u32(enemy + 0x90)", frame = 38, until = 60 },
+  { address = "brain(other) + 0x124", type = "u32", value = "u32(enemy + 0x90)", frame = 38, until = 60 },
+  # X1: a cross tap is 0x12, then 0x10, then 0.
+  { address = "prec(other) + 0x20", type = "u32", value = "18", frame = 47, until = 47 },
+  { address = "prec(other) + 0x20", type = "u32", value = "16", frame = 48, until = 48 },
+  { address = "prec(other) + 0x20", type = "u32", value = "0", frame = 49, until = 49 },
+]
+
+[coney]
+level = "sandbox:combat"
+args = ["--spawn", "start"]
+
+[[field]]
+name = "target_clip"
+address = "rec(enemy) + 0x20"
+type = "s32"
+
+[[field]]
+name = "target_state"
+address = "rec(enemy) + 0x0"
+type = "u32"
+
+[[field]]
+name = "target_held"
+address = "rec(enemy) + 0x8"
+type = "u32"
+
+[[field]]
+name = "target_flags"
+address = "enemy + 0xe0"
+type = "u32"
+
+[[field]]
+name = "target_flags_hi"
+address = "enemy + 0xe4"
+type = "u32"
+
+[[field]]
+name = "target_health"
+address = "rec(enemy) + 0x144"
+type = "s16"
+
+[[field]]
+name = "target_ally_clip"
+address = "rec(other) + 0x20"
+type = "s32"

@@ -499,10 +499,13 @@ A **tandem** is a three-person move: a player strikes a victim another human hol
 `Tandem_CanStart` (`0x00258e10`), `Tandem_Start` (`0x0026f860`), `Tandem_LinkThree` (`0x0022b1a0`),
 `Tandem_AlignThree` (`0x00277458`) and `Tandem_OnVictimIntroEnd` (`0x0026f780`):
 
-- **Started by the player only**, from square, cross, circle tapped or circle held, when the target is held from
-  the rear (by anyone: a gang member or another player), the attacker stands within 45° of the victim's front, and
-  the victim's held flags have none of `0xc12200`. Square and cross test it after the target-state strikes; circle
-  tests it before grabbing ([Combat](combat.md#grab), step 3).
+- **Started from square, cross, circle tapped or circle held**, when the target is held from the rear (state
+  `0x20`, by anyone: a gang member or another player), the attacker stands within 45° of the victim's front
+  (`Human_GetSideOf(victim, attacker, 1)` = 0), and the victim's held flags have none of `0xc12200`. Square and cross
+  test it after the target-state strikes; circle tests it before grabbing ([Combat](combat.md#grab), step 3). The
+  three callers (`Player_Square`, `Player_Cross`, `Player_GrabOrTackle`) are the only ones, and none tests for a
+  pad: they are the dispatcher's, which an AI human runs too ([An AI's attacks](combat.md#ai-attacks)). An earlier
+  reading here said "the player only"; that is corrected below.
 - **The set**: a bat or baton in hand → 181-186; a knife → 187-192; otherwise 163-168, 169-174 or 175-180 at random.
   Each set has an intro and an end for the grabber, victim and attacker (ids +0 to +5).
 - The three are linked and placed by the set's pair offsets. At the **end of the victim's intro** the attacker's
@@ -516,6 +519,73 @@ At runtime (`moves_tandem`: Ash, the player's ally, given the grab command at Po
 in 85): square played the set 1 on the next update, the player's 165 and the victim's 164 for **51** updates (not
 the 36 of their clips), then 168 / 167; the victim lost **400** (50 + 350) on the first update of 167. Confirmed
 (runtime).
+
+#### Who starts a tandem, and how an AI chooses it {#tandem-ai}
+
+Owner checklist item 18 (a gang member holds an enemy; the teammates stand by). Confirmed (code) at the addresses
+cited unless marked:
+
+1. **An AI teammate starts it through the grab.** The fight goal's attack pick (`Brain_PickAttack`, `0x0028e708`,
+   [AI](ai.md#pick-attack)) adds **+200** to kind 22 (the grab) when the target is grabbed from the rear (step 4.7),
+   and more when several attackers share him (step 4.5). `Human_CanStartAttack` (`0x00224778`) allows kind 22 at a
+   target in state `0x20` **only from in front of him** (`0x002672d0`), the same 45° front cone `Tandem_CanStart`
+   asks, and refuses a target holding `0xc12200`'s overlap `0xc08200` (a victim already in a paired move). The
+   attack action writes command `0xd` (circle tapped, [AI](ai.md#attack-action)); the dispatcher's
+   `Player_GrabOrTackle` (`0x00284920`) keeps the brain's target (it searches only for brain type 0), finds
+   `Tandem_CanStart` true and calls `Tandem_Start(AI, victim, grabber)`. So the AI's "grab" at a rear-held enemy
+   **is** the tandem. Each link is confirmed (code); the whole is confirmed (runtime) below.
+2. **Who holds.** Only a rear hold allows it: the player's own rear hold (after R1's spin, or a grab that connects
+   from behind) or an AI's. A front-held enemy refuses kind 22 (state `0x10` is in the grab's refusing mask
+   `0x7bfdc8f7fd0`); teammates hit him with ordinary strikes instead, and a third human's hit breaks the hold
+   ([Attacking a busy target](combat.md#busy-target)).
+3. **The player as the attacker** starts it with square, cross or circle at a rear-held enemy he faces.
+4. **What the three play**: the set by the attacker's held object (a bat or baton 181-186, a knife 187-192, else
+   163-168, 169-174 or 175-180 at random); held `0x800000` on the attacker and the grabber, `0x400000` on the victim
+   (so no one else starts an attack on any of the three, [Moves a hit cannot stop](combat.md#protected-moves)); the
+   grabber is let go into the fight stance at the end. The victim's damage (the attacker's intro and end values) is
+   pending until his intro ends; lethal, his death reaction plays from the end clip.
+5. **Scoring**: `Grab_ScoreMove` for the grabber (the set's base id) and the attacker (base + 2), skipped when the
+   victim has human flag `0x10` (the demi-god floor reached).
+
+**An AI tandem at runtime** (confirmed (runtime), PCSX2 2.9.94, scenario `moves_tandem_ai`: a copy of slot 6, the
+player grabs PoizoCiv (600 health) 1.0 m ahead with circle at update 10 and spins him to the rear hold with R1 at 45
+(78 / 79, then 84 / 85 from 74); at 74-78 Ash is placed 1.3 m in front of PoizoCiv facing him, his brain made a
+type-2 brain (below), the two gangs made enemies and `GoalFight(Ash, PoizoCiv)` called; stick centred; hooks
+`set-command`, `anim-dispatch`, `call-brains`):
+
+| Update | Ash (the AI) | The player (grabber) | PoizoCiv |
+| --- | --- | --- | --- |
+| 79-84 | the fight goal's walk-in (372 / 379), state `0x3` | rear hold 84 | 85 |
+| 85 | **command `0xd`** written by `AttackAction_Start` (`0x002fa9a8`, at `0x002fac98`); **165**, state `0x1003` | **163**, state `0x1005`, held `0x800000` | **164**, state `0x182001` |
+| 121 | the end clip 168 | 166 | 167; **400 damage** (600 → 200) at the intro's end |
+| 169 | | let go into the fight stance (358, state `0x5`) | |
+| 178-181 | 358, then on with the fight | | 355, then the grounded idle 196 |
+| 190 | command `0x37`: the grounded strike 193 (20 damage) | | |
+
+So the AI's attack action does pick the tandem at a rear-held enemy it faces, through command `0xd`, and the set was
+163-168 (the unarmed first set) on the first try. Step 1's chain is confirmed (runtime) end to end, with the timings
+of step 4: the intro runs 36 updates, the damage lands at its end, the grabber is let go 48 updates after that.
+
+Caveat, open: Ash's own brain in this state is type 3 (the Warriors' think, `0x003052f0`); with it, `GoalFight`
+pushed the goals but Ash stood idle for 180 updates and wrote no command, so the run gave him the type-2 handlers
+(as `civ_approach` does for PoizoCiv). Whether a Warrior teammate's own think reaches the attack action against a
+rear-held enemy (in a real fight, or after an `IssueWarriorCommand` attack order) was not watched.
+
+**Coney fixes** (item 18):
+
+1. Build the tandem ([combat-diffs](combat-diffs.md) lists it as not built): `Tandem_CanStart` and `Tandem_Start` as
+   above, three linked bodies placed by the set's pair offsets, the damage at the victim's intro end, the grabber
+   released into the fight stance.
+2. Route an attack command (square, cross, circle tap or hold) from **any** fighter, player or AI, through the tandem
+   test before the grab, as the original's dispatcher does.
+3. AI: kind 22 at a rear-held target already passes (`ai::targetViewOf` leaves the rear hold out of
+   `grabRefused`, and `attack_choice.cpp` checks the front cone). Two gaps remain: set `heldC12200` in the target
+   view from the held flags `0xc12200` (a **Coney stand-in** today: never set, always false), and let the queued
+   grab become the tandem instead of an ordinary grab. A front-held target stays refused.
+4. The held flags of the three (`0x800000` / `0x400000`) feed the start guard of [Moves a hit cannot
+   stop](combat.md#protected-moves), so others leave them alone.
+5. Test: an AI ally in front of the player's rear hold picks kind 22 and starts the tandem (assert the three clips
+   and the victim's damage at the intro end); in front of a front hold it does not.
 
 ### Stealth: hiding and the stealth kill {#stealth}
 
@@ -924,6 +994,11 @@ The moves Coney plays and where they differ from the table above: [Combat differ
   on the left. That target was pinned while walking, so the steer's lead may explain it ([Contact](#reach)); not
   rerun against a still target.
 - Why the tandem intro ran 51 updates, not 36.
+- Whether a Warrior's own type-3 brain (the Warriors' think, `0x003052f0`) starts a tandem: in `moves_tandem_ai` Ash
+  with that brain stood idle, so the run gave him type-2 handlers ([An AI tandem at runtime](#tandem-ai)). To find out,
+  rerun the scenario without the brain writes and give Ash an attack order on PoizoCiv once he is in the rear hold,
+  through the call hook on `GameState_IssueWarriorCommandFor` (`0x0041dc80`, behind the script binding
+  `IssueWarriorCommand`), logging `set-command` for Ash's command `0xd`.
 - The PS2 FPU's rounding toward zero is assumed, not read from the FPU's control, for the late ties ([Reading the
   tables](#reading)). A run of a rate-0.9 clip with a tie (an event at frame 5 or 14) would check it.
 - 490 `KNIFE_ATTACK_FROM_RUN`, 18 `ATTACK_SSX3_HOLD` and the `_02` snaps: no code path plays them here (20 is the

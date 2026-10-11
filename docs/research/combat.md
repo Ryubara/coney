@@ -613,9 +613,10 @@ one sphere of 0.8 m; for an object with `0x20000` one sphere of half its smalles
   body group (`+0x3c`, when not 0), one already on the striking body's contact list, a body with flag `0x8` whose
   owner has `0x4000000`, and one **behind the level**: a ray from 1 m above the human's root to the body's centre
   (`WorldManager_RayCast`, mask `0x48`, or `0x8` for a body with `0x40`) must hit nothing. The friend test comes
-  after, in `Strike_Contact`: against a friend (`Human_IsFriendly`) the hit is sent with "may react" off, a Warrior
-  (brain type 3) struck by a player who has no target may complain (speech command `0x58`), and
-  `Human_ApplyPendingDamage` drops the damage unless both are players ([Damage](#damage), step 3).
+  after, in `Strike_Contact`: against a friend (`Human_IsFriendly`) the hit event goes out with its hostile byte
+  (`+0x11`) clear (the "may react" value `+0x11a` is unchanged), a Warrior (brain type 3) struck by a player who has
+  no target may complain (speech command `0x58`), and `Human_ApplyPendingDamage` drops the damage unless both are
+  players ([Damage](#damage), step 3) but still plays the reaction ([Teammates](#teammates)).
 - **When a clip is cut** before its off event, the shapes still go off: every animation task gives its clip back
   through `CharacterInstance_ReleaseClip` (`0x00175120`) when it ends, is replaced or chains on, and for a clip with
   descriptor flag **`0x4`** that runs `Human_StrikeAllOff` (all ten shapes and the capsule's `0x2` off). Flag `0x4` is
@@ -1185,6 +1186,69 @@ the holds and strikes and carried only the spins' and connects' root motion (78:
   `+0x17c` became 1.125, the grab movement style's walk speed, `0x00254078`) and about 1.22 m/s in the rear hold.
   The victim kept the hold's offsets (front 1.012 ahead, 0.379 right; rear 0.222, −0.097).
 
+#### The hold walk: clips, speed and turning {#hold-walk}
+
+What plays while the grabber walks the pair, from the front or from behind (owner item 21). Confirmed (code) at the
+addresses cited unless marked.
+
+1. **Refused while busy.** `Human_MoveGrabbing` (`0x00245310`) runs for a grabbing or mugging human with a player's
+   controls (per-player `+0x1b`); it sets no velocity while the human is busy (`Human_IsBusy`), in a scene state or
+   **mugging**, or while the stick is at 0.95 or less. So a mugging pair never walks, and a part-tilted stick does
+   nothing (no slow walk).
+2. **Velocity.** After the turn above, the new heading `h'` (the old one moved by at most `r` toward stick + 180°) gives
+   the velocity **−speed × facing(h')**, with the height kept at human `+0x3a0`: the pair always walks straight
+   backward from the grabber's facing, so while the turn is under way the path curves, and once turned it runs along
+   the stick. `speed` is record `+0x170`, the walk speed the movement style's walk clip gives
+   (`Human_ComputeGaitSpeeds`, called at the end of `Human_ApplyMoveStyle` `0x00253688`).
+3. **The movement styles of a hold** (`Human_ApplyMoveStyle`): the connect's link (`Grab_Link`, `0x0022c730`) pushes
+   **style 7** on the grabber and **style 8** on the victim for a front grab, **9 / 10** for a rear one; the spins
+   replace them (`Grab_SpinToRear` `0x0026d570` and `Mug_Start` `0x002729a8` set 9 / 10, `Grab_SpinToFront`
+   `0x0026ec10` / `0x0026d998` set 7 / 8). Each style writes the idle (slots 0 and `0xb`) and the walk slots:
+
+    | Style | Who | Idle (slots 0, `0xb`) | Walk (slots) | Also |
+    | --- | --- | --- | --- | --- |
+    | 7 | grabber, front | 82 `GRAB_HOLD_FROM_FRONT` | 86 `GRAB_FRONT_WALK_BACKWARD` (`gen_grab_front_pull`) in slots 4-7 | slots `0x10` / `0x11` = 51 / 55, the grab strikes |
+    | 8 | victim, front | 83 `GRAB_HELD_FROM_FRONT` | 87 `GRAB_FRONT_WALK_BACKWARD_REACT` (`gen_grab_front_pull_react`) in slots 4-6 | |
+    | 9 | grabber, rear | 84 `GRAB_HOLD_FROM_REAR` | 88 `GRAB_REAR_WALK_BACKWARD` (`gen_grab_back_pull`) in slots 4-6 | |
+    | 10 | victim, rear | 85 `GRAB_HELD_FROM_REAR` | 89 `GRAB_REAR_WALK_BACKWARD_REACT` (`gen_grab_back_pull_react`) in slots 4-6 | |
+
+    So the grabber's walk speed is clip 86's root speed from the front (1.125 m/s at runtime, above) and 88's from
+    behind (about 1.22 m/s); the jog, run and sprint slots hold the same clip, so there is no faster gait in a hold.
+4. **The hold is a four-clip task on both bodies.** The spins and the connect push, on each body, a type 11 four-clip
+   mix ([Animation](animation.md)) of **slot 0 (the hold idle) and slot 4 (the walk) three times**, with task flags
+   `0xc1` (no root velocity: the clips do not move the bodies) and anim state 4 (`Grab_SpinToRear` builds it with
+   value 0 and speed 2.0). When the move state is rebuilt for a grabbing or grabbed human, `Human_BuildMoveState`
+   (`0x0025f4d0`) skips the gait blend and calls `Human_BuildPairedFourMix` (`0x0025af90`), which rebuilds that
+   four-clip task **on the human and on its partner** (`+0xc4`) on the same update, after a fade of 1/15 s (0.1 s
+   more with held flag `0x40000000`), starting at value 1 (the walk). The mix's target is the speed over the walk
+   speed, clamped to 0-1 ([Clip selection](characters.md#clip-selection)), so standing plays the hold idle, walking
+   plays the walk clip alone, and the blend eases between them at the task's speed.
+5. **The victim's walk.** The victim moves by `Human_MoveAttached` (`0x00244e78`): its place is the grabber's
+   transform composed with the stored hold offset, swept against the world up to three times, and the velocity it
+   reports is **the grabber's** (the grabber's vtable `+0x94`). So its own four-clip task sees the same speed and
+   plays 87 (front) or 89 (rear) in step with the grabber's 86 / 88 (inferred from the shared speed: the two tasks
+   are separate and only start together). When the third sweep is still blocked the victim keeps its previous
+   transform and the grabber is set back with a zero velocity, so the pair stops at a wall (the grabber's part
+   inferred from the vtable calls `+0x9c`, `+0xb4`, `+0x74`).
+6. **How the pair turns.** Only the grabber turns (the rate above); the victim has no heading of its own in the hold:
+   it is the grabber's rotation × the stored relative rotation, so it swings round the grabber on the hold's offset
+   (from behind 0.24 m, 23.5° to the left; from the front 1.08 m, 20.6° to the right, [the offsets](#grab-posing)).
+
+**Coney fixes** (owner item 21; Coney's `Fighter::moveGrab` already turns and moves the pair):
+
+1. Give the grabber movement style 7 (front) or 9 (rear) and the victim 8 or 10 for the whole hold, and switch them
+   on every spin (78 / 79 to 9 / 10, 80 / 81 to 7 / 8), as the table says.
+2. Play the hold as a two-clip blend per body (hold idle ↔ walk clip: 82 ↔ 86 and 83 ↔ 87 from the front, 84 ↔ 88
+   and 85 ↔ 89 from behind), target = speed / walk speed clamped to 0-1, started on both bodies on the same update
+   when the pair starts or stops walking, with no root motion from the clips.
+3. Feed the victim the grabber's velocity (not zero), so its blend follows the grabber's.
+4. Take the walk speed from the style's walk clip (86 from the front, 88 from behind) instead of the fixed 1.125 and
+   1.22 m/s tunables, and walk only with the stick above 0.95, straight backward from the grabber's new facing.
+5. No walk while mugging; stop the pair when the victim's sweep against the world fails.
+6. Tests: a rear hold with a full stick plays 88 on the grabber and 89 on the victim within one update of each other,
+   moves at clip 88's speed directly away from the grabber's facing, and returns to 84 / 85 when the stick is
+   released; a stick at 0.9 neither turns nor moves the pair.
+
 **The tackle's mount** (confirmed (runtime), and from the disc's events): after the tackle (5 / 6 from the front,
 7 / 8) the pair is in 210 `MOUNTING_IDLE` / 207 `MOUNTED_IDLE` with the victim **0.032 m ahead and 0.120 m to the
 mounter's left**, its heading the mounter's + 180°. That is the record's offset for 210 × its reach, which
@@ -1265,6 +1329,92 @@ The mount drains power at the tackle's 15 per second ([constants](#constants)). 
 updates back to 210. Level 99's tutorial follows this through two callbacks: `AddAnimCallback(player, 210,
 "PlayerState")` shows the mount's prompt when 210 starts, and `HUDSetTutorialCallback("P1.BasicAttacks")`, which
 receives each hit's anim id, wants 219 or 221 and then 223 before it calls `P1.BasicAttacksDone`.
+
+#### The mount's power strike ends the mount {#mount-power}
+
+Cross held and square pressed in the mount (owner checklist item 32) is **not** a mount strike: it ends the mount
+and leaves the mounter standing in the fight stance and the victim on the ground. Confirmed (code) at the addresses
+cited, and (runtime) as below; the clip events read from the disc (numbers only).
+
+1. **The start** (`Player_UpdateMounting`, `0x0027ec20`): with more than 0.25 of the power meter, a player calls
+   `Attack_StartPaired(mounter, victim, 225, 1, 0x400000)` (231 while raging, human `+0xe0` `0x80000`); with 0.25 or
+   less he gets off instead (`Mount_GetOff`). The mount's own strikes (219 / 221 / 223) go through
+   `Mount_StartStrike` and stay in the mount; only the power strike and the knife or bottle attacks (488, 496 with
+   the held set 1) go through `Attack_StartPaired`.
+2. **The mount is ended at once** (`Attack_StartPaired`, `0x00262ac8`): it spends 0.25 of the power, then calls
+   `Grab_BreakOnHit(mounter, victim, 226)` (`0x0022b960`). The mounter is tackling (state `0x400`), so
+   `Tackle_End(mounter, victim)` (`0x0022c388`) clears the mount's states `0x400` / `0x800` and pops style `0xc`.
+   Then the pair is linked as a **paired move**: state `0x1000` on the mounter, `0x2000` on the victim, both push
+   weights 1e9, one new body group for both (the counter at `*0x00597198 + 0x10`, body `+0x3c`) and body flag
+   `0x200`. Because 226 has a type-7 (knockdown) event, the victim gets move style `0xf` (down).
+3. **The mounter's clips**: 225 holding `+0x08` `0x7` (an attack's phases), with the end hook
+   `Attack_OnPairedClipEnd` (`0x002629a8`), chained to the looping **fight-stance idle** (the anim record's `+0x54`,
+   anim state `0xb`; 358 for Rembrandt at runtime). No mounting idle 210 follows.
+4. **The victim's clips**: 226 holding `0x400000` with the end hook `Pair_OnVictimClipEnd` (`0x00262a38`), then,
+   by the code, when 226's knockdown value is 0 (`Anim_GetKnockdownValue`, `0x00101a60`: the first type-7 event's
+   word), held `0x2000` and **198** (the knockdown's follow-up), then the looping **grounded idle** (record `+0x28`,
+   anim state 0). At runtime 198 did not play: 226 went straight to the grounded idle 196 (below). He lies there
+   and gets up by the ordinary ground time ([Reactions](#reactions)). The damage ([damage table](#damage-table)
+   index 37; Rembrandt's value in [Combat moves](combat-moves.md#frame-data)) is dealt on the start update (the
+   health field showed it one update later at runtime); a lethal one plays the death reaction instead.
+5. **The extension**: the mounter is now in state `0x1000`, so the dispatcher sends him to `Player_UpdatePowerMove`
+   (`0x0027df38`) as after a grab's power strike: square or cross while 225 holds the window `0x2` plays **227** (233
+   after 231), victim 228 (234), at most twice (record `+0xbc` < 2; one in practice: 227 opens no window, below).
+   This settles the mount part of `level99`'s
+   lesson 10 ([scripting](scripting.md#level99-lessons)): 231 → 233 comes from the same + 2.
+6. **The end**: `Attack_OnPairedClipEnd` scores the move, lets the crowd taunt and calls `Throw_ClearLink`
+   (`0x0022bce0`): the mounter's `0x1000` and link are cleared and his push weight and body group restored; then
+   `Throw_ClearVictimLink` (`0x0022bdc0`) clears the victim's `0x2000` and puts him down or stuns him by his state.
+   Nothing re-links the mount: getting back on top takes a new circle at the grounded victim (the grounded mount,
+   `Mount_StartOnGrounded`, `0x00271b30`).
+
+Clips (Rembrandt's set `warr_re_header`; the generic set has `gen_mount_power20_*` in the same ids): 225
+`gen_mount_power10_p1`, 226 `gen_mount_power10_react_p1` (type-7 event, word 0, at frame 0), 227 / 228 `_p2` /
+`_react_p2` (type 7, word 0), 231 / 232 `gen_mount_power13_p1` / `_react_p1` (type 7, word 0).
+
+**At runtime** (confirmed (runtime), PCSX2 2.9.94, scenarios `moves_mount_power` and `moves_mount_power_ext`: a copy
+of slot 6, PoizoCiv a puppet 1.0 m ahead with 600 health, the player's power 400; circle at update 10 (the front
+grab, 72 / 73 then the holds 82 / 83), circle at 60 (118 / 119, then 210 / 207 at 126), cross held from 140 with
+square tapped at 142; stick centred (0, 0) throughout; hooks `paired-start` and `anim-dispatch`):
+
+| Update | Mounter | Victim |
+| --- | --- | --- |
+| 143 | `Attack_StartPaired(player, victim, 225, 1, 0x400000)` from `Player_UpdateMounting` (return `0x0027ee78`); 225, state `0x405` → `0x1005`, phase `0x1`; power 346 → 245 (0.25 of 400 spent, plus the drain); 358 queued after 225 | 226, state `0x801` → `0x2001`; the grounded idle 196 queued after it |
+| 144 | | 79 damage (600 → 521): Rembrandt's 225 value, scored one update after the start |
+| 167 | phase `0x2` (the extension window) | |
+| 187 | phase `0x4` | |
+| 223 | 225 ends after **80 updates**; **358** (the fight stance's idle), state `0x5`: no `0x400`, no `0x1000`; power refilling | **196** (grounded idle), state `0x180001` (down and stunned), 0.88 m away; **no 198** |
+| 283 | | rises with **199**, 60 updates (2.0 s) after landing |
+| 311 | | 356, then 357 and his ambient clips |
+
+So the mount ends for good at the strike's start and nothing returns either body to 210 / 207. One difference from
+step 4 above: **198 never played**; the anim-id hook saw the victim take only 196 as 226's follow-up, so the
+`Anim_GetKnockdownValue` word for 226 was not 0 at runtime and `Attack_StartPaired` took the branch without 198 (why
+the word differs from the one read off the disc is open).
+
+**The extension** (`moves_mount_power_ext`: as above, then cross tapped every 8 updates from 160 to 216): the tap at
+160 came before the window and did nothing; the tap at 168 started `Attack_StartPaired(player, victim, 227, 1,
+0x400000)` from `Player_UpdatePowerMove` (return `0x0027dff0`) on update 169: 227 / 228, **no power spent**, another
+79 damage (521 → 442) on update 170, 196 queued again for the victim. 227 ran 60 updates and opened no window `0x2`,
+so the later taps did nothing and **one extension is all a mount power strike gets** (the counter's limit of two is
+not reached). At 229 the mounter stood in 358 (state `0x5`), the victim lay in 196 and rose with 199 at 289 (2.0 s).
+
+**Coney fixes** (item 32; today `Fighter::playMountAction` plays the power strike like a mount strike, back to 210 /
+207, so the player stands up at 225's end and snaps back into the pin):
+
+1. In `PlayerCombat::updateMounting`, a `MountAction::PowerStrike` ends the mount on its start update: the combat
+   mode leaves `Mounting`, the pair stops being a mount (no seat, no mounted target state) and becomes a paired move
+   (the mounter "throwing", the victim "thrown", [state flags](#state-flags) `0x1000` / `0x2000`).
+2. The mounter plays 225 (231 raging) chained to the fight-stance idle, not to 210; the victim plays 226 (232) with
+   held `0x400000`, then the grounded idle (196; no 198, as seen at runtime), and is down (style `0xf`) with the
+   ordinary ground timer running from the knockdown.
+3. Square or cross in 225's window plays 227 / 228 (233 / 234) through the same extension code as the grab's
+   57 → 59; 227 opens no window of its own, so one extension (seen at runtime); 229 is the filler clip and never plays.
+4. When the mounter's clip ends: clear the paired link on both and leave the victim on the ground; a circle at him
+   is the grounded mount again.
+5. Test (no disc needed, synthetic clips): mount, power strike, run to the end; assert the mounter is standing in the
+   fight-stance idle, not mounting, the victim is grounded and not mounted, and no frame after the strike shows 210 /
+   207. A level99 cp1 playthrough step can assert the same on the hobo.
 
 ### Grabbed, and breaking free {#grabbed}
 
@@ -1580,7 +1730,9 @@ not worn: only its message 1 breaks it ([Losing it](#bat)). 501's damage, hit co
 measured.
 
 **Losing it.** Triangle with nothing to take drops the held bat at once, with no clip (`0x00257f38`, falling from the
-hand under physics: [Drop](objects.md#held)); confirmed (runtime). A weapon **breaks** only on its message 1
+hand under physics: [Drop](objects.md#held)); confirmed (runtime). For a player that standing drop comes from the
+dispatcher's last step, after the climb, context action and jump tries
+([step 6](characters.md#triangle-held)). A weapon **breaks** only on its message 1
 (`0x003fd600`): shatter particles, hidden (`0x100000`), message 7 to its holder (data `+0x18`; the human's message 7
 pops sets 1-5), and state −5 deletes it on its next update. Confirmed (code); what sends message 1 is not traced. At
 runtime 12 bat hits on a civilian (64 damage each, 34 and 37 alternating) never broke it and its handler saw no message
@@ -1614,17 +1766,76 @@ to the progress (`+0x12c`), a new target
 angle comes each time the progress passes a multiple of `+0x08`, the victim's lines come at half of `+0x04`, and
 reaching `+0x04` succeeds; leaving the target goes through 3 back to 4. "On target" is the stick above 0.5 and within
 `+0x10` of the angle; the pad's rumble gets byte `+0x02` on target and byte `+0x1c` otherwise (player record `+0x1c`,
-inferred: the motor). A mugger no player controls fails when game time passes record `+0x134` instead.
+inferred: the motor). **Against an AI victim** (victim `+0x1b0` = −1) every update also checks the victim's time
+limit: once game time passes record `+0x134` the game goes to 5 with the result 0, a failure (the victim has broken
+free), and bar 1 of the mug meter shows the time since the start over that limit ([Mug
+difficulty](#mug-difficulty)). An earlier reading had this test for a mugger no player controls; it is the victim's
+side that decides it (`0x002856b8`, `uStack_b8` = the victim is a player).
 
 **`SetInterrogateParam`** (`0x002854b0`) overrides the record for every mugging while its `timeA` is non-zero (set
 0-2 at `0x00510a18`, read by `0x00284ca0`; sets 3-5 at `0x00510a38` serve a player victim, `0x002853a8`). Its
 arguments fill, in order: bytes `+0x00`, `+0x01`, `+0x02` (the on-target rumble), `+0x04` required, `+0x08` period,
 `+0x0c` off-target allowance, `+0x10` tolerance (degrees, stored in radians), `+0x14` the re-roll gap (degrees),
-`+0x18` (not read by the update), `+0x1c` the off-target rumble. `level99_lesson1`'s mugging lesson passes
+`+0x18` the victim's **time limit** (read once, when the mugging starts, [below](#mug-difficulty)), `+0x1c` the
+off-target rumble. `level99_lesson1`'s mugging lesson passes
 (160, 75, 255, 5000, 2500, 20000, 40, 60, 20000, 0, set 0): **5 s on target, a new angle every 2.5 s of it, 20 s off
 target allowed, 40° of tolerance, each new angle at least 80° from the last**; it passes all zeros after the lesson,
 which gives the per-class defaults back. Confirmed (code); bytes `+0x00` and `+0x01` are read only by the hold's games
 (below).
+
+#### Mug difficulty: who is hard to mug {#mug-difficulty}
+
+How hard a mugging is comes from the record `Mug_GetParams` (`0x00284ca0`) builds for the pair, which differs by the
+**victim's category** (`CfgChar` byte `+0x11b` of the victim's class, [characters reference](../references/characters.md))
+and the **mugger's Warrior class mugging byte** (`+0x0c`, the "Mugging" column of the [Warrior
+classes](../references/warrior-classes.md)). Confirmed (code) at `0x00284ca0`, `0x0022cd78`, `0x002856b8`:
+
+1. **When the record is built.** `Grab_StartMug` (`0x0022cd78`, from the end of the 338 intro, `Mug_OnStartEnd`
+   `0x00272878`) stamps the start (record `+0x130`, both sides) and, for a player mugger, sets his limit `+0x134` =
+   start + the record's **`+0x18`**. `Player_UpdateMugging` asks for the record again every update.
+2. **Which record.** While `SetInterrogateParam`'s set 0 has a required time (`0x00510a1c` ≠ 0) it is used as is.
+   Otherwise, for a player mugger, a table in the code fills a record at `0x006cddb8`; a mugger who is not a player
+   gets set 0 unchanged. Bytes `+0x00`-`+0x02` are 160, 75, 255, the off-target allowance `+0x0c` is always **50000
+   ms**, the tolerance `+0x10` 50° and the re-roll gap `+0x14` 60° (`0x3f5f66f4`, `0x3f860a92`), the off-target
+   rumble `+0x1c` 0. The rest, in ms, as **required on target / period (a new angle per this much progress) / the
+   victim's limit**:
+
+    | Victim category (`+0x11b`) | Mugging byte 2 | Mugging byte 3 | Any other byte (1) |
+    | --- | --- | --- | --- |
+    | 15 (drug dealers, `civl_dr_*`, `civl_sp_*`, `civl_we_*`) | 2750 / 750 / **4500** | 2750 / 750 / **5000** | 2750 / 750 / **4500** |
+    | 5, 9, 10 (workers and rioters `civl_*_ma*`, the cops) | 3500 / 2000 / 5500 | 6000 / 1200 / 10000 | 5000 / 2000 / 8250 |
+    | 14 (the Warriors: the other player) | 4000 / 1334 / 7000 | 4000 / 1334 / 7000 | 4000 / 1334 / 7000 |
+    | 6, 7 (bums, drunks) | 4000 / 2000 / 13000 | 5000 / 2500 / 13000 | 3000 / 3000 / 10000 |
+    | any other, `flag_14b` set (women, hookers, ...) | 4000 / 2000 / 10000 | 5000 / 2500 / 10000 | 3000 / 1500 / 10000 |
+    | any other, `flag_14b` clear (civilians, gang members, pimps, shopkeepers) | 5000 / 1250 / 11000 | 3000 / 1000 / 7000 | 5000 / 2000 / 10000 |
+
+    `flag_14b` is the class's byte `+0x14b`. The category labels are our reading of the types in each
+    ([characters reference](../references/characters.md): category 15 is exactly the brain-kind-5 dealer types). The
+    Warrior classes' bytes: on normal Ajax, Snow and Swan 1; Cleon, Cochise, Cowboy and Vermin 2; Fox and Rembrandt 3
+    (every class 2 on easy; [Warrior classes](../references/warrior-classes.md) for hard).
+3. **What decides it.** The mugger wins on reaching the required time on target; against an AI victim he loses once
+   the victim's limit has passed since the start, whatever the progress (the off-target allowance of 50 s never comes
+   first). So the **slack** is the limit minus the required time, and the target angle jumps (at least 80° away) each
+   period of progress: a dealer gives **1.75-2.25 s of slack and a new angle every 0.75 s** (three to four jumps to
+   catch in 2.75 s), a civilian with byte 2 gives 6 s of slack and a jump every 1.25 s, and a bum 9 s. That is the
+   "dealers are hard" of the owner's report: the victim's bar (bar 1, amber) fills over 4.5 s.
+4. **The other player as victim** (`+0x1b0` set) has no limit: the race is mode 1 against his own record
+   (`Mug_GetPlayerVictimParams`, `0x002853a8`, [the other stick games](#other-stick-games)).
+5. **The payout** is the same for all (the victim's money, × 1.5 for a dealer brain, [Crimes](crimes.md#mugging)).
+
+**Coney fixes** (owner item 27; Coney runs every mugging with one record, `CombatTuning`'s 5000 / 2500 / 50000, and
+no victim limit):
+
+1. Build the record per mugging from the table above, by the victim's `CfgChar` category and `flag_14b` and the
+   player's Warrior class mugging byte (from the difficulty's `CfgWarriorClass`), keeping `SetInterrogateParam`'s
+   override first when its required time is non-zero.
+2. Add the victim's limit: stamp the start when the mugging proper begins (after 338 / 339) and fail the mugging
+   (346 / 347, result 0) once game time passes start + `+0x18`, for an AI victim only.
+3. Drive the mug meter's bar 1 with (now − start) / (limit − start), as `Player_UpdateMugging` does.
+4. Keep the 50 s off-target allowance as it is; it is the same for every victim.
+5. Tests: with Rembrandt (byte 3 on normal) a category-15 victim fails at 5000 ms with the stick off target, and
+   succeeds with the stick on each new angle within the update it appears; a category-4 civilian with `flag_14b`
+   clear gives 3000 / 1000 / 7000; `SetInterrogateParam(…, 20000 …)` gives a 20 s limit.
 
 #### The other stick games: mug meter modes 1-3 {#other-stick-games}
 
@@ -1894,6 +2105,101 @@ armour, the held flags `0x1c16a40` or human flag `0x800` cancel the reaction:
     - Otherwise the pair stays and plays a paired hit reaction (front 133, rear 123), except that a heavy or crushing
       hit (hit-code strength ≥ 2) without held `0x2000` ends the grab and stuns the victim first.
     - The grabber hit by a third human is `HitReact_WhileGrabbing` (`0x00268ea8`) and loses 0.6 of his power.
+
+#### Moves a hit cannot stop: the dive, the charge and the paired moves {#protected-moves}
+
+No "in a sync move" flag exists. What protects a human in a dive, a charge, a power move, a finisher or a tandem is
+the record `+0x08` **held flags** those moves' clip tasks hold ([Held flags](tasks.md#held-flags)), read in three
+places. Confirmed (code) at the addresses cited; owner checklist items 25 and 29.
+
+**Who holds what** (each bit is held by the clip task for the clip's whole length, then cleared with it):
+
+| Move | Holder | Held flags | Where |
+| --- | --- | --- | --- |
+| the dive (L2 + square at a run, clip 1) | the diver | `0x400000`, push sphere off | `Player_StartDive` (`0x00264878`) |
+| the charge (L2 + cross, clip 0) | the charger | `0x1000000` (confirmed (runtime), [the fence run](#moving-strikes)) | `Player_StartCharge` (`0x00264a80`) |
+| a paired move: the grab's power strike 57 / 63 (front: `Attack_StartPaired`; rear: `Grab_StartPairedMove` from the spin 80), its extensions 59 / 65 and the mount's 225 / 227 / 231 (`Player_UpdatePowerMove`, `Player_UpdateMounting`), the armed grab and mount moves (484-496), the paired specials; the throws (`Player_Throw`) were not checked | the victim | `0x400000` (the argument each of those calls passes, `Player_UpdateGrabbing` `0x0027f3b0`), plus `0x2000` on a knockdown follow-up | `Attack_StartPaired` (`0x00262ac8`), `Grab_StartPairedMove` (`0x00263380`) |
+| the same | the attacker | `0x7` (an attack's phases) or the caller's flag | the same |
+| a tandem ([Combat moves](combat-moves.md#tandem)) | attacker and grabber / victim | `0x800000` / `0x400000` (and `0x80000` when the end has no knockdown) | `Tandem_Start` (`0x0026f860`) |
+
+**1. No AI starts an attack on him.** `Human_CanStartAttack` (`0x00224778`, [An AI's attacks](#ai-attacks), test 1)
+refuses every kind against a target holding any of **`0xc08200`** (`0x800000`, `0x400000`, `0x8000`, `0x200`), except
+for the target's own partner (target state `0x2000` and attacker state `0x1000`). The fight goal then picks again and
+waits ([AI](ai.md#fight-order)), and the attack action's start asks the same test, so a queued attack does not start
+either. So a diver, a power move's or finisher's victim and the three humans of a tandem are left alone; a charger
+(`0x1000000` is not in the mask) is not.
+
+**2. No grab or tackle by a player.** `Human_CanBeGrabbed` (`0x002256a0`) refuses held `0x8fc57a60`, which has
+`0x1000000`, `0x800000` and `0x400000`.
+
+**3. A hit lands but cannot make him react.** `Strike_Contact` never asks; the strike test skips only the same body
+group, so the two humans of a pair (one group, `Grab_BreakOnHit`) do not strike each other with stray shapes while a
+third human's shapes do. In `Human_ApplyPendingDamage` (`0x00265f70`) the health drops as usual, then a victim holding
+any of **`0x1c16a40`** (`0x1000000`, `0x800000`, `0x400000`, `0x10000`, `0x4000`, `0x2000`, `0x800`, `0x200`, `0x40`)
+has his pending damage cleared with **no reaction**: the dive, the charge, the paired clip and the tandem play on.
+
+**4. A lethal hit waits.** At the top of `Human_ApplyPendingDamage`, a human in state `0x800000` or `0x80000000`
+plays `Human_PlayLethalReaction` at once, unless he holds any of **`0xc12200`** (`0x800000`, `0x400000`, `0x10000`,
+`0x2000`, `0x200`): then the ordinary path runs, the health drops, and no reaction (lethal or other) plays while the
+flags are held. Which code sets state `0x800000` (inferred: the damage message, human vtable `+0x44`, when the damage
+is defeating) and what plays the death once the paired clip ends were not traced.
+
+**At runtime the victim finishes his paired clip and only then goes down** (confirmed (runtime), PCSX2 2.9.94,
+scenario `moves_finisher_lethal`: a copy of slot 6, PoizoCiv a puppet at 60 health 1.0 m ahead, Ash, the player's
+ally, a puppet placed 0.9 m behind him; the player's front grab (circle at 10) and power strike (cross held from 42,
+square at 44), Ash given `X1` (`0x12`, `0x10`, 0) at 47-49; stick centred; hooks `paired-start`, `anim-dispatch`,
+`strike-contact`):
+
+| Update | Player | PoizoCiv |
+| --- | --- | --- |
+| 45 | `Attack_StartPaired(…, 57, 1, 0x400000)`: 57, state `0x1005` | 58, state `0x2001`, held `0x400000` |
+| 46 | | 57 damage: 60 → 3 |
+| 56 | | Ash's `X1` (`Strike_Contact`, Ash → PoizoCiv): 23 damage, 3 → **−20**; state `0x80002001` (`0x80000000` set); **no reaction**, 58 plays on |
+| 89 | 57 ends: 358, state `0x5` | still 58, state `0x80000001` (the pair's `0x2000` cleared) |
+| 117 | | 58 ends (72 updates); **286** (the low reaction) with held `0x2000`, health set to **1** |
+| 149 | | **349**, state **`0x40000`**: knocked out, not dead ([Defeat](#defeat)) |
+
+So the lethal hit took the health below 0 at once but changed nothing the player sees until the victim's own paired
+clip (58, which outlasts the attacker's 57 by 28 updates) ended; then he fell (286, 32 updates) and lay knocked out.
+The record's state `0x80000000` is the mark the hit leaves while the reaction waits (the "state `0x80000000`" of the
+test above; which code sets it is still not traced). A civilian with the flags of this one is knocked out, with
+health 1 (inferred: `HitReact_WhileOut`, `0x002686e8`, which sets health 1), rather than killed.
+
+**When the order matters** (`Humans_Update` step 9, [Tasks](tasks.md#humans-update); `Human_UpdateActions`,
+`0x00254e78`): each human applies its pending damage **before** its dispatcher runs, and a reaction returns before
+the dispatcher. The strike tests run earlier in the step (after each move). So:
+
+- A hit that reaches a player on the update he presses L2 + square wins: the reaction plays, the dispatcher does not
+  run, the one-sample command is lost, and there is no dive.
+- From the dive's first update (`Player_StartDive` sets `0x400000` on the update of the press) no hit can stop it:
+  AIs do not start attacks on him, a swing already under way still takes health but plays no reaction, and the dive
+  runs its 2 s with its strike shapes on from k2 to k24 ([the table](#moving-strikes)).
+- When the diver's shapes and the target's swing meet on the same update, both get pending damage; the diver plays
+  on, the target reacts to the dive's crushing hit code `0x3a` ([Hit codes](#hit-codes)) before its own dispatcher
+  could start anything new.
+
+**Coney fixes** (items 25 and 29):
+
+1. `ai::startGuardOf` (`src/ai/attack_views.cpp`) never sets `StartGuard::targetHeldBusy`: set it from the target's
+   held flags `0xc08200` (Coney: the target is diving, is the victim of a paired move or power move, is in a tandem,
+   or holds a block's `0x8000` / `0x200`), and `targetPinned` for the partner exception (target "thrown" `0x2000`,
+   attacker "throwing" `0x1000`). This stops teammates and enemies starting attacks on a finisher's victim (item 29)
+   and on a diving player (item 25).
+2. In the victim path (`Fighter` hit handling, `src/human/fighter_victim.cpp`), after the health drops and before
+   the reaction: a victim whose animator holds any of `0x1c16a40` takes the health and plays no reaction and is not
+   interrupted. The dive's clip must hold `0x400000` (`combat::kPhaseDive`), the charge's `0x1000000`, and a paired
+   move's victim `0x400000`; check that `m_combat.interrupt()` is not reached for them.
+3. A lethal hit on a victim holding any of `0xc12200` does not start the dying reaction or break the pair at once:
+   keep the health below 0 and let the victim's own paired clip finish (not the attacker's: 58 outlasts 57); then
+   the victim falls with the low reaction (286 for a hit from behind, the reactions table) and goes down by
+   [Defeat](#defeat)'s rules: a civilian like PoizoCiv knocked out with health 1, idle 349 (confirmed (runtime),
+   above). Test: a third human's lethal hit during 57 / 58 leaves the victim in 58 to its end, then down.
+4. The grab search of a player refuses a target holding `0x8fc57a60` (diving, charging, in a pair).
+5. Order: apply a human's pending damage before its own commands in the same update, and drop that update's command
+   when a reaction starts.
+6. Tests: (a) a player diving at an AI that is mid-swing: the dive plays its whole clip and the AI is knocked down;
+   (b) a hit landing on the press update cancels the dive; (c) an AI Warrior next to the player's front-grab power
+   strike does not start an attack on the victim while 57 / 59 play (assert no attack command with that target).
 
 ### Reactions: stun, knockdown and getting up {#reactions}
 
@@ -2424,6 +2730,112 @@ state's handle at `+0x264` (restarted when it is still playing, `0x004194b8`); w
 `level99`'s last lesson waits for this command through `PadSetHandlerEx` (the handler receives it even when
 `EnableCommand` has turned it off, [Commands](#commands)).
 
+#### Everything rage does {#rage-effects}
+
+One list of what changes from the moment rage starts to after it ends, for the implementer. Confirmed (code) at the
+cited functions unless marked; the runtime checks used PCSX2 2.9.94 on a copy of quick-save slot 6 (`level99`,
+Rembrandt), with the scripted-pad patch, rage started by writing the meter full (78) and the hold timer, then L1 + R1
+held for 0.3 s (2026-10-10).
+
+**Start** (`Rage_Enter` `0x00284340` → `Human_StartRageMode` `0x00236d28`), in this order:
+
+1. **Sound**: `vags/misc/rage_mode_06` starts, 2D (`GameState_PlayRageSound` `0x004194b8`). It is usually already
+   prepared: `Human_UpdateMeters` (`0x002562d0`) prepares it through `RageSound_Prepare` (`0x00419460`) while the
+   meter is above 90 % of its maximum and no one rages, and stops it again below that (runtime: the handle at game
+   state `+0x264` appeared as soon as the meter, written full, fell under the hold timer's decay at 75 of 78).
+2. A pair the player is in is broken first (`Human_BreakPair`), then the clip 643 `RAGE_START` plays full-body,
+   holding `0x2000` (`0x0025a8c0`), unless the player is still paired, down (state `0xe0000`) or holds a busy flag;
+   rage starts either way.
+3. **The script's enter handler** (`CfgRageHandlers`' first name, `0x006b6830`) with `(human, flag)`, the flag true
+   when no one else rages (game state `+0x268` below 1). `global.lua` registers `SetRageMode`, which turns on, by
+   binding: `HuSetGodMode` (`0x10`), `HuSetUnstunnable` (`0x100`), `HuSetReducedReact` (`0x200`),
+   `HuSetIncreasedReact` (`0x200000`), `HuSetUngrabbable` (`0x40`), `HuSetUngroundable` (`0x80`) and `HuSetKeepWeapon`
+   (`0x2000`) on the human (and unlocks the meter when the rage cheat is on). The `level99` combat lesson swaps in its
+   own handlers that set the same seven flags and also queue a motion blur of 150 over 1 s (read from the disc's
+   scripts). Runtime: the player's `+0xe0` had `0x10` from the update rage started to the update it ended.
+4. Human flag `0x80000` set, `+0x648` (the hold timer) = 0, `+0x64c` = now.
+5. **The screen look**: `ScreenFx_StartLook(manager of the player's view, 2)` (`0x0018b7d0`): the rage tint and the
+   wobbling ghost of the last frame ([Graphics: the rage look](graphics.md#rage-look)).
+6. **The camera** shakes at level 1 (its vtable `+0x15c`, [Camera](camera.md)), with the pad's rumble.
+7. `RageSound_AddRager` (`0x00419718`): the count of raging humans at game state `+0x268` goes up by one.
+
+**While raging**:
+
+- **Meter**: drains at the Warrior class byte `+0x04` (9.36 a second for class 6); no gain, no decay hold. Runtime: 76
+  → 0 in about 8.1 s (look 2 from game time 581.34 s, ended by 589.41 s).
+- **What the player deals**: the same damage (no bonus); every hit causes a reaction because the attacker is raging
+  (hit armour does not apply, `Human_ApplyPendingDamage` `0x00265f70`) and, through `0x200000`, one step stronger
+  ([Human flags](#human-flags)); the power strike is 63 (and 231 when mounted, which also deals its damage at once,
+  `Player_UpdateGrabbing` at `0x0027f524`), the special 645 / 647, the strong grapple's strike 649 / 651; no power
+  spent or drained; the player's grabs cannot be struggled out of, escaped (`0x002258f0`, `0x00225830`), countered
+  (`Human_CanCounterGrab` `0x00258f40` refuses a raging grabber) or counter-tackled (`Human_CanCounterTackle`, the
+  same test at `0x002591e8`).
+- **What the player takes**, through the enter handler's flags: no damage (god mode: `Human_ApplyPendingDamage`
+  zeroes the pending damage while `+0xe0` has `0x10`, except a hit by a world object of `ObjectAttribs` kind `0x1d` or
+  `0x22`), never stunned (`0x100`), reaction one step weaker (`0x200`), reaction strength at most 1, so never knocked
+  down (`0x80`), cannot be grabbed (`0x40`), keeps his weapon (`0x2000`). Without the handler (none registered),
+  only the code's own rules hold:
+    - a hit on a raging player who is grabbing (record `+0x08` `0x10`) plays no reaction, the damage still lands
+      (`0x00265f70`, the test before the hit-armour one);
+    - a raging human cannot be set on fire (`Human_Ignite` `0x0022fce8` returns at once);
+    - a gunman's shot at a raging human deals a tenth of its damage, rounded (`trunc(d × 0.1 + 0.5)`,
+      `ShooterGoal_Fire` `0x002f1d60`).
+- **Movement**: no change. Runtime: with the left stick at 0.8 to the side for 2.5 s the speed `+0x1ac` settled at
+  1.629 m/s and the clip at 408 both raging and not (mean 0.907 and 0.912 m/s over the last 1.4 s). No locomotion
+  function tests `0x80000` (a search of every `lui …, 0x8` beside a `+0xe0` load found only the readers listed here).
+- **Sound**: the rage sound runs on; `RageSound_RestartIfRaging` (`0x00419630`, every frame from `0x0041a370`)
+  starts it again if it has ended while a player still rages. No other sound and **no music change**: none of the
+  rage functions calls the music system (inferred from the code read, not checked by ear).
+- **HUD**: the name banner and the meter in the raging colour (217, 158, 12), the target ring's inner arc showing
+  rage ([HUD](hud.md#the-rage-meter)).
+
+**End** (`Human_EndRageMode(human, instant)` `0x00236fb8`), when the meter reaches 0 (`Human_UpdateMeters`), on
+`Human_ReleaseAll` and at a scene's start (`SceneTask_Start`), all gradual (`instant` 0); and **at once** (`instant` 1)
+on the pause menu's opening (`GameMenu_Open` `0x001d1aa0`), `Humans_EndAllRage`, `HuSetRageMode(human, false)` and
+a fade-out queued with `ScreenQueueEffect(1)` (`0x0018d4c8`):
+
+1. `RageSound_RemoveRager`: the count goes down; at 0 `RageSound_Stop` (`0x00419758`) fades the rage sound out over
+   2,000 ms.
+2. For a player: the one-shot `vags/misc/rage_ends_01` (`RageSound_PlayEnd` `0x00419400`), and
+   `ScreenFx_EndLook(manager, 2)` (gradual) or `(manager, 3)` (instant) ([Graphics](graphics.md#rage-look)).
+3. **The script's exit handler** with `(human, flag)`: `ClrRageMode` clears the seven flags (and, with the rage
+   cheat, refills and locks the meter shortly after through `TurnOnRageCheat`, scheduled at 33). Runtime: `0x10`
+   cleared on the update the meter reached 0.
+4. `+0x648` = 0 and flag `0x80000` cleared. The meter stays at 0; it fills again only from new hits.
+
+**The meter full, before rage** (`CfgRageHandlers`' third name, `RageFull` in `global.lua`): called with
+`(human, true)` the first time the meter fills (`Human_AddRage`) and with `(human, false)` when the hold timer runs
+out with the meter still unspent (`Human_UpdateMeters`, the latch at the per-player record `+0x58`); the
+`global.lua` version queues the motion blur at **75** over 1 s for true and back to **15** over 1 s for false. A rage
+started before the hold ran out clears the latch without the false call (the rage look's own blur then takes over).
+The HUD's own full-meter cue (`rage_indicator_02` and the flashing) is on [HUD](hud.md#the-rage-meter).
+
+**Defined but unused**: `global.lua` also defines `CameraRage` (the follow camera at 1 m with a field of view of
+100) and `TurnOnRagelight` / `TurnOffRagelight` (both world lights to an orange (1, 0.75, 0)); no script chunk calls
+any of the three (each name occurs once in the 467 chunks, at its definition). Not part of the original's rage.
+
+**Coney status and the fix for the implementer** (Coney as of `781d7768`):
+
+- Done: the meter, its gains, drain and decay (`repo:src/combat/meters.h`), L1 + R1 from the block, the moves 63,
+  231, 645 / 647, 649 / 651, no power in rage, the rage handlers called with the original's flag
+  (`ScriptedHumans::runRageHandlers`), the seven flags' bindings, the HUD's colours and full-meter sound, the camera
+  shake.
+- **Screen effect (missing; item 26)**: implement look 2 on the raging player's view exactly as
+  [Graphics: the rage look](graphics.md#rage-look): the tint blend to (51, 25, 0, 80) over 1.0 s, the 9 × 9 ghost
+  grid at a blur alpha of 150, then on the end the 2.5 s grid fade, the 5 s tint and blur blends back to the base
+  look, or the instant snap for the instant ends above. `effects::ScreenTint` today models only looks 9 and 10.
+- **Sounds (missing; item 26)**: `vags/misc/rage_mode_06` on start (2D, held in one game-wide handle, restarted if it
+  ends while a player rages, faded out over 2 s when the last rager ends); `vags/misc/rage_ends_01` once at each
+  player's end. Prepare-at-90 % is a loading detail; starting it on rage is enough.
+- **`RageFull(human, false)`**: Coney calls the full handler only when the meter fills; add the false call when the
+  hold timer runs out on an unspent full meter, or the 75 blur stays on.
+- **Rage start outside a block**: the original starts it from any free state ([Commands](#commands)); Coney only from
+  the block ([Coney's differences](combat-diffs.md)).
+- **Check, not yet traced in Coney**: god mode (`kGod`) is honoured by `Fighter::takePending`; make sure the other six
+  flags are read where the original reads them (unstunnable, reduced and increased reaction, ungrabbable,
+  ungroundable, keep weapon), that a raging grabber cannot be countered (`fighter_victim.cpp` reads the victim's own
+  rage there), and, when fire and gunmen arrive, the two code-only rules above.
+
 ### Reviving a downed Warrior {#revive}
 
 The prompt (HUD string 4) and who can be revived are on [HUD: action prompts](hud.md#action-prompts); this is the
@@ -2495,6 +2907,141 @@ the revived together. Coney: [the gaps](ai.md#crew-gaps).
    `0x40` → `0x2000`, `0x80` → `0x10000`, `0x100` → `0x20000`), on top of `0x80000500`. Kinds 29, 33, 34, 15, 26
    and 31 add their own bits first. Which object types set those bits is on [World objects](objects.md). The square
    then plays [`Player_ObjectAttack`](#breakables) on the object picked.
+
+#### Teammates: what the player may do to his own crew {#teammates}
+
+Owner item 10 asks what the original allows against the player's own Warriors outside the hangout. Confirmed (code)
+at the addresses cited unless marked; "teammate" is a human friendly to the player (`Human_IsFriendly`, `0x00222a90`,
+`Brain_IsFriendly`) and in his gang (brain `+0x20c`).
+
+1. **No pick ever names a teammate.** Every human filter of the player's searches refuses friends and the same gang
+   before anything else: the attack picks (`TargetFilter_Enemy` `0x00279410`, `TargetFilter_EnemyStanding`
+   `0x00279568`, the any-angle pass `0x002797b0`), the grab and tackle search (`Player_FindCounterTarget`,
+   `0x0027ac30`, the same three filters in that order), the stance's nearest enemy (threats only) and the L1 lock
+   (`0x002792c8`). So square and cross swing along the stick or the facing with no target and no steer.
+2. **So a teammate cannot be grabbed or tackled.** `Grab_Start`'s intro ends in nothing without a target
+   (`Grab_IntroEnd`, `0x0026c1d8`, returns at once when `Human_GetTarget` is empty): 71 then 69 `GRAB_MISS` plays even
+   with a teammate right in front. No grab, so no throw and no mount of a teammate. The hangout's sparring Warriors
+   are grabbable because they are another gang: `level99` creates them in `CombatWarriors` and calls
+   `GangMakeEnemies(Warriors, CombatWarriors)` ([AI: the sparring fight](ai.md#level99-fight)).
+3. **A swing that touches a teammate does land.** The strike test takes every body, allies too
+   ([Moving strikes](#moving-strikes)), so `Strike_Contact` (`0x0021b290`) runs on the teammate: impact sound, hit
+   effect, the damage stored as pending through `Human_DealDamage` (`0x0021d680`) with the event's hostile byte
+   clear; with the player having no target, a free Warrior who may gesture and has more than 10 % health says speech
+   command `0x58` (a complaint). In `Human_ApplyPendingDamage` (`0x00265f70`) the friend's pending damage is set to
+   0 (an AI victim, or an AI attacker), so **no health is lost**, but the code goes on to the reaction by state
+   (`Hit_PlayReaction` `0x0026b0a0` for a standing one): **the teammate flinches or falls** as from an enemy's hit of
+   that hit code, and hit armour and the other gates apply as usual. Two players hurt each other for real.
+4. **A Warrior hit by his chief hits back** (`WarriorBrain_OnHitByChief`, `0x00306190`, from the brain's event 1,
+   which every hit sends): only when the hitter is a player whose Warrior commands are not locked (game state
+   `+0x418` + player), the Warrior has no fight goal, is not cuffed, not sparring (`+0x2e5`) and counts no hostiles
+   (`+0x152`). A hit with no window open opens one of 10 s (the Warrior's brain `+0x2dc` = now + 10000 ms; an
+   expired one is cleared with its count, byte `+0x2e4`); each later hit inside it adds 1 to the count, and the hit
+   that brings it to 3, **the fourth hit within 10 s** (or the second, while the chief's own brain byte `+0x2e4` shows
+   another Warrior already hitting back), clears the window and makes him push **AttackTarget**
+   (`AttackTargetGoal_Push(him, chief, 20000)`) for
+   20 s, after popping a TauntPlayer goal on top. When the chief is a war chief (`+0x3ac` = 1) with a command in
+   force, the command is re-issued as 0 and the chief's command menu is locked (`+0x42e` + player = 1). While one
+   hits back, the [player's update](ai.md#think-player) gives every free member within 15 m **TauntPlayer**: the
+   taunting ring.
+5. **Throws into teammates.** A thrown enemy strikes every body he flies into ([Throws](#throws)): he is no friend
+   of the teammate, so the bystander takes the crushing high reaction (300-303, a knockdown) with no health lost
+   (the −60 is never applied).
+6. **Walking and sprinting into a teammate** is the physics' contact 4: he is slid along and pushed by half the move
+   ([Physics: human contacts](physics.md#human-contacts)); there is **no knockdown** from running into anyone
+   (only the charge's capsule and an airborne body strike, `Human_OnContact` `0x00219d50`), and the charge's strike
+   on a teammate is a hit as in 3. A player who walks head-on into a teammate at a jog or faster and is still doing
+   so 2 s later **trades places** with him (`Human_OnPushContact` `0x00219b08` → `Human_CanPush` `0x002320a0`, which
+   sets each one's position to the other's when neither is in a fight stance, busy or held). In detail, confirmed
+   (code) at `0x00219b08`: the contact counts only when the pusher is a player, his gait (`+0x1a8`) is 3 or more and
+   his push is head-on (the dot of the two unit vectors below −0.8); the first such contact stores the time in the
+   teammate's `+0x570` and a deadline of **now + 2100 ms** in `+0x56c`; a later counting contact at least 2000 ms
+   after the first calls `Human_CanPush`, and a swap clears both. The second contact must also come before 2.1 s:
+   every update `Human_StateUpdate` clears both words once the game time is past the deadline (confirmed (code) at
+   `0x002405e0`-`0x00240604`), so the swap needs a counting contact in a window of 2.0-2.1 s after the first, about
+   three updates.
+
+**At runtime** (2026-10-11, PCSX2, confirmed (runtime)). Level80 checkpoint 2 was entered from a level99 state by
+setting mode 8's level ([the runtime order](scripting.md#level80-hints)). Cleon was the player, with Vermin, Rembrandt
+and Ajax following (`FollowPlayer`, goal 50). Input was the scripted pad of
+[Driving PCSX2](../guides/research-workflow.md#driving-pcsx2), hooks `strike-contact`, `hit-by-chief`, `hit-reaction`,
+`attack-target-push`, `push-contact` and `can-push` of `repo:research/traces/patches.toml`, with Vermin's record and
+brain read every update:
+
+- **Hits 1-3 land with a reaction and no health lost.** Cleon walked to 0.85 m from Vermin (stick 0.5, aimed at
+  him), the stick went to 0.2 towards him for one update, then square was tapped (`ANIM_ATTACK_S1`, 12). Each tap
+  logged `Strike_Contact(Cleon, Vermin)` and `Hit_PlayReaction` on Vermin, who played 272 (`ANIM_REACT_SMALL_HIGH_FRONT`)
+  and kept 1800 health. This held for every hit before the fourth, in both runs.
+- **Level80 locks the commands, and that blocks the hit-back.** In the first run (four taps 1 s apart, two of
+  which reached him) `WarriorBrain_OnHitByChief` ran on each hit but opened no window: game state `+0x418` for player
+  0 was 1, because `level80.lua`'s chapters 1-4 call `WCLockCommands(player, true)` in their set-ups and only chapter
+  4's clean-up unlocks it. **No Warrior hits back anywhere in mission 1 of `level80`.** For the second run the byte was
+  written to 0, as `WCLockCommands(player, false)` leaves it.
+- **The fourth hit starts the hit-back.** With the commands unlocked, five hits 24 updates apart: the first set
+  Vermin's `+0x2dc` to the game time + 10000 ms; the second and third raised `+0x2e4` to 1 and 2; the fourth (2.4 s
+  after the first) cleared both and called `AttackTargetGoal_Push(Vermin, Cleon, 20000)`. The chief's own brain
+  `+0x2e4` became 1. The next update Vermin had **Fight** (`0xf`, target Cleon) on top of AttackTarget, on top of
+  FollowPlayer.
+- **The fourth hit hurts.** The fourth and fifth hits each took **22** health from Vermin (1800 → 1778 → 1756): once
+  he hits back he is no longer treated as a friend, so the pending damage is applied (inferred: the friend test of
+  `Human_ApplyPendingDamage` was not traced at runtime).
+- **He fights for real.** Vermin's punches cost Cleon 209 health each (1530 → 346 in 22 s). Cleon's target
+  became Vermin. The goal stack went back to FollowPlayer 661 updates (22.0 s) after the push, AttackTarget and
+  Fight together.
+- **Sprinting into a teammate knocks no one down.** Cleon sprinted at Vermin from 5.1 m with L2 held and the stick
+  at full deflection, re-aimed at him every 2 updates and scaled so its larger axis is 1.0 (a diagonal of plain
+  components falls under the sprint's 0.95). He reached gait 5 at 10.25 m/s. At contact the player stopped dead
+  (0.06 m/s two updates later). Vermin played 402 (`ANIM_MOVEMENT_STEP_BACKWARD`), with no reaction, no state bits of
+  a fall and no health lost. An earlier run that met him at gait 4 (8.26 m/s, the sprint still speeding up) gave
+  the same. `Human_OnPushContact` ran on Vermin at every contact.
+- **Walking into one pushes him; a walking player seldom gets to the swap.** At a walk (stick 0.75 or 0.9 re-aimed,
+  gait 2, 1.63 m/s) the player shoves him along at about half his speed, and an idle Warrior often steps aside first
+  (400 `ANIM_MOVEMENT_STEP_RIGHT`). Running in (gait 3-4) started the timer: `+0x570` = the time, `+0x56c` = time +
+  2100. But the contact brought the player down to gait 0-1, so no counting contact came 2.0 s later, and the
+  deadline was cleared on time. `Human_CanPush` was never called in five runs: a player cannot keep a counting
+  contact going for 2 s, so in play the swap is rare.
+- **The swap itself** (a second pass, 2026-10-11, level80 checkpoint 2 entered the same way, commands still
+  locked, hooks `push-contact` and `can-push`). Cleon ran at Vermin from 4.6 m, stick 1.0 re-aimed every update,
+  no L2: gait 3 from the 7th update, gait 4 from the 14th. At 1.46 m the test aged Vermin's timer over PINE
+  (`+0x570` = the game time − 2050 ms, `+0x56c` = the game time + 400 ms), as a first contact 2.05 s earlier would
+  have left it. Two updates later the contact came at gait 4: `Human_OnPushContact(Vermin, …)` then
+  `Human_CanPush(Vermin, Cleon)` from `0x00219d18`, on the same update. Vermin's position became exactly Cleon's
+  (−189.45, 168.24), Cleon's became Vermin's (about (−190.2, 167.7)), each kept his own heading, and both timer words
+  were 0 the next sample. Vermin played no reaction and went on following.
+- **Circle with only a teammate in reach is a grab miss.** Cleon walked to 0.81 m from Vermin (stick 0.5, aimed at
+  him), the stick went to 0.2 towards him for one update, then circle was tapped. His target was none (`+0xc8`
+  −1). `Grab_Start(Cleon, mode 0, base 72)` ran (hook `grab-start`) and 71 and 69 were queued the same update (hook
+  `anim-dispatch`); 21 updates later (71's 5 and 69's 16) he was back in the idle 388. Vermin played nothing and
+  lost no health.
+- **The complaint is said.** Two square taps at Vermin from 0.77-0.83 m, Cleon with no target: each logged
+  `Strike_Contact(Cleon, Vermin)`, `WarriorBrain_OnHitByChief` and reaction 272 on Vermin, and
+  **`Human_SayCommand(Vermin, 0x58, …)`** (`0x002205e0`) from `Strike_Contact` (return `0x0021b4a0`, hook
+  `say-command`) on the same update. Vermin's health stayed 1800. Whether the line is heard (the speech system may
+  drop it) was not checked.
+
+**Coney fixes** (owner item 10; the blocking itself is owner item 40, physics.md#human-contacts):
+
+1. Run the strike test against every human body, not only the opposed ones: Coney's `Humans::opposed` (the
+   `AiHumans` opposition, `!Gangs::friends`) currently gates the strike test as well as the targets, which is why the
+   player's punches pass through teammates.
+2. Keep friends out of every target pick, the grab and tackle search and the locks, as now; a grab next to a
+   teammate plays 71 then 69 and connects with nothing.
+3. A hit on a friend: impact and hit effect, no health lost (unless both are players), the reaction by hit code as
+   for an enemy, the complaint line `0x58` for a Warrior hit by a player with no target.
+4. Port `WarriorBrain_OnHitByChief`: the 10 s window, the fourth hit, AttackTarget on the chief for 20 s with Fight
+   on top, the taunting ring while it lasts, the command reset and menu lock. Gate it on the commands lock
+   (`WCLockCommands`, which Coney keeps as `StoryState::noRetaliation`, set by `makeWcLockCommands` in
+   `repo:src/scripting/story_bindings.cpp`, and which replaces the stand-in in `warriorEvent`,
+   `repo:src/ai/brain_events.cpp`), so in `level80` no Warrior ever hits back; apply the damage of the fourth hit on
+   (the Warrior is no longer a friend).
+5. Thrown bodies strike teammates too (the knockdown with no damage).
+6. With the human blocking in (item 40): a head-on contact at gait 3 or more starts a 2 s wait, and another such
+   contact 2.0-2.1 s after the first swaps the two places (both bounds confirmed (code), the swap seen at runtime).
+7. Tests: square into a teammate 0.8 m ahead plays reaction 272 on him and leaves his health unchanged; three such
+   hits within 10 s leave him alone and a fourth starts his AttackTarget and Fight on the player and costs him the
+   hit's damage; in `level80` (commands locked) the fourth hit starts nothing; a sprint into a teammate stops the
+   player and knocks nobody down; circle with only a teammate in reach plays 71 then 69 and leaves him alone (seen
+   at runtime); a square that touches him makes him say `0x58`.
 
 #### The fight stance {#fight-stance}
 
@@ -3630,3 +4177,13 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
   breaks the pair.
 - **The clips' `+0x44` flags** (paired `0x1`, tackle `0x20`, grab `0x40`): which clips carry the tackle flag
   ([Strong grapple](#strong-grapple)).
+- **226's knockdown word at runtime**: the disc's 226 has its type-7 word 0, which would queue 198, yet at runtime
+  `Attack_StartPaired` took the branch without 198 ([The mount power strike](#mount-power)). To find out,
+  rerun `moves_mount_power` with a hook at `Anim_GetKnockdownValue` (`0x00101a60`) logging its argument and return on
+  update 143, and read the clip it was handed in memory: a different set (the generic `gen_mount_power20_*` rather
+  than Rembrandt's) or another event than the first type-7 one would explain it.
+- **Who sets state `0x80000000`**: the lethal hit during a paired move leaves it on the victim's record `+0x14`
+  ([Moves a hit cannot stop](#protected-moves)), but the setter was not traced. To find out, rerun
+  `moves_finisher_lethal` with the `state-code` hook (record `+0x14`'s setter) logging `ra` on update 56, and if the
+  setter is not the writer, search the damage and reaction code (`Human_UpdateActions`, `0x00254e78`, and what it
+  calls) for a store that ORs `0x80000000` into `+0x14`.
