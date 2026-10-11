@@ -254,6 +254,23 @@ private:
 } // namespace coney::io
 ```
 
+## Coney-only capabilities {#coney-only}
+
+Some code has no counterpart in the original: a debug tool, a test aid, an enhancement. When such a capability is
+something a script could plausibly want (flying a human, teleporting, spawning, pausing, reading or writing a
+tunable), it is a future native of Coney's own ([Script mods](../roadmap.md#script-mods)), so two rules apply:
+
+- **Register it in the same commit.** Add a row to
+  [Coney native candidates](asset-and-script-architecture.md#coney-native-candidates): a proposed `Coney.Name`, the
+  C++ entry point, what it does and its status (`engine-only` until a script can call it). When it is exposed, change
+  the status in the same commit as the registration. A capability that no script could use (a front end, a test aid
+  such as `--frames`) is not listed.
+- **Keep its C++ API apart from reimplemented code.** The entry point is its own function, with no `@orig` tag and a
+  doc comment that says it is Coney's own and the original has nothing like it (`Human::setFlight()` is the model).
+  Never hang it on an `@orig` function, add a flag to one, or let one call it: the original's behaviour must read the
+  same with every Coney capability off. Its natives live in the `Coney` table and never appear in
+  `research/bindings/`, which describes only the original's 956.
+
 ## Errors
 
 **The engine does not throw exceptions.** Exceptions make every call a possible exit that the code doesn't show,

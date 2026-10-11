@@ -55,6 +55,7 @@ player's path, gamepad input, playthrough tests, the checks to run before report
 - C++23 within MSVC 19.38+, GCC 13+, Clang 17+, Xcode 16+; clang-format (`.clang-format`) decides layout; no
   exceptions: recoverable errors return `std::expected<T, coney::Error>`, broken invariants `CONEY_ASSERT`.
 - Reimplemented code cites the original: `@orig 0x<addr> <Name> (<File>.cpp)`, plus a link to its research page.
+- A Coney-only capability a script could use joins the native-candidates registry: `conventions.md#coney-only`.
 - A doc comment on every public type and function, and a short comment above every other function (helpers,
   private members, long lambdas) and before each step of a long one; comments explain *why*, briefly. Keep the
   engine's test mode possible (fixed timestep, seeded randomness, scripted input): never assume real time, a display
