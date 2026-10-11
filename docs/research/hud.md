@@ -2556,19 +2556,18 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   second text
   (`SetMsgHandlerEx`'s `prompt2`)
   is queued as a priority-0 hint while it is in reach and withdrawn when it changes or leaves.
-- **Coney differs: the prompt's button** (owner item 9, "n Give Weapon"). The layout (`repo:src/gui/text_layout.cpp`)
-  skips `<MONEYFONT>`, so the `<ST>` of `GSTRING.ACTIONBUTTON` draws as the letter `n` (`part_page0` firstGlyph 94 +
-  `'n'`). **Fix for the implementer**: make `<MONEYFONT>` set a glyph base for the runs until `</MONEYFONT>`: in the
-  `part_page0` slot (Coney's `kTextFontSlot`, the original's slot 3) rectangle = 11 + (c − `'0'`); in `big_font`
-  (slot 6) rectangle = 256 + (c − 1); none in other slots ([MONEYFONT](gui.md#moneyfont)). Also give the stick tags
-  (`<SDD>`, `<SDL>`, `<SDR>`, `<SDU>`) their characters 3-6 alternating with 2 every `0x0050e6e4` ms, and add the
-  icon tags 23-31 (`<RARREST>` … `<RCALLGANG>`, [the tag table](gui.md#markup)) to `repo:src/gui/markup.cpp`.
-- **Coney differs: the prompt beside a downed Warrior** (owner item 8, "no revive prompt"). Coney's revive step
-  matches the original (a flash is needed), but its swap prompt (`repo:src/ai/swap_prompt.h`) leaves out the blocked
-  test, so a knocked-out Warrior stays talkable and Coney shows "Give Weapon" where the original shows nothing (no
-  flash) or the revive prompt (with one). **Fix for the implementer**: clear the swap prompt (talkable, its text)
-  while the Warrior or the player is knocked out, or better, model `HumanRecord_AreActionsBlocked`'s mask
-  ([No flash, no prompt](#action-prompts)); a playthrough test should hold a flash to see string 4.
+- **The prompt's button** (owner item 9, "n Give Weapon", fixed): the layout (`repo:src/gui/text_layout.cpp`) gives
+  `<MONEYFONT>` its rectangle base ([MONEYFONT](gui.md#moneyfont)), so the `<ST>` of `GSTRING.ACTIONBUTTON` draws
+  `part_page0` rectangle 73, the triangle; the stick tags alternate their characters and the icon tags 23-31 are
+  known (`repo:src/gui/markup.h`). Tests: `repo:tests/hud/hud_test.cpp` (a prompt starting with the action button),
+  `repo:tests/gui/text_layout_test.cpp`, and the disc check `"[disc][text]"`, which finds the triangle in all three
+  swap prompts (`0xc`-`0xe`) and a stick picture in the revive prompt 4.
+- **The prompt beside a downed Warrior** (owner item 8, "no revive prompt"): Coney's revive step matches the original
+  (a flash is needed), and the swap prompt (`repo:src/ai/swap_prompt.h`) now has the blocked test as far as Coney
+  models the mask's states (knocked out, by health or by a script, arrested, wounded), so beside a downed Warrior no
+  "Give Weapon" shows. A Warrior's brain that a script knocked out is off in Coney (BrDead), so its think clears the
+  prompt instead (`Brain::think`). Still to do: a playthrough test holding a flash to see string 4 (crew revive
+  belongs to the revive work), and the player's own knocked-out gate on the prompt steps.
 - **The stereo-theft panel** (`repo:src/hud/stereo_hud.h`, stepped by `PlayLevelMode::stepStereoPanel()`) as
   [the stereo panel on screen](#stereo-layout) says: up from the triangle press, the arrow round the backdrop's
   corners by stage, the gauge sized and turned by the angle turned and dropping by a doubling step while a stage is

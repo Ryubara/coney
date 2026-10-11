@@ -19,6 +19,10 @@ namespace {
 constexpr std::uint32_t kDisplayFadeMs = 1000;
 // `<PULSE>` swings the colour between these factors.
 constexpr float kPulseSwing = 0.5F;
+// The rectangle bases `<MONEYFONT>` sets: in part_page0 rectangle 11 is character `0`; in big_font rectangle 256
+// (the low 16 bits of the original's `0xd0100`) is character 1 (docs/research/gui.md#moneyfont).
+constexpr graphics::GlyphBase kTextMoneyBase{.base = 11, .origin = '0'};
+constexpr graphics::GlyphBase kBigMoneyBase{.base = 256, .origin = 1};
 
 // A whole number of milliseconds, or nothing.
 std::optional<std::uint32_t> parseMs(std::string_view text) {
@@ -95,9 +99,10 @@ template <typename T> class Stacked {
     std::vector<T> m_values;
 };
 
-// Characters drawn with one font, size and colour, at an offset into their line.
+// Characters drawn with one font, size, colour and rectangle base, at an offset into their line.
 struct Run {
     int slot;
+    std::optional<graphics::GlyphBase> base;
     graphics::FontMetrics metrics;
     graphics::Rgba colour;
     std::string text;
@@ -153,7 +158,7 @@ class LayoutBuilder {
         const graphics::FontMetrics metrics = graphics::fontMetrics(m_style.scale * m_size.current());
         const graphics::Font* font = m_fonts ? m_fonts(m_slot.current()) : nullptr;
         const std::uint32_t flags = m_style.proportional ? graphics::kFontProportional : 0;
-        return font != nullptr ? font->measure(text, metrics, flags) : 0.0F;
+        return font != nullptr ? font->measure(text, metrics, flags, m_moneyBase) : 0.0F;
     }
 
     // Adds characters with the current font, size and colour to the current line.
@@ -168,9 +173,9 @@ class LayoutBuilder {
             line.alignment = m_alignment.current();
         }
         const std::uint32_t flags = m_style.proportional ? graphics::kFontProportional : 0;
-        const float width = font != nullptr ? font->measure(text, metrics, flags) : 0.0F;
-        m_runs.push_back(
-            Run{m_slot.current(), metrics, effectiveColour(), std::string(text), m_lines.size() - 1, line.width});
+        const float width = font != nullptr ? font->measure(text, metrics, flags, m_moneyBase) : 0.0F;
+        m_runs.push_back(Run{m_slot.current(), m_moneyBase, metrics, effectiveColour(), std::string(text),
+                             m_lines.size() - 1, line.width});
         line.width += width;
     }
 
@@ -178,6 +183,12 @@ class LayoutBuilder {
     // Applies one tag.
     void apply(MarkupTag tag, std::string_view argument) {
         if (const std::optional<std::uint8_t> character = markupCharacter(tag)) {
+            const char c = static_cast<char>(*character);
+            addText(std::string_view(&c, 1));
+            return;
+        }
+        // The animated sticks: their character for the text's time.
+        if (const std::optional<std::uint8_t> character = stickCharacter(tag, m_style.timeMs)) {
             const char c = static_cast<char>(*character);
             addText(std::string_view(&c, 1));
             return;
@@ -210,6 +221,17 @@ class LayoutBuilder {
             break; // read before the layout starts
         case MarkupTag::BigFont:
             m_slot.push(kBigFontSlot);
+            break;
+        case MarkupTag::MoneyFont:
+            // The money font's base, chosen by the font now in use and the widget's own slot; otherwise unchanged.
+            if (m_slot.current() == kBigFontSlot) {
+                m_moneyBase = kBigMoneyBase;
+            } else if (m_style.fontSlot != kBigFontSlot) {
+                m_moneyBase = kTextMoneyBase;
+            }
+            break;
+        case MarkupTag::EndMoneyFont:
+            m_moneyBase.reset();
             break;
         case MarkupTag::Center:
         case MarkupTag::CCenter:
@@ -248,7 +270,7 @@ class LayoutBuilder {
             m_alignment.pop();
             break;
         default:
-            ++m_out.skippedTags; // BOLD, MONEYFONT, BGFONT, AUTOINDENT, the sticks and their closing tags
+            ++m_out.skippedTags; // BOLD, BGFONT, AUTOINDENT, LAS, RAS and their closing tags
             break;
         }
     }
@@ -289,7 +311,7 @@ class LayoutBuilder {
             }
             sprites.clear();
             font->draw(sprites, run.text, lineX[run.line] + run.offset, lineY[run.line], run.metrics, flags, run.colour,
-                       m_style.shadowAlpha);
+                       m_style.shadowAlpha, run.base);
             for (const graphics::Sprite& sprite : sprites) {
                 m_out.sprites.push_back(TextSprite{run.slot, sprite});
             }
@@ -327,6 +349,7 @@ class LayoutBuilder {
     Stacked<graphics::Rgba> m_colour;
     Stacked<std::uint32_t> m_pulse;
     Stacked<TextAlignment> m_alignment;
+    std::optional<graphics::GlyphBase> m_moneyBase; // set by <MONEYFONT>, cleared by </MONEYFONT>
     float m_displayFactor = 1.0F;
     std::vector<Run> m_runs;
     std::vector<Line> m_lines;

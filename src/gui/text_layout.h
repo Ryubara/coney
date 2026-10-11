@@ -80,11 +80,17 @@ using FontLookup = std::function<const graphics::Font*(int slot)>;
 /// Coney's choices where the page is silent: a closing tag restores the value before its opening tag (a stack); a
 /// line takes the alignment in effect at its first character; `<CCENTER>` and `<RRIGHT>` act as `<CENTER>` and
 /// `<RIGHT>`; `<CR2>` and `<CRM>` always break (Coney is single-player); `<PULSE ms>` scales the colour by
-/// 1 + 0.5 × sin(2π t / ms); `<BOLD>`, `<MONEYFONT>`, `<BGFONT>`, `<AUTOINDENT>` and the animated stick glyphs have no
-/// effect yet and are counted in skippedTags; a wrap breaks only at spaces, dropping the spaces at the break (how the
-/// multi-line widgets break is not researched).
+/// 1 + 0.5 × sin(2π t / ms); `<BOLD>`, `<BGFONT>` and `<AUTOINDENT>` have no effect yet and are counted in
+/// skippedTags; a wrap breaks only at spaces, dropping the spaces at the break (how the multi-line widgets break is
+/// not researched).
 ///
-/// Research: docs/research/gui.md#text
+/// `<MONEYFONT>` draws every character up to `</MONEYFONT>` from another rectangle base (graphics::GlyphBase): when
+/// the font in use is big_font, rectangle 256 + (c - 1); else, in a part_page0 widget (its own slot not kBigFontSlot;
+/// every other Coney slot is part_page0), rectangle 11 + (c - `'0'`). So the `<ST>` (`n`) that starts the context
+/// prompts is rectangle 73, the triangle button. The stick tags give their characters by `timeMs`
+/// (stickCharacter()).
+///
+/// Research: docs/research/gui.md#text, docs/research/gui.md#moneyfont
 /// @orig 0x001b9600 TextWidget_Layout (unknown)
 [[nodiscard]] TextLayout layoutText(std::string_view text, const TextStyle& style, const FontLookup& fonts);
 

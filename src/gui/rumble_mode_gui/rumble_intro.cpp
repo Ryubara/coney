@@ -5,6 +5,7 @@
 #include <format>
 #include <utility>
 
+#include "gui/colour_table.h"
 #include "gui/text_layout.h"
 
 namespace coney::gui {
@@ -26,11 +27,11 @@ std::string numbered(std::string_view stem, int number) { return std::format("{}
 
 std::string_view RumbleIntro::string(std::uint32_t id) const { return m_strings != nullptr ? m_strings->get(id) : ""; }
 
-void RumbleIntro::setupLine(TextWidget& text, float y, std::string_view value) {
+void RumbleIntro::setupLine(TextWidget& text, float y, float scale, std::string_view value) {
     text.setup(TextWidgetSetup{.x = 0.5F,
                                .y = y,
-                               .scale = 1.0F,
-                               .colour = graphics::kWhite,
+                               .scale = scale,
+                               .colour = kMenuGrey,
                                .alignment = TextAlignment::Centre,
                                .fontSlot = kBigFontSlot});
     text.setText(value);
@@ -78,16 +79,18 @@ void RumbleIntro::open(std::string_view onDone, std::span<const std::string> nam
     const float pitch = kSecondNameY - kFirstNameY;
     for (std::size_t i = 0; i < m_names.size(); ++i) {
         auto text = std::make_unique<TextWidget>();
-        setupLine(*text, kFirstNameY + (pitch * static_cast<float>(i)), m_names[i]);
+        setupLine(*text, kFirstNameY + (pitch * static_cast<float>(i)), kNameScale, m_names[i]);
         m_nameTexts.push_back(std::move(text));
         if (i + 1 < m_names.size()) {
             auto separator = std::make_unique<TextWidget>();
-            setupLine(*separator, kSeparatorY + (pitch * static_cast<float>(i)), kSeparatorText);
+            setupLine(*separator, kSeparatorY + (pitch * static_cast<float>(i)), 1.0F, kSeparatorText);
             m_separatorTexts.push_back(std::move(separator));
         }
     }
-    setupLine(m_prompt, kPromptY, string(kPromptString));
-    setupLine(m_countdown, kCountdownY, "");
+    // The prompt is a usage line in part_page0, whose cross-button picture its `<X>` needs; the countdown a big line.
+    m_prompt.place(0.5F, kPromptY, false);
+    m_prompt.setLegend(string(kPromptString));
+    setupLine(m_countdown, kCountdownY, kNameScale, "");
 
     m_phase = RumbleIntroPhase::Names;
     if (m_names.empty()) {

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The HUD object (docs/research/hud.md): hints, objectives and their messages, announcements, what hides what, counter
 // panels, the instruction arrow, the radars, showing and hiding, on synthetic data.
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -561,4 +562,19 @@ TEST_CASE("the action cycle hides the prompt's text and draws its button at the 
     hud.render(canvas.canvas);
     CHECK_FALSE(canvas.text.sprites().empty());
     CHECK(parts.sprites().empty());
+}
+
+TEST_CASE("a context prompt's GSTRING.ACTIONBUTTON draws the triangle button, not the letter n", "[hud]") {
+    // Owner item 9 ("n Give Weapon"): the prompt strings start with <MONEYFONT><ST></MONEYFONT> and a space, and in the
+    // prompt's part_page0 font the <ST> character n inside <MONEYFONT> is rectangle 11 + ('n' - '0') = 73.
+    Hud hud = makeHud(nullptr);
+    Canvas canvas;
+    hud.setActionPrompt(0, "<MONEYFONT><ST></MONEYFONT> Give Weapo");
+    step(hud, 0);
+    hud.render(canvas.canvas);
+    const auto& sprites = canvas.text.sprites();
+    REQUIRE(sprites.size() == 10);
+    const coney::graphics::UvRect triangle = canvas.font.sheet().page.rect(73);
+    CHECK(sprites.front().uv == triangle);
+    CHECK(std::ranges::none_of(sprites, [&](const auto& s) { return s.uv == canvas.font.glyph('n'); }));
 }

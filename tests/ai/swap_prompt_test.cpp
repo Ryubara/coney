@@ -122,3 +122,43 @@ TEST_CASE("a left-hand or hat object is dropped by the swap and taken by no hand
     CHECK(presser.heldObject == 0.0);
     CHECK(outcome.dropped == std::vector<double>{6.0});
 }
+
+TEST_CASE("a knocked-out Warrior offers no swap, so no Give Weapon prompt beside him", "[ai][swap]") {
+    // The original clears +0x1b2 while HumanRecord_AreActionsBlocked holds for him; its mask holds the knocked-out
+    // state 0x40000 (docs/research/hud.md#action-prompts, "No flash, no prompt beside a downed Warrior").
+    SwapScene s;
+    coney::human::ScriptState& script = s.warrior->human().script();
+    s.scene.player().human().script().heldObject = 7.0;
+    coney::ai::thinkSwapPrompt(*s.warrior);
+    REQUIRE(script.talkable);
+    // Downed in a fight (his health gone).
+    s.warrior->human().fighter().health().set(0);
+    coney::ai::thinkSwapPrompt(*s.warrior);
+    CHECK_FALSE(script.talkable);
+    s.warrior->human().fighter().health().set(500);
+    coney::ai::thinkSwapPrompt(*s.warrior);
+    REQUIRE(script.talkable);
+    // Knocked out by a script (HuSetConscious(h, false)), arrested, wounded: the same.
+    for (bool coney::human::ScriptState::* state :
+         {&coney::human::ScriptState::knockedOut, &coney::human::ScriptState::arrested,
+          &coney::human::ScriptState::wounded}) {
+        script.*state = true;
+        coney::ai::thinkSwapPrompt(*s.warrior);
+        CHECK_FALSE(script.talkable);
+        script.*state = false;
+        coney::ai::thinkSwapPrompt(*s.warrior);
+        CHECK(script.talkable);
+    }
+}
+
+TEST_CASE("a Warrior whose brain is off clears his swap prompt on his next think", "[ai][swap]") {
+    // A script's knock-out turns the brain off (BrDead); his think must still drop the prompt it had offered.
+    SwapScene s;
+    s.scene.player().human().script().heldObject = 7.0;
+    s.scene.run(5);
+    REQUIRE(s.warrior->human().script().talkable);
+    s.warrior->human().script().knockedOut = true;
+    s.warrior->setDead(true);
+    s.scene.run(5);
+    CHECK_FALSE(s.warrior->human().script().talkable);
+}

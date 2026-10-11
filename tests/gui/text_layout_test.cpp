@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <string_view>
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -114,13 +115,70 @@ TEST_CASE("<COLOR>, <SIZE> and their closing tags change and restore the run's l
 
 TEST_CASE("button tags draw their character from the current font", "[text_layout]") {
     const Fonts fonts;
-    const TextLayout layout = layoutText("<X><T><BOBJ><BIGFONT>a</BIGFONT>", inSlot(2), fonts.lookup);
+    const TextLayout layout = layoutText("<X><T><NOPE><BIGFONT>a</BIGFONT>", inSlot(2), fonts.lookup);
     REQUIRE(layout.sprites.size() == 3);
     CHECK(layout.sprites[0].sprite.uv == fonts.font.glyph(0x9e));
     CHECK(layout.sprites[1].sprite.uv == fonts.font.glyph(0x96));
     CHECK(layout.sprites[0].fontSlot == 2);
     CHECK(layout.sprites[2].fontSlot == kBigFontSlot);
-    CHECK(layout.skippedTags == 1); // BOBJ
+    CHECK(layout.skippedTags == 1); // NOPE
+}
+
+TEST_CASE("<MONEYFONT> in part_page0 draws rectangle 11 + (c - '0'): <ST> is the triangle", "[text_layout]") {
+    const Font font = coney::test::testFont(262);
+    const FontLookup fonts = [&font](int) -> const Font* { return &font; };
+    // GSTRING.ACTIONBUTTON in front of a context prompt: inside <MONEYFONT> the <ST> character n is rectangle 73,
+    // not glyph n; after </MONEYFONT> characters are the font's own again.
+    const TextLayout prompt = layoutText("<MONEYFONT><ST></MONEYFONT> Give<ST>", inSlot(kTextFontSlot), fonts);
+    REQUIRE(prompt.sprites.size() == 6);
+    CHECK(prompt.sprites[0].sprite.uv == font.sheet().page.rect(73));
+    CHECK(prompt.sprites[0].sprite.uv != font.glyph('n'));
+    CHECK(prompt.sprites[0].fontSlot == kTextFontSlot);
+    CHECK(prompt.sprites[1].sprite.uv == font.glyph('G'));
+    CHECK(prompt.sprites[5].sprite.uv == font.glyph('n'));
+    CHECK(prompt.skippedTags == 0);
+    // The box is measured with the money rectangle: as wide as "n Give" drawn plainly here (all 8 x 16).
+    CHECK(prompt.width == Approx(layoutText("n Given", inSlot(kTextFontSlot), fonts).width));
+    // The money and icon characters likewise: '=' 24, ';' 22, '@' 27, 'A' 28; outside, the character's own glyph.
+    const TextLayout icons =
+        layoutText("<MONEYFONT><MONEYPLUS><BOBJ><ROBJ><YOBJ></MONEYFONT><ROBJ>", inSlot(kTextFontSlot), fonts);
+    REQUIRE(icons.sprites.size() == 5);
+    CHECK(icons.sprites[0].sprite.uv == font.sheet().page.rect(24));
+    CHECK(icons.sprites[1].sprite.uv == font.sheet().page.rect(22));
+    CHECK(icons.sprites[2].sprite.uv == font.sheet().page.rect(27));
+    CHECK(icons.sprites[3].sprite.uv == font.sheet().page.rect(28));
+    CHECK(icons.sprites[4].sprite.uv == font.glyph('@'));
+}
+
+TEST_CASE("<MONEYFONT> in big_font draws rectangle 256 + (c - 1): the animated stick pictures", "[text_layout]") {
+    const Font font = coney::test::testFont(262);
+    const FontLookup fonts = [&font](int) -> const Font* { return &font; };
+    // HUD string 4's form in a part_page0 widget: the stick alternates its character (4) with 2 every 500 ms.
+    TextStyle style = inSlot(kTextFontSlot);
+    const std::string_view revive = "<SIZE 1.5><BIGFONT><MONEYFONT><SDL></MONEYFONT></BIGFONT>";
+    TextLayout layout = layoutText(revive, style, fonts);
+    REQUIRE(layout.sprites.size() == 1);
+    CHECK(layout.sprites[0].fontSlot == kBigFontSlot);
+    CHECK(layout.sprites[0].sprite.uv == font.sheet().page.rect(259));
+    style.timeMs = 500;
+    layout = layoutText(revive, style, fonts);
+    REQUIRE(layout.sprites.size() == 1);
+    CHECK(layout.sprites[0].sprite.uv == font.sheet().page.rect(257));
+    style.timeMs = 1000;
+    layout = layoutText(revive, style, fonts);
+    REQUIRE(layout.sprites.size() == 1);
+    CHECK(layout.sprites[0].sprite.uv == font.sheet().page.rect(259));
+    // A big_font widget's own text: <SDD> 3, <SDR> 5, <SDU> 6.
+    layout = layoutText("<MONEYFONT><SDD><SDR><SDU>", inSlot(kBigFontSlot), fonts);
+    REQUIRE(layout.sprites.size() == 3);
+    CHECK(layout.sprites[0].sprite.uv == font.sheet().page.rect(258));
+    CHECK(layout.sprites[1].sprite.uv == font.sheet().page.rect(260));
+    CHECK(layout.sprites[2].sprite.uv == font.sheet().page.rect(261));
+    // Without <MONEYFONT> a stick tag is its plain character.
+    layout = layoutText("<BIGFONT><SDL>", inSlot(kTextFontSlot), fonts);
+    REQUIRE(layout.sprites.size() == 1);
+    CHECK(layout.sprites[0].sprite.uv == font.glyph(4));
+    CHECK(layout.skippedTags == 0);
 }
 
 TEST_CASE("<DISPLAYTIME> fades the text over its last second and then hides it", "[text_layout]") {
