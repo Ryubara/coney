@@ -21,8 +21,8 @@ inline constexpr float kUiScaleStep = 0.125F;
 /// The automatic scale of the developer overlay for a display `displayHeight` units tall (ImGui's display size: the
 /// window's pixel height on Windows, its height in points on macOS): the height over 1080, rounded to a step of
 /// kUiScaleStep and kept within kUiScaleMin and kUiScaleMax, so it is the same physical size on a 1080p, a 1440p and a
-/// 4K display. A height of 0 or less
-/// (nothing measured yet) gives kUiScaleMin. Pure: no window or clock, so tests and headless runs see the same.
+/// 4K display. A height of 0 or less (nothing measured yet) gives kUiScaleMin. Pure: no window or clock, so tests and
+/// headless runs see the same.
 [[nodiscard]] float autoUiScale(float displayHeight);
 
 /// The labels of the Display page's scale choice: `Auto`, then each fixed scale (`1x`, `1.5x`, `2x`...). Index 0 is
