@@ -179,6 +179,14 @@ class RenderEngine final : public graphics::RenderDevice {
         m_presentOverlay = std::move(overlay);
     }
 
+    /// Hands every frame present() shows to `tap` (empty for none), read back from the frame buffer: the logical
+    /// screen's rectangle (where WindowDesc::logicalFrame puts it), RGBA from the top left with alpha 255, after the
+    /// modes' 2D layers and the line blend and before the present overlay (the debug menus), so no debug overlay is
+    /// ever in it. For `--record` (ClipRecorder), Coney's own debug tooling; nothing with the NULL backend.
+    void setFrameTap(std::function<void(std::span<const std::uint8_t>, graphics::Extent)> tap) {
+        m_frameTap = std::move(tap);
+    }
+
     /// Asks for the frame shown by the `frameIndex`-th present() (counting from 0) to be read back, summarised and
     /// saved as a PNG at `path`. The result is in capture() once that frame has been presented.
     void requestCapture(std::uint64_t frameIndex, std::string path);
@@ -216,6 +224,8 @@ class RenderEngine final : public graphics::RenderDevice {
     /// The line blend of setLineBlend() over the whole view (viewRect()): the frame copied into m_lineRaster, laid back
     /// over itself one original line higher at half strength. OpenGL only.
     void blendLines();
+    /// Reads the logical screen's rectangle back and hands it to the frame tap (setFrameTap()).
+    void tapFrame();
     /// Reads the back buffer, summarises it and writes it as a PNG, for requestCapture().
     [[nodiscard]] std::expected<CapturedFrame, Error> captureBackBuffer(const std::string& path) const;
     /// Stops librw and, with the OpenGL backend, SDL, if this object started them.
@@ -244,7 +254,10 @@ class RenderEngine final : public graphics::RenderDevice {
     std::optional<std::uint64_t> m_captureFrame;
     std::string m_capturePath;
     std::optional<std::expected<CapturedFrame, Error>> m_capture;
-    std::function<void(graphics::RenderDevice&)> m_presentOverlay;   // drawn at the end of every frame
+    std::function<void(std::span<const std::uint8_t>, graphics::Extent)> m_frameTap; // setFrameTap()
+    std::vector<std::uint8_t> m_tapRows;                                             // the tap's read-back, bottom up
+    std::vector<std::uint8_t> m_tapFrame;                                            // the same, top down
+    std::function<void(graphics::RenderDevice&)> m_presentOverlay;                   // drawn at the end of every frame
     std::vector<std::function<void(RenderEngine&)>> m_frameOverlays; // drawn at the end of this frame only, in order
 };
 

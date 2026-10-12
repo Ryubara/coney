@@ -12,13 +12,13 @@ import subprocess
 import time
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import pytest
+from conventions_support import REPO, conventions_with
 
 from coney_tools import clips, pcsx2_clip, pcsx2_proc
 from coney_tools.conventions import Clips
-from conventions_support import REPO, conventions_with
 
 RULES = Clips(folder="clips", max_seconds=10, warn_mb=10, keep_hours=24)
 
@@ -351,7 +351,7 @@ def test_clean_dry_run_deletes_nothing(scratch: Path) -> None:
 class FakeEmulator:
     """Stands in for pcsx2_cli.Emulator: keeps the ini settings it was given and whether it was closed."""
 
-    made: list[FakeEmulator] = []
+    made: ClassVar[list[FakeEmulator]] = []
 
     def __init__(self, paths: Any, state: Path, patches: list[Any], on_start: Any = None, ini: Any = ()) -> None:
         self.state = state

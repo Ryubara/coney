@@ -20,7 +20,7 @@ so a fresh clone gets the same setup as the maintainer's machine:
 | `AGENTS.md` (and `CLAUDE.md`, `GEMINI.md`, which only import it) | The rules | Most agent tools |
 | `.mcp.json` | The debugging servers: `ghidra-mcp` (the shared Ghidra project) and `pcsx2` (the emulator over PINE) | Claude Code; other tools take the same two commands in their own MCP config |
 | `.claude/agents/` | The roles: `analyst`, `implementer`, `reviewer`, `research-reviewer` | Claude Code |
-| `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and builds allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)) | Claude Code |
+| `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and builds allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)), and `gh` commands naming a video file, which only `coney-tools clips publish` uploads ([Clips](testing.md#clips)) | Claude Code |
 
 **The servers.** `.mcp.json` holds no paths. Each entry runs `coney-tools mcp serve <name>`, which finds the server
 through `coney.local.toml` (`ghidra_mcp_repo` and `pcsx2_mcp_dir`, see [Local workspace](workspace.md)) and runs it
@@ -120,7 +120,9 @@ instead of repeating it:
 - the task and the scope it owns, the files it must not touch, and what "done" means for it
   ([Testing](testing.md#done)), and that it reports it in the pull request's Testing and Screenshots sections, with
   its captures saved in `scratch/<branch>/shots/` and referenced in `PR.md` as `![alt](./shots/file.png)`
-  ([Capturing and attaching](testing.md#pr-media));
+  ([Capturing and attaching](testing.md#pr-media)); video clips are recorded only with `coney --record` or
+  `coney-tools pcsx2 clip` into `scratch/<branch>/clips/` and uploaded only with `coney-tools clips publish`, which
+  deletes them ([Clips](testing.md#clips));
 - "Read `AGENTS.md`, [How we work](how-we-work.md), [Testing](testing.md) and this page first; they override the
   brief";
 - how it runs ([Running without losing the cache](#cache)): it works local-first, never pushes or waits on CI, and

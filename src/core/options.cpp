@@ -12,6 +12,7 @@
 #include <utility>
 #include <vector>
 
+#include "core/clip_recording.h"
 #include "core/parse_number.h"
 
 namespace coney {
@@ -35,6 +36,7 @@ constexpr std::string_view kUsage =
     "             [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
     "             [--no-activate]\n"
     "             [--no-audio | --audio-test] [--skip-movies]\n"
+    "             [--record FILE [--record-seconds N]]\n"
     "\n"
     "  --disc PATH        the game's disc: a mounted disc, a folder of its files or an ISO image\n"
     "  --load ENTRY       load a WAD entry (a name such as level1.lev, or a hash such as 0x7e23a6f2)\n"
@@ -114,6 +116,12 @@ constexpr std::string_view kUsage =
     "                     --frames, --headless, --input-script or --screenshot each frame is one\n"
     "                     step and one render, with no clock, so a run is the same every time\n"
     "  --screenshot PATH  save the last frame as a PNG; needs --frames and a window\n"
+    "  --record FILE      record a video clip (H.264 MP4, 30 fps, 720 lines, with the game's sound) of\n"
+    "                     Coney's own frames, without the debug menus, into FILE: a plain name in a\n"
+    "                     scratch folder's clips/ folder, never in a git checkout; needs a window and\n"
+    "                     FFmpeg (CONEY_FFMPEG or PATH). Test mode; with --play-level from the first\n"
+    "                     frame of play\n"
+    "  --record-seconds N the clip's length, 1 to 10 seconds (default and most: 10)\n"
     "  --render-size WxH  draw frames W x H pixels (such as 640x448, the original's), the logical\n"
     "                     screen filling them at its 4:3 shape; needs a window\n"
     "  --input-script FILE\n"
@@ -306,8 +314,26 @@ std::expected<void, Error> checkPacing(const Options& options) {
     return {};
 }
 
+// Refuses `--record` where it cannot work: part of checkCombinations().
+std::expected<void, Error> checkRecord(const Options& options) {
+    if (options.recordSeconds.has_value() && !options.recordPath.has_value()) {
+        return invalidArgument("--record-seconds needs --record: it sets the clip's length");
+    }
+    if (!options.recordPath.has_value()) {
+        return {};
+    }
+    if (options.headless || !options.loads.empty() || options.renderReferences.has_value()) {
+        return invalidArgument("--record reads back the window's frames, so it cannot be combined with --headless, "
+                               "--load or --render-references");
+    }
+    return clips::checkClipPath(*options.recordPath);
+}
+
 // Refuses options that cannot work together, once the whole command line is read.
 std::expected<void, Error> checkCombinations(const Options& options) {
+    if (auto record = checkRecord(options); !record) {
+        return record;
+    }
     if (auto pacing = checkPacing(options); !pacing) {
         return pacing;
     }
@@ -373,6 +399,19 @@ std::expected<void, Error> checkCombinations(const Options& options) {
         }
     }
     return {};
+}
+
+// Parses the value after `--record-seconds`: a whole number from 1 to clips::kMaxClipSeconds.
+std::expected<int, Error> parseRecordSeconds(std::string_view text) {
+    int value = 0;
+    if (isAllDigits(text)) {
+        const auto parsed = std::from_chars(text.data(), text.data() + text.size(), value);
+        if (parsed.ec == std::errc{} && value >= 1 && value <= clips::kMaxClipSeconds) {
+            return value;
+        }
+    }
+    return invalidArgument(
+        std::format("--record-seconds needs a whole number from 1 to {}, got \"{}\"", clips::kMaxClipSeconds, text));
 }
 
 // Parses the value after `--fps-cap`: a whole number from 0 to kMaxFpsCap, written with decimal digits only.
@@ -543,7 +582,8 @@ std::expected<RenderSize, Error> parseRenderSize(std::string_view text) {
 
 bool isTestMode(const Options& options) {
     return options.headless || !options.loads.empty() || options.frameLimit.has_value() ||
-           options.inputScript.has_value() || options.padPipe || options.screenshotPath.has_value();
+           options.inputScript.has_value() || options.padPipe || options.screenshotPath.has_value() ||
+           options.recordPath.has_value();
 }
 
 bool activatesWindow(const Options& options) {
@@ -552,18 +592,19 @@ bool activatesWindow(const Options& options) {
 
 std::expected<Options, Error> parseOptions(std::span<const std::string_view> args) {
     Options options;
-    std::optional<std::string> languageArg;   // as typed, so a repeat is refused like any other option
-    std::optional<std::string> fpsCapArg;     // as typed, likewise
-    std::optional<std::string> kindArg;       // as typed, likewise
-    std::optional<std::string> vsyncArg;      // as typed, likewise
-    std::optional<std::string> lineBlendArg;  // as typed, likewise
-    std::optional<std::string> checkpointArg; // as typed, likewise
-    std::optional<std::string> startArg;      // as typed, likewise
-    std::optional<std::string> rumbleArg;     // as typed, likewise
-    std::optional<std::string> arenaArg;      // as typed, likewise
-    std::optional<std::string> gangSizeArg;   // as typed, likewise
-    std::optional<std::string> cameraArg;     // as typed, likewise
-    std::optional<std::string> renderSizeArg; // as typed, likewise
+    std::optional<std::string> languageArg;      // as typed, so a repeat is refused like any other option
+    std::optional<std::string> fpsCapArg;        // as typed, likewise
+    std::optional<std::string> recordSecondsArg; // as typed, likewise
+    std::optional<std::string> kindArg;          // as typed, likewise
+    std::optional<std::string> vsyncArg;         // as typed, likewise
+    std::optional<std::string> lineBlendArg;     // as typed, likewise
+    std::optional<std::string> checkpointArg;    // as typed, likewise
+    std::optional<std::string> startArg;         // as typed, likewise
+    std::optional<std::string> rumbleArg;        // as typed, likewise
+    std::optional<std::string> arenaArg;         // as typed, likewise
+    std::optional<std::string> gangSizeArg;      // as typed, likewise
+    std::optional<std::string> cameraArg;        // as typed, likewise
+    std::optional<std::string> renderSizeArg;    // as typed, likewise
     for (std::size_t i = 0; i < args.size(); ++i) {
         const std::string_view arg = args[i];
         if (arg == "--help") {
@@ -849,6 +890,19 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return invalidArgument("--freeze-world given twice");
             }
             options.freezeWorld = true;
+        } else if (arg == "--record") {
+            if (auto value = takeValue(args, i, options.recordPath, "--record", "the path of an MP4 file"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--record-seconds") {
+            if (auto value = takeValue(args, i, recordSecondsArg, "--record-seconds", "a number of seconds"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+            auto seconds = parseRecordSeconds(recordSecondsArg.value_or(std::string{}));
+            if (!seconds) {
+                return std::unexpected(std::move(seconds.error()));
+            }
+            options.recordSeconds = *seconds;
         } else if (arg == "--screenshot") {
 
             if (auto value = takeValue(args, i, options.screenshotPath, "--screenshot", "the path of a PNG file");

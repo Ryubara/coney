@@ -44,7 +44,8 @@ repos:
     hooks:
       - id: markdownlint-cli2
   # Only the frame pacer reads the real clock or sleeps: everything else runs on the fixed step's FrameTime, so the
-  # game behaves the same at any frame rate and in test mode (docs/guides/conventions.md#update-and-render).
+  # game behaves the same at any frame rate and in test mode (docs/guides/conventions.md#update-and-render). The clip
+  # recorder also sleeps, only while FFmpeg's input pipe is full: an I/O wait that no game time depends on.
   - repo: local
     hooks:
       - id: no-real-clock
@@ -52,4 +53,4 @@ repos:
         language: pygrep
         entry: '\b(SDL_GetTicks(NS)?|SDL_GetPerformance(Counter|Frequency)|SDL_Delay(NS|Precise)?|steady_clock|system_clock|high_resolution_clock|QueryPerformanceCounter|clock_gettime|timeGetTime|GetTickCount(64)?|sleep_for|sleep_until)\b'
         files: ^(src|tests)/.*\.(h|cpp)$
-        exclude: ^src/platform/frame_pacer\.cpp$
+        exclude: ^src/platform/(frame_pacer|clip_recorder)\.cpp$

@@ -1,6 +1,6 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers fifteen groups:
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers sixteen groups:
 [`check`](#check), which runs what CI would fail on for the files a change touched, [`repo`](#repo), which checks
 the repository's own rules (titles, descriptions, labels), `wad`, which reads the game's
 archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**, [`extract`](#extract), which turns every asset of
@@ -9,6 +9,7 @@ headers, [`xbox`](#xbox), which reads the Xbox disc's archive, [`progress`](#pro
 of the README and the docs current, [`natives`](#natives), which renders the script-binding masterlist, [`refs`](#refs),
 which builds the game reference lists, [`missions`](#missions), which builds the mission status pages, [`pcsx2`](#pcsx2)
 and [`trace`](#trace), which record the original's per-update traces in PCSX2 and compare them with Coney's,
+[`clips`](#clips), which checks, publishes and cleans up in-game video clips,
 [`mcp`](#mcp), which starts the debugging servers for agent tools, and [`workspace`](#workspace), which sets up the
 local workspace. Everything is read in place and streamed, so the 1.4 GB WAD is never loaded into memory. The format
 is described in [WARRIORS.DIR / .WAD](../research/formats/wad-dir.md).
@@ -473,6 +474,49 @@ PCSX2 running; the claim is released at the end when `record` made it. The CSV i
 refused inside the repository. With
 hooks among the scenario's patches it also writes each hook's call log to `<CSV stem>.<hook>.csv` beside it, and
 makes the scenario's `calls` ([Hooks](research-workflow.md#hooks)).
+
+```sh
+uv run --project python coney-tools pcsx2 clip STATE --out CLIP --agent ID [--seconds N]
+```
+
+Records a short clip of the original (`--seconds`, 1 to 10, default 10) with **PCSX2's own video capture of its GS
+output**: nothing on the desktop is read. For the run, the claimed copy's ini switches the capture on (with sound),
+points PCSX2's videos folder at a staging folder beside the clip, turns every on-screen display element off (FPS,
+messages, the recording indicator) and binds "Toggle Video Capture" to F12, which is posted to PCSX2's window by handle
+to start and stop it; the ini is put back when PCSX2 closes. The capture is then re-encoded into `CLIP` as Coney's
+clips are (960 x 720, H.264 and AAC, no metadata, cut at the length) through `clips.run_ffmpeg`, and the staging
+folder deleted. `CLIP` follows the [clips](#clips) rules. It needs FFmpeg as `clips` finds it, and Windows (keys by
+handle). PCSX2 starts on `STATE` under `--agent`'s claim, released at the end when `clip` made it.
+
+## clips {#clips}
+
+```sh
+uv run --project python coney-tools clips folder TASK
+uv run --project python coney-tools clips check CLIP [CLIP...]
+uv run --project python coney-tools clips publish (--pr N | --issue N) [--edit] (--body TEXT | --body-file FILE) CLIP [CLIP...]
+uv run --project python coney-tools clips clean [--older-than HOURS] [--dry-run]
+```
+
+In-game video clips for issues and pull requests, made by `coney --record` ([Recording a clip](running.md#record)) or
+`pcsx2 clip` (above). The rules and why: [Clips](testing.md#clips); the limits are `workspace.clips` in
+`.github/conventions.yml`.
+
+* `folder` makes and prints a task's clips folder, `<scratch>/<task>/clips/`, where `<scratch>` is the workspace's
+  shared scratch folder (`../../scratch` beside the main checkout).
+* `check` runs ffprobe on each clip and prints its length, size, picture and whether it has sound. It refuses a clip
+  outside a task's clips folder or inside a git checkout, one longer than `max_seconds` (10), and one with any tag
+  beyond the fixed ones an MP4's boxes carry (`major_brand`, `minor_version`, `compatible_brands`, `language`,
+  `handler_name`, `vendor_id` and a version-free `encoder`); one bigger than `warn_mb` (10 MB) gets a warning.
+* `publish` makes the same checks, then uploads every clip in one gh command, `gh pr|issue comment N` (or `edit` with
+  `--edit`, into the description) with one `--attach` per clip, and **deletes the clips once gh succeeds**. When gh
+  fails, it keeps them and says so (exit 1). A body may place a clip with a `./clips/<name>.mp4` reference, which gh
+  replaces with the upload when the clip is named the same way. It is the only way clips are uploaded.
+* `clean` deletes every file in the task clips folders older than `keep_hours` (24; `--older-than` overrides it),
+  including what a failed recording left (part files, a `pcsx2 clip` staging folder); `--dry-run` only counts.
+
+FFmpeg and ffprobe are found in `ffmpeg_dir` of `coney.local.toml`, else beside `CONEY_FFMPEG` (the variable Coney's
+`--record` reads), else on `PATH`. Every FFmpeg command the tools run goes through `clips.run_ffmpeg`, which refuses a
+capture device or any input that is not a file.
 
 ## trace {#trace}
 

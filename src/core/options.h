@@ -168,6 +168,13 @@ struct Options {
     /// `--screenshot`: save the last frame as a PNG at this path. Requires frameLimit and a window (not headless or
     /// `--load`).
     std::optional<std::string> screenshotPath;
+    /// `--record`: write a video clip of Coney's own frames (and its sound) to this MP4 file, for issues and pull
+    /// requests (src/core/clip_recording.h, docs/guides/testing.md#clips). Coney's own debug tooling. Puts Coney in
+    /// test mode; needs a window (not headless, `--load` or `--render-references`); the path must pass
+    /// clips::checkClipPath().
+    std::optional<std::string> recordPath;
+    /// `--record-seconds`: the clip's length, 1 to clips::kMaxClipSeconds; unset: the cap. Requires recordPath.
+    std::optional<int> recordSeconds;
     /// `--render-size WxH`: the frame's size (RenderSize) in place of the window's usual one. Needs a window (not
     /// headless, `--load` or `--render-references`).
     std::optional<RenderSize> renderSize;
@@ -251,9 +258,9 @@ inline constexpr int kMaxFpsCap = 1000;
 /// The largest `--checkpoint`: far beyond any level's (the most is 12, the hub's), but a script reads any number.
 inline constexpr int kMaxCheckpoint = 99;
 
-/// Whether `options` ask for test mode: `--headless`, `--load`, `--frames`, `--input-script` or `--screenshot`. Test
-/// mode runs the main loop in lockstep, one fixed step and one render per frame, and never reads a real clock, so a run
-/// gives the same result every time on any machine (docs/guides/conventions.md#platform-code).
+/// Whether `options` ask for test mode: `--headless`, `--load`, `--frames`, `--input-script`, `--screenshot` or
+/// `--record`. Test mode runs the main loop in lockstep, one fixed step and one render per frame, and never reads a
+/// real clock, so a run gives the same result every time on any machine (docs/guides/conventions.md#platform-code).
 [[nodiscard]] bool isTestMode(const Options& options);
 
 /// Whether the window may take the keyboard focus when it opens: only in a run a person plays, so not with

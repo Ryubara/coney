@@ -713,3 +713,28 @@ TEST_CASE("the trace-humans option names the file every human's rows are traced 
     CHECK_FALSE(traced->traceFile.has_value());
     CHECK(coney::usageText().find("--trace-humans") != std::string_view::npos);
 }
+
+TEST_CASE("giving --record and --record-seconds sets them and test mode", "[options]") {
+    auto options =
+        parse(std::array<std::string_view, 4>{"--record", "scratch/task/clips/a.mp4", "--record-seconds", "5"});
+    REQUIRE(options.has_value());
+    CHECK(options->recordPath == "scratch/task/clips/a.mp4");
+    CHECK(options->recordSeconds == 5);
+    CHECK(coney::isTestMode(*options));
+    CHECK(coney::usageText().find("--record-seconds") != std::string_view::npos);
+}
+
+TEST_CASE("the record options refuse what cannot work", "[options]") {
+    // Past the 10 s cap, or nothing to record.
+    CHECK_FALSE(
+        parse(std::array<std::string_view, 4>{"--record", "s/t/clips/a.mp4", "--record-seconds", "11"}).has_value());
+    CHECK_FALSE(
+        parse(std::array<std::string_view, 4>{"--record", "s/t/clips/a.mp4", "--record-seconds", "0"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 2>{"--record-seconds", "5"}).has_value());
+    // Only into a clips folder, under a plain name.
+    CHECK_FALSE(parse(std::array<std::string_view, 2>{"--record", "s/t/a.mp4"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 2>{"--record", "s/t/clips/a b.mp4"}).has_value());
+    // It reads the window's frames back.
+    CHECK_FALSE(parse(std::array<std::string_view, 3>{"--record", "s/t/clips/a.mp4", "--headless"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 1>{"--record"}).has_value());
+}
