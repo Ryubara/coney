@@ -1,0 +1,47 @@
+# What gives a human's BLOCKHUMANS (body flag 0x4) back: PoizoCiv of slot 6 is knocked out, woken without a heal,
+# healed, wounded, his wound ended without a heal and healed again, each by a direct call on the game's thread, while
+# his body pointer and body flags are sampled every update. Research: docs/research/physics.md#human-contacts.
+description = "slot 6: PoizoCiv knocked out, woken, healed, wounded, unwounded and healed; his body flags"
+research = "docs/research/physics.md#human-contacts"
+input = "blockhumans_wake.txt"
+updates = 240
+fields = ["player"]
+
+[[field]]
+name = "e_body"
+address = "enemy + 0x1a0"
+type = "u32"
+
+[[field]]
+name = "e_bflags"
+address = "u32(enemy + 0x1a0) + 0x40"
+type = "u32"
+follow = true
+
+[[field]]
+name = "e_health"
+address = "rec(enemy) + 0x144"
+type = "s16"
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "call-brains"]
+let = { enemy = 'human("PoizoCiv")' }
+calls = [
+  # Human_KnockOut(enemy, 0)
+  { function = "0x00230328", args = ["enemy", "0"], frame = 10 },
+  # Human_WakeUp(enemy, 0): what HuSetConscious(true) and a knocked-out rise end in
+  { function = "0x00230598", args = ["enemy", "0"], frame = 50 },
+  # Human_Heal(enemy, 0)
+  { function = "0x0022eb40", args = ["enemy", "0"], frame = 90 },
+  # Human_StartWounded(enemy)
+  { function = "0x0022fa78", args = ["enemy"], frame = 130 },
+  # Human_EndWounded(enemy): what HuSetWounded(false) ends in
+  { function = "0x0022fc00", args = ["enemy"], frame = 170 },
+  # Human_Heal(enemy, 0)
+  { function = "0x0022eb40", args = ["enemy", "0"], frame = 210 },
+]
+
+[coney]
+level = "level99"
+args = ["--checkpoint", "3"]

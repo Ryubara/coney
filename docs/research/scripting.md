@@ -1274,10 +1274,40 @@ move; from then on only the fences' message 2 goes on: `P3.FenceBroken` (either 
 and icon, sets the global time-to-live to 1000 ms and the player's money to at least $20, and schedules
 `P3.DealerPoizo` **0.5 s** later. `P3.DealerPoizo` **cuts** (`CameraMakeActive(DealerPoizo, 0)`, no fade) to the
 dealer's locked camera, teleports the players to `fHitDealer` / `2` and Vermin to `fDealer`, shows `TT_9` and arms
-the dealer's trigger sphere. Message 2 itself comes only from the fence's removal, 3-17 updates after the breaking
-hit at runtime ([Barriers](objects.md#barriers)); the charge's start, its run-up and a hit that leaves hitpoints send
-nothing. So the order is: the hit that breaks a fence (one charge, 10 hitpoints, kind 2) → the fence removed and
-message 2 → 0.5 s → the cut and the dealer set-up.
+the dealer's trigger sphere. Message 2 itself comes only from the fence's removal, 0-29 updates after the breaking
+hit ([Barriers](objects.md#barriers)); the charge's start, its run-up and a hit that leaves hitpoints send nothing. So
+the order is: the hit that breaks a fence (one charge, 10 hitpoints, kind 2) → the fence removed and message 2 →
+0.5 s → the cut and the dealer set-up.
+
+**Item 44 at runtime: the gap from the hit to the dealer camera** (issue #233). Confirmed (runtime), PCSX2 2.9.94,
+slot 10, scenario [`fence_dealer`](repo:research/traces/scenarios/fence_dealer.toml) (the `charge_fence` input:
+L2 held, stick 100 % straight ahead, cross 3 m before the fence; hooks `barrier-hit`, `object-remove`, `event-call`,
+`event-callback`; field set `screen`: player 1's current camera `0x005d9150`, view 1's fade level and letterbox level
+at `*0x005fdeb8` `+0x1d8` / `+0x1ec`), two runs, with window captures of the second:
+
+| Moment | Run 1 (update, tick) | Run 2 (update, tick) |
+| --- | --- | --- |
+| the breaking hit (`0x003b2180`, 10 hitpoints); the three boards removed | 29, `0xad00` | 29, `0xacd0` |
+| the player stopped at the fence (speed 0) | 31 | 31 |
+| the fence removed (`WorldObject_Remove` `0x00391c10`), `P3.FenceBroken` in the same update | 56, `0xad37` (+27.5) | 50, `0xacfb` (+21.5) |
+| `P3.DealerPoizo` called (`ScheduleFunc("P3.DealerPoizo", 500)` at the removal) | 70 | 64 |
+| first sample on the dealer camera, the player at `fHitDealer` (18.5, −16.3), heading 178° | 71 | 65 |
+| **hit → cut** | **42 updates (1.4 s)** | **36 updates (1.2 s)** |
+
+So the page was right, with one correction: the removal waits for the fence's next 60-tick update, which is **0 to 29
+updates** after the hit depending on the fence's phase (five runs so far: 3, 10, 17, 21.5 and 27.5), not 3-17. The
+removal to the cut is fixed: `P3.DealerPoizo` runs 14 updates after `P3.FenceBroken` (500 ms on the game clock) and
+the dealer camera is on screen in the 15th update. **The original's hit-to-cut gap is therefore 15 to 44 updates
+(0.5-1.5 s), about 1 s on average**; it is never "at once". In the screen effects nothing moves: the fade and
+letterbox levels stay 0 and player 1's current camera stays the follow camera from the charge until the cut, which is a
+plain switch (`CamEnable(3, …)`, `CameraCreateLocked("DealerPoizo", …)`, then `CameraMakeActive(<it>, 0)`) in the
+same update as the teleports and `TT_9`. What the player sees in the gap (captures of run 2, inferred from those
+frames): the fence is gone at the hit (hidden, its three boards and dust thrown), the player stands at the gap where
+the charge stopped him and then plays a short recovery animation (clip 388 from about 17 updates after the hit), the
+follow camera stays put, the fence lesson's hint stays until `P3.FenceBroken` clears it, and the next frame is the
+dealer camera. The owner's "almost at once" is not borne out; a short phase (3 updates) gives an 18-update (0.6 s) gap,
+which may be what was seen. Ruled out: no `ScreenQueueEffect`, `HideHud` or camera binding between the hit and
+`P3.DealerPoizo`.
 
 Coney fixes (item 44):
 
@@ -1285,11 +1315,16 @@ Coney fixes (item 44):
    every `ScreenQueueEffect`), so the fade comes from Coney's own code on the charge (a scene or camera transition, a
    respawn or reset fade, the player falling) and must go.
 2. Send a barrier's message 2 only from its removal after it has broken (the 60-tick class update), never on the
-   charge's start or on a hit that leaves hitpoints.
-3. `P3.DealerPoizo` runs 0.5 s after `P3.FenceBroken` and cuts to the dealer camera without a fade.
-4. Test (level99 checkpoint 3): from the charge's start until the fence is removed, no screen effect is queued and
-   `P3.FenceBroken` has not run; the dealer camera and `fHitDealer` placement come 15 updates (0.5 s) after the
-   removal.
+   charge's start or on a hit that leaves hitpoints. The fence is hidden at the hit itself, not at the removal.
+3. `P3.DealerPoizo` runs 0.5 s (14 updates) after `P3.FenceBroken` and cuts to the dealer camera without a fade; the
+   follow camera stays current, with no letterbox, until then.
+4. If Coney's gap is longer than 44 updates, the extra time is Coney's own: check where the barrier's 60-tick
+   countdown is restarted (it must keep its phase from spawn, never restart at the hit) and that `ScheduleFunc`'s
+   500 ms is counted in game time.
+5. Test (level99 checkpoint 3.5, the wooden fence): with the hit at update H, the fence is removed and
+   `P3.FenceBroken` runs at an update R with H ≤ R ≤ H + 30; the dealer camera is current and player 1 at
+   `fHitDealer` at R + 14 or R + 15, so the cut lands within **H + 14 … H + 45**; between H and the cut no
+   `ScreenQueueEffect` is called and the fade and letterbox levels stay 0.
 
 ### `level80.lua` (mission 2) {#level80}
 

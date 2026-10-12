@@ -112,7 +112,7 @@ Confirmed (code); offsets with "runtime" were checked on Rembrandt.
 | `+0xd0` | int | the type passed to `HuCreate` (`0x20`) | confirmed (code), runtime |
 | `+0x54` | u32 | object flags: `0x4000000` airborne, `0x2000000` on the ground ([Ground](#ground)) | confirmed (code) |
 | `+0xd4` | pointer | the human's 0x180-byte record (`0x0065a540 + i × 0x180`, [below](#the-record)) | confirmed (code), runtime |
-| `+0xe0` | u64 | human flags. `Human_MakePlayer` sets `0x2` (may start a climb from a run), `0x4` and `0x2000000` and clears `0x8`; `0x4000000` keeps stamina full; `0x10000000` forbids a jump; `0x20000000` forces the anim state and forbids a climb. Rembrandt: `0x24004440407` | confirmed (code), runtime |
+| `+0xe0` | u64 | human flags. `Human_Init` starts them by brain type ([Combat: human flags](combat.md#human-flags): a Warrior gets `0x2` and the revivable `0x4`). `Human_MakePlayer` sets `0x2` (may start a climb from a run), `0x4` and `0x2000000` and clears `0x8`; `0x4000000` keeps stamina full; `0x10000000` forbids a jump; `0x20000000` forces the anim state and forbids a climb. Rembrandt: `0x24004440407` | confirmed (code), runtime |
 | `+0xd8` | pointer | the `CharacterInstance` (model, skeleton, animation) | confirmed (code) |
 | `+0x1a0` | pointer | the physics body (0 for none) | confirmed (code) |
 | `+0x1a8` | int | the gait for the current speed (0, 1-5; `0x0022aeb0`), used by the lean | confirmed (code) |
@@ -141,7 +141,7 @@ Confirmed (code); offsets with "runtime" were checked on Rembrandt.
 | `+0x5b9` | u8 | 1 while a climb clip (437-460) plays, set by `Human_StateUpdate` | confirmed (code) |
 | `+0x5d8` / `+0x5dc` | float | last stick angle / magnitude | confirmed (code) |
 | `+0x5e0` / `+0x5e4` | float | last turn step / last heading error (turn smoothing) | confirmed (code) |
-| `+0x65c` | float | body scale: 1.0, then set by `Human_Init` through `0x00219608` to `1 − 0.01 × n` (`n` from a division not traced; at least 0.99 in one case); read by `0x0021d020`. 0.97 for Rembrandt | confirmed (code), runtime |
+| `+0x65c` | float | body scale: 1.0, then a random size and a per-type override ([Body scale](#body-scale)); read by `Human_GetScale` (`0x0021d020`). 0.97 for Rembrandt | confirmed (code), runtime |
 
 **Per-player record** (`0x00660f50 + i × 0x2c`, 60 of them, one per human index), confirmed (code) at `0x00146078`:
 
@@ -202,7 +202,8 @@ player and `+0x1b8` otherwise (`0x00222b78`). Confirmed (code) for the reads at 
 values confirmed (runtime). A street civilian (class 2) had a 0.35 hurt threshold, stun 750 ms, ground time 2000 ms,
 power 200, byte `+0x36` 4 (confirmed (runtime)). The AI's fields `+0x08` (block chance), `+0x0c` (block chance while
 hurt), `+0x24` (counter chance) and `+0x37` (the pattern-reading threshold) are on [AI](ai.md#block); `+0x32` and
-the bytes after `+0x37` are not traced. The sparring Warriors' class 40 is on [AI](ai.md#level99):
+the bytes after `+0x37` are [below the table](#power-class-bytes). The sparring Warriors' class 40 is on
+[AI](ai.md#level99):
 
 | Field | Rembrandt (class 64) | Use |
 | --- | --- | --- |
@@ -217,6 +218,25 @@ the bytes after `+0x37` are not traced. The sparring Warriors' class 40 is on [A
 | `+0x30` | 200 | a **stun**'s length, ms (`0x0022f658`) |
 | `+0x34` | 2750 | the time a knocked-down human stays **down**, ms (`0x0022f100`) |
 | `+0x36` | 3 | in a grab struggle, the grabbed human's strike costs the grabber 1 / this of its power (`0x0027fd68`) |
+
+#### The remaining power class fields {#power-class-bytes}
+
+Each confirmed (code) at the reader named (the class is the one
+`Human_GetClassRecord` picks, `0x00222b78`):
+
+| Field | Reader | What it does |
+| --- | --- | --- |
+| s16 `+0x32` | `Human_ApplyPendingDamage` (`0x00265f70`) | after a hit lands on an **AI** human (brain kind not 0), its record `+0x108` = game time + `+0x32` ms; until then `Human_IsBusy` (`0x00228258`) says busy, which about 40 AI routines test (spotting, reporting a crime, joining a fight, grabbing). A player is never marked |
+| s8 `+0x38` | `Human_GetClassReactFlag` (`0x002233c8`) in `Human_PlayReaction` (`0x0026a6d0`) | the most ground strikes a downed human reacts to: while a reaction clip plays (`Human_IsInReactionClip` `0x00228488`: held `0x8000`, a clip with flag `0x80`, or 199) and his record `+0xbe` is at least this, a new reaction is skipped. `+0xbe` counts the ground-strike reactions 195 played (`Human_PlayReaction`, `Hit_PlayBegReaction` `0x00269b80`) and is cleared when he gets up (`Human_EndDownState` `0x0025e250`) |
+| bytes `+0x3a`-`+0x3f` | `Human_ApplyClassFlags` (`0x00222c98`), from `Human_Init`, `Human_MakePlayer` and `Human_ReleasePlayer` | switches copied into the human flags `+0xe0` ([Combat: human flags](combat.md#human-flags)): `+0x3a` = 1 sets `0x80` (reaction strength at most 1), else clears it; `+0x3b` `0x1000000000` (hard to stun, below); `+0x3c` `0x2000000000` (never escapes when the grabber's power runs out); `+0x3d` `0x800000000` (reader not traced; `HuSetBlockFromReact` sets the same bit); `+0x3e` = 1 sets `0x200000` and clears `0x400000`, −1 sets `0x400000` and clears `0x200000`, 0 clears both; `+0x3f` = 1 sets `0x400` and clears `0x200`, −1 sets `0x200` and clears `0x400`, 0 clears both |
+| byte `+0x41` | `Human_ClassCanFlee` (`0x00224ea0`) in `Brain_Think` (`0x0028f6c0`) | an AI with a fight goal and **nothing in hand** draws a weapon: when free, it clears its actions and plays 477 `ANIM_ONE_HANDED_OBJECT_DRAW` (`GenToIdleAnimAction`). A cop (brain kind 1) does so in or out of a fight, unless his type's weapon (`CfgChar` `+0x18c`) is `none`. The clip's object event named `random` (`Anim_FireFrameEvents` `0x00101dd8`) calls `Brain_GiveHandObject` (`0x0028c780`), which puts the type's weapon in his hand, or `dyn_swhbld` (a switchblade) when it is `none`. The name "can flee" is an old guess: the byte is "draws a weapon" |
+| byte `+0x42` | `Human_ShouldFleeHurt` (`0x00224ec8`) in `Brain_Think` | an AI with a fight goal whose health is under 30 % plays 665 `ANIM_SPECIAL_FLASH` (blend 0.1 s in and out) when free, after clearing its actions: an AI's flash. The name is likewise a guess the code does not bear out |
+
+Human flag `0x1000000000` (power class `+0x3b`, or `HuSetHardToStun`) changes the stun rule of `Human_PlayReaction`:
+without it a hit stuns when its Anim Range List flag `0x400` is set or the caller asks; with it neither counts, and
+the hit stuns only a human already stunned on his feet (`Human_IsStunnedStanding`). Flag `0x100` (never stunned) is
+tested first. Confirmed (code) at `0x0026a6d0`. Who reads `0x400000` and `0x800000000` in the human flags was not
+found (the state and held flags of the same values are other words).
 
 `Human_StaminaMax` (`0x00223188`) returns `+0x2c`; for a player, when unlockable `(6, 12)` is unlocked, it returns
 `+0x2c × (1 + b × 0.01)` rounded, where `b` is byte 3 of `CfgWarriorUpgrade`'s record (`0x006b6650`). The power
@@ -242,6 +262,51 @@ levels 60-64), the speed class byte at `+0x11c`, and four strings (32 bytes each
 
 `Human_Init` remaps the type: 32 becomes behaviour class 30 (`0x1e`) with a variant flag (confirmed (code) at
 `0x00218008`, runtime `+0xcc` = `0x1e`, `+0xd0` = `0x20`).
+
+**The fields with a known reader** besides the tables above, confirmed (code) at the addresses given:
+
+- **The range table** (45 floats at `+0x00`, the script's numbers ÷ 100, so metres): read once per human by
+  `Human_AttachInstance` (`0x00217a98`) when its model is attached, beside the damage table. For each attack kind
+  *k* (the index of the damage and attack tables) whose value is above 0, `Attack_CallKindHandler` (`0x002545e0`,
+  jump table `0x0055d640`, kinds 0-41) writes it as the **far range** (value × 1000, mm; [Anim Range List
+  `+0x08`](formats/animation.md#anim-range-list)) of that kind's anim ids with `AnimRange_SetFarRange`
+  (`0x002545a8`). A 0 leaves the anims' own far range. The ids per kind: 0 → 11; 1 → 12; 2 → 13; 3 → 15; 4 → 14;
+  5 → 16; 6 → 17; 7 → 19; 8 → 18; 9 → 20; 10 → 25-30; 11 → 21; 12 → 193; 13 → 194; 14 → 237-240; 16 → 653, 655;
+  17 → 657, 659; 19 and 20 → 0; 21 → 3, 4; 22 → 70, 71; 15, 18 and 23-44 none. The far range is what
+  `Human_CanStartAttack` and the steer use ([Combat](combat.md#run-attacks)); kind 22's ids 70, 71 are the grab's
+  search and kind 21's 3, 4 the tackle's. The list written is the character data's (record `+0x160` points at the
+  model's own list, `HumanRecord_SetAttackTable` `0x00254568`), so every human with that model shares the values the
+  last one attached wrote (inferred from the pointer; the damage table has the same reach).
+- **The voice** (s16 `+0x118`): human `+0x3b0`, the folder `vags/character/voices/<n>/` (format string at
+  `0x0055a548`, `l<level>_c<checkpoint>_idle_<nn>`); type 259 instead takes a random 120-125. `Human_Init` counts the
+  type's idle lines 1-3 there (`+0x197`, `+0x196` set when any exists). `+0x3b4` is the level's variant
+  (`Anim_LevelVariant`) or the voice. So the binding page's "Warrior index" was a misreading: Rembrandt's 7 is his
+  voice folder.
+- **The weapon** (string `+0x18c`): when it is not `none`, `Human_Init` puts that object type in the new human's hand
+  (`Human_PlaceItemInHand(h, name, 1, 1)` `0x0024c280`: made by name, recorded as a pinned object, refused when the
+  hand is already busy with held flag `0x4000`). The police types carry `dyn_baton`. A cop who later has nothing in
+  hand draws it again, and an AI of a power class with byte `+0x41` draws it, or a switchblade when it is `none`
+  ([Power class fields](#power-class-bytes)).
+
+#### Body scale {#body-scale}
+
+`Human_Init` ends by sizing the human (confirmed (code), `0x00219040`-`0x002191fc`), stored by `Human_StoreScale`
+(`0x00219608`, which also rescales the physics body):
+
+1. **A random size**, only for a human whose brain type is not 3 (a Warrior), whose class category (`+0x11b`) is not
+   12 or 13, and whose type (`+0xcc`) is none of 122, 221, 222, 303-305, 307, 351, 414-416, 425, 458, 459. With `r` =
+   `Random_Int(99)` (0-99, stream `0x006eb880`) and "hat" = the type's hat (`+0x14c`) is not `none`:
+   - a **woman** (`flag_14b`, human `+0x3b8`, set): 1 − 0.01 × (`r` / 25), so 1.0, 0.99, 0.98 or 0.97, a quarter
+     each; with a hat at least 0.99;
+   - anyone else: `r` 0-30 → 1.0; 31-54 without a hat → 1.02 for a cop (brain type 1) or a gang member (brain type
+     2) whose brain `+0x20c` record's `+0x2c` is below 23, else 0.98; otherwise (31-54 with a hat, or 55-89) → 1.01
+     when `r` < 90, else 1.0.
+2. **The type's fixed size** (`Human_ApplyTypeScale`, `0x00219638`, also run by `Human_AttachInstance`) replaces it
+   for these types (`+0xcc`): 5 → 1.02; 18, 30 → 0.97 (so Rembrandt's 0.97, as seen at runtime); 21, 23, 24 → 0.98;
+   33 → 1.03; 89 → 1.16; 119, 120, 135 → 1.2; 128 → 1.175; 161 → 1.11. With game state `+0x158` set (co-op), 89,
+   119, 120, 128 and 161 take 1.1 and 135 takes 1.03.
+
+`Human_GetScale` (`0x0021d020`) returns it, except 1.0 in a scene for a scale under 1.1.
 
 ### Hats {#hats}
 
@@ -1610,9 +1675,9 @@ update, read over PINE:
 
 The same run with his body `+0x60` raised to 1.3429 (radius 0.470, Coney's) was alike: the crease edge 0.49 down
 to 0.35 m from the centre, the projection 0.27 to 0.05 m outside it, 0.013-0.015 m across and 0.012 m up per
-update, never blocked; this passes within 0.5 m of the point where Coney's bum stalls. Neither run tripped the move
-action's stuck test (0.2 m in 60 updates, [AI](ai.md#move-action)): about 1.1 m was covered in each 60 updates on
-the heap. The waypoint was not skipped to get round the heap, and nothing warped him.
+update, never blocked; this passes within 0.5 m of the point where Coney's bum stalled before 2026-10-11. Neither
+run tripped the move action's stuck test (0.2 m in 60 updates, [AI](ai.md#move-action)): about 1.1 m was covered
+in each 60 updates on the heap. The waypoint was not skipped to get round the heap, and nothing warped him.
 
 The push-out `PhysicsBody_PushOutOfWalls` (`0x003477c0`, a sphere out of the nearest wall by `n × (r − distance)`)
 is not the walking case: its only caller `Human_PushOutInAir` (`0x0021a490`) runs while the human is airborne
@@ -2736,11 +2801,14 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
   never braked by a slide. A wall face the sphere already reaches at the start of the move (the centre over the
   face, or past one edge whose segment is within the radius; never past a corner) takes only the move's part into
   it, along the face's own plane in 3D, and does not push the sphere out (`human::slideAlongTouchedFaces`, the
-  fraction-0 contact), so a move into a face leaning back rises along it. **Known gap**: at `level99`'s gravel heap
-  a bum walking the path's leg (his walk 0.557 m/s) stalls at the face's foot
-  (`repo:tests/platform/disc_level99_heap_test.cpp`, hidden), while a player at the runtime's angle crosses; the
-  original's run used Vermin at 1.654 m/s.
-  The sweep leaves the sphere 0.01 m clear of the face (`BodyTuning::contactClear`), and carries it round a convex
+  fraction-0 contact), so a move into a face leaning back rises along it. The sweep's push-out leaves the sphere
+  0.01 m clear of a face it met (`BodyTuning::contactClear`), where the original's sweep leaves it at the contact
+  and then lets it sink in (above: the crease edge came to 0.27 m of a 0.35 m sphere), so a face leaning back
+  within the radius plus that clearance counts as already reached (**Coney's reading**). Without it, at `level99`'s
+  gravel heap a bum
+  walking the path's leg (his walk 0.557 m/s) was pushed back off face 680 every update, never slid along it, and
+  stood for good at its foot, (−275.4, 131.6), under the stuck test; now he crosses the heap and reaches his flag in
+  1,334 updates (`repo:tests/platform/disc_level99_heap_test.cpp`). The sweep also carries the sphere round a convex
   corner whose triangles name their shared edge in flag bits 14-15 (`human::edgeSlide`): along each wall the sphere
   wraps beyond that edge, `n × up` toward it, × max(move, `r`) a second, its part along the move taken away, for the
   update only. **Coney's reading** of the passes: the slide is found where the move put the sphere, added once and

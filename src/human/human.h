@@ -364,6 +364,8 @@ class Human final : public Holdable {
     [[nodiscard]] float bodyScale() const override { return m_scale; }
     /// The radius of its collision capsule (the shape's `+0x40`, 0.35 m, × its scale): human::walkingRadius().
     [[nodiscard]] float capsuleRadius() const { return walkingRadius(m_scale); }
+    /// Its capsule as another human's sweep meets it, and as the way-clear test (human::wayClear()) takes it.
+    [[nodiscard]] UprightCapsule uprightCapsule() const;
     /// `HuSetScale`: the body's scale, not range-checked. Coney's body (its capsule, its walls' radius, its root
     /// motion) is sized from the scale at each use, so the body follows at once.
     /// @orig 0x0023b0e0 Human_SetScale (unknown)
@@ -479,8 +481,19 @@ class Human final : public Holdable {
     /// (0, 100] gives full health.
     /// @orig 0x002378a8 Human_SetHealthPercent (unknown)
     void setHealthPercent(float percent);
-    /// `HuRevive` (Fighter::revive()).
-    void revive() { m_fighter.revive(m_animator); }
+    /// `HuRevive` (Fighter::revive()), which ends in the heal: the body is made again, so it blocks other humans'
+    /// walks once more (heal()).
+    /// @orig 0x002377f8 Human_Revive (unknown)
+    void revive() {
+        m_fighter.revive(m_animator);
+        heal();
+    }
+    /// What `Human_Heal` gives back beyond health: a fresh physics body (`Human_CreatePhysicsBody`), whose flags hold
+    /// `BLOCKHUMANS`, so other humans' walks meet it again (docs/research/physics.md#human-contacts). The revive, a
+    /// flash and a freed cuffed human's revive call it; waking up or a wound ending alone do not.
+    /// @orig 0x0022eb40 Human_Heal (unknown)
+    /// @orig 0x0021ce08 Human_CreatePhysicsBody (unknown)
+    void heal() { m_blockHumansFlag = true; }
     /// `HuSetNormalMode` (Fighter::setNormal()); an arrest ends too.
     void setNormalMode(bool full);
     /// Breaks any pair it is in from outside (Fighter::breakPair()), as a placement does.
@@ -552,12 +565,19 @@ class Human final : public Holdable {
     /// human its list each update (Humans::update()); the list may hold this human and null slots, which are skipped.
     /// Empty (the default): it meets none.
     void setHumanContacts(std::span<Human* const> humans) { m_otherHumans = humans; }
-    /// Whether its capsule blocks other humans' walks: body flag `0x4` `BLOCKHUMANS`, which a human loses when his
-    /// health runs out, knocked out or wounded (`Human_OnHealthOut`). **Coney stand-in**: what gives the flag back
-    /// when he gets up is not traced, so it is back as soon as he is neither knocked out, nor wounded, nor out of
-    /// health.
+    /// Whether its capsule blocks other humans' walks: body flag `0x4` `BLOCKHUMANS`
+    /// (docs/research/physics.md#human-contacts). A human loses it when knocked out (by a script or his health running
+    /// out), wounded or arrested, and gets it back only from heal() (a new body) or the release from an arrest: one
+    /// woken by `HuSetConscious(true)` or whose wound `HuSetWounded(false)` ended stays passable until then. Out of
+    /// health or out of the world, he never blocks.
+    /// @orig 0x00230328 Human_KnockOut (unknown)
+    /// @orig 0x0022fa78 Human_StartWounded (unknown)
     /// @orig 0x002674c0 Human_OnHealthOut (unknown)
+    /// @orig 0x0022ec18 Human_Arrest (unknown)
+    /// @orig 0x0022ef58 Human_Unarrest (unknown)
     [[nodiscard]] bool blocksHumans() const;
+    /// Takes `BLOCKHUMANS` away (blocksHumans()): a knock-out, a wound, the health running out or an arrest.
+    void loseBlockHumans() { m_blockHumansFlag = false; }
     /// Whether it and `other` are linked, so their walks pass through each other: one holds the other in a grab, a
     /// tackle, a mount or a mugging (the link's group number at body `+0x3c`, `Grab_Link` and the rest). **Coney
     /// stand-in**: the scenes' shared group is not set.
@@ -625,16 +645,17 @@ class Human final : public Holdable {
     /// The cuffed human's end: freed, 333 `ANIM_ARREST_RELEASE_END_REACT` paired to `freer` then his idle; still
     /// cuffed, back to 320.
     void endUncuffReact(const Human& freer, bool freed);
-    /// The reviver's half of a revive (docs/research/combat.md#revive): he turns to the downed human at `downed` over
-    /// 0.1 s and plays 351 `gen_revive_begin`, then 353 `gen_revive_end`, then his idle (through 389 out of the fight
-    /// stance, the fight idle in it), after a 0.01 s blend, each clip holding `0x8000000`.
-    void startRevive(anim::Vec3 downed);
+    /// The reviver's half of a revive (docs/research/combat.md#revive): the led steer turns him to `downed`'s head and
+    /// slides him to 351's reach from it over 351's time to its first event + 0.1 s (Fighter::steerRevive()), and he
+    /// plays 351 `gen_revive_begin`, then 353 `gen_revive_end`, then his idle (through 389 out of the fight stance, the
+    /// fight idle in it), after a 0.01 s blend, each clip holding `0x8000000`.
+    void startRevive(const Combatant& downed);
     /// Whether 351 `gen_revive_begin` plays: the revive's first clip, at whose end the flash is spent.
     [[nodiscard]] bool reviveBeginPlaying() const;
     /// Whether 353 `gen_revive_end` plays: 351 ended and the reviver goes on to his idle.
     [[nodiscard]] bool reviveEndPlaying() const;
     /// The revived human's half: healed in full (wounding over, his health back, up from the ground, as `HuRevive`)
-    /// and up with 354 `gen_revive` paired to `reviver`, then his idle.
+    /// and up with 354 `gen_revive` paired to `reviver` holding `0x8000`, then 389 and his idle.
     void playRevived(const Human& reviver);
     /// Turns to face `point` over `seconds` of updates, whatever plays (`Human_TurnToFacePoint`); the human stays where
     /// he stands. A Warrior handed a swap turns to the presser this way.
@@ -720,8 +741,6 @@ class Human final : public Holdable {
     // goes to m_contacts.
     // @orig 0x0033d498 PhysicsBody_SweepHumanMask (unknown)
     [[nodiscard]] anim::Vec3 meetHumans(anim::Vec3 from, anim::Vec3 move);
-    // Its capsule as another human's sweep meets it.
-    [[nodiscard]] UprightCapsule uprightCapsule() const;
     // Pushes the airborne body (a player's larger sphere) out of the walls it overlaps after moving to `feet`.
     // @orig 0x0021a490 Human_PushOutInAir (unknown)
     [[nodiscard]] std::optional<anim::Vec3> pushOutInAir(const raycast::CollisionMesh& mesh, anim::Vec3 feet);
@@ -827,6 +846,7 @@ class Human final : public Holdable {
     TurnState m_turn;
     bool m_airborne = false;
     bool m_outOfWorld = false;
+    bool m_blockHumansFlag = true; // body flag 0x4 BLOCKHUMANS, on with every new body
     bool m_aimTurning = false;     // a throw aim's turn clip (470) plays
     bool m_landingPending = false; // an airborne move passed a floor: land once the feet start kLandingDepth below it
     float m_landingFloorZ = 0.0F;  // that floor's height where it was passed

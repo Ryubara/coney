@@ -6,8 +6,9 @@
 # them against this one. Prose (the why, the judgement) lives in the guides: docs/guides/repo-conventions.md says
 # what each key means and where its reasons are.
 #
-# Change a rule here, in the same commit as the guide that explains it. YAML traps: quote a colour made only of
-# digits ("000000") and any text that YAML could read as a number or a boolean.
+# Change a rule here, run `coney-tools repo render` (it rewrites the blocks that show the lists in AGENTS.md,
+# CONTRIBUTING.md and the guides) and commit the result in the same commit as the guide that explains the rule. YAML
+# traps: quote a colour made only of digits ("000000") and any text that YAML could read as a number or a boolean.
 version: 1
 
 repo:

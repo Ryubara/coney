@@ -528,6 +528,7 @@ uv run --project python coney-tools repo check-title FILE|-
 uv run --project python coney-tools repo check-docs [--body FILE]      # changed paths on stdin
 uv run --project python coney-tools repo check-body [--body FILE|-]
 uv run --project python coney-tools repo labels [--apply] [--repo OWNER/NAME]
+uv run --project python coney-tools repo render [--check]
 ```
 
 The checks of the repository's own rules, which CI runs on every pull request. Every value they apply (the commit
@@ -544,6 +545,13 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
 * `repo check-body` checks a pull request description against the template ([What a pull request
   shows](testing.md#pr-evidence)).
 * `repo labels` prints the `gh label create` commands for `labels.list`; `--apply` runs them (the coordinator does).
+* `repo render` rewrites the generated blocks of `AGENTS.md`, `CONTRIBUTING.md` and every guide under `docs/guides/`
+  from the conventions: the text between a `<!-- conventions:begin NAME -->` line and the next
+  `<!-- conventions:end -->` line (the commit areas and verbs, the label table, the rules for a pull request
+  description, the required checks, the documentation-only paths). Run it after changing `.github/conventions.yml` and
+  commit both. `--check` changes nothing and exits 1 naming each file with a stale block, as the `python` workflow does;
+  a wrong marker (an unknown block name, an end without a begin, a block never closed) is a one-line error with the
+  file and line, exit code 2. [Generated blocks](repo-conventions.md#generated-blocks) lists the blocks.
 
 ## check {#check}
 
@@ -559,7 +567,7 @@ line, and any failure makes the command exit 1:
 
 | Step | Runs when | What it does |
 | --- | --- | --- |
-| `repo` | always | `repo check`: `.github/conventions.yml` loads, and the agent pointer files |
+| `repo` | always | `repo check` and `repo render --check`: `.github/conventions.yml` loads, the agent pointer files, and the generated blocks are current |
 | `pre-commit` | a file changed | `pre-commit run --files` on the changed files: clang-format, ruff, whitespace, the 512 KB guard, the real-clock rule |
 | `clang-tidy` | C++ under `src/` or `tests/` changed | clang-tidy on the files CI's pull-request job would check, with the compiler warnings the GCC and Clang builds enable |
 | `docs` | a file matching `paths.docs_only` of `.github/conventions.yml` changed (`docs/`, `research/`, top-level Markdown, `mkdocs.yml`, the MkDocs hooks, `requirements-docs.txt`, ...) | `mkdocs build --strict` into a throwaway folder |
