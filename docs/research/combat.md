@@ -1130,7 +1130,7 @@ confirmed (runtime) where marked.
 
 **At runtime** (confirmed (runtime), PCSX2, a copy of slot 6: the civilian `PoizoCiv` held in place facing the player
 at 1.0-3.5 m until the intro ended, circle and cross pressed on the same update and held for 4 updates, no stick;
-scenario `strong_grapple` and hooks of [`patches.toml`](repo:research/traces/patches.toml)):
+scenario `strong_grapple` and hooks of [`research/traces/patches/`](repo:research/traces/patches/)):
 
 | Case | Player | Victim | Damage | Tutorial callback |
 | --- | --- | --- | --- | --- |
@@ -3536,7 +3536,7 @@ at the addresses cited unless marked; "teammate" is a human friendly to the play
 setting mode 8's level ([the runtime order](scripting.md#level80-hints)). Cleon was the player, with Vermin, Rembrandt
 and Ajax following (`FollowPlayer`, goal 50). Input was the scripted pad of
 [Driving PCSX2](../guides/research-workflow.md#driving-pcsx2), hooks `strike-contact`, `hit-by-chief`, `hit-reaction`,
-`attack-target-push`, `push-contact` and `can-push` of `repo:research/traces/patches.toml`, with Vermin's record and
+`attack-target-push`, `push-contact` and `can-push` of `repo:research/traces/patches/`, with Vermin's record and
 brain read every update:
 
 - **Hits 1-3 land with a reaction and no health lost.** Cleon walked to 0.85 m from Vermin (stick 0.5, aimed at

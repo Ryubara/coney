@@ -301,8 +301,33 @@ def test_bad_patch_files_are_named(tmp_path: Path) -> None:
         pcsx2_state.pick({}, ["nope"])
 
 
+PATCH_ONE = '[patch.one]\nedits = [{ address = 0x10, bytes = "01" }]\n'
+PATCH_TWO = '[patch.two]\nedits = [{ address = 0x20, bytes = "02" }]\n'
+
+
+def test_a_folder_of_patch_files_is_read_as_one_set(tmp_path: Path) -> None:
+    (tmp_path / "b-second.toml").write_text(PATCH_TWO, encoding="utf-8")
+    (tmp_path / "a-first.toml").write_text(PATCH_ONE, encoding="utf-8")
+    (tmp_path / "notes.txt").write_text("not a patch file", encoding="utf-8")
+    patches = pcsx2_state.load_patches(tmp_path)
+    assert list(patches) == ["one", "two"]  # read in file-name order; other files ignored
+    assert pcsx2_state.patch_files(tmp_path / "a-first.toml") == [tmp_path / "a-first.toml"]
+
+
+def test_a_patch_two_files_declare_is_refused_naming_both(tmp_path: Path) -> None:
+    (tmp_path / "a.toml").write_text(PATCH_ONE, encoding="utf-8")
+    (tmp_path / "b.toml").write_text(PATCH_ONE, encoding="utf-8")
+    with pytest.raises(pcsx2_state.StateError, match=r"b\.toml: patch one: also declared in .*a\.toml"):
+        pcsx2_state.load_patches(tmp_path)
+
+
+def test_an_empty_patch_folder_is_refused(tmp_path: Path) -> None:
+    with pytest.raises(pcsx2_state.StateError, match=r"holds no \.toml file"):
+        pcsx2_state.load_patches(tmp_path)
+
+
 def test_the_repository_patches_load_and_check_their_words() -> None:
-    patches = pcsx2_state.load_patches(REPO / "research/traces/patches.toml")
+    patches = pcsx2_state.load_patches(REPO / "research/traces/patches")
     assert {"scripted-pad", "right-stick", "puppet"} <= set(patches)
     for patch in patches.values():
         assert patch.research.startswith("docs/")

@@ -4,7 +4,7 @@ Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038e
 compiled bytecode of `level95.lua` (`worksetup`), `level95_workout.lua` (`workout`) and `global.lua` (the
 `Unlockables` list). Runtime claims were made in PCSX2 2.9.94 (2026-10-11) on a copy of quick-save slot 1 with the
 `scripted-pad`, `call-brains`, `workout-rep`, `workout-end`, `tutorial-callback` and `attack-score` patches
-([patches](repo:research/traces/patches.toml)), switched to `level95` checkpoint 2 by calling `SetCheckPoint`'s worker
+([patches](repo:research/traces/patches/)), switched to `level95` checkpoint 2 by calling `SetCheckPoint`'s worker
 `0x0041abc0(2)` and `MenuLoadLevel`'s worker `0x00160d78("level95")` as on [AI](ai.md#level99-save); the player (Cleon
 at that checkpoint) was put beside each station by writing his transform, and triangle, cross and square were pressed
 through the patched pad bytes, one update per press. Coney claims were made with the release build of 2026-10-10.

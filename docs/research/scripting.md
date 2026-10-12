@@ -960,7 +960,7 @@ The texts the hint box showed over one play of checkpoint 1 on the original (202
 than the `HUDSetTutorialText` call: a text with `<DISPLAYTIME n>` holds the box for *n* ms first. Updates count from
 the copy's first; the gaps are where the driver was stopped and the game idled, so only differences within one
 stretch mean anything. The hooks are `lua-exec`, `c-call`, `c-call-args`, `game-hint` and `hint-show` of
-`repo:research/traces/patches.toml`. Confirmed (runtime).
+`repo:research/traces/patches/`. Confirmed (runtime).
 
 | Update | Lesson | Shown (and what the script set) |
 | --- | --- | --- |
@@ -1399,7 +1399,7 @@ Points a playthrough test needs:
 
 One play of the whole mission on the original (2026-10-08), entered at checkpoint 1 from a `level99` state by
 setting mode 8's level to `level80` (record 2) and reloading, with the hooks `lua-exec`, `c-call`, `c-call-args`,
-`game-hint` and `hint-show` of `repo:research/traces/patches.toml` and the `call-brains` call hook. Scenes were left
+`game-hint` and `hint-show` of `repo:research/traces/patches/` and the `call-brains` call hook. Scenes were left
 to play out. Input over PINE as a pad: R2 held with the right stick at full deflection for each order (up, down,
 down-left, up-left), the left stick at 0.4-0.7 for walks, triangle, L1, cross, square and the L1/R1 mash. Long walks
 were shortened by **teleports** (`Object_Teleport`, `0x00385bb8`, through the call hook) to just outside each
@@ -1578,7 +1578,7 @@ Coney fixes (item 36):
   are over in about 2 s.
 - **At runtime** (2026-10-11, PCSX2, confirmed (runtime); three plays of the unskipped intro, entered at `level80`
   checkpoint 1 as in [the runtime order](#level80-hints)). The hooks `ember-init`, `ember-update`, `burn-init`,
-  `burn-update`, `fade-flame-init` and `fade-flame-update` of `repo:research/traces/patches.toml` logged the three
+  `burn-update`, `fade-flame-init` and `fade-flame-update` of `repo:research/traces/patches/` logged the three
   explosions about 650 updates into `l80_c1`, 5 and 4 updates apart, with six embers each. The tasks lived as follows:
     - **Embers: 2-5 updates (3-9 ticks)**, never their 25-40. Each starts 0.7 m above its flag (z 6.8 at
       `fExplosion1`) and falls about 0.6 m onto the sill or floor, so it lands almost at once and ends there.

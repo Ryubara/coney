@@ -54,7 +54,7 @@ from coney_tools.input_script import InputEvent, load_input_script
 
 TRACES_DIR = Path("research/traces")
 FIELDS_FILE = TRACES_DIR / "fields.toml"
-PATCHES_FILE = TRACES_DIR / "patches.toml"
+PATCHES_DIR = TRACES_DIR / "patches"  # one TOML file per research pass: state patches and hooks
 
 
 class ScenarioError(Exception):
