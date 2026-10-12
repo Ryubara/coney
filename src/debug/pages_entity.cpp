@@ -122,6 +122,20 @@ void teleportToSelected(DebugSession& session) {
     play->teleport(Place{entity->label, spot, heading});
 }
 
+// Freezes the selection or lets it go; says so in the log when nothing is selected or it cannot be frozen.
+void freezeSelected(DebugSession& session, bool on) {
+    PlayControls* play = session.play();
+    const EntityId id = session.debugDraw().inspected;
+    if (play == nullptr || id == kNoEntity) {
+        session.print("inspector: nothing selected");
+    } else if (!play->canFreezeEntity(id)) {
+        session.print("inspector: an object cannot be frozen, only a human");
+    } else {
+        play->setEntityFrozen(id, on);
+        session.print(std::format("inspector: entity {} {}", id, on ? "frozen" : "let go"));
+    }
+}
+
 // The callbacks below copy strings and call through std::function; all they can throw is a failed allocation, which
 // ends the program either way.
 // NOLINTBEGIN(bugprone-exception-escape)
@@ -173,6 +187,15 @@ void fillInspector(MenuPage& page, DebugSession& session) {
     page.add(toggleItem(
                  "Highlight", [&draw] { return draw.highlight; }, [&draw](bool on) { draw.highlight = on; }))
         .withHelp("Marks the selection in the scene, and names it under the corner lines.");
+    page.add(toggleItem(
+                 "Freeze selection",
+                 [&session] {
+                     const PlayControls* play = session.play();
+                     return play != nullptr && play->entityFrozen(session.debugDraw().inspected);
+                 },
+                 [&session](bool on) { freezeSelected(session, on); }))
+        .withHelp("Holds the selected human still: it does not move, animate or act, and the others still hit it. "
+                  "The player ignores the pad, as on the Player page.");
     page.add(actionItem("Teleport player to it", [&session] { teleportToSelected(session); }))
         .withHelp("Puts the player 1.5 m from it, facing it.");
     page.add(actionItem("Log everything", [&session] {

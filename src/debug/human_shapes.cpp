@@ -68,16 +68,19 @@ void addContacts(DebugLines& lines, const human::Human& human) {
 
 } // namespace
 
-void addHumanShapes(DebugLines& lines, const human::Human& human, const ShapeLayers& layers) {
+void addHumanShapes(DebugLines& lines, const human::Human& human, const ShapeLayers& layers, anim::Vec3 offset) {
+    // Built where the human is, then moved by the offset between its newest and drawn feet (the pose is not blended).
+    DebugLines here;
     if (layers.bodies) {
-        addBodies(lines, human);
+        addBodies(here, human);
     }
     if (layers.strikes) {
-        addStrikes(lines, human);
+        addStrikes(here, human);
     }
     if (layers.contacts) {
-        addContacts(lines, human);
+        addContacts(here, human);
     }
+    lines.appendOffset(here, offset);
 }
 
 anim::Vec3 contactPoint(anim::Vec3 centre, float radius, anim::Vec3 normal) {

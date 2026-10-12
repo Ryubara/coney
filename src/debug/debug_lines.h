@@ -46,6 +46,8 @@ class DebugLines {
     void arrow(anim::Vec3 from, anim::Vec3 along, graphics::Rgba colour);
     /// Appends every line of `other`.
     void append(const DebugLines& other);
+    /// Appends every line of `other` moved by `offset`.
+    void appendOffset(const DebugLines& other, anim::Vec3 offset);
 
     /// The lines so far.
     [[nodiscard]] std::span<const DebugLine> lines() const { return m_lines; }

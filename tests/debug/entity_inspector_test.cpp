@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The Entity inspector (docs/guides/debug-menu.md#entity-inspector): its selection rules, the watch groups it shows of
 // a human and of the objects, and the page driven through the menu model over a fake play mode. No game, no disc.
+#include <algorithm>
 #include <cstddef>
 #include <expected>
 #include <optional>
@@ -90,6 +91,20 @@ class FakePlay final : public coney::debug::PlayControls {
         return withInspect ? &inspector : nullptr;
     }
 
+    [[nodiscard]] bool canFreezeEntity(EntityId id) const override {
+        const EntityRef* entity = coney::debug::findEntity(inspector.list, id);
+        return entity != nullptr && entity->kind != EntityKind::Object;
+    }
+    [[nodiscard]] bool entityFrozen(EntityId id) const override {
+        return std::ranges::find(frozenIds, id) != frozenIds.end();
+    }
+    void setEntityFrozen(EntityId id, bool on) override {
+        std::erase(frozenIds, id);
+        if (on && canFreezeEntity(id)) {
+            frozenIds.push_back(id);
+        }
+    }
+    std::vector<EntityId> frozenIds;
     FakeInspect inspector;
     bool withInspect = true;
     Vec3 feet{0.0F, 0.0F, 0.0F};
@@ -326,4 +341,33 @@ TEST_CASE("the Debug draw page has the collision-shape switches", "[debug]") {
     CHECK(draw.shapesAllHumans);
     CHECK(draw.strikes);
     CHECK(draw.contacts);
+}
+
+TEST_CASE("the Entity inspector page freezes and unfreezes the selected human, and refuses an object", "[debug]") {
+    TunableRegistry tunables;
+    FakePlay play;
+    DebugSession session(tunables, servicesOver(&play), nullptr);
+    const auto page = session.model().openPage("Entity inspector");
+    REQUIRE(page != nullptr);
+    const MenuItem& freeze = itemOn(*page, "Freeze selection");
+    REQUIRE(freeze.getBool);
+    REQUIRE(freeze.setBool);
+    // Nothing selected: nothing to freeze, and it reads off.
+    CHECK_FALSE(freeze.getBool());
+    freeze.setBool(true);
+    CHECK(play.frozenIds.empty());
+    // A human other than the player freezes, shows it, and lets go.
+    session.debugDraw().inspected = 7;
+    freeze.setBool(true);
+    CHECK(freeze.getBool());
+    CHECK(play.frozenIds == std::vector<EntityId>{7});
+    freeze.setBool(false);
+    CHECK_FALSE(freeze.getBool());
+    CHECK(play.frozenIds.empty());
+    // An object cannot be frozen: it stays off, and the log says so.
+    session.debugDraw().inspected = 9;
+    freeze.setBool(true);
+    CHECK_FALSE(freeze.getBool());
+    CHECK(play.frozenIds.empty());
+    CHECK(session.log().last(1).back().find("cannot be frozen") != std::string::npos);
 }

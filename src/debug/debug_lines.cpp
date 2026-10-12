@@ -103,4 +103,11 @@ void DebugLines::append(const DebugLines& other) {
     m_lines.insert(m_lines.end(), other.m_lines.begin(), other.m_lines.end());
 }
 
+void DebugLines::appendOffset(const DebugLines& other, anim::Vec3 offset) {
+    m_lines.reserve(m_lines.size() + other.m_lines.size());
+    for (const DebugLine& line : other.m_lines) {
+        m_lines.push_back(DebugLine{anim::add(line.a, offset), anim::add(line.b, offset), line.colour});
+    }
+}
+
 } // namespace coney::debug

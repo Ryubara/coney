@@ -557,7 +557,9 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     stepObjectBodies();
     m_player->update(playerPad, &m_scenery->collision(), m_combatants);
     for (Target& target : m_targets) {
-        target.human->step();
+        if (!target.frozen) {
+            target.human->step();
+        }
     }
     m_ai->capture();
     stepPickups();
@@ -810,7 +812,7 @@ void PlayLevelMode::render(const RenderTime& time) {
     // the see-through panes and the cars' glass, then the effects; then, as the sprite batches after the whole world
     // (graphics.md#a-frame), the blob shadows, and the health rings over them. **Coney's choice**: the coronas, which
     // the original batches between the shadows and the rings, follow the rings (WorldRenderer::render draws them).
-    const auto afterWorlds = [this, &drawCars, &snapshot, &blended, &ringFeet] {
+    const auto afterWorlds = [this, &drawCars, &snapshot, &blended, &ringFeet, alpha] {
         if (m_levelEffects) {
             m_levelEffects->drawWater();
         }
@@ -822,7 +824,7 @@ void PlayLevelMode::render(const RenderTime& time) {
         }
         m_lights->drawShadows();
         drawRings(ringFeet);
-        drawDebugLines(snapshot);
+        drawDebugLines(snapshot, alpha);
     };
     m_scenery->draw(m_engine, blended, millisecondsOf(time.gameTicks), drawObjects, afterWorlds);
 }
@@ -845,7 +847,7 @@ world::DebugCamera PlayLevelMode::blendedFreeCamera(const Interpolated<world::De
     return between;
 }
 
-void PlayLevelMode::drawDebugLines(const human::PlayerSnapshot& snapshot) const {
+void PlayLevelMode::drawDebugLines(const human::PlayerSnapshot& snapshot, float alpha) const {
     if (m_debugDraw == nullptr || !m_engine.drawsPixels()) {
         return;
     }
@@ -906,7 +908,7 @@ void PlayLevelMode::drawDebugLines(const human::PlayerSnapshot& snapshot) const 
     }
     // The collision shapes, the classified wireframe and the Entity inspector's highlight (play_level_inspect.cpp).
     debug::DebugLines extra;
-    addInspectorLines(extra, feet);
+    addInspectorLines(extra, snapshot, alpha);
     for (const debug::DebugLine& line : extra.lines()) {
         lines.add(line.a, line.b, line.colour);
     }

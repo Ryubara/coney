@@ -141,8 +141,12 @@ std::vector<debug::WatchGroup> PlayLevelMode::Inspector::describe(debug::EntityI
         return debug::describeHuman(mode.m_player->human(), facts);
     }
     if (const auto index = indexIn(id, kTargetBase); index && *index < mode.m_targets.size()) {
-        const debug::HumanFacts facts{
-            .id = id, .role = "target", .model = mode.m_model, .type = std::nullopt, .brain = nullptr, .frozen = false};
+        const debug::HumanFacts facts{.id = id,
+                                      .role = "target",
+                                      .model = mode.m_model,
+                                      .type = std::nullopt,
+                                      .brain = nullptr,
+                                      .frozen = mode.m_targets[*index].frozen};
         return debug::describeTarget(*mode.m_targets[*index].human, facts);
     }
     if (const auto index = indexIn(id, kAiBase); index && mode.m_ai && *index < mode.m_ai->humans().size()) {
@@ -164,7 +168,7 @@ std::vector<debug::WatchGroup> PlayLevelMode::Inspector::describe(debug::EntityI
                                       .model = model.empty() && mode.m_levelNumber == 0 ? mode.m_model : model,
                                       .type = std::nullopt,
                                       .brain = mode.m_ai->brainOf(*entry.human),
-                                      .frozen = false};
+                                      .frozen = mode.m_player->humans().held(*entry.human)};
         return debug::describeHuman(*entry.human, facts);
     }
     if (mode.m_objects != nullptr) {
@@ -187,9 +191,75 @@ std::vector<debug::WatchGroup> PlayLevelMode::Inspector::describe(debug::EntityI
     return {};
 }
 
-void PlayLevelMode::addInspectorLines(debug::DebugLines& lines, anim::Vec3 feet) const {
+bool PlayLevelMode::canFreezeEntity(debug::EntityId id) const {
+    if (id == kPlayerId) {
+        return true;
+    }
+    if (const auto index = indexIn(id, kTargetBase)) {
+        return *index < m_targets.size();
+    }
+    if (const auto index = indexIn(id, kAiBase)) {
+        return m_ai && *index < m_ai->humans().size() && !m_ai->humans()[*index].removed;
+    }
+    return false;
+}
+
+bool PlayLevelMode::entityFrozen(debug::EntityId id) const {
+    if (id == kPlayerId) {
+        return m_frozen;
+    }
+    if (const auto index = indexIn(id, kTargetBase); index && *index < m_targets.size()) {
+        return m_targets[*index].frozen;
+    }
+    if (const auto index = indexIn(id, kAiBase); index && canFreezeEntity(id)) {
+        return m_player->humans().held(*m_ai->humans()[*index].human);
+    }
+    return false;
+}
+
+void PlayLevelMode::setEntityFrozen(debug::EntityId id, bool frozen) {
+    if (!canFreezeEntity(id)) {
+        return;
+    }
+    if (id == kPlayerId) {
+        m_frozen = frozen;
+    } else if (const auto targetIndex = indexIn(id, kTargetBase)) {
+        m_targets[*targetIndex].frozen = frozen;
+    } else if (const auto aiIndex = indexIn(id, kAiBase)) {
+        m_player->humans().setHeld(*m_ai->humans()[*aiIndex].human, frozen);
+    }
+}
+
+anim::Vec3 PlayLevelMode::drawnOffsetOf(debug::EntityId id, float alpha) const {
+    // The models are drawn `alpha` of the way from the step before the newest to the newest (render()); a human's
+    // shapes are built at its newest feet, so the offset is the distance between the two.
+    const auto offsetOf = [alpha](const human::Combatant& human, const human::TargetSnapshot& previous,
+                                  const human::TargetSnapshot& current) {
+        return anim::subtract(human::interpolate(previous, current, alpha).feet, human.position());
+    };
+    if (const auto index = indexIn(id, kTargetBase); index && *index < m_targets.size()) {
+        const human::TargetHuman& target = *m_targets[*index].human;
+        return offsetOf(target, target.previous(), target.current());
+    }
+    if (const auto index = indexIn(id, kAiBase); index && m_ai && *index < m_ai->humans().size()) {
+        const ai::AiHuman& fighter = m_ai->humans()[*index];
+        return offsetOf(*fighter.human, fighter.previous, fighter.current);
+    }
+    if (id == kPlayerId) {
+        return anim::subtract(human::interpolate(m_player->previous(), m_player->current(), alpha).feet,
+                              m_player->human().position());
+    }
+    return {};
+}
+
+void PlayLevelMode::addInspectorLines(debug::DebugLines& lines, const human::PlayerSnapshot& snapshot,
+                                      float alpha) const {
     const debug::DebugDrawOptions& options = *m_debugDraw;
     const raycast::CollisionMesh& mesh = m_scenery->collision();
+    const anim::Vec3 feet = snapshot.feet;
+    // The player's shapes move to where his model is drawn (his snapshot, which a scene may pose); the others' by
+    // drawnOffsetOf().
+    const anim::Vec3 playerOffset = anim::subtract(snapshot.feet, m_player->human().position());
     // The collision wireframe coloured by the walking sweep's own classing (human::wallClassOf()).
     if (options.wallClasses) {
         debug::addCollisionWireframe(lines, mesh, feet, options.collisionRadius, true, kMaxClassifiedTriangles);
@@ -197,12 +267,12 @@ void PlayLevelMode::addInspectorLines(debug::DebugLines& lines, anim::Vec3 feet)
     // The humans' shapes: every human's, or the player's and the selection's alone.
     const debug::ShapeLayers layers{.bodies = options.shapes, .strikes = options.strikes, .contacts = options.contacts};
     if (layers.bodies || layers.strikes || layers.contacts) {
-        debug::addHumanShapes(lines, m_player->human(), layers);
+        debug::addHumanShapes(lines, m_player->human(), layers, playerOffset);
         if (m_ai) {
             const auto& humans = m_ai->humans();
             for (std::size_t i = 0; i < humans.size(); ++i) {
                 if (!humans[i].removed && (options.shapesAllHumans || options.inspected == kAiBase + i)) {
-                    debug::addHumanShapes(lines, *humans[i].human, layers);
+                    debug::addHumanShapes(lines, *humans[i].human, layers, drawnOffsetOf(kAiBase + i, alpha));
                 }
             }
         }
@@ -211,7 +281,11 @@ void PlayLevelMode::addInspectorLines(debug::DebugLines& lines, anim::Vec3 feet)
     if (options.highlight && options.inspected != debug::kNoEntity) {
         const std::vector<debug::EntityRef> list = m_inspector.entities();
         if (const debug::EntityRef* entity = debug::findEntity(list, options.inspected); entity != nullptr) {
-            debug::addHighlight(lines, entity->position, kHighlightHeight);
+            // The marker follows the model, not the newest step.
+            const anim::Vec3 offset =
+                options.inspected == kPlayerId ? playerOffset : drawnOffsetOf(options.inspected, alpha);
+            const anim::Vec3 drawnAt = anim::add(entity->position, offset);
+            debug::addHighlight(lines, drawnAt, kHighlightHeight);
         }
         if (m_objects != nullptr) {
             const auto doors = m_objects->doors.doors();

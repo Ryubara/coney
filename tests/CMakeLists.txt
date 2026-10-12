@@ -94,6 +94,7 @@ add_executable(coney_tests
     hud/mug_meter_test.cpp
     hud/war_command_display_test.cpp
     platform/disc_change_character_test.cpp
+    platform/disc_inspector_freeze_test.cpp
     platform/disc_sprite_sheets_test.cpp
     platform/disc_rumble_test.cpp
     platform/disc_hub_doors_test.cpp

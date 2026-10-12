@@ -241,9 +241,14 @@ never a copy of them, so a change to a radius or a rule shows at once:
 | Strike shapes | the strike shapes switched on this step (**red** swept spheres) and the spine and head they are tested against (**yellow**) |
 | Contacts | each normal the last walking sweep slid along (a wall, another human's capsule, an object's body): a cross where the walking sphere meets it and an arrow along the normal (**orange-red**) |
 
-The shapes are drawn where the humans are at the newest step, not blended between steps as their meshes are, so with
-an uncapped frame rate they can lead a mesh by part of a step. Sandbox targets have no body in Coney's physics and get
-no shapes.
+The shapes and the Entity inspector's highlight are drawn where the models are, `alpha` of the way from the step before
+to the newest one (the same blend the meshes use), so at an uncapped frame rate they stay on the model: each human's
+shapes are built where the engine has it, then moved by the distance from its newest feet to its drawn ones (the pose
+of a strike shape is the newest step's, not blended). Sandbox targets get no shapes, on purpose: a target has no body
+in Coney's physics and no strike shapes of its own, so nothing is hit by geometry. The player's attacks reach it by
+the attack's hit update and its reach (a **Coney stand-in**, [Combat](../research/combat.md#hit-codes)), which is a
+timing and a distance, not a shape that could be drawn. The Entity inspector's highlight and its watch lines are how a
+target is looked at.
 
 ### Entity inspector {#entity-inspector}
 
@@ -262,6 +267,7 @@ out), the doors and barriers, the glass panes and the world objects whose object
 | Choose | the whole list; choosing one selects it |
 | Clear | drops the selection |
 | Highlight | marks the selection in the scene (a white post and diamond over it and a ring at its feet; a door's or a pane's own collision triangles in white) and names it under the corner lines, `Inspecting: AI 2 gang (3.4 m)` |
+| Freeze selection | holds the selected human still: an AI human or a sandbox target is not animated, moved or acted for, its brain still runs and the others still hit it (it does not react until let go); for the player it is the Player page's *Frozen* (he ignores the pad). An object cannot be frozen, and says so in the log. The Locomotion page's *Frozen* line shows it |
 | Teleport player to it | puts the player 1.5 m from it on his side, facing it |
 | Log everything | prints every value of the selection to the log, `Group / name: value` a line |
 | Identity ... Object | one page per group, a live watch per value |
@@ -278,8 +284,8 @@ Identity, Transform, Animation, Meters and Combat. An object (`src/debug/object_
 and **Object**: a door's class, state, angle, hitpoints and triangles; a pane's size, broken and alarm; a world
 object's spawn-record state, flags, zone, tint and money.
 
-The inspector only reads: choosing, highlighting and watching change nothing in the game, and the selection is a
-number in the Debug draw options, so a test-mode run plays the same with it on.
+The inspector only reads, but for *Freeze selection*: choosing, highlighting and watching change nothing in the game,
+and the selection is a number in the Debug draw options, so a test-mode run plays the same with it on.
 
 ### Noclip {#noclip}
 

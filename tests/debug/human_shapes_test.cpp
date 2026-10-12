@@ -173,3 +173,39 @@ TEST_CASE("the inspector's highlight stands over the selection", "[debug]") {
     }
     CHECK(top >= 3.4F);
 }
+
+TEST_CASE("a human's shapes drawn at an offset are the same lines moved by it", "[debug][human]") {
+    // The shapes are drawn where the models are, which is between steps: the play mode gives the offset from the
+    // newest step's feet to the drawn ones (docs/guides/debug-menu.md#debug-draw).
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human(character.anims, coney::human::AnimSlots::player(), coney::test::identityBind());
+    human.spawn(mesh.get(), Vec3{40.0F, 40.0F, 0.0F}, 0.0F);
+    const coney::debug::ShapeLayers layers{.bodies = true, .strikes = true, .contacts = true};
+    DebugLines here;
+    coney::debug::addHumanShapes(here, human, layers);
+    DebugLines moved;
+    const Vec3 offset{0.25F, -0.5F, 0.125F};
+    coney::debug::addHumanShapes(moved, human, layers, offset);
+    REQUIRE(here.size() > 0);
+    REQUIRE(moved.size() == here.size());
+    for (std::size_t i = 0; i < here.size(); ++i) {
+        CHECK(moved.lines()[i].a.x == Approx(here.lines()[i].a.x + offset.x));
+        CHECK(moved.lines()[i].a.y == Approx(here.lines()[i].a.y + offset.y));
+        CHECK(moved.lines()[i].b.z == Approx(here.lines()[i].b.z + offset.z));
+        CHECK(same(moved.lines()[i].colour, here.lines()[i].colour));
+    }
+}
+
+TEST_CASE("appending debug lines at an offset moves every end", "[debug]") {
+    DebugLines source;
+    constexpr Rgba kRed{255, 0, 0, 255};
+    source.add(Vec3{0.0F, 0.0F, 0.0F}, Vec3{1.0F, 0.0F, 0.0F}, kRed);
+    DebugLines target;
+    target.appendOffset(source, Vec3{0.0F, 2.0F, 3.0F});
+    REQUIRE(target.size() == 1);
+    CHECK(target.lines()[0].a.y == Approx(2.0F));
+    CHECK(target.lines()[0].b.x == Approx(1.0F));
+    CHECK(target.lines()[0].b.z == Approx(3.0F));
+    CHECK(same(target.lines()[0].colour, kRed));
+}

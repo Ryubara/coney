@@ -39,8 +39,10 @@ inline constexpr graphics::Rgba kStruckColour{255, 230, 60, 255};
 inline constexpr graphics::Rgba kContactColour{255, 120, 0, 255};
 inline constexpr graphics::Rgba kHighlightColour{255, 255, 255, 255};
 
-/// Adds `human`'s shapes of `layers` to `lines`, where the human is now (its newest step).
-void addHumanShapes(DebugLines& lines, const human::Human& human, const ShapeLayers& layers);
+/// Adds `human`'s shapes of `layers` to `lines`, where the human is at its newest step moved by `offset`: the play
+/// mode draws the models between steps, so it passes the distance from the newest step's feet to the drawn ones and the
+/// shapes line up with the models at any frame rate.
+void addHumanShapes(DebugLines& lines, const human::Human& human, const ShapeLayers& layers, anim::Vec3 offset = {});
 
 /// Where the walking sphere touched what the contact with outward `normal` is: the point of the sphere at `centre` of
 /// `radius` furthest along −normal.

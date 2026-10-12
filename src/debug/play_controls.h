@@ -10,6 +10,7 @@
 
 #include "animation/anim_math.h"
 #include "core/error.h"
+#include "debug/entity_inspect.h"
 #include "sandbox/sandbox_layout.h"
 
 namespace coney::hud {
@@ -17,8 +18,6 @@ class Hud;
 }
 
 namespace coney::debug {
-
-class EntityInspect;
 
 /// A named place the player can be put: the feet, in the game's axes (z up, metres), and the heading in degrees (0
 /// faces +y), as a level's player start and a sandbox spawn point are given.
@@ -168,6 +167,14 @@ class PlayControls {
     /// The scene's humans and objects for the Entity inspector page (src/debug/entity_inspect.h); null when the mode
     /// cannot list them.
     [[nodiscard]] virtual const EntityInspect* inspect() const { return nullptr; }
+    /// Whether the Entity inspector can freeze entity `id`: the player and the other humans, not an object. False by
+    /// default.
+    [[nodiscard]] virtual bool canFreezeEntity(EntityId /*id*/) const { return false; }
+    /// Whether entity `id` is frozen: it neither moves, animates nor acts until it is let go (the player ignores the
+    /// pad, as the Player page's freeze makes him). False for an entity that cannot be frozen.
+    [[nodiscard]] virtual bool entityFrozen(EntityId /*id*/) const { return false; }
+    /// Freezes entity `id`, or lets it go; nothing for an entity that cannot be frozen.
+    virtual void setEntityFrozen(EntityId /*id*/, bool /*frozen*/) {}
 };
 
 /// The spot `distance` metres in front of feet `feet` facing `headingDegrees` (0 faces +y, counter-clockwise from
