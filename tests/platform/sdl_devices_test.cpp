@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Device hot-plug: gamepads connected and pulled out while the input is sampled, and the sound device lost while it
-// plays (docs/guides/building.md#controls, docs/guides/building.md#sound). Headless and CI-safe: SDL's virtual
+// plays (docs/guides/running.md#controls, docs/guides/running.md#sound). Headless and CI-safe: SDL's virtual
 // joysticks stand in for gamepads and its dummy audio driver for the sound card; a test whose driver is missing skips.
 #include <array>
 #include <cstdint>

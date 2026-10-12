@@ -1169,7 +1169,10 @@ bool Human::tryClimb(const raycast::CollisionMesh& mesh, anim::Vec3 direction) {
     const Gait gaitNow = gait();
     // Only a human with flag 0x2 starts a climb from a run.
     const bool running = (gaitNow == Gait::Run || gaitNow == Gait::Sprint) && hasFlag(flag::kFastClimber);
-    const auto probe = probeClimb(mesh, m_position, direction, running ? tuning.runningReach : tuning.reach, true);
+    // The probes measure along a unit direction: a brain's request is the way to its waypoint, whose length would
+    // scale the face's distance and so the reach test.
+    const anim::Vec3 way = flatUnit(direction);
+    const auto probe = probeClimb(mesh, m_position, way, running ? tuning.runningReach : tuning.reach, true);
     if (!probe) {
         return false;
     }

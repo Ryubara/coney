@@ -52,6 +52,7 @@ void ThrowAimState::enter(anim::Vec3 origin, float heading) {
     m_target = 0;
     m_faceFrames = 0;
     m_arcPoints = 0;
+    m_arcCut = false;
 }
 
 void ThrowAimState::leave() {
@@ -60,6 +61,7 @@ void ThrowAimState::leave() {
     m_target = 0;
     m_faceFrames = 0;
     m_arcPoints = 0;
+    m_arcCut = false;
 }
 
 void ThrowAimState::trace(const AimInput& input, const AimWorld& world, int side) {
@@ -103,6 +105,7 @@ void ThrowAimState::trace(const AimInput& input, const AimWorld& world, int side
             }
             m_arc[a + 1] = anim::add(m_arc[a], anim::scale(anim::subtract(m_arc[a + 1], m_arc[a]), hit->fraction));
             m_arcPoints = i + 2;
+            m_arcCut = true;
             m_target = 0;
             m_aimed = hit->handle;
             return;
@@ -112,11 +115,13 @@ void ThrowAimState::trace(const AimInput& input, const AimWorld& world, int side
         const auto a = static_cast<std::size_t>(candidateSegment);
         m_arc[a + 1] = anim::add(m_arc[a], anim::scale(anim::subtract(m_arc[a + 1], m_arc[a]), candidate.fraction));
         m_arcPoints = candidateSegment + 2;
+        m_arcCut = true;
         m_target = candidate.handle;
         m_aimed = candidate.handle;
         return;
     }
     m_arcPoints = kAimTracePoints;
+    m_arcCut = false;
     m_target = 0;
     m_aimed = 0;
 }

@@ -818,6 +818,9 @@ void PlayLevelMode::render(const RenderTime& time) {
         }
         drawGlass();
         drawCars(graphics::CarPass::Glass);
+        // The throw-aim arc, blended by its vertices' alpha among the see-through things (**Coney's stand-in** for its
+        // place in WorldManager_Render's order, not traced).
+        drawThrowArc(alpha);
         if (m_levelEffects) {
             m_levelEffects->drawInScene(blended.pose);
             m_levelEffects->drawGlints(m_glints.sprites(), blended.pose);
