@@ -10,7 +10,7 @@ You can use it two ways:
 
 - **fly round it** with a free camera, with no disc at all (`--sandbox`);
 - **play in it** as Rembrandt, with the same player, follow camera and character code as
-  [playing a level](building.md#playing-a-level) (`--play-level sandbox:NAME`). This needs the disc, for the character.
+  [playing a level](running.md#playing-a-level) (`--play-level sandbox:NAME`). This needs the disc, for the character.
 
 ## Running it
 
@@ -29,7 +29,7 @@ the `sandbox` folder of Coney's assets: `assets/` beside the executable, which e
 repository's `assets/`, or the folder `--assets DIR` names. An unknown name fails with the list of known ones.
 
 In the flying mode the camera starts at the layout's first viewpoint and is driven by pad 1, with the same controls as
-[the world viewer](building.md#the-world-viewer), plus:
+[the world viewer](running.md#the-world-viewer), plus:
 
 | Pad | Keyboard | Does |
 | --- | --- | --- |
@@ -37,7 +37,7 @@ In the flying mode the camera starts at the layout's first viewpoint and is driv
 | square | J | jump to the previous viewpoint |
 
 In the play mode Rembrandt starts at the layout's first spawn point, or at the one `--spawn NAME` names, dropped onto
-the ground below it. The controls are those of [playing a level](building.md#playing-a-level). Both modes take
+the ground below it. The controls are those of [playing a level](running.md#playing-a-level). Both modes take
 `--headless`, `--frames` and `--input-script` and print a summary when they stop (counts and positions only).
 
 From any run, [the debug menu](debug-menu.md)'s Levels page plays a layout by name, and in the play mode its Player

@@ -13,6 +13,7 @@ validation:
 not_in_nav: |
   /references/flags/
   /references/lights/
+  /references/wad-names/
 
 extra_css:
   - stylesheets/extra.css
@@ -146,6 +147,7 @@ nav:
           - "AI goals: the code of every goal class": research/ai-goals.md
           - "AI and the world: objects, cars, doors and climbs": research/ai-world.md
           - "AI pathing: holes, claims, jumps and status": research/ai-pathing.md
+          - "AI reimplementation plan: units and specifications": research/ai-reimpl.md
           - Cars: research/cars.md
           - Camera: research/camera.md
           - Scenes (cutscenes): research/scenes.md
@@ -155,6 +157,9 @@ nav:
           - Feel comparison: research/feel.md
           - Collision: research/collision.md
           - Physics: research/physics.md
+          - "Physics units: geometry kernels": research/physics-kernels.md
+          - "Physics units: shapes, bodies and moves": research/physics-bodies.md
+          - "Physics units: rays and the world": research/physics-world.md
           - The streamed world: research/world.md
           - Memory: research/memory.md
           - Maths: research/maths.md
@@ -245,6 +250,7 @@ nav:
       - Running agents: guides/agents.md
       - Issues: guides/issues.md
       - Building and testing: guides/building.md
+      - Running Coney: guides/running.md
       - Testing: guides/testing.md
       - The sandbox: guides/sandbox.md
       - Local workspace: guides/workspace.md
@@ -263,3 +269,4 @@ nav:
           - Code: guides/review/code.md
           - Research: guides/review/research.md
           - Commits: guides/review/commits.md
+          - Docs: guides/review/docs.md

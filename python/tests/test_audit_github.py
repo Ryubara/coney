@@ -328,8 +328,8 @@ def test_a_pull_request_called_closed_after_it_merged_is_not_wrong() -> None:
     assert found(gh.issue_stale_status, ctx) == []
 
 
-def test_a_leftover_without_a_from_line_is_found() -> None:
-    merged = PR_BODY.replace("Remaining:\n", "Remaining:\n\n- [ ] more work (#30)\n- [ ] other (#31)\n")
+def test_an_issue_an_older_remaining_list_points_at_without_a_from_line_is_found() -> None:
+    merged = PR_BODY.replace("Done:\n", "Remaining:\n\n- [ ] more work (#30)\n- [ ] other (#31)\n\nDone:\n")
     ctx = context(
         issues=[
             issue(30, body=task_body(extra="From: #12\n\n")),
@@ -451,13 +451,44 @@ def test_a_local_path_or_a_local_image_in_a_description_is_found() -> None:
     assert "local path" in problems[0].message and "local file" in problems[1].message
 
 
-def test_a_merged_pull_request_with_an_uncited_remaining_item_is_found() -> None:
-    loose = PR_BODY.replace("Remaining:\n", "Remaining:\n\n- [ ] the follow-up\n- [ ] tracked (#44)\n")
+LEGACY = PR_BODY.replace("Done:\n", "Remaining:\n\n- [ ] the follow-up\n- [ ] tracked (#44)\n\nDone:\n")
+UNFINISHED = PR_BODY.replace("Done:\n", "Done:\n\n- [ ] the second unit (#44)\n")
+BEFORE = "2026-10-11T23:59:00Z"
+AFTER = "2026-10-12T00:00:00Z"
+
+
+def test_a_pull_request_merged_before_the_rule_with_an_uncited_remaining_item_is_found() -> None:
     ctx = context(
-        pulls=[pull(1, state="MERGED", body=loose), pull(2, state="OPEN", body=loose), pull(3, state="MERGED")]
+        pulls=[
+            pull(1, state="MERGED", body=LEGACY, merged=BEFORE),
+            pull(2, state="OPEN", body=LEGACY),
+            pull(3, state="MERGED", merged=BEFORE),
+            pull(4, state="MERGED", body=LEGACY, merged=AFTER),
+        ]
     )
     (problem,) = found(gh.pr_remaining_uncited, ctx)
     assert problem.item == "#1" and "1 Remaining item" in problem.message and "the follow-up" in problem.message
+
+
+def test_a_pull_request_merged_since_the_rule_with_an_unticked_item_is_found() -> None:
+    ctx = context(
+        pulls=[
+            pull(1, state="MERGED", body=UNFINISHED, merged=AFTER),
+            pull(2, state="MERGED", body=UNFINISHED, merged=BEFORE),
+            pull(3, state="MERGED", body=LEGACY, merged=AFTER),
+            pull(4, state="MERGED", merged=AFTER),
+            pull(5, state="OPEN", body=UNFINISHED),
+        ]
+    )
+    problems = found(gh.pr_unfinished_items, ctx)
+    assert items(problems) == ["#1", "#3"]
+    assert "1 unticked Checklist item" in problems[0].message and "the second unit (#44)" in problems[0].message
+
+
+def test_an_open_pull_request_with_an_unticked_item_breaks_the_template_rules() -> None:
+    ctx = context(pulls=[pull(1, state="OPEN", body=UNFINISHED), pull(2, state="OPEN")])
+    (problem,) = found(gh.pr_body, ctx)
+    assert problem.item == "#1" and "the second unit" in problem.message and "not ticked" in problem.message
 
 
 def test_a_stacked_pull_request_names_its_base_and_has_no_auto_merge() -> None:

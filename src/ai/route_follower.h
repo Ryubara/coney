@@ -39,8 +39,12 @@ class RouteFollower {
     /// leg on is not walked, kind 1 or 2). The route is freed once the destination is the waypoint.
     /// @orig 0x0029aa88 Route_Follow (unknown)
     [[nodiscard]] anim::Vec3 waypoint(const RoutePlanner& planner, anim::Vec3 position, float speed = 0.0F);
-    /// The waypoints still ahead, the current first (the destination last): what the corner speed looks at.
+    /// The waypoints still ahead, the current first (the destination last).
     [[nodiscard]] std::vector<anim::Vec3> ahead() const;
+    /// The waypoints the corner speed looks at: those ahead, the current first, up to the first whose leg on has bit
+    /// `0x4` or `0x80` (a jump, drop or ledge climb), which is the last: nothing past a take-off is a corner (the
+    /// points the original collects at `0x002fbd18`, docs/research/scripting.md#level99-p2-vermin-fence).
+    [[nodiscard]] std::vector<anim::Vec3> cornerPoints() const;
     /// The index of the current waypoint (the destination is the last).
     [[nodiscard]] std::size_t index() const { return m_index; }
     /// The link kind of the leg to the current waypoint (the D record that steps from the waypoint before to it, on
@@ -48,6 +52,10 @@ class RouteFollower {
     /// @orig 0x00251070 Route_LegKind (unknown)
     [[nodiscard]] std::uint16_t legKind() const { return m_legKinds[m_index]; }
     [[nodiscard]] bool legAvoided() const { return m_legAvoided[m_index]; }
+    /// The link kind of the leg out of the current waypoint (to the next); 0 when the destination is the waypoint.
+    [[nodiscard]] std::uint16_t nextLegKind() const { return onLastLeg() ? std::uint16_t{0} : m_legKinds[m_index + 1]; }
+    /// The waypoint after the current one; the current one when it is the destination.
+    [[nodiscard]] anim::Vec3 nextPoint() const { return onLastLeg() ? m_points[m_index] : m_points[m_index + 1]; }
     /// Whether the leg to the current waypoint is a jump leg (kind 4): the current waypoint is the landing point.
     [[nodiscard]] bool onJumpLeg() const { return isJumpLeg(m_legKinds[m_index]); }
     /// Whether the current waypoint is a jump leg's take-off or landing: the route is kept for it.

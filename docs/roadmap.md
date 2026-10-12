@@ -64,7 +64,7 @@ that loads data, file I/O and the frame loop. Coney reads its data straight from
   raw blocks for every type whose subsystem is not written yet (`src/core/`).
 - Done: the game-mode stack and the game clock on a fixed 1/30 s step (`src/gamemodes/`, `src/core/game_timer.h`).
 - Done: `coney --disc <disc> --load <entry>` loads any WAD entry through the chunk system and prints a summary
-  ([Building and testing](guides/building.md#run-coney)). On the NTSC-U disc 7,066 of the 10,701 entries load as
+  ([Running Coney](guides/running.md#run-coney)). On the NTSC-U disc 7,066 of the 10,701 entries load as
   chunk containers; the rest are not containers (Lua bytecode, text, sound banks, RenderWare-only data).
 - Left for later milestones: the memory system (no research page yet), the rest of the initialisation order, the
   asynchronous file queue and the chunk handlers that need their subsystems.

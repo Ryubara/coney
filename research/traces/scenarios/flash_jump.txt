@@ -1,0 +1,27 @@
+# A straight run at the window (the stick at 100 % up), triangle a metre before the roof edge (glass_jump), then
+# d-pad right every 2 updates through the jump and the landing.
+5 stick left 0 100
+59 tap triangle
+61 tap right
+63 tap right
+65 tap right
+67 tap right
+69 tap right
+71 tap right
+73 tap right
+75 tap right
+77 tap right
+79 tap right
+81 tap right
+83 tap right
+85 tap right
+87 tap right
+89 tap right
+91 tap right
+93 tap right
+95 tap right
+97 tap right
+99 tap right
+101 tap right
+103 tap right
+105 tap right
