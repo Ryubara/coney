@@ -2,39 +2,59 @@
 #include "graphics/throw_arc.h"
 
 #include <algorithm>
-#include <cmath>
 
 #include "core/interpolation.h"
 
 namespace coney::graphics {
 
-std::vector<ThrowArcVertex> throwArcStrip(std::span<const anim::Vec3> points, bool hit) {
+std::vector<ThrowArcVertex> throwArcStrip(std::span<const anim::Vec3> points, anim::Vec3 right, bool cut, bool hit) {
     std::vector<ThrowArcVertex> strip;
     if (points.size() < 2) {
         return strip;
     }
-    // Across the arc: level and square to its direction in plan (the arc stays in one vertical plane); x for an arc
-    // straight up.
-    const float dx = points.back().x - points.front().x;
-    const float dy = points.back().y - points.front().y;
-    const float length = std::hypot(dx, dy);
-    const anim::Vec3 half =
-        length > 0.0F ? anim::Vec3{dy / length * (kThrowArcWidth / 2.0F), -dx / length * (kThrowArcWidth / 2.0F), 0.0F}
-                      : anim::Vec3{kThrowArcWidth / 2.0F, 0.0F, 0.0F};
-    const std::array<std::uint8_t, 4> colour = hit ? kThrowArcHitColour : kThrowArcColour;
-    strip.reserve(points.size() * 2);
-    const auto last = static_cast<float>(points.size() - 1);
-    for (std::size_t i = 0; i < points.size(); ++i) {
-        // Faded in from the hand: alpha 0 at the first point, full from kThrowArcFadePoints on.
-        std::array<std::uint8_t, 4> rgba = colour;
-        const float fade = std::min(1.0F, static_cast<float>(i) / static_cast<float>(kThrowArcFadePoints));
-        rgba[3] = static_cast<std::uint8_t>(std::lround(static_cast<float>(colour[3]) * fade));
-        const float v = static_cast<float>(i) / last;
-        // The left edge, then the right: half the width either side of the point.
-        strip.push_back(ThrowArcVertex{.position = anim::subtract(points[i], half), .u = 0.0F, .v = v, .rgba = rgba});
-        strip.push_back(ThrowArcVertex{.position = anim::add(points[i], half), .u = 1.0F, .v = v, .rgba = rgba});
+    const std::size_t last = points.size() - 1;
+    // The points before the contact: all of them for an arc that met nothing, else the contact (the last point) is
+    // not one of them.
+    const std::size_t count = cut ? last : points.size();
+    const anim::Vec3 half = anim::scale(right, kThrowArcHalfWidth);
+    const std::array<std::uint8_t, 3>& colour = hit ? kThrowArcHitColour : kThrowArcColour;
+    strip.reserve(kThrowArcPairs * 2);
+    for (std::size_t pair = 0; pair < kThrowArcPairs; ++pair) {
+        // Pair 0 on the hand, the next ones on their points up to the cut, the rest on the last point before the
+        // contact; the last pair is where the arc ended.
+        std::size_t index = 0;
+        if (pair == kThrowArcPairs - 1) {
+            index = last;
+        } else if (pair > 0) {
+            index = pair < count ? pair : count - 1;
+        }
+        // Faded in from the hand: alpha 0 at pair 0, then 127 plus up to 16 by how far along the arc the pair is.
+        std::uint8_t alpha = 0;
+        if (pair > 0) {
+            const std::size_t along = std::min(pair, count);
+            alpha = static_cast<std::uint8_t>(kThrowArcAlphaBase +
+                                              ((static_cast<std::size_t>(kThrowArcAlphaRise) * along) / count));
+        }
+        const std::array<std::uint8_t, 4> rgba{colour[0], colour[1], colour[2], alpha};
+        const float v = kThrowArcFirstV - static_cast<float>(pair);
+        // The left vertex, then the right: half the width either side of the point.
+        strip.push_back(
+            ThrowArcVertex{.position = anim::subtract(points[index], half), .u = 0.0F, .v = v, .rgba = rgba});
+        strip.push_back(ThrowArcVertex{.position = anim::add(points[index], half), .u = 1.0F, .v = v, .rgba = rgba});
     }
     return strip;
+}
+
+std::vector<std::uint16_t> throwArcIndices() {
+    std::vector<std::uint16_t> indices;
+    indices.reserve(kThrowArcTriangles * 3);
+    for (std::size_t pair = 0; pair + 1 < kThrowArcPairs; ++pair) {
+        const auto a = static_cast<std::uint16_t>(pair * 2);
+        indices.insert(indices.end(), {a, static_cast<std::uint16_t>(a + 1), static_cast<std::uint16_t>(a + 2),
+                                       static_cast<std::uint16_t>(a + 1), static_cast<std::uint16_t>(a + 3),
+                                       static_cast<std::uint16_t>(a + 2)});
+    }
+    return indices;
 }
 
 std::vector<anim::Vec3> blendThrowArc(std::span<const anim::Vec3> previous, std::span<const anim::Vec3> newest,

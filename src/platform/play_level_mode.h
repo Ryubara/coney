@@ -34,6 +34,7 @@
 #include "gamemodes/game_mode.h"
 #include "gamemodes/gameplay_mode.h"
 #include "graphics/render_device.h"
+#include "graphics/throw_arc.h"
 #include "hud/health_rings.h"
 #include "human/player.h"
 #include "human/strike_shapes.h"
@@ -187,6 +188,10 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] ai::AiHumans& fighters() { return *m_ai; }
     /// Player 1's throw aim (docs/research/objects.md#throws).
     [[nodiscard]] const combat::ThrowAimState& throwAim() const { return m_throwAim; }
+    /// The ribbon of player 1's throw-aim arc `alpha` of the way from the step before's arc to the newest (1 for the
+    /// newest): what the arc's drawing draws, 36 vertices; empty while he does not aim
+    /// (docs/research/graphics.md#throw-arc).
+    [[nodiscard]] std::vector<graphics::ThrowArcVertex> throwArcRibbon(float alpha) const;
     /// Player 1's lock pick under way; null when none runs (docs/research/crimes.md#lockpick).
     [[nodiscard]] const world_objects::LockPick* lockPick() const { return m_lockPick ? &*m_lockPick : nullptr; }
     [[nodiscard]] const PlayStats& stats() const { return m_stats; }
@@ -538,7 +543,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // @orig 0x0027da10 Player_OnL1Pressed (unknown)
     void stepThrowAim(const Pad& pad);
     // Draws player 1's throw-aim arc while he aims, `alpha` of the way from the step before's arc to the newest, red
-    // while it meets a target (docs/research/graphics.md#code-textures).
+    // while it meets a target (docs/research/graphics.md#throw-arc).
+    // @orig 0x00419da0 ThrowArcs_RenderAll (unknown)
     void drawThrowArc(float alpha);
     // The lock-pick dial follows player 1's pick: shown at its difficulty while it runs, with the pins' angles and the
     // pin the next press judges (docs/research/hud.md#lock-pick-dial-layout).

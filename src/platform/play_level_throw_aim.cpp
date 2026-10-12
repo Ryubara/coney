@@ -217,18 +217,31 @@ void PlayLevelMode::stepThrowAim(const Pad& pad) {
     }
 }
 
+std::vector<graphics::ThrowArcVertex> PlayLevelMode::throwArcRibbon(float alpha) const {
+    // Only while he is in the aiming state and holds the object (ThrowArcs_RenderAll, ThrowArc_Render).
+    if (!m_throwAim.active() || m_throwAim.arcPoints() < 2) {
+        return {};
+    }
+    const std::span<const anim::Vec3> newest(m_throwAim.arc().data(), static_cast<std::size_t>(m_throwAim.arcPoints()));
+    const std::vector<anim::Vec3> points = graphics::blendThrowArc(m_previousArc, newest, alpha);
+    // The ribbon runs along the thrower's right axis (his frame's x), level across the arc; red while the arc meets a
+    // target: the human or object HuIsAimingAt reads (`+0x634`), none for the level mesh.
+    const anim::Vec3 right = combat::throwerToWorld(anim::Vec3{1.0F, 0.0F, 0.0F}, m_throwAim.heading());
+    return graphics::throwArcStrip(points, right, m_throwAim.arcCut(), m_throwAim.aimed() != 0.0);
+}
+
 void PlayLevelMode::drawThrowArc(float alpha) {
-    // Drawn while he is in the aiming state (ThrowArc_Render), red while the arc meets a target: the human or object
-    // HuIsAimingAt reads (`+0x634`). **Coney's reading** of ThrowArc_BuildStrip's `hit`.
-    if (!m_throwAim.active() || !m_engine.drawsPixels() || m_throwAim.arcPoints() < 2) {
+    if (!m_engine.drawsPixels()) {
+        return;
+    }
+    const std::vector<graphics::ThrowArcVertex> ribbon = throwArcRibbon(alpha);
+    if (ribbon.empty()) {
         return;
     }
     if (!m_throwArc) {
         m_throwArc = std::make_unique<ThrowArcRenderer>(m_wad, m_print);
     }
-    const std::span<const anim::Vec3> newest(m_throwAim.arc().data(), static_cast<std::size_t>(m_throwAim.arcPoints()));
-    const std::vector<anim::Vec3> points = graphics::blendThrowArc(m_previousArc, newest, alpha);
-    m_throwArc->draw(points, m_throwAim.aimed() != 0.0);
+    m_throwArc->draw(ribbon);
 }
 
 } // namespace coney::platform

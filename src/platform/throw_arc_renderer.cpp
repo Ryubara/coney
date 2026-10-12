@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "platform/throw_arc_renderer.h"
 
+#include <cstdint>
 #include <format>
 #include <string>
 #include <utility>
@@ -44,15 +45,14 @@ void ThrowArcRenderer::loadTexture() {
     m_dictionary = std::move(dictionaries->front());
 }
 
-void ThrowArcRenderer::draw(std::span<const anim::Vec3> points, bool hit) {
-    const std::vector<graphics::ThrowArcVertex> strip = graphics::throwArcStrip(points, hit);
+void ThrowArcRenderer::draw(const std::vector<graphics::ThrowArcVertex>& strip) {
     if (strip.empty()) {
         return;
     }
     if (!m_tried) {
         loadTexture();
     }
-    // The strip's pairs as triangles, in RenderWare's axes: the game's (x, y, z) is RenderWare's (x, z, -y).
+    // The ribbon's vertices in RenderWare's axes: the game's (x, y, z) is RenderWare's (x, z, -y).
     std::vector<rw::gl3::Im3DVertex> vertices;
     vertices.reserve(strip.size());
     for (const graphics::ThrowArcVertex& source : strip) {
@@ -65,14 +65,7 @@ void ThrowArcRenderer::draw(std::span<const anim::Vec3> points, bool hit) {
         vertex.setV(source.v);
         vertices.push_back(vertex);
     }
-    std::vector<rw::uint16> indices;
-    indices.reserve((strip.size() / 2 - 1) * 6);
-    for (std::size_t pair = 0; pair + 1 < strip.size() / 2; ++pair) {
-        const auto a = static_cast<rw::uint16>(pair * 2);
-        indices.insert(indices.end(), {a, static_cast<rw::uint16>(a + 1), static_cast<rw::uint16>(a + 2),
-                                       static_cast<rw::uint16>(a + 1), static_cast<rw::uint16>(a + 3),
-                                       static_cast<rw::uint16>(a + 2)});
-    }
+    std::vector<std::uint16_t> indices = graphics::throwArcIndices(); // librw takes a mutable pointer
     rw::Raster* raster = m_dictionary ? m_dictionary->textures().front()->raster : nullptr;
     rw::SetRenderState(rw::ZTESTENABLE, 1);
     rw::SetRenderState(rw::ZWRITEENABLE, 0);
@@ -81,6 +74,9 @@ void ThrowArcRenderer::draw(std::span<const anim::Vec3> points, bool hit) {
     rw::SetRenderState(rw::VERTEXALPHA, 1);
     rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
     rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+    // The texture repeats once a segment along the ribbon (v runs from 15 to -2), and is filtered linearly.
+    rw::SetRenderState(rw::TEXTUREFILTER, rw::Texture::LINEAR);
+    rw::SetRenderState(rw::TEXTUREADDRESS, rw::Texture::WRAP);
     rw::SetRenderStatePtr(rw::TEXTURERASTER, raster);
     rw::im3d::Transform(vertices.data(), static_cast<rw::int32>(vertices.size()), nullptr,
                         rw::im3d::VERTEXXYZ | rw::im3d::VERTEXRGBA | rw::im3d::VERTEXUV);

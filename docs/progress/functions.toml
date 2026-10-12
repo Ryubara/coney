@@ -2524,6 +2524,12 @@ subsystem = "Graphics"
 size = 80
 
 [[function]]
+address = 0x0018f268
+name = "ThrowArc_Create"
+subsystem = "Graphics"
+size = 960
+
+[[function]]
 address = 0x0018fa68
 name = "ThrowArc_BuildStrip"
 subsystem = "Graphics"
@@ -11961,6 +11967,12 @@ size = 664
 address = 0x004197a8
 name = "GameState_CheckGameOver"
 subsystem = "Warriors"
+
+[[function]]
+address = 0x00419da0
+name = "ThrowArcs_RenderAll"
+subsystem = "Warriors"
+size = 112
 
 [[function]]
 address = 0x00419fc8

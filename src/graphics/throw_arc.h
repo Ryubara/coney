@@ -2,6 +2,7 @@
 #pragma once
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <span>
 #include <string_view>
@@ -9,42 +10,57 @@
 
 #include "animation/anim_math.h"
 
-// The throw-aim arc: the strip drawn along the path a held object will fly while the player aims a throw with L1
-// (docs/research/graphics.md#code-textures, docs/research/objects.md#throws).
+// The throw-aim arc: the ribbon drawn along the path a held object will fly while the player aims a throw with L1
+// (docs/research/graphics.md#throw-arc, docs/research/objects.md#throws).
 
 namespace coney::graphics {
 
-/// The arc's texture, a texture dictionary in the WAD named by the decimal CRC-32 of this name. **Coney's reading**:
-/// the page gives the name and that it loads once (`0x005971b0`); the file's naming is the water's
-/// (docs/research/graphics.md#code-water), inferred to hold for every name `ResourceMgr_GetTextures` is given.
+/// The arc's texture, a texture dictionary of one texture (`aimthrow`, 32 x 64) in the WAD file named by the decimal
+/// CRC-32 of this name (`646320484`, `./ee_files/646320484`).
+/// @orig 0x0018f268 ThrowArc_Create (unknown)
 inline constexpr std::string_view kThrowArcTexture = "aimthrow_tex";
-/// The strip's width, metres.
-inline constexpr float kThrowArcWidth = 0.16F;
-/// The strip's colour (`0xRRGGBBAA` as bytes) while the arc meets nothing it targets: **Coney's stand-in** (the page
-/// says one colour for each case, not which); a flat light grey, as players remember it.
-inline constexpr std::array<std::uint8_t, 4> kThrowArcColour{170, 170, 170, 160};
-/// The strip's colour while the arc meets a target (`hit`: a human target or an object with `THROWNWEAPONTARGET`,
-/// what `HuIsAimingAt` reads): **Coney's stand-in**, red.
-inline constexpr std::array<std::uint8_t, 4> kThrowArcHitColour{220, 30, 30, 160};
-/// The points over which the strip fades in from the hand (alpha 0 at the first, full from this one on): **Coney's
-/// stand-in** for the fade the page names but does not size.
-inline constexpr std::size_t kThrowArcFadePoints = 3;
+/// The ribbon's pairs of vertices, fixed: 36 vertices and 34 triangles whatever the arc's length, the pairs past a
+/// cut arc's end collapsed on its last point.
+inline constexpr std::size_t kThrowArcPairs = 18;
+inline constexpr std::size_t kThrowArcTriangles = (kThrowArcPairs - 1) * 2;
+/// Half the ribbon's width, metres, either side of the arc along the thrower's right axis (0.16 m across).
+inline constexpr float kThrowArcHalfWidth = 0.08F;
+/// The ribbon's vertex colour (RenderWare's RGBA bytes, alpha apart) while the arc meets nothing a throw targets, and
+/// while it does (`hit`: the object `HuIsAimingAt` reads).
+inline constexpr std::array<std::uint8_t, 3> kThrowArcColour{127, 127, 127};
+inline constexpr std::array<std::uint8_t, 3> kThrowArcHitColour{170, 43, 43};
+/// The alpha of every pair but the first: 127 plus up to this much by how far along the arc the pair is.
+inline constexpr std::uint8_t kThrowArcAlphaBase = 127;
+inline constexpr int kThrowArcAlphaRise = 16;
+/// The texture coordinate v of pair 0; pair i has v = this minus i, so the texture repeats once per segment.
+inline constexpr float kThrowArcFirstV = 15.0F;
 
-/// One vertex of the strip, game axes (z up).
+/// One vertex of the ribbon, game axes (z up).
 struct ThrowArcVertex {
     anim::Vec3 position;
-    float u = 0.0F; ///< 0 on the left edge, 1 on the right.
-    float v = 0.0F; ///< 0 at the hand, 1 at the arc's last point.
+    float u = 0.0F; ///< 0 on the left vertex of a pair, 1 on the right.
+    float v = 0.0F; ///< kThrowArcFirstV at the hand, one less each pair.
     std::array<std::uint8_t, 4> rgba{};
 };
 
-/// The strip along the arc's `points` (the aim trace's kept points up to where it ended, the hand first): a pair of
-/// vertices per point, left then right, kThrowArcWidth apart across the arc's horizontal direction, so the strip lies
-/// flat; coloured kThrowArcHitColour when `hit`, else kThrowArcColour, faded in over the first kThrowArcFadePoints.
-/// Empty for fewer than two points. **Coney's reading**: "flat" as lying level across the arc (the page gives the
-/// width, not the strip's facing).
+/// The ribbon along the arc's `points` (the aim trace's kept points up to where it ended, the hand first, 18 at most;
+/// `cut` is whether the trace ended at a contact, which is then the last point): always kThrowArcPairs pairs of
+/// vertices, left then right, the point either side by kThrowArcHalfWidth along `right` (the thrower's right axis, a
+/// unit vector, so the ribbon lies level across the arc in the plane of his facing). Pair 0 is on the hand, the pairs
+/// after it on their points up to the contact, the ones past that on the last point before the contact, and the last
+/// pair on the contact (or on the last point of an arc that met nothing). Coloured kThrowArcHitColour when `hit`, else
+/// kThrowArcColour; alpha 0 on pair 0, then 127 + trunc(16 x min(pair / count, 1)) with `count` the points before the
+/// contact (all of them when not `cut`). Empty for fewer than two points.
+/// **Coney's reading**: an arc that met nothing has its last pair on its last point (the page has the last pair at
+/// "point `count`", which an 18-point arc has no entry for).
 /// @orig 0x0018fa68 ThrowArc_BuildStrip (unknown)
-[[nodiscard]] std::vector<ThrowArcVertex> throwArcStrip(std::span<const anim::Vec3> points, bool hit);
+/// @orig 0x0018f268 ThrowArc_Create (unknown)
+[[nodiscard]] std::vector<ThrowArcVertex> throwArcStrip(std::span<const anim::Vec3> points, anim::Vec3 right, bool cut,
+                                                        bool hit);
+
+/// The triangle list for a ribbon of kThrowArcPairs pairs: two triangles per pair of pairs, 6 indices a quad.
+/// Collapsed pairs make degenerate triangles that draw nothing.
+[[nodiscard]] std::vector<std::uint16_t> throwArcIndices();
 
 /// The arc's points `alpha` of the way from the step before (`previous`) to the newest (`newest`), for a render between
 /// steps: each point lerped when both arcs have as many points, else `newest` as it is. Exactly `newest` at alpha 1.

@@ -129,6 +129,7 @@ add_executable(coney_tests
     platform/disc_tagging_test.cpp
     platform/disc_story_start_test.cpp
     platform/disc_textures_test.cpp
+    platform/disc_throw_arc_test.cpp
     platform/disc_world_test.cpp
     platform/disc_level_test.cpp
     platform/disc_movies_test.cpp
