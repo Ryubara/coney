@@ -240,6 +240,7 @@ nav:
           - Debug: references/bindings/debug.md
   - Guides:
       - How we work: guides/how-we-work.md
+      - From research to code: guides/research-to-code.md
       - Running agents: guides/agents.md
       - Issues: guides/issues.md
       - Building and testing: guides/building.md
@@ -252,7 +253,6 @@ nav:
       - Realtime lighting design: guides/realtime-lighting.md
       - Asset and script architecture: guides/asset-and-script-architecture.md
       - Conventions: guides/conventions.md
-      - Repository conventions: guides/repo-conventions.md
       - Repository conventions: guides/repo-conventions.md
       - Research workflow: guides/research-workflow.md
       - Ghidra + ghidra-mcp: guides/ghidra.md
