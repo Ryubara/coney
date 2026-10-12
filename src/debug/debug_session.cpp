@@ -19,7 +19,7 @@ DebugSession::DebugSession(TunableRegistry& tunables, DebugServices services, In
     m_gate.addBetweenSteps([this] { m_model.sampleChannels(); });
     // A notice counts down by frames.
     m_gate.addBetweenSteps([this] { m_noticeFramesLeft = m_noticeFramesLeft > 0 ? m_noticeFramesLeft - 1 : 0; });
-    // R3 + d-pad left flips the noclip while the Player page's hotkey option is on.
+    // R3 + d-pad left flips the noclip while the Player page's hotkey option is on (it starts on).
     m_gate.addHotkey(
         kNoclipChord, [this] { return m_noclipHotkey; },
         [this] {

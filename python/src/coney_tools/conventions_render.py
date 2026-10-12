@@ -213,6 +213,15 @@ def _required_checks(conventions: Conventions) -> list[str]:
     return lines
 
 
+def _maintainer_decisions(conventions: Conventions) -> list[str]:
+    """The decisions only a maintainer takes, as one bullet (AGENTS.md, docs/guides/how-we-work.md)."""
+    decisions = "; ".join(conventions.repo.owner_decisions)
+    return _bullet(
+        "**Maintainer decisions** are never an agent's or a coordinator's: it stops and reports instead of acting. "
+        f"They are: {decisions}."
+    )
+
+
 def _docs_only_paths(conventions: Conventions) -> list[str]:
     """The paths of a documentation-only change, each with what its pattern matches (docs/guides/building.md)."""
     lines: list[str] = []
@@ -245,6 +254,7 @@ BLOCKS: dict[str, Callable[[Conventions], list[str]]] = {
     "labels": _labels,
     "pr-rules": _pr_rules,
     "required-checks": _required_checks,
+    "maintainer-decisions": _maintainer_decisions,
     "docs-only-paths": _docs_only_paths,
     "audit-checks": _audit_checks,
 }

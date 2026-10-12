@@ -132,6 +132,20 @@ void PlayLevelMode::takePlace(const ai::Brain& to) {
                         start.position.x, start.position.y, start.position.z));
 }
 
+bool PlayLevelMode::releasePlayerToAi() {
+    if (!m_ai) {
+        return false;
+    }
+    // The brain his class gives (Human_Init's choice), as for the human HuSwitchPlayer leaves behind.
+    ai::Brain& player = m_ai->playerBrain();
+    if (!m_ai->releasePlayer(castBrainType(player.characterClass()))) {
+        return false;
+    }
+    m_print(std::format("player: player 1 (human {}) handed to the AI as brain type {}\n", player.handle(),
+                        static_cast<int>(player.type())));
+    return true;
+}
+
 ai::BrainType PlayLevelMode::castBrainType(int type) const {
     const characters::CharacterType* found = m_types.find(type);
     const int powerClass = found != nullptr && found->powerClass ? *found->powerClass : ai::kFighterPowerClass;

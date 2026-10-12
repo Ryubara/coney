@@ -567,7 +567,7 @@ checked against the 850 script-resolved roles it covers, it gives the same perso
 
 #### Cast at runtime {#cast-runtime}
 
-**Confirmed (runtime)**, PCSX2 2.9.94, 2026-10-11, with three hooks of `repo:research/traces/patches.toml`:
+**Confirmed (runtime)**, PCSX2 2.9.94, 2026-10-11, with three hooks of `repo:research/traces/patches/scene-casts.toml`:
 `scene-bind-human` at `0x00354248` (the store of `Scene_BindHuman`: the scene id, the role index, the role's name,
 the human's name `+0x80` and character type `+0xd0`), `scene-bind-object` at `0x00354340` (the same store in
 `Scene_BindObject`: the slot's name, the object's type index `+0x112` and type name through `+0xc0`) and

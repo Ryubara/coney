@@ -41,7 +41,7 @@ std::optional<coney::io::Wad> openDisc() {
 
 } // namespace
 
-TEST_CASE("level99's scripts light it as the original does at checkpoint 3") {
+TEST_CASE("level99's scripts light it as the original does at checkpoint 3", "[disc]") {
     const std::optional<coney::io::Wad> wad = openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set");

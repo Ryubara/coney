@@ -374,8 +374,8 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
   those addresses, and start it with `coney-tools pcsx2 launch --agent <id> <copy>`; restart PCSX2 the same way
   for every run. Then write the bytes over PINE (the stick table above gives the magnitude). Find the player as the human
   whose `+0x1b0` is 0: in later levels it is not human 0, and the per-player record is indexed by its `+0x92`. The
-  patch is `scripted-pad` in `research/traces/patches.toml`, with each instruction word it expects and the one that
-  replaces it; `coney-tools pcsx2 prepare-state` and `pcsx2 record` make the copy and restart PCSX2 for you.
+  patch is `scripted-pad` in `research/traces/patches/state-patches.toml`, with each instruction word it expects and the
+  one that replaces it; `coney-tools pcsx2 prepare-state` and `pcsx2 record` make the copy and restart PCSX2 for you.
 - **The right stick, too** (2026-10-05, the feel pass). The right stick's loads are at `0x00149df8` / `0x00149e00`
   (DualShock 2 path) and `0x00149eb8` / `0x00149ec0` (digital path), offsets 4 and 5; making them 0x24 and 0x25
   puts the right stick's x and y at `0x005de3ac` / `0x005de3ad` (the `right-stick` patch). The stick table at
@@ -431,7 +431,7 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
   keep your own states as files in your scratch folder, made as above. PINE can only save to a slot number: when a
   state must be saved from a running game, save it to an empty slot above 10 and move the file to your scratch folder
   at once. A state saved from a patched copy still holds the patches; put each patched word back to the original that
-  `patches.toml` lists before using it as a scenario's `state`, or the copy is refused.
+  `research/traces/patches/` lists before using it as a scenario's `state`, or the copy is refused.
 - **Hygiene.** Save states, screenshots and logs contain game data: keep them in your scratch folder (move the
   `.p2s` files out of `pcsx2/sstates/` afterwards) and close PCSX2 when done. Screenshots are measured, never
   committed; a claim quotes the numbers.
@@ -509,10 +509,14 @@ hook among the scenario's patches: `{ function = "0x002b2b90", args = ["u32(enem
 frame = 3 }` is `GoalFight(enemy, player)`. One call per frame; the arguments (up to six) are expressions worked out
 then, and the recorder stops if the call before was not made.
 
-**Patches** (`research/traces/patches.toml`) are named groups of edits to the copy's `eeMemory.bin`: a code edit gives
-the address, the instruction word the state must hold there and the word that replaces it, and the copy is refused
+**Patches** (the files of `research/traces/patches/`) are named groups of edits to the copy's `eeMemory.bin`: a code
+edit gives the address, the instruction word the state must hold there and the word that replaces it, and the copy is refused
 when the state holds something else. `scripted-pad`, `right-stick` and `puppet` are the patches of
-[Driving PCSX2](#driving-pcsx2).
+[Driving PCSX2](#driving-pcsx2). The patches and the hooks ([Hooks](#hooks)) are declared in the TOML files of that
+folder, read together in file-name order; a name must be unique across them. **A pass adds its own file**
+(`patches/<pass>.toml`, with a comment at the top saying what the pass asked and the research page), and never appends
+to an existing one: two research branches that each append to one shared file conflict on nearly every merge, two
+files never do. Put a patch or hook in an existing file only to change that very entry.
 
 **Fields** (`research/traces/fields.toml`) are named sets of columns. A field is read every update at an
 **address expression** (`tf(player) + 0x4`, type `f32`), or worked out by a **formula** from the fields before it
@@ -642,7 +646,9 @@ several of Coney with the all-humans trace (one row per human per update; Coney'
 ...` computes rates, shares and distributions per gang (goal time shares, attacks and blocks per minute, attackers on
 one target, distance to the target, target switches, goal interruptions, time to the first engagement, knock-out
 times, the match's length and winner) and flags each metric where Coney is outside the original's spread
-([coney-tools](coney-tools.md#trace)). Keep the recordings in the scratch folder, never in the repository.
+([coney-tools](coney-tools.md#trace)). Keep the recordings in the scratch folder, never in the repository. Match the
+original's set-up on Coney's side: where the recording hands player 1 to the AI after the countdown, run Coney with
+`--ai-player`, and give each Coney match its own `--ai-seed` ([Running: tracing](running.md#tracing)).
 
 ### Differential playthroughs {#differential-playthroughs}
 
