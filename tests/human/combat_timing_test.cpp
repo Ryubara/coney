@@ -106,7 +106,8 @@ constexpr std::uint16_t kRecovery = 0x48;
 constexpr std::uint16_t kRate08 = 0x800;
 
 // The fight's clips with the disc's lengths for the moves timed here, and the chain attacks' and the snaps' phase
-// events. The charge carries the body at 7.45 m/s, as at runtime.
+// events. The charge carries the body at 7.45 m/s, as at runtime. The bat's square 34 (28 frames) and cross 36 (26
+// frames) are at the unflagged 0.75, with no chain window (docs/research/combat-moves.md#bat-cross).
 std::vector<coney::test::LocomotionClip> timingClips() {
     std::vector<coney::test::LocomotionClip> clips = coney::test::fightClips();
     const std::vector<coney::test::LocomotionClip> timedClips{
@@ -170,6 +171,8 @@ std::vector<coney::test::LocomotionClip> timingClips() {
         evented(25, 12.0F, 0, {{6, kEnd}}),
         evented(27, 12.0F, 0, {{6, kEnd}}),
         evented(29, 12.0F, 0, {{6, kEnd}}),
+        evented(34, 28.0F, 0, {{9, kEnd}, {19, kRecovery}}),
+        evented(36, 26.0F, 0, {{15, kEnd}, {17, kRecovery}}),
         evented(57, 33.0F, 0, {{14, kWindow}, {25, kEnd}})};
     // Each replaces the fight's clip of its id, or joins them (an id may appear only once in a set).
     for (const coney::test::LocomotionClip& clip : timedClips) {
@@ -531,6 +534,25 @@ TEST_CASE("X1 alone lasts 30 updates; the stick at 35 % walks him as it ends", "
     CHECK(line.freedAt(11) == over);
     checkWalksFrom(line, over);
     checkNothingLeft(fight);
+}
+
+TEST_CASE("with a bat, 34 lasts 37 updates and 36 lasts 35, as at runtime", "[human][combat][timing]") {
+    // 34's 28 frames at 0.75 give 38 updates; the original handed over to 389 after 37 (a Coney stand-in ends that
+    // clip early, docs/research/combat-moves.md#bat-cross). 36's 26 frames give its 35.
+    struct Case {
+        const char* script;
+        int clip;
+        int start;
+        int updates;
+    };
+    for (const Case& c : {Case{"10 tap square\n", 34, 10, 37}, Case{"9 tap cross\n", 36, 10, 35}}) {
+        INFO("clip " << c.clip);
+        Fight fight(timingCharacter(), 30.0F);
+        fight.human().fighter().setAnimSet(3);
+        const Timeline line = Timeline::record(fight, c.script, 80);
+        REQUIRE(line.startsOf(c.clip) == std::vector<int>{c.start});
+        CHECK(line.endOf(c.clip, c.start) == c.start + c.updates);
+    }
 }
 
 TEST_CASE("square then cross spammed plays S1 and SX2, which plays to its end", "[human][combat][timing]") {
