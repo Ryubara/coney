@@ -63,6 +63,7 @@ and set `S-needs-info`; do not invent it.
 | `issue.progress-idle` | Ask the track for its state; return the issue to `S-ready-to-start` when nobody works on it. |
 | `issue.review-without-pr` | Find the pull request (`gh pr list --search "#N"`) and link it, or set the status back to `S-in-progress`. |
 | `pr.title`, `pr.body` | The author fixes the text in the pull request's description file in their scratch folder; if you fix it yourself, `gh pr edit N --title ...` or `--body-file`, and rerun `repo check-body`. |
+| `pr.unfinished-items` | The author finishes each unticked item in the pull request, or takes it out: work the pull request does not finish lives in its own issue. Then they update the description file and rerun `repo check-body`. |
 | `pr.remaining-uncited` | File an issue for each unchecked Remaining item and write its number into the merged pull request's description. |
 | `pr.idle` | Ask the author; close the pull request with a comment when the work is abandoned. |
 | `pr.stacked-depends` | Add the `Depends on #N` line to the description. |
@@ -70,7 +71,7 @@ and set `S-needs-info`; do not invent it.
 | `pr.base-merged` | The author rebases onto `main` (`git rebase --onto origin/main <old base> <branch>`); then `gh pr edit N --base main`. |
 | `pr.merged-into-base` | Close by hand the issues the pull request fixes, with a comment naming it, and move the work onto `main`. |
 | `ws.scratch` | Delete the finished work's captures from its scratch folder (generated media may be deleted), or ask the track. |
-| `files.pointer`, `files.exist`, `files.address`, `files.forms`, `files.template`, `files.ci-scope`, `files.large-file-limit` | A change to the repository: make it on a branch in a worktree as one unit, with the check's rule from the conventions, and queue it ([the release queue](../../../docs/guides/how-we-work.md#release-queue)). |
+| `files.pointer`, `files.exist`, `files.address`, `files.forms`, `files.template`, `files.ci-scope`, `files.large-file-limit`, `files.markdown-hook` | A change to the repository: make it on a branch in a worktree as one unit, with the check's rule from the conventions, and queue it ([the release queue](../../../docs/guides/how-we-work.md#release-queue)). |
 
 ### `owner`: stop
 
