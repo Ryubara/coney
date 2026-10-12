@@ -1038,9 +1038,8 @@ uvx pre-commit run --all-files
 Run that before every commit, or install the hooks once with `uvx pre-commit install` so that `git commit` runs them
 for you. The hooks fix what they can; stage their changes and commit again. Install them once in each clone; the
 worktrees of a clone share them. No hook checks a commit title: a pull request is squash-merged, so only its title
-reaches `main`, and CI checks that against the commit title rules (`area: Verb the rest`, at most 72 characters; the
-rules are `commits.title` in [.github/conventions.yml](repo:.github/conventions.yml) and
-[CONTRIBUTING.md](repo:CONTRIBUTING.md#commits) lists them).
+reaches `main`, and CI checks that against the commit title rules (`commits.title` in
+[.github/conventions.yml](repo:.github/conventions.yml); [CONTRIBUTING.md](repo:CONTRIBUTING.md#commits) lists them).
 
 ## Documentation
 

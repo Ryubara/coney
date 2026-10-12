@@ -198,9 +198,8 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
 
 - **Decide and keep going.** The coordinator approves its own designs and plans, and when one item ends it takes the
   next from the state file instead of asking whether to start. It stops only when a maintainer says so.
-- **Escalate only maintainer decisions:** making the repository public, release tags, force-pushes of `main` or of
-  someone else's branch, legal and licence questions, changes to the installer and launcher (a maintainer approves
-  them before they merge), and changes to these rules.
+- **Escalate only maintainer decisions**, the list in [AGENTS.md](repo:AGENTS.md) (`repo.owner_decisions` in
+  [.github/conventions.yml](repo:.github/conventions.yml)); everything else the coordinator decides itself.
 - **Keep every gap staffed.** When a track finishes, the next open gap gets a track at once: unfinished fixes,
   subsystems that differ from the original, missions still to build (several at a time, one per track). The
   priorities are on the [roadmap](../roadmap.md#priorities).
@@ -222,20 +221,24 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
 - **After a merge, fix the issues that cite the pull request.** Search them (`gh issue list --state open --search "#N"`),
   change "open" to "merged" where the text names the pull request, tick the checklist items it finished, and close or
   relabel an issue it fixed ([Writing an issue a newcomer can read](issues.md#writing)).
-- **Merge only finished commits.** A "WIP" commit made when a track paused is never merged: create a clean commit
-  (or cherry-pick the finished part) instead.
+- **Merge only finished work.** A pull request is merged as it stands at its tip, and the squash drops the commits
+  inside the branch, so a "WIP" commit in the middle does no harm. A branch whose tip is a paused, half-finished
+  state is never merged: finish it, or cut the finished part into a new branch.
 - **Check a branch's diff before merging it.** A branch can be contaminated with unrelated reverted files (a bad
   rebase or a stray copy); a diff against the merge base that touches files outside the track's scope means the
   branch is rebuilt, not merged.
-- **One merge at a time, with a lock.** Merges run from a script that takes a lock directory; remove the lock only
-  after confirming no merge process runs (list processes by command line). A loop started before a session reset
-  can survive it and run alongside the new one in the same checkout, which loses merges.
-- **Do not hide a failed merge in a pipe.** `git merge ... | tail -1 && next` reports the status of `tail`, not of
-  the merge. Run the merge on its own and test its exit code.
+- **GitHub merges, one pull request at a time.** Auto-merge is on: the maintainer or the coordinator enables it on a
+  pull request that follows the rules, and GitHub squash-merges it as soon as every required check passes, then
+  deletes its branch. The settings are the `merge` section of the conventions file, shown in
+  [What CI runs](building.md#what-ci-runs). No local script merges anything, so there is no lock to take; the only
+  merges done by hand are of `main` into a branch.
+- **Do not hide a failed command in a pipe.** `git merge origin/main | tail -1 && next` reports the status of `tail`,
+  not of the merge. Run the command on its own and test its exit code.
 - **Regenerate, then resolve by hand only what a generator cannot.** On a conflict in a generated file, take either
   side and rerun the generator; resolve prose pages by hand, keeping both sides' claims.
-- **Run the local gate on the merged result** ([The local gate](testing.md#local-gate)) before pushing; fix
-  failures forward rather than leaving `main` red. Before editing a page many tracks share, rebase on `main` first.
+- **Run the local gate again after merging `main` into a branch or rebasing it**
+  ([The local gate](testing.md#local-gate)), and fix a red `main` forward rather than leaving it red. Before editing a
+  page many tracks share, rebase on `main` first.
 - **Rebuild the release build after an engine merge.** When a merged change touches the engine, the coordinator
   builds the `release` preset ([Build and test](building.md#build-and-test)) from the updated `main`, so the
   maintainer can play the latest `main`. A merge that changes only docs or research needs no build.

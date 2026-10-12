@@ -72,10 +72,10 @@ A commit title is:
 area: Verb the rest
 ```
 
-It is at most 72 characters, has no trailing period, and uses the present tense. The areas and verbs are
-`commits.title` in [.github/conventions.yml](.github/conventions.yml)
-([Repository conventions](docs/guides/repo-conventions.md)), and this block is generated from them
-(`coney-tools repo render`):
+The length, the tense and the areas and verbs are `commits.title` in
+[.github/conventions.yml](.github/conventions.yml) ([Repository conventions](docs/guides/repo-conventions.md)); the rules
+are written out in [AGENTS.md](AGENTS.md#commits-and-github), and this block, generated from them
+(`coney-tools repo render`), shows the areas:
 
 <!-- conventions:begin commit-areas -->
 | Area | Covers |
@@ -97,7 +97,9 @@ It is at most 72 characters, has no trailing period, and uses the present tense.
 Verbs: Add, Fix, Update, Remove, Rebuild, Rework, Improve, Document.
 <!-- conventions:end -->
 
-Make one commit per logical change: a test goes in the same commit as the code that makes it pass.
+Commits on a branch are dropped by the squash merge, so they need not be tidy or build one by one; what must hold is
+the branch's final state, the pull request title and its description. Where you can, make one commit per logical
+change, with a test in the same commit as the code that makes it pass: it is easier to review.
 
 The body has an opening paragraph saying what changes and why, then `Changes:` with one bullet per part when there
 are several, then `Verified:` with the commands you ran and what they printed. For example:
@@ -140,7 +142,7 @@ The person who submits or merges the work answers for it. The full rule is in [L
 
 - Every pull request is squash-merged: its commits become one commit on `main`, and the pull request title becomes
   the commit title, so it follows the same `area: Verb the rest` format. A pull request holds one feature, so that
-  the commit it becomes also reverts as one. The commits inside it still follow the title rules (CI checks them).
+  the commit it becomes also reverts as one. The commits inside it are not checked; the title is.
 - CI must pass.
 - Fill in the pull request template: a summary, a checklist of what the pull request finishes and what is still to
   do, what you tested and the results, before and after screenshots of anything a player can see (attach them to the
