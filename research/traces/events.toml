@@ -53,7 +53,7 @@ HuSpeakNI = { kind = "speech", arg = 2 }
 HuCreate = { kind = "spawn", arg = 1 }
 GangAddSpawner = { kind = "spawn", arg = 2 }
 
-# The original's hooks (research/traces/patches.toml) and the events their logs give: the kind, and the column that
+# The original's hooks (research/traces/patches/) and the events their logs give: the kind, and the column that
 # names each event (`binding`: a C function's address, named from research/bindings/; `format = "hex"`: a number).
 # `args` are the Lua arguments a call shows: (type tag, value word, high word, text) columns.
 [[original]]

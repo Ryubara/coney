@@ -64,3 +64,37 @@ TEST_CASE("without the game's table the stand-in draws deterministically and in 
         CHECK(value <= 5);
     }
 }
+
+TEST_CASE("starting the stream at an offset moves every draw along by it, the same on every run", "[game_random]") {
+    // The table's index at an offset (the original's 0x006eb880 at a recording's start): the first draw reads the
+    // entry after it.
+    GameRandom offset;
+    const std::vector<std::uint32_t> table = syntheticTable();
+    offset.setTable(table);
+    offset.startAt(40);
+    CHECK(offset.index() == 40);
+    CHECK(offset.next() == table[41]);
+    // Masked to the table's 10 bits.
+    offset.startAt(1024 + 5);
+    CHECK(offset.index() == 5);
+    // Offset 0 is the power-on stream.
+    GameRandom zero;
+    zero.setTable(table);
+    zero.startAt(0);
+    CHECK(zero.next() == table[1]);
+
+    // The stand-in varies with the offset too, and repeats for the same one.
+    GameRandom a;
+    GameRandom b;
+    GameRandom c;
+    a.startAt(7);
+    b.startAt(7);
+    c.startAt(8);
+    bool differs = false;
+    for (int i = 0; i < 20; ++i) {
+        const std::uint32_t drawn = a.next();
+        CHECK(drawn == b.next());
+        differs = differs || drawn != c.next();
+    }
+    CHECK(differs);
+}

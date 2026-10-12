@@ -2086,7 +2086,7 @@ Build in this order; each step is testable without the game.
 
 All five were run (2026-10-05, PCSX2 2.9.94) with the scenarios `civ_fight`, `civ_block`, `civ_block_fov`,
 `civ_approach`, `civ_knockdown` and `tick_split` in `repo:research/traces/scenarios/` and the call hooks in
-`repo:research/traces/patches.toml`. Brain *i* is at `0x006d53f0 + i × 0x2f0`, its per-player record at `0x00660f50 + i
+`repo:research/traces/patches/`. Brain *i* is at `0x006d53f0 + i × 0x2f0`, its per-player record at `0x00660f50 + i
 × 0x2c`. The results are in the body: [the fight and attack action](#attack-action), [think staggering](#update), [the
 block](#block), [moving](ai-moving.md#moving) and [reaction goals](#reaction-goals).
 

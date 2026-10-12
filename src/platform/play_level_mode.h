@@ -307,6 +307,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     /// pick; else a held human to mug, a pickable door, a freed car stereo and a dealer's offer in reach.
     [[nodiscard]] PromptOffer promptOffer() const override;
     [[nodiscard]] bool combatFraming() const override { return m_player->combatFraming(); }
+    /// ScriptedPlayer: `Human_ReleasePlayer` on the human the pad drives, with no one taking the pad
+    /// (ai::AiHumans::releasePlayer()): he fights on as his class's brain. False with no cast or no player left.
+    bool releasePlayerToAi() override;
     /// The model the player is drawn as.
     [[nodiscard]] const std::string& model() const { return m_model; }
 

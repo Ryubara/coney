@@ -436,9 +436,9 @@ uv run --project python coney-tools pcsx2 prepare-state SOURCE OUT [--patch NAME
 ```
 
 Copies a save state (a `.p2s` file, or `slot:N` for quick-save slot N, which is only read) to `OUT` with the named
-patches of `research/traces/patches.toml` applied to its EE memory. It refuses an `OUT` inside the repository or in
-PCSX2's `sstates/` folder, and refuses the copy when the state does not hold a patch's original instruction words.
-PCSX2 saves states with zstd, which Python reads from 3.14 (uv installs it).
+patches of `research/traces/patches/` (one file per pass) applied to its EE memory. It refuses an `OUT` inside the
+repository or in PCSX2's `sstates/` folder, and refuses the copy when the state does not hold a patch's original
+instruction words. PCSX2 saves states with zstd, which Python reads from 3.14 (uv installs it).
 
 ```sh
 uv run --project python coney-tools pcsx2 repack-state SOURCE OUT
