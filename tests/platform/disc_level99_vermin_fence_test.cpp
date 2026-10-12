@@ -9,7 +9,8 @@
 //   one kind-8 (climb) link from node 205 (46.29, 25.29) to node 204 (46.29, 24.29) over the fence. In the original he
 //   ran straight, entered the climb (route state 3) at y 26.6, was over in 38 updates and stopped at (46.31, 20.18)
 //   (docs/research/ai-pathing.md, confirmed (runtime)). Vermin is a fast climber (`HuSetFastClimber`), so he starts
-//   the climb from the run within 4.5 m of the climb's far node (`Route_TryClimbNear`, docs/research/ai.md#route-follow).
+//   the climb from the run within 4.5 m of the climb's far node (`Route_TryClimbNear`,
+//   docs/research/ai.md#route-follow).
 // - **The roof run** (issue #104): `P3.Player2Jumps` sends him from `fVerminWait` to `fStop[3]` over the window gap
 //   and `P3.FinishRun` on to `fStop[4]` over the second gap, both at gait 4; in the original he held the run gait at
 //   7.80 m/s up to both take-offs (docs/research/scripting.md#level99-p2-vermin-fence, confirmed (runtime)).
@@ -69,7 +70,6 @@ constexpr int kRunBudget = 600;
 constexpr coney::anim::Vec3 kWindowRunStart{62.8F, -3.3F, 4.3F};
 constexpr std::size_t kRunUp = 12;
 constexpr int kRoofBudget = 900;
-
 
 // One update of a run.
 struct Update {
@@ -202,8 +202,8 @@ TEST_CASE("the disc's level99 checkpoint 3: Vermin climbs the fence from his run
     const float fromTarget = std::hypot(feet.x - kTargetX, feet.y - kTargetY);
     std::printf("  level99 Vermin's fence: from (%.2f, %.2f) in %zu updates; the climb from (%.2f, %.2f) at %.2f m/s, "
                 "%d updates, off it at (%.2f, %.2f); %td updates against the fence; ends %.2f m from the target\n",
-                start.x, start.y, updates.size(), takeOff.feet.x, takeOff.feet.y, before.speed, climbUpdates,
-                landed.x, landed.y, againstFence, fromTarget);
+                start.x, start.y, updates.size(), takeOff.feet.x, takeOff.feet.y, before.speed, climbUpdates, landed.x,
+                landed.y, againstFence, fromTarget);
 
     // One climb, started from the run on the street side short of the fence, never run into it; over in about the
     // original's time, off it beyond the far node, and the flag reached.
