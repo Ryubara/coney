@@ -546,7 +546,12 @@ class Workspace:
 
     worktrees: str
     scratch: str
+    #: Under this much free space on the workspace drive, `workspace clean` deletes idle build folders.
     disk_min_free_gb: int
+    #: ... until free space reaches `disk_min_free_gb` plus this many GB.
+    disk_margin_gb: int
+    #: A `build/` folder unused for this many hours is deleted.
+    build_idle_hours: int
     #: A worktree holding a file of this name is never cleaned.
     busy_marker: str
     remove_worktree_when_merged: bool
@@ -1227,12 +1232,22 @@ def _read_hygiene(data: object, where: str) -> Hygiene:
 
 def _read_workspace(data: object, where: str) -> Workspace:
     """The `workspace` section (local only)."""
-    keys = ("worktrees", "scratch", "disk_min_free_gb", "busy_marker", "remove_worktree_when_merged")
+    keys = (
+        "worktrees",
+        "scratch",
+        "disk_min_free_gb",
+        "disk_margin_gb",
+        "build_idle_hours",
+        "busy_marker",
+        "remove_worktree_when_merged",
+    )
     table = _table(data, where, keys)
     return Workspace(
         worktrees=_text(table["worktrees"], _at(where, "worktrees")),
         scratch=_text(table["scratch"], _at(where, "scratch")),
         disk_min_free_gb=_count(table["disk_min_free_gb"], _at(where, "disk_min_free_gb")),
+        disk_margin_gb=_count(table["disk_margin_gb"], _at(where, "disk_margin_gb"), minimum=0),
+        build_idle_hours=_count(table["build_idle_hours"], _at(where, "build_idle_hours"), minimum=0),
         busy_marker=_text(table["busy_marker"], _at(where, "busy_marker")),
         remove_worktree_when_merged=_flag(
             table["remove_worktree_when_merged"], _at(where, "remove_worktree_when_merged")
