@@ -203,11 +203,20 @@ the disc checks print counts only).
    Also: the 65000 cap is on the running g, not on one edge; distances are 3D, truncated to whole 1/16 m per edge.
    *Tests*: a 600-node grid whose only way round passes 300 nodes plans a route; a 140-node corridor fails (route
    over 128); the disc check's "failed, linked" count for `level99` drops to 0 (`[disc][routes]`).
+   **Done in Coney** (`RoutePlanner::search`, which now says why it failed: `SearchFailure`). Measured on the disc
+   (`[disc][routes]`, 300 seeded pairs of nodes per level that the default mask's links join, NTSC-U, counts only):
+   the old 128-open cap lost 7 of `level87`'s 213 linked pairs and none of `level99`'s 189 (the "third of
+   `level99`'s pairs" above came from an older count that put the cap's failures among the unlinked ones); with
+   the original's limits every linked pair is found except `level80`'s routes of more than 128 nodes, which the
+   original refuses too.
 2. **The edge cost** (step 4, "The new g"). The three ClimbFilter extras are exclusive (8, else `0x80`, else 4, and
    4 not with `0x40` + avoid), not added together; the use term is 40 × *u* − 8 only when *u* > 0, and *u* is the
    use count of the **expanded** node (the one whose record it is), not the neighbour's. *Tests*: an edge with flags
    `0x8c` costs distance + 200; a node with 0 uses adds nothing; two routes through one node make a third prefer a
-   parallel way (cost compare on a two-lane map).
+   parallel way (cost compare on a two-lane map). **Done in Coney** (`RoutePlanner::edgeCost`, each addition
+   wrapping at 16 bits as the page says). With item 1's limits, the routes of more than 128 nodes among `level80`'s
+   seeded pairs fell from 19 to 2: the old use term took 8 off every step, so the cheapest route was the one with the
+   most nodes.
 3. **FollowFormation and FollowPlayer** ([The default command: follow](ai.md#warrior-follow)). Coney's
    `FollowFormationGoal` ends when the follower has no slot, and a slot is usable only when the leader sees its
    point, so a crew stops as soon as the chief turns a corner or crosses a fence. The original then follows the human
