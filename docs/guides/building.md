@@ -1004,9 +1004,10 @@ uvx pre-commit run --all-files
 
 Run that before every commit, or install the hooks once with `uvx pre-commit install` so that `git commit` runs them
 for you. The hooks fix what they can; stage their changes and commit again. The install also adds a `commit-msg` hook
-that refuses a commit whose title breaks the rules in [AGENTS.md](repo:AGENTS.md) (`area: Verb the rest`, at most 72
-characters); CI checks every commit title of a pull request again, because a clone without the hook cannot be trusted.
-Install it once in each clone; the worktrees of a clone share it.
+that refuses a commit whose title breaks the commit title rules (`area: Verb the rest`, at most 72 characters; the
+rules are `commits.title` in [.github/conventions.yml](repo:.github/conventions.yml) and
+[CONTRIBUTING.md](repo:CONTRIBUTING.md#commits) lists them); CI checks every commit title of a pull request again,
+because a clone without the hook cannot be trusted. Install it once in each clone; the worktrees of a clone share it.
 
 ## Documentation
 
@@ -1050,9 +1051,25 @@ A `changes` job at the start of `build` and `python` decides, with `.github/scri
 | Change | `build`, `sanitizers`, `clang-tidy` | `python` | `format`, `docs`, `pr` workflows |
 | --- | --- | --- | --- |
 | Draft pull request (any change) | skipped | skipped | run |
-| Only documentation: `docs/`, `research/` (including `research/traces/`), Markdown files at the top level or in `.github/`, `.github/conventions.yml`, `mkdocs.yml`, `mkdocs_hooks.py`, `requirements-docs.txt`, `.markdownlint*` | skipped | Linux only | run |
-| Anything else (`src/`, `tests/`, `python/`, `cmake/`, `CMakeLists.txt`, `CMakePresets.json`, `.clang-*`, the workflows, `assets/`, a file not listed above) | run | all three OSes | run |
+| Only documentation: every changed file is on the list below the table | skipped | Linux only | run |
+| Anything else (`src/`, `tests/`, `python/`, `cmake/`, `CMakeLists.txt`, `CMakePresets.json`, `.clang-*`, the workflows, `assets/`, a file not on the list) | run | all three OSes | run |
 | Push to `main` or `release/`, nightly run, manual run | run | all three OSes | run |
+
+The documentation-only list is `paths.docs_only` in [.github/conventions.yml](repo:.github/conventions.yml) (a
+trailing `/` is a folder and `*` matches within one folder level); the block is generated from it
+(`coney-tools repo render`), and `research/` includes `research/traces/`:
+
+<!-- conventions:begin docs-only-paths -->
+- `docs/`: the folder and everything under it
+- `research/`: the folder and everything under it
+- `*.md`: matching files at the top level only
+- `.github/*.md`: matching files directly in `.github/`
+- `.github/conventions.yml`: that file
+- `mkdocs.yml`: that file
+- `mkdocs_hooks.py`: that file
+- `requirements-docs.txt`: that file
+- `.markdownlint*`: matching files at the top level only
+<!-- conventions:end -->
 
 `python` still runs on Linux for documentation because its repository checks compare `docs/` and `research/` with
 each other (missions, bindings, references, progress), and its tests read `research/traces/`. Marking a draft "Ready
@@ -1062,6 +1079,18 @@ checked. There is no merge queue.
 A skipped matrix job reports its name unexpanded (`build (${{ matrix.name }})`), so the per-platform jobs cannot be
 required checks. Each workflow ends with a gate job instead, `build-ok` and `python-ok`, which runs every time and
 fails when a job it covers failed or was cancelled; the ruleset on `main` requires the gates, not the jobs behind them.
+What `main` requires is the `merge` section of [.github/conventions.yml](repo:.github/conventions.yml), a copy of the
+GitHub ruleset and settings, and this block is generated from it (`coney-tools repo render`):
+
+<!-- conventions:begin required-checks -->
+- Merge method: squash only. The commit on `main` has the pull request's title; its message is the pull request's
+  description.
+- Required checks: `title`, `commits`, `docs`, `body`, `build-ok`, `python-ok`, `format`, `mkdocs`, `markdownlint`,
+  `actionlint`.
+- Auto-merge is on, the branch is deleted after the merge, history is linear and a branch need not be up to date with
+  `main`.
+- Who merges: maintainer and coordinator, never the agent that wrote the work.
+<!-- conventions:end -->
 
 If a job fails, the commands above reproduce it locally on the platform you are on. The workflow files under
 `.github/workflows/` are short and list every step.

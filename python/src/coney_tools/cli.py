@@ -32,6 +32,7 @@ from coney_tools import (
 )
 from coney_tools.config import PATH_KEYS, ConfigError, find_repo_root, load_config
 from coney_tools.conventions import Conventions, load_conventions
+from coney_tools.conventions_render import run_render
 from coney_tools.repo_checks import check_body, check_docs, check_pointer_files, check_title, first_line
 from coney_tools.repo_labels import apply_labels, gh_script
 
@@ -210,6 +211,13 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     check_body_parser.add_argument(
         "--body", help="a file holding the pull request description; - or omitted reads stdin"
+    )
+    render_parser = repo_commands.add_parser(
+        "render",
+        help="rewrite the generated blocks of AGENTS.md, CONTRIBUTING.md and the guides from .github/conventions.yml",
+    )
+    render_parser.add_argument(
+        "--check", action="store_true", help="change nothing; exit 1 when a block is out of date"
     )
     _add_check_commands(groups)
     labels_parser = repo_commands.add_parser(
@@ -714,6 +722,8 @@ def _run(args: argparse.Namespace) -> int:
         return workspace.run_init(Path.cwd(), args.workspace, args.repo_url, args.fetch, args.dry_run)
     if args.group == "mcp":
         return mcp_serve.run_serve(args.name)
+    if args.command == "render":
+        return run_render(find_repo_root(Path.cwd()), args.check)
     if args.command == "labels":
         return _repo_labels(args.apply, args.repo)
     if args.command == "check-title":

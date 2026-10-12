@@ -1,6 +1,6 @@
-# Checks that only make sense on a pull request: its title must follow the commit title rules (AGENTS.md, "Commits
-# and GitHub"; areas and verbs in commits.title of .github/conventions.yml), because it becomes the title of the merged commit,
-# and its description must follow the template (.github/pull_request_template.md). Actions are pinned to a full commit
+# Checks that only make sense on a pull request: its title must follow the commit title rules (commits.title of
+# .github/conventions.yml, which AGENTS.md and CONTRIBUTING.md show), because it becomes the title of the merged
+# commit, and its description must follow the template (.github/pull_request_template.md). Actions are pinned to a full commit
 # SHA; the tag is in the comment beside it.
 name: pr
 
