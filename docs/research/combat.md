@@ -3004,8 +3004,9 @@ the key and the R2 map, in this order. Confirmed (code) at `0x002843f8`:
      one-shot clip task on top of the stack (`0x0025ade8`: a type-5 task, `0x00106240`, holding `0x2000`) when
      **nothing blocks a move**: the state word has none of `0x18003ff0` (`0x00227fd8`: grabbed, grabbing, mugging,
      mugged, tackling, tackled, a paired power move and its victim, `0x8000000`, `0x10000000`; blocking, `0x8000`, is
-     in none of these masks), none of `0xe0000` (`0x00223b48`: cuffed `0x20000`, knocked out `0x40000`, knocked down `0x80000`), not the mini-game
-     `0x4000000` (`0x00228050`), not tagging `0x2000000` (`0x002238c0`), none of `0x7bf9e9f7ff0`; record `+0x08` has
+     in none of these masks), none of `0xe0000` (`0x00223b48`: cuffed `0x20000`, knocked out `0x40000`, knocked down
+     `0x80000`), not the mini-game `0x4000000` (`0x00228050`), not tagging `0x2000000` (`0x002238c0`), none of
+     `0x7bf9e9f7ff0`; record `+0x08` has
      none of `0x2fefefff`; and the object in hand is not of `ObjectAttribs` kind (`+0x87`) 4 or 6 (`0x00224000`).
      Otherwise, if 665 is already the human's anim (`0x002266b8`), nothing more happens (its event will use the
      flash); else the flash is **used at once** (`Flash_Use`, called at `0x00284818`): no clip, the move plays on.
