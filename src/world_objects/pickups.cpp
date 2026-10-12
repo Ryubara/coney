@@ -74,7 +74,11 @@ bool pickable(std::string_view className, std::uint32_t modelHash) {
     constexpr std::uint32_t kNotPickableOverhead = 0x8fc6ac30U;
     constexpr std::uint32_t kNotPickableItem = 0x2fd690d6U;
     constexpr std::uint32_t kPickableSimpleObject = 0xfcbe9fbbU;
-    if (className == "melee_weapon" || className == "thrown_weapon" || className == kDynPileClass) {
+    // The Molotov has a class of its own, whose init sets the flag as `thrown_weapon`'s does
+    // (docs/research/script-types.md#molotov).
+    constexpr std::string_view kMolotovClass = "dyn_molotv";
+    if (className == "melee_weapon" || className == "thrown_weapon" || className == kDynPileClass ||
+        className == kMolotovClass) {
         return true;
     }
     if (className == "overhead_weapon") {
