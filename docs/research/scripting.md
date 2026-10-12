@@ -1756,6 +1756,8 @@ spawners and link to their subject pages; the rest are this mission's.
    humans only stand, because their brains skip their update ([One update](ai.md#update-goals)). Coney spawns them
    too, which matches the original; keep it.
 
+<!-- markdownlint-disable MD029 -->
+
 **Checkpoint 1** (from the subway to the street, the car flippers, then `vSection2`).
 
 4. Plays: the intro, the stairs, `vEnterRiot`, the fence (climbed with triangle) to `vIntro`, the scene
@@ -1811,6 +1813,8 @@ spawners and link to their subject pages; the rest are this mission's.
     end to the first hit on the player, and compare.
 15. The rest of the checkpoint was not reached in Coney: `P3.GetToSubway`, the scene `l34_c2` with `Final`,
     `HUDLaunchMissionComplete` and the outro `L34_OUT`.
+
+<!-- markdownlint-enable MD029 -->
 
 **A playthrough test** ([Testing](../guides/testing.md#playthrough-tests)) for the mission comes last: one driver per
 checkpoint that climbs the fence, walks the flag net (`PedNet_*`) between the boxes above, and asserts the
