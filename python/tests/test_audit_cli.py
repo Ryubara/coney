@@ -85,7 +85,7 @@ def test_list_prints_the_registry(capsys: pytest.CaptureFixture[str]) -> None:
     lines = out.splitlines()
     assert (
         code == 0
-        and len(lines) == len(CONVENTIONS.hygiene.checks) == 37
+        and len(lines) == len(CONVENTIONS.hygiene.checks) == 38
         and lines[0].startswith("files.pointer")
         and "fix: maintainer" in out
     )
