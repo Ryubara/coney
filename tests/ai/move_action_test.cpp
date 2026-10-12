@@ -326,6 +326,93 @@ TEST_CASE("a move to a point off the path data fails at its start; with no path 
     CHECK(planDistance(brain.human().position(), {41.0F, 49.0F, 0.0F}) < 0.4F);
 }
 
+TEST_CASE("a move given a point within 0.07 m of its own keeps it; a straight move takes a new point and arrives there",
+          "[ai][move]") {
+    MoveScene scene;
+    Brain& brain = scene.add({41.0F, 41.0F, 0.0F}, -90.0F);
+    brain.queueAction(moveTo({47.0F, 41.0F, 0.0F}, 0.3F));
+    scene.run(1);
+    MoveAction* move = frontMove(brain);
+    REQUIRE(move != nullptr);
+    move->retarget(brain, {47.05F, 41.04F, 0.0F});
+    CHECK(move->request().point == Vec3{47.0F, 41.0F, 0.0F});
+    move->retarget(brain, {48.5F, 41.0F, 0.0F});
+    CHECK(move->request().point == Vec3{48.5F, 41.0F, 0.0F});
+    CHECK(move->started());
+    scene.runUntil(600, [&] { return brain.actionCount() == 0; }, [] {});
+    CHECK(planDistance(brain.human().position(), {48.5F, 41.0F, 0.0F}) < 0.4F);
+}
+
+TEST_CASE("a routed move keeps its route for a point its last waypoint sees, and starts again for one it does not",
+          "[ai][move]") {
+    // Round the U from the bottom corridor to the top one: the route's last node is (49, 49), which sees the top
+    // corridor.
+    MoveScene scene;
+    Brain& brain = scene.add({41.0F, 41.0F, 0.0F}, -90.0F);
+    brain.queueAction(moveTo({41.0F, 49.0F, 0.0F}, 0.3F));
+    scene.run(1);
+    MoveAction* move = frontMove(brain);
+    REQUIRE(move != nullptr);
+    REQUIRE(move->routed());
+    const coney::ai::RouteFollower* route = move->follower();
+    REQUIRE(route != nullptr);
+    const std::vector<Vec3> before = route->ahead();
+    REQUIRE(before.size() >= 2);
+
+    // The last node sees (41.5, 49.5): the route stays, only its destination moves.
+    move->retarget(brain, {41.5F, 49.5F, 0.0F});
+    CHECK(move->started());
+    REQUIRE(move->follower() != nullptr);
+    const std::vector<Vec3> kept = move->follower()->ahead();
+    REQUIRE(kept.size() == before.size());
+    CHECK(kept.back() == Vec3{41.5F, 49.5F, 0.0F});
+    CHECK(kept[kept.size() - 2] == before[before.size() - 2]);
+
+    // (45, 41), back in the bottom corridor, is not in line with (49, 49): the route goes and the move starts again on
+    // the next update, now straight along the corridor.
+    move->retarget(brain, {45.0F, 41.0F, 0.0F});
+    CHECK_FALSE(move->started());
+    CHECK_FALSE(move->routed());
+    scene.run(1);
+    REQUIRE(frontMove(brain) == move);
+    CHECK(move->started());
+    CHECK_FALSE(move->routed());
+    scene.runUntil(900, [&] { return brain.actionCount() == 0; }, [] {});
+    CHECK(brain.moveFailure() == MoveFailure::None);
+    CHECK(planDistance(brain.human().position(), {45.0F, 41.0F, 0.0F}) < 0.4F);
+    CHECK(scene.planner.routesInUse() == 0);
+}
+
+TEST_CASE("a straight move at 12.8 m/s to a point beside the human slows for the turn and arrives", "[ai][move]") {
+    // An open floor. The human sprints north, then its move's point is put 1.5 m to its right: at 12.8 m/s and the
+    // sprint's 2.5 degrees an update its turning circle is 10 m across, so only the corner speed's slowing brings it
+    // in (docs/research/ai.md#corner-speed, the move action's step 8).
+    coney::test::PathBuilder builder;
+    builder.rectangle(0.0F, 80.0F, 0.0F, 80.0F);
+    MoveScene scene(builder.build());
+    Brain& brain = scene.add({40.0F, 20.0F, 0.0F}, 0.0F);
+    auto made = moveTo({40.0F, 70.0F, 0.0F}, 0.1F, 5);
+    made->setSpeed(12.81F);
+    MoveAction* move = made.get();
+    brain.queueAction(std::move(made));
+    scene.run(30);
+    REQUIRE(frontMove(brain) == move);
+    REQUIRE(brain.human().speed() > 10.0F);
+    const Vec3 at = brain.human().position();
+    move->retarget(brain, {at.x + 1.5F, at.y, 0.0F});
+    float slowest = 12.81F;
+    const int steps = scene.runUntil(
+        90, [&] { return brain.actionCount() == 0; },
+        [&] {
+            if (const std::optional<coney::human::BrainMove> asked = brain.human().record().move) {
+                slowest = std::min(slowest, asked->speed);
+            }
+        });
+    CHECK(steps < 90);
+    CHECK(slowest < brain.human().speeds().jog);
+    CHECK(planDistance(brain.human().position(), {at.x + 1.5F, at.y, 0.0F}) < 0.5F);
+}
+
 TEST_CASE("a look-at turns the human until it faces its target within 15 degrees, then ends", "[ai][turn]") {
     MoveScene scene;
     Brain& brain = scene.add({41.0F, 41.0F, 0.0F}, 0.0F);

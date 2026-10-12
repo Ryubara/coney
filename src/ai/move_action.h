@@ -22,6 +22,8 @@ namespace coney::ai {
 inline constexpr float kMoveNothingToDo = 0.1F;
 /// The final point is looked for in a straight line again every this many updates, offset by the brain's slot.
 inline constexpr std::uint32_t kStraightCheckSteps = 30;
+/// A move's arrival is measured in 3D, and in plan once the 3D distance is this or less (`0x0023f9d0`), m.
+inline constexpr float kArrivalPlanWithin = 1.0F;
 /// A move ends within this distance in plan of its point when the heights differ by more than kMoveHeightGap.
 inline constexpr float kMoveHeightReach = 1.0F;
 inline constexpr float kMoveHeightGap = 1.5F;
@@ -44,6 +46,8 @@ inline constexpr float kEarlyClimbReach = 4.5F;
 inline constexpr float kCornerSpeedStep = 1.0F;
 /// The braking distance is the distance covered in this long at the first corner's speed (**Coney choice**, s).
 inline constexpr float kBrakingSeconds = 0.5F;
+/// A new point this near the old one (3D, m; squared 0.005) leaves a move as it is (`MoveAction_SetTarget`).
+inline constexpr float kRetargetIgnore = 0.0707F;
 
 /// A jump leg (docs/research/ai.md#route-jump): the fastest a drop or a jump crosses in plan (m/s), half the fall's
 /// gravity, the jump's first and last vertical speed and its step (m/s), and how near (3D) its waypoint a landing
@@ -99,13 +103,14 @@ class MoveAction final : public Action {
     /// needed, it goes straight; none possible, it is done with the brain's `+0x284` set.
     /// @orig 0x002fc420 MoveAction_Start (unknown)
     [[nodiscard]] ActionStatus start(Brain& brain) override;
-    /// One update: waits while the human is busy; every kStraightCheckSteps updates drops a route whose point is in
-    /// a straight line; done within the radius (or within kMoveHeightReach in plan but kMoveHeightGap apart in
-    /// height); aims at the route's waypoint or the point; turns on the spot while standing more than 30° off; else
-    /// goes at the corner speed; done (`+0x284` = 3) when stuck. **Coney choice**: no line of sight is tested
-    /// (Coney has none; the original's every-31-updates check that the point is still in sight is not made, and the
-    /// straight check uses the walkable line), the dynamic obstacles are not built, and a route's climb and jump legs
-    /// are not steered round humans (their aim is the leg's).
+    /// One update: done when aborted (retarget()); waits while the human is busy; every kStraightCheckSteps updates
+    /// drops a route whose point is in a straight line; done within the radius, in 3D (in plan within
+    /// kArrivalPlanWithin), or within kMoveHeightReach in plan but kMoveHeightGap apart in height; aims at the route's
+    /// waypoint or the point; turns on the spot while standing more than 30° off; else goes at the corner speed (with
+    /// no route, turnLimit() onto the point); done (`+0x284` = 3) when stuck. **Coney choice**: no line of sight is
+    /// tested (Coney has none; the original's every-31-updates check that the point is still in sight is not made, and
+    /// the straight check uses the walkable line), the dynamic obstacles are not built, and a route's climb and jump
+    /// legs are not steered round humans (their aim is the leg's).
     /// @orig 0x002fc5c0 MoveAction_Update (unknown)
     [[nodiscard]] ActionStatus update(Brain& brain) override;
     /// Stops the move; never refused.
@@ -116,8 +121,22 @@ class MoveAction final : public Action {
     /// A speed in place of the gait's top (m/s, action `+0x40`), as a goal pacing the human sets it.
     /// @orig 0x0029f710 Brain_SetMoveSpeed (unknown)
     void setSpeed(float speed) { m_speed = speed; }
+    /// The speed set in place of the gait's top; nothing when it goes at its gait's.
+    [[nodiscard]] std::optional<float> speed() const { return m_speed; }
+    /// A new arrival radius for the running move (FollowFormation updates its move's).
+    void setRadius(float radius) { m_request.radius = radius; }
+    /// Gives the move a new point (docs/research/ai.md#follow-retarget, item 3): nothing for one within
+    /// kRetargetIgnore of the old (3D). Otherwise the point is stored; a straight move goes on to it, and a route is
+    /// kept, its destination moved, when its last node has a walkable line to the new point. Else, unless the human
+    /// is in a jump, a drop or a kind-8 climb, the route goes and the move starts again on the next update (a straight
+    /// line or a new route to the point); in one of those the move ends on its next update (the clips play on) and its
+    /// goal makes a new one.
+    /// @orig 0x002fbbe8 MoveAction_SetTarget (unknown)
+    void retarget(Brain& brain, anim::Vec3 point);
     /// Whether it follows a route now.
     [[nodiscard]] bool routed() const { return m_follower.has_value(); }
+    /// The route it follows; null when it goes straight.
+    [[nodiscard]] const RouteFollower* follower() const { return m_follower ? &*m_follower : nullptr; }
 
   private:
     // The speed for the corners ahead, at most `top` (the move's speed this update): the first and second corner's
@@ -150,8 +169,17 @@ class MoveAction final : public Action {
     // Ends the move: the human stands.
     [[nodiscard]] static ActionStatus finish(Brain& brain);
 
+    // Whether the human is in a jump, a drop or a kind-8 climb of its route (route states 1, 2 and 3).
+    [[nodiscard]] bool inRouteLeg(const Brain& brain) const;
+    // The fastest speed, at most `top` and at least the walk, at which the human at `position` turns onto the circle
+    // tangent to his facing that runs through `to` (the corner speed's first limit, used for a move with no route).
+    // @orig 0x002fcd90 Move_CornerSpeedLimit (unknown)
+    [[nodiscard]] static float turnLimit(const Brain& brain, anim::Vec3 position, anim::Vec3 to, float top);
+
     MoveRequest m_request;
-    std::optional<float> m_speed; // +0x40: a speed in place of the gait's top
+    std::optional<float> m_speed;     // +0x40: a speed in place of the gait's top
+    bool m_aborted = false;           // the abort bit: the move ends on its next update
+    bool m_restartedClimbing = false; // started again mid-climb: that climb's end passes no waypoint of the new route
     std::optional<RouteFollower> m_follower;
     std::uint32_t m_updates = 0;
     // The corner speeds for the waypoint index they were worked out at.

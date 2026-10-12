@@ -235,6 +235,17 @@ the disc checks print counts only).
    kind-8 fence pair the follower climbs. A disc test on `level80` replays the runtime check of
    [the follow](ai.md#warrior-follow): after "Let's Go" the crew asks 12.81 m/s from the landing, stands while the
    player runs within 9 m, and climbs the crate stack by its `0x80` links when the player stands on it.
+   **Done in Coney** (`FollowFormationGoal`, `FollowPlayerGoal`, `Formation::followPoint` and `retargetMoves`,
+   `RoutePlanner::walkDistance`, `followSpeed`, `MoveAction::retarget`). Two more changes were needed for the disc
+   test: a straight move at 12.81 m/s circled a slot point it could not turn onto and its partner ran off the street
+   behind it, so a move with no route now slows for the turn onto its point (`MoveAction::turnLimit`, the circle part
+   of [the corner speed](ai.md#corner-speed); the rest is item 7); and arrival is now in 3D (in plan within 1 m), so
+   a follower below the crate stack no longer counts as arrived on top of it. The `level80` disc test passes: 12.81
+   m/s asked, no follow within 9 m in line, both stand when the player stands, the crate stack climbed. One gap
+   stays: on the run-in Coney's walkable line runs from the landing to the street, so the crew runs off the landing
+   instead of taking the stairs (issue #315; the test prints whether a route was planned). A follower crossing a
+   fence the player jumped ran into it before climbing (issue #236): the fast climber's early climb
+   (`Route_TryClimbNear`, with its own `level80` disc test) fixes that.
 4. **Every 31 updates the aim must stay in sight** ([The move action](ai.md#move-action) step 5). Coney never ends a
    move because its waypoint went out of a walkable line, so an AI pushed off its line (by steering, a shove, a
    corner cut) walks into the wall until the stuck test, which a wall slide may never trip. Port the check (ends the

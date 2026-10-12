@@ -64,6 +64,12 @@ class RouteFollower {
     [[nodiscard]] static bool isJumpLeg(std::uint16_t kind);
     /// Moves on past the current waypoint, as when it is reached (a climb over its leg has ended beyond it).
     void passWaypoint(const RoutePlanner& planner, anim::Vec3 position) { moveOn(planner, position, true); }
+    /// Moves the destination, the last waypoint, to `point`.
+    void setDestination(anim::Vec3 point) { m_points.back() = point; }
+    /// The position of the route's last node, the waypoint before the destination; nothing for a route of none.
+    [[nodiscard]] std::optional<anim::Vec3> lastNode() const {
+        return m_points.size() >= 2 ? std::optional<anim::Vec3>{m_points[m_points.size() - 2]} : std::nullopt;
+    }
     /// Whether the destination is the waypoint (the route is freed).
     [[nodiscard]] bool onLastLeg() const { return m_index + 1 >= m_points.size(); }
     /// The route node of the current waypoint; nothing once the destination is the waypoint.
