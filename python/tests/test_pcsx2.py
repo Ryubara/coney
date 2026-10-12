@@ -506,7 +506,8 @@ def test_rows_per_human_follow_pointers_and_handles(tmp_path: Path, fake_pine: t
     player_brain = BRAIN_TABLE + PLAYER_INDEX * BRAIN_SIZE
     civilian_brain = BRAIN_TABLE + CIVILIAN_INDEX * BRAIN_SIZE
     game.write_float(TRANSFORM_TABLE + CIVILIAN_INDEX * 0x20, 2.5)
-    # The player targets the civilian through a live handle (serial 7 in the handle table) and lists two enemies (and a free entry);
+    # The player targets the civilian through a live handle (serial 7 in the handle table) and lists two enemies
+    # (and a free entry);
     # his stack is Melee under Fight (two goals in the goal pool). The civilian's handle is stale (serial 8).
     game.write(HANDLE_TABLE + CIVILIAN_INDEX * 8 + 4, 2, 7)
     game.write32(player_brain + 0x124, CIVILIAN_INDEX << 16 | 7)
