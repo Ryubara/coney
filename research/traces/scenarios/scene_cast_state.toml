@@ -1,0 +1,16 @@
+# Scene lookups and the cast each scene binds, with no input, from a state given with --state: a level start (where
+# the script plays its opening scene by itself) or any moment just before a scene starts. A state saved during a
+# level load stands still for longer than the recorder's 5 s stall limit; the 2026-10-11 runs raised the limit to
+# 180 s (docs/research/scenes.md#cast-runtime). Research: docs/research/scenes.md#cast-runtime.
+description = "no input from a given state: scene lookups, the Lua function running them, and the cast each scene binds"
+research = "docs/research/scenes.md#cast-runtime"
+input = "scene_cast_state.txt"
+updates = 1200
+fields = ["player"]
+
+[original]
+slot = 1
+patches = ["scene-find", "scene-bind-human", "scene-bind-object", "c-call", "lua-exec-source"]
+
+[coney]
+level = "level99"
