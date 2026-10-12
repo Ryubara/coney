@@ -95,8 +95,8 @@ The comment names the file and the line numbers, never the text, so it does not 
 patterns and limits (which links, how much is downloaded, the size and line thresholds) are `hygiene.attachments` in
 [.github/conventions.yml](repo:.github/conventions.yml). The download is bounded (a size cap and a timeout), sent
 without credentials and only ever held in memory: nothing attached is stored or run. The scan is a heuristic, so a
-finding is a prompt to look, and a clean scan is not a promise. `coney-tools repo audit --github --attachments` runs the same scan over
-every open issue. Removing the link from the body does not delete the file on GitHub; a person who attached something
+finding is a prompt to look, and a clean scan is not a promise. `coney-tools repo audit --github --attachments` runs
+the same scan over every open issue. Removing the link from the body does not delete the file on GitHub; a person who attached something
 private by mistake can ask a maintainer, who can ask GitHub to remove it.
 
 ## Labels {#labels}

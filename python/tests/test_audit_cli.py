@@ -234,7 +234,9 @@ def test_attachments_scan_the_open_issues(
     link = "https://github.com/user-attachments/files/9/run.log"
     monkeypatch.setattr(log_scan, "download", lambda url, limit, timeout: b"mail me: someone@example.com\n")
     path = snapshot_file(tmp_path, issues=[issue(5, body=task_body(extra=f"{link}\n\n"))])
-    code, out, _ = run(capsys, "--github", "--snapshot", str(path), "--attachments", "--only", "issue.attachment-personal")
+    code, out, _ = run(
+        capsys, "--github", "--snapshot", str(path), "--attachments", "--only", "issue.attachment-personal"
+    )
     assert code == 0 and "#5: run.log shows an email address on line 1" in out and "someone" not in out
 
 
