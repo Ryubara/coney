@@ -690,7 +690,7 @@ or any line (a grunt included) in the gap between a stop and the next update. He
 
 **At runtime** (2026-10-12, PCSX2 2.9.94, confirmed (runtime)). Scenario `repo:research/traces/scenarios/speech_cutin.toml`
 on `level80` checkpoint 1 with Cleon as the player, the hooks `say-anim-line`, `stop-speech`, `play-speech`,
-`play-speech-cut` and `event-callback` of `repo:research/traces/patches.toml`: the game's own `HuSpeakNI` and
+`play-speech-cut` and `event-callback` of `repo:research/traces/patches/`: the game's own `HuSpeakNI` and
 `HuSpeak` workers called through the call hook on Cleon with probe callback names, square tapped every 8 updates
 during the first two lines. Updates are the trace's steps:
 
