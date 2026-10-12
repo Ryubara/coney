@@ -92,6 +92,22 @@ gains him, a player member's does not); the null handle clears without touching 
 scanned on its own schedule within the 5-token budget; a re-target onto a human whose slots are full displaces the
 farthest holder.
 
+**Coney status (implemented).** `repo:src/ai/threats.h` (`isThreat`, both tags), `Gangs::enemies`, `Gangs::setTruce`
+and `Gang::setSharedTarget` (`repo:src/ai/gangs.h`); the scan runs from `Brain::update` through the gangs' one
+`ScanSchedule` (`repo:src/ai/scan_schedule.h`), which the Scout tactic now shares instead of scanning itself; the
+scan's step 2 (the gang's shared target) is in; the fight goal's re-target forces the slot, and a displaced holder
+loses his target ([Attack slots](ai.md#attack-places)); the attack command sets the shared target from the chief's
+lock-on (`ScriptedStory::startWarriorCommand`). Tests: `repo:tests/ai/threats_test.cpp` and the dispatcher case in
+`repo:tests/ai/scripted_story_test.cpp`. Stand-ins and questions left for an analyst:
+
+- The hit-back flag `+0x2e5` exists on Coney's brain but nothing sets it until `WarriorBrain_OnHitByChief` is built.
+- The fallbacks `+0x280` / `+0x284` are not filled (the open question below), so with no lock-on the attack command
+  leaves the shared target clear.
+- Coney clears the shared target where the command's tactic is started (after the dispatcher's refusals and the
+  repeat check). Does the original clear it before the refusals, so a refused or repeated command also clears it?
+- A brain with no gang takes no scan token in Coney. Does the original's `Brain_MaybeScanEnemies` take a token for a
+  brain whose gang is none?
+
 ## Unit 2: TacticAttack in full, without team-ups {#unit-2}
 
 Gang-fight needs 2, 3, 9 and 10. Today `repo:src/ai/tactic_attack.h` gives members a stand-in melee goal on the
