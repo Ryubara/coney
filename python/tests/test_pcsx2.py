@@ -467,4 +467,6 @@ def test_the_repository_scenarios_load() -> None:
         assert scenario.events or "no input" in scenario.description, path
         assert scenario.coney_level, path
         assert scenario.slot is not None or scenario.state is not None, path
-        assert "scripted-pad" in scenario.patches, path
+        # Input is played through the scripted pad; a run with no input needs no patch for it.
+        if scenario.events:
+            assert "scripted-pad" in scenario.patches, path
