@@ -570,6 +570,7 @@ uv run --project python coney-tools repo render [--check]
 uv run --project python coney-tools repo audit [--files] [--github] [--local] [--json] [--only CHECK ...] [--strict]
     [--show N] [--snapshot FILE] [--save-snapshot FILE] [--workspace DIR] [--list]
 uv run --project python coney-tools repo pr-health [--json] [--pending-hours H] [--verbose]
+uv run --project python coney-tools repo hygiene (--event N | --sweep) [--apply] [--snapshot FILE]
 ```
 
 The checks of the repository's own rules, which CI runs on every pull request. Every value they apply (the commit
@@ -595,6 +596,7 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   file and line, exit code 2. [Generated blocks](repo-conventions.md#generated-blocks) lists the blocks.
 * `repo audit` reports where the repository departs from the conventions and changes nothing: see [audit](#repo-audit).
 * `repo pr-health` lists the open pull requests that are stuck: see [pr-health](#repo-pr-health).
+* `repo hygiene` writes the audit's findings back as comments: see [hygiene](#repo-hygiene).
 
 ### repo audit {#repo-audit}
 
@@ -661,6 +663,30 @@ A failing check that is not required is ignored. A draft is never stuck. A stack
 `--json` prints `checked`, `stuck` (each with `number`, `branch`, `cause`, `kind`, `detail`, `who`, `checks`, `url`),
 `other` (the `--verbose` lines) and `notices`. Exit code 0 when nothing is stuck, 1 when something is, 2 when `gh` or
 the conventions cannot be read. Run it from the coordinator's loop to find the pull requests to unstick or to push.
+
+### repo hygiene {#repo-hygiene}
+
+`repo hygiene` is what the `hygiene` workflow runs ([Workflows](repo-conventions.md#workflows)); you can run it too.
+It audits GitHub (`repo audit --github`, plus `--files` for a sweep) and writes the result back as comments, with the
+settings in `hygiene.comments` of `.github/conventions.yml`:
+
+* `--event N` is for issue or pull request `N` that just changed. It creates the item's one comment when it has
+  findings, edits it when they change, and edits it to "found nothing to fix here now" when they are gone. A comment is
+  never deleted. Findings of the checks in `hygiene.comments.report_only` (the idleness checks) are left out, because a
+  comment is activity and would end the idleness it reports.
+* `--sweep` is the weekly run. It keeps one report comment (counts per check, then the findings) on the open issue
+  titled `hygiene.report_issue.title`, creating that issue (with the report issue's labels and a task-form body) when
+  it is missing. Item comments are written by a sweep only when `hygiene.comments.on_sweep` is true, and then at most
+  `max_per_sweep` of them, resolves first; it starts false, so the sweep only reports and item comments come from
+  events.
+* Without `--apply` nothing is written: it prints `would create comment on #7: ...` for each write. `--snapshot FILE`
+  audits a saved snapshot ([audit](#repo-audit)); the comments are still read from GitHub.
+
+Only a comment by `hygiene.comments.author` (the Actions bot) whose first line is `<!-- MARKER -->` (the report's is
+`<!-- MARKER:report -->`) counts as the workflow's own, so pasting the marker never makes it edit someone else's
+comment. Text from GitHub quoted in a comment (a title in a finding) cannot mention anyone, link, embed an image or
+close the marker, and the report writes `#12` so that it makes no cross-reference in the item's timeline. Exit code 0
+when it ran, 2 when `gh` or the conventions cannot be read.
 
 ## check {#check}
 
