@@ -1610,9 +1610,9 @@ update, read over PINE:
 
 The same run with his body `+0x60` raised to 1.3429 (radius 0.470, Coney's) was alike: the crease edge 0.49 down
 to 0.35 m from the centre, the projection 0.27 to 0.05 m outside it, 0.013-0.015 m across and 0.012 m up per
-update, never blocked; this passes within 0.5 m of the point where Coney's bum stalls. Neither run tripped the move
-action's stuck test (0.2 m in 60 updates, [AI](ai.md#move-action)): about 1.1 m was covered in each 60 updates on
-the heap. The waypoint was not skipped to get round the heap, and nothing warped him.
+update, never blocked; this passes within 0.5 m of the point where Coney's bum stalled before 2026-10-11. Neither
+run tripped the move action's stuck test (0.2 m in 60 updates, [AI](ai.md#move-action)): about 1.1 m was covered
+in each 60 updates on the heap. The waypoint was not skipped to get round the heap, and nothing warped him.
 
 The push-out `PhysicsBody_PushOutOfWalls` (`0x003477c0`, a sphere out of the nearest wall by `n × (r − distance)`)
 is not the walking case: its only caller `Human_PushOutInAir` (`0x0021a490`) runs while the human is airborne
@@ -2736,11 +2736,14 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
   never braked by a slide. A wall face the sphere already reaches at the start of the move (the centre over the
   face, or past one edge whose segment is within the radius; never past a corner) takes only the move's part into
   it, along the face's own plane in 3D, and does not push the sphere out (`human::slideAlongTouchedFaces`, the
-  fraction-0 contact), so a move into a face leaning back rises along it. **Known gap**: at `level99`'s gravel heap
-  a bum walking the path's leg (his walk 0.557 m/s) stalls at the face's foot
-  (`repo:tests/platform/disc_level99_heap_test.cpp`, hidden), while a player at the runtime's angle crosses; the
-  original's run used Vermin at 1.654 m/s.
-  The sweep leaves the sphere 0.01 m clear of the face (`BodyTuning::contactClear`), and carries it round a convex
+  fraction-0 contact), so a move into a face leaning back rises along it. The sweep's push-out leaves the sphere
+  0.01 m clear of a face it met (`BodyTuning::contactClear`), where the original's sweep leaves it at the contact
+  and then lets it sink in (above: the crease edge came to 0.27 m of a 0.35 m sphere), so a face leaning back
+  within the radius plus that clearance counts as already reached (**Coney's reading**). Without it, at `level99`'s
+  gravel heap a bum
+  walking the path's leg (his walk 0.557 m/s) was pushed back off face 680 every update, never slid along it, and
+  stood for good at its foot, (−275.4, 131.6), under the stuck test; now he crosses the heap and reaches his flag in
+  1,334 updates (`repo:tests/platform/disc_level99_heap_test.cpp`). The sweep also carries the sphere round a convex
   corner whose triangles name their shared edge in flag bits 14-15 (`human::edgeSlide`): along each wall the sphere
   wraps beyond that edge, `n × up` toward it, × max(move, `r`) a second, its part along the move taken away, for the
   update only. **Coney's reading** of the passes: the slide is found where the move put the sphere, added once and

@@ -577,9 +577,9 @@ UprightCapsule Human::uprightCapsule() const {
 }
 
 bool Human::blocksHumans() const {
-    // Health out (knocked out, wounded or none left) takes BLOCKHUMANS away; the stand-in gives it back once he is
-    // none of those (see the declaration).
-    return !m_outOfWorld && !m_fighter.health().depleted() && !m_script.knockedOut && !m_script.wounded;
+    // The flag, which only a heal or the release from an arrest gives back; health out takes it away at once (the
+    // update latches that, updateState()).
+    return m_blockHumansFlag && !m_outOfWorld && !m_fighter.health().depleted();
 }
 
 bool Human::linkedWith(const Human& other) const {
@@ -1569,6 +1569,10 @@ void Human::sendWarnings(const anim::AnimTask* before, std::uint32_t beforeId, f
 void Human::updateState(const raycast::CollisionMesh* mesh) {
     // 1. The record's stick, turned by its camera.
     ++m_updates;
+    // Health out takes BLOCKHUMANS away (`Human_OnHealthOut`) until a heal gives the body back (blocksHumans()).
+    if (m_fighter.health().depleted()) {
+        loseBlockHumans();
+    }
     m_lastMagnitude = m_intent.magnitude;
     m_intent = stickIntent(m_record.stickX, m_record.stickY, m_record.cameraForward);
     // The stick's last angle and magnitude, kept while it is pushed and fading by 0.8 an update once it is let go.

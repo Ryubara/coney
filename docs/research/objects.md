@@ -1488,6 +1488,13 @@ only. In `level95` the clubhouse's five exits (`dyn_door_stlslot` numbers 4, 10,
 from inside the player is behind it. Read from the disc (2026-10-10, `level95.lev` and the `SpawnDoor` calls of
 `level95.lua`, numbers only). The init's two-sided bit is what closes the doorway from both sides.
 
+**At runtime** (confirmed (runtime), PCSX2 2.9.94, 2026-10-11, a `level95` state outside the clubhouse with every exit
+closed, read over PINE through the world manager's mesh): triangles 729 and 730 carry flags **`0xf443`** and material
+**13**, where the disc has `0xf001` and material 0. That is enabled, two-sided `0x2`, `0x40` and `0x400`, with the
+disc's bits 12-15 kept, and the type's material. The live mesh (5,943 triangles) has 202 two-sided triangles, alike
+in two saved states and live: 703-746 (the doors and barriers, `0xf443` or `0xfc43`, `0x800` on 703-714) and
+3611-3768 (`0xf003`, material 2 `GLASS`: the panes). No triangle was disabled.
+
 **When it opens.** Only the door's own state machine switches the triangles: state command 5
 (`DisableDoorCollision`, also step 4 of an opening, [states](#door-states)) clears their enabled bit, command 6 sets
 it; a breakable door or barrier clears it when it breaks ([Breaking a door](#door-break), [Barriers](#barriers)).
@@ -2042,9 +2049,8 @@ the drawer and lifts the register with clip 504 (disc checks, 2026-10-08).
 
 ## Open questions
 
-- Door blocking ([How a closed door stops a human](#door-blocking)): confirm at runtime that a `level95` exit door's
-  triangles carry `0x2 | 0x400` after the level starts, and read the `PHYFLAG`s of the door types with an `OBB` body
-  (`dyn_door_store`, the cabin doors) to settle whether their body ever meets a walker.
+- Door blocking ([How a closed door stops a human](#door-blocking)): read the `PHYFLAG`s of the door types with an
+  `OBB` body (`dyn_door_store`, the cabin doors) to settle whether their body ever meets a walker.
 - Which search mask admits `0x40` links.
 - What human state 26 (the animated open) plays and when it sends the door `0x0b`; what fills a player's interaction
   record (`+0x660`) for a door.

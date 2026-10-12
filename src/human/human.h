@@ -479,8 +479,19 @@ class Human final : public Holdable {
     /// (0, 100] gives full health.
     /// @orig 0x002378a8 Human_SetHealthPercent (unknown)
     void setHealthPercent(float percent);
-    /// `HuRevive` (Fighter::revive()).
-    void revive() { m_fighter.revive(m_animator); }
+    /// `HuRevive` (Fighter::revive()), which ends in the heal: the body is made again, so it blocks other humans'
+    /// walks once more (heal()).
+    /// @orig 0x002377f8 Human_Revive (unknown)
+    void revive() {
+        m_fighter.revive(m_animator);
+        heal();
+    }
+    /// What `Human_Heal` gives back beyond health: a fresh physics body (`Human_CreatePhysicsBody`), whose flags hold
+    /// `BLOCKHUMANS`, so other humans' walks meet it again (docs/research/physics.md#human-contacts). The revive, a
+    /// flash and a freed cuffed human's revive call it; waking up or a wound ending alone do not.
+    /// @orig 0x0022eb40 Human_Heal (unknown)
+    /// @orig 0x0021ce08 Human_CreatePhysicsBody (unknown)
+    void heal() { m_blockHumansFlag = true; }
     /// `HuSetNormalMode` (Fighter::setNormal()); an arrest ends too.
     void setNormalMode(bool full);
     /// Breaks any pair it is in from outside (Fighter::breakPair()), as a placement does.
@@ -552,12 +563,19 @@ class Human final : public Holdable {
     /// human its list each update (Humans::update()); the list may hold this human and null slots, which are skipped.
     /// Empty (the default): it meets none.
     void setHumanContacts(std::span<Human* const> humans) { m_otherHumans = humans; }
-    /// Whether its capsule blocks other humans' walks: body flag `0x4` `BLOCKHUMANS`, which a human loses when his
-    /// health runs out, knocked out or wounded (`Human_OnHealthOut`). **Coney stand-in**: what gives the flag back
-    /// when he gets up is not traced, so it is back as soon as he is neither knocked out, nor wounded, nor out of
-    /// health.
+    /// Whether its capsule blocks other humans' walks: body flag `0x4` `BLOCKHUMANS`
+    /// (docs/research/physics.md#human-contacts). A human loses it when knocked out (by a script or his health running
+    /// out), wounded or arrested, and gets it back only from heal() (a new body) or the release from an arrest: one
+    /// woken by `HuSetConscious(true)` or whose wound `HuSetWounded(false)` ended stays passable until then. Out of
+    /// health or out of the world, he never blocks.
+    /// @orig 0x00230328 Human_KnockOut (unknown)
+    /// @orig 0x0022fa78 Human_StartWounded (unknown)
     /// @orig 0x002674c0 Human_OnHealthOut (unknown)
+    /// @orig 0x0022ec18 Human_Arrest (unknown)
+    /// @orig 0x0022ef58 Human_Unarrest (unknown)
     [[nodiscard]] bool blocksHumans() const;
+    /// Takes `BLOCKHUMANS` away (blocksHumans()): a knock-out, a wound, the health running out or an arrest.
+    void loseBlockHumans() { m_blockHumansFlag = false; }
     /// Whether it and `other` are linked, so their walks pass through each other: one holds the other in a grab, a
     /// tackle, a mount or a mugging (the link's group number at body `+0x3c`, `Grab_Link` and the rest). **Coney
     /// stand-in**: the scenes' shared group is not set.
@@ -827,6 +845,7 @@ class Human final : public Holdable {
     TurnState m_turn;
     bool m_airborne = false;
     bool m_outOfWorld = false;
+    bool m_blockHumansFlag = true; // body flag 0x4 BLOCKHUMANS, on with every new body
     bool m_aimTurning = false;     // a throw aim's turn clip (470) plays
     bool m_landingPending = false; // an airborne move passed a floor: land once the feet start kLandingDepth below it
     float m_landingFloorZ = 0.0F;  // that floor's height where it was passed

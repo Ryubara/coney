@@ -32,6 +32,9 @@ void Human::setArrested(bool arrested) {
         return;
     }
     m_script.arrested = arrested;
+    // The cuffs take BLOCKHUMANS away (`Human_Arrest`); the release gives it back (`Human_Unarrest` sets body flags
+    // 0x80000004).
+    m_blockHumansFlag = !arrested;
     // Arrested, it stops and whatever it was doing ends; released, it stands up again into the idle. While arrested
     // its push weight is 1e9 (pushWeight()), so other humans' walks do not move it.
     m_velocity.x = 0.0F;
@@ -83,6 +86,8 @@ void Human::setWounded(bool wounded) {
         return;
     }
     m_script.wounded = true;
+    // `Human_StartWounded` takes BLOCKHUMANS away; ending the wound does not give it back (only a heal does).
+    loseBlockHumans();
     m_script.woundedUntilMs = nowMs() + kWoundMs;
     // Its stance, grab or throw ends (state bits `0x14800f`), and its health drops to a quarter.
     m_fighter.setNormal(m_animator, false);
