@@ -6493,6 +6493,12 @@ subsystem = "Human"
 size = 404
 
 [[function]]
+address = 0x002783b0
+name = "Tag_EndSprayClips"
+subsystem = "Human"
+size = 624
+
+[[function]]
 address = 0x00279078
 name = "Human_FindRevivableNear"
 subsystem = "Human"
