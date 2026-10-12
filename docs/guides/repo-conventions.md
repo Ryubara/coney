@@ -181,8 +181,9 @@ default branch and never the pull request's code, and because what a title or bo
 an environment variable and a comment only after it is made harmless (no mention, link, image or HTML). It starts at
 warn level (`hygiene.comments.on_sweep` false): item comments come from events, the sweep only reports, and it is not a
 required check. The report issue is the one thing it creates besides comments, and only when no open issue has the
-title `hygiene.report_issue.title`; creating an issue is a write beyond a comment, so the maintainer approves it explicitly when merging the
-pull request that added the workflow. Turning on `on_sweep` is a one-line change to the conventions.
+title `hygiene.report_issue.title`; creating an issue is a write beyond a comment, so the maintainer approves it
+explicitly when merging the pull request that added the workflow. Turning on `on_sweep` is a one-line change to the
+conventions.
 
 ## Where the reasons are
 
