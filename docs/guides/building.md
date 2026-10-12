@@ -129,6 +129,11 @@ The first line only needs running again when a `CMakeLists.txt` or `cmake/deps.c
 does not pick up by itself. Each preset builds into its own `build/<preset>/` folder, so presets never disturb each
 other.
 
+A build or a test run that takes minutes runs in the background with its output in a log. Waiting for it is bounded:
+never `until grep -q ... log; do sleep ...; done`, which waits for ever when the build dies first (a hook refuses it;
+[Bounded waits](agents.md#bounded-waits)). A `ctest` whose caller is gone keeps starting tests; `coney-tools workspace
+clean --apply` stops it ([Cleanup](workspace.md#cleanup)).
+
 | Preset | Build type | What it is for |
 | --- | --- | --- |
 | `dev` | Debug | day-to-day work |
