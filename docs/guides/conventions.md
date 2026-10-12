@@ -69,6 +69,9 @@ avoid them from the start:
 - **Partial designated initializers** that skip a member in between or initialise out of declaration order.
 - **Parameters taken by value** where clang-tidy wants `const&` (anything bigger than a couple of words).
 - **Unchecked access to an `std::optional`** (`*opt` or `opt->` without a check in the same scope).
+- **Fused multiply-add:** GCC and Apple clang (arm64) fuse `a * b + c` unless told not to, MSVC and x86 builds do not,
+  so identical float code differs in its low bits. Coney targets build with `-ffp-contract=off`
+  (`cmake/coney_target.cmake`); keep it, since replays and tests need the same floats on every platform.
 - **`const` locals returned by value**: the `const` blocks the move on return.
 
 ### Build
