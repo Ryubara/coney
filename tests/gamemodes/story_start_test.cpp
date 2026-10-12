@@ -361,9 +361,8 @@ TEST_CASE("every start of a level finds the HUD clean: a debug jump and a reload
     // Mission A leaves a hint showing, one queued, an objective line and a tutorial callback.
     const auto dirty = [&run] {
         coney::hud::Hud& hud = run.flow->hud();
+        // The first shows at once on the free box; the second waits behind it.
         hud.hints().queue("mission A's hint", 1);
-        // The fake level does not step the HUD: the box takes the first hint here, as a frame of play would.
-        hud.hints().update(0, coney::hud::HudSound{});
         hud.hints().queue("mission A's next hint", 1);
         hud.setObjective(0, "mission A's objective", 0, true, 0);
         hud.setTutorialCallback("P1.BasicAttacks");

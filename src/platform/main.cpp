@@ -962,7 +962,7 @@ int main(int argc, char** argv) {
             devOverlay->draw();
         }
     });
-    // The time controls hold steps (pause, slow motion); a held step still reads the pads for the menus, and the
+    // The time controls hold steps (pause, a scale below 1x); a held step still reads the pads for the menus, and the
     // frame still renders the game's last step.
     modes.setStepGate([&debugSession] { return debugSession.time().shouldStep(); });
 
@@ -1047,7 +1047,10 @@ int main(int argc, char** argv) {
     if (pacer) {
         coney::platform::FramePacer& paced = *pacer;
         // The pacer's measure of each frame is also the debug menus' frame time.
-        hooks.waitForFrame = [&paced, &frameMilliseconds] {
+        hooks.waitForFrame = [&paced, &frameMilliseconds, &clock, &debugSession] {
+            // The Time page's scale above 1x makes more fixed steps due per real second (below 1x the time controls
+            // hold steps instead). Only a real clock is sped up: test mode stays one step a frame.
+            clock.setSpeed(debugSession.time().dueSpeedPercent());
             const std::uint64_t nanoseconds = paced.waitForFrame();
             frameMilliseconds = static_cast<double>(nanoseconds) / 1'000'000.0;
             return nanoseconds;

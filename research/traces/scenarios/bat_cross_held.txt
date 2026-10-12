@@ -1,0 +1,25 @@
+# a bat in hand: square or cross, then cross held 8 updates from 30-38 updates later
+40 tap square
+70 press cross
+78 release cross
+130 tap square
+164 press cross
+172 release cross
+220 tap square
+256 press cross
+264 release cross
+310 tap square
+348 press cross
+356 release cross
+400 tap cross
+430 press cross
+438 release cross
+490 tap cross
+524 press cross
+532 release cross
+580 tap cross
+616 press cross
+624 release cross
+670 tap cross
+708 press cross
+716 release cross

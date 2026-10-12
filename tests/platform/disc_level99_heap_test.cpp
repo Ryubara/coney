@@ -9,12 +9,10 @@
 // docs/research/characters.md#slopes). It runs only when the environment variable CONEY_DISC names the disc and skips
 // otherwise; it prints positions only (LEGAL.md).
 //
-// **Known gap** (hidden, `[.]`): the bum stops at (-275.4, 131.6), at the face's foot. He walks at his class's 0.557
-// m/s and aims at the platform almost along the face's normal, so his slide along its foot is a few millimetres an
-// update: the 0.01 m each wall push leaves keeps his sphere out of the face's fraction-0 contact, his move falls under
-// the stuck test (0.2 m in 60 updates) and he plans the same route again. The original's runtime crossing was Vermin's,
-// at 1.654 m/s (docs/research/characters.md#slopes); whether a bum crosses there is not traced. A player walking the
-// same line at the runtime's angle crosses.
+// It failed before the fix of 2026-10-11: the bum stopped for good at (-275.4, 131.6), at the face's foot. Coney's
+// push-out left his sphere 0.01 m off the face each update, so the face was never a fraction-0 contact he slides along,
+// and his move fell under the stuck test (0.2 m in 60 updates). A face within the radius and that clearance now counts
+// as touched (docs/research/characters.md, "Coney's implementation").
 
 #include <algorithm>
 #include <cmath>
@@ -48,8 +46,9 @@ constexpr coney::anim::Vec3 kPlatform{-277.7F, 132.0F, 3.12F};
 constexpr coney::anim::Vec3 kDestination{-285.2F, 124.2F, 0.3F};
 // The arrival radius of the stuck bum's order, metres.
 constexpr float kArrival = 2.0F;
-// How long the walk may take, frames: about 17 m of route at a walk, with the slopes' slowing, in under 20 s.
-constexpr int kWalkBudget = 600;
+// How long the walk may take, frames: about 17 m of route at a bum's 0.557 m/s walk is 31 s on the flat; with the
+// slopes' slowing and the slide along the face's foot, a minute.
+constexpr int kWalkBudget = 1800;
 // The walk counts as over the platform within this of its node across the ground, metres.
 constexpr float kOverPlatform = 1.0F;
 
@@ -68,7 +67,7 @@ float across(coney::anim::Vec3 a, coney::anim::Vec3 b) { return std::hypot(a.x -
 } // namespace
 
 TEST_CASE("the disc's level99: a bum walks over the gravel heap by its walk leg and the lesson-2 platform",
-          "[.][disc][story]") {
+          "[disc][story]") {
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");

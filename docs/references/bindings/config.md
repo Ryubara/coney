@@ -561,12 +561,12 @@ CfgChar(charType, v2, v3, speedClass, v5, v6, damage, attacks, damageScale, mode
 | 9 | `damageScale` | number (single precision) | Multiplier applied to the damage table (1). |
 | 10 | `model` | string | Model name (e.g. 'warr_re_cv'); its model index goes to +0x112 and that of '<model>_a' (the armies variant) to +0x114. |
 | 11 | `str11` | string | String (31 characters) at +0x14c ('none' for most). |
-| 12 | `warrior` | number, truncated to an integer | 16-bit value at +0x118: the Warrior index for playable characters (Rembrandt 7), inferred. |
+| 12 | `warrior` | number, truncated to an integer | 16-bit value at +0x118: the voice set, the folder number of vags/character/voices/<n>/ (Human_Init 0x00218008 copies it to human +0x3b0; type 259 instead draws 120-125). Rembrandt 7. Confirmed (code). |
 | 13 | `v13` | number, truncated to an integer | Byte at +0x14b. |
-| 14 | `ranges` | table of 45 numbers (t[1]..t[45]) | Table of 45 numbers (a range table such as RangeNormal), divided by 100 and stored as floats from +0x00. |
+| 14 | `ranges` | table of 45 numbers (t[1]..t[45]) | Table of 45 numbers (a range table such as RangeNormal), divided by 100 and stored as floats from +0x00: per attack kind, the far range in metres of that kind's anim ids (Human_AttachInstance 0x00217a98; 0 leaves the anims' own; Characters#classes). |
 | 15 | `str15` | string | String (31 characters) at +0x16c: the object a human of the type may carry, a `grp_` object group to pick one from, or none ([Crimes: starting money](../../research/crimes.md#starting-money)). |
 | 16 | `v16` | number, truncated to an integer | Integer at +0xb4: -1 gives the class money range; otherwise the carried object's drop chance (+0x278) and a cap on the starting money (0 or 5 in some calls). |
-| 17 | `str17` | string | String (31 characters) at +0x18c. |
+| 17 | `str17` | string | String (31 characters) at +0x18c: the weapon, an object type the human holds from creation (Human_PlaceItemInHand 0x0024c280 from Human_Init); none for no weapon (dyn_baton for the police). |
 
 **Returns** nothing.
 

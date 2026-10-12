@@ -381,6 +381,40 @@ SCENES = Topic(
         F("levels", "list", "Levels whose scripts preload the scene by name.", "Levels"),
         F("scripts", "list", "Scripts that preload it by name.", "Preloaded by"),
         F(
+            "plays_in",
+            "list",
+            "The level (or levels) whose world the scene plays in, as `plays_in_by` says how we know "
+            "([Scenes: which level](../research/scenes.md#which-level)).",
+            "Plays in",
+            curated=True,
+        ),
+        F(
+            "plays_in_by",
+            "str",
+            "How `plays_in` is known: `script` (a level's scripts name it), `subtitles` (its captions are in that "
+            "level's `.lev`), `movie` (a movie's caption timing), `scenetest` (only a level's debug scene test names "
+            "it), `suffix` or `prefix` (from the name alone), `none`.",
+            "Known from",
+            curated=True,
+        ),
+        F(
+            "cast",
+            "list",
+            "Per role, in role order: the character model the scene's script binds to it (through `HuCreate`'s "
+            "character type), `player` when it is the player, `-` when no human plays it, `?` when not resolved, "
+            "`a|b` when the script may bind either ([Scenes: cast](../research/scenes.md#cast)).",
+            "Cast",
+            curated=True,
+        ),
+        F(
+            "props",
+            "list",
+            "Per object slot, in slot order: the object type the scene's script binds to it (the `ObjSpawn` type "
+            "name), `-` when the script binds none, `?` when not resolved.",
+            "Props",
+            curated=True,
+        ),
+        F(
             "played_by",
             "list",
             "What plays the movie: the boot, a level record's intro or outro, the front end.",

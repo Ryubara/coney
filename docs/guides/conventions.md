@@ -417,8 +417,8 @@ code keeps to these rules:
 
 - **The simulation reads only `FrameTime`.** Gameplay, physics, animation, timers, scripts, streaming and input all
   happen in a game mode's `update()`, which is always exactly one fixed step and is handed the step's length and the
-  game time. Nothing in the simulation measures time itself or assumes how many steps a real frame runs (0 to 4).
-  Every gameplay constant in the research assumes this step.
+  game time. Nothing in the simulation measures time itself or assumes how many steps a real frame runs (0 to 4, up
+  to 16 with the debug menus' time scale). Every gameplay constant in the research assumes this step.
 - **Say whether a duration counts steps or time.** The original times some things in steps (the 5 updates after a
   block, a think every fifth step) and others in milliseconds of game time (an attack delay, a block's length). Name a
   step count `...Steps` (`kBlockPauseSteps = 5`) and a time `...Ms` or `...Seconds`, and never convert one into the

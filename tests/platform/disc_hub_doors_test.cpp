@@ -75,11 +75,17 @@ TEST_CASE("the disc's level95: a closed exit door stops the player from inside a
     }
     REQUIRE(door != nullptr);
     REQUIRE(objects.world.collision != nullptr);
+    // As read in the original's live mesh (docs/research/objects.md#door-blocking, runtime): flags 0xf443 (enabled,
+    // two-sided, 0x40, 0x400 and the disc's bits 12-15) and material 13.
+    constexpr std::uint16_t kRuntimeFlags = 0xf443;
+    constexpr std::uint8_t kRuntimeMaterial = 13;
     int marked = 0;
     for (const std::uint32_t index : door->triangles) {
         REQUIRE(index < objects.world.collision->triangles().size());
-        const std::uint16_t flags = objects.world.collision->triangles()[index].flags;
-        marked += (flags & coney::raycast::kTriangleTwoSided) != 0 && (flags & 0x400) != 0 ? 1 : 0;
+        const coney::raycast::CollisionTriangle& triangle = objects.world.collision->triangles()[index];
+        CHECK(triangle.flags == kRuntimeFlags);
+        CHECK(triangle.material == kRuntimeMaterial);
+        marked += (triangle.flags & coney::raycast::kTriangleTwoSided) != 0 && (triangle.flags & 0x400) != 0 ? 1 : 0;
     }
     CHECK(marked == 2);
     CHECK_FALSE(objects.doors.isOpen(door->handle));

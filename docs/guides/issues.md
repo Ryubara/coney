@@ -63,6 +63,12 @@ terminal you started it from, as a `.txt` file in the bug form's Log box. From t
 `![alt](./shots/f.png)` already in the body is pointed at the upload (gh 2.99 or later). Captures stay in scratch
 and are deleted once uploaded.
 
+### Wording {#wording}
+
+Issues and pull requests call the person who play-tests and decides "the user", never "the owner": "From: user
+playtest of the preview build, 2026-10-11", "the user says", "the user's screenshot". The word "owner" stays for what
+it means in the code and the research (an object's owner) and in GitHub's own fields.
+
 ### What may be attached {#media}
 
 Gameplay screenshots and short videos of Coney or of the original may be attached to issues. That is the only
@@ -78,13 +84,43 @@ so contributors who know that project recognise it. The labels live under `label
 GitHub. The coordinator makes GitHub match it with `coney-tools repo labels --apply`; without `--apply` the command
 prints the `gh label create ... --force` commands instead of running them.
 
-| Family | Labels | Meaning |
+The table is generated from `labels.list` (`coney-tools repo render`). `parity` is a difference from the original and
+`enhancement` is beyond it, so it waits until the game is complete ([Faithful first](repo:AGENTS.md)). The task form's
+area list is the `A-` labels. The coordinator sets the priority, and an issue carries one status label at a time.
+
+<!-- conventions:begin labels -->
+| Family | Label | Meaning |
 | --- | --- | --- |
-| Type | `bug`, `parity`, `task`, `docs`, `enhancement` | What kind of issue it is. `parity` is a difference from the original; `enhancement` is beyond the original and waits until the game is complete ([Faithful first](repo:AGENTS.md)). |
-| Area | `A-combat`, `A-ai`, `A-missions`, `A-hud`, `A-graphics`, `A-audio`, `A-physics`, `A-camera`, `A-platform`, `A-core`, `A-tools` | The subsystem. The task form's area list is the same list. |
-| Priority | `P-high`, `P-medium`, `P-low` | How soon. Set by the coordinator. |
-| Status | `S-needs-triage`, `S-needs-info`, `S-needs-research`, `S-in-progress`, `S-pending-review`, `S-blocked` | Where the issue is in its life; one at a time. |
-| GitHub's own | `good first issue`, `help wanted`, `duplicate`, `wontfix` | Kept as GitHub names them. |
+| Type | `bug` | Something in Coney is broken |
+| | `parity` | Coney differs from the original game |
+| | `task` | A piece of work for a maintainer or an agent |
+| | `docs` | Documentation or research pages |
+| | `enhancement` | Beyond the original; waits until the game is complete |
+| Area | `A-combat` | Area: fighting, grabs, weapons, damage |
+| | `A-ai` | Area: AI humans, pathing, goals, cars driven by AI |
+| | `A-missions` | Area: mission scripts, checkpoints, objectives |
+| | `A-hud` | Area: HUD, menus, text, prompts |
+| | `A-graphics` | Area: rendering, models, textures, animation, effects, lighting |
+| | `A-audio` | Area: sound, music, speech |
+| | `A-physics` | Area: collision, movement, cars, doors, world objects |
+| | `A-camera` | Area: cameras and cutscenes |
+| | `A-platform` | Area: window, input, gamepad, rumble, saves, loading, disc files |
+| | `A-core` | Area: engine core: memory, chunks, tasks, scripting runtime |
+| | `A-tools` | Area: coney-tools, build, CI, the sandbox |
+| Priority | `P-high` | Priority: blocks play or other work |
+| | `P-medium` | Priority: next in line |
+| | `P-low` | Priority: when there is room |
+| Status | `S-needs-triage` | Status: not yet looked at |
+| | `S-needs-info` | Status: waiting for the reporter |
+| | `S-needs-research` | Status: an analyst must study the original first |
+| | `S-in-progress` | Status: an agent or person is working on it |
+| | `S-pending-review` | Status: a pull request is open |
+| | `S-blocked` | Status: waiting for another issue or a decision |
+| GitHub's own | `good first issue` | Good for newcomers |
+| | `help wanted` | Extra attention is needed |
+| | `duplicate` | This issue already exists |
+| | `wontfix` | This will not be worked on |
+<!-- conventions:end -->
 
 ## Triage {#triage}
 
@@ -126,7 +162,7 @@ A brief may be just "issue #N" ([Briefing](agents.md#briefs)); the issue holds t
   (the place, the heading, what moved) in words and numbers. The media stays on the issue; screenshots and
   recordings are deleted from scratch when done ([Sharing one machine](how-we-work.md#shared-machine)).
 - **Work the usual way:** the research first when the status says so, then a failing test, then the fix
-  ([Testing](testing.md#done)). The pull request description starts with `Fixes #N`.
+  ([Testing](testing.md#done)). The pull request description has a `Fixes #N` line in its Summary.
 - **Agents never write to GitHub.** No comments, labels, issues or pull requests: the coordinator does all of it,
   from the same release queue as pull requests ([How we work](how-we-work.md)). An agent reports what it would say
   (the finding, the question for the reporter, the status change) in its message to the coordinator.
@@ -157,6 +193,6 @@ template's `...` placeholder and everything under Done are not looked at.
   tracked cites its existing issue; one that is finished is ticked and moved to Done; one nobody will do is dropped,
   not left unchecked.
 - **A follow-up pull request** may be cited in place of an issue when it is already open, but the work it carries
-  still ends with `Fixes #N` on the issue that describes it.
+  still finishes the issue that describes it, with a `Fixes #N` line in its Summary.
 - **The state file keeps no work list.** HANDOFF holds the live state (what runs where, what waits for CI) and issue
   numbers, never the leftovers themselves; a leftover that exists only in HANDOFF is lost when the file is cleared.

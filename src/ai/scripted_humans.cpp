@@ -188,6 +188,10 @@ void ScriptedHumans::setConscious(double human, bool conscious) {
             return;
         }
         out = !conscious;
+        // `Human_KnockOut` takes BLOCKHUMANS away; waking (`Human_WakeUp`) does not give it back.
+        if (!conscious) {
+            brain.human().loseBlockHumans();
+        }
         brain.setDead(!conscious);
     });
 }

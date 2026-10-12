@@ -213,14 +213,15 @@ class Hud {
     [[nodiscard]] ScrollInQueue& scrollIn() { return m_scrollIn; }
     [[nodiscard]] const ScrollInQueue& scrollIn() const { return m_scrollIn; }
 
-    /// The hint box's step (HintBox::update) at game time `nowMs`, unless the letterbox held the HUD's last step.
-    /// Gameplay calls it after the step's script callbacks and before the scheduled calls, where the original's
-    /// `HUD_Update` runs in its frame (after the simulation, whose animation and tutorial callbacks set texts, and
-    /// before `ScriptSystem::Update`; docs/research/level-loading.md#a-frame-of-play), because Coney's own HUD step
-    /// comes before those callbacks: a text a callback sets shows before a scheduled call's `HUDSetTutorialText(nil)`.
+    /// The hint box's one step a frame (HintBox::update) at game time `nowMs`, unless the letterbox held the HUD's last
+    /// step. update() leaves it out: gameplay calls this after the step's script callbacks and before the scheduled
+    /// calls, where the original's `HUD_Update` runs in its frame (after the simulation, whose animation and tutorial
+    /// callbacks set texts, and before `ScriptSystem::Update`; docs/research/level-loading.md#a-frame-of-play), since
+    /// Coney's own HUD step comes before those callbacks. One step only: an expired hint's successor then shows one
+    /// update after it ends, as in the original (docs/research/hud.md#hint-queue-runtime).
     void updateHints(std::uint64_t nowMs) {
         if (!m_letterbox) {
-            m_hints.update(nowMs, m_services.sound);
+            m_hints.update(nowMs);
         }
     }
     /// The hint box.

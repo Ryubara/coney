@@ -452,6 +452,10 @@ class GameplayMode final : public GameMode {
     // @orig 0x00286ba8 Player_TryRevive (unknown)
     // @orig 0x002752a0 Revive_Start (unknown)
     bool tryRevive(ai::Brain& reviver);
+    // Whether the way from `from` to `to` is clear: a 0.2 m capsule as tall as `from`'s meets no other human and no
+    // wall before `to` (human::wayClear() over the brains' humans and the level's collision).
+    // @orig 0x0021c0a8 Human_IsWayClearTo (unknown)
+    [[nodiscard]] bool wayClearTo(const human::Human& from, const human::Human& to) const;
     // 351 ended: a flash spent (the downed human's first), cue 23, the revived says 75, is healed and gets up with
     // 354.
     // @orig 0x00274ee0 Revive_Finish (unknown)

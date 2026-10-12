@@ -26,6 +26,7 @@
 #include "combat/commands.h"
 #include "combat/reactions.h"
 #include "human/human.h"
+#include "human/human_flags.h"
 #include "human/humans.h"
 #include "human/locomotion_gate.h"
 #include "support/collision_fixtures.h"
@@ -617,4 +618,39 @@ TEST_CASE("a reaction goal comes and goes one update after the state that calls 
     }
     CHECK(sawReaction);
     CHECK_FALSE(heldBefore);
+}
+
+TEST_CASE("a human starts with its brain type's flags, and a player handed back to the AI takes them again",
+          "[ai][revive]") {
+    namespace flag = coney::human::flag;
+    using coney::ai::releasedFlags;
+    using coney::ai::startingFlags;
+    // Human_Init (docs/research/combat.md#human-flags): the player and every Warrior revivable (0x4) with 0x2; the
+    // player may rage (0x2000000); cops and dealers 0x2000 and 0x40000; the others none of these.
+    CHECK(startingFlags(BrainType::Player) == (flag::kRageAllowed | flag::kFastClimber | flag::kRevivable));
+    CHECK(startingFlags(BrainType::Warrior) == (flag::kFastClimber | flag::kRevivable));
+    CHECK(startingFlags(BrainType::Cop) == 0x42000U);
+    CHECK(startingFlags(BrainType::Dealer) == 0x42000U);
+    CHECK(startingFlags(BrainType::Gang) == 0U);
+    CHECK(startingFlags(BrainType::Civilian) == 0U);
+    CHECK(startingFlags(BrainType::CivilianDi) == 0U);
+
+    // Brains::add gives them to the human, on top of what it has.
+    Scene scene;
+    const Brain& warrior = scene.add({42.0F, 40.0F, 0.0F}, 0.0F, BrainType::Warrior);
+    const Brain& soldier = scene.add({44.0F, 40.0F, 0.0F}, 0.0F, BrainType::Gang);
+    CHECK(warrior.human().hasFlag(flag::kRevivable));
+    CHECK(warrior.human().hasFlag(flag::kFastClimber));
+    CHECK_FALSE(soldier.human().hasFlag(flag::kRevivable));
+    CHECK(scene.player().hasFlag(flag::kRevivable));
+
+    // Human_ReleasePlayer: 0x2, 0x4 and 0x2000000 cleared, then 0x2 | 0x4 for a player or Warrior left behind, 0x2000
+    // for a cop; the other bits stay.
+    constexpr std::uint64_t kPlayer = flag::kPlayerFlags | flag::kGod;
+    CHECK(releasedFlags(kPlayer, BrainType::Warrior) ==
+          (flag::kComboStrength | flag::kGod | flag::kFastClimber | flag::kRevivable));
+    CHECK(releasedFlags(kPlayer, BrainType::Player) ==
+          (flag::kComboStrength | flag::kGod | flag::kFastClimber | flag::kRevivable));
+    CHECK(releasedFlags(kPlayer, BrainType::Cop) == (flag::kComboStrength | flag::kGod | 0x2000U));
+    CHECK(releasedFlags(kPlayer, BrainType::Gang) == (flag::kComboStrength | flag::kGod));
 }

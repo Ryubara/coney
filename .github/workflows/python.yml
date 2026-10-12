@@ -55,6 +55,8 @@ jobs:
       - run: uv run --project python mypy python/src python/tests
       - run: uv run --project python pytest python/tests
       - run: uv run --project python coney-tools repo check
+      # The generated blocks of AGENTS.md, CONTRIBUTING.md and the guides must match .github/conventions.yml.
+      - run: uv run --project python coney-tools repo render --check
       # The progress inputs (docs/progress/, the @orig tags, the roadmap) must agree. The tables and the README's badge
       # data are not committed: the docs build writes them (mkdocs_hooks.py).
       - run: uv run --project python coney-tools progress check

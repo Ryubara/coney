@@ -188,6 +188,12 @@ class Fighter {
     [[nodiscard]] TurnAndSlideStep takeSteer(float dt) { return m_steer.step(dt); }
     /// The attack's steer still under way.
     [[nodiscard]] const TurnAndSlide& steering() const { return m_steer; }
+    /// The revive's led steer (`Revive_Start` calls `Attack_SteerLed` for clip 351, docs/research/combat.md#revive):
+    /// from `position` and `heading`, a turn to the line to `downed`'s head (less 351's direction) and a slide to the
+    /// point 351's reach (the Anim Range List's `+0x04`) short of it, both over 351's time to its first event + 0.1 s.
+    /// Without a reach for 351 he only turns.
+    /// @orig 0x00275678 Attack_SteerLed (unknown)
+    void steerRevive(const Combatant& downed, anim::Vec3 position, float heading, const HumanAnimator& animator);
     /// The target human the search would pick for an attack of `range` metres with `current` as the current target
     /// (null for none): the nearest standing enemy within range × 1.1 and 54° of the stick's heading (the facing with
     /// the stick at rest); with no current target, within range × 0.9 at any angle; then within range × 0.7 at any

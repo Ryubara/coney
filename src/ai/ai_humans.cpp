@@ -2,6 +2,7 @@
 #include "ai/ai_humans.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <span>
 #include <utility>
 
@@ -46,7 +47,12 @@ void AiHumans::switchPlayer(Brain& to, BrainType leftAs) {
     if (&to == m_playerBrain) {
         return;
     }
+    // The human left behind fights as `leftAs`, with the flags Human_ReleasePlayer gives that brain type.
     m_playerBrain->setType(leftAs);
+    human::Human& left = m_playerBrain->human();
+    const std::uint64_t released = releasedFlags(left.flags(), leftAs);
+    left.setFlag(~released, false);
+    left.setFlag(released, true);
     to.setType(BrainType::Player);
     givePad(to);
     m_playerBrain = &to;

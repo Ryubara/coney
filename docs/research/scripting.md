@@ -1274,10 +1274,40 @@ move; from then on only the fences' message 2 goes on: `P3.FenceBroken` (either 
 and icon, sets the global time-to-live to 1000 ms and the player's money to at least $20, and schedules
 `P3.DealerPoizo` **0.5 s** later. `P3.DealerPoizo` **cuts** (`CameraMakeActive(DealerPoizo, 0)`, no fade) to the
 dealer's locked camera, teleports the players to `fHitDealer` / `2` and Vermin to `fDealer`, shows `TT_9` and arms
-the dealer's trigger sphere. Message 2 itself comes only from the fence's removal, 3-17 updates after the breaking
-hit at runtime ([Barriers](objects.md#barriers)); the charge's start, its run-up and a hit that leaves hitpoints send
-nothing. So the order is: the hit that breaks a fence (one charge, 10 hitpoints, kind 2) → the fence removed and
-message 2 → 0.5 s → the cut and the dealer set-up.
+the dealer's trigger sphere. Message 2 itself comes only from the fence's removal, 0-29 updates after the breaking
+hit ([Barriers](objects.md#barriers)); the charge's start, its run-up and a hit that leaves hitpoints send nothing. So
+the order is: the hit that breaks a fence (one charge, 10 hitpoints, kind 2) → the fence removed and message 2 →
+0.5 s → the cut and the dealer set-up.
+
+**Item 44 at runtime: the gap from the hit to the dealer camera** (issue #233). Confirmed (runtime), PCSX2 2.9.94,
+slot 10, scenario [`fence_dealer`](repo:research/traces/scenarios/fence_dealer.toml) (the `charge_fence` input:
+L2 held, stick 100 % straight ahead, cross 3 m before the fence; hooks `barrier-hit`, `object-remove`, `event-call`,
+`event-callback`; field set `screen`: player 1's current camera `0x005d9150`, view 1's fade level and letterbox level
+at `*0x005fdeb8` `+0x1d8` / `+0x1ec`), two runs, with window captures of the second:
+
+| Moment | Run 1 (update, tick) | Run 2 (update, tick) |
+| --- | --- | --- |
+| the breaking hit (`0x003b2180`, 10 hitpoints); the three boards removed | 29, `0xad00` | 29, `0xacd0` |
+| the player stopped at the fence (speed 0) | 31 | 31 |
+| the fence removed (`WorldObject_Remove` `0x00391c10`), `P3.FenceBroken` in the same update | 56, `0xad37` (+27.5) | 50, `0xacfb` (+21.5) |
+| `P3.DealerPoizo` called (`ScheduleFunc("P3.DealerPoizo", 500)` at the removal) | 70 | 64 |
+| first sample on the dealer camera, the player at `fHitDealer` (18.5, −16.3), heading 178° | 71 | 65 |
+| **hit → cut** | **42 updates (1.4 s)** | **36 updates (1.2 s)** |
+
+So the page was right, with one correction: the removal waits for the fence's next 60-tick update, which is **0 to 29
+updates** after the hit depending on the fence's phase (five runs so far: 3, 10, 17, 21.5 and 27.5), not 3-17. The
+removal to the cut is fixed: `P3.DealerPoizo` runs 14 updates after `P3.FenceBroken` (500 ms on the game clock) and
+the dealer camera is on screen in the 15th update. **The original's hit-to-cut gap is therefore 15 to 44 updates
+(0.5-1.5 s), about 1 s on average**; it is never "at once". In the screen effects nothing moves: the fade and
+letterbox levels stay 0 and player 1's current camera stays the follow camera from the charge until the cut, which is a
+plain switch (`CamEnable(3, …)`, `CameraCreateLocked("DealerPoizo", …)`, then `CameraMakeActive(<it>, 0)`) in the
+same update as the teleports and `TT_9`. What the player sees in the gap (captures of run 2, inferred from those
+frames): the fence is gone at the hit (hidden, its three boards and dust thrown), the player stands at the gap where
+the charge stopped him and then plays a short recovery animation (clip 388 from about 17 updates after the hit), the
+follow camera stays put, the fence lesson's hint stays until `P3.FenceBroken` clears it, and the next frame is the
+dealer camera. The owner's "almost at once" is not borne out; a short phase (3 updates) gives an 18-update (0.6 s) gap,
+which may be what was seen. Ruled out: no `ScreenQueueEffect`, `HideHud` or camera binding between the hit and
+`P3.DealerPoizo`.
 
 Coney fixes (item 44):
 
@@ -1285,11 +1315,16 @@ Coney fixes (item 44):
    every `ScreenQueueEffect`), so the fade comes from Coney's own code on the charge (a scene or camera transition, a
    respawn or reset fade, the player falling) and must go.
 2. Send a barrier's message 2 only from its removal after it has broken (the 60-tick class update), never on the
-   charge's start or on a hit that leaves hitpoints.
-3. `P3.DealerPoizo` runs 0.5 s after `P3.FenceBroken` and cuts to the dealer camera without a fade.
-4. Test (level99 checkpoint 3): from the charge's start until the fence is removed, no screen effect is queued and
-   `P3.FenceBroken` has not run; the dealer camera and `fHitDealer` placement come 15 updates (0.5 s) after the
-   removal.
+   charge's start or on a hit that leaves hitpoints. The fence is hidden at the hit itself, not at the removal.
+3. `P3.DealerPoizo` runs 0.5 s (14 updates) after `P3.FenceBroken` and cuts to the dealer camera without a fade; the
+   follow camera stays current, with no letterbox, until then.
+4. If Coney's gap is longer than 44 updates, the extra time is Coney's own: check where the barrier's 60-tick
+   countdown is restarted (it must keep its phase from spawn, never restart at the hit) and that `ScheduleFunc`'s
+   500 ms is counted in game time.
+5. Test (level99 checkpoint 3.5, the wooden fence): with the hit at update H, the fence is removed and
+   `P3.FenceBroken` runs at an update R with H ≤ R ≤ H + 30; the dealer camera is current and player 1 at
+   `fHitDealer` at R + 14 or R + 15, so the cut lands within **H + 14 … H + 45**; between H and the cut no
+   `ScreenQueueEffect` is called and the fade and letterbox levels stay 0.
 
 ### `level80.lua` (mission 2) {#level80}
 
@@ -2140,18 +2175,18 @@ handler component, as for `TriggerSphereEnable`).
   which are written through computed addresses with no reader found yet (`CfgWarriorClass`'s are all traced:
   [Warrior classes](../references/warrior-classes.md)). Each would move up from
   inferred once a reader or a runtime observation is found.
-- **Hint texts set twice in one frame** (owner checklist item 33b): answered by the original's runtime trace
-  ([The queue at runtime](hud.md#hint-queue-runtime), [lessons 5-8](#level99-hint-timing)): a text set on a free box
-  shows within the same call, so two `HUDSetTutorialText(nil)` + text pairs in one update never back up, and a grab's
-  hold ids fire their animation callbacks at the connect, 34 updates before `P1.Power` ([Animation
-  callbacks](characters.md#anim-callbacks)). Coney's `level99` course run still had two pairs land between two
-  hint-box steps in two places, and the box then showed every later text one late (a grab hint `TT_19*` in place of
-  the lesson's) until a frame cleared without setting: at lesson 5's end (the strong grapple's hold 82),
-  `PlayerState`'s animation callback set the hold's grab hint and `P1.Power` set `TT_24d` in the same step; and
-  `P1.StartSnaps` sets the snap text twice in one call. The second hint-box step in `GameplayMode` (Coney's order in
-  a step, [Animation callbacks](characters.md#anim-callbacks)) keeps that from backing up; what is left to do is the
-  rest of [Coney's differences](hud.md#hint-queue-runtime): `HintBox::queue` showing at once, and the hold ids firing
-  at the connect.
+- **Hint texts set twice in one frame** (owner checklist item 33b). (Answered by the original's runtime trace,
+  [The queue at runtime](hud.md#hint-queue-runtime) and [lessons 5-8](#level99-hint-timing), two runs: neither of the
+  two places where Coney's `level99` course run queued two texts in one step backs up in the original.
+  **Lesson 5's end**: `PlayerState`'s animation callback on the strong grapple's hold 82 runs at the connect (update
+  157, `TT_19b` shown) and `P1.Power` sets `TT_24d` when the hit is scored with 82 (update 191), 34 updates apart in
+  both runs, so the two texts never share an update; confirmed (runtime), the dispatch of 82 from the four-clip mix's
+  constructor (`0x00106fe0`, [Animation callbacks](characters.md#anim-callbacks)). **`P1.StartSnaps`**: its
+  `HUDSetTutorialText` calls (nil, `TT_25c`, nil, `TT_25c`) ran in one tick; each text found the box free and showed
+  within its own call, so the box showed the snap text, cleared it and showed it again, with the cue twice, and
+  nothing stayed queued; confirmed (runtime) at the show `0x001cdf7c`, as `HintBox_Queue` reads (confirmed (code) at
+  `0x001ce484`-`0x001ce52c`). In both runs the queue held no entry past the call that queued it, apart from `TT_26b`
+  behind a `<DISPLAYTIME>` hint. What Coney must change for it: [Coney's differences](hud.md#hint-queue-runtime).)
 - **The stale throw hint** (owner checklist item 38): the owner saw `level80`'s `TT_25` (lure the cops with a bottle)
   stay through step 3.4 until the Wreck'em order. Coney's checkpoint 3 test (teleports to the roof, the scene
   skipped or played out, the lesson box left and re-entered) shows the box empty when the bottle breaks and `TT_7`

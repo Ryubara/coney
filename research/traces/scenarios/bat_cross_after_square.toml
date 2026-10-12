@@ -1,0 +1,39 @@
+# a bat in hand: square, then a cross tap 3, 8, 12, 14, 18, 22, 26, 30, 33, 35, 36, 37, 38, 40 updates later, every 90 updates.
+# Research: docs/research/combat-moves.md#bat-cross. Slot 1 (the street, nobody near); dyn_bat_tuff put in the hand
+# at update 3 (Human_PlaceItemInHand 0x00238540). Frames are updates of 1/30 s.
+description = "a bat in hand: square, then a cross tap 3, 8, 12, 14, 18, 22, 26, 30, 33, 35, 36, 37, 38, 40 updates later, every 90 updates"
+research = "docs/research/combat-moves.md#bat-cross"
+input = "bat_cross_after_square.txt"
+updates = 1310
+fields = ["player"]
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick", "call-brains"]
+setup = [
+  { address = "0x000c0000", type = "u32", value = "0x5f6e7964", frame = 0, until = 0 },
+  { address = "0x000c0004", type = "u32", value = "0x5f746162", frame = 0, until = 0 },
+  { address = "0x000c0008", type = "u32", value = "0x66667574", frame = 0, until = 0 },
+  { address = "0x000c000c", type = "u32", value = "0", frame = 0, until = 0 },
+]
+calls = [
+  { function = "0x00238540", args = ["u32(player + 0x90)", "0x000c0000"], frame = 3 },
+]
+
+[coney]
+level = "level99"
+
+[[field]]
+name = "chainbuf"
+address = "rec(player) + 0xb8"
+type = "u32"
+
+[[field]]
+name = "combo"
+address = "rec(player) + 0xbc"
+type = "s16"
+
+[[field]]
+name = "inhand"
+address = "player + 0x338"
+type = "u32"
