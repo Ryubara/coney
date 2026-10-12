@@ -2152,8 +2152,11 @@ handler component, as for `TriggerSphereEnable`).
   nothing stayed queued; confirmed (runtime) at the show `0x001cdf7c`, as `HintBox_Queue` reads (confirmed (code) at
   `0x001ce484`-`0x001ce52c`). In both runs the queue held no entry past the call that queued it, apart from `TT_26b`
   behind a `<DISPLAYTIME>` hint. What Coney must change for it: [Coney's differences](hud.md#hint-queue-runtime).)
-- **The stale throw hint** (owner checklist item 38): the owner saw `level80`'s `TT_25` (lure the cops with a bottle)
-  stay through step 3.4 until the Wreck'em order. Coney's checkpoint 3 test (teleports to the roof, the scene
-  skipped or played out, the lesson box left and re-entered) shows the box empty when the bottle breaks and `TT_7`
-  next. Not reproduced; the backlog above is the likely cause (a lesson text queued behind another and shown after
-  the next clear).
+- **The stale throw hint** (owner checklist item 38). (Answered for Coney: the owner saw `level80`'s `TT_25` (lure the
+  cops with a bottle) stay through step 3.4 until the Wreck'em order. The likely cause was the hint box's backlog: a
+  lesson text queued behind another, then shown after the next clear. The box no longer queues on a nil-then-text set
+  ([The queue at runtime](hud.md#hint-queue-runtime)), and the bug no longer reproduces on the owner's path.
+  `repo:tests/platform/disc_level80_story_test.cpp` starts the story and jumps to checkpoint 3. It walks into Fox's box
+  and, on foot, up the stairs to the roof, then plays the lesson. The box is empty when the bottle breaks, `TT_7` is
+  the next hint and no lesson text comes back. The original was not traced for this; the order is the one in
+  [the order at runtime](#level80-hints).)

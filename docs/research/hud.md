@@ -2676,7 +2676,12 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   out of a level goes through (a debug jump, the story's next mission, a restart, leaving to the menus): every part
   the level set up or a script filled goes (the hints queued and showing, the tutorial callback, the objectives and
   their messages, the announcements, the prompts, bars, counters, stopwatch, mini-game panels and the radar's blips),
-  so no hint or objective of one mission survives into the next. **Coney's choice**: the game-state switches the HUD
+  so no hint or objective of one mission survives into the next. The level's start (`GameplayMode::enter`) also
+  empties the [animation callbacks](characters.md#anim-callbacks). `repo:tests/gamemodes/story_start_test.cpp` checks
+  every start path: a debug jump, a reload, the story's next mission, the pause menu's two restarts and a direct start
+  (`--play-level`). After each, no hint, objective, tutorial callback or animation callback remains, and a text set on
+  the new level's box shows at once. `repo:tests/platform/disc_level80_story_test.cpp` checks the same on the disc,
+  jumping from the story through `level80`'s four checkpoints. **Coney's choice**: the game-state switches the HUD
   object holds for Coney (the game's tutorial hints, `W_GameState + 0x56e2`; the first-objective hint's flag), the
   shown flag and the spinner are kept, as they are not the level's; the next `levelSetUp` hides both anyway.
 - **`hud::PlayerPanel`**: the [layout](#the-player-panel-layout-0x0050fa10), the banner by type, the
