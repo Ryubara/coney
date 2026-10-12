@@ -209,6 +209,18 @@ void placeOnDisplay(SDL_Window* window, SDL_DisplayID display) {
     }
     SDL_SetWindowPosition(window, place.x, place.y);
     SDL_SyncWindow(window); // window systems that move windows later (X11) have done it before the size is read
+    // A display with another scale changes the client area on the way: Windows rescales the window as it crosses
+    // (measured: 640x448 made on a 150 % display came out 646x465 on a 100 % one). The frame is the client area, so
+    // a grown one letterboxes the logical screen and no longer matches `--render-size`; set the size again, and
+    // centre it again at that size.
+    int placedWidth = 0;
+    int placedHeight = 0;
+    SDL_GetWindowSize(window, &placedWidth, &placedHeight);
+    if (placedWidth != place.width || placedHeight != place.height) {
+        SDL_SetWindowSize(window, place.width, place.height);
+        SDL_SetWindowPosition(window, place.x, place.y);
+        SDL_SyncWindow(window);
+    }
 }
 
 // What the event watch below needs: the display, and whether the window is already on it.
