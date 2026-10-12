@@ -135,7 +135,8 @@ def test_an_empty_watch_never_fires() -> None:
 def test_the_real_process_list_holds_this_process_and_its_parent() -> None:
     processes = {p.pid: p for p in process_lifetime.list_processes()}
     me = processes[os.getpid()]
-    assert me.ppid == os.getppid() and me.name.startswith("python") and me.started is not None
+    # POSIX `ps -o comm` names a script started by its shebang after the script (`pytest`), not the interpreter.
+    assert me.ppid == os.getppid() and me.name.startswith(("python", "pytest")) and me.started is not None
     assert abs(me.started - time.time()) < 7 * 24 * 3600
     assert process_lifetime.same_process(me)
 

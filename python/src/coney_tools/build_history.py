@@ -10,6 +10,7 @@ raises.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import statistics
@@ -66,4 +67,6 @@ class History:
             temporary.write_text(json.dumps(data, indent=1), encoding="utf-8")
             temporary.replace(self.path)
         except OSError:
-            temporary.unlink(missing_ok=True)
+            # POSIX says NotADirectoryError, not FileNotFoundError, when the folder is a file.
+            with contextlib.suppress(OSError):
+                temporary.unlink()

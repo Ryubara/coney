@@ -234,7 +234,9 @@ def _windows_processes() -> list[Process]:
 
 def _posix_processes() -> list[Process]:
     """Every process `ps` shows."""
-    done = subprocess.run(["ps", "-A", "-o", "pid=,ppid=,etime=,comm="], capture_output=True, text=True, check=False)
+    done = subprocess.run(
+        ["ps", "-A", "-ww", "-o", "pid=,ppid=,etime=,comm="], capture_output=True, text=True, check=False
+    )
     now = time.time()
     found: list[Process] = []
     for line in done.stdout.splitlines():
