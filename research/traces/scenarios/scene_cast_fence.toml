@@ -1,0 +1,18 @@
+# level99 checkpoint 3.5 (slot 10): the charge through the wooden fence and the steps after it. The hooks log every
+# scene name lookup with its caller, and each human and object a scene binds with the role's or slot's name, the
+# human's character type and the object's type: the subway scene Coney_Sub2 binding its train cars, then the
+# dealer's l99_c9 and Coney_Sub2 again preloaded by the script. Research: docs/research/scenes.md#cast-runtime.
+description = "level99 wooden fence: the charge and the steps after it; scene lookups and what each scene binds"
+research = "docs/research/scenes.md#cast-runtime"
+input = "scene_cast_fence.txt"
+updates = 700
+fields = ["player"]
+
+[original]
+slot = 10
+patches = ["scripted-pad", "right-stick", "scene-find", "scene-bind-human", "scene-bind-object", "c-call"]
+
+[coney]
+level = "level99"
+args = ["--checkpoint", "3"]
+settle = 300
