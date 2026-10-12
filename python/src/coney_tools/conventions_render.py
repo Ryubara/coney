@@ -182,6 +182,30 @@ def _pr_rules(conventions: Conventions) -> list[str]:
     return lines
 
 
+def _pr_review(conventions: Conventions) -> list[str]:
+    """The release gate on the reviewer's verdict (docs/guides/how-we-work.md, the release queue)."""
+    review = conventions.pull_requests.review
+    lines = _bullet(
+        f"The `{review.agent}` agent (`.claude/agents/{review.agent}.md`) writes `{review.verdict_file}` and "
+        f"`{review.report_file}` next to the description file: `{review.verdict_file}` holds `tip`, `body_sha256`, "
+        "`verdict` (`pass` or `fail`), `images` (each local image's `path` and `sha256`) and `findings` (each with "
+        "`severity` `blocker` or `note`, `where` and `text`)."
+    )
+    lines += _bullet(
+        "`repo check-review` passes only when the verdict is `pass` with no `blocker` finding, `tip` is the worktree's "
+        "HEAD, `body_sha256` is the description file's hash now and every local image the description shows is "
+        "listed with its hash now; any new commit, edit or replaced picture makes the verdict stale."
+    )
+    if review.body_hash == "sha256-lf":
+        lines += _bullet(
+            "The description's hash is the SHA-256 of the whole file (title line included) as UTF-8, with a leading "
+            "BOM dropped and CRLF or CR turned into LF."
+        )
+    if review.identical_images == "refused":
+        lines += _bullet("Two byte-identical images in one description are refused, whatever the verdict.")
+    return lines
+
+
 #: What GitHub's squash settings mean in words.
 _SQUASH_MESSAGES = {
     "PR_BODY": "the pull request's description",
@@ -253,6 +277,7 @@ BLOCKS: dict[str, Callable[[Conventions], list[str]]] = {
     "commit-areas": _commit_areas,
     "labels": _labels,
     "pr-rules": _pr_rules,
+    "pr-review": _pr_review,
     "required-checks": _required_checks,
     "maintainer-decisions": _maintainer_decisions,
     "docs-only-paths": _docs_only_paths,

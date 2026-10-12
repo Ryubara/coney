@@ -119,6 +119,17 @@ pull_requests:
       choices: ["a person", "an AI", "an AI, edited by a person", "a person, with AI help"]
       no_ai: "a person"
     model: {label: "Model:", none: "n/a"}
+  # The release gate on the pr-reviewer agent's verdict (`coney-tools repo review`, `repo check-review`). The agent
+  # (.claude/agents/<agent>.md) writes both files next to the description file. The verdict binds to what it
+  # reviewed: the branch tip, the description's hash and each local image's hash, so a new commit, an edit or a
+  # replaced picture makes it stale and the review runs again. `sha256-lf`: SHA-256 of the description file's UTF-8
+  # text with a leading BOM dropped and CRLF or CR turned into LF. Two byte-identical images are refused outright.
+  review:
+    agent: pr-reviewer
+    verdict_file: REVIEW.json
+    report_file: REVIEW.md
+    body_hash: sha256-lf
+    identical_images: refused
   stacked:
     depends_line: "Depends on #N"                # required when the base is not the default branch
     merge_into_base: false                       # never merged into a non-default base: retarget to main first

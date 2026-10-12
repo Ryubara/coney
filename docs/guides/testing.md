@@ -176,6 +176,11 @@ What the two sections hold:
   options.
 - **The original.** `coney-tools pcsx2 screenshot --copy NAME --out PNG` writes a PCSX2 copy's picture (Windows only;
   [Driving PCSX2](research-workflow.md#driving-pcsx2)), from a copy you hold a claim on.
+- **Look at each picture before using it.** Open every capture and check that it shows what its caption says:
+  gameplay, not a letterboxed scene, a loading or black screen or a menu; the right level and place; the frame and
+  options the text states. A before and after pair must differ: two identical shots mean a capture went wrong, so take
+  it again. The `pr-reviewer` agent checks the same before release, and `repo check-review` refuses byte-identical
+  images ([The description review](how-we-work.md#pr-review)).
 - **Video.** Nothing in Coney or `coney-tools` records video. A short clip is made by hand with a screen recorder; an
   agent uses a few screenshots of the moment instead.
 - **Agents** keep every capture in `scratch/<branch>/shots/` and write real image references in the pull request

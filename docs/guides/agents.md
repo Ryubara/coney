@@ -19,7 +19,7 @@ so a fresh clone gets the same setup as the maintainer's machine:
 | --- | --- | --- |
 | `AGENTS.md` (and `CLAUDE.md`, `GEMINI.md`, which only import it) | The rules | Most agent tools |
 | `.mcp.json` | The debugging servers: `ghidra-mcp` (the shared Ghidra project) and `pcsx2` (the emulator over PINE) | Claude Code; other tools take the same two commands in their own MCP config |
-| `.claude/agents/` | The roles: `analyst`, `implementer`, `reviewer`, `research-reviewer` | Claude Code |
+| `.claude/agents/` | The roles: `analyst`, `implementer`, `reviewer`, `research-reviewer`, `pr-reviewer` | Claude Code |
 | `.claude/skills/` | The coordinator's skills: `repo-hygiene` ([the skill](repo-conventions.md#hygiene-skill)) | Claude Code |
 | `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and builds allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)); a hook that refuses a wait loop with no bound ([Bounded waits](#bounded-waits)) | Claude Code |
 | `.claude/hooks/` | The hook scripts `settings.json` runs before a shell command | Claude Code |
@@ -38,7 +38,12 @@ Code asks once whether to use the project's servers. A server of the same name r
 **The roles.** Each file in `.claude/agents/` names a role from [How we work](how-we-work.md) and points at the
 guides that role reads; it holds no rules of its own. The analyst and the research reviewer are set to Opus, which
 AGENTS.md requires for reverse engineering; the others take whatever model the coordinator names
-([Which model](#models)). The implementer and the code reviewer have the Ghidra and PCSX2 MCP tools withheld
+([Which model](#models)). The `pr-reviewer` is set to Sonnet: it is the release gate on a pull request description
+([The description review](how-we-work.md#pr-review)), reads the description, the diff, the logs and every picture,
+and writes only its verdict (`REVIEW.json`) and report (`REVIEW.md`) next to `PR.md`. Its tools are Read, Glob, Grep,
+Bash and Write; its instructions keep Bash to read-only commands and Write to those two files. The coordinator runs
+it headlessly with `coney-tools repo review` ([repo review](coney-tools.md#repo-review)), or starts it as an agent on
+a `PR.md`, a worktree and a base branch. The implementer and the code reviewer have the Ghidra and PCSX2 MCP tools withheld
 (`disallowedTools` names each server, which removes all of its tools). That is a guard against reaching for them,
 not the clean room itself: they still have a shell, and the rule that keeps them out of the original's code is
 AGENTS.md's. Effort, turn and token limits are each user's own settings and stay out of the repository.
