@@ -307,6 +307,12 @@ hygiene:
       fix: skill
       keys: [paths.large_file_kb]
       summary: "pre-commit's check-added-large-files limit differs from the conventions"
+    files.markdown-hook:
+      scope: files
+      severity: error
+      fix: skill
+      keys: [repo.tools]
+      summary: "pre-commit has no markdownlint-cli2 hook, so a long Markdown line is first caught by CI"
     issue.sections:
       scope: github
       severity: error
