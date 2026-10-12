@@ -47,6 +47,7 @@ Research:
 - [Spawners](../research/ai.md#spawners)
 - [The riot's crowd, and what Coney lacks](../research/scripting.md#level34-start)
 - [Cars](../research/cars.md)
+- [Fix list, checkpoint by checkpoint](../research/scripting.md#level34-fixes)
 
 ## Run it in Coney {#run}
 
@@ -66,5 +67,7 @@ coney_tests "[disc][story]"
 ## Open questions {#questions}
 
 - How Coney's objects and stores give the riot's smash and loot acts their targets (the original's are on the AI page).
+- Why the player stops at x -135 short of fFinalGate at checkpoint 4, and whether the original's Furies knock him down
+  as fast at checkpoint 5 (fix list items 11 and 14).
 
 [All missions](index.md) and [how a mission moves between states](index.md#lifecycle).
