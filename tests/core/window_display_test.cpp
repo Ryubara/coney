@@ -2,6 +2,7 @@
 #include "core/window_display.h"
 
 #include <array>
+#include <cstddef>
 #include <optional>
 
 #include <catch2/catch_test_macros.hpp>
@@ -29,48 +30,47 @@ TEST_CASE("window display: an empty value means no choice", "[core][window_displ
 }
 
 TEST_CASE("window display: digits are a 1-based index", "[core][window_display]") {
-    const std::optional<WindowDisplayChoice> choice = parseWindowDisplay(" 2 ");
-    REQUIRE(choice.has_value());
-    CHECK(choice->kind == WindowDisplayChoice::Kind::Index);
-    CHECK(choice->index == 2);
-    REQUIRE(pickDisplay(*choice, kDesk).has_value());
-    CHECK(*pickDisplay(*choice, kDesk) == 1);
+    REQUIRE(parseWindowDisplay(" 2 ").has_value());
+    const WindowDisplayChoice choice = parseWindowDisplay(" 2 ").value_or(WindowDisplayChoice{});
+    CHECK(choice.kind == WindowDisplayChoice::Kind::Index);
+    CHECK(choice.index == 2);
+    CHECK(pickDisplay(choice, kDesk) == std::optional<std::size_t>{1});
 }
 
 TEST_CASE("window display: an index outside the list picks nothing", "[core][window_display]") {
     for (const char* text : {"0", "4", "99999999999999999999"}) {
-        const std::optional<WindowDisplayChoice> choice = parseWindowDisplay(text);
-        REQUIRE(choice.has_value());
-        CHECK_FALSE(pickDisplay(*choice, kDesk).has_value());
+        REQUIRE(parseWindowDisplay(text).has_value());
+        CHECK_FALSE(pickDisplay(parseWindowDisplay(text).value_or(WindowDisplayChoice{}), kDesk).has_value());
     }
 }
 
 TEST_CASE("window display: portrait picks the first display taller than wide", "[core][window_display]") {
     for (const char* text : {"portrait", "Portrait", "PORTRAIT"}) {
-        const std::optional<WindowDisplayChoice> choice = parseWindowDisplay(text);
-        REQUIRE(choice.has_value());
-        CHECK(choice->kind == WindowDisplayChoice::Kind::Portrait);
-        REQUIRE(pickDisplay(*choice, kDesk).has_value());
-        CHECK(*pickDisplay(*choice, kDesk) == 1);
+        REQUIRE(parseWindowDisplay(text).has_value());
+        const WindowDisplayChoice choice = parseWindowDisplay(text).value_or(WindowDisplayChoice{});
+        CHECK(choice.kind == WindowDisplayChoice::Kind::Portrait);
+        CHECK(pickDisplay(choice, kDesk) == std::optional<std::size_t>{1});
     }
     // A square or landscape-only desk has none.
     const std::array<DisplayInfo, 2> flat{{
         {"A", {0, 0, 1920, 1080}, {0, 0, 1920, 1040}},
         {"B", {1920, 0, 1200, 1200}, {1920, 0, 1200, 1160}},
     }};
-    CHECK_FALSE(pickDisplay(*parseWindowDisplay("portrait"), flat).has_value());
+    const WindowDisplayChoice portrait{WindowDisplayChoice::Kind::Portrait, 0, {}};
+    CHECK_FALSE(pickDisplay(portrait, flat).has_value());
 }
 
 TEST_CASE("window display: other text matches part of a display's name", "[core][window_display]") {
-    const std::optional<WindowDisplayChoice> choice = parseWindowDisplay("pnp");
-    REQUIRE(choice.has_value());
-    CHECK(choice->kind == WindowDisplayChoice::Kind::Name);
-    REQUIRE(pickDisplay(*choice, kDesk).has_value());
-    CHECK(*pickDisplay(*choice, kDesk) == 2); // case does not matter
-    REQUIRE(pickDisplay(*parseWindowDisplay("LG HDR"), kDesk).has_value());
-    CHECK(*pickDisplay(*parseWindowDisplay("LG HDR"), kDesk) == 1);
-    CHECK_FALSE(pickDisplay(*parseWindowDisplay("Samsung"), kDesk).has_value());
-    CHECK_FALSE(pickDisplay(*parseWindowDisplay("2x"), kDesk).has_value()); // not all digits: a name
+    // Parses `text`, which must be a name, and picks from kDesk.
+    const auto pickName = [](const char* text) {
+        const WindowDisplayChoice choice = parseWindowDisplay(text).value_or(WindowDisplayChoice{});
+        CHECK(choice.kind == WindowDisplayChoice::Kind::Name);
+        return pickDisplay(choice, kDesk);
+    };
+    CHECK(pickName("pnp") == std::optional<std::size_t>{2}); // case does not matter
+    CHECK(pickName("LG HDR") == std::optional<std::size_t>{1});
+    CHECK_FALSE(pickName("Samsung").has_value());
+    CHECK_FALSE(pickName("2x").has_value()); // not all digits: a name
 }
 
 TEST_CASE("window display: a window that fits is centred at its own size", "[core][window_display]") {
