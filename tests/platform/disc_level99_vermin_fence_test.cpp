@@ -186,8 +186,11 @@ TEST_CASE("the disc's level99 checkpoint 3: Vermin climbs the fence from his run
     }
     const std::optional<std::size_t> climb = firstClimb(updates);
     REQUIRE(climb.has_value());
+    if (!climb) {
+        return;
+    }
     REQUIRE(*climb > 0);
-    if (!climb || *climb == 0) {
+    if (*climb == 0) {
         return;
     }
     const Update takeOff = updates[*climb];
