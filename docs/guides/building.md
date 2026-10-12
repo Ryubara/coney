@@ -261,6 +261,11 @@ workflow also runs every night on `main` and on demand: open the repository's Ac
 run checks every file with clang-tidy. On Linux and macOS the jobs compile through ccache and keep its cache between
 runs, so a job recompiles only what changed; each job prints its hit rate at the end.
 
+A newer push cancels the older run of the same workflow on the same ref, queued or running: on a pull request, and
+on `main` or a `release/` branch too, so a burst of merges builds only the newest commit instead of queueing one full
+build per merge on the shared macOS runners. A commit whose run was cancelled that way is covered by the next run and
+by the nightly one; the nightly and hand-started `build` runs are never cancelled.
+
 | Workflow | Jobs |
 | --- | --- |
 | `build` | `ci` preset build and tests on Windows (MSVC), Linux (GCC 13 and Clang 19) and macOS (Apple Clang); `asan` preset on Linux Clang 19 and macOS; clang-tidy (a pull request: changed files only); pre-commit over every file; the `build-ok` gate |

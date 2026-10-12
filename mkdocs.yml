@@ -143,6 +143,10 @@ nav:
           - "World objects: tint, glass, doors": research/objects.md
           - AI humans: research/ai.md
           - "Gang fights: how a gang fights together": research/gang-fights.md
+
+          - "AI moving: gaits, path planning, routes and steering": research/ai-moving.md
+          - "AI scripting: how the scripts drive the AI": research/ai-scripting.md
+          - "AI gangs, tactics and formations": research/ai-gangs.md
           - "AI code index: brains, actions and tactics": research/ai-code.md
           - "AI goals: the code of every goal class": research/ai-goals.md
           - "AI and the world: objects, cars, doors and climbs": research/ai-world.md

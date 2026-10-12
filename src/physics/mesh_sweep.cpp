@@ -139,6 +139,14 @@ void sortByFraction(std::span<const MeshContact> contacts, std::vector<std::size
     order.resize(contacts.size());
 }
 
+bool capsuleWallNormal(Vec3 normal) { return std::fabs(normal.z) <= kWallNormalZ; }
+
+bool capsuleLowOrThin(const raycast::CollisionMesh& mesh, std::uint32_t index, float minHeight) {
+    WorkingTriangle t = loadTriangle(mesh, index);
+    computeEdges(t, true);
+    return lowOrThin(t, minHeight);
+}
+
 int sweepCapsuleMesh(const raycast::CollisionMesh& mesh, const Box& worldBox, const CapsuleSweep& sweep,
                      MeshScratch& scratch, std::vector<Contact>& out) {
     const Sphere sphere{Vec3{sweep.feet.x, sweep.feet.y, sweep.feet.z + sweep.radius + sweep.footGap}, sweep.radius};
@@ -150,7 +158,7 @@ int sweepCapsuleMesh(const raycast::CollisionMesh& mesh, const Box& worldBox, co
             return;
         }
         WorkingTriangle t = loadTriangle(mesh, index);
-        if (std::fabs(t.normal.z) > kWallNormalZ) {
+        if (!capsuleWallNormal(t.normal)) {
             return;
         }
         // 4. The side, from the centre at the start: behind a one-sided wall it is passed, a two-sided one turns.

@@ -555,7 +555,7 @@ ChangeBlocker(pos, open)
 
 Blocks or unblocks the AI walkable area (a path polygon of the level's path data) containing a point, by setting or
 clearing its flag 0x08 (`+0x48`). A blocked polygon no longer counts for the walkable-line test, so AI humans stop
-steering straight through it ([AI: path planning](../../research/ai.md#path-planning)).
+steering straight through it ([AI: path planning](../../research/ai-moving.md#path-planning)).
 
 **Notes.** When several polygons contain the point, the one whose centre is nearest wins; none does nothing. Whether A*
 routes also avoid it (through the nodes) is not traced.
@@ -1852,7 +1852,7 @@ no node `0x00251718` rejects; false otherwise or for an invalid handle.
 
 **Notes.** 0x00386010 reads both positions (object vtable +0xa4) and calls 0x0024e078(from, to, 0, 0, 1, 0xffff):
 polygon lookup 0x00250708, straight check 0x0024fbf8, end nodes 0x00251150, search 0x002511c8, then the route is freed.
-What 0x00251718 tests on a node is not traced. Planning: [AI](../../research/ai.md#path-planning).
+What 0x00251718 tests on a node is not traced. Planning: [AI](../../research/ai-moving.md#path-planning).
 
 - **Evidence:** confirmed (code) at `0x00386010`; detail: traced
 - **Wrapper** `0x0036cf88` (registered by `RegisterBindings`); **calls** `0x00386010` `Obj_PathExists`

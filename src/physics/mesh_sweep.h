@@ -88,6 +88,17 @@ struct CapsuleSweep {
     float minWallHeight = 0.25F; ///< The low and thin rules' 0.25 m.
 };
 
+/// Whether a face of unit `normal` can be a wall to the walking capsule: `|n.z|` at most 0.65 (exactly 0.65 is a
+/// wall). Anything flatter is a floor or a ceiling. sweepCapsuleMesh()'s step 3, shared with the debug menus.
+[[nodiscard]] bool capsuleWallNormal(anim::Vec3 normal);
+
+/// Whether triangle `index` of `mesh` is too low or too thin to be a wall for the walking capsule: its steepest edge
+/// rises less than `minHeight`, or (unless its longest edge is nearly vertical, `|unit z|` ≥ 0.8) its third corner
+/// lies less than `minHeight` from the longest edge's line. sweepCapsuleMesh()'s steps 6-7, here on the triangle as
+/// stored (the sweep tests it after any turn, which changes only which of two equally steep edges counts).
+/// @orig 0x00347c08 PhysicsMesh_SweepCapsule (unknown)
+[[nodiscard]] bool capsuleLowOrThin(const raycast::CollisionMesh& mesh, std::uint32_t index, float minHeight);
+
 /// The walking capsule's sphere swept by `sweep.move` against the walls of `mesh` in `worldBox`'s cells: enabled
 /// triangles with `|n.z|` ≤ 0.65, the start centre in front of them (two-sided ones turned round), the move going into
 /// them by more than 0.001, not low or thin; each kernel hit from 0 to 1 is kept. They are written to `out` (appended)

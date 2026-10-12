@@ -17,7 +17,7 @@
 // of the rooftop and street chases (`GoalDevilRun`), the carrot that runs ahead of its chasers (`GoalRunCarrotRun`) and
 // the balcony boss who throws from a ledge. Each is driven by its
 // brain as the other scripted goals are (ai/goal.h); the flags and paths come in through FlagServices.
-// Research: docs/references/bindings/ai.md, docs/research/ai.md#scripted
+// Research: docs/references/bindings/ai.md, docs/research/ai-scripting.md#scripted
 
 namespace coney::ai {
 
@@ -115,8 +115,8 @@ inline constexpr std::uint32_t kDevilResumeCount = 16;
 /// The move to the path's last point arrives within this many metres.
 inline constexpr float kDevilArrival = 1.5F;
 
-/// `GoalDevilRun`'s goal (type 152, docs/research/ai.md#devil-run): the runner moves for the path's last point (a move
-/// action that plans its own route) while pacing itself against a gang. The path measures progress: every
+/// `GoalDevilRun`'s goal (type 152, docs/research/ai-scripting.md#devil-run): the runner moves for the path's last
+/// point (a move action that plans its own route) while pacing itself against a gang. The path measures progress: every
 /// kDevilHindmostUpdates the gang's hindmost segment, every kDevilChooseUpdates the chaser (the live member farthest
 /// back along it), every kDevilPaceUpdates the speed, between its gait's and `maxSpeed` by the distance to the
 /// chaser over `paceDistance`: a friendly runner the faster the closer the chaser, a hostile pursuer the faster the
@@ -193,7 +193,7 @@ inline constexpr float kCarrotKeepAheadRate = 0.2F;
 /// @orig 0x002e13c0 RunCarrotGoal_UpdateSpeed (unknown)
 [[nodiscard]] float carrotBoost(const RunCarrotOrder& order, std::optional<float> d);
 /// What the carrot adds to its saved turn boost for a boost: 0 for none, 2 up to 0.5, 3 above
-/// (docs/research/ai.md#brain-boosts).
+/// (docs/research/ai-gangs.md#brain-boosts).
 [[nodiscard]] int carrotTurnBoost(float boost);
 
 /// `GoalRunCarrotRun`'s goal (type 0x4a, docs/research/ai-goals.md#goal-travel-path): the carrot runs a path point to

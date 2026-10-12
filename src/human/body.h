@@ -5,6 +5,7 @@
 #include <cstdint>
 
 #include "animation/anim_math.h"
+#include "raycast/collision_mesh.h"
 
 // The human's body sizes: the walking sphere the physics world sweeps against the walls (src/physics/) and the
 // larger sphere a player is pushed out of walls with while airborne, with the materials a climb passes through.
@@ -49,5 +50,21 @@ inline constexpr std::array<std::uint8_t, 3> kFenceMaterials{kMaterialLowFence, 
 /// An AI human's walking sphere radius for a human of `scale`: its body `+0x60` is 1.0, so 0.35 × scale × the scale
 /// again, as the player's (0.357 m for level99's bums at 1.01; docs/research/characters.md#walls, step 1).
 [[nodiscard]] float aiWalkingRadius(float scale);
+
+/// What a triangle is to the walking sweep, before the move and the sphere's side are known
+/// (docs/research/physics-bodies.md#unit-2, the capsule's per-triangle rules).
+enum class WallClass : std::uint8_t {
+    Disabled,   ///< Not enabled (a door's or a pane's switched off): no test meets it.
+    Degenerate, ///< No usable normal (zero area).
+    Floor,      ///< n.z above 0.65: the ground snap stands on it, the walking sweep ignores it.
+    Ceiling,    ///< n.z below −0.65: the walking sweep ignores it.
+    LowWall,    ///< Steep, but too low or thin for a walking body (physics::capsuleLowOrThin() at minWallHeight).
+    Wall,       ///< Steep and tall enough: it stops a walking body that moves into it from its front.
+};
+
+/// How the walking sweep classes triangle `index` of `mesh`, through the physics sweep's own rules
+/// (physics::capsuleWallNormal(), physics::capsuleLowOrThin() at bodyTuning().minWallHeight). Materials a climb passes
+/// through are not looked at. The debug menus colour the collision wireframe by it.
+[[nodiscard]] WallClass wallClassOf(const raycast::CollisionMesh& mesh, std::uint16_t index);
 
 } // namespace coney::human
