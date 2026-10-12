@@ -93,6 +93,10 @@ int squareAttack(const SquareInput& input) {
             return snap;
         }
     }
+    // A victim held from the rear in front: the tandem (after the target-state strikes, as in Player_Square's order).
+    if (input.tandem) {
+        return kStartTandem;
+    }
     return anim_id::kAttackS1;
 }
 
@@ -106,6 +110,9 @@ int crossAttack(const SquareInput& input) {
     }
     if (atWalk(input)) {
         return anim_id::kAttackFromWalk;
+    }
+    if (input.tandem) {
+        return kStartTandem;
     }
     return anim_id::kAttackX1;
 }
@@ -146,6 +153,9 @@ int armedAttack(const SquareInput& input, bool cross) {
     case TargetKind::Grabbed:
     case TargetKind::None:
         break;
+    }
+    if (input.tandem) {
+        return kStartTandem;
     }
     return cross ? clips.cross : clips.square;
 }

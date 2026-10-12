@@ -66,6 +66,7 @@ missions:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
       - {title: "AI: scripted goals and actions", path: "research/ai-scripting.md#scripted"}
       - {title: "Skipping a scene", path: "research/scenes.md#skipping"}
+      - {title: "Checkpoint 4: the fight's placement and who engages", path: "research/scripting.md#level80-fight-start"}
     test: "coney_tests \"[disc][story]\""
     notes: "All four checkpoints play headless on the disc with no script error and player 1 moving under the pad (`tests/platform/disc_story_missions_test.cpp`); the checkpoint 1 intro, skipped, fades back in and moves player 1 to where the scene leaves him (the skip makes its three pending end-function calls, as the original does); the Warrior command menu (R2 and the right stick) gives the orders the hints ask for (`coney_tests \"[commands]\"`); nobody has played it to the end yet."
   - level: 87

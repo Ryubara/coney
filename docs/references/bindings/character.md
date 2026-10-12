@@ -3164,9 +3164,14 @@ HuSetKeepWeapon(human, on)
 
 **Returns** nothing.
 
-Sets or clears flag bit 0x2000 of the human's flag word; from the name, the human does not drop its weapon when hit.
+Sets or clears flag bit 0x2000 of the human's flag word, which keeps a held weapon in hand when he is knocked down or
+stunned while hurt, grabbed, mounted, arrested, hit by a counter or a special move, or starts a grab or tackle. An
+object of anim set 4 or 6 (the two-handed props, the ghetto blasters) is dropped anyway.
 
-**Notes.** Bit confirmed (code) at 0x00237328; the effect is inferred from the name.
+**Notes.** Bit set at 0x00237328 and read at five places (0x00257ce8, 0x00257d70, 0x00257e38, 0x0026a7bc, 0x0022ed14).
+It does not stop the drop of an object whose throw a hit interrupts, nor of a kind-39 object (Human_ApplyPendingDamage,
+0x00265f70). Rage's SetRageMode sets it. Details: [Combat: dropping what is held when
+hit](../../research/combat.md#keep-weapon).
 
 - **Evidence:** confirmed (code) at `0x00237328`; detail: traced
 - **Wrapper** `0x003597e0` (registered by `RegisterBindings`); **calls** `0x00237328` `Human_SetKeepWeapon`
