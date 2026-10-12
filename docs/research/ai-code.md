@@ -877,8 +877,8 @@ events](../references/script-events.md); codes are `TacticGetString`'s.
 ### The tactic core {#t1-tactic-core}
 
 Pool and base-class helpers shared by every tactic; the base fields, the vtable slots and `Tactic_Start` /
-`Tactic_Process` are in [Tactics](ai-gangs.md#tactics). A tactic may own a coordinated **strategy** object at `+0x10` (a pool
-of 8 × 0x30 at `0x006eb6f0`, mask `0x006eb6e0`), which only the Attack tactic starts.
+`Tactic_Process` are in [Tactics](ai-gangs.md#tactics). A tactic may own a coordinated **strategy** object at `+0x10` (a
+pool of 8 × 0x30 at `0x006eb6f0`, mask `0x006eb6e0`), which only the Attack tactic starts.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1261,9 +1261,9 @@ the next range): members idle where they stand and banter.
 
 The tactic classes from TacticIdle's event slot to the attack sub-tactics: their constructors, member goals, Start, End,
 Process and event slots, and the `Tactic<Name>` bindings. How tactics run, the base fields and the event codes are in
-[Tactics](ai-gangs.md#tactics); what each class does for a script is in [the scripted tactics](ai-gangs.md#tactic-kinds). Event
-numbers are the human events of [Script events](../references/script-events.md); codes are the callback codes
-(`TacticGetString`).
+[Tactics](ai-gangs.md#tactics); what each class does for a script is in
+[the scripted tactics](ai-gangs.md#tactic-kinds). Event numbers are the human events of
+[Script events](../references/script-events.md); codes are the callback codes (`TacticGetString`).
 
 ### TacticIdle: the event slot {#t2-idle}
 
@@ -1427,8 +1427,8 @@ next flag, `+0x3e` the chief's line playing, `+0x3f` the answer said.
 
 ### TacticScout and TacticPathScout (type 0x27) {#t2-scout}
 
-The rest of the Scout class (vtable `0x00543da0`; [Tactics](ai-gangs.md#tactic-kinds)). Fields of PathScout: `+0x30` up to 16
-flag indices, `+0x50` / `+0x51` / `+0x53` / `+0x54` options, `+0x52` 1 = path scout.
+The rest of the Scout class (vtable `0x00543da0`; [Tactics](ai-gangs.md#tactic-kinds)). Fields of PathScout: `+0x30` up
+to 16 flag indices, `+0x50` / `+0x51` / `+0x53` / `+0x54` options, `+0x52` 1 = path scout.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1580,8 +1580,8 @@ banter on.
 
 ### WarriorAttack (type 0x01) {#t2-warrior-attack}
 
-The attack command's tactic (vtable `0x00544160`, [Warrior commands](ai-gangs.md#warrior-commands)). Fields: `+0x18` the gang
-has a target, `+0x20` the chief's line playing, `+0x21` the answer said.
+The attack command's tactic (vtable `0x00544160`, [Warrior commands](ai-gangs.md#warrior-commands)). Fields: `+0x18` the
+gang has a target, `+0x20` the chief's line playing, `+0x21` the answer said.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1658,11 +1658,11 @@ built: the wreck with no store, the answering line, the fidget clips, dogs' Avoi
 ### Attack sub-tactics {#t2-sub-tactics}
 
 Short orders TacticAttack's Process starts every 7 s (`AttackTactic_StartSubTactic` `0x00307a10`,
-[Tactics](ai.md#tactic-kinds); step by step in [AI reimplementation plan](ai-reimpl.md#unit-3)): a pool of 8 records of
-0x30 at `0x006eb6f0` (mask `0x006eb6e0`). Record: `+0x00` the gang, `+0x04` the time limit (−1 none), `+0x08` started,
-`+0x0c` the vtable (`+0x0c` Start, `+0x14` End, `+0x1c` Process). Each Process returns 1 (done) when the leader is gone,
-cuffed or knocked out. The leader opens with a speech command and a gesture (clips `0x2a3`/`0x2a4` in the fight stance,
-`0x2a7`/`0x2a8` out of it), and the order goes out when his line ends. The order names are inferred from the lines.
+[Tactics](ai-gangs.md#tactic-kinds); step by step in [AI reimplementation plan](ai-reimpl.md#unit-3)): a pool of 8
+records of 0x30 at `0x006eb6f0` (mask `0x006eb6e0`). Record: `+0x00` the gang, `+0x04` the time limit (−1 none), `+0x08`
+started, `+0x0c` the vtable (`+0x0c` Start, `+0x14` End, `+0x1c` Process). Each Process returns 1 (done) when the leader
+is gone, cuffed or knocked out. The leader opens with a speech command and a gesture (clips `0x2a3`/`0x2a4` in the fight
+stance, `0x2a7`/`0x2a8` out of it), and the order goes out when his line ends. The order names are inferred from the lines.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |

@@ -2050,8 +2050,8 @@ out in 3 steps. No level script calls it.
   ([World objects: the attachment](objects.md#held)).
 - **No spin** for model hashes `0x8b7fe995`, `0x7644ee5d`, `0x1de2e2ca`, `0x1a72a32d`, `0x687e742b`: the angular
   velocity is zeroed and flag bit 1 cleared. These are the player markers (`dyn_play_one`, `dyn_play_two` and their
-  `_euro` forms) and `dyn_lizziestarget` ([AI](ai-scripting.md#dealer-icon)); they keep the half-turn local rotation, so they
-  turn with the human.
+  `_euro` forms) and `dyn_lizziestarget` ([AI](ai-scripting.md#dealer-icon)); they keep the half-turn local rotation, so
+  they turn with the human.
 - **`dyn_cuffs`** (`0x464ac521`) takes the type record's offset and rotation (properties 11 and 12), turns at π/2
   rad/s, and is detached at once, so it stays where it appeared ([Crimes: arrest](crimes.md#arrest)).
 - **Colour state** (5 words): not fading, colour **`0xFFFFFFFF`** (white, opaque), the rest 0.

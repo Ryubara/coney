@@ -259,8 +259,8 @@ and `dyn_door_stall` 10, the cabin doors 12, `dyn_door_dclub` 20, `dyn_door_varg
 The level's navigation links are the path data's **D records** (edges, [Level loading](level-loading.md#path-data)):
 8 bytes, `+0x00` the node, `+0x04` the edge flags (u16, the **kind**) and `+0x06` a u16 whose low 13 bits are a door
 number and whose top bit is the word's bit 31, the "avoid" bit: route planning adds 1,600 to the edge's cost
-([AI: path planning](ai-moving.md#path-planning)), so a closed door makes a detour preferred, not mandatory. `0x00510590` is
-the array, `0x00510594` its count. Confirmed (code) at `0x00250960`, `0x00250c00`-`0x00250d00`.
+([AI: path planning](ai-moving.md#path-planning)), so a closed door makes a detour preferred, not mandatory.
+`0x00510590` is the array, `0x00510594` its count. Confirmed (code) at `0x00250960`, `0x00250c00`-`0x00250d00`.
 
 **A door's hole**: opening and closing by number (`0x00250c50` / `0x00250d00`, from the door's state commands with
 the second argument 1, `0x003a4b00`) change the avoid bit of every link with the number, walking the D records from

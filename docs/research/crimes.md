@@ -443,7 +443,7 @@ order of the steps:
 1. No brain: nothing.
 2. **The pocket** (`+0x250`, an item): `+0x254` pickups of that item's object, at his feet 0.5 m up. Unless the
    brain's kind (`+0x04`) or its `+0x26c` is 5, nothing more is dropped. (For brain kind 5 the pickups go round him
-   instead, 1 m out in his free sectors, [AI: neighbour sectors](ai.md#neighbour-sectors).)
+   instead, 1 m out in his free sectors, [AI: neighbour sectors](ai-moving.md#neighbour-sectors).)
 3. **Power cuffs**: a human with cuffs (`Human_GetCuffCount`) drops `dyn_powercuffs` when `Random_Int(100)` is below
    51 and game state `+0x158` is set or unlock (6, 14) is; then nothing else.
 4. **The carried object** (`+0x257`, not `none`): an AI human drops it unless `+0x278` is -1, and carries `none`
@@ -460,7 +460,7 @@ order of the steps:
    respawn timer of item 2, and his money becomes 0.
 
 So `level87` chapter 3's early Destroyers, given $5 each by their constructor, leave $5 each when beaten: the price
-of one can of paint ([GoalDealer](ai.md#dealer)). **Coney** drops nothing yet ([`level87`'s
+of one can of paint ([GoalDealer](ai-scripting.md#dealer)). **Coney** drops nothing yet ([`level87`'s
 fixes](scripting.md#level87-fixes), fix 4). Fix: on health out (wounded or knocked out), run steps 1-5 with the game's
 random numbers. Tests: an AI human of a brain kind other than 4 with $5 and no object, knocked out, leaves one
 `dyn_money` of $5 and has $0; a civilian of brain kind 4 with $15 and factor 0.1 leaves $1; a human whose object is

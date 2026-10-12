@@ -97,8 +97,8 @@ the player's word for a pad human whose brain is not dead, the **AI word** other
 | otherwise (walk, stand) | `0x005101d0` | 12° | yes |
 
 "Boost applies": the gait rows go through `Human_GetTurnRateForGait` (`0x002212d0`), which multiplies the AI word by
-the [turn boost](ai-gangs.md#brain-boosts) `+0x0b` (× (b + 1), or ÷ (1 − b) when negative); the other rows do not. At 30 Hz a
-walking AI turns 360°/s, a running one 120°/s, unboosted. Confirmed (code); the AI words are `.data` values that
+the [turn boost](ai-gangs.md#brain-boosts) `+0x0b` (× (b + 1), or ÷ (1 − b) when negative); the other rows do not. At 30
+Hz a walking AI turns 360°/s, a running one 120°/s, unboosted. Confirmed (code); the AI words are `.data` values that
 `CfgSetTurnRates` does not change: it writes only each pair's first (player) word, so its sixth argument is the
 player's stance turn (`0x005101d8`), and an AI's is always `0x005101dc`'s 24° ([Characters](characters.md#ai-locomotion)).
 The rows are tested top down, so a wounded AI turns 0.375° per update even in a fight stance.

@@ -59,8 +59,8 @@ The stand-in (`AddDummyPlayer`: `GangCreate(0, "Gang0", 1)`, character 352 at `f
 
 ### A player goes down {#player-down}
 
-`CheckPlayerDead(member, attacker, standing)` (gang event 18, [AI: gang events](ai-gangs.md#gang-events)), for player 1 (and
-the same for player 2 with its own side):
+`CheckPlayerDead(member, attacker, standing)` (gang event 18, [AI: gang events](ai-gangs.md#gang-events)), for player 1
+(and the same for player 2 with its own side):
 
 - one player or versus, one fighter a side, not Survival: revive in **4 s** (Wheelchair: **1 s**) with
   `ScheduleFuncArg1("RevivePlayer", h, ms)` (`HuRevive` if still a player);
@@ -459,8 +459,8 @@ built yet.
 - **Battle royal**: the scripts' own ring-out rules run on `TacticDomination`, `HuSetSlowMo` (the characters' step,
   `repo:src/camera/slow_motion.h`), `HuSetConscious` (a knocked-out mark that stops the human and its brain) and
   `TurnWarriorCommands`.
-- **Survival**: the gangs' spawners spawn ([AI: spawners](ai-gangs.md#spawners), `repo:src/ai/spawners.h`): the arena's two,
-  in state 8, make their humans on a route node out of the camera's sight beyond 15 m, and
+- **Survival**: the gangs' spawners spawn ([AI: spawners](ai-gangs.md#spawners), `repo:src/ai/spawners.h`): the arena's
+  two, in state 8, make their humans on a route node out of the camera's sight beyond 15 m, and
   `CreateENEMY` sends each at him with `GoalEngageEnemy` and `GoalMoveToHuman` (`repo:src/ai/engage_goals.h`) after
   `BrSetType`, `HuGetCharType`, `BrSetAttackWeight` and `HuGetPosition`. Once he is down `SavePlayerStats` ends the
   match with his time.

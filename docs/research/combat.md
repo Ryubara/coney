@@ -2738,9 +2738,10 @@ downed player himself. Players count as members like anyone else. Confirmed (cod
   mesh: `Nav_FindPolygonUnder` (`0x00252410`, height 0) drops it to marked ground within 10 m, else to the nearest
   polygon edge within 2 m (else it stays where it was), and `Nav_FindArea` (`0x00250708`) finds its area. **No area →
   0**, without trying any member. Then each member in slot order that is not cuffed (`Human_IsCuffed` ≠ 1) and not down
-  or dead (`Human_IsDownOrDead` `0x00227e60` ≠ 1: dead, dying, knocked out or `0x10000`; [AI](ai-gangs.md#warrior-follow)) is
-  tested with `Nav_CanReach(his position, goal, his area found from his position, the goal's area, 1, 0xffff)`
-  (`0x0024e078`); the first yes returns 1. There is no distance limit.
+  or dead (`Human_IsDownOrDead` `0x00227e60` ≠ 1: dead, dying, knocked out or `0x10000`;
+  [AI](ai-gangs.md#warrior-follow)) is tested with
+  `Nav_CanReach(his position, goal, his area found from his position, the goal's area, 1, 0xffff)` (`0x0024e078`); the
+  first yes returns 1. There is no distance limit.
 - **`Nav_CanReach`**: no area at either end → no. Two different areas must both be on the route graph (area `s16 +0x02`
   ≠ 0), else no. A walkable straight line between the points (`Nav_IsWalkableLine`) → yes. Otherwise each end's nearest
   node it reaches in a straight line must exist, and `Route_Find` with mask `0xffff` must return a route; with the 5th
@@ -3127,8 +3128,8 @@ the key and the R2 map, in this order. Confirmed (code) at `0x002843f8`:
 sound](sound.md#anim-sounds) (message `0x8b`) with id **70** at `+0x8` and the text `flash` at `+0xc`.
 `Human_HandleMessage` (`0x002473bc`) answers `0xc1` by the human's anim: 665 calls `Flash_Use`; 666 opens the door
 the human targets (`Door_OpenBy`); 668 played by a dealer (brain type 5 with `GoalDealer`, `0x80`, on top) finishes
-the deal (`DealerGoal_FinishPair` `0x002c7c20`, [AI](ai.md#dealer-buy)). Confirmed (code); the events read from the
-disc's clips (identical in both copies). So the flash is used partway into the clip, unless the clip is cut first
+the deal (`DealerGoal_FinishPair` `0x002c7c20`, [AI](ai-scripting.md#dealer-buy)). Confirmed (code); the events read
+from the disc's clips (identical in both copies). So the flash is used partway into the clip, unless the clip is cut first
 (then nothing is spent), and the player hears the animation sound 70 and `Flash_Use`'s interface sound 23 on the same
 update. At runtime 665 plays slower than its frames say: started on update N, `Flash_Use` ran from the event on update
 N + 25 and 665 lasted **53 updates** (N to N + 52), standing still and over a block alike, where 40 frames at 30 per
@@ -3138,8 +3139,8 @@ sets that rate is not traced (`Human_PushOverlayClip`, `0x0025ade8`, passes no r
 **Taking flash from the dealer** plays the money pair, not 665: the dealer's anim 668 bound to `money_take` and the
 buyer's 668 to `money_give` (both 1.333 s, each with a type-8 partner-place event at frame 0, about 0.97 m ahead;
 `money_take` carries the `0x41` event at **frame 17**), so the flash reaches the inventory 17 updates into the pair,
-with the pickup sound `vags/interface/powerup` and the dealer's `cash` line ([AI, Buying](ai-scripting.md#dealer-buy)). Confirmed
-(code); the frames from the disc.
+with the pickup sound `vags/interface/powerup` and the dealer's `cash` line ([AI, Buying](ai-scripting.md#dealer-buy)).
+Confirmed (code); the frames from the disc.
 
 **`Flash_Use`** (`0x00284280`), confirmed (code): one flash spent; **interface sound 23** (`0x0010fc30(*0x0050aa84,
 0x17)`: entry 23 of the audio manager's interface cue table at `+0x1e0`, which `SoundCfgInterfaceSound(23, …)` fills

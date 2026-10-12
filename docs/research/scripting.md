@@ -1138,8 +1138,8 @@ Points an implementer needs:
   target with 20 s off target allowed ([Mugging](combat.md#mugging)). The mug callback runs for every end of a
   mugging; the lesson ignores a false one.
 - **3.6**: a player hitting the dealer (message 1 or 16) fades out, removes his gang and makes him again after 2 s,
-  the players put back at `fHitDealer`. Triangle in the dealer's 1.75 m buys ([Buying](ai-scripting.md#dealer)): $20 for one
-  flash, refused at 3 carried; a dirty dealer would take the money and give nothing.
+  the players put back at `fHitDealer`. Triangle in the dealer's 1.75 m buys ([Buying](ai-scripting.md#dealer)): $20 for
+  one flash, refused at 3 carried; a dirty dealer would take the money and give nothing.
 - **3.7**: the last step waits only for the command; the flash itself heals the player when he is hurt (he is at 35 %
   from 2.1) and does nothing at full health without upgrade (6, 8).
 - **3.4**: the jump is the player's own ([Jumping](characters.md#jump)) and the script never touches the window: the
@@ -1754,7 +1754,7 @@ Fixes, in the order to take them (each one implementer unit):
 4. **A downed human drops no money.** The original's `Human_OnHealthOut` calls `Human_DropCarried` (`0x00232c60`)
    when a human is knocked out or wounded, which leaves a `dyn_money` pickup of his money ([Dropped when
    down](crimes.md#down-drop)). Chapter 3's two early Destroyers get $5 each (`EDConstructor`, `HuSetMoney`), the
-   price of a can ([GoalDealer](ai.md#dealer)), so beating them is the chapter's first paint (inferred from the
+   price of a can ([GoalDealer](ai-scripting.md#dealer)), so beating them is the chapter's first paint (inferred from the
    script); Coney drops nothing. Fix and test on [Crimes](crimes.md#down-drop).
 5. **A hidden player enters the fight stance.** The original's stance starts only when the state word lacks
    `0x200000`, the hidden state ([Fight stance](combat.md#fight-stance), step 3, `0x0027ce90`), and L1 while hidden
@@ -1766,10 +1766,10 @@ Fixes, in the order to take them (each one implementer unit):
 7. **The game hints** 16, 22 and 24/25 above (issue #332): Coney queues only hint `0x15`. Add the three triggers with
    their counters and flags in the game state. Hints 22 and 24/25 serve every level ([HUD](hud.md)).
 8. **Attacking on sight**: the Destroyers of chapters 2-4 do not react to the player until hit ([AI: attacking on
-   sight](ai.md#aggro-on-sight), issue #73).
+   sight](ai-gangs.md#aggro-on-sight), issue #73).
 9. **The tag's look**: the mist and the wall tag (fixes 6 and 7 of [Crimes](crimes.md#tag-coney-fixes), issue #70).
-10. **The spray sellers** after a hit ([GoalDealer](ai.md#dealer), items 7 and 15): chapter 2's first seller is the
-    one the hints point at.
+10. **The spray sellers** after a hit ([GoalDealer](ai-scripting.md#dealer), items 7 and 15): chapter 2's first seller
+    is the one the hints point at.
 11. **A playthrough test** per checkpoint asserting the order above, once 1-10 land (issue #333;
     [Testing](../guides/testing.md#playthrough-tests); issue #135 for the rest of the reference order).
 
@@ -1869,10 +1869,10 @@ is given.
   `level34_gate`). The level police `RiotCops` (50) start at `P1.HeadToGate` and in `level34_gate`. So the same
   placement decides where every gang and every cop of the riot appears.
 - **What each rioter does** (`F.RiotPedSpawn(human, gang, name)`): violence reaction off, threat and investigate
-  responses 0. While `bRiotPeds` is true, 75 % get `GoalRiot(h, 10, 100, 2, 0, 0)` ([GoalRiot](ai-scripting.md#riot)) and 25 %
-  `FlagNetTraverse(h, 1, 100)` (the 34-node pedestrian net that `RunLevel` sets up). While it is false, all walk the
-  net. In both cases 3 in 10 get a random object of `tCivObjects` in hand (`HuPlaceItemInHand`). `bRiotPeds` is set
-  true when `level34.lua` loads. `P1.SetupSection1` sets it false for the intro, and `P1.StoreObjectives` sets it
+  responses 0. While `bRiotPeds` is true, 75 % get `GoalRiot(h, 10, 100, 2, 0, 0)` ([GoalRiot](ai-scripting.md#riot))
+  and 25 % `FlagNetTraverse(h, 1, 100)` (the 34-node pedestrian net that `RunLevel` sets up). While it is false, all
+  walk the net. In both cases 3 in 10 get a random object of `tCivObjects` in hand (`HuPlaceItemInHand`). `bRiotPeds` is
+  set true when `level34.lua` loads. `P1.SetupSection1` sets it false for the intro, and `P1.StoreObjectives` sets it
   true again once the car flippers' scene has run. So from the loot objective on, most of the crowd riots.
 
 **Against `missions.yaml`.** Its notes for `level34` record the intro, the loot, the radio and mugging objectives,
@@ -1921,7 +1921,7 @@ spawners and link to their subject pages; the rest are this mission's.
    spawned count is under its cap. For a police gang (gang `+0x2c` = 1) that is the dispatch count `+0x324` under
    `+0x326` (`SetCopSpawnMax`); for every other gang it is `+0x432` under `+0x434` (`SetSpawnMax`, which `level34`
    sets to 45). Each spawn adds 1 to `+0x432` (and to `+0x324` in state 6), and `GangSpawner_OnHumanGone`
-   (`0x001672a8`) takes it off again ([Spawners](ai.md#spawners)). Coney does not read `SetSpawnMax`
+   (`0x001672a8`) takes it off again ([Spawners](ai-gangs.md#spawners)). Coney does not read `SetSpawnMax`
    ([Coney's implementation](ai.md#coney)), so at checkpoint 3 the riot, wanted-gang and police spawners fill the
    human pool. In 1,500 updates of standing still, `HuCreate` was asked for 240 `RiotCivs1` humans and about 40 of
    each cop gang. Once the pool was full, most of these calls failed (handle 0) on every update. Done: a test with
@@ -1948,7 +1948,7 @@ spawners and link to their subject pages; the rest are this mission's.
    enters, and the scripts filter by `HuIsAPlayer` or by gang, so that is harmless.
 5. **The looters' tactics** (item 4 of [the riot's crowd](#level34-start)). In Coney, `TacticVandalize` on zone 51
    answered with code 6 (attacked) within 30 updates, and the intro looters left. In the original, they wreck the
-   zone first and answer 1 once it is empty ([tactic kinds](ai.md#tactic-kinds)). Done: the looters break zone 51's
+   zone first and answer 1 once it is empty ([tactic kinds](ai-gangs.md#tactic-kinds)). Done: the looters break zone 51's
    objects before they leave, unless they are attacked.
 
 **Checkpoint 2** (the stores, the stereo scene, then `vSection3Gate`).
@@ -2080,8 +2080,8 @@ from the disassembly of `level3.lua` and its five chapter scripts; bindings on
    **`BrDead(player, true)`**: the player's brain is off, which also [takes his pad away](ai.md#handlers); fade in
    over 2 s; schedules the mimes' door (0.1 s), `ch4.SetupPoizo` (3 s) and the pursuit (4 s).
 3. **`ch4.SetupPoizo`**: a path camera from the intro camera through three points (the second calls Snow's line);
-   every other Warrior: brain flushed, normal mode, a friendly [devil run](ai-scripting.md#devil-run) on `roofpath2` against the
-   Warriors' gang (gait 4, pace 4 m, up to 10 m/s, urgency 3) under a `GoalMoveToFlag` to the first chase flag
+   every other Warrior: brain flushed, normal mode, a friendly [devil run](ai-scripting.md#devil-run) on `roofpath2`
+   against the Warriors' gang (gait 4, pace 4 m, up to 10 m/s, urgency 3) under a `GoalMoveToFlag` to the first chase flag
    (gait 5); **the player**: normal mode and `GoalMoveToFlag(player, fRoofChase[1], 4, ...)`. With his brain off the
    player's brain still runs the goals a script pushes (`Brain_UpdateGoals`), so **the AI walks Snow** from the
    warp point (−268.5, 353.6, 16.6) toward the first chase flag (−214.7, 364, 20.2) while the pad is ignored.
@@ -2126,8 +2126,8 @@ goal does not move a brain-dead player, leaves the player standing for good. Con
 behaviour; that Snow's walk crosses `vbStartRail` is inferred from the positions (not seen at runtime).
 
 Engine behaviour this mission needs beyond its bindings: [kind-2 boxes](#triggers), the [rail
-camera](camera.md#rail) mode 0, [GoalDevilRun](ai-scripting.md#devil-run) and [message 6](#triggers) from `vGallery` when a
-human standing in it damages something.
+camera](camera.md#rail) mode 0, [GoalDevilRun](ai-scripting.md#devil-run) and [message 6](#triggers) from `vGallery`
+when a human standing in it damages something.
 
 ### `level5.lua` (mission 7) {#level5}
 

@@ -97,8 +97,8 @@ A slot holder without a place, or whose own next-attack time (`+0x1e8`) has not 
    an active place on an attackable target and has no FollowAndDefend goal. So in a long brawl **every member
    re-chooses at least every 4 s**.
 2. **The re-target** (`FightGoal_Process` `0x002b3ab0`, at most once a second, `+0x14`): the first word of his
-   [sector record](ai-moving.md#neighbour-sectors), refreshed when older than 1 s, which is the **nearest human within 1.5 m in
-   sector 0** (straight ahead, ±22.5°). When that human is someone other than the target, a threat
+   [sector record](ai-moving.md#neighbour-sectors), refreshed when older than 1 s, which is the **nearest human within
+   1.5 m in sector 0** (straight ahead, ±22.5°). When that human is someone other than the target, a threat
    (`Brain_IsThreat` `0x00290138`: an enemy gang, or both players) and no GrabTarget goal (`0x1f`) is on the stack, he
    becomes the target with the slot **forced** (`Brain_SetTarget(brain, him, 1)`). Confirmed (code); this replaces
    the "inferred" reading under [Starting a fight](ai.md#targets).
@@ -136,16 +136,16 @@ A slot holder without a place, or whose own next-attack time (`+0x1e8`) has not 
    member with an **empty goal stack** is popped to his base and given Melee, and then a HelpRespond goal toward the
    **farthest** member that has goals (`Gang_SendHelper` `0x002b75b8`). Confirmed (code): the loop keeps a candidate
    only when his squared distance is greater than the best so far, so this corrects "the nearest" in
-   [The scripted tactics](ai-gangs.md#tactic-kinds). On violence nearby (event 20, `AttackTactic_OnViolence` `0x00307878`) the
-   **leader** picks the side and every member with an empty stack melees that man, takes him as enemy and target and
-   gets HelpRespond toward him.
+   [The scripted tactics](ai-gangs.md#tactic-kinds). On violence nearby (event 20, `AttackTactic_OnViolence`
+   `0x00307878`) the **leader** picks the side and every member with an empty stack melees that man, takes him as enemy
+   and target and gets HelpRespond toward him.
 
 ## The gang as a whole {#gang}
 
 1. **Alert state** (gang `+0x32`, `Gang_SetAlertState` `0x00164a28`): 1 while fighting; it installs the gang's fight
    anim substitutions and sets each AI member's brain `+0x14d` to 0 (calm 1), which lifts the turf limit on whom he
-   may take ([The gang](ai-gangs.md#gang-record)). Melee sets it when the gang has no tactic; a tactic's Start sets it for types
-   below `0x12`.
+   may take ([The gang](ai-gangs.md#gang-record)). Melee sets it when the gang has no tactic; a tactic's Start sets it
+   for types below `0x12`.
 2. **The leader** (gang `+0x44`, `Gang_GetLeader` `0x00165678`: while alive, not a player, not down and not out of
    the fight, else another member). He counts in the score (+6 against an enemy leader), in reason 4, in
    `AttackTactic_OnViolence` (he picks the side) and he gives the team-up orders.

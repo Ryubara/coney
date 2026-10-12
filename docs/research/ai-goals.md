@@ -1481,8 +1481,8 @@ A helper several goals share, and the reset of two lists beside it.
 
 ### The MoveTo goals (types 1-6) {#goal-move-to}
 
-[GoalMoveToFlag](ai-scripting.md#move-to-flag) and its siblings: to an exit flag, a flag-net flag, a flag to use, a position, a
-human.
+[GoalMoveToFlag](ai-scripting.md#move-to-flag) and its siblings: to an exit flag, a flag-net flag, a flag to use, a
+position, a human.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1613,7 +1613,8 @@ Follows an object (a car or a thing), matching speed.
 
 ### TravelPath (type 0x38), LeadChase (type 0x49) and RunCarrotRun (type 0x4a) {#goal-travel-path}
 
-Walking a path of flags, alone, leading a chase, or as the carrot ([GoalDevilRun](ai-scripting.md#devil-run) for the devil run).
+Walking a path of flags, alone, leading a chase, or as the carrot ([GoalDevilRun](ai-scripting.md#devil-run) for the
+devil run).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |

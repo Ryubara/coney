@@ -19,17 +19,17 @@ read in the code, which is almost always a call. Confirmed (code) at the address
    (`0x0028d758`) once, checked for all 27 of their workers: the new goal goes **on top**, the old top is suspended (it
    resumes when the new one ends), and the human's queued actions are cleared. No `Goal*` binding flushes first, so a
    script that wants the goal to be the only one calls `BrFlush` (or `BrFlushGoals`) just before, as the scripts usually
-   do ([Goals](ai.md#goals), [one update](ai.md#update-goals)). `GoalJoinCinematic` with its last argument 1 also runs the goal's
-   first update at once. `GoalMelee` pushes two goals (FindEnemy, then Melee).
+   do ([Goals](ai.md#goals), [one update](ai.md#update-goals)). `GoalJoinCinematic` with its last argument 1 also runs
+   the goal's first update at once. `GoalMelee` pushes two goals (FindEnemy, then Melee).
 2. **Actions.** `ActLookAt`, `ActTurnTo` and `ActTurnToDir` queue one action behind any queued ones; the goal on top
    keeps running ([ActLookAt](#look-at)).
 3. **The gang's tactic.** A `Tactic*` binding finds the gang, builds the tactic and sets it (`0x00165640`), which ends
    and frees the gang's old tactic. When it starts, **every member that is not a player is flushed** (goals and actions)
-   and the tactic gives the goals ([Tactics](ai-gangs.md#tactics)). A tactic of type `0x12` or above owns its members' goals and
-   gives them again on events 17, 19 and 22; under any tactic `Brain_PushFightGoal` does nothing, so a member's own
-   fights come from the tactic. `TacticClear` ends and frees it (`Gang_StopTactic`). The tactic's Lua callback receives
-   (gang id, code) for each non-zero Process result and event code (`TacFinished` ... `TacAnimStart`, [Scripted
-   tactics](ai-gangs.md#tactic-kinds)); the strategy library [below](#script-strategies) is built on it.
+   and the tactic gives the goals ([Tactics](ai-gangs.md#tactics)). A tactic of type `0x12` or above owns its members'
+   goals and gives them again on events 17, 19 and 22; under any tactic `Brain_PushFightGoal` does nothing, so a
+   member's own fights come from the tactic. `TacticClear` ends and frees it (`Gang_StopTactic`). The tactic's Lua
+   callback receives (gang id, code) for each non-zero Process result and event code (`TacFinished` ... `TacAnimStart`,
+   [Scripted tactics](ai-gangs.md#tactic-kinds)); the strategy library [below](#script-strategies) is built on it.
 4. **The brain's own handlers.** Between script calls, a brain's think and event handlers ([Brain
    types](ai.md#brain-type-handlers)) keep pushing goals of their own: a fight (`Brain_Fight`, which needs threat response
    `+0x21c` ≠ 0, and pushes nothing under a tactic), a reaction to violence (`+0x267`), an investigation (`+0x224`) and
@@ -42,8 +42,8 @@ read in the code, which is almost always a call. Confirmed (code) at the address
     - Suspension, below.
 5. **Freezing.** `BrSuspend(h, on)` (`Brain_SetSuspended` `0x002923a0`) clears the human's actions and sets brain
    `+0x0a`; `GangSuspend(gang, on)` sets gang `+0xd4`. While either holds, `Brain_UpdateGoals` keeps only the time: no
-   goal, reaction goal or action runs ([one update](ai.md#update-goals); the brain's own flag counts only while the human is
-   not held).
+   goal, reaction goal or action runs ([one update](ai.md#update-goals); the brain's own flag counts only while the
+   human is not held).
 6. **Relations and perception.** `GangMakeEnemies` / `GangMakeFriends` (both ways), `GangMakeEnemiesOfType`,
    `GangMakeNeutralOfType`, `GangSetTargetable` (brain `+0x120`), `GangSetAlwaysSeen`, `BrSetFOV`, `GangSetHearRange`
    and `GangSetRespondPercentage` change whom the [enemy scan](ai.md#enemy-scan) lists and who answers violence; they push
@@ -317,8 +317,9 @@ What each level does with them, from the call sites (arguments read from the com
   (fighters held 1 m back for 2000 ms), `GoalGuardFlag` (the gate guards, 0.5 m), `GoalTag` (the gang leader sprays a
   tag), `GangMakeEnemiesOfType(gang, 20)` and `(gang, 0)`, `BrSetType(h, 2)`.
 - **5**: the strategy library; `GoalRunCarrotRun` for Sanchez's run ahead of the Warriors (after `BrFlushGoals`),
-  `TacticBossScenarioA` for the Diego and Vargas fight ([its section](ai-gangs.md#boss-diego-vargas)), `GoalBackoff(player, …, 5,
-  5000)` to hold the players back during scenes, `BrSetPedType(h, 3)` for civilians who fight back.
+  `TacticBossScenarioA` for the Diego and Vargas fight ([its section](ai-gangs.md#boss-diego-vargas)),
+  `GoalBackoff(player, …, 5, 5000)` to hold the players back during scenes, `BrSetPedType(h, 3)` for civilians who fight
+  back.
 - **34 (the riot)**: rioters with `GoalRiot(h, 10, 100, 2, fight, gangFight)` ([GoalRiot](#riot): within 10 m of a
   player, always act, two acts, a fight chance of 0 or 25 %); the looters get `BrSetThreatResponse(h, 0)` and
   `BrSetReactToViolence(h, false)`; `GangSetMaxConcurrent` paces the riot spawner (3, 6, 10); `TacticAttack` and
@@ -367,15 +368,15 @@ goal (gait 4, angle −1, radius 0.5, distance −1 read back from the goal).
     3. Actions queued → wait (0).
     4. Fight stance off (`0x0022fef0`). **Inside the radius**: with the face flag and more than 15° off the flag's
        heading (`0x00416258`), queue a turn action and wait; otherwise set arrived and finish (2). **Outside**: queue
-       a [move action](ai-moving.md#move-action) to the target (the radius, the gait, the option bit, a start delay of 0-250 ms,
-       and the "flag kind `0x12`" bit), and wait.
+       a [move action](ai-moving.md#move-action) to the target (the radius, the gait, the option bit, a start delay of
+       0-250 ms, and the "flag kind `0x12`" bit), and wait.
 
     So the goal plans again each time a move action ends short of the radius.
 - **End** (`0x002da4a0`), only when arrived: the flag gets message 8 with the human (flag vtable `+0x44`), and the
   human's gang hears of it (`Gang_OnEvent`, [Gangs](ai-gangs.md#gangs)).
 
-GoalMoveToFlag uses only the move action and the [route planner](ai-moving.md#path-planning), not the FlagNet goals `0x69` /
-`0x73`.
+GoalMoveToFlag uses only the move action and the [route planner](ai-moving.md#path-planning), not the FlagNet goals
+`0x69` / `0x73`.
 
 ### Turning: ActLookAt {#look-at}
 

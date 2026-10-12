@@ -285,8 +285,8 @@ cited; the `level87` facts are from its scripts on the disc.
    the camera, every 8 s in the fight stance or farther than 30 m from it, at most 5 scans in one update. It lists
    the members of enemy gangs within the sight range (brain `+0x130`, 30 m when made; `HuSetLOSRange`), in front
    (field of view `+0x12c`, 110° when made; `BrSetFOV`) unless within the near radius, and in line of sight
-   ([The enemy scan](ai.md#enemy-scan), [Sight](ai.md#sight)). The gangs must be enemies first: `GangMakeEnemies`, or a script
-   form's `Enemies`.
+   ([The enemy scan](ai.md#enemy-scan), [Sight](ai.md#sight)). The gangs must be enemies first: `GangMakeEnemies`, or a
+   script form's `Enemies`.
 2. **A new enemy** goes to the scanner's own event handler as event `0xb` (11): his script handlers, then
    `Gang_OnEvent`, which hands it to the gang's tactic, then his brain ([Events and
    GangSetMsgHandler](#gang-events)). `Brain_AddEnemy` sends the same event when the tactic's `+0x3c` flag is 0
@@ -624,13 +624,13 @@ Not needed for any level: Coney can leave `GoalBossDiego` out until a script cal
 
 `WarriorBrain_Think` (`0x003052f0`), every sixth think, while the brain may pick up (`+0x265`), holds nothing, and its
 gang kind's pick-up factor (`0x001644f8`) is not 0: with chance 25 × factor %, when nobody is close around it
-(`0x0029eaa0`: none of its eight [sectors](ai-moving.md#neighbour-sectors) has flag bit 1 or 2 set, that is no human within 1.5 m
-([Neighbour sectors](ai-moving.md#neighbour-sectors)); this corrects an earlier reading as a goal check), the nearest pickable
-object within 1.5 m (`0x0029d5f0`) is fetched (`0x002faf98`). When the leader is free, the gang's `+0x32` is 1, a member
-is under attack and the Warrior's own enemy list is empty, the search's filter mask is `0x30000` instead of `0x10000`
-and its last flag 1; the radius stays 1.5 m. **`CfgWarriorWeapons(false)`** (game state `+0x5704` = 0) refuses an object
-whose type class (`+0x87`) is 4, a weapon; other objects are still taken. A Warrior holding a weapon of kind 4 or 6 with
-no enemies drops it unless its gang's tactic is type `0x26`. Confirmed (code).
+(`0x0029eaa0`: none of its eight [sectors](ai-moving.md#neighbour-sectors) has flag bit 1 or 2 set, that is no human
+within 1.5 m ([Neighbour sectors](ai-moving.md#neighbour-sectors)); this corrects an earlier reading as a goal check),
+the nearest pickable object within 1.5 m (`0x0029d5f0`) is fetched (`0x002faf98`). When the leader is free, the gang's
+`+0x32` is 1, a member is under attack and the Warrior's own enemy list is empty, the search's filter mask is `0x30000`
+instead of `0x10000` and its last flag 1; the radius stays 1.5 m. **`CfgWarriorWeapons(false)`** (game state `+0x5704`
+= 0) refuses an object whose type class (`+0x87`) is 4, a weapon; other objects are still taken. A Warrior holding a
+weapon of kind 4 or 6 with no enemies drops it unless its gang's tactic is type `0x26`. Confirmed (code).
 
 ## Spawners {#spawners}
 
@@ -754,8 +754,8 @@ not reached from its one caller.
 
 - **A\*** over the route nodes (C records of `0x20`) from the start node toward the goal: f = g + h at node `+0x16`,
   g at `+0x18`, h at `+0x1a`, parent at `+0x1c` (all `u16`, 1/16 m). h = 16 × the 3D distance from the node to the
-  goal (`0x00251820`); an edge costs as in [Path planning](ai-moving.md#path-planning) (`0x00251890` with mask `0xff`, so the
-  `ClimbFilter` extras apply when it is on). Unlike the route search there is **no mask test** and no 65000 cap:
+  goal (`0x00251820`); an edge costs as in [Path planning](ai-moving.md#path-planning) (`0x00251890` with mask `0xff`,
+  so the `ClimbFilter` extras apply when it is on). Unlike the route search there is **no mask test** and no 65000 cap:
   every edge is taken except one whose D word has **bit 31** set (a hazard-avoided link), which is skipped. A node
   already open is updated only when the new g is lower.
 - **Popping** the node with the lowest f (ties: the heap's order) marks it closed (`+0x18` = `0xabcd`) and tests it,
@@ -1074,9 +1074,9 @@ distance (0.75 m from the follow code), leader, a turn-with-leader flag, time li
        (`MoveAction_InitEx` `0x002fbae0`, which **copies** the point into the action's `+0x10`; radius 0.1 m at a
        slot, else 2.5 m; the speed below as `+0x40`, never below the walk). With a move already running, only its
        speed (`+0x40`, `MoveAction_SetSpeed` `0x002fbbe0`) and radius (`+0x2c`) are written here, **not its point**.
-       The move plans its own route ([Path planning](ai-moving.md#path-planning)), so a follower crosses fences, climbs and drops
-       by the route's links. A new move by a follower who has attackers (brain `+0x1a4`) and a clear `+0x2d5` also
-       turns him to face the point and raises his start boost by one.
+       The move plans its own route ([Path planning](ai-moving.md#path-planning)), so a follower crosses fences, climbs
+       and drops by the route's links. A new move by a follower who has attackers (brain `+0x1a4`) and a clear `+0x2d5`
+       also turns him to face the point and raises his start boost by one.
 
     The distance `d` used for the speed and the radius tests is the **walk distance** from step 5 (the route's
     length when the point is round a corner or over a fence), not the straight one.
@@ -1090,8 +1090,8 @@ distance (0.75 m from the follow code), leader, a turn-with-leader flag, time li
 - **What limits a follower's speed and destination** (confirmed (code) at the cited addresses unless marked). The
   speed's only caps are the clamp above (1.25 × the follower's own sprint clip speed, 12.81 m/s for Vermin and
   Rembrandt) and the control's 25 m/s ([Characters](characters.md#ai-locomotion)); the move action may lower it
-  further at corners ([The corner speed](ai-moving.md#corner-speed)) and a climb leg runs at gait 4. Nothing caps it for a
-  straight move, and the follower really moves that fast: confirmed (runtime), Vermin's and Rembrandt's speed
+  further at corners ([The corner speed](ai-moving.md#corner-speed)) and a climb leg runs at gait 4. Nothing caps it for
+  a straight move, and the follower really moves that fast: confirmed (runtime), Vermin's and Rembrandt's speed
   `+0x1ac` reached **12.807 m/s** and held it on a 75 m run, on a route and on straight moves alike. What keeps a
   follower on the ground is the destination and the line, not the speed:
     - the slot point is put on the ground when the formation is planned (a ray from 1.9 m above, 5.9 m long, so to
@@ -1105,7 +1105,7 @@ distance (0.75 m from the follow code), leader, a turn-with-leader flag, time li
       line or the move ends and the goal plans again ([The move action](ai-moving.md#move-action) step 5);
     - the running move's point follows every plan ([above](#follow-retarget)), so it is at most one plan old.
 
-##### Where a running move's point comes from {#follow-retarget}
+### Where a running move's point comes from {#follow-retarget}
 
 Confirmed (code) at the addresses cited; confirmed (runtime) below. A move keeps the point it was made with until
 one of these writes it:
