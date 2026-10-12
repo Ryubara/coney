@@ -1,0 +1,34 @@
+# The walking capsule over a kerb (issue #348): level99's street has no kerb, so on the original (slot 1, Rembrandt
+# facing -x) the 2.62 x 0.61 m box of material 41 at (47.40-48.01, 51.85-54.47) is made a 0.15 m kerb by writing its
+# eight vertices' heights (bottom at the street's 0.223, top 0.373; its vertices belong to its own ten triangles only,
+# as in the step test of docs/research/characters.md#walls). The player is put 1.3 m east of it and walks over it with
+# the stick 60 % up into the wall behind it; tri-sweep-tri logs every triangle that reaches Sweep_SphereTriangle, and
+# vertex-step and edge-roots every corner step and every edge step that kept a root.
+description = "level99 street: walk 60 % over a 0.15 m kerb (an edited box), logging which triangles reach the sphere-triangle kernel"
+research = "docs/research/physics-kernels.md#u1-runtime"
+input = "corner_kerb.txt"
+updates = 110
+fields = ["player"]
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick", "edge-roots", "tri-sweep-tri", "edge-step", "vertex-step"]
+let = { verts = "u32(u32(u32(u32(0x005147c4) + 0x40) + 0x4) + 0x8c)" }
+setup = [
+  { address = "tf(player) + 0x0", type = "f32", value = "49.3", frame = 0, until = 2 },
+  { address = "tf(player) + 0x4", type = "f32", value = "53.16", frame = 0, until = 2 },
+  { address = "verts + 0x1628", type = "f32", value = "0.373", frame = 0, until = 0 },
+  { address = "verts + 0x1638", type = "f32", value = "0.373", frame = 0, until = 0 },
+  { address = "verts + 0x1668", type = "f32", value = "0.373", frame = 0, until = 0 },
+  { address = "verts + 0x1698", type = "f32", value = "0.373", frame = 0, until = 0 },
+  { address = "verts + 0x1648", type = "f32", value = "0.223", frame = 0, until = 0 },
+  { address = "verts + 0x1658", type = "f32", value = "0.223", frame = 0, until = 0 },
+  { address = "verts + 0x1678", type = "f32", value = "0.223", frame = 0, until = 0 },
+  { address = "verts + 0x1688", type = "f32", value = "0.223", frame = 0, until = 0 },
+]
+
+[coney]
+# Coney's level has the box at its own height: this side shows the walk only, not the kerb.
+level = "level99"
+args = ["--checkpoint", "3", "--start", "49.3,53.16,0.2231,91.909,5.3,89.854"]
+settle = 300

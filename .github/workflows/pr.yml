@@ -1,7 +1,8 @@
 # Checks that only make sense on a pull request: its title must follow the commit title rules (commits.title of
-# .github/conventions.yml, which AGENTS.md and CONTRIBUTING.md show), because it becomes the title of the merged
-# commit, and its description must follow the template (.github/pull_request_template.md). Actions are pinned to a full commit
-# SHA; the tag is in the comment beside it.
+# .github/conventions.yml, which AGENTS.md and CONTRIBUTING.md show), because a pull request is squash-merged and its
+# title becomes the title of the one commit on main (commits on the branch are dropped by the squash, so they are not
+# checked), and its description must follow the template (.github/pull_request_template.md). Actions are pinned to a
+# full commit SHA; the tag is in the comment beside it.
 name: pr
 
 on:
@@ -31,30 +32,6 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: printf '%s\n' "$PR_TITLE" | uv run --project python coney-tools repo check-title -
 
-  # Every commit of the pull request, not only its title: the branch is merged commit by commit, so each commit title
-  # becomes history on main. A local hook (commit-title in .pre-commit-config.yaml) catches it earlier, but only in a
-  # clone that installed it.
-  # Skipped when only the title or description was edited (a skipped required check counts as passing); a changed base
-  # branch is an edit that changes HEAD^1..HEAD^2, so it still runs.
-  commits:
-    if: github.event.action != 'edited' || github.event.changes.base != null
-    runs-on: ubuntu-24.04
-    steps:
-      # Full history: a pull request's checkout is a merge commit whose parents are the branch it merges into
-      # (HEAD^1) and the pull request's last commit (HEAD^2).
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
-      # Titles are attacker-controlled: they reach the checker only on stdin, never in the script's text.
-      - name: Check every commit title against the commit conventions
-        run: |
-          failed=0
-          while IFS= read -r title; do
-            printf '%s\n' "$title" | uv run --project python coney-tools repo check-title - || failed=1
-          done < <(git log --no-merges --format=%s HEAD^1..HEAD^2)
-          exit "$failed"
-
   # A pull request that changes the engine (src/) or the tools (python/src/) must change the docs too (docs/ or
   # research/), or say `Docs: none` on a line of its description: the living docs are updated in the same pull request,
   # never later (AGENTS.md, Documentation). Editing the description re-runs the check.
@@ -66,8 +43,9 @@ jobs:
           fetch-depth: 0
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       # The description is attacker-controlled: it reaches the checker only through a file written from an
-      # environment variable, never expanded into the script's text. HEAD^1...HEAD^2 is what the pull request
-      # changes since it branched off (see the commits job).
+      # environment variable, never expanded into the script's text. A pull request's checkout is a merge commit whose
+      # parents are the branch it merges into (HEAD^1) and the pull request's last commit (HEAD^2), so
+      # HEAD^1...HEAD^2 is what the pull request changes since it branched off.
       - name: Check that the docs change with the code
         env:
           PR_BODY: ${{ github.event.pull_request.body }}

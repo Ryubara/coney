@@ -1,0 +1,23 @@
+# Circle tapped at a puppet 1.0 m ahead (the front grab), then d-pad right every 4 updates while he is held.
+40 tap circle
+50 tap right
+54 tap right
+58 tap right
+62 tap right
+66 tap right
+70 tap right
+74 tap right
+78 tap right
+82 tap right
+86 tap right
+90 tap right
+94 tap right
+98 tap right
+102 tap right
+106 tap right
+110 tap right
+114 tap right
+118 tap right
+122 tap right
+126 tap right
+130 tap right

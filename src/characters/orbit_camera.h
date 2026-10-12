@@ -17,7 +17,7 @@ struct OrbitPose {
 
 /// A camera that circles a point, for Coney's character viewer, driven by a pad like every movement in Coney. Coney's
 /// own tool: the game's cameras follow the player. It works in the characters' game axes, z up. Its controls are
-/// Coney's choice (docs/guides/building.md#the-character-viewer), each analog in proportion to the stick:
+/// Coney's choice (docs/guides/running.md#the-character-viewer), each analog in proportion to the stick:
 ///
 /// - right stick, d-pad (arrow keys): circle left and right, and up and down;
 /// - left stick up and down (W / S), R1 / L1 (E / Q): move in and out.

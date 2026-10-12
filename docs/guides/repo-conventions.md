@@ -25,12 +25,12 @@ and `labels.yml`) are gone, and so are the constants that repeated their values 
 | --- | --- | --- |
 | `repo` | The default branch, the wording (call the person who directs the project "user", never "owner"), the decisions only a maintainer takes (`owner_decisions`) and the tool configuration files | `repo audit` (`files.exist` and the wording checks); agents ([AGENTS.md](repo:AGENTS.md)) |
 | `paths` | Which paths are code, documentation and documentation-only; generated paths; the agent pointer files; the one file that may hold the repository's address; the large-file limit | `repo check`, `repo check-docs`, `check changed`; `repo render` (the `docs-only-paths` block); `ci-scope.sh` reads the docs-only list itself, and `repo audit` holds it and pre-commit to the file |
-| `commits` | The title form, its limit and suffix, the areas and verbs, the body wrap and the `Co-Authored-By` trailer | `repo check-title`, which the commit-title hook and the `title` and `commits` jobs run; `repo render` (the `commit-rules` and `commit-areas` blocks) |
-| `pull_requests` | The description's sections and which must hold text, the `Docs: none` line, `Fixes #N`, the Remaining list, the Screenshots rule, the AI use choices, stacked pull requests | `repo check-body`, `repo check-docs`; `repo render` (the `pr-rules` block); `repo audit` checks the template and the stacked-pull-request rules |
+| `commits` | The title form, its limit and suffix, the areas and verbs, the body wrap and the `Co-Authored-By` trailer | `repo check-title`, which the commit-title hook and the `title` job run; `repo render` (the `commit-rules` and `commit-areas` blocks) |
+| `pull_requests` | The description's sections and which must hold text, the `Docs: none` line, `Fixes #N`, the Checklist (every item ticked), the Screenshots rule, the AI use choices, stacked pull requests | `repo check-body`, `repo check-docs`; `repo render` (the `pr-rules` block); `repo audit` checks the template and the stacked-pull-request rules |
 | `merge` | The merge methods, the squash commit's wording, auto-merge, the required checks and who merges: a copy of the GitHub ruleset and settings | `repo render` (the `required-checks` block); `repo audit --github` compares it with the GitHub ruleset and settings |
 | `issues` | The structure of each issue form (field ids, headings, which are required, default labels), the Screenshots line, the `From:` line, links and how many labels of each family an issue carries | `repo audit` (the forms, and every issue's sections, placeholders, Screenshots, labels, links and `From:` line) |
 | `labels` | The label families and every label with its colour and description | `repo labels`; `repo render` (the `labels` block); `repo audit` (the labels on GitHub) |
-| `hygiene` | The limits after which an item counts as stale, the weekly report issue and `checks`, the registry of the audit's checks | `repo audit` |
+| `hygiene` | The limits after which an item counts as stale or stuck (`thresholds`, including `pr_pending_hours`), which required checks are lint (`pr_health.lint_checks`), the weekly report issue, how the workflow comments (`comments`) and `checks`, the registry of the audit's checks | `repo audit`, `repo pr-health`, `repo hygiene` |
 | `workspace` | The worktree and scratch layout, the free-space minimum and the busy marker | `workspace clean` and `workspace disk`, `repo audit --local`; hosted checks ignore it |
 
 The commented file is the reference for each key: open `.github/conventions.yml` and read the comment above it.
@@ -81,7 +81,7 @@ says where the check runs, how bad a finding is and who fixes it, and the table 
   in a minute (a missing section, a missing label); a warning is a judgement or a delay (a stale status, a pull request
   idle for a month). Promoting a warning to an error is one line in the file.
 - **Fix class.** `auto`: a coney-tools command fixes it (`repo render`, `repo labels --apply`, `workspace clean`).
-  `skill`: it takes judgement, so the author or the coordinator fixes it (the `/repo-hygiene` skill, when it exists,
+  `skill`: it takes judgement, so the author or the coordinator fixes it (the [`/repo-hygiene` skill](#hygiene-skill)
   acts on a finding by this class). `owner`: a maintainer decides (the ruleset and the settings of the repository).
 - **Items.** Only open issues and open pull requests are checked for their sections, labels, wording and links. History
   is checked only where it loses work: a closed issue or a merged pull request that keeps an unchecked item with no
@@ -98,6 +98,7 @@ says where the check runs, how bad a finding is and who fixes it, and the table 
 | `files.generated-blocks` | files | error | auto | a generated block in AGENTS.md, CONTRIBUTING.md or a guide is out of date (coney-tools repo render) |
 | `files.ci-scope` | files | error | skill | .github/scripts/ci-scope.sh does not read the docs-only paths from the conventions file |
 | `files.large-file-limit` | files | error | skill | pre-commit's check-added-large-files limit differs from the conventions |
+| `files.markdown-hook` | files | error | skill | pre-commit has no markdownlint-cli2 hook, so a long Markdown line is first caught by CI |
 | `issue.sections` | github | error | skill | an open issue lacks a required section of its form (or was filed with other headings) |
 | `issue.placeholder` | github | error | skill | a section of an open issue is empty or holds only a placeholder such as x |
 | `issue.screenshots` | github | error | skill | an open issue has no uploaded image and no Screenshots: none (reason) line |
@@ -107,7 +108,7 @@ says where the check runs, how bad a finding is and who fixes it, and the table 
 | `issue.closed-unchecked` | github | error | skill | a closed issue keeps an unchecked item that names no follow-up issue |
 | `issue.stale-status` | github | warn | skill | an issue calls a pull request open, merged or closed when it is not |
 | `issue.links` | github | warn | skill | an issue names a docs or research file as plain text, or links a file or anchor that is not on main |
-| `issue.provenance` | github | warn | skill | an issue that a pull request's Remaining list points at has no From: line |
+| `issue.provenance` | github | warn | skill | an issue that an older pull request's Remaining list points at has no From: line |
 | `issue.triage-age` | github | warn | skill | an issue has waited in S-needs-triage longer than the limit |
 | `issue.info-age` | github | warn | skill | an issue has waited in S-needs-info with no activity longer than the limit |
 | `issue.progress-idle` | github | warn | skill | an S-in-progress issue has had no activity for longer than the limit |
@@ -115,7 +116,8 @@ says where the check runs, how bad a finding is and who fixes it, and the table 
 | `pr.title` | github | error | skill | an open pull request's title breaks the commit title rules |
 | `pr.body` | github | error | skill | an open pull request's description breaks the template rules (sections, local file paths, images not uploaded) |
 | `pr.owner-word` | github | error | skill | an open pull request says 'owner' for the person who directs the project (say 'user') |
-| `pr.remaining-uncited` | github | error | skill | a merged pull request left an unchecked Remaining item that names no issue |
+| `pr.unfinished-items` | github | error | skill | a pull request merged since the Checklist rule began has an unticked Checklist item (an open one is pr.body) |
+| `pr.remaining-uncited` | github | error | skill | a pull request merged before the Checklist rule left an unchecked Remaining item that names no issue |
 | `pr.idle` | github | warn | skill | an open pull request has had no activity for longer than the limit |
 | `pr.stacked-depends` | github | error | skill | an open pull request on a branch other than main has no Depends on #N line |
 | `pr.stacked-automerge` | github | error | skill | auto-merge is enabled on a pull request whose base is not main |
@@ -173,12 +175,39 @@ checks out nothing and runs nothing from the repository, and the audit check `is
 fails. Another workflow that writes to GitHub needs the same maintainer approval first; a new one that only comments
 does not.
 
+`hygiene.yml` is the one that comments, and it needed no approval for that: it writes the audit's findings back as
+one comment per issue or pull request, edited in place and never deleted, and a weekly report comment ([`repo
+hygiene`](coney-tools.md#repo-hygiene)). Its token has `contents: read` and `issues: write` only. It runs on
+`pull_request_target` so that a pull request from a fork gets its comment, which is safe only because it checks out the
+default branch and never the pull request's code, and because what a title or body says reaches a script through
+an environment variable and a comment only after it is made harmless (no mention, link, image or HTML). It starts at
+warn level (`hygiene.comments.on_sweep` false): item comments come from events, the sweep only reports, and it is not a
+required check. The report issue is the one thing it creates besides comments, and only when no open issue has the
+title `hygiene.report_issue.title`; creating an issue is a write beyond a comment, so the maintainer approves it
+explicitly when merging the pull request that added the workflow. Turning on `on_sweep` is a one-line change to the
+conventions.
+
+## The /repo-hygiene skill {#hygiene-skill}
+
+The coordinator tidies the repository with the `/repo-hygiene` skill
+([.claude/skills/repo-hygiene/SKILL.md](repo:.claude/skills/repo-hygiene/SKILL.md)), after every merge round and once a
+week. It runs `repo audit` (files, GitHub and local scopes) and `repo pr-health`, then works through the findings by
+their fix class: an `auto` finding is fixed by running its command, a `skill` finding is fixed with judgement by the
+recipe the skill gives for that check, and an `owner` finding stops the skill, which reports it to the maintainer
+instead. Afterwards it fixes the issues that cite a pull request that merged, and runs the audit again to confirm. Only
+the coordinator writes to GitHub, so an agent that is asked to run the skill reports what it would change.
+
+The skill holds a recipe for every check of the registry; a test fails when a check has no recipe or the skill names a
+check that does not exist, so adding a check to `hygiene.checks` means adding its line to the skill
+([To add a check](#audit-checks)). The `hygiene` workflow ([Workflows](#workflows)) shows the same findings on the items
+themselves; the skill is what acts on them.
+
 ## Where the reasons are
 
 | Rule | Guide |
 | --- | --- |
 | Commit titles, squash merging, who merges, the release queue | [How we work](how-we-work.md), [CONTRIBUTING.md](repo:CONTRIBUTING.md#commits) |
-| Pull request descriptions: Testing, Screenshots, Remaining | [Testing](testing.md#pr-evidence), [Issues](issues.md#leftovers) |
+| Pull request descriptions: Testing, Screenshots, Checklist | [Testing](testing.md#pr-evidence), [Issues](issues.md#follow-up-work) |
 | Labels, forms, triage, what a closed issue keeps | [Issues](issues.md) |
 | What a workflow may write to GitHub | [Workflows](#workflows) |
 | What CI runs for which paths | [Building and testing](building.md#what-ci-runs) |
