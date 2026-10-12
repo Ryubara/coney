@@ -3,8 +3,8 @@
 
 #include <cstdint>
 
-#include "ai/enemy_scan.h"
 #include "ai/goal.h"
+#include "ai/scan_schedule.h"
 #include "ai/scout_services.h"
 #include "ai/story_tactics.h"
 #include "animation/anim_math.h"
@@ -114,10 +114,10 @@ class CallGangGoal final : public Goal {
 
 /// TacticScout (`0x27`): `call`'s count and count2 are the call's responders and delay, its range the phone search
 /// radius (twice the caller's far melee range when negative), range2 the roam radius. Start gives each member who can
-/// act a Scout goal at where he stands, facing his facing. Each update the members at their posts scan
-/// (ScanSchedule, 500 ms); every 200 ms a member with an enemy and no fight is given one. A member hit, warned of an
-/// attack or seeing a new enemy (events 1, `0x10`, `0xb`) while at his post fights him and, when `scout` allows it
-/// (a responder spawner, the enemy's gang not yet called on, no other caller), runs to call the gang. **Coney
+/// act a Scout goal at where he stands, facing his facing; the members at their posts scan every 500 ms (from their own
+/// updates, through Gangs::scans()). Every 200 ms a member with an enemy and no fight is given one. A member hit,
+/// warned of an attack or seeing a new enemy (events 1, `0x10`, `0xb`) while at his post fights him and, when `scout`
+/// allows it (a responder spawner, the enemy's gang not yet called on, no other caller), runs to call the gang. **Coney
 /// stand-ins**: the help call to members within 15 m, the investigation of a hit from someone unseen and the gang's
 /// alert state are not built.
 /// @orig 0x0031a430 ScoutTactic_Construct (unknown)
@@ -131,14 +131,11 @@ class ScoutTactic final : public StoryTactic {
     [[nodiscard]] int update(Gang& gang) override;
     /// @orig 0x0031a818 ScoutTactic_OnEvent (unknown)
     bool event(Gang& gang, Brain& member, const BrainEvent& event) override;
-    /// The members' scan schedule.
-    [[nodiscard]] ScanSchedule& schedule() { return m_schedule; }
 
   private:
     // Pushes the call on `member` when the level allows it.
     void maybeCall(Brain& member, const Brain& enemy);
 
-    ScanSchedule m_schedule;
     std::uint64_t m_nextCheckMs = 0;
 };
 

@@ -10,6 +10,7 @@
 #include "ai/gangs.h"
 #include "ai/sectors.h"
 #include "ai/steering.h"
+#include "ai/threats.h"
 #include "human/human.h"
 #include "human/locomotion.h"
 
@@ -39,13 +40,6 @@ bool dashFrom(const Brain& mover) {
 }
 
 } // namespace
-
-bool isThreat(const Brain& brain, const Brain& other) {
-    if (brain.type() == BrainType::Player && other.type() == BrainType::Player) {
-        return true;
-    }
-    return brain.gang() != nullptr && other.gang() != nullptr && Gangs::enemies(brain.gang(), other.gang());
-}
 
 bool pushAside(Brain& mover, Brain& stander, anim::Vec3 point, anim::Vec3 step) {
     if (stander.givingWay()) {
