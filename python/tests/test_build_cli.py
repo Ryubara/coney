@@ -127,11 +127,12 @@ def test_the_flags_of_a_build_are_parsed() -> None:
     assert (args.max_wait, args.jobs, args.build_command) == (5.0, 3, None)
     assert (args.label, args.build_dir, args.env) == ("disc", Path("build/tidy"), ["CC=clang-19", "CXX=clang++-19"])
     defaults = _build_parser().parse_args(["build", "--agent", "a"])
-    assert (defaults.preset, defaults.max_wait, defaults.test, defaults.priority) == ("dev", 45.0, False, False)
+    assert (defaults.preset, defaults.max_wait, defaults.test, defaults.priority) == ("dev", None, False, False)
+    assert (defaults.detach, defaults.log_file, defaults.result_file) == (False, None, None)
     assert (defaults.label, defaults.build_dir, defaults.env) == (None, None, [])
     alias = _build_parser().parse_args(["build", "--agent", "a", "--slots-wait-timeout", "7"])
     assert alias.max_wait == 7.0
-    assert (args.budget, defaults.budget) == (30.0, 55.0)
+    assert (args.budget, defaults.budget) == (30.0, None)  # None: the caps (build_cli.limits)
 
 
 def test_status_and_release_are_subcommands() -> None:
@@ -447,3 +448,160 @@ def test_when_the_caller_is_gone_the_run_stops_its_child_and_ends(capsys: pytest
     )
     assert calls == ["stop", "interrupt", "exit later"]
     assert "bash (pid 20) that started this build has ended" in capsys.readouterr().err
+
+
+# The caps that keep an agent from waiting past its prompt cache, and the detached run
+# (docs/guides/agents.md#build-waits).
+
+
+def test_a_wait_past_the_cap_is_refused_unless_detached(
+    checkout: Path, capsys: pytest.CaptureFixture[str], fake_toolchain: type[FakeToolchain]
+) -> None:
+    for flags in (["--max-wait", "41"], ["--budget", "46"], ["--budget", "0"]):
+        assert main(["build", "--agent", "alice", *flags]) == 2
+        err = capsys.readouterr().err
+        assert "--detach" in err and "STATUS.md" in err and "prompt cache" in err
+    assert fake_toolchain.commands == []
+    assert main(["build", "--agent", "alice", "--max-wait", "40", "--budget", "45"]) == 0
+
+
+def test_the_limits_default_to_the_caps_and_widen_when_detached() -> None:
+    parse = _build_parser().parse_args
+    assert build_cli.limits(parse(["build", "--agent", "a"])) == (40.0, 45.0)
+    assert build_cli.limits(parse(["build", "--agent", "a", "--detach"])) == (build_cli.DETACHED_MAX_WAIT, 0.0)
+    assert build_cli.limits(parse(["build", "--agent", "a", "--detach", "--max-wait", "90", "--budget", "100"])) == (
+        90.0,
+        100.0,
+    )
+
+
+@pytest.fixture
+def spawned(monkeypatch: pytest.MonkeyPatch) -> list[tuple[list[str], Path, Path]]:
+    """The detached children a run started, recorded instead of started: (command, folder, output file)."""
+    calls: list[tuple[list[str], Path, Path]] = []
+
+    def spawn(command: list[str], cwd: Path, output: Path) -> int:
+        calls.append((command, cwd, output))
+        return 4242
+
+    monkeypatch.setattr(build_cli, "spawn_detached", spawn)
+    return calls
+
+
+def test_detach_starts_the_run_in_the_background_and_returns_at_once(
+    checkout: Path,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    fake_toolchain: type[FakeToolchain],
+    spawned: list[tuple[list[str], Path, Path]],
+) -> None:
+    assert main(["build", "--agent", "alice", "--test", "-L", "disc", "--detach", "--max-wait", "120"]) == 0
+    out = capsys.readouterr().out
+    assert fake_toolchain.commands == [] and TIED == []  # nothing built here, and nothing tied to this shell
+    ((command, cwd, output),) = spawned
+    assert cwd == checkout and output.parent == tmp_path / "scratch" / "wt"
+    assert "--detach" not in command and command[command.index("build") - 2 :][:2] == ["-m", "coney_tools.cli"]
+    assert command[command.index("--max-wait") + 1] == "120.0" and command[command.index("--budget") + 1] == "0.0"
+    assert "--test" in command and command[command.index("-L") + 1] == "disc"
+    result = Path(command[command.index("--result-file") + 1])
+    assert result == tmp_path / "scratch" / "wt" / "build-result.json"
+    record = json.loads(result.read_text(encoding="utf-8"))
+    assert (record["state"], record["agent"], record["preset"]) == ("running", "alice", "dev")
+    assert record["log"] == command[command.index("--log-file") + 1] and Path(record["log"]).is_file()
+    assert "4242" in out and "coney-tools build result" in out and "STATUS.md" in out
+
+
+def test_a_second_detached_run_is_refused_while_one_runs(
+    checkout: Path,
+    capsys: pytest.CaptureFixture[str],
+    fake_toolchain: type[FakeToolchain],
+    spawned: list[tuple[list[str], Path, Path]],
+) -> None:
+    assert main(["build", "--agent", "alice", "--detach"]) == 0
+    command = spawned[0][0]
+    record = Path(command[command.index("--result-file") + 1])
+    data = json.loads(record.read_text(encoding="utf-8"))
+    record.write_text(json.dumps({**data, "pid": 4242}), encoding="utf-8")  # the child has started
+    capsys.readouterr()
+    assert main(["build", "--agent", "alice", "--detach"]) == 2
+    assert "still running" in capsys.readouterr().err and len(spawned) == 1
+
+
+def test_the_detached_child_records_its_result_for_a_successor(
+    checkout: Path,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    fake_toolchain: type[FakeToolchain],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    lifetimes: list[str] = []
+    monkeypatch.setattr(build_cli, "_detached_lifetime", lambda: lifetimes.append("own"))
+    fake_toolchain.outputs["build"] = (1, "C:\a.cpp(3): error C2065: 'x': undeclared identifier\n")
+    folder = tmp_path / "scratch" / "wt"
+    folder.mkdir(parents=True)
+    log, result = folder / "build-dev-alice-x.log", folder / "build-result.json"
+    log.write_text("", encoding="utf-8")
+    argv = ["build", "--agent", "alice", "--configure", "--max-wait", "120", "--budget", "0"]
+    assert main([*argv, "--log-file", str(log), "--result-file", str(result)]) == 1
+    assert lifetimes == ["own"] and TIED == []  # its own job, but no tie to a caller that has long gone
+    record = json.loads(result.read_text(encoding="utf-8"))
+    assert (record["state"], record["exit_code"], record["pid"]) == ("done", 1, os.getpid())
+    assert any("C2065" in line for line in record["summary"]) and "C2065" in log.read_text(encoding="utf-8")
+    capsys.readouterr()
+    assert main(["build", "result"]) == 1
+    out = capsys.readouterr().out
+    assert "alice" in out and "C2065" in out and "exit 1" in out and str(log) in out
+
+
+def test_a_detached_child_that_fails_its_precheck_still_records_it(
+    checkout: Path,
+    tmp_path: Path,
+    fake_toolchain: type[FakeToolchain],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(build_cli, "_detached_lifetime", lambda: None)
+    result = tmp_path / "scratch" / "wt" / "build-result.json"
+    log = tmp_path / "scratch" / "wt" / "x.log"
+    assert (
+        main(["build", "--agent", "alice", "--preset", "asan", "--log-file", str(log), "--result-file", str(result)])
+        == 2
+    )
+    record = json.loads(result.read_text(encoding="utf-8"))
+    assert record["state"] == "done" and record["exit_code"] == 2 and "asan" in "\n".join(record["summary"])
+
+
+def write_record(checkout: Path, tmp_path: Path, **fields: object) -> None:
+    """A build-result.json in the checkout's scratch folder."""
+    folder = tmp_path / "scratch" / "wt"
+    folder.mkdir(parents=True, exist_ok=True)
+    record = {"state": "running", "agent": "alice", "preset": "dev", "log": "x.log", "started": 1_800_000_000.0}
+    (folder / "build-result.json").write_text(json.dumps({**record, **fields}), encoding="utf-8")
+
+
+def test_result_without_a_detached_run(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["build", "result"]) == 1
+    assert "no detached build" in capsys.readouterr().out
+
+
+def test_result_of_a_run_still_going_exits_75(
+    checkout: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    write_record(checkout, tmp_path, pid=4242)
+    assert main(["build", "result"]) == 75
+    out = capsys.readouterr().out
+    assert "still running" in out and "4242" in out and "x.log" in out
+
+
+def test_result_of_a_run_that_died_without_a_word(
+    checkout: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(pcsx2_proc, "pid_alive", lambda pid: False)
+    write_record(checkout, tmp_path, pid=4242)
+    assert main(["build", "result"]) == 1
+    assert "ended without a result" in capsys.readouterr().out
+
+
+def test_result_as_json(checkout: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    write_record(checkout, tmp_path, state="done", pid=1, exit_code=0, summary=["result: ok"], ended=1_800_000_600.0)
+    assert main(["build", "result", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out)["summary"] == ["result: ok"]

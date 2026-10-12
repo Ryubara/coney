@@ -9,10 +9,11 @@ configure to the last test, so two runs never link the same executable or write 
 everything else takes one of the main slots, and waits in the queue for one. The full output goes to a log; what is
 printed is the outcome of each step, the first compile errors and the failed tests.
 
-A run has a **time budget** for the whole call (`--budget`, 55 minutes by default: an agent's prompt cache lasts an
-hour, and a call that outlasts it pays to write the cache again). A wait for a slot or for the build folder ends early,
-with exit code 75, as soon as the time the call has taken plus what the step it waits for usually takes (the median of
-its recent runs, build_history.py, else a typical figure) would pass the budget. A step that has started always runs to
+A run has a **time budget** for the whole call (`--budget`, 45 minutes by default and at most unless the run is
+detached, build_cli.py: an agent's prompt cache lasts an hour, and a call that outlasts it pays to write the cache
+again). A wait for a slot or for the build folder ends early, with exit code 75, as soon as the time the call has taken
+plus what the step it waits for usually takes (the median of its recent runs, build_history.py, else a typical figure)
+would pass the budget, or that plus the queue's own estimate of the wait still ahead. A step that has started always runs to
 its end: the budget only decides whether to keep waiting.
 
 Everything that touches the machine is behind `Toolchain` (running a command, capturing a short one), so the order of
@@ -613,7 +614,8 @@ def _budget_check(
         if used + seconds > limit:
             return f"{done}{step} and the budget is {options.budget:.0f} min"
         if used + expected + seconds > limit:
-            return f"{done}; the queue ahead is about {expected / 60:.0f} min{step} and the budget is {options.budget:.0f} min"
+            queue = f"; the queue ahead is about {expected / 60:.0f} min"
+            return f"{done}{queue}{step} and the budget is {options.budget:.0f} min"
         return None
 
     return abandon
