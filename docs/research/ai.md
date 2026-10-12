@@ -2665,20 +2665,20 @@ attack strategies are kept for readers not built. **Warrior commands** (`src/ai/
 the follow tactic (`WarriorFollowTactic`: nine slots on the chief's formation, each AI member that can act flushed and given
 `GoalFollowPlayer(9 m, chief, 3)`,
 which joins the formation, stands while the chief is within 9 m in a walkable straight line and otherwise pushes
-`FollowFormation` (0.75 m; after a failed walk it waits 31 updates), turns to the chief's heading when more than 60°
-off it every 2-4 s (1-2 s after it takes up again), and in fight mode turns to or moves to (3 s) the nearest attacker
-of the crew within 20 m or the chief's target, never attacking). `FollowFormation` walks to its slot, or with no
-usable slot behind the human ahead in the queue (2.5 m), by the walk distance (straight, else the planned route's
-length) at `FollowFormation_PickSpeed`'s speed; every formation plan retargets the running moves
-([follow retarget](ai-gangs.md#follow-retarget)), and `MoveAction::retarget` keeps a route whose last node sees the new point,
-else starts the move again (or, in a jump, drop or fence climb, ends it on its next update). A move with no route
-slows for the turn onto its point (the circle part of [the corner speed](ai-moving.md#corner-speed)), and arrival is in 3D, in
+`FollowFormation` (0.75 m; after a failed walk it waits 31 updates), turns to the chief's heading when more than 60° off
+it every 2-4 s (1-2 s after it takes up again), and in fight mode turns to or moves to (3 s) the nearest attacker of the
+crew within 20 m or the chief's target, never attacking). `FollowFormation` walks to its slot, or with no usable slot
+behind the human ahead in the queue (2.5 m), by the walk distance (straight, else the planned route's length) at
+`FollowFormation_PickSpeed`'s speed; every formation plan retargets the running moves ([follow
+retarget](ai-gangs.md#follow-retarget)), and `MoveAction::retarget` keeps a route whose last node sees the new point,
+else starts the move again (or, in a jump, drop or fence climb, ends it on its next update). A move with no route slows
+for the turn onto its point (the circle part of [the corner speed](ai-moving.md#corner-speed)), and arrival is in 3D, in
 plan within 1 m. **Stand-ins** there: "someone's enemy" is any fightable brain holding the follower among its enemies;
-the `+0x2d5` match, the trains' part of the straight line, fight stance, pick-ups, idle clips, the vandalising while
-the walk fails, the 8 s reshuffle, banter and lines are not built; a move with no route has only the corner speed's
-turn limit (the trial walk over the polygons and the 11-update period are [fix list](ai-pathing.md#pathing-fixes)
-item 7) and its arrival does not take one update's travel off (item 5); `FollowFormation`'s time limit is read as
-"done once that long has passed". 2 defend
+the `+0x2d5` match, the trains' part of the straight line, fight stance, pick-ups, idle clips, the vandalising while the
+walk fails, the 8 s reshuffle, banter and lines are not built; a move with no route has only the corner speed's turn
+limit (the trial walk over the polygons and the 11-update period are [fix list](ai-pathing.md#pathing-fixes) item 7) and
+its arrival does not take one update's travel off (item 5); `FollowFormation`'s time limit is read as "done once that
+long has passed". 2 defend
 still tracks the chief (2 m) (**stand-in** for the defend tactic). 1 attack gives the gang the attack tactic
 (`WarriorAttackTactic`, type 1): each AI member that can act is flushed and given `FollowAndAttackGoal` on the chief,
 which joins his formation and fights the best enemy within 60 m of him: a fight goal (4000 ms) within 1.1 × the far
