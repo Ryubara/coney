@@ -504,6 +504,8 @@ hygiene:
 workspace:
   worktrees: "../../worktrees/coney/<branch>/"
   scratch: "../../scratch/<branch>/"
-  disk_min_free_gb: 30
+  disk_min_free_gb: 30                           # under it, `workspace clean` deletes idle build/ folders
+  disk_margin_gb: 10                             # ... until free space reaches disk_min_free_gb + this
+  build_idle_hours: 4                            # a build/ folder unused this long is deleted (cheap to rebuild)
   busy_marker: ".coney-busy"                     # a worktree holding it is never cleaned
   remove_worktree_when_merged: true

@@ -168,16 +168,29 @@ def _build_parser() -> argparse.ArgumentParser:
     init.add_argument("--dry-run", action="store_true", help="print the steps without doing any")
     clean = workspace_commands.add_parser(
         "clean",
-        help="remove merged worktrees and old build folders, stop stale waits and orphaned test runs "
-        "(a dry run unless --apply)",
+        help="remove merged worktrees and old build folders (all idle ones when the drive is low), stop stale waits "
+        "and orphaned test runs (a dry run unless --apply)",
     )
     clean.add_argument("--workspace", type=Path, help="the workspace folder (default: found from the checkout)")
     clean.add_argument("--apply", action="store_true", help="act; without it, only report what would be done")
     clean.add_argument(
         "--build-hours",
         type=float,
-        default=workspace_clean.DEFAULT_BUILD_HOURS,
-        help="delete build/ folders of worktrees untouched this many hours (default: %(default)g)",
+        default=None,
+        help="delete build/ folders of worktrees untouched this many hours (default: workspace.build_idle_hours)",
+    )
+    clean.add_argument(
+        "--min-gb",
+        type=float,
+        default=None,
+        help="disk pressure: under this much free space, delete idle build/ folders "
+        "(default: workspace.disk_min_free_gb)",
+    )
+    clean.add_argument(
+        "--margin-gb",
+        type=float,
+        default=None,
+        help="... until this much more than --min-gb is free (default: workspace.disk_margin_gb)",
     )
     clean.add_argument(
         "--worktree-hours",
@@ -781,6 +794,8 @@ def _run(args: argparse.Namespace) -> int:
             args.build_hours,
             args.worktree_hours,
             args.fetch,
+            min_gb=args.min_gb,
+            margin_gb=args.margin_gb,
             shell_hours=args.shell_hours,
             idle_hours=args.log_idle_hours,
         )
