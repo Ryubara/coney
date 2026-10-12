@@ -543,12 +543,13 @@ limited to the gang: it is event `0x14` (20, violence) sent to everyone nearby. 
       `ScoutTactic_OnViolence`). So `HelpRespondGoal_Process` always takes the "ends once the brain lists enemies"
       branch. Confirmed (code).
     - **HelpRespond's Start** (`0x002b76a0`), with the side still a valid target: within 1.1 × the brain's range
-      `+0x140` **and** walkable in a straight line (`Human_CanWalkStraightToHuman`) → a turn to him and a 3 s look,
-      nothing more. Within that range but **not** walkable → 60 % (`Random_Int(100)` < 60) a **LookAround** action
-      first (type 10, `LookAroundAction_Init` `0x002fe248`: clip `0x29e` with the field of view widened to 4.71 rad
-      while it plays, [AI code: actions](ai-code.md#actions)), then, as beyond the range, a move action to him (gait
-      2, or 4 beyond 10 m; with an empty enemy list he leaves the fight stance and goes at gait 4, 5 on level
-      `0x53`). Confirmed (code).
+      `+0x140` **and** walkable in a straight line (`Human_CanWalkStraightToHuman`) → a turn to him and a 3 s head look,
+      nothing more: the look is not an action, so the goal ends when the turn does
+      ([HelpRespond](ai-goals.md#goal-help-respond)). Within that range but **not** walkable → 60 % (`Random_Int(100)` <
+      60) a **LookAround** action first (type 10, `LookAroundAction_Init` `0x002fe248`: clip `0x29e` with the field of
+      view widened to 4.71 rad while it plays, [AI code: actions](ai-code.md#actions)), then, as beyond the range, a
+      move action to him (gait 2, or 4 beyond 10 m; with an empty enemy list he leaves the fight stance and goes at gait
+      4, 5 on level `0x53`). Confirmed (code).
 
 6. **The new-enemy flag** (`+0x0c`) has one reader, the cop's handler (`0x00302340`, at its event `0x14`). There, a
    cop victim gives crime 2 (assault on a cop) only when the side picked is not the caller and `+0x0c` is 0. So when a
@@ -933,6 +934,9 @@ no target, duckable)`, [Speech](../references/speech.md#speech-command-146)). Th
 ### Starting a fight and choosing the target {#targets}
 
 - `GoalFight(human, target, …)` is `Brain_StartFight` (`0x002b2b90`): clear the actions, then `Brain_Fight`.
+  The target is not kept: once the first fight goal ends (at once for a target beyond 5.5 m), Melee picks by score
+  like any fight, the old target getting only the +3 of [the score](#enemy-score). Confirmed (code); seen at
+  level80's last fight ([After the order](scripting.md#level80-after-order)), confirmed (runtime).
 - **`Brain_Fight`** (`0x0028d2e8`) needs a threat response (`+0x21c` ≠ 0). It adds the target to the enemy list
   (`Brain_AddEnemy`, `0x0028d538`, which tells the gang's tactic with event `0xb`), takes it as the target
   (`Brain_SetTarget`, `0x0028cfe0`) and calls `Brain_PushFightGoal` (`0x0028d190`) with its duration argument.
