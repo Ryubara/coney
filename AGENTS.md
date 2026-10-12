@@ -77,15 +77,19 @@ state of the work (local, never committed).
 
 Every rule below that a program checks is a key of `.github/conventions.yml`, the one source: titles, description
 sections, labels, merge settings, hygiene limits and path classes (`docs/guides/repo-conventions.md`). Change the
-rule there, never a copy of it.
+rule there, never a copy of it. The block below is generated from it (`coney-tools repo render`): edit the file, not
+the block.
 
+<!-- conventions:begin commit-rules -->
 - Title `area: Verb the rest`, at most 72 characters, present tense, no trailing period. Verbs: Add, Fix, Update,
-  Remove, Rebuild, Rework, Improve, Document. Areas: `build`, `ci`, `core`, `fileio`, `graphics`, `audio`,
-  `platform`, `tools`, `research`, `agents`, `tests`, `legal`, `docs` (list and meanings: `commits.title` in
-  `.github/conventions.yml`, which CI checks PR titles against).
-- A body says what changed for a user or developer and why. An agent ends the message with
-  `Co-Authored-By: <model name> <its noreply address>` (Claude: `Claude Opus 5.5 <noreply@anthropic.com>`) and no
-  other trailer; no other email address appears in a message.
+  Remove, Rebuild, Rework, Improve, Document. Areas: `build`, `ci`, `core`, `fileio`, `graphics`, `audio`, `platform`,
+  `tools`, `research`, `agents`, `tests`, `legal`, `docs`. A breaking change ends the title with `(BREAKING)`. What each
+  area covers: `commits.title` in `.github/conventions.yml`, which CI checks PR titles against.
+- A body says what changed for a user or developer and why, wrapped at 72 columns. An agent ends the message with
+  `Co-Authored-By: <model name> <noreply address>` (the vendor's noreply address: `noreply@anthropic.com`,
+  `noreply@google.com`, `noreply@openai.com`) and no other trailer. No other email address appears in a message.
+<!-- conventions:end -->
+
 - No file, code comment or commit message contains the repository's or the docs site's address; only the README
   does. Docs link files outside `docs/` as `repo:<path>`.
 - Work happens on branches, one pull request per feature. `main` takes no direct pushes: it is protected, and a

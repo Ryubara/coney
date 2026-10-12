@@ -272,8 +272,9 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
   the results of the checks. Short. A pull request's description carries the same as a Testing section (what ran,
   the numbers) and a Screenshots section (before and after for anything visible, uploaded with `gh --attach` and never committed):
   [What a pull request shows](testing.md#pr-evidence).
-- **Commits carry the agent's own model name** in a `Co-Authored-By` trailer (the format is in
-  [Conventions](conventions.md)); an agent never pushes, opens or merges a pull request.
+- **Commits carry the agent's own model name** in a `Co-Authored-By` trailer (the format is
+  `commits.trailers` in [.github/conventions.yml](repo:.github/conventions.yml), explained in
+  [CONTRIBUTING.md](repo:CONTRIBUTING.md#agents-commits)); an agent never pushes, opens or merges a pull request.
 
 ## Starting on another game {#another-game}
 

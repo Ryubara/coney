@@ -122,7 +122,26 @@ reimplementation replaces it.
 
 A reviewer should see what was tested and what the result looks like without running anything. The pull request
 description ([the template](repo:.github/pull_request_template.md)) has two sections for it, and CI refuses a
-description that leaves either empty (`coney-tools repo check-body`):
+description that leaves either empty (`coney-tools repo check-body`). All of what CI checks in a description is the
+`pull_requests` section of [.github/conventions.yml](repo:.github/conventions.yml), shown here as a generated block
+(`coney-tools repo render`):
+
+<!-- conventions:begin pr-rules -->
+- Sections, in this order: Summary, Checklist, Testing, Screenshots, AI use.
+- Summary and Testing must hold text of their own: a section left as the template has it (its comments, `...`,
+  `<reason>`) counts as empty.
+- Docs: a change under `src/`, `python/src/` needs a change under `docs/`, `research/` or the line `Docs: none` in the
+  description.
+- Closing: a line `Fixes #N` in Summary for each issue the pull request finishes, one per line; merging closes it.
+- Checklist: each unchecked item under `Remaining:` cites an issue or pull request as `#N`.
+- Screenshots: an uploaded image (a path on your machine is refused) or a line `Screenshots: none (<reason>)` that gives
+  a reason.
+- AI use: after `Commits written by:` one of `a person`, `an AI`, `an AI, edited by a person`, `a person, with AI help`;
+  unless it is `a person`, `Model:` names the model (`n/a` is not enough).
+- The text names no path on your machine (`scratch/`, `../../`, `C:\`) outside an image reference.
+<!-- conventions:end -->
+
+What the two sections hold:
 
 - **Testing** says what was run and what came out: the commands (the build preset, `ctest`, `pytest`,
   `mkdocs build --strict`), the tests added or changed, any disc, [playthrough](#playthrough-tests) or
