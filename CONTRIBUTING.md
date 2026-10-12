@@ -17,11 +17,12 @@ contribute. If you only read one other file first, read [LEGAL.md](LEGAL.md).
 
 Clone the repository. To build and test the engine, follow [docs/guides/building.md](docs/guides/building.md).
 
-CI checks every pull request's title against the rules under [Commits](#commits); to check a commit title yourself,
+CI checks every pull request's title against the rules under [Commits](#commits), because the squash merge makes it the
+title of the one commit on `main`; the titles of the commits on the branch are not checked. To check a title yourself,
 with [uv](https://docs.astral.sh/uv/) installed:
 
 ```sh
-git log -1 --format=%s | uv run --project python coney-tools repo check-title -
+echo "docs: Add a page" | uv run --project python coney-tools repo check-title -
 ```
 
 CI also refuses a pull request that changes `src/` or `python/src/` without changing `docs/` or `research/`; put a
