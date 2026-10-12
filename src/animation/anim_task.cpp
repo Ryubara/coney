@@ -256,7 +256,7 @@ void AnimTaskStack::announceFollowOn() {
         }
         last = chained->next();
     }
-    if (last == m_layers.front().task.get() || last->announced()) {
+    if (last == nullptr || last == m_layers.front().task.get() || last->announced()) {
         return;
     }
     last->markAnnounced();

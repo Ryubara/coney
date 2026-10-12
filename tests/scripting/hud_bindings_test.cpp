@@ -123,7 +123,9 @@ TEST_CASE("the tutorial bindings queue, check, flush and keep the callback", "[s
     harness.call("HUDSetTutorialText", {Value("Press X")});
     // Shown at once on the free box.
     REQUIRE(hud.hints().showing().has_value());
-    CHECK(hud.hints().showing()->priority == 1);
+    const coney::hud::Hint shown = hud.hints().showing().value_or(coney::hud::Hint{});
+    CHECK(shown.text == "Press X");
+    CHECK(shown.priority == 1);
     CHECK(harness.value("HUDCheckTutorialText", {Value("Press X")}).number() == 1.0);
     harness.call("HUDSetTutorialText", {Value("Later"), Value(3.0)});
     harness.call("HUDFlushTutorialText", {Value(3.0)});
