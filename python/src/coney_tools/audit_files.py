@@ -315,3 +315,16 @@ def large_file_limit_matches(context: FilesContext) -> Iterator[Problem]:
     wanted = f"--maxkb={context.conventions.paths.large_file_kb}"
     if wanted not in text:
         yield Problem(PRE_COMMIT_CONFIG, f"does not pass {wanted} to check-added-large-files (paths.large_file_kb)")
+
+
+@check("files.markdown-hook")
+def markdown_hook_exists(context: FilesContext) -> Iterator[Problem]:
+    """pre-commit runs markdownlint-cli2, so a long Markdown line is refused before the commit, as CI would."""
+    text = _read(context.root, PRE_COMMIT_CONFIG)
+    if text is None:
+        yield Problem(PRE_COMMIT_CONFIG, "is missing or unreadable")
+    elif not re.search(r"^\s*-\s*id:\s*markdownlint-cli2\s*$", text, re.MULTILINE):
+        yield Problem(
+            PRE_COMMIT_CONFIG,
+            "has no markdownlint-cli2 hook, so only CI sees a long Markdown line",
+        )

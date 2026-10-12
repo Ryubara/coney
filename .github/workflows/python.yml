@@ -47,7 +47,10 @@ jobs:
       matrix:
         os: ${{ fromJSON(needs.changes.outputs.python-os) }}
     steps:
+      # Depth 2 so that HEAD^1, the branch a pull request's merge commit joins, exists for the local gate below.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       - run: uv sync --project python
       - run: uv run --project python ruff check python
@@ -60,6 +63,11 @@ jobs:
       # The copies of a convention that GitHub reads from their own files (the issue forms, the pull request template,
       # the CI scope script, pre-commit's size limit) must still agree with .github/conventions.yml.
       - run: uv run --project python coney-tools repo audit --files
+      # The local gate (docs/guides/testing.md#local-gate) is run by hand on one machine at a time, so this runs it on
+      # every OS the job tests: the steps that depend on the OS (pre-commit in command-line-sized groups, the program
+      # lookup) fail here the way they would for a contributor. clang-tidy and the docs build have their own jobs.
+      - run: uv run --project python coney-tools check changed --base HEAD^1 --only repo --only pre-commit
+        shell: bash
       # The progress inputs (docs/progress/, the @orig tags, the roadmap) must agree. The tables and the README's badge
       # data are not committed: the docs build writes them (mkdocs_hooks.py).
       - run: uv run --project python coney-tools progress check
