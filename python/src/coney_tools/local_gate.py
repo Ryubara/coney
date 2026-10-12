@@ -337,8 +337,8 @@ def load_compile_db(build_dir: Path) -> dict[str, dict[str, Any]]:
     path = build_dir / "compile_commands.json"
     if not path.is_file():
         raise ConfigError(
-            f"{path}: no compile database; configure once with `cmake --preset dev` (configuring is enough, no "
-            "build) or pass --build-dir"
+            f"{path}: no compile database; configure once with `coney-tools build --configure-only --agent <id>` "
+            "(configuring is enough, no build) or pass --build-dir"
         )
     try:
         entries = json.loads(path.read_text(encoding="utf-8"))

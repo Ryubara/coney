@@ -21,7 +21,7 @@ so a fresh clone gets the same setup as the maintainer's machine:
 | `.mcp.json` | The debugging servers: `ghidra-mcp` (the shared Ghidra project) and `pcsx2` (the emulator over PINE) | Claude Code; other tools take the same two commands in their own MCP config |
 | `.claude/agents/` | The roles: `analyst`, `implementer`, `reviewer`, `research-reviewer` | Claude Code |
 | `.claude/skills/` | The coordinator's skills: `repo-hygiene` ([the skill](repo-conventions.md#hygiene-skill)) | Claude Code |
-| `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and builds allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)); a hook that refuses a wait loop with no bound ([Bounded waits](#bounded-waits)) | Claude Code |
+| `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and `coney-tools build` allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)); hooks that refuse a raw `cmake --build`, `ctest` or `ninja` ([Builds and tests](#builds)) and a wait loop with no bound ([Bounded waits](#bounded-waits)) | Claude Code |
 | `.claude/hooks/` | The hook scripts `settings.json` runs before a shell command | Claude Code |
 
 **The servers.** `.mcp.json` holds no paths. Each entry runs `coney-tools mcp serve <name>`, which finds the server
@@ -44,7 +44,7 @@ not the clean room itself: they still have a shell, and the rule that keeps them
 AGENTS.md's. Effort, turn and token limits are each user's own settings and stay out of the repository.
 
 **The permissions.** The allowed commands are the project's own read-mostly ones: `coney-tools config show`, the
-`repo` checks, the generators, pytest, ruff, mypy, pre-commit and the CMake presets. Commands that start or drive
+`repo` checks, the generators, pytest, ruff, mypy, pre-commit and `coney-tools build`. Commands that start or drive
 PCSX2 (`coney-tools pcsx2 ...`), and git beyond Claude Code's own read-only detection, still ask. The refusals match
 on spelling (`taskkill /IM` is refused, `taskkill.exe /Im` or a piped `Stop-Process` is not), so they catch honest
 mistakes; they are not a security boundary.
@@ -130,6 +130,8 @@ instead of repeating it:
 - disk: it creates `.coney-busy` in its worktree as it starts and deletes it when it finishes, and before reporting a
   unit finished it deletes its own `build/` folder; a build is about 4 GB per preset
   ([Cleanup](workspace.md#cleanup));
+- builds: "build and test only with `coney-tools build --agent <id> ...`, in the background" ([Builds and
+  tests](#builds)); the brief does not paste the flags;
 - the local gate command, named in full, as part of "done": `uv run --project python coney-tools check changed`
   ([The local gate](testing.md#local-gate)), run in the agent's worktree before it reports a unit finished. An agent
   that is not told runs only the checks it knows of, and CI finds the rest;
@@ -144,7 +146,9 @@ issue stays the one place to read it.
 - **Never sit inside a long command.** Builds, test sweeps, emulator runs and CI waits that take more than a few
   minutes run in the background with their output going to a file; the agent checks the file every few minutes
   (each check keeps the cache warm) or once when the run should be done. Even an hour-long cache does not survive a
-  run that takes longer.
+  run that takes longer. A build or test run is `coney-tools build ...` started with `run_in_background`
+  ([Builds and tests](#builds)); it prints its log path first, and gives up waiting for a slot after 45 minutes,
+  or sooner when the wait plus the build would pass its 55-minute budget.
 - **Every wait has a bound** ([Bounded waits](#bounded-waits)): never `until ...; do sleep ...; done` or `while true`
   in a shell, which a hook refuses.
 - **Keep tool output small.** Print counts, the failing lines and the end of a log, never a whole log: every line an
@@ -159,6 +163,45 @@ issue stays the one place to read it.
 - **Keep the coordinator small.** The coordinator re-reads its whole conversation on every turn and is the context a
   fork would inherit. It saves the state, clears and continues from it at a natural boundary, and never forks once
   its context is large.
+
+## Builds and tests {#builds}
+
+Six agents compiling at once leave every one of them waiting, so builds share the machine through claims, the way
+PCSX2 copies do ([`build`](coney-tools.md#build)). An agent never runs `cmake --build`, `cmake --preset`, `ctest` or
+`ninja` itself (a hook refuses them); it runs, from its worktree:
+
+```sh
+uv run --project python coney-tools build --agent <id> --preset dev --test [-R <regex>] [-L <label>]
+```
+
+- **Run it in the background** (`run_in_background`, or output to a file) and read the log path it prints first, then
+  the short summary when it ends. Do not sit in it: a wait for a slot can take many minutes.
+- **A small job is quick.** An incremental rebuild of a few steps (the tool counts what is out of date by itself, so
+  one edited source is one step however much sits behind it), or a test run filtered with `-R` or `-L` to a few
+  tests, takes the fast lane and does not queue behind full builds. Rerun a failed test with `-R <its name>`, not the
+  whole suite; the first build in a fresh worktree and a full test run are the big jobs. `-L disc` runs only the tests
+  that need the game's disc. `-R` is a CMake regular expression: escape `.` `+` `(` `)` with a backslash and quote it
+  with single quotes ([Choosing tests](coney-tools.md#build)).
+- **One run per build folder.** A second `build` in the same checkout and preset waits for the first (it prints who
+  holds the folder), so start a build and its tests as one `--test` run rather than two commands, and never run two at
+  once in one worktree. Each run writes a log of its own, named for the preset, the agent and the time; read the path
+  it prints first.
+- **A second configuration** (the Clang build clang-tidy reads on Linux and macOS) is `--build-dir build/tidy --env
+  CC=clang-19 --env CXX=clang++-19` with `--configure-only`; never a raw `cmake`.
+- **Exit code 75 means "still queued".** The command waited its cap (45 minutes), or as long as its time budget
+  allowed (`--budget`, 55 minutes for the wait and the steps together, so the agent's one-hour prompt cache stays warm;
+  it estimates a step from the median of its recent runs), left the queue and said its position and the numbers. Do
+  other work (docs, review, the next unit) and run the same command again later; do not loop on it in one call.
+- **`--priority`** goes ahead of the queue. The coordinator uses it for a build somebody is waiting on; an agent does
+  not set it on its own.
+- **`build status`** shows who holds the slots and who waits. A crashed run is taken over by the next claimer, which
+  also stops the `ctest` or `cmake` it left running; `build release --agent <id>` cleans up by hand.
+- **A build never outlives its agent.** Its children end with the command, and the command stops when the shell that
+  started it is gone (a restart of the agent tool, a killed background shell), so a run never needs killing by hand
+  ([Process lifetimes](coney-tools.md#build)). Never stop `ctest` or a test executable yourself: stop the
+  `coney-tools build` command, and everything under it goes with it.
+- The coordinator sets the number of slots for the machine with `build_slots` in `coney.local.toml`
+  ([Local workspace](workspace.md#local-config)) and does not stagger builds by hand any more.
 
 ## Bounded waits {#bounded-waits}
 

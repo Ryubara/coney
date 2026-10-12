@@ -327,7 +327,7 @@ def test_compile_database_lookup_and_missing_files(tmp_path: Path) -> None:
 
 
 def test_missing_compile_database_says_how_to_make_it(tmp_path: Path) -> None:
-    with pytest.raises(ConfigError, match="cmake --preset dev"):
+    with pytest.raises(ConfigError, match="build --configure-only"):
         local_gate.load_compile_db(tmp_path / "nothing")
 
 
@@ -497,7 +497,12 @@ def test_tidy_step_warns_when_the_database_is_gccs(repo: Path, monkeypatch: pyte
     (build / "compile_commands.json").write_text(json.dumps(database), encoding="utf-8")
     result = check_cli._step_tidy(repo, ["src/other.cpp"], build, 1, None)
     assert result.ok
-    assert any("GCC compile database" in line and "CC=clang-19" in line for line in result.output)
+    hint = next(line for line in result.output if "GCC compile database" in line)
+    # The hint is a command an agent may run: the build tool configures the second folder (a raw `cmake --preset` is
+    # refused by the build guard hook).
+    assert "coney-tools build" in hint and "--build-dir build/tidy" in hint
+    assert "--env CC=clang-19" in hint and "--env CXX=clang++-19" in hint and "--configure-only" in hint
+    assert "cmake --preset" not in hint
 
 
 @pytest.mark.parametrize(

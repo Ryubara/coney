@@ -7,6 +7,11 @@
         "hooks": [
           {
             "type": "command",
+            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.claude/hooks/build_guard.py\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
             "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.claude/hooks/bounded_waits.py\"",
             "timeout": 10
           }
@@ -26,12 +31,11 @@
       "Bash(uv run --project python ruff *)",
       "Bash(uv run --project python mypy *)",
       "Bash(uvx pre-commit run *)",
-      "Bash(cmake --preset *)",
-      "Bash(cmake --build --preset *)",
-      "Bash(ctest --preset *)",
+      "Bash(uv run --project python coney-tools build*)",
       "PowerShell(uv run --project python coney-tools config show*)",
       "PowerShell(uv run --project python coney-tools repo check*)",
-      "PowerShell(uv run --project python pytest *)"
+      "PowerShell(uv run --project python pytest *)",
+      "PowerShell(uv run --project python coney-tools build*)"
     ],
     "deny": [
       "Bash(git stash *)",
