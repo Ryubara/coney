@@ -6,6 +6,9 @@ forgotten worktrees fill a drive (it happened: 3 GB were left and builds broke).
 work is merged and deletes the `build/` folders nobody has used for a while; `disk` tells scripts and hooks whether
 enough space is left. Both are described in docs/guides/workspace.md#cleanup.
 
+`clean` also lists the processes left behind, and stops them with `--apply`: agent shells left waiting on a run that
+died, and test runs whose caller is gone (stale_processes.py).
+
 `clean` is a dry run unless asked to `--apply`. What it will never do:
 
 * touch the main checkout, the folder it is run from, or a worktree that holds a `.coney-busy` file (an agent
@@ -36,6 +39,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
+from coney_tools import stale_processes
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Workspace, load_conventions
 from coney_tools.workspace import find_layout
@@ -448,8 +452,11 @@ def run_clean(
     *,
     now: float | None = None,
     merged_heads: MergedHeads | None = None,
+    shell_hours: float = stale_processes.DEFAULT_SHELL_HOURS,
+    idle_hours: float = stale_processes.DEFAULT_IDLE_HOURS,
 ) -> int:
-    """Run `workspace clean`; 1 when any removal failed, else 0. Prints the report."""
+    """Run `workspace clean`; 1 when any removal or stop failed, else 0. Prints the report: the worktrees and build
+    folders, then the stale processes (stale_processes.py)."""
     layout = find_layout(cwd, workspace)
     checkout = layout.checkout
     if not (checkout / ".git").exists():
@@ -509,6 +516,7 @@ def run_clean(
     if apply and stale:
         _git(checkout, "worktree", "prune")
     _report_loose(settings.root / checkout.name, {tree.path.resolve() for tree in list_worktrees(checkout)})
+    failures += stale_processes.run(apply, shell_hours, idle_hours)
 
     verb = "Reclaimed" if apply else "Would reclaim"
     print(f"{verb} {_gb(reclaimed)}: {removed} worktree(s) removed, {builds} build folder(s) deleted.")
