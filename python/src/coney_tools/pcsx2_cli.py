@@ -221,9 +221,13 @@ class Emulator:
         command = [str(_executable(paths.pcsx2_dir)), "-fastboot", *load, "--", str(disc)]
         # Never a plain Popen: a child of ours inherits the right to take the owner's focus (pcsx2_proc's docstring).
         self.guard = pcsx2_proc.focus_guard()
+        # CONEY_WINDOW_DISPLAY: each PCSX2 window goes to that display as it appears (docs/guides/running.md).
+        self.placer = pcsx2_proc.window_placer()
         self.pid = pcsx2_proc.start_detached(command)
         if self.guard is not None:
             self.guard.start(self.pid)
+        if self.placer is not None:
+            self.placer.start(self.pid)
         if on_start is not None:
             on_start(self.pid)
         try:
@@ -243,6 +247,8 @@ class Emulator:
             self.client.close()
         if self.guard is not None:
             self.guard.stop()
+        if self.placer is not None:
+            self.placer.stop()
         if pcsx2_proc.is_pcsx2(self.pid):  # a pid of a PCSX2 that already ended may belong to something else now
             pcsx2_proc.terminate(self.pid)
         if self.ini_text is not None:

@@ -49,6 +49,16 @@ PCSX2 (`coney-tools pcsx2 ...`), and git beyond Claude Code's own read-only dete
 on spelling (`taskkill /IM` is refused, `taskkill.exe /Im` or a piped `Stop-Process` is not), so they catch honest
 mistakes; they are not a security boundary.
 
+**The agents' display.** On a machine with a display set aside for agents, every window an agent opens goes there,
+never on the display a person is working on. It is set once, in the agent tool's own environment, so no brief or
+memory has to carry it: `CONEY_WINDOW_DISPLAY` (`portrait`, a display number or part of its name;
+[Which display](running.md#window-display)) in the environment the tool gives its agents, for Claude Code the `env`
+block of your user settings (`~/.claude/settings.json`, `"env": {"CONEY_WINDOW_DISPLAY": "portrait"}`). Coney opens
+its window centred on that display without taking the keyboard focus, and `coney-tools pcsx2 launch` and
+`pcsx2 record` move each PCSX2 window there as it appears ([Driving PCSX2](research-workflow.md#driving-pcsx2)). It
+is each machine's own setting and stays out of the repository; a machine with one display leaves it unset. An agent
+that runs anything else with a window puts it on the same display.
+
 Another agent tool needs only its own MCP entries for the two servers (the same
 `uv run --isolated --frozen --project python coney-tools mcp serve <name>` command, run from the checkout) and reads
 the rules from `AGENTS.md`.

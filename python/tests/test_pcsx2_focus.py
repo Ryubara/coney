@@ -100,7 +100,8 @@ def test_guard_thread_runs_and_stops() -> None:
 
 
 def test_emulator_starts_pcsx2_through_the_no_focus_launcher(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    """Emulator must use start_detached and the guard; a plain Popen would let PCSX2 take the owner's focus."""
+    """Emulator must use start_detached and the guard; a plain Popen would let PCSX2 take the owner's focus. It also
+    starts the window placer."""
     started: list[list[str]] = []
     guards: list[int] = []
 
@@ -123,6 +124,15 @@ def test_emulator_starts_pcsx2_through_the_no_focus_launcher(monkeypatch: pytest
     monkeypatch.setattr(subprocess, "Popen", no_popen)
     monkeypatch.setattr(pcsx2_proc, "start_detached", fake_start)
     monkeypatch.setattr(pcsx2_proc, "focus_guard", Guard)
+    placed: list[int] = []
+
+    class Placer(Guard):
+        """A window placer (CONEY_WINDOW_DISPLAY) that records the pid it was started on."""
+
+        def start(self, pid: int) -> None:
+            placed.append(pid)
+
+    monkeypatch.setattr(pcsx2_proc, "window_placer", Placer)
     monkeypatch.setattr(pcsx2_cli, "pine_port", lambda _: 28099)
     monkeypatch.setattr(pcsx2_cli, "_port_open", lambda _: False)
     monkeypatch.setattr(pcsx2_cli, "disc_link", lambda iso, _: iso)
@@ -133,5 +143,6 @@ def test_emulator_starts_pcsx2_through_the_no_focus_launcher(monkeypatch: pytest
     emulator = pcsx2_cli.Emulator(paths, tmp_path / "state.p2s", [], on_start=recorded.append)
     assert started and started[0][0].endswith("pcsx2-qt.exe")
     assert guards == [PCSX2_PID]
+    assert placed == [PCSX2_PID]  # each PCSX2 window goes to CONEY_WINDOW_DISPLAY's display as it appears
     assert recorded == [PCSX2_PID]
     assert emulator.pid == PCSX2_PID
