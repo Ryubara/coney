@@ -259,7 +259,8 @@ the disc checks print counts only).
 10. **Formation slot points** ([Formations](ai.md#formations)): drop each slot's point to the ground (a ray from 1.9 m
     above, 5.9 m long, so to 4.0 m below; the point 0.2 m above the hit; no hit keeps the plan point's height) instead
     of keeping the leader's height, and test usability with the line from the leader (`Human_CanWalkStraightTo`); no
-    slot is usable while the leader is airborne or at detail level 3 or more. *Test*: a leader on a kerb 0.3 m up gives slots on the road their road height.
+    slot is usable while the leader is airborne or at detail level 3 or more.
+    *Test*: a leader on a kerb 0.3 m up gives slots on the road their road height.
 11. **The stuck test** ([The move action](ai.md#move-action) step 9): 3D distance, on the 61st counted update. *Test*: a
     human climbing a steep heap 0.2 m per 60 updates in height is not stuck.
 

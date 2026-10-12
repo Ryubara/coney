@@ -4957,7 +4957,8 @@ attack-slot list. A pool of 42 formations of 0x280 at `0x006ceaf0`; `Formations_
   **0.2 m above the hit**; with no hit it keeps the plan point's height; a slot is usable when the leader has a
   walkable line to its point (`Human_CanWalkStraightTo` `0x002221e0` from the leader), up to `+0x272` of them;
   **no slot is usable at all** while the leader is airborne (state `0x1c00000000`, jumping or falling,
-  `0x00227f90`) or at detail level `+0x333` 3 or more: every follower then queues behind the human ahead; followers whose human is gone leave (`0x00294e98`); each usable slot takes its nearest unassigned
+  `0x00227f90`) or at detail level `+0x333` 3 or more: every follower then queues behind the human ahead;
+  followers whose human is gone leave (`0x00294e98`); each usable slot takes its nearest unassigned
   follower; followers left over queue nearest-first behind the slotted ones (or the leader); up to 3 passes swap
   pairs whose paths cross.
 

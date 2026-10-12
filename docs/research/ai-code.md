@@ -12,7 +12,9 @@ the section of [AI humans](ai.md) that covers it.
 
 ## The gang module {#gang-functions}
 
-Every function of the gang module (`0x00162518`-`0x0016e388`) not described in [Gangs, tactics and formations](ai.md#gangs), by address. Offsets are gang
+Every function of the gang module (`0x00162518`-`0x0016e388`)
+not described in [Gangs, tactics and formations](ai.md#gangs), by address.
+Offsets are gang
 record offsets unless a spawner (0x130 at `+0x640`) or the configuration record (0x7a) is named. Script bindings
 are given by their Lua name ([Gang bindings](../references/bindings/gang.md)).
 
