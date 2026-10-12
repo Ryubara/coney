@@ -642,7 +642,9 @@ several of Coney with the all-humans trace (one row per human per update; Coney'
 ...` computes rates, shares and distributions per gang (goal time shares, attacks and blocks per minute, attackers on
 one target, distance to the target, target switches, goal interruptions, time to the first engagement, knock-out
 times, the match's length and winner) and flags each metric where Coney is outside the original's spread
-([coney-tools](coney-tools.md#trace)). Keep the recordings in the scratch folder, never in the repository.
+([coney-tools](coney-tools.md#trace)). Keep the recordings in the scratch folder, never in the repository. Match the
+original's set-up on Coney's side: where the recording hands player 1 to the AI after the countdown, run Coney with
+`--ai-player`, and give each Coney match its own `--ai-seed` ([Running: tracing](running.md#tracing)).
 
 ### Differential playthroughs {#differential-playthroughs}
 

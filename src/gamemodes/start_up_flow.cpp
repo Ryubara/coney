@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "gamemodes/start_up_flow.h"
 
+#include <cstdint>
 #include <format>
 #include <functional>
 #include <optional>
@@ -76,7 +77,21 @@ StartUpFlow::StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack,
     m_missionFailed.setWorld(&m_gameplay);
     // A Rumble match: the intro over play, the result screen over the world going on.
     m_gameplay.addOverlay(&m_rumbleIntro);
+    // `--ai-player`: when the countdown has ended (FinishCountdown and the rules' StartIt done), player 1 is handed to
+    // the AI, so every fighter of the match is AI-driven.
+    m_rumbleIntro.setAfterDone([this] {
+        if (const std::optional<RumbleLaunch>& launch = m_rumbleMenu.launchOverride(); launch && launch->aiPlayer) {
+            if (!m_gameplay.releasePlayerToAi()) {
+                m_log("rumble: --ai-player found no player 1 to hand to the AI\n");
+            }
+        }
+    });
     m_rumbleResult.setWorld(&m_gameplay);
+}
+
+void StartUpFlow::setAiSeed(std::uint32_t seed) {
+    m_state.random.startAt(seed);
+    m_gameplay.setAiVariation(seed);
 }
 
 void StartUpFlow::start() {

@@ -505,6 +505,29 @@ and the rows of every level loaded go into it, numbered by step from the first r
 build/dev/src/platform/coney --disc /path/to/warriors.iso --skip-movies --headless --frames 6000 --rumble warparty --arena 102 --gang-size 5 --input-script ../../scratch/rumble_menu.txt --trace-humans ../../scratch/fight.csv
 ```
 
+Two options make Coney's run match the analysts' recordings of the original, where every fighter is AI-driven and each
+recording draws different random numbers:
+
+- `--ai-player` (with `--rumble`) hands player 1 to the AI when the countdown ends, once the arena script's
+  `FinishCountdown` and the rules' `StartIt` have run: the brain his class gives takes him over, his goals and actions
+  are cleared and the pad drives no one, as the original's `Human_ReleasePlayer` (`0x0022a2a8`) does to the human it
+  takes the pad from ([Rumble: Coney](../research/rumble.md#coney)). The log says `player: player 1 (human N) handed
+  to the AI`; his trace rows then have `player` -1 and his class's `btype`. The pad does nothing for the rest of the
+  match, and the scripts' hand-over to a team-mate no longer happens, since nobody is a player; nor does the
+  game-over check fail the match when he is beaten.
+- `--ai-seed N` (with `--rumble` or `--play-level`, 0 to 2147483647) varies the AI's random draws: the game's random
+  stream starts N draws in (as each recording of the original starts its index at `0x006eb880` somewhere else), and
+  every brain's and gang's own generator is seeded from N. The same N plays the same run; 0, the default, is the
+  usual run.
+
+The gang-fight scenario, a 9-a-side Brawl in the Fight Pen (the Furies against the Orphans) played out by the
+AI, once per seed (`rumble_menu.txt` drives QUICK RUMBLE and the intro's prompt, as `kQuickRumbleScript` in
+`repo:tests/support/disc_play_fixtures.h` does):
+
+```sh
+build/dev/src/platform/coney --disc /path/to/warriors.iso --skip-movies --headless --frames 12000 --rumble 1 --arena 102 --gang-size 9 --ai-player --ai-seed 3 --input-script ../../scratch/rumble_menu.txt --trace-humans ../../scratch/fight_seed3.csv
+```
+
 The columns, positions in metres (game axes), angles in degrees, speeds in m/s; those marked (O) are also written by
 the original's all-humans recorder under the same name and unit (`research/traces/fields.toml`, `[[humans]]`):
 
