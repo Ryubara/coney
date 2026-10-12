@@ -10,6 +10,7 @@
 #include "ai/move_action.h"
 #include "ai/reaction_goals.h"
 #include "ai/route_planner.h"
+#include "ai/threats.h"
 #include "ai/turn_action.h"
 #include "combat/ai_counter.h"
 #include "combat/anim_ids.h"
@@ -41,13 +42,6 @@ bool busy(const Brain& brain) { return humanBusy(brain.human()); }
 
 // Whether `other` is a friend of `brain` (their gangs, `Gang_AreFriends`).
 bool friendly(const Brain& brain, const Brain& other) { return Gangs::friends(brain.gang(), other.gang()); }
-
-// Whether `other` is a threat to `brain` (`Brain_IsThreatTo`). **Coney stand-in**: on his enemy list, or of a gang
-// his gang has as an enemy.
-bool threatTo(const Brain& brain, const Brain& other) {
-    return std::ranges::find(brain.enemies(), &other) != brain.enemies().end() ||
-           (brain.gang() != nullptr && other.gang() != nullptr && Gangs::enemies(brain.gang(), other.gang()));
-}
 
 // A hit's answer by a soldier or a Warrior: the gangs made enemies and, unless he is busy, a fight with the hitter (or
 // the hitter as the target when already fighting). Returns whether the hitter is not a friend (the hit taken).
@@ -233,7 +227,7 @@ Brain* pickSideInFight(Brain& hearer, const BrainEvent& event) {
     }
     const bool victimFriend = victim == &hearer || friendly(hearer, *victim);
     const bool aggressorFriend = friendly(hearer, *aggressor);
-    bool aggressorThreat = threatTo(hearer, *aggressor);
+    bool aggressorThreat = isThreat(hearer, *aggressor);
     // A stranger hitting a friend: the gangs become enemies (not for a cop) and he is a threat.
     if (victimFriend && !aggressorFriend && !aggressorThreat) {
         if (hearer.type() != BrainType::Cop) {
