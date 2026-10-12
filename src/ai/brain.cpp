@@ -696,4 +696,17 @@ Sectors& Brain::sectors(std::uint64_t maxAgeMs) {
     return m_sectors;
 }
 
+void releaseToAi(Brain& brain, BrainType leftAs) {
+    // Its class's type first: an AI brain has no pad to hand back (Brain::setType()), so no later BrDead gives the pad
+    // to the human again.
+    brain.setType(leftAs);
+    brain.clearGoals();
+    static_cast<void>(brain.clearActions());
+    // The flags Human_ReleasePlayer leaves for that type: rage gone, revivable again for a Warrior.
+    human::Human& human = brain.human();
+    const std::uint64_t released = releasedFlags(human.flags(), leftAs);
+    human.setFlag(~released, false);
+    human.setFlag(released, true);
+}
+
 } // namespace coney::ai

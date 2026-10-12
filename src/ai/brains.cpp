@@ -7,10 +7,13 @@
 
 namespace coney::ai {
 
+// The gangs' tactic rolls start from their usual seed, 1, moved by the variation.
+Brains::Brains(std::uint32_t variation) : m_gangs(variedSeed(1, variation)), m_variation(variation) {}
+
 Brain& Brains::add(human::Human& human, BrainType type, const FightSettings& settings, std::uint32_t seed) {
     // The flags its brain type gives a human as it is made (Human_Init), on top of what it has.
     human.setFlag(startingFlags(type), true);
-    m_brains.push_back(std::make_unique<Brain>(human, type, settings, seed));
+    m_brains.push_back(std::make_unique<Brain>(human, type, settings, variedSeed(seed, m_variation)));
     m_brains.back()->setSlot(m_brains.size() - 1);
     m_brains.back()->setPlanner(m_planner);
     m_brains.back()->setCollision(m_collision);

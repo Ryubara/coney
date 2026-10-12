@@ -24,6 +24,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "ai/brain.h"
+#include "ai/brains.h"
 #include "core/options.h"
 #include "fileio/wad.h"
 #include "gamemodes/gameplay_mode.h"
@@ -366,4 +368,88 @@ TEST_CASE("the disc's `--rumble kinghill` starts King of the hill in arena 101 f
         return line.find("rumble menu: start level101") != std::string::npos;
     }));
     std::printf("  --rumble kinghill: gameplay in arena %d, %zu log lines\n", rumble.levelNumber, game.log().size());
+}
+
+TEST_CASE("the disc's 9-a-side Fight Pen Brawl with `--ai-player` hands player 1 to the AI and plays to a winner",
+          "[disc][rumble]") {
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    // The gang-fight scenario of #273: a Brawl (game type 1) in the Fight Pen, the Furies against the Orphans, nine a
+    // side, player 1 handed to the AI when the countdown ends, the AI's draws varied by the seed.
+    const std::array<std::string_view, 11> args{"--disc",      "x", "--rumble",    "1",         "--arena", "102",
+                                                "--gang-size", "9", "--ai-player", "--ai-seed", "3"};
+    auto options = coney::parseOptions(args);
+    REQUIRE(options.has_value());
+    REQUIRE(options->rumble.has_value());
+    coney::test::DiscGame game(*wad, coney::test::kQuickRumbleScript, options->rumble);
+    game.flow().setAiSeed(options->aiSeed.value_or(0));
+    game.run(1000);
+    REQUIRE(game.stack().topId() == coney::GameplayMode::kId);
+    CHECK(game.flow().state().rumble.values[coney::RumbleSetup::kGangSize] == 9);
+    CHECK(game.flow().state().rumble.levelNumber == 102);
+
+    // Released once, when the countdown ended: the pad drives no one and the player's brain is an AI's.
+    const auto released = std::ranges::count_if(game.log(), [](const std::string& line) {
+        return line.starts_with("player: player 1 (human") && line.find("handed to the AI") != std::string::npos;
+    });
+    CHECK(released == 1);
+    const coney::platform::PlayLevelMode* play = game.play();
+    REQUIRE(play != nullptr);
+    CHECK_FALSE(play->player().padControlled());
+    const coney::ai::Brains* brains = game.flow().gameplay().brains();
+    REQUIRE(brains != nullptr);
+    CHECK(brains->variation() == 3);
+    std::size_t playerBrains = 0;
+    for (std::size_t i = 0; i < brains->size(); ++i) {
+        playerBrains += brains->at(i).type() == coney::ai::BrainType::Player ? 1 : 0;
+    }
+    CHECK(playerBrains == 0);
+
+    // Eighteen AI fighters play it out: one side down, the win sequence, the result screen, within ten minutes.
+    constexpr std::uint64_t kLimit = 18000;
+    const bool ended = game.runUntilTop(coney::RumbleResultMode::kId, kLimit);
+    for (const std::string& line : game.log()) {
+        UNSCOPED_INFO(line);
+    }
+    REQUIRE(ended);
+    const coney::RumbleResultMode& result = game.flow().rumbleResult();
+    CHECK_FALSE(result.winner().empty());
+    // With no player left the game-over check has no one to fail the match for (it runs over the player list), however
+    // the released human fares.
+    CHECK_FALSE(
+        std::ranges::any_of(game.log(), [](const std::string& line) { return line.starts_with("game over:"); }));
+    // The pad never came back: the scripts' revivals and hand-overs leave him to the AI.
+    CHECK_FALSE(play->player().padControlled());
+    CHECK(game.flow().scripts().errors() == 0);
+    std::printf("  ai-player brawl 9 a side, seed 3: result screen at frame %llu, %zu brains\n",
+                static_cast<unsigned long long>(game.frames()), brains->size());
+}
+
+TEST_CASE("the disc's AI-driven Brawl plays the same for the same `--ai-seed` and otherwise for another",
+          "[disc][rumble]") {
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    // Where every fighter stands 30 s into a 9-a-side match handed to the AI with `seed`, summed into one number.
+    const auto standings = [&wad](std::uint32_t seed) {
+        coney::test::DiscGame game(*wad, coney::test::kQuickRumbleScript,
+                                   coney::RumbleLaunch{.gameType = 1, .arena = 102, .gangSize = 9, .aiPlayer = true});
+        game.flow().setAiSeed(seed);
+        game.run(1900);
+        const coney::ai::Brains* brains = game.flow().gameplay().brains();
+        REQUIRE(brains != nullptr);
+        double sum = 0.0;
+        for (std::size_t i = 0; i < brains->size(); ++i) {
+            const coney::anim::Vec3 at = brains->at(i).human().position();
+            sum += static_cast<double>(i + 1) * (static_cast<double>(at.x) * 3.0 + static_cast<double>(at.y));
+        }
+        return sum;
+    };
+    const double first = standings(5);
+    CHECK(standings(5) == first);
+    CHECK(standings(6) != first);
+    std::printf("  ai-seed: seed 5 twice alike, seed 6 apart\n");
 }

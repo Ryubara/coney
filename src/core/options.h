@@ -67,6 +67,10 @@ struct RumbleLaunch {
     std::uint16_t gameType = 0; ///< The mode's `RM_*` number (RumbleSetup::kGameType).
     int arena = 0;              ///< The arena's level number (`101` for `level101`).
     std::uint16_t gangSize = 0; ///< Fighters per side (RumbleSetup::kGangSize).
+    /// `--ai-player`: player 1 is handed to the AI when the countdown ends (ai::AiHumans::releasePlayer()), as the
+    /// original's `Human_ReleasePlayer` (`0x0022a2a8`) does to the human it takes the pad from, so every fighter is
+    /// AI-driven: the matched gang-fight scenario of docs/guides/research-workflow.md#comparing-with-coney.
+    bool aiPlayer = false;
 };
 
 /// One mode `--rumble` knows: its name on the command line, its `RM_*` number and the arena and gang size it plays in
@@ -153,6 +157,10 @@ struct Options {
     /// this file, to compare a gang fight with the original's (docs/guides/building.md#tracing). Requires playLevel
     /// or rumble.
     std::optional<std::string> humansTraceFile;
+    /// `--ai-seed N`: vary the AI's random draws by N (0 to 2,147,483,647): the game's random stream starts at index N
+    /// (GameRandom::startAt()) and every brain's and the gangs' generator is seeded through ai::variedSeed(). Unset is
+    /// 0, the usual run; the same N plays the same run. Requires playLevel or rumble.
+    std::optional<std::uint32_t> aiSeed;
     /// `--script-trace`: write every binding call the level's scripts make, and every call into them by name, to this
     /// file, one line each with its arguments (script::ScriptSystem::traceCalls()), to see where a mission's scripts
     /// wait. Requires playLevel with a level.
