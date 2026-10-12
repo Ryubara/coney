@@ -1,0 +1,18 @@
+# Opens the debug menu with the L3+R3 chord, moves to Time (the second item of the root page) with the left stick at
+# three quarters of its travel, opens it, walks down to the 0.25x preset (the sixth item) and chooses it
+# (docs/guides/debug-menu.md#pages). Synthetic input; no game data.
+5 tap l3 r3
+8 stick left 0 -75
+9 stick left 0 0
+11 tap cross
+14 stick left 0 -75
+15 stick left 0 0
+17 stick left 0 -75
+18 stick left 0 0
+20 stick left 0 -75
+21 stick left 0 0
+23 stick left 0 -75
+24 stick left 0 0
+26 stick left 0 -75
+27 stick left 0 0
+29 tap cross

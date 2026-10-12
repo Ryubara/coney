@@ -31,16 +31,10 @@ from coney_tools import (
     xbox_cli,
 )
 from coney_tools.config import PATH_KEYS, ConfigError, find_repo_root, load_config
-from coney_tools.repo_checks import (
-    check_body,
-    check_docs,
-    check_pointer_files,
-    check_title,
-    first_line,
-    load_body_rules,
-    load_title_rules,
-)
-from coney_tools.repo_labels import apply_labels, gh_script, load_labels
+from coney_tools.conventions import Conventions, load_conventions
+from coney_tools.conventions_render import run_render
+from coney_tools.repo_checks import check_body, check_docs, check_pointer_files, check_title, first_line
+from coney_tools.repo_labels import apply_labels, gh_script
 
 
 def _config_show() -> int:
@@ -55,20 +49,29 @@ def _config_show() -> int:
     return 0
 
 
+def _conventions() -> Conventions:
+    """The conventions of the checkout the command runs in (`.github/conventions.yml`); ConfigError when unusable."""
+    return load_conventions(find_repo_root(Path.cwd()))
+
+
 def _repo_check() -> int:
     """Run the repository checks; 1 when any fails."""
-    problems = check_pointer_files(find_repo_root(Path.cwd()))
+    root = find_repo_root(Path.cwd())
+    # Loading the conventions validates the file itself, so a bad edit or merge of it fails here, in CI.
+    conventions = load_conventions(root)
+    problems = check_pointer_files(root, conventions.paths.pointer_files)
     for problem in problems:
         print(problem)
     if problems:
         return 1
+    print("conventions: ok")
     print("pointer files: ok")
     return 0
 
 
 def _repo_labels(apply: bool, repo: str | None) -> int:
-    """Print the `gh` commands that create the labels of .github/labels.yml, or run them with `apply`; 1 on failure."""
-    labels = load_labels(find_repo_root(Path.cwd()))
+    """Print the `gh` commands that create the `labels` of the conventions, or run them with `apply`; 1 on failure."""
+    labels = _conventions().labels.list
     if not apply:
         print("\n".join(gh_script(labels, repo)))
         return 0
@@ -81,7 +84,7 @@ def _repo_labels(apply: bool, repo: str | None) -> int:
 
 def _repo_check_title(file: str) -> int:
     """Check the title in `file` (a commit message or a pull request title; `-` reads stdin); 1 when refused."""
-    rules = load_title_rules(find_repo_root(Path.cwd()))
+    rules = _conventions().commits.title
     if file == "-":
         message = sys.stdin.read()
     else:
@@ -109,7 +112,8 @@ def _repo_check_docs(body_file: str | None) -> int:
         except (OSError, UnicodeDecodeError) as error:
             print(f"coney-tools: {body_file}: cannot be read ({error})", file=sys.stderr)
             return 2
-    problems = check_docs(changed, body)
+    conventions = _conventions()
+    problems = check_docs(changed, body, conventions.paths, conventions.pull_requests.docs_none)
     if problems:
         print(f"docs refused: {'; '.join(problems)} (see docs/guides/research-workflow.md)")
         return 1
@@ -119,7 +123,7 @@ def _repo_check_docs(body_file: str | None) -> int:
 
 def _repo_check_body(body_file: str | None) -> int:
     """Check the pull request description in `body_file` (`-` or none reads stdin); 1 when refused."""
-    rules = load_body_rules(find_repo_root(Path.cwd()))
+    rules = _conventions().pull_requests
     if body_file is None or body_file == "-":
         body = sys.stdin.read()
     else:
@@ -193,7 +197,7 @@ def _build_parser() -> argparse.ArgumentParser:
     serve.add_argument("name", choices=mcp_serve.SERVERS)
     repo = groups.add_parser("repo", help="repository checks")
     repo_commands = repo.add_subparsers(dest="command", required=True)
-    repo_commands.add_parser("check", help="check the agent pointer files")
+    repo_commands.add_parser("check", help="check .github/conventions.yml and the agent pointer files")
     check_title_parser = repo_commands.add_parser(
         "check-title", help="check a commit or pull request title against the commit title rules"
     )
@@ -208,9 +212,17 @@ def _build_parser() -> argparse.ArgumentParser:
     check_body_parser.add_argument(
         "--body", help="a file holding the pull request description; - or omitted reads stdin"
     )
+    render_parser = repo_commands.add_parser(
+        "render",
+        help="rewrite the generated blocks of AGENTS.md, CONTRIBUTING.md and the guides from .github/conventions.yml",
+    )
+    render_parser.add_argument(
+        "--check", action="store_true", help="change nothing; exit 1 when a block is out of date"
+    )
     _add_check_commands(groups)
     labels_parser = repo_commands.add_parser(
-        "labels", help="print the gh commands for the issue labels of .github/labels.yml, or sync them with --apply"
+        "labels",
+        help="print the gh commands for the issue labels of .github/conventions.yml, or sync them with --apply",
     )
     labels_parser.add_argument("--apply", action="store_true", help="create or update the labels through gh now")
     labels_parser.add_argument("--repo", help="OWNER/NAME to sync; default: the repository gh finds from the checkout")
@@ -710,6 +722,8 @@ def _run(args: argparse.Namespace) -> int:
         return workspace.run_init(Path.cwd(), args.workspace, args.repo_url, args.fetch, args.dry_run)
     if args.group == "mcp":
         return mcp_serve.run_serve(args.name)
+    if args.command == "render":
+        return run_render(find_repo_root(Path.cwd()), args.check)
     if args.command == "labels":
         return _repo_labels(args.apply, args.repo)
     if args.command == "check-title":

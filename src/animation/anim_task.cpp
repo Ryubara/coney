@@ -239,8 +239,29 @@ float AnimTaskStack::outgoingWeight(float elapsed, float duration) {
 
 void AnimTaskStack::startTask(const AnimTask& task) {
     m_flags = (m_flags & ~task.heldFlags()) | task.startFlags();
-    if (m_startHook) {
+    if (m_startHook && !task.announced()) {
         m_startHook(task.animId());
+    }
+}
+
+void AnimTaskStack::announceFollowOn() {
+    if (m_layers.empty()) {
+        return;
+    }
+    // Down the chain of clips handing over to one another, to the task that ends it.
+    AnimTask* last = m_layers.front().task.get();
+    while (const auto* chained = dynamic_cast<const ClipThenNextTask*>(last)) {
+        if (chained->next() == nullptr) {
+            break;
+        }
+        last = chained->next();
+    }
+    if (last == nullptr || last == m_layers.front().task.get() || last->announced()) {
+        return;
+    }
+    last->markAnnounced();
+    if (m_startHook) {
+        m_startHook(last->animId());
     }
 }
 

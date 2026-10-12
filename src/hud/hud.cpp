@@ -46,7 +46,7 @@ GuiPoint InstructionArrow::offset() const {
     return GuiPoint{step * std::sin(angle) / kArrowBobDivisor, -step * std::cos(angle) / kArrowBobDivisor};
 }
 
-Hud::Hud(HudServices services) : m_services(std::move(services)) {}
+Hud::Hud(HudServices services) : m_services(std::move(services)), m_hints(m_services.sound) {}
 
 std::string Hud::read(const std::function<std::string(std::uint32_t)>& service, std::uint32_t id) {
     return service ? service(id) : std::string{};
@@ -125,9 +125,15 @@ void Hud::showPlayers() {
 }
 
 std::string Hud::objectiveHeader(int slot) const {
-    // The objective icon (yellow for slot 0 at 0.8, blue for slot 1), the HUD colour, the heading string.
+    // The objective icon (yellow for slot 0 at 0.8, blue for slot 1), the HUD colour, the heading string. The icon
+    // tags are rectangles of the money font (<YOBJ> 28, <BOBJ> 22), so each sits inside <MONEYFONT>; outside it the tag
+    // is its plain character and the header read "ANew Objective" (issue #235).
+    // Stand-in: the page does not say how the original assembles this string. That the icon is drawn from the money
+    // font follows from how the tags draw (docs/research/gui.md#moneyfont); wrapping just the icon, with the <SIZE>
+    // outside, is Coney's choice (open question in docs/research/hud.md#objectives-hudsetobjective).
     const std::size_t index = slot == 1 ? 1 : 0;
-    const std::string icon = index == 0 ? "<SIZE 0.8><YOBJ></SIZE>" : "<BOBJ>";
+    const std::string icon =
+        index == 0 ? "<SIZE 0.8><MONEYFONT><YOBJ></MONEYFONT></SIZE>" : "<MONEYFONT><BOBJ></MONEYFONT>";
     const std::string colour =
         m_services.hudColour ? m_services.hudColour(kObjectiveHeaderColours.at(index)) : std::string{};
     return icon + colour + read(m_services.hudString, kObjectiveHeaderStrings.at(index));
@@ -399,10 +405,9 @@ void Hud::update(const HudFrame& frame) {
             m_services.wantedTimers ? m_services.wantedTimers(0, frame.nowMs) : std::array<float, 2>{};
         m_crimePanel.update(timers[0], timers[1]);
     }
-    // 2. The messages, the hint box and the counter panels on their game-time clocks; an announcement ends when its
-    // `<DISPLAYTIME>` has passed.
+    // 2. The messages and the counter panels on their game-time clocks (the hint box steps in updateHints()); an
+    // announcement ends when its `<DISPLAYTIME>` has passed.
     m_scrollIn.update(frame.nowMs, m_services.sound);
-    m_hints.update(frame.nowMs, m_services.sound);
     m_counters.update(frame.nowMs);
     for (std::optional<Announcement>* announcement : {&m_announcement, &m_centred}) {
         if (*announcement && (*announcement)->displayMs &&

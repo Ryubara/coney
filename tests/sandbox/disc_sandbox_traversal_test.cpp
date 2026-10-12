@@ -2,11 +2,12 @@
 
 // Checks against the player's own disc: Rembrandt (loaded from the disc) on the parkour course
 // (assets/sandbox/parkour.layout): the sprint and its stamina along the run-up lane, run and sprint jumps, a jump over
-// a gap between platforms, climbs over fences and onto walls of each height band, and the walking body's step rule at a
-// kerb and at ledges. Driven by the scripted pads in tests/support (partial and full stick deflections, L2 and
-// triangle), on the fixed 30 Hz step with no window and no clock. The course is Coney's own; only the character comes
-// from the disc. They run only when the environment variable CONEY_DISC names the disc and skip otherwise; they print
-// positions, speeds and a hash of the run only, never data (LEGAL.md). CONEY_TRACE=1 prints every frame.
+// a gap between platforms, walks up the stairs onto the platforms and drop towers, climbs over fences and onto walls of
+// each height band, and the walking body's step rule at a kerb and at ledges; and up the default course's ramps. Driven
+// by the scripted pads in tests/support (partial and full stick deflections, L2 and triangle), on the fixed 30 Hz step
+// with no window and no clock. The course is Coney's own; only the character comes from the disc. They run only when
+// the environment variable CONEY_DISC names the disc and skip otherwise; they print positions, speeds and a hash of the
+// run only, never data (LEGAL.md). CONEY_TRACE=1 prints every frame.
 
 #include <algorithm>
 #include <cmath>
@@ -56,7 +57,7 @@ struct Run {
     std::uint32_t respawns = 0;
 };
 
-// The player's character from the disc CONEY_DISC names, and the parkour course.
+// The player's character from the disc CONEY_DISC names, and a sandbox course (the parkour one unless named).
 // NOLINTNEXTLINE(bugprone-exception-escape)
 struct Course {
     std::optional<coney::io::Wad> wad;
@@ -64,8 +65,8 @@ struct Course {
     std::unique_ptr<coney::sandbox::SandboxWorld> world;
 };
 
-// Loads Rembrandt from the disc at `discPath` and builds the parkour layout from the repository's assets.
-Course loadCourse(const char* discPath) {
+// Loads Rembrandt from the disc at `discPath` and builds the layout `layout` from the repository's assets.
+Course loadCourse(const char* discPath, const char* layout = "parkour") {
     Course course;
     auto disc = coney::io::Disc::open(discPath);
     REQUIRE(disc.has_value());
@@ -77,7 +78,7 @@ Course loadCourse(const char* discPath) {
     auto character = coney::human::PlayerCharacter::load(discWad, table, coney::human::kPlayerModel);
     REQUIRE(character.has_value());
     course.character = std::move(*character);
-    auto world = coney::sandbox::SandboxWorld::load(std::filesystem::path(CONEY_ASSETS_DIR) / "sandbox", "parkour");
+    auto world = coney::sandbox::SandboxWorld::load(std::filesystem::path(CONEY_ASSETS_DIR) / "sandbox", layout);
     REQUIRE(world.has_value());
     REQUIRE(world->collision() != nullptr);
     course.world = std::make_unique<coney::sandbox::SandboxWorld>(std::move(*world));
@@ -382,5 +383,87 @@ TEST_CASE("Rembrandt climbs low walls and blocks standing; ledges too low or too
         const float above = kBodyRadius + 0.05F - 0.3F;
         const float edgeStop = std::sqrt((kBodyRadius * kBodyRadius) - (above * above));
         CHECK(ledge.frames.back().position.y == Approx(34.5F - edgeStop - kContactClear).margin(0.03));
+    }
+}
+
+// The first frame of `run` whose feet are at or past `y`, or -1.
+int firstFrameAtY(const Run& run, float y) {
+    for (std::size_t i = 0; i < run.frames.size(); ++i) {
+        if (run.frames[i].position.y >= y) {
+            return static_cast<int>(i);
+        }
+    }
+    return -1;
+}
+
+TEST_CASE("Rembrandt walks up the parkour stairs onto the platform at the top", "[disc][player][sandbox][traversal]") {
+    const char* discPath = discOrSkip();
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    const Course course = loadCourse(discPath);
+    // The landing a flight ends at must hold no wall face taller than a riser within the walking sphere's reach of the
+    // last step (docs/research/characters.md#walls): a full-height front face stopped him on the last step, below the
+    // platform. Each run starts 3 m before the flight with a 65 % stick (tests/support/parkour_stairs.txt) and is read
+    // at the first update the feet are over the platform's middle.
+    struct Landing {
+        const char* label;
+        float x;
+        float stairsSouth; // the flight's low end on y
+        float middleY;     // the platform's middle on y
+        float top;         // the platform's top
+    };
+    const std::vector<Landing> landings = {
+        {"jump-gap platform", -80.0F, -63.0F, -57.0F, 2.0F}, {"tower 2 m", 0.0F, -33.0F, -28.5F, 2.0F},
+        {"tower 4 m", 6.0F, -36.0F, -28.5F, 4.0F},           {"tower 6 m", 12.0F, -39.0F, -28.5F, 6.0F},
+        {"tower 7 m", 18.0F, -40.5F, -28.5F, 7.0F},          {"tower 8 m", 24.0F, -42.0F, -28.5F, 8.0F},
+        {"tower 10 m", 30.0F, -45.0F, -28.5F, 10.0F},        {"tower 14 m", 36.0F, -51.0F, -28.5F, 14.0F},
+    };
+    for (const Landing& landing : landings) {
+        SECTION(landing.label) {
+            const Run run = runScript(course, landing.label, "parkour_stairs.txt",
+                                      {landing.x, landing.stairsSouth - 3.0F, 0.0F}, 1500);
+            CHECK(run.respawns == 0);
+            const int arrived = firstFrameAtY(run, landing.middleY);
+            REQUIRE(arrived >= 0);
+            const FrameRecord& there = run.frames[static_cast<std::size_t>(arrived)];
+            // Standing on the platform's top, over its 3 m wide footprint.
+            CHECK(there.position.z == Approx(landing.top).margin(0.02));
+            CHECK(std::abs(there.position.x - landing.x) < 1.5F);
+            CHECK_FALSE(there.airborne);
+        }
+    }
+}
+
+TEST_CASE("Rembrandt walks up the default course's ramps of 10 to 40 degrees onto the platform at the top",
+          "[disc][player][sandbox][traversal]") {
+    const char* discPath = discOrSkip();
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    const Course course = loadCourse(discPath, "default");
+    // The same rule as the stairs: a platform a ramp leads to holds no tall face or top edge within the walking
+    // sphere's reach of the last metre of ramp. A full-height box held him short of the top at 30 and 40 degrees. Each
+    // ramp's low end is on y = 10; the runs start 4 m before it and are read over the platform's middle.
+    struct Ramp {
+        const char* label;
+        float x;
+        float middleY;
+    };
+    const std::vector<Ramp> ramps = {
+        {"10 degrees", -40.0F, 22.843F},
+        {"20 degrees", -35.0F, 16.995F},
+        {"30 degrees", -30.0F, 14.964F},
+        {"40 degrees", -25.0F, 13.884F},
+    };
+    for (const Ramp& ramp : ramps) {
+        SECTION(ramp.label) {
+            const Run run = runScript(course, ramp.label, "parkour_stairs.txt", {ramp.x, 6.0F, 0.0F}, 900);
+            CHECK(run.respawns == 0);
+            const int arrived = firstFrameAtY(run, ramp.middleY);
+            REQUIRE(arrived >= 0);
+            const FrameRecord& there = run.frames[static_cast<std::size_t>(arrived)];
+            CHECK(there.position.z == Approx(2.0F).margin(0.02));
+            CHECK(std::abs(there.position.x - ramp.x) < 1.5F);
+            CHECK_FALSE(there.airborne);
+        }
     }
 }

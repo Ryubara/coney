@@ -1905,8 +1905,10 @@
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
     - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
   description: >-
-    Sets or clears flag bit 0x1000000000 of the human's flag word; from the name, the human is stunned less easily.
-  evidence: inferred
+    Sets or clears flag bit 0x1000000000 of the human's flag word (power class byte +0x3b sets it too). With it, a hit
+    stuns the human only when he is already standing stunned: the hit's stun flag 0x400 and the caller's stun request
+    are ignored (Human_PlayReaction 0x0026a6d0).
+  evidence: confirmed-code
   depth: brief
   usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
 

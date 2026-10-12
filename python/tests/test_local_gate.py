@@ -10,9 +10,11 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from conventions_support import write_checkout
 
 from coney_tools import check_cli, local_gate
 from coney_tools.config import ConfigError
+from coney_tools.conventions import load_conventions
 
 REPO = Path(__file__).resolve().parents[2]
 SCRIPT = REPO / ".github" / "scripts" / "tidy-files.sh"
@@ -427,12 +429,16 @@ def test_tidy_step_skips_when_no_cpp_changed(repo: Path) -> None:
         (["docs/page.md"], True),
         (["mkdocs.yml"], True),
         (["research/missions.yaml"], True),
+        (["mkdocs_hooks.py"], True),
+        (["requirements-docs.txt"], True),
+        (["README.md"], True),
         (["src/other.cpp"], False),
         (["python/src/coney_tools/cli.py"], False),
+        (["src/README.md"], False),
     ],
 )
 def test_docs_build_runs_only_for_docs(changed: list[str], wanted: bool) -> None:
-    assert check_cli._docs_changed(changed) is wanted
+    assert check_cli._docs_changed(changed, load_conventions(REPO).paths) is wanted
 
 
 def test_python_step_skips_without_python_changes() -> None:
@@ -446,8 +452,17 @@ def test_long_output_is_cut_with_a_count() -> None:
 
 
 def test_repo_step_reports_missing_pointer_files(tmp_path: Path) -> None:
-    result = check_cli._step_repo(tmp_path)
+    result = check_cli._step_repo(write_checkout(tmp_path))
     assert not result.ok and result.output
+
+
+def test_repo_step_passes_for_this_checkout() -> None:
+    assert check_cli._step_repo(REPO).ok
+
+
+def test_repo_step_without_the_conventions_file_is_a_config_error(tmp_path: Path) -> None:
+    with pytest.raises(ConfigError, match=r"conventions\.yml"):
+        check_cli._step_repo(tmp_path)
 
 
 def test_tidy_step_labels_a_failure_in_a_file_the_change_did_not_edit(

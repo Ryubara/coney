@@ -43,6 +43,8 @@ struct FramePlan {
 /// - **Gaps are not fast-forwarded.** The same cap means that after the window was dragged, the process was suspended
 ///   or a debugger stopped it, the game moves on by at most kMaxStepsPerFrame steps, not by the whole gap.
 ///
+/// A debug time scale above 1x (setSpeed()) credits the real time times the speed and raises the cap with it.
+///
 /// Research: docs/research/graphics.md#frame-rate, docs/research/boot.md#the-main-loop
 class FrameClock {
   public:
@@ -65,17 +67,37 @@ class FrameClock {
     /// interpolated). Real time not yet stepped is dropped, so the next frame starts the new pacing afresh.
     void setPacing(FramePacing pacing);
 
-    /// Real time credited but not yet run as a step, in millionths of a tick (always less than one step).
-    [[nodiscard]] std::uint64_t leftover() const { return m_accumulated; }
+    /// The fastest speed setSpeed() takes, in percent: 10x.
+    static constexpr std::uint32_t kMaxSpeedPercent = 1000;
+    /// Makes steps due `percent` / 100 times as fast as real time calls for (clamped to 1 to kMaxSpeedPercent; 100,
+    /// the default, is the game's own speed): the debug menus' time scale above 1x (src/debug/time_control.h). Every
+    /// step is still exactly one fixed step; a faster game only runs more of them, and the per-frame cap grows with it
+    /// (maxStepsPerFrame()). In lockstep a frame runs the speed's whole steps (150: 1, 2, 1, 2). Test mode never calls
+    /// it, so it stays one step a frame. Coney's own (docs/guides/debug-menu.md#pages); the original has no time scale.
+    void setSpeed(std::uint32_t percent);
+    /// The speed in percent; 100 unless setSpeed() changed it.
+    [[nodiscard]] std::uint32_t speed() const { return m_speed; }
+    /// The most steps one interpolated frame runs at this speed: kMaxStepsPerFrame times the speed rounded up to whole
+    /// multiples (16 at 400 %), so the game keeps its scaled speed down to 7.5 frames a second and a slower machine
+    /// slows down instead of piling up steps.
+    [[nodiscard]] std::uint32_t maxStepsPerFrame() const;
+
+    /// Real time credited but not yet run as a step, in millionths of a tick of game time at the current speed
+    /// (always less than one step).
+    [[nodiscard]] std::uint64_t leftover() const { return m_accumulated / 100; }
 
   private:
-    /// One step in the accumulator's unit (millionths of a tick).
-    static constexpr std::uint64_t kStepUnits = GameTimer::kFixedStepTicks * 1'000'000;
-    /// Millionths of a tick per nanosecond: 294,912,000 ticks a second × 10^6 / 10^9.
+    /// One step in the accumulator's unit, hundredths of a millionth of a tick: the hundredths make every whole-percent
+    /// speed exact, so N seconds at speed p always give exactly 30 × N × p / 100 steps.
+    static constexpr std::uint64_t kScaledStepUnits = GameTimer::kFixedStepTicks * 1'000'000 * 100;
+    /// Millionths of a tick per nanosecond: 294,912,000 ticks a second × 10^6 / 10^9. Times the speed in percent, it
+    /// is the accumulator's units per nanosecond.
     static constexpr std::uint64_t kUnitsPerNanosecond = GameTimer::kTicksPerSecond / 1000;
 
     FramePacing m_pacing;
-    std::uint64_t m_accumulated; // real time not yet stepped, in millionths of a tick
+    std::uint64_t m_accumulated;       // real time not yet stepped, in hundredths of a millionth of a tick
+    std::uint32_t m_speed = 100;       // setSpeed(), percent
+    std::uint32_t m_lockstepCarry = 0; // lockstep: hundredths of a step owed beyond the whole steps run
 };
 
 } // namespace coney

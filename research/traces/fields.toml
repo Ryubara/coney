@@ -749,3 +749,23 @@ type = "s32"
 name = "pad_1b"                           # per-player record +0x1b: 0 doubles the aim lag x 2.5 for a fast target
 address = "prec(player) + 0x1b"
 type = "u8"
+
+# What the player sees between gameplay and a script's cut: player 1's current camera (0x005d9150, a pointer that
+# changes on CameraMakeActive) and view 1's screen effects (*0x005fdeb8: the fade's level +0x1d8, the letterbox's
+# level +0x1ec). docs/research/camera.md, docs/research/graphics.md#screen-effects.
+[[screen]]
+name = "cur_cam"
+address = "0x005d9150"
+type = "u32"
+
+[[screen]]
+name = "fade"
+address = "u32(0x005fdeb8) + 0x1d8"
+type = "f32"
+follow = true
+
+[[screen]]
+name = "letterbox"
+address = "u32(0x005fdeb8) + 0x1ec"
+type = "f32"
+follow = true

@@ -105,7 +105,7 @@ Dear ImGui (MIT licence) is pinned in `cmake/deps.cmake` and used only in `src/p
 | Page | What it has |
 | --- | --- |
 | Favourites | every pinned item, working as itself |
-| Time | pause, step one fixed step, slow motion, the frame and step counts with a plot, the real frame time |
+| Time | pause, step one fixed step, the time scale (0.05x to 4x, presets, reset to 1x), the frame and step counts with a plot, the real frame time |
 | Tunables | one page per category of the [tunables](#tunables), reset all, save and load the overrides file |
 | Natives | the [script bindings](#natives) by category with their Coney status, an argument editor and a call |
 | Lua console | a Lua line to run in the script state, a file to run, and the output |
@@ -123,12 +123,34 @@ Dear ImGui (MIT licence) is pinned in `cmake/deps.cmake` and used only in `src/p
 | Audio | the output device, the master and bus volumes, a looping test tone, the voices playing (plotted) |
 | Input | port 1 live: buttons held, both sticks (plotted), the raw stick bytes, the triggers' pressure |
 
-**Time.** The game always advances by whole fixed 1/30 s steps. Paused, no step runs; *Step one* runs exactly one.
-Slow motion runs one step out of every N that real time calls for, so the game runs at 1/N speed and every step is still
-1/30 s: never a variable step. A held step still reads the pad, so the menu keeps working, and the game's last step
-stays on screen, drawn as it is (not blended towards a step that has not run). In a window
-the page also shows the real time each frame took, as the frame pacer measures it (a headless run has no real clock
-and leaves it out); it is only shown and plotted, never used by a step.
+**Time.** The game always advances by whole fixed 1/30 s steps, never a variable step. Paused, no step runs; *Step
+one* runs exactly one. *Time scale* (0.05x to 4x, in steps of 0.05, L2 for hundredths) speeds the game up or slows it
+down by running more or fewer of those steps a real second; *Reset to 1x* (or triangle on the scale) gives the game's
+own speed back, and *Preset 0.1x*, *0.25x*, *0.5x*, *2x* and *4x* are one press away. A change shows as a notice, and
+the frame-stats line names any scale other than 1x.
+
+- **Slower than 1x.** Steps still fall due 30 times a real second, and only the scale's share of them runs: at 0.25x
+  one in four (counted in hundredths, so a scale gives exactly its steps over a run, and the first due step after a
+  change runs at once). A held step still reads the pad, so the menus keep their full speed, and the game's last step
+  stays on screen, drawn as it is (not blended towards a step that has not run).
+- **Faster than 1x.** The frame clock makes the scale's multiple of steps due (`FrameClock::setSpeed()`): 60 a second
+  at 2x, 120 at 4x, each a whole 1/30 s step. A frame runs at most 4 steps per 1x of the scale, rounded up (16 at 4x),
+  so the game keeps the scaled speed down to 7.5 frames a second; a machine too slow for that slows down instead of
+  piling up steps (the cap is the guard against the "spiral of death",
+  [Update and render](conventions.md#update-and-render)). With a frame cap of 30 (lockstep) a frame runs the scale's
+  whole steps (1.5x: 1, 2, 1, 2).
+- **Test mode** (`--headless`, `--frames`, `--input-script`, `--screenshot`) stays one due step a frame, with no
+  clock: a scale above 1x has no effect there (the item's help says so), and one below 1x holds steps as above, so a
+  scripted run is the same every time.
+- **Sound and movies do not follow the scale.** Every sound plays at its own speed and pitch: resampling the mix
+  would change the pitch, keeping the pitch would need time-stretching, and neither is worth the risk to the sound
+  path for a debug tool. Sounds start when the steps that trigger them run (at 4x four times as often), and the sound
+  engine's timers count the steps run, but music, speech and a movie's sound play in real time. A movie's pictures
+  advance one frame per step, so at another scale they drift from its sound: watch movies at 1x.
+
+In a window the page also shows the real time each frame took, as the frame pacer measures it (a headless run has no
+real clock and leaves it out); it is only shown and plotted, never used by a step. The scale is Coney's own; the
+original has none ([Debug features](../research/debug.md#not-present)).
 
 **Cheats.** The retail cheat checker (six single buttons matched against a table, [Debug features](../research/debug.md#cheats))
 is not in Coney yet. The page does what the checker does on a match: it calls the script's cheat callback,

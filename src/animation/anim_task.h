@@ -102,6 +102,10 @@ class AnimTask {
     [[nodiscard]] std::uint32_t startFlags() const { return m_startFlags; }
     /// Replaces the bits the task holds (the recovery event's work).
     void replaceHeldFlags(std::uint32_t held) { m_held = held; }
+    /// Marks the task's start as already reported (AnimTaskStack::announceFollowOn()): it does not report it again when
+    /// it begins playing.
+    void markAnnounced() { m_announced = true; }
+    [[nodiscard]] bool announced() const { return m_announced; }
 
     /// time() over duration(), 0 for an empty clip.
     [[nodiscard]] float normalisedTime() const;
@@ -117,6 +121,7 @@ class AnimTask {
     std::uint32_t m_flags;
     std::uint32_t m_held = 0;
     std::uint32_t m_startFlags = 0;
+    bool m_announced = false;
 };
 
 /// Type 1: one clip, looping; the overshoot past the end carries into the next pass.
@@ -290,6 +295,12 @@ class AnimTaskStack {
     /// gait blend moves to another clip: where the original resolves an id to a clip and runs the animation
     /// callbacks (`CharacterInstance_GetAnim`, docs/research/characters.md#anim-callbacks). Empty for none.
     void setStartHook(std::function<void(std::uint32_t animId)> hook) { m_startHook = std::move(hook); }
+    /// Reports now the start of the task the newest task's chain ends in (its follow-on, after the clips handing over
+    /// to one another), which then is not reported again when it begins playing; nothing when the newest task has no
+    /// follow-on or it was reported already. A grab's connect builds the hold under the connecting clip, and the
+    /// hold's ids fire their animation callbacks then, not when the hold plays
+    /// (docs/research/characters.md#anim-callbacks).
+    void announceFollowOn();
     /// Keeps (`keep`) every event of the newest task's clip whose frame is passed, after the held-flag events have
     /// moved the record, for takeEvents(): the human acts on the rest (clip event 11, the animation sounds,
     /// docs/research/sound.md#anim-sounds). Off by default: an owner that never takes them keeps none.

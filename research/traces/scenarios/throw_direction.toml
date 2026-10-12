@@ -1,0 +1,80 @@
+# A throw's direction (issue #240): PoizoCiv is placed 1.0 m ahead of the player and grabbed with circle (a front
+# hold). On the original the player's heading is written to −165° before the grab (he faced −145° after it), so the
+# stick (magnitude 0.9, 18° left of the camera's up, 171° in the world at runtime) is 44° to the right of his facing:
+# a front throw (147 / 148) whose 1/6 s turn takes the whole difference. Stick and circle come on the same update, so the hold walk (stick above
+# 0.95) never moves the pair first. Read the victim's path in the stick's frame (stick_heading, v_x, v_y).
+# Research: docs/research/combat.md#throw-direction.
+description = "slot 6: grab PoizoCiv 1.0 m ahead from the front, then throw with the stick about 44 degrees right of the facing: the turn onto the stick and the thrown body's path"
+research = "docs/research/combat.md#throw-direction"
+input = "throw_direction.txt"
+updates = 130
+fields = ["player"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "puppet"]
+let = { enemy = 'human("PoizoCiv")' }
+setup = [
+  { address = "tf(player) + 0x18", type = "f32", value = "-0.991445", frame = 0, until = 9 },
+  { address = "tf(player) + 0x1c", type = "f32", value = "0.130526", frame = 0, until = 9 },
+  { address = "rec(player) + 0x148", type = "s16", value = "400", frame = 0, until = 0 },
+  { address = "rec(enemy) + 0x144", type = "s16", value = "900", frame = 0, until = 0 },
+  { address = "prec(enemy) + 0x1e", type = "u8", value = "0", frame = 0, until = 0 },
+  { address = "tf(enemy) + 0x0", type = "f32", value = "f32(tf(player)) - 1.0 * sin(heading(player))", until = 9 },
+  { address = "tf(enemy) + 0x4", type = "f32", value = "f32(tf(player) + 4) + 1.0 * cos(heading(player))", until = 9 },
+  { address = "tf(enemy) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 9 },
+  { address = "tf(enemy) + 0x18", type = "f32", value = "sin((heading(player) + pi) / 2)", until = 9 },
+  { address = "tf(enemy) + 0x1c", type = "f32", value = "cos((heading(player) + pi) / 2)", until = 9 },
+]
+
+[coney]
+level = "sandbox:combat"
+args = ["--spawn", "start"]
+
+[[field]]
+name = "stick_angle"
+address = "prec(player) + 0x8 + 4 * u8(prec(player) + 0x18)"
+type = "f32"
+hidden = true
+
+[[field]]
+name = "stick_heading"
+formula = "wrap(deg(stick_angle) - 90)"
+digits = 2
+
+[[field]]
+name = "stick_len"
+address = "prec(player) + 0x10 + 4 * u8(prec(player) + 0x18)"
+type = "f32"
+
+[[field]]
+name = "v_x"
+address = "tf(enemy) + 0x0"
+type = "f32"
+
+[[field]]
+name = "v_y"
+address = "tf(enemy) + 0x4"
+type = "f32"
+
+[[field]]
+name = "v_qz"
+address = "tf(enemy) + 0x18"
+type = "f32"
+hidden = true
+
+[[field]]
+name = "v_qw"
+address = "tf(enemy) + 0x1c"
+type = "f32"
+hidden = true
+
+[[field]]
+name = "v_heading"
+formula = "wrap(deg(2 * atan2(v_qz, v_qw)))"
+digits = 2
+
+[[field]]
+name = "v_clip"
+address = "rec(enemy) + 0x20"
+type = "s32"

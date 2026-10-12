@@ -16,10 +16,12 @@
 set -euo pipefail
 
 # Paths that never reach the engine build or the python package's behaviour: docs/, research/, the Markdown files at
-# the top level and in .github/ (not those under python/, whose tests may read them) and the docs site's own setup.
-# research/ includes research/traces/, which the python tests read; that is why a docs-only change still runs python
-# on Linux.
-DOCS_ONLY='^(docs/|research/|[^/]+\.md$|\.github/[^/]+\.md$|mkdocs\.yml$|mkdocs_hooks\.py$|requirements-docs\.txt$|\.markdownlint[^/]*$)'
+# the top level and in .github/ (not those under python/, whose tests may read them), the conventions file (whose
+# checks run on Linux anyway) and the docs site's own setup. research/ includes research/traces/, which the python
+# tests read; that is why a docs-only change still runs python on Linux.
+# This is `paths.docs_only` of .github/conventions.yml written as a regular expression, and a test
+# (python/tests/test_conventions_files.py) fails when the two differ.
+DOCS_ONLY='^(docs/|research/|[^/]+\.md$|\.github/[^/]+\.md$|\.github/conventions\.yml$|mkdocs\.yml$|mkdocs_hooks\.py$|requirements-docs\.txt$|\.markdownlint[^/]*$)'
 
 all_os='["ubuntu-24.04","windows-2022","macos-15"]'
 linux_os='["ubuntu-24.04"]'

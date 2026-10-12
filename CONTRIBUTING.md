@@ -32,14 +32,25 @@ git diff --name-only main... | uv run --project python coney-tools repo check-do
 ```
 
 CI also checks the pull request description against [the template](.github/pull_request_template.md), including one
-created with `gh pr create --body-file`, and reruns when you edit it. The description needs the five sections (Summary,
-Checklist, Testing, Screenshots, AI use); a Summary and a Testing section with text; in Screenshots an image (a link to
-an uploaded screenshot or video; a local file path is refused) or a line `Screenshots: none (<reason>)`; one of the
-template's choices after "Commits written by:" and, unless a person wrote the commits, a model after "Model:". Text left
-as the template has it counts as empty. Each unchecked item under "Remaining:" in the Checklist must name an issue or
-follow-up pull request (`#123`); file an issue for what you leave undone
-([Issues](docs/guides/issues.md#leftovers)). The sections, choices and placeholder text are in
-[.github/pr-body-rules.json](.github/pr-body-rules.json). To check a description yourself:
+created with `gh pr create --body-file`, and reruns when you edit it. These rules are the `pull_requests` keys of
+[.github/conventions.yml](.github/conventions.yml), and the block is generated from them (`coney-tools repo render`):
+
+<!-- conventions:begin pr-rules -->
+- Sections, in this order: Summary, Checklist, Testing, Screenshots, AI use.
+- Summary and Testing must hold text of their own: a section left as the template has it (its comments, `...`,
+  `<reason>`) counts as empty.
+- Docs: a change under `src/`, `python/src/` needs a change under `docs/`, `research/` or the line `Docs: none` in the
+  description.
+- Closing: a line `Fixes #N` in Summary for each issue the pull request finishes, one per line; merging closes it.
+- Checklist: each unchecked item under `Remaining:` cites an issue or pull request as `#N`.
+- Screenshots: an uploaded image (a path on your machine is refused) or a line `Screenshots: none (<reason>)` that gives
+  a reason.
+- AI use: after `Commits written by:` one of `a person`, `an AI`, `an AI, edited by a person`, `a person, with AI help`;
+  unless it is `a person`, `Model:` names the model (`n/a` is not enough).
+- The text names no path on your machine (`scratch/`, `../../`, `C:\`) outside an image reference.
+<!-- conventions:end -->
+
+File an issue for what you leave undone ([Issues](docs/guides/issues.md#leftovers)). To check a description yourself:
 
 ```sh
 uv run --project python coney-tools repo check-body --body description.md
@@ -67,10 +78,32 @@ A commit title is:
 area: Verb the rest
 ```
 
-It is at most 72 characters, has no trailing period, and uses the present tense. The areas and verbs, with what
-each area covers, are in [.github/commit-conventions.json](.github/commit-conventions.json); AGENTS.md's "Commits
-and GitHub" section states the same rules. Make one commit per logical change: a test goes in the same commit as
-the code that makes it pass.
+It is at most 72 characters, has no trailing period, and uses the present tense. The areas and verbs are
+`commits.title` in [.github/conventions.yml](.github/conventions.yml)
+([Repository conventions](docs/guides/repo-conventions.md)), and this block is generated from them
+(`coney-tools repo render`):
+
+<!-- conventions:begin commit-areas -->
+| Area | Covers |
+| --- | --- |
+| `build` | CMake, presets, dependency pins and toolchain setup |
+| `ci` | GitHub Actions workflows and pre-commit configuration |
+| `core` | engine core: memory, chunk system, task engine, utilities (src/core) |
+| `fileio` | disc and WAD access, file systems and streaming (src/fileio) |
+| `graphics` | rendering through librw: models, textures, effects (src/graphics) |
+| `audio` | sound, music and speech playback (src/audio) |
+| `platform` | SDL3 and OS glue: windowing, input, timing (src/platform) |
+| `tools` | C++ asset tools and the coney_tools Python package |
+| `research` | the research pages under docs/research and the research database |
+| `agents` | AGENTS.md, the CLAUDE.md and GEMINI.md pointers and other agent instructions |
+| `tests` | test-only changes |
+| `legal` | LICENSE, LEGAL.md and other licensing or provenance files |
+| `docs` | project-wide documentation: README, guides and the docs site |
+
+Verbs: Add, Fix, Update, Remove, Rebuild, Rework, Improve, Document.
+<!-- conventions:end -->
+
+Make one commit per logical change: a test goes in the same commit as the code that makes it pass.
 
 The body has an opening paragraph saying what changes and why, then `Changes:` with one bullet per part when there
 are several, then `Verified:` with the commands you ran and what they printed. For example:

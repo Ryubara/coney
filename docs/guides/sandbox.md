@@ -78,8 +78,8 @@ What the courses show today. Coney's walking body is the original's: for the pla
 is 0.05 m above the feet, and a wall triangle under 0.25 m tall is not a wall
 ([walls and steps](../research/characters.md#walls)).
 
-- **Default course**: Rembrandt walks up the 20° ramp and the 20 cm stairs onto their 2 m platforms (each walkable
-  stair set's landing is two boxes, the top one a rise deep, so no face taller than a riser stands within the
+- **Default course**: Rembrandt walks up the ramps to 40° and the 20 cm stairs onto their 2 m platforms (each walkable
+  stair set and ramp landing is two boxes, the top one a rise deep, so no face taller than a riser stands within the
   sphere's reach of the last step). He walks onto the 10 cm ledge and the 25 cm one (its 3 m wide face is two thin
   triangles the same rule skips), and the 50 cm ledge stops him 0.480 m short of its face (the sphere and the 0.01 m the
   sweep keeps clear).
@@ -87,7 +87,7 @@ is 0.05 m above the feet, and a wall triangle under 0.25 m tall is not a wall
 - **Parkour course**: L2 with the stick past 0.95 sprints until stamina runs out; triangle jumps from a run or a sprint
   and climbs the fences, low walls and blocks inside the windows. The 20 cm kerb is walked onto, and the 30, 50 and
   65 cm ledges are walls: too low to climb, so only a jump gets onto them. `tests/sandbox/disc_sandbox_traversal_test.cpp`
-  checks a run past each threshold, with the input scripts `tests/support/parkour_*.txt`
+  checks a run past each threshold and a walk up every flight of stairs, with the input scripts `tests/support/parkour_*.txt`
   ([Characters](../research/characters.md#coneys-implementation) lists what each one shows).
 
 - **Fight yard**: Rembrandt fights the passive targets with the original's moves
@@ -184,6 +184,30 @@ Every shape also takes these:
 Textures are projected in world space at one tile per metre. On walls the grid measures the height above the ground,
 so a 1.25 m fence shows one and a quarter tiles.
 
+## Where stairs and ramps end {#landings}
+
+A flight of stairs or a walkable ramp must not end at a plain tall box. The player's walking sphere (0.4704 m, its
+centre 0.52 m above the feet) reaches that far ahead of him, so from the second-to-last step it touches the box's
+front face, and a face taller than 0.25 m is a wall ([walls and steps](../research/characters.md#walls)): he stops
+on the last step but one, as if an invisible wall stood there. A ramp does the same through the top edge of the face
+(the 30° and 40° ramps of the default course did).
+
+The rule for a layout author: **no face taller than 0.25 m, and no edge of one, within 0.47 m of the last step or
+the last metre of ramp.** The way to build a landing is two boxes with the same footprint, the lower one a rise
+short of the top and the upper one a rise deep:
+
+```text
+stairs at=0,-31.5,0 width=2 steps=10 rise=0.2 run=0.3
+box at=0,-28.5,0   size=3,3,1.8    # the body, its top one rise below the platform's
+box at=0,-28.5,1.8 size=3,3,0.2    # the top, only a rise deep: its face is a step the body skips
+```
+
+Seen from the second-to-last step, the lower box's top is level with the feet, so its tall face is below the sphere, and
+the upper box's face is one riser, which is skipped. Rises of 0.25 m and more are walls in the original, so the sets of
+25, 30 and 40 cm in the default course keep their plain landings on purpose: they are meant to stop the player.
+`tests/sandbox/disc_sandbox_traversal_test.cpp` walks every parkour flight and the default ramps up to 40° at a 65 %
+stick and checks he stands on the platform.
+
 ## Adding an experiment
 
 1. Copy a layout in `assets/sandbox/` to a new `NAME.layout`, or write one anywhere and pass its path.
@@ -194,6 +218,7 @@ so a 1.25 m fence shows one and a quarter tiles.
    `tests/support/sandbox_walk_forward.txt`). Then add a run to `tests/sandbox/disc_sandbox_player_test.cpp` (walking)
    or `disc_sandbox_traversal_test.cpp` (sprints, jumps, climbs) that prints positions and a hash only.
 5. Note in the layout where each size comes from: a research page and anchor, or "Coney's choice".
+6. End stairs and ramps at a two-box landing ([above](#landings)), or the player stops short of the top.
 
 The layout tests (`tests/sandbox/`) parse and build every shipped layout, so a new layout under `assets/sandbox/`
 is checked on every run.

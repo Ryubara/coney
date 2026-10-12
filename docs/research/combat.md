@@ -213,6 +213,27 @@ The flags at human `+0xe0` that combat reads, confirmed (code) at the cited func
 | `0x20000000000` | one hit cannot take health below a fraction of the maximum (`0x00265f70`); it then sets `0x10` | |
 | `0x100000000000` | never picked as a target (tested by `0x00227d78` in the filter `0x00279410`; not `HuSetNoAutoLock`, which sets `0x8000000000`, a bit with no reader found) | |
 
+**The flags a human starts with** come from its brain type (`Human_Init`, `0x00218008`, the stores at `0x00218cfc`
+and `0x00218dac`; confirmed (code)). The word is zeroed, then:
+
+| Brain type | Flags set | Also |
+| --- | --- | --- |
+| 0 (the player) | `0x2000000`, then `0x2` and `0x4` | cuff count `+0x378` = 0 |
+| 3 (a Warrior) | `0x2` and **`0x4` (revivable)** | cuff count 0 |
+| 1 (a cop) | `0x2000` and `0x40000` | cuff count 1 |
+| 5 (a dealer) | `0x2000` and `0x40000` | |
+| any other | `0x8` (woundable) with a 1-in-2 chance (`Random_IntBelow(2)` = 0), never for a class whose `+0x11b` is 13 | cuff count −1 |
+
+`Human_ApplyClassFlags` (`0x00222c98`) then copies the class record's switches over bits `0x80`, `0x200`, `0x400`,
+`0x200000`, `0x400000`, `0x800000000`, `0x1000000000` and `0x2000000000`. Giving a player back to the AI
+(`Human_ReleasePlayer`, `0x0022a2a8`) clears `0x2`, `0x4` and `0x2000000` and sets `0x2` and `0x4` again for brain
+type 0 or 3 (`0x2000` for type 1) before the class switches. So **every Warrior is revivable from the moment he is
+made**; `Human_MakePlayer` sets `0x4` too, and the only other writer of the bit is the script binding `HuSetRevivable`
+(`Human_SetRevivable`, `0x00235db0`). Every 64-bit store to human `+0xe0` in the executable was checked (174 `sd`,
+no `sw`), and none other sets or clears `0x4`. Confirmed (runtime), PCSX2 2.9.94, `level80` checkpoint 1 (the "Let's
+Go" lesson, before any script call): Vermin, Rembrandt and Ajax (brain type 3) had flags `0x7` in their low bits,
+Cleon (type 0) `…0207`, Ajax's girl (type 4) `0x2000000009`.
+
 ### The Anim Range List and damage {#damage-table}
 
 Every attack's base **damage is the Anim Range List's `+0x0a`** as the human holds it
@@ -723,8 +744,11 @@ whose sweep loses more than half its move to a wall stops dead until its clip en
 stand for its body until its removal. In Coney's play-through the charge strikes the fence on its 11th update, 1.06 m
 from the line, and stops 0.51 m from it 3 updates later; the original also strikes on its 11th update, but at 0.55 m,
 and stops 1 update later at 0.42 m. The AI does not charge a human yet (its attack pick takes only the square and cross
-strikes and the snap), so the charge against a human is untested in play. Not made yet: the level mesh's impact sound, a
-car struck by the shapes, and the weapon spheres of a held object.
+strikes and the snap). The player's sprint charge and dive into a human are tested in play
+([`disc_sprint_attacks_test.cpp`](repo:tests/platform/disc_sprint_attacks_test.cpp): level99, a spawned fighter
+9 m ahead, the stick at 98 %): each strikes him once and plays its whole clip (27 and 62 updates in Coney, 27 and
+61 in the original) with no reaction of the attacker's ([Moves a hit cannot stop](#protected-moves)). Not made
+yet: the level mesh's impact sound, a car struck by the shapes, and the weapon spheres of a held object.
 
 #### The capsule strike {#capsule-strike}
 
@@ -1566,10 +1590,10 @@ direction. A hit counts only on a steep face (normal · up < cos 80°): its dist
 more than the far range (without the 0.2 m) the throw becomes the wall throw of that side (`THROW_02`, kind 29, damage
 index 29) and the victim's `+0x5c0` gets the ray's direction × the distance. Otherwise it is the plain throw (kind
 25). A face more than 45° off head-on (normal · ray > cos 135°) still gives the wall throw but skips the alignment
-below. Before the pair starts (`Attack_StartPaired`; `Grab_StartPairedMove` from a rear hold without human flag
-`0x40000000`), a plain throw turns the player to the stick's angle + side × 90° over 1/6 s and moves the victim
-round with him; a head-on wall throw aligns the pair instead (`Human_AlignToObject`, 0.01 s). Every throw sets the
-victim's `+0x3bd`, which arms its one wall-impact sound ([Moving strikes](#moving-strikes)).
+below. From a front hold, before the pair starts (`Attack_StartPaired`), a plain throw turns the player onto the
+stick and carries the victim round with him, and a head-on wall throw aligns the pair instead (`Human_AlignToObject`,
+0.01 s); from a rear hold there is no turn ([Where a throw goes](#throw-direction)). Every throw sets the victim's
+`+0x3bd`, which arms its one wall-impact sound ([Moving strikes](#moving-strikes)).
 
 **What the thrown body hits** (confirmed (code) at `0x0021b290`, `0x00264bd8`, `0x00265f70`; the clip data read
 from the disc). The plain throws' victim clips switch the victim's own strike shapes on: event `0x13`
@@ -1620,6 +1644,112 @@ armed at `+0x3bd` (`Human_OnContact`, `0x00219d50`). The same frames carry a one
 (clip 155's entry, index 29), applied on the grab move's first update, not the wall's. There is no separate
 head-slam clip or reaction beyond these four victim clips. `CfgPowerClass` flag 22 is not read here (it belongs to
 `Grabbing_PickMove`, [AI](ai.md#fight-reactions)).
+
+#### Where a throw goes {#throw-direction}
+
+How the original turns the stick into the thrown body's heading (issue #240). Confirmed (code) at `0x0026dd08`
+(`Player_Throw`), `0x00146078` (`PlayerRecord_Update`), `0x0023cf88` (`Human_TurnToOver`), `0x00262ac8`
+(`Attack_StartPaired`) and `0x00263380` (`Grab_StartPairedMove`), and confirmed (runtime) where marked. Headings below
+are Coney's (0 faces +y, anticlockwise); the **stick heading** is the heading the camera-turned stick points along
+(its angle − 90°).
+
+1. **The stick, unsnapped.** The angle is the per-player record's current buffer (`+0x08` / `+0x0c` by `+0x18`):
+   `atan2` of the pad's camera-turned left stick, read on the update the throw starts (the circle press, or the end
+   of the hold clip for a throw buffered during a grab strike, `Grab_OnHoldClipEnd` `0x0026d8c8`). There is no
+   snapping to 4 or 8 directions, no smoothing and no history; the only coarseness is the stick table's per-axis dead
+   band (raw 95-160, [Front end](frontend.md#pad-record)), so a stick within about 14° of an axis at full deflection
+   reads as that axis, as it does for walking (inferred from the table). The magnitude only has to be above 0.25.
+2. **The side, from the facing.** `d` = stick angle − the facing (the transform's +y axis), wrapped: `|d|` below 45°
+   is the front (0), up to and including 135° a side, right (1) when `d` is negative (clockwise), left (3) otherwise,
+   and beyond 135° the rear (2). Exactly 45° is a side, not the front (the test is `0.785 <= |d|`). The clip is
+   147 + 2 × side (149 right, 151 rear, 153 left), or 155 + 2 × side for the wall throw ([above](#throws)).
+3. **From a front hold, the pair is turned onto the stick.** For a plain throw the thrower's wanted heading is
+   **stick heading + side × 90°** (front +0, right +90°, rear +180°, left +270°): the side's body axis then points
+   exactly along the stick. `Human_TurnToOver` turns him there at a constant rate over **1/6 s** (5 updates; no turn
+   under 0.01 rad). The victim is carried round on a circle about the thrower: its offset from him is rotated from
+   his current heading to the wanted one and `Human_MoveToOver` slides it there over the same 1/6 s, while
+   `Human_TurnToOver` turns the victim to the wanted heading + 180° (facing the thrower). The paired clips start on
+   the same update (`Attack_StartPaired`, which checks the victim stands in place, `Pair_CheckPlace`, for 147-153
+   only), so for the 5 updates after it the turn's rate (what is left to turn ÷ 1/6 s) adds to the clips' own root
+   rotation and motion. At runtime the front clip 147 did not rotate the thrower then, so he reached the wanted
+   heading in 5 updates exactly; 149 (right) took about 3.2° per update off the turn and 153 (left) added about 2.7°,
+   and both kept turning the thrower afterwards (confirmed (runtime), below).
+4. **From a rear hold, no turn.** A throw from a rear hold (human flag `0x40000000` clear, the usual case) goes to
+   `Grab_StartPairedMove`: the spin to the front 80 / 81 plays first, then the side's throw clip, with no turn and no
+   alignment. The side is chosen against the facing when circle is pressed and the thrower's heading does not change
+   during the spin, so the body flies along **the side's body axis**, up to 45° off the stick. With `0x40000000` set
+   (the grab blocks of [Human flags](#human-flags)) the front-hold path above is taken.
+5. **A wall throw** aims at the wall, not the stick: the first ray runs along the side's body axis (the stick's own
+   direction only when that ray hits nothing), and a head-on hit aligns the pair to the hit point over 0.01 s; a face
+   more than 45° off head-on gets no turn at all (above).
+6. **What carries the body.** After the turn nothing steers: the victim clip's root motion moves the body (148 front,
+   150 right, 152 rear, 154 left), so its path is the clip's, rotated onto the stick. There is no auto-aim toward
+   humans, objects or walls (`Player_Throw` makes no target search; only the wall ray above), and no velocity of its
+   own is set; collisions stop or deflect the body ([What the thrown body hits](#throws)).
+
+**At runtime** (confirmed (runtime), PCSX2 2.9.94, a copy of slot 6 with the `scripted-pad`, `right-stick` and
+`puppet` patches; scenario `repo:research/traces/scenarios/throw_direction.toml` for one of them: PoizoCiv placed
+1.0 m ahead and grabbed with circle, power set to 400, then the stick and circle on the same update at stick magnitude
+0.9, so the hold walk (above 0.95) never moved the pair first). 21 throws, the stick between 0° and 180° from the
+camera's up and the player's facing turned between −170° and +160° from the throw's heading. Positions are in the
+**stick's frame**: metres right of and along the stick heading, from the thrower's position on the update before the
+throw.
+
+| Side (clip) | Throws (clear) | Thrower's heading at the end − stick heading | Victim 5 updates in | Victim lands (196) |
+| --- | --- | --- | --- | --- |
+| front hold, front (148) | 6 (`d` −44° to +40°) | 0.0° | (0.31, 1.01-1.06), whatever `d` | (0.24-0.25, 6.84-6.88), 48 updates after |
+| front hold, right (150) | 2 (`d` −51°, −46°) | −0.2° | (−1.20, 0.38) | (−0.44, 6.46) and (−0.51, 7.45), 45 updates after |
+| front hold, rear (152) | 2 (`d` 160°, 166°) | +1.2° | (−0.29 to −0.32, −1.46) | (−0.51, 5.73) and (−0.56, 6.17), 44 updates after |
+| front hold, left (154) | 1 (`d` 114°) | −3.5° | (0.94, −0.36) | (0.00, 5.65), 43 updates after |
+
+- The thrower always ended facing the stick heading: the side clips turn him by about −90° (right), 180° (rear) and
+  +86.5° (left) after the 1/6 s turn put the side's axis on the stick.
+- The landing point is the same in the stick's frame whatever the stick's angle from the facing (the front's six
+  throws, `d` from −44° to +40°, landed within 4 cm of each other), so the turn takes the whole difference. Seen
+  from where the thrower stood, the body lands within 5° of the stick: 2.1° right of it for the front throw, 3.9°
+  and 5.1° to the left for the right and rear throws, 0° for the left one (the clips' own sideways drift, up to
+  0.56 m). The victim's displacement measured from **its own** starting point differs from the stick by up to 7° from
+  the front, because its start is rotated round the thrower first; measure from the thrower.
+- Throws that met something in the street at 3-4 m (not identified) landed short (3.0-4.3 m instead of 5.5-7 m) and
+  up to 23° off: collision, not aim. They are left out of the table.
+- **Rear hold** (four throws where the puppet stood behind the player and the grab became a rear hold, 84 / 85):
+  each played 80, then the throw at 17 updates after the press, with the thrower's heading unchanged until the
+  throw clip began. The bodies landed along the side's body axis (−0.2° rear, −0.6° right, −11.6° left, from the
+  thrower), 13° to 38° off the stick.
+
+So in the original a throw from the front hold goes exactly where the stick points, give or take the clip's few
+degrees, wherever the stick is within the side's 90° sector; only a rear-hold throw is limited to the four body axes.
+
+**Coney today** (read from `src/`; Coney's `Fighter` and `combat::updateGrab`): the throw picks the side and the clip
+from the stick (`combat::sideOf`, `combat::throwAttack`) and plays the pair at once (`Fighter::playGrabAction`), but
+a plain throw never turns the pair: the body flies along the side's body axis, so it lands up to 45° off the stick,
+which is the owner's "slightly off" (#240). Only the head-on wall throw is aligned (`Fighter::alignWallThrow`, and
+there at once, not over 0.01 s). `sideOf` counts exactly 45° as the front and exactly 135° as a side (a Coney
+choice; the original's test makes exactly 45° a side, item 2 above). A throw from the rear hold plays no spin 80
+first (`spinFirst` is set only for the power strike), and the place check (`placed`) is applied to every throw where
+the original applies `Pair_CheckPlace` only to 147-153 from the front hold.
+
+**Coney fixes** (#240):
+
+1. From a front hold (or with the `0x40000000` grab block), on a plain throw (147-153): turn the thrower to
+   stick heading + side × 90° over 1/6 s with the existing `TurnAndSlide::turnToOver` (constant rate, nothing under
+   0.01 rad), and carry the victim round him on the same update: rotate its offset from the thrower by the same turn
+   and slide it there over 1/6 s (`moveToOver`), turning it to the wanted heading + 180°. Start both throw clips on
+   the same update, so the turn runs on top of their root motion for the first 5 updates.
+2. Take the stick heading from the camera-turned stick of the update the throw starts (the press, or the hold clip's
+   end for a buffered throw), with no snapping.
+3. From a rear hold (no `0x40000000`): play the spin 80 / 81 first, then the side's throw clip, with no turn: the
+   body goes along the side's body axis chosen at the press.
+4. Make exactly 45° a side in `sideOf` (`|d| >= 45°` is not the front); 135° stays a side.
+5. Apply the place check only to the front-hold plain throws (147-153), not to the wall throws or the rear-hold path.
+6. Test (`tests/human/`, a grabbed passive target in open ground, no collision within 8 m): with the facing fixed and
+   the stick at 0°, ±20°, ±40° (front), −50°, −90° (right), 160° (rear) and 110° (left) from it, a front throw's
+   thrower reaches the stick heading within 0.5° 5 updates after the throw starts (the other sides: stick heading +
+   side × 90° plus their clip's own rotation over those updates), and at the end of the throw the thrower faces the
+   stick heading (front and right within 0.5°; rear +1.2°, left −3.5° within 1°, the clips' turns). The landing
+   point in the stick's frame is the same for every stick angle of one side within 0.1 m, and lies within 5° of the
+   stick heading seen from the thrower's start (front 2.1° right, ±1°). A rear-hold throw with the stick 30° right of
+   the facing plays 80 then 149 and lands along the facing's right axis (within 2°), not along the stick.
 
 ### A bat in hand {#bat}
 
@@ -2225,6 +2355,32 @@ the dispatcher. The strike tests run earlier in the step (after each move). So:
   on, the target reacts to the dive's crushing hit code `0x3a` ([Hit codes](#hit-codes)) before its own dispatcher
   could start anything new.
 
+**A sprint charge or dive into a standing human, at runtime** (confirmed (runtime), PCSX2 2.9.94, scenarios
+[`charge_human`](repo:research/traces/scenarios/charge_human.toml) and
+[`dive_human`](repo:research/traces/scenarios/dive_human.toml): a copy of slot 6, PoizoCiv kept 4 m in front of the
+player and facing him until update 30; L2 held and the stick at 98 % straight ahead from update 5, cross or square
+tapped at 30; hooks `strike-contact` and `anim-dispatch`):
+
+| | The charge (cross) | The dive (square) |
+| --- | --- | --- |
+| The move | 0 from update 31 to 57: **27 updates, its whole clip**; held `0x1000000` throughout | 1 from 31 to 91: **61 updates, its whole clip**; held `0x400000` throughout |
+| The attacker's speed | 7.45 m/s, 4.4-6.3 m/s from update 36, then 0 from update 42, 1.65 m from PoizoCiv, to the clip's end | 7.9-11.7 m/s, then 0 from update 40, 1.65 m from him |
+| The attacker's strike contacts (`0x0033f210`, from `Human_TestStrikes`) | updates 41-47 | updates 34-51 |
+| The attacker's health | 314 throughout | 314 throughout |
+| What follows | 388 at update 58 | 389 at update 92 |
+| PoizoCiv | 600 → 405 and 294 at update 61, then 198 | the same, at the same update |
+
+Neither attacker played a reaction or lost health: the move ran its whole clip. The run did not
+test a flung victim striking the attacker, and **PoizoCiv's 195 damage and 294 were not the charge's or the dive's**:
+moving him every update kept him airborne (clip 428, `ANIM_MOVEMENT_FALL`), and update 61 is when he landed (429)
+and took a fall's damage and knockdown (confirmed (runtime), 2026-10-12, PCSX2 2.9.94, the same slot: placed only at
+updates 0-2, he fell until update 34 and took 600 → 405 and 294 at 35 with no strike on him, the player still
+standing; the strike-shape hook (`0x003428d0`) showed only the attacker's body switching shapes on). Re-running with a
+victim who stands and reacts at once is still to do (#190): the scenarios need a placement that does not make him
+fall (writing the transform, human `+0x10` and `+0x390` at updates 0-2 still did). By the code above, such a strike
+on a charger or a diver takes its health (the extreme reactions' 20) and plays no reaction (confirmed (code) at
+`0x00265f70`).
+
 **Coney fixes** (items 25 and 29):
 
 1. `ai::startGuardOf` (`src/ai/attack_views.cpp`) never sets `StartGuard::targetHeldBusy`: set it from the target's
@@ -2232,10 +2388,13 @@ the dispatcher. The strike tests run earlier in the step (after each move). So:
    or holds a block's `0x8000` / `0x200`), and `targetPinned` for the partner exception (target "thrown" `0x2000`,
    attacker "throwing" `0x1000`). This stops teammates and enemies starting attacks on a finisher's victim (item 29)
    and on a diving player (item 25).
-2. In the victim path (`Fighter` hit handling, `src/human/fighter_victim.cpp`), after the health drops and before
-   the reaction: a victim whose animator holds any of `0x1c16a40` takes the health and plays no reaction and is not
-   interrupted. The dive's clip must hold `0x400000` (`combat::kPhaseDive`), the charge's `0x1000000`, and a paired
-   move's victim `0x400000`; check that `m_combat.interrupt()` is not reached for them.
+2. **Done for the charge and the dive** (`Fighter::takePending`, `combat::heldCancelsReaction()`): after the health
+   drops, a victim whose clip holds any of `0x1c16a40` plays no reaction and is not interrupted. Before it, a charge
+   into a human broke off on impact and the charger fell: the victim's crushing mid reaction (296-299) switches every
+   strike shape on and its flung body struck the charger for 20 with a heavy high hit, which played 292-295 on him
+   (owner report, 2026-10-11). The dive escaped only by chance (inferred): its crushing high hit gives 300-303, which
+   strike with the spine and head alone. Still to do: a paired move's victim holding `0x400000` (Coney's paired clips
+   hold no such flag yet).
 3. A lethal hit on a victim holding any of `0xc12200` does not start the dying reaction or break the pair at once:
    keep the health below 0 and let the victim's own paired clip finish (not the attacker's: 58 outlasts 57); then
    the victim falls with the low reaction (286 for a hit from behind, the reactions table) and goes down by
@@ -2288,7 +2447,8 @@ addresses:
    - Any other human without `0x4` is **knocked out** (`Human_KnockOut`, `0x00230328`) and drops what it carries.
      It is **dead** instead (state `0x100000000`, record `+0xf0` = 0) when the source of the last hit (record `+0xd0`)
      is an object of kind 29.
-   - **With `0x4`**: knocked out, with record `+0xf0` 14 s later still.
+   - **With `0x4`**: knocked out, with record `+0xf0` 14 s later still. Confirmed (runtime), `level80`: Vermin's
+     `+0xf0` became now + **28,000 ms** (`Human_KnockOut`'s 14 s plus these 14 s).
 3. A cuffed human's idle becomes 323 `ANIM_ARRESTED_DEAD`.
 4. For a player, the players of the same gang who are knocked out get the same `+0xf0`.
 
@@ -2894,16 +3054,26 @@ given:
 1. **Refused** when the reviver has any held flag or a state flag of `0x7bf9e9f7ff0`, when
    `Human_FindRevivableNear` (`0x00279078`) finds nobody, or when the downed human has any held flag.
 2. **The way**: when `Human_IsWayClearTo(reviver, downed)` (`0x0021c0a8`) fails, a downed AI human (`+0x1b0` = −1)
-   is refused, and a downed player only accepts a reviver whose brain is type 3 (a Warrior).
-3. **The flash**: the reviver's panel inventory (`+0x380`) holds item 1, or the downed human's does (only a co-op
-   partner has one); else refused. Then `Revive_Start` and the command is used (returns 1).
+   is refused, and a downed player only accepts a reviver whose brain is type 3 (a Warrior). The test sweeps a
+   **capsule of radius 0.2 m**, as tall as the reviver's own capsule (`Human_GetCapsuleHeight`) and posed on him, along
+   the vector from his transform position to the downed human's (`IPhysics_CollideShape`, collision mask `0x2803`,
+   his own body skipped); the way is clear when nothing is hit or the first thing hit is the downed human. It fails
+   at once (not clear) while the reviver is grabbed, the downed human has no character instance (`+0xd8`) or the
+   reviver has no physics body (`+0x1a0`).
+3. **The flash**: `Inventory_GetCount(inventory, slot, 1)` for the reviver's player slot (`+0x380`), else for the
+   downed human's; an AI human's slot is −1, which the inventory refuses (count 0). So an AI Warrior can only revive
+   a downed **player who holds a flash**, and player 1 only with his own flash (or a co-op partner's). Else refused.
+   Then `Revive_Start` and the command is used (returns 1).
 
 `Revive_Start(reviver, downed)` (`0x002752a0`):
 
 - Both get the same new pair id (a counter at `*0x00597198 + 0x10`, wrapping to 1) at their record `+0x3c`, and
   both their vtable slot `+0xe4` is called with (1e9, 7) (not traced; reset with 1.0 at the finish).
 - `Attack_SteerLed(0.1, reviver, downed, 0, 351)` puts the reviver in place for clip 351
-  ([the led steer](#led-steer)).
+  ([the led steer](#led-steer); the 0.1 is not read): over 351's time to its first event + 0.1 s he **turns** to the
+  line to the downed human's head (less 351's direction offset, `AttackTable_GetOffset`) and **slides** to the point
+  that lies 351's reach (the Anim Range List's `+0x04` for anim 351, `AttackTable_GetReach`, `0x002544a0`) short of
+  that head, both at an even rate ([runtime](#revive-runtime): about 0.70 m from him, 12° off the line).
 - The reviver says **76 `revive_reasure`** (`Human_SayCommand(1.0, reviver, 76, none, interrupt, …)`).
 - His animation stack gets, bottom up: **351 `gen_revive_begin`** with the finish callback (`Revive_Finish`,
   `0x00274ee0`) on its end, chained to **353 `gen_revive_end`**, chained to his idle loop (out of the fight stance
@@ -2911,7 +3081,12 @@ given:
   top. Clip 352 (`gen_revive_cycle`) is not used. Push sphere off; held flag `0x8000000`; each is the other's
   partner (`Human_SetPartner`).
 
-`Revive_Finish(reviver)` (`0x00274ee0`), when 351 ends:
+`Revive_Finish(reviver)` (`0x00274ee0`), when 351 ends **however it ends**: the callback is the chained clip task's,
+and the task's clean-up runs it on the clip's end, on a cut-off and on the task's release
+(`AnimTaskChained_Release`, `0x00105f78`, and [the task types](animation.md#task-types): resolve the human, clear the
+task's held flags, run the callback, clear it), so a hit or anything else that cuts 351 short still spends the flash
+and heals, once. Confirmed (code); the normal end confirmed (runtime: the call came from the release, `0x00106040`);
+a cut-short 351 was not staged at runtime.
 
 1. Both partners cleared, both `+0xe4` calls with (1.0, 7), both pair ids 0.
 2. **One flash is spent**: the downed human's when his inventory has one, else the reviver's
@@ -2924,34 +3099,79 @@ given:
 So the whole revive is clip 351 on the reviver (the flash spent and the heal at its end), then 353 on him and 354 on
 the revived together.
 
+**Who can be revived.** Every Warrior: `Human_Init` gives brain type 3 the revivable flag `0x4` when he is made
+([Human flags](#human-flags)), so a crew Warrior downed in any fight of any mission is revivable unless a script
+clears it with `HuSetRevivable(h, false)`. Confirmed (code); confirmed (runtime) on `level80` below. `level80`'s own two
+`HuSetRevivable` calls (checkpoint 3) are for humans of brain type 2; the crew needs none.
+
+#### At runtime {#revive-runtime}
+
+Confirmed (runtime), PCSX2 2.9.94, `level80` checkpoint 1 after the "Let's Go" lesson (R2 and the right stick up 80 %
+gave command 0, which hands control back and brings Vermin and Rembrandt down to Cleon); scenario
+`repo:research/traces/scenarios/revive_crew.toml` with the hooks `revive-start`, `revive-finish`, `anim-dispatch` and
+`say-command`. Vermin was put in front of Cleon at update 270, his health set to 0 and `Human_OnHealthOut` called on
+him at 281 (he stays standing: the fall is a fight's reaction clip, not this function), Cleon given one flash, then
+d-pad left tapped once (the stick at rest). Two runs, Vermin 0.97 m and 1.66 m away:
+
+- **The prompt**: string 4 ("Revive" with the d-pad picture) showed while Cleon stood beside the knocked-out Vermin
+  with the flash, before the press.
+- **The press**: the update that read it had command `0x27`, `Revive_Start(Cleon, Vermin)` from `Player_TryRevive`
+  (return address `0x00286ca0`), line 76 on Cleon, and Cleon's clip 351 with record `+0x08` = `0x8000000`. The clips
+  taken that update, in order: 388 (idle), 389, 353, 351 (the chain built bottom up).
+- **351 lasted 21 updates (0.70 s)** in both runs. On the 22nd update `Revive_Finish` ran: the flash count went 1 to 0,
+  Vermin's health 0 to 1800 (his maximum), line 75 on Vermin, Cleon's clip 353 and Vermin's 354. **From the press to
+  the heal: 0.70 s.**
+- **353 lasted 33 updates (1.10 s)**, then **389 25 updates (0.83 s)**, then idle 388; `+0x08` went back to 0 when
+  353 ended. Cleon was out of the fight stance, so 389 came before the idle as the chain says.
+- **354 lasted 72 updates (2.40 s)** on Vermin, then 389, which his brain cut after one update with its own clips
+  (turns 400 / 401, then idle).
+- **The steer**: Cleon's heading changed for 25 updates at an even rate (1.52° and 1.06° an update) and ended **11-13°
+  to the left of** the line to where Vermin stood (105.7° against 93.0°, 94.3° against 82.9°). He **slid**: from 0.97 m
+  he ended 0.71 m from Vermin, from 1.66 m 0.71 m too (up to 1.75 m/s), so 351 has a reach and the stand point sits
+  about **0.70 m** from the downed human. 353 then carried him back to 1.1-1.16 m and 389 to 1.15-1.29 m (their own
+  root motion).
+- **Knocked out with `0x4`**: the wake time `+0xf0` was now + 28 s ([Defeat](#defeat)).
+
 **Coney** builds it for player 1 (`repo:src/gamemodes/gameplay_revive.cpp`, `repo:src/human/human_revive.cpp`, the
 tests as `combat::mayRevive` in `repo:src/combat/revive.h`): d-pad left beside a revivable partner, the tests above,
-76, the chain 351, 353 and the idle (through 389 out of the stance) holding `0x8000000`, and at 351's end the flash,
-cue 23, 75, the full heal and 354. A Warrior downed in a fight (his health gone) counts as knocked out, as one a script
-knocked out does; before this only the script's mark was read, so beside a Warrior downed in a fight neither the prompt
-nor the revive came (owner item 8). Readings and stand-ins:
+76, the led steer, the chain 351, 353 and the idle (through 389 out of the stance) holding `0x8000000`, and at 351's
+end, however it ends, the flash, cue 23, 75, the full heal and 354, 389 and the idle on the revived, holding `0x8000`.
+Every Warrior and every player is made revivable: `ai::startingFlags` gives a human its brain type's flags of the
+table in [Human flags](#human-flags) as its brain is made (`Brains::add`), and `ai::releasedFlags` those of a player
+handed back to the AI (`AiHumans::switchPlayer`). A Warrior downed in a fight (his health gone) counts as knocked out,
+as one a script knocked out does. So beside a crew Warrior downed in any fight the prompt shows with a flash and
+d-pad left revives him, with no script call (owner item 8). The disc test `repo:tests/platform/disc_revive_test.cpp`
+downs a `level80` Warrior with a strike, walks player 1 to him by the stick at 60 % and revives him: 351 ran 22
+updates, 353 34, 389 25 and the revived's 354 73, each counted with the update it starts (the runtime read 21, 33, 25
+and 72), the steer turned him over 25 updates to 8.8° left of the
+line to the head at the press (351's direction on the disc is 10° to the right; the runtime 11-13°), and he ended
+0.81 m from the head (351's reach 1.04 m less its root motion; the runtime 0.70-0.71 m from a standing Warrior).
+Readings and stand-ins:
 
 - **Blocked** is the swap prompt's reading of the state mask (knocked out, cuffed, wounded) plus anything that keeps
-  him off his feet (down, held, in the air); "any held flag" is the record bits his clips hold.
-- **The way** is taken as clear (**stand-in**: the 0.2 m capsule sweep of `Human_IsWayClearTo` is not built; the
-  search has already found him in sight).
-- **The led steer** only turns the reviver to the downed human's head over 0.1 s; he does not slide (**Coney's
-  reading**: whether the Anim Range List gives 351 a reach is not on this page).
+  him off his feet (down, held, in the air), which covers the way test's "grabbed"; "any held flag" is the record bits
+  his clips hold.
+- **The way** (`human::wayClear`, `repo:src/human/way_clear.h`): the 0.2 m capsule, as tall as the reviver's own
+  (Coney's 2 m upright capsule on his scale), swept from his feet to the downed human's against the other humans'
+  capsules and the level's walls (triangles the walking sweep counts, tested every 0.1 m of the way). **Coney's
+  reading** of mask `0x2803`: humans and walls; objects, cars and glass panes are not swept.
+- **The led steer** (`Fighter::steerRevive`) turns him to the line to the downed human's head, less 351's direction,
+  and slides him to 351's reach from it, both over 351's time to its first event + 0.1 s, as an attack's led steer.
 - The pair ids, `Human_SetPartner`, the `+0xe4` calls and the push spheres have no counterpart.
-- **A 351 cut short** (a hit) spends nothing and heals nobody (**Coney's reading**).
-- The revived plays 354 then his idle, without 389 and without holding `0x8000`.
-- Not built: an AI Warrior reviving ([SaveHuman](ai-goals.md#goal-save-human)), a co-op partner's flash.
+- The revived's 389 is taken from the reviver's anim set (the whole get-up is one paired chain).
+- **Human_Init's other flags**: cops and dealers get `0x2000` and `0x40000`; **stand-in**: the 1-in-2 woundable `0x8`
+  of the other brain types is not given (no Coney code reads it, and the roll would shift every seeded run).
+- **Not built**: waking a knocked-out human on his own at record `+0xf0` (28 s for a revivable one, [Defeat](#defeat));
+  the page has the time stamped but not what reads it. An AI Warrior reviving ([SaveHuman](ai-goals.md#goal-save-human))
+  and a co-op partner's flash.
 
 Open questions (research needed):
 
-- **What makes a crew Warrior revivable** (human flag `0x4`). In Coney's `level80` the crew (brain type 3 in player 1's
-  gang) never gets it: `Human_MakePlayer` sets it only on players, and the level's own `HuSetRevivable` calls (two, at
-  checkpoint 3) are for type-2 humans, not the crew. So in Coney a Warrior downed in a fight is not revivable unless a
-  script flags him; the disc test flags him with `HuSetRevivable` itself. Which code sets it on the crew in the
-  original (a brain type's set-up, a gang join, a config record), or whether the crew there is revivable at all?
-- Does `Revive_Finish` run when something cuts 351 short?
-- Does the Anim Range List give 351 a reach and the led flag?
-- At runtime: the clip order 351 then 353 with 354, and the time from the press to the heal (issue #76).
+- At runtime, a 351 cut short by a hit: the code says `Revive_Finish` still runs; not yet staged.
+- What reads record `+0xf0` (the wake time `Human_OnHealthOut` and `Human_KnockOut` stamp): whether a knocked-out
+  Warrior gets up on his own when it passes, and with what health.
+- What `Revive_Start`'s vtable `+0xe4` calls with (1e9, 7) and (1.0, 7) set (inferred: the push weight, as
+  `Human_KnockOut` gives 1e9).
 
 ### Target selection {#targets}
 
@@ -3942,7 +4162,10 @@ reaction early. Ducking, square or cross pressed or held while 616's own `0x25` 
 counter, played on the next update by the side the target stands on: 617 front, 618 right, 619 back, 620 left. Each
 update the largest pending hit then lands in the original's order: a duck lets it pass; a held block cancels it with
 its block reaction unless the hit breaks it (strength 3, or attacks 26-34); the damage is taken as it is, held at the
-health floor (a hit cannot take him below 25 % of his maximum); a grabber hit by a third human loses power; winding up
+health floor (a hit cannot take him below 25 % of his maximum); a grabber hit by a third human loses power; a hit that
+does not end him while his clip holds any of `0x1c16a40` (the charge, the run attack and a landing `0x1000000`, the
+dive `0x400000`, the counter `0x2000`) only takes its health and the move plays on
+([Moves a hit cannot stop](#protected-moves)); winding up
 (`+0x08` `0x1`) or in the chain window (`0x2`) his hit armour holds against a non-player, non-raging attacker not
 playing 617-620, so the damage lands and his attack goes on; otherwise the reaction plays and his attack is lost. A
 plain reaction returns to the fight idle; a stun hit holds him 200 ms, then 357 when the reaction's clip has ended

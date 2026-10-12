@@ -14,9 +14,40 @@ Start from a form; blank issues are off.
   the [debug menu](debug-menu.md) if you know them, what happens, what the original game does (optional, but it
   tells us whether Coney differs from it), and how often it happens. The exact steps matter most: a bug that can be
   repeated is a bug that can get a regression test ([Testing](testing.md#done)).
-- **Task** (`.github/ISSUE_TEMPLATE/task.yml`) is for maintainers and agents. It asks for a summary, the area, the
-  research page that covers it, what "done" means (the acceptance test [Testing](testing.md#done) defines for this
-  kind of work), a fix list or steps, and the issues it is blocked by (`#12`).
+- **Task** (`.github/ISSUE_TEMPLATE/task.yml`) is for maintainers and agents. It asks for a summary that opens with the
+  problem ([Writing an issue a newcomer can read](#writing)), the area, the research page that covers it, what "done"
+  means (the acceptance test [Testing](testing.md#done) defines for this kind of work), a fix list or steps, and the
+  issues it is blocked by (`#12`).
+
+### Writing an issue a newcomer can read {#writing}
+
+An issue is read by someone with no other context: a player, a contributor on their first day, an agent briefed with
+only "issue #N". Write it so that the first screenful answers *what is wrong or missing, and what is the state now*.
+
+- **Problem first.** The first sentence of the Summary (or the "What happens" of a bug) says in plain words what is
+  wrong or missing for the player or the developer. The current state comes second. Never start from the pull
+  request that left the work ("Pull request #55 adds ..."): the issue is about the problem, and that pull request is
+  provenance. It goes on the `From:` line, which names where the issue came from and nothing more.
+- **State the status as it is.** When the text names a pull request or another issue, check it with `gh pr view N`
+  or `gh issue view N` and say what it is: merged, open (not merged yet), closed without merging. Write "merged",
+  never "(open)" for a pull request that has landed, and tick the checklist item it finished. A leftover is usually
+  filed while its pull request is still open, so that wording goes stale when it merges: describe what the
+  repository does and lacks rather than only what a pull request will do, and the coordinator fixes the statuses of
+  the issues that cite a pull request when it merges ([Merging safely](how-we-work.md#merging)).
+- **Link every page by a relative link.** A research page or guide is written as a Markdown link that works from an
+  issue page, with the path in the repository as its text:
+  `[docs/guides/workspace.md](../blob/main/docs/guides/workspace.md)`, and `#anchor` after the path when a section
+  is meant (check the heading's `{#id}` exists). Check the page exists on `main`
+  (`git cat-file -e origin/main:<path>`); a page or section that exists only on an unreleased branch is
+  named in plain text with a note that it is not on `main` yet. Source files can be linked the same way. GitHub's
+  file view opens the page at the top for an `{#id}` anchor, so name the section in words too. Never write the
+  repository's or the documentation site's full address anywhere ([AGENTS.md](repo:AGENTS.md)).
+- **Make each checklist item a step someone can verify.** "Windows 10 extraction route" becomes "Document or automate
+  PCSX2's 7z extraction on Windows 10, whose `tar` cannot unpack it". Say what to do, to what, and how you will know
+  it is done; tick the item (`- [x]`) when it is done and name the pull request that did it.
+- **Write numbers and names, not shorthand.** An issue refers to `#123` for issues and pull requests, to the
+  research page with its section, and to the item numbers of the owner's play-test by their text; a word like "the
+  unit", "the stack" or a branch name alone means nothing to a newcomer.
 
 ### Screenshots {#screenshots}
 
@@ -32,6 +63,12 @@ terminal you started it from, as a `.txt` file in the bug form's Log box. From t
 `![alt](./shots/f.png)` already in the body is pointed at the upload (gh 2.99 or later). Captures stay in scratch
 and are deleted once uploaded.
 
+### Wording {#wording}
+
+Issues and pull requests call the person who play-tests and decides "the user", never "the owner": "From: user
+playtest of the preview build, 2026-10-11", "the user says", "the user's screenshot". The word "owner" stays for what
+it means in the code and the research (an object's owner) and in GitHub's own fields.
+
 ### What may be attached {#media}
 
 Gameplay screenshots and short videos of Coney or of the original may be attached to issues. That is the only
@@ -42,18 +79,48 @@ required checkbox that says so. A maintainer deletes an attachment that breaks t
 ## Labels {#labels}
 
 The label scheme follows rust-lang/rust's prefixes (`A-` for the area, `P-` for the priority, `S-` for the status),
-so contributors who know that project recognise it. The labels live in `.github/labels.yml`, the one source of
-truth: edit that file, never the labels on GitHub. The coordinator
-makes GitHub match it with `coney-tools repo labels --apply`; without `--apply` the command prints the
-`gh label create ... --force` commands instead of running them.
+so contributors who know that project recognise it. The labels live under `labels` in `.github/conventions.yml`
+([Repository conventions](repo-conventions.md)), the one source of truth: edit that file, never the labels on
+GitHub. The coordinator makes GitHub match it with `coney-tools repo labels --apply`; without `--apply` the command
+prints the `gh label create ... --force` commands instead of running them.
 
-| Family | Labels | Meaning |
+The table is generated from `labels.list` (`coney-tools repo render`). `parity` is a difference from the original and
+`enhancement` is beyond it, so it waits until the game is complete ([Faithful first](repo:AGENTS.md)). The task form's
+area list is the `A-` labels. The coordinator sets the priority, and an issue carries one status label at a time.
+
+<!-- conventions:begin labels -->
+| Family | Label | Meaning |
 | --- | --- | --- |
-| Type | `bug`, `parity`, `task`, `docs`, `enhancement` | What kind of issue it is. `parity` is a difference from the original; `enhancement` is beyond the original and waits until the game is complete ([Faithful first](repo:AGENTS.md)). |
-| Area | `A-combat`, `A-ai`, `A-missions`, `A-hud`, `A-graphics`, `A-audio`, `A-physics`, `A-camera`, `A-platform`, `A-core`, `A-tools` | The subsystem. The task form's area list is the same list. |
-| Priority | `P-high`, `P-medium`, `P-low` | How soon. Set by the coordinator. |
-| Status | `S-needs-triage`, `S-needs-info`, `S-needs-research`, `S-in-progress`, `S-pending-review`, `S-blocked` | Where the issue is in its life; one at a time. |
-| GitHub's own | `good first issue`, `help wanted`, `duplicate`, `wontfix` | Kept as GitHub names them. |
+| Type | `bug` | Something in Coney is broken |
+| | `parity` | Coney differs from the original game |
+| | `task` | A piece of work for a maintainer or an agent |
+| | `docs` | Documentation or research pages |
+| | `enhancement` | Beyond the original; waits until the game is complete |
+| Area | `A-combat` | Area: fighting, grabs, weapons, damage |
+| | `A-ai` | Area: AI humans, pathing, goals, cars driven by AI |
+| | `A-missions` | Area: mission scripts, checkpoints, objectives |
+| | `A-hud` | Area: HUD, menus, text, prompts |
+| | `A-graphics` | Area: rendering, models, textures, animation, effects, lighting |
+| | `A-audio` | Area: sound, music, speech |
+| | `A-physics` | Area: collision, movement, cars, doors, world objects |
+| | `A-camera` | Area: cameras and cutscenes |
+| | `A-platform` | Area: window, input, gamepad, rumble, saves, loading, disc files |
+| | `A-core` | Area: engine core: memory, chunks, tasks, scripting runtime |
+| | `A-tools` | Area: coney-tools, build, CI, the sandbox |
+| Priority | `P-high` | Priority: blocks play or other work |
+| | `P-medium` | Priority: next in line |
+| | `P-low` | Priority: when there is room |
+| Status | `S-needs-triage` | Status: not yet looked at |
+| | `S-needs-info` | Status: waiting for the reporter |
+| | `S-needs-research` | Status: an analyst must study the original first |
+| | `S-in-progress` | Status: an agent or person is working on it |
+| | `S-pending-review` | Status: a pull request is open |
+| | `S-blocked` | Status: waiting for another issue or a decision |
+| GitHub's own | `good first issue` | Good for newcomers |
+| | `help wanted` | Extra attention is needed |
+| | `duplicate` | This issue already exists |
+| | `wontfix` | This will not be worked on |
+<!-- conventions:end -->
 
 ## Triage {#triage}
 
@@ -95,7 +162,7 @@ A brief may be just "issue #N" ([Briefing](agents.md#briefs)); the issue holds t
   (the place, the heading, what moved) in words and numbers. The media stays on the issue; screenshots and
   recordings are deleted from scratch when done ([Sharing one machine](how-we-work.md#shared-machine)).
 - **Work the usual way:** the research first when the status says so, then a failing test, then the fix
-  ([Testing](testing.md#done)). The pull request description starts with `Fixes #N`.
+  ([Testing](testing.md#done)). The pull request description has a `Fixes #N` line in its Summary.
 - **Agents never write to GitHub.** No comments, labels, issues or pull requests: the coordinator does all of it,
   from the same release queue as pull requests ([How we work](how-we-work.md)). An agent reports what it would say
   (the finding, the question for the reporter, the status change) in its message to the coordinator.
@@ -107,21 +174,25 @@ A brief may be just "issue #N" ([Briefing](agents.md#briefs)); the issue holds t
 A pull request that leaves work undone does not leave it in its description, which nobody reads after the merge. Every
 unchecked item under **Remaining** in the description carries the number of the issue (or the follow-up pull request)
 that holds it, such as `- [ ] The heavy bag's combo game (#109)`. CI's `body` check refuses a description with an
-unchecked item that has no `#123` in it (`coney-tools repo check-body`, rules in `.github/pr-body-rules.json`). Wrapped
-lines belong to the item above them; checked items, prose (`None.`), the template's `...` placeholder and everything
-under Done are not looked at.
+unchecked item that has no `#123` in it (`coney-tools repo check-body`, rules in `pull_requests` of
+`.github/conventions.yml`). Wrapped lines belong to the item above them; checked items, prose (`None.`), the
+template's `...` placeholder and everything under Done are not looked at.
 
 - **The author** finishes what it can, and for each leftover that is real work or an open question writes its title,
   area, research page and "done" test, in the shape of the [task form](#report), into the message it sends the
-  coordinator with the pull request text. It does not write to GitHub ([Working from an issue](#agents)).
+  coordinator with the pull request text. It follows [Writing an issue a newcomer can read](#writing): the problem
+  first, not "the pull request leaves ..."; pages as relative links; each checklist item a verifiable step. It does
+  not write to GitHub ([Working from an issue](#agents)).
 - **A leftover a player can see comes with a picture.** For a visible bug, gap or stand-in, the author saves a
   capture of Coney in its scratch folder's `shots/` (and of the original from PCSX2 when it has one at the same
   place), names the files in the issue text it sends, and the coordinator files the issue with `--attach`. Pure
   research questions and tooling work need none.
 - **The coordinator** files the issue from that text with its captures, labels it at triage, and puts the number into
-  the description before the pull request is opened. An item that is already tracked cites its existing issue; one
-  that is finished is ticked and moved to Done; one nobody will do is dropped, not left unchecked.
+  the description before the pull request is opened. It rewrites a draft that reads like a copy of the pull request,
+  and when the pull request merges it updates the statuses in every issue that cites it. An item that is already
+  tracked cites its existing issue; one that is finished is ticked and moved to Done; one nobody will do is dropped,
+  not left unchecked.
 - **A follow-up pull request** may be cited in place of an issue when it is already open, but the work it carries
-  still ends with `Fixes #N` on the issue that describes it.
+  still finishes the issue that describes it, with a `Fixes #N` line in its Summary.
 - **The state file keeps no work list.** HANDOFF holds the live state (what runs where, what waits for CI) and issue
   numbers, never the leftovers themselves; a leftover that exists only in HANDOFF is lost when the file is cleared.

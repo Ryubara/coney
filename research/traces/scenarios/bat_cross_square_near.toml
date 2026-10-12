@@ -1,0 +1,48 @@
+# A bat in hand, PoizoCiv pinned 1.5 m ahead (inside the melee throw's 2.0 m refusal): cross held and square tapped
+# (0x22), then cross released; then a plain square and a plain cross at him. Research:
+# docs/research/combat-moves.md#bat-cross. Slot 6 (the street with the puppet civilian); dyn_bat_tuff put in the hand at
+# update 3 (Human_PlaceItemInHand 0x00238540). Frames are updates of 1/30 s.
+description = "slot 6, a bat in hand, PoizoCiv 1.5 m ahead: cross held + square (0x22), then the cross release"
+research = "docs/research/combat-moves.md#bat-cross"
+input = "bat_cross_square_near.txt"
+updates = 130
+fields = ["player", "enemy"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "puppet", "call-brains"]
+let = { enemy = 'human("PoizoCiv")' }
+setup = [
+  { address = "rec(enemy) + 0x144", type = "s16", value = "600", frame = 0, until = 0 },
+  { address = "tf(enemy) + 0x0", type = "f32", value = "f32(tf(player)) - 1.5 * sin(heading(player))", until = 39 },
+  { address = "tf(enemy) + 0x4", type = "f32", value = "f32(tf(player) + 4) + 1.5 * cos(heading(player))", until = 39 },
+  { address = "tf(enemy) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 39 },
+  { address = "tf(enemy) + 0x18", type = "f32", value = "sin((heading(player) + pi) / 2)", until = 39 },
+  { address = "tf(enemy) + 0x1c", type = "f32", value = "cos((heading(player) + pi) / 2)", until = 39 },
+  { address = "0x000c0000", type = "u32", value = "0x5f6e7964", frame = 0, until = 0 },
+  { address = "0x000c0004", type = "u32", value = "0x5f746162", frame = 0, until = 0 },
+  { address = "0x000c0008", type = "u32", value = "0x66667574", frame = 0, until = 0 },
+  { address = "0x000c000c", type = "u32", value = "0", frame = 0, until = 0 },
+]
+calls = [
+  { function = "0x00238540", args = ["u32(player + 0x90)", "0x000c0000"], frame = 3 },
+]
+
+[coney]
+level = "sandbox:combat"
+args = ["--spawn", "start"]
+
+[[field]]
+name = "chainbuf"
+address = "rec(player) + 0xb8"
+type = "u32"
+
+[[field]]
+name = "combo"
+address = "rec(player) + 0xbc"
+type = "s16"
+
+[[field]]
+name = "inhand"
+address = "player + 0x338"
+type = "u32"

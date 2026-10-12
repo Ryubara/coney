@@ -91,9 +91,14 @@ the objective marker, which callbacks are armed, where the NPCs stand. The test 
 - the run reaches the next checkpoint.
 
 The reference order comes from an analyst's recording of the original, written on the research page. A mission
-checkpoint is not done until its playthrough test passes. The level3 chase's `RouteDriver`
-(`repo:tests/platform/disc_story_playthrough_test.cpp`) is the example: route legs (run to a point, climb, sprint
-jump, sprint charge) followed by reading where the player stands, through the game session (`DiscSession` takes a driver).
+checkpoint is not done until its playthrough test passes. Two drivers are the examples. The level3 chase's `RouteDriver`
+(`repo:tests/platform/disc_story_playthrough_test.cpp`): route legs (run to a point, climb, sprint jump, sprint charge)
+followed by reading where the player stands, through the game session (`DiscSession` takes a driver). Level 99's
+`CourseDriver` (`repo:tests/platform/disc_level99_course_test.cpp`) is the other. A driver plays through
+`coney::test::DiscSession` given a `LivePad` (`repo:tests/support/live_pad.h`), which it steers one frame at a time:
+the hub's `Gym` driver (`repo:tests/platform/disc_hub_workout_test.cpp`) walks the player along the level's path data
+with the stick at 60 %, plans again when he stops moving, and plays each gym station from what the scripts and the
+player show.
 
 A driver writes stick bytes as an input script does (`stickByteFromPercent`): each axis has its own dead zone round
 the centre, so a byte mapped linearly over 0-255 reads back smaller than meant. A full diagonal laid out that way
@@ -122,7 +127,26 @@ reimplementation replaces it.
 
 A reviewer should see what was tested and what the result looks like without running anything. The pull request
 description ([the template](repo:.github/pull_request_template.md)) has two sections for it, and CI refuses a
-description that leaves either empty (`coney-tools repo check-body`):
+description that leaves either empty (`coney-tools repo check-body`). All of what CI checks in a description is the
+`pull_requests` section of [.github/conventions.yml](repo:.github/conventions.yml), shown here as a generated block
+(`coney-tools repo render`):
+
+<!-- conventions:begin pr-rules -->
+- Sections, in this order: Summary, Checklist, Testing, Screenshots, AI use.
+- Summary and Testing must hold text of their own: a section left as the template has it (its comments, `...`,
+  `<reason>`) counts as empty.
+- Docs: a change under `src/`, `python/src/` needs a change under `docs/`, `research/` or the line `Docs: none` in the
+  description.
+- Closing: a line `Fixes #N` in Summary for each issue the pull request finishes, one per line; merging closes it.
+- Checklist: each unchecked item under `Remaining:` cites an issue or pull request as `#N`.
+- Screenshots: an uploaded image (a path on your machine is refused) or a line `Screenshots: none (<reason>)` that gives
+  a reason.
+- AI use: after `Commits written by:` one of `a person`, `an AI`, `an AI, edited by a person`, `a person, with AI help`;
+  unless it is `a person`, `Model:` names the model (`n/a` is not enough).
+- The text names no path on your machine (`scratch/`, `../../`, `C:\`) outside an image reference.
+<!-- conventions:end -->
+
+What the two sections hold:
 
 - **Testing** says what was run and what came out: the commands (the build preset, `ctest`, `pytest`,
   `mkdocs build --strict`), the tests added or changed, any disc, [playthrough](#playthrough-tests) or

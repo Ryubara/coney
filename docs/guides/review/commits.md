@@ -1,12 +1,31 @@
 # Commit review checklist
 
-For a reviewer of a pull request's title and commits before it is squash-merged. The title rules are in the
-"Commits and GitHub" section of [AGENTS.md](repo:AGENTS.md); the areas,
-with what each covers, and the verbs are in
-[`.github/commit-conventions.json`](repo:.github/commit-conventions.json),
-which `coney-tools repo check-title` and CI read. Report findings in the
-[format on the index page](index.md#finding-format), naming the commit title where a file and line do not apply,
-and never edit.
+For a reviewer of a pull request's title and commits before it is squash-merged. The title rules are
+`commits.title` in [`.github/conventions.yml`](repo:.github/conventions.yml), which `coney-tools repo check-title`
+and CI read; the areas and verbs are:
+
+<!-- conventions:begin commit-areas -->
+| Area | Covers |
+| --- | --- |
+| `build` | CMake, presets, dependency pins and toolchain setup |
+| `ci` | GitHub Actions workflows and pre-commit configuration |
+| `core` | engine core: memory, chunk system, task engine, utilities (src/core) |
+| `fileio` | disc and WAD access, file systems and streaming (src/fileio) |
+| `graphics` | rendering through librw: models, textures, effects (src/graphics) |
+| `audio` | sound, music and speech playback (src/audio) |
+| `platform` | SDL3 and OS glue: windowing, input, timing (src/platform) |
+| `tools` | C++ asset tools and the coney_tools Python package |
+| `research` | the research pages under docs/research and the research database |
+| `agents` | AGENTS.md, the CLAUDE.md and GEMINI.md pointers and other agent instructions |
+| `tests` | test-only changes |
+| `legal` | LICENSE, LEGAL.md and other licensing or provenance files |
+| `docs` | project-wide documentation: README, guides and the docs site |
+
+Verbs: Add, Fix, Update, Remove, Rebuild, Rework, Improve, Document.
+<!-- conventions:end -->
+
+Report findings in the [format on the index page](index.md#finding-format), naming the commit title where a file and
+line do not apply, and never edit.
 
 Get the messages with `git log --format=%B <base>..<tip>`.
 

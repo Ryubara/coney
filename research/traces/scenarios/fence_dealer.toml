@@ -1,0 +1,19 @@
+# level99 checkpoint 3.5 (P3.WoodenFences): slot 10, the charge of charge_fence, recorded on past the fence's removal
+# to P3.FenceBroken and the cut to P3.DealerPoizo's locked camera. The hooks give the hit and the removal; the event
+# hooks the script callbacks and bindings (CameraMakeActive, ScreenQueueEffect); the screen fields the current camera,
+# the fade and the letterbox each update. Research: docs/research/scripting.md#level99 (item 44).
+description = "level99 wooden fence to the flash dealer: the hit, the removal, P3.FenceBroken and the dealer camera cut"
+research = "docs/research/scripting.md#level99"
+input = "charge_fence.txt"
+updates = 150
+fields = ["player", "screen"]
+
+[original]
+slot = 10
+patches = ["scripted-pad", "right-stick", "barrier-hit", "object-remove", "event-call", "event-callback"]
+
+[coney]
+level = "level99"
+args = ["--checkpoint", "3"]
+# Checkpoint 3 opens with Vermin's fence lesson, which holds the pad for about 9 s; the slot starts after it.
+settle = 300

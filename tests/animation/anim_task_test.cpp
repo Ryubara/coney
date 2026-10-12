@@ -192,3 +192,28 @@ TEST_CASE("the start hook hears each anim id a task starts: a change and a clip 
     stack.change(std::make_unique<LoopTask>(loop, 388, 1.0F, 0U), 0.15F);
     CHECK(started == std::vector<std::uint32_t>{413, 408, 388});
 }
+
+TEST_CASE("a follow-on announced when built is heard then, and not again when it begins playing", "[anim_task]") {
+    // A grab's connect: the connecting clip (657) hands over to the hold (82), which the original builds, and so
+    // reports, at the connect (docs/research/characters.md#anim-callbacks).
+    const AnimClip connecting = testClip(0.3F, 1.0F);
+    const AnimClip hold = testClip(1.0F, 0.0F);
+    AnimTaskStack stack;
+    std::vector<std::uint32_t> started;
+    stack.setStartHook([&started](std::uint32_t animId) { started.push_back(animId); });
+    auto chain = std::make_unique<coney::anim::ClipThenNextTask>(connecting, 657, 1.0F, 0U,
+                                                                 std::make_unique<LoopTask>(hold, 82, 1.0F, 0U));
+    stack.change(std::make_unique<coney::anim::ClipThenNextTask>(connecting, 72, 1.0F, 0U, std::move(chain)), 0.0F);
+    stack.advance(0.4F); // the intro hands over to the connecting clip
+    CHECK(started == std::vector<std::uint32_t>{72, 657});
+    stack.announceFollowOn();
+    stack.announceFollowOn(); // once only
+    CHECK(started == std::vector<std::uint32_t>{72, 657, 82});
+    stack.advance(0.4F); // the hold begins
+    REQUIRE(stack.top() != nullptr);
+    CHECK(stack.top()->animId() == 82);
+    CHECK(started == std::vector<std::uint32_t>{72, 657, 82});
+    // A loop on its own has no follow-on.
+    stack.announceFollowOn();
+    CHECK(started.size() == 3);
+}

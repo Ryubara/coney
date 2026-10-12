@@ -36,8 +36,6 @@ TIDY_ALL_PATTERN = (
 WARNING_FLAGS: tuple[str, ...] = ("-Wall", "-Wextra", "-Wpedantic")
 #: Pathspecs that find the C++ files of Coney itself, as tidy-files.sh passes them to `git grep`.
 SOURCE_PATHSPECS: tuple[str, ...] = ("src/*.cpp", "src/*.h", "tests/*.cpp", "tests/*.h")
-#: Changes under these paths need the documentation build.
-DOCS_PATHS: tuple[str, ...] = ("docs/", "research/", "mkdocs.yml", "mkdocs_hooks.py", "requirements-docs.txt")
 #: Where Homebrew installs formulae: Apple silicon, then Intel.
 HOMEBREW_PREFIXES: tuple[str, ...] = ("/opt/homebrew", "/usr/local")
 #: Compiler launchers CMake may put before the compiler in a compile database; clang-tidy would take one for the
