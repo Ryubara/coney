@@ -22,6 +22,7 @@
 #include "combat/rage_awards.h"
 #include "combat/reactions.h"
 #include "combat/revive.h"
+#include "combat/tandem.h"
 #include "core/pad.h"
 #include "human/fighter_clips.h"
 #include "human/strike_shapes.h"
@@ -64,7 +65,7 @@ Fighter::Fighter(const combat::AnimRangeList* ranges, std::uint32_t seed, const 
 
 bool Fighter::holdsMovement(const HumanAnimator& animator) const {
     return m_combat.blocking() || m_combat.mode() != combat::CombatMode::Free || grabbed() || m_holdState.has_value() ||
-           helpless(animator);
+           m_tandemRole != TandemRole::None || helpless(animator);
 }
 
 anim::Vec3 Fighter::takeSlide() {
@@ -268,7 +269,8 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     // 1. The victim's side first, as the original applies the pending damage before the actions: a grab caught on
     // the player, a warning, the update's hit, then the reaction's timers. A hold whose grabber has stopped driving it
     // frees this human; a hold this human drives is kept for its victim.
-    if (m_holdState.has_value() && ++m_holdUnkept >= kHoldLostUpdates) {
+    // A tandem's victim stays in the hold after his grabber lets go, until his own end clip is over.
+    if (m_holdState.has_value() && m_tandemRole != TandemRole::Victim && ++m_holdUnkept >= kHoldLostUpdates) {
         freeFromLostGrabber(animator);
     }
     dropLostHold(input, animator);
@@ -276,12 +278,26 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
         m_held->keepHold();
         // What the victim did in its last update: its struggle's cost, a move to play, an escape.
         applyHeldReport(m_held->takeGrabbedReport(), input, animator);
+        // A tandem started on the victim this one holds attached: the grabber joins with its side.
+        if (m_held != nullptr && m_pair == PairStage::Attached && m_tandemRole == TandemRole::None) {
+            if (const std::optional<int> base = m_held->takeTandemRequest(); base.has_value()) {
+                joinTandem(*base, animator);
+            }
+        }
     }
     if (m_catch.has_value()) {
         startGrabbed(input, animator);
     }
+    // A tandem's moments come before the hits, so the victim's intro-end damage lands on the update it ends.
+    if (m_tandemRole != TandemRole::None) {
+        followTandem(input, animator);
+    }
     takeNotice(input, animator);
     takePending(input, animator);
+    // A lethal hit held back while a paired clip held 0xc12200: the death plays once the flags have dropped.
+    if (m_deathPending.has_value() && (animator.flags() & combat::kTandemRefusingHeld) == 0) {
+        dieNow(*m_deathPending, input, animator);
+    }
     const bool reacting = stepVictim(input, animator);
     // An AI's counter press (command 3) is kept for the grabber or tackler whose intro it answers. A tackle holds its
     // victim from the intro's start (Coney's stand-in), so a human held only that way may still press it.
@@ -321,6 +337,11 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     // what it decided.
     combat::CombatInput in = combatInput(input, animator, false);
     if (duckCounter(input, animator)) {
+        in.command = combat::command::kNone;
+    }
+    // **Coney's choice**: the attacker and the grabber take no command until their tandem clips are over (the
+    // dispatcher's phase gate does not hold 0x800000, and what keeps the original's tandem whole is not traced).
+    if (m_tandemRole != TandemRole::None) {
         in.command = combat::command::kNone;
     }
     const combat::CombatOutput out = m_combat.update(in, tuning);
@@ -365,9 +386,12 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     if (m_pair == PairStage::Attached && m_held != nullptr) {
         placeAttached(input.position, heading);
         // The victim hears the grabber's numbers, for its struggle next update (a grab, not a tackle or the mugging).
-        if (m_combat.mode() == combat::CombatMode::Grabbing) {
+        const bool grabbing = m_combat.mode() == combat::CombatMode::Grabbing;
+        if (grabbing) {
             m_held->heldInGrab(grabberState(), m_rear);
         }
+        // And the hold's side: a grab from its rear (state 0x20) is what a tandem starts at.
+        m_held->holdSide(grabbing && m_rear);
     }
     trackTarget(FighterInput{.command = input.command,
                              .buttons = input.buttons,
@@ -442,11 +466,12 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
         }
     }
     m_candidate = nullptr;
+    const combat::GrabKind kind =
+        input.command == combat::command::kCircleHeld ? combat::GrabKind::Tackle : combat::GrabKind::Grab;
+    const float circleRange = m_ranges != nullptr ? combat::grabSearchRange(*m_ranges, kind, tuning.grabSearchScale)
+                                                  : (kind == combat::GrabKind::Tackle ? 3.75F : 3.12F);
     if (input.command == combat::command::kCircleTapped || input.command == combat::command::kCircleHeld) {
-        const combat::GrabKind kind =
-            input.command == combat::command::kCircleHeld ? combat::GrabKind::Tackle : combat::GrabKind::Grab;
-        const float range = m_ranges != nullptr ? combat::grabSearchRange(*m_ranges, kind, tuning.grabSearchScale)
-                                                : (kind == combat::GrabKind::Tackle ? 3.75F : 3.12F);
+        const float range = circleRange;
         // Any human that can be held (Combatant::holdable(): a passive target, or a human without flag 0x40) standing
         // with health left.
         std::vector<combat::TargetCandidate> candidates;
@@ -461,6 +486,15 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
     } else if (input.command == combat::command::kCircleCross) {
         m_candidate = strongGrappleTarget(input);
     }
+    // Square, cross and circle test the tandem: a victim another human holds from his rear, this one in his front
+    // cone. Circle searches at its grab's or tackle's range, square and cross where they keep a target (3 m).
+    m_tandemCandidate = nullptr;
+    if (input.command == combat::command::kCircleTapped || input.command == combat::command::kCircleHeld) {
+        m_tandemCandidate = tandemTarget(input, circleRange);
+    } else if (input.command == combat::command::kSquarePressed || input.command == combat::command::kCrossLongHold) {
+        m_tandemCandidate = tandemTarget(input, combat::kKeepTargetRange);
+    }
+    in.tandemTarget = m_tandemCandidate != nullptr;
     in.grabTargetInReach = m_candidate != nullptr;
     in.grabBlocked = hasFlag(flag::kBlockFrontGrab) && hasFlag(flag::kBlockRearGrab);
     // Square with the stick asking for a snap: the snap's own search. The current target found means no snap.
@@ -605,6 +639,13 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
         m_rageStarted = true;
         animator.playCombat(clips::one(id::kRageStart), kAnimFightIdle, AnimState::Attack, kCombatFade,
                             clips::kAttackHolds);
+        consumed = true;
+    }
+    if (out.tandemBase != id::kNone) {
+        // The tandem at the victim the search found (no candidate: nothing starts, as with a vanished target).
+        if (m_tandemCandidate != nullptr) {
+            startTandem(*m_tandemCandidate, out.tandemBase, input, animator, heading);
+        }
         consumed = true;
     }
     if ((out.grabStarted || out.tackleStarted) && m_candidate != nullptr) {

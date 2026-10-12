@@ -50,6 +50,14 @@ enum class PairStage : std::uint8_t {
     Attached, ///< The victim stands at its stored offset in the grabber's frame, placed every update.
 };
 
+/// The part a human plays in a tandem (docs/research/combat-moves.md#tandem).
+enum class TandemRole : std::uint8_t {
+    None,     ///< In no tandem.
+    Attacker, ///< Strikes the victim from his front (the set's ids + 2 and + 5).
+    Grabber,  ///< Holds the victim from his rear (+ 0 and + 3), then lets go into the fight stance.
+    Victim,   ///< Held and struck (+ 1 and + 4), then on the ground.
+};
+
 /// A strike reaches a target within the attack's far range (combat::AnimRangeList::farRange()), or this far when the
 /// list has none (**Coney's choice**), and in front of the attacker (within 90° of its facing).
 inline constexpr float kDefaultStrikeReach = 2.0F;
@@ -357,6 +365,24 @@ class Fighter {
     }
     /// What it decided against its grabber while held, once (Holdable::takeGrabbedReport()).
     [[nodiscard]] GrabbedReport takeHeldReport() { return std::exchange(m_heldReport, GrabbedReport{}); }
+    /// Its grabber's side of the hold this update (Holdable::holdSide()): a grab from its rear or not.
+    void setRearHeld(bool rear) { m_rearHeld = rear && m_holdState.has_value(); }
+    /// In state `0x20`: held attached in a grab from its rear (Combatant::heldFromRear()).
+    [[nodiscard]] bool heldFromRear() const { return m_holdState == TargetState::Held && m_holdAttached && m_rearHeld; }
+
+    // The tandem (fighter_tandem.cpp, docs/research/combat-moves.md#tandem). Any fighter's square, cross or circle at
+    // a victim another human holds from behind starts it (combat::PlayerCombat decides, startTandem() plays it), a
+    // player's or an AI's alike, so an AI's attack command reaches it through the same dispatcher (#84).
+
+    /// The part this human plays in a tandem now.
+    [[nodiscard]] TandemRole tandemRole() const { return m_tandemRole; }
+    /// The victim's side of a tandem starting (Holdable::startTandem()): it plays the set's victim intro and end from
+    /// the attacker's set, holding combat::kTandemVictimHeld, then the grounded idle; keeps the set for its grabber
+    /// (takeTandemRequest()); and arms the damage its intro's end deals (`cuffed`, `knockedOut`: its state, for
+    /// combat::damageDefeats()). Refused (false) unless it is held from the rear and in no tandem.
+    bool startTandemVictim(const TandemStart& start, HumanAnimator& animator, bool cuffed, bool knockedOut);
+    /// The tandem its grabber joins, once (Holdable::takeTandemRequest()).
+    [[nodiscard]] std::optional<int> takeTandemRequest() { return std::exchange(m_tandemRequest, std::nullopt); }
     /// Placed by its grabber each update (Holdable::setAttached()); only while held.
     void setHoldAttached(bool attached) { m_holdAttached = attached && m_holdState.has_value(); }
     [[nodiscard]] bool holdAttached() const { return m_holdAttached; }
@@ -568,6 +594,41 @@ class Fighter {
     // updating without that, so the victim's side makes sure.
     void freeFromLostGrabber(HumanAnimator& animator);
 
+    // --- fighter_tandem.cpp: the tandem.
+
+    // The victim held from the rear that square, cross or circle may start a tandem at: the current target when it
+    // allows one (combat::tandemCanStart()) within `range`, else the nearest such target within `range`; null for none.
+    // **Coney's reading**: the original's target rules for the tandem (Player_PickTarget, the grab's search) are not
+    // traced for a held target, which Coney's searches skip; this search stands in for them.
+    [[nodiscard]] Holdable* tandemTarget(const FighterInput& input, float range) const;
+    // The attacker's side of a tandem with the set from `base` at `victim`: the victim starts its side (the grabber
+    // joins from it), the attacker turns and slides to its intro's place (alignTandem()) and plays its intro and end,
+    // holding combat::kTandemAttackerHeld, then the fight idle.
+    // @orig 0x0026f860 Tandem_Start (unknown)
+    // @orig 0x0022b1a0 Tandem_LinkThree (unknown)
+    void startTandem(Holdable& victim, int base, const FighterInput& input, HumanAnimator& animator, float heading);
+    // Turns the attacker to the victim and slides him to where the victim stands at his intro's pair point (its Anim
+    // Range List direction × reach, straight ahead at the reach without a direction), over the alignment's time, as a
+    // grab's connect aligns (kAlignShare of the intro's time to its first event). The victim and the grabber stay.
+    // **Coney's reading**: which of the three moves and by which offsets is not on the page.
+    // @orig 0x00277458 Tandem_AlignThree (unknown)
+    void alignTandem(const Holdable& victim, int base, const FighterInput& input, const HumanAnimator& animator,
+                     float heading);
+    // The grabber's side, started by its victim's request (takeTandemRequest()): the grab ends for the dispatcher (no
+    // drain, no moves), the victim stays attached at the hold, and the grabber plays its intro and end, holding
+    // combat::kTandemAttackerHeld, then the fight idle.
+    void joinTandem(int base, HumanAnimator& animator);
+    // One update of the part this human plays: the attacker and the grabber leave the tandem when their end clip is
+    // over (the grabber lets the victim go); the victim takes the damage when his intro ends and goes down when his
+    // end is over.
+    void followTandem(const FighterInput& input, HumanAnimator& animator);
+    // The victim's intro has ended: the attacker's damage lands, all of his health when combat::damageDefeats() says
+    // it defeats him; a defeated victim's death waits for his end clip (takePending()).
+    // @orig 0x0026f780 Tandem_OnVictimIntroEnd (unknown)
+    void tandemVictimIntroEnd(const FighterInput& input);
+    // Out of health: whatever it held goes, a hold on it ends, and the dying reaction for `hit` plays.
+    void dieNow(const IncomingHit& hit, const FighterInput& input, HumanAnimator& animator);
+
     // --- fighter_victim.cpp: the player hit, warned and grabbed.
 
     // The warning and the hit taken since the last update, as Human_ApplyPendingDamage takes them: a duck lets the
@@ -642,8 +703,19 @@ class Fighter {
     int m_spinThrow = combat::anim_id::kNone; // a rear hold's throw waiting for the spin in front of it
     std::optional<WallThrow> m_wallThrow;     // this update's wall for a throw (wallThrow())
     Holdable* m_candidate = nullptr;          // what the grab or tackle search found this update
-    Combatant* m_target = nullptr;            // the target kept (human +0xc8)
-    Combatant* m_snapTarget = nullptr;        // what the snap's search found for this update's square (not the target)
+    Holdable* m_tandemCandidate = nullptr;    // what the tandem's search found this update (tandemTarget())
+    TandemRole m_tandemRole = TandemRole::None;
+    int m_tandemBase = combat::anim_id::kNone; // the tandem's set's first id
+    int m_tandemDamage = 0;                    // the victim's: the damage his intro's end deals
+    bool m_tandemIntroOver = false;            // the victim's: his intro has ended and the damage landed
+    bool m_tandemCuffed = false;               // the victim's state at the start, for combat::damageDefeats()
+    bool m_tandemKnockedOut = false;
+    bool m_tandemByPlayer = false;             // a player started it
+    anim::Vec3 m_tandemAttacker;               // where the attacker stood at the start
+    std::optional<int> m_tandemRequest;        // the victim's: the set its grabber has not joined yet
+    std::optional<IncomingHit> m_deathPending; // a defeating hit taken while a paired move holds the death back
+    Combatant* m_target = nullptr;             // the target kept (human +0xc8)
+    Combatant* m_snapTarget = nullptr;         // what the snap's search found for this update's square (not the target)
     int m_connect = 72;            // the grab's front connecting clip: 72, or the strong grapple's 657 (649 in rage)
     anim::Vec3 m_slide;            // a grab's alignment's slide velocity, m/s
     int m_slideUpdates = 0;        // updates of slide left
@@ -703,7 +775,8 @@ class Fighter {
     bool m_mountPending = false;  // the grab's mount (118) or the tackle plays; the mounter is seated at 210
     int m_seatUpdates = 0;        // the updates of the seat's slide left; the victim is attached when it ends
     bool m_mugOnTarget = false;
-    bool m_rear = false; // the hold is from the victim's rear
+    bool m_rear = false;     // the hold is from the victim's rear
+    bool m_rearHeld = false; // held: its grabber holds it from its rear in a grab (setRearHeld())
     PairStage m_pair = PairStage::None;
     bool m_reacting = false;        // a hit's reaction (or an escape, a let-go) holds the player until it is over
     bool m_justCaught = false;      // the grab caught the player this update

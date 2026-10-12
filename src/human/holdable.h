@@ -39,6 +39,16 @@ struct GrabbedReport {
     bool ended = false;              ///< The grabbed human is out of the grab.
 };
 
+/// What a tandem's attacker tells its victim as the tandem starts (Holdable::startTandem(),
+/// docs/research/combat-moves.md#tandem).
+struct TandemStart {
+    int base = -1;                                      ///< The set's first id (combat::tandemSet()).
+    const characters::AnimSet* attackerAnims = nullptr; ///< The victim plays its clips from the attacker's set.
+    int damage = 0;                                     ///< combat::tandemDamage(): taken when his intro ends.
+    anim::Vec3 attacker;                                ///< Where the attacker's feet are.
+    bool attackerIsPlayer = false;                      ///< A player's tandem.
+};
+
 /// A combatant a grab or a tackle can hold.
 class Holdable : public Combatant {
   public:
@@ -83,6 +93,18 @@ class Holdable : public Combatant {
     virtual void heldInGrab(const combat::GrabberState& /*grabber*/, bool /*fromRear*/) {}
     /// What it did to its grabber in its last update while held, once (none by default): the grabber plays its side.
     [[nodiscard]] virtual GrabbedReport takeGrabbedReport() { return {}; }
+    /// Its grabber's side of the hold, told on each of the grabber's updates while it is attached: `rearGrab` while a
+    /// grab holds it from its rear (state `0x20`, Combatant::heldFromRear()). A passive target ignores it (the
+    /// default).
+    virtual void holdSide(bool /*rearGrab*/) {}
+    /// A tandem starts on it (`Tandem_Start`, human::Fighter): it plays its intro and end clips from the attacker's
+    /// set, takes the damage when its intro ends, and keeps the set's id for its grabber (takeTandemRequest()). False
+    /// when it cannot (the default: a passive target plays no tandem).
+    virtual bool startTandem(const TandemStart& /*start*/) { return false; }
+    /// The tandem its grabber joins, once: the set's first id. Its grabber reads it on each of its updates while it
+    /// holds it, so the grabber's clips start on the grabber's next update (the same step when the grabber acts after
+    /// the attacker). Nothing by default.
+    [[nodiscard]] virtual std::optional<int> takeTandemRequest() { return std::nullopt; }
 };
 
 } // namespace coney::human
