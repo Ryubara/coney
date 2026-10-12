@@ -173,3 +173,8 @@ AI agents read [AGENTS.md](AGENTS.md) first; it is the single instruction file f
 The repository also ships the agent tool configuration (`.mcp.json` for the Ghidra and PCSX2 debugging servers,
 `.claude/agents/` for the roles, `.claude/settings.json` for shared permissions); what each holds and how to set
 it up: [Setting up an agent tool](docs/guides/agents.md#setup).
+
+If an agent writes your pull request's description, have the `pr-reviewer` agent check it before you open the pull
+request: `uv run --project python coney-tools repo review <PR.md> --worktree <your checkout>`. It opens every
+screenshot and checks the text against the diff and your test logs
+([The description review](docs/guides/how-we-work.md#the-description-review)).
