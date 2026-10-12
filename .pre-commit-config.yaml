@@ -49,8 +49,8 @@ repos:
         entry: '\b(SDL_GetTicks(NS)?|SDL_GetPerformance(Counter|Frequency)|SDL_Delay(NS|Precise)?|steady_clock|system_clock|high_resolution_clock|QueryPerformanceCounter|clock_gettime|timeGetTime|GetTickCount(64)?|sleep_for|sleep_until)\b'
         files: ^(src|tests)/.*\.(h|cpp)$
         exclude: ^src/platform/frame_pacer\.cpp$
-      # The commit title rules of AGENTS.md ("area: Verb the rest", 72 characters), checked by the command CI runs on
-      # pull request titles and commits. Git hands the hook the message file; install it with `uvx pre-commit install`.
+      # The commit title rules (commits.title of .github/conventions.yml: "area: Verb the rest", 72 characters),
+      # checked by the command CI runs on pull request titles and commits. Git hands the hook the message file; install it with `uvx pre-commit install`.
       - id: commit-title
         name: the commit title follows the commit conventions
         language: system

@@ -60,6 +60,8 @@ bool hitArmourHolds(std::uint32_t attackPhase, int attackAnim, bool attackerIgno
     return (attackPhase & kArmouredPhases) != 0 && !attackerIgnoresArmour && !armourBreakingAttack(attackAnim);
 }
 
+bool heldCancelsReaction(std::uint32_t held) { return (held & kReactionCancellingHeld) != 0; }
+
 int flooredDamage(int health, int maximum, int damage, float floorFraction) {
     const auto floor = static_cast<int>(static_cast<float>(maximum) * floorFraction);
     if (health > floor && health - damage < floor) {

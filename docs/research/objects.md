@@ -1429,10 +1429,12 @@ At runtime (confirmed (runtime), PCSX2 2.9.94, slot 10, `level99` checkpoint 3.5
 [`charge_fence`](repo:research/traces/scenarios/charge_fence.toml)): the fence (type index 520, centre (23.6, −6.67))
 had 10 hitpoints and broke on one charge, dive or walk-attack hit (kind 2). Its three boards were removed on their own
 first update, in the same update as the hit (the pair's second tick; type indices 1368 and 1369, along the fence at x
-22.7, 23.7 and 24.6); why is not traced. The fence was removed 3, 10 and 17 updates after the hit in three runs (its
-60-tick phase; the hit re-labelled one update later after the recorder fix, [Recording a
-trace](../guides/research-workflow.md#hooks)); in the same update the objective marker went, and 15 updates later
-`P3.FenceBroken`'s placement put the player at (18.5, −16.3), beyond the fence. Breaking in by charge:
+22.7, 23.7 and 24.6); why is not traced. The fence was removed 3, 10 and 17 updates after the hit in three runs (the
+hit re-labelled one update later after the recorder fix, [Recording a trace](../guides/research-workflow.md#hooks)),
+and 21.5 and 27.5 updates (43 and 55 ticks) in two more
+([`fence_dealer`](repo:research/traces/scenarios/fence_dealer.toml), [Scripts](scripting.md#level99), item 44):
+anywhere from 0 to 29 updates, by the fence's 60-tick phase. In the same update the objective marker went, and 15
+updates later `P3.DealerPoizo`'s placement put the player at (18.5, −16.3), beyond the fence. Breaking in by charge:
 [Combat](combat.md#moving-strikes).
 
 ### Lock picking {#lock-pick}
@@ -1487,6 +1489,13 @@ only. In `level95` the clubhouse's five exits (`dyn_door_stlslot` numbers 4, 10,
 10 (triangles 729 and 730, at x −187.63, y 93.99 to 96.16, z −194.31 to −191.99) faces −x, out of the clubhouse, so
 from inside the player is behind it. Read from the disc (2026-10-10, `level95.lev` and the `SpawnDoor` calls of
 `level95.lua`, numbers only). The init's two-sided bit is what closes the doorway from both sides.
+
+**At runtime** (confirmed (runtime), PCSX2 2.9.94, 2026-10-11, a `level95` state outside the clubhouse with every exit
+closed, read over PINE through the world manager's mesh): triangles 729 and 730 carry flags **`0xf443`** and material
+**13**, where the disc has `0xf001` and material 0. That is enabled, two-sided `0x2`, `0x40` and `0x400`, with the
+disc's bits 12-15 kept, and the type's material. The live mesh (5,943 triangles) has 202 two-sided triangles, alike
+in two saved states and live: 703-746 (the doors and barriers, `0xf443` or `0xfc43`, `0x800` on 703-714) and
+3611-3768 (`0xf003`, material 2 `GLASS`: the panes). No triangle was disabled.
 
 **When it opens.** Only the door's own state machine switches the triangles: state command 5
 (`DisableDoorCollision`, also step 4 of an opening, [states](#door-states)) clears their enabled bit, command 6 sets
@@ -1919,7 +1928,10 @@ Coney's stand-ins for the world objects, where this page is silent:
   or door, or, for a car or other object, when its strike shapes come on; never at the clip's start. Stand-ins: a
   pane or door the window passed without touching takes the hit as the window closes, and a clip with no strike
   events lands it as it ends. A broken barrier is removed at its next 60-tick
-  update: its handlers get message 2 (itself, `NilHandle`) and its spawn record goes for good. It draws each swinging
+  update: its handlers get message 2 (itself, `NilHandle`) and its spawn record goes for good; the three boards it
+  throws are made at the hit and removed on the next tick (the hit's own update, as in the original), so no board
+  stands in the gap while the barrier waits for its removal (issue #233; before this they stood there until the dealer
+  cut, which a player saw as the broken fence staying on screen). It draws each swinging
   door's leaves (hinged at
   their positions, `w` the type's `CfgObj` argument 15, swinging by the 28-tick slerp of [Leaves](#leaves)) and each
   barrier as its type's model (gone once broken; `world_objects::doorDraws()`) with the
@@ -2042,9 +2054,8 @@ the drawer and lifts the register with clip 504 (disc checks, 2026-10-08).
 
 ## Open questions
 
-- Door blocking ([How a closed door stops a human](#door-blocking)): confirm at runtime that a `level95` exit door's
-  triangles carry `0x2 | 0x400` after the level starts, and read the `PHYFLAG`s of the door types with an `OBB` body
-  (`dyn_door_store`, the cabin doors) to settle whether their body ever meets a walker.
+- Door blocking ([How a closed door stops a human](#door-blocking)): read the `PHYFLAG`s of the door types with an
+  `OBB` body (`dyn_door_store`, the cabin doors) to settle whether their body ever meets a walker.
 - Which search mask admits `0x40` links.
 - What human state 26 (the animated open) plays and when it sends the door `0x0b`; what fills a player's interaction
   record (`+0x660`) for a door.

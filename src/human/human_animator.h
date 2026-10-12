@@ -186,11 +186,11 @@ class HumanAnimator {
     /// Combat, the victim's side of a paired move: plays `clips` in turn from `attacker`'s anim set at its rates (a
     /// grab's victim plays the grabber's reaction clips, authored with the grabber's), then its own `loop`, after a
     /// fade of `fade` (0: the two humans switch on the same update). `state` as for playCombat(). Ids `attacker`
-    /// lacks are skipped.
+    /// lacks are skipped. Each clip's task holds `held`, but 389, as for playCombat().
     /// Research: docs/research/formats/animation.md#paired-tasks
     /// @orig 0x00108a78 PairedTask_Init (unknown)
     void playPaired(std::span<const std::uint32_t> clips, const characters::AnimSet& attacker, std::uint32_t loop,
-                    AnimState state, float fade = 0.0F);
+                    AnimState state, float fade = 0.0F, HeldFlags held = {});
     /// Combat: plays `clips` in turn, each holding `held`, then the gait blend at the run (a run attack after which
     /// the run resumes).
     void playCombatThenRun(std::span<const std::uint32_t> clips, float fade = kCombatFade, HeldFlags held = {});
@@ -257,6 +257,9 @@ class HumanAnimator {
     void clearFlags(std::uint32_t bits) { m_tasks.clearFlags(bits); }
     /// Called with each anim id the human starts playing (anim::AnimTaskStack::setStartHook()).
     void setStartHook(std::function<void(std::uint32_t animId)> hook) { m_tasks.setStartHook(std::move(hook)); }
+    /// Reports the start of the loop the playing chain ends in now, not when it plays
+    /// (anim::AnimTaskStack::announceFollowOn()).
+    void announceFollowOn() { m_tasks.announceFollowOn(); }
     /// Keeps the clip events the animation passes (anim::AnimTaskStack::keepEvents()).
     void keepEvents(bool keep) { m_tasks.keepEvents(keep); }
     /// The clip events passed since the last call (anim::AnimTaskStack::takeEvents()).

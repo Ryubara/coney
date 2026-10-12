@@ -5,6 +5,7 @@
 #include <memory>
 #include <numbers>
 #include <optional>
+#include <string>
 #include <vector>
 
 #include <catch2/catch_approx.hpp>
@@ -592,5 +593,73 @@ TEST_CASE("L2 drops the target on the update it is read, mid-attack and with L1 
         CHECK((fight.human().fighter().target() == nullptr) == l2);
         fight.run(l2 ? "0 press l1\n0 press l2\n" : "0 press l1\n", 10);
         CHECK((fight.human().fighter().target() == nullptr) == l2);
+    }
+}
+
+TEST_CASE("charging or diving the player takes a hit's health but plays no reaction; a run takes the reaction",
+          "[human][combat]") {
+    // The charge (0) and the dive (1) with their lengths on the disc, as tests/human/moving_attacks_test.cpp builds
+    // them; the synthetic clips play at 0.75, so a clip of `updates` lasts updates / 40 s.
+    std::vector<coney::test::LocomotionClip> clips = coney::test::fightClips();
+    const auto timed = [](std::uint32_t clip, float updates, float velocity) {
+        return coney::test::LocomotionClip{.id = clip,
+                                           .speed = 0.0F,
+                                           .duration = updates * 0.75F / 30.0F,
+                                           .rootVelocity = velocity,
+                                           .rangeFlags = 0,
+                                           .reach = 0.0F,
+                                           .knockdown = false};
+    };
+    clips.push_back(timed(0, 26.67F, 7.45F));
+    clips.push_back(timed(1, 61.33F, 0.0F));
+    const FightCharacter character(clips);
+    // A sprint along +y (the stick at 98 %, L2 held from 30) and the button at 60, the target 30 m off to the right;
+    // the extreme reaction's hit (20 damage, 0x2a, as a flung victim's body strikes) lands 5 updates into the move.
+    struct Case {
+        const char* button;
+        std::uint32_t clip;
+    };
+    for (const Case& c : {Case{"cross", 0U}, Case{"square", 1U}}) {
+        INFO("L2 + " << c.button);
+        Fight fight(character, 1.0F, 30.0F);
+        const std::string script = std::string("5 stick left 0 98\n30 press l2\n60 tap ") + c.button + "\n";
+        int into = 0;
+        bool hit = false;
+        ClipLog log;
+        fight.run(script, 140, [&](std::uint64_t) {
+            const std::uint32_t clip = fight.human().animator().animId();
+            log.note(clip);
+            into = clip == c.clip ? into + 1 : 0;
+            if (!hit && into == 5) {
+                REQUIRE((fight.human().animator().flags() & combat::kReactionCancellingHeld) != 0);
+                fight.human().takeHit(hitOf(296, 20, 0x2a));
+                hit = true;
+            }
+        });
+        REQUIRE(hit);
+        CHECK(fight.human().fighter().hitsTaken() == 1);
+        CHECK(fight.human().fighter().hitsShrugged() == 1);
+        CHECK(fight.human().fighter().health().value() == 900 - 20);
+        // The move plays on to its end and no reaction follows it.
+        for (const std::uint32_t reaction : {292U, 293U, 294U, 295U}) {
+            CHECK_FALSE(log.has(reaction));
+        }
+        CHECK(fight.human().fighter().victim().lastReaction() == -1);
+    }
+    // The same hit on the sprint itself, with no move held: the reaction plays.
+    Fight fight(character, 1.0F, 30.0F);
+    fight.run("5 stick left 0 98\n30 press l2\n", 60);
+    fight.human().takeHit(hitOf(296, 20, 0x2a));
+    fight.run("", 1);
+    CHECK(fight.human().fighter().victim().lastReaction() != -1);
+}
+
+TEST_CASE("the held flags 0x1c16a40 cancel a hit's reaction; the attack phases and the step do not", "[combat]") {
+    for (const std::uint32_t held :
+         {0x1000000U, 0x800000U, 0x400000U, 0x10000U, 0x4000U, 0x2000U, 0x800U, 0x200U, 0x40U}) {
+        CHECK(combat::heldCancelsReaction(held));
+    }
+    for (const std::uint32_t held : {0x0U, 0x1U, 0x2U, 0x4U, 0x10U, 0x40000U, 0x80000U, 0x2000000U, 0x40000000U}) {
+        CHECK_FALSE(combat::heldCancelsReaction(held));
     }
 }

@@ -17,6 +17,7 @@
 #include "ai/story_goals.h"
 #include "ai/swap_prompt.h"
 #include "ai/tactic.h"
+#include "human/human_flags.h"
 #include "human/locomotion.h"
 
 namespace coney::ai {
@@ -35,6 +36,40 @@ BrainType brainTypeOf(int behaviour) {
         return BrainType::Gang;
     }
     return static_cast<BrainType>(behaviour);
+}
+
+namespace {
+
+// Human_Init's and Human_ReleasePlayer's bits (docs/research/combat.md#human-flags): a cop's and a dealer's two have
+// no name in Coney yet.
+constexpr std::uint64_t kCopFlag2000 = 0x2000;
+constexpr std::uint64_t kCopFlag40000 = 0x40000;
+constexpr std::uint64_t kRevivableFlags = human::flag::kFastClimber | human::flag::kRevivable;
+
+} // namespace
+
+std::uint64_t startingFlags(BrainType type) {
+    switch (type) {
+    case BrainType::Player:
+        return human::flag::kRageAllowed | kRevivableFlags;
+    case BrainType::Warrior:
+        return kRevivableFlags;
+    case BrainType::Cop:
+    case BrainType::Dealer:
+        return kCopFlag2000 | kCopFlag40000;
+    default:
+        return 0;
+    }
+}
+
+std::uint64_t releasedFlags(std::uint64_t flags, BrainType leftAs) {
+    flags &= ~(kRevivableFlags | human::flag::kRageAllowed);
+    if (leftAs == BrainType::Player || leftAs == BrainType::Warrior) {
+        flags |= kRevivableFlags;
+    } else if (leftAs == BrainType::Cop) {
+        flags |= kCopFlag2000;
+    }
+    return flags;
 }
 
 Brain::Brain(human::Human& human, BrainType type, const FightSettings& settings, std::uint32_t seed)
@@ -290,6 +325,8 @@ bool Brain::clearActions() {
 }
 
 Action* Brain::frontAction() { return m_actionCount == 0 ? nullptr : m_actions[m_actionFront].get(); }
+
+const Action* Brain::frontAction() const { return m_actionCount == 0 ? nullptr : m_actions[m_actionFront].get(); }
 
 void Brain::flush() {
     clearGoals();

@@ -620,7 +620,12 @@ void GameplayMode::loadLevel() {
                           car.position.x, car.position.y, car.position.z));
     }
 
-    // The loose objects a player may pick up: the spawn records the scripts and the placed objects filled.
+    // The loose objects a player may pick up: the spawn records the scripts and the placed objects filled. The AI's
+    // view of them goes first, as it holds the pick-ups.
+    if (m_scripted) {
+        m_scripted->setItems(nullptr);
+    }
+    m_items.reset();
     m_pickups.reset();
     if (m_context.spawnRecords != nullptr && m_context.objectTypes != nullptr) {
         m_pickups.emplace(m_scripts, m_state, *m_context.spawnRecords, *m_context.objectTypes, m_context.messages);
@@ -631,6 +636,14 @@ void GameplayMode::loadLevel() {
                 static_cast<void>(m_context.sound->play2D(hash));
             }
         });
+        // A theft (an owned object taken) reaches the volume boxes round it as message 7.
+        m_pickups->setOwnedTaken(
+            [this](double taker, double object, anim::Vec3 at) { sendTheftMessage(taker, object, at); });
+        // The steal command's tactic fetches from the same objects, at the store fronts among the flags.
+        m_items.emplace(m_flags, *m_pickups, *m_context.spawnRecords, *m_context.objectTypes);
+        if (m_scripted) {
+            m_scripted->setItems(&*m_items);
+        }
     }
     m_shownPrompt.clear();
     m_promptHintObject.reset();
@@ -749,6 +762,10 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
     if (m_level) {
         result = m_level->update(stack, frame);
     }
+    // The AI humans' pick-ups that reached their take in the step.
+    if (m_items && m_brains) {
+        m_items->collectTakes(*m_brains);
+    }
     // A frozen world: after its first step only the level's own step runs.
     if (m_worldFrozen && m_level) {
         if (m_frozenStepDone) {
@@ -757,6 +774,7 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
         m_frozenStepDone = true;
     }
     updateUncuff();
+    updateRevive();
     updateHiding();
     m_scripts.setTime(nowMs);
     callPadHandler();
@@ -796,9 +814,8 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
     updateTagPanel();
     updateActionPrompt();
     runPlayerFrame(m_state, m_scripts, stack.pads(), nowMs, &m_objectServices.crimeServices());
-    // The hint box steps where the original's HUD update stands in its frame, after this step's callbacks and before
-    // the scheduled calls: a text a callback set shows now, so a scheduled call's clear removes it and does not leave
-    // it queued behind the next one (the box one text late; owner checklist item 33b).
+    // The hint box's one step, where the original's HUD update stands in its frame: after this step's callbacks and
+    // before the scheduled calls (a text set on a free box has already shown, in the call that set it).
     if (m_context.hud != nullptr) {
         m_context.hud->updateHints(nowMs);
     }
@@ -1061,6 +1078,15 @@ void GameplayMode::sendDamageMessage(double human, double object) {
         });
         return;
     }
+}
+
+void GameplayMode::sendTheftMessage(double taker, double object, anim::Vec3 at) {
+    if (m_context.boxes == nullptr || m_context.messages == nullptr) {
+        return;
+    }
+    m_context.boxes->sendTheft({at.x, at.y, at.z}, [this, taker, object](double box) {
+        m_context.messages->deliver(m_scripts, box, world_objects::VolumeBoxes::kStolen, taker, object, 0.0);
+    });
 }
 
 void GameplayMode::callTutorialCallback() {

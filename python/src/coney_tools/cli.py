@@ -26,20 +26,16 @@ from coney_tools import (
     trace_cli,
     wad_cli,
     workspace,
+    workspace_clean,
     workspace_fetch,
     xbox_cli,
 )
+from coney_tools.audit_cli import add_audit_parser, run_audit
 from coney_tools.config import PATH_KEYS, ConfigError, find_repo_root, load_config
-from coney_tools.repo_checks import (
-    check_body,
-    check_docs,
-    check_pointer_files,
-    check_title,
-    first_line,
-    load_body_rules,
-    load_title_rules,
-)
-from coney_tools.repo_labels import apply_labels, gh_script, load_labels
+from coney_tools.conventions import Conventions, load_conventions
+from coney_tools.conventions_render import run_render
+from coney_tools.repo_checks import check_body, check_docs, check_pointer_files, check_title, first_line
+from coney_tools.repo_labels import apply_labels, gh_script
 
 
 def _config_show() -> int:
@@ -54,20 +50,29 @@ def _config_show() -> int:
     return 0
 
 
+def _conventions() -> Conventions:
+    """The conventions of the checkout the command runs in (`.github/conventions.yml`); ConfigError when unusable."""
+    return load_conventions(find_repo_root(Path.cwd()))
+
+
 def _repo_check() -> int:
     """Run the repository checks; 1 when any fails."""
-    problems = check_pointer_files(find_repo_root(Path.cwd()))
+    root = find_repo_root(Path.cwd())
+    # Loading the conventions validates the file itself, so a bad edit or merge of it fails here, in CI.
+    conventions = load_conventions(root)
+    problems = check_pointer_files(root, conventions.paths.pointer_files)
     for problem in problems:
         print(problem)
     if problems:
         return 1
+    print("conventions: ok")
     print("pointer files: ok")
     return 0
 
 
 def _repo_labels(apply: bool, repo: str | None) -> int:
-    """Print the `gh` commands that create the labels of .github/labels.yml, or run them with `apply`; 1 on failure."""
-    labels = load_labels(find_repo_root(Path.cwd()))
+    """Print the `gh` commands that create the `labels` of the conventions, or run them with `apply`; 1 on failure."""
+    labels = _conventions().labels.list
     if not apply:
         print("\n".join(gh_script(labels, repo)))
         return 0
@@ -80,7 +85,7 @@ def _repo_labels(apply: bool, repo: str | None) -> int:
 
 def _repo_check_title(file: str) -> int:
     """Check the title in `file` (a commit message or a pull request title; `-` reads stdin); 1 when refused."""
-    rules = load_title_rules(find_repo_root(Path.cwd()))
+    rules = _conventions().commits.title
     if file == "-":
         message = sys.stdin.read()
     else:
@@ -108,7 +113,8 @@ def _repo_check_docs(body_file: str | None) -> int:
         except (OSError, UnicodeDecodeError) as error:
             print(f"coney-tools: {body_file}: cannot be read ({error})", file=sys.stderr)
             return 2
-    problems = check_docs(changed, body)
+    conventions = _conventions()
+    problems = check_docs(changed, body, conventions.paths, conventions.pull_requests.docs_none)
     if problems:
         print(f"docs refused: {'; '.join(problems)} (see docs/guides/research-workflow.md)")
         return 1
@@ -118,7 +124,7 @@ def _repo_check_docs(body_file: str | None) -> int:
 
 def _repo_check_body(body_file: str | None) -> int:
     """Check the pull request description in `body_file` (`-` or none reads stdin); 1 when refused."""
-    rules = load_body_rules(find_repo_root(Path.cwd()))
+    rules = _conventions().pull_requests
     if body_file is None or body_file == "-":
         body = sys.stdin.read()
     else:
@@ -143,7 +149,8 @@ def _build_parser() -> argparse.ArgumentParser:
     config = groups.add_parser("config", help="local configuration (coney.local.toml)")
     config.add_subparsers(dest="command", required=True).add_parser("show", help="show the configured paths")
     group = groups.add_parser("workspace", help="the local workspace beside the checkout (docs/guides/workspace.md)")
-    init = group.add_subparsers(dest="command", required=True).add_parser(
+    workspace_commands = group.add_subparsers(dest="command", required=True)
+    init = workspace_commands.add_parser(
         "init", help="create the workspace folders, clone, write coney.local.toml and check the prerequisites"
     )
     init.add_argument("--workspace", type=Path, help="the workspace folder (default: found from the checkout)")
@@ -156,6 +163,34 @@ def _build_parser() -> argparse.ArgumentParser:
         help="also download a research tool at its pinned version (repeatable; never a BIOS or game files)",
     )
     init.add_argument("--dry-run", action="store_true", help="print the steps without doing any")
+    clean = workspace_commands.add_parser(
+        "clean", help="remove merged worktrees and old build folders (a dry run unless --apply)"
+    )
+    clean.add_argument("--workspace", type=Path, help="the workspace folder (default: found from the checkout)")
+    clean.add_argument("--apply", action="store_true", help="act; without it, only report what would be done")
+    clean.add_argument(
+        "--build-hours",
+        type=float,
+        default=workspace_clean.DEFAULT_BUILD_HOURS,
+        help="delete build/ folders of worktrees untouched this many hours (default: %(default)g)",
+    )
+    clean.add_argument(
+        "--worktree-hours",
+        type=float,
+        default=workspace_clean.DEFAULT_WORKTREE_HOURS,
+        help="remove merged worktrees only when untouched this many hours (default: %(default)g)",
+    )
+    clean.add_argument("--fetch", action="store_true", help="git fetch origin main first, so merges are current")
+    disk = workspace_commands.add_parser(
+        "disk", help="print the free space of the workspace drive; exit 1 below --min-gb"
+    )
+    disk.add_argument("--workspace", type=Path, help="the workspace folder (default: found from the checkout)")
+    disk.add_argument(
+        "--min-gb",
+        type=float,
+        default=None,
+        help="the free space in GB below which the exit code is 1 (default: workspace.disk_min_free_gb)",
+    )
     mcp = groups.add_parser("mcp", help="the debugging servers that .mcp.json registers for agents")
     serve = mcp.add_subparsers(dest="command", required=True).add_parser(
         "serve", help="run a server found through coney.local.toml, over stdin and stdout"
@@ -163,7 +198,7 @@ def _build_parser() -> argparse.ArgumentParser:
     serve.add_argument("name", choices=mcp_serve.SERVERS)
     repo = groups.add_parser("repo", help="repository checks")
     repo_commands = repo.add_subparsers(dest="command", required=True)
-    repo_commands.add_parser("check", help="check the agent pointer files")
+    repo_commands.add_parser("check", help="check .github/conventions.yml and the agent pointer files")
     check_title_parser = repo_commands.add_parser(
         "check-title", help="check a commit or pull request title against the commit title rules"
     )
@@ -178,9 +213,18 @@ def _build_parser() -> argparse.ArgumentParser:
     check_body_parser.add_argument(
         "--body", help="a file holding the pull request description; - or omitted reads stdin"
     )
+    render_parser = repo_commands.add_parser(
+        "render",
+        help="rewrite the generated blocks of AGENTS.md, CONTRIBUTING.md and the guides from .github/conventions.yml",
+    )
+    render_parser.add_argument(
+        "--check", action="store_true", help="change nothing; exit 1 when a block is out of date"
+    )
+    add_audit_parser(repo_commands)
     _add_check_commands(groups)
     labels_parser = repo_commands.add_parser(
-        "labels", help="print the gh commands for the issue labels of .github/labels.yml, or sync them with --apply"
+        "labels",
+        help="print the gh commands for the issue labels of .github/conventions.yml, or sync them with --apply",
     )
     labels_parser.add_argument("--apply", action="store_true", help="create or update the labels through gh now")
     labels_parser.add_argument("--repo", help="OWNER/NAME to sync; default: the repository gh finds from the checkout")
@@ -485,6 +529,14 @@ def _add_pcsx2_commands(groups: Any) -> None:
     _add_pcsx2_flags(record)
 
 
+def _gang_list(text: str) -> list[int]:
+    """`--original-gangs 5,3`: gang ids separated by commas."""
+    try:
+        return [int(part) for part in text.split(",")]
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(f"{text!r}: expected gang ids separated by commas") from error
+
+
 def _add_trace_commands(groups: Any) -> None:
     """Register `coney-tools trace ...`."""
     group = groups.add_parser("trace", help="per-update traces: run a scenario on Coney, compare with the original")
@@ -505,6 +557,22 @@ def _add_trace_commands(groups: Any) -> None:
     diff.add_argument("--shift", type=int, help="compare original step s with Coney step s + SHIFT (default 0)")
     diff.add_argument("--start-frame", action="store_true", help="compare in each player's frame at the first step")
     diff.add_argument("--context", type=int, default=3, help="rows shown each side of a divergence (default 3)")
+    fight = commands.add_parser(
+        "fight-report", help="behaviour statistics of an all-humans trace; compare the original's runs with Coney's"
+    )
+    fight.add_argument("traces", nargs="*", type=Path, help="all-humans traces (coney --trace-humans) to report")
+    fight.add_argument("--original", nargs="+", type=Path, default=[], metavar="TRACE", help="the original's runs")
+    fight.add_argument("--coney", nargs="+", type=Path, default=[], metavar="TRACE", help="Coney's runs")
+    fight.add_argument("--hz", type=int, default=30, help="updates a second in the traces (default 30)")
+    fight.add_argument("--exclude", nargs="+", type=int, default=[], metavar="HUMAN", help="leave these humans out")
+    fight.add_argument("--engage-distance", type=float, default=3.0, help="metres to the target that count as engaged")
+    fight.add_argument("--from", dest="start_from", type=int, default=1, help="skip the steps before this one")
+    fight.add_argument("--humans", action="store_true", help="also print the metrics of each human")
+    fight.add_argument(
+        "--margin", type=float, default=0.0, help="widen the original's spread by this share of its width"
+    )
+    fight.add_argument("--original-gangs", type=_gang_list, help="the original's gang ids in the order g0,g1,...")
+    fight.add_argument("--coney-gangs", type=_gang_list, help="Coney's gang ids in the order g0,g1,...")
     mission = commands.add_parser("mission", help="play a mission scenario's course on one game; write its event log")
     mission.add_argument("scenario", type=Path, help="a mission scenario TOML (research/traces/missions/)")
     mission.add_argument("--side", choices=("coney", "original"), required=True, help="the game to play it on")
@@ -655,6 +723,15 @@ def _run(args: argparse.Namespace) -> int:
     if args.group == "trace":
         if args.command == "coney":
             return trace_cli.run_coney(args.scenario, args.out, args.coney, args.disc)
+        if args.command == "fight-report":
+            report_options = (
+                (args.hz, frozenset(args.exclude), args.engage_distance, args.start_from),
+                args.humans,
+                args.margin,
+            )
+            return trace_cli.run_fight_report(
+                args.traces, args.original, args.coney, report_options, (args.original_gangs, args.coney_gangs)
+            )
         if args.command == "mission":
             if args.side == "coney":
                 return mission_cli.run_mission_coney(args.scenario, args.out, args.coney, args.disc, args.updates)
@@ -670,10 +747,20 @@ def _run(args: argparse.Namespace) -> int:
         return trace_cli.run_diff(args.original, args.coney, args.scenario, args.columns, args.tolerance, options)
     if args.group == "config":
         return _config_show()
+    if args.group == "workspace" and args.command == "clean":
+        return workspace_clean.run_clean(
+            Path.cwd(), args.workspace, args.apply, args.build_hours, args.worktree_hours, args.fetch
+        )
+    if args.group == "workspace" and args.command == "disk":
+        return workspace_clean.run_disk(Path.cwd(), args.workspace, args.min_gb)
     if args.group == "workspace":
         return workspace.run_init(Path.cwd(), args.workspace, args.repo_url, args.fetch, args.dry_run)
     if args.group == "mcp":
         return mcp_serve.run_serve(args.name)
+    if args.command == "audit":
+        return run_audit(args)
+    if args.command == "render":
+        return run_render(find_repo_root(Path.cwd()), args.check)
     if args.command == "labels":
         return _repo_labels(args.apply, args.repo)
     if args.command == "check-title":

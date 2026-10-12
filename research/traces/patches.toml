@@ -747,3 +747,114 @@ address = 0x002205e0
 # addiu sp,sp,-0xc0; sq s0,0xa0(sp)
 original = [0x27bdff40, 0x7fb000a0]
 log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }, { value = "a1", name = "command" }]
+
+# The revive pass (combat.md#revive-runtime): who starts and who finishes a flash revive, and when.
+
+[hook.revive-start]
+description = "Each call of Revive_Start (0x002752a0, from Player_TryRevive or an AI's revive): the reviver and the downed human."
+research = "docs/research/combat.md#revive"
+address = 0x002752a0
+# addiu sp,sp,-0xb0; lui v0,0x59
+original = [0x27bdff50, 0x3c020059]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "reviver" }, { value = "a1", name = "downed" }]
+
+[hook.revive-finish]
+description = "Each call of Revive_Finish (0x00274ee0, the callback of clip 351's task): the reviver, and whether 351 ran to its end or was cut short (the caller)."
+research = "docs/research/combat.md#revive"
+address = 0x00274ee0
+# addiu sp,sp,-0xa0; sq s0,0x80(sp)
+original = [0x27bdff60, 0x7fb00080]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "reviver" }, { value = "a1", name = "a1" }]
+
+# The crew-thefts pass (docs/research/crimes.md#owned-items, ai.md#get-item): the steal command at the level80
+# pharmacy, who claims and takes which owned object, and GetItem's swing at glass.
+
+[hook.take-owned]
+description = "Each call of Item_TakeOwned (0x00412dc8, an owned object taken): the taker, the object and the object's position."
+research = "docs/research/crimes.md#owned-items"
+address = 0x00412dc8
+# addiu sp,sp,-0xc0; sq s0,0xb0(sp)
+original = [0x27bdff40, 0x7fb000b0]
+log = [
+  { value = "[0x005104f4]", name = "ticks" },
+  "ra",
+  { value = "a0", name = "taker" },
+  { value = "a1", name = "object" },
+  { value = "[a1 + 0x10]", name = "x", type = "f32" },
+  { value = "[a1 + 0x14]", name = "y", type = "f32" },
+  { value = "[a1 + 0x18]", name = "z", type = "f32" },
+]
+
+[hook.steal-claim]
+description = "WarriorSteal_ClaimObject (0x00321540) claiming an object, at the store of its cluster record (0x0032172c): the human, the object, the record, the record's place in the sorted walk and its users before this claim."
+research = "docs/research/ai-code.md#t2-warrior-steal"
+address = 0x0032172c
+# sw s6,0x0(s4); sw v1,0x4(s4)
+original = [0xae960000, 0xae830004]
+log = [
+  { value = "[0x005104f4]", name = "ticks" },
+  { value = "s6", name = "human" },
+  { value = "s5", name = "object" },
+  { value = "s4", name = "cluster" },
+  { value = "s7", name = "walk_index" },
+  { value = "[s4 + 0x4]", name = "users" },
+  { value = "[s5 + 0x10]", name = "x", type = "f32" },
+]
+
+[hook.getitem-glass]
+description = "GetItem's Process (0x002dc9f8) within 1.5 m of its standing point with a ray to the object that crossed glass (result 2, at 0x002dce94): the human, the goal, the object's handle and the squared distance to the point."
+research = "docs/research/ai.md#get-item"
+address = 0x002dce94
+# lui at,0x3e23; ori at,at,0xd70b
+original = [0x3c013e23, 0x3421d70b]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "s3", name = "human" }, { value = "s1", name = "goal" }, { value = "[s1 + 0x20]", name = "object" }, "f21"]
+
+[hook.pickup-action]
+description = "Each call of PickUpItemAction_Init (0x002faf98, an AI's pick-up press queued): the brain and the object."
+research = "docs/research/ai-world.md#pick-up"
+address = 0x002faf98
+# addiu sp,sp,-0x20; lui v0,0x54
+original = [0x27bdffe0, 0x3c020054]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a1", name = "brain" }, { value = "a2", name = "object" }]
+
+[hook.pickup-search]
+description = "Each call of Human_PickUpSearch (0x0024d810, the pick-up press of a player or an AI): the human and its object target (+0x128)."
+research = "docs/research/crimes.md#triangle"
+address = 0x0024d810
+# addiu sp,sp,-0x550; sq s4,0x4f0(sp)
+original = [0x27bdfab0, 0x7fb404f0]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }, { value = "[a0 + 0x128]", name = "target" }]
+
+# The level99 power-lesson pass of 2026-10-11 (docs/research/combat.md#power-move-props, docs/research/scenes.md#humans).
+
+[hook.pair-break]
+description = "Each call of Human_BreakPair (0x00258a88): the human, the caller and the tick count."
+research = "docs/research/combat.md#pair-break"
+address = 0x00258a88
+# addiu sp,sp,-0x40; sq s1,0x20(sp)
+original = [0x27bdffc0, 0x7fb10020]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }]
+
+[hook.throw-clear-link]
+description = "Each call of Throw_ClearLink (0x0022bce0): the attacker, the victim, the caller and the tick count."
+research = "docs/research/combat.md#pair-break"
+address = 0x0022bce0
+# addiu sp,sp,-0x30; sq s0,0x20(sp)
+original = [0x27bdffd0, 0x7fb00020]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "attacker" }, { value = "a1", name = "victim" }]
+
+[hook.prop-create]
+description = "Each call of Human_CreateCarriedProp (0x0024cbb0, clip event 0x30): the human, the object's name and the caller."
+research = "docs/research/combat.md#power-move-props"
+address = 0x0024cbb0
+# addiu sp,sp,-0xa0; sq s3,0x60(sp)
+original = [0x27bdff60, 0x7fb30060]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }, { value = "a1", name = "name", text = 32 }]
+
+[hook.prop-release]
+description = "Each call of Human_ReleaseCarriedProps (0x0024ce40): the human, the caller and the tick count."
+research = "docs/research/combat.md#power-move-props"
+address = 0x0024ce40
+# addiu sp,sp,-0x30; sq s0,0x20(sp)
+original = [0x27bdffd0, 0x7fb00020]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }]

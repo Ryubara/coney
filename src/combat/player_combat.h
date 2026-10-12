@@ -54,7 +54,10 @@ struct CombatInput {
     bool wallInReach = false;    ///< A wall within a throw's reach.
     bool victimMuggable = false; ///< The held victim may be mugged.
     bool victimInPlace = true;   ///< The held victim stands in its place for a move in the hold.
-    bool helpless = false;       ///< Reacting to a hit, stunned, down or held: only the meters run.
+    /// Holding from behind without human flag `0x40000000`: a throw takes the rear hold's path, the spin to the front
+    /// (80) first, which lasts this many updates (at least 1). 0 otherwise: a throw takes the front hold's path.
+    int rearThrowSpinUpdates = 0;
+    bool helpless = false; ///< Reacting to a hit, stunned, down or held: only the meters run.
     /// The record's `+0x08` as the update starts: the bits the clips playing hold (docs/research/tasks.md#held-flags),
     /// an attack's phases among them, which every reader below tests with its own mask.
     std::uint32_t phase = 0;
@@ -142,17 +145,21 @@ class PlayerCombat {
     // R1 held in a fight, or L1 released or L1 + R1 short of full rage while blocking: the block. Returns true when
     // the command is R1 held, which ends the update.
     bool updateBlock(const CombatInput& input, CombatOutput& out);
-    // Starts `animId` as an attack (through the chain, for its hit timing) and names it in `out`.
-    void startAttack(int animId, const CombatTuning& tuning, CombatOutput& out);
+    // Starts `animId` as an attack (through the chain, for its hit timing, `delayUpdates` later when another clip plays
+    // in front of it) and names it in `out`.
+    void startAttack(int animId, const CombatTuning& tuning, CombatOutput& out, int delayUpdates = 0);
     // The grabbing route.
     void updateGrabbing(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
     // Cross + square outside a hold: the special 653 (645 in rage), which needs and spends a quarter of the power meter
-    // (docs/research/combat.md#attacks). Refused on kSpecialRefusingPhases. The fighter adds 2 from the target's rear
+    // (docs/research/combat.md#attacks). Refused on kSpecialRefusingPhases and with an object in hand
+    // (CombatInput::animSet not 0: the original throws a melee weapon instead, which is not built; either way no
+    // special, docs/research/combat-moves.md#bat-cross). The fighter adds 2 from the target's rear
     // (Fighter::playAttack()). **Coney choice**: circle + triangle (the tag) is not built.
     // @orig 0x00287730 Player_Special (unknown)
     void special(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
     // Circle + cross outside a hold: the strong grapple, a grab whose connect is the strike 657 (649 in rage), with no
-    // power check or cost; with nobody to grab, nothing (docs/research/combat.md#strong-grapple).
+    // power check or cost; with nobody to grab, nothing (docs/research/combat.md#strong-grapple). Refused, like the
+    // special, with an object in hand (docs/research/combat-moves.md#bat-cross).
     // @orig 0x00263c90 Player_SpecialAttack (unknown)
     void strongGrapple(const CombatInput& input, CombatOutput& out);
     // The mounted route (after a tackle or a grab's mount): updateMount's move, played through the chain or the mode.

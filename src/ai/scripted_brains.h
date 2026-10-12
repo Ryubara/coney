@@ -14,6 +14,7 @@
 
 #include "ai/brain.h"
 #include "ai/brains.h"
+#include "ai/item_services.h"
 #include "ai/move_to_flag_goal.h"
 #include "ai/script_services.h"
 #include "ai/scripted_humans.h"
@@ -70,6 +71,11 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     void setMessages(const script::MessageHandlers* messages) { m_messages = messages; }
     /// Walks `FlagNetTraverse`'s pedestrians on `net` (null: there is none, and they stand); it must outlive them.
     void setFlagNet(const world_objects::FlagNet* net) { m_flagNet = net; }
+    /// Gives the steal command's tactic the level's loose objects and store fronts (null for none: no store is ever
+    /// found); they must outlive this, or be replaced.
+    void setItems(ItemServices* items) { m_items = items; }
+    /// The level's loose objects for the AI's fetching; null for none.
+    [[nodiscard]] ItemServices* items() const { return m_items; }
     /// Sets the scripts' animation callbacks (null for none), which then resolve handles to the bound humans; it must
     /// outlive this, or be replaced. A bound human's anim starts are kept for runAnimCallbacks().
     void setAnimCallbacks(script::AnimCallbacks* callbacks);
@@ -372,6 +378,7 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     script::ScriptSystem* m_scripts = nullptr;
     const script::MessageHandlers* m_messages = nullptr;
     const world_objects::FlagNet* m_flagNet = nullptr;
+    ItemServices* m_items = nullptr;
     script::AnimCallbacks* m_animCallbacks = nullptr;
     std::vector<std::pair<double, std::uint32_t>> m_animStarts; // (human, anim id) since runAnimCallbacks()
     Brain* m_player = nullptr;

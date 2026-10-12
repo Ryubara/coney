@@ -12,6 +12,9 @@
 
 namespace coney::world_objects {
 
+/// `ObjSpawn`'s flag that marks an object owned (a store's stock): record bit `0x80000`.
+inline constexpr std::uint32_t kSpawnOwned = 2;
+
 /// One spawn record: what `ObjSpawn` leaves for an object to be made from later. Coney keeps the record's meaning,
 /// not its 0x28-byte layout.
 struct SpawnRecord {
@@ -22,12 +25,16 @@ struct SpawnRecord {
     std::uint32_t tint = 0xFFFFFFFFU;          ///< `+0x14`: the tint word `0xRRGGBBAA`; white is no tint.
     std::uint32_t zone = 0;                    ///< `+0x20`'s top bits: the object zone, 0 for none.
     std::uint32_t flags = 0;                   ///< `ObjSpawn`'s flags (bits 1 and 64 go to `+0x24`).
-    std::string flagName{};                    ///< `+0x18`: the flag (marker) it is linked to; empty for none.
-    bool live = false;                         ///< `+0x24` bit `0x20000`: its object exists.
-    bool pinned = false;                       ///< `+0x24` bit `0x10000`: never stored (a scene holds it).
-    bool removed = false;                      ///< `+0x24` bit `0x40000`: gone for good, never spawned again.
-    bool hidden = false;                       ///< Its object is hidden (`ObjHide`) until shown again (`ObjShow`).
-    float fadeInDistance = 0.0F;               ///< `+0x138`: what `ObjShow` was given (inferred: a fade-in distance).
+    /// `ObjSpawn` flag 2 (record bit `0x80000`, kept on its object as `+0x109`): the object is owned, a store's stock,
+    /// so taking it is a theft. Set from the flags when the record is added; cleared for good once it is taken
+    /// (docs/research/crimes.md#owned-items).
+    bool owned = false;
+    std::string flagName{};      ///< `+0x18`: the flag (marker) it is linked to; empty for none.
+    bool live = false;           ///< `+0x24` bit `0x20000`: its object exists.
+    bool pinned = false;         ///< `+0x24` bit `0x10000`: never stored (a scene holds it).
+    bool removed = false;        ///< `+0x24` bit `0x40000`: gone for good, never spawned again.
+    bool hidden = false;         ///< Its object is hidden (`ObjHide`) until shown again (`ObjShow`).
+    float fadeInDistance = 0.0F; ///< `+0x138`: what `ObjShow` was given (inferred: a fade-in distance).
     /// The last show/hide message (0x0a) a binding sent its object: `ObjShow` true, `ObjHide` false; none yet. An
     /// objective marker follows it (its init hides it until one is sent).
     std::optional<bool> shownMessage;
@@ -66,8 +73,10 @@ class SpawnRecords {
     /// `CfgSetDatabaseSizes(objects, ...)`: room for `objects` + kPoolExtra records; forgets any there were.
     void createPool(std::size_t objects);
 
-    /// Adds `record` (its handle set by the caller) and returns it; null when the pool is full.
+    /// Adds `record` (its handle set by the caller) and returns it; null when the pool is full. Flag kSpawnOwned
+    /// marks it owned (SpawnRecord::owned), as its object takes the owned state from the record's flags.
     /// @orig 0x00398940 ObjRecord_Add (unknown)
+    /// @orig 0x00392510 WorldObject_SetOwnedFromFlags (unknown)
     SpawnRecord* add(SpawnRecord record);
 
     /// The record named by `handle`; null when none is.

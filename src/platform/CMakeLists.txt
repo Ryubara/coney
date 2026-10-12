@@ -13,7 +13,7 @@ target_sources(coney_platform PRIVATE blood_textures.cpp play_lighting.cpp scene
 target_sources(coney_platform PRIVATE play_level_cast.cpp play_level_character.cpp play_level_hats.cpp play_level_mode.cpp play_level_objects.cpp play_level_scene.cpp play_level_throw_aim.cpp
                                       play_level_world.cpp play_scenery.cpp scene_stage.cpp)
 # The in-game HUD on screen: its sheets, batches and 2D pass (docs/research/hud.md#coneys-implementation).
-target_sources(coney_platform PRIVATE hud_layer.cpp)
+target_sources(coney_platform PRIVATE hud_layer.cpp humans_trace.cpp)
 # The sandbox: Coney's own test worlds, drawn and flown round (docs/guides/sandbox.md).
 target_sources(coney_platform PRIVATE sandbox_renderer.cpp sandbox_viewer_mode.cpp)
 # The reference images of characters and objects (docs/guides/building.md#reference-images).
@@ -88,6 +88,12 @@ set_tests_properties(coney.rejects_missing_input_script PROPERTIES WILL_FAIL TRU
 add_test(NAME coney.debug_menu_by_pad
          COMMAND coney --headless --frames 30 --input-script "${PROJECT_SOURCE_DIR}/tests/support/debug_menu.txt")
 set_tests_properties(coney.debug_menu_by_pad PROPERTIES TIMEOUT 30 PASS_REGULAR_EXPRESSION "> DbgEnterCheat\\(0\\)")
+# The Time page's scale by pad, headless: the chord opens the menu, the left stick at a partial push walks to the 0.25x
+# preset and cross chooses it, which the session prints as a notice (docs/guides/debug-menu.md#pages).
+add_test(NAME coney.debug_menu_time_scale
+         COMMAND coney --headless --frames 40
+                 --input-script "${PROJECT_SOURCE_DIR}/tests/support/debug_menu_time_scale.txt")
+set_tests_properties(coney.debug_menu_time_scale PROPERTIES TIMEOUT 30 PASS_REGULAR_EXPRESSION "Time scale 0[.]25x")
 add_test(NAME coney.rejects_bad_tunables COMMAND coney --headless --frames 1
                                                  --tunables "${PROJECT_SOURCE_DIR}/tests/support/debug_menu.txt")
 set_tests_properties(coney.rejects_bad_tunables PROPERTIES WILL_FAIL TRUE)

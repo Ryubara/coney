@@ -42,10 +42,10 @@ have come from the page, so its independence can be shown; code written by someo
 carefully they worked. You may analyse one function and implement a different one, as long as you have never read
 the original code of the one you implement.
 
-For agents, Rekit enforces the split where the platform allows: the analyst agent and the implementer agent are
-separate, and the implementer agent has no Ghidra or emulator tools at all. People keep it by discipline: before
-implementing a function, check that you haven't read the original code of the functions involved, and hand
-the work on if you have.
+For agents, the agent definitions in `.claude/agents` enforce the split where the platform allows: the analyst agent
+and the implementer agent are separate, and the implementer agent has no Ghidra or emulator tools at all. People keep
+it by discipline: before implementing a function, check that you haven't read the original code of the functions
+involved, and hand the work on if you have.
 
 What crosses from analyst to implementer is **facts and behaviour**, never code: data layouts, constants, file
 formats, algorithms needed to read the game's data (the CRC-32 name hash, for example), and prose descriptions of
@@ -80,7 +80,7 @@ to know whether it was read in the code, seen happening, or worked out from clue
 | **inferred** | Follows from evidence that points one way, without being read or observed directly | `inferred` |
 | **speculative** | A plausible guess, written down so it can be tested | `speculative` |
 
-Examples (the current pages have no runtime observation yet, so that level is shown as a template):
+Examples:
 
 - **Confirmed (code).** [WARRIORS.DIR](../research/formats/wad-dir.md): the index's constructor at `0x00149160`
   reads the entry count, seeks to `0x10`, allocates `count * 12` bytes and reads the entry table. The claim names
@@ -110,44 +110,10 @@ A page also says what it was checked against: the executable (`SLUS_212.15`, see
 
 ## The research database {#the-research-database}
 
-Research pages are for reading; the research database is the same knowledge in a form tools can check. It is a set
-of YAML files in `research/` at the repository root, in the schema Rekit defines:
-
-- `research/symbols/<area>.yaml`: one entry per function or global, by address;
-- `research/types/<area>.yaml`: one entry per struct, with its fields at their offsets.
-
-```yaml
-# research/symbols/<area>.yaml
-- addr: 0x001490b8
-  name: DVDWadIndex::Find
-  tu: Device/ps2/fileio/DVDWadIndexPS2.cpp     # original translation unit, when known
-  evidence: confirmed-code                     # confirmed-code | confirmed-runtime | inferred | speculative
-  reimpl: src/fileio/wad_index.cpp             # filled in by `rekit research check --fix-reimpl`
-  notes: CRC-32 of the lowercased name, then a linear scan.
-```
-
-```yaml
-# research/types/<area>.yaml
-- name: WadDirEntry
-  size: 12
-  evidence: confirmed-code
-  fields:
-    - { offset: 0x0, type: u32, name: wadOffset }
-    - { offset: 0x4, type: u32, name: size }
-    - { offset: 0x8, type: u32, name: nameHash, notes: "CRC-32 of the lowercased path" }
-```
-
-The database keeps three things in step:
-
-- **the code:** `rekit research check` matches every `@orig` tag in the source against the symbols, in both
-  directions (see [Comments and @orig](conventions.md#comments-and-orig));
-- **the docs:** `rekit research tables` generates the symbol and type tables in `docs/research/tables/`, which are
-  never edited by hand;
-- **Ghidra:** `rekit ghidra apply` pushes names, types and comments into an analyst's local Ghidra project, and
-  `rekit ghidra export` brings new names back, never overwriting an entry that has a higher evidence level.
-
-The database **arrives with Rekit**. Until then, findings are recorded on the research pages only, and the YAML
-is seeded from them when it arrives. One file is already there, because it is Coney's own: the script bindings.
+Research pages are for reading; a research database is planned: the same knowledge as YAML files in `research/` at
+the repository root, one entry per function, global and struct, that tools can check against the code. It does not
+exist yet. Until it does, findings live on the research pages only, and the YAML is seeded from them when it is
+created. One file is already there, because it is Coney's own: the script bindings.
 
 ### The script bindings {#bindings}
 
@@ -456,6 +422,11 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
   (`0x000b0000`) and runs the two instructions. The recorder reads the ring every poll and writes one CSV per hook
   ([Hooks](#hooks)). A **call hook** makes the game call one of its own functions on its own thread, as a script
   binding would: that is how a fight is started on a pedestrian (`GoalFight`'s `0x002b2b90`) for the AI checks.
+- **Absolute paths from a worktree.** Give `pcsx2 launch` and `pcsx2 record` absolute `--iso`, `--scratch` and
+  `--state` paths when you run them from a worktree: PCSX2 opens the disc link relative to its own folder, so a
+  relative path fails ("Requested filename ... does not exist" in its `logs/emulog.txt`) and the tool only reports
+  that the state did not run within 60 s. A state that already holds a patch (`scripted-pad` in most saved states)
+  is refused by that patch: leave it out of the scenario's `patches`.
 - **Leave the quick-save slots alone.** Load existing slots read-only (they may hold someone else's test spots), and
   keep your own states as files in your scratch folder, made as above. PINE can only save to a slot number: when a
   state must be saved from a running game, save it to an empty slot above 10 and move the file to your scratch folder
@@ -589,7 +560,8 @@ and `call-brains`. The hint-queue pass added `hint-queue`, `hint-clear`, `hint-w
 box's queue, [HUD](../research/hud.md#hint-queue-runtime)) and `anim-dispatch` and `anim-callback-match` (who starts
 which anim id and which script callback it runs). The level80 passes added the teammate hooks (`hit-by-chief`,
 `hit-reaction`, `attack-target-push`, `push-contact`, `can-push`, `say-command`) and the fire hooks (`ember-init`,
-`burn-init`, `fade-flame-init`, `debris-flame` and their update hooks). One run installs at most 64 hooks, fewer than
+`burn-init`, `fade-flame-init`, `debris-flame` and their update hooks); the revive pass added `revive-start` and
+`revive-finish` ([Combat](../research/combat.md#revive-runtime)). One run installs at most 64 hooks, fewer than
 the file holds, so name only the ones a pass needs. Two hooks at one address cannot be installed together (`hint-show`
 and `event-hint` are the same place): pick one, and add any extra value it needs to the one you keep. When the update
 of an entry matters, log the tick count and use it: in that pass one Lua call's four `HintBox_Queue` entries, all at
@@ -636,6 +608,15 @@ The smoke scenarios reproduce claims of the research pages: `walk60` (the walk s
 `run_circle` (the run and the camera's auto-centre turning it into a circle, slot 1), both started at slot 1's spot
 (level99 checkpoint 3 with `--start`), and `combat_cross` (`X1` then `XX2` at a puppet civilian 1.5 m away, slot 6, which
 walks in to 1.36 m; on Coney the fight yard's `cross` spawn, a still target 1.05 m away that X1 steers onto alike).
+
+**Gang fights are compared by behaviour, not by step.** The two games draw different random numbers, so a big fight
+(a Rumble gang battle) never plays out alike twice, even in the original. Record several matches of the original and
+several of Coney with the all-humans trace (one row per human per update; Coney's `--trace-humans`, the original's
+`[[humans]]` field set of `research/traces/fields.toml`), then `coney-tools trace fight-report --original ... --coney
+...` computes rates, shares and distributions per gang (goal time shares, attacks and blocks per minute, attackers on
+one target, distance to the target, target switches, goal interruptions, time to the first engagement, knock-out
+times, the match's length and winner) and flags each metric where Coney is outside the original's spread
+([coney-tools](coney-tools.md#trace)). Keep the recordings in the scratch folder, never in the repository.
 
 ### Differential playthroughs {#differential-playthroughs}
 

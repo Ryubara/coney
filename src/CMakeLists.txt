@@ -29,6 +29,7 @@ add_library(coney_core STATIC
     gamemodes/game_mode_stack.cpp
     gamemodes/gameplay_mode.cpp
     gamemodes/gameplay_tag.cpp
+    gamemodes/gameplay_revive.cpp
     gamemodes/gameplay_uncuff.cpp
     gamemodes/gameplay_war_commands.cpp
     gamemodes/system_music.cpp
@@ -37,6 +38,7 @@ add_library(coney_core STATIC
     gamemodes/loading_screen.cpp
     gamemodes/level_flow_mode.cpp
     gamemodes/level_object_services.cpp
+    gamemodes/level_items.cpp
     gamemodes/level_pickups.cpp
     gamemodes/level_start.cpp
     gamemodes/load_entry_mode.cpp
@@ -247,6 +249,8 @@ target_sources(coney_core PRIVATE
     human/human_sounds.cpp
     human/human_animator.cpp
     human/human_held.cpp
+    human/human_revive.cpp
+    human/way_clear.cpp
     human/human_flight.cpp
     human/human_hiding.cpp
     human/human_script.cpp
@@ -287,6 +291,7 @@ target_sources(coney_core PRIVATE
     ai/brains.cpp
     ai/chase_goals.cpp
     ai/crew.cpp
+    ai/steal_goals.cpp
     ai/dealer_goal.cpp
     ai/engage_goals.cpp
     ai/melee_goal.cpp
@@ -299,6 +304,7 @@ target_sources(coney_core PRIVATE
     ai/swap_prompt.cpp
     ai/tactic_scout.cpp
     ai/fight_goal.cpp
+    ai/fight_trace.cpp
     ai/fight_reactions.cpp
     ai/formations.cpp
     ai/gangs.cpp
@@ -349,6 +355,7 @@ target_sources(coney_core PRIVATE
     combat/meters.cpp
     combat/player_combat.cpp
     combat/rage_awards.cpp
+    combat/revive.cpp
     combat/reactions.cpp
     combat/stick_games.cpp
     combat/throw_aim.cpp
@@ -384,6 +391,7 @@ target_sources(coney_core PRIVATE
     debug/pages_hud.cpp
     debug/pages_play.cpp
     debug/pages_scripts.cpp
+    debug/pages_time.cpp
     debug/story_missions.cpp
     debug/time_control.cpp
     debug/time_series.cpp

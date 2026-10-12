@@ -26,17 +26,15 @@ Every feature goes through the same steps:
 
 ## Two roles: the clean room
 
-Analysts and implementers are never the same person or agent
-([Clean room](research-workflow.md#clean-room), [LEGAL.md](repo:LEGAL.md)):
-
-| | Analyst | Implementer |
-| --- | --- | --- |
-| Reads | Ghidra, disassembly, PCSX2 | research pages, Coney's code |
-| Writes | research pages, Ghidra names and comments | engine code, tests |
-| Never | writes engine code | opens Ghidra or PCSX2 |
+An analyst reads the original (Ghidra, disassembly, PCSX2) and writes research pages; an implementer writes engine
+code and tests from those pages and Coney's own code, and never opens Ghidra or PCSX2. The split is per function:
+whoever has read a function's original code never implements that function
+([Clean room](research-workflow.md#clean-room), [LEGAL.md](repo:LEGAL.md#clean-room)).
 
 An implementer who needs more asks a question; a coordinator routes it to the analyst who owns that area, and the
 answer lands on the page, not in a private message. Neither role ever puts game data in the repository.
+What a page must hold to be coded from, with three real features traced to the merged result, is in
+[From research to code](research-to-code.md).
 
 ## The tools
 
@@ -147,6 +145,12 @@ something:
   virtual-machine builds locally when the project's CI covers them. On Windows that means no WSL builds and no
   clang-tidy runs: GitHub CI is the Linux and macOS gate, and a failure there is fixed forward on the branch
   ([CI](building.md#what-ci-runs)).
+- **Keep the drive from filling up.** A build is about 4 GB and every track has its own worktree, so forgotten
+  worktrees fill a drive (once down to 3 GB free, which broke builds). An agent creates a `.coney-busy` file in its
+  worktree when it starts and deletes it when it finishes, and deletes its own `build/` folder when it hands over a
+  unit. The coordinator runs `coney-tools workspace clean --apply` after every merge round (it removes merged
+  worktrees and old build folders, and never touches busy or unmerged work) and `coney-tools workspace disk` before
+  starting builds: below 30 GB free it cleans first ([Cleanup](workspace.md#cleanup)).
 - **Heavy builds take a slot.** A full engine build uses every core, so only a few run at once: the coordinator
   sets the number the machine can take, records it in its state file and gives each building track a slot, staggering
   the rest. Tracks that only read, write docs or drive the emulator need no slot.
@@ -173,8 +177,10 @@ closes it. The whole process: [Issues](issues.md).
 **Leftovers are issues, not notes.** An agent that finishes a unit with work still undone lists each leftover in its
 message to the coordinator (title, area, research page, what "done" means), and the coordinator files the issue and
 writes its number into the pull request's Remaining list; CI refuses an unchecked Remaining item with no `#123`
-([Leftovers become issues](issues.md#leftovers)). The state file (`HANDOFF.md`) keeps only the live state and issue
-numbers, never a list of work to do: the work list is the open issues.
+([Leftovers become issues](issues.md#leftovers)). The issue states its problem first, links pages by relative links
+and names the source pull request's status truthfully ([Writing an issue a newcomer can read](issues.md#writing)).
+The state file (`HANDOFF.md`) keeps only the live state and issue numbers, never a list of work to do: the work list
+is the open issues.
 
 ## Testing {#testing}
 
@@ -213,6 +219,9 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
 
 ## Merging safely {#merging}
 
+- **After a merge, fix the issues that cite the pull request.** Search them (`gh issue list --state open --search "#N"`),
+  change "open" to "merged" where the text names the pull request, tick the checklist items it finished, and close or
+  relabel an issue it fixed ([Writing an issue a newcomer can read](issues.md#writing)).
 - **Merge only finished commits.** A "WIP" commit made when a track paused is never merged: create a clean commit
   (or cherry-pick the finished part) instead.
 - **Check a branch's diff before merging it.** A branch can be contaminated with unrelated reverted files (a bad
@@ -261,8 +270,9 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
   the results of the checks. Short. A pull request's description carries the same as a Testing section (what ran,
   the numbers) and a Screenshots section (before and after for anything visible, uploaded with `gh --attach` and never committed):
   [What a pull request shows](testing.md#pr-evidence).
-- **Commits carry the agent's own model name** in a `Co-Authored-By` trailer (the format is in
-  [Conventions](conventions.md)); an agent never pushes, opens or merges a pull request.
+- **Commits carry the agent's own model name** in a `Co-Authored-By` trailer (the format is
+  `commits.trailers` in [.github/conventions.yml](repo:.github/conventions.yml), explained in
+  [CONTRIBUTING.md](repo:CONTRIBUTING.md#agents-commits)); an agent never pushes, opens or merges a pull request.
 
 ## Starting on another game {#another-game}
 

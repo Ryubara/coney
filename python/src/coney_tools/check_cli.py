@@ -17,9 +17,11 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from coney_tools import local_gate
+from coney_tools.audit import Report, run_checks, specs_in
+from coney_tools.audit_files import FilesContext
 from coney_tools.config import ConfigError, find_repo_root
+from coney_tools.conventions import Paths, load_conventions
 from coney_tools.local_gate import StepResult
-from coney_tools.repo_checks import check_pointer_files
 
 #: The steps, in the order they run and print; `--only` and `--skip` take these names.
 STEPS: tuple[str, ...] = ("repo", "pre-commit", "clang-tidy", "docs", "python")
@@ -50,10 +52,18 @@ def _tail(lines: list[str]) -> tuple[str, ...]:
 
 
 def _step_repo(root: Path) -> StepResult:
-    """`coney-tools repo check`: the agent pointer files."""
-    problems = check_pointer_files(root)
+    """`coney-tools repo audit --files`, which CI runs: the conventions file loads, the agent pointer files, the
+    generated blocks, the issue forms, the pull request template, the CI scope script and pre-commit's size limit
+    agree with it."""
+    conventions = load_conventions(root)
+    report = Report(("files",))
+    run_checks(specs_in(conventions, ["files"]), {"files": FilesContext(root, conventions)}, report)
+    problems = [f"{finding.check} {finding.item}: {finding.message}" for finding in report.findings]
     return StepResult(
-        "repo", not problems, "pointer files" if not problems else f"{len(problems)} problems", output=tuple(problems)
+        "repo",
+        not problems,
+        f"{len(report.ran)} audit checks" if not problems else f"{len(problems)} problems",
+        output=tuple(problems),
     )
 
 
@@ -161,14 +171,14 @@ def _step_tidy(root: Path, changed: list[str], build_dir: Path, jobs: int, clang
     )
 
 
-def _docs_changed(changed: list[str]) -> bool:
-    """True when the change touches the documentation build."""
-    return any(name.startswith(local_gate.DOCS_PATHS) or name in local_gate.DOCS_PATHS for name in changed)
+def _docs_changed(changed: list[str], paths: Paths) -> bool:
+    """True when the change touches the documentation build (a file matching `paths.docs_only`)."""
+    return any(paths.is_docs_only(name) for name in changed)
 
 
 def _step_docs(root: Path, changed: list[str]) -> StepResult:
     """`mkdocs build --strict` into a throwaway folder, when docs or the site setup changed."""
-    if not _docs_changed(changed):
+    if not _docs_changed(changed, load_conventions(root).paths):
         return _skipped("docs", "no docs changed")
     with tempfile.TemporaryDirectory(prefix="coney-site-") as site:
         venv_python = (

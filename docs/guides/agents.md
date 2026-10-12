@@ -125,6 +125,9 @@ instead of repeating it:
   brief";
 - how it runs ([Running without losing the cache](#cache)): it works local-first, never pushes or waits on CI, and
   hands each finished unit to the [release queue](how-we-work.md#release-queue);
+- disk: it creates `.coney-busy` in its worktree as it starts and deletes it when it finishes, and before reporting a
+  unit finished it deletes its own `build/` folder; a build is about 4 GB per preset
+  ([Cleanup](workspace.md#cleanup));
 - only the facts the agent cannot find in the repository (a log path, a question to answer, the state file).
 
 A brief may be just "issue #N": the issue holds the steps, the screenshots and the acceptance test, and the agent

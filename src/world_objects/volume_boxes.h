@@ -54,6 +54,8 @@ class VolumeBoxes {
     static constexpr int kInside = 5;
     /// Damage done by a human standing inside (docs/research/scripting.md#triggers).
     static constexpr int kDamaged = 6;
+    /// An owned object taken from inside (Item_TakeOwned, docs/research/crimes.md#owned-items).
+    static constexpr int kStolen = 7;
 
     /// What a box's message goes to: (the box, the message, the human).
     using Send = std::function<void(double box, int message, double human)>;
@@ -101,6 +103,14 @@ class VolumeBoxes {
     /// delivery's test. The 30 m alert that follows in the original (`0x00293768`) is not here.
     /// @orig 0x00413018 VolumeBoxes_SendDamageMessage (unknown)
     void sendDamage(const std::array<float, 3>& human, const std::function<void(double box)>& send) const;
+
+    /// An owned object taken at `spot`: every enabled kind-0 box that `spot` is inside goes to `send` with message
+    /// kStolen, in the order the boxes were added (Item_TakeOwned tells the boxes round the spot through the inside
+    /// test `0x00412a18`). **Coney's reading**: the page names the inside test but not which boxes are asked, so they
+    /// are those message 6 asks (enabled, kind 0), and the spot is the object's, not the taker's; the witnesses'
+    /// alert, the crime score and the lines that follow in the original are not here.
+    /// @orig 0x00412dc8 Item_TakeOwned (unknown)
+    void sendTheft(const std::array<float, 3>& spot, const std::function<void(double box)>& send) const;
 
   private:
     std::vector<VolumeBox> m_boxes;

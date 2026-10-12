@@ -714,9 +714,32 @@ subtracts it down to 0 the same way. [`ProcessTag`](../references/bindings/level
 ### Taking owned items {#owned-items}
 
 An item with its owned byte (`+0x109`) set, from a store or a stolen stereo, is cleared of it when taken
-(`0x00395d98`) and `Item_TakeOwned` (`0x00412dc8`) runs, confirmed (code): every human that can see the spot is told
-(message 7, `0x00412a18`), humans within 30 m are alerted (`0x00293768`), a player scores crime event 4-8, a Warrior
-led by a player scores it for every player (`0x004f39e8`), and nearby witnesses say 128 `stealitem` (30 %) or 143.
+(`0x00395d98`) and `Item_TakeOwned(taker, object)` (`0x00412dc8`) runs, confirmed (code):
+
+1. **Message 7 goes to volume boxes only**, as message 6 does ([Scripts: triggers](scripting.md#triggers)): every
+   box (handles `0x26c`-`0x2eb`) that is enabled (`+0x68`), of kind 0 (slot `+0x64`), has a Lua handler for 7 and
+   whose inside test (`0x00412a18`) holds for **the object's position** (not the taker's). The Lua handler gets
+   **(taker, object)** (marshaller case 7, `0x00384ce0`). No human is sent message 7.
+2. Humans within **30 m** of the object are alerted (`AI_AlertNearby`, `0x00293768`) with the message and the spot.
+3. A **player** taker scores statistic [4-8](../references/statistics.md#stat-4-8) (`Stats_AddCrime(..., 8, 1)`);
+   an AI taker of brain type 3 (a Warrior) whose gang leader is a player scores it for every player
+   (`Stats_AddCrimeAllPlayers`).
+4. An **AI taker** then says line 128 `stealitem` (30 %) or 143 himself (not a witness), only when he may gesture
+   (`Ambient_MayGesture`) and the shared 8 s timer allows (`AI_Every8s`).
+
+When it runs: the pick-up search (`Human_PickUpSearch`, `0x0024d810`) calls it at the press, for the player and an AI
+alike; for any object but a `TYPE_SPECIAL` it then clears the owned byte (`0x00395d98`). A `TYPE_SPECIAL` keeps the
+byte, and `Human_PickUpObject` (`0x0023bf00`) calls `Item_TakeOwned` again only on its path for a human with none of
+record flags `0x5c7eae0` (not during a pick-up clip, which holds `0x4000`), followed by a turn to the object and
+overlay clip 667. Confirmed (code).
+
+**What a take of a `TYPE_SPECIAL` gives** (`Human_PickUpObject`, the store items' case: model hash not one of the
+named mission items, during the pick-up clip, type class name `pickup_item`), confirmed (code) at `0x0023bf00`:
+nothing for brain types 2 and 4 (gangs, civilians); for a player, item 10 ×1 (notify) and the money (the type's
+value × game state `+0x380`) to his own panel; for a **Warrior** (type 3), item 10 to his own panel, which an AI
+crew member does not have (`+0x380` = −1, which `Inventory_AddItem` ignores), and **the money to his gang leader's
+panel** (the player's, without notify), with item 10's pick-up sound played in 2D. So a crew member's theft pays the
+player and adds no loot item.
 
 ### Stores {#stores}
 
@@ -1023,7 +1046,24 @@ gang's follow after a release and `0x00280fd8`.
 Coney's choices: a break-in and a custom crime queue kind-1 responders (the break-in after `CfgBreakAndEnterDelay`);
 the assault statistic is scored once per victim through the service.
 
+**Owned items** (`repo:src/world_objects/spawn_records.h`, `repo:src/gamemodes/level_pickups.h`, 2026-10-11): a spawn
+record made with `ObjSpawn` flag 2 (record bit `0x80000`, `WorldObject_SetOwnedFromFlags` `0x00392510`) is owned; in
+`level80` that is the pharmacy's stock, the 23 objects of zone 24 with flags 2 in its placed-objects list (disc check,
+NTSC-U, counts only). Whoever takes one, the player with triangle or a Warrior fetching it, clears it and the theft goes
+to every enabled kind-0 volume box round the object's spot as message 7, `(taker, object)`
+(`VolumeBoxes::sendTheft`, `repo:src/world_objects/volume_boxes.h`); an AI's take of a `TYPE_SPECIAL` removes it with
+nothing given. **Coney's readings**: the page names the inside test (`0x00412a18`) but not which boxes are asked nor
+whether the point is the object's or the taker's, so they are the boxes message 6 asks and the object's spot. Not yet:
+the witnesses' message 7 and alert, the crime score 4-8 and the lines 128 / 143.
+
 ## Open questions
+
+- **GetItem's swing at glass** ([AI: GetItem](ai.md#get-item)): at level80's pharmacy (scenario `steal_store`) two Warriors
+  reached the glass branch 23 times each in 60 s and no pane broke. Whether the queued kind 0 played at all (the
+  anim-dispatch log of that run was not read), whether its strike reaches the pane's body from the standing point, and
+  whether the pharmacy's panes are alarmed or otherwise special are not known. The run was staged (checkpoint 1
+  state, the crew teleported inside, the order given through the dispatcher), so the mission's own path (the front
+  lock picked, the order given by the script) should be run before an implementer copies "they never break it".
 
 - Which objects register context records of kinds 1, 4 and 5, and with what second value.
 - Who sets mini-game mode 4.

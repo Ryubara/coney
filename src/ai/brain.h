@@ -54,6 +54,18 @@ enum class BrainType : std::uint8_t {
 /// gives Gang (**Coney choice**).
 [[nodiscard]] BrainType brainTypeOf(int behaviour);
 
+/// The human flags a human of brain type `type` is made with (`Human_Init`, docs/research/combat.md#human-flags): the
+/// player 0x2000000, 0x2 and 0x4; a Warrior 0x2 and 0x4 (revivable, so any Warrior downed in a fight can be revived);
+/// a cop and a dealer 0x2000 and 0x40000; any other none of these. **Coney's stand-in**: the others' 0x8 (woundable)
+/// on a 1-in-2 roll is not given, as no Coney code reads it and the roll would shift every seeded run.
+/// @orig 0x00218008 Human_Init (unknown)
+[[nodiscard]] std::uint64_t startingFlags(BrainType type);
+
+/// The flags `flags` of a player handed back to the AI as `leftAs` (`Human_ReleasePlayer`): 0x2, 0x4 and 0x2000000
+/// cleared, then 0x2 and 0x4 set again for brain type 0 or 3, 0x2000 for type 1; every other bit kept.
+/// @orig 0x0022a2a8 Human_ReleasePlayer (unknown)
+[[nodiscard]] std::uint64_t releasedFlags(std::uint64_t flags, BrainType leftAs);
+
 /// The goal stack's size, the action queue's, the enemy list's and the attack slots' (`+0x40`, `+0x68`, `+0x164`,
 /// `+0x1a4`).
 inline constexpr std::size_t kGoalStackSize = 10;
@@ -292,6 +304,10 @@ class Brain {
     [[nodiscard]] Goal* topGoal() { return m_goals.empty() ? nullptr : m_goals.back().get(); }
     [[nodiscard]] const Goal* topGoal() const { return m_goals.empty() ? nullptr : m_goals.back().get(); }
     [[nodiscard]] std::size_t goalCount() const { return m_goals.size(); }
+    /// The goal `index` places above the bottom of the stack (0 is the bottom); null past the top.
+    [[nodiscard]] const Goal* goalAt(std::size_t index) const {
+        return index < m_goals.size() ? m_goals[index].get() : nullptr;
+    }
     /// The reaction goal (`+0x3c`); null when none.
     [[nodiscard]] const Goal* reactionGoal() const { return m_reaction.get(); }
     /// Times the goals ran out (event `0xd`).
@@ -319,6 +335,8 @@ class Brain {
     [[nodiscard]] std::size_t actionCount() const { return m_actionCount; }
     /// The front action; null when the queue is empty.
     [[nodiscard]] Action* frontAction();
+    /// The same, for a reader.
+    [[nodiscard]] const Action* frontAction() const;
     /// Clears the goals, then the actions (`BrFlush`).
     /// @orig 0x00292530 Brain_FlushAll (unknown)
     void flush();

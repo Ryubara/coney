@@ -70,6 +70,7 @@
 #include "platform/error_dialogs.h"
 #include "platform/frame_pacer.h"
 #include "platform/game_session.h"
+#include "platform/humans_trace.h"
 #include "platform/imgui_overlay.h"
 #include "platform/pad_pipe.h"
 #include "platform/play_level_mode.h"
@@ -448,6 +449,16 @@ int main(int argc, char** argv) {
     sessionSettings.language = options->language;
     sessionSettings.skipMovies = options->skipMovies;
     sessionSettings.rumble = options->rumble;
+    // `--trace-humans`: the file every human of the run is traced to, opened before the first level loads.
+    std::shared_ptr<coney::platform::HumansTrace> humansTrace;
+    if (const std::optional<std::string> humansTracePath = options->humansTraceFile; humansTracePath) {
+        auto opened = coney::platform::HumansTrace::open(*humansTracePath);
+        if (!opened) {
+            std::fprintf(stderr, "coney: %s\n", opened.error().message.c_str());
+            return 1;
+        }
+        humansTrace = std::move(*opened);
+    }
     // The saved profiles: the player's folder, or none in test mode (docs/research/save.md#coney).
     sessionSettings.profiles = coney::platform::profileFolder(*options);
     sessionSettings.cardCheckingMs = coney::MemoryCardMode::kCheckingMessageMs;
@@ -561,6 +572,9 @@ int main(int argc, char** argv) {
                     std::fprintf(stderr, "coney: %s\n", traced.error().message.c_str());
                     return 1;
                 }
+            }
+            if (humansTrace) {
+                playLevel->traceHumansTo(humansTrace);
             }
             modes.push(*playLevel);
         } else {
@@ -734,6 +748,7 @@ int main(int argc, char** argv) {
     // `--script-trace`) apply to the first level it loads.
     if (session) {
         session->attachAudio(audio.get());
+        session->setHumansTrace(humansTrace);
         if (commandLineLevel) {
             session->setFirstLevelSetup(
                 [&options](coney::platform::PlayLevelMode& mode) -> std::expected<void, coney::Error> {
@@ -962,7 +977,7 @@ int main(int argc, char** argv) {
             devOverlay->draw();
         }
     });
-    // The time controls hold steps (pause, slow motion); a held step still reads the pads for the menus, and the
+    // The time controls hold steps (pause, a scale below 1x); a held step still reads the pads for the menus, and the
     // frame still renders the game's last step.
     modes.setStepGate([&debugSession] { return debugSession.time().shouldStep(); });
 
@@ -1047,7 +1062,10 @@ int main(int argc, char** argv) {
     if (pacer) {
         coney::platform::FramePacer& paced = *pacer;
         // The pacer's measure of each frame is also the debug menus' frame time.
-        hooks.waitForFrame = [&paced, &frameMilliseconds] {
+        hooks.waitForFrame = [&paced, &frameMilliseconds, &clock, &debugSession] {
+            // The Time page's scale above 1x makes more fixed steps due per real second (below 1x the time controls
+            // hold steps instead). Only a real clock is sped up: test mode stays one step a frame.
+            clock.setSpeed(debugSession.time().dueSpeedPercent());
             const std::uint64_t nanoseconds = paced.waitForFrame();
             frameMilliseconds = static_cast<double>(nanoseconds) / 1'000'000.0;
             return nanoseconds;

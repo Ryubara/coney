@@ -515,21 +515,72 @@ with command icons, `HUDShowWarCommand`). Confirmed (code) for the structure; th
   the text in it (`0x001a4d20`), mode 1 clears it, mode 2 marks it (`0x001a5070(item, text, 1)`, inferred: ticks it
   off), and mode 3 sets and marks it with no message. Slot 2 goes to a third list at `+0x2790`. The lists are the
   pause menu's Objectives screen: current, bonus and overview ([Pause menu](pause.md#the-items-screens)).
-- **Mode 0, not silent:** a **scroll-in message** is queued: a header (an objective icon, `<YOBJ>` for slot 0 at
-  `<SIZE 0.8>`, `<BOBJ>` for slot 1, the HUD colour slot 4 or 6 of `CfgHUDColor`, then the HUD string `0xe5` or `0xe6`)
-  followed by the text, at **(0.025, 0.88)**, size 0.05, for **`ms`** milliseconds (default 8,000), with the
-  interface sound cue `0x11`. A text starting with `<AUTOINDENT` builds the header another way (`0x001dab30`).
+- **Mode 0, not silent:** **one scroll-in message** is queued (`0x001db000`), its text a single string joined from
+  four parts with nothing between them, confirmed (code) at `0x001dae54`-`0x001daf8c`:
+  1. the **icon template**: slot 0 `<SIZE 0.8><MONEYFONT><YOBJ></MONEYFONT></SIZE>` followed by one space (47 bytes at
+     `0x00556260`), slot 1 `<MONEYFONT><BOBJ></MONEYFONT>` followed by one space (30 bytes at `0x005562a0`). The icon
+     tags draw as the money font's rectangles (28 and 22, [MONEYFONT](gui.md#moneyfont)) because the template opens
+     `<MONEYFONT>` around the tag alone; slot 1's icon has no `<SIZE>`. **The gap before the heading is that trailing
+     space**, drawn at the message's own size (after `</SIZE>`), not the icon's width;
+  2. the **colour tag** of HUD colour slot 4 (slot 0) or 6 (slot 1) (`HudColourTag_Get`, `0x0019eee0`, the table
+     `0x00600660` that `CfgHUDColor` fills);
+  3. the **heading**, HUD string **`0xe5`** (slot 0) or **`0xe6`** (slot 1) (`GlobalString_Get`, `0x0019ee70`);
+  4. the objective's **text**, unchanged.
+
+  A text that starts with `<` but not with `<AUTOINDENT` takes its icon template from its leading tag instead
+  (`Objective_GetIconPrefix`, `0x001dab30`, the strings at `0x00556210`-`0x00556408`): `<ROBJ_N>`, `<YOBJ_N>` and
+  `<BOBJ_N>` give the red, yellow and blue icon as above (the red one at `<SIZE 0.8>` like the yellow) followed by the
+  colour tag of slot 3, 4 or 6; `<ARREST_N>`, `<DEAD_N>`, `<FLASH_N>`, `<SPRAY_N>`, `<PEDRAT_N>` and `<CALLGANG_N>` give
+  `<MONEYFONT><RARREST></MONEYFONT>` and so on, one space and no colour tag; `<NICON>` gives no icon. The heading is
+  still chosen by the slot. Confirmed (code) at `0x001dab30`. The message is queued with the header part empty
+  (`0x00556410`), header kind −1, at **(0.025, 0.88)** (x `0x0050ede4` = 0.025, y `0x0050ede0` = 0.9 less 0.02), size
+  **0.05**, for **`ms`** milliseconds (default 8,000), with the interface sound cue **`0x11`**.
+  **Runtime** (PCSX2 2.9.94, a copy of quick-save slot 1, `level99` checkpoint 3, 2026-10-11; the scenario
+  `repo:research/traces/scenarios/objective_messages.toml` calls `HUD_SetObjective` through the call hook): the
+  strings read from the running game are `0xe5` = `<SIZE 1.0>New Objective</COLOR><CR3 0.01>`, `0xe6` =
+  `<COLOR 6A4183FF><SIZE 1.0>New Bonus Objective</SIZE></COLOR><CR3 0.01>`, colour slot 4 = `<COLOR 806400FF>` and
+  slot 6 = `<COLOR 6A4183FF>`. So **the heading string itself ends the line** (`<CR3 0.01>`, a new line 0.01 lower),
+  and closes the colour the slot's tag opened: the objective's text follows on the next line in the message's own
+  colour. The screenshots show the yellow circled icon, a space, "New Objective" in yellow and the text below it in
+  grey, and the blue diamond, "New Bonus Objective" in purple and the text below it.
 - **Mode 0, slot 1,** while the game's tutorial hints are on (`W_GameState + 0x56e2`) and not in an Armies of the
   Night level: the first time only (game-state flag `0x40000`), hint `0x15` is queued in the hint box.
-- **Mode 2:** two scroll-in messages, the header with the HUD string `0xe5`/`0xe6` and then the text; for slot 1 also
-  `0x001b3cb0(hud, 2)` per player (not traced).
+- **Mode 2 (completion) queues no message.** It builds the same string as mode 0 for that slot and text, then
+  **flushes** the scroll-in queue twice (`HUD_FlushScrollIn`, `0x001b3940`, at `0x001db16c` and `0x001db178`): with
+  that string, which ends the objective's own "new objective" message if it is showing and drops it if it is still
+  waiting, and with the bare text. Then it ticks the item (`0x001dd1a0`). It reads neither `silent` nor `ms`, and plays
+  no cue itself. Confirmed (code) at `0x001db02c`-`0x001db1f4`.
+    - **Slot 0:** nothing else. The game's "Objective complete" (built-in announcement 0 below) is not shown by
+      `HUD_SetObjective`: its only path is the script binding `HUDSetAnnounceMsg` (`0x001b5b08`, the one caller of
+      `HUD_ShowAnnouncement` besides this function), so a level script that wants it shows it itself. Confirmed (code)
+      for the callers; that the mission scripts do so is inferred.
+    - **Slot 1:** for each player slot whose handle resolves (`W_GameState + 0x224` players, handles from `+0x228`),
+      `HUD_ShowAnnouncement(hud, 2)` (`0x001b3cb0`): the built-in announcement 2, with interface cue **`0x14`**. Every
+      call targets the one HUD (`0x00600840`), so in one-player play it shows once. Confirmed (code); the per-player
+      repeat in split screen is not traced.
+    - **Runtime** (same run): after mode 0 for slot 0 at update 5, the message showed from update 7; mode 2 at update 95
+      ended it at update 96 and the queue stayed empty (the pool's five entries free), so the level's own hint box came
+      back. For slot 1, mode 2 at update 220 ended the "New Bonus Objective" message at update 221 and the announcement
+      widget (`+0xe344`) showed "Bonus complete" until update 282: 2,035 ms of game time, its `<DISPLAYTIME 2000>`.
+    - The built-in announcements read at runtime (`0x00622e20`; `<LEFT>`, `<DISPLAYTIME 2000>` and a white
+      `<MONEYFONT>` icon at 0.8, then one space and the words at `<SIZE 1.0>`): 0 the yellow icon and "Objective
+      complete" in `806400FF`; 1 the red icon (`<ROBJ>`) and "Objective complete" in `861A1AFF`; 2 the blue icon and
+      "Bonus complete" in `6A4183FF`; 3 "Checkpoint" in `861A1AFF` with no icon; 4 "Objective/Checkpoint complete" in
+      `6A4183FF` with no icon.
 
-**Scroll-in messages** (`ScrollInHUD.cpp`, HUD `+0x8dd0`): a **first-in, first-out** queue with no priorities
-(`ScrollIn_Queue` appends at the tail; nothing is queued when its pool `+0x548` has no free entry, and a message equal
-to the one showing, header and text compared as strings, is dropped). The front message is shown at its position with
-its wrap width (`0x0050ea50` one player, `0x0050ea4c` split), its y centred on the given y less `0x0050ea58`, and
-removed once game time (`GameTimer +0x48`, so not while frozen) is past its start plus its `ms` plus 500 ms; the next
-one starts on the following update. Confirmed (code) at `0x001c8b08`, `0x001c9028`.
+**Scroll-in messages** (`ScrollInHUD.cpp`, HUD `+0x8dd0`): a queue with no priorities in which **the newest message
+cuts the showing one short**. `ScrollIn_Queue` (`0x001c8b08`) appends the message at the tail (nothing is queued when
+its pool `+0x548` has no free entry, and a message equal to the one showing, header and text compared as strings, is
+dropped) and then ends the showing message (`MessageHUD_Shutdown`, `0x001b9290`, which clears its text `+0x68`).
+`ScrollIn_Update` (`0x001c9028`) starts the front waiting message when none shows, taking it out of the list, at its
+position with its wrap width (`0x0050ea50` one player, `0x0050ea4c` split), its y centred on the given y less
+`0x0050ea58`, and ends it once game time (`GameTimer +0x48`, so not while frozen) is past its start plus its `ms` plus
+500 ms; the next one starts on the following update. So messages queued in one update play one after another, but a
+message queued later ends the one showing at once. Confirmed (code) at `0x001c8b08`, `0x001c9028`. **Runtime** (the
+run above): an objective set at update 330 showed from update 332; a second one set at update 340 replaced it at
+update 342 and showed until update 597, 8,509 ms of game time (8,000 + 500 and the update it ends in); completing the
+first at update 400 changed nothing, as it no longer showed. `ScrollIn_Flush` (`0x001c94c8`) ends the showing message
+when its text equals the given one and drops every waiting message whose text equals it.
 
 ### Hints (`HUDSetTutorialText`) {#hints-hudsettutorialtext}
 
@@ -623,20 +674,23 @@ So in the original a hint queue backs up only behind a hint with a time (`<DISPL
 one, never because two scripts set texts in one update: the last text set in an update is the one on screen at its
 end. The order and timing of lessons 5-8 are in [Scripts](scripting.md#level99-hint-timing).
 
-**Coney's differences** (from `repo:src/hud/hint_box.cpp`, for the implementer):
+**Coney's implementation** (`repo:src/hud/hint_box.cpp`) follows this:
 
-1. `HintBox::queue` only inserts; the text waits for the next `HintBox::update`. It must show the front of the queue
-   at once, with its cue and its `hint` event, when nothing is showing after the insert (and after an urgent hint
-   cleared the showing one). With that, two nil + text pairs in one update leave nothing queued, as on the original.
-2. `HintBox::withdraw` of the showing text must also take the next hint at once (`HUDSetTutorialText(nil)` and
-   `flush` must not).
-3. `HintBox::update` clears an expired hint and takes the next in the same call; the original takes it on the next
-   update (`TT_26b` 92 updates after `TT_26a`, not 91).
-4. Keep: no duplicate check in `queue`; nil does not take the next hint.
-5. Not the box's: a grab's hold ids must fire their animation callbacks at the connect, 34 updates before the strong
-   grapple's hit is scored ([Animation callbacks](characters.md#anim-callbacks)), so `PlayerState`'s grab hint and
-   `P1.Power`'s `TT_24d` come in different updates, as in the original
-   ([lessons 5-8](scripting.md#level99-hint-timing)).
+1. `HintBox::queue` shows the front of the queue at once, with its cue and its `hint` event, when nothing is showing
+   after the insert (or after an urgent hint cleared the showing one), so two nil + text pairs in one update leave
+   nothing queued.
+2. `HintBox::withdraw` of the showing text takes the next hint at once; `HUDSetTutorialText(nil)` and `flush` do not.
+3. `HintBox::update` clears an expired hint and takes the next one only on its next call, and it is called once a
+   frame, by gameplay after the step's callbacks and before the scheduled calls (where the original's `HUD_Update`
+   stands); `Hud::update` leaves the box alone.
+4. No duplicate check in `queue`; nil does not take the next hint.
+5. Not the box's: a grab's hold ids fire their animation callbacks at the connect
+   ([Animation callbacks](characters.md#anim-callbacks)), so `PlayerState`'s grab hint and `P1.Power`'s `TT_24d` come
+   in different updates, as in the original ([lessons 5-8](scripting.md#level99-hint-timing)).
+
+The disc test that checks it is `repo:tests/platform/disc_level99_course_test.cpp`: lessons 1-8 with no text left
+queued except behind a `<DISPLAYTIME>` hint, lesson 5's grab hint 34 frames before `TT_24d` (the original's 34
+updates) and `P1.StartSnaps`'s text shown twice in one frame.
 
 ### The tutorial callback (`HUDSetTutorialCallback`) {#tutorial-callback}
 
@@ -822,8 +876,10 @@ icon sprite at `+0x480`. Confirmed (code) unless marked:
     - **The filter** `Human_IsRevivableBy(player, him)` (`0x00278fa0`): he is friendly to the player
       (`Human_IsFriendly`, `0x00222a90`) or in the same gang (brain `+0x20c`); knocked out (`0x00227dd8`); not cuffed
       (`0x00223b70`); not in state `0x80000000` (`0x00227e18`) or `0x100000000` (`0x00227eb0`); and **revivable**, human
-      flag `+0xe0` bit `0x4` (`HuSetRevivable`; `Human_MakePlayer` sets it on every player, scripts set or clear it on
-      others).
+      flag `+0xe0` bit `0x4` (`Human_Init` sets it on every player and every Warrior, brain types 0 and 3;
+      `Human_MakePlayer` on a player too; scripts set or clear it with `HuSetRevivable`; [Combat: human
+      flags](combat.md#human-flags)). Confirmed (runtime) on `level80`: beside a knocked-out Vermin with a flash, string
+      4 showed ([Combat: revive at runtime](combat.md#revive-runtime)).
     - **Sight, no facing**: each candidate must also pass `Human_HasLineOfSight(player, him)` (`0x00222288`: a ray at
       1.7 m to his 1.7 m, else to his 1.0 m; it passes fences, railings and glass, [AI: sight](ai.md#sight)). The list's
       field-of-view test is only consulted beyond 3 m (squared distance over 9), which the 3 m search never yields, so
@@ -2687,7 +2743,15 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
 - **`ScrollInQueue`**, **`CounterPanels`**, the announcements and the action prompt: the objectives' messages at
   (0.025, 0.88); the five panels; the bottom-left and centred [announcements](#announcements-and-other-messages),
   each replaced at once and timed by its markup; player 0's [prompt](#action-prompts) at (0.5, 0.86) raised over the
-  hint box or message. Nothing draws while `HudFrame::letterbox` is set.
+  hint box or message. Nothing draws while `HudFrame::letterbox` is set. **Differs from the original** (issue #238,
+  [Objectives](#objectives-hudsetobjective)): mode 2 queues the heading and then the bare text as two messages of
+  `ms` each, where the original queues nothing, flushes the objective's own message and, for slot 1 only, shows
+  announcement 2; the queue never cuts the showing message short when a new one arrives and has no flush; mode 0 puts
+  `<CR>` between the heading and the text although the heading string already ends with `<CR3 0.01>`; the icon
+  template has no `<MONEYFONT>` and no trailing space; and a text's leading icon tag (`<ROBJ_N>` and the rest) is not
+  read. On the player's path, a completed objective's script runs mode 2 and then mode 0 for the next objective,
+  so Coney shows "New Objective" with no text and then the completed text alone, about 8.5 s each, before the new
+  objective's message.
 - **The bindings** (`src/scripting/hud_bindings.h`): every HUD binding `level99` calls, through `BindingContext::hud`.
   `HUDSetTutorialCallback` keeps the name; the play mode calls that function after the level's step with the anim
   id of each hit player 1 struck in it, landed or blocked (`Fighter::strikes`). **Coney's choice**: called after the
@@ -2700,14 +2764,15 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   mugs, steals a stereo or picks a lock; a held human set up for interrogation gives `GSTRING.HUD` 0 (interrogate,
   whatever he carries), one with money or a pocket item who may be mugged gives
   `GSTRING.HUD` 1; else a knocked-out partner to revive gives 4 (`GameplayMode::revivableInReach()`: the nearest
-  revivable human friendly to him within 3 m, not cuffed, in sight, while player 1 holds a flash; the states
-  `0x80000000` and `0x100000000` are not modelled); else the context records by kind: an action object's own text
-  (1), a pickable door 15 (2), a freed car stereo 16 (3), a dealer's offer (4: his type's prompt, 6 for the flash,
-  while his goal registers it, from the greeting on, within 1.75 m). A prompt naming the dealers' goods wakes the
-  player panel. Last, a [talkable](#talk-prompt) Warrior or co-op partner within 1.5 m (`GameplayMode::talkPrompt()`)
+  revivable human friendly to him within 3 m, knocked out (his health gone or a script's), not cuffed, in sight,
+  while player 1 holds a flash; the states `0x80000000` and `0x100000000` are not modelled); else the context
+  records by kind: an action object's own text (1), a pickable door 15 (2), a freed car stereo 16 (3), a dealer's
+  offer (4: his type's prompt, 6 for the flash, while his goal registers it, from the greeting on, within 1.75 m).
+  A prompt naming the dealers' goods wakes the player panel.
+  Last, a [talkable](#talk-prompt) Warrior or co-op partner within 1.5 m (`GameplayMode::talkPrompt()`)
   gives the swap string his brain's think set ([AI](ai.md#coney): `GSTRING.HUD` 0xc-0xe while one of the two holds
-  an object), else his own text (`ScriptState::talkText`), else HUD string 9; triangle swaps ([AI](ai.md#coney)). The action
-  object's
+  an object), else his own text (`ScriptState::talkText`), else HUD string 9; triangle swaps ([AI](ai.md#coney)).
+  The action object's
   second text
   (`SetMsgHandlerEx`'s `prompt2`)
   is queued as a priority-0 hint while it is in reach and withdrawn when it changes or leaves.
@@ -2717,12 +2782,17 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   known (`repo:src/gui/markup.h`). Tests: `repo:tests/hud/hud_test.cpp` (a prompt starting with the action button),
   `repo:tests/gui/text_layout_test.cpp`, and the disc check `"[disc][text]"`, which finds the triangle in all three
   swap prompts (`0xc`-`0xe`) and a stick picture in the revive prompt 4.
-- **The prompt beside a downed Warrior** (owner item 8, "no revive prompt"): Coney's revive step matches the original (a
-  flash is needed), and the swap prompt (`repo:src/ai/swap_prompt.h`) now has the blocked test, for the Warrior and the
-  player alike, as far as Coney models the mask's states (knocked out, by health or by a script, arrested, wounded), so
-  beside a downed Warrior no "Give Weapon" shows. A Warrior's brain that a script knocked out is off in Coney (BrDead),
-  so its think clears the prompt instead (`Brain::think`). Still to do: a playthrough test holding a flash to see string
-  4 (crew revive belongs to the revive work), and the player's own knocked-out gate on the other prompt steps.
+- **The prompt beside a downed Warrior** (owner item 8, "no revive prompt"): Coney's revive step read only a script's
+  knock-out, so a Warrior downed in a fight (his health gone) gave no prompt; it now counts both, a flash is still
+  needed, and d-pad left revives him ([Combat: revive](combat.md#revive)). He must also be revivable (flag `0x4`),
+  which every Warrior is from the moment he is made (`Human_Init`, [Combat: human flags](combat.md#human-flags)), in
+  Coney too (`ai::startingFlags`). The disc test `repo:tests/platform/disc_revive_test.cpp` downs a `level80` Warrior
+  with a strike (no script call), walks player 1 to him with the stick at 60 % and sees no prompt without a flash,
+  string 4 with one, then the revive. The swap prompt
+  (`repo:src/ai/swap_prompt.h`) has the blocked test, for the Warrior and the player alike, as far as Coney models
+  the mask's states (knocked out, by health or by a script, arrested, wounded), so beside a downed Warrior no "Give
+  Weapon" shows. A Warrior's brain that a script knocked out is off in Coney (BrDead), so its think clears the prompt
+  instead (`Brain::think`). Still to do: the player's own knocked-out gate on the other prompt steps.
 - **The stereo-theft panel** (`repo:src/hud/stereo_hud.h`, stepped by `PlayLevelMode::stepStereoPanel()`) as
   [the stereo panel on screen](#stereo-layout) says: up from the triangle press, the arrow round the backdrop's
   corners by stage, the gauge sized and turned by the angle turned and dropping by a doubling step while a stage is
@@ -2905,3 +2975,14 @@ stand-in**: the chase HUD is not built or drawn (no level script creates it), so
 - The scripted bars ([above](#scripted-bars)): which sheet and rectangles kind 0's sprite word `0x020a0000`
   names, kind 3's bar size, and the depths of the chase gauge's three sprites (Coney draws kind 0 with the generic
   meter, kind 3 at kind 1's size and the gauge in one batch).
+- **The objective header's string** ([Objectives](#objectives-hudsetobjective)): how `HUD_SetObjective` (`0x001dad88`)
+  assembles it. The icon tags draw as their rectangles only inside `<MONEYFONT>` ([MONEYFONT](gui.md#moneyfont)), so the
+  header must draw them there; whether the code puts `<MONEYFONT>` around the icon alone, where `<SIZE 0.8>` and
+  `</SIZE>` sit, the gap between the icon and the heading (does string `0xe5`/`0xe6` start with a space, or is it the
+  icon rectangle's width?) and whether slot 1's icon is also at 0.8 are not traced. Coney builds
+  `<SIZE 0.8><MONEYFONT><YOBJ></MONEYFONT></SIZE>` / `<MONEYFONT><BOBJ></MONEYFONT>` (a marked stand-in, issue #235).
+- **Mode 2's header string** ([Objectives](#objectives-hudsetobjective), issue #238): whether the completion header
+  uses the same HUD strings `0xe5`/`0xe6` as mode 0's "new objective" header or other ones (for example a "complete"
+  heading), which of the two is picked by the slot, whether it takes the same colour slot (4 / 6) and size, and whether
+  the interface cue `0x11` plays on it. Coney queues mode 0's own header, then the text, both for `ms`; the owner sees
+  the header read as a new objective, so this is probably wrong.

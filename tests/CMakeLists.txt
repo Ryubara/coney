@@ -99,6 +99,8 @@ add_executable(coney_tests
     platform/disc_hub_doors_test.cpp
     platform/disc_hub_test.cpp
     platform/disc_level80_test.cpp
+    platform/disc_flash_test.cpp
+    platform/disc_revive_test.cpp
     platform/disc_level5_boss_camera_test.cpp
     platform/disc_level5_fights_test.cpp
     platform/disc_level99_audio_test.cpp
@@ -113,6 +115,8 @@ add_executable(coney_tests
     platform/disc_level99_sparring_test.cpp
     platform/disc_level99_change_character_test.cpp
     platform/disc_level99_noclip_test.cpp
+    platform/disc_sprint_attacks_test.cpp
+    platform/disc_bat_cross_test.cpp
     platform/disc_level99_car_climb_test.cpp
     platform/disc_level99_street_props_test.cpp
     platform/disc_game_session_test.cpp
@@ -122,6 +126,7 @@ add_executable(coney_tests
     platform/disc_level99_store_glass_test.cpp
     platform/disc_level99_store_register_test.cpp
     platform/disc_level99_world_test.cpp
+    platform/disc_level99_fence_dealer_test.cpp
     platform/disc_story_chain_test.cpp
     platform/disc_story_missions_test.cpp
     platform/disc_story_playthrough_test.cpp
@@ -253,11 +258,14 @@ target_sources(coney_tests PRIVATE
     human/disc_player_test.cpp
     human/human_test.cpp
     human/workout_test.cpp
+    human/human_revive_test.cpp
+    human/way_clear_test.cpp
     human/flight_test.cpp
     human/hiding_test.cpp
     human/body_test.cpp
     human/climb_test.cpp
     human/combat_test.cpp
+    human/throw_direction_test.cpp
     human/damage_flags_test.cpp
     human/combat_timing_test.cpp
     human/moving_attacks_test.cpp
@@ -292,6 +300,7 @@ target_sources(coney_tests PRIVATE
     combat/meters_test.cpp
     combat/player_combat_test.cpp
     combat/rage_awards_test.cpp
+    combat/revive_test.cpp
     combat/reactions_test.cpp
     combat/stick_games_test.cpp
     combat/throw_aim_test.cpp
@@ -306,6 +315,7 @@ target_sources(coney_tests PRIVATE
 target_sources(coney_tests PRIVATE
     raycast/collision_builder_test.cpp
     sandbox/disc_sandbox_combat_test.cpp
+    sandbox/disc_throw_direction_test.cpp
     sandbox/disc_sandbox_player_test.cpp
     sandbox/disc_sandbox_traversal_test.cpp
     sandbox/sandbox_layout_test.cpp
@@ -323,17 +333,20 @@ target_sources(coney_tests PRIVATE
     debug/pad_menu_input_test.cpp
     debug/play_pages_test.cpp
     debug/story_missions_test.cpp
+    debug/time_scale_test.cpp
     debug/tunables_test.cpp)
 # The AI humans' brains (docs/research/ai.md).
 target_sources(coney_tests PRIVATE
     ai/attack_choice_test.cpp
     ai/attack_reach_test.cpp
     ai/fight_goal_test.cpp
+    ai/fight_trace_test.cpp
     ai/fight_reactions_test.cpp
     ai/boss_goals_test.cpp
     ai/brain_events_test.cpp
     ai/brain_test.cpp
     ai/crew_test.cpp
+    ai/steal_goals_test.cpp
     ai/disc_ai_config_test.cpp
     ai/disc_route_test.cpp
     ai/formations_test.cpp

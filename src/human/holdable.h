@@ -51,6 +51,10 @@ class Holdable : public Combatant {
     /// clips, docs/research/formats/animation.md#paired-tasks), then its own `loop`, as play() does otherwise.
     virtual void playPaired(std::span<const std::uint32_t> clips, const characters::AnimSet& attacker,
                             std::uint32_t loop, AnimState state, TargetState targetState) = 0;
+    /// Reports the start of the loop its playing chain ends in now, not when it plays: a grab's connect builds the
+    /// victim's hold under its reaction (docs/research/characters.md#anim-callbacks). Nothing for one with no animation
+    /// callbacks (the default).
+    virtual void announceFollowOn() {}
     /// Attached, the grabber places it each update and nothing else moves it; detached, its clips' root motion does.
     virtual void setAttached(bool attached) = 0;
     [[nodiscard]] virtual bool attached() const = 0;
@@ -64,6 +68,10 @@ class Holdable : public Combatant {
     virtual void place(anim::Vec3 position, float headingRadians) = 0;
     /// Turns it to face `point`.
     virtual void face(anim::Vec3 point) = 0;
+    /// Turns it to `headingRadians` and slides it to `goal` across the ground, each at a constant rate over `seconds`
+    /// (TurnAndSlide: `Human_TurnToOver`, `Human_MoveToOver`), on top of its clip's root motion: a front hold's throw
+    /// carries its victim round the thrower this way (docs/research/combat.md#throw-direction).
+    virtual void carryOver(anim::Vec3 goal, float headingRadians, float seconds) = 0;
     /// Its own anim set (an escape's grabber side plays from it).
     [[nodiscard]] virtual const characters::AnimSet& anims() const = 0;
     /// Its AI counter press (command 3) of its last update, made while it could counter (Fighter's test), once:

@@ -372,6 +372,19 @@ the goal's turn steers and it arrives (`repo:tests/ai/move_action_test.cpp`, and
 `repo:tests/platform/disc_hub_workout_test.cpp`). The headings were not the cause: the goal and
 `TeleportToFlag` both read a flag's degrees as Coney's heading (the turn θ about `+z`, [Flags](flags.md#position)).
 
+**The cause, found and fixed** (Coney, 2026-10-11): `DeactivateWarchief` sets the player's brain dead, so the pad is
+given up and the goal runs, but the player stands in the fight stance locked on a foe (the bag, or any fighter near),
+and Coney's fight-stance walk (`Human::combatWalk`) turned every human it holds to face the lock target each update,
+whatever the brain asked. The turn action was overridden on every update; once it gave up, the goal queued another.
+In the original a human no pad drives (per-player `+0x1b` = 0) is moved by `Human_UpdateControl`, which turns it
+toward the brain's heading: by the fight stance's AI word (24° an update) when asked to move, with a turn on the spot
+when stopped more than 15° off, not at all within 15° ([AI: Speed control and Turning](ai.md#ai-turn)). Coney now
+runs a player whose pad a script took through the AI's stance control (`Human::aiCombatWalk`, the turn on the spot at
+the standing step, as for every AI, a stand-in for the turn clips; [AI: Facing the target](ai.md#fight-facing)), so
+the goal's turn steers and it arrives (`repo:tests/ai/move_action_test.cpp`, and on the disc
+`repo:tests/platform/disc_hub_workout_test.cpp`). The headings were not the cause: the goal and
+`TeleportToFlag` both read a flag's degrees as Coney's heading (the turn θ about `+z`, [Flags](flags.md#position)).
+
 **The cycle games in Coney** (2026-10-11): `HuWorkout` follows [The engine side](#engine). A workout begins once all
 five clips load (the level's clip source, by the names the script gives) and, for the player who is his own target,
 at any distance; the enter clip plays, then a gait blend over the slow, mid and fast clips at 16 units a second whose

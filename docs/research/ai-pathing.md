@@ -203,11 +203,20 @@ the disc checks print counts only).
    Also: the 65000 cap is on the running g, not on one edge; distances are 3D, truncated to whole 1/16 m per edge.
    *Tests*: a 600-node grid whose only way round passes 300 nodes plans a route; a 140-node corridor fails (route
    over 128); the disc check's "failed, linked" count for `level99` drops to 0 (`[disc][routes]`).
+   **Done in Coney** (`RoutePlanner::search`, which now says why it failed: `SearchFailure`). Measured on the disc
+   (`[disc][routes]`, 300 seeded pairs of nodes per level that the default mask's links join, NTSC-U, counts only):
+   the old 128-open cap lost 7 of `level87`'s 213 linked pairs and none of `level99`'s 189 (the "third of
+   `level99`'s pairs" above came from an older count that put the cap's failures among the unlinked ones); with
+   the original's limits every linked pair is found except `level80`'s routes of more than 128 nodes, which the
+   original refuses too.
 2. **The edge cost** (step 4, "The new g"). The three ClimbFilter extras are exclusive (8, else `0x80`, else 4, and
    4 not with `0x40` + avoid), not added together; the use term is 40 × *u* − 8 only when *u* > 0, and *u* is the
    use count of the **expanded** node (the one whose record it is), not the neighbour's. *Tests*: an edge with flags
    `0x8c` costs distance + 200; a node with 0 uses adds nothing; two routes through one node make a third prefer a
-   parallel way (cost compare on a two-lane map).
+   parallel way (cost compare on a two-lane map). **Done in Coney** (`RoutePlanner::edgeCost`, each addition
+   wrapping at 16 bits as the page says). With item 1's limits, the routes of more than 128 nodes among `level80`'s
+   seeded pairs fell from 19 to 2: the old use term took 8 off every step, so the cheapest route was the one with the
+   most nodes.
 3. **FollowFormation and FollowPlayer** ([The default command: follow](ai.md#warrior-follow)). Coney's
    `FollowFormationGoal` ends when the follower has no slot, and a slot is usable only when the leader sees its
    point, so a crew stops as soon as the chief turns a corner or crosses a fence. The original then follows the human
@@ -215,7 +224,10 @@ the disc checks print counts only).
    queue fallback; `Nav_WalkDistanceTo` (straight distance, else the planned route's length; fail only with no area
    or no route) and its 30-update wait with the vandalise check every 15; done only when the leader stands and the
    walk distance is within the radius; the speed from `FollowFormation_PickSpeed` (replace the 3 m run/walk
-   stand-in) using the walk distance; the move refreshed once a second or when the leader just stopped. In
+   stand-in) using the walk distance; the speed and radius refreshed once a second or when the leader just stopped;
+   the **running move's point** retargeted at every formation plan (and every 6 updates with no slot), never by the
+   goal's once-a-second pass ([Where a running move's point comes from](ai.md#follow-retarget)); while a move left
+   over from `FollowFormation` runs, `FollowPlayer` does nothing at all (no stand test) until it ends. In
    `FollowPlayerGoal` replace "back to the slot every 31 updates" with the stand-or-follow test (within 9 m, same
    `+0x2d5`, straight walkable line to the leader) and the failure back-off of 31 updates. *Tests*: a chief walking
    round an L-shaped wall keeps his two followers moving (they reach within 2.5 m of the one ahead); a follower
@@ -254,8 +266,10 @@ the disc checks print counts only).
    trailing cut's line runs from the destination to the node. *Tests*: a chain whose last node links back to the
    first keeps its middle nodes.
 10. **Formation slot points** ([Formations](ai.md#formations)): drop each slot's point to the ground (a ray from 1.9 m
-    above to 5.9 m below) instead of keeping the leader's height, and test usability with the line from the leader
-    (`Human_CanWalkStraightTo`). *Test*: a leader on a kerb 0.3 m up gives slots on the road their road height.
+    above, 5.9 m long, so to 4.0 m below; the point 0.2 m above the hit; no hit keeps the plan point's height) instead
+    of keeping the leader's height, and test usability with the line from the leader (`Human_CanWalkStraightTo`); no
+    slot is usable while the leader is airborne or at detail level 3 or more.
+    *Test*: a leader on a kerb 0.3 m up gives slots on the road their road height.
 11. **The stuck test** ([The move action](ai.md#move-action) step 9): 3D distance, on the 61st counted update. *Test*: a
     human climbing a steep heap 0.2 m per 60 updates in height is not stuck.
 

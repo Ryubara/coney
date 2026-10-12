@@ -16,6 +16,7 @@ SpawnRecord* SpawnRecords::add(SpawnRecord record) {
     if (m_capacity.has_value() && m_records.size() >= *m_capacity) {
         return nullptr;
     }
+    record.owned = record.owned || (record.flags & kSpawnOwned) != 0U;
     m_records.push_back(std::move(record));
     return &m_records.back();
 }

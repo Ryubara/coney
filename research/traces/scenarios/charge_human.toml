@@ -1,0 +1,26 @@
+# slot 6: PoizoCiv, a passive civilian, is kept 4 m in front of the player, facing him, until the press; the player
+# sprints (L2, the stick at 98 % straight ahead) and presses cross: the charge (anim 0) strikes him. The trace shows
+# whether the charger plays his clip out or reacts when the flung civilian's extreme reaction (all strike shapes on)
+# meets him, and what either loses. Research: docs/research/combat.md#protected-moves.
+description = "slot 6: sprint and charge into PoizoCiv standing 4 m ahead; does the charger react or lose health"
+research = "docs/research/combat.md#protected-moves"
+input = "charge_human.txt"
+updates = 120
+fields = ["player", "enemy"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "strike-contact", "anim-dispatch"]
+let = { enemy = 'human("PoizoCiv")' }
+setup = [
+  # 4 m in front of the player, facing him, until the press.
+  { address = "tf(enemy) + 0x0", type = "f32", value = "f32(tf(player)) - 4.0 * sin(heading(player))", until = 30 },
+  { address = "tf(enemy) + 0x4", type = "f32", value = "f32(tf(player) + 4) + 4.0 * cos(heading(player))", until = 30 },
+  { address = "tf(enemy) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 30 },
+  { address = "tf(enemy) + 0x18", type = "f32", value = "sin((heading(player) + pi) / 2)", until = 30 },
+  { address = "tf(enemy) + 0x1c", type = "f32", value = "cos((heading(player) + pi) / 2)", until = 30 },
+]
+
+[coney]
+level = "sandbox:combat"
+args = ["--spawn", "start"]

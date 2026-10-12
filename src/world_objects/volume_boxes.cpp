@@ -130,4 +130,12 @@ void VolumeBoxes::sendDamage(const std::array<float, 3>& human, const std::funct
     }
 }
 
+void VolumeBoxes::sendTheft(const std::array<float, 3>& spot, const std::function<void(double box)>& send) const {
+    for (const VolumeBox& box : m_boxes) {
+        if (box.enabled && box.kind == 0 && inside(box, spot)) {
+            send(box.handle);
+        }
+    }
+}
+
 } // namespace coney::world_objects

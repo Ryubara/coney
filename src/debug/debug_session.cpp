@@ -103,8 +103,8 @@ std::vector<std::string> DebugSession::cornerLines() const {
         std::string text = std::format("frames {}  steps {}", m_time.frames(), m_time.steps());
         if (m_time.paused()) {
             text += "  PAUSED";
-        } else if (m_time.slowMotion() > 1) {
-            text += std::format("  1/{} speed", m_time.slowMotion());
+        } else if (m_time.scalePercent() != 100) {
+            text += std::format("  {} speed", formatTimeScale(m_time.scalePercent()));
         }
         lines.push_back(std::move(text));
     }

@@ -1,0 +1,63 @@
+# Keeps an issue's status label true to its state (docs/guides/issues.md, "The life of an issue"): a closed issue
+# carries no `S-` label, because a status describes open work and the close reason (completed, not planned,
+# duplicate) is the final state; a reopened issue gets `S-needs-triage` so that it is looked at again. The type,
+# area and priority labels stay on a closed issue for history. `coney-tools repo audit --github` (issue.closed-status)
+# is the backstop if this ever fails.
+#
+# This is the one workflow that writes to GitHub; every other Action here only reads or comments
+# (docs/guides/repo-conventions.md, "Workflows"). Its token is limited to `issues: write`, it checks out nothing and
+# it runs no code from the repository. It uses no third-party action (which would need pinning to a full commit SHA,
+# as in the other workflows), only the `gh` that the runner image ships.
+name: issue-status
+
+on:
+  issues:
+    types: [closed, reopened]
+
+# The job's token may edit issues and do nothing else.
+permissions:
+  issues: write
+
+# One run per issue at a time, in the order the events came: a quick close and reopen must not leave a stale status.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  status-label:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      # The issue number and the action reach the script only through environment variables, never expanded into its
+      # text, and a label name read back from GitHub is matched against a strict pattern before it is used.
+      - name: Remove the status labels of a closed issue, or add S-needs-triage to a reopened one
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.issue.number }}
+          ACTION: ${{ github.event.action }}
+        run: |
+          set -euo pipefail
+          [[ "$NUMBER" =~ ^[0-9]+$ ]] || { echo "unexpected issue number" >&2; exit 1; }
+          # The labels now on the issue (not the event's copy, which a quick edit may have made stale).
+          mapfile -t status < <(gh api "repos/$REPO/issues/$NUMBER/labels" --paginate --jq '.[].name | select(startswith("S-"))')
+          case "$ACTION" in
+            closed)
+              for label in "${status[@]}"; do
+                [[ "$label" =~ ^S-[A-Za-z0-9-]+$ ]] || { echo "skipping unexpected label name" >&2; continue; }
+                gh api --method DELETE "repos/$REPO/issues/$NUMBER/labels/$label" --silent
+                echo "removed $label from #$NUMBER"
+              done
+              ;;
+            reopened)
+              # A maintainer who reopens an issue and sets its status in the same minute keeps their choice.
+              if [ "${#status[@]}" -eq 0 ]; then
+                gh api --method POST "repos/$REPO/issues/$NUMBER/labels" -f 'labels[]=S-needs-triage' --silent
+                echo "added S-needs-triage to #$NUMBER"
+              fi
+              ;;
+            *)
+              echo "unexpected action" >&2
+              exit 1
+              ;;
+          esac

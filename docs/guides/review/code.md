@@ -77,5 +77,5 @@ The test: could someone write their own version of this subsystem from the code 
 - **Critical:** engine code transcribed from Ghidra output; a game file or extracted asset staged for commit; a
   format parser that silently accepts truncated data.
 - **Important:** a reimplemented function without `@orig` or a research link; a research claim with no evidence
-  level; a commit title outside the areas in `.github/commit-conventions.json`.
+  level; a commit title outside the areas in `.github/conventions.yml` (`commits.title`).
 - **Minor:** unclear wording in a research page; a test name that does not say what it checks.

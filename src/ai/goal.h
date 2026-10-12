@@ -42,6 +42,7 @@ enum class GoalType : std::uint8_t {
     PlayDynIdle = 0x23,        ///< PlayDynIdleGoal.
     PlayGenAnim = 0x26,        ///< PlayGenAnimGoal: one generic clip.
     GuardFlag = 0x2b,          ///< GuardFlagGoal: keeps to a flag.
+    GetItem = 0x2c,            ///< GetItemGoal: walks to a loose object and picks it up.
     TrackHuman = 0x30,         ///< TrackHumanGoal.
     FollowPlayer = 0x32,       ///< FollowPlayerGoal: keeps to the war chief's formation.
     FollowFormation = 0x33,    ///< FollowFormationGoal: walks to its formation slot.
@@ -64,6 +65,7 @@ enum class GoalType : std::uint8_t {
     Scout = 0x6f,              ///< ScoutGoal: a lookout at his post.
     Dealer = 0x80,             ///< DealerGoal.
     Shopkeeper = 0x82,         ///< ShopkeeperGoal.
+    WarriorVandalSteal = 0x83, ///< WarriorVandalStealGoal: a Warrior under the steal / wreck command.
     BigBrawler = 0x84,        ///< BigBrawlerGoal: a boss who fights, tires after six hits and (Vargas) fetches objects.
     BigThrower = 0x87,        ///< BigThrowerGoal: a boss who throws objects from a flag.
     BigLedgeThrower = 0x8a,   ///< BigLedgeThrowerGoal: the balcony boss.

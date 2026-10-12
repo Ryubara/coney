@@ -80,10 +80,14 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 
 - **The tackle** always connects with 5 / 6 (the front hit), without the original's connect gates; 7, the hit from
   the rear, never plays ([Grab and tackle](combat.md#grab)).
-- **Wall throws** (155-161) are picked by the original's ray and a head-on one turns the pair square to the face,
-  but the slam's `0x41` sweep (the dust puff, the impact sound and a world object struck) is not built, and the plain
-  throw does not turn the pair to the stick over 1/6 s first ([Throws](combat.md#throws)). **Coney's choice**: the
-  thrown body does not strike its own thrower.
+- **Wall throws** (155-161) are picked by the original's ray and a head-on one turns the pair square to the face at
+  once, not over 0.01 s, and the slam's `0x41` sweep (the dust puff, the impact sound and a world object struck) is
+  not built ([Throws](combat.md#throws)). **Coney's choice**: the thrown body does not strike its own thrower.
+- **Where a plain throw goes**: the pair is turned onto the stick over 1/6 s from the front hold and the rear hold
+  spins to the front first, as in the original, but the throw clips' own root turn is about a third larger than at
+  runtime (149 turns the thrower −120° for −90°) and the front victim lands 19.2° right of the stick (2.1° at
+  runtime): an open question on the root turn and the task's rate
+  ([Where a throw goes](combat.md#throw-direction)).
 - **The mounted victim** cannot struggle (250), get the mounter off or reverse (242 / 243)
   ([The mounted victim](combat-moves.md#mounted-victim)).
 - **The mount's power strike** stops at its first part: the extensions (227 / 228, 233 / 234; 229 is a filler that
@@ -113,16 +117,28 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 - **Rage** starts only through the block branch (L1 + R1 while blocking), not by the original's other routes
   ([Rage](combat.md#rage)).
 - **Stealth** (hiding in shadow, 630 / 633, the stealth kill 637-641) is not built ([Stealth](combat-moves.md#stealth)).
-- **Flash revive** (command `0x27`, 665) is not built.
+- **Flash revive** (command `0x27`): built for player 1, every Warrior revivable from his creation
+  ([Combat: revive](combat.md#revive)); an AI Warrior reviving ([SaveHuman](ai-goals.md#goal-save-human)), a co-op
+  partner's flash and a knocked-out human waking on his own are not.
 
 ## Weapons
 
 - **Sets 4-6** (barrels, bottles, the ghetto blaster): square and cross play the unarmed moves; the original throws
   (505-507, 467-472, 551-553) or smashes (473 / 475) ([Weapons](combat-moves.md#weapons)).
-- **Knife and bottle kills** (484-496) and **throwing a melee weapon** (491 / 502) are not built.
+- **Knife and bottle kills** (484-496) and **throwing a melee weapon** (491 / 502, next entry) are not built.
+- **Throwing a melee weapon with cross + square** (`0x22`, 502 / 491): the original throws a knife, baton or bat unless
+  a target is within 2.0 m (then it does nothing, and the cross's release swings 36). Coney refuses the command for
+  a player holding any object, as `Player_Special` (`0x00287730`) does, and never throws: with nobody near the cross's
+  release swings where the original throws. The special 653 and circle + cross's strong grapple no longer start with an
+  object in hand (fixed with issue #228; [Cross with a bat in hand](combat-moves.md#bat-cross)). Coney:
+  `repo:src/combat/player_combat.cpp`.
+- **Clip 34's length** (the bat's square): Coney ends it a step early (a stand-in) so that cross works from k37 as in
+  the original; the clip-end rule behind it is an open question ([Open questions](combat-moves.md#open-questions)).
+  Coney: `repo:src/human/human_animator.cpp`.
 - **Wear**: weapons never break; the original wears them on the `use` event.
-- **Armed chain**: Coney's armed square plays the slot's swing each time; the original alternates 34 / 35 (39 / 40,
-  45 / 46).
+- **Armed chain**: Coney's armed square plays the slot's swing each time; the original alternates 39 / 40 (baton)
+  and 45 / 46 (knife) for a square pressed in the swing. With a bat the two agree: 34 has no chain window, so the
+  original never plays 35 from the pad either ([Cross with a bat in hand](combat-moves.md#bat-cross)).
 - **Blocks against weapons**: the original's rules by set (no block of an armed hit unarmed, the bat's 629, the armed
   block clips 621-624) are missing ([Weapons](combat-moves.md#weapons)).
 - **Armed AI**: no AI human holds or uses a weapon.

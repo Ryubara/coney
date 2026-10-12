@@ -9,7 +9,7 @@ body:
         Thank you for reporting. The more exactly we can repeat what you did, the sooner it is fixed.
 
         **Never attach game files**: no disc images, BIOS images, extracted assets, save files or game text.
-        Screenshots and short videos of the game are welcome (see "Attachments" below).
+        Screenshots and short videos of the game are welcome (see "Screenshots" below).
   - type: input
     id: version
     attributes:
@@ -73,14 +73,14 @@ body:
     id: actual
     attributes:
       label: What happens
-      description: What you see, and what you expected instead.
+      description: Start with what is wrong, in plain words, then what you expected instead.
     validations:
       required: true
   - type: textarea
     id: original
     attributes:
       label: What the original game does
-      description: Optional. If you have played the original on a PS2 or in an emulator, say what happens there (this tells us whether Coney differs from it).
+      description: Optional. If you have played the original on a PS2 or in an emulator, say what happens there (this tells us whether Coney differs from it). Link a research page as a relative link, for example [docs/research/cars.md](../blob/main/docs/research/cars.md).
   - type: dropdown
     id: frequency
     attributes:
@@ -93,12 +93,19 @@ body:
     validations:
       required: true
   - type: textarea
-    id: attachments
+    id: screenshots
     attributes:
-      label: Attachments
+      label: Screenshots
       description: |
-        Drag and drop screenshots or a short video of Coney (or of the original) into this box. Also attach Coney's log: the text it prints in the terminal you started it from (copy it into a `.txt` file).
-        Gameplay screenshots and short videos are fine; files from the game are not.
+        Drag and drop screenshots or a short video of Coney into this box, and of the original from the same place when you have it. Gameplay screenshots and short videos are fine; files from the game are not.
+        When there is nothing to show, write one line: `Screenshots: none (<reason>)`, for example `Screenshots: none (sound only)`.
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: Attach Coney's log, the text it prints in the terminal you started it from (copy it into a `.txt` file and drag it here).
   - type: checkboxes
     id: no-game-files
     attributes:

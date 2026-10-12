@@ -17,19 +17,15 @@
 
 namespace coney::ai {
 
-namespace {
-
-// Whether the human holds an object. **Coney's reading**: the object in its hands (`+0x338`).
-bool holds(const human::Human& human) { return human.script().heldObject != world_objects::kNoObject; }
-
-// Whether a human's actions are blocked (`HumanRecord_AreActionsBlocked`, state mask `0x7bf9e9f7ff0`), as far as
-// Coney models his states: knocked out (`0x40000`, his health gone or a script's), arrested (`0x20000`) or wounded
-// (`0x10000`) are all in the mask. **Coney's reading**: the mask's other states are not modelled.
-// @orig 0x00228228 HumanRecord_AreActionsBlocked (unknown)
 bool actionsBlocked(const human::Human& human) {
     const human::ScriptState& script = human.script();
     return human.fighter().health().depleted() || script.knockedOut || script.arrested || script.wounded;
 }
+
+namespace {
+
+// Whether the human holds an object. **Coney's reading**: the object in its hands (`+0x338`).
+bool holds(const human::Human& human) { return human.script().heldObject != world_objects::kNoObject; }
 
 // The nearest player brain within the swap's reach of `brain`, or null.
 const Brain* nearestPlayer(const Brain& brain) {

@@ -195,6 +195,7 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
       [--view-world NAME] [--view-character [NAME]] [--anim CLIP]
       [--play-level NAME [--spawn NAME | --checkpoint N] [--start X,Y,Z,H[,D,YAW]] [--trace FILE]
                    [--script-trace FILE] [--scene NAME] [--camera X,Y,Z,QX,QY,QZ,QW[,FOV]] [--freeze-world]]
+      [--trace-humans FILE]
       [--render-size WxH]
       [--sandbox [NAME]] [--assets DIR] [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]
       [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps] [--tunables FILE]
@@ -662,6 +663,38 @@ The columns, positions in metres (game axes, z up), angles in degrees, speeds in
 | `command`, `health`, `power` | the command matched this step (0 for none; [Combat](../research/combat.md#commands)), the health and the power meter |
 | `aim_x`, `aim_y`, `aim_z`, `aim_lag` | the aim point the view faces ([Camera](../research/camera.md#aim-point)) and its lag |
 
+`--trace-humans FILE` (with `--play-level` or `--rumble`) writes **every** human's state after every step to `FILE`, one
+CSV row per human per step (`step`, then `human`, the human's number), in a Rumble match as well as in a level. It is
+Coney's side of the gang-battle comparison: [`coney-tools trace fight-report`](coney-tools.md#trace) turns the rows
+into behaviour statistics per human and per gang and compares them with the original's recording, because the two
+games draw different random numbers and a fight cannot be compared update by update. `--trace` stays the player's
+trace for `--play-level`, and in a Rumble match (where there is no one level to trace the player of) it means
+`--trace-humans`. A Rumble match goes through the menu and the arena's level, so drive the menu with an input
+script (the match starts when the arena is confirmed) and give `--frames` for the whole run; the file is opened once
+and the rows of every level loaded go into it, numbered by step from the first row.
+
+```sh
+build/dev/src/platform/coney --disc /path/to/warriors.iso --skip-movies --headless --frames 6000 --rumble warparty --arena 102 --gang-size 5 --input-script ../../scratch/rumble_menu.txt --trace-humans ../../scratch/fight.csv
+```
+
+The columns, positions in metres (game axes), angles in degrees, speeds in m/s; those marked (O) are also written by
+the original's all-humans recorder under the same name and unit (`research/traces/fields.toml`, `[[humans]]`):
+
+| Columns | What |
+| --- | --- |
+| `step`, `human` (O) | the step, from 1, and the human's number: the player's brain is 0, the others are numbered as they first appear, and keep the number when another leaves |
+| `player`, `btype`, `gang` (O) | the player number a pad drives (0 for player 1, -1 for none), the brain's type (0 player, 1 cop, 2 gang, 3 Warrior, ...) and the gang's id (-1 for none) |
+| `x`, `y`, `z`, `heading`, `speed`, `vz`, `gait` (O) | as in the player's trace |
+| `clip`, `clip_frame`, `command` (O) | the anim id playing, its frame (30 a second) and the command of the step (0 for none) |
+| `health`, `health_max`, `power`, `stamina` (O) | the meters |
+| `down`, `blocking`, `grabbed`, `grabbing` (O) | 1 on the ground, 1 blocking, 1 held or tackled, 1 holding someone |
+| `lock`, `target` (O) | the number of the human its fighter has locked on, and of its brain's target (-1 for none) |
+| `goals`, `goal`, `goal0` ... `goal5`, `react` (O) | the goal stack's depth, its top goal's type id, the stack from the bottom (-1 above the top) and the reaction goal's id ([goal types](../references/goal-types.md)) |
+| `actions`, `next_attack`, `attackable`, `warned` (O) | the actions queued, the ms until it may attack and may be attacked again, and the attacks announced on it this step |
+| `enemies`, `slots`, `slots_max`, `threat` (O) | the enemy list's length, the attackers holding a slot on it, the slots it allows and its threat response |
+| `g_tactic`, `g_leader`, `g_chosen` (O) | 1 when its gang has a tactic, and the numbers of the gang's leader and chosen target |
+| `target_dist`, `action_kind`, `attack_kind`, `slot_held` | Coney's own: metres to the target, the front action (`none`, `attack`, `move`, ...), the attack kind it presses (-1 when it is none) and 1 when it holds a slot on its target |
+
 `--script-trace FILE` (with `--play-level` and a level) writes what the level's scripts do to `FILE`, one line per
 call: every script binding they call, with its arguments and what it returned (`HUDSetObjective(0, "...", 0, nil)`,
 `HuCreate(...) -> 396`), and every call the engine makes into them by name, marked `>` (`> P1.EnterRiot(74, 398)`, a
@@ -981,7 +1014,8 @@ uv run --project python mypy python/src python/tests
 
 `coney-tools config show` prints the paths your `coney.local.toml` sets (start from `coney.local.example.toml`;
 [Local workspace](workspace.md) explains each one). `coney-tools repo check-title` checks a commit or pull request
-title against the commit rules in [CONTRIBUTING.md](repo:CONTRIBUTING.md#commits), `coney-tools repo check-docs`
+title against the commit rules in [CONTRIBUTING.md](repo:CONTRIBUTING.md#commits) (their values are in
+`.github/conventions.yml`: [Repository conventions](repo-conventions.md)), `coney-tools repo check-docs`
 that a change to the code also changes the docs ([Research workflow](research-workflow.md#writing-up-a-finding)), and
 `coney-tools repo check-body` that a pull request description follows the template, including its Testing and
 Screenshots sections and an issue or pull request number on every unchecked Remaining item
@@ -1003,9 +1037,10 @@ uvx pre-commit run --all-files
 
 Run that before every commit, or install the hooks once with `uvx pre-commit install` so that `git commit` runs them
 for you. The hooks fix what they can; stage their changes and commit again. The install also adds a `commit-msg` hook
-that refuses a commit whose title breaks the rules in [AGENTS.md](repo:AGENTS.md) (`area: Verb the rest`, at most 72
-characters); CI checks every commit title of a pull request again, because a clone without the hook cannot be trusted.
-Install it once in each clone; the worktrees of a clone share it.
+that refuses a commit whose title breaks the commit title rules (`area: Verb the rest`, at most 72 characters; the
+rules are `commits.title` in [.github/conventions.yml](repo:.github/conventions.yml) and
+[CONTRIBUTING.md](repo:CONTRIBUTING.md#commits) lists them); CI checks every commit title of a pull request again,
+because a clone without the hook cannot be trusted. Install it once in each clone; the worktrees of a clone share it.
 
 ## Documentation
 
@@ -1049,9 +1084,26 @@ A `changes` job at the start of `build` and `python` decides, with `.github/scri
 | Change | `build`, `sanitizers`, `clang-tidy` | `python` | `format`, `docs`, `pr` workflows |
 | --- | --- | --- | --- |
 | Draft pull request (any change) | skipped | skipped | run |
-| Only documentation: `docs/`, `research/` (including `research/traces/`), Markdown files at the top level or in `.github/`, `mkdocs.yml`, `mkdocs_hooks.py`, `requirements-docs.txt`, `.markdownlint*` | skipped | Linux only | run |
-| Anything else (`src/`, `tests/`, `python/`, `cmake/`, `CMakeLists.txt`, `CMakePresets.json`, `.clang-*`, the workflows, `assets/`, a file not listed above) | run | all three OSes | run |
+| Only documentation: every changed file is on the list below the table | skipped | Linux only | run |
+| Anything else (`src/`, `tests/`, `python/`, `cmake/`, `CMakeLists.txt`, `CMakePresets.json`, `.clang-*`, the workflows, `assets/`, a file not on the list) | run | all three OSes | run |
 | Push to `main` or `release/`, nightly run, manual run | run | all three OSes | run |
+
+The documentation-only list is `paths.docs_only` in [.github/conventions.yml](repo:.github/conventions.yml) (a
+trailing `/` is a folder and `*` matches within one folder level). `ci-scope.sh` reads it from the file, so there is
+no second copy, and `coney-tools repo audit --files` fails a pull request when the script stops being able to. The
+block below is generated from the list (`coney-tools repo render`), and `research/` includes `research/traces/`:
+
+<!-- conventions:begin docs-only-paths -->
+- `docs/`: the folder and everything under it
+- `research/`: the folder and everything under it
+- `*.md`: matching files at the top level only
+- `.github/*.md`: matching files directly in `.github/`
+- `.github/conventions.yml`: that file
+- `mkdocs.yml`: that file
+- `mkdocs_hooks.py`: that file
+- `requirements-docs.txt`: that file
+- `.markdownlint*`: matching files at the top level only
+<!-- conventions:end -->
 
 `python` still runs on Linux for documentation because its repository checks compare `docs/` and `research/` with
 each other (missions, bindings, references, progress), and its tests read `research/traces/`. Marking a draft "Ready
@@ -1061,6 +1113,18 @@ checked. There is no merge queue.
 A skipped matrix job reports its name unexpanded (`build (${{ matrix.name }})`), so the per-platform jobs cannot be
 required checks. Each workflow ends with a gate job instead, `build-ok` and `python-ok`, which runs every time and
 fails when a job it covers failed or was cancelled; the ruleset on `main` requires the gates, not the jobs behind them.
+What `main` requires is the `merge` section of [.github/conventions.yml](repo:.github/conventions.yml), a copy of the
+GitHub ruleset and settings, and this block is generated from it (`coney-tools repo render`):
+
+<!-- conventions:begin required-checks -->
+- Merge method: squash only. The commit on `main` has the pull request's title; its message is the pull request's
+  description.
+- Required checks: `title`, `commits`, `docs`, `body`, `build-ok`, `python-ok`, `format`, `mkdocs`, `markdownlint`,
+  `actionlint`.
+- Auto-merge is on, the branch is deleted after the merge, history is linear and a branch need not be up to date with
+  `main`.
+- Who merges: maintainer and coordinator, never the agent that wrote the work.
+<!-- conventions:end -->
 
 If a job fails, the commands above reproduce it locally on the platform you are on. The workflow files under
 `.github/workflows/` are short and list every step.
