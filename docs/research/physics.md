@@ -163,9 +163,10 @@ car ([Characters](characters.md#climb)). The shells themselves are on [Character
 
 The create functions take the first free body of a pool (owner 0), set the owner (`0x00341a68`) and flags, and add it to
 the body vector and the sorted list (`IPhysics_AddBody` `0x00340668`); the free functions undo that
-(`IPhysics_RemoveBody` `0x00340700`, which first clears the owner from every ignore list) and clear the shape's in-use
-bit `0x8`. Flags by kind: human `0x8002243f`, punch bag `0x8000243f`, world object `0x80000500`, car `0x80000000` (then
-`0x8002231a` once `Car_MakeBodies` adds `0x2211a`), glass pane `0x8000007a` ([Objects](objects.md)). A human body also
+(`IPhysics_RemoveBody` `0x00340700`, which first clears the owner from every ignore list) and, for objects, cars and
+panes, clear the shape's in-use bit `0x8` (the human free clears none, and the pane free skips `StopIgnoring`,
+[Unit 9](#u9-free)). Flags by kind: human `0x8002243f`, punch bag `0x8000243f`, world object `0x80000500`, car `0x80000000` (then
+`0x8002211a` once `Car_MakeBodies` ORs in `0x2211a`, `0x00387ea8`), glass pane `0x8000007a` ([Objects](objects.md)). A human body also
 joins the human list (`0x003407a0`; next `+0xc8`, previous `+0xcc`) and gets its scale (`0x00341f28`). The punch bag is
 the human class `0x1cc` (`HeavyBag`, [Characters](../references/characters.md)): `0x0021ce08` gives it its own body set
 instead of one of the 60.
@@ -227,10 +228,12 @@ lengths and the capsule (height `0x00219890`, radius `0x00219860` of the human) 
 (code) at the cited addresses:
 
 - **Update** (vtable `+0x10`, `0x003422d0`), unless flag `0x4000`: re-pose the capsule when dirty; with weapon strike
-  spheres, pose them on the held object (`0x00226ff0`); while anything strikes, widen the strike reach to 0.8 × the
-  scale or the current attack's reach (`AttackTable_GetReach`); pose the enabled bone shapes and the push sphere.
-- **Moved** (vtable `+0x18`, `0x00342828`): the broad bound `+0x90` becomes a box of radius 0.8 m around the point
-  1.0 m above the position (height 2.0, so z from the position to 2.0 above), and each bone shape with flag `0x1` or
+  spheres, pose them on the held object (`0x00226ff0`); while anything strikes (and on a dirty update without
+  strikes), rebuild the broad bound with the strike reach max(0.8 × the scale, the current attack's reach,
+  `AttackTable_GetReach`), or with weapon spheres the horizontal distance to the first one plus its radius; pose the
+  bone shapes with flag `0x1` or `0x4` and the push sphere ([Unit 10](#u10-update)).
+- **Moved** (vtable `+0x18`, `0x00342828`): the broad bound `+0x90` becomes an upright box 0.8 m out horizontally and
+  2.0 m tall from the position ([Unit 10](#u10-moved)), and each bone shape with flag `0x1` or
   `0x4` is "set from" the new matrix (`0x00342890`): a sphere's centre jumps to the body's new origin (no offset)
   with its previous position left alone, and a segment is not touched. So it does **not** reset the previous
   positions: the next pose sweeps a sphere from the new origin to its bone, a segment from its start before the
@@ -238,11 +241,11 @@ lengths and the capsule (height `0x00219890`, radius `0x00219860` of the human) 
 - **The capsule's height** (`0x00343518`): base height + 0.2 × scale; the bottom raised by 0.61 × scale in one mode
   (`+0x3be`) and by 0.7 × scale in the states `0x00227f68` selects (at most 0.7 above `+0x560`), except in a long
   fall; 0.35 × scale when cuffed; never under 0.2 × scale.
-- **The push sphere** (`0x003420d0`): a 2.0 m sphere from the 30 pool, switched on by set-piece actions (workout,
-  uncuff, the action clips through `0x0021c058`). While it is on, `0x003425c0` (from the human's update
+- **The push sphere** (`0x003420d0`): a 2.0 m sphere from the 30 pool, switched on only by `Grab_Start` and
+  `Tackle_Start`; every other caller switches it off ([Unit 10](#u10-push-sphere)). While it is on, `0x003425c0` (from the human's update
   `0x0023d8c8`) overlaps it with the other humans (options `0x2012`, mask `0x40`) and adds to the pending push-out
   (body `+0x50`) of each one that is not its target, has no player number and has no body flag `0x200` a push of
-  **0.25 m × w(this) / (w(other) × k(other))** along the line from this human to the other: bystanders are nudged
+  **0.25 m × w(this) / (w(other) × k(other))** along the 3-D line from this human to the other ([Unit 10](#u10-push)): bystanders are nudged
   out of the animation's way. w is [attribute](#attributes) 1, 82.0 for every human, so it cancels; k is attribute 7,
   the other's push weight (1.0, or 1e9 while it must not move). Confirmed (code) at `0x003425c0`.
 - `GetContactScale` (`+0x48`, `0x00342288`): 0.25 while airborne, else 1.0. `+0x50` (`0x00342130`) tells the human
@@ -2471,7 +2474,7 @@ Table (3, 4); also the sweep table's (3, 4) through `0x00345d18`. Size 0x24. Mir
   `sweep[strike.type][other.type](contact, body, shape, otherBody, otherShape, &move)` (IPhysics `+0x7c`) with
   `move = current − previous`, and puts the shape back. Confirmed (code) at `0x0033f110`. Against an object's body
   (a car's two boxes) every shape of its chain is tried; the first hit calls the striker's `+0x104`
-  (`Strike_Contact`) with this contact as the hit record.
+  (`Strike_Contact`) with this contact as the hit record, and the test goes on with the next body.
 - So a car box is reached only by **sphere** strike shapes, through `PhysicsSweep_SphereBox` (`0x003453f8`,
   `Sweep_SphereOrientedBox` `0x0034bbe8`), which writes the fraction `+0x80`, the point `+0x90`, `+0x10`, `+0x50`,
   `+0x60`, `+0x70`/`+0x74` and clears `+0xb0`; what each means, and which `Car_OnHit` reads, is in
@@ -2876,10 +2879,12 @@ Confirmed (code) at `0x0033f110` unless marked; the target filters are already o
   `sweep[strike.type][other.type](&contact, strikerBody, strikeShape, candidateBody, candidateShape, &move)`
   (IPhysics `+0x7c` + strike.type × 0x14 + other.type × 4; an empty entry is skipped). The shape's position is put
   back to `cur` (vtable `+0x0c`) after its candidates are done, hit or not.
-- **The first hit ends the test.** On the first nonzero result: contact `+0x00` = striker's owner (body `+0x34`),
+- **A hit ends that candidate's shapes, not the test.** On the first nonzero result for a candidate: contact `+0x00` = striker's owner (body `+0x34`),
   `+0x04` = the strike shape, `+0x40` = the candidate's owner, `+0x44` = the candidate shape; then the striker
   owner's `Strike_Contact` (vtable `+0x104`) with the contact; then, if the candidate has an owner, the striker
-  body's vtable `+0x44` (put it on the struck list); no further shape or body is tried this update. The contact is a
+  body's vtable `+0x44` (put it on the struck list); no further shape is tried against that body, but the loop goes on
+  with the next candidate (`0x0033fb04`, `0x0033fc94`, `0x0033fe3c`), so one update can strike several bodies
+  ([Unit 10](#u10-strikes)). The contact is a
   single stack record reused for every try, never cleared: fields the sweep does not write hold leftovers of earlier
   tries.
 - **Where `prev` comes from** (`PhysicsSphere_Pose` `0x00342b08`, the sphere's vtable `+0x28` slot): each pose first
@@ -3827,13 +3832,17 @@ is 0, [Bodies](#bodies)).
 
 ### Unit 9: Creating and freeing bodies {#unit-9}
 
-- **Specified by:** [Bodies](#bodies) (flags per kind), [Cars](#cars), [IPhysics](#iphysics) (the punch bag's set).
-  Missing: `Physics_CreateBoxBody` (`0x0033d070`, glass panes) is named only through its caller.
-- **Coney:** `src/physics/physics_world.*`; callers in `src/human/human.cpp` (`Human_CreatePhysicsBody` rules: flag
-  `0x400`, `+0x60` 1.4286, `0x200`), `src/world_objects/object_bodies.*`, `cars.*`, `glass.*`.
-- **Tests:** each kind's starting flags (human `0x8002243f`, punch bag `0x8000243f`, object `0x80000500`, car
-  `0x8002231a` after its boxes, pane `0x8000007a`); a freed body's shapes lose `0x8`; the pool's first free slot is
-  reused (the heal keeps the same body pointer, as seen at runtime).
+**What it is.** The pools' create and free functions: which slot is taken, what each kind of body starts with, the
+human list, and what a free leaves behind. All confirmed (code) at the cited addresses (read in the disassembly,
+2026-10-12) unless a line says otherwise.
+
+- **Coney:** `src/physics/physics_world.*` (fixed pools with the original's counts, so running out behaves the same);
+  callers in `src/human/human.cpp` (`Human_CreatePhysicsBody`'s rules, [below](#u9-callers)),
+  `src/world_objects/object_bodies.*`, `cars.*`, `glass.*`.
+- **Tests:** [Test ideas](#u9-tests): each kind's starting flags (human `0x8002243f`, then `0x8002203f` /
+  `0x8002223f` for an AI; punch bag `0x8000243f` then `0x8000263f`; object `0x80000500`; car `0x80000000`, then
+  `0x8002211a` after its boxes; pane `0x8000007a`), shapes and scales; the first free slot is reused (the heal keeps
+  the same body pointer, as seen at runtime); a full pool returns null; the body vector's swap-remove.
 
 12 functions, 1752 bytes (0 tagged).
 
@@ -3852,18 +3861,151 @@ is 0, [Bodies](#bodies)).
 | `0x003407a0` | `IPhysics_AddHumanBody` | 88 |
 | `0x003407f8` | `IPhysics_RemoveHumanBody` | 152 |
 
+Notation as in [Unit 3](#u3-records): vtable slots are named by their adjust / function offsets (`+0x38` / `+0x3c`);
+"enable(shape, on)" is the shape vtable `+0x18` / `+0x1c` slot, `0x004f11c8` for every shape type: on sets flags
+`0x11` (enabled and reset-previous, [Unit 6](#u6-reset)), off clears `0x1` only.
+
+#### What the constructor leaves {#u9-constructed}
+
+The pools are built once by `IPhysics_Construct` (`0x0033c288`); a create function overwrites only some fields, so the
+rest is whatever the constructor or the slot's last user left. Confirmed (code) at `0x003418f8` (body),
+`0x00341e98` (human body), `0x00342a30` (shape head):
+
+- **Body** (`PhysicsBody_Construct`): `+0x30` first shape 0, `+0x34` owner 0, `+0x38` ignore list 0, `+0x3c` group 0,
+  `+0x40` flags `0x80000400`, `+0x44` type mask 0, `+0x50` push-out (0, 0, 0, 1), `+0x60` scale (1, 1, 1, 1),
+  `+0x70` 0, the sort node cleared (`PhysicsNode_Init`, index `+0x20` = −1).
+- **Human body** (`PhysicsHumanBody_Construct`): the body, then `+0x80` = `+0x84` = 0, the broad bound `+0x90`'s node
+  initialised, `+0xc0` = `+0xc4` = 0, flags `|= 0x3f` (so `0x8000043f`), `+0xc8` = `+0xcc` = `+0xd0` = `+0xd4` = 0.
+- **Each human body set *i*** (0 to 59) gets the capsule *i* of `+0x10e30` (`PhysShapeCapsule_SetSize(2.0, 0.35)`,
+  `0x40000000`, `0x3eb33333`) as its first shape `+0x30`, and ten bone shapes chained on `+0x80` in this order
+  (`PhysicsHumanBody_AddBoneShape` `0x003429e8` appends at the tail): the five segments *5i* to *5i+4* of `+0x71a0`
+  for bones 3, 24, 18, 32, 29, then the five spheres *5i* to *5i+4* of `+0x120` for bones 6, 25, 19, 33, 30. Their
+  offsets, radii and lengths come from the tables at `0x00512810` (segment offsets, 16 bytes each), `0x005128b0`
+  (segment radii), `0x005128e0` (segment lengths), `0x00512860` (sphere offsets) and `0x005128c8` (sphere radii),
+  index *k* of each table going with the *k*-th bone of its list; the values are on
+  [Combat](combat.md#moving-strikes). Flags: the shape head's `0x1`, plus `0x2`, plus `0x4` for bone 3 and bone 6
+  (`0x7`; the others `0x3`). The capsule's flags are `0x1`.
+- **The 60 weapon strike spheres** (`+0xf7b0`) are switched off and get `0x2` (flags `0x2`). The 30 push spheres
+  (`+0x4db60`) are plain spheres (bone −1, offset 0, flags `0x1`).
+- **The punch bag's set** (`+0x4f2a0`): capsule `+0x4f3f0` (2.0, 0.35) as `+0x30`, one segment `+0x4f380` as `+0x80`
+  with offset 0, radius 0.35 (`+0x4f3e0`), length 1.5 (`0x3fc00000`), bone 3 and flags set to **`0x4`** outright
+  (not enabled, a strike target, not a striker).
+
+#### Taking a slot {#u9-create}
+
+Every create function takes `(phys, owner)` in `a0`, `a1` (the box body also two floats, [below](#u9-box)) and scans
+its pool from index 0 for the first body whose owner `+0x34` is 0; a full pool returns **0** (null) and changes
+nothing. On the slot it calls `PhysicsBody_SetOwner(body, owner)` (`0x00341a68`: `+0x34` = owner and, when owner is
+not null, `+0x44` = the owner's type mask from its vtable `+0x20` / `+0x24`), writes the fields below, and ends with
+`IPhysics_AddBody` (`0x00340668`), which appends the body to the body vector (`+0x4f450`; `+0x20` = its index, the
+size before the append) and inserts it into the x-sorted list ([Queries](#queries)) **with its stale AABB**: the
+dirty bit makes the next update re-pose and re-sort it.
+
+| Kind | Function | Pool (count, stride) | Writes | Then |
+| --- | --- | --- | --- | --- |
+| human | `IPhysics_CreateHumanBody` `0x0033cc48` | `+0x124b0` (60, 0xe0) | flags `0x8002243f`, scale (1, 1, 1, 1), group 0, `+0x70` 0, `+0xc0` 0, `+0xc4` 0, `+0xd0` 0; enable(capsule, on) then capsule flags `&= ~0x2`; every bone shape enable(off) | `IPhysics_AddHumanBody`, `IPhysics_AddBody`, `PhysicsBody_ApplyHumanScale` ([Unit 10](#u10-scale)) |
+| punch bag | `IPhysics_CreatePunchBagBody` `0x0033cb08` | the one set `+0x4f2a0`, no free test | flags `0x8000243f`, scale 1, group 0, `+0x70` 0, `+0xc0` 0, `+0xc4` 0, `+0xd0` 0; enable(capsule, on), `&= ~0x2`; enable(segment, off) | `IPhysics_AddHumanBody`, `IPhysics_AddBody`; **no** scale step |
+| world object | `IPhysics_CreateObjectBody` `0x0033ce58` | `+0x15930` (416, 0x80) | flags `0x80000500`, group 0, `+0x70` 0, scale 1; no shape (the caller adds one) | `IPhysics_AddBody` |
+| car | `IPhysics_CreateCarBody` `0x0033cf68` | `+0x4be20` (18, 0x80) | flags `0x80000000`, group 0, `+0x70` 0; **scale not written**; no shape | `IPhysics_AddBody` |
+| glass pane | `Physics_CreateBoxBody` `0x0033d070` | `+0x3af30` (255, 0x80) with box *i* of `+0x42eb0` | flags `0x8000007a`, group 0, `+0x70` 0, scale not written, the box ([below](#u9-box)) | `IPhysics_AddBody` |
+
+The human flags `0x8002243f` are dirty, `THROWNWEAPONTARGET` (`0x20000`), `RAYCASTTARGET` (`0x2000`), `0x400` (write
+the slid velocity back, [Unit 3](#u3-records)) and `0x3f` (`0x1` sweep against bodies, then the layers `0x2`, `0x4`,
+`0x8`, `0x10`, `0x20`); the punch bag's lack `0x20000`. Quirks of the creates, confirmed (code) by what they do not
+write: none clears the pending push-out `+0x50`, the ignore list `+0x38` or (human) `+0x84` and `+0xd4`; the frees
+clear those that matter ([Freeing](#u9-free)), so a body is only stale if its last free skipped them (the pane, below).
+None writes `+0x00`-`+0x1c` (the AABB). A car's and a pane's scale is never written by anyone in these units, so it
+stays the constructor's 1 (inferred: no other writer of a car or pane body's `+0x60` was found).
+
+#### The box body {#u9-box}
+
+`Physics_CreateBoxBody(phys a0, owner a1, width f12, height f13)` (`0x0033d070`; the name lists its floats first as
+the decompiler showed them). For pool index *i* it uses box *i* of `+0x42eb0` (the two pools advance together):
+`PhysicsBox_SetSize(width, 0.5, height, box)` (`0x00342dc0`, which halves its three sizes: half-extents
+**(width / 2, 0.25, height / 2)**, `+0x4c` = 1), box flags `|= 0x9` (enabled, allocated), body `+0x30` = the box.
+The only caller is `GlassPane_CreateBody` (`0x0038ed68`) with the pane's `+0xcc` and `+0xd4` (width and height,
+[Objects](objects.md#glass)), which then calls the body's update (vtable `+0x10` / `+0x14`) with the pane, so the box
+is posed by the pane's matrix at once.
+
+#### The human list {#u9-human-list}
+
+`IPhysics_AddHumanBody(phys, body)` (`0x003407a0`) **appends at the tail** of the list headed at IPhysics `+0x04`
+(next `+0xc8`, previous `+0xcc`; an empty list makes the body the head with both links 0). `IPhysics_RemoveHumanBody`
+(`0x003407f8`): first the body's `StopIgnoring(null)` (vtable `+0x38` / `+0x3c`; for a human body
+`PhysicsHumanBody_StopIgnoring` `0x00342260`: `+0xd4` = 0 and every slot of its ignore list freed), then the unlink
+(the head moves to the next, whose previous becomes 0; otherwise previous.next = next and next.previous = previous),
+then `PhysicsHumanBody_ClearStrikeSpheres` (`0x00342168`, [Unit 10](#u10-weapon)), then both links 0. Nothing here
+reads the list; who walks it is not traced in these units.
+
+#### Freeing {#u9-free}
+
+All take `(phys, body)`. `IPhysics_RemoveBody` (`0x00340700`) is common to all: `IPhysics_ForgetIgnoredOwner`
+(`0x0033cd70`: every ignore slot in any body's list that names this body's owner is freed through that body's
+`StopIgnoring`), then a **swap-remove** from the body vector (when it holds two or more, the last body moves into
+this one's index and takes its `+0x20`; the removed body's `+0x20` is **not** reset), then `BodyList_Remove`.
+
+| Function | Steps, in order |
+| --- | --- |
+| `IPhysics_FreeHumanBody` `0x0033ce00` / `IPhysics_FreePunchBagBody` `0x0033cbf0` (identical) | `IPhysics_RemoveHumanBody`, `IPhysics_RemoveBody`, owner 0, `PhysicsHumanBody_SetPushSphere(body, 0)` (frees the push sphere, [Unit 10](#u10-push-sphere)). Flags, `+0xc0` and the bone shapes are left as they are (the next create resets them) |
+| `IPhysics_FreeObjectBody` `0x0033cf00` | `IPhysics_RemoveBody`; the first shape's `0x8` cleared (not its other flags); `StopIgnoring(null)`; owner 0; `+0x30` = 0 |
+| `IPhysics_FreeCarBody` `0x0033cff8` | `IPhysics_RemoveBody`; each shape unchained in turn (its next 0, its `0x8` cleared, `+0x30` = the following one), ending with `+0x30` = 0; `StopIgnoring(null)`; owner 0 |
+| `IPhysics_FreeBoxBody` `0x0033d158` | `IPhysics_RemoveBody`; the box's `0x8` cleared; owner 0. **No** `StopIgnoring` and `+0x30` kept (the next create of that slot rewrites it with the same box) |
+
+Owner 0 is written with `PhysicsBody_SetOwner(body, 0)`, which leaves the type mask `+0x44` as it was.
+
+#### The callers' rules {#u9-callers}
+
+`Human_CreatePhysicsBody` (`0x0021ce08`), confirmed (code): if the human has a body (`+0x1a0`) it is freed first
+(`Human_FreePhysicsBody` `0x0021cf20`: the punch bag's free for class `0x1cc`, else the human free; `+0x1a0` = 0).
+For class `0x1cc` (`HeavyBag`) the punch bag's set, flags `|= 0x200`. Otherwise a human body; then when the human's
+brain `+0x04` is 0 (the player, inferred from the 1.4286 scale [Characters](characters.md#walls) gives the player) flags
+`|= 0x400` (already set) and scale `+0x60` = (1.4286, 1.4286, 1, 1) (`0x3fb6db6e`); otherwise flags `&= ~0x400`;
+then, when human byte `+0x3bf` is 0, flags `|= 0x200`. Corroboration: the runtime flags of [Layers](#layers) (humans
+`0x2203f` and `0x2223f`, cars `0x2211a`, panes `0x7a`) are these values without the dirty bit.
+
+`Car_MakeBodies` (`0x00387d50`) ORs **`0x2211a`** into its body's flags at `0x00387ea8`, so a car's body reads
+`0x8002211a` (not `0x8002231a`).
+
+#### Test ideas {#u9-tests}
+
+A fake owner (type mask 0x40 for a human, 8 for an object, scale attribute *s*). Values from this spec.
+
+1. **Human create.** Fresh world, owner with scale 1: returns pool slot 0; flags `0x8002243f`; capsule flags `0x11`;
+   bone shapes `0x6` (bones 3, 6) and `0x2` (the rest); `+0x60` = (1, 1, 1, 1); `+0x20` = 0; human list = [it]; after
+   the scale step the capsule is height 2.0, radius 0.35 and the body is still dirty until its update.
+2. **Scale 1.1** (not in a scene): capsule height 2.2, radius 0.385; spine segment offset (−0.077, 0, 0.055), radius
+   0.198, length 0.418; forearms radius 0.077, length 0.22; shins 0.11, 0.44; head offset (0.055, 0, 0.033), radius
+   0.165; hands offset (0.088, 0, 0), radius 0.099; feet 0.165 (float32 values to 1e-6). In a scene state the same
+   human reads scale 1.0 (below 1.1, `Human_GetScale` `0x0021d020`).
+3. **Pool limits.** 60 human creates succeed, the 61st returns null; 416 objects, 18 cars, 255 panes likewise.
+4. **Reuse.** Create A, B, C (slots 0, 1, 2); free B; the next create returns slot 1 (lowest free), not slot 3.
+5. **Swap-remove.** Bodies A, B, C in the vector at 0, 1, 2; remove A: C is at index 0 with `+0x20` = 0, size 2, A's
+   `+0x20` still 0.
+6. **Player and AI.** Player: flags `0x8002243f`, scale (1.4286, 1.4286, 1, 1); AI with `+0x3bf` = 1: `0x8002203f`;
+   AI with `+0x3bf` = 0: `0x8002223f`; punch bag: `0x8000263f`, segment flags `0x4`, capsule `0x11`.
+7. **Car.** Create: `0x80000000`, no shape; after its boxes: `0x8002211a`. Free: both boxes lose `0x8`, `+0x30` = 0.
+8. **Pane.** `CreateBoxBody(1.2, 2.0)`: half-extents (0.6, 0.25, 1.0), box flags gain `0x9`; free clears `0x8` only.
+9. **Free human.** A human body with a push sphere, two ignore slots and `+0xd4` = 1: after the free, the sphere's
+   `0x8` is clear, both slots are free, `+0xd4` = 0, the list no longer holds it, its owner is 0; another body's slot
+   naming its owner is freed too.
+
 ### Unit 10: The human body set: update, strikes and push sphere {#unit-10}
 
-- **Specified by:** [The human body](#human-body), [Human contacts](#human-contacts), [Combat: moving
-  strikes](combat.md#moving-strikes). Missing: `PhysicsHumanBody_Update`'s strike-reach widening in numbers per attack,
-  the broad bound `+0x90` users.
-- **Coney:** `src/human/human.*`, `src/combat/*` (`Human_TestStrikes` sweeps each enabled strike shape from its last
-  pose against the bodies near the human through the sweep table, [How Human_TestStrikes builds the
-  sweep](#u4b-how-human-teststrikes-builds-the-sweep-0): [Unit 5](#unit-5) for boxes, [Unit 11](#unit-11) for humans),
-  `src/platform/play_level_mode.*` (`strikeObjects()`). Issue #72's step 1 (strikes hit cars) needs only Unit 5 and the
-  strike loop, not the whole of this unit.
-- **Tests:** bone shapes switch on by bit `1 << (id − 2)`; `Moved` resets the previous positions so a teleport is not a
-  strike; the push sphere pushes a bystander 0.25 m × w / (w × k) and not a held (k = 1e9) or unpushable one.
+**What it is.** What the human body adds to a body: the scale step, the per-update pose and broad bound, the strike
+switch, the strike test's gathering (the parts [Unit 5](#u4b-how-human-teststrikes-builds-the-sweep-0) does not
+cover), the weapon spheres and the push sphere. All confirmed (code) at the cited addresses (disassembly read
+2026-10-12) unless a line says otherwise.
+
+- **Coney:** `src/human/human.*` (body update after the move, the push), `src/combat/*` (`Human_TestStrikes`: the
+  gather, the line-of-sight ray and the per-candidate loop below, sweeping each enabled strike shape from its last pose
+  through the sweep table: [Unit 5](#unit-5) for boxes, [Unit 11](#unit-11) for humans),
+  `src/platform/play_level_mode.*` (`strikeObjects()`). Issue #72's step 1 (strikes hit cars) needs Unit 5, [the gather](#u10-strikes) and the sweep
+  loop, not the whole of this unit.
+- **Tests:** [Test ideas](#u10-tests): bone shapes switch on by bit `1 << ((id − 2) & 31)` and every switch empties the
+  struck list; `Moved` moves each switched-on sphere to the body's new origin (prev untouched), so the next sweep runs
+  from the origin, not across the teleport; the broad bound's radius `max(0.8 × scale, reach)`; the push of
+  0.25 m × w / (w × k) along the 3-D line, not applied to the target, a player, a held (k = 1e9) or an unpushable one;
+  one strike per candidate body per update.
 
 14 functions, 6168 bytes (1 tagged).
 
@@ -3883,6 +4025,213 @@ is 0, [Bodies](#bodies)).
 | `0x003428d0` | `PhysBody_SetShapeEnabled` | 280 |
 | `0x003429e8` | `PhysicsHumanBody_AddBoneShape` | 72 |
 | `0x0033f110` | `Human_TestStrikes` (tagged) | 3484 |
+
+#### The record and its vtable {#u10-record}
+
+Human body vtable `0x005446b0` (read from the binary), slot adjust / function: `+0x08` / `+0x0c` destructor
+`0x00341f00` (resets the vtable, then the body destructor); `+0x10` / `+0x14` Update `0x003422d0`; `+0x18` / `+0x1c`
+Moved `0x00342828`; `+0x20` / `+0x24` AddShape `0x00341aa8` (the body's); `+0x28` / `+0x2c` GetShapes `0x003420c8`
+(returns `+0x30`, the capsule, whatever arguments it gets); `+0x30` / `+0x34` IsIgnoring `0x003421d0`; `+0x38` /
+`+0x3c` StopIgnoring `0x00342260`; `+0x40` / `+0x44` Ignore `0x00342230`; `+0x48` / `+0x4c` GetContactScale
+`0x00342288` ([Unit 3](#u3-human-scale)); `+0x50` / `+0x54` OnStruck `0x00342130` (calls `Human_OnPushContact`
+`0x00219b08` with the owner, [Human contacts](#human-contacts)). The struck list of the strike test is this ignore
+list: IsIgnoring answers `+0xd4` for a null owner, **yes for the owner human's grab partner** (`Human_GetGrabOther`
+`0x002269d8`, the anim record `+0xd4`'s handle `+0xc4`), else the ordinary list; Ignore(null) sets `+0xd4` = 1;
+StopIgnoring(null) clears `+0xd4` and the whole list.
+
+Fields this unit uses ([The human body](#human-body)): `+0x30` capsule, `+0x34` owner, `+0x40` flags (`0x4000`
+skips the update; `Human_RestoreBodyAfterClimb` `0x00281368` clears it, so a climb sets it, inferred), `+0x80` bone
+chain, `+0x84` push sphere, `+0x90` broad bound (two vec4, min and max, `w` = 1), `+0xc0` strike bits, `+0xc4`
+weapon sphere chain, `+0xd0` weapon timer (updates left), `+0xd4` ignore the level.
+
+#### PhysicsBody_ApplyHumanScale {#u10-scale}
+
+`0x00341f28 (body)`. `s` = `Human_GetScale(owner)` (`0x0021d020`: human `+0x65c`, but 1.0 while
+`Human_IsInSceneState` and `+0x65c` < 1.1). Capsule height `+0x44` = `Human_GetCapsuleHeight` (`0x00219890`: 2 ×
+*s*), radius `+0x40` = `Human_GetCapsuleRadius` (`0x00219860`: 0.35 × *s*). Then it walks the bone chain assuming the
+constructor's order ([Unit 9](#u9-constructed)), with no null test: the first five shapes as segments (`+0x10` =
+table offset × *s* in xyz, `w` the table's 0; `+0x60` radius × *s*; `+0x64` length × *s*), the next five as spheres
+(`+0x10` offset × *s*, `+0x40` radius × *s*). It reads the scale afresh for every field (the same value). Finally it
+sets the dirty bit and calls the body's Update with the owner, so the capsule and bound are rebuilt at once.
+
+#### PhysicsHumanBody_Update {#u10-update}
+
+`0x003422d0 (body a0, owner a1)`; called at the end of `Human_Move` (`0x0023db20`), just before the push
+([below](#u10-push)), and so before `Human_TestStrikes`, which `0x0023fea8` runs after the move
+([Objects](objects.md#glass)). Let `F` be the flags read on entry.
+
+1. If `F & 0x4000`: return (nothing posed).
+2. If `F` is dirty (`0x80000000`): pose the capsule (shape `+0x28` / `+0x2c` with the owner), body AABB = the
+   capsule's bounds alone (`PhysicsBody_ComputeBounds` `0x00341638`), re-sort (`BodyList_Reinsert` `0x00340628`),
+   clear the dirty bit in memory. `F` keeps its dirty bit for step 4.
+3. If the weapon timer `+0xd0` ≠ 0: mark `F` dirty (locally), and pose every weapon sphere of `+0xc4` with the held
+   object (`Human_GetHeldObject` `0x00226ff0`) or, when none, the owner. Else, if `+0xc0` ≠ 0, mark `F` dirty
+   (locally).
+4. If `F` is dirty (so: dirty on entry, or a weapon timer, or any strike bit), rebuild the **broad bound** `+0x90`:
+    - `R` = 0.0; if the owner is a human with an anim record (`+0xd4`) whose Anim Range List pointer (`+0x160`) is
+      set, `R` = that list's reach (`+0x04`) for the record's clip id (`+0x20`) (`AttackTable_GetReach` `0x002544a0`,
+      [Animation](formats/animation.md#anim-range-list)); the id is not range-checked.
+    - `c` = the capsule's world position (its base `+0x50`), `c.z += capsule height × 0.5`.
+    - `r` = `Human_GetScale(owner)` × **0.8** (`0x3f4ccccd`).
+    - With weapon spheres (`+0xc4` set): `r = max(r, |(sphere centre − capsule base) with z = 0| + sphere radius)` for
+      the **first** sphere of the chain only, and `R` is **not** used. Without: `r = max(r, R)`.
+    - `+0x90` = `AABB_FromUprightCylinder(c, height, r)` (`0x00341708`, [Unit 6](#u6-aabb)): x and y in
+      `[c ± r]`, z from the capsule's base to base + height; `w` = 1.
+5. Pose every bone shape whose flags have `0x1` **or** `0x4` (so the spine and head always) with the owner.
+6. If a push sphere is held (`+0x84`), pose it with the owner (bone −1, offset 0: its centre is the human's origin).
+
+Numbers (Rembrandt-class reaches from [Frame data](combat-moves.md#frame-data), scale 1): a standing human, no strike
+and not dirty, keeps his last bound; during `S1` (reach 0.94) `r` = 0.94; `SX2` 1.37; `SSX3` 1.47; `STRAFE_FRONT`
+1.74; the push 653 1.58; at scale 1.3 and `S1`, `r` = 1.04 (0.8 × 1.3 wins). The reach is never scaled. Which clip
+the record's `+0x20` names during a chain (the attack's id or the clip's) is not traced; inferred the playing id.
+
+#### PhysicsHumanBody_Moved {#u10-moved}
+
+`0x00342828 (body, matrix)`, vtable `+0x18` / `+0x1c`. Confirmed (code); who calls it (a virtual call) is not traced.
+
+1. The body's `Moved` (`0x00341e40`): the capsule's set-from-matrix slot (shape `+0x30` / `+0x34`,
+   `0x00343798`: prev `+0x20` = base, base = the matrix's translation `+0x30`), body AABB from the capsule, re-sort.
+   The dirty bit is not touched.
+2. `+0x90` = `AABB_FromUprightCylinder(translation + (0, 0, 1.0), height 2.0, radius 0.8)`: x and y ± 0.8, z from
+   the translation's z to z + 2.0. Not scaled, unlike the update's.
+3. Every bone shape whose flags have `0x1` or `0x4` gets its set-from-matrix slot with the matrix: a **sphere's centre
+   becomes the translation** (`0x00342d08`; offset and bone ignored, prev `+0x20` untouched); a **segment** does
+   nothing (`0x00343a88`). [Unit 6](#u6-reset) gives the slot per type.
+
+So `Moved` does **not** reset previous positions. Its effect on strikes: at the next pose a sphere copies its centre
+(now the origin) to prev and computes the new one, so the next sweep runs from the human's origin up to the hand,
+inside the human, not across the distance moved (inferred from the pose rule, [Unit 6](#u6-sphere-pose)).
+
+#### PhysBody_SetShapeEnabled {#u10-enable}
+
+`0x003428d0 (body, id, on)`, through `Human_SetStrikeShape` (`0x0021c030`) from the clip events
+([Combat](combat.md#moving-strikes)).
+
+1. **Always first:** `StopIgnoring(null)` on the body (vtable `+0x38` / `+0x3c`): the human body clears `+0xd4` and
+   frees its whole ignore list. So every strike-on or strike-off event, even one that changes nothing below, empties
+   the struck list, and a body already struck can be struck again in the next window.
+2. `id < 0`: only when `on` = 0 and `+0xc0` ≠ 0: `+0xc0` = 0 and every bone shape enable(off). (`id < 0` with
+   `on` ≠ 0 does nothing more.)
+3. `id ≥ 0`: `bit = 1 << ((id − 2) & 31)` (the hardware shift uses the low five bits). On with the bit already set,
+   or off with it clear: return. Else set or clear the bit and enable(shape, on) for the **first** shape of the chain
+   whose bone byte `+0x31` equals `id`; none: the bit alone changes.
+
+Bits: 3 → `0x2`, 6 → `0x10`, 18 → `0x10000`, 19 → `0x20000`, 24 → `0x400000`, 25 → `0x800000`, 29 → `0x8000000`,
+30 → `0x10000000`, 32 → `0x40000000`, 33 → `0x80000000`; the shapeless event bones 0 → `0x40000000`, 4 → `0x4`,
+23 → `0x200000`, 28 → `0x4000000`, 31 → `0x20000000`. **Bones 0 and 32 share bit 30**: an event for bone 0 sets it,
+so a later on-event for shin 32 finds it set and does not switch the shin on, and an off-event for either clears
+both (confirmed (code) by the arithmetic; whether any clip has both in one window is not checked).
+
+#### Weapon strike spheres {#u10-weapon}
+
+`PhysicsHumanBody_AddStrikeSphere(body, sphere)` (`0x00342158`) pushes the sphere at the **head** of `+0xc4`
+(sphere `+0x00` = old head). `PhysicsHumanBody_ClearStrikeSpheres` (`0x00342168`) pops them one by one: enable(off),
+next 0, head = the following one. Who builds them is on [Combat](combat.md#moving-strikes)
+(`Human_BuildWeaponStrikeSpheres` `0x00247be8`, the timer `+0xd0` = event word + 1).
+
+#### The push sphere {#u10-push-sphere}
+
+`PhysicsHumanBody_SetPushSphere(body, on)` (`0x003420d0`; through `Human_SetPushSphere` `0x0021c058`, which does
+nothing when the human has no body): on with none held takes the first push sphere whose `0x8` is clear
+(`IPhysics_AllocBigSphere` `0x0033d278`: radius `+0x40` = 2.0, flags `|= 0xb`; null when all 30 are taken); off frees
+it (`IPhysics_FreeShape` `0x0033d2c8`: clears `0x8` only) and sets `+0x84` = 0. Of the 94 call sites of
+`Human_SetPushSphere`, **only `Grab_Start` (`0x0026c7a8`) and `Tackle_Start` (`0x00270a34`) pass 1**; every other one
+passes 0 (byte search for the call with its argument, confirmed (code)). So the sphere is on from a grab's or a
+tackle's start until the next action that switches it off (most clip starters do).
+
+#### PhysicsHumanBody_PushAwayHumans {#u10-push}
+
+`0x003425c0 (body)`, called at the end of `Human_Move` (`0x0023db28`) right after the body's Update.
+
+1. `target` = `Human_GetTarget(owner)` (`0x00226e60`). No push sphere (`+0x84` = 0): return.
+2. `IPhysics_OverlapShape` ([How it fills a contact](#overlapshape)) with the query: body, the push sphere, box pointer 0,
+   the owner, options `0x2012` (`0x2` bodies, `0x10` type mask; `0x2000` is never read), type mask `0x40` (humans),
+   at most **32** contacts, thresholds 0. Each human meets it through his capsule (SphereCapsule).
+3. The contacts are walked **from the last to the first**. For each, `other` = contact `+0x40`. Skip it when it is
+   `target`; when its player byte `+0x1b0` is not −1 (any player); when its body (owner vtable `+0xf0`) has flag
+   `0x200`.
+4. `d` = other's position − this human's position, both from the authoritative transforms (`0x00714b00` + slot
+   `+0x92` × 0x20), **in 3-D** (z included); `u = d / |d|` (VU `rsqrt`).
+5. `push = u × 0.25 × w(this) / (w(other) × k(other))` with `w` = attribute 1 and `k` = attribute 7
+   ([Attributes](#attributes); 82 and 82 for humans, so `0.25 / k`), added in xyz to the other body's push-out
+   `+0x50` (`Vec4_AddTo` `0x004e6918`, `w` = 1). The other's next sweep moves it ([Unit 3](#u3-sweep)).
+
+Two humans at the same point: `|d|` = 0, the PS2's `rsqrt` gives the largest float and `0 × max` = 0, so no push
+(inferred from the hardware; an IEEE port must special-case it rather than add NaNs).
+
+#### Human_TestStrikes: the gather and the loop {#u10-strikes}
+
+`0x0033f110 (phys a0, body a1)`. [Unit 5](#u4b-how-human-teststrikes-builds-the-sweep-0) gives the per-shape sweep
+(prev, cur, the restore, the contact fields, the pose rule); this is the rest, confirmed (code) at the addresses.
+
+0. Nothing unless `+0xd0` ≠ 0 or `+0xc0` ≠ 0. `held` = `Human_GetHeldObject(owner)`; the weapon handler's owner is
+   `held`, or the human when none.
+1. **Weapon spheres against the level** (only when `held` ≠ 0, `0x0033f218`). For each sphere of `+0xc4` whose type
+   has a mesh sweep (IPhysics `+0xe0` + type × 4): a scratch body's box = the shape's bounds grown by its move
+   (`AABB_ExtendByMove`), then the mesh sweep with max 1, the human body, the shape, the move, options **`0x800c`**,
+   `n.z` limits −0.65 and 0.65 ([Unit 2](#u2-00348a50-physicsmesh-sweepsphere): walls only, triangles with bit 3
+   skipped). On a hit: contact `+0x00`, `+0x04`, `+0x40`, `+0x44` = 0, the shape put back to `cur`, the held
+   object's handler (vtable `+0xf8` / `+0xfc`) with the contact; the rest of the weapon spheres are skipped.
+2. **Strike spheres against the level** (when `+0xc0` ≠ 0, `0x0033f360`): the same for each bone shape with flags
+   `0x1` and `0x2` **and type 2** (spheres only), options **`0x804c`** (adds `0x40`: one-sided faces kept). On the
+   first hit: the owner fields zeroed as above, the shape restored, then the owner's `Strike_Contact` (vtable
+   `+0x100` / `+0x104`, the level branch: a particle at `+0x90`); the rest of this step is skipped.
+3. **Gather** (`0x0033f4bc`): `IPhysics_QueryBox(phys, list, &body+0x90, start 0, ignored owner = own owner,
+   type mask −1, flag mask 0x18)` ([Queries](#queries)): bodies whose flags have `0x8` or `0x10`. A body with only
+   `CHARGETARGET` (`0x20`) is never gathered here. The ray origin `o` = own authoritative position + (0, 0, 1.0).
+4. **Per candidate**, in list order:
+    1. Skip: null or ownerless; own group non-zero and equal to its group; own `IsIgnoring(its owner)` (vtable
+       `+0x30` / `+0x34`: struck already, the grab partner); its type mask has `0x8` (an object) and its owner's state
+       flags (owner vtable `+0x50` / `+0x54`) have `0x4000000` (airborne: a flying object is not struck).
+    2. **Line of sight.** Target point `t` = its first shape's world position (GetShapes with (0, 0, 0), shape
+       `+0x20` / `+0x24`), `+1.0` in z when the candidate is a human (type mask `0x40`). `d = t − o`, `L = |d|`,
+       ray `{o, d / L, L}` through `WorldManager_RayCast` (`0x0040db88`) with the material exclusion list at
+       `0x005771c8` and options `0x48`, or `0x8` for a human candidate ([Objects](objects.md#glass) gives the
+       exclusions). A hit (result `+0x10` ≠ 0): skip the candidate.
+    3. **Weapon spheres** (candidate flags `0x8`): for each sphere of `+0xc4` (no flag test), its move as in Unit 5,
+       against the candidate's shapes: a human's bone chain filtered by flag `0x4`, otherwise GetShapes(2, 4, own
+       owner). On the first nonzero sweep: contact `+0x00` = `held` (or the human), `+0x04` the sphere, `+0x40` its
+       owner, `+0x44` its shape; the handler `+0xfc`; for a non-human candidate an answer of 5 means "next candidate
+       shape", for a human the answer is not read. A hit with an owner: own `Ignore(its owner)` (vtable `+0x40` /
+       `+0x44`), and the weapon spheres stop for this candidate.
+    4. **Strike shapes** (`+0xc0` ≠ 0, candidate flags `0x30` (`0x10` or `0x20`), and own owner vtable `+0x108` /
+       `+0x10c` with its owner nonzero): for each bone shape with `0x1` and `0x2`, its move, against: a non-human's
+       GetShapes(2, 4, own owner) chain; a human's bone shapes with flag `0x4`, or **his capsule alone** when
+       `Anim_HitsWithCapsule(owner, Human_GetAnimId(owner))` (`0x00101b88`, clip flag `0x10000`,
+       [Combat](combat.md#capsule-strike)). The first nonzero sweep: contact as Unit 5, `Strike_Contact`, then
+       `Ignore(its owner)` when it has one; the strike shapes stop for **this candidate**.
+    5. Go on with the **next candidate**: a hit does not end the test. Each body can be struck once per update (and
+       once per window, by the ignore list), but one swing can strike several bodies in the same update.
+5. **Weapon timer** (`0x0033fe50`): if `+0xd0` ≠ 0, decrement it; at 0 `ClearStrikeSpheres`; either way set the
+   body's dirty bit.
+
+#### Test ideas {#u10-tests}
+
+Synthetic bodies; fake owners with scale, reach, type mask and attributes. Values from this spec (float32).
+
+1. **Switch bits.** `SetShapeEnabled(25, on)`: `+0xc0` = `0x800000`, the right-hand sphere flags gain `0x11`; again:
+   nothing changes but the ignore list is emptied. `(0, on)` then `(32, on)`: `+0xc0` = `0x40000000`, shin 32
+   stays off. `(−1, off)`: `+0xc0` = 0, every bone shape off.
+2. **Struck list emptied.** Ignore(owner X) on a human body, then `SetShapeEnabled(19, off)` with bit 19 clear:
+   `IsIgnoring(X)` is false afterwards.
+3. **Broad bound.** Capsule base (10, 5, 0), height 2.0, scale 1, strike bit set: reach 1.37 → `+0x90` =
+   (8.63, 3.63, 0) to (11.37, 6.37, 2.0); reach 0 → ±0.8; scale 1.3, reach 0.94 → ±1.04. Weapon sphere at
+   (10.6, 5.8, 1.2) radius 0.1 with reach 1.37: `r` = 1.1 (the reach is ignored).
+4. **No refresh.** Not dirty, `+0xc0` = 0, `+0xd0` = 0: `+0x90` is left as it was; flag `0x4000`: nothing posed.
+5. **Moved.** Matrix translation (3, 4, 0.5): `+0x90` = (2.2, 3.2, 0.5) to (3.8, 4.8, 2.5). An enabled hand sphere
+   at (10.6, 5.0, 1.4) with prev (10.5, 5.0, 1.4) → centre (3, 4, 0.5), prev unchanged; after the next pose with the
+   hand at (3.6, 4.0, 1.9): prev (3, 4, 0.5), move (0.6, 0, 1.4).
+6. **Push.** This at (0, 0, 0), other at (1, 1, 0.5), k = 1: other's `+0x50` += (0.166667, 0.166667, 0.083333);
+   k = 2: (0.083333, 0.083333, 0.041667); other at (0, 2, 0): (0, 0.25, 0). Not pushed: the target, a player, body
+   flag `0x200`; k = 1e9: 2.5e-10 (effectively 0). Same position: no push, no NaN.
+7. **Push sphere switch.** On twice takes one sphere; off frees it (`0x8` clear) and `+0x84` = 0; a 31st on with
+   all 30 taken leaves `+0x84` = 0.
+8. **Ray.** Striker at the origin, human candidate's capsule base (3, 4, 0): ray from (0, 0, 1), direction
+   (0.6, 0.8, 0), length 5.0, options 8; an object whose first shape is at (3, 4, 0.5): direction
+   (0.597022, 0.796030, −0.099504), length 5.024938, options `0x48`. A wall triangle across the ray: no strike.
+9. **Several bodies.** Two boxes both reached by one hand sweep in one update: both get `Strike_Contact`, each once;
+   the next update neither (ignored); after an off-event, both can be struck again.
+10. **Airborne object.** An object body (type 8) whose owner reports `0x4000000`: never struck.
 
 ### Unit 11: Moving shapes against bodies: spheres, capsules, segments {#unit-11}
 
@@ -4146,7 +4495,8 @@ gives `s = 0` and a zero normal. Unit 4's kernel quirks (absolute parallel thres
   `PhysicsSweep_SegmentCapsule` (`0x00345d38`, (4, 3)): call the overlap `0x00346500`, `0x00347148`, `0x00346fb8`
   with `(c, own, other)` and return its answer; the move is ignored and **nothing is written**, so a hit's fraction
   `+0x80` and flags `+0xb0` are whatever the slot held. In a strike test (the only caller that moves a segment,
-  [Unit 5](#u4b-how-human-teststrikes-builds-the-sweep-0)) the first hit ends the test and the fraction is not read.
+  [Unit 5](#u4b-how-human-teststrikes-builds-the-sweep-0)) the first hit ends that body's shapes and the fraction is not
+  read.
   Coney should write fraction 0 and flags 0 there and say so.
 
 #### PhysicsBody_SweepHumanMask: the body pass {#u11-body-pass}
