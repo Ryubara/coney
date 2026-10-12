@@ -130,21 +130,14 @@ void ScoutTactic::start(Gang& gang) {
     for (Brain* member : gang.members()) {
         if (canAct(*member)) {
             const human::Human& body = member->human();
-            member->pushGoal(
-                std::make_unique<ScoutGoal>(body.position(), body.heading(), call().range2, m_schedule, player));
+            member->pushGoal(std::make_unique<ScoutGoal>(body.position(), body.heading(), call().range2,
+                                                         gang.owner().scans(), player));
         }
     }
 }
 
 int ScoutTactic::update(Gang& gang) {
     const std::uint64_t now = gang.owner().nowMs();
-    // The members at their posts scan.
-    m_schedule.beginUpdate();
-    for (Brain* member : gang.members()) {
-        if (canAct(*member) && member->topGoal() != nullptr && member->topGoal()->type() == GoalType::Scout) {
-            static_cast<void>(m_schedule.maybeScan(gang.owner(), *member, now));
-        }
-    }
     // Every 200 ms: a member with an enemy and no fight is given one.
     if (now >= m_nextCheckMs) {
         m_nextCheckMs = now + kScoutTacticCheckMs;

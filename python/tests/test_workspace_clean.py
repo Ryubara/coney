@@ -1,12 +1,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Tests for coney_tools.workspace_clean: `workspace clean` and `workspace disk` on made-up git repositories."""
 
+import json
 import os
 import shutil
 import stat
 import subprocess
 import time
 from collections import namedtuple
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -407,3 +409,122 @@ def test_clean_honours_the_busy_marker_of_the_conventions(space: Space) -> None:
     (removed / ".coney-busy").write_text("", encoding="utf-8")
     assert run_clean(space.checkout, space.root, True, merged_heads=lambda branch: None) == 0
     assert kept.is_dir() and not removed.exists()
+
+
+# --- gh_merged_heads: one call for every worktree -------------------------------------------------------------------
+
+
+class FakeGh:
+    """A stand-in for `gh`: records each command and answers the merged-pull-request list from a table."""
+
+    def __init__(self, merged: dict[str, list[str]], *, code: int = 0, text: str | None = None) -> None:
+        self.merged = merged
+        self.code = code
+        self.text = text
+        self.calls: list[list[str]] = []
+
+    def __call__(self, command: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
+        self.calls.append(command)
+        if self.text is not None:
+            body = self.text
+        else:
+            body = json.dumps(
+                [{"headRefName": name, "headRefOid": oid} for name, oids in self.merged.items() for oid in oids]
+            )
+        return subprocess.CompletedProcess(command, self.code, body, "boom" if self.code else "")
+
+
+def heads_for(branch: str) -> list[str]:
+    """The made-up merged heads of a branch: two pull requests for every third one, one for the rest."""
+    index = int(branch.rsplit("-", 1)[1])
+    return [f"{index:040x}", f"{index + 1000:040x}"] if index % 3 == 0 else [f"{index:040x}"]
+
+
+def test_the_merged_state_of_100_worktrees_costs_one_gh_call(tmp_path: Path) -> None:
+    merged = {f"branch-{n}": heads_for(f"branch-{n}") for n in range(0, 100, 2)}  # the even ones have pull requests
+    gh = FakeGh(merged)
+    lookup = workspace_clean.gh_merged_heads(tmp_path, gh)
+    assert gh.calls == []  # nothing is asked until a worktree needs the answer
+    answers = {f"branch-{n}": lookup(f"branch-{n}") for n in range(100)}
+    assert len(gh.calls) == 1
+    # The answers are the per-branch lookup's (`--head <branch>`): the heads of its merged pull requests, or none.
+    for name, answer in answers.items():
+        assert answer is not None and sorted(answer) == sorted(merged.get(name, []))
+
+
+def test_the_one_call_asks_for_the_merged_pull_requests_of_every_branch(tmp_path: Path) -> None:
+    gh = FakeGh({})
+    workspace_clean.gh_merged_heads(tmp_path, gh)("any")
+    (command,) = gh.calls
+    assert command[:3] == ["gh", "pr", "list"] and "--head" not in command
+    assert command[command.index("--state") + 1] == "merged"
+    assert command[command.index("--json") + 1] == "headRefName,headRefOid"
+    assert int(command[command.index("--limit") + 1]) >= 1000
+
+
+@pytest.mark.parametrize(
+    "gh",
+    [FakeGh({}, code=1), FakeGh({}, text="not json"), FakeGh({}, text='{"a": 1}'), FakeGh({}, text='[{"x": 1}]')],
+    ids=["exit code", "not json", "not a list", "no head names"],
+)
+def test_a_gh_that_fails_keeps_every_worktree_after_one_call(tmp_path: Path, gh: FakeGh) -> None:
+    lookup = workspace_clean.gh_merged_heads(tmp_path, gh)
+    assert [lookup(f"branch-{n}") for n in range(20)] == [None] * 20
+    assert len(gh.calls) == 1
+
+
+def test_a_missing_gh_is_never_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(shutil, "which", lambda name: None)
+    gh = FakeGh({})
+    monkeypatch.setattr(workspace_clean, "_run_gh", gh)
+    lookup = workspace_clean.gh_merged_heads(tmp_path)
+    assert lookup("branch-1") is None and lookup("branch-2") is None
+    assert gh.calls == []
+
+
+def test_a_gh_that_cannot_be_started_keeps_every_worktree(tmp_path: Path) -> None:
+    calls: list[list[str]] = []
+
+    def runner(command: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
+        calls.append(command)
+        raise FileNotFoundError("gh")
+
+    lookup = workspace_clean.gh_merged_heads(tmp_path, runner)
+    assert lookup("a") is None and lookup("b") is None
+    assert len(calls) == 1
+
+
+def test_a_full_list_cannot_say_no_for_a_branch_it_does_not_hold(tmp_path: Path) -> None:
+    """When GitHub returned as many pull requests as were asked for, an older one may be missing: unknown, so kept."""
+    gh = FakeGh({"new": ["a" * 40], "newer": ["b" * 40]})
+    lookup = workspace_clean.gh_merged_heads(tmp_path, gh, limit=2)
+    assert lookup("new") == ["a" * 40]
+    assert lookup("old") is None
+    assert "--limit" in gh.calls[0] and gh.calls[0][gh.calls[0].index("--limit") + 1] == "2"
+    assert len(gh.calls) == 1
+
+
+def test_a_clean_of_several_worktrees_asks_github_once(space: Space, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A real clean over three worktrees with commits asks GitHub once, and a merged pull request frees its own."""
+    paths = {name: space.worktree(name, commits=1) for name in ("one", "two", "three")}
+    gh = FakeGh({"one": [tip(paths["one"])], "two": ["f" * 40]})
+    monkeypatch.setattr(workspace_clean, "_run_gh", gh)
+    monkeypatch.setattr(shutil, "which", lambda name: "gh")
+    assert run_clean(space.checkout, space.root, True) == 0
+    assert len(gh.calls) == 1
+    assert not paths["one"].exists() and paths["two"].is_dir() and paths["three"].is_dir()
+
+
+def test_worktrees_judged_side_by_side_still_cost_one_gh_call(tmp_path: Path) -> None:
+    """Threads that need the answer at the same moment wait for the one call instead of making their own."""
+    gh = FakeGh({"branch-1": ["a" * 40]})
+    slow = gh.__call__
+
+    def slow_run(command: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
+        time.sleep(0.2)
+        return slow(command, cwd)
+
+    lookup = workspace_clean.gh_merged_heads(tmp_path, slow_run)
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        answers = list(pool.map(lookup, [f"branch-{n}" for n in range(16)]))
+    assert answers[1] == ["a" * 40] and answers[0] == [] and len(gh.calls) == 1
