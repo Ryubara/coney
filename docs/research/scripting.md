@@ -1702,7 +1702,8 @@ there. **Checkpoints 3 to 5** were not driven in this pass.
 
 Fixes, in the order to take them (each one implementer unit):
 
-1. **A spray cut short leaves its spot dead.** Played from checkpoint 1 into 2, triangle at chapter 2's first spot
+1. **A spray cut short leaves its spot dead.** Done (issue #330): Coney's cut-short path now gives the tagger
+   event 14 with (tag, 0). Played from checkpoint 1 into 2, triangle at chapter 2's first spot
    called `HuTag` and Coney logged that the spray was cut short on the next update; no event 14 followed, so
    `TagFinished` never put the spot's prompt back, and 30 later presses there did nothing. The original's
    `Tag_UpdatePlayer` (`0x00273c60`) calls `Tag_End` whenever the action is no longer `0x17` or `0x18` and the spray
