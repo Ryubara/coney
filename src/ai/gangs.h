@@ -19,8 +19,8 @@
 // scripts' message handlers, and a suspended flag that stops the members' brains. A human's events reach its gang
 // before its brain (Gang_OnEvent before Brain_OnEvent); the level scripts end their fights on a gang's event 18,
 // which passes how many members are still standing.
-// Research: docs/research/ai.md#gang-record, docs/research/ai.md#gang-events,
-// docs/research/ai.md#gang-update
+// Research: docs/research/ai-gangs.md#gang-record, docs/research/ai-gangs.md#gang-events,
+// docs/research/ai-gangs.md#gang-update
 
 namespace coney::ai {
 
@@ -181,7 +181,7 @@ class Gangs {
     /// `GangAddMember`: `brain` leaves its gang, even when it is gang `id` (its actions and target cleared, under a
     /// tactic popped to its goal base, no longer the leader, event kGangMessageMembers with 0), then joins gang `id`
     /// (a player becomes its leader, the war chief; event kGangMessageMembers with 1), so a follow tactic gives the
-    /// members their goals again (docs/research/ai.md#warrior-follow). A full gang drops its first member first
+    /// members their goals again (docs/research/ai-gangs.md#warrior-follow). A full gang drops its first member first
     /// (**Coney choice** of which). Nothing for an id not in use. **Coney choices**: the brain's counted enemies are
     /// kept; any player joining leads, where the original makes only a war chief (`+0x3ac`) the leader.
     /// @orig 0x00166308 Gang_AddMember (unknown)

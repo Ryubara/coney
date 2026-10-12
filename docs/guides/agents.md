@@ -20,7 +20,9 @@ so a fresh clone gets the same setup as the maintainer's machine:
 | `AGENTS.md` (and `CLAUDE.md`, `GEMINI.md`, which only import it) | The rules | Most agent tools |
 | `.mcp.json` | The debugging servers: `ghidra-mcp` (the shared Ghidra project) and `pcsx2` (the emulator over PINE) | Claude Code; other tools take the same two commands in their own MCP config |
 | `.claude/agents/` | The roles: `analyst`, `implementer`, `reviewer`, `research-reviewer` | Claude Code |
-| `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and builds allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)) | Claude Code |
+| `.claude/skills/` | The coordinator's skills: `repo-hygiene` ([the skill](repo-conventions.md#hygiene-skill)) | Claude Code |
+| `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and builds allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)); a hook that refuses a wait loop with no bound ([Bounded waits](#bounded-waits)) | Claude Code |
+| `.claude/hooks/` | The hook scripts `settings.json` runs before a shell command | Claude Code |
 
 **The servers.** `.mcp.json` holds no paths. Each entry runs `coney-tools mcp serve <name>`, which finds the server
 through `coney.local.toml` (`ghidra_mcp_repo` and `pcsx2_mcp_dir`, see [Local workspace](workspace.md)) and runs it
@@ -143,6 +145,8 @@ issue stays the one place to read it.
   minutes run in the background with their output going to a file; the agent checks the file every few minutes
   (each check keeps the cache warm) or once when the run should be done. Even an hour-long cache does not survive a
   run that takes longer.
+- **Every wait has a bound** ([Bounded waits](#bounded-waits)): never `until ...; do sleep ...; done` or `while true`
+  in a shell, which a hook refuses.
 - **Keep tool output small.** Print counts, the failing lines and the end of a log, never a whole log: every line an
   agent reads stays in its context for the rest of the task.
 - **Do not message a finished agent.** Start a new one from its report and the track's
@@ -155,6 +159,31 @@ issue stays the one place to read it.
 - **Keep the coordinator small.** The coordinator re-reads its whole conversation on every turn and is the context a
   fork would inherit. It saves the state, clears and continues from it at a natural boundary, and never forks once
   its context is large.
+
+## Bounded waits {#bounded-waits}
+
+A shell command that waits must end on its own, whatever happens to what it waits for. A background shell running
+`until grep -q done build.log; do sleep 20; done` waits for ever when the build dies before writing the line: the
+shell never ends, keeps its agent listed as running long after it finished, holds a little memory and CPU, and is
+left for somebody to find and kill. On 2026-10-12 twenty such shells, hours old, were found and killed by hand after
+an agent tool restart.
+
+So a hook ([`.claude/hooks/bounded_waits.py`](repo:.claude/hooks/bounded_waits.py), run before every Bash and
+PowerShell command) refuses a loop that sleeps (`until` or `while` in bash, `while`, `do ... until` or
+`do ... while` in PowerShell) with no bound: no number compared in the loop and no `timeout` in front of it. Wait
+in one of these ways instead:
+
+- **A counted loop:** `for i in $(seq 1 30); do grep -q done LOG && break; sleep 20; done` (at most 30 looks), or in
+  PowerShell `for ($i = 0; $i -lt 30; $i++) { if (...) { break }; Start-Sleep 20 }`. A counter or a deadline compared
+  in an `until` or `while` loop (`[ $n -ge 30 ]`, `$SECONDS -lt 600`, `(Get-Date) -lt $deadline`) is a bound too.
+- **`timeout N` around it:** `timeout 600 bash -c 'until grep -q done LOG; do sleep 20; done'`.
+- **No loop at all:** start the long command itself in the background (`run_in_background`) and read its output file
+  when you are told it finished, or once in a while. A build or test run is `coney-tools build`, whose `--max-wait`
+  caps its wait for a slot.
+
+A wait that is still left behind (an older shell, a shell from another tool) is found by `coney-tools workspace
+clean`, which stops shells older than three hours waiting on files unchanged for an hour, and orphaned test runs
+([Cleanup](workspace.md#cleanup)).
 
 ## When a pull request fails checks {#ci-failures}
 
@@ -189,7 +218,8 @@ and an agent waiting on it re-writes its context. So CI never holds an agent bac
    `gh run list --status queued --limit 50 --json databaseId --jq length` and the same with `--status in_progress`,
    and releases when there is room: engine fixes first, then what unblocks other work.
 3. **Each push starts a run** and cancels the pull request's previous one, so a branch is pushed once it is ready,
-   not after every commit.
+   not after every commit. A merge to `main` likewise cancels `main`'s older run, so a merge round costs one build
+   ([What CI runs](building.md#what-ci-runs)).
 4. **A pull request runs only the jobs its change can break** ([What CI runs](building.md#what-ci-runs)), so
    documentation-only units are cheap to release.
 

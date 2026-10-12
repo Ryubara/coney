@@ -251,7 +251,8 @@ TEST_CASE("the disc's Survival sends spawned enemies at the player until he fall
         if (play == nullptr) {
             return std::nullopt;
         }
-        // The search's origin: the camera's position with the player's height (docs/research/ai.md#spawner-search).
+        // The search's origin: the camera's position with the player's height
+        // (docs/research/ai-gangs.md#spawner-search).
         const coney::anim::Vec3 eye = play->cameraEye();
         const coney::script::Value& v = (*at)[0];
         return std::array<float, 3>{eye.x, eye.y, static_cast<float>(v.table()->field("z").number().value_or(0.0))};

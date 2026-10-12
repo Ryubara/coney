@@ -12,10 +12,10 @@
 // A player's crew under the Warrior commands' default: the follow tactic the game issues itself (when the chief is
 // made a player and when a scene ends), the follow goal it gives each member (keep to the chief's formation, face his
 // enemies, never attack), the attack and hold commands' tactics and goals, and the chief's automatic commands that
-// switch the crew to attack or defend and back. Research: docs/research/ai.md#warrior-commands,
-// docs/research/ai.md#warrior-follow, docs/research/ai.md#warrior-attack, docs/research/ai.md#warrior-hold,
-// docs/research/ai-goals.md#goal-follow-and-attack, docs/research/ai-goals.md#goal-hold-position,
-// docs/research/ai.md#warrior-auto-commands
+// switch the crew to attack or defend and back. Research: docs/research/ai-gangs.md#warrior-commands,
+// docs/research/ai-gangs.md#warrior-follow, docs/research/ai-gangs.md#warrior-attack,
+// docs/research/ai-gangs.md#warrior-hold, docs/research/ai-goals.md#goal-follow-and-attack,
+// docs/research/ai-goals.md#goal-hold-position, docs/research/ai-gangs.md#warrior-auto-commands
 
 namespace coney::ai {
 
@@ -55,7 +55,7 @@ struct FollowPace {
     int gait = 2;
 };
 
-/// FollowFormation's speed (docs/research/ai.md#warrior-follow, "The speed") for a follower `distance` (its walk
+/// FollowFormation's speed (docs/research/ai-gangs.md#warrior-follow, "The speed") for a follower `distance` (its walk
 /// distance) from its follow point with the arrival distance `arrival`, behind a human moving at `paceSpeed`, of
 /// `speeds`: within `arrival` the pace (capped at 1.25 x sprint); beyond it f = 0.1 x (distance - arrival), raised by
 /// 4 f x (pace - walk) under 2 m/s and by 1 over 2 m/s or when `hurried` (the follower has attackers); the gait the run
@@ -123,7 +123,7 @@ class FollowPlayerGoal final : public Goal {
     int m_failWait = 0; // +0x24: updates counted since a walk failed
 };
 
-/// `FollowFormation(reach, leader)` (type `0x33`, docs/research/ai.md#warrior-follow): follows its point in the
+/// `FollowFormation(reach, leader)` (type `0x33`, docs/research/ai-gangs.md#warrior-follow): follows its point in the
 /// leader's formation (Formation::followPoint(): its slot within `reach`, else the human it queues behind within
 /// 2.5 m) at followSpeed(), over the route its move plans, measuring the way by the walk distance
 /// (RoutePlanner::walkDistance()). It is done when it no longer follows, the leader is gone or the last move failed,

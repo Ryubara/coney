@@ -9,8 +9,8 @@
 // front door, the crew's thefts under the wreck order and the back door asserts its hints, objectives and scenes in
 // the original's order through checkpoint 4 (docs/research/scripting.md#level80, docs/research/objects.md#throws,
 // docs/research/ai-code.md#t2-warrior-steal); and at checkpoint 1 the crew under the follow order runs in, stands
-// while the player runs near, climbs the crates after him (docs/research/ai.md#warrior-follow) and climbs the fence
-// the player is put over without running into it first (issue #236). It runs only when the environment variable
+// while the player runs near, climbs the crates after him (docs/research/ai-gangs.md#warrior-follow) and climbs the
+// fence the player is put over without running into it first (issue #236). It runs only when the environment variable
 // CONEY_DISC names the disc and skips otherwise; it prints counts only (LEGAL.md).
 
 #include <algorithm>
@@ -262,7 +262,8 @@ TEST_CASE("the disc's level80: R2 and the right stick up give the follow order t
     CHECK(level.scripts->scripts().errors() == 0);
 
     // The script then stages the street (GangBrFlush(0), the Warriors walked to their flags) and, at EndStartCam,
-    // adds the crew to gang 0 again, which gives the Warriors the follow back (docs/research/ai.md#warrior-follow).
+    // adds the crew to gang 0 again, which gives the Warriors the follow back
+    // (docs/research/ai-gangs.md#warrior-follow).
     constexpr int kStaging = 15 * 30;
     level.run(kStaging);
     int following = 0;
@@ -979,7 +980,7 @@ bool followingFormation(coney::ai::Brain& warrior) {
 TEST_CASE(
     "the disc's level80: the crew runs in after Let's Go, stands while the player runs near and climbs the crates",
     "[disc][story][follow]") {
-    // The runtime check of docs/research/ai.md#warrior-follow (PCSX2, level80 at "Let's Go"): the Warriors ask
+    // The runtime check of docs/research/ai-gangs.md#warrior-follow (PCSX2, level80 at "Let's Go"): the Warriors ask
     // 12.81 m/s (1.25 x sprint) on their run-in, stand while the player runs within 9 m in a straight line and follow
     // once he is past it, and climb the crate stack by its 0x80 ledge links when he stands on it.
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
@@ -1054,8 +1055,8 @@ TEST_CASE(
         CHECK(warrior->distanceTo(*chief) < coney::ai::kCrewFollowDistance);
     }
 
-    // The crate stack: the route nodes 860-865 whose 0x80 links climb onto it (docs/research/ai.md#warrior-follow).
-    // The player is put on its top node and stands there.
+    // The crate stack: the route nodes 860-865 whose 0x80 links climb onto it
+    // (docs/research/ai-gangs.md#warrior-follow). The player is put on its top node and stands there.
     const coney::ai::RoutePlanner* planner = run.crew[0]->planner();
     REQUIRE(planner != nullptr);
     const coney::world::PathMap& map = planner->map();
@@ -1116,13 +1117,13 @@ std::optional<std::pair<std::uint32_t, std::uint32_t>> fenceLink(const coney::wo
 
 TEST_CASE("the disc's level80: Warriors following the player over a fence climb it at once (issue #236)",
           "[disc][story][follow]") {
-    // docs/research/ai.md#warrior-follow, "Crossing a fence" (PCSX2, level80): the crew standing south of the kind-8
-    // fence pairs of nodes 396-403 (y about 199.9), the player put over the fence; both Warriors pushed FollowFormation
-    // on the next update (the fence's hole refuses the line), planned routes over the kind-8 pair and climbed, about
-    // 150 and 210 updates from the teleport to standing with the player 5-7 m away; neither pressed against the fence
-    // for the 31 tries of a failed climb. Here the player lands 6 m past the fence.
-    // Without the fast climber's early climb (`Route_TryClimbNear`) one Warrior ran into the fence for 63 updates
-    // before he climbed (issue #236).
+    // docs/research/ai-gangs.md#warrior-follow, "Crossing a fence" (PCSX2, level80): the crew standing south of the
+    // kind-8 fence pairs of nodes 396-403 (y about 199.9), the player put over the fence; both Warriors pushed
+    // FollowFormation on the next update (the fence's hole refuses the line), planned routes over the kind-8 pair and
+    // climbed, about 150 and 210 updates from the teleport to standing with the player 5-7 m away; neither pressed
+    // against the fence for the 31 tries of a failed climb. Here the player lands 6 m past the fence. Without the fast
+    // climber's early climb (`Route_TryClimbNear`) one Warrior ran into the fence for 63 updates before he climbed
+    // (issue #236).
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");

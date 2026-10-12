@@ -22,11 +22,11 @@ class CollisionMesh;
 // start's) and builds a route of node indices from a pool of 32, shortened where the graph and the straight lines
 // allow. A route raises a use count on each of its nodes while it lives, which makes the next searches spread over
 // parallel routes.
-// Research: docs/research/ai.md#path-planning
+// Research: docs/research/ai-moving.md#path-planning
 
 namespace coney::ai {
 
-/// Why a move failed (brain `+0x284`, docs/research/ai.md#move-action).
+/// Why a move failed (brain `+0x284`, docs/research/ai-moving.md#move-action).
 enum class MoveFailure : std::uint8_t {
     None = 0,    ///< It has not failed.
     NoRoute = 1, ///< No polygon under an end, or no route between them.
@@ -48,7 +48,7 @@ inline constexpr std::uint16_t kNoExtra = 0x100; ///< In the mask, turns the thr
 /// What a failed search adds to the mask before it tries again (`0x002511c8`).
 inline constexpr std::uint16_t kRetry = kChoke | kEight | kJump;
 /// The mask every human searches with (`0x0029a388`, route state `+0x14`): every link kind on the disc; only `0x100`
-/// is outside it, and with it no failed search is retried (docs/research/ai.md#path-planning).
+/// is outside it, and with it no failed search is retried (docs/research/ai-moving.md#path-planning).
 inline constexpr std::uint16_t kDefaultMask = 0xff;
 } // namespace edge_flag
 
@@ -163,7 +163,7 @@ class RoutePlanner {
     /// The path data.
     [[nodiscard]] const world::PathMap& map() const { return *m_map; }
 
-    /// The walkable-line test with the mask 0 (world::PathMap::walkable(), docs/research/ai.md#path-planning): a
+    /// The walkable-line test with the mask 0 (world::PathMap::walkable(), docs/research/ai-moving.md#path-planning): a
     /// hole in the path polygons on the way, a fence's among them, refuses the line. A start standing in a hole is
     /// tested from its navPoint(), as the original tests from the point its human's polygon came from (`+0x2b0`).
     [[nodiscard]] bool lineClear(anim::Vec3 from, anim::Vec3 to) const;
@@ -185,11 +185,11 @@ class RoutePlanner {
     [[nodiscard]] std::expected<RoutePlan, MoveFailure> request(anim::Vec3 from, anim::Vec3 to,
                                                                 std::uint16_t mask = edge_flag::kDefaultMask);
 
-    /// How far a human at `from` walks to `to` (docs/research/ai.md#warrior-follow, step 5): the straight distance
-    /// when the walkable line passes, else the length of the route request() plans (from `from` through its nodes to
-    /// `to`, the route freed at once); nothing when the request fails (no area under an end, no route between them,
-    /// the pool full). **Coney choice**: lengths are 3D (the page names the straight distance and the route's length
-    /// without saying which).
+    /// How far a human at `from` walks to `to` (docs/research/ai-gangs.md#warrior-follow, step 5): the straight
+    /// distance when the walkable line passes, else the length of the route request() plans (from `from` through its
+    /// nodes to `to`, the route freed at once); nothing when the request fails (no area under an end, no route between
+    /// them, the pool full). **Coney choice**: lengths are 3D (the page names the straight distance and the route's
+    /// length without saying which).
     /// @orig 0x00247a50 Nav_WalkDistanceTo (unknown)
     [[nodiscard]] std::optional<float> walkDistance(anim::Vec3 from, anim::Vec3 to);
 
@@ -197,7 +197,7 @@ class RoutePlanner {
     /// step runs from `edge.to` into `from`), in 1/16 m: its 3D length × 16 truncated; when the extra costs are on and
     /// `mask` lacks `0x100`, one of 200 (flag 8), else 320 (`0x80`), else 80 (4, but not with `0x40` and the avoid
     /// bit); 1600 for the avoid bit; and 40 × the routes through `from` − 8 when there are any. Each addition wraps
-    /// at 16 bits (docs/research/ai.md#path-planning, "The new g").
+    /// at 16 bits (docs/research/ai-moving.md#path-planning, "The new g").
     /// @orig 0x00251890 Route_EdgeCost (unknown)
     [[nodiscard]] std::uint32_t edgeCost(std::uint32_t from, const world::PathEdge& edge, std::uint16_t mask) const;
     /// The routes through node `node` now (C `+0x1f`).
@@ -218,7 +218,7 @@ class RoutePlanner {
     /// nothing when there is none.
     [[nodiscard]] std::optional<std::uint32_t> startNode(anim::Vec3 point) const;
 
-    /// The point a human standing at `point` plans from (docs/research/ai.md#path-holes), the first that an area
+    /// The point a human standing at `point` plans from (docs/research/ai-moving.md#path-holes), the first that an area
     /// takes in (areaAt()) of: `point` itself; the point on an edge of its candidate area's polygons
     /// (world::PathMap::candidateArea(), the outline and its holes) nearest it within kNavEdgeReach, the first edge
     /// nearer than kNavEdgeNear ending the look; the eight kNavProbes. Nothing when none is. The body is not moved.

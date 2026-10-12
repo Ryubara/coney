@@ -381,7 +381,7 @@ void addCharacterBindings(LuaVm& vm, const BindingContext& context) {
         record->tint = word;
         return binding::none();
     });
-    // `ActGiveWay(human, other)`: the human steps out of the other's way (docs/research/ai.md#giving-way).
+    // `ActGiveWay(human, other)`: the human steps out of the other's way (docs/research/ai-moving.md#giving-way).
     // @orig 0x003648a0 ActGiveWay (unknown)
     vm.registerFunction("ActGiveWay", [context = &context](std::span<const Value> args) {
         if (AiBindingHost* ai = context->ai; ai != nullptr) {

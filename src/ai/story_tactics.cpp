@@ -24,7 +24,7 @@ namespace {
 
 using script::TacticKind;
 
-// The human events the tactics map to codes (docs/research/ai.md#tactic-kinds).
+// The human events the tactics map to codes (docs/research/ai-gangs.md#tactic-kinds).
 constexpr int kEventSawPlayer = 10;
 // How far the followers keep from the leader, by kind, metres.
 constexpr float kFollowMoveToFlag = 3.0F;

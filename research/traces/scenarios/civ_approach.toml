@@ -1,8 +1,8 @@
 # How the AI moves to its target: the fighter of civ_fight placed 8 m behind a player who stands still, so its
 # fight goal moves it into reach before it attacks. Each update: the goal, the action, what it asks the body for
-# (brain +0x110 heading, +0x114 speed), its per-player stick and its speed. Research: docs/research/ai.md#moving.
+# (brain +0x110 heading, +0x114 speed), its per-player stick and its speed. Research: docs/research/ai-moving.md#moving.
 description = "slot 6: PoizoCiv as a type-2 fighter 8 m behind a still player; how it moves into reach"
-research = "docs/research/ai.md#moving"
+research = "docs/research/ai-moving.md#moving"
 input = "civ_approach.txt"
 updates = 200
 fields = ["player", "enemy"]

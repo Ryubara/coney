@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The Warriors' default command and the chief's automatic commands (docs/research/ai.md#warrior-commands): the follow
-// tactic's goals, the follow goal's fight mode, and CrewOrders' switches to attack and back. Synthetic humans on a
-// flat floor.
+// The Warriors' default command and the chief's automatic commands (docs/research/ai-gangs.md#warrior-commands): the
+// follow tactic's goals, the follow goal's fight mode, and CrewOrders' switches to attack and back. Synthetic humans on
+// a flat floor.
 #include <cmath>
 #include <cstdint>
 #include <memory>
@@ -290,7 +290,7 @@ TEST_CASE("an attacking Warrior with no enemy comes back to within 8 m of the ch
 
 TEST_CASE("FollowFormation's speed: the leader's within reach, a run times the distance far behind, the walk near",
           "[ai][crew]") {
-    // The page's walk, jog, run and sprint (docs/research/ai.md#warrior-follow, "The speed").
+    // The page's walk, jog, run and sprint (docs/research/ai-gangs.md#warrior-follow, "The speed").
     const coney::human::Speeds speeds{
         .base = 1.0F, .sneak = 1.0F, .walk = 1.65F, .jog = 3.4F, .run = 7.8F, .sprint = 10.25F};
     const float top = 1.25F * speeds.sprint;

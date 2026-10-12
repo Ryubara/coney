@@ -14,7 +14,7 @@
 // route from the planner. It writes no stick: each update it sets the brain's heading and speed (brain `+0x110`,
 // `+0x114`), slowing for the corners ahead so the human stays on the walkable polygons, turning on the spot when it
 // stands far off its way, and giving up when it is stuck.
-// Research: docs/research/ai.md#move-action, docs/research/ai.md#route-follow
+// Research: docs/research/ai-moving.md#move-action, docs/research/ai-moving.md#route-follow
 
 namespace coney::ai {
 
@@ -39,7 +39,7 @@ inline constexpr float kCornerMinDistance = 0.35F;
 /// A climb leg's climb is tried for this many updates before the move gives up (route state `+0x13`).
 inline constexpr std::uint32_t kClimbTries = 31;
 /// A fast climber above the jog tries the climb of the leg after its current waypoint within this distance (3D) of
-/// that leg's far waypoint (`Route_TryClimbNear`, docs/research/ai.md#route-follow).
+/// that leg's far waypoint (`Route_TryClimbNear`, docs/research/ai-moving.md#route-follow).
 inline constexpr float kEarlyClimbReach = 4.5F;
 /// The corner speed's trial falls by 1 + 0.75 × human `+0x333` m/s for each failed trial (**Coney choice**: Coney
 /// has no `+0x333`, so it falls by 1).
@@ -49,9 +49,9 @@ inline constexpr float kBrakingSeconds = 0.5F;
 /// A new point this near the old one (3D, m; squared 0.005) leaves a move as it is (`MoveAction_SetTarget`).
 inline constexpr float kRetargetIgnore = 0.0707F;
 
-/// A jump leg (docs/research/ai.md#route-jump): the fastest a drop or a jump crosses in plan (m/s), half the fall's
-/// gravity, the jump's first and last vertical speed and its step (m/s), and how near (3D) its waypoint a landing
-/// keeps the route.
+/// A jump leg (docs/research/ai-moving.md#route-jump): the fastest a drop or a jump crosses in plan (m/s), half the
+/// fall's gravity, the jump's first and last vertical speed and its step (m/s), and how near (3D) its waypoint a
+/// landing keeps the route.
 inline constexpr float kJumpMaxAcross = 10.0F;
 inline constexpr float kHalfGravity = 7.84F;
 inline constexpr float kJumpFirstUp = 0.5F;
@@ -87,7 +87,7 @@ struct MoveRequest {
 /// Whether a human tries the climb of the next route leg now, before it reaches the current waypoint (the fast
 /// climber's early climb): the leg out of the current waypoint is a climb (kind 8 or `0x80`), the human has flag `0x2`
 /// (`HuSetFastClimber`), its gait (human `+0x1a8`) is above the jog, and it is within kEarlyClimbReach (3D) of the
-/// climb's far waypoint, `distance` away (docs/research/ai.md#route-follow).
+/// climb's far waypoint, `distance` away (docs/research/ai-moving.md#route-follow).
 /// @orig 0x0029b9b0 Route_TryClimbNear (unknown)
 [[nodiscard]] bool earlyClimbDue(std::uint16_t nextLegKind, bool fastClimber, human::Gait gait, float distance);
 
@@ -125,7 +125,7 @@ class MoveAction final : public Action {
     [[nodiscard]] std::optional<float> speed() const { return m_speed; }
     /// A new arrival radius for the running move (FollowFormation updates its move's).
     void setRadius(float radius) { m_request.radius = radius; }
-    /// Gives the move a new point (docs/research/ai.md#follow-retarget, item 3): nothing for one within
+    /// Gives the move a new point (docs/research/ai-gangs.md#follow-retarget, item 3): nothing for one within
     /// kRetargetIgnore of the old (3D). Otherwise the point is stored; a straight move goes on to it, and a route is
     /// kept, its destination moved, when its last node has a walkable line to the new point. Else, unless the human
     /// is in a jump, a drop or a kind-8 climb, the route goes and the move starts again on the next update (a straight
