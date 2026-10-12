@@ -215,7 +215,10 @@ the disc checks print counts only).
    queue fallback; `Nav_WalkDistanceTo` (straight distance, else the planned route's length; fail only with no area
    or no route) and its 30-update wait with the vandalise check every 15; done only when the leader stands and the
    walk distance is within the radius; the speed from `FollowFormation_PickSpeed` (replace the 3 m run/walk
-   stand-in) using the walk distance; the move refreshed once a second or when the leader just stopped. In
+   stand-in) using the walk distance; the speed and radius refreshed once a second or when the leader just stopped;
+   the **running move's point** retargeted at every formation plan (and every 6 updates with no slot), never by the
+   goal's once-a-second pass ([Where a running move's point comes from](ai.md#follow-retarget)); while a move left
+   over from `FollowFormation` runs, `FollowPlayer` does nothing at all (no stand test) until it ends. In
    `FollowPlayerGoal` replace "back to the slot every 31 updates" with the stand-or-follow test (within 9 m, same
    `+0x2d5`, straight walkable line to the leader) and the failure back-off of 31 updates. *Tests*: a chief walking
    round an L-shaped wall keeps his two followers moving (they reach within 2.5 m of the one ahead); a follower
@@ -254,8 +257,9 @@ the disc checks print counts only).
    trailing cut's line runs from the destination to the node. *Tests*: a chain whose last node links back to the
    first keeps its middle nodes.
 10. **Formation slot points** ([Formations](ai.md#formations)): drop each slot's point to the ground (a ray from 1.9 m
-    above to 5.9 m below) instead of keeping the leader's height, and test usability with the line from the leader
-    (`Human_CanWalkStraightTo`). *Test*: a leader on a kerb 0.3 m up gives slots on the road their road height.
+    above, 5.9 m long, so to 4.0 m below; the point 0.2 m above the hit; no hit keeps the plan point's height) instead
+    of keeping the leader's height, and test usability with the line from the leader (`Human_CanWalkStraightTo`); no
+    slot is usable while the leader is airborne or at detail level 3 or more. *Test*: a leader on a kerb 0.3 m up gives slots on the road their road height.
 11. **The stuck test** ([The move action](ai.md#move-action) step 9): 3D distance, on the 61st counted update. *Test*: a
     human climbing a steep heap 0.2 m per 60 updates in height is not stuck.
 

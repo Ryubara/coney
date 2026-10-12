@@ -331,7 +331,7 @@ The 42 formations (0x280 bytes at `0x006ceaf0`): slot sets, slot points and whic
 | `0x00294ce0` | `Formation_UncrossPaths` | helper | swaps the slots of follower pairs whose paths cross | confirmed (code) |
 | `0x00294e98` | `Formation_DropGoneFollowers` | helper | followers whose human is gone leave | confirmed (code) |
 | `0x00294f38` | `Formation_UpdateSlotPoints` | helper | the slots' world points from the leader's pose, dropped to the ground; a slot is usable when the leader sees it, up to `+0x272` | confirmed (code) |
-| `0x00295250` | `Formation_SetFollowerSpeeds` | helper | a follower walking to its slot (goals `0x33`, `0x69`, `0x73`) gets a move speed factor of 1.0 or 0.1 | inferred |
+| `0x00295250` | `Formation_RetargetFollowerMoves` | helper | after each plan, a follower whose top goal is `0x33`, `0x69` or `0x73` and whose front action is a move gets his new follow point in that move (`MoveAction_SetTarget`) and radius 0.1 m with a slot, 1.0 m without ([Where a running move's point comes from](ai.md#follow-retarget)); the old name `Formation_SetFollowerSpeeds` was wrong | confirmed (code) |
 | `0x002953c8` | `Formation_AssignSlots` | helper | each usable slot takes its nearest unassigned follower, up to `+0x272` | confirmed (code) |
 | `0x00295538` | `Formation_AssignQueue` | helper | followers left over queue behind the nearest slotted one | confirmed (code) |
 | `0x00295d08` | `Formation_PlanAndNotify` | helper | plans, then tells each follower | inferred |

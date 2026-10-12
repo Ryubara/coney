@@ -4712,11 +4712,26 @@ the distance **squared** (`+0x14`; 81 for the tactic's 9 m). Each update, confir
 1. While brain `+0x284` (the last move's failure) is set, a counter (`+0x24`) counts up; at 31 or more both are
    cleared. So after a failed walk the follower waits about a second before it tries again.
 2. **Stand or follow.** It **stands** (no new goal) when all of these hold: the leader is within the distance
-   (9 m; 10 m in fight mode), its own brain `+0x2d5` equals the leader's (both set or both clear), and it can walk
-   straight to the leader (`Human_CanWalkStraightToHuman`, the walkable line with the trains' test). Otherwise, while
+   (9 m; 10 m in fight mode), measured in **3D** between the two humans' positions (`Vec_DistSq` on the position
+   table `0x00714b00`, so a leader 2.2 m up counts his height), its own brain `+0x2d5` equals the leader's (both set
+   or both clear), and it can walk straight to the leader (`Human_CanWalkStraightToHuman` `0x002221e0` on the
+   leader's position: the trains' test, then the walkable line from the follower's polygon, mask 0). Otherwise, while
    the counter is 0, it pushes **`FollowFormation(0.75 m, leader, turn-with-leader 1, no time limit)`**
-   (`0x002dfba8`) and returns; that goal runs on top until it ends ([below](#warrior-follow)).
+   (`0x002dfba8`) and returns; that goal runs on top until it ends ([below](#warrior-follow)). The test runs only
+   while `FollowPlayer` is the top goal: while `FollowFormation` runs above it, nothing stands the follower down
+   early.
 3. With actions queued it returns. Otherwise the fight mode, or the idle behaviour below.
+
+**A move left over from `FollowFormation`** (confirmed (code) at the cited addresses). Neither `FollowFormation`'s
+End (`0x002dfe68`, which restores the edge mask `+0xf4`, the Warrior's flags and the start boost) nor the pop
+(`Brain_PopGoal` `0x0028d7d8`: End, free, then `Goal_Resume` on the new top) clears the actions, so a move still
+running when `FollowFormation` returns 2 keeps running. Meanwhile `FollowPlayer` does **nothing at all**: `Goal_Resume`
+(`0x0029ee30`) only marks it "to resume" while the action count (brain `+0x2e`) is above 0, and `Goal_Process`
+(`0x0029eed8`) then returns 0 without calling its Process, every update. Only when the move has ended does
+`FollowPlayer`'s Resume (`0x002de540`: rejoin the formation, leave the fight stance, the next turn in 1-2 s and the
+next fidget in 2-3 s) run, and its Process (the stand test above) from the update after. So there is no stand test,
+no new `FollowFormation` and no turn while a left-over move runs. (Pushing a goal, by contrast, clears the actions:
+`Brain_PushGoal` `0x0028d758`.)
 
 So a Warrior stands still anywhere within 9 m of the chief as long as a straight walkable line joins them, and only
 walks when the chief gets farther, turns a corner, or crosses a fence. Its **fight mode**
@@ -4749,14 +4764,25 @@ distance (0.75 m from the follow code), leader, a turn-with-leader flag, time li
 - **Process** (`0x002e0088`):
     1. Done (2) when the leader is invalid, the last move failed (brain `+0x284`), or he is no longer a follower of
        the leader's formation. Wait while the front action is of kind 6. Out of the fight stance when the leader is.
-    2. Every 6 updates, without a slot yet, the follow point is refreshed into the running move.
+    2. Every 6 updates (brain `+0x34` a multiple of 6), **only while it has no slot**, the follow point (the human
+       ahead, step 4) is written into the goal (`+0x10`) and into the running move (`Ai_SetRunningMoveTarget`
+       `0x0029f790`: when the front action is a move, `MoveAction_SetTarget`, [below](#follow-retarget)). With a slot
+       this step does nothing.
     3. Every *n* updates (*n* a random 2-7 drawn at init) the leader's gait is noted; "the leader just stopped" = it
        was above 3 and is now below 3. Unless he just stopped, nothing more while a check time (now + 1000 ms) has
        not passed and actions are queued.
-    4. The follow point (`Formation_GetFollowPoint`): its slot's world point, radius = the arrival distance (0.75
-       m); **without a usable slot, the position of the human it queues behind** (the follower ahead of it in the
-       formation's queue, or the leader; `Formation_GetAhead`), radius **2.5 m**, and from here on that human's
-       speed stands in for the leader's.
+    4. The follow point, written to the goal's `+0x10` and refreshed only here (once a second, or when the leader
+       just stopped): `Formation_GetFollowPoint` (`0x00295e38`) finds the follower's entry (`Formation_FollowerIndex`
+       `0x002962f0`, the entry whose handle is his, −1 none) and reads its slot (`Formation_GetSlotPoint`
+       `0x00296358`, entry `+0x04`; it replans first when the formation's "replan" byte `+0x274` is 1). With a slot
+       (≥ 0) the point is that slot's world point in the current set (`Formation_GetMemberPoint` `0x00296410`: the
+       three `s16` at slot `+0x06` / `+0x08` / `+0x0a` in 1/16 m, *w* = 1) and it returns 1; radius = the arrival
+       distance (0.75 m). With no slot (−1) the point is the **position of the human it queues behind**
+       (`Formation_GetAhead` `0x002963b0`: replan first when `+0x274` is 1, then the handle at entry `+0x08`, and
+       the leader (`+0x244`) when that handle no longer resolves) and it returns 0; radius **2.5 m**, and from here
+       on that human stands in for the leader in steps 6 and 7 (his speed and his `+0x2d5`). Confirmed (code) at the
+       addresses cited. A slot is given only by a plan, and only a usable slot is given (below), so "a slot" here
+       means a usable one.
     5. **Can it get there** (`Nav_WalkDistanceTo` `0x00247a50`; Ghidra's old name `Nav_StraightDistance` was
        wrong): the straight distance when a walkable line from the human's nav point reaches the point; otherwise,
        when both ends have an area and both areas are on the graph (or it is one area), the **length of a route**
@@ -4767,20 +4793,72 @@ distance (0.75 m from the follow code), leader, a turn-with-leader flag, time li
        1.5 m is smashed (`VandalizeItem` pushed); at 30 it tests again. A success clears the counter.
     6. The leader (or the human ahead) standing (his speed gives gait 0) and the walk distance below the radius:
        done (2). With the leader standing, the move's option bit is 0; otherwise 1.
-    7. Beyond 0.2 m (walk distance): a move action to the point (radius 0.1 m at a slot, else 2.5 m) at the speed
-       below, or the running move's speed and radius updated. The move plans its own route
-       ([Path planning](#path-planning)), so a follower crosses fences, climbs and drops by the route's links. A
-       new move by a follower who has attackers (brain `+0x1a4`) and a clear `+0x2d5` also turns him to face the
-       point and raises his start boost by one.
+    7. Beyond 0.2 m (walk distance): with no move at the front of the queue, a new move action to the point
+       (`MoveAction_InitEx` `0x002fbae0`, which **copies** the point into the action's `+0x10`; radius 0.1 m at a
+       slot, else 2.5 m; the speed below as `+0x40`, never below the walk). With a move already running, only its
+       speed (`+0x40`, `MoveAction_SetSpeed` `0x002fbbe0`) and radius (`+0x2c`) are written here, **not its point**.
+       The move plans its own route ([Path planning](#path-planning)), so a follower crosses fences, climbs and drops
+       by the route's links. A new move by a follower who has attackers (brain `+0x1a4`) and a clear `+0x2d5` also
+       turns him to face the point and raises his start boost by one.
 
     The distance `d` used for the speed and the radius tests is the **walk distance** from step 5 (the route's
     length when the point is round a corner or over a fence), not the straight one.
+
 - **The speed** (`FollowFormation_PickSpeed` `0x002dfef8`), with `d` the distance, `v` the leader's speed capped at
   1.25 × the sprint speed: within the arrival distance, `v`. Beyond it, `f` = 0.1 × (`d` − arrival distance); when
   `v` < 2 m/s, `f` += 4 × `f` × max(`v` − walk speed, 0); `f` += 1 when `v` > 2 m/s, the leader's `+0x2d5` is set, or
   the follower has attackers. Gait `g` = run (4) beyond 8 m or with the leader's `+0x2d5`, jog (3) beyond 4 m, else
   walk (2). Speed = max(speed of `g`, `v`) × `f`, clamped to [walk speed, 1.25 × sprint speed]. So a follower far
   behind runs, near his slot matches the leader, and slows to a walk on arrival.
+- **What limits a follower's speed and destination** (confirmed (code) at the cited addresses unless marked). The
+  speed's only caps are the clamp above (1.25 × the follower's own sprint clip speed, 12.81 m/s for Vermin and
+  Rembrandt) and the control's 25 m/s ([Characters](characters.md#ai-locomotion)); the move action may lower it
+  further at corners ([The corner speed](#corner-speed)) and a climb leg runs at gait 4. Nothing caps it for a
+  straight move, and the follower really moves that fast: confirmed (runtime), Vermin's and Rembrandt's speed
+  `+0x1ac` reached **12.807 m/s** and held it on a 75 m run, on a route and on straight moves alike. What keeps a
+  follower on the ground is the destination and the line, not the speed:
+    - the slot point is put on the ground when the formation is planned (a ray from 1.9 m above, 5.9 m long, so to
+      4.0 m below; the point goes **0.2 m above** the hit; with no hit it keeps the plan point's height) and is
+      usable only when the leader has a walkable line to it ([Formations](#formations));
+    - a follower with no usable slot aims at the human ahead of him, who stands on the ground;
+    - `Nav_WalkDistanceTo` fails when the point has no area (none within 3.6 m below it,
+      [Path planning](#path-planning)) or no route reaches it, and then no move is made (step 5);
+    - the move goes straight only when the walkable line reaches the point from where the follower stands, else by
+      a route ([Path planning](#path-planning)), and every 31 updates its current aim must still pass the walkable
+      line or the move ends and the goal plans again ([The move action](#move-action) step 5);
+    - the running move's point follows every plan ([above](#follow-retarget)), so it is at most one plan old.
+
+##### Where a running move's point comes from {#follow-retarget}
+
+Confirmed (code) at the addresses cited; confirmed (runtime) below. A move keeps the point it was made with until
+one of these writes it:
+
+1. **Every formation plan.** At the end of `Formation_Plan` (`0x002956d0`), `Formation_RetargetFollowerMoves`
+   (`0x00295250`; Ghidra's old name `Formation_SetFollowerSpeeds` was wrong) takes each follower whose **top goal**
+   is `FollowFormation` (`0x33`), or type `0x69` or `0x73`, and whose front action is a move (kind 1): the move
+   gets the follower's new follow point (`Formation_GetFollowPoint`, after the slots were reassigned) and its
+   radius becomes **0.1 m** with a slot or **1.0 m** without (step 7 puts 2.5 m back on its next pass). A plan
+   runs when the leader has just stopped (his speed `+0x1ac` falls to 0.005 m/s or below, which sets `+0x274`),
+   at the plan time (1000 ms after the last plan at gait 2, else 2000 ms), or once the leader is 1 m (3D) from
+   the spot of the last plan. So a follower's destination is never older than one plan: about 1 to 2 s while the
+   leader moves, and at once when he stops or moves a metre.
+2. **Every 6 updates without a slot** (Process step 2).
+3. `MoveAction_SetTarget` (`0x002fbbe8`) ignores a point within 0.0707 m of the old one (distance² ≤ 0.005).
+   Otherwise it stores the point; with a route, when the route's last waypoint has a walkable line to the new
+   point (`Nav_IsConnected` `0x0024dee8`), the route is kept; else the move is aborted (`MoveAction_Abort`
+   `0x002fc560`, which calls `RouteState_Stop` `0x0029aa20` with 1): unless the route state is 1, 2 or 3 (in a
+   jump, drop or fence climb), the route is freed and the move is **restarted** (its "started" byte `+0x06` and
+   the abort bit cleared, so its Start runs again on the next update and asks for a straight line or a new
+   route to the new point); in a jump, drop or fence climb the route is kept and the abort bit stays set, so the
+   move ends on its next update (the move's first test is the abort bit; the leg's clips play on) and the goal
+   makes a new one.
+
+Runtime, PCSX2 2.9.94, `level80` (the state of the checks below), the crew standing round the player in the
+street; the player teleported 20 m away, then, 35 updates later with both followers running at 12.81 m/s on routes,
+teleported another 9.7 m: on the **next** update both moves held the new slot points (Vermin's from (−176.88,
+181.12) to (−186.12, 178.44)), while the goals' own `+0x10` kept the old ones for another 29 updates until their
+once-a-second refresh; at a later plan the two slots swapped and each running move took the other's point at once.
+Both arrived, stood and went back to `FollowPlayer`.
 
 **Confirmed (runtime)**, PCSX2 2.9.94, `level80` at the "Let's Go" hint (a state of the scripted-pad and right-stick
 patches), Cleon the player, Vermin and Rembrandt on a landing 19 m away and 4.4 m up; the follow command given with R2
@@ -4799,6 +4877,31 @@ and the right stick up, then the player driven by the left stick; one sample per
   stood on the stack 0.7 m from him; Vermin's route was **held** (route state `+0x16` = 1) while Rembrandt had the
   shared node, then climbed (state 4) on his turn. Two seconds later the formation's replan put Rembrandt's slot on
   the ground: he dropped off (route state **2**) and climbed back up 7 s later.
+- **Why they climb: the stand test fails at the crate stack** (2026-10-12, the same state; the follow command given
+  with R2 held and the right stick at 100 % up for 15 updates, then the player teleported). With the player on the
+  street at (−193.0, 130.4) both Warriors walked up and stood (`FollowPlayer` on top, no actions) 4.5 and 6.3 m from
+  him. The player was then put on the crate stack's top at (−190.9, 132.9, 3.4): on the **next** update Rembrandt,
+  7.9 m away in 3D (inside 9 m, both `+0x2d5` clear), pushed `FollowFormation` (`0x00541c50` on top), so the walkable
+  line from the street to the top failed; Vermin (9.7 m) pushed it one update later. Rembrandt's move planned a route
+  (route `+0x04` set) and climbed by a `0x80` link (route state 4); he stood on the top 100 updates later, and Vermin
+  climbed after him. Corroboration from the disc's path data (`level80_2`, counted by script, not committed): the top
+  is its own area (one polygon, 2.15 × 1.40 m, owning nodes 860-865), and the street's outline leaves the stack out;
+  the segment from Rembrandt's spot to the player leaves the street's polygon at *t* = 0.78 and enters the top's at
+  *t* = 0.91, 0.98 m apart in plan, far over the 0.02 m the walkable line allows ([Path planning](#path-planning)),
+  so the line is refused whatever the heights.
+- **Crossing a fence** (2026-10-12, the same state; the crew standing south of the kind-8 fence pairs of nodes
+  396-403 at y ≈ 199.9, the player teleported over it). Both Warriors have human `+0xe0` = 7, so flag `0x2`, fast
+  climbers. In every run both pushed `FollowFormation` on the update after the teleport (the fence's hole refuses
+  the line), planned routes over the kind-8 pair and climbed (route state 3); no other rule takes them over.
+    - Player 5-7 m away (`FollowFormation_PickSpeed` gives the walk, 2.4-2.5 m/s): each walked to the climb's near
+      waypoint and climbed **from the walk** (gait 2 when the climb started; the early climb needs a gait above 3);
+      the climb held them about 80 updates, then they walked to their slots: about 150 and 210 updates from the
+      teleport to standing.
+    - Player 14 m away (asked 8.2-8.4 m/s): Vermin ran (gait 4, then 5) and started the climb **from the run**
+      2.85 m before the far waypoint (the early climb, `Route_TryClimbNear`), was over it about 18 updates later and
+      walked on; Rembrandt was slowed to the walk by the corner speed (his move's slow corner speed `+0x44` = 1.63,
+      the walk) before the near waypoint, so he arrived walking and climbed from standing (78 updates). Neither
+      ever pressed against the fence for the 31 tries of a failed climb. Stick: none; the player was teleported.
 
 Speculative: the levels whose level-table id is `0xe`, `0x33`, `0x34` or `0x52` (the Warriors' `0x100` mask while
 following) are `level14`, `level51`, `level52` and `level82`, if the id is the level's number; all four exist on the
@@ -4849,8 +4952,12 @@ attack-slot list. A pool of 42 formations of 0x280 at `0x006ceaf0`; `Formations_
   spot: next plan in 1000 ms at gait 2, else 2000; the plan point is the leader's position, 2 m ahead while he runs
   (`0x00223c10`); the slots' world points are worked out (`0x00294f38`: the offset in 1/16 m, turned by the leader's
   orientation (`0x004dacc0`, so x is to his right and y ahead), added to the plan point and dropped to the ground
-  with a ray from 1.9 m above to 5.9 m below; a slot is usable when the leader sees its point (`0x002221e0`), up to
-  `+0x272` of them); followers whose human is gone leave (`0x00294e98`); each usable slot takes its nearest unassigned
+  with a ray (`WorldManager_RayCast` `0x0040db88`) that starts 1.9 m above it and runs 5.9 m straight down, so it
+  finds ground down to 4.0 m below; on a hit at distance *t* the point becomes the plan point + (*t* − 2.1) down, i.e.
+  **0.2 m above the hit**; with no hit it keeps the plan point's height; a slot is usable when the leader has a
+  walkable line to its point (`Human_CanWalkStraightTo` `0x002221e0` from the leader), up to `+0x272` of them;
+  **no slot is usable at all** while the leader is airborne (state `0x1c00000000`, jumping or falling,
+  `0x00227f90`) or at detail level `+0x333` 3 or more: every follower then queues behind the human ahead; followers whose human is gone leave (`0x00294e98`); each usable slot takes its nearest unassigned
   follower; followers left over queue nearest-first behind the slotted ones (or the leader); up to 3 passes swap
   pairs whose paths cross.
 
