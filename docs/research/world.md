@@ -78,7 +78,7 @@ confirmed (code) at the address.
 | `0x0040cd78` / `0x0040cda8` | `ResourceManager_SetDynamicAnimation` / `_SetCharacterModel` | forward to the resource manager `0x0050cd4c` (`0x0018abd0`, `0x0018ad40`) | confirmed (code) |
 | `0x0040cc68` | `PVS_CaptureSamplePoint` | empty: the PVS sampler was removed ([Debug](debug.md)) | confirmed (code) |
 | `0x0040cf18` | `LevelHeader_RegisterChunkHandler` | installs `0x0040ce30` as chunk `0x17`'s handler ([Chunk system](chunk-system.md#handlers-registered-at-run-time)) | confirmed (code) |
-| `0x0040e0b8` | `WorldManager_ResetVisibility` | clears `+0x34` and calls `World_ResetVisibility` on the `s` world (`+0x44`) and the `d` world (`+0x48`) when present | confirmed (code) |
+| `0x0040e0b8` | `WorldManager_ResetVisibility` | clears `+0x34` and calls `World_ResetVisibility` on the `s` world (`+0x44`, with no null check) and on the `d` world (`+0x48`) when present | confirmed (code) |
 | `0x0040e8d0` | `WorldManager_GetSolidWorld` | returns the `s` world (`+0x44`) | confirmed (code) |
 | `0x004102f0` | `Atomic_SetModulateMaterialColour` | geometry flag `0x40` on an atomic's geometry ([Part file](#part-file), step 4) | confirmed (code) |
 | `0x00410558` | `World_Destroy` | the world's destructor: empties the 140 16-byte vectors at `+0x940`-`+0x1200` and frees their buffers from the STL pool | confirmed (code) |
@@ -531,12 +531,15 @@ second**.
    set the PVS view point to player 1's camera position (`0x004123e8`).
 2. Install `0x00411b98` as the sector render callback and call `RpWorldRender`: RenderWare walks the BSP and calls the
    callback for each sector inside the camera's frustum (no geometry is drawn: the sectors have none).
-3. With PVS data and PVS on (`0x005e539c`, set to 1 at start-up), the walk runs with the PVS hooked in
-   (`0x004beff8`, `0x004beec0`, `0x004befa0`). If that leaves no sector at all, the pass is run again without PVS.
-4. The callback, for a sector with an index: skip it if the PVS says it is hidden; skip it if one of the level's
-   occluders hides its box (`0x0017a738`); otherwise mark it visible in `+0x08f8` and call the world's own sector
-   callback, `World_CollectSector` (`0x00411b20`), which appends the sector to the world manager's draw list
-   (`+0x50`-`+0x58`) when its atomic is loaded.
+3. With PVS data and PVS on (`0x005e539c`, set to 1 at start-up), the walk runs with the PVS hooked in (`0x004beff8`,
+   `0x004beec0`, `0x004befa0`). If no indexed sector got past the occluders (a sector the PVS hides still counts,
+   `0x005147f4`), the pass is run again without PVS.
+4. The callback, for a sector with an index: skip it if one of the level's occluders hides its box (`0x0017a738`);
+   otherwise count it, and unless the PVS says it is hidden, call the world's own sector callback,
+   `World_CollectSector` (`0x00411b20`), which appends the sector to the world manager's draw list (`+0x50`-`+0x58`)
+   when its atomic is loaded, and mark it visible in the **`s` world's** `+0x08f8` (`GetSolidWorld`), whichever world
+   is being walked, so the `d` world's own bits stay clear. A sector without an index is neither counted, collected
+   nor marked. The full callback: [Physics, Unit 19](physics-world.md#u19-visibility).
 
 Because the world's render order is back-to-front and the list is drawn from its end, sectors are drawn roughly
 front to back (inferred).
