@@ -1734,7 +1734,8 @@ on the update after the press (Coney's steer, like an attack's, is applied in th
 the wanted heading 5 updates after it; a passive target's carry starts on the press's update.
 
 On the disc (`tests/sandbox/disc_throw_direction_test.cpp`, the fight yard, the stick at 0.9 and `d` 0°, ±20°, ±40°,
-−50°, −90°, 160° and 110°; `tests/human/throw_direction_test.cpp` does the same on synthetic clips): each side's throws land at one point in the stick's frame within 4 cm and end with one heading, and a front thrower
+−50°, −90°, 160° and 110°; `tests/human/throw_direction_test.cpp` does the same on synthetic clips): each side's
+throws land at one point in the stick's frame within 4 cm and end with one heading, and a front thrower
 faces the stick (0.0°) 5 updates after the press. Before the fix the front throws landed from 20.6° left to 59.0°
 right of the stick. Two differences remain, both from the clips' own root rotation, not the aim: the side clips turn
 the thrower about a third too far (149 −120° against −90° at runtime; rear −237°, left +119°), and the front victim
@@ -4315,9 +4316,9 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   on the ground (196) to get up after its time. The rear power strike's hit is scored as 57, not the spin's 80.
 - A grab plays one move at a time; a throw lets go at once (from the rear hold, once its spin to the front has
   played), turning the pair onto the stick from the front hold ([Where a throw goes](#throw-direction)); the rear
-  power strike's spin plays in front of the strike, whose timing starts with it; the release with too little power goes straight to the idles, and the grab
-  broken at 0 power plays the let-go. A tackle also ends when the power meter is empty, and any hold when the victim
-  has no health left.
+  power strike's spin plays in front of the strike, whose timing starts with it; the release with too little power
+  goes straight to the idles, and the grab broken at 0 power plays the let-go. A tackle also ends when the power meter is
+  empty, and any hold when the victim has no health left.
 - The grab and tackle search takes the nearest candidate by straight-line distance with no facing cone. The attack's
   target search uses the attack's far range in `Player_PickTarget`'s first two passes (the third finds no human the
   second missed); beyond the far range the attacker turns at most 8° at once (read as degrees). Within it the steer
