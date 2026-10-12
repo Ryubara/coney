@@ -210,7 +210,8 @@ triangle tested.
 `WorldManager_RayCast(worldManager, ray, result, exclude, mask)` (`0x0040db88`) sets result `+0x28` = 1 and the hit
 to 0, then casts into the level object's mesh (`*(worldManager + 0x40) + 0x04`). Everything outside `RayCast/` uses
 this one (46 functions, 61 call sites; mask 0 and no exclusion list at 55 of them, [Unit
-16](physics-world.md#u16-callers)); the cameras (`Camera/`, `0x00121720`-`0x0013c710`) also call `CollisionMesh_RayCast` directly
+16](physics-world.md#u16-callers)); the cameras (`Camera/`, `0x00121720`-`0x0013c710`) also call `CollisionMesh_RayCast`
+directly
 (19 callers).
 
 ### Ground height {#ground-height}
@@ -303,7 +304,8 @@ tall or more).
   a kept hit, so unlike the original it cannot report the excluded triangle a clear ray crossed
   ([Unit 16](physics-world.md#u16-coney)). `spherePush`, `setEnabledInBox`, `dropToGround`, `dropToMarkedGround`
   and `marchRay` follow the sections above; the ground helpers cast with mask 0 and no exclusions, which is what the
-  original's `Collision_DropToGround`, `_DropToMarkedGround` and `_MarchRay` pass ([Unit 16](physics-world.md#u16-callers)).
+  original's `Collision_DropToGround`, `_DropToMarkedGround` and `_MarchRay` pass ([Unit
+  16](physics-world.md#u16-callers)).
 - **Coney's choices:** `marchRay`'s last step is shortened to end at its maximum; the sphere push tests the
   centre's projection against the edges with the face's own normal, whichever side the sphere is on (the page gives
   the test as "edge × n against the point" without its sign).

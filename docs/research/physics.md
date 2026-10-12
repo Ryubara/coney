@@ -121,7 +121,8 @@ Body vtable: `+0x08` destructor (`0x00341a00`), `+0x10` `Update` (`0x00341c10`),
 `+0x20` `AddShape` (`0x00341aa8`), `+0x28` `GetShapes` (`0x00341ae0`), `+0x30` / `+0x38` / `+0x40` the ignore
 list, `+0x48` `GetContactScale` (`0x00341e18`: 1.0 for a contact with a body, 0.98 with the mesh).
 
-**World-object bodies** (`Obj_CreatePhysicsBody`, `0x00391d48`), from the type ([`CfgObj`](../references/bindings/config.md#cfgobj)),
+**World-object bodies** (`Obj_CreatePhysicsBody`, `0x00391d48`), from the type
+([`CfgObj`](../references/bindings/config.md#cfgobj)),
 confirmed (code): `shape` 1 (`OBB`) is a box with half-extents `size / 2` (`+0x78`, `PhysicsBox_SetSize`
 `0x00342dc0`); `shape` 2 (`SPHERE`) a sphere of radius `size.x / 2`; both offset by `centre` (type `+0x1c`,
 `Object_GetAttachOffset` `0x003917d8`). Other shapes get no body, except one class (the RTTI check against
@@ -166,7 +167,8 @@ The create functions take the first free body of a pool (owner 0), set the owner
 the body vector and the sorted list (`IPhysics_AddBody` `0x00340668`); the free functions undo that
 (`IPhysics_RemoveBody` `0x00340700`, which first clears the owner from every ignore list) and, for objects, cars and
 panes, clear the shape's in-use bit `0x8` (the human free clears none, and the pane free skips `StopIgnoring`, [Unit
-9](physics-bodies.md#u9-free)). Flags by kind: human `0x8002243f`, punch bag `0x8000243f`, world object `0x80000500`, car `0x80000000`
+9](physics-bodies.md#u9-free)). Flags by kind: human `0x8002243f`, punch bag `0x8000243f`, world object `0x80000500`,
+car `0x80000000`
 (then `0x8002211a` once `Car_MakeBodies` ORs in `0x2211a`, `0x00387ea8`), glass pane `0x8000007a`
 ([Objects](objects.md)). A human body also joins the human list (`0x003407a0`; next `+0xc8`, previous `+0xcc`) and gets
 its scale (`0x00341f28`). The punch bag is the human class `0x1cc` (`HeavyBag`,
@@ -198,11 +200,14 @@ A shape is a 16-byte-aligned record with a common head (`PhysicsShape_Construct`
 `+0x00` next shape of the body, `+0x10` local offset, `+0x20` the previous world position (for sweeps), `+0x30`
 type, `+0x31` bone (−1: the body's own frame), `+0x32` flags (`0x1` enabled, `0x2`, `0x4` a target for strikes,
 `0x8` allocated, `0x10` reset: the next pose makes the previous position equal the new one, for the sphere, box and
-segment but not the capsule, [Unit 6](physics-bodies.md#u6-reset)), `+0x34` vtable of 8-byte `{adjust, function}` slots (the enable
+segment but not the capsule, [Unit 6](physics-bodies.md#u6-reset)), `+0x34` vtable of 8-byte `{adjust, function}` slots
+(the enable
 sets `0x11`, a getter returns a pointer to the world position, a setter `+0x0c` writes it, the pose, and "set from a
 matrix", which moves a sphere's centre or a capsule's base to the matrix's position and sets a box's axes; slot by
-slot in [Unit 6](physics-bodies.md#u6-record)). The world AABB of any shape is `0x00341190`: for a capsule the upright cylinder's box,
-and a segment pointing down on an axis gets a wrong bound there ([Unit 6](physics-bodies.md#u6-bounds)). Confirmed (code):
+slot in [Unit 6](physics-bodies.md#u6-record)). The world AABB of any shape is `0x00341190`: for a capsule the upright
+cylinder's box,
+and a segment pointing down on an axis gets a wrong bound there ([Unit 6](physics-bodies.md#u6-bounds)). Confirmed
+(code):
 
 | Type | Shape | Size, vtable | Fields | Pose (vtable `+0x28`) |
 | --- | --- | --- | --- | --- |
@@ -213,11 +218,14 @@ and a segment pointing down on an axis gets a wrong bound there ([Unit 6](physic
 
 The "capsule" is **upright**: the capsule-capsule tests treat it as the vertical range `[base z, base z + height]` with
 a horizontal radius (`0x00346388`, `0x003498c0` + `0x0034a8d0`), so a human never tilts. The sweep swaps the two
-capsules' heights (`0x00343e1c`-`0x00343e28`, [Unit 11](physics-bodies.md#u11-capsule-capsule)); the overlap test does not. The
+capsules' heights (`0x00343e1c`-`0x00343e28`, [Unit 11](physics-bodies.md#u11-capsule-capsule)); the overlap test does
+not. The
 capsule-box sweep reads no height or z range at all: only the candidate gather separates them vertically ([Unit
-12](physics-kernels.md#unit-12)). Two overlap tests round its ends instead (capsule against sphere and against segment, a true capsule
+12](physics-kernels.md#unit-12)). Two overlap tests round its ends instead (capsule against sphere and against segment,
+a true capsule
 reaching `r` past both ends), and the capsule-box overlap reads no height at all ([Unit
-4](physics-kernels.md#u4-physicsoverlap-capsulesphere-00346ed8)); confirmed (code). A segment is a sphere of its radius swept along a
+4](physics-kernels.md#u4-physicsoverlap-capsulesphere-00346ed8)); confirmed (code). A segment is a sphere of its radius
+swept along a
 bone: the limbs' strike volumes.
 
 ### The human body {#human-body}
@@ -245,11 +253,13 @@ lengths and the capsule (height `0x00219890`, radius `0x00219860` of the human) 
   (`+0x3be`) and by 0.7 × scale in the states `0x00227f68` selects (at most 0.7 above `+0x560`), except in a long
   fall; 0.35 × scale when cuffed; never under 0.2 × scale.
 - **The push sphere** (`0x003420d0`): a 2.0 m sphere from the 30 pool, switched on only by `Grab_Start` and
-  `Tackle_Start`; every other caller switches it off ([Unit 10](physics-bodies.md#u10-push-sphere)). While it is on, `0x003425c0` (from
+  `Tackle_Start`; every other caller switches it off ([Unit 10](physics-bodies.md#u10-push-sphere)). While it is on,
+  `0x003425c0` (from
   the human's update `0x0023d8c8`) overlaps it with the other humans (options `0x2012`, mask `0x40`) and adds to the
   pending push-out (body `+0x50`) of each one that is not its target, has no player number and has no body flag `0x200`
   a push of **0.25 m × w(this) / (w(other) × k(other))** along the 3-D line from this human to the other ([Unit
-  10](physics-bodies.md#u10-push)): bystanders are nudged out of the animation's way. w is [attribute](#attributes) 1, 82.0 for every
+  10](physics-bodies.md#u10-push)): bystanders are nudged out of the animation's way. w is [attribute](#attributes) 1,
+  82.0 for every
   human, so it cancels; k is attribute 7, the other's push weight (1.0, or 1e9 while it must not move). Confirmed (code)
   at `0x003425c0`.
 - `GetContactScale` (`+0x48`, `0x00342288`): 0.25 while airborne, else 1.0. `+0x50` (`0x00342130`) tells the human
@@ -311,7 +321,8 @@ High bits: `0x10000` ends the walk and the move goes on (return 0), `0x40000` ab
 otherwise the walk stops after this contact and the sweep makes another pass (return 1). Code 0 without either bit
 goes on to the next contact. `0x20000` with a non-zero code keeps the **largest** contact scale met (body vtable
 `+0x48`), applied to the velocity at the end of the move. Contact flag `0x1` (the corner slide of
-[Unit 2](physics-bodies.md#u2-00347c08-physicsmesh-sweepcapsule)) adds the slide vector `+0xa0` to the move's velocity, flag `0x2`
+[Unit 2](physics-bodies.md#u2-00347c08-physicsmesh-sweepcapsule)) adds the slide vector `+0xa0` to the move's velocity,
+flag `0x2`
 stores it once per move in body `+0x50`; both first drop its part against the move's direction. A code above 4
 takes none of the branches. Confirmed (code) at `0x0033d9d8` ([Unit 3](physics-bodies.md#u3-tail)).
 
@@ -375,7 +386,8 @@ normal z > 0.7), its type's **`axis`** byte (`+0x85`, [`CfgObj`](../references/b
 argument 10) is not 0, and it is neither settling nor settled (`0x8040000`), it starts a settle
 (`IPhysics_StartSettle`, `0x00340fe0`): the first free slot (or the object's own),
 speed 0, start = its rotation **extrapolated to now** (`Obj_GetPoseNow`, owner slot `+0xa0` / `+0xa4`: the stored
-rotation turned by the angular velocity over the time since its last update, [Unit 15](physics-world.md#u15-start)), its angular
+rotation turned by the angular velocity over the time since its last update, [Unit 15](physics-world.md#u15-start)), its
+angular
 velocity zeroed (owner slot `+0x78` / `+0x7c`, `0x003a19a0`, with the zero vector `0x005116c0`), flag `0x40000`.
 With all 64 slots busy nothing happens.
 
@@ -479,7 +491,8 @@ cleared on every call), in up to three passes. A pass, confirmed (code):
 4. Contacts are inserted sorted by fraction (`0x0033d718`) and resolved ([Contacts](#contacts)).
 
 The move is never shortened by a contact's fraction: each pass sweeps the whole slid `V × dt` again from where the last
-advance left the body ([Unit 3](physics-bodies.md#u3-sweep)). After the passes: when three passes each stopped (or a slide left no move),
+advance left the body ([Unit 3](physics-bodies.md#u3-sweep)). After the passes: when three passes each stopped (or a
+slide left no move),
 the body stays where the last advance put it, its horizontal velocity is zeroed and written to the owner (vtable
 `+0x74`) whatever the body's flags, and its counter `+0x70` goes up; otherwise it moves by the rest and the counter is
 reset. The velocity the slides leave is written back to the owner (vtable `+0x74`) **only when body flag `0x400` is
@@ -602,12 +615,14 @@ never touches. Filled by `IPhysics_Construct`, confirmed (code):
 
 Mirrored entries call the other order and swap the contact's halves. A segment's "sweep" against a capsule or a
 segment is the static overlap, which writes no fraction, so such contacts are sorted by stack leftovers
-([Unit 11](physics-bodies.md#u11-mirrors)): segments move with their bone and are tested where they are, which is how strikes
+([Unit 11](physics-bodies.md#u11-mirrors)): segments move with their bone and are tested where they are, which is how
+strikes
 work ([Combat](combat.md#moving-strikes)). A segment never touches a box, and no sphere or segment is ray-tested.
 Strikes go through the **sweep** table (`Human_TestStrikes` `0x0033f110` sweeps each strike shape from its last pose
 to its current one), so of a human's strike shapes only the spheres (hands, head, feet, a weapon's spheres) can
 reach a car's or an object's box; the forearm, shin and spine segments never do. Confirmed (code)
-([Who reaches a car](physics-kernels.md#who-reaches-a-car), [Unit 5](physics-kernels.md#u4b-how-human-teststrikes-builds-the-sweep-0)).
+([Who reaches a car](physics-kernels.md#who-reaches-a-car), [Unit
+5](physics-kernels.md#u4b-how-human-teststrikes-builds-the-sweep-0)).
 
 ### Mesh tests {#mesh-tests}
 
@@ -681,7 +696,8 @@ and clears the car's object flag `0x200`. Confirmed (code). The car never sweeps
 leave the car's body out, and he meets and climbs the car's shell in the level's mesh ([layers](#layers),
 [Characters](characters.md#car-shells)). When a car explodes, box 1 loses 0.25 m of height ([Cars](cars.md#explode)).
 `Car_OnLanded` (`0x00389e08`) answers 2 to every contact; on the level it also
-clears the airborne flag, zeroes the velocity and sends message `0x3f` (kind 5) with the point (0, 1.84, 0.02) in the car's
+clears the airborne flag, zeroes the velocity and sends message `0x3f` (kind 5) with the point (0, 1.84, 0.02) in the
+car's
 frame to the task whose handle is at `[0x005971b4] + 0x14`: the shared `sub_car_damage`, which makes a `sub_hood_smoke`
 there ([Cars: hit effects](cars.md#hit-effects)).
 
@@ -727,13 +743,15 @@ pages: [geometry kernels](physics-kernels.md) (Units 1, 4, 5, 12 and 13), [shape
 moves](physics-bodies.md) (2, 3 and 6 to 11) and [rays and the world](physics-world.md) (14 to 19), with their
 arguments, record offsets, constants, branches, the original's quirks and worked test numbers, all confirmed (code)
 unless a line says otherwise (read in the disassembly, 2026-10-12). Unit 1's corner contacts and the strike shapes'
-previous positions are also confirmed (runtime) ([Seen at runtime](physics-kernels.md#u1-runtime)). Where a unit corrected a section
+previous positions are also confirmed (runtime) ([Seen at runtime](physics-kernels.md#u1-runtime)). Where a unit
+corrected a section
 of this page, the section was fixed in place; each unit also says what Coney changes.
 
 When this plan was made (2026-10-12, `main` at `f325e018`), the tracker had 17 of `Physics/`'s 183 functions, 12 of
 `RayCast/`'s 15 and 33 of `World/`'s 61. `RayCast/`'s mesh code (`src/raycast/collision_mesh.*`) is complete apart
 from Unit 16, which also changes its ray: it skips excluded triangles before intersecting and returns only a kept
-hit, so it cannot give the see-through material a clear ray crossed ([WorldManager_RayCast](physics-world.md#u16-world-ray));
+hit, so it cannot give the see-through material a clear ray crossed
+([WorldManager_RayCast](physics-world.md#u16-world-ray));
 `World/`'s streaming and drawing are done, and its open functions are lifecycle (Units 17 to 19).
 
 **What Coney has instead** (the stand-ins these units replace):
@@ -744,7 +762,8 @@ hit, so it cannot give the see-through material a clear ray crossed ([WorldManag
   original's swept test and pass loop.
 - Humans meet humans before walls in a pass (a marked Coney choice); Unit 11 sorts both together.
 - Strikes test only the square's aimed object attack against a car (issue #72); Unit 5 and the strike loop
-  ([How Human_TestStrikes builds the sweep](physics-kernels.md#u4b-how-human-teststrikes-builds-the-sweep-0)) let any punch or kick
+  ([How Human_TestStrikes builds the sweep](physics-kernels.md#u4b-how-human-teststrikes-builds-the-sweep-0)) let any
+  punch or kick
   whose sphere reaches a box hit it.
 - A falling object's move is a ray from its centre (`world_objects::LooseObjects`); Unit 13 is its box sweep.
 
@@ -818,14 +837,16 @@ code:
 
 - **Coney's choice**: the humans take their part of the move before the walls take theirs, where the original sorts
   both kinds of contact of a pass by fraction together; a capsule already within reach is met at fraction 0 by a move
-  that goes further in, which matches the original's start case across the ground ([Unit 11](physics-bodies.md#u11-start-case)).
+  that goes further in, which matches the original's start case across the ground ([Unit
+  11](physics-bodies.md#u11-start-case)).
 - **Not yet**: an airborne body meets no human (a jump's strike and code 1 against a human); a scene's shared group;
   the pushed human's reaction (`Human_OnPushContact`'s timers and damage).
 
 ## Open questions
 
 - **Not yet seen at runtime** from [the units](#units): the capsule sweep's cell-list overrun after a fraction above
-  1 ([Unit 2](physics-bodies.md#u2-00347c08-physicsmesh-sweepcapsule)). (The late and missed corner contacts were looked for at a post,
+  1 ([Unit 2](physics-bodies.md#u2-00347c08-physicsmesh-sweepcapsule)). (The late and missed corner contacts were looked
+  for at a post,
   a planter, a kerb and a ledge and not seen: [Seen at runtime](physics-kernels.md#u1-runtime).)
 - **Bits and flags the units read but cannot name:** triangle flag bit 3 (`0x8`), which a sphere sweep skips for a
   body with flag `0x100` or a query with option `0x8000` (every world object's body starts with `0x100` in
@@ -834,10 +855,12 @@ code:
   landing segment's raised feet. Body flag `0x1000` is set by `PhysicsBody_PushOutOfWalls` (`0x00347b70`); other
   setters are not traced.
 - **Callers not traced:** `IPhysics_CollideShape`'s callers `Car_UpdateLoosePart`, `Human_TraceThrowAim` and
-  `CamPower_PlaceShot` (the others are in [Unit 11](physics-bodies.md#u11-collide-shape); none seen passes `0x8000`); which owner class
+  `CamPower_PlaceShot` (the others are in [Unit 11](physics-bodies.md#u11-collide-shape); none seen passes `0x8000`);
+  which owner class
   has type mask `0x200`, which makes the capsule sweep skip its vertical test; whether anything but
   `IPhysics_OverlapShape` reads the overlap table; whether the camera (the other caller of `Sweep_SphereOrientedBox`)
-  reads its normals, six of which point the wrong way ([The normal tables](physics-kernels.md#the-normal-tables)); how a held weapon's
+  reads its normals, six of which point the wrong way ([The normal tables](physics-kernels.md#the-normal-tables)); how a
+  held weapon's
   strike sphere reaches `Car_OnHit` as kind 1 (its hit goes to the held object's contact handler).
 - **Names that do not fit** (kept, as other analysts gave them): `CollTri_ComputeEdgeNormals` (`0x00343b20`)
   normalises the edges; `Ray_InfiniteCylinder` (`0x0034d938`) is a capsule; `SphereBox_SweepCorner` (`0x0034b040`) is
@@ -845,7 +868,8 @@ code:
   (`0x0034baf0`) goes from the box to the world. The plate comments say what each does.
 - **A maintainers' choice:** `PhysicsOverlap_BoxBox` (`0x00345dd8`) builds its rotation matrix the wrong way round
   with the centres mixed in, so it misses rotated or distant boxes; no caller pairs two boxes, so reproducing it or
-  writing the correct test changes nothing a player sees ([Unit 4](physics-kernels.md#u4-physicsoverlap-boxbox-00345dd8)).
+  writing the correct test changes nothing a player sees ([Unit
+  4](physics-kernels.md#u4-physicsoverlap-boxbox-00345dd8)).
 
 - Hangout railing vault (checklist item 46: the vault plays but the player stays put): not explained by the door
   flags above, which only doors and panes write. The climb's pass-through (materials 30, 31 and 122 ignored while

@@ -31,9 +31,11 @@ The plan, the order of the units and their dependencies are on that page; the su
 | `0x00345b90` | `PhysicsRay_Box` | 388 |
 | `0x0033eee0` | `IPhysics_RayCastBodies` | 560 |
 
-The capsule kernel itself, `Sweep_SphereCapsule` (`0x00349a60`), belongs to [Unit 11](physics-bodies.md#unit-11); what it does with a
+The capsule kernel itself, `Sweep_SphereCapsule` (`0x00349a60`), belongs to [Unit 11](physics-bodies.md#unit-11); what
+it does with a
 ray is restated [below](#u14-capsule-kernel) so this unit stands alone. All claims confirmed (code) at the address of
-the section unless a line says otherwise (read in the disassembly, 2026-10-12). Notation as in [Unit 3](physics-bodies.md#u3-records).
+the section unless a line says otherwise (read in the disassembly, 2026-10-12). Notation as in [Unit
+3](physics-bodies.md#u3-records).
 
 ### The ray and the hit list {#u14-records}
 
@@ -47,7 +49,8 @@ AI's callers pass a unit d, so the distance is f·len (inferred from the callers
 the **constant (0, 0, 0, 1)** (`0x005116c0`) as every normal: no ray here produces a surface normal. At most two
 entries are written. Confirmed (code) at `0x003497e4`-`0x00349890` and `0x00349d1c`-`0x0034a2a4`.
 
-**Contact fields written** (the 0xc0 [contact](physics.md#contacts)): the shape functions write `+0x80` (the fraction) and
+**Contact fields written** (the 0xc0 [contact](physics.md#contacts)): the shape functions write `+0x80` (the fraction)
+and
 `+0xb0` = 0 on a hit and nothing on a miss; `IPhysics_RayCastBodies` then writes `+0x40` (owner), `+0x44` (shape)
 and `+0x80` (the nearest fraction). Nothing else: no point (`+0x90`) and no normal (`+0x50`). The callers compute
 those themselves (`Goal_LineTest` writes `+0x90` and `+0xa0`, [AI goals](ai-goals.md)).
@@ -136,7 +139,8 @@ differently, [Shapes](physics.md#shapes).)
 (confirmed (code) at the addresses given):
 
 1. **Frame** (`0x00349a98`-`0x00349b64`). L = |A|, U = A / L. A perpendicular basis E1, E2 from U
-   (`Vec_MakePerpendicularBasis` `0x00349180`, [Unit 1](physics-kernels.md#u1-capsule)); for the upright capsule only the horizontal
+   (`Vec_MakePerpendicularBasis` `0x00349180`, [Unit 1](physics-kernels.md#u1-capsule)); for the upright capsule only
+   the horizontal
    plane matters and every result below is independent of which E1, E2 it picks. Local D' = (D·E1, D·E2, D·U);
    n = |D'| (= |D|); invn = 1 / n; u = D' × invn, the unit direction (`0x00349bac`-`0x00349be0`).
    Start: r = S − P, s = (r·E1, r·E2, r·U); **s3 is the start's height above the base**.
@@ -176,7 +180,8 @@ for `PhysicsRay_Capsule`, which takes entry 0:
 - The z tests are inclusive at both ends, so a root exactly at the base or top height can be stored by the side and
   again by a cap.
 
-The arithmetic is floats in this order (EE rounding, no NaN; [Floating point](physics.md#units)); at disc = 0 exactly the two
+The arithmetic is floats in this order (EE rounding, no NaN; [Floating point](physics.md#units)); at disc = 0 exactly
+the two
 branches differ, so tests should avoid exact tangency.
 
 ### IPhysics_RayCastBodies {#u14-raycast-bodies}
@@ -189,15 +194,18 @@ branches differ, so tests should avoid exact tangency.
 1. **The box.** E = S + d × len (w = 1). A body node on its stack is initialised (`PhysicsNode_Init` `0x00341158`)
    and given min = componentwise min(S, E), max = max(S, E) (`vmini` / `vmax`, `0x0033efb0`-`0x0033efe0`). No
    margin.
-2. **Candidates** (`IPhysics_QueryBox` `0x0033feb0`, [Queries](physics.md#queries)): start body 0 (so the walk runs forwards
+2. **Candidates** (`IPhysics_QueryBox` `0x0033feb0`, [Queries](physics.md#queries)): start body 0 (so the walk runs
+   forwards
    from the list head), ignored owner `ignored`, type mask `typeMask`, **flag mask 0x2000** (`RAYCASTTARGET`,
-   [layers](physics.md#layers)). QueryBox keeps a body when `body+0x44 & typeMask` ≠ 0, so a **type mask of 0 finds nothing**;
+   [layers](physics.md#layers)). QueryBox keeps a body when `body+0x44 & typeMask` ≠ 0, so a **type mask of 0 finds
+   nothing**;
    and when `body+0x40 & 0x2000` ≠ 0; overlap tests are inclusive. Up to 512 bodies fit the stack array
    (`sp+0x20`, 0x800 bytes); QueryBox does not check that bound.
 3. **Shapes.** For each candidate in list order, its shapes from body vtable `+0x28` (called with (2, 4, 0), which
    both implementations ignore: `PhysicsBody_GetShapes` `0x00341ae0` and the human body's `0x003420c8` return
    `+0x30`), following each shape's `+0x00`. A shape is tested when its flag `0x1` (enabled) is set and the ray table
-   has an entry for its type (`phys+0x108 + 4·type`: box and capsule only, [dispatch](physics.md#dispatch)). A **human body's
+   has an entry for its type (`phys+0x108 + 4·type`: box and capsule only, [dispatch](physics.md#dispatch)). A **human
+   body's
    chain is its capsule alone**: the ten bone shapes hang from `+0x80`, not `+0x30`, so a ray never meets them.
 4. **Nearest.** best = 1e9 (`0x4e6e6b28`). The shape function is called with (len, `out`, ray, shape); on a hit it has
    written `out+0x80`; if that is **strictly less** than best, best, the shape and the body are kept. Ties keep the
@@ -281,7 +289,8 @@ settle in one of 64 slots, the settle's end rotation, and the file's static init
 | `0x0034f718` | `Physics_StaticInitStub` | 32 |
 
 All claims confirmed (code) at the address of their section unless a line says otherwise (read in the disassembly,
-2026-10-12). Owner vtable slots are written as in [Unit 3](physics-bodies.md#u3-records) (adjust / function offsets); the world
+2026-10-12). Owner vtable slots are written as in [Unit 3](physics-bodies.md#u3-records) (adjust / function offsets);
+the world
 object's vtable is `0x005453a0` (stored by `ObjectTaskPool_New`, `0x004f3ef0`).
 
 ### IPhysics_Construct {#u15-construct}
@@ -311,8 +320,10 @@ object's vtable is `0x005453a0` (stored by `ObjectTaskPool_New`, `0x004f3ef0`).
    | `+0x4c720` | 36 × 0x90 | box | cars' boxes |
    | `+0x4db60` | 30 × 0x60 | sphere | push spheres |
 
-   What the constructors write is [Unit 6](physics-bodies.md#unit-6) (shapes: next 0, offset (0, 0, 0, 1), bone −1, flags `0x1`) and
-   [Unit 7](physics-bodies.md#unit-7) (a body: node min = max = (0, 0, 0, 1), index −1, links 0, shapes 0, owner 0, flags
+   What the constructors write is [Unit 6](physics-bodies.md#unit-6) (shapes: next 0, offset (0, 0, 0, 1), bone −1,
+   flags `0x1`) and
+   [Unit 7](physics-bodies.md#unit-7) (a body: node min = max = (0, 0, 0, 1), index −1, links 0, shapes 0, owner 0,
+   flags
    `0x80000400`, push-out (0, 0, 0, 1), scale from `0x005116d0`; a human body adds `+0x80`, `+0x84`, `+0xc0`-`+0xd4`
    = 0, a broad bound node at `+0x90`, and flags `| 0x3f`).
 3. **Settle slots**: `+0x4e6a0`, 64 × 0x30; only each slot's `+0x00` (the object) is set to 0 (`0x0033c558`).
@@ -322,7 +333,8 @@ object's vtable is `0x005453a0` (stored by `ObjectTaskPool_New`, `0x004f3ef0`).
    `IPhysics_QueryBox` indexes by body `+0x20`; the other two inferred count and capacity; `+0x4f450` is not written).
 6. **The tables** cleared with `memset` (`0x004307e8`): `+0x18` and `+0x7c`, 100 bytes each (5 × 5 entries);
    `+0xe0`, `+0xf4`, `+0x108`, 20 bytes each (5 entries). Then the non-zero entries stored, exactly those of
-   [The shape-pair tables](physics.md#dispatch): entry (row, column) of the overlap table at `+0x18 + 0x14·row + 4·column`, of the
+   [The shape-pair tables](physics.md#dispatch): entry (row, column) of the overlap table at `+0x18 + 0x14·row +
+   4·column`, of the
    sweep table at `+0x7c + 0x14·row + 4·column`, rows and columns being the shape types 1-4 (row and column 0 stay
    empty); the mesh sweep, mesh overlap and ray entries at `+0xe0`, `+0xf4`, `+0x108` + 4·type
    (`0x0033c630`-`0x0033c7dc`; every address checked against that table, all agree).
@@ -347,7 +359,8 @@ object's vtable is `0x005453a0` (stored by `ObjectTaskPool_New`, `0x004f3ef0`).
 10. **The punch bag** (`0x0033ca4c`-`0x0033caf4`): capsule `+0x4f3f0` `SetSize(2.0, 0.35)`; bag body `+0x30`
     (`+0x4f2d0`) = the capsule; bag body `+0x80` (`+0x4f320`) = the segment **directly** (no append call); segment
     offset `+0x10` = (0, 0, 0, 1), bone `+0x31` = 3, flags `+0x32` = **`0x4`** (stored, not or-ed: not enabled, no
-    `0x2`), radius `+0x60` = 0.35, length `+0x64` = 1.5 (`0x3fc00000`). The posed sizes are in [Bodies](physics.md#bodies).
+    `0x2`), radius `+0x60` = 0.35, length `+0x64` = 1.5 (`0x3fc00000`). The posed sizes are in
+    [Bodies](physics.md#bodies).
 
 Constants: 2.0 `0x40000000`, 0.35 `0x3eb33333`, 1.5 `0x3fc00000`. Nothing else of the object is written: the human
 and body lists start empty, and the widest-body bound starts at 0 until a body is inserted.
@@ -476,10 +489,12 @@ Synthetic: a world built by Coney's constructor, fake owners with a pose, a flag
    3, 24, 18, 32, 29, 6, 25, 19, 33, 30, segment lengths 0.38, 0.20, 0.20, 0.40, 0.40, radii 0.18, 0.07, 0.07,
    0.10, 0.10, sphere radii 0.15, 0.09, 0.09, 0.15, 0.15; flags `0x7` for bones 3 and 6, `0x3` for the rest.
    Strike spheres `0x2`. The bag's segment: bone 3, flags `0x4`, radius 0.35, length 1.5.
-3. **Tables.** Every entry of [The shape-pair tables](physics.md#dispatch) is where the offsets say; row 0, column 0 and the
+3. **Tables.** Every entry of [The shape-pair tables](physics.md#dispatch) is where the offsets say; row 0, column 0 and
+   the
    listed "none" entries are empty; the ray table has types 1 and 3 only.
 4. **Bound refresh.** Bodies of x widths 1.0 and 3.0: a body of width 5.0 inserted then removed leaves `+0x14` = 5.0
-   for steps 1-119 (the insert grows it, [Unit 7](physics-bodies.md#unit-7)); step 120 sets it to 3.0 and `+0x12` to 0; with no
+   for steps 1-119 (the insert grows it, [Unit 7](physics-bodies.md#unit-7)); step 120 sets it to 3.0 and `+0x12` to 0;
+   with no
    bodies step 120 sets 0.0.
 5. **Settle timing.** A slot started at tick 0: t after each step 0, 0.02, 0.06, 0.12, 0.2, 0.3, 0.42, 0.56, 0.72,
    0.9, 1.0 (float32 within 1e-6); at step 11 the flags go `0x40000` → `0x8000000`, the slot is free and the rotation

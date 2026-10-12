@@ -227,7 +227,8 @@ steps confirmed (code) at the cited addresses.
 the list pointer moves on, so that cell's walk reads one `u16` past the end of its list and treats it as a triangle
 index (subject to the visited bit and the tests). The kernel's face path refuses `t > 1`, but its edge steps can return
 a fraction above 1
-([Unit 1](physics-kernels.md#u1-edge-cylinder)), so the overrun is reachable at a triangle's edges and corners (inferred: [Unit
+([Unit 1](physics-kernels.md#u1-edge-cylinder)), so the overrun is reachable at a triangle's edges and corners
+(inferred: [Unit
 1](physics-kernels.md#u1-tests) cases 12
 and 13 return 1 with a fraction above 1; not seen at runtime). An implementation should not
 read past the list; note the difference in a comment.
@@ -668,7 +669,8 @@ Run for every code that is not 0. Confirmed (code) at `0x0033e058`-`0x0033e204`:
 
 Who sets the contact flags: the capsule's mesh sweep writes `0x1` when it built a corner slide (`0x00348360`,
 `0x00348438`), the capsule-box sweep writes `0x1` for its four corner regions with a unit diagonal slide in `+0xa0`
-(`0x00345078`, [Unit 12](physics-kernels.md#unit-12)), the sphere and box mesh sweeps copy their hit's flags word (`0x003490f0`,
+(`0x00345078`, [Unit 12](physics-kernels.md#unit-12)), the sphere and box mesh sweeps copy their hit's flags word
+(`0x003490f0`,
 `0x003489d0`; the box's word is always 0, `0x003488e0`, so a box mesh contact never carries `0x1` or `0x2`), the landing
 contact is `0x80` ([below](#u3-mesh)). Whether any sweep produces `0x2` is not traced. Confirmed (code) for the stores
 cited.
@@ -944,7 +946,8 @@ indexed by human `+0x92`), so the two body slots agree. For a world object, `+0x
 (`Obj_GetPoseNow`, [Objects](objects.md)) and `+0xa8` the stored pose (`Task_GetPose`: rotation `+0x20`, position
 `+0x10`, moved by `0x003a2508`'s offset when flags `+0x54 & 0x600` are clear and slot `+0xf0` / `+0xf4` returns 0); its
 `Obj_GetWorldPose` (`0x003a19b0`) is the slot before, `+0x98` / `+0x9c`, which no pose reads. Only spheres and
-boxes, which read `+0xa0`, are built for world objects ([Bodies](physics.md#bodies)). Confirmed (code): the slots at the call
+boxes, which read `+0xa0`, are built for world objects ([Bodies](physics.md#bodies)). Confirmed (code): the slots at the
+call
 sites below, the human's entries read from its vtable `0x0053f088`, the world object's from `0x005453a0` (the vtable
 `ObjectTaskPool_New` `0x004f3ef0` stores). An earlier draft read them from `0x00544c00`, which is the car's vtable
 `0x00544c08` minus 8, so its column was one slot off.
@@ -1017,7 +1020,8 @@ Switching a shape **on** sets flags `0x11` (enabled and reset). The sphere, box 
 3. At the end: if `0x10` is **set**, previous = the new position. Then **clear `0x10`**, always.
 
 So the first pose after a shape is switched on has previous = current: a zero move, so a strike sphere just switched
-on can only hit what it starts inside ([Unit 5](physics-kernels.md#u4b-how-human-teststrikes-builds-the-sweep-0)); every later pose
+on can only hit what it starts inside ([Unit 5](physics-kernels.md#u4b-how-human-teststrikes-builds-the-sweep-0)); every
+later pose
 keeps the pose before. Switching off clears only `0x1`. Confirmed (code) at `0x00342b20`/`0x00342ccc` (sphere),
 `0x00342e10`/`0x00343000` (box), `0x0034382c`/`0x00343a48` (segment), `0x004f11d0` (enable).
 
@@ -1173,7 +1177,8 @@ axis; both keep `max`'s `w`. The second step can never change `max`. So:
 - sphere, capsule and box bounds come out right (their `min ≤ max` already, for a radius and height ≥ 0);
 - **a segment whose end is below its start on an axis gets a wrong bound on that axis**: `[min(start − r, end + r),
   end + r]`, which misses the part from `end + r` to `start + r`, and is a single value (`end + r`) when
-  `start − r > end + r`. Confirmed (code). A punch bag's segment points down ([Bodies](physics.md#bodies)), so its z bound is the
+  `start − r > end + r`. Confirmed (code). A punch bag's segment points down ([Bodies](physics.md#bodies)), so its z
+  bound is the
   single height `end.z + r` (inferred: where that bound is used, through the body's bound, is Unit 7's).
 
 The capsule bound has **no radius below or above**: it is the cylinder's box, matching the upright capsule of the
@@ -1279,9 +1284,11 @@ named by the offset of their 8-byte entry (the function pointer is 4 bytes furth
 
 **The sort node** is the first 0x30 bytes of a body: `+0x00` AABB min, `+0x10` AABB max, `+0x20` index in the body
 vector (s32), `+0x24` previous and `+0x28` next in the x-sorted list. The queries build bare nodes on their stack
-for their boxes. **The body** is the node plus the fields of [Bodies](physics.md#bodies) (0x80 bytes, vtable `0x00544710`).
+for their boxes. **The body** is the node plus the fields of [Bodies](physics.md#bodies) (0x80 bytes, vtable
+`0x00544710`).
 
-**IPhysics fields** used here ([IPhysics](physics.md#iphysics)): `+0x08` list head (lowest min x), `+0x12` u16 tick counter,
+**IPhysics fields** used here ([IPhysics](physics.md#iphysics)): `+0x08` list head (lowest min x), `+0x12` u16 tick
+counter,
 `+0x14` float bound (the widest body's `max.x − min.x`), `+0x18` the overlap table, `+0xf4` the mesh overlaps by
 shape type, `+0x4f450` the body vector (`+0x04` begin, `+0x08` end, `+0x0c` capacity end; zeroed by the constructor,
 `0x0033c5cc`-`0x0033c5dc`, grown on demand by `0x004f0fa8`). The constructor sets `+0x08` = 0, `+0x12` = 0 and
@@ -1308,7 +1315,8 @@ shape type, `+0x4f450` the body vector (`+0x04` begin, `+0x08` end, `+0x0c` capa
 `0x00341970`. `Body* PhysicsBody_ConstructForOwner(Body* b, Owner* o)`: the same, but `+0x34 = o` and, **only when
 `o` is not null**, `+0x44` = the owner's type mask (owner vtable `+0x20`, `0x003419d8`). It writes **neither
 `+0x44` for a null owner nor the scale `+0x60`** (no store of `0x005116d0`): a stack body built with it keeps
-whatever the stack held there. Only the camera builds such bodies ([Bodies](physics.md#bodies)); nothing in this unit reads
+whatever the stack held there. Only the camera builds such bodies ([Bodies](physics.md#bodies)); nothing in this unit
+reads
 `+0x60`, and [Unit 3](#u3-sweep) shows the sweep ignores it, so Coney may set 1.0 (a marked difference).
 
 ### PhysicsBody_Destroy {#u7-destroy}
@@ -1507,7 +1515,8 @@ which `keep` functions exist, is [Unit 11](#unit-11)'s (callers not traced here)
 ### IPhysics_OverlapShape {#u7-overlapshape}
 
 `0x0033ebb8`, 0x328 bytes. `int IPhysics_OverlapShape(IPhysics* p, Contact* out, const OverlapQuery* q)` → contacts
-written to `out`. The record and the contact it fills are on [Unit 4](physics-kernels.md#overlapshape); here, every bit and limit.
+written to `out`. The record and the contact it fills are on [Unit 4](physics-kernels.md#overlapshape); here, every bit
+and limit.
 
 **Options read** (`q+0x10`, at `0x0033ebfc`, `0x0033ec20`, `0x0033ec7c`, `0x0033ed20`, `0x0033ee5c`): exactly
 `0x1` (the mesh), `0x2` (bodies), `0x10` (type mask `+0x14`, else −1), `0x80` (skip the same non-zero group),
@@ -1812,7 +1821,8 @@ its pool from index 0 for the first body whose owner `+0x34` is 0; a full pool r
 nothing. On the slot it calls `PhysicsBody_SetOwner(body, owner)` (`0x00341a68`: `+0x34` = owner and, when owner is
 not null, `+0x44` = the owner's type mask from its vtable `+0x20` / `+0x24`), writes the fields below, and ends with
 `IPhysics_AddBody` (`0x00340668`), which appends the body to the body vector (`+0x4f450`; `+0x20` = its index, the
-size before the append) and inserts it into the x-sorted list ([Queries](physics.md#queries)) **with its stale AABB**: the
+size before the append) and inserts it into the x-sorted list ([Queries](physics.md#queries)) **with its stale AABB**:
+the
 dirty bit makes the next update re-pose and re-sort it.
 
 | Kind | Function | Pool (count, stride) | Writes | Then |
@@ -1874,7 +1884,8 @@ Owner 0 is written with `PhysicsBody_SetOwner(body, 0)`, which leaves the type m
 For class `0x1cc` (`HeavyBag`) the punch bag's set, flags `|= 0x200`. Otherwise a human body; then when the human's
 brain `+0x04` is 0 (the player, inferred from the 1.4286 scale [Characters](characters.md#walls) gives the player) flags
 `|= 0x400` (already set) and scale `+0x60` = (1.4286, 1.4286, 1, 1) (`0x3fb6db6e`); otherwise flags `&= ~0x400`;
-then, when human byte `+0x3bf` is 0, flags `|= 0x200`. Corroboration: the runtime flags of [Layers](physics.md#layers) (humans
+then, when human byte `+0x3bf` is 0, flags `|= 0x200`. Corroboration: the runtime flags of [Layers](physics.md#layers)
+(humans
 `0x2203f` and `0x2223f`, cars `0x2211a`, panes `0x7a`) are these values without the dirty bit.
 
 `Car_MakeBodies` (`0x00387d50`) ORs **`0x2211a`** into its body's flags at `0x00387ea8`, so a car's body reads
@@ -1906,7 +1917,8 @@ A fake owner (type mask 0x40 for a human, 8 for an object, scale attribute *s*).
 ## Unit 10: The human body set: update, strikes and push sphere {#unit-10}
 
 **What it is.** What the human body adds to a body: the scale step, the per-update pose and broad bound, the strike
-switch, the strike test's gathering (the parts [Unit 5](physics-kernels.md#u4b-how-human-teststrikes-builds-the-sweep-0) does not
+switch, the strike test's gathering (the parts [Unit 5](physics-kernels.md#u4b-how-human-teststrikes-builds-the-sweep-0)
+does not
 cover), the weapon spheres and the push sphere. All confirmed (code) at the cited addresses (disassembly read
 2026-10-12) unless a line says otherwise.
 
@@ -1948,7 +1960,8 @@ Moved `0x00342828`; `+0x20` / `+0x24` AddShape `0x00341aa8` (the body's); `+0x28
 (returns `+0x30`, the capsule, whatever arguments it gets); `+0x30` / `+0x34` IsIgnoring `0x003421d0`; `+0x38` /
 `+0x3c` StopIgnoring `0x00342260`; `+0x40` / `+0x44` Ignore `0x00342230`; `+0x48` / `+0x4c` GetContactScale
 `0x00342288` ([Unit 3](#u3-human-scale)); `+0x50` / `+0x54` OnStruck `0x00342130` (calls `Human_OnPushContact`
-`0x00219b08` with the owner, [Human contacts](physics.md#human-contacts)). The struck list of the strike test is this ignore
+`0x00219b08` with the owner, [Human contacts](physics.md#human-contacts)). The struck list of the strike test is this
+ignore
 list: IsIgnoring answers `+0xd4` for a null owner, **yes for the owner human's grab partner** (`Human_GetGrabOther`
 `0x002269d8`, the anim record `+0xd4`'s handle `+0xc4`), else the ordinary list; Ignore(null) sets `+0xd4` = 1;
 StopIgnoring(null) clears `+0xd4` and the whole list.
@@ -2058,7 +2071,8 @@ tackle's start until the next action that switches it off (most clip starters do
 `0x003425c0 (body)`, called at the end of `Human_Move` (`0x0023db28`) right after the body's Update.
 
 1. `target` = `Human_GetTarget(owner)` (`0x00226e60`). No push sphere (`+0x84` = 0): return.
-2. `IPhysics_OverlapShape` ([How it fills a contact](physics-kernels.md#overlapshape)) with the query: body, the push sphere, box pointer
+2. `IPhysics_OverlapShape` ([How it fills a contact](physics-kernels.md#overlapshape)) with the query: body, the push
+   sphere, box pointer
    0, the owner, options `0x2012` (`0x2` bodies, `0x10` type mask; `0x2000` is never read), type mask `0x40` (humans),
    at most **32** contacts, thresholds 0. Each human meets it through his capsule (SphereCapsule).
 3. The contacts are walked **from the last to the first**. For each, `other` = contact `+0x40`. Skip it when it is
@@ -2075,7 +2089,8 @@ Two humans at the same point: `|d|` = 0, the PS2's `rsqrt` gives the largest flo
 
 ### Human_TestStrikes: the gather and the loop {#u10-strikes}
 
-`0x0033f110 (phys a0, body a1)`. [Unit 5](physics-kernels.md#u4b-how-human-teststrikes-builds-the-sweep-0) gives the per-shape sweep
+`0x0033f110 (phys a0, body a1)`. [Unit 5](physics-kernels.md#u4b-how-human-teststrikes-builds-the-sweep-0) gives the
+per-shape sweep
 (prev, cur, the restore, the contact fields, the pose rule); this is the rest, confirmed (code) at the addresses.
 
 0. Nothing unless `+0xd0` ≠ 0 or `+0xc0` ≠ 0. `held` = `Human_GetHeldObject(owner)`; the weapon handler's owner is
@@ -2091,7 +2106,8 @@ Two humans at the same point: `|d|` = 0, the PS2's `rsqrt` gives the largest flo
    first hit: the owner fields zeroed as above, the shape restored, then the owner's `Strike_Contact` (vtable
    `+0x100` / `+0x104`, the level branch: a particle at `+0x90`); the rest of this step is skipped.
 3. **Gather** (`0x0033f4bc`): `IPhysics_QueryBox(phys, list, &body+0x90, start 0, ignored owner = own owner,
-   type mask −1, flag mask 0x18)` ([Queries](physics.md#queries)): bodies whose flags have `0x8` or `0x10`. A body with only
+   type mask −1, flag mask 0x18)` ([Queries](physics.md#queries)): bodies whose flags have `0x8` or `0x10`. A body with
+   only
    `CHARGETARGET` (`0x20`) is never gathered here. The ray origin `o` = own authoritative position + (0, 0, 1.0).
 4. **Per candidate**, in list order:
     1. Skip: null or ownerless; own group non-zero and equal to its group; own `IsIgnoring(its owner)` (vtable
@@ -2150,7 +2166,8 @@ Synthetic bodies; fake owners with scale, reach, type mask and attributes. Value
 ## Unit 11: Moving shapes against bodies: spheres, capsules, segments {#unit-11}
 
 **What it is.** The sweep table's sphere, capsule and segment pairs (IPhysics `+0x7c`, [The shape-pair
-tables](physics.md#dispatch)), their three kernels, the body pass of a body's sweep (`PhysicsBody_SweepHumanMask`, which puts the
+tables](physics.md#dispatch)), their three kernels, the body pass of a body's sweep (`PhysicsBody_SweepHumanMask`, which
+puts the
 bodies' contacts in the same sorted list as the mesh's), and the general shape query `IPhysics_CollideShape` with every
 option bit it reads. All confirmed (code) at the cited addresses, read in the disassembly on 2026-10-12, unless a line
 says otherwise; no runtime claims.
@@ -2225,7 +2242,8 @@ says otherwise; no runtime claims.
 
 ### Shared records and notation {#u11-records}
 
-Shape fields read ([Shapes](physics.md#shapes)): sphere `+0x40` r, `+0x50` C; capsule `+0x40` r, `+0x44` h, `+0x50` B (`+0x58`
+Shape fields read ([Shapes](physics.md#shapes)): sphere `+0x40` r, `+0x50` C; capsule `+0x40` r, `+0x44` h, `+0x50` B
+(`+0x58`
 is B.z); segment `+0x40` S, `+0x50` E, `+0x60` r. `a·b` is the xyz dot product summed `(x·x + y·y) + z·z`;
 "unit(v)" is `v × rsqrt(v·v)` on VU0 (a zero vector gives a zero result on the EE, inferred: `0 × FLT_MAX`; Coney
 should write (0, 0, 0) and say so). 1e-6 is `0x358637bd`, −1e-6 `0xb58637bd`, 1.0 `0x3f800000`, −1.0 `0xbf800000`,
@@ -2296,7 +2314,8 @@ overlap:
 
 Then return 1 if `hi < lo`, else 0. Touching counts as overlap (strict `<` tests). The `min`/`max` are written as
 "store when strictly smaller/greater". Also used by the box-triangle sweep, where the `v == 0` reset matters
-([Unit 13](physics-kernels.md#u13-interval)). In the capsule sweep it does not: the caller always passes `lo = 0`, `hi = 1`, so two
+([Unit 13](physics-kernels.md#u13-interval)). In the capsule sweep it does not: the caller always passes `lo = 0`, `hi =
+1`, so two
 humans moving level (`m.z` exactly 0) with overlapping ranges get `lo = 0` and the fraction is the circles' `t0`.
 
 ### PhysicsSweep_CapsuleCapsule {#u11-capsule-capsule}
@@ -2393,7 +2412,8 @@ the shape spans `[B.z + h − 2r_c, B.z + 2r_c]` (the formula as written; inferr
 ### PhysicsSweep_SphereSegment {#u11-sphere-segment}
 
 `0x00344320`, 0x218 bytes, table (2, 4). **Not a first-touch sweep.** `(s, t) = Segment_ClosestPoints(d1 = m, d2 = E −
-S, w = C − S)` ([Unit 4](physics-kernels.md#u4-segment-closestpoints-0034ad50)); `v = (C − S) + s·m − t·(E − S)`; hit when `v·v ≤ (r_s +
+S, w = C − S)` ([Unit 4](physics-kernels.md#u4-segment-closestpoints-0034ad50)); `v = (C − S) + s·m − t·(E − S)`; hit
+when `v·v ≤ (r_s +
 r_seg)²` (touching counts). Then `+0x80 = s` (the path parameter of **closest approach**), `+0x88 = |v|` (the distance
 there, not a depth), `+0x90 = C + s·m`, `+0x10 = unit(m)`, `+0x50 = −unit(m)`, `+0xb0` = 0. A zero move gives `s = 0`
 and a zero normal. Unit 4's kernel quirks (absolute parallel threshold) apply.
@@ -2409,7 +2429,8 @@ and a zero normal. Unit 4's kernel quirks (absolute parallel threshold) apply.
   `PhysicsSweep_SegmentCapsule` (`0x00345d38`, (4, 3)): call the overlap `0x00346500`, `0x00347148`, `0x00346fb8`
   with `(c, own, other)` and return its answer; the move is ignored and **nothing is written**, so a hit's fraction
   `+0x80` and flags `+0xb0` are whatever the slot held. In a strike test (the only caller that moves a segment,
-  [Unit 5](physics-kernels.md#u4b-how-human-teststrikes-builds-the-sweep-0)) the first hit ends that body's shapes and the fraction is not
+  [Unit 5](physics-kernels.md#u4b-how-human-teststrikes-builds-the-sweep-0)) the first hit ends that body's shapes and
+  the fraction is not
   read.
   Coney should write fraction 0 and flags 0 there and say so.
 

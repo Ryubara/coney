@@ -480,10 +480,13 @@ PCSX2 2.9.94, slot 1:
   it; no corner contact of any kind can come from a kerb on the ground. Confirmed (code) at `0x00347c08` and
   (runtime) above.
 - **A jump takes a second path to the kernel.** In the air the walking sweep (caller `0x0034813c`) still runs, and
-  `Human_PushOutInAir` (`0x0021a490`) adds, in the air and in a few states around it (50 to 371 of its calls fell in updates with `vz` = 0), the mesh-only sphere sweep through `IPhysics_CollideShape` (`0x0021aa14`,
-  options `0x2004d`, [Unit 11](physics-bodies.md#u11-collide-shape)) to `PhysicsMesh_SweepSphere` (`0x00348a50`) and the thunk
+  `Human_PushOutInAir` (`0x0021a490`) adds, in the air and in a few states around it (50 to 371 of its calls fell in
+  updates with `vz` = 0), the mesh-only sphere sweep through `IPhysics_CollideShape` (`0x0021aa14`,
+  options `0x2004d`, [Unit 11](physics-bodies.md#u11-collide-shape)) to `PhysicsMesh_SweepSphere` (`0x00348a50`) and the
+  thunk
   (`0x0034ee40`, return address `0x0034ee54`). That sweep has no 0.25 m rule, so in the air even short faces reach
-  the kernel; the corner slide skips airborne bodies ([Unit 2](physics-bodies.md#u2-00347c08-physicsmesh-sweepcapsule)). Confirmed
+  the kernel; the corner slide skips airborne bodies ([Unit 2](physics-bodies.md#u2-00347c08-physicsmesh-sweepcapsule)).
+  Confirmed
   (code) at the cited addresses; the two callers confirmed (runtime) above.
 - **Corner steps are common; late or missed contacts were not seen.** `SphereSweep_VertexRegion` ran 75 to 258
   times per run, nearly all in the air, but no edge step, from an edge or a corner, kept a cylinder root in any of
@@ -503,7 +506,8 @@ shape's `+0x20` (`0x0033f284`, `0x0033f3d4`, `0x0033f714`, `0x0033f9f4`, `0x0033
 the centre of the update before (for example update 33: from (40.6391, 46.1587) to (41.1509, 45.4583), 0.87 m in
 one update). Its first pose had flag `0x10` set (`+0x32` = `0x0013`) and a stale centre from elsewhere in the
 level (56.75, 41.42); the test in that update had previous = current, a zero move, as
-[the reset rule](physics-bodies.md#u6-reset) says. A sphere is posed only while switched on, so the reset is what keeps the first
+[the reset rule](physics-bodies.md#u6-reset) says. A sphere is posed only while switched on, so the reset is what keeps
+the first
 swing from sweeping from where the hand was last posed.
 
 ## Unit 4: Static shape-pair overlaps {#unit-4}
@@ -602,7 +606,8 @@ Steps:
    order, then the other body's shape-chain order) and say so in a comment.
 5. The first `min(count, max)` contacts are copied to `out` (0xc0 bytes each). There is no check that more than 50
    hits fit the buffer (the sorted list holds 52 pointers; inferred: never reached in play). The `0x2000` of the
-   push sphere's `0x2012` and the `0x4` and `0x8` of the climb's `0xd` are never read here ([Unit 7](physics-bodies.md#u7-overlapshape)).
+   push sphere's `0x2012` and the `0x4` and `0x8` of the climb's `0xd` are never read here ([Unit
+   7](physics-bodies.md#u7-overlapshape)).
 6. If fewer than `max` were copied and option `0x1` is set, the shape type's mesh overlap (`+0xf4`) appends up to
    `max − count` more after them, unsorted against the body contacts; only the sphere has one that can hit
    ([Mesh tests](physics.md#mesh-tests)).
@@ -1339,7 +1344,8 @@ Confirmed (code) at `0x0033f110` unless marked; the target filters are already o
   shape; then the striker owner's `Strike_Contact` (vtable `+0x104`) with the contact; then, if the candidate has an
   owner, the striker body's vtable `+0x44` (put it on the struck list); no further shape is tried against that body, but
   the loop goes on with the next candidate (`0x0033fb04`, `0x0033fc94`, `0x0033fe3c`), so one update can strike several
-  bodies ([Unit 10](physics-bodies.md#u10-strikes)). The contact is a single stack record reused for every try, never cleared: fields the
+  bodies ([Unit 10](physics-bodies.md#u10-strikes)). The contact is a single stack record reused for every try, never
+  cleared: fields the
   sweep does not write hold leftovers of earlier tries.
 - **Where `prev` comes from** (`PhysicsSphere_Pose` `0x00342b08`, the sphere's vtable `+0x28` slot): each pose first
   copies the current centre to `+0x20` and then computes the new centre, unless flag `0x10` is set, in which case the
@@ -1453,7 +1459,8 @@ renamed on 2026-10-12 from their call sites (`0x00344884`, `0x0034499c`), so the
 - **2D only.** The capsule's base x, y, its radius and the move's x, y decide everything; the capsule's height, its
   base z, the move's z and the box's extent along its vertical axis are never read for the test. Two shapes far apart
   in height collide when their footprints do; only the candidate gather (the swept body's AABB against the box body's
-  AABB, [Sweeping a body](physics.md#sweep)) keeps them apart vertically. Confirmed (code) at `0x00344618` (the reads); the
+  AABB, [Sweeping a body](physics.md#sweep)) keeps them apart vertically. Confirmed (code) at `0x00344618` (the reads);
+  the
   consequence is inferred.
 - **Already touching counts as a hit**, at fraction 0, unlike the sphere-box sweep of [Unit 5](#unit-5): a kernel's
   −1 is non-zero and the caller only tests for 0 (`0x003448ac`, `0x00344fe0`). But a capsule that touches and moves
@@ -1495,7 +1502,8 @@ Before the test (`0x0034468c`-`0x003446cc`): `flag = 0` if the box body's flags 
 goes to every kernel in `a3`. **Flag 0** makes the kernel return "no hit" at once when the capsule does not move
 towards the face (side) or the corner point (corner); **flag 1** skips that screen. So the screen is off only for a
 box without `BLOCKHUMANS` (one the human meets through `JUMPTARGET`, `CHARGETARGET` or `RUNTARGET`,
-[layers](physics.md#layers)) while the human is airborne or landing. Confirmed (code); the reading of the bits is from the
+[layers](physics.md#layers)) while the human is airborne or landing. Confirmed (code); the reading of the bits is from
+the
 pages cited.
 
 ### PhysicsSweep_CapsuleBox (0x00344618): the regions {#u12-capsulebox}
@@ -1609,10 +1617,12 @@ Written on a hit only (`0x00345000`-`0x003450c8`), `f` = the fraction, `B` = cap
 | `+0xb0` | 1 for the four corner regions, else 0 | |
 
 Nothing else is written: `+0x00`/`+0x04`/`+0x40`/`+0x44` and `+0xb4` are set by the caller
-(`PhysicsBody_SweepHumanMask` clears `+0xb4` and calls `Contact_InsertSorted`, [Unit 3](physics-bodies.md#u3-insert)); `+0x20`,
+(`PhysicsBody_SweepHumanMask` clears `+0xb4` and calls `Contact_InsertSorted`, [Unit 3](physics-bodies.md#u3-insert));
+`+0x20`,
 `+0x30`, `+0x70`-`+0x7c`, `+0x84`-`+0x8c` hold whatever the slot held. Confirmed (code).
 
-What the resolution makes of it ([Unit 3](physics-bodies.md#u3-codes), inferred): flag `0x1` with a corner's diagonal slide adds that
+What the resolution makes of it ([Unit 3](physics-bodies.md#u3-codes), inferred): flag `0x1` with a corner's diagonal
+slide adds that
 unit vector, less its part against the pass's direction, to the move velocity, which steers a walker around the box's
 corner; a fraction-0 contact advances nothing and only removes the velocity's part into `+0x50`; over the box the
 unsigned normal blocks only the part of the move along −A_i (or −A_j).
@@ -1641,7 +1651,8 @@ table users that can pair a capsule with a box:
 
 - `PhysicsBody_SweepHumanMask` (`0x0033d498`), from `PhysicsBody_Sweep` and the `0x801` update: a human's capsule
   (its first shape) against the candidate bodies whose flags meet the human's mask (`0x4`, or `0x44` while airborne
-  or holding, plus `0x20`, `0x40000`, [Sweeping a body](physics.md#sweep)), every enabled shape of each; and a world object's
+  or holding, plus `0x20`, `0x40000`, [Sweeping a body](physics.md#sweep)), every enabled shape of each; and a world
+  object's
   box (mask `0x2`) against the humans' capsules (humans' bodies have `0x2`), the (1, 3) mirror. Confirmed (code).
 - `IPhysics_CollideShape` (`0x0033e7f0`) with a temporary capsule: `Human_CapsuleOverlaps` (`0x0021c418`, radius
   0.2) and `Human_IsWayClearTo` (`0x0021c0a8`, radius 0.2) sweep it from the human to another human with options
@@ -1655,7 +1666,8 @@ table users that can pair a capsule with a box:
 - **Negative fractions** (flag 1 only): a receding path whose line passes within r of a side's end corner gets that
   corner's past root, e.g. −0.5 ([test 12](#u12-tests)). In 40,000 random sweeps with flag 1, 89 side-region hits
   were negative; none came from flag 0. A negative fraction sorts first and, through the advance `d = f·(D·n)`, would
-  move the body back **towards** the box by `abs(d) − 0.01` (inferred from [Unit 3](physics-bodies.md#u3-codes); whether it shows in
+  move the body back **towards** the box by `abs(d) − 0.01` (inferred from [Unit 3](physics-bodies.md#u3-codes); whether
+  it shows in
   play depends on `Human_OnContact`'s answer for such a box, not traced).
 - **Zero move.** Flag 0, outside the footprint: no hit (side: `mx ≤ 0`; corner: `B = 0`). Flag 1, corner region:
   `k = 0 ≤ r·0` takes the near corner, `D = 0` hits the guard, a hit at fraction 0 with the corner rule's `n0`. Flag 1,
@@ -1731,10 +1743,12 @@ axis has exactly zero speed, which an axis-aligned box falling straight down alw
 - **Tests:** [Test ideas](#u13-tests): a box dropped flat (fraction 0, the quirk) and tilted (the true fraction)
   onto a floor triangle; the early and the false contact of the zero-speed quirk; two boxes sliding past without
   touching, and one passing a corner that only the velocity axes separate; the brick of
-  [Settling a landed object](physics.md#settle) resting at 0.2831 (floor 0.2231 + 0.05 + 0.01), which needs a move with a
+  [Settling a landed object](physics.md#settle) resting at 0.2831 (floor 0.2231 + 0.05 + 0.01), which needs a move with
+  a
   horizontal part (test 9).
 
-8 functions, 7848 bytes (0 tagged). `Sweep_IntervalOverlap` (`0x0034a8d0`, [Unit 11](physics-bodies.md#unit-11)'s table) is specified
+8 functions, 7848 bytes (0 tagged). `Sweep_IntervalOverlap` (`0x0034a8d0`, [Unit 11](physics-bodies.md#unit-11)'s table)
+is specified
 here too, because the box-triangle sweep depends on it.
 
 | Address | Name | Size |
@@ -1756,7 +1770,8 @@ confirmed (code) at the cited addresses, read in the disassembly (2026-10-12), u
 
 **The box record** the kernels read: four rows `A0`, `A1`, `A2` (unit axes) and `P` (centre), 16 bytes each, then
 the half extents `h0`, `h1`, `h2` at `+0x40`. The wrappers pass the box shape's `+0x50` (rows) and `+0x40` (half
-extents) as two pointers ([Shapes](physics.md#shapes)); the mesh sweep copies both into one 0x50-byte record on its stack
+extents) as two pointers ([Shapes](physics.md#shapes)); the mesh sweep copies both into one 0x50-byte record on its
+stack
 (`0x003485a8`-`0x003485e0`). No kernel normalises an axis or checks that the rows are orthogonal: the projections
 assume they are unit and orthogonal.
 
@@ -1796,7 +1811,8 @@ and then `v2`: if below `min`, it becomes `min`; otherwise, if above `max`, it b
 ### Sweep_BoxTriangle (0x0034d5d0) {#u13-box-triangle}
 
 Size 0x368. `float fn(Box* box, Tri* T, const vec4* move)`: `a0` the box record (rows and half extents, above),
-`a1` the working triangle ([Unit 2](physics-bodies.md#u2-the-working-triangle-t-d0-bytes-on-the-c): corners `+0x00`/`+0x10`/`+0x20`,
+`a1` the working triangle ([Unit 2](physics-bodies.md#u2-the-working-triangle-t-d0-bytes-on-the-c): corners
+`+0x00`/`+0x10`/`+0x20`,
 edges `e0`, `e1`, `e2` at `+0x30`/`+0x40`/`+0x50`, as the caller left them), `a2` the box's move. The triangle stands
 still; the box moves by `move` over `t` from 0 to 1. Returns the fraction `t` of first contact, or **1e28**
 (`0x6e013f39`) for no contact. Nothing else is written.
@@ -1830,18 +1846,22 @@ No epsilon anywhere; touching counts as contact.
   plane within the move. So the quirk only changes the fraction of a box that reaches the triangle's plane, plus
   the false contacts of test 4.
 
-What it means in the game (inferred): a resolution moves the body by `f × (D·n)` ([the advance](physics-bodies.md#u3-codes)), so a
+What it means in the game (inferred): a resolution moves the body by `f × (D·n)` ([the
+advance](physics-bodies.md#u3-codes)), so a
 fraction of 0 means **no advance**: the box stops where it was, short of the floor, and bounces or stops there. In
 the game an object's rotation is rarely exactly axis-aligned, so its axes are rarely exactly horizontal; the brick of
-[Settling](physics.md#settle) ended exactly 0.01 above the floor after its settle, which needs a non-zero fraction on that
+[Settling](physics.md#settle) ended exactly 0.01 above the floor after its settle, which needs a non-zero fraction on
+that
 contact. Coney must reproduce the quirk exactly (faithful first), so its tests set up exact zeros on purpose.
 
 ### PhysicsMesh_SweepBox (0x00348530) {#u13-mesh}
 
 Size 0x520. Mesh sweep table `+0xe0`, type 1. `int fn(Contact* out, int max, const AABB* worldBox, Body* body,
 Shape* box, const vec4* move)` (`a0`-`a3`, `t0`, `t1`); the options word (`t2`) and `f12`/`f13` (the `n.z` range of
-[Unit 2](physics-bodies.md#u2-0033d2d8-iphysics-sweepshapevsmesh)) are **never read**. Returns the number of contacts written. It
-follows the pattern of the sphere sweep ([Unit 2](physics-bodies.md#u2-00348a50-physicsmesh-sweepsphere)): the same query start
+[Unit 2](physics-bodies.md#u2-0033d2d8-iphysics-sweepshapevsmesh)) are **never read**. Returns the number of contacts
+written. It
+follows the pattern of the sphere sweep ([Unit 2](physics-bodies.md#u2-00348a50-physicsmesh-sweepsphere)): the same
+query start
 (`CollisionMesh_BeginShapeQuery`), cell walk (x outer, y, z inner), visited bits, 100-entry stack array of 0xb0
 mesh contacts with no overflow check, sort and cap.
 
@@ -1867,7 +1887,8 @@ start of the move). `P` = shape `+0x80`.
    (`0x00348894`-`0x003488e0`). `+0x0c`, `+0x10`, `+0x14` are not written.
 
 **Bug, confirmed (code) at `0x0034888c`:** the `t > 1` exit branches past the loop counter's increment (as the
-capsule's does, [Unit 2](physics-bodies.md#u2-00347c08-physicsmesh-sweepcapsule)), and here the kernel's "no contact" value 1e28 takes
+capsule's does, [Unit 2](physics-bodies.md#u2-00347c08-physicsmesh-sweepcapsule)), and here the kernel's "no contact"
+value 1e28 takes
 that exit. So **every triangle the kernel misses** leaves the cell's counter where it was while the list pointer
 moves on, and the walk reads one more `u16` past the end of the cell's list per miss (and per miss among those).
 Every other skip (visited, disabled, bit 3, behind, receding, `t < 0`) counts correctly. What the extra entries
@@ -1892,7 +1913,8 @@ smear); `count = min(count, max)`. For each sorted entry `i`, into `out[i]`:
 | `+0x10` | `unit(move)` (xyz; `w` = the move's `w`) |
 
 Nothing else (`+0xa0`, `+0x84`, `+0x88` untouched). Returns the capped count. Reached through
-`IPhysics_SweepShapeVsMesh` (max 1, [Unit 2](physics-bodies.md#u2-0033d2d8-iphysics-sweepshapevsmesh)) for a body whose first shape is
+`IPhysics_SweepShapeVsMesh` (max 1, [Unit 2](physics-bodies.md#u2-0033d2d8-iphysics-sweepshapevsmesh)) for a body whose
+first shape is
 a box, and through `IPhysics_CollideShape` with a box shape.
 
 **Differences from the sphere sweep, in one list:** no options (no `n.z` range, no `0x40` back faces, no `0x8000`, no
@@ -1950,7 +1972,8 @@ centre, `B0`, `B1` and `b0`, `b1` the other box's axes and half extents:
 
 `+0x6c` and everything else are not written. Returns 1. The point mixes frames (a quirk; it is a point on the other
 box only when that box is world-aligned and the own centre is level with it). Consequences in a resolution
-([the codes](physics-bodies.md#u3-codes)), inferred: with `f = 0` there is no advance, and code 2 (a world object or a car) bounces
+([the codes](physics-bodies.md#u3-codes)), inferred: with `f = 0` there is no advance, and code 2 (a world object or a
+car) bounces
 the velocity off `−unit(move)`, i.e. reverses its component along the move, scaled by the restitution.
 
 **PhysicsSweep_SegmentBox**, size 8, sweep table (4, 1): returns 0.
