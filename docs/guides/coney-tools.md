@@ -477,7 +477,7 @@ hooks among the scenario's patches it also writes each hook's call log to `<CSV 
 makes the scenario's `calls` ([Hooks](research-workflow.md#hooks)).
 
 ```sh
-uv run --project python coney-tools pcsx2 clip STATE --out CLIP --agent ID [--seconds N] [--iso DISC]
+uv run --project python coney-tools pcsx2 clip STATE --out CLIP --agent ID [--seconds N] [--iso DISC] [--scratch DIR]
 ```
 
 Records a short clip of the original (`--seconds`, 1 to 10, default 10) with **PCSX2's own video capture of its GS
@@ -486,11 +486,12 @@ points PCSX2's videos folder at a staging folder beside the clip, turns every on
 messages, the recording indicator) and binds "Toggle Video Capture" to F12, which is posted to PCSX2's window by handle
 to start and stop it; the ini is put back when PCSX2 closes. The capture is then re-encoded into `CLIP` as Coney's
 clips are (960 x 720, H.264 and AAC, no metadata, cut at the length) through `clips.run_ffmpeg`, and the staging
-folder deleted. PCSX2's first frames are torn (a black band along the bottom) as its capture starts, so the capture
-runs 0.2 s longer (`CAPTURE_START_TRIM`) and the clip starts after that, still lasting `--seconds`.
+folder deleted. PCSX2 2.9.94 tears the first ~1.15 s of its capture (a black band along the bottom), so the capture
+runs 1.5 s longer (`CAPTURE_START_TRIM`) and the clip starts after that, still lasting `--seconds`.
 `--out` is a path under the scratch folder, `<workspace>/scratch/<task>/clips/NAME.mp4`; give it absolute (the
 folder `clips folder TASK` prints), because a relative `../../scratch/...` is wrong from a worktree, which sits three
-levels below the workspace. The game comes from `game_dir` in `coney.local.toml`; without it pass `--iso DISC`.
+levels below the workspace. The game comes from `game_dir` in `coney.local.toml`; without it pass `--iso DISC`,
+and likewise `--scratch DIR` (an absolute path) without `scratch_dir`.
 `CLIP` follows the [clips](#clips) rules. It needs FFmpeg as `clips` finds it, and Windows (keys by
 handle). PCSX2 starts on `STATE` under `--agent`'s claim, released at the end when `clip` made it.
 

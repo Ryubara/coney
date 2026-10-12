@@ -449,7 +449,8 @@ def test_pcsx2_clip_uses_pcsx2s_own_capture_and_never_the_screen(
     assert "-map_metadata" in encode_args
     # PCSX2's capture starts with torn frames: the clip drops its first CAPTURE_START_TRIM seconds, the capture runs
     # that much longer, and the clip still lasts the 5 seconds asked for.
-    assert pcsx2_clip.CAPTURE_START_TRIM > 0
+    # Measured on PCSX2 2.9.94: the raw capture is torn for its first 1.15 s, so the trim must clear that.
+    assert pcsx2_clip.CAPTURE_START_TRIM >= 1.15
     assert encode_args[encode_args.index("-ss") + 1] == str(pcsx2_clip.CAPTURE_START_TRIM)
     assert encode_args[encode_args.index("-t") + 1] == "5"
     assert max(sleeps) >= 5 + pcsx2_clip.CAPTURE_START_TRIM

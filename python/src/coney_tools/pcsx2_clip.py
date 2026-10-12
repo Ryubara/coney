@@ -26,10 +26,10 @@ from coney_tools.pine import PineError
 
 #: The key PCSX2's "Toggle Video Capture" hotkey is bound to for the run (unbound in the copies' own inis).
 TOGGLE_KEY = "f12"
-#: Seconds dropped from the start of PCSX2's capture. Its first frames are torn (a black band along the bottom, seen
-#: in frames 0 to 2 on PCSX2 2.9.94 as the capture starts), so the capture runs this much longer and the clip starts
-#: after it, still lasting the seconds asked for.
-CAPTURE_START_TRIM = 0.2
+#: Seconds dropped from the start of PCSX2's capture. PCSX2 2.9.94 tears its first ~1.15 s of capture (measured: a
+#: black band along the bottom on every even frame of the raw 59.94 fps file up to frame 68, whole after), so the
+#: capture runs this much longer and the clip starts after it, still lasting the seconds asked for.
+CAPTURE_START_TRIM = 1.5
 #: How long to wait for PCSX2 to finish writing the capture after it is stopped.
 FINISH_TIMEOUT = 20.0
 
