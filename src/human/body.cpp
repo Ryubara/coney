@@ -265,8 +265,8 @@ std::optional<anim::Vec3> nearestWallPush(const raycast::CollisionMesh& mesh, an
 anim::Vec3 slideAlongTouchedFaces(const raycast::CollisionMesh& mesh, anim::Vec3 centre, float radius, anim::Vec3 move,
                                   WallFilter filter, std::vector<std::uint16_t>& scratch,
                                   std::vector<anim::Vec3>* normals) {
-    // The push-out leaves the sphere `keepClear` off a face it met, where the original's sweep leaves it at the contact,
-    // so a face leaning back within the radius and that clearance counts as touched (**Coney's reading**,
+    // The push-out leaves the sphere `keepClear` off a face it met, where the original's sweep leaves it at the
+    // contact, so a face leaning back within the radius and that clearance counts as touched (**Coney's reading**,
     // docs/research/characters.md#slopes): without it a slow walker pushed back off such a face each update never
     // slides up along it, the push's rise being lost to the snap. Against an upright face the push-out and the slide
     // move the sphere alike, so those keep the radius.
