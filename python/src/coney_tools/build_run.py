@@ -49,6 +49,13 @@ from coney_tools.config import ConfigError
 
 #: Exit code of a run that gave up waiting for a slot (EX_TEMPFAIL): do other work and try again later.
 EXIT_QUEUED = 75
+#: What a run that gave up waiting tells its caller to do: never wait on in the same call, which would outlast the
+#: agent's prompt cache (docs/guides/agents.md#build-waits).
+QUEUED_ADVICE = (
+    "do other work and run the command again, or start it with --detach, write STATUS.md and stop: "
+    "`coney-tools build result` shows the outcome to whoever continues"
+)
+
 #: How many compile errors a summary shows, and how long a line may be.
 MAX_ERRORS = 8
 #: How many failed tests a summary names.
@@ -590,25 +597,24 @@ def _estimate(context: Context, options: Options, steps: list[tuple[str, str]], 
 
 def _budget_check(
     options: Options, context: Context, clock: Callable[[], float], what: str | None, seconds: float, basis: str
-) -> Callable[[float], str | None] | None:
+) -> Callable[[float, float], str | None] | None:
     """The `abandon` callback of a wait under the time budget (None without a budget): it answers with the reason, the
     numbers in it, once the call so far plus `seconds` (what `what` would take; None for a wait that has no step of
-    its own) passes the budget."""
+    its own) passes the budget, or as soon as the queue's own estimate of the wait still ahead, added to those, does:
+    a wait that cannot end in time is left at once, not after sitting through most of the budget."""
     if options.budget <= 0:
         return None
     limit = options.budget * 60
 
-    def abandon(waited: float) -> str | None:
+    def abandon(waited: float, expected: float) -> str | None:
         used = clock() - (context.call_started if context.call_started is not None else clock())
-        if used + seconds <= limit:
-            return None
         done = f"time budget: {used / 60:.0f} min of the call so far"
-        if what is None:
-            return f"{done} and the budget is {options.budget:.0f} min"
-        return (
-            f"{done}; {what} would take about {seconds / 60:.0f} min ({basis}) and the budget is "
-            f"{options.budget:.0f} min"
-        )
+        step = "" if what is None else f"; {what} would take about {seconds / 60:.0f} min ({basis})"
+        if used + seconds > limit:
+            return f"{done}{step} and the budget is {options.budget:.0f} min"
+        if used + expected + seconds > limit:
+            return f"{done}; the queue ahead is about {expected / 60:.0f} min{step} and the budget is {options.budget:.0f} min"
+        return None
 
     return abandon
 
@@ -930,7 +936,7 @@ def _failed(
 def _gave_up(result: Result, step: str, timeout: SlotTimeout) -> Result:
     """Mark a run that stopped waiting for a slot (or for its build folder): exit code 75, the place, and the way on."""
     result.summary.append(_queued_line(step, timeout))
-    result.summary.append(f"result: QUEUED at {step} (exit {EXIT_QUEUED}); do other work and run the command again")
+    result.summary.append(f"result: QUEUED at {step} (exit {EXIT_QUEUED}); {QUEUED_ADVICE}")
     result.ok = False
     result.exit_code = EXIT_QUEUED
     return result
