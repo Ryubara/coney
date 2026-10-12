@@ -59,8 +59,9 @@ second (one per fixed step), 720 lines high at the picture's shape (960 x 720 fo
 10, the default, is also the most. Coney's own debug tooling, with no counterpart in the original.
 
 ```sh
-build/dev/src/platform/coney --disc /path/to/warriors.iso --record ../../scratch/my-task/clips/front-end.mp4 --record-seconds 5
-build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 --input-script tests/support/play_walk.txt --record ../../scratch/my-task/clips/walk.mp4
+CLIPS=$(uv run --project python coney-tools clips folder my-task)   # the absolute path of the clips folder
+build/dev/src/platform/coney --disc /path/to/warriors.iso --record "$CLIPS/front-end.mp4" --record-seconds 5
+build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 --input-script tests/support/play_walk.txt --record "$CLIPS/walk.mp4"
 ```
 
 - **What it records.** The frames Coney draws, read back from its own frame buffer after the game's 2D layers (HUD,
@@ -72,8 +73,10 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 -
   frame, no clock), so the same command and `--input-script` give the same frames: the line it prints ends with a hash
   of every frame recorded.
 - **Where.** `FILE` must be a plain name (letters, digits, `.`, `_`, `-`) ending in `.mp4`, in an existing folder
-  named `clips` outside every git checkout: the task's scratch folder, `../../scratch/<task>/clips/`. Anything else
-  is refused before the run starts.
+  named `clips` outside every git checkout: the task's scratch folder, `<workspace>/scratch/<task>/clips/`
+  (`coney-tools clips folder TASK` makes and prints it). Pass it absolute: a relative `../../scratch/...` is right
+  only from the main checkout, not from a worktree (three levels deep). Anything else is refused before the run
+  starts.
 - **What the file holds.** Only the picture and the sound: no title, comment, encoder version or path (FFmpeg runs
   with `-map_metadata -1`, bit-exact headers and x264's settings note removed). `coney-tools clips check` confirms it.
 - **Needs** a window (not `--headless`, `--load` or `--render-references`) and FFmpeg: `CONEY_FFMPEG` names the

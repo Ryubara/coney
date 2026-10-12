@@ -218,10 +218,12 @@ kept by the code, not by memory or by this page:
 The steps, for an agent:
 
 ```sh
-uv run --project python coney-tools clips folder my-task          # makes and prints ../../scratch/my-task/clips
-build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 --input-script walk.txt --record ../../scratch/my-task/clips/after.mp4
-uv run --project python coney-tools clips check ../../scratch/my-task/clips/after.mp4
-uv run --project python coney-tools clips publish --pr 123 --body "Coney after the fix" ../../scratch/my-task/clips/after.mp4
+CLIPS=$(uv run --project python coney-tools clips folder my-task)   # makes and prints the absolute <workspace>/scratch/my-task/clips
+build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 --input-script walk.txt --record "$CLIPS/after.mp4"
+uv run --project python coney-tools clips check "$CLIPS/after.mp4"
+uv run --project python coney-tools clips publish --pr 123 --body "Coney after the fix" "$CLIPS/after.mp4"
+# the original: --iso is needed when coney.local.toml has no game_dir; --out is absolute, from any checkout
+uv run --project python coney-tools pcsx2 clip STATE --out "$CLIPS/original.mp4" --agent ID --iso /path/to/warriors.iso
 ```
 
 An agent that cannot publish (agents do not post to GitHub: the coordinator does) names its clips in its report and

@@ -191,6 +191,19 @@ def test_run_ffmpeg_never_starts_a_refused_command() -> None:
     assert started == []
 
 
+def test_the_encode_can_skip_the_start_of_a_recording(tmp_path: Path) -> None:
+    source = tmp_path / "capture.mp4"
+    source.write_bytes(b"")
+    plain = clips.encode_arguments(Path("ffmpeg"), source, tmp_path / "out.mp4", 5)
+    assert "-ss" not in plain
+    trimmed = clips.encode_arguments(Path("ffmpeg"), source, tmp_path / "out.mp4", 5, skip_seconds=0.25)
+    clips.refuse_screen_capture(trimmed)
+    # The skip is an input option (before -i), and the cut at the length still follows it.
+    assert trimmed[trimmed.index("-ss") + 1] == "0.25"
+    assert trimmed.index("-ss") < trimmed.index("-i")
+    assert trimmed[trimmed.index("-t") + 1] == "5"
+
+
 def test_the_encode_strips_metadata_and_caps_the_length(tmp_path: Path) -> None:
     source = tmp_path / "capture.mp4"
     source.write_bytes(b"")
@@ -413,7 +426,8 @@ def test_pcsx2_clip_uses_pcsx2s_own_capture_and_never_the_screen(
     monkeypatch.setattr(pcsx2_proc, "post_keys", toggle)
     monkeypatch.setattr(pcsx2_proc, "capture", no_screen)
     monkeypatch.setattr(pcsx2_proc, "render_window", no_screen)
-    monkeypatch.setattr(pcsx2_clip.time, "sleep", lambda seconds: None)
+    sleeps: list[float] = []
+    monkeypatch.setattr(pcsx2_clip.time, "sleep", sleeps.append)
     monkeypatch.setattr(clips, "run_ffmpeg", encode)
     monkeypatch.setattr(clips, "probe", lambda path, ffprobe, runner=None: clips.parse_probe(json.dumps(CLEAN_PROBE)))
 
@@ -433,6 +447,12 @@ def test_pcsx2_clip_uses_pcsx2s_own_capture_and_never_the_screen(
     assert registry.released == ["pcsx2-b"]
     (encode_args,) = encodes
     assert "-map_metadata" in encode_args
+    # PCSX2's capture starts with torn frames: the clip drops its first CAPTURE_START_TRIM seconds, the capture runs
+    # that much longer, and the clip still lasts the 5 seconds asked for.
+    assert pcsx2_clip.CAPTURE_START_TRIM > 0
+    assert encode_args[encode_args.index("-ss") + 1] == str(pcsx2_clip.CAPTURE_START_TRIM)
+    assert encode_args[encode_args.index("-t") + 1] == "5"
+    assert max(sleeps) >= 5 + pcsx2_clip.CAPTURE_START_TRIM
     assert encode_args[-1] == str(out.resolve())
     assert out.exists()
     assert not (out.parent / "original.pcsx2-capture").exists()

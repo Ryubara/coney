@@ -6,7 +6,8 @@ emulator; nothing on the desktop is read. For the run, the claimed copy's ini sw
 a staging folder beside the clip, turns every on-screen display element off (so neither its recording indicator nor
 a message can be drawn into the GS output) and binds the capture's toggle to a key, which is posted to PCSX2's
 window by handle (never focusing it). The ini is put back when PCSX2 closes. The capture is then re-encoded into the
-clip with `clips.encode_arguments` (cut to the cap, 960 x 720, no metadata) and the staging file deleted.
+clip with `clips.encode_arguments` (the torn first frames dropped, cut to the cap, 960 x 720, no metadata) and the
+staging file deleted.
 
 Nothing here calls a screen or window capture: no PrintWindow, no FFmpeg capture device (`clips.run_ffmpeg` refuses
 them), which tests/test_clips.py checks.
@@ -25,6 +26,10 @@ from coney_tools.pine import PineError
 
 #: The key PCSX2's "Toggle Video Capture" hotkey is bound to for the run (unbound in the copies' own inis).
 TOGGLE_KEY = "f12"
+#: Seconds dropped from the start of PCSX2's capture. Its first frames are torn (a black band along the bottom, seen
+#: in frames 0 to 2 on PCSX2 2.9.94 as the capture starts), so the capture runs this much longer and the clip starts
+#: after it, still lasting the seconds asked for.
+CAPTURE_START_TRIM = 0.2
 #: How long to wait for PCSX2 to finish writing the capture after it is stopped.
 FINISH_TIMEOUT = 20.0
 
@@ -113,7 +118,7 @@ def run_clip(
     staging.mkdir()
     try:
         capture = _capture(state, seconds, staging, flags, registry, claim)
-        clips.run_ffmpeg(clips.encode_arguments(ffmpeg, capture, target, seconds))
+        clips.run_ffmpeg(clips.encode_arguments(ffmpeg, capture, target, seconds, CAPTURE_START_TRIM))
     finally:
         shutil.rmtree(staging, ignore_errors=True)
         if created:
@@ -147,8 +152,8 @@ def _capture(
             ini=capture_settings(staging),
         )
         _toggle(emulator.pid)
-        # A little past the clip's length: the encode cuts it to exactly `seconds`.
-        time.sleep(seconds + 0.5)
+        # The dropped start and a little past the clip's length: the encode cuts it to exactly `seconds`.
+        time.sleep(CAPTURE_START_TRIM + seconds + 0.5)
         _toggle(emulator.pid)
         return _finished_capture(staging, FINISH_TIMEOUT)
     except PineError as error:

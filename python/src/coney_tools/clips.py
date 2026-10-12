@@ -214,9 +214,11 @@ def run_ffmpeg(args: Sequence[str], runner: Runner = _run) -> None:
         raise ClipError(f"ffmpeg failed (exit {done.returncode}): {done.stderr.strip()[-400:]}")
 
 
-def encode_arguments(ffmpeg: Path, source: Path, out: Path, max_seconds: int) -> list[str]:
-    """FFmpeg's arguments to turn a recording file `source` into a clip at `out`: the first `max_seconds`, scaled to
-    960 x 720, encoded with ENCODE_SETTINGS (its sound too, when it has any)."""
+def encode_arguments(ffmpeg: Path, source: Path, out: Path, max_seconds: int, skip_seconds: float = 0.0) -> list[str]:
+    """FFmpeg's arguments to turn a recording file `source` into a clip at `out`: the first `max_seconds` after the
+    first `skip_seconds` of it are dropped, scaled to 960 x 720, encoded with ENCODE_SETTINGS (its sound too, when it
+    has any)."""
+    skip = ["-ss", str(skip_seconds)] if skip_seconds > 0 else []
     return [
         str(ffmpeg),
         "-hide_banner",
@@ -224,6 +226,7 @@ def encode_arguments(ffmpeg: Path, source: Path, out: Path, max_seconds: int) ->
         "error",
         "-nostdin",
         "-y",
+        *skip,
         "-i",
         str(source),
         "-t",
