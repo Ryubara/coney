@@ -239,11 +239,23 @@ labels:
     - {name: wontfix, color: ffffff, description: "This will not be worked on"}
 
 hygiene:
-  # The one pinned issue the weekly sweep keeps up to date (a later change); the Action only comments, never edits (docs/guides/repo-conventions.md, "Workflows").
+  # The one issue the weekly sweep reports on: one comment on it, edited in place; the workflow creates the issue if it
+  # is missing (docs/guides/repo-conventions.md, "Workflows").
   report_issue:
     title: "Repo hygiene"
     labels: [task, A-tools, P-low, S-in-progress]
   sweep: "0 6 * * 1"                             # weekly, Monday 06:00 UTC
+  # What `coney-tools repo hygiene` and .github/workflows/hygiene.yml do (docs/guides/repo-conventions.md, "Workflows").
+  # The workflow keeps ONE comment per item that has findings, edited in place (never deleted; "all fixed" when the
+  # findings are gone), and one comment on the report issue for the sweep. It starts at warn level: on_sweep false means
+  # the weekly sweep only updates the report and item comments come from events alone.
+  comments:
+    marker: coney-repo-hygiene                   # the comment starts with <!-- marker -->; the report's has :report
+    author: "github-actions[bot]"                # only comments from this login are the workflow's own
+    on_events: true
+    on_sweep: false
+    max_per_sweep: 25                            # with on_sweep true, item comments created or edited per sweep
+    report_only: [issue.triage-age, issue.info-age, issue.progress-idle, pr.idle]   # idleness: a comment would hide it
   thresholds:
     needs_triage_days: 7
     needs_info_days: 21

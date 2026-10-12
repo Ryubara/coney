@@ -414,6 +414,25 @@ class ReportIssue:
 
 
 @dataclass(frozen=True)
+class Comments:
+    """How the hygiene workflow comments on issues and pull requests (`coney-tools repo hygiene`)."""
+
+    #: The word the workflow's comments start with, inside an HTML comment, so it finds its own comments again.
+    marker: str
+    #: The login a comment must be from to count as the workflow's own (the Actions bot); anyone else's is never edited.
+    author: str
+    #: Whether an issue or pull request event (opened, edited, labelled, ...) updates that item's comment.
+    on_events: bool
+    #: Whether the weekly sweep updates item comments; false = the sweep only updates the report.
+    on_sweep: bool
+    #: At most this many item comments a sweep creates or edits (a flood stopper for a first run).
+    max_per_sweep: int
+    #: Checks whose findings go in the report only, never in an item comment: a comment is activity, which would make an
+    #: idle item look active and so hide the very finding it reports.
+    report_only: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class Thresholds:
     """How many days without a change make an item stale."""
 
@@ -459,6 +478,7 @@ class Hygiene:
     report_issue: ReportIssue
     #: The cron schedule of the weekly sweep.
     sweep: str
+    comments: Comments
     thresholds: Thresholds
     pr_health: PrHealth
     #: Check id to its spec, in file order.
@@ -1001,6 +1021,8 @@ def _read_labels(data: object, where: str) -> Labels:
 _CHECK_SCOPES = ("files", "github", "local")
 _CHECK_SEVERITIES = ("error", "warn")
 _CHECK_FIXES = ("auto", "skill", "maintainer")
+#: The marker of the hygiene workflow's comments: a word that cannot end or break the HTML comment it sits in.
+_MARKER = re.compile(r"^[A-Za-z][A-Za-z0-9-]*$")
 #: A check id: a group, a dot and a name.
 _CHECK_ID = re.compile(r"^[a-z]+\.[a-z][a-z-]*$")
 
@@ -1032,7 +1054,7 @@ def _read_check(check_id: str, data: object, where: str) -> CheckSpec:
 
 def _read_hygiene(data: object, where: str) -> Hygiene:
     """The `hygiene` section: the report issue, the sweep schedule, the idle limits and the audit's checks."""
-    table = _table(data, where, ("report_issue", "sweep", "thresholds", "pr_health", "checks"))
+    table = _table(data, where, ("report_issue", "sweep", "comments", "thresholds", "pr_health", "checks"))
     checks_where = _at(where, "checks")
     raw_checks = _mapping(table["checks"], checks_where)
     if not raw_checks:
@@ -1040,6 +1062,17 @@ def _read_hygiene(data: object, where: str) -> Hygiene:
     checks = {name: _read_check(name, spec, _at(checks_where, name)) for name, spec in raw_checks.items()}
     report_where = _at(where, "report_issue")
     report = _table(table["report_issue"], report_where, ("title", "labels"))
+    comments_where = _at(where, "comments")
+    comments = _table(
+        table["comments"],
+        comments_where,
+        ("marker", "author", "on_events", "on_sweep", "max_per_sweep", "report_only"),
+    )
+    marker = _text(comments["marker"], _at(comments_where, "marker"))
+    if not _MARKER.match(marker):
+        raise _fail(_at(comments_where, "marker"), "letters, digits and hyphens only (it sits inside an HTML comment)")
+    report_only = _texts(comments["report_only"], _at(comments_where, "report_only"), empty_ok=True)
+    _names_in(report_only, checks, _at(comments_where, "report_only"), "a check in hygiene.checks")
     limits_where = _at(where, "thresholds")
     keys = (
         "needs_triage_days",
@@ -1057,6 +1090,14 @@ def _read_hygiene(data: object, where: str) -> Hygiene:
             labels=_texts(report["labels"], _at(report_where, "labels")),
         ),
         sweep=_text(table["sweep"], _at(where, "sweep")),
+        comments=Comments(
+            marker=marker,
+            author=_text(comments["author"], _at(comments_where, "author")),
+            on_events=_flag(comments["on_events"], _at(comments_where, "on_events")),
+            on_sweep=_flag(comments["on_sweep"], _at(comments_where, "on_sweep")),
+            max_per_sweep=_count(comments["max_per_sweep"], _at(comments_where, "max_per_sweep")),
+            report_only=report_only,
+        ),
         thresholds=Thresholds(**{key: _count(limits[key], _at(limits_where, key)) for key in keys}),
         pr_health=PrHealth(lint_checks=_texts(health["lint_checks"], _at(health_where, "lint_checks"))),
         checks=MappingProxyType(checks),
