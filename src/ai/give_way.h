@@ -22,11 +22,6 @@ inline constexpr int kGiveWayDelayRange = 125;
 /// A script's ActGiveWay acts only on a human with fewer than this many queued actions.
 inline constexpr std::size_t kGiveWayQueueLimit = 8;
 
-/// Whether `other` is a threat to `brain`: their gangs are enemies, or both are players. **Coney stand-in**: a
-/// Warrior's mode (`+0x2e5`), which can force it either way, is not read.
-/// @orig 0x00222a48 Human_IsThreatTo (unknown)
-[[nodiscard]] bool isThreat(const Brain& brain, const Brain& other);
-
 /// Asks `stander` to give way to `mover`, whose path is the line through `point` along `step`: yes at once when the
 /// stander already gives way; no while he is inside a push-aside; otherwise giveWayTo() with both marked meanwhile.
 /// @orig 0x0028a248 Brain_PushAside (unknown)

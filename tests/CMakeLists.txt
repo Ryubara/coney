@@ -54,6 +54,7 @@ add_executable(coney_tests
     graphics/font_test.cpp
     graphics/frame_stats_test.cpp
     graphics/car_draw_test.cpp
+    graphics/throw_arc_test.cpp
     graphics/human_blood_test.cpp
     graphics/human_lighting_test.cpp
     graphics/light_manager_test.cpp
@@ -101,6 +102,7 @@ add_executable(coney_tests
     platform/disc_level80_test.cpp
     platform/disc_flash_test.cpp
     platform/disc_revive_test.cpp
+    platform/disc_level80_story_test.cpp
     platform/disc_level5_boss_camera_test.cpp
     platform/disc_level5_fights_test.cpp
     platform/disc_level99_audio_test.cpp
@@ -123,6 +125,7 @@ add_executable(coney_tests
     platform/disc_level99_handover_test.cpp
     platform/disc_hub_workout_test.cpp
     platform/disc_level99_street_test.cpp
+    platform/disc_level99_vermin_fence_test.cpp
     platform/disc_level99_store_glass_test.cpp
     platform/disc_level99_store_register_test.cpp
     platform/disc_level99_world_test.cpp
@@ -133,6 +136,7 @@ add_executable(coney_tests
     platform/disc_tagging_test.cpp
     platform/disc_story_start_test.cpp
     platform/disc_textures_test.cpp
+    platform/disc_throw_arc_test.cpp
     platform/disc_world_test.cpp
     platform/disc_level_test.cpp
     platform/disc_movies_test.cpp
@@ -370,7 +374,8 @@ target_sources(coney_tests PRIVATE
     ai/rumble_tactics_test.cpp
     ai/swap_prompt_test.cpp
     ai/tactics_test.cpp
-    ai/targeting_test.cpp)
+    ai/targeting_test.cpp
+    ai/threats_test.cpp)
 # The sound engine, its data and streams, the mixer and the game-facing sound calls (docs/research/sound.md).
 target_sources(coney_tests PRIVATE audio/adpcm_test.cpp audio/disc_sound_test.cpp audio/game_sound_test.cpp
                                    audio/mixer_test.cpp audio/music_player_test.cpp audio/object_sounds_test.cpp

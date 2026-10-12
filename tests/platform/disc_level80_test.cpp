@@ -27,6 +27,7 @@
 #include <utility>
 #include <vector>
 
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include "ai/brain.h"
@@ -42,6 +43,7 @@
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/gameplay_mode.h"
 #include "gamemodes/level_start.h"
+#include "graphics/throw_arc.h"
 #include "gui/global_strings.h"
 #include "hud/hint_box.h"
 #include "hud/hud.h"
@@ -693,6 +695,26 @@ TEST_CASE("the disc's level80 checkpoint 3: Fox, Hold Up, the bottle thrown from
     level.pad.buttons = 0;
     REQUIRE(level.runUntil([&] { return hinted("TT_28"); }, kWait));
     REQUIRE(level.play()->throwAim().active());
+    // The arc's ribbon while he aims, before it meets the marker (docs/research/graphics.md#throw-arc): 36 vertices
+    // with the first pair on his hand and faded in from it, 0.16 m wide level across the arc, grey while the aim
+    // meets no target.
+    {
+        const coney::platform::PlayLevelMode& play = *level.play();
+        const std::vector<coney::graphics::ThrowArcVertex> ribbon = play.throwArcRibbon(1.0F);
+        REQUIRE(ribbon.size() == 36);
+        const coney::anim::Vec3 hand = play.throwAim().releasePoint();
+        CHECK((ribbon[0].position.x + ribbon[1].position.x) / 2.0F == Catch::Approx(hand.x).margin(1e-3));
+        CHECK((ribbon[0].position.y + ribbon[1].position.y) / 2.0F == Catch::Approx(hand.y).margin(1e-3));
+        CHECK((ribbon[0].position.z + ribbon[1].position.z) / 2.0F == Catch::Approx(hand.z).margin(1e-3));
+        const coney::anim::Vec3 across = coney::anim::subtract(ribbon[1].position, ribbon[0].position);
+        CHECK(std::hypot(across.x, across.y) == Catch::Approx(0.16F).margin(1e-4));
+        CHECK(across.z == Catch::Approx(0.0F).margin(1e-4));
+        CHECK(ribbon[0].rgba[3] == 0);
+        CHECK(ribbon[2].rgba[3] >= 127); // then 127 plus up to 16 by how far along the arc
+        CHECK(ribbon[2].rgba[3] <= 143);
+        const bool already = play.player().human().script().aimedObject != 0;
+        CHECK(ribbon[2].rgba[0] == (already ? 170 : 127));
+    }
 
     // The stick brings the arc onto the marker, as a player does: it turns him to face it, then pitches the aim down
     // from the start, a few steps a frame, until the arc meets it (HuIsAimingAt).
@@ -724,6 +746,14 @@ TEST_CASE("the disc's level80 checkpoint 3: Fox, Hold Up, the bottle thrown from
     }
     REQUIRE(aimed);
     REQUIRE(level.runUntil([&] { return hinted("TT_29"); }, kWait));
+    // On the marker the ribbon is red: (170, 43, 43).
+    {
+        const std::vector<coney::graphics::ThrowArcVertex> ribbon = level.play()->throwArcRibbon(1.0F);
+        REQUIRE(ribbon.size() == 36);
+        CHECK(ribbon[2].rgba[0] == 170);
+        CHECK(ribbon[2].rgba[1] == 43);
+        CHECK(ribbon[2].rgba[2] == 43);
+    }
 
     // Cross throws from the aim; the bottle breaks by the marker, the cops are distracted and Fox's second scene plays.
     level.pad.buttons = coney::pad::kCross;

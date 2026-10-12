@@ -502,7 +502,7 @@ uv run --project python coney-tools trace fight-report --original TRACE... --con
 ```
 
 Behaviour statistics of a gang fight, from the all-humans trace of either game (Coney's `--trace-humans`, the
-original's `pcsx2 record` of the all-humans field set; [Tracing](building.md#tracing)). The two games draw different
+original's `pcsx2 record` of the all-humans field set; [Tracing](running.md#tracing)). The two games draw different
 random numbers, so a fight is compared by rates, shares and distributions, not update by update. A trace needs the
 columns `step`, `human` and `gang`; a metric whose columns are missing is left out. For the whole match (`all`) and
 each gang (and each human with `--humans`) it prints:
@@ -569,6 +569,7 @@ uv run --project python coney-tools repo labels [--apply] [--repo OWNER/NAME]
 uv run --project python coney-tools repo render [--check]
 uv run --project python coney-tools repo audit [--files] [--github] [--local] [--json] [--only CHECK ...] [--strict]
     [--show N] [--snapshot FILE] [--save-snapshot FILE] [--workspace DIR] [--list]
+uv run --project python coney-tools repo pr-health [--json] [--pending-hours H] [--verbose]
 ```
 
 The checks of the repository's own rules, which CI runs on every pull request. Every value they apply (the commit
@@ -593,6 +594,7 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   a wrong marker (an unknown block name, an end without a begin, a block never closed) is a one-line error with the
   file and line, exit code 2. [Generated blocks](repo-conventions.md#generated-blocks) lists the blocks.
 * `repo audit` reports where the repository departs from the conventions and changes nothing: see [audit](#repo-audit).
+* `repo pr-health` lists the open pull requests that are stuck: see [pr-health](#repo-pr-health).
 
 ### repo audit {#repo-audit}
 
@@ -615,7 +617,10 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   check needs `origin/main` in the checkout (`git fetch origin`) and says so when it is missing.
 * `--local` reads the workspace around the checkout: the free space of its drive, merged worktrees and stray files
   among the worktrees (`workspace clean` would remove them), and scratch folders of finished work that still hold
-  captures. The limits are the `workspace` section of the file.
+  captures. The limits are the `workspace` section of the file. It asks GitHub once for the merged pull requests of
+  every branch, judges the worktrees and walks the scratch folders several at a time, and does not read the last
+  activity of a worktree it will not report (a `build/` folder is `workspace clean`'s business), so a workspace of
+  80 worktrees takes seconds, not minutes.
 
 Each finding has the check's id, a severity (`error` or `warn`), the item (`#201`, a file, a worktree), a message and a
 fix class: `auto` (a coney-tools command fixes it), `skill` (a person or the `/repo-hygiene` skill fixes it with
@@ -626,6 +631,36 @@ judgement) or `owner` (a maintainer decides). The text report groups findings by
 check id or a group (`issue`) and may be repeated. Exit code 1 when a finding has severity `error` (any finding with
 `--strict`), 2 when `gh` or the snapshot cannot be read or the conventions are unusable, otherwise 0. The audit never
 edits an issue, a pull request or a label; fixing the findings is the coordinator's job.
+
+### repo pr-health {#repo-pr-health}
+
+`repo pr-health` answers "which open pull requests need someone to act?" with one read of the open pull requests and
+their checks (`gh pr list --json`) and one of the branch ruleset (`gh api repos/{owner}/{repo}/rules/branches/main`,
+which names the required checks, so nothing is hard-coded). It prints one line per cause, sorted by pull request
+number, and changes nothing:
+
+```text
+#7 fix-bat-cross checks-failed lint: body, markdownlint -> author
+#9 research-x checks-failed code: python-ok; lint: markdownlint -> author
+#12 throw-arc conflict with main -> author
+#15 char-stats ci-stuck build-ok 4.2 h (limit 3.0 h) -> coordinator
+#18 workouts-2 auto-merge-off into main -> coordinator
+```
+
+| Cause | When | Acts |
+| --- | --- | --- |
+| `checks-failed` | a **required** check failed (failure, timeout, cancelled). Its class is `lint` for the checks in `hygiene.pr_health.lint_checks` (title, body, docs, format, mkdocs, markdownlint, actionlint) and `code` for the others (`build-ok`, `python-ok`); a mix lists both | author |
+| `conflict` | GitHub says the pull request conflicts with its base | author |
+| `ci-stuck` | a required check has been queued or running longer than `hygiene.thresholds.pr_pending_hours` (default 3; `--pending-hours H` overrides it for one run) | coordinator |
+| `auto-merge-off` | the pull request is not a draft, targets `main` and has auto-merge off | coordinator |
+
+A failing check that is not required is ignored. A draft is never stuck. A stacked pull request (base other than
+`main`) is reported as `stacked` and never as lacking auto-merge; its failures and conflicts count. GitHub answers
+`UNKNOWN` for mergeability while it computes it, which means "not known yet": it is not a finding and shows only with
+`--verbose`, together with the drafts and stacked pull requests, so a rerun a minute later settles it.
+`--json` prints `checked`, `stuck` (each with `number`, `branch`, `cause`, `kind`, `detail`, `who`, `checks`, `url`),
+`other` (the `--verbose` lines) and `notices`. Exit code 0 when nothing is stuck, 1 when something is, 2 when `gh` or
+the conventions cannot be read. Run it from the coordinator's loop to find the pull requests to unstick or to push.
 
 ## check {#check}
 
@@ -672,6 +707,9 @@ command notes a GCC database; configure a Clang one once, beside `build/dev`, an
 CC=clang-19 CXX=clang++-19 cmake --preset dev -B build/tidy   # macOS: the Apple or Homebrew clang
 uv run --project python coney-tools check changed --build-dir build/tidy
 ```
+
+CI runs the `repo` and `pre-commit` steps on Windows, Linux and macOS in its `python` workflow, so the command's
+handling of paths, programs and long command lines is tested on all three.
 
 `--only` and `--skip` take step names, for a rerun of the one that failed. The command prints at most 40 lines of a
 failing step; run the step's tool by hand for the rest. What stays CI's: warnings only GCC emits, macOS, the

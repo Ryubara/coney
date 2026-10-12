@@ -36,6 +36,9 @@ inline constexpr float kStuckDistance = 0.2F;
 inline constexpr float kCornerMinDistance = 0.35F;
 /// A climb leg's climb is tried for this many updates before the move gives up (route state `+0x13`).
 inline constexpr std::uint32_t kClimbTries = 31;
+/// A fast climber above the jog tries the climb of the leg after its current waypoint within this distance (3D) of
+/// that leg's far waypoint (`Route_TryClimbNear`, docs/research/ai-moving.md#route-follow).
+inline constexpr float kEarlyClimbReach = 4.5F;
 /// The corner speed's trial falls by 1 + 0.75 × human `+0x333` m/s for each failed trial (**Coney choice**: Coney
 /// has no `+0x333`, so it falls by 1).
 inline constexpr float kCornerSpeedStep = 1.0F;
@@ -76,6 +79,13 @@ struct MoveRequest {
 /// sprint; 0 and any other value give 0 (docs/research/characters.md).
 /// @orig 0x0022ae40 Human_SpeedForGait (unknown)
 [[nodiscard]] float gaitSpeed(const human::Speeds& speeds, int gait);
+
+/// Whether a human tries the climb of the next route leg now, before it reaches the current waypoint (the fast
+/// climber's early climb): the leg out of the current waypoint is a climb (kind 8 or `0x80`), the human has flag `0x2`
+/// (`HuSetFastClimber`), its gait (human `+0x1a8`) is above the jog, and it is within kEarlyClimbReach (3D) of the
+/// climb's far waypoint, `distance` away (docs/research/ai-moving.md#route-follow).
+/// @orig 0x0029b9b0 Route_TryClimbNear (unknown)
+[[nodiscard]] bool earlyClimbDue(std::uint16_t nextLegKind, bool fastClimber, human::Gait gait, float distance);
 
 /// The move action.
 /// @orig 0x002fb9e8 MoveAction_Init (unknown)
@@ -156,6 +166,9 @@ class MoveAction final : public Action {
     std::size_t m_climbIndex = 0;
     std::uint32_t m_climbFails = 0;
     bool m_wasClimbing = false;
+    // Whether the last update asked for the fast climber's early climb: when the human climbs now, the route moves on
+    // onto the climb's leg at once.
+    bool m_earlyClimb = false;
     // A jump leg: what the handler did (route state 1 a jump, 2 a drop), the human's landings counted so far, the
     // launch's speed in plan, and whether the landing waypoint was reached.
     enum class JumpState : std::uint8_t { None, Drop, Jumped };

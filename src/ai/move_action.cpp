@@ -9,6 +9,8 @@
 #include "ai/brain.h"
 #include "ai/steering.h"
 #include "core/assert.h"
+#include "human/human.h"
+#include "human/human_flags.h"
 #include "human/locomotion.h"
 
 namespace coney::ai {
@@ -59,6 +61,11 @@ float gaitSpeed(const human::Speeds& speeds, int gait) {
     }
 }
 
+bool earlyClimbDue(std::uint16_t nextLegKind, bool fastClimber, human::Gait gait, float distance) {
+    return (nextLegKind & (edge_flag::kClimb | edge_flag::kJump)) != 0 && fastClimber && gait > human::Gait::Jog &&
+           distance <= kEarlyClimbReach;
+}
+
 ActionStatus MoveAction::start(Brain& brain) {
     const anim::Vec3 position = brain.human().position();
     m_landings = brain.human().landings();
@@ -89,6 +96,12 @@ ActionStatus MoveAction::update(Brain& brain) {
     // 1. Wait while the human is busy (Human_IsBusy) or climbing: the move stays as it was. A climb over a route's
     // leg that has just ended leaves the human beyond the leg's waypoint: the follower moves on.
     const bool climbing = human.traversal() == human::Traversal::Climbing;
+    // An early climb that started carries the human over the next leg: the route moves on onto it at once
+    // (`Route_TryClimbNear`), so the climb's end passes the leg's far waypoint as a climb leg's does.
+    if (m_earlyClimb && climbing && !m_wasClimbing && m_follower && brain.planner() != nullptr) {
+        m_follower->passWaypoint(*brain.planner(), human.position());
+    }
+    m_earlyClimb = false;
     if (m_wasClimbing && !climbing && m_follower && brain.planner() != nullptr) {
         m_follower->passWaypoint(*brain.planner(), human.position());
         m_stuckFrom = human.position();
@@ -189,6 +202,17 @@ std::optional<ActionStatus> MoveAction::followLeg(Brain& brain, anim::Vec3 posit
         return finish(brain);
     }
     if ((kind & (edge_flag::kClimb | edge_flag::kJump)) == 0) {
+        // A walked leg before a climb: a fast climber at the run tries the climb from here, toward the climb's far
+        // waypoint, while it runs on. Without it a runner reaches the climb's near waypoint against the face, too close
+        // for the running climb, and runs into the face until the leg's tries give out.
+        const human::Human& human = brain.human();
+        const anim::Vec3 far = m_follower->nextPoint();
+        if (earlyClimbDue(m_follower->nextLegKind(), human.hasFlag(human::flag::kFastClimber), human.gait(),
+                          anim::distance(position, far))) {
+            const anim::Vec3 way = anim::subtract(far, position);
+            brain.requestClimb(anim::Vec3{way.x, way.y, 0.0F});
+            m_earlyClimb = true;
+        }
         return std::nullopt;
     }
     // A climb: run at the waypoint (gait 4) and try the climb toward it each update; give up after kClimbTries.
@@ -220,7 +244,7 @@ float MoveAction::cornerSpeed(Brain& brain, anim::Vec3 position, float top) {
     if (!m_follower || brain.planner() == nullptr) {
         return top;
     }
-    const std::vector<anim::Vec3> ahead = m_follower->ahead();
+    const std::vector<anim::Vec3> ahead = m_follower->cornerPoints();
     if (m_cornersAt != m_follower->index()) {
         // The corners at the next two waypoints, each from the leg before it to the leg after.
         const float floor = std::min(speeds.walk, top);

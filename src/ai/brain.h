@@ -249,7 +249,8 @@ class Brain {
 
     /// One update at game time `nowMs`: for a type-0 brain (the player's) only its books, unless it is dead; for every
     /// other type, and a dead player's, Brain_UpdateGoals: the move cleared first (stopMove()), then skipped while the
-    /// human is airborne, out of health, its gang is suspended or the brain is; the reaction goal when the human's
+    /// human is airborne, out of health, its gang is suspended or the brain is; the enemy scan when its schedule allows
+    /// (Gangs::scans(), ScanSchedule::maybeScan(); a brain with no gang has none); the reaction goal when the human's
     /// state calls for one, else the goal stack; then the actions. The human's attack announcements within the range
     /// and field of view are delivered at the start as events `0x10` (deliverEvent()), which count the warnings
     /// (`+0x200`); the count is cleared at the end.
@@ -378,9 +379,10 @@ class Brain {
     /// Empties the enemy list (event 2, the reset).
     void clearEnemies() { m_enemies.clear(); }
     /// Takes `target` (null for none) as the target: the old target's attack slot is released and one is claimed on
-    /// the new.
+    /// the new; with `force` a full slot list gives up its farthest holder's slot whatever the distances
+    /// (docs/research/ai.md#attack-places).
     /// @orig 0x0028cfe0 Brain_SetTarget (unknown)
-    void setTarget(Brain* target);
+    void setTarget(Brain* target, bool force = false);
     /// The target (`+0x124`); null when none.
     [[nodiscard]] Brain* target() { return m_target; }
     [[nodiscard]] const Brain* target() const { return m_target; }
@@ -403,6 +405,11 @@ class Brain {
     /// `level99` sets its fighters.
     void setThreatResponse(int response) { m_threatResponse = response; }
     [[nodiscard]] int threatResponse() const { return m_threatResponse; }
+    /// A Warrior hitting back at a player who hit him (`+0x2e5`): he and any pad player are threats to each other
+    /// (ai::isThreat()). **Coney stand-in**: the hit-back (`WarriorBrain_OnHitByChief`) is not built, so only a test
+    /// sets it.
+    [[nodiscard]] bool hittingBack() const { return m_hittingBack; }
+    void setHittingBack(bool on) { m_hittingBack = on; }
     /// The melee ranges (`+0x13c`, `+0x140`, `BrSetMeleeRange`).
     void setMeleeRange(float nearRange, float farRange);
     /// The far and near melee ranges.
@@ -555,9 +562,9 @@ class Brain {
     // @orig 0x0028fe28 Brain_RunActions (unknown)
     void runActions();
     // Claims a slot for `attacker` on this brain's human: a free one, else the farthest holder's when `attacker` is
-    // closer; returns whether it holds one.
+    // closer or forced in, and that holder loses his target; returns whether it holds one.
     // @orig 0x0028df30 Brain_ClaimAttackSlot (unknown)
-    bool claimSlot(Brain& attacker);
+    bool claimSlot(Brain& attacker, bool force = false);
     // Releases `attacker`'s slot on this brain's human.
     void releaseSlot(const Brain& attacker);
     // Raises this human's spacing bytes to `attacker`'s gang's `CfgGang` values (a Warrior keeps one swinging at
@@ -625,8 +632,9 @@ class Brain {
     bool m_suspended = false;                      // +0x0a
     bool m_wantsWeapon = true;                     // +0x265
     bool m_downReported = false;
-    bool m_mayApproach = true; // +0x2d3
-    bool m_attackable = true;  // +0x11f
+    bool m_mayApproach = true;  // +0x2d3
+    bool m_attackable = true;   // +0x11f
+    bool m_hittingBack = false; // +0x2e5
 };
 
 /// Delivers `event` to `brain`'s human as `Human_OnEvent` does: its own script handlers first (`SetMsgHandler`, through

@@ -4,7 +4,7 @@
 # STORY, cross on CREATE NEW PROFILE, cross on the keyboard's first key (one character), the left stick at 70 % right
 # eight times (to key 8) and 70 % up once (key 8's jump to OK), cross on OK, then cross on the defaults of
 # PM_Difficulty, PM_Light and PM_Subtitles. The menus then fade out for 1 s and the story starts.
-# Format: docs/guides/building.md#input-scripts
+# Format: docs/guides/running.md#input-scripts
 290 tap start
 305 tap cross
 315 tap cross

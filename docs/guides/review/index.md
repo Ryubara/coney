@@ -1,13 +1,14 @@
 # Reviews
 
 Every change gets a review, and a review is a list of findings written by someone who did not do the work.
-This page says how a review runs; the three checklists say what to look at:
+This page says how a review runs; the four checklists say what to look at:
 
 | Reviewing | Checklist |
 | --- | --- |
 | Code: C++, Python, CMake, scripts, tests | [Code](code.md) |
 | Research pages and the research database | [Research](research.md) |
 | A branch's commits or a pull request | [Commits](commits.md) |
+| Guides, designs and other pages outside `docs/research/` | [Docs](docs.md) |
 
 A review of a change that mixes kinds (a research page and the code that uses it) applies each checklist to the files
 it covers.

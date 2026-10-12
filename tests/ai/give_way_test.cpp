@@ -16,6 +16,7 @@
 #include "ai/brains.h"
 #include "ai/gangs.h"
 #include "ai/scripted_brains.h"
+#include "ai/threats.h"
 #include "human/fighter_clips.h"
 #include "human/human.h"
 #include "human/humans.h"
