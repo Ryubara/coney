@@ -907,8 +907,8 @@ TEST_CASE("a fast climber at the run tries the next leg's climb within 4.5 m of 
     using coney::ai::earlyClimbDue;
     using coney::human::Gait;
     namespace edge_flag = coney::ai::edge_flag;
-    // Route_TryClimbNear (docs/research/ai-moving.md#route-follow): a climb leg next (kind 8 or 0x80), flag 0x2, a gait above
-    // the jog, within 4.5 m (3D).
+    // Route_TryClimbNear (docs/research/ai-moving.md#route-follow): a climb leg next (kind 8 or 0x80), flag 0x2, a gait
+    // above the jog, within 4.5 m (3D).
     CHECK(earlyClimbDue(edge_flag::kClimb, true, Gait::Run, 4.5F));
     CHECK(earlyClimbDue(edge_flag::kJump, true, Gait::Sprint, 1.0F));
     CHECK_FALSE(earlyClimbDue(edge_flag::kClimb, true, Gait::Run, 4.6F));
