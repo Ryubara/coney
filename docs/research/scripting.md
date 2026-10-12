@@ -1605,6 +1605,123 @@ Coney fixes (item 28):
 **Deferred: runtime**: none left; item 36's batons and holds and item 28's extra flames were checked in the second
 pass above.
 
+### `level87.lua` (mission 3) {#level87}
+
+Story mission 3, loaded by `runNextMission` after `level80`: Rembrandt (player 1) and the crew tag over the
+Destroyers' burners in East Coney. Read from the compiled `level87.lua` and its five chapter scripts through
+`coney-tools`' Lua walker (names, ids and values only; our own words); bindings on [Story
+coverage](../references/bindings/story.md#level87). Inferred unless marked. Chapter 5 (the stealth tutorial) is on
+[Stealth](stealth.md#level87), the Destroyers' reactions on [AI](ai.md#aggro-on-sight), the tag itself on
+[Crimes](crimes.md#tagging).
+
+- **Each chapter** ends with `SaveLevelData`, `SetCheckPoint(N + 1)`, `ChLoader` (`preLoadFile` of the next chapter
+  with `"Setup"`) and the global `Cleanup`; that order only works when `preLoadFile` runs the new chunk later, not
+  inside the call ([Errors in a fresh state](#errors-in-a-fresh-state)). Tags already sprayed are kept in the Lua save
+  numbers 1-4 (`SaveLevelData`, `RestorePreviousTags`), so a checkpoint start restores them.
+- **Tag spots.** Each chapter's `Handlers` gives every spot of its list the tag prompt (`SetMsgHandlerEx(spot, 0,
+  "SpotGettingTagged", ...)`), a `dyn_w_mission` marker, a radar objective (texture 28) and a sphere that hides the
+  marker while a player stands in it (`GlowGoAway`, `GlowComeBack`). `SpotGettingTagged` asks for paint
+  (`InvGetSpraycanCharges`): with none, speech command 37 only; otherwise the prompt is taken off the spot, the player
+  made unpushable, event 14 handed to `TagFinished`, and `HuTag` called. `TagFinished(human, tag, finished)`: with 0
+  the prompt goes back (and chapter 1 refills one can); with 1 the marker and radar entry go, the chapter's counter
+  moves (`Updater`, `ObjectiveUpdate`) and the next pattern loads (`NextTagPattern`, a `tagN` file).
+- **Paint and cash.** Chapter 1 gives 2 cans (`InvSetSpraycanCharges(0, 2)`) and tops one up when they run out
+  (`ch1.CheckSpray`, `ch1.BoostSpray`); from chapter 2 the player buys paint from the spray sellers (`StartFactory`,
+  [GoalDealer](ai.md#dealer)) with mugged cash, and `CheckCash` (every 60 s) and the reminders nag (hints `CASH`,
+  `TT_41`, `RM_1`).
+
+| Step | Started by | Hints, objectives, scenes (in order) | Waits for | Ends with |
+| --- | --- | --- | --- | --- |
+| 1.1 intro | `Setup` | mission line `MP_1`; scene `l87_c1` | the scene's end | `ch1.Start87`: 2 cans, `l87_drunk_dest` preloaded, crew brain-dead, the intro path camera, the crew walk to their marks |
+| 1.2 first burner | `ch1.PlayerGotToFirstMark` | objective `MS_C1_1`; Ajax's line and gestures; 3.5 s: `TT_2` (again each time the player leaves the sphere) | the burner on the raised ledge tagged (`TagFinished` with 1) | 1 s: `ch1.FirstTagDone` |
+| 1.3 to the streets | `ch1.FirstTagDone` | objective `MS_C1_2` (go-to marker), the gate camera and Ajax's line, then `MS_C1_1` done | the player in the objective's volume (`vbGoVoltron` on the way puts the crew back in the gang) | `ch1.The_REAL_End`: **`SetCheckPoint(2)`** |
+| 2.1 the drunks | `Setup` (chapter 2) | scene `l87_drunk_dest`; three tag spots armed | the scene's end | `ch2.LiquorSceneDone` |
+| 2.2 two burners | `ch2.LiquorSceneDone` | `MS_C1_2` done; `TT_41`; objective `MS_C2_1` with a 0/2 counter; the first spray seller flashing on the radar; reminders `TT_41` (20 s), `RM_1` (60 s) and `CASH` (60 s, when broke) | two of the three spots tagged | `ch2.Done`: secondary objective `MS_C2_2` (the last street tag, 0/1) and objective `MS_C2_3` (go-to) |
+| 2.3 back alleys | `ch2.Done` | - | the player at `MS_C2_3`'s flag (the third tag is a bonus: `UM_Unlock(87, 1, ...)`) | `ch2.Exit`: **`SetCheckPoint(3)`** |
+| 3.1 three burners | `Setup` (chapter 3) | objective `MS_C3_1` (0/3), five spots armed; `SPRAYATTACK`; the boozer's 10 m sphere (its callback `ch3.BoozerChallenge` does not exist); the bums' fight (`vbBumScrap`) | three tagged | `ch3.Done`: objectives `MS_C3_2`, `MS_C3_3` |
+| 3.2 alleys' exit | `ch3.Done` | - | the exit objective | `ch3.Exit`: **`SetCheckPoint(4)`** |
+| 4.1 the street | `Setup` (chapter 4) | crew brain-dead; Rembrandt walks to `fMeanStreet`; the intro path camera (`ch4.RunIntroPoizo`) and his line; 15 s: `RUNATTACK` | the camera's end | `ch4.IntroCamDone`: objective `MS_C4_1`, the wanderers |
+| 4.2 burners | `MS_C4_1` | the roof tagger (`ch4.ApproachRoofTagger`), the roof radio and chairs, the porn-stand chat, the stairs' house party, the chair thrower (`FlamerSeePlayer`), the liquor store's pickable door | the chapter's burners tagged | objectives `MS_C4_2` (go-to) and `MS_C4_3` (bonus) |
+| 4.3 out | `MS_C4_2` | - | the exit | `ch4.Exit`: **`SetCheckPoint(5)`** |
+| 5 | chapter 5 | the stealth tutorial, the last tag (`MS_C5_3`), the penultimate scene and `l87_c2` | [Stealth](stealth.md#level87) | `HUDLaunchMissionFailed(MF_C5_1)` when spotted; the final scene ends the mission |
+
+#### The order at runtime (reference) {#level87-hints}
+
+From one run of the original (2026-10-08, PCSX2 2.9.94): the [`level80` reference run](#level80-hints) played on
+into `level87` at checkpoint 1 with the same hooks. The walks were helped by teleports and, in chapter 2, by writing
+the player's money, so only the order means anything. Updates count from that run's first sample. Confirmed
+(runtime).
+
+| Update | Step | Shown or set, in order |
+| --- | --- | --- |
+| 65831 | 1.1 | `HUDSetObjective(2, MP_1)`; scene `l87_c1` |
+| 66609-66916 | 1.2 | `l87_drunk_dest` preloaded; the burner's radar objective; objective **`MS_C1_1`**; **game hint 22** 9 updates later; **`TT_2`** |
+| 77650-84035 | 1.2 | at each spray, **game hint 16** 70 updates after it starts; an unfinished spray keeps its progress (the next one started at 19, 27, 43 and 72 of 76 points) |
+| 84065-84152 | 1.3 | `TT_2` cleared; objective **`MS_C1_2`** and its radar flag; `MS_C1_1` done 87 updates later |
+| 87071-87097 | 1.3 to 2.1 | `MS_C1_2` done; **`SetCheckPoint(2)`**; scene `l87_drunk_dest`; three radar objectives |
+| 87349 | 2.2 | **`TT_41`**; objective **`MS_C2_1`** with its 0/2 counter; then `TT_41` every 600 updates, `RM_1` about every 1,820 and `CASH` while broke |
+| 95142 | 2.2 | **game hint 24** (the player knocked down) |
+| 103047-115832 | 2.2 | the counter at 1/2, then 2/2; secondary objective **`MS_C2_2`** (0/1) and objective **`MS_C2_3`** |
+| 116494-116510 | 2.3 | the third tag: `MS_C2_2` done, `UM_Unlock(87, 1, ...)` |
+| 116852-116871 | 2.3 to 3.1 | **`SetCheckPoint(3)`**; `MS_C2_3` done; `EConey_Sub5` preloaded; objective **`MS_C3_1`** (0/3); five radar objectives |
+| 117333 | 3.1 | **`SPRAYATTACK`**, then `RM_1` about every 1,820 updates (the run stopped here) |
+
+**The game hints.** Confirmed (code) at the addresses:
+
+- **Hint 16** is queued by `Tag_StartSpray` (`0x0022e610`) when the game's hints are on (`W_GameState + 0x56e2`), the
+  level is not an Armies stage, hint 16 is unlocked, a two-bit counter (game state bits 19-20) is below 2 and the
+  level's number is 87. `Tag_End` (`0x0022e848`) withdraws it and, after a finished tag, adds 1 to the counter: it
+  shows at every spray until two tags are finished, in `level87` only.
+- **Hint 22** is queued once (game state flag `0x10000000`) by `Radar_Update` (`0x001c5210`) when a mission-objective
+  blip (kind 10) is more than 1.0 m above or below the player and |dx| + |dy| is under 20 m (`0x0050e9ac`,
+  `0x0050e9b8`).
+- **Hints 24 and 25** are queued by `Human_KnockDown` (`0x0022f100`) when a player goes down: 24 while a two-bit
+  counter (game state bits 30-31) is below 2, then 25 at 2; each adds 1 to the counter. Both need the hints on, no
+  Armies stage, and `0x006092b8` at 0.
+
+#### Coney's run and the fix list {#level87-fixes}
+
+Coney at `f325e018` (release build), started with `--play-level level87 --checkpoint N --pad-pipe` and played by a
+scratch course over the observation (markers, events and Coney's own log lines), the left stick at 35-90 %, climbs
+made by pushing at 90 % and tapping triangle along the level's path nodes. **Checkpoint 1** plays to
+`SetCheckPoint(2)` in 2,773 updates (the ledge climb, the stick game finished on the second spray, the go-to
+objective), and chapter 2 then sets up and plays its scene. **From a checkpoint 2 start** the player has no paint;
+mugging the passers-by near the start paid $0 or $1 eight times and $14 once in 8,900 updates, and the run ended
+there. **Checkpoints 3 to 5** were not driven in this pass.
+
+Fixes, in the order to take them (each one implementer unit):
+
+1. **A spray cut short leaves its spot dead.** Played from checkpoint 1 into 2, triangle at chapter 2's first spot
+   called `HuTag` and Coney logged that the spray was cut short on the next update; no event 14 followed, so
+   `TagFinished` never put the spot's prompt back, and 30 later presses there did nothing. The original's
+   `Tag_UpdatePlayer` (`0x00273c60`) calls `Tag_End` whenever the action is no longer `0x17` or `0x18` and the spray
+   flag `0x2000000` is not set while the tag still exists, and `Tag_End` (`0x0022e848`) always gives the tagger event
+   `0xe` with finished = `+0x3ba` (0 here). Confirmed (code). Fix: Coney's cut-short path delivers event 14 with
+   (tag, 0) as its refusal does. Test: a spray whose intro is cut short runs the script's event-14 handler with 0, and
+   a second press at the spot starts a new spray.
+2. **The game hints** 16, 22 and 24/25 above: Coney queues only hint `0x15`. Add the three triggers with their
+   counters and flags in the game state. Hints 22 and 24/25 serve every level ([HUD](hud.md)).
+3. **Attacking on sight**: the Destroyers of chapters 2-4 do not react to the player until hit ([AI: attacking on
+   sight](ai.md#aggro-on-sight), issue #73).
+4. **The tag's look**: the mist and the wall tag (fixes 6 and 7 of [Crimes](crimes.md#tag-coney-fixes), issue #70).
+5. **The spray sellers** after a hit ([GoalDealer](ai.md#dealer), items 7 and 15): chapter 2's first seller is the
+   one the hints point at.
+6. **Routes at checkpoint 4**, out of the street and down from the roofs ([AI pathing](ai-pathing.md)): the planner
+   fixes merged since (#271) are not re-checked on this mission yet.
+7. **A playthrough test** per checkpoint asserting the order above, once 1-6 land
+   ([Testing](../guides/testing.md#playthrough-tests); issue #135 for the rest of the reference order).
+
+Open questions:
+
+- Why chapter 2's first spray, in the story path, ended one update after `HuTag` when the same press works in
+  chapter 1 (fix 1 makes it recoverable; a `--trace` of that run, clip column, answers it).
+- Whether passers-by near chapter 2's start paying $0 is faithful: bums are categories 9-11, which carry nothing
+  unless an object is rolled ([Starting money](crimes.md#starting-money)); compare with the runtime money of
+  `level87`'s spawned humans.
+- Whether a crew Warrior can be grabbed and mugged: the course grabbed humans standing beside the start more than
+  once, and which human it was is not logged.
+- What the original does with `ch3.BoozerChallenge`, which the script names but never defines.
+
 ### `level34.lua` (mission 4) {#level34}
 
 Story mission 4, loaded from the hub's checkpoint 1: the riot. Vermin is player 1, Snow player 2, Ash the third
