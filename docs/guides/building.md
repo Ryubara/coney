@@ -1036,27 +1036,16 @@ uvx pre-commit run --all-files
 ```
 
 Run that before every commit, or install the hooks once with `uvx pre-commit install` so that `git commit` runs them
-for you. The hooks fix what they can; stage their changes and commit again. The install also adds a `commit-msg` hook
-that refuses a commit whose title breaks the commit title rules (`area: Verb the rest`, at most 72 characters; the
+for you. The hooks fix what they can; stage their changes and commit again. Install them once in each clone; the
+worktrees of a clone share them. No hook checks a commit title: a pull request is squash-merged, so only its title
+reaches `main`, and CI checks that against the commit title rules (`area: Verb the rest`, at most 72 characters; the
 rules are `commits.title` in [.github/conventions.yml](repo:.github/conventions.yml) and
-[CONTRIBUTING.md](repo:CONTRIBUTING.md#commits) lists them); CI checks every commit title of a pull request again,
-because a clone without the hook cannot be trusted. Install it once in each clone; the worktrees of a clone share it.
+[CONTRIBUTING.md](repo:CONTRIBUTING.md#commits) lists them).
 
 ## Documentation
 
-This site is built with MkDocs from `docs/`. In a virtual environment at the repository root:
-
-```sh
-py -m venv .venv
-.venv/Scripts/pip install -r requirements-docs.txt
-.venv/Scripts/python -m mkdocs build --strict
-```
-
-On Linux and macOS use `python3 -m venv .venv` and `.venv/bin/` in place of `.venv/Scripts/`.
-`mkdocs serve --dev-addr 127.0.0.1:8000` previews the site and reloads it as you edit. `--strict` turns broken links
-and pages missing from the navigation into errors, as CI does. How to write the pages is in
-[Writing these docs](writing-docs.md). The Changelog page is generated from `git log` at build time, so it needs the
-full history (no shallow clone) and is never committed.
+This site is built with MkDocs from `docs/`. The setup, the build and preview commands (`.venv/Scripts/python -m mkdocs
+build --strict` is the one CI runs) and how to write the pages are in [Writing these docs](writing-docs.md).
 
 ## What CI runs
 
@@ -1071,7 +1060,7 @@ runs, so a job recompiles only what changed; each job prints its hit rate at the
 | `build` | `ci` preset build and tests on Windows (MSVC), Linux (GCC 13 and Clang 19) and macOS (Apple Clang); `asan` preset on Linux Clang 19 and macOS; clang-tidy (a pull request: changed files only); pre-commit over every file; the `build-ok` gate |
 | `python` | ruff, mypy, pytest and `coney-tools repo check` on Windows, Linux and macOS; the `python-ok` gate |
 | `docs` | `mkdocs build --strict`, markdownlint over every Markdown file, actionlint over the workflows |
-| `pr` | the pull request title and every commit title of it against the commit title rules, that code changes come with docs changes, and the description against the template (pull requests only; editing the title or description reruns it) |
+| `pr` | the pull request title against the commit title rules, that code changes come with docs changes, and the description against the template (pull requests only; editing the title or description reruns it) |
 
 On Windows, do not run WSL builds or clang-tidy locally to stand in for the Linux and macOS jobs: GitHub CI is that
 gate, and a failure there is fixed forward on the branch.
@@ -1119,8 +1108,7 @@ GitHub ruleset and settings, and this block is generated from it (`coney-tools r
 <!-- conventions:begin required-checks -->
 - Merge method: squash only. The commit on `main` has the pull request's title; its message is the pull request's
   description.
-- Required checks: `title`, `commits`, `docs`, `body`, `build-ok`, `python-ok`, `format`, `mkdocs`, `markdownlint`,
-  `actionlint`.
+- Required checks: `title`, `docs`, `body`, `build-ok`, `python-ok`, `format`, `mkdocs`, `markdownlint`, `actionlint`.
 - Auto-merge is on, the branch is deleted after the merge, history is linear and a branch need not be up to date with
   `main`.
 - Who merges: maintainer and coordinator, never the agent that wrote the work.

@@ -17,11 +17,12 @@ contribute. If you only read one other file first, read [LEGAL.md](LEGAL.md).
 
 Clone the repository. To build and test the engine, follow [docs/guides/building.md](docs/guides/building.md).
 
-CI checks every pull request's title against the rules under [Commits](#commits); to check a commit title yourself,
+CI checks every pull request's title against the rules under [Commits](#commits), because the squash merge makes it the
+title of the one commit on `main`; the titles of the commits on the branch are not checked. To check a title yourself,
 with [uv](https://docs.astral.sh/uv/) installed:
 
 ```sh
-git log -1 --format=%s | uv run --project python coney-tools repo check-title -
+echo "docs: Add a page" | uv run --project python coney-tools repo check-title -
 ```
 
 CI also refuses a pull request that changes `src/` or `python/src/` without changing `docs/` or `research/`; put a
@@ -56,16 +57,9 @@ File an issue for what you leave undone ([Issues](docs/guides/issues.md#leftover
 uv run --project python coney-tools repo check-body --body description.md
 ```
 
-To build the documentation:
-
-```sh
-py -m venv .venv
-.venv/Scripts/pip install -r requirements-docs.txt
-.venv/Scripts/python -m mkdocs build --strict
-```
-
-On Linux and macOS use `python3 -m venv .venv` and `.venv/bin/` in place of `.venv/Scripts/`. The build must pass
-with `--strict`, which rejects broken links and pages missing from the navigation.
+The documentation must build with `.venv/Scripts/python -m mkdocs build --strict`, which rejects broken links and
+pages missing from the navigation. The setup, the Linux and macOS form and how to write the pages are in
+[Writing these docs](docs/guides/writing-docs.md).
 
 Game files, emulators and tool installs live outside the repository, as siblings of the checkout. The layout is
 described in [docs/guides/workspace.md](docs/guides/workspace.md).
