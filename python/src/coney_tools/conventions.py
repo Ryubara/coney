@@ -14,6 +14,7 @@ from __future__ import annotations
 import re
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any
@@ -195,14 +196,16 @@ class Closing:
 
 
 @dataclass(frozen=True)
-class Remaining:
-    """The list of what a pull request leaves undone: each unchecked item cites the issue that holds it."""
+class Checklist:
+    """The Checklist section: a pull request merges only when every task in it is finished, so no item is unticked."""
 
     section: str
-    #: The line that opens the list (`Remaining:`).
-    label: str
-    #: What an unchecked item must contain (`#N`: an issue or pull request number).
-    unchecked_cites: str
+    #: What an unchecked `- [ ]` item gets (`refused`: the description fails the check).
+    unchecked: str
+    #: The day the rule began; a pull request merged before it kept the older `Remaining` list.
+    since: date
+    #: The line that opened that older list (`Remaining:`), whose unchecked items had to cite an issue as `#N`.
+    legacy_label: str
 
 
 @dataclass(frozen=True)
@@ -271,7 +274,7 @@ class PullRequests:
     local_paths: bool
     docs_none: DocsNone
     closing: Closing
-    remaining: Remaining
+    checklist: Checklist
     screenshots: ScreenshotsRule
     ai_use: AiUse
     stacked: Stacked
@@ -543,6 +546,14 @@ def _flag(value: object, where: str) -> bool:
     return value
 
 
+def _day(value: object, where: str) -> date:
+    """A calendar day written as quoted `YYYY-MM-DD` text."""
+    try:
+        return date.fromisoformat(_text(value, where))
+    except ValueError:
+        raise _fail(where, "expected a day written as YYYY-MM-DD") from None
+
+
 def _count(value: object, where: str, minimum: int = 1) -> int:
     """A whole number of at least `minimum` (a YAML boolean is not one)."""
     if not isinstance(value, int) or isinstance(value, bool) or value < minimum:
@@ -716,7 +727,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
         "local_paths",
         "docs_none",
         "closing",
-        "remaining",
+        "checklist",
         "screenshots",
         "ai_use",
         "stacked",
@@ -731,7 +742,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
 
     docs_none, docs_none_where = sub("docs_none", "line", "when_changed", "unless_changed")
     closing, closing_where = sub("closing", "keyword", "form", "one_per_line", "section")
-    remaining, remaining_where = sub("remaining", "section", "label", "unchecked_cites")
+    checklist, checklist_where = sub("checklist", "section", "unchecked", "since", "legacy_label")
     screenshots, screenshots_where = sub("screenshots", "section", "none", "reason", "uploaded_only")
     ai_use, ai_where = sub("ai_use", "section", "written_by", "model")
     stacked, stacked_where = sub(
@@ -746,7 +757,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
     _names_in((no_ai,), choices, _at(written_where, "no_ai"), "one of the choices")
     section_fields = (
         (_at(closing_where, "section"), closing["section"]),
-        (_at(remaining_where, "section"), remaining["section"]),
+        (_at(checklist_where, "section"), checklist["section"]),
         (_at(screenshots_where, "section"), screenshots["section"]),
         (_at(ai_where, "section"), ai_use["section"]),
     )
@@ -769,10 +780,11 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
             one_per_line=_flag(closing["one_per_line"], _at(closing_where, "one_per_line")),
             section=closing["section"],
         ),
-        remaining=Remaining(
-            section=remaining["section"],
-            label=_text(remaining["label"], _at(remaining_where, "label")),
-            unchecked_cites=_choice(remaining["unchecked_cites"], _at(remaining_where, "unchecked_cites"), ("#N",)),
+        checklist=Checklist(
+            section=checklist["section"],
+            unchecked=_choice(checklist["unchecked"], _at(checklist_where, "unchecked"), ("refused",)),
+            since=_day(checklist["since"], _at(checklist_where, "since")),
+            legacy_label=_text(checklist["legacy_label"], _at(checklist_where, "legacy_label")),
         ),
         screenshots=ScreenshotsRule(
             section=screenshots["section"],

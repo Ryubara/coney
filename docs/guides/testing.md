@@ -138,7 +138,8 @@ description that leaves either empty (`coney-tools repo check-body`). All of wha
 - Docs: a change under `src/`, `python/src/` needs a change under `docs/`, `research/` or the line `Docs: none` in the
   description.
 - Closing: a line `Fixes #N` in Summary for each issue the pull request finishes, one per line; merging closes it.
-- Checklist: each unchecked item under `Remaining:` cites an issue or pull request as `#N`.
+- Checklist: every item is ticked (`- [x]`): a pull request lists only the work it finishes, and a task it does not
+  finish is left out and lives in its own issue.
 - Screenshots: an uploaded image (a path on your machine is refused) or a line `Screenshots: none (<reason>)` that gives
   a reason.
 - AI use: after `Commits written by:` one of `a person`, `an AI`, `an AI, edited by a person`, `a person, with AI help`;

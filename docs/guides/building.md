@@ -1018,7 +1018,7 @@ title against the commit rules in [CONTRIBUTING.md](repo:CONTRIBUTING.md#commits
 `.github/conventions.yml`: [Repository conventions](repo-conventions.md)), `coney-tools repo check-docs`
 that a change to the code also changes the docs ([Research workflow](research-workflow.md#writing-up-a-finding)), and
 `coney-tools repo check-body` that a pull request description follows the template, including its Testing and
-Screenshots sections and an issue or pull request number on every unchecked Remaining item
+Screenshots sections and no unticked item in the Checklist
 ([CONTRIBUTING.md](repo:CONTRIBUTING.md#setting-up),
 [What a pull request shows](testing.md#pr-evidence)).
 `coney-tools wad` reads the archive on your own disc (`info`, `list`, `extract`, `names`), `coney-tools pcsx2` and
