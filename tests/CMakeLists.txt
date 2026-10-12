@@ -99,6 +99,7 @@ add_executable(coney_tests
     platform/disc_hub_doors_test.cpp
     platform/disc_hub_test.cpp
     platform/disc_level80_test.cpp
+    platform/disc_flash_test.cpp
     platform/disc_revive_test.cpp
     platform/disc_level5_boss_camera_test.cpp
     platform/disc_level5_fights_test.cpp

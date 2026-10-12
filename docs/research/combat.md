@@ -4187,10 +4187,19 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
 - The combat walk's clip by eight even 45° sectors centred on the clips' directions; the walk starts at its full
   speed (the 5 slower first updates backward are not known).
 - **The flash** (`PlayLevelMode::stepFlash()`, `useFlash()`): d-pad right with a flash carried and health below the
-  maximum plays 665 (holding `0x2000`) when nothing holds a move, and the clip's action event `0x41` 19 updates in
-  (`Human::actionEvent()`) uses the flash: one spent, interface sound 23, the health filled, the health rings asked
-  for; a clip cut first spends nothing. In a grab the flash is used at once and the grab stays. Coney always heals in
-  full (it has no difficulty setting) and does not build the full-health rage use or the screen effect reset.
+  maximum plays 665 when nothing holds a move, and the clip's action event `0x41` 19 updates in
+  (`Human::actionEvent()`) uses the flash: one spent, interface sound 23 and the clip's animation sound 70, the health
+  filled, the health rings asked for; a clip cut first spends nothing. In a grab the flash is used at once and the
+  grab stays. Coney always heals in full (it has no difficulty setting) and does not build the full-health rage use or
+  the screen effect reset. The clip holds `0x2000` **and sets it as it starts** (**inferred**: the page says the task
+  "holds" it and only a set bit keeps the clip alive). Held without being set, the bit never reaches the record, the
+  stick step does not count the human busy, and a player in the fight stance (after walking up to the dealer, his lock
+  on) has the stance walk's idle put over 665 on the next update: the clip showed for one update, the event never
+  came, and nothing was spent or healed (issue 234, found on `level99` checkpoint 3 after the purchase). A second
+  d-pad right while 665 plays does nothing (the human is busy, and 665 is already his anim). Tests:
+  `repo:tests/platform/disc_flash_test.cpp` (`level80` standing, walking and running; `level99` from the dealer's
+  purchase to the use in the stance: 665 from the press, the spend, cue 23 and animation sound 70 on update 19 of
+  it, and no play left silent by the engine).
 
 **Not yet**: an attacker for the player (no human attacks him yet, so the victim side runs only in the tests; the
 AI that would is on [AI](ai.md)); the
@@ -4250,6 +4259,9 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
 - **Rage extensions at runtime**: 63 → 65 in a grab and 231 → 233 in the mount, which `level99`'s rage lesson
   waits for (inferred from `Player_UpdatePowerMove`); L1 + R1 did not start rage in a slot 6 copy with the meter
   written full, so what else the start needs is open.
+- **Whether the flash clip sets `0x2000`** (record `+0x08`) as it starts: the task holds it ([Rage](#rage)), and Coney
+  sets it, which keeps the fight stance from cutting the clip; the type-5 task's start flags at `0x0025ade8` would
+  tell, and a runtime read of `+0x08` on the update after d-pad right in the stance.
 - **The flash in a grab** at runtime: the masks say it is used at once and the grab stays ([Rage](#rage)); Coney
   breaks the pair.
 - **The clips' `+0x44` flags** (paired `0x1`, tackle `0x20`, grab `0x40`): which clips carry the tackle flag

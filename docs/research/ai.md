@@ -3566,6 +3566,11 @@ flash and weapons sellers on difficulty 2 and up. Chapter 2's first spray seller
   goal (type `0x81`: the wait, the back-off to 2-4 m, the switchblade or the exit flag), `Brain_Fight` for 15000 ms
   with threat response 2, and `GoalDealer`'s state 5 run to the activity-8 flag once the fight is over.
 - Keep the dealer handler dropping events `0xb` and `0x14`.
+- **The dealer's lines (fixed 2026-10-11, issue 234):** the play mode asked for them (`cash`, `nocash`, a
+  boss's taunts) with the speaker's handle only, and the game sound said nothing without a voice set, so every one was
+  silent. `GameSound::sayCommand` now takes the voice set of the type the level script made the speaker as
+  (`HuCreate`, `CfgChar`) when the caller gives none. Checked on `level99`: a purchase says `cash` once
+  (`repo:tests/platform/disc_flash_test.cpp`).
 
 **Suggested tests** (synthetic, `coney_tests "[dealer]"`):
 
