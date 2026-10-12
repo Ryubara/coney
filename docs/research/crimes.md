@@ -573,6 +573,68 @@ point)`: the turn to the tag object's position is spread over the first half of 
 pause begins (a slip or a new charge; `TagGame_IsPaused` `0x002745e8` turns on during the update),
 `Tag_RestartSprayClips` (`0x00278210`) plays 337 and then the loop 335 again, with the same hooks.
 
+**The end** (issue #407). Confirmed (code) at the addresses unless marked. `Tag_EndSprayClips` (`0x002783b0`) plays
+336 `ANIM_TAGGING_END`, whose event `0x31` at frame 7 removes the can that 334's event `0x30` made at frame 10
+([props of a clip](combat.md#power-move-props), human `+0x348`). Its callers:
+
+- `Tag_UpdatePlayer` (`0x00273c60`, a player's spray, after the stick game's update), at `0x00273f10`: a **finished**
+  tag (`Tag_IsComplete`), **any other command** (`PlayerCmd_IsOtherInput`: the player lets go), or **no cans** left;
+  after it the action is set to 0. At `0x00273dc0`: the action became **`0x18`** while tagging.
+- `MiniGame_Update` (`0x00255fd8`, a human that is not a pad player, `+0x1b0` = −1, so an **AI tagger**): action
+  `0x18` while tagging (`0x00256004`), or any other command while tagging (`0x00256034`, then action 0). The AI's
+  `Tag` action presses command 10 each update ([AI code](ai-code.md#actions)), so the end comes from `0x18`.
+- **Who sets `0x18`**: the human's message `0x13` (case `0x00245978` of `Human_HandleMessage`, jump table
+  `0x0055c980` indexed by message − 1): while tagging, action `0x18`; a human that is not a pad player
+  (player record `+0x1b` = 0) also gets `+0x3ba` = 1, a finished tag. The [tag spot](#tag-spots) sends the tagger
+  `0x13` when its fade reaches 1 or 0 or when it is hidden. So an AI tag ends with 336 when the wall is painted, and
+  a player's ends with 336 if his spot is hidden. Message `0x17` with state 4 while tagging also sets `0x18`
+  (`0x00245a94`; who sends it is not traced).
+- `Tag_OnIntroEnd` (`0x00277f10`) calls it only when the tag object no longer resolves, and then it **does nothing**:
+  its first step returns when `+0x36c` does not resolve (`0x002783e8`). No 336 and no `Tag_End` there; what then
+  ends that spray is not traced.
+
+What it does, in order:
+
+1. Takes three tasks. Makes a **fade** (type 9) of **0.05 s** (`0x3d4ccccd`), no flags, no owner.
+2. **Cuts off** the current top task (vtable `+0x84`; the bottom one when the top is a fade): the loop 335, or 337.
+   A clip task clears its held flags as it is cut off ([Task fields](formats/animation.md#animation-tasks)).
+3. Push sphere call with 0, as `Tag_StartSprayClips` makes (`Human_SetPushSphere`, `0x0021c058`).
+4. Picks the clips by `Human_IsInFightStance` (`0x00228340`, state word `0x00` any of `0x3`):
+    - **Not in the stance**: anim state (record `+0x18`) = 0; the idle **loop** (type 1) of record `+0x28` (anim
+      slot 0, the idle), no callback; then 336 as a type 3 task with blend time **0** into that loop, holding
+      **`0x800000`**, owner the human, end hook `Tag_OnEndClipEnd` (`0x002783a8`, an empty function).
+    - **In the stance**: held flag **`0x80000`** set now; the loop of record `+0x54` (anim slot 11, the fight idle,
+      358 for Rembrandt); anim state = `0xb`; a type 3 task of the id **record `+0x54` + 1** (359
+      `ANIM_FIGHT_TRANSITION_FROM_NORMAL` when the fight idle is 358) with blend 0 into the fight idle, holding
+      `0x80000`, no hook; then 336 with blend 0 into that clip, holding `0x800000`, hook `0x002783a8`. So 336, then
+      the neutral-to-fight transition, then the fight idle.
+5. Inserts 336 at the bottom of the task stack and pushes the fade on top: the usual change of animation
+   ([Task stack](formats/animation.md#task-stack)), a 0.05 s blend from the spray pose into 336.
+6. Sets held flag `0x800000` (cleared by 336's task when 336 ends or is cut off).
+7. Calls **`Tag_End` at once** (`0x002785ec`), in the same update, not when 336 ends: action 0, state `0x2000000`
+   cleared, the stick game freed, the bonus or the extra charge, the flag freed, the **tagger's event 14** (the tag,
+   finished `+0x3ba`), `+0x36c` emptied, message `0x13` to the tag object, the voice stopped
+   ([The end](#tagging)). So event 14 comes on 336's first update, about 7 frames before the can goes.
+
+It sets no turn and no velocity, and it does not clear `0x400` (that flag is held by 334's task and goes when 334
+ends). 336 is not muted (no task flag `0x10`), so its events fire. While `0x800000` is held, `MiniGame_Update`
+skips the tag (any held flag) and `Human_ApplyPendingDamage` gives a hit no reaction (`0x1c16a40` includes
+`0x800000`, `0x0026668c`; the props are released before that test).
+
+**Ends without 336.** `Tag_End` alone, with no clip: the update with the action no longer `0x17` / `0x18`, not
+tagging, while the tag still exists (`Tag_UpdatePlayer` `0x00273f6c`, `MiniGame_Update` `0x00255fa8`: the cut-short
+intro of issue #330); a **hit** (`Human_ApplyPendingDamage`, `0x002667ac`, while tagging or while the tag exists),
+a death (`Human_PlayLethalReaction`, `0x00268068`), a grab or mount (`Grab_Link` `0x0022c8dc`, `Pair_LinkMount`
+`0x0022c178`, `Grab_BreakOnHit` `0x0022ba5c`), a broken pair (`Human_BreakPair` `0x00258af8`) and a mode reset
+(`Human_ResetForMode` `0x00232740`). `Tag_End` itself never touches the can or the clips. On those paths the can goes
+another way: `Human_ReleaseCarriedProps` (`0x0024ce40`) runs, unless the human is cuffed, from every damage dealt
+(`Human_DealDamage` `0x0021d81c`), every attack warning (`Human_WarnOfAttack` `0x0021d658`), the pending damage of a
+non-lethal hit (`0x002664a8`, before the reaction), a death (`0x00267ee4`) and a mode reset such as a scene start
+(`0x00232954`); and for an AI human each update that asks for a gait above 0 or is in a scene state
+(`Human_UpdateControl`, `0x002439f4`, `0x00243a0c`). So a hit removes the can on the hit's update. Whether a grab
+always passes a warning or damage first, and so drops the can, is not traced. Runtime: not run (the prop at `+0x348`
+around 336's frame 7 has not been watched in PCSX2).
+
 **The paint colour** is the tagger's human `+0x640`, four bytes. `Human_Init` (`0x00218770`) stores bytes
 `50 07 05 20` (in memory order) for everyone; a human whose class has brain kind 4 (`+0x11a`, after the `+0x19d`
 remap) and `+0x3b8` = 1 gets `ff ef ef ef` instead (`0x002187b0`). `HuTagColor(h, {t1, t2, t3, t4})` writes
@@ -636,7 +698,7 @@ HUD, a dark charge bar, the Warrior not turned to the wall and still holding a p
 the W is complete. Causes and fixes, for the implementer.
 
 **Done** (2026-10-11): 1-5, and 8 but the turn with no intro clip, which Coney makes at once (**Coney's reading**: a
-missing clip plays for 0 s). **Not yet**: 6 (the mist) and 7 (the wall tag).
+missing clip plays for 0 s). **Not yet**: 6 (the mist), 7 (the wall tag) and 9 (the end clip).
 
 1. **Ends early** (`TagGame::update`, `repo:src/warriors/tag_game.cpp`): Coney finishes at
    `progress + 4 >= size − 1` (p ≥ count − 5), two points early, and its tracking picks the **nearest** point in
@@ -664,6 +726,10 @@ missing clip plays for 0 s). **Not yet**: 6 (the mist) and 7 (the wall tag).
    none); when 334 is missing Coney skips the clips and so the turn too (`GameplayMode::startTag`), where the
    original still turns. A held pipe staying in the hand is **faithful**; drop only anim sets 4 and 6. Restart the
    clips with 337 when a pause begins.
+9. **The end clip** (issue #407): Coney never plays 336, so the can 334 made stays in the hand. End every spray
+   that `Tag_EndSprayClips` ends as [The end](#tag-look) says: 336 after a 0.05 s fade, then the idle (or the
+   transition and the fight idle), `Tag_End` on the same update; the can goes at 336's event `0x31`. A hit, death,
+   grab or reset ends the spray without 336, and the hit or reset releases the can itself.
 
 **Tests** (synthetic, no game data): a straight 20-point path finishes when p reaches 17 and not at 15 or 16; a
 cursor within 6 cells of point p and of p + 1 leaves p unchanged; a cursor near p − 2 keeps p; five off-track moving
@@ -921,7 +987,8 @@ The start and end of each mode of the [mini-game record](#mini-game-record), the
 | `0x00277ed8` | `Tag_OnIntroEnd` | End hook of 334 ANIM_TAGGING_INTRO: starts the spray when the tag still exists, else ends the spray clips. | confirmed (code) |
 | `0x00277f28` | `Tag_StartSprayEffect` | Loop hook of 335: while tagging, a `sub_spr` mist burst at attach point 0x13 in the tagger's colour and the spray voice ([What the player sees](#tag-look)). | confirmed (code) |
 | `0x00278210` | `Tag_RestartSprayClips` | Requeues the spray clips (the spray effect hook) when the tag still exists, dropping a kind 4 or 6 weapon. | confirmed (code) |
-| `0x002783b0` | `Tag_EndSprayClips` | The spray's end clip and the idle (the stance idle in a fight stance), then Tag_End. | confirmed (code) |
+| `0x002783a8` | `Tag_OnEndClipEnd` | End hook of 336 ANIM_TAGGING_END: an empty function. | confirmed (code) |
+| `0x002783b0` | `Tag_EndSprayClips` | Unless the tag is gone: a 0.05 s fade into 336 (held `0x800000`), then the idle loop (anim state 0) or, in the fight stance, the fight idle + 1 transition (held `0x80000`) and the fight idle (state `0xb`); then `Tag_End` at once ([The end](#tag-look)). | confirmed (code) |
 
 ### Game-state functions {#warriors-functions}
 
