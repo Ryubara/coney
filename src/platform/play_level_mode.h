@@ -318,6 +318,12 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] const std::vector<world_objects::CarHitEffect>& carHitEffects() const { return m_carHitEffects; }
     /// How many world objects the last frame drew (0 without pixels).
     [[nodiscard]] std::size_t objectsDrawn() const { return m_placed ? m_placed->drawn() : 0; }
+    /// How many objects made as `typeName` the level's spawn records still hold (not removed): a disc test's way to ask
+    /// whether the boards a broken fence threw are still standing, whatever the renderer.
+    [[nodiscard]] std::size_t standingObjectsOf(std::string_view typeName) const;
+    /// How many doors and barriers within `radius` of `at` would be drawn now (the doors' draw list, hidden and removed
+    /// ones left out): a disc test's way to ask whether a broken fence is still on screen.
+    [[nodiscard]] std::size_t doorsDrawnNear(anim::Vec3 at, float radius) const;
 
   private:
     // A character's resources and its texture dictionaries, ready to draw.

@@ -1322,6 +1322,13 @@ Coney fixes (item 44):
 4. If Coney's gap is longer than 44 updates, the extra time is Coney's own: check where the barrier's 60-tick
    countdown is restarted (it must keep its phase from spawn, never restart at the hit) and that `ScheduleFunc`'s
    500 ms is counted in game time.
+   Coney, measured (issue #233, `repo:tests/platform/disc_level99_fence_dealer_test.cpp`, four charges at 98 % stick
+   with L2, cross 3 m out, the start moved to meet the fence's phase at both ends): the hit-to-cut gap was **already
+   inside the original's window**, 16 to 43 updates (removal 0-29 after the hit, `P3.DealerPoizo` 14 after it, the
+   cut in that update), no fade and no screen effect, the charge stopped 1-2 updates after the hit and the fence
+   hidden in the hit's own update. What stayed on screen was the **three boards** the break throws: Coney left them
+   standing in the gap until the cut, while the original removes them in the hit's update ([Barriers](objects.md#barriers));
+   fix 2's last sentence holds for them too, and they now go on the tick after the hit.
 5. Test (level99 checkpoint 3.5, the wooden fence): with the hit at update H, the fence is removed and
    `P3.FenceBroken` runs at an update R with H ≤ R ≤ H + 30; the dealer camera is current and player 1 at
    `fHitDealer` at R + 14 or R + 15, so the cut lands within **H + 14 … H + 45**; between H and the cut no
