@@ -1,0 +1,5 @@
+# Update 20: triangle lifts the register; stand until 110; walk north (stick 60 % down: the camera looks south) for
+# 80 updates; stand again.
+20 tap triangle
+110 stick left 0 -60
+190 stick left 0 0
