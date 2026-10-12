@@ -618,3 +618,18 @@ def test_configure_only_configures_and_builds_nothing(tmp_path: Path) -> None:
     assert result.ok and [run.toolchain.kind(c) for c in run.toolchain.commands] == ["configure"]
     assert result.summary[0].startswith("configure: ok") and result.summary[-1] == "result: ok"
     assert run.toolchain.during["configure"] == (1, 0)  # a configure is a main-slot job
+
+
+def test_a_program_is_found_on_the_childs_path_not_this_processs(tmp_path: Path) -> None:
+    # Windows resolves a bare program name on the parent's PATH, so the Visual Studio environment's cmake must be
+    # looked up by hand before it is started.
+    tools = tmp_path / "vs"
+    tools.mkdir()
+    program = tools / ("fake-cmake.exe" if os.name == "nt" else "fake-cmake")
+    program.write_bytes(b"")
+    program.chmod(0o755)
+    toolchain = build_run.ProcessToolchain(tmp_path, {"PATH": str(tools), "PATHEXT": ".EXE"})
+    found, *rest = toolchain._resolve(["fake-cmake", "--build"])
+    assert Path(found) == program  # Windows paths compare without case; which() may add PATHEXT's spelling
+    assert rest == ["--build"]
+    assert toolchain._resolve(["not-there", "-x"]) == ["not-there", "-x"]

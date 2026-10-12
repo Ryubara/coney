@@ -284,6 +284,12 @@ class ProcessToolchain:
         self.checkout = checkout
         self.env = dict(env)
 
+    def _resolve(self, command: list[str]) -> list[str]:
+        """The command with its program found on the environment's PATH: Windows looks a bare name up on this
+        process's own PATH, not the child's, so cmake from the Visual Studio environment would not be found."""
+        found = shutil.which(command[0], path=env_get(self.env, "PATH") or None)
+        return [found, *command[1:]] if found else command
+
     def _start(self, command: list[str], cwd: Path) -> subprocess.Popen[str]:
         """Start a command with merged, line-buffered text output, at below-normal priority."""
         if sys.platform == "win32":
@@ -291,7 +297,7 @@ class ProcessToolchain:
         else:
             lower = {"preexec_fn": lambda: os.nice(5)}
         return subprocess.Popen(  # type: ignore[call-overload,no-any-return]
-            command,
+            self._resolve(command),
             cwd=cwd,
             env=self.env,
             stdin=subprocess.DEVNULL,
@@ -333,7 +339,7 @@ class ProcessToolchain:
         """Run a short command, with a time limit; a timeout or a missing program is a failure."""
         try:
             done = subprocess.run(
-                command,
+                self._resolve(command),
                 cwd=cwd or self.checkout,
                 env=self.env,
                 capture_output=True,
