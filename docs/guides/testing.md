@@ -222,6 +222,11 @@ designated initializer that skips a field (`-Wmissing-designated-field-initializ
 replace the list below, which is the whole gate, and it leaves to CI the warnings only GCC emits, macOS, the
 sanitizers and the full clang-tidy pass; a change to the build setup is checked on its changed files only.
 
+The command runs on Windows, Linux and macOS. Nobody checks it by hand on all three, so CI does: the `python` workflow
+runs its `repo` and `pre-commit` steps on every operating system it tests (`--base HEAD^1`, the branch a pull request's
+merge commit joins), and a step that works on one system and not another fails there. A person on Linux or macOS who
+finds a difference fixes it forward.
+
 The whole gate:
 
 - **Engine changes:** the `ci` preset build and its tests with the disc configured, in one command:

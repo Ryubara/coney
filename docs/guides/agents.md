@@ -131,6 +131,9 @@ instead of repeating it:
   ([Cleanup](workspace.md#cleanup));
 - builds: "build and test only with `coney-tools build --agent <id> ...`, in the background" ([Builds and
   tests](#builds)); the brief does not paste the flags;
+- the local gate command, named in full, as part of "done": `uv run --project python coney-tools check changed`
+  ([The local gate](testing.md#local-gate)), run in the agent's worktree before it reports a unit finished. An agent
+  that is not told runs only the checks it knows of, and CI finds the rest;
 - only the facts the agent cannot find in the repository (a log path, a question to answer, the state file).
 
 A brief may be just "issue #N": the issue holds the steps, the screenshots and the acceptance test, and the agent

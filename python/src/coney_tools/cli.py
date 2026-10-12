@@ -35,6 +35,7 @@ from coney_tools.audit_cli import add_audit_parser, run_audit
 from coney_tools.config import PATH_KEYS, ConfigError, find_repo_root, load_config
 from coney_tools.conventions import Conventions, load_conventions
 from coney_tools.conventions_render import run_render
+from coney_tools.hygiene_cli import add_hygiene_parser, run_hygiene
 from coney_tools.pr_health import add_pr_health_parser, run_pr_health
 from coney_tools.repo_checks import check_body, check_docs, check_pointer_files, check_title, first_line
 from coney_tools.repo_labels import apply_labels, gh_script
@@ -226,6 +227,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     add_audit_parser(repo_commands)
     add_pr_health_parser(repo_commands)
+    add_hygiene_parser(repo_commands)
     _add_check_commands(groups)
     labels_parser = repo_commands.add_parser(
         "labels",
@@ -531,6 +533,13 @@ def _add_pcsx2_commands(groups: Any) -> None:
     record.add_argument("--attach", action="store_true", help="record a PCSX2 already running a patched state")
     record.add_argument("--keep-open", action="store_true", help="leave PCSX2 running afterwards")
     record.add_argument("--agent", help="your id; runs under your claim (made, and released at the end, if none)")
+    record.add_argument(
+        "--let",
+        action="append",
+        default=[],
+        metavar="NAME=EXPR",
+        help="give or replace a name of the scenario's let (a random stream's offset per match); repeatable",
+    )
     _add_claim_commands(commands)
     _add_pcsx2_flags(record)
 
@@ -682,7 +691,9 @@ def _run_pcsx2(args: argparse.Namespace) -> int:
     if args.command == "screenshot":
         return pcsx2_claims_cli.run_screenshot(args.copy, args.out)
     flags = (args.pcsx2_dir, args.iso, args.scratch)
-    return pcsx2_cli.run_record(args.scenario, args.out, args.state, args.attach, args.keep_open, flags, args.agent)
+    return pcsx2_cli.run_record(
+        args.scenario, args.out, args.state, args.attach, args.keep_open, flags, args.agent, args.let
+    )
 
 
 def _run(args: argparse.Namespace) -> int:
@@ -769,6 +780,8 @@ def _run(args: argparse.Namespace) -> int:
         return run_audit(args)
     if args.command == "pr-health":
         return run_pr_health(args)
+    if args.command == "hygiene":
+        return run_hygiene(args)
     if args.command == "render":
         return run_render(find_repo_root(Path.cwd()), args.check)
     if args.command == "labels":

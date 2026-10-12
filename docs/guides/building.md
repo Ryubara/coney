@@ -281,7 +281,7 @@ runs, so a job recompiles only what changed; each job prints its hit rate at the
 | Workflow | Jobs |
 | --- | --- |
 | `build` | `ci` preset build and tests on Windows (MSVC), Linux (GCC 13 and Clang 19) and macOS (Apple Clang); `asan` preset on Linux Clang 19 and macOS; clang-tidy (a pull request: changed files only); pre-commit over every file; the `build-ok` gate |
-| `python` | ruff, mypy, pytest and `coney-tools repo check` on Windows, Linux and macOS; the `python-ok` gate |
+| `python` | ruff, mypy, pytest, `coney-tools repo check` and the local gate (`check changed`: its `repo` and `pre-commit` steps) on Windows, Linux and macOS; the `python-ok` gate |
 | `docs` | `mkdocs build --strict`, markdownlint over every Markdown file, actionlint over the workflows |
 | `pr` | the pull request title against the commit title rules, that code changes come with docs changes, and the description against the template (pull requests only; editing the title or description reruns it) |
 
