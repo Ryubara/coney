@@ -42,8 +42,8 @@ Ghidra pseudocode and disassembly are for reading, by analyst agents and by huma
 original and write what they learn into `docs/research/`.
 
 Implementers write engine code from `docs/research/` only. The result has the same observable behaviour but our own
-structure, names and control flow. Rekit, the project's reverse-engineering agent kit (a sibling project), enforces
-this where platforms allow: the implementer agent has no Ghidra or emulator tools.
+structure, names and control flow. The agent definitions in `.claude/agents` enforce this where platforms allow: the
+implementer agent has no Ghidra or emulator tools.
 
 Facts may be reproduced: data layouts, constants, file formats and interoperability algorithms.
 

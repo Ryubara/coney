@@ -42,10 +42,10 @@ have come from the page, so its independence can be shown; code written by someo
 carefully they worked. You may analyse one function and implement a different one, as long as you have never read
 the original code of the one you implement.
 
-For agents, Rekit enforces the split where the platform allows: the analyst agent and the implementer agent are
-separate, and the implementer agent has no Ghidra or emulator tools at all. People keep it by discipline: before
-implementing a function, check that you haven't read the original code of the functions involved, and hand
-the work on if you have.
+For agents, the agent definitions in `.claude/agents` enforce the split where the platform allows: the analyst agent
+and the implementer agent are separate, and the implementer agent has no Ghidra or emulator tools at all. People keep
+it by discipline: before implementing a function, check that you haven't read the original code of the functions
+involved, and hand the work on if you have.
 
 What crosses from analyst to implementer is **facts and behaviour**, never code: data layouts, constants, file
 formats, algorithms needed to read the game's data (the CRC-32 name hash, for example), and prose descriptions of
@@ -110,44 +110,10 @@ A page also says what it was checked against: the executable (`SLUS_212.15`, see
 
 ## The research database {#the-research-database}
 
-Research pages are for reading; the research database is the same knowledge in a form tools can check. It is a set
-of YAML files in `research/` at the repository root, in the schema Rekit defines:
-
-- `research/symbols/<area>.yaml`: one entry per function or global, by address;
-- `research/types/<area>.yaml`: one entry per struct, with its fields at their offsets.
-
-```yaml
-# research/symbols/<area>.yaml
-- addr: 0x001490b8
-  name: DVDWadIndex::Find
-  tu: Device/ps2/fileio/DVDWadIndexPS2.cpp     # original translation unit, when known
-  evidence: confirmed-code                     # confirmed-code | confirmed-runtime | inferred | speculative
-  reimpl: src/fileio/wad_index.cpp             # filled in by `rekit research check --fix-reimpl`
-  notes: CRC-32 of the lowercased name, then a linear scan.
-```
-
-```yaml
-# research/types/<area>.yaml
-- name: WadDirEntry
-  size: 12
-  evidence: confirmed-code
-  fields:
-    - { offset: 0x0, type: u32, name: wadOffset }
-    - { offset: 0x4, type: u32, name: size }
-    - { offset: 0x8, type: u32, name: nameHash, notes: "CRC-32 of the lowercased path" }
-```
-
-The database keeps three things in step:
-
-- **the code:** `rekit research check` matches every `@orig` tag in the source against the symbols, in both
-  directions (see [Comments and @orig](conventions.md#comments-and-orig));
-- **the docs:** `rekit research tables` generates the symbol and type tables in `docs/research/tables/`, which are
-  never edited by hand;
-- **Ghidra:** `rekit ghidra apply` pushes names, types and comments into an analyst's local Ghidra project, and
-  `rekit ghidra export` brings new names back, never overwriting an entry that has a higher evidence level.
-
-The database **arrives with Rekit**. Until then, findings are recorded on the research pages only, and the YAML
-is seeded from them when it arrives. One file is already there, because it is Coney's own: the script bindings.
+Research pages are for reading; a research database is planned: the same knowledge as YAML files in `research/` at
+the repository root, one entry per function, global and struct, that tools can check against the code. It does not
+exist yet. Until it does, findings live on the research pages only, and the YAML is seeded from them when it is
+created. One file is already there, because it is Coney's own: the script bindings.
 
 ### The script bindings {#bindings}
 
