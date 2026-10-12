@@ -14,6 +14,7 @@ from __future__ import annotations
 import re
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any
@@ -195,14 +196,16 @@ class Closing:
 
 
 @dataclass(frozen=True)
-class Remaining:
-    """The list of what a pull request leaves undone: each unchecked item cites the issue that holds it."""
+class Checklist:
+    """The Checklist section: a pull request merges only when every task in it is finished, so no item is unticked."""
 
     section: str
-    #: The line that opens the list (`Remaining:`).
-    label: str
-    #: What an unchecked item must contain (`#N`: an issue or pull request number).
-    unchecked_cites: str
+    #: What an unchecked `- [ ]` item gets (`refused`: the description fails the check).
+    unchecked: str
+    #: The day the rule began; a pull request merged before it kept the older `Remaining` list.
+    since: date
+    #: The line that opened that older list (`Remaining:`), whose unchecked items had to cite an issue as `#N`.
+    legacy_label: str
 
 
 @dataclass(frozen=True)
@@ -271,7 +274,7 @@ class PullRequests:
     local_paths: bool
     docs_none: DocsNone
     closing: Closing
-    remaining: Remaining
+    checklist: Checklist
     screenshots: ScreenshotsRule
     ai_use: AiUse
     stacked: Stacked
@@ -416,6 +419,16 @@ class Thresholds:
     needs_info_days: int
     in_progress_idle_days: int
     pull_request_idle_days: int
+    #: Hours a required check may stay queued or running before `repo pr-health` calls the pull request stuck in CI.
+    pr_pending_hours: int
+
+
+@dataclass(frozen=True)
+class PrHealth:
+    """How `coney-tools repo pr-health` sorts a failing required check."""
+
+    #: Required checks whose failure is a lint failure (the author fixes the text); any other required check is code.
+    lint_checks: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -445,6 +458,7 @@ class Hygiene:
     #: The cron schedule of the weekly sweep.
     sweep: str
     thresholds: Thresholds
+    pr_health: PrHealth
     #: Check id to its spec, in file order.
     checks: Mapping[str, CheckSpec]
 
@@ -541,6 +555,14 @@ def _flag(value: object, where: str) -> bool:
     if not isinstance(value, bool):
         raise _fail(where, "expected true or false")
     return value
+
+
+def _day(value: object, where: str) -> date:
+    """A calendar day written as quoted `YYYY-MM-DD` text."""
+    try:
+        return date.fromisoformat(_text(value, where))
+    except ValueError:
+        raise _fail(where, "expected a day written as YYYY-MM-DD") from None
 
 
 def _count(value: object, where: str, minimum: int = 1) -> int:
@@ -716,7 +738,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
         "local_paths",
         "docs_none",
         "closing",
-        "remaining",
+        "checklist",
         "screenshots",
         "ai_use",
         "stacked",
@@ -731,7 +753,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
 
     docs_none, docs_none_where = sub("docs_none", "line", "when_changed", "unless_changed")
     closing, closing_where = sub("closing", "keyword", "form", "one_per_line", "section")
-    remaining, remaining_where = sub("remaining", "section", "label", "unchecked_cites")
+    checklist, checklist_where = sub("checklist", "section", "unchecked", "since", "legacy_label")
     screenshots, screenshots_where = sub("screenshots", "section", "none", "reason", "uploaded_only")
     ai_use, ai_where = sub("ai_use", "section", "written_by", "model")
     stacked, stacked_where = sub(
@@ -746,7 +768,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
     _names_in((no_ai,), choices, _at(written_where, "no_ai"), "one of the choices")
     section_fields = (
         (_at(closing_where, "section"), closing["section"]),
-        (_at(remaining_where, "section"), remaining["section"]),
+        (_at(checklist_where, "section"), checklist["section"]),
         (_at(screenshots_where, "section"), screenshots["section"]),
         (_at(ai_where, "section"), ai_use["section"]),
     )
@@ -769,10 +791,11 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
             one_per_line=_flag(closing["one_per_line"], _at(closing_where, "one_per_line")),
             section=closing["section"],
         ),
-        remaining=Remaining(
-            section=remaining["section"],
-            label=_text(remaining["label"], _at(remaining_where, "label")),
-            unchecked_cites=_choice(remaining["unchecked_cites"], _at(remaining_where, "unchecked_cites"), ("#N",)),
+        checklist=Checklist(
+            section=checklist["section"],
+            unchecked=_choice(checklist["unchecked"], _at(checklist_where, "unchecked"), ("refused",)),
+            since=_day(checklist["since"], _at(checklist_where, "since")),
+            legacy_label=_text(checklist["legacy_label"], _at(checklist_where, "legacy_label")),
         ),
         screenshots=ScreenshotsRule(
             section=screenshots["section"],
@@ -1001,7 +1024,7 @@ def _read_check(check_id: str, data: object, where: str) -> CheckSpec:
 
 def _read_hygiene(data: object, where: str) -> Hygiene:
     """The `hygiene` section: the report issue, the sweep schedule, the idle limits and the audit's checks."""
-    table = _table(data, where, ("report_issue", "sweep", "thresholds", "checks"))
+    table = _table(data, where, ("report_issue", "sweep", "thresholds", "pr_health", "checks"))
     checks_where = _at(where, "checks")
     raw_checks = _mapping(table["checks"], checks_where)
     if not raw_checks:
@@ -1010,8 +1033,16 @@ def _read_hygiene(data: object, where: str) -> Hygiene:
     report_where = _at(where, "report_issue")
     report = _table(table["report_issue"], report_where, ("title", "labels"))
     limits_where = _at(where, "thresholds")
-    keys = ("needs_triage_days", "needs_info_days", "in_progress_idle_days", "pull_request_idle_days")
+    keys = (
+        "needs_triage_days",
+        "needs_info_days",
+        "in_progress_idle_days",
+        "pull_request_idle_days",
+        "pr_pending_hours",
+    )
     limits = _table(table["thresholds"], limits_where, keys)
+    health_where = _at(where, "pr_health")
+    health = _table(table["pr_health"], health_where, ("lint_checks",))
     return Hygiene(
         report_issue=ReportIssue(
             title=_text(report["title"], _at(report_where, "title")),
@@ -1019,6 +1050,7 @@ def _read_hygiene(data: object, where: str) -> Hygiene:
         ),
         sweep=_text(table["sweep"], _at(where, "sweep")),
         thresholds=Thresholds(**{key: _count(limits[key], _at(limits_where, key)) for key in keys}),
+        pr_health=PrHealth(lint_checks=_texts(health["lint_checks"], _at(health_where, "lint_checks"))),
         checks=MappingProxyType(checks),
     )
 

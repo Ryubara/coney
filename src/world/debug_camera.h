@@ -8,7 +8,7 @@
 namespace coney::world {
 
 /// A free-flying camera for Coney's world viewer, driven by a pad. Coney's own tool: the original's cameras follow the
-/// player. Its controls are Coney's choice (docs/guides/building.md#the-world-viewer):
+/// player. Its controls are Coney's choice (docs/guides/running.md#the-world-viewer):
 ///
 /// - left stick (W A S D): fly forward, back and sideways along the view;
 /// - right stick and d-pad (arrow keys): turn left and right, look up and down;

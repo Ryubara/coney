@@ -1,0 +1,4 @@
+# Walk into a low planter's corner (stick down: toward the camera), so the walking capsule meets its triangles' edges and corners.
+# Research: docs/research/physics-kernels.md#u1-runtime. Stick 60 % down (a walk), then let go.
+10 stick left 0 -60
+110 stick left 0 0
