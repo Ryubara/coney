@@ -498,6 +498,10 @@ carried boom box is inferred.
 sound; 10 with 0 stops it and leaves the radio off (state 10); `0x1b` (picked up) calls `onPickUp` with the player's
 handle and queues hint text `0x11`. Confirmed (code).
 
+**A destroyed radio.** `ObjDestroy` of the boom box (the level95 hub's mission action does it) removes the object
+that holds the radio record. What happens to a sound still playing is not traced; Coney stops it and forgets the
+radio, as the smash (message 1) does on the next update. Inferred.
+
 ### Interface sounds
 
 `SoundCfgInterfaceSound(n, name)` fills a numbered cue table in the sound matrix; `0x0010fc30` plays cue `n` as a 2D
@@ -899,8 +903,17 @@ loops come back on their own (mode 3 restarts a loop whenever none plays), the b
    the next update. A disc test then plays the hub's first `MA_CUTSCENE` and checks the bed is stopped and stays
    stopped through the scene.
 
-Open: what `+0x411` is; the hub cutscene itself at runtime (bed fade, emitter levels from the scene camera); whether
-Coney's #404 sound is the bed, an emitter heard from the player's ear, or the chat Warriors.
+**What #404 was** (Coney's disc test `repo:tests/platform/disc_hub_cutscene_audio_test.cpp`, hub at checkpoint 2):
+not the bed (stopped, 0 frames heard) nor an emitter nor the chat Warriors, but a **radio announcement**. Walking to
+the marker passes the hub's boom box within 5 m, which starts its armed announcement (`djlady_02`, class 213); the
+mission action then `ObjDestroy`s the boom box (it spawns a `dyn_s_blaster` in its place) and starts the scene.
+Coney kept the destroyed object's radio, which could no longer be found, so it was never updated: the announcement
+played on at full level through all 1,779 frames of the scene, when the radio's update would have stopped it (state
+6 with a scene running). Coney now drops a radio whose object is gone and stops its sound ([Radios](#radios)).
+Confirmed (runtime, Coney); the original's own result for that frame is inferred, not traced.
+
+Open: what `+0x411` is; the hub cutscene itself at runtime in the original (bed fade, emitter levels from the scene
+camera, and whether `ObjDestroy` of a radio's object stops its sound at once).
 
 ### The front end and level99
 

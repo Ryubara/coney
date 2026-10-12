@@ -134,8 +134,21 @@ void Radios::setMode(double object, int mode, RadioSound& sound) {
 void Radios::update(const std::function<std::optional<std::array<float, 3>>(double object)>& locate,
                     const RadioWorld& world, RadioSound& sound, GameRandom& random,
                     const std::function<void(const std::string& function)>& call) {
+    if (!locate) {
+        return;
+    }
+    // A radio whose object is gone (ObjDestroy) stops its sound and goes with it: its record lived in the object.
+    std::erase_if(m_radios, [&locate, &sound](const Radio& radio) {
+        if (locate(radio.object)) {
+            return false;
+        }
+        if (radio.sound != 0) {
+            sound.stop(radio.sound);
+        }
+        return true;
+    });
     for (Radio& radio : m_radios) {
-        if (const std::optional<std::array<float, 3>> at = locate ? locate(radio.object) : std::nullopt) {
+        if (const std::optional<std::array<float, 3>> at = locate(radio.object)) {
             updateOne(radio, *at, world, sound, random, call);
         }
     }

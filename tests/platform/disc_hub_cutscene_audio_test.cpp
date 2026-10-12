@@ -6,7 +6,8 @@
 // 1 is steered at 60 % onto the yellow marker (flag 5, "Start Next Level") and presses triangle there, which runs the
 // hub's mission action (`story.EndMissionActionFlag`, then `story.NextMissionAction`: `SoundStopAmbientTrack`,
 // `events.Mute(true, true)`, `ScenePlayCinematic`). While the cinematic runs, the test samples every live sound each
-// frame and checks that no ambient bed plays, no Warrior starts a line, and both listeners sit at the scene camera.
+// frame and checks that no ambient bed plays, no Warrior starts a line, both listeners sit at the scene camera, and
+// the radio whose boom box the action destroys (`ObjDestroy`) no longer plays its announcement.
 // It runs only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts, hashes
 // and levels only (LEGAL.md).
 
@@ -28,9 +29,9 @@
 #include "platform/game_session.h"
 #include "platform/play_level_mode.h"
 #include "scenes/scene_player.h"
-#include "world_objects/radios.h"
 #include "support/disc_play_fixtures.h"
 #include "support/disc_session.h"
+#include "world_objects/radios.h"
 
 namespace {
 
@@ -127,8 +128,7 @@ TEST_CASE("the disc's hub mission cutscene: no ambient bed, no chat, the listene
         // The listener is the scene camera, wherever the player stands.
         const coney::camera::Cameras* cameras = run.session().gameplay().cameras();
         const coney::platform::PlayLevelMode* play = run.session().play();
-        if (cameras != nullptr && play != nullptr &&
-            cameras->current().kind == coney::camera::CameraKind::Scene) {
+        if (cameras != nullptr && play != nullptr && cameras->current().kind == coney::camera::CameraKind::Scene) {
             ++sceneCameraFrames;
             const coney::anim::Vec3 eye = cameras->view().position;
             const coney::audio::SoundVec at = game.listener().position;
@@ -165,4 +165,7 @@ TEST_CASE("the disc's hub mission cutscene: no ambient bed, no chat, the listene
     CHECK_FALSE(engine->ambientTrack().valid());
     CHECK(linesDuring == 0);
     CHECK(listenerOff == 0);
+    // The mission destroys the boom box as the scene starts: its radio's announcement stops with it.
+    CHECK(radioSounding == 0);
+    CHECK(run.session().gameplay().radios().all().empty());
 }
