@@ -291,7 +291,8 @@ leave the focus alone:
   ([Frame rate](running.md#frame-rate)).
 - **On the agents' display.** Every window an agent opens goes on the display set aside for agents, never on the one
   the user works on. The agent tool's environment sets `CONEY_WINDOW_DISPLAY` (the [setup](agents.md#setup)), and
-  Coney opens its window centred on that display ([Which display](running.md#window-display)); the PCSX2 launcher
+  Coney opens its window centred on that display, never taking the keyboard focus
+  ([Which display](running.md#window-display)); the PCSX2 launcher
   reads the same variable (below). An agent never overrides it with `--window-display` for its own runs.
 - **ctest needs nothing.** The disc tests inside `coney_tests` run on librw's NULL renderer and open no window; the
   `coney` smoke tests (`repo:src/platform/CMakeLists.txt`) run `--headless` or stop at the command line before a

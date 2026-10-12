@@ -234,7 +234,8 @@ struct Options {
     bool noActivate = false;
     /// `--window-display VALUE`: the display the window opens on, centred (core/window_display.h): a 1-based index in
     /// the window system's list, part of a display's name, or `portrait`. Unset: the `CONEY_WINDOW_DISPLAY`
-    /// environment variable, else the window system's own placement. A debug aid that keeps agents' runs off the
+    /// environment variable, else the window system's own placement. Either one set also keeps the window from taking
+    /// the keyboard focus (as --no-activate does). A debug aid that keeps agents' runs off the
     /// display a person works on (docs/guides/running.md#window-display).
     std::optional<std::string> windowDisplay;
     /// `--kind`: the lists `--render-references` renders; unset renders all of them. Requires renderReferences.

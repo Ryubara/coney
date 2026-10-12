@@ -130,15 +130,28 @@ std::vector<std::pair<SDL_DisplayID, DisplayInfo>> listDisplays() {
     return displays;
 }
 
-// The display `--window-display` or else CONEY_WINDOW_DISPLAY names (core/window_display.h); nothing when neither is
-// set or nothing matches. A value that matches nothing is reported once per process on stderr, with the displays there
-// are, and the window then opens where SDL puts it.
-std::optional<SDL_DisplayID> chosenDisplay(std::string_view option) {
+// Where the display setting comes from (`--window-display`, else CONEY_WINDOW_DISPLAY) and its text; empty when
+// neither is set.
+struct DisplaySetting {
+    std::string_view source;
+    std::string_view value;
+};
+
+// The display setting in force: the option when given, else the environment variable.
+DisplaySetting displaySetting(std::string_view option) {
+    if (!option.empty()) {
+        return {"--window-display", option};
+    }
     const char* fromEnvironment = SDL_getenv("CONEY_WINDOW_DISPLAY");
-    const std::string_view source = !option.empty() ? "--window-display" : "CONEY_WINDOW_DISPLAY";
-    const std::string_view value = !option.empty()              ? option
-                                   : fromEnvironment != nullptr ? std::string_view(fromEnvironment)
-                                                                : std::string_view();
+    return {"CONEY_WINDOW_DISPLAY",
+            fromEnvironment != nullptr ? std::string_view(fromEnvironment) : std::string_view()};
+}
+
+// The display the setting names (core/window_display.h); nothing when it is unset or nothing matches. A value that
+// matches nothing is reported once per process on stderr, with the displays there are, and the window then opens
+// where SDL puts it.
+std::optional<SDL_DisplayID> chosenDisplay(std::string_view option) {
+    const auto [source, value] = displaySetting(option);
     const std::optional<WindowDisplayChoice> choice = parseWindowDisplay(value);
     if (!choice) {
         return std::nullopt;
@@ -258,8 +271,11 @@ std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBa
     // it ignores its own failures and goes on to use a display list it never made; holding our own reference also
     // keeps SDL alive until librw has destroyed its window.
     if (openGl) {
-        // Before librw makes and shows the window, so a run nobody is playing never takes the keyboard focus.
-        setWindowActivation(desc.activate && !desc.hidden);
+        // Before librw makes and shows the window, so a run nobody is playing never takes the keyboard focus. A run
+        // placed on a display of its own (--window-display, CONEY_WINDOW_DISPLAY) is one an agent or tool started, so
+        // it never takes it either, on this show or a later one.
+        const bool placed = parseWindowDisplay(displaySetting(desc.display).value).has_value();
+        setWindowActivation(desc.activate && !desc.hidden && !placed);
         if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
             return startFailure("SDL_InitSubSystem(SDL_INIT_VIDEO)", true);
         }

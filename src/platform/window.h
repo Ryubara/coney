@@ -23,7 +23,8 @@ struct WindowDesc {
     bool logicalFrame = false;
     /// The display to open on (`--window-display`; core/window_display.h has the values): the window is centred on
     /// it, and shrunk to fit when larger. Empty: the `CONEY_WINDOW_DISPLAY` environment variable, else wherever the
-    /// window system puts it. Must outlive RenderEngine::start.
+    /// window system puts it. A set value (either way) also keeps the window from taking the keyboard focus, as
+    /// `activate = false` does. Must outlive RenderEngine::start.
     std::string_view display;
 };
 

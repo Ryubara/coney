@@ -74,6 +74,10 @@ the option nor the variable, leaves the window where SDL puts it (on the primary
 display prints one warning on stderr, listing the displays there are with their numbers, names and sizes, and the
 window opens where SDL puts it.
 
+Whenever a value is set (even one that matches no display), the window also opens without taking the keyboard focus,
+as with `--no-activate`, and SDL keeps it from taking the focus when it is shown or raised later: a run placed on a
+display of its own is one an agent or a tool started, and the person typing elsewhere keeps their keystrokes.
+
 librw makes and shows the window itself inside its start-up, so Coney cannot create it in the right place; it moves
 the window the moment SDL reports it shown, before its OpenGL context exists or a frame is drawn
 (`RenderEngine::start`, `repo:src/platform/render_engine.cpp`; the choosing and fitting are
