@@ -557,8 +557,11 @@ circle + cross at a victim getting up played 359 and then `X1`.
 
 A moving attack has no single hit update. Its clip's events switch **strike shapes** on and off, and while any is on
 `Human_TestStrikes` (`0x0033f110`) tests them **every update, after the move**, against every body near the human:
-the first shape that overlaps a body calls `Strike_Contact` (`0x0021b290`) for it. The reach is the posed body
-itself: there is no reach or height figure of its own. Confirmed (code) at the addresses below; the timings are
+the first shape that meets a body calls `Strike_Contact` (`0x0021b290`) for it. "Meets" is a **sweep**: each shape
+is moved from its pose at the last update to its pose now through the physics sweep table, so only the spheres can
+reach a box (a segment never does), and a shape just switched on is tested with no move
+([Physics: Unit 5](physics.md#u4b-how-human-teststrikes-builds-the-sweep-0), confirmed (code)). The reach is the
+posed body itself: there is no reach or height figure of its own. Confirmed (code) at the addresses below; the timings are
 confirmed (runtime).
 
 **The shapes** (confirmed (code), `IPhysics_Construct` `0x0033c288` with the tables at `0x00512810`-`0x005128f0`).
