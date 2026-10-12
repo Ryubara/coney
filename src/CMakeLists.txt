@@ -74,6 +74,9 @@ add_library(coney_core STATIC
     graphics/sprite_batch.cpp
     graphics/texture_grid.cpp
     graphics/texture_lod.cpp
+    physics/overlaps.cpp
+    physics/segment_kernels.cpp
+    physics/sphere_box_sweep.cpp
     raycast/collision_mesh.cpp
     gui/bar.cpp
     gui/base_widget.cpp

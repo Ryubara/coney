@@ -165,6 +165,8 @@ add_executable(coney_tests
     platform/placed_objects_test.cpp
     platform/world_renderer_test.cpp
     platform/world_set_test.cpp
+    physics/overlaps_test.cpp
+    physics/sphere_box_sweep_test.cpp
     raycast/collision_mesh_test.cpp
     raycast/disc_collision_test.cpp
     scripting/ai_bindings_test.cpp
