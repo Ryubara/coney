@@ -165,12 +165,12 @@ car ([Characters](characters.md#climb)). The shells themselves are on [Character
 The create functions take the first free body of a pool (owner 0), set the owner (`0x00341a68`) and flags, and add it to
 the body vector and the sorted list (`IPhysics_AddBody` `0x00340668`); the free functions undo that
 (`IPhysics_RemoveBody` `0x00340700`, which first clears the owner from every ignore list) and, for objects, cars and
-panes, clear the shape's in-use bit `0x8` (the human free clears none, and the pane free skips `StopIgnoring`,
-[Unit 9](#u9-free)). Flags by kind: human `0x8002243f`, punch bag `0x8000243f`, world object `0x80000500`, car `0x80000000` (then
-`0x8002211a` once `Car_MakeBodies` ORs in `0x2211a`, `0x00387ea8`), glass pane `0x8000007a` ([Objects](objects.md)). A human body also
-joins the human list (`0x003407a0`; next `+0xc8`, previous `+0xcc`) and gets its scale (`0x00341f28`). The punch bag is
-the human class `0x1cc` (`HeavyBag`, [Characters](../references/characters.md)): `0x0021ce08` gives it its own body set
-instead of one of the 60.
+panes, clear the shape's in-use bit `0x8` (the human free clears none, and the pane free skips `StopIgnoring`, [Unit
+9](#u9-free)). Flags by kind: human `0x8002243f`, punch bag `0x8000243f`, world object `0x80000500`, car `0x80000000`
+(then `0x8002211a` once `Car_MakeBodies` ORs in `0x2211a`, `0x00387ea8`), glass pane `0x8000007a`
+([Objects](objects.md)). A human body also joins the human list (`0x003407a0`; next `+0xc8`, previous `+0xcc`) and gets
+its scale (`0x00341f28`). The punch bag is the human class `0x1cc` (`HeavyBag`,
+[Characters](../references/characters.md)): `0x0021ce08` gives it its own body set instead of one of the 60.
 
 **The punch bag's shapes** (`IPhysics_CreatePunchBagBody`, `0x0033cb08`: the capsule on, the bone shapes off), read at
 runtime (PCSX2 2.9.94, `level95`, the bag at rest with its origin at height −197.567; confirmed (runtime), the posing
@@ -211,13 +211,14 @@ and a segment pointing down on an axis gets a wrong bound there ([Unit 6](#u6-bo
 | 3 | capsule | 0x60, `0x005447b0` | `+0x40` radius, `+0x44` height, `+0x50` base | for a human at its position, the offset unused, and the height follows the state; for another owner the position plus the **unrotated** offset (`0x00343518`, [below](#human-body), [Unit 6](#u6-capsule-pose)) |
 | 4 | segment | 0x70, `0x00544770` | `+0x40` start, `+0x50` end, `+0x60` radius, `+0x64` length | start = its bone plus the bone-rotated offset (bone −1: the body's position, offset ignored), end = start + the bone's x axis × length (`0x00343810`) |
 
-The "capsule" is **upright**: the capsule-capsule tests treat it as the vertical range `[base z, base z + height]`
-with a horizontal radius (`0x00346388`, `0x003498c0` + `0x0034a8d0`), so a human never tilts. The sweep swaps the two
-capsules' heights (`0x00343e1c`-`0x00343e28`, [Unit 11](#u11-capsule-capsule)); the overlap test does not. The capsule-box sweep reads no height or z range at all: only the candidate gather separates
-them vertically ([Unit 12](#unit-12)). Two overlap tests round
-its ends instead (capsule against sphere and against segment, a true capsule reaching `r` past both ends), and the
-capsule-box overlap reads no height at all ([Unit 4](#u4-physicsoverlap-capsulesphere-00346ed8)); confirmed (code).
-A segment is a sphere of its radius swept along a bone: the limbs' strike volumes.
+The "capsule" is **upright**: the capsule-capsule tests treat it as the vertical range `[base z, base z + height]` with
+a horizontal radius (`0x00346388`, `0x003498c0` + `0x0034a8d0`), so a human never tilts. The sweep swaps the two
+capsules' heights (`0x00343e1c`-`0x00343e28`, [Unit 11](#u11-capsule-capsule)); the overlap test does not. The
+capsule-box sweep reads no height or z range at all: only the candidate gather separates them vertically ([Unit
+12](#unit-12)). Two overlap tests round its ends instead (capsule against sphere and against segment, a true capsule
+reaching `r` past both ends), and the capsule-box overlap reads no height at all ([Unit
+4](#u4-physicsoverlap-capsulesphere-00346ed8)); confirmed (code). A segment is a sphere of its radius swept along a
+bone: the limbs' strike volumes.
 
 ### The human body {#human-body}
 
@@ -244,12 +245,13 @@ lengths and the capsule (height `0x00219890`, radius `0x00219860` of the human) 
   (`+0x3be`) and by 0.7 × scale in the states `0x00227f68` selects (at most 0.7 above `+0x560`), except in a long
   fall; 0.35 × scale when cuffed; never under 0.2 × scale.
 - **The push sphere** (`0x003420d0`): a 2.0 m sphere from the 30 pool, switched on only by `Grab_Start` and
-  `Tackle_Start`; every other caller switches it off ([Unit 10](#u10-push-sphere)). While it is on, `0x003425c0` (from the human's update
-  `0x0023d8c8`) overlaps it with the other humans (options `0x2012`, mask `0x40`) and adds to the pending push-out
-  (body `+0x50`) of each one that is not its target, has no player number and has no body flag `0x200` a push of
-  **0.25 m × w(this) / (w(other) × k(other))** along the 3-D line from this human to the other ([Unit 10](#u10-push)): bystanders are nudged
-  out of the animation's way. w is [attribute](#attributes) 1, 82.0 for every human, so it cancels; k is attribute 7,
-  the other's push weight (1.0, or 1e9 while it must not move). Confirmed (code) at `0x003425c0`.
+  `Tackle_Start`; every other caller switches it off ([Unit 10](#u10-push-sphere)). While it is on, `0x003425c0` (from
+  the human's update `0x0023d8c8`) overlaps it with the other humans (options `0x2012`, mask `0x40`) and adds to the
+  pending push-out (body `+0x50`) of each one that is not its target, has no player number and has no body flag `0x200`
+  a push of **0.25 m × w(this) / (w(other) × k(other))** along the 3-D line from this human to the other ([Unit
+  10](#u10-push)): bystanders are nudged out of the animation's way. w is [attribute](#attributes) 1, 82.0 for every
+  human, so it cancels; k is attribute 7, the other's push weight (1.0, or 1e9 while it must not move). Confirmed (code)
+  at `0x003425c0`.
 - `GetContactScale` (`+0x48`, `0x00342288`): 0.25 while airborne, else 1.0. `+0x50` (`0x00342130`) tells the human
   (`0x00219b08`).
 
@@ -350,11 +352,11 @@ Object flags (`+0x54`, [task head](tasks.md#task-object)): `0x40000` settling, `
    body in x over the list. Inserting a body (`0x003404a8`) only ever grows `+0x14`, so the refresh is what lets it
    shrink. The queries read it to know how far back along the sorted list to look ([Queries](#queries)).
 2. **Settle turns.** For each of the 64 slots in use: `t += speed`, `speed += 0.02`, clamp `t` to 1; set the object's
-   rotation to `slerp(start, end, t)`, keeping the position of its stored pose (owner slot `+0xa8` / `+0xac`), and
-   write the pose through owner slot `+0x68` / `+0x6c` (the world object's `0x00395220`, which changes nothing while
-   the object is held, flag `0x10`); if the object has a body, mark it (`+0x40 |= 0x80000000`) and update the body
-   at once (body slot `+0x10` / `+0x14`, `PhysicsBody_Update` `0x00341c10`: its shapes re-posed and re-sorted). At `t` = 1 the object's flags lose
-   `0x40000` and gain `0x8000000`, and the slot is freed.
+   rotation to `slerp(start, end, t)`, keeping the position of its stored pose (owner slot `+0xa8` / `+0xac`), and write
+   the pose through owner slot `+0x68` / `+0x6c` (the world object's `0x00395220`, which changes nothing while the
+   object is held, flag `0x10`); if the object has a body, mark it (`+0x40 |= 0x80000000`) and update the body at once
+   (body slot `+0x10` / `+0x14`, `PhysicsBody_Update` `0x00341c10`: its shapes re-posed and re-sorted). At `t` = 1 the
+   object's flags lose `0x40000` and gain `0x8000000`, and the slot is freed.
 
 Starting from rest, `t` after *n* ticks is `0.01 × n(n − 1)`, so **a settle takes 11 ticks (183 ms)**, slow at
 first and fastest at the end, like something tipping over.
@@ -720,15 +722,17 @@ What follows is inferred from the code above.
 Every function of `Physics/` (`0x0033c288`-`0x0034f740`) and every function of `RayCast/` and `World/` that Coney
 does not cite yet, split into units an implementer can take one at a time, bottom-up. Each unit lists its functions
 (names and sizes from the shared Ghidra project; "tagged" means `docs/progress/functions.toml` already lists it), what
-specifies it, where it goes in Coney and what its tests check. Units 1 to 5 are **specified exactly** below: arguments,
-record offsets, constants, branches, the original's quirks and worked test numbers, all confirmed (code) unless a line
-says otherwise (read in the disassembly, 2026-10-12; no runtime claims in them). Units 6 to 19 point at the sections
-above and say what is still missing before they can be written.
+specifies it, where it goes in Coney and what its tests check. All 19 units are **specified exactly** below:
+arguments, record offsets, constants, branches, the original's quirks and worked test numbers, all confirmed (code)
+unless a line says otherwise (read in the disassembly, 2026-10-12). Unit 1's corner contacts and the strike shapes'
+previous positions are also confirmed (runtime) ([Seen at runtime](#u1-runtime)). Where a unit corrected a section
+above, the section was fixed in place; each unit also says what Coney changes.
 
 When this plan was made (2026-10-12, `main` at `f325e018`), the tracker had 17 of `Physics/`'s 183 functions, 12 of
 `RayCast/`'s 15 and 33 of `World/`'s 61. `RayCast/`'s mesh code (`src/raycast/collision_mesh.*`) is complete apart
 from Unit 16, which also changes its ray: it skips excluded triangles before intersecting and returns only a kept
-hit, so it cannot give the see-through material a clear ray crossed ([WorldManager_RayCast](#u16-world-ray)); `World/`'s streaming and drawing are done, and its open functions are lifecycle (Units 17 to 19).
+hit, so it cannot give the see-through material a clear ray crossed ([WorldManager_RayCast](#u16-world-ray));
+`World/`'s streaming and drawing are done, and its open functions are lifecycle (Units 17 to 19).
 
 **What Coney has instead** (the stand-ins these units replace):
 
@@ -762,9 +766,9 @@ hit, so it cannot give the see-through material a clear ray crossed ([WorldManag
 | [14](#unit-14) Rays against bodies | 6, 7 | the AI's line tests against bodies |
 | [15](#unit-15) The physics world | 3, 7, 9 | one `IPhysics` per level, the step and the 64 settle slots |
 | [16](#unit-16) RayCast leftovers | | material names, the world manager's ray |
-| [17](#unit-17) Level file and level object | | |
-| [18](#unit-18) World manager lifecycle | 17 | |
-| [19](#unit-19) Streamed world object lifecycle | 18 | |
+| [17](#unit-17) Level file and level object | | the level object's destructor order, the WAD entry size |
+| [18](#unit-18) World manager lifecycle | 17 | one `WorldManager` owning the level's pools (the budget comes back on unload) |
+| [19](#unit-19) Streamed world object lifecycle | 18 | the two-world visibility marks, a pending atomic release |
 
 A unit is done when its functions are tagged in Coney (`@orig`, `functions.toml`), its tests pass on synthetic
 geometry, and the stand-in it replaces is gone or marked.
@@ -1889,11 +1893,11 @@ Run for every code that is not 0. Confirmed (code) at `0x0033e058`-`0x0033e204`:
 5. The return ([above](#u3-resolve), step 5).
 
 Who sets the contact flags: the capsule's mesh sweep writes `0x1` when it built a corner slide (`0x00348360`,
-`0x00348438`), the capsule-box sweep writes `0x1` for its four corner regions with a unit diagonal slide in
-`+0xa0` (`0x00345078`, [Unit 12](#unit-12)), the sphere and box mesh sweeps copy their hit's flags word (`0x003490f0`, `0x003489d0`; the box's
-word is always 0, `0x003488e0`, so a box mesh contact never carries `0x1` or `0x2`), the landing
-contact is `0x80` ([below](#u3-mesh)). Whether any sweep produces `0x2` is not traced. Confirmed (code) for
-the stores cited.
+`0x00348438`), the capsule-box sweep writes `0x1` for its four corner regions with a unit diagonal slide in `+0xa0`
+(`0x00345078`, [Unit 12](#unit-12)), the sphere and box mesh sweeps copy their hit's flags word (`0x003490f0`,
+`0x003489d0`; the box's word is always 0, `0x003488e0`, so a box mesh contact never carries `0x1` or `0x2`), the landing
+contact is `0x80` ([below](#u3-mesh)). Whether any sweep produces `0x2` is not traced. Confirmed (code) for the stores
+cited.
 
 #### PhysicsVec_BackOffPlane {#u3-backoff}
 
@@ -2929,14 +2933,13 @@ Confirmed (code) at `0x0033f110` unless marked; the target filters are already o
   `sweep[strike.type][other.type](&contact, strikerBody, strikeShape, candidateBody, candidateShape, &move)`
   (IPhysics `+0x7c` + strike.type × 0x14 + other.type × 4; an empty entry is skipped). The shape's position is put
   back to `cur` (vtable `+0x0c`) after its candidates are done, hit or not.
-- **A hit ends that candidate's shapes, not the test.** On the first nonzero result for a candidate: contact `+0x00` = striker's owner (body `+0x34`),
-  `+0x04` = the strike shape, `+0x40` = the candidate's owner, `+0x44` = the candidate shape; then the striker
-  owner's `Strike_Contact` (vtable `+0x104`) with the contact; then, if the candidate has an owner, the striker
-  body's vtable `+0x44` (put it on the struck list); no further shape is tried against that body, but the loop goes on
-  with the next candidate (`0x0033fb04`, `0x0033fc94`, `0x0033fe3c`), so one update can strike several bodies
-  ([Unit 10](#u10-strikes)). The contact is a
-  single stack record reused for every try, never cleared: fields the sweep does not write hold leftovers of earlier
-  tries.
+- **A hit ends that candidate's shapes, not the test.** On the first nonzero result for a candidate: contact `+0x00` =
+  striker's owner (body `+0x34`), `+0x04` = the strike shape, `+0x40` = the candidate's owner, `+0x44` = the candidate
+  shape; then the striker owner's `Strike_Contact` (vtable `+0x104`) with the contact; then, if the candidate has an
+  owner, the striker body's vtable `+0x44` (put it on the struck list); no further shape is tried against that body, but
+  the loop goes on with the next candidate (`0x0033fb04`, `0x0033fc94`, `0x0033fe3c`), so one update can strike several
+  bodies ([Unit 10](#u10-strikes)). The contact is a single stack record reused for every try, never cleared: fields the
+  sweep does not write hold leftovers of earlier tries.
 - **Where `prev` comes from** (`PhysicsSphere_Pose` `0x00342b08`, the sphere's vtable `+0x28` slot): each pose first
   copies the current centre to `+0x20` and then computes the new centre, unless flag `0x10` is set, in which case the
   new centre is copied to `+0x20` after it is computed (so prev = cur), and `0x10` is cleared. The shape's enable
@@ -4053,8 +4056,8 @@ cover), the weapon spheres and the push sphere. All confirmed (code) at the cite
 - **Coney:** `src/human/human.*` (body update after the move, the push), `src/combat/*` (`Human_TestStrikes`: the
   gather, the line-of-sight ray and the per-candidate loop below, sweeping each enabled strike shape from its last pose
   through the sweep table: [Unit 5](#unit-5) for boxes, [Unit 11](#unit-11) for humans),
-  `src/platform/play_level_mode.*` (`strikeObjects()`). Issue #72's step 1 (strikes hit cars) needs Unit 5, [the gather](#u10-strikes) and the sweep
-  loop, not the whole of this unit.
+  `src/platform/play_level_mode.*` (`strikeObjects()`). Issue #72's step 1 (strikes hit cars) needs Unit 5, [the
+  gather](#u10-strikes) and the sweep loop, not the whole of this unit.
 - **Tests:** [Test ideas](#u10-tests): bone shapes switch on by bit `1 << ((id − 2) & 31)` and every switch empties the
   struck list; `Moved` moves each switched-on sphere to the body's new origin (prev untouched), so the next sweep runs
   from the origin, not across the teleport; the broad bound's radius `max(0.8 × scale, reach)`; the push of
@@ -4198,8 +4201,8 @@ tackle's start until the next action that switches it off (most clip starters do
 `0x003425c0 (body)`, called at the end of `Human_Move` (`0x0023db28`) right after the body's Update.
 
 1. `target` = `Human_GetTarget(owner)` (`0x00226e60`). No push sphere (`+0x84` = 0): return.
-2. `IPhysics_OverlapShape` ([How it fills a contact](#overlapshape)) with the query: body, the push sphere, box pointer 0,
-   the owner, options `0x2012` (`0x2` bodies, `0x10` type mask; `0x2000` is never read), type mask `0x40` (humans),
+2. `IPhysics_OverlapShape` ([How it fills a contact](#overlapshape)) with the query: body, the push sphere, box pointer
+   0, the owner, options `0x2012` (`0x2` bodies, `0x10` type mask; `0x2000` is never read), type mask `0x40` (humans),
    at most **32** contacts, thresholds 0. Each human meets it through his capsule (SphereCapsule).
 3. The contacts are walked **from the last to the first**. For each, `other` = contact `+0x40`. Skip it when it is
    `target`; when its player byte `+0x1b0` is not −1 (any player); when its body (owner vtable `+0xf0`) has flag
@@ -4533,10 +4536,10 @@ the shape spans `[B.z + h − 2r_c, B.z + 2r_c]` (the formula as written; inferr
 #### PhysicsSweep_SphereSegment {#u11-sphere-segment}
 
 `0x00344320`, 0x218 bytes, table (2, 4). **Not a first-touch sweep.** `(s, t) = Segment_ClosestPoints(d1 = m, d2 = E −
-S, w = C − S)` ([Unit 4](#u4-segment-closestpoints-0034ad50)); `v = (C − S) + s·m − t·(E − S)`; hit when `v·v ≤ (r_s
-+ r_seg)²` (touching counts). Then `+0x80 = s` (the path parameter of **closest approach**), `+0x88 = |v|` (the
-distance there, not a depth), `+0x90 = C + s·m`, `+0x10 = unit(m)`, `+0x50 = −unit(m)`, `+0xb0` = 0. A zero move
-gives `s = 0` and a zero normal. Unit 4's kernel quirks (absolute parallel threshold) apply.
+S, w = C − S)` ([Unit 4](#u4-segment-closestpoints-0034ad50)); `v = (C − S) + s·m − t·(E − S)`; hit when `v·v ≤ (r_s +
+r_seg)²` (touching counts). Then `+0x80 = s` (the path parameter of **closest approach**), `+0x88 = |v|` (the distance
+there, not a depth), `+0x90 = C + s·m`, `+0x10 = unit(m)`, `+0x50 = −unit(m)`, `+0xb0` = 0. A zero move gives `s = 0`
+and a zero normal. Unit 4's kernel quirks (absolute parallel threshold) apply.
 
 #### The mirrors and the overlap entries {#u11-mirrors}
 
@@ -4601,16 +4604,16 @@ Steps (confirmed (code) at the addresses):
    (`PhysicsBody_ComputeBounds` `0x00341638`), or with `0x400` the node at `*(q+0x08)`; then `AABB_ExtendByMove(box,
    move)`.
 2. **Bodies**, with option `0x2` (`0x0033e890`-`0x0033ea60`): candidates from `0x00340120` (the filtered query,
-   specified in [Unit 7](#unit-7): start body `q+0x00`, the fields above as its arguments, list order). Per candidate: skip the same non-zero group and an owner refusal
-   (slot `+0x110`), **always** (no option bit, unlike `IPhysics_OverlapShape`); chain from body slot `+0x28` with
-   `(2, 4, owner)`; **every** enabled shape with a sweep entry is tried, and every hit inserted (`+0xb4 = 0`, then
-   `Contact_InsertSorted`), so one body can give several contacts. The querying body itself is a candidate unless a
-   filter drops it (inferred from the start-body walk; the callers seen set `0x2000` with their own owner or sweep
-   a temporary body).
+   specified in [Unit 7](#unit-7): start body `q+0x00`, the fields above as its arguments, list order). Per candidate:
+   skip the same non-zero group and an owner refusal (slot `+0x110`), **always** (no option bit, unlike
+   `IPhysics_OverlapShape`); chain from body slot `+0x28` with `(2, 4, owner)`; **every** enabled shape with a sweep
+   entry is tried, and every hit inserted (`+0xb4 = 0`, then `Contact_InsertSorted`), so one body can give several
+   contacts. The querying body itself is a candidate unless a filter drops it (inferred from the start-body walk; the
+   callers seen set `0x2000` with their own owner or sweep a temporary body).
 3. **Mesh**, with option `0x1` (`0x0033ea64`-`0x0033eb10`): `phys+0xe0 + 4·type`; if set, it is called with
    `(contacts + count, max = 50 − count, box, body, shape, move, options = the whole word, f12 = q+0x28,
    f13 = q+0x2c)`, and each contact it returns is inserted with other owner 0 and other shape 0. So the mesh's option
-   bits (`0x4`, `0x8`, `0x40`, `0x8000`, `0x20000`, [Unit 2](#u2-00348a50-physicsmesh-spheresweep)) come from the same
+   bits (`0x4`, `0x8`, `0x40`, `0x8000`, `0x20000`, [Unit 2](#u2-00348a50-physicsmesh-sweepsphere)) come from the same
    word, and **body and mesh contacts are sorted together** by fraction; at an equal fraction the body contact, being
    inserted first, comes first.
 4. **Copy** (`0x0033eb14`-`0x0033eb7c`): `n = min(count, q+0x18)` contacts from the sorted list to `out` (0xc0
@@ -5199,16 +5202,16 @@ the first axis). In order, returning 0 at the first separated axis:
 
 | Axes | `p0` (at `t = 0`; `p1` the same with `D1`) | `R` |
 | --- | --- | --- |
-| `A_i`, i = 0, 1, 2 | `A_i·D` | `a_i + ((b0·|c_i0| + b1·|c_i1|) + b2·|c_i2|)` |
-| `B_j`, j = 0, 1, 2 | `B_j·D` | `a0·|c_0j| + a1·|c_1j| + a2·|c_2j| + b_j` |
-| `A_i × B_j`, i outer, j inner | `(A_{i+2}·D)·c_{i+1,j} − (A_{i+1}·D)·c_{i+2,j}` | `a_{i+1}·|c_{i+2,j}| + a_{i+2}·|c_{i+1,j}| + b_{j+1}·|c_{i,j+2}| + b_{j+2}·|c_{i,j+1}|` |
+| `A_i`, i = 0, 1, 2 | `A_i·D` | `a_i + ((b0·abs(c_i0) + b1·abs(c_i1)) + b2·abs(c_i2))` |
+| `B_j`, j = 0, 1, 2 | `B_j·D` | `a0·abs(c_0j) + a1·abs(c_1j) + a2·abs(c_2j) + b_j` |
+| `A_i × B_j`, i outer, j inner | `(A_{i+2}·D)·c_{i+1,j} − (A_{i+1}·D)·c_{i+2,j}` | `a_{i+1}·abs(c_{i+2,j}) + a_{i+2}·abs(c_{i+1,j}) + b_{j+1}·abs(c_{i,j+2}) + b_{j+2}·abs(c_{i,j+1})` |
 
 (indices mod 3). Then the velocity axes (`0x0034d0f8` on), with `X = W × D` and separation `R < |X·axis|`:
 
 | Axis | `R` |
 | --- | --- |
-| `W × A_i`, i = 0, 1, 2 | `a_{i+1}·|W·A_{i+2}| + a_{i+2}·|W·A_{i+1}| + Σ_j b_j·|c_{i+1,j}·(W·A_{i+2}) − c_{i+2,j}·(W·A_{i+1})|` |
-| `W × B_j`, j = 0, 1, 2 | `Σ_i a_i·|c_{i,j+1}·(W·B_{j+2}) − c_{i,j+2}·(W·B_{j+1})| + b_{j+1}·|W·B_{j+2}| + b_{j+2}·|W·B_{j+1}|` |
+| `W × A_i`, i = 0, 1, 2 | `a_{i+1}·abs(W·A_{i+2}) + a_{i+2}·abs(W·A_{i+1}) + Σ_j b_j·abs(c_{i+1,j}·(W·A_{i+2}) − c_{i+2,j}·(W·A_{i+1}))` |
+| `W × B_j`, j = 0, 1, 2 | `Σ_i a_i·abs(c_{i,j+1}·(W·B_{j+2}) − c_{i,j+2}·(W·B_{j+1})) + b_{j+1}·abs(W·B_{j+2}) + b_{j+2}·abs(W·B_{j+1})` |
 
 With `W = 0` every velocity axis passes (`0 ≤ R`), so two still boxes reduce to the static 15-axis test. The axes
 are not normalised and parallel boxes give zero cross axes, which pass (`|0| ≤ R`); no epsilon. All 21 pass → 1.
@@ -5508,29 +5511,29 @@ identity, half (1, 0.5, 1).
 
 Capsule C: base (0, 0, 0), height 1.8, radius 0.35.
 
-8. **Side.** S (−2, 0, 1), d (1, 0, 0), len 4: list [0.4125, 0.5875]; answer 0.4125 (x = −0.35).
-9. **Rounded top.** S (−2, 0, 2.0), same d and len: the side roots are at z = 2.0 > 1.8, the top hemisphere gives
+1. **Side.** S (−2, 0, 1), d (1, 0, 0), len 4: list [0.4125, 0.5875]; answer 0.4125 (x = −0.35).
+2. **Rounded top.** S (−2, 0, 2.0), same d and len: the side roots are at z = 2.0 > 1.8, the top hemisphere gives
    [0.428193, 0.571807]; answer 0.428193. At z 2.2 (0.4 above the top centre, more than R): no hit. At z −0.2: the
    bottom hemisphere, 0.428193.
-10. **Start inside.** S (0, 0, 1), len 1: stored [−0.35, 0.35]; answer **0.35** (the exit).
-11. **Slanted through the top, out the side.** S (−1, 0, 3.2), d = (1, 0, −1.5) / 1.802776, len 4: stored
-    [0.608437 (side exit, z 1.175), 0.343499 (top entry, z 2.056768)]; answer **0.608437**, not 0.343499.
-12. **Straight down (the quirk).** S (0.1, 0, 3), d (0, 0, −1), len 4: q = 0.335410; stored [0.833853, −0.216148];
-    answer **0.833853** (z −0.335410, the bottom), where the true entry is 0.216148 (z 2.135410). With len 3: stored
-    [1.111803, −0.288197]: **no hit**, though the ray passes 0.86 m into the capsule.
-13. **Straight up.** S (0.1, 0, −1), d (0, 0, 1), len 4: stored [0.166148, 0.783853]; answer 0.166148 (correct).
-14. **Miss.** S (−2, 0.4, 1), d (1, 0, 0), len 4: disc < 0, no hit.
+3. **Start inside.** S (0, 0, 1), len 1: stored [−0.35, 0.35]; answer **0.35** (the exit).
+4. **Slanted through the top, out the side.** S (−1, 0, 3.2), d = (1, 0, −1.5) / 1.802776, len 4: stored
+   [0.608437 (side exit, z 1.175), 0.343499 (top entry, z 2.056768)]; answer **0.608437**, not 0.343499.
+5. **Straight down (the quirk).** S (0.1, 0, 3), d (0, 0, −1), len 4: q = 0.335410; stored [0.833853, −0.216148];
+   answer **0.833853** (z −0.335410, the bottom), where the true entry is 0.216148 (z 2.135410). With len 3: stored
+   [1.111803, −0.288197]: **no hit**, though the ray passes 0.86 m into the capsule.
+6. **Straight up.** S (0.1, 0, −1), d (0, 0, 1), len 4: stored [0.166148, 0.783853]; answer 0.166148 (correct).
+7. **Miss.** S (−2, 0.4, 1), d (1, 0, 0), len 4: disc < 0, no hit.
 
 RayCastBodies, ray S (0, 0, 1), d (1, 0, 0), len 10, typeMask 0xffffffff, flags of every body `0x2000` unless said:
 
-15. **Nearest.** Body A, box centre (5, 0, 1), half (1, 1, 1); body B, box centre (3, 0, 1), half (0.5, 0.5, 0.5):
-    owner B, B's box, 0.25 (A's 0.4 loses).
-16. **Filters.** B without `0x2000`: A, 0.4. `ignored` = B's owner: A, 0.4. typeMask 0: no hit. B's box disabled
-    (flag `0x1` clear): A, 0.4. A sphere shape on B instead of the box: never tested, A.
-17. **A human.** A human body whose capsule has base (2, 0, 0), height 1.8, radius 0.35: hit at 0.165 on the capsule;
-    a bone shape switched on and in the ray's way changes nothing.
-18. **Tie.** Two bodies with identical boxes: the one earlier in the x-sorted list wins.
-19. **Miss leaves `out` alone.** Fill `out` with a pattern; a ray that meets nothing leaves every byte.
+1. **Nearest.** Body A, box centre (5, 0, 1), half (1, 1, 1); body B, box centre (3, 0, 1), half (0.5, 0.5, 0.5):
+   owner B, B's box, 0.25 (A's 0.4 loses).
+2. **Filters.** B without `0x2000`: A, 0.4. `ignored` = B's owner: A, 0.4. typeMask 0: no hit. B's box disabled
+   (flag `0x1` clear): A, 0.4. A sphere shape on B instead of the box: never tested, A.
+3. **A human.** A human body whose capsule has base (2, 0, 0), height 1.8, radius 0.35: hit at 0.165 on the capsule;
+   a bone shape switched on and in the ray's way changes nothing.
+4. **Tie.** Two bodies with identical boxes: the one earlier in the x-sorted list wins.
+5. **Miss leaves `out` alone.** Fill `out` with a pattern; a ray that meets nothing leaves every byte.
 
 ### Unit 15: The physics world: construction, settle and step {#unit-15}
 
@@ -6250,17 +6253,17 @@ came from.
 
 **Only when `keepLevelFile` is 0:**
 
-5. **Pop** (the Lua pool pushed by `LoadLevel`).
-6. Push the `World Level Pool` (`+0x38`); its `SetOption(0, 1)` (count frees).
-7. `WorldLevel_Release(+0x40)` ([Unit 17](#u17-release)): the glows, the captions, the level object and its mesh,
+1. **Pop** (the Lua pool pushed by `LoadLevel`).
+2. Push the `World Level Pool` (`+0x38`); its `SetOption(0, 1)` (count frees).
+3. `WorldLevel_Release(+0x40)` ([Unit 17](#u17-release)): the glows, the captions, the level object and its mesh,
    occluders and models.
-8. Free the path data (`0x0051058c`, line 1187, `0x004f58b8`: if non-null).
-9. `SetOption(0, 0)`; pop.
-10. Push the `Sector Pool`. The level clump's `CheckEmpty` (slot `+0x70`; its result is not used); `UnregisterPool`
-    (manager slot `+0xd0`); the `Sector Pool`'s `SetOption(0, 1)` (a heap ignores it); the clump's `Destroy(Sector
-    Pool)` (slot `+0x90`: its block goes back); delete the 0x18-byte clump object (`0x004de3d8`, line 1200), which
-    `LoadLevel` allocated from the `Sector Pool`; `SetOption(0, 0)`; pop.
-11. `+0x38 = 0`.
+4. Free the path data (`0x0051058c`, line 1187, `0x004f58b8`: if non-null).
+5. `SetOption(0, 0)`; pop.
+6. Push the `Sector Pool`. The level clump's `CheckEmpty` (slot `+0x70`; its result is not used); `UnregisterPool`
+   (manager slot `+0xd0`); the `Sector Pool`'s `SetOption(0, 1)` (a heap ignores it); the clump's `Destroy(Sector
+   Pool)` (slot `+0x90`: its block goes back); delete the 0x18-byte clump object (`0x004de3d8`, line 1200), which
+   `LoadLevel` allocated from the `Sector Pool`; `SetOption(0, 0)`; pop.
+7. `+0x38 = 0`.
 
 **Left behind**, by both paths: `+0x40` still points at the freed level object (a `WorldManager_RayCast` after an
 unload reads freed memory; inferred that nothing casts then); the path data globals `0x0051058c` and `0x00510584`
@@ -6356,8 +6359,8 @@ sector's atomic, the material alpha callback, the visibility pass's sector callb
 - **Coney:** `src/world/streamed_world.*` (the visibility callback's order and its quirk), `src/platform/world_set.*`
   (the release of an atomic, the modulate flag, tags), `src/platform/world_renderer.*` (the alpha callback).
 - **Tests:** [Test ideas](#u19-tests): a marked sector of the `d` world sets the `s` world's mark; an occluded sector is
-  neither marked nor collected nor counted; a sector without an index is neither collected, marked nor counted; the alpha callback
-  changes only the alpha byte of every material; a sector whose atomic is in use stays pending.
+  neither marked nor collected nor counted; a sector without an index is neither collected, marked nor counted; the
+  alpha callback changes only the alpha byte of every material; a sector whose atomic is in use stays pending.
 
 7 functions, 1684 bytes (0 tagged).
 
@@ -6471,14 +6474,15 @@ callback is saved in `0x005147e4` and the world being walked in `0x005147ec`.
    (`+0x08f8 + 4 × (index >> 5)`, bit `index & 31`), **whichever world is being walked**.
 6. Return `sector` when `visible`, else null.
 
-**Consequences** (confirmed (code) for each mechanism, the effects inferred): the `d` world's own visible bits are
-only ever cleared (by `World_ResetVisibility` on the first viewport), so its `World_FindPartToLoad` never finds a
-visible candidate and always falls back to all its sectors (its `+0x10` is always set after a search), and its
+**Consequences** (confirmed (code) for each mechanism, the effects inferred): the `d` world's own visible bits are only
+ever cleared (by `World_ResetVisibility` on the first viewport), so its `World_FindPartToLoad` never finds a visible
+candidate and always falls back to all its sectors (its `+0x10` is always set after a search), and its
 `World_FindPartToUnload` treats every loaded part as unseen. The `s` world's bits gain the `d` world's indices, so an
 `s` sector can count as visible because the `d` sector with the same index is. The counter `0x005147f4` is reset by
 `World_ResetVisibility` (`0x004123e8`, the store at `0x004124e8`) and read once by `World_FindVisibleSectors`
-(`0x00411e20`): when it is still 0 after a PVS walk, the walk is repeated with PVS off. Since PVS-hidden sectors count, the repeat happens only when no
-indexed sector survived the occluders (or none was walked), not when the PVS hid them all.
+(`0x00411e20`): when it is still 0 after a PVS walk, the walk is repeated with PVS off. Since PVS-hidden sectors count,
+the repeat happens only when no indexed sector survived the occluders (or none was walked), not when the PVS hid them
+all.
 
 Whether RenderWare's walk stops or goes on after a null return is RenderWare's, not read here; the original returns
 null for both an occluded and a PVS-hidden sector.
@@ -6578,11 +6582,11 @@ code:
   landing segment's raised feet. Body flag `0x1000` is set by `PhysicsBody_PushOutOfWalls` (`0x00347b70`); other
   setters are not traced.
 - **Callers not traced:** `IPhysics_CollideShape`'s callers `Car_UpdateLoosePart`, `Human_TraceThrowAim` and
-  `CamPower_PlaceShot` (the others are in [Unit 11](#u11-collide-shape); none seen passes `0x8000`); which owner
-  class has type mask `0x200`, which makes the capsule sweep skip its vertical test; whether anything but `IPhysics_OverlapShape` reads the overlap table; whether the camera (the other
-  caller of `Sweep_SphereOrientedBox`) reads its normals, six of which point the wrong way
-  ([The normal tables](#the-normal-tables)); how a held weapon's strike sphere reaches `Car_OnHit` as kind 1 (its hit
-  goes to the held object's contact handler).
+  `CamPower_PlaceShot` (the others are in [Unit 11](#u11-collide-shape); none seen passes `0x8000`); which owner class
+  has type mask `0x200`, which makes the capsule sweep skip its vertical test; whether anything but
+  `IPhysics_OverlapShape` reads the overlap table; whether the camera (the other caller of `Sweep_SphereOrientedBox`)
+  reads its normals, six of which point the wrong way ([The normal tables](#the-normal-tables)); how a held weapon's
+  strike sphere reaches `Car_OnHit` as kind 1 (its hit goes to the held object's contact handler).
 - **Names that do not fit** (kept, as other analysts gave them): `CollTri_ComputeEdgeNormals` (`0x00343b20`)
   normalises the edges; `Ray_InfiniteCylinder` (`0x0034d938`) is a capsule; `SphereBox_SweepCorner` (`0x0034b040`) is
   the face-region step, `SphereBox_SweepFaceEdges` (`0x0034b7b0`) the corner-region step and `SphereBox_ToBoxSpace`

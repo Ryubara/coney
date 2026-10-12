@@ -137,12 +137,11 @@ The collision chunks and their queries: [Collision](collision.md).
 ### The level object {#the-level-object}
 
 `0x0040ce30`, the `0x17` handler, builds the level object **in place, on the `0x17` chunk's own 48 bytes**: the
-constructor `0x0040cf40` writes the vtable `0x00545b88` and zeroes the ten words `+0x04` to `+0x28` (the object with its vtable is 0x2c
-bytes). It then takes the collision
-mesh from the object stack and pops, in this order, `0x42`, `0x0B`, then three `0x41`/`0x0B` pairs and the `0x53`
-occluders, links each pair (`0x0040cdd8`) and pushes the level as an object, which `WorldLevel_Load` (`0x0040c688`)
-pops for `LoadLevel`. Confirmed (code) for the fields; the roles of the three models come from their texture names
-and their drawing (inferred):
+constructor `0x0040cf40` writes the vtable `0x00545b88` and zeroes the ten words `+0x04` to `+0x28` (the object with its
+vtable is 0x2c bytes). It then takes the collision mesh from the object stack and pops, in this order, `0x42`, `0x0B`,
+then three `0x41`/`0x0B` pairs and the `0x53` occluders, links each pair (`0x0040cdd8`) and pushes the level as an
+object, which `WorldLevel_Load` (`0x0040c688`) pops for `LoadLevel`. Confirmed (code) for the fields; the roles of the
+three models come from their texture names and their drawing (inferred):
 
 | Offset | What | Read by |
 | --- | --- | --- |

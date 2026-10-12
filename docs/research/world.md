@@ -531,8 +531,8 @@ second**.
    set the PVS view point to player 1's camera position (`0x004123e8`).
 2. Install `0x00411b98` as the sector render callback and call `RpWorldRender`: RenderWare walks the BSP and calls the
    callback for each sector inside the camera's frustum (no geometry is drawn: the sectors have none).
-3. With PVS data and PVS on (`0x005e539c`, set to 1 at start-up), the walk runs with the PVS hooked in
-   (`0x004beff8`, `0x004beec0`, `0x004befa0`). If no indexed sector got past the occluders (a sector the PVS hides still counts,
+3. With PVS data and PVS on (`0x005e539c`, set to 1 at start-up), the walk runs with the PVS hooked in (`0x004beff8`,
+   `0x004beec0`, `0x004befa0`). If no indexed sector got past the occluders (a sector the PVS hides still counts,
    `0x005147f4`), the pass is run again without PVS.
 4. The callback, for a sector with an index: skip it if one of the level's occluders hides its box (`0x0017a738`);
    otherwise count it, and unless the PVS says it is hidden, call the world's own sector callback,
