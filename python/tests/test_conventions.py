@@ -31,6 +31,7 @@ def test_the_real_title_rules() -> None:
         "build",
         "ci",
         "core",
+        "gameplay",
         "fileio",
         "graphics",
         "audio",
