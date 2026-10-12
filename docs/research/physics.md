@@ -727,7 +727,8 @@ above and say what is still missing before they can be written.
 
 When this plan was made (2026-10-12, `main` at `f325e018`), the tracker had 17 of `Physics/`'s 183 functions, 12 of
 `RayCast/`'s 15 and 33 of `World/`'s 61. `RayCast/`'s mesh code (`src/raycast/collision_mesh.*`) is complete apart
-from Unit 16; `World/`'s streaming and drawing are done, and its open functions are lifecycle (Units 17 to 19).
+from Unit 16, which also changes its ray: it skips excluded triangles before intersecting and returns only a kept
+hit, so it cannot give the see-through material a clear ray crossed ([WorldManager_RayCast](#u16-world-ray)); `World/`'s streaming and drawing are done, and its open functions are lifecycle (Units 17 to 19).
 
 **What Coney has instead** (the stand-ins these units replace):
 
@@ -5779,12 +5780,17 @@ Synthetic: a world built by Coney's constructor, fake owners with a pose, a flag
 
 ### Unit 16: RayCast leftovers and the world manager's ray {#unit-16}
 
-- **Specified by:** [Collision](collision.md#materials) (the material names, 191 entries), [Ray
-  cast](collision.md#ray-cast) (`WorldManager_RayCast`), [Lifetime](collision.md#lifetime).
-- **Coney:** `src/raycast/collision_mesh.*` (a material name table as reference data: names only), callers that today
-  cast with mask 0 where the original passes its own mask (an open question on the Collision page).
-- **Tests:** the name of ids 0, 1, 2, 116, 190; an id past 190 (what the jump table does with it is to be read first);
-  the world wrapper pre-sets material 1 and hit 0.
+**What it is.** The material id to name lookup, the collision mesh's chunk frees, the empty per-frame mesh update and
+the world manager's ray cast, the one through which everything outside `RayCast/` and the cameras casts into the
+level. All claims below are confirmed (code) at the cited addresses (read in the disassembly, 2026-10-12) unless a
+line says otherwise; no runtime claims.
+
+- **Coney:** `src/raycast/collision_mesh.*`: a material name table (reference data, names only) and a world ray
+  whose result keeps the original's preset and its pass-through fill ([WorldManager_RayCast](#u16-world-ray)); the
+  callers keep mask 0 and no exclusion list, which is what the original passes almost everywhere
+  ([Who passes what](#u16-callers)). The mesh's destruction order is Unit 17's.
+- **Tests:** [Test ideas](#u16-tests): the names of ids 0, 1, 2, 116, 190, 191 and 255; the world ray's preset
+  (material 1, hit 0, every other field left as the caller had it) and its fill by an excluded triangle.
 
 4 functions, 2636 bytes (0 tagged).
 
@@ -5795,13 +5801,189 @@ Synthetic: a world built by Coney's constructor, fake owners with a pose, a flag
 | `0x00351158` | `CollisionMesh_UpdateEmpty` | 8 |
 | `0x0040db88` | `WorldManager_RayCast` | 48 |
 
+#### CollisionMaterial_GetName {#u16-material-name}
+
+`0x0034fc08`, `const char* CollisionMaterial_GetName(int id)` (`a0` id, `v0` the name). No static caller (no
+cross-reference reaches it; inferred: a debug or tool leftover, or a caller through a pointer not found).
+
+1. **Bound:** `id < 191`, compared **unsigned** (`sltiu a0, 0xbf` at `0x0034fc08`). Any other value, including
+   every negative `int`, returns the string `unknown` (`0x005785c8`, the default case at `0x00350520`).
+2. **Table:** otherwise jump through the 191-word table at `0x005785d0`. Every entry points at its own 12-byte case
+   (`0x0034fc2c + 12 × id`), and every case returns a different string: no two ids share a name, no id falls to the
+   default. The strings run from `0x00577560` (id 0) to `0x005785b8` (id 190) in id order.
+
+Note the two "no material" names: id 0 is `undefined` and an id past 190 is `unknown`; id 1 is `MATERIAL_NONE`.
+
+#### The material names {#u16-names}
+
+A curated reference list (names only, read from the strings the cases return). Every name is `MATERIAL_` followed by
+the word given, except id 0 (`undefined`, no prefix) and id 1 (written in full). `ASHPHALT`, `LAMPOST`,
+`GUILOTINE`, `PARKNMETER` and `SWITCHBLD` are spelt as the game spells them.
+
+0 `undefined`, 1 `MATERIAL_NONE`, 2 `GLASS`, 3 `STEEL`, 4 `ALUMINIUM`, 5 `CONCRETE`, 6 `ASHPHALT`, 7 `LAMPOST`,
+8 `SHOE`, 9 `FIST`, 10 `TORSO`, 11 `GARBAGE_CAN`, 12 `DUMPSTER`, 13 `CAR_HOOD`, 14 `CAR_HOOD_STREAM`, 15 `DRYWALL`,
+16 `WOOD`, 17 `HEAD`, 18 `TRAINRAIL`, 19 `SHOVEL`, 20 `TRAINCAR`, 21 `METALDIVIDER`, 22 `GARBAGEBAG`, 23 `TINBOX`,
+24 `RUBBLE`, 25 `ROLLUPDOOR`, 26 `HUMAN`, 27 `TV`, 28 `DRUM`, 29 `BAT`, 30 `LOW_FENCE`, 31 `OPAQUE_FENCE`, 32 `MAILBOX`,
+33 `ELBOW`, 34 `KNEE`, 35 `GRASS`, 36 `DIRT`, 37 `BOTTLE`, 38 `FRIDGE`, 39 `SIGNS`, 40 `BASKETS`, 41 `SKID`, 42 `GEAR`,
+43 `TRASHCAN`, 44 `TRASHCANLID`, 45 `SOFAS`, 46 `TYPEWRITER`, 47 `WOODFURNITURE`, 48 `MILKCRATE`, 49 `RADIATOR`,
+50 `METALCHAIR`, 51 `OFFICECHAIR`, 52 `CINDERBLOCK`, 53 `WHEELCHAIR`, 54 `STEELBARRICADE`, 55 `THINWOOD`, 56 `MEDWOOD`,
+57 `SHOPPINGCART`, 58 `HEAVYBOXES`, 59 `HOTDOGCART`, 60 `POOLBALL`, 61 `EMPTYBARREL`, 62 `FULLBARREL`, 63 `GARDENTOOLS`,
+64 `PAN`, 65 `CROWBAR`, 66 `STICKS`, 67 `BASEBALL`, 68 `FIREEXTINGUISHER`, 69 `BENCH`, 70 `WELDINGTANKS`, 71 `TIRE`,
+72 `RAT`, 73 `FIREWHOOSH`, 74 `STEELOBJECTS`, 75 `SOLIDOBJECTS`, 76 `ELECDEBRIS`, 77 `METALRODS`, 78 `GUILOTINE`,
+79 `MINECART`, 80 `RIDECART`, 81 `PICKAXE`, 82 `WOODTABLE`, 83 `WIDEBOARD`, 84 `SMALLBOARD`, 85 `DEBRIS`, 86 `CHAIR`,
+87 `LAMP`, 88 `GLASS_SMALL`, 89 `MUG`, 90 `MACHETE`, 91 `WOODFENCE`, 92 `MOLOTOV`, 93 `PORCELAIN`, 94 `PORCE_PART`,
+95 `CAMERA_GHOST`, 96 `BLASTER`, 97 `SWITCHBLD`, 98 `PAINT`, 99 `CERAMIC`, 100 `CERAM_PART`, 101 `FEET`, 102 `BRICK`,
+103 `CASHREG`, 104 `GLASS_FRAGILE`, 105 `ROOFTOP`, 106 `GRAVEL`, 107 `CHAINLINK_NOCLIMB`, 108 `BAG`, 109 `MEAT`,
+110 `PLASTIC`, 111 `JAB`, 112 `BIGPUNCH`, 113 `BIGKICK`, 114 `VEGETATION`, 115 `GARBAGE`, 116 `BRICKWALL`,
+117 `WOODWALL`, 118 `STEELWALL`, 119 `CAR_PART`, 120 `CAR_PART_STREAM`, 121 `CARPET`, 122 `RAILING`, 123 `JUKEBOX`,
+124 `BEAM`, 125 `CABINET`, 126 `BATON`, 127 `BLOCK`, 128 `WEAPON_BLOCK`, 129 `CAR_DAMAGE`, 130 `RAZOR_CLUB`,
+131 `DRUMKIT`, 132 `CYMBAL`, 133 `WOODSPLINTER`, 134 `GONG`, 135 `KEYBOARD`, 136 `PAINTCAN`, 137 `CHICKENBOX`,
+138 `RICEBAG`, 139 `SPIKEBAT`, 140 `GLASSPART`, 141 `PLYWOOD`, 142 `GARBPART`, 143 `RUBBLEDEBRIS`, 144 `METALDEBRIS`,
+145 `PAPERDEBRIS`, 146 `BIGWOOD`, 147 `WIREFRAME`, 148 `SMALLBOARDPART`, 149 `WIDEBOARDPART`, 150 `TINYWOOD`,
+151 `SPEAKER`, 152 `CHAINMETAL`, 153 `CHAINWOOD`, 154 `GUITAR`, 155 `DRUMSTICK`, 156 `PARKBENCH`, 157 `PLASTERWALL`,
+158 `BROKENBOTTLE`, 159 `TORSO_PRONE`, 160 `BREAKABLEDOOR`, 161 `HUMAN_LIGHT`, 162 `HUMAN_HEAVY`, 163 `FEET_LIGHT`,
+164 `FEET_LAND`, 165 `COKEMACHINE`, 166 `PHONE`, 167 `FIREHYDRANT`, 168 `PARKNMETER`, 169 `PAINTING`, 170 `SUBWAYSEAT`,
+171 `AQUARIUM`, 172 `DEFAULT_OBJ`, 173 `LIZZIE_DOOR`, 174 `BOSS_SHOE`, 175 `BOTTLE_SPECIAL`, 176 `MOLOTOV_SPECIAL`,
+177 `BRICK_SPECIAL`, 178 `CHAIR_SPECIAL`, 179 `CLIMB_WOOD`, 180 `CHIMNEY`, 181 `STATUE`, 182 `STATUE_PIECE`,
+183 `BOSS_FIST`, 184 `DEAD`, 185 `ICECREAM`, 186 `SAND`, 187 `STOREDOOR_GLASS`, 188 `PUNCHING_BAG`, 189 `FOAMHAND`,
+190 `SALAMI`.
+
+The same 191 ids index the sound matrix's material side (`src/audio/sound_matrix.h`, `kMaterials = 191`, from
+`enum_preload.lua`); that the two lists name the same ids in the same order is inferred from the count, not compared.
+
+#### CollisionMesh_FreeChunks {#u16-free-chunks}
+
+`0x00350688`, `void CollisionMesh_FreeChunks(CollisionMesh* mesh)`; the anchor of `RayCast/CollisionMesh.cpp` (path
+string `0x005788f8`). Its only caller is the mesh's deleting destructor `CollisionMesh_DeletingDtor` (`0x004f12a8`,
+vtable `0x005448b0` slot `+0x08`), which writes the mesh's vtable, calls it, writes the base vtable `0x00534298` and
+calls `operator delete` only when its flags have bit 0.
+
+It frees five pointers through the memory manager's `Free` (`0x005127e4`, slot `+0x58`, [Memory](memory.md)): each
+goes to the pool on top of the heap stack, with the file string and a line number. **Order:**
+
+| # | Field | Chunk | Line |
+| --- | --- | --- | --- |
+| 1 | `+0x80` | `0x06` index lists | 285 |
+| 2 | `+0x78` | `0x05` grid | 286 |
+| 3 | `+0x88` | `0x04` triangles | 287 |
+| 4 | `+0x8c` | `0x07` vertices | 288 |
+| 5 | `+0x94` | `0x52` checked bits | 289 |
+
+No pointer is tested for null and none is cleared afterwards. The header (the `0x03` chunk, which **is** the mesh
+object) is not freed here: the caller's delete frees it after the destructor ([LevelObject_Destroy](#u17-destroy)).
+Nothing else in the mesh is touched.
+
+#### CollisionMesh_UpdateEmpty {#u16-update-empty}
+
+`0x00351158`: `jr ra` and nothing else. Called with no arguments by eleven game modes' `Update` functions, not only
+mode 1's: `Gm_Level_Update` (`0x00158d0c`), `PauseMode_Update`, `Gm_ANGameOver_Update`, `Gm_MissionFailed_Update`,
+`GameStats_Update`, `RumbleResult_Update`, `MissionSelect_Update`, the modes `0x0e`, `0x11` and `0x12`, and
+`Gm_Error_DrawOverWorld` (call sites `0x00155d00`-`0x0015f380`). Coney needs nothing for it; a tag on the mode update
+is enough.
+
+#### WorldManager_RayCast {#u16-world-ray}
+
+`0x0040db88`, `void WorldManager_RayCast(WorldManager* wm, const Ray* ray, RayResult* result, const u32*
+excludeList, u32 mask)`: `a0`..`a3` and `t0` in the EE ABI. The ray and result records are on
+[Collision](collision.md#ray-cast).
+
+1. `result+0x28 = 1` (a `u32` store: `MATERIAL_NONE`) and `result+0x10 = 0` (hit). **Nothing else is preset:** the
+   normal (`+0x00`), `t` (`+0x14`), `+0x18`, the flags (`+0x2c`), the area byte (`+0x2e`) and the triangle pointer
+   (`+0x30`) keep whatever the caller left in them.
+2. Call `CollisionMesh_RayCast(*(wm+0x40) + 0x04 → mesh, ray, result, excludeList, mask)` with every other
+   argument passed through unchanged. `wm+0x40` (the level object) is read **without a null check**: a cast before
+   `LoadLevel` or after `WorldManager_Unload(0)` reads a null or a freed level ([Unit 18](#u18-unload)).
+3. **Return value:** none worth reading. `CollisionMesh_RayCast` (`0x00350cd8`) returns with `v0` holding the last
+   loop comparison of its cell walk (`sltu` at `0x00351110`), and the wrapper passes it on. Callers read `+0x10`.
+
+What the cast then writes, restated from the cell test (`0x00350778`) so this unit is complete:
+
+- For each triangle reached and accepted (`0 <= t <= length`), the material filter (`0x00350538`) answers 1 (kept)
+  or 0 (in `excludeList`).
+- **While `hit` is 0**, the triangle fills the result whatever the filter said and with **no nearer-than test**:
+  `t`, `hit` = the filter's answer, `+0x18` = 0, the material (`u32` at `+0x28`), the flags `& 0xfff` (`u16` at
+  `+0x2c`), the area byte (`+0x2e`) and the triangle (`+0x30`). Only a kept triangle (filter 1) also writes the unit
+  normal (`+0x00`), flipped to face the ray when the triangle is two-sided and `n·dir > 0`.
+- **Once `hit` is 1**, an excluded triangle is skipped, and a kept one replaces the result only when its `t` is
+  smaller than the stored `t`.
+
+So after a cast: `hit` 1 means the nearest kept triangle is in the result. `hit` 0 with material 1 means nothing was
+crossed (and `t`, normal, flags, area and triangle are the caller's old values). `hit` 0 with any other material
+means an excluded triangle was crossed and none kept: the result holds the **last excluded triangle tested** (in the
+walk's cell order, then the cell list's order), its `t`, flags, area and triangle, and the caller's old normal. A
+kept triangle met after an excluded fill becomes the hit whatever the two `t` values.
+
+#### Who passes what {#u16-callers}
+
+`WorldManager_RayCast` has **61 call sites in 46 functions** (the "46 callers" of Collision counts functions). Read at
+each call site, 2026-10-12:
+
+- **No exclusion list and mask 0** at 55 sites, among them `Collision_DropToGround` (`0x0034f994`),
+  `Collision_DropToMarkedGround` (`0x0034faa0`), `Collision_MarchRay` (`0x0034f888`), every climb probe
+  (`Climb_TryStart`, `Climb_ProbeTop`, `Climb_Start`, the two `Climb_OnFirstClipEnd*`), the human's ground and
+  landing rays (`Human_SnapToGround` `0x0023eb9c`, `Human_LandingTest` `0x0023e5a4`, `Human_StartFall`,
+  `Human_SetTransform`, `Human_Init`, `Human_TeleportNear`), `Player_TryJump`, `Player_Throw`, the AI's line and
+  point tests and `Explosion_DamageHumansInRadius` (`0x00392834`). So Coney's mask 0 and empty list for the ground
+  helpers and the human are the original's, not a choice.
+- **Mask 8**, no list: the first cast of `Human_CanSeeObject` (`0x0021c69c`); its second (`0x0021c780`) passes 0.
+- **A list and a mask**: `Human_TestStrikes` (`0x0033f6c0`) passes the list at its `sp+0x930` and mask `0x48`, or
+  another value chosen by a test just before (`movn` at `0x0033f6a8`; not read further here).
+- **Not read**: `Ray_IsClear` (`0x0024e040`), the second cast of `Garbage_Update` (`0x001710bc`) and
+  `Interact_FindPartner` (`0x002a9454`) set `a3` and `t0` outside the 25 instructions before the call.
+
+#### What Coney changes {#u16-coney}
+
+- **Material names.** A constexpr table of the 191 names above (`collision_mesh.h` or a `materials.h` beside it) and
+  a `materialName(int id)` that returns `unknown` for any id outside 0 to 190, negative ones included.
+  `@orig 0x0034fc08 CollisionMaterial_GetName (unknown)`; the file is inferred to be in `RayCast/`, not read.
+- **The world ray.** `CollisionMesh::rayCast` returns `std::optional<RayHit>` and skips an excluded triangle
+  **before** intersecting (`collision_mesh.cpp`, the exclusion test in the cell loop), so it cannot report the
+  see-through triangle a clear ray crossed, which [AI: GetItem](ai.md#get-item) reads as "an intact pane in the way".
+  Add a world-ray result that mirrors the original's: `hit`, `t`, normal, material (preset 1), flags, area and
+  triangle, filled as [above](#u16-world-ray), with a `worldRayCast(level, ray, result&, exclude, mask)` that sets
+  only `material = 1` and `hit = false` before the walk and leaves the rest of the caller's result alone.
+  `@orig 0x0040db88 WorldManager_RayCast (WorldManagerPS2.cpp)` (inferred file: it sits in the
+  `World/ps2/WorldManagerPS2.cpp` range, [Source map](source-map.md#world)). `rayCast` can stay as the convenience
+  form that returns only a kept hit.
+- **No level.** The original dereferences a missing level; Coney returns no hit (material 1) and asserts in debug
+  builds, a marked Coney choice.
+- **Freeing the mesh.** Nothing to add: the mesh owns its chunks, and the order of the five frees is not observable
+  ([Unit 17](#u17-destroy) gives the level object's order, which is).
+
+#### Test ideas {#u16-tests}
+
+All on synthetic meshes from `src/raycast/collision_builder.h`; expected values follow from the spec above.
+
+- **Names:** `materialName(0)` = `undefined`, `1` = `MATERIAL_NONE`, `2` = `MATERIAL_GLASS`, `116` =
+  `MATERIAL_BRICKWALL`, `190` = `MATERIAL_SALAMI`, `191` = `unknown`, `255` = `unknown`, `-1` = `unknown`; 191
+  distinct names.
+- **Preset, nothing crossed:** an empty mesh area, ray from (0, 0, 1) along +x, length 5, a result prefilled with
+  `t` = 7.0, normal (0, 0, 9) and triangle 42: after the cast `hit` false, material 1, `t` 7.0, normal (0, 0, 9),
+  triangle 42.
+- **A pane crossed, glass excluded:** a two-sided vertical triangle of material 2 across x = 1 and a ray from
+  (0, 0, 1) along +x, length 5, list {2}: `hit` false, material 2, `t` = 1.0, the pane's triangle, normal still the
+  caller's.
+- **The same pane, no list:** `hit` true, material 2, `t` = 1.0, normal (−1, 0, 0) (flipped to face the ray).
+- **Excluded then kept, farther:** the pane at x = 1 (material 2) and a wall at x = 3 (material 3), list {2}: `hit`
+  true, `t` = 3.0, material 3.
+- **Kept then excluded, nearer, in the same cell** (wall listed before the pane): `hit` true, `t` = 3.0, material 3
+  (an excluded triangle never replaces a kept hit).
+- **Two excluded panes in one cell's list**, at x = 2 listed first and x = 1 listed second, list {2}: `hit` false,
+  `t` = 1.0 (the last tested, not the nearest); listed the other way round, `t` = 2.0.
+- **Mask:** a floor with flag `0x08` under a ray cast with mask 8 is not hit (material stays 1); with mask 0 it is.
+
 ### Unit 17: Level file and level object lifecycle {#unit-17}
 
-- **Specified by:** [Level loading](level-loading.md), [Chunk system](chunk-system.md), [The streamed
-  world](world.md#small-functions).
-- **Coney:** `src/world/level_object.*`, `src/platform/level_file.*`.
-- **Tests:** a synthetic WAD index finds, sizes and misses entries; the level object's destructor frees the collision
-  chunks (no leak under the synthetic chunk stack).
+**What it is.** The WAD object's opener and lookups, the level file's load (`WorldLevel_Load`), the `0x17` handler's
+registration, the level object's constructor, destructor and occluder setter, and `WorldLevel_Release`, which
+destroys the level object on unload. Confirmed (code) at the cited addresses unless a line says otherwise.
+
+- **Coney:** `src/fileio/wad.*` (the lookups), `src/world/level_object.*` (an explicit destructor in the original's
+  order, the `WorldLevel_Load` tag), `src/platform/level_file.*`, and the unload path that stands for
+  `WorldLevel_Release` ([What Coney changes](#u17-coney)).
+- **Tests:** [Test ideas](#u17-tests): a synthetic WAD index finds, sizes and misses entries in any case; a level
+  file round trip leaves both chunk stacks empty; destroying the level object releases its parts in the original's
+  order (models before their dictionaries).
 
 10 functions, 1028 bytes (0 tagged).
 
@@ -5817,6 +5999,139 @@ Synthetic: a world built by Coney's constructor, fake owners with a pose, a flag
 | `0x0040cf40` | `LevelObject_Construct` | 60 |
 | `0x0040cf80` | `LevelObject_Destroy` | 264 |
 | `0x0040d088` | `LevelObject_SetOccluders` | 32 |
+
+#### The WAD object {#u17-wad}
+
+A one-word object (`+0x00` the `DVDWadIndex*`), the global `0x006f39e8` reached through `0x005147a4`
+([Boot](boot.md#initialisation-order)).
+
+- **`Wad_Open(wad)`** (`0x0040c5e0`, boot step 8): `wad+0x00 = DVDWadIndex_Create("cdrom0:\WARRIORS.DIR;1")`
+  (`0x00149040`), then `MS_OpenStreamFile(0, "cdrom0:\WARRIORS.WAD;1", 0)` (`0x001500a8`, the IOP command `0x1f`).
+  No error check of either ([File I/O](file-io.md#opening-the-wad-at-boot)).
+- **`Wad_FindEntry(wad, name)`** (`0x0040c628`): returns `DVDWadIndex::Find(wad+0x00, name)` (`0x001490b8`): the
+  12-byte entry or null. `Find` **lowercases `name` in place** before hashing ([Resolving a
+  name](file-io.md#resolving-a-name)), so the caller's buffer changes. Callers: `IopStream_Start` (`0x00149410`) and
+  `AudioDevice_LoadBank` (`0x0014c620`).
+- **`Wad_GetEntrySize(wad, name)`** (`0x0040c648`): `Find(...)` then the entry's `+0x04` (size), **with no null
+  check**: a missing name reads address 4. Caller: `PS2StreamFileSys_GetSize` (`0x00148ba8`).
+- **`Wad_HasEntry(wad, name)`** (`0x0040c668`): `Find(...) != 0`. Caller: `PS2StreamFileSys_Exists` (`0x00148bf0`).
+
+The names these receive are already prefixed `./ee_files/` by the stream file system ([File
+I/O](file-io.md#resolving-a-name)); the WAD object adds nothing.
+
+#### WorldLevel_Load {#u17-load}
+
+`0x0040c688`, `LoadedObject* WorldLevel_Load(const char* name)`. Its only caller is `WorldManager_LoadLevel`, which
+has the `World Level Pool` on top of the heap stack. Steps:
+
+1. `snprintf(buf, 255, "%s.lev", name)` (format `0x00588638`, a 256-byte stack buffer).
+2. Push the `Level Dynamic & LUA Pool` (`0x006eb9b8`). `file = fs.Open(buf, 0)` (device `0x0050b788` `+0x90`, the
+   current file system, slot `+0x60`). Build a `BufferedStream` on the stack over `file`, the file manager's buffer
+   (`+0x3c`) and its size (`+0x40`). Pop.
+3. `ChunkSystem_LoadContainer(stream)` (`0x00144180`) with the caller's pool on top: every chunk and object the
+   level file makes goes into the `World Level Pool`.
+4. Push the Lua pool; detach the stream; `fs.Close(file)` (slot `+0x68`); pop.
+5. `level = ChunkSystem_PopObject()`; destroy the stream (`File_Destroy(stream, 2)`); return `level`.
+
+No step checks a failure: a missing file, a short read or an empty object stack is not detected here (inferred: the
+file system and chunk system handle or ignore them; not traced). Nothing checks that the popped object is a level.
+
+#### LevelHeader_RegisterChunkHandler {#u17-register}
+
+`0x0040cf18`: `ChunkSystem_SetHandlers(0x17, 0x0040ce30, 0)` (`0x00144348`): chunk `0x17` gets `onLoaded` =
+`LevelHeader_OnLoaded` and no second handler. Boot step 9 ([Chunk
+system](chunk-system.md#handlers-registered-at-run-time)).
+
+#### LevelObject_Construct and LevelObject_SetOccluders {#u17-construct}
+
+- **`LevelObject_Construct(level)`** (`0x0040cf40`): `+0x00` = vtable `0x00545b88`; the ten words `+0x04` to `+0x28`
+  = 0; returns `level`. It runs on the `0x17` chunk's own 48 bytes, so `+0x2c` to `+0x2f` keep the chunk's bytes
+  (unused). `LevelHeader_OnLoaded` (`0x0040ce30`) calls it only when `PopChunk(0x17)` is non-null, and then writes
+  through the result unconditionally (a missing chunk would write through null).
+- **`LevelObject_SetOccluders(level, occluders)`** (`0x0040d088`): `level+0x28 = occluders`, then
+  `Occluders_Set(occluders)` (`0x0017a560`), which converts their points ([Occluders](level-loading.md#occluders)).
+
+The vtable `0x00545b88` has one used slot: `+0x08` / `+0x0c` = `LevelObject_Destroy`.
+
+#### LevelObject_Destroy {#u17-destroy}
+
+`0x0040cf80`, `void LevelObject_Destroy(LevelObject* level, u32 flags)`. Runs from `WorldLevel_Release` on every
+`WorldManager_Unload(keep = 0)` ([below](#u17-release)); this answers [Level loading](level-loading.md#open-questions)'s
+"no caller on the unload path". Order of frees, exactly:
+
+| # | What | How | Then |
+| --- | --- | --- | --- |
+| 1 | vtable | `+0x00` = `0x00545b88` | |
+| 2 | collision mesh `+0x04` | `SafeDelete` `0x004f4b78`: if non-null, its destructor (slot `+0x08`, flags 2: [FreeChunks](#u16-free-chunks)), then `Free(mesh)` (`WorldLevelPS2.cpp`, line 144) | `+0x04` = 0 |
+| 3 | occluders `+0x28` | `SafeFree` `0x004f4bf8`: if non-null, `Free` (line 147) | `+0x28` = 0 |
+| 4 | level world `+0x0c` | device (`0x0050cdb4`) slot `+0x178`: destroy the RenderWare world | `+0x0c` = 0 |
+| 5 | glow dictionary `+0x08` | device slot `+0x158`: destroy the texture dictionary | `+0x0c` = 0 **again**; `+0x08` is never cleared |
+| 6 | skyline model `+0x14`, then its dictionary `+0x10` | `0x004693f0` (clump destroy), `0x00488c58` (dictionary destroy) | not cleared |
+| 7 | sky box `+0x1c`, then `+0x18` | the same | not cleared |
+| 8 | cloud box `+0x24`, then `+0x20` | the same | not cleared |
+| 9 | vtable | `+0x00` = `0x00534298` (the base) | |
+| 10 | the object | `operator delete` (`0x0042c820`) only when `flags & 1` | |
+
+Steps 4 to 8 pass their pointers without a null test (the device's and RenderWare's functions are not read here for
+their null handling). Every `Free` goes to the pool on top of the heap stack, which `WorldManager_Unload` has made
+the `World Level Pool`. Each model goes **before its own dictionary**, and the three model pairs go in the order
+skyline, sky box, cloud box, which is not the order the handler linked them (sky box, skyline, cloud box).
+
+#### WorldLevel_Release {#u17-release}
+
+`0x0040c7f0`, `void WorldLevel_Release(LevelObject* level)`; anchor of `World/WorldLevel.cpp` (path `0x00588640`).
+Only caller: `WorldManager_Unload` with `keep` = 0, passing `wm+0x40`. Steps:
+
+1. `LightGlow_Release(lightManager)` (`0x0017e680` on `0x0050cce4`, [Lighting](lighting.md)).
+2. `Captions_Release(0x00619570)` (`0x001cafa0`, [Movies](movies.md#caption-text)).
+3. **Delete the level object**: `SafeDelete_WorldLevel(level, "WorldLevel.cpp", 45)` (`0x004f4af8`): if non-null,
+   the destructor through vtable `+0x08` with flags 2 ([above](#u17-destroy)), then `Free(level)` into the current
+   pool.
+4. Five calls to empty functions (`0x00386f58`, `0x00386f68`, `0x00386f78`, `0x00386f88`, `0x00386f98`, each
+   `jr ra`).
+
+There are no string tables here: what [Level loading](level-loading.md#the-level-object) calls "frees the string
+tables" is step 3 and the empty calls.
+
+#### What Coney changes {#u17-coney}
+
+- **WAD lookups.** `io::Wad::lookup` already covers `Wad_FindEntry` and `Wad_HasEntry` (any case, no in-place
+  lowercasing, a `NotFound` error for a miss). Add `entrySize(name)` returning `std::expected<std::uint32_t, Error>`
+  for `Wad_GetEntrySize`, where the original crashes on a miss (a marked Coney choice). Tags:
+  `@orig 0x0040c5e0 Wad_Open (World/unknown)` on `Wad::open`, `0x0040c628 Wad_FindEntry`, `0x0040c648
+  Wad_GetEntrySize`, `0x0040c668 Wad_HasEntry` (all `World/unknown`).
+- **The level file.** `world::loadLevelFile` stands for `WorldLevel_Load`; its comment says the function is in the
+  tolua range and carries no tag, which [Level loading](level-loading.md#open-questions) has since answered (game
+  code in `World/`, no path string). Tag it `@orig 0x0040c688 WorldLevel_Load (World/unknown)`. Its stack checks
+  are Coney's (the original checks nothing).
+- **The destructor.** `world::LevelObject`'s members are destroyed in reverse declaration order: subtitles, path data,
+  occluders, cloud box, sky box, skyline, level world, glow dictionary, collision. Give it an explicit destructor that
+  releases them in the original's order ([table](#u17-destroy)): collision, occluders, level world, glow dictionary,
+  then each model **before** its dictionary, skyline, sky box, cloud box. Within `LevelModel` the default order
+  already destroys the model (declared second) before the dictionary. `@orig 0x0040cf80 LevelObject_Destroy
+  (WorldLevelPS2.cpp)`. Whether the order shows to a player is not known (inferred: it matters only for texture
+  reference counts, which librw keeps itself); it costs nothing to keep.
+- **Release on unload.** `WorldLevel_Release`'s three effects belong to Coney's unload ([Unit 18](#u18-coney)): the
+  light glows reset, the captions cleared, the level object destroyed. `@orig 0x0040c7f0 WorldLevel_Release
+  (WorldLevel.cpp)`.
+- **Small ones.** `LevelObject_Construct` and `LevelHeader_RegisterChunkHandler` are what `makeLevelHeaderHandler`
+  and `addLevelFileHandlers` already do; tag them there. `LevelObject_SetOccluders` is the occluders' assignment in
+  the `0x17` handler (`readOccluders` does the conversion).
+
+#### Test ideas {#u17-tests}
+
+- **Lookups on a synthetic index** of three entries named `./ee_files/level1.lev`, `./ee_files/warriors.glr` and
+  `./ee_files/a.pak` with sizes 100, 200, 300: `lookup("LEVEL1.LEV")` finds the first, `entrySize("warriors.glr")` =
+  200, `lookup("missing.lev")` and `entrySize("missing.lev")` fail with `NotFound`, a name differing only in case
+  hashes the same.
+- **A level file round trip** (synthetic chunks in the 18-chunk order of [The level
+  file](level-loading.md#the-level-file)): after `loadLevelFile` both chunk stacks are empty and the object's ten
+  fields are set.
+- **Destruction order:** with recording stand-ins for the platform objects, destroying a `LevelObject` records
+  collision, occluders, level world, glow dictionary, skyline model, skyline dictionary, sky model, sky dictionary,
+  cloud model, cloud dictionary.
+- **No leak:** a level object built over a synthetic collision mesh and destroyed leaves nothing allocated (the
+  `asan` preset, or an allocation counter in the test).
 
 ### Unit 18: World manager lifecycle {#unit-18}
 
