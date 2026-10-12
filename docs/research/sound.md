@@ -1444,8 +1444,12 @@ workers) that belong to this page, by address.
   level when its segment, as a ray, crosses a level triangle, without the turn limits and state `0x4000000`; a
   pane sounds as `GLASS`; a thrown human against the level (`Human_OnContact`) does not sound yet.
 - `VoiceTable` (`voice_table.cpp`, [The voice table](#voice-table)) and `Speech` (`speech.cpp`,
-  [Saying a speech command](#speech)): one line per human at a time, positional and directional at him, cut off by
-  an interrupting one.
+  [Saying a speech command](#speech)): one line per human at a time, positional and directional at him. `Speech`
+  keeps the human's "may be cut" flag and callback as [Cutting in on a line](#speech-cut-in) says: the two starts
+  (`Start::Waiting` for `HuSpeak`, the grunts and commands said uncut; `Start::Cutting` for `HuSpeakNI`, `die`,
+  `expire` and commands said cutting), the one stop (`shutUp` with `force`: `HuShutUp` passes its argument, every
+  other caller stops unforced) and the speech update that runs a gone line's callback once. A grunt over a
+  `HuSpeakNI` line is silent and the line plays on, which is what lets mission 2's last line (`FadeOut`) end.
 - `AmbientEmitters` (`ambient_emitters.cpp`, [Ambient emitters](#ambient)): both binding forms (the older one named
   `particle task`; the same name, sound and first point is the existing emitter, switched on), modes 1-5, the range
   from `pos1`, the plays, the delays, the points, the volume, the name kinds, the filter on player 1's covered
@@ -1478,8 +1482,9 @@ game's music update does; the random factors come from the engine's own seeded s
 generator, `0x006eb8b0`, seeded from the timer at start-up, `0x0010f768`). The speech and ambience stand-ins: an emitter
 plays one sound at a time, waiting a random whole number of seconds in its two delays before the first and after each
 one ends (level99's pairs, 1-3 to 10-30, read as seconds), from a random point of its line or a random one of its
-positions; its range, `plays`, `mode`, `filter` and the name kinds are not read; a line follows its speaker; a line
-stopped by `HuShutUp` or cut off drops its callback; `HuShutUp` always stops (the human's `+0x194` is not modelled);
+positions; its range, `plays`, `mode`, `filter` and the name kinds are not read; a line follows its speaker; a
+script's `SoundPlayCommand` says its line as a cut-able one (`CommandCall::cutting` false: which `uncut` the script's
+call passes is not traced; Warrior orders, which say theirs cutting, are not built);
 `HuSpeak`'s fifth argument is not read, and neither speaker turns to a look-at target; a human's voice set is his type's
 own `CfgChar` voice (no alias rule, no `HuSetVoiceIndex`); the fixed list of blocked lines is not applied;
 `SndSetListener` 0 is the camera and 1 the player (inferred); the bank deferral of mode 1's enter ends with the load
@@ -1494,11 +1499,12 @@ sounds. The hub's sound bindings
 plays nothing more) and on; `SoundPlay` plays a sound once at a point; `SndLoadMatrix` empties the sound matrix and
 runs `<name>_preload.lua` when the name changes; `HuSay` speaks a line with no callback.
 
-### Speech cut-in: what Coney must change {#speech-cut-in-fixes}
+### Speech cut-in: what Coney changed {#speech-cut-in-fixes}
 
-Coney drops a line's callback whenever the line is stopped, and lets any stop end any line, so a grunt from Cleon's
-swing ends mission 2's last line (`HuSpeakNI(Cleon, line, "FadeOut")`) and `FadeOut` never runs (#239). To match
-[Cutting in on a line](#speech-cut-in):
+Coney used to drop a line's callback whenever the line was stopped, and let any stop end any line, so a grunt from
+Cleon's swing ended mission 2's last line (`HuSpeakNI(Cleon, line, "FadeOut")`) and `FadeOut` never ran (#239). It now
+matches [Cutting in on a line](#speech-cut-in) (`repo:src/audio/speech.cpp`, `GameSound`); the five changes, each
+tested in `repo:tests/audio/game_sound_test.cpp` (`[cut-in]`):
 
 1. **Keep the "may be cut" flag per human** (the original's `+0x194`): set by default, cleared while a line started
    by `HuSpeakNI`, a cutting vocal id (`die`, `expire`) or a speech command said cutting (every Warrior order) plays,
@@ -1520,15 +1526,23 @@ swing ends mission 2's last line (`HuSpeakNI(Cleon, line, "FadeOut")`) and `Fade
    over an uncut line nothing is said, but the voice table's counter still moves and the command's callback runs at
    once.
 
-**The test** (unit, `Speech` or `GameSound` with an offline engine, no disc): a human says a line through the
+**The tests** (unit, `GameSound` with an offline engine, no disc): a human says a line through the
 `HuSpeakNI` path with callback `A`; while it plays, a vocal id with `overLine` (`SA` 9) is said for him: the line's
 handle is unchanged and still playing, no grunt plays, and when the line ends `A` is reported once. Its mirror: the
 same with the `HuSpeak` path and callback `B`: the grunt replaces the line and `B` is never reported. And
 `HuShutUp(false)` on the `HuSpeakNI` line leaves it playing; `HuShutUp(true)` stops it and `A` is reported at the next
-update. The disc test `[disc][story][level80-end]` (square held until `MS_C4_2` is ticked + 5 s) then reaches
-`l80_c3` and `HUDLaunchMissionComplete`.
+update. The disc test `[disc][story][level80-end]` (`repo:tests/platform/disc_level80_end_test.cpp`, square held until
+`MS_C4_2` is ticked + 5 s) reaches `l80_c3` and `HUDLaunchMissionComplete`: before the change the mission never
+completed under the swinging, after it it does.
+
+**Coney's choices:** a script's `SoundPlayCommand` says its line cut-able (the `uncut` it passes is not traced, see
+the open question below), and a refused start in `Speech::say` leaves the human's callback and flag as they were,
+the caller running its own callback at once.
 
 ## Open questions
+
+- Which `uncut` the script's `SoundPlayCommand` (`Sound_PlayHumanCommand`, `0x001140d8`) passes to
+  `Human_SayCommand`: Coney says its lines cut-able, so a later command or grunt replaces them.
 
 - What game state `+0x268` is (it scales sounds of others, music and pitch).
 - Who sets the system-music mood (game state `+0x40c`).
