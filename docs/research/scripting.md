@@ -897,6 +897,10 @@ lessons 11-12 (the second wave and checkpoint 2) wait for an adaptive driver: an
 bums. Points an implementer needs:
 
 - **6**: from the rear hold the hit is scored with the spin's id 80, not 57, so only a front grab passes the first step.
+  The script gives no spray can: Rembrandt's 59 makes and removes its own (`dyn_s_spraycan`, clip events
+  `0x30` / `0x31`) and stops its spray sound (event `0x45`), [Combat](combat.md#power-move-props). The scene
+  `l99_c7` that follows binds the victim, `CombatEnemy.GenWarrior` (Rudy), to role 6 `rudy`; the pair is broken
+  when the cinematic is played ([Scenes](scenes.md#humans)).
 - **10**: the rage special is cross + square while raging (645 / 647); the last step wants the extension of the rage
   power strike in a grab (63 → 65) or of the rage power strike in the mount (231 → 233); both use the + 2 of
   `Player_UpdatePowerMove` (confirmed (code) for the mount too: [the mount's power strike](combat.md#mount-power)

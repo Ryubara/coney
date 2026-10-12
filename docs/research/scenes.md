@@ -401,6 +401,40 @@ a script teleporting either human, or, for a skipped scene, the end's placement 
 `Human_BreakPair`, the partner playing its reaction clip). The cinematic's step 0 → 1 (`Gang_ClearBums`,
 `0x0016b8d0`) destroys the player's gang members whose type byte `+0x11b` is 6; it does not release grabs either.
 
+**`l99_c7` and the lesson-6 bum** (issue #225). `P1.PowerMovesDone`, 2500 ms after the extension 59 is counted,
+binds `l99_c7`'s 13 roles through `SuperRunScene` ([below](#superrunscene)): 0 Cleon, 1 Vermin, 2-4 `Generic1`-`3`,
+5 `NilHandle`, **6 `CombatEnemy.GenWarrior`** (the lesson's victim, Rudy; role name `rudy`), 7-10
+`CombatEnemy2.SecondWave01`-`04` (`bum01`-`bum04`), 11 the player (`warrrecv`), 12 `player2` or `NilHandle`; objects
+the left door of `ChA00` and `dyn_beerbottle`; return `P1.SetupSnapAttacks`. Before that it clears Rudy's message
+handler 1 and flushes his brain (`BrFlush`). Inferred from the disassembly of `level99_combat.lua` (names and order
+only). In the original the 59 pair is **gone by the time the scene starts**, so both are free and bound
+(confirmed (runtime), PCSX2 2.9.94, two plays of checkpoint 1 with the course of
+`repo:research/traces/missions/level99_cp1.toml`, the pad let go after `P1.PowerMovesDone` so the scene was not
+skipped, hooks `pair-break`, `throw-clear-link`, `prop-release`):
+
+| Update (second play) | What happened |
+| --- | --- |
+| 2057 | 59 starts (Rembrandt state `0x1005`, Rudy `0x2001`, held `0x400000`, Rudy's clip 60); `P1.PowerMovesDone` scheduled |
+| 2131 | `P1.PowerMovesDone`: `ScenePreload("l99_c7")` |
+| 2141 | 59's event `0x31` removes the spray can ([Combat](combat.md#power-move-props)) |
+| 2142 | `ScenePlayCinematic`; in the same update `Human_ResetForMode` (`0x002325e0`) runs on every human: `Human_ReleaseCarriedProps` for each, and **`Human_BreakPair(Rudy)`** (return `0x00232690`), which clears the throw link (`Throw_ClearLink(Rembrandt, —)` from `0x00258db4`): the pair ends there, 85 updates into the 94-update 59 |
+| 2143 on | both in the scene: state `0x800000`, scene id 2630 at `+0x280`, clip 388; Rudy stands on role 6's start mark (−282.58, 127.29) |
+| about 2540-2730 | Rudy's role clip moves him (−282.6, 127.3) → (−276.6, 122.2): the Warriors drag him off |
+
+In the first play (scene skipped by the course's presses) the same states showed and the end placed Rudy at role 6's
+end mark (−273.62, 120.81). Which caller runs `Human_ResetForMode` at the cinematic's start was not traced (open).
+This qualifies the paragraph above: the scene task's own start does not release a pair (confirmed (code) at
+`0x0039d870`), but in this cinematic the pair was broken in the play call's update, before the free test, so a
+player's grab or paired move does not survive a `SuperRunScene` cinematic here; whether every cinematic does this
+waits for that caller.
+
+**Coney** (#225): Coney's disc test sees the pair still on as `l99_c7` starts (1 holding, 1 held), so the stage's
+free test leaves Rembrandt and Rudy out. Match the original: when a cinematic starts, reset every human as
+`Human_ResetForMode` does, which breaks any pair (`Human_BreakPair`, [Combat](combat.md#pair-break)) and removes
+carried props, before the free test; then Rudy joins role 6 and is moved by his role clip. Disc test: through lesson
+6 into `l99_c7`, Rudy's scene id is the scene's, he stands on role 6's start mark at frame 0 and his position follows
+the role clip (more than 5 m from the mark before the end).
+
 **While it plays** the human is driven by the clip's animation and root motion ([Animation](formats/animation.md)),
 and the clip's 21/22 events place it at its marks ([Events](#events)). **When its clip ends** (`0x003a00b8`): unless
 skipping, it leaves the scene (`+0x280` = −1), flags `0x2000` and `0x800000` cleared and `0x20000000` set, message
