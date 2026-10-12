@@ -424,12 +424,12 @@ with a 1,500 ms stand-in for any announcer line whose length it does not know.
 
 ## Gang battle trace {#gang-battle-trace}
 
-A recording of the biggest Rumble battle with every human traced on every update, to compare gang combat with Coney's
-by behaviour statistics (issue #273); how a gang fights is on the Gang fights page (`gang-fights.md`, pull request
-#291). The columns are the `humans` field set of `repo:research/traces/fields.toml` (one row per human per update;
-[Every human](../guides/research-workflow.md#recording-a-trace)); Coney's all-humans `--trace` writes the same
-columns. The scenario is `repo:research/traces/scenarios/gang_battle.toml`; the traces are measurements of the game
-and stay in the analyst's scratch folder.
+A recording of the biggest Rumble battle with every human traced on every update, to compare gang combat with Coney's by
+behaviour statistics (issue #273); how a gang fights is on the [Gang fights](gang-fights.md) page. The columns are the
+`humans` field set of `repo:research/traces/fields.toml` (one row per human per update; [Every
+human](../guides/research-workflow.md#recording-a-trace)); Coney's all-humans `--trace` writes the same columns. The
+scenario is `repo:research/traces/scenarios/gang_battle.toml`; the traces are measurements of the game and stay in the
+analyst's scratch folder.
 
 ### The set-up {#gang-battle-setup}
 
