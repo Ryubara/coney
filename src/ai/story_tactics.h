@@ -14,7 +14,7 @@
 // human, holding a line and pursuing another gang. Each is built from the binding's arguments (script::TacticCall) and
 // what the level gives the brains (TacticServices). The members' own goals of most kinds are not traced, so each class
 // says where it stands in for them.
-// Research: docs/research/ai.md#tactic-kinds
+// Research: docs/research/ai-gangs.md#tactic-kinds
 
 namespace coney::ai {
 

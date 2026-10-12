@@ -9,6 +9,11 @@
             "type": "command",
             "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.claude/hooks/build_guard.py\"",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.claude/hooks/bounded_waits.py\"",
+            "timeout": 10
           }
         ]
       }

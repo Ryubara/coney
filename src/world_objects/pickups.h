@@ -88,7 +88,8 @@ struct PileTake {
 
 /// Whether triangle picks up an object of class `className` whose model hash is `modelHash`: the classes whose init
 /// sets flag `0x8000` (docs/research/objects.md#pickable), `melee_weapon`, `thrown_weapon`, `overhead_weapon`,
-/// `pickup_item` and `dyn_pile` (docs/research/objects.md#weapon-piles), but for the hashes they exclude, and a
+/// `pickup_item`, `dyn_pile` (docs/research/objects.md#weapon-piles) and the Molotov's own class `dyn_molotv`
+/// (docs/research/script-types.md#molotov), but for the hashes they exclude, and a
 /// `simple_object` whose hash adds it. A `powerup_item` has the
 /// flag but is walked over instead, never taken by triangle. **Coney's reading**: the messages that set or clear the
 /// flag later (`0x19`) are not modelled.

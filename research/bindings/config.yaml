@@ -1741,7 +1741,7 @@
   description: >-
     Sets how many responders a crime type draws: the byte at game state `+0x294 + crime`. When that crime is reported
     with responders, this many are queued on the nearest spawner in a responding state (custom crimes, type 4, use
-    the report's own count instead); see [AI: crimes](../../research/ai.md#crimes). The difficulty configs and some
+    the report's own count instead); see [AI: crimes](../../research/ai-gangs.md#crimes). The difficulty configs and some
     levels set it.
   evidence: confirmed-code
   depth: thorough
@@ -1762,7 +1762,7 @@
   description: >-
     Enables or disables one crime type: a byte at game state `+0x32b + crime`. Only type 12 (trespassing) is read back,
     by the police brain (`0x00300910`, `0x00301770`), so in practice this switches whether cops act on trespassing
-    ([AI: crimes](../../research/ai.md#crimes)).
+    ([AI: crimes](../../research/ai-gangs.md#crimes)).
   evidence: confirmed-code
   depth: thorough
   notes: >-
@@ -1780,7 +1780,7 @@
     - {name: fn, lua: string, desc: "Name of a global Lua function (up to 31 characters), or nil to clear it."}
   description: >-
     Names a script function to call whenever a crime with a known offender is reported (game state `+0x2dc`). The
-    crime report (GameState_ReportCrime, 0x0041b8b0, see [AI: crimes](../../research/ai.md#crimes)) calls it through
+    crime report (GameState_ReportCrime, 0x0041b8b0, see [AI: crimes](../../research/ai-gangs.md#crimes)) calls it through
     GameState_RunCrimeCallback (0x0041ae60) with two numbers: the offender's gang id and the
     [crime type](../../references/crime-types.md). The level reset (0x00418c68) clears it.
   evidence: confirmed-code

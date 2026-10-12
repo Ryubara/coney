@@ -8,7 +8,7 @@ buttons each update, through the nine **trigger** kinds; `global.lua` binds them
 AI humans write the same numbers. A **Warrior command** is an order the war chief gives the crew from
 the command menu (`WCIssueCommand`, `WCEnableCommand`). How buttons are matched:
 [Combat: commands](../research/combat.md#commands); the orders:
-[AI: Warrior commands](../research/ai.md#warrior-commands); the buttons: [Controls](controls.md).
+[AI: Warrior commands](../research/ai-gangs.md#warrior-commands); the buttons: [Controls](controls.md).
 
 !!! info "What is complete"
 

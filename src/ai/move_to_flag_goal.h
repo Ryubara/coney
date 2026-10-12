@@ -12,7 +12,7 @@
 // GoalMoveToFlag: walk or run to a world flag (or a point offset from it) and stop within an arrival radius,
 // optionally turning to the flag's heading. It only queues move and turn actions; each time a move ends short of the
 // radius the next update plans again. Arriving tells the flag (message 8) and the human's gang.
-// Research: docs/research/ai.md#move-to-flag
+// Research: docs/research/ai-scripting.md#move-to-flag
 
 namespace coney::ai {
 

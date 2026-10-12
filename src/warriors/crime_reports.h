@@ -93,7 +93,7 @@ class CrimeServices {
 /// (type 4) kind-1 responders (the page gives its count, not its kind); the "assault" statistic
 /// is scored once per victim through CrimeServices::scoreAssault (which event is the service's choice).
 ///
-/// Research: docs/research/ai.md#crimes, docs/research/crimes.md#wanted, docs/references/crime-types.md
+/// Research: docs/research/ai-gangs.md#crimes, docs/research/crimes.md#wanted, docs/references/crime-types.md
 class CrimeReports {
   public:
     /// How long a report keeps the offender's gang wanted.

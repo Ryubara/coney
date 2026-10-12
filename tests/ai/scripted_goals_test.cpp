@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The scripted goals' Lua callbacks, GoalPlayDynAnimation, GoalAddressPerson, and the brain switches BrFlush and BrDead
-// (docs/research/ai.md#scripted). Synthetic humans; the script services keep what they are asked.
+// (docs/research/ai-scripting.md#scripted). Synthetic humans; the script services keep what they are asked.
 #include <algorithm>
 #include <memory>
 #include <string>

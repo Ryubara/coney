@@ -142,6 +142,11 @@ The first line only needs running again when a `CMakeLists.txt` or `cmake/deps.c
 does not pick up by itself (`coney-tools build --configure` forces it). Each preset builds into its own
 `build/<preset>/` folder, so presets never disturb each other.
 
+A build or a test run that takes minutes runs in the background with its output in a log. Waiting for it is bounded:
+never `until grep -q ... log; do sleep ...; done`, which waits for ever when the build dies first (a hook refuses it;
+[Bounded waits](agents.md#bounded-waits)). A `ctest` whose caller is gone keeps starting tests; `coney-tools workspace
+clean --apply` stops it ([Cleanup](workspace.md#cleanup)).
+
 | Preset | Build type | What it is for |
 | --- | --- | --- |
 | `dev` | Debug | day-to-day work |
@@ -279,6 +284,11 @@ workflow also runs every night on `main` and on demand: open the repository's Ac
 "Run workflow" and pick a branch that is already on GitHub (or `gh workflow run build.yml --ref <branch>`). A manual
 run checks every file with clang-tidy. On Linux and macOS the jobs compile through ccache and keep its cache between
 runs, so a job recompiles only what changed; each job prints its hit rate at the end.
+
+A newer push cancels the older run of the same workflow on the same ref, queued or running: on a pull request, and
+on `main` or a `release/` branch too, so a burst of merges builds only the newest commit instead of queueing one full
+build per merge on the shared macOS runners. A commit whose run was cancelled that way is covered by the next run and
+by the nightly one; the nightly and hand-started `build` runs are never cancelled.
 
 | Workflow | Jobs |
 | --- | --- |

@@ -28,7 +28,7 @@
     - {name: count, lua: number, ctype: int, desc: "Most police that may be spawned as responders at once (16-bit); the level set-up resets it to 16."}
   description: >-
     Sets the cap on spawned police (`W_GameState + 0x326`). A responder spawner only makes a new police responder
-    while the game's police count (`+0x324`) is under this cap ([AI: spawners](../../research/ai.md#spawners)).
+    while the game's police count (`+0x324`) is under this cap ([AI: spawners](../../research/ai-gangs.md#spawners)).
   evidence: confirmed-code
   depth: thorough
   notes: >-
@@ -626,7 +626,7 @@
   depth: thorough
   notes: >-
     The position is transformed (`0x00252ae0`) before being passed on to the crime report 0x0041b8b0, which asks for
-    responders; what each type does: [AI: crimes](../../research/ai.md#crimes). Severity, radius and flags
+    responders; what each type does: [AI: crimes](../../research/ai-gangs.md#crimes). Severity, radius and flags
     are never read, confirmed (code) at 0x0037a2f8, 0x0041b6e0 and 0x0041b8b0 ([Crimes: wanted](../../research/crimes.md#wanted)).
   usage: {chunks: 12, calls: 18, boot: true, mission1: false, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
   coney: implemented
@@ -644,7 +644,7 @@
     - {name: text, lua: string, desc: "Optional text key for the crime's name on the offender's HUD crime panel; nil keeps the panel's default."}
   description: >-
     Reports a crime of type 4 (the custom crime) at a position with reporting mode 1, so police turn hostile to the
-    offender's gang, the crime callback runs and `responders` police are sent ([AI: crimes](../../research/ai.md#crimes)).
+    offender's gang, the crime callback runs and `responders` police are sent ([AI: crimes](../../research/ai-gangs.md#crimes)).
     When the offender is a player's human (human `+0x1b0` not -1) the text is first interned into that player's HUD
     crime panel (HUD `0x00600840 + 0x177d0 + player × 0xab0`), which shows it in place of a type name for type 4.
   evidence: confirmed-code

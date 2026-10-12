@@ -4,7 +4,7 @@
 
 The crimes the police respond to. Scripts report one with `CrimeIsHappening` or
 `SpawnCustomCrime`, set how many responders each type draws with `CfgCrimeResponders` and switch one with
-`CfgEnableCrimeType`; the game reports others itself ([AI: crimes](../research/ai.md#crimes)).
+`CfgEnableCrimeType`; the game reports others itself ([AI: crimes](../research/ai-gangs.md#crimes)).
 
 !!! info "What is complete"
 

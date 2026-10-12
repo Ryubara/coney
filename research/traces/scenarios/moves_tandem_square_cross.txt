@@ -1,0 +1,4 @@
+# Cross held, square pressed: 0x12, then 0x22 (the special 653 SPECIAL_ATTACK1_FRONT), then 0x16 and 0x10; no tandem.
+60 press cross
+61 tap square
+64 release cross
