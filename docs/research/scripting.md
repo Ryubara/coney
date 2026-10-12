@@ -1733,8 +1733,8 @@ Fixes, in the order to take them (each one implementer unit):
    (tag, 0) as its refusal does. Test: a spray whose intro is cut short runs the script's event-14 handler with 0, and
    a second press at the spot starts a new spray.
 2. **The fight stance cuts the spray's intro short** (why chapter 2's first spray ended, issue #331). Done (issue #353):
-   Coney now does both, as the fix below says. Before the press the player was already in the fight stance (the stance
-   walk clips 380 and 384, then the fight idle 358): chapter 2's first spot has a human within 2 m, whom [the
+   Coney now makes the fix below. Before the press the player was already in the fight stance (the stance walk clips 380
+   and 384, then the fight idle 358): chapter 2's first spot has a human within 2 m, whom [the
    stance](combat.md#fight-stance) takes as its target; chapter 1's spots have none. `HuTag` started 334
    `ANIM_TAGGING_INTRO`, and on the next update Coney's stance walk, with the stick at rest, put the fight idle 358 back
    over it, so the intro was no longer playing and the spray counted as cut short. In the original nothing of the stance
