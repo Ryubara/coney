@@ -8,12 +8,14 @@ come from `workspace` in `.github/conventions.yml`. Nothing here deletes or chan
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import time
 from collections.abc import Iterator
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePath
 
 from coney_tools.audit import Problem, check
 from coney_tools.config import ConfigError
@@ -30,6 +32,8 @@ from coney_tools.workspace_clean import (
 )
 
 _GIB = 1024**3
+#: How many scratch folders are walked at once.
+SCRATCH_WORKERS = 8
 #: File types of screenshots and recordings, which an issue or a pull request holds once uploaded.
 CAPTURE_SUFFIXES = frozenset({".png", ".jpg", ".jpeg", ".gif", ".webp", ".mp4", ".webm", ".mkv", ".mov"})
 
@@ -63,15 +67,27 @@ class LocalContext:
 
 
 def _captures(folder: Path) -> tuple[int, int]:
-    """How many capture files `folder` holds (at any depth) and their total size."""
+    """How many capture files `folder` holds (at any depth) and their total size.
+
+    A scratch folder can hold hundreds of thousands of files, so this walks with `os.scandir`, whose entries know
+    whether they are files without a call of their own, and asks for the size of capture files only.
+    """
     count = size = 0
-    for path in folder.rglob("*"):
-        if path.is_file() and path.suffix.lower() in CAPTURE_SUFFIXES:
-            count += 1
-            try:
-                size += path.stat().st_size
-            except OSError:
-                continue
+    pending = [str(folder)]
+    while pending:
+        try:
+            with os.scandir(pending.pop()) as entries:
+                for entry in entries:
+                    try:
+                        if entry.is_dir(follow_symlinks=False):
+                            pending.append(entry.path)
+                        elif PurePath(entry.name).suffix.lower() in CAPTURE_SUFFIXES and entry.is_file():
+                            count += 1
+                            size += entry.stat().st_size
+                    except OSError:
+                        continue
+        except OSError:
+            continue
     return count, size
 
 
@@ -123,6 +139,7 @@ def build_context(
             merged_heads=merged_heads or gh_merged_heads(checkout),
             busy_file=conventions.workspace.busy_marker,
             measure=False,
+            builds=False,
         )
         context.entries, context.stale = plan(settings)
     known = {tree.path.resolve() for tree in trees}
@@ -131,10 +148,12 @@ def build_context(
     names = {tree.path.name for tree in trees[1:]} | {tree.branch for tree in trees[1:] if tree.branch}
     scratch = layout.workspace / "scratch"
     if scratch.is_dir():
-        for child in sorted(scratch.iterdir()):
-            if child.is_dir():
-                count, size = _captures(child)
-                context.scratch.append(ScratchFolder(child.name, count, size, child.name in names))
+        folders = sorted(child for child in scratch.iterdir() if child.is_dir())
+        # The folders are walked side by side: the walk waits on the disk.
+        with ThreadPoolExecutor(max_workers=max(1, min(SCRATCH_WORKERS, len(folders)))) as pool:
+            counted = list(pool.map(_captures, folders))
+        for child, (count, size) in zip(folders, counted, strict=True):
+            context.scratch.append(ScratchFolder(child.name, count, size, child.name in names))
     return context
 
 
