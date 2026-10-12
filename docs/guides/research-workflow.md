@@ -609,6 +609,15 @@ The smoke scenarios reproduce claims of the research pages: `walk60` (the walk s
 (level99 checkpoint 3 with `--start`), and `combat_cross` (`X1` then `XX2` at a puppet civilian 1.5 m away, slot 6, which
 walks in to 1.36 m; on Coney the fight yard's `cross` spawn, a still target 1.05 m away that X1 steers onto alike).
 
+**Gang fights are compared by behaviour, not by step.** The two games draw different random numbers, so a big fight
+(a Rumble gang battle) never plays out alike twice, even in the original. Record several matches of the original and
+several of Coney with the all-humans trace (one row per human per update; Coney's `--trace-humans`, the original's
+`[[humans]]` field set of `research/traces/fields.toml`), then `coney-tools trace fight-report --original ... --coney
+...` computes rates, shares and distributions per gang (goal time shares, attacks and blocks per minute, attackers on
+one target, distance to the target, target switches, goal interruptions, time to the first engagement, knock-out
+times, the match's length and winner) and flags each metric where Coney is outside the original's spread
+([coney-tools](coney-tools.md#trace)). Keep the recordings in the scratch folder, never in the repository.
+
 ### Differential playthroughs {#differential-playthroughs}
 
 A trace diff compares two games update by update, which holds for a few seconds of walking but not for a mission: the
