@@ -981,7 +981,8 @@ uv run --project python mypy python/src python/tests
 
 `coney-tools config show` prints the paths your `coney.local.toml` sets (start from `coney.local.example.toml`;
 [Local workspace](workspace.md) explains each one). `coney-tools repo check-title` checks a commit or pull request
-title against the commit rules in [CONTRIBUTING.md](repo:CONTRIBUTING.md#commits), `coney-tools repo check-docs`
+title against the commit rules in [CONTRIBUTING.md](repo:CONTRIBUTING.md#commits) (their values are in
+`.github/conventions.yml`: [Repository conventions](repo-conventions.md)), `coney-tools repo check-docs`
 that a change to the code also changes the docs ([Research workflow](research-workflow.md#writing-up-a-finding)), and
 `coney-tools repo check-body` that a pull request description follows the template, including its Testing and
 Screenshots sections and an issue or pull request number on every unchecked Remaining item
@@ -1049,7 +1050,7 @@ A `changes` job at the start of `build` and `python` decides, with `.github/scri
 | Change | `build`, `sanitizers`, `clang-tidy` | `python` | `format`, `docs`, `pr` workflows |
 | --- | --- | --- | --- |
 | Draft pull request (any change) | skipped | skipped | run |
-| Only documentation: `docs/`, `research/` (including `research/traces/`), Markdown files at the top level or in `.github/`, `mkdocs.yml`, `mkdocs_hooks.py`, `requirements-docs.txt`, `.markdownlint*` | skipped | Linux only | run |
+| Only documentation: `docs/`, `research/` (including `research/traces/`), Markdown files at the top level or in `.github/`, `.github/conventions.yml`, `mkdocs.yml`, `mkdocs_hooks.py`, `requirements-docs.txt`, `.markdownlint*` | skipped | Linux only | run |
 | Anything else (`src/`, `tests/`, `python/`, `cmake/`, `CMakeLists.txt`, `CMakePresets.json`, `.clang-*`, the workflows, `assets/`, a file not listed above) | run | all three OSes | run |
 | Push to `main` or `release/`, nightly run, manual run | run | all three OSes | run |
 

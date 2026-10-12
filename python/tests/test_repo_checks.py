@@ -1,29 +1,24 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Tests for coney_tools.repo_checks: pointer files, commit titles and pull request descriptions."""
 
-import json
 import re
 from pathlib import Path
 
 import pytest
+from conventions_support import REPO, conventions_with
 
+from coney_tools.conventions import load_conventions
 from coney_tools.repo_checks import (
-    IMPORT_LINE,
-    MAX_POINTER_BYTES,
-    BodyRules,
-    BodyRulesError,
-    TitleRules,
-    TitleRulesError,
     check_body,
+    check_docs,
     check_pointer_files,
     check_title,
-    load_body_rules,
-    load_title_rules,
     strip_comments,
 )
 
+POINTERS = load_conventions(REPO).paths.pointer_files
 # The import line is joined on, not written after a "\n" escape, which would read as an email address ("n@...").
-GOOD = "# CLAUDE.md\n\nRead `AGENTS.md`.\n\n" + IMPORT_LINE + "\n"
+GOOD = "# CLAUDE.md\n\nRead `AGENTS.md`.\n\n" + POINTERS.line + "\n"
 
 
 def write(root: Path, claude: str | None = GOOD, gemini: str | None = GOOD.replace("CLAUDE", "GEMINI")) -> Path:
@@ -35,30 +30,32 @@ def write(root: Path, claude: str | None = GOOD, gemini: str | None = GOOD.repla
 
 
 def test_clean_pointer_files_pass(tmp_path: Path) -> None:
-    assert check_pointer_files(write(tmp_path)) == []
+    assert check_pointer_files(write(tmp_path), POINTERS) == []
 
 
 def test_missing_pointer_file_is_reported(tmp_path: Path) -> None:
-    problems = check_pointer_files(write(tmp_path, gemini=None))
+    problems = check_pointer_files(write(tmp_path, gemini=None), POINTERS)
     assert len(problems) == 1 and "GEMINI.md" in problems[0]
 
 
 def test_missing_import_line_is_reported(tmp_path: Path) -> None:
-    problems = check_pointer_files(write(tmp_path, claude="# CLAUDE.md\n\nSee AGENTS.md\n"))
+    problems = check_pointer_files(write(tmp_path, claude="# CLAUDE.md\n\nSee AGENTS.md\n"), POINTERS)
     assert len(problems) == 1 and "@AGENTS.md" in problems[0]
 
 
 def test_oversized_pointer_file_is_reported(tmp_path: Path) -> None:
-    problems = check_pointer_files(write(tmp_path, claude=GOOD + "x" * MAX_POINTER_BYTES))
+    problems = check_pointer_files(write(tmp_path, claude=GOOD + "x" * POINTERS.max_bytes), POINTERS)
     assert len(problems) == 1 and "CLAUDE.md" in problems[0]
 
 
 def test_the_real_repository_is_clean() -> None:
-    repo = Path(__file__).resolve().parents[2]
-    assert check_pointer_files(repo) == []
+    assert check_pointer_files(REPO, POINTERS) == []
 
 
-RULES = TitleRules(areas=frozenset({"docs", "ci"}), verbs=("Add", "Fix", "Update"))
+RULES = conventions_with(
+    ("commits.title.areas", {"docs": "documentation", "ci": "workflows"}),
+    ("commits.title.verbs", ["Add", "Fix", "Update"]),
+).commits.title
 
 
 @pytest.mark.parametrize(
@@ -98,67 +95,14 @@ def test_every_broken_rule_is_reported() -> None:
     assert len(check_title("web: Added the guide.", RULES)) == 3
 
 
-def write_rules(root: Path, data: object) -> Path:
-    """Write `data` as the commit conventions file of `root`."""
-    (root / ".github").mkdir()
-    (root / ".github" / "commit-conventions.json").write_text(json.dumps(data), encoding="utf-8")
-    return root
-
-
-def test_rules_are_read_from_the_conventions_file(tmp_path: Path) -> None:
-    rules = load_title_rules(write_rules(tmp_path, {"areas": {"docs": "documentation"}, "verbs": ["Add"]}))
-    assert rules == TitleRules(areas=frozenset({"docs"}), verbs=("Add",))
-
-
-@pytest.mark.parametrize(
-    "data",
-    [
-        [],
-        {"verbs": ["Add"]},
-        {"areas": {}, "verbs": ["Add"]},
-        {"areas": {"docs": "x"}},
-        {"areas": {"docs": "x"}, "verbs": []},
-        {"areas": {"docs": "x"}, "verbs": ["Add", 3]},
-        {"areas": ["docs"], "verbs": ["Add"]},
-    ],
-)
-def test_unusable_rules_raise(tmp_path: Path, data: object) -> None:
-    with pytest.raises(TitleRulesError):
-        load_title_rules(write_rules(tmp_path, data))
-
-
-def test_missing_or_broken_conventions_file_raises(tmp_path: Path) -> None:
-    with pytest.raises(TitleRulesError):
-        load_title_rules(tmp_path)
-    (tmp_path / ".github").mkdir()
-    (tmp_path / ".github" / "commit-conventions.json").write_text("{not json", encoding="utf-8")
-    with pytest.raises(TitleRulesError):
-        load_title_rules(tmp_path)
-
-
 def test_the_real_rules_load_and_accept_a_real_title() -> None:
-    rules = load_title_rules(Path(__file__).resolve().parents[2])
+    rules = load_conventions(REPO).commits.title
     assert check_title("ci: Add the pull request title check", rules) == []
 
 
 # --- pull request descriptions -----------------------------------------------------------------------------------
 
-REPO = Path(__file__).resolve().parents[2]
-BODY_RULES = BodyRules(
-    sections=("Summary", "Checklist", "Testing", "Screenshots", "AI use"),
-    filled=("Summary", "Testing"),
-    placeholders=("...", "<reason>"),
-    screenshots_section="Screenshots",
-    screenshots_none="Screenshots: none",
-    ai_section="AI use",
-    written_by_label="Commits written by:",
-    choices=("a person", "an AI", "an AI, edited by a person", "a person, with AI help"),
-    no_ai="a person",
-    model_label="Model:",
-    model_none="n/a",
-    remaining_section="Checklist",
-    remaining_label="Remaining:",
-)
+BODY_RULES = load_conventions(REPO).pull_requests
 CHECKLIST = "Done:\n\n- [x] The check\n\nRemaining:\n\n- [ ] The follow-up (#123)\n"
 
 
@@ -409,89 +353,13 @@ def test_strip_comments_removes_single_and_multi_line_comments() -> None:
     assert strip_comments("a<!-- x -->b<!--\ny\n-->c") == "abc"
 
 
-def write_body_rules(root: Path, data: object) -> Path:
-    """Write `data` as the pull request description rules of `root`."""
-    (root / ".github").mkdir()
-    (root / ".github" / "pr-body-rules.json").write_text(json.dumps(data), encoding="utf-8")
-    return root
-
-
-AI_USE = {
-    "section": "AI use",
-    "written_by": {"label": "Written by:", "choices": ["a person", "an AI"], "no_ai": "a person"},
-    "model": {"label": "Model:", "none": "n/a"},
-}
-SCREENSHOTS = {"section": "Screenshots", "none": "Screenshots: none"}
-REMAINING = {"section": "Checklist", "label": "Remaining:"}
-GOOD_BODY_RULES = {
-    "sections": ["Summary", "Checklist", "Screenshots", "AI use"],
-    "filled": ["Summary"],
-    "placeholders": ["..."],
-    "screenshots": SCREENSHOTS,
-    "ai_use": AI_USE,
-    "remaining": REMAINING,
-}
-
-
-def test_body_rules_are_read_from_the_rules_file(tmp_path: Path) -> None:
-    rules = load_body_rules(write_body_rules(tmp_path, GOOD_BODY_RULES))
-    assert rules.sections == ("Summary", "Checklist", "Screenshots", "AI use") and rules.filled == ("Summary",)
-    assert rules.screenshots_section == "Screenshots" and rules.screenshots_none == "Screenshots: none"
-    assert rules.choices == ("a person", "an AI") and rules.no_ai == "a person"
-    assert rules.written_by_label == "Written by:" and rules.model_label == "Model:"
-    assert rules.remaining_section == "Checklist" and rules.remaining_label == "Remaining:"
-
-
-def altered(**changes: object) -> dict[str, object]:
-    """The good rules with the top-level keys in `changes` replaced (a value of None removes the key)."""
-    data = {**GOOD_BODY_RULES, **changes}
-    return {key: value for key, value in data.items() if value is not None}
-
-
-@pytest.mark.parametrize(
-    "data",
-    [
-        [],
-        altered(sections=None),
-        altered(sections=[]),
-        altered(sections=["Summary", 3]),
-        altered(filled=["Missing"]),
-        altered(filled="Summary"),
-        altered(placeholders=None),
-        altered(ai_use=None),
-        altered(screenshots=None),
-        altered(screenshots={"section": "Other", "none": "Screenshots: none"}),
-        altered(screenshots={"section": "Screenshots", "none": ""}),
-        altered(remaining=None),
-        altered(remaining={"section": "Other", "label": "Remaining:"}),
-        altered(remaining={"section": "Checklist", "label": ""}),
-        altered(ai_use={**AI_USE, "section": "Other"}),
-        altered(ai_use={**AI_USE, "model": {"label": "", "none": "n/a"}}),
-        altered(ai_use={**AI_USE, "written_by": {"label": "W:", "choices": [], "no_ai": "x"}}),
-        altered(ai_use={**AI_USE, "written_by": {"label": "W:", "choices": ["a"], "no_ai": "b"}}),
-    ],
-)
-def test_unusable_body_rules_raise(tmp_path: Path, data: object) -> None:
-    with pytest.raises(BodyRulesError):
-        load_body_rules(write_body_rules(tmp_path, data))
-
-
-def test_missing_or_broken_body_rules_file_raises(tmp_path: Path) -> None:
-    with pytest.raises(BodyRulesError):
-        load_body_rules(tmp_path)
-    (tmp_path / ".github").mkdir()
-    (tmp_path / ".github" / "pr-body-rules.json").write_text("{not json", encoding="utf-8")
-    with pytest.raises(BodyRulesError):
-        load_body_rules(tmp_path)
-
-
 def read_template() -> str:
     """The pull request template of this checkout."""
     return (REPO / ".github" / "pull_request_template.md").read_text(encoding="utf-8")
 
 
 def test_the_unchanged_template_is_refused() -> None:
-    problems = check_body(read_template(), load_body_rules(REPO))
+    problems = check_body(read_template(), BODY_RULES)
     assert any("'## Summary' is empty" in problem for problem in problems), problems
     assert any("'Commits written by:' is empty" in problem for problem in problems), problems
     assert any("'## Testing' is empty" in problem for problem in problems), problems
@@ -500,15 +368,15 @@ def test_the_unchanged_template_is_refused() -> None:
 
 def test_the_template_matches_the_rules() -> None:
     """The headings, labels and choices in the template are the ones the check reads, so the two cannot drift."""
-    rules = load_body_rules(REPO)
+    rules = BODY_RULES
     template = read_template()
     headings = re.findall(r"^## (.+?)\s*$", strip_comments(template), re.MULTILINE)
     assert tuple(headings) == rules.sections
-    assert f"**{rules.written_by_label}**" in template and f"**{rules.model_label}**" in template
+    assert f"**{rules.ai_use.written_by.label}**" in template and f"**{rules.ai_use.model.label}**" in template
     # The choices are listed, in order, in the comment after the label, separated by " / ".
-    listed = re.search(re.escape(rules.written_by_label) + r"\*\*\s*<!--\s*(.+?)\s*-->", template)
+    listed = re.search(re.escape(rules.ai_use.written_by.label) + r"\*\*\s*<!--\s*(.+?)\s*-->", template)
     assert listed is not None
-    assert tuple(listed.group(1).split(" / ")) == rules.choices
+    assert tuple(listed.group(1).split(" / ")) == rules.ai_use.written_by.choices
 
 
 def test_a_filled_in_template_passes() -> None:
@@ -517,7 +385,7 @@ def test_a_filled_in_template_passes() -> None:
     filled = filled.replace("## Screenshots\n", "## Screenshots\n\nScreenshots: none (no visible change)\n", 1)
     filled = re.sub(r"(\*\*Commits written by:\*\*) <!--.*?-->", r"\1 an AI", filled)
     filled = re.sub(r"(\*\*Model:\*\*) <!--.*?-->", r"\1 Claude Sonnet 5.5", filled)
-    assert check_body(filled, load_body_rules(REPO)) == []
+    assert check_body(filled, BODY_RULES) == []
 
 
 # --- the Remaining list names an issue or pull request -----------------------------------------------------------
@@ -592,6 +460,103 @@ def test_a_list_after_remaining_ends_it() -> None:
 
 
 def test_the_real_rules_read_the_checklist_section() -> None:
-    rules = load_body_rules(REPO)
-    assert rules.remaining_section == "Checklist" and rules.remaining_label == "Remaining:"
-    assert rules.remaining_section in rules.sections
+    rules = BODY_RULES
+    assert rules.remaining.section == "Checklist" and rules.remaining.label == "Remaining:"
+    assert rules.remaining.section in rules.sections
+
+
+# --- the rules come from the conventions file, not from the code ---------------------------------------------------
+
+
+def test_pointer_rules_name_the_files_the_line_and_the_size(tmp_path: Path) -> None:
+    rules = conventions_with(
+        ("paths.pointer_files", {"files": ["CLAUDE.md"], "line": "@OTHER.md", "max_bytes": 20})
+    ).paths.pointer_files
+    (tmp_path / "CLAUDE.md").write_text("@OTHER.md\n" + "x" * 30, encoding="utf-8")
+    problems = check_pointer_files(tmp_path, rules)
+    assert len(problems) == 1 and "over the 20 allowed" in problems[0]
+    (tmp_path / "CLAUDE.md").write_text("@AGENTS.md\n", encoding="utf-8")
+    assert "no line that is exactly @OTHER.md" in check_pointer_files(tmp_path, rules)[0]
+
+
+def test_the_title_limit_is_the_files() -> None:
+    rules = conventions_with(("commits.title.max_length", 30)).commits.title
+    assert check_title("docs: Add " + "x" * 20, rules) == []
+    assert any("31 characters; 30 at most" in problem for problem in check_title("docs: Add " + "x" * 21, rules))
+
+
+def test_a_trailing_period_is_refused_only_when_the_file_says_so() -> None:
+    allowed = conventions_with(("commits.title.trailing_period", True)).commits.title
+    assert check_title("docs: Add the documents.", allowed) == []
+    assert check_title("docs: Add the documents.", load_conventions(REPO).commits.title)
+
+
+def test_the_breaking_suffix_is_the_files() -> None:
+    rules = conventions_with(("commits.title.breaking_suffix", "[!]")).commits.title
+    assert check_title("docs: Add the guide [!]", rules) == []
+    assert any("[!] must end the title" in problem for problem in check_title("docs: Add [!] the guide", rules))
+    assert check_title("docs: Add (BREAKING) the guide", rules) == []
+
+
+PATHS = load_conventions(REPO).paths
+DOCS_NONE = load_conventions(REPO).pull_requests.docs_none
+
+
+def test_code_without_docs_is_refused_naming_the_paths() -> None:
+    problems = check_docs(["src/a.cpp", "src/b.cpp", "src/c.cpp", "src/d.cpp"], "", PATHS, DOCS_NONE)
+    assert len(problems) == 1
+    assert "src/a.cpp, src/b.cpp, src/c.cpp and 1 more" in problems[0] and "`Docs: none`" in problems[0]
+
+
+@pytest.mark.parametrize(
+    "changed",
+    [
+        ["src/a.cpp", "docs/guides/x.md"],
+        ["python/src/coney_tools/cli.py", "research/missions.yaml"],
+        ["tests/a_test.cpp", ".github/workflows/pr.yml", "CMakeLists.txt"],
+        [],
+    ],
+)
+def test_changes_that_need_no_docs_pass(changed: list[str]) -> None:
+    assert check_docs(changed, "", PATHS, DOCS_NONE) == []
+
+
+@pytest.mark.parametrize("line", ["Docs: none", "docs:none", "  DOCS:   None", "Docs: none (a typo fix)"])
+def test_the_docs_none_line_passes_in_any_spacing(line: str) -> None:
+    assert check_docs(["src/a.cpp"], f"## Summary\n\n{line}\n", PATHS, DOCS_NONE) == []
+
+
+@pytest.mark.parametrize("text", ["I think Docs: none is fine", "Docs: nonetheless", "Docs none"])
+def test_a_docs_none_inside_a_sentence_does_not_pass(text: str) -> None:
+    assert check_docs(["src/a.cpp"], text, PATHS, DOCS_NONE)
+
+
+def test_the_docs_rule_follows_the_files_paths_and_line() -> None:
+    conventions = conventions_with(("paths.code", ["lib/"]), ("pull_requests.docs_none.line", "No docs"))
+    paths, docs_none = conventions.paths, conventions.pull_requests.docs_none
+    assert check_docs(["src/a.cpp"], "", paths, docs_none) == []
+    assert check_docs(["lib/a.cpp"], "", paths, docs_none)
+    assert check_docs(["lib/a.cpp"], "no docs\n", paths, docs_none) == []
+
+
+def test_local_paths_are_allowed_only_when_the_file_says_so() -> None:
+    text = body(testing="- ran it from scratch/pr/x.log: 12 passed")
+    assert check_body(text, BODY_RULES)
+    assert check_body(text, conventions_with(("pull_requests.local_paths", True)).pull_requests) == []
+
+
+def test_a_local_image_is_accepted_only_when_uploads_are_not_required() -> None:
+    text = body(screenshots="![a](./shots/a.png)")
+    assert check_body(text, BODY_RULES)
+    relaxed = conventions_with(("pull_requests.screenshots.uploaded_only", False)).pull_requests
+    assert check_body(text, relaxed) == []
+
+
+def test_the_sections_and_labels_are_the_files() -> None:
+    rules = conventions_with(
+        ("pull_requests.sections", ["Summary", "Checklist", "Testing", "Pictures", "AI use"]),
+        ("pull_requests.screenshots.section", "Pictures"),
+    ).pull_requests
+    text = body().replace("## Screenshots", "## Pictures")
+    assert check_body(text, rules) == []
+    assert any("missing the section '## Pictures'" in problem for problem in check_body(body(), rules))

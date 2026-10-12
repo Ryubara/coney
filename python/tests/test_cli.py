@@ -2,10 +2,10 @@
 """Tests for coney_tools.cli: exit codes and output of each command."""
 
 import io
-import json
 from pathlib import Path
 
 import pytest
+from conventions_support import changed, write_checkout
 
 from coney_tools.cli import main
 
@@ -41,20 +41,46 @@ def test_config_error_is_one_line_and_exit_2(
     assert "coney.local.toml" in err and "Traceback" not in err
 
 
-def test_repo_check_fails_with_exit_1(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_repo_check_fails_with_exit_1_when_a_pointer_file_is_missing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(write_checkout(tmp_path))
+    assert main(["repo", "check"]) == 1
+    assert "CLAUDE.md: missing" in capsys.readouterr().out
+
+
+def test_repo_check_passes_with_the_conventions_and_the_pointer_files(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(write_checkout(tmp_path))
+    for name in ("CLAUDE.md", "GEMINI.md"):
+        (tmp_path / name).write_text("@AGENTS.md\n", encoding="utf-8")
+    assert main(["repo", "check"]) == 0
+    assert capsys.readouterr().out.splitlines() == ["conventions: ok", "pointer files: ok"]
+
+
+def test_repo_check_without_the_conventions_file_exits_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     (tmp_path / "coney.local.example.toml").write_text("", encoding="utf-8")
     monkeypatch.chdir(tmp_path)
-    assert main(["repo", "check"]) == 1
+    assert main(["repo", "check"]) == 2
+    err = capsys.readouterr().err
+    assert "conventions.yml" in err and "Traceback" not in err
+
+
+def test_repo_check_with_a_mistake_in_the_conventions_names_the_key(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(write_checkout(tmp_path, changed(("merge.auto_merge", "yes"))))
+    assert main(["repo", "check"]) == 2
+    assert "merge.auto_merge: expected true or false" in capsys.readouterr().err
 
 
 def title_checkout(tmp_path: Path) -> Path:
     """A made-up checkout whose title rules allow only the area `docs` and the verb `Add`."""
-    (tmp_path / "coney.local.example.toml").write_text("", encoding="utf-8")
-    (tmp_path / ".github").mkdir()
-    (tmp_path / ".github" / "commit-conventions.json").write_text(
-        '{"areas": {"docs": "documentation"}, "verbs": ["Add"]}', encoding="utf-8"
-    )
-    return tmp_path
+    data = changed(("commits.title.areas", {"docs": "documentation"}), ("commits.title.verbs", ["Add"]))
+    return write_checkout(tmp_path, data)
 
 
 def test_check_title_passes_with_exit_0(
@@ -88,11 +114,11 @@ def test_check_title_with_unusable_rules_exits_2(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     monkeypatch.chdir(title_checkout(tmp_path))
-    (tmp_path / ".github" / "commit-conventions.json").write_text("{}", encoding="utf-8")
+    (tmp_path / ".github" / "conventions.yml").write_text("{}\n", encoding="utf-8")
     (tmp_path / "msg").write_text("docs: Add the guide\n", encoding="utf-8")
     assert main(["repo", "check-title", "msg"]) == 2
     err = capsys.readouterr().err
-    assert "commit-conventions.json" in err and "Traceback" not in err
+    assert "conventions.yml" in err and "Traceback" not in err
 
 
 def test_check_title_with_an_unreadable_file_exits_2(
@@ -155,22 +181,13 @@ def test_check_docs_with_an_unreadable_body_exits_2(
 
 def body_checkout(tmp_path: Path) -> Path:
     """A made-up checkout whose description rules ask for a Summary and an AI use section."""
-    (tmp_path / "coney.local.example.toml").write_text("", encoding="utf-8")
-    (tmp_path / ".github").mkdir()
-    rules = {
-        "sections": ["Summary", "Checklist", "Screenshots", "AI use"],
-        "filled": ["Summary"],
-        "remaining": {"section": "Checklist", "label": "Remaining:"},
-        "placeholders": ["..."],
-        "screenshots": {"section": "Screenshots", "none": "Screenshots: none"},
-        "ai_use": {
-            "section": "AI use",
-            "written_by": {"label": "By:", "choices": ["a person", "an AI"], "no_ai": "a person"},
-            "model": {"label": "Model:", "none": "n/a"},
-        },
-    }
-    (tmp_path / ".github" / "pr-body-rules.json").write_text(json.dumps(rules), encoding="utf-8")
-    return tmp_path
+    data = changed(
+        ("pull_requests.sections", ["Summary", "Checklist", "Screenshots", "AI use"]),
+        ("pull_requests.filled", ["Summary"]),
+        ("pull_requests.ai_use.written_by.label", "By:"),
+        ("pull_requests.ai_use.written_by.choices", ["a person", "an AI"]),
+    )
+    return write_checkout(tmp_path, data)
 
 
 GOOD_BODY = (
@@ -237,4 +254,4 @@ def test_check_body_with_unusable_rules_exits_2(
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr("sys.stdin", io.StringIO(GOOD_BODY))
     assert main(["repo", "check-body"]) == 2
-    assert "pr-body-rules.json" in capsys.readouterr().err
+    assert "conventions.yml" in capsys.readouterr().err
