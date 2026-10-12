@@ -474,8 +474,14 @@ def triggers(data: dict[Any, Any]) -> dict[str, Any]:
     return data.get("on") or data[True]
 
 
-def test_the_workflow_may_only_read_the_code_and_write_issues() -> None:
-    assert workflow()["permissions"] == {"contents": "read", "issues": "write"}
+def test_the_workflow_may_only_read_the_code_and_pull_requests_and_write_issues() -> None:
+    assert workflow()["permissions"] == {
+        "contents": "read",
+        "issues": "write",
+        "pull-requests": "read",
+        "checks": "read",
+        "statuses": "read",
+    }
 
 
 def test_the_sweep_schedule_is_the_conventions() -> None:
@@ -484,9 +490,16 @@ def test_the_sweep_schedule_is_the_conventions() -> None:
 
 def test_it_reacts_to_item_events_and_can_be_run_by_hand() -> None:
     on = triggers(workflow())
-    assert {"issues", "pull_request_target", "schedule", "workflow_dispatch"} == set(on)
+    assert {"issues", "pull_request_target", "schedule", "push", "workflow_dispatch"} == set(on)
     assert {"opened", "edited", "labeled", "unlabeled", "reopened"} <= set(on["issues"]["types"])
     assert "synchronize" not in on["pull_request_target"]["types"]
+
+
+def test_it_labels_the_pull_requests_on_every_push_to_the_default_branch() -> None:
+    assert triggers(workflow())["push"] == {"branches": [CONVENTIONS.repo.default_branch]}
+    text = WORKFLOW.read_text(encoding="utf-8")
+    assert text.count("coney-tools repo pr-health --labels --apply") == 2  # the push case and the sweep
+    assert "push)" in text and "github.event_name == 'push'" in text
 
 
 def test_no_expression_reaches_a_script_and_the_checkout_takes_no_other_ref() -> None:

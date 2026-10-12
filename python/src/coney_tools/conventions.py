@@ -442,12 +442,24 @@ class Thresholds:
     pr_pending_hours: int
 
 
+#: The causes `coney-tools repo pr-health` reports, in the order one pull request lists them.
+PR_HEALTH_CAUSES = ("checks-failed", "conflict", "ci-stuck", "auto-merge-off")
+
+
 @dataclass(frozen=True)
 class PrHealth:
-    """How `coney-tools repo pr-health` sorts a failing required check."""
+    """How `coney-tools repo pr-health` sorts a failing required check and labels the stuck pull requests."""
 
     #: Required checks whose failure is a lint failure (the author fixes the text); any other required check is code.
     lint_checks: tuple[str, ...]
+    #: Cause to the label `repo pr-health --labels` puts on an open pull request with that cause and takes off when it
+    #: is gone (`conflict` to `S-conflict`); a label of the list, and no other label is ever touched.
+    labels: Mapping[str, str]
+    #: How many times `--labels` rereads GitHub while it still answers `UNKNOWN` for a pull request's mergeability
+    #: (it computes it on demand, so the first read after a push to main is often unknown).
+    unknown_retries: int
+    #: Seconds between those rereads.
+    unknown_wait_seconds: int
 
 
 @dataclass(frozen=True)
@@ -1075,7 +1087,16 @@ def _read_hygiene(data: object, where: str) -> Hygiene:
     )
     limits = _table(table["thresholds"], limits_where, keys)
     health_where = _at(where, "pr_health")
-    health = _table(table["pr_health"], health_where, ("lint_checks",))
+    health = _table(
+        table["pr_health"], health_where, ("lint_checks", "labels", "unknown_retries", "unknown_wait_seconds")
+    )
+    labels_where = _at(health_where, "labels")
+    cause_labels = _mapping(health["labels"], labels_where)
+    for cause, label in cause_labels.items():
+        _names_in([cause], PR_HEALTH_CAUSES, labels_where, "a cause of repo pr-health")
+        _text(label, _at(labels_where, cause))
+    if len(set(cause_labels.values())) != len(cause_labels):
+        raise _fail(labels_where, "a label is used for two causes")
     return Hygiene(
         report_issue=ReportIssue(
             title=_text(report["title"], _at(report_where, "title")),
@@ -1091,7 +1112,12 @@ def _read_hygiene(data: object, where: str) -> Hygiene:
             report_only=report_only,
         ),
         thresholds=Thresholds(**{key: _count(limits[key], _at(limits_where, key)) for key in keys}),
-        pr_health=PrHealth(lint_checks=_texts(health["lint_checks"], _at(health_where, "lint_checks"))),
+        pr_health=PrHealth(
+            lint_checks=_texts(health["lint_checks"], _at(health_where, "lint_checks")),
+            labels=MappingProxyType(dict(cause_labels)),
+            unknown_retries=_count(health["unknown_retries"], _at(health_where, "unknown_retries"), minimum=0),
+            unknown_wait_seconds=_count(health["unknown_wait_seconds"], _at(health_where, "unknown_wait_seconds")),
+        ),
         checks=MappingProxyType(checks),
     )
 
@@ -1129,6 +1155,7 @@ def parse_conventions(data: object) -> Conventions:
     for form in issues.forms.values():
         _names_in(form.labels, names, f"issues.forms.{form.name}.labels", "in labels.list")
     _names_in(hygiene.report_issue.labels, names, "hygiene.report_issue.labels", "in labels.list")
+    _names_in(hygiene.pr_health.labels.values(), names, "hygiene.pr_health.labels", "in labels.list")
     return Conventions(
         version=SUPPORTED_VERSION,
         repo=_read_repo(table["repo"], "repo"),

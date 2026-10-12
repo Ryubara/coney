@@ -118,11 +118,17 @@ time. A closed issue carries none ([What a closed issue keeps](#closed)).
 | | `S-in-progress` | Status: an agent or person is working on it |
 | | `S-pending-review` | Status: a pull request is open |
 | | `S-blocked` | Status: waiting for another issue or a decision |
+| | `S-conflict` | Status: a pull request conflicts with main (set by CI) |
+| | `S-failing` | Status: a pull request fails a required check (set by CI) |
 | GitHub's own | `good first issue` | Good for newcomers |
 | | `help wanted` | Extra attention is needed |
 | | `duplicate` | This issue already exists |
 | | `wontfix` | This will not be worked on |
 <!-- conventions:end -->
+
+`S-conflict` and `S-failing` are for pull requests, not issues, and nobody sets them by hand: the `hygiene` workflow
+puts them on an open pull request that conflicts with `main` or fails a required check, and takes them off when that
+is fixed ([Workflows](repo-conventions.md#workflows)).
 
 ## Triage {#triage}
 

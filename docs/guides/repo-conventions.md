@@ -30,7 +30,7 @@ and `labels.yml`) are gone, and so are the constants that repeated their values 
 | `merge` | The merge methods, the squash commit's wording, auto-merge, the required checks and who merges: a copy of the GitHub ruleset and settings | `repo render` (the `required-checks` block); `repo audit --github` compares it with the GitHub ruleset and settings |
 | `issues` | The structure of each issue form (field ids, headings, which are required, default labels), the Screenshots line, the `From:` line, links and how many labels of each family an issue carries | `repo audit` (the forms, and every issue's sections, placeholders, Screenshots, labels, links and `From:` line) |
 | `labels` | The label families and every label with its colour and description | `repo labels`; `repo render` (the `labels` block); `repo audit` (the labels on GitHub) |
-| `hygiene` | The limits after which an item counts as stale or stuck (`thresholds`, including `pr_pending_hours`), which required checks are lint (`pr_health.lint_checks`), the weekly report issue, how the workflow comments (`comments`) and `checks`, the registry of the audit's checks | `repo audit`, `repo pr-health`, `repo hygiene` |
+| `hygiene` | The limits after which an item counts as stale or stuck (`thresholds`, including `pr_pending_hours`), which required checks are lint (`pr_health.lint_checks`), the labels for stuck pull requests (`pr_health.labels`), the weekly report issue, how the workflow comments (`comments`) and `checks`, the registry of the audit's checks | `repo audit`, `repo pr-health`, `repo hygiene` |
 | `workspace` | The worktree and scratch layout, the free-space minimum and the busy marker | `workspace clean` and `workspace disk`, `repo audit --local`; hosted checks ignore it |
 
 The commented file is the reference for each key: open `.github/conventions.yml` and read the comment above it.
@@ -164,10 +164,10 @@ unusable, and never with a traceback.
 
 ## Workflows {#workflows}
 
-The workflows in `.github/workflows/` read the repository and report: they run checks, build, and at most comment. Two
-rules keep them safe: each declares the narrowest `permissions` it needs (`contents: read` by default), and nothing
-from a title, a description or a comment is ever expanded into a script's text; it reaches the script through an
-environment variable or a file ([pr.yml](repo:.github/workflows/pr.yml) shows both).
+The workflows in `.github/workflows/` read the repository and report: they run checks, build, and at most comment or
+label. Two rules keep them safe: each declares the narrowest `permissions` it needs (`contents: read` by default), and
+nothing from a title, a description or a comment is ever expanded into a script's text; it reaches the script through
+an environment variable or a file ([pr.yml](repo:.github/workflows/pr.yml) shows both).
 
 There is one exception, approved by the maintainer on 2026-10-12: `issue-status.yml` edits labels. A status label
 describes open work only, so when an issue is closed it removes every `S-` label and when it is reopened it adds
@@ -176,9 +176,21 @@ checks out nothing and runs nothing from the repository, and the audit check `is
 fails. Another workflow that writes to GitHub needs the same maintainer approval first; a new one that only comments
 does not.
 
+A second exception, approved on the same day: `hygiene.yml` also edits labels, and only two. On every push to `main`
+(and in the weekly sweep) it runs `coney-tools repo pr-health --labels --apply`
+([`pr-health`](coney-tools.md#repo-pr-health)), which puts `S-conflict` on each open pull request that conflicts with
+`main` and `S-failing` on each that fails a required check, and removes the label when the cause is gone, so the pull
+request list shows what is stuck without anyone running a command. A push to `main` is when GitHub's answer about
+conflicts changes. The labels and the rereads while GitHub is still working out a conflict are `hygiene.pr_health` in
+`.github/conventions.yml`; no other label is touched. The job additionally gets read access to pull requests, checks
+and statuses, which `gh pr list` needs for the checks, and still no write access beyond issues (a label on a pull
+request is an issue write). A check that fails after the last push to `main` is labelled at the next push or sweep, or
+by running the command by hand.
+
 `hygiene.yml` is the one that comments, and it needed no approval for that: it writes the audit's findings back as
 one comment per issue or pull request, edited in place and never deleted, and a weekly report comment ([`repo
-hygiene`](coney-tools.md#repo-hygiene)). Its token has `contents: read` and `issues: write` only. It runs on
+hygiene`](coney-tools.md#repo-hygiene)). Its token has `contents: read`, `issues: write` and read access to pull
+requests, checks and statuses, nothing more. It runs on
 `pull_request_target` so that a pull request from a fork gets its comment, which is safe only because it checks out the
 default branch and never the pull request's code, and because what a title or body says reaches a script through
 an environment variable and a comment only after it is made harmless (no mention, link, image or HTML). It starts at

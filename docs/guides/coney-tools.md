@@ -571,7 +571,7 @@ uv run --project python coney-tools repo labels [--apply] [--repo OWNER/NAME]
 uv run --project python coney-tools repo render [--check]
 uv run --project python coney-tools repo audit [--files] [--github] [--local] [--json] [--only CHECK ...] [--strict]
     [--show N] [--snapshot FILE] [--save-snapshot FILE] [--workspace DIR] [--list]
-uv run --project python coney-tools repo pr-health [--json] [--pending-hours H] [--verbose]
+uv run --project python coney-tools repo pr-health [--json] [--pending-hours H] [--verbose] [--labels [--apply]]
 uv run --project python coney-tools repo hygiene (--event N | --sweep) [--apply] [--snapshot FILE]
 ```
 
@@ -663,8 +663,20 @@ A failing check that is not required is ignored. A draft is never stuck. A stack
 `UNKNOWN` for mergeability while it computes it, which means "not known yet": it is not a finding and shows only with
 `--verbose`, together with the drafts and stacked pull requests, so a rerun a minute later settles it.
 `--json` prints `checked`, `stuck` (each with `number`, `branch`, `cause`, `kind`, `detail`, `who`, `checks`, `url`),
-`other` (the `--verbose` lines) and `notices`. Exit code 0 when nothing is stuck, 1 when something is, 2 when `gh` or
-the conventions cannot be read. Run it from the coordinator's loop to find the pull requests to unstick or to push.
+`other` (the `--verbose` lines), `notices` and `labels` (see below). Exit code 0 when nothing is stuck, 1 when something
+is, 2 when `gh` or the conventions cannot be read. Run it from the coordinator's loop to find the pull requests to
+unstick or to push.
+
+`--labels` also compares the labels on every open pull request with its causes and prints what would change, after the
+findings: `add S-conflict to #12 (conflict with main)`, `remove S-failing from #7 (cleared)` (`would add ...` until
+`--apply`). `hygiene.pr_health.labels` in `.github/conventions.yml` maps the causes to labels (`conflict` to
+`S-conflict`, `checks-failed` to `S-failing`); a pull request with the cause gets the label, one without it loses the
+label (a draft is never stuck, so it carries neither), and no other label is ever added or removed. `--apply` makes the
+changes through `gh api` on the issue labels endpoints and needs a token that may write issues; the exit code is still
+the findings' (the `hygiene` workflow accepts 1). While GitHub answers `UNKNOWN` for a pull request's mergeability the
+command rereads up to `hygiene.pr_health.unknown_retries` times, `unknown_wait_seconds` apart, and a pull request still
+unknown keeps its conflict label as it is. The labels must exist in the repository with their colours: `repo labels
+--apply` creates them from `labels.list`.
 
 ### repo hygiene {#repo-hygiene}
 
