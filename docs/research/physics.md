@@ -3317,6 +3317,25 @@ move, where the original uses the centre before it ([Sweeping a body](#sweep)). 
 (moves are under 0.3 m and the radius about 0.47 m) the two agree; the hangout's doors that the player walked through
 one way were not this but the spawn's lost triangle flags, now fixed ([Objects](objects.md#coneys-implementation)).
 
+The shape-pair code of [Unit 4](#unit-4) and [Unit 5](#unit-5) is in `src/physics/`, as functions of posed shapes
+(`physics::Box`, `Sphere`, `Capsule`, `Segment` in `repo:src/physics/shapes.h`) that fill a contact record
+(`physics::Contact`, `repo:src/physics/contact.h`, laid out as the 0xc0-byte record's fields): the static overlaps
+and their table (`repo:src/physics/overlaps.h`), the segment and capsule-box kernels
+(`repo:src/physics/segment_kernels.h`) and the sphere-box sweep (`repo:src/physics/sphere_box_sweep.h`), with
+every quirk the units list kept and pinned by a test. Nothing calls them yet: the strike loop (issue #72, step 1)
+calls `physics::sweepSphereBox` with a car's or an object's box (`physics::boxAt` turns a body's pose and half
+extents into one), and the overlap query ([Unit 7](#unit-7)) calls `physics::overlapShapes`. Coney's choices, each
+marked in the code:
+
+- `PhysicsOverlap_BoxCapsule` writes the capsule-side normal (the box normal negated) into `+0x50`, which the
+  original leaves holding whatever the stack held.
+- The sphere-box sweep's direction to the box, and the inside case's normal, are (0, 0, 0, 1) for a sphere straight
+  above or below the box centre, where the original normalises a zero vector.
+- The ray roots are computed as C / (D − B), the same root as the original's form, and exact at a tangent where the
+  original divides by zero.
+- `PhysicsOverlap_BoxBox` keeps the original's wrong matrix (a maintainers' choice in
+  [Open questions](#open-questions); no caller pairs two boxes).
+
 Humans meet each other as [Human contacts](#human-contacts) describes (`human::sweepCapsules` and
 `human::contactPush`, `repo:src/human/human_contacts.h`; `Human::meetHumans`). The characters' step
 (`human::Humans::update`) gives every human the step's list of humans, and a walking human's sweep first meets their
