@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The pages over a play mode (Player, Camera, Spawner, HUD, Debug draw) and the Levels page's levels and sandboxes,
 // driven through the menu model over a fake PlayControls: no game, no disc.
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
@@ -273,14 +274,14 @@ TEST_CASE("every spawnable object is a primitive a sandbox can build", "[debug][
         CHECK(p.surface.solid);
     }
     // The crate and the wall are climbable walls and the fence a climbable fence, as the parkour course's are.
+    // REQUIRE ends the test case when the name is missing; nothing after FAIL could be reached (MSVC C4702).
     const auto find = [](std::string_view name) {
-        for (const coney::debug::Spawnable& spawnable : coney::debug::spawnables()) {
-            if (spawnable.name == name) {
-                return spawnable.primitive;
-            }
-        }
-        FAIL("no spawnable " << name);
-        return coney::sandbox::Primitive{};
+        const std::vector<coney::debug::Spawnable>& all = coney::debug::spawnables();
+        const auto it = std::find_if(all.begin(), all.end(), [name](const coney::debug::Spawnable& spawnable) {
+            return spawnable.name == name;
+        });
+        REQUIRE(it != all.end());
+        return it->primitive;
     };
     CHECK(find("Crate (1 m)").surface.flags == coney::human::kTriangleClimbable);
     CHECK(find("Wall (2.5 m)").surface.flags == coney::human::kTriangleClimbable);
