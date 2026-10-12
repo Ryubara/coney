@@ -115,7 +115,7 @@ TEST_CASE("the between-steps callbacks run once per frame, in order", "[debug]")
     CHECK(calls == std::vector<int>{1, 2, 1, 2});
 }
 
-TEST_CASE("time control pauses, steps one at a time and runs slow motion as fewer whole steps", "[debug]") {
+TEST_CASE("time control pauses, steps one at a time and runs a slower scale as fewer whole steps", "[debug]") {
     TimeControl time;
     CHECK(time.shouldStep());
     time.setPaused(true);
@@ -126,17 +126,15 @@ TEST_CASE("time control pauses, steps one at a time and runs slow motion as fewe
     CHECK(time.shouldStep());
     CHECK_FALSE(time.shouldStep());
     time.setPaused(false);
-    time.setSlowMotion(3);
+    time.setScale(0.5);
     std::vector<bool> pattern;
     pattern.reserve(6);
     for (int i = 0; i < 6; ++i) {
         pattern.push_back(time.shouldStep());
     }
-    CHECK(pattern == std::vector<bool>{true, false, false, true, false, false});
+    CHECK(pattern == std::vector<bool>{true, false, true, false, true, false});
     CHECK(time.frames() == 11);
-    CHECK(time.steps() == 5);
-    time.setSlowMotion(100);
-    CHECK(time.slowMotion() == TimeControl::kMaxDivisor);
+    CHECK(time.steps() == 6);
 }
 
 TEST_CASE("a hotkey fires once per press of its chord, in either order, and the game never sees the chord",
