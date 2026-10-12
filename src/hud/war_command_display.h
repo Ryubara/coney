@@ -23,7 +23,7 @@ inline constexpr int kWarCommandHoldUpdates = 10;
 inline constexpr std::uint32_t kWarCommandChosenFadeMs = 1500;
 inline constexpr std::uint32_t kWarCommandFadeMs = 500;
 
-/// The Warrior command (ai.md#warrior-commands) of a menu slot (`WarCommand_FromSlot`, the jump table at
+/// The Warrior command (ai-gangs.md#warrior-commands) of a menu slot (`WarCommand_FromSlot`, the jump table at
 /// `0x00553fe0`): 0 follow, 2 defend, 4 scatter, 3 hold, 5 wreck, 1 attack, clockwise from up; nothing for any other
 /// slot.
 /// @orig 0x001a8530 WarCommand_FromSlot (unknown)

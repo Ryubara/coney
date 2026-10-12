@@ -162,3 +162,25 @@ TEST_CASE("a wall face the sphere already touches takes only the move's part int
                                                              walking, scratch);
     CHECK(coney::anim::length(atWall) == Approx(0.0F).margin(1e-6));
 }
+
+TEST_CASE("wallClassOf classes a triangle as the walking sweep's wall test does", "[human][body]") {
+    using coney::human::WallClass;
+    // Two floor triangles, a 2 m wall facing -x, a 0.2 m kerb riser facing -y and a ceiling (a floor turned over).
+    std::vector<coney::test::Tri> tris = coney::test::floorAt(0.0F, 0.0F, 20.0F, 0.0F, 20.0F);
+    tris = coney::test::join(tris, coney::test::wallFacingMinusX(10.0F, 2.0F, 6.0F, 0.0F, 2.0F));
+    tris = coney::test::join(tris, coney::test::wallFacingMinusY(12.0F, 2.0F, 6.0F, 0.0F, 0.2F));
+    tris.push_back(coney::test::Tri{{2, 2, 3}, {3, 3, 3}, {3, 2, 3}});
+    const auto mesh = coney::test::makeMesh(tris);
+    CHECK(coney::human::wallClassOf(*mesh, 0) == WallClass::Floor);
+    CHECK(coney::human::wallClassOf(*mesh, 1) == WallClass::Floor);
+    CHECK(coney::human::wallClassOf(*mesh, 2) == WallClass::Wall);
+    CHECK(coney::human::wallClassOf(*mesh, 3) == WallClass::Wall);
+    CHECK(coney::human::wallClassOf(*mesh, 4) == WallClass::LowWall);
+    CHECK(coney::human::wallClassOf(*mesh, 5) == WallClass::LowWall);
+    CHECK(coney::human::wallClassOf(*mesh, 6) == WallClass::Ceiling);
+    // The shared steepness rule: |n.z| at most kWallNormalZ, and a usable normal.
+    CHECK(coney::human::wallNormal(Vec3{1.0F, 0.0F, 0.0F}));
+    CHECK(coney::human::wallNormal(Vec3{0.76F, 0.0F, 0.65F}));
+    CHECK_FALSE(coney::human::wallNormal(Vec3{0.0F, 0.6F, 0.8F}));
+    CHECK_FALSE(coney::human::wallNormal(Vec3{0.0F, 0.0F, 0.0F}));
+}

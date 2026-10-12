@@ -9,7 +9,7 @@
 // (Diego a BigBrawler, Vargas a BigThrower in stage 2 and a BigBrawler in stage 3, the others StationaryThrowers);
 // the tactic caps Diego's health per stage until he is tired, starts the break that ends the stage, and answers the
 // script with 18 while the break's clip plays and 1 once the stage is over.
-// Research: docs/research/ai.md#boss-diego-vargas, docs/research/ai-code.md#t1-boss-diego-vargas
+// Research: docs/research/ai-gangs.md#boss-diego-vargas, docs/research/ai-code.md#t1-boss-diego-vargas
 
 namespace coney::ai {
 

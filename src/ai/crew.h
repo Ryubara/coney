@@ -11,10 +11,10 @@
 // A player's crew under the Warrior commands' default: the follow tactic the game issues itself (when the chief is
 // made a player and when a scene ends), the follow goal it gives each member (keep to the chief's formation, face his
 // enemies, never attack), the attack and hold commands' tactics and goals, and the chief's automatic commands that
-// switch the crew to attack or defend and back. Research: docs/research/ai.md#warrior-commands,
-// docs/research/ai.md#warrior-follow, docs/research/ai.md#warrior-attack, docs/research/ai.md#warrior-hold,
-// docs/research/ai-goals.md#goal-follow-and-attack, docs/research/ai-goals.md#goal-hold-position,
-// docs/research/ai.md#warrior-auto-commands
+// switch the crew to attack or defend and back. Research: docs/research/ai-gangs.md#warrior-commands,
+// docs/research/ai-gangs.md#warrior-follow, docs/research/ai-gangs.md#warrior-attack,
+// docs/research/ai-gangs.md#warrior-hold, docs/research/ai-goals.md#goal-follow-and-attack,
+// docs/research/ai-goals.md#goal-hold-position, docs/research/ai-gangs.md#warrior-auto-commands
 
 namespace coney::ai {
 

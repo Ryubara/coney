@@ -20,6 +20,7 @@ so a fresh clone gets the same setup as the maintainer's machine:
 | `AGENTS.md` (and `CLAUDE.md`, `GEMINI.md`, which only import it) | The rules | Most agent tools |
 | `.mcp.json` | The debugging servers: `ghidra-mcp` (the shared Ghidra project) and `pcsx2` (the emulator over PINE) | Claude Code; other tools take the same two commands in their own MCP config |
 | `.claude/agents/` | The roles: `analyst`, `implementer`, `reviewer`, `research-reviewer` | Claude Code |
+| `.claude/skills/` | The coordinator's skills: `repo-hygiene` ([the skill](repo-conventions.md#hygiene-skill)) | Claude Code |
 | `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and builds allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)) | Claude Code |
 
 **The servers.** `.mcp.json` holds no paths. Each entry runs `coney-tools mcp serve <name>`, which finds the server
@@ -189,7 +190,8 @@ and an agent waiting on it re-writes its context. So CI never holds an agent bac
    `gh run list --status queued --limit 50 --json databaseId --jq length` and the same with `--status in_progress`,
    and releases when there is room: engine fixes first, then what unblocks other work.
 3. **Each push starts a run** and cancels the pull request's previous one, so a branch is pushed once it is ready,
-   not after every commit.
+   not after every commit. A merge to `main` likewise cancels `main`'s older run, so a merge round costs one build
+   ([What CI runs](building.md#what-ci-runs)).
 4. **A pull request runs only the jobs its change can break** ([What CI runs](building.md#what-ci-runs)), so
    documentation-only units are cheap to release.
 

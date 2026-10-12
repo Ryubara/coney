@@ -308,7 +308,7 @@ workers) that belong to this page, by address.
 
 ## Coney's implementation
 
-Written from this page, [Scripts](scripting.md#stopwatch), [AI: crimes](ai.md#crimes) and the binding pages
+Written from this page, [Scripts](scripting.md#stopwatch), [AI: crimes](ai-gangs.md#crimes) and the binding pages
 (2026-10-06). `GameState::player` (`src/warriors/player_state.h`) holds:
 
 - **The inventory** (`src/warriors/inventory.h`): two players × 23 slots; `CfgInventoryItem` configures both players'

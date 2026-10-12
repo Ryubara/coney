@@ -120,6 +120,7 @@ class DebugSession {
     [[nodiscard]] DisplayOptions& display() { return m_display; }
     /// What the Debug draw page switches, for the play mode to draw.
     [[nodiscard]] DebugDrawOptions& debugDraw() { return m_debugDraw; }
+    [[nodiscard]] const DebugDrawOptions& debugDraw() const { return m_debugDraw; }
     /// The mode the player plays in now (DebugServices::play), or null.
     [[nodiscard]] PlayControls* play() const { return m_services.play ? m_services.play() : nullptr; }
     /// The session's log: native calls, results, console output.

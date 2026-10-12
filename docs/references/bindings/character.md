@@ -317,8 +317,8 @@ m) for flag-8 edges, +320 (20 m) for flag-0x80 edges (inferred: jumps/climbs) an
 a route found through a 0x80 edge is searched again without such edges and the cheaper one kept (0x002511c8). Route
 requests whose edge mask has 0x100 are exempt. Only level 82 calls it, with true.
 
-**Notes.** The name says climb; what edge flags 8 and 0x80 look like in play is not traced (ai.md#path-planning). The
-switch is global and stays set until changed (not traced whether a level load clears it).
+**Notes.** The name says climb; what edge flags 8 and 0x80 look like in play is not traced (ai-moving.md#path-planning).
+The switch is global and stays set until changed (not traced whether a level load clears it).
 
 - **Evidence:** confirmed (code) at `0x002511b8`; detail: traced
 - **Wrapper** `0x0036e438` (registered by `RegisterBindings`); **calls** `0x002511b8` `Climb_SetFilter`
@@ -914,7 +914,7 @@ HuClearLook(human)
 **Returns** nothing.
 
 Does nothing in this build: the function it calls returns at once. Scripts call it to end a head look-at; look-ats here
-end by themselves ([AI: turning](../../research/ai.md#look-at)).
+end by themselves ([AI: turning](../../research/ai-scripting.md#look-at)).
 
 - **Evidence:** confirmed (code) at `0x0023a460`; detail: traced
 - **Wrapper** `0x00358c58` (registered by `RegisterBindings`); **calls** `0x0023a460` `Human_ClearLook_Stub`
@@ -1295,7 +1295,7 @@ its usual refusals (action and fight states, a player's busy states, `HuBlockLoo
 its look-at target even mid-animation; only death and two other states (0x00228070, 0x00228090) still stop it.
 
 **Notes.** `GoalPlayDynAnimation` sets and clears the same bit around its clip
-([AI](../../research/ai.md#dyn-animation)), so the end of such a goal also clears a forced look.
+([AI](../../research/ai-scripting.md#dyn-animation)), so the end of such a goal also clears a forced look.
 
 - **Evidence:** confirmed (code) at `0x0023a328`; detail: traced
 - **Wrapper** `0x00358bf8` (registered by `RegisterBindings`); **calls** `0x0023a328` `Human_SetForceLook`
@@ -3309,7 +3309,7 @@ HuSetLOSRange(human, range)
 Sets how far a human's AI sees, in metres (brain `+0x130`), the range the sight checks (0x002223e8) and tactics use;
 hang-out and use-flag tactics change it too.
 
-**Notes.** Storage at 0x002383a0. The AI's sight check: [AI](../../research/ai.md#tactic-kinds).
+**Notes.** Storage at 0x002383a0. The AI's sight check: [AI](../../research/ai-gangs.md#tactic-kinds).
 
 - **Evidence:** confirmed (code) at `0x002383a0`; detail: traced
 - **Wrapper** `0x0035c200` (registered by `RegisterBindings`); **calls** `0x002383a0` `Human_SetLOSRange`
@@ -4882,7 +4882,7 @@ called.
 **Notes.** 0x0041c2d0 → `GameState_IssueWarriorCommandFor` 0x0041dc80 → 0x0041c4e0. Refused while a scene camera (type
 4) is player 1's, while commands are locked (`+0x411`), the player's menu is locked (`+0x42e`), the command is disabled
 (`WCEnableCommand`) or the human is not a war chief. The command number is not range-checked. What each command starts:
-[AI](../../research/ai.md#warrior-commands).
+[AI](../../research/ai-gangs.md#warrior-commands).
 
 - **Evidence:** confirmed (code) at `0x0041c2d0`; detail: traced
 - **Wrapper** `0x003747b8` (registered by `RegisterBindings`); **calls** `0x0041c2d0` `GameState_IssueWarriorCommand`
@@ -4936,8 +4936,8 @@ clip `+0x20`, anim id `+0x24`) by its type: type 0 (puke) the first seven as ids
 (itch) the goal plays every 10 s with a player near, 669 the big puke, 196 and 195 the knocked-down pose and the hit
 while down ([Combat](../../research/combat.md)), so a sleeping or begging bum lies or sits in its own clips; 320-324
 being the arrested state's idle, hit, dying, dead and second hit is inferred (a type-0 bum is put in the arrested
-state). [AI: GoalBumLogic](../../research/ai.md#bum-logic). Requesting fills 13 of the 64 dynamic-animation list
-entries. Releasing also drops files another script requested separately by the same name. Confirmed (code) unless
+state). [AI: GoalBumLogic](../../research/ai-scripting.md#bum-logic). Requesting fills 13 of the 64 dynamic-animation
+list entries. Releasing also drops files another script requested separately by the same name. Confirmed (code) unless
 marked.
 
 - **Evidence:** confirmed (code) at `0x002abe98`; detail: traced
@@ -5205,9 +5205,9 @@ WCEnableAutomaticSwitching(on)
 
 **Returns** nothing.
 
-Turns the war chief's automatic commands on or off ([AI](../../research/ai.md#warrior-auto-commands)): while the byte is
-set, the chief's brain orders his crew to fight or follow by what he does. `InitLevel` sets it; only the Rumble arenas
-(`brawl`, `kinghill`, `royal`, `survival`, `tagbt`) turn it off.
+Turns the war chief's automatic commands on or off ([AI](../../research/ai-gangs.md#warrior-auto-commands)): while the
+byte is set, the chief's brain orders his crew to fight or follow by what he does. `InitLevel` sets it; only the Rumble
+arenas (`brawl`, `kinghill`, `royal`, `survival`, `tagbt`) turn it off.
 
 - **Evidence:** confirmed (code) at `0x0041dd68`; detail: traced
 - **Wrapper** `0x00374a00` (registered by `RegisterBindings`); **calls** `0x0041dd68` `GameState_SetAutoSwitch`

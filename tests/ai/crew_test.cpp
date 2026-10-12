@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The Warriors' default command and the chief's automatic commands (docs/research/ai.md#warrior-commands): the follow
-// tactic's goals, the follow goal's fight mode, and CrewOrders' switches to attack and back. Synthetic humans on a
-// flat floor.
+// The Warriors' default command and the chief's automatic commands (docs/research/ai-gangs.md#warrior-commands): the
+// follow tactic's goals, the follow goal's fight mode, and CrewOrders' switches to attack and back. Synthetic humans on
+// a flat floor.
 #include <cmath>
 #include <memory>
 #include <numbers>
