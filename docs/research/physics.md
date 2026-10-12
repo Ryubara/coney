@@ -38,7 +38,7 @@ address unless a section says otherwise.
 | --- | --- | --- |
 | The world | `IPhysics_Construct` `0x0033c288`, `IPhysics_Step` `0x00340918`, `Physics_StaticInit` `0x0034f6c0` and its stub `0x0034f718` (copy a 48-byte constant from `0x00511720` to `0x006eb9e0`) | confirmed (code) |
 | [Bodies](#bodies) | create and free: `IPhysics_CreateHumanBody` `0x0033cc48` / `_FreeHumanBody` `0x0033ce00`, `_CreatePunchBagBody` `0x0033cb08` / `_FreePunchBagBody` `0x0033cbf0`, `_CreateObjectBody` `0x0033ce58` / `_FreeObjectBody` `0x0033cf00`, `_CreateCarBody` `0x0033cf68` / `_FreeCarBody` `0x0033cff8`, `Physics_CreateBoxBody` `0x0033d070` / `IPhysics_FreeBoxBody` `0x0033d158`; lists: `IPhysics_AddBody` `0x00340668`, `_RemoveBody` `0x00340700`, `_AddHumanBody` `0x003407a0`, `_RemoveHumanBody` `0x003407f8`, `BodyList_Insert` / `_Remove` / `_Reinsert` `0x003404a8` / `0x003405d8` / `0x00340628`; the body: `PhysicsNode_Init` `0x00341158`, `PhysicsBody_Construct` `0x003418f8`, `_ConstructForOwner` `0x00341970`, `_Destroy` `0x00341a00`, `_SetOwner` `0x00341a68`, `_AddShape` `0x00341aa8`, `_GetShapes` `0x00341ae0`, `_Update` `0x00341c10`, `_Moved` `0x00341e40`, `_GetContactScale` `0x00341e18`, `_ComputeBounds` `0x00341638`, `_AddShapeBounds` `0x003417c0` | confirmed (code) |
-| [Shapes](#shapes) | pools: `IPhysics_AllocObjectSphere` `0x0033d1a0`, `_AllocObjectBox` `0x0033d1e8`, `_AllocCarBox` `0x0033d230`, `_AllocBigSphere` `0x0033d278`, `_FreeShape` `0x0033d2c8`, `_FindFreeStrikeSphere` `0x003408d8`; base: `PhysicsShape_Construct` / `_Destroy` `0x00342a30` / `0x00342a70`, `PhysicsShape_GetBounds` `0x00341190`; sphere `0x00342aa0` / `0x00342ae0` / pose `0x00342b08`; box `0x00342d18` / `0x00342d98`, `PhysicsBox_SetSize` `0x00342dc0`, pose `0x00342df8`, `_SetMatrix` `0x00343040`, `_GetBounds` `0x003430e8`; capsule `0x003434a8` / `0x003434e0`, size `0x00343508`, pose `0x00343518`; segment `0x003437b0` / `0x003437e8`, pose `0x00343810`; `AABB_FromSphere` `0x00341660` (and `0x00341708`), `AABB_ExtendByMove` `0x00341840`, `AABB_ScaleAboutCentre` `0x003414c0` | confirmed (code) |
+| [Shapes](#shapes) | pools: `IPhysics_AllocObjectSphere` `0x0033d1a0`, `_AllocObjectBox` `0x0033d1e8`, `_AllocCarBox` `0x0033d230`, `_AllocBigSphere` `0x0033d278`, `_FreeShape` `0x0033d2c8`, `_FindFreeStrikeSphere` `0x003408d8`; base: `PhysicsShape_Construct` / `_Destroy` `0x00342a30` / `0x00342a70`, `PhysicsShape_GetBounds` `0x00341190`; sphere `0x00342aa0` / `0x00342ae0` / pose `0x00342b08`; box `0x00342d18` / `0x00342d98`, `PhysicsBox_SetSize` `0x00342dc0`, pose `0x00342df8`, `_SetMatrix` `0x00343040`, `_GetCorners` `0x003430e8`; capsule `0x003434a8` / `0x003434e0`, size `0x00343508`, pose `0x00343518`; segment `0x003437b0` / `0x003437e8`, pose `0x00343810`; `AABB_FromSphere` `0x00341660`, `AABB_FromUprightCylinder` `0x00341708`, `AABB_ExtendByMove` `0x00341840`, `AABB_ScaleAboutCentre` `0x003414c0` | confirmed (code) |
 | [The human body](#human-body) | `PhysicsHumanBody_Construct` `0x00341e98`, `_Destroy` `0x00341f00`, `PhysicsBody_ApplyHumanScale` `0x00341f28`, `PhysicsHumanBody_SetPushSphere` `0x003420d0`, `_GetShapes` `0x003420c8`, `_OnStruck` `0x00342130`, `_AddStrikeSphere` `0x00342158`, `_ClearStrikeSpheres` `0x00342168`, `_GetContactScale` `0x00342288`, `_Update` `0x003422d0`, `_PushAwayHumans` `0x003425c0`, `_Moved` `0x00342828`, `PhysBody_SetShapeEnabled` `0x003428d0`, `_AddBoneShape` `0x003429e8`, `Human_TestStrikes` `0x0033f110` ([Combat](combat.md#moving-strikes)) | confirmed (code) |
 | [Ignore lists](#ignore-lists) | `IPhysics_FindFreeIgnoreSlot` `0x00340890`, `IPhysics_ForgetIgnoredOwner` `0x0033cd70`, `PhysicsBody_IsIgnoring` / `_Ignore` / `_StopIgnoring` `0x00341ae8` / `0x00341b20` / `0x00341b80`, the human body's `0x003421d0` / `0x00342230` / `0x00342260` | confirmed (code) |
 | [Queries](#queries) | `IPhysics_QueryBox` `0x0033feb0`, `_QueryBoxFiltered` `0x00340120`, `_CollideShape` `0x0033e7f0`, `_OverlapShape` `0x0033ebb8`, `_RayCastBodies` `0x0033eee0` | confirmed (code) |
@@ -193,15 +193,19 @@ stack for its sphere tests (`0x00341970`).
 A shape is a 16-byte-aligned record with a common head (`PhysicsShape_Construct` `0x00342a30`, vtable `0x00544870`):
 `+0x00` next shape of the body, `+0x10` local offset, `+0x20` the previous world position (for sweeps), `+0x30`
 type, `+0x31` bone (−1: the body's own frame), `+0x32` flags (`0x1` enabled, `0x2`, `0x4` a target for strikes,
-`0x8` allocated, `0x10` reset the previous position on the next pose), `+0x34` vtable (`+0x1c` enable,
-`+0x24` world position, `+0x28` pose, `+0x30` reset). The world AABB of any shape is `0x00341190`. Confirmed (code):
+`0x8` allocated, `0x10` reset: the next pose makes the previous position equal the new one, for the sphere, box and
+segment but not the capsule, [Unit 6](#u6-reset)), `+0x34` vtable of 8-byte `{adjust, function}` slots (the enable
+sets `0x11`, a getter returns a pointer to the world position, a setter `+0x0c` writes it, the pose, and "set from a
+matrix", which moves a sphere's centre or a capsule's base to the matrix's position and sets a box's axes; slot by
+slot in [Unit 6](#u6-record)). The world AABB of any shape is `0x00341190`: for a capsule the upright cylinder's box,
+and a segment pointing down on an axis gets a wrong bound there ([Unit 6](#u6-bounds)). Confirmed (code):
 
 | Type | Shape | Size, vtable | Fields | Pose (vtable `+0x28`) |
 | --- | --- | --- | --- | --- |
 | 1 | oriented box | 0x90, `0x005447f0` | `+0x40` half extents (`PhysicsBox_SetSize` `0x00342dc0` halves the sizes it gets), `+0x50`-`+0x7c` axes, `+0x80` position | the owner's matrix and the local offset (`0x00342df8`); cars set the matrix directly (`0x00343040`) |
 | 2 | sphere | 0x60, `0x00544830` | `+0x40` radius, `+0x50` centre | the local offset on its bone (owner vtable `+0xb8`) or in the body's frame (owner vtable `+0xa0`) (`0x00342b08`) |
-| 3 | capsule | 0x60, `0x005447b0` | `+0x40` radius, `+0x44` height, `+0x50` base | at the owner's position; for a human the height follows the state (`0x00343518`, [below](#human-body)) |
-| 4 | segment | 0x70, `0x00544770` | `+0x40` start, `+0x50` end, `+0x60` radius, `+0x64` length | start on its bone, end = start + the bone's axis × length (`0x00343810`) |
+| 3 | capsule | 0x60, `0x005447b0` | `+0x40` radius, `+0x44` height, `+0x50` base | for a human at its position, the offset unused, and the height follows the state; for another owner the position plus the **unrotated** offset (`0x00343518`, [below](#human-body), [Unit 6](#u6-capsule-pose)) |
+| 4 | segment | 0x70, `0x00544770` | `+0x40` start, `+0x50` end, `+0x60` radius, `+0x64` length | start = its bone plus the bone-rotated offset (bone −1: the body's position, offset ignored), end = start + the bone's x axis × length (`0x00343810`) |
 
 The "capsule" is **upright**: the capsule-capsule tests treat it as the vertical range `[base z, base z + height]`
 with a horizontal radius (`0x00346388`, `0x003498c0` + `0x0034a8d0`), so a human never tilts. Two overlap tests round
@@ -223,7 +227,11 @@ lengths and the capsule (height `0x00219890`, radius `0x00219860` of the human) 
   spheres, pose them on the held object (`0x00226ff0`); while anything strikes, widen the strike reach to 0.8 × the
   scale or the current attack's reach (`AttackTable_GetReach`); pose the enabled bone shapes and the push sphere.
 - **Moved** (vtable `+0x18`, `0x00342828`): the broad bound `+0x90` becomes a box of radius 0.8 m around the point
-  1.0 m above the position, and the enabled bone shapes' previous positions are reset, so a teleport is not a strike.
+  1.0 m above the position (height 2.0, so z from the position to 2.0 above), and each bone shape with flag `0x1` or
+  `0x4` is "set from" the new matrix (`0x00342890`): a sphere's centre jumps to the body's new origin (no offset)
+  with its previous position left alone, and a segment is not touched. So it does **not** reset the previous
+  positions: the next pose sweeps a sphere from the new origin to its bone, a segment from its start before the
+  teleport ([Unit 6](#u6-sphere-pose)).
 - **The capsule's height** (`0x00343518`): base height + 0.2 × scale; the bottom raised by 0.61 × scale in one mode
   (`+0x3be`) and by 0.7 × scale in the states `0x00227f68` selects (at most 0.7 above `+0x560`), except in a long
   fall; 0.35 × scale when cuffed; never under 0.2 × scale.
@@ -2945,15 +2953,23 @@ Hand sphere r = 0.09. "prev" is the sphere's start centre, "move" = cur − prev
 
 ### Unit 6: Shapes: records, poses and bounds {#unit-6}
 
-- **Specified by:** [Shapes](#shapes), [The human body](#human-body) (capsule height), [Combat: moving
-  strikes](combat.md#moving-strikes) (segment and sphere posing). Missing for exact code: the box's bound (`0x003430e8`,
-  956 bytes) and the generic bound `0x00341190`, `AABB_FromSphere` versus `0x00341708`, the flag `0x10` reset rule.
-- **Coney:** a new `src/physics/shapes.{h,cpp}` (posed shapes as values); `src/human/human.h` capsule height moves here;
-  `world_objects/object_bodies.*` builds its box and sphere from it.
-- **Tests:** each shape posed from a synthetic bone matrix and offset; bounds of a rotated box against a brute-force
-  corner bound; the capsule's height rules (0.61, 0.7, 0.35 cuffed, never under 0.2 × scale).
+**What it is.** The four shape records (oriented box, sphere, upright capsule, segment), how each is posed from its
+owner's transform and bone every update, how its "previous position" is kept for sweeps (the flag `0x10` rule), and
+the world AABB of a posed shape. Specified exactly below; everything confirmed (code) at the cited addresses (read in
+the disassembly, 2026-10-12), unless a line says otherwise.
 
-21 functions, 5272 bytes (1 tagged).
+- **Specified by:** this section; background in [Shapes](#shapes), [The human body](#human-body) and
+  [Combat: moving strikes](combat.md#moving-strikes).
+- **Coney:** a new `src/physics/shapes.{h,cpp}` (posed shapes as values, with a pose function per type that takes
+  the owner's transform and bone transform as inputs); `src/human/human.h` capsule height moves here;
+  `world_objects/object_bodies.*` builds its box and sphere from it.
+- **Tests:** [Test ideas](#u6-tests): each shape posed from a synthetic body and bone transform; the flag `0x10`
+  sequence; a rotated box's corners and bound against a brute-force corner bound; the segment bound quirk; the
+  capsule's height rules (0.61, 0.7 and its cap, 0.35 cuffed, never under 0.2 × scale).
+
+21 functions, 5272 bytes (1 tagged). Two names changed in Ghidra on 2026-10-12 because the old ones were wrong:
+`0x003430e8` was `PhysicsBox_GetBounds` (it returns the eight corners, not a bound) and `0x00341708` was
+`AABB_FromSphereMethod` (it builds an upright cylinder's box).
 
 | Address | Name | Size |
 | --- | --- | --- |
@@ -2967,7 +2983,7 @@ Hand sphere r = 0.09. "prev" is the sphere's start centre, "move" = cur − prev
 | `0x00342dc0` | `PhysicsBox_SetSize` | 52 |
 | `0x00342df8` | `PhysicsBox_Pose` | 580 |
 | `0x00343040` | `PhysicsBox_SetMatrix` | 168 |
-| `0x003430e8` | `PhysicsBox_GetBounds` | 956 |
+| `0x003430e8` | `PhysicsBox_GetCorners` | 956 |
 | `0x003434a8` | `PhysShapeCapsule_Construct` | 56 |
 | `0x003434e0` | `PhysicsCapsule_Destroy` | 40 |
 | `0x00343508` | `PhysShapeCapsule_SetSize` | 12 |
@@ -2977,7 +2993,315 @@ Hand sphere r = 0.09. "prev" is the sphere's start centre, "move" = cur − prev
 | `0x00343810` | `PhysShapeSegment_Pose` | 632 |
 | `0x00341190` | `PhysicsShape_GetBounds` | 812 |
 | `0x00341660` | `AABB_FromSphere` | 168 |
-| `0x00341708` | `AABB_FromSphereMethod` | 180 |
+| `0x00341708` | `AABB_FromUprightCylinder` | 180 |
+
+Notation as in [Unit 3](#u3-records): vectors are 4 floats, "xyz" operations leave `w` alone, "w = 1" is the code
+writing 1.0 (the VU constant register). Arguments follow the EE ABI: integers and pointers in `a0`-`a3`, floats in
+`f12`, `f13`, `f14`.
+
+#### Transforms and rotations {#u6-transforms}
+
+Every pose reads its transforms through owner vtable slots (GCC 2.x 8-byte slots, adjust then function; [Unit 3's
+table](#u3-records)). Each returns a **32-byte transform: position (vec4) then rotation quaternion `(x, y, z, w)`**.
+
+| Slot (adjust / function) | Called as | Human's function | World object's (vtable `0x00544c00`) | Used by |
+| --- | --- | --- | --- | --- |
+| `+0xa0` / `+0xa4` | `(out, owner)`, the body transform | `0x0023cd00` | `Obj_GetWorldPose` `0x003a19b0` | sphere, box |
+| `+0xa8` / `+0xac` | `(out, owner)`, the body transform | `0x004ed828` | `Obj_GetPoseNow` `0x003a1ad8` | capsule, segment |
+| `+0xb8` / `+0xbc` | `(owner, out, bone)`, a bone's transform in the body's frame | `Human_GetBoneTransform` `0x0023bde8` | | sphere, box, segment |
+| `+0x20` / `+0x24` | `(owner)`, type mask (`0x40` a human) | | | capsule |
+
+For a human, `0x0023cd00` and `0x004ed828` are the same code (both copy the entry of the transform table `0x00714b00`
+indexed by human `+0x92`), so the two body slots agree. For a world object, `+0xa0` is the world pose and `+0xa8` the
+pose extrapolated to now ([Objects](objects.md)); only spheres and boxes, which read `+0xa0`, are built for world
+objects ([Bodies](#bodies)). Confirmed (code): the slots at the call sites below, the human's entries read from its
+vtable `0x0053f088`, the world object's from `0x00544c00`.
+
+`Human_GetBoneTransform` returns the bone cache entry (model space) with the **position multiplied by the human's
+scale** and the rotation as is ([Objects](objects.md)); it writes nothing when the human has no model instance
+(`+0xd8` = 0), so the caller's buffer keeps what it held. In the sphere, box and segment poses that buffer is the one
+the body transform was just read into, so such a human's bone transform **is its body transform** (confirmed (code):
+the same stack slot at `0x00342b4c`/`0x00342b80`, `0x00342e3c`/`0x00342e78`, `0x00343858`/`0x0034389c`; that it
+happens in play is not known).
+
+**Rotation by a quaternion** (`R(q)`). Two forms appear, and they give the same result for a unit quaternion:
+
+- The sphere's no-bone case rotates the offset directly (`0x00342c5c`-`0x00342c9c`):
+  `v' = (w² − |u|²) v + 2 (u·v) u + 2 w (u × v)`, with `u = (x, y, z)`. No normalisation.
+- Everything else builds a matrix with `Quat_ToMatrix` (`0x00336500`) and multiplies. Its four stored rows are the
+  images of the axes (row 0 = `R e_x`, and so on) and row 3 is `(0, 0, 0, 1)`:
+
+  | Row | x | y | z | w |
+  | --- | --- | --- | --- | --- |
+  | 0 | `1 − 2(y² + z²)` | `2(xy + zw)` | `2(xz − yw)` | 0 |
+  | 1 | `2(xy − zw)` | `1 − 2(x² + z²)` | `2(yz + xw)` | 0 |
+  | 2 | `2(xz + yw)` | `2(yz − xw)` | `1 − 2(x² + y²)` | 0 |
+  | 3 | 0 | 0 | 0 | 1 |
+
+  A vector is transformed as `row0·v.x + row1·v.y + row2·v.z + row3·v.w`, so `M v = R v` in xyz and its `w` is
+  `v.w`. Every pose then adds a position in xyz and writes `w = 1`, so the `w` never matters.
+
+So a shape's "bone x axis" is row 0 of the bone's matrix, `R(qb) e_x`.
+
+#### The shape record and vtable {#u6-record}
+
+Common head, written by `PhysicsShape_Construct` (`0x00342a30`, `(Shape* s, u8 type)`, returns `s`):
+
+| Offset | Type | Meaning | Construct writes |
+| --- | --- | --- | --- |
+| `+0x00` | ptr | next shape of the body | 0 |
+| `+0x10` | vec4 | local offset | `(0, 0, 0, 1)` (the constant at `0x005116c0`) |
+| `+0x20` | vec4 | previous position (sphere centre, box position, capsule base, segment start) | **not written** |
+| `+0x30` | u8 | type: 1 box, 2 sphere, 3 capsule, 4 segment | `type` |
+| `+0x31` | s8 | bone, −1 the body's own frame | −1 |
+| `+0x32` | u16 | flags: `0x1` enabled, `0x2`, `0x4` a strike target, `0x8` allocated, `0x10` reset the previous position on the next pose | `0x1` |
+| `+0x34` | ptr | vtable | `0x00544870` (the base) |
+
+**Shape vtable** (both offsets of each slot; the type vtables are `0x005447f0` box, `0x00544830` sphere,
+`0x005447b0` capsule, `0x00544770` segment; read from the vtables):
+
+| Slot | What | Sphere | Box | Capsule | Segment |
+| --- | --- | --- | --- | --- | --- |
+| `+0x08` / `+0x0c` | **set position** `(s, const vec4* p)`: copies `p` (all four words), previous untouched | `+0x50` (`0x004f1200`) | `+0x80` (`0x004f1220`) | `+0x50` (`0x004f1238`) | `+0x40` (`0x004f1250`) |
+| `+0x10` / `+0x14` | destructor `(s, flags)` | `0x00342ae0` | `0x00342d98` | `0x003434e0` | `0x003437e8` |
+| `+0x18` / `+0x1c` | **enable** `(s, bool on)` (`0x004f11c8`, shared) | on: flags `\|= 0x11`; off: flags `&= ~0x1` | | | |
+| `+0x20` / `+0x24` | **position pointer** `(s)` → `&` the field | `+0x50` (`0x004f1210`) | `+0x80` (`0x004f1230`) | `+0x50` (`0x004f1248`) | `+0x40` (`0x004f1260`) |
+| `+0x28` / `+0x2c` | **pose** `(s, owner)` | `0x00342b08` | `0x00342df8` | `0x00343518` | `0x00343810` |
+| `+0x30` / `+0x34` | **set from a matrix** `(s, const mat4* m)`, `m` = 4 rows, row 3 the position | `0x00342d08`: centre = row 3; previous untouched | `PhysicsBox_SetMatrix` `0x00343040` | `0x00343798`: previous = base, base = row 3 | `0x00343a88`: **does nothing** |
+
+The base vtable's entries for these slots point at `0x0042b2b0` (inferred: the pure-virtual stub) except the enable
+(`0x004f11c8`) and the destructor (`0x00342a70`). The small entries (`0x004f11c8`-`0x004f1260`, `0x00342d08`,
+`0x00343798`, `0x00343a88`) have no function in Ghidra; they are read as listed (confirmed (code)).
+
+**Destructors.** `PhysicsShape_Destroy` (`0x00342a70`, `(s, int flags)`) sets the base vtable and frees `s`
+(`0x0042c820`) when `flags & 1`. Each type's destructor sets its own vtable and calls it with the same flags.
+
+#### The flag 0x10 rule {#u6-reset}
+
+Switching a shape **on** sets flags `0x11` (enabled and reset). The sphere, box and segment poses then do:
+
+1. At the start: if `0x10` is **clear**, previous = the current position (the pose before this one).
+2. Pose (below).
+3. At the end: if `0x10` is **set**, previous = the new position. Then **clear `0x10`**, always.
+
+So the first pose after a shape is switched on has previous = current: a zero move, so a strike sphere just switched
+on can only hit what it starts inside ([Unit 5](#u4b-how-human-teststrikes-builds-the-sweep-0)); every later pose
+keeps the pose before. Switching off clears only `0x1`. Confirmed (code) at `0x00342b20`/`0x00342ccc` (sphere),
+`0x00342e10`/`0x00343000` (box), `0x0034382c`/`0x00343a48` (segment), `0x004f11d0` (enable).
+
+The **capsule** pose never reads or clears `0x10`: its previous base is always the base before this pose
+(`0x0034358c`, `0x0034373c`). `PhysicsBox_SetMatrix` also ignores it (previous = the old position, always). A
+capsule's `0x10`, once set by enabling it, stays set (no reader of it found in this unit).
+
+What the segment keeps as "previous" is its **start** only; the end has no previous. The sphere keeps its centre, the
+box its position (`+0x80`; not its axes).
+
+#### Sphere {#u6-sphere-record}
+
+0x60 bytes. `PhysShapeSphere_Construct` (`0x00342aa0`, `(s)`): the head with type 2, then `+0x40` radius = 0, vtable
+`0x00544830`; the centre `+0x50` is not written. Fields: `+0x40` radius (float), `+0x50` centre.
+
+#### PhysicsSphere_Pose {#u6-sphere-pose}
+
+`0x00342b08`, 0x200 bytes. `void (Sphere* s, Owner* o)`.
+
+1. Flag `0x10` start step ([above](#u6-reset)).
+2. `(P, q)` = owner slot `+0xa0` (`0x00342b4c`).
+3. Bone −1 (`0x00342b68` → `0x00342c5c`): `centre = P + R(q) offset` (the direct quaternion form), `w = 1`.
+4. Bone ≥ 0: `(b, qb)` = owner slot `+0xb8` with the bone (`0x00342b80`);
+   `centre = P + R(q) (b + R(qb) offset)` (two matrix products, `0x00342bc4`, `0x00342c1c`), `w = 1`.
+5. Flag `0x10` end step; clear `0x10`.
+
+#### Box {#u6-box-record}
+
+0x90 bytes. `PhysicsBox_Construct` (`0x00342d18`, `(b)`): the head with type 1, vtable `0x005447f0`, and `+0x50`,
+`+0x60`, `+0x70`, `+0x80` = the four rows of the identity at `0x005117a0`-`0x005117d0`: axes identity, position
+`(0, 0, 0, 1)`. The half extents are not written. Fields: `+0x40` half extents (x, y, z; `w` 1.0 once sized),
+`+0x50` / `+0x60` / `+0x70` the axes `A0`, `A1`, `A2` (unit vectors, `w` 0), `+0x80` position (the centre).
+
+`PhysicsBox_SetSize` (`0x00342dc0`, `(b, float sx, float sy, float sz)`): `+0x40 = 0.5 sx`, `+0x44 = 0.5 sy`,
+`+0x48 = 0.5 sz` (the constant 0.5 is `0x3f000000`), `+0x4c = 1.0`.
+
+#### PhysicsBox_Pose {#u6-box-pose}
+
+`0x00342df8`, 0x244 bytes. `void (Box* b, Owner* o)`.
+
+1. Flag `0x10` start step (previous = old `+0x80`).
+2. `(P, q)` = owner slot `+0xa0` (`0x00342e3c`).
+3. Bone −1 (`0x00342f98`): axes `A0, A1, A2` = rows 0-2 of `Quat_ToMatrix(q)` (row 3 is written to `+0x80` and
+   then overwritten); `position = P + R(q) offset`, `w = 1`.
+4. Bone ≥ 0: `(b, qb)` = owner slot `+0xb8` (`0x00342e78`). Axes: `Ai = R(q) (row i of R(qb))`, i = 0, 1, 2 (the
+   loop at `0x00342eb0` multiplies all four rows; row 3 stays `(0, 0, 0, 1)` and is overwritten).
+   `position = P + R(q) (b + offset)`, `w = 1`. **Quirk:** the offset is added to the bone's position **without the
+   bone's rotation** (`0x00342f10`), unlike the sphere and the segment. No box with a bone is known (inferred: the
+   object and car boxes have bone −1), so it is unlikely to matter.
+5. Flag `0x10` end step; clear `0x10`.
+
+#### PhysicsBox_SetMatrix {#u6-box-set-matrix}
+
+`0x00343040`, 0xa8 bytes; also the box's slot `+0x30` / `+0x34`. `void (Box* b, const mat4* m)`, `m` = rows
+`m0`-`m3`, `m3` the position. In order: previous `+0x20` = the old position `+0x80` (always); `A0 = m0`, `A1 = m1`,
+`A2 = m2` (all four words copied); `position = m3 + m0·off.x + m1·off.y + m2·off.z` (xyz), `w = 1`. Flags untouched.
+Called by `Car_UpdateLoosePart` (`0x0038806c`) and, through the slot, by `PhysicsBody_Moved` (`0x00341e40`) for a
+body's first shape.
+
+#### PhysicsBox_GetCorners {#u6-box-corners}
+
+`0x003430e8`, 0x3bc bytes. `void (const Box* b, vec4 out[8])`. Corner `i` (0 to 7):
+
+`out[i] = position + sx·hx·A0 + sy·hy·A1 + sz·hz·A2`, `w = 1`, with `sx = +1` when `i & 1` else −1,
+**`sy = −1` when `i & 2` else +1**, `sz = +1` when `i & 4` else −1.
+
+(The code builds the x part for all eight, then adds or subtracts the y and z parts in place: `0x00343100`,
+`0x003431a0`-`0x00343438`, `0x00343448`.) The y sign is the odd one out; only the order of the corners depends on it.
+Its only caller is the generic bound.
+
+#### Capsule {#u6-capsule-record}
+
+0x60 bytes. `PhysShapeCapsule_Construct` (`0x003434a8`, `(c)`): the head with type 3, vtable `0x005447b0`; radius
+and height are not written. Fields: `+0x40` radius, `+0x44` height, `+0x50` base (the bottom centre; the capsule is
+the vertical range `[base.z, base.z + height]`, [Shapes](#shapes)).
+
+`PhysShapeCapsule_SetSize` (`0x00343508`, `(c, float height, float radius)`): `+0x40 = radius` (from `f13`),
+`+0x44 = height` (from `f12`). Note the order: height first. `IPhysics_Construct` passes 0.35 (`0x3eb33333`) as the
+radius (`0x0033c8e4`).
+
+#### PhysicsCapsule_Pose {#u6-capsule-pose}
+
+`0x00343518`, 0x27c bytes (tagged). `void (Capsule* c, Owner* o)`. The flag `0x10` is not used ([above](#u6-reset)).
+
+**Not a human** (the owner's type mask, slot `+0x20`, lacks `0x40`; `0x0034354c` → `0x00343734`): previous = old
+base; `(P, q)` = slot `+0xa8`; `base = P + offset` (xyz, **not rotated**), `w = 1`. Nothing else: the height stays as
+set.
+
+**A human** (`0x00343558`). Let `s` = `Human_GetScale` (`0x0021d020`: human `+0x65c`, or 1.0 when `0x00227d28`
+holds and the scale is under 1.1), called afresh each time it is used.
+
+1. `(P, q)` = slot `+0xa8` (`0x00343570`). Previous = old base; `base = P` (all four words; **the offset is not
+   used**).
+2. `(b6, ·)` = slot `+0xb8` with bone **6** (the head; `0x003435a8`). `height = b6.z + 0.2 s`
+   (`0x3e4ccccd`). (`b6.z` is already scaled, [above](#u6-transforms).) The capsule's top is therefore
+   `P.z + b6.z + 0.2 s` in every case below except the cuffed one.
+3. If the byte human `+0x3be` is non-zero (`0x003435c8`): `base.z += 0.61 s`, `height −= 0.61 s` (`0x3f1c28f6`).
+   Go to 6.
+4. Else if the human is jumping (state flag `0x400000000`, `0x00227f68`) **and not** in a long fall (state flag
+   `0x1000000000`, `0x002265f0`) (`0x00343614`-`0x00343634`): `base.z += 0.7 s`, `height −= 0.7 s`
+   (`0x3f333333`). Then if `base.z − h560 > 0.7` (strictly; `h560` = human `+0x560`, the take-off height; the
+   constant is 0.7 **not** scaled), `base.z = h560 + 0.7` and `height = b6.z + 0.2 s + P.z − base.z` (the top kept).
+   Go to 6.
+5. Else if the human is cuffed (state flag `0x20000`, `0x00223b70`; `0x003436c4`): `height = 0.35 s` (base
+   unchanged, so the top drops).
+6. If `height < 0.2 s` (strictly), `height = 0.2 s` (`0x00343710`).
+
+A state test reads the 64-bit word at the human's current state record (`+0xd4`), and is false when there is none
+(`0x002265f0`). The radius is never touched here.
+
+#### Segment {#u6-segment-record}
+
+0x70 bytes. `PhysShapeSegment_Construct` (`0x003437b0`, `(s)`): the head with type 4, vtable `0x00544770`; nothing
+else written. Fields: `+0x40` start, `+0x50` end, `+0x60` radius, `+0x64` length.
+
+#### PhysShapeSegment_Pose {#u6-segment-pose}
+
+`0x00343810`, 0x278 bytes. `void (Segment* s, Owner* o)`.
+
+1. Flag `0x10` start step (previous = old start `+0x40`).
+2. `(P, q)` = slot **`+0xa8`** (`0x00343858`), and `M = Quat_ToMatrix(q)`.
+3. Bone −1 (`0x00343a00`): `start = P` (all four words; **the offset is not used**), `end = P + length · M row 0`
+   (the body's x axis), `w = 1`.
+4. Bone ≥ 0: `(b, qb)` = slot `+0xb8` (`0x0034389c`), `B = Quat_ToMatrix(qb)`. Local `a = b + B offset`, local
+   `e = a + length · B row 0` (the bone's x axis). `start = P + M a`, `end = P + M e`, `w = 1`
+   (`0x00343970`, `0x003439c0`).
+5. Flag `0x10` end step (previous = the new start); clear `0x10`.
+
+The radius `+0x60` is not read.
+
+#### PhysicsShape_GetBounds {#u6-bounds}
+
+`0x00341190`, 0x32c bytes. `void (unused, vec4* min, vec4* max, const Shape* s)`: the first argument is not read
+(`PhysicsBody_ComputeBounds` `0x00341638` passes the body, whose `+0x00` / `+0x10` are `min` / `max`;
+`PhysicsBody_AddShapeBounds` `0x003417c0` passes stack boxes and then merges them into the body's). By type
+(`+0x30`):
+
+| Type | `min` before the sort | `max` before the sort |
+| --- | --- | --- |
+| 2 sphere (`0x003412b0`) | `centre − r` (xyz; `w` = centre's) | `centre + r` |
+| 3 capsule (`0x003411f0`) | `(base.x − r, base.y − r, base.z)` | `(base.x + r, base.y + r, base.z + height)` |
+| 4 segment (`0x00341248`) | `start − r` (`r` = `+0x60`) | `end + r` |
+| 1 box (`0x00341320`) | per axis, the corner with the smallest value | per axis, the corner with the largest value |
+| anything else | nothing written, return | |
+
+The box's corners come from [PhysicsBox_GetCorners](#u6-box-corners); the scan is over corners 1 to 7 against the
+best so far with strict `<` (`0x00341348`-`0x00341404`), so the exact rotated-box bound. The box path writes only xyz
+of `min` and `max`.
+
+**The sort** (`0x0034146c`), for all four types: `min' = min(min, max)` per axis, then `max' = max(min', max)` per
+axis; both keep `max`'s `w`. The second step can never change `max`. So:
+
+- sphere, capsule and box bounds come out right (their `min ≤ max` already, for a radius and height ≥ 0);
+- **a segment whose end is below its start on an axis gets a wrong bound on that axis**: `[min(start − r, end + r),
+  end + r]`, which misses the part from `end + r` to `start + r`, and is a single value (`end + r`) when
+  `start − r > end + r`. Confirmed (code). A punch bag's segment points down ([Bodies](#bodies)), so its z bound is the
+  single height `end.z + r` (inferred: where that bound is used, through the body's bound, is Unit 7's).
+
+The capsule bound has **no radius below or above**: it is the cylinder's box, matching the upright capsule of the
+pair tests ([Shapes](#shapes)).
+
+#### AABB_FromSphere and AABB_FromUprightCylinder {#u6-aabb}
+
+Both write a 0x20-byte AABB (`min` at `+0x00`, `max` at `+0x10`) and set **both `w` to 1.0**; both sort with the
+original `min` and `max` (so unlike the generic bound, a negative size still gives a valid box).
+
+- `AABB_FromSphere` (`0x00341660`, `(AABB* out, const vec4* c, float r)`): `min = c − r`, `max = c + r` (xyz). Its
+  only caller is `PhysicsBody_PushOutOfWalls` ([Unit 2](#u2-003477c0-physicsbody-pushoutofwalls), `0x00347808`).
+- `AABB_FromUprightCylinder` (`0x00341708`, `(AABB* out, const vec4* c, float height, float radius)`; formerly
+  `AABB_FromSphereMethod`): `min = (c.x − radius, c.y − radius, c.z − height/2)`,
+  `max = (c.x + radius, c.y + radius, c.z + height/2)`. Callers: the human body's broad bound `+0x90`, in its update
+  (`0x0034252c`, height = the capsule's `+0x44`) and in its moved handler (`0x00342878`: height 2.0, radius 0.8,
+  centre = the new position + 1.0 m in z) ([Unit 10](#unit-10)).
+
+#### Test ideas {#u6-tests}
+
+Values computed from this spec (double precision; compare with 1e-5). `qz` = 90° about z = `(0, 0, 0.70711,
+0.70711)`, `qy` = 90° about y = `(0, 0.70711, 0, 0.70711)`. `Quat_ToMatrix(qz)` rows: `(0, 1, 0)`, `(−1, 0, 0)`,
+`(0, 0, 1)`; `Quat_ToMatrix(qy)` rows: `(0, 0, −1)`, `(0, 1, 0)`, `(1, 0, 0)`. Body `P = (10, 5, 0)`, `q = qz`
+unless said; the bone `(b, qb) = ((0.2, 0, 1.5), qy)`.
+
+1. **Sphere, no bone.** Offset `(1, 0, 0.5)`: centre `(10, 6, 0.5, 1)` (both rotation forms agree).
+2. **Sphere on a bone.** Offset `(0.08, 0, 0)` (the hand's): `R(qb) offset = (0, 0, −0.08)`, local
+   `(0.2, 0, 1.42)`, centre `(10, 5.2, 1.42, 1)`.
+3. **Segment on a bone.** Offset `(−0.07, 0, 0.05)`, length 0.38 (the spine's): local start `(0.25, 0, 1.57)`, local
+   end `(0.25, 0, 1.19)`; start `(10, 5.25, 1.57, 1)`, end `(10, 5.25, 1.19, 1)`.
+4. **Segment, no bone.** Any offset, length 0.38: start = `P` = `(10, 5, 0)`, end `(10, 5.38, 0, 1)`.
+5. **Box, no bone.** Offset `(1, 0, 0)`: axes `(0, 1, 0)`, `(−1, 0, 0)`, `(0, 0, 1)`; position `(10, 6, 0, 1)`.
+6. **Box on a bone (the quirk).** Offset `(0.1, 0, 0)`: axes `(0, 0, −1)`, `(−1, 0, 0)`, `(0, 1, 0)`; position
+   `(10, 5.3, 1.5, 1)` (`b + offset` unrotated by the bone; a rotated offset would give `(10, 5.2, 1.4)`).
+7. **Flag 0x10 sequence** (sphere, no bone, offset 0). Pose at `P = (0, 0, 0)` → centre 0. Enable (flags `0x11`).
+   Pose at `P = (1, 0, 0)`: previous = `(1, 0, 0)` = centre (zero move), flags `0x01`. Pose at `P = (2, 0, 0)`:
+   previous `(1, 0, 0)`, centre `(2, 0, 0)`. Disable then enable again: the next pose again has previous = centre.
+   The same sequence on a capsule (non-human owner) gives previous = the old base every time.
+8. **SetMatrix.** Rows `(0, 1, 0)`, `(−1, 0, 0)`, `(0, 0, 1)`, position `(5, 5, 0)`; offset `(0, 0, 0.5)`; old
+   position `(1, 1, 1)`: previous `(1, 1, 1)`, position `(5, 5, 0.5, 1)`. Offset `(1, 0, 0)`: position `(5, 6, 0)`.
+9. **Box corners.** Centre `(0, 0, 0.5)`, identity axes, half `(2, 1, 0.5)`: corners 0-7 are `(−2, 1, 0)`,
+   `(2, 1, 0)`, `(−2, −1, 0)`, `(2, −1, 0)`, `(−2, 1, 1)`, `(2, 1, 1)`, `(−2, −1, 1)`, `(2, −1, 1)`.
+10. **Rotated box bound.** The same box turned 45° about z (`q = (0, 0, 0.38268, 0.92388)`): bound
+    `(−2.1213, −2.1213, 0)` to `(2.1213, 2.1213, 1)`, equal to the brute-force min/max of the eight corners.
+11. **Sphere and capsule bounds.** Sphere centre `(1, 2, 3)`, r 0.5: `(0.5, 1.5, 2.5)` to `(1.5, 2.5, 3.5)`. Capsule
+    base `(1, 2, 0)`, r 0.35, height 1.8: `(0.65, 1.65, 0)` to `(1.35, 2.35, 1.8)`.
+12. **Segment bound quirk.** Start `(0, 0, 2.15)`, end `(0, 0, 0.65)`, r 0.35: x `[−0.35, 0.35]`, y the same, z
+    **`[1.0, 1.0]`** (the true bound is `[0.3, 2.5]`). Reversed (start `(0, 0, 0.65)`, end `(0, 0, 2.15)`): z
+    `[0.3, 2.5]`. Start `(0, 0, 1.0)`, end `(0, 0, 0.8)`, r 0.35: z `[0.65, 1.15]` (true `[0.45, 1.35]`).
+13. **AABB helpers.** `AABB_FromSphere(c = (1, 2, 3), r = 0.5)`: `(0.5, 1.5, 2.5, 1)` to `(1.5, 2.5, 3.5, 1)`;
+    with r = −0.5 the same box. `AABB_FromUprightCylinder(c = (1, 2, 3), height 2.0, radius 0.8)`:
+    `(0.2, 1.2, 2, 1)` to `(1.8, 2.8, 4, 1)`.
+14. **Capsule height, human** (`P = (0, 0, 10)`, `b6.z = 1.6`, `s = 1` unless said): plain: base z 10, height 1.8
+    (top 11.8). `+0x3be` set: base z 10.61, height 1.19. Jumping, take-off `+0x560` = 9.8: base z 10.7, height 1.1
+    (10.7 − 9.8 = 0.9 > 0.7 → base z 10.5, height 1.3; top still 11.8). Jumping with take-off 10.2: 10.7 − 10.2 = 0.5,
+    no cap: base z 10.7, height 1.1. Jumping and long fall: plain (1.8). Cuffed: height 0.35, base z 10 (top 10.35).
+    `+0x3be` and cuffed: 1.19 (the `+0x3be` branch wins). `b6.z = −0.1`: 0.1 → clamped to 0.2. Scale 0.97,
+    `b6.z = 1.552` (the bone already scaled): height 1.746; cuffed 0.3395; clamp floor 0.194.
+15. **Capsule, not a human.** Owner at `(3, 4, 5)` with rotation `qz`, offset `(1, 0, 0)`: base `(4, 4, 5, 1)` (the
+    offset not rotated); height and radius unchanged.
 
 ### Unit 7: Bodies and the sort-and-sweep world {#unit-7}
 
