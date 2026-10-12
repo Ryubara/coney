@@ -275,6 +275,39 @@ hygiene:
   # text) and "code" otherwise (build-ok, python-ok and the jobs under them).
   pr_health:
     lint_checks: [title, docs, body, format, mkdocs, markdownlint, actionlint]
+  # The logs and text files attached to an issue, which the workflow downloads and scans on every issue event (and the
+  # sweep for every open issue): docs/guides/issues.md#attachments. Only links starting with `link` and ending with one
+  # of `extensions` are fetched, at most `download_kb` each, held in memory and never stored or run. A finding names the
+  # file and line numbers only, never the text it matched. The patterns are Python regular expressions (single-quoted,
+  # so a backslash is literal); a line is matched in its first 2000 characters.
+  attachments:
+    link: "https://github.com/user-attachments/files/"
+    extensions: [".txt", ".log"]
+    max_files: 5                                 # per issue
+    max_per_run: 50                              # downloads in one run (the sweep)
+    download_kb: 2048                            # the rest of a bigger file is never downloaded
+    timeout_seconds: 20                          # per download
+    large_kb: 512                                # a bigger log is reported as possible game data (as paths.large_file_kb)
+    control_percent: 1                           # more control characters than this (or any NUL): not text
+    line_threshold: 5                            # this many script or game-text lines make a finding
+    patterns:
+      # Personal information: a user's home folder (a path written from ~ is fine) and email addresses.
+      user_folder:
+        - '(?i)\b[a-z]:[\\/]+(?:users|documents and settings)[\\/]+(?!(?:public|default|default user|all users)(?:[\\/]|$))[^\\/\s:*?"<>|]+'
+        - '(?<![\w.~])/home/[^/\s:*?"<>|]+'
+        - '(?<![\w.~])/Users/(?!Shared(?:/|$))[^/\s:*?"<>|]+'
+      email:
+        - '(?i)\b[a-z0-9._%+-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}\b'
+      # Possible game data: lines of Lua script source (docs/research/scripting.md) ...
+      script_source:
+        - '^\s*(?:local\s+)?function\s+[\w.:]+\s*\('
+        - '^\s*local\s+[A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*\s*='
+        - '^\s*(?:if|elseif|while)\s.*\s(?:then|do)\s*$'
+        - '^\s*end\s*[,)]?\s*$'
+      # ... and lines of the game's data files: a placed-objects line, a position then a rotation
+      # (docs/research/objects.md#objs-file).
+      game_text:
+        - '\{\s*-?[\d.]+\s*,\s*-?[\d.]+\s*,\s*-?[\d.]+\s*\}\s*,\s*\{\s*-?[\d.]+\s*,\s*-?[\d.]+\s*,\s*-?[\d.]+\s*,\s*-?[\d.]+\s*\}'
   # The audit's checks (`coney-tools repo audit`; docs/guides/repo-conventions.md#audit-checks). scope: where it runs
   # (files = the checkout, github = issues, pull requests, labels and settings, local = the workspace). severity: error
   # fails the audit (exit code 1), warn is only reported. fix: auto = a coney-tools command fixes it, skill = the
@@ -396,6 +429,18 @@ hygiene:
       fix: skill
       keys: [issues.provenance]
       summary: "an issue that an older pull request's Remaining list points at has no From: line"
+    issue.attachment-data:
+      scope: github
+      severity: warn
+      fix: skill
+      keys: [hygiene.attachments]
+      summary: "a log attached to an open issue may hold game data: not text, too large, or lines of script source or game text"
+    issue.attachment-personal:
+      scope: github
+      severity: warn
+      fix: skill
+      keys: [hygiene.attachments.patterns]
+      summary: "a log attached to an open issue shows personal information: a user folder path or an email address"
     issue.triage-age:
       scope: github
       severity: warn
