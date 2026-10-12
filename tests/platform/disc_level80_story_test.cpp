@@ -183,8 +183,8 @@ struct Run {
     coney::test::DiscSession& session;
     DrivenPad& pad;
     Shown shown;
-    coney::anim::Vec3 lastAim{};             // where the last walk steered, for the failure dump
-    std::pair<float, float> lastStick{0, 0}; // its last stick
+    coney::anim::Vec3 lastAim{};                   // where the last walk steered, for the failure dump
+    std::pair<float, float> lastStick{0.0F, 0.0F}; // its last stick
 
     // The play mode (null outside play), the start-up flow and the HUD.
     [[nodiscard]] coney::platform::PlayLevelMode* play() { return session.session().play(); }
