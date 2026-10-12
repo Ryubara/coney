@@ -34,6 +34,8 @@ from coney_tools.config import ConfigError
 EXIT_QUEUED = 75
 #: How many compile errors a summary shows, and how long a line may be.
 MAX_ERRORS = 8
+#: How many failed tests a summary names.
+MAX_FAILED_TESTS = 8
 MAX_LINE = 220
 #: How many last lines a failure with no recognised error shows.
 TAIL_LINES = 10
@@ -51,9 +53,11 @@ _OTHER_ERROR = re.compile(r"^(?:CMake Error|ninja: (?:error|fatal))")
 _FAILED_STEP = re.compile(r"^FAILED: (?:\[code=\d+\] )?(\S+)")
 _PROGRESS = re.compile(r"^\[(\d+)/(\d+)\] ")
 _EXPLAIN = re.compile(r"^ninja explain: (.*)$")
-_TEST_LINE = re.compile(r"^\s*\d+/\d+ Test\s+#\d+: (?P<name>\S+)\s+\.+\s*(?P<state>.*?)\s+[\d.]+ sec\s*$")
+# A test's name holds spaces, commas and quotes: it runs up to the dots that pad it to the state column (ctest glues the
+# state to them when it is a failure: `.....***Failed`).
+_TEST_LINE = re.compile(r"^\s*\d+/\d+ Test\s+#\d+: (?P<name>.+) \.{2,}\s*(?P<state>.*?)\s+[\d.]+ sec\s*$")
 _TEST_SUMMARY = re.compile(r"(\d+)% tests passed, (\d+) tests? failed out of (\d+)")
-_TEST_FAILED_ENTRY = re.compile(r"^\s*\d+ - (?P<name>\S+) \(")
+_TEST_FAILED_ENTRY = re.compile(r"^\s*\d+ - (?P<name>.+) \([^()]*\)\s*$")
 
 
 def _cut(line: str) -> str:
@@ -139,6 +143,14 @@ class TestScan:
     def failed(self) -> list[str]:
         """The names of the failed tests."""
         return self._listed_failures or self._lines_failed
+
+    @property
+    def failed_count(self) -> int:
+        """How many tests failed: ctest's own count when it printed its summary (the names it listed may be fewer
+        than that, or none), else the failed lines seen."""
+        if self._summary is not None:
+            return self._summary[1]
+        return len(self._lines_failed)
 
     @property
     def passed(self) -> int:
@@ -557,9 +569,17 @@ class _Phase:
         return f"{self.lane_name} lane{steps}{waited}"
 
 
+#: What a run says when a command ended in failure and its output names nothing that failed: a process killed from
+#: outside (a timeout, a user, another tool) prints no error.
+OUTSIDE = "stopped from outside (no failing {what} found)"
+
+
 def _failure_lines(scan: BuildScan) -> list[str]:
-    """The indented lines that explain a failed build step: its errors, or its last lines."""
+    """The indented lines that explain a failed build step: its errors, or its last lines; or, when there is neither
+    an error nor a failed step, that the build was stopped from outside."""
     lines = [f"  {error}" for error in scan.errors]
+    if not scan.errors and not scan.failed:
+        lines.append("  " + OUTSIDE.format(what="step"))
     if scan.error_count > len(scan.errors):
         lines.append(f"  ... and {scan.error_count - len(scan.errors)} more errors (see the log)")
     if scan.failed:
@@ -693,7 +713,7 @@ def _execute(options: Options, context: Context, note: Callable[[str], None]) ->
             result.summary += _failure_lines(scan)
             if step == "configure":
                 result.summary.append("build: not run")
-            return _failed(result, step, options.test)
+            return _failed(result, step, options.test, "step" if not scan.errors and not scan.failed else "")
     if not options.test or options.configure_only:
         result.summary.append("result: ok")
         return result
@@ -720,23 +740,35 @@ def _execute(options: Options, context: Context, note: Callable[[str], None]) ->
     if phase.queued is not None:
         return _gave_up(result, "test", phase.queued)
     _, code, seconds = ran[0]
-    counts = f"{tests.passed} passed, {len(tests.failed)} failed of {tests.total}"
+    counts = f"{tests.passed} passed, {tests.failed_count} failed of {tests.total}"
     if code == 0 and not tests.none_found:
         result.summary.append(f"test: ok in {_duration(seconds)} ({phase.lane_text(selected)}): {counts}")
         result.summary.append("result: ok")
         return result
     reason = "no tests were found" if tests.none_found else f"exit {code}"
     result.summary.append(f"test: FAILED ({reason}) in {_duration(seconds)} ({phase.lane_text(selected)}): {counts}")
-    if tests.failed:
-        result.summary.append("  failed: " + ", ".join(tests.failed))
-    return _failed(result, "test", False)
+    names = tests.failed
+    if names:
+        shown = _cut(", ".join(names[:MAX_FAILED_TESTS]))
+        more = f", ... and {len(names) - MAX_FAILED_TESTS} more (see the log)" if len(names) > MAX_FAILED_TESTS else ""
+        result.summary.append(f"  failed: {shown}{more}")
+    outside = not names and tests.failed_count == 0 and not tests.none_found
+    if outside:
+        result.summary.append("  " + OUTSIDE.format(what="test"))
+    return _failed(result, "test", False, "test" if outside else "", names[:3])
 
 
-def _failed(result: Result, step: str, tests_skipped: bool) -> Result:
-    """Mark a run failed at `step` (exit 1), noting the tests that never ran."""
+def _failed(
+    result: Result, step: str, tests_skipped: bool, outside: str = "", tests: list[str] | None = None
+) -> Result:
+    """Mark a run failed at `step` (exit 1), noting the tests that never ran. The result line says what failed: the
+    first failing tests, or (`outside` names the kind of thing, "step" or "test") that nothing was found failing."""
     if tests_skipped:
         result.summary.append("test: not run")
-    result.summary.append(f"result: FAILED at {step}")
+    detail = f" (stopped from outside: no failing {outside} found)" if outside else ""
+    if tests:
+        detail = f": {_cut(', '.join(tests))}"
+    result.summary.append(f"result: FAILED at {step}{detail}")
     result.ok = False
     result.exit_code = 1
     return result

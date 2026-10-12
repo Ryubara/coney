@@ -909,3 +909,111 @@ def test_the_dry_run_reads_a_copy_of_the_manifest_and_removes_it(tmp_path: Path)
 
 def test_a_missing_manifest_is_a_failed_dry_run(tmp_path: Path) -> None:
     assert build_run.ProcessToolchain(tmp_path, os.environ).dry_run(tmp_path)[0] == 127
+
+
+# -- ctest output as the Windows ctest prints it: names with spaces, commas and apostrophes --------------------------
+
+REAL_CTEST = """\
+1769/2276 Test #1775: the disc's level80: d-pad right with a flash plays 665 ....   Passed   12.34 sec
+          Start 1777: coney.help
+1770/2276 Test #1776: the disc's level80: Warriors following over a fence climb it (issue #236) ..***Failed   10.00 sec
+2276/2276 Test #1780: the disc's level95 plays each checkpoint, player 1 walking ........   Passed  554.46 sec
+
+99% tests passed, 1 tests failed out of 2276
+
+Total Test time (real) = 879.08 sec
+
+The following tests FAILED:
+\t1776 - the disc's level80: Warriors following over a fence climb it (issue #236) (Failed)
+Errors while running CTest
+"""
+
+
+def test_ctest_names_with_spaces_and_a_failed_count_that_agrees_with_the_summary() -> None:
+    scan = scan_tests(REAL_CTEST)
+    assert (scan.total, scan.passed, scan.failed_count) == (2276, 2275, 1)
+    assert scan.failed == ["the disc's level80: Warriors following over a fence climb it (issue #236)"]
+
+
+def test_the_failed_count_comes_from_the_summary_even_when_no_name_is_found() -> None:
+    scan = scan_tests("99% tests passed, 3 tests failed out of 400\n")
+    assert (scan.total, scan.passed, scan.failed_count, scan.failed) == (400, 397, 3, [])
+
+
+def test_ctest_failure_states_other_than_failed_are_failures_too() -> None:
+    scan = scan_tests(
+        "1/3 Test #1: slow one ..........***Timeout  60.00 sec\n"
+        "2/3 Test #2: not run ..........***Not Run (Disabled)   0.00 sec\n"
+        "3/3 Test #3: skipped one ......***Skipped   0.01 sec\n"
+    )
+    assert scan.failed == ["slow one", "not run"] and scan.failed_count == 2
+
+
+def test_a_failed_test_run_names_the_failing_tests_and_the_counts_agree(tmp_path: Path) -> None:
+    run = Run(tmp_path, test=True)
+    run.toolchain.output["test"] = (8, REAL_CTEST)
+    result = run.go()
+    text = "\n".join(result.summary)
+    assert "2275 passed, 1 failed of 2276" in text and "0 failed" not in text
+    assert "  failed: the disc's level80: Warriors following over a fence climb it (issue #236)" in result.summary
+    assert result.summary[-1].startswith("result: FAILED at test") and "level80" in result.summary[-1]
+
+
+def test_many_failed_tests_list_the_first_few_and_count_the_rest(tmp_path: Path) -> None:
+    lines = "".join(f"{n}/60 Test #{n}: broken thing {n} ....***Failed   0.10 sec\n" for n in range(1, 31))
+    lines += "50% tests passed, 30 tests failed out of 60\n\nThe following tests FAILED:\n"
+    lines += "".join(f"\t{n} - broken thing {n} (Failed)\n" for n in range(1, 31))
+    run = Run(tmp_path, test=True)
+    run.toolchain.output["test"] = (8, lines)
+    result = run.go()
+    failed = next(line for line in result.summary if line.startswith("  failed:"))
+    assert "broken thing 1," in failed and "broken thing 8" in failed and "broken thing 9" not in failed
+    assert "and 22 more (see the log)" in failed
+    assert "30 failed of 60" in "\n".join(result.summary)
+
+
+# -- a run stopped from outside ----------------------------------------------------------------------------------
+
+
+def test_a_build_that_exits_non_zero_with_no_failing_step_was_stopped_from_outside(tmp_path: Path) -> None:
+    run = Run(tmp_path, test=True)
+    run.toolchain.output["build"] = (2, "[1/9] Building CXX object a.obj\n[2/9] Building CXX object b.obj\n")
+    result = run.go()
+    text = "\n".join(result.summary)
+    assert "build: FAILED (exit 2)" in text and "stopped from outside (no failing step found)" in text
+    assert "[2/9] Building CXX object b.obj" in text  # where it stopped
+    assert result.summary[-1] == "result: FAILED at build (stopped from outside: no failing step found)"
+
+
+def test_a_build_with_a_compile_error_is_not_called_stopped_from_outside(tmp_path: Path) -> None:
+    run = Run(tmp_path)
+    run.toolchain.output["build"] = (1, MSVC_FAILURE)
+    result = run.go()
+    assert "stopped from outside" not in "\n".join(result.summary)
+    assert result.summary[-1] == "result: FAILED at build"
+
+
+def test_a_build_with_a_failed_step_and_no_error_line_names_the_step_not_outside(tmp_path: Path) -> None:
+    run = Run(tmp_path)
+    run.toolchain.output["build"] = (
+        1,
+        "[1/2] x\nFAILED: tests/coney_tests.exe\nsomething odd\nninja: build stopped: subcommand failed.\n",
+    )
+    result = run.go()
+    text = "\n".join(result.summary)
+    assert "stopped from outside" not in text and "tests/coney_tests.exe" in text
+
+
+def test_a_ctest_killed_from_outside_says_so(tmp_path: Path) -> None:
+    run = Run(tmp_path, test=True)
+    run.toolchain.output["test"] = (1, "1/9 Test #1: a ... Passed 0.1 sec\n2/9 Test #2: b ... Passed 0.1 sec\n")
+    result = run.go()
+    text = "\n".join(result.summary)
+    assert "test: FAILED (exit 1)" in text and "stopped from outside (no failing test found)" in text
+    assert result.summary[-1] == "result: FAILED at test (stopped from outside: no failing test found)"
+
+
+def test_a_ctest_that_found_no_tests_is_not_called_stopped_from_outside(tmp_path: Path) -> None:
+    run = Run(tmp_path, test=True)
+    run.toolchain.output["test"] = (1, "No tests were found!!!\n")
+    assert "stopped from outside" not in "\n".join(run.go().summary)
