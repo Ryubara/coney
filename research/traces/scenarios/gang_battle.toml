@@ -17,10 +17,11 @@ patches = ["scripted-pad", "call-brains"]
 # before the first update: `pcsx2 record --let seed=341`.
 let = { seed = "0" }
 setup = [ { address = "0x006eb880", type = "u32", value = "(u32(0x006eb880) + seed) & 0x3ff", frame = 0, until = 0 } ]
-# The countdown ends and the brains go on at step 151 (P11's brain +0x09 turns 0); four updates later player 1
-# (P11) is given back to his brain, as HuSwitchPlayer gives a player back: Human_ReleasePlayer(h, 0, 1).
-calls = [ { function = "0x0022a2a8", args = ["player", "0", "1"], frame = 155 } ]
-# A sample of 30 humans takes about 11 ms, near the 16 ms before the next update: at half speed none tears.
+# The countdown ends and the brains go on at step 151 to 172 (the fighters' brain +0x09 turns 0; the intro does not
+# take a fixed number of updates). At frame 200 player 1 (P11) is given back to his brain, as HuSwitchPlayer gives a
+# player back: Human_ReleasePlayer(h, 0, 1). Given back before the brains go on, nobody ever fights.
+calls = [ { function = "0x0022a2a8", args = ["player", "0", "1"], frame = 200 } ]
+# A sample of 30 humans takes about 11 ms, near the 16 ms before the next update: at 0.4 speed none tears.
 speed = 0.4
 
 [coney]

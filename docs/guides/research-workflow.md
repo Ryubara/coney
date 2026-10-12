@@ -582,9 +582,12 @@ fields, with `h` the row's human) instead of one per update: the `humans` field 
 worked out together, one message per level of pointers (four or five messages a sample). The recorder prints how many
 samples were **torn**: read while the next update had already started, so they mix two updates. A sample of 30 humans
 takes about 11 ms (2026-10-12, PCSX2 2.9.94: 1.6 ms of it PINE), close to the 16 ms between the tick that ends an
-update and the next update's, and at full speed 64 of 601 samples tore; `speed = 0.5` in `[original]` (PCSX2's
-`[Framerate]` `NominalScalar`, set in the claimed copy's ini for the run and put back afterwards) gave none. The game
-counts emulated ticks, so the speed changes nothing it does; only the run takes longer.
+update and the next update's, and at full speed 64 of 601 samples tore; `speed` in `[original]` (PCSX2's
+`[Framerate]` `NominalScalar`, set in the claimed copy's ini for the run and put back afterwards) slows the emulation:
+at 0.4 a 9,000-update match had none missed. The game steps by emulated ticks, but not every wait is a fixed number
+of updates (the Rumble intro ended after 151 to 172, [Rumble](../research/rumble.md#gang-battle-setup)), so time a
+scenario's calls with a margin. A frame that runs two updates (about one in 1,000) still tears its sample; the trace's
+`.quality.txt` lists every missed and torn step.
 
 `pcsx2 record --let NAME=EXPR` gives or replaces a name of the scenario's `let`, so one scenario is recorded with
 different values: the gang battle's matches differ by an offset of the brains' random stream (`--let seed=341`).
