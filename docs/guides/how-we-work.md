@@ -90,7 +90,7 @@ minutes), so it must never hold an agent back. Agents do all their work locally 
 coordinator, who pushes them when CI has room.
 
 - **An agent never pushes and never opens a pull request.** It commits on its branch and runs every local check that
-  applies before calling a unit finished: the build and `ctest` for code, `uvx pre-commit run --all-files`, pytest,
+  applies before calling a unit finished: `coney-tools build --test` for code, `uvx pre-commit run --all-files`, pytest,
   `mkdocs build --strict` ([The local gate](testing.md#local-gate)). CI should only ever find what the local
   platform cannot see.
 - **The unit is one pull request's worth,** not a whole task: one fix or feature with its tests and docs. For each,
@@ -151,9 +151,12 @@ something:
   unit. The coordinator runs `coney-tools workspace clean --apply` after every merge round (it removes merged
   worktrees and old build folders, and never touches busy or unmerged work) and `coney-tools workspace disk` before
   starting builds: below 30 GB free it cleans first ([Cleanup](workspace.md#cleanup)).
-- **Heavy builds take a slot.** A full engine build uses every core, so only a few run at once: the coordinator
-  sets the number the machine can take, records it in its state file and gives each building track a slot, staggering
-  the rest. Tracks that only read, write docs or drive the emulator need no slot.
+- **Heavy builds take a slot, from a tool.** A full engine build uses every core, so only two run at once and the
+  rest queue: every build and test run goes through `coney-tools build`, which claims a slot like a PCSX2 copy (a
+  fast lane for small jobs, a fair queue, priority for builds someone waits on; [`build`](coney-tools.md#build)), and
+  a hook refuses raw `cmake --build`, `ctest` and `ninja`. The machine's number of slots is `build_slots` in
+  `coney.local.toml` ([Local workspace](workspace.md#local-config)). Tracks that only read, write docs or drive
+  the emulator need no slot.
 - **Share the long-lived tools, one user per copy.** One Ghidra server serves every analyst: use it as it is, never
   restart or stop it, and start it only if it is down ([Ghidra + ghidra-mcp](ghidra.md)). An emulator copy has one
   user at a time, through a claim that is released when done ([Driving PCSX2](research-workflow.md#driving-pcsx2)).
