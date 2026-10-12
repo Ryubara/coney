@@ -1,0 +1,2 @@
+# Cross tapped: 0x12 on the press, 0x10 on the release; the tandem starts on 0x10.
+60 tap cross
