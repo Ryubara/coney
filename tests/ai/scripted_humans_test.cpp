@@ -533,8 +533,10 @@ TEST_CASE("WCEnableCommand for a player's human the level has not made yet switc
           "[ai][scripted]") {
     Level level;
     coney::CreatedHumans created;
-    REQUIRE(created.add(coney::HumanCreation{.name = "Cleon", .playerIndex = 1, .handle = 228.0}));
-    REQUIRE(created.add(coney::HumanCreation{.name = "Vermin", .playerIndex = 0, .handle = 229.0}));
+    REQUIRE(created.add(
+        coney::HumanCreation{.name = "Cleon", .position = std::nullopt, .playerIndex = 1, .handle = 228.0}));
+    REQUIRE(created.add(
+        coney::HumanCreation{.name = "Vermin", .position = std::nullopt, .playerIndex = 0, .handle = 229.0}));
     level.context.humans = &created;
     level.call("WCEnableAllCommands", {Value()});
     level.call("WCEnableCommand", {Value(228.0), Value(0.0), Value(1.0)});
