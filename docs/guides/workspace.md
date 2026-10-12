@@ -206,9 +206,9 @@ delete it once you know the work is over. The file's name is `workspace.busy_mar
 `workspace.disk_min_free_gb` key of [.github/conventions.yml](repo:.github/conventions.yml)), for hooks and scripts
 (`coney-tools workspace disk || coney-tools workspace clean --apply`). The coordinator runs
 `clean --apply` after every merge round (`coney-tools repo audit --local` lists what it would remove and the scratch
-folders of finished work that still hold files taken from the original), and agents delete their own `build/` when they finish a unit
-([Briefing](agents.md#briefs)). `scratch/` is not cleaned automatically: prune built docs sites, logs and captures
-there yourself (below).
+folders of finished work that still hold files taken from the original), and agents delete their own `build/` when they
+finish a unit ([Briefing](agents.md#briefs)). `scratch/` is not cleaned automatically: prune built docs sites, logs and
+captures there yourself (below).
 
 ## Scratch
 

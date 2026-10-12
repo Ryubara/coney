@@ -3,7 +3,8 @@
 
 <!-- One short paragraph: what this changes and why.
      Call whoever tested or filed it "the user" and whoever decides "the maintainer", never "the owner".
-     If the change needs no documentation, add a line `Docs: none` (CI refuses a change under src/ or python/src/ without a docs change, unless this line is here).
+     If the change needs no documentation, add a line `Docs: none`
+     (CI refuses a change under src/ or python/src/ without a docs change, unless this line is here).
      If this finishes an issue, add a line `Fixes #<number>` (one per issue): merging then closes it. -->
 
 ## Checklist
