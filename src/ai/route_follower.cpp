@@ -80,6 +80,18 @@ std::vector<anim::Vec3> RouteFollower::ahead() const {
     return {m_points.begin() + static_cast<std::ptrdiff_t>(m_index), m_points.end()};
 }
 
+std::vector<anim::Vec3> RouteFollower::cornerPoints() const {
+    std::vector<anim::Vec3> points;
+    for (std::size_t i = m_index; i < m_points.size(); ++i) {
+        points.push_back(m_points[i]);
+        // The leg on from waypoint i is the one into waypoint i + 1.
+        if (i + 1 < m_legKinds.size() && (m_legKinds[i + 1] & (edge_flag::kJumpDown | edge_flag::kJump)) != 0) {
+            break;
+        }
+    }
+    return points;
+}
+
 void RouteFollower::moveOn(const RoutePlanner& planner, anim::Vec3 position, bool reached) {
     const std::size_t before = m_index;
     if (reached && !onLastLeg()) {
