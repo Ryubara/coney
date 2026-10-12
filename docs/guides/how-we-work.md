@@ -37,6 +37,8 @@ Analysts and implementers are never the same person or agent
 
 An implementer who needs more asks a question; a coordinator routes it to the analyst who owns that area, and the
 answer lands on the page, not in a private message. Neither role ever puts game data in the repository.
+What a page must hold to be coded from, with three real features traced to the merged result, is in
+[From research to code](research-to-code.md).
 
 ## The tools
 
