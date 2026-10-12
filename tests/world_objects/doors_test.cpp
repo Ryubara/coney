@@ -345,6 +345,13 @@ TEST_CASE("a barrier: links charged through, boards, hidden, then removed with i
     CHECK(fixture.enabled(0));
     CHECK_FALSE(fixture.paths.edges()[0].avoid);
     CHECK(fixture.services.spawned.size() == 3);
+    // The three boards go on their own first update, the next tick (the hit's own update in the original), and never
+    // stand for the barrier's removal 60 ticks on (docs/research/objects.md#barriers, issue #233).
+    CHECK(fixture.services.destroyed.empty());
+    tick(doors, fixture, 1);
+    CHECK(fixture.services.destroyed == std::vector<double>{1001.0, 1002.0, 1003.0});
+    tick(doors, fixture, 1);
+    CHECK(fixture.services.destroyed.size() == 3);
     CHECK_FALSE(doors.hit(handle, hitBy(HitKind::Plain), fixture.world));
     // Broken, it is removed at its next update (every 60 ticks), once.
     CHECK(doors.find(handle)->broken);

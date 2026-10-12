@@ -326,6 +326,8 @@ bool Brain::clearActions() {
 
 Action* Brain::frontAction() { return m_actionCount == 0 ? nullptr : m_actions[m_actionFront].get(); }
 
+const Action* Brain::frontAction() const { return m_actionCount == 0 ? nullptr : m_actions[m_actionFront].get(); }
+
 void Brain::flush() {
     clearGoals();
     clearActions();

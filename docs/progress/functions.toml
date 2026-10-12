@@ -5809,6 +5809,12 @@ subsystem = "Human"
 size = 2232
 
 [[function]]
+address = 0x00263380
+name = "Grab_StartPairedMove"
+subsystem = "Human"
+size = 2320
+
+[[function]]
 address = 0x00263c90
 name = "Player_SpecialAttack"
 subsystem = "Human"

@@ -303,6 +303,7 @@ target_sources(coney_core PRIVATE
     ai/swap_prompt.cpp
     ai/tactic_scout.cpp
     ai/fight_goal.cpp
+    ai/fight_trace.cpp
     ai/fight_reactions.cpp
     ai/formations.cpp
     ai/gangs.cpp

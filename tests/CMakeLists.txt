@@ -99,6 +99,7 @@ add_executable(coney_tests
     platform/disc_hub_doors_test.cpp
     platform/disc_hub_test.cpp
     platform/disc_level80_test.cpp
+    platform/disc_flash_test.cpp
     platform/disc_revive_test.cpp
     platform/disc_level5_boss_camera_test.cpp
     platform/disc_level5_fights_test.cpp
@@ -124,6 +125,7 @@ add_executable(coney_tests
     platform/disc_level99_store_glass_test.cpp
     platform/disc_level99_store_register_test.cpp
     platform/disc_level99_world_test.cpp
+    platform/disc_level99_fence_dealer_test.cpp
     platform/disc_story_chain_test.cpp
     platform/disc_story_missions_test.cpp
     platform/disc_story_playthrough_test.cpp
@@ -261,6 +263,7 @@ target_sources(coney_tests PRIVATE
     human/body_test.cpp
     human/climb_test.cpp
     human/combat_test.cpp
+    human/throw_direction_test.cpp
     human/damage_flags_test.cpp
     human/combat_timing_test.cpp
     human/moving_attacks_test.cpp
@@ -310,6 +313,7 @@ target_sources(coney_tests PRIVATE
 target_sources(coney_tests PRIVATE
     raycast/collision_builder_test.cpp
     sandbox/disc_sandbox_combat_test.cpp
+    sandbox/disc_throw_direction_test.cpp
     sandbox/disc_sandbox_player_test.cpp
     sandbox/disc_sandbox_traversal_test.cpp
     sandbox/sandbox_layout_test.cpp
@@ -334,6 +338,7 @@ target_sources(coney_tests PRIVATE
     ai/attack_choice_test.cpp
     ai/attack_reach_test.cpp
     ai/fight_goal_test.cpp
+    ai/fight_trace_test.cpp
     ai/fight_reactions_test.cpp
     ai/boss_goals_test.cpp
     ai/brain_events_test.cpp

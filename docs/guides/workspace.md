@@ -200,11 +200,13 @@ what it would do, then the bytes it would reclaim; with `--apply` it acts and pr
 done (`touch .coney-busy`; it is in `.gitignore`). While it exists, `clean` leaves that worktree and its `build/`
 entirely alone, however old its files look: use it for any stretch where files may not change for hours (a long
 build, a test sweep, a wait on the emulator). A file left behind by a dead agent protects its worktree for good;
-delete it once you know the work is over.
+delete it once you know the work is over. The file's name is `workspace.busy_marker` of the conventions file.
 
-**`workspace disk`** prints the free space of the workspace's drive and exits 1 below `--min-gb` (default 30), for
-hooks and scripts (`coney-tools workspace disk || coney-tools workspace clean --apply`). The coordinator runs
-`clean --apply` after every merge round, and agents delete their own `build/` when they finish a unit
+**`workspace disk`** prints the free space of the workspace's drive and exits 1 below `--min-gb` (default: 30, the
+`workspace.disk_min_free_gb` key of [.github/conventions.yml](repo:.github/conventions.yml)), for hooks and scripts
+(`coney-tools workspace disk || coney-tools workspace clean --apply`). The coordinator runs
+`clean --apply` after every merge round (`coney-tools repo audit --local` lists what it would remove and the scratch
+folders that still hold captures), and agents delete their own `build/` when they finish a unit
 ([Briefing](agents.md#briefs)). `scratch/` is not cleaned automatically: prune built docs sites, logs and captures
 there yourself (below).
 

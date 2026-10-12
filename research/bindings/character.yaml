@@ -613,9 +613,11 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    The AI stays held until something releases brain `+0x09` (not traced which binding). State flags 0x10000,
-    0x20000000 and 0x40000000 and human flag 0x10 (also set by a hit stopped at a health floor) are not named yet;
-    inferred: lying beaten on the ground. Bit meanings: characters.md#the-record, combat.md#state-flags.
+    The AI stays held until something releases brain `+0x09` (not traced which binding). State flag 0x40000000 is
+    the down latch (HuMakeGrounded false clears it; confirmed (runtime): 196 at once, health 1, then 199 on the
+    update after the latch was cleared, combat.md#scripted-knockdowns). State flags 0x10000 and 0x20000000 and human
+    flag 0x10 (also set by a hit stopped at a health floor) are not named yet. Bit meanings: characters.md#the-record,
+    combat.md#state-flags.
   usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [92]}
 
 - name: HuMakeGrounded
@@ -628,14 +630,16 @@
     - {name: down, lua: boolean, desc: "true knocks the human down and keeps it down; false lets it get up. Missing counts as false."}
   description: >-
     With true, a human that is not already down or dead is knocked down (Human_KnockDown, no attacker and no stun: state
-    `0x80000`, grounded), its state code set to 3 and state flags `0x20000000` and `0x40000000` set. With false, state
-    flag `0x40000000` is cleared, which (inferred) is what lets it rise when its down time runs out
-    ([Combat](../../research/combat.md)).
-  evidence: confirmed-code
+    `0x80000`, grounded) and lies in 196 at once, with no fall clip; its state code is set to 3 and state flags
+    `0x20000000` and `0x40000000` (the down latch) set. While latched it never rises. With false the latch is cleared,
+    and the human rises (199) on its next update if its down time has run out, else when it does
+    ([Combat](../../research/combat.md#scripted-knockdowns)).
+  evidence: confirmed-runtime
   depth: thorough
   notes: >-
-    The meaning of state flags `0x20000000` and `0x40000000` is inferred from this pairing; false does not itself make
-    the human stand.
+    The latch is read by Human_UpdateDown (0x00256a60), which skips the rise and the stun's end while it is set, by
+    Humans_Update (no removal, no bleed-out mark) and by CullCorpses (which spares latched humans). False does not
+    itself make the human stand.
   usage: {chunks: 3, calls: 10, boot: false, mission1: false, result_used: false, levels: [54, 55]}
 
 - name: HuSetRageMode
@@ -1171,12 +1175,15 @@
     flag 0x100000, and the stun ends at now + its stun time (the stats block's `+0x30`, in ms, scaled when
     0x00222ff8 holds); if human flag `+0xe0` 0x8000000 is set the stun lasts until ended by script. With false
     the stun state is left, flag 0x100000 cleared and the human recovers. Both set state flag 0x20000000.
-  evidence: confirmed-code
+  evidence: confirmed-runtime
   depth: thorough
   notes: >-
-    A human with `+0xe1` bit 1 set (stun immune) ignores the stun unless it has the endless-stun flag. Humans in
-    states 7-10 or 0xf, knocked down, or flagged 0xcf0/0x10200 are not stunned. Ending a stun on a dead, downed or
-    grabbed human only clears the flag. What state flag 0x20000000 means is open. Used on Luther in level 64.
+    A human with flag `0x100` (`+0xe1` bit 0, as `HuSetUnstunnable` sets; `Human_Stun` tests it at 0x0022f68c) ignores
+    the stun unless it has the endless-stun flag 0x8000000; confirmed (runtime): with `0x100` nothing happened,
+    without it 355/356 for the class's 750 ms, then 357
+    ([Combat](../../research/combat.md#scripted-knockdowns)). Humans in movement styles 7-10 or 0xf, knocked down, or
+    flagged 0xcf0/0x10200 are not stunned. Ending a stun on a dead, downed or grabbed human only clears the flag.
+    What state flag 0x20000000 means is open. Used on Luther in level 64.
   usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [64]}
 
 - name: HuSetConscious
@@ -1688,7 +1695,7 @@
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human to hurt; a bad handle does nothing."}
     - {name: amount, lua: number, ctype: int, desc: "Damage in hitpoints (16 bits; the sign is kept, the size compared)."}
     - {name: attacker, lua: number, ctype: unsigned, desc: "Handle of the human credited with the hit, or 0 for none (0 is tested, not NilHandle)."}
-    - {name: react, lua: number, ctype: unsigned, desc: "Stored as the hit's may-react word (record `+0x11a`): non-zero lets the victim play a hit reaction ([Combat](../../research/combat.md#damage))."}
+    - {name: react, lua: number, ctype: unsigned, desc: "Stored in record `+0x11a`, read only when the victim is in a grab: 2 or more plays the heavier paired reaction. It does not decide whether the victim reacts ([Combat](../../research/combat.md#scripted-knockdowns))."}
     - {name: useHeld, lua: boolean, desc: "With no attacker, true records the human's own held object as what hit it; ignored with an attacker."}
   description: >-
     Queues damage on the human as one more hit of this update, through the same path as a melee strike: it becomes the
@@ -1700,7 +1707,8 @@
   depth: thorough
   notes: >-
     A smaller hit in the same update is dropped, not added. Also written: human `+0x5d2` (last damage). Scripts pass
-    attacker 0 to hurt without blame.
+    attacker 0 to hurt without blame; the victim is then its own foe, and a standing victim plays 275 (hit code 10 from
+    its own side 3), confirmed (runtime) ([Combat](../../research/combat.md#scripted-knockdowns)).
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [81, 55]}
 
 - name: HuSetKillerMode
@@ -1905,8 +1913,10 @@
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
     - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
   description: >-
-    Sets or clears flag bit 0x1000000000 of the human's flag word; from the name, the human is stunned less easily.
-  evidence: inferred
+    Sets or clears flag bit 0x1000000000 of the human's flag word (power class byte +0x3b sets it too). With it, a hit
+    stuns the human only when he is already standing stunned: the hit's stun flag 0x400 and the caller's stun request
+    are ignored (Human_PlayReaction 0x0026a6d0).
+  evidence: confirmed-code
   depth: brief
   usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
 

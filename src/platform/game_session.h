@@ -86,6 +86,9 @@ class GameSession {
     /// once, on that level's play mode; an error fails that level's load.
     using LevelSetup = std::function<std::expected<void, Error>(PlayLevelMode&)>;
     void setFirstLevelSetup(LevelSetup setup) { m_firstLevelSetup = std::move(setup); }
+    /// The all-humans trace (`--trace-humans`) every level loaded writes its rows to, one file for the whole run; null:
+    /// none.
+    void setHumansTrace(std::shared_ptr<HumansTrace> trace) { m_humansTrace = std::move(trace); }
 
     /// The game from boot: the start-up movies, the legal screen, the memory-card check and the menus.
     void startStory();
@@ -131,6 +134,7 @@ class GameSession {
     const debug::DebugDrawOptions* m_debugDraw = nullptr;
     AudioOutput* m_audio = nullptr;
     LevelSetup m_firstLevelSetup;
+    std::shared_ptr<HumansTrace> m_humansTrace;
     std::optional<std::string> m_pendingLevel;
     int m_pendingCheckpoint = 1;
     std::optional<scenes::SceneList> m_sceneList;

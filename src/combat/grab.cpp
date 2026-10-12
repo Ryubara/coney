@@ -137,10 +137,14 @@ GrabOutcome updateGrab(const GrabInput& input, PowerMeter& power, const CombatTu
     case command::kCirclePressed:
         // The stick decides between a throw and, from the rear, the spin to the front.
         if (input.stick.magnitude() > kThrowStick) {
-            if (!placed) {
+            // Only a front hold's plain throw (147-153, `Attack_StartPaired`) checks the place: not a wall throw, and
+            // not the rear hold's path (`Grab_StartPairedMove`), which spins to the front first
+            // (docs/research/combat.md#throw-direction, items 4 and 5).
+            if (!placed && !input.rearThrow && !input.wallInReach) {
                 break;
             }
             powerMove(GrabAction::Throw, throwAttack(sideOf(input.stick.angleDegrees()), input.wallInReach));
+            outcome.spinFirst = outcome.action == GrabAction::Throw && input.rearThrow;
         } else if (input.fromRear) {
             outcome.action = GrabAction::Spin;
             outcome.animId = anim_id::kGrabSpinToFront;

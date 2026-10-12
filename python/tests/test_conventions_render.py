@@ -10,11 +10,11 @@ import shutil
 from pathlib import Path
 
 import pytest
-from conventions_support import REPO, conventions_with, write_checkout
+from conventions_support import REPO, conventions_with, real_data, write_checkout
 
 from coney_tools import check_cli
 from coney_tools.cli import main
-from coney_tools.conventions import CONVENTIONS_FILE, Conventions, load_conventions
+from coney_tools.conventions import CONVENTIONS_FILE, Conventions, load_conventions, parse_conventions
 from coney_tools.conventions_render import (
     BLOCKS,
     WIDTH,
@@ -363,6 +363,21 @@ def test_the_local_gate_repo_step_reports_a_stale_block(tmp_path: Path) -> None:
     for name in ("CLAUDE.md", "GEMINI.md"):
         (root / name).write_text("@AGENTS.md\n", encoding="utf-8")
     result = check_cli._step_repo(root)
-    assert not result.ok and "AGENTS.md" in result.output[0] and "repo render" in result.output[0]
+    assert any("AGENTS.md" in line and "repo render" in line for line in result.output)
     assert run_render(root, check=False) == 0
-    assert check_cli._step_repo(root).ok
+    assert not any("generated block" in line for line in check_cli._step_repo(root).output)
+
+
+def test_audit_checks_is_a_table_with_a_row_per_registered_check() -> None:
+    lines = render_block("audit-checks", CONVENTIONS)
+    assert lines[0].startswith("| Check |") and lines[1].startswith("| ---")
+    rows = [line.split("|")[1].strip(" `") for line in lines[2:]]
+    assert rows == list(CONVENTIONS.hygiene.checks)
+    assert "| `files.generated-blocks` | files | error | auto |" in "\n".join(lines)
+
+
+def test_audit_checks_follow_a_changed_severity() -> None:
+    data = real_data()
+    data["hygiene"]["checks"]["issue.links"]["severity"] = "error"
+    text = "\n".join(render_block("audit-checks", parse_conventions(data)))
+    assert "| `issue.links` | github | error | skill |" in text

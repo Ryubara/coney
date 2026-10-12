@@ -74,6 +74,13 @@ addresses cited.
 4. **Update** (`0x002fb0a8`) reports running on its first update, then while held flag `0x4000` (a pick-up playing)
    is set, then done.
 
+**The pick-up itself is the player's.** `PickUpItemAction` writes command `0x33`, which runs `Human_PickUpSearch`
+(`0x0024d810`) as for a player; but a human with an **object target** (the action's Start sets it) skips the 1.5 m
+search and its sight rays and takes that object at once, so the only glass test on an AI's take is GetItem's ray
+above. The object then gets message 0 and plays the player's clip by height (463 at or below 0.8 m above the feet,
+464 above; [Combat: breakables](combat.md#breakables)), and `Human_PickUpObject` runs at the clip's event. Confirmed
+(code) at `0x0024d810`, `0x002faf98`.
+
 Two goals look for a weapon themselves, besides those listed in [AI: Objects in an AI's hands](ai.md#ai-objects).
 Both push GetItem with gait 4 and use `Ai_FindObject` with a line of sight, a claim and a reach test
 ([AI: The object search](ai.md#get-item)):

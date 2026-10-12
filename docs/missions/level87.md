@@ -21,10 +21,10 @@ goals.
 | # | Status | Note |
 | --- | --- | --- |
 | 1 | 🚧 In Progress | Plays to checkpoint 2 driven by the pad: the walk and climb to the first burner, triangle at its flag (the spray intro 334 where he stands, then the stick game as the loop 335 starts), the tag finished with the left stick, and the walk to the streets. Played on into checkpoint 2, chapter 2's set-up fails (the preLoadFile fix is being merged). |
-| 2 | 🚧 In Progress | From a checkpoint 2 start, driven by the pad: a passer-by mugged for cash, spray bought from the dealer, the three burners tagged and the walk back to the back alleys' marker reach checkpoint 3. |
+| 2 | 🚧 In Progress | Played on from checkpoint 1 (2026-10-12, f325e018), chapter 2 sets up and plays its scene, but a spray cut short at the first spot leaves it dead (fix 1 of the fix list). From a checkpoint 2 start, driven by the pad: a passer-by mugged for cash, spray bought from the dealer, the three burners tagged and the walk back to the back alleys' marker reach checkpoint 3. |
 | 3 | 🚧 In Progress | From a checkpoint 3 start, driven by the pad: passers-by mugged for cash, spray bought, three burners tagged (one up the stairs on the roofs, which needs the route planner's upper-floor fix) and the walk to the alleys' exit reach checkpoint 4. The crew's tag lines need the defend order. |
 | 4 | 🚧 In Progress | Played on from checkpoint 3, driven by the pad with the route planner's upper-floor fix: Poizo's intro, then the last three burners (one in the street, two on the roofs) tagged, and "Get out of East Coney" set. Blocked: the planner finds no route out of the street by the checkpoint's start or down from the roofs to the exit marker (with mission2-impl). |
-| 5 | 🚧 In Progress | - |
+| 5 | 🚧 In Progress | The stealth tutorial ([Stealth](../research/stealth.md#level87)); not driven to its end yet. |
 
 ## What it needs {#needs}
 
@@ -54,6 +54,9 @@ Research:
 - [World objects: doors](../research/objects.md)
 - [AI: scripted goals and actions](../research/ai.md#scripted)
 - [Crimes: tagging](../research/crimes.md#tagging)
+- [The mission's scripts, checkpoint by checkpoint](../research/scripting.md#level87)
+- [The order at runtime (reference)](../research/scripting.md#level87-hints)
+- [Coney's run and the fix list](../research/scripting.md#level87-fixes)
 
 ## Run it in Coney {#run}
 

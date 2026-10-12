@@ -30,6 +30,7 @@ from coney_tools import (
     workspace_fetch,
     xbox_cli,
 )
+from coney_tools.audit_cli import add_audit_parser, run_audit
 from coney_tools.config import PATH_KEYS, ConfigError, find_repo_root, load_config
 from coney_tools.conventions import Conventions, load_conventions
 from coney_tools.conventions_render import run_render
@@ -187,8 +188,8 @@ def _build_parser() -> argparse.ArgumentParser:
     disk.add_argument(
         "--min-gb",
         type=float,
-        default=workspace_clean.DEFAULT_MIN_GB,
-        help="the free space in GB below which the exit code is 1 (default: %(default)g)",
+        default=None,
+        help="the free space in GB below which the exit code is 1 (default: workspace.disk_min_free_gb)",
     )
     mcp = groups.add_parser("mcp", help="the debugging servers that .mcp.json registers for agents")
     serve = mcp.add_subparsers(dest="command", required=True).add_parser(
@@ -219,6 +220,7 @@ def _build_parser() -> argparse.ArgumentParser:
     render_parser.add_argument(
         "--check", action="store_true", help="change nothing; exit 1 when a block is out of date"
     )
+    add_audit_parser(repo_commands)
     _add_check_commands(groups)
     labels_parser = repo_commands.add_parser(
         "labels",
@@ -534,6 +536,14 @@ def _add_pcsx2_commands(groups: Any) -> None:
     _add_pcsx2_flags(record)
 
 
+def _gang_list(text: str) -> list[int]:
+    """`--original-gangs 5,3`: gang ids separated by commas."""
+    try:
+        return [int(part) for part in text.split(",")]
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(f"{text!r}: expected gang ids separated by commas") from error
+
+
 def _add_trace_commands(groups: Any) -> None:
     """Register `coney-tools trace ...`."""
     group = groups.add_parser("trace", help="per-update traces: run a scenario on Coney, compare with the original")
@@ -554,6 +564,22 @@ def _add_trace_commands(groups: Any) -> None:
     diff.add_argument("--shift", type=int, help="compare original step s with Coney step s + SHIFT (default 0)")
     diff.add_argument("--start-frame", action="store_true", help="compare in each player's frame at the first step")
     diff.add_argument("--context", type=int, default=3, help="rows shown each side of a divergence (default 3)")
+    fight = commands.add_parser(
+        "fight-report", help="behaviour statistics of an all-humans trace; compare the original's runs with Coney's"
+    )
+    fight.add_argument("traces", nargs="*", type=Path, help="all-humans traces (coney --trace-humans) to report")
+    fight.add_argument("--original", nargs="+", type=Path, default=[], metavar="TRACE", help="the original's runs")
+    fight.add_argument("--coney", nargs="+", type=Path, default=[], metavar="TRACE", help="Coney's runs")
+    fight.add_argument("--hz", type=int, default=30, help="updates a second in the traces (default 30)")
+    fight.add_argument("--exclude", nargs="+", type=int, default=[], metavar="HUMAN", help="leave these humans out")
+    fight.add_argument("--engage-distance", type=float, default=3.0, help="metres to the target that count as engaged")
+    fight.add_argument("--from", dest="start_from", type=int, default=1, help="skip the steps before this one")
+    fight.add_argument("--humans", action="store_true", help="also print the metrics of each human")
+    fight.add_argument(
+        "--margin", type=float, default=0.0, help="widen the original's spread by this share of its width"
+    )
+    fight.add_argument("--original-gangs", type=_gang_list, help="the original's gang ids in the order g0,g1,...")
+    fight.add_argument("--coney-gangs", type=_gang_list, help="Coney's gang ids in the order g0,g1,...")
     mission = commands.add_parser("mission", help="play a mission scenario's course on one game; write its event log")
     mission.add_argument("scenario", type=Path, help="a mission scenario TOML (research/traces/missions/)")
     mission.add_argument("--side", choices=("coney", "original"), required=True, help="the game to play it on")
@@ -706,6 +732,15 @@ def _run(args: argparse.Namespace) -> int:
     if args.group == "trace":
         if args.command == "coney":
             return trace_cli.run_coney(args.scenario, args.out, args.coney, args.disc)
+        if args.command == "fight-report":
+            report_options = (
+                (args.hz, frozenset(args.exclude), args.engage_distance, args.start_from),
+                args.humans,
+                args.margin,
+            )
+            return trace_cli.run_fight_report(
+                args.traces, args.original, args.coney, report_options, (args.original_gangs, args.coney_gangs)
+            )
         if args.command == "mission":
             if args.side == "coney":
                 return mission_cli.run_mission_coney(args.scenario, args.out, args.coney, args.disc, args.updates)
@@ -731,6 +766,8 @@ def _run(args: argparse.Namespace) -> int:
         return workspace.run_init(Path.cwd(), args.workspace, args.repo_url, args.fetch, args.dry_run)
     if args.group == "mcp":
         return mcp_serve.run_serve(args.name)
+    if args.command == "audit":
+        return run_audit(args)
     if args.command == "render":
         return run_render(find_repo_root(Path.cwd()), args.check)
     if args.command == "labels":

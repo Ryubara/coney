@@ -198,6 +198,57 @@ TEST_CASE("a strike, power strike or throw is refused while the victim is out of
     CHECK(updateGrab(input, power, CombatTuning{}, random).action == GrabAction::Spin);
 }
 
+TEST_CASE("exactly 45 degrees from the facing is a side, not the front; exactly 135 is still a side", "[combat]") {
+    // The original's test is `0.785 <= |d|` for a side (docs/research/combat.md#throw-direction, item 2).
+    CHECK(sideOf(44.9F) == Side::Front);
+    CHECK(sideOf(-44.9F) == Side::Front);
+    CHECK(sideOf(45.0F) == Side::Right);
+    CHECK(sideOf(-45.0F) == Side::Left);
+    CHECK(sideOf(135.0F) == Side::Right);
+    CHECK(sideOf(-135.0F) == Side::Left);
+    CHECK(sideOf(135.1F) == Side::Rear);
+    CHECK(sideOf(-135.1F) == Side::Rear);
+}
+
+TEST_CASE("only a front hold's plain throw needs the victim in its place; a rear hold's throw spins first",
+          "[combat]") {
+    // `Pair_CheckPlace` runs for 147-153 from the front hold only: not for the wall throws, and not on the rear hold's
+    // path (`Grab_StartPairedMove`), which plays the spin to the front first (docs/research/combat.md#throw-direction).
+    CombatRandom random(1);
+    GrabInput input;
+    input.command = command::kCirclePressed;
+    input.stick = Stick{0.0F, 0.7F};
+    input.victimInPlace = false;
+    {
+        PowerMeter power;
+        input.wallInReach = true;
+        const GrabOutcome wall = updateGrab(input, power, CombatTuning{}, random);
+        CHECK(wall.action == GrabAction::Throw);
+        CHECK(wall.animId == anim_id::kThrow2Front);
+        CHECK_FALSE(wall.spinFirst);
+    }
+    {
+        PowerMeter power;
+        input.wallInReach = false;
+        input.fromRear = true;
+        input.rearThrow = true;
+        const GrabOutcome rear = updateGrab(input, power, CombatTuning{}, random);
+        CHECK(rear.action == GrabAction::Throw);
+        CHECK(rear.animId == anim_id::kThrow1Front);
+        CHECK(rear.spinFirst);
+    }
+    {
+        // From behind with the grab block 0x40000000 the front hold's path is taken: the place is checked.
+        PowerMeter power;
+        input.rearThrow = false;
+        CHECK(updateGrab(input, power, CombatTuning{}, random).action == GrabAction::None);
+        input.victimInPlace = true;
+        const GrabOutcome front = updateGrab(input, power, CombatTuning{}, random);
+        CHECK(front.action == GrabAction::Throw);
+        CHECK_FALSE(front.spinFirst);
+    }
+}
+
 TEST_CASE("the mount: square 219 or 221, cross 223, the power strike, circle back to the hold, L2 off", "[combat]") {
     PowerMeter power;
     CombatRandom random(7);

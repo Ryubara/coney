@@ -141,6 +141,7 @@ nav:
           - Tasks (the TaskEngine): research/tasks.md
           - "World objects: tint, glass, doors": research/objects.md
           - AI humans: research/ai.md
+          - "Gang fights: how a gang fights together": research/gang-fights.md
           - "AI code index: brains, actions and tactics": research/ai-code.md
           - "AI goals: the code of every goal class": research/ai-goals.md
           - "AI and the world: objects, cars, doors and climbs": research/ai-world.md
@@ -240,6 +241,7 @@ nav:
           - Debug: references/bindings/debug.md
   - Guides:
       - How we work: guides/how-we-work.md
+      - From research to code: guides/research-to-code.md
       - Running agents: guides/agents.md
       - Issues: guides/issues.md
       - Building and testing: guides/building.md
@@ -252,7 +254,6 @@ nav:
       - Realtime lighting design: guides/realtime-lighting.md
       - Asset and script architecture: guides/asset-and-script-architecture.md
       - Conventions: guides/conventions.md
-      - Repository conventions: guides/repo-conventions.md
       - Repository conventions: guides/repo-conventions.md
       - Research workflow: guides/research-workflow.md
       - Ghidra + ghidra-mcp: guides/ghidra.md

@@ -80,10 +80,14 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 
 - **The tackle** always connects with 5 / 6 (the front hit), without the original's connect gates; 7, the hit from
   the rear, never plays ([Grab and tackle](combat.md#grab)).
-- **Wall throws** (155-161) are picked by the original's ray and a head-on one turns the pair square to the face,
-  but the slam's `0x41` sweep (the dust puff, the impact sound and a world object struck) is not built, and the plain
-  throw does not turn the pair to the stick over 1/6 s first ([Throws](combat.md#throws)). **Coney's choice**: the
-  thrown body does not strike its own thrower.
+- **Wall throws** (155-161) are picked by the original's ray and a head-on one turns the pair square to the face at
+  once, not over 0.01 s, and the slam's `0x41` sweep (the dust puff, the impact sound and a world object struck) is
+  not built ([Throws](combat.md#throws)). **Coney's choice**: the thrown body does not strike its own thrower.
+- **Where a plain throw goes**: the pair is turned onto the stick over 1/6 s from the front hold and the rear hold
+  spins to the front first, as in the original, but the throw clips' own root turn is about a third larger than at
+  runtime (149 turns the thrower −120° for −90°) and the front victim lands 19.2° right of the stick (2.1° at
+  runtime): an open question on the root turn and the task's rate
+  ([Where a throw goes](combat.md#throw-direction)).
 - **The mounted victim** cannot struggle (250), get the mounter off or reverse (242 / 243)
   ([The mounted victim](combat-moves.md#mounted-victim)).
 - **The mount's power strike** stops at its first part: the extensions (227 / 228, 233 / 234; 229 is a filler that

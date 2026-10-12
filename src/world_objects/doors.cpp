@@ -606,8 +606,13 @@ void Doors::hitBarrier(Door& door, const ObjectHit& hit, ObjectWorld& world) {
             world.services->setModel(door.handle, kBarrierDamagedModel);
             world.services->setBody(door.handle, false);
         } else if (!listed(kBoardlessBarriers, door.type)) {
+            // Each board is made and sent its messages, then goes at its first update (tick()): a board that stayed
+            // would stand in the gap as the broken fence for as long as the barrier waits for its removal.
             for (const std::string_view board : kBoards) {
-                world.services->spawnObject(board, door.position, door.rotation);
+                const double handle = world.services->spawnObject(board, door.position, door.rotation);
+                if (handle != kNoObject) {
+                    door.boards.push_back(handle);
+                }
             }
         }
     }
@@ -667,6 +672,15 @@ void Doors::tick(ObjectWorld& world) {
     for (Door& door : m_doors) {
         for (DoorLeaf& leaf : door.leaves) {
             stepLeaf(leaf);
+        }
+        // The boards a broken barrier threw end at their first update, the tick after the hit.
+        if (!door.boards.empty()) {
+            for (const double board : door.boards) {
+                if (world.services != nullptr) {
+                    world.services->destroyObject(board);
+                }
+            }
+            door.boards.clear();
         }
         // A barrier's update only asks whether it is broken; a broken one is removed (WorldObject_Update).
         if (door.doorClass == DoorClass::Barrier && !door.removed && --door.countdown <= 0) {

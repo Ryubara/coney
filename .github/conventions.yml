@@ -13,6 +13,8 @@ version: 1
 
 repo:
   default_branch: main
+  # What an issue or a pull request calls the person who directs the project, and the word it must not use for them.
+  wording: {person: user, avoid: [owner]}
   # Decisions only a maintainer makes: an agent stops and reports instead of acting (AGENTS.md, "Rules").
   owner_decisions:
     - make the repository public
@@ -40,7 +42,8 @@ paths:
   # A pull request that touches only these skips the engine builds (.github/scripts/ci-scope.sh) and the local gate's
   # clang-tidy step, and a change to them is what `coney-tools check changed` builds the docs for. A trailing slash
   # means a folder; `*` matches within one folder level, so "*.md" is the Markdown files at the top level only.
-  # ci-scope.sh repeats this list as a regular expression until it reads this file, and a test holds the two together.
+  # ci-scope.sh reads this list itself with awk, so keep one quoted pattern per line, made of letters, digits, . _ / -
+  # and *; `coney-tools repo audit` (files.ci-scope) checks that the script can still read it.
   docs_only:
     - "docs/"
     - "research/"
@@ -56,7 +59,6 @@ paths:
     - {path: "docs/references/bindings/", by: "coney-tools natives render"}
     - {path: "docs/references/", by: "coney-tools refs render", except: ["docs/references/entities.md"]}
     - {path: "docs/missions/", by: "coney-tools missions render"}
-    - {path: "docs/research/tables/", by: "research/*.yaml"}
   # The agent entry files hold one line that imports AGENTS.md and nothing of their own, so the rules cannot drift.
   pointer_files: {files: ["CLAUDE.md", "GEMINI.md"], line: "@AGENTS.md", max_bytes: 400}
   # Only these files may hold the repository's or the docs site's address.
@@ -134,6 +136,9 @@ merge:
 
 issues:
   blank_issues: false
+  # A section that holds only one of these (any case, a trailing full stop ignored) is not filled in. The form's own
+  # "_No response_" and an empty section count as empty too.
+  placeholders: ["x", "xx", "xxx", "tbd", "todo", "fixme", "wip", "...", "…", "n/a", "na", "?"]
   # Every form's structure, checked against .github/ISSUE_TEMPLATE/*.yml by a test (the forms keep their guidance
   # text). A section is `id: [heading, required]`, in the form's order.
   forms:
@@ -216,6 +221,7 @@ labels:
     - {name: P-medium, color: fbca04, description: "Priority: next in line"}
     - {name: P-low, color: 0e8a16, description: "Priority: when there is room"}
     - {name: S-needs-triage, color: ededed, description: "Status: not yet looked at"}
+    - {name: S-ready-to-start, color: 0e8a16, description: "Status: triaged and accepted; waiting for someone to pick it up"}
     - {name: S-needs-info, color: d4c5f9, description: "Status: waiting for the reporter"}
     - {name: S-needs-research, color: d4c5f9, description: "Status: an analyst must study the original first"}
     - {name: S-in-progress, color: 5319e7, description: "Status: an agent or person is working on it"}
@@ -237,6 +243,223 @@ hygiene:
     needs_info_days: 21
     in_progress_idle_days: 30
     pull_request_idle_days: 30
+  # The audit's checks (`coney-tools repo audit`; docs/guides/repo-conventions.md#audit-checks). scope: where it runs
+  # (files = the checkout, github = issues, pull requests, labels and settings, local = the workspace). severity: error
+  # fails the audit (exit code 1), warn is only reported. fix: auto = a coney-tools command fixes it, skill = the
+  # /repo-hygiene skill or the author fixes it with judgement, owner = a maintainer decides. keys: the keys of this file
+  # the check enforces (each must exist). A check listed here without code in coney_tools/audit_*.py, or code without
+  # an entry here, fails a test.
+  checks:
+    files.pointer:
+      scope: files
+      severity: error
+      fix: skill
+      keys: [paths.pointer_files]
+      summary: "an agent entry file (CLAUDE.md, GEMINI.md) is missing, too big, or lacks the import line"
+    files.exist:
+      scope: files
+      severity: error
+      fix: skill
+      keys: [repo.tools, paths.generated, paths.code, paths.docs, pull_requests.template, issues.forms]
+      summary: "a file or folder the conventions name does not exist"
+    files.address:
+      scope: files
+      severity: error
+      fix: skill
+      keys: [paths.address_allowed_in]
+      summary: "the repository's or the docs site's address appears in a file other than the README"
+    files.forms:
+      scope: files
+      severity: error
+      fix: skill
+      keys: [issues.forms, issues.blank_issues, issues.screenshots_none, labels]
+      summary: "an issue form differs from the conventions: title, labels, field ids, headings, required flags, areas"
+    files.template:
+      scope: files
+      severity: error
+      fix: skill
+      keys: [pull_requests.template, pull_requests.sections, pull_requests.ai_use, pull_requests.docs_none, pull_requests.closing, pull_requests.remaining]
+      summary: "the pull request template differs from the conventions: headings, AI use lines, the Docs: none and Fixes lines"
+    files.generated-blocks:
+      scope: files
+      severity: error
+      fix: auto
+      keys: [commits, labels, merge, paths, pull_requests]
+      summary: "a generated block in AGENTS.md, CONTRIBUTING.md or a guide is out of date (coney-tools repo render)"
+    files.ci-scope:
+      scope: files
+      severity: error
+      fix: skill
+      keys: [paths.docs_only]
+      summary: ".github/scripts/ci-scope.sh does not read the docs-only paths from the conventions file"
+    files.large-file-limit:
+      scope: files
+      severity: error
+      fix: skill
+      keys: [paths.large_file_kb]
+      summary: "pre-commit's check-added-large-files limit differs from the conventions"
+    issue.sections:
+      scope: github
+      severity: error
+      fix: skill
+      keys: [issues.forms, issues.cli_uses_form]
+      summary: "an open issue lacks a required section of its form (or was filed with other headings)"
+    issue.placeholder:
+      scope: github
+      severity: error
+      fix: skill
+      keys: [issues.placeholders]
+      summary: "a section of an open issue is empty or holds only a placeholder such as x"
+    issue.screenshots:
+      scope: github
+      severity: error
+      fix: skill
+      keys: [issues.screenshots_none]
+      summary: "an open issue has no uploaded image and no Screenshots: none (reason) line"
+    issue.labels:
+      scope: github
+      severity: error
+      fix: skill
+      keys: [issues.labels, labels]
+      summary: "an issue lacks a type, area, priority (after triage) or status label, has two of one, or has an unknown label"
+    issue.owner-word:
+      scope: github
+      severity: error
+      fix: skill
+      keys: [repo.wording]
+      summary: "an open issue says 'owner' for the person who directs the project (say 'user')"
+    issue.closed-unchecked:
+      scope: github
+      severity: error
+      fix: skill
+      keys: [pull_requests.remaining]
+      summary: "a closed issue keeps an unchecked item that names no follow-up issue"
+    issue.stale-status:
+      scope: github
+      severity: warn
+      fix: skill
+      keys: [issues.status_text]
+      summary: "an issue calls a pull request open, merged or closed when it is not"
+    issue.links:
+      scope: github
+      severity: warn
+      fix: skill
+      keys: [issues.links]
+      summary: "an issue names a docs or research file as plain text, or links a file or anchor that is not on main"
+    issue.provenance:
+      scope: github
+      severity: warn
+      fix: skill
+      keys: [issues.provenance]
+      summary: "an issue that a pull request's Remaining list points at has no From: line"
+    issue.triage-age:
+      scope: github
+      severity: warn
+      fix: skill
+      keys: [hygiene.thresholds.needs_triage_days]
+      summary: "an issue has waited in S-needs-triage longer than the limit"
+    issue.info-age:
+      scope: github
+      severity: warn
+      fix: skill
+      keys: [hygiene.thresholds.needs_info_days]
+      summary: "an issue has waited in S-needs-info with no activity longer than the limit"
+    issue.progress-idle:
+      scope: github
+      severity: warn
+      fix: skill
+      keys: [hygiene.thresholds.in_progress_idle_days]
+      summary: "an S-in-progress issue has had no activity for longer than the limit"
+    issue.review-without-pr:
+      scope: github
+      severity: warn
+      fix: skill
+      keys: [issues.labels.status]
+      summary: "an S-pending-review issue that no open pull request mentions"
+    pr.title:
+      scope: github
+      severity: error
+      fix: skill
+      keys: [commits.title]
+      summary: "an open pull request's title breaks the commit title rules"
+    pr.body:
+      scope: github
+      severity: error
+      fix: skill
+      keys: [pull_requests]
+      summary: "an open pull request's description breaks the template rules (sections, local file paths, images not uploaded)"
+    pr.owner-word:
+      scope: github
+      severity: error
+      fix: skill
+      keys: [repo.wording]
+      summary: "an open pull request says 'owner' for the person who directs the project (say 'user')"
+    pr.remaining-uncited:
+      scope: github
+      severity: error
+      fix: skill
+      keys: [pull_requests.remaining]
+      summary: "a merged pull request left an unchecked Remaining item that names no issue"
+    pr.idle:
+      scope: github
+      severity: warn
+      fix: skill
+      keys: [hygiene.thresholds.pull_request_idle_days]
+      summary: "an open pull request has had no activity for longer than the limit"
+    pr.stacked-depends:
+      scope: github
+      severity: error
+      fix: skill
+      keys: [pull_requests.stacked.depends_line]
+      summary: "an open pull request on a branch other than main has no Depends on #N line"
+    pr.stacked-automerge:
+      scope: github
+      severity: error
+      fix: skill
+      keys: [pull_requests.stacked.auto_merge_on_non_default_base]
+      summary: "auto-merge is enabled on a pull request whose base is not main"
+    pr.base-merged:
+      scope: github
+      severity: warn
+      fix: skill
+      keys: [pull_requests.stacked.after_base_merges]
+      summary: "an open pull request's base branch was merged: rebase it onto main and retarget it"
+    pr.merged-into-base:
+      scope: github
+      severity: error
+      fix: skill
+      keys: [pull_requests.stacked.merge_into_base]
+      summary: "a pull request was merged into a branch other than main, so the issues it fixes stay open"
+    gh.labels:
+      scope: github
+      severity: error
+      fix: auto
+      keys: [labels.list]
+      summary: "the labels on GitHub differ from the conventions (coney-tools repo labels --apply)"
+    gh.ruleset:
+      scope: github
+      severity: error
+      fix: owner
+      keys: [merge]
+      summary: "the GitHub ruleset or repository settings differ from the merge section"
+    ws.disk:
+      scope: local
+      severity: error
+      fix: auto
+      keys: [workspace.disk_min_free_gb]
+      summary: "the workspace drive has less free space than the minimum (coney-tools workspace clean)"
+    ws.worktrees:
+      scope: local
+      severity: warn
+      fix: auto
+      keys: [workspace.worktrees, workspace.remove_worktree_when_merged, workspace.busy_marker]
+      summary: "a worktree of merged work is still there, or a stray file sits among the worktrees"
+    ws.scratch:
+      scope: local
+      severity: warn
+      fix: skill
+      keys: [workspace.scratch]
+      summary: "a scratch folder of finished work still holds captures"
 
 # Local only (`workspace clean|disk`); the hosted checks ignore it.
 workspace:

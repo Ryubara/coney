@@ -459,24 +459,79 @@ so the speeds on [Characters](../characters.md#speed-classes) stand.
 
 ### Root motion {#root-motion}
 
-The sampler (`0x00104ce0`) puts section A's root velocity, **times the task's rate**, in the pose's first
-translation, unless the cursor has flag `0x1` or the clip has no section A (then it keeps the instance's default and
-marks the pose "none"). Bone 0's rotation channel (mask bit 0) is the root's **turn per frame**, likewise unless flag
-`0x2`. Both blend like any other channel. When the instance builds its bone matrices (`0x00104630`) it keeps the
-blended root velocity at instance `+0x00` with a flag at `+0x461`, and the turn with a flag at `+0x462`. Confirmed
-(code).
+The sampler (`AnimCursor_SamplePose`, `0x00104ce0`) is given the task's rate in `f12` and puts section A's root
+velocity, **times the rate** (`vmulx` at `0x00104e68`), in the pose's first translation, unless the cursor has flag
+`0x1` or the clip has no section A (then it keeps the instance's default and marks the pose "none"). Bone 0's
+rotation channel (mask bit 0) is the root's **turn per frame**, likewise unless flag `0x2`, and it is **scaled by the
+rate as well**:
 
-The human's state update (`0x0023fea8`) then calls `0x0023f238`, before the move:
+- It is the channel's **key in force**, not interpolated: the sampler reads the `x, y, z` of the key the cursor holds
+  for that channel (`+0x2c`, at `0x00104f48`) and rebuilds `w = sqrt(1 − x² − y² − z²)`; it never calls the rotation
+  lerp (`0x00104ac8`) that every other bone goes through.
+- Unless the rate is exactly 1.0 or `w` is within 5·10⁻⁷ of 1 (no turn), that quaternion is **slerped from the
+  identity** (`0x00511780`, `(0, 0, 0, 1)`) toward the key by the rate: `Quat_Slerp(rate, out, identity, key)`
+  (`0x00336a00`), which runs from its first quaternion at 0 to its second at 1 and clamps the factor to [0, 1]. The
+  result is the same axis turned by **the key's angle × the rate**.
+
+Both blend like any other channel. When the instance builds its bone matrices (`0x00104630`) it keeps the blended
+root velocity at instance `+0x00` with a flag at `+0x461`, and the turn with a flag at `+0x462`. Confirmed (code) at
+the addresses cited.
+
+Every task type samples through this one function with its rate: types 1, 3, 5, 10, 12 and 13 pass
+`AnimTask_GetRate` (`0x00105860`, `0x00105ba0`, `0x001065f0`, `0x0010b448`, `0x0010adf8`, `0x0010a008`), types 4, 6,
+7 and 11 their `+0x0c` (`0x00108800`, `0x00108c80`, `0x00106b60`, `0x00107f60`); a paired task's rate is the
+attacker's ([Paired tasks](#paired-tasks)). Confirmed (code).
+
+The human's state update (`0x0023fea8`) then calls `Human_ApplyRootMotion` (`0x0023f238`), before the move:
 
 - **Velocity:** the root velocity, turned by the human's rotation into world axes and capped at 50 m/s, is **added**
   to the velocity the state function set.
 - **Turn:** with the turn's angle *a* = `2 · acos(w)`, the human turns about `z` (the sign from the quaternion's `z`) by
-  `a × 30 × dt` per update, so the channel holds a turn per 1/30 s.
+  `a × 30 × dt` per update (`dt` is `0x005102cc`, 1/30 s), so the channel holds a turn per 1/30 s. No rate is applied
+  here: the sampler has applied it. A human with an attachment (`+0x280` not −1) instead takes the pose's quaternion
+  once per update as it is.
 
-Confirmed (code). The locomotion sets no horizontal velocity of its own while a start or stop clip plays (human flags
-`0x10000000` or `0x80000`, mask `0x110c0880` tested at `0x00241a88`, or move state 5 or 6), so the clip alone moves the
-character then. At runtime the walk start moved Rembrandt at a steady 0.76 m/s, and section A of that clip is about
-1.05 m/s × 0.75 ≈ 0.79 m/s (confirmed (runtime) for the speed; the match is inferred).
+Confirmed (code).
+
+**So the root turn and the root velocity follow one rule:** each update the human turns by *rate × (the key's
+angle)* and moves by *rate × (the key's velocity)* × dt, while the clip's time advances by *rate × dt*. Over a
+whole clip the turn is therefore the sum of the key angles over the clip's frames, **whatever the rate**, just as
+the distance is the descriptor's displacement whatever the rate. A turn not scaled by the rate comes out 1/rate times
+too large: 4/3 at 0.75, which is what Coney showed on the throws (#263).
+
+**On the disc** (counts and angles only, from the extracted clips; the turn summed as the key in force over each
+frame of the clip, the rate from the id's Anim Range List flags): in the generic set, 161 of the 722 ids have a bone 0
+channel and 158 of them turn the body by a degree or more: 127 at rate 0.75 and 31 at 1.0. Every other character set
+has some as well, at 0.75 and 0.8 (Rembrandt's set: 12 at 0.75, 3 at 0.8). The throws come out as whole angles once
+the rate is applied: 149 −89.9°, 151 −180.0°, 153 +86.4°, 155 +150.0°, 159 −90.0°, 161 +90.0° (148 −90.0°,
+152 −269.4°); unscaled they would be −119.9°, −240.0° and +115.1°.
+
+**At runtime** the thrower's turns on the side throws were −90° (149), 180° (151) and +86.5° (153), and 3.2° and
+2.7° per update off and onto the 1/6 s turn ([Combat: where a throw goes](../combat.md#throw-direction), PCSX2
+2.9.94). They match the scaled totals above, not the unscaled ones, so the runtime agrees with the code.
+
+What changes with the rule, by kind (generic set; ids at rate 1.0 are unchanged):
+
+| Kind | Ids at 0.75 that turn |
+| --- | --- |
+| Tackles | 5, 6, 9, 10 |
+| Strafes | 31, 32 |
+| Grabs: power strikes, spins, reversals, breaks, escapes, hit-in-grab | 59, 60, 65, 79, 81, 90-95, 100, 102, 106, 107, 112-115, 137, 139, 145, 146 |
+| Throws and wall throws | 148-161 (all but 160) |
+| Tandem attacks (plain, bat, knife) | 166-168, 172-174, 177-180, 184-188, 190, 191 |
+| Grounded and wounded | 198, 204, 205 |
+| Mounting and the mount | 211, 214-218, 225, 227, 231, 233, 235, 238-240, 242-244, 246, 247 |
+| Arrests | 254, 255, 266, 325, 327, 332 |
+| Knockdown, extreme and death reactions | 285-315 (those with a turn) |
+| Weapon grabs and mounts | 484, 486-488, 496, 497 |
+| The ghetto set's turns (its fight and run turns play at 0.75) | 557-560, 568, 570, 575-578 |
+| Stealth kill reactions | 638, 640, 642 |
+
+At rate 1.0 and unchanged: the turns in place (360-363, 390-398), the run turns (416, 418), the barrel set's turns
+(511-532), 8, 261-265 and 319. The locomotion sets no horizontal velocity of its own while a start or stop clip
+plays (human flags `0x10000000` or `0x80000`, mask `0x110c0880` tested at `0x00241a88`, or move state 5 or 6), so the
+clip alone moves the character then. At runtime the walk start moved Rembrandt at a steady 0.76 m/s, and section A
+of that clip is about 1.05 m/s × 0.75 ≈ 0.79 m/s (confirmed (runtime) for the speed; the match is inferred).
 
 **Disc survey (counts only):** 31,274 clip occurrences in the WAD, 1,875 distinct; all parse with the channel rule;
 the channel count equals the mask's bit count in all; at most 606 keys in a channel; clips run 1 to 680 frames; bone
@@ -496,6 +551,11 @@ value easing at 10 units/s, the pair stepped at 0.995, 1.995 and 2.995, the lead
 fraction above 0.875, a shared normalised phase), and the stack with its cosine fades. Root motion is taken from the
 pose of the newest task and switched off by its flags (`0x1` velocity, `0x2` turn; the locomotion tasks carry
 `0x2c1`). Rates come from `CfgAnimSpeeds` by the Anim Range List's flags at `+0x0e` (`src/characters/anim_set.*`).
+
+**Root turn, a known difference** (#263): `AnimTask::applyFlags` scales the root velocity by the task's rate but not
+bone 0's turn, and `samplePose` interpolates bone 0 like any other bone. The original holds bone 0's key in force and
+turns by its angle × the rate ([Root motion](#root-motion)), so every turning clip played at a rate below 1 turns
+1/rate times too far in Coney (the throws by a third).
 
 **The pose** follows the original's: a bone without a channel takes the [reference pose](#reference-pose)
 (`anim::referenceRotations()`, the 34 rotations above, normalised) and is marked as a default, and `blendPoses()` reads
@@ -527,7 +587,8 @@ the run stop's measured speeds on every update but the two that fall exactly hal
 7.5), where the original took the lower key and Coney's float time comes out a hair above the half. It is how a
 cursor that steps its channels as each frame is passed ([Playing a clip](#playing-a-clip)) would behave if a frame
 counted as passed from half-way; the code of that step (`0x00104110`) has not been read for it. Every channel,
-rotations included, is sampled this way.
+rotations included, is sampled this way, except bone 0's turn, which takes the key in force without carrying it
+toward the next key (confirmed (code) at `0x00104f48`, [Root motion](#root-motion)).
 
 In the task system:
 
@@ -561,8 +622,11 @@ In the task system:
 - **Rates:** single clips play at the `CfgAnimSpeeds` rate chosen by their range flags (0.75 with no flag, 0.8, 1.0,
   0.9 at runtime); the gait loops at 1.0. Nothing scales a clip's rate with the character's speed.
 - **Root motion only where the clip is meant to move the body:** start and stop clips add their root velocity (times
-  the rate, turned into world axes) to the human's velocity, and their root turn to its heading; the gait loops and the
-  idle have it switched off by the task flags ([Root motion](#root-motion)).
+  the rate, turned into world axes) to the human's velocity, and their root turn (its angle **times the rate** too) to
+  its heading; the gait loops and the idle have it switched off by the task flags ([Root motion](#root-motion)).
+- **Bone 0's turn is the key in force, scaled by the rate:** take the channel's current key without interpolating it,
+  and turn by its angle × the rate (a slerp from the identity, the factor clamped to [0, 1]) before blending. With
+  that, a clip's total turn does not depend on its rate ([Root motion](#root-motion)).
 - The root's motion is also data for the speeds: the descriptor's displacement over the duration is the speed of a
   looping gait (the game derives each character's walk, jog, run and sprint speeds from it,
   [Characters](../characters.md#speed-classes)).

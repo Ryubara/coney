@@ -63,11 +63,13 @@ struct PlannerSettings {
 
 /// The route pool's size (`0x006ca250`).
 inline constexpr std::size_t kRoutePoolSize = 32;
-/// A search gives up once its open list would hold more nodes than this. **Coney choice**: "fails at 128 nodes" is
-/// read as the open list's size; read as the nodes closed, the search fails on a third of the reachable pairs of
-/// `level99`'s nodes (docs/research/ai.md#coney).
-inline constexpr std::size_t kMaxSearchNodes = 128;
-/// An edge whose cost reaches this is never taken (`0x005105a4`).
+/// The open heap's size (`PathHeap_Push`): a search that would hold more nodes open fails.
+inline constexpr std::size_t kMaxOpenNodes = 1000;
+/// The closed list's size (`PathList_Add`): a search that would close more nodes fails.
+inline constexpr std::size_t kMaxClosedNodes = 3000;
+/// The most nodes a route holds (`0x110` bytes less its count and three words): a longer chain fails the search.
+inline constexpr std::size_t kMaxRouteNodes = 128;
+/// A step whose running cost (g) would reach this is never taken (`0x005105a4`).
 inline constexpr std::uint32_t kEdgeCostCap = 65000;
 /// How many of its polygon's nodes an end tries, nearest first, for one it reaches in a straight line.
 inline constexpr std::size_t kEndNodeTries = 30;
@@ -124,6 +126,14 @@ struct RouteSearch {
     std::uint32_t cost = 0;
 };
 
+/// Why a search found no route.
+enum class SearchFailure : std::uint8_t {
+    NoWay,      ///< The open heap emptied: no way under the cap over the links the mask admits.
+    OpenFull,   ///< More than kMaxOpenNodes would be open.
+    ClosedFull, ///< More than kMaxClosedNodes would be closed.
+    TooLong,    ///< The route found would hold more than kMaxRouteNodes.
+};
+
 /// What a request gives: a route, or nothing when the straight line is walkable and no route is needed.
 struct RoutePlan {
     std::optional<Route> route;
@@ -175,9 +185,11 @@ class RoutePlanner {
     [[nodiscard]] std::expected<RoutePlan, MoveFailure> request(anim::Vec3 from, anim::Vec3 to,
                                                                 std::uint16_t mask = edge_flag::kDefaultMask);
 
-    /// The cost of the edge `edge` into node `to`, in 1/16 m: its length × 16, the extra costs of its flag (when on
-    /// and `mask` lacks `0x100`), 1600 for the avoid bit, and 40 × the routes through `to` − 8; at least 0, at most
-    /// `0xffff`. **Coney choice**: the last term is read as (40 × uses) − 8, of the node the edge enters.
+    /// The cost of the step over `edge`, a record of node `from` (the node the search expands; in walking order the
+    /// step runs from `edge.to` into `from`), in 1/16 m: its 3D length × 16 truncated; when the extra costs are on and
+    /// `mask` lacks `0x100`, one of 200 (flag 8), else 320 (`0x80`), else 80 (4, but not with `0x40` and the avoid
+    /// bit); 1600 for the avoid bit; and 40 × the routes through `from` − 8 when there are any. Each addition wraps
+    /// at 16 bits (docs/research/ai.md#path-planning, "The new g").
     /// @orig 0x00251890 Route_EdgeCost (unknown)
     [[nodiscard]] std::uint32_t edgeCost(std::uint32_t from, const world::PathEdge& edge, std::uint16_t mask) const;
     /// The routes through node `node` now (C `+0x1f`).
@@ -186,11 +198,12 @@ class RoutePlanner {
     [[nodiscard]] std::size_t routesInUse() const { return m_routesInUse; }
 
     /// One A* search over the graph from node `goal` back to node `start`, so the parent links read in walking
-    /// order: the nodes from `start` to `goal` and the cost, or nothing when the heap empties, its open list outgrows
-    /// kMaxSearchNodes, or every way costs more than `cap`.
+    /// order: the nodes from `start` to `goal` and the cost; or why not: the heap emptied (every way runs up a cost of
+    /// `cap` or more counts too: a step reaching it is skipped), more than kMaxOpenNodes would be open or
+    /// kMaxClosedNodes closed, or the route would hold more than kMaxRouteNodes. Costs are in 1/16 m, 3D, truncated.
     /// @orig 0x00251a70 Route_AStar (unknown)
-    [[nodiscard]] std::optional<RouteSearch> search(std::uint32_t start, std::uint32_t goal, std::uint16_t mask,
-                                                    std::uint32_t cap = 0xffff) const;
+    [[nodiscard]] std::expected<RouteSearch, SearchFailure>
+    search(std::uint32_t start, std::uint32_t goal, std::uint16_t mask, std::uint32_t cap = kEdgeCostCap) const;
 
     /// The node a route starting at `point` would leave from: of the polygon under it (or the nearest within
     /// kPolygonReach), the nearest of up to kEndNodeTries of its nodes that `point` reaches in a straight line;
