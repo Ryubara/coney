@@ -587,6 +587,33 @@ rear-held enemy (in a real fight, or after an `IssueWarriorCommand` attack order
 5. Test: an AI ally in front of the player's rear hold picks kind 22 and starts the tandem (assert the three clips
    and the victim's damage at the intro end); in front of a front hold it does not.
 
+#### Coney's tandem {#tandem-coney}
+
+Coney plays the tandem from `repo:src/combat/tandem.h` (the start test, the set, the damage and
+`Human_IsDamageDefeating`) and `repo:src/human/fighter_tandem.cpp` (the three humans). Items 1, 2 and 4 of the fixes
+above are built; item 3 (the AI's kind 22 becoming the tandem, and the `heldC12200` view) is left to issue #84. Any
+fighter's square, cross, circle tapped or circle held at a target that `Tandem_CanStart` allows starts it, a player's
+or an AI's. Where the page is silent, these are **Coney's choices**:
+
+- **The target.** Square and cross search within 3 m, circle within its grab's or tackle's search range; the current
+  target when it qualifies, else the nearest qualifying one. The original's target rules for a held victim are not
+  traced (open question below).
+- **Who moves.** Only the attacker is aligned: he turns and slides, over the share of his intro's time a grab's
+  connect uses, to where the victim stands at his intro's pair point (the Anim Range List direction × reach, straight
+  ahead at the reach without one). The victim keeps the rear hold's offset from his grabber.
+- **The grabber joins on his own next update**, through a request the victim keeps, rather than through a link to the
+  grabber, so a grabber removed meanwhile cannot leave a dangling link. With the humans' alternating order, all three
+  clips start on the same step.
+- **The let-go.** The grabber lets go at the end of his own end clip (27 updates for the first set), not the 48
+  updates after the damage measured at runtime (open question below).
+- **The damage** lands when the victim's intro hands over to his end clip, as a hit with no reaction. A defeating hit
+  takes all his health, and his death waits until his clips no longer hold `0xc12200`
+  ([Moves a hit cannot stop](combat.md#protected-moves), item 4).
+- **The empty-handed set** is one of the three drawn evenly from the fighter's own random numbers.
+- **No scoring.** `Grab_ScoreMove` is not called: its "100 points of category 6" has no counterpart in Coney's
+  player statistics, which have categories 0-5 (open question below).
+- **No other command.** The attacker and the grabber take no command until their tandem clips are over.
+
 ### Stealth: hiding and the stealth kill {#stealth}
 
 **Hiding** has no button: a player on shadow ground (collision triangle flag `0x10`) whom nobody hunts enters state
@@ -1076,6 +1103,15 @@ The moves Coney plays and where they differ from the table above: [Combat differ
   on the left. That target was pinned while walking, so the steer's lead may explain it ([Contact](#reach)); not
   rerun against a still target.
 - Why the tandem intro ran 51 updates, not 36.
+- The tandem's alignment: which of the three humans `Tandem_AlignThree` (`0x00277458`) moves, by which offsets and
+  over what time. Coney moves only the attacker, to his intro's pair point ([Coney's tandem](#tandem-coney)).
+- When the tandem's grabber lets go: 48 updates after the damage at runtime, where his end clip (166) lasts 27. Coney
+  lets go at the end of the clip.
+- How the empty-handed set is drawn: whether the three sets are equally likely, and from which random source.
+- What `Grab_ScoreMove`'s "100 points of category 6" adds to: Coney's player statistics have categories 0-5, so the
+  tandem scores nothing in Coney yet.
+- The target a held victim is found by: `Player_PickTarget` and the grab's search skip held humans in Coney; which
+  search square, cross and circle use to reach a rear-held victim for the tandem was not traced.
 - Whether a Warrior's own type-3 brain (the Warriors' think, `0x003052f0`) starts a tandem: in `moves_tandem_ai` Ash
   with that brain stood idle, so the run gave him type-2 handlers ([An AI tandem at runtime](#tandem-ai)). To find out,
   rerun the scenario without the brain writes and give Ash an attack order on PoizoCiv once he is in the rear hold,

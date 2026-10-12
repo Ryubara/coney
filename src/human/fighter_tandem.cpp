@@ -44,10 +44,10 @@ Holdable* Fighter::tandemTarget(const FighterInput& input, float range) const {
             std::fabs(target.position().z - input.position.z) > kPickHeight) {
             return nullptr;
         }
-        const combat::TandemCheck check{
-            .victimRearHeld = target.heldFromRear(),
-            .attackerSide = combat::victimSide(target.position(), target.heading(), input.position),
-            .victimHeld = target.heldFlags()};
+        const combat::TandemCheck check{.victimRearHeld = target.heldFromRear(),
+                                        .attackerSide =
+                                            combat::victimSide(target.position(), target.heading(), input.position),
+                                        .victimHeld = target.heldFlags()};
         return combat::tandemCanStart(check) ? target.holdable() : nullptr;
     };
     // The current target first, then the nearest.
@@ -110,8 +110,8 @@ void Fighter::alignTandem(const Holdable& victim, int base, const FighterInput& 
     const anim::Vec3 along = anim::subtract(fromFrame(input.position, wanted, point), input.position);
     const anim::Vec3 feet{victim.position().x - along.x, victim.position().y - along.y, input.position.z};
     const anim::AnimClip* clip = animator.clip(intro);
-    const float seconds = std::max(input.stepSeconds,
-                                   clip != nullptr ? alignSeconds(*clip, animator.anims().rate(intro)) : 0.0F);
+    const float seconds =
+        std::max(input.stepSeconds, clip != nullptr ? alignSeconds(*clip, animator.anims().rate(intro)) : 0.0F);
     m_steer.clear();
     m_steer.turnToOver(heading, wanted, seconds);
     m_steer.moveToOver(input.position, feet, seconds);

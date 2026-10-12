@@ -48,7 +48,7 @@ struct CombatInput {
     bool grabTargetInReach = false; ///< The search found someone to grab for this circle or circle + cross.
     /// Both grab-block flags on the player (`0x40000000` and `0x80000000`, `HuBlockGrab`): circle starts no grab.
     bool grabBlocked = false;
-    bool snapTarget = false;     ///< The snap's search found a human that is not the target (SquareInput).
+    bool snapTarget = false; ///< The snap's search found a human that is not the target (SquareInput).
     /// The human square, cross or circle aims at is held from the rear in front of this one and allows a tandem
     /// (combat::tandemCanStart(), the caller's search). Square and cross start it after their other target tests,
     /// circle before grabbing (docs/research/combat.md#grab, step 3).

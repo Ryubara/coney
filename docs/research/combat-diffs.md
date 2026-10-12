@@ -57,7 +57,9 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 - **Strafe attacks 31-33** are not built ([Strafe attacks](combat-moves.md#strafe)).
 - **Counters from square and cross** (76 / 9 against a grab or tackle intro) are not built; only R1 at the catch is
   ([Counters](combat-moves.md#counters)).
-- **Tandems** are not built ([Tandems](combat-moves.md#tandem)).
+- **Tandems** are built for any fighter's square, cross and circle, with Coney's choices for the alignment, the
+  grabber's let-go and the target search, and no scoring; the AI's side (its target view's `0xc12200` test and kind
+  22's choice at a rear-held target) is issue #84's ([Coney's tandem](combat-moves.md#tandem-coney)).
 - **The moving attacks' windows** open late: on the disc Coney's run attack 24 switches its shapes on at update 4 and
   off at 9, the walk attack 23 at 6 and 12, against 1 and 7, 4 and 10 at runtime
   ([How a moving attack strikes](combat.md#moving-strikes)). Coney fires the clips' events by the clip time from 0 on

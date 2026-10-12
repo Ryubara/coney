@@ -51,7 +51,8 @@ struct TandemCheck {
 
 /// The set's first id for an attacker holding an object of anim set `heldSet` (0 for none): a baton (2) or a bat (3)
 /// kBatTandem, a knife (1) kKnifeTandem, anything else kTandem1, kTandem2 or kTandem3, one of the three drawn evenly
-/// from `random`.
+/// from `random` (**Coney's choice**: the original's draw is not on the page,
+/// docs/research/combat-moves.md#tandem-coney).
 [[nodiscard]] int tandemSet(int heldSet, CombatRandom& random);
 
 /// The six clips of the set that starts at `base`: an intro and an end for each of the three, ids base + 0 to + 5.

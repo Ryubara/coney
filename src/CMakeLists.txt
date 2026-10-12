@@ -264,6 +264,7 @@ target_sources(coney_core PRIVATE
     human/fighter_counter.cpp
     human/fighter_grab.cpp
     human/fighter_script.cpp
+    human/fighter_tandem.cpp
     human/fighter_victim.cpp
     human/player.cpp
     human/player_trace.cpp

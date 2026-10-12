@@ -118,6 +118,7 @@ add_executable(coney_tests
     platform/disc_level99_change_character_test.cpp
     platform/disc_level99_noclip_test.cpp
     platform/disc_sprint_attacks_test.cpp
+    platform/disc_tandem_test.cpp
     platform/disc_bat_cross_test.cpp
     platform/disc_level99_car_climb_test.cpp
     platform/disc_level99_street_props_test.cpp
@@ -274,6 +275,7 @@ target_sources(coney_tests PRIVATE
     human/moving_attacks_test.cpp
     human/being_hit_test.cpp
     human/human_grab_test.cpp
+    human/human_tandem_test.cpp
     human/script_state_test.cpp
     human/jump_test.cpp
     human/locomotion_test.cpp

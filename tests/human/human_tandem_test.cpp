@@ -38,8 +38,8 @@ namespace combat = coney::combat;
 namespace {
 
 // The enemy at (40, 42) facing +y, the ally `behind` metres behind him facing the same way, and the player
-// `ahead` metres in front of him, `sideways` to his right, facing him. Each update steps the player (fighting the enemy),
-// then the ally (fighting the enemy, with the command `allyCommand` gives), then the enemy.
+// `ahead` metres in front of him, `sideways` to his right, facing him. Each update steps the player (fighting the
+// enemy), then the ally (fighting the enemy, with the command `allyCommand` gives), then the enemy.
 class TandemFight {
   public:
     explicit TandemFight(const FightCharacter& character, float ahead = 1.8F, float sideways = 0.0F,
@@ -53,8 +53,8 @@ class TandemFight {
                   &character.ranges) {
         const coney::human::FighterProfile ai{
             .player = false, .powerClass = combat::kCivilianPowerClass, .health = enemyHealth};
-        m_ally.setFighterProfile(coney::human::FighterProfile{
-            .player = false, .powerClass = combat::kCivilianPowerClass, .health = 600});
+        m_ally.setFighterProfile(
+            coney::human::FighterProfile{.player = false, .powerClass = combat::kCivilianPowerClass, .health = 600});
         m_enemy.setFighterProfile(ai);
         m_enemy.spawn(m_mesh.get(), kEnemy, 0.0F);
         // Behind him he faces the same way; a negative `behind` puts him in front, facing the enemy.
@@ -133,15 +133,17 @@ class TandemFight {
 
 // What one tandem did, update by update.
 struct TandemRecord {
-    int start = -1;          // the update the player's intro started
+    int start = -1; // the update the player's intro started
     int base = combat::anim_id::kNone;
-    int allyStart = -1;      // the update the ally's intro started
-    int enemyStart = -1;     // the update the enemy's intro started
-    int damageAt = -1;       // the update the enemy's health dropped
-    int healthAfter = 0;     // and to what
-    int enemyEndAt = -1;     // the update the enemy's end clip started
-    int allyFreeAt = -1;     // the update the ally first stood in the fight idle holding no one after the start
-    float standOff = 0.0F;   // the player's distance to the enemy when the player's end clip started
+    int allyStart = -1;         // the update the ally's intro started
+    int enemyStart = -1;        // the update the enemy's intro started
+    int damageAt = -1;          // the update the enemy's health dropped
+    int healthAfter = 0;        // and to what
+    int enemyEndAt = -1;        // the update the enemy's end clip started
+    int allyFreeAt = -1;        // the update the ally first stood in the fight idle holding no one after the start
+    float standOff = 0.0F;      // the player's distance to the enemy when the player's end clip started
+    bool groundedAfter = false; // the enemy lay on the ground on the first update after his end clip
+    int afterEndAt = -1;        // that update
 };
 
 // Runs `script` on `fight` for `frames` updates and records the tandem.
@@ -177,6 +179,10 @@ TandemRecord recordTandem(TandemFight& fight, std::string_view script, std::uint
         if (out.allyFreeAt < 0 && out.allyStart >= 0 && ally == static_cast<int>(coney::human::kAnimFightIdle) &&
             fight.ally().fighter().held() == nullptr) {
             out.allyFreeAt = frame;
+        }
+        if (out.enemyEndAt >= 0 && out.afterEndAt < 0 && enemy != out.base + 4) {
+            out.afterEndAt = frame;
+            out.groundedAfter = fight.enemy().state() == TargetState::Grounded;
         }
         if (player == out.base + 5 && out.standOff == 0.0F) {
             const Vec3 to = coney::anim::subtract(fight.enemy().position(), fight.player().position());
@@ -222,6 +228,9 @@ TEST_CASE("square at an enemy an ally holds from behind plays the tandem: the th
     fight.allyHoldsFromBehind();
     const TandemRecord tandem = recordTandem(fight, "2 tap square\n", 200);
     REQUIRE(tandem.start >= 0);
+    INFO("set " << tandem.base << ": start " << tandem.start << ", enemy " << tandem.enemyStart << ", enemy end "
+                << tandem.enemyEndAt << ", damage " << tandem.damageAt << ", ally " << tandem.allyStart
+                << ", ally free " << tandem.allyFreeAt);
     CHECK((tandem.base == combat::kTandem1 || tandem.base == combat::kTandem2 || tandem.base == combat::kTandem3));
     // The three start together: the enemy on the player's update, the ally on its own update after it.
     CHECK(tandem.enemyStart == tandem.start);
@@ -238,8 +247,8 @@ TEST_CASE("square at an enemy an ally holds from behind plays the tandem: the th
     // The player was put at his intro's reach from the enemy (1.72, 1.46 or 1.69 m).
     const float reach = tandem.base == combat::kTandem1 ? 1.72F : (tandem.base == combat::kTandem2 ? 1.46F : 1.69F);
     CHECK(tandem.standOff == Approx(reach).margin(0.1F));
-    // The enemy ends on the ground, his hold over; the player and the ally are free to fight.
-    CHECK(fight.enemy().state() == TargetState::Grounded);
+    // The enemy lies on the ground after his end clip, his hold over; the player and the ally are free to fight.
+    CHECK(tandem.groundedAfter);
     CHECK_FALSE(fight.enemy().fighter().inPair());
     CHECK_FALSE(fight.player().fighter().holdsMovement(fight.player().animator()));
 }
@@ -332,20 +341,24 @@ TEST_CASE("a hit from a fourth human on the tandem's victim takes health but pla
     bool hit = false;
     std::uint32_t clipAfterHit = 0;
     int base = combat::anim_id::kNone;
+    std::uint64_t startedAt = 0;
     fight.run("2 tap square\n", 30, [&](std::uint64_t frame) {
         const auto player = static_cast<int>(fight.player().animator().animId());
         if (base == combat::anim_id::kNone && player >= combat::kTandem1 && player < combat::kTandem1 + 30) {
             base = player - 2;
+            startedAt = frame;
         }
-        if (frame == 6 && base != combat::anim_id::kNone) {
+        // Four updates into the tandem a fourth human's hit lands on the victim (the fight's updates count on from the
+        // hold's set-up).
+        if (base != combat::anim_id::kNone && frame == startedAt + 4) {
             CHECK((fight.enemy().heldFlags() & combat::kTandemVictimHeld) != 0);
             CHECK((fight.player().heldFlags() & combat::kTandemAttackerHeld) != 0);
             CHECK((fight.ally().heldFlags() & combat::kTandemAttackerHeld) != 0);
-            fight.enemy().takeHit(coney::human::IncomingHit{.damage = 10, .attackAnim = 12, .code = 0x0a,
-                                                            .attacker = Vec3{39.0F, 42.0F, 0.0F}});
+            fight.enemy().takeHit(coney::human::IncomingHit{
+                .damage = 10, .attackAnim = 12, .code = 0x0a, .attacker = Vec3{39.0F, 42.0F, 0.0F}});
             hit = true;
         }
-        if (frame == 8) {
+        if (base != combat::anim_id::kNone && frame == startedAt + 6) {
             clipAfterHit = fight.enemy().animator().animId();
         }
     });

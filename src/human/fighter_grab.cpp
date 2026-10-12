@@ -141,9 +141,15 @@ void Fighter::breakPair() {
     m_tacklePending = false;
     m_mountPending = false;
     m_seatUpdates = 0;
+    // 4. A tandem it plays a part in ends for it (its clips play on, as the placement decides).
+    m_tandemRole = TandemRole::None;
+    m_tandemRequest.reset();
+    m_rearHeld = false;
 }
 
-bool Fighter::inPair() const { return m_held != nullptr || m_holdState.has_value() || m_grabbed.has_value(); }
+bool Fighter::inPair() const {
+    return m_held != nullptr || m_holdState.has_value() || m_grabbed.has_value() || m_tandemRole != TandemRole::None;
+}
 
 void Fighter::startHold(Holdable& victim, const FighterInput& input, float& heading, bool tackle, int connect,
                         HumanAnimator& animator) {

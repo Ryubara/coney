@@ -368,9 +368,7 @@ class Fighter {
     /// Its grabber's side of the hold this update (Holdable::holdSide()): a grab from its rear or not.
     void setRearHeld(bool rear) { m_rearHeld = rear && m_holdState.has_value(); }
     /// In state `0x20`: held attached in a grab from its rear (Combatant::heldFromRear()).
-    [[nodiscard]] bool heldFromRear() const {
-        return m_holdState == TargetState::Held && m_holdAttached && m_rearHeld;
-    }
+    [[nodiscard]] bool heldFromRear() const { return m_holdState == TargetState::Held && m_holdAttached && m_rearHeld; }
 
     // The tandem (fighter_tandem.cpp, docs/research/combat-moves.md#tandem). Any fighter's square, cross or circle at
     // a victim another human holds from behind starts it (combat::PlayerCombat decides, startTandem() plays it), a
@@ -712,12 +710,12 @@ class Fighter {
     bool m_tandemIntroOver = false;            // the victim's: his intro has ended and the damage landed
     bool m_tandemCuffed = false;               // the victim's state at the start, for combat::damageDefeats()
     bool m_tandemKnockedOut = false;
-    bool m_tandemByPlayer = false;            // a player started it
-    anim::Vec3 m_tandemAttacker;              // where the attacker stood at the start
-    std::optional<int> m_tandemRequest;       // the victim's: the set its grabber has not joined yet
+    bool m_tandemByPlayer = false;             // a player started it
+    anim::Vec3 m_tandemAttacker;               // where the attacker stood at the start
+    std::optional<int> m_tandemRequest;        // the victim's: the set its grabber has not joined yet
     std::optional<IncomingHit> m_deathPending; // a defeating hit taken while a paired move holds the death back
-    Combatant* m_target = nullptr;            // the target kept (human +0xc8)
-    Combatant* m_snapTarget = nullptr;        // what the snap's search found for this update's square (not the target)
+    Combatant* m_target = nullptr;             // the target kept (human +0xc8)
+    Combatant* m_snapTarget = nullptr;         // what the snap's search found for this update's square (not the target)
     int m_connect = 72;            // the grab's front connecting clip: 72, or the strong grapple's 657 (649 in rage)
     anim::Vec3 m_slide;            // a grab's alignment's slide velocity, m/s
     int m_slideUpdates = 0;        // updates of slide left

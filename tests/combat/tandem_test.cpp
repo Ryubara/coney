@@ -100,7 +100,13 @@ TEST_CASE("the victim's damage is the attacker's intro and end values", "[combat
         } else if (id == 192) {
             damage = 600;
         }
-        bytes.u16(0).u16(1000).u32(std::bit_cast<std::uint32_t>(1.0F)).u16(0).u16(static_cast<std::uint16_t>(damage)).u16(0).u16(0);
+        bytes.u16(0)
+            .u16(1000)
+            .u32(std::bit_cast<std::uint32_t>(1.0F))
+            .u16(0)
+            .u16(static_cast<std::uint16_t>(damage))
+            .u16(0)
+            .u16(0);
     }
     const auto ranges = combat::AnimRangeList::parse(bytes.span());
     REQUIRE(ranges.has_value());
@@ -125,8 +131,8 @@ TEST_CASE("damage defeats a human at or below it, tripled when he is cuffed, nev
     cuffed.health = 1201;
     CHECK_FALSE(combat::damageDefeats(cuffed));
     // Never with human flag 0x10 or 0x20000000000, nor once knocked out.
-    for (const auto set : std::array{&combat::DefeatTest::god, &combat::DefeatTest::demiGod,
-                                     &combat::DefeatTest::knockedOut}) {
+    for (const auto set :
+         std::array{&combat::DefeatTest::god, &combat::DefeatTest::demiGod, &combat::DefeatTest::knockedOut}) {
         combat::DefeatTest never = base;
         never.*set = true;
         CHECK_FALSE(combat::damageDefeats(never));

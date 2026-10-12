@@ -4424,6 +4424,11 @@ name = "Human_GaitOfVelocity"
 subsystem = "Human"
 
 [[function]]
+address = 0x0022b1a0
+name = "Tandem_LinkThree"
+subsystem = "Human"
+
+[[function]]
 address = 0x0022c760
 name = "Grab_Link"
 subsystem = "Human"
@@ -5764,6 +5769,11 @@ name = "Human_BreakPair"
 subsystem = "Human"
 
 [[function]]
+address = 0x00258e10
+name = "Tandem_CanStart"
+subsystem = "Human"
+
+[[function]]
 address = 0x00258e88
 name = "Human_CanCounterGrab"
 subsystem = "Human"
@@ -5889,6 +5899,11 @@ subsystem = "Human"
 size = 2128
 
 [[function]]
+address = 0x00265c28
+name = "Human_IsDamageDefeating"
+subsystem = "Human"
+
+[[function]]
 address = 0x00265dd0
 name = "Rage_NoteHit"
 subsystem = "Human"
@@ -5959,6 +5974,16 @@ size = 2288
 [[function]]
 address = 0x0026ef68
 name = "Grab_MountClipEnd"
+subsystem = "Human"
+
+[[function]]
+address = 0x0026f780
+name = "Tandem_OnVictimIntroEnd"
+subsystem = "Human"
+
+[[function]]
+address = 0x0026f860
+name = "Tandem_Start"
 subsystem = "Human"
 
 [[function]]
@@ -6050,6 +6075,11 @@ size = 600
 [[function]]
 address = 0x00277248
 name = "Human_AlignToVictimFacing"
+subsystem = "Human"
+
+[[function]]
+address = 0x00277458
+name = "Tandem_AlignThree"
 subsystem = "Human"
 
 [[function]]

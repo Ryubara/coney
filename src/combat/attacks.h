@@ -122,20 +122,19 @@ inline constexpr int kStartTandem = -2;
 
 /// The attack cross (its 0x10) starts. With a knife, baton or bat in hand (SquareInput::heldSet 1-3) it is
 /// armedAttack()'s with the set's cross slot. Otherwise: at a run (gait 4 or 5) with no phase bit and the stick beyond
-/// 0.95 the run attack 24; walking (gait 1-3) with the stick at 0.12 or more the walk attack 23; kStartTandem at a target
-/// that allows a tandem; else `X1`. Cross has
-/// no snaps and reads no target (docs/research/combat.md#attacks). **Coney's reading**: square's fields are reused;
-/// cross ignores the target and the snap's. (Sets 4-6 throw instead: throwAttack().)
+/// 0.95 the run attack 24; walking (gait 1-3) with the stick at 0.12 or more the walk attack 23; kStartTandem at a
+/// target that allows a tandem; else `X1`. Cross has no snaps and reads no target (docs/research/combat.md#attacks).
+/// **Coney's reading**: square's fields are reused; cross ignores the target and the snap's. (Sets 4-6 throw instead:
+/// throwAttack().)
 /// @orig 0x00287a18 Player_Cross (unknown)
 [[nodiscard]] int crossAttack(const SquareInput& input);
 
 /// The armed branch square and cross take with a knife, baton or bat in hand (docs/research/combat.md#armed-moves), in
 /// its order: at a run (gait 4, or for cross 4 or 5, with no phase bit and the stick beyond 0.95) 501; at a grounded or
 /// tackled target the set's grounded strike (slot `0x13`); at a breakable anim_id::kNone (objectAttack() picks the
-/// clip); kStartTandem at a target that allows a tandem; otherwise the set's swing `swing` (slot `0x10` for square, `0x11`
-/// for cross). No walk attack, no snaps and
-/// no strike on a grabbed target: a walking player swings where he is. **Coney's reading**: the mugging this branch
-/// may start is not built.
+/// clip); kStartTandem at a target that allows a tandem; otherwise the set's swing `swing` (slot `0x10` for square,
+/// `0x11` for cross). No walk attack, no snaps and no strike on a grabbed target: a walking player swings where he is.
+/// **Coney's reading**: the mugging this branch may start is not built.
 [[nodiscard]] int armedAttack(const SquareInput& input, bool cross);
 
 /// Whether `set` is a thrown object's: 4 overhead (drums, chairs, amps), 5 one-handed (bricks, bottles) or 6 the ghetto
