@@ -156,6 +156,11 @@ TEST_CASE("the disc's level99 checkpoint 3: Vermin climbs the fence in his demon
         run.run(1);
         const bool climbing = brain->human().climb().has_value();
         const coney::anim::Vec3 feet = brain->human().position();
+        if (std::getenv("VF_DEBUG") != nullptr && frames % 5 == 0) {
+            std::printf("      fence %d gait %d speed %.2f at (%.2f, %.2f, %.2f) climbing %d\n", frames,
+                        static_cast<int>(brain->human().gait()), brain->human().speed(), feet.x, feet.y, feet.z,
+                        climbing ? 1 : 0);
+        }
         if (climbing && !wasClimbing) {
             ++climbs;
             if (!takeOff) {
@@ -218,6 +223,14 @@ TEST_CASE("the disc's level99 checkpoint 3: Vermin runs up to both of his roof j
 
     // Vermin where the window run starts, then the script's step after the player's window jump.
     brain->human().place(kWindowRunStart, coney::human::headingOf(coney::anim::Vec3{-1.0F, 0.0F, 0.0F}));
+    if (std::getenv("VF_DEBUG") != nullptr) {
+        run.session().flow().scripts().traceCalls([](std::string_view line) {
+            if (line.find("Goal") != std::string_view::npos || line.find("Act") != std::string_view::npos ||
+                line.find("P3.") != std::string_view::npos) {
+                std::printf("      trace %.*s\n", static_cast<int>(line.size()), line.data());
+            }
+        });
+    }
     REQUIRE(run.session().flow().scripts().call("P3.Player2Jumps"));
 
     const float runSpeed = brain->human().speeds().run;
@@ -242,6 +255,10 @@ TEST_CASE("the disc's level99 checkpoint 3: Vermin runs up to both of his roof j
         for (std::size_t i = at - kRunUp; i < at - 1; ++i) {
             running += updates[i].gait == coney::human::Gait::Run ? 1 : 0;
             slowest = std::min(slowest, updates[i].speed);
+            if (std::getenv("VF_DEBUG") != nullptr) {
+                std::printf("      %zu gait %d speed %.2f at (%.2f, %.2f)\n", i, static_cast<int>(updates[i].gait),
+                            updates[i].speed, updates[i].feet.x, updates[i].feet.y);
+            }
         }
         const coney::anim::Vec3 feet = updates[at].feet;
         std::printf("    take-off at (%.2f, %.2f, %.2f): %d of %zu updates before it at the run, slowest %.2f m/s\n",
