@@ -99,6 +99,7 @@ add_executable(coney_tests
     platform/disc_inspector_freeze_test.cpp
     platform/disc_sprite_sheets_test.cpp
     platform/disc_rumble_test.cpp
+    platform/disc_hub_cutscene_audio_test.cpp
     platform/disc_hub_doors_test.cpp
     platform/disc_hub_test.cpp
     platform/disc_level80_end_test.cpp
