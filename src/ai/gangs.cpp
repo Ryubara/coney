@@ -4,8 +4,10 @@
 #include <algorithm>
 #include <array>
 #include <utility>
+#include <vector>
 
 #include "ai/script_services.h"
+#include "ai/targeting.h"
 #include "human/human_flags.h"
 
 namespace coney::ai {
@@ -218,7 +220,7 @@ bool Gangs::friends(const Gang* a, const Gang* b) {
     if (a == nullptr || b == nullptr) {
         return false;
     }
-    if (a == b || a->m_kind == b->m_kind || (policeLike(a->m_kind) && policeLike(b->m_kind))) {
+    if (a == b || a->m_kind == b->m_kind || (policeLike(a->m_kind) && policeLike(b->m_kind)) || a->owner().truce()) {
         return true;
     }
     return (a->m_friends & bitOf(b->m_id)) != 0;
@@ -266,8 +268,23 @@ void Gangs::setAlwaysSeen(int id, bool on) {
 }
 
 bool Gangs::enemies(const Gang* a, const Gang* b) {
-    return a != nullptr && b != nullptr && (a->m_enemies & bitOf(b->m_id)) != 0;
+    if (a == nullptr || b == nullptr) {
+        return false;
+    }
+    // 1. The police and the police-like kind are never enemies.
+    if ((a->m_kind == kPoliceKind && b->m_kind == kPoliceLikeKind) ||
+        (a->m_kind == kPoliceLikeKind && b->m_kind == kPoliceKind)) {
+        return false;
+    }
+    // 2. Nobody during a truce.
+    if (a->owner().truce()) {
+        return false;
+    }
+    // 3. The bit of b's id in a's mask.
+    return (a->m_enemies & bitOf(b->m_id)) != 0;
 }
+
+void Gangs::setTruce(std::uint64_t ms) { m_truceEndMs = ms == 0 ? 0 : m_nowMs + ms; }
 
 void Gangs::setThreatResponse(int id, int response) {
     if (Gang* gang = find(id); gang != nullptr) {
@@ -327,6 +344,7 @@ void Gangs::setAttackable(int id, bool on) {
 }
 
 void Gangs::forget(const Brain& brain) {
+    m_scans.forget(brain);
     for (int id = 0; id < static_cast<int>(kGangSlots); ++id) {
         if (Gang* gang = find(id); gang != nullptr && gang->m_chosenTarget == &brain) {
             gang->m_chosenTarget = nullptr;
@@ -363,6 +381,8 @@ void Gangs::setTactic(int id, std::unique_ptr<Tactic> tactic) {
 
 void Gangs::update(std::uint64_t nowMs) {
     m_nowMs = nowMs;
+    // A new update: the brains that follow may scan again.
+    m_scans.beginUpdate();
     for (Gang& gang : m_gangs) {
         if (!gang.m_inUse || gang.m_members.empty() || gang.m_tactic == nullptr) {
             continue;
@@ -375,6 +395,31 @@ void Gangs::update(std::uint64_t nowMs) {
 
 std::size_t Gang::turfCount() const {
     return static_cast<std::size_t>(std::ranges::count_if(m_orders.turf, [](double box) { return box != 0.0; }));
+}
+
+void Gang::setSharedTarget(Brain* target) {
+    // 1. The null target: stored, and nothing else.
+    if (target == nullptr) {
+        m_chosenTarget = nullptr;
+        return;
+    }
+    // 2. Checked through the leader: none, or one who may not take him, and the old target stays.
+    const Brain* lead = leader();
+    if (lead == nullptr || !validEnemy(*lead, *target)) {
+        return;
+    }
+    // 3. Never a friend's member.
+    if (Gangs::friends(this, target->gang())) {
+        return;
+    }
+    // 4. The target, listed by every AI member; the players are skipped.
+    m_chosenTarget = target;
+    const std::vector<Brain*> members = m_members; // addEnemy() may tell a tactic, which may change the members
+    for (Brain* member : members) {
+        if (member->type() != BrainType::Player) {
+            member->addEnemy(*target);
+        }
+    }
 }
 
 Brain* Gang::leader() const {
