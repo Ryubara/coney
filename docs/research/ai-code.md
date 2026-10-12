@@ -177,7 +177,7 @@ The list of up to 16 enemies at brain `+0x164` and the score that picks among th
 | `0x0028ef48` | `Brain_UncountAllEnemies` | helper | each enemy's hostile count − 1 (players' left alone in co-op) | confirmed (code) |
 | `0x0028f000` | `Brain_ShakeOffPursuers` | helper | for a player or a Warrior: hunters of a hostile gang within 2 × far who hold him as an enemy but have no line of sight to him lower his count | confirmed (code) |
 | `0x0028f9e8` | `Brain_ClearEnemies` | helper | uncounts and empties the enemy list, brain disabled (`+0x08` = 0) | confirmed (code) |
-| `0x00290138` | `Brain_IsThreat` | helper | whether another brain is a threat: never himself; a Warrior hitting back at his chief (`+0x2e5`) and that chief are threats to each other; else enemy gangs, or both players ([The enemy scan](ai.md#enemy-scan)) | confirmed (code) |
+| `0x00290138` | `Brain_IsThreat` | helper | whether another brain is a threat: never himself; a Warrior hitting back (`+0x2e5`) and any pad player are threats to each other; else enemy gangs, or both players ([step by step](ai-reimpl.md#brain-is-threat)) | confirmed (code) |
 | `0x00290328` | `Brain_MakeGangsEnemies` | helper | sets the enemy bit between the two brains' gangs | confirmed (code) |
 | `0x00291218` | `Brain_NearestEnemyVisible` | helper | sorts the enemy list by distance; whether the nearest is visible (not in shadow, in view) | confirmed (code) |
 | `0x0029bec8` | `Brain_CanTarget` | helper | CanSeeLiving, unless he is an unarmed non-cop the brain may not engage | inferred |
@@ -730,7 +730,7 @@ scene. No script calls it.
 | `0x00307878` | `AttackTactic_OnViolence` | helper | event 20: the leader picks a side in the fight (`Brain_PickSideInFight`); each standing member with no goal melees that human, adds him as enemy and target, and sends a helper (`Gang_SendHelper`) when HelpRespond (`0x1d`) is not on his stack | confirmed (code) |
 | `0x00307d40` | `GangTactic_CheckFlee` | helper | `GangTactic_CheckFlee`, event 18 (a member down): with the gang's flee percentage (`+0xe0`) and `+0xdf` set (not for kind 6 with `+0xd9`), when the standing, uncuffed members number at most that percentage of the kind's size (`GangConfig_GetField72`), each of them whose class byte `+0x11b` is 11 gets threat response 0, melee and a PedReaction (type 9) away from his enemy; sets `+0x32` (the gang fled) | confirmed (code) |
 | `0x003080c8` | `AttackTactic_End` | End | releases the gang's substitute group `0x29c` when the flee option is set (or kind 6 with `+0xd9`) | confirmed (code) |
-| `0x00308150` | `AttackTactic_OnStrategyEnd` | slot +0x1c | when the ended strategy's slot `+0x2c` answers 1, gives the members melee again | confirmed (code) |
+| `0x00308150` | `AttackTactic_OnStrategyEnd` | slot +0x1c | when the ended strategy's kind (its slot `+0x2c`) is 1, the guard orders, gives the members melee again ([Unit 3](ai-reimpl.md#unit-3)) | confirmed (code) |
 | `0x00308478` | `AttackTactic_OnEvent` | Event | 1/11 for an own member with no fight goal and no strategy: melee; 2 → 13 `TacMemberDied` unless the gang fled; 18 → `GangTactic_CheckFlee`; 19/22 → melee again; 20 → `AttackTactic_OnViolence` | confirmed (code) |
 
 ### AvoidEnemies (type 0x20) {#t1-avoid-enemies}
@@ -1466,7 +1466,7 @@ built: the wreck with no store, the answering line, the fidget clips, dogs' Avoi
 ### Attack sub-tactics {#t2-sub-tactics}
 
 Short orders TacticAttack's Process starts every 7 s (`AttackTactic_StartSubTactic` `0x00307a10`,
-[Tactics](ai.md#tactic-kinds)): a pool of 8 records of 0x30 at `0x006eb6f0` (mask `0x006eb6e0`). Record: `+0x00` the
+[Tactics](ai.md#tactic-kinds); step by step in [AI reimplementation plan](ai-reimpl.md#unit-3)): a pool of 8 records of 0x30 at `0x006eb6f0` (mask `0x006eb6e0`). Record: `+0x00` the
 gang, `+0x04` the time limit (−1 none), `+0x08` started, `+0x0c` the vtable (`+0x0c` Start, `+0x14` End, `+0x1c`
 Process). Each Process returns 1 (done) when the leader is gone, cuffed or knocked out. The leader opens with a speech
 command and a gesture (clips `0x2a3`/`0x2a4` in the fight stance, `0x2a7`/`0x2a8` out of it), and the order goes out
@@ -1488,7 +1488,7 @@ when his line ends. The order names are inferred from the lines.
 | `0x00321c50` | `GrabSubTactic_End` | End | pops the leader's GrabTarget goal (`0x1f`) | confirmed (code) |
 | `0x00321cd8` | `GrabSubTactic_Process` | Process | orders once; done when the leader is cuffed or knocked out, nothing was ordered, or the grab goal is gone | confirmed (code) |
 | `0x00321db8` | `ChargeSubTactic_Init` | constructor | gang, time, vtable `0x00544290`, how many members (`+0x10`) | confirmed (code) |
-| `0x00321de8` | `ChargeSubTactic_Order` | helper | up to the count: free members (not busy, not attacked, no goal `0x3f`, top goal not `0x0b`) take their nearest valid enemy, drop the fight goal and get EngageEnemy (`EngageEnemyGoal_Init`, `0x8f`) | confirmed (code) |
+| `0x00321de8` | `ChargeSubTactic_Order` | helper | up to the count: free members (not the leader, not busy, not attacked, no goal `0x3f`, top goal not `0x0b`) take the **farthest** enemy on their list when it is valid ([Unit 4](ai-reimpl.md#unit-4)), drop the fight goal and get EngageEnemy (`EngageEnemyGoal_Init`, `0x8f`) | confirmed (code) |
 | `0x00322050` | `ChargeSubTactic_Process` | Process | with two or more alive the leader says `attack` (1) and gestures (`0x2a4` / `0x2a8`); after the line, orders once | confirmed (code) |
 | `0x00322188` | `GuardSubTactic_Init` | constructor | gang, no time limit, vtable `0x005442c8`, the back-off option `+0x17`; with a time, `+0x10` = now + time | confirmed (code) |
 | `0x003221e8` | `GuardSubTactic_Order` | helper | the leader's formation: set 3 with min(2 × others, 9) slots, shape 3.0; members join and get FollowAndDefend (3.0) on him, with attack table `0x00511438` unless the option; with the option the leader backs off (FightBackOff goal) | confirmed (code) |
