@@ -238,6 +238,11 @@ The whole gate:
 
 Commands and presets: [Building and testing](building.md).
 
+The whole gate runs once per unit, as its final check before the unit is reported ready for release. While working,
+check with the `dev` preset and only the tests the change touches (`ctest --preset dev -R <pattern>`, disc tests
+included when they are the ones affected). Builds share a few slots on one machine, and a full `ci` build with the whole
+suite holds one for 20 to 40 minutes, so running it for every step makes everyone else wait.
+
 ### Continuous integration {#ci}
 
 CI builds and tests on Windows, Linux (GCC and Clang) and macOS, with sanitizers and clang-tidy, and runs the Python

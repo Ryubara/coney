@@ -3260,7 +3260,8 @@ held for 0.3 s (2026-10-10).
 - **What the player takes**, through the enter handler's flags: no damage (god mode: `Human_ApplyPendingDamage`
   zeroes the pending damage while `+0xe0` has `0x10`, except a hit by a world object of `ObjectAttribs` kind `0x1d` or
   `0x22`), never stunned (`0x100`), reaction one step weaker (`0x200`), reaction strength at most 1, so never knocked
-  down (`0x80`), cannot be grabbed (`0x40`), keeps his weapon (`0x2000`). Without the handler (none registered),
+  down (`0x80`), cannot be grabbed (`0x40`), keeps his weapon (`0x2000`; what that covers and what it does not:
+  [Dropping what is held when hit](#keep-weapon)). Without the handler (none registered),
   only the code's own rules hold:
     - a hit on a raging player who is grabbing (record `+0x08` `0x10`) plays no reaction, the damage still lands
       (`0x00265f70`, the test before the hit-armour one);
@@ -3321,7 +3322,120 @@ any of the three (each name occurs once in the 467 chunks, at its definition). N
 - **Check, not yet traced in Coney**: god mode (`kGod`) is honoured by `Fighter::takePending`; make sure the other six
   flags are read where the original reads them (unstunnable, reduced and increased reaction, ungrabbable,
   ungroundable, keep weapon), that a raging grabber cannot be countered (`fighter_victim.cpp` reads the victim's own
-  rage there), and, when fire and gunmen arrive, the two code-only rules above.
+  rage there), and, when fire and gunmen arrive, the two code-only rules above. The keep-weapon flag's readers and
+  the drops it does not stop are in [Dropping what is held when hit](#keep-weapon), with its own list for Coney.
+
+#### Dropping what is held when hit {#keep-weapon}
+
+When a hit, a grab or a defeat makes a human let go of what he holds, and what human flag `0x2000`
+(`HuSetKeepWeapon`, set by rage's enter handler) changes. Asked for issue #91. Confirmed (code) at the addresses
+cited; not checked at runtime. "Set" is the held object's type byte `+0x87`, its move style
+([Objects: the move style](objects.md#two-handed)): 1 knife, 2 baton, 3 bat, 4 two-handed prop, 5 throwable, 6
+ghetto blaster. "Hurt" is `Human_IsHurt` (`0x00222ff8`): health below the power class's `+0x04` fraction of the
+maximum (0.35 for a street civilian, [Characters: power classes](characters.md#power-classes)). Every drop is
+`Human_DropHeld` (`0x00257f38`, [Objects: drop](objects.md#held)).
+
+**Three helpers decide** (each first ends a throw aim, `Human_CancelThrowAim`, and drops a held set 4 or 6 object
+whatever the flags; `Human_HoldsKind4Or6` `0x00224000` reads the set):
+
+| Helper | Then drops any other held object when | Called on |
+| --- | --- | --- |
+| `Human_EndThrowAimIfHurt` (`0x00257e38`) | the human is **hurt**, flag `0x2000` is clear, and he is not a cop (brain type 1) holding set 1 or 2 | the victim, by `Human_KnockDown` (`0x0022f100`, always, first thing) and `Human_Stun` (`0x0022f658`, see below) |
+| `Human_EndThrowAimDropHeavy` (`0x00257d70`) | flag `0x2000` is clear, he is not a cop holding set 1 or 2, and he is **hurt or holds set 3** (a bat) | the victim, by `Grab_Link` (`0x0022c730`, a grab), `Pair_LinkMount` (`0x0022bfd0`, a mount), the paired-move link `0x0022b960` (from `Attack_StartPaired`, `Grab_StartPairedMove`, `Grab_Strike`, `Grab_Reverse` and the mount strikes, reversal and get-off) and `Human_PlayLethalReaction` (`0x00267e48`) |
+| `Human_EndThrowAim` (`0x00257ce8`) | flag `0x2000` is clear and the set is not 1 or 2 (no hurt test, no brain test) | the human **starting** the move: the grabber in `Grab_Start` (`0x0026c548`), `Grab_Link`, `Pair_LinkMount`, the tackler in `Tackle_Start` (`0x002707a8`), and in `0x0022b960` the attacker when he holds set 2 or 3 (not for clip 642, nor set 1 with clip 640) |
+
+The test in `0x00257e38`, as read (snippet):
+
+```c
+if (Human_IsHurt(h) && !(h->flags & 0x2000) &&
+    (Brain(h)->type != 1 || (set != 2 && set != 1)))
+    Human_DropHeld(h);
+```
+
+**When a hit gets there.** A hit that lands and is not blocked runs `Human_ApplyPendingDamage` (`0x00265f70`,
+[Damage](#damage)); a blocked hit returns before any of this. In order:
+
+1. **Every landed, non-lethal hit** (or any hit while airborne), before the reaction is chosen and **without any flag
+   test**:
+    - `Human_ReleaseCarriedProps` (`0x0024ce40`, unless cuffed) drops a held object of `ObjectAttribs` kind `0x27`
+      (39, the one-sphere melee object) unless he is throwing, and lets go of the carried props `+0x348` / `+0x34c`;
+    - `Human_DropHeld` when `Human_IsSwingingHeld` (`0x002286a0`) is true, that is held flag `0x800000`, or held
+      flag `0x1000010` with something in hand during one of the eleven **throw** clips (467, 471, 472, 491, 502,
+      505-507, 551-553), or when he plays 602 `ANIM_TAUNT_CHALLENGE` (the knife-toss fidget) with set 1 in hand
+      (`0x002664e8`). So a hit during a throw wind-up makes the object fall from the hand, raging or not. Despite
+      the function's name, no melee swing clip is in its list.
+2. **The ordinary reaction** (`Human_PlayReaction` `0x0026a6d0`, reached when hit armour, the held flags `0x1c16a40`
+   and flag `0x800` let a reaction play):
+    - when the **attacker's** clip is **620 or above** (the test at `0x0026a798` is `id ≥ 0x269` and `id ≥ 0x26c`,
+      so in effect `≥ 620`: the left block counter 620, the bat-block counter 629, the rage moves 645 / 647 and
+      649 / 651, the specials 653 / 655 and 657 / 659) and the victim's flag `0x2000` is clear, he drops what he
+      holds, any set, hurt or not;
+    - a reaction that knocks down calls `Human_KnockDown`, hence `0x00257e38`;
+    - a stunning reaction calls `Human_Stun(victim, attacker)`. `Human_Stun` returns at once for a human with flag
+      `0x100` (unstunnable; without an attacker only when he also lacks flag `0x8000000`), and calls `0x00257e38` only
+      when he has none of the state bits `0xcf0` (grabbed or grabbing) and neither held flag `0x10200`.
+3. **The special reactions**: `HitReact_WhileGrabbed` (`0x002688d0`) stuns (so `0x00257e38` as above);
+   `HitReact_InSpecial` (`0x00268430`) knocks down; a lethal hit runs `Human_PlayLethalReaction` (`0x00257d70`).
+4. **Defeat**, where no flag is read: `Human_StartWounded` (`0x0022fa78`) and the knock-out's `Human_ReleaseAll`
+   (`0x00258968`) drop what he holds ([Knocked out](#defeat)).
+
+**Arrest** (`Human_Arrest` `0x0022ec18`, at the end of the cuffing) drops a set 4 or 6 object always and anything
+else only without flag `0x2000`.
+
+**Summary by case** (no flag `0x2000`; a player is brain type 0, so the cop exception never applies to him):
+
+| Case | Bat (set 3) | Knife, baton (1, 2) | Two-handed, ghetto (4, 6) | Bottle, brick (5) |
+| --- | --- | --- | --- | --- |
+| Hit, not hurt, stunned or knocked down | kept | kept | dropped | kept |
+| Hit, hurt, stunned or knocked down | dropped | dropped (a cop keeps them) | dropped | dropped |
+| Hit by a clip ≥ 620 (counter, rage, special) | dropped | dropped | dropped | dropped |
+| Hit during a throw clip | dropped | dropped | dropped | dropped |
+| Grabbed, mounted, in a paired move as the victim | dropped | kept unless hurt (a cop keeps them) | dropped | kept unless hurt |
+| Starts a grab or a tackle | dropped | kept | dropped | dropped |
+| Arrested | dropped | dropped | dropped | dropped |
+
+The damage itself is never read: only whether the victim is hurt after it (the health drops before the reaction).
+The weapon the attacker uses matters only through his clip id (≥ 620).
+
+**With flag `0x2000`** every row above keeps the object, except: the set 4 / 6 column wherever one of the three
+helpers or the arrest runs (they drop those first, flag or not; the clip ≥ 620 test itself spares them, but the
+stun or knock-down that usually follows does not), the throw
+row and a kind 39 object (step 1, no flag test), and defeat. The flag is read at exactly five places: the three
+helpers (`0x00257d18`, `0x00257da4`, `0x00257e7c`), `Human_PlayReaction` (`0x0026a7bc`) and `Human_Arrest`
+(`0x0022ed14`); a search of every `andi …, 0x2000` in the executable found no other reader of the human flags.
+
+**While raging**, the enter handler's other flags already close most of these paths: unstunnable (`0x100`) stops
+`Human_Stun` before its drop, ungroundable (`0x80`) keeps reactions from knocking down, ungrabbable (`0x40`) stops
+grabs and mounts, god mode (`0x10`) prevents defeat. What `0x2000` alone still decides for a raging player is the
+drop by an attacker's clip ≥ 620 (an enemy's counter or special), his own grab or tackle start with a bat or a
+set 5 object, and a paired move he starts holding a bat (`0x0022b960`). A hit during his own throw still drops the
+object.
+
+**What Coney must do** (for the implementer of issue #91 and of [Objects: held](objects.md#held)):
+
+1. Give a human one "keep weapon" flag, set and cleared by `HuSetKeepWeapon` and by the rage handlers.
+2. On a landed, non-blocked, non-lethal hit (or any hit while airborne): drop the held object when the victim is in
+   a throw clip with something in hand (the eleven ids above), holds held flag `0x800000`, plays 602 with set 1, or
+   holds a kind 39 object; no flag test.
+3. In the ordinary reaction: when the attacker's clip id is ≥ 620 and the victim lacks the flag, drop.
+4. On a knock-down, and on a stun that is not refused (unstunnable, grab states `0xcf0`, held `0x10200`): drop set
+   4 / 6; drop any other object when the victim is hurt, lacks the flag and is not a cop holding set 1 or 2.
+5. When a human becomes the victim of a grab, mount, paired move or lethal reaction: drop set 4 / 6; drop any other
+   when he lacks the flag, is not a cop holding set 1 or 2, and is hurt or holds set 3.
+6. When a human starts a grab or tackle (and as attacker of a paired move, holding set 2 or 3): drop set 4 / 6, and
+   any set but 1 or 2 without the flag.
+7. On arrest: drop set 4 / 6, and anything else without the flag. On defeat: drop whatever is held.
+
+**Tests.**
+
+- Unit: a fighter with a bat at full health takes a stun hit and keeps it; at 20 % of a class with a 0.35 threshold
+  he drops it; with the keep-weapon flag he keeps it; with a set 4 prop he drops it in all three; the same hurt
+  victim as a cop with a baton keeps it; a hit by an attacker in clip 645 drops a bat at full health unless the flag
+  is set; a hit during clip 502 drops the bat even with the flag.
+- Disc (the player's path): `level99`, the rage lesson checkpoint, through `DiscSession`. Put a bat in the
+  player's hand (`HuPlaceItemInHand`, as the scripts do), bring his health under the hurt threshold, start rage with
+  L1 + R1 as a pad press, have a sparring Warrior land a stun hit and a special (clip ≥ 620): the bat stays in hand
+  (`script().heldObject` unchanged) through both. End rage (meter drained) and repeat the stun hit: the bat falls.
 
 ### Reviving a downed Warrior {#revive}
 
