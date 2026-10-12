@@ -7,9 +7,9 @@ contribute. If you only read one other file first, read [LEGAL.md](LEGAL.md).
 
 - Read [LEGAL.md](LEGAL.md). The short version: no game data anywhere in the project, and the clean room is
   never broken.
-- The clean room splits the work in two. Analysts may read decompiler output and disassembly of the original game,
-  and write what they learn into `docs/research/`. Anyone writing engine code works from `docs/research/` only and
-  never copies or paraphrases decompiler output. See [LEGAL.md](LEGAL.md#clean-room).
+- The clean room splits the work in two: analysts read the original and write `docs/research/`; anyone writing
+  engine code works from those pages only, and never implements a function whose original code they have read. See
+  [LEGAL.md](LEGAL.md#clean-room) and [how we keep it](docs/guides/research-workflow.md#clean-room).
 - Research lives in `docs/research/`. If the page you need does not exist or is wrong, fixing the research is a
   contribution in its own right. Each claim carries an evidence level and, where it applies, an address.
 

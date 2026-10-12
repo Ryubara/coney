@@ -37,7 +37,8 @@ player's path, gamepad input, playthrough tests, the checks to run before report
   never asset files, game text or script source, per `LEGAL.md`. Issues may also hold gameplay screenshots and
   short videos of Coney or the original (a maintainer decision, 2026-10-11), never files, saves, dumps or text.
 - **Clean room:** only analysts read decompiler output or disassembly, and they write `docs/research/` pages that
-  cite addresses and short snippets. Engine code is written fresh from those pages, never transcribed.
+  cite addresses and short snippets. Engine code is written fresh from those pages, never transcribed, and never by
+  someone who has read that function's original code (`docs/guides/research-workflow.md#clean-room`).
 - **Research claims** carry an evidence level: confirmed (code) at a cited address, confirmed (runtime), inferred,
   or speculative. Addresses are like `0x001490b8` in NTSC-U `SLUS_212.15`. How: `docs/guides/research-workflow.md`.
 - **Reverse-engineering work** (Ghidra, disassembly, PCSX2, research claims) runs on Opus 5.5.
