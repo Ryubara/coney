@@ -150,7 +150,7 @@ struct Options {
     /// (docs/guides/running.md#tracing). Requires playLevel.
     std::optional<std::string> traceFile;
     /// `--trace-humans`: write one CSV row per human per step (ai::FightTracer) of a played level or a Rumble match to
-    /// this file, to compare a gang fight with the original's (docs/guides/building.md#tracing). Requires playLevel
+    /// this file, to compare a gang fight with the original's (docs/guides/running.md#tracing). Requires playLevel
     /// or rumble.
     std::optional<std::string> humansTraceFile;
     /// `--script-trace`: write every binding call the level's scripts make, and every call into them by name, to this

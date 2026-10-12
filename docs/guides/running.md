@@ -523,7 +523,6 @@ the original's all-humans recorder under the same name and unit (`research/trace
 | `g_tactic`, `g_leader`, `g_chosen` (O) | 1 when its gang has a tactic, and the numbers of the gang's leader and chosen target |
 | `target_dist`, `action_kind`, `attack_kind`, `slot_held` | Coney's own: metres to the target, the front action (`none`, `attack`, `move`, ...), the attack kind it presses (-1 when it is none) and 1 when it holds a slot on its target |
 
-
 `--script-trace FILE` (with `--play-level` and a level) writes what the level's scripts do to `FILE`, one line per
 call: every script binding they call, with its arguments and what it returned (`HUDSetObjective(0, "...", 0, nil)`,
 `HuCreate(...) -> 396`), and every call the engine makes into them by name, marked `>` (`> P1.EnterRiot(74, 398)`, a

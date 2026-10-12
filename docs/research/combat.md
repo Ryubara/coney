@@ -3907,9 +3907,9 @@ At runtime 1.5 turns per second took 9.6 s to succeed, and one R1 press failed i
 
 ### Input scripts {#input-scripts}
 
-Coney's `--input-script` lines (frame = one 30 Hz update; [input scripts](../guides/running.md#input-scripts)) that reproduce each
-behaviour, from a standing player facing the target with the camera behind; stick values are the in-game magnitudes. The
-gaps
+Coney's `--input-script` lines (frame = one 30 Hz update; [input scripts](../guides/running.md#input-scripts)) that
+reproduce each behaviour, from a standing player facing the target with the camera behind; stick values are the in-game
+magnitudes. The gaps
 between the grab's steps are generous, not measured minimums:
 
 ```text

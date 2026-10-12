@@ -334,8 +334,8 @@ leaves the game's behaviour as the original's. When on, Coney (`RenderEngine::se
 one of the original's 448 lines at the window's size, the last line clamped. It covers the whole 3D view
 (`RenderEngine::viewRect`), so in a window wider than 4:3 the view's sides are softened too: the original's output
 blends its whole picture, and a blend of only the logical screen's 4:3 place left a visible edge 12.5 % in from each
-side. `--line-blend off` shows the frame as drawn ([Frame rate](../guides/running.md#frame-rate)); reference renders are never
-blended.
+side. `--line-blend off` shows the frame as drawn ([Frame rate](../guides/running.md#frame-rate)); reference renders are
+never blended.
 
 ## Open questions
 

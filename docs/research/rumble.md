@@ -424,12 +424,12 @@ with a 1,500 ms stand-in for any announcer line whose length it does not know.
 
 ## Coney's implementation {#coney}
 
-A Brawl (1 ON 1 or WAR PARTY) plays to its end, won or lost ([Running Coney: QUICK RUMBLE](../guides/running.md#loading-entries-from-your-disc)): the
-set-up menus, the arena script's sides, the intro and countdown, the other side's fighters, the knockdown, the player's
-revival and hand-over, the winner's cheer, the win camera and the result screen with its three paths. King of the hill
-plays to its result screen when the player holds the top, Battle royal when one side is rung out, Survival when
-the spawned enemies have beaten the player, and Wheelchair when the CPU racer finishes. Tag battle and Mercy are not
-built yet.
+A Brawl (1 ON 1 or WAR PARTY) plays to its end, won or lost
+([Running Coney: QUICK RUMBLE](../guides/running.md#loading-entries-from-your-disc)): the set-up menus, the arena
+script's sides, the intro and countdown, the other side's fighters, the knockdown, the player's revival and hand-over,
+the winner's cheer, the win camera and the result screen with its three paths. King of the hill plays to its result
+screen when the player holds the top, Battle royal when one side is rung out, Survival when the spawned enemies have
+beaten the player, and Wheelchair when the CPU racer finishes. Tag battle and Mercy are not built yet.
 
 - **Intro** (`repo:src/gui/rumble_mode_gui/rumble_intro.h`, drawn over play by
   `repo:src/gamemodes/rumble_intro_layer.h`): `ShowRumbleModeIntro` is held until the level's first frame, because
