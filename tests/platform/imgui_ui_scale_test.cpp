@@ -40,7 +40,8 @@ class BareScaler {
 
     // One whole frame with a window `name`, at `pos` and sized `size` the first time it opens, optionally not
     // resizable.
-    static void frameWithWindow(const char* name, ImVec2 size, ImGuiWindowFlags flags = 0, ImVec2 pos = ImVec2(20.0F, 30.0F)) {
+    static void frameWithWindow(const char* name, ImVec2 size, ImGuiWindowFlags flags = 0,
+                                ImVec2 pos = ImVec2(20.0F, 30.0F)) {
         ImGui::NewFrame();
         ImGui::SetNextWindowPos(pos, ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize(size, ImGuiCond_FirstUseEver);

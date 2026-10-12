@@ -17,9 +17,9 @@ namespace coney::platform {
 /// at the new size and the text stays sharp.
 ///
 /// A change of scale (a window resized, moved to another display, or a new override) also resizes and moves the open
-/// windows by the same ratio, so their contents still fit and the layout keeps its shape. The scale at which the windows
-/// were last saved is kept in the settings file (`[ConeyUi][Scale]`), with the Display page's choice, so windows saved
-/// at one scale open at the right size and place at another.
+/// windows by the same ratio, so their contents still fit and the layout keeps its shape. The scale at which the
+/// windows were last saved is kept in the settings file (`[ConeyUi][Scale]`), with the Display page's choice, so
+/// windows saved at one scale open at the right size and place at another.
 ///
 /// Needs a current ImGui context; does no drawing, so tests run it on a bare context.
 class ImGuiUiScale {
