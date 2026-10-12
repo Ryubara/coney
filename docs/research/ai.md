@@ -5570,10 +5570,11 @@ human whose last move failed runs straight at
   his gang's enemies within sight, the camera turn faces player 1, no event 24 or help call, and each tactic code
   is answered once.
 - **Disc check (NTSC-U, counts only):** `coney_tests "[disc][routes]"` decodes all 64 levels' path data; 42,373 of the
-  43,234 route nodes lie inside the polygon that owns them. Of 500 seeded pairs of `level99`'s 415 nodes, 101 are a
-  straight line, 52 routed (200 route nodes), 34 refused (a polygon off the graph), 151 linked only over flag `0x10`
-  edges, which the mask `0x3` Coney once used left out (the original's and now Coney's is `0xff`,
-  [Path planning](#path-planning)), and 162 not linked at all.
+  43,234 route nodes lie inside the polygon that owns them. Of 500 seeded pairs of `level99`'s 415 nodes, 32 are a
+  straight line, 269 routed (3,208 route nodes), 34 refused (a polygon off the graph), 162 not linked at all over
+  the default mask's links, none lost by the search, and 3 lost at the ends (the check has no ground probe, so a node
+  over another floor finds the wrong polygon). Of 300 seeded pairs of linked nodes on each of `level80`, `level87` and
+  `level99`, the search finds every one but `level80`'s two routes of more than 128 nodes.
 
 **Coney choices.** A fighter is class 58 (brain type 2, 1400 health) with the sparring Warriors' runtime brain values (4
 attack slots, melee 3 / 5 m, sight 30 m, field of view 1.92 rad), drawn and animated as the player's character, in a
@@ -5602,9 +5603,8 @@ the objects' search rather than among them by distance; the two-player swap is n
 **Coney choices for moving.** The inside test counts an edge going down in y as +1 (the sign under which the route
 nodes lie in their polygons; the clockwise polygons then contain nothing). A polygon's A record takes the next nodes
 in order (the counts add up to the C records in every file; `+0x08` does not always hold the running index).
-The search holds 1000 nodes open and 3000 closed and fails a route of more than 128 nodes, as the original does. It
-adds the use term (40 × uses − 8, also at 0 uses) on the neighbour, which differs from the original
-([Pathing: status and fixes](ai-pathing.md#pathing-fixes), item 2). `0x0051059c` is 1 and
+The search holds 1000 nodes open and 3000 closed, fails a route of more than 128 nodes and costs a step as the
+original does ([Pathing: status and fixes](ai-pathing.md#pathing-fixes), items 1 and 2). `0x0051059c` is 1 and
 `0x005105a0` 0. An end off every polygon counts on the nearest within 1 m and takes its nearest node; the shortcut
 takes any edge that links back. The walkable line crosses every edge of the two areas rather than the slab lists',
 finds the start's area from the point, and has no hazard spheres (Coney has no fire to add them). A point's area

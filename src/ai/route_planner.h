@@ -185,9 +185,11 @@ class RoutePlanner {
     [[nodiscard]] std::expected<RoutePlan, MoveFailure> request(anim::Vec3 from, anim::Vec3 to,
                                                                 std::uint16_t mask = edge_flag::kDefaultMask);
 
-    /// The cost of the edge `edge` into node `to`, in 1/16 m: its length × 16, the extra costs of its flag (when on
-    /// and `mask` lacks `0x100`), 1600 for the avoid bit, and 40 × the routes through `to` − 8; at least 0, at most
-    /// `0xffff`. **Coney choice**: the last term is read as (40 × uses) − 8, of the node the edge enters.
+    /// The cost of the step over `edge`, a record of node `from` (the node the search expands; in walking order the
+    /// step runs from `edge.to` into `from`), in 1/16 m: its 3D length × 16 truncated; when the extra costs are on and
+    /// `mask` lacks `0x100`, one of 200 (flag 8), else 320 (`0x80`), else 80 (4, but not with `0x40` and the avoid
+    /// bit); 1600 for the avoid bit; and 40 × the routes through `from` − 8 when there are any. Each addition wraps
+    /// at 16 bits (docs/research/ai.md#path-planning, "The new g").
     /// @orig 0x00251890 Route_EdgeCost (unknown)
     [[nodiscard]] std::uint32_t edgeCost(std::uint32_t from, const world::PathEdge& edge, std::uint16_t mask) const;
     /// The routes through node `node` now (C `+0x1f`).

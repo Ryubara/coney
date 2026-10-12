@@ -33,8 +33,8 @@ constexpr std::uint32_t kEightCost = 200;
 constexpr std::uint32_t kJumpCost = 320;
 constexpr std::uint32_t kChokeCost = 80;
 constexpr std::uint32_t kAvoidCost = 1600;
-constexpr int kUseCost = 40;
-constexpr int kUseOffset = 8;
+constexpr std::uint32_t kUseCost = 40;
+constexpr std::uint32_t kUseOffset = 8;
 // A route looks this many nodes ahead for one that links back.
 constexpr std::size_t kShortcutReach = 4;
 // A g cost no node has yet.
@@ -142,23 +142,28 @@ std::expected<RoutePlan, MoveFailure> RoutePlanner::request(anim::Vec3 from, ani
 
 std::uint32_t RoutePlanner::edgeCost(std::uint32_t from, const world::PathEdge& edge, std::uint16_t mask) const {
     const std::span<const world::PathNode> nodes = m_map->nodes();
-    float cost = anim::distance(nodes[from].position, nodes[edge.to].position) * kCostPerMetre;
+    // The sum is a u16 in the original: each addition wraps.
+    auto cost = static_cast<std::uint16_t>(
+        static_cast<std::uint32_t>(anim::distance(nodes[from].position, nodes[edge.to].position) * kCostPerMetre));
+    const auto add = [&cost](std::uint32_t extra) { cost = static_cast<std::uint16_t>(cost + extra); };
+    // One ClimbFilter extra at most, in this order.
     if (m_settings.extraCosts && (mask & edge_flag::kNoExtra) == 0) {
         if ((edge.flags & edge_flag::kEight) != 0) {
-            cost += static_cast<float>(kEightCost);
-        }
-        if ((edge.flags & edge_flag::kJump) != 0) {
-            cost += static_cast<float>(kJumpCost);
-        }
-        if ((edge.flags & edge_flag::kChoke) != 0) {
-            cost += static_cast<float>(kChokeCost);
+            add(kEightCost);
+        } else if ((edge.flags & edge_flag::kJump) != 0) {
+            add(kJumpCost);
+        } else if ((edge.flags & edge_flag::kChoke) != 0 && !((edge.flags & edge_flag::kCharge) != 0 && edge.avoid)) {
+            add(kChokeCost);
         }
     }
     if (edge.avoid) {
-        cost += static_cast<float>(kAvoidCost);
+        add(kAvoidCost);
     }
-    cost += static_cast<float>(kUseCost * m_uses.at(edge.to) - kUseOffset);
-    return static_cast<std::uint32_t>(std::clamp(cost, 0.0F, static_cast<float>(kCostMax)));
+    // The routes through the expanded node: spreads AIs over parallel routes; nothing while none use it.
+    if (const std::uint32_t uses = m_uses.at(from); uses != 0) {
+        add((kUseCost * uses) - kUseOffset);
+    }
+    return cost;
 }
 
 std::uint32_t RoutePlanner::heuristic(std::uint32_t a, std::uint32_t b) const {

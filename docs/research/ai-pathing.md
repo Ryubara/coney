@@ -213,7 +213,10 @@ the disc checks print counts only).
    4 not with `0x40` + avoid), not added together; the use term is 40 × *u* − 8 only when *u* > 0, and *u* is the
    use count of the **expanded** node (the one whose record it is), not the neighbour's. *Tests*: an edge with flags
    `0x8c` costs distance + 200; a node with 0 uses adds nothing; two routes through one node make a third prefer a
-   parallel way (cost compare on a two-lane map).
+   parallel way (cost compare on a two-lane map). **Done in Coney** (`RoutePlanner::edgeCost`, each addition
+   wrapping at 16 bits as the page says). With item 1's limits, the routes of more than 128 nodes among `level80`'s
+   seeded pairs fell from 19 to 2: the old use term took 8 off every step, so the cheapest route was the one with the
+   most nodes.
 3. **FollowFormation and FollowPlayer** ([The default command: follow](ai.md#warrior-follow)). Coney's
    `FollowFormationGoal` ends when the follower has no slot, and a slot is usable only when the leader sees its
    point, so a crew stops as soon as the chief turns a corner or crosses a fence. The original then follows the human
