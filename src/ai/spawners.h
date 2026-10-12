@@ -20,7 +20,7 @@
 // Each update runs every spawner in use against its state: when the state says it is ready, the delay since its last
 // spawn has passed, fewer of its humans are alive than it allows and it has not made its total, it makes one human
 // and calls its callback with it. The play mode makes the human as `HuCreate` does.
-// Research: docs/research/ai.md#spawners, docs/references/spawner-states.md
+// Research: docs/research/ai-gangs.md#spawners, docs/references/spawner-states.md
 
 namespace coney::ai {
 
@@ -106,10 +106,10 @@ inline constexpr std::size_t kSearchClosedMax = 3000;
 /// A uniform number in [0, 1) for the turned tries' angles (the original's `Random_Float`, `0x00335420`).
 using PlacementRandom = std::function<float()>;
 
-/// The route node a human placed out of `camera`'s sight stands on (docs/research/ai.md#spawner-placement). Distances
-/// are from the origin, the camera's eye at `player`'s height, in 3D. The search starts at the node `player` would
-/// leave a route from (RoutePlanner::startNode(); none: nothing). The cone's axis is the camera's forward with its z
-/// cleared, not normalised again, and its half-angle half the field of view + kConeMarginRadians. Each of
+/// The route node a human placed out of `camera`'s sight stands on (docs/research/ai-gangs.md#spawner-placement).
+/// Distances are from the origin, the camera's eye at `player`'s height, in 3D. The search starts at the node `player`
+/// would leave a route from (RoutePlanner::startNode(); none: nothing). The cone's axis is the camera's forward with
+/// its z cleared, not normalised again, and its half-angle half the field of view + kConeMarginRadians. Each of
 /// kPlacementTries draws an angle in [h, 2 pi - h] from `random` and searches (searchOutward()): the first toward the
 /// origin + kFirstGoalAhead x the forward (its draw unused), each later toward the origin + 2 x `value` x the
 /// flattened forward turned by the angle about the vertical. Nothing when no try finds a node.

@@ -22,7 +22,9 @@ How scenes play: [Scenes](../research/scenes.md); movies:
     subtitles give play in the hub instead); 244 have no level (shared animation sets, subway scenes, and `l4_` /
     `l88_` names with no such level). **Cast** and **Props** are filled for the 188 scenes a script builds a scene
     table for: per role the character model of the human the script binds (inferred from its `HuCreate` type), per
-    object slot the object type ([Scenes: cast and props](../research/scenes.md#cast)).
+    object slot the object type ([Scenes: cast and props](../research/scenes.md#cast)). `l99_c1`'s cast and the
+    subway scenes `Coney_Sub2` and `Coney_Sub4`'s props were read at runtime
+    ([Scenes: cast at runtime](../research/scenes.md#cast-runtime)).
 
 1,256 entries. Data: `research/references/scenes.yaml`.
 
@@ -60,9 +62,9 @@ How scenes play: [Scenes](../research/scenes.md); movies:
 | <span id="scene-benson-sub3"></span>`Benson_Sub3` | 2 | `level14` | `level14` | `level14` | script | | |
 | <span id="scene-coney-sub1"></span>`Coney_Sub1` | 3 | `level99` | `level99` | `level99` | script | | |
 | <span id="scene-coney-sub1nocar"></span>`Coney_Sub1nocar` | 4 | | | | none | | |
-| <span id="scene-coney-sub2"></span>`Coney_Sub2` | 5 | `level99` | `level99` | `level99` | script | | |
+| <span id="scene-coney-sub2"></span>`Coney_Sub2` | 5 | `level99` | `level99` | `level99` | script | | `dyn_s_train_med_full`, `dyn_s_train_med_full`, `dyn_s_train_med_full`, `?`, `dyn_s_train_med_full`, `dyn_s_train_med_full`, `dyn_s_train_med_full` |
 | <span id="scene-coney-sub3"></span>`Coney_Sub3` | 6 | `level80` | `level80` | `level80` | script | | |
-| <span id="scene-coney-sub4"></span>`Coney_Sub4` | 7 | `level80` | `level80` | `level80` | script | | |
+| <span id="scene-coney-sub4"></span>`Coney_Sub4` | 7 | `level80` | `level80` | `level80` | script | | `dyn_s_train_med_full`, `dyn_s_train_med_full`, `dyn_s_train_med_full`, `?`, `dyn_s_train_med_full`, `dyn_s_train_med_full`, `dyn_s_train_med_full` |
 | <span id="scene-coney-sub5"></span>`Coney_Sub5` | 8 | `level83` | `level83` | `level83` | script | | |
 | <span id="scene-econey-sub1"></span>`EConey_Sub1` | 9 | | | | none | | |
 | <span id="scene-econey-sub2"></span>`EConey_Sub2` | 10 | | | | none | | |
@@ -1232,7 +1234,7 @@ How scenes play: [Scenes](../research/scenes.md); movies:
 | <span id="scene-l98-c1"></span>`l98_c1` | 2562 | | | `level98` | prefix | | |
 | <span id="scene-l98-c1-sub"></span>`l98_c1_sub` | 2563 | | | `level98` | prefix | | |
 | <span id="scene-l99-ash-intro"></span>`l99_ash_intro` | 2612 | | | `level99` | script | `warr_cl_gen`, `warr_ve\|warr_ve_gen`, `warr_re`, `warr_so_vb1_hr`, `warr_so_vb2_hr`, `warr_so_vb3_hr`, `-`, `warr_ty` | `-`, `-`, `door (left leaf)` |
-| <span id="scene-l99-c1"></span>`l99_c1` | 2613 | | | `level99` | script | `warr_cl_gen`, `warr_ve\|warr_ve_gen`, `warr_re\|warr_re_cv`, `-`, `warr_so_vb2_hr`, `warr_so_vb1_hr`, `warr_so_vb3_hr`, `warr_ty` | `dyn_s_spraycan`, `dyn_rembrandt`, `dyn_vermin`, `dyn_intro_test` |
+| <span id="scene-l99-c1"></span>`l99_c1` | 2613 | | | `level99` | script | `warr_cl_gen`, `warr_ve_gen`, `warr_re_cv`, `-`, `warr_so_vb2_hr`, `warr_so_vb1_hr`, `warr_so_vb3_hr`, `warr_ty_cv` | `dyn_s_spraycan`, `dyn_rembrandt`, `dyn_vermin`, `dyn_intro_test` |
 | <span id="scene-l99-c2"></span>`l99_c2` | 2619 | | | `level99` | script | `warr_cl_gen`, `warr_re`, `warr_ve\|warr_ve_gen`, `-` | |
 | <span id="scene-l99-c3"></span>`l99_c3` | 2625 | | | `level99` | script | `warr_re`, `warr_ve\|warr_ve_gen`, `-` | |
 | <span id="scene-l99-c4"></span>`l99_c4` | 2626 | | | `level99` | prefix | | |

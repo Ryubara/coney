@@ -11,7 +11,7 @@
 // has one, its members' fights push no fight goal: the tactic fights for them. It starts on its first process, which
 // marks every AI member's goal base: the tactic's goals go on top of his own, and its end pops back down to them. It
 // may have a time limit and a Lua callback the gang update fires with what its process returns.
-// Research: docs/research/ai.md#tactics
+// Research: docs/research/ai-gangs.md#tactics
 
 namespace coney::ai {
 

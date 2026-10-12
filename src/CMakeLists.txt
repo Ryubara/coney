@@ -380,16 +380,22 @@ target_sources(coney_core PRIVATE
     sandbox/sandbox_world.cpp)
 # The debug menus: the model every front end renders, and its pages (docs/guides/debug-menu.md).
 target_sources(coney_core PRIVATE
+    debug/debug_lines.cpp
     debug/debug_session.cpp
+    debug/entity_inspect.cpp
     debug/game_tunables.cpp
+    debug/human_shapes.cpp
+    debug/human_watch.cpp
     debug/input_gate.cpp
     debug/lua_console.cpp
     debug/menu_model.cpp
     debug/menu_navigator.cpp
     debug/native_caller.cpp
     debug/native_signatures.cpp
+    debug/object_watch.cpp
     debug/pad_menu_input.cpp
     debug/pages_engine.cpp
+    debug/pages_entity.cpp
     debug/pages_hud.cpp
     debug/pages_play.cpp
     debug/pages_scripts.cpp

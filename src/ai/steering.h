@@ -16,7 +16,7 @@
 // against the disc. By where the blocker stands and which way he heads the walker passes beside him, overtakes him,
 // goes round behind him or yields; speed changes go through an override the move reads on its next update. All of it
 // works in plan (x, y).
-// Research: docs/research/ai.md#steering, docs/research/ai.md#neighbour-sectors (the blocker test)
+// Research: docs/research/ai-moving.md#steering, docs/research/ai-moving.md#neighbour-sectors (the blocker test)
 
 namespace coney::ai {
 

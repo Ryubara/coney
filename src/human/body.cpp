@@ -131,6 +131,27 @@ bool wallTooLow(anim::Vec3 a, anim::Vec3 b, anim::Vec3 c, float minHeight) {
     return anim::length(across) < minHeight;
 }
 
+bool wallNormal(anim::Vec3 normal) { return anim::length(normal) >= 0.5F && std::abs(normal.z) <= kWallNormalZ; }
+
+WallClass wallClassOf(const raycast::CollisionMesh& mesh, std::uint16_t index) {
+    const raycast::CollisionTriangle& triangle = mesh.triangles()[index];
+    if ((triangle.flags & raycast::kTriangleEnabled) == 0) {
+        return WallClass::Disabled;
+    }
+    const anim::Vec3 normal = fromMesh(mesh.faceNormal(index));
+    if (anim::length(normal) < 0.5F) {
+        return WallClass::Degenerate;
+    }
+    if (!wallNormal(normal)) {
+        return normal.z > 0.0F ? WallClass::Floor : WallClass::Ceiling;
+    }
+    const auto vertices = mesh.vertices();
+    const anim::Vec3 a = fromMesh(vertices[triangle.vertices[0]]);
+    const anim::Vec3 b = fromMesh(vertices[triangle.vertices[1]]);
+    const anim::Vec3 c = fromMesh(vertices[triangle.vertices[2]]);
+    return wallTooLow(a, b, c, bodyTuning().minWallHeight) ? WallClass::LowWall : WallClass::Wall;
+}
+
 namespace {
 
 // A wall triangle the sphere at `centre` is in front of, as a wall test sees it: its corners (in the order its edges
@@ -154,7 +175,7 @@ std::optional<FacingWall> keptWall(const raycast::CollisionMesh& mesh, std::uint
     }
     FacingWall wall;
     wall.normal = fromMesh(mesh.faceNormal(index));
-    if (anim::length(wall.normal) < 0.5F || std::abs(wall.normal.z) > kWallNormalZ) {
+    if (!wallNormal(wall.normal)) {
         return std::nullopt; // degenerate, or a floor or ceiling
     }
     const auto vertices = mesh.vertices();

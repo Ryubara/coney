@@ -10,7 +10,7 @@
 //   ran straight, entered the climb (route state 3) at y 26.6, was over in 38 updates and stopped at (46.31, 20.18)
 //   (docs/research/ai-pathing.md, confirmed (runtime)). Vermin is a fast climber (`HuSetFastClimber`), so he starts
 //   the climb from the run within 4.5 m of the climb's far node (`Route_TryClimbNear`,
-//   docs/research/ai.md#route-follow).
+//   docs/research/ai-moving.md#route-follow).
 // - **The roof run** (issue #104): `P3.Player2Jumps` sends him from `fVerminWait` to `fStop[3]` over the window gap
 //   and `P3.FinishRun` on to `fStop[4]` over the second gap, both at gait 4; in the original he held the run gait at
 //   7.80 m/s up to both take-offs (docs/research/scripting.md#level99-p2-vermin-fence, confirmed (runtime)).

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import bisect
 import json
 import re
 from pathlib import Path
@@ -133,6 +134,14 @@ def set_size(text: str, address: int, size: int) -> str:
     raise ConfigError(f"no [[function]] with address = {address:#010x} in {progress.FUNCTIONS_FILE}")
 
 
+def next_span(span: int, address: int, listed: list[int]) -> int:
+    """`span` (to the executable's next known function), cut at the next of `listed` (sorted) if that is nearer."""
+    index = bisect.bisect_right(listed, address)
+    if index == len(listed):
+        return span
+    return min(span, listed[index] - address) if span else span
+
+
 def run_sizes(disc_arg: str | None, fill: bool) -> int:
     """Check each listed function's size against the executable on the disc; `fill` writes the missing ones.
 
@@ -153,18 +162,22 @@ def run_sizes(disc_arg: str | None, fill: bool) -> int:
     text = path.read_bytes().decode("utf-8")
     newline = "\r\n" if "\r\n" in text else "\n"
     text = text.replace("\r\n", "\n")
+    listed = sorted({f.address for f in functions})
     failed = filled = 0
     for f in functions:
         result = elf.check_size(executable, f.address, f.size, starts)
+        # A listed function that nothing calls (a virtual method) is no start to the executable's scan, but it still
+        # ends the span of the function before it: a size that ran into it would fail `progress check`.
+        span = next_span(result.span, f.address, listed)
         given = "-" if f.size is None else str(f.size)
-        print(f"{f.address:#010x} {f.name}: size {given}, span to the next known function {result.span}")
+        print(f"{f.address:#010x} {f.name}: size {given}, span to the next known function {span}")
         for message in result.errors:
             print(f"  error: {message}")
         for message in result.warnings:
             print(f"  warning: {message}")
         failed += bool(result.errors)
-        if fill and f.size is None and result.span and not result.errors:
-            text = set_size(text, f.address, result.span)
+        if fill and f.size is None and span and not result.errors:
+            text = set_size(text, f.address, span)
             filled += 1
     if filled:
         path.write_bytes(text.replace("\n", newline).encode("utf-8"))

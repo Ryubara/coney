@@ -234,8 +234,9 @@ Reports a crime at a position so police and witnesses react (`0x0041b8b0` on the
 such as a mugging.
 
 **Notes.** The position is transformed (`0x00252ae0`) before being passed on to the crime report 0x0041b8b0, which asks
-for responders; what each type does: [AI: crimes](../../research/ai.md#crimes). Severity, radius and flags are never
-read, confirmed (code) at 0x0037a2f8, 0x0041b6e0 and 0x0041b8b0 ([Crimes: wanted](../../research/crimes.md#wanted)).
+for responders; what each type does: [AI: crimes](../../research/ai-gangs.md#crimes). Severity, radius and flags are
+never read, confirmed (code) at 0x0037a2f8, 0x0041b6e0 and 0x0041b8b0 ([Crimes:
+wanted](../../research/crimes.md#wanted)).
 
 - **Evidence:** confirmed (code) at `0x0041b6e0`; detail: traced
 - **Wrapper** `0x0037a2f8` (registered by `RegisterBindings`); **calls** `0x0041b6e0`
@@ -1200,7 +1201,7 @@ SetCopSpawnMax(count)
 **Returns** nothing.
 
 Sets the cap on spawned police (`W_GameState + 0x326`). A responder spawner only makes a new police responder while the
-game's police count (`+0x324`) is under this cap ([AI: spawners](../../research/ai.md#spawners)).
+game's police count (`+0x324`) is under this cap ([AI: spawners](../../research/ai-gangs.md#spawners)).
 
 **Notes.** Reset to 16 on every level load (0x00418c68). Also read by Gang_CachePlayerInfo (0x00166954), not traced. 0
 stops police responders entirely (inferred).
@@ -1450,9 +1451,10 @@ SpawnCustomCrime(pos, offender, responders, text)
 **Returns** nothing.
 
 Reports a crime of type 4 (the custom crime) at a position with reporting mode 1, so police turn hostile to the
-offender's gang, the crime callback runs and `responders` police are sent ([AI: crimes](../../research/ai.md#crimes)).
-When the offender is a player's human (human `+0x1b0` not -1) the text is first interned into that player's HUD crime
-panel (HUD `0x00600840 + 0x177d0 + player × 0xab0`), which shows it in place of a type name for type 4.
+offender's gang, the crime callback runs and `responders` police are sent ([AI:
+crimes](../../research/ai-gangs.md#crimes)). When the offender is a player's human (human `+0x1b0` not -1) the text is
+first interned into that player's HUD crime panel (HUD `0x00600840 + 0x177d0 + player × 0xab0`), which shows it in place
+of a type name for type 4.
 
 **Notes.** The position is transformed by 0x00252ae0 before the report, as in CrimeIsHappening. Victim is none, severity
 0. Signature: arg 4 is a HUD text, not a sound. When the panel actually shows type 4 is not traced (0x001b2520).

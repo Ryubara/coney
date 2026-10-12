@@ -8,7 +8,7 @@
 // GoalTrackHuman: the human joins its target's formation and keeps to its slot: beyond a distance from the slot's point
 // it walks there, otherwise it turns to face the target when more than 15° off. Without a slot its point is where it
 // stands, so it never walks and only turns. It ends when the target is gone.
-// Research: docs/research/ai.md#formations
+// Research: docs/research/ai-gangs.md#formations
 
 namespace coney::ai {
 

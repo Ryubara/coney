@@ -109,7 +109,7 @@ class ObjectServices {
     [[nodiscard]] virtual bool shardsWanted(anim::Vec3 /*centre*/) { return true; }
     /// One `glasstest` shard particle at `at` of `size` with the pane's colour word.
     virtual void spawnShard(anim::Vec3 /*at*/, float /*size*/, std::uint32_t /*colour*/) {}
-    /// A crime of `type` reported at `at` with `offender` (docs/research/ai.md#crimes).
+    /// A crime of `type` reported at `at` with `offender` (docs/research/ai-gangs.md#crimes).
     virtual void reportCrime(int /*type*/, anim::Vec3 /*at*/, double /*offender*/) {}
     /// Moves the level's `CrimeScene` flag to `at` (an alarmed pane's break-in).
     virtual void moveCrimeSceneFlag(anim::Vec3 /*at*/) {}

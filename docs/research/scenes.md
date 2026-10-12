@@ -4,7 +4,9 @@ Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038e
 `coney-tools wad scenes` ([coney-tools](../guides/coney-tools.md#scenes)) parsed all 2,765 records of the NTSC-U disc on
 2026-10-06 and prints counts and hashes only. Runtime claims come from the `warriors_passive` trace
 (`repo:research/traces/scenarios/warriors_passive.toml`, recorded in PCSX2 2.9.94 on 2026-10-05,
-[AI](ai.md#level99-fight)) and from [Characters](characters.md#creation).
+[AI](ai.md#level99-fight)) and from [Characters](characters.md#creation), and from the scene-binding hooks of
+[Cast at runtime](#cast-runtime) (`repo:research/traces/scenarios/scene_cast_state.toml` and
+`repo:research/traces/scenarios/scene_cast_fence.toml`, PCSX2 2.9.94, 2026-10-11).
 
 ## Purpose
 
@@ -563,6 +565,45 @@ name, the gang's first `<gang>_so` model, (d) the gang's first model. It names a
 checked against the 850 script-resolved roles it covers, it gives the same person (same `<gang>_<who>` start) in
 458, the right gang in 340 and another in 52. Inferred (measured on the disc).
 
+#### Cast at runtime {#cast-runtime}
+
+**Confirmed (runtime)**, PCSX2 2.9.94, 2026-10-11, with three hooks of `repo:research/traces/patches.toml`:
+`scene-bind-human` at `0x00354248` (the store of `Scene_BindHuman`: the scene id, the role index, the role's name,
+the human's name `+0x80` and character type `+0xd0`), `scene-bind-object` at `0x00354340` (the same store in
+`Scene_BindObject`: the slot's name, the object's type index `+0x112` and type name through `+0xc0`) and
+`scene-find` at `0x00353698` (every scene name lookup and its caller). Scenarios `scene_cast_state` (no input, from
+a state passed with `--state`) and `scene_cast_fence` (slot 10, the charge through the wooden fence); thirteen
+states in `level99` and `level80`, 40 to 90 s each. A state saved during a level load stops the tick count for
+longer than `pcsx2 record`'s 5 s stall limit, so those runs called the recorder with a 180 s limit; the command
+has no option for it yet.
+
+**`l99_c1`** (scene 2613), from a state saved as checkpoint 1 starts (the level load is still running; the binding
+comes at update 5): seven of its eight roles bound:
+
+| Role | Name in the scene | Human bound | Character type | Model |
+| ---: | --- | --- | ---: | --- |
+| 0 | `warrcl` | Cleon | 2 | `warr_cl_gen` |
+| 1 | `warrve` | Vermin | 27 | `warr_ve_gen` |
+| 2 | `warrrecv` | Rembrandt | 32 | `warr_re_cv` |
+| 3 | (`-`) | none | | |
+| 4 | `warrso02` | Generic2 | 59 | `warr_so_vb2_hr` |
+| 5 | `warrso03` | Generic1 | 58 | `warr_so_vb1_hr` |
+| 6 | `warrso04` | Generic3 | 60 | `warr_so_vb3_hr` |
+| 7 | `warrashcv` | Ash | 40 | `warr_ty_cv` |
+
+and its four object slots: `s_spraycan01` ← `dyn_s_spraycan`, `rembrandt` ← `dyn_rembrandt`, `vermin` ←
+`dyn_vermin`, `cleon` ← `dyn_intro_test`. So the model is the bound human's type, never the role's name: `warrve`
+draws `warr_ve_gen`, `warrso02` a `_vb2_hr` soldier, and a role nobody binds draws nothing. This settles two of
+`l99_c1`'s either-or roles (Vermin `warr_ve_gen`, Rembrandt `warr_re_cv`) and corrects the static walk for Ash,
+who is type 40 (`warr_ty_cv`), not 38 (`warr_ty`); the [scenes list](../references/scenes.md) now says so. A
+checkpoint that makes these humans with other types would show other models; only checkpoint 1's start was read.
+
+**The subway scenes** bind objects only: `Coney_Sub2` (scene 5, `level99`, five runs) and `Coney_Sub4` (scene 7,
+`level80`) each get seven `SceneAddObject` calls from the script, slots 0-2 and 4-6 (`s_train_low`, `s_train_low01`
+... in `Coney_Sub2`; `s_train_med_ful` ×6 in `Coney_Sub4`) all bound to objects of type `dyn_s_train_med_full`
+(type index 1144), so `s_train_low` draws a `med_full` car: the slot name is not the type. Slot 3, `train_sound`, is
+bound to an object with no world-object type (type index 0, no type name at `+0xc0`); what it is was not traced.
+
 ### Which level a scene plays in {#which-level}
 
 **The scene list is global and no level owns a scene.** `scene_list.cnk` is one list for the whole game
@@ -583,6 +624,25 @@ at the three name lookups and their callers:
 So C++ code names no scene of its own, and **`GoalStartParlay` and `TacticAddress` are never called** by a script on
 the disc (both have no call in any compiled chunk), so the parlay families (`l14_p1_000` to `_004`, `l5_m5_000` to
 `_010`, ...) and any tactic scene are not reached by name in the shipped game (inferred).
+
+**At runtime every lookup came from a script.** Confirmed (runtime), PCSX2 2.9.94, 2026-10-11, the `scene-find`
+hook ([Cast at runtime](#cast-runtime)) over thirteen runs in `level99` and `level80`: every call of
+`SceneList_FindBySubstring` came from `ScenePreload` (return `0x00353f9c`), each followed a few updates later by
+the fix-up finding the loaded record's own name (`SceneRecord_Fixup`, return `0x003523fc`); no other caller. The
+names were `l99_c1`, `l99_c9`, `Coney_Sub1`, `Coney_Sub2` and `Coney_Sub4`, each in the level whose scripts hold
+it. The subway scenes are among them: `level99`'s script preloads `Coney_Sub1` or `Coney_Sub2` (its `random`
+binding is called just before, so it picks one) and `level80`'s `Coney_Sub4`, so a `*_Sub*` scene is a level
+script's like any other, and the ones no script names (`Benson_Sub1`, `Train_Sub2`, `EConey_Sub1`, ...) were not
+seen loaded.
+
+**No computed name reaches the unnamed families** (inferred, from the disc's compiled scripts, names only). A
+script could build a scene name by joining strings, so every string constant of every compiled chunk was compared
+with the scene names: the only constants that are the start or the end of a scene name without being one are
+`rumble_` (33 chunks, joined with a level number: `rumble_102`, [above](#which-level)), `L1_IN`, `L86_M`,
+`turn_bd`, `level95.lua`'s `l`, `_in` and `_out` (movie and caption names) and `level84.lua`'s `_01` to `_07`
+(its debug `PlaySceneTest`). None is a piece of an `l<N>_l1_`, `_p1_`, `_s1_`, `_m2_` or `_t<N>_` name, so those
+families are reached by neither a literal nor a joined name; with `GoalStartParlay` and `TacticAddress` never
+called, they are not played in the shipped game.
 
 **Where a scene plays** is the world of the level whose scripts play it: cinematics and fixed scenes are played at
 the origin, so the records hold that world's coordinates ([Playing](#playing)). Evidence for each scene, from a
@@ -789,15 +849,15 @@ letterbox goes out, and before the end function is called:
 
 1. Each bound Warrior's join goal is popped (step 2), which gives a player his pad back and an AI Warrior his brain.
 2. Only when one of the scene's bound humans was a player (human `+0x1b0` not −1), or else player 1's brain `+0x2e4`
-   is set (a Warrior hitting back at his chief, [AI](ai.md#warrior-follow)): that player's command menu is unlocked
+   is set (a Warrior hitting back at his chief, [AI](ai-gangs.md#warrior-follow)): that player's command menu is unlocked
    (game state `+0x42e` + player = 0), and **command 0, follow, is dispatched forced** for player 1
    (`WarriorCommand_Dispatch(state, player 1, 0, 1, 0, 1)` at `0x0039ff5c`). A forced dispatch is silent, still
    refused while commands are locked or follow is disabled, and otherwise clears the gang's tactic and shared target,
-   records follow as the last command and builds a new follow tactic ([AI: commands](ai.md#warrior-follow)).
+   records follow as the last command and builds a new follow tactic ([AI: commands](ai-gangs.md#warrior-follow)).
 3. In the same case, one **gang update** is run at once (`0x00166708(gang, 0)` at `0x0039ff70`; Ghidra calls it
    `Gang_CachePlayerInfo`): with 0 it skips the spawner step, refreshes the cached player position, runs the new
    tactic once (`Tactic_Process`, which starts the follow tactic and hands out its goals) and the wanted level's
-   update ([AI: the gang update](ai.md#gang-update)). It is not an "alert clear" as this page used to say.
+   update ([AI: the gang update](ai-gangs.md#gang-update)). It is not an "alert clear" as this page used to say.
 4. With `freeze`, every brain is resumed (step 6).
 
 **A cinematic given up** (`SceneTask_Abort`, `0x0039ec60`, after 10 s without starting) does less: fade in at once on
@@ -1045,9 +1105,11 @@ trace above.
   ([Movies](movies.md#caption-text)).
 - Event 30's argument layout (colour at `+8` and cone at `+0x10` overlap as three floats).
 - How a role's model is decided (answered: by the bound human's character type; the name is a label, [Cast and
-  props](#cast)). Still open: the 204 roles and 41 props of scripted scenes the static walk does not resolve, and
-  which of two or more `HuCreate` types a level's checkpoint picks (a runtime read of the bound humans' `+0xd0` would
-  settle each scene).
+  props](#cast), confirmed at runtime for `l99_c1`, [Cast at runtime](#cast-runtime)). Still open: the 204 roles
+  and 41 props of scripted scenes the static walk does not resolve, and which of two or more `HuCreate` types a
+  level's checkpoint picks in the other either-or roles (the `scene_cast_state` scenario reads them from a state
+  saved before each scene starts; only `level99` and `level80` states exist). What the object bound to the subway
+  scenes' `train_sound` slot is (no world-object type).
 - Which level a scene plays in (answered for the 333 scenes a script, a Subtitles chunk or a movie places,
   [Which level](#which-level)). Open: the 663 known only by their prefix and the 244 with no level; whether the
-  never-named `l<N>_` families (`_l1_000`, `_p1_000`, `_s1_000`, `_m2_000`, ...) are reached by a computed name at all.
+  never-named `l<N>_` families are reached by a computed name (answered: no, [Which level](#which-level)).

@@ -197,7 +197,7 @@ class HumanAnimator {
     /// A scripted clip from outside the dispatcher (the play-anim action's start, `0x0025a3e0`): `clip` (anim `animId`,
     /// which must outlive its use) once at `rate`, faded in over `fade`, then the idle; AnimState::Attack while it
     /// plays, its task holding `held` on the record `+0x08`.
-    /// Research: docs/research/ai.md#dyn-animation
+    /// Research: docs/research/ai-scripting.md#dyn-animation
     void playScripted(const anim::AnimClip& clip, std::uint32_t animId, float rate, float fade, HeldFlags held);
     /// A workout's clips (docs/research/workouts.md#engine): a fade of kWorkoutFade, the enter clip (anim 691) and
     /// then a gait blend over the three loop clips (693-695) at kWorkoutBlendSpeed units a second, its target kept as
