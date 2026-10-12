@@ -113,8 +113,9 @@ against `WARRIORS.WAD`, and prints how many entries it lists.
 
 With `--disc` and no viewer or `--load`, Coney runs the game's start-up as far as it goes. First the start-up movies
 play with their sound (`LOGO`, `PLOGO`, then the intro `L1_IN`; [Movies](../research/movies.md#coneys-implementation)):
-any pad button skips one, except `LOGO`, which always plays its 3.8 s. `--skip-movies` skips every movie at once; the
-frame numbers below count from the legal screen, as they do with it. Then the legal screen for five seconds (150
+any pad button skips one, except `LOGO`, which always plays its 3.8 s. `--skip-movies` skips every movie at once (but
+one chosen on the debug menu's [Movies page](debug-menu.md#movies)); the frame numbers below count from the legal
+screen, as they do with it. Then the legal screen for five seconds (150
 frames; no button skips it, as in the original), the memory-card check's "checking" message for three seconds (90
 frames), then the menus' first screen over `level100`'s world, the game's logo and a blinking "press START" (from frame
 242). START leads to the main menu (story, extras, quick rumble); the d-pad or the left stick moves, cross chooses and
