@@ -22,8 +22,8 @@ player's path, gamepad input, playthrough tests, the checks to run before report
 
 ## Build and test
 
-- Engine: `cmake --preset dev && cmake --build --preset dev && ctest --preset dev` (Windows: from a shell with the
-  MSVC environment, `vcvars64.bat`). Presets `dev`, `release`, `ci` (warnings as errors), `asan` (Linux/macOS).
+- Engine: `uv run --project python coney-tools build --agent <id> --preset dev --test` (presets `dev`, `release`,
+  `ci`, `asan`); a hook refuses raw `cmake --build`, `ctest`, `ninja`: [`build`](docs/guides/coney-tools.md#build).
 - Python: `uv run --project python pytest python/tests`; `uvx pre-commit run --all-files` before committing.
 - Docs: `.venv/Scripts/python -m mkdocs build --strict`. Build details: `docs/guides/building.md`.
 - On Windows, no local WSL builds or clang-tidy runs: GitHub CI is the Linux and macOS gate, and a failure there is
@@ -46,8 +46,12 @@ player's path, gamepad input, playthrough tests, the checks to run before report
   enhancements wait (designs may be written now); debug tooling is not a mechanic and is fine.
 - **Never exclude a file from the 512 KB large-file check** in `.pre-commit-config.yaml`: it catches game data
   committed by mistake. Split big generated data and pages instead.
-- Making the repo public, tagging releases, force-pushing `main` or someone else's branch, and legal or licence
-  questions are maintainer decisions. Whoever pushes a pull-request branch may `git push --force-with-lease` it.
+<!-- conventions:begin maintainer-decisions -->
+- **Maintainer decisions** are never an agent's or a coordinator's: it stops and reports instead of acting. They are:
+  make the repository public; tag a release; force-push main or someone else's branch; legal or licence questions;
+  change the installer or launcher; change these conventions.
+<!-- conventions:end -->
+- Whoever pushes a pull-request branch may `git push --force-with-lease` it.
 - **Local first; no agent pushes or waits on CI.** An agent commits, runs every applicable local check, writes each
   pull request's title and description to its scratch folder and tells the coordinator, who pushes from a release
   queue when CI has room (`docs/guides/how-we-work.md`, "Local first: the release queue").

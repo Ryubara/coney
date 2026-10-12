@@ -26,11 +26,13 @@
 #include "audio/sound_player.h"
 #include "audio/voice_table.h"
 #include "audio_fixtures.h"
+#include "camera/camera_view.h"
 #include "camera/cameras.h"
 #include "camera/follow_camera.h"
 #include "core/error.h"
 #include "core/name_hash.h"
 #include "gui/global_strings.h"
+#include "human/human_sounds.h"
 #include "scripting/lua_value.h"
 #include "scripting/lua_vm.h"
 #include "scripting/script_bindings.h"
@@ -494,23 +496,209 @@ TEST_CASE("HuSpeak plays a line at the speaker and calls back when it ends", "[a
     CHECK(rig.sound.speech().lines() == 0);
 }
 
-TEST_CASE("HuSpeakNI cuts a line off; HuShutUp stops it; a missing line or human calls back at once",
+TEST_CASE("HuSpeakNI cuts a line that may be cut; HuShutUp(true) stops it; a missing line or human calls back at once",
           "[audio][speech]") {
     Rig rig;
     rig.call("HuSpeak", {Value(20.0), str(kLine), str("OnLine"), Value(1.0)});
     rig.call("HuSpeakNI", {Value(20.0), str(kOtherLine), str("OnLine"), Value(2.0)});
-    // The cut-off line's callback is dropped; the new one plays.
+    // The cut-off line's callback is lost; the new one plays.
     CHECK(rig.callbacks.empty());
     CHECK(rig.sound.speech().lines() == 1);
-    rig.call("HuShutUp", {Value(20.0)});
+    // A forced stop ends it; its callback is kept and runs at the next update.
+    rig.call("HuShutUp", {Value(20.0), Value(1.0)});
     CHECK(rig.sound.speech().lines() == 0);
-    rig.frames(100);
     CHECK(rig.callbacks.empty());
+    rig.frames(1);
+    CHECK(rig.callbacks == std::vector<double>{2.0});
+    rig.frames(100);
+    CHECK(rig.callbacks == std::vector<double>{2.0});
 
+    rig.callbacks.clear();
     rig.call("HuSpeak", {Value(20.0), str("vags/speeches/l99/cut"), str("OnLine"), Value(3.0)});
     rig.call("HuSpeakNI", {Value(99.0), str(kLine), str("OnLine"), Value(4.0)});
     rig.call("HuSpeak", {Value(20.0), Value(), str("OnLine"), Value(5.0)});
     CHECK(rig.callbacks == std::vector<double>{3.0, 4.0, 5.0});
+}
+
+namespace {
+
+// A vocal animation sound `id` (a grunt) in the rig's sound matrix: one entry whose first sound is voice set 3's pain
+// line (a streamed voice line).
+void addVocalEntry(Rig& rig, std::uint32_t id) {
+    rig.sound.matrix().newAnimSlots(id, 1, 1, {1.0F, 1.0F, 1.0F});
+    rig.sound.matrix().newAnimSound(
+        0, id,
+        std::array<std::optional<std::uint32_t>, 3>{coney::crc32(coney::audio::voiceLineName(3, 12, 1)), std::nullopt,
+                                                    std::nullopt});
+}
+
+// Human 20 (Ash) is asked for animation sound `id`, as his swing's clip asks for a grunt.
+void askAnimSound(Rig& rig, std::uint32_t id) {
+    coney::script::HumanSoundCall call;
+    call.human = 20.0;
+    call.characterType = 40;
+    call.sound.kind = coney::human::HumanSound::Kind::Anim;
+    call.sound.animSound = id;
+    rig.sound.humanSound(call);
+}
+
+constexpr std::uint32_t kGruntPunch = 9; // `grunt_pch`: over a line, does not cut
+constexpr std::uint32_t kDieSound = 58;  // `die`: over a line, cuts
+
+} // namespace
+
+TEST_CASE("a grunt over a HuSpeakNI line leaves it playing and its callback runs once", "[audio][speech][cut-in]") {
+    Rig rig;
+    addVocalEntry(rig, kGruntPunch);
+    rig.call("HuSpeakNI", {Value(20.0), str(kLine), str("OnLine"), Value(7.0)});
+    REQUIRE(rig.sound.speech().said() == 1);
+    const std::uint64_t started = rig.engine().stats().started;
+    rig.frames(10);
+    // The swing's grunt: no new sound, the line goes on.
+    askAnimSound(rig, kGruntPunch);
+    CHECK(rig.sound.speech().said() == 1);
+    CHECK(rig.sound.speech().lines() == 1);
+    CHECK(rig.engine().stats().started == started);
+    CHECK(rig.callbacks.empty());
+    // More swings during the line change nothing.
+    for (int swing = 0; swing < 4; ++swing) {
+        rig.frames(10);
+        askAnimSound(rig, kGruntPunch);
+    }
+    CHECK(rig.sound.speech().said() == 1);
+    CHECK(rig.callbacks.empty());
+    // The line ends by itself and reports its callback once.
+    rig.frames(100);
+    CHECK(rig.callbacks == std::vector<double>{7.0});
+    rig.frames(100);
+    CHECK(rig.callbacks == std::vector<double>{7.0});
+    CHECK(rig.sound.speech().lines() == 0);
+}
+
+TEST_CASE("a grunt over a HuSpeak line replaces it and the line's callback is never reported",
+          "[audio][speech][cut-in]") {
+    Rig rig;
+    addVocalEntry(rig, kGruntPunch);
+    rig.call("HuSpeak", {Value(20.0), str(kLine), str("OnLine"), Value(8.0)});
+    REQUIRE(rig.sound.speech().said() == 1);
+    rig.frames(10);
+    askAnimSound(rig, kGruntPunch);
+    // The grunt took the line's place.
+    CHECK(rig.sound.speech().said() == 2);
+    CHECK(rig.sound.speech().lines() == 1);
+    rig.frames(200);
+    CHECK(rig.sound.speech().lines() == 0);
+    CHECK(rig.callbacks.empty());
+}
+
+TEST_CASE("a cutting vocal id is refused over a line that may not be cut", "[audio][speech][cut-in]") {
+    Rig rig;
+    addVocalEntry(rig, kDieSound);
+    rig.call("HuSpeakNI", {Value(20.0), str(kLine), str("OnLine"), Value(7.0)});
+    rig.frames(5);
+    askAnimSound(rig, kDieSound);
+    CHECK(rig.sound.speech().said() == 1);
+    rig.frames(100);
+    CHECK(rig.callbacks == std::vector<double>{7.0});
+    // Over a line that may be cut it cuts it, and that line's callback is lost.
+    rig.callbacks.clear();
+    rig.frames(2);
+    rig.call("HuSpeak", {Value(20.0), str(kLine), str("OnLine"), Value(8.0)});
+    askAnimSound(rig, kDieSound);
+    CHECK(rig.sound.speech().said() == 3);
+    rig.frames(100);
+    CHECK(rig.callbacks.empty());
+}
+
+TEST_CASE("HuShutUp(false) leaves a HuSpeakNI line playing; HuShutUp(true) stops it and the callback follows",
+          "[audio][speech][cut-in]") {
+    Rig rig;
+    rig.call("HuSpeakNI", {Value(20.0), str(kLine), str("OnLine"), Value(7.0)});
+    rig.frames(10);
+    rig.call("HuShutUp", {Value(20.0), Value(0.0)});
+    rig.call("HuShutUp", {Value(20.0)});
+    CHECK(rig.sound.speech().lines() == 1);
+    rig.frames(10);
+    CHECK(rig.callbacks.empty());
+    // A forced stop ends it; the callback runs at the next update, once.
+    rig.call("HuShutUp", {Value(20.0), Value(1.0)});
+    CHECK(rig.sound.speech().lines() == 0);
+    CHECK(rig.callbacks.empty());
+    rig.frames(1);
+    CHECK(rig.callbacks == std::vector<double>{7.0});
+    rig.frames(100);
+    CHECK(rig.callbacks == std::vector<double>{7.0});
+    // The stop frees the human to speak again.
+    rig.call("HuSpeak", {Value(20.0), str(kOtherLine), str("OnLine"), Value(9.0)});
+    CHECK(rig.sound.speech().lines() == 1);
+    // An unforced stop does end a line that may be cut, keeping its callback for the next update.
+    rig.call("HuShutUp", {Value(20.0), Value(0.0)});
+    CHECK(rig.sound.speech().lines() == 0);
+    rig.frames(1);
+    CHECK(rig.callbacks == std::vector<double>{7.0, 9.0});
+}
+
+TEST_CASE("the waiting start and the cutting start differ over a line that may not be cut", "[audio][speech][cut-in]") {
+    Rig rig;
+    rig.call("HuSpeakNI", {Value(20.0), str(kLine), str("OnLine"), Value(1.0)});
+    // Neither start plays over it; each runs its own callback at once and leaves the line alone.
+    rig.call("HuSpeak", {Value(20.0), str(kOtherLine), str("OnLine"), Value(2.0)});
+    rig.call("HuSpeakNI", {Value(20.0), str(kOtherLine), str("OnLine"), Value(3.0)});
+    CHECK(rig.callbacks == std::vector<double>{2.0, 3.0});
+    CHECK(rig.sound.speech().said() == 1);
+    // It ends: its callback runs at that update, and the human may be cut again one update later, so a HuSpeak in
+    // between is refused.
+    while (rig.callbacks.size() == 2) {
+        rig.frames(1);
+    }
+    CHECK(rig.callbacks == std::vector<double>{2.0, 3.0, 1.0});
+    rig.call("HuSpeak", {Value(20.0), str(kOtherLine), str("OnLine"), Value(4.0)});
+    CHECK(rig.callbacks == std::vector<double>{2.0, 3.0, 1.0, 4.0});
+    CHECK(rig.sound.speech().said() == 1);
+    rig.frames(1);
+    rig.call("HuSpeak", {Value(20.0), str(kOtherLine), str("OnLine"), Value(5.0)});
+    CHECK(rig.sound.speech().said() == 2);
+    CHECK(rig.callbacks.size() == 4);
+}
+
+TEST_CASE("a speech command that interrupts follows the same rule", "[audio][speech][cut-in]") {
+    Rig rig;
+    std::vector<Value> cfgChar(17, Value(0.0));
+    cfgChar[0] = Value(40.0);
+    cfgChar[11] = Value(3.0);
+    rig.recorded.add("CfgChar", cfgChar);
+    rig.call("SndAllocateCharacterVoices", {Value(10.0)});
+    // Over a line that may not be cut it says nothing, its callback runs at once and the line plays on.
+    rig.call("HuSpeakNI", {Value(20.0), str(kLine), str("OnLine"), Value(7.0)});
+    rig.frames(5);
+    CHECK(rig.call("SoundPlayCommand", {Value(20.0), Value(1.0), str("OnLine")}).number() == 0.0);
+    CHECK(rig.callbacks == std::vector<double>{20.0});
+    CHECK(rig.sound.speech().said() == 1);
+    rig.frames(100);
+    CHECK(rig.callbacks == std::vector<double>{20.0, 7.0});
+    rig.frames(2);
+
+    // Said cutting (a Warrior's order), the command's line may not be cut: a command over it and a HuSpeakNI are
+    // refused, and its own callback runs when it ends.
+    rig.callbacks.clear();
+    const coney::script::CommandCall order{
+        .human = 20.0, .voiceSet = 3, .command = 1, .interrupt = true, .cutting = true};
+    REQUIRE(rig.sound.sayCommand(order, "OnLine").has_value());
+    rig.frames(5);
+    CHECK_FALSE(rig.sound.sayCommand(order, "OnLine").has_value());
+    rig.call("HuSpeakNI", {Value(20.0), str(kLine), str("OnLine"), Value(6.0)});
+    CHECK(rig.callbacks == std::vector<double>{6.0});
+    rig.frames(100);
+    CHECK(rig.callbacks == std::vector<double>{6.0, 20.0});
+
+    // Said uncut (a script's call), a later command cuts it and the first callback is lost.
+    rig.callbacks.clear();
+    rig.frames(2);
+    const coney::script::CommandCall plain{.human = 20.0, .voiceSet = 3, .command = 1, .interrupt = true};
+    REQUIRE(rig.sound.sayCommand(plain, "OnLine").has_value());
+    REQUIRE(rig.sound.sayCommand(plain, "OnLine").has_value());
+    rig.frames(100);
+    CHECK(rig.callbacks == std::vector<double>{20.0});
 }
 
 TEST_CASE("without the game's sound a speech binding calls back at once", "[audio][speech]") {
@@ -598,6 +786,42 @@ TEST_CASE("the listener sits at player 1's camera, or at the player for listener
     rig.frames(1);
     // Player 1 (handle 10) stands at the origin: the listener 1.8 m above his feet.
     CHECK(rig.sound.listener().position.x == Approx(0.0F));
+    CHECK(rig.sound.listener().position.z == Approx(GameSound::kPlayerEarHeight));
+}
+
+// #404, docs/research/sound.md#scene-world-sound: while a cinematic runs the original hears from the scene camera
+// (`0x00158d58`), its position and its ears, even when SndSetListener chose the player.
+TEST_CASE("during a cinematic the listener is the scene camera, also for listener 1", "[audio][scenes]") {
+    Rig rig;
+    coney::camera::FollowCamera follow{coney::anim::Vec3{40.0F, 40.0F, 0.0F}, 0.0F};
+    coney::camera::Cameras cameras;
+    cameras.attachFollow(&follow);
+    rig.context.cameras = &cameras;
+    rig.call("SndSetListener", {Value(1.0)});
+    rig.frames(1);
+    REQUIRE(rig.sound.listener().position.z == Approx(GameSound::kPlayerEarHeight));
+
+    // The scene camera, 30 m from player 1 (at the origin), looking along +x: its right is -y.
+    const coney::anim::Vec3 shot{0.0F, 30.0F, 5.0F};
+    cameras.beginScene(coney::camera::CameraView{.position = shot,
+                                                 .orientation = coney::camera::lookRotation({1.0F, 0.0F, 0.0F}),
+                                                 .lookAt = {shot.x + 1.0F, shot.y, shot.z}});
+    rig.engine().setCinematic(true);
+    rig.frames(1);
+    const coney::audio::Listener& during = rig.sound.listener();
+    CHECK(during.position.x == Approx(shot.x));
+    CHECK(during.position.y == Approx(shot.y));
+    CHECK(during.position.z == Approx(shot.z));
+    CHECK(during.right.x == Approx(0.0F).margin(1e-4));
+    CHECK(during.right.y == Approx(-1.0F));
+    CHECK(during.right.z == Approx(0.0F).margin(1e-4));
+
+    // The update after the end, the player's ear again.
+    rig.engine().setCinematic(false);
+    cameras.endScene(0.0F);
+    rig.frames(1);
+    CHECK(rig.sound.listener().position.x == Approx(0.0F));
+    CHECK(rig.sound.listener().position.y == Approx(0.0F));
     CHECK(rig.sound.listener().position.z == Approx(GameSound::kPlayerEarHeight));
 }
 

@@ -4379,9 +4379,14 @@ size = 664
 
 [[function]]
 address = 0x0021e698
-name = "Human_PlaySpeechInterrupt"
+name = "Human_PlaySpeechCutting"
 subsystem = "Human"
 size = 680
+
+[[function]]
+address = 0x0021e940
+name = "Human_UpdateSpeech"
+subsystem = "Human"
 
 [[function]]
 address = 0x0021ec38
@@ -4676,6 +4681,11 @@ address = 0x0022aeb0
 name = "Human_GaitOfVelocity"
 subsystem = "Human"
 size = 152
+
+[[function]]
+address = 0x0022b1a0
+name = "Tandem_LinkThree"
+subsystem = "Human"
 
 [[function]]
 address = 0x0022c760
@@ -6124,6 +6134,11 @@ subsystem = "Human"
 size = 904
 
 [[function]]
+address = 0x00258e10
+name = "Tandem_CanStart"
+subsystem = "Human"
+
+[[function]]
 address = 0x00258e88
 name = "Human_CanCounterGrab"
 subsystem = "Human"
@@ -6262,6 +6277,11 @@ subsystem = "Human"
 size = 2128
 
 [[function]]
+address = 0x00265c28
+name = "Human_IsDamageDefeating"
+subsystem = "Human"
+
+[[function]]
 address = 0x00265dd0
 name = "Rage_NoteHit"
 subsystem = "Human"
@@ -6338,6 +6358,16 @@ address = 0x0026ef68
 name = "Grab_MountClipEnd"
 subsystem = "Human"
 size = 160
+
+[[function]]
+address = 0x0026f780
+name = "Tandem_OnVictimIntroEnd"
+subsystem = "Human"
+
+[[function]]
+address = 0x0026f860
+name = "Tandem_Start"
+subsystem = "Human"
 
 [[function]]
 address = 0x00273a68
@@ -6440,6 +6470,11 @@ address = 0x00277248
 name = "Human_AlignToVictimFacing"
 subsystem = "Human"
 size = 524
+
+[[function]]
+address = 0x00277458
+name = "Tandem_AlignThree"
+subsystem = "Human"
 
 [[function]]
 address = 0x00277958

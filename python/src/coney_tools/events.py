@@ -7,7 +7,7 @@ started, the humans who ran out of health (docs/guides/research-workflow.md#diff
 writes an **event log**, a CSV of `step,kind,name,detail`:
 
 - Coney writes it itself (`coney --event-log`, src/core/event_log.h).
-- The original's comes from hook call logs (original_events(): the hooks of `research/traces/patches.toml` that
+- The original's comes from hook call logs (original_events(): the hooks of `research/traces/patches/` that
   `research/traces/events.toml` names) and the recorder's watch of the humans.
 
 compare() lines the two logs up as **ordered sequences**, not by step: load times and the AI's timing differ, so the
