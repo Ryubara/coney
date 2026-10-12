@@ -673,6 +673,9 @@ CC=clang-19 CXX=clang++-19 cmake --preset dev -B build/tidy   # macOS: the Apple
 uv run --project python coney-tools check changed --build-dir build/tidy
 ```
 
+CI runs the `repo` and `pre-commit` steps on Windows, Linux and macOS in its `python` workflow, so the command's
+handling of paths, programs and long command lines is tested on all three.
+
 `--only` and `--skip` take step names, for a rerun of the one that failed. The command prints at most 40 lines of a
 failing step; run the step's tool by hand for the rest. What stays CI's: warnings only GCC emits, macOS, the
 sanitizers and the full clang-tidy pass (see [the local gate](testing.md#local-gate)).
