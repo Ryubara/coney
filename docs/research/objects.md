@@ -1429,10 +1429,12 @@ At runtime (confirmed (runtime), PCSX2 2.9.94, slot 10, `level99` checkpoint 3.5
 [`charge_fence`](repo:research/traces/scenarios/charge_fence.toml)): the fence (type index 520, centre (23.6, −6.67))
 had 10 hitpoints and broke on one charge, dive or walk-attack hit (kind 2). Its three boards were removed on their own
 first update, in the same update as the hit (the pair's second tick; type indices 1368 and 1369, along the fence at x
-22.7, 23.7 and 24.6); why is not traced. The fence was removed 3, 10 and 17 updates after the hit in three runs (its
-60-tick phase; the hit re-labelled one update later after the recorder fix, [Recording a
-trace](../guides/research-workflow.md#hooks)); in the same update the objective marker went, and 15 updates later
-`P3.FenceBroken`'s placement put the player at (18.5, −16.3), beyond the fence. Breaking in by charge:
+22.7, 23.7 and 24.6); why is not traced. The fence was removed 3, 10 and 17 updates after the hit in three runs (the
+hit re-labelled one update later after the recorder fix, [Recording a trace](../guides/research-workflow.md#hooks)),
+and 21.5 and 27.5 updates (43 and 55 ticks) in two more
+([`fence_dealer`](repo:research/traces/scenarios/fence_dealer.toml), [Scripts](scripting.md#level99), item 44):
+anywhere from 0 to 29 updates, by the fence's 60-tick phase. In the same update the objective marker went, and 15
+updates later `P3.DealerPoizo`'s placement put the player at (18.5, −16.3), beyond the fence. Breaking in by charge:
 [Combat](combat.md#moving-strikes).
 
 ### Lock picking {#lock-pick}
