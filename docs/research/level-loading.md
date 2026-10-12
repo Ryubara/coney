@@ -206,7 +206,7 @@ is at least -50.0 (`0x0050ccc4`; which coordinate that is was not traced). The w
 
 `0x0024e720` fixes the chunk up in place; `0x0024eef0`, `0x0024ea60`, `0x0024f290` and `0x0024f718` read it.
 Confirmed (code) for the layout. The AI walks the polygons and plans routes over the C records (nodes) and D
-records (edges) ([AI, Path planning](ai.md#path-planning)). In order:
+records (edges) ([AI, Path planning](ai-moving.md#path-planning)). In order:
 
 | Part | Size | Contents |
 | --- | --- | --- |
@@ -235,7 +235,7 @@ every first path with an A record and none of the 539 others; all 539 holes are 
 | `+0x20` | on the disc non-zero when the next path belongs to the same **area**; at load the next path of the area, or 0 |
 | `+0x24` | at load, in an area's first path: the next area's first path (the list starts at `0x00510588`) |
 | `+0x28` | 16 `s16`: the start of each **slab**'s edge list, −1 when there are none |
-| `+0x48` | `u16` flags (bit `0x10` cleared at load): 4 a hole a door can open, 8 ignored by the AI's tests ([AI](ai.md#path-planning)) |
+| `+0x48` | `u16` flags (bit `0x10` cleared at load): 4 a hole a door can open, 8 ignored by the AI's tests ([AI](ai-moving.md#path-planning)) |
 | `+0x4a` | `u16`, matched against the ground's collision byte when a point's area is found (`0x00250760`) |
 | `+0x4c` | A record or 0 |
 
@@ -282,7 +282,7 @@ and a one-off count):
   42,373 of the 43,234 route nodes lie inside the path that owns them, and no point lies inside a clockwise path.
 - **Edges:** each has exactly one flag: 1 (238,422), 2 (2,126), 4 (5,890), 8 (982), `0x10` (746, every one with bit
   31 set) and `0x80` (4,730); 250,963 have an edge back. What a follower does with each kind (4 a jump, 8 and `0x80` a
-  climb, `0x10` a door, `0x40` a breakable door) is on [AI: Following a route](ai.md#route-follow). Path `+0x02` is
+  climb, `0x10` a door, `0x40` a breakable door) is on [AI: Following a route](ai-moving.md#route-follow). Path `+0x02` is
   not 0 on 1,263 paths.
 
 ### The Object List's models {#the-object-list}

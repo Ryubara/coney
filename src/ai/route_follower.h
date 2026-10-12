@@ -13,7 +13,7 @@
 // Following a route: the waypoints are the route's nodes and then the destination. The follower gives the move
 // action the waypoint to aim at, moves on when the human reaches it, skips the ones it can already walk past in a
 // straight line, and frees the route once only the destination is left.
-// Research: docs/research/ai.md#route-follow
+// Research: docs/research/ai-moving.md#route-follow
 
 namespace coney::ai {
 
@@ -52,7 +52,7 @@ class RouteFollower {
     [[nodiscard]] bool onJumpLeg() const { return isJumpLeg(m_legKinds[m_index]); }
     /// Whether the current waypoint is a jump leg's take-off or landing: the route is kept for it.
     [[nodiscard]] bool atJump() const { return onJumpLeg() || (!onLastLeg() && isJumpLeg(m_legKinds[m_index + 1])); }
-    /// Whether a leg of `kind` is a jump leg: kind 4, not a climb (docs/research/ai.md#route-jump).
+    /// Whether a leg of `kind` is a jump leg: kind 4, not a climb (docs/research/ai-moving.md#route-jump).
     [[nodiscard]] static bool isJumpLeg(std::uint16_t kind);
     /// Moves on past the current waypoint, as when it is reached (a climb over its leg has ended beyond it).
     void passWaypoint(const RoutePlanner& planner, anim::Vec3 position) { moveOn(planner, position, true); }
@@ -74,7 +74,7 @@ class RouteFollower {
     [[nodiscard]] bool canSkip(const RoutePlanner& planner, anim::Vec3 position) const;
 
     // Puts the current waypoint where a jump leg wants it: a take-off at the human's point in the queue along its
-    // edge, a landing at the human's position projected onto the landing edge (docs/research/ai.md#route-jump).
+    // edge, a landing at the human's position projected onto the landing edge (docs/research/ai-moving.md#route-jump).
     // @orig 0x0029b2b8 Route_JumpPoints (unknown)
     void placeJumpPoint(const RoutePlanner& planner, anim::Vec3 position);
 

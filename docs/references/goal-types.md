@@ -5,7 +5,7 @@
 Every goal class a brain can have on its goal stack, by the type id the class reports, with the script
 bindings that push it ([AI: goals](../research/ai.md#goals), [AI bindings](bindings/ai.md)). A goal binding's
 callback is called 33 ms after the goal ends with the human's handle and whether the goal completed
-([scripted goals](../research/ai.md#scripted)).
+([scripted goals](../research/ai-scripting.md#scripted)).
 
 !!! info "What is complete"
 
@@ -21,7 +21,7 @@ callback is called 33 ms after the goal ends with the human's handle and whether
 | Type | Goal | Vtable | Bindings | Calls | What |
 | --- | --- | --- | --- | --- | --- |
 | <span id="goal-0"></span>0 | `Idle` | `0x005418f0` | | | |
-| <span id="goal-1"></span>1 | `MoveToFlag` | `0x00542130` | `GoalCallPolice`, `GoalMoveToFlag`, `GoalRunCarrotRun` | 309 | Walk or run to a world flag ([GoalMoveToFlag](../research/ai.md#move-to-flag)) |
+| <span id="goal-1"></span>1 | `MoveToFlag` | `0x00542130` | `GoalCallPolice`, `GoalMoveToFlag`, `GoalRunCarrotRun` | 309 | Walk or run to a world flag ([GoalMoveToFlag](../research/ai-scripting.md#move-to-flag)) |
 | <span id="goal-2"></span>2 | `MoveToExitFlag` | `0x005420d0` | `GangExitWorld`, `GoalCallGang`, `GoalCallPolice`, `GoalMoveToExitFlag`, `GoalShopkeeper`, `HuExitWorld` | 163 | Go to a flag and leave the world there |
 | <span id="goal-3"></span>3 | `MoveToFlagNetFlag` | `0x00542070` | | | |
 | <span id="goal-4"></span>4 | `MoveToUseFlag` | `0x00542010` | `GoalMoveToUseFlag`, `GoalShopkeeper` | 94 | |
@@ -52,7 +52,7 @@ callback is called 33 ms after the goal ends with the human's handle and whether
 | <span id="goal-31"></span>31 | `GrabTarget` | `0x00540390` | `GoalGrabTarget` | 3 | Grab the target |
 | <span id="goal-32"></span>32 | `AvoidEnemies` | `0x005419b0` | `GoalAvoidEnemies`, `TacticBossScenarioD` | 5 | |
 | <span id="goal-33"></span>33 | `PlayAnimation` | `0x00542370` | `GoalPlayAnimation` | | Play a scene animation; pushed by `GoalAddressPerson` |
-| <span id="goal-34"></span>34 | `PlayDynAnimation` | `0x00541410` | `GoalPlayDynAnimation` | 49 | Play an animation set by name ([GoalPlayDynAnimation](../research/ai.md#dyn-animation)) |
+| <span id="goal-34"></span>34 | `PlayDynAnimation` | `0x00541410` | `GoalPlayDynAnimation` | 49 | Play an animation set by name ([GoalPlayDynAnimation](../research/ai-scripting.md#dyn-animation)) |
 | <span id="goal-35"></span>35 | `PlayDynIdle` | `0x005413b0` | `GoalPlayDynIdle` | 92 | |
 | <span id="goal-36"></span>36 | `PlayParlayAnimation` | `0x00542310` | | | |
 | <span id="goal-37"></span>37 | `PlaySpecialIdle` | `0x00541350` | `TacticBossScenarioD` | 1 | |
@@ -66,13 +66,13 @@ callback is called 33 ms after the goal ends with the human's handle and whether
 | <span id="goal-45"></span>45 | `DestroyItem` | `0x00541e90` | | | |
 | <span id="goal-46"></span>46 | `DestroyCar` | `0x00541dd0` | | | |
 | <span id="goal-47"></span>47 | `VandalizeItem` | `0x00541e30` | `GoalFollowFormation` | 1 | |
-| <span id="goal-48"></span>48 | `TrackHuman` | `0x00541d10` | `GoalTrackHuman` | 1 | Track a human ([formations](../research/ai.md#formations)) |
+| <span id="goal-48"></span>48 | `TrackHuman` | `0x00541d10` | `GoalTrackHuman` | 1 | Track a human ([formations](../research/ai-gangs.md#formations)) |
 | <span id="goal-49"></span>49 | `FollowObject` | `0x00541cb0` | `GoalFollowObject` | 4 | |
 | <span id="goal-50"></span>50 | `FollowPlayer` | `0x00541d70` | `GoalFollowPlayer`, `HuSetArrested` | 63 | |
 | <span id="goal-51"></span>51 | `FollowFormation` | `0x00541c50` | `GoalAvoidEnemies`, `GoalFollowFormation`, `HuSetWarChief`, `WCIssueCommand` | 53 | |
 | <span id="goal-52"></span>52 | `FollowAndAttack` | `0x005405d0` | | | |
 | <span id="goal-53"></span>53 | `FollowAndDefend` | `0x00540570` | | | |
-| <span id="goal-54"></span>54 | `HoldPosition` | `0x00540510` | `GoalHoldPosition` | 1 | Hold a position ([tactics](../research/ai.md#tactics)) |
+| <span id="goal-54"></span>54 | `HoldPosition` | `0x00540510` | `GoalHoldPosition` | 1 | Hold a position ([tactics](../research/ai-gangs.md#tactics)) |
 | <span id="goal-55"></span>55 | `Scatter` | `0x00541290` | | | |
 | <span id="goal-56"></span>56 | `TravelPath` | `0x00541bf0` | `GoalTravelPath`, `GoalTravelPath2` | 18 | |
 | <span id="goal-57"></span>57 | `HookerLogic` | `0x0053fa30` | `GoalHooker` | | |
@@ -102,7 +102,7 @@ callback is called 33 ms after the goal ends with the human's handle and whether
 | <span id="goal-84"></span>84 | `Riot` | `0x005414d0` | `GoalRiot` | 12 | |
 | <span id="goal-85"></span>85 | `CopperRespond` | `0x00540b10` | `GoalCopperRespond` | | |
 | <span id="goal-86"></span>86 | `CopperGuardArrested` | `0x00540ab0` | | | |
-| <span id="goal-87"></span>87 | `AddressPerson` | `0x00541830` | `GoalAddressPerson`, `GoalCallPolice` | 17 | Walk up to a human and talk ([GoalAddressPerson](../research/ai.md#address-person)) |
+| <span id="goal-87"></span>87 | `AddressPerson` | `0x00541830` | `GoalAddressPerson`, `GoalCallPolice` | 17 | Walk up to a human and talk ([GoalAddressPerson](../research/ai-scripting.md#address-person)) |
 | <span id="goal-88"></span>88 | `Hide` | `0x005417d0` | | | |
 | <span id="goal-89"></span>89 | `ArrestHuman` | `0x005409f0` | `GoalArrestHuman` | 1 | |
 | <span id="goal-90"></span>90 | `Tag` | `0x00541770` | `GoalTag`, `GoalTagEx` | 6 | |
@@ -140,7 +140,7 @@ callback is called 33 ms after the goal ends with the human's handle and whether
 | <span id="goal-125"></span>125 | `Domination` | `0x0053fc10` | `TacticDomination` | 10 | |
 | <span id="goal-126"></span>126 | `Ring` | `0x0053fbb0` | | | |
 | <span id="goal-127"></span>127 | `StandGround` | `0x0053fb50` | `TacticStandGround` | 1 | |
-| <span id="goal-128"></span>128 | `Dealer` | `0x00540c90` | `GoalDealer` | 27 | A dealer selling to the player ([GoalDealer](../research/ai.md#dealer)) |
+| <span id="goal-128"></span>128 | `Dealer` | `0x00540c90` | `GoalDealer` | 27 | A dealer selling to the player ([GoalDealer](../research/ai-scripting.md#dealer)) |
 | <span id="goal-129"></span>129 | `DealerReaction` | `0x00540c30` | | | |
 | <span id="goal-130"></span>130 | `Shopkeeper` | `0x005423d0` | `GoalShopkeeper` | 5 | |
 | <span id="goal-131"></span>131 | `WarriorVandalSteal` | `0x005404b0` | | | |

@@ -456,9 +456,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] const world_objects::Car* stereoInReach(anim::Vec3 feet) const;
     // The pickable door nearest feet at `feet` within reach (a kind-2 context record); null for none.
     [[nodiscard]] const world_objects::Door* lockInReach(anim::Vec3 feet) const;
-    // Player 1's triangle at a dealer offering a deal (a kind-4 context record, docs/research/ai.md#dealer): the first
-    // whose offer is within ai::kDealReach in plan and whose feet are within the prompt height of the human's waist
-    // deals. Returns whether one took the press.
+    // Player 1's triangle at a dealer offering a deal (a kind-4 context record, docs/research/ai-scripting.md#dealer):
+    // the first whose offer is within ai::kDealReach in plan and whose feet are within the prompt height of the human's
+    // waist deals. Returns whether one took the press.
     bool tryDeal(human::Human& human);
     // Player 1's triangle beside a Warrior whose swap prompt is up (docs/research/ai.md#warrior-swap): the Warriors
     // ahead within 1.5 m are asked nearest first; the first that does not refuse turns to him over 0.2 s and the two
@@ -469,7 +469,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // A deal's outcome for player 1: the item and money moved for a sale or a rip-off, and the dealer's line.
     void settleDeal(ai::Brain& brain, ai::DealerGoal& dealer, ai::DealOutcome outcome);
     // Each dealer whose money clip (`money_take`, his 668) passed its action event completes the sale its pair
-    // started (`DealerGoal_FinishPair`, docs/research/ai.md#dealer-buy).
+    // started (`DealerGoal_FinishPair`, docs/research/ai-scripting.md#dealer-buy).
     void stepDealerPairs();
     // The game-over check each update (GameState_CheckGameOver, docs/research/combat.md#defeat) with player 1 as it
     // sees him, then the failure's hand-off: the HUD hidden at its first update, and after 180 updates (10 once cross

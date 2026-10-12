@@ -5,7 +5,7 @@ title: "Script events"
 about: |
   The messages scripts subscribe to with `SetMsgHandler(object, message, callback)`, and the same
   messages for a whole gang with `GangSetMsgHandler(gang, message, callback)`: a human's event goes to its
-  own handlers, then to its gang's ([AI: gang events](../research/ai.md#gang-events)). The arguments
+  own handlers, then to its gang's ([AI: gang events](../research/ai-gangs.md#gang-events)). The arguments
   each message's callback gets are in [Scripts: message handlers](../research/scripting.md#message-handlers).
   The meaning of a message is read from its sender where that is traced, else from the names of the
   callbacks scripts give it.

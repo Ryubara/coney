@@ -46,7 +46,7 @@ Research:
 - [Story order and what loads each level](../research/scripting.md#run-next-mission)
 - [The mission's script and the rooftop chase](../research/scripting.md#level3)
 - [Rail cameras](../research/camera.md#rail)
-- [AI: GoalDevilRun](../research/ai.md#devil-run)
+- [AI: GoalDevilRun](../research/ai-scripting.md#devil-run)
 
 ## Run it in Coney {#run}
 

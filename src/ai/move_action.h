@@ -14,7 +14,7 @@
 // route from the planner. It writes no stick: each update it sets the brain's heading and speed (brain `+0x110`,
 // `+0x114`), slowing for the corners ahead so the human stays on the walkable polygons, turning on the spot when it
 // stands far off its way, and giving up when it is stuck.
-// Research: docs/research/ai.md#move-action, docs/research/ai.md#route-follow
+// Research: docs/research/ai-moving.md#move-action, docs/research/ai-moving.md#route-follow
 
 namespace coney::ai {
 
@@ -42,9 +42,9 @@ inline constexpr float kCornerSpeedStep = 1.0F;
 /// The braking distance is the distance covered in this long at the first corner's speed (**Coney choice**, s).
 inline constexpr float kBrakingSeconds = 0.5F;
 
-/// A jump leg (docs/research/ai.md#route-jump): the fastest a drop or a jump crosses in plan (m/s), half the fall's
-/// gravity, the jump's first and last vertical speed and its step (m/s), and how near (3D) its waypoint a landing
-/// keeps the route.
+/// A jump leg (docs/research/ai-moving.md#route-jump): the fastest a drop or a jump crosses in plan (m/s), half the
+/// fall's gravity, the jump's first and last vertical speed and its step (m/s), and how near (3D) its waypoint a
+/// landing keeps the route.
 inline constexpr float kJumpMaxAcross = 10.0F;
 inline constexpr float kHalfGravity = 7.84F;
 inline constexpr float kJumpFirstUp = 0.5F;

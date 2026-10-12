@@ -11,7 +11,7 @@
 // Brain_GiveWayTo tests who may give way, picks a free sector of the stander's record and queues a GiveWay action, or
 // asks the human in each of those sectors to make room in turn. The step is the TakeStep action's: the human's step
 // control plays one step clip on the sector's heading (human::Human::enterStepControl()).
-// Research: docs/research/ai.md#giving-way, docs/research/characters.md#step-control
+// Research: docs/research/ai-moving.md#giving-way, docs/research/characters.md#step-control
 
 namespace coney::ai {
 

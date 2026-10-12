@@ -9,7 +9,7 @@
 // GoalPlayDynAnimation: the human plays a level-loaded clip in its dynamic animation slot (anim 668) once it is free,
 // then the goal ends and calls its script back with whether the clip played to its end. A goal pushed above it
 // interrupts it for good.
-// Research: docs/research/ai.md#dyn-animation, docs/research/ai.md#scripted
+// Research: docs/research/ai-scripting.md#dyn-animation, docs/research/ai-scripting.md#scripted
 
 namespace coney::ai {
 

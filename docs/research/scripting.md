@@ -304,7 +304,7 @@ message was consumed. Confirmed (code); the meanings in the last column are from
 | 6 | `(subject, n, other or NilHandle)`, `n` from `+0x00` | no |
 | 7 | `(subject, other)`, `other` from `+0x00` | no |
 | `0xb` | `(self, other)` | no |
-| 8 | not marshalled here; a flag's own handler (`0x00416038`) calls `(flag, human)` when a human arrives at it ([AI: GoalMoveToFlag](ai.md#move-to-flag)) | no |
+| 8 | not marshalled here; a flag's own handler (`0x00416038`) calls `(flag, human)` when a human arrives at it ([AI: GoalMoveToFlag](ai-scripting.md#move-to-flag)) | no |
 | 9 | `(n)`, the short at `W_GameState + 0x412` | yes |
 | 10, `0xd` | `(self)` | no |
 | `0xc` | `(self)` | yes |
@@ -317,7 +317,7 @@ message was consumed. Confirmed (code); the meanings in the last column are from
 
 `self` is the object the handler belongs to; `subject` is the record's `+0x24`; `other` is `+0x00` unless the row
 says otherwise. A gang's handlers
-(`GangSetMsgHandler`) use their own marshalling for 18, `0x11` and 2 ([AI: gang events](ai.md#gang-events)).
+(`GangSetMsgHandler`) use their own marshalling for 18, `0x11` and 2 ([AI: gang events](ai-gangs.md#gang-events)).
 
 **World objects** (props, weapons, pick-ups; the shared vtable `0x005453a0`) take a message through their `+0x44`
 (`0x00392520`): it first offers it to the object zone's handler (`ObjZone_DispatchMessage`, `0x003982a0`, whose result
@@ -689,14 +689,14 @@ described:
 | character | [Characters](characters.md), [Combat](combat.md) |
 | world | [World objects](objects.md), [World flags](flags.md) |
 | level | [Level loading](level-loading.md) |
-| ai: goals and actions (`Goal*`, `Act*`) | [AI](ai.md#scripted) |
-| gang | [AI](ai.md#gangs) |
+| ai: goals and actions (`Goal*`, `Act*`) | [AI](ai-scripting.md#scripted) |
+| gang | [AI](ai-gangs.md#gangs) |
 | hud | [HUD](hud.md) |
 | config | [Config bindings](../references/bindings/config.md) |
 | sound | [Sound](sound.md) |
 | effects | [Particles](particles.md), [The streamed world](world.md#fog) |
 | camera | [Camera](camera.md) |
-| ai: tactics (`Tactic*`) | [AI](ai.md#tactic-kinds) |
+| ai: tactics (`Tactic*`) | [AI](ai-gangs.md#tactic-kinds) |
 | ai: brains and the rest (`Br*`, ...) | [AI](ai.md#brain) |
 | scene | [Scenes](scenes.md) |
 | script | this page |
@@ -1122,14 +1122,14 @@ the disassembly of the scripts (names, ids and values only).
 | 2.1 set-up | `P2.SetupLesson1` | the Warriors remade for the checkpoint, flash command 40 off, both players at 35 % health and demi-god 0.25, scene `l99_c2` | the scene's end | [Scenes](scenes.md) |
 | 2.2 store | `P2.EndStreetScn` | Vermin's talk prompt (message 0), `CfgInventoryCallback(P2.UpdateLootCount)`, `vInsideStore` message 3 | three items of item 10 | [Breakables](combat.md#breakables), [inventory callback](player-state.md#pickup-callback) |
 | 2.3 car | `P2.SetupCars`, 3 s after the third item | `CarMakeGoodAsNew` and `CarSpawnRadio` on the three cars, the locked camera `VerminCar`, Vermin's line; then `CfgSetSteroTheftHandler(P2.CarRadioStolen)` | the first stereo a player steals (`radioNeeded` 2 is never read) | [Cars: windows](cars.md#windows), [the theft](combat.md#stereo-theft), [context kind 3](crimes.md#context-records) |
-| 2.4 mugging | `P2.SetupPeds`, 3 s later | `PoizoCiv` sent to the phone flag `wPhone01` (dead brain, `GoalMoveToUseFlag`), the bums (`GoalBumLogic`, `GoalMoveToUseFlag`), `HuSetMugCallback(P2.PedMugged)` on both players, `SetInterrogateParam` (below), message 18 on `PoizoCiv` (`P2.MugPedDied`: a hint only); after 3 s `FlagNetTraverse(PoizoCiv, 1, 0)` walks him off | the callback with success true; then all-zero `SetInterrogateParam` | [Mugging](combat.md#mugging), [who and the callback](crimes.md#mugging), [AI](ai.md#scripted) |
+| 2.4 mugging | `P2.SetupPeds`, 3 s later | `PoizoCiv` sent to the phone flag `wPhone01` (dead brain, `GoalMoveToUseFlag`), the bums (`GoalBumLogic`, `GoalMoveToUseFlag`), `HuSetMugCallback(P2.PedMugged)` on both players, `SetInterrogateParam` (below), message 18 on `PoizoCiv` (`P2.MugPedDied`: a hint only); after 3 s `FlagNetTraverse(PoizoCiv, 1, 0)` walks him off | the callback with success true; then all-zero `SetInterrogateParam` | [Mugging](combat.md#mugging), [who and the callback](crimes.md#mugging), [AI](ai-scripting.md#scripted) |
 | 2.5 Vermin | `P2.SeeVermin`, 5 s later | the camera `VerminWait`, `ObjShow(dyn_objective_w)`, Vermin a radar objective (texture 27), command 38 on after 2.5 s | `vFenceSection` message 3 → `SetCheckPoint(3)`, `level99_lesson2` | [HUD](hud.md) |
-| 3.1 set-up | `P3.SetupLesson2` | the dealer `FlashDealer` with `GoalDealer(dealer, 0, 17, 0, 0, false)` and messages 1 and 16 (`P3.DealerHit`), Vermin (god mode, unpushable, ungrabbable, fast climber), scene `l99_c3` | the scene's end | [GoalDealer](ai.md#dealer) |
-| 3.2 fences | `P3.EndChapterScene` | `DoorOpenDegree(WXL00, 100)`, command 40 off and 38 on, Vermin (secondary camera target) to `fVerminFencePoizo` | `vFenceJump` 3, the flag's 8, then `vFenceJump2` / `3` texts | [Climbs](characters.md), [AI fence climb](ai.md#path-planning) |
+| 3.1 set-up | `P3.SetupLesson2` | the dealer `FlashDealer` with `GoalDealer(dealer, 0, 17, 0, 0, false)` and messages 1 and 16 (`P3.DealerHit`), Vermin (god mode, unpushable, ungrabbable, fast climber), scene `l99_c3` | the scene's end | [GoalDealer](ai-scripting.md#dealer) |
+| 3.2 fences | `P3.EndChapterScene` | `DoorOpenDegree(WXL00, 100)`, command 40 off and 38 on, Vermin (secondary camera target) to `fVerminFencePoizo` | `vFenceJump` 3, the flag's 8, then `vFenceJump2` / `3` texts | [Climbs](characters.md), [AI fence climb](ai-moving.md#path-planning) |
 | 3.3 climb | `vClimb` 3 (`P3.MoveToClimb`) | Vermin to `fStop2`; `P3.GetBack(1)` 10 s later flashes his radar icon while the player is lost | `fStop2` 8 → the camera `ClimbPoizo`, the players put at `fClimbWarp`; `vFirstClimb` / `vDoneClimb` 3 | [Characters](characters.md) |
 | 3.4 rooftops | `vReachRooftop` / `2` 3 (`P3.PoizoJump`) | `ObjShow(dyn_w_mission)`, the camera `JumpCam`, the players put at `fRoofTeleport`, radar target `fRadarJump` | `vReachWindow` 3 (both players with two, below), then Vermin's run to `fStop3`, his line, `vVerminJumps` 3 | [Jumps](characters.md#jump), [Moving into a pane](objects.md#pane-break) |
 | 3.5 wooden fences | `vAlmostDone` 3 (`P3.WoodenFences`) | the players put at `fBreakFencePoizo` (a held object destroyed), two locked cameras, message 2 on `dyn_door_fence02` and `03` | either fence's message 2 (`P3.FenceBroken`) | [Barriers](objects.md#barriers) |
-| 3.6 dealer | `P3.DealerPoizo`, 0.5 s later | `CfgSetGlobalTimeToLive(1000)`, money raised to at least $20, the dealer's icon `dyn_flashdeal`, `TriggerSphereCfg(dealer, true, 4, 2, 500)` with messages 3 / 4, the scene `l99_c9` preloaded | message 3 on the dealer → `P3.CheckForFlash` every 0.5 s until `InvNumberOf(1)` ≥ 1 | [Buying](ai.md#dealer), [trigger spheres](#triggers) |
+| 3.6 dealer | `P3.DealerPoizo`, 0.5 s later | `CfgSetGlobalTimeToLive(1000)`, money raised to at least $20, the dealer's icon `dyn_flashdeal`, `TriggerSphereCfg(dealer, true, 4, 2, 500)` with messages 3 / 4, the scene `l99_c9` preloaded | message 3 on the dealer → `P3.CheckForFlash` every 0.5 s until `InvNumberOf(1)` ≥ 1 | [Buying](ai-scripting.md#dealer), [trigger spheres](#triggers) |
 | 3.7 flash | `P3.FlashSpeak`, 3 s after the buy | `CfgSetGlobalTimeToLive(10000)`, command 40 on, `PadSetHandlerEx(P3.UseFlash)` | command 40 (d-pad right) → `P3.MissionOver` 1.5 s later | [The flash](combat.md#rage), [How the mission ends](#level99) |
 
 Points an implementer needs:
@@ -1138,7 +1138,7 @@ Points an implementer needs:
   target with 20 s off target allowed ([Mugging](combat.md#mugging)). The mug callback runs for every end of a
   mugging; the lesson ignores a false one.
 - **3.6**: a player hitting the dealer (message 1 or 16) fades out, removes his gang and makes him again after 2 s,
-  the players put back at `fHitDealer`. Triangle in the dealer's 1.75 m buys ([Buying](ai.md#dealer)): $20 for one
+  the players put back at `fHitDealer`. Triangle in the dealer's 1.75 m buys ([Buying](ai-scripting.md#dealer)): $20 for one
   flash, refused at 3 carried; a dirty dealer would take the money and give nothing.
 - **3.7**: the last step waits only for the command; the flash itself heals the player when he is hurt (he is at 35 %
   from 2.1) and does nothing at full health without upgrade (6, 8).
@@ -1220,9 +1220,9 @@ Nothing on the way slows him for the jump, confirmed (code):
 - The move's corner speed (`MoveAction_CornerSpeed`, `0x002fc158`) simulates only the points that
   `MoveAction_CollectPoints` (`0x002fbd18`) gathers, and that stops at the first link with bit `0x4` or `0x80`
   (a jump or drop link): the take-off point is the last point considered and nothing past the window is, so the
-  jump itself is not a corner ([Moving: the move action](ai.md#move-action)).
+  jump itself is not a corner ([Moving: the move action](ai-moving.md#move-action)).
 - An AI starts a jump at any gait, from a run too, with no run-up test (`Human_BeginJump`, `0x0023db48`), and the
-  landing here is level with the take-off, so it is a jump, not the slowing drop ([Jumps and drops](ai.md#path-planning)).
+  landing here is level with the take-off, so it is a jump, not the slowing drop ([Jumps and drops](ai-moving.md#path-planning)).
 
 **At runtime** (2026-10-11, PCSX2, confirmed (runtime); scenario `vermin_window_jump` in
 `repo:research/traces/scenarios/`, the owner's slot 9 copied, hook `event-call`). The player runs at the window with the
@@ -1622,7 +1622,7 @@ Story mission 3, loaded by `runNextMission` after `level80`: Rembrandt (player 1
 Destroyers' burners in East Coney. Read from the compiled `level87.lua` and its five chapter scripts through
 `coney-tools`' Lua walker (names, ids and values only; our own words); bindings on [Story
 coverage](../references/bindings/story.md#level87). Inferred unless marked. Chapter 5 (the stealth tutorial) is on
-[Stealth](stealth.md#level87), the Destroyers' reactions on [AI](ai.md#aggro-on-sight), the tag itself on
+[Stealth](stealth.md#level87), the Destroyers' reactions on [AI](ai-gangs.md#aggro-on-sight), the tag itself on
 [Crimes](crimes.md#tagging).
 
 - **Each chapter** ends with `SaveLevelData`, `SetCheckPoint(N + 1)`, `ChLoader` (`preLoadFile` of the next chapter
@@ -1638,7 +1638,7 @@ coverage](../references/bindings/story.md#level87). Inferred unless marked. Chap
   moves (`Updater`, `ObjectiveUpdate`) and the next pattern loads (`NextTagPattern`, a `tagN` file).
 - **Paint and cash.** Chapter 1 gives 2 cans (`InvSetSpraycanCharges(0, 2)`) and tops one up when they run out
   (`ch1.CheckSpray`, `ch1.BoostSpray`); from chapter 2 the player buys paint from the spray sellers (`StartFactory`,
-  [GoalDealer](ai.md#dealer)) with mugged cash, and `CheckCash` (every 60 s) and the reminders nag (hints `CASH`,
+  [GoalDealer](ai-scripting.md#dealer)) with mugged cash, and `CheckCash` (every 60 s) and the reminders nag (hints `CASH`,
   `TT_41`, `RM_1`).
 
 | Step | Started by | Hints, objectives, scenes (in order) | Waits for | Ends with |
@@ -1869,7 +1869,7 @@ is given.
   `level34_gate`). The level police `RiotCops` (50) start at `P1.HeadToGate` and in `level34_gate`. So the same
   placement decides where every gang and every cop of the riot appears.
 - **What each rioter does** (`F.RiotPedSpawn(human, gang, name)`): violence reaction off, threat and investigate
-  responses 0. While `bRiotPeds` is true, 75 % get `GoalRiot(h, 10, 100, 2, 0, 0)` ([GoalRiot](ai.md#riot)) and 25 %
+  responses 0. While `bRiotPeds` is true, 75 % get `GoalRiot(h, 10, 100, 2, 0, 0)` ([GoalRiot](ai-scripting.md#riot)) and 25 %
   `FlagNetTraverse(h, 1, 100)` (the 34-node pedestrian net that `RunLevel` sets up). While it is false, all walk the
   net. In both cases 3 in 10 get a random object of `tCivObjects` in hand (`HuPlaceItemInHand`). `bRiotPeds` is set
   true when `level34.lua` loads. `P1.SetupSection1` sets it false for the intro, and `P1.StoreObjectives` sets it
@@ -1882,11 +1882,11 @@ acts find targets. The play-test shows these are also missing:
 | What the original does | Coney now | Page |
 | --- | --- | --- |
 | State 7 places every crowd, gang and police human out of sight on a pedestrian flag | placed as state 8 with value 0: at the player's side, on the subway tracks at the start | [reinforcements](ai-world.md#spawner-reinforcements) |
-| A rioter's smash finds a vandalisable object with a stand point; a loot finds a store flag (activity 14) whose group still has objects | nothing found (the question in `missions.yaml`) | [GoalRiot](ai.md#riot) |
-| The looters wreck zones 51 and 29 (`TacticVandalize`), and the Panzers rob the pharmacy (`TacticSteal`) | both kinds are `StationTactic`: the members stand (`repo:src/ai/story_tactics.cpp`) | [AI: tactics](ai.md#tactics) |
+| A rioter's smash finds a vandalisable object with a stand point; a loot finds a store flag (activity 14) whose group still has objects | nothing found (the question in `missions.yaml`) | [GoalRiot](ai-scripting.md#riot) |
+| The looters wreck zones 51 and 29 (`TacticVandalize`), and the Panzers rob the pharmacy (`TacticSteal`) | both kinds are `StationTactic`: the members stand (`repo:src/ai/story_tactics.cpp`) | [AI: tactics](ai-gangs.md#tactics) |
 | The roof throwers and bar staff throw bottles, speakers, TVs, boxes and drum kits (`GoalStationaryThrower`) | the clip plays, nothing leaves the hand (`repo:src/ai/riot_goals.h`) | [GoalStationaryThrower](../references/bindings/ai.md#goalstationarythrower) |
-| Police: the `Cops` and `RiotCops` spawners (state 7), and at checkpoint 4 a forced crime level with a crime at the cop search flag | the spawners place their cops as above; the dispatch states 4 and 9 never spawn (no crimes are routed: checklist item 13) | [Spawners](ai.md#spawners), [Crimes](crimes.md) |
-| The Warriors' R2 commands | not every command works (checklist item 11) | [AI: Warrior commands](ai.md#warrior-commands) |
+| Police: the `Cops` and `RiotCops` spawners (state 7), and at checkpoint 4 a forced crime level with a crime at the cop search flag | the spawners place their cops as above; the dispatch states 4 and 9 never spawn (no crimes are routed: checklist item 13) | [Spawners](ai-gangs.md#spawners), [Crimes](crimes.md) |
+| The Warriors' R2 commands | not every command works (checklist item 11) | [AI: Warrior commands](ai-gangs.md#warrior-commands) |
 
 **Coney fixes (item 17).**
 
@@ -1896,7 +1896,7 @@ acts find targets. The play-test shows these are also missing:
    name). `FlagNetTraverse` must walk the 34-node net, and `GoalRiot` must roam, decide and leave in the gang's turf
    (`RiotCivs1` has no turf box, so the turf gate always passes).
 3. Give the riot's smash and loot acts their targets: vandalisable world objects with a reachable stand point, and the
-   store flags (activity 14) with objects left in their group ([GoalRiot](ai.md#riot) states 1 and 2).
+   store flags (activity 14) with objects left in their group ([GoalRiot](ai-scripting.md#riot) states 1 and 2).
 4. Build `TacticVandalize` (members wreck the zone's objects; code 1 once nothing is left) and `TacticSteal` in
    place of the standing stand-in.
 5. Let `GoalStationaryThrower`'s throws release their object (the thrown-object physics), so the roof throwers and
@@ -2080,7 +2080,7 @@ from the disassembly of `level3.lua` and its five chapter scripts; bindings on
    **`BrDead(player, true)`**: the player's brain is off, which also [takes his pad away](ai.md#handlers); fade in
    over 2 s; schedules the mimes' door (0.1 s), `ch4.SetupPoizo` (3 s) and the pursuit (4 s).
 3. **`ch4.SetupPoizo`**: a path camera from the intro camera through three points (the second calls Snow's line);
-   every other Warrior: brain flushed, normal mode, a friendly [devil run](ai.md#devil-run) on `roofpath2` against the
+   every other Warrior: brain flushed, normal mode, a friendly [devil run](ai-scripting.md#devil-run) on `roofpath2` against the
    Warriors' gang (gait 4, pace 4 m, up to 10 m/s, urgency 3) under a `GoalMoveToFlag` to the first chase flag
    (gait 5); **the player**: normal mode and `GoalMoveToFlag(player, fRoofChase[1], 4, ...)`. With his brain off the
    player's brain still runs the goals a script pushes (`Brain_UpdateGoals`), so **the AI walks Snow** from the
@@ -2126,7 +2126,7 @@ goal does not move a brain-dead player, leaves the player standing for good. Con
 behaviour; that Snow's walk crosses `vbStartRail` is inferred from the positions (not seen at runtime).
 
 Engine behaviour this mission needs beyond its bindings: [kind-2 boxes](#triggers), the [rail
-camera](camera.md#rail) mode 0, [GoalDevilRun](ai.md#devil-run) and [message 6](#triggers) from `vGallery` when a
+camera](camera.md#rail) mode 0, [GoalDevilRun](ai-scripting.md#devil-run) and [message 6](#triggers) from `vGallery` when a
 human standing in it damages something.
 
 ### `level5.lua` (mission 7) {#level5}

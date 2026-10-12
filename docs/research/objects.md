@@ -13,7 +13,7 @@ end's Wonder Wheel as the worked case), an object's **tint**, the **objective ma
 the player to walk into), the **breakable glass** panes, the **doors** and the **breakable barriers**. The lists are
 [Object tints](../references/tints.md), [Glass types](../references/glass-types.md) and [Doors](../references/doors.md);
 the classes and pools of world objects and glass panes are on [Tasks](tasks.md#classes), the crimes a pane can raise on
-[AI: crimes](ai.md#crimes), and what the player's attacks do to them on [Combat: breakables](combat.md#breakables).
+[AI: crimes](ai-gangs.md#crimes), and what the player's attacks do to them on [Combat: breakables](combat.md#breakables).
 
 ## Original structure
 
@@ -259,7 +259,7 @@ and `dyn_door_stall` 10, the cabin doors 12, `dyn_door_dclub` 20, `dyn_door_varg
 The level's navigation links are the path data's **D records** (edges, [Level loading](level-loading.md#path-data)):
 8 bytes, `+0x00` the node, `+0x04` the edge flags (u16, the **kind**) and `+0x06` a u16 whose low 13 bits are a door
 number and whose top bit is the word's bit 31, the "avoid" bit: route planning adds 1,600 to the edge's cost
-([AI: path planning](ai.md#path-planning)), so a closed door makes a detour preferred, not mandatory. `0x00510590` is
+([AI: path planning](ai-moving.md#path-planning)), so a closed door makes a detour preferred, not mandatory. `0x00510590` is
 the array, `0x00510594` its count. Confirmed (code) at `0x00250960`, `0x00250c00`-`0x00250d00`.
 
 **A door's hole**: opening and closing by number (`0x00250c50` / `0x00250d00`, from the door's state commands with
@@ -275,19 +275,19 @@ the last, and the path flags of one polygon, found from the first link they meet
 3. opening sets bit 3 (8) of that polygon's `u16` flags at `+0x48`, closing clears it.
 
 The polygon is a **hole** of an area ([Path data](level-loading.md#path-data)), never the area's outline, which
-has no flag 4. Opening it lets lines and routes cross the doorway ([AI: path planning](ai.md#path-planning)). Disc
+has no flag 4. Opening it lets lines and routes cross the doorway ([AI: path planning](ai-moving.md#path-planning)). Disc
 check (level87, door 15): links 1530 and 1537 (kind `0x10`, nodes 219 and 220, 1.4 m apart); the middle lies in the
 boxes of the street's outline (polygon 0) and of polygon 33, a clockwise 4-vertex hole of flags 7, about
 0.8 × 2.8 m, the only flag-4 candidate: polygon 33 gets flag 8.
 
-| Kind | Who sets it | How a follower takes it ([Following a route](ai.md#route-follow)) |
+| Kind | Who sets it | How a follower takes it ([Following a route](ai-moving.md#route-follow)) |
 | --- | --- | --- |
 | 4 | the data | `0x0029baa8`: faces the waypoint, then either runs or starts a jump (`Human_BeginJump`) |
 | `0x10` | the data; `ConvertJumpToDoor` (4 → `0x10`) | walked while the door is open; with the avoid bit set the move fails (brain `+0x284` = 4) |
 | `0x40` | breakable doors (by number) and window-linked panes | `0x0029bca0`: faces the waypoint, sets the move action to 4, and issues the **charge** (attack kind 19, command `0x20`) |
 
 So an AI routed through a breakable door or a pane charges it. Confirmed (code) at `0x0029ad04`-`0x0029adb8`; every
-human searches with the mask `0xff`, which admits them ([AI](ai.md#path-planning)).
+human searches with the mask `0xff`, which admits them ([AI](ai-moving.md#path-planning)).
 
 ## Behaviour
 
@@ -1052,7 +1052,7 @@ collision mesh that stand for them. Confirmed (code) for the spawns, counts from
    effect and the triangles only). Confirmed (code).
 6. **Break** (`0x0038f378`, called by the human and thrown-object paths, not by `BreakGlassInRadius`):
     - with the alarm (`+0xf8` both bits): the `CrimeScene` flag moves to the pane and a break-in (crime type 1) is
-      reported ([AI: crimes](ai.md#crimes));
+      reported ([AI: crimes](ai-gangs.md#crimes));
     - with the window link: when the pane is in a path polygon, the polygon gets flag 8 and its `0x40` link loses the
       avoid bit; otherwise the kind-4 link does;
     - every enabled flag of activity 9 (`_xwWindowLook`, [Flags](flags.md#activities)) within max(width, height) of

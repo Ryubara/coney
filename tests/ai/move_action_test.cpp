@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The move action over path data (docs/research/ai.md#move-action), the turn actions and ActLookAt
-// (docs/research/ai.md#look-at), GoalMoveToFlag (docs/research/ai.md#move-to-flag) and the scripts' hold on brains.
-// Synthetic clips, a flat floor and synthetic path data; game time is the steps run (1/30 s each).
+// The move action over path data (docs/research/ai-moving.md#move-action), the turn actions and ActLookAt
+// (docs/research/ai-scripting.md#look-at), GoalMoveToFlag (docs/research/ai-scripting.md#move-to-flag) and the scripts'
+// hold on brains. Synthetic clips, a flat floor and synthetic path data; game time is the steps run (1/30 s each).
 #include "ai/move_action.h"
 
 #include <algorithm>
@@ -248,7 +248,7 @@ TEST_CASE("a move round the U follows its route's waypoints and stays on the pol
 TEST_CASE("running into a tight corner, the move slows to a speed that keeps it on the polygons", "[ai][move]") {
     // An L whose corner leaves 0.75 m beyond its node on the way in: at the run the turn would swing out of it. The
     // side leaves 3.25 m: past the waypoint the move asks for the run again and the human speeds up while still turning
-    // at the run's 4° an update, swinging out about 3 m (docs/research/ai.md#move-action).
+    // at the run's 4° an update, swinging out about 3 m (docs/research/ai-moving.md#move-action).
     coney::test::PathBuilder builder;
     const std::uint32_t bottom = builder.rectangle(40.0F, 49.5F, 40.0F, 42.0F);
     const std::uint32_t side = builder.rectangle(48.0F, 52.0F, 40.0F, 54.0F);

@@ -47,7 +47,7 @@ page](../references/bindings/story.md#level80).
 Research:
 
 - [Story order and what loads each level](../research/scripting.md#run-next-mission)
-- [AI: scripted goals and actions](../research/ai.md#scripted)
+- [AI: scripted goals and actions](../research/ai-scripting.md#scripted)
 - [Skipping a scene](../research/scenes.md#skipping)
 
 ## Run it in Coney {#run}

@@ -22,7 +22,7 @@
 // switched; their brains get the exit, path, enemy, throw and idle goals and their senses; the gangs their turf,
 // leader, ranges, exits and the Warrior commands' crews. Like the other bindings, a call on a human not made yet waits
 // until the level makes it (ScriptedBrains::hold()). After each characters' step update() lets the leaving gangs go.
-// Research: docs/references/bindings/story.md, docs/research/ai.md#warrior-commands
+// Research: docs/references/bindings/story.md, docs/research/ai-gangs.md#warrior-commands
 
 namespace coney::world_objects {
 class VolumeBoxes;

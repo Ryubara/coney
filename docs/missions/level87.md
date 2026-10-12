@@ -52,7 +52,7 @@ Research:
 
 - [Story order and what loads each level](../research/scripting.md#run-next-mission)
 - [World objects: doors](../research/objects.md)
-- [AI: scripted goals and actions](../research/ai.md#scripted)
+- [AI: scripted goals and actions](../research/ai-scripting.md#scripted)
 - [Crimes: tagging](../research/crimes.md#tagging)
 - [The mission's scripts, checkpoint by checkpoint](../research/scripting.md#level87)
 - [The order at runtime (reference)](../research/scripting.md#level87-hints)

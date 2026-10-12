@@ -27,7 +27,7 @@ Helpers the goals below call, at the start of the goals' file.
 
 A scripted gunman for the Lizzies' fight, using Vargas's voice (`vags/speeches/l55`) and `l55_gun_*` aim clips. It
 is **unused**: only the unused Boss tactic and the uncalled `GoalBossLizzies` push it; the shipped level 55 fight is
-`TacticBossScenarioB` ([AI: The boss fights](ai.md#boss-fights)). The goal types `0x93`-`0x96` below are all in this
+`TacticBossScenarioB` ([AI: The boss fights](ai-gangs.md#boss-fights)). The goal types `0x93`-`0x96` below are all in this
 case. Confirmed (code) at the cited addresses.
 
 **BossLizzies' state machine** (`0x0029fe18`). The state is goal `+0x10`, its deadline `+0x14` (ms on the game clock),
@@ -121,7 +121,7 @@ The Chatter boss.
 
 ### BossDiego (type 0x48) {#goal-boss-diego}
 
-The Diego boss ([Diego and Vargas](ai.md#boss-diego-vargas)). Its Process runs a small script: an array of s16 (op,
+The Diego boss ([Diego and Vargas](ai-gangs.md#boss-diego-vargas)). Its Process runs a small script: an array of s16 (op,
 argument) pairs at goal `+0x40`.
 
 | Address | Name | Role | What it does | Evidence |
@@ -144,7 +144,7 @@ Stands at a pile and throws objects from it at the player, with Vargas's lines.
 | `0x002a31f0` | `Goal_ManWeaponPile` | binding | `GoalManWeaponPile` | confirmed (code) |
 | `0x002a3320` | `ManWeaponPileGoal_Init` | init | vtable `0x0053f370` | confirmed (code) |
 | `0x002a3498` | `ManWeaponPileGoal_Process` | Process | picks up an object from the pile, aims and throws it, says a line | inferred |
-| `0x002a3d90` | `ManWeaponPileGoal_End` | End | when the goal has a Lua callback (`+0x20`), calls it through the script system `[0x00512b04]` with the human's handle ([Scripted goals](ai.md#scripted)) | confirmed (code) |
+| `0x002a3d90` | `ManWeaponPileGoal_End` | End | when the goal has a Lua callback (`+0x20`), calls it through the script system `[0x00512b04]` with the human's handle ([Scripted goals](ai-scripting.md#scripted)) | confirmed (code) |
 
 ### ObjectThrower (type 0x4e) {#goal-object-thrower}
 
@@ -386,7 +386,7 @@ A bum who begs, takes money and gives items.
 
 ### Peddler (type 0x50) {#goal-peddler}
 
-A street seller ([Dealers](ai.md#dealer)).
+A street seller ([Dealers](ai-scripting.md#dealer)).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -721,7 +721,7 @@ Take objects from a pile and throw them at the nearest human until a time.
 
 ### FollowAndAttack (type 0x34) {#goal-follow-and-attack}
 
-What each Warrior runs under the attack command ([Warrior commands](ai.md#warrior-commands)): fight the
+What each Warrior runs under the attack command ([Warrior commands](ai-gangs.md#warrior-commands)): fight the
 best enemy near the chief, or stay with him.
 
 | Address | Name | Role | What it does | Evidence |
@@ -735,7 +735,7 @@ best enemy near the chief, or stay with him.
 
 ### FollowAndDefend (type 0x35) {#goal-follow-and-defend}
 
-What each Warrior runs under the defend command ([The default command](ai.md#warrior-follow)): stay in
+What each Warrior runs under the defend command ([The default command](ai-gangs.md#warrior-follow)): stay in
 the chief's formation, guard him while he commits a crime, rescue him when he is down, fight enemies near
 him.
 
@@ -847,7 +847,7 @@ The goal under Melee that restarts a fight ([The FindEnemy goal](ai.md#find-enem
 
 ### Patrol (type 0x73) {#goal-patrol}
 
-A cop on the flag net, walking alone or in a pair ([Crimes and the police](ai.md#crimes)).
+A cop on the flag net, walking alone or in a pair ([Crimes and the police](ai-gangs.md#crimes)).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -879,7 +879,7 @@ of the states is inferred.
 ### Respond (type 0x74) {#goal-respond}
 
 A cop answering a crime report: he goes to the scene and hands over to the goal for the crime kind
-([Crimes and the police](ai.md#crimes)).
+([Crimes and the police](ai-gangs.md#crimes)).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -893,7 +893,7 @@ A cop answering a crime report: he goes to the scene and hands over to the goal 
 
 ### RiotCop (type 0x77) {#goal-riot-cop}
 
-Riot police under the gang's riot tactic ([GoalRiot](ai.md#riot)).
+Riot police under the gang's riot tactic ([GoalRiot](ai-scripting.md#riot)).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -978,22 +978,22 @@ A warning to an offender: two lines, then his gang is wanted for 10 s.
 
 ### Dealer (type 0x80) and DealerReaction (type 0x81) {#goal-dealer}
 
-[GoalDealer](ai.md#dealer) and the flee-or-fight goal it pushes when attacked ([Buying](ai.md#dealer-buy)).
+[GoalDealer](ai-scripting.md#dealer) and the flee-or-fight goal it pushes when attacked ([Buying](ai-scripting.md#dealer-buy)).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
-| `0x002c6c88` | `Goal_Dealer` | pusher | GoalDealer: the dealer type from his class (426-430 flash, 431-435 spray paint, 436-440 weapons), pushes the goal (ai.md#dealer) | confirmed (code) |
-| `0x002c6d90` | `DealerGoal_Init` | init | ai.md#dealer has the fields | confirmed (code) |
-| `0x002c6e78` | `DealerGoal_Start` | Start | threat response (brain `+0x21c`) 0, brain `+0xcc` ORed with 2; the spinning icon by dealer type (`+0x28`: 0 dyn_flashdeal, 1 dyn_weapdeal, 2 the icon at `0x00565668`); puts the type's item (table `0x005110fc`, 8-byte rows) in his pocket; home = his current position (`+0x10`..`+0x1c`); then Resume (vtable `+0x34`) ([Dealer](ai.md#dealer)) | confirmed (code) |
-| `0x002c6f98` | `DealerGoal_Resume` | Resume | leaves fight stance, not pushable (Human_SetPushable 0), registers the kind-4 buy prompt with the type's global string (table `0x005110f8`) ([Dealer](ai.md#dealer)) | confirmed (code) |
+| `0x002c6c88` | `Goal_Dealer` | pusher | GoalDealer: the dealer type from his class (426-430 flash, 431-435 spray paint, 436-440 weapons), pushes the goal (ai-scripting.md#dealer) | confirmed (code) |
+| `0x002c6d90` | `DealerGoal_Init` | init | ai-scripting.md#dealer has the fields | confirmed (code) |
+| `0x002c6e78` | `DealerGoal_Start` | Start | threat response (brain `+0x21c`) 0, brain `+0xcc` ORed with 2; the spinning icon by dealer type (`+0x28`: 0 dyn_flashdeal, 1 dyn_weapdeal, 2 the icon at `0x00565668`); puts the type's item (table `0x005110fc`, 8-byte rows) in his pocket; home = his current position (`+0x10`..`+0x1c`); then Resume (vtable `+0x34`) ([Dealer](ai-scripting.md#dealer)) | confirmed (code) |
+| `0x002c6f98` | `DealerGoal_Resume` | Resume | leaves fight stance, not pushable (Human_SetPushable 0), registers the kind-4 buy prompt with the type's global string (table `0x005110f8`) ([Dealer](ai-scripting.md#dealer)) | confirmed (code) |
 | `0x002c7020` | `DealerGoal_Suspend` | Suspend | withdraws the prompt (`+0x1b2` = 0, vtable 300), pushable, and resets the visit (DealerGoal_Reset) | confirmed (code) |
-| `0x002c70a0` | `DealerGoal_End` | End | removes the spinning icon; if he is the game state's dealer customer (`+0x284`) that is reset to the default (`0x006ebd30`); threat response 2, clears brain `+0xcc` bit 2; then the base End (vtable `+0x3c`) ([Dealer](ai.md#dealer)) | confirmed (code) |
-| `0x002c7158` | `DealerGoal_QueueGesture` | helper | queues a dealer gesture (ai.md#dealer-gestures) | confirmed (code) |
-| `0x002c7248` | `DealerGoal_Say` | helper | says the dealer's line for a kind (ai.md#dealer-gestures) | confirmed (code) |
-| `0x002c73b8` | `DealerGoal_CanOtherPlayerBuy` | helper | From DealerGoal_OnBuy with two players: 1 when the other player is within the goal's range (`+0x2c`, squared distance) and can buy: money (item 2) at least the price byte `0x005110fd` and, except for type 1, a count of the item below the cap byte `0x005110fe` ([Dealer](ai.md#dealer-buy)) | confirmed (code) |
+| `0x002c70a0` | `DealerGoal_End` | End | removes the spinning icon; if he is the game state's dealer customer (`+0x284`) that is reset to the default (`0x006ebd30`); threat response 2, clears brain `+0xcc` bit 2; then the base End (vtable `+0x3c`) ([Dealer](ai-scripting.md#dealer)) | confirmed (code) |
+| `0x002c7158` | `DealerGoal_QueueGesture` | helper | queues a dealer gesture (ai-scripting.md#dealer-gestures) | confirmed (code) |
+| `0x002c7248` | `DealerGoal_Say` | helper | says the dealer's line for a kind (ai-scripting.md#dealer-gestures) | confirmed (code) |
+| `0x002c73b8` | `DealerGoal_CanOtherPlayerBuy` | helper | From DealerGoal_OnBuy with two players: 1 when the other player is within the goal's range (`+0x2c`, squared distance) and can buy: money (item 2) at least the price byte `0x005110fd` and, except for type 1, a count of the item below the cap byte `0x005110fe` ([Dealer](ai-scripting.md#dealer-buy)) | confirmed (code) |
 | `0x002c7c20` | `DealerGoal_FinishPair` | helper | when the money pair was started by this deal (`+0x45`): the 'cash' line at most every 5 s, then the deal's completion (the weapons dealer's blade to the chosen member, else the item to the buyer's inventory), the price taken and added to the dealer's money (at most 999), `+0x3f` set and a deal counted | confirmed (code) |
-| `0x002c7de8` | `DealerGoal_Reset` | helper | resets the visit when the player leaves (ai.md#dealer-process) | confirmed (code) |
-| `0x002c88a8` | `DealerFlee_Push` | pusher | pushes the flee-or-fight goal when the dealer is attacked (ai.md#dealer-buy) | confirmed (code) |
+| `0x002c7de8` | `DealerGoal_Reset` | helper | resets the visit when the player leaves (ai-scripting.md#dealer-process) | confirmed (code) |
+| `0x002c88a8` | `DealerFlee_Push` | pusher | pushes the flee-or-fight goal when the dealer is attacked (ai-scripting.md#dealer-buy) | confirmed (code) |
 | `0x002c8970` | `DealerFleeGoal_Init` | init | vtable `0x00540c30`: the attacker and the 'fight' byte | confirmed (code) |
 | `0x002c89a8` | `DealerFleeGoal_Start` | Start | line 9 or a turn to the attacker, then a 25-50 ms wait | confirmed (code) |
 | `0x002c8af0` | `DealerFleeGoal_Process` | Process | steps back 2-4 m, then the blade in hand (fight) or a run at gait 5 to an activity-8 flag | confirmed (code) |
@@ -1061,7 +1061,7 @@ A grab under the HTL tactic: throw the grabbed enemy toward the tactic's flag.
 
 ### Idle (type 0) {#goal-idle}
 
-The idle-in-place goal of a cheering crowd ([Tactics](ai.md#tactics)), and two empty initialisers next to it.
+The idle-in-place goal of a cheering crowd ([Tactics](ai-gangs.md#tactics)), and two empty initialisers next to it.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1083,7 +1083,7 @@ The parley goal (`Goal_StartParlay`); its Start and Process are outside this ran
 
 ### AddressPerson (type 0x57) {#goal-address-person}
 
-[GoalAddressPerson](ai.md#address-person); its Start and Process are outside this range.
+[GoalAddressPerson](ai-scripting.md#address-person); its Start and Process are outside this range.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1201,7 +1201,7 @@ object target is inferred: the goal sets nothing else. Neither the arc nor any s
 | --- | --- | --- | --- | --- |
 | `0x002cf480` | `Goal_ThrowObject` | binding | `Goal_ThrowObject`: pushes the goal on a human | confirmed (code) |
 | `0x002cf530` | `ThrowObjectGoal_Init` | init | vtable `0x005415f0`; the flag, the range, the gait, a Lua callback (`*(0x00512b04)` `+0xcc`) | confirmed (code) |
-| `0x002cf5d0` | `ThrowObjectGoal_End` | End | clears object flag `0x40000` and human `+0x128`; calls the Lua callback ([Scripted goals](ai.md#scripted)) | confirmed (code) |
+| `0x002cf5d0` | `ThrowObjectGoal_End` | End | clears object flag `0x40000` and human `+0x128`; calls the Lua callback ([Scripted goals](ai-scripting.md#scripted)) | confirmed (code) |
 | `0x002cf690` | `ThrowObjectGoal_Process` | Process | done unless he holds something throwable; walks to within range of the flag, turns to it (15°), makes the flag his object target and queues kind 0 (cross) every 30th update (above) | confirmed (code) |
 
 ### Investigate (type 0x5e) {#goal-investigate}
@@ -1224,7 +1224,7 @@ crime event at a car). Cops may call backup from it.
 ### TauntPlayer (type 0x63) {#goal-taunt-player}
 
 The ring round a chief who fights one of his own Warriors. `PlayerBrain_Update` (`0x003035d8`), every 13 updates while
-the player's brain `+0x2e4` is set ([fight mode](ai.md#warrior-follow)), pushes it on each free member of his gang
+the player's brain `+0x2e4` is set ([fight mode](ai-gangs.md#warrior-follow)), pushes it on each free member of his gang
 within 15 m that has no TauntPlayer goal.
 
 | Address | Name | Role | What it does | Evidence |
@@ -1236,14 +1236,14 @@ within 15 m that has no TauntPlayer goal.
 
 ### Riot (type 0x54): helpers {#goal-riot-helpers}
 
-Helpers of [GoalRiot](ai.md#riot).
+Helpers of [GoalRiot](ai-scripting.md#riot).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
 | `0x002d1080` | `RiotGoal_Start` | Start | saves the brain's type `+0x21c` and `+0x28d` | confirmed (code) |
 | `0x002d1100` | `Riot_OnAttacked` | event | from `GangBrain_OnEvent`: unless in the 3 s cool-down or fighting, fights back (`Brain_Fight`, 8000) a free attacker or another rioter, with line `0x11` | confirmed (code) |
 | `0x002d11f8` | `Riot_AfterFight` | helper | from FindEnemy's End (`0x002c04e8`): line `0x58`, type 0, a 3 s cool-down | confirmed (code) |
-| `0x002d1288` | `RiotGoal_TryPickFight` | helper | `RiotGoal_TryPickFight` ([the fight](ai.md#riot)) | confirmed (code) |
+| `0x002d1288` | `RiotGoal_TryPickFight` | helper | `RiotGoal_TryPickFight` ([the fight](ai-scripting.md#riot)) | confirmed (code) |
 | `0x002d1498` | `Riot_PointNearPlayer` | helper | when the nearest player is 15 m or more away, a reachable point 15 m from him; the move deadline 10 s on | confirmed (code) |
 | `0x002d15d0` | `Riot_PointInTurf` | helper | a reachable point in one of the gang's turf boxes; the move deadline 10 s on | confirmed (code) |
 
@@ -1263,14 +1263,14 @@ A gang member follows a passer-by, jeering, while he stays near.
 
 ### PlayDynAnimation (type 0x22) {#goal-play-dyn-animation}
 
-[GoalPlayDynAnimation](ai.md#dyn-animation).
+[GoalPlayDynAnimation](ai-scripting.md#dyn-animation).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
 | `0x002d2df8` | `Goal_PlayDynamicAnimation` | binding | script binding: resolves the human, makes the goal with the script's arguments and pushes it (needs a clip name) | confirmed (code) |
 | `0x002d2eb0` | `PlayDynAnimGoal_Init` | init | vtable `0x00541410`; the clip into the human's dyn slot (`+0x468`, anim 668), the Lua callback | confirmed (code) |
 | `0x002d3038` | `PlayDynAnimGoal_Destroy` | Destroy | releases the dyn slot | confirmed (code) |
-| `0x002d3060` | `PlayDynAnimGoal_Process` | Process | waits for the clip, plays anim 668 once, done ([GoalPlayDynAnimation](ai.md#dyn-animation)) | confirmed (code) |
+| `0x002d3060` | `PlayDynAnimGoal_Process` | Process | waits for the clip, plays anim 668 once, done ([GoalPlayDynAnimation](ai-scripting.md#dyn-animation)) | confirmed (code) |
 
 ### Scatter (type 0x37) {#goal-scatter}
 
@@ -1481,12 +1481,12 @@ A helper several goals share, and the reset of two lists beside it.
 
 ### The MoveTo goals (types 1-6) {#goal-move-to}
 
-[GoalMoveToFlag](ai.md#move-to-flag) and its siblings: to an exit flag, a flag-net flag, a flag to use, a position, a
+[GoalMoveToFlag](ai-scripting.md#move-to-flag) and its siblings: to an exit flag, a flag-net flag, a flag to use, a position, a
 human.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
-| `0x002da4a0` | `MoveToFlagGoal_End` | End | MoveToFlag: when arrived, message 8 to the flag and the gang's event ([GoalMoveToFlag](ai.md#move-to-flag)) | confirmed (code) |
+| `0x002da4a0` | `MoveToFlagGoal_End` | End | MoveToFlag: when arrived, message 8 to the flag and the gang's event ([GoalMoveToFlag](ai-scripting.md#move-to-flag)) | confirmed (code) |
 | `0x002da810` | `Goal_MoveToExitFlag` | binding | `Goal_MoveToExitFlag` (type 2): a non-cop brain is held | confirmed (code) |
 | `0x002da960` | `GoalMoveToExitFlag_Start` | Start | MoveToExitFlag: the flag point (or a point on its circle); a camera check 8 s on | confirmed (code) |
 | `0x002daa20` | `MoveToExitFlagGoal_End` | End | MoveToExitFlag: when arrived, the gang's event; clears brain `+0x2d7` | confirmed (code) |
@@ -1562,7 +1562,7 @@ Smashing a car, from a spot round it.
 
 ### FollowPlayer (type 0x32) {#goal-follow-player}
 
-[The default command: follow](ai.md#warrior-follow).
+[The default command: follow](ai-gangs.md#warrior-follow).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1572,12 +1572,12 @@ Smashing a car, from a spot round it.
 | `0x002de498` | `FollowPlayerGoal_End` | End | restores the turn boost and view (`+0x12c`); leaves the leader's formation | confirmed (code) |
 | `0x002de540` | `FollowPlayerGoal_Resume` | Resume | joins the leader's formation, leaves the fight stance; next turn 1-2 s, next fidget 2-3 s | confirmed (code) |
 | `0x002de608` | `FollowPlayerGoal_Suspend` | Suspend | clears the actions and the target; restores the turn boost | confirmed (code) |
-| `0x002de650` | `FollowPlayerGoal_IsFightMode` | helper | `FollowPlayerGoal_IsFightMode` ([fight mode](ai.md#warrior-follow)) | confirmed (code) |
-| `0x002de7c0` | `FollowPlayerGoal_Process` | Process | [`GoalFollowPlayer`'s Process](ai.md#warrior-follow) | confirmed (code) |
+| `0x002de650` | `FollowPlayerGoal_IsFightMode` | helper | `FollowPlayerGoal_IsFightMode` ([fight mode](ai-gangs.md#warrior-follow)) | confirmed (code) |
+| `0x002de7c0` | `FollowPlayerGoal_Process` | Process | [`GoalFollowPlayer`'s Process](ai-gangs.md#warrior-follow) | confirmed (code) |
 
 ### TrackHuman (type 0x30) {#goal-track-human}
 
-[Formations and follow slots](ai.md#formations).
+[Formations and follow slots](ai-gangs.md#formations).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1599,7 +1599,7 @@ Follows an object (a car or a thing), matching speed.
 
 ### FollowFormation (type 0x33) {#goal-follow-formation}
 
-[Formations and follow slots](ai.md#formations).
+[Formations and follow slots](ai-gangs.md#formations).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1609,11 +1609,11 @@ Follows an object (a car or a thing), matching speed.
 | `0x002dfcd0` | `FollowFormationGoal_Start` | Resume | `FollowFormationGoal_Start` (the Resume slot): joins the formation, takes the follow point, turns with a running leader | confirmed (code) |
 | `0x002dfe68` | `FollowFormationGoal_End` | End | restores the Warrior's flags and the start boost | confirmed (code) |
 | `0x002dfef8` | `FollowFormation_PickSpeed` | helper | the speed by distance to the slot: walk, run (4-8 m) or the leader's | confirmed (code) |
-| `0x002e0088` | `FollowFormationGoal_Process` | Process | done when the leader is gone or a move failed; follows the slot point; a running move's point is retargeted by the plan, not here ([follow](ai.md#follow-retarget)) | confirmed (code) |
+| `0x002e0088` | `FollowFormationGoal_Process` | Process | done when the leader is gone or a move failed; follows the slot point; a running move's point is retargeted by the plan, not here ([follow](ai-gangs.md#follow-retarget)) | confirmed (code) |
 
 ### TravelPath (type 0x38), LeadChase (type 0x49) and RunCarrotRun (type 0x4a) {#goal-travel-path}
 
-Walking a path of flags, alone, leading a chase, or as the carrot ([GoalDevilRun](ai.md#devil-run) for the devil run).
+Walking a path of flags, alone, leading a chase, or as the carrot ([GoalDevilRun](ai-scripting.md#devil-run) for the devil run).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1631,21 +1631,21 @@ Walking a path of flags, alone, leading a chase, or as the carrot ([GoalDevilRun
 | `0x002e0dc8` | `LeadChaseGoal_Process` | Process | waits for the chaser when he falls behind, runs on when close; slows on low power | confirmed (code) |
 | `0x002e1140` | `Goal_RunCarrot` | binding | script binding: resolves the human, makes the goal with the script's arguments and pushes it | confirmed (code) |
 | `0x002e1230` | `RunCarrotGoal_Init` | init | vtable `0x00541b30`; makes a TravelPath sub-goal (`+0x10`) for the path; the gang that chases (`+0x1c`); the hostile flag `+0x25` | confirmed (code) |
-| `0x002e1330` | `RunCarrotGoal_End` | End | restores the turn boost, ends the move sub-goal ([brain boosts](ai.md#brain-boosts)) | confirmed (code) |
+| `0x002e1330` | `RunCarrotGoal_End` | End | restores the turn boost, ends the move sub-goal ([brain boosts](ai-gangs.md#brain-boosts)) | confirmed (code) |
 | `0x002e1388` | `RunCarrotGoal_Free` | Destroy | ends and frees the TravelPath sub-goal | confirmed (code) |
-| `0x002e13c0` | `RunCarrotGoal_UpdateSpeed` | helper | the nearest chaser's distance sets the speed between the gait's and the maximum, and the turn boost + 0, 2 or 3 ([brain boosts](ai.md#brain-boosts)); passes the speed to the running move | confirmed (code) |
+| `0x002e13c0` | `RunCarrotGoal_UpdateSpeed` | helper | the nearest chaser's distance sets the speed between the gait's and the maximum, and the turn boost + 0, 2 or 3 ([brain boosts](ai-gangs.md#brain-boosts)); passes the speed to the running move | confirmed (code) |
 | `0x002e15e8` | `RunCarrotGoal_Process` | Process | every fourth update the speed; runs the MoveToFlag sub-goal to each path point in turn; done at the end of the path | confirmed (code) |
 
 ### DevilRun (type 0x98) {#goal-devil-run}
 
-[GoalDevilRun](ai.md#devil-run).
+[GoalDevilRun](ai-scripting.md#devil-run).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
-| `0x002e18d8` | `DevilRunGoal_Start` | Start | saves the turn boost, threat response and view; speed = the gait's; view 2π ([GoalDevilRun](ai.md#devil-run)) | confirmed (code) |
+| `0x002e18d8` | `DevilRunGoal_Start` | Start | saves the turn boost, threat response and view; speed = the gait's; view 2π ([GoalDevilRun](ai-scripting.md#devil-run)) | confirmed (code) |
 | `0x002e1950` | `DevilRunGoal_End` | End | restores the turn boost, threat response and view | confirmed (code) |
 | `0x002e1998` | `DevilRunGoal_Resume` | Resume | threat response 0; update counter 16 | confirmed (code) |
-| `0x002e19b0` | `DevilRunGoal_SegmentOf` | helper | the path segment nearest a position ([GoalDevilRun](ai.md#devil-run)) | confirmed (code) |
+| `0x002e19b0` | `DevilRunGoal_SegmentOf` | helper | the path segment nearest a position ([GoalDevilRun](ai-scripting.md#devil-run)) | confirmed (code) |
 | `0x002e1ad0` | `DevilRun_IsPastPoint` | helper | whether a point lies past another along a direction, by the goal's way (`+0x3c`) | confirmed (code) |
 | `0x002e1b60` | `DevilRunGoal_FindHindmostSegment` | helper | the hindmost gang member's segment; 0 when the gang has nobody left | confirmed (code) |
 | `0x002e1c18` | `DevilRunGoal_ChooseChaser` | helper | the chaser: the live gang member farthest back along the hindmost segment | confirmed (code) |
@@ -1701,7 +1701,7 @@ The first functions of the Confront class (vtable `0x00541950`); its Process (`0
 ### Confront (type 0x3c): the Process {#goal-confront-process}
 
 The Process of the Confront goal (its init and Start are in [Confront: the start](#goal-confront-start)); the gang
-tactic is [TacticConfront](ai.md#tactics).
+tactic is [TacticConfront](ai-gangs.md#tactics).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1793,7 +1793,7 @@ Ray tests used by `ShooterGoal_Fire` and the StationaryShooterB fire code below.
 
 ### Fatigued (type 0x90) {#goal-tired}
 
-The tired spell of a boss after a run of hits or throws: [The Diego and Vargas fight](ai.md#boss-diego-vargas).
+The tired spell of a boss after a run of hits or throws: [The Diego and Vargas fight](ai-gangs.md#boss-diego-vargas).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1807,7 +1807,7 @@ The tired spell of a boss after a run of hits or throws: [The Diego and Vargas f
 
 ### BigBrawler (type 0x84) {#goal-big-brawler}
 
-Diego, and Vargas at stage 3: [The Diego and Vargas fight](ai.md#boss-diego-vargas).
+Diego, and Vargas at stage 3: [The Diego and Vargas fight](ai-gangs.md#boss-diego-vargas).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1830,7 +1830,7 @@ Diego, and Vargas at stage 3: [The Diego and Vargas fight](ai.md#boss-diego-varg
 ### BigFighter (type 0x85) {#goal-big-fighter}
 
 A boss fighter (Lua `GoalBigFighter`). Big Mo has it in level 11, set to the tactic's stage, and Virgil has it in
-stage 3 of level 93 ([AI: The boss fights](ai.md#boss-fights)). "Giant" means a model scale above 1.1. Confirmed (code)
+stage 3 of level 93 ([AI: The boss fights](ai-gangs.md#boss-fights)). "Giant" means a model scale above 1.1. Confirmed (code)
 at `0x002eabc8`, `0x002ea3c8`, `0x002ea218` and `0x002ea038`, with the [attack kinds](ai.md#attack-kinds) as numbered
 there.
 
@@ -1942,7 +1942,7 @@ recovery when his health falls to 15 %.
 
 ### BigThrower (type 0x87) {#goal-big-thrower}
 
-Vargas at stage 2: [The Diego and Vargas fight](ai.md#boss-diego-vargas).
+Vargas at stage 2: [The Diego and Vargas fight](ai-gangs.md#boss-diego-vargas).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1979,7 +1979,7 @@ by the Chatterbox and Virgil boss tactics.
 ### StationaryThrower (type 0x8c) {#goal-stationary-thrower}
 
 `GoalStationaryThrower`: stay at a spot and throw spawned objects at visible enemies (the Diego and Vargas minions,
-[above](ai.md#boss-diego-vargas)).
+[above](ai-gangs.md#boss-diego-vargas)).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
