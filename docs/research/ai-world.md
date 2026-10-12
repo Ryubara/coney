@@ -16,11 +16,11 @@ here, not repeated.
 | Which goal fetches an object, the object search, letting go | [AI: Fetching an object](ai.md#get-item), [Objects in an AI's hands](ai.md#ai-objects) |
 | World flags (activities) | [AI: World flags](ai.md#ai-flags); reinforcements spawned on them: [below](#spawner-reinforcements) |
 | Hiding, cars and trains in brief | [AI: Cover, cars and trains](ai.md#ai-hazards) |
-| Route links: climbs, jumps, doors, charges | [AI: Following a route](ai.md#route-follow), [Jump legs](ai.md#route-jump) |
-| How the scripts drive the AI | [AI: How the scripts drive the AI](ai.md#script-control) |
+| Route links: climbs, jumps, doors, charges | [AI: Following a route](ai-moving.md#route-follow), [Jump legs](ai-moving.md#route-jump) |
+| How the scripts drive the AI | [AI: How the scripts drive the AI](ai-scripting.md#script-control) |
 | An AI's attacks and the held object's effect | [Combat: An AI's attacks](combat.md#ai-attacks) |
 | Each weapon set's swings, throws and blocks | [Combat moves: Weapons](combat-moves.md#weapons) |
-| Steps and giving way | [Characters: Step control](characters.md#step-control), [AI: Giving way](ai.md#giving-way) |
+| Steps and giving way | [Characters: Step control](characters.md#step-control), [AI: Giving way](ai-moving.md#giving-way) |
 
 ## Behaviour
 
@@ -209,7 +209,7 @@ otherwise. A gang-locked car ignores hits from other gangs.
 
 ### Breakables, climbs and charges on a route {#route-objects}
 
-The route follower handles these link kinds ([AI: Following a route](ai.md#route-follow)). On the Human side,
+The route follower handles these link kinds ([AI: Following a route](ai-moving.md#route-follow)). On the Human side,
 confirmed (code):
 
 - **The charge** (`Route_SmashLeg`, `0x0029bca0`), at a breakable door or pane:
@@ -228,7 +228,7 @@ confirmed (code):
 An AI never opens a closed door on its own. Confirmed (code) at the addresses cited.
 
 - **On a route**, a closed door's link (kind `0x10` with the avoid bit) refuses the move with brain `+0x284` = 4,
-  an open door's link is walked, and a breakable door is charged ([AI: Following a route](ai.md#route-follow)).
+  an open door's link is walked, and a breakable door is charged ([AI: Following a route](ai-moving.md#route-follow)).
 - **Scripted**: `OpenDoorAnimated(door, human)` sends the door message 0. `Door_OpenAnimated` (`0x00396fa8`) makes
   the door the human's object target and sets its action code (record `+0x14`) to **26** (`Human_SetAction`,
   `0x002266a8`; [World objects: Doors](objects.md#doors)).
@@ -253,7 +253,7 @@ An AI never opens a closed door on its own. Confirmed (code) at the addresses ci
     - once the time is more than `+0x6b4` ms past, the door closes;
     - otherwise the door is told to open again every 500 ms.
 
-  [AI: Spawners](ai.md#spawners) gives the slot's other fields.
+  [AI: Spawners](ai-gangs.md#spawners) gives the slot's other fields.
 
 ### Where a reinforcement spawner puts its humans {#spawner-reinforcements}
 
@@ -281,8 +281,8 @@ Confirmed (code) at the addresses cited unless marked:
    `FlagNet_GetMask` `0x002a7538`: a flag whose mask `+0xd8` is 0 suits anyone, and so does a class whose mask is
    `0x20`), the one **nearest the aim point**. No flag, no spawn. The human stands on that flag's position.
 6. **Turf.** The flag must lie in one of the gang's turf boxes (`Gang_IsPointInTurf` `0x001652e8`; a gang with no
-   turf takes any, [AI: Out of sight](ai.md#spawner-placement)).
-7. **Unseen.** `Camera_CanSeePoint(0.3, d, camera, flag + 1.6 m up)` (`0x00122548`, [Off screen](ai.md#spawner-unseen))
+   turf takes any, [AI: Out of sight](ai-gangs.md#spawner-placement)).
+7. **Unseen.** `Camera_CanSeePoint(0.3, d, camera, flag + 1.6 m up)` (`0x00122548`, [Off screen](ai-gangs.md#spawner-unseen))
    must not answer 1. With two players, the other player's camera must not see it either, at its view distance capped
    at 70 m and raised to at least 35 m.
 8. **Not crowded.** With z back on the flag, the gang's first member that still resolves (16 handles at gang
@@ -292,7 +292,7 @@ Confirmed (code) at the addresses cited unless marked:
 
 Nothing in this function sends the human anywhere: the first live member is only the friendliness reference. What a
 reinforcement does next is its spawn callback's business (`level34`'s give a riot goal or a flag-net walk). The
-[Spawners](ai.md#spawners) summary used to say the human is sent to that member; this reading replaces it.
+[Spawners](ai-gangs.md#spawners) summary used to say the human is sent to that member; this reading replaces it.
 
 **In Coney** (`repo:src/ai/spawners.cpp`, `Spawners::spawnOne`): state 7 is placed as state 8 with a value of 0, by
 the outward route search from the player's node. With a value of 0, any node outside the view cone qualifies,
@@ -314,7 +314,7 @@ that is the subway the mission starts in (user checklist item 17).
 
 What an AI does about world things it does not use:
 
-- Dealers: [AI: GoalDealer](ai.md#dealer).
+- Dealers: [AI: GoalDealer](ai-scripting.md#dealer).
 - Breakables smashed by gangs: VandalizeItem, DestroyItem and Riot ([AI goals](ai-goals.md)).
 - A crime at a car: the Pursue tactic ([AI](ai.md#ai-hazards)).
 - Trains: RunFromTrain ([AI](ai.md#ai-hazards)).

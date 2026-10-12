@@ -44,7 +44,7 @@ Research:
 - [The mission's scripts, checkpoint by checkpoint](../research/scripting.md#level34)
 - [Story order and what loads each level](../research/scripting.md#run-next-mission)
 - [The fourth mission's brain and human calls](../research/ai.md#coney)
-- [Spawners](../research/ai.md#spawners)
+- [Spawners](../research/ai-gangs.md#spawners)
 - [The riot's crowd, and what Coney lacks](../research/scripting.md#level34-start)
 - [Cars](../research/cars.md)
 - [Fix list, checkpoint by checkpoint](../research/scripting.md#level34-fixes)

@@ -1,0 +1,2 @@
+# Circle tapped: 0x1e on the press, 0xd on the release; the tandem starts on 0xd.
+60 tap circle

@@ -647,7 +647,7 @@ becomes player 1 when player 1 goes. What the engine calls "the player" (the rin
 8. **Difficulty scaling**: health (record `+0x144`, `+0x146`) times a percentage, power maxima reloaded, attack damage
    times another percentage (bytes `+5` and `+6` of the record `0x00222b58` returns; `Human_ReleasePlayer` divides
    back).
-9. The war chief's default Warrior command 0 to its gang (`0x0041c4e0`, [AI](ai.md#warrior-commands)), the gang's
+9. The war chief's default Warrior command 0 to its gang (`0x0041c4e0`, [AI](ai-gangs.md#warrior-commands)), the gang's
    cached player data (`0x00166708`), physics body flag `0x400` and a wider body, the human flags of the table above.
    Returns 1.
 
@@ -695,7 +695,7 @@ disassembly; each step is confirmed (code) as above:
    front end's pad for slot 0), takes HUD panel 0 (just freed) and is added to the camera targets.
 4. **`GangBrFlush(0)`** clears the old pair's goals and actions.
 5. **`GangDelete(0)`** destroys the old Rembrandt and the old Ash at once ([Destroying a human](#destroy),
-   [AI: deleting a gang](ai.md#gang-delete)).
+   [AI: deleting a gang](ai-gangs.md#gang-delete)).
 
 So the player moves with `HuChangePlayerGang`, not with `HuCreate`: an implementation that binds the player on any
 `HuCreate(..., 1, ...)` while a player exists diverges here, and one that ignores `HuChangePlayerGang` leaves the pad on
@@ -951,7 +951,7 @@ release.
 ### An AI's locomotion {#ai-locomotion}
 
 An AI human has no stick: its goals and actions write the brain's heading `+0x110`, speed `+0x114` (from a gait,
-`Brain_SetMoveGait` `0x0028aac0`), aim point `+0x90` and radius `+0x118` ([AI, Moving](ai.md#moving)), and its
+`Brain_SetMoveGait` `0x0028aac0`), aim point `+0x90` and radius `+0x118` ([AI, Moving](ai-moving.md#moving)), and its
 control function, `Human_UpdateControl` (`0x00243848`, the default `+0x1bc`), turns them into a velocity and a
 rotation each update. For a pad-controlled human the same function only picks the player's control (locomotion, air,
 fight stance, button tap or wheelchair) and runs it. Confirmed (code) at `0x00243848` unless marked.
@@ -971,7 +971,7 @@ keeps sprinting at 0 (inferred: no reader found).
    than 0.1; in a fight stance (state `0x3`) → the base speed (`+0x164` × `+0x3a4`, the combat walk) when asked for
    more than 0.1, else 0; carrying an object of kind 4 or 6 and asked for more than the run speed → it **drops** the
    object (`0x00257f38`) unless its type's `+0x87` is 6 and `+0x5a` is 0; otherwise at most 25 m/s. With brain
-   `+0x0b` (the turn boost, [AI](ai.md#brain-boosts)) above 0, a human (`+0x1b0` = −1) in a fight stance gets
+   `+0x0b` (the turn boost, [AI](ai-gangs.md#brain-boosts)) above 0, a human (`+0x1b0` = −1) in a fight stance gets
    anim slot 14 = 380 (the player's combat walk) and its speeds recomputed; at 0 or below, slot 14 goes back to 372.
 3. **Speeding up from rest** (current speed exactly 0): unless the state code is 3 or 7 or the anim state is 4, the
    state code becomes **6** (run start) when asked for at least the run speed (**8** instead when brain `+0x0c` is
@@ -1045,7 +1045,7 @@ inferred from the subtraction). Positive angles turn left. Confirmed (code):
 
 The clip is played by `0x0025cb90`: a fade of 0.1 s, the clip, then the idle (slot 0, or slot 11 in a fight stance)
 looping, holding the given flag (`0x20000000` here) while it plays, state code 0. This is the turn (398) seen at
-runtime before an AI's run-in ([AI, Moving](ai.md#moving)).
+runtime before an AI's run-in ([AI, Moving](ai-moving.md#moving)).
 
 **Arriving with one clip** (`0x0025c5b8`, the global `0x005104e8` = 1): while the brain asks for more than the jog
 speed, its `+0x11c` is 0, the human is not down, not hurt and holds no flag, and its point is at least 0.1 m beyond
@@ -1063,7 +1063,7 @@ Confirmed (code):
 
 So an AI running at its point stops with the run stop once the point is closer than the run stop's slide (about
 1.6 m for Rembrandt), and one starting near its point takes a step or dash. Whether a given goal's move reaches
-this test is the move action's business ([AI, The move action](ai.md#move-action)).
+this test is the move action's business ([AI, The move action](ai-moving.md#move-action)).
 
 **Other effects**: when the brain asks for any gait above 0 (`Brain_UpdateGait`, `0x0028ab08`), the human lets go of
 carried props (`0x0024ce40`) and, after a state 18 or with held flag `0x20000`, its animation is rebuilt
@@ -1103,7 +1103,7 @@ control (`+0x1bc` = `0x00243420`, the member-function pointer form `+0x1be` = �
 
    The step then starts on the first free update.
 3. **Pick the clip.** Let `d` be the brain's heading `+0x110` minus the facing, wrapped to −π..π. The turn boost is
-   brain `+0x0b` ([AI](ai.md#brain-boosts)). The facing to end on is the heading, offset so that the clip's own
+   brain `+0x0b` ([AI](ai-gangs.md#brain-boosts)). The facing to end on is the heading, offset so that the clip's own
    direction points along the heading:
 
    | `d` | End facing | Fight stance | Boost 0 or below | Boost above 0 |
@@ -1172,7 +1172,7 @@ GiveWay ends; nothing else restores it. The destroy (`GiveWayAction_Destroy`, `0
 steps out of a walker's.
 
 **Who may give way** (`Brain_GiveWayTo`, before its free-sector search, which is in
-[AI: Giving way](ai.md#giving-way)). All of these must hold:
+[AI: Giving way](ai-moving.md#giving-way)). All of these must hold:
 
 - the stander's brain has a task (`+0x04` ≠ 0) or its `+0x09` is set;
 - **neither human is a threat to the other**: `Human_IsThreatTo` (`0x00222a48`) is false both ways. It is
@@ -1600,7 +1600,7 @@ Nothing else changes them:
   material rule is the climb's pass-through of 30, 31 and 122. `GRAVEL` (106) and the rest have no movement rule.
 - **The triangle's bits 14-15.** The sweep reads them as the edge of a corner slide; 3 names none, and the gravel
   faces below hold 3.
-- **The route.** A leg of kind 1 is walked with no handler of its own ([AI: link kinds](ai.md#route-follow)). The
+- **The route.** A leg of kind 1 is walked with no handler of its own ([AI: link kinds](ai-moving.md#route-follow)). The
   sweep, the contact handler and the snap read neither the brain nor its route, and an AI's body moves through the
   same move as the player's. Two things differ: the sphere's radius (body `+0x60`, about 0.35 m for an AI,
   [above](#walls)), and the slid velocity, which is written back only to a player's body (body flag `0x400`,
@@ -1671,12 +1671,12 @@ update, read over PINE:
 | street, updates 1-81 | 1.654 m/s straight at the first waypoint, 20° off 680's normal in plan |
 | 679, along 680's foot, 82-110 | the centre's projection **0.36 to 0.02 m outside the crease edge** (679-680) with the edge 0.50 down to 0.27 m from the centre (radius 0.35): the edge case of step 1. He moved 0.013-0.015 m across the ground (0.42 m/s) and 0.012 m up per update, turned 20-30° north of his aim, while his asked speed (`+0x1ac`) and velocity stayed 1.654 m/s; the "could not move" counter stayed 0 |
 | inside 680, 111-155 | the projection inside the face (step 1's first case), the centre sinking to 0.21 m from its plane; feet still on 679 until update 140, then on 680 itself (`n.z` 0.526): 0.33 m/s across and 0.45 m/s up |
-| crest | the route moved on to (−280.76, 130.48) at update 160, before he reached the first waypoint (the route's straight-line skip, [AI](ai.md#route-follow)); he crested at z 3.7, took the drop leg and stopped 1.9 m from the target at update 487 |
+| crest | the route moved on to (−280.76, 130.48) at update 160, before he reached the first waypoint (the route's straight-line skip, [AI](ai-moving.md#route-follow)); he crested at z 3.7, took the drop leg and stopped 1.9 m from the target at update 487 |
 
 The same run with his body `+0x60` raised to 1.3429 (radius 0.470, Coney's) was alike: the crease edge 0.49 down
 to 0.35 m from the centre, the projection 0.27 to 0.05 m outside it, 0.013-0.015 m across and 0.012 m up per
 update, never blocked; this passes within 0.5 m of the point where Coney's bum stalled before 2026-10-11. Neither
-run tripped the move action's stuck test (0.2 m in 60 updates, [AI](ai.md#move-action)): about 1.1 m was covered
+run tripped the move action's stuck test (0.2 m in 60 updates, [AI](ai-moving.md#move-action)): about 1.1 m was covered
 in each 60 updates on the heap. The waypoint was not skipped to get round the heap, and nothing warped him.
 
 The push-out `PhysicsBody_PushOutOfWalls` (`0x003477c0`, a sphere out of the nearest wall by `n × (r − distance)`)
@@ -1819,7 +1819,7 @@ from any gait, standing too, and its `+0x3c0` is not written. `Human_LaunchJump`
 `+0x1b` is 0 the velocity of the route follower's arc instead (`0x0029ade0`): the lowest of the vertical speeds 0.5,
 1.25, 2.0, ... m/s whose arc lands on the route's landing point at no more than 10 m/s in plan. Confirmed (code), and
 at runtime for Vermin (3.5 m/s up, 9.55 m/s across a 4.1 m gap); the rest is in
-[AI: Jump legs](ai.md#route-jump).
+[AI: Jump legs](ai-moving.md#route-jump).
 
 **In an input script**: `stick left 0 100`, wait until the run start is over and the speed is above 3.3 m/s, then
 `tap triangle`; add `press l2` beforehand for a sprint jump.
@@ -2006,7 +2006,7 @@ itself is above.
 The marker over a human's head (a mission target's star, a dealer's sign, the co-op player markers, the crown in
 Rumble) is a **3D world object of class `dyn_icon`**, attached to the human; it is not a HUD sprite. One per human,
 its handle at human `+0x360`. Confirmed (code) at the cited addresses unless marked; not checked at run time. The
-dealer's case is also on [AI: the dealer's icon](ai.md#dealer-icon).
+dealer's case is also on [AI: the dealer's icon](ai-scripting.md#dealer-icon).
 
 **Making one** (`Human_ShowOverheadIcon`, `0x002271f0`; reached from `HuAttachSpinningIcon` `0x00238a88`,
 `GangAttachSpinningIcon` `0x0016b2c8` for each of the gang's 16 member slots, and the game's own callers):
@@ -2050,8 +2050,8 @@ out in 3 steps. No level script calls it.
   ([World objects: the attachment](objects.md#held)).
 - **No spin** for model hashes `0x8b7fe995`, `0x7644ee5d`, `0x1de2e2ca`, `0x1a72a32d`, `0x687e742b`: the angular
   velocity is zeroed and flag bit 1 cleared. These are the player markers (`dyn_play_one`, `dyn_play_two` and their
-  `_euro` forms) and `dyn_lizziestarget` ([AI](ai.md#dealer-icon)); they keep the half-turn local rotation, so they
-  turn with the human.
+  `_euro` forms) and `dyn_lizziestarget` ([AI](ai-scripting.md#dealer-icon)); they keep the half-turn local rotation, so
+  they turn with the human.
 - **`dyn_cuffs`** (`0x464ac521`) takes the type record's offset and rotation (properties 11 and 12), turns at π/2
   rad/s, and is detached at once, so it stays where it appeared ([Crimes: arrest](crimes.md#arrest)).
 - **Colour state** (5 words): not fading, colour **`0xFFFFFFFF`** (white, opaque), the rest 0.
@@ -2254,7 +2254,7 @@ bytes each. A human flag is a bit of `+0xe0`, a state flag one of record `+0x00`
 | `0x00227428` | `Human_HasOverheadIconType` | True when the overhead icon `+0x360` is a world object of the given type. | confirmed (code) |
 | `0x002274a0` | `Human_EmptyStub3` | Empty function called by Human_StateUpdate. | confirmed (code) |
 | `0x00227738` | `Humans_FindNear` | Collects up to n humans of the game state's list (`+0x224`, `+0x228`) within a radius of a point, skipping one human and an optional filter; distances squared go beside each. | confirmed (code) |
-| `0x002278a8` | `Humans_FindNearSegment` | Finds humans whose pose slot lies near a segment (Segment_ClosestPoint), skipping one; used by Route_IsJumpLegClear ([AI: Giving way](ai.md#giving-way)). | confirmed (code) |
+| `0x002278a8` | `Humans_FindNearSegment` | Finds humans whose pose slot lies near a segment (Segment_ClosestPoint), skipping one; used by Route_IsJumpLegClear ([AI: Giving way](ai-moving.md#giving-way)). | confirmed (code) |
 | `0x00227a38` | `Human_IsButtonTapControl` | State flag 0x100000000000 (button-tap movement, Human_SetButtonTapControl). | confirmed (code) |
 | `0x00227a60` | `Human_IsInWheelchair` | State flag 0x80000000000 (wheelchair control). | confirmed (code) |
 | `0x00227b78` | `Human_SetFightStanceControl` | Control function `+0x1bc` = Human_FightStanceMove (lock-on). | confirmed (code) |
@@ -2599,7 +2599,7 @@ the human code reads.
 | `0x002446a8` | `Human_SetButtonTapParam` | Sets `+0x6bc` for the button-tap control. | confirmed (code) |
 | `0x002446b0` | `Human_SetThrowAimState` | Enters throw aiming: the control function and the aim point. | confirmed (code) |
 | `0x00247a08` | `Human_SetFallStartPoint` | `+0x2c0` = the given point when it is on the nav mesh, else `+0x2b0`. | confirmed (code) |
-| `0x00247a50` | `Nav_WalkDistanceTo` | The straight distance to a point a walkable line reaches, else the length of a route planned to it ([AI](ai.md#warrior-follow)); 0 with no area or no route. | confirmed (code) |
+| `0x00247a50` | `Nav_WalkDistanceTo` | The straight distance to a point a walkable line reaches, else the length of a route planned to it ([AI](ai-gangs.md#warrior-follow)); 0 with no area or no route. | confirmed (code) |
 | `0x00247fc0` | `Human_StrikeShapeOn` | Turns a strike shape on (message 0x8f). | confirmed (code) |
 | `0x00248110` | `Human_StrikeShapeOff` | Turns a strike shape off (message 0x90). | confirmed (code) |
 | `0x002482e0` | `Human_CanHeadLook` | Whether the head may turn to look. | confirmed (code) |
@@ -2626,7 +2626,7 @@ the human code reads.
 ### Navigation {#code-nav}
 
 `0x0024e1f8`-`0x00250e00`: the human's side of the navigation mesh (on-mesh tests, path polygons, links); the planner is
-on [AI](ai.md#path-planning).
+on [AI](ai-moving.md#path-planning).
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |

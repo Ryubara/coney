@@ -762,7 +762,7 @@ CfgCrimeResponders(crime, count)
 
 Sets how many responders a crime type draws: the byte at game state `+0x294 + crime`. When that crime is reported with
 responders, this many are queued on the nearest spawner in a responding state (custom crimes, type 4, use the report's
-own count instead); see [AI: crimes](../../research/ai.md#crimes). The difficulty configs and some levels set it.
+own count instead); see [AI: crimes](../../research/ai-gangs.md#crimes). The difficulty configs and some levels set it.
 
 **Notes.** No range check: a crime index past 14 writes into the next game-state fields. Types 6, 7, 10, 12 and 14 never
 send responders whatever is set.
@@ -854,7 +854,7 @@ CfgEnableCrimeType(crime, enabled)
 
 Enables or disables one crime type: a byte at game state `+0x32b + crime`. Only type 12 (trespassing) is read back, by
 the police brain (`0x00300910`, `0x00301770`), so in practice this switches whether cops act on trespassing ([AI:
-crimes](../../research/ai.md#crimes)).
+crimes](../../research/ai-gangs.md#crimes)).
 
 **Notes.** Disabling another type has no effect: crime reports do not check the byte; what the police brain does
 differently for type 12 is not traced here.
@@ -2169,7 +2169,7 @@ CfgSetCrimeCallback(fn)
 **Returns** nothing.
 
 Names a script function to call whenever a crime with a known offender is reported (game state `+0x2dc`). The crime
-report (GameState_ReportCrime, 0x0041b8b0, see [AI: crimes](../../research/ai.md#crimes)) calls it through
+report (GameState_ReportCrime, 0x0041b8b0, see [AI: crimes](../../research/ai-gangs.md#crimes)) calls it through
 GameState_RunCrimeCallback (0x0041ae60) with two numbers: the offender's gang id and the [crime
 type](../../references/crime-types.md). The level reset (0x00418c68) clears it.
 
