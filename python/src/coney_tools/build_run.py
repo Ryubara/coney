@@ -37,7 +37,7 @@ MAX_ERRORS = 8
 MAX_LINE = 220
 #: How many last lines a failure with no recognised error shows.
 TAIL_LINES = 10
-#: Seconds a dry run (`ninja -n -d explain`, `ctest -N`) may take before the job counts as unmeasured and uses a main slot.
+#: Seconds a dry run (`ninja -n -d explain`, `ctest -N`) may take before the job counts as unmeasured (a main slot).
 DRY_RUN_SECONDS = 120
 #: Seconds the refresh of the build manifest (`ninja build.ninja`, which may re-run CMake) may take before the job
 #: counts as unmeasured.
