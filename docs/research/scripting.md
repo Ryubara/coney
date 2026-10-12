@@ -1906,6 +1906,102 @@ acts find targets. The play-test shows these are also missing:
 7. A disc playthrough test from checkpoint 1: after `P1.EndIntroScene`, no `RiotCivs1` human appears in the subway
    while the player is in it, and at least one appears on the street flags once he comes out.
 
+#### Fix list, checkpoint by checkpoint {#level34-fixes}
+
+What stops `level34` from playing start to end in Coney. Found by playing each checkpoint headless on the disc
+(`--play-level level34 --checkpoint N`, a waypoint driver over `--pad-pipe` with the left stick at 60-100 %,
+2026-10-12, a release build of `main` at `f325e018`) and by reading the scripts above. The fixes are in the order an
+implementer can take them, and each says what "done" means. Items 1-3 are shared with every mission that uses
+spawners and link to their subject pages; the rest are this mission's.
+
+**Shared, first.**
+
+1. **The global spawn cap.** Confirmed (code) at `0x00166708` (`Gang_CachePlayerInfo`, called with 1 from
+   `Gangs_Update` `0x0016d170`): a gang's spawners (`GangSpawner_Update`, `0x001681a0`) run only while the game's
+   spawned count is under its cap. For a police gang (gang `+0x2c` = 1) that is the dispatch count `+0x324` under
+   `+0x326` (`SetCopSpawnMax`); for every other gang it is `+0x432` under `+0x434` (`SetSpawnMax`, which `level34`
+   sets to 45). Each spawn adds 1 to `+0x432` (and to `+0x324` in state 6), and `GangSpawner_OnHumanGone`
+   (`0x001672a8`) takes it off again ([Spawners](ai.md#spawners)). Coney does not read `SetSpawnMax`
+   ([Coney's implementation](ai.md#coney)), so at checkpoint 3 the riot, wanted-gang and police spawners fill the
+   human pool. In 1,500 updates of standing still, `HuCreate` was asked for 240 `RiotCivs1` humans and about 40 of
+   each cop gang. Once the pool was full, most of these calls failed (handle 0) on every update. Done: a test with
+   `SetSpawnMax(n)` and two spawners never has more than *n* spawned humans alive, and a removed human frees its
+   place.
+2. **State 7's placement** ([its fix list](ai-world.md#spawner-reinforcements); item 1 of
+   [the riot's crowd](#level34-start)). It is still a stand-in. At checkpoint 1, eight `RiotCivs1` humans appeared on
+   one subway spot (2.2, −66.7, −6.2), all at the same point. At checkpoint 2, 26 appeared on the street beside the
+   player's start (−56, −143). At checkpoint 4, the wanted gangs and cops appeared 3-6 m from the player
+   (−49, −256) and cut his health from 900 to 445 within 1,500 updates. Every crowd and police squad of the mission
+   is state 7, so this placement decides how hard checkpoints 3 and 4 are.
+3. **A suspended gang still spawns.** Confirmed (code): neither `Gangs_Update` nor `GangSpawner_Update` reads gang
+   `+0xd4` (`GangSuspend`), so the original's `RiotCivs1` spawner keeps making humans during the intro scene. Those
+   humans only stand, because their brains skip their update ([One update](ai.md#update-goals)). Coney spawns them
+   too, which matches the original; keep it.
+
+<!-- markdownlint-disable MD029 -->
+
+**Checkpoint 1** (from the subway to the street, the car flippers, then `vSection2`).
+
+4. Plays: the intro, the stairs, `vEnterRiot`, the fence (climbed with triangle) to `vIntro`, the scene
+   `l34_car_flip`, `P1.StoreObjectives` with the loot objective, and the walk towards `vSection2`. Nothing blocks
+   here once item 2 keeps the crowd out of the subway. The trigger boxes send their message for every human that
+   enters, and the scripts filter by `HuIsAPlayer` or by gang, so that is harmless.
+5. **The looters' tactics** (item 4 of [the riot's crowd](#level34-start)). In Coney, `TacticVandalize` on zone 51
+   answered with code 6 (attacked) within 30 updates, and the intro looters left. In the original, they wreck the
+   zone first and answer 1 once it is empty ([tactic kinds](ai.md#tactic-kinds)). Done: the looters break zone 51's
+   objects before they leave, unless they are attacked.
+
+**Checkpoint 2** (the stores, the stereo scene, then `vSection3Gate`).
+
+6. Plays: `vCarPoizo` warps the Warrior to `fStereoWarp`, Vermin says his line, and `P1.DoneStereoPoizo` gives the
+   radio objective and its marker. The hardware owner, the Hun store, the molotov thrower and `F.BlowupCar` all run.
+7. **`vSection3Gate` did not end the checkpoint** (open; inferred). The driver reached (−107.6, −221.5), inside the
+   box, and was then pushed back to (−104.3, −218.1). In 3,000 updates no `P1.EnterSection3` came from a player.
+   Only `P1.DoneStereoPoizo` sets the box's handler, and the run that reached the box did not log whether the stereo
+   scene had ended first. Next step: rerun with the end of the stereo scene confirmed, then check that box messages
+   reach the handler while the gate `DblGt01` is shut (it opens only after the cop scene).
+8. **`CarSpawnRadio` runs twice on the same three cars at checkpoint 2**: once from `P1.SetupTier2Encounters` and
+   once from `P1.EnterSection2`. The original does the same, because the second call does not test `radioSpawn`.
+   Coney must make the second call harmless (no second stereo). Open question: what the binding does to a car that
+   already has a radio.
+
+**Checkpoint 3** (the three objectives, then `P1.HeadToGate`).
+
+9. This checkpoint depends on item 1: while the pool is full, nothing else can spawn.
+10. **The three objectives have no disc test that plays them together.** Disc tests exist for the radios and the
+    muggings, but not for the loot ($350 from store items; [Taking owned items](crimes.md#owned-items)) or for the
+    riot meter (200 points: a newsstand gives 3, another world object 1, a pane 2, and car message 25 gives 3). In
+    the driver runs the meter counted (1 % on the first point, then 2 %), so it is wired, but neither total was
+    played to the end. Done: a disc test from checkpoint 3 that takes store items to $350, breaks props and cars to
+    100 % and steals three stereos, then sees `P1.HeadToGate` and `SetCheckPoint(4)`.
+
+**Checkpoint 4** (to `fFinalGate`, then `vNearFuries`).
+
+11. **The player cannot get west of x −135** (open; inferred). Every run stopped at (−135, −255..−261), 9-12 m short
+    of `fFinalGate` (−144.1, −269.3), and the objective's `P2.AtGate` never ran. `P2.SetupGate` calls
+    `DoorOpen(DblGt00, player)` (door 325 in Coney's trace), so the likely cause is that gate staying shut. Next
+    step: take a screenshot from (−134, −258) facing west, and read the door's state after the call
+    ([`DoorOpen`](../references/bindings/world.md#dooropen)).
+12. The player died twice in 6,000 updates, killed by the wanted gangs and cops that spawned beside him (item 2), and
+    the level restarted at checkpoint 4. Once item 2 is in, check that he can reach the gate.
+
+**Checkpoint 5** (the park, the Furies, then `vSubwayExit`).
+
+13. Plays: the scene `l34_c4`, `P3.EndParkScene` and the fence Furies. `P3.FuryTimeout` runs 5 s later
+    (`MoveFromFence`, which kills the two Rogues), and Vermin says a line every 15 s, as the script says.
+14. **No route to `vSubwayExit` was found** (open). From (−208, −269.5), the Furies knocked the player down within
+    400 updates in every run, and once he died (the level restarted at checkpoint 5). Whether the original's Furies
+    hit as quickly is not known. Next step: record the original from checkpoint 5, measure the time from the scene's
+    end to the first hit on the player, and compare.
+15. The rest of the checkpoint was not reached in Coney: `P3.GetToSubway`, the scene `l34_c2` with `Final`,
+    `HUDLaunchMissionComplete` and the outro `L34_OUT`.
+
+<!-- markdownlint-enable MD029 -->
+
+**A playthrough test** ([Testing](../guides/testing.md#playthrough-tests)) for the mission comes last: one driver per
+checkpoint that climbs the fence, walks the flag net (`PedNet_*`) between the boxes above, and asserts the
+`SetCheckPoint` calls 2-5 and `HUDLaunchMissionComplete`.
+
 ### `level2.lua` (mission 5) {#level2}
 
 Story mission 5, loaded from the hub's checkpoint 2: the Warriors (six, Cleon player 1 and Fox player 2) against the
