@@ -528,10 +528,10 @@ What changes with the rule, by kind (generic set; ids at rate 1.0 are unchanged)
 | Stealth kill reactions | 638, 640, 642 |
 
 At rate 1.0 and unchanged: the turns in place (360-363, 390-398), the run turns (416, 418), the barrel set's turns
-(511-532), 8, 261-265 and 319. The locomotion sets no horizontal velocity of its own while a start or stop clip plays (human flags
-`0x10000000` or `0x80000`, mask `0x110c0880` tested at `0x00241a88`, or move state 5 or 6), so the clip alone moves the
-character then. At runtime the walk start moved Rembrandt at a steady 0.76 m/s, and section A of that clip is about
-1.05 m/s × 0.75 ≈ 0.79 m/s (confirmed (runtime) for the speed; the match is inferred).
+(511-532), 8, 261-265 and 319. The locomotion sets no horizontal velocity of its own while a start or stop clip
+plays (human flags `0x10000000` or `0x80000`, mask `0x110c0880` tested at `0x00241a88`, or move state 5 or 6), so the
+clip alone moves the character then. At runtime the walk start moved Rembrandt at a steady 0.76 m/s, and section A
+of that clip is about 1.05 m/s × 0.75 ≈ 0.79 m/s (confirmed (runtime) for the speed; the match is inferred).
 
 **Disc survey (counts only):** 31,274 clip occurrences in the WAD, 1,875 distinct; all parse with the channel rule;
 the channel count equals the mask's bit count in all; at most 606 keys in a channel; clips run 1 to 680 frames; bone
