@@ -218,7 +218,7 @@ struct DisplayWatch {
 };
 
 // Moves librw's window to its display the moment SDL shows it. librw's GL3 device makes and shows the window inside
-// Engine::open with SDL's default position (the primary display), so this watch, which SDL calls as it sends the
+// Engine::start with SDL's default position (the primary display), so this watch, which SDL calls as it sends the
 // window's SHOWN event, is the earliest point Coney can reach it: before its OpenGL context exists and before any
 // frame is drawn. The OpenGL check's own hidden window is never shown, so it is never moved.
 bool SDLCALL placeWhenShown(void* userdata, SDL_Event* event) {
@@ -315,22 +315,33 @@ std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBa
     // For the NULL backend, put librw's NULL device in that slot for the duration of the copy, then put GL3 back: the
     // engine then runs on the NULL device until it closes, and SDL's video is never started.
     bool opened = false;
-    // `--window-display` / CONEY_WINDOW_DISPLAY: the window goes to that display as it is shown (placeWhenShown), or
-    // right after open on a window system that never sent the event.
+    // `--window-display` / CONEY_WINDOW_DISPLAY: librw's GL3 device makes and shows the window in Engine::start, so
+    // the watch covers open and start, and the window goes to its display as it is shown (placeWhenShown), or right
+    // after start on a window system that never sent the event. The guard removes the watch on every way out.
     DisplayWatch displayWatch;
-    if (openGl) {
-        const std::optional<SDL_DisplayID> display = chosenDisplay(desc.display);
-        if (display) {
-            displayWatch.display = *display;
-            SDL_AddEventWatch(placeWhenShown, &displayWatch);
-        }
-        opened = rw::Engine::open(&params) != 0;
-        if (display) {
-            SDL_RemoveEventWatch(placeWhenShown, &displayWatch);
-            if (!displayWatch.placed && engine->m_sdlWindow != nullptr) {
-                placeOnDisplay(static_cast<SDL_Window*>(engine->m_sdlWindow), *display);
+    std::optional<SDL_DisplayID> display;
+    struct WatchGuard {
+        DisplayWatch* watch = nullptr;
+        WatchGuard() = default;
+        WatchGuard(const WatchGuard&) = delete;
+        WatchGuard& operator=(const WatchGuard&) = delete;
+        WatchGuard(WatchGuard&&) = delete;
+        WatchGuard& operator=(WatchGuard&&) = delete;
+        ~WatchGuard() {
+            if (watch != nullptr) {
+                SDL_RemoveEventWatch(placeWhenShown, watch);
             }
         }
+    } watchGuard;
+    if (openGl) {
+        display = chosenDisplay(desc.display);
+        if (display) {
+            displayWatch.display = *display;
+            if (SDL_AddEventWatch(placeWhenShown, &displayWatch)) {
+                watchGuard.watch = &displayWatch;
+            }
+        }
+        opened = rw::Engine::open(&params) != 0;
     } else {
         const rw::Device gl3Device = rw::gl3::renderdevice;
         rw::gl3::renderdevice = rw::null::renderdevice;
@@ -352,6 +363,9 @@ std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBa
     engine->m_librwStarted = true;
     if (!openGl) {
         return engine;
+    }
+    if (display && !displayWatch.placed && engine->m_sdlWindow != nullptr) {
+        placeOnDisplay(static_cast<SDL_Window*>(engine->m_sdlWindow), *display);
     }
 
     // Engine::start succeeds even when the GL3 device could not make a window or a context; the only sign is that it
