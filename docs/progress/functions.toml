@@ -4244,6 +4244,11 @@ subsystem = "Human"
 size = 288
 
 [[function]]
+address = 0x00223188
+name = "Human_StaminaMax"
+subsystem = "Human"
+
+[[function]]
 address = 0x002235f8
 name = "Human_CounterChance"
 subsystem = "Human"

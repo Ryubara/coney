@@ -5,9 +5,9 @@
 
 namespace coney::combat {
 
-PlayerCombat::PlayerCombat(const AnimRangeList* ranges, std::uint64_t startMs, std::uint32_t seed)
-    : m_ranges(ranges), m_random(seed), m_power(kPlayerPowerMax, kPlayerPowerRefillPerSecond, startMs),
-      m_rage(kPlayerRageMax, kPlayerRageGainPercent, startMs) {}
+PlayerCombat::PlayerCombat(const AnimRangeList* ranges, std::uint64_t startMs, std::uint32_t seed, int powerMax,
+                           int powerRefillPerSecond, const RageClass& rage)
+    : m_ranges(ranges), m_random(seed), m_power(powerMax, powerRefillPerSecond, startMs), m_rage(rage, startMs) {}
 
 CombatOutput PlayerCombat::update(const CombatInput& input, const CombatTuning& tuning) {
     CombatOutput out;
@@ -16,7 +16,7 @@ CombatOutput PlayerCombat::update(const CombatInput& input, const CombatTuning& 
     // drains in rage and decays after a gain's hold.
     const bool holding = m_mode == CombatMode::Grabbing || m_mode == CombatMode::Tackling;
     m_power.update(input.nowMs, holding && !m_rage.raging(), tuning.powerDrainPerSecond);
-    m_rage.update(input.nowMs, tuning);
+    m_rage.update(input.nowMs);
     if (input.helpless) {
         return out;
     }
