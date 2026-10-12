@@ -47,10 +47,21 @@ class ConventionsError(ConfigError):
 
 
 @dataclass(frozen=True)
+class Wording:
+    """How issues and pull requests name people: the word to use and the words that name the same person wrongly."""
+
+    #: What the person who directs the project is called in an issue or a description (`user`).
+    person: str
+    #: Words that must not name that person there (`owner`); matched as whole words outside code.
+    avoid: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class Repo:
     """General facts: the default branch, decisions reserved for a maintainer and the tool configuration files."""
 
     default_branch: str
+    wording: Wording
     #: Decisions an agent never takes; it stops and reports them.
     owner_decisions: tuple[str, ...]
     #: Role (`format_cpp`, `hooks`, ...) to the repository path of a tool's own configuration file.
@@ -336,6 +347,8 @@ class Issues:
     """The rules for issues: blank issues, the forms, the media line, provenance and labels."""
 
     blank_issues: bool
+    #: Text that is no answer when it is all a section holds (`x`, `TBD`): a placeholder, which the audit refuses.
+    placeholders: tuple[str, ...]
     forms: Mapping[str, IssueForm]
     #: The form whose headings an issue filed from the command line uses.
     cli_uses_form: str
@@ -406,13 +419,34 @@ class Thresholds:
 
 
 @dataclass(frozen=True)
+class CheckSpec:
+    """One check of `coney-tools repo audit`: where it runs, how bad a finding is and who fixes it."""
+
+    #: The check's name, `<group>.<what>` (`issue.labels`); a finding carries it.
+    id: str
+    #: `files` (the checkout, no network), `github` (issues, pull requests, labels, settings) or `local` (workspace).
+    scope: str
+    #: `error` fails the audit (exit code 1); `warn` is reported and does not.
+    severity: str
+    #: `auto` (a coney-tools command fixes it), `skill` (the /repo-hygiene skill or the author fixes it with judgement)
+    #: or `owner` (a maintainer decides).
+    fix: str
+    #: The conventions keys the check enforces, as dotted paths (`issues.labels`); each exists in the file.
+    keys: tuple[str, ...]
+    #: One line: what the check finds.
+    summary: str
+
+
+@dataclass(frozen=True)
 class Hygiene:
-    """The limits the hygiene checks use."""
+    """The limits the hygiene checks use, and the registry of the audit's checks."""
 
     report_issue: ReportIssue
     #: The cron schedule of the weekly sweep.
     sweep: str
     thresholds: Thresholds
+    #: Check id to its spec, in file order.
+    checks: Mapping[str, CheckSpec]
 
 
 @dataclass(frozen=True)
@@ -556,12 +590,32 @@ def _pattern_regex(pattern: str) -> re.Pattern[str]:
     return re.compile("[^/]*".join(re.escape(part) for part in pattern.split("*")))
 
 
+#: What a `docs_only` pattern may hold: plain path characters and `*`, which `.github/scripts/ci-scope.sh` turns into a
+#: regular expression by escaping the dot and nothing more.
+_DOCS_ONLY_PATTERN = re.compile(r"^[A-Za-z0-9_./*-]+$")
+
+
+def _docs_only_patterns(value: object, where: str) -> tuple[str, ...]:
+    """The `paths.docs_only` list; a pattern with a character the CI scope script does not escape is refused."""
+    patterns = _texts(value, where)
+    for index, pattern in enumerate(patterns):
+        if not _DOCS_ONLY_PATTERN.match(pattern):
+            raise _fail(f"{where}[{index}]", f"'{pattern}': only letters, digits, . _ / - and * (ci-scope.sh reads it)")
+    return patterns
+
+
 def _read_repo(data: object, where: str) -> Repo:
-    """The `repo` section: the default branch, the owner-only decisions and the tool files."""
-    table = _table(data, where, ("default_branch", "owner_decisions", "tools"))
+    """The `repo` section: the default branch, the wording, the owner-only decisions and the tool files."""
+    table = _table(data, where, ("default_branch", "wording", "owner_decisions", "tools"))
     tools = _mapping(table["tools"], _at(where, "tools"))
+    wording_where = _at(where, "wording")
+    wording = _table(table["wording"], wording_where, ("person", "avoid"))
     return Repo(
         default_branch=_text(table["default_branch"], _at(where, "default_branch")),
+        wording=Wording(
+            person=_text(wording["person"], _at(wording_where, "person")),
+            avoid=_texts(wording["avoid"], _at(wording_where, "avoid")),
+        ),
         owner_decisions=_texts(table["owner_decisions"], _at(where, "owner_decisions")),
         tools=MappingProxyType({key: _text(path, _at(_at(where, "tools"), key)) for key, path in tools.items()}),
     )
@@ -586,7 +640,7 @@ def _read_paths(data: object, where: str) -> Paths:
     return Paths(
         code=_texts(table["code"], _at(where, "code")),
         docs=_texts(table["docs"], _at(where, "docs")),
-        docs_only=_texts(table["docs_only"], _at(where, "docs_only")),
+        docs_only=_docs_only_patterns(table["docs_only"], _at(where, "docs_only")),
         generated=_each(table["generated"], _at(where, "generated"), _read_generated),
         pointer_files=PointerFiles(
             files=_texts(pointer["files"], _at(pointer_where, "files")),
@@ -807,6 +861,7 @@ def _read_issues(data: object, where: str) -> Issues:
     """The `issues` section; the command-line form must be one of the forms."""
     keys = (
         "blank_issues",
+        "placeholders",
         "forms",
         "cli_uses_form",
         "screenshots_none",
@@ -835,6 +890,7 @@ def _read_issues(data: object, where: str) -> Issues:
     labels = _table(table["labels"], labels_where, ("type", "area", "priority", "status", "closed_keeps_status"))
     return Issues(
         blank_issues=_flag(table["blank_issues"], _at(where, "blank_issues")),
+        placeholders=_texts(table["placeholders"], _at(where, "placeholders")),
         forms=MappingProxyType(forms),
         cli_uses_form=table["cli_uses_form"],
         screenshots_none=_text(table["screenshots_none"], _at(where, "screenshots_none")),
@@ -910,9 +966,47 @@ def _read_labels(data: object, where: str) -> Labels:
     return result
 
 
+#: Where a check runs, how bad a finding is and who fixes it (the words `hygiene.checks` may use).
+_CHECK_SCOPES = ("files", "github", "local")
+_CHECK_SEVERITIES = ("error", "warn")
+_CHECK_FIXES = ("auto", "skill", "owner")
+#: A check id: a group, a dot and a name.
+_CHECK_ID = re.compile(r"^[a-z]+\.[a-z][a-z-]*$")
+
+
+def _has_key(data: object, dotted: str) -> bool:
+    """Whether the dotted key (`issues.labels.type`) exists in the file's data."""
+    node = data
+    for part in dotted.split("."):
+        if not isinstance(node, dict) or part not in node:
+            return False
+        node = node[part]
+    return True
+
+
+def _read_check(check_id: str, data: object, where: str) -> CheckSpec:
+    """One entry of `hygiene.checks`."""
+    if not _CHECK_ID.match(check_id):
+        raise _fail(where, f"'{check_id}' is not a check id like 'issue.labels'")
+    table = _table(data, where, ("scope", "severity", "fix", "keys", "summary"))
+    return CheckSpec(
+        id=check_id,
+        scope=_choice(table["scope"], _at(where, "scope"), _CHECK_SCOPES),
+        severity=_choice(table["severity"], _at(where, "severity"), _CHECK_SEVERITIES),
+        fix=_choice(table["fix"], _at(where, "fix"), _CHECK_FIXES),
+        keys=_texts(table["keys"], _at(where, "keys")),
+        summary=_text(table["summary"], _at(where, "summary")),
+    )
+
+
 def _read_hygiene(data: object, where: str) -> Hygiene:
-    """The `hygiene` section: the report issue, the sweep schedule and the idle limits."""
-    table = _table(data, where, ("report_issue", "sweep", "thresholds"))
+    """The `hygiene` section: the report issue, the sweep schedule, the idle limits and the audit's checks."""
+    table = _table(data, where, ("report_issue", "sweep", "thresholds", "checks"))
+    checks_where = _at(where, "checks")
+    raw_checks = _mapping(table["checks"], checks_where)
+    if not raw_checks:
+        raise _fail(checks_where, "expected at least one check")
+    checks = {name: _read_check(name, spec, _at(checks_where, name)) for name, spec in raw_checks.items()}
     report_where = _at(where, "report_issue")
     report = _table(table["report_issue"], report_where, ("title", "labels"))
     limits_where = _at(where, "thresholds")
@@ -925,6 +1019,7 @@ def _read_hygiene(data: object, where: str) -> Hygiene:
         ),
         sweep=_text(table["sweep"], _at(where, "sweep")),
         thresholds=Thresholds(**{key: _count(limits[key], _at(limits_where, key)) for key in keys}),
+        checks=MappingProxyType(checks),
     )
 
 
@@ -953,6 +1048,10 @@ def parse_conventions(data: object) -> Conventions:
     labels = _read_labels(table["labels"], "labels")
     issues = _read_issues(table["issues"], "issues")
     hygiene = _read_hygiene(table["hygiene"], "hygiene")
+    for spec in hygiene.checks.values():
+        for key in spec.keys:
+            if not _has_key(data, key):
+                raise _fail(f"hygiene.checks.{spec.id}.keys", f"'{key}' is not a key of this file")
     names = labels.names()
     for form in issues.forms.values():
         _names_in(form.labels, names, f"issues.forms.{form.name}.labels", "in labels.list")

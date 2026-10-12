@@ -1056,8 +1056,9 @@ A `changes` job at the start of `build` and `python` decides, with `.github/scri
 | Push to `main` or `release/`, nightly run, manual run | run | all three OSes | run |
 
 The documentation-only list is `paths.docs_only` in [.github/conventions.yml](repo:.github/conventions.yml) (a
-trailing `/` is a folder and `*` matches within one folder level); the block is generated from it
-(`coney-tools repo render`), and `research/` includes `research/traces/`:
+trailing `/` is a folder and `*` matches within one folder level). `ci-scope.sh` reads it from the file, so there is
+no second copy, and `coney-tools repo audit --files` fails a pull request when the script stops being able to. The
+block below is generated from the list (`coney-tools repo render`), and `research/` includes `research/traces/`:
 
 <!-- conventions:begin docs-only-paths -->
 - `docs/`: the folder and everything under it

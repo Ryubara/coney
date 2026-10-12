@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from pathlib import Path
 
 from coney_tools.conventions import DocsNone, Paths, PointerFiles, PullRequests, TitleRules
@@ -203,8 +204,8 @@ _OPEN_ITEM = re.compile(r"^[ \t]*[-*+][ \t]+\[ \][ \t]*(?P<text>.*)$")
 #: A line that opens a labelled list (`Done:`, `Remaining (later units):`), which ends the list before it.
 _LIST_LABEL = re.compile(r"^[ \t]*\**[A-Za-z][^:\n]*:\**[ \t]*$")
 
-#: A reference to an issue or pull request, `#123`.
-_NUMBER_REFERENCE = re.compile(r"(?<![\w&/])#\d+\b")
+#: A reference to an issue or pull request, `#123` (also what the audit looks for in issues).
+NUMBER_REFERENCE = re.compile(r"(?<![\w&/])#\d+\b")
 
 
 def _remaining_items(section: str, rules: PullRequests) -> list[str]:
@@ -234,16 +235,28 @@ def _remaining_items(section: str, rules: PullRequests) -> list[str]:
     return [text for text in texts if text and text not in rules.placeholders]
 
 
-def _check_remaining(section: str, rules: PullRequests) -> list[str]:
-    """Refuse an unchecked Remaining item that names no issue or pull request.
+def remaining_items(body: str, rules: PullRequests) -> list[str]:
+    """The text of each unchecked item of a pull request description's Remaining list (placeholders aside)."""
+    checklist = _split_sections(strip_comments(body)).get(rules.remaining.section.casefold())
+    return [] if checklist is None else _remaining_items(checklist, rules)
+
+
+def uncited_remaining(body: str, rules: PullRequests) -> list[str]:
+    """The Remaining items of a description that name no issue or pull request.
 
     Work a pull request leaves undone is tracked where everyone can see it, not in a description that stops being read
     once the pull request merges. Each item carries the number of the issue (or the follow-up pull request) that holds
-    it, such as `#123`; the coordinator files the issue when an agent has none.
+    it, such as `#123`; the coordinator files the issue when an agent has none. An empty list means every item cites one
+    (or there is no Remaining list).
     """
+    return [text for text in remaining_items(body, rules) if not NUMBER_REFERENCE.search(text)]
+
+
+def _check_remaining(section: str, rules: PullRequests) -> list[str]:
+    """Refuse an unchecked Remaining item that names no issue or pull request (see `uncited_remaining`)."""
     problems: list[str] = []
     for text in _remaining_items(section, rules):
-        if not _NUMBER_REFERENCE.search(text):
+        if not NUMBER_REFERENCE.search(text):
             shown = text if len(text) <= 60 else text[:57] + "..."
             label = rules.remaining.label.rstrip(":")
             problems.append(
@@ -288,35 +301,43 @@ def _image_targets(section: str) -> list[str]:
     return [target for _, target in sorted(found)]
 
 
-def _check_screenshots(section: str, rules: PullRequests) -> list[str]:
-    """Check the Screenshots section: an uploaded image or video, or the `none (reason)` line with a real reason.
+def screenshots_problems(
+    section: str, name: str, none_line: str, uploaded_only: bool, placeholders: Sequence[str]
+) -> list[str]:
+    """Check a Screenshots section: an uploaded image or video, or the `none (reason)` line with a real reason.
 
-    A picture counts only when it is reachable by a reader (`screenshots.uploaded_only`): an http(s) URL (a GitHub
-    attachment or any other). An image that points at a local file would show as broken on GitHub, so it is reported
-    with the way to upload it.
+    A picture counts only when it is reachable by a reader (`uploaded_only`): an http(s) URL (a GitHub attachment or
+    any other). An image that points at a local file would show as broken on GitHub, so it is reported with the way to
+    upload it. `name` is the section's heading and `none_line` the start of its `none` line (`Screenshots: none`); a
+    pull request and an issue differ only in those.
     """
     targets = _image_targets(section)
     local = [target for target in targets if not _REMOTE.match(target)]
-    if local and rules.screenshots.uploaded_only:
+    if local and uploaded_only:
         return [
-            f"'## {rules.screenshots.section}': '{target}' is a local file: attach it with gh --attach (gh 2.99+) "
-            "so it uploads"
+            f"'## {name}': '{target}' is a local file: attach it with gh --attach (gh 2.99+) so it uploads"
             for target in local
         ]
     if targets or _ATTACHMENT_LINK.search(section):
         return []
     # The label may be bold (`- **Screenshots:** none (...)`), so the asterisks are dropped before matching.
-    none = re.compile(rf"^(?:[-*+]\s+)?{re.escape(rules.screenshots.none)}\s*\((?P<reason>.*)\)$", re.IGNORECASE)
+    none = re.compile(rf"^(?:[-*+]\s+)?{re.escape(none_line)}\s*\((?P<reason>.*)\)$", re.IGNORECASE)
     for line in section.splitlines():
         found = none.match(line.replace("**", "").strip())
         if found:
             reason = found.group("reason").strip()
-            if reason and reason not in rules.placeholders:
+            if reason and reason not in placeholders:
                 return []
     return [
-        f"'## {rules.screenshots.section}' needs an image (an uploaded screenshot or video), "
-        f"or a line '{rules.screenshots.none} (<reason>)' saying why there is nothing to show"
+        f"'## {name}' needs an image (an uploaded screenshot or video), "
+        f"or a line '{none_line} (<reason>)' saying why there is nothing to show"
     ]
+
+
+def _check_screenshots(section: str, rules: PullRequests) -> list[str]:
+    """Check a pull request's Screenshots section against `pull_requests.screenshots`."""
+    shots = rules.screenshots
+    return screenshots_problems(section, shots.section, shots.none, shots.uploaded_only, rules.placeholders)
 
 
 def check_body(body: str, rules: PullRequests) -> list[str]:
