@@ -327,6 +327,7 @@ target_sources(coney_tests PRIVATE
     debug/pad_menu_input_test.cpp
     debug/play_pages_test.cpp
     debug/story_missions_test.cpp
+    debug/time_scale_test.cpp
     debug/tunables_test.cpp)
 # The AI humans' brains (docs/research/ai.md).
 target_sources(coney_tests PRIVATE

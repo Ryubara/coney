@@ -166,7 +166,7 @@ changes how the game plays when unused.
 live and call any binding, in a story level and in a test level, from a gamepad.
 
 - Done: the menu's model and its pad front end ([The debug menus](guides/debug-menu.md)): time controls (pause, single
-  step, slow motion in whole steps), tunables with a saved overrides file (the player's movement and the follow
+  step, a time scale in whole steps), tunables with a saved overrides file (the player's movement and the follow
   camera's values first), every script binding callable with an argument editor built from the masterlist, a Lua
   console, the cheat codes, level loading by name, display overlays and the live pad.
 - Done: the developer overlay over the same model, with Dear ImGui (F1): a window per page, filter boxes, plots and a

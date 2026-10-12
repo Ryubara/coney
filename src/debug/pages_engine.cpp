@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The engine pages of the debug menus: Time, Tunables, Display, Audio and Input. Coney's own tools (no @orig).
+// The engine pages of the debug menus: Tunables, Display, Audio and Input (Time is in pages_time.cpp). Coney's own
+// tools (no @orig).
 #include "debug/debug_pages.h"
 
 #include <array>
@@ -65,56 +66,6 @@ void fillTunableCategory(MenuPage& page, TunableRegistry& registry, const std::s
             registry.set(tunable->path(), tunable->defaultValue());
         }
     }));
-}
-
-void addTimePage(DebugSession& session) {
-    TimeControl& time = session.time();
-    // Steps run since the last sample (one per due step): 1 at full speed, 0 paused, a pulse in slow motion.
-    auto lastSteps = std::make_shared<std::uint64_t>(0);
-    session.model().addChannel("Time/Steps run", [&time, lastSteps] {
-        const std::uint64_t steps = time.steps();
-        const auto delta = static_cast<float>(steps - *lastSteps);
-        *lastSteps = steps;
-        return delta;
-    });
-    // The real frame time, when the platform measures it.
-    const std::function<double()> frameMilliseconds = session.services().frameMilliseconds;
-    if (frameMilliseconds) {
-        session.model().addChannel("Time/Frame ms",
-                                   [frameMilliseconds] { return static_cast<float>(frameMilliseconds()); });
-    }
-    session.model().addPage(
-        "Time",
-        [&time, frameMilliseconds](MenuPage& page) {
-            page.add(toggleItem(
-                         "Paused", [&time] { return time.paused(); }, [&time](bool paused) { time.setPaused(paused); }))
-                .withHelp("Stops the game's steps; the menus keep running.");
-            page.add(actionItem("Step one",
-                                [&time] {
-                                    time.setPaused(true);
-                                    time.stepOnce();
-                                }))
-                .withHelp("Runs exactly one fixed 1/30 s step, then stays paused.");
-            MenuItem slow = numberItem(
-                "Slow motion", [&time] { return time.slowMotion(); },
-                [&time](double divisor) { time.setSlowMotion(static_cast<int>(divisor)); }, 1, TimeControl::kMaxDivisor,
-                1, true);
-            slow.units = "x slower";
-            slow.defaultValue = 1;
-            slow.help = "Runs one fixed step out of every N that are due: 1/N speed; the steps never change length.";
-            page.add(std::move(slow));
-            page.add(watchItem(
-                "Due / run steps", [&time] { return std::format("{} / {}", time.frames(), time.steps()); },
-                "Time/Steps run"));
-            if (frameMilliseconds) {
-                page
-                    .add(watchItem(
-                        "Frame time", [frameMilliseconds] { return std::format("{:.2f} ms", frameMilliseconds()); },
-                        "Time/Frame ms"))
-                    .withHelp("Real time per frame, measured by the platform; the steps stay 1/30 s.");
-            }
-        },
-        "Pause, single step and slow motion; every step stays 1/30 s.");
 }
 
 void addTunablesPage(DebugSession& session) {
