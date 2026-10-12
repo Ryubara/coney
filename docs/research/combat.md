@@ -1569,10 +1569,10 @@ direction. A hit counts only on a steep face (normal · up < cos 80°): its dist
 more than the far range (without the 0.2 m) the throw becomes the wall throw of that side (`THROW_02`, kind 29, damage
 index 29) and the victim's `+0x5c0` gets the ray's direction × the distance. Otherwise it is the plain throw (kind
 25). A face more than 45° off head-on (normal · ray > cos 135°) still gives the wall throw but skips the alignment
-below. Before the pair starts (`Attack_StartPaired`; `Grab_StartPairedMove` from a rear hold without human flag
-`0x40000000`), a plain throw turns the player to the stick's angle + side × 90° over 1/6 s and moves the victim
-round with him; a head-on wall throw aligns the pair instead (`Human_AlignToObject`, 0.01 s). Every throw sets the
-victim's `+0x3bd`, which arms its one wall-impact sound ([Moving strikes](#moving-strikes)).
+below. From a front hold, before the pair starts (`Attack_StartPaired`), a plain throw turns the player onto the
+stick and carries the victim round with him, and a head-on wall throw aligns the pair instead (`Human_AlignToObject`,
+0.01 s); from a rear hold there is no turn ([Where a throw goes](#throw-direction)). Every throw sets the victim's
+`+0x3bd`, which arms its one wall-impact sound ([Moving strikes](#moving-strikes)).
 
 **What the thrown body hits** (confirmed (code) at `0x0021b290`, `0x00264bd8`, `0x00265f70`; the clip data read
 from the disc). The plain throws' victim clips switch the victim's own strike shapes on: event `0x13`
@@ -1623,6 +1623,112 @@ armed at `+0x3bd` (`Human_OnContact`, `0x00219d50`). The same frames carry a one
 (clip 155's entry, index 29), applied on the grab move's first update, not the wall's. There is no separate
 head-slam clip or reaction beyond these four victim clips. `CfgPowerClass` flag 22 is not read here (it belongs to
 `Grabbing_PickMove`, [AI](ai.md#fight-reactions)).
+
+#### Where a throw goes {#throw-direction}
+
+How the original turns the stick into the thrown body's heading (issue #240). Confirmed (code) at `0x0026dd08`
+(`Player_Throw`), `0x00146078` (`PlayerRecord_Update`), `0x0023cf88` (`Human_TurnToOver`), `0x00262ac8`
+(`Attack_StartPaired`) and `0x00263380` (`Grab_StartPairedMove`), and confirmed (runtime) where marked. Headings below
+are Coney's (0 faces +y, anticlockwise); the **stick heading** is the heading the camera-turned stick points along
+(its angle − 90°).
+
+1. **The stick, unsnapped.** The angle is the per-player record's current buffer (`+0x08` / `+0x0c` by `+0x18`):
+   `atan2` of the pad's camera-turned left stick, read on the update the throw starts (the circle press, or the end
+   of the hold clip for a throw buffered during a grab strike, `Grab_OnHoldClipEnd` `0x0026d8c8`). There is no
+   snapping to 4 or 8 directions, no smoothing and no history; the only coarseness is the stick table's per-axis dead
+   band (raw 95-160, [Front end](frontend.md#pad-record)), so a stick within about 14° of an axis at full deflection
+   reads as that axis, as it does for walking (inferred from the table). The magnitude only has to be above 0.25.
+2. **The side, from the facing.** `d` = stick angle − the facing (the transform's +y axis), wrapped: `|d|` below 45°
+   is the front (0), up to and including 135° a side, right (1) when `d` is negative (clockwise), left (3) otherwise,
+   and beyond 135° the rear (2). Exactly 45° is a side, not the front (the test is `0.785 <= |d|`). The clip is
+   147 + 2 × side (149 right, 151 rear, 153 left), or 155 + 2 × side for the wall throw ([above](#throws)).
+3. **From a front hold, the pair is turned onto the stick.** For a plain throw the thrower's wanted heading is
+   **stick heading + side × 90°** (front +0, right +90°, rear +180°, left +270°): the side's body axis then points
+   exactly along the stick. `Human_TurnToOver` turns him there at a constant rate over **1/6 s** (5 updates; no turn
+   under 0.01 rad). The victim is carried round on a circle about the thrower: its offset from him is rotated from
+   his current heading to the wanted one and `Human_MoveToOver` slides it there over the same 1/6 s, while
+   `Human_TurnToOver` turns the victim to the wanted heading + 180° (facing the thrower). The paired clips start on
+   the same update (`Attack_StartPaired`, which checks the victim stands in place, `Pair_CheckPlace`, for 147-153
+   only), so for the 5 updates after it the turn's rate (what is left to turn ÷ 1/6 s) adds to the clips' own root
+   rotation and motion. At runtime the front clip 147 did not rotate the thrower then, so he reached the wanted
+   heading in 5 updates exactly; 149 (right) took about 3.2° per update off the turn and 153 (left) added about 2.7°,
+   and both kept turning the thrower afterwards (confirmed (runtime), below).
+4. **From a rear hold, no turn.** A throw from a rear hold (human flag `0x40000000` clear, the usual case) goes to
+   `Grab_StartPairedMove`: the spin to the front 80 / 81 plays first, then the side's throw clip, with no turn and no
+   alignment. The side is chosen against the facing when circle is pressed and the thrower's heading does not change
+   during the spin, so the body flies along **the side's body axis**, up to 45° off the stick. With `0x40000000` set
+   (the grab blocks of [Human flags](#human-flags)) the front-hold path above is taken.
+5. **A wall throw** aims at the wall, not the stick: the first ray runs along the side's body axis (the stick's own
+   direction only when that ray hits nothing), and a head-on hit aligns the pair to the hit point over 0.01 s; a face
+   more than 45° off head-on gets no turn at all (above).
+6. **What carries the body.** After the turn nothing steers: the victim clip's root motion moves the body (148 front,
+   150 right, 152 rear, 154 left), so its path is the clip's, rotated onto the stick. There is no auto-aim toward
+   humans, objects or walls (`Player_Throw` makes no target search; only the wall ray above), and no velocity of its
+   own is set; collisions stop or deflect the body ([What the thrown body hits](#throws)).
+
+**At runtime** (confirmed (runtime), PCSX2 2.9.94, a copy of slot 6 with the `scripted-pad`, `right-stick` and
+`puppet` patches; scenario `repo:research/traces/scenarios/throw_direction.toml` for one of them: PoizoCiv placed
+1.0 m ahead and grabbed with circle, power set to 400, then the stick and circle on the same update at stick magnitude
+0.9, so the hold walk (above 0.95) never moved the pair first). 21 throws, the stick between 0° and 180° from the
+camera's up and the player's facing turned between −170° and +160° from the throw's heading. Positions are in the
+**stick's frame**: metres right of and along the stick heading, from the thrower's position on the update before the
+throw.
+
+| Side (clip) | Throws (clear) | Thrower's heading at the end − stick heading | Victim 5 updates in | Victim lands (196) |
+| --- | --- | --- | --- | --- |
+| front hold, front (148) | 6 (`d` −44° to +40°) | 0.0° | (0.31, 1.01-1.06), whatever `d` | (0.24-0.25, 6.84-6.88), 48 updates after |
+| front hold, right (150) | 2 (`d` −51°, −46°) | −0.2° | (−1.20, 0.38) | (−0.44, 6.46) and (−0.51, 7.45), 45 updates after |
+| front hold, rear (152) | 2 (`d` 160°, 166°) | +1.2° | (−0.29 to −0.32, −1.46) | (−0.51, 5.73) and (−0.56, 6.17), 44 updates after |
+| front hold, left (154) | 1 (`d` 114°) | −3.5° | (0.94, −0.36) | (0.00, 5.65), 43 updates after |
+
+- The thrower always ended facing the stick heading: the side clips turn him by about −90° (right), 180° (rear) and
+  +86.5° (left) after the 1/6 s turn put the side's axis on the stick.
+- The landing point is the same in the stick's frame whatever the stick's angle from the facing (the front's six
+  throws, `d` from −44° to +40°, landed within 4 cm of each other), so the turn takes the whole difference. Seen
+  from where the thrower stood, the body lands within 5° of the stick: 2.1° right of it for the front throw, 3.9°
+  and 5.1° to the left for the right and rear throws, 0° for the left one (the clips' own sideways drift, up to
+  0.56 m). The victim's displacement measured from **its own** starting point differs from the stick by up to 7° from
+  the front, because its start is rotated round the thrower first; measure from the thrower.
+- Throws that met something in the street at 3-4 m (not identified) landed short (3.0-4.3 m instead of 5.5-7 m) and
+  up to 23° off: collision, not aim. They are left out of the table.
+- **Rear hold** (four throws where the puppet stood behind the player and the grab became a rear hold, 84 / 85):
+  each played 80, then the throw at 17 updates after the press, with the thrower's heading unchanged until the
+  throw clip began. The bodies landed along the side's body axis (−0.2° rear, −0.6° right, −11.6° left, from the
+  thrower), 13° to 38° off the stick.
+
+So in the original a throw from the front hold goes exactly where the stick points, give or take the clip's few
+degrees, wherever the stick is within the side's 90° sector; only a rear-hold throw is limited to the four body axes.
+
+**Coney today** (read from `src/`; Coney's `Fighter` and `combat::updateGrab`): the throw picks the side and the clip
+from the stick (`combat::sideOf`, `combat::throwAttack`) and plays the pair at once (`Fighter::playGrabAction`), but
+a plain throw never turns the pair: the body flies along the side's body axis, so it lands up to 45° off the stick,
+which is the owner's "slightly off" (#240). Only the head-on wall throw is aligned (`Fighter::alignWallThrow`, and
+there at once, not over 0.01 s). `sideOf` counts exactly 45° as the front and exactly 135° as a side (a Coney
+choice; the original's test makes exactly 45° a side, item 2 above). A throw from the rear hold plays no spin 80
+first (`spinFirst` is set only for the power strike), and the place check (`placed`) is applied to every throw where
+the original applies `Pair_CheckPlace` only to 147-153 from the front hold.
+
+**Coney fixes** (#240):
+
+1. From a front hold (or with the `0x40000000` grab block), on a plain throw (147-153): turn the thrower to
+   stick heading + side × 90° over 1/6 s with the existing `TurnAndSlide::turnToOver` (constant rate, nothing under
+   0.01 rad), and carry the victim round him on the same update: rotate its offset from the thrower by the same turn
+   and slide it there over 1/6 s (`moveToOver`), turning it to the wanted heading + 180°. Start both throw clips on
+   the same update, so the turn runs on top of their root motion for the first 5 updates.
+2. Take the stick heading from the camera-turned stick of the update the throw starts (the press, or the hold clip's
+   end for a buffered throw), with no snapping.
+3. From a rear hold (no `0x40000000`): play the spin 80 / 81 first, then the side's throw clip, with no turn: the
+   body goes along the side's body axis chosen at the press.
+4. Make exactly 45° a side in `sideOf` (`|d| >= 45°` is not the front); 135° stays a side.
+5. Apply the place check only to the front-hold plain throws (147-153), not to the wall throws or the rear-hold path.
+6. Test (`tests/human/`, a grabbed passive target in open ground, no collision within 8 m): with the facing fixed and
+   the stick at 0°, ±20°, ±40° (front), −50°, −90° (right), 160° (rear) and 110° (left) from it, a front throw's
+   thrower reaches the stick heading within 0.5° 5 updates after the throw starts (the other sides: stick heading +
+   side × 90° plus their clip's own rotation over those updates), and at the end of the throw the thrower faces the
+   stick heading (front and right within 0.5°; rear +1.2°, left −3.5° within 1°, the clips' turns). The landing
+   point in the stick's frame is the same for every stick angle of one side within 0.1 m, and lies within 5° of the
+   stick heading seen from the thrower's start (front 2.1° right, ±1°). A rear-hold throw with the stick 30° right of
+   the facing plays 80 then 149 and lands along the facing's right axis (within 2°), not along the stick.
 
 ### A bat in hand {#bat}
 
