@@ -136,6 +136,7 @@ add_executable(coney_tests
     platform/disc_world_test.cpp
     platform/disc_level_test.cpp
     platform/disc_movies_test.cpp
+    platform/disc_debug_movies_test.cpp
     platform/disc_play_frame_rate_test.cpp
     platform/disc_world_streaming_test.cpp
     platform/ffmpeg_info_test.cpp
@@ -328,6 +329,7 @@ target_sources(coney_tests PRIVATE
     debug/debug_session_test.cpp
     debug/input_gate_test.cpp
     debug/menu_navigator_test.cpp
+    debug/movies_page_test.cpp
     debug/native_caller_test.cpp
     debug/pad_menu_input_test.cpp
     debug/play_pages_test.cpp

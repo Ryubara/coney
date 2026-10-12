@@ -29,6 +29,9 @@ void addLevelsPage(DebugSession& session);
 /// The Missions page: the story's 18 missions in order (number, title, level, checkpoints), each a page of its
 /// checkpoints; choosing one starts the mission's level there.
 void addMissionsPage(DebugSession& session);
+/// The Movies page: the disc's movies (DebugServices::movies) with what plays each, and a captions switch; choosing
+/// one plays it over the game, which resumes as it was, and closes the menu so the movie's skip reaches it.
+void addMoviesPage(DebugSession& session);
 /// The Player page: where the player is and how it moves (plotted), his character type and a change of it, freezing
 /// it, and teleports to the scene's places, a typed spot or a saved one. Over PlayControls; says so when no player
 /// plays.

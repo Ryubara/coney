@@ -179,6 +179,10 @@ bool ImGuiModelView::drawEntry(const MenuItem& item, const std::string& path, co
         if (ImGui::Button(item.label.c_str()) && item.run) {
             item.run();
         }
+        if (!item.detail.empty()) {
+            ImGui::SameLine();
+            ImGui::TextDisabled("%s", item.detail.c_str());
+        }
         tooltip(item.help);
         contextMenu(item, path);
         break;
