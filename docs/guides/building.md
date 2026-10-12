@@ -228,9 +228,10 @@ command line](coney-tools.md) shows how to run each command.
 
 ## Formatting and pre-commit
 
-clang-format decides the layout of C and C++ code, ruff that of the Python package, and a few hooks catch trailing
-whitespace, broken YAML or TOML, merge-conflict markers and files over 512 KB (usually game data added by mistake).
-All of them run through [pre-commit](https://pre-commit.com/), configured in `.pre-commit-config.yaml`:
+clang-format decides the layout of C and C++ code, ruff that of the Python package, markdownlint that of every Markdown
+file (a line over 120 characters is refused), and a few hooks catch trailing whitespace, broken YAML or TOML,
+merge-conflict markers and files over 512 KB (usually game data added by mistake). All of them run through
+[pre-commit](https://pre-commit.com/), configured in `.pre-commit-config.yaml`:
 
 ```sh
 uvx pre-commit run --all-files
@@ -238,7 +239,11 @@ uvx pre-commit run --all-files
 
 Run that before every commit, or install the hooks once with `uvx pre-commit install` so that `git commit` runs them
 for you. The hooks fix what they can; stage their changes and commit again. Install them once in each clone; the
-worktrees of a clone share them. No hook checks a commit title: a pull request is squash-merged, so only its title
+worktrees of a clone share them. The markdownlint hook runs the same rules as CI's markdownlint job
+(`.markdownlint.yaml`, with the files it skips in `.markdownlint-cli2.yaml`) through Node.js, so Node.js 18 or newer
+must be on your `PATH` (pre-commit would otherwise download its own copy on the first run). `coney-tools check
+changed` runs it on the files you changed, and `repo audit` (`files.markdown-hook`) fails when the hook is removed from
+the configuration. No hook checks a commit title: a pull request is squash-merged, so only its title
 reaches `main`, and CI checks that against the commit title rules (`area: Verb the rest`, at most 72 characters; the
 rules are `commits.title` in [.github/conventions.yml](repo:.github/conventions.yml) and
 [CONTRIBUTING.md](repo:CONTRIBUTING.md#commits) lists them).
@@ -259,7 +264,7 @@ runs, so a job recompiles only what changed; each job prints its hit rate at the
 | Workflow | Jobs |
 | --- | --- |
 | `build` | `ci` preset build and tests on Windows (MSVC), Linux (GCC 13 and Clang 19) and macOS (Apple Clang); `asan` preset on Linux Clang 19 and macOS; clang-tidy (a pull request: changed files only); pre-commit over every file; the `build-ok` gate |
-| `python` | ruff, mypy, pytest and `coney-tools repo check` on Windows, Linux and macOS; the `python-ok` gate |
+| `python` | ruff, mypy, pytest, `coney-tools repo check` and the local gate (`check changed`: its `repo` and `pre-commit` steps) on Windows, Linux and macOS; the `python-ok` gate |
 | `docs` | `mkdocs build --strict`, markdownlint over every Markdown file, actionlint over the workflows |
 | `pr` | the pull request title against the commit title rules, that code changes come with docs changes, and the description against the template (pull requests only; editing the title or description reruns it) |
 
