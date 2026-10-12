@@ -49,6 +49,10 @@ struct CombatInput {
     /// Both grab-block flags on the player (`0x40000000` and `0x80000000`, `HuBlockGrab`): circle starts no grab.
     bool grabBlocked = false;
     bool snapTarget = false;     ///< The snap's search found a human that is not the target (SquareInput).
+    /// The human square, cross or circle aims at is held from the rear in front of this one and allows a tandem
+    /// (combat::tandemCanStart(), the caller's search). Square and cross start it after their other target tests,
+    /// circle before grabbing (docs/research/combat.md#grab, step 3).
+    bool tandemTarget = false;
     ChainTargets chain;          ///< What the chain's next step reads of the targets (AttackChain::update()).
     bool fromRear = false;       ///< Holding the victim from behind.
     bool wallInReach = false;    ///< A wall within a throw's reach.
@@ -80,6 +84,9 @@ struct CombatOutput {
     MountAction mountAction = MountAction::None; ///< What the player did in the mount (startAnim is its clip).
     bool grabPowerOut = false;             ///< The grab broke because the power meter ran out (grabAction is LetGo).
     GameResult game = GameResult::Running; ///< A minigame's result this update (mugging or theft).
+    /// The tandem starts with the set whose first id this is (combat::tandemSet()); anim_id::kNone otherwise. The
+    /// fighter plays the three humans' clips; startAnim stays anim_id::kNone.
+    int tandemBase = anim_id::kNone;
 };
 
 /// The player's combat state and its per-update decisions.
@@ -170,6 +177,9 @@ class PlayerCombat {
     bool extendPowerMove(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
     // The theft route.
     void updateTheft(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
+    // Square, cross or circle at a target that allows one: the tandem with the set the object in hand picks
+    // (CombatOutput::tandemBase). The fighter plays it (human::Fighter, `Tandem_Start`).
+    void startTandem(const CombatInput& input, CombatOutput& out);
     /// Circle tapped or held: a grab or a tackle, or a miss.
     /// @orig 0x00284920 Player_GrabOrTackle (unknown)
     void grabOrTackle(const CombatInput& input, CombatOutput& out);

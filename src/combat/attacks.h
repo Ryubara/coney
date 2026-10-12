@@ -95,7 +95,14 @@ struct SquareInput {
     /// The snap's search found a human on the stick's side that is not the current target (the caller searches:
     /// kSnapSearchRange, kSnapSearchCone, kSnapSearchHeight). Only read while snaps need a target.
     bool snapTarget = false;
+    /// The target allows a tandem (combat::tandemCanStart(), the caller's search): square and cross start it after
+    /// the target-state strikes, the moving attacks and the snap (docs/research/combat-moves.md#square).
+    bool tandem = false;
 };
+
+/// Not a clip: what squareAttack(), crossAttack() and armedAttack() return when the press starts the tandem
+/// (combat/tandem.h), whose clips the set decides.
+inline constexpr int kStartTandem = -2;
 
 /// The snap a stick asks for: beyond 0.95 and more than 45° off the facing, 25 right, 27 left, 29 back; otherwise
 /// anim_id::kNone. It needs a target as well to play (squareAttack()).
@@ -106,8 +113,8 @@ struct SquareInput {
 /// grabbed one; an object attack at a breakable (anim_id::kNone here: objectAttack() picks the clip); at a run (gait 4)
 /// with no phase bit and the stick beyond 0.95 the run attack 24; walking (gait 1-3) with the stick at 0.12 or more the
 /// walk attack 23; only then, standing or sprinting, the snap of snapForStick() when snaps are on and the search found
-/// a target (SquareInput::snapTarget), or with `CfgSnap` off for the stick alone; otherwise `S1`. So a snap comes from
-/// a player who has not started to walk.
+/// a target (SquareInput::snapTarget), or with `CfgSnap` off for the stick alone; then kStartTandem at a target that
+/// allows a tandem (SquareInput::tandem); otherwise `S1`. So a snap comes from a player who has not started to walk.
 /// **Coney choice**: a grounded target takes 193, never 194.
 /// The snap itself is `0x00264460` (docs/research/combat.md#attacks).
 /// @orig 0x00286cc8 Player_Square (unknown)
@@ -115,7 +122,8 @@ struct SquareInput {
 
 /// The attack cross (its 0x10) starts. With a knife, baton or bat in hand (SquareInput::heldSet 1-3) it is
 /// armedAttack()'s with the set's cross slot. Otherwise: at a run (gait 4 or 5) with no phase bit and the stick beyond
-/// 0.95 the run attack 24; walking (gait 1-3) with the stick at 0.12 or more the walk attack 23; else `X1`. Cross has
+/// 0.95 the run attack 24; walking (gait 1-3) with the stick at 0.12 or more the walk attack 23; kStartTandem at a target
+/// that allows a tandem; else `X1`. Cross has
 /// no snaps and reads no target (docs/research/combat.md#attacks). **Coney's reading**: square's fields are reused;
 /// cross ignores the target and the snap's. (Sets 4-6 throw instead: throwAttack().)
 /// @orig 0x00287a18 Player_Cross (unknown)
@@ -124,7 +132,8 @@ struct SquareInput {
 /// The armed branch square and cross take with a knife, baton or bat in hand (docs/research/combat.md#armed-moves), in
 /// its order: at a run (gait 4, or for cross 4 or 5, with no phase bit and the stick beyond 0.95) 501; at a grounded or
 /// tackled target the set's grounded strike (slot `0x13`); at a breakable anim_id::kNone (objectAttack() picks the
-/// clip); otherwise the set's swing `swing` (slot `0x10` for square, `0x11` for cross). No walk attack, no snaps and
+/// clip); kStartTandem at a target that allows a tandem; otherwise the set's swing `swing` (slot `0x10` for square, `0x11`
+/// for cross). No walk attack, no snaps and
 /// no strike on a grabbed target: a walking player swings where he is. **Coney's reading**: the mugging this branch
 /// may start is not built.
 [[nodiscard]] int armedAttack(const SquareInput& input, bool cross);

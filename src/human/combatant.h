@@ -80,6 +80,12 @@ class Combatant {
     /// (bone 6) in the world, a few centimetres off its position at rest and up to 0.28 m in a reel
     /// (docs/research/combat.md#led-steer). The position by default.
     [[nodiscard]] virtual anim::Vec3 ledPoint() const { return position(); }
+    /// Whether it is in state `0x20`: held attached in a grab from its rear, by anyone (a tandem's victim,
+    /// docs/research/combat-moves.md#tandem). False by default.
+    [[nodiscard]] virtual bool heldFromRear() const { return false; }
+    /// Its record `+0x08`: the bits the clips it plays hold (docs/research/tasks.md#held-flags), which the tandem's
+    /// start test and an AI's attack test read of a target. 0 by default.
+    [[nodiscard]] virtual std::uint32_t heldFlags() const { return 0; }
 };
 
 } // namespace coney::human

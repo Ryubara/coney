@@ -218,6 +218,13 @@ inline std::vector<LocomotionClip> combatClips() {
     for (std::uint32_t id = 268; id <= 303; ++id) {
         still(id, 0.4F, false, id >= 288);
     }
+    // The tandems' clips (163-192: grabber, victim and attacker intros, then their ends, per set), each as many updates
+    // long as the disc's (docs/research/combat-moves.md#frame-data).
+    static constexpr std::array<int, 30> kTandemUpdates{36, 36, 36, 27, 38, 36, 47, 47, 47, 42, 54, 47, 11, 11, 11,
+                                                        43, 63, 40, 14, 14, 14, 67, 67, 67, 68, 68, 68, 18, 59, 22};
+    for (std::uint32_t i = 0; i < kTandemUpdates.size(); ++i) {
+        still(163 + i, static_cast<float>(kTandemUpdates[i]) / 30.0F);
+    }
     return clips;
 }
 

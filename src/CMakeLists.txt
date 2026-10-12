@@ -359,6 +359,7 @@ target_sources(coney_core PRIVATE
     combat/revive.cpp
     combat/reactions.cpp
     combat/stick_games.cpp
+    combat/tandem.cpp
     combat/throw_aim.cpp
     combat/throw_velocity.cpp
     debug/combat_tunables.cpp)

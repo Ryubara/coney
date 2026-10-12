@@ -572,3 +572,63 @@ TEST_CASE("with a bat, circle + cross is no strong grapple, even with a target i
     }
     CHECK(runner.combat().mode() == CombatMode::Free);
 }
+
+TEST_CASE("square, cross, circle tapped and circle held each start the tandem at a target that allows one",
+          "[combat][tandem]") {
+    // The fighter found a victim held from the rear in front of the player (Tandem_CanStart true): every one of the
+    // four commands starts the tandem, the set one of the three empty-handed ones, and no clip of the dispatcher's own.
+    const auto tandem = [](std::uint64_t, CombatInput& input) { input.tandemTarget = true; };
+    for (const std::string_view press : {"10 tap square\n", "10 tap cross\n", "10 tap circle\n",
+                                         "10 press circle\n18 release circle\n"}) {
+        Runner runner(nullptr);
+        const auto frames = runner.run(press, 25, tandem);
+        const auto started = std::ranges::find_if(frames, [](const Frame& f) { return f.out.tandemBase != anim_id::kNone; });
+        REQUIRE(started != frames.end());
+        CHECK((started->out.tandemBase == 163 || started->out.tandemBase == 169 || started->out.tandemBase == 175));
+        CHECK(started->out.startAnim == anim_id::kNone);
+        CHECK_FALSE(started->out.grabStarted);
+        CHECK_FALSE(started->out.tackleStarted);
+        CHECK_FALSE(started->out.grabMissed);
+        CHECK(runner.combat().mode() == CombatMode::Free);
+    }
+}
+
+TEST_CASE("a tandem's set follows the weapon in hand: a bat 181, a baton 181, a knife 187", "[combat][tandem]") {
+    for (const auto& [set, base] : std::array{std::pair{3, 181}, std::pair{2, 181}, std::pair{1, 187}}) {
+        Runner runner(nullptr);
+        const auto frames = runner.run("10 tap square\n", 20, [set = set](std::uint64_t, CombatInput& input) {
+            input.tandemTarget = true;
+            input.animSet = set;
+        });
+        CHECK(frames[10].out.tandemBase == base);
+    }
+}
+
+TEST_CASE("the tandem comes after the moving attacks and is refused mid-attack", "[combat][tandem]") {
+    // Walking at the victim with the stick at 60 %, square is the walk attack 23, as in the original's order.
+    Runner walking(nullptr);
+    const auto walk = walking.run("0 stick left 0 60\n10 tap square\n", 20, [](std::uint64_t, CombatInput& input) {
+        input.tandemTarget = true;
+        input.gait = Gait::Walk;
+    });
+    CHECK(walk[10].out.tandemBase == anim_id::kNone);
+    CHECK(walk[10].out.startAnim == anim_id::kAttackFromWalk);
+    // Without a victim to share, square is S1; in S1's wind-up a second square (now with one) starts nothing.
+    Runner runner(nullptr);
+    const auto frames = runner.run("10 tap square\n12 tap square\n", 20, [](std::uint64_t frame, CombatInput& input) {
+        input.tandemTarget = frame >= 11;
+    });
+    CHECK(frames[10].out.startAnim == anim_id::kAttackS1);
+    CHECK(frames[12].out.tandemBase == anim_id::kNone);
+}
+
+TEST_CASE("circle at a rear-held victim starts the tandem even with both grab blocks on", "[combat][tandem]") {
+    // The tandem is tested before the grab in Player_GrabOrTackle's step 3; the grab-block flags refuse only the grab.
+    Runner runner(nullptr);
+    const auto frames = runner.run("10 tap circle\n", 20, [](std::uint64_t, CombatInput& input) {
+        input.tandemTarget = true;
+        input.grabBlocked = true;
+    });
+    const auto started = std::ranges::find_if(frames, [](const Frame& f) { return f.out.tandemBase != anim_id::kNone; });
+    CHECK(started != frames.end());
+}

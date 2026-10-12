@@ -50,7 +50,12 @@ inline combat::AnimRangeList fightRanges(const std::map<int, std::int16_t>& code
         {0, {31, 0x36, 0}},       {76, {30, 0, 0}},         {96, {0, 0, 0}},      {100, {20, 0x2a, 0x100}},
         {104, {20, 0x26, 0x400}}, {219, {61, 0, 0}},        {221, {61, 0, 0}},    {223, {61, 0, 0}},
         {225, {61, 0, 0}},        {657, {60, 0, 0}},        {659, {60, 0, 0}},    {25, {31, 0x1b, 0}},
-        {27, {31, 0x19, 0}},      {29, {31, 0x1b, 0}},      {148, {-60, 0x3a, 0}}};
+        {27, {31, 0x19, 0}},      {29, {31, 0x1b, 0}},      {148, {-60, 0x3a, 0}},
+        // The tandems' attacker sides (combat-moves.md#frame-data): 50 on each intro, 350 on the empty-handed ends, 500
+        // on the bat's and 600 on the knife's.
+        {165, {50, 0, 0}},        {171, {50, 0, 0}},        {177, {50, 0, 0}},    {183, {50, 0, 0}},
+        {189, {50, 0, 0}},        {168, {350, 0, 0}},       {174, {350, 0, 0}},   {180, {350, 0, 0}},
+        {186, {500, 0, 0}},       {192, {600, 0, 0}}};
     test::Bytes bytes;
     bytes.u32(722);
     for (int animId = 0; animId < 722; ++animId) {
@@ -76,7 +81,10 @@ inline combat::AnimRangeList fightRanges(const std::map<int, std::int16_t>& code
         const std::map<int, Place> places{{72, {0, 1000, 0.999F}},   {74, {0, 1000, 1.018F}},  {82, {351, 936, 1.081F}},
                                           {84, {-399, 916, 0.242F}}, {657, {0, 1000, 0.999F}}, {659, {0, 1000, 1.018F}},
                                           {25, {999, -12, 1.0F}},    {27, {-1000, 0, 1.0F}},   {29, {-39, -999, 1.0F}},
-                                          {0, {0, 1000, 3.29F}},     {1, {0, 1000, 2.22F}}};
+                                          {0, {0, 1000, 3.29F}},     {1, {0, 1000, 2.22F}},
+                                          // The tandems' attacker intros, straight ahead at their reach.
+                                          {165, {0, 1000, 1.72F}},   {171, {0, 1000, 1.46F}},  {177, {0, 1000, 1.69F}},
+                                          {183, {0, 1000, 1.27F}},   {189, {0, 1000, 1.44F}}};
         const std::map<int, std::int16_t> wallFars{{155, 2250}, {157, 1549}, {159, 1250},
                                                    {161, 1549}, {0, 4110},   {1, 3000}};
         const auto placed = places.find(animId);
