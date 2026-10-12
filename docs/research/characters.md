@@ -112,7 +112,7 @@ Confirmed (code); offsets with "runtime" were checked on Rembrandt.
 | `+0xd0` | int | the type passed to `HuCreate` (`0x20`) | confirmed (code), runtime |
 | `+0x54` | u32 | object flags: `0x4000000` airborne, `0x2000000` on the ground ([Ground](#ground)) | confirmed (code) |
 | `+0xd4` | pointer | the human's 0x180-byte record (`0x0065a540 + i × 0x180`, [below](#the-record)) | confirmed (code), runtime |
-| `+0xe0` | u64 | human flags. `Human_MakePlayer` sets `0x2` (may start a climb from a run), `0x4` and `0x2000000` and clears `0x8`; `0x4000000` keeps stamina full; `0x10000000` forbids a jump; `0x20000000` forces the anim state and forbids a climb. Rembrandt: `0x24004440407` | confirmed (code), runtime |
+| `+0xe0` | u64 | human flags. `Human_Init` starts them by brain type ([Combat: human flags](combat.md#human-flags): a Warrior gets `0x2` and the revivable `0x4`). `Human_MakePlayer` sets `0x2` (may start a climb from a run), `0x4` and `0x2000000` and clears `0x8`; `0x4000000` keeps stamina full; `0x10000000` forbids a jump; `0x20000000` forces the anim state and forbids a climb. Rembrandt: `0x24004440407` | confirmed (code), runtime |
 | `+0xd8` | pointer | the `CharacterInstance` (model, skeleton, animation) | confirmed (code) |
 | `+0x1a0` | pointer | the physics body (0 for none) | confirmed (code) |
 | `+0x1a8` | int | the gait for the current speed (0, 1-5; `0x0022aeb0`), used by the lean | confirmed (code) |

@@ -250,6 +250,7 @@ target_sources(coney_core PRIVATE
     human/human_animator.cpp
     human/human_held.cpp
     human/human_revive.cpp
+    human/way_clear.cpp
     human/human_flight.cpp
     human/human_hiding.cpp
     human/human_script.cpp

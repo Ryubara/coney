@@ -825,8 +825,10 @@ icon sprite at `+0x480`. Confirmed (code) unless marked:
     - **The filter** `Human_IsRevivableBy(player, him)` (`0x00278fa0`): he is friendly to the player
       (`Human_IsFriendly`, `0x00222a90`) or in the same gang (brain `+0x20c`); knocked out (`0x00227dd8`); not cuffed
       (`0x00223b70`); not in state `0x80000000` (`0x00227e18`) or `0x100000000` (`0x00227eb0`); and **revivable**, human
-      flag `+0xe0` bit `0x4` (`HuSetRevivable`; `Human_MakePlayer` sets it on every player, scripts set or clear it on
-      others).
+      flag `+0xe0` bit `0x4` (`Human_Init` sets it on every player and every Warrior, brain types 0 and 3;
+      `Human_MakePlayer` on a player too; scripts set or clear it with `HuSetRevivable`; [Combat: human
+      flags](combat.md#human-flags)). Confirmed (runtime) on `level80`: beside a knocked-out Vermin with a flash, string
+      4 showed ([Combat: revive at runtime](combat.md#revive-runtime)).
     - **Sight, no facing**: each candidate must also pass `Human_HasLineOfSight(player, him)` (`0x00222288`: a ray at
       1.7 m to his 1.7 m, else to his 1.0 m; it passes fences, railings and glass, [AI: sight](ai.md#sight)). The list's
       field-of-view test is only consulted beyond 3 m (squared distance over 9), which the 3 m search never yields, so
@@ -2724,9 +2726,10 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
 - **The prompt beside a downed Warrior** (owner item 8, "no revive prompt"): Coney's revive step read only a script's
   knock-out, so a Warrior downed in a fight (his health gone) gave no prompt; it now counts both, a flash is still
   needed, and d-pad left revives him ([Combat: revive](combat.md#revive)). He must also be revivable (flag `0x4`),
-  which Coney's crew is not unless a script says so: an open question on that page. The disc test
-  `repo:tests/platform/disc_revive_test.cpp` flags a `level80` Warrior with `HuSetRevivable`, downs him, walks player 1
-  to him with the stick at 60 % and sees no prompt without a flash, string 4 with one, then the revive. The swap prompt
+  which every Warrior is from the moment he is made (`Human_Init`, [Combat: human flags](combat.md#human-flags)), in
+  Coney too (`ai::startingFlags`). The disc test `repo:tests/platform/disc_revive_test.cpp` downs a `level80` Warrior
+  with a strike (no script call), walks player 1 to him with the stick at 60 % and sees no prompt without a flash,
+  string 4 with one, then the revive. The swap prompt
   (`repo:src/ai/swap_prompt.h`) has the blocked test, for the Warrior and the player alike, as far as Coney models
   the mask's states (knocked out, by health or by a script, arrested, wounded), so beside a downed Warrior no "Give
   Weapon" shows. A Warrior's brain that a script knocked out is off in Coney (BrDead), so its think clears the prompt

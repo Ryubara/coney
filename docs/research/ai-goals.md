@@ -601,7 +601,53 @@ him on the way. Pushed by the arrested goal (`0x002b6eb0`) and by FollowAndDefen
 | `0x002b8688` | `SaveHumanGoal_FightOff` | helper | fights one enemy off: without an attack slot drops him; picks an attack kind, closes in to its reach (move-to-human 1000 ms) or queues it | confirmed (code) |
 | `0x002b8868` | `SaveHumanGoal_FindOtherRescuer` | helper | the nearest gang mate (to the saved human) whose top goal is FollowAndDefend (`0x35`), free and idle; the squared distance out | confirmed (code) |
 | `0x002b8a30` | `SaveHumanGoal_UpdatePoint` | helper | the rescue point: the saved human's position `+0x2b0` put on the nav mesh; none: flags `+0x3d` (give up) | confirmed (code) |
-| `0x002b8ad8` | `SaveHumanGoal_Process` | Process | runs to the downed or cuffed human (gait 5), fighting off nearby attackers, pushing bystanders aside or breaking objects in the way; there, unlocks the cuffs or revives him (a car's `+0xf0` gets 10000); in one-player games hands the follow camera to the rescuer | confirmed (code) |
+| `0x002b8ad8` | `SaveHumanGoal_Process` | Process | runs to the downed or cuffed human (gait 5), fighting off nearby attackers, pushing bystanders aside or breaking objects in the way; there, unlocks the cuffs or revives him (his wake time `+0xf0` 10 s later first); in one-player games hands the follow camera to the rescuer | confirmed (code) |
+
+**Who gets the goal** (confirmed (code) at the callers of `Goal_SaveHuman`, `0x002b7d80`):
+
+- `FollowAndDefendGoal_Process` (`0x002bd808`): a follower whose **leader** is cuffed or knocked out (a player leader
+  only when he holds a flash) claims him and pushes it. This is how the crew revives player 1.
+- `DefendTactic_Rescue` (`0x003108a8`, from the Defend tactic's events 17 and 18 on the guarded human): each free AI
+  member (not a dog, class `0xdd`) of the guarding gang, nearest first, that claims the human
+  (`Brain_ClaimCoopTarget`) clears his actions, pops his goals down to FollowAndDefend (`0x35`) and pushes it.
+- `Arrested_CallForRescue` (`0x002b6eb0`): a cuffed type-2 human, every 30 thinks, asks a visible gang mate within
+  20 m who claims him.
+
+No caller pushes it for one AI Warrior downed beside another, and the revive itself needs a flash that only a player's
+inventory holds ([Combat: revive](combat.md#revive), step 3): **an AI Warrior revives a player who holds a flash, never
+another AI Warrior**. Inferred from the callers and `Player_TryRevive`.
+
+**How Process runs**, confirmed (code) at `0x002b8ad8`. Goal fields: `+0x20` the saved human's handle, `+0x10` the
+rescue point (his position on the nav mesh, `SaveHumanGoal_UpdatePoint`), `+0x30` the state, `+0x28` the attack kind,
+`+0x3b` the saved turn boost, `+0x3c` "rescue started", `+0x3d` give up, `+0x3e` re-pick an enemy. *near* and *far*
+are the brain's ranges `+0x140` and `+0x13c`; *d²* the squared distance from the rescuer to the rescue point.
+
+1. **Ends** (returns 2) when the saved human is gone, `+0x3d` or `+0x39` is set, or the game state's `+0x14c` is set (a
+   mission failure); when he is neither cuffed nor knocked out any more; in state 2 (done).
+2. **A busy rescuer** (`Human_IsBusy`) gets human flag `0x800` (no reactions); the goal ends if he is cuffed or down;
+   every 5th think it looks for another rescuer (`SaveHumanGoal_FindOtherRescuer`) and, in state 0, ends when that one
+   is within 2.5 m of the saved human.
+3. It **waits** while the saved human has a held flag other than `0x40000000`.
+4. **The camera**: when the saved human is a player with a follow camera, d² ≤ far² ends the camera's take-over; in a
+   one-player game a farther rescuer takes the camera over (`Cam_Follow_TakeOverTarget`).
+5. **State 0, the run**: out of the fight stance. With no action queued: within near, enter the stance, clear the
+   actions and flag `0x800`, attack kind 45 (none), state 1. Farther: on `+0x3e`, drop the target and fight the best
+   enemy (`SaveHumanGoal_FightOff`); else, when an attacker in the brain's list (`+0x1a4`) is within far, clear the
+   actions, set `0x800`, turn to the rescue point and play a short anim action (blends 0.1 s), gait 5; then a move
+   action to the rescue point at gait 5. With an action queued: a move keeps gait 5; while another action runs,
+   every 3rd think, flag `0x800` is cleared and the nearest attacker within far that is mid-attack (held flags
+   `0x5c0221f`) and in front of him makes him clear the actions and play the same short anim action.
+6. **State 1, at the point**: beyond 1.1 × near, back to state 0 (turn boost restored). Else in the fight stance; while
+   an action is queued, wait; drop the target; beyond 0.75 m (d² > 0.5625) fight the best enemy if there is one;
+   beyond 1 m a walk (gait 2) to the rescue point with the turn boost + 1, avoiding the nearest human of the brain's
+   `+0x164` list when brain `+0x152` is set. Within 1 m, `Human_CapsuleOverlaps` with the saved human: a breakable
+   object (type record `+0x5a` = 1) is made the object target and attacked (`Brain_QueueAttack`) and the point
+   re-read; a human who is not a threat is pushed aside (`Brain_PushAside`, then a 1.5 s Nothing action), or, when his
+   actions cannot be cleared, faced (0.033 s) with a short anim action (`0x21`); a threat is fought off. Otherwise,
+   once (`+0x3c`), standing (gait idle) and holding no flag but `0x40000000`: a cuffed human gets an `UnlockHuman`
+   action (command `0x32`, [uncuffing](crimes.md)); a knocked-out one gets, when the way is clear
+   (`Human_IsWayClearTo`), his wake time `+0xf0` pushed 10 s later, then a `Revive` action (command `0x27`, the
+   player's [revive](combat.md#revive) with its tests); state 2.
 
 ### Domination (type 0x7d) {#goal-hold-flag}
 

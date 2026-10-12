@@ -255,6 +255,7 @@ target_sources(coney_tests PRIVATE
     human/disc_player_test.cpp
     human/human_test.cpp
     human/human_revive_test.cpp
+    human/way_clear_test.cpp
     human/flight_test.cpp
     human/hiding_test.cpp
     human/body_test.cpp

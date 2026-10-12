@@ -1,0 +1,77 @@
+# level80 checkpoint 1 at the "Let's Go" hint (Cleon's stick locked until he gives the follow command): the input
+# gives command 0 (R2, right stick up), which brings Vermin and Rembrandt down to Cleon. Vermin, a crew Warrior (brain
+# type 3, human flags 0x7 with the revivable 0x4 from Human_Init), is then put 1 m in front of Cleon, his health set to
+# 0 and Human_OnHealthOut called on him as a fight's last hit does; Cleon is given one flash and taps d-pad left
+# (command 0x27). The trace shows the revive: Revive_Start, the clips 351 / 353 / 354 and 389, the flash spent, the
+# heal, lines 76 and 75. Research: docs/research/combat.md#revive-runtime. The state is not a quick-save slot: a
+# level80 state saved at that hint (a copy of the re-pathing pass's, with the patched words put back), passed with
+# --state and absolute paths.
+description = "level80 cp1: Cleon revives a knocked-out Vermin with a flash (d-pad left); clip order and timing"
+research = "docs/research/combat.md#revive-runtime"
+input = "revive_crew.txt"
+updates = 600
+fields = ["player"]
+
+[original]
+state = "research-revive/l80_letsgo_clean.p2s"
+patches = ["scripted-pad", "right-stick", "call-brains", "anim-dispatch", "say-command", "revive-start", "revive-finish", "set-command"]
+let = { v = 'human("Vermin")' }
+setup = [
+  # Vermin 1 m in front of Cleon, on his floor, for the first frames (his body follows the transform).
+  { address = "tf(v) + 0x0", type = "f32", value = "f32(tf(player)) - 1.0 * sin(heading(player))", frame = 270, until = 273 },
+  { address = "tf(v) + 0x4", type = "f32", value = "f32(tf(player) + 0x4) + 1.0 * cos(heading(player))", frame = 270, until = 273 },
+  { address = "tf(v) + 0x8", type = "f32", value = "f32(tf(player) + 0x8)", frame = 270, until = 273 },
+  # His health gone; player 1's flash count (inventory 0x0051489c + 0x480, player 0, item 1 at + 0x2c + 0x24) one.
+  { address = "rec(v) + 0x144", type = "s16", value = "0", frame = 278 },
+  { address = "u32(0x0051489c) + 0x4d0", type = "s32", value = "1", frame = 278 },
+]
+calls = [
+  # Human_OnHealthOut(Vermin): knocked out (he has 0x4), wake time + 28 s.
+  { function = "0x002674c0", args = ["v"], frame = 281 },
+]
+
+[[field]]
+name = "v_clip"
+address = "rec(v) + 0x20"
+type = "s32"
+
+[[field]]
+name = "v_health"
+address = "rec(v) + 0x144"
+type = "s16"
+
+[[field]]
+name = "v_x"
+address = "tf(v) + 0x0"
+type = "f32"
+
+[[field]]
+name = "v_y"
+address = "tf(v) + 0x4"
+type = "f32"
+
+[[field]]
+name = "v_flags"
+address = "v + 0xe0"
+type = "u32"
+
+[[field]]
+name = "v_wake"
+address = "rec(v) + 0xf0"
+type = "u32"
+
+[[field]]
+name = "now"
+address = "u32(0x0050b734) + 0x48"
+type = "u32"
+follow = true
+
+[[field]]
+name = "flashes"
+address = "u32(0x0051489c) + 0x4d0"
+type = "s32"
+follow = true
+
+[coney]
+level = "level80"
+# Coney's side has no staged knock-out yet: the Let's Go input runs, the revive press finds nobody downed.

@@ -5833,7 +5833,7 @@ it was not run (Coney reading); the kind 4 / 6 drop is not built.
    fights for him and (with `SaveHuman`) frees or revives him.
 4. **Draw the Warrior's weapon** (item 37): place every human's held object at his own pose, not only player 1's
    (the same bone and offset as the swap's placement); then add the kind 4 / 6 drop rule.
-5. **Revive** (item 8): built for player 1 ([Combat](combat.md#revive)); the crew's revivable flag and the AI
+5. **Revive** (item 8): built for player 1 ([Combat](combat.md#revive)); the crew's flag (`Human_Init`'s) and the AI
    rescue remain.
 6. **The 50 m range refusal** with 18 / 92, then the hide tactic and the hide-in-shadow order.
 

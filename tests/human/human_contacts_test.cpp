@@ -160,8 +160,9 @@ TEST_CASE("two AI humans walked at each other do not overlap", "[human][contacts
     street.humans.setPadControlled(street.player, false);
     // Each brain walks its human at the other at 1.6 m/s, as a move action writes it.
     street.humans.setBrains([](std::span<Human* const> humans) {
-        humans[0]->record().move = coney::human::BrainMove{.heading = 0.0F, .speed = 1.6F};
-        humans[1]->record().move = coney::human::BrainMove{.heading = 3.14159265F, .speed = 1.6F};
+        humans[0]->record().move = coney::human::BrainMove{.heading = 0.0F, .speed = 1.6F, .turnBoost = 0, .aim = {}};
+        humans[1]->record().move =
+            coney::human::BrainMove{.heading = 3.14159265F, .speed = 1.6F, .turnBoost = 0, .aim = {}};
     });
     float nearest = 4.0F;
     for (int i = 0; i < 90; ++i) {
