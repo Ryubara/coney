@@ -141,6 +141,7 @@ nav:
           - Tasks (the TaskEngine): research/tasks.md
           - "World objects: tint, glass, doors": research/objects.md
           - AI humans: research/ai.md
+          - "Gang fights: how a gang fights together": research/gang-fights.md
           - "AI code index: brains, actions and tactics": research/ai-code.md
           - "AI goals: the code of every goal class": research/ai-goals.md
           - "AI and the world: objects, cars, doors and climbs": research/ai-world.md
