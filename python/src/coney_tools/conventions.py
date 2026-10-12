@@ -443,6 +443,45 @@ class Thresholds:
 
 
 @dataclass(frozen=True)
+class AttachmentPatterns:
+    """The regular expressions the attachment scan looks for, one tuple per kind of finding (`log_scan`)."""
+
+    #: A user's home folder (`C:\\Users\\<name>`, `/home/<name>`, `/Users/<name>`): personal information.
+    user_folder: tuple[str, ...]
+    #: An email address: personal information.
+    email: tuple[str, ...]
+    #: A line of script source (the game's scripts are Lua 4.0): possible game data.
+    script_source: tuple[str, ...]
+    #: A line of a game text or data file (the placed-objects lines, ...): possible game data.
+    game_text: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class Attachments:
+    """The text files attached to an issue that the hygiene workflow downloads and scans (`coney_tools.log_scan`)."""
+
+    #: The start of an attachment link (`https://github.com/user-attachments/files/`); the id and name follow it.
+    link: str
+    #: The file name endings that are scanned (`.txt`, `.log`), compared without regard to case.
+    extensions: tuple[str, ...]
+    #: At most this many attachments of one issue are downloaded.
+    max_files: int
+    #: At most this many attachments in one run (the weekly sweep scans every open issue).
+    max_per_run: int
+    #: At most this many KB of one attachment are downloaded; the rest is never read.
+    download_kb: int
+    #: How long one download may take.
+    timeout_seconds: int
+    #: A log larger than this many KB is reported as possible game data.
+    large_kb: int
+    #: More than this percentage of control characters (or any NUL) means the file is not text.
+    control_percent: int
+    #: A file with at least this many lines matching `script_source`, or `game_text`, is reported.
+    line_threshold: int
+    patterns: AttachmentPatterns
+
+
+@dataclass(frozen=True)
 class PrHealth:
     """How `coney-tools repo pr-health` sorts a failing required check."""
 
@@ -479,6 +518,7 @@ class Hygiene:
     comments: Comments
     thresholds: Thresholds
     pr_health: PrHealth
+    attachments: Attachments
     #: Check id to its spec, in file order.
     checks: Mapping[str, CheckSpec]
 
@@ -1044,9 +1084,63 @@ def _read_check(check_id: str, data: object, where: str) -> CheckSpec:
     )
 
 
+def _patterns(value: object, where: str) -> tuple[str, ...]:
+    """A list of regular expressions, each of which must compile."""
+    patterns = _texts(value, where)
+    for index, pattern in enumerate(patterns):
+        try:
+            re.compile(pattern)
+        except re.error as error:
+            raise _fail(f"{where}[{index}]", f"not a valid regular expression ({error})") from None
+    return patterns
+
+
+def _read_attachments(data: object, where: str) -> Attachments:
+    """`hygiene.attachments`: what the attachment scan downloads, its limits and its patterns."""
+    counts = (
+        "max_files",
+        "max_per_run",
+        "download_kb",
+        "timeout_seconds",
+        "large_kb",
+        "control_percent",
+        "line_threshold",
+    )
+    table = _table(data, where, ("link", "extensions", "patterns", *counts))
+    link = _text(table["link"], _at(where, "link"))
+    if not link.startswith("https://") or not link.endswith("/"):
+        raise _fail(_at(where, "link"), "expected an https:// address ending with /")
+    extensions = _texts(table["extensions"], _at(where, "extensions"))
+    for extension in extensions:
+        if not re.fullmatch(r"\.[a-z0-9]+", extension):
+            raise _fail(_at(where, "extensions"), f"'{extension}' is not a lower-case ending like '.log'")
+    numbers = {key: _count(table[key], _at(where, key)) for key in counts}
+    if numbers["large_kb"] > numbers["download_kb"]:
+        raise _fail(_at(where, "large_kb"), "must not be more than download_kb, or a large file could not be seen")
+    if numbers["control_percent"] > 100:
+        raise _fail(_at(where, "control_percent"), "expected a percentage of 100 or less")
+    patterns_where = _at(where, "patterns")
+    kinds = ("user_folder", "email", "script_source", "game_text")
+    patterns = _table(table["patterns"], patterns_where, kinds)
+    return Attachments(
+        link=link,
+        extensions=extensions,
+        max_files=numbers["max_files"],
+        max_per_run=numbers["max_per_run"],
+        download_kb=numbers["download_kb"],
+        timeout_seconds=numbers["timeout_seconds"],
+        large_kb=numbers["large_kb"],
+        control_percent=numbers["control_percent"],
+        line_threshold=numbers["line_threshold"],
+        patterns=AttachmentPatterns(**{kind: _patterns(patterns[kind], _at(patterns_where, kind)) for kind in kinds}),
+    )
+
+
 def _read_hygiene(data: object, where: str) -> Hygiene:
     """The `hygiene` section: the report issue, the sweep schedule, the idle limits and the audit's checks."""
-    table = _table(data, where, ("report_issue", "sweep", "comments", "thresholds", "pr_health", "checks"))
+    table = _table(
+        data, where, ("report_issue", "sweep", "comments", "thresholds", "pr_health", "attachments", "checks")
+    )
     checks_where = _at(where, "checks")
     raw_checks = _mapping(table["checks"], checks_where)
     if not raw_checks:
@@ -1092,6 +1186,7 @@ def _read_hygiene(data: object, where: str) -> Hygiene:
         ),
         thresholds=Thresholds(**{key: _count(limits[key], _at(limits_where, key)) for key in keys}),
         pr_health=PrHealth(lint_checks=_texts(health["lint_checks"], _at(health_where, "lint_checks"))),
+        attachments=_read_attachments(table["attachments"], _at(where, "attachments")),
         checks=MappingProxyType(checks),
     )
 

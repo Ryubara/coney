@@ -6,15 +6,21 @@ item's one comment. `--sweep` is the weekly run: it audits the checkout and GitH
 report issue up to date (creating the issue if it is missing) and, only when `hygiene.comments.on_sweep` is true, brings
 every item's comment up to date too, at most `hygiene.comments.max_per_sweep` of them. Without `--apply` nothing is
 written: the command prints the plan. The audit itself stays read only (`coney-tools repo audit`).
+
+Both download the logs attached to the issues they look at (the event's issue, or every open issue for the sweep) and
+scan them for possible game data and personal information (`log_scan`, `hygiene.attachments`); what the scan finds is
+two more checks of the same comment.
 """
 
 from __future__ import annotations
 
 import argparse
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
 from coney_tools.audit_cli import build_report
+from coney_tools.audit_github import Snapshot
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import Conventions, load_conventions
 from coney_tools.hygiene_comments import (
@@ -28,6 +34,17 @@ from coney_tools.hygiene_comments import (
     report_marker,
 )
 from coney_tools.hygiene_github import GhRemote, Remote
+from coney_tools.log_scan import Fetch, Scans, download, scan_issues
+
+
+def _scanner(fetch: Fetch, only: int | None = None) -> Callable[[Snapshot, Conventions], Scans]:
+    """The attachment scan of the open issues of a snapshot, or of issue `only` alone (an event)."""
+
+    def scan(snapshot: Snapshot, conventions: Conventions) -> Scans:
+        issues = [issue for issue in snapshot.open_issues() if only is None or issue.number == only]
+        return scan_issues({issue.number: issue.body for issue in issues}, conventions.hygiene.attachments, fetch)
+
+    return scan
 
 
 def add_hygiene_parser(repo_commands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
@@ -68,13 +85,17 @@ def _apply(remote: Remote, actions: list[Action], apply: bool) -> None:
             remote.edit_comment(action.comment_id, action.body)
 
 
-def run_event(conventions: Conventions, number: int, remote: Remote, args: argparse.Namespace, root: Path) -> int:
-    """Update the comment of item `number` from a fresh audit of GitHub."""
+def run_event(
+    conventions: Conventions, number: int, remote: Remote, args: argparse.Namespace, root: Path, fetch: Fetch
+) -> int:
+    """Update the comment of item `number` from a fresh audit of GitHub (and of its attached logs)."""
     comments = conventions.hygiene.comments
     if not comments.on_events:
         print("hygiene.comments.on_events is false: nothing to do")
         return 0
-    report = build_report(root, conventions, ["github"], [], _audit_args(args), Path.cwd())
+    report = build_report(root, conventions, ["github"], [], _audit_args(args), Path.cwd(), _scanner(fetch, number))
+    for notice in report.notices:
+        print(f"note: {notice}")
     stickies = remote.stickies(item_marker(comments), comments.author, number)
     actions = plan_items(comments, group_by_item(report.findings, comments), stickies, scope=[number])
     _apply(remote, actions, args.apply)
@@ -83,10 +104,12 @@ def run_event(conventions: Conventions, number: int, remote: Remote, args: argpa
     return 0
 
 
-def run_sweep(conventions: Conventions, remote: Remote, args: argparse.Namespace, root: Path, now: datetime) -> int:
+def run_sweep(
+    conventions: Conventions, remote: Remote, args: argparse.Namespace, root: Path, now: datetime, fetch: Fetch
+) -> int:
     """Update the report comment, and the item comments when the conventions say the sweep may."""
     comments = conventions.hygiene.comments
-    report = build_report(root, conventions, ["files", "github"], [], _audit_args(args), Path.cwd())
+    report = build_report(root, conventions, ["files", "github"], [], _audit_args(args), Path.cwd(), _scanner(fetch))
     body = render_report(comments, report, now.strftime("%Y-%m-%d %H:%M UTC"))
     title = conventions.hygiene.report_issue.title
     issue = remote.find_report_issue(title)
@@ -116,13 +139,15 @@ def _audit_args(args: argparse.Namespace) -> argparse.Namespace:
     return argparse.Namespace(snapshot=args.snapshot, save_snapshot=None, workspace=None)
 
 
-def run_hygiene(args: argparse.Namespace, remote: Remote | None = None, now: datetime | None = None) -> int:
-    """Run `coney-tools repo hygiene`; `remote` and `now` are replaced in the tests."""
+def run_hygiene(
+    args: argparse.Namespace, remote: Remote | None = None, now: datetime | None = None, fetch: Fetch = download
+) -> int:
+    """Run `coney-tools repo hygiene`; `remote`, `now` and `fetch` (the attachment download) are replaced in tests."""
     root = find_repo_root(Path.cwd())
     conventions = load_conventions(root)
     github: Remote = remote if remote is not None else GhRemote()
     if args.event is not None:
         if args.event < 1:
             raise ConfigError("--event needs an issue or pull request number")
-        return run_event(conventions, args.event, github, args, root)
-    return run_sweep(conventions, github, args, root, now or datetime.now(UTC))
+        return run_event(conventions, args.event, github, args, root, fetch)
+    return run_sweep(conventions, github, args, root, now or datetime.now(UTC), fetch)

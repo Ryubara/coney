@@ -30,7 +30,7 @@ and `labels.yml`) are gone, and so are the constants that repeated their values 
 | `merge` | The merge methods, the squash commit's wording, auto-merge, the required checks and who merges: a copy of the GitHub ruleset and settings | `repo render` (the `required-checks` block); `repo audit --github` compares it with the GitHub ruleset and settings |
 | `issues` | The structure of each issue form (field ids, headings, which are required, default labels), the Screenshots line, the `From:` line, links and how many labels of each family an issue carries | `repo audit` (the forms, and every issue's sections, placeholders, Screenshots, labels, links and `From:` line) |
 | `labels` | The label families and every label with its colour and description | `repo labels`; `repo render` (the `labels` block); `repo audit` (the labels on GitHub) |
-| `hygiene` | The limits after which an item counts as stale or stuck (`thresholds`, including `pr_pending_hours`), which required checks are lint (`pr_health.lint_checks`), the weekly report issue, how the workflow comments (`comments`) and `checks`, the registry of the audit's checks | `repo audit`, `repo pr-health`, `repo hygiene` |
+| `hygiene` | The limits after which an item counts as stale or stuck (`thresholds`, including `pr_pending_hours`), which required checks are lint (`pr_health.lint_checks`), the weekly report issue, how the workflow comments (`comments`), what the scan of attached logs downloads and looks for (`attachments`: the link, the endings, the size and time limits, the patterns) and `checks`, the registry of the audit's checks | `repo audit`, `repo pr-health`, `repo hygiene` |
 | `workspace` | The worktree and scratch layout, the free-space minimum and the busy marker | `workspace clean` and `workspace disk`, `repo audit --local`; hosted checks ignore it |
 
 The commented file is the reference for each key: open `.github/conventions.yml` and read the comment above it.
@@ -109,6 +109,8 @@ says where the check runs, how bad a finding is and who fixes it, and the table 
 | `issue.stale-status` | github | warn | skill | an issue calls a pull request open, merged or closed when it is not |
 | `issue.links` | github | warn | skill | an issue names a docs or research file as plain text, or links a file or anchor that is not on main |
 | `issue.provenance` | github | warn | skill | an issue that an older pull request's Remaining list points at has no From: line |
+| `issue.attachment-data` | github | warn | skill | a log attached to an open issue may hold game data: not text, too large, or lines of script source or game text |
+| `issue.attachment-personal` | github | warn | skill | a log attached to an open issue shows personal information: a user folder path or an email address |
 | `issue.triage-age` | github | warn | skill | an issue has waited in S-needs-triage longer than the limit |
 | `issue.info-age` | github | warn | skill | an issue has waited in S-needs-info with no activity longer than the limit |
 | `issue.progress-idle` | github | warn | skill | an S-in-progress issue has had no activity for longer than the limit |
@@ -180,7 +182,10 @@ one comment per issue or pull request, edited in place and never deleted, and a 
 hygiene`](coney-tools.md#repo-hygiene)). Its token has `contents: read` and `issues: write` only. It runs on
 `pull_request_target` so that a pull request from a fork gets its comment, which is safe only because it checks out the
 default branch and never the pull request's code, and because what a title or body says reaches a script through
-an environment variable and a comment only after it is made harmless (no mention, link, image or HTML). It starts at
+an environment variable and a comment only after it is made harmless (no mention, link, image or HTML). It also
+downloads the `.txt` and `.log` files attached to an issue and scans them for game data and personal information
+([Attached logs](issues.md#attachments)); that content is only read in memory, within a size cap and a timeout, never
+stored, run or quoted. It starts at
 warn level (`hygiene.comments.on_sweep` false): item comments come from events, the sweep only reports, and it is not a
 required check. The report issue is the one thing it creates besides comments, and only when no open issue has the
 title `hygiene.report_issue.title`; creating an issue is a write beyond a comment, so the maintainer approves it

@@ -569,7 +569,7 @@ uv run --project python coney-tools repo check-body [--body FILE|-]
 uv run --project python coney-tools repo labels [--apply] [--repo OWNER/NAME]
 uv run --project python coney-tools repo render [--check]
 uv run --project python coney-tools repo audit [--files] [--github] [--local] [--json] [--only CHECK ...] [--strict]
-    [--show N] [--snapshot FILE] [--save-snapshot FILE] [--workspace DIR] [--list]
+    [--show N] [--snapshot FILE] [--save-snapshot FILE] [--attachments] [--workspace DIR] [--list]
 uv run --project python coney-tools repo pr-health [--json] [--pending-hours H] [--verbose]
 uv run --project python coney-tools repo hygiene (--event N | --sweep) [--apply] [--snapshot FILE]
 ```
@@ -617,7 +617,10 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   machine or an image that is not uploaded, stacked pull requests, how long an item has waited, and drift between the
   labels, settings and ruleset on GitHub and the file. `--save-snapshot FILE` also writes what it read, and
   `--snapshot FILE` audits a saved snapshot instead of reading GitHub (the tests do; so can you, offline). The link
-  check needs `origin/main` in the checkout (`git fetch origin`) and says so when it is missing.
+  check needs `origin/main` in the checkout (`git fetch origin`) and says so when it is missing. `--attachments` also
+  downloads the `.txt` and `.log` files attached to open issues and scans them for possible game data and personal
+  information (`issue.attachment-data`, `issue.attachment-personal`; [Attached logs](issues.md#attachments)); without
+  it those two checks do not run and a notice says so.
 * `--local` reads the workspace around the checkout: the free space of its drive, merged worktrees and stray files
   among the worktrees (`workspace clean` would remove them), and scratch folders of finished work that still hold
   captures. The limits are the `workspace` section of the file. It asks GitHub once for the merged pull requests of
@@ -680,6 +683,9 @@ settings in `hygiene.comments` of `.github/conventions.yml`:
   it is missing. Item comments are written by a sweep only when `hygiene.comments.on_sweep` is true, and then at most
   `max_per_sweep` of them, resolves first; it starts false, so the sweep only reports and item comments come from
   events.
+* Both scan attached logs, as `repo audit --attachments` does ([Attached logs](issues.md#attachments)): an event the
+  logs of its own issue, a sweep those of every open issue, within `hygiene.attachments.max_per_run` downloads. A
+  download that fails is a notice (printed, and in the report), not a finding.
 * Without `--apply` nothing is written: it prints `would create comment on #7: ...` for each write. `--snapshot FILE`
   audits a saved snapshot ([audit](#repo-audit)); the comments are still read from GitHub.
 
