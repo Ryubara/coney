@@ -1318,7 +1318,7 @@ HUDSetObjective(slot, text, mode, silent, ms)
 | --- | --- | --- | --- |
 | 1 | `slot` | number, truncated to an integer | Objective line: 0 or 1 (two objective slots; each has its own heading string). |
 | 2 | `text` | string | The objective text. |
-| 3 | `mode` | number, truncated to an integer | 0 set the objective (and announce it unless `silent`), 1 clear the slot, 2 mark it (announce the heading and the text), 3 set and mark it without a message. |
+| 3 | `mode` | number, truncated to an integer | 0 set the objective (and announce it unless `silent`), 1 clear the slot, 2 mark it done (no message: it removes the objective's own message from the queue; slot 1 also shows the built-in Bonus complete announcement), 3 set and mark it without a message. |
 | 4 | `silent` | boolean (nil or 0 is false) | With mode 0, true sets the text without the message. |
 | 5 | `ms` | number, truncated to an unsigned integer; default 8000 | How long the message stays on screen, in milliseconds (default 8000). |
 
@@ -1328,10 +1328,12 @@ Sets, marks or clears one of the two objective lines in the HUD's checklist, wit
 (GUI (0.025, 0.88), size 0.05, interface sound cue 0x11). It is the most-used HUD binding (global.lua's Objective
 helpers and most level scripts).
 
-**Notes.** The message is the objective icon markup, HUD colour slot 4 or 6, global string 0xe5 or 0xe6, then the text;
-mode 0 for slot 1 also queues tutorial hint 0x15 once while game tutorial text is on. That mode 2 ticks the line off is
-inferred (0x001a5070). The checklist is the object at 0x0062e790 (pointer 0x0050eddc). Behaviour: [The in-game
-HUD](../../research/hud.md#objectives-hudsetobjective).
+**Notes.** The mode-0 message is one string: the objective icon markup and a space, HUD colour slot 4 or 6, global
+string 0xe5 or 0xe6 (which ends the line), then the text; a text whose leading tag names an icon (<ROBJ_N> ...) takes
+that icon. Mode 2 flushes that message and shows announcement 2 for slot 1 only (runtime-checked in level99,
+2026-10-11); mode 0 for slot 1 also queues tutorial hint 0x15 once while game tutorial text is on. That mode 2 ticks the
+line off is inferred (0x001a5070). The checklist is the object at 0x0062e790 (pointer 0x0050eddc). Behaviour: [The
+in-game HUD](../../research/hud.md#objectives-hudsetobjective).
 
 - **Evidence:** confirmed (code) at `0x001dad88`; detail: traced
 - **Wrapper** `0x0036f280` (registered by `RegisterBindings`); **calls** `0x001dad88` `HUD_SetObjective`
