@@ -1955,11 +1955,21 @@ spawners and link to their subject pages; the rest are this mission's.
 
 6. Plays: `vCarPoizo` warps the Warrior to `fStereoWarp`, Vermin says his line, and `P1.DoneStereoPoizo` gives the
    radio objective and its marker. The hardware owner, the Hun store, the molotov thrower and `F.BlowupCar` all run.
-7. **`vSection3Gate` did not end the checkpoint** (open; inferred). The driver reached (−107.6, −221.5), inside the
-   box, and was then pushed back to (−104.3, −218.1). In 3,000 updates no `P1.EnterSection3` came from a player.
-   Only `P1.DoneStereoPoizo` sets the box's handler, and the run that reached the box did not log whether the stereo
-   scene had ended first. Next step: rerun with the end of the stereo scene confirmed, then check that box messages
-   reach the handler while the gate `DblGt01` is shut (it opens only after the cop scene).
+7. **What ends checkpoint 2** (settled; it was the driver). The script waits for message 3 from a player on one of
+   two boxes, both handled by `P1.EnterSection3`: `vSection3`, set by `P1.EnableSections` when section 2 is set up,
+   lies south of the shut gate `DblGt01` (corner (−111.5, −279.4), size 96.5 × 55.2, so `y` up to −224.2) and
+   cannot be reached yet; `vSection3Gate`, set only by `P1.DoneStereoPoizo`, is the strip **in front of** the gate:
+   corner (−109.3, −224, −0.3), size 3.6 × 1.8 × 5, so `x` −109.3 to −105.7 and `y` −224 to −222.2, beside the
+   gate's hinge at (−109.39, −223.97). `P1.EnterSection3` goes on only for a player, while `bObjCompleted` and
+   `bSection3` are false and `sLocation` is not 3; it clears the box's handler, starts the cop scene
+   (`P1.SetupSection3`), sets `sLocation` = 3 and calls `SetCheckPoint(3)`. Confirmed (runtime), PCSX2 2.9.94, a
+   state of `level34` checkpoint 2 loaded through mode 8 (`0x005e5d90 + 0x20` = 4, `W_GameState + 0x33a` = 2),
+   the scripted pad at stick magnitude 0.3-0.7 and the script's globals read over PINE: after the stereo scene
+   (`RadioStolen` set), walking south along `x` −107.5, `bSection3` and `bCopScene` turned true between `y` −222.19
+   and −222.43, the box's edge, and the scene moved the player to (−96.7, −247.2). The earlier Coney run had
+   stopped steering 1.5 m from its waypoint, at `y` −221.5, outside the box. With the waypoint inside the box and a
+   0.3 m arrival radius, Coney called `SetCheckPoint(3)` at (−107.6, −222.2), the same edge (2026-10-12, release
+   build of `68f4e6d3`). Nothing to fix; the playthrough driver must walk into the 1.8 m strip.
 8. **`CarSpawnRadio` runs twice on the same three cars at checkpoint 2**: once from `P1.SetupTier2Encounters` and
    once from `P1.EnterSection2`. The original does the same, because the second call does not test `radioSpawn`.
    Coney must make the second call harmless (no second stereo). Open question: what the binding does to a car that
@@ -1977,30 +1987,67 @@ spawners and link to their subject pages; the rest are this mission's.
 
 **Checkpoint 4** (to `fFinalGate`, then `vNearFuries`).
 
-11. **The player cannot get west of x −135** (open; inferred). Every run stopped at (−135, −255..−261), 9-12 m short
-    of `fFinalGate` (−144.1, −269.3), and the objective's `P2.AtGate` never ran. `P2.SetupGate` calls
-    `DoorOpen(DblGt00, player)` (door 325 in Coney's trace), so the likely cause is that gate staying shut. Next
-    step: take a screenshot from (−134, −258) facing west, and read the door's state after the call
-    ([`DoorOpen`](../references/bindings/world.md#dooropen)).
+11. **The way to `fFinalGate` is a fence climb, and the objective waits for the crew** (settled). No gate opens on
+    the way: `DblGt00` (opened by `P2.SetupGate`) is at `x` −111.9, and `DblGt02` (−144.94, −270.82), the gate
+    beside `fFinalGate`, opens only in `P2.AtGate`, after the objective. Past `DblGt00` the street is a dead-end alley,
+    `y` −251.5 to −260.75 at `x` −133, closed by a wall at `x` −135; its south side at `y` −260.75 is a chain-link
+    fence, and the yard behind it holds `fFinalGate`. Confirmed (runtime), PCSX2 2.9.94, a state of checkpoint 4
+    loaded through mode 8, the player put at (−100, −255) over PINE to skip the street fight: walking west at stick
+    0.7 he stopped at (−134.96, −260.75), and south at 0.6 at (−131.5, −260.75); triangle there played the fence
+    climb (anim ids 437, 438, 439, `ANIM_FENCE_CLIMB_STANDING_01` and its two parts, about 2.4 s) and left him at
+    (−131.5, −262.0), from where the flag is a walk; `P2.AtGate` ran (`ParkScene` set) with the other two Warriors
+    beside him. Coney climbs the same fence the same way (the driver taps triangle facing south at (−131.5,
+    −259.3)). What then held Coney is the objective's crew test ([`ObjectiveGoodToGo`](#objective-helper): every
+    Warrior within 15 m of the player at the flag): its two AI Warriors stayed near the start (−55, −252) until about
+    update 1,200, came on slowly and climbed after him, so the hint "You can't leave anyone in your Warparty
+    behind!" showed and `DoorOpen(DblGt02)` came at update 4,307, then `SetCheckPoint(5)` at `vNearFuries` at
+    5,481. How quickly the original's Warriors follow from the start was not measured (the player was moved past the
+    street fight). Done for the driver: climb at (−131.5, −260.75) and wait at the flag until `DoorOpen` of the
+    second gate.
 12. The player died twice in 6,000 updates, killed by the wanted gangs and cops that spawned beside him (item 2), and
-    the level restarted at checkpoint 4. Once item 2 is in, check that he can reach the gate.
+    the level restarted at checkpoint 4. Once item 2 is in, check that he can reach the gate. (In the run of item 11
+    he was not killed.)
 
 **Checkpoint 5** (the park, the Furies, then `vSubwayExit`).
 
 13. Plays: the scene `l34_c4`, `P3.EndParkScene` and the fence Furies. `P3.FuryTimeout` runs 5 s later
     (`MoveFromFence`, which kills the two Rogues), and Vermin says a line every 15 s, as the script says.
-14. **No route to `vSubwayExit` was found** (open). From (−208, −269.5), the Furies knocked the player down within
-    400 updates in every run, and once he died (the level restarted at checkpoint 5). Whether the original's Furies
-    hit as quickly is not known. Next step: record the original from checkpoint 5, measure the time from the scene's
-    end to the first hit on the player, and compare.
-15. The rest of the checkpoint was not reached in Coney: `P3.GetToSubway`, the scene `l34_c2` with `Final`,
-    `HUDLaunchMissionComplete` and the outro `L34_OUT`.
+14. **Coney's Furies hit too early** (measured; the cause is open). The original, confirmed (runtime), PCSX2 2.9.94,
+    checkpoint 5 loaded through mode 8, the scene's end taken as the moment `SubwayScene` is set (`P3.EndParkScene`,
+    which also schedules `P3.FuryTimeout` 5 s on through `P3.ReachFence`), the player left standing at (−207.97,
+    −269.5) with no input, two runs: he turned to a fight stance (anim 359) at update 161, and the **first hit came
+    at update 276 and 294**, both a knock-down (anim 292 `ANIM_REACT_KNOCKDOWN_HIGH_FRONT`, 294 `..._HIGH_BACK`);
+    then a knock-down about every 200 updates, ground hits between, 90 health a hit, from 1,170 to 26 by update
+    1,074 (run 1). Coney (release build of `68f4e6d3`, `--play-level level34 --checkpoint 5 --headless --trace`, no
+    input; `P3.EndParkScene` at step 816): the **first hit at update 91** after the scene, before `P3.FuryTimeout`
+    (update 149) and before any `P3.MoveFromFence` or `P3.EnterDiamond` from a Warrior, so some human attacks before
+    the script makes the Furies enemies of the Warriors (`GangMakeEnemies` and `TacticAttack` are only in those
+    three functions); the hits were small reactions (anims 272, 275, 280), the first time on the ground at update
+    368, health 900 to 216 by update 785. Done: no Fury hits a Warrior before `P3.FuryTimeout`, `P3.MoveFromFence` or
+    `P3.EnterDiamond` runs, and the first hit comes about 270-300 updates after the scene for a player standing still.
+    Next step: find which human hits first in Coney and what makes it hostile. Note: the original's player had 1,170
+    health here and Coney's 900; the original state came from a save with progress, so that may be upgrades, not
+    a difference (not checked).
+15. **The route to `vSubwayExit`** (settled). `P3.GetToSubway` takes message 3 from any Warrior on `vSubwayExit`
+    (corner (−256.6, −203.2, −12.7), size 2 × 3.8 × 3.5, turned about its centre (−255.6, −201.3) by
+    `RotateVolumeBox(0.696, −0.718, 0.718, 0.696)`). Confirmed (runtime), the same state, full stick with **L2 held
+    (sprint)**, waypoints (−230, −270), (−245.1, −249), (−252.4, −222), (−248.5, −213.5), (−254.5, −202.2), (−255.6,
+    −201.3): the scene `l34_c2` started (the player moved into the subway car at (−113, −55, −207)), at update 494
+    with no hit in one run and at update 1,022 after hits (health 1,170 to 515) in another. The leg from
+    (−252.4, −222) must go by (−248.5, −213.5): straight on, the player slides along an obstacle near (−250, −214).
+    Without sprint (full stick) the Furies knocked him down near (−237, −258) or (−251, −223) about update 245, and
+    in one run he died before the box. Coney with the same route and L2 held: `P3.GetToSubway` at update 4,085 and
+    `HUDLaunchMissionComplete` at 4,501 (the first life, standing still, had died at checkpoint 5). Whether
+    `L34_OUT` plays after it was not checked.
 
 <!-- markdownlint-enable MD029 -->
 
 **A playthrough test** ([Testing](../guides/testing.md#playthrough-tests)) for the mission comes last: one driver per
-checkpoint that climbs the fence, walks the flag net (`PedNet_*`) between the boxes above, and asserts the
-`SetCheckPoint` calls 2-5 and `HUDLaunchMissionComplete`.
+checkpoint that climbs the fences (checkpoint 1's, and checkpoint 4's at (−131.5, −260.75), item 11), walks the
+flag net (`PedNet_*`) between the boxes above, steps into `vSection3Gate`'s 1.8 m strip (item 7), waits at
+`fFinalGate` for the crew, sprints to `vSubwayExit` (item 15), and asserts the `SetCheckPoint` calls 2-5 and
+`HUDLaunchMissionComplete`. Waypoint routes that already play checkpoints 2, 4 and 5 in Coney are those of items 7,
+11 and 15.
 
 ### `level2.lua` (mission 5) {#level2}
 
