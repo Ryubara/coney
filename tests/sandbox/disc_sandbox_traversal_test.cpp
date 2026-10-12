@@ -449,8 +449,10 @@ TEST_CASE("Rembrandt walks up the default course's ramps of 10 to 40 degrees ont
         float middleY;
     };
     const std::vector<Ramp> ramps = {
-        {"10 degrees", -40.0F, 22.843F}, {"20 degrees", -35.0F, 16.995F},
-        {"30 degrees", -30.0F, 14.964F}, {"40 degrees", -25.0F, 13.884F},
+        {"10 degrees", -40.0F, 22.843F},
+        {"20 degrees", -35.0F, 16.995F},
+        {"30 degrees", -30.0F, 14.964F},
+        {"40 degrees", -25.0F, 13.884F},
     };
     for (const Ramp& ramp : ramps) {
         SECTION(ramp.label) {
