@@ -268,12 +268,12 @@ void GameSession::beginFrame() {
     }
     if (m_pendingMovie) {
         auto [name, captions] = std::exchange(m_pendingMovie, std::nullopt).value_or(std::pair<std::string, bool>{});
-        m_movieMode->playMovie(name, movies::MovieRequest{.debug = true, .alwaysCaptions = captions});
+        movies().playMovie(name, movies::MovieRequest{.debug = true, .alwaysCaptions = captions});
     }
 }
 
 bool GameSession::playDebugMovie(std::string_view name, bool captions) {
-    if (m_pendingMovie || m_movieMode->busy() || std::ranges::find(discMovieNames(), name) == discMovieNames().end()) {
+    if (m_pendingMovie || movies().busy() || std::ranges::find(discMovieNames(), name) == discMovieNames().end()) {
         return false;
     }
     m_pendingMovie.emplace(std::string(name), captions);

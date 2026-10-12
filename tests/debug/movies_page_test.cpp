@@ -29,8 +29,9 @@ struct Played {
     bool captions = false;
 };
 
-// Services listing three movies whose play records each request in `played` and answers `accept`.
-DebugServices movieServices(std::vector<Played>& played, const bool& accept) {
+// Services listing three movies whose play records each request in `played` and answers `accept`, a reference the
+// test changes between requests.
+DebugServices movieServices(std::vector<Played>& played, bool& accept) {
     DebugServices services;
     services.movies = [] { return std::vector<std::string>{"LOGO", "TRAILER", "L99_IN"}; };
     services.playMovie = [&played, &accept](std::string_view name, bool captions) {
@@ -45,7 +46,7 @@ DebugServices movieServices(std::vector<Played>& played, const bool& accept) {
 TEST_CASE("the Movies page lists the disc's movies with what plays each, after Missions", "[debug][movies]") {
     TunableRegistry tunables;
     std::vector<Played> played;
-    const bool accept = true;
+    bool accept = true;
     DebugSession session(tunables, movieServices(played, accept), nullptr);
     const auto titles = session.model().pageTitles();
     const auto missions = std::ranges::find(titles, "Missions");

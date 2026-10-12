@@ -33,6 +33,7 @@ void addMoviesPage(DebugSession& session) {
             for (const std::string& name : movies) {
                 // Choosing a movie closes the menu: while it is open the game sees no buttons, so the movie's skip
                 // (any button) could not reach it.
+                // NOLINTNEXTLINE(bugprone-exception-escape): copying the captures can only fail on allocation
                 MenuItem item = actionItem(name, [&session, captions, name] {
                     const auto& play = session.services().playMovie;
                     if (!play) {
