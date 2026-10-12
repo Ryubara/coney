@@ -2,6 +2,7 @@
 #pragma once
 
 #include <array>
+#include <cstdint>
 #include <variant>
 
 #include "animation/anim_math.h"
@@ -13,7 +14,7 @@
 namespace coney::physics {
 
 /// The shape types, as the original numbers them (shape `+0x30`); also the row and column of the pair tables.
-enum class ShapeType { Box = 1, Sphere = 2, Capsule = 3, Segment = 4 };
+enum class ShapeType : std::uint8_t { Box = 1, Sphere = 2, Capsule = 3, Segment = 4 };
 
 /// An oriented box (type 1): half extents along its three unit axes, around its centre (shape `+0x40` half extents,
 /// `+0x50`/`+0x60`/`+0x70` the axes, `+0x80` the centre).
