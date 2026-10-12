@@ -168,7 +168,7 @@ TEST_CASE("an arc of fewer than two points draws nothing", "[throw_arc]") {
 
 TEST_CASE("the triangle list has 34 triangles, two a pair of pairs", "[throw_arc]") {
     const std::vector<std::uint16_t> indices = throwArcIndices();
-    REQUIRE(indices.size() == 34 * 3);
+    REQUIRE(indices.size() == std::size_t{34} * 3);
     // The first quad joins pairs 0 and 1: vertices 0, 1 (pair 0) and 2, 3 (pair 1).
     CHECK(indices[0] == 0);
     CHECK(indices[1] == 1);

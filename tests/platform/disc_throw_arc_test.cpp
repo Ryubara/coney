@@ -46,7 +46,7 @@ TEST_CASE("the disc's aimthrow texture is one 32 by 64 texture of three palette 
     CHECK(image.name == "aimthrow");
     CHECK(image.width == 32);
     CHECK(image.height == 64);
-    REQUIRE(image.pixels.size() == 32U * 64U * 4U);
+    REQUIRE(image.pixels.size() == std::size_t{32} * 64 * 4);
 
     // The texels by alpha (0 transparent, 255 opaque, between faint) and how many have each RGBA colour (alpha, red,
     // green, blue in one word).
