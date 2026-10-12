@@ -379,6 +379,7 @@ target_sources(coney_core PRIVATE
 # The debug menus: the model every front end renders, and its pages (docs/guides/debug-menu.md).
 target_sources(coney_core PRIVATE
     debug/debug_session.cpp
+    debug/fighter_spawn.cpp
     debug/game_tunables.cpp
     debug/input_gate.cpp
     debug/lua_console.cpp

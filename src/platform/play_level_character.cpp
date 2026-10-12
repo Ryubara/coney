@@ -138,6 +138,11 @@ std::expected<void, Error> PlayLevelMode::changeCharacter(int type) {
     const human::PlayerStart here{.position = before.position(), .headingDegrees = degreesOf(before.heading())};
     const human::PlayerStart start = m_player->start();
     std::vector<human::PlayerStart> fighters;
+    // The model each fighter was spawned as (the meshes are in the fighters' order), so it keeps its look.
+    std::vector<std::string> fighterModels;
+    for (const FighterMesh& mesh : m_fighterMeshes) {
+        fighterModels.push_back(mesh.model);
+    }
     for (const ai::AiHuman& fighter : m_ai->humans()) {
         fighters.push_back(human::PlayerStart{.position = fighter.human->position(),
                                               .headingDegrees = degreesOf(fighter.human->heading())});
@@ -164,7 +169,7 @@ std::expected<void, Error> PlayLevelMode::changeCharacter(int type) {
     m_playerCharacter = std::move(loaded->character);
     m_playerDictionaries = std::move(loaded->dictionaries); // the old ones' mesh went above
 
-    // The fighters again, as the scene's character.
+    // The fighters again, each as the model it had (the scene's character for those spawned without one).
     m_ai = std::make_unique<ai::AiHumans>(*m_player, *m_character, aiConfig);
     m_ai->setEngaging(engaging);
     // The new brains plan on the level's routes like the old ones did.
@@ -172,8 +177,9 @@ std::expected<void, Error> PlayLevelMode::changeCharacter(int type) {
         m_ai->brains().setPlanner(m_planner.get());
     }
     m_ai->brains().setCollision(&m_scenery->collision());
-    for (const human::PlayerStart& fighter : fighters) {
-        addFighter(fighter.position, fighter.headingDegrees);
+    for (std::size_t i = 0; i < fighters.size(); ++i) {
+        addFighter(fighters[i].position, fighters[i].headingDegrees,
+                   i < fighterModels.size() ? fighterModels[i] : std::string{});
     }
     m_type = type;
     m_model = *model;

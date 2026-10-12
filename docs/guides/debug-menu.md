@@ -115,7 +115,7 @@ Dear ImGui (MIT licence) is pinned in `cmake/deps.cmake` and used only in `src/p
 | Player | where the player is and how it moves (plotted), his character type and a change of it, freezing him, the [noclip](#noclip) and its hotkey, teleports |
 | Camera | the follow camera's eye, target and distance (plotted), a reset behind the player, the free camera, its values |
 | Spawner | objects put in front of the player in a sandbox: a crate, a fence, a wall, a ramp, stairs, a pillar, a ball |
-| AI fighters | AI humans that fight the player: spawn one in front of him, the engaging toggle, their state, clear them |
+| AI fighters | AI humans that fight the player: a model picker (every human model, or Random) and an amount, spawn them in front of him, the engaging toggle, their state, clear them |
 | HUD | the [in-game HUD](../research/hud.md)'s parts on and off, player 1's rage, score, money and items set (-1 gives the value back), an objective, a hint and an announcement fired |
 | Debug draw | lines in the scene: collision near the player, the player's heading and velocity, the camera, places |
 | Display | the frame-stats line, the FPS counter, the frame cap and vsync (live), the player's coordinates, the GUI safe area, the logical screen |
@@ -184,8 +184,17 @@ Frozen, the player ignores the pad. *Reset behind player* places the follow came
 tunables, so the leash, pitch and look-at height apply at once. The free camera flies with pad 1 as the world viewer's
 does, while the player stands still and the scenery streams round the free camera. The Spawner adds sandbox primitives
 (Coney's own sizes) in front of the player, facing his way, and rebuilds the sandbox with its collision and lighting; a
-level cannot spawn yet. *AI fighters* spawns a fighter ([Sandbox](sandbox.md#ai-fighters)) the chosen distance in front
+level cannot spawn yet. *AI fighters* spawns fighters ([Sandbox](sandbox.md#ai-fighters)) the chosen distance in front
 of the player, facing him, in a sandbox or a level; *Engaging* off keeps idle fighters from taking him on.
+
+*Spawn fighters* makes *Amount* of them (1 to 50) in one click, in rows of five centred in front of the player, each
+row 1.2 m further out. *Model* picks what they look and move as: any human model the scene's character types name (the
+list *Change character* below draws on, sorted, with its distinct models) or *Random*, which draws a model for each
+fighter from the whole list (a generator of the menu's own with a fixed seed, so it never moves the game's random
+numbers and a run with the same clicks spawns the same models). A model is loaded from the disc the first time it is
+used and kept, so a first click with many models stalls briefly. Without a list (a sandbox without a disc) only
+*Random* is offered and every fighter is the scene's own character. A fighter keeps its model when *Change character*
+makes the fighters again.
 
 **Change character.** *Character type* lists every type the scripts' `CfgChar` calls configure (449 on the disc) when
 the scripts set up the scene (a level's own, the story's, or level99's for a sandbox), each with the model a player

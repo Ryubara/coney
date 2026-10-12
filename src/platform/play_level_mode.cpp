@@ -6,6 +6,8 @@
 #include <cmath>
 #include <format>
 #include <numbers>
+#include <set>
+#include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -335,17 +337,22 @@ void PlayLevelMode::makeTargets(rw::Texture* texture) {
     }
 }
 
-void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees) {
+void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees, const std::string& model) {
     // Dropped onto the ground below its spot, as a teleport is.
     raycast::Vec3 feet{spot.x, spot.y, spot.z + kTeleportDrop};
     if (!raycast::dropToGround(m_scenery->collision(), kTeleportDrop * 2.0F, feet)) {
         feet.z = spot.z;
     }
-    m_ai->spawnFighter(&m_scenery->collision(), anim::Vec3{feet.x, feet.y, feet.z}, headingDegrees);
-    const std::size_t vertices = m_character->assets().model.vertices.size();
+    // The scene's character, or the one `model` names (loaded once and kept, as the scripts' humans' are; a model that
+    // does not load falls back to the scene's, with a line saying so).
+    const CastLook look = model.empty() ? CastLook{.character = m_character.get(), .texture = m_texture}
+                                        : castCharacter(model);
+    m_ai->spawnFighter(*look.character, &m_scenery->collision(), anim::Vec3{feet.x, feet.y, feet.z}, headingDegrees);
+    const std::size_t vertices = look.character->assets().model.vertices.size();
     FighterMesh mesh;
-    mesh.character = m_character.get();
-    mesh.mesh = std::make_unique<CharacterMesh>(m_character->assets().model, m_texture);
+    mesh.character = look.character;
+    mesh.model = model;
+    mesh.mesh = std::make_unique<CharacterMesh>(look.character->assets().model, look.texture);
     mesh.positions.resize(vertices);
     mesh.normals.resize(vertices);
     m_fighterMeshes.push_back(std::move(mesh));
@@ -353,6 +360,21 @@ void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees) {
 
 std::expected<void, Error> PlayLevelMode::spawnFighter(anim::Vec3 feet, float headingDegrees) {
     addFighter(feet, headingDegrees);
+    return {};
+}
+
+std::vector<std::string> PlayLevelMode::fighterModels() const {
+    // The distinct models of the configured types a player can be drawn as, sorted.
+    std::set<std::string> models;
+    for (const debug::CharacterChoice& choice : characterChoices()) {
+        models.insert(choice.model);
+    }
+    return {models.begin(), models.end()};
+}
+
+std::expected<void, Error> PlayLevelMode::spawnFighterAs(anim::Vec3 feet, float headingDegrees,
+                                                         std::string_view model) {
+    addFighter(feet, headingDegrees, std::string(model));
     return {};
 }
 
