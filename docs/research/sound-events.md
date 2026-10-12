@@ -135,9 +135,9 @@ human's held sound and stop it on clip event `0x45` (and on a cinematic's start 
 (`+0x178` alive) it plays only when `overLine`, and then stops that line first **without force**: a line that may
 not be cut (`+0x194` clear: every `HuSpeakNI` line and every Warrior order) is neither stopped nor talked over, so
 the grunt is not heard and that line's script callback still runs when it ends; a cut-able line (`HuSpeak`'s) is
-replaced by the grunt and its callback is lost. Confirmed (code) and (runtime): [Cutting in on a line](sound.md#speech-cut-in).
-As a speech line it follows [Speech lines](sound.md#speech): nothing during a cinematic. Where a female id is given, a human with
-`+0x3b8` = 1 uses it instead.
+replaced by the grunt and its callback is lost. Confirmed (code) and (runtime):
+[Cutting in on a line](sound.md#speech-cut-in). As a speech line it follows [Speech lines](sound.md#speech): nothing
+during a cinematic. Where a female id is given, a human with `+0x3b8` = 1 uses it instead.
 
 | `SA` id (female id) | overLine | cut | Notes | Evidence |
 | --- | --- | --- | --- | --- |
