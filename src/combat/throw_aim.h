@@ -105,6 +105,8 @@ class ThrowAimState {
     /// The arc's kept points up to where it ended, for the arc's drawing.
     [[nodiscard]] const std::array<anim::Vec3, kAimTracePoints>& arc() const { return m_arc; }
     [[nodiscard]] int arcPoints() const { return m_arcPoints; }
+    /// Whether the last trace ended at a contact, which is then the arc's last point (also in the last segment).
+    [[nodiscard]] bool arcCut() const { return m_arcCut; }
 
     /// The trace alone (`Human_TraceThrowAim`): the release point and velocity from the origin, heading and pitch, the
     /// arc's 108 steps and its two sweeps. Public for the tests.
@@ -124,6 +126,7 @@ class ThrowAimState {
     int m_faceFrames = 0; // +0x63c
     std::array<anim::Vec3, kAimTracePoints> m_arc{};
     int m_arcPoints = 0;
+    bool m_arcCut = false; // the last trace ended at a contact
 };
 
 /// A point given in a thrower's frame (x right, y forward, z up) turned into the world by his `heading`.

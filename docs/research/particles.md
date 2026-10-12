@@ -131,7 +131,7 @@ calls to `0x003a2e40`, `0x003a4160` or `0x001e99f8` with a constant name). The c
 A name that is not in the table finds no record: `part_ominoussmoke`, which one script spawns six times, is such a
 name (the table has `part_ominous_smoke`). What the task then does is not traced.
 
-**The list's images** (Coney, [Building](../guides/building.md#reference-images)): each traced type's rectangle, cut
+**The list's images** (Coney, [Running Coney](../guides/running.md#reference-images)): each traced type's rectangle, cut
 from its sheet's texture and scaled to fit 64 × 64 (the `lighting` glows are 120 × 120), without the type's colour.
 Three types traced to rectangle 54 of `part_page1` (`part_s_subway_sparks`, `subway_spark`, `urine_spray`) show a
 grey box there, not a spark or a spray (checked on the images), so their trace is in doubt.

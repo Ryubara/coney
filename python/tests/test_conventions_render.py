@@ -173,7 +173,7 @@ def test_pr_rules_name_the_sections_the_filled_ones_and_the_special_lines() -> N
     assert ", ".join(rules.sections) in text
     assert "Summary and Testing" in text
     assert f"`{rules.docs_none.line}`" in text and f"`{rules.closing.form}`" in text
-    assert f"`{rules.remaining.label}`" in text and f"`{rules.remaining.unchecked_cites}`" in text
+    assert f"{rules.checklist.section}: every item is ticked" in text
     assert f"`{rules.screenshots.none} (<reason>)`" in text
     assert f"`{rules.ai_use.written_by.label}`" in text and f"`{rules.ai_use.model.label}`" in text
     for choice in rules.ai_use.written_by.choices:

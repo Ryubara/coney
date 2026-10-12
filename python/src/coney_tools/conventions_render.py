@@ -160,8 +160,8 @@ def _pr_rules(conventions: Conventions) -> list[str]:
         f"{', one per line' if rules.closing.one_per_line else ''}; merging closes it."
     )
     lines += _bullet(
-        f"{rules.remaining.section}: each unchecked item under `{rules.remaining.label}` cites an issue or pull "
-        f"request as `{rules.remaining.unchecked_cites}`."
+        f"{rules.checklist.section}: every item is ticked (`- [x]`): a pull request lists only the work it finishes, "
+        "and a task it does not finish is left out and lives in its own issue."
     )
     shots = rules.screenshots
     lines += _bullet(
