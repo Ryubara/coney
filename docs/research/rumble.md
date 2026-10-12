@@ -443,17 +443,17 @@ built yet.
   the follow camera drive him, his brain becomes the player's, and the human left behind fights as his class; the
   shared camera targets follow. The revival (`HuRevive` after 4 s) and the new player's cue (`SoundPlay2D`) are the
   scripts' own.
-- **Every fighter AI-driven** (`--ai-player`, a test aid, [Building: tracing](../guides/building.md#tracing)): when
-  the countdown ends (after `FinishCountdown` and `StartIt`), player 1 is released as `Human_ReleasePlayer`
+- **Every fighter AI-driven** (`--ai-player`, a test aid, [Building: tracing](../guides/building.md#tracing)): when the
+  countdown ends (after `FinishCountdown` and `StartIt`), player 1 is released as `Human_ReleasePlayer`
   ([Characters](characters.md#players), `0x0022a2a8`) releases a human with no one taking the pad
-  (`repo:src/ai/ai_humans.h`): his brain goes back to his class's type with its goals and actions cleared, his
-  flags are the released ones ([Combat: human flags](combat.md#human-flags)) and the pad drives nobody, so his brain
-  alone moves him and `HuSwitchPlayer` finds no player to hand on. With no one in the player list, the game-over check
-  ([Combat: defeat](combat.md#defeat)) has no one to fail the match for, however he fares. **Coney's choices**: he keeps the player's fighter
-  profile (the wider body sphere `Human_ReleasePlayer` puts back to 1.0, [Physics](physics.md#sweep), and the player's
-  hit flags), as after `HuSwitchPlayer`; the scripts' player 1 handle still names him; the HUD panel stays. `--ai-seed`
-  varies the AI's draws: the shared stream's index (`0x006eb880`, [Scripting](scripting.md)) starts that far in, and
-  Coney's per-brain generators, which the original does not have, are seeded from it.
+  (`repo:src/ai/ai_humans.h`): his brain goes back to his class's type with its goals and actions cleared, his flags are
+  the released ones ([Combat: human flags](combat.md#human-flags)) and the pad drives nobody, so his brain alone moves
+  him and `HuSwitchPlayer` finds no player to hand on. With no one in the player list, the game-over check ([Combat:
+  defeat](combat.md#defeat)) has no one to fail the match for, however he fares. **Coney's choices**: he keeps the
+  player's fighter profile (the wider body sphere `Human_ReleasePlayer` puts back to 1.0, [Physics](physics.md#sweep),
+  and the player's hit flags), as after `HuSwitchPlayer`; the scripts' player 1 handle still names him; the HUD panel
+  stays. `--ai-seed` varies the AI's draws: the shared stream's index (`0x006eb880`, [Scripting](scripting.md)) starts
+  that far in, and Coney's per-brain generators, which the original does not have, are seeded from it.
 - **The cheer**: `HuUseAnim`'s idle replacement (slot 0) plays: its `.anm` resource is loaded from the disc when first
   named (`repo:src/characters/dynamic_clips.h`) and plays wherever the idle would.
 - **Win camera** (`repo:src/camera/win_camera.h`): `CameraCreateWin`, `CamDelete` and `CamSetFollowHeading`; it
