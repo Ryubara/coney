@@ -944,11 +944,8 @@ no target, duckable)`, [Speech](../references/speech.md#speech-command-146)). Th
 - **`Brain_SetTarget`** releases the old target's attack slot and claims one on the new target
   (`Brain_ClaimAttackSlot`, `0x0028df30`): the target's list `+0x1a4` holds at most `+0x1e4` attackers, and a closer
   attacker takes the slot of the farthest.
-- **Re-targeting**: once a second the fight goal takes the nearest human within 1.5 m straight ahead (sector 0 of
-  his sector record, `Brain_GetSectors` `0x0028fe90`, refreshed when older than 1 s;
-  [Switches](gang-fights.md#switches)) as the target with the slot forced (`Brain_SetTarget(brain, him, 1)`) when
-  that human is not already the target, is a threat (`Brain_IsThreat` `0x00290138`,
-  [The enemy scan](#enemy-scan)) and no GrabTarget goal (`0x1f`) is on the stack. Confirmed (code) at `0x002b3c30`.
+- **Re-targeting**: once a second, the nearest threat within 1.5 m straight ahead, slot forced:
+  [Gang fights](gang-fights.md#switches).
 
 ### The fight goal {#fight}
 
@@ -3748,10 +3745,7 @@ runners against the Warriors (gait 5, attack at 1 m, pace distance 13 m, up to 1
 
 ### Gang fights {#gang-fights}
 
-How a gang shares out a big fight (who goes for whom, how many hit one man at once, what the waiting ones do, target
-switches, helping a mate, flight, the leader's team-up orders under TacticAttack, the player's effect and Rumble's
-CPU sides) has its own page, [Gang fights](gang-fights.md), with what Coney still needs and what a trace records to
-check each rule. Confirmed (code) there at the addresses cited.
+How a gang shares out a big fight, team-ups and Rumble's CPU sides: [Gang fights](gang-fights.md).
 
 ### Gangs, tactics and formations {#gangs}
 
@@ -3979,9 +3973,8 @@ Class details, confirmed (code) unless marked:
 
 - **Attack** (constructor `0x003075c8`): Start (`0x00307fe0`) gives each member not in a `PedReaction` goal threat
   response 2 (brain `+0x21c`) and a melee goal, and has the gang say `spot`. Process (`0x003081a8`): every 3 s,
-  members with no goal melee and walk toward the **farthest** member that has one (`0x002b75b8`,
-  [Helping](gang-fights.md#help)); every 7 s a gang with `+0xd9` set and at least two living members starts one of
-  seven coordinated sub-tactics chosen by weights per gang kind (`0x00307a10`, [Team-ups](gang-fights.md#gang)).
+  members with no goal melee and go toward the farthest busy one; every 7 s, a team-up
+  ([Gang fights](gang-fights.md#gang)).
 - **Confront** (`0x0030e670`): with `targetGang` −1 the first member's brain target gang (`+0x264`) is taken, and
   without one nothing starts. Start (`0x0030ec20`) puts the posture anims in the gang's substitution table for anim
   `0x253` (four defaults from `0x005113a8` when none is given; the fifth marks a last, separate anim) and says the spot
@@ -5943,11 +5936,7 @@ the wait, and its animation name is kept, not applied.
   ManWeaponPile's Process (`0x002a3498`, not read).
 - Who sends events `0x15`, 6, 9, 10 and `0x11`, and who reads event `0xf` (the tag-spot message); what reads the
   tackle meter brain `+0x148` besides the fight goal, and what brain `+0x28f` controls.
-- The target's pattern bytes `+0x5d0` / `+0x5d1`. (The per-gang `CfgGang` values are on
-  [Gangs](../references/gangs.md); values 2 and 3 per gang type are tabled in [Gang fights](gang-fights.md#limits).)
-- Gang fights: what fills game state `+0x280` / `+0x284`, the attack command's fallback for the shared target; who
-  reads TacticAttack's interval `+0x2c` / `+0x30` (`AttackTactic_ComputeSpacing` `0x00307668`); whether Rumble's
-  arenas turn on `GangEnableAttackStrategies` (gang `+0xd9`, to be read in the gang-battle trace).
+- The target's pattern bytes `+0x5d0` / `+0x5d1`. Gang fights: [its page](gang-fights.md#open-questions).
 - `GoalBumLogic`'s begging (type 2's prompt, the chance, the callback, the 12 s timer) and what sets `+0x36`; what
   `GoalBackoff`, `GoalMoveToUseFlag` and the pedestrian goal (`0x69`, with its two variants
   and `FlagNetTraverse`'s flags) do each update (Process), and the use-flag goal's two floats; what

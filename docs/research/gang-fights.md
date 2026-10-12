@@ -264,3 +264,10 @@ with 0, 1, 2 active places held; the mean time a member holds one target; switch
 (re-target, fight-goal end, engage re-target); the share of slot holders inside 4-4.75 m while waiting; taunts per
 minute; help calls and helpers sent per member down; the share of members idle (empty stack); team-ups started per
 minute by kind.
+
+## Open questions {#open-questions}
+
+- What fills game state `+0x280` / `+0x284`, the attack command's fallback for the shared target.
+- Who reads TacticAttack's interval `+0x2c` / `+0x30` (`AttackTactic_ComputeSpacing` `0x00307668`).
+- Whether Rumble's arenas turn on `GangEnableAttackStrategies` (gang `+0xd9`); the gang-battle trace reads it.
+- What sends event `0x15` (the slot holders' taunts).
