@@ -58,6 +58,7 @@ Markers inside a fenced code block, like the one above, are examples and are lef
 | `labels` | Every label with its family and description | `labels` | [Issues](issues.md#labels) |
 | `pr-rules` | What CI checks in a pull request description | `pull_requests`, `paths` | `CONTRIBUTING.md`, [Testing](testing.md#pr-evidence) |
 | `required-checks` | The merge method, the required checks and the merge settings | `merge` | [Building and testing](building.md#what-ci-runs) |
+| `maintainer-decisions` | The decisions only a maintainer takes | `repo.owner_decisions` | `AGENTS.md` (the coordinator section of [How we work](how-we-work.md#coordinator) links to it) |
 | `docs-only-paths` | The paths a documentation-only change may touch | `paths.docs_only` | [Building and testing](building.md#what-a-pull-request-runs) |
 | `audit-checks` | The table of the audit's checks | `hygiene.checks` | [Audit checks](#audit-checks) |
 
@@ -207,6 +208,7 @@ themselves; the skill is what acts on them.
 | Rule | Guide |
 | --- | --- |
 | Commit titles, squash merging, who merges, the release queue | [How we work](how-we-work.md), [CONTRIBUTING.md](repo:CONTRIBUTING.md#commits) |
+| What a reviewer holds a commit, a branch and a pull request title to | [Commit review](review/commits.md) |
 | Pull request descriptions: Testing, Screenshots, Checklist | [Testing](testing.md#pr-evidence), [Issues](issues.md#follow-up-work) |
 | Labels, forms, triage, what a closed issue keeps | [Issues](issues.md) |
 | What a workflow may write to GitHub | [Workflows](#workflows) |
