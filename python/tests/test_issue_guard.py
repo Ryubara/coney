@@ -151,4 +151,6 @@ def test_the_settings_register_the_hook_for_both_shell_tools() -> None:
     entries = settings["hooks"]["PreToolUse"]
     guard = [entry for entry in entries if "issue_guard.py" in json.dumps(entry)]
     assert len(guard) == 1 and guard[0]["matcher"] == "Bash|PowerShell"
-    assert "issue_guard.py" in guard[0]["hooks"][0]["command"] and guard[0]["hooks"][0]["type"] == "command"
+    # The entry shares its matcher with other guards, so look for the hook anywhere in its list.
+    hooks = [hook for hook in guard[0]["hooks"] if "issue_guard.py" in hook["command"]]
+    assert len(hooks) == 1 and hooks[0]["type"] == "command"
