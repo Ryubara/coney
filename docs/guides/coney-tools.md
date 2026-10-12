@@ -667,10 +667,12 @@ diagnostics through the `-*` of `.clang-tidy`; with the config's `WarningsAsErro
 
 **Linux and macOS: use a Clang database.** On Windows the `dev` preset uses MSVC and the command adapts. On Linux the
 default compiler is GCC, whose database can carry flags clang-tidy rejects, and CI tidies a Clang 19 build. The
-command notes a GCC database; configure a Clang one once, beside `build/dev`, and point the command at it:
+command notes a GCC database; configure a Clang one once, beside `build/dev`, with [`build`](#build) (it sets the
+compilers for the run and configures a second folder; a hook refuses a raw `cmake`), and point the command at it:
 
 ```sh
-CC=clang-19 CXX=clang++-19 cmake --preset dev -B build/tidy   # macOS: the Apple or Homebrew clang
+uv run --project python coney-tools build --agent ID --configure-only --preset dev --build-dir build/tidy \
+    --env CC=clang-19 --env CXX=clang++-19         # macOS: the Apple or Homebrew clang
 uv run --project python coney-tools check changed --build-dir build/tidy
 ```
 
@@ -681,8 +683,9 @@ sanitizers and the full clang-tidy pass (see [the local gate](testing.md#local-g
 ## build {#build}
 
 ```sh
-uv run --project python coney-tools build --agent ID [--preset dev|release|ci|asan] [--test] [-R REGEX]
-    [--configure | --configure-only] [--priority] [--max-wait MIN] [-j N] [--dir CHECKOUT]
+uv run --project python coney-tools build --agent ID [--preset dev|release|ci|asan] [--test] [-R REGEX] [-L LABEL]
+    [--configure | --configure-only] [--build-dir FOLDER] [--env NAME=VALUE ...] [--priority] [--max-wait MIN]
+    [-j N] [--dir CHECKOUT]
 uv run --project python coney-tools build status [--json]
 uv run --project python coney-tools build release --agent ID [--force] [--slot N] [--lane main|fast]
 ```
@@ -700,19 +703,23 @@ commands, so the hook never sees them.
    are found. On Windows it runs `vcvars64.bat` once and captures the environment (found with `vswhere` in the
    installer folder under `Program Files (x86)`, which is not on `PATH`; inside a Developer shell it does nothing), so
    no special shell is needed.
-2. *Configure and build*, one claim: `cmake --preset P` when the build folder has no `CMakeCache.txt` or with
+2. *The build folder's lock*, held to the very end (see "One run per build folder" below).
+3. *Configure and build*, one claim: `cmake --preset P` when the build folder has no `CMakeCache.txt` or with
    `--configure`, then `cmake --build --preset P -j N`. `--configure-only` stops after the configure (the compile
    database `check changed` reads).
-3. *Test*, with `--test` and only after a successful build, a claim of its own (it queues again between the two, so a
+4. *Test*, with `--test` and only after a successful build, a claim of its own (it queues again between the two, so a
    long test run does not hold a slot against other agents' builds longer than it must): `ctest --preset P -j N`,
-   with `-R REGEX` when given.
+   with the filters `-R REGEX` and `-L LABEL` when given (see "Choosing tests" below).
 
-The full output goes to `build-<preset>.log` in the worktree's folder of the scratch directory (`scratch/<worktree>/`),
-and its path is the first line printed. What is printed after is short: a line per step (outcome, time, lane, time
-spent waiting), the first compile, link and CMake errors (MSVC, GCC and Clang forms) and the failed steps, the failed
-tests by name with `N passed, M failed of T`, and a last `result:` line. Exit code `0` on success, `1` on a failed step
-or a `-R` that selects no tests, `2` on a precheck or usage problem, `75` when it gave up waiting for a slot, `130` on
-an interrupt. The children run at below-normal priority and are stopped (by process id) if the command is interrupted.
+**The log.** The full output goes to a file of its own per run, `build-<preset>-<agent>-<date>-<time>.log` in the
+worktree's folder of the scratch directory (`scratch/<worktree>/`; the process id is added if that name exists), and
+its path is the first line printed. No two runs share a log, so one never garbles another's; the newest 20 logs of a
+worktree are kept. What is printed after is short: a line per step (outcome, time, lane, how many steps were out of
+date, time spent waiting), the first compile, link and CMake errors (MSVC, GCC and Clang forms) and the failed steps,
+the failed tests by name with `N passed, M failed of T`, and a last `result:` line. Exit code `0` on success, `1` on a
+failed step or a filter that selects no tests, `2` on a precheck or usage problem, `75` when it gave up waiting for a
+slot or for the build folder, `130` on an interrupt. The children run at below-normal priority and are stopped (by
+process id) if the command is interrupted.
 
 **Parallelism.** `-j` defaults to the cores divided by the slots (at least 1), so two builds share the machine
 instead of each starting a job per core; `-j N` overrides it, for both the build and `ctest`.
@@ -734,13 +741,53 @@ holders, every minute. **It does not wait for ever:** after `--max-wait` minutes
 `--slots-wait-timeout`), so that an agent never outlives its one-hour prompt cache, it leaves the queue and exits `75`
 with `still queued, position N of M, try again later`. On `75`, do other work and run the same command again.
 
-**The fast lane.** A small job should not queue behind a full build. Before claiming, the command measures the job:
-`ninja -n` in the build folder counts the steps an incremental build would run, and for a test run with `-R` `ctest -N
--R` counts the tests it selects. A build of fewer than `build_fast_lane_steps` steps (default 50) or a `-R` run of at
-most `build_fast_lane_tests` tests (default 20) takes the **fast lane**: one extra slot of its own (`fast-1.claim/`,
-queue `queue-fast/`), so at most one such job runs at once, with a short queue of its own. A first build, a
-`--configure`, a build whose `ninja -n` would re-run CMake or cannot be counted, and any test run without `-R` take a
-main slot. A threshold of `0` turns the lane off.
+**The fast lane.** A small job should not queue behind a full build. Before claiming, the command measures the job.
+For a build: the manifest is brought up to date for real with `ninja build.ninja` (it re-checks the `CONFIGURE_DEPENDS`
+globs, which is cheap, and re-runs CMake only when a CMake file or a glob changed, which the build would do first
+anyway; under the folder's lock, outside a slot), then `ninja -n -d explain` runs on a *copy* of `build.ninja`, and the
+**causes** it names are counted: each "output x older than most recent input y", "output x doesn't exist" or "command
+line changed for x". A plain `ninja -n` is no use here: the globs make ninja want to re-run CMake first, and a dry run
+stops there having planned nothing; and a dry run on a copy plans too much, because it cannot ask a `restat` step
+whether its output really changed, so CMake's C++ dependency scan (one for the whole target, in front of every object)
+drags every object in with it: 410 planned steps for a touched source whose real build is 10. The causes are what a
+real build must do whatever the `restat` steps find: one per touched source, and one for each source that includes a
+touched header. For a test run, `ctest -N` with the same `-R` and `-L` counts the tests selected. A build with fewer
+than `build_fast_lane_steps` causes (default 50) or a filtered test run of at most `build_fast_lane_tests` tests
+(default 20) takes the **fast lane**: one extra slot of its own (`fast-1.claim/`, queue `queue-fast/`), so at most one
+such job runs at once, with a short queue of its own. A first build, a `--configure`, a build that cannot be measured
+(the manifest refresh failed, ninja printed no cause) and any test run without a filter take a main slot. A threshold of
+`0` turns the lane off. The summary line says what decided it ("fast lane, 2 steps out of date").
+
+**One run per build folder.** Two runs in one build folder collide: a second build's link fails
+with `LNK1168` while the first's tests hold `coney_tests.exe`, and the logs and the dependency log are written by both.
+So each build folder (the checkout, the preset or `--build-dir`) has a **lock**, taken before anything else and held from
+the configure to the last test, however the run ends. A second run in the same folder **waits** for it, in a queue
+like the slots' (`claims/folders/<worktree>-<folder>-<digest>/`, the same stale rules: the holder's process is gone, or
+four hours), printing who holds it and the step it is at every minute, and gives up after `--max-wait` minutes with
+exit `75` as for a slot. Runs in other folders, other worktrees or other presets are not held up by it. The lock
+covers the run from its measuring on, so the manifest refresh and the dry run never overlap a build either.
+
+**Choosing tests.** `-R REGEX` runs the tests whose names match and `-L LABEL` those with a label that
+matches (ctest's two filters; both together select the tests that satisfy both). The command lists the selection
+first (`ctest -N`), takes the fast lane for 20 tests or fewer and fails, naming the filter, when nothing matches. Every
+test that needs the player's disc has the label **`disc`**: the Catch2 tag `[disc]` of a test case becomes a ctest label
+(`catch_discover_tests(... ADD_TAGS_AS_LABELS)`), and the `coney --disc` checks that exist only when `CONEY_DISC` is set
+at configure time carry it too. So `build --test -L disc` runs exactly the disc tests (they skip without the disc), and
+every other tag is a label as well (`-L routes`). `-L` matches a part of a label name: `-L '^disc$'` is the exact one.
+`-R` is a **CMake regular expression**, and the tool passes it to ctest exactly as it was typed (a test checks that a
+regex with `^ ( | ) $ . + \` and spaces reaches ctest unchanged), so a test that matches nothing is usually the
+expression. Test names hold spaces, `.`, `+`, parentheses, `:` and quotes, and `. + ( ) [ ] * ? ^ $ |` mean something to
+the expression: escape the ones that are part of a name with a backslash (`'^(L1 \+ R1 with a full rage meter starts
+rage|coney\.help)$'`), and quote the argument against your shell with single quotes (PowerShell and bash both leave
+those alone; a double-quoted `$` or backtick is the shell's). Without anchors a name matches as a substring, which is
+often enough: `-R 'rage meter'`. Preview a filter without a run: `ctest --preset P -N -R ... -L ...` lists what it
+selects, and the hook allows it.
+
+**Another build folder.** `--build-dir FOLDER` (relative to the checkout) configures, builds and tests in that folder
+instead of `build/<preset>`, with the preset's settings (`cmake --preset P -B FOLDER`, `cmake --build FOLDER`, `ctest
+--test-dir FOLDER`), for a second configuration beside the first, such as the Clang one that
+[`check changed`](#check) reads for clang-tidy. `--env NAME=VALUE` (repeatable) sets an environment variable for the
+run, such as `CC=clang-19`; CMake reads `CC` and `CXX` at a folder's first configure and keeps them in the cache.
 
 `build status` prints both lanes: each slot's holder, worktree, preset, step and minutes, the queue in order (place,
 agent, priority, minutes waiting) and the stale entries; `--json` prints the same as one object. `build release

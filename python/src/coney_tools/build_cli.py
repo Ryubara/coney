@@ -7,6 +7,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import time
 from dataclasses import asdict
@@ -20,6 +21,10 @@ from coney_tools.config import INT_KEYS, ConfigError, find_repo_root, load_confi
 from coney_tools.pcsx2_claims import AGENT_NAME
 
 PRESETS = ("dev", "release", "ci", "asan")
+#: How many logs of one worktree are kept; older ones are removed when a run starts.
+KEEP_LOGS = 20
+#: A variable name for `--env`.
+_ENV_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 def add_parser(groups: Any) -> None:
@@ -36,7 +41,31 @@ def add_parser(groups: Any) -> None:
         "--configure-only", action="store_true", help="configure and stop (no build): the compile database for check"
     )
     group.add_argument("--test", action="store_true", help="run ctest after a successful build")
-    group.add_argument("-R", "--regex", help="run only the tests whose names match (ctest -R); a few tests are quick")
+    group.add_argument(
+        "-R",
+        "--regex",
+        help="run only the tests whose names match (ctest -R, a CMake regular expression: escape . + ( ) with a "
+        "backslash); a few tests are quick",
+    )
+    group.add_argument(
+        "-L",
+        "--label",
+        help="run only the tests with a label that matches (ctest -L); `disc` is every test that needs the game's disc",
+    )
+    group.add_argument(
+        "--build-dir",
+        type=Path,
+        help="build in this folder instead of build/<preset> (relative to the checkout), with the preset's settings; "
+        "for a second configuration, such as the Clang one clang-tidy reads",
+    )
+    group.add_argument(
+        "--env",
+        action="append",
+        default=[],
+        metavar="NAME=VALUE",
+        help="set an environment variable for the run, e.g. CC=clang-19 (repeatable); CMake reads CC and CXX at the "
+        "first configure of a folder",
+    )
     group.add_argument("--priority", action="store_true", help="go ahead of the normal queue (a build someone awaits)")
     group.add_argument(
         "--max-wait",
@@ -76,12 +105,48 @@ def _numbers(root: Path) -> dict[str, int]:
     return load_config(root).numbers if local_config_file(root) else dict(INT_KEYS)
 
 
-def _log_path(root: Path, preset: str) -> Path:
-    """The log of a run: `build-<preset>.log` in the worktree's scratch folder (`scratch_dir`, else the shared
-    scratch beside the main checkout, then the worktree's name)."""
+def _log_folder(root: Path) -> Path:
+    """The worktree's folder in the scratch directory (`scratch_dir`, else the shared scratch beside the main checkout,
+    then the worktree's name)."""
     configured = load_config(root).paths.get("scratch_dir") if local_config_file(root) else None
     scratch = configured or (main_checkout(root) / ".." / ".." / "scratch").resolve()
-    return scratch / root.name / f"build-{preset}.log"
+    return scratch / root.name
+
+
+def _new_log(root: Path, preset: str, folder: str | None, agent: str) -> Path:
+    """A log file of this run alone: `build-<preset>[-<folder>]-<agent>-<date>-<time>.log` (with the process id when
+    that name is taken), so two runs never write one file; the oldest logs beyond KEEP_LOGS are removed. The file is
+    created here, empty, so the name is ours."""
+    directory = _log_folder(root)
+    directory.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    stem = f"build-{preset}{'-' + folder if folder else ''}-{agent}-{stamp}"
+    for name in (f"{stem}.log", f"{stem}-{os.getpid()}.log"):
+        try:
+            (directory / name).open("x", encoding="utf-8").close()
+            break
+        except FileExistsError:
+            continue
+    else:
+        raise ConfigError(f"{directory / (stem + '.log')} already exists")
+    logs = sorted(directory.glob("build-*.log"), key=lambda path: (path.stat().st_mtime, path.name))
+    for old in logs[:-KEEP_LOGS]:
+        old.unlink(missing_ok=True)  # one a running build still holds is refused on Windows: it is not the oldest
+    return directory / name
+
+
+def _environment(base: dict[str, str], settings: list[str]) -> dict[str, str]:
+    """`base` with the `NAME=VALUE` settings of `--env` applied; a name replaces the same name in any case. Raises
+    ConfigError for a setting that is not NAME=VALUE."""
+    env = dict(base)
+    for setting in settings:
+        name, equals, value = setting.partition("=")
+        if not equals or not _ENV_NAME.match(name):
+            raise ConfigError(f"--env {setting!r}: use NAME=VALUE (letters, digits and '_' in the name)")
+        for key in [k for k in env if k.upper() == name.upper()]:
+            del env[key]
+        env[name] = value
+    return env
 
 
 def run_build(args: argparse.Namespace) -> int:
@@ -92,13 +157,15 @@ def run_build(args: argparse.Namespace) -> int:
     if not AGENT_NAME.match(args.agent):
         raise ConfigError(f"agent id {args.agent!r}: use letters, digits, '.', '_' and '-' (at most 64)")
     root = _root(args.dir)
-    # The precheck: the preset exists and the tools are found, before anything waits for a slot.
+    # The precheck: the preset exists, the settings are well formed and the tools are found, before anything waits.
     build_run.check_preset(root, args.preset)
-    env = build_run.load_msvc_environment(os.environ, build_run.run_text)
+    _environment({}, args.env)  # a malformed --env is refused now; it is applied after the Visual Studio environment
+    build_dir = (root / args.build_dir).resolve() if args.build_dir else None
+    env = _environment(build_run.load_msvc_environment(os.environ, build_run.run_text), args.env)
     build_run.find_programs(env)
     numbers = _numbers(root)
-    log_path = _log_path(root, args.preset)
-    log_path.parent.mkdir(parents=True, exist_ok=True)
+    folder = build_dir if build_dir is not None else root / "build" / args.preset
+    log_path = _new_log(root, args.preset, build_dir.name if build_dir else None, args.agent)
     options = build_run.Options(
         agent=args.agent,
         preset=args.preset,
@@ -107,12 +174,14 @@ def run_build(args: argparse.Namespace) -> int:
         configure_only=args.configure_only,
         test=args.test,
         regex=args.regex,
+        label=args.label,
+        build_dir=build_dir,
         priority=args.priority,
         max_wait=args.max_wait,
         jobs=args.jobs,
     )
     print(f"log: {log_path}", flush=True)
-    with log_path.open("w", encoding="utf-8", buffering=1) as log:
+    with log_path.open("a", encoding="utf-8", buffering=1) as log:
         context = build_run.Context(
             slots=build_claims.default_slots(MAIN_LANE, root),
             fast=build_claims.default_slots(FAST_LANE, root),
@@ -123,7 +192,8 @@ def run_build(args: argparse.Namespace) -> int:
             cpus=os.cpu_count(),
             fast_steps=numbers["build_fast_lane_steps"],
             fast_tests=numbers["build_fast_lane_tests"],
-            configured=(root / "build" / args.preset / "CMakeCache.txt").is_file(),
+            configured=(folder / "CMakeCache.txt").is_file(),
+            checkout_lock=build_claims.folder_lock(folder, root),
         )
         result = build_run.execute(options, context)
     for line in result.summary:

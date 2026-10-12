@@ -474,3 +474,34 @@ def test_the_default_fast_lane_is_one_slot_in_the_same_folder(tmp_path: Path, mo
     monkeypatch.chdir(tmp_path)
     main, fast = build_claims.default_slots(), build_claims.default_slots(FAST_LANE)
     assert (main.slots, fast.slots) == (3, 1) and main.claims_dir == fast.claims_dir
+
+
+def test_a_build_folder_has_one_lock_of_its_own_beside_the_slots(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from coney_tools import build_claims
+
+    root = tmp_path / "work" / "worktrees" / "coney" / "wt"
+    root.mkdir(parents=True)
+    (root / "coney.local.example.toml").write_text("", encoding="utf-8")
+    monkeypatch.chdir(root)
+    folder = root / "build" / "ci"
+    lock = build_claims.folder_lock(folder, root)
+    again = build_claims.folder_lock(root / "build" / "ci" / ".." / "ci", root)
+    other = build_claims.folder_lock(root / "build" / "dev", root)
+    assert lock.slots == 1 and lock.claims_dir == again.claims_dir  # the same folder spelled twice: the same lock
+    assert lock.claims_dir != other.claims_dir  # another folder, another lock
+    slots = build_claims.default_slots(root=root)
+    assert lock.claims_dir.parent == slots.claims_dir / "folders"  # shared by every worktree, apart from the slots
+    assert "wt" in lock.claims_dir.name and "ci" in lock.claims_dir.name
+    # The slots' status looks only at its own folder, so a lock never shows up as a slot.
+    ticket_ = lock.join("alice", "wt", "ci", False, os.getpid())
+    assert lock.try_claim(ticket_) is not None
+    assert all(row.claim is None for row in slots.status().slots)
+
+
+def test_the_lock_message_names_what_is_busy(tmp_path: Path, world: World) -> None:
+    lock = Slots(tmp_path / "locks", 1, clock=world.clock, alive=world.is_alive, sleep=world.sleep, what="build folder")
+    assert take(lock, world, "holder", 1601) is not None
+    with pytest.raises(SlotTimeout, match=r"build folder .*holder"):
+        lock.acquire("waiter", "wt", "dev", False, 11602, poll=10, report=None, timeout=30)

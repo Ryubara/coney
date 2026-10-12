@@ -187,6 +187,11 @@ environment variable `CONEY_DISC` names the disc, are reported as skipped otherw
 CONEY_DISC=/path/to/warriors.iso build/dev/tests/coney_tests "[disc]"
 ```
 
+Under `ctest` each test case is a test, and its Catch2 tags are its labels, so `-L disc` selects the disc tests (the
+hand-registered `coney.*` checks that exist only when `CONEY_DISC` is set at configure time carry the label too) and
+`-LE disc` leaves them out: `coney-tools build --agent <id> --test -L disc` ([`build`](coney-tools.md#build)). A
+test case that skips without the disc but lacks the tag fails a Python test.
+
 The level99 intro's sound check (`[disc][story][audio]`) also writes everything it mixed as a 48 kHz stereo WAV file
 when `CONEY_AUDIO_WAV` names one, to listen to; keep it out of the repository.
 
@@ -1008,8 +1013,9 @@ included some unusual way is still caught within a day.
 `coney-tools check changed` runs the pull request's pass for you: the same file selection, clang-tidy from
 the Visual Studio LLVM folder (macOS: Homebrew's `llvm@19`) over the `build/dev` compile database, and the GCC and
 Clang warnings that MSVC does not report ([the local gate](testing.md#local-gate), [its options](coney-tools.md#check)).
-On Linux, where `dev` builds with GCC, configure a Clang database for it once:
-`CC=clang-19 CXX=clang++-19 cmake --preset dev -B build/tidy`, then pass `--build-dir build/tidy`.
+On Linux, where `dev` builds with GCC, configure a Clang database for it once, with the build tool (a hook refuses a
+raw `cmake`): `coney-tools build --agent <id> --configure-only --preset dev --build-dir build/tidy --env CC=clang-19
+--env CXX=clang++-19`, then pass `--build-dir build/tidy` to `check changed`.
 
 ## Python tools
 

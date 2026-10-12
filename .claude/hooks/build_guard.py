@@ -29,13 +29,17 @@ import sys
 _START = r"(?:^|[;&|(]|\$\()[ \t]*(?:[A-Za-z_]\w*=\S*[ \t]+)*"
 #: A program by name, possibly with a path in front and `.exe` after, possibly quoted (`& "C:\...\cmake.exe" --build`).
 _PATH = r"(?:\"[^\"\n]*[\\/]|'[^'\n]*[\\/]|[\"']?[^\s;&|()\"']*[\\/])?"
-_PROGRAM = _PATH + r"(?P<name>cmake|ctest|ninja)(?:\.exe)?[\"']?(?=[ \t]|$)(?P<args>[^\n;&|]*)"
+_PROGRAM = (
+    _PATH + r"(?P<name>cmake|ctest|ninja)(?:\.exe)?[\"']?(?=[ \t]|$)(?P<args>[^\n;&|]*)"
+)
 
 _COMMAND = re.compile(_START + _PROGRAM, re.MULTILINE)
 #: What a `cmake` command does that builds: configure by preset or by -S/-B, or build.
 _CMAKE_BUILDS = re.compile(r"(?:^|[ \t])(?:--build|--preset|-S|-B)")
 #: Options that only list or print for `ctest` and `ninja`.
-_CTEST_LISTS = re.compile(r"(?:^|[ \t])(?:-N|--show-only(?:=\S+)?|--version|--help|-h)(?=[ \t]|$)")
+_CTEST_LISTS = re.compile(
+    r"(?:^|[ \t])(?:-N|--show-only(?:=\S+)?|--version|--help|-h)(?=[ \t]|$)"
+)
 _NINJA_PRINTS = re.compile(r"(?:^|[ \t])(?:--version|--help|-h)(?=[ \t]|$)")
 
 #: A here-document (`<<EOF`, `<<-'EOF'`): its head line is kept, its body is text, not commands.
@@ -53,10 +57,11 @@ MESSAGE = (
     "`coney-tools build` takes a build slot (at most two builds at once, a fast lane for small jobs, a fair queue), "
     "and does configure, build and ctest in one command with a short summary and the full log in your scratch "
     "folder (docs/guides/coney-tools.md, 'build'). Use, from your worktree:\n"
-    "  uv run --project python coney-tools build --agent <your id> --preset dev --test [-R <regex>]\n"
+    "  uv run --project python coney-tools build --agent <your id> --preset dev --test [-R <regex>] [-L <label>]\n"
     "(`--configure` forces a configure, `--priority` goes ahead in the queue, `--dir <checkout>` builds another "
-    "worktree). It runs in the background well: add `run_in_background` and check the log. Exit code 75 means it "
-    "waited its cap for a slot: do other work and run it again.\n"
+    "worktree, `--build-dir <folder> --env CC=... --env CXX=...` a second configuration). It runs in the background "
+    "well: add `run_in_background` and check the log. Exit code 75 means it waited its cap for a slot or for the "
+    "build folder: do other work and run it again.\n"
 )
 
 

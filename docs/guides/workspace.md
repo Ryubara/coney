@@ -145,8 +145,8 @@ Paths are relative to the repository root or absolute. The keys and their defaul
 | `pcsx2_claims_dir` | `pcsx2-claims` in the main checkout's `../../scratch` | where those claims live; one place every worktree sees, whatever its `scratch_dir` |
 | `build_claims_dir` | `build-claims` in the main checkout's `../../scratch` | where `coney-tools build` keeps its slots and queue; one place every worktree sees, whatever its `scratch_dir` |
 | `build_slots` | `2` | a number: how many builds and test runs `coney-tools build` lets run at once |
-| `build_fast_lane_steps` | `50` | a number: a build whose `ninja -n` shows fewer steps uses the fast lane; `0` turns the lane off |
-| `build_fast_lane_tests` | `20` | a number: a `-R` test run that selects at most this many tests uses the fast lane; `0` turns it off |
+| `build_fast_lane_steps` | `50` | a number: a build with fewer steps out of date by themselves (`ninja -n -d explain` causes, [`build`](coney-tools.md#build)) uses the fast lane; `0` turns the lane off |
+| `build_fast_lane_tests` | `20` | a number: a `-R` or `-L` test run that selects at most this many tests uses the fast lane; `0` turns it off |
 | `scratch_dir` | `../../scratch` | captures and tool output |
 | `jdk_home` | none: you must set it | a JDK 21 home, needed to run Ghidra |
 | `ghidra_mcp_repo` | none: you must set it | a built ghidra-mcp checkout, used read-only |

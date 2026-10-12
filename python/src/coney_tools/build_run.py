@@ -2,10 +2,12 @@
 """Run configure, build and test of a checkout under the build slots, and boil their output down to a short summary
 (docs/guides/coney-tools.md#build).
 
-A run has up to two **phases**, each holding its own claim (build_claims.py): configure and build together, then the
-test run. A small job (a build whose `ninja -n` shows a few steps, a `ctest -R` that selects a few tests) takes the
-single fast-lane slot; everything else takes one of the main slots, and waits in the queue for one. The full output
-goes to a log; what is printed is the outcome of each step, the first compile errors and the failed tests.
+A run first takes the **lock of its build folder** (build_claims.folder_lock): one run per folder at a time, from
+configure to the last test, so two runs never link the same executable or write the same files. Then it has up to two
+**phases**, each holding its own claim (build_claims.py): configure and build together, then the test run. A small job
+(a build with a few out-of-date steps, a `ctest -R` or `-L` that selects a few tests) takes the single fast-lane slot;
+everything else takes one of the main slots, and waits in the queue for one. The full output goes to a log; what is
+printed is the outcome of each step, the first compile errors and the failed tests.
 
 Everything that touches the machine is behind `Toolchain` (running a command, capturing a short one), so the order of
 a run, the lane choice, the claims and the summary are tested with canned output.
@@ -35,8 +37,11 @@ MAX_ERRORS = 8
 MAX_LINE = 220
 #: How many last lines a failure with no recognised error shows.
 TAIL_LINES = 10
-#: Seconds a dry run (`ninja -n`, `ctest -N`) may take before the job counts as unmeasured and uses a main slot.
+#: Seconds a dry run (`ninja -n -d explain`, `ctest -N`) may take before the job counts as unmeasured and uses a main slot.
 DRY_RUN_SECONDS = 120
+#: Seconds the refresh of the build manifest (`ninja build.ninja`, which may re-run CMake) may take before the job
+#: counts as unmeasured.
+REFRESH_SECONDS = 900
 
 # -- reading the output ------------------------------------------------------------------------------------------
 
@@ -45,6 +50,7 @@ _MSVC_ERROR = re.compile(r"\b(?:fatal )?error [A-Z]{1,5}\d{3,5}:")
 _OTHER_ERROR = re.compile(r"^(?:CMake Error|ninja: (?:error|fatal))")
 _FAILED_STEP = re.compile(r"^FAILED: (?:\[code=\d+\] )?(\S+)")
 _PROGRESS = re.compile(r"^\[(\d+)/(\d+)\] ")
+_EXPLAIN = re.compile(r"^ninja explain: (.*)$")
 _TEST_LINE = re.compile(r"^\s*\d+/\d+ Test\s+#\d+: (?P<name>\S+)\s+\.+\s*(?P<state>.*?)\s+[\d.]+ sec\s*$")
 _TEST_SUMMARY = re.compile(r"(\d+)% tests passed, (\d+) tests? failed out of (\d+)")
 _TEST_FAILED_ENTRY = re.compile(r"^\s*\d+ - (?P<name>\S+) \(")
@@ -162,15 +168,34 @@ class TestScan:
                 self._lines_passed += 1
 
 
-def count_ninja_steps(output: str) -> int | None:
-    """The number of steps `ninja -n` would run; 0 for no work, None when it cannot be told (an error, no output, or
-    ninja would first re-run CMake, which can change the rest)."""
-    if "Re-running CMake" in output:
+def count_dirty_steps(output: str) -> int | None:
+    """How many steps are out of date by themselves, from a `ninja -n -d explain` dry run; 0 for no work, None when it
+    cannot be told (an error, no output, ninja stopping to re-run CMake, or steps planned with no reason given).
+
+    The planned steps ("[n/m]") are no measure: a dry run cannot ask a `restat` step whether its output really changed,
+    so it plans everything behind one (CMake's C++ dependency scan is one, and it stands in front of every object) and
+    reports 410 steps for one touched source whose real build is 10. The explanation names the **cause** of each
+    out-of-date step ("output x older than most recent input y", "output x doesn't exist", "command line changed for
+    x"), and a step dirty only because something before it ran just says "x is dirty". The causes are what a real
+    build must do whatever the restat steps find: one per touched source, and a header's includers one each
+    (docs/guides/coney-tools.md#build)."""
+    if "Re-running CMake" in output or "ninja: error" in output:
         return None
     if "no work to do" in output:
         return 0
-    steps = [int(m.group(2)) for line in output.splitlines() if (m := _PROGRESS.match(line))]
-    return steps[-1] if steps else None
+    if not any(_PROGRESS.match(line) for line in output.splitlines()):
+        return None
+    causes = set()
+    for line in output.splitlines():
+        reason = _EXPLAIN.match(line.strip())
+        if reason is None:
+            continue
+        text = reason.group(1)
+        if text.startswith("loading dyndep") or text.endswith(" is dirty") or "phony edge" in text:
+            continue
+        causes.add(text)
+    # Steps planned but no cause named: an older or odd ninja, so nothing can be said.
+    return len(causes) or None
 
 
 def count_ctest_tests(output: str) -> int | None:
@@ -271,8 +296,12 @@ class Toolchain(Protocol):
         """Run the command in the checkout; each output line (stdout and stderr together) goes to `on_line`."""
         ...
 
-    def capture(self, command: list[str], cwd: Path | None) -> tuple[int, str]:
+    def capture(self, command: list[str], cwd: Path | None, timeout: float | None = None) -> tuple[int, str]:
         """Run a short command (in `cwd`, else the checkout) and return its exit code and output."""
+        ...
+
+    def dry_run(self, directory: Path) -> tuple[int, str]:
+        """`ninja -n -d explain` of the build folder, on a copy of its manifest (see ProcessToolchain.dry_run)."""
         ...
 
 
@@ -290,12 +319,15 @@ class ProcessToolchain:
         found = shutil.which(command[0], path=env_get(self.env, "PATH") or None)
         return [found, *command[1:]] if found else command
 
+    @staticmethod
+    def _lower() -> dict[str, object]:
+        """The arguments that start a child at below-normal priority."""
+        if sys.platform == "win32":
+            return {"creationflags": 0x00004000}  # BELOW_NORMAL_PRIORITY_CLASS
+        return {"preexec_fn": lambda: os.nice(5)}
+
     def _start(self, command: list[str], cwd: Path) -> subprocess.Popen[str]:
         """Start a command with merged, line-buffered text output, at below-normal priority."""
-        if sys.platform == "win32":
-            lower: dict[str, object] = {"creationflags": 0x00004000}  # BELOW_NORMAL_PRIORITY_CLASS
-        else:
-            lower = {"preexec_fn": lambda: os.nice(5)}
         return subprocess.Popen(  # type: ignore[call-overload,no-any-return]
             self._resolve(command),
             cwd=cwd,
@@ -306,7 +338,7 @@ class ProcessToolchain:
             text=True,
             encoding="utf-8",
             errors="replace",
-            **lower,
+            **self._lower(),
         )
 
     @staticmethod
@@ -335,23 +367,41 @@ class ProcessToolchain:
             self._stop(process)
             raise
 
-    def capture(self, command: list[str], cwd: Path | None) -> tuple[int, str]:
-        """Run a short command, with a time limit; a timeout or a missing program is a failure."""
+    def capture(self, command: list[str], cwd: Path | None, timeout: float | None = None) -> tuple[int, str]:
+        """Run a short command, with a time limit (`timeout`, else DRY_RUN_SECONDS); a timeout or a missing program is
+        a failure."""
         try:
-            done = subprocess.run(
+            done = subprocess.run(  # type: ignore[call-overload]
                 self._resolve(command),
                 cwd=cwd or self.checkout,
                 env=self.env,
+                stdin=subprocess.DEVNULL,
                 capture_output=True,
                 text=True,
                 encoding="utf-8",
                 errors="replace",
                 check=False,
-                timeout=DRY_RUN_SECONDS,
+                timeout=timeout or DRY_RUN_SECONDS,
+                **self._lower(),
             )
         except (OSError, subprocess.TimeoutExpired) as error:
             return 127, str(error)
         return done.returncode, done.stdout + done.stderr
+
+    def dry_run(self, directory: Path) -> tuple[int, str]:
+        """`ninja -n -d explain` of the build folder, run on a copy of `build.ninja`. The project's globs are
+        CONFIGURE_DEPENDS, so ninja always wants to re-run CMake first, and a dry run stops there having planned
+        nothing; the copy is not an output of any step, so ninja has no manifest to rebuild and goes on. The copy sits
+        in the build folder (the manifest's paths are relative to it) and is removed again."""
+        probe = directory / f".coney-probe-{os.getpid()}.ninja"
+        try:
+            shutil.copyfile(directory / "build.ninja", probe)
+        except OSError as error:
+            return 127, str(error)
+        try:
+            return self.capture(["ninja", "-n", "-d", "explain", "-f", probe.name], directory)
+        finally:
+            probe.unlink(missing_ok=True)
 
 
 # -- a run --------------------------------------------------------------------------------------------------------
@@ -369,11 +419,30 @@ class Options:
     configure_only: bool = False
     test: bool = False
     regex: str | None = None
+    #: ctest's `-L`: run only the tests with a label matching this (`disc` for the tests that need the game's disc).
+    label: str | None = None
+    #: The build folder when it is not the preset's own `build/<preset>` (`--build-dir`), as an absolute path.
+    build_dir: Path | None = None
     priority: bool = False
     #: Minutes to wait for a slot, per phase, before giving up with exit code 75.
     max_wait: float = 45.0
     #: Parallel jobs; None shares the cores between the slots.
     jobs: int | None = None
+
+    @property
+    def folder(self) -> Path:
+        """The build folder of the run."""
+        return self.build_dir or self.checkout / "build" / self.preset
+
+    @property
+    def filters(self) -> list[str]:
+        """The ctest options that choose the tests: `-R` and `-L`."""
+        return [*(["-R", self.regex] if self.regex is not None else []), *(["-L", self.label] if self.label else [])]
+
+    @property
+    def filter_text(self) -> str:
+        """The test filter as a person typed it, for a message."""
+        return " ".join(self.filters)
 
 
 @dataclass
@@ -394,6 +463,8 @@ class Context:
     configured: bool
     poll: float = 2.0
     report_every: float = 60.0
+    #: The lock of the build folder: one run at a time per folder, from configure to the last test. None: no lock.
+    checkout_lock: Slots | None = None
 
 
 @dataclass
@@ -420,12 +491,16 @@ def _holders_text(holders: list[BuildClaim], now: float) -> str:
 class _Phase:
     """One claim's worth of steps: choose the lane, wait for the slot, run the commands, free the slot."""
 
-    def __init__(self, options: Options, context: Context, label: str, lane: str) -> None:
+    def __init__(
+        self, options: Options, context: Context, label: str, lane: str, note: Callable[[str], None] = lambda step: None
+    ) -> None:
         self.options = options
         self.context = context
         self.label = label
         self.lane_name = lane
         self.slots = context.fast if lane == FAST_LANE else context.slots
+        #: Told the step each command starts, for the folder lock's owner file.
+        self.note = note
         self.waited = 0.0
         self.queued: SlotTimeout | None = None
 
@@ -460,6 +535,7 @@ class _Phase:
                     context.emit(f"took over a stale build claim of {self.slots.last_takeover.agent}")
                 for step, command, on_line in steps:
                     claim = self.slots.set_step(claim, step) or claim
+                    self.note(step)
                     context.log.write(f"==== {step}: {' '.join(command)}\n")
                     began = self.slots.clock()
                     code = context.toolchain.run(command, on_line)
@@ -471,10 +547,11 @@ class _Phase:
             self.queued = timeout
         return results
 
-    def lane_text(self) -> str:
-        """The lane and any wait, for a summary line."""
+    def lane_text(self, measured: int | None = None) -> str:
+        """The lane, what decided it and any wait, for a summary line."""
         waited = f", waited {_duration(self.waited)}" if self.waited >= 1 else ""
-        return f"{self.lane_name} lane{waited}"
+        steps = "" if measured is None else f", {measured} step{'s' if measured != 1 else ''} out of date"
+        return f"{self.lane_name} lane{steps}{waited}"
 
 
 def _failure_lines(scan: BuildScan) -> list[str]:
@@ -495,28 +572,85 @@ def _queued_line(label: str, timeout: SlotTimeout) -> str:
     return f"{label}: still queued, position {timeout.position} of {timeout.total}, try again later ({timeout})"
 
 
-def _choose_build_lane(options: Options, context: Context) -> str:
-    """The lane of the configure and build phase: fast for a configured tree whose dry run shows few steps."""
+def _choose_build_lane(options: Options, context: Context) -> tuple[str, int | None]:
+    """The lane of the configure and build phase, and how many steps the build has to do (None: not measured). Fast
+    for a configured tree with a few steps out of date, else a main slot.
+
+    To measure, the manifest is first brought up to date for real (`ninja build.ninja`: it re-checks the globs, which
+    is cheap, and re-runs CMake only when a CMake file or a glob changed, which the build would do first anyway); then
+    a dry run on a copy of it counts the steps that are out of date by themselves (count_dirty_steps)."""
     if options.configure or options.configure_only or not context.configured or context.fast_steps <= 0:
-        return MAIN_LANE
-    cwd = options.checkout / "build" / options.preset
-    code, output = context.toolchain.capture(["ninja", "-n"], cwd)
-    steps = count_ninja_steps(output) if code == 0 else None
-    return FAST_LANE if steps is not None and steps < context.fast_steps else MAIN_LANE
+        return MAIN_LANE, None
+    code, _ = context.toolchain.capture(["ninja", "build.ninja"], options.folder, REFRESH_SECONDS)
+    if code != 0:
+        return MAIN_LANE, None
+    code, output = context.toolchain.dry_run(options.folder)
+    steps = count_dirty_steps(output) if code == 0 else None
+    return (FAST_LANE if steps is not None and steps < context.fast_steps else MAIN_LANE), steps
+
+
+def _ctest(options: Options, *more: str) -> list[str]:
+    """A ctest command for the run's build folder: the preset's, or `--test-dir` for another folder."""
+    base = ["ctest", "--preset", options.preset]
+    if options.build_dir is not None:
+        base = ["ctest", "--test-dir", str(options.build_dir), "--output-on-failure"]
+    return [*base, *more]
 
 
 def _choose_test_lane(options: Options, context: Context) -> tuple[str, int | None]:
-    """The lane of the test phase and how many tests the filter selects (None when unknown). Only a `-R` filter can
-    be small; a full run always takes a main slot."""
-    if options.regex is None:
+    """The lane of the test phase and how many tests the filter selects (None when unknown). Only a `-R` or `-L` filter
+    can be small; a full run always takes a main slot."""
+    if not options.filters:
         return MAIN_LANE, None
-    code, output = context.toolchain.capture(["ctest", "--preset", options.preset, "-N", "-R", options.regex], None)
+    code, output = context.toolchain.capture(_ctest(options, "-N", *options.filters), None)
     tests = count_ctest_tests(output) if code == 0 else None
     small = tests is not None and 0 < tests <= context.fast_tests
     return (FAST_LANE if small else MAIN_LANE), tests
 
 
 def execute(options: Options, context: Context) -> Result:
+    """Run one build folder's configure, build and tests under the folder's lock: the lock is taken first and held to
+    the end (a second run in the same folder waits for it, up to `max_wait` minutes, then gives up with exit code 75),
+    and released however this ends, an interrupt included. What runs inside is `_execute`."""
+    lock = context.checkout_lock
+    if lock is None:
+        return _execute(options, context, lambda step: None)
+
+    def report(waiting: Waiting) -> None:
+        context.emit(
+            f"waiting for another run in this build folder ({options.folder}): place {waiting.place} of "
+            f"{waiting.total}; held by {_holders_text(waiting.holders, lock.clock())}; "
+            f"gives up after {options.max_wait:.0f} min"
+        )
+
+    try:
+        claim = lock.acquire(
+            options.agent,
+            options.checkout.name,
+            options.preset,
+            False,
+            context.pid,
+            poll=context.poll,
+            report=report,
+            report_every=context.report_every,
+            timeout=options.max_wait * 60,
+        )
+    except SlotTimeout as timeout:
+        return _gave_up(Result(), "build folder", timeout)
+    if lock.last_takeover is not None:
+        context.emit(f"took over a stale lock of this build folder from {lock.last_takeover.agent}")
+    held = [claim]
+
+    def note(step: str) -> None:
+        held[0] = lock.set_step(held[0], step) or held[0]
+
+    try:
+        return _execute(options, context, note)
+    finally:
+        lock.release_claim(held[0])
+
+
+def _execute(options: Options, context: Context, note: Callable[[str], None]) -> Result:
     """Run configure and build (one claim), then the tests when asked (another claim). Stops at the first failing
     step; the summary has a line per step reached, the first errors or the failed tests, and a final result line.
     The claims are released however this ends, an interrupt included."""
@@ -530,20 +664,25 @@ def execute(options: Options, context: Context) -> Result:
 
     # Phase 1: configure (when needed) and build.
     build_steps: list[tuple[str, list[str], Callable[[str], None]]] = []
+    custom = options.build_dir is not None
     if options.configure or options.configure_only or not context.configured:
-        build_steps.append(("configure", ["cmake", "--preset", options.preset], build_line))
+        configure = ["cmake", "--preset", options.preset, *(["-B", str(options.build_dir)] if custom else [])]
+        build_steps.append(("configure", configure, build_line))
     if not options.configure_only:
-        build_steps.append(("build", ["cmake", "--build", "--preset", options.preset, "-j", jobs], build_line))
-    phase = _Phase(options, context, "build", _choose_build_lane(options, context))
+        target = [str(options.build_dir)] if custom else ["--preset", options.preset]
+        build_steps.append(("build", ["cmake", "--build", *target, "-j", jobs], build_line))
+    note("measuring")
+    lane, measured = _choose_build_lane(options, context)
+    phase = _Phase(options, context, "build", lane, note)
     ran = phase.run(build_steps)
     if phase.queued is not None:
         return _gave_up(result, "build", phase.queued)
     for step, code, seconds in ran:
         if code == 0:
-            where = f" ({phase.lane_text()})" if step == "build" or len(ran) == 1 else ""
+            where = f" ({phase.lane_text(measured)})" if step == "build" or len(ran) == 1 else ""
             result.summary.append(f"{step}: ok in {_duration(seconds)}{where}")
         else:
-            result.summary.append(f"{step}: FAILED (exit {code}) in {_duration(seconds)} ({phase.lane_text()})")
+            result.summary.append(f"{step}: FAILED (exit {code}) in {_duration(seconds)} ({phase.lane_text(measured)})")
             result.summary += _failure_lines(scan)
             if step == "configure":
                 result.summary.append("build: not run")
@@ -555,7 +694,12 @@ def execute(options: Options, context: Context) -> Result:
     # Phase 2: the tests, with a claim of their own.
     lane, selected = _choose_test_lane(options, context)
     if selected == 0:
-        result.summary.append(f"test: FAILED: no tests match -R {options.regex}")
+        result.summary.append(f"test: FAILED: no tests match {options.filter_text}")
+        if options.regex is not None:
+            result.summary.append(
+                "  -R is a CMake regular expression: escape . + ( ) [ ] with a backslash, and quote the argument "
+                "(docs/guides/coney-tools.md#build)"
+            )
         return _failed(result, "test", False)
     tests = TestScan()
 
@@ -563,21 +707,19 @@ def execute(options: Options, context: Context) -> Result:
         context.log.write(line + "\n")
         tests.feed(line)
 
-    command = ["ctest", "--preset", options.preset, "-j", jobs]
-    if options.regex is not None:
-        command += ["-R", options.regex]
-    phase = _Phase(options, context, "test", lane)
+    command = _ctest(options, "-j", jobs, *options.filters)
+    phase = _Phase(options, context, "test", lane, note)
     ran = phase.run([("test", command, test_line)])
     if phase.queued is not None:
         return _gave_up(result, "test", phase.queued)
     _, code, seconds = ran[0]
     counts = f"{tests.passed} passed, {len(tests.failed)} failed of {tests.total}"
     if code == 0 and not tests.none_found:
-        result.summary.append(f"test: ok in {_duration(seconds)} ({phase.lane_text()}): {counts}")
+        result.summary.append(f"test: ok in {_duration(seconds)} ({phase.lane_text(selected)}): {counts}")
         result.summary.append("result: ok")
         return result
     reason = "no tests were found" if tests.none_found else f"exit {code}"
-    result.summary.append(f"test: FAILED ({reason}) in {_duration(seconds)} ({phase.lane_text()}): {counts}")
+    result.summary.append(f"test: FAILED ({reason}) in {_duration(seconds)} ({phase.lane_text(selected)}): {counts}")
     if tests.failed:
         result.summary.append("  failed: " + ", ".join(tests.failed))
     return _failed(result, "test", False)
@@ -594,7 +736,7 @@ def _failed(result: Result, step: str, tests_skipped: bool) -> Result:
 
 
 def _gave_up(result: Result, step: str, timeout: SlotTimeout) -> Result:
-    """Mark a run that stopped waiting for a slot: exit code 75, the place, and the way on."""
+    """Mark a run that stopped waiting for a slot (or for its build folder): exit code 75, the place, and the way on."""
     result.summary.append(_queued_line(step, timeout))
     result.summary.append(f"result: QUEUED at {step} (exit {EXIT_QUEUED}); do other work and run the command again")
     result.ok = False

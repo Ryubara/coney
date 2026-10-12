@@ -164,14 +164,23 @@ PCSX2 copies do ([`build`](coney-tools.md#build)). An agent never runs `cmake --
 `ninja` itself (a hook refuses them); it runs, from its worktree:
 
 ```sh
-uv run --project python coney-tools build --agent <id> --preset dev --test [-R <regex>]
+uv run --project python coney-tools build --agent <id> --preset dev --test [-R <regex>] [-L <label>]
 ```
 
 - **Run it in the background** (`run_in_background`, or output to a file) and read the log path it prints first, then
   the short summary when it ends. Do not sit in it: a wait for a slot can take many minutes.
-- **A small job is quick.** An incremental rebuild of a few steps, or a test run filtered with `-R` to a few tests,
-  takes the fast lane and does not queue behind full builds. Rerun a failed test with `-R <its name>`, not the whole
-  suite; the first build in a fresh worktree and a full test run are the big jobs.
+- **A small job is quick.** An incremental rebuild of a few steps (the tool counts what is out of date by itself, so
+  one edited source is one step however much sits behind it), or a test run filtered with `-R` or `-L` to a few
+  tests, takes the fast lane and does not queue behind full builds. Rerun a failed test with `-R <its name>`, not the
+  whole suite; the first build in a fresh worktree and a full test run are the big jobs. `-L disc` runs only the tests
+  that need the game's disc. `-R` is a CMake regular expression: escape `.` `+` `(` `)` with a backslash and quote it
+  with single quotes ([Choosing tests](coney-tools.md#build)).
+- **One run per build folder.** A second `build` in the same checkout and preset waits for the first (it prints who
+  holds the folder), so start a build and its tests as one `--test` run rather than two commands, and never run two at
+  once in one worktree. Each run writes a log of its own, named for the preset, the agent and the time; read the path
+  it prints first.
+- **A second configuration** (the Clang build clang-tidy reads on Linux and macOS) is `--build-dir build/tidy --env
+  CC=clang-19 --env CXX=clang++-19` with `--configure-only`; never a raw `cmake`.
 - **Exit code 75 means "still queued".** The command waited its cap (45 minutes, so the agent's prompt cache stays
   warm), left the queue and said its position. Do other work (docs, review, the next unit) and run the same command
   again later; do not loop on it in one call.

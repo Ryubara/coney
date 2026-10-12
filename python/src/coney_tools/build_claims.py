@@ -11,6 +11,9 @@ one shared place every worktree sees:
 * `queue/<millis>-<pid>-<id>.json`: a ticket per waiting build. The order is priority tickets first, then by time;
   **only the head of the queue may claim**, so waiters cannot overtake one another.
 
+A third kind of claim, the **folder lock** (`folder_lock`), is the same machinery with one slot and a folder of its own
+per build folder: a run holds it from configure to its last test, so two runs never share one build folder.
+
 A second, separate **fast lane** (`fast-1.claim/`, queue `queue-fast/`, one slot) is for small jobs: an incremental
 rebuild of a few steps, a test run that selects a few tests. It has its own claim and its own short queue, so these
 never wait behind a full build (the caller decides which lane a job belongs to; build_run.py).
@@ -22,6 +25,7 @@ maximum age (a hung build; a pid can also be reused). A ticket is stale when its
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -180,6 +184,19 @@ def estimate_wait(place: int, holders: list[BuildClaim], slots: int, now: float,
     return remaining[index] + rounds * _typical("build", lane)
 
 
+def folder_lock(build_dir: Path, root: Path | None = None) -> Slots:
+    """The lock of one build folder: a single slot, with its own queue, in `folders/` beside the build claims (so every
+    worktree sees it, and the slots' status never lists it). The folder is named for the checkout, the folder and a
+    digest of the folder's resolved path, so the same folder spelled two ways is one lock."""
+    root = find_repo_root(root or Path.cwd())
+    resolved = Path(os.path.realpath(build_dir))
+    digest = hashlib.sha1(os.path.normcase(str(resolved)).encode("utf-8"), usedforsecurity=False).hexdigest()[:10]
+    safe = re.compile(r"[^A-Za-z0-9._-]+")
+    name = f"{safe.sub('_', root.name)}-{safe.sub('_', resolved.name)}-{digest}"
+    directory = default_slots(MAIN_LANE, root).claims_dir / "folders" / name
+    return Slots(directory, 1, what="build folder")
+
+
 class Slots:
     """The build slots and their queue under `claims_dir`."""
 
@@ -192,10 +209,11 @@ class Slots:
         alive: Callable[[int], bool] | None = None,
         sleep: Callable[[float], None] | None = None,
         lane: str = MAIN_LANE,
+        what: str = "build slot",
     ) -> None:
         """`clock` returns epoch seconds, `alive` says whether a pid lives and `sleep` waits (default: the real ones;
         tests pass fakes).
-        `lane` picks the claim folders and the queue this object works on."""
+        `lane` picks the claim folders and the queue this object works on; `what` names what is claimed, in messages."""
         self.claims_dir = claims_dir
         self.slots = slots
         self.max_age = max_age
@@ -204,6 +222,7 @@ class Slots:
         self.alive = alive or (lambda pid: pcsx2_proc.pid_alive(pid))
         self.sleep = sleep or (lambda seconds: time.sleep(seconds))
         self.lane = lane
+        self.what = what
         #: The stale claim the last successful claim took over, for the caller to report.
         self.last_takeover: BuildClaim | None = None
 
@@ -429,7 +448,7 @@ class Slots:
                 if timeout is not None and now - started >= timeout:
                     held = ", ".join(f"{h.agent} ({h.preset}, {h.step})" for h in holders) or "nobody"
                     raise SlotTimeout(
-                        f"no build slot after {timeout / 60:.0f} minutes; held by {held}", place, len(live)
+                        f"no {self.what} free after {timeout / 60:.0f} minutes; held by {held}", place, len(live)
                     )
                 if report is not None and (last_report is None or now - last_report >= report_every):
                     minutes = estimate_wait(place, holders, self.slots, now, self.lane)

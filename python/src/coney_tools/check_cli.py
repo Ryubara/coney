@@ -134,9 +134,9 @@ def _step_tidy(root: Path, changed: list[str], build_dir: Path, jobs: int, clang
     if local_gate.uses_gcc_driver(first):
         notes.append(
             f"note: {build_dir} is a GCC compile database; CI tidies a Clang one and clang-tidy can reject GCC-only "
-            f"flags. Configure one with `CC=clang-{local_gate.TIDY_MAJOR} CXX=clang++-{local_gate.TIDY_MAJOR} "
-            "cmake --preset dev -B build/tidy` and pass `--build-dir build/tidy` (a person on Linux or macOS; agents "
-            "build through `coney-tools build`)"
+            "flags. Configure one with `coney-tools build --agent <id> --configure-only --preset dev "
+            f"--build-dir build/tidy --env CC=clang-{local_gate.TIDY_MAJOR} --env CXX=clang++-{local_gate.TIDY_MAJOR}` "
+            "and pass `--build-dir build/tidy` here"
         )
     with tempfile.TemporaryDirectory(prefix="coney-tidy-") as scratch:
         database_dir = local_gate.without_missing_response_files(database, Path(scratch))

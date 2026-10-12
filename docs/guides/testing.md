@@ -27,6 +27,8 @@ request's Testing and Screenshots sections ([What a pull request shows](#pr-evid
   They are written first.
 - **Smoke tests** run the `coney` executable itself under `ctest`: start-up, argument errors, scripted input.
 - **Disc tests** need the player's own disc, found through `coney.local.toml` or `CONEY_DISC`. They skip without it.
+  Every one carries the ctest label `disc` (the Catch2 tag `[disc]`), so `coney-tools build --test -L disc` runs them
+  and nothing else ([`build`](coney-tools.md#build)).
 - **Playthrough tests** are disc tests that play a mission checkpoint from start to end through the pad.
 - **Event diffs** replay a recorded run of the original into Coney and compare the ordered events.
 - **Trace diffs** record the same scripted scenario on the original and on Coney, per update, and compare the

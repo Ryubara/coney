@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Tests for coney_tools.build_run: reading MSVC, ninja, CMake and ctest output into a short summary, the job count,
-the Visual Studio environment, which lane a job takes (from `ninja -n` and `ctest -N` output), and the order of a
-run: a claim per phase, released however the phase ends, a wait that gives up with exit code 75. No compiler, no
-CMake and no real time: the toolchain is a fake that returns canned output."""
+the Visual Studio environment, which lane a job takes (from the dry run's explanation of what is out of date and from
+`ctest -N` output), and the order of a run: the lock of the build folder, a claim per phase, released however the phase
+ends, a wait that gives up with exit code 75. No compiler, no CMake and no real time: the toolchain is a fake that
+returns canned output."""
 
 import io
 import os
@@ -19,7 +20,7 @@ from coney_tools.build_run import (
     Options,
     TestScan,
     count_ctest_tests,
-    count_ninja_steps,
+    count_dirty_steps,
     execute,
     jobs_for,
     parse_environment,
@@ -224,21 +225,61 @@ def test_a_missing_visual_studio_is_explained(tmp_path: Path) -> None:
 # -- the lane a job takes ----------------------------------------------------------------------------------------
 
 
+def explain(*reasons: str, steps: int = 3) -> str:
+    """A dry run's output: the `-d explain` lines (stderr, so first) and then the planned steps."""
+    lines = [f"ninja explain: {reason}" for reason in reasons]
+    lines += [f"[{n}/{steps}] Building CXX object x{n}.obj" for n in range(1, steps + 1)]
+    return "\n".join(lines) + "\n"
+
+
+TOUCHED = "output src/a.cpp.obj.ddi older than most recent input C:/w/src/a.cpp (8134980954457836 vs 8135031095096621)"
+
+
+#: A dry run of a header change: sixty sources out of date by themselves, more than the fast lane takes.
+BIG = explain(
+    *[f"output src/f{n}.cpp.obj.ddi older than most recent input C:/w/h.h (1 vs 2)" for n in range(60)], steps=300
+)
+
+
 @pytest.mark.parametrize(
     ("output", "steps"),
     [
         ("ninja: no work to do.\n", 0),
+        # One touched source: its scan step is out of date by itself; the 400 compile steps behind the dyndep step
+        # are "dirty" only because a dry run assumes every restat step changes its output, which a real run checks.
         (
-            "[1/3] Building CXX object a.obj\n[2/3] Building CXX object b.obj\n[3/3] Linking coney.exe\n",
-            3,
+            explain(
+                "loading dyndep file 'src/CXX.dd'",
+                "output _deps/x/all of phony edge with no inputs doesn't exist",
+                TOUCHED,
+                "src/a.cpp.obj.ddi is dirty",
+                "src/b.cpp.obj.modmap is dirty",
+                "src/b.cpp.obj is dirty",
+                steps=410,
+            ),
+            1,
         ),
+        # A header many sources include: each scan step is out of date by itself.
+        (
+            explain(
+                *[f"output src/f{n}.cpp.obj.ddi older than most recent input C:/w/h.h (1 vs 2)" for n in range(60)]
+            ),
+            60,
+        ),
+        # The same reason twice, or a missing output, a changed command line or a stale record each count once.
+        (explain(TOUCHED, TOUCHED, steps=2), 1),
+        (explain("output src/new.cpp.obj doesn't exist", "command line changed for src/a.cpp.obj", steps=2), 2),
+        (explain("recorded mtime of src/a.obj older than most recent input C:/w/a.h (1 vs 2)", steps=2), 1),
+        # Steps are planned but nothing says why: it cannot be told.
+        ("[1/3] Building CXX object a.obj\n[2/3] Building CXX object b.obj\n[3/3] Linking CXX executable x\n", None),
+        (explain("src/a.cpp.obj is dirty", steps=2), None),
         ("[1/1] Re-running CMake...\n[1/200] Building CXX object a.obj\n", None),
         ("ninja: error: loading 'build.ninja': no such file\n", None),
         ("", None),
     ],
 )
-def test_ninja_dry_run_steps_are_counted(output: str, steps: int | None) -> None:
-    assert count_ninja_steps(output) == steps
+def test_ninja_dry_run_counts_the_steps_that_are_out_of_date_by_themselves(output: str, steps: int | None) -> None:
+    assert count_dirty_steps(output) == steps
 
 
 @pytest.mark.parametrize(
@@ -255,31 +296,40 @@ def test_ctest_list_counts_the_selected_tests(output: str, tests: int | None) ->
 class FakeToolchain:
     """Canned output for each command, a record of what ran, and a look at the claims while a command runs."""
 
-    def __init__(self, slots: Slots, fast: Slots) -> None:
+    def __init__(self, slots: Slots, fast: Slots, lock: Slots) -> None:
         self.slots = slots
         self.fast = fast
+        self.lock = lock
         self.commands: list[list[str]] = []
         self.output: dict[str, tuple[int, str]] = {
-            "ninja": (0, "[1/2] Building CXX object a.obj\n[2/2] Linking CXX executable coney\n"),
+            "refresh": (0, "ninja: no work to do.\n"),
+            "ninja": (0, explain(TOUCHED, steps=2)),
             "ctest-list": (0, "Total Tests: 3\n"),
             "configure": (0, "-- Configuring done\n"),
             "build": (0, "[1/2] Building CXX object a.obj\n[2/2] Linking CXX executable coney\n"),
             "test": (0, "1/3 Test #1: a ... Passed 0.1 sec\n100% tests passed, 0 tests failed out of 3\n"),
         }
         self.during: dict[str, tuple[int, int]] = {}
+        #: The step the folder's lock records while each command runs.
+        self.lock_steps: dict[str, str] = {}
         self.raises: dict[str, BaseException] = {}
 
     @staticmethod
     def kind(command: list[str]) -> str:
         if command[0] == "ninja":
-            return "ninja"
+            return "refresh" if command[1:] == ["build.ninja"] else "ninja"
         if command[0] == "ctest":
             return "ctest-list" if "-N" in command else "test"
         return "configure" if "--build" not in command else "build"
 
-    def capture(self, command: list[str], cwd: Path | None) -> tuple[int, str]:
+    def capture(self, command: list[str], cwd: Path | None, timeout: float | None = None) -> tuple[int, str]:
         self.commands.append(command)
         return self.output[self.kind(command)]
+
+    def dry_run(self, directory: Path) -> tuple[int, str]:
+        command = ["ninja", "-n", "-d", "explain"]
+        self.commands.append(command)
+        return self.output["ninja"]
 
     def run(self, command: list[str], on_line: Callable[[str], None]) -> int:
         kind = self.kind(command)
@@ -288,6 +338,8 @@ class FakeToolchain:
             sum(1 for r in self.slots.status().slots if r.claim),
             sum(1 for r in self.fast.status().slots if r.claim),
         )
+        held = [r.claim for r in self.lock.status().slots if r.claim]
+        self.lock_steps[kind] = held[0].step if held else "(no lock)"
         if kind in self.raises:
             raise self.raises[kind]
         code, text = self.output[kind]
@@ -304,7 +356,8 @@ class Run:
         self.alive = {1}
         self.main = Slots(tmp_path / "claims", 2, clock=self.clock, alive=self.is_alive, sleep=self.sleep)
         self.fast = Slots(tmp_path / "claims", 1, clock=self.clock, alive=self.is_alive, sleep=self.sleep, lane="fast")
-        self.toolchain = FakeToolchain(self.main, self.fast)
+        self.lock = Slots(tmp_path / "folder-lock", 1, clock=self.clock, alive=self.is_alive, sleep=self.sleep)
+        self.toolchain = FakeToolchain(self.main, self.fast, self.lock)
         self.lines: list[str] = []
         self.log = io.StringIO()
         settings: dict[str, object] = {"agent": "alice", "preset": "dev", "checkout": tmp_path / "wt", **options}
@@ -336,6 +389,7 @@ class Run:
             fast_tests=20,
             configured=self.configured,
             poll=30.0,
+            checkout_lock=self.lock,
         )
         return execute(self.options, context)
 
@@ -354,7 +408,7 @@ def test_a_small_incremental_build_takes_the_fast_lane_and_a_big_one_a_main_slot
     assert result.ok and result.exit_code == 0
     assert run.toolchain.during["build"] == (0, 1)  # two ninja steps: fast lane
     big = Run(tmp_path / "big")
-    big.toolchain.output["ninja"] = (0, "[1/300] Building CXX object a.obj\n[2/300] Building CXX object b.obj\n")
+    big.toolchain.output["ninja"] = (0, BIG)
     assert big.go().ok
     assert big.toolchain.during["build"] == (1, 0)
 
@@ -370,10 +424,38 @@ def test_the_fast_lane_needs_a_configured_build_and_no_configure_flag(tmp_path: 
     assert forced.toolchain.during["configure"] == (1, 0)
 
 
-def test_a_build_that_would_rerun_cmake_or_cannot_be_counted_takes_a_main_slot(tmp_path: Path) -> None:
+def test_a_build_that_cannot_be_counted_takes_a_main_slot(tmp_path: Path) -> None:
     run = Run(tmp_path)
     run.toolchain.output["ninja"] = (0, "[1/1] Re-running CMake...\n[1/3] Building CXX object a.obj\n")
     assert run.go().ok and run.toolchain.during["build"] == (1, 0)
+    failing = Run(tmp_path / "failing")
+    failing.toolchain.output["ninja"] = (1, "ninja: error: loading 'build.ninja': no such file\n")
+    assert failing.go().ok and failing.toolchain.during["build"] == (1, 0)
+
+
+def test_the_manifest_is_brought_up_to_date_before_the_dry_run_and_a_failure_of_it_means_a_main_slot(
+    tmp_path: Path,
+) -> None:
+    # CONFIGURE_DEPENDS globs make a plain `ninja -n` stop after "Re-running CMake", so the manifest is refreshed for
+    # real (cheap when nothing changed) and the dry run reads a copy of it (the toolchain's dry_run).
+    run = Run(tmp_path)
+    assert run.go().ok
+    assert [run.toolchain.kind(c) for c in run.toolchain.commands] == ["refresh", "ninja", "build"]
+    assert run.toolchain.commands[0] == ["ninja", "build.ninja"]
+    broken = Run(tmp_path / "broken")
+    broken.toolchain.output["refresh"] = (1, "CMake Error at CMakeLists.txt:3 (project):\n  boom\n")
+    assert broken.go().ok
+    assert [broken.toolchain.kind(c) for c in broken.toolchain.commands] == ["refresh", "build"]
+    assert broken.toolchain.during["build"] == (1, 0)  # no measure: a main slot, where the build reports the error
+
+
+def test_the_summary_names_how_many_steps_were_out_of_date(tmp_path: Path) -> None:
+    run = Run(tmp_path)
+    result = run.go()
+    assert "1 step out of date" in result.summary[0] and "fast lane" in result.summary[0]
+    big = Run(tmp_path / "big")
+    big.toolchain.output["ninja"] = (0, BIG)
+    assert "60 steps out of date" in big.go().summary[0]
 
 
 def test_the_fast_lane_can_be_turned_off(tmp_path: Path) -> None:
@@ -519,7 +601,7 @@ def test_the_claim_records_the_step_while_it_runs(tmp_path: Path) -> None:
 
 def test_a_full_main_lane_makes_a_big_build_wait_while_the_fast_lane_stays_open(tmp_path: Path) -> None:
     run = Run(tmp_path)
-    run.toolchain.output["ninja"] = (0, "[1/300] x\n")
+    run.toolchain.output["ninja"] = (0, BIG)
     occupy(run.main, run, "bob", 101)
     occupy(run.main, run, "carol", 102)
     freed: list[int] = []
@@ -548,7 +630,7 @@ def test_a_small_build_does_not_wait_behind_full_main_slots(tmp_path: Path) -> N
 
 def test_waiting_longer_than_the_cap_exits_75_and_leaves_the_queue(tmp_path: Path) -> None:
     run = Run(tmp_path, max_wait=45.0)
-    run.toolchain.output["ninja"] = (0, "[1/300] x\n")
+    run.toolchain.output["ninja"] = (0, BIG)
     occupy(run.main, run, "bob", 101)
     occupy(run.main, run, "carol", 102)
     result = run.go()
@@ -556,7 +638,7 @@ def test_waiting_longer_than_the_cap_exits_75_and_leaves_the_queue(tmp_path: Pat
     text = "\n".join(result.summary)
     assert "still queued, position 1" in text and "try again later" in text
     assert run.main.status().queue == []
-    assert run.toolchain.commands and all(run.toolchain.kind(c) == "ninja" for c in run.toolchain.commands)
+    assert run.toolchain.commands and all(run.toolchain.kind(c) in ("refresh", "ninja") for c in run.toolchain.commands)
     assert run.now - NOW >= 45 * 60
 
 
@@ -633,3 +715,159 @@ def test_a_program_is_found_on_the_childs_path_not_this_processs(tmp_path: Path)
     assert Path(found) == program  # Windows paths compare without case; which() may add PATHEXT's spelling
     assert rest == ["--build"]
     assert toolchain._resolve(["not-there", "-x"]) == ["not-there", "-x"]
+
+
+# -- one run per build folder ---------------------------------------------------------------------------------------
+
+
+def hold_folder(run: Run, agent: str, pid: int) -> None:
+    """Another agent's run holds the lock of the build folder."""
+    occupy(run.lock, run, agent, pid)
+
+
+def test_a_run_holds_the_lock_of_its_folder_from_configure_to_the_last_test(tmp_path: Path) -> None:
+    run = Run(tmp_path, test=True, configure=True)
+    assert run.go().ok
+    assert run.toolchain.lock_steps == {"configure": "configure", "build": "build", "test": "test"}
+    assert all(row.claim is None for row in run.lock.status().slots) and run.lock.status().queue == []
+
+
+def test_the_lock_is_released_when_the_run_fails_or_is_interrupted(tmp_path: Path) -> None:
+    failing = Run(tmp_path / "failing", test=True)
+    failing.toolchain.output["build"] = (1, MSVC_FAILURE)
+    assert failing.go().exit_code == 1
+    assert all(row.claim is None for row in failing.lock.status().slots)
+    interrupted = Run(tmp_path / "interrupted")
+    interrupted.toolchain.raises["build"] = KeyboardInterrupt()
+    with pytest.raises(KeyboardInterrupt):
+        interrupted.go()
+    assert all(row.claim is None for row in interrupted.lock.status().slots)
+    assert interrupted.lock.status().queue == []
+
+
+def test_a_second_run_in_the_same_folder_waits_for_the_first_and_then_goes(tmp_path: Path) -> None:
+    run = Run(tmp_path)
+    hold_folder(run, "bob", 101)
+    freed: list[int] = []
+
+    def finish_the_other_run() -> None:
+        if not freed:
+            freed.append(1)
+            claim = run.lock.status().slots[0].claim
+            assert claim is not None
+            run.lock.release_claim(claim)
+
+    run.on_sleep.append(finish_the_other_run)
+    result = run.go()
+    assert result.ok
+    wait = [line for line in run.lines if "build folder" in line]
+    assert wait and "bob" in wait[0] and "dev" in wait[0] and "gives up after" in wait[0]
+    assert run.toolchain.commands  # it ran, once the folder was free
+
+
+def test_a_second_run_that_waits_too_long_exits_75_and_runs_nothing(tmp_path: Path) -> None:
+    run = Run(tmp_path, max_wait=10.0)
+    hold_folder(run, "bob", 101)
+    result = run.go()
+    assert result.exit_code == build_run.EXIT_QUEUED and not result.ok
+    text = "\n".join(result.summary)
+    assert "bob" in text and "build folder" in text and "try again later" in text
+    assert run.toolchain.commands == []  # not even the dry run: the folder is not ours
+    assert run.lock.status().queue == []
+    assert all(row.claim is None for row in run.main.status().slots + run.fast.status().slots)
+
+
+def test_a_stale_lock_of_a_dead_run_is_taken_over(tmp_path: Path) -> None:
+    run = Run(tmp_path)
+    hold_folder(run, "bob", 101)
+    run.alive.discard(101)
+    assert run.go().ok
+    assert any("took over" in line for line in run.lines)
+
+
+# -- which tests, which folder -------------------------------------------------------------------------------------
+
+
+def test_a_label_filter_is_passed_to_ctest_and_to_the_count(tmp_path: Path) -> None:
+    run = Run(tmp_path, test=True, label="disc")
+    assert run.go().ok
+    listing = next(c for c in run.toolchain.commands if "-N" in c)
+    assert listing[-2:] == ["-L", "disc"]
+    assert ["ctest", "--preset", "dev", "-j", "8", "-L", "disc"] in run.toolchain.commands
+    assert run.toolchain.during["test"] == (0, 1)  # three tests: the fast lane
+
+
+def test_a_regex_and_a_label_together_select_with_both(tmp_path: Path) -> None:
+    run = Run(tmp_path, test=True, regex="level80", label="disc")
+    run.toolchain.output["ctest-list"] = (0, "Total Tests: 400\n")
+    assert run.go().ok
+    assert ["ctest", "--preset", "dev", "-j", "8", "-R", "level80", "-L", "disc"] in run.toolchain.commands
+    assert run.toolchain.during["test"] == (1, 0)
+
+
+def test_a_label_that_selects_no_tests_fails_and_says_so(tmp_path: Path) -> None:
+    run = Run(tmp_path, test=True, label="nothing")
+    run.toolchain.output["ctest-list"] = (0, "Total Tests: 0\n")
+    result = run.go()
+    assert result.exit_code == 1 and "-L nothing" in "\n".join(result.summary)
+
+
+def test_a_regex_reaches_ctest_exactly_as_it_was_given(tmp_path: Path) -> None:
+    # Test names hold spaces, '+', '.', parentheses and quotes; ctest reads the filter as a CMake regular expression, so
+    # the caller escapes with a backslash. Nothing here may rewrite it.
+    regex = r"^(L1 \+ R1 with a full rage meter starts rage|coney\.help|<A> draws 256 \+ \(c - 1\): it's here)$"
+    run = Run(tmp_path, test=True, regex=regex)
+    assert run.go().ok
+    listing = next(c for c in run.toolchain.commands if "-N" in c)
+    assert listing[-1] == regex and run.toolchain.commands[-1][-2:] == ["-R", regex]
+
+
+def test_the_process_toolchain_passes_an_argument_through_unchanged(tmp_path: Path) -> None:
+    import sys
+
+    regex = r"^(L1 \+ R1 with a full rage meter starts rage|coney\.help|it's \(c - 1\): \"quoted\")$"
+    toolchain = build_run.ProcessToolchain(tmp_path, os.environ)
+    code, output = toolchain.capture([sys.executable, "-c", "import sys; print(sys.argv[1])", regex], tmp_path)
+    assert code == 0 and output.strip() == regex
+
+
+def test_a_custom_build_folder_changes_the_commands_not_the_presets(tmp_path: Path) -> None:
+    folder = tmp_path / "wt" / "build" / "tidy"
+    run = Run(tmp_path, test=True, label="disc", build_dir=folder, configure=True)
+    assert run.go().ok
+    commands = [c for c in run.toolchain.commands if c[0] != "ninja" and "-N" not in c]
+    assert commands == [
+        ["cmake", "--preset", "dev", "-B", str(folder)],
+        ["cmake", "--build", str(folder), "-j", "8"],
+        ["ctest", "--test-dir", str(folder), "--output-on-failure", "-j", "8", "-L", "disc"],
+    ]
+    listing = next(c for c in run.toolchain.commands if "-N" in c)
+    assert listing[:4] == ["ctest", "--test-dir", str(folder), "--output-on-failure"]
+
+
+def test_the_default_build_folder_is_the_presets(tmp_path: Path) -> None:
+    options = Options(agent="a", preset="ci", checkout=tmp_path / "wt")
+    assert options.folder == tmp_path / "wt" / "build" / "ci"
+    assert Options(agent="a", preset="ci", checkout=tmp_path, build_dir=tmp_path / "x").folder == tmp_path / "x"
+
+
+def test_the_dry_run_reads_a_copy_of_the_manifest_and_removes_it(tmp_path: Path) -> None:
+    (tmp_path / "build.ninja").write_text("rule x\n", encoding="utf-8")
+    toolchain = build_run.ProcessToolchain(tmp_path, os.environ)
+    seen: list[tuple[list[str], bool]] = []
+
+    def capture(command: list[str], cwd: Path | None, timeout: float | None = None) -> tuple[int, str]:
+        copy = tmp_path / command[command.index("-f") + 1]
+        seen.append((command, copy.is_file() and copy.read_text(encoding="utf-8") == "rule x\n"))
+        return 0, "ok"
+
+    toolchain.capture = capture  # type: ignore[method-assign]
+    assert toolchain.dry_run(tmp_path) == (0, "ok")
+    command, copied = seen[0]
+    assert copied and command[:5] == ["ninja", "-n", "-d", "explain", "-f"]
+    assert command[5] != "build.ninja"  # a copy: ninja then has no rule to re-run CMake, which stops a dry run
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["build.ninja"]
+
+
+def test_a_missing_manifest_is_a_failed_dry_run(tmp_path: Path) -> None:
+    assert build_run.ProcessToolchain(tmp_path, os.environ).dry_run(tmp_path)[0] == 127

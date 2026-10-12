@@ -387,7 +387,9 @@ target_compile_definitions(coney_tests PRIVATE CONEY_TEST_SUPPORT_DIR="${CMAKE_C
 target_link_libraries(coney_tests PRIVATE coney_platform Catch2::Catch2WithMain)
 include(Catch)
 # The disc check skips (Catch2's exit code 4) unless CONEY_DISC names the player's disc; ctest reports it as skipped.
-catch_discover_tests(coney_tests)
+# A Catch2 tag is also a ctest label: a test case tagged [disc] is the label `disc`, so `ctest -L disc` runs (or lists)
+# the tests that need the disc and `-LE disc` leaves them out. Every test that opens the disc carries the tag.
+catch_discover_tests(coney_tests ADD_TAGS_AS_LABELS)
 
 # The debug C runtime's checks must fail a run on stderr, not open a dialog nobody will click (platform/error_dialogs.h).
 # Only MSVC's debug runtime has those dialogs and those checks.
