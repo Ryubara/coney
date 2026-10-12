@@ -49,6 +49,7 @@ Research:
 - [Story order and what loads each level](../research/scripting.md#run-next-mission)
 - [AI: scripted goals and actions](../research/ai-scripting.md#scripted)
 - [Skipping a scene](../research/scenes.md#skipping)
+- [Checkpoint 4: the fight's placement and who engages](../research/scripting.md#level80-fight-start)
 
 ## Run it in Coney {#run}
 

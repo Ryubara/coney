@@ -248,10 +248,9 @@ worktrees of a clone share them. The markdownlint hook runs the same rules as CI
 (`.markdownlint.yaml`, with the files it skips in `.markdownlint-cli2.yaml`) through Node.js, so Node.js 18 or newer
 must be on your `PATH` (pre-commit would otherwise download its own copy on the first run). `coney-tools check
 changed` runs it on the files you changed, and `repo audit` (`files.markdown-hook`) fails when the hook is removed from
-the configuration. No hook checks a commit title: a pull request is squash-merged, so only its title
-reaches `main`, and CI checks that against the commit title rules (`area: Verb the rest`, at most 72 characters; the
-rules are `commits.title` in [.github/conventions.yml](repo:.github/conventions.yml) and
-[CONTRIBUTING.md](repo:CONTRIBUTING.md#commits) lists them).
+the configuration. No hook checks a commit title: a pull request is squash-merged, so only its title reaches `main`,
+and CI checks that against the commit title rules (`commits.title` in
+[.github/conventions.yml](repo:.github/conventions.yml); [CONTRIBUTING.md](repo:CONTRIBUTING.md#commits) lists them).
 
 ## Documentation
 
