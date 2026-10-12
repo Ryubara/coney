@@ -215,7 +215,7 @@ def _required_checks(conventions: Conventions) -> list[str]:
 
 def _maintainer_decisions(conventions: Conventions) -> list[str]:
     """The decisions only a maintainer takes, as one bullet (AGENTS.md, docs/guides/how-we-work.md)."""
-    decisions = "; ".join(conventions.repo.owner_decisions)
+    decisions = "; ".join(conventions.repo.maintainer_decisions)
     return _bullet(
         "**Maintainer decisions** are never an agent's or a coordinator's: it stops and reports instead of acting. "
         f"They are: {decisions}."
