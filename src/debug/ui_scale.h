@@ -18,10 +18,10 @@ inline constexpr float kUiScaleMax = 4.0F;
 /// every pixel (each step makes the font's glyphs again at the new size).
 inline constexpr float kUiScaleStep = 0.125F;
 
-/// The automatic scale of the developer overlay for a display `displayHeight` units tall (ImGui's display size, which
-/// is the window's height in points: pixels divided by the OS scaling): the height over 1080, rounded to a step of
-/// kUiScaleStep and kept within kUiScaleMin and kUiScaleMax. It is the same physical size on a 1080p, a 1440p and a 4K
-/// display, and does not read the OS scaling itself, because the points already hold it. A height of 0 or less
+/// The automatic scale of the developer overlay for a display `displayHeight` units tall (ImGui's display size: the
+/// window's pixel height on Windows, its height in points on macOS): the height over 1080, rounded to a step of
+/// kUiScaleStep and kept within kUiScaleMin and kUiScaleMax, so it is the same physical size on a 1080p, a 1440p and a
+/// 4K display. A height of 0 or less
 /// (nothing measured yet) gives kUiScaleMin. Pure: no window or clock, so tests and headless runs see the same.
 [[nodiscard]] float autoUiScale(float displayHeight);
 

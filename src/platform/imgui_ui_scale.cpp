@@ -18,9 +18,9 @@ namespace {
 // The font size the overlay was designed for, in points, at scale 1.
 constexpr float kBaseFontSize = 13.0F;
 
-// `size` times `ratio`, kept within what the settings file stores (a signed 16-bit number).
-short scaledShort(short size, float ratio) {
-    return static_cast<short>(std::clamp(std::lround(static_cast<float>(size) * ratio), 0L, 32000L));
+// `value` (a size or a position) times `ratio`, kept within what the settings file stores (a signed 16-bit number).
+short scaledShort(short value, float ratio) {
+    return static_cast<short>(std::clamp(std::lround(static_cast<float>(value) * ratio), -32000L, 32000L));
 }
 
 } // namespace
@@ -79,6 +79,8 @@ void ImGuiUiScale::scaleOpenWindows(float ratio) {
         if ((window->Flags & kFixed) != 0) {
             continue;
         }
+        // Size and place: a window at a quarter of the screen stays at a quarter of it.
+        ImGui::SetWindowPos(window, ImVec2(window->Pos.x * ratio, window->Pos.y * ratio), ImGuiCond_Always);
         ImGui::SetWindowSize(window, ImVec2(window->SizeFull.x * ratio, window->SizeFull.y * ratio), ImGuiCond_Always);
     }
 }
@@ -94,6 +96,8 @@ void ImGuiUiScale::scaleSavedWindows() {
          saved = context.SettingsWindows.next_chunk(saved)) {
         saved->Size.x = scaledShort(saved->Size.x, ratio);
         saved->Size.y = scaledShort(saved->Size.y, ratio);
+        saved->Pos.x = scaledShort(saved->Pos.x, ratio);
+        saved->Pos.y = scaledShort(saved->Pos.y, ratio);
     }
     // From now on the sizes in the settings are at the applied scale.
     m_savedScale = m_applied;

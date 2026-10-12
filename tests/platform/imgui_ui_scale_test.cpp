@@ -38,9 +38,11 @@ class BareScaler {
     BareScaler(BareScaler&&) = delete;
     BareScaler& operator=(BareScaler&&) = delete;
 
-    // One whole frame with a window `name`, sized `size` the first time it opens, optionally not resizable.
-    static void frameWithWindow(const char* name, ImVec2 size, ImGuiWindowFlags flags = 0) {
+    // One whole frame with a window `name`, at `pos` and sized `size` the first time it opens, optionally not
+    // resizable.
+    static void frameWithWindow(const char* name, ImVec2 size, ImGuiWindowFlags flags = 0, ImVec2 pos = ImVec2(20.0F, 30.0F)) {
         ImGui::NewFrame();
+        ImGui::SetNextWindowPos(pos, ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize(size, ImGuiCond_FirstUseEver);
         ImGui::Begin(name, nullptr, flags);
         ImGui::TextUnformatted("text");
@@ -117,6 +119,8 @@ TEST_CASE("a change of scale resizes the open windows by the same ratio", "[debu
     REQUIRE(fixed != nullptr);
     CHECK(page->SizeFull.x == Approx(800.0F));
     CHECK(page->SizeFull.y == Approx(600.0F));
+    CHECK(page->Pos.x == Approx(40.0F)); // moved too, so the layout keeps its shape
+    CHECK(page->Pos.y == Approx(60.0F));
     CHECK(fixed->SizeFull.x == Approx(100.0F)); // a window that cannot be resized is left alone
 
     bare.scaler.update(1080.0F);
@@ -142,6 +146,8 @@ TEST_CASE("the saved choice and the scale the sizes were saved at come back from
     REQUIRE(page != nullptr);
     CHECK(page->SizeFull.x == Approx(600.0F));
     CHECK(page->SizeFull.y == Approx(400.0F));
+    CHECK(page->Pos.x == Approx(20.0F));
+    CHECK(page->Pos.y == Approx(20.0F));
 }
 
 TEST_CASE("a window saved at the scale now applied keeps its size", "[debug][platform][ui-scale]") {

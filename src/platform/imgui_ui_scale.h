@@ -16,10 +16,10 @@ namespace coney::platform {
 /// font, above that its scalable font at 13 px times the scale, so Dear ImGui's dynamic atlas draws the glyphs again
 /// at the new size and the text stays sharp.
 ///
-/// A change of scale (a window resized, moved to another display, or a new override) also resizes the open windows by
-/// the same ratio, so their contents still fit. The scale at which the window sizes were last saved is kept in the
-/// settings file (`[ConeyUi][Scale]`), with the Display page's choice, so windows saved at one scale open at the
-/// right size at another.
+/// A change of scale (a window resized, moved to another display, or a new override) also resizes and moves the open
+/// windows by the same ratio, so their contents still fit and the layout keeps its shape. The scale at which the windows
+/// were last saved is kept in the settings file (`[ConeyUi][Scale]`), with the Display page's choice, so windows saved
+/// at one scale open at the right size and place at another.
 ///
 /// Needs a current ImGui context; does no drawing, so tests run it on a bare context.
 class ImGuiUiScale {
@@ -33,9 +33,9 @@ class ImGuiUiScale {
     /// frame; the scaler must outlive the context.
     void setup();
 
-    /// Sets the style and the font for a display `displayHeight` tall (ImGui's DisplaySize.y, in points), when the
-    /// scale it gives differs from the one applied; resizes the open windows by the ratio. Call between frames, before
-    /// ImGui::NewFrame(). Returns whether the scale changed.
+    /// Sets the style and the font for a display `displayHeight` tall (ImGui's DisplaySize.y), when the
+    /// scale it gives differs from the one applied; resizes and moves the open windows by the ratio. Call between
+    /// frames, before ImGui::NewFrame(). Returns whether the scale changed.
     bool update(float displayHeight);
 
     /// The scale applied now; 1 before the first update().
@@ -50,9 +50,9 @@ class ImGuiUiScale {
 
     // Sets the style and the default font for `scale`.
     void applyStyle(float scale);
-    // Resizes the windows saved in the settings from the scale they were saved at to the one applied.
+    // Resizes and moves the windows saved in the settings from the scale they were saved at to the one applied.
     void scaleSavedWindows();
-    // Resizes the open windows by `ratio`.
+    // Resizes and moves the open windows by `ratio`.
     static void scaleOpenWindows(float ratio);
 
     debug::DisplayOptions& m_display;
