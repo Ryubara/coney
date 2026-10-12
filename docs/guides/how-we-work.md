@@ -204,6 +204,8 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
   next from the state file instead of asking whether to start. It stops only when a maintainer says so.
 - **Escalate only maintainer decisions**, the list in [AGENTS.md](repo:AGENTS.md) (`repo.owner_decisions` in
   [.github/conventions.yml](repo:.github/conventions.yml)); everything else the coordinator decides itself.
+- **Tidy after every merge round and once a week.** Run the `/repo-hygiene` skill: it audits the issues, pull requests,
+  labels and workspace and fixes each finding by its class ([Merging safely](#merging)).
 - **Keep every gap staffed.** When a track finishes, the next open gap gets a track at once: unfinished fixes,
   subsystems that differ from the original, missions still to build (several at a time, one per track). The
   priorities are on the [roadmap](../roadmap.md#priorities).
@@ -222,9 +224,10 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
 
 ## Merging safely {#merging}
 
-- **After a merge, fix the issues that cite the pull request.** Search them (`gh issue list --state open --search "#N"`),
-  change "open" to "merged" where the text names the pull request, tick the checklist items it finished, and close or
-  relabel an issue it fixed ([Writing an issue a newcomer can read](issues.md#writing)).
+- **After a merge round, run `/repo-hygiene`.** The skill runs the audit and fixes what it finds by the finding's fix
+  class, including the issues that cite a pull request that merged (change "open" to "merged", tick what it finished,
+  close or relabel an issue it fixed: [Writing an issue a newcomer can read](issues.md#writing)). It stops at the
+  maintainer decisions ([The /repo-hygiene skill](repo-conventions.md#hygiene-skill)).
 - **Merge only finished work.** A pull request is merged as it stands at its tip, and the squash drops the commits
   inside the branch, so a "WIP" commit in the middle does no harm. A branch whose tip is a paused, half-finished
   state is never merged: finish it, or cut the finished part into a new branch.
