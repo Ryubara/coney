@@ -11,6 +11,8 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include "graphics/font.h"
+#include "gui/text_layout.h"
 #include "hud/hud.h"
 #include "support/font_fixtures.h"
 #include "support/hud_fixtures.h"
@@ -143,7 +145,7 @@ TEST_CASE("HUDSetObjective sets the checklist and queues the header and text at 
     CHECK(coney::test::got(hud.checklist().slots[0]).text == "Reach the park");
     REQUIRE(hud.scrollIn().messages().size() == 1);
     const coney::hud::ScrollInMessage& message = hud.scrollIn().messages().front();
-    CHECK(message.text == "<SIZE 0.8><YOBJ></SIZE><C4>H229<CR>Reach the park");
+    CHECK(message.text == "<SIZE 0.8><MONEYFONT><YOBJ></MONEYFONT></SIZE><C4>H229<CR>Reach the park");
     CHECK(message.place == coney::hud::kObjectiveMessagePlace);
     step(hud, 0);
     CHECK(hud.scrollIn().showing());
@@ -167,6 +169,55 @@ TEST_CASE("HUDSetObjective sets the checklist and queues the header and text at 
     CHECK_FALSE(hud.checklist().slots[1].has_value());
     hud.removeGoalText();
     CHECK_FALSE(hud.checklist().slots[0].has_value());
+}
+
+TEST_CASE("the objective header's first glyph is the icon rectangle, not the letter", "[hud]") {
+    // Issue #235: the header drew "ANew Objective", the icon character as a plain letter. The icon tags are rectangles
+    // of the money font (28 for <YOBJ>, 22 for <BOBJ>, docs/research/gui.md#moneyfont), so the header wraps the tag in
+    // <MONEYFONT>; the heading after it is ordinary text.
+    const coney::graphics::Font font = coney::test::testFont(262);
+    const coney::gui::FontLookup fonts = [&font](int) -> const coney::graphics::Font* { return &font; };
+    Hud hud = makeHud(nullptr);
+    hud.setObjective(0, "Go", 0, false, 8000);
+    hud.setObjective(1, "Find Ash", 0, false, 8000);
+    REQUIRE(hud.scrollIn().messages().size() == 2);
+    struct Case {
+        std::size_t message;
+        int rectangle;
+        std::uint8_t letter;
+    };
+    for (const Case c : {Case{0, 28, 'A'}, Case{1, 22, ';'}}) {
+        const std::string& text = hud.scrollIn().messages().at(c.message).text;
+        const coney::gui::TextLayout layout = coney::gui::layoutText(text, coney::gui::TextStyle{}, fonts);
+        INFO(text);
+        REQUIRE(layout.sprites.size() > 2);
+        CHECK(layout.sprites[0].sprite.uv == font.sheet().page.rect(c.rectangle));
+        CHECK(layout.sprites[0].sprite.uv != font.glyph(c.letter));
+        // The heading ("H229": the test strings name themselves) is drawn as letters again.
+        CHECK(layout.sprites[1].sprite.uv == font.glyph('H'));
+        CHECK(layout.skippedTags == 0);
+    }
+}
+
+TEST_CASE("completing an objective (mode 2) queues the icon header, then the text", "[hud]") {
+    // Issue #238. hud.md: "two scroll-in messages, the header with the HUD string 0xe5/0xe6 and then the text". The
+    // header is the same icon header as mode 0's (so its icon is the rectangle, #235), alone; the text follows as a
+    // plain message. Which string reads "complete" is an open question (hud.md), so only the order, the
+    // icon and the pairing of slot and string are pinned.
+    KeepingAudio audio;
+    Hud hud = makeHud(&audio);
+    hud.setObjective(0, "Go", 2, false, 4000);
+    hud.setObjective(1, "Find Ash", 2, false, 4000);
+    REQUIRE(hud.scrollIn().messages().size() == 4);
+    const auto& messages = hud.scrollIn().messages();
+    CHECK(messages[0].text == "<SIZE 0.8><MONEYFONT><YOBJ></MONEYFONT></SIZE><C4>H229");
+    CHECK(messages[1].text == "Go");
+    CHECK(messages[2].text == "<MONEYFONT><BOBJ></MONEYFONT><C6>H230");
+    CHECK(messages[3].text == "Find Ash");
+    CHECK(messages[0].place == coney::hud::kObjectiveMessagePlace);
+    CHECK(messages[1].place == coney::hud::kObjectiveMessagePlace);
+    CHECK(messages[0].ms == 4000);
+    CHECK(messages[1].ms == 4000);
 }
 
 TEST_CASE("the first slot-1 objective with game hints on queues tutorial hint 0x15 once", "[hud]") {

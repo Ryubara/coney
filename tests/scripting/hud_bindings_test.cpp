@@ -114,7 +114,8 @@ TEST_CASE("the objective header takes the HUD string and the CfgHUDColor recordi
     harness.call("CfgHUDColor", {Value(4.0), Value("<COLOR ffcc00ff>")});
     harness.call("HUDSetObjective", {Value(0.0), Value("Go"), Value(0.0)});
     REQUIRE(hud.scrollIn().messages().size() == 1);
-    CHECK(hud.scrollIn().messages().front().text == "<SIZE 0.8><YOBJ></SIZE><COLOR ffcc00ff>OBJECTIVE:<CR>Go");
+    CHECK(hud.scrollIn().messages().front().text ==
+          "<SIZE 0.8><MONEYFONT><YOBJ></MONEYFONT></SIZE><COLOR ffcc00ff>OBJECTIVE:<CR>Go");
 }
 
 TEST_CASE("the tutorial bindings queue, check, flush and keep the callback", "[scripting][hud]") {

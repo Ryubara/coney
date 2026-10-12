@@ -519,9 +519,12 @@ with command icons, `HUDShowWarCommand`). Confirmed (code) for the structure; th
   `<SIZE 0.8>`, `<BOBJ>` for slot 1, the HUD colour slot 4 or 6 of `CfgHUDColor`, then the HUD string `0xe5` or `0xe6`)
   followed by the text, at **(0.025, 0.88)**, size 0.05, for **`ms`** milliseconds (default 8,000), with the
   interface sound cue `0x11`. A text starting with `<AUTOINDENT` builds the header another way (`0x001dab30`).
+  The icon is the money font's rectangle (`<YOBJ>` 28, `<BOBJ>` 22, [MONEYFONT](gui.md#moneyfont)), not the letter `A`
+  or `;`; how the string is assembled is an [open question](#open-questions) and Coney's header is a stand-in.
 - **Mode 0, slot 1,** while the game's tutorial hints are on (`W_GameState + 0x56e2`) and not in an Armies of the
   Night level: the first time only (game-state flag `0x40000`), hint `0x15` is queued in the hint box.
-- **Mode 2:** two scroll-in messages, the header with the HUD string `0xe5`/`0xe6` and then the text; for slot 1 also
+- **Mode 2:** two scroll-in messages, the header with the HUD string `0xe5`/`0xe6` (which string, and whether it is the
+  same as mode 0's, is an [open question](#open-questions)) and then the text; for slot 1 also
   `0x001b3cb0(hud, 2)` per player (not traced).
 
 **Scroll-in messages** (`ScrollInHUD.cpp`, HUD `+0x8dd0`): a **first-in, first-out** queue with no priorities
@@ -2910,3 +2913,14 @@ stand-in**: the chase HUD is not built or drawn (no level script creates it), so
 - The scripted bars ([above](#scripted-bars)): which sheet and rectangles kind 0's sprite word `0x020a0000`
   names, kind 3's bar size, and the depths of the chase gauge's three sprites (Coney draws kind 0 with the generic
   meter, kind 3 at kind 1's size and the gauge in one batch).
+- **The objective header's string** ([Objectives](#objectives-hudsetobjective)): how `HUD_SetObjective` (`0x001dad88`)
+  assembles it. The icon tags draw as their rectangles only inside `<MONEYFONT>` ([MONEYFONT](gui.md#moneyfont)), so the
+  header must draw them there; whether the code puts `<MONEYFONT>` around the icon alone, where `<SIZE 0.8>` and
+  `</SIZE>` sit, the gap between the icon and the heading (does string `0xe5`/`0xe6` start with a space, or is it the
+  icon rectangle's width?) and whether slot 1's icon is also at 0.8 are not traced. Coney builds
+  `<SIZE 0.8><MONEYFONT><YOBJ></MONEYFONT></SIZE>` / `<MONEYFONT><BOBJ></MONEYFONT>` (a marked stand-in, issue #235).
+- **Mode 2's header string** ([Objectives](#objectives-hudsetobjective), issue #238): whether the completion header
+  uses the same HUD strings `0xe5`/`0xe6` as mode 0's "new objective" header or other ones (for example a "complete"
+  heading), which of the two is picked by the slot, whether it takes the same colour slot (4 / 6) and size, and whether
+  the interface cue `0x11` plays on it. Coney queues mode 0's own header, then the text, both for `ms`; the owner sees
+  the header read as a new objective, so this is probably wrong.
