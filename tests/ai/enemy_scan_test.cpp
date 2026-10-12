@@ -48,6 +48,9 @@ TEST_CASE("a guard lists an enemy in his cone and sight, and only behind him wit
     makeSides(scene, {&guard});
     scene.run(1);
     CHECK(scanSees(guard, scene.player()));
+    // His own update's scan has listed him already; forgotten, a scan lists him again.
+    CHECK(lists(guard, scene.player()));
+    guard.forget(scene.player());
     CHECK(scanEnemies(scene.brains.gangs(), guard) == 1);
     CHECK(lists(guard, scene.player()));
     CHECK(scanEnemies(scene.brains.gangs(), guard) == 0); // listed already

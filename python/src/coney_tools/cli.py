@@ -525,6 +525,13 @@ def _add_pcsx2_commands(groups: Any) -> None:
     record.add_argument("--attach", action="store_true", help="record a PCSX2 already running a patched state")
     record.add_argument("--keep-open", action="store_true", help="leave PCSX2 running afterwards")
     record.add_argument("--agent", help="your id; runs under your claim (made, and released at the end, if none)")
+    record.add_argument(
+        "--let",
+        action="append",
+        default=[],
+        metavar="NAME=EXPR",
+        help="give or replace a name of the scenario's let (a random stream's offset per match); repeatable",
+    )
     _add_claim_commands(commands)
     _add_pcsx2_flags(record)
 
@@ -676,7 +683,9 @@ def _run_pcsx2(args: argparse.Namespace) -> int:
     if args.command == "screenshot":
         return pcsx2_claims_cli.run_screenshot(args.copy, args.out)
     flags = (args.pcsx2_dir, args.iso, args.scratch)
-    return pcsx2_cli.run_record(args.scenario, args.out, args.state, args.attach, args.keep_open, flags, args.agent)
+    return pcsx2_cli.run_record(
+        args.scenario, args.out, args.state, args.attach, args.keep_open, flags, args.agent, args.let
+    )
 
 
 def _run(args: argparse.Namespace) -> int:

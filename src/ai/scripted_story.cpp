@@ -25,6 +25,8 @@
 #include "ai/tactic_attack.h"
 #include "ai/track_human_goal.h"
 #include "combat/meters.h"
+#include "human/combatant.h"
+#include "human/fighter.h"
 #include "human/human.h"
 #include "human/victim.h"
 #include "world_objects/volume_boxes.h"
@@ -70,6 +72,23 @@ script::StoryPoint pointOf(anim::Vec3 v) { return script::StoryPoint{v.x, v.y, v
 
 // Whether `brain` is an AI human's (no player's).
 bool isAi(const Brain& brain) { return brain.type() != BrainType::Player; }
+
+// The attack command's shared target (`WarriorCommand_Dispatch`, docs/research/ai-reimpl.md#unit-1): the AI human the
+// chief is locked onto, when not of a friendly gang; null otherwise. **Coney stand-in**: the original then falls back
+// to the AI handles in game state `+0x280` and `+0x284`, which nothing in Coney fills (what fills them is an open
+// question on the page).
+Brain* chiefsTarget(const Brain& chief) {
+    const human::Combatant* locked = chief.human().fighter().lockTarget();
+    if (locked == nullptr || chief.peers() == nullptr) {
+        return nullptr;
+    }
+    for (const std::unique_ptr<Brain>& peer : *chief.peers()) {
+        if (static_cast<const human::Combatant*>(&peer->human()) == locked) {
+            return isAi(*peer) && !Gangs::friends(chief.gang(), peer->gang()) ? peer.get() : nullptr;
+        }
+    }
+    return nullptr;
+}
 
 } // namespace
 
@@ -686,7 +705,7 @@ void ScriptedStory::setTactic(const script::TacticCall& call) {
     }
 }
 
-bool ScriptedStory::startWarriorCommand(double chief, int command, bool /*forced*/) {
+bool ScriptedStory::startWarriorCommand(double chief, int command, bool forced) {
     Brain* lead = m_scripted->brain(chief);
     if (lead == nullptr) {
         return false;
@@ -695,6 +714,13 @@ bool ScriptedStory::startWarriorCommand(double chief, int command, bool /*forced
     Gang* crew = lead->gang();
     if (crew == nullptr) {
         return true;
+    }
+    // Every command first clears the crew's shared target; the menu's attack sets it from the chief.
+    crew->setSharedTarget(nullptr);
+    if (command == kCrewAttack && !forced) {
+        if (Brain* target = chiefsTarget(*lead); target != nullptr) {
+            crew->setSharedTarget(target);
+        }
     }
     // Follow: the follow tactic, which gives the members their goals on its first process.
     if (command == kCommandFollow) {

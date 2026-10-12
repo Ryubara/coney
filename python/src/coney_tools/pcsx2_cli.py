@@ -25,7 +25,7 @@ from coney_tools.hooks import Hook, HookError
 from coney_tools.pcsx2_state import Patch, StateError
 from coney_tools.pine import PineClient, PineError, Read
 from coney_tools.recorder import Recorder, RecordError
-from coney_tools.scenario import PATCHES_DIR, Scenario, ScenarioError, load_scenario
+from coney_tools.scenario import PATCHES_DIR, Scenario, ScenarioError, load_scenario, with_let
 from coney_tools.wad import refuse_inside_repo
 
 #: Seconds to wait for PCSX2 to boot, load the state and run the game.
@@ -86,6 +86,28 @@ def pine_port(pcsx2_dir: Path) -> int:
         ini = pcsx2_dir / "inis" / "PCSX2.ini"
         raise ConfigError(f"{ini}: PINE is off; set EnablePINE = true under [EmuCore] (and PINESlot) first")
     return port
+
+
+def set_ini_value(text: str, section: str, key: str, value: str) -> str:
+    """`text`, an ini file, with `key = value` in `[section]`: the line replaced where it is, else added after the
+    section's last setting (a new section at the end when there is none)."""
+    lines = text.splitlines()
+    header = f"[{section}]"
+    start = next((i for i, line in enumerate(lines) if line.strip() == header), None)
+    if start is None:
+        return text.rstrip("\n") + f"\n\n{header}\n{key} = {value}\n"
+    end = next((i for i in range(start + 1, len(lines)) if lines[i].lstrip().startswith("[")), len(lines))
+    for i in range(start + 1, end):
+        if lines[i].split("=", 1)[0].strip() == key:
+            lines[i] = f"{key} = {value}"
+            break
+    else:
+        # After the section's last setting, before the blank lines that end it.
+        at = end
+        while at > start + 1 and not lines[at - 1].strip():
+            at -= 1
+        lines.insert(at, f"{key} = {value}")
+    return "\n".join(lines) + "\n"
 
 
 def disc_link(iso: Path, scratch: Path) -> Path:
@@ -170,10 +192,16 @@ class Emulator:
     warns about new files in its sstates/ folder."""
 
     def __init__(
-        self, paths: Paths, state: Path | None, patches: list[Patch], on_start: Callable[[int], None] | None = None
+        self,
+        paths: Paths,
+        state: Path | None,
+        patches: list[Patch],
+        on_start: Callable[[int], None] | None = None,
+        speed: float = 1.0,
     ) -> None:
         """Start PCSX2 on `state` and wait until its game runs (no state: boot the disc and wait for PINE); `on_start`
-        gets the process id as soon as it exists (the claim records it). Raises ConfigError when PCSX2 already runs
+        gets the process id as soon as it exists (the claim records it). `speed` below 1 runs the emulation slower
+        (the copy's `[Framerate]` `NominalScalar`, put back by close()). Raises ConfigError when PCSX2 already runs
         (one PINE client at a time, and a run needs a fresh start for its patches) or PineError when it never
         answers."""
         self.paths = paths
@@ -181,6 +209,13 @@ class Emulator:
         if _port_open(self.port):
             raise ConfigError(f"something already serves PINE on port {self.port}; close PCSX2 first (or --attach)")
         self.before = _slot_states(paths.pcsx2_dir)
+        self.ini = paths.pcsx2_dir / "inis" / "PCSX2.ini"
+        self.ini_text: str | None = None
+        if speed != 1.0:
+            # The copy is ours under the claim; its ini is put back as it was when PCSX2 closes.
+            self.ini_text = self.ini.read_text(encoding="utf-8")
+            scaled = set_ini_value(self.ini_text, "Framerate", "NominalScalar", f"{speed:g}")
+            self.ini.write_text(scaled, encoding="utf-8")
         disc = disc_link(paths.iso, paths.scratch)
         load = ["-statefile", str(state)] if state is not None else []
         command = [str(_executable(paths.pcsx2_dir)), "-fastboot", *load, "--", str(disc)]
@@ -210,6 +245,9 @@ class Emulator:
             self.guard.stop()
         if pcsx2_proc.is_pcsx2(self.pid):  # a pid of a PCSX2 that already ended may belong to something else now
             pcsx2_proc.terminate(self.pid)
+        if self.ini_text is not None:
+            self.ini.write_text(self.ini_text, encoding="utf-8")
+            self.ini_text = None
         for path in sorted(_slot_states(self.paths.pcsx2_dir) - self.before):
             print(f"warning: {path} appeared while PCSX2 ran; move it to your scratch folder", file=sys.stderr)
 
@@ -320,15 +358,16 @@ def run_record(
     keep_open: bool,
     flags: tuple[Path | None, Path | None, Path | None],
     agent: str | None = None,
+    lets: list[str] | None = None,
 ) -> int:
     """`pcsx2 record`: play a scenario on the original and write its trace, under `agent`'s claim: the one it holds
     (kept for it afterwards), else one made here and released at the end, also on an error or Ctrl-C (unless
-    `keep_open`)."""
+    `keep_open`). `lets` (`NAME=EXPRESSION`) give or replace names of the scenario's `let`."""
     refuse_inside_repo(out)
     registry = pcsx2_claims.default_registry()
     claim, created = registry.claim_for_run(agent, flags[0], os.getpid())
     try:
-        return _record(scenario_path, out, state, attach, keep_open, flags, registry, claim)
+        return _record(scenario_path, out, state, attach, keep_open, flags, registry, claim, lets or [])
     finally:
         if created and not keep_open:
             registry.release(claim.agent, claim.copy)
@@ -343,10 +382,11 @@ def _record(
     flags: tuple[Path | None, Path | None, Path | None],
     registry: pcsx2_claims.Registry,
     claim: pcsx2_claims.Claim,
+    lets: list[str],
 ) -> int:
     """The recording of `run_record`, on the copy of `claim`."""
     try:
-        scenario = load_scenario(scenario_path, find_repo_root(Path.cwd()))
+        scenario = with_let(load_scenario(scenario_path, find_repo_root(Path.cwd())), lets)
     except ScenarioError as error:
         raise ConfigError(str(error)) from error
     emulator: Emulator | None = None
@@ -354,13 +394,17 @@ def _record(
     try:
         patches, hooks = _patches(list(scenario.patches))
         if attach:
+            if scenario.speed != 1.0:
+                print("warning: --attach records PCSX2 at the speed it runs; the scenario's speed is not set")
             client = PineClient(claim.port)
         else:
             paths = resolve_paths(Path(claim.path), flags[1], flags[2])
             source = _source_state(_scenario_state(scenario, state, paths.scratch), paths.pcsx2_dir)
             copy = paths.scratch / f"{scenario_path.stem}.p2s"
             _make_copy(source, copy, patches, paths.pcsx2_dir)
-            emulator = Emulator(paths, copy, patches, on_start=lambda pid: registry.record_pid(claim, pid))
+            emulator = Emulator(
+                paths, copy, patches, on_start=lambda pid: registry.record_pid(claim, pid), speed=scenario.speed
+            )
             client = emulator.client
         recording = Recorder(GameMemory(client), scenario, hooks=hooks).record()
     except (PineError, RecordError, StateError) as error:
@@ -383,9 +427,14 @@ def _record(
             print(f"{path}: {len(recording.hooks.entries[hook.name])} calls logged")
         if recording.hooks.lost:
             print(f"warning: {recording.hooks.lost} logged calls were lost (the ring overflowed between polls)")
+    if recording.missed or recording.torn:
+        # Every step to distrust, beside the trace; the line below lists only the first.
+        out.with_name(f"{out.stem}.quality.txt").write_text(recording.quality(), encoding="utf-8")
     per_poll = 1000 * recording.seconds / max(recording.polls, 1)
     print(
-        f"{out}: {len(recording.rows)} updates, {len(recording.header) - 1} columns; "
+        f"{out}: {recording.updates} updates"
+        + (f" ({len(recording.lines)} human rows, {len(recording.torn)} torn)" if recording.lines else "")
+        + f", {len(recording.header) - 1} columns; "
         f"{recording.words} reads per poll, {recording.polls} polls in {recording.seconds:.1f} s "
         f"({per_poll:.2f} ms each); missed updates: {len(recording.missed)}"
         + (f" ({', '.join(map(str, recording.missed[:20]))})" if recording.missed else "")
