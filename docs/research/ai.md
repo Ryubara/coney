@@ -1652,7 +1652,9 @@ the Warriors' think, Riot, Destroy, Steal and others). Confirmed (code).
        15 m and pickable for Spectate, and 20 m and breakable for Riot.
     5. For an AI A, no player stands within 1 m of it.
     6. With `needRay`, a clear ray from A to it (`Human_HasClearRayTo`, mask 8). Unless `allowLow`, the ray must
-       not end in result 2 (inferred: blocked low).
+       not end in result 2: the ray crossed a `GLASS` triangle (material 2, an intact pane), which the ray's
+       exclusion list lets through while still recording its material ([GetItem](#get-item) below). Confirmed
+       (code) at `0x0024df40`, `0x00350778`.
     7. With `needReach`, a navigation polygon under it (within the larger of the type's half-sizes `+0x78`,
        `+0x7c`) that A can reach (`Nav_CanReach`).
 3. With `claim`, the object is claimed for A's gang for **5000 ms**, so gang mates do not run for the same object.
@@ -1697,10 +1699,24 @@ the Warriors' think, Riot, Destroy, Steal and others). Confirmed (code).
             - When the ray result is not 2: queue a **pick-up action** (`PickUpItemAction_Init`, `0x21`) and count
               a try.
             - When the ray result is 2: step to the point (when beyond 0.4 m; gait 3, radius 0.36 m), turn to the
-              object, and press **cross** (`Brain_QueueAttack` kind 0 on himself, delay 33 ms). This is the
-              player's context pick-up press.
+              object, and queue attack kind 0 (`X1`) on himself (`Brain_QueueAttack(−1, brain, self, 0, 0x21)`),
+              **counting no try**. Result 2 means the ray from his feet + 1.7 m to the object + 0.1 m crossed an
+              intact pane: `Ray_IsClear`'s default list (30, 2, 187, 122, 107) lets those materials through, but
+              `CollisionMesh_RayTestCell` (`0x00350778`) still writes an excluded triangle's material into the result
+              while nothing solid has been hit, so the ray is clear and its result is 2 (`GLASS`). `STOREDOOR_GLASS`
+              (187) gives 187, so only material 2 makes him swing. Confirmed (code) at `0x002dce84`-`0x002dcf44`.
+              **So an AI never takes an object through an intact pane**: he swings at it instead and keeps
+              swinging until the pane breaks (its triangles are disabled, [Objects](objects.md#pane)) or the goal
+              ends. Confirmed (runtime), PCSX2 2.9.94, scenario `repo:research/traces/scenarios/steal_store.toml`
+              (level80's pharmacy under the steal order, no stick input): both Warriors' claimed objects stood behind
+              glass; each reached this branch every 1.2-1.3 s (23 times each in 60 s), no pane broke (hook
+              `glass-break`), no owned object was taken (hook `take-owned`) and no money or loot was added. Why
+              the queued kind 0 broke nothing there is not known (an [open question](crimes.md#open-questions)).
         - Without a clear ray: turn to it when more than 15° off, else count a try.
-    6. **Walk** to the point out of the fight stance: gait 3 within 3 m, else the goal's gait, radius 0.36 m.
+    6. **Walk** to the point out of the fight stance: gait 3 within 3 m, else the goal's gait (+0x28; 4, a run, for
+       WarriorVandalSteal's fetches, `0x002bee78`), radius 0.36 m. Confirmed (code) at `0x002dd018`-`0x002dd080`.
+
+The AI's pick-up press itself: [AI and the world: Picking up](ai-world.md#pick-up).
 
 #### Objects in an AI's hands {#ai-objects}
 

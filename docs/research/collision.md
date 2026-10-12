@@ -189,8 +189,13 @@ cell's list, confirmed (code):
 1. Skip it if its checked bit is set; set it (so a triangle listed in several cells is tested once per cast).
 2. Skip it if `flags & 0xfff & mask & ~0x801` is non-zero.
 3. Skip it unless it is enabled: flag bit 0, or mask bit 0, or (mask bit 11 and flag `0x800`).
-4. Skip it if its material is in `excludeMaterials` (`0x00350538`: a `u32` list ended by the value 1; a null list
-   excludes nothing).
+4. Intersect (step 5); the material test comes after it. An accepted `t` on a triangle whose material is in
+   `excludeMaterials` (`0x00350538`: a `u32` list ended by the value 1; a null list excludes nothing) does not count
+   as a hit, **but while nothing has been hit yet it still fills the result** (hit 0, `t`, the material at `+0x28`, the
+   flags and the triangle), with no nearer-than test; a later real hit overwrites it, and once a real hit is kept
+   excluded triangles are skipped. So a clear ray reports the material of a see-through triangle it crossed (the last
+   one tested): [AI: GetItem](ai.md#get-item) reads 2 (`GLASS`) as "an intact pane in the way". Confirmed (code) at
+   `0x00350778`.
 5. Intersect: `RayTriangle_TwoSided` (`0x00337a60`) when flag bit 1 is set, otherwise `RayTriangle_OneSided`
    (`0x00337920`). Both are Möller-Trumbore tests that return `t` or -1. The one-sided test rejects a determinant
    below `1e-6` (rays hitting the back are ignored); the two-sided one rejects `|det| < 1e-6`.
