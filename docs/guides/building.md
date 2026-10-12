@@ -1044,19 +1044,8 @@ rules are `commits.title` in [.github/conventions.yml](repo:.github/conventions.
 
 ## Documentation
 
-This site is built with MkDocs from `docs/`. In a virtual environment at the repository root:
-
-```sh
-py -m venv .venv
-.venv/Scripts/pip install -r requirements-docs.txt
-.venv/Scripts/python -m mkdocs build --strict
-```
-
-On Linux and macOS use `python3 -m venv .venv` and `.venv/bin/` in place of `.venv/Scripts/`.
-`mkdocs serve --dev-addr 127.0.0.1:8000` previews the site and reloads it as you edit. `--strict` turns broken links
-and pages missing from the navigation into errors, as CI does. How to write the pages is in
-[Writing these docs](writing-docs.md). The Changelog page is generated from `git log` at build time, so it needs the
-full history (no shallow clone) and is never committed.
+This site is built with MkDocs from `docs/`. The setup, the build and preview commands (`.venv/Scripts/python -m mkdocs
+build --strict` is the one CI runs) and how to write the pages are in [Writing these docs](writing-docs.md).
 
 ## What CI runs
 
