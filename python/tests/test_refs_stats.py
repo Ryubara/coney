@@ -87,7 +87,7 @@ def _warrior_classes() -> RefList:
 def _cells() -> dict[str, dict[object, str]]:
     """The extra columns' cells by heading, for the synthetic lists."""
     columns = refs_stats.character_columns(_characters(), _power_classes(), _warrior_classes())
-    return {column.heading: column.cells for column in columns}
+    return {column.heading: dict(column.cells) for column in columns}
 
 
 def test_a_warrior_shows_his_ai_and_player_classes_and_his_warrior_class() -> None:

@@ -197,7 +197,8 @@ starting player takes his. That is the class's damage table scaled by his Warrio
 ([Damage](../research/combat.md#damage-table)), and his power class: his Warrior's (58-66) for a Warriors type, else the
 type's own ([Power classes](../research/characters.md#power-classes)), which sets his power meter, stamina, hurt
 threshold, stun and down times; his health, the type's times his Warrior class's percentage (Cleon's 1800 × 85 % =
-1530); and his Warrior class's rage ([Stats](../research/characters.md#stats)). The Player page's *Character* line shows both classes. The AI fighters are made again where they
+1530); and his Warrior class's rage ([Stats](../research/characters.md#stats)). The Player page's *Character* line
+shows both classes. The AI fighters are made again where they
 stand, at full health, since their brains hold the player they fought; they and the targets keep the scene's
 character. In a level whose scripts hold the player (every story level, the hub included) the brains and the scripts
 hold him by his handle, so he is not made again but becomes the type in place (`human::Player::changeCharacter()`):
