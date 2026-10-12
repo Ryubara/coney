@@ -56,16 +56,9 @@ File an issue for what you leave undone ([Issues](docs/guides/issues.md#leftover
 uv run --project python coney-tools repo check-body --body description.md
 ```
 
-To build the documentation:
-
-```sh
-py -m venv .venv
-.venv/Scripts/pip install -r requirements-docs.txt
-.venv/Scripts/python -m mkdocs build --strict
-```
-
-On Linux and macOS use `python3 -m venv .venv` and `.venv/bin/` in place of `.venv/Scripts/`. The build must pass
-with `--strict`, which rejects broken links and pages missing from the navigation.
+The documentation must build with `.venv/Scripts/python -m mkdocs build --strict`, which rejects broken links and
+pages missing from the navigation. The setup, the Linux and macOS form and how to write the pages are in
+[Writing these docs](docs/guides/writing-docs.md).
 
 Game files, emulators and tool installs live outside the repository, as siblings of the checkout. The layout is
 described in [docs/guides/workspace.md](docs/guides/workspace.md).
