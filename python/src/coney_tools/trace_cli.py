@@ -1,10 +1,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The `coney-tools trace ...` commands: run a scenario on Coney, and compare two traces.
+"""The `coney-tools trace ...` commands: run a scenario on Coney, and compare traces.
 
 `trace coney` plays a scenario's input script on Coney headless (`--play-level`, `--input-script`, `--trace`), so the
 same file drives both games. `trace diff` compares the original's trace with Coney's (coney_tools.trace_diff) and
 exits with 1 when a column is outside its tolerance, so a parity check can gate a change
-(docs/guides/research-workflow.md#comparing-with-coney).
+(docs/guides/research-workflow.md#comparing-with-coney). `trace fight-report` computes the behaviour statistics of
+an all-humans trace and compares the original's runs with Coney's (coney_tools.fight_report).
 """
 
 from __future__ import annotations
@@ -13,6 +14,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from coney_tools import fight_report
 from coney_tools.config import ConfigError, find_repo_root, load_config
 from coney_tools.scenario import Scenario, ScenarioError, load_scenario
 from coney_tools.trace_diff import TraceError, compare, load_trace, report, to_start_frame
@@ -169,4 +171,67 @@ def run_coney(scenario_path: Path, out: Path, executable: Path | None, disc: str
         if script is not None:
             script.unlink()
     print(f"{out}: {scenario.updates} steps of {scenario.coney_level}")
+    return 0
+
+
+def _gang_labels(order: list[int] | None, analysis: fight_report.Analysis) -> dict[int, str]:
+    """Labels `g0`, `g1`, ... for the gangs of a run: in the order given, else by gang id."""
+    gangs = order if order else fight_report.gangs_of(analysis)
+    return {gang: f"g{rank}" for rank, gang in enumerate(gangs)}
+
+
+def _fight_runs(
+    paths: list[Path], order: list[int] | None, settings: fight_report.Settings
+) -> list[dict[str, fight_report.Metric]]:
+    """The metrics of each trace in `paths`, the gangs labelled in `order`."""
+    runs = []
+    for path in paths:
+        analysis = fight_report.analyse(fight_report.load_fight_trace(path), *settings)
+        runs.append(fight_report.scalars(analysis, _gang_labels(order, analysis)))
+    return runs
+
+
+def _name_goals() -> None:
+    """Name the goals by the repository's reference list, when the command runs inside the repository."""
+    try:
+        goals = find_repo_root(Path.cwd()) / "research" / "references" / "goal-types.yaml"
+    except ConfigError:
+        return
+    if goals.is_file():
+        fight_report.load_goal_names(goals)
+
+
+def run_fight_report(
+    traces: list[Path],
+    original: list[Path],
+    coney: list[Path],
+    options: tuple[fight_report.Settings, bool, float],
+    gangs: tuple[list[int] | None, list[int] | None],
+) -> int:
+    """`trace fight-report`: the metrics of each trace, or (with `original` and `coney`) the two sets compared.
+
+    `options` is analyse()'s settings (updates a second, the humans to leave out, the engage distance, the first
+    step), whether to print each human, and the comparison's margin. Returns 1 when a compared metric is outside the
+    original's spread, else 0.
+    """
+    settings, per_human, margin = options
+    try:
+        _name_goals()
+        if bool(original) != bool(coney):
+            raise ConfigError("--original and --coney go together: compare needs both")
+        if original:
+            if traces:
+                raise ConfigError("name either traces to report or --original and --coney to compare, not both")
+            runs_original = _fight_runs(original, gangs[0], settings)
+            runs_coney = _fight_runs(coney, gangs[1], settings)
+            comparisons = fight_report.compare_runs(runs_original, runs_coney, margin)
+            print(fight_report.report_compare(comparisons, (len(original), len(coney))))
+            return 1 if any(c.flag for c in comparisons) else 0
+        if not traces:
+            raise ConfigError("name a trace to report, or --original and --coney to compare")
+        for path in traces:
+            analysis = fight_report.analyse(fight_report.load_fight_trace(path), *settings)
+            print(fight_report.report_run(analysis, per_human, _gang_labels(gangs[0], analysis) if gangs[0] else None))
+    except fight_report.FightTraceError as error:
+        raise ConfigError(str(error)) from error
     return 0

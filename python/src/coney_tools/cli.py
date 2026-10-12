@@ -527,6 +527,14 @@ def _add_pcsx2_commands(groups: Any) -> None:
     _add_pcsx2_flags(record)
 
 
+def _gang_list(text: str) -> list[int]:
+    """`--original-gangs 5,3`: gang ids separated by commas."""
+    try:
+        return [int(part) for part in text.split(",")]
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(f"{text!r}: expected gang ids separated by commas") from error
+
+
 def _add_trace_commands(groups: Any) -> None:
     """Register `coney-tools trace ...`."""
     group = groups.add_parser("trace", help="per-update traces: run a scenario on Coney, compare with the original")
@@ -547,6 +555,22 @@ def _add_trace_commands(groups: Any) -> None:
     diff.add_argument("--shift", type=int, help="compare original step s with Coney step s + SHIFT (default 0)")
     diff.add_argument("--start-frame", action="store_true", help="compare in each player's frame at the first step")
     diff.add_argument("--context", type=int, default=3, help="rows shown each side of a divergence (default 3)")
+    fight = commands.add_parser(
+        "fight-report", help="behaviour statistics of an all-humans trace; compare the original's runs with Coney's"
+    )
+    fight.add_argument("traces", nargs="*", type=Path, help="all-humans traces (coney --trace-humans) to report")
+    fight.add_argument("--original", nargs="+", type=Path, default=[], metavar="TRACE", help="the original's runs")
+    fight.add_argument("--coney", nargs="+", type=Path, default=[], metavar="TRACE", help="Coney's runs")
+    fight.add_argument("--hz", type=int, default=30, help="updates a second in the traces (default 30)")
+    fight.add_argument("--exclude", nargs="+", type=int, default=[], metavar="HUMAN", help="leave these humans out")
+    fight.add_argument("--engage-distance", type=float, default=3.0, help="metres to the target that count as engaged")
+    fight.add_argument("--from", dest="start_from", type=int, default=1, help="skip the steps before this one")
+    fight.add_argument("--humans", action="store_true", help="also print the metrics of each human")
+    fight.add_argument(
+        "--margin", type=float, default=0.0, help="widen the original's spread by this share of its width"
+    )
+    fight.add_argument("--original-gangs", type=_gang_list, help="the original's gang ids in the order g0,g1,...")
+    fight.add_argument("--coney-gangs", type=_gang_list, help="Coney's gang ids in the order g0,g1,...")
     mission = commands.add_parser("mission", help="play a mission scenario's course on one game; write its event log")
     mission.add_argument("scenario", type=Path, help="a mission scenario TOML (research/traces/missions/)")
     mission.add_argument("--side", choices=("coney", "original"), required=True, help="the game to play it on")
@@ -697,6 +721,15 @@ def _run(args: argparse.Namespace) -> int:
     if args.group == "trace":
         if args.command == "coney":
             return trace_cli.run_coney(args.scenario, args.out, args.coney, args.disc)
+        if args.command == "fight-report":
+            report_options = (
+                (args.hz, frozenset(args.exclude), args.engage_distance, args.start_from),
+                args.humans,
+                args.margin,
+            )
+            return trace_cli.run_fight_report(
+                args.traces, args.original, args.coney, report_options, (args.original_gangs, args.coney_gangs)
+            )
         if args.command == "mission":
             if args.side == "coney":
                 return mission_cli.run_mission_coney(args.scenario, args.out, args.coney, args.disc, args.updates)

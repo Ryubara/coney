@@ -304,6 +304,10 @@ class Brain {
     [[nodiscard]] Goal* topGoal() { return m_goals.empty() ? nullptr : m_goals.back().get(); }
     [[nodiscard]] const Goal* topGoal() const { return m_goals.empty() ? nullptr : m_goals.back().get(); }
     [[nodiscard]] std::size_t goalCount() const { return m_goals.size(); }
+    /// The goal `index` places above the bottom of the stack (0 is the bottom); null past the top.
+    [[nodiscard]] const Goal* goalAt(std::size_t index) const {
+        return index < m_goals.size() ? m_goals[index].get() : nullptr;
+    }
     /// The reaction goal (`+0x3c`); null when none.
     [[nodiscard]] const Goal* reactionGoal() const { return m_reaction.get(); }
     /// Times the goals ran out (event `0xd`).
@@ -331,6 +335,8 @@ class Brain {
     [[nodiscard]] std::size_t actionCount() const { return m_actionCount; }
     /// The front action; null when the queue is empty.
     [[nodiscard]] Action* frontAction();
+    /// The same, for a reader.
+    [[nodiscard]] const Action* frontAction() const;
     /// Clears the goals, then the actions (`BrFlush`).
     /// @orig 0x00292530 Brain_FlushAll (unknown)
     void flush();
