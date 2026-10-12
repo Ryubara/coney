@@ -47,6 +47,10 @@ this where platforms allow: the implementer agent has no Ghidra or emulator tool
 
 Facts may be reproduced: data layouts, constants, file formats and interoperability algorithms.
 
+The split is per function, for people and agents alike: whoever has read a function's original code (its decompiler
+output or its disassembly) never implements that function; someone else does, from the research page. How we keep
+this is in [docs/guides/research-workflow.md](docs/guides/research-workflow.md#clean-room).
+
 ## Research limits
 
 Research documents describe; they don't reproduce. They hold addresses and short explanatory snippets only, never a
