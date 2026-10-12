@@ -12,9 +12,10 @@ from typing import ClassVar
 
 import pytest
 
-from coney_tools import build_run, pcsx2_proc
+from coney_tools import build_cli, build_run, pcsx2_proc
 from coney_tools.build_claims import FAST_LANE, MAIN_LANE, default_slots, folder_lock
 from coney_tools.cli import _build_parser, main
+from coney_tools.process_lifetime import Process
 
 PRESETS = {
     "configurePresets": [{"name": "base"}, {"name": "dev"}, {"name": "ci"}],
@@ -75,7 +76,13 @@ def fake_toolchain(monkeypatch: pytest.MonkeyPatch) -> type[FakeToolchain]:
     monkeypatch.setattr(build_run, "ProcessToolchain", FakeToolchain)
     monkeypatch.setattr(build_run, "load_msvc_environment", lambda base, run: dict(base))
     monkeypatch.setattr(build_run, "find_programs", lambda env: None)
+    TIED.clear()
+    monkeypatch.setattr(build_cli, "_tie_to_caller", TIED.append)
     return FakeToolchain
+
+
+#: The toolchains a run tied to its caller (the real tie binds the test process itself, so the tests record it).
+TIED: list[object] = []
 
 
 def test_the_flags_of_a_build_are_parsed() -> None:
@@ -416,3 +423,27 @@ def test_the_budget_reaches_the_run(
     monkeypatch.setattr(build_run, "execute", spy)
     assert main(["build", "--agent", "alice", "--budget", "20"]) == 0
     assert seen == [20.0]
+
+
+def test_a_run_ties_its_toolchain_to_the_caller_before_running(
+    checkout: Path, fake_toolchain: type[FakeToolchain]
+) -> None:
+    assert main(["build", "--agent", "a", "--preset", "dev"]) == 0
+    assert len(TIED) == 1 and isinstance(TIED[0], FakeToolchain)
+
+
+def test_when_the_caller_is_gone_the_run_stops_its_child_and_ends(capsys: pytest.CaptureFixture[str]) -> None:
+    calls: list[str] = []
+
+    class Toolchain:
+        def stop(self) -> None:
+            calls.append("stop")
+
+    build_cli._caller_gone(
+        Toolchain(),  # type: ignore[arg-type]
+        Process(20, 10, "bash", None),
+        interrupt=lambda: calls.append("interrupt"),
+        exit_later=lambda: calls.append("exit later"),
+    )
+    assert calls == ["stop", "interrupt", "exit later"]
+    assert "bash (pid 20) that started this build has ended" in capsys.readouterr().err

@@ -187,12 +187,16 @@ uv run --project python coney-tools build --agent <id> --preset dev --test [-R <
   CC=clang-19 --env CXX=clang++-19` with `--configure-only`; never a raw `cmake`.
 - **Exit code 75 means "still queued".** The command waited its cap (45 minutes), or as long as its time budget
   allowed (`--budget`, 55 minutes for the wait and the steps together, so the agent's one-hour prompt cache stays warm;
-  it estimates a step from the median of its recent runs), left the queue and said its position and the numbers. Do other work (docs, review, the next unit) and run the same command
-  again later; do not loop on it in one call.
+  it estimates a step from the median of its recent runs), left the queue and said its position and the numbers. Do
+  other work (docs, review, the next unit) and run the same command again later; do not loop on it in one call.
 - **`--priority`** goes ahead of the queue. The coordinator uses it for a build somebody is waiting on; an agent does
   not set it on its own.
-- **`build status`** shows who holds the slots and who waits. A crashed run is taken over by the next claimer;
-  `build release --agent <id>` cleans up by hand.
+- **`build status`** shows who holds the slots and who waits. A crashed run is taken over by the next claimer, which
+  also stops the `ctest` or `cmake` it left running; `build release --agent <id>` cleans up by hand.
+- **A build never outlives its agent.** Its children end with the command, and the command stops when the shell that
+  started it is gone (a restart of the agent tool, a killed background shell), so a run never needs killing by hand
+  ([Process lifetimes](coney-tools.md#build)). Never stop `ctest` or a test executable yourself: stop the
+  `coney-tools build` command, and everything under it goes with it.
 - The coordinator sets the number of slots for the machine with `build_slots` in `coney.local.toml`
   ([Local workspace](workspace.md#local-config)) and does not stagger builds by hand any more.
 

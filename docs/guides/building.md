@@ -121,7 +121,9 @@ brew install cmake ninja
 Everything goes through the presets in `CMakePresets.json`. **Agents build and test only through `coney-tools build`**,
 which holds a [build slot](coney-tools.md#build) (at most two builds run on the machine at once, so six agents do not
 starve one another), configures when the build folder has no cache, builds, and with `--test` runs the tests; it
-prints a short summary and keeps the full output in a log:
+prints a short summary and keeps the full output in a log. Nothing it starts outlives it: the compilers, `ctest` and
+the test executables end when the command ends or the shell that ran it goes away, and a crashed run's leftovers are
+stopped by the next build that takes its slot ([Process lifetimes](coney-tools.md#build)):
 
 ```sh
 uv run --project python coney-tools build --agent <your id> --preset dev --test

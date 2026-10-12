@@ -785,9 +785,28 @@ and a last `result:` line that names the failing step or the first failing tests
 no error, no failed step and no failed test in its output says so plainly, `stopped from outside (no failing step
 found)`: it was killed, timed out or interrupted by something else. Exit code `0` on success, `1` on a failed step or a
 filter that selects no tests, `2` on a precheck or usage problem, `75` when it gave up waiting for a slot or for the
-build folder, `130` on an interrupt. The children run at below-normal priority, on Windows with no console window of
-their own (so a build started from a background task opens no terminal that takes the focus), and are stopped (by
-process id) if the command is interrupted.
+build folder, `130` on an interrupt or when its caller is gone. The children run at below-normal priority, on Windows
+with no console window of their own (`CREATE_NO_WINDOW`, so a build started from a background task opens no terminal
+that takes the focus), and never outlive the command (below).
+
+**Process lifetimes.** An orphaned `ctest` goes on starting tests after its caller is gone, and killing the tests one
+by one only lets it start the next, so nothing the command starts may outlive it
+([`process_lifetime.py`](repo:python/src/coney_tools/process_lifetime.py)):
+
+* *The command is killed.* On Windows it puts itself in a job object with `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` before
+  it starts anything; `cmake`, `ninja`, the compilers, `ctest` and every `coney_tests` inherit the job, and when the
+  command ends, however it ends (Task Manager included), Windows ends them all. On Linux and macOS each child runs in
+  a session of its own, so its whole tree is one process group that the command stops on an interrupt, `SIGTERM` or
+  `SIGHUP`; on Linux the child also gets `SIGKILL` when the command dies by `SIGKILL` (`PR_SET_PDEATHSIG`).
+* *Its caller is gone.* A watch thread looks every two seconds at the command's ancestors, up to the shell that ran it
+  (through `uv` and Python's launchers; under Git Bash, as far as the native chain goes). When one has ended (the
+  agent tool restarted, the background shell was killed), the command stops its child, starts nothing more and
+  leaves as on an interrupt, releasing its claims (by force 15 seconds later if a wait does not notice); exit `130`.
+* *An older run died without these guards.* When a claim or a folder lock whose process is gone is taken over or
+  released with `build release`, the build programs that run started (`cmake`, `ctest`, `ninja`, `coney_tests`: its
+  direct children by parent pid, started after the claim was made, as Windows reuses pids) are stopped with everything
+  under them, and the run that took over says `stopped N process trees <agent>'s run left running`. A claim that is
+  stale only by age (its pid lives) is taken over without stopping anything, as the pid may be somebody else's by now.
 
 **Parallelism.** `-j` defaults to the cores divided by the slots (at least 1), so two builds share the machine
 instead of each starting a job per core; `-j N` overrides it, for both the build and `ctest`.
@@ -798,8 +817,9 @@ caller wins and none sees a half-made claim. The directory is `build-claims/` in
 checkout's `../../scratch`, whatever a worktree's `scratch_dir` says (keys `build_claims_dir` and `build_slots` in
 [`coney.local.toml`](workspace.md#local-config)). Nothing is cached: `status` is rebuilt from the folders and the live
 processes every time. A claim is released on success, on failure and on an interrupt, and is **stale** (taken over by
-the next claimer, who says so) when its process is gone, or when it is older than four hours with a process that
-lives (a hung build, or a reused pid). Takeovers go through a lock folder, as the PCSX2 claims do.
+the next claimer, who says so and stops what the dead run left running; see "Process lifetimes" above) when its process
+is gone, or when it is older than four hours with a process that lives (a hung build, or a reused pid). Takeovers go
+through a lock folder, as the PCSX2 claims do.
 
 **The queue.** With no slot free, the build waits in a first-come queue of ticket files (`queue/`). Only the head of
 the queue may claim, so waiters cannot overtake one another; `--priority` tickets go ahead of normal ones (for the
@@ -872,9 +892,9 @@ run, such as `CC=clang-19`; CMake reads `CC` and `CXX` at a folder's first confi
 
 `build status` prints both lanes: each slot's holder, worktree, preset, step and minutes, the queue in order (place,
 agent, priority, minutes waiting) and the stale entries; `--json` prints the same as one object. `build release
---agent ID` is manual cleanup: it frees the slots a crashed or stuck run of that agent left and drops its tickets. A
-slot whose process still runs, or another agent's, needs `--force`, which frees the slot but does not stop the
-process. How agents use it, and what exit `75` asks of them: [Builds and tests](agents.md#builds).
+--agent ID` is manual cleanup: it frees the slots a crashed or stuck run of that agent left, stops what a crashed run
+left running, and drops its tickets. A slot whose process still runs, or another agent's, needs `--force`, which frees
+the slot but does not stop the process. How agents use it, and what exit `75` asks of them: [Builds and tests](agents.md#builds).
 
 ## mcp {#mcp}
 

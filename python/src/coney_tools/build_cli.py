@@ -4,18 +4,21 @@
 
 from __future__ import annotations
 
+import _thread
 import argparse
 import json
 import os
 import re
 import sys
+import threading
 import time
+from collections.abc import Callable
 from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from coney_tools import build_claims, build_run
+from coney_tools import build_claims, build_run, process_lifetime
 from coney_tools.build_claims import FAST_LANE, MAIN_LANE, BuildClaimError, Slots
 from coney_tools.build_history import FILE_NAME, History
 from coney_tools.config import INT_KEYS, ConfigError, find_repo_root, load_config, local_config_file, main_checkout
@@ -24,6 +27,11 @@ from coney_tools.pcsx2_claims import AGENT_NAME
 PRESETS = ("dev", "release", "ci", "asan")
 #: How many logs of one worktree are kept; older ones are removed when a run starts.
 KEEP_LOGS = 20
+#: Seconds a run whose caller is gone gets to stop on its own before the process ends at once (its claims then go
+#: stale and are taken over; on Windows the job ends the children).
+ORPHAN_GRACE_SECONDS = 15.0
+#: The exit code of a run that ended because its caller was gone.
+EXIT_ORPHANED = 130
 #: A variable name for `--env`.
 _ENV_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
@@ -192,11 +200,13 @@ def run_build(args: argparse.Namespace) -> int:
         jobs=args.jobs,
     )
     print(f"log: {log_path}", flush=True)
+    toolchain = build_run.ProcessToolchain(root, env)
+    _tie_to_caller(toolchain)
     with log_path.open("a", encoding="utf-8", buffering=1) as log:
         context = build_run.Context(
             slots=slots,
             fast=build_claims.default_slots(FAST_LANE, root),
-            toolchain=build_run.ProcessToolchain(root, env),
+            toolchain=toolchain,
             emit=lambda line: print(line, flush=True),
             log=log,
             pid=os.getpid(),
@@ -212,6 +222,41 @@ def run_build(args: argparse.Namespace) -> int:
     for line in result.summary:
         print(line)
     return result.exit_code
+
+
+def _tie_to_caller(toolchain: build_run.ProcessToolchain) -> None:
+    """Make sure nothing this run starts outlives it, nor the run its caller (process_lifetime.py): the children end
+    when this process does (the Windows job; a process group stopped on SIGTERM and SIGHUP elsewhere), and the run
+    stops when the shell that started it is gone."""
+    process_lifetime.bind_children()
+    process_lifetime.stop_on_signals()
+    process_lifetime.watch_parent(lambda gone: _caller_gone(toolchain, gone))
+
+
+def _exit_later() -> None:
+    """End the process after ORPHAN_GRACE_SECONDS, whatever it is doing (a wait for a slot may not see the interrupt
+    at once)."""
+    timer = threading.Timer(ORPHAN_GRACE_SECONDS, os._exit, (EXIT_ORPHANED,))
+    timer.daemon = True
+    timer.start()
+
+
+def _caller_gone(
+    toolchain: build_run.ProcessToolchain,
+    gone: process_lifetime.Process,
+    interrupt: Callable[[], None] = _thread.interrupt_main,
+    exit_later: Callable[[], None] = _exit_later,
+) -> None:
+    """The shell (or launcher) that started this run has ended: stop the running command and anything after it, and
+    leave as an interrupt does (releasing the claims), or by force a little later."""
+    try:
+        print(f"{gone.name} (pid {gone.pid}) that started this build has ended: stopping the build", file=sys.stderr)
+        sys.stderr.flush()
+    except (OSError, ValueError):
+        pass  # the console may be gone with the shell
+    toolchain.stop()
+    interrupt()
+    exit_later()
 
 
 def _minutes(since: float, now: float) -> str:

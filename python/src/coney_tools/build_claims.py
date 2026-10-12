@@ -21,6 +21,10 @@ never wait behind a full build (the caller decides which lane a job belongs to; 
 Everything reported is rebuilt from those files and the live processes each time; no cached state file exists to go
 stale. A claim is stale, and may be taken over, when its holder's process is gone, or when it is older than the
 maximum age (a hung build; a pid can also be reused). A ticket is stale when its process is gone, and is dropped.
+
+When a claim whose process is gone is removed (taken over, or released by hand), what that build left running is
+stopped (`reap_claim`, process_lifetime.reap): an orphaned `ctest` would otherwise go on starting tests. A claim that
+is stale only by age is taken over but nothing is stopped, as its pid may belong to somebody else by now.
 """
 
 from __future__ import annotations
@@ -37,7 +41,7 @@ from dataclasses import asdict, dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 
-from coney_tools import claim_files, pcsx2_proc
+from coney_tools import claim_files, pcsx2_proc, process_lifetime
 from coney_tools.claim_files import OWNER_FILE, TAKEOVER_ATTEMPTS
 from coney_tools.config import ConfigError, find_repo_root, load_config, local_config_file, main_checkout
 from coney_tools.pcsx2_claims import AGENT_NAME, INCOMPLETE_SECONDS
@@ -166,7 +170,12 @@ def default_slots(lane: str = MAIN_LANE, root: Path | None = None) -> Slots:
     claims = config.paths.get("build_claims_dir") if config else None
     count = config.numbers["build_slots"] if config else DEFAULT_SLOTS
     directory = claims or (main / ".." / ".." / "scratch" / "build-claims").resolve()
-    return Slots(directory, 1 if lane == FAST_LANE else count, lane=lane)
+    return Slots(directory, 1 if lane == FAST_LANE else count, lane=lane, reap=reap_claim)
+
+
+def reap_claim(claim: BuildClaim) -> list[object]:
+    """Stop the build programs a dead claimant started after it made the claim (process_lifetime.reap)."""
+    return list(process_lifetime.reap(claim.pid, datetime.fromisoformat(claim.started).timestamp()))
 
 
 def _typical(step: str, lane: str) -> float:
@@ -194,7 +203,7 @@ def folder_lock(build_dir: Path, root: Path | None = None) -> Slots:
     safe = re.compile(r"[^A-Za-z0-9._-]+")
     name = f"{safe.sub('_', root.name)}-{safe.sub('_', resolved.name)}-{digest}"
     directory = default_slots(MAIN_LANE, root).claims_dir / "folders" / name
-    return Slots(directory, 1, what="build folder")
+    return Slots(directory, 1, what="build folder", reap=reap_claim)
 
 
 class Slots:
@@ -210,10 +219,13 @@ class Slots:
         sleep: Callable[[float], None] | None = None,
         lane: str = MAIN_LANE,
         what: str = "build slot",
+        reap: Callable[[BuildClaim], list[object]] | None = None,
     ) -> None:
         """`clock` returns epoch seconds, `alive` says whether a pid lives and `sleep` waits (default: the real ones;
         tests pass fakes).
-        `lane` picks the claim folders and the queue this object works on; `what` names what is claimed, in messages."""
+        `lane` picks the claim folders and the queue this object works on; `what` names what is claimed, in messages.
+        `reap` stops what a dead claimant left running and returns what it stopped (none by default; the machine's
+        slots, `default_slots` and `folder_lock`, use `reap_claim`)."""
         self.claims_dir = claims_dir
         self.slots = slots
         self.max_age = max_age
@@ -225,6 +237,9 @@ class Slots:
         self.what = what
         #: The stale claim the last successful claim took over, for the caller to report.
         self.last_takeover: BuildClaim | None = None
+        self.reap = reap
+        #: How many leftover process trees the last takeover stopped, for the caller to report.
+        self.last_reaped = 0
 
     # -- files
 
@@ -358,9 +373,11 @@ class Slots:
             self.lane,
         )
         took_over: BuildClaim | None = None
+        reaped = 0
         for _ in range(TAKEOVER_ATTEMPTS):
             if claim_files.publish(folder, json.dumps(asdict(claim), indent=1)):
                 self.last_takeover = took_over
+                self.last_reaped = reaped
                 return claim
             seen = self._read(number)
             if seen is None:
@@ -376,7 +393,14 @@ class Slots:
                 return None
             if outcome == "removed":
                 took_over = seen
+                reaped = self._reap(seen)
         return None
+
+    def _reap(self, claim: BuildClaim) -> int:
+        """Stop what a removed claim's build left running, if its process is gone; how many trees were stopped."""
+        if self.reap is None or claim.agent == "?" or self.alive(claim.pid):
+            return 0
+        return len(self.reap(claim))
 
     def set_step(self, claim: BuildClaim, step: str) -> BuildClaim | None:
         """Note the step the build is at in the owner file; the updated claim, or None when the claim is no longer
@@ -523,6 +547,7 @@ class Slots:
             assert row.claim is not None
             if self.release_claim(row.claim):
                 released.append(row.claim)
+                self._reap(row.claim)
         for ticket in tickets:
             self.leave(ticket)
         return released, tickets

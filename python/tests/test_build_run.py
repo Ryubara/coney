@@ -711,6 +711,17 @@ def test_the_process_toolchain_streams_lines_and_returns_the_exit_code(tmp_path:
     assert code == 3 and sorted(lines) == ["err", "out"]
 
 
+def test_a_stopped_process_toolchain_starts_nothing_more(tmp_path: Path) -> None:
+    import sys
+
+    toolchain = build_run.ProcessToolchain(tmp_path, os.environ)
+    toolchain.stop()
+    lines: list[str] = []
+    assert toolchain.run([sys.executable, "-c", "print('ran')"], lines.append) == 130
+    assert lines and "ran" not in lines
+    assert toolchain.capture([sys.executable, "-c", "print('ran')"], None)[0] == 130
+
+
 def test_the_process_toolchain_captures_and_reports_a_missing_program(tmp_path: Path) -> None:
     import sys
 
@@ -833,6 +844,15 @@ def test_a_stale_lock_of_a_dead_run_is_taken_over(tmp_path: Path) -> None:
     run.alive.discard(101)
     assert run.go().ok
     assert any("took over" in line for line in run.lines)
+
+
+def test_a_takeover_reports_the_leftover_processes_it_stopped(tmp_path: Path) -> None:
+    run = Run(tmp_path)
+    run.lock.reap = lambda claim: [object(), object()]  # the dead run left ctest and a cmake running
+    hold_folder(run, "bob", 101)
+    run.alive.discard(101)
+    assert run.go().ok
+    assert any("stopped 2 process trees bob's run left running" in line for line in run.lines)
 
 
 # -- which tests, which folder -------------------------------------------------------------------------------------

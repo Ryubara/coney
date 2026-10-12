@@ -527,3 +527,49 @@ def test_a_build_that_gets_its_slot_is_not_called_off(tmp_path: Path, world: Wor
     slots = make(tmp_path, world, slots=1)
     claim = slots.acquire("waiter", "wt", "dev", False, 11703, poll=10, report=None, abandon=lambda waited: "never")
     assert claim.agent == "waiter"
+
+
+# -- leftovers of a dead claimant ----------------------------------------------------------------------------------
+
+
+def reaping(tmp_path: Path, world: World, slots: int = 1, max_age: float = 4 * 3600.0) -> tuple[Slots, list[str]]:
+    """Slots whose reaper records the agent of each claim it is asked to clean up after (and stops one process)."""
+    reaped: list[str] = []
+
+    def reap(claim: BuildClaim) -> list[object]:
+        reaped.append(claim.agent)
+        return [object()]
+
+    made = Slots(
+        tmp_path / "claims", slots, max_age, clock=world.clock, alive=world.is_alive, sleep=world.sleep, reap=reap
+    )
+    return made, reaped
+
+
+def test_taking_over_a_dead_claim_stops_what_its_build_left_running(tmp_path: Path, world: World) -> None:
+    slots, reaped = reaping(tmp_path, world)
+    assert take(slots, world, "crashed", 611) is not None
+    world.alive.discard(611)
+    assert take(slots, world, "next", 612) is not None
+    assert reaped == ["crashed"] and slots.last_reaped == 1
+
+
+def test_a_hung_claim_whose_process_lives_is_taken_over_but_nothing_is_stopped(tmp_path: Path, world: World) -> None:
+    # A live pid past the maximum age may be a reused one: stopping "its" children could hit somebody else's work.
+    slots, reaped = reaping(tmp_path, world, max_age=60.0)
+    assert take(slots, world, "hung", 621) is not None
+    world.now += 120
+    assert take(slots, world, "next", 622) is not None
+    assert slots.last_takeover is not None and reaped == [] and slots.last_reaped == 0
+
+
+def test_releasing_a_dead_claim_by_hand_stops_its_leftovers_and_a_forced_live_one_does_not(
+    tmp_path: Path, world: World
+) -> None:
+    slots, reaped = reaping(tmp_path, world, slots=2)
+    assert take(slots, world, "alice", 1711) is not None
+    assert take(slots, world, "bob", 1712) is not None
+    world.alive.discard(1711)
+    slots.release("alice")
+    slots.release("bob", force=True)
+    assert reaped == ["alice"]

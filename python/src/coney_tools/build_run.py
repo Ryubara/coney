@@ -33,6 +33,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol, TextIO
 
+from coney_tools import process_lifetime
 from coney_tools.build_claims import (
     FAST_LANE,
     FAST_MINUTES,
@@ -347,11 +348,16 @@ class Toolchain(Protocol):
 
 class ProcessToolchain:
     """The real toolchain: subprocesses of the checkout, with the Visual Studio environment where needed, started at
-    below-normal priority so a build does not starve the keyboard."""
+    below-normal priority so a build does not starve the keyboard, and tied to this process so they end with it
+    (process_lifetime.py: the Windows job, a process group of their own elsewhere)."""
 
     def __init__(self, checkout: Path, env: Mapping[str, str]) -> None:
         self.checkout = checkout
         self.env = dict(env)
+        #: The command running now, for `stop` from another thread (the parent watch).
+        self.current: subprocess.Popen[str] | None = None
+        #: Set by `stop`: no command starts any more.
+        self.stopped = False
 
     def _resolve(self, command: list[str]) -> list[str]:
         """The command with its program found on the environment's PATH: Windows looks a bare name up on this
@@ -361,10 +367,11 @@ class ProcessToolchain:
 
     @staticmethod
     def _lower() -> dict[str, object]:
-        """The arguments that start a child at below-normal priority, with no console window of its own."""
+        """The arguments that start a child at below-normal priority, with no console window of its own; elsewhere in a
+        session of its own, so `_stop` can end its whole tree (process_lifetime.child_options)."""
         if sys.platform == "win32":
             return {"creationflags": 0x00004000 | NO_WINDOW}  # BELOW_NORMAL_PRIORITY_CLASS
-        return {"preexec_fn": lambda: os.nice(5)}
+        return process_lifetime.child_options(nice=5)
 
     def _start(self, command: list[str], cwd: Path) -> subprocess.Popen[str]:
         """Start a command with merged, line-buffered text output, at below-normal priority."""
@@ -394,15 +401,26 @@ class ProcessToolchain:
                 creationflags=NO_WINDOW,
             )
         else:
-            process.kill()
+            process_lifetime.stop_group(process.pid)
+
+    def stop(self) -> None:
+        """Stop the command running now and its children, and start no other (safe from another thread)."""
+        self.stopped = True
+        process = self.current
+        if process is not None:
+            self._stop(process)
 
     def run(self, command: list[str], on_line: Callable[[str], None]) -> int:
         """Run the command in the checkout, streaming its lines; the child tree is stopped if this is interrupted."""
+        if self.stopped:
+            on_line(f"{command[0]}: not started, the build is stopping")
+            return 130
         try:
             process = self._start(command, self.checkout)
         except OSError as error:
             on_line(f"{command[0]}: {error.strerror or error}")
             return 127
+        self.current = process
         try:
             assert process.stdout is not None
             for line in process.stdout:
@@ -411,10 +429,14 @@ class ProcessToolchain:
         except BaseException:
             self._stop(process)
             raise
+        finally:
+            self.current = None
 
     def capture(self, command: list[str], cwd: Path | None, timeout: float | None = None) -> tuple[int, str]:
         """Run a short command, with a time limit (`timeout`, else DRY_RUN_SECONDS); a timeout or a missing program is
         a failure."""
+        if self.stopped:
+            return 130, "not started, the build is stopping"
         try:
             done = subprocess.run(  # type: ignore[call-overload]
                 self._resolve(command),
@@ -664,6 +686,7 @@ class _Phase:
                 self.waited = self.slots.clock() - started
                 if self.slots.last_takeover is not None:
                     context.emit(f"took over a stale build claim of {self.slots.last_takeover.agent}")
+                    _report_reaped(context, self.slots)
                 for step, command, on_line in steps:
                     claim = self.slots.set_step(claim, step) or claim
                     self.note(step)
@@ -691,6 +714,14 @@ class _Phase:
 #: What a run says when a command ended in failure and its output names nothing that failed: a process killed from
 #: outside (a timeout, a user, another tool) prints no error.
 OUTSIDE = "stopped from outside (no failing {what} found)"
+
+
+def _report_reaped(context: Context, slots: Slots) -> None:
+    """Say how many process trees the takeover just made stopped (a dead run's orphaned ctest or cmake)."""
+    if slots.last_reaped and slots.last_takeover is not None:
+        count = slots.last_reaped
+        trees = "process tree" if count == 1 else "process trees"
+        context.emit(f"stopped {count} {trees} {slots.last_takeover.agent}'s run left running")
 
 
 def _failure_lines(scan: BuildScan) -> list[str]:
@@ -783,6 +814,7 @@ def execute(options: Options, context: Context) -> Result:
         return _gave_up(Result(), "build folder", timeout)
     if lock.last_takeover is not None:
         context.emit(f"took over a stale lock of this build folder from {lock.last_takeover.agent}")
+        _report_reaped(context, lock)
     if context.configured_now is not None:
         context.configured = context.configured_now()
     held = [claim]
