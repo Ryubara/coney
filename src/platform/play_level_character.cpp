@@ -144,6 +144,7 @@ std::expected<void, Error> PlayLevelMode::changeCharacter(int type) {
     for (const FighterMesh& drawn : m_fighterMeshes) {
         fighterModels.push_back(drawn.model);
     }
+    fighters.reserve(m_ai->humans().size());
     for (const ai::AiHuman& fighter : m_ai->humans()) {
         fighters.push_back(human::PlayerStart{.position = fighter.human->position(),
                                               .headingDegrees = degreesOf(fighter.human->heading())});
