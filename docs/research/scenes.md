@@ -59,7 +59,9 @@ the letterbox, gives the player control back and calls the script's end function
 | `0x00354d98` | `SceneTrack_Events` | the object, camera and light tracks' events | confirmed (code) |
 | `0x00355798` | `SceneTrack_Flush` | a skipped scene's remaining track events, a reduced set ([Skipping](#skipping)) | confirmed (code) |
 | `0x002e5300`, `0x002e53e0` | `GoalJoinCinematic` and its goal (type `0x29`) | binds a human to a role | confirmed (code) |
-| `0x003541a0` | `Scene_BindHuman` | writes the human into the role | confirmed (code) |
+| `0x003541a0` | `Scene_BindHuman` | resets the human (`Human_ResetForMode(h, 1)` at `0x003541d8`), then writes it into the role ([The reset at the join](#join-reset)) | confirmed (code) |
+| `0x002325e0` | `Human_ResetForMode` | the reset every join runs: pairs, grabs, holds, rage, stun, props ([The reset at the join](#join-reset)) | confirmed (code) |
+| `0x0016b8d0` | `Gang_ClearBums` | a cinematic's start destroys the bums in player 1's gang ([The player's gang](#gang)) | confirmed (code) |
 | `0x00354178`, `0x00353b78` | `Scene_IsPreloadedWrap`, `Scene_GetState` | `SceneIsPreloaded`'s worker; the state of an id's slot: 0 none, 1 loading, else the record's state (2 = ready). An AI pair goal (`0x00306ec0`) waits for 2, then plays its two leaders' animation | confirmed (code) |
 | `0x00353fc8` | `Scene_Unload` | `SceneUnload`'s worker: a ready scene's user count to 0, then frees finished slots | confirmed (code) |
 | `0x00354710` | `Scene_SetCallback` | `SceneSetCallback`'s worker (also from `InitLevel`): looks the Lua function up (script system `+0xcc`) and keeps it at `0x00512af4`; an empty name clears it | confirmed (code) |
@@ -336,8 +338,9 @@ The task's update (`0x0039cbf0`) runs every **2 ticks** (30 a second, `Task_SetU
 2. With a camera, for every player: end screen look 2 if the human has flag `0x80000`, and queue screen effect 5 (end
    the blur pulse) at once.
 3. Mark every bound human in-scene (human flag `0x800000`); a human not yet ready waits.
-4. **Cinematic only**, steps of the global scene state `0x0051489c + 0x410` (one per update): 0 → 1 (an action on
-   some of the player gang's members, `0x0016b8d0`, not traced; the player panels hidden, `0x001b2380`, and
+4. **Cinematic only**, steps of the global scene state `0x0051489c + 0x410` (one per update): 0 → 1 (the bums in
+   player 1's gang destroyed, `Gang_ClearBums` `0x0016b8d0`, [The player's gang](#gang); the player panels hidden,
+   `0x001b2380`, and
    **`HideHud`**, [HUD](hud.md#who-shows-the-hud-again)); 1 → 2: player 1's camera (the camera inside a
    wrapper of types 5-8) saves its place in the task and moves to the scene camera's start position, and **the world
    around it is preloaded** with a 10 s budget and the camera definition's radius, loading `<scene>.pak` when it
@@ -360,8 +363,9 @@ The task's update (`0x0039cbf0`) runs every **2 ticks** (30 a second, `Task_SetU
 
 ### Humans {#humans}
 
-**Binding.** `GoalJoinCinematic(human, scene, role, gait)` pushes goal `0x29` and at once writes the human into the
-role (`0x003541a0`: only if the role exists and the human is in no scene, human `+0x280` = −1); a pad-controlled
+**Binding.** `GoalJoinCinematic(human, scene, role, gait)` pushes goal `0x29` and at once resets the human and writes it
+into the role (`0x003541a0`: the reset always, [The reset at the join](#join-reset); the role only if it exists and
+the human is in no scene, human `+0x280` = −1); a pad-controlled
 human's brain is switched off (`BrDead(brain, 1)`) right away. The goal's Start switches an AI brain off too
 (remembering whether it was), pushes a move to the role's start mark at the given gait and a turn to its start
 heading; its Process finishes when the scene has. Its End restores an AI brain; its destroy turns a pad brain back on
@@ -385,7 +389,8 @@ transform re-applied as it is); `0x00227388` sends message `0x15` to the object 
 traced) and clears it; the record's state code `+0x14` and `+0x18` = 0. None of them touches the state bits of a
 grab or a mount, and none calls `Grab_Release` or `Human_BreakPair` ([Combat](combat.md#pair-break)).
 
-**A human in a grab is not taken in.** "Free" (`0x002263d8`) means: state `0x100000000` clear, none of the grab,
+**A human in a grab at the start is not taken in** (rare: the join has already let a bound human go,
+[The reset at the join](#join-reset)). "Free" (`0x002263d8`) means: state `0x100000000` clear, none of the grab,
 mount and tackle-mount bits `0xcf0` (grabbed `0x10` / `0x20`, grabbing `0x40` / `0x80`, mounting `0x400`, mounted
 `0x800`), and none of `+0x08` `0xc1e600`. Confirmed (code) at `0x0039d870`. Step 5 above waits (state 4) only for
 the `+0x08` bits; a human that is grabbing, grabbed, mounting or mounted is **skipped**: not counted, not reset, no
@@ -407,6 +412,44 @@ instead. Confirmed (code).
 saved after it began); when it pops, `Generic2` stands at (−282.55, 128.97), role 3 `warrlynx`'s end position
 (−282.56, 128.97), and the player at role 6's (−286.93, 121.58). After `l99_c1`, Rembrandt stood at role 2
 `warrrecv`'s end position (−289.03, 120.29) ([Characters](characters.md#creation)).
+
+### The reset at the join {#join-reset}
+
+**Every human bound to a role is reset first, at the join, not at the scene's start.** `Scene_BindHuman`
+(`0x003541a0`) begins with `Human_ResetForMode(human, 1)` (the call at `0x003541d8`), before it loads the scene,
+checks the role or checks that the human is in no scene, so the reset happens even when the bind is then refused.
+`Human_ResetForMode` has three callers: `Scene_BindHuman`, the `HuSetNormalMode` binding's worker
+`Human_SetNormalMode` (`0x0023a210`, which passes the script's `full` flag) and `GeneralParlayGoal_Init`
+(`0x002cb348`). `Scene_BindHuman` in turn is called by the six goals that put a human in a scene:
+`GoalJoinCinematic`'s constructor (`0x002e53e0`, the call at `0x002e5464`, run when the binding pushes the goal),
+`GoalJoinAnimation` (`0x002e5750`), `GoalJoinFixedScene` (`0x002e5188`), the join-scene goal's Start (`0x002e4eb8`)
+and the two play-animation goals' Starts (`0x002e4a10`, `0x002e4ba0`). Confirmed (code) at those addresses.
+
+So the rule is: **every scene of every kind** (cinematic, fixed scene, animation) resets each human it binds, once,
+when the script binds it; a role left to `NilHandle` resets nobody, and humans that are not bound are not reset
+(except for rage, below). For a `SuperRunScene` cinematic, `gPlayCutScene` binds every role and then calls
+`ScenePlayCinematic` in the same Lua call ([`SuperRunScene`](#superrunscene)), which is why the reset showed at
+runtime in the update of the play call (`l99_c7`, issue #225). The reset is exactly `HuSetNormalMode(human, true)`
+([binding](../references/bindings/character.md#husetnormalmode)); confirmed (code) at `0x002325e0`:
+
+1. A human with any hold flag drops its overlay task; **every player in rage** (`+0xe0` bit `0x80000`) leaves it
+   (`Humans_EndAllRage`, all players, not only this human); fire put out; a mini-game ended; a throw's aim
+   cancelled; `+0x644` = 0.
+2. When the human is in any paired or special state (mask `0x7001e193ff0`): **the pair is broken**
+   (`Human_BreakPair`, [Combat](combat.md#pair-break)), then a mini-game aborted, a special state and a workout
+   ended, a mug (`0x100` / `0x200`), a tag (`0x2000000`), a tackle hold (`0x8000000000` / `0x10000000000`), a tackle
+   (`0x800` / `0x400`) or a grab (`0xc0` / `0x30`, both sides) ended with its partner, and wounded (`0x10000`), down
+   (`0x80000`) and stunned (`0x100000`) ended.
+3. Always: a held object of kind `0x27` or `0x10` dropped, the carried props released (`Human_ReleaseCarriedProps`),
+   the fight stance left, and the slow motion a player caused turned off.
+4. Then (the join always passes 1): state bit `0x80000000` and bits `0x3c00000000` cleared (ungrounding first when
+   set), the body restored after a climb, an object it was picking (hold flag `0x4000`) unpinned and let go, its idle
+   clip rebuilt with action 0, and the motion reset (vtable `+0x14c`). Last, state bit `0x20000000` is set.
+
+What this means for [Humans](#humans): a human that is in a grab, a mount or a tackle when the script binds it is
+let go there and then, its partner too (the partner need not be bound), so it is normally free by the time the
+start's free test runs. The free test still matters for a human that gets into a pair between its join and the
+scene's start (the start can wait for loads and for the walk to the marks).
 
 ### Objects, camera and lights {#camera}
 
@@ -657,8 +700,9 @@ State 7 (all clips done, or a part ended with no roles) calls the end (`0x0039f4
 4. **The camera**: popped and made current over `BlendCam` seconds, the scene camera released and the cameras updated
    once with 0.17 s ([Camera](camera.md#scenes)).
 5. Cinematic: **letterbox out** on every player's view (type 3, 1.5 s), which **shows the HUD again** once the bars
-   are out ([HUD](hud.md#who-shows-the-hud-again)); player 1's gang command reset
-   (`0x0041c4e0(…, 0, 1, 0, 1)`) and its gang's alert cleared (`0x00166708`).
+   are out ([HUD](hud.md#who-shows-the-hud-again)); when a player was bound (or player 1's
+   brain `+0x2e4` is set), player 1's command menu unlocked, **follow** dispatched to his gang, forced and silent, and
+   one gang update run ([The player's gang](#gang)).
 6. With `freeze`, **every brain is resumed**, including any a script had suspended.
 7. State 8; **the end function is called with the scene id** (`0x003a0da8`, only while scripting runs, `0x00512b28`
    = 1). For `level99` this is `PreCashTheWorld`, which calls `ReturnFunc` and fades in over 0.5 s.
@@ -684,6 +728,52 @@ stops at once like any other. Confirmed (code). `WonderWheel_100` has no roles a
 tracks and camera track carry only events 24 and 25), so a non-forced stop ends it at once: at runtime (PCSX2 2.9.94,
 slot read over PINE) it went from state 5 to 7 with its camera track at 10.77 s of the 20 s pass.
 
+### The player's gang {#gang}
+
+What a cinematic (task `+0xed`) does to player 1's gang, the Warriors, in order. Only player 1's gang is touched
+(game state `0x0051489c + 0x228`); a fixed scene or an animation does none of the engine steps below, only the
+[reset at the join](#join-reset) of the humans it binds. Confirmed (code) at the addresses given; not checked at
+runtime.
+
+**Before the scene** (the scripts, [`SuperRunScene`](#superrunscene), read as bytecode): unless `NoClearWanted`, the
+Warriors' wanted state is cleared (`GangClearWanted(GangWarriors)`: police neutral to them again, the wanted HUD
+reset) and every responding gang dismissed (`GangClearResponders()`: non-police responders deleted, police stood
+down, [bindings](../references/bindings/gang.md#gangclearresponders)); each bound human of gang type 0 is un-arrested
+and revived. Then each bound Warrior is [reset as it joins](#join-reset): his grab, tackle or mug ends, and
+**every player's rage ends**, bound or not.
+
+**At the start** (`SceneTask_Start`, `0x0039d870`, step 0 → 1 of the global scene state, once per cinematic):
+`Gang_ClearBums` (`0x0016b8d0`) walks the 16 member slots of player 1's gang (his brain `+0x20c`, gang `+0x48`) and
+**destroys every member whose class byte `+0x11b` is 6** (`Human_Destroy(member, 0)`): the bums the player has
+taken into his crew. A class-7 bum and every other member stay. Nothing else in the start touches the gang:
+members that are not bound keep their brains and their tactic (the follow tactic, usually) through the scene unless
+the scene freezes ([Starting](#starting) step 9; `SuperRunScene`'s scenes do not), and they are neither moved nor
+hidden. The same `Gang_ClearBums` is the `GangClearBums` binding.
+
+**At the end** (`SceneTask_End`, `0x0039f450`, step 5 of [Ending](#ending)), after the camera is popped and the
+letterbox goes out, and before the end function is called:
+
+1. Each bound Warrior's join goal is popped (step 2), which gives a player his pad back and an AI Warrior his brain.
+2. Only when one of the scene's bound humans was a player (human `+0x1b0` not −1), or else player 1's brain `+0x2e4`
+   is set (a Warrior hitting back at his chief, [AI](ai.md#warrior-follow)): that player's command menu is unlocked
+   (game state `+0x42e` + player = 0), and **command 0, follow, is dispatched forced** for player 1
+   (`WarriorCommand_Dispatch(state, player 1, 0, 1, 0, 1)` at `0x0039ff5c`). A forced dispatch is silent, still
+   refused while commands are locked or follow is disabled, and otherwise clears the gang's tactic and shared target,
+   records follow as the last command and builds a new follow tactic ([AI: commands](ai.md#warrior-follow)).
+3. In the same case, one **gang update** is run at once (`0x00166708(gang, 0)` at `0x0039ff70`; Ghidra calls it
+   `Gang_CachePlayerInfo`): with 0 it skips the spawner step, refreshes the cached player position, runs the new
+   tactic once (`Tactic_Process`, which starts the follow tactic and hands out its goals) and the wanted level's
+   update ([AI: the gang update](ai.md#gang-update)). It is not an "alert clear" as this page used to say.
+4. With `freeze`, every brain is resumed (step 6).
+
+**A cinematic given up** (`SceneTask_Abort`, `0x0039ec60`, after 10 s without starting) does less: fade in at once on
+every view, then follow dispatched forced for player 1 (`0x0039f3f0`) without the menu unlock, the player test or
+the gang update, and the HUD shown again.
+
+So after any cinematic in which the player took part, the crew is back under a fresh follow command with no target,
+whatever the command was before (attack, hold, scatter): a scene resets the player's last command. The wanted state
+is cleared before the scene (by the scripts) and not restored.
+
 ### Timing {#timing}
 
 - Scene time is in 1/30 s frames; the task and its runners advance on the 30-a-second update, the roles' clips on the
@@ -691,6 +781,69 @@ slot read over PINE) it went from state 5 to 7 with its camera track at 10.77 s 
 - While the scene camera is current the game clock follows real time without the 40 ms clamp
   ([Boot](boot.md#timers)), so a slow frame is not stretched out. A fixed-step Coney plays the same frames.
 - `SceneLength` reports the first part's duration only (`0x003540b8`), not `+0x84`. Confirmed (code).
+
+### The scene test (`SCENETEST`, `PlaySceneTest`) {#scene-test}
+
+The level scripts carry the original developers' scene viewer: set the Lua global `SCENETEST` to a scene's **name**
+and load a level, and instead of its mission the level spawns that scene's cast and plays the scene on a loop. It is
+dead in the retail game: `global.lua`'s first statement sets `SCENETEST` to nil and no script or engine code sets it
+again ([Debug](debug.md#debug-only-script-paths)). Everything here is confirmed (code), read as bytecode from the
+disc's chunks (`global.lua`, the level scripts and the `*_scenetest` chunks), unless marked; names and counts only.
+
+**The switch.** A level whose scripts have a scene test reads `SCENETEST` where it would start its mission
+(`level99`'s `RunLevel`, most others' `RunMission` or `Main` call). When it is set:
+
+- **Thirteen levels load a separate chunk**: `level2`, `level5`, `level9`, `level11`, `level20`, `level31`,
+  `level34`, `level51`, `level54`, `level83`, `level84`, `level87` and `level99`. The level makes its Warriors (in
+  `level99`, `AddWarriors()`, Rembrandt as `player` and Ash as `player2`; `level31` picks one of two Warrior sets by
+  the scene name), then `preLoadFile("<level>_scenetest", <entry>)` and `AddCameras()`, and skips everything else
+  of its start: no checkpoint chapter, no start-game callback (`level99`'s `StartAmbient`), no mission. The entry
+  the chunk defines and the level names is `PlaySceneTest`, or `PlayScene` in `level9`, `level54`, `level83` and
+  `level87`, or `PLAYSceneTest` in `level20`.
+- **Ten levels define the test in the level script itself** and call it instead of their mission: `level3`,
+  `level14`, `level52`, `level55`, `level80`, `level81`, `level82`, `level86`, `level92` and `level93`. A
+  `level86_scenetest` chunk is on the disc too, with the same five names, but nothing loads it.
+- **The hub, `level95`**, has `LoadSceneTest` instead: for 19 names (the scenes played in the clubhouse, such as
+  `l34_c5_a` or `l51_c11`) it sets the hub chapter that holds the scene as the checkpoint, loads that chapter, and
+  its set-up then runs the chapter's own cutscene action whose `SceneId` is `SCENETEST` (`story.RunMissionAction`,
+  after `ScreenQueueEffect(0, 2)`), or, with `CfgSceneTables`, schedules `DoQuickMap` instead. So the hub plays the
+  scene through its real mission action, once, not looped.
+
+**The dispatcher.** `PlaySceneTest` (or its other name) compares `SCENETEST` with each scene name it knows, in turn,
+and calls that scene's play function; a value that matches none (`SCENETEST = 1`, say) plays nothing and leaves the
+level without a mission. Across the 24 levels there are **196 scene names**, every one a scene of `scene_list.cnk`
+(checked against the [scene list](../references/scenes.md)). Two are unreachable: `level20`'s list has `"l20_c6 "`
+with a trailing space, and `level5_scenetest` defines `Playl5t9010` but its dispatcher never calls it.
+
+**A play function** sets up the scene the way the story does, from the level's own spawners: it calls the same
+`Add…` functions the chapters use for the scene's cast (`level99`'s `PlayL99C1` calls `AddCombatTeacher` and
+`AddCombatWarriors`), sometimes spawns or enables objects (`ObjSpawn`, `ObjEnableZone`), builds the
+[`SuperRunScene`](#superrunscene) table with the story's `SceneId`, `Humans` and `Objects` in the story's role order
+(`level99`'s `l99_c1` table matches `IntroScene`'s), and calls `SuperRunScene`. What differs from the story:
+
+- **`Looping` = true** (1 in `level9`, `level54`, `level83` and `level87`) in all but a few: the scene plays again and
+  again ([Objects, camera and lights](#camera): a looping scene restarts its pass, the role clips looping with it).
+  `level86`'s five do not loop. A few in-level tests keep a story return function while looping: `level80`'s
+  `RunIntroScene` for `l80_c1` (its `EndIntroScene` with three call-backs, [Skipping](#skipping)) and `level93`'s
+  `RunFinalScene` for `l93_c3` (`EndFinalScene`).
+- **Otherwise the end function does nothing**: the chunks' `EndScene(id)` and `SceneFinished()` are empty, and many
+  tables set no `ReturnFunc` at all (`PreCashTheWorld` skips a missing one). Nothing follows the scene.
+- `Preloaded` is false (`level99`, `level34`, `level52`): `SuperRunScene` preloads the scene itself.
+
+**What `global.lua` does differently while `SCENETEST` is set**: `gPlayCutScene` calls `CfgSubtitles(SCENESUBTITLES)`
+before every play, and `SCENESUBTITLES` is 1, so **subtitles are forced on**. `global.lua` also sets `SCENELANGUAGE`
+= 0 and calls `CfgLanguage(SCENELANGUAGE)` when `SCENETEST` is set, but only at its own load, right after setting
+`SCENETEST` to nil, so that call never runs.
+
+**How it ends.** A looping scene with a loop point (event 29) plays to the end of its pass when skipped; one without
+ends at once ([Skipping](#skipping), [Ending](#ending)); either way the empty end function runs and the level then
+sits with no mission (inferred: no script is left to run but the level's ambient set-up).
+
+**For a debug entry** (inferred): the developers' review path is "load the level with `SCENETEST` = the scene's
+name". A faithful debug entry sets the global after `global.lua` has run and before the level's start function, as
+[Debug](debug.md#pcsx2-recipes) describes, and lets the level's own test path spawn the cast and play the scene
+with the story's bindings. It needs the level script and, for the thirteen chunk levels, `preLoadFile` of the
+`*_scenetest` chunk; the scene then loops until skipped.
 
 ### Disc check {#disc-check}
 
