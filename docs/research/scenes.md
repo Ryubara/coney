@@ -628,8 +628,9 @@ runtime.
 **Before the scene** (the scripts, [`SuperRunScene`](#superrunscene), read as bytecode): unless `NoClearWanted`, the
 Warriors' wanted state is cleared (`GangClearWanted(GangWarriors)`: police neutral to them again, the wanted HUD
 reset) and every responding gang dismissed (`GangClearResponders()`: non-police responders deleted, police stood
-down, [bindings](../references/bindings/gang.md#gangclearresponders)); each bound human of gang type 0 is un-arrested and revived. Then each bound Warrior is
-[reset as it joins](#join-reset): his grab, tackle or mug ends, and **every player's rage ends**, bound or not.
+down, [bindings](../references/bindings/gang.md#gangclearresponders)); each bound human of gang type 0 is un-arrested
+and revived. Then each bound Warrior is [reset as it joins](#join-reset): his grab, tackle or mug ends, and
+**every player's rage ends**, bound or not.
 
 **At the start** (`SceneTask_Start`, `0x0039d870`, step 0 → 1 of the global scene state, once per cinematic):
 `Gang_ClearBums` (`0x0016b8d0`) walks the 16 member slots of player 1's gang (his brain `+0x20c`, gang `+0x48`) and
@@ -715,8 +716,8 @@ with a trailing space, and `level5_scenetest` defines `Playl5t9010` but its disp
   `level86`'s five do not loop. A few in-level tests keep a story return function while looping: `level80`'s
   `RunIntroScene` for `l80_c1` (its `EndIntroScene` with three call-backs, [Skipping](#skipping)) and `level93`'s
   `RunFinalScene` for `l93_c3` (`EndFinalScene`).
-- **Otherwise the end function does nothing**: the chunks' `EndScene(id)` and `SceneFinished()` are empty, and many tables set
-  no `ReturnFunc` at all (`PreCashTheWorld` skips a missing one). Nothing follows the scene.
+- **Otherwise the end function does nothing**: the chunks' `EndScene(id)` and `SceneFinished()` are empty, and many
+  tables set no `ReturnFunc` at all (`PreCashTheWorld` skips a missing one). Nothing follows the scene.
 - `Preloaded` is false (`level99`, `level34`, `level52`): `SuperRunScene` preloads the scene itself.
 
 **What `global.lua` does differently while `SCENETEST` is set**: `gPlayCutScene` calls `CfgSubtitles(SCENESUBTITLES)`
