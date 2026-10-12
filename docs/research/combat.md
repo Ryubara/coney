@@ -2995,19 +2995,24 @@ the key and the R2 map, in this order. Confirmed (code) at `0x002843f8`:
    `Human_AddRage` also tests) and is not raging (`+0xe0` bit `0x80000`), `Rage_Enter` (`0x00284340`) runs.
 5. **The flash**, command `0x28` (d-pad right, [Commands](#commands)), needs all of: a player human (`+0x1b0` ≠ −1),
    at least one flash (item 1) in the player's inventory (`0x0041e420` on `*(0x0051489c) + 0x480`, the player index
-   at human `+0x380`), not down or dead, the state word free of `0x1c00000000` (`0x00227f90`) and `+0x08` free of
-   `0x40` (`0x00223c10`). Then by health (record `+0x144` against the maximum `+0x146`):
+   at human `+0x380`), not down or dead (`Human_IsDownOrDead`: state `0x180050000`, which is wounded `0x10000`,
+   knocked out `0x40000`, the pending-hit mark `0x80000000` and dead `0x100000000`; knocked **down**, `0x80000`, is
+   not in it), the state word free of `0x1c00000000` (`0x00227f90`: jumping, falling, a long fall) and `+0x08` free
+   of `0x40` (`0x00223c10`: climbing over). Any of these and the press does nothing: no clip, no flash spent. Then by
+   health (record `+0x144` against the maximum `+0x146`):
    - **Below the maximum.** The flash clip **665 `SPECIAL_FLASH`** (`gen_flash_use`, 40 frames) is pushed as a
      one-shot clip task on top of the stack (`0x0025ade8`: a type-5 task, `0x00106240`, holding `0x2000`) when
-     **nothing blocks a move**: the state word has none of `0x18003ff0` (`0x00227fd8`: grabbing, held, mugging,
-     tackling, throwing, blocking, `0x8000000`, `0x10000000`), none of `0xe0000` (`0x00223b48`), not the mini-game
+     **nothing blocks a move**: the state word has none of `0x18003ff0` (`0x00227fd8`: grabbed, grabbing, mugging,
+     mugged, tackling, tackled, a paired power move and its victim, `0x8000000`, `0x10000000`; blocking, `0x8000`, is
+     in none of these masks), none of `0xe0000` (`0x00223b48`: cuffed `0x20000`, knocked out `0x40000`, knocked down `0x80000`), not the mini-game
      `0x4000000` (`0x00228050`), not tagging `0x2000000` (`0x002238c0`), none of `0x7bf9e9f7ff0`; record `+0x08` has
      none of `0x2fefefff`; and the object in hand is not of `ObjectAttribs` kind (`+0x87`) 4 or 6 (`0x00224000`).
      Otherwise, if 665 is already the human's anim (`0x002266b8`), nothing more happens (its event will use the
-     flash); else the flash is **used at once** (`Flash_Use`, `0x00284280`). The code before this test that would let
-     go of a grab (`0x00258a88` when the state word has `0xc0` or `0x400`) also requires the state word to be free of
-     `0x7bf9e9f7ff0`, which holds both bits, so it never runs: in a grab the flash is used at once and the grab stays
-     (inferred from the masks; not seen at runtime).
+     flash); else the flash is **used at once** (`Flash_Use`, called at `0x00284818`): no clip, the move plays on.
+     The code before this test that would let go of a grab (`Human_BreakPair`, `0x00258a88`, when the state word has
+     `0xc0` or `0x400`) also requires the state word to be free of `0x7bf9e9f7ff0`, which holds both bits, so it never
+     runs: in a grab the flash is used at once and the grab stays. Confirmed (code) at `0x002843f8`; confirmed
+     (runtime), [The flash during a move](#flash-mid-move).
    - **At the maximum**, with upgrade (6, 8) unlocked (`0x00424130(0x006fe998, 6, 8)`: the first unlockable record of
      type 6 whose data is 8, unlocked when its bit in `0x006fe8f8` is clear, [Unlockables](player-state.md#unlockables)),
      the state word free of `0x19f9e0f3000`, `+0x08` free of `0xfc1fe7b`, not raging, the rage flag `0x2000000` set and
@@ -3020,9 +3025,12 @@ sound](sound.md#anim-sounds) (message `0x8b`) with id **70** at `+0x8` and the t
 `Human_HandleMessage` (`0x002473bc`) answers `0xc1` by the human's anim: 665 calls `Flash_Use`; 666 opens the door
 the human targets (`Door_OpenBy`); 668 played by a dealer (brain type 5 with `GoalDealer`, `0x80`, on top) finishes
 the deal (`DealerGoal_FinishPair` `0x002c7c20`, [AI](ai.md#dealer-buy)). Confirmed (code); the events read from the
-disc's clips (identical in both copies). So the flash is used 19 updates into the clip, unless the clip is cut first
+disc's clips (identical in both copies). So the flash is used partway into the clip, unless the clip is cut first
 (then nothing is spent), and the player hears the animation sound 70 and `Flash_Use`'s interface sound 23 on the same
-update.
+update. At runtime 665 plays slower than its frames say: started on update N, `Flash_Use` ran from the event on update
+N + 25 and 665 lasted **53 updates** (N to N + 52), standing still and over a block alike, where 40 frames at 30 per
+second would give 19 and 40 (both ratios about 0.75). Confirmed (runtime), `flash_idle` and `flash_block` below; what
+sets that rate is not traced (`Human_PushOverlayClip`, `0x0025ade8`, passes no rate).
 
 **Taking flash from the dealer** plays the money pair, not 665: the dealer's anim 668 bound to `money_take` and the
 buyer's 668 to `money_give` (both 1.333 s, each with a type-8 partner-place event at frame 0, about 0.97 m ahead;
@@ -3040,6 +3048,57 @@ the player (`0x001b28a0`, [HUD](hud.md)); and the player's screen effect at `0x0
 (`Human_WakeUp`), clears state `0x4000000000`, then sets health to the maximum, or on fury and rumble adds half the
 maximum (capped); it also runs `0x0021ce08`, `0x0024ca40` and clears human `+0x644`. The same heal serves
 `Human_Revive`, the uncuffing and the Armies game-over toggle.
+
+#### The flash during a move {#flash-mid-move}
+
+What d-pad right does while another move plays (issue #234). The press is **never queued**: `Commands_Match`
+(`0x00147940`) clears the per-player command `+0x20` at every update, and `Human_UpdateActions` (`0x00254e78`) hands
+command `0x28` to `Player_UseItemCommand` (`0x00255074`) on that update only, whenever `PadHandlerEx_DispatchCommand`
+(`0x001480e0`) returns 0 (the per-player `+0x1e`, set while a script holds the player, is clear); no move state is
+tested before that call. So each press has one of three outcomes, decided at once by step 5 above:
+
+| Outcome | What the player sees and hears | When |
+| --- | --- | --- |
+| **665** | the flash clip, then the heal, interface cue 23 and animation sound 70 together 25 updates in | nothing blocks a move |
+| **at once** | the heal on the same update, with interface cue 23 (`Flash_Use` always plays it, `0x002842bc`); **no clip and no sound 70** (that sound is an event of 665); the move plays on | a move blocks 665, and the player is not airborne, climbing over, down or dead |
+| **ignored** | nothing; the flash is kept | airborne (`0x1c00000000`), climbing over (held `0x40`), wounded, knocked out or dead (`0x180050000`, and step 1's `0x80040000`) |
+
+Per move, confirmed (code) by the masks at `0x002843f8` and confirmed (runtime) where a scenario is named (PCSX2
+2.9.94, `pcsx2 record` with the `scripted-pad`, `right-stick` and new `flash-use` hook on `Flash_Use`'s entry, whose
+`ra` tells the two callers apart: `0x00284820` at once, `0x002473c4` from 665's event; health held at 600 of 900 and
+3 flashes every update so each press is a fresh test; d-pad right is a digital button, the stick at 100 % is raw byte
+255):
+
+| Move | State when pressed | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Standing, walking | no move | 665 | runtime, `flash_idle` (slot 1) |
+| **Sprinting** (L2 held, stick 100 % up) | state `0x1000000`, held 0 | 665; it **stops the sprint dead** (speed 10.25 m/s → 0 and gait 0 on the next update, with L2 and the stick still held) and the run starts again after 665 | runtime, `flash_sprint` (slot 1) |
+| **Attacking**, a cross chain X1, XX2, XXX3 | state `0x5`, held `0x1` wind-up, `0x2` window, `0x4` end, `0x40000` recovery | at once, every press (11 of 11, through 11 and 13); 665 only from the stance after the chain (358) | runtime for `0x1` and `0x40000`, `flash_attack` (slot 6, a puppet 1.5 m ahead); code for `0x2` and `0x4` |
+| **Holding someone** (front grab: the connect 72, the hold 82) | state `0x45`, held `0x200` then 0 | at once, every press (21 of 21); **the grab stays** (82 and `0x45` on) | runtime, `flash_grab` (slot 6, a puppet 1.0 m ahead) |
+| **Blocking** (R1 held), its first 5 updates | state `0x8001`, held `0x80000` | at once | runtime, `flash_block` (slot 6) |
+| **Blocking**, held after that | state `0x8001`, held 0 | **665 plays over the held block** (the state stays `0x8001`), the flash used by its event | runtime, `flash_block` |
+| **Hit**: a standing reaction (272) | state `0x5`, held `0x400` | at once; the reaction plays on | runtime, `flash_hit` (slot 6, PoizoCiv as a type-2 fighter) |
+| Held by an enemy's front grab (73) | state `0x15`, held `0x10000` | at once; still held | runtime, `flash_hit` |
+| **Knocked down**: thrown (154), then stunned on the ground | state `0x180005` (stun `0x100000`, down `0x80000`), held `0x400000` | at once; the fall goes on (196) | runtime, `flash_hit` |
+| Lying down, getting up (196, 199) | state `0x80000` | at once (`0xe0000` blocks 665, `0x180050000` does not stop the press) | code |
+| Mounted by a tackler | state `0x800` | at once | code |
+| **Jumping**, in the air (434) | state `0xc00000000` | ignored (10 of 10 presses), the flash kept | runtime, `flash_jump` (slot 9, a run at 100 % and triangle) |
+| Landing (435) | state `0x2000000000`, held `0x1000000` | at once | code (the presses on landing in `flash_jump` gave no command: open) |
+| **Climbing** a fence: its first clip (440) and last (442) | held `0x80000` | at once | runtime, `flash_climb` (slot 7) |
+| Climbing over (441) | held `0x40` | ignored (5 of 5) | runtime, `flash_climb` |
+| Knocked out, wounded, dead | `0x40000`, `0x10000`, `0x100000000` | ignored (a partner revives, [Reviving](#revive)) | code |
+| 665 already playing | held `0x2000` | nothing more (one flash, at its event) | runtime, every scenario |
+
+So the "heals at once, no animation, no sound" a player sees is the original's own behaviour **mid-move** (attacking,
+in a grab, reacting to a hit, down, the block's start, a climb's first and last clips), except that the original
+still plays interface cue 23 (`vags/misc/flash`) then; only the animation sound 70 is missing. Standing, walking,
+sprinting and a held block play 665. Confirmed (code) at `0x002843f8` and `0x00284280`; runtime as listed.
+
+The level99 states (slots 1, 6, 7, 9) have the flash command turned off for pad 0: the pressed table's d-pad right
+entry (`0x005ddde8`) has mask `0xfe` where every other entry has `0xff`, so `Commands_Match` stores `0x28` in the
+pending `+0x24`, not in `+0x20`, and d-pad right does nothing there (confirmed (runtime); inferred that the level's
+script turns it off with `EnableCommand`, [bindings](../references/bindings/character.md#enablecommand)). The
+scenarios turn it on with a setup write.
 
 **`Rage_Enter`** (`0x00284340`), confirmed (code): plays the 2D sound `vags/misc/rage_mode_06` through the game
 state's handle at `+0x264` (restarted when it is still playing, `0x004194b8`); when the state word has any of
@@ -4599,9 +4658,9 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
   written full, so what else the start needs is open.
 - **Whether the flash clip sets `0x2000`** (record `+0x08`) as it starts: the task holds it ([Rage](#rage)), and Coney
   sets it, which keeps the fight stance from cutting the clip; the type-5 task's start flags at `0x0025ade8` would
-  tell, and a runtime read of `+0x08` on the update after d-pad right in the stance.
-- **The flash in a grab** at runtime: the masks say it is used at once and the grab stays ([Rage](#rage)); Coney
-  breaks the pair.
+- **The flash during a move** ([The flash during a move](#flash-mid-move)): what sets 665's rate (53 updates for
+  40 frames); why presses on landing from the slot 9 window jump gave no command; the window between 665's start and
+  its event when a hit lands (a hit in `flash_hit`'s first run took health while 665 played on).
 - **The clips' `+0x44` flags** (paired `0x1`, tackle `0x20`, grab `0x40`): which clips carry the tackle flag
   ([Strong grapple](#strong-grapple)).
 - **Killer and double damage in a hold**: whether the moves in a grab (`Grab_Strike`), the power strikes and the

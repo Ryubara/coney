@@ -1,0 +1,2 @@
+# d-pad right once, standing still: 665 starts, its event uses the flash 19 updates in. Frames are updates of 1/30 s.
+40 tap right

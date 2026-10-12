@@ -1,0 +1,31 @@
+# The flash (d-pad right) asked for while a move plays: health held at 600 of 900 and 3 flashes held every update,
+# so every tap is a fresh test (level99's states have the command off for pad 0; the setup turns it on). The
+# flash-use hook says whether Flash_Use ran at once (called from Player_UseItemCommand, ra 0x00284820) or from clip
+# 665's event (Human_HandleMessage, ra 0x002473c4); the clip column says whether 665 started.
+# Research: docs/research/combat.md#flash-mid-move.
+description = "level99 street: d-pad right while sprinting (L2 held, stick 100 % up)"
+research = "docs/research/combat.md#flash-mid-move"
+input = "flash_sprint.txt"
+updates = 140
+fields = ["player", "held"]
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick", "flash-use"]
+
+setup = [
+  { address = "rec(player) + 0x144", type = "s16", value = "600", frame = 0, until = 140 },
+  { address = "u32(0x0051489c) + 0x4d0", type = "s32", value = "3", frame = 0, until = 140 },
+  # The flash command (pressed table entry 2, d-pad right) is off for pad 0 in this state (mask 0xfe): turn it on.
+  { address = "0x005ddde8", type = "u16", value = "0xff", frame = 0, until = 0 },
+
+]
+
+[coney]
+level = "level99"
+
+# The flashes player 1 carries: Inventory_GetCount(*(0x0051489c) + 0x480, 0, 1) reads +0x24 + item 1 * 0x2c.
+[[field]]
+name = "flashes"
+address = "u32(0x0051489c) + 0x4d0"
+type = "s32"
