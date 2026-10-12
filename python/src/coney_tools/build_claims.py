@@ -428,7 +428,7 @@ class Slots:
     ) -> BuildClaim:
         """Wait in the queue until this build is at its head and a slot is free, then claim it. `report` is called
         with a Waiting (place, queue length, holders, a rough wait) when waiting starts and every `report_every`
-        seconds after. Raises SlotTimeout, carrying the place, after `timeout` seconds, or as soon as `abandon` (asked at
+        seconds after. Raises SlotTimeout, carrying the place, after `timeout` seconds or as soon as `abandon` (asked at
         every look that finds no slot, with the seconds waited so far) answers with a reason: the caller's own limit,
         such as a time budget the wait plus the build would pass. The ticket is gone however this returns or raises."""
         ticket = self.join(agent, worktree, preset, priority, pid)
