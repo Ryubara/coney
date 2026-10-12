@@ -1466,11 +1466,11 @@ built: the wreck with no store, the answering line, the fidget clips, dogs' Avoi
 ### Attack sub-tactics {#t2-sub-tactics}
 
 Short orders TacticAttack's Process starts every 7 s (`AttackTactic_StartSubTactic` `0x00307a10`,
-[Tactics](ai.md#tactic-kinds); step by step in [AI reimplementation plan](ai-reimpl.md#unit-3)): a pool of 8 records of 0x30 at `0x006eb6f0` (mask `0x006eb6e0`). Record: `+0x00` the
-gang, `+0x04` the time limit (−1 none), `+0x08` started, `+0x0c` the vtable (`+0x0c` Start, `+0x14` End, `+0x1c`
-Process). Each Process returns 1 (done) when the leader is gone, cuffed or knocked out. The leader opens with a speech
-command and a gesture (clips `0x2a3`/`0x2a4` in the fight stance, `0x2a7`/`0x2a8` out of it), and the order goes out
-when his line ends. The order names are inferred from the lines.
+[Tactics](ai.md#tactic-kinds); step by step in [AI reimplementation plan](ai-reimpl.md#unit-3)): a pool of 8 records of
+0x30 at `0x006eb6f0` (mask `0x006eb6e0`). Record: `+0x00` the gang, `+0x04` the time limit (−1 none), `+0x08` started,
+`+0x0c` the vtable (`+0x0c` Start, `+0x14` End, `+0x1c` Process). Each Process returns 1 (done) when the leader is gone,
+cuffed or knocked out. The leader opens with a speech command and a gesture (clips `0x2a3`/`0x2a4` in the fight stance,
+`0x2a7`/`0x2a8` out of it), and the order goes out when his line ends. The order names are inferred from the lines.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
