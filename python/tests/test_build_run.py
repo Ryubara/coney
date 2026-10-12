@@ -449,6 +449,18 @@ def test_the_manifest_is_brought_up_to_date_before_the_dry_run_and_a_failure_of_
     assert broken.toolchain.during["build"] == (1, 0)  # no measure: a main slot, where the build reports the error
 
 
+def test_the_measure_is_printed_before_waiting_for_the_slot(tmp_path: Path) -> None:
+    run = Run(tmp_path)
+    assert run.go().ok
+    assert run.lines == ["measured: 1 step out of date, so the fast lane"]
+    big = Run(tmp_path / "big")
+    big.toolchain.output["ninja"] = (0, BIG)
+    assert big.go().ok
+    assert big.lines == ["measured: 60 steps out of date, so the main lane"]
+    unmeasured = Run(tmp_path / "unmeasured", configure=True)
+    assert unmeasured.go().ok and unmeasured.lines == []
+
+
 def test_the_summary_names_how_many_steps_were_out_of_date(tmp_path: Path) -> None:
     run = Run(tmp_path)
     result = run.go()

@@ -673,6 +673,8 @@ def _execute(options: Options, context: Context, note: Callable[[str], None]) ->
         build_steps.append(("build", ["cmake", "--build", *target, "-j", jobs], build_line))
     note("measuring")
     lane, measured = _choose_build_lane(options, context)
+    if measured is not None:
+        context.emit(f"measured: {measured} step{'s' if measured != 1 else ''} out of date, so the {lane} lane")
     phase = _Phase(options, context, "build", lane, note)
     ran = phase.run(build_steps)
     if phase.queued is not None:
