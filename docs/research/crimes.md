@@ -432,6 +432,40 @@ second roll is 0 or 1 (2 in 101): $5-$20, rarely $25-$100. The $18 seen at runti
 in range. His pocket is empty (item 0, count 0), so the mugging pays money only. A seeded reimplementation draws, in
 this order: the object roll, the money, the bonus roll, then `Random_Int(100)` for `+0x26c`.
 
+#### Dropped when down {#down-drop}
+
+A human whose health runs out drops what he carries: `Human_OnHealthOut` (`0x002674c0`, [Defeat](combat.md#defeat))
+calls `Human_DropCarried(human, 1, 1)` (`0x00232c60`) when he is wounded or knocked out, unless he has human flag
+`0x4` (the players and the crew, [Human flags](combat.md#human-flags)). Every human goes through it, so a spawner's
+human drops his money as a scripted one does ([Starting money](#starting-money)). Confirmed (code) at `0x00232c60`; the
+order of the steps:
+
+1. No brain: nothing.
+2. **The pocket** (`+0x250`, an item): `+0x254` pickups of that item's object, at his feet 0.5 m up. Unless the
+   brain's kind (`+0x04`) or its `+0x26c` is 5, nothing more is dropped. (For brain kind 5 the pickups go round him
+   instead, 1 m out in his free sectors, [AI: neighbour sectors](ai.md#neighbour-sectors).)
+3. **Power cuffs**: a human with cuffs (`Human_GetCuffCount`) drops `dyn_powercuffs` when `Random_Int(100)` is below
+   51 and game state `+0x158` is set or unlock (6, 14) is; then nothing else.
+4. **The carried object** (`+0x257`, not `none`): an AI human drops it unless `+0x278` is -1, and carries `none`
+   from then on. A player keeps it when `rand(0, 100)` is below 51; otherwise he drops it and loses money: the
+   object type's `+0x5a` × game state `+0x380`.
+5. **Money** (the carried object is `none`; a human of brain kind 1 whose class has `+0xb4` = 0 drops `dyn_key`
+   instead once unlock (6, 13) is set):
+    - brain kind 4: his money × his category's `+0x0c` factor (0.1-0.25 in the table above), at least 1 when he has
+      any;
+    - any other AI human: **all** his money (`+0x370`);
+    - a player: `rand(min, max)` of his category, at most what his inventory holds, taken from it.
+
+   One dollar or more makes a `dyn_money` pickup holding the amount (`+0x124`) at his feet, 0.5 m up, with the
+   respawn timer of item 2, and his money becomes 0.
+
+So `level87` chapter 3's early Destroyers, given $5 each by their constructor, leave $5 each when beaten: the price
+of one can of paint ([GoalDealer](ai.md#dealer)). **Coney** drops nothing yet ([`level87`'s
+fixes](scripting.md#level87-fixes), fix 4). Fix: on health out (wounded or knocked out), run steps 1-5 with the game's
+random numbers. Tests: an AI human of a brain kind other than 4 with $5 and no object, knocked out, leaves one
+`dyn_money` of $5 and has $0; a civilian of brain kind 4 with $15 and factor 0.1 leaves $1; a human whose object is
+`none` and money 0 leaves nothing.
+
 #### Interrogation {#interrogation}
 
 `+0x5a0` holds a reference to a Lua function, confirmed (code). Its only writers: `HuSetInterrogation` (`0x00239f20`:

@@ -33,9 +33,9 @@ material names (`0x0034f740`-`0x0034fc08`) lie just before, after `Physics/`'s l
 | `0x00350cd8` | `CollisionMesh_RayCast` | ray against the mesh: the grid walk | confirmed (code) |
 | `0x00350aa0` / `0x00351160` | `CollisionMesh_SetEnabledInBox(Cell)` | switch triangles inside a box on or off | confirmed (code) |
 | `0x00351468` / `0x003519f8` | `CollisionMesh_SphereTestCell` / `CollisionMesh_SpherePush` | push a sphere out of walls | confirmed (code) |
-| `0x00351158` | `CollisionMesh_UpdateEmpty` | called by mode 1's `Update` every frame; an empty function | confirmed (code) |
+| `0x00351158` | `CollisionMesh_UpdateEmpty` | called by eleven game modes' `Update` functions every frame ([Unit 16](physics-world.md#u16-update-empty)); an empty function | confirmed (code) |
 | `0x00337920` / `0x00337a60` | `RayTriangle_OneSided` / `RayTriangle_TwoSided` | ray-triangle intersection (`Utils` maths, outside the file) | confirmed (code) |
-| `0x0040db88` | `WorldManager_RayCast` | the world manager's ray cast into the level's mesh; 46 callers | confirmed (code) |
+| `0x0040db88` | `WorldManager_RayCast` | the world manager's ray cast into the level's mesh; 46 functions, 61 call sites | confirmed (code) |
 | `0x0034f950` | `Collision_DropToGround` | ground height under a point | confirmed (code) |
 | `0x0034fa28` | `Collision_DropToMarkedGround` | the same, skipping triangles whose area byte is 0 | confirmed (code) |
 | `0x0034f740` | `Collision_MarchRay` | a long ray cast in steps | confirmed (code) |
@@ -199,13 +199,19 @@ cell's list, confirmed (code):
 5. Intersect: `RayTriangle_TwoSided` (`0x00337a60`) when flag bit 1 is set, otherwise `RayTriangle_OneSided`
    (`0x00337920`). Both are Möller-Trumbore tests that return `t` or -1. The one-sided test rejects a determinant
    below `1e-6` (rays hitting the back are ignored); the two-sided one rejects `|det| < 1e-6`.
-6. Accept `0 <= t <= length`, and keep it if it is nearer than the hit so far: fill the result.
+6. Accept `0 <= t <= length`. While the result has no hit yet, the triangle fills it with no nearer-than test and
+   whatever the material filter says (an excluded triangle leaves the hit at 0 but writes its `t`, material, flags,
+   area and triangle); once there is a hit, an excluded triangle is skipped and a kept one replaces it only when
+   nearer ([Physics, Unit 16](physics-world.md#u16-world-ray)).
 
-So a cast returns the **nearest** accepted hit along the whole ray, not the first cell's.
+So a cast returns the **nearest** kept hit along the whole ray, not the first cell's; with none, the last excluded
+triangle tested.
 
 `WorldManager_RayCast(worldManager, ray, result, exclude, mask)` (`0x0040db88`) sets result `+0x28` = 1 and the hit
 to 0, then casts into the level object's mesh (`*(worldManager + 0x40) + 0x04`). Everything outside `RayCast/` uses
-this one (46 callers); the cameras (`Camera/`, `0x00121720`-`0x0013c710`) also call `CollisionMesh_RayCast` directly
+this one (46 functions, 61 call sites; mask 0 and no exclusion list at 55 of them, [Unit
+16](physics-world.md#u16-callers)); the cameras (`Camera/`, `0x00121720`-`0x0013c710`) also call `CollisionMesh_RayCast`
+directly
 (19 callers).
 
 ### Ground height {#ground-height}
@@ -251,7 +257,8 @@ traced to it).
 
 The mesh lives in the `World Level Pool` with the rest of the level file and goes with it. The level object's
 destructor (`0x0040cf80`) frees the mesh's chunks (`0x004f4b78`). Nothing updates it per frame:
-`CollisionMesh_UpdateEmpty` (`0x00351158`), which mode 1 calls every frame, does nothing.
+`CollisionMesh_UpdateEmpty` (`0x00351158`), which eleven game modes' updates call every frame, does nothing.
+The destructor's order is in [Physics, Unit 17](physics-world.md#u17-destroy).
 
 ## Disc counts {#disc-counts}
 
@@ -292,11 +299,14 @@ tall or more).
   index lists, every listed triangle and every triangle's vertices against their counts. It sets every triangle's
   enabled bit, as the original's handler does.
 - `rayCast` is `CollisionMesh_RayCast` with `RayTestCell`: the same cell box, the same column walk (half a cell off,
-  as above), the per-cast checked set, the mask and enabled rules, the material exclusion (a span of ids in place of
-  the list ended by 1) and the nearest hit. `spherePush`, `setEnabledInBox`, `dropToGround`, `dropToMarkedGround`
-  and `marchRay` follow the sections above.
-- **Coney's choices:** the ground helpers cast with mask 0 and no exclusions (what the original passes to its world
-  cast is not on this page); `marchRay`'s last step is shortened to end at its maximum; the sphere push tests the
+  as above), the per-cast checked set, the mask and enabled rules, a material exclusion (a span of ids in place of
+  the list ended by 1) and the nearest hit. It skips an excluded triangle **before** intersecting it and returns only
+  a kept hit, so unlike the original it cannot report the excluded triangle a clear ray crossed
+  ([Unit 16](physics-world.md#u16-coney)). `spherePush`, `setEnabledInBox`, `dropToGround`, `dropToMarkedGround`
+  and `marchRay` follow the sections above; the ground helpers cast with mask 0 and no exclusions, which is what the
+  original's `Collision_DropToGround`, `_DropToMarkedGround` and `_MarchRay` pass ([Unit
+  16](physics-world.md#u16-callers)).
+- **Coney's choices:** `marchRay`'s last step is shortened to end at its maximum; the sphere push tests the
   centre's projection against the edges with the face's own normal, whichever side the sphere is on (the page gives
   the test as "edge × n against the point" without its sign).
 - Unit tests on synthetic meshes cover a floor, a one- and a two-sided triangle, a wall from either side, the type

@@ -288,7 +288,7 @@ leave the focus alone:
   `--headless`, never as a plain interactive run. In test mode Coney's window opens without taking the focus (it
   may show on top, but keystrokes stay where they were), and `--render-references` (which hides its window) never
   takes it either. Any other windowed run started by a tool adds `--no-activate`
-  ([Frame rate](building.md#frame-rate)).
+  ([Frame rate](running.md#frame-rate)).
 - **ctest needs nothing.** The disc tests inside `coney_tests` run on librw's NULL renderer and open no window; the
   `coney` smoke tests (`repo:src/platform/CMakeLists.txt`) run `--headless` or stop at the command line before a
   window opens; the one test with a window (`coney.frame_copies_upright`) hides it and so never takes the focus. A new
@@ -518,7 +518,8 @@ when the state holds something else. `scripted-pad`, `right-stick` and `puppet` 
 **address expression** (`tf(player) + 0x4`, type `f32`), or worked out by a **formula** from the fields before it
 (`wrap(deg(2 * atan2(qz, qw)))`); `hidden = true` keeps a helper out of the CSV, and `follow = true` works the address
 out again at every sample, for a chain of pointers that changes as the game plays (the top of an animation stack).
-Expressions are arithmetic over these names, and nothing else of Python:
+A **value** field (`value = "handles(brain(h) + 0x164, 16)"`) is an expression over memory worked out at every sample,
+whose result is the column. Expressions are arithmetic over these names, and nothing else of Python:
 
 | Name | Value |
 | --- | --- |
@@ -528,13 +529,34 @@ Expressions are arithmetic over these names, and nothing else of Python:
 | `prec(h)`, `tf(h)`, `brain(h)` | `0x00660f50 + index × 0x2c`; `0x00714b00 + index × 0x20`; `0x006d53f0 + index × 0x2f0` |
 | `heading(h)` | the heading in radians from the transform's rotation (0 faces +y, anticlockwise) |
 | `camera`, `game_time` | `*(0x005d9158)`; `*(0x0050b734) + 0x48` |
+| `h` | with `rows = "humans"`, the row's human |
+| `hidx(handle)` | the handle index a handle names (high half), -1 for the null handle `0xffffffff` or a stale one (`0x00390180`) |
+| `goal_type(vt)`, `goal_at(brain, k)` | a goal class's type id ([goal types](../references/goal-types.md)); the type of stack slot k, -1 above the top |
+| `handles(address, n)` | how many of n words are handles, neither 0 nor `0xffffffff` (a handle list's length) |
 | `u8` ... `f32` (address) | a value in memory (`u8 s8 u16 s16 u32 s32 f32`) |
 | `sin cos atan2 hypot sqrt abs min max deg rad wrap pi` | math; `wrap` takes degrees to (-180, 180] |
 
-A column that Coney's `--trace` also writes has Coney's name and unit ([Tracing](building.md#tracing)): `x`, `y`,
+A column that Coney's `--trace` also writes has Coney's name and unit ([Tracing](running.md#tracing)): `x`, `y`,
 `z`, `heading`, `speed`, `vz`, `gait`, `clip`, `stamina`, `command`, `health`, `power` and the camera's `cam_*`,
 `look_*`, `wanted_*`, `cam_distance`, `cam_pitch`, `cam_yaw`, `band_near` and `target_pitch`. `phase` (record
 `+0x08`) is the original's only.
+
+**Every human.** `rows = "humans"` in a scenario writes one row per human in use per update (`step`, `human`, then the
+fields, with `h` the row's human) instead of one per update: the `humans` field set, a gang battle's every fighter
+([Rumble: gang battle trace](../research/rumble.md#gang-battle-trace)), is the contract for Coney's all-humans
+`--trace`. One message reads which humans are in use and every fixed address; the `value` and `follow` fields are then
+worked out together, one message per level of pointers (four or five messages a sample). The recorder prints how many
+samples were **torn**: read while the next update had already started, so they mix two updates. A sample of 30 humans
+takes about 11 ms (2026-10-12, PCSX2 2.9.94: 1.6 ms of it PINE), close to the 16 ms between the tick that ends an
+update and the next update's, and at full speed 64 of 601 samples tore; `speed` in `[original]` (PCSX2's
+`[Framerate]` `NominalScalar`, set in the claimed copy's ini for the run and put back afterwards) slows the emulation:
+at 0.4 a 9,000-update match had none missed. The game steps by emulated ticks, but not every wait is a fixed number
+of updates (the Rumble intro ended after 151 to 172, [Rumble](../research/rumble.md#gang-battle-setup)), so time a
+scenario's calls with a margin. A frame that runs two updates (about one in 1,000) still tears its sample; the trace's
+`.quality.txt` lists every missed and torn step.
+
+`pcsx2 record --let NAME=EXPR` gives or replaces a name of the scenario's `let`, so one scenario is recorded with
+different values: the gang battle's matches differ by an offset of the brains' random stream (`--let seed=341`).
 
 #### Hooks {#hooks}
 
@@ -561,7 +583,9 @@ box's queue, [HUD](../research/hud.md#hint-queue-runtime)) and `anim-dispatch` a
 which anim id and which script callback it runs). The level80 passes added the teammate hooks (`hit-by-chief`,
 `hit-reaction`, `attack-target-push`, `push-contact`, `can-push`, `say-command`) and the fire hooks (`ember-init`,
 `burn-init`, `fade-flame-init`, `debris-flame` and their update hooks); the revive pass added `revive-start` and
-`revive-finish` ([Combat](../research/combat.md#revive-runtime)). One run installs at most 64 hooks, fewer than
+`revive-finish` ([Combat](../research/combat.md#revive-runtime)), and the speech pass `say-anim-line`, `stop-speech`,
+`play-speech` and `play-speech-cut` (who starts, stops or refuses a human's line, with his line state before each;
+[Sound](../research/sound.md#speech-cut-in)). One run installs at most 64 hooks, fewer than
 the file holds, so name only the ones a pass needs. Two hooks at one address cannot be installed together (`hint-show`
 and `event-hint` are the same place): pick one, and add any extra value it needs to the one you keep. When the update
 of an entry matters, log the tick count and use it: in that pass one Lua call's four `HintBox_Queue` entries, all at
@@ -609,6 +633,15 @@ The smoke scenarios reproduce claims of the research pages: `walk60` (the walk s
 (level99 checkpoint 3 with `--start`), and `combat_cross` (`X1` then `XX2` at a puppet civilian 1.5 m away, slot 6, which
 walks in to 1.36 m; on Coney the fight yard's `cross` spawn, a still target 1.05 m away that X1 steers onto alike).
 
+**Gang fights are compared by behaviour, not by step.** The two games draw different random numbers, so a big fight
+(a Rumble gang battle) never plays out alike twice, even in the original. Record several matches of the original and
+several of Coney with the all-humans trace (one row per human per update; Coney's `--trace-humans`, the original's
+`[[humans]]` field set of `research/traces/fields.toml`), then `coney-tools trace fight-report --original ... --coney
+...` computes rates, shares and distributions per gang (goal time shares, attacks and blocks per minute, attackers on
+one target, distance to the target, target switches, goal interruptions, time to the first engagement, knock-out
+times, the match's length and winner) and flags each metric where Coney is outside the original's spread
+([coney-tools](coney-tools.md#trace)). Keep the recordings in the scratch folder, never in the repository.
+
 ### Differential playthroughs {#differential-playthroughs}
 
 A trace diff compares two games update by update, which holds for a few seconds of walking but not for a mission: the
@@ -619,7 +652,7 @@ events**, and drives both games through the same stretch with one **adaptive cou
 1. **Event logs on both sides, at the same semantic points.** Each game writes one CSV line per event (`step, kind,
    name, detail`): a script binding called, a call into the scripts by name, a hint shown, a sound started, a human
    appearing, going down or removed. Coney writes them with `--event-log`
-   ([Building](building.md#event-log)); the original's come from hooks at the places that do the same thing (the
+   ([Running Coney](running.md#event-log)); the original's come from hooks at the places that do the same thing (the
    script VM's binding call, the engine's script look-up, the hint box, the sound start), cited to their addresses on
    the research pages. A binding's call is the best hook: it is the mission script's own vocabulary, so both games
    name the event alike without interpretation.

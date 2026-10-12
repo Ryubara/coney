@@ -34,6 +34,8 @@ from coney_tools.audit_cli import add_audit_parser, run_audit
 from coney_tools.config import PATH_KEYS, ConfigError, find_repo_root, load_config
 from coney_tools.conventions import Conventions, load_conventions
 from coney_tools.conventions_render import run_render
+from coney_tools.hygiene_cli import add_hygiene_parser, run_hygiene
+from coney_tools.pr_health import add_pr_health_parser, run_pr_health
 from coney_tools.repo_checks import check_body, check_docs, check_pointer_files, check_title, first_line
 from coney_tools.repo_labels import apply_labels, gh_script
 
@@ -221,6 +223,8 @@ def _build_parser() -> argparse.ArgumentParser:
         "--check", action="store_true", help="change nothing; exit 1 when a block is out of date"
     )
     add_audit_parser(repo_commands)
+    add_pr_health_parser(repo_commands)
+    add_hygiene_parser(repo_commands)
     _add_check_commands(groups)
     labels_parser = repo_commands.add_parser(
         "labels",
@@ -525,8 +529,23 @@ def _add_pcsx2_commands(groups: Any) -> None:
     record.add_argument("--attach", action="store_true", help="record a PCSX2 already running a patched state")
     record.add_argument("--keep-open", action="store_true", help="leave PCSX2 running afterwards")
     record.add_argument("--agent", help="your id; runs under your claim (made, and released at the end, if none)")
+    record.add_argument(
+        "--let",
+        action="append",
+        default=[],
+        metavar="NAME=EXPR",
+        help="give or replace a name of the scenario's let (a random stream's offset per match); repeatable",
+    )
     _add_claim_commands(commands)
     _add_pcsx2_flags(record)
+
+
+def _gang_list(text: str) -> list[int]:
+    """`--original-gangs 5,3`: gang ids separated by commas."""
+    try:
+        return [int(part) for part in text.split(",")]
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(f"{text!r}: expected gang ids separated by commas") from error
 
 
 def _add_trace_commands(groups: Any) -> None:
@@ -549,6 +568,22 @@ def _add_trace_commands(groups: Any) -> None:
     diff.add_argument("--shift", type=int, help="compare original step s with Coney step s + SHIFT (default 0)")
     diff.add_argument("--start-frame", action="store_true", help="compare in each player's frame at the first step")
     diff.add_argument("--context", type=int, default=3, help="rows shown each side of a divergence (default 3)")
+    fight = commands.add_parser(
+        "fight-report", help="behaviour statistics of an all-humans trace; compare the original's runs with Coney's"
+    )
+    fight.add_argument("traces", nargs="*", type=Path, help="all-humans traces (coney --trace-humans) to report")
+    fight.add_argument("--original", nargs="+", type=Path, default=[], metavar="TRACE", help="the original's runs")
+    fight.add_argument("--coney", nargs="+", type=Path, default=[], metavar="TRACE", help="Coney's runs")
+    fight.add_argument("--hz", type=int, default=30, help="updates a second in the traces (default 30)")
+    fight.add_argument("--exclude", nargs="+", type=int, default=[], metavar="HUMAN", help="leave these humans out")
+    fight.add_argument("--engage-distance", type=float, default=3.0, help="metres to the target that count as engaged")
+    fight.add_argument("--from", dest="start_from", type=int, default=1, help="skip the steps before this one")
+    fight.add_argument("--humans", action="store_true", help="also print the metrics of each human")
+    fight.add_argument(
+        "--margin", type=float, default=0.0, help="widen the original's spread by this share of its width"
+    )
+    fight.add_argument("--original-gangs", type=_gang_list, help="the original's gang ids in the order g0,g1,...")
+    fight.add_argument("--coney-gangs", type=_gang_list, help="Coney's gang ids in the order g0,g1,...")
     mission = commands.add_parser("mission", help="play a mission scenario's course on one game; write its event log")
     mission.add_argument("scenario", type=Path, help="a mission scenario TOML (research/traces/missions/)")
     mission.add_argument("--side", choices=("coney", "original"), required=True, help="the game to play it on")
@@ -652,7 +687,9 @@ def _run_pcsx2(args: argparse.Namespace) -> int:
     if args.command == "screenshot":
         return pcsx2_claims_cli.run_screenshot(args.copy, args.out)
     flags = (args.pcsx2_dir, args.iso, args.scratch)
-    return pcsx2_cli.run_record(args.scenario, args.out, args.state, args.attach, args.keep_open, flags, args.agent)
+    return pcsx2_cli.run_record(
+        args.scenario, args.out, args.state, args.attach, args.keep_open, flags, args.agent, args.let
+    )
 
 
 def _run(args: argparse.Namespace) -> int:
@@ -699,6 +736,15 @@ def _run(args: argparse.Namespace) -> int:
     if args.group == "trace":
         if args.command == "coney":
             return trace_cli.run_coney(args.scenario, args.out, args.coney, args.disc)
+        if args.command == "fight-report":
+            report_options = (
+                (args.hz, frozenset(args.exclude), args.engage_distance, args.start_from),
+                args.humans,
+                args.margin,
+            )
+            return trace_cli.run_fight_report(
+                args.traces, args.original, args.coney, report_options, (args.original_gangs, args.coney_gangs)
+            )
         if args.command == "mission":
             if args.side == "coney":
                 return mission_cli.run_mission_coney(args.scenario, args.out, args.coney, args.disc, args.updates)
@@ -726,6 +772,10 @@ def _run(args: argparse.Namespace) -> int:
         return mcp_serve.run_serve(args.name)
     if args.command == "audit":
         return run_audit(args)
+    if args.command == "pr-health":
+        return run_pr_health(args)
+    if args.command == "hygiene":
+        return run_hygiene(args)
     if args.command == "render":
         return run_render(find_repo_root(Path.cwd()), args.check)
     if args.command == "labels":

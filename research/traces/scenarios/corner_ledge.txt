@@ -1,0 +1,5 @@
+# Run at a 0.6 m ledge (an edited box) and jump onto it, issue #348.
+# Research: docs/research/physics-kernels.md#u1-runtime. Stick 100 % up (a run), triangle tapped so he leaves the ground 1.5 m before the ledge.
+5 stick left 0 100
+38 tap triangle
+90 stick left 0 0

@@ -34,6 +34,7 @@
 #include "gamemodes/game_mode.h"
 #include "gamemodes/gameplay_mode.h"
 #include "graphics/render_device.h"
+#include "graphics/throw_arc.h"
 #include "hud/health_rings.h"
 #include "human/player.h"
 #include "human/strike_shapes.h"
@@ -41,12 +42,14 @@
 #include "platform/blood_textures.h"
 #include "platform/character_mesh.h"
 #include "platform/hud_layer.h"
+#include "platform/humans_trace.h"
 #include "platform/placed_objects.h"
 #include "platform/play_lighting.h"
 #include "platform/play_scenery.h"
 #include "platform/render_engine.h"
 #include "platform/scene_stage.h"
 #include "platform/texture_dictionary.h"
+#include "platform/throw_arc_renderer.h"
 #include "platform/world_renderer.h"
 #include "sandbox/sandbox_world.h"
 #include "warriors/created_humans.h"
@@ -107,7 +110,7 @@ struct PlayStats {
     float travelled = 0.0F; ///< Metres the player's feet moved across the ground.
 };
 
-/// Coney's first playable mode, behind `coney --play-level NAME` (docs/guides/building.md#playing-a-level): Rembrandt
+/// Coney's first playable mode, behind `coney --play-level NAME` (docs/guides/running.md#playing-a-level): Rembrandt
 /// standing in a scenery (PlayScenery) at its start, driven by pad 1's left stick, and the follow camera behind him
 /// turned by the right stick. The scenery is a level's streamed worlds and level file, loaded as the world viewer
 /// loads them and streamed around the follow camera, or a sandbox layout (`--play-level sandbox:NAME`,
@@ -186,6 +189,10 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] ai::AiHumans& fighters() { return *m_ai; }
     /// Player 1's throw aim (docs/research/objects.md#throws).
     [[nodiscard]] const combat::ThrowAimState& throwAim() const { return m_throwAim; }
+    /// The ribbon of player 1's throw-aim arc `alpha` of the way from the step before's arc to the newest (1 for the
+    /// newest): what the arc's drawing draws, 36 vertices; empty while he does not aim
+    /// (docs/research/graphics.md#throw-arc).
+    [[nodiscard]] std::vector<graphics::ThrowArcVertex> throwArcRibbon(float alpha) const;
     /// Player 1's lock pick under way; null when none runs (docs/research/crimes.md#lockpick).
     [[nodiscard]] const world_objects::LockPick* lockPick() const { return m_lockPick ? &*m_lockPick : nullptr; }
     [[nodiscard]] const PlayStats& stats() const { return m_stats; }
@@ -193,6 +200,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     /// Writes the trace (human::traceHeader(), then human::traceLine() after every step) to the file at `path`,
     /// replacing it: `--trace`. Fails with ErrorCode::Io when the file cannot be opened.
     [[nodiscard]] std::expected<void, Error> traceTo(const std::string& path);
+    /// Writes every human's row (ai::FightTracer) to `trace` after every step: `--trace-humans`. The file is shared, so
+    /// a run that loads several levels writes one.
+    void traceHumansTo(std::shared_ptr<HumansTrace> trace) { m_humansTrace = std::move(trace); }
 
     /// Starts the player at `place` instead (dropped onto the ground below it, as a start is), and the camera where it
     /// says, if it says: `--start`, Coney's own test aid.
@@ -542,6 +552,10 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // the arc's segments, humans are upright capsules, a human target's point is a fixed head height.
     // @orig 0x0027da10 Player_OnL1Pressed (unknown)
     void stepThrowAim(const Pad& pad);
+    // Draws player 1's throw-aim arc while he aims, `alpha` of the way from the step before's arc to the newest, red
+    // while it meets a target (docs/research/graphics.md#throw-arc).
+    // @orig 0x00419da0 ThrowArcs_RenderAll (unknown)
+    void drawThrowArc(float alpha);
     // The lock-pick dial follows player 1's pick: shown at its difficulty while it runs, with the pins' angles and the
     // pin the next press judges (docs/research/hud.md#lock-pick-dial-layout).
     void stepLockPickDial();
@@ -733,6 +747,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // The --trace file (closed when unset) and the steps traced.
     std::optional<std::ofstream> m_trace;
     std::uint64_t m_traceSteps = 0;
+    // The --trace-humans file (shared with the other levels of the run), when asked for.
+    std::shared_ptr<HumansTrace> m_humansTrace;
     // The level's parked cars, particles and motion blur (play_level_effects.h), when gameplay brought them.
     std::unique_ptr<PlayLevelEffects> m_levelEffects;
     // The world objects: the scripts' records and types (null without a cast), their objects, the models they are
@@ -745,8 +761,10 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     world_objects::DrawnPoses<double> m_drawnPoses;
     world_objects::DrawnPoses<const human::Human*> m_iconPoses;
     effects::Triglints m_glints;
-    world_objects::ObjectBodies m_objectBodies; // this step's world-object bodies
-    combat::ThrowAimState m_throwAim;           // player 1's throw aim
+    world_objects::ObjectBodies m_objectBodies;   // this step's world-object bodies
+    combat::ThrowAimState m_throwAim;             // player 1's throw aim
+    std::vector<anim::Vec3> m_previousArc;        // the arc's points on the step before (none: not aiming)
+    std::unique_ptr<ThrowArcRenderer> m_throwArc; // made when the arc is first drawn
     // The RUNTARGET bodies running humans met last step: (the human's handle, his feet, the object), struck next step.
     std::vector<std::tuple<double, anim::Vec3, double>> m_runContacts;
     world_objects::LooseObjects m_looseObjects;              // the dropped objects falling or settling

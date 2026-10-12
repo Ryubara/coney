@@ -735,22 +735,30 @@ plus `puppet` in slot 6; the stick at rest (128, 128) throughout; a tap holds th
 | `bat_cross_square` | cross held 3 updates, square tapped on its 2nd, nobody near | `0x22` played **502** (the bat thrown, out of the hand at k20, 35 updates); the release's `0x10` at k2 dropped |
 | `bat_cross_square_near` | the same, `PoizoCiv` 1.5 m ahead | `0x22` started nothing; the release's `0x10` on the next update played **36**, 35 updates, which hit him for 64 at k13 |
 
-**Coney** (`repo:src/combat/player_combat.cpp`, `repo:src/combat/attacks.cpp`, main at `6f9281af`), read for this
-issue:
+**Coney** (`repo:src/combat/player_combat.cpp`, `repo:src/combat/attacks.cpp`, `repo:src/human/human_animator.cpp`),
+fixed for issue #228:
 
 - The gates are the original's: Coney's cross acts on `0x10` (`kCrossLongHold`), refused under `0x100101f`
   (`kAttackRefusingPhases`) and dropped under `0x5c7fee0` (`kDispatchDroppingPhases`), with the clips' own phase
   events and lengths. Its chain (`AttackChain`) stores the cross press during 34's wind-up and, having no armed steps
-  (`nextChainAttack` knows only 12, 11 and 16), plays nothing: the same result as the original for the bat. So the
-  plain cases (cross after 34, after 36, after square-square, after the drop) should already match, provided Coney's
-  34 hands over to 389 on k37 as above; the disc test the issue asks for checks exactly that.
-- **Cross + square with a weapon differs.** Coney's `PlayerCombat::special` has no held-object test, so with a bat in
-  hand `0x22` plays the special 653 (spending power), whose phases then refuse the cross's own `0x10`: the player sees
-  a push, not a bat swing. The original never plays 653 (or the strong grapple) for a pad player holding an object:
-  it throws the bat (502) when the throw is allowed, else does nothing and lets the cross's release play 36. A cross
-  pressed a moment before a square, or a square pressed before cross is let go, is the input that gives `0x22`, so this
-  is the likely cause of "cross sometimes does not start an attack" in Coney ([Combat
-  differences](combat-diffs.md#weapons)).
+  (`nextChainAttack` knows only 12, 11 and 16), plays nothing: the same result as the original for the bat. The
+  disc test (`repo:tests/platform/disc_bat_cross_test.cpp`, level99 with a bat in hand, cross tapped 33-40 updates
+  after a square and 31-38 after a cross) finds the first cross that swings at **k37 after 34 and k35 after 36**,
+  and none before, as the table above.
+- **34's length is a stand-in.** Coney's 34 (28 frames at 0.75) lasted 38 updates, so a cross on k37 was dropped.
+  Coney ends that one clip a step early (`ClipThenNextTask`'s `handOverEarly`, set for anim id 34 in
+  `HumanAnimator::clipThen`) so that 389 and the held flags clear on k37. **Coney stand-in**: the cause is open
+  ([Open questions](#open-questions)). Ending every clip when its cursor's frame reaches its last frame (the rule for
+  events, [Reading the tables](#reading)) fits 34 and 36 but ends the parkour clip 441 and the grab miss's 69 a step
+  early, against their runtime lengths, so it was not adopted.
+- **Cross + square (`0x22`) and circle + cross (`0x23`) with an object in hand** do nothing in Coney, as in the
+  original's `Player_Special`, which refuses a pad player holding an object: `PlayerCombat::special` and
+  `strongGrapple` return when `CombatInput::animSet` is not 0 (sets 1-6). Before, `0x22` played the special 653
+  (spending a quarter of the power), whose phases refused the cross's own `0x10`, and `0x23` started a grab: the player
+  saw a push, not a bat swing, and that was the likely cause of "cross sometimes does not start an attack". Now
+  the cross's release plays 36 (47, 41 for a knife, a baton) on the next update. **Not built**: the original's
+  throw of the melee weapon (502 / 491) for the `0x22` that has a free target ([Combat
+  differences](combat-diffs.md#weapons)), so with nobody near Coney swings where the original throws.
 
 ### Commands only scripts and the AI send {#ai-commands}
 
@@ -1077,5 +1085,10 @@ The moves Coney plays and where they differ from the table above: [Combat differ
   tables](#reading)). A run of a rate-0.9 clip with a tie (an event at frame 5 or 14) would check it.
 - Why 34 `BAT_COMBO_S1` hands over to 389 after 37 updates when its frame count gives 38 (36's 35 matches its
   count), and when the bat's 35 plays at all, if no pad chain reaches it ([Cross with a bat in hand](#bat-cross)).
+  Coney ends clip 34 a step early as a stand-in until the clip-end rule is known; the rule for events (the cursor's
+  frame reaches the frame) fits 34 and 36 but not Coney's other measured lengths, e.g. the parkour clip 441 and the
+  grab miss's 69 ([Coney](#bat-cross)). To find out: the lengths of several more chain clips at runtime, 12 (16
+  frames) to 20 (26 frames) and 19 (21 frames) especially, from the first update to the one 389 or the next clip
+  holds.
 - 490 `KNIFE_ATTACK_FROM_RUN`, 18 `ATTACK_SSX3_HOLD` and the `_02` snaps: no code path plays them here (20 is the
   chain's random pick after `SS2`, `0x00280708`).

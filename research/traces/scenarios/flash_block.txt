@@ -1,0 +1,16 @@
+# R1 held from 40 to 100 (the block), d-pad right at 42 (in the block start's 5 updates of held 0x80000), then every 5
+# updates from 45 while it is held.
+40 press r1
+42 tap right
+45 tap right
+50 tap right
+55 tap right
+60 tap right
+65 tap right
+70 tap right
+75 tap right
+80 tap right
+85 tap right
+90 tap right
+95 tap right
+100 release r1

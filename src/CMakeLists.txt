@@ -59,6 +59,7 @@ add_library(coney_core STATIC
     graphics/frame_stats.cpp
     graphics/car_draw.cpp
     graphics/human_blood.cpp
+    graphics/throw_arc.cpp
     graphics/human_lighting.cpp
     graphics/level_lighting.cpp
     graphics/light_manager.cpp
@@ -303,6 +304,7 @@ target_sources(coney_core PRIVATE
     ai/swap_prompt.cpp
     ai/tactic_scout.cpp
     ai/fight_goal.cpp
+    ai/fight_trace.cpp
     ai/fight_reactions.cpp
     ai/formations.cpp
     ai/gangs.cpp
@@ -332,6 +334,7 @@ target_sources(coney_core PRIVATE
     ai/tactic_boss.cpp
     ai/tactic.cpp
     ai/targeting.cpp
+    ai/threats.cpp
     ai/tactic_attack.cpp
     ai/tactic_confront.cpp
     ai/tactic_domination.cpp

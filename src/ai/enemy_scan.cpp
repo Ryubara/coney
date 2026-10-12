@@ -8,6 +8,7 @@
 #include "ai/perception.h"
 #include "ai/script_services.h"
 #include "ai/targeting.h"
+#include "ai/threats.h"
 #include "human/human.h"
 #include "human/locomotion.h"
 
@@ -15,13 +16,14 @@ namespace coney::ai {
 
 namespace {
 
-// The Warriors' filter (`Filter_IsThreatTo`): a cop only within 10 m; a civilian not at all (**Coney's reading**: the
-// ped type 3 with a threat response that would let one through is not modelled); any other enemy is a threat.
+// The Warriors' filter (`Filter_IsThreatTo`): a cop only within 10 m and a threat; a civilian not at all (**Coney's
+// reading**: the ped type 3 with a threat response that would let one through is not modelled); any other when he is
+// a threat (isThreat()).
 bool warriorThreat(const Brain& scanner, const Brain& member) {
     if (member.type() == BrainType::Cop) {
-        return scanner.distanceTo(member) <= kScanWarriorCopRange;
+        return scanner.distanceTo(member) <= kScanWarriorCopRange && isThreat(scanner, member);
     }
-    return member.type() != BrainType::Civilian && member.type() != BrainType::CivilianDi;
+    return member.type() != BrainType::Civilian && member.type() != BrainType::CivilianDi && isThreat(scanner, member);
 }
 
 // The near radius for `member` as `scanner` sees him: 1.5 m walking or standing, 5.2 m for a cop and a running member,
@@ -101,6 +103,13 @@ int scanEnemies(const Gangs& gangs, Brain& scanner) {
             if (enemyGang(scanner, *member) && scanSees(scanner, *member)) {
                 found.push_back(member);
             }
+        }
+    }
+    // 2. The gang's shared target, when valid.
+    if (const Gang* own = scanner.gang(); own != nullptr && own->chosenTarget() != nullptr) {
+        Brain* shared = own->chosenTarget();
+        if (shared != &scanner && validEnemy(scanner, *shared) && std::ranges::find(found, shared) == found.end()) {
+            found.push_back(shared);
         }
     }
     // 3. Old entries not found again: kept while in range, valid, and near or in sight; the rest dropped.
