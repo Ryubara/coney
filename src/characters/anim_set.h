@@ -38,6 +38,11 @@ class AnimSet {
 
     /// The clip for anim `id`, or null: CharacterData::animation(), then the defaults.
     [[nodiscard]] const anim::AnimClip* clip(std::size_t id) const;
+    /// Whether anim `id`'s clip comes from the defaults: the character's own data leaves the id to them and they
+    /// answer it.
+    [[nodiscard]] bool fromDefaults(std::size_t id) const {
+        return m_own->animation(id) == nullptr && m_defaults != nullptr && m_defaults->animation(id) != nullptr;
+    }
 
     /// The rate flags of anim `id` from the character's own Anim Range List (`+0x0e` of its record); 0 when the list
     /// is too short.

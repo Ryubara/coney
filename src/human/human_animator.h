@@ -76,7 +76,8 @@ enum class AnimState : std::int8_t {
     Attack = 103,  ///< **Coney's**: combat clips played once (an attack, a reaction), then what follows them.
     Hold = 104,    ///< **Coney's**: a held combat pose (a block, a grab, a mount, a mugging) until combat changes it.
     CombatWalk =
-        105, ///< **Coney's**: locked onto a target, the combat walk (380-387) or the fight idle, set by the human.
+        105,     ///< **Coney's**: locked onto a target, the combat walk (380-387) or the fight idle, set by the human.
+    Debug = 106, ///< **Coney's own**: the debug menus' Animation player plays a clip (HumanAnimator::playDebugClip()).
 };
 
 /// The bits of the human's record `+0x08` a clip task holds while it plays and sets as it starts
@@ -193,8 +194,20 @@ class HumanAnimator {
     void playScripted(const anim::AnimClip& clip, std::uint32_t animId, float rate, float fade, HeldFlags held);
     /// The combat walk locked onto a target: `clip` (one of 380-387, or the fight idle 358 with the stick at rest)
     /// looping with no root velocity, since the human sets the velocity (docs/research/combat.md#targets). A clip the
-    /// set lacks is the fight idle's, or the idle's. Changes nothing while it already plays.
+    /// set lacks is the fight idle's, or the idle's. Changes nothing while it already plays, nor while the Animation
+    /// player's clip plays (playDebugClip()).
     void playCombatWalk(std::uint32_t clip);
+    /// **Coney's own**, for the debug menus' Animation player (docs/guides/debug-menu.md#animation-player); the
+    /// original has nothing like it, and nothing of the original's calls it. Plays `clip` (anim `animId`, which must
+    /// outlive its use) from its first frame at `rate`, at once with no fade, holding no bits of the record `+0x08`:
+    /// once, after which the idle takes over and the controller chooses again, or with `loop` until stopDebugClip() or
+    /// something else the human plays (a hit, a jump) replaces it. With `inPlace` its root motion neither moves nor
+    /// turns the body. AnimState::Debug while it plays.
+    void playDebugClip(const anim::AnimClip& clip, std::uint32_t animId, float rate, bool loop, bool inPlace);
+    /// Ends the clip playDebugClip() plays with the idle (its usual fade); nothing when none plays.
+    void stopDebugClip();
+    /// Whether a clip playDebugClip() started is still playing.
+    [[nodiscard]] bool debugClipPlaying() const;
     /// Leaves the combat walk for the idle (the lock is gone); nothing in any other state.
     void leaveCombatWalk();
     /// Leaves a held combat pose (AnimState::Hold) for the controller's own choice, keeping what plays; nothing in
@@ -308,6 +321,7 @@ class HumanAnimator {
     Speeds m_speeds;
     anim::AnimTaskStack m_tasks;
     AnimState m_state = AnimState::None;
+    const anim::AnimTask* m_debugTask = nullptr; // playDebugClip()'s task while AnimState::Debug; only compared
 };
 
 } // namespace coney::human

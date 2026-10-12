@@ -255,6 +255,14 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     /// (human::Player::changeCharacter(): the same files and class, at full health) and the scripts' record of him
     /// and his brain take the new type; the cast is left as it is.
     std::expected<void, Error> changeCharacter(int type) override;
+    // The Animation player (src/platform/play_level_anim.cpp): the player's set, the generic set, then every model a
+    // player can be drawn as, each with its own clips (every character shares the player's skeleton).
+    [[nodiscard]] std::vector<std::string> animSets() const override;
+    std::expected<std::vector<debug::AnimClipChoice>, Error> animClips(std::size_t set) override;
+    std::expected<void, Error> playAnim(std::size_t set, std::uint32_t id,
+                                        const debug::AnimPlayOptions& options) override;
+    void stopAnim() override { m_player->human().stopDebugClip(); }
+    [[nodiscard]] debug::AnimPlayback animPlayback() const override;
 
     /// Plays the game's scenes in this mode (src/platform/play_level_scene.cpp): `scenes` is stepped with every step
     /// and drawn through the mode's SceneStage (its camera, letterbox, fades and the bound humans), `playerHandle` is
@@ -344,6 +352,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     void swapPlayerModel(LoadedCharacter loaded, const std::string& model);
     // The texture a character's dictionaries hold, which every material uses; null when none.
     [[nodiscard]] static rw::Texture* textureOf(const std::vector<TextureDictionary>& dictionaries);
+    // The Animation player's anim set `set` (animSets()), a model's loaded on first use; fails for a set that does not
+    // exist and as loading the model does (src/platform/play_level_anim.cpp).
+    [[nodiscard]] std::expected<const characters::AnimSet*, Error> animSetAt(std::size_t set);
     // The character the player plays: his own after a change of character, else the scene's.
     [[nodiscard]] const human::PlayerCharacter& playerCharacter() const {
         return m_playerCharacter ? *m_playerCharacter : *m_character;
@@ -645,6 +656,16 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     std::unique_ptr<human::PlayerCharacter> m_playerCharacter;
     std::vector<TextureDictionary> m_playerDictionaries;
     std::vector<std::unique_ptr<human::PlayerCharacter>> m_retired;
+    // The Animation player's other characters' anim sets, by model (src/platform/play_level_anim.cpp): loaded when
+    // first opened and kept while the mode lasts, declared before the player, whose tasks may hold their clips.
+    struct AnimSetCharacter {
+        std::unique_ptr<human::PlayerCharacter> character;
+        std::unique_ptr<characters::AnimSet> own; // its own clips only
+    };
+    std::map<std::string, AnimSetCharacter, std::less<>> m_animSetCharacters;
+    std::unique_ptr<characters::AnimSet> m_genericAnims; // the generic character data alone, made when first opened
+    std::string m_animSetName;                           // the set and the clip the Animation player last played
+    std::string m_animClipName;
     characters::CharacterTypes m_types; // the configuration's types
     int m_type = 0;                     // the type the player is
     int m_levelNumber = 0;              // the scene's level number (its models), 0 for a sandbox

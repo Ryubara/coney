@@ -353,6 +353,11 @@ void HumanAnimator::playScripted(const anim::AnimClip& clip, std::uint32_t animI
 }
 
 void HumanAnimator::playCombatWalk(std::uint32_t walk) {
+    // The Animation player's clip (Coney's debug tool) plays out first: the lock, which the human renews every update,
+    // takes over once it ends.
+    if (debugClipPlaying()) {
+        return;
+    }
     std::uint32_t id = walk;
     if (clip(id) == nullptr) {
         id = clip(kAnimFightIdle) != nullptr ? kAnimFightIdle : m_slots.ids[kSlotIdle];
@@ -364,6 +369,36 @@ void HumanAnimator::playCombatWalk(std::uint32_t walk) {
     m_tasks.change(std::make_unique<anim::LoopTask>(*clip(id), id, m_anims->rate(id), anim::kTaskNoRootVelocity),
                    kCombatFade);
     m_state = AnimState::CombatWalk;
+}
+
+void HumanAnimator::playDebugClip(const anim::AnimClip& clip, std::uint32_t animId, float rate, bool loop,
+                                  bool inPlace) {
+    // In place, the root's velocity and turn are not sampled, as the locomotion's own loops do it.
+    const std::uint32_t flags = inPlace ? (anim::kTaskNoRootVelocity | anim::kTaskNoRootTurn) : 0U;
+    std::unique_ptr<anim::AnimTask> task;
+    if (loop) {
+        task = std::make_unique<anim::LoopTask>(clip, animId, rate, flags);
+    } else {
+        // Once, then the idle; choose() sees the hand-over (the task is no longer the newest) and chooses again.
+        task = std::make_unique<anim::ClipThenNextTask>(clip, animId, rate, flags, idleLoop());
+    }
+    m_debugTask = task.get();
+    // No fade: the clip shows from its first frame, so what plays is the whole clip.
+    m_tasks.change(std::move(task), 0.0F);
+    m_state = AnimState::Debug;
+}
+
+void HumanAnimator::stopDebugClip() {
+    if (!debugClipPlaying()) {
+        return;
+    }
+    buildIdle();
+    m_state = AnimState::Idle;
+    m_debugTask = nullptr;
+}
+
+bool HumanAnimator::debugClipPlaying() const {
+    return m_state == AnimState::Debug && m_debugTask != nullptr && m_tasks.top() == m_debugTask;
 }
 
 void HumanAnimator::leaveCombatWalk() {
@@ -384,6 +419,16 @@ bool HumanAnimator::settling() const {
 }
 
 void HumanAnimator::choose(const AnimInputs& inputs) {
+    // The Animation player's clip plays out (a loop until it is stopped or replaced); once it has handed over to the
+    // idle, the controller chooses from there.
+    if (m_state == AnimState::Debug) {
+        if (debugClipPlaying()) {
+            return;
+        }
+        m_debugTask = nullptr;
+        const anim::AnimTask* top = m_tasks.top();
+        m_state = top != nullptr && top->type() == anim::AnimTaskType::GaitBlend ? AnimState::Move : AnimState::Idle;
+    }
     // A held combat pose stays until combat plays something else.
     if (m_state == AnimState::Hold || m_state == AnimState::CombatWalk) {
         return;
@@ -436,6 +481,7 @@ void HumanAnimator::choose(const AnimInputs& inputs) {
         case AnimState::Attack:
         case AnimState::Hold:
         case AnimState::CombatWalk:
+        case AnimState::Debug:
             break;
         }
         m_state = next;

@@ -309,6 +309,13 @@ class Human final : public Holdable {
     void playScripted(const anim::AnimClip& clip, std::uint32_t animId, float rate, float fade, HeldFlags held) {
         m_animator.playScripted(clip, animId, rate, fade, held);
     }
+    /// **Coney's own**: the debug menus' Animation player plays `clip` on the human (HumanAnimator::playDebugClip(),
+    /// docs/guides/debug-menu.md#animation-player); the original has nothing like it.
+    void playDebugClip(const anim::AnimClip& clip, std::uint32_t animId, float rate, bool loop, bool inPlace) {
+        m_animator.playDebugClip(clip, animId, rate, loop, inPlace);
+    }
+    /// **Coney's own**: ends the Animation player's clip (HumanAnimator::stopDebugClip()).
+    void stopDebugClip() { m_animator.stopDebugClip(); }
     /// The name of the idle replacement applied (empty for none).
     [[nodiscard]] const std::string& idleClipName() const { return m_idleClipName; }
     /// `HuUseAnyAnim`'s replacement for anim `id` other than the idle, `name` loaded as `clip` (null: the own clip

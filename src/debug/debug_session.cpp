@@ -38,6 +38,7 @@ DebugSession::DebugSession(TunableRegistry& tunables, DebugServices services, In
     addCameraPage(*this);
     addSpawnerPage(*this);
     addFightersPage(*this);
+    addAnimPlayerPage(*this);
     addHudPage(*this);
     addDebugDrawPage(*this);
     addDisplayPage(*this);

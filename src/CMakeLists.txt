@@ -375,6 +375,8 @@ target_sources(coney_core PRIVATE
     sandbox/sandbox_world.cpp)
 # The debug menus: the model every front end renders, and its pages (docs/guides/debug-menu.md).
 target_sources(coney_core PRIVATE
+    debug/anim_catalog.cpp
+    debug/anim_id_names.cpp
     debug/debug_session.cpp
     debug/game_tunables.cpp
     debug/input_gate.cpp
@@ -384,6 +386,7 @@ target_sources(coney_core PRIVATE
     debug/native_caller.cpp
     debug/native_signatures.cpp
     debug/pad_menu_input.cpp
+    debug/pages_anim.cpp
     debug/pages_engine.cpp
     debug/pages_hud.cpp
     debug/pages_play.cpp

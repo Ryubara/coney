@@ -93,6 +93,7 @@ add_executable(coney_tests
     hud/lock_pick_hud_test.cpp
     hud/mug_meter_test.cpp
     hud/war_command_display_test.cpp
+    platform/disc_anim_player_test.cpp
     platform/disc_change_character_test.cpp
     platform/disc_sprite_sheets_test.cpp
     platform/disc_rumble_test.cpp
@@ -254,6 +255,7 @@ target_sources(coney_tests PRIVATE
     human/disc_player_test.cpp
     human/human_test.cpp
     human/human_revive_test.cpp
+    human/debug_clip_test.cpp
     human/flight_test.cpp
     human/hiding_test.cpp
     human/body_test.cpp
@@ -317,6 +319,8 @@ target_sources(coney_tests PRIVATE
 target_compile_definitions(coney_tests PRIVATE CONEY_ASSETS_DIR="${PROJECT_SOURCE_DIR}/assets")
 # The debug menus (docs/guides/debug-menu.md).
 target_sources(coney_tests PRIVATE
+    debug/anim_catalog_test.cpp
+    debug/anim_page_test.cpp
     debug/audio_page_test.cpp
     debug/debug_session_test.cpp
     debug/input_gate_test.cpp
