@@ -9,7 +9,7 @@
 #   python-os=<JSON>     the OSes python runs on
 #
 # Pushes, the nightly run and manual runs always get everything. A draft pull request gets only the cheap checks (the
-# title, commits, docs, format and docs workflows); marking it ready for review runs the rest. A ready pull request
+# title, docs, format and docs workflows); marking it ready for review runs the rest. A ready pull request
 # whose every changed file is documentation (`paths.docs_only` of the conventions file) skips the engine builds, and
 # runs python on Linux only: python's repository checks read docs/, research/ and README.md, but do not depend on the
 # OS. Anything else, or a file this script does not recognise, runs everything.

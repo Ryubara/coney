@@ -1084,7 +1084,7 @@ runs. The log says `scene sound: <hash> prepared` (or `pending`) and `scene soun
 the human the scene holds, else unplaced on the effects bus. **Coney stand-ins:**
 captions, particles and rumble are counted; a puppet's model follows its role's name (`warrcl` is Cleon's `warr_cl`,
 and so on); a cast human keeps running its brain while a scene poses it.
-`--scene NAME` with `--play-level` plays one scene at once ([Building](../guides/building.md#playing-a-level)).
+`--scene NAME` with `--play-level` plays one scene at once ([Running Coney](../guides/running.md#playing-a-level)).
 
 **In play** (`--play-level level99`, headless): at checkpoint 1 `StartAmbient` runs `SuperRunScene(IntroScene)`, and
 `l99_c1` plays through the scripts with its seven bound humans posed on the stage; it ends after 2,026 frames, calls

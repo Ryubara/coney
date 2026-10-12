@@ -2110,7 +2110,7 @@ Coney's choices, where the original does something else or the page is silent:
   legal screen reads none, so its behaviour is unchanged.
 - Sources: `platform::SdlInput` (`src/platform/sdl_input.h`), SDL3 gamepads and the keyboard; and
   `ScriptedInput` (`src/core/input_script.h`), which plays an input script (`--input-script FILE`, format and
-  controls in [Building and testing](../guides/building.md#controls)) for tests and headless runs.
+  controls in [Running Coney](../guides/running.md#controls)) for tests and headless runs.
 
 Coney's choices for the pads, where the original does something else or the page is silent:
 
@@ -2126,7 +2126,7 @@ Coney's choices for the pads, where the original does something else or the page
   quarter of the travel. SDL's face buttons are positional (south is cross on any gamepad). A gamepad takes the
   first free port when it connects and frees it when pulled out, the other port keeping its own; the keyboard always
   plays on port 1, which is therefore always connected in a windowed run. The original's controller-removed screen
-  (mode 0xf, [Boot](boot.md)) is not shown ([Controls](../guides/building.md#controls)). A headless run without a
+  (mode 0xf, [Boot](boot.md)) is not shown ([Controls](../guides/running.md#controls)). A headless run without a
   script has no input source: every record stays disconnected.
 - The Lua pad handlers (`src/core/pad_handlers.h`; `PadSetHandler` maps player 0 to port 1's record, any other to
   port 2's) are called during play only (`src/gamemodes/player_frame.h`), not on the front end.

@@ -2,7 +2,7 @@
 #pragma once
 
 // What the disc tests that play through the front end share: the disc named by CONEY_DISC, gameplay's level loader as
-// `main` sets it up, and QUICK RUMBLE from boot as a scripted pad drives it (docs/guides/building.md#run-coney). They
+// `main` sets it up, and QUICK RUMBLE from boot as a scripted pad drives it (docs/guides/running.md#run-coney). They
 // print counts and positions only (LEGAL.md).
 
 #include <array>

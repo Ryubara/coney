@@ -3,6 +3,7 @@
 // (scripting/story_bindings.h, ai/scripted_story.h): each binding called by name in a script state whose AI host is the
 // scripted brains over a synthetic scene, then the humans, brains, gangs and the game state checked. Handles: 1 the
 // player, 2 and up the AI humans the tests add, 100 and up the flags.
+#include <algorithm>
 #include <cstddef>
 #include <expected>
 #include <map>
@@ -22,6 +23,7 @@
 #include "ai/riot_goals.h"
 #include "ai/scripted_brains.h"
 #include "ai/scripted_story.h"
+#include "combat/commands.h"
 #include "core/error.h"
 #include "gui/global_strings.h"
 #include "human/human_flags.h"
@@ -130,7 +132,7 @@ TEST_CASE("The story's human switches reach the humans", "[ai][story]") {
     level.call("HuForceLook", {Value(2.0), Value(1.0)});
     CHECK(extra.human().hasFlag(flag::kBlockLook));
     CHECK(extra.human().hasFlag(flag::kForceLook));
-    level.call("HuLockPadMovement", {Value(1.0), Value(1.0)});
+    level.call("HuLockPadMovement", {Value(1.0), Value(true)});
     CHECK(level.scene.player().human().script().movementLocked);
     level.call("HuShadow", {Value(2.0), Value(0.0)});
     CHECK_FALSE(extra.human().script().shadow);
@@ -234,6 +236,39 @@ TEST_CASE("A Warrior command reaches the chief's crew and the callback", "[ai][s
     CHECK(level.scripted->storyHost().warriorCommand() == 0);
 }
 
+TEST_CASE("Every Warrior command clears the crew's shared target; the menu's attack sets it to the chief's lock-on",
+          "[ai][story][threat]") {
+    // WarriorCommand_Dispatch and Gang_SetSharedTarget (docs/research/ai-reimpl.md#unit-1).
+    Level level;
+    Brain& crew = level.add({42.0F, 39.0F, 0.0F});
+    Brain& rogue = level.add({40.0F, 41.0F, 0.0F});
+    const int gang = level.scripted->gangCreate(0, "Warriors");
+    const int rogues = level.scripted->gangCreate(2, "Rogues");
+    level.scripted->gangAddMember(gang, 1.0);
+    level.scripted->gangAddMember(gang, 2.0);
+    level.scripted->gangAddMember(rogues, 3.0);
+    rogue.setThreatResponse(0);
+    // The chief locks onto the rogue 1 m ahead of him (square, then the stance).
+    level.scene.player().human().record().command = coney::combat::command::kSquarePressed;
+    level.scene.run(1);
+    level.scene.player().human().record().command = coney::combat::command::kNone;
+    level.scene.run(30);
+    REQUIRE(level.scene.player().human().fighter().lockTarget() == &rogue.human());
+    const coney::ai::Gang* warriors = level.scene.brains.gangs().find(gang);
+    REQUIRE(warriors != nullptr);
+    // A forced attack never sets it.
+    level.call("IssueWarriorCommand", {Value(1.0), Value(true)});
+    CHECK(warriors->chosenTarget() == nullptr);
+    // The menu's (unforced) attack: the chief's lock-on target, listed by the AI members.
+    level.call("IssueWarriorCommand", {Value(0.0), Value(true)});
+    level.call("IssueWarriorCommand", {Value(1.0), Value(0.0)});
+    CHECK(warriors->chosenTarget() == &rogue);
+    CHECK(std::ranges::find(crew.enemies(), &rogue) != crew.enemies().end());
+    // Any other command clears it first.
+    level.call("IssueWarriorCommand", {Value(2.0), Value(0.0)});
+    CHECK(warriors->chosenTarget() == nullptr);
+}
+
 TEST_CASE("GangIsWanted asks the wanted timer by default and the second timer for a nil or false", "[ai][story]") {
     Level level;
     level.state.player.crimes.setSecondWanted(2, 0);
@@ -332,7 +367,7 @@ TEST_CASE("The fourth mission's brain calls reach the brains: pedestrian type, w
 TEST_CASE("The fifth and sixth missions' human switches reach the humans", "[ai][story]") {
     Level level;
     Brain& extra = level.add({44.0F, 40.0F, 0.0F});
-    level.call("HuBlockJump", {Value(1.0), Value(1.0)});
+    level.call("HuBlockJump", {Value(1.0), Value(true)});
     CHECK(level.scene.player().human().hasFlag(flag::kBlockJump));
     level.call("HuSetNoReact", {Value(2.0), Value(1.0)});
     CHECK(extra.human().fighter().hitReactionsOff());

@@ -290,6 +290,25 @@ def test_a_limit_that_pre_commit_does_not_pass_is_found(root: Path) -> None:
     assert "--maxkb=512" in problem.message
 
 
+# --- files.markdown-hook ------------------------------------------------------------------------------------------
+
+
+def test_the_markdownlint_hook_is_in_the_clean_copy(root: Path) -> None:
+    assert "id: markdownlint-cli2" in (root / ".pre-commit-config.yaml").read_text(encoding="utf-8")
+
+
+def test_a_pre_commit_config_without_the_markdownlint_hook_is_found(root: Path) -> None:
+    edit(root, ".pre-commit-config.yaml", "id: markdownlint-cli2", "id: something-else")
+    (problem,) = found(af.markdown_hook_exists, context(root))
+    assert problem.item == ".pre-commit-config.yaml" and "markdownlint-cli2" in problem.message
+
+
+def test_a_missing_pre_commit_config_is_found_by_the_markdownlint_check(root: Path) -> None:
+    (root / ".pre-commit-config.yaml").unlink()
+    (problem,) = found(af.markdown_hook_exists, context(root))
+    assert "missing" in problem.message
+
+
 # --- the scope script itself --------------------------------------------------------------------------------------
 
 
