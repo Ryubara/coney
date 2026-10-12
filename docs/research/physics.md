@@ -212,7 +212,8 @@ and a segment pointing down on an axis gets a wrong bound there ([Unit 6](#u6-bo
 
 The "capsule" is **upright**: the capsule-capsule tests treat it as the vertical range `[base z, base z + height]`
 with a horizontal radius (`0x00346388`, `0x003498c0` + `0x0034a8d0`), so a human never tilts. The sweep swaps the two
-capsules' heights (`0x00343e1c`-`0x00343e28`, [Unit 11](#u11-capsule-capsule)); the overlap test does not. Two overlap tests round
+capsules' heights (`0x00343e1c`-`0x00343e28`, [Unit 11](#u11-capsule-capsule)); the overlap test does not. The capsule-box sweep reads no height or z range at all: only the candidate gather separates
+them vertically ([Unit 12](#unit-12)). Two overlap tests round
 its ends instead (capsule against sphere and against segment, a true capsule reaching `r` past both ends), and the
 capsule-box overlap reads no height at all ([Unit 4](#u4-physicsoverlap-capsulesphere-00346ed8)); confirmed (code).
 A segment is a sphere of its radius swept along a bone: the limbs' strike volumes.
@@ -629,7 +630,7 @@ where a unit names a quirk: `Sweep_BoxTriangle`'s zero-speed reset gives fractio
 | `0x00349488` / `0x00349560` | `Ray_ClipSlab` / `Ray_OrientedBox` | a ray against an oriented box, slab by slab | confirmed (code) |
 | `0x003498c0`, `0x0034a8d0` | `Sweep_CircleCircle2D`, `Sweep_IntervalOverlap` | the capsule-capsule sweep: horizontal circles, then the vertical ranges over time | confirmed (code) |
 | `0x00349a60`, `0x00349180` | `Sweep_SphereCapsule`, `Vec_MakePerpendicularBasis` | moving sphere (or a ray: radius 0) against an upright capsule | confirmed (code) |
-| `0x0034a318`, `0x0034a6d0` | `CapsuleBox_SweepSide`, `CapsuleBox_SweepCorner` | the capsule-box sweep, four sides and four corners | confirmed (code) |
+| `0x0034a318`, `0x0034a6d0` | `CapsuleBox_SweepCorner`, `CapsuleBox_SweepSide` | the capsule-box sweep, four corners and four sides: a circle against a rectangle in the box's plane, with no vertical test ([Unit 12](#unit-12)) | confirmed (code) |
 | `0x0034a2d0`, `0x0034a6a0` | `CapsuleBox_CornerCircle`, `CapsuleBox_SideInterval` | the capsule-box overlap | confirmed (code) |
 | `0x0034ac08`, `0x0034acc8`, `0x0034ad50` | `Segment_ClosestParam`, `Segment_ClosestPoint`, `Segment_ClosestPoints` | point-segment and segment-segment closest points | confirmed (code) |
 | `0x0034af50`, `0x0034afd8` | `Ray_SphereRoot`, `Ray_CircleRoot` | the first root of a ray against a sphere (3D) or a circle (2D) | confirmed (code) |
@@ -1634,7 +1635,7 @@ the vtable.
 | Slot (adjust / function) | What the sweep uses it for | Human's function | Called at |
 | --- | --- | --- | --- |
 | `+0x20` / `+0x24` | type mask (bit `0x40` a human) | | `0x0033e070`, `0x0033e090` |
-| `+0x50` / `+0x54` | state flags (64-bit); bit `0x4000000` airborne | | `0x0033d3f4`, `0x0033e0bc`, `0x00342288` |
+| `+0x50` / `+0x54` | the owner's flags; for a human the 32-bit object flags word `+0x54`, bit `0x4000000` airborne | `0x004f4780` | `0x0033d3f4`, `0x0033e0bc`, `0x00342288` |
 | `+0x70` / `+0x74` | **set velocity** `(owner, &vec4)` | `0x0023cf00` | `0x0033e6b0`, `0x0033e760` |
 | `+0x98` / `+0x9c` | **get the cached transform** (sret, 32 bytes: position, rotation): the copy the owner took at the start of its update (human `+0x10` / `+0x20`) | `0x004ed860` | `0x0033e3e0` |
 | `+0xa8` / `+0xac` | **get the transform** (sret, 32 bytes) from the authoritative table `0x00714b00` | `0x004ed828` | `0x0033e5ec`, `0x0033dd4c` |
@@ -1840,7 +1841,8 @@ Run for every code that is not 0. Confirmed (code) at `0x0033e058`-`0x0033e204`:
 5. The return ([above](#u3-resolve), step 5).
 
 Who sets the contact flags: the capsule's mesh sweep writes `0x1` when it built a corner slide (`0x00348360`,
-`0x00348438`), the sphere and box mesh sweeps copy their hit's flags word (`0x003490f0`, `0x003489d0`; the box's
+`0x00348438`), the capsule-box sweep writes `0x1` for its four corner regions with a unit diagonal slide in
+`+0xa0` (`0x00345078`, [Unit 12](#unit-12)), the sphere and box mesh sweeps copy their hit's flags word (`0x003490f0`, `0x003489d0`; the box's
 word is always 0, `0x003488e0`, so a box mesh contact never carries `0x1` or `0x2`), the landing
 contact is `0x80` ([below](#u3-mesh)). Whether any sweep produces `0x2` is not traced. Confirmed (code) for
 the stores cited.
@@ -4655,21 +4657,298 @@ Values from the spec (doubles; compare with 1e-5). Capsules are `(B; r = 0.35, h
 
 ### Unit 12: A capsule swept against a box {#unit-12}
 
-- **Specified by:** [Geometry kernels](#kernels) (roles only); the overlap form is exact in
-  [Unit 4](#u4-physicsoverlap-capsulebox-00346808). Needs the algebra of the capsule-box sides and corners.
-- **Coney:** `src/physics/sweeps.*`; a walking human against an object's box body (today the stand-in push of
-  `world_objects::ObjectBodies::pushOut`).
-- **Tests:** a capsule swept at a box face and a corner against a brute-force sampled sweep; the vertical ranges that
-  never overlap pass.
+**What it is.** An upright capsule swept against an oriented box (sweep table entries (3, 1) and (1, 3)): a walking or
+jumping human's capsule against an object's box body, and a moving box against a human. It is a **2D test** in the
+box's horizontal plane, a circle swept against a rectangle; no height or vertical range is read. Specified exactly
+below from the disassembly (2026-10-12), confirmed (code) unless a line says otherwise; the fractions were checked
+against a brute-force sampled sweep ([Test ideas](#u12-tests)).
 
-4 functions, 4436 bytes (0 tagged).
+- **Coney:** `src/physics/sweeps.*`; a walking human against an object's box body (today the stand-in push of
+  `world_objects::ObjectBodies::pushOut`), and the mirror for a moving box against a human (with [Unit 13](#unit-13)).
+- **Tests:** [Test ideas](#u12-tests): a face, a face's end, a corner, start overlaps, the over-the-box case, the
+  quirks (start-centre normals, the opposite-corner normal, A0/A1 corner normals, grazes missed, negative fractions),
+  the mirror; there is **no** vertical test to pin, the pair ignores heights.
+
+4 functions, 4436 bytes (0 tagged). The two kernels' names were swapped in the shared Ghidra project; they were
+renamed on 2026-10-12 from their call sites (`0x00344884`, `0x0034499c`), so the table and the
+[kernels](#kernels) row now read: `0x0034a318` is the **corner** step, `0x0034a6d0` the **side** step.
 
 | Address | Name | Size |
 | --- | --- | --- |
 | `0x00344618` | `PhysicsSweep_CapsuleBox` | 2800 |
 | `0x00345108` | `PhysicsSweep_BoxCapsule` | 224 |
-| `0x0034a318` | `CapsuleBox_SweepSide` | 900 |
-| `0x0034a6d0` | `CapsuleBox_SweepCorner` | 512 |
+| `0x0034a318` | `CapsuleBox_SweepCorner` (was `CapsuleBox_SweepSide`) | 900 |
+| `0x0034a6d0` | `CapsuleBox_SweepSide` (was `CapsuleBox_SweepCorner`) | 512 |
+
+#### Summary for the implementer {#u12-summary}
+
+- **2D only.** The capsule's base x, y, its radius and the move's x, y decide everything; the capsule's height, its
+  base z, the move's z and the box's extent along its vertical axis are never read for the test. Two shapes far apart
+  in height collide when their footprints do; only the candidate gather (the swept body's AABB against the box body's
+  AABB, [Sweeping a body](#sweep)) keeps them apart vertically. Confirmed (code) at `0x00344618` (the reads); the
+  consequence is inferred.
+- **Already touching counts as a hit**, at fraction 0, unlike the sphere-box sweep of [Unit 5](#unit-5): a kernel's
+  −1 is non-zero and the caller only tests for 0 (`0x003448ac`, `0x00344fe0`). But a capsule that touches and moves
+  **away** (or parallel) gets **no** contact, unless the kernels' flag is set ([below](#u12-flag)), so a human can
+  walk out of a box it overlaps.
+- **Over the box** (the base inside the footprint): always a hit at fraction 0, whatever the move, with an
+  **unsigned** axis as the normal.
+- **The contact** ([What the contact holds](#u12-contact)): `+0x80` fraction, `+0x50` normal (a face's outward axis,
+  or for a corner the direction from the touch point to the capsule's **start** centre), `+0x90` the capsule's axis
+  point at mid-height at contact (not a surface point), `+0x60` the touch point's two in-plane box coordinates with
+  the world mid-height z, `+0xa0` a corner slide (the region's diagonal) with flag `+0xb0` = 1 for corner regions,
+  `+0x10` the move's direction.
+- **Quirks to keep** (each pinned by a test): the (−, −) corner's start-touching normal is built from the opposite
+  corner, as in the overlap ([Unit 4](#u4-physicsoverlap-capsulebox-00346808)); corner normals use the box's axes A0
+  and A1 whatever the in-plane axes are; a corner's normal is taken from the start centre, not the centre at contact;
+  the corner step misses some grazes of its near corner; with the flag set a receding capsule can get a **negative**
+  fraction.
+
+#### Records and calls {#u12-records}
+
+`bool PhysicsSweep_CapsuleBox(Contact* c, Body* capsuleBody, Shape* capsule, Body* boxBody, Shape* box, const Vec4*
+move)` (`a0`-`a3`, `t0`, `t1`, the sweep table's convention, [Unit 5](#u4b-physicssweep-spherebox-003453f8)).
+Returns 1 on a hit, else 0 with nothing written. Confirmed (code) at `0x00344618`.
+
+| Record | Fields read |
+| --- | --- |
+| capsule (type 3) | `+0x40` radius r; `+0x44` height h (only for the output z); `+0x50` base B (x, y used; z only for the output) |
+| box (type 1) | `+0x40`, `+0x44`, `+0x48` half extents h0, h1, h2; `+0x50`, `+0x60`, `+0x70` axes A0, A1, A2 (x, y, z); `+0x80` centre P |
+| capsule body | `+0x34` owner, which must be a human (`Object_AsHuman` `0x00229868` is called and its result used without a null test, `0x003446a0`; inferred safe: only human bodies hold capsules) |
+| box body | `+0x40` flags, bit `0x4` (`BLOCKHUMANS`, [layers](#layers)) |
+| owner | vtable slot `+0x50` / `+0x54`, the human's `0x004f4780`, which returns the object flags word `+0x54` (bit `0x4000000` airborne); state flag `0x2000000000` through `0x00227f40` (landing, [Characters](characters.md)) |
+
+The box's own move is not an argument: the box is taken at rest at its current pose.
+
+#### The kernels' flag {#u12-flag}
+
+Before the test (`0x0034468c`-`0x003446cc`): `flag = 0` if the box body's flags have `0x4` (`BLOCKHUMANS`); else
+`flag = 1` if the owner's object flags have `0x4000000` (airborne), else `flag = (0x00227f40(owner) ≠ 0)`. The flag
+goes to every kernel in `a3`. **Flag 0** makes the kernel return "no hit" at once when the capsule does not move
+towards the face (side) or the corner point (corner); **flag 1** skips that screen. So the screen is off only for a
+box without `BLOCKHUMANS` (one the human meets through `JUMPTARGET`, `CHARGETARGET` or `RUNTARGET`,
+[layers](#layers)) while the human is airborne or landing. Confirmed (code); the reading of the bits is from the
+pages cited.
+
+#### PhysicsSweep_CapsuleBox (0x00344618): the regions {#u12-capsulebox}
+
+1. **In-plane axes** (`0x003446d0`-`0x00344738`): `u` = the axis with the largest `|A_k.z|`, scanning k = 0, 1, 2
+   with a strict `>` from −1 (the first wins a tie); `i = (u + 1) mod 3`, `j = (i + 1) mod 3`; `hx = h_i`,
+   `hy = h_j`. The same choice as the overlap ([Unit 4](#u4-physicsoverlap-capsulebox-00346808)).
+2. **Coordinates** (`0x00344740`-`0x0034485c`): `d = B − P` and `m = move`, each with z set to 0; `x = d·A_i`,
+   `y = d·A_j`, `mx = m·A_i`, `my = m·A_j` (xyz dot products, VU0).
+3. **Region** by x against ±hx and y against ±hy, strict outside (`x < −hx`, `x > hx`), inclusive inside. Each outer
+   region calls a kernel on the coordinates **folded** so that the start lies left of (and for a corner, below) the
+   rectangle, then unfolds the kernel's touch point `(px, py)` by negating what was negated:
+
+| Region | Kernel and arguments `(x, y, r, mx, my, hx, hy)` | Unfold | Normal `+0x50` (w) | Slide `+0xa0` | `+0xb0` |
+| --- | --- | --- | --- | --- | --- |
+| `x < −hx`, `y < −hy` | Corner `(x, y, r, mx, my, hx, hy)` | | corner rule, `n0 = (x − hx, y − hy)` (**quirk**) | norm(−A_i − A_j) | 1 |
+| `x < −hx`, `abs(y) ≤ hy` | Side `(x, y, r, mx, my, hx, hy)` | | −A_i (1) | none | 0 |
+| `x < −hx`, `y > hy` | Corner `(x, −y, r, mx, −my, hx, hy)` | py | corner rule, `n0 = (x + hx, y − hy)` | norm(−A_i + A_j) | 1 |
+| `abs(x) ≤ hx`, `y < −hy` | Side `(y, x, r, my, mx, hy, hx)`, outputs (py, px) | | −A_j (1) | none | 0 |
+| `abs(x) ≤ hx`, `abs(y) ≤ hy` | none: a hit at fraction 0, `(px, py) = (0, 0)` | | A_j if `abs(x) < abs(y)`, else A_i, **unsigned** (1) | none | 0 |
+| `abs(x) ≤ hx`, `y > hy` | Side `(−y, x, r, −my, mx, hy, hx)`, outputs (py, px) | py | +A_j (1) | none | 0 |
+| `x > hx`, `y < −hy` | Corner `(−x, y, r, −mx, my, hx, hy)` | px | corner rule, `n0 = (x − hx, y + hy)` | norm(A_i − A_j) | 1 |
+| `x > hx`, `abs(y) ≤ hy` | Side `(−x, y, r, −mx, my, hx, hy)` | px | +A_i (1) | none | 0 |
+| `x > hx`, `y > hy` | Corner `(−x, −y, r, −mx, −my, hx, hy)` | px, py | corner rule, `n0 = (x − hx, y − hy)` | norm(A_i + A_j) | 1 |
+
+"None" means the slide stays `(0, 0, 0, 1)` (`0x005116c0`, loaded at `0x00344670`). A kernel result of 0, or a
+fraction above 1.0 (`0x3f800000`; `c.le`, so exactly 1.0 hits), is no hit. Confirmed (code) at
+`0x0034485c`-`0x00344f34`.
+
+**The corner rule** (`0x00344f38`-`0x00344fa4`): `(nx, ny) = (x − px, y − py)` when the fraction is > 0, else `n0`
+from the table; then `n = normalize(nx·A0 + ny·A1)` (xyz; its w is the stack word at `sp+0x2c`, never set: undefined).
+Three quirks, confirmed (code):
+
+- `(x, y)` is the capsule's **start**, not its centre at contact, so the normal points from the touch point to where
+  the capsule started (an oblique approach skews it; [test 5](#u12-tests)).
+- **A0 and A1**, not `A_i` and `A_j`: right only when `u = 2` (the box's third axis is the most vertical, every box
+  posed from an upright owner, inferred); a box lying with A0 vertical gets a corner normal with a z part.
+- At fraction 0 (start touching, or the zero-discriminant guard below) the (−, −) corner uses `(x − hx, y − hy)`, the
+  offset from the **opposite** corner; the other three use their own corner. The overlap test has the same slip.
+
+The slide vectors use `A_i`, `A_j` correctly and are unit vectors (VU0 `vrsqrt`), w = 1.
+
+**After the region** (`0x00344fa8`-`0x00344fdc`): the owner's object flags are read again; with `0x4000000`
+(airborne) the slide is reset to `(0, 0, 0, 1)` (the flag `+0xb0` stays 1). So an airborne human never gets a
+corner slide. Confirmed (code).
+
+#### CapsuleBox_SweepSide (0x0034a6d0) {#u12-side}
+
+Size 0x200. `int fn(float x, float y, float r, float mx, float my, float hx, float hy, int flag, float* frac,
+float* px, float* py)`: `f12`-`f18` then `a3`, `a0`-`a2`. The start is folded so `x < −hx`, `abs(y) ≤ hy`; the
+target is the face `x = −hx` and its two end corners `(−hx, ±hy)`. Returns 1 hit, 0 none, −1 touching. Confirmed
+(code) at `0x0034a6d0`. Let `g = x + hx` (< 0), `s = g + r`, `A = mx² + my²`.
+
+1. If flag = 0 and `mx ≤ 0`: return 0 (not moving towards the face).
+2. If `s ≥ 0` (within r of the face plane): `*frac = 0`, return −1 (`px`, `py` not written).
+3. Pick the end the move heads for: if `my ≥ 0`, the end `+hy` and `k = mx·(y − hy) − my·g`; the miss test and the
+   end test are `k ≥ 0 and k² > r²·A` → return 0, and `k > r·my` → the end corner. If `my < 0`, the end `−hy` and
+   `k = mx·(y + hy) − my·g`; miss when `k ≤ 0 and k² > r²·A`; the end corner when `r·my > k`.
+   (`k / mx` is how far past that end the centre is as it crosses `x = −hx`; `|k| / |m|` the line's distance from
+   the corner, inferred from the algebra.)
+4. **Face**: `*frac = −s / mx`; `px = −hx`, `py = y + frac·my` (not clamped to the face). Return 1.
+5. **End corner** `(−hx, e)`: `*frac` = the smaller root of `|q + t·m|² = r²` with `q = (g, y − e)`; `px = −hx`,
+   `py = e`. Return 1.
+
+The root is computed inline as in `Ray_CircleRoot` ([Unit 5](#u4b-ray-sphereroot-0034af50-and-ray-circlero)):
+`C = |q|² − r²`, `B = q·m`, `D = sqrt(abs(B² − A·C))`, `t = (C/D) / (1 − B/D)`. With flag 1 nothing stops a receding
+path: the face branch is then reached only in degenerate cases, but the end corner's root is the **past** entry time,
+a negative fraction, which the caller accepts (only > 1 is rejected); see [Edge cases](#u12-edge).
+
+#### CapsuleBox_SweepCorner (0x0034a318) {#u12-corner}
+
+Size 0x384. Same signature. The start is folded into the (−, −) corner region, `x < −hx`, `y < −hy`; the target is
+the whole rectangle as reached from there. Confirmed (code) at `0x0034a318`. Let `e = (x + hx, y + hy)` (both < 0),
+`A = |m|²`, `B = m·e`, `C = |e|² − r²`, `k = mx·ey − my·ex`.
+
+1. If flag = 0 and `B ≥ 0`: return 0 (not moving towards the corner point).
+2. If `C ≤ 0` (within r of the corner): `*frac = 0`, return −1.
+3. If `k ≥ 0` (the path crosses the line `y = −hy` left of the corner, by `k / my`):
+    - `k ≤ r·my`: **near corner**: root of `q = e`; if `D` is exactly 0 the fraction is **0** (an explicit guard,
+      `0x0034a3f0`); `(px, py) = (−hx, −hy)`. Return 1.
+    - else, if `mx ≤ 0` return 0; `k2 = mx·(y − hy) − my·ex`; if `k2 ≥ 0 and k2² > r²·A` return 0; if `k2 ≤ r·my`,
+      the **face `x = −hx`**: `frac = −(ex + r) / mx`, `(px, py) = (−hx, y + frac·my)`; else the **far corner
+      `(−hx, +hy)`**: root of `q = (ex, y − hy)`, `(px, py) = (−hx, hy)`. Return 1.
+4. If `k < 0` (it crosses `x = −hx` below the corner, by `−k / mx`):
+    - `−k ≤ r·mx`: **near corner**, root of `q = e` (no zero guard here), `(px, py) = (−hx, −hy)`. Return 1.
+    - else, if `my ≤ 0` return 0; `k2 = mx·ey − my·(x − hx)`; if `k2 ≤ 0 and k2² > r²·A` return 0; if
+      `−k2 ≤ r·mx`, the **face `y = −hy`**: `frac = −(ey + r) / my`, `(px, py) = (x + frac·mx, −hy)`; else the
+      **far corner `(+hx, −hy)`**: root of `q = (x − hx, ey)`, `(px, py) = (hx, −hy)`. Return 1.
+
+The near-corner branches have no miss test of their own: `abs(k) ≤ r·abs(m_axis)` already puts the line within r of
+the corner (inferred). **Grazes are missed**: when the path crosses the extended side line farther than r from the
+corner but still passes within r of it, and does not move towards that side (`my ≤ 0` or `mx ≤ 0`), the step returns
+0 although the circle touches the corner ([test 11](#u12-tests)). In 40,000 random sweeps (box B, r 0.3, flag 0) this
+lost 17 of 1,124 corner-region contacts; every other hit matched the sampled sweep to 1e-4. Inferred from the model
+of this page, checked by brute force.
+
+#### What the contact holds {#u12-contact}
+
+Written on a hit only (`0x00345000`-`0x003450c8`), `f` = the fraction, `B` = capsule base, `M` = move:
+
+| Offset | Value | Frame |
+| --- | --- | --- |
+| `+0x10` | `normalize(M)` in xyz (the full 3D move, `vrsqrt`), w = M.w (as the caller left it) | world |
+| `+0x50` | the normal of the region table (faces and over the box w = 1; corners w undefined) | world |
+| `+0x60` | `(px, py)`: the touch point's coordinates along `A_i`, `A_j` from the box centre (in the table's unfolded form; `(0, 0)` when the kernel returned −1 or over the box; negated zeros may be −0.0) | box plane |
+| `+0x68` | `B.z + f·M.z + h/2`: the capsule's mid-height, **world** z (`0x0034505c`-`0x00345094`) | world |
+| `+0x6c` | 1.0 | |
+| `+0x80` | `f` (0 for a start overlap or over the box; ≤ 1; negative possible with flag 1) | |
+| `+0x90` | `B + f·M` with z replaced by the mid-height above, w = 1: the capsule's axis point, **not** a point on the box | world |
+| `+0xa0` | the slide of the region table (`(0, 0, 0, 1)` unless a corner region and not airborne) | world |
+| `+0xb0` | 1 for the four corner regions, else 0 | |
+
+Nothing else is written: `+0x00`/`+0x04`/`+0x40`/`+0x44` and `+0xb4` are set by the caller
+(`PhysicsBody_SweepHumanMask` clears `+0xb4` and calls `Contact_InsertSorted`, [Unit 3](#u3-insert)); `+0x20`,
+`+0x30`, `+0x70`-`+0x7c`, `+0x84`-`+0x8c` hold whatever the slot held. Confirmed (code).
+
+What the resolution makes of it ([Unit 3](#u3-codes), inferred): flag `0x1` with a corner's diagonal slide adds that
+unit vector, less its part against the pass's direction, to the move velocity, which steers a walker around the box's
+corner; a fraction-0 contact advances nothing and only removes the velocity's part into `+0x50`; over the box the
+unsigned normal blocks only the part of the move along −A_i (or −A_j).
+
+#### PhysicsSweep_BoxCapsule (0x00345108) {#u12-boxcapsule}
+
+Size 0xe0. Table (1, 3): the box moves. Calls `PhysicsSweep_CapsuleBox(c, capsuleBody, capsule, boxBody, box,
+&(−M.x, −M.y, −M.z, M.w))`; on a hit swaps the contact's two 0x40-byte halves wholesale (`+0x00..+0x3f` ↔
+`+0x40..+0x7f`; `+0x80` on untouched) and returns 1. Confirmed (code) at `0x00345108`. So:
+
+- `+0x10` = the box's normal towards the capsule (what the capsule-box test put in `+0x50`);
+- `+0x50` = `normalize(−M)`: the **reversed move direction**, not a surface normal; `+0x20` the in-plane point, `+0x28`
+  the mid-height z, `+0x2c` 1.0;
+- `+0x90` = the capsule's base **minus** `f·M` at mid-height (a point in the box's start frame, not a place in the
+  world); `+0xa0`, `+0xb0` as in the table, with the airborne test applied to the **capsule's** owner.
+
+Inferred consequence: the moving box's resolution uses `+0x50` = −move direction, so its advance is along its own
+move and the slide removes its whole velocity along that direction; a corner slide (flag 1) points from the box towards
+the capsule's quadrant.
+
+#### Who calls it {#u12-callers}
+
+Only through the sweep table (IPhysics `+0x7c`, entries (3, 1) and (1, 3), filled by `IPhysics_Construct`,
+`0x0033c7a0`); `PhysicsSweep_BoxCapsule` is the only direct caller of `0x00344618`. Confirmed (code), xrefs. The
+table users that can pair a capsule with a box:
+
+- `PhysicsBody_SweepHumanMask` (`0x0033d498`), from `PhysicsBody_Sweep` and the `0x801` update: a human's capsule
+  (its first shape) against the candidate bodies whose flags meet the human's mask (`0x4`, or `0x44` while airborne
+  or holding, plus `0x20`, `0x40000`, [Sweeping a body](#sweep)), every enabled shape of each; and a world object's
+  box (mask `0x2`) against the humans' capsules (humans' bodies have `0x2`), the (1, 3) mirror. Confirmed (code).
+- `IPhysics_CollideShape` (`0x0033e7f0`) with a temporary capsule: `Human_CapsuleOverlaps` (`0x0021c418`, radius
+  0.2) and `Human_IsWayClearTo` (`0x0021c0a8`, radius 0.2) sweep it from the human to another human with options
+  `0x2803` (bodies included); `Human_IsClearToTarget` (`0x0021c240`) uses option 1 (mesh only) and never reaches this
+  pair. Confirmed (code) at the callers.
+- Strikes (`Human_TestStrikes`) sweep spheres and segments, not capsules
+  ([Unit 5](#u4b-how-human-teststrikes-builds-the-sweep-0)).
+
+#### Edge cases {#u12-edge}
+
+- **Negative fractions** (flag 1 only): a receding path whose line passes within r of a side's end corner gets that
+  corner's past root, e.g. −0.5 ([test 12](#u12-tests)). In 40,000 random sweeps with flag 1, 89 side-region hits
+  were negative; none came from flag 0. A negative fraction sorts first and, through the advance `d = f·(D·n)`, would
+  move the body back **towards** the box by `abs(d) − 0.01` (inferred from [Unit 3](#u3-codes); whether it shows in
+  play depends on `Human_OnContact`'s answer for such a box, not traced).
+- **Zero move.** Flag 0, outside the footprint: no hit (side: `mx ≤ 0`; corner: `B = 0`). Flag 1, corner region:
+  `k = 0 ≤ r·0` takes the near corner, `D = 0` hits the guard, a hit at fraction 0 with the corner rule's `n0`. Flag 1,
+  side region: `frac = −s / 0`: on the PS2 a signed `FLT_MAX` whose sign follows the zero's sign (`−mx` of +0 is −0
+  in the regions that negate), so the left and bottom sides give +`FLT_MAX` (no hit) and the right and top sides
+  −`FLT_MAX` (a hit) (inferred from the FPU's divide-by-zero rule). `+0x10` is then `normalize(0)` (VU0 `rsqrt` of 0;
+  meaningless). Coney: write `(0, 0, 0, w)` for `+0x10` and reproduce the hit / no-hit pattern, noting it.
+- **Exact tangency** (`D = 0`) outside the guarded branch divides by zero; Coney may compute `C / (D − B)` (the
+  tangent root), as in [Unit 5](#u4b-ray-sphereroot-0034af50-and-ray-circlero), but must return 0 in the guarded
+  near-corner branch (`k ≥ 0`).
+- Region boundaries are inclusive inside (`x = ±hx` is the middle column), and the side step's "touching" is `s ≥ 0`,
+  the corner's `C ≤ 0`, so exact contact at the start is a hit at 0 (when approaching or flag 1).
+
+#### Test ideas {#u12-tests}
+
+Box B: centre P = (0, 0, 0.5), axes identity, half (2, 1, 0.5). Capsule r 0.35, h 1.8, base z 0 unless given; flag 0,
+grounded, unless given. Values from the model of this page (`scratch` Python), fractions checked against a sampled
+sweep of a circle against the rectangle; 6 decimals.
+
+1. **Face.** Base (−2.6, 0.2), move (0.5, 0, 0): fraction 0.5; `+0x50` (−1, 0, 0, 1); `+0x60` (−2, 0.2, 0.9, 1);
+   `+0x90` (−2.35, 0.2, 0.9, 1); `+0xa0` (0, 0, 0, 1); `+0xb0` 0; `+0x10` (1, 0, 0).
+2. **No vertical test.** Test 1 with base z 5.0 (far above the box): fraction 0.5, `+0x68` and `+0x98` 5.9. Move
+   (0.5, 0, −0.4) from base z 1.0: fraction 0.5, `+0x68` 1.7, `+0x10` (0.780869, 0, −0.624695).
+3. **A face's end.** Base (−2.6, 0.9), move (0.5, 0.4, 0): side region, the end corner (−2, 1): fraction 0.539394;
+   `+0x60` (−2, 1); `+0x50` (−1, 0, 0, 1) (the face normal though the corner was touched); `+0x90` (−2.3303, 1.1158).
+4. **Corner, diagonal.** Base (−2.5, −1.5), move (0.4, 0.4, 0): fraction 0.631282 (= (√0.5 − 0.35) / (0.4√2));
+   `+0x50` (−0.707107, −0.707107, 0); `+0x60` (−2, −1); `+0x90` (−2.2475, −1.2475, 0.9); `+0xa0`
+   (−0.707107, −0.707107, 0, 1); `+0xb0` 1. Airborne owner: the same, but `+0xa0` (0, 0, 0, 1) and `+0xb0` still 1.
+5. **Corner, oblique: the start-centre normal.** Base (−2.5, −1.2), move (0.5, 0.1, 0): near corner, fraction
+   0.379545; `+0x50` (−0.928477, −0.371391, 0) (from the start; the true normal at contact is (−0.886, −0.463)).
+6. **Corner region reaching a face.** Base (−2.5, −1.1), move (0.5, 0.5, 0): the face x = −2, fraction 0.3;
+   `+0x60` (−2, −0.95); `+0x50` (−0.957826, −0.287348, 0) (true (−1, 0, 0)); slide (−0.707107, −0.707107, 0, 1);
+   `+0xb0` 1.
+7. **Start touching a corner: the opposite-corner normal.** Base (−2.2, −1.2), move (0.1, 0.1, 0): fraction 0;
+   `+0x50` (−0.885832, −0.464007, 0) (from (−4.2, −2.2)); `+0x60` (0, 0). Mirror (+, +): base (2.2, 1.2), move
+   (−0.1, −0.1, 0): `+0x50` (0.707107, 0.707107, 0). Base (−2.2, −1.2), move (−0.1, −0.1, 0): no hit; the same with
+   flag 1: a hit at 0, `+0x50` (−0.885832, −0.464007, 0).
+8. **Start touching a face.** Base (−2.2, 0): move (0.1, 0, 0): fraction 0, `+0x50` (−1, 0, 0, 1), `+0x60` (0, 0);
+   move (−0.1, 0, 0) or (0, 0.3, 0): no hit; move (−0.1, 0, 0) with flag 1: a hit at 0.
+9. **Over the box.** Base (−1.5, 0.1), any move including zero: fraction 0, `+0x50` (1, 0, 0, 1) (unsigned, though the
+   capsule is on the −x half); base (0.5, −0.9): (0, 1, 0, 1); base (0.5, −0.5) (tie): (1, 0, 0, 1); `+0x60` (0, 0).
+10. **Short and exact.** Base (−2.6, 0.2), move (0.2, 0, 0): fraction 1.25, no hit. r 0.25, base (−2.5, 0), move
+    (0.25, 0, 0): fraction exactly 1.0, a hit.
+11. **A graze missed.** Base (−2.6, −1.01), move (0.48, −0.3, 0): no hit (`−k` = 0.1848 > r·mx = 0.168, `my` < 0);
+    the sampled sweep touches the corner at 0.6667.
+12. **Negative fraction.** Base (−2.5, 0.8), move (−1.0, 0.3, 0), flag 1: a hit at fraction −0.5 (q = (−0.5, −0.2),
+    `B` 0.44, `C` 0.1675, `D` 0.105); `+0x50` (−1, 0, 0, 1); `+0x60` (−2, 1); `+0x90` (−2.0, 0.65, 0.9). Flag 0: no hit.
+13. **A0/A1 corner normals.** Box lying on its side: centre (0, 0, 0.5), A0 = (0, 0, 1), A1 = (1, 0, 0),
+    A2 = (0, 1, 0), half (0.5, 2, 1) (u = 0, the same footprint as B). Test 1: identical. Test 4: fraction 0.631282,
+    `+0x50` (−0.707107, 0, −0.707107) (a z part), slide (−0.707107, −0.707107, 0, 1) (correct).
+14. **Rotated box.** Centre (10, 5, 0.5), A0 = (0, 1, 0), A1 = (−1, 0, 0), A2 = (0, 0, 1), half (2, 1, 0.5); base
+    (11.6, 5.2), move (−0.5, 0, 0): local (0.2, −1.6) → the −A1 side; fraction 0.5; `+0x50` (1, 0, 0, 1); `+0x60`
+    (0.2, −1); `+0x90` (11.35, 5.2, 0.9).
+15. **Mirror.** Box B moving by (−0.5, 0, 0) against a capsule at rest at base (−2.6, 0.2): fraction 0.5; `+0x10`
+    (−1, 0, 0, 1); `+0x50` (1, 0, 0, w of the move); `+0x20` (−2, 0.2), `+0x28` 0.9, `+0x2c` 1.0; `+0x90`
+    (−2.35, 0.2, 0.9); `+0xa0` (0, 0, 0, 1); `+0xb0` 0.
+16. **Zero move.** Base (−2.6, 0.2): no hit. Base (−2.5, −1.5), flag 1: a hit at 0, `+0x50` (−0.874157, −0.485643, 0)
+    (from (−4.5, −2.5)), `+0x60` (−2, −1).
+17. **Brute force.** Random starts and moves around B (flag 0): every hit's fraction within 1e-4 of the sampled sweep;
+    the only misses are start overlaps moving away or parallel and corner grazes as in test 11; with flag 1 the only
+    extra hits are negative fractions as in test 12.
 
 ### Unit 13: Box against box and triangle {#unit-13}
 
