@@ -801,7 +801,8 @@ function (`P1.Cleanup` → checkpoint 2, `level99_lesson1`, `P2.SetupLesson1`; `
 after themselves, `0x00422c60`), and the object manager's 35-word list (`0x00715780` → `0x007156f0`, the source
 cleared) with the checkpoint and the level index (−1 unless the level is `level34`, `0x00397e88`). The checkpoint
 picks the chapter only when the level is entered (`Main`, above); `RunLevel` also has a branch that preloads
-`level99_scenetest` (`PlaySceneTest`), a test path with no script of that name on the disc (inferred).
+`level99_scenetest` (`PlaySceneTest`) when the debug `SCENETEST` is set: the chunk is on the disc and plays one of
+eight `l99_` scenes on a loop ([Scenes: the scene test](scenes.md#scene-test)).
 
 **Triggers in this mission** (counted from the scripts): 16 volume boxes, whose message 3 starts most steps (`vMark01`
 → `P1.FirstGlow`, `vClimb` → `P3.MoveToClimb`, ...); message 8 on four flags (an AI teacher arrived); messages 1, 3, 4
