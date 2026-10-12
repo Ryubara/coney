@@ -725,9 +725,9 @@ from the line, and stops 0.51 m from it 3 updates later; the original also strik
 and stops 1 update later at 0.42 m. The AI does not charge a human yet (its attack pick takes only the square and cross
 strikes and the snap). The player's sprint charge and dive into a human are tested in play
 ([`disc_sprint_attacks_test.cpp`](repo:tests/platform/disc_sprint_attacks_test.cpp): level99, a spawned fighter
-9 m ahead, the stick at 98 %): each strikes him once and plays its whole clip (27 and 62 updates in Coney, 27 and 61 in the original) with no
-reaction of the attacker's ([Moves a hit cannot stop](#protected-moves)). Not made yet: the level mesh's impact sound, a
-car struck by the shapes, and the weapon spheres of a held object.
+9 m ahead, the stick at 98 %): each strikes him once and plays its whole clip (27 and 62 updates in Coney, 27 and
+61 in the original) with no reaction of the attacker's ([Moves a hit cannot stop](#protected-moves)). Not made
+yet: the level mesh's impact sound, a car struck by the shapes, and the weapon spheres of a held object.
 
 #### The capsule strike {#capsule-strike}
 
@@ -2261,8 +2261,8 @@ strike; inferred). By the code above, such a strike on a charger or a diver take
    into a human broke off on impact and the charger fell: the victim's crushing mid reaction (296-299) switches every
    strike shape on and its flung body struck the charger for 20 with a heavy high hit, which played 292-295 on him
    (owner report, 2026-10-11). The dive escaped only by chance (inferred): its crushing high hit gives 300-303, which
-   strike with the spine and head alone. Still to do: a paired move's victim holding `0x400000` (Coney's paired clips hold no
-   such flag yet).
+   strike with the spine and head alone. Still to do: a paired move's victim holding `0x400000` (Coney's paired clips
+   hold no such flag yet).
 3. A lethal hit on a victim holding any of `0xc12200` does not start the dying reaction or break the pair at once:
    keep the health below 0 and let the victim's own paired clip finish (not the attacker's: 58 outlasts 57); then
    the victim falls with the low reaction (286 for a hit from behind, the reactions table) and goes down by
