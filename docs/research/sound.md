@@ -828,6 +828,80 @@ On the disc (*inferred*, from scanning the `.scn` files for listed hashes): 228 
 of the 248 once each; every main level99 scene (`l99_c1`-`c9`, `l99_t1`, `l99_ash_intro`) has its own. The scenes
 also name streamed mono sounds 280 times and bank sounds 4 times: the event 14/71 sounds.
 
+#### World sound during a scene {#scene-world-sound}
+
+**The engine does not silence the world for a scene.** Nothing in the scene task's start (`SceneTask_Start`,
+`0x0039d870`) or end (`SceneTask_End`, `0x0039f450`) stops, pauses or fades the ambient bed, the ambient emitters or
+the other sounds; their sound calls are the soundtrack's wait and start, the system music off and back on, the held
+speech stopped (`Humans_StopAllSpeech`, `0x0021ecd0`, a cinematic with roles) and each bound human's and object's
+sounds stopped at the end. What a cinematic (scene state `0x0051489c + 0x410` set) changes is a set of **volume
+factors and the listener**, each read every update, so all of it undoes itself the update after the end clears
+`+0x410`. Confirmed (code) at the addresses below:
+
+| What | During a cinematic | Where |
+| --- | --- | --- |
+| **The listener** | both listeners are the **current camera** (the scene camera) for the whole scene: `Gm_Level_Update` takes the camera's matrix and skips the player-ear position (player 1 + 1.8 m) it uses outside a scene when the audio manager's `+0x60` is 0. So emitter ranges, distance attenuation and pan are heard from the scene camera. The same holds while `+0x411` is set (not traced) | `0x00158d58`, `Gm_Level_Update` (`0x00158728`) |
+| Ambient emitters | every emitter sound's `a8` is the ambient factor **0.75** (`Ambient_GetVolume`), applied to playing ones each emitter update (once a second) and to new ones as they start; a `music` emitter's mode-3 loop starts at 0.75 instead of its music duck. Emitters keep starting, stopping and measuring range as usual | `0x0010bf90`, `0x0010c100` |
+| The ambient bed (`SoundPlayAmbientTrack`) | **unchanged**, full volume | none reads `+0x410` |
+| Directional voices not a player's | × the duck factor 0.2 (`+0x3faac`): `Tasks_Update` sets both non-duckable flags for the whole update | `0x00112b10`, [Task update](#three-d) |
+| Speech lines | `Human_PlaySpeech` / `_Cutting` play nothing; held lines stopped at the start | `0x0021e458`, `0x0021e6f0` |
+| Music | × 0.75 (with ducking on); the system music is switched off at the start and back on at the end, only if it was on | `0x0010e5c4`, [Scenes](scenes.md#starting) |
+| Radios | volume 0.5 | `0x003ad4fc`, [Radios](#radios) |
+
+**Runtime** (PCSX2 2.9.94, the audio manager's task list read over PINE about every 55 ms; a scratch state in a
+`level34` cinematic, `+0x410` = 3): for the last 6.4 s of the scene the live tasks were the scene soundtrack (class
+224, sent at 1.0 per side) and the **ambient bed** (`0x83b1ba40`, class 51, record volume 20 %), sent at **0.18 per
+side**, which is its full `0.2 × 0.9` (sound volume): the bed is not lowered by a cinematic. No emitter sound was
+live during the scene (the camera was out of their ranges); after the end, emitter and world sounds started again
+within 2 s. Confirmed (runtime).
+
+**What silences the world is the scripts.** The hub's mission actions (`level95.lua`, `story.RunMissionAction`, read
+as bytecode) do it around their cutscenes, confirmed (code) for the scripts:
+
+- **`MA_CUTSCENE`** (a mission's start or end scene played in the hub, the yellow marker's): before
+  `SuperRunScene`, `SoundStopAmbientTrack()` (the bed fades out over **2 s**, `AmbientTrack_Stop` `0x00110c70`),
+  `ScreenQueueEffect(0, 0.5)`, and, when the clubhouse's `events` exist, `events.Mute(true, true)`: every Warrior
+  sitting at a chat flag has his sound commands switched off (`HuEnableSoundCommands(h, false)`) and is shut up
+  (`HuShutUp(h, true)`), and the workout's Warrior is stopped; the second argument true skips the
+  `SoundPauseSound(true)` it would otherwise make. Nothing in the action plays the bed again: it comes back when the
+  player next crosses a `soundbox` volume ([level95](sound-events.md#level95)), or with the next level.
+- **Entering or leaving the clubhouse** (the door actions): `SoundStopAmbientTrack()` at the door, then
+  `SoundPauseSound(true)` while the other half's script loads (`level95_clubhouse` / `level95_coney`); the loaded half's
+  set-up plays its own bed and un-pauses.
+- At runtime (the same PCSX2, `level95` checkpoint 2 reached by setting the level and checkpoint over PINE, player in
+  the clubhouse): no bed was live inside, one loop emitter (class 106) and the Warriors' chat lines (class 142) played,
+  and the next mission scene's soundtrack was already prepared (`+0x9c` = 0). The cutscene itself was not reached in
+  this pass.
+
+**Movies** differ: `Movie_Play` (`0x0042a938`) stops the music and **every** sound (`0x0010fba8` → `0x00112a90`)
+before the movie, bed and emitters included, and restarts nothing ([Movies](movies.md#movie-play)); the emitters'
+loops come back on their own (mode 3 restarts a loop whenever none plays), the bed only when a script plays it.
+
+**What Coney must do** (for an implementer; the engine side is `repo:src/audio/game_sound.cpp`,
+`repo:src/audio/ambient_emitters.cpp`, the stage `repo:src/platform/play_level_scene.cpp`):
+
+1. **Listener at the scene camera while a cinematic runs**, whatever `SndSetListener` chose: Coney's
+   `GameSound::updateListener` uses the player's ear when the listener mode is 1, also during a scene. During a
+   cinematic both the position and the ears must come from the scene camera's view (`0x00158d58`).
+2. **Keep the bed at full volume during a scene** (no engine duck), and the emitters at 0.75 (already built); do not
+   add a blanket mute: the original plays world sound under every scene that no script silences.
+3. **Make the scripts' silencing work in play**: `story.RunMissionAction`'s `MA_CUTSCENE` path must reach
+   `SoundStopAmbientTrack` (a 2 s fade-out of the bed) before the scene, and `events.Mute(true, true)` must reach
+   `HuEnableSoundCommands(h, false)` and `HuShutUp(h, true)` for the chat Warriors. If the bed still plays in Coney's
+   hub cutscene (#404), the first thing to check is whether this action runs and whether Coney's
+   `stopAmbientTrack` stops the bed that the `soundbox` set-up started (the same handle).
+4. **Do not restart the bed at the scene's end**; it returns only through a script (`soundbox` enter or exit) or the
+   next level.
+5. **The test** (offline mixer, no disc): with the bed and one in-range emitter playing, start a cinematic: the bed's
+   sent level stays the same, the emitter's falls to 0.75 of it, a non-player directional voice to 0.2; moving the
+   player 30 m away while the scene camera stays near the emitter keeps it audible (the listener is the camera); a
+   `SoundStopAmbientTrack` call fades the bed to 0 over 2 s; after the end everything returns to its own factors on
+   the next update. A disc test then plays the hub's first `MA_CUTSCENE` and checks the bed is stopped and stays
+   stopped through the scene.
+
+Open: what `+0x411` is; the hub cutscene itself at runtime (bed fade, emitter levels from the scene camera); whether
+Coney's #404 sound is the bed, an emitter heard from the player's ear, or the chat Warriors.
+
 ### The front end and level99
 
 - **Front end** (level 100): bank `menu` (14 sounds: the interface cues); music loops `MenuTrack` (`global.lua`:

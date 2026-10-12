@@ -746,7 +746,9 @@ State 7 (all clips done, or a part ended with no roles) calls the end (`0x0039f4
 The **scene soundtrack** is stopped by the end only when the scene was skipped, and by the abort only for a
 cinematic; an unskipped scene's soundtrack plays on to its own end or until the next scene's preload stops it
 ([Sound: scene soundtracks](sound.md#scene-sound)). Confirmed (code) at `0x0039f450`, `0x0039ec60`; confirmed
-(runtime) for an unskipped level99 scene.
+(runtime) for an unskipped level99 scene. Neither the start nor the end silences the world's sound: a cinematic only
+moves the listener to the scene camera and lowers some sounds while `+0x410` is set, and the hub's scripts stop the
+ambient bed themselves ([Sound: world sound during a scene](sound.md#scene-world-sound)).
 
 The next update sees state 8 with no humans left and frees the task and **unloads the slot** (`0x00353bf0`,
 `0x00351da0`): one user less, and with no user left the slot is emptied, so a scene is loaded again for its next
