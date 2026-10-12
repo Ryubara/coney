@@ -310,7 +310,7 @@ to -x), which is the turn Coney's reference images use (`kObjectToPose`, Coney's
 
 | Offset | Meaning |
 | --- | --- |
-| `+0x0c`-`+0x24` | a queue of pack names to load at the end of the preload (`0x0040e1a0` appends) |
+| `+0x00`-`+0x28` | a queue of pack names to load at the end of the preload: an SGI-STL `deque<string>` (start iterator `+0x0c`-`+0x18`, finish `+0x1c`-`+0x28`; `0x0040e1a0` appends, [physics.md Unit 18](physics.md#u18-construct)) |
 | `+0x2c` | a preload is running |
 | `+0x34` | "nothing more to load" latch of the streaming update |
 | `+0x38` | the `World Level Pool` |
@@ -578,7 +578,8 @@ anything they reference (the intro scene) must be loaded by then.
 `0x0040dbb8(worldManager, name, headerOnly)`, confirmed (code):
 
 1. Look up the size of `<name>.lev` and create the `World Level Pool` in the `Sector Pool`: 103 % of it, at least
-   256 KB.
+   256 KB. Then push the `Level Dynamic & LUA Pool` and **leave it pushed**: the world objects below come from it, and
+   only `WorldManager_Unload(0)` pops it ([physics.md Unit 18](physics.md#u18-load)).
 2. Unless `headerOnly` (boot loads `level1` this way for the intro movie's subtitles, [Boot](boot.md#main)):
     - take the world name from the current level record (`+0x39`);
     - if `<world>s_sec.wld` exists: create two world objects (0x2188 bytes each, tag `World`), the first for
@@ -724,8 +725,10 @@ too. `UnloadLevel(keep)`, confirmed (code) for the order:
 4. Reset the HUD, the task manager and its object lists, cameras and scripts.
 5. **`WorldManager_Unload(keep)`** (`0x0040f5b8`): flush the render queue and the task manager, unload each world
    (`0x00410b70`: wait for a part being read, unload every loaded part, destroy the world, its dictionary and its
-   heap), free the water effect, and unless `keep`: release the level object (`0x0040c7f0`: light glows,
-   captions, the level object deleted), the path data, and destroy the `World Level Pool`.
+   heap), free the water effect, and unless `keep`: pop the `Level Dynamic & LUA Pool` that `LoadLevel` pushed,
+   release the level object (`0x0040c7f0`: light glows, captions, the level object deleted), the path data, and
+   destroy the `World Level Pool`. `+0x40` is left pointing at the freed level object, and the path data globals keep
+   their old values ([physics.md Unit 18](physics.md#u18-unload)).
 6. The resource manager drops the level's resources (`0x00185ae0`, `0x00188aa8`, `0x00189718`); the light manager
    resets; the **Lua state is destroyed and created again** (`0x00356450`, `0x00356390`).
 7. Timers, effects and the game state's level flags are reset.

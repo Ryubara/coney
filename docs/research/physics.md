@@ -6135,11 +6135,17 @@ tables" is step 3 and the empty calls.
 
 ### Unit 18: World manager lifecycle {#unit-18}
 
-- **Specified by:** [Level loading](level-loading.md), [Memory](memory.md) (the pools), [The streamed
-  world](world.md#streaming).
-- **Coney:** `src/world/world_streamer.*`, `src/platform/game_session.*`, `src/platform/play_level_world.cpp`.
-- **Tests:** load then unload returns every pool to empty; `ResetVisibility` clears the part flags; the load priority
-  setter stores its value (whether it clamps is to be read first).
+**What it is.** The `Sector Pool`'s creation at boot, the world manager's constructor (the global data), loading and
+unloading a level, and its small accessors. This unit settles the pool sizes, the heap-stack pairing, what an unload
+gives back and what it leaves behind. Confirmed (code) at the cited addresses unless a line says otherwise.
+
+- **Coney:** a platform-neutral `world::WorldManager` (`src/world/world_manager.*`, new) owning the level's budget
+  reservations, its streamed worlds' state and its level object, with `loadLevel(name, headerOnly)` and
+  `unload(keepLevelFile)`; `src/platform/world_viewer_mode.cpp` (`loadLevelScenery`), `play_scenery.*`,
+  `game_session.*` and `play_level_world.cpp` go through it ([What Coney changes](#u18-coney)).
+- **Tests:** [Test ideas](#u18-tests): the pool sizes; load then `unload(0)` returns the budget to what it was;
+  `unload(1)` keeps the level file's reservation; `ResetVisibility` clears the latch and both worlds' marks; the load
+  priority stores its value as given (no clamp).
 
 10 functions, 3700 bytes (0 tagged).
 
@@ -6156,13 +6162,202 @@ tables" is step 3 and the empty calls.
 | `0x0040c938` | `WorldManager_SetLoadPriority` | 12 |
 | `0x0040cc68` | `PVS_CaptureSamplePoint` | 8 |
 
+Notation: "push P" and "pop" are the memory manager's heap stack (slots `+0xb8` / `+0xc0`; pop ignores its argument,
+[Memory](memory.md#memory-manager)); "new X (line n)" is an `Alloc` from the pool on top of the stack with
+`WorldManagerPS2.cpp` and line `n`; "track" is `TrackPool` (slot `+0xd8`, which on retail returns the pool unchanged);
+"register" is `RegisterPool(name, pool, parent)` (slot `+0xc8`).
+
+#### WorldManager_CreatePools {#u18-create-pools}
+
+`0x0040d688`, no arguments; boot step 21 ([Boot](boot.md#initialisation-order)).
+
+1. Push the global heap (manager `+0x08`). `L` = the current pool's `LargestFreeBlock` (slot `+0x80`).
+2. new `MemoryPoolHeap` object (0x10 bytes, tag `MemoryPoolHeap`, align 16, line 121, flag 1); vtable `0x00544428`.
+   `MemoryPoolHeap_InitInParent(heap, global, L − 0x20000, "Sector Pool")`: **no minimum** (an `L` under 128 KB
+   would give a negative size; inferred never to happen). Track it into `0x006eb9c8`; register `Sector Pool` under
+   the global heap. Pop.
+3. `L2` = the current pool's `LargestFreeBlock`; `size2 = L2 − 0x20000`, raised to `0x1000` when smaller (a signed
+   compare). new heap object (line 134, flag 1); `InitInParent(global, size2, "Sector Pool 2")`; track into
+   `0x006eb9cc`; register under the global heap. No push around this second one: it is allocated from whatever pool
+   is on top after the pop (the global heap at boot).
+
+Sizes on a retail boot: 17,217,536 and 4,096 bytes ([Sizes at runtime](memory.md#sizes-at-runtime), confirmed
+(runtime) there).
+
+#### WorldManager_Construct {#u18-construct}
+
+`0x0040d900`, `WorldManager* WorldManager_Construct(WorldManager* wm)` on the 0x60-byte object (boot step 26).
+
+1. Zero `+0x04` to `+0x28` and call `PackDeque_InitMap(wm, 0)` (`0x004f4d20`): `+0x00`-`+0x28` is an SGI-STL
+   `deque<string>` of pack names (start iterator `+0x0c`-`+0x18`, finish iterator `+0x1c`-`+0x28`: current, first,
+   last, node, as `WorldManager_QueuePack` reads them). Zero `+0x50`, `+0x54`, `+0x58` (the draw list), `+0x38`,
+   `+0x40`, `+0x44`, `+0x48`, `+0x5c`, `+0x2c`, `+0x34`. `+0x30` and `+0x4c` are not written.
+2. `size` = the file system's `GetSize("warriors.glr")` (slot `+0x58`).
+3. new `MemoryPoolClump` object (0x18 bytes, line 179) from the pool on top of the stack (**not** the `Sector
+   Pool`: nothing is pushed); vtable `0x00544370`. `MemoryPoolClump_InitInParent(clump, SectorPool, size × 101 / 100,
+   "Global Data")` (32-bit unsigned multiply and divide, so the size is truncated). Track it as `GlobalPool` into
+   `+0x3c`; register `Global Data Pool` under the `Sector Pool`.
+4. Open `warriors.glr` (slot `+0x60`), wrap it in a `BufferedStream` on the file manager's buffer, push `+0x3c`,
+   `ChunkSystem_LoadContainer`, pop, detach, close (slot `+0x68`), destroy the stream. Return `wm`.
+
+Nothing ever frees the `Global Data Pool` (no other reference to `+0x3c` frees it; inferred from the unload below).
+
+#### WorldManager_LoadLevel {#u18-load}
+
+`0x0040dbb8`, `int WorldManager_LoadLevel(WorldManager* wm, const char* name, int headerOnly)`; returns 1 always.
+Callers: `main` (`0x00144778`, `level1` with `headerOnly` 1) and `InitLevel` (`0x00160210`, `headerOnly` 0).
+
+1. `snprintf(buf, 255, "%s.lev", name)`; print `Looking for file : %s`; `size` = `GetSize(buf)` (slot `+0x58`).
+2. Push the `Sector Pool`. new clump object (line 234). `levelPool = max(size × 103 / 100, 0x40000)` (unsigned,
+   truncated; 0x40000 = 262,144). `InitInParent(clump, SectorPool, levelPool, "World Level Pool")`; track into
+   `+0x38`; register `World Level Pool` under the `Sector Pool`. Pop.
+3. **Push the `Level Dynamic & LUA Pool` and leave it pushed.** This function never pops it; `WorldManager_Unload`
+   with `keep` 0 does ([below](#u18-unload)). So during a level the Lua pool is the default pool, and the world
+   objects of step 4 come from it.
+4. Unless `headerOnly`, with `world` = the current level record's world name (`W_GameState` `0x0051489c`, record
+   index `u16` at `+0x56dc`, records of 0x84 bytes from `+0x14d4`, name at record `+0x39`):
+    - if the file system's `Exists("<world>s_sec.wld")` (slot `+0x50`): new `World` (0x2188 bytes, tag `World`, line
+      251) → `World_Construct` → `+0x44`, then `World_ReadManifest(+0x44, "<world>s")` and
+      `World_LoadStream(+0x44, "<world>s")`; then new `World` (line 259) → `+0x48`, read and load `"<world>d"`;
+    - otherwise `+0x48 = 0` first, then new `World` (line 270) → `+0x44`, read and load `"<world>"`.
+
+    A failed allocation stores null and the manifest read follows anyway (no check).
+5. Push `+0x38`; `+0x40 = WorldLevel_Load(name)` ([Unit 17](#u17-load)); pop.
+6. Print the banner and the `Sector Pool`'s free bytes (slot `+0x88`); `0x005147d0` = those free bytes (written, never
+   read); `0x005147cc` = 0.001 (`0x3a83126f`).
+
+With `headerOnly` the worlds are skipped but the `World Level Pool`, the level file and the Lua push all happen.
+
+#### WorldManager_Unload {#u18-unload}
+
+`0x0040f5b8`, `void WorldManager_Unload(WorldManager* wm, int keepLevelFile)`. Callers: `main` (`0x00144830`, keep 0,
+after the boot's header-only load), `UnloadLevel` (`0x00160b64`, keep = its own argument) and `Gm_Level_Exit`
+(`0x00158554`, keep 0). Mode 1's exit passes the "level change pending" flag `0x0050c754` to `UnloadLevel`, so a
+level change keeps the level file through the outro movie, then `Gm_Level_Exit` unloads it with keep 0; without a
+level change `UnloadLevel(0)` unloads everything at once (`0x001584f4`, `0x00158554`).
+
+**Always:**
+
+1. Device (`0x0050cdb4`) slot `+0x18`: flush the render queue. Task manager (`0x00512c7c`) slot `+0x48`.
+2. If `+0x44`: `World_Unload(GetSolidWorld(wm))` (`0x00410b70`: its parts, world, dictionary and clump, [The
+   streamed world](world.md#streaming)); delete the world object (`0x004f57d8`: `World_Destroy` then `Free`, line
+   1160); `+0x44 = 0`.
+3. If `+0x48`: the same (line 1168); `+0x48 = 0`.
+4. If `+0x5c`: delete the water effect (`0x004f5848`, line 1174); `+0x5c = 0`.
+
+The deletes free into the pool on top of the stack, which is the Lua pool that `LoadLevel` pushed, where the objects
+came from.
+
+**Only when `keepLevelFile` is 0:**
+
+5. **Pop** (the Lua pool pushed by `LoadLevel`).
+6. Push the `World Level Pool` (`+0x38`); its `SetOption(0, 1)` (count frees).
+7. `WorldLevel_Release(+0x40)` ([Unit 17](#u17-release)): the glows, the captions, the level object and its mesh,
+   occluders and models.
+8. Free the path data (`0x0051058c`, line 1187, `0x004f58b8`: if non-null).
+9. `SetOption(0, 0)`; pop.
+10. Push the `Sector Pool`. The level clump's `CheckEmpty` (slot `+0x70`; its result is not used); `UnregisterPool`
+    (manager slot `+0xd0`); the `Sector Pool`'s `SetOption(0, 1)` (a heap ignores it); the clump's `Destroy(Sector
+    Pool)` (slot `+0x90`: its block goes back); delete the 0x18-byte clump object (`0x004de3d8`, line 1200), which
+    `LoadLevel` allocated from the `Sector Pool`; `SetOption(0, 0)`; pop.
+11. `+0x38 = 0`.
+
+**Left behind**, by both paths: `+0x40` still points at the freed level object (a `WorldManager_RayCast` after an
+unload reads freed memory; inferred that nothing casts then); the path data globals `0x0051058c` and `0x00510584`
+keep their old values; `+0x2c`, `+0x34`, the draw list and the pack queue are not touched; the `Global Data Pool` is
+never freed. With keep 1, the `World Level Pool`, the level object and the Lua push all stay.
+
+**What an unload with keep 0 gives back to the `Sector Pool`:** the `World Level Pool`'s block and its clump object,
+and (inside step 2's `World_Unload`) each world's clump and every loaded part's `Sectors<i>` clump. To the Lua pool:
+the two 0x2188-byte world objects, their 140 vector buffers (32 bytes each, [Unit 19](#u19-construct)) and the
+water effect. So the `Sector Pool` returns to what it held before `LoadLevel`, apart from what the resource manager
+holds in it (its clumps are its own, freed by `UnloadLevel`'s later steps).
+
+**The heap stack:** `LoadLevel` leaves it one deeper; `Unload(0)` makes it one shallower; `Unload(1)` leaves it as
+it is. Each path above runs `LoadLevel` once and `Unload(0)` once, so they pair (inferred from the three call sites;
+whether a level can start again after `Unload(1)` without an `Unload(0)` is not traced).
+
+#### The small ones {#u18-small}
+
+- **`WorldManager_ResetVisibility(wm)`** (`0x0040e0b8`): `+0x34 = 0`; `World_ResetVisibility(GetSolidWorld(wm))`
+  **without a null check** of `+0x44`; then `World_ResetVisibility(+0x48)` when it is non-null. Callers:
+  `WorldManager_Preload` and `ResourceMgr_LoadAllBlocking` (`0x001889d0`). What `World_ResetVisibility` clears:
+  [Visibility](world.md#visibility).
+- **`WorldManager_QueuePack(wm, name)`** (`0x0040e1a0`): appends a copy of `name` (a reference-counted string,
+  allocated through the STL pool `0x006eb9c0`) at the deque's back: in place when the finish node has room (finish
+  current ≠ finish last − 4), else through `PackDeque_PushBack`. No limit, no duplicate check. Only caller:
+  `World_QueuePackToPrecache` (`0x0040cc40`).
+- **`WorldManager_GetSolidWorld(wm)`** (`0x0040e8d0`): returns `+0x44`.
+- **`WorldManager_GetSectorPool(wm, &largestFree)`** (`0x0040f850`): `wm` is not read; when `largestFree` is
+  non-null it receives the `Sector Pool`'s `LargestFreeBlock`; returns the `Sector Pool` (`0x006eb9c8`). Callers:
+  `GameStats_Update`, `Gm_Mode11_Update`, `ResourceMgr_Heap`, `ResourceMgr_ServiceDeferred`, `WorldManager_Update`,
+  `World_RequestPart`.
+- **`WorldManager_SetLoadPriority(scale)`** (`0x0040c938`): stores the float argument (`f12`) into `0x005147cc`
+  as it is: **no clamp**, no check, no return value. Callers: `Gm_Mode11_Enter` (`0x0015e9d0`, 10.0) and the Lua
+  binding `lua_SetLoadPriority` (`0x0036e630`); `LoadLevel` writes 0.001 itself. The streaming update multiplies the
+  resource manager's distances by it ([Choosing what to stream](world.md#streaming)).
+- **`PVS_CaptureSamplePoint`** (`0x0040cc68`): `jr ra` ([Debug](debug.md)).
+
+#### What Coney changes {#u18-coney}
+
+Coney allocates normally ([Memory](memory.md#what-a-reimplementation-must-keep)), so the pools become reservations in
+`world::SectorBudget` and the heap stack has no counterpart. What a player can see is the budget, which decides
+evictions, so it must come back exactly on unload.
+
+- **A `world::WorldManager`** (new, platform-neutral; the worlds' renderer objects stay in `platform::WorldSet`)
+  holding: the `Global Data` reservation, made **once** when the manager is made (`globalDataPoolBytes`, already
+  101 % truncated); the `World Level Pool` reservation (`worldLevelPoolBytes`); the streamed worlds; the level object;
+  the visibility latch (`+0x34`); the pack queue; the load priority (initially whatever the boot leaves; `LoadLevel`
+  sets 0.001). `@orig 0x0040d900 WorldManager::WorldManager (WorldManagerPS2.cpp)`.
+- **`loadLevel(name, headerOnly)`**: reserve the level pool first, then (unless header-only) the worlds in the order
+  above, then the level file; set the load priority to 0.001. `@orig 0x0040dbb8`.
+- **`unload(keepLevelFile)`**: release the worlds (and their parts) and the water always; with keep false, also run
+  the [release](#u17-release) (glows, captions, level object), drop the path data and release the level pool's
+  reservation. Coney clears the level pointer (where the original leaves it dangling, a marked Coney choice).
+  `@orig 0x0040f5b8`.
+- **A leak to fix now.** `loadLevelScenery` (`src/platform/world_viewer_mode.cpp`) reserves the `Global Data` and
+  `World Level` pools on every level load and nothing releases them (`LevelPlayScenery` and `WorldSet` release only
+  the worlds and parts), so a session that plays a second level (the one budget made in `main.cpp`) streams with
+  less room than the original. The manager above fixes it; until then, release both when the scenery goes.
+- **`setLoadPriority(float)`** stores the value unchanged; it has no reader until the resource manager streams
+  (a stand-in). `@orig 0x0040c938`.
+- **`queuePack(name)`** appends to a `std::deque<std::string>`; the preload consumes it (`world_streamer`'s preload).
+  `@orig 0x0040e1a0`.
+- **`resetVisibility()`** clears the latch and calls `StreamedWorld::resetVisibility` on each world. Coney's
+  `StreamedWorld` cannot be null, so the original's missing null check has nothing to copy. `@orig 0x0040e0b8`.
+- **`sectorPool(&largestFree)`**: the budget, with `freeBytes()` standing for the largest free block (the
+  approximation [Memory](memory.md#what-a-reimplementation-must-keep) recommends). `@orig 0x0040f850`.
+- **`CreatePools`**: `kSectorPoolSize` (the retail runtime value) already stands for it; tag the constant
+  `@orig 0x0040d688 WorldManager_CreatePools (WorldManagerPS2.cpp)`. `Sector Pool 2` has nothing to stand for.
+
+#### Test ideas {#u18-tests}
+
+With a `SectorBudget` of 17,217,536 bytes and synthetic file sizes:
+
+- **Pool sizes:** `worldLevelPoolBytes(100,000)` = 262,144; `(254,500)` = 262,144 (262,135 raised);
+  `(254,524)` = 262,159; `(300,000)` = 309,000. `globalDataPoolBytes(99)` = 99 (9,999 / 100 truncated);
+  `(1,000)` = 1,010. `Sector Pool 2` for `L2` = 100,000: 4,096; for 200,000: 68,928.
+- **Load then unload(0):** with the global data reserved, `used()` before `loadLevel` equals `used()` after
+  `unload(false)`, for a two-world level and for a header-only load; the level object is gone.
+- **Unload(1):** after `unload(true)` the worlds are released and exactly the level pool's reservation remains; a
+  following `unload(false)` releases it.
+- **Twice:** load, unload(0), load, unload(0) leaves `used()` where it started (the leak above fails this today).
+- **ResetVisibility:** with marks set in both worlds and the latch set, all marks and the latch are clear afterwards.
+- **Load priority:** `setLoadPriority(10.0)` then reading gives 10.0; `-3.0` gives -3.0 and `1e9` gives 1e9 (no
+  clamp); `loadLevel` sets 0.001.
+- **Pack queue:** three `queuePack` calls with the same name give three entries, in order.
+
 ### Unit 19: Streamed world object lifecycle and sector callbacks {#unit-19}
 
-- **Specified by:** [The world object](world.md#world-object), [Visibility](world.md#visibility),
-  [Lighting](world.md#lighting).
-- **Coney:** `src/world/streamed_world.*`, `src/platform/world_set.*`, `src/platform/world_renderer.*`.
-- **Tests:** a part marked loaded joins the visible set; releasing a sector's atomic; the material alpha callback set on
-  every material of a sector.
+**What it is.** The world object's constructor and destructor, the part-loaded callback, the release of one
+sector's atomic, the material alpha callback, the visibility pass's sector callback and the modulate flag. Confirmed
+(code) at the cited addresses unless a line says otherwise.
+
+- **Coney:** `src/world/streamed_world.*` (the visibility callback's order and its quirk), `src/platform/world_set.*`
+  (the release of an atomic, the modulate flag, tags), `src/platform/world_renderer.*` (the alpha callback).
+- **Tests:** [Test ideas](#u19-tests): a marked sector of the `d` world sets the `s` world's mark; an occluded sector is
+  neither marked nor collected nor counted; a sector without an index is neither collected, marked nor counted; the alpha callback
+  changes only the alpha byte of every material; a sector whose atomic is in use stays pending.
 
 7 functions, 1684 bytes (0 tagged).
 
@@ -6175,6 +6370,158 @@ tables" is step 3 and the empty calls.
 | `0x00411958` | `Material_SetAlphaCallback` | 56 |
 | `0x00411b98` | `World_VisibilitySectorCallback` | 376 |
 | `0x004102f0` | `Atomic_SetModulateMaterialColour` | 24 |
+
+Records: the world object ([The world object](world.md#world-object)) and the sector plugin (offset in `0x0050ced0`;
+`+0x00` atomic, `+0x04` streamed index or -1, `+0x08` state, [Sector plugin](world.md#sector-plugin)).
+
+#### World_Construct {#u19-construct}
+
+`0x00410308`, `World* World_Construct(World* world)`; no vtable. Writes, in this order:
+
+1. The visible bits `+0x08f8`: 18 words = 0.
+2. The 140 part-sector vectors at `+0x0940` (16 bytes each: `+0x04` begin, `+0x08` end, `+0x0c` capacity end; `+0x00`
+   unused): all three pointers = 0, then each **reserves 8 entries**: a 0x20-byte buffer from the STL pool
+   (`0x006eb9c0`, the `Level Dynamic & LUA Pool`'s STL copy; align 16), begin = end = buffer, capacity end = buffer +
+   0x20. So a world takes 140 × 32 = 4,480 bytes of the Lua pool besides itself.
+3. `+0x10 = 0`, `+0x04 = -1`, `+0x08 = 0`, `+0x2158` to `+0x2168` (dictionary, `RpWorld`, has-PVS, part count,
+   streamed-sector count) = 0, `+0x00 = -1`, `+0x0c = 0`, `+0x14 = 0`, `+0x2170 = 0`, `+0x216c = 0`, `+0x2150 = 0`.
+4. The 140 part records at `+0x1200` (0x1c bytes each): all 7 words = 0.
+
+**Not written:** `+0x18`-`+0x37` (cleared by the first viewport's pass), the sector table `+0x38`-`+0x8f7`, the
+world's clump `+0x2154` and its name `+0x2174`. The memory is the Lua heap's, not cleared. `World_FindPartToLoad`
+(`0x00411eb0`) reads every table entry from 0 to the streamed-sector count − 1 without a null test, so every index
+must be filled by `World_RegisterSector` (inferred from the disc check that indices run 0 to k − 1 without gaps,
+[Sector plugin](world.md#sector-plugin)).
+
+#### World_Destroy {#u19-destroy}
+
+`0x00410558`, `void World_Destroy(World* world, u32 flags)`, called through `0x004f57d8` by `WorldManager_Unload`
+after `World_Unload`:
+
+1. For each of the 140 vectors, first to last: end = begin (the entries are plain pointers; nothing is destroyed).
+2. For each vector **from the last to the first**: if begin is non-null, free it to the STL pool.
+3. `operator delete(world)` only when `flags & 1`.
+
+It releases nothing else: the parts, the `RpWorld`, the dictionary and the clump are `World_Unload`'s
+([Choosing what to stream](world.md#streaming)).
+
+#### World_PartLoaded {#u19-part-loaded}
+
+`0x004114d8`, the file manager's completion callback for a part read, `(request, World* world)`; the first argument
+is not read.
+
+1. Push the `Level Dynamic & LUA Pool`.
+2. Wrap the file manager's buffer (`+0x3c`) as an in-memory file whose size and capacity are both the part record's
+   file size: record `world+0x1200 + 0x1c × p`, `+0x10`, with `p = world+0x00` (the part being read).
+3. A RenderWare custom stream over it (`0x0047f1f8(4, 1, …)`: custom type, read access; RenderWare's constants,
+   inferred).
+4. `World_ReadPart(world, stream)` (`0x004110c0`, [Part file](world.md#part-file)), then close the stream.
+5. Pop. `world+0x00 = -1` (no part being read). Destroy the in-memory file.
+
+No step checks the read's status or `World_ReadPart`'s result.
+
+#### WorldSector_ReleaseAtomic {#u19-release}
+
+`0x004118b8`, `RpWorldSector* WorldSector_ReleaseAtomic(RpWorldSector* sector, void* unused)`, called for each sector
+of a part by `World_UnloadPart` (`0x004115d0`, with a null second argument):
+
+1. Plugin state (`+0x08`) = 3.
+2. `atomic` = plugin `+0x00`. If it is null, or `Atomic_IsInUse(atomic)` (`0x00198220`) is true: return `sector`,
+   state left at 3.
+3. Otherwise: `frame` = `atomic+0x04`; detach the frame (`0x0046a0c0(atomic, 0)`); destroy the frame
+   (`0x00484240`); destroy the atomic (`0x0046a3f0`); plugin atomic = null; state = 4. Return `sector`.
+
+`World_UnloadPart` goes through the part's sector vector and **stops at the first sector not at 4**; the part is
+finished (dictionary destroyed, `world+0x04 = -1`, clump checked, unregistered and destroyed) only when every sector
+reached 4, else the unload is tried again on a later frame. So a sector with **no atomic** in a part being unloaded
+would hold its part forever (inferred: a loaded part's sectors all have atomics, [Part file](world.md#part-file)).
+What `Atomic_IsInUse` tests (the atomic's MatFX or particle-tank users) is not read further here.
+
+#### Material_SetAlphaCallback {#u19-alpha}
+
+`0x00411958`, `RpMaterial* Material_SetAlphaCallback(RpMaterial* material, const u8* alpha)`: copies the material
+colour (`+0x04`, four bytes RGBA, read and written unaligned), replaces byte 3 with `*alpha`, writes it back and
+returns `material` (non-null, so a `ForAllMaterials` walk goes on to the next). R, G and B are unchanged.
+`World_RenderSectorAtomic` runs it over every material of a sector's atomic during the fade-in ([A
+frame](world.md#a-frame)).
+
+#### Atomic_SetModulateMaterialColour {#u19-modulate}
+
+`0x004102f0`, `RpAtomic* Atomic_SetModulateMaterialColour(RpAtomic* atomic)`: geometry = `atomic+0x18`; geometry
+flags (`+0x08`) `|= 0x40` (modulate by material colour); returns `atomic`. No null test of the geometry. Applied to
+every atomic of a part as it is read ([Part file](world.md#part-file), step 4), which is what lets the alpha above
+fade it.
+
+#### World_VisibilitySectorCallback {#u19-visibility}
+
+`0x00411b98`, `RpWorldSector* World_VisibilitySectorCallback(RpWorldSector* sector)`, installed as the world's sector
+render callback by `World_FindVisibleSectors` (`0x00411d10`) for the length of one `RpWorldRender`; the world's own
+callback is saved in `0x005147e4` and the world being walked in `0x005147ec`.
+
+1. **PVS:** `visible` = 1. When the walked world has PVS data (`+0x2160`) and PVS is on (`0x005e539c`), `visible` =
+   `0x004bef30(sector)` (RenderWare's PVS test, inferred from its place).
+2. **Unindexed sectors:** if the plugin's streamed index (`+0x04`) is -1 (the value at `0x00553790`), skip to step 6.
+3. **Occluders:** build a box from the sector's bounding box, `(+0x6c, +0x70, +0x74, 1)` then `(+0x60, +0x64,
+   +0x68, 1)` (RenderWare's `inf` then `sup`, inferred from the `RwBBox` layout); if
+   `Occluders_HidesBox(level+0x28, box)` (`0x0017a738`, the level from world manager `+0x40`) returns 1, **return
+   null** at once.
+4. **Count:** `0x005147f4 += 1`, before and whatever the PVS answer.
+5. **Keep:** if `visible`: call the saved callback (`World_CollectSector` `0x00411b20`, which queues the sector when
+   its atomic is loaded), then set bit `index` in the visible bits of **`GetSolidWorld(wm)`**, the `s` world
+   (`+0x08f8 + 4 × (index >> 5)`, bit `index & 31`), **whichever world is being walked**.
+6. Return `sector` when `visible`, else null.
+
+**Consequences** (confirmed (code) for each mechanism, the effects inferred): the `d` world's own visible bits are
+only ever cleared (by `World_ResetVisibility` on the first viewport), so its `World_FindPartToLoad` never finds a
+visible candidate and always falls back to all its sectors (its `+0x10` is always set after a search), and its
+`World_FindPartToUnload` treats every loaded part as unseen. The `s` world's bits gain the `d` world's indices, so an
+`s` sector can count as visible because the `d` sector with the same index is. The counter `0x005147f4` is reset by
+`World_ResetVisibility` (`0x004123e8`, the store at `0x004124e8`) and read once by `World_FindVisibleSectors`
+(`0x00411e20`): when it is still 0 after a PVS walk, the walk is repeated with PVS off. Since PVS-hidden sectors count, the repeat happens only when no
+indexed sector survived the occluders (or none was walked), not when the PVS hid them all.
+
+Whether RenderWare's walk stops or goes on after a null return is RenderWare's, not read here; the original returns
+null for both an occluded and a PVS-hidden sector.
+
+#### What Coney changes {#u19-coney}
+
+- **The visibility quirk.** `StreamedWorld::markVisible` marks the world's own sector. To match the original's
+  streaming order, the pass over the `d` world must mark the **`s` world's** bit with the `d` sector's index, and the
+  `d` world's marks stay clear: an "Original quirk, kept" in `findVisibleSectors` (a pass needs the `s` world as the
+  mark target), with a test. Single-world levels are unaffected.
+- **Order inside the callback.** When Coney adds occluders, the test comes after the index check and before the
+  count; when it adds PVS, the PVS answer only decides marking and collecting. Until then the frustum test stands for
+  both (already marked in `streamed_world.h`).
+- **Unindexed sectors** are not collected by the original (the saved callback runs only in the indexed branch,
+  `0x00411c9c`; the sector is only returned to RenderWare when visible); Coney's `collectSectors` skips them too.
+- **Releasing an atomic.** `WorldSet::unloadPart` frees a part at once. The original keeps a sector at state 3 while
+  its atomic is in use and retries the part later; Coney has no in-use atomics yet (a stand-in, to mark), and a
+  pending state should be added with whatever first holds an atomic. `@orig 0x004118b8 WorldSector_ReleaseAtomic
+  (WorldPS2.cpp)` on the per-atomic release in `unloadPart`.
+- **Part loaded.** `WorldSet::loadPart` reads synchronously and stands for both the request's completion and
+  `World_PartLoaded`; tag it `@orig 0x004114d8 World_PartLoaded (WorldPS2.cpp)` beside `World_ReadPart`.
+- **Construct and destroy.** `StreamedWorld::create` and `~WorldSet` stand for them; Coney sizes from the data, so the
+  140 reserved vectors have no counterpart. Tags: `@orig 0x00410308 World::World`, `@orig 0x00410558
+  World_Destroy` (both `WorldPS2.cpp`).
+- **Alpha and modulate.** `loadPart` already sets geometry flag `0x40` (tag `@orig 0x004102f0
+  Atomic_SetModulateMaterialColour (WorldPS2.cpp)`); the renderer's fade sets the alpha of every material and must
+  leave R, G and B alone (tag `@orig 0x00411958 Material_SetAlphaCallback (WorldPS2.cpp)`).
+
+#### Test ideas {#u19-tests}
+
+On a synthetic two-world layout (no renderer needed for the first four):
+
+- **The `s` world takes the marks:** walking the `d` world with its sector of index 5 in view sets index 5 in the `s`
+  world's marks and leaves the `d` world's clear; `findSectorToLoad` on the `d` world then reports `searchFellBack()`.
+- **Occluded:** a sector of index 3 whose box an occluder hides is not marked, not collected, and does not raise the
+  counter; one not hidden but PVS-hidden raises the counter and is neither marked nor collected.
+- **Unindexed:** a sector with index -1 in view is not marked and not counted.
+- **Repeat without PVS:** when every indexed sector in view is occluded, the pass runs again with PVS off (counter
+  still 0); when all are only PVS-hidden, it does not.
+- **Alpha:** materials with colours (10, 20, 30, 255) and (200, 100, 50, 7), alpha 128: afterwards (10, 20, 30, 128)
+  and (200, 100, 50, 128).
+- **Release:** a part of three sectors whose second atomic is in use: the first is released (state 4), the second
+  stays at 3, the third is not visited, the part is not finished; once the use ends, a retry finishes it.
 
 ## Coney's implementation
 
