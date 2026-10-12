@@ -194,7 +194,7 @@ TEST_CASE("the disc's level99: player 1 climbs a spawned fence and onto a spawne
     REQUIRE(run.runToPlayFrame(kFenceAt));
     REQUIRE(human.speed() > 0.5F);
     coney::anim::Vec3 from = human.position();
-    float heading = play->playerHeadingDegrees();
+    const float heading = play->playerHeadingDegrees();
     itemOn(*page, "Fence (1.2 m)").run();
     REQUIRE(play->spawnedCount() == 1);
     int climbing = 0;
@@ -216,7 +216,6 @@ TEST_CASE("the disc's level99: player 1 climbs a spawned fence and onto a spawne
     // The crate: a standing short-wall climb onto its top, where he stands before walking on.
     itemOn(*page, "Clear spawned").run();
     from = human.position();
-    heading = play->playerHeadingDegrees();
     itemOn(*page, "Crate (1 m)").run();
     REQUIRE(play->spawnedCount() == 1);
     int onTop = 0;

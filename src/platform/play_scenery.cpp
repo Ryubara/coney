@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "camera/camera_lens.h"
+#include "core/assert.h"
 #include "core/game_timer.h"
 #include "sandbox/sandbox_mesh.h"
 #include "world/view_frustum.h"
@@ -191,7 +192,8 @@ std::expected<void, Error> LevelPlayScenery::setExtras(const RenderEngine& engin
     // fitted before, so they fit again).
     mesh.clearExtraTriangles();
     if (auto added = mesh.addExtraTriangles(solid); !added) {
-        (void)mesh.addExtraTriangles(m_extraSolid);
+        const bool restored = mesh.addExtraTriangles(m_extraSolid).has_value();
+        CONEY_ASSERT(restored);
         return added;
     }
     m_extraSolid = std::move(solid);
