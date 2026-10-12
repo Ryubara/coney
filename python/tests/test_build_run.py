@@ -363,6 +363,9 @@ class Run:
         settings: dict[str, object] = {"agent": "alice", "preset": "dev", "checkout": tmp_path / "wt", **options}
         self.options = Options(**settings)  # type: ignore[arg-type]
         self.configured = True
+        #: Whether the folder is configured once the lock is ours (what the run it waited for left behind); None: as
+        #: it was.
+        self.configured_now: bool | None = None
         self.on_sleep: list[Callable[[], None]] = []
 
     def clock(self) -> float:
@@ -390,6 +393,7 @@ class Run:
             configured=self.configured,
             poll=30.0,
             checkout_lock=self.lock,
+            configured_now=lambda: self.configured if self.configured_now is None else self.configured_now,
         )
         return execute(self.options, context)
 
@@ -787,6 +791,28 @@ def test_a_second_run_that_waits_too_long_exits_75_and_runs_nothing(tmp_path: Pa
     assert run.toolchain.commands == []  # not even the dry run: the folder is not ours
     assert run.lock.status().queue == []
     assert all(row.claim is None for row in run.main.status().slots + run.fast.status().slots)
+
+
+def test_a_run_that_waited_looks_at_the_folder_again_once_the_lock_is_its_own(tmp_path: Path) -> None:
+    # The run it waited for configured the folder: this one must not configure it again.
+    run = Run(tmp_path, test=False)
+    run.configured = False  # as it looked when this run started
+    run.configured_now = True  # as it is after the first run
+    hold_folder(run, "bob", 101)
+
+    def finish_the_other_run() -> None:
+        claim = run.lock.status().slots[0].claim
+        if claim is not None:
+            run.lock.release_claim(claim)
+
+    run.on_sleep.append(finish_the_other_run)
+    assert run.go().ok
+    assert [run.toolchain.kind(c) for c in run.toolchain.commands] == ["refresh", "ninja", "build"]  # no configure
+    unlocked = Run(tmp_path / "plain")
+    unlocked.configured = False
+    unlocked.configured_now = True
+    assert unlocked.go().ok  # no wait: the same check after taking the lock, so it is not configured either
+    assert "configure" not in [unlocked.toolchain.kind(c) for c in unlocked.toolchain.commands]
 
 
 def test_a_stale_lock_of_a_dead_run_is_taken_over(tmp_path: Path) -> None:

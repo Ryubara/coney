@@ -465,6 +465,9 @@ class Context:
     report_every: float = 60.0
     #: The lock of the build folder: one run at a time per folder, from configure to the last test. None: no lock.
     checkout_lock: Slots | None = None
+    #: Looks at the build folder again once the lock is held: whether it is configured by then (the run that held the
+    #: lock before may have configured it). None: `configured` stands.
+    configured_now: Callable[[], bool] | None = None
 
 
 @dataclass
@@ -639,6 +642,8 @@ def execute(options: Options, context: Context) -> Result:
         return _gave_up(Result(), "build folder", timeout)
     if lock.last_takeover is not None:
         context.emit(f"took over a stale lock of this build folder from {lock.last_takeover.agent}")
+    if context.configured_now is not None:
+        context.configured = context.configured_now()
     held = [claim]
 
     def note(step: str) -> None:

@@ -765,7 +765,8 @@ the configure to the last test, however the run ends. A second run in the same f
 like the slots' (`claims/folders/<worktree>-<folder>-<digest>/`, the same stale rules: the holder's process is gone, or
 four hours), printing who holds it and the step it is at every minute, and gives up after `--max-wait` minutes with
 exit `75` as for a slot. Runs in other folders, other worktrees or other presets are not held up by it. The lock
-covers the run from its measuring on, so the manifest refresh and the dry run never overlap a build either.
+covers the run from its measuring on, so the manifest refresh and the dry run never overlap a build either, and
+a run that waited looks at the folder again once the lock is its own (the run before it may have configured it).
 
 **Choosing tests.** `-R REGEX` runs the tests whose names match and `-L LABEL` those with a label that
 matches (ctest's two filters; both together select the tests that satisfy both). The command lists the selection

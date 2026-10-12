@@ -194,6 +194,7 @@ def run_build(args: argparse.Namespace) -> int:
             fast_tests=numbers["build_fast_lane_tests"],
             configured=(folder / "CMakeCache.txt").is_file(),
             checkout_lock=build_claims.folder_lock(folder, root),
+            configured_now=lambda: (folder / "CMakeCache.txt").is_file(),
         )
         result = build_run.execute(options, context)
     for line in result.summary:
