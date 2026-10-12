@@ -28,6 +28,8 @@
 #include "core/error.h"
 #include "core/interpolation.h"
 #include "core/options.h"
+#include "debug/debug_lines.h"
+#include "debug/entity_inspect.h"
 #include "debug/play_controls.h"
 #include "effects/glints.h"
 #include "fileio/wad.h"
@@ -328,6 +330,15 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] const std::vector<world_objects::CarHitEffect>& carHitEffects() const { return m_carHitEffects; }
     /// How many world objects the last frame drew (0 without pixels).
     [[nodiscard]] std::size_t objectsDrawn() const { return m_placed ? m_placed->drawn() : 0; }
+    /// The Entity inspector's view of the scene: its humans and objects (play_level_inspect.cpp).
+    [[nodiscard]] const debug::EntityInspect* inspect() const override { return &m_inspector; }
+    [[nodiscard]] bool canFreezeEntity(debug::EntityId id) const override;
+    [[nodiscard]] bool entityFrozen(debug::EntityId id) const override;
+    void setEntityFrozen(debug::EntityId id, bool frozen) override;
+    /// The distance from entity `id`'s newest-step feet (where the debug shapes are built) to where its model is drawn
+    /// `alpha` of the way from the step before to the newest one; zero for an object or an unknown id. The debug shapes
+    /// and the inspector's highlight move by it so they stay on the models at any frame rate.
+    [[nodiscard]] anim::Vec3 drawnOffsetOf(debug::EntityId id, float alpha) const;
     /// How many objects made as `typeName` the level's spawn records still hold (not removed): a disc test's way to ask
     /// whether the boards a broken fence threw are still standing, whatever the renderer.
     [[nodiscard]] std::size_t standingObjectsOf(std::string_view typeName) const;
@@ -647,8 +658,23 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // The free camera `camera` between its last two steps, `alpha` of the way.
     [[nodiscard]] static world::DebugCamera blendedFreeCamera(const Interpolated<world::DebugCamera>& camera,
                                                               float alpha);
-    // Draws the Debug draw page's lines through the current camera, from `snapshot`.
-    void drawDebugLines(const human::PlayerSnapshot& snapshot) const;
+    // Draws the Debug draw page's lines through the current camera, from `snapshot`, the models at `alpha` of a step.
+    void drawDebugLines(const human::PlayerSnapshot& snapshot, float alpha) const;
+    // The Entity inspector's view of the mode's humans and objects (play_level_inspect.cpp): read-only (freezing is
+    // PlayControls').
+    class Inspector final : public debug::EntityInspect {
+      public:
+        explicit Inspector(PlayLevelMode& mode) : m_mode(mode) {}
+        [[nodiscard]] std::vector<debug::EntityRef> entities() const override;
+        [[nodiscard]] std::vector<debug::WatchGroup> describe(debug::EntityId id) const override;
+
+      private:
+        PlayLevelMode& m_mode;
+    };
+    // Adds the Debug draw page's collision shapes, drawn where the models are `alpha` of the way between steps, the
+    // classified wireframe round the player's feet in `snapshot` and the Entity inspector's highlight to `lines`
+    // (play_level_inspect.cpp).
+    void addInspectorLines(debug::DebugLines& lines, const human::PlayerSnapshot& snapshot, float alpha) const;
 
     RenderEngine& m_engine;
     const io::Wad& m_wad;
@@ -690,6 +716,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
         std::unique_ptr<CharacterMesh> mesh;
         std::vector<anim::Vec3> positions;
         std::vector<anim::Vec3> normals;
+        bool frozen = false; // the Entity inspector's freeze: its step is skipped
     };
     std::vector<Target> m_targets;
     std::vector<human::TargetHuman*> m_targetPointers;
@@ -782,6 +809,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     std::vector<std::pair<double, world_objects::WorldPose>> m_hatDraws;
     hud::HealthRings m_rings;
     std::map<std::uint64_t, int> m_ringHealth; // each ringed human's health at the last step, for its hit pulse
+    Inspector m_inspector{*this};              // the Entity inspector's view of the mode
     std::unique_ptr<HudLayer> m_hud;           // the HUD's sheets, batches and pass (src/platform/hud_layer.h)
     // The layer renderWithOverlay() adds over the HUD for the render it runs; null otherwise.
     const std::function<void(graphics::RenderDevice&)>* m_overlay = nullptr;
