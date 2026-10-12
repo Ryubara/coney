@@ -2670,9 +2670,9 @@ off it every 2-4 s (1-2 s after it takes up again), and in fight mode turns to o
 of the crew within 20 m or the chief's target, never attacking). `FollowFormation` walks to its slot, or with no
 usable slot behind the human ahead in the queue (2.5 m), by the walk distance (straight, else the planned route's
 length) at `FollowFormation_PickSpeed`'s speed; every formation plan retargets the running moves
-([follow retarget](#follow-retarget)), and `MoveAction::retarget` keeps a route whose last node sees the new point,
+([follow retarget](ai-gangs.md#follow-retarget)), and `MoveAction::retarget` keeps a route whose last node sees the new point,
 else starts the move again (or, in a jump, drop or fence climb, ends it on its next update). A move with no route
-slows for the turn onto its point (the circle part of [the corner speed](#corner-speed)), and arrival is in 3D, in
+slows for the turn onto its point (the circle part of [the corner speed](ai-moving.md#corner-speed)), and arrival is in 3D, in
 plan within 1 m. **Stand-ins** there: "someone's enemy" is any fightable brain holding the follower among its enemies;
 the `+0x2d5` match, the trains' part of the straight line, fight stance, pick-ups, idle clips, the vandalising while
 the walk fails, the 8 s reshuffle, banter and lines are not built; a move with no route has only the corner speed's
