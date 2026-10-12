@@ -1,0 +1,4 @@
+# Walk over a 0.15 m kerb (an edited box) into the wall behind it, issue #348.
+# Research: docs/research/physics.md#u1-runtime. Stick 60 % up (a walk), then let go.
+10 stick left 0 60
+90 stick left 0 0

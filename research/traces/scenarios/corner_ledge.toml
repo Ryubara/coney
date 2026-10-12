@@ -1,0 +1,36 @@
+# A run and a jump onto a ledge (issue #348): on the original (slot 1, Rembrandt facing -x) the 2.62 x 0.61 m box of
+# material 41 at (47.40-48.01, 51.85-54.47), against a wall, is made a 0.6 m ledge by writing its eight vertices'
+# heights (bottom at the street's 0.223, top 0.823; its vertices belong to its own ten triangles only, as in the step
+# test of docs/research/characters.md#walls). The player is put 8.5 m east of it, runs at it with the stick 100 % up
+# and leaves the ground 1.5 m before it (triangle at frame 38; frames 33 and 40 also land on it, 42 hits its face).
+# tri-sweep-tri logs every triangle that reaches Sweep_SphereTriangle and its caller (the walking capsule sweep or,
+# in the air, the sphere sweep's thunk), vertex-step and edge-roots every corner step and every edge step that kept
+# a root.
+description = "level99 street: run 100 % at a 0.6 m ledge (an edited box) and jump onto it, logging the sphere-triangle kernel's steps"
+research = "docs/research/physics.md#u1-runtime"
+input = "corner_ledge.txt"
+updates = 110
+fields = ["player"]
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick", "edge-roots", "tri-sweep-tri", "edge-step", "vertex-step"]
+let = { verts = "u32(u32(u32(u32(0x005147c4) + 0x40) + 0x4) + 0x8c)" }
+setup = [
+  { address = "tf(player) + 0x0", type = "f32", value = "56.5", frame = 0, until = 2 },
+  { address = "tf(player) + 0x4", type = "f32", value = "53.16", frame = 0, until = 2 },
+  { address = "verts + 0x1628", type = "f32", value = "0.823", frame = 0, until = 0 },
+  { address = "verts + 0x1638", type = "f32", value = "0.823", frame = 0, until = 0 },
+  { address = "verts + 0x1668", type = "f32", value = "0.823", frame = 0, until = 0 },
+  { address = "verts + 0x1698", type = "f32", value = "0.823", frame = 0, until = 0 },
+  { address = "verts + 0x1648", type = "f32", value = "0.223", frame = 0, until = 0 },
+  { address = "verts + 0x1658", type = "f32", value = "0.223", frame = 0, until = 0 },
+  { address = "verts + 0x1678", type = "f32", value = "0.223", frame = 0, until = 0 },
+  { address = "verts + 0x1688", type = "f32", value = "0.223", frame = 0, until = 0 },
+]
+
+[coney]
+# Coney's level has the box at its own height: this side shows the run and jump only, not the ledge.
+level = "level99"
+args = ["--checkpoint", "3", "--start", "56.5,53.16,0.2231,91.909,5.3,89.854"]
+settle = 300

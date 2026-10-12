@@ -1220,10 +1220,44 @@ from the walking capsule sweep `0x0034813c`, 540 edge steps) along and into a 0.
 (75.9, 35.4)) and towards a 1.3 m planter: the corner step (`0x0034e5d0`) **never ran**, and every edge step that kept
 a root reported its first root in range (133 of 133 with one root in [0, 1]), so no late or missed contact. The walking
 sphere's centre is 0.52 m above the feet (radius 0.4704), and the post's and planter's triangles are taller than it
-on both sides, so the centre's projection is never past two edges of one triangle. Inferred from that: the late and
-missed corner contacts need a triangle corner within the sphere's height and ahead of it (a kerb, a step, the top of
-a low wall, a jump onto a ledge); level99's street near slot 1 has no such geometry, so how often they happen in
-play is still open. Scenarios: `corner_post` and `corner_planter` in `repo:research/traces/scenarios/`.
+on both sides, so the centre's projection is never past two edges of one triangle. Scenarios: `corner_post` and
+`corner_planter` in `repo:research/traces/scenarios/`.
+
+**Over a kerb and onto a ledge** (issue #348). Level99's mesh (1,718 triangles, read over PINE) has no kerb or
+jumpable ledge on the street, so the 2.62 × 0.61 m box of material 41 at (47.40-48.01, 51.85-54.47), against a wall,
+was given new heights in RAM (its eight vertices serve its ten triangles only, as in the
+[step test](characters.md#walls)): a **0.15 m kerb** (`corner_kerb`, walk 60 % over it into the wall behind) and a
+**0.6 m ledge** (`corner_ledge`, a run at 100 % and a jump that leaves the ground 2.8, 1.5, 1.0 or 0.5 m before it). The
+`tri-sweep-tri` hook logged every triangle that reached `Sweep_SphereTriangle` and its caller. Confirmed (runtime),
+PCSX2 2.9.94, slot 1:
+
+| Run | Kernel calls (walking capsule / sphere in the air) | On the box's triangles | Corner steps (in the air, `vz` ≠ 0) | Edge or corner steps that kept a root |
+| --- | --- | --- | --- | --- |
+| kerb, walked onto in one update | 1,268 / 0 | **0** | 76 (0) | **0** |
+| ledge, take-off 2.8 m before: lands on it | 2,528 / 4,919 | 30 / 428 | 89 (89) | **0** |
+| ledge, take-off 1.5 m before: lands on it | 2,489 / 2,937 | 30 / 244 | 78 (75) | **0** |
+| ledge, take-off 1.0 m before: lands on it | 2,450 / 2,367 | 30 / 194 | 75 (72) | **0** |
+| ledge, take-off 0.5 m before: hits the face, falls back | 2,879 / 4,661 | 108 / 418 | 258 (132) | **0** |
+
+- **A kerb never reaches the kernel.** Its faces are under 0.25 m, so the walking capsule sweep drops them before the
+  kernel (the low-triangle rule of `0x00347c08`, [Characters](characters.md#walls)), and the snap lifts the feet onto
+  it; no corner contact of any kind can come from a kerb on the ground. Confirmed (code) at `0x00347c08` and
+  (runtime) above.
+- **A jump takes a second path to the kernel.** In the air the walking sweep (caller `0x0034813c`) still runs, and
+  `Human_PushOutInAir` (`0x0021a490`) adds, in the air and in a few states around it (50 to 371 of its calls fell in updates with `vz` = 0), the mesh-only sphere sweep through `IPhysics_CollideShape` (`0x0021aa14`,
+  options `0x2004d`, [Unit 11](#u11-collide-shape)) to `PhysicsMesh_SweepSphere` (`0x00348a50`) and the thunk
+  (`0x0034ee40`, return address `0x0034ee54`). That sweep has no 0.25 m rule, so in the air even short faces reach
+  the kernel; the corner slide skips airborne bodies ([Unit 2](#u2-00347c08-physicsmesh-sweepcapsule)). Confirmed
+  (code) at the cited addresses; the two callers confirmed (runtime) above.
+- **Corner steps are common; late or missed contacts were not seen.** `SphereSweep_VertexRegion` ran 75 to 258
+  times per run, nearly all in the air, but no edge step, from an edge or a corner, kept a cylinder root in any of
+  the five runs (the `edge-roots` hook logged none; it logged 133 in a rerun of `corner_post` with the same hooks,
+  so it works). Each step ended earlier: the edge segment was already within the sphere (fraction 0), the corner
+  already inside it, or the move went away from the corner (inferred from the logs: those exits are not hooked).
+  So the late and missed contacts of rows 11 and 12 of [Test ideas](#u1-tests) need a sphere sweeping onto a corner
+  from outside within one update, which these walks and jumps did not do. They are rare in play (inferred: none
+  in seven runs at a post, a planter, a kerb and a ledge). Where one does happen, the late root delays a contact
+  within one update's move and the missed one lets the sphere pass a corner by less than its radius.
 
 **A strike shape's previous position.** `strike_prev` (slot 6, three squares at a parked sedan), with the
 `sphere-pose` hook (`0x00342b08`) and the `strike-move-*` hooks at the six places `Human_TestStrikes` reads a strike
@@ -6571,10 +6605,9 @@ code:
 
 ## Open questions
 
-- **Not yet seen at runtime** from [the units](#units): how often the late or missed corner contacts happen in play
-  (the kernel produces them on the EE, [Seen at runtime](#u1-runtime), but the walks tried met no triangle corner
-  within the sphere's height; a kerb, step or low wall would show them); the capsule sweep's cell-list overrun after
-  a fraction above 1 ([Unit 2](#u2-00347c08-physicsmesh-sweepcapsule)).
+- **Not yet seen at runtime** from [the units](#units): the capsule sweep's cell-list overrun after a fraction above
+  1 ([Unit 2](#u2-00347c08-physicsmesh-sweepcapsule)). (The late and missed corner contacts were looked for at a post,
+  a planter, a kerb and a ledge and not seen: [Seen at runtime](#u1-runtime).)
 - **Bits and flags the units read but cannot name:** triangle flag bit 3 (`0x8`), which a sphere sweep skips for a
   body with flag `0x100` or a query with option `0x8000` (every world object's body starts with `0x100` in
   `0x80000500`, so a flying object's sphere passes those triangles; inferred); how many triangles carry each corner

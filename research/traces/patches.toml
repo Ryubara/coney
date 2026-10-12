@@ -973,6 +973,14 @@ address = 0x0034ee60
 original = [0x27bdfec0, 0x00c0682d]
 log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "[a1 + 0x0]", name = "cx", type = "f32" }, { value = "[a1 + 0x4]", name = "cy", type = "f32" }, { value = "[a1 + 0x10]", name = "r", type = "f32" }, { value = "[a3 + 0x0]", name = "mx", type = "f32" }, { value = "[a1 + 0x8]", name = "cz", type = "f32" }]
 
+[hook.tri-sweep-tri]
+description = "Each Sweep_SphereTriangle (0x0034ee60) on entry, with the triangle: the caller, the working triangle's first corner x, y, z and its unit normal's z (+0x78), and the sphere's centre z. Same address as tri-sweep: name one of the two."
+research = "docs/research/physics.md#u1-runtime"
+address = 0x0034ee60
+# addiu sp,sp,-0x140; move t5,a2
+original = [0x27bdfec0, 0x00c0682d]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "[a2 + 0x0]", name = "v0x", type = "f32" }, { value = "[a2 + 0x4]", name = "v0y", type = "f32" }, { value = "[a2 + 0x8]", name = "v0z", type = "f32" }, { value = "[a2 + 0x78]", name = "nz", type = "f32" }, { value = "[a1 + 0x8]", name = "cz", type = "f32" }]
+
 [hook.edge-step]
 description = "Each SphereSweep_Edge (0x0034e3b8) on entry: the caller (Sweep_SphereTriangle for an edge, SphereSweep_VertexRegion for a corner)."
 research = "docs/research/physics.md#u1-runtime"
