@@ -122,6 +122,13 @@ void PlayLevelMode::removeCarriedProp(Carrier& carrier) {
     carrier.typeName.clear();
 }
 
+void PlayLevelMode::dropReleasedProp(const human::Human& human) {
+    const auto found = m_carriers.find(&human);
+    if (found != m_carriers.end() && !human.carriedProp()) {
+        removeCarriedProp(found->second);
+    }
+}
+
 void PlayLevelMode::poseCarriedProp(const human::Human& human, const human::PlayerCharacter& character,
                                     const anim::Pose& pose, anim::Vec3 feet, float heading) {
     const auto found = m_carriers.find(&human);

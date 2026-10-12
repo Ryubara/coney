@@ -428,12 +428,17 @@ This qualifies the paragraph above: the scene task's own start does not release 
 player's grab or paired move does not survive a `SuperRunScene` cinematic here; whether every cinematic does this
 waits for that caller.
 
-**Coney** (#225, implemented; #281 in part): `SceneSystem::joinHuman`, the bind, resets the human first, before it
-checks the scene or the role (`SceneHost::resetHumanForJoin()`, `Human::resetForJoin()`): the carried prop goes and any
-pair breaks (`Human_BreakPair`, [Combat](combat.md#pair-break)); a human never bound is not reset. Only these two steps
-of `Human_ResetForMode` are done (stand-in); the rest, and the end of every player's rage on a bind, wait on #281. Rudy
-then joins role 6 and is moved by his role clip. Disc test (`tests/platform/disc_level99_power_lesson_test.cpp`):
-through lesson 6 into `l99_c7` Rudy is in role 6 and moves 11.2 m. Known difference: Coney starts `l99_c7` 7 updates
+**Coney** (#225 and #281, implemented): `SceneSystem::joinHuman`, the bind, resets the human first, before it checks
+the scene or the role (`SceneHost::resetHumanForJoin()`, `Human::resetForJoin()`), with the steps of
+[the reset at the join](#join-reset) that Coney models: a throw's aim cancelled, any pair broken (`Human_BreakPair`,
+[Combat](combat.md#pair-break)), a wound ended, then `HuSetNormalMode(human, true)` (a grab, a stun, rage and a fall
+ended, the idle, at least 1 health), and the carried prop gone; and every raging human's rage ends at once
+(`human::endAllRage()`, play mode's join reset). A human never bound is not reset. Stand-in: fire, mini-games, overlay
+tasks, held kind-`0x27` / `0x10` objects, slow motion, a climb's body and a picked object are not in Coney, so those
+steps are left out. Rudy then joins role 6 and is moved by his role clip. Disc tests: through lesson 6 into `l99_c7`
+Rudy is in role 6 and moves 11.2 m (`tests/platform/disc_level99_power_lesson_test.cpp`); the player still holds Rudy
+on the update before the play and no human is in a pair as it starts
+(`tests/platform/disc_level99_scene_grab_test.cpp`). Known difference: Coney starts `l99_c7` 7 updates
 earlier than the original (update 78 of 59 against 85), probably because Coney's scene preload is instant where the
 original takes 11 updates from `ScenePreload` to the play, so the reset removes the can before 59's own `0x31`.
 

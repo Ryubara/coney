@@ -3,6 +3,7 @@
 // docs/research/combat.md#human-flags): god and demi-god mode against synthetic hits, the stun and knockdown flags, the
 // health percentage, the revive, the normal mode, the arrest, tireless stamina, the rage meter's script operations and
 // the target search's no-target flag. Synthetic humans and hits; the stick at full deflection where the human sprints.
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <memory>
@@ -167,6 +168,51 @@ TEST_CASE("HuRevive brings a human out of health back up with full health; HuSet
     REQUIRE(fight.human().fighter().victim().stunned());
     fight.human().setNormalMode(false);
     CHECK_FALSE(fight.human().fighter().victim().stunned());
+}
+
+TEST_CASE("a scene bind's reset ends a stun, a wound, rage and a throw's aim, and brings a human out of health up",
+          "[human][script][scenes]") {
+    const FightCharacter character;
+    SECTION("stunned, wounded, raging and aiming a throw") {
+        Fight fight(character, 30.0F);
+        fight.human().takeHit(hitOf(15, 37, 0x1a, 0xc00));
+        fight.run("", 2);
+        REQUIRE(fight.human().fighter().victim().stunned());
+        fight.human().setWounded(true);
+        fight.human().setRageMode(true);
+        fight.human().setThrowAiming(true);
+        REQUIRE(fight.human().fighter().combat().rage().raging());
+        fight.human().resetForJoin();
+        CHECK_FALSE(fight.human().fighter().victim().stunned());
+        CHECK_FALSE(fight.human().script().wounded);
+        CHECK_FALSE(fight.human().fighter().combat().rage().raging());
+        CHECK_FALSE(fight.human().script().throwAiming);
+    }
+    SECTION("out of health and down") {
+        Fight fight(character, 30.0F);
+        fight.human().setFlag(flag::kDemiGod, false);
+        fight.human().takeHit(hitOf(12, 900, 0x0a, 0x800));
+        fight.run("", 5);
+        REQUIRE(fight.human().fighter().health().depleted());
+        // The join always passes `full`: up with at least 1 health.
+        fight.human().resetForJoin();
+        CHECK(fight.human().fighter().health().value() >= 1);
+        CHECK_FALSE(fight.human().fighter().victim().grounded());
+    }
+}
+
+TEST_CASE("a bind ends every raging human's rage, whoever is bound (Humans_EndAllRage)", "[human][script][scenes]") {
+    const FightCharacter character;
+    Fight first(character, 30.0F);
+    Fight second(character, 30.0F);
+    Fight calm(character, 30.0F);
+    first.human().setRageMode(true);
+    second.human().setRageMode(true);
+    const std::array<Human*, 3> humans{&first.human(), &second.human(), &calm.human()};
+    coney::human::endAllRage(humans);
+    CHECK_FALSE(first.human().fighter().combat().rage().raging());
+    CHECK_FALSE(second.human().fighter().combat().rage().raging());
+    CHECK_FALSE(calm.human().fighter().combat().rage().raging());
 }
 
 TEST_CASE("an arrested human stays where it is and is not alive until released", "[human][script]") {

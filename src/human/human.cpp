@@ -1393,8 +1393,22 @@ void Human::noteCarriedPropEvents(const anim::AnimTask* before, std::uint32_t be
 }
 
 void Human::resetForJoin() {
-    releaseCarriedProps();
+    // In the original's order (scenes.md#join-reset): the throw's aim (step 1); the pair broken before the grab, the
+    // wound and the stun end (step 2); the full normal mode's idle (step 4) and the carried props (step 3), which
+    // touch different state, so their order does not matter here.
+    setThrowAiming(false);
     breakPair();
+    setWounded(false);
+    setNormalMode(true);
+    releaseCarriedProps();
+}
+
+void endAllRage(std::span<Human* const> humans) {
+    for (Human* human : humans) {
+        if (human != nullptr) {
+            human->setRageMode(false);
+        }
+    }
 }
 
 void Human::noteReleaseEvent(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime) {

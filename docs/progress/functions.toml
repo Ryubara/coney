@@ -4524,6 +4524,12 @@ subsystem = "Human"
 size = 1192
 
 [[function]]
+address = 0x00232538
+name = "Humans_EndAllRage"
+subsystem = "Human"
+size = 168
+
+[[function]]
 address = 0x002325e0
 name = "Human_ResetForMode"
 subsystem = "Human"

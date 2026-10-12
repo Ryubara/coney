@@ -647,6 +647,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     void makeCarriedProp(human::Human& human, const human::CarriedProp& prop, Carrier& carrier);
     // Removes `carrier`'s object.
     void removeCarriedProp(Carrier& carrier);
+    // Removes the object of a prop `human` no longer carries now, not at the next stepCarriedProps(): a scene bind's
+    // reset releases it in the middle of the step, and the original's release destroys the object at once.
+    void dropReleasedProp(const human::Human& human);
     // Notes where `human`'s carried prop is drawn this frame, `character` posed by `pose` at `feet` facing `heading`.
     void poseCarriedProp(const human::Human& human, const human::PlayerCharacter& character, const anim::Pose& pose,
                          anim::Vec3 feet, float heading);

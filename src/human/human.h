@@ -510,10 +510,13 @@ class Human final : public Holdable {
     /// stand-in**: the original also drops a held object of kind `0x27`, which no Coney human holds yet.
     /// @orig 0x0024ce40 Human_ReleaseCarriedProps (unknown)
     void releaseCarriedProps() { m_carriedProp.reset(); }
-    /// What binding the human to a scene role does to it first (docs/research/scenes.md#join-reset): it removes the
-    /// carried prop and breaks any pair the human is in (breakPair()), so that a grab or a paired move does not keep
-    /// the human out of the scene. **Coney's stand-in**: only these two of the original's reset steps are done (the
-    /// rest, and every player's rage ending, wait on issue #281).
+    /// What binding the human to a scene role does to it first, `HuSetNormalMode(human, true)`'s reset
+    /// (docs/research/scenes.md#join-reset): a throw's aim is cancelled, any pair it is in is broken (breakPair()) so
+    /// that a grab or a paired move does not keep it out of the scene, a wound ends, then setNormalMode(true) ends a
+    /// grab, a stun, its rage and a fall and stands it in its idle with at least 1 health, and last its carried prop
+    /// goes. Every other human's rage ends too, which is the caller's (endAllRage()). **Coney stand-in**: the steps for
+    /// what Coney does not model (fire, a mini-game, an overlay task, a held kind-`0x27` or `0x10` object, slow
+    /// motion, a climb's body, a picked object) are left out.
     /// @orig 0x002325e0 Human_ResetForMode (unknown)
     void resetForJoin();
     /// `HuSetArrested`: arrested, the human stops where it is, its fighting ends and it loops 320
@@ -944,5 +947,12 @@ class Human final : public Holdable {
     std::span<Human* const> m_otherHumans; // setHumanContacts(), the step's
     anim::Vec3 m_pendingPush{};            // addPush(): others' pushes, for the next move
 };
+
+/// Ends the rage of every human in `humans` that rages, at once (Human::setRageMode() off, the meters left where they
+/// are), as a scene's bind does whoever it binds (docs/research/scenes.md#join-reset). **Coney's reading**: the
+/// research calls them every player (scenes.md) and every human in rage (characters.md); either way a raging human
+/// stops, so the caller passes every human it has.
+/// @orig 0x00232538 Humans_EndAllRage (unknown)
+void endAllRage(std::span<Human* const> humans);
 
 } // namespace coney::human
