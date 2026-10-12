@@ -10,7 +10,7 @@
 #include "graphics/render_device.h"
 
 // The platform-neutral half of Coney's 2D reference images (`coney --render-references`, the radar icons and the
-// particle effects; docs/guides/building.md#reference-images): which sprite each image shows, which texels a sprite
+// particle effects; docs/guides/running.md#reference-images): which sprite each image shows, which texels a sprite
 // sheet's rectangle covers, and how the cut-out is scaled. Pure and deterministic (integer arithmetic), so the same
 // disc gives byte-identical images on every machine; the renderer in src/platform/ only loads and writes.
 

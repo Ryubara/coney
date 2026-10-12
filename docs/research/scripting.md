@@ -1252,6 +1252,10 @@ Coney fixes (item 42):
 3. Test (level99 checkpoint 3): from `P3.Player2Jumps`, Vermin's gait is Run (and his speed the run speed) for the
    updates before he leaves the ground at the window, and again on the `fStop[4]` leg.
 
+Status: fix 2 is built (`RouteFollower::cornerPoints`); with it the gait 4 order runs him at 7.80 m/s up to both
+take-offs, where before the corner after each landing held him at 2.80 m/s. Test:
+`repo:tests/platform/disc_level99_vermin_fence_test.cpp`, which also checks his fence climb in step 3.2 (issue #232).
+
 **Item 43: where Vermin faces in the fence lesson.** `P3.WoodenFences` (the player entering `vAlmostDone`) flushes
 Vermin and teleports him to `fStop[5]` (29.5, 6.4, 0.3) with heading −1, so **the flag's heading, 273°**; the game's
 heading grows clockwise from +y and faces `(sin h, cos h)` ([Characters](characters.md#step-control)), so he faces
@@ -2380,7 +2384,7 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
   object took sends `(human, box, object)` to every enabled kind-0 box the attacker (a thrown object's thrower)
   stands in. Not yet: props, the 30 m alert after it, and the boxes' every-fifth-frame round-robin (Coney updates
   them every frame). **`--script-trace`** (`ScriptSystem::traceCalls()`,
-  [Building](../guides/building.md#tracing)) logs every binding call and every call into the scripts by name,
+  [Running Coney](../guides/running.md#tracing)) logs every binding call and every call into the scripts by name,
   Coney's own tool.
 - **Trigger spheres** (`src/world_objects/trigger_spheres.h`, `TriggerSphereCfg` in `src/scripting/world_bindings.h`):
   a pool of 100, one per object, each checked every fifth frame (index modulo 5) with the boxes' rules, 3, 5 once per

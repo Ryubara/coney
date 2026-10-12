@@ -26,7 +26,7 @@ and `labels.yml`) are gone, and so are the constants that repeated their values 
 | `repo` | The default branch, the wording (call the person who directs the project "user", never "owner"), the decisions only a maintainer takes (`owner_decisions`) and the tool configuration files | `repo audit` (`files.exist` and the wording checks); agents ([AGENTS.md](repo:AGENTS.md)) |
 | `paths` | Which paths are code, documentation and documentation-only; generated paths; the agent pointer files; the one file that may hold the repository's address; the large-file limit | `repo check`, `repo check-docs`, `check changed`; `repo render` (the `docs-only-paths` block); `ci-scope.sh` reads the docs-only list itself, and `repo audit` holds it and pre-commit to the file |
 | `commits` | The title form, its limit and suffix, the areas and verbs, the body wrap and the `Co-Authored-By` trailer | `repo check-title`, which the commit-title hook and the `title` job run; `repo render` (the `commit-rules` and `commit-areas` blocks) |
-| `pull_requests` | The description's sections and which must hold text, the `Docs: none` line, `Fixes #N`, the Remaining list, the Screenshots rule, the AI use choices, stacked pull requests | `repo check-body`, `repo check-docs`; `repo render` (the `pr-rules` block); `repo audit` checks the template and the stacked-pull-request rules |
+| `pull_requests` | The description's sections and which must hold text, the `Docs: none` line, `Fixes #N`, the Checklist (every item ticked), the Screenshots rule, the AI use choices, stacked pull requests | `repo check-body`, `repo check-docs`; `repo render` (the `pr-rules` block); `repo audit` checks the template and the stacked-pull-request rules |
 | `merge` | The merge methods, the squash commit's wording, auto-merge, the required checks and who merges: a copy of the GitHub ruleset and settings | `repo render` (the `required-checks` block); `repo audit --github` compares it with the GitHub ruleset and settings |
 | `issues` | The structure of each issue form (field ids, headings, which are required, default labels), the Screenshots line, the `From:` line, links and how many labels of each family an issue carries | `repo audit` (the forms, and every issue's sections, placeholders, Screenshots, labels, links and `From:` line) |
 | `labels` | The label families and every label with its colour and description | `repo labels`; `repo render` (the `labels` block); `repo audit` (the labels on GitHub) |
@@ -98,6 +98,7 @@ says where the check runs, how bad a finding is and who fixes it, and the table 
 | `files.generated-blocks` | files | error | auto | a generated block in AGENTS.md, CONTRIBUTING.md or a guide is out of date (coney-tools repo render) |
 | `files.ci-scope` | files | error | skill | .github/scripts/ci-scope.sh does not read the docs-only paths from the conventions file |
 | `files.large-file-limit` | files | error | skill | pre-commit's check-added-large-files limit differs from the conventions |
+| `files.markdown-hook` | files | error | skill | pre-commit has no markdownlint-cli2 hook, so a long Markdown line is first caught by CI |
 | `issue.sections` | github | error | skill | an open issue lacks a required section of its form (or was filed with other headings) |
 | `issue.placeholder` | github | error | skill | a section of an open issue is empty or holds only a placeholder such as x |
 | `issue.screenshots` | github | error | skill | an open issue has no uploaded image and no Screenshots: none (reason) line |
@@ -107,7 +108,7 @@ says where the check runs, how bad a finding is and who fixes it, and the table 
 | `issue.closed-unchecked` | github | error | skill | a closed issue keeps an unchecked item that names no follow-up issue |
 | `issue.stale-status` | github | warn | skill | an issue calls a pull request open, merged or closed when it is not |
 | `issue.links` | github | warn | skill | an issue names a docs or research file as plain text, or links a file or anchor that is not on main |
-| `issue.provenance` | github | warn | skill | an issue that a pull request's Remaining list points at has no From: line |
+| `issue.provenance` | github | warn | skill | an issue that an older pull request's Remaining list points at has no From: line |
 | `issue.triage-age` | github | warn | skill | an issue has waited in S-needs-triage longer than the limit |
 | `issue.info-age` | github | warn | skill | an issue has waited in S-needs-info with no activity longer than the limit |
 | `issue.progress-idle` | github | warn | skill | an S-in-progress issue has had no activity for longer than the limit |
@@ -115,7 +116,8 @@ says where the check runs, how bad a finding is and who fixes it, and the table 
 | `pr.title` | github | error | skill | an open pull request's title breaks the commit title rules |
 | `pr.body` | github | error | skill | an open pull request's description breaks the template rules (sections, local file paths, images not uploaded) |
 | `pr.owner-word` | github | error | skill | an open pull request says 'owner' for the person who directs the project (say 'user') |
-| `pr.remaining-uncited` | github | error | skill | a merged pull request left an unchecked Remaining item that names no issue |
+| `pr.unfinished-items` | github | error | skill | a pull request merged since the Checklist rule began has an unticked Checklist item (an open one is pr.body) |
+| `pr.remaining-uncited` | github | error | skill | a pull request merged before the Checklist rule left an unchecked Remaining item that names no issue |
 | `pr.idle` | github | warn | skill | an open pull request has had no activity for longer than the limit |
 | `pr.stacked-depends` | github | error | skill | an open pull request on a branch other than main has no Depends on #N line |
 | `pr.stacked-automerge` | github | error | skill | auto-merge is enabled on a pull request whose base is not main |
@@ -193,7 +195,7 @@ themselves; the skill is what acts on them.
 | Rule | Guide |
 | --- | --- |
 | Commit titles, squash merging, who merges, the release queue | [How we work](how-we-work.md), [CONTRIBUTING.md](repo:CONTRIBUTING.md#commits) |
-| Pull request descriptions: Testing, Screenshots, Remaining | [Testing](testing.md#pr-evidence), [Issues](issues.md#leftovers) |
+| Pull request descriptions: Testing, Screenshots, Checklist | [Testing](testing.md#pr-evidence), [Issues](issues.md#follow-up-work) |
 | Labels, forms, triage, what a closed issue keeps | [Issues](issues.md) |
 | What a workflow may write to GitHub | [Workflows](#workflows) |
 | What CI runs for which paths | [Building and testing](building.md#what-ci-runs) |

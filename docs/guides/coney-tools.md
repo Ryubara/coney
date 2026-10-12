@@ -502,7 +502,7 @@ uv run --project python coney-tools trace fight-report --original TRACE... --con
 ```
 
 Behaviour statistics of a gang fight, from the all-humans trace of either game (Coney's `--trace-humans`, the
-original's `pcsx2 record` of the all-humans field set; [Tracing](building.md#tracing)). The two games draw different
+original's `pcsx2 record` of the all-humans field set; [Tracing](running.md#tracing)). The two games draw different
 random numbers, so a fight is compared by rates, shares and distributions, not update by update. A trace needs the
 columns `step`, `human` and `gang`; a metric whose columns are missing is left out. For the whole match (`all`) and
 each gang (and each human with `--humans`) it prints:
@@ -617,7 +617,10 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   check needs `origin/main` in the checkout (`git fetch origin`) and says so when it is missing.
 * `--local` reads the workspace around the checkout: the free space of its drive, merged worktrees and stray files
   among the worktrees (`workspace clean` would remove them), and scratch folders of finished work that still hold
-  captures. The limits are the `workspace` section of the file.
+  captures. The limits are the `workspace` section of the file. It asks GitHub once for the merged pull requests of
+  every branch, judges the worktrees and walks the scratch folders several at a time, and does not read the last
+  activity of a worktree it will not report (a `build/` folder is `workspace clean`'s business), so a workspace of
+  80 worktrees takes seconds, not minutes.
 
 Each finding has the check's id, a severity (`error` or `warn`), the item (`#201`, a file, a worktree), a message and a
 fix class: `auto` (a coney-tools command fixes it), `skill` (a person or the `/repo-hygiene` skill fixes it with

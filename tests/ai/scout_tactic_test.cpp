@@ -86,13 +86,12 @@ TEST_CASE("TacticScout posts each guard, and a guard pushed off his post walks b
     Level level(true, std::nullopt);
     const coney::ai::TacticServices services{.scripts = &scene.services, .scout = &level.services};
     auto owned = std::make_unique<coney::ai::ScoutTactic>(scoutCall(gang), services);
-    coney::ai::ScoutTactic& tactic = *owned;
     scene.brains.gangs().setTactic(gang, std::move(owned));
     scene.run(1);
     REQUIRE(guard.topGoal() != nullptr);
     CHECK(guard.topGoal()->type() == GoalType::Scout);
     CHECK(guard.threatResponse() == 0);
-    CHECK(tactic.schedule().interval(guard) == coney::ai::kScoutScanMs);
+    CHECK(scene.brains.gangs().scans().interval(guard) == coney::ai::kScoutScanMs);
 
     // Moved 2 m off, he walks back within the slack.
     guard.human().place(Vec3{22.0F, 20.0F, 0.0F}, 180.0F);

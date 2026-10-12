@@ -879,7 +879,7 @@ workers) that belong to this page, by address.
 ## Coney's implementation
 
 The streamed-world half of `LoadLevel`, the level file and the streaming of a running level exist (2026-10-04),
-behind Coney's world viewer (`coney --view-world <level>`, [Building](../guides/building.md#the-world-viewer)), and
+behind Coney's world viewer (`coney --view-world <level>`, [Running Coney](../guides/running.md#the-world-viewer)), and
 Coney's play mode plays a level with Rembrandt (`--play-level`). Details on
 [The streamed world](world.md#coneys-implementation).
 
@@ -1029,7 +1029,7 @@ the records for the AI's route planner, with the inside and walkable-line tests 
 
 **The Object List** (2026-10-06): `world_objects::ObjectList` (`src/world_objects/object_list.h`) parses the chunk
 and finds a record by name ([The Object List](#the-object-list)); Coney's reference renderer
-(`coney --render-references`, [Building](../guides/building.md#reference-images)) loads every record's model with the
+(`coney --render-references`, [Running Coney](../guides/running.md#reference-images)) loads every record's model with the
 level file's `0x47` reader and draws the thumbnails of [Objects](../references/objects.md). Disc check (NTSC-U,
 2026-10-06, counts only; `coney_tests "[disc][object_list]"` and the renderer): every record's model and dictionary
 is a WAD entry, all 1,406 models load, and 1,399 object images are drawn (one name hash is listed twice); the six
