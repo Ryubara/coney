@@ -131,8 +131,9 @@ TEST_CASE("the play pages say so when no player plays", "[debug]") {
     const auto titles = session.model().pageTitles();
     CHECK(titles == std::vector<std::string>{"Time", "Tunables", "Natives", "Lua console", "Cheats", "Levels",
                                              "Missions", "Player", "Camera", "Spawner", "AI fighters",
-                                             "Animation player", "HUD", "Debug draw", "Display", "Audio", "Input"});
-    CHECK(session.model().openPage("Debug draw")->items().size() == 6);
+                                             "Animation player", "HUD", "Debug draw", "Entity inspector", "Display",
+                                             "Audio", "Input"});
+    CHECK(session.model().openPage("Debug draw")->items().size() == 11);
 }
 
 TEST_CASE("the HUD page switches the HUD's parts, sets the panel's values and fires messages", "[debug][hud]") {

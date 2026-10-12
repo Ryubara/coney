@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The gangs (docs/research/ai.md#gangs): their records, enemies and friends, the brains' switches for a whole gang, and
-// the events a member's gang hears before its brain, among them event 18 with the count still standing.
+// The gangs (docs/research/ai-gangs.md#gangs): their records, enemies and friends, the brains' switches for a whole
+// gang, and the events a member's gang hears before its brain, among them event 18 with the count still standing.
 #include "ai/gangs.h"
 
 #include <memory>

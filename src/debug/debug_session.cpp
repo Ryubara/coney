@@ -41,6 +41,7 @@ DebugSession::DebugSession(TunableRegistry& tunables, DebugServices services, In
     addAnimPlayerPage(*this);
     addHudPage(*this);
     addDebugDrawPage(*this);
+    addEntityInspectorPage(*this);
     addDisplayPage(*this);
     addAudioPage(*this);
     addInputPage(*this);
@@ -129,6 +130,10 @@ std::vector<std::string> DebugSession::cornerLines() const {
         } else {
             lines.emplace_back("coordinates: no player");
         }
+    }
+    // The Entity inspector's selection, named while it is highlighted.
+    if (std::string inspected = inspectedCornerLine(*this); !inspected.empty()) {
+        lines.push_back(std::move(inspected));
     }
     // The last notice, while it lasts.
     if (m_noticeFramesLeft > 0) {

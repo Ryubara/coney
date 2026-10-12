@@ -9,6 +9,7 @@ namespace coney::debug {
 
 class DebugSession;
 class MenuPage;
+struct DebugDrawOptions;
 class TunableRegistry;
 
 /// The Time page: pause, step one fixed step, the time scale (0.05x to 4x, presets, a reset to 1x), and the frame and
@@ -51,6 +52,15 @@ void addAnimPlayerPage(DebugSession& session);
 void addHudPage(DebugSession& session);
 /// The Debug draw page: the lines of DebugDrawOptions.
 void addDebugDrawPage(DebugSession& session);
+/// The Debug draw page's collision-shape items (wall classes, shapes, strike shapes, contacts), appended to `page`
+/// over `draw` (src/debug/pages_entity.cpp).
+void addShapeDrawItems(MenuPage& page, DebugDrawOptions& draw);
+/// The Entity inspector page: select a human or object (nearest, next, previous, looked at, from a list), highlight
+/// it, and watch everything the mode knows of it in groups. Over PlayControls::inspect(); says so without one.
+void addEntityInspectorPage(DebugSession& session);
+/// The corner line naming the Entity inspector's selection while it is highlighted ("Inspecting: ..."); empty when
+/// there is none.
+[[nodiscard]] std::string inspectedCornerLine(const DebugSession& session);
 /// Fills `page` with the tunables of `category`: each as a toggle or a number with its default, then a reset. The
 /// Tunables page's submenus, and any page that shows one category.
 void fillTunableCategory(MenuPage& page, TunableRegistry& registry, const std::string& category);

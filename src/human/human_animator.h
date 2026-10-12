@@ -190,7 +190,7 @@ class HumanAnimator {
     /// A scripted clip from outside the dispatcher (the play-anim action's start, `0x0025a3e0`): `clip` (anim `animId`,
     /// which must outlive its use) once at `rate`, faded in over `fade`, then the idle; AnimState::Attack while it
     /// plays, its task holding `held` on the record `+0x08`.
-    /// Research: docs/research/ai.md#dyn-animation
+    /// Research: docs/research/ai-scripting.md#dyn-animation
     void playScripted(const anim::AnimClip& clip, std::uint32_t animId, float rate, float fade, HeldFlags held);
     /// The combat walk locked onto a target: `clip` (one of 380-387, or the fight idle 358 with the stick at rest)
     /// looping with no root velocity, since the human sets the velocity (docs/research/combat.md#targets). A clip the

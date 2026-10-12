@@ -96,6 +96,7 @@ add_executable(coney_tests
     hud/war_command_display_test.cpp
     platform/disc_anim_player_test.cpp
     platform/disc_change_character_test.cpp
+    platform/disc_inspector_freeze_test.cpp
     platform/disc_sprite_sheets_test.cpp
     platform/disc_rumble_test.cpp
     platform/disc_hub_doors_test.cpp
@@ -334,6 +335,8 @@ target_sources(coney_tests PRIVATE
     debug/anim_page_test.cpp
     debug/audio_page_test.cpp
     debug/debug_session_test.cpp
+    debug/entity_inspector_test.cpp
+    debug/human_shapes_test.cpp
     debug/input_gate_test.cpp
     debug/menu_navigator_test.cpp
     debug/native_caller_test.cpp

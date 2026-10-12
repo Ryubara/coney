@@ -249,7 +249,7 @@ class AiBindingHost {
 
 /// Registers kAiBindings in `vm`, handing each call to `context.ai` (a null one does nothing). They return nothing.
 ///
-/// Research: docs/research/ai.md#scripted, docs/references/bindings/ai.md
+/// Research: docs/research/ai-scripting.md#scripted, docs/references/bindings/ai.md
 void addAiBindings(LuaVm& vm, const BindingContext& context);
 
 } // namespace coney::script

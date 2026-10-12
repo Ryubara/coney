@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The Warriors' steal command (docs/research/ai-code.md#t2-warrior-steal, docs/research/ai.md#warrior-steal): the
+// The Warriors' steal command (docs/research/ai-code.md#t2-warrior-steal, docs/research/ai-gangs.md#warrior-steal): the
 // tactic's store front and clusters, the claims that keep two Warriors off one object, the WarriorVandalSteal goal's
 // fetches and GetItem's walk and pick-up (docs/research/ai.md#get-item). Synthetic humans on a flat floor and a store
 // of stand-in objects; the level's side (ItemServices) is a fake that takes an object at once when a pick-up starts.

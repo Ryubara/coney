@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The spinning icons over humans (docs/research/ai.md#dealer-icon), on synthetic data.
+// The spinning icons over humans (docs/research/ai-scripting.md#dealer-icon), on synthetic data.
 #include "world_objects/spinning_icons.h"
 
 #include <cmath>

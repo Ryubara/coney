@@ -118,7 +118,8 @@ Dear ImGui (MIT licence) is pinned in `cmake/deps.cmake` and used only in `src/p
 | AI fighters | AI humans that fight the player: spawn one in front of him, the engaging toggle, their state, clear them |
 | Animation player | every clip the player's anim sets can play, by set and category with its length, played on him once or looping at a speed, then his own animation back ([below](#animation-player)) |
 | HUD | the [in-game HUD](../research/hud.md)'s parts on and off, player 1's rage, score, money and items set (-1 gives the value back), an objective, a hint and an announcement fired |
-| Debug draw | lines in the scene: collision near the player, the player's heading and velocity, the camera, places |
+| Debug draw | lines in the scene: collision near the player (plain or by wall class), the player's heading and velocity, the camera, places, every human's collision shapes, strike shapes and contacts |
+| Entity inspector | pick a human or object (nearest, next, looked at, from a list), mark it in the scene and watch everything Coney knows of it |
 | Display | the frame-stats line, the FPS counter, the frame cap and vsync (live), the player's coordinates, the GUI safe area, the logical screen |
 | Audio | the output device, the master and bus volumes, a looping test tone, the voices playing (plotted) |
 | Input | port 1 live: buttons held, both sticks (plotted), the raw stick bytes, the triggers' pressure |
@@ -223,9 +224,69 @@ real clock, so the counter says so and there is no cap to change. *Coordinates* 
 metres, z up) and heading (degrees, 0 faces +y) under the other corner lines, read from the play mode; with no player
 it says so.
 
+### Debug draw {#debug-draw}
+
 **Debug draw** switches lines the play mode draws into the scene, tested against depth: the collision triangles within
 a radius of the player as a wireframe (at most 6,000), a cross at his feet with his heading and velocity, the ground's
-normal, the follow camera's wanted position and look-at point, and the scene's places with their headings.
+normal, the follow camera's wanted position and look-at point, and the scene's places with their headings. They work
+in a level and in a sandbox alike.
+
+The collision switches draw what the physics uses, from the engine's own sizes and rules (`src/debug/human_shapes.h`),
+never a copy of them, so a change to a radius or a rule shows at once:
+
+| Switch | Draws |
+| --- | --- |
+| Wall classes | the collision wireframe (in place of the plain one, same radius and budget) coloured by how the walking sweep classes each triangle (`human::wallClassOf()`, [Walls](../research/characters.md#walls)): **red** a wall, **yellow** a steep face too low or thin to stop a walk (a kerb, a stair's riser), **green** a floor, **blue** a ceiling, **grey** a disabled triangle, **magenta** one with no usable normal |
+| Shapes | on each human: grounded, the walking sphere the wall sweep moves (**cyan**; the player's 0.4704 m, an AI human's 0.35 m, × the scale, its centre that plus 0.05 m above the feet); airborne, the push-out sphere (**magenta**, 0.5 m × the scale); the 2 m upright capsule other humans' sweeps meet (**grey**); the ground snap's ray (**green**); during a climb, the face found, its normal and the top (**orange**) |
+| Shapes on all humans | on (the default): every human's shapes; off: the player's and the Entity inspector's selection's only |
+| Strike shapes | the strike shapes switched on this step (**red** swept spheres) and the spine and head they are tested against (**yellow**) |
+| Contacts | each normal the last walking sweep slid along (a wall, another human's capsule, an object's body): a cross where the walking sphere meets it and an arrow along the normal (**orange-red**) |
+
+The shapes and the Entity inspector's highlight are drawn where the models are, `alpha` of the way from the step before
+to the newest one (the same blend the meshes use), so at an uncapped frame rate they stay on the model: each human's
+shapes are built where the engine has it, then moved by the distance from its newest feet to its drawn ones (the pose
+of a strike shape is the newest step's, not blended). Sandbox targets get no shapes, on purpose: a target has no body
+in Coney's physics and no strike shapes of its own, so nothing is hit by geometry. The player's attacks reach it by
+the attack's hit update and its reach (a **Coney stand-in**, [Combat](../research/combat.md#hit-codes)), which is a
+timing and a distance, not a shape that could be drawn. The Entity inspector's highlight and its watch lines are how a
+target is looked at.
+
+### Entity inspector {#entity-inspector}
+
+The **Entity inspector** page picks one entity of the scene and shows everything Coney knows about it, live. It needs
+the play mode (`--play-level`, the story, or a sandbox from Levels); elsewhere it says there are no entities. The
+entities are player 1, the sandbox targets, the AI humans (fighters and the scripts' cast; deleted ones are left
+out), the doors and barriers, the glass panes and the world objects whose object exists now.
+
+| Item | Does |
+| --- | --- |
+| Selected | the selection's name and its distance from the player |
+| Entities | how many humans and objects there are |
+| Nearest to player | selects the entity nearest the player, not counting him |
+| Next, Previous | steps through the list (player 1, targets, AI humans, doors, panes, objects), wrapping round |
+| Looked at | selects the entity nearest the middle of the camera's view (within 12°, aimed 1 m above its feet) |
+| Choose | the whole list; choosing one selects it |
+| Clear | drops the selection |
+| Highlight | marks the selection in the scene (a white post and diamond over it and a ring at its feet; a door's or a pane's own collision triangles in white) and names it under the corner lines, `Inspecting: AI 2 gang (3.4 m)` |
+| Freeze selection | holds the selected human still: an AI human or a sandbox target is not animated, moved or acted for, its brain still runs and the others still hit it (it does not react until let go); for the player it is the Player page's *Frozen* (he ignores the pad). An object cannot be frozen, and says so in the log. The Locomotion page's *Frozen* line shows it |
+| Teleport player to it | puts the player 1.5 m from it on his side, facing it |
+| Log everything | prints every value of the selection to the log, `Group / name: value` a line |
+| Identity ... Object | one page per group, a live watch per value |
+
+A human's groups (`src/debug/human_watch.h`): **Identity** (role, model, character type, what drives it, brain
+handle, class and gang), **Transform** (feet, heading, velocity, speed, scale, lean), **Locomotion** (gait, ground or
+air, traversal, the stick and command the pad or brain wrote, the brain's move, the ground's normal and material,
+landings), **Animation** (clip, animation state, the task's time, the held flags, the idle clip), **State flags** (the
+human flag word decoded by name, the scripts' switches, the target state), **Meters** (health, stamina, power, rage),
+**AI** (with a brain: type, goal stack top first, reaction goal, actions, target, enemies, attack slots, melee range,
+thinks), **Physics** (the walking sphere, capsule and air sphere sizes, the contacts, blocked and airborne updates, the
+climb) and **Combat** (mode, the attack playing, blocking, the pair, holding or grabbed, hits). A sandbox target shows
+Identity, Transform, Animation, Meters and Combat. An object (`src/debug/object_watch.h`) shows Identity, Transform
+and **Object**: a door's class, state, angle, hitpoints and triangles; a pane's size, broken and alarm; a world
+object's spawn-record state, flags, zone, tint and money.
+
+The inspector only reads, but for *Freeze selection*: choosing, highlighting and watching change nothing in the game,
+and the selection is a number in the Debug draw options, so a test-mode run plays the same with it on.
 
 ### Noclip {#noclip}
 

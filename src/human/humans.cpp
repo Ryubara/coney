@@ -11,6 +11,7 @@ void Humans::add(Human& human, bool padControlled) {
     m_humans.push_back(&human);
     m_padControlled.push_back(padControlled);
     m_fightsTargets.push_back(padControlled);
+    m_held.push_back(false);
 }
 
 void Humans::setPadControlled(const Human& human, bool padControlled) {
@@ -18,6 +19,18 @@ void Humans::setPadControlled(const Human& human, bool padControlled) {
     if (found != m_humans.end()) {
         m_padControlled[static_cast<std::size_t>(std::distance(m_humans.begin(), found))] = padControlled;
     }
+}
+
+void Humans::setHeld(const Human& human, bool held) {
+    const auto found = std::ranges::find(m_humans, &human);
+    if (found != m_humans.end()) {
+        m_held[static_cast<std::size_t>(std::distance(m_humans.begin(), found))] = held;
+    }
+}
+
+bool Humans::held(const Human& human) const {
+    const auto found = std::ranges::find(m_humans, &human);
+    return found != m_humans.end() && m_held[static_cast<std::size_t>(std::distance(m_humans.begin(), found))];
 }
 
 bool Humans::opposed(std::size_t slot, std::size_t other) const {
@@ -41,6 +54,7 @@ void Humans::remove(const Human& human) {
     m_humans.erase(found);
     m_padControlled.erase(m_padControlled.begin() + slot);
     m_fightsTargets.erase(m_fightsTargets.begin() + slot);
+    m_held.erase(m_held.begin() + slot);
 }
 
 void Humans::gatherTargets(std::size_t slot, std::span<Combatant* const> targets) {
@@ -77,9 +91,11 @@ void Humans::update(const raycast::CollisionMesh* mesh, std::span<Combatant* con
     if (m_brains) {
         m_brains(m_humans);
     }
-    // 3. Every human's animation, then 4. every human's state update.
-    for (Human* human : m_humans) {
-        human->animate(mesh);
+    // 3. Every human's animation, then 4. every human's state update; a held human (setHeld()) takes no part in 3-5.
+    for (std::size_t slot = 0; slot < m_humans.size(); ++slot) {
+        if (!m_held[slot]) {
+            m_humans[slot]->animate(mesh);
+        }
     }
     // Every walking body meets the others' capsules (docs/research/physics.md#human-contacts), from a list of its own
     // so that a human added during the pass does not move it.
@@ -90,6 +106,9 @@ void Humans::update(const raycast::CollisionMesh* mesh, std::span<Combatant* con
     // Each human's strike test runs in its state update, after its move (the humans it fights, and the level's
     // objects).
     for (std::size_t slot = 0; slot < m_humans.size(); ++slot) {
+        if (m_held[slot]) {
+            continue;
+        }
         m_humans[slot]->updateState(mesh);
         if (m_humans[slot]->strikeShapes().anyOn()) {
             m_victims.clear();
@@ -105,6 +124,9 @@ void Humans::update(const raycast::CollisionMesh* mesh, std::span<Combatant* con
     const bool forward = m_steps % 2 == 0;
     for (std::size_t n = 0; n < m_humans.size(); ++n) {
         const std::size_t slot = forward ? n : m_humans.size() - 1 - n;
+        if (m_held[slot]) {
+            continue;
+        }
         gatherTargets(slot, targets);
         m_humans[slot]->updateActions(m_scratch, mesh);
     }

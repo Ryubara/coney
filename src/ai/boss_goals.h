@@ -11,7 +11,8 @@
 // tires after six hits and, for Vargas in stage 3, fetches objects from a flag), the BigThrower (Vargas in stage 2,
 // throwing objects from a flag) and the tired goal (the boss stunned and open to hits for a while, and the break that
 // ends a stage). The tactic that gives them is ai/tactic_boss.h.
-// Research: docs/research/ai.md#boss-diego-vargas, docs/research/ai.md#boss-throw, docs/research/ai-goals.md#goal-tired
+// Research: docs/research/ai-gangs.md#boss-diego-vargas, docs/research/ai-gangs.md#boss-throw,
+// docs/research/ai-goals.md#goal-tired
 
 namespace coney::ai {
 
@@ -20,7 +21,7 @@ class FlagServices;
 class ScriptServices;
 
 /// The two bosses' character classes (`HuCreate`'s types): Diego the brawler in every stage, Vargas the thrower in
-/// stage 2 and a brawler in stage 3 (docs/research/ai.md#boss-diego-vargas).
+/// stage 2 and a brawler in stage 3 (docs/research/ai-gangs.md#boss-diego-vargas).
 inline constexpr int kDiegoClass = 120;
 inline constexpr int kVargasClass = 119;
 
