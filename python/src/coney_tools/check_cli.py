@@ -125,7 +125,7 @@ def _step_tidy(root: Path, changed: list[str], build_dir: Path, jobs: int, clang
         raise ConfigError(
             f"{build_dir / 'compile_commands.json'} has no entry for {', '.join(absent[:3])}"
             f"{' ...' if len(absent) > 3 else ''}: it belongs to another checkout, or the files are new and need "
-            "`cmake --preset dev` again"
+            "`coney-tools build --configure-only --agent <id>` again"
         )
     checks = local_gate.load_tidy_checks(root)
     first = database[local_gate.comparable(root / sources[0])]
@@ -135,7 +135,8 @@ def _step_tidy(root: Path, changed: list[str], build_dir: Path, jobs: int, clang
         notes.append(
             f"note: {build_dir} is a GCC compile database; CI tidies a Clang one and clang-tidy can reject GCC-only "
             f"flags. Configure one with `CC=clang-{local_gate.TIDY_MAJOR} CXX=clang++-{local_gate.TIDY_MAJOR} "
-            "cmake --preset dev -B build/tidy` and pass `--build-dir build/tidy`"
+            "cmake --preset dev -B build/tidy` and pass `--build-dir build/tidy` (a person on Linux or macOS; agents "
+            "build through `coney-tools build`)"
         )
     with tempfile.TemporaryDirectory(prefix="coney-tidy-") as scratch:
         database_dir = local_gate.without_missing_response_files(database, Path(scratch))

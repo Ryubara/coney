@@ -326,7 +326,7 @@ def test_compile_database_lookup_and_missing_files(tmp_path: Path) -> None:
 
 
 def test_missing_compile_database_says_how_to_make_it(tmp_path: Path) -> None:
-    with pytest.raises(ConfigError, match="cmake --preset dev"):
+    with pytest.raises(ConfigError, match="build --configure-only"):
         local_gate.load_compile_db(tmp_path / "nothing")
 
 

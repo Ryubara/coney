@@ -124,7 +124,7 @@ Then put your own files in place:
 
 `ghidra/` stays empty until the Ghidra tooling creates a project in it.
 
-## coney.local.toml
+## coney.local.toml {#local-config}
 
 Tools find the sibling folders through `coney.local.toml` in the repository root. The file is untracked. Copy the
 shipped example and adjust it:
@@ -143,12 +143,17 @@ Paths are relative to the repository root or absolute. The keys and their defaul
 | `pcsx2_dir` | `../../emulators/pcsx2` | portable PCSX2 with PINE enabled |
 | `pcsx2_root` | the main checkout | folder holding the `pcsx2`, `pcsx2-b`, ... copies that `coney-tools pcsx2 claim` hands out |
 | `pcsx2_claims_dir` | `pcsx2-claims` in the main checkout's `../../scratch` | where those claims live; one place every worktree sees, whatever its `scratch_dir` |
+| `build_claims_dir` | `build-claims` in the main checkout's `../../scratch` | where `coney-tools build` keeps its slots and queue; one place every worktree sees, whatever its `scratch_dir` |
+| `build_slots` | `2` | a number: how many builds and test runs `coney-tools build` lets run at once |
+| `build_fast_lane_steps` | `50` | a number: a build whose `ninja -n` shows fewer steps uses the fast lane; `0` turns the lane off |
+| `build_fast_lane_tests` | `20` | a number: a `-R` test run that selects at most this many tests uses the fast lane; `0` turns it off |
 | `scratch_dir` | `../../scratch` | captures and tool output |
 | `jdk_home` | none: you must set it | a JDK 21 home, needed to run Ghidra |
 | `ghidra_mcp_repo` | none: you must set it | a built ghidra-mcp checkout, used read-only |
 | `pcsx2_mcp_dir` | none | PCSX2-MCP's Node.js server (`dist/index.js`) or the release folder holding it; only for the `pcsx2` agent server |
 
-Each line is `key = "value"`; a `#` starts a comment. A tool that needs a folder that does not exist stops with an
+Each line is `key = "value"` (the `build_*` number keys are written without quotes: `build_slots = 2`); a `#` starts a
+comment. A tool that needs a folder that does not exist stops with an
 error naming the key, the path it resolved and the config file it used, so a wrong entry is easy to find.
 
 ## Worktrees

@@ -13,6 +13,7 @@ from typing import Any
 
 from coney_tools import (
     audio_cli,
+    build_cli,
     check_cli,
     mcp_serve,
     mission_cli,
@@ -39,7 +40,7 @@ from coney_tools.repo_labels import apply_labels, gh_script
 
 
 def _config_show() -> int:
-    """Print every path key with whether it exists."""
+    """Print every path key with whether it exists, then the number keys."""
     config = load_config(find_repo_root(Path.cwd()))
     for key in PATH_KEYS:
         path = config.paths[key]
@@ -47,6 +48,8 @@ def _config_show() -> int:
             print(f"{key} = unset")
         else:
             print(f"{key} = {path} ({'found' if path.exists() else 'missing'})")
+    for key, number in config.numbers.items():
+        print(f"{key} = {number}")
     return 0
 
 
@@ -238,6 +241,7 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_refs_commands(groups)
     _add_missions_commands(groups)
     _add_pcsx2_commands(groups)
+    build_cli.add_parser(groups)
     _add_trace_commands(groups)
     return parser
 
@@ -720,6 +724,8 @@ def _run(args: argparse.Namespace) -> int:
         return missions_render.run_render(args.check)
     if args.group == "pcsx2":
         return _run_pcsx2(args)
+    if args.group == "build":
+        return build_cli.run(args)
     if args.group == "trace":
         if args.command == "coney":
             return trace_cli.run_coney(args.scenario, args.out, args.coney, args.disc)
@@ -783,6 +789,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     except ConfigError as error:
         print(f"coney-tools: {error}", file=sys.stderr)
         return 2
+    except KeyboardInterrupt:
+        # Whatever the command held (a build slot) is released by its own `finally` on the way here.
+        print("coney-tools: interrupted", file=sys.stderr)
+        return 130
     except (BrokenPipeError, wad_cli.OutputClosedError):
         # The reader went away (`wad list | head`): stop quietly, as Unix tools do. Point stdout at devnull so the
         # interpreter's final flush does not fail again on exit.

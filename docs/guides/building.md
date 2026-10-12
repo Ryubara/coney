@@ -77,7 +77,8 @@ The compiler and those tools are on `PATH` only inside a shell with the MSVC env
 ```
 
 For a Visual Studio install, replace `BuildTools` with your edition (`Community`, `Professional` or `Enterprise`)
-and `Program Files (x86)` with `Program Files`. Every `cmake` and `ctest` command below runs from that shell.
+and `Program Files (x86)` with `Program Files`. A person running `cmake` and `ctest` by hand runs them from that
+shell; [`coney-tools build`](coney-tools.md#build) loads the environment itself, so an agent needs no such shell.
 
 In Git Bash, MSYS converts arguments that look like paths: a `C:\...` argument to `sed` or `git show
 origin/main:<file>` can arrive mangled. Set `MSYS_NO_PATHCONV=1` for such a command, or write the script to a file
@@ -116,7 +117,17 @@ brew install cmake ninja
 
 ## Build and test
 
-Everything goes through the presets in `CMakePresets.json`. The everyday loop is:
+Everything goes through the presets in `CMakePresets.json`. **Agents build and test only through `coney-tools build`**,
+which holds a [build slot](coney-tools.md#build) (at most two builds run on the machine at once, so six agents do not
+starve one another), configures when the build folder has no cache, builds, and with `--test` runs the tests; it
+prints a short summary and keeps the full output in a log:
+
+```sh
+uv run --project python coney-tools build --agent <your id> --preset dev --test
+```
+
+A hook in `.claude/settings.json` refuses `cmake --build`, `cmake --preset`, `ctest` and `ninja` typed directly.
+Underneath, and for a person alone on a machine, the everyday loop is:
 
 ```sh
 cmake --preset dev
@@ -125,8 +136,8 @@ ctest --preset dev
 ```
 
 The first line only needs running again when a `CMakeLists.txt` or `cmake/deps.cmake` changes in a way the build
-does not pick up by itself. Each preset builds into its own `build/<preset>/` folder, so presets never disturb each
-other.
+does not pick up by itself (`coney-tools build --configure` forces it). Each preset builds into its own
+`build/<preset>/` folder, so presets never disturb each other.
 
 | Preset | Build type | What it is for |
 | --- | --- | --- |
@@ -961,10 +972,10 @@ The `asan` preset builds with AddressSanitizer and UndefinedBehaviorSanitizer an
 report fails the test that caused it.
 
 ```sh
-cmake --preset asan
-cmake --build --preset asan
-ctest --preset asan
+uv run --project python coney-tools build --agent <your id> --preset asan --test
 ```
+
+(Underneath: `cmake --preset asan`, `cmake --build --preset asan`, `ctest --preset asan`.)
 
 LeakSanitizer reads its suppressions from `tests/lsan.supp`, which hides one known leak inside librw and nothing in
 Coney's own code. Suppressions match function names, so the sanitizer must be able to name the frames in a report.

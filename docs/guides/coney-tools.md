@@ -1,7 +1,8 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers fifteen groups:
-[`check`](#check), which runs what CI would fail on for the files a change touched, [`repo`](#repo), which checks
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers sixteen groups:
+[`check`](#check), which runs what CI would fail on for the files a change touched, [`build`](#build), which
+configures, builds and tests the engine under the machine's build slots, [`repo`](#repo), which checks
 the repository's own rules (titles, descriptions, labels), `wad`, which reads the game's
 archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**, [`extract`](#extract), which turns every asset of
 the disc into open formats, [`audio`](#audio), which reads its sound data, [`movies`](#movies), which reads the movies'
@@ -654,15 +655,15 @@ build workflow) CI checks every file, an hour's work; the command says so and ch
 
 **How it runs clang-tidy.** With the repository's `.clang-tidy` and the `compile_commands.json` of `--build-dir`
 (every preset writes one; configuring is enough, no build, and a stale or missing entry is reported with the
-`cmake --preset dev` to rerun). It finds clang-tidy 19 as `clang-tidy-19` on `PATH`, in Homebrew's `llvm@19`, in the
-Visual Studio LLVM folder that `vswhere` names, or as `clang-tidy` on `PATH` or in Homebrew's `llvm` (the first of
-version 19 wins; another version is used with a note), or from `--clang-tidy`. A `ccache` or `sccache` launcher in
-the database is removed from the copy clang-tidy reads, as CI's job does. The compile database of an MSVC build makes
-clang-tidy run in clang-cl mode, where MSVC's `/W4` misses what GCC and Clang reject (a designated initializer that
-leaves a field out, `-Wmissing-designated-field-initializers`). So the command adds `-Wall -Wextra -Wpedantic` (the
-flags of `cmake/coney_target.cmake`, passed as `/clang:-W...` in that mode) and lets the compiler's diagnostics
-through the `-*` of `.clang-tidy`; with the config's `WarningsAsErrors` they fail like CI's `-Werror`. `--jobs` runs
-that many files at once (default: half the cores).
+`coney-tools build --configure-only` to rerun). It finds clang-tidy 19 as `clang-tidy-19` on `PATH`, in Homebrew's
+`llvm@19`, in the Visual Studio LLVM folder that `vswhere` names, or as `clang-tidy` on `PATH` or in Homebrew's `llvm`
+(the first of version 19 wins; another version is used with a note), or from `--clang-tidy`. A `ccache` or `sccache`
+launcher in the database is removed from the copy clang-tidy reads, as CI's job does. The compile database of an MSVC
+build makes clang-tidy run in clang-cl mode, where MSVC's `/W4` misses what GCC and Clang reject (a designated
+initializer that leaves a field out, `-Wmissing-designated-field-initializers`). So the command adds `-Wall -Wextra
+-Wpedantic` (the flags of `cmake/coney_target.cmake`, passed as `/clang:-W...` in that mode) and lets the compiler's
+diagnostics through the `-*` of `.clang-tidy`; with the config's `WarningsAsErrors` they fail like CI's `-Werror`.
+`--jobs` runs that many files at once (default: half the cores).
 
 **Linux and macOS: use a Clang database.** On Windows the `dev` preset uses MSVC and the command adapts. On Linux the
 default compiler is GCC, whose database can carry flags clang-tidy rejects, and CI tidies a Clang 19 build. The
@@ -676,6 +677,76 @@ uv run --project python coney-tools check changed --build-dir build/tidy
 `--only` and `--skip` take step names, for a rerun of the one that failed. The command prints at most 40 lines of a
 failing step; run the step's tool by hand for the rest. What stays CI's: warnings only GCC emits, macOS, the
 sanitizers and the full clang-tidy pass (see [the local gate](testing.md#local-gate)).
+
+## build {#build}
+
+```sh
+uv run --project python coney-tools build --agent ID [--preset dev|release|ci|asan] [--test] [-R REGEX]
+    [--configure | --configure-only] [--priority] [--max-wait MIN] [-j N] [--dir CHECKOUT]
+uv run --project python coney-tools build status [--json]
+uv run --project python coney-tools build release --agent ID [--force] [--slot N] [--lane main|fast]
+```
+
+The one way an agent configures, builds and tests the engine. Several agents share one machine and a full build uses
+every core, so a build takes a **slot** like a PCSX2 copy takes a claim, and at most `build_slots` (default 2) run at
+once. The command replaces `cmake --preset`, `cmake --build --preset` and `ctest --preset`; a hook in
+`.claude/settings.json` refuses those, `ctest` and `ninja` typed directly in a shell
+([`.claude/hooks/build_guard.py`](repo:.claude/hooks/build_guard.py)). The tool's own subprocesses are not shell
+commands, so the hook never sees them.
+
+**What a run does.** From the checkout (the current one, or `--dir`):
+
+1. *Precheck*, before it waits for anything: `CMakePresets.json` names the preset, and `cmake`, `ctest` and `ninja`
+   are found. On Windows it runs `vcvars64.bat` once and captures the environment (found with `vswhere` in the
+   installer folder under `Program Files (x86)`, which is not on `PATH`; inside a Developer shell it does nothing), so
+   no special shell is needed.
+2. *Configure and build*, one claim: `cmake --preset P` when the build folder has no `CMakeCache.txt` or with
+   `--configure`, then `cmake --build --preset P -j N`. `--configure-only` stops after the configure (the compile
+   database `check changed` reads).
+3. *Test*, with `--test` and only after a successful build, a claim of its own (it queues again between the two, so a
+   long test run does not hold a slot against other agents' builds longer than it must): `ctest --preset P -j N`,
+   with `-R REGEX` when given.
+
+The full output goes to `build-<preset>.log` in the worktree's folder of the scratch directory (`scratch/<worktree>/`),
+and its path is the first line printed. What is printed after is short: a line per step (outcome, time, lane, time
+spent waiting), the first compile, link and CMake errors (MSVC, GCC and Clang forms) and the failed steps, the failed
+tests by name with `N passed, M failed of T`, and a last `result:` line. Exit code `0` on success, `1` on a failed step
+or a `-R` that selects no tests, `2` on a precheck or usage problem, `75` when it gave up waiting for a slot, `130` on
+an interrupt. The children run at below-normal priority and are stopped (by process id) if the command is interrupted.
+
+**Parallelism.** `-j` defaults to the cores divided by the slots (at least 1), so two builds share the machine
+instead of each starting a job per core; `-j N` overrides it, for both the build and `ctest`.
+
+**The slots.** Each run holds a claim: a folder `slot-N.claim/` with `owner.json` (agent, worktree, preset, the step it
+is at, pid, start time) in the claims directory, built whole in a private folder and renamed into place, so exactly one
+caller wins and none sees a half-made claim. The directory is `build-claims/` in the shared scratch folder, the main
+checkout's `../../scratch`, whatever a worktree's `scratch_dir` says (keys `build_claims_dir` and `build_slots` in
+[`coney.local.toml`](workspace.md#local-config)). Nothing is cached: `status` is rebuilt from the folders and the live
+processes every time. A claim is released on success, on failure and on an interrupt, and is **stale** (taken over by
+the next claimer, who says so) when its process is gone, or when it is older than four hours with a process that
+lives (a hung build, or a reused pid). Takeovers go through a lock folder, as the PCSX2 claims do.
+
+**The queue.** With no slot free, the build waits in a first-come queue of ticket files (`queue/`). Only the head of
+the queue may claim, so waiters cannot overtake one another; `--priority` tickets go ahead of normal ones (for the
+coordinator, or a build somebody is waiting on). A ticket whose process is gone is dropped. While it waits, the
+command prints its place, a rough wait (from the holders' recorded step and how long they have run it) and the
+holders, every minute. **It does not wait for ever:** after `--max-wait` minutes (default 45, per claim; also spelled
+`--slots-wait-timeout`), so that an agent never outlives its one-hour prompt cache, it leaves the queue and exits `75`
+with `still queued, position N of M, try again later`. On `75`, do other work and run the same command again.
+
+**The fast lane.** A small job should not queue behind a full build. Before claiming, the command measures the job:
+`ninja -n` in the build folder counts the steps an incremental build would run, and for a test run with `-R` `ctest -N
+-R` counts the tests it selects. A build of fewer than `build_fast_lane_steps` steps (default 50) or a `-R` run of at
+most `build_fast_lane_tests` tests (default 20) takes the **fast lane**: one extra slot of its own (`fast-1.claim/`,
+queue `queue-fast/`), so at most one such job runs at once, with a short queue of its own. A first build, a
+`--configure`, a build whose `ninja -n` would re-run CMake or cannot be counted, and any test run without `-R` take a
+main slot. A threshold of `0` turns the lane off.
+
+`build status` prints both lanes: each slot's holder, worktree, preset, step and minutes, the queue in order (place,
+agent, priority, minutes waiting) and the stale entries; `--json` prints the same as one object. `build release
+--agent ID` is manual cleanup: it frees the slots a crashed or stuck run of that agent left and drops its tickets. A
+slot whose process still runs, or another agent's, needs `--force`, which frees the slot but does not stop the
+process. How agents use it, and what exit `75` asks of them: [Builds and tests](agents.md#builds).
 
 ## mcp {#mcp}
 

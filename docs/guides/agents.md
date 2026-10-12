@@ -20,7 +20,8 @@ so a fresh clone gets the same setup as the maintainer's machine:
 | `AGENTS.md` (and `CLAUDE.md`, `GEMINI.md`, which only import it) | The rules | Most agent tools |
 | `.mcp.json` | The debugging servers: `ghidra-mcp` (the shared Ghidra project) and `pcsx2` (the emulator over PINE) | Claude Code; other tools take the same two commands in their own MCP config |
 | `.claude/agents/` | The roles: `analyst`, `implementer`, `reviewer`, `research-reviewer` | Claude Code |
-| `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and builds allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)) | Claude Code |
+| `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and `coney-tools build` allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)); a hook that refuses a raw `cmake --build`, `ctest` or `ninja` ([Builds and tests](#builds)) | Claude Code |
+| `.claude/hooks/` | The hook scripts `settings.json` runs before a shell command | Claude Code |
 
 **The servers.** `.mcp.json` holds no paths. Each entry runs `coney-tools mcp serve <name>`, which finds the server
 through `coney.local.toml` (`ghidra_mcp_repo` and `pcsx2_mcp_dir`, see [Local workspace](workspace.md)) and runs it
@@ -42,7 +43,7 @@ not the clean room itself: they still have a shell, and the rule that keeps them
 AGENTS.md's. Effort, turn and token limits are each user's own settings and stay out of the repository.
 
 **The permissions.** The allowed commands are the project's own read-mostly ones: `coney-tools config show`, the
-`repo` checks, the generators, pytest, ruff, mypy, pre-commit and the CMake presets. Commands that start or drive
+`repo` checks, the generators, pytest, ruff, mypy, pre-commit and `coney-tools build`. Commands that start or drive
 PCSX2 (`coney-tools pcsx2 ...`), and git beyond Claude Code's own read-only detection, still ask. The refusals match
 on spelling (`taskkill /IM` is refused, `taskkill.exe /Im` or a piped `Stop-Process` is not), so they catch honest
 mistakes; they are not a security boundary.
@@ -128,6 +129,8 @@ instead of repeating it:
 - disk: it creates `.coney-busy` in its worktree as it starts and deletes it when it finishes, and before reporting a
   unit finished it deletes its own `build/` folder; a build is about 4 GB per preset
   ([Cleanup](workspace.md#cleanup));
+- builds: "build and test only with `coney-tools build --agent <id> ...`, in the background" ([Builds and
+  tests](#builds)); the brief does not paste the flags;
 - only the facts the agent cannot find in the repository (a log path, a question to answer, the state file).
 
 A brief may be just "issue #N": the issue holds the steps, the screenshots and the acceptance test, and the agent
@@ -139,7 +142,8 @@ issue stays the one place to read it.
 - **Never sit inside a long command.** Builds, test sweeps, emulator runs and CI waits that take more than a few
   minutes run in the background with their output going to a file; the agent checks the file every few minutes
   (each check keeps the cache warm) or once when the run should be done. Even an hour-long cache does not survive a
-  run that takes longer.
+  run that takes longer. A build or test run is `coney-tools build ...` started with `run_in_background`
+  ([Builds and tests](#builds)); it prints its log path first, and gives up waiting for a slot after 45 minutes.
 - **Keep tool output small.** Print counts, the failing lines and the end of a log, never a whole log: every line an
   agent reads stays in its context for the rest of the task.
 - **Do not message a finished agent.** Start a new one from its report and the track's
@@ -152,6 +156,31 @@ issue stays the one place to read it.
 - **Keep the coordinator small.** The coordinator re-reads its whole conversation on every turn and is the context a
   fork would inherit. It saves the state, clears and continues from it at a natural boundary, and never forks once
   its context is large.
+
+## Builds and tests {#builds}
+
+Six agents compiling at once leave every one of them waiting, so builds share the machine through claims, the way
+PCSX2 copies do ([`build`](coney-tools.md#build)). An agent never runs `cmake --build`, `cmake --preset`, `ctest` or
+`ninja` itself (a hook refuses them); it runs, from its worktree:
+
+```sh
+uv run --project python coney-tools build --agent <id> --preset dev --test [-R <regex>]
+```
+
+- **Run it in the background** (`run_in_background`, or output to a file) and read the log path it prints first, then
+  the short summary when it ends. Do not sit in it: a wait for a slot can take many minutes.
+- **A small job is quick.** An incremental rebuild of a few steps, or a test run filtered with `-R` to a few tests,
+  takes the fast lane and does not queue behind full builds. Rerun a failed test with `-R <its name>`, not the whole
+  suite; the first build in a fresh worktree and a full test run are the big jobs.
+- **Exit code 75 means "still queued".** The command waited its cap (45 minutes, so the agent's prompt cache stays
+  warm), left the queue and said its position. Do other work (docs, review, the next unit) and run the same command
+  again later; do not loop on it in one call.
+- **`--priority`** goes ahead of the queue. The coordinator uses it for a build somebody is waiting on; an agent does
+  not set it on its own.
+- **`build status`** shows who holds the slots and who waits. A crashed run is taken over by the next claimer;
+  `build release --agent <id>` cleans up by hand.
+- The coordinator sets the number of slots for the machine with `build_slots` in `coney.local.toml`
+  ([Local workspace](workspace.md#local-config)) and does not stagger builds by hand any more.
 
 ## When a pull request fails checks {#ci-failures}
 
