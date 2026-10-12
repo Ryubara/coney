@@ -1059,7 +1059,10 @@ bool Human::startTagSpray(anim::Vec3 point) {
         return false;
     }
     turnOverClip(clips::kTaggingIntro, point, kHalf);
-    m_animator.playCombat(clips::one(clips::kTaggingIntro), clips::kTaggingLoop, AnimState::Hold, kCombatFade);
+    // 334 holds the busy bit 0x400 (Tag_StartSprayClips), so the stance's movement sets no velocity while it plays.
+    constexpr std::uint32_t kSprayIntroBusy = 0x400;
+    m_animator.playCombat(clips::one(clips::kTaggingIntro), clips::kTaggingLoop, AnimState::Hold, kCombatFade,
+                          HeldFlags{.held = kSprayIntroBusy, .set = kSprayIntroBusy});
     return true;
 }
 
@@ -1645,8 +1648,10 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
     } else if (wheelchair) {
         // A pad-driven human in a wheelchair runs its control instead; a brain-driven one keeps its own.
         wheelchairControl(movementHeld);
-    } else if (const GateInput gate = gateInput(); m_fighter.holdsMovement(m_animator) || stickBusy(gate)) {
-        // The stick step is skipped: combat's states, or the record's +0x08 makes the human busy.
+    } else if (const GateInput gate = gateInput();
+               m_fighter.holdsMovement(m_animator) || stickBusy(gate) || tagSprayPlaying()) {
+        // The stick step is skipped: combat's states, the record's +0x08 makes the human busy, or a spray runs (the
+        // stance's walk would put its own clip over the spray's, docs/research/scripting.md#level87-fixes, fix 2).
         holdForCombat();
     } else if (const Combatant* lock = m_fighter.lockTarget(); lock != nullptr) {
         combatWalk(*lock, stickVelocityGated(gate));
@@ -1721,6 +1726,12 @@ void Human::updateActions(std::span<Combatant* const> targets, const raycast::Co
     updateHiding();
     // An arrested human neither fights nor acts (**Coney stand-in**, human/script_state.h), nor does one working out:
     // its pad pumps and quits the workout instead.
+    // While a spray runs nothing else of the actions does (`Human_UpdateActions` returns once `MiniGame_Update` has
+    // run the spray, before the stance, the commands and the anim-state choice), so the spray's clips stay on.
+    if (tagSprayPlaying()) {
+        m_lean = leanStep(m_lean, m_lastTurn, speed(), gait());
+        return;
+    }
     if (!m_airborne && !m_climbRun && !m_script.arrested && !m_script.workingOut) {
         fight(targets, mesh);
     }
