@@ -8,6 +8,7 @@ The choices are tested on made-up process lists, files and clocks; one test list
 from __future__ import annotations
 
 import os
+import subprocess
 import time
 from pathlib import Path
 
@@ -152,3 +153,18 @@ def test_a_path_held_in_a_variable_the_loop_reads_is_judged() -> None:
     found = find([proc(10, 1, "bash", 6, command)])
     assert [pid for pid, _ in found] == [10] and "build.log unchanged for 2.0 h" in found[0][1]
     assert find([proc(10, 1, "bash", 6, command)], {LOG: 0.2}) == []
+
+
+def test_posix_command_lines_are_read_whole(monkeypatch: pytest.MonkeyPatch) -> None:
+    # `ps` cuts its lines at 80 columns when not writing to a terminal unless asked for full width (`-ww`).
+    asked: list[list[str]] = []
+    long_command = "/usr/bin/bash -c " + "x" * 300
+
+    def fake_run(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        asked.append(command)
+        return subprocess.CompletedProcess(command, 0, f"  42     1  01:02:03 {long_command}\n", "")
+
+    monkeypatch.setattr(stale_processes.sys, "platform", "linux")
+    monkeypatch.setattr(stale_processes.subprocess, "run", fake_run)
+    (found,) = stale_processes.list_processes()
+    assert "-ww" in asked[0] and found.command == long_command and found.name == "bash"

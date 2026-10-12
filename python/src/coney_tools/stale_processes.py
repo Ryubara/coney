@@ -257,8 +257,14 @@ def list_processes() -> list[Proc]:
             for row in rows
         ]
     try:
+        # `-ww`: without it `ps` cuts each line at 80 columns when its output is not a terminal, and the wait loop
+        # at the end of a long command line would never be seen.
         done = subprocess.run(
-            ["ps", "-A", "-o", "pid=,ppid=,etime=,args="], capture_output=True, text=True, check=False, timeout=60
+            ["ps", "-A", "-ww", "-o", "pid=,ppid=,etime=,args="],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=60,
         )
     except (OSError, subprocess.TimeoutExpired):
         return []
