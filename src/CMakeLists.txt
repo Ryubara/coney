@@ -251,6 +251,7 @@ target_sources(coney_core PRIVATE
     human/human_animator.cpp
     human/human_held.cpp
     human/human_revive.cpp
+    human/way_clear.cpp
     human/human_flight.cpp
     human/human_hiding.cpp
     human/human_script.cpp
@@ -389,6 +390,7 @@ target_sources(coney_core PRIVATE
     debug/pages_hud.cpp
     debug/pages_play.cpp
     debug/pages_scripts.cpp
+    debug/pages_time.cpp
     debug/story_missions.cpp
     debug/time_control.cpp
     debug/time_series.cpp

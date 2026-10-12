@@ -422,7 +422,7 @@ TEST_CASE("the disc's level80: the cuffed Warriors offer the uncuff prompt and t
     REQUIRE(player != nullptr);
     const auto facingHim = [&level, warrior] {
         // Once he stands (the freed Warriors walk off at first), 1 m east of him, facing west (heading 90 degrees
-        // faces -x), for a think or two. His goals are held meanwhile (the brain suspended, as BrSuspend does; his
+        // faces -x), for a think period. His goals are held meanwhile (the brain suspended, as BrSuspend does; his
         // thinks still run the prompt's test): moved off his formation slot by the teleport, his follow goal would
         // otherwise run him back to it, out of the swap's reach.
         warrior->setSuspended(false);
@@ -431,7 +431,16 @@ TEST_CASE("the disc's level80: the cuffed Warriors offer the uncuff prompt and t
         const coney::anim::Vec3 at = warrior->human().position();
         level.play()->teleportPlayer(
             coney::world_objects::Placement{.position = {at.x + 1.0F, at.y, at.z}, .headingDegrees = 90.0F});
-        level.run(6);
+        // He may still be slowing to a stop for a few steps; the test waits until he has stood for a whole think
+        // period (his brain thinks one step in five).
+        constexpr int kThinkPeriod = 6;
+        int standing = 0;
+        REQUIRE(level.runUntil(
+            [warrior, &standing] {
+                standing = warrior->human().gait() == coney::human::Gait::Standing ? standing + 1 : 0;
+                return standing >= kThinkPeriod;
+            },
+            kWait));
     };
     constexpr double kHeld = 9999.0;
     player->human().script().heldObject = kHeld;
@@ -581,7 +590,11 @@ TEST_CASE("the disc's level80 checkpoint 3: Fox, Hold Up, the bottle thrown from
     level.watch = [&level, &shown] { shown.watch(level); };
     constexpr int kWait = 30 * 60;
     const auto padded = [&level] { return level.play() != nullptr && level.play()->player().padControlled(); };
-    const auto hinted = [&shown](std::string_view key) { return shown.hint == key; };
+    // A hint the player can read: showing, and the HUD drawn (after a scene the HUD comes back a few frames after the
+    // script has set the next text, and an R2 pressed while it is hidden gives the highlighted order at once).
+    const auto hinted = [&shown, &level](std::string_view key) {
+        return shown.hint == key && level.scripts->hud().visible() && !level.scripts->hud().hintsHidden();
+    };
     // On a failure: where player 1 stands, what showed and the log.
     const auto dump = [&level, &shown] {
         const coney::anim::Vec3 at = level.play()->player().human().position();

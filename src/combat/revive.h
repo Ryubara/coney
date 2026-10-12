@@ -20,8 +20,6 @@ inline constexpr std::uint32_t kReviverHeld = 0x8000000;
 inline constexpr std::uint32_t kRevivedHeld = 0x8000;
 /// The fade the reviver's chain starts with: a blend over 0.01 s.
 inline constexpr float kReviveFadeSeconds = 0.01F;
-/// The led steer that puts the reviver in place takes 0.1 s (`Attack_SteerLed(0.1, …)`).
-inline constexpr float kReviveSteerSeconds = 0.1F;
 /// The speech commands (docs/references/speech.md): the reviver's 76 `revive_reasure` as he starts, the revived's
 /// 75 `revive_thank` as he is healed.
 inline constexpr std::uint32_t kReviveReassureCommand = 76;

@@ -1,8 +1,9 @@
 <!-- markdownlint-disable-file MD041 -- a pull request body starts at the second heading level -->
 ## Summary
 
-<!-- One short paragraph: what this changes and why. If the change needs no documentation, add a line `Docs: none`
-     (CI refuses a change under src/ or python/src/ without a docs change, unless this line is here).
+<!-- One short paragraph: what this changes and why.
+     Call the person who play-tests "the user", never "the owner". If the change needs no documentation, add a line
+     `Docs: none` (CI refuses a change under src/ or python/src/ without a docs change, unless this line is here).
      If this finishes an issue, add a line `Fixes #<number>` (one per issue): merging then closes it. -->
 
 ## Checklist

@@ -88,6 +88,12 @@ set_tests_properties(coney.rejects_missing_input_script PROPERTIES WILL_FAIL TRU
 add_test(NAME coney.debug_menu_by_pad
          COMMAND coney --headless --frames 30 --input-script "${PROJECT_SOURCE_DIR}/tests/support/debug_menu.txt")
 set_tests_properties(coney.debug_menu_by_pad PROPERTIES TIMEOUT 30 PASS_REGULAR_EXPRESSION "> DbgEnterCheat\\(0\\)")
+# The Time page's scale by pad, headless: the chord opens the menu, the left stick at a partial push walks to the 0.25x
+# preset and cross chooses it, which the session prints as a notice (docs/guides/debug-menu.md#pages).
+add_test(NAME coney.debug_menu_time_scale
+         COMMAND coney --headless --frames 40
+                 --input-script "${PROJECT_SOURCE_DIR}/tests/support/debug_menu_time_scale.txt")
+set_tests_properties(coney.debug_menu_time_scale PROPERTIES TIMEOUT 30 PASS_REGULAR_EXPRESSION "Time scale 0[.]25x")
 add_test(NAME coney.rejects_bad_tunables COMMAND coney --headless --frames 1
                                                  --tunables "${PROJECT_SOURCE_DIR}/tests/support/debug_menu.txt")
 set_tests_properties(coney.rejects_bad_tunables PROPERTIES WILL_FAIL TRUE)

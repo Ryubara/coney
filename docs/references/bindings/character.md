@@ -117,7 +117,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuSetFireProof`](#husetfireproof) | - | 8 | no | no | confirmed (code) |
 | [`HuSetFullRage`](#husetfullrage) | - | 1 | yes | yes | confirmed (code) |
 | [`HuSetGodMode`](#husetgodmode) | - | 81 | yes | yes | confirmed (code) |
-| [`HuSetHardToStun`](#husethardtostun) | - | 0 | no | no | inferred |
+| [`HuSetHardToStun`](#husethardtostun) | - | 0 | no | no | confirmed (code) |
 | [`HuSetHealth`](#husethealth) | - | 23 | no | no | confirmed (code) |
 | [`HuSetHealthPercent`](#husethealthpercent) | - | 17 | no | yes | confirmed (code) |
 | [`HuSetHearRange`](#husethearrange) | - | 5 | no | no | confirmed (code) |
@@ -2899,9 +2899,11 @@ HuSetHardToStun(human, on)
 
 **Returns** nothing.
 
-Sets or clears flag bit 0x1000000000 of the human's flag word; from the name, the human is stunned less easily.
+Sets or clears flag bit 0x1000000000 of the human's flag word (power class byte +0x3b sets it too). With it, a hit stuns
+the human only when he is already standing stunned: the hit's stun flag 0x400 and the caller's stun request are ignored
+(Human_PlayReaction 0x0026a6d0).
 
-- **Evidence:** inferred; detail: brief
+- **Evidence:** confirmed (code) at `0x002373f8`; detail: brief
 - **Wrapper** `0x0035be50` (registered by `RegisterBindings`); **calls** `0x002373f8` `Human_SetHardToStun`
 - **Used by** no script on the disc
 - **Coney:** not implemented

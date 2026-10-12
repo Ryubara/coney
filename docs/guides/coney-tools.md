@@ -1,7 +1,8 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers fourteen groups:
-[`check`](#check), which runs what CI would fail on for the files a change touched, `wad`, which reads the game's
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers fifteen groups:
+[`check`](#check), which runs what CI would fail on for the files a change touched, [`repo`](#repo), which checks
+the repository's own rules (titles, descriptions, labels), `wad`, which reads the game's
 archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**, [`extract`](#extract), which turns every asset of
 the disc into open formats, [`audio`](#audio), which reads its sound data, [`movies`](#movies), which reads the movies'
 headers, [`xbox`](#xbox), which reads the Xbox disc's archive, [`progress`](#progress), which keeps the progress tables
@@ -519,6 +520,39 @@ different points of a mission; `--labels` names hashed texts by a JSON object of
 from your disc, kept in scratch). It exits with 0 when Coney has every compared event in order, 1 when not.
 [Differential playthroughs](research-workflow.md#differential-playthroughs) explains the method.
 
+## repo {#repo}
+
+```sh
+uv run --project python coney-tools repo check
+uv run --project python coney-tools repo check-title FILE|-
+uv run --project python coney-tools repo check-docs [--body FILE]      # changed paths on stdin
+uv run --project python coney-tools repo check-body [--body FILE|-]
+uv run --project python coney-tools repo labels [--apply] [--repo OWNER/NAME]
+uv run --project python coney-tools repo render [--check]
+```
+
+The checks of the repository's own rules, which CI runs on every pull request. Every value they apply (the commit
+areas and verbs, the description's sections, the path classes, the labels) is a key of `.github/conventions.yml`
+([Repository conventions](repo-conventions.md)); a missing or malformed file is a one-line error and exit code 2.
+
+* `repo check` loads and validates `.github/conventions.yml` and checks that each agent entry file (`CLAUDE.md`,
+  `GEMINI.md`) holds the `@AGENTS.md` import line and nothing more. Exit 1 when a pointer file is wrong.
+* `repo check-title` checks the first line of a commit message or a title (`-` reads stdin) against `commits.title`:
+  `area: Verb the rest`, a known area and verb, the length limit, no trailing period, the breaking suffix last. The
+  commit-title pre-commit hook and the `title` and `commits` jobs of the `pr` workflow run it.
+* `repo check-docs` reads the changed paths on stdin and refuses a change under `paths.code` that has no change under
+  `paths.docs` and no `Docs: none` line in the body.
+* `repo check-body` checks a pull request description against the template ([What a pull request
+  shows](testing.md#pr-evidence)).
+* `repo labels` prints the `gh label create` commands for `labels.list`; `--apply` runs them (the coordinator does).
+* `repo render` rewrites the generated blocks of `AGENTS.md`, `CONTRIBUTING.md` and every guide under `docs/guides/`
+  from the conventions: the text between a `<!-- conventions:begin NAME -->` line and the next
+  `<!-- conventions:end -->` line (the commit areas and verbs, the label table, the rules for a pull request
+  description, the required checks, the documentation-only paths). Run it after changing `.github/conventions.yml` and
+  commit both. `--check` changes nothing and exits 1 naming each file with a stale block, as the `python` workflow does;
+  a wrong marker (an unknown block name, an end without a begin, a block never closed) is a one-line error with the
+  file and line, exit code 2. [Generated blocks](repo-conventions.md#generated-blocks) lists the blocks.
+
 ## check {#check}
 
 ```sh
@@ -533,10 +567,10 @@ line, and any failure makes the command exit 1:
 
 | Step | Runs when | What it does |
 | --- | --- | --- |
-| `repo` | always | `repo check`: the agent pointer files |
+| `repo` | always | `repo check` and `repo render --check`: `.github/conventions.yml` loads, the agent pointer files, and the generated blocks are current |
 | `pre-commit` | a file changed | `pre-commit run --files` on the changed files: clang-format, ruff, whitespace, the 512 KB guard, the real-clock rule |
 | `clang-tidy` | C++ under `src/` or `tests/` changed | clang-tidy on the files CI's pull-request job would check, with the compiler warnings the GCC and Clang builds enable |
-| `docs` | `docs/`, `research/`, `mkdocs.yml`, the MkDocs hooks or `requirements-docs.txt` changed | `mkdocs build --strict` into a throwaway folder |
+| `docs` | a file matching `paths.docs_only` of `.github/conventions.yml` changed (`docs/`, `research/`, top-level Markdown, `mkdocs.yml`, the MkDocs hooks, `requirements-docs.txt`, ...) | `mkdocs build --strict` into a throwaway folder |
 | `python` | `python/` changed | `pytest python/tests` and `mypy python/src python/tests` |
 
 **Which files clang-tidy checks.** The same rules as CI (`.github/scripts/tidy-files.sh`): a changed `.cpp` itself, a

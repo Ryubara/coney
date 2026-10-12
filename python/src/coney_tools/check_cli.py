@@ -18,6 +18,8 @@ from pathlib import Path
 
 from coney_tools import local_gate
 from coney_tools.config import ConfigError, find_repo_root
+from coney_tools.conventions import Paths, load_conventions
+from coney_tools.conventions_render import stale_files
 from coney_tools.local_gate import StepResult
 from coney_tools.repo_checks import check_pointer_files
 
@@ -50,10 +52,19 @@ def _tail(lines: list[str]) -> tuple[str, ...]:
 
 
 def _step_repo(root: Path) -> StepResult:
-    """`coney-tools repo check`: the agent pointer files."""
-    problems = check_pointer_files(root)
+    """`coney-tools repo check` and `repo render --check`: the conventions file, the agent pointer files and the
+    generated blocks of AGENTS.md and the guides."""
+    conventions = load_conventions(root)
+    problems = check_pointer_files(root, conventions.paths.pointer_files)
+    problems += [
+        f"{name}: a generated block is out of date (run `coney-tools repo render`)"
+        for name in stale_files(root, conventions)
+    ]
     return StepResult(
-        "repo", not problems, "pointer files" if not problems else f"{len(problems)} problems", output=tuple(problems)
+        "repo",
+        not problems,
+        "conventions, pointer files, generated blocks" if not problems else f"{len(problems)} problems",
+        output=tuple(problems),
     )
 
 
@@ -161,14 +172,14 @@ def _step_tidy(root: Path, changed: list[str], build_dir: Path, jobs: int, clang
     )
 
 
-def _docs_changed(changed: list[str]) -> bool:
-    """True when the change touches the documentation build."""
-    return any(name.startswith(local_gate.DOCS_PATHS) or name in local_gate.DOCS_PATHS for name in changed)
+def _docs_changed(changed: list[str], paths: Paths) -> bool:
+    """True when the change touches the documentation build (a file matching `paths.docs_only`)."""
+    return any(paths.is_docs_only(name) for name in changed)
 
 
 def _step_docs(root: Path, changed: list[str]) -> StepResult:
     """`mkdocs build --strict` into a throwaway folder, when docs or the site setup changed."""
-    if not _docs_changed(changed):
+    if not _docs_changed(changed, load_conventions(root).paths):
         return _skipped("docs", "no docs changed")
     with tempfile.TemporaryDirectory(prefix="coney-site-") as site:
         venv_python = (

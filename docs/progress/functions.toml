@@ -4081,6 +4081,11 @@ subsystem = "Human"
 size = 3488
 
 [[function]]
+address = 0x0021c0a8
+name = "Human_IsWayClearTo"
+subsystem = "Human"
+
+[[function]]
 address = 0x0021c570
 name = "Human_CanSeeObject"
 subsystem = "Human"
@@ -4091,6 +4096,11 @@ address = 0x0021cda8
 name = "Human_StoreName"
 subsystem = "Human"
 size = 96
+
+[[function]]
+address = 0x0021ce08
+name = "Human_CreatePhysicsBody"
+subsystem = "Human"
 
 [[function]]
 address = 0x0021d080
@@ -4375,6 +4385,11 @@ name = "Human_MakePlayer"
 subsystem = "Human"
 
 [[function]]
+address = 0x0022a2a8
+name = "Human_ReleasePlayer"
+subsystem = "Human"
+
+[[function]]
 address = 0x0022a770
 name = "Gang_PickSwitchMember"
 subsystem = "Human"
@@ -4434,6 +4449,11 @@ name = "Tag_End"
 subsystem = "Human"
 
 [[function]]
+address = 0x0022eb40
+name = "Human_Heal"
+subsystem = "Human"
+
+[[function]]
 address = 0x0022ec18
 name = "Human_Arrest"
 subsystem = "Human"
@@ -4486,6 +4506,11 @@ subsystem = "Human"
 [[function]]
 address = 0x00230140
 name = "Human_ClearHiddenState"
+subsystem = "Human"
+
+[[function]]
+address = 0x00230328
+name = "Human_KnockOut"
 subsystem = "Human"
 
 [[function]]
@@ -6302,15 +6327,15 @@ name = "Brain_CanBeChased"
 subsystem = "Human"
 
 [[function]]
-address = 0x0028b358
-name = "Brain_ScanEnemies"
-subsystem = "Human"
-
-[[function]]
 address = 0x0028ac18
 name = "Brain_StopMove"
 subsystem = "Human"
 size = 80
+
+[[function]]
+address = 0x0028b358
+name = "Brain_ScanEnemies"
+subsystem = "Human"
 
 [[function]]
 address = 0x0028bf00

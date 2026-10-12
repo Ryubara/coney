@@ -1,0 +1,4 @@
+# cross held 3 updates with a square tap on its 2nd, then released
+40 press cross
+41 tap square
+43 release cross

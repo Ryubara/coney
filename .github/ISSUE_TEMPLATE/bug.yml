@@ -73,14 +73,14 @@ body:
     id: actual
     attributes:
       label: What happens
-      description: What you see, and what you expected instead.
+      description: Start with what is wrong, in plain words, then what you expected instead.
     validations:
       required: true
   - type: textarea
     id: original
     attributes:
       label: What the original game does
-      description: Optional. If you have played the original on a PS2 or in an emulator, say what happens there (this tells us whether Coney differs from it).
+      description: Optional. If you have played the original on a PS2 or in an emulator, say what happens there (this tells us whether Coney differs from it). Link a research page as a relative link, for example [docs/research/cars.md](../blob/main/docs/research/cars.md).
   - type: dropdown
     id: frequency
     attributes:

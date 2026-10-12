@@ -66,6 +66,16 @@ inline constexpr float kDuckCounterReachScale = 1.25F;
 /// `0x200000` or `0x4000`: `attackerIgnoresArmour`) and is not playing 617-620. The damage lands; no reaction plays.
 [[nodiscard]] bool hitArmourHolds(std::uint32_t attackPhase, int attackAnim, bool attackerIgnoresArmour);
 
+/// The record `+0x08` held flags under which a hit takes its health but plays no reaction (`Human_ApplyPendingDamage`,
+/// `0x00265f70`): `0x1000000` (the charge, the run attack, a landing), `0x800000` and `0x400000` (the dive, a paired
+/// move's or a tandem's victim), `0x10000`, `0x4000`, `0x2000` (the counter), `0x800`, `0x200` and `0x40`
+/// (docs/research/combat.md#protected-moves).
+inline constexpr std::uint32_t kReactionCancellingHeld = 0x01c16a40;
+
+/// Whether a victim holding `held` on the record `+0x08` plays no reaction to a hit that does not end him: the health
+/// drops, the pending damage is cleared and the move he is making plays on (docs/research/combat.md#protected-moves).
+[[nodiscard]] bool heldCancelsReaction(std::uint32_t held);
+
 /// The damage a hit really takes off a victim at `health` of `maximum` with the health floor (human flag
 /// `0x20000000000`, the player's): one hit cannot take health below `floorFraction` of the maximum. **Coney's
 /// reading**: the floor stops a hit that starts above it; a victim already at or below it takes the whole hit.

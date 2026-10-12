@@ -113,17 +113,25 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 - **Rage** starts only through the block branch (L1 + R1 while blocking), not by the original's other routes
   ([Rage](combat.md#rage)).
 - **Stealth** (hiding in shadow, 630 / 633, the stealth kill 637-641) is not built ([Stealth](combat-moves.md#stealth)).
-- **Flash revive** (command `0x27`): built for player 1 ([Combat: revive](combat.md#revive)); an AI Warrior reviving
-  ([SaveHuman](ai-goals.md#goal-save-human)) and a co-op partner's flash are not.
+- **Flash revive** (command `0x27`): built for player 1, every Warrior revivable from his creation
+  ([Combat: revive](combat.md#revive)); an AI Warrior reviving ([SaveHuman](ai-goals.md#goal-save-human)), a co-op
+  partner's flash and a knocked-out human waking on his own are not.
 
 ## Weapons
 
 - **Sets 4-6** (barrels, bottles, the ghetto blaster): square and cross play the unarmed moves; the original throws
   (505-507, 467-472, 551-553) or smashes (473 / 475) ([Weapons](combat-moves.md#weapons)).
 - **Knife and bottle kills** (484-496) and **throwing a melee weapon** (491 / 502) are not built.
+- **Cross + square with a weapon in hand** (`0x22`) plays the special 653 in Coney (`PlayerCombat::special` has no
+  held-object test), and its phases then refuse the cross's own release, so no bat swing starts. The original's
+  `Player_Special` (`0x00287730`) refuses a pad player holding an object: `0x22` throws the weapon (502 / 491) or,
+  with the throw refused (a target within 2.0 m), starts nothing, and the cross's release plays 36 on the next update.
+  The same test keeps circle + cross's strong grapple from an armed player
+  ([Cross with a bat in hand](combat-moves.md#bat-cross)). Coney: `repo:src/combat/player_combat.cpp`.
 - **Wear**: weapons never break; the original wears them on the `use` event.
-- **Armed chain**: Coney's armed square plays the slot's swing each time; the original alternates 34 / 35 (39 / 40,
-  45 / 46).
+- **Armed chain**: Coney's armed square plays the slot's swing each time; the original alternates 39 / 40 (baton)
+  and 45 / 46 (knife) for a square pressed in the swing. With a bat the two agree: 34 has no chain window, so the
+  original never plays 35 from the pad either ([Cross with a bat in hand](combat-moves.md#bat-cross)).
 - **Blocks against weapons**: the original's rules by set (no block of an armed hit unarmed, the bat's 629, the armed
   block clips 621-624) are missing ([Weapons](combat-moves.md#weapons)).
 - **Armed AI**: no AI human holds or uses a weapon.

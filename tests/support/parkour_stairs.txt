@@ -1,0 +1,4 @@
+# Rembrandt walking up a flight of the parkour course's stairs, or a ramp of the default course, at a 65 % stick, the
+# way a thumb holds it (tests/sandbox/disc_sandbox_traversal_test.cpp): from standing, forward and held, so he walks on
+# over the landing and the test reads the run once he is over its middle. Frames are 1/30 s.
+15 stick left 0 65

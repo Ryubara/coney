@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <format>
 #include <string>
+#include <vector>
 
 #include "ai/brain.h"
 #include "ai/brains.h"
@@ -17,7 +18,9 @@
 #include "gamemodes/gameplay_mode.h"
 #include "hud/hud.h"
 #include "human/human.h"
+#include "human/human_contacts.h"
 #include "human/human_flags.h"
+#include "human/way_clear.h"
 #include "scripting/sound_bindings.h"
 #include "warriors/inventory.h"
 
@@ -82,9 +85,9 @@ void GameplayMode::updateRevive() {
         m_revive.reset();
         return;
     }
-    // A revive under way waits for the end of the reviver's 351: 353 next is its end; anything else (a hit, a scene)
-    // took his body first. **Coney's reading**: a 351 cut short spends nothing and heals nobody (the page says the
-    // finish runs at its end, not whether a cut-short clip runs it).
+    // A revive under way waits for the end of the reviver's 351, however it ends: 353 next, or anything else that cut
+    // it short (a hit, a scene). Revive_Finish is the clip task's callback, which its clean-up runs on the clip's end,
+    // a cut-off and the task's release alike, so the flash is spent and the downed human healed either way, once.
     if (m_revive) {
         ai::Brain* reviver = m_scripted->brain(m_revive->reviver);
         if (reviver != nullptr && reviver->human().reviveBeginPlaying()) {
@@ -93,11 +96,14 @@ void GameplayMode::updateRevive() {
         ai::Brain* revived = m_scripted->brain(m_revive->downed);
         const double downed = m_revive->downed;
         m_revive.reset();
-        if (reviver != nullptr && revived != nullptr && reviver->human().reviveEndPlaying()) {
-            finishRevive(*reviver, *revived);
-        } else {
-            m_log(std::format("revive: cut short, human {:.0f} still down\n", downed));
+        if (reviver == nullptr || revived == nullptr) {
+            m_log(std::format("revive: human {:.0f} or his reviver gone\n", downed));
+            return;
         }
+        if (!reviver->human().reviveEndPlaying()) {
+            m_log(std::format("revive: cut short, human {:.0f} revived all the same\n", downed));
+        }
+        finishRevive(*reviver, *revived);
         return;
     }
     if (player->human().record().command == combat::command::kDpadLeft) {
@@ -105,19 +111,31 @@ void GameplayMode::updateRevive() {
     }
 }
 
+bool GameplayMode::wayClearTo(const human::Human& from, const human::Human& to) const {
+    // The 0.2 m capsule as tall as `from`'s, swept to `to` past every other human in the world.
+    std::vector<human::UprightCapsule> others;
+    const ai::Brains& brains = m_scripted->owner();
+    for (std::size_t i = 0; i < brains.size(); ++i) {
+        const human::Human& human = brains.at(i).human();
+        if (&human != &from && &human != &to && !human.outOfWorld()) {
+            others.push_back(human.uprightCapsule());
+        }
+    }
+    return human::wayClear(brains.collision(), from.position(), from.uprightCapsule().top, to.uprightCapsule(), others);
+}
+
 bool GameplayMode::tryRevive(ai::Brain& reviver) {
     human::Human& body = reviver.human();
     ai::Brain* downed = revivableInReach();
     // Player_TryRevive's tests. **Coney's readings**: "blocked" is the swap prompt's reading of the state mask plus
-    // anything that keeps him off his feet (down, held, in the air); the way is taken as clear, the search having
-    // found him in sight (**Coney's stand-in** for the 0.2 m capsule `Human_IsWayClearTo` sweeps); a downed AI crew
-    // member has no inventory and Coney keeps no second player, so only player 1's flash counts.
+    // anything that keeps him off his feet (down, held, in the air), which covers the way test's "grabbed"; a downed
+    // AI crew member has no inventory and Coney keeps no second player, so only player 1's flash counts.
     const combat::ReviveFacts facts{.reviverHeld = body.animator().flags() != 0,
                                     .reviverBlocked = ai::actionsBlocked(body) ||
                                                       body.state() != human::TargetState::Standing || body.airborne(),
                                     .found = downed != nullptr,
                                     .downedHeld = downed != nullptr && downed->human().animator().flags() != 0,
-                                    .wayClear = true,
+                                    .wayClear = downed != nullptr && wayClearTo(body, downed->human()),
                                     .downedIsPlayer = downed != nullptr && downed->type() == ai::BrainType::Player,
                                     .reviverIsWarrior = reviver.type() == ai::BrainType::Warrior,
                                     .reviverHasFlash = m_state.player.inventory.has(kPlayerOnePanel, item::kRevive),
@@ -134,7 +152,7 @@ bool GameplayMode::tryRevive(ai::Brain& reviver) {
                                                                           .interrupt = true},
                                                       {}));
     }
-    body.startRevive(downed->human().ledPoint());
+    body.startRevive(downed->human());
     m_revive = Revive{.reviver = reviver.handle(), .downed = downed->handle()};
     m_log(std::format("revive: reviving human {:.0f}\n", downed->handle()));
     return true;

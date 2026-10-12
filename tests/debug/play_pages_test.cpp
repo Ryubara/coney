@@ -166,7 +166,7 @@ TEST_CASE("the HUD page switches the HUD's parts, sets the panel's values and fi
     itemOn(*page, "Fire an objective").run();
     CHECK(hud.scrollIn().messages().size() == 1);
     itemOn(*page, "Fire a hint").run();
-    CHECK(hud.hints().queued().size() == 1);
+    CHECK(hud.hints().showing().has_value());
     itemOn(*page, "Fire an announcement").run();
     CHECK(hud.centredAnnouncement().has_value());
     itemOn(*page, "Action prompt").setBool(true);

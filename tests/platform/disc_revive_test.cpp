@@ -3,19 +3,20 @@
 // Checks against the player's own disc that player 1 revives a knocked-out Warrior with a flash, as the original does
 // (docs/research/combat.md#revive, docs/research/hud.md#action-prompts): `level80` checkpoint 2 played in the game
 // session as `coney --play-level level80 --checkpoint 2` plays it (support/disc_session.h), one of player 1's Warriors
-// knocked out (his health gone, as a fight leaves him), and a driver that walks player 1 to him with the left stick at
-// 60 % (turned by the camera, as a player steers), then taps d-pad left. Beside him with no flash no prompt shows; with
-// a flash the revive prompt, `GSTRING.HUD` 4, shows; d-pad left plays 351 then 353 on player 1, spends the flash and
-// heals the Warrior, who gets up with 354. It runs only when the environment variable CONEY_DISC names the disc and
-// skips otherwise; it prints counts only (LEGAL.md).
+// knocked out by a strike that takes all his health (no script flags him: every Warrior is made revivable), and a
+// driver that walks player 1 to him with the left stick at 60 % (turned by the camera, as a player steers), then taps
+// d-pad left. Beside him with no flash no prompt shows; with a flash the revive prompt, `GSTRING.HUD` 4, shows; d-pad
+// left turns and slides player 1 to 351's reach from the Warrior's head, plays 351 (0.70 s), 353 and 389 on him, and
+// at 351's end spends the flash and heals the Warrior, who gets up with 354. It runs only when the environment
+// variable CONEY_DISC names the disc and skips otherwise; it prints counts and measures only (LEGAL.md).
 
 #include <algorithm>
-#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <functional>
+#include <numbers>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -26,6 +27,7 @@
 
 #include "ai/brain.h"
 #include "ai/brains.h"
+#include "combat/anim_ranges.h"
 #include "combat/revive.h"
 #include "core/input_script.h"
 #include "core/pad.h"
@@ -36,10 +38,11 @@
 #include "hud/hud.h"
 #include "human/human.h"
 #include "human/human_flags.h"
+#include "human/locomotion.h"
 #include "human/player.h"
+#include "human/victim.h"
 #include "platform/game_session.h"
 #include "platform/play_level_mode.h"
-#include "scripting/lua_value.h"
 #include "scripting/script_system.h"
 #include "support/disc_play_fixtures.h"
 #include "support/disc_session.h"
@@ -167,10 +170,10 @@ TEST_CASE("the disc's level80: player 1 with a flash revives a knocked-out Warri
     driver.want = Want::Nothing;
     run.run(30);
 
-    // The nearest Warrior of player 1's gang, made revivable as a level script does (`HuSetRevivable(h, 1)`): Coney's
-    // level80 crew is not flagged (open question on docs/research/combat.md#revive: what flags the crew in the
-    // original). The test knocks him out by taking his health, which the brains see as a fight's knock-out. The brains
-    // belong to the session's gameplay, which the test changes through them.
+    // The nearest Warrior of player 1's gang: revivable from the moment he was made (Human_Init gives every Warrior
+    // flag 0x4, docs/research/combat.md#human-flags), with no script call. The test knocks him out in a fight: a strike
+    // (S1, hit code 0x0a) from player 1's side that takes all his health. The brains belong to the session's gameplay,
+    // which the test reaches through them.
     const coney::ai::Brains* found = run.session().gameplay().brains();
     REQUIRE(found != nullptr);
     auto& brains = const_cast<coney::ai::Brains&>(*found);
@@ -196,14 +199,17 @@ TEST_CASE("the disc's level80: player 1 with a flash revives a knocked-out Warri
         }
     }
     REQUIRE(warrior != nullptr);
-    coney::script::ScriptSystem& scripts = run.session().flow().scripts();
-    const std::array<coney::script::Value, 2> revivable{coney::script::Value(warrior->handle()),
-                                                        coney::script::Value(1.0)};
-    REQUIRE(scripts.call("HuSetRevivable", revivable));
     coney::human::Human& downed = warrior->human();
     REQUIRE(downed.hasFlag(coney::human::flag::kRevivable));
-    downed.fighter().health().set(0);
+    downed.setFlag(coney::human::flag::kGod | coney::human::flag::kDemiGod, false);
+    coney::human::IncomingHit strike;
+    strike.damage = downed.fighter().health().value();
+    strike.attackAnim = 12;
+    strike.code = 0x0a;
+    strike.attacker = player->human().position();
+    downed.takeHit(strike);
     run.run(60);
+    REQUIRE(downed.fighter().health().depleted());
     REQUIRE(warrior->knockedOut());
 
     // Walked beside him with no flash: no prompt (docs/research/hud.md#action-prompts, "No flash, no prompt").
@@ -230,47 +236,110 @@ TEST_CASE("the disc's level80: player 1 with a flash revives a knocked-out Warri
     run.run(2);
     CHECK(hud.actionPrompt(0) == reviveText);
 
-    // D-pad left: 351 on player 1, then at its end 353, the flash spent, the Warrior healed and up with 354.
+    // D-pad left: the steer and 351 on player 1, then at its end 353, the flash spent, the Warrior healed and up with
+    // 354. Each clip's updates and the updates his heading turns are counted; the head is where the steer aims.
     const coney::human::Human& reviver = run.session().play()->player().human();
+    const coney::anim::Vec3 head = downed.ledPoint();
     driver.want = Want::Revive;
-    std::vector<std::uint32_t> reviverClips;
-    bool sawRevived = false;
+    std::vector<std::pair<std::uint32_t, int>> reviverClips;
+    std::vector<std::pair<std::uint32_t, int>> revivedClips;
+    int turning = 0;
+    int sincePress = 0;
+    float lastHeading = reviver.heading();
+    // The line to the head as he stands at the press (the runtime's reference), and where the steer left him at its
+    // 25th update: his distance from the head in plan, and how far his facing is to the left of that line (degrees;
+    // headings grow to the left). 351's root motion carries him on along his facing, off the line, so the line from
+    // where he ends turns as he nears the head; the press's line does not.
+    const float line = coney::human::headingOf(coney::anim::subtract(head, reviver.position()));
+    constexpr int kSteerRead = 25;
+    float standOff = 0.0F;
+    float offLine = 0.0F;
+    // Counts `id` into `clips`: one more update of the clip playing, or a new clip.
+    const auto count = [](std::vector<std::pair<std::uint32_t, int>>& clips, std::uint32_t id) {
+        if (clips.empty() || clips.back().first != id) {
+            clips.emplace_back(id, 0);
+        }
+        ++clips.back().second;
+    };
+    // One update's readings of both humans.
+    const auto watch = [&] {
+        count(reviverClips, reviver.animator().animId());
+        if (!revivedClips.empty() || downed.animator().animId() == coney::combat::kRevivedAnim) {
+            count(revivedClips, downed.animator().animId());
+        }
+        if (std::fabs(coney::human::wrapAngle(reviver.heading() - lastHeading)) > 1e-4F) {
+            ++turning;
+        }
+        lastHeading = reviver.heading();
+        if (++sincePress == kSteerRead) {
+            standOff = std::hypot(head.x - reviver.position().x, head.y - reviver.position().y);
+            offLine = coney::human::wrapAngle(reviver.heading() - line) * 180.0F / std::numbers::pi_v<float>;
+        }
+    };
     const bool revived = run.runUntil(
         [&] {
-            const std::uint32_t id = reviver.animator().animId();
-            if (reviverClips.empty() || reviverClips.back() != id) {
-                reviverClips.push_back(id);
-            }
-            sawRevived = sawRevived || downed.animator().animId() == coney::combat::kRevivedAnim;
+            watch();
             return countOf(run.log(), "revive: revived human") > 0;
         },
         kLimit);
     if (!revived) {
-        for (const std::string& line : run.log()) {
-            if (line.starts_with("revive")) {
-                UNSCOPED_INFO(line);
+        for (const std::string& entry : run.log()) {
+            if (entry.starts_with("revive")) {
+                UNSCOPED_INFO(entry);
             }
         }
     }
     REQUIRE(revived);
-    run.run(2);
-    sawRevived = sawRevived || downed.animator().animId() == coney::combat::kRevivedAnim;
-    const bool begin = std::ranges::find(reviverClips, coney::combat::kReviveBeginAnim) != reviverClips.end();
-    const bool end = std::ranges::find(reviverClips, coney::combat::kReviveEndAnim) != reviverClips.end();
-    const int flashes = inventory.count(0, coney::item::kRevive);
-    std::printf("  level80 revive: %d crew Warriors; 351 %d, 353 %d, 354 %d; flashes 1 -> %d; health %d of %d\n", crew,
-                begin ? 1 : 0, end ? 1 : 0, sawRevived ? 1 : 0, flashes, downed.fighter().health().value(),
-                downed.fighter().health().maximum());
-    CHECK(begin);
-    CHECK(end);
-    CHECK(sawRevived);
-    CHECK(flashes == 0);
+    const int flashesAtHeal = inventory.count(0, coney::item::kRevive);
+    const int healthAtHeal = downed.fighter().health().value();
+    for (int update = 0; update < 150; ++update) {
+        run.run(1);
+        watch();
+    }
+    // Each clip's updates in order, the first (the update of the press reads it before 351) left out.
+    const auto updatesOf = [](const std::vector<std::pair<std::uint32_t, int>>& clips, std::uint32_t id) {
+        const auto found = std::ranges::find_if(clips, [id](const auto& clip) { return clip.first == id; });
+        return found != clips.end() ? found->second : 0;
+    };
+    const int begin = updatesOf(reviverClips, coney::combat::kReviveBeginAnim);
+    const int end = updatesOf(reviverClips, coney::combat::kReviveEndAnim);
+    const int settle = updatesOf(reviverClips, coney::human::kAnimNormalFromFight);
+    const int up = updatesOf(revivedClips, coney::combat::kRevivedAnim);
+    const coney::combat::AnimRange* range =
+        reviver.ranges() != nullptr ? reviver.ranges()->find(coney::combat::kReviveBeginAnim) : nullptr;
+    const float direction = range != nullptr
+                                ? std::atan2(-range->directionX, range->directionY) * 180.0F / std::numbers::pi_v<float>
+                                : 0.0F;
+    std::printf("  level80 revive: %d crew Warriors; updates 351 %d, 353 %d, 389 %d, 354 %d; steer %d updates, "
+                "%.2f m from the head (reach %.2f), %.1f deg left of the line (351's direction %.1f); flashes 1 -> %d; "
+                "health %d of %d\n",
+                crew, begin, end, settle, up, turning, standOff, range != nullptr ? range->reach : 0.0F, offLine,
+                direction, flashesAtHeal, healthAtHeal, downed.fighter().health().maximum());
+    // The runtime's figures (docs/research/combat.md#revive-runtime): 351 21 updates, 353 33, 389 25, 354 72; the
+    // steer 25 updates, ending about 0.70 m from him and 11-13 degrees to the left of the line.
+    CHECK(begin >= 20);
+    CHECK(begin <= 22);
+    CHECK(end >= 32);
+    CHECK(end <= 34);
+    CHECK(settle >= 24);
+    CHECK(settle <= 26);
+    CHECK(up >= 71);
+    CHECK(up <= 73);
+    CHECK(turning >= 23);
+    CHECK(turning <= 26);
+    REQUIRE(range != nullptr);
+    // 351's reach on the disc is 1.04 m; its root motion brings him nearer: the runtime ended 0.70-0.71 m away.
+    CHECK(standOff >= 0.6F);
+    CHECK(standOff <= 0.9F);
+    CHECK(offLine >= 8.0F);
+    CHECK(offLine <= 14.0F);
+    CHECK(flashesAtHeal == 0);
+    CHECK(healthAtHeal == downed.fighter().health().maximum());
     CHECK(downed.fighter().health().value() == downed.fighter().health().maximum());
     CHECK(countOf(run.log(), "revive: reviving human") == 1);
     CHECK(countOf(run.log(), "revive: cut short") == 0);
 
     // He is up: his brain back on, no prompt beside him.
-    run.run(30);
     CHECK_FALSE(warrior->knockedOut());
     CHECK(hud.actionPrompt(0) != reviveText);
     CHECK(run.session().flow().scripts().errors() == 0);

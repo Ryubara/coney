@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <format>
+#include <iterator>
 #include <map>
 #include <memory>
 #include <numbers>
@@ -457,6 +458,36 @@ TEST_CASE("after the connect the victim sits at the front hold's offset and foll
           Approx(std::numbers::pi_v<float>).margin(1e-3));
     // The alignment slid the grabber from 1.5 m to the clip's reach before the connect.
     CHECK(fight.human().position().y == Approx(40.0F + 1.5F - 0.999F).margin(0.02F));
+}
+
+TEST_CASE("a grab's hold id reaches the animation callbacks at the connect, once, not when the hold plays",
+          "[human][combat]") {
+    // The original builds the hold under the connecting clip and fires 82 then, the connecting clip's length before
+    // the hold plays (docs/research/characters.md#anim-callbacks): level99's PlayerState and P1.Power never share
+    // an update at lesson 5's end.
+    const FightCharacter character;
+    Fight fight(character, 1.5F);
+    std::vector<std::pair<std::uint64_t, std::uint32_t>> started;
+    std::uint64_t frameNow = 0;
+    fight.human().setAnimStartHook([&](std::uint32_t anim) { started.emplace_back(frameNow, anim); });
+    std::uint64_t holdPlays = 0;
+    fight.run("5 tap circle\n", 40, [&](std::uint64_t frame) {
+        frameNow = frame + 1;
+        if (holdPlays == 0 && fight.human().animator().animId() == 82) {
+            holdPlays = frame;
+        }
+    });
+    REQUIRE(holdPlays != 0);
+    const auto holds = std::ranges::count_if(started, [](const auto& start) { return start.second == 82; });
+    CHECK(holds == 1);
+    const auto hold = std::ranges::find_if(started, [](const auto& start) { return start.second == 82; });
+    REQUIRE(hold != started.end());
+    REQUIRE(hold != started.begin());
+    // Reported in the update the connecting clip started, right after it, and before the hold played.
+    const auto connecting = std::prev(hold);
+    CHECK(connecting->first == hold->first);
+    CHECK(connecting->second != 71U);
+    CHECK(hold->first < holdPlays);
 }
 
 TEST_CASE("a grab from behind connects with 74 and holds the victim at the rear offset", "[human][combat]") {

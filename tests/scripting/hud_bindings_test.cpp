@@ -114,21 +114,26 @@ TEST_CASE("the objective header takes the HUD string and the CfgHUDColor recordi
     harness.call("CfgHUDColor", {Value(4.0), Value("<COLOR ffcc00ff>")});
     harness.call("HUDSetObjective", {Value(0.0), Value("Go"), Value(0.0)});
     REQUIRE(hud.scrollIn().messages().size() == 1);
-    CHECK(hud.scrollIn().messages().front().text == "<SIZE 0.8><YOBJ></SIZE><COLOR ffcc00ff>OBJECTIVE:<CR>Go");
+    CHECK(hud.scrollIn().messages().front().text ==
+          "<SIZE 0.8><MONEYFONT><YOBJ></MONEYFONT></SIZE><COLOR ffcc00ff>OBJECTIVE:<CR>Go");
 }
 
 TEST_CASE("the tutorial bindings queue, check, flush and keep the callback", "[scripting][hud]") {
     coney::hud::Hud hud;
     Harness harness(&hud);
     harness.call("HUDSetTutorialText", {Value("Press X")});
-    REQUIRE(hud.hints().queued().size() == 1);
-    CHECK(hud.hints().queued().front().priority == 1);
+    // Shown at once on the free box.
+    REQUIRE(hud.hints().showing().has_value());
+    const coney::hud::Hint shown = hud.hints().showing().value_or(coney::hud::Hint{});
+    CHECK(shown.text == "Press X");
+    CHECK(shown.priority == 1);
     CHECK(harness.value("HUDCheckTutorialText", {Value("Press X")}).number() == 1.0);
     harness.call("HUDSetTutorialText", {Value("Later"), Value(3.0)});
     harness.call("HUDFlushTutorialText", {Value(3.0)});
-    CHECK(hud.hints().queued().size() == 1);
-    harness.call("HUDFlushTutorialText", {});
+    CHECK(hud.hints().showing().has_value());
     CHECK(hud.hints().queued().empty());
+    harness.call("HUDFlushTutorialText", {});
+    CHECK_FALSE(hud.hints().showing().has_value());
     harness.call("HUDSetTutorialCallback", {Value("P1.BasicAttacks")});
     CHECK(hud.tutorialCallback() == "P1.BasicAttacks");
     harness.call("HUDSetTutorialCallback", {Value()});

@@ -168,3 +168,80 @@ TEST_CASE("a change of pacing between frames starts the new pacing afresh", "[fr
     const Fed fed = feed(clock, framesAt(60, 1));
     CHECK(fed.steps == 30);
 }
+
+TEST_CASE("a speed above 100 % runs that many more whole steps a simulated second", "[frame_clock]") {
+    // The debug menus' time scale above 1x: 2x at 60 frames a second, 4x at 30, 1.5x at 144. Every step is still a
+    // whole 1/30 s; there are only more of them.
+    struct Case {
+        std::uint32_t percent;
+        std::uint64_t hz;
+        std::uint64_t stepsPerSecond;
+    };
+    const Case c = GENERATE(Case{100, 60, 30}, Case{150, 144, 45}, Case{200, 60, 60}, Case{400, 30, 120},
+                            Case{400, 240, 120}, Case{250, 75, 75});
+    CAPTURE(c.percent, c.hz);
+    FrameClock clock(FramePacing::Interpolated);
+    clock.setSpeed(c.percent);
+    CHECK(clock.speed() == c.percent);
+    const Fed fed = feed(clock, framesAt(c.hz, 4));
+    CHECK(fed.steps == 1 + (c.stepsPerSecond * 4));
+    CHECK(fed.maxAlpha < 1.0F);
+    CHECK(clock.leftover() == 0);
+}
+
+TEST_CASE("a faster speed raises the per-frame cap with it, so a slow machine slows down instead of spiralling",
+          "[frame_clock]") {
+    FrameClock clock(FramePacing::Interpolated);
+    clock.setSpeed(400);
+    // Four times the steps a frame: full 4x speed down to 7.5 frames a second, as 1x keeps full speed there.
+    CHECK(clock.maxStepsPerFrame() == 4 * FrameClock::kMaxStepsPerFrame);
+    // At 5 frames a second 4x would need 24 steps a frame; 16 run and the game runs at 80 steps a second.
+    const Fed fed = feed(clock, framesAt(5, 2));
+    CHECK(fed.steps == 1 + (16 * 5 * 2));
+    // A stall still runs no more than the cap.
+    CHECK(clock.advance(10 * kSecond).steps == clock.maxStepsPerFrame());
+    // 1.5x rounds the cap's multiple up: 8 steps a frame.
+    clock.setSpeed(150);
+    CHECK(clock.maxStepsPerFrame() == 2 * FrameClock::kMaxStepsPerFrame);
+    clock.setSpeed(100);
+    CHECK(clock.maxStepsPerFrame() == FrameClock::kMaxStepsPerFrame);
+}
+
+TEST_CASE("lockstep at a speed runs whole steps a frame in a steady pattern; 100 % stays one a frame",
+          "[frame_clock]") {
+    FrameClock clock(FramePacing::Lockstep);
+    std::vector<std::uint32_t> steps;
+    steps.reserve(4);
+    for (int i = 0; i < 4; ++i) {
+        steps.push_back(clock.advance(kSecond).steps);
+    }
+    CHECK(steps == std::vector<std::uint32_t>{1, 1, 1, 1});
+    clock.setSpeed(150);
+    steps.clear();
+    for (int i = 0; i < 4; ++i) {
+        const FramePlan plan = clock.advance(0);
+        CHECK(plan.alpha == 1.0F);
+        steps.push_back(plan.steps);
+    }
+    CHECK(steps == std::vector<std::uint32_t>{1, 2, 1, 2});
+    clock.setSpeed(400);
+    CHECK(clock.advance(0).steps == 4);
+}
+
+TEST_CASE("a speed is clamped to 1 % to kMaxSpeedPercent, and setting the same speed changes nothing",
+          "[frame_clock]") {
+    FrameClock clock(FramePacing::Interpolated);
+    clock.setSpeed(0);
+    CHECK(clock.speed() == 1);
+    clock.setSpeed(100'000);
+    CHECK(clock.speed() == FrameClock::kMaxSpeedPercent);
+    // The leftover is kept across a speed change: no time is lost or invented.
+    clock.setSpeed(100);
+    (void)clock.advance(0);
+    (void)clock.advance(kSecond / 60);
+    const std::uint64_t leftover = clock.leftover();
+    CHECK(leftover > 0);
+    clock.setSpeed(100);
+    clock.setSpeed(200);
+    CHECK(clock.leftover() == leftover);
+}

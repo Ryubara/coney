@@ -252,6 +252,8 @@ nav:
       - Realtime lighting design: guides/realtime-lighting.md
       - Asset and script architecture: guides/asset-and-script-architecture.md
       - Conventions: guides/conventions.md
+      - Repository conventions: guides/repo-conventions.md
+      - Repository conventions: guides/repo-conventions.md
       - Research workflow: guides/research-workflow.md
       - Ghidra + ghidra-mcp: guides/ghidra.md
       - Writing these docs: guides/writing-docs.md

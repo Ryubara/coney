@@ -115,10 +115,12 @@ add_executable(coney_tests
     platform/disc_level99_sparring_test.cpp
     platform/disc_level99_change_character_test.cpp
     platform/disc_level99_noclip_test.cpp
+    platform/disc_sprint_attacks_test.cpp
     platform/disc_level99_car_climb_test.cpp
     platform/disc_level99_street_props_test.cpp
     platform/disc_game_session_test.cpp
     platform/disc_level99_handover_test.cpp
+    platform/disc_hub_workout_test.cpp
     platform/disc_level99_street_test.cpp
     platform/disc_level99_store_glass_test.cpp
     platform/disc_level99_store_register_test.cpp
@@ -255,6 +257,7 @@ target_sources(coney_tests PRIVATE
     human/disc_player_test.cpp
     human/human_test.cpp
     human/human_revive_test.cpp
+    human/way_clear_test.cpp
     human/flight_test.cpp
     human/hiding_test.cpp
     human/body_test.cpp
@@ -326,6 +329,7 @@ target_sources(coney_tests PRIVATE
     debug/pad_menu_input_test.cpp
     debug/play_pages_test.cpp
     debug/story_missions_test.cpp
+    debug/time_scale_test.cpp
     debug/tunables_test.cpp)
 # The AI humans' brains (docs/research/ai.md).
 target_sources(coney_tests PRIVATE

@@ -1,0 +1,7 @@
+# The "Let's Go" lesson first (Cleon's stick is locked until the follow command): R2 held, the right stick up 80 %
+# picks command 0, which hands control back and brings Vermin and Rembrandt down to Cleon. The scenario then puts the
+# three inside the pharmacy and orders the steal (command 5) through the dispatcher; no more input.
+5 press r2
+15 stick right 0 80
+35 stick right 0 0
+40 release r2

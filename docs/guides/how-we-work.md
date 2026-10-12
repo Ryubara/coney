@@ -179,8 +179,10 @@ closes it. The whole process: [Issues](issues.md).
 **Leftovers are issues, not notes.** An agent that finishes a unit with work still undone lists each leftover in its
 message to the coordinator (title, area, research page, what "done" means), and the coordinator files the issue and
 writes its number into the pull request's Remaining list; CI refuses an unchecked Remaining item with no `#123`
-([Leftovers become issues](issues.md#leftovers)). The state file (`HANDOFF.md`) keeps only the live state and issue
-numbers, never a list of work to do: the work list is the open issues.
+([Leftovers become issues](issues.md#leftovers)). The issue states its problem first, links pages by relative links
+and names the source pull request's status truthfully ([Writing an issue a newcomer can read](issues.md#writing)).
+The state file (`HANDOFF.md`) keeps only the live state and issue numbers, never a list of work to do: the work list
+is the open issues.
 
 ## Testing {#testing}
 
@@ -219,6 +221,9 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
 
 ## Merging safely {#merging}
 
+- **After a merge, fix the issues that cite the pull request.** Search them (`gh issue list --state open --search "#N"`),
+  change "open" to "merged" where the text names the pull request, tick the checklist items it finished, and close or
+  relabel an issue it fixed ([Writing an issue a newcomer can read](issues.md#writing)).
 - **Merge only finished commits.** A "WIP" commit made when a track paused is never merged: create a clean commit
   (or cherry-pick the finished part) instead.
 - **Check a branch's diff before merging it.** A branch can be contaminated with unrelated reverted files (a bad
@@ -267,8 +272,9 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
   the results of the checks. Short. A pull request's description carries the same as a Testing section (what ran,
   the numbers) and a Screenshots section (before and after for anything visible, uploaded with `gh --attach` and never committed):
   [What a pull request shows](testing.md#pr-evidence).
-- **Commits carry the agent's own model name** in a `Co-Authored-By` trailer (the format is in
-  [Conventions](conventions.md)); an agent never pushes, opens or merges a pull request.
+- **Commits carry the agent's own model name** in a `Co-Authored-By` trailer (the format is
+  `commits.trailers` in [.github/conventions.yml](repo:.github/conventions.yml), explained in
+  [CONTRIBUTING.md](repo:CONTRIBUTING.md#agents-commits)); an agent never pushes, opens or merges a pull request.
 
 ## Starting on another game {#another-game}
 

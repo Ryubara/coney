@@ -417,8 +417,8 @@ code keeps to these rules:
 
 - **The simulation reads only `FrameTime`.** Gameplay, physics, animation, timers, scripts, streaming and input all
   happen in a game mode's `update()`, which is always exactly one fixed step and is handed the step's length and the
-  game time. Nothing in the simulation measures time itself or assumes how many steps a real frame runs (0 to 4).
-  Every gameplay constant in the research assumes this step.
+  game time. Nothing in the simulation measures time itself or assumes how many steps a real frame runs (0 to 4, up
+  to 16 with the debug menus' time scale). Every gameplay constant in the research assumes this step.
 - **Say whether a duration counts steps or time.** The original times some things in steps (the 5 updates after a
   block, a think every fifth step) and others in milliseconds of game time (an attack delay, a block's length). Name a
   step count `...Steps` (`kBlockPauseSteps = 5`) and a time `...Ms` or `...Seconds`, and never convert one into the
@@ -474,6 +474,10 @@ reverse-engineering projects goes to Rekit instead, once a second project needs 
 - **ruff** formats and lints, **mypy --strict** type-checks, and **pytest** tests. All three run in CI; ruff format
   also runs in pre-commit. Strict typing matters here because these tools parse binary formats, where a wrong type
   is a silent wrong answer.
+- **Repository rules are read, not copied.** A value that is a rule of running the repository (a commit area, a
+  title limit, a description section, a label, a path class, a limit in days) is a key of
+  `.github/conventions.yml`, read through `coney_tools/conventions.py`; code never repeats it as a constant
+  ([Repository conventions](repo-conventions.md)).
 - **`pathlib` only** for paths, never string concatenation or `os.path`. Every tool runs on Windows, Linux and
   macOS, and `pathlib` handles the separators and drive letters.
 - **Docstrings** on every public module, class and function: a one-line summary, then whatever a caller needs
