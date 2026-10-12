@@ -580,6 +580,7 @@ float Human::walkingSphereCentreHeight() const { return walkingSphereRadius() + 
 float Human::airSphereRadius() const { return bodyTuning().airRadius * m_scale; }
 
 UprightCapsule Human::uprightCapsule() const {
+    // **Coney's choice**: the 2 m upright capsule the strikes take too, not posed from the head bone each time.
     return UprightCapsule{.feet = m_position, .top = kStrikeCapsuleHeight * m_scale, .radius = capsuleRadius()};
 }
 
