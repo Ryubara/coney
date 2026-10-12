@@ -149,6 +149,17 @@ void Fighter::takePending(const FighterInput& input, HumanAnimator& animator) {
         m_reacting = true;
         return;
     }
+    // A move holding any of 0x1c16a40 (the charge, the dive, a paired move's victim) takes the health and plays on:
+    // the pending damage is cleared with no reaction (`Human_ApplyPendingDamage`,
+    // docs/research/combat.md#protected-moves). So a victim the charge flings into the charger, whose extreme reaction
+    // strikes with every shape, cannot knock him down. A lethal hit ends him at once above, as the original's does for
+    // the charge (`0x1000000` is not in `0xc12200`); **stand-in** for the dive and a paired move's victim, whose lethal
+    // reaction the original holds back until their clip ends.
+    // @orig 0x00265f70 Human_ApplyPendingDamage (unknown)
+    if (combat::heldCancelsReaction(animator.flags())) {
+        ++m_hitsShrugged;
+        return;
+    }
     // A hit ends a stereo theft (`Human_ApplyPendingDamage` sends a human in a mini-game other than lock picking to
     // `0x00268c50`, which ends it, docs/research/crimes.md#uncuffing); the reaction then plays as in free play.
     // **Coney's reading**: the clip `0x00268c50` plays for the theft is not traced, so the hit's own reaction plays.

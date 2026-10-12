@@ -375,6 +375,8 @@ class Fighter {
     [[nodiscard]] int hitsBlocked() const { return m_hitsBlocked; }
     [[nodiscard]] int hitsDucked() const { return m_hitsDucked; }
     [[nodiscard]] int hitsArmoured() const { return m_hitsArmoured; }
+    /// Hits taken in a move whose held flags cancel the reaction (combat::heldCancelsReaction(): the charge, the dive).
+    [[nodiscard]] int hitsShrugged() const { return m_hitsShrugged; }
     /// Duck counters played (617-620).
     [[nodiscard]] int duckCounters() const { return m_duckCounters; }
     /// The repeat tracker of the player's hits.
@@ -663,6 +665,7 @@ class Fighter {
     int m_hitsBlocked = 0;
     int m_hitsDucked = 0;
     int m_hitsArmoured = 0;
+    int m_hitsShrugged = 0;
     int m_holdUnkept = 0; // own updates held since the grabber last kept the hold (keepHold())
     // The flags, together so the class packs.
     bool m_player = true;         // FighterProfile::player
