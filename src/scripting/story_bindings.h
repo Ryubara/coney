@@ -20,7 +20,7 @@
 // objects; and the configuration the missions set. Each acts on the level's humans, brains and gangs through a
 // StoryBindingHost (the level's scripted brains, ai::ScriptedStory), the configuration on the game state.
 // Research: docs/references/bindings/story.md, docs/references/bindings/character.md, docs/references/bindings/ai.md,
-// docs/references/bindings/gang.md, docs/research/ai.md#tactic-kinds
+// docs/references/bindings/gang.md, docs/research/ai-gangs.md#tactic-kinds
 
 namespace coney::script {
 
@@ -241,7 +241,7 @@ struct DynIdleCall {
 };
 
 /// The kinds of gang tactic the `Tactic<Name>` bindings set, by the original's type ids
-/// (docs/research/ai.md#tactic-kinds).
+/// (docs/research/ai-gangs.md#tactic-kinds).
 enum class TacticKind : std::uint8_t {
     Attack = 0x00,
     Defend = 0x02,
@@ -461,7 +461,7 @@ class StoryBindingHost {
 /// 1's, the commands or the player's menu are locked or the command is disabled; otherwise the player's last command,
 /// the crew's tactic and the `WCSetCallback` function with (chief, command).
 ///
-/// Research: docs/research/hud.md#warrior-command-menu, docs/research/ai.md#warrior-commands
+/// Research: docs/research/hud.md#warrior-command-menu, docs/research/ai-gangs.md#warrior-commands
 void giveWarriorCommand(ScriptSystem& scripts, const BindingContext& context, double chief, int command);
 
 /// Registers kStoryBindings in `vm`: the humans', brains', gangs' and paths' bindings act through `context.ai`'s

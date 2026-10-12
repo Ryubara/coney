@@ -70,7 +70,7 @@ Most functions are instances of a few templates. Knowing the shape of each saves
 
 ## Tactic types {#tactic-types}
 
-Each AI tactic class ([Tactics](ai.md#tactics)) has three inline virtuals here: slot `+0x28` the deleting destructor,
+Each AI tactic class ([Tactics](ai-gangs.md#tactics)) has three inline virtuals here: slot `+0x28` the deleting destructor,
 slot `+0x30` **GetType** (returns the class's type number) and slot `+0x38` **IsCombatType** (type below `0x12`: the
 fighting and boss tactics, as against the crowd, travel and idle ones from `0x12` up). The vtables lie every `0x60`
 bytes from `0x005432c0` to `0x005441c0`. Confirmed (code); the meaning of the `0x12` split is inferred.

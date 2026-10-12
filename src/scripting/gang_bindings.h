@@ -20,7 +20,7 @@ inline constexpr std::array<std::string_view, 12> kGangBindings{
 
 /// Registers kGangBindings in `vm`, handing each call to `context.ai` (a null one does nothing; the counts are then 0).
 ///
-/// Research: docs/research/ai.md#gangs, docs/references/bindings/gang.md
+/// Research: docs/research/ai-gangs.md#gangs, docs/references/bindings/gang.md
 void addGangBindings(LuaVm& vm, const BindingContext& context);
 
 } // namespace coney::script
