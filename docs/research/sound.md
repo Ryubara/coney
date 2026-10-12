@@ -525,7 +525,8 @@ acts by id. Confirmed (code):
   a player, half for one hidden in shadow.
 - **Held objects** (ids `0x34`, `0x56`): the held object's material against itself or against 17.
 - **Vocal ids** (grunts and efforts): the entry's first sound said as a speech line (`Human_SayAnimLine`,
-  `0x0021f410`; needs `+0x199`, a player twice as loud), some only when no line plays, some cutting it.
+  `0x0021f410`; needs `+0x199`, a player twice as loud), some only when no line plays, some cutting it, none over a
+  line that may not be cut ([Cutting in on a line](#speech-cut-in)).
 - **Speech-command ids**: `Human_SayCommand` with a fixed command (`0x8b` itself says `onfire`, 107, while `+0x19b`
   is set; others taunts and reactions, some only when `Ambient_MayGesture` allows).
 
@@ -540,7 +541,9 @@ sound-by-hash events of [Scene soundtracks](#scene-sound). Type 13 starts the sc
 (`0x002205e0`), confirmed (code):
 
 1. Nothing when the human cannot speak (`+0x199` clear). A line already playing is cut off when the fourth argument
-   (`interrupt`, default true) is set; otherwise nothing is said while it plays.
+   (`interrupt`, default true) is set, unless it may not be cut (`+0x194` clear, a `HuSpeakNI` line or an order):
+   then nothing is said and the command's callback runs at once ([Cutting in on a line](#speech-cut-in)). Without
+   `interrupt` nothing is said while any line plays.
 2. `VoiceTable_NextLine(+0x3b0, command)` picks the line. With a chance below 100 it rolls 0-99 and says nothing
    when the roll is higher than the chance. With no lines it says nothing. Otherwise it takes line `next + 1`, adds
    one to `next` and wraps it to 0 at the count: **a set's lines for a command play in turn, not at random**. A line
@@ -622,10 +625,92 @@ that were cut).
    duckable flag**: false makes a non-duckable line, which plays at pitch 1 and ducks every other duckable
    directional sound of a non-player to `+0x3faac` (0.2) while it lasts.
 4. `Human_UpdateSpeech` (`0x0021e940`, each update) starts the stream once it is primed (and the speaking pose with
-   it), keeps it at the human's head, and when the line is gone calls the Lua callback with its argument and sets
-   `+0x194` again. A line stopped by `HuShutUp` keeps its Lua callback, which runs at that next update; a line cut off
-   by a new one loses it (the new line's callback replaces it). The speaker looks at the `listener` for the line's
-   length plus 0.5 s.
+   it), keeps it at the human's head, and when the line is gone calls the Lua callback with its argument, or, when
+   there is none, sets `+0x194` again. A line stopped by `HuShutUp` keeps its Lua callback, which runs at that next
+   update; a line cut off by a new one loses it (the new line's callback replaces it). The full rule is
+   [below](#speech-cut-in). The speaker looks at the `listener` for the line's length plus 0.5 s.
+
+#### Cutting in on a line {#speech-cut-in}
+
+Every way a human's line starts or stops goes through the same four fields and two functions, so one rule covers
+`HuSpeak`, `HuSpeakNI`, `HuShutUp`, speech commands and the grunts of [vocal ids](sound-events.md#vocal-ids).
+Confirmed (code) at the addresses given:
+
+| Human field | Meaning | Written by |
+| --- | --- | --- |
+| `+0x178` | the current line's sound handle; "alive" means it still resolves to a task (`SoundHandle_Resolve`, `0x0010f578`) | every line start |
+| `+0x188` / `+0x190` | the Lua callback (an interned name, 0 for none) and its argument | **every** line start writes both, 0 when the new line has none (`0x0021e56c`, `0x0021e818`); `Human_UpdateSpeech` clears `+0x188` just before it calls it (`0x0021eb20`) |
+| `+0x194` | "the line may be cut": 1 normally; 0 while a line that must play out runs | 0: `Human_PlaySpeechCutting` (`0x0021e744`, every `HuSpeakNI` line and every cutting line), `Player_StartPreparedLine` (`0x0021f26c`) and `Strike_Contact` after its `fuck_you` (88) complaint (`0x0021b4a4`, [Combat](combat.md#teammates)); 1: `Human_StopSpeech` when it stops (`0x0021ecac`), `Human_UpdateSpeech` when no line is alive and no callback is pending (`0x0021ebbc`), `Human_Init` |
+| `+0x195` | set with `+0x194` by a stop: the stopped line's queued voice follow-up (`+0x184`) is dropped | `Human_StopSpeech` |
+
+**Stopping** (`Human_StopSpeech(human, force)`, `0x0021ec38`): nothing when no line is alive. Without `force`,
+nothing either while `+0x194` is 0: **an uncut line is never stopped by an unforced stop**. Otherwise the stream
+stops (and is freed at once, `AudioManager_StopTask` `0x00112c60`, so the handle no longer resolves), the speaking
+pose ends and `+0x194` goes back to 1. **A stop never touches the callback** (`+0x188`). `HuShutUp(human, force)`
+passes its flag; the game's own forced stops are a knock-out, a defeat, a lethal reaction, a paired attack or grab
+starting (`Attack_StartPaired`, `Grab_StartPairedMove`), mugging, some goals' ends and `Humans_StopAllSpeech`; every
+other caller (the speech commands, the vocal ids, the gang barks, banter, scenes) stops without force.
+
+**Starting** a line has two forms, and neither will start over a line that is alive and uncut:
+
+- `Human_PlaySpeech` (`0x0021e400`; `HuSpeak`, the non-cutting vocal ids, uncut speech commands) plays only when **no
+  line is alive and `+0x194` is 1**.
+- `Human_PlaySpeechCutting` (`0x0021e698`; `HuSpeakNI`, the cutting ids `die` and `expire`, speech commands said
+  with `uncut` 0) plays unless a line is alive with `+0x194` 0. It stops the current line first (unforced) and
+  clears `+0x194` for its own.
+
+A start that plays nothing calls **its own** callback at once (when it has one) and leaves the human's line, callback
+and `+0x194` as they were. A start that plays writes its own callback (or 0) over `+0x188`.
+
+**When a pending callback runs or is lost:** the callback in `+0x188` runs at the first `Human_UpdateSpeech` that
+finds no live line (once; `+0x194` is then set back to 1 an update later, by the next update's no-callback branch). It
+is lost only when another line **starts** on the same human before that update: a cutting line over a cut-able one,
+or any line (a grunt included) in the gap between a stop and the next update. Hence:
+
+1. A vocal id with `overLine` over an **uncut** line (`HuSpeakNI`'s, `+0x194` 0): `Human_SayAnimLine` calls the
+   unforced stop, which does nothing, then `Human_PlaySpeech`, which finds the line alive and plays nothing; the grunt
+   has no callback, so nothing runs. **The line and its callback are untouched; the grunt is simply not heard.** The
+   cutting ids (`die` 58, `expire` 115) go through `Human_PlaySpeechCutting` and are refused the same way.
+   Confirmed (code) at `0x0021f410`, `0x0021ec38`, `0x0021e400`, `0x0021e698`; confirmed (runtime), below.
+2. The same over a **cut-able** line (`HuSpeak`'s, a speech command's said uncut 1): the stop ends the line, the grunt
+   plays in its place and writes 0 over `+0x188`: **the line's callback is lost** and never runs. Confirmed (code)
+   and (runtime), below.
+3. `Human_SayCommand` (`0x002205e0`) with `interrupt` (the `pain` grunt 12 of `SA` 28, `SoundPlayCommand`'s default)
+   calls the same unforced stop and then one of the two starts: over an uncut line it says nothing, though the voice
+   table's counter has moved and `Sound_MarkCommandSaid` has run (`0x001106d0`), and the command's own callback runs
+   at once; the uncut line and its callback carry on. Over a cut-able line it cuts it and the old callback is lost.
+   Without `interrupt`, nothing is said while any line is alive. Confirmed (code).
+4. `HuSpeak` while a line is alive, or in the one update after an uncut line with a callback ended (`+0x194` still 0):
+   nothing plays and its callback runs at once. `HuSpeakNI` over an uncut line: the same. Confirmed (code).
+5. `HuShutUp(false)` on an uncut line does nothing; `HuShutUp(true)` stops it and the callback runs at the next
+   update. Confirmed (code) and (runtime), below.
+6. A line that ends by itself, or is stopped, and has its callback replaced by a new line started in the same update
+   before `Human_UpdateSpeech` runs (a forced stop followed by a grunt in one update) loses it: inferred from the
+   writes above, not seen at runtime.
+
+**At runtime** (2026-10-12, PCSX2 2.9.94, confirmed (runtime)). Scenario `repo:research/traces/scenarios/speech_cutin.toml`
+on `level80` checkpoint 1 with Cleon as the player, the hooks `say-anim-line`, `stop-speech`, `play-speech`,
+`play-speech-cut` and `event-callback` of `repo:research/traces/patches.toml`: the game's own `HuSpeakNI` and
+`HuSpeak` workers called through the call hook on Cleon with probe callback names, square tapped every 8 updates
+during the first two lines. Updates are the trace's steps:
+
+| Step | What happened | Cleon's line, callback, `+0x194` after |
+| --- | --- | --- |
+| 321 | `HuSpeakNI` (callback `SpeechProbeA`): `Human_PlaySpeechCutting` plays | new line, `SpeechProbeA`, 0 |
+| 351, 399 | square swings: `Human_SayAnimLine(Cleon, 9 grunt_pch, overLine 1, cut 0)`; `Human_StopSpeech(force 0)` returns, `Human_PlaySpeech` plays nothing | unchanged (same handle), `SpeechProbeA`, 0 |
+| 412 | the line ends by itself (91 updates long): `SpeechProbeA` looked up from `Human_UpdateSpeech` (`0x0021eb3c`) | `+0x188` 0, `+0x194` still 0 |
+| 413 | the next update sets `+0x194` back | 1 |
+| 521 | `HuSpeak` (callback `SpeechProbeB`) | new line, `SpeechProbeB`, 1 |
+| 548 | a swing's `grunt_pch`: the stop ends the line, the grunt plays in its place | the grunt, 0, 1; **`SpeechProbeB` is never looked up** |
+| 701-792 | the control: `HuSpeak` (`SpeechProbeC`), no swings; it ends and `SpeechProbeC` is looked up | |
+| 821 | `HuSpeakNI` (`SpeechProbeD`) | new line, `SpeechProbeD`, 0 |
+| 851 | `HuShutUp(Cleon, false)` | unchanged |
+| 871 | `HuShutUp(Cleon, true)`: stopped, and `SpeechProbeD` looked up in the same update (the call hook runs before the humans' speech update) | 0, 1 |
+
+The follow command at step 41 shows one more case: Cleon's own command line goes through `Human_PlaySpeechCutting`
+(called from `Human_SayCommand`, `0x0022073c` its return), so a Warrior order is an uncut line too (`+0x194` 0 for
+its 30 updates). The run does not reach mission 2's end; the end's line is `HuSpeakNI` with a callback, which is
+case 1 above whatever swings, grunts or `pain` lines Cleon makes while it plays.
 
 ### Scene soundtracks {#scene-sound}
 
@@ -1408,6 +1493,40 @@ sounds. The hub's sound bindings
 (`repo:src/scripting/hub_world_bindings.cpp`): `EnableAmbientEmitter` switches an emitter off (it stops its sound and
 plays nothing more) and on; `SoundPlay` plays a sound once at a point; `SndLoadMatrix` empties the sound matrix and
 runs `<name>_preload.lua` when the name changes; `HuSay` speaks a line with no callback.
+
+### Speech cut-in: what Coney must change {#speech-cut-in-fixes}
+
+Coney drops a line's callback whenever the line is stopped, and lets any stop end any line, so a grunt from Cleon's
+swing ends mission 2's last line (`HuSpeakNI(Cleon, line, "FadeOut")`) and `FadeOut` never runs (#239). To match
+[Cutting in on a line](#speech-cut-in):
+
+1. **Keep the "may be cut" flag per human** (the original's `+0x194`): set by default, cleared while a line started
+   by `HuSpeakNI`, a cutting vocal id (`die`, `expire`) or a speech command said cutting (every Warrior order) plays,
+   set again by a stop that stops, and by the speech update when no line is alive and no callback is waiting.
+2. **Keep the callback on the human, not on the line.** A stop leaves it in place; the speech update runs it (once)
+   at the first update that finds no live line, whether the line ended or was stopped. Starting a line that plays
+   overwrites it with the new line's callback, or with none. A start that plays nothing runs its own callback at once
+   and leaves the human's untouched.
+3. **One unforced stop** (`Speech::shutUp` with a `force` flag): an unforced stop does nothing while the flag of 1 is
+   clear. `HuShutUp` passes its argument; the vocal ids, speech commands and every other game-side caller stop
+   unforced (a forced stop is only for knock-outs, defeats, lethal reactions, paired attacks and grabs, mugging and
+   stopping every line).
+4. **Two starts.** The waiting start (`HuSpeak`, non-cutting vocal ids, commands said uncut) plays only when no line is
+   alive and the flag is set; the cutting start (`HuSpeakNI`, `die`, `expire`, commands said cutting) plays unless a
+   line is alive with the flag clear, stopping the current line unforced first and clearing the flag.
+   `HumanSoundEvents::sayAnimLine` then needs no special case: over an uncut line its stop does nothing and its start
+   refuses, so the grunt is silent and the line plays on.
+5. **Speech commands with `interrupt`** stop unforced and then start (cutting or waiting by the command's `uncut`);
+   over an uncut line nothing is said, but the voice table's counter still moves and the command's callback runs at
+   once.
+
+**The test** (unit, `Speech` or `GameSound` with an offline engine, no disc): a human says a line through the
+`HuSpeakNI` path with callback `A`; while it plays, a vocal id with `overLine` (`SA` 9) is said for him: the line's
+handle is unchanged and still playing, no grunt plays, and when the line ends `A` is reported once. Its mirror: the
+same with the `HuSpeak` path and callback `B`: the grunt replaces the line and `B` is never reported. And
+`HuShutUp(false)` on the `HuSpeakNI` line leaves it playing; `HuShutUp(true)` stops it and `A` is reported at the next
+update. The disc test `[disc][story][level80-end]` (square held until `MS_C4_2` is ticked + 5 s) then reaches
+`l80_c3` and `HUDLaunchMissionComplete`.
 
 ## Open questions
 
