@@ -212,6 +212,11 @@ def test_priority_may_wait_for_triage() -> None:
     assert labels_of("task", "A-tools", "S-needs-triage") == []
 
 
+def test_a_ready_to_start_issue_counts_as_triaged_and_needs_a_priority() -> None:
+    assert labels_of("task", "A-tools", "P-low", "S-ready-to-start") == []
+    assert "no priority label" in labels_of("task", "A-tools", "S-ready-to-start")[0]
+
+
 def test_two_labels_of_a_one_only_family_are_found() -> None:
     assert "2 type labels (bug, parity)" in labels_of("bug", "parity", "A-ai", "P-low", "S-blocked")[0]
     assert "2 priority labels" in labels_of("task", "A-ai", "P-low", "P-high", "S-blocked")[0]

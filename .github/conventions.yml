@@ -222,6 +222,7 @@ labels:
     - {name: P-medium, color: fbca04, description: "Priority: next in line"}
     - {name: P-low, color: 0e8a16, description: "Priority: when there is room"}
     - {name: S-needs-triage, color: ededed, description: "Status: not yet looked at"}
+    - {name: S-ready-to-start, color: 0e8a16, description: "Status: triaged and accepted; waiting for someone to pick it up"}
     - {name: S-needs-info, color: d4c5f9, description: "Status: waiting for the reporter"}
     - {name: S-needs-research, color: d4c5f9, description: "Status: an analyst must study the original first"}
     - {name: S-in-progress, color: 5319e7, description: "Status: an agent or person is working on it"}
