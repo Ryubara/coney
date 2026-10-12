@@ -49,7 +49,7 @@ The code sits in `TaskEngine/`, in the stretches placed by position
 | `0x003e9828` | `ObjectiveMarker_SetShown` | a marker's shown state, passed on to its column | confirmed (code) |
 | `0x003e9d60` / `0x003e9fd8` / `0x003e9ea0` | `sub_objective_column` init / update / message | the marker's column | confirmed (code) |
 | `0x003a1810` / `0x003a1858` | `Obj_Attach` / `Obj_Detach` | parent, bone and local pose; detaching keeps the world pose ([Held objects](#held)) | confirmed (code) |
-| `0x003a19b0` / `0x003a1ad8` | `Obj_GetWorldPose` / `Obj_GetPoseNow` | vtable `+0xa4` / `+0xac`: an attached object's pose through its parent's bone | confirmed (code), runtime |
+| `0x003a19b0` / `0x003a1ad8` | `Obj_GetWorldPose` / `Obj_GetPoseNow` | vtable function words `+0x9c` / `+0xa4` (slots `+0x98` / `+0xa0` of `0x005453a0` and the car's `0x00544c08`): an attached object's pose through its parent's bone | confirmed (code), runtime |
 | `0x003fe490` / `0x003fe6b8` | `MeleeWeapon_Take` / `MeleeWeapon_Detach` | messages `0x1b` / `0x1c` of `melee_weapon` | confirmed (code) |
 | `0x00257f38` / `0x002586d8` | `Human_DropHeld` / `Human_ReleaseThrow` | a held object let go: dropped / thrown | confirmed (code) |
 | `0x003a5530` | `ScriptObj_SpawnThrownDebris` | a broken prop's piece: created by name at the prop's pose, knocked with message `0x30` ([Trash props](#trash-props)) | confirmed (code), runtime |
@@ -663,9 +663,9 @@ bat is the worked case ([Combat: a bat in hand](combat.md#bat)); what the human 
 object's current world pose into `+0x10` / `+0x20`, then clears the bit and the parent, so a detached object starts
 exactly where it was drawn.
 
-**The world pose** (`Obj_GetWorldPose`, `0x003a19b0`, slot `+0xa4` of the world-object vtables, e.g. `0x00544c00`):
-unattached, `+0x10` / `+0x20`; attached, three transforms composed with `0x003359b0` (rotation `qa · qb`, position
-`pa + qa · pb`, no scale):
+**The world pose** (`Obj_GetWorldPose`, `0x003a19b0`, function word `+0x9c` of the world object's vtable
+`0x005453a0` and the car's `0x00544c08`): unattached, `+0x10` / `+0x20`; attached, three transforms composed with
+`0x003359b0` (rotation `qa · qb`, position `pa + qa · pb`, no scale):
 
 ```text
 world = parent's world transform (its vtable +0x9c: for a human, its position and rotation)

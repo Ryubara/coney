@@ -3065,18 +3065,22 @@ writing 1.0 (the VU constant register). Arguments follow the EE ABI: integers an
 Every pose reads its transforms through owner vtable slots (GCC 2.x 8-byte slots, adjust then function; [Unit 3's
 table](#u3-records)). Each returns a **32-byte transform: position (vec4) then rotation quaternion `(x, y, z, w)`**.
 
-| Slot (adjust / function) | Called as | Human's function | World object's (vtable `0x00544c00`) | Used by |
+| Slot (adjust / function) | Called as | Human's function | World object's (vtable `0x005453a0`) | Used by |
 | --- | --- | --- | --- | --- |
-| `+0xa0` / `+0xa4` | `(out, owner)`, the body transform | `0x0023cd00` | `Obj_GetWorldPose` `0x003a19b0` | sphere, box |
-| `+0xa8` / `+0xac` | `(out, owner)`, the body transform | `0x004ed828` | `Obj_GetPoseNow` `0x003a1ad8` | capsule, segment |
+| `+0xa0` / `+0xa4` | `(out, owner)`, the body transform | `0x0023cd00` | `Obj_GetPoseNow` `0x003a1ad8` | sphere, box |
+| `+0xa8` / `+0xac` | `(out, owner)`, the body transform | `0x004ed828` | `Task_GetPose` `0x003a1e30` | capsule, segment |
 | `+0xb8` / `+0xbc` | `(owner, out, bone)`, a bone's transform in the body's frame | `Human_GetBoneTransform` `0x0023bde8` | | sphere, box, segment |
 | `+0x20` / `+0x24` | `(owner)`, type mask (`0x40` a human) | | | capsule |
 
 For a human, `0x0023cd00` and `0x004ed828` are the same code (both copy the entry of the transform table `0x00714b00`
-indexed by human `+0x92`), so the two body slots agree. For a world object, `+0xa0` is the world pose and `+0xa8` the
-pose extrapolated to now ([Objects](objects.md)); only spheres and boxes, which read `+0xa0`, are built for world
-objects ([Bodies](#bodies)). Confirmed (code): the slots at the call sites below, the human's entries read from its
-vtable `0x0053f088`, the world object's from `0x00544c00`.
+indexed by human `+0x92`), so the two body slots agree. For a world object, `+0xa0` is the pose extrapolated to now
+(`Obj_GetPoseNow`, [Objects](objects.md)) and `+0xa8` the stored pose (`Task_GetPose`: rotation `+0x20`, position
+`+0x10`, moved by `0x003a2508`'s offset when flags `+0x54 & 0x600` are clear and slot `+0xf0` / `+0xf4` returns 0); its
+`Obj_GetWorldPose` (`0x003a19b0`) is the slot before, `+0x98` / `+0x9c`, which no pose reads. Only spheres and
+boxes, which read `+0xa0`, are built for world objects ([Bodies](#bodies)). Confirmed (code): the slots at the call
+sites below, the human's entries read from its vtable `0x0053f088`, the world object's from `0x005453a0` (the vtable
+`ObjectTaskPool_New` `0x004f3ef0` stores). An earlier draft read them from `0x00544c00`, which is the car's vtable
+`0x00544c08` minus 8, so its column was one slot off.
 
 `Human_GetBoneTransform` returns the bone cache entry (model space) with the **position multiplied by the human's
 scale** and the rotation as is ([Objects](objects.md)); it writes nothing when the human has no model instance
