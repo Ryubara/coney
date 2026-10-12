@@ -618,6 +618,8 @@ void PlayLevelMode::useFlash(human::Human& human) {
     combat::Health& health = human.fighter().health();
     human.setWounded(false);
     health.set(health.maximum());
+    // `Flash_Use` heals (`Human_Heal`): a new body, so he blocks other humans' walks again.
+    human.heal();
     m_flashRingRequest = true;
     m_print(std::format("flash: used, health {}\n", health.value()));
 }

@@ -698,16 +698,16 @@ upright capsules (0.35 × scale, 2 m tall): the nearest contact stops the capsul
 slides along the other human (code 1), and, unless the mover charges, the one met gets half of the move into him over
 his push weight (1e9 while in a pair or arrested) as a pending push for his own next move (code 4), unless a script
 made him unpushable (`HuSetPushable(false)`). A player's velocity loses its part into the human, as against a wall.
-Skipped: a human who is knocked out, wounded, out of health or out of the world, and the human this one holds or is
-held by (a grab, tackle, mount or mugging), so a linked pair passes through each other. What differs, each marked in
-the code:
+Skipped: a human without `BLOCKHUMANS` (`Human::blocksHumans`), out of health or out of the world, and the human this
+one holds or is held by (a grab, tackle, mount or mugging), so a linked pair passes through each other. The flag goes
+with a knock-out (`HuSetConscious(false)` or the health running out), a wound and an arrest, and comes back only with
+a heal (`HuRevive`, a flash, a freed cuffed human's revive) or the release from an arrest; a knockdown keeps it, as
+in the original ([Human contacts](#human-contacts), "Who loses `BLOCKHUMANS`"). What differs, each marked in the
+code:
 
 - **Coney's choice**: the humans take their part of the move before the walls take theirs, where the original sorts
   both kinds of contact of a pass by fraction together; a capsule already within reach is met at fraction 0 by a move
   that goes further in (the capsule sweep's start case is not traced).
-- **Stand-in**: `BLOCKHUMANS` comes back as soon as the human is no longer knocked out, wounded or out of health.
-  The original ([Human contacts](#human-contacts), "Who loses `BLOCKHUMANS`") gives it back only when he is healed or
-  unarrested, never by waking or ending a wound alone, and also takes it from a cuffed human; a knockdown keeps it.
 - **Not yet**: an airborne body meets no human (a jump's strike and code 1 against a human); a scene's shared group;
   the pushed human's reaction (`Human_OnPushContact`'s timers and damage).
 

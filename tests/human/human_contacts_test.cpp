@@ -175,7 +175,7 @@ TEST_CASE("two AI humans walked at each other do not overlap", "[human][contacts
 
 TEST_CASE("a human whose health is out no longer blocks: the player walks over him", "[human][contacts]") {
     Street street(3.0F);
-    street.other.script().knockedOut = true;
+    street.other.fighter().health().set(0);
     CHECK_FALSE(street.other.blocksHumans());
     float nearest = 3.0F;
     for (int i = 0; i < 90; ++i) {
@@ -183,8 +183,37 @@ TEST_CASE("a human whose health is out no longer blocks: the player walks over h
         nearest = std::min(nearest, apart(street.player, street.other));
     }
     CHECK(nearest < 0.3F);
-    // Up again, he blocks again (**Coney stand-in**: what restores the flag is not traced).
+    // Health given back without a heal (a script's) leaves him passable: only the heal makes the body again.
+    street.other.fighter().health().set(street.other.fighter().health().maximum());
+    CHECK_FALSE(street.other.blocksHumans());
+    street.other.heal();
+    CHECK(street.other.blocksHumans());
+}
+
+TEST_CASE("BLOCKHUMANS comes back from a heal or the release from an arrest, never from waking up",
+          "[human][contacts]") {
+    Street street(3.0F);
+    REQUIRE(street.other.blocksHumans());
+    // A wound takes it; the wound ending does not give it back; the revive (a heal) does.
+    street.other.setWounded(true);
+    CHECK_FALSE(street.other.blocksHumans());
+    street.other.setWounded(false);
+    CHECK_FALSE(street.other.blocksHumans());
+    street.other.revive();
+    CHECK(street.other.blocksHumans());
+    // The cuffs take it; the release gives it back.
+    street.other.setArrested(true);
+    CHECK_FALSE(street.other.blocksHumans());
+    street.other.setArrested(false);
+    CHECK(street.other.blocksHumans());
+    // A knock-out takes it; standing up again (no longer knocked out) does not give it back.
+    street.other.loseBlockHumans();
+    street.other.script().knockedOut = true;
+    street.step(0.0F, 0.0F);
     street.other.script().knockedOut = false;
+    street.step(0.0F, 0.0F);
+    CHECK_FALSE(street.other.blocksHumans());
+    street.other.heal();
     CHECK(street.other.blocksHumans());
 }
 

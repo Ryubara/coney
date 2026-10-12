@@ -222,6 +222,9 @@ bool touchesAtStart(const FacingWall& wall, anim::Vec3 centre, float radius) {
     return anim::distance(centre, anim::add(from, anim::scale(along, t))) <= radius;
 }
 
+// A wall face whose normal rises more than this leans back (an upright one's is 0): the walking sphere slides up it.
+constexpr float kLeansBack = 0.05F;
+
 // The edge a triangle names for the corner slide, in its flag bits 14-15; 3 names none.
 constexpr unsigned kSlideEdgeShift = 14;
 constexpr unsigned kNoSlideEdge = 3;
@@ -262,17 +265,23 @@ std::optional<anim::Vec3> nearestWallPush(const raycast::CollisionMesh& mesh, an
 anim::Vec3 slideAlongTouchedFaces(const raycast::CollisionMesh& mesh, anim::Vec3 centre, float radius, anim::Vec3 move,
                                   WallFilter filter, std::vector<std::uint16_t>& scratch,
                                   std::vector<anim::Vec3>* normals) {
-    trianglesNear(mesh, centre, radius, scratch);
+    // The push-out leaves the sphere `keepClear` off a face it met, where the original's sweep leaves it at the contact,
+    // so a face leaning back within the radius and that clearance counts as touched (**Coney's reading**,
+    // docs/research/characters.md#slopes): without it a slow walker pushed back off such a face each update never
+    // slides up along it, the push's rise being lost to the snap. Against an upright face the push-out and the slide
+    // move the sphere alike, so those keep the radius.
+    trianglesNear(mesh, centre, radius + filter.keepClear, scratch);
     for (int pass = 0; pass < kTouchPasses && anim::length(move) > 0.0F; ++pass) {
         // Each pass sees only the walls the move left so far still goes into: a face already slid along is skipped.
         filter.move = move;
         std::optional<FacingWall> touched;
         for (const std::uint16_t index : scratch) {
             const auto wall = keptWall(mesh, index, centre, filter);
-            if (!wall || wall->distance > radius) {
+            const float reach = wall && wall->normal.z > kLeansBack ? radius + filter.keepClear : radius;
+            if (!wall || wall->distance > reach) {
                 continue;
             }
-            if (!touchesAtStart(*wall, centre, radius)) {
+            if (!touchesAtStart(*wall, centre, reach)) {
                 continue;
             }
             if (!touched || wall->distance < touched->distance) {
