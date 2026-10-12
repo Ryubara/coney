@@ -291,6 +291,27 @@ TEST_CASE("a grab, a strike and a forward throw, with the power meter paying for
     CHECK(runner.combat().power().value() <= drained + (2 * 19) + 2);
 }
 
+TEST_CASE("a rear hold's throw lands its hit the spin's updates later than a front hold's", "[combat]") {
+    // From a rear hold the spin to the front (80) plays before the throw's clip
+    // (docs/research/combat.md#throw-direction, item 4), so the hit comes 2 updates after the throw's own start, here
+    // 17 updates after the press.
+    const AnimRangeList ranges = researchedRanges();
+    Runner runner(&ranges);
+    const auto frames = runner.run("90 tap circle\n180 stick left 0 100\n181 tap circle\n182 stick left 0 0\n", 215,
+                                   [](std::uint64_t frame, CombatInput& input) {
+                                       input.grabTargetInReach = true;
+                                       input.fromRear = frame > 120;
+                                       input.rearThrowSpinUpdates = frame > 120 ? 17 : 0;
+                                       // The spin and the throw hold the attack's bits until both are over.
+                                       if (frame > 181 && frame < 210) {
+                                           input.phase = kPhaseWindUp;
+                                       }
+                                   });
+    CHECK(frames[181].out.grabAction == GrabAction::Throw);
+    CHECK(frames[181].out.startAnim == anim_id::kThrow1Front);
+    CHECK(hits(frames) == Starts{{200, 66}});
+}
+
 TEST_CASE("circle held 7 samples tackles; mounted, square strikes", "[combat]") {
     Runner runner(nullptr);
     const auto frames = runner.run("185 press circle\n195 release circle\n200 tap square\n", 210,

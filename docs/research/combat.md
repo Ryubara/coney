@@ -1723,36 +1723,27 @@ throw.
 So in the original a throw from the front hold goes exactly where the stick points, give or take the clip's few
 degrees, wherever the stick is within the side's 90° sector; only a rear-hold throw is limited to the four body axes.
 
-**Coney today** (read from `src/`; Coney's `Fighter` and `combat::updateGrab`): the throw picks the side and the clip
-from the stick (`combat::sideOf`, `combat::throwAttack`) and plays the pair at once (`Fighter::playGrabAction`), but
-a plain throw never turns the pair: the body flies along the side's body axis, so it lands up to 45° off the stick,
-which is the owner's "slightly off" (#240). Only the head-on wall throw is aligned (`Fighter::alignWallThrow`, and
-there at once, not over 0.01 s). `sideOf` counts exactly 45° as the front and exactly 135° as a side (a Coney
-choice; the original's test makes exactly 45° a side, item 2 above). A throw from the rear hold plays no spin 80
-first (`spinFirst` is set only for the power strike), and the place check (`placed`) is applied to every throw where
-the original applies `Pair_CheckPlace` only to 147-153 from the front hold.
+**In Coney** (#240; `combat::updateGrab`, `Fighter::turnThrow`, `Fighter::throwAfterSpin`): the throw picks the side and
+the clip from the press's camera-turned stick, unsnapped (`combat::sideOf`, `combat::throwAttack`), where exactly 45°
+is a side and exactly 135° still a side. From the front hold (or with the `0x40000000` grab block) a plain throw starts
+both clips on the press's update and turns the thrower to stick heading + side × 90° over 1/6 s
+(`TurnAndSlide::turnToOver`), while the victim, let go, is carried round him over the same 1/6 s
+(`Holdable::carryOver`: its offset from him turned by the same angle, `moveToOver`, and turned to face him), on top of
+both clips' root motion. A head-on wall throw is aligned at once (`Fighter::alignWallThrow`, not over 0.01 s); another
+wall throw turns nothing. From the rear hold the spin 80 / 81 plays first and the throw's clip follows with no turn;
+the victim is let go when the throw's clip begins, and the throw's hit is timed from it (its spin's updates after the
+press). The place check applies only to the front hold's plain throws. **Coney's readings**: the thrower's turn starts
+on the update after the press (Coney's steer, like an attack's, is applied in the next state update), so he reaches
+the wanted heading 5 updates after it; a passive target's carry starts on the press's update.
 
-**Coney fixes** (#240):
-
-1. From a front hold (or with the `0x40000000` grab block), on a plain throw (147-153): turn the thrower to
-   stick heading + side × 90° over 1/6 s with the existing `TurnAndSlide::turnToOver` (constant rate, nothing under
-   0.01 rad), and carry the victim round him on the same update: rotate its offset from the thrower by the same turn
-   and slide it there over 1/6 s (`moveToOver`), turning it to the wanted heading + 180°. Start both throw clips on
-   the same update, so the turn runs on top of their root motion for the first 5 updates.
-2. Take the stick heading from the camera-turned stick of the update the throw starts (the press, or the hold clip's
-   end for a buffered throw), with no snapping.
-3. From a rear hold (no `0x40000000`): play the spin 80 / 81 first, then the side's throw clip, with no turn: the
-   body goes along the side's body axis chosen at the press.
-4. Make exactly 45° a side in `sideOf` (`|d| >= 45°` is not the front); 135° stays a side.
-5. Apply the place check only to the front-hold plain throws (147-153), not to the wall throws or the rear-hold path.
-6. Test (`tests/human/`, a grabbed passive target in open ground, no collision within 8 m): with the facing fixed and
-   the stick at 0°, ±20°, ±40° (front), −50°, −90° (right), 160° (rear) and 110° (left) from it, a front throw's
-   thrower reaches the stick heading within 0.5° 5 updates after the throw starts (the other sides: stick heading +
-   side × 90° plus their clip's own rotation over those updates), and at the end of the throw the thrower faces the
-   stick heading (front and right within 0.5°; rear +1.2°, left −3.5° within 1°, the clips' turns). The landing
-   point in the stick's frame is the same for every stick angle of one side within 0.1 m, and lies within 5° of the
-   stick heading seen from the thrower's start (front 2.1° right, ±1°). A rear-hold throw with the stick 30° right of
-   the facing plays 80 then 149 and lands along the facing's right axis (within 2°), not along the stick.
+On the disc (`tests/sandbox/disc_throw_direction_test.cpp`, the fight yard, the stick at 0.9 and `d` 0°, ±20°, ±40°,
+−50°, −90°, 160° and 110°; `tests/human/throw_direction_test.cpp` does the same on synthetic clips): each side's
+throws land at one point in the stick's frame within 4 cm and end with one heading, and a front thrower
+faces the stick (0.0°) 5 updates after the press. Before the fix the front throws landed from 20.6° left to 59.0°
+right of the stick. Two differences remain, both from the clips' own root rotation, not the aim: the side clips turn
+the thrower about a third too far (149 −120° against −90° at runtime; rear −237°, left +119°), and the front victim
+lands 19.2° right of the stick (2.1° at runtime). See the open question on the root turn and the task's rate
+([Open questions](#open-questions)).
 
 ### A bat in hand {#bat}
 
@@ -4331,10 +4322,11 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
 - The power strike's extension (57 → 59, 63 → 65) takes square's press or cross's `0x10` only on an update with the
   window open, and the grab ends when the last part's clip gives way to 389: the victim, attached until then, is put
   on the ground (196) to get up after its time. The rear power strike's hit is scored as 57, not the spin's 80.
-- A grab plays one move at a time; a throw lets go at once; the rear power strike's spin plays in front of the strike,
-  whose timing starts with it; the release with too little power goes straight to the idles, and the grab
-  broken at 0 power plays the let-go. A tackle also ends when the power meter is empty, and any hold when the victim
-  has no health left.
+- A grab plays one move at a time; a throw lets go at once (from the rear hold, once its spin to the front has
+  played), turning the pair onto the stick from the front hold ([Where a throw goes](#throw-direction)); the rear
+  power strike's spin plays in front of the strike, whose timing starts with it; the release with too little power
+  goes straight to the idles, and the grab broken at 0 power plays the let-go. A tackle also ends when the power meter is
+  empty, and any hold when the victim has no health left.
 - The grab and tackle search takes the nearest candidate by straight-line distance with no facing cone. The attack's
   target search uses the attack's far range in `Player_PickTarget`'s first two passes (the third finds no human the
   second missed); beyond the far range the attacker turns at most 8° at once (read as degrees). Within it the steer
@@ -4361,7 +4353,8 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   82's / 84's range record, (0.380, 1.012) facing the player or (−0.097, 0.222) facing his way, and attached: each
   update it is put at the player's transform × that offset, its own root motion ignored. A spin (78 / 80) detaches it
   so both bodies move by their clips, as at runtime, and its end snaps it to the other hold. A strike, power strike or
-  throw is refused (nothing played or spent) unless the victim stands within 0.3 m of the current hold's point. The
+  a front hold's plain throw is refused (nothing played or spent) unless the victim stands within 0.3 m of the current
+  hold's point; a wall throw and a rear hold's throw are not checked ([Where a throw goes](#throw-direction)). The
   mounted victim is attached at 210's type-8 pair event, (−0.120, 0.032): 0.032 m ahead and 0.120 m to the left,
   facing the other way. **Coney's choices**: the grab's side is decided as the intro starts (a passive target does
   not move in between); the place a move checks is the current hold's point (the strikes' points are the front
@@ -4523,3 +4516,12 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
   circle tap, before anything plays (no intro, no miss, no stance change, no grounded mount or tandem). Either bit
   alone does not stop the tap there: `Grab_IntroEnd` then refuses the front or rear grab and the intro ends in 69.
   Confirmed (code).
+- **The root turn and the task's rate** (open, from #240): on the disc Coney's throw clips turn the thrower about a
+  third too far (149 by −120° where the runtime turn was −90°; 151 −237° for 180°, 153 +119° for +86.5°), and the
+  front victim (148) lands 19.2° right of the stick where the original's landed 2.1° right
+  ([Where a throw goes](#throw-direction)). Coney applies bone 0's turn per 1/30 s as
+  [Root motion](formats/animation.md#root-motion) says, not scaled by the task's rate; these clips play at 0.75. In a
+  local experiment (not kept) scaling the turn by the rate, as the velocity is, gave −0.2° for 149 (runtime −0.2°),
+  +2.1° for 151 (+1.2°), −0.9° for 153 (−3.5°), turns of 3.2° and 2.7° per update during the 1/6 s turn (runtime 3.2°
+  and 2.7°) and a front landing 4.8° right of the stick. Whether `0x00104ce0` or `0x0023f238` scales the turn by the
+  rate needs checking in the code; it would change every clip with a root turn, not only the throws.

@@ -97,6 +97,8 @@ struct GrabInput {
     bool wallInReach = false;    ///< A wall is within the throw's reach.
     bool victimMuggable = false; ///< The victim qualifies for a mugging (`0x00225ff0`).
     bool victimInPlace = true;   ///< The victim stands within 0.3 m of the move's point (`Pair_CheckPlace`).
+    /// A throw takes the rear hold's path (`Grab_StartPairedMove`): from behind without human flag `0x40000000`.
+    bool rearThrow = false;
 };
 
 /// What a grab update did.
@@ -104,8 +106,9 @@ struct GrabOutcome {
     GrabAction action = GrabAction::None;
     int animId = anim_id::kNone; ///< The player's clip it starts (the spin's 78 or 80, the let-go's 95);
                                  ///< anim_id::kNone for the mugging (its clips are the mugging's) and the release.
-    bool spinFirst = false;      ///< A power strike from the rear: the spin to the front (80) plays first.
-    int powerSpent = 0;          ///< Taken from the power meter.
+    /// A power strike from the rear, or a throw on the rear hold's path: the spin to the front (80) plays first.
+    bool spinFirst = false;
+    int powerSpent = 0; ///< Taken from the power meter.
 };
 
 /// One update of a grab:
@@ -113,14 +116,15 @@ struct GrabOutcome {
 ///   0.5 of the meter (40 of 400) at any level;
 /// - cross held and square pressed (0x22) is the power strike 57 (63 in rage); from the rear the spin to the front
 ///   plays first; circle + cross (0x23) does nothing in a player's grab (63 is an AI grabber's);
-/// - circle (its press, 0x1e) with the stick beyond kThrowStick throws by the stick's side; without the stick, from
-///   the rear, it spins to the front;
+/// - circle (its press, 0x1e) with the stick beyond kThrowStick throws by the stick's side (on the rear hold's path,
+///   GrabInput::rearThrow, after the spin to the front); without the stick, from the rear, it spins to the front;
 /// - the power strikes and the throws need more than CombatTuning::powerEndurance of the meter and spend it (100 of
 ///   400); with that much or less the grab is released instead;
 /// - R1 pressed (3) spins front to rear (78) or rear to front (80); L2 held (5) lets go (95);
 /// - triangle mugs a victim that qualifies;
-/// - a strike, power strike or throw is refused (nothing played or spent) when the victim is not in its place
-///   (`0x00277958`, docs/research/combat.md#grab-posing).
+/// - a strike, power strike or a front hold's plain throw is refused (nothing played or spent) when the victim is not
+///   in its place (`0x00277958`, docs/research/combat.md#grab-posing); a wall throw and a throw on the rear hold's
+///   path are not (docs/research/combat.md#throw-direction).
 ///
 /// In rage nothing is spent or needed.
 /// - circle (its press) with the stick at kThrowStick or less from the front mounts the victim (118, victim 119, then

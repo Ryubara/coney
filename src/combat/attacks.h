@@ -231,9 +231,11 @@ struct ChainStep {
 class AttackChain {
   public:
     /// Starts attack `animId` from its first update, adding one to the combo count; the caller plays its clip holding
-    /// the attack's bits. Returns whether its hit lands on the start (hit update 0).
+    /// the attack's bits. Its hit lands `delayUpdates` later than attackHitUpdate() says, when another clip plays in
+    /// front of the attack's (a rear hold's throw behind the spin to the front). Returns whether its hit lands on the
+    /// start (hit update 0).
     /// @orig 0x002625a8 Attack_Start (unknown)
-    bool start(int animId, const CombatTuning& tuning);
+    bool start(int animId, const CombatTuning& tuning, int delayUpdates = 0);
     /// Stops the attack and forgets the chain (a hit taken, a grab).
     void cancel();
 

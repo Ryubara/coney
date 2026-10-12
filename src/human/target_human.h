@@ -14,6 +14,7 @@
 #include "human/combatant.h"
 #include "human/holdable.h"
 #include "human/human_animator.h"
+#include "human/turn_and_slide.h"
 #include "human/victim.h"
 
 // A passive human to fight: Coney's own test target for the sandbox, not part of the original game and never placed in
@@ -84,6 +85,9 @@ class TargetHuman final : public Holdable {
     void place(anim::Vec3 position, float headingRadians) override;
     /// Turns it to face `point`.
     void face(anim::Vec3 point) override;
+    /// Turns and slides it over `seconds` on top of its clip's root motion, while no grabber holds it attached (a
+    /// throw carrying it round the thrower).
+    void carryOver(anim::Vec3 goal, float headingRadians, float seconds) override;
 
     [[nodiscard]] anim::Vec3 position() const override { return m_position; }
     [[nodiscard]] float heading() const override { return m_heading; }
@@ -130,6 +134,7 @@ class TargetHuman final : public Holdable {
     std::uint32_t m_idle; // the idle clip of its slots
     TargetState m_state = TargetState::Standing;
     bool m_attached = false; // placed by its grabber (setAttached())
+    TurnAndSlide m_carry;    // a throw's turn and slide round the thrower (carryOver())
     std::uint64_t m_updates = 0;
     int m_hits = 0;
     TargetSnapshot m_previous;

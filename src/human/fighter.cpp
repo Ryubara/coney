@@ -475,6 +475,7 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
     in.fromRear = m_rear;
     in.victimMuggable = m_held != nullptr && !m_held->health().depleted();
     in.victimInPlace = victimInPlace(input);
+    in.rearThrowSpinUpdates = rearThrowPath() ? spinToFrontUpdates(animator, input.stepSeconds) : 0;
     return in;
 }
 
@@ -627,10 +628,17 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
         victimEscapes(input, animator);
         consumed = true;
     } else if (out.grabAction != combat::GrabAction::None) {
-        if (out.grabAction == combat::GrabAction::Throw) {
+        // A throw from the front hold turns the pair first: onto a head-on wall, or a plain throw onto the stick. The
+        // rear hold's path turns nothing (docs/research/combat.md#throw-direction).
+        const bool frontThrow = out.grabAction == combat::GrabAction::Throw && m_held != nullptr && !rearThrowPath();
+        Holdable* thrown = frontThrow ? m_held : nullptr;
+        if (frontThrow) {
             alignWallThrow(out, input, heading);
         }
         playGrabAction(out, animator);
+        if (thrown != nullptr) {
+            turnThrow(*thrown, out.startAnim, input, heading);
+        }
         consumed = true;
     } else if (out.mountAction != combat::MountAction::None) {
         playMountAction(out, animator);
