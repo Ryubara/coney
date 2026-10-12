@@ -605,7 +605,8 @@ The mesh functions read the level's [collision mesh](collision.md) through the w
   mesh's frame to pick the cells.
 - For each enabled triangle of those cells the test fills a working triangle (corners `+0x00`/`+0x10`/`+0x20`,
   edges `0x00343a90`, edge normals `0x00343b20`, unit normal `+0x70` by `0x00343c30`) and turns a two-sided one to
-  face the shape (`0x00343c90`).
+  face the shape (`0x00343c90`; for a box, the box's centre decides the side, and the box sweep stores no plane
+  constant at `+0x80`, [Unit 13](#u13-mesh)).
 - Sphere sweep (`0x00348a50`): `Sweep_SphereTriangle` (`0x0034ee60`); box sweep (`0x00348530`):
   `Sweep_BoxTriangle` (`0x0034d5d0`); sphere overlap (`0x003473c8`): `SphereTriangle_Penetration` (`0x0034edd0`).
   Hits become 0xb0-byte mesh contacts, sorted by fraction (`0x00347300`) and copied out.
@@ -613,7 +614,9 @@ The mesh functions read the level's [collision mesh](collision.md) through the w
 ### Geometry kernels {#kernels}
 
 The pair and mesh functions above call these. Their roles are confirmed (code) by their callers and arguments;
-the exact algebra is not written out here (any correct implementation of the same test gives the same contacts).
+the exact algebra is in the units below. A correct implementation of the same test gives the same contacts except
+where a unit names a quirk: `Sweep_BoxTriangle`'s zero-speed reset gives fractions a correct test does not
+([Unit 13](#u13-interval)).
 
 | Address | Name | Test | Evidence |
 | --- | --- | --- | --- |
@@ -626,7 +629,7 @@ the exact algebra is not written out here (any correct implementation of the sam
 | `0x0034ac08`, `0x0034acc8`, `0x0034ad50` | `Segment_ClosestParam`, `Segment_ClosestPoint`, `Segment_ClosestPoints` | point-segment and segment-segment closest points | confirmed (code) |
 | `0x0034af50`, `0x0034afd8` | `Ray_SphereRoot`, `Ray_CircleRoot` | the first root of a ray against a sphere (3D) or a circle (2D) | confirmed (code) |
 | `0x0034bbe8` and `0x0034b040`, `0x0034b3b8`, `0x0034b600`, `0x0034b7b0`, `0x0034baf0` | `Sweep_SphereOrientedBox` and its corner, edge, edges, face-edge and frame steps | moving sphere against an oriented box (also the camera's tilt over obstacles) | confirmed (code) |
-| `0x0034c430` | `Sweep_BoxBox` | moving oriented box against an oriented box | confirmed (code) |
+| `0x0034c430` | `Sweep_BoxBox` | moving oriented box against an oriented box: only whether they meet, no fraction (`PhysicsSweep_BoxBox` writes fraction 0, [Unit 13](#u13-box-box)) | confirmed (code) |
 | `0x0034d5d0`, `0x0034aa60`, `0x0034ab28` | `Sweep_BoxTriangle`, `BoxTri_ProjectBox`, `BoxTri_ProjectTriangle` | moving box against a triangle, axis by axis | confirmed (code) |
 | `0x0034ee60` (`0x0034ee40` calls it) | `Sweep_SphereTriangle` | moving sphere against a triangle: the face, then an edge (`0x0034e3b8`) or a corner's region (`0x0034e5d0`); what it does with a sphere that already overlaps is on [Characters](characters.md#slopes) | confirmed (code) |
 | `0x0034e3b8`, `0x0034e5d0`, `0x0034dff8`, `0x0034d938`, `0x0034e120` | `SphereSweep_Edge`, `SphereSweep_VertexRegion`, `SphereSweep_EdgeCylinder`, `Ray_InfiniteCylinder`, `Segment_SphereIntersect` | its edge steps: an edge already within the radius (fraction 0), else the edge as a cylinder; past a corner, one of the corner's two edges | confirmed (code) |
@@ -1832,7 +1835,8 @@ Run for every code that is not 0. Confirmed (code) at `0x0033e058`-`0x0033e204`:
 5. The return ([above](#u3-resolve), step 5).
 
 Who sets the contact flags: the capsule's mesh sweep writes `0x1` when it built a corner slide (`0x00348360`,
-`0x00348438`), the sphere and box mesh sweeps copy their hit's flags word (`0x003490f0`, `0x003489d0`), the landing
+`0x00348438`), the sphere and box mesh sweeps copy their hit's flags word (`0x003490f0`, `0x003489d0`; the box's
+word is always 0, `0x003488e0`, so a box mesh contact never carries `0x1` or `0x2`), the landing
 contact is `0x80` ([below](#u3-mesh)). Whether any sweep produces `0x2` is not traced. Confirmed (code) for
 the stores cited.
 
@@ -3930,14 +3934,22 @@ is 0, [Bodies](#bodies)).
 
 ### Unit 13: Box against box and triangle {#unit-13}
 
-- **Specified by:** [Mesh tests](#mesh-tests), [Geometry kernels](#kernels) (roles only). Needs the separating-axis
-  sweep of `Sweep_BoxBox` (4,484 bytes) and `Sweep_BoxTriangle`, and the box's mesh sweep `0x00348530`.
-- **Coney:** `src/physics/sweeps.*`, `src/world_objects/loose_objects.*` (a falling object's box then sweeps instead of
-  the centre ray stand-in), the car's loose parts.
-- **Tests:** a box dropped flat and on an edge onto a floor triangle; two boxes sliding past without touching; the brick
-  of [Settling a landed object](#settle) resting at 0.2831 (floor 0.2231 + 0.05 + 0.01).
+**What it is.** An oriented box swept against another box (sweep table entry (1, 1)), against one triangle, and
+against the level's collision mesh (mesh sweep table type 1); and the two box-segment entries, which never touch.
+The box-box test only says **whether** the boxes meet during the move: its contact always has fraction 0. The
+box-triangle test is a separating-axis sweep with a quirk that makes it return fraction 0 (or too early) whenever an
+axis has exactly zero speed, which an axis-aligned box falling straight down always has.
 
-8 functions, 7848 bytes (0 tagged).
+- **Coney:** `src/physics/sweeps.*`, `src/world_objects/loose_objects.*` (a falling object's box then sweeps instead
+  of the centre ray stand-in), the car's loose parts.
+- **Tests:** [Test ideas](#u13-tests): a box dropped flat (fraction 0, the quirk) and tilted (the true fraction)
+  onto a floor triangle; the early and the false contact of the zero-speed quirk; two boxes sliding past without
+  touching, and one passing a corner that only the velocity axes separate; the brick of
+  [Settling a landed object](#settle) resting at 0.2831 (floor 0.2231 + 0.05 + 0.01), which needs a move with a
+  horizontal part (test 9).
+
+8 functions, 7848 bytes (0 tagged). `Sweep_IntervalOverlap` (`0x0034a8d0`, [Unit 11](#unit-11)'s table) is specified
+here too, because the box-triangle sweep depends on it.
 
 | Address | Name | Size |
 | --- | --- | --- |
@@ -3949,6 +3961,261 @@ is 0, [Bodies](#bodies)).
 | `0x0034aa60` | `BoxTri_ProjectBox` | 200 |
 | `0x0034ab28` | `BoxTri_ProjectTriangle` | 224 |
 | `0x00348530` | `PhysicsMesh_SweepBox` | 1312 |
+
+Conventions as in [Unit 1](#unit-1): `a·b` sums x, y, z as `(ax·bx + ay·by) + az·bz`; `a × b` is the cross product
+(the VU0 `vopmula` / `vopmsub` pair computes first × second); vectors are 16-byte `float[4]`. Everything below is
+confirmed (code) at the cited addresses, read in the disassembly (2026-10-12), unless a line says otherwise.
+
+#### Records {#u13-records}
+
+**The box record** the kernels read: four rows `A0`, `A1`, `A2` (unit axes) and `P` (centre), 16 bytes each, then
+the half extents `h0`, `h1`, `h2` at `+0x40`. The wrappers pass the box shape's `+0x50` (rows) and `+0x40` (half
+extents) as two pointers ([Shapes](#shapes)); the mesh sweep copies both into one 0x50-byte record on its stack
+(`0x003485a8`-`0x003485e0`). No kernel normalises an axis or checks that the rows are orthogonal: the projections
+assume they are unit and orthogonal.
+
+**Separation, not a fraction, is what the box-box test returns.** The box-triangle test returns a fraction.
+
+#### Sweep_IntervalOverlap (0x0034a8d0) {#u13-interval}
+
+Size 0x18c. `int fn(float* tFirst, float* tLast, f12 tMax, f13 v, f14 aMin, f15 aMax, f16 bMin, f17 bMax)`.
+Interval `A` = `[aMin, aMax]` stands still; interval `B` = `[bMin, bMax]` moves by `v` per unit of `t`. It narrows the
+window `[tFirst, tLast]` in which the two overlap, and returns **1 when they are separated** for the whole move
+(or the window is empty), 0 otherwise. Confirmed (code) at `0x0034a8d0`-`0x0034aa58`:
+
+1. **B below A** (`bMax < aMin`, strict): if `v ≤ 0`, return 1. Else `k = 1/v`; `t = (aMin − bMax)·k`; if
+   `tFirst < t`, `tFirst = t`; if `tMax < tFirst`, return 1 (`tFirst` keeps the new value). Then
+   `t = (aMax − bMin)·k`; if `t < tLast`, `tLast = t`; go to the end test.
+2. **B above A** (`aMax < bMin`): if `v ≥ 0`, return 1. Else `k = 1/v`; `t = (aMax − bMin)·k`, raise `tFirst` as
+   above, `tMax` test; then `t = (aMin − bMax)·k`, lower `tLast`; end test.
+3. **Overlapping now** (neither, so touching counts): if `v > 0`, `t = (aMax − bMin)/v`, lower `tLast`; if `v < 0`,
+   `t = (aMin − bMax)/v`, lower `tLast`; end test. Here the code divides; cases 1 and 2 multiply by `1/v` (a last-bit
+   difference only).
+4. **Overlapping and `v` exactly 0** (`0x0034aa1c`-`0x0034aa50`): **`tFirst = 0` and `tLast = 1.0`**, return 0.
+   This is a quirk: it throws away the window the earlier axes built (a correct test leaves it alone).
+5. **End test:** return 1 if `tLast < tFirst` (strict), else 0.
+
+A separated axis with `v = 0` (cases 1, 2) returns 1, which is right. Only case 4 is wrong, and it decides most of
+the box-triangle results below. Callers: `Sweep_BoxTriangle` and `PhysicsSweep_CapsuleCapsule` (`0x00343cd8`).
+
+#### BoxTri_ProjectBox (0x0034aa60) and BoxTri_ProjectTriangle (0x0034ab28) {#u13-project}
+
+`BoxTri_ProjectBox(float* min, float* max, rows, half, axis L)`, size 0xc8: `r = (h0·|L·A0| + h1·|L·A1|) +
+h2·|L·A2|`, `c = L·P`, `min = c − r`, `max = c + r`. `L` need not be unit (both sides of every comparison scale
+with it).
+
+`BoxTri_ProjectTriangle(float* min, float* max, v0, v1, v2, axis L)`, size 0xe0: `min = max = L·v0`; then for `v1`
+and then `v2`: if below `min`, it becomes `min`; otherwise, if above `max`, it becomes `max`.
+
+#### Sweep_BoxTriangle (0x0034d5d0) {#u13-box-triangle}
+
+Size 0x368. `float fn(Box* box, Tri* T, const vec4* move)`: `a0` the box record (rows and half extents, above),
+`a1` the working triangle ([Unit 2](#u2-the-working-triangle-t-d0-bytes-on-the-c): corners `+0x00`/`+0x10`/`+0x20`,
+edges `e0`, `e1`, `e2` at `+0x30`/`+0x40`/`+0x50`, as the caller left them), `a2` the box's move. The triangle stands
+still; the box moves by `move` over `t` from 0 to 1. Returns the fraction `t` of first contact, or **1e28**
+(`0x6e013f39`) for no contact. Nothing else is written.
+
+1. `tFirst = 0`, `tLast = 1e24` (`0x6753c21c`), `tMax = 1.0` for every axis.
+2. **Axis 1, the face:** `N = e0 × e1` (not normalised). The triangle's interval is the single value `N·v0`; the box's
+   is `BoxTri_ProjectBox` on `N`; speed `N·move`. `Sweep_IntervalOverlap(&tFirst, &tLast, 1.0, speed, triangle min,
+   triangle max, box min, box max)`; 1 → return 1e28.
+3. **Axes 2-4, the box's axes** `A0`, `A1`, `A2` in that order: triangle interval by `BoxTri_ProjectTriangle`, box
+   interval `A_i·P ± h_i`, speed `A_i·move`; same call, 1 → 1e28.
+4. **Axes 5-13, the edge crosses** `e_i × A_j`, `i` = 0, 1, 2 outer, `j` = 0, 1, 2 inner: both intervals by the two
+   projections, speed `(e_i × A_j)·move`; same call, 1 → 1e28. A zero axis (an edge parallel to a box axis) is not
+   skipped: both intervals are `[0, 0]`, the speed 0, so it is case 4 of the interval test and **resets the window**.
+5. `t = tFirst`. If `t < 0` or `t > 1.0`, return 1e28; else return `t` (so `t = 1` exactly is a contact).
+
+No epsilon anywhere; touching counts as contact.
+
+**What the quirk does** (the arithmetic is confirmed (code); the cases below were computed from it in Python,
+2026-10-12, and the exact answers by a brute-force static separating-axis test sampled at 20,000 steps):
+
+- An axis whose speed is exactly 0 and whose intervals overlap sets `tFirst = 0`, `tLast = 1`. Later axes with a
+  non-zero speed raise `tFirst` again, so the result is the entry time of the **last** moving axis after the last
+  reset, or 0.
+- **A box falling straight down** (move `(0, 0, −d)`) with a horizontal axis (any box lying flat or standing upright)
+  has `A·move = 0` on that axis. If the true contact is within the move, the result is very often **0** instead of the
+  true fraction (test 1 below: 0 instead of 0.75). A box with no exactly horizontal axis and no edge parallel to an
+  axis gets the true fraction (test 2).
+- It can give a contact **earlier** than the true one (test 3: 0.5 instead of 1.0), and a contact where there is
+  **none** (test 4: 0.25 where the box passes the triangle), because the reset also forgets an empty window.
+- A move that falls short is still refused: the face axis comes first and returns 1e28 when the box cannot reach the
+  plane within the move. So the quirk only changes the fraction of a box that reaches the triangle's plane, plus
+  the false contacts of test 4.
+
+What it means in the game (inferred): a resolution moves the body by `f × (D·n)` ([the advance](#u3-codes)), so a
+fraction of 0 means **no advance**: the box stops where it was, short of the floor, and bounces or stops there. In
+the game an object's rotation is rarely exactly axis-aligned, so its axes are rarely exactly horizontal; the brick of
+[Settling](#settle) ended exactly 0.01 above the floor after its settle, which needs a non-zero fraction on that
+contact. Coney must reproduce the quirk exactly (faithful first), so its tests set up exact zeros on purpose.
+
+#### PhysicsMesh_SweepBox (0x00348530) {#u13-mesh}
+
+Size 0x520. Mesh sweep table `+0xe0`, type 1. `int fn(Contact* out, int max, const AABB* worldBox, Body* body,
+Shape* box, const vec4* move)` (`a0`-`a3`, `t0`, `t1`); the options word (`t2`) and `f12`/`f13` (the `n.z` range of
+[Unit 2](#u2-0033d2d8-iphysics-sweepshapevsmesh)) are **never read**. Returns the number of contacts written. It
+follows the pattern of the sphere sweep ([Unit 2](#u2-00348a50-physicsmesh-sweepsphere)): the same query start
+(`CollisionMesh_BeginShapeQuery`), cell walk (x outer, y, z inner), visited bits, 100-entry stack array of 0xb0
+mesh contacts with no overflow check, sort and cap.
+
+**The box:** rows and position from shape `+0x50`…`+0x80`, half extents from `+0x40`, as they are at the call (the
+start of the move). `P` = shape `+0x80`.
+
+**Per triangle** (index from the cell list, visited bit tested and set first):
+
+1. **Bit 3:** `flags = u16 at +0x06`, masked to `0xfff`. If bit `0x8` is set and the body's flags `+0x40` have
+   `0x100`, skip (`0x003486e8`-`0x003486fc`; the body pointer is read with no null test). The sphere's option
+   `0x8000` has no counterpart here.
+2. Skip unless bit 0 (enabled).
+3. Corners into `T`, unit normal `n` (`CollTri_ComputeNormal`).
+4. **Side:** `s = n·P − n·v0`. If `s < 1e-6` (`0x358637bd`): a one-sided triangle (raw flags bit `0x2` clear) is
+   skipped, a two-sided one is flipped (`CollTri_Flip`) (`0x003487b8`-`0x003487ec`). The box's **centre** decides the
+   side, not its corners.
+5. **Into the face:** skip if `n·move ≥ −0.001` (`0xba83126f`), with the possibly flipped normal.
+6. Edges un-normalised (`CollTri_ComputeEdges(T, 0)`). The plane constant `T+0x80` is **not** stored (unlike the
+   sphere and capsule), and the lengths `T+0x60` are not computed, so the copy's `+0x80` and `+0xa0` hold stale
+   stack bytes; nothing reads them.
+7. `t = Sweep_BoxTriangle(&box, T, move)`. Kept when `0 ≤ t ≤ 1`: a mesh contact with `+0x00 = t`, `+0x04` the
+   10-byte file triangle, `+0x08 = 0`, `+0x20`…`+0xaf` the copy of `T+0x00`…`T+0x8f` (normal at `+0x90`)
+   (`0x00348894`-`0x003488e0`). `+0x0c`, `+0x10`, `+0x14` are not written.
+
+**Bug, confirmed (code) at `0x0034888c`:** the `t > 1` exit branches past the loop counter's increment (as the
+capsule's does, [Unit 2](#u2-00347c08-physicsmesh-sweepcapsule)), and here the kernel's "no contact" value 1e28 takes
+that exit. So **every triangle the kernel misses** leaves the cell's counter where it was while the list pointer
+moves on, and the walk reads one more `u16` past the end of the cell's list per miss (and per miss among those).
+Every other skip (visited, disabled, bit 3, behind, receding, `t < 0`) counts correctly. What the extra entries
+are depends on what follows the list in memory (the next cell's count and indices, inferred from the layout in
+[Collision](collision.md)); each is treated as a triangle index, subject to the visited bit and every test. Since a
+triangle the swept box really reaches must lie in a cell the query box covers, the extra triangles can only add
+contacts that the cell walk would also find (inferred), except through the false contacts of the quirk above.
+Coney should walk the lists exactly and note the difference in a comment.
+
+**After the walk** (`0x00348930`-`0x00348a1c`): none kept → return 0. Sort (`MeshContacts_SortByFraction`, with its
+smear); `count = min(count, max)`. For each sorted entry `i`, into `out[i]`:
+
+| 0xc0 field | Value |
+| --- | --- |
+| `+0x04` own shape | the box shape |
+| `+0x44` other shape | 0 |
+| `+0x50` normal | mesh contact `+0x90` (unit, flipped towards the box centre when two-sided) |
+| `+0x80` fraction | `t` |
+| `+0x90` point | `P + t × move`, `w = 1`: the box **centre** at contact, not a point on the surface |
+| `+0xb0` flags | mesh contact `+0x08`, always 0 |
+| `+0xb4` triangle | mesh contact `+0x04` |
+| `+0x10` | `unit(move)` (xyz; `w` = the move's `w`) |
+
+Nothing else (`+0xa0`, `+0x84`, `+0x88` untouched). Returns the capped count. Reached through
+`IPhysics_SweepShapeVsMesh` (max 1, [Unit 2](#u2-0033d2d8-iphysics-sweepshapevsmesh)) for a body whose first shape is
+a box, and through `IPhysics_CollideShape` with a box shape.
+
+**Differences from the sphere sweep, in one list:** no options (no `n.z` range, no `0x40` back faces, no `0x8000`, no
+one-contact-per-plane `0x20000`); the side is taken at the box centre; the point is the box centre; the flags word is
+always 0; the counter bug on every kernel miss.
+
+#### Sweep_BoxBox (0x0034c430) {#u13-box-box}
+
+Size 0x1184. `bool fn(rowsA, halfA, moveA, rowsB, halfB, moveB)` (`a0`-`a3`, `t0`, `t1`). Do two oriented boxes,
+each moving linearly over `t` from 0 to 1 without turning, overlap at any time? Returns 1 if yes (touching counts),
+0 if a separating axis exists. **No fraction, point or normal is computed.** The test is the standard one for boxes
+moving with constant velocity (15 box axes tested at both ends of the move, then 6 axes built from the relative
+velocity), which is exact for that motion (inferred: the swept difference of two boxes is a convex body whose face
+normals are among these 21 axes).
+
+Let `D = P_B − P_A` (`w = 1`), `W = moveB − moveA`, `D1 = D + W` (the centre offset at the end), `c_ij = A_i·B_j`.
+Separation on an axis of the first 15 means **both** projections of the centre offset, at `t = 0` and at `t = 1`, lie
+beyond `R` on the same side: `R < p0 and R < p1`, or `p0 < −R and p1 < −R` (strict; `0x0034c5a0`-`0x0034c614` for
+the first axis). In order, returning 0 at the first separated axis:
+
+| Axes | `p0` (at `t = 0`; `p1` the same with `D1`) | `R` |
+| --- | --- | --- |
+| `A_i`, i = 0, 1, 2 | `A_i·D` | `a_i + ((b0·|c_i0| + b1·|c_i1|) + b2·|c_i2|)` |
+| `B_j`, j = 0, 1, 2 | `B_j·D` | `a0·|c_0j| + a1·|c_1j| + a2·|c_2j| + b_j` |
+| `A_i × B_j`, i outer, j inner | `(A_{i+2}·D)·c_{i+1,j} − (A_{i+1}·D)·c_{i+2,j}` | `a_{i+1}·|c_{i+2,j}| + a_{i+2}·|c_{i+1,j}| + b_{j+1}·|c_{i,j+2}| + b_{j+2}·|c_{i,j+1}|` |
+
+(indices mod 3). Then the velocity axes (`0x0034d0f8` on), with `X = W × D` and separation `R < |X·axis|`:
+
+| Axis | `R` |
+| --- | --- |
+| `W × A_i`, i = 0, 1, 2 | `a_{i+1}·|W·A_{i+2}| + a_{i+2}·|W·A_{i+1}| + Σ_j b_j·|c_{i+1,j}·(W·A_{i+2}) − c_{i+2,j}·(W·A_{i+1})|` |
+| `W × B_j`, j = 0, 1, 2 | `Σ_i a_i·|c_{i,j+1}·(W·B_{j+2}) − c_{i,j+2}·(W·B_{j+1})| + b_{j+1}·|W·B_{j+2}| + b_{j+2}·|W·B_{j+1}|` |
+
+With `W = 0` every velocity axis passes (`0 ≤ R`), so two still boxes reduce to the static 15-axis test. The axes
+are not normalised and parallel boxes give zero cross axes, which pass (`|0| ≤ R`); no epsilon. All 21 pass → 1.
+
+#### The pair wrappers: 0x003451e8, 0x00345588, 0x00345590 {#u13-wrapper}
+
+**PhysicsSweep_BoxBox**, size 0x20c, sweep table (1, 1). `bool fn(Contact* c, Body* own, Shape* ownBox, Body* other,
+Shape* otherBox, const vec4* move)`; the bodies are not read. Calls `Sweep_BoxBox(ownBox+0x50, ownBox+0x40, move,
+otherBox+0x50, otherBox+0x40, (0, 0, 0, 1) at 0x005116c0)`, so `W = −move` and `D` = other centre − own centre. No
+overlap: return 0, nothing written. Overlap (`0x00345240`-`0x003453d4`), with `P` = own centre (`+0x80`), `Q` = other
+centre, `B0`, `B1` and `b0`, `b1` the other box's axes and half extents:
+
+| Field | Value |
+| --- | --- |
+| `+0x80` fraction | **0.0**, always |
+| `+0x50` normal | `−unit(move)` (xyz), `w` = the move's `w`: straight back along the move, whatever the faces |
+| `+0x10` | `unit(move)`, `w` the same |
+| `+0x60` | `clamp(B0·P − B0·Q, −b0, b0)` |
+| `+0x64` | `clamp(B1·P − B1·Q, −b1, b1)` |
+| `+0x68` | `P.z`, the own centre's **world** z |
+| `+0x90` point | `(P.x + [+0x60], P.y + [+0x64], P.z, 1)`: the other-box-frame offsets added to world x and y |
+| `+0xb0` | 0 |
+
+`+0x6c` and everything else are not written. Returns 1. The point mixes frames (a quirk; it is a point on the other
+box only when that box is world-aligned and the own centre is level with it). Consequences in a resolution
+([the codes](#u3-codes)), inferred: with `f = 0` there is no advance, and code 2 (a world object or a car) bounces
+the velocity off `−unit(move)`, i.e. reverses its component along the move, scaled by the restitution.
+
+**PhysicsSweep_SegmentBox**, size 8, sweep table (4, 1): returns 0.
+
+**PhysicsSweep_BoxSegment**, size 0xe0, sweep table (1, 4): calls `0x00345588` with the bodies and shapes swapped and
+the move negated; that returns 0, so it returns 0 and writes nothing. Its code to swap the contact's halves
+(`+0x00`…`+0x3f` with `+0x40`…`+0x7f`) after a hit never runs. A box and a segment never touch.
+
+#### Test ideas {#u13-tests}
+
+Values computed in Python from this spec (scratch `u13/model.py`, 2026-10-12); "exact" is a brute-force static test
+sampled at 20,000 steps. Boxes have half extents (0.5, 0.5, 0.5) unless stated; `I` is the world-aligned box.
+Triangles are given as `v0, v1, v2`; their kernel normal is `(v1 − v0) × (v2 − v1)`.
+
+1. **Flat drop, the quirk.** Floor `(−10, −10, 0), (30, −10, 0), (−10, 30, 0)`, box `I` at (0, 0, 2), move
+   (0, 0, −2): `Sweep_BoxTriangle` returns **0.0** (exact 0.75). Window after each axis: face 0.75; `A0`, `A1` reset
+   to 0; `A2` 0.75; the last resets come from `e1 × A2`, `e2 × A1` and `e2 × A2`. The same with move (0.1, 0.05, −2)
+   also gives 0.0 (the edge along x is parallel to `A0`: a zero axis). Box `I` rotated 30° about z and move
+   (0, 0, −2): 0.0; with move (0.1, 0.05, −2): **0.75**, the true value.
+2. **Tilted drop.** Same floor, box rotated 40° about the unit axis along (1, 2, 3), centre (0, 0, 2), move (0, 0, −2):
+   **0.629511** (the lowest corner is at z 1.259023; exact 0.62955 at the sampling step).
+3. **Too early.** Wall `(0, 0, 0), (0, 0, 2), (0, 2, 0)` (normal −x), box `I` at (−1, −2, 0), move (1, 1.5, 0):
+   **0.5** (exact 1.0: the `A2` axis has speed 0 and resets the window that `A1` had raised to 1.0).
+4. **A contact where there is none.** Triangle `(1, 3, −1), (0, 0, 1), (1, −1, 0)` (normal (5, 1, 4), the box centre in
+   front, `n·move` = −4), box `I` at (2, 1.5, 0), move (−2, 0, 1.5): **0.25**; exact: no contact. Window: face
+   [0.625, 3.125], `A0` [0.625, 1.25], `A1` resets to [0, 1], then the crosses narrow it to [0.25, 0.556].
+5. **Short and touching.** Test 1's box with move (0, 0, −1): 1e28 (refused by the face axis). With move (0, 0, −1.5)
+   (touching exactly at the end): 0.0 by the quirk (exact 1.0). Tilted box of test 2 with move (0, 0, −1): 1e28.
+6. **Interval test alone.** `A` = [0, 1], window (0, 1e24), `tMax` 1: `B` = [−3, −2], `v` = 4 → 0, window (0.5, 1.0);
+   `v` = 1 → 1 (`tFirst` = 2 > 1); `v` = −1 → 1. `B` = [0.5, 2], window (0.7, 0.9), `v` = 0 → 0 and the window becomes
+   **(0, 1)**. `B` = [1, 2] (touching), `v` = 0 → the same reset. `B` = [2, 3], `v` = 0 → 1.
+7. **Mesh filters.** With test 2's tilted box over a one-sided floor: centre below the plane → no contact; two-sided
+   → flipped normal (0, 0, −1) and no contact for a downward move (receding). Move (0, 0, −0.0009): receding by the
+   −0.001 rule, no contact. Bit 3 set and body flag `0x100`: skipped; bit 3 with the body flag clear: found.
+8. **Mesh contact.** Test 2 through `PhysicsMesh_SweepBox` with `max` 1: one contact, `+0x80` 0.629511, `+0x50`
+   (0, 0, 1), `+0x90` = (0, 0, 2 − 1.259023) = (0, 0, 0.740977, 1), `+0xb0` 0, `+0x10` (0, 0, −1).
+9. **The brick lands.** Floor at z 0.2231 (test 1's triangle raised), brick half extents (0.035, 0.105, 0.05) rotated
+   30° about z, centre (0, 0, 0.35), velocity (0.3, 0.2, −5.4886) m/s, `dt` 1/30, so `D` = (0.01, 0.006667,
+   −0.182953): fraction **0.420326** (= 0.0769 / 0.182953; no reset, since no axis has zero speed). The advance
+   `0.420326 × −0.182953 = −0.0769` then puts the centre at 0.35 − 0.0769 + 0.01 = **0.2831**. With `D` = (0, 0,
+   −0.182953) instead the fraction is 0 and the brick is not advanced (the quirk).
+10. **Box-box, passing.** Own box `I` at (0, 0, 0), other `I` at (0, 2, 0): move (3, 0, 0) → 0 (axis `A1`); move
+    (0, 0.99, 0) → 0; move (0, 1.0, 0) → 1 (touching at the end); move (0, 1.5, 0) → 1.
+11. **Box-box, a corner only the velocity axes see.** Own `I` at (−2, 0, 0), other `I` at the origin, move (2, 3, 0):
+    0, separated first by `W × A2`; without the six velocity axes the 15 end-point axes would say 1. Move (3, 3, 0)
+    → 1.
+12. **Box-box contact.** Own `I` at (0, 0, 1), other `I` at (1.5, 0.3, 1.2), move (2, 0, 0): returns 1 with `+0x80`
+    0, `+0x50` (−1, 0, 0), `+0x10` (1, 0, 0), `+0x60` −0.5, `+0x64` −0.3, `+0x68` 1.0, `+0x90` (−0.5, −0.3, 1.0, 1),
+    `+0xb0` 0. Zero move with overlapping boxes: 1 (a zero move never reaches it from the body sweep, which stops
+    below `|D|² ≤ 1e-6`).
+13. **Box-segment.** Both orders return 0 and leave the contact untouched.
 
 ### Unit 14: Rays against bodies {#unit-14}
 
