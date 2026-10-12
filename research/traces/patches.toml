@@ -857,6 +857,13 @@ research = "docs/research/combat.md#power-move-props"
 address = 0x0024ce40
 # addiu sp,sp,-0x30; sq s0,0x20(sp)
 original = [0x27bdffd0, 0x7fb00020]
+
+[hook.flash-use]
+description = "Each call of Flash_Use (0x00284280): the caller (Player_UseItemCommand's at-once use, or Human_HandleMessage's answer to clip 665's 0x41 event) and the human."
+research = "docs/research/combat.md#flash-mid-move"
+address = 0x00284280
+# addiu sp,sp,-0x30; li a2,0x1
+original = [0x27bdffd0, 0x24060001]
 log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }]
 
 [hook.say-anim-line]

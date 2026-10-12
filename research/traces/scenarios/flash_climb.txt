@@ -1,0 +1,31 @@
+# A run at the fence (the stick at 100 % up), triangle every 2 updates from 4.6 m before it (fence_climb), then
+# d-pad right every 3 updates through the climb.
+5 stick left 0 100
+67 tap triangle
+69 tap triangle
+71 tap triangle
+73 tap triangle
+75 tap right
+78 tap right
+81 tap right
+84 tap right
+87 tap right
+90 tap right
+93 tap right
+96 tap right
+99 tap right
+102 tap right
+105 tap right
+108 tap right
+111 tap right
+114 tap right
+117 tap right
+120 tap right
+123 tap right
+126 tap right
+129 tap right
+132 tap right
+135 tap right
+138 tap right
+141 tap right
+144 tap right
