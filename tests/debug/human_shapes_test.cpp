@@ -64,26 +64,26 @@ TEST_CASE("debug lines build spheres, capsules, swept spheres and arrows of know
     constexpr Rgba kRed{255, 0, 0, 255};
     lines.sphere(Vec3{1.0F, 2.0F, 3.0F}, 0.5F, kRed);
     // Three great circles of 16 segments, every end on the sphere.
-    REQUIRE(lines.size() == 3U * DebugLines::kCircleSegments);
+    REQUIRE(lines.size() == std::size_t{3} * DebugLines::kCircleSegments);
     for (const DebugLine& line : lines.lines()) {
         CHECK(coney::anim::distance(line.a, Vec3{1.0F, 2.0F, 3.0F}) == Approx(0.5F).margin(1e-4));
     }
     DebugLines capsule;
     capsule.uprightCapsule(Vec3{}, 2.0F, 0.35F, kRed);
     // A ring at each end and four uprights.
-    CHECK(capsule.size() == 2U * DebugLines::kCircleSegments + 4U);
+    CHECK(capsule.size() == std::size_t{2} * DebugLines::kCircleSegments + 4U);
     DebugLines swept;
     swept.sweptSphere(Vec3{}, Vec3{1.0F, 0.0F, 0.0F}, 0.1F, kRed);
-    CHECK(swept.size() == 2U * 3U * DebugLines::kCircleSegments + 4U);
+    CHECK(swept.size() == std::size_t{6} * DebugLines::kCircleSegments + 4U);
     DebugLines point;
     point.sweptSphere(Vec3{}, Vec3{}, 0.1F, kRed);
-    CHECK(point.size() == 3U * DebugLines::kCircleSegments);
+    CHECK(point.size() == std::size_t{3} * DebugLines::kCircleSegments);
     DebugLines arrow;
     arrow.arrow(Vec3{}, Vec3{0.0F, 0.0F, 1.0F}, kRed);
     REQUIRE_FALSE(arrow.empty());
     CHECK(arrow.lines().front().b.z == Approx(1.0F));
     lines.append(arrow);
-    CHECK(lines.size() == 3U * DebugLines::kCircleSegments + arrow.size());
+    CHECK(lines.size() == std::size_t{3} * DebugLines::kCircleSegments + arrow.size());
 }
 
 TEST_CASE("a human's walking sphere is drawn at the radius and height the wall sweep uses", "[debug][human]") {
@@ -102,7 +102,7 @@ TEST_CASE("a human's walking sphere is drawn at the radius and height the wall s
         DebugLines lines;
         coney::debug::addHumanShapes(lines, human, coney::debug::ShapeLayers{});
         const std::vector<DebugLine> sphere = linesIn(lines, coney::debug::kWalkingSphereColour);
-        REQUIRE(sphere.size() == 3U * DebugLines::kCircleSegments);
+        REQUIRE(sphere.size() == std::size_t{3} * DebugLines::kCircleSegments);
         const Vec3 centre = coney::anim::add(human.position(), Vec3{0.0F, 0.0F, human.walkingSphereCentreHeight()});
         CHECK(farthest(sphere, centre) == Approx(human.walkingSphereRadius()).margin(1e-4));
         // The capsule others meet, and the ground probe under a grounded human.

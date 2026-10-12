@@ -263,9 +263,10 @@ WatchGroup physicsGroup(const human::Human& human) {
     group.add("Last contact", human.contacts().empty() ? std::string("-") : vecText(human.contacts().back()));
     group.add("Blocked updates", std::format("{}", human.blockedUpdates()));
     group.add("Airborne updates", std::format("{}", human.airborneUpdates()));
-    group.add("Climb", human.climb() ? std::format("face {} at {:.2f} m, top {:.2f} m", vecText(human.climb()->face),
-                                                   human.climb()->distance, human.climb()->top)
-                                     : std::string("-"));
+    const auto& climb = human.climb();
+    group.add("Climb", climb.has_value() ? std::format("face {} at {:.2f} m, top {:.2f} m", vecText(climb->face),
+                                                       climb->distance, climb->top)
+                                         : std::string("-"));
     return group.take();
 }
 
