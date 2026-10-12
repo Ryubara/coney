@@ -883,6 +883,20 @@ void GameplayMode::reportHumanSounds() {
     if (m_context.sound != nullptr) {
         m_context.sound->setCombatFraming(framing);
     }
+    // The humans gone since the last step: the sound each held stops with him (the spray loop).
+    std::vector<double> present;
+    present.reserve(m_scripted->bound().size());
+    for (const auto& [handle, brain] : m_scripted->bound()) {
+        present.push_back(handle);
+    }
+    if (m_context.sound != nullptr) {
+        for (const double gone : m_soundHumans) {
+            if (!std::ranges::binary_search(present, gone)) {
+                m_context.sound->humanRemoved(gone);
+            }
+        }
+    }
+    m_soundHumans = std::move(present);
     for (const auto& [handle, brain] : m_scripted->bound()) {
         human::Human& body = brain->human();
         const std::vector<human::HumanSound> sounds = body.takeSounds();

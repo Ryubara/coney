@@ -428,12 +428,14 @@ This qualifies the paragraph above: the scene task's own start does not release 
 player's grab or paired move does not survive a `SuperRunScene` cinematic here; whether every cinematic does this
 waits for that caller.
 
-**Coney** (#225): Coney's disc test sees the pair still on as `l99_c7` starts (1 holding, 1 held), so the stage's
-free test leaves Rembrandt and Rudy out. Match the original: when a cinematic starts, reset every human as
-`Human_ResetForMode` does, which breaks any pair (`Human_BreakPair`, [Combat](combat.md#pair-break)) and removes
-carried props, before the free test; then Rudy joins role 6 and is moved by his role clip. Disc test: through lesson
-6 into `l99_c7`, Rudy's scene id is the scene's, he stands on role 6's start mark at frame 0 and his position follows
-the role clip (more than 5 m from the mark before the end).
+**Coney** (#225, implemented; #281 in part): `SceneSystem::joinHuman`, the bind, resets the human first, before it
+checks the scene or the role (`SceneHost::resetHumanForJoin()`, `Human::resetForJoin()`): the carried prop goes and any
+pair breaks (`Human_BreakPair`, [Combat](combat.md#pair-break)); a human never bound is not reset. Only these two steps
+of `Human_ResetForMode` are done (stand-in); the rest, and the end of every player's rage on a bind, wait on #281. Rudy
+then joins role 6 and is moved by his role clip. Disc test (`tests/platform/disc_level99_power_lesson_test.cpp`):
+through lesson 6 into `l99_c7` Rudy is in role 6 and moves 11.2 m. Known difference: Coney starts `l99_c7` 7 updates
+earlier than the original (update 78 of 59 against 85), probably because Coney's scene preload is instant where the
+original takes 11 updates from `ScenePreload` to the play, so the reset removes the can before 59's own `0x31`.
 
 **While it plays** the human is driven by the clip's animation and root motion ([Animation](formats/animation.md)),
 and the clip's 21/22 events place it at its marks ([Events](#events)). **When its clip ends** (`0x003a00b8`): unless

@@ -179,11 +179,15 @@ Human::Human(const characters::AnimSet& anims, const AnimSlots& slots,
 
 std::vector<HumanSound> Human::takeSounds() {
     std::vector<HumanSound> sounds;
-    // Clip event 11 carries the animation sound's id in its argument (0 plays nothing).
+    // Clip event 11 carries the animation sound's id in its argument (0 plays nothing); 0x45 stops the sound the
+    // human holds (docs/research/sound-events.md#spray-loop).
     for (const anim::ClipEvent& event : m_animator.takeEvents()) {
         if (event.type == kEventAnimSound) {
             sounds.push_back(HumanSound{
                 .kind = HumanSound::Kind::Anim, .animSound = event.argument, .at = {}, .sceneFeet = std::nullopt});
+        } else if (event.type == kEventStopHeldSound) {
+            sounds.push_back(
+                HumanSound{.kind = HumanSound::Kind::StopHeld, .animSound = 0, .at = {}, .sceneFeet = std::nullopt});
         }
     }
     sounds.insert(sounds.end(), m_contactSounds.begin(), m_contactSounds.end());
@@ -1343,6 +1347,54 @@ void Human::animate(const raycast::CollisionMesh* mesh) {
     noteStrikeEvents(before, beforeId, beforeTime);
     noteReleaseEvent(before, beforeId, beforeTime);
     noteActionEvent(before, beforeId, beforeTime);
+    noteCarriedPropEvents(before, beforeId, beforeTime);
+}
+
+void Human::noteCarriedPropEvents(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime) {
+    const anim::AnimTask* top = m_animator.tasks().top();
+    if (top == nullptr || top->eventClip() == nullptr) {
+        return;
+    }
+    // From the clip's start when it began this step (or another clip took the top, or it had not advanced yet: 59's
+    // can is made on its frame 0), else from where it was; the events in their order in the clip.
+    const bool same = top == before && top->animId() == beforeId && top->time() >= beforeTime && beforeTime > 0.0F;
+    const int from = same ? anim::eventFrame(beforeTime) : -1;
+    const int to = anim::eventFrame(top->time());
+    for (const anim::ClipEvent& event : top->eventClip()->events) {
+        if (event.frame <= from || event.frame > to) {
+            continue;
+        }
+        switch (event.type) {
+        case kEventPropCreate:
+            // Made only when it carries none (`+0x348` empty); whether the type is one to carry (kind 5) is the
+            // level's test, which has the object types.
+            if (!m_carriedProp) {
+                m_carriedProp =
+                    CarriedProp{.typeName = propTypeName(event), .point = kCarryPoint, .place = std::nullopt};
+            }
+            break;
+        case kEventPropPlace:
+            // Message 0xb7: to the attach point in the word, at the event's position scaled as the human is.
+            if (m_carriedProp) {
+                m_carriedProp->point = event.word;
+                m_carriedProp->place =
+                    PropPlace{.position = anim::scale(event.position, m_scale), .rotation = event.rotation};
+            }
+            break;
+        case kEventPropRemove:
+            if (m_carriedProp && m_carriedProp->typeName == propTypeName(event)) {
+                releaseCarriedProps();
+            }
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+void Human::resetForJoin() {
+    releaseCarriedProps();
+    breakPair();
 }
 
 void Human::noteReleaseEvent(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime) {

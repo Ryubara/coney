@@ -217,12 +217,30 @@ void HumanSoundEvents::play(const script::HumanSoundCall& call, const HumanTrait
         animSound(call, traits, sound.animSound);
         return;
     }
+    if (sound.kind == human::HumanSound::Kind::StopHeld) {
+        stopHeldSound(call.human);
+        return;
+    }
     // A hit sounds at its owner (the attacker), as a player's when he is one.
     script::HumanSoundCall owner = call;
     owner.player = sound.ownerIsPlayer;
     owner.position = {sound.at.x, sound.at.y, sound.at.z};
     impact(owner, traits, sound.volume, sound.material1, sound.material2, sound.victimDown,
            SoundVec{sound.at.x, sound.at.y, sound.at.z});
+}
+
+void HumanSoundEvents::stopHeldSound(double human) {
+    if (const auto found = m_held.find(human); found != m_held.end()) {
+        m_sounds.stop(found->second);
+        m_held.erase(found);
+    }
+}
+
+void HumanSoundEvents::stopHeldSounds() {
+    for (const auto& [human, sound] : m_held) {
+        m_sounds.stop(sound);
+    }
+    m_held.clear();
 }
 
 float HumanSoundEvents::combatFactor(const script::HumanSoundCall& who, const HumanTraits& traits) {
@@ -376,12 +394,14 @@ void HumanSoundEvents::animSound(const script::HumanSoundCall& who, const HumanT
         m_sounds.playAnimSound(1.0F, id, at, ownerOf(who));
         return;
     case sa::kSprayLoop: {
-        // One loop per human: the last one stops.
-        if (const auto found = m_loops.find(who.human); found != m_loops.end()) {
-            m_sounds.stop(found->second);
-        }
+        // The human's held sound: the one he held stops first; the clip's event 0x45 stops this one
+        // (stopHeldSound()).
+        stopHeldSound(who.human);
         if (const std::optional<MatrixSounds> entry = m_sounds.matrix().nextAnimSounds(id); entry) {
-            m_loops[who.human] = m_sounds.playSound(entry->sounds[0], entry->volumes[0], 1.0F, at, ownerOf(who));
+            const SoundHandle sound = m_sounds.playSound(entry->sounds[0], entry->volumes[0], 1.0F, at, ownerOf(who));
+            if (sound.valid()) {
+                m_held[who.human] = sound;
+            }
         }
         return;
     }

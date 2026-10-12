@@ -20,6 +20,7 @@
 #include "combat/anim_ranges.h"
 #include "combat/commands.h"
 #include "human/body.h"
+#include "human/carried_prop.h"
 #include "human/climb.h"
 #include "human/combatant.h"
 #include "human/fighter.h"
@@ -502,6 +503,19 @@ class Human final : public Holdable {
     void setNormalMode(bool full);
     /// Breaks any pair it is in from outside (Fighter::breakPair()), as a placement does.
     void breakPair() { m_fighter.breakPair(); }
+    /// The prop its clips made it carry (events `0x30`, `0x37`, `0x31`): Rembrandt's spray can in his power move 59;
+    /// nothing when it carries none (docs/research/combat.md#power-move-props).
+    [[nodiscard]] const std::optional<CarriedProp>& carriedProp() const { return m_carriedProp; }
+    /// The carried prop goes (human `+0x348` and `+0x34c` emptied); the level removes its object. **Coney's
+    /// stand-in**: the original also drops a held object of kind `0x27`, which no Coney human holds yet.
+    /// @orig 0x0024ce40 Human_ReleaseCarriedProps (unknown)
+    void releaseCarriedProps() { m_carriedProp.reset(); }
+    /// What binding the human to a scene role does to it first (docs/research/scenes.md#join-reset): it removes the
+    /// carried prop and breaks any pair the human is in (breakPair()), so that a grab or a paired move does not keep
+    /// the human out of the scene. **Coney's stand-in**: only these two of the original's reset steps are done (the
+    /// rest, and every player's rage ending, wait on issue #281).
+    /// @orig 0x002325e0 Human_ResetForMode (unknown)
+    void resetForJoin();
     /// `HuSetArrested`: arrested, the human stops where it is, its fighting ends and it loops 320
     /// `ANIM_ARRESTED_IDLE`; released, it stands again with the idle (docs/research/crimes.md#arrest).
     /// @orig 0x00237700 Human_SetArrested (unknown)
@@ -794,6 +808,11 @@ class Human final : public Holdable {
     // Human_HandleMessage at 0x002473bc).
     // @orig 0x00101dd8 Anim_FireEvents (unknown)
     void noteActionEvent(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
+    // Acts on the carried prop's events of the clip playing that this step's animation passed, as noteStrikeEvents()
+    // finds its own: 0x30 makes the prop when it carries none, 0x37 moves it to the event's attach point and pose
+    // (message 0xb7), 0x31 removes it when it is of the named type (docs/research/combat.md#power-move-props).
+    // @orig 0x00101dd8 Anim_FireEvents (unknown)
+    void noteCarriedPropEvents(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
     // The world placement of the body the strike shapes are posed on.
     [[nodiscard]] BodyPlacement placement() const;
     // Stamina's drain and refill, then the sprint flag, for this update's L2.
@@ -863,6 +882,7 @@ class Human final : public Holdable {
     std::uint8_t m_groundMaterial = 5;             // groundMaterial(): CONCRETE until the first snap
     bool m_reportSounds = false;                   // reportSounds()
     std::vector<HumanSound> m_contactSounds;       // reportSound()
+    std::optional<CarriedProp> m_carriedProp;      // carriedProp(): +0x348, +0x34c
     std::uint16_t m_groundFlags = 0;               // the last ground snap's triangle flags
     bool m_hidden = false;                         // state 0x200000
     std::optional<Flight> m_flight;                // setFlight(): flying, and how

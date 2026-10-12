@@ -122,10 +122,15 @@ starts at frame 14 and event `0x45` stops it at frame 27: **17 updates (0.57 s)*
 PCSX2 2.9.94, level99 lesson 6: `+0x168` held a live handle from 59's update 19 to its update 36 and was empty from
 then on.
 
-**Coney** (#224): today `HumanSoundEvents` keeps the loop per human until the next `SA` 83 (`m_loops`,
-`repo:src/audio/human_sound_events.cpp`) and acts on no event `0x45`, so the loop plays forever. Keep the loop as the
-human's held sound and stop it on clip event `0x45` (and on a cinematic's start and the human's removal). Test: after
-59, no spray voice is playing and the human holds none.
+**Coney** (#224, implemented): `HumanSoundEvents` keeps the loop as the human's held sound (`m_held`,
+`repo:src/audio/human_sound_events.cpp`) and stops it on clip event `0x45` (`HumanSound::Kind::StopHeld`, from
+`Human::takeSounds`), on the next held sound, on a cinematic's start (`GameSound`), when gameplay is left, and when the
+human is removed (`SoundHost::humanRemoved`). Disc test (`tests/platform/disc_level99_power_lesson_test.cpp`): the
+spray is held for 17 updates of 59 and no human holds a sound after it, and a one-shot interface cue (the flash's use,
+cue 23) played during the spray, after it and in `l99_c7` starts each time. The same test with the stops switched off
+(a loop that runs on, as before) also let the cue start: one stuck loop takes a task and a voice, which the engine's
+admission does not refuse a cue for, so it does not by itself explain the silence a user reported for the flash's use
+sound or for a cutscene's audio.
 
 ### Vocal ids {#vocal-ids}
 

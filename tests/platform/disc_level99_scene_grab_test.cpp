@@ -3,8 +3,9 @@
 // Checks against the player's own disc that a grab held when one of `level99`'s tutorial scenes starts leaves no human
 // stuck in it: the level plays as `--play-level level99 --checkpoint 1` plays it, headless, driven through lessons
 // 1-6 by the shared input script (lesson 7's scene is not skipped); then the player grabs a bum (circle tapped whenever
-// he holds no one) until lesson 7's scene `l99_c7` takes him over, and once the scene has ended and given him back no
-// human is grabbing, holding, held or mounted (docs/research/scenes.md#starting, docs/research/combat.md#grabbing). It
+// he holds no one) until lesson 7's scene `l99_c7` takes him over: the cinematic's play breaks every pair, so as it
+// starts and once it has ended and given him back no human is grabbing, holding, held or mounted
+// (docs/research/scenes.md#humans, docs/research/combat.md#grabbing). It
 // runs only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only
 // (LEGAL.md).
 
@@ -233,7 +234,8 @@ TEST_CASE("the disc's level99: a grab held as lesson 7's scene starts leaves no 
                 static_cast<unsigned long long>(startedAt), static_cast<unsigned long long>(grabs), atStart.holding,
                 atStart.held, atStart.grabbed);
     REQUIRE(started);
-    CHECK(atStart.holding + atStart.held > 0);
+    // The cinematic's play broke every pair before its start (docs/research/scenes.md#humans).
+    CHECK(atStart.total() == 0);
 
     // 3. The cinematic plays and ends; then the humans settle.
     while (pad.nextFrame() < startedAt + kSceneLength && sceneSystem->cinematicActive()) {

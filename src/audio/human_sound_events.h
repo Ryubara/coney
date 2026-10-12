@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <map>
@@ -75,6 +76,19 @@ class HumanSoundEvents {
     void impact(const script::HumanSoundCall& who, const HumanTraits& traits, float volume, std::uint32_t m1,
                 std::uint32_t m2, bool victimDown, SoundVec at);
 
+    /// Stops the sound `human` holds (`+0x168`, where `SA` 83's spray loop is kept) and forgets it: clip event `0x45`
+    /// (message `0xc5`), which reaches play() as HumanSound::Kind::StopHeld (docs/research/sound-events.md#spray-loop).
+    /// Nothing when he holds none.
+    void stopHeldSound(double human);
+    /// A cinematic's start: every human's held sound stops (docs/research/sound-events.md#spray-loop).
+    void stopHeldSounds();
+    /// The human `human` is removed: his held sound stops with him.
+    void humanRemoved(double human) { stopHeldSound(human); }
+    /// Whether `human` holds a sound (his `+0x168` is set).
+    [[nodiscard]] bool holdsSound(double human) const { return m_held.contains(human); }
+    /// How many humans hold a sound.
+    [[nodiscard]] std::size_t heldSoundCount() const { return m_held.size(); }
+
   private:
     // The animation entry `id` at the human, owned by him: a player's columns 1 and 2 (and 3 under combat framing)
     // twice as loud; anyone else's column 1. Whether a sound came.
@@ -96,7 +110,7 @@ class HumanSoundEvents {
     MaterialSoundPlayer& m_sounds;
     HumanVoices& m_voices;
     RandomRange m_random;
-    std::map<double, SoundHandle> m_loops; // SA 83's sound per human (+0x168)
+    std::map<double, SoundHandle> m_held; // each human's held sound (+0x168): SA 83's spray loop
 };
 
 } // namespace coney::audio
