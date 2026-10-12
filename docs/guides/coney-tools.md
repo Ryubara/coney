@@ -606,20 +606,21 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   the generated blocks are current.
 * `--github` reads issues, pull requests, labels, the repository settings and the ruleset through `gh` (read only;
   `gh` must be signed in) and checks them: the sections of each open issue (a missing one, one left as `x`), its
-  Screenshots, its labels, a closed issue that still carries an `S-` status label, the word "owner" for the person
-  (say "user"), closed issues and merged pull requests that
+  Screenshots, its labels, a closed issue that still carries an `S-` status label, the word "owner" for a person
+  (say "user" for who tested or filed it, "maintainer" for who decides), closed issues and merged pull requests that
   keep an unchecked item with no follow-up issue number, open pull requests whose description names a path on your
   machine or an image that is not uploaded, stacked pull requests, how long an item has waited, and drift between the
   labels, settings and ruleset on GitHub and the file. `--save-snapshot FILE` also writes what it read, and
   `--snapshot FILE` audits a saved snapshot instead of reading GitHub (the tests do; so can you, offline). The link
   check needs `origin/main` in the checkout (`git fetch origin`) and says so when it is missing.
 * `--local` reads the workspace around the checkout: the free space of its drive, merged worktrees and stray files
-  among the worktrees (`workspace clean` would remove them), and scratch folders of finished work that still hold
-  captures. The limits are the `workspace` section of the file.
+  among the worktrees (`workspace clean` would remove them), and scratch folders of merged or abandoned branches that
+  still hold files taken from the original (save states, traces, dumps). The limits are the `workspace` section of the
+  file.
 
 Each finding has the check's id, a severity (`error` or `warn`), the item (`#201`, a file, a worktree), a message and a
 fix class: `auto` (a coney-tools command fixes it), `skill` (a person or the `/repo-hygiene` skill fixes it with
-judgement) or `owner` (a maintainer decides). The text report groups findings by check and prints the counts;
+judgement) or `maintainer` (a maintainer decides). The text report groups findings by check and prints the counts;
 `--show N` limits the findings printed per check (0 prints all). `--json` prints one object with `errors`,
 `warnings`, `checks` (the count per check that ran), `notices` (what could not be read) and `findings`, each with
 `check`, `keys` (the conventions keys it enforces), `severity`, `item`, `url`, `message` and `fix`. `--only` takes a

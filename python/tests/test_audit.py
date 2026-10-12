@@ -67,7 +67,7 @@ def test_the_error_checks_include_what_the_user_pointed_out_by_hand() -> None:
         "issue.closed-unchecked",
         "pr.remaining-uncited",
     } <= errors
-    assert {"pr.body", "issue.owner-word", "pr.owner-word"} <= errors
+    assert {"pr.body", "issue.person-word", "pr.person-word"} <= errors
 
 
 # --- the loader reads the registry strictly -------------------------------------------------------------------------
@@ -78,7 +78,7 @@ def test_the_error_checks_include_what_the_user_pointed_out_by_hand() -> None:
     [
         ("scope", "everywhere", "scope: expected one of: files, github, local"),
         ("severity", "fatal", "severity: expected one of: error, warn"),
-        ("fix", "magic", "fix: expected one of: auto, skill, owner"),
+        ("fix", "magic", "fix: expected one of: auto, skill, maintainer"),
         ("keys", ["paths.nothing"], "'paths.nothing' is not a key of this file"),
         ("keys", [], "keys: expected a non-empty list"),
         ("summary", "", "summary: expected non-empty text"),
@@ -119,7 +119,9 @@ def test_a_docs_only_pattern_the_scope_script_cannot_read_is_refused(pattern: st
 
 
 def test_the_wording_and_the_placeholders_are_read() -> None:
-    assert CONVENTIONS.repo.wording.person == "user" and CONVENTIONS.repo.wording.avoid == ("owner",)
+    wording = CONVENTIONS.repo.wording
+    assert (wording.person, wording.decider, wording.avoid) == ("user", "maintainer", ("owner",))
+    assert "make the repository public" in CONVENTIONS.repo.maintainer_decisions
     assert "x" in CONVENTIONS.issues.placeholders and "tbd" in CONVENTIONS.issues.placeholders
     assert conventions_with(("repo.wording.avoid", ["owner", "boss"])).repo.wording.avoid == ("owner", "boss")
 
@@ -246,4 +248,4 @@ def test_the_json_report_has_the_fields_the_skill_reads() -> None:
 
 def test_audit_cli_is_importable() -> None:
     assert audit_cli.DEFAULT_SHOWN > 0 and audit_files.CI_SCOPE_SCRIPT.endswith("ci-scope.sh")
-    assert audit_github.FETCH_LIMIT > 1000 and audit_local.CAPTURE_SUFFIXES
+    assert audit_github.FETCH_LIMIT > 1000 and audit_local.ScratchFolder is not None

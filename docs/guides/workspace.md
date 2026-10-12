@@ -206,7 +206,7 @@ delete it once you know the work is over. The file's name is `workspace.busy_mar
 `workspace.disk_min_free_gb` key of [.github/conventions.yml](repo:.github/conventions.yml)), for hooks and scripts
 (`coney-tools workspace disk || coney-tools workspace clean --apply`). The coordinator runs
 `clean --apply` after every merge round (`coney-tools repo audit --local` lists what it would remove and the scratch
-folders that still hold captures), and agents delete their own `build/` when they finish a unit
+folders of finished work that still hold files taken from the original), and agents delete their own `build/` when they finish a unit
 ([Briefing](agents.md#briefs)). `scratch/` is not cleaned automatically: prune built docs sites, logs and captures
 there yourself (below).
 
@@ -216,3 +216,11 @@ there yourself (below).
 experiments. It is never committed and nothing depends on it surviving. Prune it when the work that produced a file
 is done, and keep out of it anything you would be sorry to lose; findings belong in
 [research pages](research-workflow.md), not in scratch.
+
+Name a scratch folder for its branch (`scratch/<branch>/`). `coney-tools repo audit --local` warns (`ws.scratch`) about
+a folder whose branch is merged or gone and that still holds files taken from the original: the types in
+`workspace.game_capture_suffixes` of [.github/conventions.yml](repo:.github/conventions.yml) (PCSX2 save states,
+traces, memory dumps). They are of no use once the work is finished, and they are the files that must never leave the
+machine. Screenshots are not looked at there: upload what an issue or a pull request needs, then delete them. The
+folders in `workspace.shared_scratch` (the emulator's files, the saved states, the PCSX2 claims, the downloads, the
+preview builds) belong to the workspace and are never reported.

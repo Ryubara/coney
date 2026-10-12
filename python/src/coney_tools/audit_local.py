@@ -30,19 +30,20 @@ from coney_tools.workspace_clean import (
 )
 
 _GIB = 1024**3
-#: File types of screenshots and recordings, which an issue or a pull request holds once uploaded.
-CAPTURE_SUFFIXES = frozenset({".png", ".jpg", ".jpeg", ".gif", ".webp", ".mp4", ".webm", ".mkv", ".mov"})
 
 
 @dataclass(frozen=True)
 class ScratchFolder:
-    """A folder of the workspace's scratch area and what it holds."""
+    """A scratch folder (named for its branch) and the game-derived captures it holds."""
 
     name: str
-    captures: int
-    capture_bytes: int
-    #: Whether a worktree (or a branch checked out in one) carries the folder's name.
-    has_worktree: bool
+    #: Files whose type `workspace.game_capture_suffixes` names (traces, dumps, save states), at any depth.
+    game_files: int
+    game_bytes: int
+    #: `shared` (a folder of the workspace itself, not of a branch), `active` (a worktree carries the name, or nothing
+    #: needed judging), `open` (a branch of the name exists and is
+    #: not merged: work to come), `merged` (its branch is in origin/main) or `gone` (no branch of the name is left).
+    state: str
 
 
 @dataclass
@@ -62,11 +63,11 @@ class LocalContext:
     notices: list[str] = field(default_factory=list)
 
 
-def _captures(folder: Path) -> tuple[int, int]:
-    """How many capture files `folder` holds (at any depth) and their total size."""
+def _game_files(folder: Path, suffixes: frozenset[str]) -> tuple[int, int]:
+    """How many game-derived files `folder` holds (at any depth, by file type) and their total size."""
     count = size = 0
     for path in folder.rglob("*"):
-        if path.is_file() and path.suffix.lower() in CAPTURE_SUFFIXES:
+        if path.is_file() and path.suffix.lower() in suffixes:
             count += 1
             try:
                 size += path.stat().st_size
@@ -80,6 +81,38 @@ def has_origin_main(checkout: Path) -> bool:
     try:
         done = subprocess.run(
             ["git", "rev-parse", "--verify", "--quiet", "origin/main"],
+            cwd=checkout,
+            capture_output=True,
+            timeout=60,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return done.returncode == 0
+
+
+def _local_branches(checkout: Path) -> set[str]:
+    """The names of the checkout's local branches (empty when git cannot say)."""
+    try:
+        done = subprocess.run(
+            ["git", "for-each-ref", "--format=%(refname:short)", "refs/heads"],
+            cwd=checkout,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=60,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return set()
+    return set(done.stdout.split()) if done.returncode == 0 else set()
+
+
+def _branch_merged(checkout: Path, branch: str) -> bool:
+    """Whether the branch's tip is in `origin/main` (a squash-merged branch is not: only its pull request says so)."""
+    try:
+        done = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", f"refs/heads/{branch}", "origin/main"],
             cwd=checkout,
             capture_output=True,
             timeout=60,
@@ -129,12 +162,24 @@ def build_context(
     if folder.is_dir():
         context.loose = sorted(child for child in folder.iterdir() if child.resolve() not in known)
     names = {tree.path.name for tree in trees[1:]} | {tree.branch for tree in trees[1:] if tree.branch}
+    branches = _local_branches(checkout)
+    suffixes = frozenset(suffix.lower() for suffix in conventions.workspace.game_capture_suffixes)
+    shared = set(conventions.workspace.shared_scratch)
     scratch = layout.workspace / "scratch"
     if scratch.is_dir():
         for child in sorted(scratch.iterdir()):
-            if child.is_dir():
-                count, size = _captures(child)
-                context.scratch.append(ScratchFolder(child.name, count, size, child.name in names))
+            if not child.is_dir():
+                continue
+            count, size = _game_files(child, suffixes)
+            if child.name in shared:
+                state = "shared"  # the emulator's, the save states', the downloads': never a branch's leftovers
+            elif not count or child.name in names:
+                state = "active"  # nothing to report, so no git question is asked
+            elif child.name not in branches:
+                state = "gone"
+            else:
+                state = "merged" if _branch_merged(checkout, child.name) else "open"
+            context.scratch.append(ScratchFolder(child.name, count, size, state))
     return context
 
 
@@ -176,11 +221,17 @@ def merged_worktrees(context: LocalContext) -> Iterator[Problem]:
 
 @check("ws.scratch")
 def finished_scratch(context: LocalContext) -> Iterator[Problem]:
-    """A scratch folder with no worktree of its name holds no captures (they are uploaded, then deleted)."""
+    """A scratch folder whose branch is merged or gone holds no game-derived captures (traces, dumps, save states).
+
+    Screenshots and recordings of Coney are not looked at here: they are uploaded where they are needed. This is about
+    the files taken from the original, which have no use once the work is finished and must not linger.
+    """
     for folder in context.scratch:
-        if folder.captures and not folder.has_worktree:
+        if folder.game_files and folder.state in ("merged", "gone"):
+            why = "its branch is merged" if folder.state == "merged" else "no branch of that name is left"
+            size = f"{folder.game_bytes / 1024 / 1024:.1f} MB"
             yield Problem(
                 f"scratch/{folder.name}",
-                f"{folder.captures} capture file(s), {folder.capture_bytes / 1024 / 1024:.1f} MB, and no worktree of "
-                "that name: upload what a pull request or issue needs, then delete them",
+                f"{folder.game_files} game-derived file(s) (traces, dumps, save states), {size}, and {why}: "
+                "delete them (the research page holds what they showed)",
             )

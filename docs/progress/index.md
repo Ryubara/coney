@@ -18,7 +18,7 @@ How far Coney has come, measured three ways:
   bar in the same commit. How to refresh it: [Research workflow](../guides/research-workflow.md#understood).
 - **Milestones:** the status table of the [roadmap](../roadmap.md).
 - **Missions:** the [mission checklist](../missions/index.md): each story level's status, from Not Started to
-  Approved by the owner's play-test, with its checkpoints and the script bindings it needs.
+  Approved by the user's play-test, with its checkpoints and the script bindings it needs.
 
 The tables below are not in the repository: they are generated each time the documentation is built, so this page
 always shows the numbers of `main`, and the badges at the top of the repository's `README.md` read the same figures

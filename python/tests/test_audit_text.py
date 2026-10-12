@@ -105,7 +105,7 @@ def test_link_text_counts_as_words() -> None:
     assert len(word_uses("[the owner](https://example.invalid)", ["owner"])) == 1
 
 
-@pytest.mark.parametrize("text", ["owner/repo", "{owner} and {repo}", "the owner_decisions key", "ownership"])
+@pytest.mark.parametrize("text", ["owner/repo", "{owner} and {repo}", "the owner_name key", "ownership"])
 def test_names_that_contain_the_word_are_not_a_use(text: str) -> None:
     assert word_uses(text, ["owner"]) == []
 

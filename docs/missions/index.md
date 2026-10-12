@@ -2,8 +2,8 @@
 
 # Missions
 
-Which missions of the story Coney can play, and how far the owner's play-testing has signed each off. A mission here is
-a level: the 18 story missions, the hub between them, the five flashbacks and the five stages of the Armies of the Night
+Which missions of the story Coney can play, and how far the user's play-testing has signed each off. A mission here is a
+level: the 18 story missions, the hub between them, the five flashbacks and the five stages of the Armies of the Night
 bonus game. Each page lists the mission's checkpoints, what it needs from the script bindings, its known issues and how
 to run it.
 
@@ -13,9 +13,9 @@ to run it.
 | --- | --- | --- |
 | ⬜ Not Started | 21 | No Coney code for it yet. |
 | 🚧 In Progress | 6 | Being built. |
-| 🎮 Pending Gameplay Approval | 2 | Built to its end in Coney; waits for the owner's play-test against the original. |
+| 🎮 Pending Gameplay Approval | 2 | Built to its end in Coney; waits for the user's play-test against the original. |
 | 🔧 Needs Fixes | 0 | A play-test found something off; back in maintenance, the known issues are listed. |
-| ✅ Approved | 0 | The owner played it and signed it off. |
+| ✅ Approved | 0 | The user played it and signed it off. |
 
 ## Story missions {#story}
 
@@ -69,7 +69,7 @@ to run it.
 ## Lifecycle {#lifecycle}
 
 A mission starts Not Started and becomes In Progress when its first checkpoint is being built. The implementer moves it
-to Pending Gameplay Approval once every checkpoint plays to its end in Coney. Only the owner, after play-testing it
+to Pending Gameplay Approval once every checkpoint plays to its end in Coney. Only the user, after play-testing it
 against the original, moves it to Needs Fixes (the play-test found something; the known issues are listed on its page)
 or to Approved. A merged fix moves a Needs Fixes mission back to Pending Gameplay Approval for another play-test. Each
 checkpoint carries the same states, and a mission's state never claims more than its checkpoints show: Pending, Needs

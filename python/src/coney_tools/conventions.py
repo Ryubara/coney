@@ -48,11 +48,13 @@ class ConventionsError(ConfigError):
 
 @dataclass(frozen=True)
 class Wording:
-    """How issues and pull requests name people: the word to use and the words that name the same person wrongly."""
+    """How issues, pull requests and guides name people: who is the user, who decides, and the words never to use."""
 
-    #: What the person who directs the project is called in an issue or a description (`user`).
+    #: What the person who tested, was affected or created the issue or pull request is called (`user`).
     person: str
-    #: Words that must not name that person there (`owner`); matched as whole words outside code.
+    #: What whoever decides is called (`maintainer`).
+    decider: str
+    #: Words that must not name a person there (`owner`); matched as whole words outside code.
     avoid: tuple[str, ...]
 
 
@@ -63,7 +65,7 @@ class Repo:
     default_branch: str
     wording: Wording
     #: Decisions an agent never takes; it stops and reports them.
-    owner_decisions: tuple[str, ...]
+    maintainer_decisions: tuple[str, ...]
     #: Role (`format_cpp`, `hooks`, ...) to the repository path of a tool's own configuration file.
     tools: Mapping[str, str]
 
@@ -429,7 +431,7 @@ class CheckSpec:
     #: `error` fails the audit (exit code 1); `warn` is reported and does not.
     severity: str
     #: `auto` (a coney-tools command fixes it), `skill` (the /repo-hygiene skill or the author fixes it with judgement)
-    #: or `owner` (a maintainer decides).
+    #: or `maintainer` (a maintainer decides).
     fix: str
     #: The conventions keys the check enforces, as dotted paths (`issues.labels`); each exists in the file.
     keys: tuple[str, ...]
@@ -459,6 +461,11 @@ class Workspace:
     #: A worktree holding a file of this name is never cleaned.
     busy_marker: str
     remove_worktree_when_merged: bool
+    #: File types taken from the original (traces, memory dumps, save states); `repo audit --local` finds them in the
+    #: scratch folder of merged or abandoned work.
+    game_capture_suffixes: tuple[str, ...]
+    #: Scratch folders that belong to the workspace, not to a branch (the emulator's, the save states', the downloads').
+    shared_scratch: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -605,18 +612,19 @@ def _docs_only_patterns(value: object, where: str) -> tuple[str, ...]:
 
 
 def _read_repo(data: object, where: str) -> Repo:
-    """The `repo` section: the default branch, the wording, the owner-only decisions and the tool files."""
-    table = _table(data, where, ("default_branch", "wording", "owner_decisions", "tools"))
+    """The `repo` section: the default branch, the wording, the maintainer decisions and the tool files."""
+    table = _table(data, where, ("default_branch", "wording", "maintainer_decisions", "tools"))
     tools = _mapping(table["tools"], _at(where, "tools"))
     wording_where = _at(where, "wording")
-    wording = _table(table["wording"], wording_where, ("person", "avoid"))
+    wording = _table(table["wording"], wording_where, ("person", "decider", "avoid"))
     return Repo(
         default_branch=_text(table["default_branch"], _at(where, "default_branch")),
         wording=Wording(
             person=_text(wording["person"], _at(wording_where, "person")),
+            decider=_text(wording["decider"], _at(wording_where, "decider")),
             avoid=_texts(wording["avoid"], _at(wording_where, "avoid")),
         ),
-        owner_decisions=_texts(table["owner_decisions"], _at(where, "owner_decisions")),
+        maintainer_decisions=_texts(table["maintainer_decisions"], _at(where, "maintainer_decisions")),
         tools=MappingProxyType({key: _text(path, _at(_at(where, "tools"), key)) for key, path in tools.items()}),
     )
 
@@ -969,7 +977,7 @@ def _read_labels(data: object, where: str) -> Labels:
 #: Where a check runs, how bad a finding is and who fixes it (the words `hygiene.checks` may use).
 _CHECK_SCOPES = ("files", "github", "local")
 _CHECK_SEVERITIES = ("error", "warn")
-_CHECK_FIXES = ("auto", "skill", "owner")
+_CHECK_FIXES = ("auto", "skill", "maintainer")
 #: A check id: a group, a dot and a name.
 _CHECK_ID = re.compile(r"^[a-z]+\.[a-z][a-z-]*$")
 
@@ -1025,7 +1033,15 @@ def _read_hygiene(data: object, where: str) -> Hygiene:
 
 def _read_workspace(data: object, where: str) -> Workspace:
     """The `workspace` section (local only)."""
-    keys = ("worktrees", "scratch", "disk_min_free_gb", "busy_marker", "remove_worktree_when_merged")
+    keys = (
+        "worktrees",
+        "scratch",
+        "disk_min_free_gb",
+        "busy_marker",
+        "remove_worktree_when_merged",
+        "game_capture_suffixes",
+        "shared_scratch",
+    )
     table = _table(data, where, keys)
     return Workspace(
         worktrees=_text(table["worktrees"], _at(where, "worktrees")),
@@ -1035,6 +1051,8 @@ def _read_workspace(data: object, where: str) -> Workspace:
         remove_worktree_when_merged=_flag(
             table["remove_worktree_when_merged"], _at(where, "remove_worktree_when_merged")
         ),
+        game_capture_suffixes=_texts(table["game_capture_suffixes"], _at(where, "game_capture_suffixes")),
+        shared_scratch=_texts(table["shared_scratch"], _at(where, "shared_scratch")),
     )
 
 

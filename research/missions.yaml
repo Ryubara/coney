@@ -11,13 +11,13 @@
 #    each: {N: {status, note}}}, research [{title, path under docs/}], optional issues, questions, test, notes.
 # Statuses (missions and checkpoints): not-started, in-progress, pending-approval, needs-fixes, approved.
 about: |
-  Which missions of the story Coney can play, and how far the owner's play-testing has signed each off. A mission
+  Which missions of the story Coney can play, and how far the user's play-testing has signed each off. A mission
   here is a level: the 18 story missions, the hub between them, the five flashbacks and the five stages of the
   Armies of the Night bonus game. Each page lists the mission's checkpoints, what it needs from the script bindings,
   its known issues and how to run it.
 lifecycle: |
   A mission starts Not Started and becomes In Progress when its first checkpoint is being built. The implementer
-  moves it to Pending Gameplay Approval once every checkpoint plays to its end in Coney. Only the owner, after
+  moves it to Pending Gameplay Approval once every checkpoint plays to its end in Coney. Only the user, after
   play-testing it against the original, moves it to Needs Fixes (the play-test found something; the known issues are
   listed on its page) or to Approved. A merged fix moves a Needs Fixes mission back to Pending Gameplay Approval for
   another play-test. Each checkpoint carries the same states, and a mission's state never claims more than its

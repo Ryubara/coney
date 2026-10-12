@@ -13,10 +13,12 @@ version: 1
 
 repo:
   default_branch: main
-  # What an issue or a pull request calls the person who directs the project, and the word it must not use for them.
-  wording: {person: user, avoid: [owner]}
+  # How an issue, a pull request or a guide names a person. `person`: the user, whoever tested, was affected by a
+  # problem or created the issue or pull request. `decider`: the maintainers, whoever decides. `avoid`: words that
+  # never name a person (the project's owner is a maintainer; say maintainers).
+  wording: {person: user, decider: maintainer, avoid: [owner]}
   # Decisions only a maintainer makes: an agent stops and reports instead of acting (AGENTS.md, "Rules").
-  owner_decisions:
+  maintainer_decisions:
     - make the repository public
     - tag a release
     - force-push main or someone else's branch
@@ -246,7 +248,7 @@ hygiene:
   # The audit's checks (`coney-tools repo audit`; docs/guides/repo-conventions.md#audit-checks). scope: where it runs
   # (files = the checkout, github = issues, pull requests, labels and settings, local = the workspace). severity: error
   # fails the audit (exit code 1), warn is only reported. fix: auto = a coney-tools command fixes it, skill = the
-  # /repo-hygiene skill or the author fixes it with judgement, owner = a maintainer decides. keys: the keys of this file
+  # /repo-hygiene skill or the author fixes it with judgement, maintainer = a maintainer decides. keys: the keys of this file
   # the check enforces (each must exist). A check listed here without code in coney_tools/audit_*.py, or code without
   # an entry here, fails a test.
   checks:
@@ -328,12 +330,12 @@ hygiene:
       fix: skill
       keys: [issues.labels.closed_keeps_status, labels.families]
       summary: "a closed issue still carries an S- status label (the issue-status workflow removes it; this is the backstop)"
-    issue.owner-word:
+    issue.person-word:
       scope: github
       severity: error
       fix: skill
       keys: [repo.wording]
-      summary: "an open issue says 'owner' for the person who directs the project (say 'user')"
+      summary: "an open issue says 'owner' for a person (say 'user' for who tested or filed it, 'maintainer' for who decides)"
     issue.closed-unchecked:
       scope: github
       severity: error
@@ -394,12 +396,12 @@ hygiene:
       fix: skill
       keys: [pull_requests]
       summary: "an open pull request's description breaks the template rules (sections, local file paths, images not uploaded)"
-    pr.owner-word:
+    pr.person-word:
       scope: github
       severity: error
       fix: skill
       keys: [repo.wording]
-      summary: "an open pull request says 'owner' for the person who directs the project (say 'user')"
+      summary: "an open pull request says 'owner' for a person (say 'user' for who tested or filed it, 'maintainer' for who decides)"
     pr.remaining-uncited:
       scope: github
       severity: error
@@ -445,7 +447,7 @@ hygiene:
     gh.ruleset:
       scope: github
       severity: error
-      fix: owner
+      fix: maintainer
       keys: [merge]
       summary: "the GitHub ruleset or repository settings differ from the merge section"
     ws.disk:
@@ -464,8 +466,8 @@ hygiene:
       scope: local
       severity: warn
       fix: skill
-      keys: [workspace.scratch]
-      summary: "a scratch folder of finished work still holds captures"
+      keys: [workspace.scratch, workspace.game_capture_suffixes, workspace.shared_scratch]
+      summary: "a scratch folder of merged or abandoned work still holds files taken from the original (traces, dumps, save states)"
 
 # Local only (`workspace clean|disk`); the hosted checks ignore it.
 workspace:
@@ -474,3 +476,9 @@ workspace:
   disk_min_free_gb: 30
   busy_marker: ".coney-busy"                     # a worktree holding it is never cleaned
   remove_worktree_when_merged: true
+  # File types taken from the original (PCSX2 save states, traces, memory dumps): `repo audit --local` finds them in the
+  # scratch folder of a branch that is merged or gone, where they have no use left. Screenshots are not on this list.
+  game_capture_suffixes: [".p2s", ".trace", ".dump", ".bin"]
+  # Scratch folders that are the workspace's own, not a branch's (the emulator's files, the saved states, the PCSX2
+  # claims, the downloads, the preview builds): the scratch check never reports them.
+  shared_scratch: [pcsx2, pcsx2-states, pcsx2-claims, downloads, preview, public-preview, presentation]

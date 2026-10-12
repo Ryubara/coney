@@ -23,7 +23,7 @@ and `labels.yml`) are gone, and so are the constants that repeated their values 
 
 | Section | What it says | Read by |
 | --- | --- | --- |
-| `repo` | The default branch, the wording (call the person who directs the project "user", never "owner"), the decisions only a maintainer takes (`owner_decisions`) and the tool configuration files | `repo audit` (`files.exist` and the wording checks); agents ([AGENTS.md](repo:AGENTS.md)) |
+| `repo` | The default branch, the wording (the "user" is whoever tested, was affected or created the issue or pull request; the "maintainers" are whoever decides; never "owner" for a person), the decisions only a maintainer takes (`maintainer_decisions`) and the tool configuration files | `repo audit` (`files.exist` and the wording checks); agents ([AGENTS.md](repo:AGENTS.md)) |
 | `paths` | Which paths are code, documentation and documentation-only; generated paths; the agent pointer files; the one file that may hold the repository's address; the large-file limit | `repo check`, `repo check-docs`, `check changed`; `repo render` (the `docs-only-paths` block); `ci-scope.sh` reads the docs-only list itself, and `repo audit` holds it and pre-commit to the file |
 | `commits` | The title form, its limit and suffix, the areas and verbs, the body wrap and the `Co-Authored-By` trailer | `repo check-title`, which the commit-title hook and the `title` job run; `repo render` (the `commit-rules` and `commit-areas` blocks) |
 | `pull_requests` | The description's sections and which must hold text, the `Docs: none` line, `Fixes #N`, the Remaining list, the Screenshots rule, the AI use choices, stacked pull requests | `repo check-body`, `repo check-docs`; `repo render` (the `pr-rules` block); `repo audit` checks the template and the stacked-pull-request rules |
@@ -82,7 +82,7 @@ says where the check runs, how bad a finding is and who fixes it, and the table 
   idle for a month). Promoting a warning to an error is one line in the file.
 - **Fix class.** `auto`: a coney-tools command fixes it (`repo render`, `repo labels --apply`, `workspace clean`).
   `skill`: it takes judgement, so the author or the coordinator fixes it (the `/repo-hygiene` skill, when it exists,
-  acts on a finding by this class). `owner`: a maintainer decides (the ruleset and the settings of the repository).
+  acts on a finding by this class). `maintainer`: a maintainer decides (the ruleset and the settings of the repository).
 - **Items.** Only open issues and open pull requests are checked for their sections, labels, wording and links. History
   is checked only where it loses work: a closed issue or a merged pull request that keeps an unchecked item with no
   follow-up issue number, and a pull request merged into a branch other than `main`.
@@ -103,7 +103,7 @@ says where the check runs, how bad a finding is and who fixes it, and the table 
 | `issue.screenshots` | github | error | skill | an open issue has no uploaded image and no Screenshots: none (reason) line |
 | `issue.labels` | github | error | skill | an issue lacks a type, area, priority (after triage) or status label, has two of one, or has an unknown label |
 | `issue.closed-status` | github | error | skill | a closed issue still carries an S- status label (the issue-status workflow removes it; this is the backstop) |
-| `issue.owner-word` | github | error | skill | an open issue says 'owner' for the person who directs the project (say 'user') |
+| `issue.person-word` | github | error | skill | an open issue says 'owner' for a person (say 'user' for who tested or filed it, 'maintainer' for who decides) |
 | `issue.closed-unchecked` | github | error | skill | a closed issue keeps an unchecked item that names no follow-up issue |
 | `issue.stale-status` | github | warn | skill | an issue calls a pull request open, merged or closed when it is not |
 | `issue.links` | github | warn | skill | an issue names a docs or research file as plain text, or links a file or anchor that is not on main |
@@ -114,7 +114,7 @@ says where the check runs, how bad a finding is and who fixes it, and the table 
 | `issue.review-without-pr` | github | warn | skill | an S-pending-review issue that no open pull request mentions |
 | `pr.title` | github | error | skill | an open pull request's title breaks the commit title rules |
 | `pr.body` | github | error | skill | an open pull request's description breaks the template rules (sections, local file paths, images not uploaded) |
-| `pr.owner-word` | github | error | skill | an open pull request says 'owner' for the person who directs the project (say 'user') |
+| `pr.person-word` | github | error | skill | an open pull request says 'owner' for a person (say 'user' for who tested or filed it, 'maintainer' for who decides) |
 | `pr.remaining-uncited` | github | error | skill | a merged pull request left an unchecked Remaining item that names no issue |
 | `pr.idle` | github | warn | skill | an open pull request has had no activity for longer than the limit |
 | `pr.stacked-depends` | github | error | skill | an open pull request on a branch other than main has no Depends on #N line |
@@ -122,10 +122,10 @@ says where the check runs, how bad a finding is and who fixes it, and the table 
 | `pr.base-merged` | github | warn | skill | an open pull request's base branch was merged: rebase it onto main and retarget it |
 | `pr.merged-into-base` | github | error | skill | a pull request was merged into a branch other than main, so the issues it fixes stay open |
 | `gh.labels` | github | error | auto | the labels on GitHub differ from the conventions (coney-tools repo labels --apply) |
-| `gh.ruleset` | github | error | owner | the GitHub ruleset or repository settings differ from the merge section |
+| `gh.ruleset` | github | error | maintainer | the GitHub ruleset or repository settings differ from the merge section |
 | `ws.disk` | local | error | auto | the workspace drive has less free space than the minimum (coney-tools workspace clean) |
 | `ws.worktrees` | local | warn | auto | a worktree of merged work is still there, or a stray file sits among the worktrees |
-| `ws.scratch` | local | warn | skill | a scratch folder of finished work still holds captures |
+| `ws.scratch` | local | warn | skill | a scratch folder of merged or abandoned work still holds files taken from the original (traces, dumps, save states) |
 <!-- conventions:end -->
 
 To add a check, write the function in `python/src/coney_tools/audit_files.py`, `audit_github.py` or `audit_local.py`
@@ -157,7 +157,7 @@ unusable, and never with a traceback.
    template or pre-commit's `--maxkb`. `coney-tools repo audit --files` fails, naming the file and the key, until they
    agree (`.github/scripts/ci-scope.sh` keeps no copy: it reads `paths.docs_only` from the file).
 3. Update the guide that explains the rule in the same commit ([Documentation](repo:AGENTS.md)).
-4. Changing the conventions themselves is a maintainer decision (`repo.owner_decisions`).
+4. Changing the conventions themselves is a maintainer decision (`repo.maintainer_decisions`).
 
 ## Workflows {#workflows}
 
