@@ -436,8 +436,9 @@ this order: the object roll, the money, the bonus roll, then `Random_Int(100)` f
 
 A human whose health runs out drops what he carries: `Human_OnHealthOut` (`0x002674c0`, [Defeat](combat.md#defeat))
 calls `Human_DropCarried(human, 1, 1)` (`0x00232c60`) when he is wounded or knocked out, unless he has human flag
-`0x4` (the players and the crew, [Human flags](combat.md#human-flags)). Every human goes through it, so a spawner's human drops his money as a scripted one
-does ([Starting money](#starting-money)). Confirmed (code) at `0x00232c60`; the order of the steps:
+`0x4` (the players and the crew, [Human flags](combat.md#human-flags)). Every human goes through it, so a spawner's
+human drops his money as a scripted one does ([Starting money](#starting-money)). Confirmed (code) at `0x00232c60`; the
+order of the steps:
 
 1. No brain: nothing.
 2. **The pocket** (`+0x250`, an item): `+0x254` pickups of that item's object, at his feet 0.5 m up. Unless the
@@ -461,9 +462,9 @@ does ([Starting money](#starting-money)). Confirmed (code) at `0x00232c60`; the 
 So `level87` chapter 3's early Destroyers, given $5 each by their constructor, leave $5 each when beaten: the price
 of one can of paint ([GoalDealer](ai.md#dealer)). **Coney** drops nothing yet ([`level87`'s
 fixes](scripting.md#level87-fixes), fix 4). Fix: on health out (wounded or knocked out), run steps 1-5 with the game's
-random numbers. Tests: an AI human of a brain kind other than 4 with $5 and no object, knocked out, leaves one `dyn_money` of $5
-and has $0; a civilian of brain kind 4 with $15 and factor 0.1 leaves $1; a human whose object is `none` and money 0
-leaves nothing.
+random numbers. Tests: an AI human of a brain kind other than 4 with $5 and no object, knocked out, leaves one
+`dyn_money` of $5 and has $0; a civilian of brain kind 4 with $15 and factor 0.1 leaves $1; a human whose object is
+`none` and money 0 leaves nothing.
 
 #### Interrogation {#interrogation}
 
