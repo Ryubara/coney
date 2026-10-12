@@ -20,6 +20,12 @@ Names and functions (the layouts are on the research pages named; every address 
 - `camera`: the player's follow camera, `*(0x005d9158)` (docs/research/camera.md).
 - `game_time`: the address of the game time in milliseconds, `*(0x0050b734) + 0x48` (docs/research/boot.md).
 - `u8 s8 u16 s16 u32 s32 f32 (address)`: the value in memory.
+- `hidx(handle)`: the handle index a handle names (its high half), or -1 for the null handle `0xffffffff` or a stale
+  one (its low half, the serial, differs from the handle table's at `0x006ebd38 + index * 8 + 4`; `Handle_Resolve`
+  `0x00390180`). A human's handle is its `u32` at `+0x90`, so `hidx` of it is `index(h)`.
+- `goal_type(vtable)`: a goal class's type id (docs/references/goal-types.md), -2 for a vtable not listed;
+  `goal_at(brain, k)`: the type id of the goal in slot k of the brain's stack (`+0x40`), -1 above the top (`+0x2c`).
+- `nonzero(address, n)`: how many of the n words from `address` are not 0 (a handle list's length).
 - `sin cos atan2 hypot sqrt abs min max`, `deg(radians)`, `rad(degrees)`, `wrap(degrees)` (to -180..180), `pi`.
 
 Field formulas (derived columns) use the same grammar, with the scenario's other fields as names.
@@ -30,7 +36,7 @@ from __future__ import annotations
 import ast
 import math
 import struct
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -45,6 +51,8 @@ TRANSFORM_TABLE = 0x00714B00
 TRANSFORM_SIZE = 0x20
 BRAIN_TABLE = 0x006D53F0
 BRAIN_SIZE = 0x2F0
+HANDLE_TABLE = 0x006EBD38
+NULL_HANDLE = 0xFFFFFFFF
 CAMERA_POINTER = 0x005D9158
 GAME_TIMER_POINTER = 0x0050B734
 GAME_TIME_OFFSET = 0x48
@@ -144,29 +152,51 @@ class Expression:
         return {node.id for node in ast.walk(self.tree) if isinstance(node, ast.Name) and id(node) not in called}
 
     def evaluate(self, names: Callable[[str], Any]) -> Any:
-        """The expression's value; `names` gives each name's value (raising KeyError for an unknown one)."""
+        """The expression's value; `names` gives each name's value (raising KeyError for an unknown one).
+
+        It runs as compiled Python with no builtins and the names as its only variables: parse() has checked that the
+        tree holds nothing but constants, names, arithmetic and calls by name, so nothing else can run (and a
+        recording of every human works out thousands of expressions an update, too many for a tree walk)."""
         try:
-            return self._eval(self.tree, names)
+            return eval(_code(self), {"__builtins__": {}}, _Names(names))
         except KeyError as error:
             raise ExpressionError(f"{self.text!r}: unknown name {error.args[0]!r}") from error
+        except NameError as error:
+            raise ExpressionError(f"{self.text!r}: unknown name {error.name!r}") from error
         except (ArithmeticError, TypeError, ValueError) as error:
             raise ExpressionError(f"{self.text!r}: {error}") from error
 
-    def _eval(self, node: ast.expr, names: Callable[[str], Any]) -> Any:
-        """Evaluate one node (the grammar is checked by parse(), so every node here is allowed)."""
-        if isinstance(node, ast.Constant):
-            return node.value
-        if isinstance(node, ast.Name):
-            return names(node.id)
-        if isinstance(node, ast.BinOp):
-            return _BINARY[type(node.op)](self._eval(node.left, names), self._eval(node.right, names))
-        if isinstance(node, ast.UnaryOp):
-            return _UNARY[type(node.op)](self._eval(node.operand, names))
-        assert isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
-        function = names(node.func.id)
-        if not callable(function):
-            raise ExpressionError(f"{self.text!r}: {node.func.id} is not a function")
-        return function(*(self._eval(arg, names) for arg in node.args))
+
+class _Names(Mapping[str, Any]):
+    """The names of one evaluation, as the variables compiled code looks up."""
+
+    def __init__(self, names: Callable[[str], Any]) -> None:
+        """Look names up with `names`."""
+        self._names = names
+
+    def __getitem__(self, key: str) -> Any:
+        """One name's value (KeyError for an unknown one)."""
+        return self._names(key)
+
+    def __iter__(self) -> Iterator[str]:
+        """No listing: names are only looked up."""
+        return iter(())
+
+    def __len__(self) -> int:
+        """No listing: names are only looked up."""
+        return 0
+
+
+_CODE: dict[str, Any] = {}
+
+
+def _code(expression: Expression) -> Any:
+    """The compiled code of a parsed expression, made once per text."""
+    code = _CODE.get(expression.text)
+    if code is None:
+        code = compile(ast.Expression(expression.tree), "<expression>", "eval")
+        _CODE[expression.text] = code
+    return code
 
 
 def parse(text: str) -> Expression:
@@ -193,9 +223,11 @@ def parse(text: str) -> Expression:
 class GameMemory:
     """The original's objects over a Memory (a PINE connection or a fake): the names of the module docstring."""
 
-    def __init__(self, memory: Memory) -> None:
-        """Wrap `memory`; nothing is read until a name is used."""
+    def __init__(self, memory: Memory, goal_types: Mapping[int, int] | None = None) -> None:
+        """Wrap `memory`; nothing is read until a name is used. `goal_types` maps goal vtables to type ids
+        (docs/references/goal-types.md) for goal_type() and goal_at()."""
         self.memory = memory
+        self.goal_types = dict(goal_types or {})
         self._player: int | None = None
         self.functions: dict[str, Any] = {
             **MATH,
@@ -207,6 +239,10 @@ class GameMemory:
             "tf": lambda h: TRANSFORM_TABLE + self.index(h) * TRANSFORM_SIZE,
             "brain": lambda h: BRAIN_TABLE + self.index(h) * BRAIN_SIZE,
             "heading": self.heading,
+            "hidx": self.hidx,
+            "goal_type": self.goal_type,
+            "goal_at": self.goal_at,
+            "nonzero": self.nonzero,
         }
 
     def read(self, address: int, kind: str) -> Number:
@@ -261,6 +297,34 @@ class GameMemory:
         base = TRANSFORM_TABLE + self.index(human) * TRANSFORM_SIZE
         return 2.0 * math.atan2(float(self.read(base + 0x18, "f32")), float(self.read(base + 0x1C, "f32")))
 
+    def hidx(self, handle: int) -> int:
+        """The handle index `handle` names, -1 for the null handle or a stale one (`Handle_Resolve` `0x00390180`:
+        the high half indexes the handle table, whose entry's serial must equal the low half)."""
+        handle = int(handle) & 0xFFFFFFFF
+        if handle == NULL_HANDLE or not handle & 0xFFFF:
+            return -1
+        index = handle >> 16
+        if index >= 0x8000 or self.read(HANDLE_TABLE + index * 8 + 4, "u16") != handle & 0xFFFF:
+            return -1
+        return index
+
+    def goal_type(self, vtable: int) -> int:
+        """The type id of the goal class with `vtable`, -2 for one not listed."""
+        return self.goal_types.get(int(vtable), -2)
+
+    def goal_at(self, brain: int, slot: int) -> int:
+        """The type id of the goal in stack slot `slot` of `brain`, -1 when the slot is empty (above the top)."""
+        slot = int(slot)
+        if slot < 0 or slot >= 10 or slot > int(self.read(brain + 0x2C, "s8")):
+            return -1
+        goal = int(self.read(brain + 0x40 + 4 * slot, "u32"))
+        return self.goal_type(int(self.read(goal + 0xC, "u32")))
+
+    def nonzero(self, address: int, count: int) -> int:
+        """How many of the `count` words from `address` are not 0, read in one batch."""
+        reads = [Read(int(address) + 4 * k, 4) for k in range(int(count))]
+        return sum(1 for word in self.memory.batch(reads) if word)
+
     def names(self, extra: Mapping[str, Value] | None = None) -> Callable[[str], Any]:
         """A name lookup for Expression.evaluate(): `extra` first, then the functions and the objects above."""
         bound = dict(extra or {})
@@ -280,3 +344,72 @@ class GameMemory:
             raise KeyError(name)
 
         return lookup
+
+
+class SampleMemory:
+    """A Memory that answers from what one sample has read so far: a read not made yet answers 0 and is noted, so
+    expressions can be worked out in rounds, each round's notes read in one message (evaluate_all())."""
+
+    def __init__(self, known: dict[tuple[int, int], int]) -> None:
+        """Answer from `known`, (address, size) to the unsigned value."""
+        self.known = known
+        self.missing: set[tuple[int, int]] = set()
+
+    def batch(self, reads: Sequence[Read], writes: Sequence[Write] = ()) -> list[int]:
+        """The known value of each of `reads`, 0 for one not read yet (noted in `missing`); it never writes."""
+        if writes:
+            raise ExpressionError("an expression may not write")
+        out = []
+        for read in reads:
+            key = (read.address, read.size)
+            if key in self.known:
+                out.append(self.known[key])
+            elif not 0 <= read.address <= 0xFFFFFFFF - read.size:
+                # An address worked out from a value not read yet can be anything; it is never read.
+                out.append(0)
+            else:
+                self.missing.add(key)
+                out.append(0)
+        return out
+
+
+#: A value worked out from memory within one sample (coney_tools.recorder's `value` and `follow` fields).
+Job = Callable[[GameMemory], Any]
+
+
+def evaluate_all(
+    memory: Memory,
+    known: dict[tuple[int, int], int],
+    jobs: Sequence[Job],
+    goal_types: Mapping[int, int] | None = None,
+    rounds: int = 8,
+) -> list[Any]:
+    """Every job's value, worked out together in few messages: each round runs the jobs not finished yet over the
+    reads made so far (`known`, which grows), then reads in one message all they asked for that was missing. A
+    pointer chain of depth d takes d rounds, however many jobs there are. A job that fails, or is still unfinished
+    after `rounds` rounds, gives NaN."""
+    sample = SampleMemory(known)
+    game = GameMemory(sample, goal_types)
+    results: list[Any] = [math.nan] * len(jobs)
+    pending = list(range(len(jobs)))
+    for _ in range(rounds):
+        unfinished: list[int] = []
+        wanted: set[tuple[int, int]] = set()
+        for k in pending:
+            sample.missing = set()
+            try:
+                value = jobs[k](game)
+            except ExpressionError:
+                value = math.nan
+            if sample.missing:
+                unfinished.append(k)
+                wanted |= sample.missing
+            else:
+                results[k] = value
+        if not unfinished:
+            break
+        order = sorted(wanted)
+        values = memory.batch([Read(address, size) for address, size in order])
+        known.update(zip(order, values, strict=True))
+        pending = unfinished
+    return results

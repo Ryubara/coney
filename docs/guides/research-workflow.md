@@ -552,7 +552,8 @@ when the state holds something else. `scripted-pad`, `right-stick` and `puppet` 
 **address expression** (`tf(player) + 0x4`, type `f32`), or worked out by a **formula** from the fields before it
 (`wrap(deg(2 * atan2(qz, qw)))`); `hidden = true` keeps a helper out of the CSV, and `follow = true` works the address
 out again at every sample, for a chain of pointers that changes as the game plays (the top of an animation stack).
-Expressions are arithmetic over these names, and nothing else of Python:
+A **value** field (`value = "nonzero(brain(h) + 0x164, 16)"`) is an expression over memory worked out at every sample,
+whose result is the column. Expressions are arithmetic over these names, and nothing else of Python:
 
 | Name | Value |
 | --- | --- |
@@ -562,6 +563,10 @@ Expressions are arithmetic over these names, and nothing else of Python:
 | `prec(h)`, `tf(h)`, `brain(h)` | `0x00660f50 + index × 0x2c`; `0x00714b00 + index × 0x20`; `0x006d53f0 + index × 0x2f0` |
 | `heading(h)` | the heading in radians from the transform's rotation (0 faces +y, anticlockwise) |
 | `camera`, `game_time` | `*(0x005d9158)`; `*(0x0050b734) + 0x48` |
+| `h` | with `rows = "humans"`, the row's human |
+| `hidx(handle)` | the handle index a handle names (high half), -1 for the null handle `0xffffffff` or a stale one (`0x00390180`) |
+| `goal_type(vt)`, `goal_at(brain, k)` | a goal class's type id ([goal types](../references/goal-types.md)); the type of stack slot k, -1 above the top |
+| `nonzero(address, n)` | how many of n words are not 0 (a handle list's length) |
 | `u8` ... `f32` (address) | a value in memory (`u8 s8 u16 s16 u32 s32 f32`) |
 | `sin cos atan2 hypot sqrt abs min max deg rad wrap pi` | math; `wrap` takes degrees to (-180, 180] |
 
@@ -569,6 +574,13 @@ A column that Coney's `--trace` also writes has Coney's name and unit ([Tracing]
 `z`, `heading`, `speed`, `vz`, `gait`, `clip`, `stamina`, `command`, `health`, `power` and the camera's `cam_*`,
 `look_*`, `wanted_*`, `cam_distance`, `cam_pitch`, `cam_yaw`, `band_near` and `target_pitch`. `phase` (record
 `+0x08`) is the original's only.
+
+**Every human.** `rows = "humans"` in a scenario writes one row per human in use per update (`step`, `human`, then the
+fields, with `h` the row's human) instead of one per update: the `humans` field set, a gang battle's every fighter
+([Rumble: gang battle trace](../research/rumble.md#gang-battle-trace)), is the contract for Coney's all-humans
+`--trace`. One message reads which humans are in use and every fixed address; the `value` and `follow` fields are then
+worked out together, one message per level of pointers (four or five messages a sample). The recorder prints how many
+samples were **torn**: read while the next update had already started, so they mix two updates.
 
 #### Hooks {#hooks}
 

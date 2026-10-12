@@ -422,6 +422,13 @@ with a 1,500 ms stand-in for any announcer line whose length it does not know.
    dropped, as in the original. That is faithful, though it can feel like a delay.
 6. A level-flow test: a looping track started in the front end has stopped when the arena's first frame runs.
 
+## Gang battle trace {#gang-battle-trace}
+
+A recording of the biggest Rumble battle with every human traced on every update, to compare gang combat with Coney's
+by behaviour statistics (issue #273). The columns are the `humans` field set of `repo:research/traces/fields.toml`
+(one row per human per update; [Every human](../guides/research-workflow.md#recording-a-trace)); Coney's all-humans
+`--trace` writes the same columns. The scenario, its settings and the first measurements follow as they are recorded.
+
 ## Coney's implementation {#coney}
 
 A Brawl (1 ON 1 or WAR PARTY) plays to its end, won or lost ([Building: QUICK RUMBLE](../guides/building.md)): the

@@ -385,7 +385,9 @@ def _record(
             print(f"warning: {recording.hooks.lost} logged calls were lost (the ring overflowed between polls)")
     per_poll = 1000 * recording.seconds / max(recording.polls, 1)
     print(
-        f"{out}: {len(recording.rows)} updates, {len(recording.header) - 1} columns; "
+        f"{out}: {recording.updates} updates"
+        + (f" ({len(recording.lines)} human rows, {len(recording.torn)} torn)" if recording.lines else "")
+        + f", {len(recording.header) - 1} columns; "
         f"{recording.words} reads per poll, {recording.polls} polls in {recording.seconds:.1f} s "
         f"({per_poll:.2f} ms each); missed updates: {len(recording.missed)}"
         + (f" ({', '.join(map(str, recording.missed[:20]))})" if recording.missed else "")

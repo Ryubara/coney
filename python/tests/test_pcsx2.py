@@ -17,8 +17,11 @@ import pytest
 from coney_tools import pcsx2_state
 from coney_tools.config import ConfigError
 from coney_tools.game_memory import (
+    BRAIN_SIZE,
+    BRAIN_TABLE,
     CAMERA_POINTER,
     GAME_TIMER_POINTER,
+    HANDLE_TABLE,
     HUMAN_SIZE,
     HUMAN_TABLE,
     PER_PLAYER_TABLE,
@@ -455,6 +458,84 @@ def test_a_scenario_may_name_a_state_file_under_scratch(tmp_path: Path) -> None:
         path.write_text(head + original, encoding="utf-8")
         with pytest.raises(ScenarioError, match=problem):
             load_scenario(path, tmp_path)
+
+
+def _humans_repo(tmp_path: Path) -> Path:
+    """A made-up checkout with a per-human field set, a goal types list and a rows = "humans" scenario."""
+    path = _repo(tmp_path, "")
+    (tmp_path / "research" / "references").mkdir(parents=True)
+    (tmp_path / "research" / "references" / "goal-types.yaml").write_text(
+        "entries:\n  - {id: 8, name: Melee, vtable: 0x00540450}\n  - {id: 15, name: Fight, vtable: 0x005402d0}\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "research" / "traces" / "fields.toml").write_text(
+        """
+[[each]]
+name = "x"
+address = "tf(h) + 0x0"
+type = "f32"
+digits = 1
+[[each]]
+name = "clip"
+address = "rec(h) + 0x20"
+type = "s32"
+[[each]]
+name = "target"
+value = "hidx(u32(brain(h) + 0x124))"
+[[each]]
+name = "enemies"
+value = "nonzero(brain(h) + 0x164, 16)"
+[[each]]
+name = "goal"
+value = "goal_at(brain(h), s8(brain(h) + 0x2c))"
+[[each]]
+name = "goal0"
+value = "goal_at(brain(h), 0)"
+[[each]]
+name = "fight"
+formula = "1 - min(abs(goal - 15), 1)"
+""",
+        encoding="utf-8",
+    )
+    path.write_text('input = "demo.txt"\nupdates = 3\nrows = "humans"\nfields = ["each"]\n', encoding="utf-8")
+    return path
+
+
+def test_rows_per_human_follow_pointers_and_handles(tmp_path: Path, fake_pine: tuple[FakeGame, int]) -> None:
+    game, port = fake_pine
+    player_brain = BRAIN_TABLE + PLAYER_INDEX * BRAIN_SIZE
+    civilian_brain = BRAIN_TABLE + CIVILIAN_INDEX * BRAIN_SIZE
+    game.write_float(TRANSFORM_TABLE + CIVILIAN_INDEX * 0x20, 2.5)
+    # The player targets the civilian through a live handle (serial 7 in the handle table) and lists two enemies;
+    # his stack is Melee under Fight (two goals in the goal pool). The civilian's handle is stale (serial 8).
+    game.write(HANDLE_TABLE + CIVILIAN_INDEX * 8 + 4, 2, 7)
+    game.write32(player_brain + 0x124, CIVILIAN_INDEX << 16 | 7)
+    game.write32(civilian_brain + 0x124, PLAYER_INDEX << 16 | 8)
+    game.write32(player_brain + 0x164 + 4, 0x12345)
+    game.write32(player_brain + 0x164 + 40, 0x6789A)
+    game.memory[player_brain + 0x2C] = 1
+    game.write32(player_brain + 0x40, 0x00400000)
+    game.write32(player_brain + 0x44, 0x00400100)
+    game.write32(0x00400000 + 0xC, 0x00540450)
+    game.write32(0x00400100 + 0xC, 0x005402D0)
+    game.memory[civilian_brain + 0x2C] = 0xFF
+    # A sample takes several messages (the humans, then each round of pointers): updates come slower than polls.
+    game.polls_per_update = 12
+    scenario = load_scenario(_humans_repo(tmp_path), tmp_path)
+    with PineClient(port) as client:
+        recording = Recorder(GameMemory(client), scenario).record(timeout=5)
+    assert recording.header == ["step", "human", "x", "clip", "target", "enemies", "goal", "goal0", "fight"]
+    assert recording.updates == 4
+    assert recording.missed == []
+    # Step 0 is sampled whenever the first poll lands, maybe just before the next update; the others right after one.
+    assert set(recording.torn) <= {0}
+    rows = [line.split(",") for line in recording.lines]
+    # Human 0 (the civilian, index 5) comes first in table order, then the player (index 3), at every step.
+    assert [row[:2] for row in rows[:4]] == [["0", "5"], ["0", "3"], ["1", "5"], ["1", "3"]]
+    civilian, player = rows[2], rows[3]
+    assert civilian[2:] == ["2.5", "0", "-1", "0", "-1", "-1", "0"]
+    assert player[3] == "1"  # the clip counts the updates
+    assert player[4:] == [str(CIVILIAN_INDEX), "2", "15", "8", "1"]
 
 
 def test_the_repository_scenarios_load() -> None:
