@@ -90,7 +90,7 @@ A slot holder without a place, or whose own next-attack time (`+0x1e8`) has not 
 ## Target switches and what interrupts a fight {#switches}
 
 1. **The fight goal ends** (and Melee re-scores, +3 for the previous target) when the target fails
-   `Brain_ValidateEnemy`, when he no longer holds a slot on him (displaced, rule 1 above), when the target is beyond
+   `Brain_ValidateEnemy`, when he no longer holds a slot on him (displaced, [limits](#limits) rule 1), when the target is beyond
    5.5 m (unless he holds a throwable), every 30 updates when no straight walkable line is left, and at its deadline:
    4000 ms for every fight goal Melee pushes ([The durations](ai.md#fight-durations)), unless at that moment he still holds
    an active place on an attackable target and has no FollowAndDefend goal. So in a long brawl **every member
