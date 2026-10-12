@@ -2,8 +2,8 @@
 #include "platform/clip_recorder.h"
 
 #include <algorithm>
-#include <cstdio>
 #include <format>
+#include <fstream>
 #include <system_error>
 #include <utility>
 
@@ -14,7 +14,7 @@ namespace coney::platform {
 namespace {
 
 // The largest piece written to FFmpeg at once: SDL's pipe is non-blocking and takes what fits.
-constexpr std::size_t kWriteChunk = 64 * 1024;
+constexpr std::size_t kWriteChunk = std::size_t{64} * 1024;
 
 // `args` as the null-terminated array of C strings SDL's process calls take; valid while `args` lives.
 std::vector<const char*> argv(const std::vector<std::string>& args) {
@@ -232,10 +232,11 @@ std::expected<ClipSummary, Error> ClipRecorder::finish() {
     } else if (sound) {
         const std::string audio = clips::partPath(m_path, ".audio.part.raw");
         bool muxed = false;
-        if (std::FILE* file = std::fopen(audio.c_str(), "wb"); file != nullptr) {
-            const bool written =
-                std::fwrite(m_samples.data(), sizeof(std::int16_t), m_samples.size(), file) == m_samples.size();
-            muxed = std::fclose(file) == 0 && written;
+        if (std::ofstream file(audio, std::ios::binary | std::ios::trunc); file) {
+            file.write(reinterpret_cast<const char*>(m_samples.data()),
+                       static_cast<std::streamsize>(m_samples.size() * sizeof(std::int16_t)));
+            file.close();
+            muxed = !file.fail();
         }
         if (muxed) {
             const std::vector<std::string> args =

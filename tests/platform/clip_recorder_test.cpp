@@ -73,7 +73,7 @@ TEST_CASE("a recorder writes a clip through FFmpeg", "[clips]") {
     (*recorder)->start();
     const coney::clips::ClipSize size{64, 48};
     std::vector<std::uint8_t> frame(static_cast<std::size_t>(size.width) * size.height * 4, 0);
-    const std::vector<std::int16_t> sound(1600 * 2, 100);
+    const std::vector<std::int16_t> sound(std::size_t{1600} * 2, 100);
     for (int i = 0; i < 40; ++i) {
         std::fill(frame.begin(), frame.end(), static_cast<std::uint8_t>(i * 6));
         (*recorder)->addFrame(frame, size);
