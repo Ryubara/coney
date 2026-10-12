@@ -106,7 +106,7 @@ his footsteps play at half volume ([Characters](characters.md)); the AI's enemy 
 still: speed `+0x1ac` = 0, not busy, his gang able to help): after a delay (500 ms; with no command active, the time
 the nearest free member already on shadow ground needs to run to him at gait 4, + 500 ms) and while none of his gang
 has attackers, he issues Warrior command **3**, hold (`WarriorCommand_Dispatch`, [AI: Warrior
-commands](ai.md#warrior-commands): its line is `holdhide` while he hides); the command in force before is remembered
+commands](ai-gangs.md#warrior-commands): its line is `holdhide` while he hides); the command in force before is remembered
 at `0x0051480c` and given back when he leaves the hidden state (`Human_SetHiddenState(0)`). Confirmed (code); whether
 the hold takes its Hide form (type `0x13`) here is not traced.
 
@@ -160,7 +160,7 @@ A guard is a member of a gang under **`TacticScout`** (type `0x27`). Its argumen
 | 4 | range (40) | `+0x20` | the call's phone search radius, m | 10 |
 | 5 | roam radius (10) | `+0x24` | how far from his post he wanders, m (0: never) | 0 |
 | 6 | roam arc (30) | `+0x28` | the arc about his heading he wanders in, degrees | 20 |
-| 7 | callback | | the tactic's Lua callback ([Tactics](ai.md#tactic-kinds)) | `ch5.StealthSpotted` |
+| 7 | callback | | the tactic's Lua callback ([Tactics](ai-gangs.md#tactic-kinds)) | `ch5.StealthSpotted` |
 
 Arguments 2 and 3 are the same pair `TacticPathScout` names `callCount` and `callDelaySec`
 ([binding](../references/bindings/ai.md#tacticpathscout)). **Start** (`0x0031af98`) gives each living member a
@@ -216,7 +216,7 @@ so a stealth kill out of their sight goes unnoticed; noises still carry 50 m ([D
    than Scout, PathScout, Investigate (`0x5e`) or HelpRespond (`0x1d`): nothing; Investigate and HelpRespond are
    popped.
 4. With a human: **`GoalMelee`** on himself (he fights), then the **call**: only when a responder spawner exists (a
-   spawner in state 9 or 10, [Spawners](ai.md#spawners)), the enemy's gang has no call timer running (gang
+   spawner in state 9 or 10, [Spawners](ai-gangs.md#spawners)), the enemy's gang has no call timer running (gang
    `+0x5f0` = 0) and no other caller is active (game state `+0x284`, one caller at a time): he becomes the caller and
    gets **CallGang** (`0x6e`) with radius = the tactic's range (10 m in level87; twice his brain `+0x140` for a path
    scout or a negative range), the two call bytes, and the phone option on. The spotter is noted in brain

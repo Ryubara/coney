@@ -350,7 +350,7 @@ TEST_CASE("the disc's level5: the boss fight, won with the pad, ends the mission
     }
     bool complete = false;
     // Vargas first when he is near: stage 3 holds him at 67 % and 34 % until he tires, which only the hits he takes
-    // bring, and ends once neither boss stands (docs/research/ai.md#boss-diego-vargas). Fighting whoever was
+    // bring, and ends once neither boss stands (docs/research/ai-gangs.md#boss-diego-vargas). Fighting whoever was
     // nearest, the pad could beat on Diego, in front now that humans meet, while Vargas waited at his cap until the
     // player went down.
     const FightRun run =

@@ -101,7 +101,7 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Readers at 0x00312580 and 0x00315228 ([AI](../../research/ai.md#tactic-kinds)); other readers may exist. Values
+    Readers at 0x00312580 and 0x00315228 ([AI](../../research/ai-gangs.md#tactic-kinds)); other readers may exist. Values
     above 255 wrap (one byte).
   usage: {chunks: 10, calls: 23, boot: false, mission1: false, result_used: false, levels: [87, 14, 51, 52, 82]}
   coney: implemented
@@ -437,7 +437,7 @@
     (member, other, value): for message 18 the attacker and the members still standing, for 2 the headcount, for 17
     the event's value; other ids pass the event through a generic marshaller and count as handled when the function
     returns true. The message ids' meanings are inferred from the scripts' handler names. Behaviour:
-    [AI](../../research/ai.md#gang-events).
+    [AI](../../research/ai-gangs.md#gang-events).
   usage: {chunks: 140, calls: 1155, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
@@ -836,7 +836,7 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Gangs of the same kind, or both police kinds, still count as friends ([AI: gangs](../../research/ai.md#gang-record)).
+    Gangs of the same kind, or both police kinds, still count as friends ([AI: gangs](../../research/ai-gangs.md#gang-record)).
     Call it both ways for a mutual truce.
   usage: {chunks: 3, calls: 5, boot: false, mission1: false, result_used: false, levels: [93, 31, 83]}
 
@@ -874,7 +874,7 @@
     (10, 20, 30, 60 ...) are set at creation. The callback call is in 0x0016d860 (script slots +0x5c handle, +0x64
     short, +0x7c string, +0x8c call with 3); scripts such as level87's StoopCallBack index their own tables by the
     gang id. Type pick 0x0016d810; spawning, the callback and out-of-sight placement:
-    [AI: spawners](../../research/ai.md#spawners).
+    [AI: spawners](../../research/ai-gangs.md#spawners).
   usage: {chunks: 37, calls: 221, boot: false, mission1: true, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 84, 82, 92, 83, 20, 11]}
   coney: implemented
 
@@ -896,7 +896,7 @@
   depth: thorough
   notes: >-
     A spawner stops counting as in use once it has made its total number of humans
-    ([AI: spawners](../../research/ai.md#spawners)), so the answer turns false when a spawner is exhausted. Plain strcmp (0x00430c4c).
+    ([AI: spawners](../../research/ai-gangs.md#spawners)), so the answer turns false when a spawner is exhausted. Plain strcmp (0x00430c4c).
   usage: {chunks: 2, calls: 7, boot: false, mission1: false, result_used: true, levels: [95]}
   coney: implemented
 
@@ -934,7 +934,7 @@
   notes: >-
     Reader: GangSpawner_Update (0x001681a0, at 0x001685e8, the visibility test 0x001202e8). The test uses the
     spawner's own position, so it matters for spawners that place humans there, not for the states that place them
-    away from the player. Spawners: [AI](../../research/ai.md#spawners).
+    away from the player. Spawners: [AI](../../research/ai-gangs.md#spawners).
   usage: {chunks: 12, calls: 29, boot: false, mission1: false, result_used: false, levels: [34, 3, 81, 86, 93, 9, 54, 82, 83]}
   coney: implemented
 
@@ -952,14 +952,14 @@
   description: >-
     Switches a gang's named spawner to a new state, optionally with a new value, and sets its next-spawn time
     (`+0x64`) to now so a spawner made ready spawns on its next update. What each state does is in
-    [AI: spawners](../../research/ai.md#spawners).
+    [AI: spawners](../../research/ai-gangs.md#spawners).
   evidence: confirmed-code
   depth: thorough
   notes: >-
     The value and next-spawn time are written even when the mode is not accepted. Spawners only run while the
     level's spawn cap allows (SetSpawnMax). Each spawn calls GangAddSpawner's callback with (human, gang id, spawner
     name); states 6, 8 and 10 place the human out of the camera's sight
-    ([AI: out of sight](../../research/ai.md#spawner-placement)).
+    ([AI: out of sight](../../research/ai-gangs.md#spawner-placement)).
   usage: {chunks: 45, calls: 229, boot: false, mission1: false, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 82, 92, 83, 20, 11]}
   coney: implemented
 
@@ -980,7 +980,7 @@
   depth: thorough
   notes: >-
     Reader: GangSpawner_Update (0x001681a0, at 0x0016855c; the wave flag is spawner `+0x51`). The spawner's total
-    (`+0x58`) still ends it. Spawners: [AI](../../research/ai.md#spawners).
+    (`+0x58`) still ends it. Spawners: [AI](../../research/ai-gangs.md#spawners).
   usage: {chunks: 8, calls: 34, boot: false, mission1: false, result_used: false, levels: [34, 93, 52, 82, 83]}
   coney: implemented
 
@@ -1001,7 +1001,7 @@
     Queues reinforcements like a gang dispatch: when any gang has a spawner in the gang-dispatch states (9 or 10,
     [Spawner states](../../references/spawner-states.md#spawner-9)), the nearest such spawner with room in its four-entry
     queue gets an entry (due now + `delaySec`, the position, `count`, the caller's gang). When it is due the spawner
-    makes a new gang of its own type and sends it to the position ([AI: spawners](../../research/ai.md#spawners)).
+    makes a new gang of its own type and sends it to the position ([AI: spawners](../../research/ai-gangs.md#spawners)).
     Without such a spawner it does nothing.
   evidence: confirmed-code
   depth: thorough

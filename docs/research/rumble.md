@@ -59,8 +59,8 @@ The stand-in (`AddDummyPlayer`: `GangCreate(0, "Gang0", 1)`, character 352 at `f
 
 ### A player goes down {#player-down}
 
-`CheckPlayerDead(member, attacker, standing)` (gang event 18, [AI: gang events](ai.md#gang-events)), for player 1 (and
-the same for player 2 with its own side):
+`CheckPlayerDead(member, attacker, standing)` (gang event 18, [AI: gang events](ai-gangs.md#gang-events)), for player 1
+(and the same for player 2 with its own side):
 
 - one player or versus, one fighter a side, not Survival: revive in **4 s** (Wheelchair: **1 s**) with
   `ScheduleFuncArg1("RevivePlayer", h, ms)` (`HuRevive` if still a player);
@@ -116,14 +116,14 @@ the counter panel when one is set, and at 0 ends the match: `RumbleOver(2, CamFl
 has a standing member, else a draw. `StartIt`: with one a side, the War Commands are locked and disabled for each
 player, automatic switching off and the command display hidden; `WCIssueCommand(player, 1, true)`; gang 2 the enemy of
 gang 1; outside versus, gang 2's AI is **`TacticConfront(gang2, gang1, 10, 2, 0, -1, "AIConfrontCallback")`**, whose
-callback switches to `TacticAttack(gang2)` on results 1, 5 or 6 ([AI: tactic kinds](ai.md#tactic-kinds)). In versus
+callback switches to `TacticAttack(gang2)` on results 1, 5 or 6 ([AI: tactic kinds](ai-gangs.md#tactic-kinds)). In versus
 there is no AI.
 
 **How a brawl ends** (inferred from `brawl.lua` and `level102.lua`). `AddBrawlGang1` / `2` set the per-member message
 18 handler (`StandardGang1Dead` / `2Dead`) only on members for which `HuIsAlive(h)` returns non-nil; at that point
 (before the intro, brains off, nobody down) that is every member. Only these handlers end a brawl: side 1's last
 member down → `RumbleOver(2, ...)`, side 2's → `RumbleOver(1, ...)`, `RumbleOver(3)` when the other side has nobody
-standing either. They run before the gang's `CheckPlayerDead` ([AI: gang events](ai.md#gang-events)), so the
+standing either. They run before the gang's `CheckPlayerDead` ([AI: gang events](ai-gangs.md#gang-events)), so the
 player's 4 s revival only fires during the win sequence. A CPU fighter is never revived: `CheckPlayerDead` handles
 only `Rumble.player1` / `player2`, gang 2 gets it only in versus, and every fighter is made not revivable.
 
@@ -531,13 +531,13 @@ beaten the player, and Wheelchair when the CPU racer finishes. Tag battle and Me
   (`HUDEnableTextProgress`, `HUDSetTextProgress`) and the stopwatch's display (`W_ShowStopWatch`) on the HUD, the
   leader's crown (`GangAttachSpinningIcon`, kept, not drawn), `HuForceEnableReticule` (kept) and `CamSetSplitMode`
   (kept: one view). In arenas 101, 129 and 130 the AI is held at the foot of the top tier (inferred: the way up
-  needs the flag-`0x80` jump legs the goal's `+0xe0` bit 2 allows, [AI: route follow](ai.md#route-follow), which
+  needs the flag-`0x80` jump legs the goal's `+0xe0` bit 2 allows, [AI: route follow](ai-moving.md#route-follow), which
   Coney's move action does not take), so only the player scores.
 - **Battle royal**: the scripts' own ring-out rules run on `TacticDomination`, `HuSetSlowMo` (the characters' step,
   `repo:src/camera/slow_motion.h`), `HuSetConscious` (a knocked-out mark that stops the human and its brain) and
   `TurnWarriorCommands`.
-- **Survival**: the gangs' spawners spawn ([AI: spawners](ai.md#spawners), `repo:src/ai/spawners.h`): the arena's two,
-  in state 8, make their humans on a route node out of the camera's sight beyond 15 m, and
+- **Survival**: the gangs' spawners spawn ([AI: spawners](ai-gangs.md#spawners), `repo:src/ai/spawners.h`): the arena's
+  two, in state 8, make their humans on a route node out of the camera's sight beyond 15 m, and
   `CreateENEMY` sends each at him with `GoalEngageEnemy` and `GoalMoveToHuman` (`repo:src/ai/engage_goals.h`) after
   `BrSetType`, `HuGetCharType`, `BrSetAttackWeight` and `HuGetPosition`. Once he is down `SavePlayerStats` ends the
   match with his time.
@@ -549,7 +549,7 @@ beaten the player, and Wheelchair when the CPU racer finishes. Tag battle and Me
   its own locomotion. Stand-ins: no start clip or wheelchair clips (the body slides in its idle), commands 46 and 47
   are not added (the control reads the buttons itself), and `DeclareWinner`'s pad lock stops the pushes.
   `HuSetNoAutoLock` and `CamAssignRevCamButton` are kept, and `ActGiveWay` makes the human give way to the other
-  ([AI: Giving way](ai.md#giving-way)).
+  ([AI: Giving way](ai-moving.md#giving-way)).
 - **Result screen**, mode 0x14 (`repo:src/gamemodes/rumble_result_mode.h`,
   `repo:src/gui/rumble_mode_gui/rumble_result_menu.h`):
   the world keeps running under it; its choices act through the pause menu's outcomes.
@@ -594,7 +594,7 @@ wheelchair's clips and the give-way action.
 - The playback rate of a dynamic clip played by `HuUseAnim` (Coney: 1).
 - The range beyond which `GoalEngageEnemy`'s goal gives up its enemy (Coney: none).
 - Where spawner state 7 places its human (`0x001679e8`; Coney: as state 8 with a value of 0). The out-of-sight search
-  itself is answered in [AI: the search](ai.md#spawner-search).
+  itself is answered in [AI: the search](ai-gangs.md#spawner-search).
 - The wheelchair's clips and start (state code 5), and whether the update is 1/30 s or 1/60 s (Coney: no clips, the
   constants per 1/30 s step).
 - Mercy is versus only, and Coney has no second player yet; its one-player path (`GoalGrabTarget` on `P21` against

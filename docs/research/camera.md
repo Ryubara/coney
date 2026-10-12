@@ -1763,7 +1763,7 @@ A door walk is one scripted walk of the player through a clubhouse door, with an
    `GoalMoveToFlag(player, term, 2, 0, 0, 0.5, 0, true)` (a walk, gait 2, to within 0.5 m, then facing the flag). It
    sets `SetMsgHandler(term, 8, "WalkFinish")`. On the opening walk `StartTheWalk` then sets `CamSetFollowAngle(10)`.
 4. **What ends it**: the flag's message 8, which the move-to-flag goal sends **once** when the player is inside its
-   radius (0.5 m) and turned within 15° of the flag's heading ([ai.md](ai.md#move-to-flag) End, `0x002da4a0`);
+   radius (0.5 m) and turned within 15° of the flag's heading ([ai.md](ai-scripting.md#move-to-flag) End, `0x002da4a0`);
    the goal plans again each time a move ends short of the radius, which is not a new walk. Or the skip button:
    `SkipWalk` teleports to `term`, resets the follow camera and 100 ms later (`SkipWalkFinish`) calls `WalkFinish`.
 5. **`WalkFinish(flag, human)`** first clears the message-8 handler and the skip callback, so it runs once; at the
@@ -1820,7 +1820,7 @@ what each step is comes from the scripts (`level95.lua`: `StartLevel`, `FinalSta
 | 4.07 s (122) | stops at (−185.48, 107.63): **5.07 m** walked, 0.43 m short of **`fWchiefEnd_5` (−185.5, 107.2, −193.8), heading 182°**, inside the goal's 0.5 m radius |
 | 4.17 s (125) | turned to 177.4° (recorded 182.6°; within the goal's 15° of the flag's 182°): message 8, so **`WalkFinish`** runs between 4.10 and 4.27 s (updates 123-128), then `FinalStartLevel` |
 | 4.27 s (128) | **walk 2** starts at once: `FinalStartLevel` sees the tutorial locked, puts the player back under script control (`DeactivateWarchief`) and gives him `GoalMoveToFlag(player, fWchiefEnd_1, walk, 0.5 m)` |
-| about 7.6 s (229) | he enters the volume box `vbTutorialStart` (centre (−187.8, 98, −194.1), size (6, 4, 4); entered at y ≈ 102, so the size is a half-extent, inferred): `tutorial.RunTutorial` gives the **same** `GoalMoveToFlag` again (its Resume clears the running move; the new move action waits a random 0-250 ms first, the brain asking for speed 0 meanwhile, [AI](ai.md#move-action)); the positions, read every 1-2 updates, show no stop here, so the walk goes on, and starts the tutorial text and shots |
+| about 7.6 s (229) | he enters the volume box `vbTutorialStart` (centre (−187.8, 98, −194.1), size (6, 4, 4); entered at y ≈ 102, so the size is a half-extent, inferred): `tutorial.RunTutorial` gives the **same** `GoalMoveToFlag` again (its Resume clears the running move; the new move action waits a random 0-250 ms first, the brain asking for speed 0 meanwhile, [AI](ai-moving.md#move-action)); the positions, read every 1-2 updates, show no stop here, so the walk goes on, and starts the tutorial text and shots |
 | 12.21 s (366) | walk 2 ends at (−184.92, 95.47), 0.47 m from `fWchiefEnd_1` (−184.9, 95, −194.3), inside the goal's 0.5 m radius: **12.2 m** in 7.9 s, facing 178° (the game's clockwise heading; the recorder's 182° is anticlockwise) |
 | 12.24-12.44 s (367-373) | the goal's face-the-flag turn (`faceFlag` true; facing 178°, he is 89° off the flag's 89°): a turn action at the standing 12° per update, which ends within 15°, at **97.6°** (recorded as 262.4°); then the goal arrives, its End sends the flag message 8, and `tutorial.StopWalk` (the flag's message-8 handler, installed by `RunTutorial`) flushes the player's goals and removes the handler; he stands |
 | **25.05 s (751)** | brain "dead" back to 0: **control returns** (`ActivateWarchief`, at the end of the tutorial's last item) |

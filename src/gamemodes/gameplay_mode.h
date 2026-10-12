@@ -401,7 +401,7 @@ class GameplayMode final : public GameMode {
     [[nodiscard]] bool playerInScene() const;
     // Player 1's crew this frame: the follow the game issues itself (forced) when he is made a player and when a scene
     // that held him ends, once no scene camera is current; then his automatic commands (ai::CrewOrders), and his
-    // menu unlocked every 10 updates (docs/research/ai.md#warrior-follow, #warrior-auto-commands).
+    // menu unlocked every 10 updates (docs/research/ai-gangs.md#warrior-follow, #warrior-auto-commands).
     // @orig 0x00229c40 Human_MakePlayer (unknown)
     // @orig 0x0039f450 SceneTask_End (unknown)
     // @orig 0x003035d8 PlayerBrain_Update (unknown)

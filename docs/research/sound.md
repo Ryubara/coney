@@ -59,7 +59,7 @@ Names are ours; every other function of the unit is in the [Function index](#fun
 | `0x00114c98` | `VoiceTable_IsBlocked` | a fixed list of lines not played in certain levels | confirmed (code) |
 | `0x002205e0` | `Human_SayCommand` | a human says a speech command (the work of `SoundPlayCommand`) | confirmed (code) |
 | `0x0021e400` / `0x0021e698` | `Human_PlaySpeech` / `Human_PlaySpeechCutting` | plays a line at the human with an end callback (the second also cuts a line off) | confirmed (code) |
-| `0x0041cc40` | `WarChief_SayCommand` | the line a war chief says for a Warrior command ([AI](ai.md#warrior-commands)) | confirmed (code) |
+| `0x0041cc40` | `WarChief_SayCommand` | the line a war chief says for a Warrior command ([AI](ai-gangs.md#warrior-commands)) | confirmed (code) |
 
 ## Data
 

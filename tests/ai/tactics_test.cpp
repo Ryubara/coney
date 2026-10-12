@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The gang tactics (docs/research/ai.md#tactics): the base's start, time limit and callback, TacticCrowd and
-// TacticTrigger; and GoalDealer (docs/research/ai.md#dealer).
+// The gang tactics (docs/research/ai-gangs.md#tactics): the base's start, time limit and callback, TacticCrowd and
+// TacticTrigger; and GoalDealer (docs/research/ai-scripting.md#dealer).
 #include "ai/tactic.h"
 
 #include <algorithm>
