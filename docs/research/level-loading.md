@@ -47,7 +47,7 @@ Names are ours unless they come from a path or tag string.
 | `0x0040d088` | `LevelObject_SetOccluders` | same | stores the occluders and converts their points (`0x0017a560`) | confirmed (code) |
 | `0x0040d0a8` | `LevelObject_RenderBackground(viewport)` | same | sky, clouds and skyline, before the world | confirmed (code) |
 | `0x00156408` | (none) | `GameModes/` region | the per-viewport passes of a frame | confirmed (code) |
-| `0x0040c7f0` | `WorldLevel_Release` | `World/WorldLevel.cpp` | light glows, captions, deletes the level object ([physics.md Unit 17](physics.md#u17-release)) | confirmed (code) |
+| `0x0040c7f0` | `WorldLevel_Release` | `World/WorldLevel.cpp` | light glows, captions, deletes the level object ([Physics, Unit 17](physics-world.md#u17-release)) | confirmed (code) |
 | `0x00187c38` | `ResourceManager_LoadPack(name, block)` | `Graphics/ResourceMgr.cpp` | a `.pak`, grouped container | confirmed (code) |
 | `0x00187d28` | `ResourceManager_MakeRoom(bytes)` | same | evicts unused resources until a block of that size is free | confirmed (code) |
 | `0x00178bc8` | `ResourceManager_LoadDependencies(crc, block)` | `Graphics/` | the dependency list entry of a name | confirmed (code); role from [Chunk system](chunk-system.md#chunk-type-table) |
@@ -178,7 +178,7 @@ the path data (`0x0051058c`) and destroys the pool. So the destructor `0x0040cf8
 (vtable `+0x08`, flags 2, then a free into the `World Level Pool`): it frees the collision chunks (`0x004f4b78`) and
 the occluders (`0x004f4bf8`), destroys the level world (device slot `+0x178`) and its dictionary (slot `+0x158`) and
 the three clumps (`0x004693f0`) and dictionaries (`0x00488c58`), each model before its dictionary; the exact order is
-in [physics.md Unit 17](physics.md#u17-destroy).
+in [Physics, Unit 17](physics-world.md#u17-destroy).
 
 ### Occluders (chunk `0x53`) {#occluders}
 
@@ -309,7 +309,7 @@ to -x), which is the turn Coney's reference images use (`kObjectToPose`, Coney's
 
 | Offset | Meaning |
 | --- | --- |
-| `+0x00`-`+0x28` | a queue of pack names to load at the end of the preload: an SGI-STL `deque<string>` (start iterator `+0x0c`-`+0x18`, finish `+0x1c`-`+0x28`; `0x0040e1a0` appends, [physics.md Unit 18](physics.md#u18-construct)) |
+| `+0x00`-`+0x28` | a queue of pack names to load at the end of the preload: an SGI-STL `deque<string>` (start iterator `+0x0c`-`+0x18`, finish `+0x1c`-`+0x28`; `0x0040e1a0` appends, [Physics, Unit 18](physics-world.md#u18-construct)) |
 | `+0x2c` | a preload is running |
 | `+0x34` | "nothing more to load" latch of the streaming update |
 | `+0x38` | the `World Level Pool` |
@@ -578,7 +578,7 @@ anything they reference (the intro scene) must be loaded by then.
 
 1. Look up the size of `<name>.lev` and create the `World Level Pool` in the `Sector Pool`: 103 % of it, at least
    256 KB. Then push the `Level Dynamic & LUA Pool` and **leave it pushed**: the world objects below come from it, and
-   only `WorldManager_Unload(0)` pops it ([physics.md Unit 18](physics.md#u18-load)).
+   only `WorldManager_Unload(0)` pops it ([Physics, Unit 18](physics-world.md#u18-load)).
 2. Unless `headerOnly` (boot loads `level1` this way for the intro movie's subtitles, [Boot](boot.md#main)):
     - take the world name from the current level record (`+0x39`);
     - if `<world>s_sec.wld` exists: create two world objects (0x2188 bytes each, tag `World`), the first for
@@ -727,7 +727,7 @@ too. `UnloadLevel(keep)`, confirmed (code) for the order:
    heap), free the water effect, and unless `keep`: pop the `Level Dynamic & LUA Pool` that `LoadLevel` pushed,
    release the level object (`0x0040c7f0`: light glows, captions, the level object deleted), the path data, and
    destroy the `World Level Pool`. `+0x40` is left pointing at the freed level object, and the path data globals keep
-   their old values ([physics.md Unit 18](physics.md#u18-unload)).
+   their old values ([Physics, Unit 18](physics-world.md#u18-unload)).
 6. The resource manager drops the level's resources (`0x00185ae0`, `0x00188aa8`, `0x00189718`); the light manager
    resets; the **Lua state is destroyed and created again** (`0x00356450`, `0x00356390`).
 7. Timers, effects and the game state's level flags are reset.
@@ -1054,7 +1054,7 @@ with several atomics are the cars, drawn as [Cars](../references/cars.md) instea
   world ([The level in a frame](#render-order)). The "shadow" model is a skyline backdrop (inferred).
 - **The level object's destructor** (`0x0040cf80`) (answered): `WorldLevel_Release` deletes the level object through
   `0x004f4af8`, which calls it through vtable `+0x08` on every `WorldManager_Unload(0)`
-  ([physics.md Unit 17](physics.md#u17-release)).
+  ([Physics, Unit 17](physics-world.md#u17-release)).
 - **The subtitles chunk** (answered): [Movies](movies.md#caption-text). Still open: the A record's `+0x08`, and the path
   flags other than 4 and 8 ([Path data](#path-data)); the clockwise paths are an area's holes.
 - **The path data's size** (answered): the header is 0x20 bytes, and the chunk ends with the paths' edge lists and a

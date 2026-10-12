@@ -1112,7 +1112,7 @@ each side and covers the whole pane. Its body flags (`0x0033d070`) are `0x800000
    `0x40`, unless the target is a human's body, body `+0x44` bit `0x40`), so glass never hides a pane from a strike.
    A body gathered with flag `0x8` or `0x10` (mask `0x18`, so `0x20` alone is never gathered) that the human may
    strike (human vtable `+0x10c`, not traced) is then swept against each strike shape (shape flags `0x1` and `0x2`,
-   [Physics Unit 10](physics.md#u10-strikes)), and the first that hits calls `Strike_Contact`
+   [Physics Unit 10](physics-bodies.md#u10-strikes)), and the first that hits calls `Strike_Contact`
    (`0x0021b290`). For a pane that is: the noise event (`0x002936a8`, 30 m), `Glass_Break` (`0x0038f378`), a
    player's crime-10 statistic and then message 1 ([A pane's life](#pane), steps 5-7).
 2. **The airborne body**. The move's sweep asks the physics world for bodies whose flags meet a mask the human

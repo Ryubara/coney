@@ -5,7 +5,7 @@
 # the stick 60 % up into the wall behind it; tri-sweep-tri logs every triangle that reaches Sweep_SphereTriangle, and
 # vertex-step and edge-roots every corner step and every edge step that kept a root.
 description = "level99 street: walk 60 % over a 0.15 m kerb (an edited box), logging which triangles reach the sphere-triangle kernel"
-research = "docs/research/physics.md#u1-runtime"
+research = "docs/research/physics-kernels.md#u1-runtime"
 input = "corner_kerb.txt"
 updates = 110
 fields = ["player"]

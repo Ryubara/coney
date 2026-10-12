@@ -442,7 +442,7 @@ damages comes from the zone tables, never from the part's own box. Confirmed (co
 - **The contact point** (hit record `+0x60`, x and y) is read against the type's thresholds without any transform. It is
   the point in the **struck box's own frame**, along the box's axes from the **box's centre** (not the car's origin),
   and `+0x90` holds the same point in the world, which the rock, the dent sound and the window-break effect use.
-  Confirmed (code) at `0x0034bbe8` and `0x003453f8` ([Physics: Unit 5](physics.md#unit-5)); so a cabin-box hit's bands
+  Confirmed (code) at `0x0034bbe8` and `0x003453f8` ([Physics: Unit 5](physics-kernels.md#unit-5)); so a cabin-box hit's bands
   are measured from the cabin box's centre (inferred). Bit 1 (the roof) is **not** dropped on this path: a thrown
   object, a weapon or a charge reaching a cabin band whose mask holds 1 takes the roof off at once (its record flag
   `0x10`), and the roof coming off ends a police car's `part_copcar_lights` (message `0x15`, then its vtable `+0x4c`;
@@ -696,7 +696,7 @@ particular spots", comes from these gaps:
 1. **Strikes hit cars.** In the humans' strike step (`strikeObjects()`), sweep each enabled strike **sphere** from
    its centre at the last update to its centre now against each car's two boxes (box 1 and box 2 at the car's pose,
    sizes and offsets per type), as for any object body: the sphere-box sweep and the strike loop are specified
-   exactly in [Physics: Unit 5](physics.md#unit-5). Segments (forearms, shins, the spine) never reach a box, a sphere
+   exactly in [Physics: Unit 5](physics-kernels.md#unit-5). Segments (forearms, shins, the spine) never reach a box, a sphere
    whose centre is outside a box it already touches at the start does not hit it, and a shape just switched on is
    tested with no move. The first hit calls `Cars::humanHit()` with the striker's feet (kind 3: parts by where he
    stands) and puts the car on the shapes' struck list. The square's object attack then needs no special path: its

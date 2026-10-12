@@ -539,7 +539,7 @@ second**.
    `World_CollectSector` (`0x00411b20`), which appends the sector to the world manager's draw list (`+0x50`-`+0x58`)
    when its atomic is loaded, and mark it visible in the **`s` world's** `+0x08f8` (`GetSolidWorld`), whichever world
    is being walked, so the `d` world's own bits stay clear. A sector without an index is neither counted, collected
-   nor marked. The full callback: [physics.md Unit 19](physics.md#u19-visibility).
+   nor marked. The full callback: [Physics, Unit 19](physics-world.md#u19-visibility).
 
 Because the world's render order is back-to-front and the list is drawn from its end, sectors are drawn roughly
 front to back (inferred).

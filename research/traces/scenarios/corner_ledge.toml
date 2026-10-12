@@ -7,7 +7,7 @@
 # in the air, the sphere sweep's thunk), vertex-step and edge-roots every corner step and every edge step that kept
 # a root.
 description = "level99 street: run 100 % at a 0.6 m ledge (an edited box) and jump onto it, logging the sphere-triangle kernel's steps"
-research = "docs/research/physics.md#u1-runtime"
+research = "docs/research/physics-kernels.md#u1-runtime"
 input = "corner_ledge.txt"
 updates = 110
 fields = ["player"]

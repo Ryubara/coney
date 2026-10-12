@@ -3,7 +3,7 @@
 # centre line, and walks at it with the stick 60 % up; the edge-roots hook logs every edge step that kept a root, so
 # a first listed root later than the second (late) or above 1 with the second in range (missed) shows at runtime.
 description = "level99 street: walk 60 % into a thin post's corner, logging the edge step's capsule roots"
-research = "docs/research/physics.md#u1-runtime"
+research = "docs/research/physics-kernels.md#u1-runtime"
 input = "corner_planter.txt"
 updates = 130
 fields = ["player"]

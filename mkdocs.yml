@@ -156,6 +156,9 @@ nav:
           - Feel comparison: research/feel.md
           - Collision: research/collision.md
           - Physics: research/physics.md
+          - "Physics units: geometry kernels": research/physics-kernels.md
+          - "Physics units: shapes, bodies and moves": research/physics-bodies.md
+          - "Physics units: rays and the world": research/physics-world.md
           - The streamed world: research/world.md
           - Memory: research/memory.md
           - Maths: research/maths.md
