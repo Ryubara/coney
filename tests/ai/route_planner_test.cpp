@@ -208,8 +208,7 @@ TEST_CASE("the search walks the edges whose flags meet the mask", "[ai][routes]"
     CHECK(failureOf(planner.search(0, 5, 2)) == SearchFailure::NoWay); // no edge has flag 2
 }
 
-TEST_CASE("the search holds 1000 nodes open and 3000 closed and fails a route of more than 128 nodes",
-          "[ai][routes]") {
+TEST_CASE("the search holds 1000 nodes open and 3000 closed and fails a route of more than 128 nodes", "[ai][routes]") {
     // A route holds at most 128 nodes: a corridor of 128 is found, one of 129 or 140 fails however few nodes it opens.
     const coney::world::PathMap corridor = corridorChain(140);
     const RoutePlanner planner(corridor);

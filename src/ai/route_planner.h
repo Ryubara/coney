@@ -202,9 +202,8 @@ class RoutePlanner {
     /// `cap` or more counts too: a step reaching it is skipped), more than kMaxOpenNodes would be open or
     /// kMaxClosedNodes closed, or the route would hold more than kMaxRouteNodes. Costs are in 1/16 m, 3D, truncated.
     /// @orig 0x00251a70 Route_AStar (unknown)
-    [[nodiscard]] std::expected<RouteSearch, SearchFailure> search(std::uint32_t start, std::uint32_t goal,
-                                                                   std::uint16_t mask,
-                                                    std::uint32_t cap = kEdgeCostCap) const;
+    [[nodiscard]] std::expected<RouteSearch, SearchFailure>
+    search(std::uint32_t start, std::uint32_t goal, std::uint16_t mask, std::uint32_t cap = kEdgeCostCap) const;
 
     /// The node a route starting at `point` would leave from: of the polygon under it (or the nearest within
     /// kPolygonReach), the nearest of up to kEndNodeTries of its nodes that `point` reaches in a straight line;

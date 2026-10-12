@@ -172,8 +172,8 @@ std::uint32_t RoutePlanner::heuristic(std::uint32_t a, std::uint32_t b) const {
                     static_cast<std::uint32_t>(anim::distance(nodes[a].position, nodes[b].position) * kCostPerMetre));
 }
 
-std::expected<RouteSearch, SearchFailure> RoutePlanner::search(std::uint32_t start, std::uint32_t goal, std::uint16_t mask,
-                                                std::uint32_t cap) const {
+std::expected<RouteSearch, SearchFailure> RoutePlanner::search(std::uint32_t start, std::uint32_t goal,
+                                                               std::uint16_t mask, std::uint32_t cap) const {
     const std::size_t count = m_map->nodes().size();
     if (start >= count || goal >= count) {
         return std::unexpected(SearchFailure::NoWay);

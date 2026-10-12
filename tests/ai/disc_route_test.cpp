@@ -269,8 +269,9 @@ TEST_CASE("the search finds every linked pair of nodes on the big levels", "[dis
                 ++tooLong;
             }
         }
-        std::printf("%s: %zu nodes; %d pairs, %d linked, %d found by the search (longest %zu nodes), %d over %zu nodes\n",
-                    name, map->nodes().size(), kPairs, linked, found, longest, tooLong, coney::ai::kMaxRouteNodes);
+        std::printf(
+            "%s: %zu nodes; %d pairs, %d linked, %d found by the search (longest %zu nodes), %d over %zu nodes\n", name,
+            map->nodes().size(), kPairs, linked, found, longest, tooLong, coney::ai::kMaxRouteNodes);
         CHECK(linked > 0);
         CHECK(found + tooLong == linked);
     }
