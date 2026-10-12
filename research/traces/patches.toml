@@ -996,3 +996,35 @@ address = 0x0034e5d0
 # addiu sp,sp,-0x90; move t6,a0
 original = [0x27bdff70, 0x0080702d]
 log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "corner" }]
+
+[hook.scene-find]
+description = "Each scene name lookup (SceneList_FindBySubstring, 0x00353698): who asks (ra) and the name it looks for."
+research = "docs/research/scenes.md#which-level"
+address = 0x00353698
+# addiu sp,sp,-0x60; lui v0,0x51
+original = [0x27bdffa0, 0x3c020051]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "name", text = 48 }]
+
+[hook.scene-bind-human]
+description = "Scene_BindHuman (0x003541a0) as it writes the human into its role: the scene id, the role index, the role definition (its name), the human (its name at +0x80) and the human's character type (+0xd0)."
+research = "docs/research/scenes.md#cast"
+address = 0x00354248
+# sw s1,0x50(v0); lw v0,0x90(a0)
+original = [0xac510050, 0x8c820090]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "s2", name = "scene" }, { value = "s3", name = "role" }, { value = "v0", name = "def", text = 16 }, { value = "s1", name = "human", text = 16, text_offset = 0x80 }, { value = "[s1 + 0xd0]", name = "type" }]
+
+[hook.scene-bind-object]
+description = "Scene_BindObject (0x00354280) as it writes the object into its slot: the scene id, the slot index, the slot definition (its name), the object and its type (index +0x112, name through +0xc0)."
+research = "docs/research/scenes.md#cast"
+address = 0x00354340
+# sw s1,0x50(v1); lw v0,0x94(s0)
+original = [0xac710050, 0x8e020094]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "s2", name = "scene" }, { value = "s3", name = "role" }, { value = "v1", name = "def", text = 16 }, { value = "[s1 + 0x112]", type = "u16", name = "type_index" }, { value = "[s1 + 0xc0]", name = "type", text = 32 }]
+
+[hook.lua-exec-source]
+description = "As lua-exec (0x00334478, luaV_execute), with the chunk name's text: each Lua function the script system runs, its lineDefined and the script it comes from. Not with lua-exec (the same address)."
+research = "docs/research/scenes.md#which-level"
+address = 0x00334478
+# addiu sp,sp,-0xc0; sw a1,0x14(sp)
+original = [0x27bdff40, 0xafa50014]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "[[a1 + 0x0] + 0x38]", name = "line" }, { value = "[[a1 + 0x0] + 0x3c]", name = "source", text = 48, text_offset = 0x10 }]
