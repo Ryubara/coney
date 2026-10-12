@@ -13,8 +13,8 @@ A run has a **time budget** for the whole call (`--budget`, 45 minutes by defaul
 detached, build_cli.py: an agent's prompt cache lasts an hour, and a call that outlasts it pays to write the cache
 again). A wait for a slot or for the build folder ends early, with exit code 75, as soon as the time the call has taken
 plus what the step it waits for usually takes (the median of its recent runs, build_history.py, else a typical figure)
-would pass the budget, or that plus the queue's own estimate of the wait still ahead. A step that has started always runs to
-its end: the budget only decides whether to keep waiting.
+would pass the budget, or that plus the queue's own estimate of the wait still ahead. A step that has started always
+runs to its end: the budget only decides whether to keep waiting.
 
 Everything that touches the machine is behind `Toolchain` (running a command, capturing a short one), so the order of
 a run, the lane choice, the claims and the summary are tested with canned output.
