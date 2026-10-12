@@ -180,6 +180,9 @@ message to the coordinator (title, area, research page, what "done" means) and t
 its own; a pull request that finishes an issue says `Fixes #N`
 ([Work found along the way](issues.md#follow-up-work)). The issue states its problem first, links pages by relative links
 and names the source pull request's status truthfully ([Writing an issue a newcomer can read](issues.md#writing)).
+The `hygiene` workflow comments on an issue or pull request that breaks the repository's rules and keeps that one
+comment current; fix what it lists, and the comment says so when it is done
+([Workflows](repo-conventions.md#workflows)).
 The state file (`HANDOFF.md`) keeps only the live state and issue numbers, never a list of work to do: the work list
 is the open issues.
 

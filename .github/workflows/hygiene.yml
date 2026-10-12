@@ -1,0 +1,62 @@
+# Writes what `coney-tools repo audit` finds back as comments (docs/guides/repo-conventions.md, "Workflows"): when an
+# issue or pull request changes, it keeps one comment on that item up to date; every Monday it keeps one report comment
+# on the "Repo hygiene" issue, creating the issue if it is missing. The settings (the marker, the sweep, whether the
+# sweep also comments on items) are `hygiene.comments` of .github/conventions.yml, and the code is
+# python/src/coney_tools/hygiene_cli.py.
+#
+# It only comments: it never edits an issue's title, body, labels or state, and it deletes nothing. It is not a required
+# check (it is not in merge.required_checks), so a failure here never blocks a merge. Its token is limited to writing
+# issues (to GitHub a comment on a pull request is an issue comment). It runs with `pull_request_target` so that a pull
+# request from a fork can be commented on; for that reason it checks out the default branch only (no `ref`, no
+# `repository`: never the pull request's own code) and nothing a pull request, an issue or a comment says is expanded
+# into a script's text: the item number and the event name reach the script through environment variables, and the
+# findings are quoted into comments by `neutralize` in hygiene_comments.py. It uses no third-party action beyond the
+# pinned checkout and uv. Actions are pinned to a full commit SHA; the tag is in the comment beside it.
+name: hygiene
+
+on:
+  issues:
+    types: [opened, edited, labeled, unlabeled, reopened]
+  pull_request_target:
+    types: [opened, edited, labeled, unlabeled, reopened, ready_for_review]
+  # Must equal hygiene.sweep in .github/conventions.yml (a test checks it).
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+# One run per item at a time and in order; a newer event for the same item waits for the running one, so two runs never
+# edit the same comment together. The sweep and a manual run share one group of their own.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || 'sweep' }}
+  cancel-in-progress: false
+
+jobs:
+  hygiene:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      # No `with:`: the default is the default branch for an issue, a schedule or a dispatch, and the base branch for
+      # pull_request_target, which is the point.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - name: Update the comments
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          case "$EVENT_NAME" in
+            issues | pull_request_target)
+              [[ "$NUMBER" =~ ^[0-9]+$ ]] || { echo "unexpected item number" >&2; exit 1; }
+              uv run --project python coney-tools repo hygiene --event "$NUMBER" --apply
+              ;;
+            *)
+              uv run --project python coney-tools repo hygiene --sweep --apply
+              ;;
+          esac
