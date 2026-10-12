@@ -1,0 +1,3 @@
+# Circle held: 0x1e on the press, 0xe on the 7th sample held; the tandem starts on 0xe, before the release.
+60 press circle
+72 release circle

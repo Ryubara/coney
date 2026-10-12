@@ -505,7 +505,9 @@ A **tandem** is a three-person move: a player strikes a victim another human hol
   test it after the target-state strikes; circle tests it before grabbing ([Combat](combat.md#grab), step 3). The
   three callers (`Player_Square`, `Player_Cross`, `Player_GrabOrTackle`) are the only ones, and none tests for a
   pad: they are the dispatcher's, which an AI human runs too ([An AI's attacks](combat.md#ai-attacks)). An earlier
-  reading here said "the player only"; that is corrected below.
+  reading here said "the player only"; that is corrected below. Square and cross pressed **together** (command
+  `0x22`) are not among them: that is the special 653, which hits the victim and breaks the hold. Every input, with
+  runtime checks: [Which button starts it](#tandem-input).
 - **The set**: a bat or baton in hand → 181-186; a knife → 187-192; otherwise 163-168, 169-174 or 175-180 at random.
   Each set has an intro and an end for the grabber, victim and attacker (ids +0 to +5).
 - The three are linked and placed by the set's pair offsets. At the **end of the victim's intro** the attacker's
@@ -519,6 +521,70 @@ At runtime (`moves_tandem`: Ash, the player's ally, given the grab command at Po
 in 85): square played the set 1 on the next update, the player's 165 and the victim's 164 for **51** updates (not
 the 36 of their clips), then 168 / 167; the victim lost **400** (50 + 350) on the first update of 167. Confirmed
 (runtime).
+
+#### Which button starts it {#tandem-input}
+
+Asked in issue #412: a player's report said the tandem is not square and cross and involves holding circle. The answer:
+**any one attack button** starts it, square, cross or circle, and circle works **tapped or held**; what does not is
+**square and cross together**. The game's own level80 tutorial line for the tandem (`LEVEL80.TANDEM`, shown by
+`level80_chapter4.lua`'s `TandemText`) agrees: it tells the player that any attack button works on an enemy a teammate holds.
+
+**The four inputs.** Each is one command of [the command tables](combat.md#commands), and `Player_UpdateActions`
+(`0x0027c120`) hands it on only when the player is not busy (`Human_IsBusy`) and holds none of the held flags
+`0x5c7fee0`. Confirmed (code) at the addresses cited:
+
+| Input | Command, and the sample it comes on | Path | Where the tandem test sits |
+| --- | --- | --- | --- |
+| square pressed | `0xf`, the sample square goes down | `Player_Square` (`0x00286cc8`) | step 8, after the moving attacks, strafes, snaps, the target re-pick and the low, mid and front-grab strikes ([Square](#square)) |
+| cross tapped or held | `0x10`, on the release of a press of 1-3 samples, or on the 4th sample held (`0x12` on the press does nothing here) | `Player_Cross` (`0x00287a18`) | the same place ([Cross](#cross)) |
+| circle tapped | `0xd`, on the release of a press of 1-6 samples (`0x1e` on the press does nothing here) | `Player_GrabOrTackle` (`0x00284920`) | first: after the stance and the grounded mount, before the grab |
+| circle held | `0xe`, on the 7th sample held (`0x0050b708` = 7), before any release | `Player_GrabOrTackle` | first: after the stance and the grounded mount, before the tackle |
+
+Square and cross together are matched as the combination `0x22` (square newly down while cross is held), which the
+dispatcher sends to `Player_Special` before it looks at `0xf` or `0x10`; `Player_Special` is not a caller of
+`Tandem_Start` (its only callers are the three above). L2 with square or cross (`0x21` / `0x20`, the dive
+and the charge) is matched first too. Confirmed (code) at `0x0027c120` and the callers of `0x0026f860`.
+
+**When it is allowed** (`Tandem_CanStart`, `0x00258e10`, confirmed (code)): the target is in a **rear** hold (state
+`0x20`; a front hold, state `0x10`, never), held by anyone; the player stands within 45° of the victim's front
+(`Human_GetSideOf(victim, player, 1)` = 0); and the victim has none of the held flags `0xc12200` (already in a paired
+move or tandem). The grabber's own state is not tested. There is **no distance test** in the tandem itself: the reach
+is the target pick's.
+
+- Circle: a pad player's circle always searches again (`Player_FindCounterTarget`, `0x0027ac30`, called when the brain
+  type `+0x04` is 0) within 1.25 × the far range of id 3 (3.75 m) when held, or of id 70 (3.12 m) when tapped,
+  first among the enemies within about 54° (`0x0051096c` = 0.9425 rad) of the aim heading (`Player_GetAimHeading`),
+  then wider. So the held enemy the player faces is picked even when another enemy was his target.
+- Square keeps the current target and searches only without one or when it is too far ([Targets](#targeting));
+  cross always searches. A square at another, nearer target strikes that one.
+- Before the tandem test, square and cross can start something else at the same press: out of the stance and
+  running, the run attacks 24 / 23 (or 193 at a low target); with the stick past 0.95, the strafes 31-33 (L1 locked)
+  and the snaps 25 / 27 / 29; at a front-held target, 120. Circle has none of these: it puts the player in the stance
+  and goes to the tandem test. **Inferred**: this is why circle is the dependable button in play, from a run or with
+  the stick pushed, which matches the player's report that circle works; square and cross do start it when the
+  player stands in front of the held enemy with the stick near the centre (the runs below).
+
+**At runtime** (confirmed (runtime), PCSX2 2.9.94, the `moves_tandem` set-up: slot 6, PoizoCiv (600 health) in Ash's
+rear hold (85), the player 1.1 m in front of him facing him, stick centred, in the stance's idle 388; hook
+`anim-dispatch`; one scenario per input, the press at script frame 60, which update 61 reads):
+
+| Scenario | Input | Commands seen (update) | Result |
+| --- | --- | --- | --- |
+| `moves_tandem` | square tapped at 60 | `0xf` (61) | the tandem at 61: player 165, PoizoCiv 164, Ash 163 |
+| `moves_tandem_cross` | cross tapped at 60 | `0x12` (61), `0x10` (62) | the tandem at 62 |
+| `moves_tandem_circle_tap` | circle tapped at 60 | `0x1e` (61), `0xd` (62) | the tandem at 62 |
+| `moves_tandem_circle_hold` | circle held from 60 to 72 | `0x1e` (61), `0xe` (67) | the tandem at **67**, the 7th update held, five before the release; the release gave no `0xd` |
+| `moves_tandem_square_cross` | cross held from 60 to 64, square tapped at 61 | `0x12` (61), `0x22` (62), `0x16` (63), `0x10` (64) | **no tandem**: 653 `SPECIAL_ATTACK1_FRONT` at 62; at 69 PoizoCiv lost 6 (600 → 594) and played 133, Ash 107 `GRAB_REAR_BREAK_REACT` then 268: the hold was broken. The later `0x10` found the player busy |
+
+Each of the four tandems played the first set, 163-168.
+
+**To script it** (on the original, through the `scripted-pad` patch; the recorder writes the same bytes from a Coney
+input script): the second button byte `0x005de3ab` is active low, so circle alone is `0xdf`, cross `0xbf`, square
+`0x7f`, cross and square `0x3f`, none `0xff`; the first byte `0x005de3aa` stays `0xff` and the four stick bytes
+`0x005de3ac`-`0x005de3af` stay `0x80`. A circle hold is `0xdf` written for at least 7 updates (the tandem starts on the
+7th); a circle tap is `0xdf` for 1-6 updates, then `0xff`. In a Coney input script: `60 tap circle`, or
+`60 press circle` and `72 release circle`; the negative test is `60 press cross`, `61 tap square`, `64 release
+cross`, which must play 653 and no tandem.
 
 #### Who starts a tandem, and how an AI chooses it {#tandem-ai}
 
@@ -1076,6 +1142,10 @@ The moves Coney plays and where they differ from the table above: [Combat differ
   on the left. That target was pinned while walking, so the steer's lead may explain it ([Contact](#reach)); not
   rerun against a still target.
 - Why the tandem intro ran 51 updates, not 36.
+- Whether a Warrior who grabs an enemy in a real fight holds him from the rear (where a tandem is possible) or from
+  the front (where square and cross give 120 and circle grabs instead), and how often: every [tandem
+  run](#tandem-input) staged the rear hold with a puppet. A rumble with the Warriors' own brains, logging the
+  grabber's state `0x20` / `0x10`, would tell.
 - Whether a Warrior's own type-3 brain (the Warriors' think, `0x003052f0`) starts a tandem: in `moves_tandem_ai` Ash
   with that brain stood idle, so the run gave him type-2 handlers ([An AI tandem at runtime](#tandem-ai)). To find out,
   rerun the scenario without the brain writes and give Ash an attack order on PoizoCiv once he is in the rear hold,
