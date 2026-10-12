@@ -550,23 +550,23 @@ with command icons, `HUDShowWarCommand`). Confirmed (code) for the structure; th
   that string, which ends the objective's own "new objective" message if it is showing and drops it if it is still
   waiting, and with the bare text. Then it ticks the item (`0x001dd1a0`). It reads neither `silent` nor `ms`, and plays
   no cue itself. Confirmed (code) at `0x001db02c`-`0x001db1f4`.
-  - **Slot 0:** nothing else. The game's "Objective complete" (built-in announcement 0 below) is not shown by
-    `HUD_SetObjective`: its only path is the script binding `HUDSetAnnounceMsg` (`0x001b5b08`, the one caller of
-    `HUD_ShowAnnouncement` besides this function), so a level script that wants it shows it itself. Confirmed (code)
-    for the callers; that the mission scripts do so is inferred.
-  - **Slot 1:** for each player slot whose handle resolves (`W_GameState + 0x224` players, handles from `+0x228`),
-    `HUD_ShowAnnouncement(hud, 2)` (`0x001b3cb0`): the built-in announcement 2, with interface cue **`0x14`**. Every
-    call targets the one HUD (`0x00600840`), so in one-player play it shows once. Confirmed (code); the per-player
-    repeat in split screen is not traced.
-  - **Runtime** (same run): after mode 0 for slot 0 at update 5, the message showed from update 7; mode 2 at update 95
-    ended it at update 96 and the queue stayed empty (the pool's five entries free), so the level's own hint box came
-    back. For slot 1, mode 2 at update 220 ended the "New Bonus Objective" message at update 221 and the announcement
-    widget (`+0xe344`) showed "Bonus complete" until update 282: 2,035 ms of game time, its `<DISPLAYTIME 2000>`.
-  - The built-in announcements read at runtime (`0x00622e20`; `<LEFT>`, `<DISPLAYTIME 2000>` and a white
-    `<MONEYFONT>` icon at 0.8, then one space and the words at `<SIZE 1.0>`): 0 the yellow icon and "Objective
-    complete" in `806400FF`; 1 the red icon (`<ROBJ>`) and "Objective complete" in `861A1AFF`; 2 the blue icon and
-    "Bonus complete" in `6A4183FF`; 3 "Checkpoint" in `861A1AFF` with no icon; 4 "Objective/Checkpoint complete" in
-    `6A4183FF` with no icon.
+    - **Slot 0:** nothing else. The game's "Objective complete" (built-in announcement 0 below) is not shown by
+      `HUD_SetObjective`: its only path is the script binding `HUDSetAnnounceMsg` (`0x001b5b08`, the one caller of
+      `HUD_ShowAnnouncement` besides this function), so a level script that wants it shows it itself. Confirmed (code)
+      for the callers; that the mission scripts do so is inferred.
+    - **Slot 1:** for each player slot whose handle resolves (`W_GameState + 0x224` players, handles from `+0x228`),
+      `HUD_ShowAnnouncement(hud, 2)` (`0x001b3cb0`): the built-in announcement 2, with interface cue **`0x14`**. Every
+      call targets the one HUD (`0x00600840`), so in one-player play it shows once. Confirmed (code); the per-player
+      repeat in split screen is not traced.
+    - **Runtime** (same run): after mode 0 for slot 0 at update 5, the message showed from update 7; mode 2 at update 95
+      ended it at update 96 and the queue stayed empty (the pool's five entries free), so the level's own hint box came
+      back. For slot 1, mode 2 at update 220 ended the "New Bonus Objective" message at update 221 and the announcement
+      widget (`+0xe344`) showed "Bonus complete" until update 282: 2,035 ms of game time, its `<DISPLAYTIME 2000>`.
+    - The built-in announcements read at runtime (`0x00622e20`; `<LEFT>`, `<DISPLAYTIME 2000>` and a white
+      `<MONEYFONT>` icon at 0.8, then one space and the words at `<SIZE 1.0>`): 0 the yellow icon and "Objective
+      complete" in `806400FF`; 1 the red icon (`<ROBJ>`) and "Objective complete" in `861A1AFF`; 2 the blue icon and
+      "Bonus complete" in `6A4183FF`; 3 "Checkpoint" in `861A1AFF` with no icon; 4 "Objective/Checkpoint complete" in
+      `6A4183FF` with no icon.
 
 **Scroll-in messages** (`ScrollInHUD.cpp`, HUD `+0x8dd0`): a queue with no priorities in which **the newest message
 cuts the showing one short**. `ScrollIn_Queue` (`0x001c8b08`) appends the message at the tail (nothing is queued when
