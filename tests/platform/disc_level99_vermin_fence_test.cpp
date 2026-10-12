@@ -1,32 +1,34 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Checks against the player's own disc that Vermin climbs his fence in `level99` checkpoint 3's demonstration, as the
-// original does (issue #232): after the scene `l99_c3`, `P3.EndChapterScene` sends him with
-// `GoalMoveToFlag(Vermin, fVerminFencePoizo, 4, -1, -1, 0.5, 0, true)` from the street to (46.30, 20.22), a route of
-// one kind-8 (climb) link from node 205 (46.29, 25.29) to node 204 (46.29, 24.29) over the fence. In the original he
-// ran straight, started the climb at y 26.6, was over in 38 updates, left it at y 22.3 and stopped at (46.31, 20.18)
-// (docs/research/ai-pathing.md, confirmed (runtime); docs/research/scripting.md#level99-checkpoints step 3.2). The
-// level plays in the game session as `--play-level level99 --checkpoint 3` plays it (support/disc_session.h), the
-// pad idle. It runs only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints
-// positions only (LEGAL.md).
+// Checks against the player's own disc how an AI runs at `level99` checkpoint 3's fence and roofs, as the original
+// does. The level plays in the game session as `--play-level level99 --checkpoint 3` plays it
+// (support/disc_session.h), the pad idle.
+//
+// - **The fence demonstration** (issue #232): after the scene `l99_c3`, `P3.EndChapterScene` sends Vermin with
+//   `GoalMoveToFlag(Vermin, fVerminFencePoizo, 4, -1, -1, 0.5, 0, true)` from the street to (46.30, 20.22), a route of
+//   one kind-8 (climb) link from node 205 (46.29, 25.29) to node 204 (46.29, 24.29) over the fence. In the original he
+//   ran straight, entered the climb (route state 3) at y 26.6, was over in 38 updates and stopped at (46.31, 20.18)
+//   (docs/research/ai-pathing.md, confirmed (runtime)). Vermin is a fast climber (`HuSetFastClimber`), so he starts
+//   the climb from the run within 4.5 m of the climb's far node (`Route_TryClimbNear`, docs/research/ai.md#route-follow).
+// - **The roof run** (issue #104): `P3.Player2Jumps` sends him from `fVerminWait` to `fStop[3]` over the window gap
+//   and `P3.FinishRun` on to `fStop[4]` over the second gap, both at gait 4; in the original he held the run gait at
+//   7.80 m/s up to both take-offs (docs/research/scripting.md#level99-p2-vermin-fence, confirmed (runtime)).
+//
+// It runs only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints positions only
+// (LEGAL.md).
 
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
-#include <cstdlib>
-#include <format>
 #include <optional>
-#include <string>
 #include <string_view>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
 #include "ai/brain.h"
-#include "debug/play_controls.h"
-#include "scripting/script_system.h"
 #include "ai/brains.h"
 #include "ai/goal.h"
 #include "animation/anim_math.h"
@@ -35,43 +37,46 @@
 #include "human/locomotion.h"
 #include "platform/game_session.h"
 #include "platform/play_level_mode.h"
+#include "scripting/script_system.h"
 #include "support/disc_play_fixtures.h"
 #include "support/disc_session.h"
 #include "warriors/created_humans.h"
 
 namespace {
 
-// The goal's target (the flag (47.30, 20.20) moved 1 m along -1 degrees) and its arrival radius, metres.
+// The fence order's target (the flag (47.30, 20.20) moved 1 m along -1 degrees) and its arrival radius, metres.
 constexpr float kTargetX = 46.30F;
 constexpr float kTargetY = 20.217F;
 constexpr float kArrival = 0.5F;
-// The fence line between the climb link's two nodes (y 25.29 and 24.29).
+// The climb link's two nodes (y 25.29 and 24.29) and the fence between them.
+constexpr float kFarNodeY = 24.29F;
 constexpr float kFenceY = 24.79F;
-// Where the climb may start: on the street side of the fence, no farther back than the original's 26.6 plus the
-// climb's own reach, and close to the link's line in x.
-constexpr float kTakeOffFarthestY = 27.6F;
-constexpr float kTakeOffNearestY = 25.0F;
-constexpr float kLinkX = 46.29F;
-constexpr float kOffLink = 1.0F;
-// The original's landing side: off the climb at y 22.3; anything past the far node counts.
-constexpr float kLandedBeforeY = 24.29F;
-// How long the scene and the set-up before the order may take, and the run itself (about 23 m at the run's 7.8 m/s
-// and a 38-update climb in the original, under 5 s), in frames.
+// Where a running climb may start: within 4.5 m of the far node, and not against the fence (the running climb's
+// nearest face is (r1 + r2) x 0.4 away, 1.2 m for this fence's clips; the original's state 3 began 1.8 m out).
+constexpr float kTakeOffFarthestY = kFarNodeY + 4.5F;
+constexpr float kTakeOffNearestY = kFenceY + 0.8F;
+// The climb's updates at most (38 in the original) and the whole order's (the scene's end to the arrival: about 23 m
+// at 7.8 m/s, the climb and the start; 246 before the fix, with 33 updates run against the fence).
+constexpr int kClimbMost = 50;
+constexpr int kFenceRunMost = 180;
+// How long the scene and the set-up before the order may take, and any one run, in frames.
 constexpr std::uint64_t kOrderLimit = 6000;
 constexpr int kRunBudget = 600;
-// The roof run (docs/research/scripting.md#level99-p2-vermin-fence): `fVerminWait`, where Vermin waits for the
-// player's window jump; the updates looked at before each take-off (the original ran at gait 4 and 7.80 m/s from 34
-// updates before the window's take-off and 18 before the second); how long both legs may take (the original took off
-// the second time 266 updates after the order).
+
+// The roof run: `fVerminWait`, where Vermin waits for the player's window jump; the updates looked at before each
+// take-off (the original ran at gait 4 and 7.80 m/s from 34 updates before the window's take-off and 18 before the
+// second); how long both legs may take (the original's second take-off was 266 updates after the order).
 constexpr coney::anim::Vec3 kWindowRunStart{62.8F, -3.3F, 4.3F};
 constexpr std::size_t kRunUp = 12;
 constexpr int kRoofBudget = 900;
 
-// One update of the roof run.
+
+// One update of a run.
 struct Update {
     coney::human::Gait gait = coney::human::Gait::Standing;
     float speed = 0.0F;
     coney::anim::Vec3 feet{};
+    bool climbing = false;
 };
 
 // The handle of the last human the scripts made with `name`, or 0.
@@ -102,38 +107,39 @@ bool movingToFlag(const coney::ai::Brain& brain) {
     return top != nullptr && top->type() == coney::ai::GoalType::MoveToFlag;
 }
 
-} // namespace
+// What `human` is doing now.
+Update sample(const coney::human::Human& human) {
+    return Update{.gait = human.gait(),
+                  .speed = human.speed(),
+                  .feet = human.position(),
+                  .climbing = human.traversal() == coney::human::Traversal::Climbing};
+}
 
-TEST_CASE("the disc's level99 checkpoint 3: Vermin climbs the fence in his demonstration",
-          "[disc][story][level99]") {
-    std::optional<coney::io::Wad> wad = coney::test::openDisc();
-    if (!wad) {
-        SKIP("CONEY_DISC is not set: no disc to check");
+// The index of the first climbing update in `updates`, if any.
+std::optional<std::size_t> firstClimb(const std::vector<Update>& updates) {
+    const auto it = std::ranges::find_if(updates, [](const Update& u) { return u.climbing; });
+    return it != updates.end() ? std::optional<std::size_t>(static_cast<std::size_t>(it - updates.begin()))
+                               : std::nullopt;
+}
+
+// How many updates the climb from `start` lasts.
+int climbLength(const std::vector<Update>& updates, std::size_t start) {
+    int length = 0;
+    for (std::size_t i = start; i < updates.size() && updates[i].climbing; ++i) {
+        ++length;
     }
+    return length;
+}
 
-    // Checkpoint 3 as --play-level starts it, the pad idle; the scene `l99_c3` plays out to its end.
-    const char* pad = std::getenv("VF_PAD") != nullptr ? std::getenv("VF_PAD") : "0 stick left 0 0\n";
-    coney::test::DiscSession run(*wad, pad);
-    const bool story = std::getenv("VF_STORY") != nullptr;
-    run.session().startAtLevel("level99", story ? 2 : 3);
+// Checkpoint 3 started in `run`, its scene played out, until the fence order: Vermin's brain, or null.
+coney::ai::Brain* untilFenceOrder(coney::test::DiscSession& run) {
+    run.session().startAtLevel("level99", 3);
     REQUIRE(run.runUntilPlay());
     coney::platform::PlayLevelMode* play = run.session().play();
     REQUIRE(play != nullptr);
     if (play == nullptr) {
-        return;
+        return nullptr;
     }
-    if (story) {
-        run.runToPlayFrame(600);
-        CHECK(run.session().flow().scripts().call("P2.SeeVermin"));
-        run.runToPlayFrame(900);
-        play->teleport(coney::debug::Place{.name = "fence", .feet = {46.6F, 49.3F, 0.3F}, .headingDegrees = 0.0F});
-        REQUIRE(run.runUntil([&] { return run.session().flow().state().checkPoint == 3; }, 3000));
-        std::printf("  checkpoint 3 at play frame %llu\n", static_cast<unsigned long long>(run.playFrames()));
-    }
-    const double vermin = lastNamed(run.session().flow().humans(), "Vermin");
-    REQUIRE(vermin != 0.0);
-
-    // The scene's end sends him to the flag.
     coney::ai::Brain* brain = nullptr;
     REQUIRE(run.runUntil(
         [&] {
@@ -141,60 +147,75 @@ TEST_CASE("the disc's level99 checkpoint 3: Vermin climbs the fence in his demon
             return brain != nullptr && movingToFlag(*brain);
         },
         kOrderLimit));
+    return brain;
+}
+
+// The fence order run out in `run`, then half a second: Vermin's brain, or null.
+coney::ai::Brain* afterFenceDemonstration(coney::test::DiscSession& run) {
+    coney::ai::Brain* brain = untilFenceOrder(run);
+    if (brain == nullptr) {
+        return nullptr;
+    }
+    REQUIRE(run.runUntil([&] { return !movingToFlag(*brain); }, kRunBudget));
+    constexpr std::uint64_t kSettle = 15;
+    run.run(kSettle);
+    return brain;
+}
+
+} // namespace
+
+TEST_CASE("the disc's level99 checkpoint 3: Vermin climbs the fence from his run in his demonstration",
+          "[disc][story][level99]") {
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    coney::test::DiscSession run(*wad, "0 stick left 0 0\n");
+    coney::ai::Brain* brain = untilFenceOrder(run);
     if (brain == nullptr) {
         return;
     }
     const coney::anim::Vec3 start = brain->human().position();
+    const float runSpeed = brain->human().speeds().run;
 
-    // Every update until the goal is done: where the climb starts, where he is when it ends, how far he got.
-    std::optional<coney::anim::Vec3> takeOff;
-    std::optional<coney::anim::Vec3> landed;
-    int climbs = 0;
-    int frames = 0;
-    for (; frames < kRunBudget && movingToFlag(*brain); ++frames) {
-        const bool wasClimbing = brain->human().climb().has_value();
+    // Every update until the order is done.
+    std::vector<Update> updates;
+    for (int frame = 0; frame < kRunBudget && movingToFlag(*brain); ++frame) {
         run.run(1);
-        const bool climbing = brain->human().climb().has_value();
-        const coney::anim::Vec3 feet = brain->human().position();
-        if (std::getenv("VF_DEBUG") != nullptr && frames % 5 == 0) {
-            std::printf("      fence %d gait %d speed %.2f at (%.2f, %.2f, %.2f) climbing %d\n", frames,
-                        static_cast<int>(brain->human().gait()), brain->human().speed(), feet.x, feet.y, feet.z,
-                        climbing ? 1 : 0);
-        }
-        if (climbing && !wasClimbing) {
-            ++climbs;
-            if (!takeOff) {
-                takeOff = feet;
-            }
-        }
-        if (!climbing && wasClimbing && !landed) {
-            landed = feet;
-        }
+        updates.push_back(sample(brain->human()));
     }
-    const coney::anim::Vec3 feet = brain->human().position();
-    const float fromTarget = std::hypot(feet.x - kTargetX, feet.y - kTargetY);
-    std::printf("  level99 Vermin's fence: from (%.2f, %.2f) in %d frames, %d climbs, take-off %s, off the climb %s, "
-                "ends at (%.2f, %.2f, %.2f), %.2f m from the target\n",
-                start.x, start.y, frames, climbs,
-                takeOff ? std::format("({:.2f}, {:.2f})", takeOff->x, takeOff->y).c_str() : "none",
-                landed ? std::format("({:.2f}, {:.2f})", landed->x, landed->y).c_str() : "none", feet.x, feet.y,
-                feet.z, fromTarget);
-
-    // He starts the street side of the fence, climbs once, from near the link, and comes off it beyond the fence.
-    CHECK(start.y > kTakeOffFarthestY);
-    REQUIRE(takeOff.has_value());
-    REQUIRE(landed.has_value());
-    if (!takeOff || !landed) {
+    const std::optional<std::size_t> climb = firstClimb(updates);
+    REQUIRE(climb.has_value());
+    REQUIRE(*climb > 0);
+    if (!climb || *climb == 0) {
         return;
     }
-    CHECK(climbs == 1);
-    CHECK(takeOff->y <= kTakeOffFarthestY);
-    CHECK(takeOff->y >= kTakeOffNearestY);
-    CHECK(std::fabs(takeOff->x - kLinkX) < kOffLink);
-    CHECK(landed->y < kLandedBeforeY);
-    CHECK(feet.y < kFenceY);
-    // And he arrives at the flag in time.
-    CHECK(frames < kRunBudget);
+    const Update takeOff = updates[*climb];
+    const Update before = updates[*climb - 1];
+    const int climbUpdates = climbLength(updates, *climb);
+    const std::size_t off = *climb + static_cast<std::size_t>(climbUpdates);
+    const coney::anim::Vec3 landed = off < updates.size() ? updates[off].feet : updates.back().feet;
+    // The updates he spent on the street side within 0.8 m of the fence without climbing: running into it.
+    const auto againstFence = std::ranges::count_if(
+        updates, [](const Update& u) { return !u.climbing && u.feet.y > kFenceY && u.feet.y < kTakeOffNearestY; });
+    const coney::anim::Vec3 feet = brain->human().position();
+    const float fromTarget = std::hypot(feet.x - kTargetX, feet.y - kTargetY);
+    std::printf("  level99 Vermin's fence: from (%.2f, %.2f) in %zu updates; the climb from (%.2f, %.2f) at %.2f m/s, "
+                "%d updates, off it at (%.2f, %.2f); %td updates against the fence; ends %.2f m from the target\n",
+                start.x, start.y, updates.size(), takeOff.feet.x, takeOff.feet.y, before.speed, climbUpdates,
+                landed.x, landed.y, againstFence, fromTarget);
+
+    // One climb, started from the run on the street side short of the fence, never run into it; over in about the
+    // original's time, off it beyond the far node, and the flag reached.
+    CHECK(start.y > kTakeOffFarthestY);
+    CHECK(takeOff.feet.y <= kTakeOffFarthestY);
+    CHECK(takeOff.feet.y >= kTakeOffNearestY);
+    CHECK(before.speed >= runSpeed * 0.9F);
+    CHECK(againstFence == 0);
+    CHECK(climbUpdates <= kClimbMost);
+    CHECK(std::ranges::count_if(updates, [](const Update& u) { return u.climbing; }) == climbUpdates);
+    CHECK(landed.y < kFarNodeY);
+    CHECK(static_cast<int>(updates.size()) <= kFenceRunMost);
     CHECK(fromTarget <= kArrival + 0.1F);
 }
 
@@ -204,33 +225,14 @@ TEST_CASE("the disc's level99 checkpoint 3: Vermin runs up to both of his roof j
         SKIP("CONEY_DISC is not set: no disc to check");
     }
     coney::test::DiscSession run(*wad, "0 stick left 0 0\n");
-    run.session().startAtLevel("level99", 3);
-    REQUIRE(run.runUntilPlay());
-    coney::platform::PlayLevelMode* play = run.session().play();
-    REQUIRE(play != nullptr);
-    if (play == nullptr) {
+    coney::ai::Brain* brain = afterFenceDemonstration(run);
+    if (brain == nullptr) {
         return;
     }
-    coney::ai::Brain* brain = nullptr;
-    REQUIRE(run.runUntil(
-        [&] {
-            brain = brainNamed(*play, lastNamed(run.session().flow().humans(), "Vermin"));
-            return brain != nullptr && movingToFlag(*brain);
-        },
-        kOrderLimit));
-    REQUIRE(run.runUntil([&] { return !movingToFlag(*brain); }, kRunBudget));
-    run.run(30);
 
-    // Vermin where the window run starts, then the script's step after the player's window jump.
+    // Vermin where the window run starts, then the script's step after the player's window jump, which sends him to
+    // fStop[3]; its arrival line's end runs P3.FinishRun, which sends him on to fStop[4].
     brain->human().place(kWindowRunStart, coney::human::headingOf(coney::anim::Vec3{-1.0F, 0.0F, 0.0F}));
-    if (std::getenv("VF_DEBUG") != nullptr) {
-        run.session().flow().scripts().traceCalls([](std::string_view line) {
-            if (line.find("Goal") != std::string_view::npos || line.find("Act") != std::string_view::npos ||
-                line.find("P3.") != std::string_view::npos) {
-                std::printf("      trace %.*s\n", static_cast<int>(line.size()), line.data());
-            }
-        });
-    }
     REQUIRE(run.session().flow().scripts().call("P3.Player2Jumps"));
 
     const float runSpeed = brain->human().speeds().run;
@@ -239,26 +241,22 @@ TEST_CASE("the disc's level99 checkpoint 3: Vermin runs up to both of his roof j
     bool wasAirborne = brain->human().airborne();
     for (int frame = 0; frame < kRoofBudget && takeOffs.size() < 2; ++frame) {
         run.run(1);
-        const coney::human::Human& human = brain->human();
-        updates.push_back(Update{.gait = human.gait(), .speed = human.speed(), .feet = human.position()});
-        if (human.airborne() && !wasAirborne) {
+        updates.push_back(sample(brain->human()));
+        if (brain->human().airborne() && !wasAirborne) {
             takeOffs.push_back(updates.size() - 1);
         }
-        wasAirborne = human.airborne();
+        wasAirborne = brain->human().airborne();
     }
     std::printf("  level99 Vermin's roof run: run speed %.2f m/s, %zu take-offs\n", runSpeed, takeOffs.size());
     REQUIRE(takeOffs.size() == 2);
     for (const std::size_t at : takeOffs) {
+        REQUIRE(at >= kRunUp);
         // The updates before the take-off (the one before it the jump's own): the run gait at the run's speed.
         int running = 0;
         float slowest = runSpeed;
         for (std::size_t i = at - kRunUp; i < at - 1; ++i) {
             running += updates[i].gait == coney::human::Gait::Run ? 1 : 0;
             slowest = std::min(slowest, updates[i].speed);
-            if (std::getenv("VF_DEBUG") != nullptr) {
-                std::printf("      %zu gait %d speed %.2f at (%.2f, %.2f)\n", i, static_cast<int>(updates[i].gait),
-                            updates[i].speed, updates[i].feet.x, updates[i].feet.y);
-            }
         }
         const coney::anim::Vec3 feet = updates[at].feet;
         std::printf("    take-off at (%.2f, %.2f, %.2f): %d of %zu updates before it at the run, slowest %.2f m/s\n",
