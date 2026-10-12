@@ -8,8 +8,9 @@
 // (docs/research/crimes.md#uncuffing); at checkpoint 3 an adaptive pad playthrough of the throw lesson, the store's
 // front door, the crew's thefts under the wreck order and the back door asserts its hints, objectives and scenes in
 // the original's order through checkpoint 4 (docs/research/scripting.md#level80, docs/research/objects.md#throws,
-// docs/research/ai-code.md#t2-warrior-steal). It runs only when the environment variable CONEY_DISC names the disc and
-// skips otherwise; it prints counts only (LEGAL.md).
+// docs/research/ai-code.md#t2-warrior-steal); and at checkpoint 1 the crew under the follow order runs in, stands
+// while the player runs near and climbs the crates after him (docs/research/ai.md#warrior-follow). It runs only when
+// the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only (LEGAL.md).
 
 #include <algorithm>
 #include <array>
@@ -32,6 +33,11 @@
 
 #include "ai/brain.h"
 #include "ai/brains.h"
+#include "ai/crew.h"
+#include "ai/goal.h"
+#include "ai/move_action.h"
+#include "ai/route_follower.h"
+#include "ai/route_planner.h"
 #include "ai/swap_prompt.h"
 #include "combat/throw_aim.h"
 #include "core/game_random.h"
@@ -64,6 +70,7 @@
 #include "scripting/script_bindings.h"
 #include "scripting/script_system.h"
 #include "warriors/inventory.h"
+#include "world/path_map.h"
 #include "world/sector_budget.h"
 #include "world_objects/flags.h"
 
@@ -896,4 +903,193 @@ TEST_CASE("the disc's level80 checkpoint 3: Fox, Hold Up, the bottle thrown from
     std::printf("  level80 checkpoint 3: %zu hints, objectives and scenes in order, %td of the store's stock stolen, "
                 "checkpoint %.0f\n",
                 seen.size(), taken, level.checkPoint());
+}
+
+namespace {
+
+// level80 from "Let's Go" with the follow order given (R2 held, the right stick up at 95 %), and the script's staging
+// of the street run out: the chief and the Warriors that follow him.
+struct FollowingCrew {
+    coney::ai::Brain* chief = nullptr;
+    std::vector<coney::ai::Brain*> crew;
+    std::vector<coney::anim::Vec3> atLetsGo; // the Warriors' feet when the order was asked for
+};
+
+// Runs `level` to the follow order and gives it; `watch` (may be empty) sees every frame from the order on.
+FollowingCrew giveFollowOrder(Level80& level, const std::function<void(const FollowingCrew&)>& watch) {
+    FollowingCrew found;
+    // The intro, skipped, until the script asks for Let's Go.
+    constexpr int kWait = 30 * 60;
+    int frame = 0;
+    const auto tapUntilAsked = [&level, &frame] {
+        if (level.scripts->state().story.commandCallback.empty()) {
+            constexpr int kTapEvery = 30;
+            ++frame;
+            level.pad.buttons = (frame % kTapEvery == 0) ? coney::pad::kCross : 0;
+            return false;
+        }
+        return true;
+    };
+    REQUIRE(level.runUntil(tapUntilAsked, kWait));
+    REQUIRE(level.gameplay->brains() != nullptr);
+    // The test moves player 1 and the Warriors and reads their moves, so it reaches into the brains gameplay owns.
+    auto& brains = const_cast<coney::ai::Brains&>(*level.gameplay->brains());
+    std::vector<coney::ai::Brain*> warriors;
+    for (std::size_t i = 0; i < brains.size(); ++i) {
+        coney::ai::Brain& brain = brains.at(i);
+        if (brain.type() == coney::ai::BrainType::Player) {
+            found.chief = &brain;
+        } else if (brain.type() == coney::ai::BrainType::Warrior) {
+            warriors.push_back(&brain);
+        }
+    }
+    REQUIRE(found.chief != nullptr);
+    // Before the order every Warrior counts, so the run-in is watched; after the staging only the followers do.
+    found.crew = warriors;
+    for (const coney::ai::Brain* warrior : warriors) {
+        found.atLetsGo.push_back(warrior->human().position());
+    }
+    if (watch) {
+        level.watch = [&found, watch] { watch(found); };
+    }
+    level.pad.buttons = coney::pad::kR2;
+    level.run(2);
+    level.pad.rightY = 0.95F;
+    level.run(6);
+    level.pad.buttons = 0;
+    level.run(1);
+    level.pad.rightY = 0.0F;
+    // The run-in and the script's staging of the street.
+    constexpr int kStaging = 15 * 30;
+    level.run(kStaging);
+    level.watch = nullptr;
+    std::erase_if(found.crew, [](const coney::ai::Brain* warrior) { return warrior->following() == nullptr; });
+    REQUIRE(found.crew.size() == 2);
+    return found;
+}
+
+// Whether `warrior` follows a FollowFormation goal now.
+bool followingFormation(coney::ai::Brain& warrior) {
+    return warrior.findGoal(coney::ai::GoalType::FollowFormation) != nullptr;
+}
+
+} // namespace
+
+TEST_CASE(
+    "the disc's level80: the crew runs in after Let's Go, stands while the player runs near and climbs the crates",
+    "[disc][story][follow]") {
+    // The runtime check of docs/research/ai.md#warrior-follow (PCSX2, level80 at "Let's Go"): the Warriors ask
+    // 12.81 m/s (1.25 x sprint) on their run-in, stand while the player runs within 9 m in a straight line and follow
+    // once he is past it, and climb the crate stack by its 0x80 ledge links when he stands on it.
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    Level80 level(**engine, *wad, 1);
+
+    // Every frame: the fastest speed a Warrior's follow move asks, whether one planned a route, whether one climbed a
+    // 0x80 ledge leg, and each FollowFormation pushed while its Warrior stood within 9 m of the chief in a straight
+    // line (none should be: there the follow goal stands).
+    float fastest = 0.0F;
+    bool routed = false;
+    bool ledge = false;
+    int pushedNear = 0;
+    int pushedFar = 0;
+    std::vector<bool> wasFollowing(8, false);
+    const auto watch = [&](const FollowingCrew& at) {
+        for (std::size_t k = 0; k < at.crew.size() && k < wasFollowing.size(); ++k) {
+            coney::ai::Brain& warrior = *at.crew[k];
+            const bool following = followingFormation(warrior);
+            if (following && !wasFollowing[k]) {
+                const coney::ai::RoutePlanner* planner = warrior.planner();
+                const bool inLine =
+                    planner == nullptr || planner->lineClear(warrior.human().position(), at.chief->human().position());
+                ++((warrior.distanceTo(*at.chief) <= coney::ai::kCrewFollowDistance && inLine) ? pushedNear
+                                                                                               : pushedFar);
+            }
+            wasFollowing[k] = following;
+            const auto* move = dynamic_cast<const coney::ai::MoveAction*>(warrior.frontAction());
+            if (move == nullptr || !following) {
+                continue;
+            }
+            fastest = std::max(fastest, move->speed().value_or(0.0F));
+            routed = routed || move->routed();
+            const coney::ai::RouteFollower* route = move->follower();
+            ledge = ledge || (route != nullptr && (route->legKind() & coney::ai::edge_flag::kJump) != 0 &&
+                              warrior.human().traversal() == coney::human::Traversal::Climbing);
+        }
+    };
+    FollowingCrew run = giveFollowOrder(level, watch);
+    coney::ai::Brain* chief = run.chief;
+    const float sprint = run.crew[0]->human().speeds().sprint;
+    float startHeight = 0.0F;
+    for (const coney::anim::Vec3 feet : run.atLetsGo) {
+        startHeight = std::max(startHeight, feet.z - chief->human().position().z);
+    }
+    // **Known difference** (not checked): the original's Warriors planned a route down the landing's stairs; Coney's
+    // walkable line passes from the landing to the street, so they run straight.
+    std::printf("  level80 follow: run-in from %.1f m up asked up to %.2f m/s (1.25 x sprint %.2f), route %s\n",
+                static_cast<double>(startHeight), static_cast<double>(fastest), static_cast<double>(1.25F * sprint),
+                routed ? "planned" : "none");
+    CHECK(fastest > 1.25F * sprint - 0.01F);
+
+    // The player runs (stick 100 % ahead) for 4 s, then stops for 6 s.
+    pushedNear = 0;
+    pushedFar = 0;
+    level.watch = [&] { watch(run); };
+    level.pad.leftY = 1.0F;
+    level.run(4ULL * 30);
+    level.pad.leftY = 0.0F;
+    level.run(6ULL * 30);
+    std::printf("  level80 follow: while the player ran, %d follows began beyond 9 m or out of line, %d within\n",
+                pushedFar, pushedNear);
+    CHECK(pushedNear == 0);
+    CHECK(pushedFar > 0);
+    // Both stand once he stands: no Warrior circles a point left over from his run.
+    for (coney::ai::Brain* warrior : run.crew) {
+        CHECK(warrior->human().speed() < 0.1F);
+        CHECK(warrior->distanceTo(*chief) < coney::ai::kCrewFollowDistance);
+    }
+
+    // The crate stack: the route nodes 860-865 whose 0x80 links climb onto it (docs/research/ai.md#warrior-follow).
+    // The player is put on its top node and stands there.
+    const coney::ai::RoutePlanner* planner = run.crew[0]->planner();
+    REQUIRE(planner != nullptr);
+    const coney::world::PathMap& map = planner->map();
+    REQUIRE(map.nodes().size() > 865);
+    std::uint32_t top = 860;
+    bool ledgeLinks = false;
+    for (std::uint32_t node = 860; node <= 865; ++node) {
+        if (map.nodes()[node].position.z > map.nodes()[top].position.z) {
+            top = node;
+        }
+        for (const coney::world::PathEdge& edge : map.edgesOf(node)) {
+            ledgeLinks = ledgeLinks || (edge.flags & coney::ai::edge_flag::kJump) != 0;
+        }
+    }
+    REQUIRE(ledgeLinks);
+    const coney::anim::Vec3 stack = map.nodes()[top].position;
+    chief->human().place(stack, chief->human().heading());
+    level.run(2);
+    float highest = -1000.0F;
+    float lowest = 1000.0F;
+    for (int second = 0; second < 20 && highest < stack.z - 0.5F; ++second) {
+        level.run(30);
+        for (const coney::ai::Brain* warrior : run.crew) {
+            highest = std::max(highest, warrior->human().position().z);
+            lowest = std::min(lowest, warrior->human().position().z);
+        }
+    }
+    level.watch = nullptr;
+    std::printf("  level80 follow: player on the crates %.1f m up; a Warrior climbed a ledge leg: %s; highest Warrior "
+                "%.1f m, lowest %.1f m\n",
+                static_cast<double>(stack.z), ledge ? "yes" : "no", static_cast<double>(highest),
+                static_cast<double>(lowest));
+    CHECK(ledge);
+    CHECK(highest > stack.z - 0.5F);
+    // Nobody fell off the street.
+    CHECK(lowest > 0.0F);
+    CHECK(level.scripts->scripts().errors() == 0);
 }
