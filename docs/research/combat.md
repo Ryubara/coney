@@ -1041,6 +1041,49 @@ square 2 updates later, both released 4 updates after; then cross taps every 8 u
   power twice (389 → 188; `0x00263380` spends 0.25, then again for the move's damage).
 - The tutorial callback got 57 and 59 from the front, 80 and 59 from the rear.
 
+#### Rembrandt's power move and its spray can {#power-move-props}
+
+Issue #223 asked whether level99's lesson 6 gives Rembrandt a spray can. It does not, and it needs none: the power
+move is the same for every Warrior class's anim ids, and the clips decide what it looks like.
+
+- **Which finisher.** The power strike is always anim id **57**, and its extension is **59**
+  ([In the grab](#grabbing)). No inventory, spray-paint count or held object is read on that path
+  (`Player_UpdatePowerMove` `0x0027df38`, confirmed (code); `Player_UpdateGrabbing` `0x0027f3b0` as
+  [In the grab](#grabbing) describes it, inferred). Each
+  character's data maps the id to a clip, and its own slot wins ([Anim ids](../references/anim-ids.md#anim-57)):
+  Rembrandt's 57 / 58 / 59 / 60 are `gen_grab_front_power10_p1` / `_p1_rea` / `_p2` / `_p2_rea`, and the generic
+  set's are `gen_grab_front_power23_*`. So the spray finisher is Rembrandt's own 59, with or without paint.
+- **The can comes from the clip.** `gen_grab_front_power10_p2` (70 frames, played at rate 0.75, so 94 updates)
+  carries these events, read from the disc (numbers only):
+
+  | Frame (update) | Event | What it does |
+  | --- | --- | --- |
+  | 0 (0) | `0x30`, the name `s_spraycan` at `+8` | **creates the can**: `dyn_` + name is looked up (`ObjectDb_FindByName`); for a type of kind (`+0x65`) 5, with no prop at human `+0x348`, `Human_CreateCarriedProp` (`0x0024cbb0`) makes the object at the human and attaches it at point `0x13` with its type's offset (`Human_AttachCarriedProp` `0x0024cd30`); both `+0x348` and `+0x34c` then hold its handle |
+  | 0 (0) | 11, `SA` 146 `sprayface` | the speech command `sprayface` ([Sound events](sound-events.md#command-ids)) |
+  | 1 (1) | `0x37`, word 19 | message `0xb7`: moves the prop to attach point 19 at the event's position (× the human's scale) and rotation |
+  | 14 (19) | 11, `SA` 83 `sprayloop`; `0x21` on bone 19 | starts the **spray sound** ([Sound events](sound-events.md#spray-loop)); a named effect at the can |
+  | 17, 20 | `0x21` on bone 19 | more spray effect |
+  | 27 (36) | `0x45` | message `0xc5`: **stops the spray sound** |
+  | 64 (85) | `0x31`, the name `s_spraycan` | **removes the can**: when the prop at `+0x348` is of that type, `Human_ReleaseCarriedProps` (`0x0024ce40`) destroys it and empties both handles |
+
+  `gen_grab_front_power10_p1` (57) has no prop or spray event. A type of kind 6 is ignored by both events; any other
+  kind is put in the hand instead (`Human_PlaceItemInHand`) and dropped by `0x31` when it is the held object.
+  Confirmed (code) at `Anim_FireFrameEvents` (`0x00101dd8`, the cases `0x30`, `0x31`, `0x37` and `0x45`) and
+  `Human_HandleMessage` (`0x00245920`, cases `0xb7` and `0xc5`).
+- **At runtime** (confirmed (runtime), PCSX2 2.9.94, two plays of level99 checkpoint 1 from the `l99-cp1-lesson1`
+  state with the course of `repo:research/traces/missions/level99_cp1.toml`, hooks `prop-create` and `prop-release`,
+  Rembrandt's human `+0x168`, `+0x348`, `+0x34c` read every update): 59 started on update 2271; the next update
+  `+0x348` and `+0x34c` held one handle; the sound handle `+0x168` was set on update 2290 (59's update 19) and emptied
+  on 2307 (update 36); the props were empty again when the scene started. In the second play the hook saw
+  `Human_CreateCarriedProp(Rembrandt, "dyn_s_spraycan")` called from `Anim_FireFrameEvents` (return `0x00103874`) on
+  59's first update and `Human_ReleaseCarriedProps(Rembrandt)` from it (return `0x00103938`) 84 updates later.
+  Rembrandt held no spray paint in either run.
+
+**Coney** (#223): play Rembrandt's 59 as it is, and act on the clip events above for any human: `0x30` makes the
+named `dyn_` object and attaches it at point `0x13` (kind 5), `0x37` sets its attach point and local pose, `0x31`
+removes it; a scene start also removes it ([Scenes](scenes.md#humans)). Disc test: through lesson 6, Rembrandt has a
+`dyn_s_spraycan` attached from 59's first update to about update 85, and none after.
+
 ### Strong grapple {#strong-grapple}
 
 **Circle + cross** together (command `0x23`, combination held: on the update the second of the two goes down) outside
