@@ -99,9 +99,12 @@ box at=-24,55,0 size=3,3,3.5 texture=ledge flags=0x80
 
 # Jump gaps, west: platforms 2 m high, 3 m wide and 6 m long (a run-up each) along x = -80, with gaps of 1 to 8 m (a
 # run jump clears about 6.4 m, a sprint jump about 7.9 m); stairs (20 cm rises, walked up) to the first. Missing a jump
-# is a 2 m fall to the ground. Not climbable, so nothing refuses a jump.
+# is a 2 m fall to the ground. Not climbable, so nothing refuses a jump. The first platform is two boxes, the top one a
+# rise (0.2 m) deep: stairs end at a landing that stands no wall face taller than a riser (0.25 m) within the player's
+# 0.47 m walking sphere of the last step, or he stops on the step below it (docs/guides/sandbox.md#landings).
 stairs at=-80,-61.5,0 width=3 steps=10 rise=0.2 run=0.3 texture=stairs
-box at=-80,-57,0 size=3,6,2 texture=ledge
+box at=-80,-57,0 size=3,6,1.8 texture=ledge
+box at=-80,-57,1.8 size=3,6,0.2 texture=ledge
 box at=-80,-50,0 size=3,6,2 texture=ledge
 box at=-80,-42.5,0 size=3,6,2 texture=ledge
 box at=-80,-34.5,0 size=3,6,2 texture=ledge
@@ -116,7 +119,8 @@ box at=-80,52.5,0 size=3,6,2 texture=ledge
 
 # Drop towers, south: 3 m square, 2 to 14 m high, each with stairs (20 cm rises) up its south side; step off the north
 # side to fall. A fall from h lands at about sqrt(2 · 15.68 · h): hurting from about 7.1 m (14.9 m/s) and killing from
-# about 13.4 m (20.5 m/s), inferred from the gravity and thresholds above, so the towers bracket both.
+# about 13.4 m (20.5 m/s), inferred from the gravity and thresholds above, so the towers bracket both. Each top is two
+# boxes, the upper a rise (0.2 m) deep, as the first jump gap's platform (docs/guides/sandbox.md#landings).
 stairs at=0,-31.5,0 width=2 steps=10 rise=0.2 run=0.3 texture=stairs
 stairs at=6,-33,0 width=2 steps=20 rise=0.2 run=0.3 texture=stairs
 stairs at=12,-34.5,0 width=2 steps=30 rise=0.2 run=0.3 texture=stairs
@@ -124,13 +128,20 @@ stairs at=18,-35.25,0 width=2 steps=35 rise=0.2 run=0.3 texture=stairs
 stairs at=24,-36,0 width=2 steps=40 rise=0.2 run=0.3 texture=stairs
 stairs at=30,-37.5,0 width=2 steps=50 rise=0.2 run=0.3 texture=stairs
 stairs at=36,-40.5,0 width=2 steps=70 rise=0.2 run=0.3 texture=stairs
-box at=0,-28.5,0 size=3,3,2 texture=ledge
-box at=6,-28.5,0 size=3,3,4 texture=ledge
-box at=12,-28.5,0 size=3,3,6 texture=ledge
-box at=18,-28.5,0 size=3,3,7 texture=marker
-box at=24,-28.5,0 size=3,3,8 texture=marker
-box at=30,-28.5,0 size=3,3,10 texture=marker
-box at=36,-28.5,0 size=3,3,14 texture=marker
+box at=0,-28.5,0 size=3,3,1.8 texture=ledge
+box at=0,-28.5,1.8 size=3,3,0.2 texture=ledge
+box at=6,-28.5,0 size=3,3,3.8 texture=ledge
+box at=6,-28.5,3.8 size=3,3,0.2 texture=ledge
+box at=12,-28.5,0 size=3,3,5.8 texture=ledge
+box at=12,-28.5,5.8 size=3,3,0.2 texture=ledge
+box at=18,-28.5,0 size=3,3,6.8 texture=marker
+box at=18,-28.5,6.8 size=3,3,0.2 texture=marker
+box at=24,-28.5,0 size=3,3,7.8 texture=marker
+box at=24,-28.5,7.8 size=3,3,0.2 texture=marker
+box at=30,-28.5,0 size=3,3,9.8 texture=marker
+box at=30,-28.5,9.8 size=3,3,0.2 texture=marker
+box at=36,-28.5,0 size=3,3,13.8 texture=marker
+box at=36,-28.5,13.8 size=3,3,0.2 texture=marker
 
 # Jump-up blocks, centre: 2 m square, 0.5 to 2 m high in quarter metres, not climbable. A run jump rises 1.06 m, so
 # 1 m is about the highest landed on.
