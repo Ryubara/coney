@@ -13,6 +13,7 @@ validation:
 not_in_nav: |
   /references/flags/
   /references/lights/
+  /references/wad-names/
 
 extra_css:
   - stylesheets/extra.css
