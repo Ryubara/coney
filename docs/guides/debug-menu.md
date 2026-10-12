@@ -100,6 +100,26 @@ right. `--dev-overlay N` shows it for the first N frames and then hides it, to c
 Dear ImGui (MIT licence) is pinned in `cmake/deps.cmake` and used only in `src/platform/`
 ([LEGAL.md](repo:LEGAL.md#licences)).
 
+### Size at any resolution {#ui-scale}
+
+The overlay is drawn at the same physical size on a 1080p, a 1440p and a 4K display. Its *scale* is the display's
+height (the window's height in points, which is its pixels divided by the operating system's own scaling) over 1080,
+rounded to a step of an eighth and kept between 1x and 4x: 1x at 1080 and below, 2x at 2160, so a 4K window has the
+overlay at twice the size of a 1080p one and not a quarter of it. The system's display scale is not read separately,
+because the points already hold it. The scale follows the window as it is resized or moved to another display, from the
+next frame.
+
+A scale sets every size of Dear ImGui's style (padding, spacing, scrollbars, rounding) and the font size, and makes the
+font again at that size, so the text stays sharp and is not a stretched picture: at 1x the overlay uses Dear ImGui's
+pixel-clean 13 px font, above that its scalable font at 13 px times the scale. The windows that are open are resized by
+the same ratio. The settings file (`coney-imgui.ini`) keeps the scale its window sizes were saved at, so a window saved
+at 1x opens at the right size at 2x.
+
+The Display page's *Debug UI scale* overrides the choice: *Auto* (the rule above), or a fixed 1x, 1.25x, 1.5x, 2x,
+2.5x, 3x or 4x, kept in the settings file; *Debug UI scale now* shows the scale in use. The pad menu is not affected
+(it is drawn in the game's own screen space). The rule is `src/debug/ui_scale.h`, the Dear ImGui side
+`src/platform/imgui_ui_scale.h`; both have tests that need no window.
+
 ## The pages {#pages}
 
 | Page | What it has |
@@ -118,7 +138,7 @@ Dear ImGui (MIT licence) is pinned in `cmake/deps.cmake` and used only in `src/p
 | AI fighters | AI humans that fight the player: spawn one in front of him, the engaging toggle, their state, clear them |
 | HUD | the [in-game HUD](../research/hud.md)'s parts on and off, player 1's rage, score, money and items set (-1 gives the value back), an objective, a hint and an announcement fired |
 | Debug draw | lines in the scene: collision near the player, the player's heading and velocity, the camera, places |
-| Display | the frame-stats line, the FPS counter, the frame cap and vsync (live), the player's coordinates, the GUI safe area, the logical screen |
+| Display | the frame-stats line, the FPS counter, the frame cap and vsync (live), the player's coordinates, the GUI safe area, the logical screen, the [overlay's size](#ui-scale) |
 | Audio | the output device, the master and bus volumes, a looping test tone, the voices playing (plotted) |
 | Input | port 1 live: buttons held, both sticks (plotted), the raw stick bytes, the triggers' pressure |
 

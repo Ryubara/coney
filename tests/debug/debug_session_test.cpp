@@ -250,3 +250,25 @@ TEST_CASE("the Display page changes the frame cap and vsync live where the platf
     vsyncItem->setBool(false);
     CHECK_FALSE(vsync);
 }
+
+TEST_CASE("the Display page's Debug UI scale choice sets the overlay's scale override", "[debug][ui-scale]") {
+    TunableRegistry tunables;
+    DebugSession session(tunables, DebugServices{}, nullptr);
+    const auto page = session.model().openPage("Display");
+    const MenuItem* choice = page->find("Debug UI scale");
+    REQUIRE(choice != nullptr);
+    REQUIRE(choice->kind == ItemKind::Choice);
+    // Auto first, then the fixed scales.
+    REQUIRE(choice->choices.size() == 8);
+    CHECK(choice->choices[0] == "Auto");
+    CHECK(choice->choices[4] == "2x");
+    CHECK(choice->getChoice() == 0);
+    choice->setChoice(4);
+    CHECK(session.display().uiScaleChoice == 4);
+    // The watch shows the scale the overlay applied last.
+    const MenuItem* now = page->find("Debug UI scale now");
+    REQUIRE(now != nullptr);
+    CHECK(coney::debug::valueText(*now) == "1x");
+    session.display().uiScaleApplied = 1.5F;
+    CHECK(coney::debug::valueText(*now) == "1.5x");
+}
