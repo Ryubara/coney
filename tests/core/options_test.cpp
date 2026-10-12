@@ -691,3 +691,25 @@ TEST_CASE("the pad pipe is test mode and takes the place of an input script", "[
         parse(std::array<std::string_view, 4>{"--pad-pipe", "--input-script", "s.txt", "--headless"}).has_value());
     CHECK_FALSE(parse(std::array<std::string_view, 2>{"--pad-pipe", "--pad-pipe"}).has_value());
 }
+
+TEST_CASE("the trace-humans option names the file every human's rows are traced to", "[options]") {
+    // A played level and a Rumble match both have humans to trace.
+    auto play =
+        parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "level99", "--trace-humans", "h.csv"});
+    REQUIRE(play.has_value());
+    CHECK(play->humansTraceFile == "h.csv");
+    auto rumble =
+        parse(std::array<std::string_view, 6>{"--disc", "x", "--rumble", "warparty", "--trace-humans", "h.csv"});
+    REQUIRE(rumble.has_value());
+    CHECK(rumble->humansTraceFile == "h.csv");
+    // It needs a game that is played, and a file.
+    CHECK_FALSE(parse(std::array<std::string_view, 2>{"--trace-humans", "h.csv"}).has_value());
+    CHECK_FALSE(
+        parse(std::array<std::string_view, 5>{"--disc", "x", "--rumble", "warparty", "--trace-humans"}).has_value());
+    // In a Rumble match --trace traces every human too: the match has no one level to trace the player of.
+    auto traced = parse(std::array<std::string_view, 6>{"--disc", "x", "--rumble", "warparty", "--trace", "t.csv"});
+    REQUIRE(traced.has_value());
+    CHECK(traced->humansTraceFile == "t.csv");
+    CHECK_FALSE(traced->traceFile.has_value());
+    CHECK(coney::usageText().find("--trace-humans") != std::string_view::npos);
+}

@@ -439,10 +439,13 @@ damages comes from the zone tables, never from the part's own box. Confirmed (co
 - **The gang lock**: a car whose `+0x12d8` is not `0x19` ignores a striker (or holder, or thrower) whose gang
   (brain `+0x20c` → `+0x2c`) differs. `CarCanBeDamagedBy(car, gang)` (`lua_CarCanBeDamagedBy` `0x00378790` →
   `0x0038e030`) sets it.
-- **The contact point** (hit record `+0x60`, x and y) is read against the type's thresholds without any transform,
-  so it is in the car's frame (inferred). Bit 1 (the roof) is **not** dropped on this path: a thrown object, a
-  weapon or a charge reaching a cabin band whose mask holds 1 takes the roof off at once (its record flag `0x10`),
-  and the roof coming off ends a police car's `part_copcar_lights` (message `0x15`, then its vtable `+0x4c`;
+- **The contact point** (hit record `+0x60`, x and y) is read against the type's thresholds without any transform. It is
+  the point in the **struck box's own frame**, along the box's axes from the **box's centre** (not the car's origin),
+  and `+0x90` holds the same point in the world, which the rock, the dent sound and the window-break effect use.
+  Confirmed (code) at `0x0034bbe8` and `0x003453f8` ([Physics: Unit 5](physics.md#unit-5)); so a cabin-box hit's bands
+  are measured from the cabin box's centre (inferred). Bit 1 (the roof) is **not** dropped on this path: a thrown
+  object, a weapon or a charge reaching a cabin band whose mask holds 1 takes the roof off at once (its record flag
+  `0x10`), and the roof coming off ends a police car's `part_copcar_lights` (message `0x15`, then its vtable `+0x4c`;
   `Car_AddPartDamage` `0x0038a4d8`). Confirmed (code); not seen at runtime.
 - **After the parts**, for each part 1-29 reached, not removed, flying or off: parts 1-25 take the damage
   (`Car_AddPartDamage`), parts 26-29 are only marked removed and off (`+0x11f0`, `+0x11f8`). A part among 4, 5, 10-14,
@@ -690,15 +693,18 @@ particular spots", comes from these gaps:
 
 **The fix, as pull requests** (each with its tests first; the parity scenarios are `car_punch` and `car_glance`):
 
-1. **Strikes hit cars.** In the humans' strike step (`strikeObjects()`), test the striking shapes against each car's
-   two boxes (box 1 and box 2 at the car's pose, sizes and offsets per type) as for any object body; the first
-   overlap calls `Cars::humanHit()` with the striker's feet (kind 3: parts by where he stands) and puts the car on
-   the shapes' struck list. The square's object attack then needs no special path: its clip's shapes strike the car
-   like any other clip. Keep `carTargetable()` / `carAimPoint()` for the aim only. Tests: a unit test that a hand
-   sphere overlapping box 1 beside the rear door damages parts 20/21 (window first) from feet at the car's
-   y = −0.08; one that a shape 0.1 m short of the box hits nothing; one that a car struck once per window is not
-   struck again until the shapes go off. Playthrough: `car_glance` on level99 checkpoint 4 asserts window 21 breaks
-   on the first square.
+1. **Strikes hit cars.** In the humans' strike step (`strikeObjects()`), sweep each enabled strike **sphere** from
+   its centre at the last update to its centre now against each car's two boxes (box 1 and box 2 at the car's pose,
+   sizes and offsets per type), as for any object body: the sphere-box sweep and the strike loop are specified
+   exactly in [Physics: Unit 5](physics.md#unit-5). Segments (forearms, shins, the spine) never reach a box, a sphere
+   whose centre is outside a box it already touches at the start does not hit it, and a shape just switched on is
+   tested with no move. The first hit calls `Cars::humanHit()` with the striker's feet (kind 3: parts by where he
+   stands) and puts the car on the shapes' struck list. The square's object attack then needs no special path: its
+   clip's shapes strike the car like any other clip. Keep `carTargetable()` / `carAimPoint()` for the aim only.
+   Tests: a unit test that a hand sphere swept into box 1 beside the rear door damages parts 20/21 (window first)
+   from feet at the car's y = −0.08; one that a shape 0.1 m short of the box hits nothing; one that a car struck once
+   per window is not struck again until the shapes go off. Playthrough: `car_glance` on level99 checkpoint 4 asserts
+   window 21 breaks on the first square.
 2. **Per-type tables.** Replace `zonesOf()`'s stand-in with the six types' boxes, thresholds, masks (with bit 1),
    part boxes, part flags (the van's `0x18`) and all-broken masks; add the player-on-top rule (cabin table forced
    in body bands 1-4 when his feet are above the car's position). Tests: per type, a table-driven test of the zone

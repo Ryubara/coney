@@ -17,11 +17,11 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from coney_tools import local_gate
+from coney_tools.audit import Report, run_checks, specs_in
+from coney_tools.audit_files import FilesContext
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import Paths, load_conventions
-from coney_tools.conventions_render import stale_files
 from coney_tools.local_gate import StepResult
-from coney_tools.repo_checks import check_pointer_files
 
 #: The steps, in the order they run and print; `--only` and `--skip` take these names.
 STEPS: tuple[str, ...] = ("repo", "pre-commit", "clang-tidy", "docs", "python")
@@ -52,18 +52,17 @@ def _tail(lines: list[str]) -> tuple[str, ...]:
 
 
 def _step_repo(root: Path) -> StepResult:
-    """`coney-tools repo check` and `repo render --check`: the conventions file, the agent pointer files and the
-    generated blocks of AGENTS.md and the guides."""
+    """`coney-tools repo audit --files`, which CI runs: the conventions file loads, the agent pointer files, the
+    generated blocks, the issue forms, the pull request template, the CI scope script and pre-commit's size limit
+    agree with it."""
     conventions = load_conventions(root)
-    problems = check_pointer_files(root, conventions.paths.pointer_files)
-    problems += [
-        f"{name}: a generated block is out of date (run `coney-tools repo render`)"
-        for name in stale_files(root, conventions)
-    ]
+    report = Report(("files",))
+    run_checks(specs_in(conventions, ["files"]), {"files": FilesContext(root, conventions)}, report)
+    problems = [f"{finding.check} {finding.item}: {finding.message}" for finding in report.findings]
     return StepResult(
         "repo",
         not problems,
-        "conventions, pointer files, generated blocks" if not problems else f"{len(problems)} problems",
+        f"{len(report.ran)} audit checks" if not problems else f"{len(problems)} problems",
         output=tuple(problems),
     )
 

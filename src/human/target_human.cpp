@@ -61,6 +61,13 @@ void TargetHuman::step() {
         react(hit);
     }
     m_animator.advance(kStepSeconds);
+    // A throw's carry round the thrower (carryOver()) turns and slides it first, as a human's steer comes before its
+    // clip's root motion; a grabber's placement drops it.
+    if (!m_attached && (m_carry.turning() || m_carry.sliding())) {
+        const TurnAndSlideStep carry = m_carry.step(kStepSeconds);
+        m_heading = wrapAngle(m_heading + carry.turn);
+        m_position = anim::add(m_position, anim::scale(carry.velocity, kStepSeconds));
+    }
     // A clip that moves the body moves it by its root motion, unless its grabber places it (not by a loop's).
     if (!m_attached && m_state != TargetState::Mounted && m_animator.drivingClipPlaying()) {
         applyRootMotion();
@@ -149,6 +156,13 @@ void TargetHuman::applyRootMotion() {
 void TargetHuman::place(anim::Vec3 position, float headingRadians) {
     m_position = position;
     m_heading = wrapAngle(headingRadians);
+    m_carry.clear();
+}
+
+void TargetHuman::carryOver(anim::Vec3 goal, float headingRadians, float seconds) {
+    m_carry.clear();
+    m_carry.turnToOver(m_heading, headingRadians, seconds);
+    m_carry.moveToOver(m_position, goal, seconds);
 }
 
 void TargetHuman::face(anim::Vec3 point) {

@@ -510,7 +510,7 @@
   args:
     - {name: slot, lua: number, ctype: int, desc: "Objective line: 0 or 1 (two objective slots; each has its own heading string)."}
     - {name: text, lua: string, desc: "The objective text."}
-    - {name: mode, lua: number, ctype: int, desc: "0 set the objective (and announce it unless `silent`), 1 clear the slot, 2 mark it (announce the heading and the text), 3 set and mark it without a message."}
+    - {name: mode, lua: number, ctype: int, desc: "0 set the objective (and announce it unless `silent`), 1 clear the slot, 2 mark it done (no message: it removes the objective's own message from the queue; slot 1 also shows the built-in Bonus complete announcement), 3 set and mark it without a message."}
     - {name: silent, lua: boolean, desc: "With mode 0, true sets the text without the message."}
     - {name: ms, lua: number, ctype: unsigned, default: 8000, desc: "How long the message stays on screen, in milliseconds (default 8000)."}
   description: >-
@@ -520,7 +520,9 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    The message is the objective icon markup, HUD colour slot 4 or 6, global string 0xe5 or 0xe6, then the text; mode
+    The mode-0 message is one string: the objective icon markup and a space, HUD colour slot 4 or 6, global string 0xe5
+    or 0xe6 (which ends the line), then the text; a text whose leading tag names an icon (<ROBJ_N> ...) takes that icon.
+    Mode 2 flushes that message and shows announcement 2 for slot 1 only (runtime-checked in level99, 2026-10-11); mode
     0 for slot 1 also queues tutorial hint 0x15 once while game tutorial text is on. That mode 2 ticks the line off is
     inferred (0x001a5070). The checklist is the object at 0x0062e790 (pointer 0x0050eddc). Behaviour:
     [The in-game HUD](../../research/hud.md#objectives-hudsetobjective).

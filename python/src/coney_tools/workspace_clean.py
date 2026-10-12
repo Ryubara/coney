@@ -35,6 +35,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from coney_tools.config import ConfigError
+from coney_tools.conventions import Workspace, load_conventions
 from coney_tools.workspace import find_layout
 
 #: The file an agent creates in its worktree while it works and deletes when it is done.
@@ -269,14 +270,18 @@ class Settings:
     merged_heads: MergedHeads
     #: The ref a branch must be contained in.
     base: str = "origin/main"
+    #: The file whose presence marks a worktree as in use (`workspace.busy_marker` of the conventions).
+    busy_file: str = BUSY_FILE
+    #: Whether to add up the sizes a removal frees (a walk over every build folder; the audit skips it).
+    measure: bool = True
 
 
 def assess(tree: GitWorktree, settings: Settings) -> Entry:
     """Decide what to do with one worktree. Reads the file system and git; changes nothing."""
     entry = Entry(tree.path, tree.branch)
     path = tree.path
-    if (path / BUSY_FILE).exists():
-        entry.why = f"busy ({BUSY_FILE})"
+    if (path / settings.busy_file).exists():
+        entry.why = f"busy ({settings.busy_file})"
         return entry
     if settings.cwd.resolve().is_relative_to(path.resolve()):
         entry.why = "the folder this runs from"
@@ -286,7 +291,7 @@ def assess(tree: GitWorktree, settings: Settings) -> Entry:
     build = path / "build"
     has_build = build.is_dir()
     ignored = has_build and _git(path, "check-ignore", "-q", "build").returncode == 0
-    build_size = dir_size(build) if has_build else 0
+    build_size = dir_size(build) if has_build and settings.measure else 0
     if has_build and not ignored:
         entry.build_why = "build/ is not ignored by git: left alone"
     elif has_build and idle < settings.build_hours:
@@ -323,7 +328,7 @@ def assess(tree: GitWorktree, settings: Settings) -> Entry:
             else:
                 entry.remove = True
                 entry.delete_build = False
-                entry.reclaim = build_size + dir_size(path, frozenset({"build", ".git"}))
+                entry.reclaim = build_size + (dir_size(path, frozenset({"build", ".git"})) if settings.measure else 0)
     return entry
 
 
@@ -394,6 +399,7 @@ def run_clean(
     checkout = layout.checkout
     if not (checkout / ".git").exists():
         raise ConfigError(f"{checkout} is not a checkout; run this from the workspace's repository")
+    known = _conventions_workspace(checkout)
     if fetch:
         fetched = _git(checkout, "fetch", "--quiet", "origin", "main")
         if fetched.returncode != 0:
@@ -409,6 +415,7 @@ def run_clean(
         build_hours=build_hours,
         worktree_hours=worktree_hours,
         merged_heads=merged_heads or gh_merged_heads(checkout),
+        busy_file=known.busy_marker if known is not None else BUSY_FILE,
     )
     free_before = shutil.disk_usage(layout.workspace).free
     print(f"Workspace: {layout.workspace}" + ("" if apply else " (dry run: nothing is changed; --apply acts)"))
@@ -466,9 +473,24 @@ def _report_loose(folder: Path, known: set[Path]) -> None:
         print(f"Not worktrees, left alone: {', '.join(loose)}")
 
 
-def run_disk(cwd: Path, workspace: Path | None, min_gb: float = DEFAULT_MIN_GB) -> int:
-    """Run `workspace disk`: print the free space of the workspace's drive; 1 when it is below `min_gb`."""
+def _conventions_workspace(checkout: Path) -> Workspace | None:
+    """The `workspace` section of the checkout's conventions file; None when it has none or cannot be read, so a
+    workspace without a usable checkout still cleans with the built-in defaults."""
+    try:
+        return load_conventions(checkout).workspace
+    except ConfigError:
+        return None
+
+
+def run_disk(cwd: Path, workspace: Path | None, min_gb: float | None = None) -> int:
+    """Run `workspace disk`: print the free space of the workspace's drive; 1 when it is below `min_gb`.
+
+    Without `min_gb` the limit is `workspace.disk_min_free_gb` of the conventions file (30 GB when that is unreadable).
+    """
     layout = find_layout(cwd, workspace)
+    if min_gb is None:
+        known = _conventions_workspace(layout.checkout)
+        min_gb = float(known.disk_min_free_gb) if known is not None else DEFAULT_MIN_GB
     free = shutil.disk_usage(layout.workspace).free
     low = free < min_gb * _GIB
     advice = ": LOW, run workspace clean" if low else ""

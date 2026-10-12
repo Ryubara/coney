@@ -824,3 +824,37 @@ address = 0x0024d810
 # addiu sp,sp,-0x550; sq s4,0x4f0(sp)
 original = [0x27bdfab0, 0x7fb404f0]
 log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }, { value = "[a0 + 0x128]", name = "target" }]
+
+# The level99 power-lesson pass of 2026-10-11 (docs/research/combat.md#power-move-props, docs/research/scenes.md#humans).
+
+[hook.pair-break]
+description = "Each call of Human_BreakPair (0x00258a88): the human, the caller and the tick count."
+research = "docs/research/combat.md#pair-break"
+address = 0x00258a88
+# addiu sp,sp,-0x40; sq s1,0x20(sp)
+original = [0x27bdffc0, 0x7fb10020]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }]
+
+[hook.throw-clear-link]
+description = "Each call of Throw_ClearLink (0x0022bce0): the attacker, the victim, the caller and the tick count."
+research = "docs/research/combat.md#pair-break"
+address = 0x0022bce0
+# addiu sp,sp,-0x30; sq s0,0x20(sp)
+original = [0x27bdffd0, 0x7fb00020]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "attacker" }, { value = "a1", name = "victim" }]
+
+[hook.prop-create]
+description = "Each call of Human_CreateCarriedProp (0x0024cbb0, clip event 0x30): the human, the object's name and the caller."
+research = "docs/research/combat.md#power-move-props"
+address = 0x0024cbb0
+# addiu sp,sp,-0xa0; sq s3,0x60(sp)
+original = [0x27bdff60, 0x7fb30060]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }, { value = "a1", name = "name", text = 32 }]
+
+[hook.prop-release]
+description = "Each call of Human_ReleaseCarriedProps (0x0024ce40): the human, the caller and the tick count."
+research = "docs/research/combat.md#power-move-props"
+address = 0x0024ce40
+# addiu sp,sp,-0x30; sq s0,0x20(sp)
+original = [0x27bdffd0, 0x7fb00020]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }]

@@ -126,8 +126,8 @@ have no wrapper address or usage counts. There are none yet.
 
 | | Bindings |
 | --- | --- |
-| confirmed (code) | 863 |
-| confirmed (runtime) | 0 |
+| confirmed (code) | 861 |
+| confirmed (runtime) | 2 |
 | inferred | 68 |
 | speculative | 25 |
 | detail: traced | 769 |

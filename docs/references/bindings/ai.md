@@ -3159,12 +3159,12 @@ TacticAttack(gang, callback)
 **Returns** nothing.
 
 Sets a gang's tactic to attacking (type 0): every member that is not a player gets threat response 2 and a melee goal,
-idle members join the nearest member's fight every 3 s, and the callback gets 9 `TacNoEnemies` once no member has an
-enemy (checked each second) and 13 `TacMemberDied` when a member dies.
+idle members are sent toward the farthest busy member every 3 s, and the callback gets 9 `TacNoEnemies` once no member
+has an enemy (checked each second) and 13 `TacMemberDied` when a member dies.
 
 **Notes.** Constructor 0x003075c8 (vtable 0x00543320): Start 0x00307fe0, Process 0x003081a8, event 0x00308478. A gang
-with `+0xd9` set also starts one of seven coordinated sub-tactics every 7 s (0x00307a10), not traced. Behaviour:
-[AI](../../research/ai.md#tactic-kinds).
+with `+0xd9` set also starts one of seven coordinated sub-tactics every 7 s (0x00307a10). Behaviour:
+[AI](../../research/ai.md#tactic-kinds), [Gang fights](../../research/gang-fights.md).
 
 - **Evidence:** confirmed (code) at `0x00307548`; detail: traced
 - **Wrapper** `0x00375370` (registered by `RegisterBindings`); **calls** `0x00307548` `Tactic_Attack`

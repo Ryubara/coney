@@ -1928,7 +1928,10 @@ Coney's stand-ins for the world objects, where this page is silent:
   or door, or, for a car or other object, when its strike shapes come on; never at the clip's start. Stand-ins: a
   pane or door the window passed without touching takes the hit as the window closes, and a clip with no strike
   events lands it as it ends. A broken barrier is removed at its next 60-tick
-  update: its handlers get message 2 (itself, `NilHandle`) and its spawn record goes for good. It draws each swinging
+  update: its handlers get message 2 (itself, `NilHandle`) and its spawn record goes for good; the three boards it
+  throws are made at the hit and removed on the next tick (the hit's own update, as in the original), so no board
+  stands in the gap while the barrier waits for its removal (issue #233; before this they stood there until the dealer
+  cut, which a player saw as the broken fence staying on screen). It draws each swinging
   door's leaves (hinged at
   their positions, `w` the type's `CfgObj` argument 15, swinging by the 28-tick slerp of [Leaves](#leaves)) and each
   barrier as its type's model (gone once broken; `world_objects::doorDraws()`) with the

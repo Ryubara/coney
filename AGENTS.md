@@ -35,9 +35,10 @@ player's path, gamepad input, playthrough tests, the checks to run before report
   dumps. Tests use synthetic fixtures; disc-backed checks print counts and hashes only. Exception: curated
   reference lists (names, ids, values, our own short descriptions) and small reference screenshots of models;
   never asset files, game text or script source, per `LEGAL.md`. Issues may also hold gameplay screenshots and
-  short videos of Coney or the original (owner, 2026-10-11), never files, saves, dumps or text.
+  short videos of Coney or the original (a maintainer decision, 2026-10-11), never files, saves, dumps or text.
 - **Clean room:** only analysts read decompiler output or disassembly, and they write `docs/research/` pages that
-  cite addresses and short snippets. Engine code is written fresh from those pages, never transcribed.
+  cite addresses and short snippets. Engine code is written fresh from those pages, never transcribed, and never by
+  someone who has read that function's original code (`docs/guides/research-workflow.md#clean-room`).
 - **Research claims** carry an evidence level: confirmed (code) at a cited address, confirmed (runtime), inferred,
   or speculative. Addresses are like `0x001490b8` in NTSC-U `SLUS_212.15`. How: `docs/guides/research-workflow.md`.
 - **Reverse-engineering work** (Ghidra, disassembly, PCSX2, research claims) runs on Opus 5.5.
@@ -53,8 +54,9 @@ player's path, gamepad input, playthrough tests, the checks to run before report
 
 ## Code
 
-- C++23 within MSVC 19.38+, GCC 13+, Clang 17+, Xcode 16+; clang-format (`.clang-format`) decides layout; no
-  exceptions: recoverable errors return `std::expected<T, coney::Error>`, broken invariants `CONEY_ASSERT`.
+- C++23 within MSVC 19.38+, GCC 13+, Clang 17+ (19+ on Linux), Xcode 16+; clang-format (`.clang-format`) decides
+  layout; no exceptions: recoverable errors return `std::expected<T, coney::Error>`, broken invariants
+  `CONEY_ASSERT`.
 - Reimplemented code cites the original: `@orig 0x<addr> <Name> (<File>.cpp)`, plus a link to its research page.
 - A Coney-only capability a script could use joins the native-candidates registry: `conventions.md#coney-only`.
 - A doc comment on every public type and function, and a short comment above every other function (helpers,

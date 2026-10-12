@@ -19,7 +19,7 @@ it covers.
 - **The reviewer reports and never edits.** It does not fix a finding, not even a typo; the author does, in a
   follow-up commit. A reviewer that fixes things hides what was wrong from the next reader and from the history.
 - **The reviewer reads the diff and the files it touches**, not the implementer's summary of them. Run the checks
-  the change calls for (`mkdocs build --strict`, tests once they exist) rather than trusting a reported result.
+  the change calls for (`mkdocs build --strict`, the tests) rather than trusting a reported result.
 - **Every checklist item is answered**: it passes, or it produces a finding. A review that lists only problems
   cannot be told apart from one that skipped half the list, so the report says which checklists it applied and
   which items did not apply.

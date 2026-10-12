@@ -26,17 +26,15 @@ Every feature goes through the same steps:
 
 ## Two roles: the clean room
 
-Analysts and implementers are never the same person or agent
-([Clean room](research-workflow.md#clean-room), [LEGAL.md](repo:LEGAL.md)):
-
-| | Analyst | Implementer |
-| --- | --- | --- |
-| Reads | Ghidra, disassembly, PCSX2 | research pages, Coney's code |
-| Writes | research pages, Ghidra names and comments | engine code, tests |
-| Never | writes engine code | opens Ghidra or PCSX2 |
+An analyst reads the original (Ghidra, disassembly, PCSX2) and writes research pages; an implementer writes engine
+code and tests from those pages and Coney's own code, and never opens Ghidra or PCSX2. The split is per function:
+whoever has read a function's original code never implements that function
+([Clean room](research-workflow.md#clean-room), [LEGAL.md](repo:LEGAL.md#clean-room)).
 
 An implementer who needs more asks a question; a coordinator routes it to the analyst who owns that area, and the
 answer lands on the page, not in a private message. Neither role ever puts game data in the repository.
+What a page must hold to be coded from, with three real features traced to the merged result, is in
+[From research to code](research-to-code.md).
 
 ## The tools
 

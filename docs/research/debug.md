@@ -136,9 +136,12 @@ Codes 4 and 10 are in the table, but `DoCheat` returns false for them. They are 
 - **`debuglua`** (`global.lua`) runs a file named `debug` and calls `dumpFullTables`. No script calls it, neither is
   defined anywhere, and no `debug.lua` is on the disc (its name hash is absent from `WARRIORS.DIR`).
 - **Scene test**: `global.lua` sets `SCENETEST` to nil first thing, and nothing sets it again. Level start functions
-  test it (240 reads); when it is set, a level preloads `<level>_scenetest` and calls `PlaySceneTest`. Thirteen
-  `*_scenetest` chunks are on the disc, for `level2`, `level5`, `level9`, `level11`, `level20`, `level31`, `level34`,
-  `level51`, `level54`, `level83`, `level84`, `level87` and `level99`. Inferred: a cinematic-scene review mode.
+  test it (240 reads); when it holds a scene's name, the level spawns that scene's cast and plays it on a loop
+  instead of its mission: thirteen levels preload a `<level>_scenetest` chunk for it (`level2`, `level5`, `level9`,
+  `level11`, `level20`, `level31`, `level34`, `level51`, `level54`, `level83`, `level84`, `level87`, `level99`), ten
+  carry it in the level script, and the hub plays the scene through its chapter. Fourteen `*_scenetest` chunks are on
+  the disc; `level86_scenetest` is never loaded. The developers' scene viewer, read as bytecode:
+  [Scenes: the scene test](scenes.md#scene-test).
 - Leftover helpers in level scripts, defined but never called: `Debug` (`LEVEL20`), `Test` and `test`
   (`level82` chapters), `PrintFlagPairs` (`wchair`), `AddTestDealers` (`level83`).
 
@@ -219,9 +222,10 @@ Untested; for a later runtime pass. Addresses are NTSC-U.
    view distances.
 4. **Memory dump**: enable PCSX2's host file system and make the memory manager's slot `+0x1b4` run (set the
    pool's `+0x5c`, then call the slot from a breakpoint). Speculative: PCSX2 may not map `host0:`.
-5. **Scene test**: set the Lua global `SCENETEST` before a level's start function runs. One way is to run the string
-   `SCENETEST=1` through script slot `+0x2c` (`0x00356a78`) from a breakpoint at the level entry `0x003569d8`.
-   Speculative.
+5. **Scene test**: set the Lua global `SCENETEST` to a scene's name (`SCENETEST="l99_c1"`; a number matches no
+   scene and plays nothing, [Scenes](scenes.md#scene-test)) after `global.lua` has run and before a level's start
+   function runs. One way is to run that string through script slot `+0x2c` (`0x00356a78`) from a breakpoint at the
+   level entry `0x003569d8`. Speculative.
 
 ## What a reimplementation must keep
 

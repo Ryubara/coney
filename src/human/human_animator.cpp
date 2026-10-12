@@ -27,6 +27,13 @@ constexpr float kRunSwapLimit = 0.5F;
 // quarter of the speed 0x00221580 returns", which getter that is being open).
 constexpr float kIdleSpeedShare = 0.25F;
 
+// The bat's square 34 `BAT_COMBO_S1` (28 frames at 0.75). At runtime it lasted 37 updates and 389 followed on the 38th,
+// one fewer than its frame count gives, while the bat's cross 36 (26 frames) lasted its 35
+// (docs/research/combat-moves.md#bat-cross). **Coney stand-in**: why is open (an open question on that page), so only
+// this clip hands over early (ClipThenNextTask's handOverEarly, which ends it on the update 37 gives) until the rule
+// that ends clips is known.
+constexpr std::uint32_t kAnimBatComboS1 = 34;
+
 // The bits the locomotion's clips hold on the record +0x08 (docs/research/characters.md#the-record): a move's start
 // clip, a jump's landing, the run stop and the climbs, and 389 after a move.
 constexpr HeldFlags kStartClipHeld{.held = kFlagStartClip, .set = kFlagStartClip};
@@ -190,7 +197,8 @@ std::unique_ptr<anim::AnimTask> HumanAnimator::clipThen(std::uint32_t id, std::u
     // attacker's rate (the original's type 6 task); it plays on this human like any other.
     const characters::AnimSet& set = from != nullptr ? *from : *m_anims;
     const anim::AnimClip* played = from != nullptr ? from->clip(id) : clip(id);
-    auto task = std::make_unique<anim::ClipThenNextTask>(*played, id, set.rate(id), 0U, std::move(next));
+    auto task = std::make_unique<anim::ClipThenNextTask>(*played, id, set.rate(id), 0U, std::move(next), 0.0F,
+                                                         id == kAnimBatComboS1);
     task->holdFlags(held.held, held.set);
     return task;
 }

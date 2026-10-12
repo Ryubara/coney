@@ -2478,14 +2478,14 @@
     - {name: callback, lua: string, desc: "Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`."}
   description: >-
     Sets a gang's tactic to attacking (type 0): every member that is not a player gets threat response 2 and a melee
-    goal, idle members join the nearest member's fight every 3 s, and the callback gets 9 `TacNoEnemies` once no
-    member has an enemy (checked each second) and 13 `TacMemberDied` when a member dies.
+    goal, idle members are sent toward the farthest busy member every 3 s, and the callback gets 9 `TacNoEnemies`
+    once no member has an enemy (checked each second) and 13 `TacMemberDied` when a member dies.
   evidence: confirmed-code
   depth: thorough
   notes: >-
     Constructor 0x003075c8 (vtable 0x00543320): Start 0x00307fe0, Process 0x003081a8, event 0x00308478. A gang with
-    `+0xd9` set also starts one of seven coordinated sub-tactics every 7 s (0x00307a10), not traced. Behaviour:
-    [AI](../../research/ai.md#tactic-kinds).
+    `+0xd9` set also starts one of seven coordinated sub-tactics every 7 s (0x00307a10). Behaviour:
+    [AI](../../research/ai.md#tactic-kinds), [Gang fights](../../research/gang-fights.md).
   usage: {chunks: 54, calls: 184, boot: false, mission1: false, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 

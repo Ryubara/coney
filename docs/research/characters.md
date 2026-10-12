@@ -128,7 +128,7 @@ Confirmed (code); offsets with "runtime" were checked on Rembrandt.
 | `+0x2f0` | vec4 | external push velocity, added to the velocity when moving | confirmed (code) |
 | `+0x338` | handle | the object **in the hand** (Nil when none); pose bone 25 is the right hand (runtime), 19 the left (inferred from the left-hand pick-up clips) ([World objects: objects in a human's hand](objects.md#held)) | confirmed (code), runtime |
 | `+0x33c` | handle | the object being picked up, from the pick-up's message `0x14` until its clip event attaches it | confirmed (code), runtime |
-| `+0x348` / `+0x34c` | handle | two more objects a clip event `0x37` places on a bone (not traced) | confirmed (code) |
+| `+0x348` / `+0x34c` | handle | the **carried prop** a clip makes (event `0x30`) and removes (event `0x31`), attached at point `0x13` and moved by event `0x37`: both hold the same handle once attached; Rembrandt's power move 59 uses it ([Combat: props of a power move](combat.md#power-move-props)) | confirmed (code), runtime |
 | `+0x37c` (`+0xdf` as a word index) | int | model index in the Character List | confirmed (code) |
 | `+0x380` | int | HUD player panel (0 or 1), -1 for none ([Players](#players)) | confirmed (code) |
 | `+0x384` | int | airborne updates so far | confirmed (code) |
@@ -2616,7 +2616,7 @@ the human code reads.
 | `0x0024c560` | `Human_PlaceObjectInHand` | Puts a world object into the hand by its type record, unless picking up already (held 0x4000). | confirmed (code) |
 | `0x0024c7b0` | `Human_StickThrownKnife` | Sticks a thrown knife into the human. | confirmed (code) |
 | `0x0024cac8` | `Human_DetachProp` | Detaches the object `+0x358`, marks its body dirty and drops it (message 0x3e). | confirmed (code) |
-| `0x0024cbb0` | `Human_DropCarriedProp` | Releases the carried prop `+0x348` and spawns the loose one at the human. | confirmed (code) |
+| `0x0024cbb0` | `Human_CreateCarriedProp` | Destroys the prop at `+0x348`, creates the named object at the human, keeps it in `+0x34c` and attaches it at point `0x13` (`Human_AttachCarriedProp`); clip event `0x30` ([Combat: props of a power move](combat.md#power-move-props)). | confirmed (code) |
 | `0x0024cd30` | `Human_AttachCarriedProp` | Attaches the prop `+0x34c` to attach point 0x13 with its type's offset. | confirmed (code) |
 | `0x0024ce40` | `Human_ReleaseCarriedProps` | Drops a held kind-0x27 object and clears the carried props `+0x348`, `+0x34c`. | confirmed (code) |
 | `0x0024cef0` | `Player_AttachGear` | For a player with the unlocked gear (unlockables 6/5, 6/6): spawns the gear pieces on its bones from the transforms at 0x00715480. | confirmed (code) |

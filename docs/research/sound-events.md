@@ -107,6 +107,26 @@ player's doubling; classes `0x77` and `0x78` use the plain pair (no difference f
 | 0 `none` | nothing | confirmed (code) |
 | **every other id** | `Human_PlayAnimSound` (the default; listed explicitly for 2, 11, 26, 33, 74, 94, 118-128) | confirmed (code) |
 
+#### The spray loop's end {#spray-loop}
+
+`SA` 83 `sprayloop` keeps its sound in the human's **speech handle `+0x168`** (above), and nothing about the sound
+itself ends it: the clip that starts it also stops it. Clip event **`0x45`** sends the human message **`0xc5`**
+(`Anim_FireFrameEvents` `0x00101dd8`), whose handler stops the sound in `+0x168` when it is still alive
+(`Sound_Stop`) and resets the handle to the null handle (`0x00598690`, `Human_SetSpeechHandle`;
+`Human_HandleMessage` `0x00245920`). Confirmed (code). The other ways that sound ends: the next `SA` 83, 14 / 71
+(`0x8e` / `0xc7`) on the same human stop it before starting their own; a cinematic's start stops every human's held
+sound ([Scenes](scenes.md#playing)); `Human_StopVoice` (`0x0021f058`).
+
+In Rembrandt's power move 59 (`gen_grab_front_power10_p2`, rate 0.75, [Combat](combat.md#power-move-props)) the loop
+starts at frame 14 and event `0x45` stops it at frame 27: **17 updates (0.57 s)** of spray. Confirmed (runtime),
+PCSX2 2.9.94, level99 lesson 6: `+0x168` held a live handle from 59's update 19 to its update 36 and was empty from
+then on.
+
+**Coney** (#224): today `HumanSoundEvents` keeps the loop per human until the next `SA` 83 (`m_loops`,
+`repo:src/audio/human_sound_events.cpp`) and acts on no event `0x45`, so the loop plays forever. Keep the loop as the
+human's held sound and stop it on clip event `0x45` (and on a cinematic's start and the human's removal). Test: after
+59, no spray voice is playing and the human holds none.
+
 ### Vocal ids {#vocal-ids}
 
 `Human_SayAnimLine(h, id, overLine, cut)` (`0x0021f410`) plays the entry's column 1 as the human's speech line

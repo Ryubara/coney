@@ -5,13 +5,16 @@
 // environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only, never data (LEGAL.md).
 // docs/research/ai.md#coney has the results.
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <format>
+#include <optional>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <SDL3/SDL_stdinc.h>
 #include <catch2/catch_test_macros.hpp>
@@ -34,6 +37,27 @@ struct Lcg {
         return (state >> 8U) % bound;
     }
 };
+
+// The fewest nodes on a chain of links whose flags meet `mask` from node `from` to node `to`, with no limit on the
+// search (a breadth-first walk; a D record on node N naming node M is the step M to N); nothing when none joins them.
+std::optional<std::size_t> nodesBetween(const coney::world::PathMap& map, std::uint32_t from, std::uint32_t to,
+                                        std::uint16_t mask) {
+    std::vector<std::size_t> depth(map.nodes().size(), 0);
+    std::vector<std::uint32_t> queue{to};
+    depth[to] = 1;
+    for (std::size_t at = 0; at < queue.size(); ++at) {
+        if (queue[at] == from) {
+            return depth[from];
+        }
+        for (const coney::world::PathEdge& edge : map.edgesOf(queue[at])) {
+            if ((edge.flags & mask) != 0 && depth[edge.to] == 0) {
+                depth[edge.to] = depth[queue[at]] + 1;
+                queue.push_back(edge.to);
+            }
+        }
+    }
+    return std::nullopt;
+}
 
 } // namespace
 
@@ -79,7 +103,9 @@ TEST_CASE("every level's path data decodes and level99's routes are planned", "[
     }
 
     // level99: routes between seeded pairs of its nodes; each failure put down to the ends' polygons being off the
-    // graph, the nodes being linked only over edges a move does not ask for (flag 0x10), or not linked at all.
+    // graph, the nodes not being linked at all, the search between the two nodes failing though they are linked over
+    // the default mask's links (what the search's limits once cost, docs/research/ai-pathing.md#pathing-fixes item 1),
+    // or else the ends: with no ground probe here, a node over another floor can find the wrong polygon or no node.
     auto level99 = coney::platform::loadLevel(*wad, "level99", false);
     REQUIRE(level99.has_value());
     auto map = coney::world::PathMap::decode((*level99)->pathData);
@@ -91,8 +117,9 @@ TEST_CASE("every level's path data decodes and level99's routes are planned", "[
     int straight = 0;
     int routed = 0;
     int offGraph = 0;
-    int otherEdges = 0;
     int unlinked = 0;
+    int searchFailed = 0;
+    int endsFailed = 0;
     std::uint64_t routeNodes = 0;
     const auto count = static_cast<std::uint32_t>(map->nodes().size());
     for (int pair = 0; pair < kPairs; ++pair) {
@@ -114,10 +141,12 @@ TEST_CASE("every level's path data decodes and level99's routes are planned", "[
             if (start && end && *start != *end &&
                 (map->polygons()[*start].graph == 0 || map->polygons()[*end].graph == 0)) {
                 ++offGraph;
-            } else if (planner.search(a, b, 0xffff)) {
-                ++otherEdges;
-            } else {
+            } else if (!nodesBetween(*map, a, b, coney::ai::edge_flag::kDefaultMask)) {
                 ++unlinked;
+            } else if (!planner.search(a, b, coney::ai::edge_flag::kDefaultMask)) {
+                ++searchFailed;
+            } else {
+                ++endsFailed;
             }
         }
     }
@@ -125,14 +154,15 @@ TEST_CASE("every level's path data decodes and level99's routes are planned", "[
                 static_cast<unsigned long long>(decoded), static_cast<unsigned long long>(levels),
                 static_cast<unsigned long long>(nodesInside), static_cast<unsigned long long>(ownedNodes));
     std::printf("level99: %zu polygons, %zu nodes, %zu edges; %d pairs: %d straight, %d routed (%llu nodes); failed: "
-                "%d off the graph, %d linked only over other edges, %d not linked\n",
+                "%d off the graph, %d not linked, %d by the search, %d at the ends\n",
                 map->polygons().size(), map->nodes().size(), map->edges().size(), kPairs, straight, routed,
-                static_cast<unsigned long long>(routeNodes), offGraph, otherEdges, unlinked);
+                static_cast<unsigned long long>(routeNodes), offGraph, unlinked, searchFailed, endsFailed);
     CHECK(levels == 64);
     CHECK(decoded == levels);
     CHECK(nodesInside * 50 > ownedNodes * 49); // at least 98 % lie inside their owner
     CHECK(routed > 0);
-    CHECK(straight + routed + offGraph + otherEdges + unlinked == kPairs);
+    CHECK(searchFailed == 0);
+    CHECK(straight + routed + offGraph + unlinked + searchFailed + endsFailed == kPairs);
     CHECK(planner.routesInUse() == 0);
 }
 
@@ -193,4 +223,56 @@ TEST_CASE("level87's routes leave a hole a human stands in: checkpoint 4's start
     }
     std::printf("level87: %d of %zu legs planned from checkpoint 4's start and the roofs\n", planned, legs.size());
     CHECK(planner.routesInUse() == 0);
+}
+
+TEST_CASE("the search finds every linked pair of nodes on the big levels", "[disc][routes]") {
+    // The search's limits (docs/research/ai-pathing.md#pathing-fixes item 1): 1000 open, 3000 closed, a route of at
+    // most 128 nodes. Seeded pairs of nodes that the default mask's links join; the search between them must succeed
+    // unless the route it finds would be too long (the original refuses those too).
+    const char* discPath = SDL_getenv("CONEY_DISC");
+    if (discPath == nullptr || *discPath == '\0') {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    auto disc = coney::io::Disc::open(discPath);
+    REQUIRE(disc.has_value());
+    auto wad = coney::io::Wad::open(std::move(*disc));
+    REQUIRE(wad.has_value());
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    for (const char* name : {"level80", "level87", "level99"}) {
+        auto level = coney::platform::loadLevel(*wad, name, false);
+        REQUIRE(level.has_value());
+        auto map = coney::world::PathMap::decode((*level)->pathData);
+        REQUIRE(map.has_value());
+        REQUIRE(!map->nodes().empty());
+        const coney::ai::RoutePlanner planner(*map);
+        Lcg random{80};
+        constexpr int kPairs = 300;
+        int linked = 0;
+        int found = 0;
+        int tooLong = 0;
+        std::size_t longest = 0;
+        const auto count = static_cast<std::uint32_t>(map->nodes().size());
+        for (int pair = 0; pair < kPairs; ++pair) {
+            const std::uint32_t a = random.next(count);
+            const std::uint32_t b = random.next(count);
+            const std::optional<std::size_t> fewest = nodesBetween(*map, a, b, coney::ai::edge_flag::kDefaultMask);
+            if (!fewest) {
+                continue;
+            }
+            ++linked;
+            const auto search = planner.search(a, b, coney::ai::edge_flag::kDefaultMask);
+            if (search) {
+                ++found;
+                longest = std::max(longest, search->nodes.size());
+            } else if (search.error() == coney::ai::SearchFailure::TooLong) {
+                ++tooLong;
+            }
+        }
+        std::printf(
+            "%s: %zu nodes; %d pairs, %d linked, %d found by the search (longest %zu nodes), %d over %zu nodes\n", name,
+            map->nodes().size(), kPairs, linked, found, longest, tooLong, coney::ai::kMaxRouteNodes);
+        CHECK(linked > 0);
+        CHECK(found + tooLong == linked);
+    }
 }

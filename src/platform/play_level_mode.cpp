@@ -577,6 +577,10 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     if (m_trace) {
         *m_trace << human::traceLine(++m_traceSteps, *m_player);
     }
+    // Every human's row for this step, after all their updates.
+    if (m_humansTrace) {
+        m_humansTrace->write(m_ai->brains());
+    }
     if (const std::uint32_t id = m_player->human().animator().animId(); id != m_lastAnimId) {
         m_print(std::format("frame {}: clip {}\n", frame.index, id));
         m_lastAnimId = id;

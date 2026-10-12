@@ -26,13 +26,13 @@ struct Stick {
 /// Which way a stick points from the player.
 enum class Side : std::uint8_t { Front, Right, Rear, Left };
 
-/// The side an angle from the facing falls on: within 45° ahead, beyond 135° behind, otherwise right or left. A
-/// throw picks its clip this way; a snap attack wants any side but the front.
-/// **Coney choice**: exactly 45° is still the front and exactly 135° still a side (the research gives "within 45°"
-/// and "beyond 135°").
+/// The side an angle from the facing falls on: under 45° ahead, beyond 135° behind, otherwise right or left (exactly
+/// 45° and exactly 135° are sides: the original's test for a side is `0.785 <= |d|`). A throw picks its clip this way;
+/// a snap attack wants any side but the front.
+/// Research: docs/research/combat.md#throw-direction (item 2)
 [[nodiscard]] inline Side sideOf(float angleDegrees) {
     const float off = std::fabs(angleDegrees);
-    if (off <= 45.0F) {
+    if (off < 45.0F) {
         return Side::Front;
     }
     if (off > 135.0F) {

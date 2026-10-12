@@ -476,7 +476,15 @@ std::optional<double> GameSound::sayCommand(const script::CommandCall& call, std
 std::optional<double> GameSound::sayCommandAt(const script::CommandCall& call, std::string_view callback, float volume,
                                               bool duckable) {
     SoundEngine* engine = m_sounds.engine();
-    if (engine == nullptr || call.voiceSet < 0) {
+    // A caller that only has the speaker's handle (the AI goals' lines: the dealer's `cash`, a boss's taunts) leaves
+    // the voice set out; it is the voice of the type the level script made him as (`HuCreate`, `CfgChar`).
+    int voiceSet = call.voiceSet;
+    if (voiceSet < 0 && m_context != nullptr && m_context->humans != nullptr) {
+        if (const HumanCreation* made = m_context->humans->find(call.human); made != nullptr) {
+            voiceSet = voiceSetOf(made->type);
+        }
+    }
+    if (engine == nullptr || voiceSet < 0) {
         return std::nullopt;
     }
     const std::optional<SpeakerPlace> at = locate(call.human);
@@ -484,9 +492,8 @@ std::optional<double> GameSound::sayCommandAt(const script::CommandCall& call, s
     if (!at || (!call.interrupt && m_speech.speaking(*engine, call.human))) {
         return std::nullopt;
     }
-    const std::optional<std::uint32_t> line =
-        m_voices.nextLine(call.voiceSet, call.command,
-                          [engine](std::int32_t low, std::int32_t high) { return engine->random(low, high); });
+    const std::optional<std::uint32_t> line = m_voices.nextLine(
+        voiceSet, call.command, [engine](std::int32_t low, std::int32_t high) { return engine->random(low, high); });
     if (!line) {
         return std::nullopt;
     }
