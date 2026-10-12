@@ -90,7 +90,7 @@ minutes), so it must never hold an agent back. Agents do all their work locally 
 coordinator, who pushes them when CI has room.
 
 - **An agent never pushes and never opens a pull request.** It commits on its branch and runs every local check that
-  applies before calling a unit finished: the build and `ctest` for code, `uvx pre-commit run --all-files`, pytest,
+  applies before calling a unit finished: `coney-tools build --test` for code, `uvx pre-commit run --all-files`, pytest,
   `mkdocs build --strict` ([The local gate](testing.md#local-gate)). CI should only ever find what the local
   platform cannot see.
 - **The unit is one pull request's worth,** not a whole task: one fix or feature with its tests and docs. For each,
@@ -108,11 +108,47 @@ coordinator, who pushes them when CI has room.
   [Capturing and attaching](testing.md#pr-media)). Priority: engine fixes first, then what
   unblocks other work. A pull request runs only the jobs its change can break, so a documentation-only one is cheap
   ([What CI runs](building.md#what-ci-runs)).
+- **Every description is reviewed before it is pushed** ([below](#pr-review)). The coordinator runs
+  `coney-tools repo review <PR.md> --worktree <worktree>` and pushes only when `repo check-review` passes. Any edit to
+  the description or its pictures, and any new commit on the branch, makes the verdict stale: review again.
 - **A failure CI finds later** (another platform, a check that cannot run locally) goes to the coordinator when it is
   trivial, otherwise to a small fresh agent ([When a pull request fails checks](agents.md#ci-failures)); never back
   to the agent that wrote the unit.
 - **A description is public:** the clean-room rules of a research page apply (addresses and short findings, no
   decompiler output).
+
+### The description review {#pr-review}
+
+`coney-tools repo check-body` (and CI) only checks a description's structure. On 2026-10-12 a pull request was
+released whose screenshots did not match it: three of its four pictures showed a letterboxed scene instead of
+gameplay, and its before and after pair were the same file. So a second reader goes over every description before it
+is pushed: the `pr-reviewer` agent ([Running agents](agents.md#setup)). It reads the description, the branch's diff and
+the logs the description cites, opens every picture, and writes a verdict: whether each picture shows what the text
+says (gameplay, not a scene, loading screen or menu; the right level; before and after that differ), whether each
+claim in Summary and Testing is backed by the diff or a log, whether `Fixes #N` fits, that nothing is left for later,
+that `Docs: none` is allowed and that AI use is filled.
+
+```sh
+uv run --project python coney-tools repo review <PR.md> --worktree <worktree>
+uv run --project python coney-tools repo check-review <PR.md> --worktree <worktree>
+```
+
+`repo review` runs the agent headlessly (`claude -p`, a throwaway run in the scratch folder) and then
+`repo check-review`, the gate the release step runs before it pushes ([repo review](coney-tools.md#repo-review)).
+A failing verdict goes back as a fix to the description or the captures, never as a push. The gate's rules, generated
+from `pull_requests.review` in [.github/conventions.yml](repo:.github/conventions.yml):
+
+<!-- conventions:begin pr-review -->
+- The `pr-reviewer` agent (`.claude/agents/pr-reviewer.md`) writes `REVIEW.json` and `REVIEW.md` next to the description
+  file: `REVIEW.json` holds `tip`, `body_sha256`, `verdict` (`pass` or `fail`), `images` (each local image's `path` and
+  `sha256`) and `findings` (each with `severity` `blocker` or `note`, `where` and `text`).
+- `repo check-review` passes only when the verdict is `pass` with no `blocker` finding, `tip` is the worktree's HEAD,
+  `body_sha256` is the description file's hash now and every local image the description shows is listed with its hash
+  now; any new commit, edit or replaced picture makes the verdict stale.
+- The description's hash is the SHA-256 of the whole file (title line included) as UTF-8, with a leading BOM dropped and
+  CRLF or CR turned into LF.
+- Two byte-identical images in one description are refused, whatever the verdict.
+<!-- conventions:end -->
 
 People contributing from their own fork push and open pull requests themselves
 ([CONTRIBUTING.md](repo:CONTRIBUTING.md)); the queue is how a coordinator runs many agents on one machine.
@@ -151,9 +187,12 @@ something:
   unit. The coordinator runs `coney-tools workspace clean --apply` after every merge round (it removes merged
   worktrees and old build folders, and never touches busy or unmerged work) and `coney-tools workspace disk` before
   starting builds: below 30 GB free it cleans first ([Cleanup](workspace.md#cleanup)).
-- **Heavy builds take a slot.** A full engine build uses every core, so only a few run at once: the coordinator
-  sets the number the machine can take, records it in its state file and gives each building track a slot, staggering
-  the rest. Tracks that only read, write docs or drive the emulator need no slot.
+- **Heavy builds take a slot, from a tool.** A full engine build uses every core, so only two run at once and the
+  rest queue: every build and test run goes through `coney-tools build`, which claims a slot like a PCSX2 copy (a
+  fast lane for small jobs, a fair queue, priority for builds someone waits on; [`build`](coney-tools.md#build)), and
+  a hook refuses raw `cmake --build`, `ctest` and `ninja`. The machine's number of slots is `build_slots` in
+  `coney.local.toml` ([Local workspace](workspace.md#local-config)). Tracks that only read, write docs or drive
+  the emulator need no slot.
 - **Share the long-lived tools, one user per copy.** One Ghidra server serves every analyst: use it as it is, never
   restart or stop it, and start it only if it is down ([Ghidra + ghidra-mcp](ghidra.md)). An emulator copy has one
   user at a time, through a claim that is released when done ([Driving PCSX2](research-workflow.md#driving-pcsx2)).

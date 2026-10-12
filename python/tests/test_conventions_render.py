@@ -191,6 +191,22 @@ def test_pr_rules_say_which_paths_ask_for_docs() -> None:
     assert "`src/`" in text and "`python/src/`" in text and "`docs/`" in text and "`research/`" in text
 
 
+def test_pr_review_names_the_agent_the_files_and_what_makes_a_verdict_stale() -> None:
+    text = " ".join(render_block("pr-review", CONVENTIONS))
+    review = CONVENTIONS.pull_requests.review
+    assert f"`{review.agent}`" in text
+    assert f"`{review.verdict_file}`" in text and f"`{review.report_file}`" in text
+    for field in ("`tip`", "`body_sha256`", "`verdict`", "`images`", "`findings`"):
+        assert field in text
+    assert "CRLF" in text and "identical" in text
+
+
+def test_pr_review_follows_a_changed_verdict_file() -> None:
+    conventions = conventions_with(("pull_requests.review.verdict_file", "VERDICT.json"))
+    text = " ".join(render_block("pr-review", conventions))
+    assert "`VERDICT.json`" in text and "REVIEW.json" not in text
+
+
 def test_required_checks_list_every_check_and_the_merge_method() -> None:
     text = "\n".join(render_block("required-checks", CONVENTIONS))
     for check in CONVENTIONS.merge.required_checks:

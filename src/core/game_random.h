@@ -48,13 +48,20 @@ class GameRandom {
     /// Replaces the original's Random_Range at 0x003353f0, also inside the Lua middleware range.
     [[nodiscard]] std::int32_t range(std::int32_t low, std::int32_t high);
 
+    /// Starts the stream at `offset` (masked to 10 bits) as if that many draws had been made since power-on: a run's
+    /// `--ai-seed`, the way each recording of the original starts the index at `0x006eb880` somewhere else. The
+    /// stand-in's state moves with it (**Coney's choice**: its start plus the offset times an odd constant), so a run
+    /// without the table varies too. 0 is the power-on stream.
+    void startAt(std::uint32_t offset);
+
     /// The index: how many draws, modulo 1,024, the session has made.
     [[nodiscard]] std::uint32_t index() const { return m_index; }
 
   private:
     std::vector<std::uint32_t> m_table;
     std::uint32_t m_index = 0;
-    std::uint32_t m_standIn = 0x12345678U; // the stand-in generator's state
+    static constexpr std::uint32_t kStandInStart = 0x12345678U; // the stand-in's power-on state
+    std::uint32_t m_standIn = kStandInStart;                    // the stand-in generator's state
 };
 
 } // namespace coney

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <cstdint>
 #include <filesystem>
 #include <functional>
 #include <memory>
@@ -121,6 +122,10 @@ class StartUpFlow final : public script::BindingHost {
     [[nodiscard]] RumbleMenuMode& rumbleMenu() { return m_rumbleMenu; }
     /// The Rumble intro over play.
     [[nodiscard]] RumbleIntroLayer& rumbleIntro() { return m_rumbleIntro; }
+    /// `--ai-seed N`: the game's random stream starts at N (GameRandom::startAt()) and each level's brains are made
+    /// with variation N (GameplayMode::setAiVariation()), so the AI draws differently from a run with another N and
+    /// the same as one with this N. Call it before the first frame.
+    void setAiSeed(std::uint32_t seed);
     /// Mode 0x14.
     [[nodiscard]] RumbleResultMode& rumbleResult() { return m_rumbleResult; }
     /// The humans the level scripts created.

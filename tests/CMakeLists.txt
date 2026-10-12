@@ -15,6 +15,7 @@ add_executable(coney_tests
     core/ps2_float_test.cpp
     core/options_test.cpp
     core/pad_test.cpp
+    core/window_display_test.cpp
     effects/effect_culling_test.cpp
     effects/glints_test.cpp
     effects/ground_fog_test.cpp
@@ -98,8 +99,10 @@ add_executable(coney_tests
     platform/disc_inspector_freeze_test.cpp
     platform/disc_sprite_sheets_test.cpp
     platform/disc_rumble_test.cpp
+    platform/disc_hub_cutscene_audio_test.cpp
     platform/disc_hub_doors_test.cpp
     platform/disc_hub_test.cpp
+    platform/disc_level80_end_test.cpp
     platform/disc_level80_test.cpp
     platform/disc_flash_test.cpp
     platform/disc_revive_test.cpp
@@ -399,7 +402,9 @@ target_compile_definitions(coney_tests PRIVATE CONEY_TEST_SUPPORT_DIR="${CMAKE_C
 target_link_libraries(coney_tests PRIVATE coney_platform Catch2::Catch2WithMain)
 include(Catch)
 # The disc check skips (Catch2's exit code 4) unless CONEY_DISC names the player's disc; ctest reports it as skipped.
-catch_discover_tests(coney_tests)
+# A Catch2 tag is also a ctest label: a test case tagged [disc] is the label `disc`, so `ctest -L disc` runs (or lists)
+# the tests that need the disc and `-LE disc` leaves them out. Every test that opens the disc carries the tag.
+catch_discover_tests(coney_tests ADD_TAGS_AS_LABELS)
 
 # The debug C runtime's checks must fail a run on stderr, not open a dialog nobody will click (platform/error_dialogs.h).
 # Only MSVC's debug runtime has those dialogs and those checks.

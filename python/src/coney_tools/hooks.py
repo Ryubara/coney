@@ -16,7 +16,8 @@ ends with the pair itself, and with a jump back when the jump links (`jal`, `jal
 relative to where it stands) is refused. The hook's address must not be a delay slot or a branch target; check it in
 the disassembly before declaring the hook.
 
-Hooks are declared in `research/traces/patches.toml`:
+Hooks are declared in the files of `research/traces/patches/` (one per research pass; the state patches live in
+the same folder):
 
 ```toml
 [hook.state-code]
@@ -61,7 +62,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from coney_tools.game_memory import Number, convert
-from coney_tools.pcsx2_state import Edit, Patch, StateError
+from coney_tools.pcsx2_state import Edit, Patch, StateError, patch_files
 from coney_tools.pine import Memory, Read
 
 #: Where the caves go: one of CAVE_SIZE bytes per hook, in EE memory below the game's ELF (`0x00100000`) that the
@@ -452,14 +453,27 @@ def parse_hook(name: str, raw: object, where: str) -> Hook:
 
 
 def load_hooks(path: Path) -> dict[str, Hook]:
-    """Every `[hook.NAME]` of the patch file at `path`. Raises HookError for a missing file or a bad hook."""
+    """Every `[hook.NAME]` of the patch file at `path`, or of every file of the folder `path`. Raises HookError for a
+    missing file, a bad hook or a name two files both declare."""
     try:
-        with path.open("rb") as handle:
-            data = tomllib.load(handle)
-    except (OSError, tomllib.TOMLDecodeError, UnicodeDecodeError) as error:
-        raise HookError(f"{path}: {error}") from error
-    raw = data.get("hook", {})
-    return {name: parse_hook(name, table, f"{path}: hook {name}") for name, table in raw.items()}
+        files = patch_files(path)
+    except StateError as error:
+        raise HookError(str(error)) from error
+    hooks: dict[str, Hook] = {}
+    origin: dict[str, Path] = {}
+    for file in files:
+        try:
+            with file.open("rb") as handle:
+                data = tomllib.load(handle)
+        except (OSError, tomllib.TOMLDecodeError, UnicodeDecodeError) as error:
+            raise HookError(f"{file}: {error}") from error
+        for name, table in data.get("hook", {}).items():
+            where = f"{file}: hook {name}"
+            if name in origin:
+                raise HookError(f"{where}: also declared in {origin[name]}")
+            hooks[name] = parse_hook(name, table, where)
+            origin[name] = file
+    return hooks
 
 
 def build(hooks: list[Hook]) -> Patch:
