@@ -448,7 +448,7 @@ Written from this page:
   `src/gamemodes/mission_complete_mode.h`) and 1 (gameplay, `src/gamemodes/gameplay_mode.h`), which plays the chosen
   level ([Level loading](level-loading.md#coneys-implementation)).
   `--load` and `--view-txd` run their own tool modes instead
-  ([Building and testing](../guides/building.md#run-coney)). The rest of the initialisation order, level 1's header
+  ([Running Coney](../guides/running.md#run-coney)). The rest of the initialisation order, level 1's header
   load, the controller check and its error mode, and the bugstar check are not done.
 - `FrameTime` also carries the ticks the step advanced (`stepTicks`), so a mode can time itself from the moment it
   was entered, as mode 5 does.

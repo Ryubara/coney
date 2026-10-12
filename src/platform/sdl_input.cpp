@@ -47,7 +47,7 @@ constexpr std::array<Binding<SDL_GamepadButton>, 14> kGamepadButtons{{
     {SDL_GAMEPAD_BUTTON_DPAD_LEFT, pad::kLeft},
 }};
 
-// The keyboard on port 1, a Coney choice (docs/guides/building.md#controls). Scancodes are key positions, so the
+// The keyboard on port 1, a Coney choice (docs/guides/running.md#controls). Scancodes are key positions, so the
 // layout is the same on a QWERTY, AZERTY or any other keyboard: arrows for the d-pad, the I J K L diamond for the
 // face buttons as they sit on the pad, Q and E for the shoulders above them.
 constexpr std::array<Binding<SDL_Scancode>, 20> kKeyboardButtons{{
@@ -196,7 +196,7 @@ std::expected<std::unique_ptr<SdlInput>, Error> SdlInput::start() {
     // comes or goes (a gamepad switched on, a wireless headset connecting), and DirectInput's enumeration can take
     // seconds: 6 to 10 s measured on a machine with a wireless headset, 0.2 s without it. The window stopped
     // responding meanwhile. XInput (Xbox) gamepads and those SDL drives over HIDAPI (PlayStation, Switch and more) do
-    // not need it; only older DirectInput-only gamepads do (docs/guides/building.md#controls).
+    // not need it; only older DirectInput-only gamepads do (docs/guides/running.md#controls).
     SDL_SetHint(SDL_HINT_JOYSTICK_DIRECTINPUT, "0");
     if (!SDL_InitSubSystem(SDL_INIT_GAMEPAD)) {
         return fail(ErrorCode::PlatformFailure,

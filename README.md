@@ -107,21 +107,15 @@ holding `WARRIORS.DIR` and `WARRIORS.WAD`, or an ISO image.
 build/dev/src/platform/coney --disc /path/to/warriors.iso
 ```
 
-`coney --help` lists every option. [Building and testing](docs/guides/building.md) covers the other presets
-(`release`, `ci`, `asan`), switching compilers, the Python tools and everything the run options do.
+`coney --help` lists every option, and [Running Coney](docs/guides/running.md) says what they do.
+[Building and testing](docs/guides/building.md) covers the other presets (`release`, `ci`, `asan`), switching
+compilers and the Python tools.
 
 ## Documentation
 
 The documentation is published at **<https://ryubara.github.io/coney/>**, rebuilt from `main` on every push. It
-is a MkDocs site built from `docs/`. To build it locally:
-
-```sh
-py -m venv .venv
-.venv/Scripts/pip install -r requirements-docs.txt
-.venv/Scripts/python -m mkdocs build --strict
-```
-
-On Linux and macOS use `python3` and `.venv/bin/` instead. `mkdocs serve` previews the site while you edit.
+is a MkDocs site built from `docs/`. To build or preview it locally, see
+[Writing these docs](docs/guides/writing-docs.md).
 
 - [`docs/research/`](docs/research/) holds what is known about the game: formats, engine behaviour, addresses.
 - [`docs/guides/`](docs/guides/) holds how-to guides for working on the project.

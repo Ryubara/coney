@@ -288,7 +288,7 @@ leave the focus alone:
   `--headless`, never as a plain interactive run. In test mode Coney's window opens without taking the focus (it
   may show on top, but keystrokes stay where they were), and `--render-references` (which hides its window) never
   takes it either. Any other windowed run started by a tool adds `--no-activate`
-  ([Frame rate](building.md#frame-rate)).
+  ([Frame rate](running.md#frame-rate)).
 - **ctest needs nothing.** The disc tests inside `coney_tests` run on librw's NULL renderer and open no window; the
   `coney` smoke tests (`repo:src/platform/CMakeLists.txt`) run `--headless` or stop at the command line before a
   window opens; the one test with a window (`coney.frame_copies_upright`) hides it and so never takes the focus. A new
@@ -531,7 +531,7 @@ Expressions are arithmetic over these names, and nothing else of Python:
 | `u8` ... `f32` (address) | a value in memory (`u8 s8 u16 s16 u32 s32 f32`) |
 | `sin cos atan2 hypot sqrt abs min max deg rad wrap pi` | math; `wrap` takes degrees to (-180, 180] |
 
-A column that Coney's `--trace` also writes has Coney's name and unit ([Tracing](building.md#tracing)): `x`, `y`,
+A column that Coney's `--trace` also writes has Coney's name and unit ([Tracing](running.md#tracing)): `x`, `y`,
 `z`, `heading`, `speed`, `vz`, `gait`, `clip`, `stamina`, `command`, `health`, `power` and the camera's `cam_*`,
 `look_*`, `wanted_*`, `cam_distance`, `cam_pitch`, `cam_yaw`, `band_near` and `target_pitch`. `phase` (record
 `+0x08`) is the original's only.
@@ -561,7 +561,9 @@ box's queue, [HUD](../research/hud.md#hint-queue-runtime)) and `anim-dispatch` a
 which anim id and which script callback it runs). The level80 passes added the teammate hooks (`hit-by-chief`,
 `hit-reaction`, `attack-target-push`, `push-contact`, `can-push`, `say-command`) and the fire hooks (`ember-init`,
 `burn-init`, `fade-flame-init`, `debris-flame` and their update hooks); the revive pass added `revive-start` and
-`revive-finish` ([Combat](../research/combat.md#revive-runtime)). One run installs at most 64 hooks, fewer than
+`revive-finish` ([Combat](../research/combat.md#revive-runtime)), and the speech pass `say-anim-line`, `stop-speech`,
+`play-speech` and `play-speech-cut` (who starts, stops or refuses a human's line, with his line state before each;
+[Sound](../research/sound.md#speech-cut-in)). One run installs at most 64 hooks, fewer than
 the file holds, so name only the ones a pass needs. Two hooks at one address cannot be installed together (`hint-show`
 and `event-hint` are the same place): pick one, and add any extra value it needs to the one you keep. When the update
 of an entry matters, log the tick count and use it: in that pass one Lua call's four `HintBox_Queue` entries, all at
@@ -628,7 +630,7 @@ events**, and drives both games through the same stretch with one **adaptive cou
 1. **Event logs on both sides, at the same semantic points.** Each game writes one CSV line per event (`step, kind,
    name, detail`): a script binding called, a call into the scripts by name, a hint shown, a sound started, a human
    appearing, going down or removed. Coney writes them with `--event-log`
-   ([Building](building.md#event-log)); the original's come from hooks at the places that do the same thing (the
+   ([Running Coney](running.md#event-log)); the original's come from hooks at the places that do the same thing (the
    script VM's binding call, the engine's script look-up, the hint box, the sound start), cited to their addresses on
    the research pages. A binding's call is the best hook: it is the mission script's own vocabulary, so both games
    name the event alike without interpretation.

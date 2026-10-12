@@ -1,0 +1,30 @@
+# The follow command first (R2, right stick up 80 %), which hands Cleon control; then square tapped every 8 updates
+# through the first two lines (330-418, 530-618); none after. Frames are character updates of 1/30 s.
+5 press r2
+15 stick right 0 80
+35 stick right 0 0
+40 release r2
+330 tap square
+338 tap square
+346 tap square
+354 tap square
+362 tap square
+370 tap square
+378 tap square
+386 tap square
+394 tap square
+402 tap square
+410 tap square
+418 tap square
+530 tap square
+538 tap square
+546 tap square
+554 tap square
+562 tap square
+570 tap square
+578 tap square
+586 tap square
+594 tap square
+602 tap square
+610 tap square
+618 tap square

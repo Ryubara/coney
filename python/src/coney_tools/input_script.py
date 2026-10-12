@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Coney's input scripts, read the way Coney reads them, so one script drives both Coney and the original.
 
-The format and its rules are Coney's own (`src/core/input_script.cpp`, docs/guides/building.md#input-scripts): one
+The format and its rules are Coney's own (`src/core/input_script.cpp`, docs/guides/running.md#input-scripts): one
 line per command, `FRAME [p1|p2] ACTION ARGS`, `#` comments, frames that never go down; `press`, `release` and `tap`
 take button names, `stick left|right X Y` takes whole percentages from -100 to 100 (y up), `connect` and `disconnect`
 take nothing. A frame is one fixed step of 1/30 s, so on the original it is one character update.

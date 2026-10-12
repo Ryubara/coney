@@ -2145,7 +2145,7 @@ bytes each. A human flag is a bit of `+0xe0`, a state flag one of record `+0x00`
 | `0x0021e3a8` | `Human_GetSoundVolumeScale` | 1.0, or the combat-framing volume (game state `+0x24c`) for a player while the camera frames a fight. | confirmed (code) |
 | `0x0021e940` | `Human_UpdateSpeech` | Per update speech: when the line ends, clears speaking state and runs the end callback once; while it plays, moves the stream to the head and faces the partner. | confirmed (code) |
 | `0x0021ec30` | `Human_GetSpeechHandle` | Returns the current speech line handle `+0x178`. | confirmed (code) |
-| `0x0021ec38` | `Human_StopSpeech` | Stops the current line when alive and forced (or already flagged), ends the speaking pose and marks it stopped without callback. | confirmed (code) |
+| `0x0021ec38` | `Human_StopSpeech` | `(human, force)`: stops the current line when it is alive and either forced or cut-able (`+0x194` set); ends the speaking pose, sets `+0x194` and `+0x195` and drops the queued follow-up (`+0x184`); never touches the Lua callback, which runs at the next `Human_UpdateSpeech` ([Sound](sound.md#speech-cut-in)). | confirmed (code) |
 | `0x0021ed28` | `Human_SayCopLine` | Says a cop command line; on success stores a callback hash so the script hears when it ends. | confirmed (code) |
 | `0x0021ede0` | `Human_PlayNextVoiceLine` | Plays the next line of voice bank 0x29 at the human when the shared voice slot 0x005e6d80 is free, and takes that slot. | confirmed (code) |
 | `0x0021ee50` | `Human_PlayVoiceByName` | Hashes a fixed name (0x005d91e0) and plays it through Human_PlayVoiceAt. | confirmed (code) |
@@ -2765,9 +2765,9 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
   (`src/platform/play_lighting.*`) every human is drawn in the two passes of
   [Drawing a human](graphics.md#human-draw): the second pass blends the blood texture
   (`src/graphics/human_blood.*`, the three `charblood` textures of `global.pak`) by its alpha below 90% health.
-- `--view-character [NAME] [--anim CLIP]` ([Building](../guides/building.md#the-character-viewer)) shows a skinned
+- `--view-character [NAME] [--anim CLIP]` ([Running Coney](../guides/running.md#the-character-viewer)) shows a skinned
   character playing a clip in place on the fixed 30 Hz step, with a pad-driven orbit camera.
-- `--render-references DIR` ([Building](../guides/building.md#reference-images)) writes a 256x256
+- `--render-references DIR` ([Running Coney](../guides/running.md#reference-images)) writes a 256x256
   transparent PNG of every character, posed at its default clip's first frame (and of every object,
   [Level loading](level-loading.md#the-object-list)), from a fixed three-quarter camera
   (`src/characters/reference_render.*` frames and reduces; `src/platform/reference_renderer.*` draws offscreen).
@@ -2863,7 +2863,7 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
   renderer that draws between steps.
 - The debug menu's tunables ([Debug menu](../guides/debug-menu.md#tunables)) expose the body, sprint, jump, climb
   and lean values above, each defaulting to the original's.
-- `--play-level NAME` ([Building](../guides/building.md#playing-a-level)) plays it: `src/platform/play_level_mode.*`
+- `--play-level NAME` ([Running Coney](../guides/running.md#playing-a-level)) plays it: `src/platform/play_level_mode.*`
   steps the player, streams the level and runs the visibility pass in its update, and draws from the snapshots of the
   last two steps, blended by the frame's alpha, in its render
   ([Update and render](../guides/conventions.md#update-and-render)). A disc test (`[frame_rate]`) plays both scripts
