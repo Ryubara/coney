@@ -256,6 +256,9 @@ missions:
       default: not-started
     research:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+      - {title: "Pickable objects (the Molotov's class)", path: "research/objects.md#pickable"}
+    test: "coney_tests \"[disc][story][pickup]\""
+    notes: "At checkpoint 1 player 1 picks up each of the six Molotovs on the liquor store's shelves with triangle (`tests/platform/disc_level93_molotov_test.cpp`); they were not pickable before, their class `dyn_molotv` being missing from the pickable classes. Checkpoints 1 to 6 start headless and windowed with no black screen; the route to the black screen a player reported is not known yet."
   - level: 31
     group: story
     slot: story mission 11
