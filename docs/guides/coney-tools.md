@@ -617,7 +617,10 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   check needs `origin/main` in the checkout (`git fetch origin`) and says so when it is missing.
 * `--local` reads the workspace around the checkout: the free space of its drive, merged worktrees and stray files
   among the worktrees (`workspace clean` would remove them), and scratch folders of finished work that still hold
-  captures. The limits are the `workspace` section of the file.
+  captures. The limits are the `workspace` section of the file. It asks GitHub once for the merged pull requests of
+  every branch, judges the worktrees and walks the scratch folders several at a time, and does not read the last
+  activity of a worktree it will not report (a `build/` folder is `workspace clean`'s business), so a workspace of
+  80 worktrees takes seconds, not minutes.
 
 Each finding has the check's id, a severity (`error` or `warn`), the item (`#201`, a file, a worktree), a message and a
 fix class: `auto` (a coney-tools command fixes it), `skill` (a person or the `/repo-hygiene` skill fixes it with
@@ -704,6 +707,9 @@ command notes a GCC database; configure a Clang one once, beside `build/dev`, an
 CC=clang-19 CXX=clang++-19 cmake --preset dev -B build/tidy   # macOS: the Apple or Homebrew clang
 uv run --project python coney-tools check changed --build-dir build/tidy
 ```
+
+CI runs the `repo` and `pre-commit` steps on Windows, Linux and macOS in its `python` workflow, so the command's
+handling of paths, programs and long command lines is tested on all three.
 
 `--only` and `--skip` take step names, for a rerun of the one that failed. The command prints at most 40 lines of a
 failing step; run the step's tool by hand for the rest. What stays CI's: warnings only GCC emits, macOS, the
