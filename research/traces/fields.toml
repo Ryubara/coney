@@ -777,7 +777,8 @@ follow = true
 # `lock`, `partner` and the gang's `g_leader` / `g_chosen` are indices (-1 none). `value` fields are worked out from
 # memory at each sample: `hidx(handle)` the human index a handle names (-1 for the null handle 0xffffffff or a stale
 # one), `goal_at(brain, k)` the type id of goal stack slot k (docs/references/goal-types.md; -1 above the top),
-# `goal_type(vtable)` a goal class's type id, `nonzero(address, n)` how many of n words there are not 0.
+# `goal_type(vtable)` a goal class's type id, `handles(address, n)` how many of n words there are
+# handles (neither 0 nor 0xffffffff).
 # Research: docs/research/ai.md (#brain, #goals, #gangs, #fight), docs/research/combat.md (#state-flags,
 # #record-fields), docs/research/rumble.md#gang-battle-trace. Goal type 15 is Fight, 27 Blocking, 8 Melee, 11
 # EngageEnemy, 65 FindEnemy.
@@ -997,11 +998,11 @@ type = "u8"
 
 [[humans]]
 name = "enemies"                          # handles in its enemy list (brain +0x164)
-value = "nonzero(brain(h) + 0x164, 16)"
+value = "handles(brain(h) + 0x164, 16)"
 
 [[humans]]
 name = "slots"                            # attack slots taken on it (brain +0x1a4)
-value = "nonzero(brain(h) + 0x1a4, 16)"
+value = "handles(brain(h) + 0x1a4, 16)"
 
 [[humans]]
 name = "slots_max"                        # attack slots allowed on it
@@ -1010,7 +1011,7 @@ type = "u8"
 
 [[humans]]
 name = "active"                           # active attackers on it (brain +0x1f0)
-value = "nonzero(brain(h) + 0x1f0, 4)"
+value = "handles(brain(h) + 0x1f0, 4)"
 
 [[humans]]
 name = "space_up"                         # attack spacing (brain +0x14a, +0x14b)

@@ -35,7 +35,7 @@ A field set is an array of tables in `research/traces/fields.toml`, each field o
   one of u8 s8 u16 s16 u32 s32 f32;
 - `{ name, formula }`: a value worked out from the fields before it (`deg(2 * atan2(qz, qw))`);
 - `{ name, value }`: an expression over memory worked out at every sample, whose result is the column
-  (`nonzero(brain(h) + 0x164, 16)`, `hidx(u32(brain(h) + 0x124))`).
+  (`handles(brain(h) + 0x164, 16)`, `hidx(u32(brain(h) + 0x124))`).
 
 `rows = "humans"` makes one row per human in use per update instead of one per update: the columns are `step`,
 `human` (its handle index) and the fields, with the name `h` standing for the row's human

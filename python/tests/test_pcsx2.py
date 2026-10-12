@@ -484,7 +484,7 @@ name = "target"
 value = "hidx(u32(brain(h) + 0x124))"
 [[each]]
 name = "enemies"
-value = "nonzero(brain(h) + 0x164, 16)"
+value = "handles(brain(h) + 0x164, 16)"
 [[each]]
 name = "goal"
 value = "goal_at(brain(h), s8(brain(h) + 0x2c))"
@@ -506,13 +506,14 @@ def test_rows_per_human_follow_pointers_and_handles(tmp_path: Path, fake_pine: t
     player_brain = BRAIN_TABLE + PLAYER_INDEX * BRAIN_SIZE
     civilian_brain = BRAIN_TABLE + CIVILIAN_INDEX * BRAIN_SIZE
     game.write_float(TRANSFORM_TABLE + CIVILIAN_INDEX * 0x20, 2.5)
-    # The player targets the civilian through a live handle (serial 7 in the handle table) and lists two enemies;
+    # The player targets the civilian through a live handle (serial 7 in the handle table) and lists two enemies (and a free entry);
     # his stack is Melee under Fight (two goals in the goal pool). The civilian's handle is stale (serial 8).
     game.write(HANDLE_TABLE + CIVILIAN_INDEX * 8 + 4, 2, 7)
     game.write32(player_brain + 0x124, CIVILIAN_INDEX << 16 | 7)
     game.write32(civilian_brain + 0x124, PLAYER_INDEX << 16 | 8)
     game.write32(player_brain + 0x164 + 4, 0x12345)
     game.write32(player_brain + 0x164 + 40, 0x6789A)
+    game.write32(player_brain + 0x164 + 8, 0xFFFFFFFF)  # a free entry holding the null handle
     game.memory[player_brain + 0x2C] = 1
     game.write32(player_brain + 0x40, 0x00400000)
     game.write32(player_brain + 0x44, 0x00400100)

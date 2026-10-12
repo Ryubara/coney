@@ -25,7 +25,8 @@ Names and functions (the layouts are on the research pages named; every address 
   `0x00390180`). A human's handle is its `u32` at `+0x90`, so `hidx` of it is `index(h)`.
 - `goal_type(vtable)`: a goal class's type id (docs/references/goal-types.md), -2 for a vtable not listed;
   `goal_at(brain, k)`: the type id of the goal in slot k of the brain's stack (`+0x40`), -1 above the top (`+0x2c`).
-- `nonzero(address, n)`: how many of the n words from `address` are not 0 (a handle list's length).
+- `handles(address, n)`: how many of the n words from `address` are neither 0 nor the null handle (a handle
+  list's length).
 - `sin cos atan2 hypot sqrt abs min max`, `deg(radians)`, `rad(degrees)`, `wrap(degrees)` (to -180..180), `pi`.
 
 Field formulas (derived columns) use the same grammar, with the scenario's other fields as names.
@@ -242,7 +243,7 @@ class GameMemory:
             "hidx": self.hidx,
             "goal_type": self.goal_type,
             "goal_at": self.goal_at,
-            "nonzero": self.nonzero,
+            "handles": self.handles,
         }
 
     def read(self, address: int, kind: str) -> Number:
@@ -320,10 +321,11 @@ class GameMemory:
         goal = int(self.read(brain + 0x40 + 4 * slot, "u32"))
         return self.goal_type(int(self.read(goal + 0xC, "u32")))
 
-    def nonzero(self, address: int, count: int) -> int:
-        """How many of the `count` words from `address` are not 0, read in one batch."""
+    def handles(self, address: int, count: int) -> int:
+        """How many of the `count` words from `address` are handles: neither 0 nor the null handle (a handle list,
+        whose free entries hold one or the other), read in one batch."""
         reads = [Read(int(address) + 4 * k, 4) for k in range(int(count))]
-        return sum(1 for word in self.memory.batch(reads) if word)
+        return sum(1 for word in self.memory.batch(reads) if word not in (0, NULL_HANDLE))
 
     def names(self, extra: Mapping[str, Value] | None = None) -> Callable[[str], Any]:
         """A name lookup for Expression.evaluate(): `extra` first, then the functions and the objects above."""

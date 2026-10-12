@@ -552,7 +552,7 @@ when the state holds something else. `scripted-pad`, `right-stick` and `puppet` 
 **address expression** (`tf(player) + 0x4`, type `f32`), or worked out by a **formula** from the fields before it
 (`wrap(deg(2 * atan2(qz, qw)))`); `hidden = true` keeps a helper out of the CSV, and `follow = true` works the address
 out again at every sample, for a chain of pointers that changes as the game plays (the top of an animation stack).
-A **value** field (`value = "nonzero(brain(h) + 0x164, 16)"`) is an expression over memory worked out at every sample,
+A **value** field (`value = "handles(brain(h) + 0x164, 16)"`) is an expression over memory worked out at every sample,
 whose result is the column. Expressions are arithmetic over these names, and nothing else of Python:
 
 | Name | Value |
@@ -566,7 +566,7 @@ whose result is the column. Expressions are arithmetic over these names, and not
 | `h` | with `rows = "humans"`, the row's human |
 | `hidx(handle)` | the handle index a handle names (high half), -1 for the null handle `0xffffffff` or a stale one (`0x00390180`) |
 | `goal_type(vt)`, `goal_at(brain, k)` | a goal class's type id ([goal types](../references/goal-types.md)); the type of stack slot k, -1 above the top |
-| `nonzero(address, n)` | how many of n words are not 0 (a handle list's length) |
+| `handles(address, n)` | how many of n words are handles, neither 0 nor `0xffffffff` (a handle list's length) |
 | `u8` ... `f32` (address) | a value in memory (`u8 s8 u16 s16 u32 s32 f32`) |
 | `sin cos atan2 hypot sqrt abs min max deg rad wrap pi` | math; `wrap` takes degrees to (-180, 180] |
 
