@@ -1703,7 +1703,10 @@ throw.
 | front hold, left (154) | 1 (`d` 114°) | −3.5° | (0.94, −0.36) | (0.00, 5.65), 43 updates after |
 
 - The thrower always ended facing the stick heading: the side clips turn him by about −90° (right), 180° (rear) and
-  +86.5° (left) after the 1/6 s turn put the side's axis on the stick.
+  +86.5° (left) after the 1/6 s turn put the side's axis on the stick. These are the clips' root turns **times their
+  rate** (0.75): the sampler scales bone 0's turn by the task's rate as it does the root velocity (confirmed (code) at
+  `0x00104ce0`; the disc's 149, 151 and 153 sum to −89.9°, −180.0° and +86.4° that way, and to −119.9°, −240.0° and
+  +115.1° without it; [Root motion](formats/animation.md#root-motion), #263).
 - The landing point is the same in the stick's frame whatever the stick's angle from the facing (the front's six
   throws, `d` from −44° to +40°, landed within 4 cm of each other), so the turn takes the whole difference. Seen
   from where the thrower stood, the body lands within 5° of the stick: 2.1° right of it for the front throw, 3.9°
