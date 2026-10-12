@@ -15,19 +15,24 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <format>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
 #include "ai/brain.h"
+#include "debug/play_controls.h"
+#include "scripting/script_system.h"
 #include "ai/brains.h"
 #include "ai/goal.h"
 #include "animation/anim_math.h"
 #include "fileio/wad.h"
 #include "human/human.h"
+#include "human/locomotion.h"
 #include "platform/game_session.h"
 #include "platform/play_level_mode.h"
 #include "support/disc_play_fixtures.h"
@@ -54,6 +59,20 @@ constexpr float kLandedBeforeY = 24.29F;
 // and a 38-update climb in the original, under 5 s), in frames.
 constexpr std::uint64_t kOrderLimit = 6000;
 constexpr int kRunBudget = 600;
+// The roof run (docs/research/scripting.md#level99-p2-vermin-fence): `fVerminWait`, where Vermin waits for the
+// player's window jump; the updates looked at before each take-off (the original ran at gait 4 and 7.80 m/s from 34
+// updates before the window's take-off and 18 before the second); how long both legs may take (the original took off
+// the second time 266 updates after the order).
+constexpr coney::anim::Vec3 kWindowRunStart{62.8F, -3.3F, 4.3F};
+constexpr std::size_t kRunUp = 12;
+constexpr int kRoofBudget = 900;
+
+// One update of the roof run.
+struct Update {
+    coney::human::Gait gait = coney::human::Gait::Standing;
+    float speed = 0.0F;
+    coney::anim::Vec3 feet{};
+};
 
 // The handle of the last human the scripts made with `name`, or 0.
 double lastNamed(const coney::CreatedHumans& humans, std::string_view name) {
@@ -93,13 +112,23 @@ TEST_CASE("the disc's level99 checkpoint 3: Vermin climbs the fence in his demon
     }
 
     // Checkpoint 3 as --play-level starts it, the pad idle; the scene `l99_c3` plays out to its end.
-    coney::test::DiscSession run(*wad, "0 stick left 0 0\n");
-    run.session().startAtLevel("level99", 3);
+    const char* pad = std::getenv("VF_PAD") != nullptr ? std::getenv("VF_PAD") : "0 stick left 0 0\n";
+    coney::test::DiscSession run(*wad, pad);
+    const bool story = std::getenv("VF_STORY") != nullptr;
+    run.session().startAtLevel("level99", story ? 2 : 3);
     REQUIRE(run.runUntilPlay());
     coney::platform::PlayLevelMode* play = run.session().play();
     REQUIRE(play != nullptr);
     if (play == nullptr) {
         return;
+    }
+    if (story) {
+        run.runToPlayFrame(600);
+        CHECK(run.session().flow().scripts().call("P2.SeeVermin"));
+        run.runToPlayFrame(900);
+        play->teleport(coney::debug::Place{.name = "fence", .feet = {46.6F, 49.3F, 0.3F}, .headingDegrees = 0.0F});
+        REQUIRE(run.runUntil([&] { return run.session().flow().state().checkPoint == 3; }, 3000));
+        std::printf("  checkpoint 3 at play frame %llu\n", static_cast<unsigned long long>(run.playFrames()));
     }
     const double vermin = lastNamed(run.session().flow().humans(), "Vermin");
     REQUIRE(vermin != 0.0);
@@ -162,4 +191,62 @@ TEST_CASE("the disc's level99 checkpoint 3: Vermin climbs the fence in his demon
     // And he arrives at the flag in time.
     CHECK(frames < kRunBudget);
     CHECK(fromTarget <= kArrival + 0.1F);
+}
+
+TEST_CASE("the disc's level99 checkpoint 3: Vermin runs up to both of his roof jumps", "[disc][story][level99]") {
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    coney::test::DiscSession run(*wad, "0 stick left 0 0\n");
+    run.session().startAtLevel("level99", 3);
+    REQUIRE(run.runUntilPlay());
+    coney::platform::PlayLevelMode* play = run.session().play();
+    REQUIRE(play != nullptr);
+    if (play == nullptr) {
+        return;
+    }
+    coney::ai::Brain* brain = nullptr;
+    REQUIRE(run.runUntil(
+        [&] {
+            brain = brainNamed(*play, lastNamed(run.session().flow().humans(), "Vermin"));
+            return brain != nullptr && movingToFlag(*brain);
+        },
+        kOrderLimit));
+    REQUIRE(run.runUntil([&] { return !movingToFlag(*brain); }, kRunBudget));
+    run.run(30);
+
+    // Vermin where the window run starts, then the script's step after the player's window jump.
+    brain->human().place(kWindowRunStart, coney::human::headingOf(coney::anim::Vec3{-1.0F, 0.0F, 0.0F}));
+    REQUIRE(run.session().flow().scripts().call("P3.Player2Jumps"));
+
+    const float runSpeed = brain->human().speeds().run;
+    std::vector<Update> updates;
+    std::vector<std::size_t> takeOffs;
+    bool wasAirborne = brain->human().airborne();
+    for (int frame = 0; frame < kRoofBudget && takeOffs.size() < 2; ++frame) {
+        run.run(1);
+        const coney::human::Human& human = brain->human();
+        updates.push_back(Update{.gait = human.gait(), .speed = human.speed(), .feet = human.position()});
+        if (human.airborne() && !wasAirborne) {
+            takeOffs.push_back(updates.size() - 1);
+        }
+        wasAirborne = human.airborne();
+    }
+    std::printf("  level99 Vermin's roof run: run speed %.2f m/s, %zu take-offs\n", runSpeed, takeOffs.size());
+    REQUIRE(takeOffs.size() == 2);
+    for (const std::size_t at : takeOffs) {
+        // The updates before the take-off (the one before it the jump's own): the run gait at the run's speed.
+        int running = 0;
+        float slowest = runSpeed;
+        for (std::size_t i = at - kRunUp; i < at - 1; ++i) {
+            running += updates[i].gait == coney::human::Gait::Run ? 1 : 0;
+            slowest = std::min(slowest, updates[i].speed);
+        }
+        const coney::anim::Vec3 feet = updates[at].feet;
+        std::printf("    take-off at (%.2f, %.2f, %.2f): %d of %zu updates before it at the run, slowest %.2f m/s\n",
+                    feet.x, feet.y, feet.z, running, kRunUp - 1, slowest);
+        CHECK(running == static_cast<int>(kRunUp - 1));
+        CHECK(slowest >= runSpeed * 0.95F);
+    }
 }
