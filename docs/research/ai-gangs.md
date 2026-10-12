@@ -390,6 +390,16 @@ playing two missions. A check for later, from such a state: log the tactic callb
 the code) while the player walks into a hanging-out group's view; the expected order is 3, then 7 and 1 from
 Confront, then the ATTACK tactic's members in Melee.
 
+**Runtime, gangs with no tactic** (2026-10-12, PCSX2 2.9.94; confirmed (runtime)): at `level80` checkpoint 4, two
+Destroyer gangs with no tactic and threat response 2 were made enemies of Cochise and Swan by `GangMakeEnemies`. One
+update later every member had scanned (five an update), and within six updates all twelve had FindEnemy and Melee with
+Fight or Spectate. After the attack order made them enemies of the Warriors too, Destroyers turned on the player
+although he never attacked: five within 21 updates in one run, two within 25 in another and none in 450 in a third, as
+the scan lists only the Warriors in a soldier's field of view. That is steps 1 and 3 of the chain above, with nobody hit
+first; Coney does neither yet. Of the fix list above, the open PR #394 does item 1 (the scan in every brain); item 2
+(the think step that fights a listed enemy) is still missing there. Details, timings and the test:
+[Scripts](scripting.md#level80-fight-start).
+
 ## The boss fights {#boss-fights}
 
 Every boss fight on the disc sets one of the `TacticBossScenarioA`-`H` tactics, and each gives the boss an ordinary
