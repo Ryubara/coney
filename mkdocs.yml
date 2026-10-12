@@ -287,6 +287,7 @@ nav:
       - The coney-tools command line: guides/coney-tools.md
       - The debug menus: guides/debug-menu.md
       - Performance: guides/performance.md
+      - The run log: guides/run-log.md
       - Enhancements plan: guides/enhancements.md
       - Realtime lighting design: guides/realtime-lighting.md
       - Asset and script architecture: guides/asset-and-script-architecture.md

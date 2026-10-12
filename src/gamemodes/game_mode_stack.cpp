@@ -4,6 +4,7 @@
 #include <algorithm>
 
 #include "core/assert.h"
+#include "core/log.h"
 #include "core/perf.h"
 
 namespace coney {
@@ -43,6 +44,8 @@ void GameModeStack::updateTop(const FrameTime& frame) {
     if (mode == nullptr) {
         return;
     }
+    // The run log stamps what this step writes, enter() included, with its number (docs/guides/run-log.md).
+    logging::setStep(frame.index);
     if (!mode->entered()) {
         // Marked entered before enter() runs, so a mode that pushes another from enter() is suspended properly.
         mode->m_entered = true;

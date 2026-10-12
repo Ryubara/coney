@@ -127,7 +127,7 @@ The Display page's *Debug UI scale* overrides the choice: *Auto* (the rule above
 | Page | What it has |
 | --- | --- |
 | Favourites | every pinned item, working as itself |
-| Time | pause, step one fixed step, the time scale (0.05x to 4x, presets, reset to 1x), the frame and step counts with a plot, the real frame time |
+| Time | pause, step one fixed step, the time scale (0.05x to 4x, presets, reset to 1x), the frame and step counts with a plot, the real frame time, write a bug report log |
 | Tunables | one page per category of the [tunables](#tunables), reset all, save and load the overrides file |
 | Natives | the [script bindings](#natives) by category with their Coney status, an argument editor and a call |
 | Lua console | a Lua line to run in the script state, a file to run, and the output |
@@ -153,7 +153,9 @@ The Display page's *Debug UI scale* overrides the choice: *Auto* (the rule above
 one* runs exactly one. *Time scale* (0.05x to 4x, in steps of 0.05, L2 for hundredths) speeds the game up or slows it
 down by running more or fewer of those steps a real second; *Reset to 1x* (or triangle on the scale) gives the game's
 own speed back, and *Preset 0.1x*, *0.25x*, *0.5x*, *2x* and *4x* are one press away. A change shows as a notice, and
-the frame-stats line names any scale other than 1x.
+the frame-stats line names any scale other than 1x. *Write bug report log* writes the last 30 s of the
+[run log](run-log.md#bug-reports), every level, into the log file for a bug report, and a notice says how many events
+and where.
 
 - **Slower than 1x.** Steps still fall due 30 times a real second, and only the scale's share of them runs: at 0.25x
   one in four (counted in hundredths, so a scale gives exactly its steps over a run, and the first due step after a

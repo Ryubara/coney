@@ -10,6 +10,7 @@
 
 #include "animation/anim_task.h"
 #include "core/assert.h"
+#include "core/log.h"
 
 namespace coney::scenes {
 
@@ -335,6 +336,8 @@ class SceneTask {
         m_loopPoint = m_request.looping && hasLoopPoint();
         m_slot.state = SceneState::Playing;
         ++m_system.m_stats.started;
+        logging::info(logging::Category::World,
+                      std::format("cutscene: start {} (id {})", m_slot.header->name, m_slot.id));
         // Frame 0: every runner's first events and pose.
         for (TrackRun& run : m_tracks) {
             stepTrack(run, 0.0F);
@@ -393,6 +396,8 @@ class SceneTask {
         }
         m_skipped = true;
         ++m_system.m_stats.skipped;
+        logging::info(logging::Category::World,
+                      std::format("cutscene: skip {} (id {})", m_slot.header->name, m_slot.id));
         if (m_loopPoint) {
             m_request.looping = false;
             return;
@@ -968,6 +973,8 @@ class SceneTask {
         }
         m_slot.state = SceneState::Ended;
         ++m_system.m_stats.ended;
+        logging::info(logging::Category::World, std::format("cutscene: end {} (id {}){}", m_slot.header->name,
+                                                            m_slot.id, m_skipped ? ", skipped" : ""));
         if (callEndFunction) {
             callEnd();
         }

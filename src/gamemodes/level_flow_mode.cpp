@@ -10,6 +10,7 @@
 
 #include "core/assert.h"
 #include "core/game_timer.h"
+#include "core/log.h"
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/gameplay_mode.h"
 #include "gamemodes/legal_screen_mode.h"
@@ -214,6 +215,8 @@ void LevelFlowMode::finishFrontEnd() {
 namespace coney {
 
 void LevelFlowMode::loadScene() {
+    // The front end has no checkpoint: the run log's lines say `cp-` until a level starts.
+    logging::clearCheckpoint();
     dropScenes();
     m_scene.reset();
     if (!m_loadScene) {

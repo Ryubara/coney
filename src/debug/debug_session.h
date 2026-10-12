@@ -94,6 +94,9 @@ struct DebugServices {
     /// skipped (docs/guides/debug-menu.md#movies). False, changing nothing, when it cannot (no such movie, or a movie
     /// playing already). Empty: movies cannot be played in this run.
     std::function<bool(std::string_view name, bool captions)> playMovie;
+    /// Writes the run log's ring (the last 30 s at every level) into the log file for a bug report and returns the
+    /// line to show (docs/guides/run-log.md#bug-reports); empty: the Time page dumps through the logger itself.
+    std::function<std::string()> writeBugReport;
 };
 
 /// One debug session: the menu model with every page, the state its pages share (the time controls, the log, the Lua

@@ -5,6 +5,7 @@ add_executable(coney_tests
     core/clip_recording_test.cpp
     core/deferred_input_test.cpp
     core/event_log_test.cpp
+    core/log_test.cpp
     core/frame_clock_test.cpp
     core/frame_rate_meter_test.cpp
     core/game_random_test.cpp
@@ -281,7 +282,8 @@ target_sources(coney_tests PRIVATE
     characters/disc_characters_test.cpp
     characters/dynamic_clips_test.cpp
     characters/orbit_camera_test.cpp
-    platform/character_mesh_test.cpp)
+    platform/character_mesh_test.cpp
+    platform/log_output_test.cpp)
 # The player: animation tasks, locomotion, the human, the follow camera, and level99 driven by scripted pads.
 target_sources(coney_tests PRIVATE
     animation/anim_task_test.cpp

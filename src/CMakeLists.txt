@@ -7,6 +7,9 @@ add_library(coney_core STATIC
     core/chunk_types.cpp
     core/deferred_input.cpp
     core/event_log.cpp
+    core/log.cpp
+    core/log_record.cpp
+    core/log_ring.cpp
     core/frame_clock.cpp
     core/frame_rate_meter.cpp
     core/game_random.cpp

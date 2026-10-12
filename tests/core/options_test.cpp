@@ -913,3 +913,32 @@ TEST_CASE("the bench options measure a played level with fighters spawned", "[op
                     .has_value());
     CHECK(coney::usageText().find("--bench-fighters") != std::string_view::npos);
 }
+
+TEST_CASE("the run log options take a file and the verbose categories", "[options]") {
+    using coney::logging::Category;
+    auto none = parseOptions({});
+    REQUIRE(none.has_value());
+    CHECK_FALSE(none->logFile.has_value());
+    CHECK(none->logVerbose.empty());
+
+    auto both = parse(std::array<std::string_view, 4>{"--log-file", "run.log", "--log-verbose", "ai,combat"});
+    REQUIRE(both.has_value());
+    CHECK(both->logFile == "run.log");
+    CHECK(both->logVerbose == std::vector<Category>{Category::Ai, Category::Combat});
+
+    auto all = parse(std::array<std::string_view, 2>{"--log-verbose", "all"});
+    REQUIRE(all.has_value());
+    CHECK(all->logVerbose.size() == coney::logging::kCategoryCount);
+}
+
+TEST_CASE("the run log options refuse an unknown category, a missing value and a repeat", "[options]") {
+    auto unknown = parse(std::array<std::string_view, 2>{"--log-verbose", "ai,physics"});
+    REQUIRE_FALSE(unknown.has_value());
+    CHECK(unknown.error().code == ErrorCode::InvalidArgument);
+    CHECK(unknown.error().message.find("--log-verbose") != std::string::npos);
+    CHECK(unknown.error().message.find("physics") != std::string::npos);
+    CHECK_FALSE(parse(std::array<std::string_view, 1>{"--log-verbose"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 1>{"--log-file"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 4>{"--log-file", "a", "--log-file", "b"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 4>{"--log-verbose", "ai", "--log-verbose", "combat"}).has_value());
+}

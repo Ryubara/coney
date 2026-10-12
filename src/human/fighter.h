@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <optional>
 #include <span>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -171,6 +172,11 @@ class Fighter {
     /// combat decides, the fighter plays the clips, turns `heading` to a target it attacks, grabs or tackles, lands the
     /// hits, keeps or drops its target, and puts an attached victim at its offset.
     void update(const FighterInput& input, HumanAnimator& animator, float& heading);
+
+    /// What the run log calls this fighter (`human 12 warr_cl`), set by whoever names the human (the AI's brains);
+    /// `player` or `human` until then. Coney's own, for the log only (docs/guides/run-log.md).
+    void setLogName(std::string name) { m_logName = std::move(name); }
+    [[nodiscard]] const std::string& logName() const;
 
     /// Whether combat's states move the body this update rather than the stick: blocking, holding someone or held,
     /// mugging, a theft, or reacting to a hit (stunned, down, getting up). These stand for the state word's part of
@@ -805,6 +811,7 @@ class Fighter {
     combat::CombatRandom m_grabbedRandom;
     combat::RepeatTracker m_repeat;   // halves the rage of a long run of one kind; the throw bonus
     std::vector<HumanSound> m_sounds; // takeSounds()
+    std::string m_logName;            // setLogName(); empty: the default logName() gives
     int m_hitsTaken = 0;
     int m_hitsBlocked = 0;
     int m_hitsDucked = 0;

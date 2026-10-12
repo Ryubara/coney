@@ -9,6 +9,7 @@
 #include <limits>
 #include <numbers>
 #include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -70,6 +71,15 @@ Fighter::Fighter(const combat::AnimRangeList* ranges, std::uint32_t seed, const 
       m_combat(ranges, 0, seed, profile.powerClass.powerMax, profile.powerClass.refillPerSecond, profile.rage),
       m_health(profile.health > 0 ? profile.health : kPlayerHealth), m_victim(profile.powerClass, seed),
       m_grabbedRandom(seed + 1U), m_player(profile.player), m_bossClass(profile.bossClass) {}
+
+const std::string& Fighter::logName() const {
+    static const std::string kPlayer = "player";
+    static const std::string kHuman = "human";
+    if (!m_logName.empty()) {
+        return m_logName;
+    }
+    return m_player ? kPlayer : kHuman;
+}
 
 bool Fighter::holdsMovement(const HumanAnimator& animator) const {
     return m_combat.blocking() || m_combat.mode() != combat::CombatMode::Free || grabbed() || m_holdState.has_value() ||
@@ -1075,7 +1085,8 @@ void Fighter::applyHit(Combatant& victim, int animId, int damage, bool heldMove,
                            .attackerFlag200000 = hasFlag(flag::kIncreasedReact),
                            .attackerIsPlayer = m_player,
                            .strikeMaterial = strikeMaterialOf(animId, range, animator),
-                           .charge = (animator.flags() & kChargeFlags) != 0});
+                           .charge = (animator.flags() & kChargeFlags) != 0,
+                           .attackerName = logName()});
     ++m_hitsLanded;
     m_damageDealt += damage;
     if (m_player) {

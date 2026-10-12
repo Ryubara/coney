@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <format>
 #include <numbers>
 #include <span>
 
@@ -11,6 +12,7 @@
 #include "combat/combat_tuning.h"
 #include "combat/lock_on.h"
 #include "combat/reactions.h"
+#include "core/log.h"
 #include "human/fighter_clips.h"
 #include "human/pair_placement.h"
 #include "raycast/collision_mesh.h"
@@ -321,7 +323,8 @@ void Fighter::landGrapple(const FighterInput& input) {
                             .react = false,
                             .ignoresArmour = m_player || hasFlag(flag::kIncreasedReact),
                             .attackerFlag200000 = hasFlag(flag::kIncreasedReact),
-                            .attackerIsPlayer = m_player});
+                            .attackerIsPlayer = m_player,
+                            .attackerName = logName()});
     ++m_hitsLanded;
     m_damageDealt += damage;
     if (m_player) {
@@ -599,6 +602,7 @@ void Fighter::victimEscapes(const FighterInput& input, HumanAnimator& animator) 
     }
     animator.playPaired(clips::one(clips::clipOf(escape) + 1), victim.anims(), clips::kGroundedIdle, AnimState::Hold);
     m_victim.knockDown(input.nowMs, true);
+    logging::info(logging::Category::Combat, std::format("knock-down: {} by his victim's escape", logName()));
     m_reacting = true;
 }
 

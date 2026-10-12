@@ -13,6 +13,7 @@
 #include "characters/character_class.h"
 #include "characters/starting_money.h"
 #include "core/assert.h"
+#include "core/log.h"
 #include "effects/level_effects.h"
 #include "scenes/scene_player.h"
 #include "scripting/ai_bindings.h"
@@ -138,6 +139,11 @@ NativeFunction makeSetCheckPoint(const Factory& factory) {
     return [state = factory.context->state](std::span<const Value> args) {
         state->checkPoint = binding::number(args, 0);
         state->player.saveCheckpoint();
+        // The run log's checkpoint start; its lines are stamped with this checkpoint from now on (Coney's own,
+        // docs/guides/run-log.md).
+        const int checkpoint = static_cast<int>(std::trunc(state->checkPoint));
+        logging::setCheckpoint(checkpoint);
+        logging::info(logging::Category::World, std::format("checkpoint: start {}", checkpoint));
         return binding::none();
     };
 }

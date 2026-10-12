@@ -14,6 +14,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "core/log.h"
 #include "core/perf.h"
 #include "debug/menu_model.h"
 
@@ -315,4 +316,32 @@ TEST_CASE("the Performance page turns the profiler on and shows its zones", "[de
     CHECK(again->find("test.page_zone") != nullptr);
     CHECK(again->find("Frame")->watch().find("over 1 frames") != std::string::npos);
     coney::perf::resetForTests();
+}
+
+TEST_CASE("the Time page writes a bug report: the run log's ring through the service, or the logger's own dump",
+          "[debug]") {
+    TunableRegistry tunables;
+    DebugServices services;
+    int asked = 0;
+    services.writeBugReport = [&asked] {
+        ++asked;
+        return std::string("bug report: the last 4 events written to coney.log");
+    };
+    DebugSession session(tunables, services, nullptr);
+    const MenuItem* report = session.model().openPage("Time")->find("Write bug report log");
+    REQUIRE(report != nullptr);
+    report->run();
+    CHECK(asked == 1);
+    CHECK(session.log().last(1) == std::vector<std::string>{"bug report: the last 4 events written to coney.log"});
+
+    // Without the service (no platform log output) the logger dumps to whatever dump sink there is.
+    coney::logging::reset();
+    std::vector<std::string> dumped;
+    coney::logging::setDumpSink([&dumped](std::string_view line) { dumped.emplace_back(line); });
+    coney::logging::info(coney::logging::Category::World, "checkpoint: start 1");
+    DebugSession bare(tunables, DebugServices{}, nullptr);
+    bare.model().openPage("Time")->find("Write bug report log")->run();
+    CHECK(dumped.size() == 3);
+    CHECK(bare.log().last(1) == std::vector<std::string>{"bug report: the last 1 events written to the log"});
+    coney::logging::reset();
 }

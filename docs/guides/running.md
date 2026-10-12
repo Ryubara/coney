@@ -31,6 +31,7 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
       [--skip-movies] [--rumble TYPE [--arena N] [--gang-size N]]
       [--profiles DIR] [--dev-overlay N] [--no-activate] [--window-display DISPLAY] [--event-log FILE] [--pad-pipe]
       [--record FILE [--record-seconds N]] [--bench FILE [--bench-fighters N] [--bench-warmup N]]
+      [--log-file FILE] [--log-verbose CATEGORIES]
       [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME]
 ```
 
@@ -710,6 +711,13 @@ it starts when the level's Lua state is made, before its scripts run, with the s
 loading screen's events stay out. The file is flushed every update, so a run that is killed keeps its events. It is
 the Coney side of a [differential playthrough](research-workflow.md#differential-playthroughs). Like
 `--script-trace` it holds the game's own text: keep it out of the repository.
+
+#### The run log {#run-log}
+
+Everything Coney prints about a run is a line of the [run log](run-log.md), stamped `[step N | mm:ss.s | level
+cpK]` with a category: on the console, and in `coney.log` in your data folder (a test-mode run writes a file only
+with `--log-file FILE`). `--log-verbose ai,combat` keeps the `detail` lines of those categories too (`all` for every
+one). How to read it, attach it to a bug report and add lines: [The run log](run-log.md).
 
 #### The pad pipe {#pad-pipe}
 
