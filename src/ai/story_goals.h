@@ -16,7 +16,7 @@
 // flags, looking for an enemy to fight, throwing what they hold, and idling at a flag. Each is driven by its brain as
 // the first mission's goals are (ai/goal.h); what they ask of the world beyond the brain (the flags, the exits, the
 // player's view, the removal of a human) comes in as functions, which the level's scripted brains give them.
-// Research: docs/references/bindings/ai.md, docs/research/ai.md#scripted
+// Research: docs/references/bindings/ai.md, docs/research/ai-scripting.md#scripted
 
 namespace coney::ai {
 

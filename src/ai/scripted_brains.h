@@ -37,14 +37,14 @@ class ScriptSystem;
 // it. It gives GoalMoveToFlag its flags (the level's world flags), finds what ActLookAt turns to (a human of a brain, a
 // flag, or any object the locator knows), and gives the scripted goals, the gangs and the tactics the script system
 // (their callbacks and message handlers) as their ScriptServices.
-// Research: docs/research/ai.md#scripted, docs/research/ai.md#gangs
+// Research: docs/research/ai-scripting.md#scripted, docs/research/ai-gangs.md#gangs
 
 namespace coney::ai {
 
 class ScriptedStory;
 class ScriptedHub;
 
-/// A scripted clip's fade in (the play-anim action's blend, 0.2 s, docs/research/ai.md#dyn-animation).
+/// A scripted clip's fade in (the play-anim action's blend, 0.2 s, docs/research/ai-scripting.md#dyn-animation).
 inline constexpr float kScriptedClipFade = 0.2F;
 /// The record bits a scripted clip holds while it plays: **Coney stand-in** (`0x80000`, busy and gated), as the
 /// original's are not traced.
@@ -117,7 +117,7 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     using HandOver = std::function<void(const Brain& to)>;
     void setHandOver(HandOver handOver) { m_handOver = std::move(handOver); }
     /// Told the handle of player 1's human once it is made and bound (`Human_MakePlayer`'s step, whose last act is
-    /// the crew's follow command, docs/research/ai.md#warrior-follow). Empty: nothing is told.
+    /// the crew's follow command, docs/research/ai-gangs.md#warrior-follow). Empty: nothing is told.
     /// **Coney choice**: Coney makes the humans after the level's script has run, while the gangs' tactics were set as
     /// it ran; a tactic the script set on his gang after creating him is the newer order, so then nothing is told.
     using PlayerMade = std::function<void(double handle)>;
@@ -239,7 +239,7 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     [[nodiscard]] int gangCreate(int kind, std::string_view name) override;
     /// `GangDelete`: every member still in the gang is deleted at once (out of the world, its handle naming no one),
     /// then the gang is freed. **Coney's choice**: player 1, who has no other human to go to, is only taken out of
-    /// the gang. Research: docs/research/ai.md#gang-delete
+    /// the gang. Research: docs/research/ai-gangs.md#gang-delete
     /// @orig 0x0016a1e8 Gang_FreeWhenEmpty (unknown)
     void gangDelete(int gang) override;
     void gangAddMember(int gang, double human) override;

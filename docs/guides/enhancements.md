@@ -18,7 +18,7 @@ always show the faithful image.
 | Every texture is 4- or 8-bit palettised, up to 512²; only 741 of 42,211 have mipmaps; 20,559 of 20,582 distinct textures wrap | Mip generation is the cheapest big quality gain. Upscalers must handle tiling and palettes | [Graphics: texture formats](../research/graphics.md#texture-formats) |
 | Draw distance 115 m with fog from half of it; the PS2 shrinks it when the frame rate drops | The level's mood is in its fog. A longer view changes the look | [World: a frame](../research/world.md#a-frame) |
 | Screen effects: frame-feedback motion blur (looks), a 512 × 256 blur/glow raster, heat distortion, a 9 × 9 distortion grid | The faithful look already needs a render-to-texture post chain | [Graphics: screen effects](../research/graphics.md#screen-effects) |
-| The simulation reads the camera: spawners test `Camera_AnyPlayerCanSeePoint` and place humans outside half the field of view + 10°; scripts set the field of view | A wider FOV or aspect must never reach the simulation | [AI: off screen](../research/ai.md#spawner-unseen), [AI: out of sight](../research/ai.md#spawner-placement), [Cameras](../research/camera.md) |
+| The simulation reads the camera: spawners test `Camera_AnyPlayerCanSeePoint` and place humans outside half the field of view + 10°; scripts set the field of view | A wider FOV or aspect must never reach the simulation | [AI: off screen](../research/ai-gangs.md#spawner-unseen), [AI: out of sight](../research/ai-gangs.md#spawner-placement), [Cameras](../research/camera.md) |
 
 **Coney's renderer today** (`repo:src/platform/`): librw GL3 (OpenGL 3.3 core) through SDL3. The camera draws
 straight into the window's back buffer at the window's size. The 4:3 logical screen is fitted inside the window.

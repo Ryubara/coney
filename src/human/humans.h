@@ -43,6 +43,12 @@ class Humans {
     /// Takes the pad from `human` or gives it back (a player's brain set dead takes it, `BrDead`); nothing when it is
     /// not in the step.
     void setPadControlled(const Human& human, bool padControlled);
+    /// Holds `human` still, or lets it go (the Entity inspector's freeze, Coney's own debug tooling): a held human
+    /// keeps its record, state and place, and the step skips its animation, state update and actions; its brain still
+    /// runs and the others still see and hit it. Nothing when it is not in the step.
+    void setHeld(const Human& human, bool held);
+    /// Whether `human` is held (setHeld()); false for one not in the step.
+    [[nodiscard]] bool held(const Human& human) const;
     /// Sets who fights whom. Without one (the default) the humans added pad-controlled and the others fight each other,
     /// as the player and the AI humans of a scene without gangs do.
     void setOpposition(Opposition opposition) { m_opposition = std::move(opposition); }
@@ -84,6 +90,7 @@ class Humans {
     std::vector<Human*> m_humans;      // not owned
     std::vector<bool> m_padControlled; // per slot
     std::vector<bool> m_fightsTargets; // per slot: added pad-controlled
+    std::vector<bool> m_held;          // per slot: setHeld()
     Opposition m_opposition;
     std::vector<Combatant*> m_scratch; // gatherTargets()'s list
     BrainsHook m_brains;

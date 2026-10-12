@@ -14,7 +14,7 @@
 // leave (`GoalRiot`), and the bartenders and shopkeepers who stand their ground throwing bottles at enemies
 // (`GoalStationaryThrower`). Each is driven by its brain as the other goals are (ai/goal.h); what they ask of the
 // level beyond the brain comes in as functions, which the level's scripted brains give them.
-// Research: docs/research/ai.md#riot, docs/references/bindings/ai.md#goalriot,
+// Research: docs/research/ai-scripting.md#riot, docs/references/bindings/ai.md#goalriot,
 // docs/references/bindings/ai.md#goalstationarythrower
 
 namespace coney::ai {
@@ -87,16 +87,16 @@ struct RiotServices {
     std::function<bool(Brain&)> leave;
 };
 
-/// `GoalRiot`'s goal (type 84), as docs/research/ai.md#riot reads it. It starts in state 0 (roam), or about half the
-/// time straight in a free smash or loot. Each update it finds the nearest player; while he stands outside the gang's
-/// turf, or when he is within the order's radius at every kRiotDecisionUpdates-th brain update about half the time, the
-/// rioter decides: one draw picks a fight (gang soldiers only; started, it leaves), else an act (smash or loot), else
-/// it leaves. Otherwise it roams: toward the player, somewhere in the turf, or a wander 10 m ahead. Acts count down and
-/// then it leaves through the nearest exit flag in its gang's turf. **Coney stand-ins** where Coney lacks the part:
-/// the shouts, the taunt and the head glances are not made (no speech or glances yet); a roam destination is not
-/// dropped to the ground and "on an area" and "reached in a straight line" are both the planner's straight-line test;
-/// the move deadline's human `+0x333` term is 0; a running move is replaced, not retargeted; smash and loot are
-/// whatever the services find (the scripted story finds none yet); the actions-blocked check is not made.
+/// `GoalRiot`'s goal (type 84), as docs/research/ai-scripting.md#riot reads it. It starts in state 0 (roam), or about
+/// half the time straight in a free smash or loot. Each update it finds the nearest player; while he stands outside the
+/// gang's turf, or when he is within the order's radius at every kRiotDecisionUpdates-th brain update about half the
+/// time, the rioter decides: one draw picks a fight (gang soldiers only; started, it leaves), else an act (smash or
+/// loot), else it leaves. Otherwise it roams: toward the player, somewhere in the turf, or a wander 10 m ahead. Acts
+/// count down and then it leaves through the nearest exit flag in its gang's turf. **Coney stand-ins** where Coney
+/// lacks the part: the shouts, the taunt and the head glances are not made (no speech or glances yet); a roam
+/// destination is not dropped to the ground and "on an area" and "reached in a straight line" are both the planner's
+/// straight-line test; the move deadline's human `+0x333` term is 0; a running move is replaced, not retargeted; smash
+/// and loot are whatever the services find (the scripted story finds none yet); the actions-blocked check is not made.
 /// @orig 0x002d0e98 Goal_Riot (unknown)
 /// @orig 0x002d0f68 RiotGoal_Init (unknown)
 class RiotGoal final : public Goal {

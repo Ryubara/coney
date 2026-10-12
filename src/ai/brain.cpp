@@ -79,7 +79,7 @@ Brain::~Brain() = default;
 
 // The brain whose human stands at `position` (the announced attacker); null when none does. **Coney reading**: the
 // announcement carries the attacker's position, so the attacker is the peer standing there (the boss counters answer
-// him, docs/research/ai.md#boss-diego-vargas).
+// him, docs/research/ai-gangs.md#boss-diego-vargas).
 Brain* Brain::announcer(anim::Vec3 position) const {
     if (m_peers == nullptr) {
         return nullptr;
