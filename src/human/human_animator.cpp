@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "core/assert.h"
+#include "human/fighter_clips.h"
 #include "human/locomotion_gate.h"
 
 namespace coney::human {
@@ -338,6 +339,34 @@ void HumanAnimator::playChain(std::span<const std::uint32_t> clips, const charac
     }
     m_tasks.change(std::move(chain), fade);
     m_state = state;
+}
+
+void HumanAnimator::playTagEnd(bool stance) {
+    // Built from the end: the idle, or in the stance the fight idle after its transition, then 336 before them.
+    constexpr std::uint32_t kEndHeld = 0x800000;
+    constexpr std::uint32_t kStanceHeld = 0x80000;
+    constexpr float kEndFade = 0.05F;
+    std::unique_ptr<anim::AnimTask> chain;
+    if (const anim::AnimClip* idle = clip(kAnimFightIdle); stance && idle != nullptr) {
+        chain = std::make_unique<anim::LoopTask>(*idle, kAnimFightIdle, m_anims->rate(kAnimFightIdle), 0U);
+    } else {
+        chain = idleLoop();
+    }
+    std::uint32_t endHeld = kEndHeld;
+    if (stance) {
+        // The stance's 0x80000 is set at once, so 336 sets it too; 359 holds it after 336 lets it go.
+        endHeld |= kStanceHeld;
+        constexpr std::uint32_t kTransition = kAnimFightIdle + 1;
+        if (hasClip(kTransition)) {
+            chain =
+                clipThen(kTransition, std::move(chain), nullptr, HeldFlags{.held = kStanceHeld, .set = kStanceHeld});
+        }
+    }
+    if (hasClip(clips::kTaggingEnd)) {
+        chain = clipThen(clips::kTaggingEnd, std::move(chain), nullptr, HeldFlags{.held = endHeld, .set = endHeld});
+    }
+    m_tasks.change(std::move(chain), kEndFade);
+    m_state = AnimState::Attack;
 }
 
 void HumanAnimator::playCombatThenRun(std::span<const std::uint32_t> clips, float fade, HeldFlags held) {

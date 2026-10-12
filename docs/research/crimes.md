@@ -698,7 +698,8 @@ HUD, a dark charge bar, the Warrior not turned to the wall and still holding a p
 the W is complete. Causes and fixes, for the implementer.
 
 **Done** (2026-10-11): 1-5, and 8 but the turn with no intro clip, which Coney makes at once (**Coney's reading**: a
-missing clip plays for 0 s). **Not yet**: 6 (the mist), 7 (the wall tag) and 9 (the end clip).
+missing clip plays for 0 s); 9 for player 1 (2026-10-12, `HumanAnimator::playTagEnd`; an AI tagger's end still plays
+no 336). **Not yet**: 6 (the mist) and 7 (the wall tag).
 
 1. **Ends early** (`TagGame::update`, `repo:src/warriors/tag_game.cpp`): Coney finishes at
    `progress + 4 >= size − 1` (p ≥ count − 5), two points early, and its tracking picks the **nearest** point in
@@ -1088,12 +1089,14 @@ the spray clips stop at the end (back to the idle); an AI human given `HuTag` be
 an AI tagger he is done (message `0x13`, at the end of its fade or when hidden) ends his spray as `Tag_End` does:
 he gets event 14 with the tag and whether it is fully painted (**Coney's reading**: the human's handling of `0x13`
 is not traced). Each human's tag colour (`repo:src/human/tag_colour.h`, 2026-10-11) is the four bytes of `+0x640`:
-`Human_Init`'s `50 07 05 20` (a civilian woman's `ff ef ef ef`; **Coney's reading**: the brain kind before the
-`+0x19d` remap), which `HuTagColor` overwrites with t4, t3, t2, t1; the HUD draws bytes 0-2 and the mist will read
-the word with alpha in byte 0 ([above](#tag-look)). An unfinished end (no cans, a 301st cell) leaves the spot at
-p / count, not `Tag_GetProgress`'s 1.0 (**Coney's reading**: whether `0x41` carries that 1.0 before the end is not on
-the page). Not yet: the slip's rumble, the bonus event on a clean finish, the spray particles and the tag's
-drawing, hint `0x10`, and buttons other than the stick ending a session.
+`Human_Init`'s `50 07 05 20` (a civilian woman's `ff ef ef ef`; **Coney's reading**: the brain kind before the `+0x19d`
+remap), which `HuTagColor` overwrites with t4, t3, t2, t1; the HUD draws bytes 0-2 and the mist will read the word with
+alpha in byte 0 ([above](#tag-look)). An unfinished end (no cans, a 301st cell) leaves the spot at p / count, not
+`Tag_GetProgress`'s 1.0 (**Coney's reading**: whether `0x41` carries that 1.0 before the end is not on the page). A
+finished or abandoned spray of player 1 ends through 336, holding `0x800000`, then the idle, or 359 and the fight idle
+when he is locked onto a target (**Coney's reading** of the state word's `0x3`); a spray cut short plays no end clip.
+Not yet: the slip's rumble, the bonus event on a clean finish, the spray particles and the tag's drawing, hint `0x10`,
+and buttons other than the stick ending a session.
 
 **Car stereos** (`repo:src/world_objects/cars.h`, 2026-10-06): `CarSpawnRadio` puts a stereo in a parked car;
 breaking window 15 ([Cars](cars.md#windows)), or a type-12 pane within 2 m (`ObjectServices::freeCarStereos`), frees

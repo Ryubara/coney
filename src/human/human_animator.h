@@ -175,6 +175,13 @@ class HumanAnimator {
     /// (docs/research/tasks.md#held-flags), but 389, which holds its own `0x40000000` as at runtime.
     void playCombat(std::span<const std::uint32_t> clips, std::uint32_t loop, AnimState state, float fade = kCombatFade,
                     HeldFlags held = {});
+    /// A tag spray's end: 336 `ANIM_TAGGING_END` after a 0.05 s fade, then the idle (slot 0); in a fight stance
+    /// (`stance`) 336, the transition 359 and the fight idle 358 looping. 336 holds and sets `0x800000` (a hit gets no
+    /// reaction while it plays), and in a fight stance also `0x80000`, which 359 holds after it. 336's event `0x31` at
+    /// frame 7 drops the can its intro 334 made (docs/research/crimes.md#tag-look, "The end"). Ids the anim set lacks
+    /// are skipped.
+    /// @orig 0x002783b0 Tag_EndSprayClips (unknown)
+    void playTagEnd(bool stance);
     /// Combat, the victim's side of a paired move: plays `clips` in turn from `attacker`'s anim set at its rates (a
     /// grab's victim plays the grabber's reaction clips, authored with the grabber's), then its own `loop`, after a
     /// fade of `fade` (0: the two humans switch on the same update). `state` as for playCombat(). Ids `attacker`
