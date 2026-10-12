@@ -74,7 +74,7 @@ def issue(
 
 
 PR_BODY = (
-    "## Summary\n\nAdds a check.\n\n## Checklist\n\nDone:\n\n- [x] the check\n\nRemaining:\n\n"
+    "## Summary\n\nAdds a check.\n\n## Checklist\n\nDone:\n\n- [x] the check\n\n"
     "## Testing\n\n- 3 tests passed\n\n## Screenshots\n\nScreenshots: none (tooling)\n\n"
     "## AI use\n\n- **Commits written by:** a person\n- **Model:** n/a\n"
 )
@@ -92,6 +92,7 @@ def pull(
     auto_merge: bool = False,
     closes: tuple[int, ...] = (),
     updated: float = 1.0,
+    merged: str | None = None,
 ) -> dict[str, Any]:
     """A pull request as `gh pr list --json` returns it; the defaults describe a clean open one."""
     return {
@@ -102,7 +103,7 @@ def pull(
         "labels": [],
         "createdAt": stamp(updated),
         "updatedAt": stamp(updated),
-        "mergedAt": stamp(updated) if state == "MERGED" else None,
+        "mergedAt": (merged or stamp(updated)) if state == "MERGED" else None,
         "baseRefName": base,
         "headRefName": head or f"branch-{number}",
         "isDraft": draft,
