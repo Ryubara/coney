@@ -1784,6 +1784,12 @@ name = "Gang_GetLeader"
 subsystem = "GameModes"
 
 [[function]]
+address = 0x00165b70
+name = "Gang_SetSharedTarget"
+subsystem = "GameModes"
+size = 276
+
+[[function]]
 address = 0x00166220
 name = "Gang_StandingCount"
 subsystem = "GameModes"
@@ -1836,6 +1842,12 @@ address = 0x00168f58
 name = "Gang_AreFriends"
 subsystem = "GameModes"
 size = 136
+
+[[function]]
+address = 0x00168fe0
+name = "Gang_IsEnemyOf"
+subsystem = "GameModes"
+size = 124
 
 [[function]]
 address = 0x001696e0
@@ -2054,6 +2066,11 @@ subsystem = "GameModes"
 [[function]]
 address = 0x0016be30
 name = "Gang_CanUseWorldFlags"
+subsystem = "GameModes"
+
+[[function]]
+address = 0x0016c358
+name = "Gangs_SetTruce"
 subsystem = "GameModes"
 
 [[function]]
@@ -2524,10 +2541,28 @@ subsystem = "Graphics"
 size = 80
 
 [[function]]
+address = 0x0018f268
+name = "ThrowArc_Create"
+subsystem = "Graphics"
+size = 960
+
+[[function]]
+address = 0x0018fa68
+name = "ThrowArc_BuildStrip"
+subsystem = "Graphics"
+size = 1144
+
+[[function]]
 address = 0x0018fee0
 name = "Human_TraceThrowAim"
 subsystem = "Graphics"
 size = 1704
+
+[[function]]
+address = 0x00190588
+name = "ThrowArc_Render"
+subsystem = "Graphics"
+size = 352
 
 [[function]]
 address = 0x001906e8
@@ -6524,6 +6559,12 @@ name = "Brain_GetSectors"
 subsystem = "Human"
 
 [[function]]
+address = 0x00290138
+name = "Brain_IsThreat"
+subsystem = "Human"
+size = 244
+
+[[function]]
 address = 0x00290328
 name = "Brain_MakeGangsEnemies"
 subsystem = "Human"
@@ -6828,6 +6869,11 @@ address = 0x0029b848
 name = "Route_ClimbLeg"
 subsystem = "Human"
 size = 360
+
+[[function]]
+address = 0x0029b9b0
+name = "Route_TryClimbNear"
+subsystem = "Human"
 
 [[function]]
 address = 0x0029baa8
@@ -11985,6 +12031,12 @@ size = 664
 address = 0x004197a8
 name = "GameState_CheckGameOver"
 subsystem = "Warriors"
+
+[[function]]
+address = 0x00419da0
+name = "ThrowArcs_RenderAll"
+subsystem = "Warriors"
+size = 112
 
 [[function]]
 address = 0x00419fc8

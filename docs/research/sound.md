@@ -1394,7 +1394,7 @@ workers) that belong to this page, by address.
   frame, and a stalled frame (0.2-1.1 s on a busy machine in real-time play) emptied the old half-second ring, which
   cut streamed speech and ambient loops short.
 - `Mixer`: the game's voices as the device takes them: a 15-bit level per side and the SPU2 pitch word, mixed at
-  48 kHz; SDL3's device or, in test mode, offline ([Building](../guides/building.md#sound)).
+  48 kHz; SDL3's device or, in test mode, offline ([Running Coney](../guides/running.md#sound)).
 - `SoundPlayer`: what game code calls (play by name hash, 2D or at a position, stop, pause); `engine()` for banks,
   music, the load screen and scenes. Main gives it the engine when a disc is given.
 - `ObjectSounds` (`repo:src/audio/object_sounds.h`): the glass panes', doors' and barriers' sounds: a name hash as a

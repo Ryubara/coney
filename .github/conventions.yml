@@ -75,10 +75,11 @@ commits:
     areas:
       build: "CMake, presets, dependency pins and toolchain setup"
       ci: "GitHub Actions workflows and pre-commit configuration"
-      core: "engine core: memory, chunk system, task engine, utilities (src/core)"
+      core: "engine level only: main loop and timing, memory, chunks, the task engine's plumbing, shared utilities (src/core)"
+      gameplay: "the game's rules a player meets: combat, AI and crew behaviour, movement and physics responses, missions and scripts, objects and pickups, HUD and hint logic, camera behaviour"
       fileio: "disc and WAD access, file systems and streaming (src/fileio)"
-      graphics: "rendering through librw: models, textures, effects (src/graphics)"
-      audio: "sound, music and speech playback (src/audio)"
+      graphics: "rendering through librw: models, textures, effects, drawing the HUD (src/graphics)"
+      audio: "sound, music and speech playback; the rules that trigger a sound stay in their gameplay area (src/audio)"
       platform: "SDL3 and OS glue: windowing, input, timing (src/platform)"
       tools: "C++ asset tools and the coney_tools Python package"
       research: "the research pages under docs/research and the research database"
@@ -106,7 +107,10 @@ pull_requests:
   local_paths: false                             # no scratch/, ../../ or C:\ in the text (images are the exception)
   docs_none: {line: "Docs: none", when_changed: code, unless_changed: docs}   # names of the `paths` classes
   closing: {keyword: "Fixes", form: "Fixes #N", one_per_line: true, section: Summary}
-  remaining: {section: Checklist, label: "Remaining:", unchecked_cites: "#N"}
+  # Every task a pull request lists is finished: an unticked `- [ ]` item in the section is refused, and work the pull
+  # request does not finish is not listed (it lives in its own issue). A pull request merged before `since` kept the
+  # older `legacy_label` list, whose unchecked items each had to cite an issue as `#N`; the audit still holds those.
+  checklist: {section: Checklist, unchecked: refused, since: "2026-10-12", legacy_label: "Remaining:"}
   screenshots: {section: Screenshots, none: "Screenshots: none", reason: required, uploaded_only: true}
   ai_use:
     section: "AI use"
@@ -131,7 +135,7 @@ merge:
   delete_branch_on_merge: true
   linear_history: true
   up_to_date_required: false                     # no merge queue yet (how-we-work#merging)
-  required_checks: [title, commits, docs, body, build-ok, python-ok, format, mkdocs, markdownlint, actionlint]
+  required_checks: [title, docs, body, build-ok, python-ok, format, mkdocs, markdownlint, actionlint]
   who: [maintainer, coordinator]                 # never the agent that wrote the work
 
 issues:
@@ -243,6 +247,11 @@ hygiene:
     needs_info_days: 21
     in_progress_idle_days: 30
     pull_request_idle_days: 30
+    pr_pending_hours: 3                          # a required check queued or running this long: stuck in CI
+  # `coney-tools repo pr-health` calls a failing required check "lint" when it is one of these (the author fixes the
+  # text) and "code" otherwise (build-ok, python-ok and the jobs under them).
+  pr_health:
+    lint_checks: [title, docs, body, format, mkdocs, markdownlint, actionlint]
   # The audit's checks (`coney-tools repo audit`; docs/guides/repo-conventions.md#audit-checks). scope: where it runs
   # (files = the checkout, github = issues, pull requests, labels and settings, local = the workspace). severity: error
   # fails the audit (exit code 1), warn is only reported. fix: auto = a coney-tools command fixes it, skill = the
@@ -278,7 +287,7 @@ hygiene:
       scope: files
       severity: error
       fix: skill
-      keys: [pull_requests.template, pull_requests.sections, pull_requests.ai_use, pull_requests.docs_none, pull_requests.closing, pull_requests.remaining]
+      keys: [pull_requests.template, pull_requests.sections, pull_requests.ai_use, pull_requests.docs_none, pull_requests.closing, pull_requests.checklist]
       summary: "the pull request template differs from the conventions: headings, AI use lines, the Docs: none and Fixes lines"
     files.generated-blocks:
       scope: files
@@ -298,6 +307,12 @@ hygiene:
       fix: skill
       keys: [paths.large_file_kb]
       summary: "pre-commit's check-added-large-files limit differs from the conventions"
+    files.markdown-hook:
+      scope: files
+      severity: error
+      fix: skill
+      keys: [repo.tools]
+      summary: "pre-commit has no markdownlint-cli2 hook, so a long Markdown line is first caught by CI"
     issue.sections:
       scope: github
       severity: error
@@ -338,7 +353,7 @@ hygiene:
       scope: github
       severity: error
       fix: skill
-      keys: [pull_requests.remaining]
+      keys: [pull_requests.checklist]
       summary: "a closed issue keeps an unchecked item that names no follow-up issue"
     issue.stale-status:
       scope: github
@@ -357,7 +372,7 @@ hygiene:
       severity: warn
       fix: skill
       keys: [issues.provenance]
-      summary: "an issue that a pull request's Remaining list points at has no From: line"
+      summary: "an issue that an older pull request's Remaining list points at has no From: line"
     issue.triage-age:
       scope: github
       severity: warn
@@ -400,12 +415,18 @@ hygiene:
       fix: skill
       keys: [repo.wording]
       summary: "an open pull request says 'owner' for the person who directs the project (say 'user')"
+    pr.unfinished-items:
+      scope: github
+      severity: error
+      fix: skill
+      keys: [pull_requests.checklist]
+      summary: "a pull request merged since the Checklist rule began has an unticked Checklist item (an open one is pr.body)"
     pr.remaining-uncited:
       scope: github
       severity: error
       fix: skill
-      keys: [pull_requests.remaining]
-      summary: "a merged pull request left an unchecked Remaining item that names no issue"
+      keys: [pull_requests.checklist]
+      summary: "a pull request merged before the Checklist rule left an unchecked Remaining item that names no issue"
     pr.idle:
       scope: github
       severity: warn

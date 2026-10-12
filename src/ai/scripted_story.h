@@ -165,6 +165,9 @@ class ScriptedStory final : public script::StoryBindingHost {
     /// names. Attack and Confront are the AI host's (ScriptedBrains::tacticAttack(), tacticConfront()).
     void setTactic(const script::TacticCall& call) override;
 
+    /// Every command first clears the crew's shared target (Gang::setSharedTarget()); the unforced attack then sets it
+    /// to the AI human the chief is locked onto, unless of a friendly gang (**Coney stand-in**: the original's
+    /// fallbacks, game state `+0x280` and `+0x284`, are not filled in Coney; docs/research/ai-reimpl.md#unit-1).
     /// 0 follow gives the crew the follow tactic (ai/crew.h). **Coney stand-in** for the other commands' tactics:
     /// the crew's tactic is cleared and its AI members flushed, then 2 defend has them track the chief, 1 attack look
     /// for enemies to fight (`FollowAndAttack` is not traced), 3 hold stand where they are; 4, 5 and 6 start nothing

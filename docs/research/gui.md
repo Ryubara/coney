@@ -1227,7 +1227,7 @@ whose size equals the record's `size`, and records 0, 1, 3, 7, 8, 10, 13 and 51 
   order); batches are queued by their owner, where the original collects them by rendering its overlay world; only
   format 0 exists.
 - `coney --disc <disc> --view-sheet <sheet>` lays a sheet's rectangles out in a grid and draws them as sprites
-  through a batch and the 2D pass ([Building and testing](../guides/building.md#run-coney)): `menu_system` (6
+  through a batch and the 2D pass ([Running Coney](../guides/running.md#run-coney)): `menu_system` (6
   rectangles over a 512 × 256 texture) and `big_font` (262 glyphs) show correctly on the NTSC-U disc.
 
 - **UI strings** (`src/gui/global_strings.h`, `src/scripting/config_strings.h`), loaded [as the game
@@ -1309,7 +1309,7 @@ runs about 42,600 Lua instructions and skips 1,796 binding calls.
 - **The `METRICS1` file** is not read: no code uses it ([above](#the-metrics1-file)), and the fonts' metrics come from
   their sheets' rectangles.
 - `coney --disc <disc> --view-text <font> <text or @id>` lays a text out and draws it through a batch per font and
-  the 2D pass ([Building and testing](../guides/building.md#viewing-text)). On the NTSC-U disc, `@0x1f` shows the
+  the 2D pass ([Running Coney](../guides/running.md#viewing-text)). On the NTSC-U disc, `@0x1f` shows the
   usage line as cross "ok" and triangle "back", and a test text shows `big_font` headings, colours, sizes, alignment
   and every button picture correctly.
 

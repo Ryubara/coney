@@ -138,7 +138,8 @@ description that leaves either empty (`coney-tools repo check-body`). All of wha
 - Docs: a change under `src/`, `python/src/` needs a change under `docs/`, `research/` or the line `Docs: none` in the
   description.
 - Closing: a line `Fixes #N` in Summary for each issue the pull request finishes, one per line; merging closes it.
-- Checklist: each unchecked item under `Remaining:` cites an issue or pull request as `#N`.
+- Checklist: every item is ticked (`- [x]`): a pull request lists only the work it finishes, and a task it does not
+  finish is left out and lives in its own issue.
 - Screenshots: an uploaded image (a path on your machine is refused) or a line `Screenshots: none (<reason>)` that gives
   a reason.
 - AI use: after `Commits written by:` one of `a person`, `an AI`, `an AI, edited by a person`, `a person, with AI help`;
@@ -170,7 +171,7 @@ What the two sections hold:
   text, only pictures of the running game.
 - **Coney.** `coney --screenshot PATH` saves the last frame of a test-mode run as a PNG. To line a frame up with the
   original's, pin the view with `--camera`, `--freeze-world` and `--render-size 640x448`
-  ([Matched views](building.md#matched-views)). `--screenshot` needs a window, so the run is not `--headless`. Take
+  ([Matched views](running.md#matched-views)). `--screenshot` needs a window, so the run is not `--headless`. Take
   the "before" shot from a build of `main` (or the branch point) and the "after" shot from the branch, with the same
   options.
 - **The original.** `coney-tools pcsx2 screenshot --copy NAME --out PNG` writes a PCSX2 copy's picture (Windows only;
@@ -218,6 +219,11 @@ pytest and mypy when `python/` changed, and `repo check`; it needs a `build/dev`
 (`bugprone-unchecked-optional-access`). [The command's page](coney-tools.md#check) has the options. It does not
 replace the list below, which is the whole gate, and it leaves to CI the warnings only GCC emits, macOS, the
 sanitizers and the full clang-tidy pass; a change to the build setup is checked on its changed files only.
+
+The command runs on Windows, Linux and macOS. Nobody checks it by hand on all three, so CI does: the `python` workflow
+runs its `repo` and `pre-commit` steps on every operating system it tests (`--base HEAD^1`, the branch a pull request's
+merge commit joins), and a step that works on one system and not another fails there. A person on Linux or macOS who
+finds a difference fixes it forward.
 
 The whole gate:
 
