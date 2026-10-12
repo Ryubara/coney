@@ -20,6 +20,7 @@ PATH_KEYS: tuple[str, ...] = (
     "jdk_home",
     "ghidra_mcp_repo",
     "pcsx2_mcp_dir",
+    "ffmpeg_dir",
 )
 
 LOCAL_FILE = "coney.local.toml"

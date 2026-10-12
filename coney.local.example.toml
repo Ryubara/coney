@@ -10,3 +10,4 @@ pcsx2_claims_dir = ""                                   # where `pcsx2 claim` ke
 jdk_home        = ""                                    # JDK 21 home; required for Ghidra
 ghidra_mcp_repo = ""                                    # a built ghidra-mcp checkout (target/GhidraMCPHeadless.jar); read-only
 pcsx2_mcp_dir   = ""                                    # PCSX2-MCP's Node.js server (dist/index.js), or its release folder
+ffmpeg_dir      = ""                                    # folder with ffmpeg and ffprobe, for in-game clips (coney-tools clips); default: PATH

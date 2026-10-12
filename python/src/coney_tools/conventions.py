@@ -484,6 +484,20 @@ class Hygiene:
 
 
 @dataclass(frozen=True)
+class Clips:
+    """The in-game video clips' rules (`coney-tools clips`, `pcsx2 clip`)."""
+
+    #: The folder name the clips of a task live in: `<scratch>/<task>/<folder>/`.
+    folder: str
+    #: The longest clip, in seconds (also Coney's `--record-seconds` cap).
+    max_seconds: int
+    #: A clip bigger than this many megabytes is reported.
+    warn_mb: int
+    #: `clips clean` deletes clips older than this many hours.
+    keep_hours: int
+
+
+@dataclass(frozen=True)
 class Workspace:
     """The local workspace rules (`workspace clean|disk`); hosted checks ignore them."""
 
@@ -493,6 +507,7 @@ class Workspace:
     #: A worktree holding a file of this name is never cleaned.
     busy_marker: str
     remove_worktree_when_merged: bool
+    clips: Clips
 
 
 @dataclass(frozen=True)
@@ -1098,8 +1113,10 @@ def _read_hygiene(data: object, where: str) -> Hygiene:
 
 def _read_workspace(data: object, where: str) -> Workspace:
     """The `workspace` section (local only)."""
-    keys = ("worktrees", "scratch", "disk_min_free_gb", "busy_marker", "remove_worktree_when_merged")
+    keys = ("worktrees", "scratch", "disk_min_free_gb", "busy_marker", "remove_worktree_when_merged", "clips")
     table = _table(data, where, keys)
+    clips_where = _at(where, "clips")
+    clips = _table(table["clips"], clips_where, ("folder", "max_seconds", "warn_mb", "keep_hours"))
     return Workspace(
         worktrees=_text(table["worktrees"], _at(where, "worktrees")),
         scratch=_text(table["scratch"], _at(where, "scratch")),
@@ -1107,6 +1124,12 @@ def _read_workspace(data: object, where: str) -> Workspace:
         busy_marker=_text(table["busy_marker"], _at(where, "busy_marker")),
         remove_worktree_when_merged=_flag(
             table["remove_worktree_when_merged"], _at(where, "remove_worktree_when_merged")
+        ),
+        clips=Clips(
+            folder=_text(clips["folder"], _at(clips_where, "folder")),
+            max_seconds=_count(clips["max_seconds"], _at(clips_where, "max_seconds")),
+            warn_mb=_count(clips["warn_mb"], _at(clips_where, "warn_mb")),
+            keep_hours=_count(clips["keep_hours"], _at(clips_where, "keep_hours")),
         ),
     )
 
