@@ -107,8 +107,9 @@ holding `WARRIORS.DIR` and `WARRIORS.WAD`, or an ISO image.
 build/dev/src/platform/coney --disc /path/to/warriors.iso
 ```
 
-`coney --help` lists every option. [Building and testing](docs/guides/building.md) covers the other presets
-(`release`, `ci`, `asan`), switching compilers, the Python tools and everything the run options do.
+`coney --help` lists every option, and [Running Coney](docs/guides/running.md) says what they do.
+[Building and testing](docs/guides/building.md) covers the other presets (`release`, `ci`, `asan`), switching
+compilers and the Python tools.
 
 ## Documentation
 

@@ -14,7 +14,7 @@ namespace coney::platform {
 
 /// A game mode that shows every texture of some texture dictionaries, laid out in a grid that fills the window
 /// (graphics::layoutGrid()) and drawn with their alpha. It backs `coney --view-txd`
-/// (docs/guides/building.md#run-coney). It stays until the window closes or the frame limit is hit; it reads no clock,
+/// (docs/guides/running.md#run-coney). It stays until the window closes or the frame limit is hit; it reads no clock,
 /// so every frame of a run is the same.
 ///
 /// Coney's own tool; nothing in the original corresponds.

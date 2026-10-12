@@ -35,7 +35,7 @@ struct StartPlace {
 };
 
 /// What `--camera` asks for: player 1's view pinned to one place and orientation for the whole run, whatever camera
-/// the game would show, so a frame can be matched with one of the original's (docs/guides/building.md#matched-views).
+/// the game would show, so a frame can be matched with one of the original's (docs/guides/running.md#matched-views).
 /// The values are the base camera object's (docs/research/camera.md#the-base-camera-object): Coney's own test aid.
 struct CameraPin {
     float x = 0.0F; ///< The eye, game axes (metres, z up): the camera's +0x10.
@@ -61,7 +61,7 @@ inline constexpr int kMinRenderSide = 16;
 inline constexpr int kMaxRenderSide = 8192;
 
 /// What `--rumble` asks for: the Rumble set-up the match starts with, written over what the Rumble menu chose when its
-/// arena is confirmed (docs/guides/building.md#rumble-from-the-command-line). Coney's own developer aid: a fresh
+/// arena is confirmed (docs/guides/running.md#rumble-from-the-command-line). Coney's own developer aid: a fresh
 /// profile's menu offers only 1 ON 1 and WAR PARTY.
 struct RumbleLaunch {
     std::uint16_t gameType = 0; ///< The mode's `RM_*` number (RumbleSetup::kGameType).
@@ -147,7 +147,7 @@ struct Options {
     std::optional<CameraPin> cameraPin;
     /// `--trace`: write the player's and the follow camera's state after every step of `--play-level` to this file,
     /// one CSV line per step (human::traceLine()), so feel comparisons can be repeated
-    /// (docs/guides/building.md#tracing). Requires playLevel.
+    /// (docs/guides/running.md#tracing). Requires playLevel.
     std::optional<std::string> traceFile;
     /// `--trace-humans`: write one CSV row per human per step (ai::FightTracer) of a played level or a Rumble match to
     /// this file, to compare a gang fight with the original's (docs/guides/building.md#tracing). Requires playLevel
@@ -200,7 +200,7 @@ struct Options {
     std::optional<std::string> namesFile;
     /// `--fps-cap N`: draw at most N frames a second, 0 for no cap (the default; vsync still limits the rate while
     /// it is on). 30 is the original's rhythm: one step and one render per frame, nothing blended
-    /// (docs/guides/building.md#frame-rate). Not in test mode.
+    /// (docs/guides/running.md#frame-rate). Not in test mode.
     std::optional<int> fpsCap;
     /// `--rumble TYPE [--arena N] [--gang-size N]`: start a Rumble match of that mode as QUICK RUMBLE does, whatever
     /// the menu chose. Requires discPath; cannot be combined with `--load`, the viewers, `--play-level` or `--sandbox`.
@@ -215,7 +215,7 @@ struct Options {
     /// the fixed step still runs. Requires playLevel.
     bool freezeWorld = false;
     /// `--pad-pipe`: take player 1's pad from standard input, one line per frame, after writing what the frame before
-    /// left on screen to standard output (docs/guides/building.md#pad-pipe), so a driver program can play the game
+    /// left on screen to standard output (docs/guides/running.md#pad-pipe), so a driver program can play the game
     /// by what it sees. Test mode; cannot be combined with `--input-script`.
     bool padPipe = false;
     /// `--language`: the language of the UI strings (`en`, `es`, `fr`, `it`, `de`); English by default.

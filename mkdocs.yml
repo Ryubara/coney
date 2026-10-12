@@ -245,6 +245,7 @@ nav:
       - Running agents: guides/agents.md
       - Issues: guides/issues.md
       - Building and testing: guides/building.md
+      - Running Coney: guides/running.md
       - Testing: guides/testing.md
       - The sandbox: guides/sandbox.md
       - Local workspace: guides/workspace.md

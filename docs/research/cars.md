@@ -606,7 +606,7 @@ reversal (`Colour_LerpRatio` reverses the bytes on unpacking and does not revers
 undamaged atomics. The level file's `0x47` reader (`readPreinstanceObjectChunk`, `src/platform/level_file.h`) reads a
 clump of several atomics as a `LevelClumpObject` (`world::extractClumpModels`), and the reference renderer draws the
 first 26 atomics of each car, each at its frame and given the dictionary's first texture, for
-[Cars](../references/cars.md) ([Building](../guides/building.md#reference-images)).
+[Cars](../references/cars.md) ([Running Coney](../guides/running.md#reference-images)).
 
 **Parked cars in play** (2026-10-06), written from this page and [Crimes](crimes.md#stereo):
 

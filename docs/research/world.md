@@ -597,7 +597,7 @@ a `.lev`; `SetFogDistance` in 14 levels. The colour values themselves are inside
 ## Coney's implementation
 
 Reading, decoding, streaming and drawing exist (2026-10-04): `coney --view-world <level>` streams a level's two worlds
-around a free-flying camera ([Building](../guides/building.md#the-world-viewer)). The level file, the level world,
+around a free-flying camera ([Running Coney](../guides/running.md#the-world-viewer)). The level file, the level world,
 objects, PVS and occluders do not.
 
 **Reading and decoding** (2026-10-04, unchanged):

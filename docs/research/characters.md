@@ -2765,9 +2765,9 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
   (`src/platform/play_lighting.*`) every human is drawn in the two passes of
   [Drawing a human](graphics.md#human-draw): the second pass blends the blood texture
   (`src/graphics/human_blood.*`, the three `charblood` textures of `global.pak`) by its alpha below 90% health.
-- `--view-character [NAME] [--anim CLIP]` ([Building](../guides/building.md#the-character-viewer)) shows a skinned
+- `--view-character [NAME] [--anim CLIP]` ([Running Coney](../guides/running.md#the-character-viewer)) shows a skinned
   character playing a clip in place on the fixed 30 Hz step, with a pad-driven orbit camera.
-- `--render-references DIR` ([Building](../guides/building.md#reference-images)) writes a 256x256
+- `--render-references DIR` ([Running Coney](../guides/running.md#reference-images)) writes a 256x256
   transparent PNG of every character, posed at its default clip's first frame (and of every object,
   [Level loading](level-loading.md#the-object-list)), from a fixed three-quarter camera
   (`src/characters/reference_render.*` frames and reduces; `src/platform/reference_renderer.*` draws offscreen).
@@ -2863,7 +2863,7 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
   renderer that draws between steps.
 - The debug menu's tunables ([Debug menu](../guides/debug-menu.md#tunables)) expose the body, sprint, jump, climb
   and lean values above, each defaulting to the original's.
-- `--play-level NAME` ([Building](../guides/building.md#playing-a-level)) plays it: `src/platform/play_level_mode.*`
+- `--play-level NAME` ([Running Coney](../guides/running.md#playing-a-level)) plays it: `src/platform/play_level_mode.*`
   steps the player, streams the level and runs the visibility pass in its update, and draws from the snapshots of the
   last two steps, blended by the frame's alpha, in its render
   ([Update and render](../guides/conventions.md#update-and-render)). A disc test (`[frame_rate]`) plays both scripts
