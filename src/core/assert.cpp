@@ -16,7 +16,7 @@ void assertFailed(const char* expr, const char* file, int line) {
     std::fflush(stderr);
     // Then the run log's last 30 s, into the log file, for the bug report (docs/guides/run-log.md#ring). It may
     // allocate, so it comes after the line above, which then is out whatever happens here.
-    logging::detail::dumpOnFailure("assertion failed");
+    logging::dumpOnFailure("assertion failed");
     std::abort();
 }
 

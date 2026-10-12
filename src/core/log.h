@@ -79,12 +79,8 @@ std::size_t dump(std::string_view reason);
 /// tests and for the platform's teardown.
 void reset();
 
-namespace detail {
-
 /// The failure path's dump (CONEY_ASSERT, the platform's crash handler): dump(`reason`) the first time, nothing
 /// after, so an abort after a failed assertion does not dump twice. Takes no lock it could wait on.
 void dumpOnFailure(const char* reason) noexcept;
-
-} // namespace detail
 
 } // namespace coney::logging

@@ -33,7 +33,10 @@ struct FreshLogger {
 
 // A record at `step` with `text`, the rest left as a record starts.
 logging::Record recordAt(std::uint64_t step, std::string text = "x") {
-    return logging::Record{.step = step, .text = std::move(text)};
+    logging::Record record;
+    record.step = step;
+    record.text = std::move(text);
+    return record;
 }
 
 } // namespace
@@ -50,8 +53,12 @@ TEST_CASE("a stamp gives the step, the play time it stands for, the level and th
 }
 
 TEST_CASE("a line is the stamp, the category and the text", "[log]") {
-    const logging::Record record{
-        .step = 90, .checkpoint = 3, .category = Category::Combat, .level = Level::Info, .text = "damage: 12"};
+    const logging::Record record{.step = 90,
+                                 .checkpoint = 3,
+                                 .category = Category::Combat,
+                                 .level = Level::Info,
+                                 .privacy = logging::Privacy::Public,
+                                 .text = "damage: 12"};
     CHECK(logging::formatLine(record) == "[step 90 | 00:03.0 | info cp3] combat: damage: 12");
 }
 
@@ -196,10 +203,10 @@ TEST_CASE("a failure dump writes the ring through the dump sink once", "[log]") 
     std::vector<std::string> dumped;
     logging::setDumpSink([&dumped](std::string_view line) { dumped.emplace_back(line); });
     logging::info(Category::World, "checkpoint: start 2");
-    logging::detail::dumpOnFailure("assertion failed");
+    logging::dumpOnFailure("assertion failed");
     REQUIRE(dumped.size() == 3);
     CHECK(dumped[0].find("assertion failed: the last 1 events") != std::string::npos);
-    logging::detail::dumpOnFailure("crash");
+    logging::dumpOnFailure("crash");
     CHECK(dumped.size() == 3); // a crash after the assert does not dump again
 }
 

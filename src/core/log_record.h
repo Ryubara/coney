@@ -57,7 +57,7 @@ struct Record {
     Category category = Category::Engine;
     Level level = Level::Info;
     Privacy privacy = Privacy::Public;
-    std::string text; ///< One line, no newline.
+    std::string text{}; ///< One line, no newline.
 };
 
 /// The name of `category` as the log writes it and `--log-verbose` takes it (`player`, `ai`, ...).

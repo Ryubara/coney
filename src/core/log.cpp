@@ -244,8 +244,6 @@ void reset() {
     logger.failureDumped = false;
 }
 
-namespace detail {
-
 void dumpOnFailure(const char* reason) noexcept {
     Logger& logger = theLogger();
     if (logger.failureDumped.exchange(true)) {
@@ -259,7 +257,5 @@ void dumpOnFailure(const char* reason) noexcept {
         logger.mutex.unlock();
     }
 }
-
-} // namespace detail
 
 } // namespace coney::logging

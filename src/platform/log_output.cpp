@@ -39,7 +39,7 @@ void writeLine(std::FILE* file, std::string_view line) {
 void onCrashSignal(int signal) {
     // NOLINTBEGIN(bugprone-signal-handler,cert-sig30-c): the dump allocates; see above.
     std::signal(signal, SIG_DFL);
-    logging::detail::dumpOnFailure(signal == SIGABRT ? "abort" : "crash");
+    logging::dumpOnFailure(signal == SIGABRT ? "abort" : "crash");
     if (std::FILE* file = crashFile().load(); file != nullptr) {
         std::fflush(file);
     }
