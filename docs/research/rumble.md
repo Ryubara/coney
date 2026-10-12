@@ -425,9 +425,11 @@ with a 1,500 ms stand-in for any announcer line whose length it does not know.
 ## Gang battle trace {#gang-battle-trace}
 
 A recording of the biggest Rumble battle with every human traced on every update, to compare gang combat with Coney's by
-behaviour statistics (issue #273); how a gang fights is on the [Gang fights](gang-fights.md) page. The columns are the
+behaviour statistics (issue #273); the rules it checks, with code evidence, are on [Gang fights](gang-fights.md), and
+which column checks which rule is [What a trace records](gang-fights.md#trace). The columns are the
 `humans` field set of `repo:research/traces/fields.toml` (one row per human per update; [Every
-human](../guides/research-workflow.md#recording-a-trace)); Coney's all-humans `--trace` writes the same columns. The
+human](../guides/research-workflow.md#recording-a-trace)); Coney's `--trace-humans` writes the same columns
+([Tracing](../guides/building.md#tracing)), and `coney-tools trace fight-report` compares the two. The
 scenario is `repo:research/traces/scenarios/gang_battle.toml`; the traces are measurements of the game and stay in the
 analyst's scratch folder.
 
@@ -486,7 +488,8 @@ on to `RumbleOver` (every brain off: every goal stack empty from then on), per m
   and match), 0.71-1.06 m for 80 % of them (215-324 attacks a side and match).
 - **How many fight one enemy.** At most **4** of a side target one enemy at once (in every match), usually 1 (64-80
   % of the cases), 2 in 16-32 %. Every fighter's attack slots allowed (`slots_max`) are **4**; the slots taken on a
-  fighter reach 4, its active attackers (`active`) at most 2. An enemy list holds 8 or 9 handles most of the fight.
+  fighter reach 4, its active attackers (`active`) at most 2. Both are the two limits read in the code
+  ([How many hit one man at once](gang-fights.md#limits)). An enemy list holds 8 or 9 handles most of the fight.
 - **Out of the fight.** A knocked-out fighter keeps health **1** and lies in `ANIM_DEAD_IDLE` (349); a wounded one has
   state `0x10000` and crawls (`ANIM_WOUNDED_IDLE`, 200, then `ANIM_WOUNDED_HIT_REACT_DIE`, 204). Both count as out
   for the brawl. A knocked-out fighter is **deleted 461 updates** (15.4 s) after it lies down (four of four checked in
