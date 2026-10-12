@@ -5602,8 +5602,9 @@ the objects' search rather than among them by distance; the two-player swap is n
 **Coney choices for moving.** The inside test counts an edge going down in y as +1 (the sign under which the route
 nodes lie in their polygons; the clockwise polygons then contain nothing). A polygon's A record takes the next nodes
 in order (the counts add up to the C records in every file; `+0x08` does not always hold the running index).
-Coney caps the open list at 128 nodes and adds the use term (40 × uses − 8, also at 0 uses) on the neighbour; both
-differ from the original ([Pathing: status and fixes](ai-pathing.md#pathing-fixes), items 1 and 2). `0x0051059c` is 1 and
+The search holds 1000 nodes open and 3000 closed and fails a route of more than 128 nodes, as the original does. It
+adds the use term (40 × uses − 8, also at 0 uses) on the neighbour, which differs from the original
+([Pathing: status and fixes](ai-pathing.md#pathing-fixes), item 2). `0x0051059c` is 1 and
 `0x005105a0` 0. An end off every polygon counts on the nearest within 1 m and takes its nearest node; the shortcut
 takes any edge that links back. The walkable line crosses every edge of the two areas rather than the slab lists',
 finds the start's area from the point, and has no hazard spheres (Coney has no fire to add them). A point's area

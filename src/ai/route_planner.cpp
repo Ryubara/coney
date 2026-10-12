@@ -40,6 +40,11 @@ constexpr std::size_t kShortcutReach = 4;
 // A g cost no node has yet.
 constexpr std::uint32_t kUnreached = 0x10000;
 
+// A search's route, or nothing whatever the reason it failed.
+std::optional<RouteSearch> optionalOf(std::expected<RouteSearch, SearchFailure> found) {
+    return found ? std::optional<RouteSearch>(std::move(*found)) : std::nullopt;
+}
+
 // Adds two costs, saturating at kCostMax.
 std::uint32_t addCost(std::uint32_t a, std::uint32_t b) { return std::min(kCostMax, a + b); }
 
@@ -162,11 +167,11 @@ std::uint32_t RoutePlanner::heuristic(std::uint32_t a, std::uint32_t b) const {
                     static_cast<std::uint32_t>(anim::distance(nodes[a].position, nodes[b].position) * kCostPerMetre));
 }
 
-std::optional<RouteSearch> RoutePlanner::search(std::uint32_t start, std::uint32_t goal, std::uint16_t mask,
+std::expected<RouteSearch, SearchFailure> RoutePlanner::search(std::uint32_t start, std::uint32_t goal, std::uint16_t mask,
                                                 std::uint32_t cap) const {
     const std::size_t count = m_map->nodes().size();
     if (start >= count || goal >= count) {
-        return std::nullopt;
+        return std::unexpected(SearchFailure::NoWay);
     }
     std::vector<std::uint32_t> g(count, kUnreached);
     std::vector<std::uint32_t> parent(count, 0);
@@ -177,39 +182,44 @@ std::optional<RouteSearch> RoutePlanner::search(std::uint32_t start, std::uint32
     g[goal] = 0;
     parent[goal] = goal;
     open.emplace(heuristic(goal, start), goal);
-    std::size_t openCount = 1; // nodes on the open list, each once however often it was pushed
+    std::size_t openCount = 1;   // nodes on the open heap, each once however often it was pushed
+    std::size_t closedCount = 0; // nodes on the closed list
     while (!open.empty()) {
         const auto [f, node] = open.top();
         open.pop();
         if (closed[node]) {
             continue;
         }
-        if (f > cap) {
-            return std::nullopt;
+        // Closed before the start test: a full list fails even on the start's node.
+        if (++closedCount > kMaxClosedNodes) {
+            return std::unexpected(SearchFailure::ClosedFull);
         }
+        closed[node] = true;
+        --openCount;
         if (node == start) {
-            // The parent links run from the start to the goal: walking order.
+            // The parent links run from the start to the goal: walking order. A route holds at most kMaxRouteNodes.
             RouteSearch found{.nodes = {start}, .cost = g[start]};
             for (std::uint32_t at = start; at != goal; at = parent[at]) {
+                if (found.nodes.size() == kMaxRouteNodes) {
+                    return std::unexpected(SearchFailure::TooLong);
+                }
                 found.nodes.push_back(parent[at]);
             }
             return found;
         }
-        closed[node] = true;
-        --openCount;
         for (const world::PathEdge& edge : m_map->edgesOf(node)) {
             if ((edge.flags & mask) == 0 || closed[edge.to]) {
                 continue;
             }
-            const std::uint32_t cost = edgeCost(node, edge, mask);
-            if (cost >= kEdgeCostCap) {
+            // The cap is on the running cost, so a long route of cheap steps can reach it too.
+            const std::uint32_t reached = addCost(g[node], edgeCost(node, edge, mask));
+            if (reached >= cap) {
                 continue;
             }
-            const std::uint32_t reached = addCost(g[node], cost);
             if (reached < g[edge.to]) {
-                // A node new to the open list must fit in it.
-                if (g[edge.to] == kUnreached && ++openCount > kMaxSearchNodes) {
-                    return std::nullopt;
+                // A node new to the open heap must fit in it.
+                if (g[edge.to] == kUnreached && ++openCount > kMaxOpenNodes) {
+                    return std::unexpected(SearchFailure::OpenFull);
                 }
                 g[edge.to] = reached;
                 parent[edge.to] = node;
@@ -217,17 +227,17 @@ std::optional<RouteSearch> RoutePlanner::search(std::uint32_t start, std::uint32
             }
         }
     }
-    return std::nullopt;
+    return std::unexpected(SearchFailure::NoWay);
 }
 
 std::optional<RouteSearch> RoutePlanner::searchWithRetries(std::uint32_t start, std::uint32_t goal,
                                                            std::uint16_t mask) const {
     std::uint16_t used = mask;
-    std::optional<RouteSearch> found = search(start, goal, used);
+    std::optional<RouteSearch> found = optionalOf(search(start, goal, used));
     // Retried only when the mask (without 0x100) is not every kind already.
     if (!found && (mask & 0xffU) != 0xffU) {
         used = static_cast<std::uint16_t>(mask | edge_flag::kRetry);
-        found = search(start, goal, used);
+        found = optionalOf(search(start, goal, used));
     }
     if (!found || !m_settings.extraCosts || (used & edge_flag::kNoExtra) != 0) {
         return found;
@@ -241,7 +251,7 @@ std::optional<RouteSearch> RoutePlanner::searchWithRetries(std::uint32_t start, 
     }
     if (jumps) {
         std::optional<RouteSearch> detour =
-            search(start, goal, static_cast<std::uint16_t>(used & ~edge_flag::kJump), found->cost);
+            optionalOf(search(start, goal, static_cast<std::uint16_t>(used & ~edge_flag::kJump), found->cost));
         if (detour && detour->cost < found->cost) {
             return detour;
         }
