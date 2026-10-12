@@ -103,7 +103,7 @@ ten bone shapes are the strike shapes; their bones, sizes and events are on [Com
 | Offset | Meaning |
 | --- | --- |
 | `+0x00` / `+0x10` | AABB min / max (w = 1) |
-| `+0x20` | index in the body vector, −1 when none (`PhysicsNode_Init` `0x00341158`) |
+| `+0x20` | index in the body vector, −1 when none (`PhysicsNode_Init` `0x00341158`; `IPhysics_RemoveBody` does not reset it, [Unit 7](#u7-addremove)) |
 | `+0x24` / `+0x28` | previous / next in the x-sorted list |
 | `+0x30` | first shape (a chain through shape `+0x00`) |
 | `+0x34` | owner (a task object); free when 0 |
@@ -185,7 +185,9 @@ The segment is what strikes meet ([Combat](combat.md#moving-strikes)); the capsu
 `PhysicsBody_Update` (`0x00341c10`), when the body is dirty or flag `0x800` is set: pose every shape (shape vtable
 `+0x28`), recompute the AABB from the shapes (`0x00341638`, `0x003417c0`), re-sort (`0x00340628`), clear the dirty
 bit; with `0x801` set, it also sweeps the first shape from where it was to where it is against the other bodies and
-resolves the contacts, so a body moved by its owner still meets what is in the way. The camera builds bodies on its
+resolves the contacts, so a body moved by its owner still meets what is in the way. The candidates come from the
+**new** AABB grown forward by the move, not from a box around the whole move, so a body passed through can be
+missed ([Unit 7](#u7-update)). The camera builds bodies on its
 stack for its sphere tests (`0x00341970`).
 
 ### Shapes {#shapes}
@@ -272,7 +274,8 @@ A body can ignore particular owners: sixty 12-byte slots at IPhysics `+0xf4e0` (
 ignored owner, `+0x08` next), chained from body `+0x38`. `Ignore` (vtable `+0x40`, `0x00341b20`) takes a free slot
 (`0x00340890`), `IsIgnoring` (`+0x30`, `0x00341ae8`) walks the chain, `StopIgnoring` (`+0x38`, `0x00341b80`) frees
 one slot or, given null, all. When a body is removed, every slot naming its owner is freed (`0x0033cd70`). The human
-body adds two rules (`0x003421d0`, `0x00342230`, `0x00342260`): its held object is always ignored, and a null owner
+body adds two rules (`0x003421d0`, `0x00342230`, `0x00342260`): its owner's grab partner (`Human_GetGrabOther`
+`0x002269d8`, the other human of a grab) is always ignored, and a null owner
 means the level itself (`+0xd4`). With all sixty slots in use, `Ignore` does nothing. Confirmed (code).
 
 ### Contacts {#contacts}
@@ -410,25 +413,27 @@ Every query first gathers candidate bodies from the x-sorted list with a box. Co
 (`IPhysics_QueryBox(phys, out, box, startBody, ignoredOwner, typeMask, flagMask)`) and `0x00340120` (the same with
 more filters):
 
-1. With a start body (the querying body itself), walk **backwards** from it while `box.min.x − node.min.x` is at
-   most the widest body (IPhysics `+0x14`): further back, nothing can reach the box. Then walk **forwards** from it.
-   Without one, walk forwards from the head.
+1. With a start body (the querying body itself, which is a candidate too), walk **backwards** from it, then
+   **forwards** from it. Without one, walk forwards from the head. The bound (IPhysics `+0x14`, the widest body)
+   stops the backward walk only at a node that would reach the box, so with a current bound the walk runs to the
+   head; going backwards there is no `min.x ≤ box.max.x` test ([Unit 7](#u7-querybox)).
 2. Forwards, stop at the first node with `min.x > box.max.x`.
 3. Keep a body when its `max.x ≥ box.min.x` and it overlaps the box in y and z, its owner is not the ignored one,
    its type mask (`+0x44`) meets `typeMask` and its flags (`+0x40`) meet `flagMask` (0: any). The filtered form also
    drops bodies with excluded flags, owners whose state flags (owner vtable `+0x50`) meet an excluded mask, and pairs
    a callback refuses.
 
-The answer is the bodies in list order, at most 512. On top of it:
+The answer is the backward hits in reverse list order, then the forward hits. The query has no cap: 512 is the
+size of every caller's list, and nothing checks it ([Unit 7](#u7-cap)). On top of it:
 
 | Query | Address | What it does | Evidence |
 | --- | --- | --- | --- |
 | `IPhysics_CollideShape(phys, out, query)` | `0x0033e7f0` | sweeps a shape (the body's own, or one given with a transform: option `0x400`) along a move against the candidate bodies (option `2`; the [sweep table](#dispatch)) and the level mesh (option `1`; the type's mesh sweep with the query's two thresholds); keeps up to 50 contacts sorted by fraction and copies the first `max` out. Bodies of the same non-zero group and owners that refuse (owner vtable `+0x110`) are skipped. Used by the follow camera's sphere tests, the throw aim, the airborne push-out and the cars | confirmed (code) |
-| `IPhysics_OverlapShape(phys, out, query)` | `0x0033ebb8` | the same without a move, with the overlap table and the mesh overlap (`+0xf4`); option `0x80` skips the same group, `0x100` asks the owner, `0x200` only enabled shapes. Used by the push sphere and the strikes | confirmed (code) |
+| `IPhysics_OverlapShape(phys, out, query)` | `0x0033ebb8` | the same without a move, with the overlap table and the mesh overlap (`+0xf4`); option `0x80` skips the same group, `0x100` asks the owner, `0x200` only enabled shapes; it reads no other bits than `0x1`, `0x2`, `0x10`, `0x80`, `0x100`, `0x200` and `0x400` ([Unit 7](#u7-overlapshape)). Used by the push sphere and the strikes | confirmed (code) |
 | `IPhysics_RayCastBodies(length, phys, out, ray)` | `0x0033eee0` | the box around the ray's two ends, then each candidate's shapes with the type's ray function (`+0x108`); keeps the nearest hit's owner, shape and fraction. Used by the AI's line tests (`0x002e7608`, `0x00308c60` and others) | confirmed (code) |
 
 So `+0x14` is the classic sort-and-sweep bound: the step's refresh keeps it from growing for ever
-([The step](#step)).
+([The step](#step)), though it never cuts the backward walk in practice.
 
 ### Sweeping a body {#sweep}
 
@@ -455,7 +460,8 @@ cleared on every call), in up to three passes. A pass, confirmed (code):
    ([collision layers](#layers)): 2 `BLOCKOBJECTS` for a non-human; for a human 4 `BLOCKHUMANS`, or `0x44` (and
    `JUMPTARGET`) while airborne or holding (`0x800`), plus `0x20` `CHARGETARGET` when the capsule has flag `0x2`,
    `0x40000` `RUNTARGET` above gait 3, and `0x80000 << player`; same non-zero group skipped; owner asked
-   (`+0x110`); each enabled shape of the candidate (body vtable `+0x28`) through the sweep table. Confirmed (code).
+   (`+0x110`); each enabled shape of the candidate (body vtable `+0x28`) through the sweep table, **stopping at the
+   candidate's first shape that hits** (one contact per candidate body, `0x0033d6c0`). Confirmed (code).
    Between two humans this is one capsule against one capsule: [Human contacts](#human-contacts).
 4. Contacts are inserted sorted by fraction (`0x0033d718`) and resolved ([Contacts](#contacts)).
 
@@ -2104,7 +2110,7 @@ The query record:
 | --- | --- |
 | `+0x00` | the querying body |
 | `+0x04` | the querying shape (`own`) |
-| `+0x08` | a box to gather candidates with, used instead of the shape's own world box when option `0x400` is set |
+| `+0x08` | a **pointer** to a box to gather candidates with (word load at `0x0033ec10`), used instead of the shape's own world box when option `0x400` is set |
 | `+0x10` | options: `0x1` the level mesh, `0x2` bodies, `0x10` use the type mask at `+0x14`, `0x80` skip the same non-zero group (body `+0x3c`), `0x100` ask the querying owner (owner vtable `+0x110`/`+0x114` with the other owner; 0 skips), `0x200` only shapes with flag `0x1` (enabled), `0x400` the box at `+0x08` |
 | `+0x14` | type mask (−1, any, unless option `0x10`) |
 | `+0x18` | the most contacts to return (0: no body is tested at all) |
@@ -2131,7 +2137,8 @@ Steps:
    overlapping bodies is tried first (see below); Coney should keep discovery order (the candidates' x-sorted list
    order, then the other body's shape-chain order) and say so in a comment.
 5. The first `min(count, max)` contacts are copied to `out` (0xc0 bytes each). There is no check that more than 50
-   hits fit the buffer (inferred: never reached in play).
+   hits fit the buffer (the sorted list holds 52 pointers; inferred: never reached in play). The `0x2000` of the
+   push sphere's `0x2012` and the `0x4` and `0x8` of the climb's `0xd` are never read here ([Unit 7](#u7-overlapshape)).
 6. If fewer than `max` were copied and option `0x1` is set, the shape type's mesh overlap (`+0xf4`) appends up to
    `max − count` more after them, unsorted against the body contacts; only the sphere has one that can hit
    ([Mesh tests](#mesh-tests)).
@@ -3305,13 +3312,15 @@ unless said; the bone `(b, qb) = ((0.2, 0, 1.5), qy)`.
 
 ### Unit 7: Bodies and the sort-and-sweep world {#unit-7}
 
-- **Specified by:** [Bodies](#bodies), [Queries](#queries), [The step](#step) (the bound refresh). Missing:
-  `BodyList_Insert`'s tie order, the filtered query's callback and excluded-flag arguments (`0x00340120`, 904 bytes),
-  `IPhysics_OverlapShape`'s options beyond `0x80`/`0x100`/`0x200`.
-- **Coney:** `src/physics/physics_world.{h,cpp}` (body vector, x-sorted list, `+0x14` bound, 512-candidate cap);
-  `play_level_mode` owns one per level.
-- **Tests:** insert / remove / reinsert keep the list sorted by min x; a query box finds exactly the brute-force overlap
-  set, including a wide body far back in the list (the bound); the bound only shrinks on the 120th tick.
+**What it is.** The body record and its update, the body vector, the list of bodies sorted by AABB min x, the
+widest-body bound, and the box queries every shape, sweep, strike and ray test starts from. Read in the disassembly
+on 2026-10-12; every claim is confirmed (code) at the cited address unless it says otherwise.
+
+- **Coney:** `src/physics/physics_world.{h,cpp}` (body vector, x-sorted list, `+0x14` bound, the two box queries, the
+  overlap query); `play_level_mode` owns one per level. The queries have **no** 512 cap of their own: the callers'
+  lists hold 512 and nothing checks it ([below](#u7-cap)); Coney uses a growable list and marks the difference.
+- **Tests:** [Test ideas](#u7-tests): the tie order of insert and reinsert, the backward walk's order and its missing
+  upper x test, the filters, the bound refresh on the 120th tick, the overlap query's option bits.
 
 19 functions, 4400 bytes (0 tagged).
 
@@ -3337,13 +3346,351 @@ unless said; the bone `(b, qb) = ((0.2, 0, 1.5), qy)`.
 | `0x00340120` | `IPhysics_QueryBoxFiltered` | 904 |
 | `0x0033ebb8` | `IPhysics_OverlapShape` | 808 |
 
+Notation as in [Unit 3](#u3-records): vectors are 4 floats, "xyz" leaves `w` alone, owner and body vtable slots are
+named by the offset of their 8-byte entry (the function pointer is 4 bytes further). Arguments follow the EE ABI:
+`a0`-`a3`, then `t0`-`t3`, then 64-bit stack slots at the caller's `sp+0x00`, `+0x08`, `+0x10`.
+
+#### The records {#u7-records}
+
+**The sort node** is the first 0x30 bytes of a body: `+0x00` AABB min, `+0x10` AABB max, `+0x20` index in the body
+vector (s32), `+0x24` previous and `+0x28` next in the x-sorted list. The queries build bare nodes on their stack
+for their boxes. **The body** is the node plus the fields of [Bodies](#bodies) (0x80 bytes, vtable `0x00544710`).
+
+**IPhysics fields** used here ([IPhysics](#iphysics)): `+0x08` list head (lowest min x), `+0x12` u16 tick counter,
+`+0x14` float bound (the widest body's `max.x − min.x`), `+0x18` the overlap table, `+0xf4` the mesh overlaps by
+shape type, `+0x4f450` the body vector (`+0x04` begin, `+0x08` end, `+0x0c` capacity end; zeroed by the constructor,
+`0x0033c5cc`-`0x0033c5dc`, grown on demand by `0x004f0fa8`). The constructor sets `+0x08` = 0, `+0x12` = 0 and
+`+0x14` = 0.0 (`0x0033c86c`, `0x0033c2d8`, `0x0033c2dc`).
+
+**Body vtable** `0x00544710`, read from memory: `+0x08` `PhysicsBody_Destroy`, `+0x10` `PhysicsBody_Update`, `+0x18`
+`PhysicsBody_Moved`, `+0x20` `PhysicsBody_AddShape`, `+0x28` `PhysicsBody_GetShapes`, `+0x30` `IsIgnoring`, `+0x38`
+`StopIgnoring`, `+0x40` `Ignore` ([Unit 8](#unit-8)), `+0x48` `PhysicsBody_GetContactScale` (`0x00341e18`), `+0x50`
+"you were pushed" (`0x004f12a0`). The human body's vtable `0x005446b0` replaces `+0x08`, `+0x10`, `+0x18`, `+0x28`,
+`+0x30`-`+0x50` ([The human body](#human-body), [Unit 8](#u8-human)) and keeps `+0x20`.
+
+#### PhysicsNode_Init {#u7-node}
+
+`0x00341158`. `Node* PhysicsNode_Init(Node* n)`: `min = max = (0, 0, 0, 1)` (the constant at `0x005116c0`), `+0x20 =
+−1`, `+0x24 = +0x28 = 0`; returns `n`.
+
+#### PhysicsBody_Construct and PhysicsBody_ConstructForOwner {#u7-construct}
+
+`0x003418f8`. `Body* PhysicsBody_Construct(Body* b)`: vtable `0x00544710`, `PhysicsNode_Init`, `+0x30` first shape
+= 0, `+0x34` owner = 0, `+0x38` ignore chain = 0, `+0x3c` group (s16) = 0, `+0x40` flags = `0x80000400` (dirty and
+"write the slid velocity back"), `+0x44` type mask = 0, `+0x50` push-out = `(0, 0, 0, 1)`, `+0x60` scale =
+`(1, 1, 1, 1)` (`0x005116d0`), `+0x70` counter = 0. Not written: `+0x2c`, `+0x48`, `+0x4c`.
+
+`0x00341970`. `Body* PhysicsBody_ConstructForOwner(Body* b, Owner* o)`: the same, but `+0x34 = o` and, **only when
+`o` is not null**, `+0x44` = the owner's type mask (owner vtable `+0x20`, `0x003419d8`). It writes **neither
+`+0x44` for a null owner nor the scale `+0x60`** (no store of `0x005116d0`): a stack body built with it keeps
+whatever the stack held there. Only the camera builds such bodies ([Bodies](#bodies)); nothing in this unit reads
+`+0x60`, and [Unit 3](#u3-sweep) shows the sweep ignores it, so Coney may set 1.0 (a marked difference).
+
+#### PhysicsBody_Destroy {#u7-destroy}
+
+`0x00341a00`, vtable `+0x08`. `void (Body* b, int flags)`: resets the vtable pointer; if `+0x30` is not null,
+deletes that first shape (`SafeDelete_PhysicsBodyDestroy` `0x004f1148`: the shape's destructor, then the heap free
+with this file's path `0x005771d0` and line 3309) and sets `+0x30 = 0`; then frees the body itself when `flags & 1`.
+The pool free functions ([Unit 9](#unit-9)) clear `+0x30` first, so pooled shapes are never deleted (inferred from
+`IPhysics_FreeObjectBody` `0x0033cf00`, which does so at `0x0033cf50`).
+
+#### PhysicsBody_SetOwner {#u7-set-owner}
+
+`0x00341a68`. `void (Body* b, Owner* o)`: `+0x34 = o` always; when `o` is not null, `+0x44` = owner vtable `+0x20`
+(the type mask). A null owner leaves `+0x44` as it was.
+
+#### PhysicsBody_AddShape and PhysicsBody_GetShapes {#u7-shapes}
+
+`0x00341aa8`, vtable `+0x20`. `void (Body* b, Shape* s)`: if `+0x30` is null, `+0x30 = s`; else walks the chain
+through shape `+0x00` and sets the last one's `+0x00 = s`. It does **not** write `s+0x00` (the shape constructor
+`0x00342a30` zeroes it) and does not check whether `s` is already in the chain.
+
+`0x00341ae0`, vtable `+0x28`. `Shape* (Body* b, int, int, Owner*)`: returns `+0x30`; the three extra arguments the
+callers pass (`(1, 3, 0)`, `(2, 4, owner)`) are ignored. The human body's version answers its capsule chain.
+
+#### PhysicsBody_ComputeBounds and PhysicsBody_AddShapeBounds {#u7-bounds}
+
+`0x00341638`. `void (AABB* box, Shape* s)`: `PhysicsShape_GetBounds(—, &box.min, &box.max, s)` (`0x00341190`,
+[Unit 6](#unit-6)); `box` is any 0x20-byte AABB, the body's own `+0x00` or a stack box.
+
+`0x003417c0`. `void (AABB* box, Shape* s)`: the shape's bounds into a temporary, then `box.min = min(box.min, t.min)`
+and `box.max = max(box.max, t.max)` per axis (VU0 `vmini.xyz` / `vmax.xyz`), then `box.min.w = box.max.w = 1.0`.
+
+#### PhysicsBody_Update {#u7-update}
+
+`0x00341c10`, vtable `+0x10`. `void PhysicsBody_Update(Body* b, Owner* o)`. Called by the owners' updates and by
+the [step](#step)'s settle (body vtable `+0x10` with the object).
+
+1. If `b+0x40 & 0x80000800` is 0, return (`0x00341c44`).
+2. Pose the first shape (shape vtable `+0x28` with `o`; no null check, a body always has a shape), `b`'s AABB =
+   its bounds (`PhysicsBody_ComputeBounds(b, first)`). For each further shape of the chain: pose it, then
+   `PhysicsBody_AddShapeBounds(b, s)`. **Every** shape is posed and bounded, enabled or not.
+3. `BodyList_Reinsert(the global IPhysics at 0x00597198, b)` ([below](#u7-reinsert)); clear `0x80000000`.
+4. If `b+0x40 & 0x801` is exactly `0x801` (`0x00341ce0`), the **update sweep**:
+    1. `s` = body vtable `+0x28` with `(1, 3, 0)`; `p` = the shape's world position (shape vtable `+0x20`);
+       `d = p − s+0x20` (xyz, `w = 1`): from its previous world position to its new one.
+    2. A stack node: `PhysicsNode_Init`, then a copy of `b`'s min, max and `+0x20` word, and the box is extended by
+       `d` (`AABB_ExtendByMove`, [Unit 3](#u3-extend)). **The box is the new AABB grown forward by `d`**, so it
+       covers the new pose and one more `d` beyond it, not the path from the old pose (`0x00341d34`-`0x00341d7c`).
+    3. `count = 0`; `PhysicsBody_SweepHumanMask(phys, &box, b, s, contacts, sorted, &count, &d)`
+       (`0x0033d498`, [Unit 11](#unit-11)); 50 contacts of 0xc0 at `sp+0x20`, 50 pointers at `sp+0x25a0`.
+    4. If `count > 0`: `PhysicsBody_ResolveContacts(phys, b, sorted, count, &d, &V, &v, &dtOne, &moveFlags,
+       &scale)` ([Unit 3](#u3-resolve)) with `V = d`, `v` **not initialised** (stack), `dtOne = 1.0` (unused by the
+       resolution), `moveFlags = 0`, `scale` not initialised. The return value, `V`, `v` and `scale` are dropped;
+       what remains is what the contact codes did to the owner (an advance along the normal, a push-out on the
+       other body).
+
+So a body with `0x801` meets bodies that lie **ahead** of its new position but can miss one it passed through in
+this update (inferred from step 4.2; which bodies carry `0x801` is [Unit 9](#unit-9)'s).
+
+#### PhysicsBody_Moved {#u7-moved}
+
+`0x00341e40`, vtable `+0x18`. `void (Body* b)`: resets the **first** shape's previous position (shape vtable `+0x30`),
+`b`'s AABB = that shape's bounds only (`PhysicsBody_ComputeBounds`), then `BodyList_Reinsert(0x00597198's IPhysics,
+b)`. Other shapes are neither reset nor bounded, the dirty flag is not touched. The human body has its own
+(`0x00342828`, [The human body](#human-body)).
+
+#### BodyList_Insert {#u7-insert}
+
+`0x003404a8`. `void BodyList_Insert(IPhysics* p, Body* b, Body* hint)`:
+
+1. **Bound** (`0x003404a8`-`0x003404c4`): `w = b.max.x − b.min.x`; if `p+0x14 < w` (strict), `p+0x14 = w`. This
+   happens on every insert and so on every reinsert.
+2. **Empty list**: `head = b`, `b.prev = b.next = 0`; done.
+3. `start = hint`, or the head when `hint` is 0.
+4. **Backward** when `b.min.x < start.min.x` (`0x003404f0`): walk `n = start.prev, n.prev, …`; at the first `n` with
+   `n.min.x < b.min.x` (strict), link `b` **after** `n`. If the walk runs off the front, `b` becomes the head (before
+   the last node visited). So `b` goes **before every node of equal min x** it passed.
+5. **Forward** otherwise (`b.min.x ≥ start.min.x`, `0x00340574`): walk `n = start.next, n.next, …`; at the first `n`
+   with `b.min.x < n.min.x` (strict), link `b` **before** `n`. If the walk runs off the end, `b` is the tail. So `b`
+   goes **after every node of equal min x** it passed, and after `start` itself.
+
+The tie rule is therefore not "stable": a body lands after its equals when it is placed moving forward and before
+them when moving backward.
+
+#### BodyList_Remove {#u7-remove}
+
+`0x003405d8`. `Body* BodyList_Remove(IPhysics* p, Body* b)`: returns `b`'s **old previous node** (0 for the head).
+If `b` is the head: `head = b.next` and, if that is not null, its `prev = 0`. Otherwise `b.prev.next = b.next` (when
+`b.prev` is set) and `b.next.prev = b.prev` (when `b.next` is set). Then `b.prev = b.next = 0`. There is no
+membership check: removing a body that is not in the list and has no links changes nothing and returns 0.
+
+#### BodyList_Reinsert {#u7-reinsert}
+
+`0x00340628`. `void (IPhysics* p, Body* b)`: `prev = BodyList_Remove(p, b)`, then `BodyList_Insert(p, b, prev)`.
+
+Consequences of the hint (confirmed (code); the examples computed from it):
+
+- A body whose min x did **not** change still moves: from its old previous node it walks forward and lands after
+  every following node of the same min x. In `A(0) B(1) C(1) E(1) D(2)` (min x in brackets), reinserting `B`
+  unchanged gives `A C E B D`.
+- A body that moves back lands before the equals it passes: `A(0) B(1) C(1) D(2)` with `D` moved to 0 gives
+  `D A B C`; moved to 1 it walks forward from `C` and stays `A B C D`.
+- The old head has no previous node, so it starts from the new head (its old successor).
+
+#### IPhysics_AddBody and IPhysics_RemoveBody {#u7-addremove}
+
+`0x00340668`. `void IPhysics_AddBody(IPhysics* p, Body* b)`: pushes `b` at the end of the body vector (growing it
+through `0x004f0fa8` when full), `b+0x20 = size − 1`, then `BodyList_Insert(p, b, 0)`: from the head, so a new body
+goes after every body of equal min x. No check that `b` is already present.
+
+`0x00340700`. `void IPhysics_RemoveBody(IPhysics* p, Body* b)`:
+
+1. `IPhysics_ForgetIgnoredOwner(p, b)` ([Unit 8](#u8-forget)).
+2. **Swap-remove** from the vector: when the size is 2 or more, the last body `L` takes `b`'s place (`L+0x20 =
+   b+0x20`, `vector[b+0x20] = L`); then the size goes down by one (also when it is 1). `b+0x20` keeps its old value
+   (not −1).
+3. `BodyList_Remove(p, b)`.
+
+So removing a body renumbers the last one; nothing outside these functions reads `+0x20` except the queries, which
+use it to fetch the body ([below](#u7-querybox)).
+
+#### IPhysics_QueryBox {#u7-querybox}
+
+`0x0033feb0`. `int IPhysics_QueryBox(IPhysics* p, Body** out, const AABB* box, Body* start, Owner* ignored, u32
+typeMask, u32 flagMask)` → the number written to `out`. Leaf function (no calls).
+
+**Keep test** for a node `n` (the same in both walks): `B = vector[n+0x20]` (the body is fetched through the
+vector; for a body in the list this is `n` itself, so Coney may use the node), then, in this order:
+
+1. `B+0x34 == ignored` → drop. (With `ignored` = 0, ownerless bodies are dropped and every owned body passes.)
+2. `B+0x44 & typeMask == 0` → drop. So a body with type mask 0 is never found, and `typeMask` 0 finds nothing.
+3. `flagMask != 0` and `B+0x40 & flagMask == 0` → drop.
+4. y and z, inclusive, on the **node's** box: keep when `n.min.y ≤ box.max.y`, `box.min.y ≤ n.max.y`, and the same
+   for z. The x tests belong to the walks below.
+
+**The walk** (`0x0033feb4`-`0x00340118`):
+
+1. **Without `start`**: go to step 3 from the head.
+2. **With `start`, backward** from `start` itself (`start` is tested too): for each `n = start, start.prev, …`:
+    - `n.max.x < box.min.x` → skip it, go on to `n.prev` (no bound test);
+    - else, if `box.min.x − n.min.x > p+0x14` (strict) → **stop** the backward walk;
+    - else apply the keep test and append; go on to `n.prev`.
+
+   When it stops or runs off the front, continue with step 3 from `start.next`.
+3. **Forward** from the given node: stop at the end or at the first `n` with `box.max.x < n.min.x`; skip `n` when
+   `n.max.x < box.min.x`; else the keep test and append.
+
+What follows from this, confirmed (code) for the branches and worked out from them:
+
+- **Order:** the backward hits come first, **in reverse list order** (from `start` towards the head), then the forward
+  hits in list order. Not one list order.
+- **The bound never stops the walk while it is current.** The stop is tested only on a node that reaches the box
+  (`n.max.x ≥ box.min.x`), whose own width is then at least `box.min.x − n.min.x`; and `+0x14` is at least every
+  width as long as each body was inserted after its last box change (which `Update`, `Moved` and the human body's
+  update all do). So the backward walk runs to the head; the bound matters only if it is smaller than a body's width
+  (inferred; it changes the cost, not the answer).
+- **No upper x test going backward.** A body before `start` is kept even when its min x is beyond `box.max.x`. With
+  the usual callers the box contains `start`'s own box, so every body before `start` has `min.x ≤ start.min.x ≤
+  box.max.x` and nothing changes (inferred). A test can show it with a box placed left of `start`.
+- `start` is a candidate like any other; the callers drop it by passing its owner as `ignored` (all four do,
+  [below](#u7-callers)).
+- A `start` that is not in the list (no links, not the head) yields at most itself: the backward walk sees only
+  `start`, the forward walk begins at its null `next`. A query must start from a listed body or from none.
+
+#### IPhysics_QueryBoxFiltered {#u7-queryboxfiltered}
+
+`0x00340120`. `int IPhysics_QueryBoxFiltered(IPhysics* p, Body* query, Body** out, const AABB* box, Body* start,
+Owner* ignored, u32 typeMask, u32 flagMask, u32 excludedFlags, u32 excludedState, int (*keep)(Owner* mine, Owner*
+theirs))`: `a0`-`a3`, `t0`-`t3`, then the caller's `sp+0x00`, `+0x08`, `+0x10` (read at `0x003401d8`, `0x003401fc`,
+`0x00340174`). The same two walks as `IPhysics_QueryBox`, with these filters after the first three (owner, type mask,
+flag mask) and before y and z (`0x003401d8`-`0x00340224`, mirrored at `0x00340388`-`0x003403d4`):
+
+- (4) `B+0x40 & excludedFlags != 0` → drop (0 excludes nothing).
+- (5) `state` = the candidate owner's state flags (owner vtable `+0x50`, the 64-bit word of [Unit 3](#u3-records)),
+  **called for every candidate that got this far, even when `excludedState` is 0**, with no null check: an
+  ownerless body reaches it unless `ignored` is 0 (filter 1 then drops it). `state & excludedState != 0` → drop.
+  The mask is a 32-bit load, sign-extended (bit 31 also tests the high word).
+- (6) When `keep` is not null: `keep(query+0x34, B+0x34)` returns 0 → drop. `query` is read only here.
+
+The only caller is `IPhysics_CollideShape` (`0x0033e91c`, [Unit 11](#unit-11)), which passes its query body as both
+`query` and `start`, the stack box, and these from its query record (`0x0033e890`-`0x0033e8f8`):
+
+| Argument | Option bit | Field when set | Value when clear |
+| --- | --- | --- | --- |
+| `ignored` | `0x2000` | `+0x0c` | 0 |
+| `typeMask` | `0x10` | `+0x14` | −1 |
+| `flagMask` | `0x800` | `+0x1c` | 0 |
+| `excludedFlags` | `0x1000` | `+0x20` | 0 |
+| `excludedState` | `0x10000` | `+0x24` | 0 |
+| `keep` | `0x40000` | `+0x38` | null |
+
+So **without option `0x2000` the querying body itself is a candidate** (`ignored` = 0); `IPhysics_CollideShape`
+then drops it only through its own group test and its owner's `+0x110` answer. Which callers set which bits, and
+which `keep` functions exist, is [Unit 11](#unit-11)'s (callers not traced here).
+
+#### IPhysics_OverlapShape {#u7-overlapshape}
+
+`0x0033ebb8`, 0x328 bytes. `int IPhysics_OverlapShape(IPhysics* p, Contact* out, const OverlapQuery* q)` → contacts
+written to `out`. The record and the contact it fills are on [Unit 4](#overlapshape); here, every bit and limit.
+
+**Options read** (`q+0x10`, at `0x0033ebfc`, `0x0033ec20`, `0x0033ec7c`, `0x0033ed20`, `0x0033ee5c`): exactly
+`0x1` (the mesh), `0x2` (bodies), `0x10` (type mask `+0x14`, else −1), `0x80` (skip the same non-zero group),
+`0x100` (ask the querying owner, vtable `+0x110`), `0x200` (only shapes with flag `0x1`), `0x400` (`q+0x08` is a
+**pointer** to the box to use; read with a word load at `0x0033ec10`). **No other bit is read**, and `q` is not passed
+on: the push sphere's `0x2000` (`0x2012`) and the climb's `0x4` and `0x8` (`0xd`) have no effect here.
+
+1. **The box**: `*q+0x08` with `0x400`, else the querying shape's bounds into a stack node (`PhysicsBody_ComputeBounds`
+   on `q+0x04`).
+2. **Without `0x2`**: no bodies, go to step 5 with 0 contacts.
+3. **Candidates**: `n = IPhysics_QueryBox(p, list, box, q+0x00, (q+0x00)+0x34, typeMask, 0)` into a 512-entry
+   stack list (`sp+0x30`-`sp+0x82c`). The querying body is `start`, so it must be in the list
+   ([above](#u7-querybox)).
+4. **Each candidate** `C`, in the order the query returned them, **while `q+0x18` (max) is not 0** (tested before each
+   candidate; no other early stop, not when `max` or 50 contacts are reached):
+    - `0x80`: `C+0x3c` (u16) and the querying body's `+0x3c` both non-zero and equal → skip `C`.
+    - `0x100`: querying owner's vtable `+0x110` with `(owner, C+0x34)` returns 0 → skip `C`.
+    - shapes = `C`'s vtable `+0x28` with `(2, 4, querying owner)`; null → skip.
+    - Each shape `s` of the chain (with `0x200`, only those with flag `0x1`): `fn = overlap[own.type][s.type]`
+      (`p+0x18 + own.type × 0x14 + s.type × 4`); null → next shape. Else `slot = contacts[count]` (50 × 0xc0 at
+      `sp+0x830`), and if `fn(slot, own, s)` is non-zero: `slot+0xb4 = 0`, then `Contact_InsertSorted(p, slot,
+      sorted, &count, querying owner, C+0x34, own, s)` ([Unit 3](#u3-insert)). **All** shapes of `C` are tested
+      (several contacts per candidate are possible).
+5. **Copy out** `k = min(count, max)` contacts, in sorted order, 0xc0 bytes each (`0x0033eddc`-`0x0033ee44`).
+6. **The mesh**: if `k < max` (unsigned) and `0x1`, and the querying shape's type has a mesh overlap (`p+0xf4 + type ×
+   4`): `k += meshOverlap(q+0x28, q+0x2c, out + k, max − k, &box, q+0x00)` (floats in `f12`, `f13`; then `a0`-`a3`;
+   `0x0033ee84`-`0x0033eea8`). Return `k`.
+
+**Limits, none checked** (`0x0033ec44`, `0x0033ed10`, `0x0033ed8c`): 512 candidates, 50 contact slots, 52 sorted
+pointers (`sp+0x2db0`-`sp+0x2e7f`). A 51st hit writes its contact over the sorted list, and the insert writes
+pointers past it; a 513th candidate writes over the contact slots. Inferred: not reached in play (the four callers
+use small boxes and max 1 to 32).
+
+#### The 512 candidates {#u7-cap}
+
+Neither query has a cap, and neither is told the size of `out`. Every caller provides 512 entries:
+`IPhysics_OverlapShape` (`sp+0x30`, 0x800 bytes), `IPhysics_CollideShape` (`sp+0x26a0`-`sp+0x2e9f`),
+`PhysicsBody_SweepHumanMask` (`sp+0x000`-`sp+0x7ff`), `IPhysics_RayCastBodies` (`sp+0x20`-`sp+0x81f`); in
+`Human_TestStrikes` the list is at `sp+0x130` and the next local at `sp+0x990` (room for 536). Confirmed (code) for
+the four frames; past 512 the original writes over its own stack (whatever lies after the list), which is undefined
+behaviour, not a rule to reproduce. The pools allow 60 + 1 + 416 + 255 + 18 = 750 bodies, so a level-sized box could
+pass 512 (inferred; no caller asks for one). Coney: a growable list, and a debug assertion at 512 so a test can see
+the original's limit.
+
+#### The callers' arguments {#u7-callers}
+
+| Caller | Query | `start` | `ignored` | `typeMask` | `flagMask` |
+| --- | --- | --- | --- | --- | --- |
+| `IPhysics_OverlapShape` `0x0033ec58` | box | the query body | its owner | `+0x14` or −1 | 0 |
+| `PhysicsBody_SweepHumanMask` `0x0033d598` | box | the moving body | its owner | −1 | the mover's layer mask ([Sweeping a body](#sweep)) |
+| `Human_TestStrikes` `0x0033f4bc` | box (the human body's broad bound `+0x90`) | none | the striker's owner | −1 | `0x18` |
+| `IPhysics_RayCastBodies` `0x0033efe8` | box | none | its `t0` argument | its `a3` argument | `0x2000` |
+| `IPhysics_CollideShape` `0x0033e91c` | filtered | the query body | table above | | |
+
+#### The bound refresh {#u7-refresh}
+
+In `IPhysics_Step` (`0x00340940`-`0x00340994`), before the settle slots: `+0x12 += 1` (u16); if it is now below 120
+(`0x78`), nothing else. Otherwise `+0x12 = 0`, `+0x14 = 0.0`, and for each body of the list from the head, `+0x14 =
+max(+0x14, max.x − min.x)` (strict `>`). So after construction the refresh runs on the 120th, 240th, … step, and
+between refreshes the bound only grows (on inserts). The refresh reads the bodies' current boxes; an empty list
+leaves 0.
+
+#### Test ideas {#u7-tests}
+
+Synthetic bodies with boxes only (y and z `[0, 1]` unless said), owners as distinct tags, type mask −1, flags 0. The
+numbers come from a model of this spec (computed 2026-10-12).
+
+1. **Insert ties.** Add `A(0) B(1) C(1) D(2)` (min x; width 0.5) → list `A B C D`. Add `E(1)` → `A B C E D` (after
+   its equals). Bound 0.5.
+2. **Reinsert unmoved.** From test 1, reinsert `B` without changing it → `A C E B D`.
+3. **Reinsert backward.** `A(0) B(1) C(1) D(2)`; `D` moved to `[0, 0.5]`, reinsert → `D A B C` (before its equal
+   `A`). `D` moved to `[1, 1.5]` instead → `A B C D`.
+4. **Remove returns the previous node.** In `A B C`, removing `B` returns `A`; removing the head `A` returns null
+   and makes `B` the head with `B.prev` null.
+5. **Swap-remove.** Add `A, B, C` (indices 0, 1, 2); remove `A` → vector `C, B`, `C+0x20 = 0`, `A+0x20` still 0.
+6. **Query order.** Bodies `W[0, 10] P[1, 2] Q[6, 7] S[8, 9] R[8.5, 9.5] T[11, 12]` (list in that order, bound 10).
+   `QueryBox(box x [8, 9], start S, ignored S)` → `W, R` (backward: `S` dropped as ignored, `Q` and `P` skipped on
+   max x, `W` kept; forward: `R` kept, `T` stops it). With no start → `W, R`. Box `[8, 12]`, start `S`, `ignored`
+   none → `S, W, R, T`.
+7. **No upper x test backward.** Same bodies, box x `[0, 0.2]`, start `S`, ignored `S` → `Q, P, W`; a brute-force
+   overlap gives only `W`.
+8. **A stale bound stops the walk.** Bodies `W[0, 10] Q[6, 7] S[8, 9]`, bound forced to 1.0, box `[8, 9]` from `S`,
+   ignored `S` → nothing (`8 − 0 > 1` stops at `W`). With the true bound 10 → `W`.
+9. **Filters.** A body with type mask 0 is never found; `typeMask` 0 finds nothing; `flagMask` `0x4` finds only
+   bodies with `0x4`; `ignored` = 0 drops an ownerless body; touching y or z boxes (`max.y == box.min.y`) are found.
+10. **Filtered query.** As test 6 with `excludedFlags 0x200` on `R` → `W`; with a fake state `0x4000000` on `W`'s
+    owner and `excludedState 0x4000000` → `R`; with `keep` refusing `W`'s owner → `R`; the state callback is called
+    once per candidate that passed the first four filters, also with `excludedState` 0.
+11. **Bound refresh.** `A[0, 4]`, `B[5, 6]` → bound 4; shrink `A` to `[0, 1]` and reinsert → still 4. After step 1:
+    counter 1, bound 4; after step 119: 119, 4; after step 120: counter 0, bound 1; step 121: counter 1, bound 1.
+12. **Overlap options.** A fake overlap entry that always hits: with `max` 0, no candidate is tested (fake called 0
+    times); with options `0x2012` the result equals options `0x12`; two shapes on one candidate give two contacts;
+    with `0x80` and both groups 7 the candidate is skipped, with groups 7 and 0 it is not.
+13. **Update sweep box.** A sphere body (radius 0.35) whose shape moved from x 0 to x 1 with flags `0x801`: the
+    candidate box is x `[0.65, 2.35]`, so a body at x `[0.1, 0.4]` is not met and one at `[2.0, 2.2]` is.
+14. **Update gate.** Flags 0: `Update` poses nothing and does not reinsert; flags `0x800`: poses and reinserts every
+    call, keeping `0x800`; flags `0x80000000`: poses, reinserts and clears it, so the next call does nothing.
+
 ### Unit 8: Ignore lists and shape pools {#unit-8}
 
-- **Specified by:** [Ignore lists](#ignore-lists), [IPhysics](#iphysics) (pool sizes). Complete enough; the pool
-  allocators are "first slot whose flag `0x8` is clear".
-- **Coney:** `src/physics/physics_world.*` (fixed pools with the original's counts, so running out behaves the same).
-- **Tests:** 60 ignore slots then a 61st `Ignore` does nothing; removing a body frees every slot naming its owner; the
-  human body always ignores its held object and treats a null owner as the level.
+**What it is.** The 60 ignore slots a body uses to pass through particular owners, the human body's two extra rules,
+and the fixed shape pools with their allocators. Read in the disassembly on 2026-10-12; all confirmed (code) at the
+cited addresses unless marked.
+
+- **Coney:** `src/physics/physics_world.*`: fixed pools with the original's counts and "first free" scans, so running
+  out and reuse behave the same; the ignore slots as one array of 60.
+- **Tests:** [Test ideas](#u8-tests): the 61st `Ignore`, slot reuse, pointer matching, the grab partner, the pool
+  limits and the flags a freed shape keeps.
 
 14 functions, 1032 bytes (0 tagged).
 
@@ -3363,6 +3710,114 @@ unless said; the bone `(b, qb) = ((0.2, 0, 1.5), qy)`.
 | `0x0033d278` | `IPhysics_AllocBigSphere` | 80 |
 | `0x0033d2c8` | `IPhysics_FreeShape` | 16 |
 | `0x003408d8` | `IPhysics_FindFreeStrikeSphere` | 60 |
+
+#### The ignore slot {#u8-slot}
+
+60 slots of 12 bytes at IPhysics `+0xf4e0`, zeroed by the constructor (720 bytes, `0x0033c830`): `+0x00` the body
+whose list holds it, `+0x04` the ignored owner, `+0x08` the next slot of that body's chain. A slot is **free when
+`+0x04` is 0**. The chain starts at body `+0x38`. Owners are matched by **pointer equality** on the owner object
+(the task object a body's `+0x34` holds), so ignoring an owner passes through every body that owner has.
+
+#### IPhysics_FindFreeIgnoreSlot {#u8-find}
+
+`0x00340890`. `Slot* (IPhysics* p)`: the lowest-index slot with `+0x04 == 0`, or null when all 60 are in use. It
+does not mark the slot.
+
+#### PhysicsBody_IsIgnoring {#u8-is}
+
+`0x00341ae8`, body vtable `+0x30`. `bool (Body* b, Owner* o)`: false when `o` is null; else walks the chain from
+`+0x38` and answers true at the first slot with `+0x04 == o`.
+
+#### PhysicsBody_Ignore {#u8-ignore}
+
+`0x00341b20`, vtable `+0x40`. `void (Body* b, Owner* o)`: nothing when `o` is null. Else `slot =
+IPhysics_FindFreeIgnoreSlot(*0x00597198)` (the global IPhysics, not an argument); none → nothing. Else `slot+0x04 =
+o`, `slot+0x08 = b+0x38`, `slot+0x00 = b`, `b+0x38 = slot`: **pushed at the front**. There is **no duplicate check**:
+ignoring the same owner twice uses two slots.
+
+#### PhysicsBody_StopIgnoring {#u8-stop}
+
+`0x00341b80`, vtable `+0x38`. `void (Body* b, Slot* s)`: the argument is a **slot**, not an owner.
+
+- `s` not null: if `s` is the chain head, `b+0x38 = s+0x08`; else walk the chain for the slot whose `+0x08 == s`
+  and set it to `s+0x08`. Then, **found or not**, `s+0x00 = s+0x04 = s+0x08 = 0` (freed).
+- `s` null: every slot of the chain, from the head: `+0x04 = 0`, `+0x08 = 0`, `+0x00 = 0`; `b+0x38` ends null.
+
+Only `IPhysics_ForgetIgnoredOwner` passes a slot; the free functions pass null ([Unit 9](#unit-9), for example
+`0x0033cf3c`).
+
+#### IPhysics_ForgetIgnoredOwner {#u8-forget}
+
+`0x0033cd70`. `void (IPhysics* p, Body* removed)`: for slot 0 to 59, if `slot+0x04 == removed+0x34`, call
+`slot+0x00`'s vtable `+0x38` with that slot (the slot's body, which may be a human body). Called first by
+`IPhysics_RemoveBody` ([Unit 7](#u7-addremove)). It frees the slots in **other** bodies' lists that name the removed
+body's owner; the removed body's **own** list is freed by its free function (`StopIgnoring(null)`). An ownerless
+body would match every free slot, whose body is null: undefined, never done (inferred: every free function runs
+while the owner is still set, `0x0033cf0c` before `0x0033cf48`).
+
+#### The human body's three {#u8-human}
+
+Human body vtable `0x005446b0`: `+0x30` `0x003421d0`, `+0x38` `0x00342260`, `+0x40` `0x00342230`. The human body's
+`+0xd4` is a word: non-zero = "ignore the level".
+
+- **`PhysicsHumanBody_IsIgnoring`** (`0x003421d0`), `(hb, o)`: `o` null → returns **`hb+0xd4`** (the level). Else,
+  if `o` is the owner human's **grab partner** (`Human_GetGrabOther` `0x002269d8` on `hb+0x34`: the other human of
+  the human's grab record, 0 when none) → true. Else `PhysicsBody_IsIgnoring(hb, o)`.
+- **`PhysicsHumanBody_Ignore`** (`0x00342230`), `(hb, o)`: `o` null → `hb+0xd4 = 1`; else `PhysicsBody_Ignore`.
+- **`PhysicsHumanBody_StopIgnoring`** (`0x00342260`), `(hb, s)`: `s` null → `hb+0xd4 = 0`, then
+  `PhysicsBody_StopIgnoring(hb, null)` (all slots too); else `PhysicsBody_StopIgnoring(hb, s)`.
+
+Who asks `IsIgnoring` (body vtable `+0x30`) is not traced here: the static calls are only the human's to the base
+(`0x00342204`); the owners' `+0x110` answers are the likely askers ([Unit 11](#unit-11)). Inferred.
+
+#### The shape pools {#u8-pools}
+
+Every shape is built once by the IPhysics constructor (flags `0x1`, enabled, by `PhysicsShape_Construct`
+`0x00342a30`; `0x8` clear). The allocators scan from index 0 and take the **first** shape whose test passes; past the
+end they return null. They write only `+0x32` (and the big sphere's radius): type, bone, offset and size keep the
+previous user's values until the caller sets them.
+
+| Pool | IPhysics offset | Count × size | Allocator | Free when | On allocation |
+| --- | --- | --- | --- | --- | --- |
+| object spheres | `+0x22930` | 416 × 0x60 | `IPhysics_AllocObjectSphere` `0x0033d1a0` | flag `0x8` clear | sets `0xb` |
+| object boxes | `+0x2c530` | 416 × 0x90 | `IPhysics_AllocObjectBox` `0x0033d1e8` | flag `0x8` clear | sets `0xb` |
+| car boxes | `+0x4c720` | 36 × 0x90 | `IPhysics_AllocCarBox` `0x0033d230` | flag `0x8` clear | sets `0xb` |
+| 2.0 m spheres | `+0x4db60` | 30 × 0x60 | `IPhysics_AllocBigSphere` `0x0033d278` | flag `0x8` clear | radius `+0x40` = 2.0 (`0x40000000`), sets `0xb` |
+| weapon strike spheres | `+0xf7b0` | 60 × 0x60 | `IPhysics_FindFreeStrikeSphere` `0x003408d8` | flag **`0x1`** clear | **nothing**: the caller enables it |
+| ignore slots | `+0xf4e0` | 60 × 12 | `IPhysics_FindFreeIgnoreSlot` `0x00340890` | `+0x04` == 0 | nothing; `Ignore` fills it |
+
+The counts are the loop limits `0x1a0`, `0x1a0`, `0x24`, `0x1e`, `0x3c`, `0x3c` (signed compares for the shape
+pools). `0xb` = enabled `0x1`, `0x2`, allocated `0x8`. The strike spheres are switched off and given `0x2` by the
+constructor (`0x0033c7e0`-`0x0033c814`), so they start free; a strike sphere stays taken while it is enabled, and the
+same one is returned again until its caller enables it.
+
+`IPhysics_FreeShape` (`0x0033d2c8`), `(p, shape)`: clears **only** `0x8`. A freed pool shape keeps `0x1` and `0x2`
+(flags `0x3` after a plain allocate and free), so it still counts as enabled to any code that reaches it through a
+stale pointer; the next allocation sets `0xb` again. The other pools (the human sets, the world-object, glass and car
+bodies, glass boxes) are taken by the create functions of [Unit 9](#unit-9) (a body is free when its owner `+0x34`
+is 0, [Bodies](#bodies)).
+
+#### Test ideas {#u8-tests}
+
+1. **Sixty slots.** 60 `Ignore` calls with distinct owners on one body take slots 0 to 59 in order; the chain reads
+   59, 58, …, 0 from `+0x38`; a 61st `Ignore` changes nothing (the chain and all slots unchanged).
+2. **Reuse.** Free slot 5 (`StopIgnoring(b, slot 5)`); the next `Ignore` takes slot 5 and puts it at the chain's
+   front.
+3. **Duplicates.** `Ignore(o)` twice → two slots; `IsIgnoring(o)` true; `ForgetIgnoredOwner` of a body owned by `o`
+   frees both.
+4. **Null owner.** Base body: `Ignore(null)` takes no slot, `IsIgnoring(null)` is false. Human body: `Ignore(null)`
+   sets `+0xd4 = 1`, `IsIgnoring(null)` returns 1; `StopIgnoring(null)` sets it to 0 and frees all its slots.
+5. **Stop a slot not in the chain.** `StopIgnoring(b, s)` with `s` from another body's chain: `b`'s chain unchanged,
+   `s` zeroed (its own chain then still points at it: the original's behaviour, a test of the zeroing only).
+6. **Forget.** Bodies `X` (owner `x`) and `Y`, `Z` both ignoring `x` and `Y` ignoring `z`; removing `X` frees the
+   two `x` slots and keeps `Y`'s `z` slot.
+7. **Grab partner.** A human body whose owner's grab partner is `g`: `IsIgnoring(g)` true with an empty chain; with no
+   grab, false.
+8. **Pools.** 416 `AllocObjectSphere` calls succeed, the 417th returns null; `FreeShape` on the 3rd, then the next
+   allocation returns the 3rd. Flags after allocate `0xb`, after free `0x3`, after a second allocate `0xb`.
+   `AllocBigSphere` sets radius 2.0 even if the slot held 0.5. 37 `AllocCarBox` → the 37th is null.
+9. **Strike spheres.** `FindFreeStrikeSphere` twice without enabling returns the same sphere; after enabling it, the
+   next; with all 60 enabled, null.
 
 ### Unit 9: Creating and freeing bodies {#unit-9}
 
