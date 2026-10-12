@@ -75,8 +75,8 @@ and set `S-needs-info`; do not invent it.
 
 ### `maintainer`: stop
 
-A finding with fix `maintainer` (`gh.ruleset`: the ruleset or the repository settings differ from the `merge` section) is a
-maintainer decision. Do not change the ruleset, the settings, the conventions file's `merge` section or the repository's
+A finding with fix `maintainer` (`gh.ruleset`: the ruleset or the repository settings differ from the `merge` section) is
+a maintainer decision. Do not change the ruleset, the settings, the conventions file's `merge` section or the repository's
 visibility to make it pass. Report it to the maintainer with the finding's message and which side you think is right.
 
 ## 3. After a merge round: the issues that cite the pull requests
@@ -90,8 +90,8 @@ you miss.
 ## 4. Check and report
 
 Run the audit again. Report the counts per class before and after, what you changed (item numbers), what you left and
-why, every `maintainer` finding, and every notice. If a finding came back, a workflow or a rule is not doing its job: say so
-in the report so that it is fixed at the source (the conventions or the check), not by hand again.
+why, every `maintainer` finding, and every notice. If a finding came back, a workflow or a rule is not doing its job: say
+so in the report so that it is fixed at the source (the conventions or the check), not by hand again.
 
 ## Limits
 
