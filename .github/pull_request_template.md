@@ -9,19 +9,14 @@
 
 ## Checklist
 
-<!-- Done is what this pull request finishes. Remaining is what it leaves for later, and each unchecked item
-     must name the issue or follow-up pull request that holds it, as `#123`: CI refuses one that does not. An
-     agent that has no issue for a leftover reports it to the coordinator, who files it; write the number once
-     it exists. Leave Remaining empty when nothing is left. A track's working status lives in its scratch
-     STATUS.md, not here. -->
+<!-- A pull request merges only when every task in it is finished: list what it finishes, each item ticked, and
+     CI refuses an unticked `- [ ]` item. Work this pull request does not finish is not part of it and is not
+     listed here; it lives in its own issue. An issue this pull request resolves gets a `Fixes #N` line in
+     Summary. A track's working status lives in its scratch STATUS.md, not here. -->
 
 Done:
 
 - [x] ...
-
-Remaining:
-
-- [ ] ...
 
 ## Testing
 

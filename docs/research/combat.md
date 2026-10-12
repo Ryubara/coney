@@ -560,7 +560,7 @@ A moving attack has no single hit update. Its clip's events switch **strike shap
 the first shape that meets a body calls `Strike_Contact` (`0x0021b290`) for it. "Meets" is a **sweep**: each shape
 is moved from its pose at the last update to its pose now through the physics sweep table, so only the spheres can
 reach a box (a segment never does), and a shape just switched on is tested with no move
-([Physics: Unit 5](physics.md#u4b-how-human-teststrikes-builds-the-sweep-0), confirmed (code)). The reach is the
+([Physics: Unit 5](physics-kernels.md#u4b-how-human-teststrikes-builds-the-sweep-0), confirmed (code)). The reach is the
 posed body itself: there is no reach or height figure of its own. Confirmed (code) at the addresses below; the timings are
 confirmed (runtime).
 
@@ -4069,9 +4069,9 @@ At runtime 1.5 turns per second took 9.6 s to succeed, and one R1 press failed i
 
 ### Input scripts {#input-scripts}
 
-Coney's `--input-script` lines (frame = one 30 Hz update; [building](../guides/building.md)) that reproduce each
-behaviour, from a standing player facing the target with the camera behind; stick values are the in-game magnitudes. The
-gaps
+Coney's `--input-script` lines (frame = one 30 Hz update; [input scripts](../guides/running.md#input-scripts)) that
+reproduce each behaviour, from a standing player facing the target with the camera behind; stick values are the in-game
+magnitudes. The gaps
 between the grab's steps are generous, not measured minimums:
 
 ```text

@@ -65,6 +65,7 @@ def test_the_error_checks_include_what_the_user_pointed_out_by_hand() -> None:
         "issue.labels",
         "issue.closed-status",
         "issue.closed-unchecked",
+        "pr.unfinished-items",
         "pr.remaining-uncited",
     } <= errors
     assert {"pr.body", "issue.person-word", "pr.person-word"} <= errors

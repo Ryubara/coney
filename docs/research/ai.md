@@ -5574,8 +5574,16 @@ choices**: a probe keeps the point's height and finds its area by the ground pro
 test), and with no edge in reach there is no edge point. `level87`'s checkpoint 4 start plans from a diagonal probe
 1.41 m out; before, every line from it, and so every route, failed. A climb leg's climb
 that has ended moves the
-follower on past the leg's waypoint (the original's step there is open); the fast climber's early start within
-4.5 m, the charge (`0x40`), the link's clear test and the waypoint claims are not built. A jump leg (kind 4) takes
+follower on past the leg's waypoint (the original's step there is open). The fast climber's early start is built
+(`ai::earlyClimbDue`): on a walked leg whose next leg is a climb, a human with flag `0x2` at the run or sprint tries
+the climb toward the climb's far waypoint while within 4.5 m (3D) of it, and when the climb starts the route moves on
+onto the climb's leg; the climb probes measure along a unit direction (`Human::tryClimb`), so a brain's request, the way
+to its waypoint, no longer scales the face's distance. Before (issue #232), a fast climber ran on to the climb's near
+waypoint, too close for the running climb ((r1 + r2) × 0.4), and ran into the fence for the leg's 31 tries; `level99`'s
+Vermin then climbed standing, 85 updates. The corner speed looks only at the waypoints up to the first whose leg on
+has bit `0x4` or `0x80` (`RouteFollower::cornerPoints`, `MoveAction_CollectPoints` `0x002fbd18`), so a run-up to a
+jump keeps its gait's speed (issue #104). The charge (`0x40`), the link's clear test and the waypoint claims are not
+built. A jump leg (kind 4) takes
 its take-off and landing points, the drop or the arc and the 1.5 m landing test as above; the brain does not run while
 the human is airborne, so the move notices the landing by the human's landing count, and the arc counts as having
 reached the landing point when it lands within the waypoint radius plus one update's travel at the launch's plan

@@ -3065,7 +3065,7 @@ from the code; not seen at runtime). The cameras are not slowed either: `Humans_
 ## Coney's implementation
 
 `src/camera/follow_camera.*` is the follow camera of `Cam_Follow_Update` (`0x0012ae58`), stepped after the human
-by `src/human/player.*` and drawn by `--play-level` ([Building](../guides/building.md#playing-a-level));
+by `src/human/player.*` and drawn by `--play-level` ([Running Coney](../guides/running.md#playing-a-level));
 `src/camera/follow_collision.*` holds its rays against the collision mesh:
 
 - the look-at point is the feet + 1.4 m, its move each update limited by its length `d` as in [step 5](#update):
@@ -3170,7 +3170,7 @@ by `src/human/player.*` and drawn by `--play-level` ([Building](../guides/buildi
   scene's `BlendCam`. The level streams round the current camera and draws through its lens, the far clip capping the
   draw distance;
 - `--trace FILE` writes the camera's position, look-at point, wanted position, distance, angles, band and
-  auto-follow turn after every step, with the player's state ([Building](../guides/building.md#tracing)).
+  auto-follow turn after every step, with the player's state ([Running Coney](../guides/running.md#tracing)).
 
 The world viewer keeps its own free camera with the player camera's lens
 ([The streamed world](world.md#coneys-implementation)).

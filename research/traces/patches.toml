@@ -897,3 +897,102 @@ address = 0x0021e698
 # addiu sp,sp,-0x110; sq s1,0xd0(sp)
 original = [0x27bdfef0, 0x7fb100d0]
 log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }, { value = "a2", name = "new_callback" }, { value = "[a0 + 0x178]", name = "line" }, { value = "[a0 + 0x188]", name = "callback" }, { value = "[a0 + 0x194]", name = "w194" }]
+
+# The physics runtime pass (issue #348, docs/research/physics-kernels.md#u1-runtime): the edge step's capsule roots, and a
+# strike shape's previous and current centre at each pose and each strike test.
+
+[hook.edge-roots]
+description = "SphereSweep_Edge (0x0034e3b8) after its capsule step kept a root (0x0034e454): the caller (saved ra: Sweep_SphereTriangle for an edge, SphereSweep_VertexRegion for a corner), the first listed root it reports (f1), the second root, how many roots fell in [0, 1], the radius and the move's x."
+research = "docs/research/physics-kernels.md#u1-runtime"
+address = 0x0034e454
+# mfc1 a2,f1; lq a1,0x0(s0)
+original = [0x44060800, 0x7a050000]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "[sp + 0x70]", name = "caller" }, { value = "f1", name = "root0", type = "f32" }, { value = "[sp + 0x4]", name = "root1", type = "f32" }, { value = "[s5]", name = "in_range", type = "s32" }, { value = "f20", name = "radius", type = "f32" }, { value = "[s6 + 0x0]", name = "move_x", type = "f32" }]
+
+[hook.sphere-pose]
+description = "Each PhysicsSphere_Pose (0x00342b08) on entry: the shape, its flags (+0x32; 0x10 = reset), its centre (+0x50, the last pose's) and its previous centre (+0x20), x and y."
+research = "docs/research/physics-kernels.md#u1-runtime"
+address = 0x00342b08
+# addiu sp,sp,-0x160; sq s0,0x150(sp)
+original = [0x27bdfea0, 0x7fb00150]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a0", name = "shape" }, { value = "[a0 + 0x30]", name = "flags" }, { value = "[a0 + 0x50]", name = "cur_x", type = "f32" }, { value = "[a0 + 0x54]", name = "cur_y", type = "f32" }, { value = "[a0 + 0x20]", name = "prev_x", type = "f32" }, { value = "[a0 + 0x24]", name = "prev_y", type = "f32" }]
+
+[hook.strike-move-a]
+description = "Human_TestStrikes (0x0033f110), strike-move block a at 0x0033f284, where a strike shape's move is formed: the shape, its flags, its current centre (+0x50) and the previous one it sweeps from (+0x20), x and y."
+research = "docs/research/physics-kernels.md#u1-runtime"
+address = 0x0033f284
+# lq v0,0x20(s1); sq v0,0x940(sp)
+original = [0x7a220020, 0x7fa20940]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "s1", name = "shape" }, { value = "[s1 + 0x30]", name = "flags" }, { value = "[s1 + 0x50]", name = "cur_x", type = "f32" }, { value = "[s1 + 0x54]", name = "cur_y", type = "f32" }, { value = "[s1 + 0x20]", name = "prev_x", type = "f32" }, { value = "[s1 + 0x24]", name = "prev_y", type = "f32" }]
+
+[hook.strike-move-b]
+description = "Human_TestStrikes (0x0033f110), strike-move block b at 0x0033f3d4, where a strike shape's move is formed: the shape, its flags, its current centre (+0x50) and the previous one it sweeps from (+0x20), x and y."
+research = "docs/research/physics-kernels.md#u1-runtime"
+address = 0x0033f3d4
+# lq v0,0x20(s1); sq v0,0x940(sp)
+original = [0x7a220020, 0x7fa20940]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "s1", name = "shape" }, { value = "[s1 + 0x30]", name = "flags" }, { value = "[s1 + 0x50]", name = "cur_x", type = "f32" }, { value = "[s1 + 0x54]", name = "cur_y", type = "f32" }, { value = "[s1 + 0x20]", name = "prev_x", type = "f32" }, { value = "[s1 + 0x24]", name = "prev_y", type = "f32" }]
+
+[hook.strike-move-c]
+description = "Human_TestStrikes (0x0033f110), strike-move block c at 0x0033f714, where a strike shape's move is formed: the shape, its flags, its current centre (+0x50) and the previous one it sweeps from (+0x20), x and y."
+research = "docs/research/physics-kernels.md#u1-runtime"
+address = 0x0033f714
+# lq v0,0x20(s1); sq v0,0x940(sp)
+original = [0x7a220020, 0x7fa20940]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "s1", name = "shape" }, { value = "[s1 + 0x30]", name = "flags" }, { value = "[s1 + 0x50]", name = "cur_x", type = "f32" }, { value = "[s1 + 0x54]", name = "cur_y", type = "f32" }, { value = "[s1 + 0x20]", name = "prev_x", type = "f32" }, { value = "[s1 + 0x24]", name = "prev_y", type = "f32" }]
+
+[hook.strike-move-d]
+description = "Human_TestStrikes (0x0033f110), strike-move block d at 0x0033f9f4, where a strike shape's move is formed: the shape, its flags, its current centre (+0x50) and the previous one it sweeps from (+0x20), x and y."
+research = "docs/research/physics-kernels.md#u1-runtime"
+address = 0x0033f9f4
+# lq v0,0x20(s1); sq v0,0x940(sp)
+original = [0x7a220020, 0x7fa20940]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "s1", name = "shape" }, { value = "[s1 + 0x30]", name = "flags" }, { value = "[s1 + 0x50]", name = "cur_x", type = "f32" }, { value = "[s1 + 0x54]", name = "cur_y", type = "f32" }, { value = "[s1 + 0x20]", name = "prev_x", type = "f32" }, { value = "[s1 + 0x24]", name = "prev_y", type = "f32" }]
+
+[hook.strike-move-e]
+description = "Human_TestStrikes (0x0033f110), strike-move block e at 0x0033fb54, where a strike shape's move is formed: the shape, its flags, its current centre (+0x50) and the previous one it sweeps from (+0x20), x and y."
+research = "docs/research/physics-kernels.md#u1-runtime"
+address = 0x0033fb54
+# lq v0,0x20(s1); sq v0,0x940(sp)
+original = [0x7a220020, 0x7fa20940]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "s1", name = "shape" }, { value = "[s1 + 0x30]", name = "flags" }, { value = "[s1 + 0x50]", name = "cur_x", type = "f32" }, { value = "[s1 + 0x54]", name = "cur_y", type = "f32" }, { value = "[s1 + 0x20]", name = "prev_x", type = "f32" }, { value = "[s1 + 0x24]", name = "prev_y", type = "f32" }]
+
+[hook.strike-move-f]
+description = "Human_TestStrikes (0x0033f110), strike-move block f at 0x0033fcec, where a strike shape's move is formed: the shape, its flags, its current centre (+0x50) and the previous one it sweeps from (+0x20), x and y."
+research = "docs/research/physics-kernels.md#u1-runtime"
+address = 0x0033fcec
+# lq v0,0x20(s1); sq v0,0x940(sp)
+original = [0x7a220020, 0x7fa20940]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "s1", name = "shape" }, { value = "[s1 + 0x30]", name = "flags" }, { value = "[s1 + 0x50]", name = "cur_x", type = "f32" }, { value = "[s1 + 0x54]", name = "cur_y", type = "f32" }, { value = "[s1 + 0x20]", name = "prev_x", type = "f32" }, { value = "[s1 + 0x24]", name = "prev_y", type = "f32" }]
+
+[hook.tri-sweep]
+description = "Each Sweep_SphereTriangle (0x0034ee60) on entry: the caller, the sphere's start centre x and y and radius, the move's x and the centre's z."
+research = "docs/research/physics-kernels.md#u1-runtime"
+address = 0x0034ee60
+# addiu sp,sp,-0x140; move t5,a2
+original = [0x27bdfec0, 0x00c0682d]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "[a1 + 0x0]", name = "cx", type = "f32" }, { value = "[a1 + 0x4]", name = "cy", type = "f32" }, { value = "[a1 + 0x10]", name = "r", type = "f32" }, { value = "[a3 + 0x0]", name = "mx", type = "f32" }, { value = "[a1 + 0x8]", name = "cz", type = "f32" }]
+
+[hook.tri-sweep-tri]
+description = "Each Sweep_SphereTriangle (0x0034ee60), two instructions in (0x0034ee68), with the triangle: the caller, the working triangle's first corner x, y, z and its unit normal's z (+0x78), and the sphere's centre z."
+research = "docs/research/physics-kernels.md#u1-runtime"
+address = 0x0034ee68
+# sq s0,0x130(sp); sd ra,0x120(sp)
+original = [0x7fb00130, 0xffbf0120]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "[a2 + 0x0]", name = "v0x", type = "f32" }, { value = "[a2 + 0x4]", name = "v0y", type = "f32" }, { value = "[a2 + 0x8]", name = "v0z", type = "f32" }, { value = "[a2 + 0x78]", name = "nz", type = "f32" }, { value = "[a1 + 0x8]", name = "cz", type = "f32" }]
+
+[hook.edge-step]
+description = "Each SphereSweep_Edge (0x0034e3b8) on entry: the caller (Sweep_SphereTriangle for an edge, SphereSweep_VertexRegion for a corner)."
+research = "docs/research/physics-kernels.md#u1-runtime"
+address = 0x0034e3b8
+# addiu sp,sp,-0x100; sq s0,0xe0(sp)
+original = [0x27bdff00, 0x7fb000e0]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra"]
+
+[hook.vertex-step]
+description = "Each SphereSweep_VertexRegion (0x0034e5d0) on entry: the corner index and the caller."
+research = "docs/research/physics-kernels.md#u1-runtime"
+address = 0x0034e5d0
+# addiu sp,sp,-0x90; move t6,a0
+original = [0x27bdff70, 0x0080702d]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "corner" }]

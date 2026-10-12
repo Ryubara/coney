@@ -31,6 +31,7 @@ def test_the_real_title_rules() -> None:
         "build",
         "ci",
         "core",
+        "gameplay",
         "fileio",
         "graphics",
         "audio",
@@ -48,7 +49,7 @@ def test_the_real_title_rules() -> None:
 def test_the_real_pull_request_rules() -> None:
     rules = load_conventions(REPO).pull_requests
     assert rules.sections == ("Summary", "Checklist", "Testing", "Screenshots", "AI use")
-    assert rules.filled == ("Summary", "Testing") and rules.remaining.section == "Checklist"
+    assert rules.filled == ("Summary", "Testing") and rules.checklist.section == "Checklist"
     assert rules.docs_none.line == "Docs: none"
     assert rules.ai_use.written_by.no_ai == "a person"
 
@@ -166,10 +167,11 @@ BAD: list[tuple[str, tuple[tuple[str, object], ...], str]] = [
         (("pull_requests.filled", ["Nope"]),),
         r"'Nope' is not one of the sections",
     ),
-    ("a remaining section that does not exist", (("pull_requests.remaining.section", "Nope"),), r"remaining\.section"),
+    ("a checklist section that does not exist", (("pull_requests.checklist.section", "Nope"),), r"checklist\.section"),
     ("a no_ai choice that is not a choice", (("pull_requests.ai_use.written_by.no_ai", "robot"),), r"no_ai: 'robot'"),
     ("a docs_none class that does not exist", (("pull_requests.docs_none.when_changed", "tests"),), r"when_changed"),
-    ("an unsupported unchecked_cites", (("pull_requests.remaining.unchecked_cites", "#1"),), r"unchecked_cites"),
+    ("an unsupported unchecked rule", (("pull_requests.checklist.unchecked", "cited"),), r"checklist\.unchecked"),
+    ("a since that is no day", (("pull_requests.checklist.since", "someday"),), r"checklist\.since"),
     (
         "a squash message GitHub does not have",
         (("merge.squash_message", "BODY"),),

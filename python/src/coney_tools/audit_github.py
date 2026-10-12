@@ -26,9 +26,10 @@ from coney_tools.repo_checks import (
     NUMBER_REFERENCE,
     check_body,
     check_title,
-    remaining_items,
+    legacy_remaining_items,
+    legacy_uncited_remaining,
     screenshots_problems,
-    uncited_remaining,
+    unfinished_items,
 )
 
 #: How many issues and pull requests one fetch asks for; a repository with more says so in a notice.
@@ -70,6 +71,8 @@ class Pull:
     labels: tuple[str, ...]
     created: datetime
     updated: datetime
+    #: When it merged (`None` for a pull request that has not).
+    merged: datetime | None
     base: str
     head: str
     draft: bool
@@ -166,6 +169,7 @@ def parse_snapshot(data: Mapping[str, Any]) -> Snapshot:
                 labels=_names(item.get("labels")),
                 created=_time(item.get("createdAt")),
                 updated=_time(item.get("updatedAt")),
+                merged=_time(item.get("mergedAt")) if item.get("mergedAt") else None,
                 base=str(item.get("baseRefName", "")),
                 head=str(item.get("headRefName", "")),
                 draft=bool(item.get("isDraft", False)),
@@ -573,12 +577,12 @@ def issue_links(context: GithubContext) -> Iterator[Problem]:
 
 @check("issue.provenance")
 def issue_provenance(context: GithubContext) -> Iterator[Problem]:
-    """An open issue that a pull request's Remaining list points at (a leftover) says where it came from (`From:`)."""
+    """An open issue that an older pull request's Remaining list points at says where it came from (`From:`)."""
     snapshot = context.snapshot
     rules = context.conventions.pull_requests
     leftovers: dict[int, int] = {}
     for pull in snapshot.pulls:
-        for item in remaining_items(pull.body, rules):
+        for item in legacy_remaining_items(pull.body, rules):
             for number in NUMBER_REFERENCE.findall(item):
                 leftovers.setdefault(int(number[1:]), pull.number)
     line = context.conventions.issues.provenance.line
@@ -670,11 +674,34 @@ def pr_person_word(context: GithubContext) -> Iterator[Problem]:
             yield _problem(pull, _wording_message(wording, uses))
 
 
+def _merged_since_the_rule(context: GithubContext, pull: Pull) -> bool:
+    """Whether the pull request merged on or after the day the Checklist rule began (`checklist.since`)."""
+    return pull.merged is not None and pull.merged.date() >= context.conventions.pull_requests.checklist.since
+
+
+def _items_message(items: list[str]) -> str:
+    """`2 item(s): 'a'; 'b'` for the first few unfinished items of a description."""
+    shown = "; ".join(repr(_short(item, 50)) for item in items[:3])
+    more = f" and {len(items) - 3} more" if len(items) > 3 else ""
+    return f"{len(items)} unticked Checklist item(s): {shown}{more}"
+
+
+@check("pr.unfinished-items")
+def pr_unfinished_items(context: GithubContext) -> Iterator[Problem]:
+    """A pull request merged since the Checklist rule began has every Checklist item ticked."""
+    rules = context.conventions.pull_requests
+    for pull in context.snapshot.pulls_in("merged"):
+        items = unfinished_items(pull.body, rules) if _merged_since_the_rule(context, pull) else []
+        if items:
+            yield _problem(pull, "merged with " + _items_message(items) + "; a pull request finishes all it lists")
+
+
 @check("pr.remaining-uncited")
 def pr_remaining_uncited(context: GithubContext) -> Iterator[Problem]:
-    """A merged pull request's unchecked Remaining items each name an issue (so the leftover is tracked)."""
+    """A pull request merged before the Checklist rule began names an issue on each unchecked Remaining item."""
+    rules = context.conventions.pull_requests
     for pull in context.snapshot.pulls_in("merged"):
-        loose = uncited_remaining(pull.body, context.conventions.pull_requests)
+        loose = [] if _merged_since_the_rule(context, pull) else legacy_uncited_remaining(pull.body, rules)
         if loose:
             shown = "; ".join(repr(_short(item, 50)) for item in loose[:3])
             yield _problem(pull, f"merged with {len(loose)} Remaining item(s) naming no issue: {shown}")

@@ -352,7 +352,7 @@ Written from this page, in `src/core/`:
   result of one type once a load is over.
 - The grouped loader loads every group: Coney has no resource manager yet to ask whether a group is resident.
 - `coney --disc <disc> --load <entry>` loads an entry with these and prints a summary
-  ([Building and testing](../guides/building.md#run-coney)). It reads an entry whose container header ends with
+  ([Running Coney](../guides/running.md#run-coney)). It reads an entry whose container header ends with
   `0xDE686795` (`crc32("package")`) as grouped, any other as flat, and if the flat parse fails, as grouped.
 
 Run over every entry of the NTSC-U disc (2026-10-04; counts only): 6,183 load as flat containers, 881 as packs

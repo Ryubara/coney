@@ -49,7 +49,7 @@ The code sits in `TaskEngine/`, in the stretches placed by position
 | `0x003e9828` | `ObjectiveMarker_SetShown` | a marker's shown state, passed on to its column | confirmed (code) |
 | `0x003e9d60` / `0x003e9fd8` / `0x003e9ea0` | `sub_objective_column` init / update / message | the marker's column | confirmed (code) |
 | `0x003a1810` / `0x003a1858` | `Obj_Attach` / `Obj_Detach` | parent, bone and local pose; detaching keeps the world pose ([Held objects](#held)) | confirmed (code) |
-| `0x003a19b0` / `0x003a1ad8` | `Obj_GetWorldPose` / `Obj_GetPoseNow` | vtable `+0xa4` / `+0xac`: an attached object's pose through its parent's bone | confirmed (code), runtime |
+| `0x003a19b0` / `0x003a1ad8` | `Obj_GetWorldPose` / `Obj_GetPoseNow` | vtable function words `+0x9c` / `+0xa4` (slots `+0x98` / `+0xa0` of `0x005453a0` and the car's `0x00544c08`): an attached object's pose through its parent's bone | confirmed (code), runtime |
 | `0x003fe490` / `0x003fe6b8` | `MeleeWeapon_Take` / `MeleeWeapon_Detach` | messages `0x1b` / `0x1c` of `melee_weapon` | confirmed (code) |
 | `0x00257f38` / `0x002586d8` | `Human_DropHeld` / `Human_ReleaseThrow` | a held object let go: dropped / thrown | confirmed (code) |
 | `0x003a5530` | `ScriptObj_SpawnThrownDebris` | a broken prop's piece: created by name at the prop's pose, knocked with message `0x30` ([Trash props](#trash-props)) | confirmed (code), runtime |
@@ -663,9 +663,9 @@ bat is the worked case ([Combat: a bat in hand](combat.md#bat)); what the human 
 object's current world pose into `+0x10` / `+0x20`, then clears the bit and the parent, so a detached object starts
 exactly where it was drawn.
 
-**The world pose** (`Obj_GetWorldPose`, `0x003a19b0`, slot `+0xa4` of the world-object vtables, e.g. `0x00544c00`):
-unattached, `+0x10` / `+0x20`; attached, three transforms composed with `0x003359b0` (rotation `qa · qb`, position
-`pa + qa · pb`, no scale):
+**The world pose** (`Obj_GetWorldPose`, `0x003a19b0`, function word `+0x9c` of the world object's vtable
+`0x005453a0` and the car's `0x00544c08`): unattached, `+0x10` / `+0x20`; attached, three transforms composed with
+`0x003359b0` (rotation `qa · qb`, position `pa + qa · pb`, no scale):
 
 ```text
 world = parent's world transform (its vtable +0x9c: for a human, its position and rotation)
@@ -1110,8 +1110,9 @@ each side and covers the whole pane. Its body flags (`0x0033d070`) are `0x800000
    whose flags hold `0x18`; for each, a ray from 1 m above the feet to the body's centre must hit nothing in the
    level mesh, the ray excluding material 2 (its exclusion list is `{2, 1}`) and triangles with flag `0x8` (and
    `0x40`, unless the target is a human's body, body `+0x44` bit `0x40`), so glass never hides a pane from a strike.
-   A body with any of `0x30` that the human may strike (human vtable `+0x10c`, not traced) is then tested against
-   each strike shape (shape flags `0x1` and `0x2`), and the first that overlaps calls `Strike_Contact`
+   A body gathered with flag `0x8` or `0x10` (mask `0x18`, so `0x20` alone is never gathered) that the human may
+   strike (human vtable `+0x10c`, not traced) is then swept against each strike shape (shape flags `0x1` and `0x2`,
+   [Physics Unit 10](physics-bodies.md#u10-strikes)), and the first that hits calls `Strike_Contact`
    (`0x0021b290`). For a pane that is: the noise event (`0x002936a8`, 30 m), `Glass_Break` (`0x0038f378`), a
    player's crime-10 statistic and then message 1 ([A pane's life](#pane), steps 5-7).
 2. **The airborne body**. The move's sweep asks the physics world for bodies whose flags meet a mask the human
@@ -1867,7 +1868,7 @@ Coney's stand-ins for the world objects, where this page is silent:
   meets is kept for `HuIsAimingAt`, `HuGetControlName` gives `throwControl`, and a throw from the aim leaves from the
   release point with the aim's velocity. Stand-ins: the sweeps are sampled every 0.1 m along a segment (not
   `IPhysics_CollideShape`), humans are 2 m upright capsules, cars are not met, a target's point is a fixed head
-  height, and the lock-on's friendly case is not modelled (Coney's lock never takes a friend). The arc is not drawn.
+  height, and the lock-on's friendly case is not modelled (Coney's lock never takes a friend). The arc is drawn ([Graphics](graphics.md#throw-arc)).
 - **Wear and breaks in flight** ([above](#throws); `world_objects::LooseObjects`, `world_objects::Props::breakFlying`,
   the play mode's `flyingBreak`): a throw sets the flying object's body flag 1 and keeps its thrower. Each contact
   with the level mesh first takes one hit (`WorldObject_TakeHit`, the second counter first) as the table above says:
