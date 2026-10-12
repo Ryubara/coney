@@ -1,0 +1,4 @@
+# a bat in hand: triangle (the drop), then a cross tap 1 and 80 updates later
+40 tap triangle
+41 tap cross
+120 tap cross
