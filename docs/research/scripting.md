@@ -1570,6 +1570,62 @@ Over 866 HelpRespond goals in four level80 traces (run 1 from the scene's end to
 and 30 s before the order), the median lasted 2 updates and the longest 51 (1.7 s); none lasted 3 s. Almost all sat
 on a Spectate goal (some on a Fight), which carried on afterwards. Confirmed (runtime).
 
+##### The first updates and the crew's targets: five more runs {#level80-fight-timeline}
+
+Second set of answers for issues #406 and #73 (2026-10-12). Five runs of the original (PCSX2 2.9.94), each from a
+checkpoint-4 state with the player put on `fCochiseSwan` (−236.4, 176.6, 4.3) to fire the trigger, every human read
+once per update over PINE (position, facing, brain goals, target `+0x124`, enemy list, attack-slot holders `+0x1a4`,
+health record `+0x144`, state word). Runs 1-3 enter the trigger at the same moment and share the opening (the game is
+deterministic from a state); runs 4 and 5 enter it 4 s and 7 s later and open differently. The order was given 15,
+40, 60, 25 and 30 s after the scene. Updates count from the scene's end, U from the order (Cochise's first
+`FollowAndAttack`). Confirmed (runtime) unless marked.
+
+**A slot refused leaves no target.** `Brain_SetTarget` (`0x0028cfe0`) stores the nil handle in `+0x124` first and
+writes the new target only when `Brain_ClaimAttackSlot` (`0x0028df30`) succeeds; a claim on a full list fails unless
+the newcomer is nearer than the farthest holder or forced. So a `Brain_Fight(side)` from `Brain_OnViolenceSeen`
+(`0x00291960`) that finds the side full leaves `+0x124` nil, pushes FindEnemy, Melee, Fight anyway, then HelpRespond
+on top (when none sits above the goal base). Nothing gives him a target or a Spectate goal until HelpRespond ends,
+except an event ([HelpRespond](ai-goals.md#goal-help-respond)). Then Fight ends at once (no slot, [step
+2](ai.md#fight-order)), Melee re-picks and, with every enemy at −999, pushes Spectate. Confirmed (code).
+
+**The fight starts within 7-9 updates.** The first Destroyer has FindEnemy and Melee at update 1 or 2, the last at
+update 7 or 9 (runs 1, 4, 5; the earlier run 1 above: all by update 8). Every Destroyer targets Cochise or Swan or has
+Spectate on his stack by update 7, 7 and 9, and all twelve at once from then. From there to update 30 at most one
+Destroyer at a time fails it, for one update (run 4, update 22: a soldier just pushed off Swan's slots, his
+HelpRespond on a targetless Fight lasting one update because he already faced the fight). Later such gaps last longer
+only when the soldier is stunned (state `0x100000`, update 31-52 in run 1: the stack is frozen under the reaction).
+No HelpRespond is pushed before update 13: the help calls come from the first attacks, by which time every soldier
+already has Fight or Spectate, so a HelpRespond lands on Spectate (the condition still holds) or, when it lands on a
+targetless Fight, on a soldier already facing the fight.
+
+**After the order: who the crew attack, and what turns a holder.** At U+300 (crew Warriors only; Cleon in brackets):
+
+| | Run 1 | Run 2 | Run 3 | Run 4 | Run 5 |
+| --- | --- | --- | --- | --- | --- |
+| Destroyers targeting a crew Warrior | 9 | 7 (+2) | 7 | 5 (+1) | 5 |
+| ... listing one of the seven | 12 | 12 | 12 | 12 | 10 |
+| slot holders on Cochise or Swan at U who target a Warrior by U+300 | 5 of 6 | 6 of 6 | 5 of 7 | 4 of 7 | 4 of 6 |
+| crew Warriors who target a holder by U+300 | 3 | 5 | 6 | 6 | 5 |
+
+- **The crew pick by score from their own list; slots on Cochise and Swan play no part.** Each crew Warrior's
+  `FollowAndAttack` picks with `Brain_PickBestEnemy` (flags `0xfffffbf9`) at 9-19 m, within U+0 to U+3 in most cases.
+  The −999 rule asks about the *Destroyer's* attackers, who are few, so a Destroyer holding a slot on Cochise is as
+  good a pick as a free one. The first pick was a holder for 1-4 of the six per run, and often not the nearest
+  Destroyer: the walk over the list stops at the first valid entry after five slots once a winner exists (empty
+  slots count), so list order matters. Confirmed (code) at `0x0029f230`; the picks confirmed (runtime).
+- **A holder turns to a Warrior in four ways**, counted over the 24 holders that did by U+300 (classified from the
+  trace: goal stack, distances, health): Melee's re-pick by score when his fight goal ends (at its 4 s deadline, or
+  the target beyond 5.5 m) and a Warrior now scores higher (13); the [fight goal's re-target](gang-fights.md#switches)
+  (a Warrior within 1.5 m straight ahead, slot forced, at most once a second; 5, often a Warrior running past toward
+  someone else); EngageEnemy's 2 s re-target when the old target is beyond 5 m (2); a hit (event 1 →
+  `Brain_SetTarget(hitter, forced)` when not busy, `GangBrain_OnEvent` `0x00304fa8`; 2). Two more lost their slot
+  first and then picked a Warrior. Inferred from the traces for the split; each path confirmed (code) at the cited
+  addresses. Free soldiers (Spectate or no slot) take a Warrior or Cleon through Melee's or Spectate's own pick.
+- **Cochise and Swan do not go out.** From 1,800 health they lost at most 164 by U+300 (lowest 1,636), were knocked
+  down (state `0x80000`) 0-2 times each for 12-73 updates, and were never knocked out. A knock-down releases no slot:
+  slot claims prune only dead holders and the knock-out alone releases them ([ai.md](ai.md#targets)). Their holders
+  fell from 6-7 at U to 1-6 at U+300, by the holders' own switches.
+
 **Coney.** Checked 2026-10-12 on the preview build (tip `b73ef09d`) with `--play-level level80 --checkpoint 4
 --start -236.4,176.6,4.3,180 --headless --trace-humans`, and in the code on `main` (`0a926664`) and on PR #394's
 branch:
@@ -1605,15 +1661,26 @@ branch:
 4. Melee's slots, with Spectate for the soldiers who get none, and LeftTurf inside `vTurfDestroyers`
    ([The fight goal](ai.md#fight), [The Melee goal](ai.md#melee-goal)), so the block breaks into a ring.
 5. A test (`[disc][story]`, on the player's path): level80 from checkpoint 4, walked into `vCochiseSwanTrigger`, the
-   scene skipped. Within 30 updates of the scene's end every Destroyer targets Cochise or Swan or has a Spectate
-   goal; within 60 updates at least eight are more than 0.5 m from their flag; no Destroyer targets Cleon before the
-   attack order. After the order, with the player standing still and pressing nothing (from three runs of the
-   original, [above](#level80-after-order)): Cochise and Swan have `FollowAndAttack` within 2 updates; by update 300
-   at least 9 of the 12 Destroyers list one of the seven Warriors and at least 5 target one. How many target the idle
+   scene skipped. Each Destroyer has pushed FindEnemy and Melee by update 10 of the scene's end; by update 12 all
+   twelve at once target Cochise or Swan or have a Spectate goal, and from then to update 30 at most one fails it at
+   any update ([the timeline](#level80-fight-timeline): 7-9 and at most one, in four runs); within 60 updates at least
+   eight are more than 0.5 m from their flag; no Destroyer targets Cleon before the attack order. After the order,
+   with the player standing still and pressing nothing (eight runs of the original, [above](#level80-after-order)
+   and [the timeline](#level80-fight-timeline)): Cochise and Swan have `FollowAndAttack` within 2 updates; by update
+   300 at least 9 of the 12 Destroyers list one of the seven Warriors (Cleon and the crew), at least 4 target one,
+   at least 3 of the Destroyers that held a slot on Cochise or Swan at the order have targeted a Warrior, and at
+   least 2 crew Warriors have targeted such a holder. Cochise and Swan are never knocked out. How many target the idle
    player within 30 updates varies (5, 0 and 2), so a test must not require it.
 6. After the order: the forced `IssueWarriorCommand(1, true)` rebuilds the attack tactic although command 1 is
    current, and gives Cochise and Swan `FollowAndAttack`; `GangAddMember` empties a moved human's enemy list; the
    enemy scan applies the 110° field of view beyond the near radius ([After the order](#level80-after-order)).
+7. The fight's timing and the slots ([the timeline](#level80-fight-timeline)): the scan on the gang-changed trigger
+   and the think one step in five ([ai.md](ai.md#update)) put FindEnemy and Melee on every Destroyer within 7-9
+   updates, before the first attack's help calls. `Brain_SetTarget` leaves the target nil when the slot claim fails.
+   A standing soldier's turn of more than 15° is one turn clip of about 10 updates, whatever the angle. A crew
+   Warrior's pick ignores whether a Destroyer holds a slot on someone else, and a holder leaves Cochise or Swan
+   through the fight goal's 1.5 m re-target, Melee's re-pick at the fight goal's 4 s deadline, EngageEnemy's re-target
+   and hits.
 
 #### The order at runtime (reference) {#level80-hints}
 

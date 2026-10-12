@@ -578,6 +578,17 @@ goal; the head look runs on by itself. Confirmed (code). At runtime (level80's l
 the median goal lasted 2 updates and the longest 51 (1.7 s); it was pushed over a Spectate or Fight goal, which
 carried on afterwards ([level80](scripting.md#level80-after-order)). Confirmed (runtime).
 
+The median is short because most goals start with the soldier already facing the caller's enemy. A standing soldier
+asks no speed, so a turn of more than 15° is a **turn on the spot**: one turn clip, the rest of the angle spread over
+the clip's length ([Characters](characters.md#ai-locomotion), `0x0025c240`); there is no per-update rate. Over 732
+goals in four level80 runs (PCSX2 2.9.94, every human read once per update), the 214 that needed more than 15° lasted
+a median of **10 updates** whatever the angle (15-30°: 10; 30-60°: 10; 60-90°: 10; ranges 1-50), and the 518 within
+15° a median of 2. Confirmed (runtime). While the goal is on top nothing under it runs
+([Brain_UpdateGoals](ai.md#update-goals)), so a soldier whose target was cleared keeps none until it ends: only an
+event can give him one (a hit, event 1: `Brain_SetTarget(hitter, forced)`; a violence event, `0x14`: with no target he
+retries `Brain_SetTarget(side)`, not forced), and `HelpRespondGoal_Process` also ends it on a brain-counter update
+divisible by 30 when his enemy list is not empty. Confirmed (code) at `0x00304fa8`, `0x00291960`, `0x002b7900`.
+
 ### GuardFlag (type 0x2b) {#goal-guard-flag}
 
 `GoalGuardFlag`: stay within a radius of a flag and face a set heading.
