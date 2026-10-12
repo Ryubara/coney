@@ -505,3 +505,25 @@ def test_the_lock_message_names_what_is_busy(tmp_path: Path, world: World) -> No
     assert take(lock, world, "holder", 1601) is not None
     with pytest.raises(SlotTimeout, match=r"build folder .*holder"):
         lock.acquire("waiter", "wt", "dev", False, 11602, poll=10, report=None, timeout=30)
+
+
+def test_a_waiting_build_can_be_called_off_by_its_caller(tmp_path: Path, world: World) -> None:
+    slots = make(tmp_path, world, slots=1)
+    assert take(slots, world, "holder", 1701) is not None
+    asked: list[float] = []
+
+    def abandon(waited: float) -> str | None:
+        asked.append(waited)
+        return "would not fit" if waited >= 30 else None
+
+    with pytest.raises(SlotTimeout, match=r"would not fit; held by holder") as timeout:
+        slots.acquire("waiter", "wt", "dev", False, 11702, poll=10, report=None, abandon=abandon)
+    assert (timeout.value.position, timeout.value.total) == (1, 1)
+    assert asked == [0.0, 10.0, 20.0, 30.0]  # asked at every look, with the seconds waited so far
+    assert slots.status().queue == []
+
+
+def test_a_build_that_gets_its_slot_is_not_called_off(tmp_path: Path, world: World) -> None:
+    slots = make(tmp_path, world, slots=1)
+    claim = slots.acquire("waiter", "wt", "dev", False, 11703, poll=10, report=None, abandon=lambda waited: "never")
+    assert claim.agent == "waiter"
