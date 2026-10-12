@@ -32,9 +32,9 @@ class SpawnRandom {
 
 /// The models for `amount` fighters. `choice` is the model picker's index: 0 is Random (each fighter gets its own
 /// model, drawn from `models` with `random`), a larger one is `models[choice - 1]` for every fighter. With no `models`
-/// (a mode that does not know the configuration's types) every entry is empty, which the play mode reads as "the scene's
-/// own character". A choice past the end counts as Random. An amount below 1 gives none; above kMaxFighterAmount, that
-/// many.
+/// (a mode that does not know the configuration's types) every entry is empty, which the play mode reads as "the
+/// scene's own character". A choice past the end counts as Random. An amount below 1 gives none; above
+/// kMaxFighterAmount, that many.
 [[nodiscard]] std::vector<std::string> pickFighterModels(std::span<const std::string> models, std::size_t choice,
                                                          int amount, SpawnRandom& random);
 

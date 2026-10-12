@@ -345,8 +345,8 @@ void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees, const std:
     }
     // The scene's character, or the one `model` names (loaded once and kept, as the scripts' humans' are; a model that
     // does not load falls back to the scene's, with a line saying so).
-    const CastLook look = model.empty() ? CastLook{.character = m_character.get(), .texture = m_texture}
-                                        : castCharacter(model);
+    const CastLook look =
+        model.empty() ? CastLook{.character = m_character.get(), .texture = m_texture} : castCharacter(model);
     m_ai->spawnFighter(*look.character, &m_scenery->collision(), anim::Vec3{feet.x, feet.y, feet.z}, headingDegrees);
     const std::size_t vertices = look.character->assets().model.vertices.size();
     FighterMesh mesh;

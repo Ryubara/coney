@@ -362,8 +362,8 @@ void addFightersPage(DebugSession& session) {
                                     const std::vector<std::string> picks =
                                         pickFighterModels(p.fighterModels(), spawn->model, amount, spawn->random);
                                     const float heading = p.playerHeadingDegrees();
-                                    const std::vector<anim::Vec3> spots = fighterSpots(
-                                        p.playerFeet(), heading, static_cast<float>(*distance), amount);
+                                    const std::vector<anim::Vec3> spots =
+                                        fighterSpots(p.playerFeet(), heading, static_cast<float>(*distance), amount);
                                     std::size_t made = 0;
                                     for (std::size_t i = 0; i < spots.size(); ++i) {
                                         // Each faces the player.
