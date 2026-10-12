@@ -1,0 +1,28 @@
+# The biggest Rumble battle: Brawl, 9 a side, Furies (gang 3, P11-P19) against Orphans (gang 4, P21-P29) in the Fight
+# Pen, every human traced on every update, all eighteen fighters driven by their brains.
+# Research: docs/research/rumble.md#gang-battle-trace (the state, the settings and what the matches show).
+description = "Fight Pen brawl, 9 a side, player 1 handed to the AI after the countdown: every human, every update"
+research = "docs/research/rumble.md"
+input = "gang_battle.txt"
+updates = 9000
+rows = "humans"
+fields = ["humans"]
+
+[original]
+# Made from QUICK RUMBLE > WAR PARTY > 1P vs CPU > Furies, Orphans, the set-up's mode (index 1) written 1 (RM_Brawl)
+# and gang size (index 2) 9 at Choose Area, then the Fight Pen: saved at the intro's "press X" prompt, brains off.
+state = "states/gang_battle_intro.p2s"
+patches = ["scripted-pad", "call-brains"]
+# The matches differ by an offset of the brains' random stream (its 10-bit index, maths.md#random), written
+# before the first update: `pcsx2 record --let seed=341`.
+let = { seed = "0" }
+setup = [ { address = "0x006eb880", type = "u32", value = "(u32(0x006eb880) + seed) & 0x3ff", frame = 0, until = 0 } ]
+# The countdown ends and the brains go on at step 151 (P11's brain +0x09 turns 0); four updates later player 1
+# (P11) is given back to his brain, as HuSwitchPlayer gives a player back: Human_ReleasePlayer(h, 0, 1).
+calls = [ { function = "0x0022a2a8", args = ["player", "0", "1"], frame = 155 } ]
+# A sample of 30 humans takes about 11 ms, near the 16 ms before the next update: at half speed none tears.
+speed = 0.4
+
+[coney]
+level = "level102"
+args = ["--rumble", "1", "--arena", "102", "--gang-size", "9"]

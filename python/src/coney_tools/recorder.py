@@ -83,6 +83,11 @@ class Recording:
     #: With rows = "humans": the steps whose sample saw the next update start before it was read to the end.
     torn: list[int] = field(default_factory=list)
 
+    def quality(self) -> str:
+        """Every missed and torn step, a line each (`missed: 3 4`, `torn: 7`): where a long recording's samples
+        cannot be trusted, which the summary line only starts to list."""
+        return f"missed: {' '.join(map(str, self.missed))}\ntorn: {' '.join(map(str, self.torn))}\n"
+
     def csv(self) -> str:
         """The trace as CSV text, header first."""
         lines = [",".join(self.header)]

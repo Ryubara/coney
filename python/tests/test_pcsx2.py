@@ -588,6 +588,8 @@ def test_rows_per_human_follow_pointers_and_handles(tmp_path: Path, fake_pine: t
     assert recording.missed == []
     # Step 0 is sampled whenever the first poll lands, maybe just before the next update; the others right after one.
     assert set(recording.torn) <= {0}
+    recording.missed, recording.torn = [4, 5], [7]
+    assert recording.quality() == "missed: 4 5\ntorn: 7\n"
     rows = [line.split(",") for line in recording.lines]
     # Human 0 (the civilian, index 5) comes first in table order, then the player (index 3), at every step.
     assert [row[:2] for row in rows[:4]] == [["0", "5"], ["0", "3"], ["1", "5"], ["1", "3"]]

@@ -427,6 +427,9 @@ def _record(
             print(f"{path}: {len(recording.hooks.entries[hook.name])} calls logged")
         if recording.hooks.lost:
             print(f"warning: {recording.hooks.lost} logged calls were lost (the ring overflowed between polls)")
+    if recording.missed or recording.torn:
+        # Every step to distrust, beside the trace; the line below lists only the first.
+        out.with_name(f"{out.stem}.quality.txt").write_text(recording.quality(), encoding="utf-8")
     per_poll = 1000 * recording.seconds / max(recording.polls, 1)
     print(
         f"{out}: {recording.updates} updates"
