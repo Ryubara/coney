@@ -29,14 +29,19 @@ struct Played {
     bool captions = false;
 };
 
-// Services listing three movies whose play records each request in `played` and answers `accept`, a reference the
-// test changes between requests.
-DebugServices movieServices(std::vector<Played>& played, bool& accept) {
+// The play requests the page made, and whether the game accepts the next one.
+struct MovieCalls {
+    std::vector<Played> played;
+    bool accept = true;
+};
+
+// Services listing three movies whose play records each request in `calls` and answers its `accept`.
+DebugServices movieServices(MovieCalls& calls) {
     DebugServices services;
     services.movies = [] { return std::vector<std::string>{"LOGO", "TRAILER", "L99_IN"}; };
-    services.playMovie = [&played, &accept](std::string_view name, bool captions) {
-        played.push_back(Played{.name = std::string(name), .captions = captions});
-        return accept;
+    services.playMovie = [&calls](std::string_view name, bool captions) {
+        calls.played.push_back(Played{.name = std::string(name), .captions = captions});
+        return calls.accept;
     };
     return services;
 }
@@ -45,9 +50,8 @@ DebugServices movieServices(std::vector<Played>& played, bool& accept) {
 
 TEST_CASE("the Movies page lists the disc's movies with what plays each, after Missions", "[debug][movies]") {
     TunableRegistry tunables;
-    std::vector<Played> played;
-    bool accept = true;
-    DebugSession session(tunables, movieServices(played, accept), nullptr);
+    MovieCalls calls;
+    DebugSession session(tunables, movieServices(calls), nullptr);
     const auto titles = session.model().pageTitles();
     const auto missions = std::ranges::find(titles, "Missions");
     REQUIRE(missions != titles.end());
@@ -68,14 +72,13 @@ TEST_CASE("the Movies page lists the disc's movies with what plays each, after M
     CHECK(page->find("TRAILER")->detail.empty());
     REQUIRE(page->find("L99_IN") != nullptr);
     CHECK(coney::debug::valueText(*page->find("L99_IN")) == "level99 intro");
-    CHECK(played.empty());
+    CHECK(calls.played.empty());
 }
 
 TEST_CASE("choosing a movie asks the game to play it with the captions switch and closes the menu", "[debug][movies]") {
     TunableRegistry tunables;
-    std::vector<Played> played;
-    bool accept = true;
-    DebugSession session(tunables, movieServices(played, accept), nullptr);
+    MovieCalls calls;
+    DebugSession session(tunables, movieServices(calls), nullptr);
     coney::debug::MenuNavigator& navigator = session.navigator();
     navigator.open();
     // The root page: Favourites, then the pages in order; walk down to Movies and open it.
@@ -93,9 +96,9 @@ TEST_CASE("choosing a movie asks the game to play it with the captions switch an
         navigator.apply(coney::debug::MenuInputFrame{.action = coney::debug::MenuAction::Down});
     }
     navigator.apply(coney::debug::MenuInputFrame{.action = coney::debug::MenuAction::Accept});
-    REQUIRE(played.size() == 1);
-    CHECK(played.front().name == "L99_IN");
-    CHECK(played.front().captions);
+    REQUIRE(calls.played.size() == 1);
+    CHECK(calls.played.front().name == "L99_IN");
+    CHECK(calls.played.front().captions);
     CHECK_FALSE(navigator.isOpen());
     CHECK(session.log().last(1).front() == "movies: playing L99_IN");
 
@@ -104,10 +107,10 @@ TEST_CASE("choosing a movie asks the game to play it with the captions switch an
     REQUIRE(navigator.page() != nullptr);
     CHECK(navigator.page()->title() == "Movies");
     session.model().openPage("Movies")->find("Captions always")->setBool(false);
-    accept = false;
+    calls.accept = false;
     session.model().openPage("Movies")->find("LOGO")->run();
-    REQUIRE(played.size() == 2);
-    CHECK_FALSE(played.back().captions);
+    REQUIRE(calls.played.size() == 2);
+    CHECK_FALSE(calls.played.back().captions);
     CHECK(navigator.isOpen());
     CHECK(session.log().last(1).front() == "movies: LOGO could not be played (no such movie, or one is playing)");
 }
