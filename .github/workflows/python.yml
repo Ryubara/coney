@@ -57,6 +57,9 @@ jobs:
       - run: uv run --project python coney-tools repo check
       # The generated blocks of AGENTS.md, CONTRIBUTING.md and the guides must match .github/conventions.yml.
       - run: uv run --project python coney-tools repo render --check
+      # The copies of a convention that GitHub reads from their own files (the issue forms, the pull request template,
+      # the CI scope script, pre-commit's size limit) must still agree with .github/conventions.yml.
+      - run: uv run --project python coney-tools repo audit --files
       # The progress inputs (docs/progress/, the @orig tags, the roadmap) must agree. The tables and the README's badge
       # data are not committed: the docs build writes them (mkdocs_hooks.py).
       - run: uv run --project python coney-tools progress check

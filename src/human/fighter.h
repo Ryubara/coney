@@ -190,6 +190,11 @@ class Fighter {
     /// Without a reach for 351 he only turns.
     /// @orig 0x00275678 Attack_SteerLed (unknown)
     void steerRevive(const Combatant& downed, anim::Vec3 position, float heading, const HumanAnimator& animator);
+
+    /// This human, thrown, is carried round its thrower: from `position` and `heading` it turns to `targetHeading` and
+    /// slides to `goal`, each at a constant rate over `seconds` (TurnAndSlide), on top of its clip's root motion, as
+    /// the steer of an attack does (Holdable::carryOver(), docs/research/combat.md#throw-direction).
+    void carryOver(anim::Vec3 position, float heading, anim::Vec3 goal, float targetHeading, float seconds);
     /// The target human the search would pick for an attack of `range` metres with `current` as the current target
     /// (null for none): the nearest standing enemy within range × 1.1 and 54° of the stick's heading (the facing with
     /// the stick at rest); with no current target, within range × 0.9 at any angle; then within range × 0.7 at any
@@ -606,6 +611,21 @@ class Fighter {
     // **Coney's reading**: the alignment's target heading is not traced; the side's axis is put along the face's
     // inward normal.
     void alignWallThrow(const combat::CombatOutput& out, const FighterInput& input, float& heading);
+    // Whether a throw now takes the rear hold's path (`Grab_StartPairedMove`): holding from behind without human flag
+    // 0x40000000. The spin to the front plays first, and nothing turns.
+    [[nodiscard]] bool rearThrowPath() const;
+    // The updates the spin to the front (80) lasts at its rate, at least 1: a rear hold's throw starts after it.
+    [[nodiscard]] int spinToFrontUpdates(const HumanAnimator& animator, float stepSeconds) const;
+    // A front hold's plain throw (147-153) turns the pair onto the stick over 1/6 s: the thrower so the throw's side
+    // points along the stick, the victim carried round him at its offset and turned to face him.
+    // Research: docs/research/combat.md#throw-direction
+    // @orig 0x0026dd08 Player_Throw (unknown)
+    void turnThrow(Holdable& victim, int animId, const FighterInput& input, float heading);
+    // The spin in front of a rear hold's throw has handed over to the throw's clip: the victim plays its side of the
+    // throw and is let go. (The spin and the throw are started by playGrabAction().)
+    // Research: docs/research/combat.md#throw-direction
+    // @orig 0x00263380 Grab_StartPairedMove (unknown)
+    void throwAfterSpin(const HumanAnimator& animator);
     // The grabber's numbers its victim's struggle reads (power, hurt, rage, flag 0x40, its class's divisor).
     [[nodiscard]] combat::GrabberState grabberState() const;
     // The grabber's side of what its held victim decided: the power it costs, the move's pair of clips and damage,
@@ -617,12 +637,13 @@ class Fighter {
     combat::PlayerCombat m_combat;
     combat::CombatOutput m_last;
     Holdable* m_held = nullptr;
-    Holdable* m_thrown = nullptr;         // the victim of the throw whose hit has not landed yet
-    Holdable* m_lastThrown = nullptr;     // the victim of the last throw (lastThrown())
-    std::optional<WallThrow> m_wallThrow; // this update's wall for a throw (wallThrow())
-    Holdable* m_candidate = nullptr;      // what the grab or tackle search found this update
-    Combatant* m_target = nullptr;        // the target kept (human +0xc8)
-    Combatant* m_snapTarget = nullptr;    // what the snap's search found for this update's square (not the target)
+    Holdable* m_thrown = nullptr;             // the victim of the throw whose hit has not landed yet
+    Holdable* m_lastThrown = nullptr;         // the victim of the last throw (lastThrown())
+    int m_spinThrow = combat::anim_id::kNone; // a rear hold's throw waiting for the spin in front of it
+    std::optional<WallThrow> m_wallThrow;     // this update's wall for a throw (wallThrow())
+    Holdable* m_candidate = nullptr;          // what the grab or tackle search found this update
+    Combatant* m_target = nullptr;            // the target kept (human +0xc8)
+    Combatant* m_snapTarget = nullptr;        // what the snap's search found for this update's square (not the target)
     int m_connect = 72;            // the grab's front connecting clip: 72, or the strong grapple's 657 (649 in rage)
     anim::Vec3 m_slide;            // a grab's alignment's slide velocity, m/s
     int m_slideUpdates = 0;        // updates of slide left

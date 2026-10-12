@@ -230,6 +230,14 @@ def _docs_only_paths(conventions: Conventions) -> list[str]:
     return lines
 
 
+def _audit_checks(conventions: Conventions) -> list[str]:
+    """The checks `coney-tools repo audit` runs (`hygiene.checks`) as a table: scope, severity, fix class, finds."""
+    lines = ["| Check | Scope | Severity | Fix | Finds |", "| --- | --- | --- | --- | --- |"]
+    for spec in conventions.hygiene.checks.values():
+        lines.append(f"| `{spec.id}` | {spec.scope} | {spec.severity} | {spec.fix} | {spec.summary} |")
+    return lines
+
+
 #: Block name to what fills it. The names appear in the marker lines of the files.
 BLOCKS: dict[str, Callable[[Conventions], list[str]]] = {
     "commit-rules": _commit_rules,
@@ -238,6 +246,7 @@ BLOCKS: dict[str, Callable[[Conventions], list[str]]] = {
     "pr-rules": _pr_rules,
     "required-checks": _required_checks,
     "docs-only-paths": _docs_only_paths,
+    "audit-checks": _audit_checks,
 }
 
 

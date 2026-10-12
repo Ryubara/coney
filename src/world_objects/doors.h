@@ -173,6 +173,9 @@ struct Door {
     bool broken = false;             ///< Data `+0x00`: a broken barrier, removed at its next update.
     bool removed = false;            ///< Removed from the world (`WorldObject_Remove`): gone for good.
     double secondObject = kNoObject; ///< `dyn_door_vargas`' second object (data `+0x08`).
+    /// The boards a broken barrier threw, which go on the next tick: the original removed them on their own first
+    /// update, in the update of the hit (docs/research/objects.md#barriers).
+    std::vector<double> boards;
 };
 
 /// The level's doors and barriers.

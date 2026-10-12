@@ -241,8 +241,8 @@ int attackHitUpdate(int animId, const CombatTuning& tuning) {
     return found != kMeasured.end() ? found->hit : tuning.hitUpdate;
 }
 
-bool AttackChain::start(int animId, const CombatTuning& tuning) {
-    m_hit = attackHitUpdate(animId, tuning);
+bool AttackChain::start(int animId, const CombatTuning& tuning, int delayUpdates) {
+    m_hit = attackHitUpdate(animId, tuning) + std::max(0, delayUpdates);
     m_current = animId;
     m_age = 0;
     ++m_combo;

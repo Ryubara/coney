@@ -557,8 +557,11 @@ circle + cross at a victim getting up played 359 and then `X1`.
 
 A moving attack has no single hit update. Its clip's events switch **strike shapes** on and off, and while any is on
 `Human_TestStrikes` (`0x0033f110`) tests them **every update, after the move**, against every body near the human:
-the first shape that overlaps a body calls `Strike_Contact` (`0x0021b290`) for it. The reach is the posed body
-itself: there is no reach or height figure of its own. Confirmed (code) at the addresses below; the timings are
+the first shape that meets a body calls `Strike_Contact` (`0x0021b290`) for it. "Meets" is a **sweep**: each shape
+is moved from its pose at the last update to its pose now through the physics sweep table, so only the spheres can
+reach a box (a segment never does), and a shape just switched on is tested with no move
+([Physics: Unit 5](physics.md#u4b-how-human-teststrikes-builds-the-sweep-0), confirmed (code)). The reach is the
+posed body itself: there is no reach or height figure of its own. Confirmed (code) at the addresses below; the timings are
 confirmed (runtime).
 
 **The shapes** (confirmed (code), `IPhysics_Construct` `0x0033c288` with the tables at `0x00512810`-`0x005128f0`).
@@ -1040,6 +1043,49 @@ square 2 updates later, both released 4 updates after; then cross taps every 8 u
   scored with id **80**; 57 follows without a hit of its own; the extension 59 is scored as 59. The rear path spends
   power twice (389 → 188; `0x00263380` spends 0.25, then again for the move's damage).
 - The tutorial callback got 57 and 59 from the front, 80 and 59 from the rear.
+
+#### Rembrandt's power move and its spray can {#power-move-props}
+
+Issue #223 asked whether level99's lesson 6 gives Rembrandt a spray can. It does not, and it needs none: the power
+move is the same for every Warrior class's anim ids, and the clips decide what it looks like.
+
+- **Which finisher.** The power strike is always anim id **57**, and its extension is **59**
+  ([In the grab](#grabbing)). No inventory, spray-paint count or held object is read on that path
+  (`Player_UpdatePowerMove` `0x0027df38`, confirmed (code); `Player_UpdateGrabbing` `0x0027f3b0` as
+  [In the grab](#grabbing) describes it, inferred). Each
+  character's data maps the id to a clip, and its own slot wins ([Anim ids](../references/anim-ids.md#anim-57)):
+  Rembrandt's 57 / 58 / 59 / 60 are `gen_grab_front_power10_p1` / `_p1_rea` / `_p2` / `_p2_rea`, and the generic
+  set's are `gen_grab_front_power23_*`. So the spray finisher is Rembrandt's own 59, with or without paint.
+- **The can comes from the clip.** `gen_grab_front_power10_p2` (70 frames, played at rate 0.75, so 94 updates)
+  carries these events, read from the disc (numbers only):
+
+  | Frame (update) | Event | What it does |
+  | --- | --- | --- |
+  | 0 (0) | `0x30`, the name `s_spraycan` at `+8` | **creates the can**: `dyn_` + name is looked up (`ObjectDb_FindByName`); for a type of kind (`+0x65`) 5, with no prop at human `+0x348`, `Human_CreateCarriedProp` (`0x0024cbb0`) makes the object at the human and attaches it at point `0x13` with its type's offset (`Human_AttachCarriedProp` `0x0024cd30`); both `+0x348` and `+0x34c` then hold its handle |
+  | 0 (0) | 11, `SA` 146 `sprayface` | the speech command `sprayface` ([Sound events](sound-events.md#command-ids)) |
+  | 1 (1) | `0x37`, word 19 | message `0xb7`: moves the prop to attach point 19 at the event's position (× the human's scale) and rotation |
+  | 14 (19) | 11, `SA` 83 `sprayloop`; `0x21` on bone 19 | starts the **spray sound** ([Sound events](sound-events.md#spray-loop)); a named effect at the can |
+  | 17, 20 | `0x21` on bone 19 | more spray effect |
+  | 27 (36) | `0x45` | message `0xc5`: **stops the spray sound** |
+  | 64 (85) | `0x31`, the name `s_spraycan` | **removes the can**: when the prop at `+0x348` is of that type, `Human_ReleaseCarriedProps` (`0x0024ce40`) destroys it and empties both handles |
+
+  `gen_grab_front_power10_p1` (57) has no prop or spray event. A type of kind 6 is ignored by both events; any other
+  kind is put in the hand instead (`Human_PlaceItemInHand`) and dropped by `0x31` when it is the held object.
+  Confirmed (code) at `Anim_FireFrameEvents` (`0x00101dd8`, the cases `0x30`, `0x31`, `0x37` and `0x45`) and
+  `Human_HandleMessage` (`0x00245920`, cases `0xb7` and `0xc5`).
+- **At runtime** (confirmed (runtime), PCSX2 2.9.94, two plays of level99 checkpoint 1 from the `l99-cp1-lesson1`
+  state with the course of `repo:research/traces/missions/level99_cp1.toml`, hooks `prop-create` and `prop-release`,
+  Rembrandt's human `+0x168`, `+0x348`, `+0x34c` read every update): 59 started on update 2271; the next update
+  `+0x348` and `+0x34c` held one handle; the sound handle `+0x168` was set on update 2290 (59's update 19) and emptied
+  on 2307 (update 36); the props were empty again when the scene started. In the second play the hook saw
+  `Human_CreateCarriedProp(Rembrandt, "dyn_s_spraycan")` called from `Anim_FireFrameEvents` (return `0x00103874`) on
+  59's first update and `Human_ReleaseCarriedProps(Rembrandt)` from it (return `0x00103938`) 84 updates later.
+  Rembrandt held no spray paint in either run.
+
+**Coney** (#223): play Rembrandt's 59 as it is, and act on the clip events above for any human: `0x30` makes the
+named `dyn_` object and attaches it at point `0x13` (kind 5), `0x37` sets its attach point and local pose, `0x31`
+removes it; a scene start also removes it ([Scenes](scenes.md#humans)). Disc test: through lesson 6, Rembrandt has a
+`dyn_s_spraycan` attached from 59's first update to about update 85, and none after.
 
 ### Strong grapple {#strong-grapple}
 
@@ -1703,7 +1749,10 @@ throw.
 | front hold, left (154) | 1 (`d` 114°) | −3.5° | (0.94, −0.36) | (0.00, 5.65), 43 updates after |
 
 - The thrower always ended facing the stick heading: the side clips turn him by about −90° (right), 180° (rear) and
-  +86.5° (left) after the 1/6 s turn put the side's axis on the stick.
+  +86.5° (left) after the 1/6 s turn put the side's axis on the stick. These are the clips' root turns **times their
+  rate** (0.75): the sampler scales bone 0's turn by the task's rate as it does the root velocity (confirmed (code) at
+  `0x00104ce0`; the disc's 149, 151 and 153 sum to −89.9°, −180.0° and +86.4° that way, and to −119.9°, −240.0° and
+  +115.1° without it; [Root motion](formats/animation.md#root-motion), #263).
 - The landing point is the same in the stick's frame whatever the stick's angle from the facing (the front's six
   throws, `d` from −44° to +40°, landed within 4 cm of each other), so the turn takes the whole difference. Seen
   from where the thrower stood, the body lands within 5° of the stick: 2.1° right of it for the front throw, 3.9°
@@ -1720,36 +1769,27 @@ throw.
 So in the original a throw from the front hold goes exactly where the stick points, give or take the clip's few
 degrees, wherever the stick is within the side's 90° sector; only a rear-hold throw is limited to the four body axes.
 
-**Coney today** (read from `src/`; Coney's `Fighter` and `combat::updateGrab`): the throw picks the side and the clip
-from the stick (`combat::sideOf`, `combat::throwAttack`) and plays the pair at once (`Fighter::playGrabAction`), but
-a plain throw never turns the pair: the body flies along the side's body axis, so it lands up to 45° off the stick,
-which is the owner's "slightly off" (#240). Only the head-on wall throw is aligned (`Fighter::alignWallThrow`, and
-there at once, not over 0.01 s). `sideOf` counts exactly 45° as the front and exactly 135° as a side (a Coney
-choice; the original's test makes exactly 45° a side, item 2 above). A throw from the rear hold plays no spin 80
-first (`spinFirst` is set only for the power strike), and the place check (`placed`) is applied to every throw where
-the original applies `Pair_CheckPlace` only to 147-153 from the front hold.
+**In Coney** (#240; `combat::updateGrab`, `Fighter::turnThrow`, `Fighter::throwAfterSpin`): the throw picks the side and
+the clip from the press's camera-turned stick, unsnapped (`combat::sideOf`, `combat::throwAttack`), where exactly 45°
+is a side and exactly 135° still a side. From the front hold (or with the `0x40000000` grab block) a plain throw starts
+both clips on the press's update and turns the thrower to stick heading + side × 90° over 1/6 s
+(`TurnAndSlide::turnToOver`), while the victim, let go, is carried round him over the same 1/6 s
+(`Holdable::carryOver`: its offset from him turned by the same angle, `moveToOver`, and turned to face him), on top of
+both clips' root motion. A head-on wall throw is aligned at once (`Fighter::alignWallThrow`, not over 0.01 s); another
+wall throw turns nothing. From the rear hold the spin 80 / 81 plays first and the throw's clip follows with no turn;
+the victim is let go when the throw's clip begins, and the throw's hit is timed from it (its spin's updates after the
+press). The place check applies only to the front hold's plain throws. **Coney's readings**: the thrower's turn starts
+on the update after the press (Coney's steer, like an attack's, is applied in the next state update), so he reaches
+the wanted heading 5 updates after it; a passive target's carry starts on the press's update.
 
-**Coney fixes** (#240):
-
-1. From a front hold (or with the `0x40000000` grab block), on a plain throw (147-153): turn the thrower to
-   stick heading + side × 90° over 1/6 s with the existing `TurnAndSlide::turnToOver` (constant rate, nothing under
-   0.01 rad), and carry the victim round him on the same update: rotate its offset from the thrower by the same turn
-   and slide it there over 1/6 s (`moveToOver`), turning it to the wanted heading + 180°. Start both throw clips on
-   the same update, so the turn runs on top of their root motion for the first 5 updates.
-2. Take the stick heading from the camera-turned stick of the update the throw starts (the press, or the hold clip's
-   end for a buffered throw), with no snapping.
-3. From a rear hold (no `0x40000000`): play the spin 80 / 81 first, then the side's throw clip, with no turn: the
-   body goes along the side's body axis chosen at the press.
-4. Make exactly 45° a side in `sideOf` (`|d| >= 45°` is not the front); 135° stays a side.
-5. Apply the place check only to the front-hold plain throws (147-153), not to the wall throws or the rear-hold path.
-6. Test (`tests/human/`, a grabbed passive target in open ground, no collision within 8 m): with the facing fixed and
-   the stick at 0°, ±20°, ±40° (front), −50°, −90° (right), 160° (rear) and 110° (left) from it, a front throw's
-   thrower reaches the stick heading within 0.5° 5 updates after the throw starts (the other sides: stick heading +
-   side × 90° plus their clip's own rotation over those updates), and at the end of the throw the thrower faces the
-   stick heading (front and right within 0.5°; rear +1.2°, left −3.5° within 1°, the clips' turns). The landing
-   point in the stick's frame is the same for every stick angle of one side within 0.1 m, and lies within 5° of the
-   stick heading seen from the thrower's start (front 2.1° right, ±1°). A rear-hold throw with the stick 30° right of
-   the facing plays 80 then 149 and lands along the facing's right axis (within 2°), not along the stick.
+On the disc (`tests/sandbox/disc_throw_direction_test.cpp`, the fight yard, the stick at 0.9 and `d` 0°, ±20°, ±40°,
+−50°, −90°, 160° and 110°; `tests/human/throw_direction_test.cpp` does the same on synthetic clips): each side's
+throws land at one point in the stick's frame within 4 cm and end with one heading, and a front thrower
+faces the stick (0.0°) 5 updates after the press. Before the fix the front throws landed from 20.6° left to 59.0°
+right of the stick. Two differences remain, both from the clips' own root rotation, not the aim: the side clips turn
+the thrower about a third too far (149 −120° against −90° at runtime; rear −237°, left +119°), and the front victim
+lands 19.2° right of the stick (2.1° at runtime). See the open question on the root turn and the task's rate
+([Open questions](#open-questions)).
 
 ### A bat in hand {#bat}
 
@@ -2375,11 +2415,29 @@ test a flung victim striking the attacker, and **PoizoCiv's 195 damage and 294 w
 moving him every update kept him airborne (clip 428, `ANIM_MOVEMENT_FALL`), and update 61 is when he landed (429)
 and took a fall's damage and knockdown (confirmed (runtime), 2026-10-12, PCSX2 2.9.94, the same slot: placed only at
 updates 0-2, he fell until update 34 and took 600 → 405 and 294 at 35 with no strike on him, the player still
-standing; the strike-shape hook (`0x003428d0`) showed only the attacker's body switching shapes on). Re-running with a
-victim who stands and reacts at once is still to do (#190): the scenarios need a placement that does not make him
-fall (writing the transform, human `+0x10` and `+0x390` at updates 0-2 still did). By the code above, such a strike
-on a charger or a diver takes its health (the extreme reactions' 20) and plays no reaction (confirmed (code) at
-`0x00265f70`).
+standing; the strike-shape hook (`0x003428d0`) showed only the attacker's body switching shapes on). Why he fell:
+the street in front of slot 6's spot ends about 7.5 m ahead in a drop of 8.7 m, and both placements put him past it
+(kept 4 m ahead of a player who ran 4 m, or 9.3 m away at once). Walked out 0.15 m an update he stays on the ground
+to 7.5 m and steps off there (confirmed (runtime), scratch probes `walkout` and `charge1`).
+
+**A flung victim's strike costs the charger 20 health and no reaction; the diver was not struck** (confirmed
+(runtime), PCSX2 2.9.94, 2026-10-12, a copy of slot 6; PoizoCiv's brain held (`+0x09` = 1), walked out 0.15 m an
+update to 3.8 m (charge) or 2.7 m (dive) in front of the player, then kept there along the player's heading and facing
+him until the press, so he stands upright and reacts at once; L2 held and the stick at 98 % straight ahead from update
+20, cross or square tapped at 40; hooks `strike-contact` and `anim-dispatch`):
+
+| Update | The charge (cross) | The dive (square) |
+| --- | --- | --- |
+| 41 | 0 starts, held `0x1000000` | 1 starts, held `0x400000` |
+| hit | 50: the charger's body touches PoizoCiv (`Human_OnContact`, `0x00219d50`): 600 → 569, **296** (crushing mid, front), held `0x402000` | 46: the dive's strike shape (`Human_TestStrikes`, `0x0033f110`): 600 → 574, **300** (crushing high, front) |
+| strike back | 51: PoizoCiv's flung body touches the charger (`Human_OnContact` again): **314 → 294**, the charger plays on in 0 (no reaction) | none: PoizoCiv's shapes test on from 57 and touch nothing; **314 throughout** |
+| end | 0 runs its clip to 67, then 410 (the run) | 1 runs to 101, then 389 |
+| PoizoCiv | 198 at 77, 196, 199 at 110 | 196 at 89, 199 at 106 |
+
+So the code's reading holds at runtime: a strike on a charger takes the 20 of an extreme reaction (the crushing
+reactions 296-303 switch every shape on) and the held `0x1000000` (`0x1c16a40` above) stops the reaction. The diver
+was clear of 300's spine and head shapes in this run; a diver whose body is inside a flung victim's shapes would lose
+the same 20 by the same code (inferred: the dive holds `0x400000`, in the same mask).
 
 **Coney fixes** (items 25 and 29):
 
@@ -2392,8 +2450,10 @@ on a charger or a diver takes its health (the extreme reactions' 20) and plays n
    drops, a victim whose clip holds any of `0x1c16a40` plays no reaction and is not interrupted. Before it, a charge
    into a human broke off on impact and the charger fell: the victim's crushing mid reaction (296-299) switches every
    strike shape on and its flung body struck the charger for 20 with a heavy high hit, which played 292-295 on him
-   (owner report, 2026-10-11). The dive escaped only by chance (inferred): its crushing high hit gives 300-303, which
-   strike with the spine and head alone. Still to do: a paired move's victim holding `0x400000` (Coney's paired clips
+   (owner report, 2026-10-11). The original takes the same 20 from the charger with no reaction (confirmed (runtime),
+   the run above). The dive escaped only by chance (inferred; no strike back in the run above): its crushing high hit
+   gives 300-303, which strike with the spine and head alone.
+   Still to do: a paired move's victim holding `0x400000` (Coney's paired clips
    hold no such flag yet).
 3. A lethal hit on a victim holding any of `0xc12200` does not start the dying reaction or break the pair at once:
    keep the health below 0 and let the victim's own paired clip finish (not the attacker's: 58 outlasts 57); then
@@ -2431,6 +2491,59 @@ civilian rose 2.0 s after the special's hit, the player (2750 ms) 2.78 s after a
 mashing is measured in [Being hit](#being-hit-runtime).
 
 The victim can act again when its reaction clip ends (standing), its stun ends, or its rise ends.
+
+#### Scripted knockdowns, stuns and hits {#scripted-knockdowns}
+
+What the script bindings `HuMakeGrounded`, `HuMakeBeatUp`, `HuSetStunned` and `HuSetDamage` do to a human
+([the bindings](../references/bindings/character.md#humakegrounded)). Confirmed (code) at the addresses; the runtime
+lines are from PCSX2 2.9.94, 2026-10-12, a copy of slot 6, the natives' functions called on PoizoCiv (brain held,
+`+0x09` = 1) through the `call-brains` hook, with `anim-dispatch`.
+
+- **The script's knockdown lies down at once in 196.** `Human_MakeGrounded` (`0x00234e58`, with true) and
+  `Human_MakeBeatUp` (`0x00234d70`) call `Human_KnockDown` (`0x0022f100`) with no attacker and no stun, which pushes
+  the grounded movement style 15; `Human_ApplyMoveStyle` (`0x00253688`) gives style 15 the idle 196
+  (`GROUNDED_IDLE`), and no reaction or fall clip is played. At runtime the human was in 196 on the next update,
+  straight from its standing clip, record state `0x40080000` (confirmed (runtime), both natives). `HuMakeBeatUp` also
+  empties the movement-style stack first and sets health to 1 and human flag `0x10` (runtime: health 600 → 1, flag
+  word `0x1` → `0x11`).
+- **The down latch is state `0x40000000`** (set by both natives through `Human_SetLying`, `0x00228388`; cleared by
+  `Human_ClearDownLatch` `0x002283a8`, which `HuMakeGrounded(false)` calls). Its test `Human_HasDownLatch`
+  (`0x002283c8`) has four readers:
+    - `Human_UpdateDown` (`0x00256a60`, at `0x00256b04`) tests it first: a latched human skips the whole down and stun
+      update, so it never rises (and a stun never ends) however long ago its ground time passed;
+    - `Humans_Update` (`0x00249558`): a latched human with record state `0x200000000` is not taken away (the branch to
+      `0x0021c7c8`);
+    - `Humans_Update` (`0x002495d8`): a latched human is not moved from hurt (`0x10000`) to state `0x80000000` when its
+      record `+0xf0` time passes (inferred from the branch; not run);
+    - `Humans_CullCorpses` (`0x002322b4`) skips it, and `Bum_GiveItem` (`0x002ac488`, `0x002ac51c`) tests it.
+
+  At runtime (confirmed (runtime)) a grounded human whose ground time (2000 ms) ended at update 66 lay in 196 until
+  the latch was cleared at update 150, then rose at once: 199 on update 151 (28 updates), then the idle 388. The rise
+  is the ordinary one ([Getting up](#reactions)): clearing the latch only lets `Human_UpdateDown` run again.
+  `HuMakeGrounded(true)` also writes the state code (record `+0x14`) 3, but at runtime it read 0 from the next update.
+- **`HuSetStunned`'s stun-immune bit is `0x100`**, the same bit as a hit's stun and `HuSetUnstunnable`: `Human_Stun`
+  (`0x0022f658`) returns at once when the byte at human `+0xe1` has bit **0** (`lbu` at `0x0022f68c` / `0x0022f6c8`,
+  then `andi 1`), which is flag word bit `0x100`. The binding page's "bit 1" was wrong. The endless-stun flag
+  `0x8000000` (`HuSetManualStun`) skips the test, and only when there is no attacker, as for `HuSetStunned`.
+  Confirmed (runtime): with `0x100` set, `HuSetStunned(true)` changed nothing; with it cleared, the human was stunned
+  at once (355, 356, state `0x100000`, movement style 14) for 750 ms (the class stun time; 23 updates), then 357.
+- **`HuSetDamage` with no attacker plays 275** on a standing human. `Human_AddPendingDamage` (`0x00264bd8`) stores no
+  hit code; `Human_ApplyPendingDamage` (`0x00265f70`) makes the victim its own foe (`Human_SetFoe(h, h)`), so
+  `Hit_PlayReaction` (`0x0026b0a0`) reads the default hit code 10 (`0x0a`: light, high, straight) and the side of the
+  victim's own position: the zero offset normalises to zero on the VU, both dot products are 0, so the side is 3
+  (`Hit_GetSideFromPoint`, `0x00267338`) and the direction (2 + 3) & 3 = 1, the left column: **275**
+  (light, high, left in [the table](#hit-codes)). Confirmed (runtime): 50 damage, 600 → 550, 275 on the
+  next update, then 389 and idle. The strength modifiers of [the reaction](#hit-codes) still apply (a victim with
+  flag `0x200` drops to strength 0 anyway; one with `0x80` is capped at 1). With an attacker the attacker's own
+  attack gives the code, as for a melee hit.
+- **The `react` argument is not a may-react flag.** It is stored in record `+0x11a`, which
+  `Human_ApplyPendingDamage` never reads; its only readers are `HitReact_WhileGrabbed` (`0x0026892c`, `0x00268948`,
+  `0x002689b0`) and `HitReact_WhileGrabbing` (`0x00268fa0`, `0x00268fbc`, `0x00269024`): for a third party's hit on a
+  pair holding `0x2000` (or a grabbed victim with flag `0x200`), a value of 2 or more plays the heavier paired
+  reaction (`0x7d` / `0x87` instead of `0x7b` / `0x85`). Confirmed (code). So a scripted hit always reacts unless the
+  usual held flags, flag `0x800` or a block stop it ([Moves a hit cannot stop](#protected-moves)). (The record table
+  above calls `+0x11a` "whether the hit may cause a reaction"; by these readers it is a hit weight for paired
+  reactions.)
 
 ### Knocked out, and the mission failing {#defeat}
 
@@ -4328,10 +4441,11 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
 - The power strike's extension (57 → 59, 63 → 65) takes square's press or cross's `0x10` only on an update with the
   window open, and the grab ends when the last part's clip gives way to 389: the victim, attached until then, is put
   on the ground (196) to get up after its time. The rear power strike's hit is scored as 57, not the spin's 80.
-- A grab plays one move at a time; a throw lets go at once; the rear power strike's spin plays in front of the strike,
-  whose timing starts with it; the release with too little power goes straight to the idles, and the grab
-  broken at 0 power plays the let-go. A tackle also ends when the power meter is empty, and any hold when the victim
-  has no health left.
+- A grab plays one move at a time; a throw lets go at once (from the rear hold, once its spin to the front has
+  played), turning the pair onto the stick from the front hold ([Where a throw goes](#throw-direction)); the rear
+  power strike's spin plays in front of the strike, whose timing starts with it; the release with too little power
+  goes straight to the idles, and the grab broken at 0 power plays the let-go. A tackle also ends when the power meter is
+  empty, and any hold when the victim has no health left.
 - The grab and tackle search takes the nearest candidate by straight-line distance with no facing cone. The attack's
   target search uses the attack's far range in `Player_PickTarget`'s first two passes (the third finds no human the
   second missed); beyond the far range the attacker turns at most 8° at once (read as degrees). Within it the steer
@@ -4358,7 +4472,8 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   82's / 84's range record, (0.380, 1.012) facing the player or (−0.097, 0.222) facing his way, and attached: each
   update it is put at the player's transform × that offset, its own root motion ignored. A spin (78 / 80) detaches it
   so both bodies move by their clips, as at runtime, and its end snaps it to the other hold. A strike, power strike or
-  throw is refused (nothing played or spent) unless the victim stands within 0.3 m of the current hold's point. The
+  a front hold's plain throw is refused (nothing played or spent) unless the victim stands within 0.3 m of the current
+  hold's point; a wall throw and a rear hold's throw are not checked ([Where a throw goes](#throw-direction)). The
   mounted victim is attached at 210's type-8 pair event, (−0.120, 0.032): 0.032 m ahead and 0.120 m to the left,
   facing the other way. **Coney's choices**: the grab's side is decided as the intro starts (a passive target does
   not move in between); the place a move checks is the current hold's point (the strikes' points are the front
@@ -4410,10 +4525,19 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
 - The combat walk's clip by eight even 45° sectors centred on the clips' directions; the walk starts at its full
   speed (the 5 slower first updates backward are not known).
 - **The flash** (`PlayLevelMode::stepFlash()`, `useFlash()`): d-pad right with a flash carried and health below the
-  maximum plays 665 (holding `0x2000`) when nothing holds a move, and the clip's action event `0x41` 19 updates in
-  (`Human::actionEvent()`) uses the flash: one spent, interface sound 23, the health filled, the health rings asked
-  for; a clip cut first spends nothing. In a grab the flash is used at once and the grab stays. Coney always heals in
-  full (it has no difficulty setting) and does not build the full-health rage use or the screen effect reset.
+  maximum plays 665 when nothing holds a move, and the clip's action event `0x41` 19 updates in
+  (`Human::actionEvent()`) uses the flash: one spent, interface sound 23 and the clip's animation sound 70, the health
+  filled, the health rings asked for; a clip cut first spends nothing. In a grab the flash is used at once and the
+  grab stays. Coney always heals in full (it has no difficulty setting) and does not build the full-health rage use or
+  the screen effect reset. The clip holds `0x2000` **and sets it as it starts** (**inferred**: the page says the task
+  "holds" it and only a set bit keeps the clip alive). Held without being set, the bit never reaches the record, the
+  stick step does not count the human busy, and a player in the fight stance (after walking up to the dealer, his lock
+  on) has the stance walk's idle put over 665 on the next update: the clip showed for one update, the event never
+  came, and nothing was spent or healed (issue 234, found on `level99` checkpoint 3 after the purchase). A second
+  d-pad right while 665 plays does nothing (the human is busy, and 665 is already his anim). Tests:
+  `repo:tests/platform/disc_flash_test.cpp` (`level80` standing, walking and running; `level99` from the dealer's
+  purchase to the use in the stance: 665 from the press, the spend, cue 23 and animation sound 70 on update 19 of
+  it, and no play left silent by the engine).
 
 **Not yet**: an attacker for the player (no human attacks him yet, so the victim side runs only in the tests; the
 AI that would is on [AI](ai.md)); the
@@ -4473,6 +4597,9 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
 - **Rage extensions at runtime**: 63 → 65 in a grab and 231 → 233 in the mount, which `level99`'s rage lesson
   waits for (inferred from `Player_UpdatePowerMove`); L1 + R1 did not start rage in a slot 6 copy with the meter
   written full, so what else the start needs is open.
+- **Whether the flash clip sets `0x2000`** (record `+0x08`) as it starts: the task holds it ([Rage](#rage)), and Coney
+  sets it, which keeps the fight stance from cutting the clip; the type-5 task's start flags at `0x0025ade8` would
+  tell, and a runtime read of `+0x08` on the update after d-pad right in the stance.
 - **The flash in a grab** at runtime: the masks say it is used at once and the grab stays ([Rage](#rage)); Coney
   breaks the pair.
 - **The clips' `+0x44` flags** (paired `0x1`, tackle `0x20`, grab `0x40`): which clips carry the tackle flag
@@ -4508,3 +4635,12 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
   circle tap, before anything plays (no intro, no miss, no stance change, no grounded mount or tandem). Either bit
   alone does not stop the tap there: `Grab_IntroEnd` then refuses the front or rear grab and the intro ends in 69.
   Confirmed (code).
+- **The root turn and the task's rate** (open, from #240): on the disc Coney's throw clips turn the thrower about a
+  third too far (149 by −120° where the runtime turn was −90°; 151 −237° for 180°, 153 +119° for +86.5°), and the
+  front victim (148) lands 19.2° right of the stick where the original's landed 2.1° right
+  ([Where a throw goes](#throw-direction)). Coney applies bone 0's turn per 1/30 s as
+  [Root motion](formats/animation.md#root-motion) says, not scaled by the task's rate; these clips play at 0.75. In a
+  local experiment (not kept) scaling the turn by the rate, as the velocity is, gave −0.2° for 149 (runtime −0.2°),
+  +2.1° for 151 (+1.2°), −0.9° for 153 (−3.5°), turns of 3.2° and 2.7° per update during the 1/6 s turn (runtime 3.2°
+  and 2.7°) and a front landing 4.8° right of the stick. Whether `0x00104ce0` or `0x0023f238` scales the turn by the
+  rate needs checking in the code; it would change every clip with a root turn, not only the throws.

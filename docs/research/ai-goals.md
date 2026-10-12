@@ -1609,7 +1609,7 @@ Follows an object (a car or a thing), matching speed.
 | `0x002dfcd0` | `FollowFormationGoal_Start` | Resume | `FollowFormationGoal_Start` (the Resume slot): joins the formation, takes the follow point, turns with a running leader | confirmed (code) |
 | `0x002dfe68` | `FollowFormationGoal_End` | End | restores the Warrior's flags and the start boost | confirmed (code) |
 | `0x002dfef8` | `FollowFormation_PickSpeed` | helper | the speed by distance to the slot: walk, run (4-8 m) or the leader's | confirmed (code) |
-| `0x002e0088` | `FollowFormationGoal_Process` | Process | done when the leader is gone or a move failed; follows the slot point | confirmed (code) |
+| `0x002e0088` | `FollowFormationGoal_Process` | Process | done when the leader is gone or a move failed; follows the slot point; a running move's point is retargeted by the plan, not here ([follow](ai.md#follow-retarget)) | confirmed (code) |
 
 ### TravelPath (type 0x38), LeadChase (type 0x49) and RunCarrotRun (type 0x4a) {#goal-travel-path}
 

@@ -29,7 +29,7 @@ constexpr std::string_view kUsage =
     "             [--trace FILE] [--script-trace FILE] [--scene NAME] [--camera X,Y,Z,QX,QY,QZ,QW[,FOV]]\n"
     "             [--freeze-world]] [--sandbox [NAME]]\n"
     "             [--assets DIR]\n"
-    "             [--event-log FILE] [--pad-pipe]\n"
+    "             [--event-log FILE] [--pad-pipe] [--trace-humans FILE]\n"
     "             [--dev-overlay N]\n"
     "             [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]\n"
     "             [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
@@ -64,6 +64,9 @@ constexpr std::string_view kUsage =
     "                     him with its view facing YAW degrees; a test aid for trace scenarios\n"
     "  --trace FILE       with --play-level: write the player's and the camera's state after every\n"
     "                     step to FILE, one CSV line per step\n"
+    "  --trace-humans FILE with --play-level or --rumble (--trace in a match): write every human's\n"
+    "                     state (position, goals, target, attacks, blocks) after every step to\n"
+    "                     FILE, one CSV row per human per step\n"
     "  --script-trace FILE with --play-level levelN: write every script binding call, and every call\n"
     "                     into the scripts, with its arguments to FILE, one line each\n"
     "  --event-log FILE   write what a player would notice (binding calls, calls into the scripts,\n"
@@ -232,6 +235,9 @@ std::expected<void, Error> checkSandbox(const Options& options) {
     }
     if (options.traceFile.has_value() && !options.playLevel.has_value()) {
         return invalidArgument("--trace needs --play-level: it traces the player");
+    }
+    if (options.humansTraceFile.has_value() && !options.playLevel.has_value() && !options.rumble.has_value()) {
+        return invalidArgument("--trace-humans needs --play-level or --rumble: it traces the humans of a played level");
     }
     if (options.scriptTraceFile.has_value() && !(options.playLevel && !sandboxOfPlayLevel(*options.playLevel))) {
         return invalidArgument("--script-trace needs --play-level with a level: it traces the level's scripts");
@@ -626,6 +632,11 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             if (auto value = takeValue(args, i, options.traceFile, "--trace", "the path of a CSV file"); !value) {
                 return std::unexpected(std::move(value.error()));
             }
+        } else if (arg == "--trace-humans") {
+            if (auto value = takeValue(args, i, options.humansTraceFile, "--trace-humans", "the path of a CSV file");
+                !value) {
+                return std::unexpected(std::move(value.error()));
+            }
         } else if (arg == "--script-trace") {
             if (auto value = takeValue(args, i, options.scriptTraceFile, "--script-trace", "the path of a text file");
                 !value) {
@@ -877,6 +888,11 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             return std::unexpected(std::move(launch.error()));
         }
         options.rumble = *launch;
+        // `--trace FILE` in a Rumble match traces every human: there is no single player level to trace the player of.
+        if (options.traceFile.has_value() && !options.humansTraceFile.has_value()) {
+            options.humansTraceFile = std::move(options.traceFile);
+            options.traceFile.reset();
+        }
     }
     if (auto combined = checkCombinations(options); !combined) {
         return std::unexpected(std::move(combined.error()));

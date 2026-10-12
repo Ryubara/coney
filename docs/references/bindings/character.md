@@ -85,7 +85,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuLockPad`](#hulockpad) | - | 37 | no | yes | confirmed (code) |
 | [`HuLockPadMovement`](#hulockpadmovement) | - | 10 | no | no | confirmed (code) |
 | [`HuMakeBeatUp`](#humakebeatup) | - | 1 | no | no | confirmed (code) |
-| [`HuMakeGrounded`](#humakegrounded) | - | 3 | no | no | confirmed (code) |
+| [`HuMakeGrounded`](#humakegrounded) | - | 3 | no | no | confirmed (runtime) |
 | [`HuMarkReachable`](#humarkreachable) | - | 9 | no | no | confirmed (code) |
 | [`HuPlaceHatOnHead`](#huplacehatonhead) | - | 0 | no | no | inferred |
 | [`HuPlaceItemInHand`](#huplaceiteminhand) | number | 62 | yes | yes | confirmed (code) |
@@ -161,7 +161,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuSetSpinningIconColor`](#husetspinningiconcolor) | - | 0 | no | no | confirmed (code) |
 | [`HuSetStateRespVoiceIndex`](#husetstaterespvoiceindex) | - | 4 | no | no | confirmed (code) |
 | [`HuSetStrong`](#husetstrong) | - | 0 | no | no | inferred |
-| [`HuSetStunned`](#husetstunned) | - | 1 | no | no | confirmed (code) |
+| [`HuSetStunned`](#husetstunned) | - | 1 | no | no | confirmed (runtime) |
 | [`HuSetTireless`](#husettireless) | - | 50 | yes | yes | confirmed (code) |
 | [`HuSetUnarrestable`](#husetunarrestable) | - | 4 | no | no | confirmed (code) |
 | [`HuSetUngrabbable`](#husetungrabbable) | - | 23 | yes | yes | confirmed (code) |
@@ -2078,9 +2078,10 @@ what it carries, and, unless record state flag 0x10000 is already set, its anim-
 0x180040000 cleared, it is knocked down, its state code set to 0, its health to 1 hit point and state flag 0x20000000
 set. Finally human flag `+0xe0` 0x10 and state flag 0x40000000 are set.
 
-**Notes.** The AI stays held until something releases brain `+0x09` (not traced which binding). State flags 0x10000,
-0x20000000 and 0x40000000 and human flag 0x10 (also set by a hit stopped at a health floor) are not named yet; inferred:
-lying beaten on the ground. Bit meanings: characters.md#the-record, combat.md#state-flags.
+**Notes.** The AI stays held until something releases brain `+0x09` (not traced which binding). State flag 0x40000000 is
+the down latch (HuMakeGrounded false clears it; confirmed (runtime): 196 at once, health 1, then 199 on the update after
+the latch was cleared, combat.md#scripted-knockdowns). State flags 0x10000 and 0x20000000 and human flag 0x10 (also set
+by a hit stopped at a health floor) are not named yet. Bit meanings: characters.md#the-record, combat.md#state-flags.
 
 - **Evidence:** confirmed (code) at `0x00234d70`, `0x0022f100`; detail: traced
 - **Wrapper** `0x003593e0` (registered by `RegisterBindings`); **calls** `0x00234d70` `Human_MakeBeatUp`, `0x0022f100`
@@ -2103,14 +2104,16 @@ HuMakeGrounded(human, down)
 **Returns** nothing.
 
 With true, a human that is not already down or dead is knocked down (Human_KnockDown, no attacker and no stun: state
-`0x80000`, grounded), its state code set to 3 and state flags `0x20000000` and `0x40000000` set. With false, state flag
-`0x40000000` is cleared, which (inferred) is what lets it rise when its down time runs out
-([Combat](../../research/combat.md)).
+`0x80000`, grounded) and lies in 196 at once, with no fall clip; its state code is set to 3 and state flags `0x20000000`
+and `0x40000000` (the down latch) set. While latched it never rises. With false the latch is cleared, and the human
+rises (199) on its next update if its down time has run out, else when it does
+([Combat](../../research/combat.md#scripted-knockdowns)).
 
-**Notes.** The meaning of state flags `0x20000000` and `0x40000000` is inferred from this pairing; false does not itself
+**Notes.** The latch is read by Human_UpdateDown (0x00256a60), which skips the rise and the stun's end while it is set,
+by Humans_Update (no removal, no bleed-out mark) and by CullCorpses (which spares latched humans). False does not itself
 make the human stand.
 
-- **Evidence:** confirmed (code) at `0x00234e58`, `0x0022f100`; detail: traced
+- **Evidence:** confirmed (runtime); detail: traced
 - **Wrapper** `0x00359418` (registered by `RegisterBindings`); **calls** `0x00234e58` `Human_MakeGrounded`, `0x0022f100`
   `Human_KnockDown`
 - **Used by** 3 of 467 script chunks (10 references); boot to menu: no; mission 1: no; result used: no
@@ -2715,7 +2718,7 @@ HuSetDamage(human, amount, attacker, react, useHeld)
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human to hurt; a bad handle does nothing. |
 | 2 | `amount` | number, truncated to an integer | Damage in hitpoints (16 bits; the sign is kept, the size compared). |
 | 3 | `attacker` | number, truncated to an unsigned integer | Handle of the human credited with the hit, or 0 for none (0 is tested, not NilHandle). |
-| 4 | `react` | number, truncated to an unsigned integer | Stored as the hit's may-react word (record `+0x11a`): non-zero lets the victim play a hit reaction ([Combat](../../research/combat.md#damage)). |
+| 4 | `react` | number, truncated to an unsigned integer | Stored in record `+0x11a`, read only when the victim is in a grab: 2 or more plays the heavier paired reaction. It does not decide whether the victim reacts ([Combat](../../research/combat.md#scripted-knockdowns)). |
 | 5 | `useHeld` | boolean (nil or 0 is false) | With no attacker, true records the human's own held object as what hit it; ignored with an attacker. |
 
 **Returns** nothing.
@@ -2727,7 +2730,8 @@ doubled for an attacker with human flag 0x4000 and quartered for a class-128 vic
 real hits.
 
 **Notes.** A smaller hit in the same update is dropped, not added. Also written: human `+0x5d2` (last damage). Scripts
-pass attacker 0 to hurt without blame.
+pass attacker 0 to hurt without blame; the victim is then its own foe, and a standing victim plays 275 (hit code 10 from
+its own side 3), confirmed (runtime) ([Combat](../../research/combat.md#scripted-knockdowns)).
 
 - **Evidence:** confirmed (code) at `0x002358c8`, `0x00264bd8`; detail: traced
 - **Wrapper** `0x0035b8a0` (registered by `RegisterBindings`); **calls** `0x002358c8` `Human_SetDamage`, `0x00264bd8`
@@ -3996,11 +4000,13 @@ Stuns a human as a fighting stun would, with no attacker: it enters the stunned 
 human flag `+0xe0` 0x8000000 is set the stun lasts until ended by script. With false the stun state is left, flag
 0x100000 cleared and the human recovers. Both set state flag 0x20000000.
 
-**Notes.** A human with `+0xe1` bit 1 set (stun immune) ignores the stun unless it has the endless-stun flag. Humans in
-states 7-10 or 0xf, knocked down, or flagged 0xcf0/0x10200 are not stunned. Ending a stun on a dead, downed or grabbed
-human only clears the flag. What state flag 0x20000000 means is open. Used on Luther in level 64.
+**Notes.** A human with flag `0x100` (`+0xe1` bit 0, as `HuSetUnstunnable` sets; `Human_Stun` tests it at 0x0022f68c)
+ignores the stun unless it has the endless-stun flag 0x8000000; confirmed (runtime): with `0x100` nothing happened,
+without it 355/356 for the class's 750 ms, then 357 ([Combat](../../research/combat.md#scripted-knockdowns)). Humans in
+movement styles 7-10 or 0xf, knocked down, or flagged 0xcf0/0x10200 are not stunned. Ending a stun on a dead, downed or
+grabbed human only clears the flag. What state flag 0x20000000 means is open. Used on Luther in level 64.
 
-- **Evidence:** confirmed (code) at `0x002354b8`, `0x0022f658`, `0x0022f8d8`, `0x00223720`; detail: traced
+- **Evidence:** confirmed (runtime); detail: traced
 - **Wrapper** `0x0035ac80` (registered by `RegisterBindings`); **calls** `0x002354b8` `Human_SetStunned`, `0x0022f658`
   `Human_Stun`, `0x0022f8d8` `Human_EndStun`, `0x00223720` `Human_GetStunTime`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no

@@ -68,6 +68,10 @@ class Holdable : public Combatant {
     virtual void place(anim::Vec3 position, float headingRadians) = 0;
     /// Turns it to face `point`.
     virtual void face(anim::Vec3 point) = 0;
+    /// Turns it to `headingRadians` and slides it to `goal` across the ground, each at a constant rate over `seconds`
+    /// (TurnAndSlide: `Human_TurnToOver`, `Human_MoveToOver`), on top of its clip's root motion: a front hold's throw
+    /// carries its victim round the thrower this way (docs/research/combat.md#throw-direction).
+    virtual void carryOver(anim::Vec3 goal, float headingRadians, float seconds) = 0;
     /// Its own anim set (an escape's grabber side plays from it).
     [[nodiscard]] virtual const characters::AnimSet& anims() const = 0;
     /// Its AI counter press (command 3) of its last update, made while it could counter (Fighter's test), once:

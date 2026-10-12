@@ -46,7 +46,7 @@ only "issue #N". Write it so that the first screenful answers *what is wrong or 
   PCSX2's 7z extraction on Windows 10, whose `tar` cannot unpack it". Say what to do, to what, and how you will know
   it is done; tick the item (`- [x]`) when it is done and name the pull request that did it.
 - **Write numbers and names, not shorthand.** An issue refers to `#123` for issues and pull requests, to the
-  research page with its section, and to the item numbers of the owner's play-test by their text; a word like "the
+  research page with its section, and to the item numbers of the user's play-test by their text; a word like "the
   unit", "the stack" or a branch name alone means nothing to a newcomer.
 
 ### Screenshots {#screenshots}
@@ -86,7 +86,8 @@ prints the `gh label create ... --force` commands instead of running them.
 
 The table is generated from `labels.list` (`coney-tools repo render`). `parity` is a difference from the original and
 `enhancement` is beyond it, so it waits until the game is complete ([Faithful first](repo:AGENTS.md)). The task form's
-area list is the `A-` labels. The coordinator sets the priority, and an issue carries one status label at a time.
+area list is the `A-` labels. The coordinator sets the priority, and an open issue carries one status label at a
+time. A closed issue carries none ([What a closed issue keeps](#closed)).
 
 <!-- conventions:begin labels -->
 | Family | Label | Meaning |
@@ -111,6 +112,7 @@ area list is the `A-` labels. The coordinator sets the priority, and an issue ca
 | | `P-medium` | Priority: next in line |
 | | `P-low` | Priority: when there is room |
 | Status | `S-needs-triage` | Status: not yet looked at |
+| | `S-ready-to-start` | Status: triaged and accepted; waiting for someone to pick it up |
 | | `S-needs-info` | Status: waiting for the reporter |
 | | `S-needs-research` | Status: an analyst must study the original first |
 | | `S-in-progress` | Status: an agent or person is working on it |
@@ -127,27 +129,53 @@ area list is the `A-` labels. The coordinator sets the priority, and an issue ca
 The coordinator reads each new issue and:
 
 1. sets the type (`bug` or `parity`, or `task`, `docs`, `enhancement`), the area and the priority;
-2. asks for what is missing with a comment and sets `S-needs-info`, or sets `S-needs-research` when an analyst must
-   study the original first ([Research workflow](research-workflow.md));
+2. moves an accepted issue from `S-needs-triage` to `S-ready-to-start`: it is understood, has a priority and can be
+   picked up as written. Otherwise it asks for what is missing with a comment and sets `S-needs-info`, sets
+   `S-needs-research` when an analyst must study the original first ([Research workflow](research-workflow.md)), or
+   sets `S-blocked` when it waits for another issue or a decision;
 3. closes a repeat as `duplicate` (pointing at the first), and a request outside the project as `wontfix`;
 4. turns a vague report into a task that an agent can take, with a research page link and an acceptance test.
 
+Whoever picks up an `S-ready-to-start` issue moves it to `S-in-progress`. The audit counts every status except
+`S-needs-triage` as triaged, so an `S-ready-to-start` issue already needs its priority label
+([Repository conventions](repo-conventions.md)).
+
 ## The life of an issue {#life}
 
-Every issue has exactly one status label, and the coordinator moves it:
+Every open issue has exactly one status label, and the coordinator moves it:
 
 | Status | Set when |
 | --- | --- |
 | `S-needs-triage` | The form sets it. |
+| `S-ready-to-start` | Triage accepted the issue: type, area and priority are set and nothing blocks it. |
 | `S-needs-info` | Triage found the report incomplete and asked the reporter. Back to triage when they answer. |
 | `S-needs-research` | The behaviour of the original is not yet written on a research page. |
-| `S-in-progress` | An agent or person starts work. |
+| `S-in-progress` | An agent or person picks up an `S-ready-to-start` issue and starts work. |
 | `S-pending-review` | The coordinator opens the pull request, with `Fixes #N` in its body. |
 | `S-blocked` | The issue waits for another issue (named in the task's "Blocked by") or a decision. |
 
 An issue is closed automatically when its pull request is squash-merged into `main`, because the body says
-`Fixes #N` ([Pull requests](repo:CONTRIBUTING.md)). If the problem is still there after the merge, reopen the issue
-and set `S-needs-triage`. Close with a reason: completed, not planned (`wontfix`) or duplicate.
+`Fixes #N` ([Pull requests](repo:CONTRIBUTING.md)). If the problem is still there after the merge, reopen the issue;
+it gets `S-needs-triage` again ([below](#closed)). Close with a reason: completed, not planned (`wontfix`) or
+duplicate.
+
+### What a closed issue keeps {#closed}
+
+A status describes work that is still open, so a closed issue never carries an `S-` label: the close reason
+(completed, not planned, duplicate) is its final state. It keeps its type, area and priority labels, and
+`wontfix` or `duplicate` when they apply, as history. A leftover status such as `S-pending-review` on a closed issue
+only misleads whoever filters by it.
+
+The `issue-status` workflow (`.github/workflows/issue-status.yml`) keeps this true without anyone remembering it:
+
+- **On close** it removes every label that starts with `S-`, whoever closed the issue and however (a merged
+  `Fixes #N` pull request, the button, `gh issue close`).
+- **On reopen** it adds `S-needs-triage`, so a reopened issue is looked at again, unless the issue already has an `S-`
+  label (someone set the status as they reopened it).
+
+It is the one workflow that writes to GitHub, and its token is limited to `issues: write`
+([Workflows](repo-conventions.md#workflows)). If it ever fails, `coney-tools repo audit --github` reports the closed
+issue under `issue.closed-status` and the coordinator removes the label by hand.
 
 ## Working from an issue {#agents}
 

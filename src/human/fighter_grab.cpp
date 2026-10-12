@@ -28,6 +28,9 @@ namespace id = combat::anim_id;
 constexpr float kPi = std::numbers::pi_v<float>;
 // The mount's slide and turn of the mounter onto the victim (`Human_AlignToVictimFacing`, 0x00277248).
 constexpr float kMountSeatSeconds = 0.1F;
+// A front hold's plain throw turns the pair onto the stick over this long (`Human_TurnToOver`, `Human_MoveToOver`
+// from `Player_Throw`, docs/research/combat.md#throw-direction): 5 updates.
+constexpr float kThrowTurnSeconds = 1.0F / 6.0F;
 
 // The alignment's slide is dropped from this far, or above this speed (m/s).
 constexpr float kAlignMaxSlide = 13.0F;
@@ -86,6 +89,7 @@ void Fighter::dropLostHold(const FighterInput& input, HumanAnimator& animator) {
     m_pair = PairStage::None;
     m_turnUpdates = 0;
     m_grabTurn = 0.0F;
+    m_spinThrow = id::kNone;
     m_rear = false;
     m_tacklePending = false;
     m_mountPending = false;
@@ -119,6 +123,7 @@ void Fighter::breakPair() {
         m_pair = PairStage::None;
         m_turnUpdates = 0;
         m_grabTurn = 0.0F;
+        m_spinThrow = id::kNone;
         m_rear = false;
         m_combat.release();
     }
@@ -148,6 +153,7 @@ void Fighter::startHold(Holdable& victim, const FighterInput& input, float& head
     m_target = &victim;
     m_rear = false;
     m_pair = PairStage::None;
+    m_spinThrow = id::kNone;
     if (tackle) {
         // The tackle faces the victim at once; the intro covers the distance and the victim waits for the hit clip.
         heading = toVictim;
@@ -194,6 +200,13 @@ void Fighter::followPairClips(const FighterInput& input, HumanAnimator& animator
         return;
     }
     const std::uint32_t clip = animator.animId();
+    // A rear hold's throw waits for its spin: nothing else follows the clips until the throw's own begins.
+    if (m_spinThrow != id::kNone) {
+        if (clip == clips::clipOf(m_spinThrow)) {
+            throwAfterSpin(animator);
+        }
+        return;
+    }
     // A power move has ended with no extension after it: the grab is over.
     if (clips::isPowerMove(m_lastClip) && clip != m_lastClip && !clips::isPowerMove(clip)) {
         endPowerMove();
@@ -390,6 +403,20 @@ void Fighter::playGrabAction(const combat::CombatOutput& out, HumanAnimator& ani
         break;
     }
     case combat::GrabAction::Throw:
+        if (rearThrowPath()) {
+            // From the rear hold the spin to the front (80, the victim 81) plays first, then the throw; the victim is
+            // let go when the throw's clip begins (throwAfterSpin()). Nothing turns the pair, so the body flies along
+            // the side's axis of the facing at the press (`Grab_StartPairedMove`,
+            // docs/research/combat.md#throw-direction).
+            const std::array<std::uint32_t, 2> moves{id::kGrabSpinToFront, clips::clipOf(out.startAnim)};
+            animator.playCombat(moves, kAnimFightIdle, AnimState::Attack, clips::kPairFade, clips::kAttackHolds);
+            m_held->playPaired(clips::one(id::kGrabSpinToFront + 1), animator.anims(), clips::kGrabHeld,
+                               AnimState::Hold, TargetState::Held);
+            m_spinThrow = out.startAnim;
+            m_thrown = m_held;
+            m_lastThrown = m_held;
+            break;
+        }
         // The throw lets go: the victim plays its reaction and lands on its back.
         animator.playCombat(clips::one(clips::clipOf(out.startAnim)), kAnimFightIdle, AnimState::Attack,
                             clips::kPairFade, clips::kAttackHolds);
@@ -625,6 +652,55 @@ void Fighter::alignWallThrow(const combat::CombatOutput& out, const FighterInput
     placeAttached(input.position, heading);
 }
 
+bool Fighter::rearThrowPath() const { return m_held != nullptr && m_rear && !hasFlag(flag::kBlockFrontGrab); }
+
+int Fighter::spinToFrontUpdates(const HumanAnimator& animator, float stepSeconds) const {
+    const auto spin = static_cast<std::uint32_t>(id::kGrabSpinToFront);
+    const anim::AnimClip* clip = animator.clip(spin);
+    const float rate = animator.anims().rate(spin);
+    if (clip == nullptr || rate <= 0.0F || stepSeconds <= 0.0F) {
+        return 1;
+    }
+    // **Coney's reading**: the throw's clip starts on the update after the spin's playing time has run out.
+    return std::max(1, static_cast<int>(std::ceil((clip->duration / rate / stepSeconds) - 1e-4F)));
+}
+
+void Fighter::turnThrow(Holdable& victim, int animId, const FighterInput& input, float heading) {
+    // Only the plain throws (147-153): a wall throw aims at the wall (alignWallThrow()).
+    if (animId < id::kThrow1Front || animId > id::kThrow1Left || (animId - id::kThrow1Front) % 2 != 0) {
+        return;
+    }
+    // The side's body axis onto the stick: the thrower's wanted heading is the stick's heading (the press's
+    // camera-turned stick, unsnapped) + side x 90 degrees. The stick is in the frame of the facing at the update's
+    // start.
+    const int side = (animId - id::kThrow1Front) / 2;
+    const float stickHeading = wrapAngle(input.heading - (input.stick.angleDegrees() * kPi / 180.0F));
+    const float wanted = wrapAngle(stickHeading + (static_cast<float>(side) * kPi / 2.0F));
+    m_steer.clear();
+    m_steer.turnToOver(heading, wanted, kThrowTurnSeconds);
+    // The victim is carried round him on the same turn: its offset in his frame kept, turned to face him.
+    const anim::Vec3 offset = toFrame(input.position, heading, victim.position());
+    victim.carryOver(fromFrame(input.position, wanted, offset), wrapAngle(wanted + kPi), kThrowTurnSeconds);
+}
+
+void Fighter::throwAfterSpin(const HumanAnimator& animator) {
+    // The victim plays its side of the throw (the next id) from the grabber's set and is let go, as a front throw's.
+    Holdable& victim = *m_held;
+    victim.playPaired(clips::one(clips::clipOf(m_spinThrow) + 1), animator.anims(), clips::kGroundedIdle,
+                      AnimState::Hold, TargetState::Grounded);
+    victim.setAttached(false);
+    m_spinThrow = id::kNone;
+    m_pair = PairStage::None;
+    m_held = nullptr;
+    m_rear = false;
+}
+
+void Fighter::carryOver(anim::Vec3 position, float heading, anim::Vec3 goal, float targetHeading, float seconds) {
+    m_steer.clear();
+    m_steer.turnToOver(heading, targetHeading, seconds);
+    m_steer.moveToOver(position, goal, seconds);
+}
+
 combat::GrabberState Fighter::grabberState() const {
     return combat::GrabberState{.power = m_combat.power().value(),
                                 .powerMax = std::max(1, m_combat.power().maximum()),
@@ -672,6 +748,7 @@ void Fighter::endPowerMove() {
     m_pair = PairStage::None;
     m_turnUpdates = 0;
     m_grabTurn = 0.0F;
+    m_spinThrow = id::kNone;
     m_combat.release();
     if (!m_held->health().depleted()) {
         m_held->play(clips::kNoClips, clips::kGroundedIdle, AnimState::Hold, TargetState::Grounded);
@@ -685,6 +762,11 @@ void Fighter::releaseHold(HumanAnimator& animator, bool letGo) {
     m_pair = PairStage::None;
     m_turnUpdates = 0;
     m_grabTurn = 0.0F;
+    // A rear hold's throw cut short in its spin (a hit on the grabber) throws no one.
+    if (m_spinThrow != id::kNone) {
+        m_thrown = nullptr;
+        m_spinThrow = id::kNone;
+    }
     const bool mounted = m_held->state() == TargetState::Mounted;
     m_combat.release();
     if (letGo) {

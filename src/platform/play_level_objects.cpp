@@ -602,7 +602,10 @@ void PlayLevelMode::stepFlash() {
     const bool blocked = human::stickBusy(human.gateInput()) || human.fighter().inPair();
     const anim::AnimClip* clip = human.anims().clip(kFlashAnim);
     if (!blocked && clip != nullptr) {
-        human.playScripted(*clip, kFlashAnim, 1.0F, kFlashFade, human::HeldFlags{.held = kFlashHeld});
+        // The clip sets the bit it holds as it starts: the stick step reads it (busy) and leaves the clip alone, where
+        // the fight stance would otherwise put its idle over it on the very next update.
+        human.playScripted(*clip, kFlashAnim, 1.0F, kFlashFade,
+                           human::HeldFlags{.held = kFlashHeld, .set = kFlashHeld});
         m_print("flash: 665 plays\n");
     } else if (human.animator().animId() != kFlashAnim) {
         useFlash(human);
@@ -1284,6 +1287,25 @@ void PlayLevelMode::stepObjects() {
                                 static_cast<int>(effect.kind)));
         }
     }
+}
+
+std::size_t PlayLevelMode::standingObjectsOf(std::string_view typeName) const {
+    if (m_records == nullptr) {
+        return 0;
+    }
+    return static_cast<std::size_t>(
+        std::ranges::count_if(m_records->all(), [typeName](const world_objects::SpawnRecord& r) {
+            return !r.removed && r.typeName == typeName;
+        }));
+}
+
+std::size_t PlayLevelMode::doorsDrawnNear(anim::Vec3 at, float radius) const {
+    if (m_objects == nullptr) {
+        return 0;
+    }
+    const std::vector<world_objects::DoorDraw> draws = world_objects::doorDraws(m_objects->doors);
+    return static_cast<std::size_t>(std::ranges::count_if(
+        draws, [at, radius](const world_objects::DoorDraw& d) { return anim::distance(d.position, at) <= radius; }));
 }
 
 std::optional<double> PlayLevelMode::objectAttackLands(const human::Human& human) {
