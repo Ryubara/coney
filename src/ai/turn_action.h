@@ -12,7 +12,7 @@
 // The turn actions: turn the human on the spot until it faces a target, a point or a heading within 15°, then end
 // (they do not keep facing it), or give up after 3 s. They write the heading to the brain (`+0x110`) at speed 0, and
 // the human's state update turns it. `ActLookAt` queues the one that follows a target.
-// Research: docs/research/ai.md#look-at
+// Research: docs/research/ai-scripting.md#look-at
 
 namespace coney::ai {
 

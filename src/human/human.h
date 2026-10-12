@@ -67,9 +67,9 @@ struct HumanInput {
 };
 
 /// A brain's move (brain `+0x110`, `+0x114`, `+0x90`): the heading and speed the locomotion follows in place of the
-/// stick for a human a brain drives, and the point a fight stance walks it to (docs/research/ai.md#moving). The brain
-/// clears it at the start of each update (ai::Brain::update()), so it holds only what this update's goals and actions
-/// wrote.
+/// stick for a human a brain drives, and the point a fight stance walks it to (docs/research/ai-moving.md#moving). The
+/// brain clears it at the start of each update (ai::Brain::update()), so it holds only what this update's goals and
+/// actions wrote.
 struct BrainMove {
     float heading = 0.0F; ///< Radians, 0 facing +y.
     float speed = 0.0F;   ///< m/s; 0 stands.
@@ -91,7 +91,7 @@ struct PlayerRecord {
     bool actionPressed = false; ///< Triangle pressed this update.
     combat::CommandId command = combat::command::kNone; ///< The command the human acts on (`+0x20`).
     /// A brain's climb this update toward this direction (a route's climb leg: `Climb_TryStart` toward the waypoint,
-    /// docs/research/ai.md#route-follow); a pad never sets it.
+    /// docs/research/ai-moving.md#route-follow); a pad never sets it.
     std::optional<anim::Vec3> climbToward;
     /// The pad's command whether or not the human may act on it: the one matched (`+0x20`), kept under a pad lock, or
     /// else the disabled one pending (`+0x24`). What the `PadSetHandlerEx` handler is given
@@ -364,8 +364,23 @@ class Human final : public Holdable {
     [[nodiscard]] float bodyScale() const override { return m_scale; }
     /// The radius of its collision capsule (the shape's `+0x40`, 0.35 m, × its scale): human::walkingRadius().
     [[nodiscard]] float capsuleRadius() const { return walkingRadius(m_scale); }
+    /// The walking sphere the wall sweep moves (docs/research/characters.md#walls, step 1): a player's
+    /// playerWalkingRadius(), an AI human's aiWalkingRadius(), of its scale now.
+    [[nodiscard]] float walkingSphereRadius() const;
+    /// How far above the feet the walking sphere's centre is: its radius plus BodyTuning::footGap.
+    [[nodiscard]] float walkingSphereCentreHeight() const;
+    /// The sphere the airborne body is pushed out of walls with: BodyTuning::airRadius × the scale, its centre its
+    /// radius plus the foot gap above the feet (docs/research/characters.md#walls).
+    [[nodiscard]] float airSphereRadius() const;
     /// Its capsule as another human's sweep meets it, and as the way-clear test (human::wayClear()) takes it.
     [[nodiscard]] UprightCapsule uprightCapsule() const;
+    /// The normals of what the last walking sweep slid along (walls, other humans' capsules, world objects' bodies),
+    /// each pointing out of what was met; empty after a move that met nothing. The velocity slides along the same.
+    [[nodiscard]] std::span<const anim::Vec3> contacts() const { return m_contacts; }
+    /// Updates in a row the walking move was blocked outright (the body stayed), or the airborne body could not move.
+    [[nodiscard]] std::uint32_t blockedUpdates() const { return m_blockedUpdates; }
+    /// Updates spent in the air since the last landing.
+    [[nodiscard]] std::uint32_t airborneUpdates() const { return m_airborneUpdates; }
     /// `HuSetScale`: the body's scale, not range-checked. Coney's body (its capsule, its walls' radius, its root
     /// motion) is sized from the scale at each use, so the body follows at once.
     /// @orig 0x0023b0e0 Human_SetScale (unknown)
@@ -446,9 +461,9 @@ class Human final : public Holdable {
     void setFlight(std::optional<Flight> flight);
     /// Whether it flies (setFlight()).
     [[nodiscard]] bool flying() const { return m_flight.has_value(); }
-    /// An AI's jump (`Human_BeginJump` with argument 1, then `Human_LaunchJump`, docs/research/ai.md#route-jump): from
-    /// any gait, standing too, launched at `velocity` with the jump's clip. Refused (false) in the air, while climbing,
-    /// or while the record `+0x08` holds any of kAiJumpRefuseFlags.
+    /// An AI's jump (`Human_BeginJump` with argument 1, then `Human_LaunchJump`,
+    /// docs/research/ai-moving.md#route-jump): from any gait, standing too, launched at `velocity` with the jump's
+    /// clip. Refused (false) in the air, while climbing, or while the record `+0x08` holds any of kAiJumpRefuseFlags.
     /// @orig 0x0023db48 Human_BeginJump (unknown)
     /// @orig 0x002217f0 Human_LaunchJump (unknown)
     bool launchJump(anim::Vec3 velocity);

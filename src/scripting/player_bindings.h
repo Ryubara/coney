@@ -62,7 +62,7 @@ inline constexpr std::array<std::string_view, 42> kPlayerBindings{
 /// start time).
 ///
 /// Research: docs/research/player-state.md, docs/references/bindings/level.md, docs/references/bindings/input.md,
-/// docs/research/scripting.md#stopwatch, docs/research/ai.md#crimes
+/// docs/research/scripting.md#stopwatch, docs/research/ai-gangs.md#crimes
 void addPlayerBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& context);
 
 /// Adds `amount` (negative takes) of item `item` to player `player` (0 or 1; nothing outside players 0-1 and items

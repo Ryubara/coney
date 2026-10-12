@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The route planner (docs/research/ai.md#path-planning): the straight line first, the ends' nodes, A* with its edge
-// costs, cap and node limit, the retry and the jump detour, the route's shortcuts and the pool with its use counts;
-// and the follower's waypoints (docs/research/ai.md#route-follow). Synthetic path data only.
+// The route planner (docs/research/ai-moving.md#path-planning): the straight line first, the ends' nodes, A* with its
+// edge costs, cap and node limit, the retry and the jump detour, the route's shortcuts and the pool with its use
+// counts; and the follower's waypoints (docs/research/ai-moving.md#route-follow). Synthetic path data only.
 #include "ai/route_planner.h"
 
 #include <cmath>

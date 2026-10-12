@@ -11,7 +11,7 @@ uncuff a partner, mug, tag a wall, take an item), the timed **mini-games** behin
 it costs, and how the game turns these into **crimes**, **wanted** time and police. The pieces already documented are
 linked rather than repeated: the mugging's stick game and the stereo's stick rotation are on
 [Combat: mugging](combat.md#mugging) and [Combat: the stereo theft](combat.md#stereo-theft); the crime report and the
-police response on [AI: crimes](ai.md#crimes) with the types in [Crime types](../references/crime-types.md); breakable
+police response on [AI: crimes](ai-gangs.md#crimes) with the types in [Crime types](../references/crime-types.md); breakable
 glass and doors on [World objects](objects.md); store flags on [World flags](flags.md#groups); the inventory and the
 scores on [Inventory, unlockables and statistics](player-state.md) and [Statistics](../references/statistics.md).
 
@@ -64,7 +64,7 @@ Confirmed (code) at `0x00417ca0`:
 | 1 | an object or flag with its own text: `SetMsgHandlerEx` with message 0 on a world object ([Scripts](scripting.md#message-handlers)) | the caller's text, and a second value at `+0x14` | 1.1 m | confirmed (code), runtime |
 | 2 | a pickable lock (a door) | 15 (pick lock) | 2 m | confirmed (code) |
 | 3 | a car stereo | 16 (steal) | 2 m | confirmed (code) |
-| 4, 5 | objects with their own text: kind 4 a dealer's offer ([AI: GoalDealer](ai.md#dealer)) | the caller's text | 1.75 m, 1.5 m | confirmed (code); kind 5's registrar is not traced |
+| 4, 5 | objects with their own text: kind 4 a dealer's offer ([AI: GoalDealer](ai-scripting.md#dealer)) | the caller's text | 1.75 m, 1.5 m | confirmed (code); kind 5's registrar is not traced |
 
 The reaches are stored squared at `0x00514878 + kind × 4` (`CfgActionDistance`); the executable's defaults are
 2, 1.1, 2, 1.5, 1.5, 1.5 m. The prompt texts are `GSTRING.HUD` strings ([Text labels](../references/text-labels.md#gstring)),
@@ -443,7 +443,7 @@ order of the steps:
 1. No brain: nothing.
 2. **The pocket** (`+0x250`, an item): `+0x254` pickups of that item's object, at his feet 0.5 m up. Unless the
    brain's kind (`+0x04`) or its `+0x26c` is 5, nothing more is dropped. (For brain kind 5 the pickups go round him
-   instead, 1 m out in his free sectors, [AI: neighbour sectors](ai.md#neighbour-sectors).)
+   instead, 1 m out in his free sectors, [AI: neighbour sectors](ai-moving.md#neighbour-sectors).)
 3. **Power cuffs**: a human with cuffs (`Human_GetCuffCount`) drops `dyn_powercuffs` when `Random_Int(100)` is below
    51 and game state `+0x158` is set or unlock (6, 14) is; then nothing else.
 4. **The carried object** (`+0x257`, not `none`): an AI human drops it unless `+0x278` is -1, and carries `none`
@@ -460,7 +460,7 @@ order of the steps:
    respawn timer of item 2, and his money becomes 0.
 
 So `level87` chapter 3's early Destroyers, given $5 each by their constructor, leave $5 each when beaten: the price
-of one can of paint ([GoalDealer](ai.md#dealer)). **Coney** drops nothing yet ([`level87`'s
+of one can of paint ([GoalDealer](ai-scripting.md#dealer)). **Coney** drops nothing yet ([`level87`'s
 fixes](scripting.md#level87-fixes), fix 4). Fix: on health out (wounded or knocked out), run steps 1-5 with the game's
 random numbers. Tests: an AI human of a brain kind other than 4 with $5 and no object, knocked out, leaves one
 `dyn_money` of $5 and has $0; a civilian of brain kind 4 with $15 and factor 0.1 leaves $1; a human whose object is
@@ -480,7 +480,7 @@ the lesson's mugging of `PoizoCiv` is a plain mugging.
 
 The scores (crime events 4-5 to 4-7) are on [Statistics](../references/statistics.md). The mugging itself reports
 no crime; type 8 (`Mugging`) comes from scripts or from the witnesses' goals, which report a type from their own
-records ([AI: crimes](ai.md#crimes)).
+records ([AI: crimes](ai-gangs.md#crimes)).
 
 ### Tagging {#tagging}
 
@@ -729,7 +729,7 @@ mode** (`+0x0c`: 7 the next spray paints the tag in, 5 it wipes the tag out; 7 a
 | Message | Effect |
 | --- | --- |
 | `0x00` (tagger) | stores the tagger, then as `0x12` |
-| `0x12` (shown) | sets path flag 8 on the path polygon at the tag ([AI](ai.md#path-planning)); if the spray mode is 7 with fraction < 1, or 5 with fraction > 0, and there is a tagger: the tagger gets message `0x17` (state 1, the tag's position) and the tag sends itself `0x19` with the spray mode (7 starts the fade in, 5 the fade out); otherwise the tagger, if any, gets `0x13` |
+| `0x12` (shown) | sets path flag 8 on the path polygon at the tag ([AI](ai-moving.md#path-planning)); if the spray mode is 7 with fraction < 1, or 5 with fraction > 0, and there is a tagger: the tagger gets message `0x17` (state 1, the tag's position) and the tag sends itself `0x19` with the spray mode (7 starts the fade in, 5 the fade out); otherwise the tagger, if any, gets `0x13` |
 | `0x13` (hidden) | clears path flag 8 there, the tagger (if any) gets `0x13`, the fade stops (mode 0) |
 | `0x15` | frees the sprite batch and removes the object |
 | `0x19` state 3 | fade stops; the tagger (if any) gets `0x13` (sent by the update when a fade reaches 1 or 0) |
@@ -779,7 +779,7 @@ player and adds no loot item.
 
 A store is a set of flags ([World flags: groups](flags.md#groups)) with a store front (activity 14), browsers and
 buyers. A **break-in** (crime type 1) comes from an alarmed pane ([panes](objects.md#pane)), a lock pick that was not
-perfect, or a third abandoned pick. The report ([AI: crimes](ai.md#crimes)), confirmed (code) at `0x0041b8b0`: within
+perfect, or a third abandoned pick. The report ([AI: crimes](ai-gangs.md#crimes)), confirmed (code) at `0x0041b8b0`: within
 10 m the store front is marked robbed (bit 16 of its group word, the offender's gang in bits 18-22), the store's
 buyers and browsers are switched off, the nearest `strobe` within 6 m gets message `0x12`, and responders are queued
 with a delay of `CfgBreakAndEnterDelay` (15, 10 or 7 by difficulty). The first gang to rob a store scores crime event
@@ -797,7 +797,7 @@ differ in the code: a break-in reaches a strobe within 6 m of the store's flag, 
 1. It looks for the nearest flag of activity `0xe` (a store front) to the report's position
    (`Flag_FindNearestByActivity`) and goes on only when one exists and lies within **10 m** (squared distance under
    100). **No store front within 10 m: no police, no strobe, nothing robbed.** The wanted timer, hostility and
-   crime callback run before this, but only with an offender (step 2 of [AI: crimes](ai.md#crimes)).
+   crime callback run before this, but only with an offender (step 2 of [AI: crimes](ai-gangs.md#crimes)).
 2. Only when that store is **not yet robbed** (bit 16 of the flag's word `+0xd8` clear) and the call asked for
    responders (`mode` 1): `Responders_Queue(1, kind 1, count = CfgCrimeResponders(1) (game state +0x295), delay =
    CfgBreakAndEnterDelay (0x005148a4) seconds, the crime scene, no target, no offender)`. Then the strobe's message
@@ -809,14 +809,14 @@ differ in the code: a break-in reaches a strobe within 6 m of the store's flag, 
    full (`+0xb0` < 4), and `Spawner_QueueCall` (`0x0016dc70`) appends the entry: due at now + delay × 1,000 ms, the
    type, kind and count. **No spawner in state 4 or 6 anywhere: no police.** The spawner then makes a `Responder<n>`
    gang of type 1 when the entry is due, while the police count is under its limit, and places the squad out of sight
-   ([AI: spawners](ai.md#spawners), steps 4-6).
+   ([AI: spawners](ai-gangs.md#spawners), steps 4-6).
 
 **Who reports a break-in** and with what, confirmed (code):
 
 | Reporter | Position | Offender | Mode |
 | --- | --- | --- | --- |
 | A lock pick that was not all perfect, or a third abandoned pick (`LockPick_End` `0x0022d908`, both calls) | the picker's position | **none** (`0x006ebd30`), so no wanted time, no police hostility, no callback | 1 |
-| An alarmed pane ([panes](objects.md#pane)) and the others in [AI: crimes](ai.md#crimes) | their own | their own | their own |
+| An alarmed pane ([panes](objects.md#pane)) and the others in [AI: crimes](ai-gangs.md#crimes) | their own | their own | their own |
 
 So a lock-picked store door brings `CfgCrimeResponders(1)` police after `CfgBreakAndEnterDelay` seconds (15, 10 or 7
 by difficulty), from the nearest police dispatch spawner, only when the door is within 10 m of a store front that
@@ -831,7 +831,7 @@ target).
 nothing is ever queued; Coney also has no dispatch queue on its spawners (`GameplayMode`'s scout hook logs its call
 only). **Coney fixes**:
 
-1. Build the spawner dispatch queue ([AI: spawners](ai.md#spawners) steps 1, 4-6, [Spawner
+1. Build the spawner dispatch queue ([AI: spawners](ai-gangs.md#spawners) steps 1, 4-6, [Spawner
    states](../references/spawner-states.md) 4 and 6): four entries per spawner (time due, type, kind, count, target,
    point, offender gang), served when due; state 4 makes a `Responder<n>` gang of type 1 while the game's police
    count is under its limit and goes to 6, which places the squad out of sight and returns to 4 when it is complete.
@@ -966,7 +966,7 @@ turning each step, cross judging and any button but cross, L1, R2, the d-pad and
 lock-pick animations (689, 690), the hint and the HUD dial.
 
 **Crime reports** (`repo:src/warriors/crime_reports.h`, `CrimeReports` in `GameState::player`), written from [AI:
-crimes](ai.md#crimes) and [Wanted](#wanted) (2026-10-06): `report()` follows steps 1-6 there, reaching gangs, spawners,
+crimes](ai-gangs.md#crimes) and [Wanted](#wanted) (2026-10-06): `report()` follows steps 1-6 there, reaching gangs, spawners,
 stores, statistics, the script callback and the HUD through a `CrimeServices` interface the play mode implements as
 those systems arrive; `update()` clears a gang's wanted state 10 s after its last report (held while forced).
 `setSecondWanted()` starts a gang's second timer (10 s, not held by `ForceCrimeLevel`; the all-clear callback at its end
