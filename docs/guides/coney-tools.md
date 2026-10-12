@@ -531,6 +531,7 @@ uv run --project python coney-tools repo labels [--apply] [--repo OWNER/NAME]
 uv run --project python coney-tools repo render [--check]
 uv run --project python coney-tools repo audit [--files] [--github] [--local] [--json] [--only CHECK ...] [--strict]
     [--show N] [--snapshot FILE] [--save-snapshot FILE] [--workspace DIR] [--list]
+uv run --project python coney-tools repo pr-health [--json] [--pending-hours H] [--verbose]
 ```
 
 The checks of the repository's own rules, which CI runs on every pull request. Every value they apply (the commit
@@ -555,6 +556,7 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   a wrong marker (an unknown block name, an end without a begin, a block never closed) is a one-line error with the
   file and line, exit code 2. [Generated blocks](repo-conventions.md#generated-blocks) lists the blocks.
 * `repo audit` reports where the repository departs from the conventions and changes nothing: see [audit](#repo-audit).
+* `repo pr-health` lists the open pull requests that are stuck: see [pr-health](#repo-pr-health).
 
 ### repo audit {#repo-audit}
 
@@ -587,6 +589,36 @@ judgement) or `owner` (a maintainer decides). The text report groups findings by
 check id or a group (`issue`) and may be repeated. Exit code 1 when a finding has severity `error` (any finding with
 `--strict`), 2 when `gh` or the snapshot cannot be read or the conventions are unusable, otherwise 0. The audit never
 edits an issue, a pull request or a label; fixing the findings is the coordinator's job.
+
+### repo pr-health {#repo-pr-health}
+
+`repo pr-health` answers "which open pull requests need someone to act?" with one read of the open pull requests and
+their checks (`gh pr list --json`) and one of the branch ruleset (`gh api repos/{owner}/{repo}/rules/branches/main`,
+which names the required checks, so nothing is hard-coded). It prints one line per cause, sorted by pull request
+number, and changes nothing:
+
+```text
+#7 fix-bat-cross checks-failed lint: body, markdownlint -> author
+#9 research-x checks-failed code: python-ok; lint: markdownlint -> author
+#12 throw-arc conflict with main -> author
+#15 char-stats ci-stuck build-ok 4.2 h (limit 3.0 h) -> coordinator
+#18 workouts-2 auto-merge-off into main -> coordinator
+```
+
+| Cause | When | Acts |
+| --- | --- | --- |
+| `checks-failed` | a **required** check failed (failure, timeout, cancelled). Its class is `lint` for the checks in `hygiene.pr_health.lint_checks` (title, body, docs, format, mkdocs, markdownlint, actionlint) and `code` for the others (`build-ok`, `python-ok`); a mix lists both | author |
+| `conflict` | GitHub says the pull request conflicts with its base | author |
+| `ci-stuck` | a required check has been queued or running longer than `hygiene.thresholds.pr_pending_hours` (default 3; `--pending-hours H` overrides it for one run) | coordinator |
+| `auto-merge-off` | the pull request is not a draft, targets `main` and has auto-merge off | coordinator |
+
+A failing check that is not required is ignored. A draft is never stuck. A stacked pull request (base other than
+`main`) is reported as `stacked` and never as lacking auto-merge; its failures and conflicts count. GitHub answers
+`UNKNOWN` for mergeability while it computes it, which means "not known yet": it is not a finding and shows only with
+`--verbose`, together with the drafts and stacked pull requests, so a rerun a minute later settles it.
+`--json` prints `checked`, `stuck` (each with `number`, `branch`, `cause`, `kind`, `detail`, `who`, `checks`, `url`),
+`other` (the `--verbose` lines) and `notices`. Exit code 0 when nothing is stuck, 1 when something is, 2 when `gh` or
+the conventions cannot be read. Run it from the coordinator's loop to find the pull requests to unstick or to push.
 
 ## check {#check}
 

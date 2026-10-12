@@ -243,6 +243,11 @@ hygiene:
     needs_info_days: 21
     in_progress_idle_days: 30
     pull_request_idle_days: 30
+    pr_pending_hours: 3                          # a required check queued or running this long: stuck in CI
+  # `coney-tools repo pr-health` calls a failing required check "lint" when it is one of these (the author fixes the
+  # text) and "code" otherwise (build-ok, python-ok and the jobs under them).
+  pr_health:
+    lint_checks: [title, commits, docs, body, format, mkdocs, markdownlint, actionlint]
   # The audit's checks (`coney-tools repo audit`; docs/guides/repo-conventions.md#audit-checks). scope: where it runs
   # (files = the checkout, github = issues, pull requests, labels and settings, local = the workspace). severity: error
   # fails the audit (exit code 1), warn is only reported. fix: auto = a coney-tools command fixes it, skill = the

@@ -34,6 +34,7 @@ from coney_tools.audit_cli import add_audit_parser, run_audit
 from coney_tools.config import PATH_KEYS, ConfigError, find_repo_root, load_config
 from coney_tools.conventions import Conventions, load_conventions
 from coney_tools.conventions_render import run_render
+from coney_tools.pr_health import add_pr_health_parser, run_pr_health
 from coney_tools.repo_checks import check_body, check_docs, check_pointer_files, check_title, first_line
 from coney_tools.repo_labels import apply_labels, gh_script
 
@@ -221,6 +222,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--check", action="store_true", help="change nothing; exit 1 when a block is out of date"
     )
     add_audit_parser(repo_commands)
+    add_pr_health_parser(repo_commands)
     _add_check_commands(groups)
     labels_parser = repo_commands.add_parser(
         "labels",
@@ -726,6 +728,8 @@ def _run(args: argparse.Namespace) -> int:
         return mcp_serve.run_serve(args.name)
     if args.command == "audit":
         return run_audit(args)
+    if args.command == "pr-health":
+        return run_pr_health(args)
     if args.command == "render":
         return run_render(find_repo_root(Path.cwd()), args.check)
     if args.command == "labels":
