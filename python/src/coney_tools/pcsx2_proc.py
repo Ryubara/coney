@@ -6,10 +6,10 @@ Windows needs ctypes (this is the only module that touches it); other systems ge
 error from the window calls. Nothing here ever focuses a window or sends input to whichever window has focus: keys go
 to a window by its handle (PostMessage), and screenshots read a window by its handle (PrintWindow).
 
-**PCSX2 must never take the keyboard focus** (the machine's owner types while agents work). Do not "simplify" the
+**PCSX2 must never take the keyboard focus** (the user types while agents work). Do not "simplify" the
 launch back to a Popen with a no-activate show command: that was tried and PCSX2 still came to the foreground,
 because Qt ignores the show command for its first window and Windows lets a process activate its window when the
-foreground process started it, and every agent runs under the owner's foreground terminal. So the launch has two
+foreground process started it, and every agent runs under the user's foreground terminal. So the launch has two
 layers:
 
 1. `start_detached` has WMI (Win32_Process.Create) start PCSX2. Its parent is then WMI's provider host, outside our
@@ -189,7 +189,7 @@ _WMI_CREATE = (
 def start_detached(command: list[str]) -> int:
     """Start a program outside this process tree and return its pid.
 
-    Windows lets a process take the foreground when the foreground process (the owner's terminal, which every agent
+    Windows lets a process take the foreground when the foreground process (the user's terminal, which every agent
     runs under) started it, so a child of ours may activate its window whatever its show command says. Started by
     WMI (Win32_Process.Create) the program's parent is WMI's provider host, which holds no foreground rights to
     pass on. Elsewhere this is a plain detached Popen. Raises ConfigError when WMI refuses."""
@@ -384,7 +384,7 @@ class FocusCalls:
 class FocusGuard:
     """Hands the foreground back whenever a window of the guarded process takes it.
 
-    Built before the launch, it remembers the foreground window then (the owner's); `check()` is one poll, and
+    Built before the launch, it remembers the foreground window then (the user's); `check()` is one poll, and
     `start()` runs it every `interval` seconds on a daemon thread until `stop()`."""
 
     def __init__(self, calls: FocusCalls, interval: float = 0.05) -> None:
@@ -399,8 +399,8 @@ class FocusGuard:
 
     def check(self) -> bool:
         """One poll: True when the guarded process held the foreground and it was handed back. A foreground window
-        of any other process becomes the one to return to (the owner moved on), so the guard never fights the
-        owner's own clicks elsewhere."""
+        of any other process becomes the one to return to (the user moved on), so the guard never fights the
+        user's own clicks elsewhere."""
         if self.pid is None:
             return False
         current = self.calls.foreground()
@@ -437,7 +437,7 @@ class FocusGuard:
 
 
 def _give_foreground(hwnd: int) -> bool:
-    """Make `hwnd` (the owner's window) the foreground again: attach to the input of the thread that holds the
+    """Make `hwnd` (the user's window) the foreground again: attach to the input of the thread that holds the
     foreground now (PCSX2's), which allows SetForegroundWindow, then detach. No input is sent."""
     user, kernel = _user32(), _kernel32()
     current = user.GetForegroundWindow()

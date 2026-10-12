@@ -1,4 +1,4 @@
-# A fall from a great height (owner checklist item 48): slot 1 stands Rembrandt in level99's street; at frame 5
+# A fall from a great height (user checklist item 48): slot 1 stands Rembrandt in level99's street; at frame 5
 # his feet are put 40 m up and he falls with the stick at rest. The trace shows the follow camera on the way
 # down: the aim point the view faces and its lag, the view's pitch, the hard band and the long-fall state flag.
 # Research: docs/research/camera.md#long-fall.

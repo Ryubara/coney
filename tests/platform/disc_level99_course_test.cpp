@@ -213,7 +213,7 @@ TEST_CASE("the disc's level99 combat tutorial: the play-through script passes le
     // The lesson texts the hint box showed, in the original's order up to the throw lesson
     // (docs/research/scripting.md#level99-hints): the grab hints (TT_19*) the player's state brings up are left out
     // and repeats merged, as the page says. A text the lessons set only after a grab hint that was still queued would
-    // show late, behind it, and break the order (owner checklist item 33b).
+    // show late, behind it, and break the order (user checklist item 33b).
     const std::shared_ptr<coney::script::Table> texts = scripts.scripts().vm().global("LEVEL99").table();
     REQUIRE(texts != nullptr);
     const auto textOf = [&texts](std::string_view key) {

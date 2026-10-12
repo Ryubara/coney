@@ -585,7 +585,7 @@ So the original's pick-up sound ends on its own after about 0.37 s (`powerup`: 2
 or 0.2 s (`mission_item`), whatever happens to the picked-up object; it is not tied to the object, the human or the
 pause.
 
-**Owner item 22 (the pick-up sound looping until paused)**: nothing in the data or the original's code loops these
+**User item 22 (the pick-up sound looping until paused)**: nothing in the data or the original's code loops these
 sounds, so the loop is Coney's. Coney decodes the sample to its end flag and gives a bank sample loop points only
 for a looping class (`repo:src/audio/sound_bank.cpp`), so the data is not the cause either; what remains is the
 engine side. **Coney fixes**:

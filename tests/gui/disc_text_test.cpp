@@ -105,7 +105,7 @@ TEST_CASE("the text fonts load with every glyph the tags use and lay out every H
     CHECK(laidOut == 388);
     CHECK(sprites > 0);
 
-    // Owner items 9 and 24b (docs/research/gui.md#moneyfont, docs/research/rumble.md#intro): the swap prompts 0xc-0xe
+    // User items 9 and 24b (docs/research/gui.md#moneyfont, docs/research/rumble.md#intro): the swap prompts 0xc-0xe
     // start with GSTRING.ACTIONBUTTON, whose <ST> inside <MONEYFONT> is part_page0 rectangle 73 (the triangle); the
     // revive prompt 4 draws a big_font stick picture (rectangles 256-261); the rumble prompt 0x25, laid out as its
     // usage line in part_page0, draws the cross button.

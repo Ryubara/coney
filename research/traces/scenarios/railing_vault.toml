@@ -1,4 +1,4 @@
-# The hangout's balcony railing (level95's clubhouse, owner checklist item 46): the player is put 0.6 m in front of
+# The hangout's balcony railing (level95's clubhouse, user checklist item 46): the player is put 0.6 m in front of
 # the 0.9 m railing of material 7 (LAMPOST, triangle flag 0x80) that runs along y = 99 above the 3.2 m drop to the
 # floor below, facing it; the stick at 50 % toward it and triangle: the short-fence climb (443, 444, 445), where the
 # body goes and when it falls. Research: docs/research/characters.md#climb. The state is any level95 state (one on

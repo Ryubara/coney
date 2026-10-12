@@ -184,7 +184,7 @@ class Emulator:
         disc = disc_link(paths.iso, paths.scratch)
         load = ["-statefile", str(state)] if state is not None else []
         command = [str(_executable(paths.pcsx2_dir)), "-fastboot", *load, "--", str(disc)]
-        # Never a plain Popen: a child of ours inherits the right to take the owner's focus (pcsx2_proc's docstring).
+        # Never a plain Popen: a child of ours inherits the right to take the user's focus (pcsx2_proc's docstring).
         self.guard = pcsx2_proc.focus_guard()
         self.pid = pcsx2_proc.start_detached(command)
         if self.guard is not None:

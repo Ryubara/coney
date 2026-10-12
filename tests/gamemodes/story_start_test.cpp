@@ -348,7 +348,7 @@ TEST_CASE("mission complete: kind 2 reloads the current level", "[story_start]")
 
 TEST_CASE("every start of a level finds the HUD clean: a debug jump and a reload drop the last level's hints",
           "[story_start][hud]") {
-    // Owner checklist item 35: a hint on screen and an objective set, then a jump to the next mission through the debug
+    // User checklist item 35: a hint on screen and an objective set, then a jump to the next mission through the debug
     // menu (or a restart): none of it may survive into the new level (docs/research/hud.md#hud-object, UnloadLevel's
     // HUD shut-down).
     StoryRun run(storyScript(), false);

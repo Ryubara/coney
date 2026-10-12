@@ -3,7 +3,7 @@
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`), static analysis only
 (Ghidra), and a disc check (2026-10-06) of the car models and the Object List, reported as counts, sizes and frame
 positions, with Coney's renders of the models. Runtime: the colour (below) and, 2026-10-10, PCSX2 2.9.94, a copy of the
-owner's slot 6 (`level99`), the scenarios `car_punch` and `car_glance` (`repo:research/traces/scenarios/`): squares
+user's slot 6 (`level99`), the scenarios `car_punch` and `car_glance` (`repo:research/traces/scenarios/`): squares
 and plain punches at the sedan in car slot 2, its parts' damage and its rock read each update
 ([What can hit a car](#hit-volumes)).
 
@@ -583,7 +583,7 @@ the four bytes as one word in `+0x12e8` and `+0x12ec`, marking the car dirty. `C
 `0x00338240`, which spreads the bytes in reverse order (`pextlb`, `prevh`) and blends the two, and stores the result in
 the render object (`+0x24`). Confirmed (code) for the packing (`Colour_PackFloat`: byte *i* = `c(i+1)` × 255) and the
 reversal (`Colour_LerpRatio` reverses the bytes on unpacking and does not reverse them back), and **confirmed
-(runtime)**, PCSX2 2.9.94, `level99`, the owner's slot 5 (copied): the render tint's bytes in memory order
+(runtime)**, PCSX2 2.9.94, `level99`, the user's slot 5 (copied): the render tint's bytes in memory order
 (`RwRGBA` r, g, b, a) are **(`c4`, `c3`, `c2`, `c1`)**. So `c1` is alpha, `c2` blue, `c3` green and `c4` red:
 
 - **Order.** Car slot 0 stores the word `0xe5cc99ff` (bytes `c1..c4` = 255, 153, 204, 229) and its tint reads
@@ -673,7 +673,7 @@ Coney's stand-ins, where this page is silent:
 ### Coney status and the fix for the implementer {#coney-fix}
 
 Checked 2026-10-10 by playing `car_punch` and `car_glance` on Coney (`level99` checkpoint 4, the release build of
-`main`) beside the same car. The owner's report, "no destruction, only the glass breaks, and hits must land on very
+`main`) beside the same car. The user's report, "no destruction, only the glass breaks, and hits must land on very
 particular spots", comes from these gaps:
 
 - **Only the square's object attack hits a car.** `PlayLevelMode::stepObjects()` passes a car hit to

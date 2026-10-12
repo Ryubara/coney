@@ -1350,7 +1350,7 @@ Every brain starts with near `+0x13c` and far `+0x140` from two globals (`0x0028
 from `config_preload2.lua` to **3 and 5 m** (1 and 4 in the executable's image, before the config runs). Nothing per
 class or power class changes them: the only other writers are `BrSetMeleeRange` (no script calls it) and
 `GoalBossDiego` (`0x002a1b50`, 1 and 2 m). So the far range is **5 m** for the sparring Warriors (power class 40)
-and every other AI. Confirmed (code) at the writes above; confirmed (runtime), PCSX2 2.9.94, read from the owner's
+and every other AI. Confirmed (code) at the writes above; confirmed (runtime), PCSX2 2.9.94, read from the user's
 save states 1 and 6 (all 19 brains 3.0 / 5.0) and in the lesson-12 trace below.
 
 #### The Melee goal {#melee-goal}
@@ -4096,7 +4096,7 @@ line) → ATTACK at 2-3 m**; a hit at any point → ATTACK at once.
 fight it hears about; it does not stop code 3. No form holds a gang passive by its threat response; the passive ones
 are held by a short sight (`HuSetLOSRange` 1 or 4) or by `Halt`.
 
-**Coney status and fix** (checked 2026-10-11, `repo:src/ai`; item 5 of the owner's list):
+**Coney status and fix** (checked 2026-10-11, `repo:src/ai`; item 5 of the user's list):
 
 - Coney runs the enemy scan only for members under TacticScout (`ScoutTactic::update` →
   `ScanSchedule::maybeScan`); `Brains::update` and `Brain::think` never scan. So no Destroyer under HANGINGOUT, IDLE,
@@ -5726,7 +5726,7 @@ the player modes 2 and 3 and steal at a store are not built. `GangStartSpawner` 
 
 ### Warrior commands, revive and the weapon swap: the gaps {#crew-gaps}
 
-Coney against the original, command by command (owner checklist items 11, 16, 8 and 37), as of this page's commit.
+Coney against the original, command by command (user checklist items 11, 16, 8 and 37), as of this page's commit.
 The menu itself (`repo:src/hud/war_command_display.cpp`, `repo:src/gamemodes/gameplay_war_commands.cpp`) matches
 [HUD](hud.md#warrior-command-menu): every slot reaches the dispatcher (`dispatchWarriorCommand`,
 `repo:src/scripting/story_bindings.cpp`), which hands the tactic to `ScriptedStory::startWarriorCommand`

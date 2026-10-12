@@ -393,7 +393,7 @@ implementers are working in `src/platform/` now.
 | N3 | Core loaders from `const io::Wad&` to `const assets::AssetStore&`, one directory per commit: `characters` + `human/player` (6), `audio` (2), `scenes`, `world_objects`, `gamemodes/load_entry_mode` (4) | 15 headers in core directories, their tests | 3 x S |
 | N4 | `coney-tools repo check` rule: outside `src/fileio/`, `src/assets/` and a shrinking allowlist, no `#include` of `fileio/disc.h`, `wad.h`, `wad_index.h` or `executable.h` (`reader.h` and `stream.h` stay free). The allowlist starts with today's files and only ever shrinks, so the 1:1 work adds no new direct use | `python/src/coney_tools/repo_checks.py`, its test | S |
 | N5 | One function for every texture load (Enhancements choice 5), called by `texture_dictionary`, `sprite_sheets` and `object_models`; F4 attaches there later | `src/platform/` texture files | S |
-| N6 | Platform loaders and modes to the store, after N3 and when the platform owners agree: 17 headers, about 30 signatures (`world_set`, `level_file`, `play_level_*`, viewers, `hud_layer`, `particle_renderer`, ...) | `src/platform/` | 2 x M |
+| N6 | Platform loaders and modes to the store, after N3 and when the platform's maintainers agree: 17 headers, about 30 signatures (`world_set`, `level_file`, `play_level_*`, viewers, `hud_layer`, `particle_renderer`, ...) | `src/platform/` | 2 x M |
 | N7 | `--data <install>` opening `<install>/game/ps2/` through the same `Disc` + `Wad` (a folder copy already works), and the default lookup next to the executable; `docs/guides/building.md` updated | `core/options`, `platform/main.cpp` | S |
 
 Not now, but **rules for all work from today on**: no new `const io::Wad&` parameter (N4 enforces this once it

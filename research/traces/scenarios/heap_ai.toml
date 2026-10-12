@@ -84,7 +84,7 @@ type = "f32"
 digits = 4
 
 [original]
-slot = 6                          # the owner's slot 6, copied read-only
+slot = 6                          # the user's slot 6, copied read-only
 patches = ["scripted-pad", "right-stick", "call-brains"]
 let = { enemy = 'human("Vermin")' }
 setup = [

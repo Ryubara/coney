@@ -2070,7 +2070,7 @@ up or down by its direction byte, wrapped into 0-2π; positive angles turn clock
 the constant **3.14** (`0x0050d6e4` = `0x4048f5c3`, written by `LockPickDial_Draw` and used by `LockPickDial_Show`
 and the miss in `LockPickDial_Judge`), not π, confirmed (code); at 3.14 every pin's notch points straight down. A pin
 held at 4.71 shows its notch at 9 o'clock, so positive angles turn clockwise and the notch's screen angle, clockwise
-from 12 o'clock, is the pin's angle: confirmed (runtime), PCSX2 2.9.94, owner slot 3 (speed 0 written to `+0x458`,
+from 12 o'clock, is the pin's angle: confirmed (runtime), PCSX2 2.9.94, user slot 3 (speed 0 written to `+0x458`,
 the angle to pin 0's rotation `+0xe0`).
 
 **The shapes** (`Shape2D_Queue` → `Shape2D_DrawQueued` `0x0017c308`, drawn in the viewport pass with RwIm2D):
@@ -2139,7 +2139,7 @@ order; how much the art covers is above).
   are j = 0 to k − 1 (k segments clockwise of 12 o'clock) and j = n − k − 1 to n − 1 (**k + 1** segments
   counter-clockwise): **2k + 1 solid segments with hard radial edges, from −(k + 1) × 11.25° to +k × 11.25°**, and
   nothing outside them. Example: 27 % (difficulty 1) gives k = 4, a wedge from −56.25° to +45° (101.25°); 12 % gives
-  k = 1, −22.5° to +11.25°. Confirmed (runtime), PCSX2 2.9.94 at native resolution, owner slot 3 at difficulty 1:
+  k = 1, −22.5° to +11.25°. Confirmed (runtime), PCSX2 2.9.94 at native resolution, user slot 3 at difficulty 1:
   sampled round the centre at radii 22-36 pixels, band 1's edges sit at −56.7° and +44.5° and band 2's at −22.5° and
   +10.5° at every radius, with no gradient across either edge. (An earlier reading here had 2k solid segments and a
   fading segment on each side, from Gouraud shading.)
@@ -2157,7 +2157,7 @@ order; how much the art covers is above).
 #### The dial next to the original (2026-10-11) {#lock-pick-dial-compared}
 
 **The original's capture.** PCSX2 2.9.94 at native resolution (window 1240 × 930 for the 640 × 448 frame), the
-interlaced 4:3 mode (device flags `0x01`), owner slot 3 (a store door; it is not pickable there, the kind-2 list of
+interlaced 4:3 mode (device flags `0x01`), user slot 3 (a store door; it is not pickable there, the kind-2 list of
 the context registry is empty). The dial was shown by writing 1 to player 1's dial `+0x478` (HUD `0x00600840` +
 `0xf420` = `0x0060fc60`, so `0x006100d8`): `LockPickDial_Draw` then turns pin 0 and queues the shapes exactly as in a
 pick, since nothing it draws reads the mini-game's state; the difficulty in force was 1 (directions (+, −, +), bands
@@ -2205,10 +2205,10 @@ puts every pin back at 3.14 and pin 0 turns again, and the end of the pick hides
 **Open**: how many times a second the dial's update (`LockPickDial_Draw`, the HUD's update slot) runs, and so how
 fast a pin turns in seconds, was not measured; the code turns it 0.1 × speed per call.
 
-**Owner item 12 (the dial's layers misplaced)**: Coney's `repo:src/hud/lock_pick_hud.cpp` (checked 2026-10-11)
+**User item 12 (the dial's layers misplaced)**: Coney's `repo:src/hud/lock_pick_hud.cpp` (checked 2026-10-11)
 draws the pins at the GUI position (0.09, 0.59) through `OverlayCamera::guiToOverlay` (depth 1.1) and the shapes at
 (−0.565, −0.07, 1). That puts the wedges and the lock face 14 pixels left of and 5 above the brass pins, which is the
-red wedge "up and left of the lock" and the keyhole left of the outer ring that the owner saw. The original draws
+red wedge "up and left of the lock" and the keyhole left of the outer ring that the user saw. The original draws
 the pins at the centre point. **Coney fixes** (done in pull request #52):
 
 1. Draw the three pins at the player's centre point in overlay space at distance 1, not at the GUI position: 4:3
@@ -2776,13 +2776,13 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   second text
   (`SetMsgHandlerEx`'s `prompt2`)
   is queued as a priority-0 hint while it is in reach and withdrawn when it changes or leaves.
-- **The prompt's button** (owner item 9, "n Give Weapon", fixed): the layout (`repo:src/gui/text_layout.cpp`) gives
+- **The prompt's button** (user item 9, "n Give Weapon", fixed): the layout (`repo:src/gui/text_layout.cpp`) gives
   `<MONEYFONT>` its rectangle base ([MONEYFONT](gui.md#moneyfont)), so the `<ST>` of `GSTRING.ACTIONBUTTON` draws
   `part_page0` rectangle 73, the triangle; the stick tags alternate their characters and the icon tags 23-31 are
   known (`repo:src/gui/markup.h`). Tests: `repo:tests/hud/hud_test.cpp` (a prompt starting with the action button),
   `repo:tests/gui/text_layout_test.cpp`, and the disc check `"[disc][text]"`, which finds the triangle in all three
   swap prompts (`0xc`-`0xe`) and a stick picture in the revive prompt 4.
-- **The prompt beside a downed Warrior** (owner item 8, "no revive prompt"): Coney's revive step read only a script's
+- **The prompt beside a downed Warrior** (user item 8, "no revive prompt"): Coney's revive step read only a script's
   knock-out, so a Warrior downed in a fight (his health gone) gave no prompt; it now counts both, a flash is still
   needed, and d-pad left revives him ([Combat: revive](combat.md#revive)). He must also be revivable (flag `0x4`),
   which every Warrior is from the moment he is made (`Human_Init`, [Combat: human flags](combat.md#human-flags)), in

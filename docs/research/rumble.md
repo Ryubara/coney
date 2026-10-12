@@ -257,7 +257,7 @@ The update (`0x001fad40`) runs four phases (byte `+0xe4`), confirmed (code):
   glyph of `part_page0` (characters `0x91`-`0xa0`, [Markup](gui.md#markup)).
 - **The countdown**: a text widget at (0.5, 0.5), size 2.5, grey `0x005fd310`, font slot 6, centred, hidden.
 
-**Fixed in Coney** (owner item 24b, "press  to start" with an empty gap): Coney drew the prompt like a name, in
+**Fixed in Coney** (user item 24b, "press  to start" with an empty gap): Coney drew the prompt like a name, in
 `big_font`, which has no picture for the `<X>` character, so the button was a gap. The intro
 (`repo:src/gui/rumble_mode_gui/rumble_intro.cpp`) now builds the prompt as a usage line (`part_page0`, size 1.0,
 grey 178, centred) at (0.5, 0.88), and the names and countdown in grey 178 at size 2.5, the countdown at (0.5, 0.5).
@@ -372,7 +372,7 @@ workers) that belong to this page, by address.
 ## Starting a match: the music and the wait {#match-start}
 
 What happens to the front end's music between the Choose Area launch and the fight, and how long the player waits
-after accepting the prompt (owner checklist items 24 a and c; the prompt's missing button glyph, 24 b, is the HUD
+after accepting the prompt (user checklist items 24 a and c; the prompt's missing button glyph, 24 b, is the HUD
 text's glyph handling).
 
 **The music** is stopped twice and then cut. Confirmed (code) unless marked:

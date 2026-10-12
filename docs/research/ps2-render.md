@@ -2,7 +2,7 @@
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`), static reading in Ghidra
 (2026-10-07), and the game running under PCSX2 2.9.94 (EE memory read over PINE, in `level99` from a copy of the
-owner's quick-save slot 1).
+user's quick-save slot 1).
 
 ## Purpose
 

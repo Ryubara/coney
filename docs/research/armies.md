@@ -8,7 +8,7 @@ Static reading, 2026-10-11. Each claim carries its evidence level.
 
 Armies of the Night is the original's bonus game: five stages of a side-on brawler in the game's own engine. This
 page says how the player reaches it, what loads, and which engine pieces exist only for it. It ends with what
-Coney needs to show it instead of a black screen (owner checklist item 19). The pieces have their own pages, linked
+Coney needs to show it instead of a black screen (user checklist item 19). The pieces have their own pages, linked
 below. This page gathers them and does not repeat them.
 
 ## What it is {#what-it-is}

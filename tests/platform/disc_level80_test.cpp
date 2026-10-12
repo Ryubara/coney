@@ -735,7 +735,7 @@ TEST_CASE("the disc's level80 checkpoint 3: Fox, Hold Up, the bottle thrown from
     }
     REQUIRE(distracted);
     // The bottle's break clears the throw lesson's text and flushes its poll: no hint of it is left showing or
-    // queued to come back in step 3.4 (owner checklist item 38: "throw a bottle" stayed up until the Mayhem order).
+    // queued to come back in step 3.4 (user checklist item 38: "throw a bottle" stayed up until the Mayhem order).
     const coney::hud::HintBox& box = level.scripts->hud().hints();
     CHECK_FALSE(box.showing().has_value());
     CHECK(box.queued().empty());

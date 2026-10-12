@@ -1065,7 +1065,7 @@ so how RenderWare's pipeline hands the prelit colour and alpha to the GS is stil
 step: read palette entry 2's colour from the disc, or capture with the arc close to the camera so that opaque texels
 show unfiltered.
 
-**Owner item 31 (the arc)**: the first Coney arc (on the `throw-arc` branch, 2026-10-11) used
+**User item 31 (the arc)**: the first Coney arc (on the `throw-arc` branch, 2026-10-11) used
 stand-in values that differ from the above. **Coney fixes**:
 
 1. Colours (127, 127, 127) not hit and (170, 43, 43) hit, instead of (170, 170, 170, 160) and (220, 30, 30, 160).

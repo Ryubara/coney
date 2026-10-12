@@ -409,7 +409,7 @@ to `b` inclusive. Confirmed (code) at `0x002187e4`-`0x00218a90`:
    category 4 first draws `Random_Int(100)` (`0x003353b8`, 0 to 100) and takes 2 when it is below 10. Categories 5
    and 7 set 3.
 
-The `CfgCharClassAttribs` records, confirmed (runtime) over PINE in level99 (a copy of the owner's slot 6; game
+The `CfgCharClassAttribs` records, confirmed (runtime) over PINE in level99 (a copy of the user's slot 6; game
 state `0x01fd8400`):
 
 | Category | `min`-`max` | `+0x0c` | `noObject` | `bonusChance` | `bonus` |
@@ -826,7 +826,7 @@ Whether the responders then attack the player's gang when the pick reported no o
 set) is not traced: the dispatch goal's target is the crime scene (inferred from the queued entry, which carries no
 target).
 
-**Owner item 13 (no police on a break-in)**: Coney's report (`repo:src/warriors/crime_reports.cpp`, checked
+**User item 13 (no police on a break-in)**: Coney's report (`repo:src/warriors/crime_reports.cpp`, checked
 2026-10-11) calls `CrimeServices::queueResponders`, whose only implementation is the interface's empty default, so
 nothing is ever queued; Coney also has no dispatch queue on its spawners (`GameplayMode`'s scout hook logs its call
 only). **Coney fixes**:
