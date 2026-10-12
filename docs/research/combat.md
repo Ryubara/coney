@@ -4659,6 +4659,7 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
   written full, so what else the start needs is open.
 - **Whether the flash clip sets `0x2000`** (record `+0x08`) as it starts: the task holds it ([Rage](#rage)), and Coney
   sets it, which keeps the fight stance from cutting the clip; the type-5 task's start flags at `0x0025ade8` would
+  tell, and a runtime read of `+0x08` on the update after d-pad right in the stance.
 - **The flash during a move** ([The flash during a move](#flash-mid-move)): what sets 665's rate (53 updates for
   40 frames); why presses on landing from the slot 9 window jump gave no command; the window between 665's start and
   its event when a hit lands (a hit in `flash_hit`'s first run took health while 665 played on).
