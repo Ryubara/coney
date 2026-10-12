@@ -81,7 +81,7 @@ says where the check runs, how bad a finding is and who fixes it, and the table 
   in a minute (a missing section, a missing label); a warning is a judgement or a delay (a stale status, a pull request
   idle for a month). Promoting a warning to an error is one line in the file.
 - **Fix class.** `auto`: a coney-tools command fixes it (`repo render`, `repo labels --apply`, `workspace clean`).
-  `skill`: it takes judgement, so the author or the coordinator fixes it (the `/repo-hygiene` skill, when it exists,
+  `skill`: it takes judgement, so the author or the coordinator fixes it (the [`/repo-hygiene` skill](#hygiene-skill)
   acts on a finding by this class). `maintainer`: a maintainer decides (the ruleset and the settings of the repository).
 - **Items.** Only open issues and open pull requests are checked for their sections, labels, wording and links. History
   is checked only where it loses work: a closed issue or a merged pull request that keeps an unchecked item with no
@@ -186,6 +186,21 @@ required check. The report issue is the one thing it creates besides comments, a
 title `hygiene.report_issue.title`; creating an issue is a write beyond a comment, so the maintainer approves it
 explicitly when merging the pull request that added the workflow. Turning on `on_sweep` is a one-line change to the
 conventions.
+
+## The /repo-hygiene skill {#hygiene-skill}
+
+The coordinator tidies the repository with the `/repo-hygiene` skill
+([.claude/skills/repo-hygiene/SKILL.md](repo:.claude/skills/repo-hygiene/SKILL.md)), after every merge round and once a
+week. It runs `repo audit` (files, GitHub and local scopes) and `repo pr-health`, then works through the findings by
+their fix class: an `auto` finding is fixed by running its command, a `skill` finding is fixed with judgement by the
+recipe the skill gives for that check, and an `owner` finding stops the skill, which reports it to the maintainer
+instead. Afterwards it fixes the issues that cite a pull request that merged, and runs the audit again to confirm. Only
+the coordinator writes to GitHub, so an agent that is asked to run the skill reports what it would change.
+
+The skill holds a recipe for every check of the registry; a test fails when a check has no recipe or the skill names a
+check that does not exist, so adding a check to `hygiene.checks` means adding its line to the skill
+([To add a check](#audit-checks)). The `hygiene` workflow ([Workflows](#workflows)) shows the same findings on the items
+themselves; the skill is what acts on them.
 
 ## Where the reasons are
 
