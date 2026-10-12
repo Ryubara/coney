@@ -22,10 +22,8 @@ player's path, gamepad input, playthrough tests, the checks to run before report
 
 ## Build and test
 
-- Engine: `uv run --project python coney-tools build --agent <id> --preset dev --test` configures, builds and tests in
-  one command (on Windows it loads the MSVC environment itself). Agents never run `cmake --build`, `ctest` or
-  `ninja` directly: builds share two slots on the machine, and a hook refuses the raw commands
-  ([`build`](docs/guides/coney-tools.md#build)). Presets `dev`, `release`, `ci` (warnings as errors), `asan` (Linux/macOS).
+- Engine: `uv run --project python coney-tools build --agent <id> --preset dev --test` (presets `dev`, `release`,
+  `ci`, `asan`); a hook refuses raw `cmake --build`, `ctest`, `ninja`: [`build`](docs/guides/coney-tools.md#build).
 - Python: `uv run --project python pytest python/tests`; `uvx pre-commit run --all-files` before committing.
 - Docs: `.venv/Scripts/python -m mkdocs build --strict`. Build details: `docs/guides/building.md`.
 - On Windows, no local WSL builds or clang-tidy runs: GitHub CI is the Linux and macOS gate, and a failure there is
