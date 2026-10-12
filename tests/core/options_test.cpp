@@ -368,6 +368,24 @@ TEST_CASE("the window takes the focus only in a run a person plays", "[options]"
     CHECK(coney::usageText().find("--no-activate") != std::string_view::npos);
 }
 
+TEST_CASE("window-display names the display the window opens on", "[options]") {
+    auto plain = parseOptions({});
+    REQUIRE(plain.has_value());
+    CHECK_FALSE(plain->windowDisplay.has_value());
+
+    auto asked = parse(std::array<std::string_view, 2>{"--window-display", "portrait"});
+    REQUIRE(asked.has_value());
+    CHECK(asked->windowDisplay == "portrait");
+    // Any text is taken as given: whether a display matches is known only once the window system lists them.
+    auto name = parse(std::array<std::string_view, 2>{"--window-display", "LG HDR"});
+    REQUIRE(name.has_value());
+    CHECK(name->windowDisplay == "LG HDR");
+
+    CHECK_FALSE(parse(std::array<std::string_view, 1>{"--window-display"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 4>{"--window-display", "1", "--window-display", "2"}).has_value());
+    CHECK(coney::usageText().find("--window-display") != std::string_view::npos);
+}
+
 TEST_CASE("the sandbox option takes a layout or defaults to the default one, and needs no disc", "[options][sandbox]") {
     auto bare = parse(std::array<std::string_view, 1>{"--sandbox"});
     REQUIRE(bare.has_value());

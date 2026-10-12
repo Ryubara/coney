@@ -15,6 +15,7 @@ add_executable(coney_tests
     core/ps2_float_test.cpp
     core/options_test.cpp
     core/pad_test.cpp
+    core/window_display_test.cpp
     effects/effect_culling_test.cpp
     effects/glints_test.cpp
     effects/ground_fog_test.cpp

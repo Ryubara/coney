@@ -29,7 +29,7 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
       [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps] [--tunables FILE]
       [--no-audio | --audio-test]
       [--skip-movies] [--rumble TYPE [--arena N] [--gang-size N]]
-      [--profiles DIR] [--dev-overlay N] [--no-activate] [--event-log FILE] [--pad-pipe]
+      [--profiles DIR] [--dev-overlay N] [--no-activate] [--window-display DISPLAY] [--event-log FILE] [--pad-pipe]
 ```
 
 Coney draws with librw's OpenGL 3 renderer (an OpenGL 3.3 core context through SDL3; librw falls back to 2.1 or OpenGL
@@ -54,6 +54,32 @@ The STORY profiles are saved as one file each (`profile-1.sav` to `profile-6.sav
 (`%APPDATA%\Coney\Coney\` on Windows, `~/.local/share/Coney/Coney/` on Linux, `~/Library/Application
 Support/Coney/Coney/` on macOS); `--profiles DIR` names another folder. A test-mode run without `--profiles` keeps
 its profiles in memory, so tests never touch yours ([Profiles and saving](../research/save.md#coney)).
+
+### Which display the window opens on {#window-display}
+
+`--window-display DISPLAY`, or the environment variable `CONEY_WINDOW_DISPLAY` when the option is not given, opens the
+window centred on one display. It is debug tooling, there so that agents' runs stay off the display a person is
+working on ([Running Coney](research-workflow.md#running-coney)). The value is one of:
+
+| Value | Display |
+| --- | --- |
+| `1`, `2`, ... | That display in SDL's list, counted from 1. On Windows the primary display is 1 and the others follow in Windows' own order, which need not match the numbers in Windows' display settings |
+| `portrait` (any case) | The first display taller than wide |
+| any other text | The first display whose name holds it, case ignored: SDL's name for it, on Windows the monitor's model (`DELL U2724D`) |
+
+The window keeps its size when it fits the display's usable area (the display less its taskbar or menu bar, and less
+the window's own borders) and is otherwise shrunk to the largest size of the same shape that fits, so a 1920 × 1080
+window on a 1080 × 1920 display opens 1080 wide; frames then have the window's new size. An empty value, or neither
+the option nor the variable, leaves the window where SDL puts it (on the primary display). A value that matches no
+display prints one warning on stderr, listing the displays there are with their numbers, names and sizes, and the
+window opens where SDL puts it.
+
+librw makes and shows the window itself inside its start-up, so Coney cannot create it in the right place; it moves
+the window the moment SDL reports it shown, before its OpenGL context exists or a frame is drawn
+(`RenderEngine::start`, `repo:src/platform/render_engine.cpp`; the choosing and fitting are
+`repo:src/core/window_display.h`). A hidden window (`--render-references`) is moved too. The same variable places the
+windows of PCSX2 copies that `coney-tools pcsx2 launch` and `pcsx2 record` start
+([Driving PCSX2](research-workflow.md#driving-pcsx2)).
 
 ### Frame rate {#frame-rate}
 
