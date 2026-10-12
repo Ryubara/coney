@@ -42,8 +42,8 @@ class RouteFollower {
     /// The waypoints still ahead, the current first (the destination last).
     [[nodiscard]] std::vector<anim::Vec3> ahead() const;
     /// The waypoints the corner speed looks at: those ahead, the current first, up to the first whose leg on has bit
-    /// `0x4` or `0x80` (a jump, drop or ledge climb), which is the last: nothing past a take-off is a corner.
-    /// @orig 0x002fbd18 MoveAction_CollectPoints (unknown)
+    /// `0x4` or `0x80` (a jump, drop or ledge climb), which is the last: nothing past a take-off is a corner (the points
+    /// the original collects at `0x002fbd18`, docs/research/scripting.md#level99-p2-vermin-fence).
     [[nodiscard]] std::vector<anim::Vec3> cornerPoints() const;
     /// The index of the current waypoint (the destination is the last).
     [[nodiscard]] std::size_t index() const { return m_index; }

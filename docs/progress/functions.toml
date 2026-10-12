@@ -6819,6 +6819,11 @@ subsystem = "Human"
 size = 360
 
 [[function]]
+address = 0x0029b9b0
+name = "Route_TryClimbNear"
+subsystem = "Human"
+
+[[function]]
 address = 0x0029baa8
 name = "Route_JumpLeg"
 subsystem = "Human"
