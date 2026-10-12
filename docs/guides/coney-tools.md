@@ -659,6 +659,7 @@ A failing check that is not required is ignored. A draft is never stuck. A stack
 `--json` prints `checked`, `stuck` (each with `number`, `branch`, `cause`, `kind`, `detail`, `who`, `checks`, `url`),
 `other` (the `--verbose` lines) and `notices`. Exit code 0 when nothing is stuck, 1 when something is, 2 when `gh` or
 the conventions cannot be read. Run it from the coordinator's loop to find the pull requests to unstick or to push.
+
 ## issue {#issue}
 
 ```sh
