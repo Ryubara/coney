@@ -363,7 +363,7 @@ void Human::locomote(bool gated) {
         m_animator.startRunStop();
     }
     // A brain's move at speed 0 still turns the human to its heading: the turn on the spot
-    // (docs/research/ai.md#moving).
+    // (docs/research/ai-moving.md#moving).
     if (target > 0.0F || m_moveSpeed.has_value()) {
         // Turn toward the stick, limited by the gait and eased.
         m_heading = turnToward(m_heading, wanted, maxTurn(gaitNow), m_turn);
@@ -509,8 +509,8 @@ std::optional<Human::Swept> Human::sweep(const raycast::CollisionMesh& mesh, ani
     // The walking sphere (0.4704 m for Rembrandt, about 0.35 m for an AI human, whose body +0x60 is 1.0), 0.05 m clear
     // of the feet, against the walls the move goes into and that are 0.25 m tall or more; each push slides it along
     // that wall and leaves it 0.01 m clear.
-    const float radius = m_profile.player ? playerWalkingRadius(m_scale) : aiWalkingRadius(m_scale);
-    const float centreHeight = radius + bodyTuning().footGap;
+    const float radius = walkingSphereRadius();
+    const float centreHeight = walkingSphereCentreHeight();
     WallFilter filter{.move = displacement,
                       .skipLow = true,
                       .excludeMaterials = passThrough(),
@@ -574,6 +574,14 @@ std::optional<Human::Swept> Human::sweep(const raycast::CollisionMesh& mesh, ani
     }
     return swept;
 }
+
+float Human::walkingSphereRadius() const {
+    return m_profile.player ? playerWalkingRadius(m_scale) : aiWalkingRadius(m_scale);
+}
+
+float Human::walkingSphereCentreHeight() const { return walkingSphereRadius() + bodyTuning().footGap; }
+
+float Human::airSphereRadius() const { return bodyTuning().airRadius * m_scale; }
 
 UprightCapsule Human::uprightCapsule() const {
     // **Coney's choice**: the 2 m upright capsule the strikes take too, not posed from the head bone each time.
@@ -647,7 +655,7 @@ anim::Vec3 Human::meetHumans(anim::Vec3 from, anim::Vec3 move) {
 
 std::optional<anim::Vec3> Human::pushOutInAir(const raycast::CollisionMesh& mesh, anim::Vec3 feet) {
     // A player's push-out sphere is 0.5 × scale, centred its radius plus 0.05 above the feet, out of every wall.
-    const float radius = bodyTuning().airRadius * m_scale;
+    const float radius = airSphereRadius();
     const WallFilter filter{
         .move = anim::Vec3{}, .skipLow = false, .excludeMaterials = passThrough(), .toContact = false};
     return slideOut(mesh, feet, radius, radius + bodyTuning().footGap, filter, m_nearby);
@@ -768,7 +776,7 @@ void Human::moveInAir(const raycast::CollisionMesh& mesh) {
     // (docs/research/objects.md#pane-break). **Coney stand-in**: the push-out sphere stands for both the body and the
     // jump's strike shapes, whose sizes are not traced.
     if (m_bodyContact != nullptr && *m_bodyContact) {
-        const float radius = bodyTuning().airRadius * m_scale;
+        const float radius = airSphereRadius();
         (*m_bodyContact)(*this, anim::Vec3{across.x, across.y, across.z + radius + bodyTuning().footGap}, radius);
     }
     if (const auto moved = pushOutInAir(mesh, across); moved) {

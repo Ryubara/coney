@@ -10,7 +10,7 @@ executable. Only names, ids and numbers are kept, never a script's code or a fil
 The pure functions take the walked scripts (`lua4.ChunkFacts` by script name) so the tests can feed them synthetic
 facts; the `topic_*` functions are the disc readers `refs extract` calls.
 
-Research: docs/research/objects.md, docs/research/ai.md#spawners, docs/research/ai.md#crimes,
+Research: docs/research/objects.md, docs/research/ai-gangs.md#spawners, docs/research/ai-gangs.md#crimes,
 docs/research/lighting.md#record, docs/guides/research-workflow.md#reference-lists.
 """
 
@@ -283,7 +283,7 @@ STARTERS: dict[str, dict[str, Any]] = {
         "evidence": "confirmed-code",
         "about": "A gang's spawners (four per gang, `GangAddSpawner`) make humans according to their state:\n"
         "`GangAddSpawner`'s kind starts one in a state and `GangStartSpawner(gang, name, state, value)` switches it\n"
-        "([AI: spawners](../research/ai.md#spawners)).",
+        "([AI: spawners](../research/ai-gangs.md#spawners)).",
         "complete": "All twelve states are listed; 6 and 10 only the game sets.",
     },
     "crime-types": {
@@ -292,7 +292,7 @@ STARTERS: dict[str, dict[str, Any]] = {
         "evidence": "confirmed-code",
         "about": "The crimes the police respond to. Scripts report one with `CrimeIsHappening` or\n"
         "`SpawnCustomCrime`, set how many responders each type draws with `CfgCrimeResponders` and switch one with\n"
-        "`CfgEnableCrimeType`; the game reports others itself ([AI: crimes](../research/ai.md#crimes)).",
+        "`CfgEnableCrimeType`; the game reports others itself ([AI: crimes](../research/ai-gangs.md#crimes)).",
         "complete": "All 15 types are listed. The names come from a table no code calls, so which name goes with\n"
         "which number is inferred from the types the code raises.",
     },

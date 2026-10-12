@@ -1658,13 +1658,13 @@ record volume 100, class 1 (near 1 m, far 20 m, flags 3: looping).
 
 ### `dyn_icon` and `sub_glint` {#glint-icon}
 
-`dyn_icon` is the icon over a human (the dealer's, [AI: the dealer's icon](ai.md#dealer-icon)).
+`dyn_icon` is the icon over a human (the dealer's, [AI: the dealer's icon](ai-scripting.md#dealer-icon)).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
-| `0x003e8fa0` | `DynIcon_Init` | `dyn_icon` init | model, attached to the human, spin and height ([AI](ai.md#dealer-icon)) | confirmed (code) |
-| `0x003e92e0` | `DynIcon_Update` | `dyn_icon` update | the colour fade and the hidden state ([AI](ai.md#dealer-icon)) | confirmed (code) |
-| `0x003e9470` | `DynIcon_OnMessage` | `dyn_icon` message | 8, 10, `0x15`, `0x20`, `0x34` ([AI](ai.md#dealer-icon)) | confirmed (code) |
+| `0x003e8fa0` | `DynIcon_Init` | `dyn_icon` init | model, attached to the human, spin and height ([AI](ai-scripting.md#dealer-icon)) | confirmed (code) |
+| `0x003e92e0` | `DynIcon_Update` | `dyn_icon` update | the colour fade and the hidden state ([AI](ai-scripting.md#dealer-icon)) | confirmed (code) |
+| `0x003e9470` | `DynIcon_OnMessage` | `dyn_icon` message | 8, 10, `0x15`, `0x20`, `0x34` ([AI](ai-scripting.md#dealer-icon)) | confirmed (code) |
 | `0x003e93d0` | `DynIcon_SetColourFade` | helper (`0x34`) | a target colour and a step count; a per-update colour step (none: the colour at once) | confirmed (code) |
 | `0x003e9560` | `SubGlint_Init` | `sub_glint` init | a glint sprite (rectangle `0x40029`), size popped × 0.15, attached when given a parent | confirmed (code) |
 | `0x003e96a0` | `SubGlint_Update` | `sub_glint` update | blinks on and off every 20-30 ticks | confirmed (code) |

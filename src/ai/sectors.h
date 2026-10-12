@@ -14,7 +14,7 @@ class Human;
 // The neighbour sectors: who stands round a human in eight 45° sectors, rebuilt at most once per a caller's maximum age
 // and kept per brain. The fight's footwork, the grab and snap tries, the steering round humans and giving way read it.
 // A wall probe per sector runs lazily, once per rebuild, when a reader needs it.
-// Research: docs/research/ai.md#neighbour-sectors
+// Research: docs/research/ai-moving.md#neighbour-sectors
 
 namespace coney::ai {
 

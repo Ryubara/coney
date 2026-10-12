@@ -17,7 +17,7 @@
 // each slot's point is the leader's position plus its offset turned by his heading (2 m ahead while he runs), a slot
 // is usable when the leader can walk to it, each usable slot takes its nearest unassigned follower, the rest queue
 // behind the slotted ones, and pairs whose paths cross swap. GoalTrackHuman's followers walk to their slot's point.
-// Research: docs/research/ai.md#formations
+// Research: docs/research/ai-gangs.md#formations
 
 namespace coney::ai {
 

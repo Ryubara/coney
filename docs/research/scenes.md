@@ -796,15 +796,15 @@ letterbox goes out, and before the end function is called:
 
 1. Each bound Warrior's join goal is popped (step 2), which gives a player his pad back and an AI Warrior his brain.
 2. Only when one of the scene's bound humans was a player (human `+0x1b0` not −1), or else player 1's brain `+0x2e4`
-   is set (a Warrior hitting back at his chief, [AI](ai.md#warrior-follow)): that player's command menu is unlocked
+   is set (a Warrior hitting back at his chief, [AI](ai-gangs.md#warrior-follow)): that player's command menu is unlocked
    (game state `+0x42e` + player = 0), and **command 0, follow, is dispatched forced** for player 1
    (`WarriorCommand_Dispatch(state, player 1, 0, 1, 0, 1)` at `0x0039ff5c`). A forced dispatch is silent, still
    refused while commands are locked or follow is disabled, and otherwise clears the gang's tactic and shared target,
-   records follow as the last command and builds a new follow tactic ([AI: commands](ai.md#warrior-follow)).
+   records follow as the last command and builds a new follow tactic ([AI: commands](ai-gangs.md#warrior-follow)).
 3. In the same case, one **gang update** is run at once (`0x00166708(gang, 0)` at `0x0039ff70`; Ghidra calls it
    `Gang_CachePlayerInfo`): with 0 it skips the spawner step, refreshes the cached player position, runs the new
    tactic once (`Tactic_Process`, which starts the follow tactic and hands out its goals) and the wanted level's
-   update ([AI: the gang update](ai.md#gang-update)). It is not an "alert clear" as this page used to say.
+   update ([AI: the gang update](ai-gangs.md#gang-update)). It is not an "alert clear" as this page used to say.
 4. With `freeze`, every brain is resumed (step 6).
 
 **A cinematic given up** (`SceneTask_Abort`, `0x0039ec60`, after 10 s without starting) does less: fade in at once on
