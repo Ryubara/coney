@@ -447,6 +447,15 @@ class Human final : public Holdable {
         m_fighter.heldInGrab(grabber, fromRear);
     }
     [[nodiscard]] GrabbedReport takeGrabbedReport() override { return m_fighter.takeHeldReport(); }
+    void holdSide(bool rearGrab) override { m_fighter.setRearHeld(rearGrab); }
+    [[nodiscard]] bool heldFromRear() const override { return m_fighter.heldFromRear(); }
+    [[nodiscard]] std::uint32_t heldFlags() const override { return m_animator.flags(); }
+    /// The tandem's victim side (Fighter::startTandemVictim()); cuffed is its arrest (state `0x20000`), which
+    /// `Human_IsDamageDefeating` triples the damage for.
+    bool startTandem(const TandemStart& start) override {
+        return m_fighter.startTandemVictim(start, m_animator, m_script.arrested, m_script.knockedOut);
+    }
+    [[nodiscard]] std::optional<int> takeTandemRequest() override { return m_fighter.takeTandemRequest(); }
     /// Moves it there and stops it (its velocity goes).
     void place(anim::Vec3 position, float headingRadians) override;
     /// Thrown: its fighter's steer carries it (Fighter::carryOver()), applied in each state update as an attack's is.

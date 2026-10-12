@@ -2386,6 +2386,12 @@ The record's state `0x80000000` is the mark the hit leaves while the reaction wa
 test above; which code sets it is still not traced). A civilian with the flags of this one is knocked out, with
 health 1 (inferred: `HitReact_WhileOut`, `0x002686e8`, which sets health 1), rather than killed.
 
+**Coney** holds a lethal hit back the same way (`Fighter::takePending`, `repo:src/human/fighter_victim.cpp`): out of
+health while his clips hold any of `0xc12200`, a human plays no reaction and keeps his clip; on the first update the
+flags are clear, his dying reaction plays. A tandem's defeated victim so finishes his end clip first
+([Coney's tandem](combat-moves.md#tandem-coney)). **Coney's reading**: the dying reaction is the one his hit picks;
+the knock-out with health 1 seen above is not built.
+
 **When the order matters** (`Humans_Update` step 9, [Tasks](tasks.md#humans-update); `Human_UpdateActions`,
 `0x00254e78`): each human applies its pending damage **before** its dispatcher runs, and a reaction returns before
 the dispatcher. The strike tests run earlier in the step (after each move). So:
