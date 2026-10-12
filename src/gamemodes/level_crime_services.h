@@ -20,7 +20,7 @@ namespace coney {
 /// the police spawners are not wired yet, so hostility and responders do nothing (open item on
 /// docs/research/crimes.md).
 ///
-/// Research: docs/research/ai.md#crimes
+/// Research: docs/research/ai-gangs.md#crimes
 class LevelCrimeServices final : public CrimeServices {
   public:
     /// Over `scripts`, which must outlive it; `moveScene` moves the `CrimeScene` flag.

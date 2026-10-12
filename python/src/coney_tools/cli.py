@@ -24,6 +24,7 @@ from coney_tools import (
     pcsx2_cli,
     progress_cli,
     refs_cli,
+    stale_processes,
     trace_cli,
     wad_cli,
     workspace,
@@ -167,7 +168,9 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     init.add_argument("--dry-run", action="store_true", help="print the steps without doing any")
     clean = workspace_commands.add_parser(
-        "clean", help="remove merged worktrees and old build folders (a dry run unless --apply)"
+        "clean",
+        help="remove merged worktrees and old build folders, stop stale waits and orphaned test runs "
+        "(a dry run unless --apply)",
     )
     clean.add_argument("--workspace", type=Path, help="the workspace folder (default: found from the checkout)")
     clean.add_argument("--apply", action="store_true", help="act; without it, only report what would be done")
@@ -184,6 +187,18 @@ def _build_parser() -> argparse.ArgumentParser:
         help="remove merged worktrees only when untouched this many hours (default: %(default)g)",
     )
     clean.add_argument("--fetch", action="store_true", help="git fetch origin main first, so merges are current")
+    clean.add_argument(
+        "--shell-hours",
+        type=float,
+        default=stale_processes.DEFAULT_SHELL_HOURS,
+        help="a shell waiting in a loop is stale only when older than this many hours (default: %(default)g)",
+    )
+    clean.add_argument(
+        "--log-idle-hours",
+        type=float,
+        default=stale_processes.DEFAULT_IDLE_HOURS,
+        help="... and every file its loop reads is unchanged this many hours (default: %(default)g)",
+    )
     disk = workspace_commands.add_parser(
         "disk", help="print the free space of the workspace drive; exit 1 below --min-gb"
     )
@@ -766,7 +781,14 @@ def _run(args: argparse.Namespace) -> int:
         return _config_show()
     if args.group == "workspace" and args.command == "clean":
         return workspace_clean.run_clean(
-            Path.cwd(), args.workspace, args.apply, args.build_hours, args.worktree_hours, args.fetch
+            Path.cwd(),
+            args.workspace,
+            args.apply,
+            args.build_hours,
+            args.worktree_hours,
+            args.fetch,
+            shell_hours=args.shell_hours,
+            idle_hours=args.log_idle_hours,
         )
     if args.group == "workspace" and args.command == "disk":
         return workspace_clean.run_disk(Path.cwd(), args.workspace, args.min_gb)

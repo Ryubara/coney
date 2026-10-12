@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The Diego and Vargas fight (docs/research/ai.md#boss-diego-vargas): the tired goal stuns the boss and lets him up
-// when his fatigue runs out; six hits in the fight tire a BigBrawler; and TacticBossScenarioA gives each Hurricane his
-// goal, holds Diego's health above the stage's cap until he is tired, then answers 18 for the break and 1 once it is
-// done. Synthetic scenes.
+// The Diego and Vargas fight (docs/research/ai-gangs.md#boss-diego-vargas): the tired goal stuns the boss and lets him
+// up when his fatigue runs out; six hits in the fight tire a BigBrawler; and TacticBossScenarioA gives each Hurricane
+// his goal, holds Diego's health above the stage's cap until he is tired, then answers 18 for the break and 1 once it
+// is done. Synthetic scenes.
 #include "ai/boss_goals.h"
 
 #include <algorithm>

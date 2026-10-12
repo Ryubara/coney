@@ -20,7 +20,7 @@
 #include "support/fight_fixtures.h"
 #include "support/human_fixtures.h"
 
-// The steering's blocker test (docs/research/ai.md#neighbour-sectors, the blocker test): the step clamp, the ray
+// The steering's blocker test (docs/research/ai-moving.md#neighbour-sectors, the blocker test): the step clamp, the ray
 // against a human's disc, the predicted steps and the first human met. Synthetic humans on a floor.
 
 using Catch::Approx;

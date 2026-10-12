@@ -404,6 +404,25 @@ def test_sizes_command_checks_and_fills(
     assert "error: size 32 runs past" in capsys.readouterr().out
 
 
+def test_sizes_fill_stops_at_the_next_listed_function(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A listed function nothing calls (a virtual method) still ends the span of the one before it."""
+    functions = '[[function]]\naddress = 0x00001010\nname = "A"\nsubsystem = "Alpha"\n\n'
+    functions += '[[function]]\naddress = 0x00001018\nname = "C"\nsubsystem = "Alpha"\n'
+    root = make_checkout(tmp_path / "repo", functions)
+    disc = tmp_path / "disc"
+    disc.mkdir()
+    (disc / "SLUS_212.15").write_bytes(make_elf(TEXT, DATA))
+    monkeypatch.chdir(root)
+    assert main(["progress", "sizes", str(disc), "--fill"]) == 0
+    out = capsys.readouterr().out
+    assert "0x00001010 A: size -, span to the next known function 8" in out
+    assert "0x00001018 C: size -, span to the next known function 8" in out
+    loaded = progress.load_functions(root / progress.FUNCTIONS_FILE)
+    assert [(f.name, f.size) for f in loaded] == [("A", 8), ("C", 8)]
+
+
 # --- the "Understood" measure -----------------------------------------------------------------------------------------
 
 # Four game functions and one in the middleware: Alpha's first is named and cited with evidence, its second is cited

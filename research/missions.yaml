@@ -64,7 +64,7 @@ missions:
         4: {status: in-progress, note: "Reaches Cochise and Swan's scene; the fight needs the Wreck'em All order and the crew's tactics."}
     research:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
-      - {title: "AI: scripted goals and actions", path: "research/ai.md#scripted"}
+      - {title: "AI: scripted goals and actions", path: "research/ai-scripting.md#scripted"}
       - {title: "Skipping a scene", path: "research/scenes.md#skipping"}
     test: "coney_tests \"[disc][story]\""
     notes: "All four checkpoints play headless on the disc with no script error and player 1 moving under the pad (`tests/platform/disc_story_missions_test.cpp`); the checkpoint 1 intro, skipped, fades back in and moves player 1 to where the scene leaves him (the skip makes its three pending end-function calls, as the original does); the Warrior command menu (R2 and the right stick) gives the orders the hints ask for (`coney_tests \"[commands]\"`); nobody has played it to the end yet."
@@ -89,7 +89,7 @@ missions:
     research:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
       - {title: "World objects: doors", path: "research/objects.md"}
-      - {title: "AI: scripted goals and actions", path: "research/ai.md#scripted"}
+      - {title: "AI: scripted goals and actions", path: "research/ai-scripting.md#scripted"}
       - {title: "Crimes: tagging", path: "research/crimes.md#tagging"}
       - {title: "The mission's scripts, checkpoint by checkpoint", path: "research/scripting.md#level87"}
       - {title: "The order at runtime (reference)", path: "research/scripting.md#level87-hints"}
@@ -134,7 +134,7 @@ missions:
       - {title: "The mission's scripts, checkpoint by checkpoint", path: "research/scripting.md#level34"}
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
       - {title: "The fourth mission's brain and human calls", path: "research/ai.md#coney"}
-      - {title: "Spawners", path: "research/ai.md#spawners"}
+      - {title: "Spawners", path: "research/ai-gangs.md#spawners"}
       - {title: "The riot's crowd, and what Coney lacks", path: "research/scripting.md#level34-start"}
       - {title: "Cars", path: "research/cars.md"}
       - {title: "Fix list, checkpoint by checkpoint", path: "research/scripting.md#level34-fixes"}
@@ -186,7 +186,7 @@ missions:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
       - {title: "The mission's script and the rooftop chase", path: "research/scripting.md#level3"}
       - {title: "Rail cameras", path: "research/camera.md#rail"}
-      - {title: "AI: GoalDevilRun", path: "research/ai.md#devil-run"}
+      - {title: "AI: GoalDevilRun", path: "research/ai-scripting.md#devil-run"}
     test: "coney_tests \"[disc][story]\""
   - level: 5
     group: story
@@ -256,6 +256,9 @@ missions:
       default: not-started
     research:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+      - {title: "Pickable objects (the Molotov's class)", path: "research/objects.md#pickable"}
+    test: "coney_tests \"[disc][story][pickup]\""
+    notes: "At checkpoint 1 player 1 picks up each of the six Molotovs on the liquor store's shelves with triangle (`tests/platform/disc_level93_molotov_test.cpp`); they were not pickable before, their class `dyn_molotv` being missing from the pickable classes. Checkpoints 1 to 6 start headless and windowed with no black screen; the route to the black screen a player reported is not known yet."
   - level: 31
     group: story
     slot: story mission 11

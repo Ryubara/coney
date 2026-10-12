@@ -4,7 +4,7 @@
 
 A gang's spawners (four per gang, `GangAddSpawner`) make humans according to their state:
 `GangAddSpawner`'s kind starts one in a state and `GangStartSpawner(gang, name, state, value)` switches it
-([AI: spawners](../research/ai.md#spawners)).
+([AI: spawners](../research/ai-gangs.md#spawners)).
 
 !!! info "What is complete"
 
