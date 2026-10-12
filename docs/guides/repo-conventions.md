@@ -30,7 +30,7 @@ and `labels.yml`) are gone, and so are the constants that repeated their values 
 | `merge` | The merge methods, the squash commit's wording, auto-merge, the required checks and who merges: a copy of the GitHub ruleset and settings | `repo render` (the `required-checks` block); `repo audit --github` compares it with the GitHub ruleset and settings |
 | `issues` | The structure of each issue form (field ids, headings, which are required, default labels), the Screenshots line, the `From:` line, links and how many labels of each family an issue carries | `repo audit` (the forms, and every issue's sections, placeholders, Screenshots, labels, links and `From:` line) |
 | `labels` | The label families and every label with its colour and description | `repo labels`; `repo render` (the `labels` block); `repo audit` (the labels on GitHub) |
-| `hygiene` | The limits after which an item counts as stale, the weekly report issue and `checks`, the registry of the audit's checks | `repo audit` |
+| `hygiene` | The limits after which an item counts as stale or stuck (`thresholds`, including `pr_pending_hours`), which required checks are lint (`pr_health.lint_checks`), the weekly report issue and `checks`, the registry of the audit's checks | `repo audit`, `repo pr-health` |
 | `workspace` | The worktree and scratch layout, the free-space minimum and the busy marker | `workspace clean` and `workspace disk`, `repo audit --local`; hosted checks ignore it |
 
 The commented file is the reference for each key: open `.github/conventions.yml` and read the comment above it.

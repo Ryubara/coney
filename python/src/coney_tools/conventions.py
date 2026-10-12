@@ -416,6 +416,16 @@ class Thresholds:
     needs_info_days: int
     in_progress_idle_days: int
     pull_request_idle_days: int
+    #: Hours a required check may stay queued or running before `repo pr-health` calls the pull request stuck in CI.
+    pr_pending_hours: int
+
+
+@dataclass(frozen=True)
+class PrHealth:
+    """How `coney-tools repo pr-health` sorts a failing required check."""
+
+    #: Required checks whose failure is a lint failure (the author fixes the text); any other required check is code.
+    lint_checks: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -445,6 +455,7 @@ class Hygiene:
     #: The cron schedule of the weekly sweep.
     sweep: str
     thresholds: Thresholds
+    pr_health: PrHealth
     #: Check id to its spec, in file order.
     checks: Mapping[str, CheckSpec]
 
@@ -1001,7 +1012,7 @@ def _read_check(check_id: str, data: object, where: str) -> CheckSpec:
 
 def _read_hygiene(data: object, where: str) -> Hygiene:
     """The `hygiene` section: the report issue, the sweep schedule, the idle limits and the audit's checks."""
-    table = _table(data, where, ("report_issue", "sweep", "thresholds", "checks"))
+    table = _table(data, where, ("report_issue", "sweep", "thresholds", "pr_health", "checks"))
     checks_where = _at(where, "checks")
     raw_checks = _mapping(table["checks"], checks_where)
     if not raw_checks:
@@ -1010,8 +1021,16 @@ def _read_hygiene(data: object, where: str) -> Hygiene:
     report_where = _at(where, "report_issue")
     report = _table(table["report_issue"], report_where, ("title", "labels"))
     limits_where = _at(where, "thresholds")
-    keys = ("needs_triage_days", "needs_info_days", "in_progress_idle_days", "pull_request_idle_days")
+    keys = (
+        "needs_triage_days",
+        "needs_info_days",
+        "in_progress_idle_days",
+        "pull_request_idle_days",
+        "pr_pending_hours",
+    )
     limits = _table(table["thresholds"], limits_where, keys)
+    health_where = _at(where, "pr_health")
+    health = _table(table["pr_health"], health_where, ("lint_checks",))
     return Hygiene(
         report_issue=ReportIssue(
             title=_text(report["title"], _at(report_where, "title")),
@@ -1019,6 +1038,7 @@ def _read_hygiene(data: object, where: str) -> Hygiene:
         ),
         sweep=_text(table["sweep"], _at(where, "sweep")),
         thresholds=Thresholds(**{key: _count(limits[key], _at(limits_where, key)) for key in keys}),
+        pr_health=PrHealth(lint_checks=_texts(health["lint_checks"], _at(health_where, "lint_checks"))),
         checks=MappingProxyType(checks),
     )
 
