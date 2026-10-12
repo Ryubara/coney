@@ -753,8 +753,9 @@ and a last `result:` line that names the failing step or the first failing tests
 no error, no failed step and no failed test in its output says so plainly, `stopped from outside (no failing step
 found)`: it was killed, timed out or interrupted by something else. Exit code `0` on success, `1` on a failed step or a
 filter that selects no tests, `2` on a precheck or usage problem, `75` when it gave up waiting for a slot or for the
-build folder, `130` on an interrupt. The children run at below-normal priority and are stopped (by process id) if the
-command is interrupted.
+build folder, `130` on an interrupt. The children run at below-normal priority, on Windows with no console window of
+their own (so a build started from a background task opens no terminal that takes the focus), and are stopped (by
+process id) if the command is interrupted.
 
 **Parallelism.** `-j` defaults to the cores divided by the slots (at least 1), so two builds share the machine
 instead of each starting a job per core; `-j N` overrides it, for both the build and `ctest`.

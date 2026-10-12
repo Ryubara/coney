@@ -299,6 +299,11 @@ def load_msvc_environment(
     return {**{k.upper(): v for k, v in base.items()}, **{k.upper(): v for k, v in loaded.items()}}
 
 
+# Windows: start console children with no console window of their own, so a build run from a process without a
+# console (a background task) does not pop up terminals that take the focus. Zero elsewhere.
+NO_WINDOW = 0x08000000 if sys.platform == "win32" else 0  # CREATE_NO_WINDOW
+
+
 def run_text(command: list[str], env: Mapping[str, str] | None = None) -> str | None:
     """Run a short command and return its stdout, None when it fails. A `cmd /s /c` command is passed as the one
     string cmd wants, quotes and all (a list would be quoted again by Python)."""
@@ -307,7 +312,14 @@ def run_text(command: list[str], env: Mapping[str, str] | None = None) -> str | 
         arguments = f'cmd /d /s /c "{command[4]}"'
     try:
         done = subprocess.run(
-            arguments, capture_output=True, text=True, encoding="utf-8", errors="replace", check=False, env=env
+            arguments,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+            env=env,
+            creationflags=NO_WINDOW,
         )
     except OSError:
         return None
@@ -349,9 +361,9 @@ class ProcessToolchain:
 
     @staticmethod
     def _lower() -> dict[str, object]:
-        """The arguments that start a child at below-normal priority."""
+        """The arguments that start a child at below-normal priority, with no console window of its own."""
         if sys.platform == "win32":
-            return {"creationflags": 0x00004000}  # BELOW_NORMAL_PRIORITY_CLASS
+            return {"creationflags": 0x00004000 | NO_WINDOW}  # BELOW_NORMAL_PRIORITY_CLASS
         return {"preexec_fn": lambda: os.nice(5)}
 
     def _start(self, command: list[str], cwd: Path) -> subprocess.Popen[str]:
@@ -375,7 +387,12 @@ class ProcessToolchain:
         if process.poll() is not None:
             return
         if sys.platform == "win32":
-            subprocess.run(["taskkill", "/T", "/F", "/PID", str(process.pid)], capture_output=True, check=False)
+            subprocess.run(
+                ["taskkill", "/T", "/F", "/PID", str(process.pid)],
+                capture_output=True,
+                check=False,
+                creationflags=NO_WINDOW,
+            )
         else:
             process.kill()
 
