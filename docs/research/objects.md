@@ -569,6 +569,7 @@ Triangle's pick-up search ([Breakables](combat.md#breakables)) and `Human_PickUp
 | `melee_weapon` (`0x003fd420`) | `0x218081` | yes | bit `0x80` cleared for model hash `0x13ff8ee4`; its message `0x19` sets or clears `0x8000` |
 | `thrown_weapon` (`0x00403090`) | `0x228081` | yes | |
 | `overhead_weapon` (`0x003ff6c8`) | `0x228001` | yes | not for model hash `0x8fc6ac30` |
+| `dyn_molotv` (`0x00404b38`, [the Molotov](script-types.md#molotov)) | `0x228081` | yes | |
 | `pickup_item` (`0x003f17e0`) | `0x208081` | yes | not for model hash `0x2fd690d6` (also cleared in `0x003f23f8`) |
 | `powerup_item` (`0x003f2700`) | `0x808081` | yes, but the search skips the class: it is [walked over](player-state.md#walk-over) | |
 | `simple_object` | 1 (or `0x11`) | no | `0x8080` added for model hash `0xfcbe9fbb` |

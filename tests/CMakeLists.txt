@@ -131,6 +131,7 @@ add_executable(coney_tests
     platform/disc_level99_store_glass_test.cpp
     platform/disc_level99_store_register_test.cpp
     platform/disc_level99_world_test.cpp
+    platform/disc_level93_molotov_test.cpp
     platform/disc_level99_fence_dealer_test.cpp
     platform/disc_story_chain_test.cpp
     platform/disc_story_missions_test.cpp
