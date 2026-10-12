@@ -210,7 +210,8 @@ and a segment pointing down on an axis gets a wrong bound there ([Unit 6](#u6-bo
 | 4 | segment | 0x70, `0x00544770` | `+0x40` start, `+0x50` end, `+0x60` radius, `+0x64` length | start = its bone plus the bone-rotated offset (bone −1: the body's position, offset ignored), end = start + the bone's x axis × length (`0x00343810`) |
 
 The "capsule" is **upright**: the capsule-capsule tests treat it as the vertical range `[base z, base z + height]`
-with a horizontal radius (`0x00346388`, `0x003498c0` + `0x0034a8d0`), so a human never tilts. Two overlap tests round
+with a horizontal radius (`0x00346388`, `0x003498c0` + `0x0034a8d0`), so a human never tilts. The sweep swaps the two
+capsules' heights (`0x00343e1c`-`0x00343e28`, [Unit 11](#u11-capsule-capsule)); the overlap test does not. Two overlap tests round
 its ends instead (capsule against sphere and against segment, a true capsule reaching `r` past both ends), and the
 capsule-box overlap reads no height at all ([Unit 4](#u4-physicsoverlap-capsulesphere-00346ed8)); confirmed (code).
 A segment is a sphere of its radius swept along a bone: the limbs' strike volumes.
@@ -428,7 +429,7 @@ size of every caller's list, and nothing checks it ([Unit 7](#u7-cap)). On top o
 
 | Query | Address | What it does | Evidence |
 | --- | --- | --- | --- |
-| `IPhysics_CollideShape(phys, out, query)` | `0x0033e7f0` | sweeps a shape (the body's own, or one given with a transform: option `0x400`) along a move against the candidate bodies (option `2`; the [sweep table](#dispatch)) and the level mesh (option `1`; the type's mesh sweep with the query's two thresholds); keeps up to 50 contacts sorted by fraction and copies the first `max` out. Bodies of the same non-zero group and owners that refuse (owner vtable `+0x110`) are skipped. Used by the follow camera's sphere tests, the throw aim, the airborne push-out and the cars | confirmed (code) |
+| `IPhysics_CollideShape(phys, out, query, move)` | `0x0033e7f0` | sweeps a shape (the body's own, or one given with a transform: option `0x400`) along a move against the candidate bodies (option `2`; the [sweep table](#dispatch)) and the level mesh (option `1`; the type's mesh sweep with the query's two thresholds); keeps up to 50 contacts sorted by fraction and copies the first `max` out. Bodies of the same non-zero group and owners that refuse (owner vtable `+0x110`) are skipped. Used by the follow camera's sphere tests, the throw aim and the cars; the airborne push-out and `WorldObject_UpdateBodyContacts` sweep the mesh only (options `0x2004d`); every option bit and caller in [Unit 11](#u11-collide-shape) | confirmed (code) |
 | `IPhysics_OverlapShape(phys, out, query)` | `0x0033ebb8` | the same without a move, with the overlap table and the mesh overlap (`+0xf4`); option `0x80` skips the same group, `0x100` asks the owner, `0x200` only enabled shapes; it reads no other bits than `0x1`, `0x2`, `0x10`, `0x80`, `0x100`, `0x200` and `0x400` ([Unit 7](#u7-overlapshape)). Used by the push sphere and the strikes | confirmed (code) |
 | `IPhysics_RayCastBodies(length, phys, out, ray)` | `0x0033eee0` | the box around the ray's two ends, then each candidate's shapes with the type's ray function (`+0x108`); keeps the nearest hit's owner, shape and fraction. Used by the AI's line tests (`0x002e7608`, `0x00308c60` and others) | confirmed (code) |
 
@@ -588,7 +589,8 @@ never touches. Filled by `IPhysics_Construct`, confirmed (code):
 | ray `+0x108` | `0x00345b90` | none | `0x003459f0` | none | confirmed (code) |
 
 Mirrored entries call the other order and swap the contact's halves. A segment's "sweep" against a capsule or a
-segment is the static overlap: segments move with their bone and are tested where they are, which is how strikes
+segment is the static overlap, which writes no fraction, so such contacts are sorted by stack leftovers
+([Unit 11](#u11-mirrors)): segments move with their bone and are tested where they are, which is how strikes
 work ([Combat](combat.md#moving-strikes)). A segment never touches a box, and no sphere or segment is ray-tested.
 Strikes go through the **sweep** table (`Human_TestStrikes` `0x0033f110` sweeps each strike shape from its last pose
 to its current one), so of a human's strike shapes only the spheres (hands, head, feet, a weapon's spheres) can
@@ -1496,7 +1498,7 @@ confirmed (code) at `0x0033e834`-`0x0033e8dc`, `0x0033ea64`-`0x0033eab4`, `0x003
 | --- | --- |
 | `+0x00` | the body (passed as `body`; its owner `+0x34` becomes contact `+0x00`) |
 | `+0x04` | the shape (its type byte `+0x30` picks the mesh function) |
-| `+0x08` | a transform, used for the box when option `0x400` |
+| `+0x08` | a **pointer** to a box node (three quadwords copied, `0x0033e84c`-`0x0033e868`), used for the box when option `0x400`; the record also has `+0x0c`, `+0x14`, `+0x1c`, `+0x20`, `+0x24` and `+0x38` ([Unit 11](#u11-collide-shape)) |
 | `+0x10` | options: `1` test the mesh, `2` the bodies; the whole word is passed on, so `4`, `8`, `0x40`, `0x8000`, `0x20000` reach the mesh function |
 | `+0x18` | the most contacts to copy out |
 | `+0x28`, `+0x2c` | minimum and maximum `n.z` (f12, f13) |
@@ -3884,14 +3886,19 @@ is 0, [Bodies](#bodies)).
 
 ### Unit 11: Moving shapes against bodies: spheres, capsules, segments {#unit-11}
 
-- **Specified by:** [Human contacts](#human-contacts), [The shape-pair tables](#dispatch), [Geometry kernels](#kernels).
-  Coney already has the capsule-capsule sweep (`src/human/human_contacts.h`), tagged. Missing: the algebra of
-  `Sweep_SphereSphere`, `Sweep_CircleCircle2D`, `Sweep_IntervalOverlap`, `Sweep_SphereCapsule` (the capsule-capsule
-  start case is an open item on the page), and `IPhysics_CollideShape`'s option bits.
-- **Coney:** `src/physics/sweeps.*`; `src/human/human_contacts.h` moves onto it; `PhysicsBody_SweepHumanMask` replaces
-  `Human::meetHumans` so the humans' and the walls' contacts of a pass are sorted together (now a marked Coney choice).
-- **Tests:** two capsules head-on meet at the sum of the radii; vertical ranges that never overlap pass; a sphere
-  against a sphere at a glancing angle; a pass with a wall contact at 0.6 and a human at 0.3 resolves the human first.
+**What it is.** The sweep table's sphere, capsule and segment pairs (IPhysics `+0x7c`, [The shape-pair
+tables](#dispatch)), their three kernels, the body pass of a body's sweep (`PhysicsBody_SweepHumanMask`, which puts the
+bodies' contacts in the same sorted list as the mesh's), and the general shape query `IPhysics_CollideShape` with every
+option bit it reads. All confirmed (code) at the cited addresses, read in the disassembly on 2026-10-12, unless a line
+says otherwise; no runtime claims.
+
+- **Coney:** `src/physics/sweeps.*` for the pair functions and kernels; `src/human/human_contacts.h` moves onto
+  `PhysicsSweep_CapsuleCapsule` as specified here (four differences from it today: [below](#u11-coney-differs));
+  `PhysicsBody_SweepHumanMask` replaces `Human::meetHumans`, so a pass's human and wall contacts are sorted together
+  by fraction (today a marked Coney choice).
+- **Tests:** [Test ideas](#u11-tests): every number there was computed from this spec (a Python model of it), with
+  the original's quirks pinned: start-of-move normals, swapped heights, unsorted capsule roots, the missed vertical
+  drop onto a capsule, the inward sphere-capsule normal.
 
 16 functions, 8672 bytes (3 tagged).
 
@@ -3913,6 +3920,388 @@ is 0, [Bodies](#bodies)).
 | `0x00349180` | `Vec_MakePerpendicularBasis` | 232 |
 | `0x0033d498` | `PhysicsBody_SweepHumanMask` (tagged) | 640 |
 | `0x0033e7f0` | `IPhysics_CollideShape` | 964 |
+
+#### Summary for the implementer {#u11-summary}
+
+- **Calling convention of a sweep pair** (confirmed (code) at `0x0033d68c` and `0x0033ea0c`, the two callers):
+  `bool fn(Contact* c, Body* ownBody, Shape* own, Body* otherBody, Shape* other, const vec4* move)` in `a0`-`a3`,
+  `t0`, `t1`. `own` is the moving shape, `move` its whole move for this pass (the other shape is at rest). Returns 1
+  on a hit. Only `PhysicsSweep_CapsuleCapsule` reads a body (the other body's type mask `+0x44`).
+- **What a hit writes** (the caller then writes `+0xb4 = 0` and `Contact_InsertSorted` writes `+0x00`, `+0x04`,
+  `+0x40`, `+0x44`; [Unit 3](#u3-insert)). The slot is **not cleared** first: a field not listed holds what the
+  50-slot stack array held.
+
+  | Pair | `+0x10` | `+0x50` | `+0x80` | `+0x88` | `+0x90` | `+0xa0` | `+0xb0` |
+  | --- | --- | --- | --- | --- | --- | --- | --- |
+  | sphere-sphere (2, 2) | unit(other − own), start | unit(own − other), start | first touch | | own centre + f·move | | 0 |
+  | capsule-capsule (3, 3) | −`+0x50` | horizontal unit(own − other) at the start; (0, 0, 1) in the start case | max(circle entry, vertical entry) | | own base + f·move | start case only | 0, or 2 in the start case |
+  | sphere-capsule (2, 3) | −`+0x50` | unit(capsule mid-height − sphere start): **into** the capsule | first stored root in [0, 1] | | sphere centre + f·move | | 0 |
+  | capsule-sphere (3, 2) | halves of (2, 3) with −move swapped | | | | sphere centre − f·move | | 0 |
+  | sphere-segment (2, 4) | unit(move) | −unit(move) | closest approach, not first touch | that distance | sphere centre + f·move | | 0 |
+  | segment-sphere (4, 2) | halves of (2, 4) with −move swapped | | | | | | 0 |
+  | segment-segment, capsule-segment, segment-capsule | nothing written: the static overlaps of [Unit 4](#unit-4), move ignored | | **leftover** | | | | **leftover** |
+
+- **Normals are taken at the start of the move**, not at the contact, in sphere-sphere and capsule-capsule; a
+  glancing approach gets the start direction. **The sphere-capsule normal points the other way** from every other
+  pair (from the mover into the other shape). Resolved with code 1 or 2 ([Unit 3](#u3-codes)), such a normal gives
+  no advance (`D · n > 0`) and no slide (`Vec_RemoveNormalPart` acts only on `v · n < 0`), so the pass returns 1
+  and the next pass meets the same contact: after three passes the mover is **stuck where it started**, its
+  horizontal velocity zeroed. Inferred from the two functions; not seen at runtime. It concerns a world object's
+  sphere hitting a human (sphere-capsule) and a walking human meeting a `BLOCKHUMANS` object of sphere shape
+  (capsule-sphere).
+- **The capsule is three different shapes** in this unit: an upright cylinder `[B.z, B.z + h]` against another
+  capsule (with the heights swapped, [below](#u11-capsule-capsule)); a true capsule whose rounded ends lie **inside**
+  `[B.z, B.z + h]` against a sphere (hemisphere centres at `B.z + r` and `B.z + h − r`); and Unit 4's true capsule
+  reaching `r` past both ends against a segment (the overlap, used as the sweep).
+- **Sorting with walls.** In `PhysicsBody_Sweep` each pass's list gets, in this order, the nearest mesh contact,
+  the landing contact, then one contact per candidate body ([Unit 3](#u3-mesh), [The body pass](#u11-body-pass)), all
+  through `Contact_InsertSorted` (strictly-greater insertion), so humans and walls are resolved nearest first, and
+  at an equal fraction the mesh contact comes first. Any non-zero answer ends the walk ([Unit 3](#u3-resolve)), so a
+  human met at 0.3 is resolved and the wall at 0.6 is not seen in that pass.
+- **The capsule-capsule start case** ("already within reach at fraction 0"), settled: [below](#u11-start-case).
+
+#### Shared records and notation {#u11-records}
+
+Shape fields read ([Shapes](#shapes)): sphere `+0x40` r, `+0x50` C; capsule `+0x40` r, `+0x44` h, `+0x50` B (`+0x58`
+is B.z); segment `+0x40` S, `+0x50` E, `+0x60` r. `a·b` is the xyz dot product summed `(x·x + y·y) + z·z`;
+"unit(v)" is `v × rsqrt(v·v)` on VU0 (a zero vector gives a zero result on the EE, inferred: `0 × FLT_MAX`; Coney
+should write (0, 0, 0) and say so). 1e-6 is `0x358637bd`, −1e-6 `0xb58637bd`, 1.0 `0x3f800000`, −1.0 `0xbf800000`,
+0.5 `0x3f000000`, 0.05 `0x3d4ccccd`. Vectors written as unit vectors keep `w = 1`.
+
+**The hit record of the two root kernels** (a stack record of the caller, count cleared to 0 first): `+0x00` count
+(int), `+0x04` the roots `t[i]` (floats, at most two used here), `+0x10 + 16·i` a vector per root, always
+(0, 0, 0, 1) from `0x005116c0` (unused). **The root filter** of `PhysicsSweep_SphereSphere` (`0x00344144`) and
+`PhysicsSweep_SphereCapsule` (`0x00345730`): walk the roots from the last to the first and remove each `t` with
+`t < 0` or `t > 1` (shifting the rest down); no root left is no hit; otherwise the fraction is `t[0]`, the **first
+kept in stored order**.
+
+#### Sweep_SphereSphere {#u11-sphere-sphere-kernel}
+
+`0x00349268`, 0x220 bytes. `bool Sweep_SphereSphere(Hits* hits, const {vec4 P; vec4 m}* ray, const {vec4 C; float
+R}* sphere)`. It finds the `t` with `|(C − P) + t·m| = R`, that is a centre moving from C by `t·m` against a fixed
+point P (equivalently a ray from P along −m against a sphere at C). Returns 1 when it appended a root:
+
+1. `d = C − P`, `c = d·d − R²`, `b = m·d`.
+2. `c ≤ 0` (P within R of C, touching included): append `t = 0`, return 1.
+3. `a = m·m`; if `|a| < 1e-6`: return 0.
+4. `disc = (2b)² − 4·c·a` (computed as `(2b)·(2b) − (4c)·a`).
+5. `disc > 0`: `s = √disc`; append `(−2b − s)/(2a)` and `(−2b + s)/(2a)`, the smaller first (a swap if needed).
+   `disc == 0`: append `−2b/(2a)`. `disc < 0`: return 0.
+
+The roots are not clamped. Also called by `ObjectRender_Draw` ([Geometry kernels](#kernels)).
+
+#### PhysicsSweep_SphereSphere {#u11-sphere-sphere}
+
+`0x003440d0`, 0x230 bytes, table (2, 2). Calls the kernel with `P` = the **other** centre, `m` = move, `C` = the
+**own** centre, `R` = r_own + r_other, then the root filter. On a hit (`0x00344214`-`0x003442cc`): `+0x10` =
+unit(C_other − C_own), `+0x50` = −`+0x10` = unit(C_own − C_other) (both from the centres at the **start**), `+0x80`
+= f, `+0x90` = C_own + f·move (w = 1), `+0xb0` = 0. Consequences: spheres already touching at the start hit at
+fraction 0 **whatever the move** (also a move away, also a zero move); a move with `|move|² < 1e-6` (shorter than
+1 mm) never hits otherwise.
+
+#### Sweep_CircleCircle2D {#u11-circles}
+
+`0x003498c0`, 0x1a0 bytes. `bool (float r1 f12, float r2 f13, float* t0 a0, float* t1 a1, const vec4* c1 a2, const
+vec4* c2 a3, const vec4* m t0, int flag t1)`. The caller zeroes the z of `c1`, `c2` and `m`, so this is the circle of
+radius r1 at c1 moving by `t·m` against the circle r2 at c2:
+
+1. `d = c1 − c2`, `b = m·d`.
+2. If `flag & 1` and `b ≥ 0` (not closing in, a tangent or zero move included): return 0.
+3. `c = d·d − (r1 + r2)²`. If `c ≤ 0` (overlapping or touching): `*t0 = 0`, `*t1 = 1.0`, return 1.
+4. `a = m·m`, `disc = (2b)² − 4·a·c` (as `(2b)² − a·(4c)`). `disc > 0`: the two roots `(−2b ± √disc)/(2a)`, written
+   so that `*t0 ≤ *t1`, return 1. `disc == 0`: both = `−2b/(2a)`, return 1. Else return 0.
+
+With `flag` 0 and a zero move, step 4 divides 0 by 0 (EE: −`FLT_MAX`, inferred), which the caller rejects; Coney may
+return 0 there.
+
+#### Sweep_IntervalOverlap {#u11-interval}
+
+`0x0034a8d0`, 0x18c bytes. `int (float* lo a0, float* hi a1, float maxT f12, float v f13, float A0 f14, float A1 f15,
+float B0 f16, float B1 f17)`: the interval `[B0, B1]` moves by `v·t` against the fixed `[A0, A1]`; `[lo, hi]` comes
+in as the allowed times and is narrowed to the times they overlap. Returns **1 when they are separated**, 0 when they
+overlap:
+
+| Start | `v` | Effect |
+| --- | --- | --- |
+| `B1 < A0` (B below) | `v ≤ 0` | return 1 |
+| | `v > 0` | `lo = max(lo, (A0 − B1)/v)`; if `maxT < lo` return 1; `hi = min(hi, (A1 − B0)/v)` |
+| `A1 < B0` (B above) | `v ≥ 0` | return 1 |
+| | `v < 0` | `lo = max(lo, (A1 − B0)/v)`; if `maxT < lo` return 1; `hi = min(hi, (A0 − B1)/v)` |
+| overlapping (neither) | `v > 0` | `hi = min(hi, (A1 − B0)/v)` |
+| | `v < 0` | `hi = min(hi, (A0 − B1)/v)` |
+| | `v == 0` | `lo = 0`, `hi = 1.0`, return 0 |
+
+Then return 1 if `hi < lo`, else 0. Touching counts as overlap (strict `<` tests). The `min`/`max` are written as
+"store when strictly smaller/greater". Also used by the box-triangle sweep, where the `v == 0` reset matters
+([Unit 13](#u13-interval)). In the capsule sweep it does not: the caller always passes `lo = 0`, `hi = 1`, so two
+humans moving level (`m.z` exactly 0) with overlapping ranges get `lo = 0` and the fraction is the circles' `t0`.
+
+#### PhysicsSweep_CapsuleCapsule {#u11-capsule-capsule}
+
+`0x00343cd8`, 0x3f4 bytes, table (3, 3). Own capsule (B1, r1, h1) moves by `m`; the other (B2, r2, h2) is at rest:
+
+1. **Circles** (`0x00343d20`-`0x00343db4`): `c1`, `c2`, `m2` = B1, B2, m with z = 0. `flag` = 1, except 0 when the
+   mover goes down (`m.z ≤ −1e-6`) **and** starts strictly above (`B1.z > B2.z`) (`0x00343d48`-`0x00343d90`).
+   `Sweep_CircleCircle2D(r1, r2, &t0, &t1, c1, c2, m2, flag)`; 0 → no hit. Then require `0 ≤ t0 ≤ 1` (else no hit).
+   `t1` is never used.
+2. **Vertical** (`0x00343df0`-`0x00343e2c`), skipped when the **other body's** type mask (`+0x44`) has `0x200`:
+   `lo = 0`, `hi = 1`, `Sweep_IntervalOverlap(&lo, &hi, 1.0, m.z, A0 = B2.z, A1 = B2.z + h1, B0 = B1.z, B1 = B1.z +
+   h2)`; 1 → no hit. **The heights are swapped**: the fixed range is the other's base with the mover's height, the
+   moving range the mover's base with the other's height. Equal heights (every human of one scale and state) hide it.
+3. **Fraction** `f = max(t0, lo)` (`max.s` at `0x0034402c`; `lo` is 0 when step 2 was skipped). The circle times
+   `[t0, t1]` and the vertical times `[lo, hi]` are **never intersected**: a contact is reported at `max(t0, lo)` even
+   when the circles have separated again before `lo` (or the ranges before `t0`).
+4. **Normal source** `d = c1 − c2` (horizontal, at the start), unless the start case below replaced it.
+5. **Write** (`0x00343ff0`-`0x003440a0`): `n = unit(d)`; `+0x50 = n`, `+0x10 = −n`, `+0x80 = f`, `+0x90 = B1 + f·m`
+   (the mover's base at the contact, w = 1), `+0xb0` = 0 or 2. Return 1.
+
+#### The start case {#u11-start-case}
+
+Taken when `t0 < 1e-6` (the circles touch or overlap at the start; the test reads `t0`, not `f`), `m.z ≤ −1e-6` and
+`B2.z ≤ B1.z` (`0x00343e34`-`0x00343fec`): a capsule coming down onto another from above, already within reach
+across the ground. Then:
+
+- `u` = unit(c1 − c2), and `k = (r1 + r2) − |c1 − c2| + 0.05`; if `|c1 − c2|² < 1e-6`, `u` = unit(m2) and
+  `k = r1 + r2 + 0.05`, or, if also `|m2|² < 1e-6`, `u = (0, 1, 0)` (`0x00511730`) with the same `k`.
+- `+0xa0 = u × 0.5k` (the slide), contact flags `+0xb0 = 2`, and the normal source becomes (0, 0, 1, 1)
+  (`0x00511740`), so `+0x50 = (0, 0, 1)`, `+0x10 = (0, 0, −1)`.
+
+What the resolution then does (inferred from [Unit 3](#u3-tail)): with a non-zero answer, the slide (less its part
+against the move's direction) is stored once as the mover's next push-out, so a human dropping onto another's head
+stops falling there (the upward normal removes `v.z < 0`) and is pushed off sideways by half of the overlap plus
+0.025 m on its next sweep; code 4 also gives the one below a **downward** push-out, `0.5·(D·n)·n`.
+
+The other start positions, settled (all confirmed (code) through the steps above): within reach and closing in
+(`flag` 1, `m2·d < 0`) → a hit at fraction 0 (or at `lo`) with the start normal, no slide; within reach and not
+closing in (moving away, along the tangent, or no horizontal move) → **no hit**; coincident axes with `flag` 1 → no
+hit (`b = 0`). This is what Coney's `sweepCapsules` already does across the ground.
+
+#### Vec_MakePerpendicularBasis {#u11-basis}
+
+`0x00349180`, 0xe8 bytes. `void (vec4* U a0, vec4* V a1, const vec4* W a2)`, `W` a unit vector. If `|W.x| ≥ |W.y|`:
+`k = 1/√(W.x² + W.z²)`, `U = (−W.z·k, 0, W.x·k)`; else `k = 1/√(W.y² + W.z²)`, `U = (0, W.z·k, −W.y·k)`. `U.w` is
+not written. `V = W × U` (VU `opmula`/`opmsub`), the whole quadword written, `V.w` = `U.w`. For `W = (0, 0, 1)`:
+`U = (−1, 0, 0)`, `V = (0, −1, 0)`; for `(0, 0, −1)`: `U = (1, 0, 0)`, `V = (0, −1, 0)`.
+
+#### Sweep_SphereCapsule {#u11-sphere-capsule-kernel}
+
+`0x00349a60`, 0x870 bytes. `bool (Hits* hits a0, const {vec4 O; vec4 dir}* ray a1, const {vec4 P0; vec4 A; float R}*
+cap a2)`: a ray against the capsule of radius R around the segment P0 → P0 + A. Roots are in units of `dir`
+(unnormalised), appended in the order below, at most two. Returns `count != 0` (1 after two roots).
+
+1. **Frame** (`0x00349a98`-`0x00349c68`): `L = |A|` (VU `sqrt`), `W = A/L`; `U, V` from
+   `Vec_MakePerpendicularBasis(W)`. `D = (U·dir, V·dir, W·dir)`, `len = |D|`, `inv = 1/len`, `D ×= inv` (unit).
+   `P = (U·(O − P0), V·(O − P0), W·(O − P0))`.
+2. **Parallel** when `|D.z| ≥ 0.999999` (`0x3f7fffef` = 0.99999899, about 0.08° from the axis) **or** `len < 1e-6`
+   (`0x00349c1c`-`0x00349c90`). With `g = dir·A` and `q = R² − P.x² − P.y²`:
+   - `g < 0` and `q ≥ 0`: append `(P.z + √q)·inv`, then `(L − P.z + √q)·inv`, return 1.
+   - `g > 0` and `q ≥ 0`: append `−(P.z + √q)·inv`, then `(L − P.z + √q)·inv`, return 1.
+   - otherwise return 0.
+
+   The rising case (`g > 0`) gives the entry at the bottom and the exit at the top. **The falling case is wrong**: its
+   second root is the entry time negated (the true entry is `(P.z − L − √q)·inv`), so a sphere moving **exactly**
+   down the axis from above the capsule has a negative "entry" (dropped by the filter) and is met only at its exit
+   below the bottom, or not at all. Confirmed (code) at `0x00349d38`-`0x00349d5c`; the consequence (an object dropped
+   straight down onto a human's head passes into him) is inferred.
+3. **Side** (`0x00349e2c`-`0x00349f98`): `a = D.x² + D.y²`, `b = P.x·D.x + P.y·D.y`, `c = P.x² + P.y² − R²`,
+   `disc = b² − a·c`. `disc < 0`: return 0 (**the caps are not tried**). `disc > 0`: for `s = (−b − √disc)/a`, then
+   `(−b + √disc)/a`, append `s·inv` when `0 ≤ P.z + s·D.z ≤ L`; two appended → return 1. `disc == 0`: `s = −b/a`,
+   appended under the same test, and then return 1 at once; if not appended, go on.
+4. **Bottom cap** (`0x0034a018`-`0x0034a174`): `b' = b + P.z·D.z`, `c' = c + P.z²` (the sphere at P0),
+   `disc = b'² − c'`. `> 0`: for `s = −b' − √disc`, then `−b' + √disc`, append `s·inv` when `P.z + s·D.z ≤ 0`,
+   returning 1 once two are stored. `== 0`: `s = −b'`, the same test. `< 0`: nothing.
+5. **Top cap** (`0x0034a178`-`0x0034a2a8`): `b'' = b' − D.z·L`, `c'' = c' + L·(L − 2P.z)` (the sphere at P0 + A),
+   `disc = b''² − c''`; the same as step 4 with the test `P.z + s·D.z ≥ L`.
+
+Edge cases: **no inside test**: a ray starting inside gets its exit (and a negative entry); the caller's filter
+keeps the exit when it is within the move. **Store order is not time order**: an entry through a cap and an exit
+through the side are stored exit first, and the caller takes the first kept root. `L = 0` (`h = 2r` in the caller)
+divides by zero (EE: `W = 0`, then `len = 0`, the parallel branch with `g = 0`: no hit; inferred).
+
+#### PhysicsSweep_SphereCapsule {#u11-sphere-capsule}
+
+`0x00345670`, 0x29c bytes, table (2, 3). Sphere (C, r_s) moving by `m`, capsule (B, r_c, h) at rest. Kernel arguments
+(`0x003456ac`-`0x00345720`): `O = C`, `dir = m`, `P0 = B + (0, 0, r_c)`, `A = (0, 0, (h − r_c) − r_c)`,
+`R = r_c + r_s`; then the root filter. On a hit (`0x003457fc`-`0x003458dc`): `M = B + (0, 0, 0.5h)`; `+0x50 =
+unit(M − C)` (from the sphere's **start** centre to the capsule's mid-height, a 3D vector pointing **into** the
+capsule), `+0x10 = −+0x50`, `+0x80` = f, `+0x90 = C + f·m`, `+0xb0` = 0. With `h < 2r_c` the axis points down and
+the shape spans `[B.z + h − 2r_c, B.z + 2r_c]` (the formula as written; inferred to be unintended).
+
+#### PhysicsSweep_SphereSegment {#u11-sphere-segment}
+
+`0x00344320`, 0x218 bytes, table (2, 4). **Not a first-touch sweep.** `(s, t) = Segment_ClosestPoints(d1 = m, d2 = E −
+S, w = C − S)` ([Unit 4](#u4-segment-closestpoints-0034ad50)); `v = (C − S) + s·m − t·(E − S)`; hit when `v·v ≤ (r_s
++ r_seg)²` (touching counts). Then `+0x80 = s` (the path parameter of **closest approach**), `+0x88 = |v|` (the
+distance there, not a depth), `+0x90 = C + s·m`, `+0x10 = unit(m)`, `+0x50 = −unit(m)`, `+0xb0` = 0. A zero move
+gives `s = 0` and a zero normal. Unit 4's kernel quirks (absolute parallel threshold) apply.
+
+#### The mirrors and the overlap entries {#u11-mirrors}
+
+- `PhysicsSweep_SegmentSphere` (`0x00344538`, (4, 2)) and `PhysicsSweep_CapsuleSphere` (`0x00345910`, (3, 2)): call
+  (2, 4) or (2, 3) as `(c, otherBody, otherShape, ownBody, ownShape, −m)` (x, y, z negated, `w` kept), and on a hit
+  swap the quadwords `+0x00..+0x3f` with `+0x40..+0x7f`. `+0x80`, `+0x90` and `+0xb0` are not swapped: `+0x90` is
+  the **sphere's** centre moved by `−f·m`. After the swap `+0x50` is still "the other's half"; for (3, 2) it is
+  unit(C_sphere − M), again pointing from the mover into the other.
+- `PhysicsSweep_SegmentSegment` (`0x00344300`, (4, 4)), `PhysicsSweep_CapsuleSegment` (`0x00345d18`, (3, 4)),
+  `PhysicsSweep_SegmentCapsule` (`0x00345d38`, (4, 3)): call the overlap `0x00346500`, `0x00347148`, `0x00346fb8`
+  with `(c, own, other)` and return its answer; the move is ignored and **nothing is written**, so a hit's fraction
+  `+0x80` and flags `+0xb0` are whatever the slot held. In a strike test (the only caller that moves a segment,
+  [Unit 5](#u4b-how-human-teststrikes-builds-the-sweep-0)) the first hit ends the test and the fraction is not read.
+  Coney should write fraction 0 and flags 0 there and say so.
+
+#### PhysicsBody_SweepHumanMask: the body pass {#u11-body-pass}
+
+`0x0033d498`, 0x280 bytes. `void (IPhysics* phys, const AABB* box, Body* body, Shape* shape, Contact* contacts,
+Contact** sorted, int* count, const vec4* D)`, the same arguments as `IPhysics_SweepBodyVsMesh` ([Unit 3](#u3-mesh));
+called by `PhysicsBody_Sweep` when body flag `0x1` is set and by `PhysicsBody_Update` (`0x00341c10`). The name is
+another analyst's and is kept; the function is the whole body pass, not only its mask.
+
+1. **Mask** (`0x0033d4d4`-`0x0033d578`): `2` when the body's type mask `+0x44` lacks `0x40`. For a human: `4`;
+   `0x44` when the owner's state (slot `+0x50`) has `0x4000000` (airborne) or `0x00226660(owner, 0x800)` is true
+   (holding); `| 0x20` when the shape's flags `+0x32` have `0x2`; `| 0x40000` when owner `+0x1a8` (gait) ≥ 4;
+   `| 0x80000 << p` when the owner's byte `+0x1b0` (player number, signed) is not −1.
+2. **Candidates**: `IPhysics_QueryBox(phys, list, box, startBody = body, ignoredOwner = body+0x34, typeMask = −1,
+   flagMask = mask)` ([Queries](#queries)); list order (x-sorted).
+3. **Per candidate**, in list order (`0x0033d5ac`-`0x0033d6e4`): skip when both groups `+0x3c` (u16) are non-zero
+   and equal; ask the mover's owner, slot `+0x110` `(owner, candidateOwner)`, skip on 0; the chain is the
+   candidate's body slot `+0x28` called with `(2, 4, owner)`. Walk it: a shape is tried only with flag `0x1`
+   (enabled) and a non-empty `sweep[shape.type][candidate.type]` entry; the contact slot is `contacts[*count]`.
+   On the **first** hit: `+0xb4 = 0`, `Contact_InsertSorted(phys, slot, sorted, count, body+0x34, candidate+0x34,
+   shape, candidateShape)`, and go to the **next candidate**: at most one contact per body, the first shape of the
+   chain that hits, not the nearest.
+4. No check against the 50-slot array (inferred: never reached).
+
+#### IPhysics_CollideShape {#u11-collide-shape}
+
+`0x0033e7f0`, 0x3c4 bytes. `int IPhysics_CollideShape(IPhysics* phys, Contact* out, const Query* q, const vec4* move)`:
+**four** arguments, the move separate from the query. Returns the number of contacts copied to `out`.
+
+| Query offset | Read when | Meaning |
+| --- | --- | --- |
+| `+0x00` | always | the querying body (its owner becomes contact `+0x00`; its group and owner filter the candidates) |
+| `+0x04` | always | the shape swept (its type picks the sweep and mesh functions) |
+| `+0x08` | option `0x400` | a **pointer** to a 0x30-byte box node, copied and used instead of the shape's world bounds |
+| `+0x0c` | option `0x2000` | an owner whose bodies are skipped (else none) |
+| `+0x10` | always | options |
+| `+0x14` | option `0x10` | type mask the candidates must meet (else −1) |
+| `+0x18` | always | the most contacts copied out |
+| `+0x1c` | option `0x800` | body flags a candidate must have at least one of (else no requirement) |
+| `+0x20` | option `0x1000` | body flags that exclude a candidate |
+| `+0x24` | option `0x10000` | owner state bits (slot `+0x50`) that exclude a candidate |
+| `+0x28`, `+0x2c` | option `0x1` | the mesh sweep's min and max `n.z` (f12, f13) |
+| `+0x38` | option `0x40000` | a callback `(ownOwner, candidateOwner)`; 0 excludes |
+
+Steps (confirmed (code) at the addresses):
+
+1. **Box** (`0x0033e82c`-`0x0033e87c`): a local node (`PhysicsNode_Init`); the shape's world bounds
+   (`PhysicsBody_ComputeBounds` `0x00341638`), or with `0x400` the node at `*(q+0x08)`; then `AABB_ExtendByMove(box,
+   move)`.
+2. **Bodies**, with option `0x2` (`0x0033e890`-`0x0033ea60`): candidates from `0x00340120` (the filtered query,
+   specified in [Unit 7](#unit-7): start body `q+0x00`, the fields above as its arguments, list order). Per candidate: skip the same non-zero group and an owner refusal
+   (slot `+0x110`), **always** (no option bit, unlike `IPhysics_OverlapShape`); chain from body slot `+0x28` with
+   `(2, 4, owner)`; **every** enabled shape with a sweep entry is tried, and every hit inserted (`+0xb4 = 0`, then
+   `Contact_InsertSorted`), so one body can give several contacts. The querying body itself is a candidate unless a
+   filter drops it (inferred from the start-body walk; the callers seen set `0x2000` with their own owner or sweep
+   a temporary body).
+3. **Mesh**, with option `0x1` (`0x0033ea64`-`0x0033eb10`): `phys+0xe0 + 4·type`; if set, it is called with
+   `(contacts + count, max = 50 − count, box, body, shape, move, options = the whole word, f12 = q+0x28,
+   f13 = q+0x2c)`, and each contact it returns is inserted with other owner 0 and other shape 0. So the mesh's option
+   bits (`0x4`, `0x8`, `0x40`, `0x8000`, `0x20000`, [Unit 2](#u2-00348a50-physicsmesh-spheresweep)) come from the same
+   word, and **body and mesh contacts are sorted together** by fraction; at an equal fraction the body contact, being
+   inserted first, comes first.
+4. **Copy** (`0x0033eb14`-`0x0033eb7c`): `n = min(count, q+0x18)` contacts from the sorted list to `out` (0xc0
+   each); return `n`.
+
+Bits not read here: `0x80`, `0x100`, `0x200` (the overlap query's) do nothing in this function.
+
+**Callers' option words** (confirmed (code) at the call sites; the others are not traced):
+
+| Caller | Options | Other fields |
+| --- | --- | --- |
+| `Cam_Follow_SphereTest` `0x001305a0`, `CamMug_PlaceShot` `0x00138798`, `CamMug_Update` `0x001397bc` | `0x12812`: bodies, type mask `+0x14` = 8 (objects), required flags `+0x1c` = 4 (`BLOCKHUMANS`), ignored owner, excluded owner state `+0x24` = `0x4000000` (airborne) | max 1 |
+| `CamMini_TestShot` `0x001375d4` | `0x52813` (the above, plus mesh and a callback `0x00136040`) | |
+| `Human_IsWayClearTo` `0x0021c1d0`, `Human_CapsuleOverlaps` `0x0021c524` | `0x2803`: mesh, bodies, required flags 4, ignored owner (the human) | max 1 |
+| `Human_IsClearToTarget` `0x0021c3e0` | `1`: mesh only | max 1 |
+| `Human_PushOutInAir` `0x0021aa14`, `WorldObject_UpdateBodyContacts` `0x00394be8` | `0x2004d`: mesh only, sphere-sweep options `0x4`, `0x8`, `0x40`, `0x20000`; `n.z` range 0 to 0.7 | max 2 (the human) |
+| `Human_HandleMessage` `0x0024732c` | `0x52`: bodies, type mask `0x100408` | max 2 |
+
+#### Where Coney differs today {#u11-coney-differs}
+
+`human::sweepCapsules` (`src/human/human_contacts.h`) against `PhysicsSweep_CapsuleCapsule`, each confirmed (code)
+on the original's side: (1) Coney's normal is taken at the contact, the original's at the start; (2) Coney tests the
+mover's swept height range against the other's, the original intersects times with the heights swapped and takes
+`max(t0, lo)` without checking the circle exit; (3) Coney has no descending start case (normal up, slide, flags 2);
+(4) Coney resolves humans before walls, the original sorts both. The start case across the ground already agrees.
+
+#### Test ideas {#u11-tests}
+
+Values from the spec (doubles; compare with 1e-5). Capsules are `(B; r = 0.35, h = 1.8)` unless said; spheres
+`(C; r)`.
+
+1. **Sphere-sphere kernel.** `P = (2, 0, 0)`, `m = (−4, 0, 0)`, `C = 0`, `R = 1`: roots −0.75, −0.25 (none kept by the
+   filter). Same with `m = (4, 0, 0)`: 0.25, 0.75.
+2. **Sphere-sphere head-on.** Own `(0; 0.5)`, other `((2, 0, 0); 0.5)`, move `(4, 0, 0)`: f = 0.25, `+0x50 = (−1, 0,
+   0)`, `+0x10 = (1, 0, 0)`, `+0x90 = (1, 0, 0)`, `+0xb0` 0.
+3. **Glancing, start normal.** Own at `(0, 0.8, 0)`: f = 0.35, `+0x90 = (1.4, 0.8, 0)`, `+0x50` = unit(−2, 0.8, 0) =
+   `(−0.92848, 0.37139, 0)` (the contact direction would be `(−0.6, 0.8, 0)`). Own at `(0, 1.2, 0)`: no hit.
+4. **Already touching.** Own `(0; 0.5)`, other `((0.5, 0, 0); 0.5)`, move `(−1, 0, 0)` (away): hit, f = 0. Move
+   `(0.0005, 0, 0)` from 2 m apart: no hit (`|m|² < 1e-6`).
+5. **Circles.** r 0.35 each, `c1 = 0`, `c2 = (1, 0, 0)`, `m = (0.5, 0, 0)`, flag 1: `(0.6, 3.4)`. `c2 = (0.5, 0, 0)`,
+   `m = (0.1, 0, 0)`: `(0, 1)`; `m = (−0.1, 0, 0)`: no hit. Flag 0, `c2 = (1, 0, 0)`, `m = (−0.5, 0, 0)`: `(−3.4,
+   −0.6)` (returned; the caller rejects).
+6. **Intervals.** `A = [1, 2.8]`, `B = [−0.2, 0.8]`, `v = 0.5`: overlap, `lo = 0.4`, `hi = 1`. `A = [0, 1.8]`,
+   `B = [2.3, 4.1]`, `v = −1`: `lo = 0.5`. `A = [1, 2.8]`, `B = [−1, 0.5]`, `v = 0`: separated. `A = [2, 3.8]`,
+   `B = [−1, 0.8]`, `v = 0.5`: `lo = 2.4 > 1`, separated. Overlapping, `v = 0`: `lo = 0`, `hi = 1`.
+7. **Capsules head-on.** `B1 = 0`, `B2 = (1, 0, 0)`, `m = (0.5, 0, 0)`: f = 0.6, `+0x50 = (−1, 0, 0)`, `+0x90 =
+   (0.3, 0, 0)`, `+0xb0` 0. `B1 = (0, 0.4, 0)`: f = 0.85109, `+0x50 = (−0.92848, 0.37139, 0)` (start normal).
+8. **Capsules within reach.** `B2 = (0.5, 0, 0)`: `m = (0.1, 0, 0)` → f = 0, `+0x50 = (−1, 0, 0)`; `m = (−0.1, 0, 0)`
+   → no hit; `m = 0` → no hit.
+9. **Vertical miss and the swap.** `B1 = (0, 0, 2)`, `B2 = (1, 0, 0)`, `m = (0.5, 0, 0)`: no hit. `B1 = (0, 0, 1.5)`
+   with `h1 = 1.0`, other `h2 = 1.8`: **no hit** (the swap tests `[1.5, 3.3]` against `[0, 1.0]`); with `h1 = 1.8`,
+   `h2 = 1.0`: a hit at 0.6, `+0x90 = (0.3, 0, 1.5)`.
+10. **Rising.** `B1 = (0, 0, −2.4)`, `m = (0.5, 0, 1.0)`, `B2 = (1, 0, 0)`: f = 0.6 (`lo` = 0.6, `t0` = 0.6).
+11. **Times never intersected.** `B1 = (−0.8, 0, −2.4)`, `B2 = 0`, `m = (3, 0, 1)`: circles `[0.0333, 0.5]`, vertical
+    `lo = 0.6`: hit at **0.6** with `+0x50 = (−1, 0, 0)` and `+0x90 = (1.0, 0, −1.8)`, where the axes are 1.0 m
+    apart.
+12. **Landing on a head (start case).** `B1 = (0.3, 0, 1.7)`, `B2 = 0`, `m = (0, 0, −0.2)`: f = 0, `+0x50 = (0, 0,
+    1)`, `+0x10 = (0, 0, −1)`, `+0xa0 = (0.225, 0, 0)`, `+0xb0 = 2`, `+0x90 = (0.3, 0, 1.7)`. `B1 = (0, 0, 1.7)`:
+    `+0xa0 = (0, 0.375, 0)`; with `m = (0.1, 0, −0.2)`: `(0.375, 0, 0)`. The same with the other's type mask `0x200`:
+    identical. `B1 = (0.3, 0, 2.0)`, `m = (0, 0, −0.5)`: f = 0.4 (vertical entry), start case still taken (it reads
+    `t0` = 0), `+0x90 = (0.3, 0, 1.8)`, `+0xa0 = (0.225, 0, 0)`.
+13. **Descending, outside reach.** `B1 = (1, 0, 2)`, `m = (−0.5, 0, −0.5)`: f = 0.6, `+0x50 = (1, 0, 0)`, flags 0.
+14. **Sphere-segment.** Segment `(−1, 0, 0)`-`(1, 0, 0)` r 0.05, sphere `((0, −1, 0); 0.1)`, `m = (0, 2, 0)`: f = 0.5
+    (closest approach, not the touch at 0.425), `+0x88 = 0`, `+0x10 = (0, 1, 0)`, `+0x50 = (0, −1, 0)`, `+0x90 =
+    0`. Sphere at z 0.1: f = 0.5, `+0x88 = 0.1`. At z 0.2: no hit. Segment-sphere with the roles swapped and
+    `m = (0, −2, 0)` moving the segment: the same fraction, halves swapped.
+15. **Basis.** `W = (0, 1, 0)`: `U = (0, 0, −1)`, `V = (−1, 0, 0)`. `W = (0.6, 0.8, 0)`: `U = (0, 0, −1)`,
+    `V = (−0.8, 0.6, 0)`.
+16. **Sphere-capsule** (capsule `B = 0`, r 0.35, h 1.8; sphere r 0.1; `m` along x unless said):
+    - side, `C = (−1, 0, 1)`, `m = (1, 0, 0)`: roots `[0.55, 1.45]`, f = 0.55, `+0x50` = unit(1, 0, −0.1) =
+      `(0.99504, 0, −0.09950)` (into the capsule), `+0x90 = (−0.45, 0, 1)`;
+    - `C = (−1, 0.3, 1)`: f = 0.66459; `C = (−1, 0, 1.6)` (top cap): f = 0.57574; `C = (−1, 0, −0.05)` (bottom cap):
+      f = 0.79384; `C = (−1, 0, 2.0)`: no hit;
+    - inside, `C = (0, 0, 1)`, `m = (0.2, 0, 0)`: roots `[−2.25, 2.25]`, no hit; `m = (1, 0, 0)`: roots
+      `[−0.45, 0.45]`, **hit at the exit** 0.45, `+0x50 = (0, 0, −1)`;
+    - exact vertical drop, `C = (0.1, 0, 3)`, `m = (0, 0, −2)`: roots `[1.54437, −0.55563]`, **no hit** (true touch
+      at 0.55); `m = (0.01, 0, −2)` (tilt 0.29°, not parallel): f = 0.55628;
+    - exact vertical rise, `C = (0.1, 0, −1)`, `m = (0, 0, 2)`: f = 0.45563 (correct);
+    - store order, `C = (−0.3, 0, −0.5)`, `m = (1.2, 0, 2.4)`: roots stored `[0.625, 0.17089]` (side exit, then bottom
+      entry), **f = 0.625**; with `m = (0.6, 0, 1.2)` the exit is 1.25 and f = 0.34177.
+17. **Capsule-sphere** with the capsule moving: the (2, 3) case with `m` negated; `+0x90` is the sphere's centre
+    minus `f·m`.
+18. **Overlap entries.** Segment-capsule via (4, 3): a hit leaves `+0x80` and `+0xb0` as the slot held (fill the
+    slot with a sentinel and check it survives).
+19. **Body pass.** A fake world: a human mover (type mask `0x40`) with candidates flagged 4, `0x44`, `0x20`; masks
+    4 (walking), `0x44` (airborne), `0x64` (charging and airborne), `0x40004` at gait 4, `0x100004` for player 1;
+    a non-human mover → 2. A candidate with two capsules that both hit gives one contact (the first in the chain); the
+    same through `IPhysics_CollideShape` gives two.
+20. **Humans and walls in one pass.** Through `PhysicsBody_Sweep` with a fake mesh contact at 0.6 and a capsule met at
+    0.3, answers 4 for the human: the human's contact is resolved, the wall's is not reached in pass 1. A mesh and a
+    body contact both at 0.5: the mesh's first in the walk; through `IPhysics_CollideShape`, the body's first.
+21. **CollideShape options.** `max` 1 with two hits returns the nearer; option `0x2000` naming the mover's own owner
+    removes its self-contact; `0x800` with `+0x1c = 4` drops a candidate without `BLOCKHUMANS`; `0x10000` with
+    `0x4000000` drops an airborne owner's body; option `0x80` makes no difference (same-group bodies are always
+    skipped).
 
 ### Unit 12: A capsule swept against a box {#unit-12}
 
@@ -4379,7 +4768,7 @@ code:
 
 - **Coney's choice**: the humans take their part of the move before the walls take theirs, where the original sorts
   both kinds of contact of a pass by fraction together; a capsule already within reach is met at fraction 0 by a move
-  that goes further in (the capsule sweep's start case is not traced).
+  that goes further in, which matches the original's start case across the ground ([Unit 11](#u11-start-case)).
 - **Not yet**: an airborne body meets no human (a jump's strike and code 1 against a human); a scene's shared group;
   the pushed human's reaction (`Human_OnPushContact`'s timers and damage).
 
@@ -4393,11 +4782,12 @@ code:
 - **Bits and flags the units read but cannot name:** triangle flag bit 3 (`0x8`), which a sphere sweep skips for a
   body with flag `0x100` or a query with option `0x8000` (every world object's body starts with `0x100` in
   `0x80000500`, so a flying object's sphere passes those triangles; inferred); how many triangles carry each corner
-  edge in bits 14-15; which sweep, if any, writes contact flag `0x2`; which states `0x00227f68` selects for the
+  edge in bits 14-15; which states `0x00227f68` selects for the
   landing segment's raised feet. Body flag `0x1000` is set by `PhysicsBody_PushOutOfWalls` (`0x00347b70`); other
   setters are not traced.
-- **Callers not traced:** which `IPhysics_CollideShape` callers pass the sphere sweep's options `0x40`, `0x8000` or
-  `0x20000`; whether anything but `IPhysics_OverlapShape` reads the overlap table; whether the camera (the other
+- **Callers not traced:** `IPhysics_CollideShape`'s callers `Car_UpdateLoosePart`, `Human_TraceThrowAim` and
+  `CamPower_PlaceShot` (the others are in [Unit 11](#u11-collide-shape); none seen passes `0x8000`); which owner
+  class has type mask `0x200`, which makes the capsule sweep skip its vertical test; whether anything but `IPhysics_OverlapShape` reads the overlap table; whether the camera (the other
   caller of `Sweep_SphereOrientedBox`) reads its normals, six of which point the wrong way
   ([The normal tables](#the-normal-tables)); how a held weapon's strike sphere reaches `Car_OnHit` as kind 1 (its hit
   goes to the held object's contact handler).
