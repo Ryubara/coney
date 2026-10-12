@@ -3,16 +3,11 @@
 
 #include <array>
 #include <cstdint>
-#include <optional>
-#include <span>
-#include <vector>
 
 #include "animation/anim_math.h"
-#include "raycast/collision_mesh.h"
 
-// The human's body against the level's walls: the walking sphere with the 0.25 m rule that is all the step-up there
-// is, and the larger sphere a player is pushed out of walls with while airborne. Pure functions over the collision
-// mesh, so each rule can be tested on its own.
+// The human's body sizes: the walking sphere the physics world sweeps against the walls (src/physics/) and the
+// larger sphere a player is pushed out of walls with while airborne, with the materials a climb passes through.
 // Research: docs/research/characters.md#walls
 
 namespace coney::human {
@@ -30,7 +25,6 @@ struct BodyTuning {
     float minWallHeight = 0.25F; ///< A wall triangle whose steepest edge rises less than this is not a wall.
     float airRadius = 0.5F;      ///< A player's push-out sphere while airborne, before the scale (0.35 for others).
     float playerFactor = kPlayerBodyFactor; ///< A player's body `+0x60`: its walking sphere is radius × this × scale².
-    float contactClear = 0.01F;             ///< How far clear of a face the sweep's resolver leaves the walking sphere.
 };
 
 /// The one BodyTuning the game uses; at its defaults unless a debug menu changed it.
@@ -42,71 +36,6 @@ inline constexpr std::uint8_t kMaterialLowFence = 30;
 inline constexpr std::uint8_t kMaterialOpaqueFence = 31;
 inline constexpr std::uint8_t kMaterialRailing = 122;
 inline constexpr std::array<std::uint8_t, 3> kFenceMaterials{kMaterialLowFence, kMaterialOpaqueFence, kMaterialRailing};
-
-/// A wall triangle's normal has |z| at most this; anything flatter is a floor or a ceiling.
-inline constexpr float kWallNormalZ = 0.65F;
-
-/// What a wall test skips, beyond floors, ceilings, disabled triangles and walls the sphere is behind.
-struct WallFilter {
-    /// The move being made: a wall the move does not go into (`n · move` ≥ −0.001) is skipped. Zero tests every wall.
-    anim::Vec3 move;
-    /// Skip low and thin triangles (the walking sweep's 0.25 m rule, wallTooLow()); the airborne push-out does not.
-    bool skipLow = false;
-    /// Materials whose triangles are skipped (the fences while climbing over); empty for none.
-    std::span<const std::uint8_t> excludeMaterials;
-    /// Push the sphere only until it touches the triangle, the walking sweep's contact: a face lower than the sphere's
-    /// centre then stops the body where the sphere meets its top edge, `sqrt(r² − (c − h)²)` from the face
-    /// (docs/research/characters.md#walls). Otherwise out of the face's plane by `n × (r − distance)`, as the
-    /// airborne push-out does.
-    bool toContact = false;
-    /// How far clear of the face the push leaves the sphere: the walking sweep's resolver backs off 0.01 m along the
-    /// normal (`0x0033d9d8`), so the player stops 0.480 m from a wall; 0 for the airborne push-out.
-    float keepClear = 0.0F;
-};
-
-/// Whether the triangle `a b c` is too low or too thin to be a wall for a walking body: the edge whose direction is
-/// steepest rises less than `minHeight`; or, unless the longest edge is nearly vertical (|unit z| ≥ 0.8), the third
-/// corner lies less than `minHeight` from the longest edge's line.
-/// @orig 0x00347c08 PhysicsMesh_SweepCapsule (unknown)
-[[nodiscard]] bool wallTooLow(anim::Vec3 a, anim::Vec3 b, anim::Vec3 c, float minHeight);
-
-/// The nearest wall a sphere at `centre` of `radius` overlaps: an enabled triangle of `mesh` with |n.z| at most
-/// kWallNormalZ, that the sphere reaches (by the distance to its closest point: face, edge or corner) from its front
-/// (either side for a two-sided one), and that `filter` keeps. Nearness by the closest point is **Coney's choice**:
-/// the page says "nearest" without saying how it measures, and a face-only test lets a body slip between two walls at
-/// a convex edge. Returns the push along the face's normal that moves the sphere out of it: to `radius` from the
-/// face's plane, or with `filter.toContact` to `radius` from the triangle's closest point; nothing when none is
-/// reached. `scratch` is reused between calls to save allocations.
-/// @orig 0x003477c0 PhysicsBody_PushOutOfWalls (unknown)
-[[nodiscard]] std::optional<anim::Vec3> nearestWallPush(const raycast::CollisionMesh& mesh, anim::Vec3 centre,
-                                                        float radius, const WallFilter& filter,
-                                                        std::vector<std::uint16_t>& scratch);
-
-/// The walking sweep's contact at fraction 0 (docs/research/characters.md#slopes): `move` with the part into each wall
-/// face that the sphere at `centre` of `radius` already touches taken away, in 3D, up to three passes. A face counts
-/// when `filter` keeps it for the move left so far, its plane is at most `radius` from the centre, and the centre
-/// lies over the face or past one edge whose segment is within `radius` (past a corner never counts), the slide
-/// then going along the face's own plane either way; a face slid along no longer takes the move in and is skipped.
-/// Nothing pushes the sphere out of such a face, so a move into a face that leans back (`n.z` up to 0.65) rises along
-/// it, and a body that overlaps a face stays as deep in it. Each face slid along adds its normal to `normals` when
-/// given (the velocity slides along the same faces). **Coney's choice**: of several faces touched at once the one whose
-/// plane is nearest the centre goes first (the original resolves the contacts of one pass in an order not traced).
-/// @orig 0x0034ee60 Sweep_SphereTriangle (unknown)
-/// @orig 0x0033d870 Vec_RemoveNormalPart (unknown)
-[[nodiscard]] anim::Vec3 slideAlongTouchedFaces(const raycast::CollisionMesh& mesh, anim::Vec3 centre, float radius,
-                                                anim::Vec3 move, WallFilter filter, std::vector<std::uint16_t>& scratch,
-                                                std::vector<anim::Vec3>* normals = nullptr);
-
-/// The corner slide's direction for a walking sphere at `centre` of `radius` (docs/research/characters.md#walls, step
-/// 6): over the walls `filter` keeps that the sphere reaches **beyond the edge its triangle names** in flag bits 14-15
-/// (0: v0→v1, 1: v1→v2, 2: v2→v0, 3: none), the wall's tangent `n × up`, taken away when that edge rises and added
-/// otherwise, so each points along its wall toward the named edge, round the corner. Returns the sum, not normalised
-/// (zero when nothing counts). **Coney's reading**: the hit centre is where the moved sphere stands, not a swept
-/// contact's; a two-sided triangle met from behind adds nothing (the original swaps its corners first, in an order not
-/// traced; four triangles on the disc are two-sided).
-/// @orig 0x00347c08 PhysicsMesh_SweepCapsule (unknown)
-[[nodiscard]] anim::Vec3 edgeSlide(const raycast::CollisionMesh& mesh, anim::Vec3 centre, float radius,
-                                   const WallFilter& filter, std::vector<std::uint16_t>& scratch);
 
 /// The walking body's sphere radius for a human of `scale` (`+0x65c`): 0.35 × scale.
 [[nodiscard]] float walkingRadius(float scale);

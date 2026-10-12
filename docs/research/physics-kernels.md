@@ -16,9 +16,8 @@ triangles. The plan, the order of the units and their dependencies are on that p
 the point-to-triangle distance; and the working triangle every mesh test fills. Answers issue #150's three questions
 ([Issue #150](#issue-150)).
 
-- **Coney:** one shared kernel for every sphere against the level. Coney's walking body cites parts of it
-  (`src/human/body.cpp`); a branch not yet merged when this was written adds a sphere sweep for the cameras
-  (`raycast::sweepSphere`) that follows the same reading. Both should end on this one.
+- **Coney:** one shared kernel for every sphere against the level, `repo:src/physics/sphere_triangle.h` (done). The
+  cameras' sphere sweep (`raycast::sweepSphere`, a separate branch) should end on it too (#370).
 - **Tests:** [Test ideas](#u1-tests), including the late and missed corner contacts the original produces.
 
 13 functions, 8116 bytes (3 tagged).

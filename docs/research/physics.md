@@ -756,11 +756,10 @@ hit, so it cannot give the see-through material a clear ray crossed
 
 **What Coney has instead** (the stand-ins these units replace):
 
-- The walking body's walls are a push-out at the end of the move (`human::nearestWallPush`,
-  `slideAlongTouchedFaces`, `edgeSlide`; [Coney's implementation](#coneys-implementation)), so the side of a wall is
-  decided after the move and a body fast enough to cross a wall in one update can pass it. Units 1 to 3 are the
-  original's swept test and pass loop.
-- Humans meet humans before walls in a pass (a marked Coney choice); Unit 11 sorts both together.
+- Units 1 to 3 are done (`src/physics/`, issue #346): the walking body is the original's swept test and pass loop
+  ([Coney's implementation](#coneys-implementation)). The airborne body's landing still uses Coney's own segment, not
+  `Human_LandingTest`'s contact (#369).
+- Humans meet humans before walls in a pass (a marked Coney choice); Unit 11 sorts both together (#371).
 - Strikes test only the square's aimed object attack against a car (issue #72); Unit 5 and the strike loop
   ([How Human_TestStrikes builds the sweep](physics-kernels.md#u4b-how-human-teststrikes-builds-the-sweep-0)) let any
   punch or kick
@@ -801,8 +800,8 @@ cases that divide by zero say what the original then does.
 
 ## Coney's implementation
 
-Coney has the walking body's sweep (`src/human/body.h`, `src/raycast/`) and placed world objects
-(`src/world_objects/`), but no `IPhysics`. A dropped object's fall, bounces, settle and stop are
+Coney has Units 1 to 3 (`src/physics/`) and placed world objects (`src/world_objects/`), but no `IPhysics` and no
+bodies of its own yet. A dropped object's fall, bounces, settle and stop are
 `world_objects::LooseObjects` (`repo:src/world_objects/loose_objects.h`), stepped by the play mode: each 1/30 s step
 runs the object's update, then two settle ticks, so the settle keeps its 11 ticks. Its move is a ray from the body's
 centre against the level mesh, as long as the move plus the box's or sphere's reach that way; humans, cars and other
@@ -813,13 +812,31 @@ The world objects in the world have their bodies (`world_objects::ObjectBodies`,
 `repo:src/world_objects/object_bodies.h`): each type's box or sphere at its object's pose, with its `PHYFLAG` layers,
 remade each step before the humans move. A walking human's sphere slides along the `BLOCKHUMANS` ones after the
 level's walls, as `Human_OnContact` slides along an object (stand-in: pushed out of the deepest body the move goes
-into, in the ground plane, and then out of the walls again; the object does not move).
+into, in the ground plane; the sum of those pushes is then swept through the level's walls as a push-out; the object
+does not move).
 
-The walking body's wall test (`src/human/body.cpp`, `nearestWallPush`) is a push-out at the end of the move, not a
-sweep: it decides which side of a wall the sphere is on, and flips a two-sided wall, from the centre **after** the
-move, where the original uses the centre before it ([Sweeping a body](#sweep)). For walls a step never crosses
-(moves are under 0.3 m and the radius about 0.47 m) the two agree; the hangout's doors that the player walked through
-one way were not this but the spawn's lost triangle flags, now fixed ([Objects](objects.md#coneys-implementation)).
+The walking body moves through the original's sweep ([Unit 3](physics-bodies.md#unit-3), `physics::sweepBody`,
+`repo:src/physics/body_sweep.h`) against the level ([Unit 2](physics-bodies.md#unit-2), `physics::sweepCapsuleMesh`)
+with the original's kernels ([Unit 1](physics-kernels.md#unit-1)): up to three passes, each sweeping the whole slid move
+from where the body is, the capsule's walking sphere against the walls the move goes into, met at the fraction where it
+first touches from where the move starts (so a fast move never passes a wall), advanced to 0.01 m short of it along the
+normal, the move and the velocity slid, the corner slide added on the ground, and the stuck counter (`+0x70`, Coney's
+`m_blockedUpdates`) counted. `Human::sweep` gives it a per-sweep owner (`WalkingOwner`, `repo:src/human/human.cpp`) that
+answers `Human_OnContact`'s `0x20001` for every level triangle and code 0 for the fences a climb passes; the body has
+flag `0x400` for a player only, so only a player's slid velocity is written back. While airborne the same sweep takes
+the move across the ground (no corner slide; a player keeps a quarter of the slid speed, the human contact scale), and
+the air sphere's push out of the nearest wall (`physics::pushOutOfWalls`) is added to the pending push for the next
+move, as `Human_PushOutInAir` does. What differs, each marked in the code:
+
+- **Coney's choice**: the human has no physics body between updates; each sweep builds one from the human's own
+  fields (the pending push is body `+0x50`, kept with flag `0x1000` since Coney divides it by the push weight when it
+  is added).
+- **Coney's reading**: the sweep is given the slope-scaled velocity, and the scale is taken off the velocity it
+  writes back (which of the two the original writes back is not on this page).
+- **Coney stand-in**: a capsule body's query box is its walking sphere's bounds, not the capsule shape's (Unit 6);
+  the visited bits live beside the mesh, not in it.
+- **Not yet**: the airborne body falls and lands by Coney's own landing segment (`Human::moveInAir`), not by
+  `Human_LandingTest`'s contact in the sweep (#369; `physics::landingContact` is written and tested).
 
 Humans meet each other as [Human contacts](#human-contacts) describes (`human::sweepCapsules` and
 `human::contactPush`, `repo:src/human/human_contacts.h`; `Human::meetHumans`). The characters' step
@@ -866,6 +883,13 @@ code:
   normalises the edges; `Ray_InfiniteCylinder` (`0x0034d938`) is a capsule; `SphereBox_SweepCorner` (`0x0034b040`) is
   the face-region step, `SphereBox_SweepFaceEdges` (`0x0034b7b0`) the corner-region step and `SphereBox_ToBoxSpace`
   (`0x0034baf0`) goes from the box to the world. The plate comments say what each does.
+- **From the implementation of Units 1 to 3** (issue #346): [Unit 3](physics-bodies.md#u3-tests)'s test 13 gives
+  `PhysicsVec_Bounce((0, 0, −2), (0, 0, 1), 0.1)` as `(0, 0, 2.2)`, but the formula above it (`v −= n d (1 + e)`) and
+  test 12 (−5 to 0.5) give `(0, 0, 0.2)`; Coney follows the formula. Which velocity `PhysicsBody_Sweep` writes back to
+  a walking human on a slope: the slope-scaled one `Human_Move` (`0x0023d8c8`) hands it, or the unscaled one (Coney
+  takes the scale off). Two guards Coney had to choose: a zero-length edge in `Ray_InfiniteCylinder` (treated as the
+  sphere at its first end, inferred from `1/0` on the PS2) and a move parallel to an edge's side plane in
+  `SphereSweep_VertexRegion` (decided by the signs the PS2's `±FLT_MAX` crossing would have, inferred).
 - **A maintainers' choice:** `PhysicsOverlap_BoxBox` (`0x00345dd8`) builds its rotation matrix the wrong way round
   with the centres mixed in, so it misses rotated or distant boxes; no caller pairs two boxes, so reproducing it or
   writing the correct test changes nothing a player sees ([Unit

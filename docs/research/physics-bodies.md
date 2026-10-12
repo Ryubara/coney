@@ -15,8 +15,8 @@ subsystem itself is [Physics](physics.md).
 **What it is.** A shape swept against (or overlapping) the level's collision mesh: the cells, the visited bits, the
 per-triangle rules, the capsule's wall rules and corner slide, the sort, and the contact each hit becomes.
 
-- **Coney:** replaces `human::nearestWallPush`, `slideAlongTouchedFaces` and `edgeSlide` (`src/human/body.*`) with
-  the swept test from the start of the move.
+- **Coney:** `repo:src/physics/mesh_sweep.h` (done): the swept test from the start of the move, which replaced the
+  walking body's old push-out (`human::nearestWallPush`, `slideAlongTouchedFaces`, `edgeSlide`).
 - **Tests:** [Test ideas](#u2-test-ideas-synthetic-meshes-src-raycast), built with `src/raycast/collision_builder.h`;
   test 1 is the fast mover that must not tunnel.
 
@@ -430,8 +430,8 @@ All with one-sided triangles unless stated, flags given as the file stores them,
 body is put, what is left of the move, how velocities slide, bounce and are written back, the push-outs, and the
 airborne human's landing segment.
 
-- **Coney:** `Human::sweep` (`src/human/human.cpp`) becomes this loop over Unit 2's contacts; the loose objects'
-  bounce (`src/world_objects/loose_objects.*`) uses the same resolution.
+- **Coney:** `repo:src/physics/body_sweep.h` (done), which `Human::sweep` (`src/human/human.cpp`) runs. The loose
+  objects' bounce (`src/world_objects/loose_objects.*`) is still its own (Unit 13).
 - **Tests:** [Test ideas](#u3-tests), with a fake owner that answers fixed codes.
 
 10 functions, 5148 bytes (4 tagged).

@@ -24,7 +24,8 @@ inline constexpr float kWayClearRadius = 0.2F;
 /// first. It meets the humans of `others` (their capsules, the reviver's and `goal`'s left out by the caller) and the
 /// walls of `mesh` it moves into. **Coney's readings**: the collision mask `0x2803` is read as the humans and the
 /// level's walls, a wall being a triangle the walking sweep counts (taller than 0.25 m); objects, cars and glass are
-/// not swept; the walls are tested by the capsule's spheres every 0.1 m of the way. No mesh: only the humans count.
+/// not swept; the walls are met by the capsule's spheres swept along the way as the walking sphere is
+/// (docs/research/physics-bodies.md#u2-00347c08-physicsmesh-sweepcapsule). No mesh: only the humans count.
 /// @orig 0x0021c0a8 Human_IsWayClearTo (unknown)
 [[nodiscard]] bool wayClear(const raycast::CollisionMesh* mesh, anim::Vec3 from, float height,
                             const UprightCapsule& goal, std::span<const UprightCapsule> others);
