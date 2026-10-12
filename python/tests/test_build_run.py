@@ -14,6 +14,7 @@ import pytest
 
 from coney_tools import build_run
 from coney_tools.build_claims import Slots
+from coney_tools.build_history import History, step_key
 from coney_tools.build_run import (
     BuildScan,
     Context,
@@ -313,6 +314,9 @@ class FakeToolchain:
         #: The step the folder's lock records while each command runs.
         self.lock_steps: dict[str, str] = {}
         self.raises: dict[str, BaseException] = {}
+        #: Seconds each kind of command takes, on the fake clock (`advance`).
+        self.seconds: dict[str, float] = {}
+        self.advance: Callable[[float], None] = lambda seconds: None
 
     @staticmethod
     def kind(command: list[str]) -> str:
@@ -342,6 +346,7 @@ class FakeToolchain:
         self.lock_steps[kind] = held[0].step if held else "(no lock)"
         if kind in self.raises:
             raise self.raises[kind]
+        self.advance(self.seconds.get(kind, 0.0))
         code, text = self.output[kind]
         for line in text.splitlines():
             on_line(line)
@@ -358,6 +363,9 @@ class Run:
         self.fast = Slots(tmp_path / "claims", 1, clock=self.clock, alive=self.is_alive, sleep=self.sleep, lane="fast")
         self.lock = Slots(tmp_path / "folder-lock", 1, clock=self.clock, alive=self.is_alive, sleep=self.sleep)
         self.toolchain = FakeToolchain(self.main, self.fast, self.lock)
+        self.toolchain.advance = self.advance
+        #: The duration history the run reads and writes; None: none.
+        self.history: History | None = None
         self.lines: list[str] = []
         self.log = io.StringIO()
         settings: dict[str, object] = {"agent": "alice", "preset": "dev", "checkout": tmp_path / "wt", **options}
@@ -379,6 +387,9 @@ class Run:
         for action in self.on_sleep:
             action()
 
+    def advance(self, seconds: float) -> None:
+        self.now += seconds
+
     def go(self) -> build_run.Result:
         context = Context(
             slots=self.main,
@@ -394,6 +405,7 @@ class Run:
             poll=30.0,
             checkout_lock=self.lock,
             configured_now=lambda: self.configured if self.configured_now is None else self.configured_now,
+            history=self.history,
         )
         return execute(self.options, context)
 
@@ -1017,3 +1029,133 @@ def test_a_ctest_that_found_no_tests_is_not_called_stopped_from_outside(tmp_path
     run = Run(tmp_path, test=True)
     run.toolchain.output["test"] = (1, "No tests were found!!!\n")
     assert "stopped from outside" not in "\n".join(run.go().summary)
+
+
+# -- the time budget ----------------------------------------------------------------------------------------------
+
+MINUTE = 60.0
+
+
+def full_main_lane(run: Run) -> None:
+    """A big build (main lane) with both main slots held by others for good."""
+    run.toolchain.output["ninja"] = (0, BIG)
+    occupy(run.main, run, "bob", 101)
+    occupy(run.main, run, "carol", 102)
+
+
+def history_of(tmp_path: Path, **minutes: list[float]) -> History:
+    """A duration history with the given minutes per key (`dev_build_main=[30, 30]` is `dev/build/main`)."""
+    history = History(tmp_path / "claims" / "durations.json")
+    for name, values in minutes.items():
+        for value in values:
+            history.record(step_key(*name.split("_")), value * MINUTE)
+    return history
+
+
+def test_a_queued_build_leaves_once_the_wait_plus_its_median_would_pass_the_budget(tmp_path: Path) -> None:
+    run = Run(tmp_path, budget=55.0, max_wait=45.0)
+    full_main_lane(run)
+    run.history = history_of(tmp_path, dev_build_main=[28, 30, 30, 40])
+    result = run.go()
+    assert result.exit_code == 75
+    # 30 min of build left room for 25 min of waiting, not the 45 of --max-wait.
+    assert 25 * MINUTE < run.now - NOW <= 26 * MINUTE
+    assert run.main.status().queue == []
+    text = "\n".join(result.summary)
+    assert "build: still queued" in text
+    assert "the build would take about 30 min (median of 4 runs)" in text
+    assert "the budget is 55 min" in text and "min of the call so far" in text
+
+
+def test_without_a_history_the_typical_durations_are_the_estimate(tmp_path: Path) -> None:
+    run = Run(tmp_path, budget=55.0, max_wait=45.0)
+    full_main_lane(run)
+    result = run.go()
+    assert result.exit_code == 75
+    assert 40 * MINUTE < run.now - NOW <= 41 * MINUTE  # typical build of 15 min
+    assert "about 15 min (typical, no history)" in "\n".join(result.summary)
+
+
+def test_a_budget_of_zero_leaves_only_the_wait_cap(tmp_path: Path) -> None:
+    run = Run(tmp_path, budget=0.0, max_wait=45.0)
+    full_main_lane(run)
+    result = run.go()
+    assert result.exit_code == 75
+    assert run.now - NOW >= 45 * MINUTE
+    assert "after 45 minutes" in "\n".join(result.summary)
+
+
+def test_a_step_that_already_runs_is_never_stopped_by_the_budget(tmp_path: Path) -> None:
+    run = Run(tmp_path, budget=55.0, test=True, regex="a")
+    run.toolchain.seconds = {"build": 70 * MINUTE, "test": 10 * MINUTE}
+    result = run.go()
+    assert result.ok and result.summary[-1] == "result: ok"
+    assert [run.toolchain.kind(c) for c in run.toolchain.commands if run.toolchain.kind(c) in ("build", "test")] == [
+        "build",
+        "test",
+    ]
+
+
+def test_the_test_phase_counts_the_whole_call_against_the_budget(tmp_path: Path) -> None:
+    run = Run(tmp_path, budget=55.0, max_wait=45.0, test=True)
+    run.toolchain.seconds = {"build": 40 * MINUTE}
+    original = run.toolchain.run
+
+    def building(command: list[str], on_line: Callable[[str], None]) -> int:
+        code = original(command, on_line)
+        if run.toolchain.kind(command) == "build":
+            occupy(run.main, run, "bob", 101)
+            occupy(run.main, run, "carol", 102)
+        return code
+
+    run.toolchain.run = building  # type: ignore[method-assign]
+    result = run.go()
+    assert result.exit_code == 75
+    # 40 min of build, then the full test run (typical 10 min) leaves after about 5 min of waiting.
+    assert 45 * MINUTE < run.now - NOW <= 46 * MINUTE
+    text = "\n".join(result.summary)
+    assert "build: ok" in text and "test: still queued" in text and "the tests would take about 10 min" in text
+
+
+def test_the_wait_for_the_build_folder_counts_against_the_budget(tmp_path: Path) -> None:
+    run = Run(tmp_path, budget=20.0, max_wait=45.0)
+    hold_folder(run, "bob", 101)
+    result = run.go()
+    assert result.exit_code == 75
+    assert 20 * MINUTE < run.now - NOW <= 21 * MINUTE
+    assert "the budget is 20 min" in "\n".join(result.summary)
+    assert run.toolchain.commands == []
+
+
+def test_finished_steps_are_recorded_per_preset_step_and_size(tmp_path: Path) -> None:
+    run = Run(tmp_path, test=True, regex="a")
+    run.configured = False
+    run.history = History(tmp_path / "claims" / "durations.json")
+    run.toolchain.seconds = {"configure": 2 * MINUTE, "build": 20 * MINUTE, "test": MINUTE}
+    assert run.go().ok
+    assert run.history.expected("dev/configure/main") == (120.0, 1)
+    assert run.history.expected("dev/build/main") == (1200.0, 1)
+    assert run.history.expected("dev/test/filtered") == (60.0, 1)
+
+    again = Run(tmp_path, test=True)
+    again.history = run.history
+    again.toolchain.seconds = {"build": 30.0, "test": 5 * MINUTE}
+    assert again.go().ok
+    assert again.history.expected("dev/build/fast") == (30.0, 1)  # a small incremental build: the fast lane
+    assert again.history.expected("dev/test/full") == (300.0, 1)
+
+
+def test_a_failed_step_is_not_recorded(tmp_path: Path) -> None:
+    run = Run(tmp_path, test=True)
+    run.history = History(tmp_path / "claims" / "durations.json")
+    run.toolchain.output["build"] = (1, "FAILED: a.obj\n/w/a.cpp:1:1: error: no\n")
+    run.toolchain.seconds = {"build": 5 * MINUTE}
+    assert not run.go().ok
+    assert run.history.expected("dev/build/fast") is None
+
+
+def test_the_waiting_line_names_the_budget(tmp_path: Path) -> None:
+    run = Run(tmp_path, budget=55.0)
+    full_main_lane(run)
+    run.go()
+    assert any("waiting for a build slot" in line and "55 min budget" in line for line in run.lines)

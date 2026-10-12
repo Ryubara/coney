@@ -143,7 +143,8 @@ issue stays the one place to read it.
   minutes run in the background with their output going to a file; the agent checks the file every few minutes
   (each check keeps the cache warm) or once when the run should be done. Even an hour-long cache does not survive a
   run that takes longer. A build or test run is `coney-tools build ...` started with `run_in_background`
-  ([Builds and tests](#builds)); it prints its log path first, and gives up waiting for a slot after 45 minutes.
+  ([Builds and tests](#builds)); it prints its log path first, and gives up waiting for a slot after 45 minutes,
+  or sooner when the wait plus the build would pass its 55-minute budget.
 - **Keep tool output small.** Print counts, the failing lines and the end of a log, never a whole log: every line an
   agent reads stays in its context for the rest of the task.
 - **Do not message a finished agent.** Start a new one from its report and the track's
@@ -181,8 +182,9 @@ uv run --project python coney-tools build --agent <id> --preset dev --test [-R <
   it prints first.
 - **A second configuration** (the Clang build clang-tidy reads on Linux and macOS) is `--build-dir build/tidy --env
   CC=clang-19 --env CXX=clang++-19` with `--configure-only`; never a raw `cmake`.
-- **Exit code 75 means "still queued".** The command waited its cap (45 minutes, so the agent's prompt cache stays
-  warm), left the queue and said its position. Do other work (docs, review, the next unit) and run the same command
+- **Exit code 75 means "still queued".** The command waited its cap (45 minutes), or as long as its time budget
+  allowed (`--budget`, 55 minutes for the wait and the steps together, so the agent's one-hour prompt cache stays warm;
+  it estimates a step from the median of its recent runs), left the queue and said its position and the numbers. Do other work (docs, review, the next unit) and run the same command
   again later; do not loop on it in one call.
 - **`--priority`** goes ahead of the queue. The coordinator uses it for a build somebody is waiting on; an agent does
   not set it on its own.

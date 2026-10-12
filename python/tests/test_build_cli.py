@@ -103,6 +103,8 @@ def test_the_flags_of_a_build_are_parsed() -> None:
             "--priority",
             "--max-wait",
             "5",
+            "--budget",
+            "30",
             "-j",
             "3",
         ]
@@ -122,6 +124,7 @@ def test_the_flags_of_a_build_are_parsed() -> None:
     assert (defaults.label, defaults.build_dir, defaults.env) == (None, None, [])
     alias = _build_parser().parse_args(["build", "--agent", "a", "--slots-wait-timeout", "7"])
     assert alias.max_wait == 7.0
+    assert (args.budget, defaults.budget) == (30.0, 55.0)
 
 
 def test_status_and_release_are_subcommands() -> None:
@@ -389,3 +392,27 @@ def test_a_malformed_env_setting_is_refused_before_anything_runs(
 ) -> None:
     assert main(["build", "--agent", "a", "--env", setting]) == 2
     assert "--env" in capsys.readouterr().err and fake_toolchain.commands == []
+
+
+def test_a_run_records_its_step_durations_beside_the_claims(
+    checkout: Path, tmp_path: Path, fake_toolchain: type[FakeToolchain]
+) -> None:
+    assert main(["build", "--agent", "alice", "--configure"]) == 0
+    durations = json.loads((tmp_path / "claims" / "durations.json").read_text(encoding="utf-8"))
+    assert sorted(durations) == ["dev/build/main", "dev/configure/main"]
+
+
+def test_the_budget_reaches_the_run(
+    checkout: Path, monkeypatch: pytest.MonkeyPatch, fake_toolchain: type[FakeToolchain]
+) -> None:
+    seen: list[float] = []
+    real = build_run.execute
+
+    def spy(options: build_run.Options, context: build_run.Context) -> build_run.Result:
+        seen.append(options.budget)
+        assert context.history is not None
+        return real(options, context)
+
+    monkeypatch.setattr(build_run, "execute", spy)
+    assert main(["build", "--agent", "alice", "--budget", "20"]) == 0
+    assert seen == [20.0]

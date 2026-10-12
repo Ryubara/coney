@@ -17,6 +17,7 @@ from typing import Any
 
 from coney_tools import build_claims, build_run
 from coney_tools.build_claims import FAST_LANE, MAIN_LANE, BuildClaimError, Slots
+from coney_tools.build_history import FILE_NAME, History
 from coney_tools.config import INT_KEYS, ConfigError, find_repo_root, load_config, local_config_file, main_checkout
 from coney_tools.pcsx2_claims import AGENT_NAME
 
@@ -74,6 +75,14 @@ def add_parser(groups: Any) -> None:
         default=45.0,
         metavar="MIN",
         help="minutes to wait for a slot, per phase, before exiting with code 75 (default 45)",
+    )
+    group.add_argument(
+        "--budget",
+        type=float,
+        default=55.0,
+        metavar="MIN",
+        help="minutes the whole call may take, waits and steps together: stop waiting (exit 75) once the wait plus "
+        "what the step usually takes would pass it (default 55, under an hour's prompt cache; 0: no budget)",
     )
     group.add_argument("-j", "--jobs", type=int, help="parallel jobs (default: the cores divided by the slots)")
     commands = group.add_subparsers(dest="build_command")
@@ -165,6 +174,7 @@ def run_build(args: argparse.Namespace) -> int:
     build_run.find_programs(env)
     numbers = _numbers(root)
     folder = build_dir if build_dir is not None else root / "build" / args.preset
+    slots = build_claims.default_slots(MAIN_LANE, root)
     log_path = _new_log(root, args.preset, build_dir.name if build_dir else None, args.agent)
     options = build_run.Options(
         agent=args.agent,
@@ -178,12 +188,13 @@ def run_build(args: argparse.Namespace) -> int:
         build_dir=build_dir,
         priority=args.priority,
         max_wait=args.max_wait,
+        budget=args.budget,
         jobs=args.jobs,
     )
     print(f"log: {log_path}", flush=True)
     with log_path.open("a", encoding="utf-8", buffering=1) as log:
         context = build_run.Context(
-            slots=build_claims.default_slots(MAIN_LANE, root),
+            slots=slots,
             fast=build_claims.default_slots(FAST_LANE, root),
             toolchain=build_run.ProcessToolchain(root, env),
             emit=lambda line: print(line, flush=True),
@@ -195,6 +206,7 @@ def run_build(args: argparse.Namespace) -> int:
             configured=(folder / "CMakeCache.txt").is_file(),
             checkout_lock=build_claims.folder_lock(folder, root),
             configured_now=lambda: (folder / "CMakeCache.txt").is_file(),
+            history=History(slots.claims_dir / FILE_NAME),
         )
         result = build_run.execute(options, context)
     for line in result.summary:

@@ -685,7 +685,7 @@ sanitizers and the full clang-tidy pass (see [the local gate](testing.md#local-g
 ```sh
 uv run --project python coney-tools build --agent ID [--preset dev|release|ci|asan] [--test] [-R REGEX] [-L LABEL]
     [--configure | --configure-only] [--build-dir FOLDER] [--env NAME=VALUE ...] [--priority] [--max-wait MIN]
-    [-j N] [--dir CHECKOUT]
+    [--budget MIN] [-j N] [--dir CHECKOUT]
 uv run --project python coney-tools build status [--json]
 uv run --project python coney-tools build release --agent ID [--force] [--slot N] [--lane main|fast]
 ```
@@ -743,6 +743,18 @@ command prints its place, a rough wait (from the holders' recorded step and how 
 holders, every minute. **It does not wait for ever:** after `--max-wait` minutes (default 45, per claim; also spelled
 `--slots-wait-timeout`), so that an agent never outlives its one-hour prompt cache, it leaves the queue and exits `75`
 with `still queued, position N of M, try again later`. On `75`, do other work and run the same command again.
+
+**The time budget.** `--max-wait` caps one wait; `--budget` (minutes, default 55; `0` turns it off) caps the whole
+call, waits and steps together, so an agent's wait plus its build stays inside the hour its prompt cache lasts. Each
+finished step's duration is kept in `durations.json` in the claims directory, the last ten per preset, step and size
+(`ci/configure/main`, `ci/build/fast` or `ci/build/main` by lane, `ci/test/filtered` with `-R` or `-L`, `ci/test/full`
+without); a failed step is not recorded. While a run waits for a slot, it leaves the queue with exit `75` as soon as
+the time the call has taken plus the median of what it waits for (a phase's steps added up; with no history, the
+typical 5 minutes for a configure, 15 for a build, 10 for a full test run, 3 for anything in the fast lane) would pass
+the budget, and says so with the numbers: `time budget: 25 min of the call so far; the build would take about 30 min
+(median of 4 runs) and the budget is 55 min`. The test phase counts the build before it, and the wait for the build
+folder counts too. The budget only decides whether to keep waiting: a step that has started always runs to its end,
+and a free slot is always taken.
 
 **The fast lane.** A small job should not queue behind a full build. Before claiming, the command measures the job.
 For a build: the manifest is brought up to date for real with `ninja build.ninja` (it re-checks the `CONFIGURE_DEPENDS`

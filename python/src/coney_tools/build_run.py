@@ -9,6 +9,12 @@ configure to the last test, so two runs never link the same executable or write 
 everything else takes one of the main slots, and waits in the queue for one. The full output goes to a log; what is
 printed is the outcome of each step, the first compile errors and the failed tests.
 
+A run has a **time budget** for the whole call (`--budget`, 55 minutes by default: an agent's prompt cache lasts an
+hour, and a call that outlasts it pays to write the cache again). A wait for a slot or for the build folder ends early,
+with exit code 75, as soon as the time the call has taken plus what the step it waits for usually takes (the median of
+its recent runs, build_history.py, else a typical figure) would pass the budget. A step that has started always runs to
+its end: the budget only decides whether to keep waiting.
+
 Everything that touches the machine is behind `Toolchain` (running a command, capturing a short one), so the order of
 a run, the lane choice, the claims and the summary are tested with canned output.
 """
@@ -27,7 +33,17 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol, TextIO
 
-from coney_tools.build_claims import FAST_LANE, MAIN_LANE, BuildClaim, Slots, SlotTimeout, Waiting
+from coney_tools.build_claims import (
+    FAST_LANE,
+    FAST_MINUTES,
+    MAIN_LANE,
+    TYPICAL_MINUTES,
+    BuildClaim,
+    Slots,
+    SlotTimeout,
+    Waiting,
+)
+from coney_tools.build_history import History, step_key
 from coney_tools.config import ConfigError
 
 #: Exit code of a run that gave up waiting for a slot (EX_TEMPFAIL): do other work and try again later.
@@ -438,6 +454,9 @@ class Options:
     priority: bool = False
     #: Minutes to wait for a slot, per phase, before giving up with exit code 75.
     max_wait: float = 45.0
+    #: Minutes the whole call may take, waits and steps together: a wait that would push the call past it ends with
+    #: exit code 75 (0: no budget; the command line's default is 55).
+    budget: float = 0.0
     #: Parallel jobs; None shares the cores between the slots.
     jobs: int | None = None
 
@@ -480,6 +499,11 @@ class Context:
     #: Looks at the build folder again once the lock is held: whether it is configured by then (the run that held the
     #: lock before may have configured it). None: `configured` stands.
     configured_now: Callable[[], bool] | None = None
+    #: How long each kind of step took before, for the time budget's estimate, and where finished steps are recorded.
+    #: None: typical figures, nothing recorded.
+    history: History | None = None
+    #: When the call started (the clock of `slots`), the start of the budget; set by `execute` when None.
+    call_started: float | None = None
 
 
 @dataclass
@@ -503,21 +527,90 @@ def _holders_text(holders: list[BuildClaim], now: float) -> str:
     return ", ".join(f"{h.agent} ({h.preset}, {h.step}, {h.age(now) / 60:.0f} min)" for h in holders) or "nobody"
 
 
+#: What a budget message calls each step.
+_STEP_NAMES = {"configure": "the configure", "build": "the build", "test": "the tests"}
+
+
+def _estimate(context: Context, options: Options, steps: list[tuple[str, str]], lane: str) -> tuple[float, str]:
+    """The seconds a phase's (step, size) pairs usually take together, and what that rests on: the median of each
+    step's recent runs in the history, else the typical figure of its lane (build_claims.TYPICAL_MINUTES)."""
+    total = 0.0
+    bases = []
+    for step, size in steps:
+        found = context.history.expected(step_key(options.preset, step, size)) if context.history else None
+        if found is not None:
+            total += found[0]
+            bases.append(f"median of {found[1]} run{'s' if found[1] != 1 else ''}")
+        else:
+            total += 60 * (FAST_MINUTES if lane == FAST_LANE else TYPICAL_MINUTES.get(step, TYPICAL_MINUTES["build"]))
+            bases.append("typical, no history")
+    if len(set(bases)) <= 1:
+        return total, bases[0] if bases else "nothing to run"
+    return total, "; ".join(f"{step}: {basis}" for (step, _), basis in zip(steps, bases, strict=True))
+
+
+def _budget_check(
+    options: Options, context: Context, clock: Callable[[], float], what: str | None, seconds: float, basis: str
+) -> Callable[[float], str | None] | None:
+    """The `abandon` callback of a wait under the time budget (None without a budget): it answers with the reason, the
+    numbers in it, once the call so far plus `seconds` (what `what` would take; None for a wait that has no step of
+    its own) passes the budget."""
+    if options.budget <= 0:
+        return None
+    limit = options.budget * 60
+
+    def abandon(waited: float) -> str | None:
+        used = clock() - (context.call_started if context.call_started is not None else clock())
+        if used + seconds <= limit:
+            return None
+        done = f"time budget: {used / 60:.0f} min of the call so far"
+        if what is None:
+            return f"{done} and the budget is {options.budget:.0f} min"
+        return (
+            f"{done}; {what} would take about {seconds / 60:.0f} min ({basis}) and the budget is "
+            f"{options.budget:.0f} min"
+        )
+
+    return abandon
+
+
+def _gives_up(options: Options) -> str:
+    """When a wait gives up, for a waiting line."""
+    budget = f" or before passing the {options.budget:.0f} min budget" if options.budget > 0 else ""
+    return f"gives up after {options.max_wait:.0f} min{budget}"
+
+
 class _Phase:
     """One claim's worth of steps: choose the lane, wait for the slot, run the commands, free the slot."""
 
     def __init__(
-        self, options: Options, context: Context, label: str, lane: str, note: Callable[[str], None] = lambda step: None
+        self,
+        options: Options,
+        context: Context,
+        label: str,
+        lane: str,
+        note: Callable[[str], None] = lambda step: None,
+        size: str | None = None,
     ) -> None:
         self.options = options
         self.context = context
         self.label = label
         self.lane_name = lane
+        #: How big the phase's job is, for the history's keys: a test run's "full" or "filtered"; None: the lane for a
+        #: build, "main" for a configure.
+        self.size = size
         self.slots = context.fast if lane == FAST_LANE else context.slots
         #: Told the step each command starts, for the folder lock's owner file.
         self.note = note
         self.waited = 0.0
         self.queued: SlotTimeout | None = None
+
+    def size_of(self, step: str) -> str:
+        """The size part of a step's history key: a configure is always "main" (it does the same work in either lane),
+        a build its lane, a test run "full" or "filtered"."""
+        if self.size is not None:
+            return self.size
+        return MAIN_LANE if step == "configure" else self.lane_name
 
     def run(self, steps: list[tuple[str, list[str], Callable[[str], None]]]) -> list[tuple[str, int, float]]:
         """Hold a slot and run each (step, command, line handler); returns (step, exit code, seconds) for each step
@@ -529,9 +622,14 @@ class _Phase:
             context.emit(
                 f"waiting for a build slot ({self.lane_name} lane): place {waiting.place} of {waiting.total}, "
                 f"about {waiting.minutes:.0f} min; held by {_holders_text(waiting.holders, self.slots.clock())}; "
-                f"gives up after {options.max_wait:.0f} min"
+                f"{_gives_up(options)}"
             )
 
+        # The budget's estimate of this phase: its steps' usual durations together.
+        keyed = [(step, self.size_of(step)) for step, _, _ in steps]
+        seconds, basis = _estimate(context, options, keyed, self.lane_name)
+        what = " and ".join(_STEP_NAMES.get(step, step) for step, _ in keyed)
+        abandon = _budget_check(options, context, self.slots.clock, what, seconds, basis)
         results: list[tuple[str, int, float]] = []
         try:
             with self.slots.hold(
@@ -544,6 +642,7 @@ class _Phase:
                 report=report,
                 report_every=context.report_every,
                 timeout=options.max_wait * 60,
+                abandon=abandon,
             ) as claim:
                 self.waited = self.slots.clock() - started
                 if self.slots.last_takeover is not None:
@@ -555,9 +654,12 @@ class _Phase:
                     began = self.slots.clock()
                     code = context.toolchain.run(command, on_line)
                     context.log.flush()
-                    results.append((step, code, self.slots.clock() - began))
+                    took = self.slots.clock() - began
+                    results.append((step, code, took))
                     if code != 0:
                         break
+                    if context.history is not None:
+                        context.history.record(step_key(options.preset, step, self.size_of(step)), took)
         except SlotTimeout as timeout:
             self.queued = timeout
         return results
@@ -635,6 +737,8 @@ def execute(options: Options, context: Context) -> Result:
     """Run one build folder's configure, build and tests under the folder's lock: the lock is taken first and held to
     the end (a second run in the same folder waits for it, up to `max_wait` minutes, then gives up with exit code 75),
     and released however this ends, an interrupt included. What runs inside is `_execute`."""
+    if context.call_started is None:
+        context.call_started = context.slots.clock()
     lock = context.checkout_lock
     if lock is None:
         return _execute(options, context, lambda step: None)
@@ -642,8 +746,7 @@ def execute(options: Options, context: Context) -> Result:
     def report(waiting: Waiting) -> None:
         context.emit(
             f"waiting for another run in this build folder ({options.folder}): place {waiting.place} of "
-            f"{waiting.total}; held by {_holders_text(waiting.holders, lock.clock())}; "
-            f"gives up after {options.max_wait:.0f} min"
+            f"{waiting.total}; held by {_holders_text(waiting.holders, lock.clock())}; {_gives_up(options)}"
         )
 
     try:
@@ -657,6 +760,7 @@ def execute(options: Options, context: Context) -> Result:
             report=report,
             report_every=context.report_every,
             timeout=options.max_wait * 60,
+            abandon=_budget_check(options, context, context.slots.clock, None, 0.0, ""),
         )
     except SlotTimeout as timeout:
         return _gave_up(Result(), "build folder", timeout)
@@ -735,7 +839,7 @@ def _execute(options: Options, context: Context, note: Callable[[str], None]) ->
         tests.feed(line)
 
     command = _ctest(options, "-j", jobs, *options.filters)
-    phase = _Phase(options, context, "test", lane, note)
+    phase = _Phase(options, context, "test", lane, note, "filtered" if options.filters else "full")
     ran = phase.run([("test", command, test_line)])
     if phase.queued is not None:
         return _gave_up(result, "test", phase.queued)
