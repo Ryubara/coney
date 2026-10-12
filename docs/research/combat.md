@@ -2415,11 +2415,29 @@ test a flung victim striking the attacker, and **PoizoCiv's 195 damage and 294 w
 moving him every update kept him airborne (clip 428, `ANIM_MOVEMENT_FALL`), and update 61 is when he landed (429)
 and took a fall's damage and knockdown (confirmed (runtime), 2026-10-12, PCSX2 2.9.94, the same slot: placed only at
 updates 0-2, he fell until update 34 and took 600 → 405 and 294 at 35 with no strike on him, the player still
-standing; the strike-shape hook (`0x003428d0`) showed only the attacker's body switching shapes on). Re-running with a
-victim who stands and reacts at once is still to do (#190): the scenarios need a placement that does not make him
-fall (writing the transform, human `+0x10` and `+0x390` at updates 0-2 still did). By the code above, such a strike
-on a charger or a diver takes its health (the extreme reactions' 20) and plays no reaction (confirmed (code) at
-`0x00265f70`).
+standing; the strike-shape hook (`0x003428d0`) showed only the attacker's body switching shapes on). Why he fell:
+the street in front of slot 6's spot ends about 7.5 m ahead in a drop of 8.7 m, and both placements put him past it
+(kept 4 m ahead of a player who ran 4 m, or 9.3 m away at once). Walked out 0.15 m an update he stays on the ground
+to 7.5 m and steps off there (confirmed (runtime), scratch probes `walkout` and `charge1`).
+
+**A flung victim's strike costs the charger 20 health and no reaction; the diver was not struck** (confirmed
+(runtime), PCSX2 2.9.94, 2026-10-12, a copy of slot 6; PoizoCiv's brain held (`+0x09` = 1), walked out 0.15 m an
+update to 3.8 m (charge) or 2.7 m (dive) in front of the player, then kept there along the player's heading and facing
+him until the press, so he stands upright and reacts at once; L2 held and the stick at 98 % straight ahead from update
+20, cross or square tapped at 40; hooks `strike-contact` and `anim-dispatch`):
+
+| Update | The charge (cross) | The dive (square) |
+| --- | --- | --- |
+| 41 | 0 starts, held `0x1000000` | 1 starts, held `0x400000` |
+| hit | 50: the charger's body touches PoizoCiv (`Human_OnContact`, `0x00219d50`): 600 → 569, **296** (crushing mid, front), held `0x402000` | 46: the dive's strike shape (`Human_TestStrikes`, `0x0033f110`): 600 → 574, **300** (crushing high, front) |
+| strike back | 51: PoizoCiv's flung body touches the charger (`Human_OnContact` again): **314 → 294**, the charger plays on in 0 (no reaction) | none: PoizoCiv's shapes test on from 57 and touch nothing; **314 throughout** |
+| end | 0 runs its clip to 67, then 410 (the run) | 1 runs to 101, then 389 |
+| PoizoCiv | 198 at 77, 196, 199 at 110 | 196 at 89, 199 at 106 |
+
+So the code's reading holds at runtime: a strike on a charger takes the 20 of an extreme reaction (the crushing
+reactions 296-303 switch every shape on) and the held `0x1000000` (`0x1c16a40` above) stops the reaction. The diver
+was clear of 300's spine and head shapes in this run; a diver whose body is inside a flung victim's shapes would lose
+the same 20 by the same code (inferred: the dive holds `0x400000`, in the same mask).
 
 **Coney fixes** (items 25 and 29):
 
@@ -2432,8 +2450,10 @@ on a charger or a diver takes its health (the extreme reactions' 20) and plays n
    drops, a victim whose clip holds any of `0x1c16a40` plays no reaction and is not interrupted. Before it, a charge
    into a human broke off on impact and the charger fell: the victim's crushing mid reaction (296-299) switches every
    strike shape on and its flung body struck the charger for 20 with a heavy high hit, which played 292-295 on him
-   (owner report, 2026-10-11). The dive escaped only by chance (inferred): its crushing high hit gives 300-303, which
-   strike with the spine and head alone. Still to do: a paired move's victim holding `0x400000` (Coney's paired clips
+   (owner report, 2026-10-11). The original takes the same 20 from the charger with no reaction (confirmed (runtime),
+   the run above). The dive escaped only by chance (inferred; no strike back in the run above): its crushing high hit
+   gives 300-303, which strike with the spine and head alone.
+   Still to do: a paired move's victim holding `0x400000` (Coney's paired clips
    hold no such flag yet).
 3. A lethal hit on a victim holding any of `0xc12200` does not start the dying reaction or break the pair at once:
    keep the health below 0 and let the victim's own paired clip finish (not the attacker's: 58 outlasts 57); then
@@ -2471,6 +2491,59 @@ civilian rose 2.0 s after the special's hit, the player (2750 ms) 2.78 s after a
 mashing is measured in [Being hit](#being-hit-runtime).
 
 The victim can act again when its reaction clip ends (standing), its stun ends, or its rise ends.
+
+#### Scripted knockdowns, stuns and hits {#scripted-knockdowns}
+
+What the script bindings `HuMakeGrounded`, `HuMakeBeatUp`, `HuSetStunned` and `HuSetDamage` do to a human
+([the bindings](../references/bindings/character.md#humakegrounded)). Confirmed (code) at the addresses; the runtime
+lines are from PCSX2 2.9.94, 2026-10-12, a copy of slot 6, the natives' functions called on PoizoCiv (brain held,
+`+0x09` = 1) through the `call-brains` hook, with `anim-dispatch`.
+
+- **The script's knockdown lies down at once in 196.** `Human_MakeGrounded` (`0x00234e58`, with true) and
+  `Human_MakeBeatUp` (`0x00234d70`) call `Human_KnockDown` (`0x0022f100`) with no attacker and no stun, which pushes
+  the grounded movement style 15; `Human_ApplyMoveStyle` (`0x00253688`) gives style 15 the idle 196
+  (`GROUNDED_IDLE`), and no reaction or fall clip is played. At runtime the human was in 196 on the next update,
+  straight from its standing clip, record state `0x40080000` (confirmed (runtime), both natives). `HuMakeBeatUp` also
+  empties the movement-style stack first and sets health to 1 and human flag `0x10` (runtime: health 600 → 1, flag
+  word `0x1` → `0x11`).
+- **The down latch is state `0x40000000`** (set by both natives through `Human_SetLying`, `0x00228388`; cleared by
+  `Human_ClearDownLatch` `0x002283a8`, which `HuMakeGrounded(false)` calls). Its test `Human_HasDownLatch`
+  (`0x002283c8`) has four readers:
+    - `Human_UpdateDown` (`0x00256a60`, at `0x00256b04`) tests it first: a latched human skips the whole down and stun
+      update, so it never rises (and a stun never ends) however long ago its ground time passed;
+    - `Humans_Update` (`0x00249558`): a latched human with record state `0x200000000` is not taken away (the branch to
+      `0x0021c7c8`);
+    - `Humans_Update` (`0x002495d8`): a latched human is not moved from hurt (`0x10000`) to state `0x80000000` when its
+      record `+0xf0` time passes (inferred from the branch; not run);
+    - `Humans_CullCorpses` (`0x002322b4`) skips it, and `Bum_GiveItem` (`0x002ac488`, `0x002ac51c`) tests it.
+
+  At runtime (confirmed (runtime)) a grounded human whose ground time (2000 ms) ended at update 66 lay in 196 until
+  the latch was cleared at update 150, then rose at once: 199 on update 151 (28 updates), then the idle 388. The rise
+  is the ordinary one ([Getting up](#reactions)): clearing the latch only lets `Human_UpdateDown` run again.
+  `HuMakeGrounded(true)` also writes the state code (record `+0x14`) 3, but at runtime it read 0 from the next update.
+- **`HuSetStunned`'s stun-immune bit is `0x100`**, the same bit as a hit's stun and `HuSetUnstunnable`: `Human_Stun`
+  (`0x0022f658`) returns at once when the byte at human `+0xe1` has bit **0** (`lbu` at `0x0022f68c` / `0x0022f6c8`,
+  then `andi 1`), which is flag word bit `0x100`. The binding page's "bit 1" was wrong. The endless-stun flag
+  `0x8000000` (`HuSetManualStun`) skips the test, and only when there is no attacker, as for `HuSetStunned`.
+  Confirmed (runtime): with `0x100` set, `HuSetStunned(true)` changed nothing; with it cleared, the human was stunned
+  at once (355, 356, state `0x100000`, movement style 14) for 750 ms (the class stun time; 23 updates), then 357.
+- **`HuSetDamage` with no attacker plays 275** on a standing human. `Human_AddPendingDamage` (`0x00264bd8`) stores no
+  hit code; `Human_ApplyPendingDamage` (`0x00265f70`) makes the victim its own foe (`Human_SetFoe(h, h)`), so
+  `Hit_PlayReaction` (`0x0026b0a0`) reads the default hit code 10 (`0x0a`: light, high, straight) and the side of the
+  victim's own position: the zero offset normalises to zero on the VU, both dot products are 0, so the side is 3
+  (`Hit_GetSideFromPoint`, `0x00267338`) and the direction (2 + 3) & 3 = 1, the left column: **275**
+  (light, high, left in [the table](#hit-codes)). Confirmed (runtime): 50 damage, 600 → 550, 275 on the
+  next update, then 389 and idle. The strength modifiers of [the reaction](#hit-codes) still apply (a victim with
+  flag `0x200` drops to strength 0 anyway; one with `0x80` is capped at 1). With an attacker the attacker's own
+  attack gives the code, as for a melee hit.
+- **The `react` argument is not a may-react flag.** It is stored in record `+0x11a`, which
+  `Human_ApplyPendingDamage` never reads; its only readers are `HitReact_WhileGrabbed` (`0x0026892c`, `0x00268948`,
+  `0x002689b0`) and `HitReact_WhileGrabbing` (`0x00268fa0`, `0x00268fbc`, `0x00269024`): for a third party's hit on a
+  pair holding `0x2000` (or a grabbed victim with flag `0x200`), a value of 2 or more plays the heavier paired
+  reaction (`0x7d` / `0x87` instead of `0x7b` / `0x85`). Confirmed (code). So a scripted hit always reacts unless the
+  usual held flags, flag `0x800` or a block stop it ([Moves a hit cannot stop](#protected-moves)). (The record table
+  above calls `+0x11a` "whether the hit may cause a reaction"; by these readers it is a hit weight for paired
+  reactions.)
 
 ### Knocked out, and the mission failing {#defeat}
 

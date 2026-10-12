@@ -550,7 +550,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
 | [`HuEnableSpeaking`](character.md#huenablespeaking) | Characters | traced | confirmed (code) | not implemented |
-| [`HuMakeGrounded`](character.md#humakegrounded) | Characters | traced | confirmed (code) | not implemented |
+| [`HuMakeGrounded`](character.md#humakegrounded) | Characters | traced | confirmed (runtime) | not implemented |
 | [`HuRubberNeck`](character.md#hurubberneck) | Characters | traced | inferred | implemented |
 | [`HuSetNoAutoLock`](character.md#husetnoautolock) | Characters | traced | inferred | implemented |
 | [`BrHasAttackers`](ai.md#brhasattackers) | AI | traced | confirmed (code) | not implemented |
@@ -697,7 +697,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`HuSetStunned`](character.md#husetstunned) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetStunned`](character.md#husetstunned) | Characters | traced | confirmed (runtime) | not implemented |
 | [`GoalLutherShooter`](ai.md#goalluthershooter) | AI | traced | confirmed (code) | not implemented |
 | [`HUDANLaunchEndScreen`](hud.md#hudanlaunchendscreen) | HUD and menus | traced | confirmed (code) | not implemented |
 | [`SoundSetSoundVolume`](sound.md#soundsetsoundvolume) | Sound and music | traced | confirmed (code) | not implemented |
