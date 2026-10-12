@@ -90,7 +90,8 @@ A slot holder without a place, or whose own next-attack time (`+0x1e8`) has not 
 ## Target switches and what interrupts a fight {#switches}
 
 1. **The fight goal ends** (and Melee re-scores, +3 for the previous target) when the target fails
-   `Brain_ValidateEnemy`, when he no longer holds a slot on him (displaced, [limits](#limits) rule 1), when the target is beyond
+   `Brain_ValidateEnemy`, when he no longer holds a slot on him (displaced, [limits](#limits) rule 1),
+   when the target is beyond
    5.5 m (unless he holds a throwable), every 30 updates when no straight walkable line is left, and at its deadline:
    4000 ms for every fight goal Melee pushes ([The durations](ai.md#fight-durations)), unless at that moment he still holds
    an active place on an attackable target and has no FollowAndDefend goal. So in a long brawl **every member
@@ -100,7 +101,8 @@ A slot holder without a place, or whose own next-attack time (`+0x1e8`) has not 
    sector 0** (straight ahead, ±22.5°). When that human is someone other than the target, a threat
    (`Brain_IsThreat` `0x00290138`: an enemy gang, or both players) and no GrabTarget goal (`0x1f`) is on the stack, he
    becomes the target with the slot **forced** (`Brain_SetTarget(brain, him, 1)`). Confirmed (code); this replaces
-   the "inferred" reading under [Starting a fight](ai.md#targets). The new target is not checked against the enemy list or
+   the "inferred" reading under [Starting a fight](ai.md#targets).
+   The new target is not checked against the enemy list or
    `Brain_ValidateEnemy` there: an enemy who steps in front of a fighter takes him over, and the next update's step 2
    ends the goal if he is not valid.
 3. **EngageEnemy** re-targets every 2 s to the nearest enemy he can see when the current one is beyond 5 m.
@@ -113,13 +115,15 @@ A slot holder without a place, or whose own next-attack time (`+0x1e8`) has not 
 ## Helping a gang-mate {#help}
 
 1. **Being hit or warned spreads the fight.** A member warned of an attack (event `0x10`) or hit (event 1) sends a
-   help call within 20 m ([Help calls](ai.md#help-calls), [The shared event handler](ai.md#shared-events)); a busy gang member
+   help call within 20 m ([Help calls](ai.md#help-calls),
+   [The shared event handler](ai.md#shared-events)); a busy gang member
    hit by a player calls within 30 m. Every hearer with no target, no held flags and free actions picks the side
    (`Brain_PickSideInFight` `0x002912b0`: his friend's attacker), starts a fight on him and pushes HelpRespond, which
    walks him over until he lists an enemy. A member who already has a target ignores the call: **help comes from the
    idle**.
 2. **A grabbed member does not call for help** (only a civilian in the Grabbed reaction does, every 30 updates within
-   10 m, [The fight reaction goals](ai.md#fight-reactions)). Mates are drawn by the score instead: a rear-grabbed enemy is
+   10 m, [The fight reaction goals](ai.md#fight-reactions)).
+   Mates are drawn by the score instead: a rear-grabbed enemy is
    +6 and +1 grabbed. The other way round, a member holding an enemy from behind **presents him** to a nearby friendly
    player ([Grabbing](ai.md#fight-reactions)), and an AI mate may start a tandem on a held enemy
    ([Combat moves: tandem](combat-moves.md#tandem-ai), issue #84).
