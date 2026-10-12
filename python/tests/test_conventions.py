@@ -200,6 +200,25 @@ BAD: list[tuple[str, tuple[tuple[str, object], ...], str]] = [
         r"forms\.bug\.labels: 'ghost'",
     ),
     ("a report label that is not a label", (("hygiene.report_issue.labels", ["ghost"]),), r"report_issue\.labels"),
+    ("a comment marker with a space", (("hygiene.comments.marker", "repo hygiene"),), r"comments\.marker: letters"),
+    (
+        "a comment marker that ends the HTML comment",
+        (("hygiene.comments.marker", "x-->"),),
+        r"comments\.marker: letters",
+    ),
+    (
+        "a comment flag that is text",
+        (("hygiene.comments.on_sweep", "no"),),
+        r"comments\.on_sweep: expected true or false",
+    ),
+    ("no comments per sweep", (("hygiene.comments.max_per_sweep", 0),), r"max_per_sweep: expected a whole"),
+    ("a comment author that is empty", (("hygiene.comments.author", ""),), r"comments\.author: expected non-empty"),
+    (
+        "a report-only check that is unknown",
+        (("hygiene.comments.report_only", ["issue.ghost"]),),
+        r"report_only: 'issue.ghost'",
+    ),
+    ("a missing comments key", (("hygiene.comments.on_events", REMOVE),), r"comments: missing the key 'on_events'"),
     ("a cli form that does not exist", (("issues.cli_uses_form", "wish"),), r"cli_uses_form: 'wish' is not a form"),
     (
         "a form section that is not a pair",
@@ -297,3 +316,14 @@ def test_a_form_keeps_its_sections_in_order() -> None:
 def test_the_real_data_survives_a_round_trip_through_changed() -> None:
     data: dict[str, Any] = changed()
     assert data == real_data()
+
+
+def test_the_comment_settings_start_at_warn_level() -> None:
+    comments = load_conventions(REPO).hygiene.comments
+    assert comments.marker == "coney-repo-hygiene" and comments.author == "github-actions[bot]"
+    assert comments.on_events and not comments.on_sweep and comments.max_per_sweep == 25
+    assert "pr.idle" in comments.report_only
+
+
+def test_no_report_only_check_is_allowed() -> None:
+    assert conventions_with(("hygiene.comments.report_only", [])).hygiene.comments.report_only == ()
