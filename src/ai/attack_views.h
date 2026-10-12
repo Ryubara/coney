@@ -66,7 +66,7 @@ enum class PickFilter : std::uint8_t { CanUse, CanStart };
 [[nodiscard]] bool grabbedFromRear(const Brain& target);
 
 /// Whether `who` is the nearest human in one of `sectors` of `owner`'s sector record, refreshed when older than
-/// kSectorAgeMs (docs/research/ai.md#neighbour-sectors).
+/// kSectorAgeMs (docs/research/ai-moving.md#neighbour-sectors).
 [[nodiscard]] bool nearestIn(Brain& owner, const Brain& who, std::initializer_list<int> sectors);
 
 /// Whether `attacker` is behind `target`: the nearest human in sector 3, 4 or 5 of T's record (`Brain_CheckAttack`'s

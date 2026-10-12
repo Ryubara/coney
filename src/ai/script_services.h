@@ -12,7 +12,8 @@
 // cheers). Every hook but brain() does nothing by default, so a world without scripts, scenes or clips still runs the
 // goals: a clip that cannot start ends its action at once, as the original's play-anim action does when its clip
 // fails.
-// Research: docs/research/ai.md#scripted, docs/research/ai.md#gang-events, docs/research/ai.md#tactics
+// Research: docs/research/ai-scripting.md#scripted, docs/research/ai-gangs.md#gang-events,
+// docs/research/ai-gangs.md#tactics
 
 namespace coney::ai {
 
@@ -20,9 +21,10 @@ class Brain;
 struct BrainEvent;
 
 /// A goal's Lua callback is scheduled this long after its End, ms: `ScheduleFuncArg2(name, handle, completed, 33)`
-/// (docs/research/ai.md#scripted).
+/// (docs/research/ai-scripting.md#scripted).
 inline constexpr std::uint32_t kGoalCallbackDelayMs = 33;
-/// The anim id of a human's dynamic animation slot (`GoalPlayDynAnimation`, docs/research/ai.md#dyn-animation).
+/// The anim id of a human's dynamic animation slot (`GoalPlayDynAnimation`,
+/// docs/research/ai-scripting.md#dyn-animation).
 inline constexpr int kDynamicAnimId = 668;
 
 /// The services a brain's scripted goals, its gang and the gang's tactic use; the level's scripted brains

@@ -175,11 +175,13 @@ happening; run them from the main checkout or any worktree.
 
 ```sh
 uv run --project python coney-tools workspace clean [--apply] [--build-hours N] [--worktree-hours N] [--fetch]
+    [--shell-hours N] [--log-idle-hours N]
 uv run --project python coney-tools workspace disk [--min-gb N]
 ```
 
 **`workspace clean`** is a dry run until `--apply` is given. It lists every worktree under `worktrees/coney/` and
-what it would do, then the bytes it would reclaim; with `--apply` it acts and prints the free space before and after.
+what it would do, then the bytes it would reclaim, then the stale processes; with `--apply` it acts and prints the
+free space before and after.
 
 * **Removes a worktree** (`git worktree remove`, then its local branch) when all of these hold: no uncommitted
   changes (untracked files count), no `.coney-busy` file, not locked by git, not the folder you run it from, untouched
@@ -197,6 +199,19 @@ what it would do, then the bytes it would reclaim; with `--apply` it acts and pr
   only names them; the loose files and logs in `worktrees/coney/` are for you to delete). A worktree whose folder is
   gone has its record pruned.
 * Read-only files (git's packs, some tools' output) are cleared before deleting, and long Windows paths work.
+* **Stops stale processes** (the tree under each, by process id, never by name;
+  [`stale_processes.py`](repo:python/src/coney_tools/stale_processes.py)):
+    * *a stale wait*: a shell (bash, sh, zsh, pwsh, PowerShell) older than `--shell-hours` (default 3) whose command
+      sleeps in an `until` or `while` loop, when every file the loop reads (named in it, or held in a variable it
+      reads: `f=/c/x/build.log; while ...; grep "$f"`) has not changed for `--log-idle-hours` (default 1) or does not
+      exist. The run it waits for has died, so it would wait for ever and keep its finished agent listed as running.
+      A loop that names no file it can check is never judged;
+    * *an orphaned test run*: a `ctest` or `coney_tests` whose parent process is gone (or whose parent's pid now
+      belongs to a younger process). Nobody reads its result, and an orphaned `ctest` goes on starting tests.
+
+  It never stops the process running `clean` or any of its ancestors, and lists only the topmost stale process of a
+  tree. On 2026-10-12 twenty such shells, hours old, and an orphaned `ctest` were found and killed by hand; the
+  [bounded-waits hook](agents.md#bounded-waits) keeps new ones from being started.
 
 **The busy file.** An agent creates an empty `.coney-busy` in its worktree root as it starts and deletes it when it is
 done (`touch .coney-busy`; it is in `.gitignore`). While it exists, `clean` leaves that worktree and its `build/`

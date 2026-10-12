@@ -34,8 +34,8 @@ ActionStatus MoveToHumanAction::update(Brain& brain) {
     const human::Speeds& speeds = brain.human().speeds();
     const anim::Vec3 position = brain.human().position();
     const anim::Vec3 way = anim::subtract(target->human().position(), position);
-    // The aim, 2 m along the move (radius 0), as the original's update sets it (docs/research/ai.md#move-melee): in a
-    // fight stance the feet strafe toward it while the facing turns to the heading.
+    // The aim, 2 m along the move (radius 0), as the original's update sets it (docs/research/ai-moving.md#move-melee):
+    // in a fight stance the feet strafe toward it while the facing turns to the heading.
     const float length = std::hypot(way.x, way.y);
     if (length > 1e-4F) {
         brain.setMoveAim(anim::add(position, anim::Vec3{kAimAhead * way.x / length, kAimAhead * way.y / length, 0.0F}),

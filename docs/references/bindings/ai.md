@@ -218,7 +218,7 @@ then ends; it does not keep facing it. Scripts use it to make extras look at the
 
 **Notes.** Wrapper 0x002fe0c8, action set-up 0x002fe160 (a turn action, 0x002fdc28, with the target kept at `+0x1c`,
 vtable 0x005430a0); update 0x002fe1b0 / 0x002fdd08 writes the heading to the target into brain `+0x110` each update.
-Behaviour: [AI](../../research/ai.md#look-at).
+Behaviour: [AI](../../research/ai-scripting.md#look-at).
 
 - **Evidence:** confirmed (code) at `0x002fe0c8`; detail: traced
 - **Wrapper** `0x003647d8` (registered by `RegisterBindings`); **calls** `0x002fe0c8` `Action_LookAt`
@@ -318,7 +318,7 @@ ActTurnToDir(human, heading, turnSpeed, delayMs)
 
 Queues a turn action on the human's brain towards a world heading (converted to radians, action `+0x0c`). After the
 delay the human turns, through brain `+0x110`, until it faces the heading within 15°, then the action ends; it gives up
-after 3 s ([AI: turning](../../research/ai.md#look-at)).
+after 3 s ([AI: turning](../../research/ai-scripting.md#look-at)).
 
 **Notes.** The base turn action (vtable 0x00543160: Start 0x002fdc68, Update 0x002fdd08). It is an action, not a goal,
 so it runs after any actions already queued; a human busy in some states (record `+0x08` has any of 0x1c16a40) skips it.
@@ -845,7 +845,7 @@ Sets how many formation slots a leader has for followers such as the player's ga
 follow formation, made on first use (human `+0x1a4`, not the brain's).
 
 **Notes.** Confirmed (code) at 0x00295dd8: `count` is the number of slots (`+0x271`), `count2` how many followers may
-take one (`+0x272`); the rest queue behind them. Behaviour: [AI](../../research/ai.md#formations).
+take one (`+0x272`); the rest queue behind them. Behaviour: [AI](../../research/ai-gangs.md#formations).
 
 - **Evidence:** confirmed (code) at `0x00292a60`; detail: traced
 - **Wrapper** `0x0035fc80` (registered by `RegisterBindings`); **calls** `0x00292a60` `Follow_SetSlotCount`
@@ -1090,7 +1090,8 @@ Makes a human face another human, typically the player, and play a scene when it
 script. The human turns but never walks.
 
 **Notes.** Constructor 0x002cc408 interns the callback name through the script system (slot +0xcc). It resolves the
-speaker without checking it is a human. Process 0x002cc588. Behaviour: [AI](../../research/ai.md#address-person).
+speaker without checking it is a human. Process 0x002cc588. Behaviour:
+[AI](../../research/ai-scripting.md#address-person).
 
 - **Evidence:** confirmed (code) at `0x002cc348`; detail: traced
 - **Wrapper** `0x003603a8` (registered by `RegisterBindings`); **calls** `0x002cc348` `Goal_AddressPerson`
@@ -1494,8 +1495,8 @@ GoalCallPolice(human, crime, pos, victim, offender)
 Pushes a call-the-police goal (vtable 0x0053f7f0) on the witness. He turns to the offender, points (anim 0x29c) and says
 `rat` (speech command 33), then gets a spinning icon and a radar blip and runs (gait 4) to a phone flag, queueing behind
 anyone using it (`hurryup`), or toward the crime scene. He phones for 6 s saying `phone_cop` (84), then reports the
-crime (crime report with mode 1, so police responders come, [AI: crimes](../../research/ai.md#crimes)), loses the icon
-and blip, and flees to the nearest exit flag (screaming if he was attacked) or cowers.
+crime (crime report with mode 1, so police responders come, [AI: crimes](../../research/ai-gangs.md#crimes)), loses the
+icon and blip, and flees to the nearest exit flag (screaming if he was attacked) or cowers.
 
 **Notes.** Interrupting him (brain `+0x284`, as when he is hit) skips to the end without a report. The report is also
 skipped when the offender no longer resolves. 0x0041cfe8 records the current caller on the game state at start and
@@ -1693,7 +1694,7 @@ catches it. It ends when the gang has no member or no live member left.
 within (1.1 × runner `+0x140`)² (a squared reach against metres); it then sets threat response 2 and pushes goals
 0x002ade10 (2000, 2000) and, in the first case, an engage-enemy goal (0x47). Chaser choice: 0x002e1c18; hindmost
 segment: 0x002e1b60. Start / Resume / End save and restore the threat response, the field of view (2π while it runs) and
-a brain byte. Full behaviour: [AI: GoalDevilRun](../../research/ai.md#devil-run).
+a brain byte. Full behaviour: [AI: GoalDevilRun](../../research/ai-scripting.md#devil-run).
 
 - **Evidence:** confirmed (code) at `0x002e1760`, `0x002e1850`, `0x002e2230`; detail: traced
 - **Wrapper** `0x00360d98` (registered by `RegisterBindings`); **calls** `0x002e1760` `Goal_DevilRun`, `0x002e1850`
@@ -1775,7 +1776,7 @@ alive, or a move fails.
 
 **Notes.** Fixed values from the binding: distance 0.75 m, no turn-to-leader mode. On a player-type brain (kind 3) it
 sets human flags 0x300 while it runs (no stun, weaker reactions). Every 15 updates without a route it may look for
-another target (0x0029d5f0). Formations: [AI](../../research/ai.md#formations).
+another target (0x0029d5f0). Formations: [AI](../../research/ai-gangs.md#formations).
 
 - **Evidence:** confirmed (code) at `0x002dfb00`, `0x002dfba8`, `0x002dfcd0`, `0x002e0088`; detail: traced
 - **Wrapper** `0x003607f8` (registered by `RegisterBindings`); **calls** `0x002dfb00` `Goal_FollowFormation`,
@@ -1926,7 +1927,8 @@ it and, on station, turns to `heading`. It ends when the flag no longer exists. 
 push goal 63 (LeftTurf, back to the brain's home `+0x230`) on top.
 
 **Notes.** Event handler 0x002b7bc0 pushes LeftTurf (0x002f8c90) for any event it gets. The callback follows the shared
-rule of [AI: scripted goals](../../research/ai.md#scripted). How the base goal uses `+0x08` is not traced here.
+rule of [AI: scripted goals](../../research/ai-scripting.md#scripted). How the base goal uses `+0x08` is not traced
+here.
 
 - **Evidence:** confirmed (code) at `0x002b79b8`, `0x002b7a90`, `0x002b7c18`; detail: traced
 - **Wrapper** `0x00360f28` (registered by `RegisterBindings`); **calls** `0x002b79b8` `Goal_GuardFlag`, `0x002b7a90`
@@ -2711,7 +2713,7 @@ neither, a started fight, `acts` acts or the nearest player leaving the gang's t
 **Notes.** States at goal `+0x36`: 0 roam, 1 smash, 2 loot, 3 leave (RiotGoal_Process 0x002d1c38). Fight choice:
 RiotGoal_TryPickFight 0x002d1288 (only for a gang-soldier brain, type 2). The gate 0x0028ff58 is whether the nearest
 player stands in the rioter's gang's turf. Roaming, targets and the fight's end: [AI:
-GoalRiot](../../research/ai.md#riot).
+GoalRiot](../../research/ai-scripting.md#riot).
 
 - **Evidence:** confirmed (code) at `0x002d0e98`, `0x002d0f68`; detail: traced
 - **Wrapper** `0x00363268` (registered by `RegisterBindings`); **calls** `0x002d0e98` `Goal_Riot`, `0x002d0f68`
@@ -2975,7 +2977,7 @@ the target when it is more than 15 degrees off. Without a slot it stays where it
 the target is gone. The mission-1 combat tutorial uses it for a sparring partner.
 
 **Notes.** Constructor 0x002df250, start 0x002df288 (joins the formation), update 0x002df3c0 (walks at gait 2; also
-refreshes its actions every 40 updates). Behaviour: [AI](../../research/ai.md#formations).
+refreshes its actions every 40 updates). Behaviour: [AI](../../research/ai-gangs.md#formations).
 
 - **Evidence:** confirmed (code) at `0x002df1a8`; detail: traced
 - **Wrapper** `0x00360690` (registered by `RegisterBindings`); **calls** `0x002df1a8` `Goal_TrackHuman`
@@ -3164,7 +3166,7 @@ has an enemy (checked each second) and 13 `TacMemberDied` when a member dies.
 
 **Notes.** Constructor 0x003075c8 (vtable 0x00543320): Start 0x00307fe0, Process 0x003081a8, event 0x00308478. A gang
 with `+0xd9` set also starts one of seven coordinated sub-tactics every 7 s (0x00307a10). Behaviour:
-[AI](../../research/ai.md#tactic-kinds), [Gang fights](../../research/gang-fights.md).
+[AI](../../research/ai-gangs.md#tactic-kinds), [Gang fights](../../research/gang-fights.md).
 
 - **Evidence:** confirmed (code) at `0x00307548`; detail: traced
 - **Wrapper** `0x00375370` (registered by `RegisterBindings`); **calls** `0x00307548` `Tactic_Attack`
@@ -3197,7 +3199,7 @@ and throws things at him.
 
 **Notes.** Constructor 0x003085d8 (vtable 0x00543380): Start 0x00308790 (0x00308698), event 0x003087c0 (hit 5, attack
 6); Process always 0. The goal (vtable 0x005419b0, Process 0x002e3630) re-picks the nearest enemy every 1.5 s and flees
-at gait 5 (4 when the human is tired) unless `gait` is given. Behaviour: [AI](../../research/ai.md#tactic-kinds).
+at gait 5 (4 when the human is tired) unless `gait` is given. Behaviour: [AI](../../research/ai-gangs.md#tactic-kinds).
 
 - **Evidence:** confirmed (code) at `0x00316988`; detail: traced
 - **Wrapper** `0x00375d98` (registered by `RegisterBindings`); **calls** `0x00316988` `Tactic_AvoidEnemies`
@@ -3581,7 +3583,7 @@ within `approachRange`, 1 inside `criticalRange`, 2 when they part again and 9 w
 
 **Notes.** Constructor 0x0030e670 (vtable 0x00543740): Start 0x0030ec20, Process 0x0030eec0 (every 250 ms; posture every
 500 ms), event 0x0030f408. With no route between the leaders it returns 1 when the other leader is in view, else 9.
-Behaviour: [AI](../../research/ai.md#tactic-kinds).
+Behaviour: [AI](../../research/ai-gangs.md#tactic-kinds).
 
 - **Evidence:** confirmed (code) at `0x00316dd8`; detail: traced
 - **Wrapper** `0x00376408` (registered by `RegisterBindings`); **calls** `0x00316dd8` `Tactic_Confront`
@@ -3635,7 +3637,7 @@ callback gets 11 `TacHumanToDefendDead` when he dies and 9 `TacNoEnemies` when n
 
 **Notes.** Constructor 0x003101d8 (vtable 0x00543800): Start 0x00310618, Process 0x00310768 (every 1.5 s), event
 0x00310a60. The formation uses set 3 with two slots per member (up to 9). Behaviour:
-[AI](../../research/ai.md#tactic-kinds).
+[AI](../../research/ai-gangs.md#tactic-kinds).
 
 - **Evidence:** confirmed (code) at `0x00315d98`; detail: traced
 - **Wrapper** `0x00374c18` (registered by `RegisterBindings`); **calls** `0x00315d98` `Tactic_Defend`
@@ -3722,7 +3724,8 @@ Has a gang hang out round a flag (type 0x18): each member gets a `HangOut` goal 
 members banter every 3 s, and the callback gets the shared hit, sighting and attack codes (5, 4, 3, 6).
 
 **Notes.** Constructor 0x00311ad8 (vtable 0x00543920): Start 0x00312348, Process 0x00312518, event 0x00312580. Start
-also substitutes anim 0x25b with eight hang-out idles (0x00511480). Behaviour: [AI](../../research/ai.md#tactic-kinds).
+also substitutes anim 0x25b with eight hang-out idles (0x00511480). Behaviour:
+[AI](../../research/ai-gangs.md#tactic-kinds).
 
 - **Evidence:** confirmed (code) at `0x00315fc8`; detail: traced
 - **Wrapper** `0x00374f00` (registered by `RegisterBindings`); **calls** `0x00315fc8` `Tactic_HanginOut`
@@ -3755,7 +3758,7 @@ after `hits` hits on members within `window` seconds, 13 when a defender falls a
 
 **Notes.** Constructor 0x00313f38 (vtable 0x00543a40): Start 0x00314038, Process 0x00314538 (every 1.75 s), event
 0x003147a0. The defenders are min(line length in metres, 60 % of the members). Behaviour:
-[AI](../../research/ai.md#tactic-kinds).
+[AI](../../research/ai-gangs.md#tactic-kinds).
 
 - **Evidence:** confirmed (code) at `0x00313e30`; detail: traced
 - **Wrapper** `0x00374ab8` (registered by `RegisterBindings`); **calls** `0x00313e30` `Tactic_HoldTheLine`
@@ -3785,7 +3788,7 @@ attack breaks the members off their idle animations and the callback gets 15 `Ta
 it gets the shared codes.
 
 **Notes.** Constructor 0x003149f0 (vtable 0x00543aa0): Start 0x00314f38, Process 0x003150c8, event 0x00315228.
-Behaviour: [AI](../../research/ai.md#tactic-kinds).
+Behaviour: [AI](../../research/ai-gangs.md#tactic-kinds).
 
 - **Evidence:** confirmed (code) at `0x00316ee8`; detail: traced
 - **Wrapper** `0x00376718` (registered by `RegisterBindings`); **calls** `0x00316ee8` `Tactic_Idle`
@@ -3841,7 +3844,7 @@ Has a gang man a pile of throwables (type 6): each member gets a `ManWeaponPile`
 gets 13 `TacMemberDied` when a member dies, and the hit and attack codes.
 
 **Notes.** Constructor 0x00317050 (vtable 0x00543b60): Start 0x00317218 (0x00317108), event 0x00317350. The goal's own
-behaviour (0x002a3320, goal type 82) is not traced here. Behaviour: [AI](../../research/ai.md#tactic-kinds).
+behaviour (0x002a3320, goal type 82) is not traced here. Behaviour: [AI](../../research/ai-gangs.md#tactic-kinds).
 
 - **Evidence:** confirmed (code) at `0x00316a68`; detail: traced
 - **Wrapper** `0x00375ef8` (registered by `RegisterBindings`); **calls** `0x00316a68` `Tactic_ManWeaponPile`
@@ -3870,7 +3873,7 @@ Has a gang walk together to a flag (type 0x19): the leader gets a `MoveToFlag` g
 formation 3 m apart; the callback gets 8 `TacArrived` when the leader arrives, and the shared hit and sighting codes.
 
 **Notes.** Constructor 0x00317410 (vtable 0x00543bc0): Start 0x00317700 (0x003174e8), Process 0x00317ad0, event
-0x00317b38. No time limit. Behaviour: [AI](../../research/ai.md#tactic-kinds).
+0x00317b38. No time limit. Behaviour: [AI](../../research/ai-gangs.md#tactic-kinds).
 
 - **Evidence:** confirmed (code) at `0x00316298`; detail: traced
 - **Wrapper** `0x003753d0` (registered by `RegisterBindings`); **calls** `0x00316298` `Tactic_MoveToFlag`
@@ -3897,10 +3900,11 @@ TacticPathScout(gang, callCount, callDelaySec, range, flags, loop, callback, opt
 
 **Returns** nothing.
 
-The path form of TacticScout (type 0x27, vtable 0x00543da0, [AI: tactic kinds](../../research/ai.md#tactic-kinds)):
-every non-player member gets a `PathScout` goal (112) walking the flag route, with anim 0x29c (scouting) substituted
-gang-wide. A member who is hit, attacks or spots an enemy fights him and, when a gang-dispatch spawner exists, calls his
-gang: the call queues `callCount` responders due after `callDelaySec` seconds at his position (as GangQueueResponders).
+The path form of TacticScout (type 0x27, vtable 0x00543da0, [AI: tactic
+kinds](../../research/ai-gangs.md#tactic-kinds)): every non-player member gets a `PathScout` goal (112) walking the flag
+route, with anim 0x29c (scouting) substituted gang-wide. A member who is hit, attacks or spots an enemy fights him and,
+when a gang-dispatch spawner exists, calls his gang: the call queues `callCount` responders due after `callDelaySec`
+seconds at his position (as GangQueueResponders).
 
 **Notes.** The call is skipped when the target's gang already has a wanted timer (`+0x5f0`) or the crime rules refuse
 (0x0041d088). What `option` does inside the PathScout goal (vtable 0x00541050) is not traced.
@@ -3937,7 +3941,7 @@ gets 7 `TacInRange` when a member sees a target within `range` (who becomes his 
 target gang is gone or the search after losing it runs out.
 
 **Notes.** Constructor 0x00317c40 (vtable 0x00543c20): Start 0x00317f20, Process 0x003183b8 (every 150 ms), event
-0x00318770. Hits by a player's gang do not fire `TacDamage`. Behaviour: [AI](../../research/ai.md#tactic-kinds).
+0x00318770. Hits by a player's gang do not fire `TacDamage`. Behaviour: [AI](../../research/ai-gangs.md#tactic-kinds).
 
 - **Evidence:** confirmed (code) at `0x00315ee8`; detail: traced
 - **Wrapper** `0x00374d90` (registered by `RegisterBindings`); **calls** `0x00315ee8` `Tactic_Pursue`
@@ -4014,7 +4018,8 @@ a member hit, attacked or spotting someone fights him and calls his gang over, a
 whether any member is fighting (checked every 200 ms). No code is sent from Process.
 
 **Notes.** Constructor 0x0031a430 (vtable 0x00543da0): Start 0x0031af98, Process 0x0031b030, event 0x0031b1b0
-(0x0031a818). Behaviour: [Stealth: scouts](../../research/stealth.md#scouts), [AI](../../research/ai.md#tactic-kinds).
+(0x0031a818). Behaviour: [Stealth: scouts](../../research/stealth.md#scouts),
+[AI](../../research/ai-gangs.md#tactic-kinds).
 
 - **Evidence:** confirmed (code) at `0x0031a268`; detail: traced
 - **Wrapper** `0x003776d8` (registered by `RegisterBindings`); **calls** `0x0031a268` `Tactic_Scout`
@@ -4100,7 +4105,7 @@ Has a gang loot a zone (type 0x1d): each member gets a `Steal` goal for the zone
 and sighting codes.
 
 **Notes.** Constructor 0x0031c030 (vtable 0x00543ec0): Start 0x0031c1d0 (0x0031c0e0), event 0x0031c258; Process always
-0. Behaviour: [AI](../../research/ai.md#tactic-kinds).
+0. Behaviour: [AI](../../research/ai-gangs.md#tactic-kinds).
 
 - **Evidence:** confirmed (code) at `0x00316638`; detail: traced
 - **Wrapper** `0x00375930` (registered by `RegisterBindings`); **calls** `0x00316638` `Tactic_Steal`
@@ -4160,7 +4165,7 @@ sighting codes.
 
 **Notes.** Constructor 0x0031cbc0 (vtable 0x00543f80): Start 0x0031cf80, Process 0x0031d460, event 0x0031d758. A free
 member near the leader may stop to use a nearby usable flag (inferred). Behaviour:
-[AI](../../research/ai.md#tactic-kinds).
+[AI](../../research/ai-gangs.md#tactic-kinds).
 
 - **Evidence:** confirmed (code) at `0x003161a0`; detail: traced
 - **Wrapper** `0x003751d0` (registered by `RegisterBindings`); **calls** `0x003161a0` `Tactic_TravelPath`
@@ -4185,7 +4190,7 @@ TacticTrigger(gang, what, enabled)
 Drives a gang running a crowd tactic (`TacticCrowd`, type 0x1b); does nothing for other tactics. With `what` 0 the
 crowd's periodic switch makes every free member react on each cheer tick (every 2 s); with `what` 1 every free member
 reacts once at once: a gesture clip (anim 0x8f, or 0xb1 when `enabled` is 0) after 0-750 ms, then one of three cheers
-([AI: TacticCrowd](../../research/ai.md#tactics)).
+([AI: TacticCrowd](../../research/ai-gangs.md#tactics)).
 
 **Notes.** The reaction is 0x0030fc48; with `what` 0 a reaction tick picks anim 0x10 instead of 0x8f half the time.
 Members with queued actions are skipped.
@@ -4219,7 +4224,7 @@ nearest player comes within `range` of the flag they leave it and the callback g
 
 **Notes.** Constructor 0x0031d878 (vtable 0x00543fe0): Start 0x0031dc28, Process 0x0031e098 (every second), event
 0x0031e280. Hits, sightings and attacks alert the members without calling back. Behaviour:
-[AI](../../research/ai.md#tactic-kinds).
+[AI](../../research/ai-gangs.md#tactic-kinds).
 
 - **Evidence:** confirmed (code) at `0x00316ca0`; detail: traced
 - **Wrapper** `0x003761e8` (registered by `RegisterBindings`); **calls** `0x00316ca0` `Tactic_UseFlag`
@@ -4249,7 +4254,7 @@ Has a gang wreck a zone (type 0x1c): each member gets a `Destroy` goal for the z
 
 **Notes.** Constructor 0x0031e3b8 (vtable 0x00544040): Start 0x0031e5f8, Process 0x0031ea00, event 0x0031eaf0. The
 constructor can also take up to four objects instead of a zone; the binding never passes any. Behaviour:
-[AI](../../research/ai.md#tactic-kinds).
+[AI](../../research/ai-gangs.md#tactic-kinds).
 
 - **Evidence:** confirmed (code) at `0x003164e0`; detail: traced
 - **Wrapper** `0x003756c8` (registered by `RegisterBindings`); **calls** `0x003164e0` `Tactic_Vandalize`
@@ -4308,7 +4313,7 @@ enemy gang is within `range` (checked each second) and 8 `TacArrived`.
 
 **Notes.** Constructor 0x0031ec90 (vtable 0x005440a0): Start 0x0031ef28, Process 0x0031efb8, event 0x0031f268. Start
 substitutes anim 0x253 with four swagger anims (0x00511620) and says the `shadow_spot` line. Behaviour:
-[AI](../../research/ai.md#tactic-kinds).
+[AI](../../research/ai-gangs.md#tactic-kinds).
 
 - **Evidence:** confirmed (code) at `0x00315e48`; detail: traced
 - **Wrapper** `0x00374cd0` (registered by `RegisterBindings`); **calls** `0x00315e48` `Tactic_WalkinTall`
@@ -4343,7 +4348,7 @@ shared hit and sighting codes.
 
 **Notes.** Constructor 0x0031f300 (vtable 0x00544100): Start 0x0031f638 (0x0031f410), Process 0x00320360 (world flags
 0x0031fb80, vandalism 0x0031fdc0, theft 0x003200c8), event 0x00320410. Behaviour:
-[AI](../../research/ai.md#tactic-kinds).
+[AI](../../research/ai-gangs.md#tactic-kinds).
 
 - **Evidence:** confirmed (code) at `0x003160a8`; detail: traced
 - **Wrapper** `0x00375038` (registered by `RegisterBindings`); **calls** `0x003160a8` `Tactic_Wander`
