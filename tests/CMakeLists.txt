@@ -373,7 +373,8 @@ target_sources(coney_tests PRIVATE
     ai/rumble_tactics_test.cpp
     ai/swap_prompt_test.cpp
     ai/tactics_test.cpp
-    ai/targeting_test.cpp)
+    ai/targeting_test.cpp
+    ai/threats_test.cpp)
 # The sound engine, its data and streams, the mixer and the game-facing sound calls (docs/research/sound.md).
 target_sources(coney_tests PRIVATE audio/adpcm_test.cpp audio/disc_sound_test.cpp audio/game_sound_test.cpp
                                    audio/mixer_test.cpp audio/music_player_test.cpp audio/object_sounds_test.cpp

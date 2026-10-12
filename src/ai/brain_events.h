@@ -38,8 +38,8 @@ void broadcastHelpCall(Brain& caller, float range, Brain* aggressor, int value =
 
 /// The side `hearer` takes in the violence `event` reports (`Brain_PickSideInFight`): the aggressor (the victim's
 /// target when none is named) when he is a threat to the hearer; a stranger hitting the hearer's friend is made one,
-/// the gangs made enemies (not by a cop); else the victim when only the aggressor is a friend; else none. **Coney
-/// stand-in**: a threat is a man on his enemy list or of an enemy gang (`Brain_IsThreatTo` is not researched).
+/// the gangs made enemies (not by a cop); else the victim when only the aggressor is a friend; else none. A threat
+/// is one ai::isThreat() names (`Human_IsThreatTo`).
 /// @orig 0x002912b0 Brain_PickSideInFight (unknown)
 Brain* pickSideInFight(Brain& hearer, const BrainEvent& event);
 
