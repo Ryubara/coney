@@ -6,7 +6,7 @@
 #include <string>
 #include <string_view>
 
-// The all-humans trace (`--trace-humans FILE`, docs/guides/building.md#tracing): one CSV row per human per update,
+// The all-humans trace (`--trace-humans FILE`, docs/guides/running.md#tracing): one CSV row per human per update,
 // with what a gang fight is judged by (where each human stands and faces, its goals, its target and who else attacks
 // it, its attacks, blocks, grabs and falls), so a big fight can be compared with the original's by behaviour
 // statistics (`coney-tools trace fight-report`). The columns the player's trace and the original's recorder share

@@ -10,7 +10,7 @@
 // The player's trace: one CSV line per step with what a feel or combat comparison reads (the human's feet, heading,
 // speeds, gait, clip and state; the follow camera's position, look-at point, wanted position, distance, angles, band
 // and auto-centre turn; the command, health and power), so a scripted run can be compared with the original's
-// per-update trace (`--trace FILE`, docs/guides/building.md#tracing; `coney-tools trace diff`). The columns the
+// per-update trace (`--trace FILE`, docs/guides/running.md#tracing; `coney-tools trace diff`). The columns the
 // original also has carry the same names as `coney-tools pcsx2 record`'s. Coney's own tool; the original has none.
 // Research: docs/research/feel.md#method
 

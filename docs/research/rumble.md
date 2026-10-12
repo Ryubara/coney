@@ -424,12 +424,12 @@ with a 1,500 ms stand-in for any announcer line whose length it does not know.
 
 ## Coney's implementation {#coney}
 
-A Brawl (1 ON 1 or WAR PARTY) plays to its end, won or lost ([Building: QUICK RUMBLE](../guides/building.md)): the
-set-up menus, the arena script's sides, the intro and countdown, the other side's fighters, the knockdown, the player's
-revival and hand-over, the winner's cheer, the win camera and the result screen with its three paths. King of the hill
-plays to its result screen when the player holds the top, Battle royal when one side is rung out, Survival when
-the spawned enemies have beaten the player, and Wheelchair when the CPU racer finishes. Tag battle and Mercy are not
-built yet.
+A Brawl (1 ON 1 or WAR PARTY) plays to its end, won or lost
+([Running Coney: QUICK RUMBLE](../guides/running.md#loading-entries-from-your-disc)): the set-up menus, the arena
+script's sides, the intro and countdown, the other side's fighters, the knockdown, the player's revival and hand-over,
+the winner's cheer, the win camera and the result screen with its three paths. King of the hill plays to its result
+screen when the player holds the top, Battle royal when one side is rung out, Survival when the spawned enemies have
+beaten the player, and Wheelchair when the CPU racer finishes. Tag battle and Mercy are not built yet.
 
 - **Intro** (`repo:src/gui/rumble_mode_gui/rumble_intro.h`, drawn over play by
   `repo:src/gamemodes/rumble_intro_layer.h`): `ShowRumbleModeIntro` is held until the level's first frame, because
@@ -443,7 +443,7 @@ built yet.
   the follow camera drive him, his brain becomes the player's, and the human left behind fights as his class; the
   shared camera targets follow. The revival (`HuRevive` after 4 s) and the new player's cue (`SoundPlay2D`) are the
   scripts' own.
-- **Every fighter AI-driven** (`--ai-player`, a test aid, [Building: tracing](../guides/building.md#tracing)): when the
+- **Every fighter AI-driven** (`--ai-player`, a test aid, [Running: tracing](../guides/running.md#tracing)): when the
   countdown ends (after `FinishCountdown` and `StartIt`), player 1 is released as `Human_ReleasePlayer`
   ([Characters](characters.md#players), `0x0022a2a8`) releases a human with no one taking the pad
   (`repo:src/ai/ai_humans.h`): his brain goes back to his class's type with its goals and actions cleared, his flags are
