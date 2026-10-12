@@ -9,7 +9,7 @@
 
 // The play-anim action: the human stands and plays one clip by anim id, and the action lasts as long as the clip
 // holds the record flags it started with. A clip that cannot start ends the action at once.
-// Research: docs/research/ai.md#dyn-animation, docs/research/ai.md#tactics
+// Research: docs/research/ai-scripting.md#dyn-animation, docs/research/ai-gangs.md#tactics
 
 namespace coney::ai {
 

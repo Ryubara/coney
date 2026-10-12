@@ -10,7 +10,7 @@
 // TacticConfront: a gang squares up to another. Its members close in on the other gang's leader, and the tactic tells
 // its callback how near the two leaders are: in approach range (7), in critical range (1, where the arena scripts
 // switch to an attack), out of approach range again (2), or apart with no way between (9).
-// Research: docs/research/ai.md#tactic-kinds, docs/references/bindings/ai.md#tacticconfront
+// Research: docs/research/ai-gangs.md#tactic-kinds, docs/references/bindings/ai.md#tacticconfront
 
 namespace coney::ai {
 

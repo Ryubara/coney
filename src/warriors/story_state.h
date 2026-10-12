@@ -12,7 +12,7 @@
 // flag, the music switches, the spawn cap, the tagging set-up, the civilians' and the AI's configuration and the
 // models a level asks to keep. Each field cites where the original keeps it. GameState holds one
 // (warriors/game_state.h); a level reset (resetForLevel()) clears what the original's level reset clears.
-// Research: docs/references/bindings/story.md, docs/research/ai.md#warrior-commands
+// Research: docs/references/bindings/story.md, docs/research/ai-gangs.md#warrior-commands
 
 namespace coney {
 

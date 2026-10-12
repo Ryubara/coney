@@ -11,7 +11,7 @@
 // GoalDealer: a street dealer who stands at his spot, never fights while dealing, turns to the player, greets him the
 // first time he comes in range and deals once he stands close; an enemy close by makes him wary for a while. Leaving
 // after a deal sends him off (states 4 and 5).
-// Research: docs/research/ai.md#dealer
+// Research: docs/research/ai-scripting.md#dealer
 
 namespace coney::ai {
 
@@ -51,7 +51,7 @@ struct DealTerms {
 /// The terms of a dealer of `type` (dealerTypeFor()): 0 the flash, 1 weapons, 2 spray paint; nothing for another.
 [[nodiscard]] std::optional<DealTerms> dealTerms(int type);
 
-/// How a buyer's triangle at a dealing dealer ends (docs/research/ai.md#dealer).
+/// How a buyer's triangle at a dealing dealer ends (docs/research/ai-scripting.md#dealer).
 enum class DealOutcome : std::uint8_t {
     NoCash,      ///< Less money than the price: the offer is withdrawn.
     AtLimit,     ///< Already carrying the most: the offer is withdrawn.
@@ -65,7 +65,7 @@ enum class DealOutcome : std::uint8_t {
 inline constexpr float kDealReach = 1.75F;
 /// The most money a dealer holds.
 inline constexpr int kDealerMostMoney = 999;
-/// The dealer's speech commands (docs/research/ai.md#dealer) and the least time between two `cash` lines, ms.
+/// The dealer's speech commands (docs/research/ai-scripting.md#dealer) and the least time between two `cash` lines, ms.
 inline constexpr std::uint32_t kDealGreetLine = 94;
 inline constexpr std::uint32_t kDealCashLine = 96;
 inline constexpr std::uint32_t kDealOfferLine = 95;
@@ -78,7 +78,7 @@ inline constexpr std::uint32_t kDealRipOffLine = 105;
 inline constexpr std::uint64_t kDealCashLineMs = 5000;
 
 /// The gesture anim ids: 603 `ANIM_FIDGET_FIGHT` and 668 `ANIM_SPECIAL_ACTION`, and the gang kind whose clip table
-/// fills them with the dealer's clips (`GangCreate(24, "FDealer")`, docs/research/ai.md#dealer-gestures).
+/// fills them with the dealer's clips (`GangCreate(24, "FDealer")`, docs/research/ai-scripting.md#dealer-gestures).
 inline constexpr int kDealerFidgetAnim = 603;
 inline constexpr int kDealerActionAnim = 668;
 inline constexpr int kDealerGangKind = 24;
@@ -117,16 +117,16 @@ class DealerGoal final : public Goal {
     /// Threat response back to 2, his icon removed; he no longer deals.
     /// @orig 0x002c70a0 DealerGoal_End (unknown)
     void end(Brain& brain) override;
-    /// One update (docs/research/ai.md#dealer-process): the player leaving his range after a deal brings the leaving
-    /// gesture and line (`thanks` after a sale, `goodbye` without one unless refused at the limit) and the reset to
-    /// state 1; beyond twice the range he is forgotten. In range, nothing more while actions are queued; states 4 and
-    /// 5 stay put (**Coney choice**: the run to a flag of kind 8 is not built); every 2 s while his threat response is
-    /// 0 an enemy gang's member within 16 m makes him wary (a spectate goal, a turn to the player, the wary gesture and
-    /// line); more than 1 m from home he walks back; more than 15° off the player he turns (before he has greeted him,
-    /// or when the player stands within 2 m); in state 1 with the player within 1.5 m the offer line and state 3; the
-    /// first time, a turn, the greeting gesture and line, and his radar blip when the goal was made with `option`
-    /// (DealerGoal_AddRadarIcon). Every update that gets that far offers the deal. Never done. **Coney choices**: no
-    /// line of sight is tested, and the run chance is kept, not read.
+    /// One update (docs/research/ai-scripting.md#dealer-process): the player leaving his range after a deal brings the
+    /// leaving gesture and line (`thanks` after a sale, `goodbye` without one unless refused at the limit) and the
+    /// reset to state 1; beyond twice the range he is forgotten. In range, nothing more while actions are queued;
+    /// states 4 and 5 stay put (**Coney choice**: the run to a flag of kind 8 is not built); every 2 s while his threat
+    /// response is 0 an enemy gang's member within 16 m makes him wary (a spectate goal, a turn to the player, the wary
+    /// gesture and line); more than 1 m from home he walks back; more than 15° off the player he turns (before he has
+    /// greeted him, or when the player stands within 2 m); in state 1 with the player within 1.5 m the offer line and
+    /// state 3; the first time, a turn, the greeting gesture and line, and his radar blip when the goal was made with
+    /// `option` (DealerGoal_AddRadarIcon). Every update that gets that far offers the deal. Never done. **Coney
+    /// choices**: no line of sight is tested, and the run chance is kept, not read.
     /// @orig 0x002c7fd8 DealerGoal_Process (unknown)
     /// @orig 0x002c7de8 DealerGoal_Reset (unknown)
     [[nodiscard]] GoalStatus process(Brain& brain) override;

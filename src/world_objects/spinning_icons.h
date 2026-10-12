@@ -36,7 +36,7 @@ struct IconPose {
 /// follows the game time, not the attachment; `dyn_cross` and `dyn_cuffs`, which take their type record's offset, sit
 /// at 2.25 m like the others, and the cuffs stay attached. Inferred (the page): the attachment's origin is the feet.
 ///
-/// Research: docs/research/ai.md#dealer-icon
+/// Research: docs/research/ai-scripting.md#dealer-icon
 /// @orig 0x003e8fa0 DynIcon_Init (unknown)
 /// @orig 0x003e92e0 DynIcon_Update (unknown)
 [[nodiscard]] IconPose spinningIconPose(std::string_view name, anim::Vec3 feet, float heading, std::uint64_t ms);

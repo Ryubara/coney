@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The formations and GoalTrackHuman (docs/research/ai.md#formations): slots kept in 1/16 m and turned by the leader's
-// heading, the nearest follower to each slot, the re-plan, and a tracker without a slot that only turns.
+// The formations and GoalTrackHuman (docs/research/ai-gangs.md#formations): slots kept in 1/16 m and turned by the
+// leader's heading, the nearest follower to each slot, the re-plan, and a tracker without a slot that only turns.
 #include "ai/formations.h"
 
 #include <cmath>

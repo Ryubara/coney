@@ -218,8 +218,8 @@ class LevelPickups {
     [[nodiscard]] int score(int player) const;
     /// A dealer sold player `player` (0 or 1) `amount` of item `item` for `price` dollars: the item given and the price
     /// taken (an amount of 0: a dirty dealer kept the price), and the item's pick-up sound plays when one was given
-    /// (docs/research/ai.md#dealer-buy). **Coney's reading**: neither notifies the inventory callbacks, and "the pickup
-    /// sound" is the item's own (`vags/interface/powerup` for the items the shipped config gives it).
+    /// (docs/research/ai-scripting.md#dealer-buy). **Coney's reading**: neither notifies the inventory callbacks, and
+    /// "the pickup sound" is the item's own (`vags/interface/powerup` for the items the shipped config gives it).
     void dealerSold(int player, int item, int amount, int price);
     /// Player `player` (0 or 1) used one of item `item` (a flash): one fewer, no callbacks.
     void spendItem(int player, int item);
