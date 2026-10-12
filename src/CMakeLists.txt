@@ -333,6 +333,7 @@ target_sources(coney_core PRIVATE
     ai/tactic_boss.cpp
     ai/tactic.cpp
     ai/targeting.cpp
+    ai/threats.cpp
     ai/tactic_attack.cpp
     ai/tactic_confront.cpp
     ai/tactic_domination.cpp
