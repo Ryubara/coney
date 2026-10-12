@@ -44,6 +44,7 @@
 #include "scripting/config_strings.h"
 #include "support/disc_play_fixtures.h"
 #include "support/disc_session.h"
+#include "support/optional_value.h"
 
 namespace {
 
@@ -122,7 +123,7 @@ TEST_CASE("the disc's level99: a clip chosen on the Animation player plays its f
     REQUIRE(clips.has_value());
     const std::optional<AnimClipChoice> found = clipOf(*clips, kAttackS1);
     REQUIRE(found.has_value());
-    const AnimClipChoice s1 = found.value();
+    const AnimClipChoice s1 = coney::test::got(found);
     const std::string label = std::format("{} {} {:.2f} s", s1.id, s1.clip, s1.seconds);
     itemOn(*attacks, label).run();
     REQUIRE(play->animPlayback().playing);
@@ -195,7 +196,7 @@ TEST_CASE("the sandbox: the Animation player's sets list their clips, a loop pla
     // S1 looping at twice the speed and in place: still playing after three times its length, then stopped.
     const std::optional<AnimClipChoice> found = clipOf(*own, kAttackS1);
     REQUIRE(found.has_value());
-    const AnimClipChoice s1 = found.value();
+    const AnimClipChoice s1 = coney::test::got(found);
     const coney::anim::Vec3 feet = mode.playerFeet();
     REQUIRE(mode.playAnim(0, kAttackS1, coney::debug::AnimPlayOptions{.loop = true, .speed = 2.0F, .inPlace = true}));
     (void)modes.runUntilEmpty(timer, {}, static_cast<std::uint64_t>(3 * expectedUpdates(s1, 2.0F)));
