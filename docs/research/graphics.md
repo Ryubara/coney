@@ -997,10 +997,12 @@ addresses cited unless marked.
 - One material, surface properties (1, 1, 1), texture **`aimthrow_tex`**: the WAD file named the decimal CRC-32 of
   that name, `646320484` (entry 3,276 of `WARRIORS.DIR`, name hash `0x3f103fcb` of `./ee_files/646320484`, 1,552
   bytes), loaded once and kept (`0x005971b0`). It is a texture dictionary of one PS2 texture, **`aimthrow`, 32 × 64,
-  4-bit palettised, linear filtering, wrap in u and v**. Its palette uses three entries: 0 = light grey (150, 150,
-  150) at alpha `0x0e` (about 11 % of the PS2's `0x80` = opaque), 1 = the same grey fully opaque, 2 = transparent;
-  of the 2,048 texels 62 % are transparent, 31 % the faint grey and 6 % opaque (counted from the disc; the texels'
-  layout is in the PS2's swizzled order and was not unswizzled here, so the pattern's shape is not described).
+  4-bit palettised, linear filtering, wrap in u and v**. Its palette uses three colours: light grey (150, 150, 150)
+  at alpha `0x0e` (about 11 % of the PS2's `0x80` = opaque), the same grey fully opaque, and **transparent black
+  (0, 0, 0, alpha 0)**. Of the 2,048 texels **640 (31 %) are transparent, 128 (6 %) the faint grey and 1,280 (62 %)
+  opaque** (confirmed (disc data): Coney's loader converts the texture and `repo:tests/platform/disc_throw_arc_test.cpp`
+  counts the classes; this page's first count, 62 % transparent, 31 % faint and 6 % opaque, was wrong). The texels'
+  layout is in the PS2's swizzled order and was not unswizzled, so the pattern's shape is not described.
 - Texture coordinates, fixed: pair i has u = 0 on its left vertex and 1 on its right, and **v = 15 − i** (15 at the
   hand down to −2 at the end), so the texture repeats once per segment along the arc (wrapping).
 
@@ -1057,32 +1059,42 @@ steps; the camera is the lesson's fixed `ThrowCam`, so frames with the arc in di
   43 → 17), at this distance (the band 10-20 pixels wide, the texture's pattern not resolved). For the red band the
   rule fits the low end of the measured range; its brighter pixels (up to about 87 red) sit above it.
 
-What this leaves open: the 0.39 is the vertex colour's scale times the filtered texture colour, and the filtered
-colour depends on the colour stored in the transparent palette entry, which was not read. A 128 = 1.0 reading needs a
-filtered texel of about 50 (the transparent texels' colour near black, so the 150 grey is diluted), a 255 = 1.0
-reading about 100; the alpha (about 0.44) is also higher than the palette's average alpha predicts in either reading,
-so how RenderWare's pipeline hands the prelit colour and alpha to the GS is still not settled from the pixels. Next
-step: read palette entry 2's colour from the disc, or capture with the arc close to the camera so that opaque texels
-show unfiltered.
+**The colour scale is settled: 255 is 1.0** (the vertex colour and alpha as RenderWare's byte values; confirmed (disc
+data) for the texture, inferred for the pipeline). The filtered texel's colour is the plain mean of the palette's
+colours, because the transparent entry is black: (1,280 + 128) ÷ 2,048 × 150 = **103**, so a vertex grey of 127 gives
+127 ÷ 255 × 103 = **51** (measured 50), the red 170 gives **69** (measured 67-69) and the green and blue 43 give
+**17** (measured 17-20). That is the 0.39-0.40 rule above, from the texture alone. A 128 = 1.0 reading would show
+about 102, 137 and 35, twice what was measured. The alpha agrees in kind: the mean texel alpha is 0.63 (the opaque
+62 % and the faint 6 % at 0.11), times the vertex alpha 127-143 ÷ 255 (0.50-0.56), about 0.32-0.35; the measured
+0.44 is higher, and a Coney render of the same ribbon fits 0.28 to 0.47 by the same two-frame method depending on how
+far the ribbon is (the texture's minification), so the difference is the filtering of a thin band, not a different
+scale. Not settled: the exact alpha rule of the GS (the measured 0.44 came from one distance).
 
-**Owner item 31 (the arc)**: the first Coney arc (on the `throw-arc` branch, 2026-10-11) used
-stand-in values that differ from the above. **Coney fixes**:
+**Coney's implementation** (`graphics::throwArcStrip()`, `repo:src/graphics/throw_arc.h`; `platform::ThrowArcRenderer`;
+`PlayLevelMode::throwArcRibbon()`), tested by `repo:tests/graphics/throw_arc_test.cpp`, the throw lesson's disc test
+(`repo:tests/platform/disc_level80_test.cpp`) and `repo:tests/platform/disc_throw_arc_test.cpp`:
 
-1. Colours (127, 127, 127) not hit and (170, 43, 43) hit, instead of (170, 170, 170, 160) and (220, 30, 30, 160).
-   Whatever scale Coney uses, match the measured look: at the lesson's distance the grey band shows as about colour
-   50 at alpha 0.44 over the scene, the red band as about (68, 18, 18) at the same alpha (above); a brighter arc,
-   such as the texture's grey at full strength, does not match the original.
-2. Alpha per pair as above (0 at the hand, then 127 + trunc(16 × min(i ÷ count, 1))) instead of a fade over three
-   points to a fixed 160. Whether 128 or 255 is 1.0 is not settled (above); match the measured alpha of about 0.44.
-3. Always 18 pairs: points up to count − 1, the rest collapsed on point count − 1, the last pair at the end point.
-4. Texture `aimthrow` from WAD entry `./ee_files/646320484`, wrapping, with u 0 → 1 across and v = 15 − pair along
-   (one repeat per segment); untextured only when the file is missing.
-5. Width ± 0.08 m along the thrower's right axis (his facing), not the chord's perpendicular in plan (the same while
-   the arc stays in his facing's plane; the right axis is what the original uses).
-6. Culling off; drawn in the world pass while the aiming move runs and a world object is held.
-7. Test: for a trace of 18 points with no hit, the strip has 36 vertices, alphas (0, 127, 128, ..., 141, 142) and
-   colour (127, 127, 127); with a contact in segment 5 the pairs 5-16 coincide with point 4 and pair 17 is the
-   contact; with a hit the colour is (170, 43, 43).
+1. Always 18 pairs (36 vertices, 34 triangles): pair 0 on the hand, pairs 1 to count − 1 on their points, the rest on
+   point count − 1 and the last pair on the end point (the contact). The trace's contact is point `arcPoints − 1`, so
+   `count` is that, or 18 when the trace met nothing (`ThrowAimState::arcCut()` tells a contact in the last segment
+   from none). **Coney's reading**: with no contact the last pair sits on the last point, point 17 (the page has the
+   last pair at "point `count`", which an 18-point arc has no entry for).
+2. Colour (127, 127, 127), or (170, 43, 43) while the trace ends on the human target or a body (`+0x634` set), none
+   for the level mesh; alpha 0 at the hand, then 127 + trunc(16 × min(pair ÷ count, 1)). The renderer hands the bytes
+   to librw as they are (255 is 1.0).
+3. Texture `aimthrow` from WAD entry `./ee_files/646320484`, wrapping, linearly filtered, u 0 → 1 across and
+   v = 15 − pair along (one repeat per segment); untextured only when the file is missing.
+4. Width ± 0.08 m along the thrower's right axis (his frame's x, from the aim's heading), level across the arc.
+5. Culling off; drawn only while the aiming state is on, in `PlayLevelMode::render`'s world pass after the cars'
+   glass. **Coney's stand-ins**: Z tested but not written, and no fog (the page leaves these to the world pass's
+   defaults, inferred), the draw's place in the frame (`ThrowArcs_RenderAll` not placed in `WorldManager_Render`'s
+   order), and the ribbon's heading is the aim's current one (a render between two steps blends the arc's points, not
+   the heading).
+6. A render between two steps draws the arc between their points
+   ([Update and render](../guides/conventions.md#update-and-render)).
+
+What a ribbon laid level looks like: from a camera at the thrower's head height it is edge-on, a line a few pixels
+thick; from above it is a band 0.16 m wide.
 
 ### Distance: fades and level of detail {#lod}
 
@@ -1907,6 +1919,9 @@ What is still to do:
   ([The streamed world](world.md#coneys-implementation)); the level world, PVS and occluders do not.
 - The 16:9 option: a 16:9 logical screen shape, the overlay view-window scale 1.1 and the `_w` legal screens.
 
+**The throw-aim arc** is drawn while player 1 aims a throw with L1, with the page's model, colours, alpha and texture
+([Coney's implementation](#throw-arc)); its stand-ins are the Z write, fog and place in the frame.
+
 The implementers' TODOs from the runtime answers (2026-10-04) are done: the overlay camera's view window is
 0.725 × 0.5 and the legal screen overfills the screen as above; its colour was already white.
 
@@ -1917,6 +1932,10 @@ Still for the analysts:
 
 ## Open questions
 
+- **The throw-aim arc's render state** (`ThrowArc_Render` `0x00190588`, `ThrowArcs_RenderAll` `0x00419da0`): whether
+  the world pass writes Z and fogs it (Coney does neither), where in `WorldManager_Render`'s order the arcs fall (Coney:
+  after the cars' glass), and the GS's exact alpha rule (the measured 0.44 is one band at one distance; the colour
+  scale is [settled](#throw-arc)). Coney's stand-ins: [Coney's implementation](#throw-arc).
 - **Exact legal-screen placement** (answered): it overfills the screen by 6.8 % across and 1.1 % down, centred
   ([Placement](#first-screen)).
 - **Mode flag `0x02`.** Read as PAL from the 24.5 frames-a-second threshold and the `_euro` screen; nothing that sets

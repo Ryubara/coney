@@ -54,6 +54,7 @@ add_executable(coney_tests
     graphics/font_test.cpp
     graphics/frame_stats_test.cpp
     graphics/car_draw_test.cpp
+    graphics/throw_arc_test.cpp
     graphics/human_blood_test.cpp
     graphics/human_lighting_test.cpp
     graphics/light_manager_test.cpp
@@ -133,6 +134,7 @@ add_executable(coney_tests
     platform/disc_tagging_test.cpp
     platform/disc_story_start_test.cpp
     platform/disc_textures_test.cpp
+    platform/disc_throw_arc_test.cpp
     platform/disc_world_test.cpp
     platform/disc_level_test.cpp
     platform/disc_movies_test.cpp

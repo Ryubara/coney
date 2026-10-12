@@ -1867,7 +1867,7 @@ Coney's stand-ins for the world objects, where this page is silent:
   meets is kept for `HuIsAimingAt`, `HuGetControlName` gives `throwControl`, and a throw from the aim leaves from the
   release point with the aim's velocity. Stand-ins: the sweeps are sampled every 0.1 m along a segment (not
   `IPhysics_CollideShape`), humans are 2 m upright capsules, cars are not met, a target's point is a fixed head
-  height, and the lock-on's friendly case is not modelled (Coney's lock never takes a friend). The arc is not drawn.
+  height, and the lock-on's friendly case is not modelled (Coney's lock never takes a friend). The arc is drawn ([Graphics](graphics.md#throw-arc)).
 - **Wear and breaks in flight** ([above](#throws); `world_objects::LooseObjects`, `world_objects::Props::breakFlying`,
   the play mode's `flyingBreak`): a throw sets the flying object's body flag 1 and keeps its thrower. Each contact
   with the level mesh first takes one hit (`WorldObject_TakeHit`, the second counter first) as the table above says:
