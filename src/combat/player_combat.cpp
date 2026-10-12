@@ -160,10 +160,10 @@ bool PlayerCombat::updateBlock(const CombatInput& input, CombatOutput& out) {
     return input.command == command::kR1Held;
 }
 
-void PlayerCombat::startAttack(int animId, const CombatTuning& tuning, CombatOutput& out) {
+void PlayerCombat::startAttack(int animId, const CombatTuning& tuning, CombatOutput& out, int delayUpdates) {
     out.startAnim = animId;
     // An attack whose hit lands on its start (the power strike) deals it now.
-    if (m_chain.start(animId, tuning)) {
+    if (m_chain.start(animId, tuning, delayUpdates)) {
         out.hitAnim = animId;
         out.hitDamage = m_ranges != nullptr ? strikeDamage(*m_ranges, animId) : 0;
     }
@@ -210,6 +210,7 @@ void PlayerCombat::updateGrabbing(const CombatInput& input, const CombatTuning& 
     grab.wallInReach = input.wallInReach;
     grab.victimMuggable = input.victimMuggable;
     grab.victimInPlace = input.victimInPlace;
+    grab.rearThrow = input.rearThrowSpinUpdates > 0;
     const GrabOutcome outcome = updateGrab(grab, m_power, tuning, m_random);
     out.grabAction = outcome.action;
     switch (outcome.action) {
@@ -219,10 +220,15 @@ void PlayerCombat::updateGrabbing(const CombatInput& input, const CombatTuning& 
         startAttack(outcome.animId, tuning, out);
         break;
     case GrabAction::Strike:
-    case GrabAction::Throw:
         // The moves with a hit run through the chain for their timing. **Coney choice**: a rear power strike's spin
         // is played by the caller in front of the strike, whose timing starts with it.
         startAttack(outcome.animId, tuning, out);
+        break;
+    case GrabAction::Throw:
+        // A rear hold's throw plays the spin to the front first (`Grab_StartPairedMove`,
+        // docs/research/combat.md#throw-direction): its hit is timed from the throw's own clip, the spin's updates
+        // later. **Coney's reading**: the research times the throw's hit from its clip, not from the press.
+        startAttack(outcome.animId, tuning, out, outcome.spinFirst ? input.rearThrowSpinUpdates : 0);
         break;
     case GrabAction::Spin:
         out.startAnim = outcome.animId;

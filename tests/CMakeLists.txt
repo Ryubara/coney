@@ -261,6 +261,7 @@ target_sources(coney_tests PRIVATE
     human/body_test.cpp
     human/climb_test.cpp
     human/combat_test.cpp
+    human/throw_direction_test.cpp
     human/damage_flags_test.cpp
     human/combat_timing_test.cpp
     human/moving_attacks_test.cpp
@@ -310,6 +311,7 @@ target_sources(coney_tests PRIVATE
 target_sources(coney_tests PRIVATE
     raycast/collision_builder_test.cpp
     sandbox/disc_sandbox_combat_test.cpp
+    sandbox/disc_throw_direction_test.cpp
     sandbox/disc_sandbox_player_test.cpp
     sandbox/disc_sandbox_traversal_test.cpp
     sandbox/sandbox_layout_test.cpp

@@ -433,6 +433,10 @@ class Human final : public Holdable {
     [[nodiscard]] GrabbedReport takeGrabbedReport() override { return m_fighter.takeHeldReport(); }
     /// Moves it there and stops it (its velocity goes).
     void place(anim::Vec3 position, float headingRadians) override;
+    /// Thrown: its fighter's steer carries it (Fighter::carryOver()), applied in each state update as an attack's is.
+    void carryOver(anim::Vec3 goal, float headingRadians, float seconds) override {
+        m_fighter.carryOver(m_position, m_heading, goal, headingRadians, seconds);
+    }
     /// Flies the human while `flight` is set (the debug menu's noclip, docs/guides/debug-menu.md#noclip; Coney's own,
     /// with no counterpart in the original): each state update moves it by the record's stick, turned by the camera
     /// with the game's dead zone, at the flight's speed, and by its climb, with no collision, gravity, falling or
