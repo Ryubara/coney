@@ -550,7 +550,7 @@ Goals for what happens to the body: grabbed, tackled, on the ground, stunned, on
 | `0x002b7140` | `FightBackOffGoal_Init` | init | FightBackOff (`0x1c`), vtable `0x0053fdf0` | confirmed (code) |
 | `0x002b7178` | `FightBackOffGoal_Start` | Start | turn boost + 1 | confirmed (code) |
 | `0x002b71b8` | `FightBackOffGoal_End` | End | restores the turn boost | confirmed (code) |
-| `0x002b71d8` | `FightBackOff_PickPoint` | helper | the nearest flag to back off to (`0x004ede08`) | inferred |
+| `0x002b71d8` | `FightBackOff_PickPoint` | helper | despite the name, the nearest human on his enemy list, kept as the threat (`+0x10`); [FightBackOff](ai-reimpl.md#unit-5) | confirmed (code) |
 
 ### FightBackOff (type 0x1c): Process {#goal-fight-back-off}
 
