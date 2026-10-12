@@ -205,7 +205,8 @@ void addPlayerPage(DebugSession& session) {
             page.add(toggleItem(
                          "Noclip hotkey (R3 + D-pad left)", [&session] { return session.noclipHotkey(); },
                          [&session](bool on) { session.setNoclipHotkey(on); }))
-                .withHelp("While on, R3 + d-pad left (keyboard: H + left arrow) toggles the noclip in play.");
+                .withHelp("On by default: R3 + d-pad left (keyboard: H + left arrow) toggles the noclip in play. "
+                          "Off, the chord is the game's.");
             page.add(submenuItem("Teleport", [&session] {
                          auto sub = std::make_shared<MenuPage>("Teleport");
                          fillTeleport(*sub, session);

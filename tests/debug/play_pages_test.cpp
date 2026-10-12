@@ -392,7 +392,7 @@ class FakeInput final : public coney::InputSource {
 
 } // namespace
 
-TEST_CASE("the Player page switches the noclip with a notice, and its hotkey only while that is on",
+TEST_CASE("the Player page switches the noclip with a notice, and its hotkey (on by default) until switched off",
           "[debug][noclip]") {
     TunableRegistry tunables;
     FakePlay play;
@@ -423,14 +423,8 @@ TEST_CASE("the Player page switches the noclip with a notice, and its hotkey onl
     }
     CHECK(session.cornerLines().empty());
 
-    // The hotkey is off by default: the chord is the game's.
-    CHECK_FALSE(itemOn(*page, "Noclip hotkey (R3 + D-pad left)").getBool());
-    CHECK(frameHolding(coney::pad::kR3 | coney::pad::kLeft) == (coney::pad::kR3 | coney::pad::kLeft));
-    CHECK_FALSE(play.flying);
-    (void)frameHolding(0);
-
-    // On, each press toggles the noclip, and the game never sees the chord.
-    itemOn(*page, "Noclip hotkey (R3 + D-pad left)").setBool(true);
+    // The hotkey is on by default: each press of the chord toggles the noclip, and the game never sees the chord.
+    CHECK(itemOn(*page, "Noclip hotkey (R3 + D-pad left)").getBool());
     CHECK(frameHolding(coney::pad::kR3) == coney::pad::kR3);
     CHECK(frameHolding(coney::pad::kR3 | coney::pad::kLeft) == 0);
     CHECK(play.flying);
@@ -442,6 +436,14 @@ TEST_CASE("the Player page switches the noclip with a notice, and its hotkey onl
     CHECK(frameHolding(coney::pad::kLeft | coney::pad::kR3) == 0);
     CHECK_FALSE(play.flying);
     CHECK(session.cornerLines() == std::vector<std::string>{"Noclip off"});
+
+    // Switched off, the chord is the game's again.
+    (void)frameHolding(0);
+    itemOn(*page, "Noclip hotkey (R3 + D-pad left)").setBool(false);
+    CHECK(frameHolding(coney::pad::kR3 | coney::pad::kLeft) == (coney::pad::kR3 | coney::pad::kLeft));
+    CHECK_FALSE(play.flying);
+    (void)frameHolding(0);
+    itemOn(*page, "Noclip hotkey (R3 + D-pad left)").setBool(true);
 
     // A mode that cannot noclip is left alone, and says so.
     (void)frameHolding(0);

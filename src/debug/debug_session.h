@@ -138,8 +138,8 @@ class DebugSession {
     /// samples, never in real time, so a scripted run sees the same.
     static constexpr int kNoticeFrames = 90;
 
-    /// Whether the noclip hotkey (kNoclipChord, R3 + d-pad left) toggles the player's noclip in play; off until the
-    /// Player page switches it on.
+    /// Whether the noclip hotkey (kNoclipChord, R3 + d-pad left) toggles the player's noclip in play; on by default,
+    /// and the Player page switches it off.
     [[nodiscard]] bool noclipHotkey() const { return m_noclipHotkey; }
     void setNoclipHotkey(bool on) { m_noclipHotkey = on; }
     /// Switches the player's noclip (PlayControls::setNoclip()) to `on` with a notice saying so; with no player, or
@@ -163,7 +163,7 @@ class DebugSession {
     DebugLog m_log;
     LuaConsole m_console;
     std::unique_ptr<SandboxScripts> m_sandbox;
-    bool m_noclipHotkey = false;
+    bool m_noclipHotkey = true;
     std::string m_notice;       // notice()'s text
     int m_noticeFramesLeft = 0; // frames it still shows
 };

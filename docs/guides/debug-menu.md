@@ -244,7 +244,7 @@ He has no collision, no gravity and no falling or landing, so no fall hurts him;
 Switched off, he is dropped from where he stands with the normal physics: on the ground if it is under his feet, else
 he falls to whatever is below. A short notice, *Noclip on* or *Noclip off*, shows under the corner lines for 90 frames.
 
-*Noclip hotkey (R3 + D-pad left)*, off by default, makes **R3 and d-pad left together** (keyboard: **H and the left
+*Noclip hotkey (R3 + D-pad left)*, on by default (the page's option switches it off), makes **R3 and d-pad left together** (keyboard: **H and the left
 arrow**) switch the noclip in play, whichever is pressed first, once per press. The input gate
 (`src/debug/input_gate.h`) catches the chord before the game: from the moment both are held neither reaches the game
 until it is let go, so the d-pad press neither enters a cheat code nor acts in a fight. (An R3 held first reaches the
