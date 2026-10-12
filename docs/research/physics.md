@@ -958,8 +958,9 @@ out, `t2` = `vec4*` point(s) out (room for two). **Return** 1 for a contact, 0 f
 
 #### SphereSweep_VertexRegion {#u1-vertex-region}
 
-`0x0034e5d0`, 0x264 bytes. Its Ghidra name is `SphereSweep_EdgeIfNear` (another analyst's, kept);
-this page calls it `SphereSweep_VertexRegion`. **Arguments**: `a0` = corner index `k` (0-2), `a1` =
+`0x0034e5d0`, 0x264 bytes. It handles a centre past a corner (the corner's region) and gives **no** contact when
+the corner is near, so the Ghidra name is `SphereSweep_VertexRegion` (a rename to `SphereSweep_EdgeIfNear` was
+reverted, issue #383). **Arguments**: `a0` = corner index `k` (0-2), `a1` =
 working triangle (corners read at `+0x10·i`), `a2` = `&n` (unused), `a3` = `&m_k`, `t0` = `&e_k`, `t1` = sphere,
 `t2` = move `M`, `t3` = `float*` fraction out, `f12` = `r`, `f13` = 1.0 (unused). The caller's stack words `+0` and
 `+8` are the count and point outputs, handed on to the edge step. **Return** 1 or 0. Confirmed (code) at
