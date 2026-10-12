@@ -36,12 +36,13 @@ Hud makeHud(KeepingAudio* audio) {
     return Hud(std::move(services));
 }
 
-// One HUD step at `nowMs` in level 99.
+// One HUD step at `nowMs` in level 99, with the hint box's step as gameplay makes it.
 void step(Hud& hud, std::uint64_t nowMs) {
     HudFrame frame;
     frame.nowMs = nowMs;
     frame.levelNumber = 99;
     hud.update(frame);
+    hud.updateHints(nowMs);
 }
 
 // A canvas drawing every font slot and the flat quads into recorded batches.
@@ -59,34 +60,92 @@ struct Canvas {
 
 } // namespace
 
-TEST_CASE("a hint stays until flushed unless its markup times it; the next one shows with cue 0x15", "[hud]") {
+TEST_CASE("a hint stays until cleared unless its markup times it; a text set on a free box shows at once with cue 0x15",
+          "[hud]") {
     KeepingAudio audio;
     Hud hud = makeHud(&audio);
-    hud.hints().queue("first", 2);
-    hud.hints().queue("<DISPLAYTIME 3000>second", 2);
     step(hud, 0);
+    // Shown within the call that set it, before any step.
+    hud.hints().queue("first", 2);
     REQUIRE(hud.hints().showing().has_value());
     CHECK(coney::test::got(hud.hints().showing()).text == "first");
     CHECK(audio.cues == std::vector<int>{coney::hud::kCueHint});
+    hud.hints().queue("<DISPLAYTIME 3000>second", 2);
+    CHECK(coney::test::got(hud.hints().showing()).text == "first");
     CHECK(hud.hints().contains("<DISPLAYTIME 3000>second"));
     // No tag: no timeout at all.
     step(hud, 600000);
     CHECK(coney::test::got(hud.hints().showing()).text == "first");
     CHECK(hud.hints().fade() == Approx(1.0F));
-    hud.hints().flush(2);
+    // A nil clears without taking the next; the next step takes it.
+    hud.hints().clearShowing();
     CHECK_FALSE(hud.hints().showing().has_value());
-    // The timed one shows next, fades over its last second and goes at 3000 ms.
-    hud.hints().queue("<DISPLAYTIME 3000>second", 2);
     step(hud, 700000);
+    CHECK(coney::test::got(hud.hints().showing()).text == "<DISPLAYTIME 3000>second");
     CHECK(audio.cues.size() == 2);
+    // The timed one fades over its last second and goes at 3000 ms.
     step(hud, 702500);
     CHECK(hud.hints().fade() == Approx(0.5F));
     step(hud, 703000);
     CHECK_FALSE(hud.hints().showing().has_value());
 }
 
+TEST_CASE("two nil-then-text pairs in one update leave nothing queued; the same text twice shows twice", "[hud]") {
+    // P1.StartSnaps's four calls in one tick: the box showed the text, cleared it and showed it again, cue twice
+    // (docs/research/hud.md#hint-queue-runtime).
+    KeepingAudio audio;
+    Hud hud = makeHud(&audio);
+    step(hud, 0);
+    hud.hints().queue("lesson", 1);
+    for (int i = 0; i < 2; ++i) {
+        hud.hints().clearShowing();
+        hud.hints().queue("snaps", 1);
+    }
+    CHECK(coney::test::got(hud.hints().showing()).text == "snaps");
+    CHECK(hud.hints().queued().empty());
+    CHECK(audio.cues.size() == 3);
+    // A later pair shows its text at once, not one text late.
+    step(hud, 33);
+    hud.hints().clearShowing();
+    hud.hints().queue("next", 1);
+    CHECK(coney::test::got(hud.hints().showing()).text == "next");
+    CHECK(hud.hints().queued().empty());
+}
+
+TEST_CASE("a timed hint's successor shows on the step after it ends; a withdrawn hint's at once", "[hud]") {
+    Hud hud = makeHud(nullptr);
+    step(hud, 0);
+    hud.hints().queue("<DISPLAYTIME 3000>held", 1);
+    hud.hints().queue("behind", 1);
+    step(hud, 2967);
+    CHECK(coney::test::got(hud.hints().showing()).text == "<DISPLAYTIME 3000>held");
+    // TT_26a's end: cleared on one step, TT_26b taken on the next.
+    step(hud, 3000);
+    CHECK_FALSE(hud.hints().showing().has_value());
+    CHECK(hud.hints().queued().size() == 1);
+    step(hud, 3033);
+    CHECK(coney::test::got(hud.hints().showing()).text == "behind");
+    // Withdrawing the showing hint takes the next in the same call; withdrawing a queued one only removes it.
+    hud.hints().queue("third", 1);
+    hud.hints().queue("fourth", 1);
+    hud.hints().withdraw("fourth");
+    CHECK(hud.hints().queued().size() == 1);
+    hud.hints().withdraw("behind");
+    CHECK(coney::test::got(hud.hints().showing()).text == "third");
+    CHECK(hud.hints().queued().empty());
+    // A flush does not take the next.
+    hud.hints().queue("fifth", 1);
+    hud.hints().queue("sixth", 2);
+    hud.hints().flush(1);
+    CHECK_FALSE(hud.hints().showing().has_value());
+    step(hud, 3066);
+    CHECK(coney::test::got(hud.hints().showing()).text == "sixth");
+}
+
 TEST_CASE("hints queue by priority, first in first out within one; a full queue drops", "[hud]") {
     coney::hud::HintBox box;
+    // The most urgent priority showing, so the rest wait in the queue.
+    box.queue("showing", 0);
     box.queue("b3", 3);
     box.queue("a1", 1);
     box.queue("c3", 3);
@@ -109,28 +168,28 @@ TEST_CASE("hints queue by priority, first in first out within one; a full queue 
 TEST_CASE("a more urgent hint interrupts; the interrupted one starts again later; flushing removes by priority",
           "[hud]") {
     Hud hud = makeHud(nullptr);
-    hud.hints().queue("<DISPLAYTIME 5000>low", 3);
     step(hud, 0);
+    hud.hints().queue("<DISPLAYTIME 5000>low", 3);
     step(hud, 4000);
     hud.hints().queue("waits", 3);
+    // The urgent one clears the showing hint and so shows at once.
     hud.hints().queue("urgent", 1);
-    CHECK_FALSE(hud.hints().showing().has_value());
-    step(hud, 4033);
     CHECK(coney::test::got(hud.hints().showing()).text == "urgent");
     REQUIRE(hud.hints().queued().size() == 2);
     CHECK(hud.hints().queued()[0].text == "waits");
     CHECK(hud.hints().queued()[1].text == "<DISPLAYTIME 5000>low");
     hud.hints().flush(1);
+    CHECK_FALSE(hud.hints().showing().has_value());
     step(hud, 4066);
     CHECK(coney::test::got(hud.hints().showing()).text == "waits");
-    hud.hints().flush(3);
-    step(hud, 4100);
-    CHECK_FALSE(hud.hints().showing().has_value());
-    // Restarted: the interrupted hint's time counts from its new start.
-    hud.hints().queue("<DISPLAYTIME 5000>low", 3);
-    step(hud, 10000);
-    step(hud, 14000);
+    // Restarted: the interrupted hint's time counts from its new start (here 4,066 ms).
+    hud.hints().withdraw("waits");
+    CHECK(coney::test::got(hud.hints().showing()).text == "<DISPLAYTIME 5000>low");
+    step(hud, 9033);
     CHECK(hud.hints().showing().has_value());
+    step(hud, 9066);
+    CHECK_FALSE(hud.hints().showing().has_value());
+    hud.hints().queue("again", 3);
     hud.hints().flush(coney::hud::kHintFlushAll);
     CHECK_FALSE(hud.hints().showing().has_value());
 }
@@ -173,13 +232,13 @@ TEST_CASE("the first slot-1 objective with game hints on queues tutorial hint 0x
     Hud hud = makeHud(nullptr);
     step(hud, 0);
     hud.setObjective(1, "a", 0, false, 8000);
-    CHECK(hud.hints().queued().empty());
+    CHECK_FALSE(hud.hints().showing().has_value());
     hud.setGameTutorialText(true);
     hud.setObjective(1, "b", 0, false, 8000);
-    REQUIRE(hud.hints().queued().size() == 1);
-    CHECK(hud.hints().queued().front().text == "T21");
+    REQUIRE(hud.hints().showing().has_value());
+    CHECK(coney::test::got(hud.hints().showing()).text == "T21");
     hud.setObjective(1, "c", 0, false, 8000);
-    CHECK(hud.hints().queued().size() == 1);
+    CHECK(hud.hints().queued().empty());
 }
 
 TEST_CASE("an announcement hides the messages and the hint box; a message hides the hint box", "[hud]") {

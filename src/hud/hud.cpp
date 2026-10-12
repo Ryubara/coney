@@ -46,7 +46,7 @@ GuiPoint InstructionArrow::offset() const {
     return GuiPoint{step * std::sin(angle) / kArrowBobDivisor, -step * std::cos(angle) / kArrowBobDivisor};
 }
 
-Hud::Hud(HudServices services) : m_services(std::move(services)) {}
+Hud::Hud(HudServices services) : m_services(std::move(services)), m_hints(m_services.sound) {}
 
 std::string Hud::read(const std::function<std::string(std::uint32_t)>& service, std::uint32_t id) {
     return service ? service(id) : std::string{};
@@ -399,10 +399,9 @@ void Hud::update(const HudFrame& frame) {
             m_services.wantedTimers ? m_services.wantedTimers(0, frame.nowMs) : std::array<float, 2>{};
         m_crimePanel.update(timers[0], timers[1]);
     }
-    // 2. The messages, the hint box and the counter panels on their game-time clocks; an announcement ends when its
-    // `<DISPLAYTIME>` has passed.
+    // 2. The messages and the counter panels on their game-time clocks (the hint box steps in updateHints()); an
+    // announcement ends when its `<DISPLAYTIME>` has passed.
     m_scrollIn.update(frame.nowMs, m_services.sound);
-    m_hints.update(frame.nowMs, m_services.sound);
     m_counters.update(frame.nowMs);
     for (std::optional<Announcement>* announcement : {&m_announcement, &m_centred}) {
         if (*announcement && (*announcement)->displayMs &&

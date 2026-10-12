@@ -136,6 +136,24 @@ void HintBox::queue(std::string text, int priority) {
             insert(std::move(interrupted));
         }
     }
+    // With nothing showing (the box was free, or the urgent hint just cleared it) the box takes the front at once, so
+    // two nil-then-text pairs in one update leave nothing queued (docs/research/hud.md#hint-queue-runtime).
+    if (!m_showing) {
+        takeNext();
+    }
+}
+
+void HintBox::takeNext() {
+    if (m_queue.empty()) {
+        return;
+    }
+    m_showing = std::move(m_queue.front());
+    m_queue.pop_front();
+    m_times = markupTimesOf(m_showing->text);
+    m_shownAtMs = m_nowMs;
+    m_sound.playCue(kCueHint);
+    // The event log (`--event-log`): a hint as the player starts to see it.
+    events::emit("hint", m_showing->text);
 }
 
 void HintBox::flush(int priority) {
@@ -156,8 +174,10 @@ bool HintBox::contains(std::string_view text) const {
 }
 
 void HintBox::withdraw(std::string_view text) {
+    // The showing one is cleared and the box steps at once, so the next hint takes its place in the same call.
     if (m_showing && m_showing->text == text) {
         m_showing.reset();
+        takeNext();
         return;
     }
     const auto found = std::ranges::find_if(m_queue, [text](const Hint& hint) { return hint.text == text; });
@@ -166,9 +186,10 @@ void HintBox::withdraw(std::string_view text) {
     }
 }
 
-void HintBox::update(std::uint64_t nowMs, const HudSound& audio) {
+void HintBox::update(std::uint64_t nowMs) {
     m_nowMs = nowMs;
-    // 1. The showing hint ends only when its markup's time is over.
+    // A showing hint ends only when its markup's time is over; the next one is not taken in the same step, so it shows
+    // one step later (`TT_26b` 92 updates after `TT_26a`'s 3,000 ms, docs/research/hud.md#hint-queue-runtime).
     if (m_showing) {
         std::optional<std::uint32_t> endMs = m_times.displayMs;
         if (m_times.freezeMs) {
@@ -177,17 +198,10 @@ void HintBox::update(std::uint64_t nowMs, const HudSound& audio) {
         if (endMs && nowMs - m_shownAtMs >= *endMs) {
             m_showing.reset();
         }
+        return;
     }
-    // 2. When free, the front of the queue shows, with its cue.
-    if (!m_showing && !m_queue.empty()) {
-        m_showing = std::move(m_queue.front());
-        m_queue.pop_front();
-        m_times = markupTimesOf(m_showing->text);
-        m_shownAtMs = nowMs;
-        audio.playCue(kCueHint);
-        // The event log (`--event-log`): a hint as the player starts to see it.
-        events::emit("hint", m_showing->text);
-    }
+    // When free, the front of the queue shows, with its cue.
+    takeNext();
 }
 
 float HintBox::fade() const {

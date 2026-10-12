@@ -239,6 +239,9 @@ class HumanAnimator {
     void clearFlags(std::uint32_t bits) { m_tasks.clearFlags(bits); }
     /// Called with each anim id the human starts playing (anim::AnimTaskStack::setStartHook()).
     void setStartHook(std::function<void(std::uint32_t animId)> hook) { m_tasks.setStartHook(std::move(hook)); }
+    /// Reports the start of the loop the playing chain ends in now, not when it plays
+    /// (anim::AnimTaskStack::announceFollowOn()).
+    void announceFollowOn() { m_tasks.announceFollowOn(); }
     /// Keeps the clip events the animation passes (anim::AnimTaskStack::keepEvents()).
     void keepEvents(bool keep) { m_tasks.keepEvents(keep); }
     /// The clip events passed since the last call (anim::AnimTaskStack::takeEvents()).

@@ -1367,17 +1367,19 @@ addresses given:
   ending in the fight idle 358 started it twice in one update. `level99`'s `PlayerState` then ran twice: each time
   `HUDSetTutorialText(nil)` and a hint, and the second nil found nothing showing yet, so one hint stayed queued per
   double start. The box backed up behind them, and the Targeting and Light Combos hints never showed
-  ([Hints](hud.md#hints-hudsettutorialtext)). **Differs from the original**: a grab's hold ids (82 / 83, 84 / 85)
-  must fire at the connect, when the hold is set up under the connecting clip, not when the hold begins (above);
-  in Coney's `level99` course run they fired when the hold played, the update the strong grapple's damage is scored,
-  which put `PlayerState`'s grab hint and `P1.Power`'s `TT_24d` in one update.
+  ([Hints](hud.md#hints-hudsettutorialtext)). **A grab's hold ids** (82 / 83, 84 / 85 from the rear) fire at the
+  connect, as above: `Fighter::connect` reports the start of the hold its chain and the victim's end in
+  (`AnimTaskStack::announceFollowOn`), and the hold does not report again when it begins, so `PlayerState`'s grab
+  hint and `P1.Power`'s `TT_24d` come the connecting clip's length apart. **Coney's reading**: the four-clip mix's
+  second clips (86 / 87) are not reported, since Coney's hold plays the one clip; the paired reaction (658 for the
+  strong grapple) is still dispatched for the victim, not for the grabber as above.
 - **Coney's order in a step** (inferred from the original's frame, [A frame of play](level-loading.md#a-frame-of-play)):
   the animation callbacks run before the [tutorial callback](hud.md#tutorial-callback), since the original calls
   that one when the victim applies the damage, with the id the attacker has already started; then the hint box
-  steps, where the original's `HUD_Update` stands; then the scheduled calls. Coney's HUD step comes before the
-  callbacks, so without the second hint-box step a text a callback set was still queued when a scheduled call's
-  `HUDSetTutorialText(nil)` ran, and the next text waited behind it: from `level99`'s lesson 6 on, the box showed
-  each grab hint (`TT_19*`) one text late, in place of the lesson's (owner checklist item 33b).
+  steps, once a frame, where the original's `HUD_Update` stands; then the scheduled calls. A text set on a free box
+  shows within the call that set it ([The queue at runtime](hud.md#hint-queue-runtime)), so texts set by a callback
+  and a scheduled call in one step never back up (before, from `level99`'s lesson 6 on, the box showed each grab hint
+  `TT_19*` one text late, in place of the lesson's: owner checklist item 33b).
 
 ### Moving, standing on the ground and falling {#ground}
 

@@ -623,20 +623,23 @@ So in the original a hint queue backs up only behind a hint with a time (`<DISPL
 one, never because two scripts set texts in one update: the last text set in an update is the one on screen at its
 end. The order and timing of lessons 5-8 are in [Scripts](scripting.md#level99-hint-timing).
 
-**Coney's differences** (from `repo:src/hud/hint_box.cpp`, for the implementer):
+**Coney's implementation** (`repo:src/hud/hint_box.cpp`) follows this:
 
-1. `HintBox::queue` only inserts; the text waits for the next `HintBox::update`. It must show the front of the queue
-   at once, with its cue and its `hint` event, when nothing is showing after the insert (and after an urgent hint
-   cleared the showing one). With that, two nil + text pairs in one update leave nothing queued, as on the original.
-2. `HintBox::withdraw` of the showing text must also take the next hint at once (`HUDSetTutorialText(nil)` and
-   `flush` must not).
-3. `HintBox::update` clears an expired hint and takes the next in the same call; the original takes it on the next
-   update (`TT_26b` 92 updates after `TT_26a`, not 91).
-4. Keep: no duplicate check in `queue`; nil does not take the next hint.
-5. Not the box's: a grab's hold ids must fire their animation callbacks at the connect, 34 updates before the strong
-   grapple's hit is scored ([Animation callbacks](characters.md#anim-callbacks)), so `PlayerState`'s grab hint and
-   `P1.Power`'s `TT_24d` come in different updates, as in the original
-   ([lessons 5-8](scripting.md#level99-hint-timing)).
+1. `HintBox::queue` shows the front of the queue at once, with its cue and its `hint` event, when nothing is showing
+   after the insert (or after an urgent hint cleared the showing one), so two nil + text pairs in one update leave
+   nothing queued.
+2. `HintBox::withdraw` of the showing text takes the next hint at once; `HUDSetTutorialText(nil)` and `flush` do not.
+3. `HintBox::update` clears an expired hint and takes the next one only on its next call, and it is called once a
+   frame, by gameplay after the step's callbacks and before the scheduled calls (where the original's `HUD_Update`
+   stands); `Hud::update` leaves the box alone.
+4. No duplicate check in `queue`; nil does not take the next hint.
+5. Not the box's: a grab's hold ids fire their animation callbacks at the connect
+   ([Animation callbacks](characters.md#anim-callbacks)), so `PlayerState`'s grab hint and `P1.Power`'s `TT_24d` come
+   in different updates, as in the original ([lessons 5-8](scripting.md#level99-hint-timing)).
+
+The disc test that checks it is `repo:tests/platform/disc_level99_course_test.cpp`: lessons 1-8 with no text left
+queued except behind a `<DISPLAYTIME>` hint, lesson 5's grab hint 34 frames before `TT_24d` (the original's 34
+updates) and `P1.StartSnaps`'s text shown twice in one frame.
 
 ### The tutorial callback (`HUDSetTutorialCallback`) {#tutorial-callback}
 

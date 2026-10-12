@@ -579,7 +579,11 @@ TEST_CASE("the disc's level80 checkpoint 3: Fox, Hold Up, the bottle thrown from
     level.watch = [&level, &shown] { shown.watch(level); };
     constexpr int kWait = 30 * 60;
     const auto padded = [&level] { return level.play() != nullptr && level.play()->player().padControlled(); };
-    const auto hinted = [&shown](std::string_view key) { return shown.hint == key; };
+    // A hint the player can read: showing, and the HUD drawn (after a scene the HUD comes back a few frames after the
+    // script has set the next text, and an R2 pressed while it is hidden gives the highlighted order at once).
+    const auto hinted = [&shown, &level](std::string_view key) {
+        return shown.hint == key && level.scripts->hud().visible() && !level.scripts->hud().hintsHidden();
+    };
     // On a failure: where player 1 stands, what showed and the log.
     const auto dump = [&level, &shown] {
         const coney::anim::Vec3 at = level.play()->player().human().position();
