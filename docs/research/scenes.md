@@ -75,6 +75,10 @@ the letterbox, gives the player control back and calls the script's end function
 | `0x00354558` / `0x003546a0` | `SceneCam_Lock` / `SceneCam_Unlock` | a locked camera (type 4, `LockedSceneCam`) made the current scene camera (`0x003a1558`) over the player's camera (its active sub-camera in modes 5-8 pushed); unlock pops it back and frees it. Used by the in-game camera bindings (`0x002cb538`) | confirmed (code) |
 | `0x003555d0` | `SceneTrack_ParticleEvent` | event type 33: the effect starts only when its position is inside player 1's view (each of the six planes, 2 m margin), except the effect `sub_shk`, which always plays | confirmed (code) |
 | `0x00356028`, `0x00356090`, `0x003560a0` | `SceneTrack_SetTarget`, `SceneTrack_SetCamera`, `SceneTrack_SetObject` | track runner: set the track's target and re-read its keys at the current frame; the camera form sets `+8` and `+0xc`, the object form `+8` | confirmed (code) |
+| `0x00354280` | `Scene_BindObject` | `SceneAddObject`'s worker: writes the object into the slot by index (definition `+0x50`) and pins its record; refuses an object already in a scene | confirmed (code) |
+| `0x00299248` | `Goal_StartParlay` | `GoalStartParlay`'s worker: preloads `<base>_000` to `<base>_004` (formats `0x00561760`-`0x00561780`) and pushes the parlay goal; no script on the disc calls it ([Which level](#which-level)) | confirmed (code) |
+| `0x002cb5d0` | `Brain_PlayScene` | the parlay goal's steps: looks the five parlay scenes up by name and plays them as animations | confirmed (code) |
+| `0x00306c68` | `AddressTactic_Init` | `TacticAddress`'s tactic: looks its scene up by the name the script gives (no script on the disc calls it) | confirmed (code) |
 
 ## Data
 
@@ -127,8 +131,8 @@ else the least recently requested slot in state 2 or 8, which it unloads first (
 
 **A role or object definition** (0x60): `char name[16]`; the **start pose** at `+0x10` (position `x, y, z, 1`, then a
 quaternion `x, y, z, w` at `+0x20`); the **end pose** at `+0x30` (`+0x40` the quaternion); `+0x50` the bound human
-or object at runtime (0 in the file). A role's name is a model name (`warrcl`, `warrrecv`, `warrashcv`, ...); binding
-is by index, not by name.
+or object at runtime (0 in the file). A role's name looks like a model name (`warrcl`, `warrrecv`, `warrashcv`, ...)
+but is only a label: binding is by index, and no code maps the name to a model ([Cast and props](#cast)).
 
 **The camera definition** (0x70): the same name and poses, then `+0x54` near plane, `+0x58` far plane (slot `+0x1ac`),
 `+0x60` the world preload's radius, `+0x64` field of view in degrees, `+0x6c` the scene camera at runtime; `+0x50`,
@@ -423,6 +427,112 @@ lens is the definition's field of view, near and far; each update the track move
 
 **Objects** bound by `SceneAddObject` follow their tracks; at the end they are released to the object manager.
 **Lights** are made from their definitions at the start and released at the end. Confirmed (code).
+
+### Cast and props: what a role's or object's name means {#cast}
+
+**The original never turns a role's name or an object definition's name into a model.** A role is drawn as
+whatever human the script binds to it, and an object slot moves whatever object the script binds; a role or slot
+nobody binds plays nothing. Confirmed (code):
+
+- **Binding is by index only.** `Scene_BindHuman` (`0x003541a0`) and `Scene_BindObject` (`0x00354280`) write the
+  handle's object into definition `+0x50` of the role or slot given by number, checking only the index against the
+  header's counts (`+0x20`, `+0x21`) and that the human or object is in no other scene.
+- **Nothing reads a role's name.** Every load of the role table (header `+0x90`) in the scene code
+  (`SceneRecord_Fixup`, `Scene_BindHuman`, `Scene_GetRoleStart`, `Scene_FitToHumans`, `SceneTask_StepToMarks`,
+  `SceneTask_Start`, `SceneTask_ClipDone`, `SceneTask_EndClips`, `SceneTask_StopLooping`, `SceneTask_End`,
+  `SceneTask_Abort`) reads a pose (`+0x10` to `+0x4c`) or the bound human (`+0x50`), never `+0x00`; no binding takes a
+  role by name.
+- **One read of an object's name**, in the start (`0x0039d870`, the compare set up at `0x0039e4a0`): when a bound
+  object's definition name begins with **`s_`** (its first two bytes `0x5f73`), the object gets message 8 before its
+  track is bound. For a `simple_object`, the class of every object the scripts bind to an `s_` slot (44 of 44), message
+  8 puts it back at its attached pose ([`simple_object`](objects.md#simple-object)). 775 of the 2,317 object slots on
+  the disc are `s_` names (`s_spraycan01`).
+- **What decides the look**: a human's model is its **character type**, the second argument of the `HuCreate` that
+  made it ([Characters](characters.md#creation), [character list](../references/characters.md)), so the same role
+  wears different models in different scripts (`l11_c1`'s `warrcl` is Cleon's `warr_cl_gen`, `l80_c1`'s Cleon is
+  `warr_cl`). An object's model is its **object type**: the scripts bind `Objects.<key>`, which holds the
+  `ObjSpawn(type, ...)` of that type (a type spawned again is keyed `<type>01`, `<type>02`), or a door's leaf
+  (`GetLeftDoorHandle`, `GetRightDoorHandle`). An intro card is an object type of its own: `l99_c1`'s slot `cleon`
+  is bound to `dyn_intro_test`, not to the level's `dyn_cleon` ([Intro cards](#intro-cards)).
+- **One cast detail at the start** (`0x0039d870`, around `0x0039e7dc`): for a cinematic, a bound human of behaviour
+  class `0x12`, `0x14` or `0xbc` (Cowboy's classes) with no hat object at `+0x364` gets the handle of a free object of
+  its class's hat type (class `+0x14c`, looked up by name among the object manager's kind-24 objects and taken only
+  if not attached), so a Cowboy who lost his hat may wear it again in the scene (inferred: the hat,
+  [Characters: where a hat comes from](characters.md#creation)).
+
+**The names are labels** (inferred from the disc): the 1,236 differently named headers hold 3,144 role slots under
+689 distinct names, in several conventions: a model name without its underscores (`warrrecv` for `warr_re_cv`), the
+same with a number (`warrso01`), two-letter initials (`sw`, `ve`, `cb`), a gang and a part (`destso01`, `cops02`) or
+a first name (`sanchez`, `mercy`). Only 68 of the 689 equal a model name with or without its underscores. Object
+definitions are named the same way (805 distinct names: props, `s_` props, card names such as `cleon`).
+
+**The cast the scripts give** (scratch script over the disc's compiled scripts, names and ids only; inferred, since
+it is read from the code statically and a script may pick a table by checkpoint). 266 scene tables in the scripts
+(the `SuperRunScene` table: `SceneId`, `Humans`, `Objects`, [From Lua](#superrunscene)) cover 188 scenes. Following
+each `Humans` entry through assignments to a `HuCreate` gives, of their 1,374 roles: 937 one character type, 112
+two or more (the same name made by several `HuCreate` calls of a level, `Warriors.Rembrandt` as type 30 or 32 in
+`level99`), 25 the player with no `HuCreate` in sight, 204 not resolved (globals set from calls the walk cannot
+follow, `hVermin`, `Ajax`), and 96 not played (15 `NilHandle`, 81 beyond the list's end). Of the 937, the role name
+equals the model without underscores in 142. Their 563 object slots: 346 an object type, 31 a door leaf, 41 not
+resolved, 145 not bound. The result is the **Cast** and **Props** columns of [Scenes and
+movies](../references/scenes.md); `l99_c1` reads Cleon `warr_cl_gen`, Vermin `warr_ve` or `warr_ve_gen`, Rembrandt
+`warr_re` or `warr_re_cv`, nobody, three soldiers `warr_so_vb2_hr`, `warr_so_vb1_hr`, `warr_so_vb3_hr`, and Ash
+`warr_ty`, with props `dyn_s_spraycan`, `dyn_rembrandt`, `dyn_vermin` and `dyn_intro_test`.
+
+**A stand-in from the name alone** (for a viewer that shows a scene with no script, not the original's behaviour):
+taken in order, (a) the model whose name without underscores is the role's (with or without a trailing number), (b)
+for one to three letters, `warr_` and the first two, (c) the gang code of the first four letters with `so` in the
+name, the gang's first `<gang>_so` model, (d) the gang's first model. It names a model for 3,029 of the 3,144 slots;
+checked against the 850 script-resolved roles it covers, it gives the same person (same `<gang>_<who>` start) in
+458, the right gang in 340 and another in 52. Inferred (measured on the disc).
+
+### Which level a scene plays in {#which-level}
+
+**The scene list is global and no level owns a scene.** `scene_list.cnk` is one list for the whole game
+(`SceneList_Load`, `0x00353460`), every `.scn` record is a file of the WAD, and a scene id is its index in that list.
+A level uses a scene when its scripts name it, and every name reaches the scene system from a script. Confirmed (code)
+at the three name lookups and their callers:
+
+- `SceneList_FindBySubstring` (`0x00353698`, the first record whose name contains the string) is called by
+  `ScenePreload` (`0x00353f88`), `SceneIsPreloaded` (`0x00354b38`), the fix-up (the record's own name),
+  `Goal_StartParlay` and `Brain_PlayScene` (the parlay names `<base>_000` to `<base>_004` built from the script's
+  `base`), and `AddressTactic_Init` (the name `TacticAddress` was given).
+- The exact-name lookup (`0x00353778`) serves only the segment chain, and the lookup by id (`0x00353730`) only
+  `SceneSlot_Load`. The play bindings, `GoalJoin*` and `GoalPlayAnimation` take ids that a script got from
+  `ScenePreload`.
+- The one scene record read outside the scene list is a movie's caption timing, `<movie>_sub.scn`, which `Movie_Play`
+  reads as a file and plays on its own ([Movies](movies.md#caption-timing)).
+
+So C++ code names no scene of its own, and **`GoalStartParlay` and `TacticAddress` are never called** by a script on
+the disc (both have no call in any compiled chunk), so the parlay families (`l14_p1_000` to `_004`, `l5_m5_000` to
+`_010`, ...) and any tactic scene are not reached by name in the shipped game (inferred).
+
+**Where a scene plays** is the world of the level whose scripts play it: cinematics and fixed scenes are played at
+the origin, so the records hold that world's coordinates ([Playing](#playing)). Evidence for each scene, from a
+scratch pass over the disc (names and counts only):
+
+| Source | Scenes | Evidence |
+| --- | ---: | --- |
+| a level's scripts hold the name as a string (any string constant, not only a `ScenePreload` argument: most go through a `SuperRunScene` table) | 309 | inferred (the scripts are the only way in, above); one is named by two levels' scripts (`Pel_subway`: `level31`, `level115`) |
+| the name is a scene marker in a level's Subtitles chunk (the captions come from the current level's `.lev` only, [Movies](movies.md#caption-text)) | 3 | inferred; 210 markers in 26 levels, and each of the 192 scenes that the scripts also name is marked in the same level; the others are the 11 caption timings below and these 3 |
+| a movie's caption timing, `l<N>_in_sub` / `l<N>_out_sub` | 11 | confirmed (code), [Movies](movies.md#caption-timing) |
+| only a level's debug scene test (`level<N>_scenetest.lua`) names it | 3 | inferred |
+| a level number at the end of the name (`rumble_102`, `wonderwheel_81`; the Rumble levels' scripts hold the string `rumble_`) | 7 | inferred |
+| only the `l<N>_` prefix | 663 | speculative, below |
+| none (shared animation sets such as `gen_*`, `bar_*`, `craps_*`; the subway scenes `Benson_Sub1`, `Train_Sub2`, ...; `l4_*` and `l88_*`, with no such level) | 244 | |
+
+**The `l<N>_` prefix names the mission, not the world.** Of the 299 `l<N>_` scenes whose level the scripts or the
+subtitles give, 280 play in level *N* and 19 in the hub, `level95` (`l3_c1`, `l5_c1`, `l14_c6_a`, `l31_c1`, ...):
+mission starts and ends played in the clubhouse, at around (−170, 90, −193) and (−200, 130, −698) in the hub's world,
+named by `level95.lua` and captioned in `level95.lev`. The scene soundtracks agree with the prefix, not the world:
+each of the 213 scenes found in the sound stream table (an unnamed WAD entry listing `speeches/<folder>/<scene>`) sits
+in the folder of its prefix (`l3_c1` in `l3`).
+So the prefix is a good guess (94 % on the scenes we can check) but wrong for a mission's clubhouse scenes, and the
+663 scenes known only by it are marked speculative. A scene's position does not settle it either: the levels' worlds
+overlap in coordinates, and placing each script-known scene at the level of its nearest script-known neighbour is
+right for only 196 of 321.
+
+The **Plays in** and **Known from** columns of [Scenes and movies](../references/scenes.md) hold this for every scene.
 
 ### Intro cards {#intro-cards}
 
@@ -747,3 +857,10 @@ trace above.
 - Where a scene's captions come from (answered): the level's Subtitles chunk, by the scene's name
   ([Movies](movies.md#caption-text)).
 - Event 30's argument layout (colour at `+8` and cone at `+0x10` overlap as three floats).
+- How a role's model is decided (answered: by the bound human's character type; the name is a label, [Cast and
+  props](#cast)). Still open: the 204 roles and 41 props of scripted scenes the static walk does not resolve, and
+  which of two or more `HuCreate` types a level's checkpoint picks (a runtime read of the bound humans' `+0xd0` would
+  settle each scene).
+- Which level a scene plays in (answered for the 333 scenes a script, a Subtitles chunk or a movie places,
+  [Which level](#which-level)). Open: the 663 known only by their prefix and the 244 with no level; whether the
+  never-named `l<N>_` families (`_l1_000`, `_p1_000`, `_s1_000`, `_m2_000`, ...) are reached by a computed name at all.
