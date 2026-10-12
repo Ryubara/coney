@@ -18,7 +18,7 @@ were corrected in place where the runs contradicted them.
 ## Method
 
 - **Inputs.** Each run is a Coney input script (`FRAME stick left X Y`, `press l2`, `tap triangle`,
-  [Input scripts](../guides/building.md#input-scripts)) with the frame read as the update number. On the original
+  [Input scripts](../guides/running.md#input-scripts)) with the frame read as the update number. On the original
   side a PINE client wrote the same raw stick bytes Coney makes from a script value (`160 + round(0.95 × v)` for
   `v > 0`, `95 − round(0.95 × |v|)` below, 128 at rest) and the same button bits, through the patched pad read, at
   the update the script names (±1 update of latency, aligned by the clip change). The original's stick table at
@@ -34,7 +34,7 @@ were corrected in place where the runs contradicted them.
 - **Coney trace.** A throwaway tool (outside the repository) stepped Coney's `Human` and `FollowCamera` headless on
   `level99`'s collision mesh, from the save's position and heading, with the camera placed behind at the save's view
   heading, and printed the same quantities per update. Coney's own `--trace` option now writes them
-  ([Building](../guides/building.md#tracing)).
+  ([Running Coney](../guides/running.md#tracing)).
 - **Saves.** Slot 1 (a clear street, facing −x) for walks, runs, turns, sprint, jumps and the right stick; slot 7
   (the fence) for the running fence climb; slot 8 (the trash can and roof) for the short-wall and wall climbs.
 
@@ -142,7 +142,7 @@ run read per update; the turn values are also confirmed (code), below.
 
 The fixes below are in Coney ([Characters](characters.md#coneys-implementation),
 [Camera](camera.md#coneys-implementation)); the values are from Coney's own trace (`--trace`,
-[Building](../guides/building.md#tracing)) on the sandbox's parkour lane with the same kind of scripted stick:
+[Running Coney](../guides/running.md#tracing)) on the sandbox's parkour lane with the same kind of scripted stick:
 
 | Quantity | Original | Coney now |
 | --- | --- | --- |
@@ -213,7 +213,7 @@ The fixes in order of how much they change the feel:
 ## Open questions
 
 - **A `--trace` option for `coney`** (answered): `--play-level NAME --trace FILE` writes those columns per update
-  ([Building](../guides/building.md#tracing)).
+  ([Running Coney](../guides/running.md#tracing)).
 - **The 0.25 m step at runtime** (answered): a test step made in the street's collision mesh was walked onto at
   0.10-0.245 m in one update and stopped the player from 0.255 m, at the distances the 0.4705 m sphere predicts
   with about 0.006 m clearance ([Characters](characters.md#walls)). A real kerb in a later level would corroborate it.

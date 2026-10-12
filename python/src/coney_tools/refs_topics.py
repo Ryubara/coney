@@ -725,6 +725,7 @@ WAD_NAMES = Topic(
     group_by="kind",
     compact=True,
     nav="WAD entry names",
+    split=True,
 )
 
 RADAR_ICONS = Topic(

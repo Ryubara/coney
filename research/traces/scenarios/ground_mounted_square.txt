@@ -1,0 +1,26 @@
+# square every 4 updates once mounted (the struggle)
+150 tap square
+154 tap square
+158 tap square
+162 tap square
+166 tap square
+170 tap square
+174 tap square
+178 tap square
+182 tap square
+186 tap square
+190 tap square
+194 tap square
+198 tap square
+202 tap square
+206 tap square
+210 tap square
+214 tap square
+218 tap square
+222 tap square
+226 tap square
+230 tap square
+234 tap square
+238 tap square
+242 tap square
+246 tap square
