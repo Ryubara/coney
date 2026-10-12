@@ -2415,7 +2415,8 @@ the same 20 by the same code (inferred: the dive holds `0x400000`, in the same m
    strike shape on and its flung body struck the charger for 20 with a heavy high hit, which played 292-295 on him
    (owner report, 2026-10-11). The original takes the same 20 from the charger with no reaction (confirmed (runtime),
    the run above). The dive escaped only by chance (inferred; no strike back in the run above): its crushing high hit
-   gives 300-303, which strike with the spine and head alone. Still to do: a paired move's victim holding `0x400000` (Coney's paired clips
+   gives 300-303, which strike with the spine and head alone.
+   Still to do: a paired move's victim holding `0x400000` (Coney's paired clips
    hold no such flag yet).
 3. A lethal hit on a victim holding any of `0xc12200` does not start the dying reaction or break the pair at once:
    keep the health below 0 and let the victim's own paired clip finish (not the attacker's: 58 outlasts 57); then
@@ -2471,13 +2472,13 @@ lines are from PCSX2 2.9.94, 2026-10-12, a copy of slot 6, the natives' function
 - **The down latch is state `0x40000000`** (set by both natives through `Human_SetLying`, `0x00228388`; cleared by
   `Human_ClearDownLatch` `0x002283a8`, which `HuMakeGrounded(false)` calls). Its test `Human_HasDownLatch`
   (`0x002283c8`) has four readers:
-  - `Human_UpdateDown` (`0x00256a60`, at `0x00256b04`) tests it first: a latched human skips the whole down and stun
-    update, so it never rises (and a stun never ends) however long ago its ground time passed;
-  - `Humans_Update` (`0x00249558`): a latched human with record state `0x200000000` is not taken away (the branch to
-    `0x0021c7c8`);
-  - `Humans_Update` (`0x002495d8`): a latched human is not moved from hurt (`0x10000`) to state `0x80000000` when its
-    record `+0xf0` time passes (inferred from the branch; not run);
-  - `Humans_CullCorpses` (`0x002322b4`) skips it, and `Bum_GiveItem` (`0x002ac488`, `0x002ac51c`) tests it.
+    - `Human_UpdateDown` (`0x00256a60`, at `0x00256b04`) tests it first: a latched human skips the whole down and stun
+      update, so it never rises (and a stun never ends) however long ago its ground time passed;
+    - `Humans_Update` (`0x00249558`): a latched human with record state `0x200000000` is not taken away (the branch to
+      `0x0021c7c8`);
+    - `Humans_Update` (`0x002495d8`): a latched human is not moved from hurt (`0x10000`) to state `0x80000000` when its
+      record `+0xf0` time passes (inferred from the branch; not run);
+    - `Humans_CullCorpses` (`0x002322b4`) skips it, and `Bum_GiveItem` (`0x002ac488`, `0x002ac51c`) tests it.
 
   At runtime (confirmed (runtime)) a grounded human whose ground time (2000 ms) ended at update 66 lay in 196 until
   the latch was cleared at update 150, then rose at once: 199 on update 151 (28 updates), then the idle 388. The rise
