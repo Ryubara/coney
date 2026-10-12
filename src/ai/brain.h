@@ -292,6 +292,11 @@ class Brain {
     [[nodiscard]] Goal* topGoal() { return m_goals.empty() ? nullptr : m_goals.back().get(); }
     [[nodiscard]] const Goal* topGoal() const { return m_goals.empty() ? nullptr : m_goals.back().get(); }
     [[nodiscard]] std::size_t goalCount() const { return m_goals.size(); }
+    /// The goal `index` places up from the bottom of the stack (goalCount() − 1 is the top); null past the top. For
+    /// reading only: the debug menus' entity inspector lists the stack with it.
+    [[nodiscard]] const Goal* goalAt(std::size_t index) const {
+        return index < m_goals.size() ? m_goals[index].get() : nullptr;
+    }
     /// The reaction goal (`+0x3c`); null when none.
     [[nodiscard]] const Goal* reactionGoal() const { return m_reaction.get(); }
     /// Times the goals ran out (event `0xd`).

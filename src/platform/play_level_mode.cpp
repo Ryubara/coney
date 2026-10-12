@@ -849,7 +849,7 @@ void PlayLevelMode::drawDebugLines(const human::PlayerSnapshot& snapshot) const 
     LineList lines;
     const anim::Vec3 feet = snapshot.feet;
     // The collision triangles whose first corner is near the feet, as a wireframe, up to a budget.
-    if (options.collision) {
+    if (options.collision && !options.wallClasses) {
         const raycast::CollisionMesh& mesh = m_scenery->collision();
         const auto vertices = mesh.vertices();
         const float reach = options.collisionRadius * options.collisionRadius;
@@ -899,6 +899,12 @@ void PlayLevelMode::drawDebugLines(const human::PlayerSnapshot& snapshot) const 
             const anim::Vec3 ahead = human::facing(place.headingDegrees * std::numbers::pi_v<float> / 180.0F);
             lines.add(place.feet, anim::add(place.feet, anim::scale(ahead, kHeadingLength)), kPlace);
         }
+    }
+    // The collision shapes, the classified wireframe and the Entity inspector's highlight (play_level_inspect.cpp).
+    debug::DebugLines extra;
+    addInspectorLines(extra, feet);
+    for (const debug::DebugLine& line : extra.lines()) {
+        lines.add(line.a, line.b, line.colour);
     }
     lines.draw();
 }

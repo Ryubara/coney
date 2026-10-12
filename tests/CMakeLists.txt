@@ -318,6 +318,8 @@ target_compile_definitions(coney_tests PRIVATE CONEY_ASSETS_DIR="${PROJECT_SOURC
 target_sources(coney_tests PRIVATE
     debug/audio_page_test.cpp
     debug/debug_session_test.cpp
+    debug/entity_inspector_test.cpp
+    debug/human_shapes_test.cpp
     debug/input_gate_test.cpp
     debug/menu_navigator_test.cpp
     debug/native_caller_test.cpp

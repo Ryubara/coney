@@ -28,6 +28,8 @@
 #include "core/error.h"
 #include "core/interpolation.h"
 #include "core/options.h"
+#include "debug/debug_lines.h"
+#include "debug/entity_inspect.h"
 #include "debug/play_controls.h"
 #include "effects/glints.h"
 #include "fileio/wad.h"
@@ -318,6 +320,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] const std::vector<world_objects::CarHitEffect>& carHitEffects() const { return m_carHitEffects; }
     /// How many world objects the last frame drew (0 without pixels).
     [[nodiscard]] std::size_t objectsDrawn() const { return m_placed ? m_placed->drawn() : 0; }
+    /// The Entity inspector's view of the scene: its humans and objects (play_level_inspect.cpp).
+    [[nodiscard]] const debug::EntityInspect* inspect() const override { return &m_inspector; }
 
   private:
     // A character's resources and its texture dictionaries, ready to draw.
@@ -629,6 +633,19 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
                                                               float alpha);
     // Draws the Debug draw page's lines through the current camera, from `snapshot`.
     void drawDebugLines(const human::PlayerSnapshot& snapshot) const;
+    // The Entity inspector's view of the mode's humans and objects (play_level_inspect.cpp): read-only.
+    class Inspector final : public debug::EntityInspect {
+      public:
+        explicit Inspector(const PlayLevelMode& mode) : m_mode(mode) {}
+        [[nodiscard]] std::vector<debug::EntityRef> entities() const override;
+        [[nodiscard]] std::vector<debug::WatchGroup> describe(debug::EntityId id) const override;
+
+      private:
+        const PlayLevelMode& m_mode;
+    };
+    // Adds the Debug draw page's collision shapes, the classified wireframe round `feet` and the Entity inspector's
+    // highlight to `lines` (play_level_inspect.cpp).
+    void addInspectorLines(debug::DebugLines& lines, anim::Vec3 feet) const;
 
     RenderEngine& m_engine;
     const io::Wad& m_wad;
@@ -758,6 +775,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     std::vector<std::pair<double, world_objects::WorldPose>> m_hatDraws;
     hud::HealthRings m_rings;
     std::map<std::uint64_t, int> m_ringHealth; // each ringed human's health at the last step, for its hit pulse
+    Inspector m_inspector{*this};              // the Entity inspector's view of the mode
     std::unique_ptr<HudLayer> m_hud;           // the HUD's sheets, batches and pass (src/platform/hud_layer.h)
     // The layer renderWithOverlay() adds over the HUD for the render it runs; null otherwise.
     const std::function<void(graphics::RenderDevice&)>* m_overlay = nullptr;

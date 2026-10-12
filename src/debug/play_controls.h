@@ -18,6 +18,8 @@ class Hud;
 
 namespace coney::debug {
 
+class EntityInspect;
+
 /// A named place the player can be put: the feet, in the game's axes (z up, metres), and the heading in degrees (0
 /// faces +y), as a level's player start and a sandbox spawn point are given.
 struct Place {
@@ -34,6 +36,14 @@ struct DebugDrawOptions {
     bool groundNormal = false;    ///< The normal of the ground under the player.
     bool camera = false;          ///< The follow camera's wanted position and its look-at point.
     bool places = false;          ///< The places of PlayControls::places(), each a marker with its heading.
+    // The collision shapes and the Entity inspector's highlight (src/debug/pages_entity.cpp, src/debug/human_shapes.h).
+    bool wallClasses = false;    ///< The collision wireframe coloured by how the walking sweep classes each triangle.
+    bool shapes = false;         ///< The humans' bodies: walking or air sphere, capsule, ground probe, climb.
+    bool shapesAllHumans = true; ///< The shapes on every human; off: on the player and the inspected entity only.
+    bool strikes = false;        ///< The strike shapes switched on, and the spine and head they are tested against.
+    bool contacts = false;       ///< The contacts the last walking sweep slid along: a point and its normal.
+    std::uint64_t inspected = 0; ///< The Entity inspector's selection (an EntityId; 0 for none).
+    bool highlight = true;       ///< Mark the inspected entity in the scene.
 };
 
 /// One object the Spawner page can put in front of the player: a sandbox primitive and the name the page shows. The
@@ -154,6 +164,10 @@ class PlayControls {
 
     /// The in-game HUD the mode draws, for the HUD page; null when it has none.
     [[nodiscard]] virtual hud::Hud* hud() { return nullptr; }
+
+    /// The scene's humans and objects for the Entity inspector page (src/debug/entity_inspect.h); null when the mode
+    /// cannot list them.
+    [[nodiscard]] virtual const EntityInspect* inspect() const { return nullptr; }
 };
 
 /// The spot `distance` metres in front of feet `feet` facing `headingDegrees` (0 faces +y, counter-clockwise from

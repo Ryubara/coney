@@ -364,6 +364,24 @@ class Human final : public Holdable {
     [[nodiscard]] float bodyScale() const override { return m_scale; }
     /// The radius of its collision capsule (the shape's `+0x40`, 0.35 m, × its scale): human::walkingRadius().
     [[nodiscard]] float capsuleRadius() const { return walkingRadius(m_scale); }
+    /// The walking sphere the wall sweep moves (docs/research/characters.md#walls, step 1): a player's
+    /// playerWalkingRadius(), an AI human's aiWalkingRadius(), of its scale now.
+    [[nodiscard]] float walkingSphereRadius() const;
+    /// How far above the feet the walking sphere's centre is: its radius plus BodyTuning::footGap.
+    [[nodiscard]] float walkingSphereCentreHeight() const;
+    /// The sphere the airborne body is pushed out of walls with: BodyTuning::airRadius × the scale, its centre its
+    /// radius plus the foot gap above the feet (docs/research/characters.md#walls).
+    [[nodiscard]] float airSphereRadius() const;
+    /// Its capsule as another human's sweep meets it (docs/research/physics.md#human-contacts). **Coney's choice**:
+    /// the 2 m upright capsule the strikes take too, not posed from the head bone each time.
+    [[nodiscard]] UprightCapsule uprightCapsule() const;
+    /// The normals of what the last walking sweep slid along (walls, other humans' capsules, world objects' bodies),
+    /// each pointing out of what was met; empty after a move that met nothing. The velocity slides along the same.
+    [[nodiscard]] std::span<const anim::Vec3> contacts() const { return m_contacts; }
+    /// Updates in a row the walking move was blocked outright (the body stayed), or the airborne body could not move.
+    [[nodiscard]] std::uint32_t blockedUpdates() const { return m_blockedUpdates; }
+    /// Updates spent in the air since the last landing.
+    [[nodiscard]] std::uint32_t airborneUpdates() const { return m_airborneUpdates; }
     /// `HuSetScale`: the body's scale, not range-checked. Coney's body (its capsule, its walls' radius, its root
     /// motion) is sized from the scale at each use, so the body follows at once.
     /// @orig 0x0023b0e0 Human_SetScale (unknown)
@@ -719,8 +737,6 @@ class Human final : public Holdable {
     // goes to m_contacts.
     // @orig 0x0033d498 PhysicsBody_SweepHumanMask (unknown)
     [[nodiscard]] anim::Vec3 meetHumans(anim::Vec3 from, anim::Vec3 move);
-    // Its capsule as another human's sweep meets it.
-    [[nodiscard]] UprightCapsule uprightCapsule() const;
     // Pushes the airborne body (a player's larger sphere) out of the walls it overlaps after moving to `feet`.
     // @orig 0x0021a490 Human_PushOutInAir (unknown)
     [[nodiscard]] std::optional<anim::Vec3> pushOutInAir(const raycast::CollisionMesh& mesh, anim::Vec3 feet);
