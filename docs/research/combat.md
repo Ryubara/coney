@@ -1084,12 +1084,12 @@ move is the same for every Warrior class's anim ids, and the clips decide what i
 
 **Coney** (#223, implemented): `Human` acts on the clip events above for any human (`repo:src/human/carried_prop.h`,
 `Human::carriedProp()`): `0x30` notes the named prop, `0x37` its place (the word's point times its scale), `0x31`
-removes it when the name matches, and a script's bind of the human to a scene role removes it ([Scenes](scenes.md#humans)). Play mode makes the
-object (`repo:src/platform/play_level_props.cpp`: the `dyn_` type's record, kind 5 only) and hangs it from the bone,
-drawn with the hats. Stand-ins: a type of another kind is not made (the original ignores kind 6 and puts the others in
-the hand), and the drop of a held kind-`0x27` object by `Human_ReleaseCarriedProps` is not modelled. Disc test
-(`tests/platform/disc_level99_power_lesson_test.cpp`): through lesson 6 the can is carried from 59's update 1 to 77
-of its 59 and is gone after.
+removes it when the name matches, and a script's bind of the human to a scene role removes it
+([Scenes](scenes.md#humans)). Play mode makes the object (`repo:src/platform/play_level_props.cpp`: the `dyn_` type's
+record, kind 5 only) and hangs it from the bone, drawn with the hats. Stand-ins: a type of another kind is not made
+(the original ignores kind 6 and puts the others in the hand), and the drop of a held kind-`0x27` object by
+`Human_ReleaseCarriedProps` is not modelled. Disc test (`tests/platform/disc_level99_power_lesson_test.cpp`): through
+lesson 6 the can is carried from 59's update 1 to 77 of its 59 and is gone after.
 
 ### Strong grapple {#strong-grapple}
 
