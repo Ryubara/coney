@@ -579,7 +579,7 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   `GEMINI.md`) holds the `@AGENTS.md` import line and nothing more. Exit 1 when a pointer file is wrong.
 * `repo check-title` checks the first line of a commit message or a title (`-` reads stdin) against `commits.title`:
   `area: Verb the rest`, a known area and verb, the length limit, no trailing period, the breaking suffix last. The
-  commit-title pre-commit hook and the `title` and `commits` jobs of the `pr` workflow run it.
+  `title` job of the `pr` workflow runs it on the pull request title.
 * `repo check-docs` reads the changed paths on stdin and refuses a change under `paths.code` that has no change under
   `paths.docs` and no `Docs: none` line in the body.
 * `repo check-body` checks a pull request description against the template ([What a pull request
@@ -606,7 +606,8 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   the generated blocks are current.
 * `--github` reads issues, pull requests, labels, the repository settings and the ruleset through `gh` (read only;
   `gh` must be signed in) and checks them: the sections of each open issue (a missing one, one left as `x`), its
-  Screenshots, its labels, the word "owner" for the person (say "user"), closed issues and merged pull requests that
+  Screenshots, its labels, a closed issue that still carries an `S-` status label, the word "owner" for the person
+  (say "user"), closed issues and merged pull requests that
   keep an unchecked item with no follow-up issue number, open pull requests whose description names a path on your
   machine or an image that is not uploaded, stacked pull requests, how long an item has waited, and drift between the
   labels, settings and ruleset on GitHub and the file. `--save-snapshot FILE` also writes what it read, and

@@ -116,6 +116,7 @@ add_executable(coney_tests
     platform/disc_level99_change_character_test.cpp
     platform/disc_level99_noclip_test.cpp
     platform/disc_sprint_attacks_test.cpp
+    platform/disc_bat_cross_test.cpp
     platform/disc_level99_car_climb_test.cpp
     platform/disc_level99_street_props_test.cpp
     platform/disc_game_session_test.cpp

@@ -113,15 +113,8 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso
 ## Documentation
 
 The documentation is published at **<https://ryubara.github.io/coney/>**, rebuilt from `main` on every push. It
-is a MkDocs site built from `docs/`. To build it locally:
-
-```sh
-py -m venv .venv
-.venv/Scripts/pip install -r requirements-docs.txt
-.venv/Scripts/python -m mkdocs build --strict
-```
-
-On Linux and macOS use `python3` and `.venv/bin/` instead. `mkdocs serve` previews the site while you edit.
+is a MkDocs site built from `docs/`. To build or preview it locally, see
+[Writing these docs](docs/guides/writing-docs.md).
 
 - [`docs/research/`](docs/research/) holds what is known about the game: formats, engine behaviour, addresses.
 - [`docs/guides/`](docs/guides/) holds how-to guides for working on the project.

@@ -435,7 +435,7 @@ def issue_screenshots(context: GithubContext) -> Iterator[Problem]:
 
 
 def _label_problems(labels: Sequence[str], is_open: bool, conventions: Conventions) -> list[str]:
-    """What is wrong with an issue's labels: counts per family, unknown labels, a status left on a closed issue."""
+    """What is wrong with an issue's labels: counts per family and unknown labels (a closed one: unknown ones only)."""
     rules = conventions.issues.labels
     known = set(conventions.labels.names())
     families: dict[str, list[str]] = {"type": [], "area": [], "priority": [], "status": [], "other": []}
@@ -444,9 +444,7 @@ def _label_problems(labels: Sequence[str], is_open: bool, conventions: Conventio
         if name in known:
             families[conventions.labels.family(name)].append(name)
     if not is_open:
-        if families["status"] and not rules.closed_keeps_status:
-            problems.append(f"closed but still labelled {', '.join(families['status'])}")
-        return problems
+        return problems  # a closed issue keeps its history labels; a status left on it is issue.closed-status's finding
     triaged = "S-needs-triage" not in families["status"]
     for family, rule in (
         ("type", rules.type),
@@ -469,11 +467,25 @@ def _label_problems(labels: Sequence[str], is_open: bool, conventions: Conventio
 
 @check("issue.labels")
 def issue_labels(context: GithubContext) -> Iterator[Problem]:
-    """Open issues carry the labels `issues.labels` asks for; closed ones keep no status; all use known labels."""
+    """Open issues carry the labels `issues.labels` asks for; every issue uses known labels."""
     for issue in sorted(context.snapshot.issues, key=lambda item: item.number):
         problems = _label_problems(issue.labels, issue.open, context.conventions)
         if problems:
             yield _problem(issue, "; ".join(problems))
+
+
+@check("issue.closed-status")
+def issue_closed_status(context: GithubContext) -> Iterator[Problem]:
+    """A closed issue carries no `S-` label: a status describes open work (the issue-status workflow removes it)."""
+    if context.conventions.issues.labels.closed_keeps_status:
+        return
+    labels = context.conventions.labels
+    for issue in sorted(context.snapshot.issues, key=lambda item: item.number):
+        left = [name for name in issue.labels if labels.family(name) == "status"] if not issue.open else []
+        if left:
+            yield _problem(
+                issue, f"closed but still labelled {', '.join(left)}: remove it (the close reason is the final state)"
+            )
 
 
 # --- issues: wording, leftovers, links ------------------------------------------------------------------------------

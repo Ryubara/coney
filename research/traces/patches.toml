@@ -857,4 +857,43 @@ research = "docs/research/combat.md#power-move-props"
 address = 0x0024ce40
 # addiu sp,sp,-0x30; sq s0,0x20(sp)
 original = [0x27bdffd0, 0x7fb00020]
+
+[hook.flash-use]
+description = "Each call of Flash_Use (0x00284280): the caller (Player_UseItemCommand's at-once use, or Human_HandleMessage's answer to clip 665's 0x41 event) and the human."
+research = "docs/research/combat.md#flash-mid-move"
+address = 0x00284280
+# addiu sp,sp,-0x30; li a2,0x1
+original = [0x27bdffd0, 0x24060001]
 log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }]
+
+[hook.say-anim-line]
+description = "Each call of Human_SayAnimLine (0x0021f410, a vocal animation-sound id said as the human's line): the tick count, the caller, the human, the SA id, overLine, cut, and the human's line handle (+0x178), Lua callback (+0x188) and the word holding the may-be-cut byte (+0x194, low byte) before the call."
+research = "docs/research/sound.md#speech-cut-in"
+address = 0x0021f410
+# addiu sp,sp,-0x80; sq s0,0x70(sp)
+original = [0x27bdff80, 0x7fb00070]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a0", name = "human" }, { value = "a1", name = "id" }, { value = "a2", name = "over" }, { value = "[a0 + 0x178]", name = "line" }, { value = "[a0 + 0x188]", name = "callback" }, { value = "[a0 + 0x194]", name = "w194" }]
+
+[hook.stop-speech]
+description = "Each call of Human_StopSpeech (0x0021ec38): the tick count, the caller, the human, force (a1), and the human's line handle, Lua callback and +0x194 word before the call."
+research = "docs/research/sound.md#speech-cut-in"
+address = 0x0021ec38
+# addiu sp,sp,-0x40; sq s0,0x30(sp)
+original = [0x27bdffc0, 0x7fb00030]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }, { value = "a1", name = "force" }, { value = "[a0 + 0x178]", name = "line" }, { value = "[a0 + 0x188]", name = "callback" }, { value = "[a0 + 0x194]", name = "w194" }]
+
+[hook.play-speech]
+description = "Each call of Human_PlaySpeech (0x0021e400, a line that waits for the current one): the tick count, the caller, the human, the sound hash, the callback it brings (a2) and the human's line handle, callback and +0x194 word before the call."
+research = "docs/research/sound.md#speech-cut-in"
+address = 0x0021e400
+# addiu sp,sp,-0x110; sq s1,0xd0(sp)
+original = [0x27bdfef0, 0x7fb100d0]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }, { value = "a2", name = "new_callback" }, { value = "[a0 + 0x178]", name = "line" }, { value = "[a0 + 0x188]", name = "callback" }, { value = "[a0 + 0x194]", name = "w194" }]
+
+[hook.play-speech-cut]
+description = "Each call of Human_PlaySpeechCutting (0x0021e698, HuSpeakNI's line and the cutting vocal ids): the same values as play-speech."
+research = "docs/research/sound.md#speech-cut-in"
+address = 0x0021e698
+# addiu sp,sp,-0x110; sq s1,0xd0(sp)
+original = [0x27bdfef0, 0x7fb100d0]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }, { value = "a2", name = "new_callback" }, { value = "[a0 + 0x178]", name = "line" }, { value = "[a0 + 0x188]", name = "callback" }, { value = "[a0 + 0x194]", name = "w194" }]

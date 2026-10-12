@@ -1692,46 +1692,100 @@ the player's money, so only the order means anything. Updates count from that ru
 
 #### Coney's run and the fix list {#level87-fixes}
 
-Coney at `f325e018` (release build), started with `--play-level level87 --checkpoint N --pad-pipe` and played by a
-scratch course over the observation (markers, events and Coney's own log lines), the left stick at 35-90 %, climbs
-made by pushing at 90 % and tapping triangle along the level's path nodes. **Checkpoint 1** plays to
-`SetCheckPoint(2)` in 2,773 updates (the ledge climb, the stick game finished on the second spray, the go-to
-objective), and chapter 2 then sets up and plays its scene. **From a checkpoint 2 start** the player has no paint;
-mugging the passers-by near the start paid $0 or $1 eight times and $14 once in 8,900 updates, and the run ended
-there. **Checkpoints 3 to 5** were not driven in this pass.
+Coney at `f325e018` (release build, the planner fixes of #271 included), started with `--play-level level87
+--checkpoint N --pad-pipe` and played by a scratch course over the observation (markers, events and Coney's own log
+lines), the left stick at 25-90 %, climbs made by pushing at 90 % and tapping triangle along the level's path nodes.
+
+- **Checkpoint 1** plays to `SetCheckPoint(2)` in 2,773 updates (the ledge climb, the stick game finished on the
+  second spray, the go-to objective), and chapter 2 then sets up and plays its scene; its first spray is cut short
+  (fix 2).
+- **Checkpoint 2** (a direct start): no paint; mugging the passers-by near the start paid $0 or $1 eight times and
+  $14 once in 8,900 updates (fix 3).
+- **Checkpoint 3**: the order matches the script and the reference: objective `MS_C3_1` (0/3) and the five spots at
+  the start, `SPRAYATTACK` once `EConey_Sub5` has loaded (update 354; the reference's 481 after `SetCheckPoint(3)`
+  include the original's load). The boozer's sphere calls the missing `ch3.BoozerChallenge` at once, set off by the
+  second early Destroyer standing beside him. No paint: three muggings of spawned humans in 6,000 updates paid $0
+  each, so no spot could be sprayed (fixes 3 and 4).
+- **Checkpoint 4**: Poizo's intro path camera, `MS_C4_1` (0/3) at the camera's end (update 335) and `RUNATTACK` 18
+  updates later, as the script orders. The course reached none of the three burners: the street one needs paint, and
+  on the level's path links the two roof spots are reached only through door links (kind `0x10`; for the roof at
+  (442.6, 112.5, 6.5), the bar door `dyn_door_bar_bani` number 11 at (457.1, 127.1), where the player stood pushing
+  for 2,000 updates) or a jump link (kind 4) 4.6 m up. No link joins the street to chapter 5's start: the way out is
+  a scripted door (`Doors.ChA17`, opened by `ch4.Exit`).
+- **Checkpoint 5**: the stealth tutorial runs in the script's order up to the kill lesson (the hide box, its hints,
+  the move to the marker, the scout lesson, then the creep hint at update 737); the player hides and sneaks (clips
+  630, 631, 633). Crept up on the first guard at 25 % stick, the player went into the fight stance 1.5 m from him
+  (clip 380) before any L1, and L1 + square played the normal combo (12, 16, 19); the guard called his gang and the
+  mission failed as spotted (update 975) (fixes 5 and 6).
 
 Fixes, in the order to take them (each one implementer unit):
 
-1. **A spray cut short leaves its spot dead.** Played from checkpoint 1 into 2, triangle at chapter 2's first spot
-   called `HuTag` and Coney logged that the spray was cut short on the next update; no event 14 followed, so
-   `TagFinished` never put the spot's prompt back, and 30 later presses there did nothing. The original's
+1. **A spray cut short leaves its spot dead** (issue #330). Played from checkpoint 1 into 2, triangle at chapter 2's
+   first spot called `HuTag` and Coney logged that the spray was cut short on the next update; no event 14 followed,
+   so `TagFinished` never put the spot's prompt back, and 30 later presses there did nothing. The original's
    `Tag_UpdatePlayer` (`0x00273c60`) calls `Tag_End` whenever the action is no longer `0x17` or `0x18` and the spray
    flag `0x2000000` is not set while the tag still exists, and `Tag_End` (`0x0022e848`) always gives the tagger event
    `0xe` with finished = `+0x3ba` (0 here). Confirmed (code). Fix: Coney's cut-short path delivers event 14 with
    (tag, 0) as its refusal does. Test: a spray whose intro is cut short runs the script's event-14 handler with 0, and
    a second press at the spot starts a new spray.
-2. **The game hints** 16, 22 and 24/25 above: Coney queues only hint `0x15`. Add the three triggers with their
-   counters and flags in the game state. Hints 22 and 24/25 serve every level ([HUD](hud.md)).
-3. **Attacking on sight**: the Destroyers of chapters 2-4 do not react to the player until hit ([AI: attacking on
+2. **The fight stance cuts the spray's intro short** (why chapter 2's first spray ended, issue #331). Before the
+   press the player was already in the fight stance (the stance walk clips 380 and 384, then the fight idle 358):
+   chapter 2's first spot has a human within 2 m, whom [the stance](combat.md#fight-stance) takes as its target;
+   chapter 1's spots have none. `HuTag` started 334 `ANIM_TAGGING_INTRO`, and on the next update Coney's stance walk,
+   with the stick at rest, put the fight idle 358 back over it, so the intro was no longer playing and the spray
+   counted as cut short. In the original nothing of the stance runs during a spray: `Human_UpdateActions`
+   (`0x00254e78`) calls `MiniGame_Update`, which for a tagging player runs `Tag_UpdatePlayer`, and returns at once
+   when that answers 1, which it does from the first update of action `0x17` (when it calls `Tag_StartSprayClips`)
+   to the spray's end; `Player_UpdateActions` (with the stance, `Player_UpdateSprint` `0x0027ce90`) and
+   `Human_ChooseAnimState` come after that return. The movement function moves nothing either: `Tag_StartSprayClips`
+   (`0x00278018`) sets held flag `0x400`, a busy bit ([the locomotion gate](tasks.md#locomotion-gate)), so
+   `Human_FightStanceMove` (`0x00241b90`) sets no velocity while 334 plays. Confirmed (code) at the addresses; the
+   cause in Coney inferred from its log (the clip column) and its code. Fix: while a spray runs (intro, loop and
+   restart clips, and the stick game) the player's stance and anim-state choice do not run, and 334 holds `0x400`.
+   Test: a player in the fight stance (an enemy 1.5 m away, stick at rest) presses triangle at a spot; 334 then 335
+   play and the stick game starts.
+3. **Spawned humans carry no money.** The original rolls the [starting money](crimes.md#starting-money) in
+   `Human_Init` for every human: `Spawner_MakeHuman` (`0x0016d860`) calls it as `Human_Create` does. Confirmed
+   (code). Coney rolls it only in `HuCreate`, so everyone a spawner makes (the street's civilians of
+   `AddcCivilians`, the bums, the wanderers) has $0, and mugging them pays nothing; the $14 of the checkpoint 2 run
+   came from a scripted human (inferred). This settles the earlier question about the passers-by: $0 is not
+   faithful. Fix: a spawner's human rolls its money and object as a scripted one does, in the same order of draws.
+   Test: a spawner human of a class whose range is 5-20 with no object holds $5-$20.
+4. **A downed human drops no money.** The original's `Human_OnHealthOut` calls `Human_DropCarried` (`0x00232c60`)
+   when a human is knocked out or wounded, which leaves a `dyn_money` pickup of his money ([Dropped when
+   down](crimes.md#down-drop)). Chapter 3's two early Destroyers get $5 each (`EDConstructor`, `HuSetMoney`), the
+   price of a can ([GoalDealer](ai.md#dealer)), so beating them is the chapter's first paint (inferred from the
+   script); Coney drops nothing. Fix and test on [Crimes](crimes.md#down-drop).
+5. **A hidden player enters the fight stance.** The original's stance starts only when the state word lacks
+   `0x200000`, the hidden state ([Fight stance](combat.md#fight-stance), step 3, `0x0027ce90`), and L1 while hidden
+   picks a target without the lock ([The stealth kill](stealth.md#stealth-kill)). Coney's stance ignores the hidden
+   state, so creeping up on a scout puts the player in the fight walk. Test: a hidden player walking to 1.5 m behind
+   an enemy keeps the stealth walk (633) and has no target until L1.
+6. **The stealth kill** ([Stealth](stealth.md#stealth-kill); not in Coney yet): checkpoint 5's kill lesson needs it.
+   Without it the guard is only hit, calls for help and the mission fails.
+7. **The game hints** 16, 22 and 24/25 above (issue #332): Coney queues only hint `0x15`. Add the three triggers with
+   their counters and flags in the game state. Hints 22 and 24/25 serve every level ([HUD](hud.md)).
+8. **Attacking on sight**: the Destroyers of chapters 2-4 do not react to the player until hit ([AI: attacking on
    sight](ai.md#aggro-on-sight), issue #73).
-4. **The tag's look**: the mist and the wall tag (fixes 6 and 7 of [Crimes](crimes.md#tag-coney-fixes), issue #70).
-5. **The spray sellers** after a hit ([GoalDealer](ai.md#dealer), items 7 and 15): chapter 2's first seller is the
-   one the hints point at.
-6. **Routes at checkpoint 4**, out of the street and down from the roofs ([AI pathing](ai-pathing.md)): the planner
-   fixes merged since (#271) are not re-checked on this mission yet.
-7. **A playthrough test** per checkpoint asserting the order above, once 1-6 land
-   ([Testing](../guides/testing.md#playthrough-tests); issue #135 for the rest of the reference order).
+9. **The tag's look**: the mist and the wall tag (fixes 6 and 7 of [Crimes](crimes.md#tag-coney-fixes), issue #70).
+10. **The spray sellers** after a hit ([GoalDealer](ai.md#dealer), items 7 and 15): chapter 2's first seller is the
+    one the hints point at.
+11. **A playthrough test** per checkpoint asserting the order above, once 1-10 land (issue #333;
+    [Testing](../guides/testing.md#playthrough-tests); issue #135 for the rest of the reference order).
 
 Open questions:
 
-- Why chapter 2's first spray, in the story path, ended one update after `HuTag` when the same press works in
-  chapter 1 (fix 1 makes it recoverable; a `--trace` of that run, clip column, answers it).
-- Whether passers-by near chapter 2's start paying $0 is faithful: bums are categories 9-11, which carry nothing
-  unless an object is rolled ([Starting money](crimes.md#starting-money)); compare with the runtime money of
-  `level87`'s spawned humans.
 - Whether a crew Warrior can be grabbed and mugged: the course grabbed humans standing beside the start more than
   once, and which human it was is not logged.
-- What the original does with `ch3.BoozerChallenge`, which the script names but never defines.
+- What the original does with `ch3.BoozerChallenge`, which the script names but never defines; its sphere goes off
+  for any human, the second early Destroyer included, as soon as the chapter starts.
+- How the player reaches checkpoint 4's roof burners in the original: whether the bar door (number 11) is open at
+  the checkpoint's start (`OpenDoors(giStart)` opens doors by script name, and which number each name has was not
+  traced) or another way up exists that the path links do not show. The earlier note that the planner found no route
+  out of the street is answered by the path data: no link leaves the street for chapter 5, whose way is the
+  scripted door. A runtime walk of checkpoint 4 in the original settles both.
+- What a direct checkpoint 3 or 4 start holds in the original (paint and money come from the save's inventory; the
+  course started with none).
 
 ### `level34.lua` (mission 4) {#level34}
 
@@ -1851,6 +1905,102 @@ acts find targets. The play-test shows these are also missing:
    routed crimes (dispatch states 4 and 9) are item 13's work.
 7. A disc playthrough test from checkpoint 1: after `P1.EndIntroScene`, no `RiotCivs1` human appears in the subway
    while the player is in it, and at least one appears on the street flags once he comes out.
+
+#### Fix list, checkpoint by checkpoint {#level34-fixes}
+
+What stops `level34` from playing start to end in Coney. Found by playing each checkpoint headless on the disc
+(`--play-level level34 --checkpoint N`, a waypoint driver over `--pad-pipe` with the left stick at 60-100 %,
+2026-10-12, a release build of `main` at `f325e018`) and by reading the scripts above. The fixes are in the order an
+implementer can take them, and each says what "done" means. Items 1-3 are shared with every mission that uses
+spawners and link to their subject pages; the rest are this mission's.
+
+**Shared, first.**
+
+1. **The global spawn cap.** Confirmed (code) at `0x00166708` (`Gang_CachePlayerInfo`, called with 1 from
+   `Gangs_Update` `0x0016d170`): a gang's spawners (`GangSpawner_Update`, `0x001681a0`) run only while the game's
+   spawned count is under its cap. For a police gang (gang `+0x2c` = 1) that is the dispatch count `+0x324` under
+   `+0x326` (`SetCopSpawnMax`); for every other gang it is `+0x432` under `+0x434` (`SetSpawnMax`, which `level34`
+   sets to 45). Each spawn adds 1 to `+0x432` (and to `+0x324` in state 6), and `GangSpawner_OnHumanGone`
+   (`0x001672a8`) takes it off again ([Spawners](ai.md#spawners)). Coney does not read `SetSpawnMax`
+   ([Coney's implementation](ai.md#coney)), so at checkpoint 3 the riot, wanted-gang and police spawners fill the
+   human pool. In 1,500 updates of standing still, `HuCreate` was asked for 240 `RiotCivs1` humans and about 40 of
+   each cop gang. Once the pool was full, most of these calls failed (handle 0) on every update. Done: a test with
+   `SetSpawnMax(n)` and two spawners never has more than *n* spawned humans alive, and a removed human frees its
+   place.
+2. **State 7's placement** ([its fix list](ai-world.md#spawner-reinforcements); item 1 of
+   [the riot's crowd](#level34-start)). It is still a stand-in. At checkpoint 1, eight `RiotCivs1` humans appeared on
+   one subway spot (2.2, −66.7, −6.2), all at the same point. At checkpoint 2, 26 appeared on the street beside the
+   player's start (−56, −143). At checkpoint 4, the wanted gangs and cops appeared 3-6 m from the player
+   (−49, −256) and cut his health from 900 to 445 within 1,500 updates. Every crowd and police squad of the mission
+   is state 7, so this placement decides how hard checkpoints 3 and 4 are.
+3. **A suspended gang still spawns.** Confirmed (code): neither `Gangs_Update` nor `GangSpawner_Update` reads gang
+   `+0xd4` (`GangSuspend`), so the original's `RiotCivs1` spawner keeps making humans during the intro scene. Those
+   humans only stand, because their brains skip their update ([One update](ai.md#update-goals)). Coney spawns them
+   too, which matches the original; keep it.
+
+<!-- markdownlint-disable MD029 -->
+
+**Checkpoint 1** (from the subway to the street, the car flippers, then `vSection2`).
+
+4. Plays: the intro, the stairs, `vEnterRiot`, the fence (climbed with triangle) to `vIntro`, the scene
+   `l34_car_flip`, `P1.StoreObjectives` with the loot objective, and the walk towards `vSection2`. Nothing blocks
+   here once item 2 keeps the crowd out of the subway. The trigger boxes send their message for every human that
+   enters, and the scripts filter by `HuIsAPlayer` or by gang, so that is harmless.
+5. **The looters' tactics** (item 4 of [the riot's crowd](#level34-start)). In Coney, `TacticVandalize` on zone 51
+   answered with code 6 (attacked) within 30 updates, and the intro looters left. In the original, they wreck the
+   zone first and answer 1 once it is empty ([tactic kinds](ai.md#tactic-kinds)). Done: the looters break zone 51's
+   objects before they leave, unless they are attacked.
+
+**Checkpoint 2** (the stores, the stereo scene, then `vSection3Gate`).
+
+6. Plays: `vCarPoizo` warps the Warrior to `fStereoWarp`, Vermin says his line, and `P1.DoneStereoPoizo` gives the
+   radio objective and its marker. The hardware owner, the Hun store, the molotov thrower and `F.BlowupCar` all run.
+7. **`vSection3Gate` did not end the checkpoint** (open; inferred). The driver reached (−107.6, −221.5), inside the
+   box, and was then pushed back to (−104.3, −218.1). In 3,000 updates no `P1.EnterSection3` came from a player.
+   Only `P1.DoneStereoPoizo` sets the box's handler, and the run that reached the box did not log whether the stereo
+   scene had ended first. Next step: rerun with the end of the stereo scene confirmed, then check that box messages
+   reach the handler while the gate `DblGt01` is shut (it opens only after the cop scene).
+8. **`CarSpawnRadio` runs twice on the same three cars at checkpoint 2**: once from `P1.SetupTier2Encounters` and
+   once from `P1.EnterSection2`. The original does the same, because the second call does not test `radioSpawn`.
+   Coney must make the second call harmless (no second stereo). Open question: what the binding does to a car that
+   already has a radio.
+
+**Checkpoint 3** (the three objectives, then `P1.HeadToGate`).
+
+9. This checkpoint depends on item 1: while the pool is full, nothing else can spawn.
+10. **The three objectives have no disc test that plays them together.** Disc tests exist for the radios and the
+    muggings, but not for the loot ($350 from store items; [Taking owned items](crimes.md#owned-items)) or for the
+    riot meter (200 points: a newsstand gives 3, another world object 1, a pane 2, and car message 25 gives 3). In
+    the driver runs the meter counted (1 % on the first point, then 2 %), so it is wired, but neither total was
+    played to the end. Done: a disc test from checkpoint 3 that takes store items to $350, breaks props and cars to
+    100 % and steals three stereos, then sees `P1.HeadToGate` and `SetCheckPoint(4)`.
+
+**Checkpoint 4** (to `fFinalGate`, then `vNearFuries`).
+
+11. **The player cannot get west of x −135** (open; inferred). Every run stopped at (−135, −255..−261), 9-12 m short
+    of `fFinalGate` (−144.1, −269.3), and the objective's `P2.AtGate` never ran. `P2.SetupGate` calls
+    `DoorOpen(DblGt00, player)` (door 325 in Coney's trace), so the likely cause is that gate staying shut. Next
+    step: take a screenshot from (−134, −258) facing west, and read the door's state after the call
+    ([`DoorOpen`](../references/bindings/world.md#dooropen)).
+12. The player died twice in 6,000 updates, killed by the wanted gangs and cops that spawned beside him (item 2), and
+    the level restarted at checkpoint 4. Once item 2 is in, check that he can reach the gate.
+
+**Checkpoint 5** (the park, the Furies, then `vSubwayExit`).
+
+13. Plays: the scene `l34_c4`, `P3.EndParkScene` and the fence Furies. `P3.FuryTimeout` runs 5 s later
+    (`MoveFromFence`, which kills the two Rogues), and Vermin says a line every 15 s, as the script says.
+14. **No route to `vSubwayExit` was found** (open). From (−208, −269.5), the Furies knocked the player down within
+    400 updates in every run, and once he died (the level restarted at checkpoint 5). Whether the original's Furies
+    hit as quickly is not known. Next step: record the original from checkpoint 5, measure the time from the scene's
+    end to the first hit on the player, and compare.
+15. The rest of the checkpoint was not reached in Coney: `P3.GetToSubway`, the scene `l34_c2` with `Final`,
+    `HUDLaunchMissionComplete` and the outro `L34_OUT`.
+
+<!-- markdownlint-enable MD029 -->
+
+**A playthrough test** ([Testing](../guides/testing.md#playthrough-tests)) for the mission comes last: one driver per
+checkpoint that climbs the fence, walks the flag net (`PedNet_*`) between the boxes above, and asserts the
+`SetCheckPoint` calls 2-5 and `HUDLaunchMissionComplete`.
 
 ### `level2.lua` (mission 5) {#level2}
 

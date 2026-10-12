@@ -1,0 +1,1 @@
+# No scripted taps: the scenario's setup presses d-pad right while the player reacts, lies down, is stunned or held.

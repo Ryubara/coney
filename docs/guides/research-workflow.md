@@ -583,7 +583,9 @@ box's queue, [HUD](../research/hud.md#hint-queue-runtime)) and `anim-dispatch` a
 which anim id and which script callback it runs). The level80 passes added the teammate hooks (`hit-by-chief`,
 `hit-reaction`, `attack-target-push`, `push-contact`, `can-push`, `say-command`) and the fire hooks (`ember-init`,
 `burn-init`, `fade-flame-init`, `debris-flame` and their update hooks); the revive pass added `revive-start` and
-`revive-finish` ([Combat](../research/combat.md#revive-runtime)). One run installs at most 64 hooks, fewer than
+`revive-finish` ([Combat](../research/combat.md#revive-runtime)), and the speech pass `say-anim-line`, `stop-speech`,
+`play-speech` and `play-speech-cut` (who starts, stops or refuses a human's line, with his line state before each;
+[Sound](../research/sound.md#speech-cut-in)). One run installs at most 64 hooks, fewer than
 the file holds, so name only the ones a pass needs. Two hooks at one address cannot be installed together (`hint-show`
 and `event-hint` are the same place): pick one, and add any extra value it needs to the one you keep. When the update
 of an entry matters, log the tick count and use it: in that pass one Lua call's four `HintBox_Queue` entries, all at

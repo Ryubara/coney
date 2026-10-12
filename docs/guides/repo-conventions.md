@@ -25,7 +25,7 @@ and `labels.yml`) are gone, and so are the constants that repeated their values 
 | --- | --- | --- |
 | `repo` | The default branch, the wording (call the person who directs the project "user", never "owner"), the decisions only a maintainer takes (`owner_decisions`) and the tool configuration files | `repo audit` (`files.exist` and the wording checks); agents ([AGENTS.md](repo:AGENTS.md)) |
 | `paths` | Which paths are code, documentation and documentation-only; generated paths; the agent pointer files; the one file that may hold the repository's address; the large-file limit | `repo check`, `repo check-docs`, `check changed`; `repo render` (the `docs-only-paths` block); `ci-scope.sh` reads the docs-only list itself, and `repo audit` holds it and pre-commit to the file |
-| `commits` | The title form, its limit and suffix, the areas and verbs, the body wrap and the `Co-Authored-By` trailer | `repo check-title`, which the commit-title hook and the `title` and `commits` jobs run; `repo render` (the `commit-rules` and `commit-areas` blocks) |
+| `commits` | The title form, its limit and suffix, the areas and verbs, the body wrap and the `Co-Authored-By` trailer | `repo check-title`, which the commit-title hook and the `title` job run; `repo render` (the `commit-rules` and `commit-areas` blocks) |
 | `pull_requests` | The description's sections and which must hold text, the `Docs: none` line, `Fixes #N`, the Remaining list, the Screenshots rule, the AI use choices, stacked pull requests | `repo check-body`, `repo check-docs`; `repo render` (the `pr-rules` block); `repo audit` checks the template and the stacked-pull-request rules |
 | `merge` | The merge methods, the squash commit's wording, auto-merge, the required checks and who merges: a copy of the GitHub ruleset and settings | `repo render` (the `required-checks` block); `repo audit --github` compares it with the GitHub ruleset and settings |
 | `issues` | The structure of each issue form (field ids, headings, which are required, default labels), the Screenshots line, the `From:` line, links and how many labels of each family an issue carries | `repo audit` (the forms, and every issue's sections, placeholders, Screenshots, labels, links and `From:` line) |
@@ -102,6 +102,7 @@ says where the check runs, how bad a finding is and who fixes it, and the table 
 | `issue.placeholder` | github | error | skill | a section of an open issue is empty or holds only a placeholder such as x |
 | `issue.screenshots` | github | error | skill | an open issue has no uploaded image and no Screenshots: none (reason) line |
 | `issue.labels` | github | error | skill | an issue lacks a type, area, priority (after triage) or status label, has two of one, or has an unknown label |
+| `issue.closed-status` | github | error | skill | a closed issue still carries an S- status label (the issue-status workflow removes it; this is the backstop) |
 | `issue.owner-word` | github | error | skill | an open issue says 'owner' for the person who directs the project (say 'user') |
 | `issue.closed-unchecked` | github | error | skill | a closed issue keeps an unchecked item that names no follow-up issue |
 | `issue.stale-status` | github | warn | skill | an issue calls a pull request open, merged or closed when it is not |
@@ -158,12 +159,27 @@ unusable, and never with a traceback.
 3. Update the guide that explains the rule in the same commit ([Documentation](repo:AGENTS.md)).
 4. Changing the conventions themselves is a maintainer decision (`repo.owner_decisions`).
 
+## Workflows {#workflows}
+
+The workflows in `.github/workflows/` read the repository and report: they run checks, build, and at most comment. Two
+rules keep them safe: each declares the narrowest `permissions` it needs (`contents: read` by default), and nothing
+from a title, a description or a comment is ever expanded into a script's text; it reaches the script through an
+environment variable or a file ([pr.yml](repo:.github/workflows/pr.yml) shows both).
+
+There is one exception, approved by the maintainer on 2026-10-12: `issue-status.yml` edits labels. A status label
+describes open work only, so when an issue is closed it removes every `S-` label and when it is reopened it adds
+`S-needs-triage` ([What a closed issue keeps](issues.md#closed)). It has `issues: write` and no other permission,
+checks out nothing and runs nothing from the repository, and the audit check `issue.closed-status` is the backstop if it
+fails. Another workflow that writes to GitHub needs the same maintainer approval first; a new one that only comments
+does not.
+
 ## Where the reasons are
 
 | Rule | Guide |
 | --- | --- |
 | Commit titles, squash merging, who merges, the release queue | [How we work](how-we-work.md), [CONTRIBUTING.md](repo:CONTRIBUTING.md#commits) |
 | Pull request descriptions: Testing, Screenshots, Remaining | [Testing](testing.md#pr-evidence), [Issues](issues.md#leftovers) |
-| Labels, forms, triage | [Issues](issues.md) |
+| Labels, forms, triage, what a closed issue keeps | [Issues](issues.md) |
+| What a workflow may write to GitHub | [Workflows](#workflows) |
 | What CI runs for which paths | [Building and testing](building.md#what-ci-runs) |
 | Code style (SPDX, `@orig`, comments) | [Conventions](conventions.md): code, not repository process |

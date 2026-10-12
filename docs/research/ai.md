@@ -435,7 +435,10 @@ said. Confirmed (code) at each address.
     2. A target hidden in shadow is dropped.
 
     So about 1.9 s after going down, a man still under attack plays kind 42 (anim 250), which `0x002240e8` allows
-    only from this goal (inferred: a get-up attack). This corrects [AI goals](ai-goals.md#goal-reactions)' "against
+    only from this goal. Kind 42 is the command `0xf`
+    (`AttackKind_ToCommand`, `0x00231090`); a downed human never reaches the dispatcher, so no attack plays:
+    the one command cuts his ground time as a press does
+    ([Combat](combat.md#ground-escape); inferred). This corrects [AI goals](ai-goals.md#goal-reactions)' "against
     the target".
 
 #### Who backs off (FightBackOff) {#fight-back-off-pusher}
