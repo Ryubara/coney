@@ -8,6 +8,7 @@ body:
       value: |
         A task is written so that someone with no other context can do it. An agent may be given only "issue #N".
         Never put game data in an issue: no assets, extracted files, saves, dumps, executables, BIOS or game text.
+        Call the person who play-tests "the user" (for example "From: user playtest, 2026-10-11"), never "the owner".
   - type: textarea
     id: summary
     attributes:

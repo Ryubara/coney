@@ -32,6 +32,12 @@ terminal you started it from, as a `.txt` file in the bug form's Log box. From t
 `![alt](./shots/f.png)` already in the body is pointed at the upload (gh 2.99 or later). Captures stay in scratch
 and are deleted once uploaded.
 
+### Wording {#wording}
+
+Issues and pull requests call the person who play-tests and decides "the user", never "the owner": "From: user
+playtest of the preview build, 2026-10-11", "the user says", "the user's screenshot". The word "owner" stays for what
+it means in the code and the research (an object's owner) and in GitHub's own fields.
+
 ### What may be attached {#media}
 
 Gameplay screenshots and short videos of Coney or of the original may be attached to issues. That is the only
