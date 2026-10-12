@@ -38,8 +38,8 @@ an uploaded screenshot or video; a local file path is refused) or a line `Screen
 template's choices after "Commits written by:" and, unless a person wrote the commits, a model after "Model:". Text left
 as the template has it counts as empty. Each unchecked item under "Remaining:" in the Checklist must name an issue or
 follow-up pull request (`#123`); file an issue for what you leave undone
-([Issues](docs/guides/issues.md#leftovers)). The sections, choices and placeholder text are in
-[.github/pr-body-rules.json](.github/pr-body-rules.json). To check a description yourself:
+([Issues](docs/guides/issues.md#leftovers)). The sections, choices and placeholder text are the
+`pull_requests` keys of [.github/conventions.yml](.github/conventions.yml). To check a description yourself:
 
 ```sh
 uv run --project python coney-tools repo check-body --body description.md
@@ -68,8 +68,9 @@ area: Verb the rest
 ```
 
 It is at most 72 characters, has no trailing period, and uses the present tense. The areas and verbs, with what
-each area covers, are in [.github/commit-conventions.json](.github/commit-conventions.json); AGENTS.md's "Commits
-and GitHub" section states the same rules. Make one commit per logical change: a test goes in the same commit as
+each area covers, are `commits.title` in [.github/conventions.yml](.github/conventions.yml)
+([Repository conventions](docs/guides/repo-conventions.md)); AGENTS.md's "Commits and GitHub" section states the
+same rules. Make one commit per logical change: a test goes in the same commit as
 the code that makes it pass.
 
 The body has an opening paragraph saying what changes and why, then `Changes:` with one bullet per part when there

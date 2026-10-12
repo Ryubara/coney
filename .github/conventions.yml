@@ -1,0 +1,246 @@
+# The rules for running the repository: commits, pull requests, issues, labels, merging and hygiene. This file is the
+# one source of truth for every rule a program can check. coney-tools (repo check, check-title, check-docs,
+# check-body, labels, check changed) reads it through coney_tools/conventions.py, which refuses an unknown key, a
+# wrong type and a duplicate key, so a typo or a bad merge fails loudly instead of being ignored. The issue forms, the
+# pull request template and the GitHub ruleset are not read from here: they stay in their own files and a test checks
+# them against this one. Prose (the why, the judgement) lives in the guides: docs/guides/repo-conventions.md says
+# what each key means and where its reasons are.
+#
+# Change a rule here, in the same commit as the guide that explains it. YAML traps: quote a colour made only of
+# digits ("000000") and any text that YAML could read as a number or a boolean.
+version: 1
+
+repo:
+  default_branch: main
+  # Decisions only a maintainer makes: an agent stops and reports instead of acting (AGENTS.md, "Rules").
+  owner_decisions:
+    - make the repository public
+    - tag a release
+    - force-push main or someone else's branch
+    - legal or licence questions
+    - change the installer or launcher
+    - change these conventions
+  # Tool configuration that stays in its own format. Listed so a check knows each file exists and the docs can link it;
+  # its values are never copied here.
+  tools:
+    format_cpp: .clang-format
+    tidy: .clang-tidy
+    hooks: .pre-commit-config.yaml
+    markdown: .markdownlint.yaml
+    editor: .editorconfig
+    docs_site: mkdocs.yml
+    presets: CMakePresets.json
+    agent_permissions: .claude/settings.json
+
+paths:
+  # A change here needs a change under `docs` (the living doc moves with the code) or a `Docs: none` line.
+  code: ["src/", "python/src/"]
+  docs: ["docs/", "research/"]
+  # A pull request that touches only these skips the engine builds (.github/scripts/ci-scope.sh) and the local gate's
+  # clang-tidy step, and a change to them is what `coney-tools check changed` builds the docs for. A trailing slash
+  # means a folder; `*` matches within one folder level, so "*.md" is the Markdown files at the top level only.
+  # ci-scope.sh repeats this list as a regular expression until it reads this file, and a test holds the two together.
+  docs_only:
+    - "docs/"
+    - "research/"
+    - "*.md"
+    - ".github/*.md"
+    - ".github/conventions.yml"
+    - "mkdocs.yml"
+    - "mkdocs_hooks.py"
+    - "requirements-docs.txt"
+    - ".markdownlint*"
+  # Written by a generator, never by hand; on a merge conflict take either side and rerun it.
+  generated:
+    - {path: "docs/references/bindings/", by: "coney-tools natives render"}
+    - {path: "docs/references/", by: "coney-tools refs render", except: ["docs/references/entities.md"]}
+    - {path: "docs/missions/", by: "coney-tools missions render"}
+    - {path: "docs/research/tables/", by: "research/*.yaml"}
+  # The agent entry files hold one line that imports AGENTS.md and nothing of their own, so the rules cannot drift.
+  pointer_files: {files: ["CLAUDE.md", "GEMINI.md"], line: "@AGENTS.md", max_bytes: 400}
+  # Only these files may hold the repository's or the docs site's address.
+  address_allowed_in: ["README.md"]
+  # Mirrors pre-commit's check-added-large-files (a large file is usually game data); never exclude a file from it.
+  large_file_kb: 512
+
+commits:
+  title:
+    form: "area: Verb the rest"
+    max_length: 72
+    trailing_period: false
+    breaking_suffix: "(BREAKING)"
+    areas:
+      build: "CMake, presets, dependency pins and toolchain setup"
+      ci: "GitHub Actions workflows and pre-commit configuration"
+      core: "engine core: memory, chunk system, task engine, utilities (src/core)"
+      fileio: "disc and WAD access, file systems and streaming (src/fileio)"
+      graphics: "rendering through librw: models, textures, effects (src/graphics)"
+      audio: "sound, music and speech playback (src/audio)"
+      platform: "SDL3 and OS glue: windowing, input, timing (src/platform)"
+      tools: "C++ asset tools and the coney_tools Python package"
+      research: "the research pages under docs/research and the research database"
+      agents: "AGENTS.md, the CLAUDE.md and GEMINI.md pointers and other agent instructions"
+      tests: "test-only changes"
+      legal: "LICENSE, LEGAL.md and other licensing or provenance files"
+      docs: "project-wide documentation: README, guides and the docs site"
+    verbs: [Add, Fix, Update, Remove, Rebuild, Rework, Improve, Document]
+  body:
+    wrap: 72
+  trailers:
+    ai_co_author:
+      key: "Co-Authored-By"
+      value: "<model name> <noreply address>"
+      noreply: ["noreply@anthropic.com", "noreply@google.com", "noreply@openai.com"]
+    only_ai_co_author: true                      # no other trailer
+    other_emails: false                          # no other e-mail address anywhere in the message
+
+pull_requests:
+  template: .github/pull_request_template.md
+  # `##` headings of the description, in the template's order; the squash commit takes the pull request's title.
+  sections: [Summary, Checklist, Testing, Screenshots, AI use]
+  filled: [Summary, Testing]                     # must hold text of their own, not just a comment or a placeholder
+  placeholders: ["...", "<reason>"]              # template text that counts as empty when left unchanged
+  local_paths: false                             # no scratch/, ../../ or C:\ in the text (images are the exception)
+  docs_none: {line: "Docs: none", when_changed: code, unless_changed: docs}   # names of the `paths` classes
+  closing: {keyword: "Fixes", form: "Fixes #N", one_per_line: true, section: Summary}
+  remaining: {section: Checklist, label: "Remaining:", unchecked_cites: "#N"}
+  screenshots: {section: Screenshots, none: "Screenshots: none", reason: required, uploaded_only: true}
+  ai_use:
+    section: "AI use"
+    written_by:
+      label: "Commits written by:"
+      choices: ["a person", "an AI", "an AI, edited by a person", "a person, with AI help"]
+      no_ai: "a person"
+    model: {label: "Model:", none: "n/a"}
+  stacked:
+    depends_line: "Depends on #N"                # required when the base is not the default branch
+    merge_into_base: false                       # never merged into a non-default base: retarget to main first
+    auto_merge_on_non_default_base: false
+    after_base_merges: "git rebase --onto origin/main <old base> <branch>"
+
+merge:
+  # Mirrors the GitHub ruleset "Main" and the repository settings, which only a maintainer changes; the audit (a later
+  # change) compares them and reports drift.
+  methods: [squash]
+  squash_title: PR_TITLE
+  squash_message: PR_BODY                        # the pull request description, so its Co-Authored-By trailers stay
+  auto_merge: true
+  delete_branch_on_merge: true
+  linear_history: true
+  up_to_date_required: false                     # no merge queue yet (how-we-work#merging)
+  required_checks: [title, commits, docs, body, build-ok, python-ok, format, mkdocs, markdownlint, actionlint]
+  who: [maintainer, coordinator]                 # never the agent that wrote the work
+
+issues:
+  blank_issues: false
+  # Every form's structure, checked against .github/ISSUE_TEMPLATE/*.yml by a test (the forms keep their guidance
+  # text). A section is `id: [heading, required]`, in the form's order.
+  forms:
+    bug:
+      file: .github/ISSUE_TEMPLATE/bug.yml
+      title_prefix: "Bug: "
+      labels: [bug, S-needs-triage]
+      sections:
+        version: ["Coney version or commit", true]
+        os: ["Operating system", false]
+        gpu: ["Graphics card and driver", false]
+        controller: ["Controller", false]
+        started: ["How did you start the game?", true]
+        mission: ["Mission and checkpoint", false]
+        steps: ["Steps to reproduce", true]
+        position: ["Position and heading", false]
+        actual: ["What happens", true]
+        original: ["What the original game does", false]
+        frequency: ["How often does it happen?", true]
+        screenshots: ["Screenshots", true]
+        log: ["Log", false]
+        no-game-files: ["No game files", true]
+    task:
+      file: .github/ISSUE_TEMPLATE/task.yml
+      title_prefix: "Task: "
+      labels: [task, S-needs-triage]
+      sections:
+        summary: ["Summary", true]
+        area: ["Area", true]                     # its options are the `A-` labels
+        research: ["Research page", false]
+        done: ["What \"done\" means", true]
+        steps: ["Fix list or steps", false]
+        blocked-by: ["Blocked by", false]
+        screenshots: ["Screenshots", true]
+  # An issue filed from the command line uses this form's headings, at the form's level (`###`).
+  cli_uses_form: task
+  screenshots_none: "Screenshots: none"
+  provenance: {line: "From:", required_for: leftovers}
+  sub_issues: {leftover_parent: source_pr_fixes}  # a leftover is a sub-issue of the issue its source pull request fixes
+  links:
+    docs_paths: linked                           # docs/... and research/... appear as Markdown links, not bare text
+    link_form: "../blob/main/<path>"
+    must_exist_on: main                          # the path and its {#anchor}; a branch-only page is named as such
+  status_text: truthful                          # a cited pull request called "open" must be open, "merged" merged
+  # How many of each label family an open issue carries.
+  labels:
+    type: exactly-one
+    area: at-least-one
+    priority: exactly-one-after-triage
+    status: exactly-one
+    closed_keeps_status: false
+
+labels:
+  description_max: 100                           # GitHub's limit
+  # A label belongs to the family named by its prefix; `type` has no prefix and lists its names. The rest are GitHub's
+  # own labels, kept so the sync leaves them as we want them.
+  families:
+    type: {prefix: "", names: [bug, parity, task, docs, enhancement]}
+    area: {prefix: "A-"}
+    priority: {prefix: "P-"}
+    status: {prefix: "S-"}
+  list:
+    - {name: bug, color: d73a4a, description: "Something in Coney is broken"}
+    - {name: parity, color: b60205, description: "Coney differs from the original game"}
+    - {name: task, color: 0e8a16, description: "A piece of work for a maintainer or an agent"}
+    - {name: docs, color: 0075ca, description: "Documentation or research pages"}
+    - {name: enhancement, color: a2eeef, description: "Beyond the original; waits until the game is complete"}
+    - {name: A-combat, color: c5def5, description: "Area: fighting, grabs, weapons, damage"}
+    - {name: A-ai, color: c5def5, description: "Area: AI humans, pathing, goals, cars driven by AI"}
+    - {name: A-missions, color: c5def5, description: "Area: mission scripts, checkpoints, objectives"}
+    - {name: A-hud, color: c5def5, description: "Area: HUD, menus, text, prompts"}
+    - {name: A-graphics, color: c5def5, description: "Area: rendering, models, textures, animation, effects, lighting"}
+    - {name: A-audio, color: c5def5, description: "Area: sound, music, speech"}
+    - {name: A-physics, color: c5def5, description: "Area: collision, movement, cars, doors, world objects"}
+    - {name: A-camera, color: c5def5, description: "Area: cameras and cutscenes"}
+    - {name: A-platform, color: c5def5, description: "Area: window, input, gamepad, rumble, saves, loading, disc files"}
+    - {name: A-core, color: c5def5, description: "Area: engine core: memory, chunks, tasks, scripting runtime"}
+    - {name: A-tools, color: c5def5, description: "Area: coney-tools, build, CI, the sandbox"}
+    - {name: P-high, color: e11d21, description: "Priority: blocks play or other work"}
+    - {name: P-medium, color: fbca04, description: "Priority: next in line"}
+    - {name: P-low, color: 0e8a16, description: "Priority: when there is room"}
+    - {name: S-needs-triage, color: ededed, description: "Status: not yet looked at"}
+    - {name: S-needs-info, color: d4c5f9, description: "Status: waiting for the reporter"}
+    - {name: S-needs-research, color: d4c5f9, description: "Status: an analyst must study the original first"}
+    - {name: S-in-progress, color: 5319e7, description: "Status: an agent or person is working on it"}
+    - {name: S-pending-review, color: 1d76db, description: "Status: a pull request is open"}
+    - {name: S-blocked, color: "000000", description: "Status: waiting for another issue or a decision"}
+    - {name: good first issue, color: 7057ff, description: "Good for newcomers"}
+    - {name: help wanted, color: "008672", description: "Extra attention is needed"}
+    - {name: duplicate, color: cfd3d7, description: "This issue already exists"}
+    - {name: wontfix, color: ffffff, description: "This will not be worked on"}
+
+hygiene:
+  # The one pinned issue the weekly sweep keeps up to date (a later change); the Action only comments, never edits.
+  report_issue:
+    title: "Repo hygiene"
+    labels: [task, A-tools, P-low, S-in-progress]
+  sweep: "0 6 * * 1"                             # weekly, Monday 06:00 UTC
+  thresholds:
+    needs_triage_days: 7
+    needs_info_days: 21
+    in_progress_idle_days: 30
+    pull_request_idle_days: 30
+
+# Local only (`workspace clean|disk`); the hosted checks ignore it.
+workspace:
+  worktrees: "../../worktrees/coney/<branch>/"
+  scratch: "../../scratch/<branch>/"
+  disk_min_free_gb: 30
+  busy_marker: ".coney-busy"                     # a worktree holding it is never cleaned
+  remove_worktree_when_merged: true

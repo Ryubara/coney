@@ -73,10 +73,10 @@ required checkbox that says so. A maintainer deletes an attachment that breaks t
 ## Labels {#labels}
 
 The label scheme follows rust-lang/rust's prefixes (`A-` for the area, `P-` for the priority, `S-` for the status),
-so contributors who know that project recognise it. The labels live in `.github/labels.yml`, the one source of
-truth: edit that file, never the labels on GitHub. The coordinator
-makes GitHub match it with `coney-tools repo labels --apply`; without `--apply` the command prints the
-`gh label create ... --force` commands instead of running them.
+so contributors who know that project recognise it. The labels live under `labels` in `.github/conventions.yml`
+([Repository conventions](repo-conventions.md)), the one source of truth: edit that file, never the labels on
+GitHub. The coordinator makes GitHub match it with `coney-tools repo labels --apply`; without `--apply` the command
+prints the `gh label create ... --force` commands instead of running them.
 
 | Family | Labels | Meaning |
 | --- | --- | --- |
@@ -138,9 +138,9 @@ A brief may be just "issue #N" ([Briefing](agents.md#briefs)); the issue holds t
 A pull request that leaves work undone does not leave it in its description, which nobody reads after the merge. Every
 unchecked item under **Remaining** in the description carries the number of the issue (or the follow-up pull request)
 that holds it, such as `- [ ] The heavy bag's combo game (#109)`. CI's `body` check refuses a description with an
-unchecked item that has no `#123` in it (`coney-tools repo check-body`, rules in `.github/pr-body-rules.json`). Wrapped
-lines belong to the item above them; checked items, prose (`None.`), the template's `...` placeholder and everything
-under Done are not looked at.
+unchecked item that has no `#123` in it (`coney-tools repo check-body`, rules in `pull_requests` of
+`.github/conventions.yml`). Wrapped lines belong to the item above them; checked items, prose (`None.`), the
+template's `...` placeholder and everything under Done are not looked at.
 
 - **The author** finishes what it can, and for each leftover that is real work or an open question writes its title,
   area, research page and "done" test, in the shape of the [task form](#report), into the message it sends the

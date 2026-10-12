@@ -474,6 +474,10 @@ reverse-engineering projects goes to Rekit instead, once a second project needs 
 - **ruff** formats and lints, **mypy --strict** type-checks, and **pytest** tests. All three run in CI; ruff format
   also runs in pre-commit. Strict typing matters here because these tools parse binary formats, where a wrong type
   is a silent wrong answer.
+- **Repository rules are read, not copied.** A value that is a rule of running the repository (a commit area, a
+  title limit, a description section, a label, a path class, a limit in days) is a key of
+  `.github/conventions.yml`, read through `coney_tools/conventions.py`; code never repeats it as a constant
+  ([Repository conventions](repo-conventions.md)).
 - **`pathlib` only** for paths, never string concatenation or `os.path`. Every tool runs on Windows, Linux and
   macOS, and `pathlib` handles the separators and drive letters.
 - **Docstrings** on every public module, class and function: a one-line summary, then whatever a caller needs

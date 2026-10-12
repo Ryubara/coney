@@ -3,7 +3,7 @@
 For a reviewer of a pull request's title and commits before it is squash-merged. The title rules are in the
 "Commits and GitHub" section of [AGENTS.md](repo:AGENTS.md); the areas,
 with what each covers, and the verbs are in
-[`.github/commit-conventions.json`](repo:.github/commit-conventions.json),
+[`.github/conventions.yml`](repo:.github/conventions.yml) (`commits.title`),
 which `coney-tools repo check-title` and CI read. Report findings in the
 [format on the index page](index.md#finding-format), naming the commit title where a file and line do not apply,
 and never edit.

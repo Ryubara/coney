@@ -1,5 +1,5 @@
 # Checks that only make sense on a pull request: its title must follow the commit title rules (AGENTS.md, "Commits
-# and GitHub"; areas and verbs in .github/commit-conventions.json), because it becomes the title of the merged commit,
+# and GitHub"; areas and verbs in commits.title of .github/conventions.yml), because it becomes the title of the merged commit,
 # and its description must follow the template (.github/pull_request_template.md). Actions are pinned to a full commit
 # SHA; the tag is in the comment beside it.
 name: pr
@@ -25,7 +25,7 @@ jobs:
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       # A title is attacker-controlled, so it reaches the checker only through an environment variable and stdin,
       # never expanded into the script's text. check-title exits 0 (pass), 1 (refused) or 2
-      # (.github/commit-conventions.json unusable); both failures fail the job.
+      # (.github/conventions.yml unusable); both failures fail the job.
       - name: Check the title against the commit conventions
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
@@ -76,9 +76,9 @@ jobs:
           git diff --name-only HEAD^1...HEAD^2 |
             uv run --project python coney-tools repo check-docs --body "$RUNNER_TEMP/pr-body.md"
 
-  # The description must follow the template (.github/pull_request_template.md): its three sections, a Summary with
-  # text, who wrote the commits (one of the template's choices) and, when an AI took part, the model. The rules are in
-  # .github/pr-body-rules.json. Editing the description re-runs the check.
+  # The description must follow the template (.github/pull_request_template.md): its sections, a Summary and a
+  # Testing section with text, who wrote the commits (one of the template's choices) and, when an AI took part, the
+  # model. The rules are pull_requests in .github/conventions.yml. Editing the description re-runs the check.
   body:
     runs-on: ubuntu-24.04
     steps:

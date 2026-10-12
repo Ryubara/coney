@@ -75,10 +75,14 @@ state of the work (local, never committed).
 
 ## Commits and GitHub
 
+Every rule below that a program checks is a key of `.github/conventions.yml`, the one source: titles, description
+sections, labels, merge settings, hygiene limits and path classes (`docs/guides/repo-conventions.md`). Change the
+rule there, never a copy of it.
+
 - Title `area: Verb the rest`, at most 72 characters, present tense, no trailing period. Verbs: Add, Fix, Update,
   Remove, Rebuild, Rework, Improve, Document. Areas: `build`, `ci`, `core`, `fileio`, `graphics`, `audio`,
-  `platform`, `tools`, `research`, `agents`, `tests`, `legal`, `docs` (list and meanings:
-  `.github/commit-conventions.json`, which CI checks PR titles against).
+  `platform`, `tools`, `research`, `agents`, `tests`, `legal`, `docs` (list and meanings: `commits.title` in
+  `.github/conventions.yml`, which CI checks PR titles against).
 - A body says what changed for a user or developer and why. An agent ends the message with
   `Co-Authored-By: <model name> <its noreply address>` (Claude: `Claude Opus 5.5 <noreply@anthropic.com>`) and no
   other trailer; no other email address appears in a message.
