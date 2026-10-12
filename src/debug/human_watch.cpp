@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <format>
 #include <numbers>
+#include <optional>
 #include <utility>
 
 #include "ai/gangs.h"
@@ -169,7 +170,8 @@ WatchGroup animationGroup(const human::Human& human) {
     group.add("Held flags (+0x08)", std::format("{:#010x}", animator.flags()));
     group.add("Gait value", std::format("{:.2f}", animator.gaitValue()));
     group.add("Idle clip", human.idleClipName().empty() ? "-" : human.idleClipName());
-    group.add("Action event", human.actionEvent() ? std::format("{}", *human.actionEvent()) : std::string("-"));
+    const std::optional<std::uint32_t> actionEvent = human.actionEvent();
+    group.add("Action event", actionEvent.has_value() ? std::format("{}", *actionEvent) : std::string("-"));
     return group.take();
 }
 
