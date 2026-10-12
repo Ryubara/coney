@@ -944,10 +944,8 @@ no target, duckable)`, [Speech](../references/speech.md#speech-command-146)). Th
 - **`Brain_SetTarget`** releases the old target's attack slot and claims one on the new target
   (`Brain_ClaimAttackSlot`, `0x0028df30`): the target's list `+0x1a4` holds at most `+0x1e4` attackers, and a closer
   attacker takes the slot of the farthest.
-- **Re-targeting**: once a second the fight goal takes the human nearest him in his sector record (`Brain_GetSectors`
-  `0x0028fe90`, refreshed when older than 1 s; its first word read as the nearest human, inferred) as the target
-  (`Brain_SetTarget`) when that human is not already the target, is a threat (`Brain_IsThreat` `0x00290138`,
-  [The enemy scan](#enemy-scan)) and no GrabTarget goal (`0x1f`) is on the stack. Confirmed (code) at `0x002b3c30`.
+- **Re-targeting**: once a second, the nearest threat within 1.5 m straight ahead, slot forced:
+  [Gang fights](gang-fights.md#switches).
 
 ### The fight goal {#fight}
 
@@ -3750,6 +3748,10 @@ distance 4 m, up to 10 m/s, urgency 3), the player being the one they wait for; 
 runners against the Warriors (gait 5, attack at 1 m, pace distance 13 m, up to 13 m/s, urgency 0.5)
 ([`level3`](scripting.md#level3)).
 
+### Gang fights {#gang-fights}
+
+How a gang shares out a big fight, team-ups and Rumble's CPU sides: [Gang fights](gang-fights.md).
+
 ### Gangs, tactics and formations {#gangs}
 
 #### The gang {#gang-record}
@@ -3976,9 +3978,8 @@ Class details, confirmed (code) unless marked:
 
 - **Attack** (constructor `0x003075c8`): Start (`0x00307fe0`) gives each member not in a `PedReaction` goal threat
   response 2 (brain `+0x21c`) and a melee goal, and has the gang say `spot`. Process (`0x003081a8`): every 3 s,
-  members with no goal melee the nearest member that has one (`0x002b75b8`); every 7 s a gang with `+0xd9` set and
-  at least two living members starts one of seven coordinated sub-tactics chosen by weights per gang kind
-  (`0x00307a10`, not traced further).
+  members with no goal melee and go toward the farthest busy one; every 7 s, a team-up
+  ([Gang fights](gang-fights.md#gang)).
 - **Confront** (`0x0030e670`): with `targetGang` −1 the first member's brain target gang (`+0x264`) is taken, and
   without one nothing starts. Start (`0x0030ec20`) puts the posture anims in the gang's substitution table for anim
   `0x253` (four defaults from `0x005113a8` when none is given; the fifth marks a last, separate anim) and says the spot
@@ -5941,8 +5942,7 @@ the wait, and its animation name is kept, not applied.
   ManWeaponPile's Process (`0x002a3498`, not read).
 - Who sends events `0x15`, 6, 9, 10 and `0x11`, and who reads event `0xf` (the tag-spot message); what reads the
   tackle meter brain `+0x148` besides the fight goal, and what brain `+0x28f` controls.
-- The per-gang `CfgGang` values 2, 3, 5, 7 and 8 (attackers at once, tackle and rear-grab chances) as
-  `config_preload2.lua` sets them; the target's pattern bytes `+0x5d0` / `+0x5d1`.
+- The target's pattern bytes `+0x5d0` / `+0x5d1`. Gang fights: [its page](gang-fights.md#open-questions).
 - `GoalBumLogic`'s begging (type 2's prompt, the chance, the callback, the 12 s timer) and what sets `+0x36`; what
   `GoalBackoff`, `GoalMoveToUseFlag` and the pedestrian goal (`0x69`, with its two variants
   and `FlagNetTraverse`'s flags) do each update (Process), and the use-flag goal's two floats; what
