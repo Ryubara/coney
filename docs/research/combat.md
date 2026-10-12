@@ -2545,6 +2545,107 @@ lines are from PCSX2 2.9.94, 2026-10-12, a copy of slot 6, the natives' function
   above calls `+0x11a` "whether the hit may cause a reaction"; by these readers it is a hit weight for paired
   reactions.)
 
+### Down and under attack: getting up and countering {#ground-escape}
+
+What a knocked-down human can do while someone attacks him on the ground (issue #231). There is **no dedicated
+"get-up attack" clip**: the escape is one of three routes, by what the attacker does. Runtime claims are confirmed
+(runtime) with PCSX2 2.9.94, scenarios `ground_kicked`, `ground_kicked_mash`, `ground_mounted_circle`,
+`ground_mounted_r1` and `ground_mounted_square` (a copy of slot 6; `PoizoCiv`, a puppet with 600 health and 400
+power, knocks the player down with the special 653 at update 10, is put 0.8 m from him at 58, then kicks him with
+command `0x37` (193) or mounts him with command `0xe`; stick centred throughout; hooks `anim-dispatch` and
+`strike-contact`; the field set `down` reads record `+0x104`, `+0xbe` and `+0x00`).
+
+**The states.** Down is record state `0x80000` (`Human_IsKnockedDown`, `0x0022f100` sets it); a crushing hit also
+stuns (`0x100000`, seen `0x180001`). While down, `Human_UpdateActions` (`0x00254e78`) runs `Human_UpdateDown`
+(`0x00256a60`), which returns 1 and so **skips the dispatcher**: no attack, block or grab starts from the ground.
+Confirmed (code). A mounted human is state `0x800` instead, and the dispatcher sends him to `Player_UpdateTackled`
+(`0x0027f1a0`).
+
+**1. Kicked on the ground: mash, rise, and the rise's counter.**
+
+- **Hits on the ground.** A hit on a human in state `0xe0000` that holds none of `0xc48000` goes to
+  `Hit_PlayBegReaction` (`0x00269b80`, from `Human_ApplyPendingDamage` `0x00265f70`): the damage is taken, state bit
+  `0x1` cleared, record `+0xbe` (the hits since the last rise) counted, and **195 `GROUNDED_STRIKE_REACT`** plays
+  holding `0x400`, back to the grounded idle 196. A hit while the knockdown reaction still plays (held `0x400000`, in
+  `0x1c16a40`) takes the health and plays nothing. `Human_EndDownState` (`0x0025e26c`, the end of 199) clears
+  `+0xbe`. Confirmed (code); confirmed (runtime): the kick at 77 (still in 303) took 20 and played nothing; the kick at
+  113 (in 196) took 20 and played 195 with `+0xbe` = 1.
+- **The mash.** `Human_UpdateDown` cuts the remaining ground time by ground time / `Random_IntRange(1, 3)`
+  (`0x005106c8`) on **every update with any command** (`PlayerCmd_IsAny`: any button press, tap or hold the
+  matcher turns into a command), but only when no held flag is set and the state has none of `0x1c18003ff0`. So
+  presses during the knockdown reaction (303) and during 195 count for nothing; presses in 196 do. When the time has
+  passed, `Human_PlayRise` (`0x0025e2d8`) plays **199 `GROUNDED_RISE`** holding `0x8000`, then the fight-stance idle
+  when in a stance (else the idle). Confirmed (code); confirmed (runtime): square every 4 updates from 40 did nothing
+  until 196 began at 80; the press at 80 put him into 199 at 81 (1.28 s early). Without input he rose at 132 (2.75 s
+  after the knockdown plus the wait for 195 to end).
+- **The rise blocks input.** While 199 holds `0x8000` the dispatcher returns before the chain buffer (`0x5c7fee0`),
+  so presses during the rise are not buffered (confirmed (runtime): circles during 199 in `ground_mounted_circle` did
+  nothing).
+- **The counter from the rise.** In `ground_kicked_mash` the square pressed late in 199 played **620
+  `BLOCK_COUNTER_LEFT`** at update 97 against the puppet standing at the player's left, state `0x20000001`; it hit at
+  103 for **50** and knocked the puppet down (288, then 196 and 199). Without the press (`ground_kicked`) the player
+  rose into 356 / 357. Confirmed (runtime). The path is the duck's counter: `Human_UpdateActions` (`0x00254e78`), when
+  record `+0x14` is `0xe` and the human is free to react, finds the foe within 1.25 × 617's far range (or the
+  nearest one, `Player_FindCounterTarget`), ends the reaction clip and the stun, and calls `Block_DuckCounter`
+  (`0x002617f8`), which plays 617-620 by the target's side ([Block](#block)). Confirmed (code). **Inferred**: 199 sets
+  `+0x14` = `0xe` the way 616 does, through its own event `0x25` window with square or cross pressed (the setter was
+  not traced in 199; see Open questions).
+- **The AI.** An AI's Grounded goal (`0x17`, `0x002b4aa8`) queues kind 42 on itself about 1.9 s after going down while
+  it is attacked ([AI](ai.md#fight-reactions)). `AttackKind_ToCommand` (`0x00231090`, table `0x0055c170`) makes kind
+  42 the command `0xf` (square), so it is the AI's mash: one command, which cuts its ground time like a press
+  (inferred from the code; not seen at runtime). This corrects "a get-up attack" on [AI](ai.md#fight-reactions):
+  no attack clip starts from it.
+
+**2. Mounted on the ground: struggle, break or reverse.** An attacker's circle at a knocked-down target that
+`Human_CanBeGrabbed` accepts (not holding `0x8fc57a60`, so not while the knockdown reaction plays) mounts him:
+`Player_GrabOrTackle` (`0x00284920`) → `Mount_StartOnGrounded` (`0x00271b30`): clip **237 + the side** (237 front,
+238 right, 239 back, 240 left) on the attacker, steered on over 0.1 s, **241 `MOUNT_GROUNDED_REACT`** on the victim,
+then the mount's idles 210 / 207 (`Pair_LinkMount`). The tap (`0xd`) and the hold (`0xe`) both reach it; the AI's
+kind 14 is command `0xe`. A target in 199 (held `0x8000` alone) is still mounted while 199 is below 70 % played: the
+rise is cut. Confirmed (code); confirmed (runtime): command `0xe` at 84 played 240 / 241 at 85 and 210 / 207 at 112
+(27 updates); at 64, during 303, the same command fell through to the tackle (3, then the miss 2).
+
+The mounted victim's inputs (`Player_UpdateTackled`, [Combat moves](combat-moves.md#mounted-victim)), confirmed
+(code) and here from the grounded mount (runtime):
+
+| Input | Effect | Runtime (from 150) |
+| --- | --- | --- |
+| square or cross | the struggle **250** / 251: the mounter loses 1 / the victim's class divisor of its power per press, and 250 hits it (40) | 250 at 151, the mounter 600 → 560 → 520; its power ran out and `Human_UpdateMeters` let the victim escape: **246** / 247 at 169 |
+| circle | the break `Mount_GetOff` (`0x00271470`): **246 `MOUNT_BREAK`** / 247, both to the fight-stance idle, when `Grab_CanEscape(mounter)` allows (always at or below a quarter of its power, else 1 in floor(power / quarter) per press; never while it rages); the victim's flag `0x2000000000` forbids it | 246 / 247 at 158 (3rd press), 48 updates, **no damage** to the mounter |
+| R1 (command 3) | the reversal `Mount_StartReversal` (`0x002723e8`): **242** / 243 (57 updates), then the roles swap: the victim mounts (210, the attacker 207) and has the mount's strikes; refused when the mounter has human flag `0x40` or the victim `0x100000000` | 242 at 166 (6th press), 210 / 207 at 223; then square played 221 / 222, 61 damage each |
+
+**What the attacker gets.** From the break: nothing but 247 and the stance (no damage, no knockdown, no stun);
+from the struggle: 40 a press that plays 250, and its power drained; from the reversal: it is mounted.
+From the rise's counter: the duck counter's hit (50 here, a knockdown).
+
+**The counter after a break.** 246 holds `0x2000`, which blocks the dispatcher; at its end the player stands in the
+fight stance and acts on the next command: square at 219 after the break at 169 played `S1` (12) and hit for 17, then
+`SS2` 36 and `SSS3` 53. A circle pressed as 246 ended started a grab instead (71, then the miss 69). Confirmed
+(runtime).
+
+**How it relates to the pair breaks.** `PairBreak_GetUp199` (`0x00269908`) and `PairBreak_Play244` are the clips a
+mount plays when something **outside** the pair breaks it (a teleport, a hit on the mounter:
+[Breaking a pair](#pair-break)): the victim plays 245 then 199. The escapes here are the victim's own and play 246
+(the break) or 242 (the reversal) instead; none of them plays 199.
+
+**Coney today** (read 2026-10-11, `src/combat`, `src/human`, `src/ai`):
+
+- The ground hit (195), the ground time and the mash's cut are built (`human/victim.*`, `Fighter` victim side).
+  Whether a press is counted while 303 or 195 still holds a flag (the original counts none) should be checked.
+- **Missing: the counter from the rise.** Coney opens the duck counter only from 616's own `0x25` events
+  (`combat/being_hit.h`, `fighter_victim.cpp`); a square or cross late in 199 does nothing. Faithful: the counter
+  (617-620 by side, against the foe within 1.25 × 617's reach) when the rise's window is open.
+- **Missing: the grounded mount.** `Mount_StartOnGrounded` is not built for anyone: circle at a downed human
+  neither mounts him (237-240 / 241) nor cuts a rise below 70 %.
+- **Missing: the mounted player's inputs.** No AI grabs, tackles or mounts yet ([Coney's implementation](#coneys-implementation)),
+  and `Player_UpdateTackled` is not built: no struggle 250 (power drain, 40 damage), no break 246 / 247, no reversal
+  242 / 243 into the player's own mount, and no escape when the mounter's power runs out while mounting the player.
+- **Missing for the AI:** kind 14 (the grounded mount, command `0xe`) has a reach but no move behind it; kind 42 on
+  itself should be one command that cuts the AI's ground time (Coney calls it "the get-up attack").
+- A disc test: knock the player down with an AI, kick him (195), press square in 196 (he rises next update), press
+  square late in 199 (620 / 617-620 by side, the attacker knocked down); and an AI that mounts him from the ground,
+  circle until 246, then `S1` hits.
+
 ### Knocked out, and the mission failing {#defeat}
 
 **When health runs out** (inferred from what it does), `Human_OnHealthOut` (`0x002674c0`; from `0x00267a00`,
@@ -4549,6 +4650,9 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
 
 ## Open questions
 
+- **The rise's counter** ([Down and under attack](#ground-escape)): which part of 199 `GROUNDED_RISE` sets record
+  `+0x14` = `0xe` (an event `0x25` window as in 616 is inferred), the window's frames, and whether cross opens it
+  too. Seen once at runtime (square late in 199 → 620).
 - **The block**: whether a strength-3 hit can still break a block. (Answered: `+0x14` = `0xe`, message `0xa5`, is
   the duck counter, [Blocking](#block); seen at runtime, and the AI goals' answer traced.) The block goal's byte `+0x14`
   (answered): its Start rolls it against the block chance ([AI](ai.md#block)).
