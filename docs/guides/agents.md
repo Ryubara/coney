@@ -189,7 +189,8 @@ and an agent waiting on it re-writes its context. So CI never holds an agent bac
    `gh run list --status queued --limit 50 --json databaseId --jq length` and the same with `--status in_progress`,
    and releases when there is room: engine fixes first, then what unblocks other work.
 3. **Each push starts a run** and cancels the pull request's previous one, so a branch is pushed once it is ready,
-   not after every commit.
+   not after every commit. A merge to `main` likewise cancels `main`'s older run, so a merge round costs one build
+   ([What CI runs](building.md#what-ci-runs)).
 4. **A pull request runs only the jobs its change can break** ([What CI runs](building.md#what-ci-runs)), so
    documentation-only units are cheap to release.
 

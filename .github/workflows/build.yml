@@ -19,10 +19,15 @@ on:
 permissions:
   contents: read
 
-# A new push to a pull request cancels its older run; on main every run finishes, so each merge gets a verdict.
+# A new push to a pull request, to main or to a release branch cancels that ref's older run, queued or running: on
+# main a burst of merges otherwise queues one full build each, and those starve the macOS runners every pull request
+# needs. The newest run covers the merges before it, and the nightly run checks main again. Nightly and hand-started
+# runs get a group of their own (the run id), so a push never cancels them and they never cancel each other.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'pull_request' && 'pr' || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: >-
+    ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}-${{
+    (github.event_name == 'pull_request' || github.event_name == 'push') && 'latest' || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
 
 # Linux Clang is 19, not Ubuntu 24.04's default 18: libstdc++ declares std::expected only when __cpp_concepts is at
 # least 202002L, which Clang first reports in version 19, so Clang 18 cannot compile Coney's use of std::expected.
