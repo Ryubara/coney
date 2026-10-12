@@ -21,6 +21,7 @@
 #include "combat/lock_on.h"
 #include "combat/rage_awards.h"
 #include "combat/reactions.h"
+#include "combat/revive.h"
 #include "core/pad.h"
 #include "human/fighter_clips.h"
 #include "human/strike_shapes.h"
@@ -847,6 +848,25 @@ void Fighter::steerOnto(int animId, const Combatant& target, const FighterInput&
     const float aim = std::hypot(toAim.x, toAim.y) > 1e-4F ? headingOf(toAim) : headingOf(to);
     m_steer.turnToOver(heading, wrapAngle(aim - attackDirection(animId)), time);
     m_steer.moveToOver(input.position, goal.stand, time);
+}
+
+void Fighter::steerRevive(const Combatant& downed, anim::Vec3 position, float heading, const HumanAnimator& animator) {
+    constexpr auto kAnim = static_cast<int>(combat::kReviveBeginAnim);
+    m_steer.clear();
+    // The led steer's point is the downed human's head as the revive starts; the time 351's first event + 0.1 s (the
+    // 0.1 Revive_Start passes is not read).
+    const float toEvent = timeToEvent(kAnim, animator);
+    const float time = toEvent + kSteerLeadExtraSeconds;
+    const anim::Vec3 point = downed.ledPoint();
+    const anim::Vec3 to = anim::subtract(point, position);
+    const float distance = std::hypot(to.x, to.y);
+    const combat::AnimRange* range = m_ranges != nullptr ? m_ranges->find(combat::kReviveBeginAnim) : nullptr;
+    const float reach = range != nullptr && range->reach > 0.0F ? range->reach : distance;
+    const SteerGoal goal = attackSteerGoal(position, point, downed.velocity(), reach, toEvent);
+    const anim::Vec3 toAim = anim::subtract(goal.aim, position);
+    const float aim = std::hypot(toAim.x, toAim.y) > 1e-4F ? headingOf(toAim) : headingOf(to);
+    m_steer.turnToOver(heading, wrapAngle(aim - attackDirection(kAnim)), time);
+    m_steer.moveToOver(position, goal.stand, time);
 }
 
 bool Fighter::ledSteer(int animId) const {

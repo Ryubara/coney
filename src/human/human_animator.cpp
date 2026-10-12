@@ -310,8 +310,8 @@ void HumanAnimator::playCombat(std::span<const std::uint32_t> clips, std::uint32
 }
 
 void HumanAnimator::playPaired(std::span<const std::uint32_t> clips, const characters::AnimSet& attacker,
-                               std::uint32_t loop, AnimState state, float fade) {
-    playChain(clips, &attacker, loop, state, fade, HeldFlags{});
+                               std::uint32_t loop, AnimState state, float fade, HeldFlags held) {
+    playChain(clips, &attacker, loop, state, fade, held);
 }
 
 void HumanAnimator::playChain(std::span<const std::uint32_t> clips, const characters::AnimSet* from, std::uint32_t loop,

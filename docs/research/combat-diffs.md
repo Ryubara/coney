@@ -113,8 +113,9 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 - **Rage** starts only through the block branch (L1 + R1 while blocking), not by the original's other routes
   ([Rage](combat.md#rage)).
 - **Stealth** (hiding in shadow, 630 / 633, the stealth kill 637-641) is not built ([Stealth](combat-moves.md#stealth)).
-- **Flash revive** (command `0x27`): built for player 1 ([Combat: revive](combat.md#revive)); an AI Warrior reviving
-  ([SaveHuman](ai-goals.md#goal-save-human)) and a co-op partner's flash are not.
+- **Flash revive** (command `0x27`): built for player 1, every Warrior revivable from his creation
+  ([Combat: revive](combat.md#revive)); an AI Warrior reviving ([SaveHuman](ai-goals.md#goal-save-human)), a co-op
+  partner's flash and a knocked-out human waking on his own are not.
 
 ## Weapons
 

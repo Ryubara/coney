@@ -11,7 +11,8 @@ class DebugSession;
 class MenuPage;
 class TunableRegistry;
 
-/// The Time page: pause, step one fixed step, slow motion, and the frame and step counts (with a channel to plot).
+/// The Time page: pause, step one fixed step, the time scale (0.05x to 4x, presets, a reset to 1x), and the frame and
+/// step counts (with a channel to plot).
 void addTimePage(DebugSession& session);
 /// The Tunables page: one submenu per category of the registry, each tunable as a number or a toggle with its
 /// default; reset all, save and load the overrides file.
