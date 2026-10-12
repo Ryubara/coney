@@ -2,6 +2,7 @@
 """Tests for coney_tools.audit_github: every GitHub check on made-up issues and pull requests (no network)."""
 
 import json
+from dataclasses import replace
 from typing import Any
 
 import pytest
@@ -226,9 +227,36 @@ def test_an_unknown_label_is_found_and_githubs_own_are_fine() -> None:
     assert labels_of("task", "A-tools", "P-low", "S-blocked", "good first issue", "help wanted") == []
 
 
-def test_a_closed_issue_keeps_no_status() -> None:
-    assert "closed but still labelled S-pending-review" in labels_of("task", "S-pending-review", state="CLOSED")[0]
-    assert labels_of("task", "A-tools", state="CLOSED") == []
+def test_a_closed_issue_is_not_asked_for_a_status_or_other_families() -> None:
+    assert labels_of("task", "S-pending-review", state="CLOSED") == []
+    assert labels_of("task", state="CLOSED") == []
+    assert "label 'weird' is not in labels.list" in labels_of("task", "weird", state="CLOSED")[0]
+
+
+def closed_status(*issues: Any, keeps: bool = False) -> list[str]:
+    """The items `issue.closed-status` finds among `issues`, with `issues.labels.closed_keeps_status` set to `keeps`."""
+    rules = CONVENTIONS.issues
+    conventions = replace(CONVENTIONS, issues=replace(rules, labels=replace(rules.labels, closed_keeps_status=keeps)))
+    return items(found(gh.issue_closed_status, context(conventions, issues=list(issues))))
+
+
+def test_a_closed_issue_still_carrying_a_status_label_is_found() -> None:
+    stale = issue(1, state="CLOSED", labels=("task", "A-tools", "P-low", "S-pending-review"))
+    clean = issue(2, state="CLOSED", labels=("task", "A-tools", "P-low"))
+    reopened = issue(3, labels=("task", "A-tools", "P-low", "S-in-progress"))
+    (problem,) = found(gh.issue_closed_status, context(issues=[stale, clean, reopened]))
+    assert problem.item == "#1" and "closed but still labelled S-pending-review" in problem.message
+
+
+def test_every_status_label_of_a_closed_issue_is_named_whatever_the_close_reason() -> None:
+    both = issue(4, state="CLOSED", reason="NOT_PLANNED", labels=("wontfix", "S-blocked", "S-needs-info"))
+    (problem,) = found(gh.issue_closed_status, context(issues=[both]))
+    assert "S-blocked, S-needs-info" in problem.message
+
+
+def test_the_closed_status_rule_can_be_switched_off_in_the_conventions() -> None:
+    assert closed_status(issue(1, state="CLOSED", labels=("task", "S-blocked")), keeps=True) == []
+    assert closed_status(issue(1, state="CLOSED", labels=("task", "S-blocked"))) == ["#1"]
 
 
 # --- wording --------------------------------------------------------------------------------------------------------
