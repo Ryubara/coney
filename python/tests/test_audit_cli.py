@@ -46,7 +46,7 @@ def no_tree(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_files_is_the_default_scope_and_this_checkout_is_clean(capsys: pytest.CaptureFixture[str]) -> None:
     code, out, _ = run(capsys)
-    assert code == 0 and out.strip() == "audit files: 8 checks, 0 errors, 0 warnings"
+    assert code == 0 and out.strip() == "audit files: 9 checks, 0 errors, 0 warnings"
 
 
 def test_files_json_lists_the_checks_that_ran(capsys: pytest.CaptureFixture[str]) -> None:
@@ -55,7 +55,7 @@ def test_files_json_lists_the_checks_that_ran(capsys: pytest.CaptureFixture[str]
     assert (
         code == 0 and data["findings"] == [] and data["errors"] == 0 and next(iter(data["checks"])) == "files.pointer"
     )
-    assert all(count == 0 for count in data["checks"].values()) and len(data["checks"]) == 8
+    assert all(count == 0 for count in data["checks"].values()) and len(data["checks"]) == 9
 
 
 def test_a_finding_in_the_checkout_fails_the_run(
@@ -85,7 +85,7 @@ def test_list_prints_the_registry(capsys: pytest.CaptureFixture[str]) -> None:
     lines = out.splitlines()
     assert (
         code == 0
-        and len(lines) == len(CONVENTIONS.hygiene.checks) == 35
+        and len(lines) == len(CONVENTIONS.hygiene.checks) == 38
         and lines[0].startswith("files.pointer")
         and "fix: owner" in out
     )

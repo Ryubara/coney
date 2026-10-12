@@ -9,6 +9,7 @@
 #include <functional>
 #include <map>
 #include <numbers>
+#include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -50,13 +51,15 @@ struct Frame {
 // What an attack's clip would hold on the record's +0x08 as it plays, standing in for the animator the dispatcher runs
 // beside in the game (docs/research/tasks.md#held-flags): the wind-up, the chain window from `open`, the end phase from
 // `close`, the recovery from `recovery`, nothing from `end`, in updates from the clip's start; the moving attacks hold
-// 0x1000000 to their end. The values are the phases measured at runtime (docs/research/combat.md#attacks), S1's for
-// the attacks not listed.
+// 0x1000000 to their end. The values are the phases measured at runtime (docs/research/combat.md#attacks; the bat's
+// 34 and 36, which have no chain window, docs/research/combat-moves.md#bat-cross), S1's for the attacks not listed.
 class ClipPhases {
   public:
     // An attack `animId` started this update.
     void start(int animId) {
-        static constexpr std::array<Timing, 6> kTimings{{{anim_id::kAttackX1, 10, 20, 21, 30},
+        static constexpr std::array<Timing, 8> kTimings{{{anim_id::kAttackX1, 10, 20, 21, 30},
+                                                         {34, 13, 13, 25, 37},
+                                                         {36, 20, 20, 23, 35},
                                                          {anim_id::kAttackSSS3, 16, 16, 22, 26},
                                                          {anim_id::kAttackXS2, 22, 22, 26, 30},
                                                          {anim_id::kRunningAttackCharge, 27, 27, 27, 27},
@@ -443,9 +446,9 @@ TEST_CASE("circle + cross outside a hold is the strong grapple: a grab connectin
 TEST_CASE("a bat's anim set plays 34 for square and 36 for cross, with no chain after them", "[combat]") {
     Runner runner(nullptr);
     const auto set = [](std::uint64_t, CombatInput& input) { input.animSet = 3; };
-    const auto frames = runner.run("10 tap square\n16 tap square\n40 tap cross\n", 80, set);
-    // The second square, in 34's window, finds no chain attack after it.
-    CHECK(starts(frames) == Starts{{10, 34}, {41, 36}});
+    const auto frames = runner.run("10 tap square\n16 tap square\n50 tap cross\n", 90, set);
+    // The second square, in 34's window, finds no chain attack after it, and the cross waits for 34 to end.
+    CHECK(starts(frames) == Starts{{10, 34}, {51, 36}});
     // At a grounded target: 37.
     Runner grounded(nullptr);
     const auto down = grounded.run("10 tap square\n", 20, [](std::uint64_t, CombatInput& input) {
@@ -493,4 +496,79 @@ TEST_CASE("with a brick in hand square, cross and the charge throw it; mid-throw
         });
     CHECK(!starts(ran).empty());
     CHECK(starts(ran).front() == std::pair<std::size_t, int>{5, anim_id::kBarrelThrowFromRun});
+}
+
+TEST_CASE("with a bat, a cross's 0x10 starts 36 only once 34 or 36 has ended: k37 after 34, k35 after 36", "[combat]") {
+    // The move's whole length is lost, not only its end phase and recovery: the bat's 34 and 36 have no chain window
+    // that keeps a press (docs/research/combat-moves.md#bat-cross). k counts updates from the move's first, and a tap
+    // at update f has its 0x10 on f + 1.
+    struct Case {
+        const char* first;
+        int firstClip;
+        int free;
+    };
+    const auto set = [](std::uint64_t, CombatInput& input) { input.animSet = 3; };
+    // Both moves start on update 10: square's press, cross's release.
+    for (const Case& c : {Case{"10 tap square\n", 34, 37}, Case{"9 tap cross\n", 36, 35}}) {
+        for (const int k : {3, 12, 24, c.free - 1, c.free, c.free + 1, c.free + 8}) {
+            INFO("after " << c.firstClip << ", cross's 0x10 on k" << k);
+            Runner runner(nullptr);
+            const std::string script = std::string(c.first) + std::to_string(10 + k - 1) + " tap cross\n";
+            const auto frames = runner.run(script, 120, set);
+            const Starts expected = k >= c.free ? Starts{{10, c.firstClip}, {static_cast<std::size_t>(10 + k), 36}}
+                                                : Starts{{10, c.firstClip}};
+            CHECK(starts(frames) == expected);
+        }
+    }
+}
+
+TEST_CASE("with a bat, a second square in the swing is not kept: 34 chains into nothing, and cross waits for k37",
+          "[combat]") {
+    const auto set = [](std::uint64_t, CombatInput& input) { input.animSet = 3; };
+    for (const int cross : {45, 46, 47}) {
+        INFO("cross's 0x10 on update " << cross);
+        Runner runner(nullptr);
+        const auto frames =
+            runner.run("10 tap square\n15 tap square\n" + std::to_string(cross - 1) + " tap cross\n", 100, set);
+        // The 0x10 on update 46 is k36 (dropped); 47 is k37 (plays).
+        CHECK(starts(frames) == (cross < 47 ? Starts{{10, 34}} : Starts{{10, 34}, {47, 36}}));
+    }
+}
+
+TEST_CASE("with a bat, cross + square is no special: no 653, no power spent, and the cross's release swings 36",
+          "[combat]") {
+    // The original's Player_Special refuses a pad player holding an object (it throws a melee weapon first when the
+    // throw is allowed, which Coney does not build); cross's own 0x10 then plays 36 on the release
+    // (docs/research/combat-moves.md#bat-cross).
+    for (const int set : {1, 2, 3, 4, 5, 6}) {
+        INFO("anim set " << set);
+        Runner runner(nullptr);
+        const auto frames = runner.run("10 press cross\n11 tap square\n13 release cross\n", 30,
+                                       [set](std::uint64_t, CombatInput& input) { input.animSet = set; });
+        CHECK(frames[11].command == command::kCrossSquare);
+        for (const Frame& frame : frames) {
+            CHECK(frame.out.startAnim != anim_id::kSpecial);
+            CHECK(frame.out.startAnim != anim_id::kSpecialRage);
+        }
+        CHECK(runner.combat().power().value() >= 390);
+        // The melee sets swing on the release.
+        if (set <= 3) {
+            CHECK(starts(frames) == Starts{{13, set == 1 ? 47 : set == 2 ? 41 : 36}});
+        }
+    }
+}
+
+TEST_CASE("with a bat, circle + cross is no strong grapple, even with a target in reach", "[combat]") {
+    Runner runner(nullptr);
+    const auto frames =
+        runner.run("10 press circle cross\n14 release circle cross\n", 20, [](std::uint64_t, CombatInput& input) {
+            input.animSet = 3;
+            input.grabTargetInReach = true;
+        });
+    CHECK(frames[10].command == command::kCircleCross);
+    for (const Frame& frame : frames) {
+        CHECK_FALSE(frame.out.grabStarted);
+        CHECK(frame.out.grappleAnim == anim_id::kNone);
+    }
+    CHECK(runner.combat().mode() == CombatMode::Free);
 }

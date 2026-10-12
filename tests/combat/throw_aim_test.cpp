@@ -104,6 +104,7 @@ TEST_CASE("the arc keeps every sixth of its 108 steps and ends where it meets th
     aim.enter(Vec3{0.0F, 0.0F, 0.0F}, 0.0F);
     aim.trace(AimInput{}, AimWorld{}, 0);
     CHECK(aim.arcPoints() == kAimTracePoints);
+    CHECK_FALSE(aim.arcCut());
     CHECK(aim.target() == 0);
     CHECK(aim.aimed() == 0);
     // Point 1 is six steps of 1/60 s on, the z speed losing 0.2613 a step after each.
@@ -114,6 +115,7 @@ TEST_CASE("the arc keeps every sixth of its 108 steps and ends where it meets th
 
     aim.trace(AimInput{}, floorOnly(), 0);
     REQUIRE(aim.arcPoints() < kAimTracePoints);
+    CHECK(aim.arcCut());
     CHECK(aim.arc()[static_cast<std::size_t>(aim.arcPoints() - 1)].z == Approx(0.0F).margin(1e-4));
     CHECK(aim.aimed() == 0);
 }

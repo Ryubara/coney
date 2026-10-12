@@ -1,0 +1,87 @@
+# level80 checkpoint 1 at the "Let's Go" hint: does a swing's grunt cut a line or drop its callback?
+# After the follow command and the opening camera (Cleon can swing from about update 285), Cleon (the player) is given
+# lines through the game's own workers, called on its thread by the call hook: at 320 HuSpeakNI's
+# (Human_SpeakInterrupt, 0x002395a0, callback SpeechProbeA) with square tapped every 8 updates through it; at 520
+# HuSpeak's (Human_Speak, 0x00239370, callback SpeechProbeB) with the same taps; at 700 HuSpeak's again (SpeechProbeC)
+# with no taps, the control; at 820 HuSpeakNI's (SpeechProbeD), then HuShutUp (Human_ShutUp, 0x00239558) without
+# force at 850 and with force at 870. The callbacks name no Lua function, so nothing runs; ScriptSystem::FindFunction's
+# look-up (event-callback) shows each one the game tries to call. The line and probe names are written into the empty
+# memory at 0x00098000 first. The speech hooks log every vocal id said, every stop and every line started, with
+# Cleon's line state before each. Research: docs/research/sound.md#speech-cut-in. The state is the revive pass's
+# (research-revive/l80_letsgo_clean.p2s), passed with --state.
+description = "level80 cp1: Cleon's swing grunts over a HuSpeakNI line and a HuSpeak line, HuShutUp; which callbacks run"
+research = "docs/research/sound.md#speech-cut-in"
+input = "speech_cutin.txt"
+updates = 1000
+fields = ["player"]
+
+[original]
+state = "research-revive/l80_letsgo_clean.p2s"
+patches = ["scripted-pad", "right-stick", "call-brains", "event-callback", "say-anim-line", "stop-speech", "play-speech", "play-speech-cut"]
+setup = [
+  { address = "0x00098000", type = "u32", value = "1936154998", frame = 100 },
+  { address = "0x00098004", type = "u32", value = "1701868335", frame = 100 },
+  { address = "0x00098008", type = "u32", value = "1701340005", frame = 100 },
+  { address = "0x0009800c", type = "u32", value = "862728051", frame = 100 },
+  { address = "0x00098010", type = "u32", value = "862727985", frame = 100 },
+  { address = "0x00098014", type = "u32", value = "930373425", frame = 100 },
+  { address = "0x00098018", type = "u32", value = "825241695", frame = 100 },
+  { address = "0x0009801c", type = "u32", value = "0", frame = 100 },
+  { address = "0x00098040", type = "u32", value = "1701146707", frame = 100 },
+  { address = "0x00098044", type = "u32", value = "1917872227", frame = 100 },
+  { address = "0x00098048", type = "u32", value = "1097163375", frame = 100 },
+  { address = "0x0009804c", type = "u32", value = "0", frame = 100 },
+  { address = "0x00098060", type = "u32", value = "1701146707", frame = 100 },
+  { address = "0x00098064", type = "u32", value = "1917872227", frame = 100 },
+  { address = "0x00098068", type = "u32", value = "1113940591", frame = 100 },
+  { address = "0x0009806c", type = "u32", value = "0", frame = 100 },
+  { address = "0x00098080", type = "u32", value = "1701146707", frame = 100 },
+  { address = "0x00098084", type = "u32", value = "1917872227", frame = 100 },
+  { address = "0x00098088", type = "u32", value = "1130717807", frame = 100 },
+  { address = "0x0009808c", type = "u32", value = "0", frame = 100 },
+  { address = "0x000980a0", type = "u32", value = "1701146707", frame = 100 },
+  { address = "0x000980a4", type = "u32", value = "1917872227", frame = 100 },
+  { address = "0x000980a8", type = "u32", value = "1147495023", frame = 100 },
+  { address = "0x000980ac", type = "u32", value = "0", frame = 100 },
+]
+calls = [
+  # Human_SpeakInterrupt(Cleon, line, "SpeechProbeA", no argument, duckable, no listener): HuSpeakNI.
+  { function = "0x002395a0", args = ["u32(player + 0x90)", "0x00098000", "0x00098040", "0", "1", "0xffffffff"], frame = 320 },
+  # Human_Speak(Cleon, line, "SpeechProbeB", ...): HuSpeak.
+  { function = "0x00239370", args = ["u32(player + 0x90)", "0x00098000", "0x00098060", "0", "1", "0xffffffff"], frame = 520 },
+  # Human_Speak(Cleon, line, "SpeechProbeC", ...): HuSpeak with no swings, the control.
+  { function = "0x00239370", args = ["u32(player + 0x90)", "0x00098000", "0x00098080", "0", "1", "0xffffffff"], frame = 700 },
+  # HuSpeakNI(Cleon, line, "SpeechProbeD"), then HuShutUp(Cleon, false) and HuShutUp(Cleon, true).
+  { function = "0x002395a0", args = ["u32(player + 0x90)", "0x00098000", "0x000980a0", "0", "1", "0xffffffff"], frame = 820 },
+  { function = "0x00239558", args = ["u32(player + 0x90)", "0"], frame = 850 },
+  { function = "0x00239558", args = ["u32(player + 0x90)", "1"], frame = 870 },
+]
+
+[[field]]
+name = "line"
+address = "player + 0x178"
+type = "u32"
+
+[[field]]
+name = "callback"
+address = "player + 0x188"
+type = "u32"
+
+[[field]]
+name = "may_cut"
+address = "player + 0x194"
+type = "u8"
+
+[[field]]
+name = "can_speak"
+address = "player + 0x199"
+type = "u8"
+
+[[field]]
+name = "scene"
+address = "u32(0x0051489c) + 0x410"
+type = "u8"
+follow = true
+
+[coney]
+level = "level80"

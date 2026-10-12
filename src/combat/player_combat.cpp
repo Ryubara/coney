@@ -393,7 +393,10 @@ void PlayerCombat::updateCommands(const CombatInput& input, const CombatTuning& 
 }
 
 void PlayerCombat::special(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out) {
-    if ((phaseFlags(input) & kSpecialRefusingPhases) != 0) {
+    // Player_Special refuses a pad player holding an object, whatever the object: the melee weapon's throw (502 / 491,
+    // not built) is the armed command's, and when it is refused too the command does nothing, so the cross's own
+    // release swings (docs/research/combat-moves.md#bat-cross).
+    if (input.animSet != 0 || (phaseFlags(input) & kSpecialRefusingPhases) != 0) {
         return;
     }
     // Not paired, it needs and spends the endurance fraction of the meter; rage plays its own and spends nothing.
@@ -409,8 +412,9 @@ void PlayerCombat::special(const CombatInput& input, const CombatTuning& tuning,
 
 void PlayerCombat::strongGrapple(const CombatInput& input, CombatOutput& out) {
     // The strike's clip is paired, so with nobody the search may grab nothing plays; the power meter is neither tested
-    // nor spent (the hold's drain starts with the grab, as for any).
-    if ((phaseFlags(input) & kSpecialRefusingPhases) != 0 || !input.grabTargetInReach) {
+    // nor spent (the hold's drain starts with the grab, as for any). Player_Special's refusal of a held object applies
+    // to it as to the special (special()).
+    if (input.animSet != 0 || (phaseFlags(input) & kSpecialRefusingPhases) != 0 || !input.grabTargetInReach) {
         return;
     }
     m_chain.cancel();

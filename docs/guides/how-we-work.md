@@ -26,14 +26,10 @@ Every feature goes through the same steps:
 
 ## Two roles: the clean room
 
-Analysts and implementers are never the same person or agent
-([Clean room](research-workflow.md#clean-room), [LEGAL.md](repo:LEGAL.md)):
-
-| | Analyst | Implementer |
-| --- | --- | --- |
-| Reads | Ghidra, disassembly, PCSX2 | research pages, Coney's code |
-| Writes | research pages, Ghidra names and comments | engine code, tests |
-| Never | writes engine code | opens Ghidra or PCSX2 |
+An analyst reads the original (Ghidra, disassembly, PCSX2) and writes research pages; an implementer writes engine
+code and tests from those pages and Coney's own code, and never opens Ghidra or PCSX2. The split is per function:
+whoever has read a function's original code never implements that function
+([Clean room](research-workflow.md#clean-room), [LEGAL.md](repo:LEGAL.md#clean-room)).
 
 An implementer who needs more asks a question; a coordinator routes it to the analyst who owns that area, and the
 answer lands on the page, not in a private message. Neither role ever puts game data in the repository.
@@ -178,11 +174,15 @@ coordinator triages them and is the only one who writes to GitHub; an agent read
 --comments`) and is often briefed with just its number. A pull request that finishes one says `Fixes #N`, so merging
 closes it. The whole process: [Issues](issues.md).
 
-**Leftovers are issues, not notes.** An agent that finishes a unit with work still undone lists each leftover in its
-message to the coordinator (title, area, research page, what "done" means), and the coordinator files the issue and
-writes its number into the pull request's Remaining list; CI refuses an unchecked Remaining item with no `#123`
-([Leftovers become issues](issues.md#leftovers)). The issue states its problem first, links pages by relative links
+**A pull request merges only when every task in it is finished.** Its Checklist lists what it finishes, all ticked, and
+CI refuses an unticked item; there is no "Remaining" list. Work an agent finds that is not part of its task goes in its
+message to the coordinator (title, area, research page, what "done" means) and the coordinator files it as an issue of
+its own; a pull request that finishes an issue says `Fixes #N`
+([Work found along the way](issues.md#follow-up-work)). The issue states its problem first, links pages by relative links
 and names the source pull request's status truthfully ([Writing an issue a newcomer can read](issues.md#writing)).
+The `hygiene` workflow comments on an issue or pull request that breaks the repository's rules and keeps that one
+comment current; fix what it lists, and the comment says so when it is done
+([Workflows](repo-conventions.md#workflows)).
 The state file (`HANDOFF.md`) keeps only the live state and issue numbers, never a list of work to do: the work list
 is the open issues.
 
@@ -205,6 +205,8 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
 - **Escalate only maintainer decisions:** making the repository public, release tags, force-pushes of `main` or of
   someone else's branch, legal and licence questions, changes to the installer and launcher (a maintainer approves
   them before they merge), and changes to these rules.
+- **Tidy after every merge round and once a week.** Run the `/repo-hygiene` skill: it audits the issues, pull requests,
+  labels and workspace and fixes each finding by its class ([Merging safely](#merging)).
 - **Keep every gap staffed.** When a track finishes, the next open gap gets a track at once: unfinished fixes,
   subsystems that differ from the original, missions still to build (several at a time, one per track). The
   priorities are on the [roadmap](../roadmap.md#priorities).
@@ -223,9 +225,10 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
 
 ## Merging safely {#merging}
 
-- **After a merge, fix the issues that cite the pull request.** Search them (`gh issue list --state open --search "#N"`),
-  change "open" to "merged" where the text names the pull request, tick the checklist items it finished, and close or
-  relabel an issue it fixed ([Writing an issue a newcomer can read](issues.md#writing)).
+- **After a merge round, run `/repo-hygiene`.** The skill runs the audit and fixes what it finds by the finding's fix
+  class, including the issues that cite a pull request that merged (change "open" to "merged", tick what it finished,
+  close or relabel an issue it fixed: [Writing an issue a newcomer can read](issues.md#writing)). It stops at the
+  maintainer decisions ([The /repo-hygiene skill](repo-conventions.md#hygiene-skill)).
 - **Merge only finished commits.** A "WIP" commit made when a track paused is never merged: create a clean commit
   (or cherry-pick the finished part) instead.
 - **Check a branch's diff before merging it.** A branch can be contaminated with unrelated reverted files (a bad

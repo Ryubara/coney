@@ -575,6 +575,10 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     if (m_trace) {
         *m_trace << human::traceLine(++m_traceSteps, *m_player);
     }
+    // Every human's row for this step, after all their updates.
+    if (m_humansTrace) {
+        m_humansTrace->write(m_ai->brains());
+    }
     if (const std::uint32_t id = m_player->human().animator().animId(); id != m_lastAnimId) {
         m_print(std::format("frame {}: clip {}\n", frame.index, id));
         m_lastAnimId = id;
@@ -806,12 +810,15 @@ void PlayLevelMode::render(const RenderTime& time) {
     // the see-through panes and the cars' glass, then the effects; then, as the sprite batches after the whole world
     // (graphics.md#a-frame), the blob shadows, and the health rings over them. **Coney's choice**: the coronas, which
     // the original batches between the shadows and the rings, follow the rings (WorldRenderer::render draws them).
-    const auto afterWorlds = [this, &drawCars, &snapshot, &blended, &ringFeet] {
+    const auto afterWorlds = [this, &drawCars, &snapshot, &blended, &ringFeet, alpha] {
         if (m_levelEffects) {
             m_levelEffects->drawWater();
         }
         drawGlass();
         drawCars(graphics::CarPass::Glass);
+        // The throw-aim arc, blended by its vertices' alpha among the see-through things (**Coney's stand-in** for its
+        // place in WorldManager_Render's order, not traced).
+        drawThrowArc(alpha);
         if (m_levelEffects) {
             m_levelEffects->drawInScene(blended.pose);
             m_levelEffects->drawGlints(m_glints.sprites(), blended.pose);

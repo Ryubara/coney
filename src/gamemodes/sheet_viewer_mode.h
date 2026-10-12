@@ -14,7 +14,7 @@ namespace coney {
 
 /// A game mode that shows every rectangle of a sprite sheet as a sprite, laid out in a grid over the logical screen
 /// (graphics::layoutGrid()), each at its own shape. It draws through a sprite batch and the 2D pass, so what it shows
-/// is what the game's sprites go through. It backs `coney --view-sheet` (docs/guides/building.md#run-coney) and stays
+/// is what the game's sprites go through. It backs `coney --view-sheet` (docs/guides/running.md#run-coney) and stays
 /// until the window closes or the frame limit is hit.
 ///
 /// Coney's own tool; nothing in the original corresponds.

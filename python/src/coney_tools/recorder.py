@@ -27,7 +27,21 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-from coney_tools.game_memory import MATH, TYPES, ExpressionError, GameMemory, Number, Value, convert, to_raw
+from coney_tools.game_memory import (
+    HUMAN_COUNT,
+    HUMAN_SIZE,
+    HUMAN_TABLE,
+    MATH,
+    TYPES,
+    ExpressionError,
+    GameMemory,
+    Job,
+    Number,
+    Value,
+    convert,
+    evaluate_all,
+    to_raw,
+)
 from coney_tools.hooks import CALL_BASE, RING_BASE, Hook, HookLog, RingReader
 from coney_tools.input_script import ScriptedPad
 from coney_tools.pine import Read, Write
@@ -62,11 +76,23 @@ class Recording:
     polls: int = 0
     seconds: float = 0.0
     words: int = 0
+    #: The updates sampled (a row each, or a row per human with rows = "humans").
+    updates: int = 0
+    #: With rows = "humans": the rows as CSV lines (kept as text, a match being hundreds of thousands of rows).
+    lines: list[str] = field(default_factory=list)
+    #: With rows = "humans": the steps whose sample saw the next update start before it was read to the end.
+    torn: list[int] = field(default_factory=list)
+
+    def quality(self) -> str:
+        """Every missed and torn step, a line each (`missed: 3 4`, `torn: 7`): where a long recording's samples
+        cannot be trusted, which the summary line only starts to list."""
+        return f"missed: {' '.join(map(str, self.missed))}\ntorn: {' '.join(map(str, self.torn))}\n"
 
     def csv(self) -> str:
         """The trace as CSV text, header first."""
         lines = [",".join(self.header)]
         lines += [",".join(str(value) for value in row) for row in self.rows]
+        lines += self.lines
         return "\n".join(lines) + "\n"
 
 
@@ -77,10 +103,11 @@ def _format(value: Number, item: Field) -> Value:
     return value
 
 
-def _row(step: int, fields: tuple[Field, ...], raw: list[Number]) -> list[Value]:
-    """One CSV row: the step, then each visible field (formulas worked out from the fields before them)."""
+def _row(prefix: list[Value], fields: tuple[Field, ...], raw: list[Number]) -> list[Value]:
+    """One CSV row: `prefix` (the step, and the human in a row per human), then each visible field (formulas worked
+    out from the fields before them); `raw` holds the other fields' values in order."""
     values: dict[str, Number] = {}
-    out: list[Value] = [step]
+    out: list[Value] = list(prefix)
     read = iter(raw)
     for item in fields:
         if item.formula is not None:
@@ -100,6 +127,20 @@ def _row(step: int, fields: tuple[Field, ...], raw: list[Number]) -> list[Value]
     return out
 
 
+def _value_job(item: Field, bound: dict[str, Value]) -> Job:
+    """The job that works out a `value` field with the names `bound`."""
+    assert item.value is not None
+    value = item.value
+    return lambda game: value.evaluate(game.names(bound))
+
+
+def _follow_job(item: Field, bound: dict[str, Value]) -> Job:
+    """The job that reads a `follow` field, its address worked out with the names `bound`."""
+    assert item.address is not None
+    address, kind = item.address, item.type
+    return lambda game: game.read(int(address.evaluate(game.names(bound))), kind)
+
+
 class Recorder:
     """Plays a scenario's input on a running original and samples its fields once per update."""
 
@@ -116,6 +157,11 @@ class Recorder:
         self.scenario = scenario
         self.clock = clock
         self.hooks = hooks or []
+        if not game.goal_types:
+            game.goal_types = dict(scenario.goal_types)
+        # With rows = "humans": each human's fixed reads, and the handle index they were worked out for.
+        self._fixed: dict[int, list[Read | None]] = {}
+        self._fixed_index: dict[int, int] = {}
 
     def resolve(self) -> tuple[dict[str, Value], list[tuple[Field, Read | None]]]:
         """Resolve the scenario's names and every field's address, once; a `follow` field's address is worked out
@@ -123,10 +169,19 @@ class Recorder:
         bound: dict[str, Value] = {}
         for name, expression in self.scenario.let:
             bound[name] = expression.evaluate(self.game.names(bound))
-        names = self.game.names(bound)
         reads: list[tuple[Field, Read | None]] = []
+        if self.scenario.rows == "humans":
+            # Each human's addresses are worked out now, before the first sample, and for a human that comes later
+            # when it is first seen (_human_rows).
+            for human in self.game.humans():
+                self._fixed_reads(human, bound)
+            return bound, reads
+        names = self.game.names(bound)
         for item in self.scenario.fields:
-            if item.address is not None:
+            if item.value is not None:
+                item.value.evaluate(names)
+                reads.append((item, None))
+            elif item.address is not None:
                 if item.follow:
                     item.address.evaluate(names)
                     reads.append((item, None))
@@ -147,12 +202,75 @@ class Recorder:
             if read is not None:
                 raw.append(convert(next(batch), item.type))
                 continue
-            assert item.address is not None
             try:
+                if item.value is not None:
+                    raw.append(item.value.evaluate(names))
+                    continue
+                assert item.address is not None
                 raw.append(self.game.read(int(item.address.evaluate(names)), item.type))
             except ExpressionError:
                 raw.append(float("nan"))
         return raw
+
+    def _fixed_reads(self, human: int, bound: dict[str, Value]) -> list[Read | None]:
+        """A human's read for each field with an address worked out once (None for the others), cached."""
+        reads = self._fixed.get(human)
+        if reads is None:
+            self._fixed_index[human] = self.game.index(human)
+            names = self.game.names({**bound, "h": human})
+            reads = []
+            for item in self.scenario.fields:
+                if item.address is not None and not item.follow:
+                    reads.append(Read(int(item.address.evaluate(names)), TYPES[item.type][0]))
+                else:
+                    reads.append(None)
+            self._fixed[human] = reads
+        return reads
+
+    def _human_rows(self, step: int, bound: dict[str, Value]) -> list[list[Value]]:
+        """The rows of one sample with rows = "humans": one per human in use, in table order. One message reads
+        which humans are in use and every fixed address of the humans already seen; the `value` and `follow`
+        fields are then worked out together in a few more (game_memory.evaluate_all)."""
+        memory = self.game.memory
+        fields = self.scenario.fields
+        in_use = [Read(HUMAN_TABLE + i * HUMAN_SIZE + 0xD4, 4) for i in range(HUMAN_COUNT)]
+        wanted = list(in_use)
+        for human, reads in self._fixed.items():
+            wanted += [read for read in reads if read is not None]
+            wanted.append(Read(human + 0x92, 2))
+        known = dict(zip(((read.address, read.size) for read in wanted), memory.batch(wanted), strict=True))
+        humans = [HUMAN_TABLE + i * HUMAN_SIZE for i, read in enumerate(in_use) if known[(read.address, 4)]]
+        for human in humans:
+            # A slot reused by another human (another handle index) has other tables: work its addresses out again.
+            if human in self._fixed and convert(known[(human + 0x92, 2)], "s16") != self._fixed_index[human]:
+                del self._fixed[human]
+        try:
+            new = [human for human in humans if human not in self._fixed]
+            more = [Read(human + 0x92, 2) for human in new]
+            more += [read for human in new for read in self._fixed_reads(human, bound) if read is not None]
+        except ExpressionError as error:
+            raise RecordError(str(error)) from error
+        if more:
+            known.update(zip(((read.address, read.size) for read in more), memory.batch(more), strict=True))
+        jobs: list[Job] = []
+        for human in humans:
+            for item in fields:
+                if item.value is not None:
+                    jobs.append(_value_job(item, {**bound, "h": human}))
+                elif item.address is not None and item.follow:
+                    jobs.append(_follow_job(item, {**bound, "h": human}))
+        results = iter(evaluate_all(memory, known, jobs, self.scenario.goal_types))
+        rows = []
+        for human in humans:
+            raw: list[Number] = []
+            for item, read in zip(fields, self._fixed[human], strict=True):
+                if read is not None:
+                    raw.append(convert(known[(read.address, read.size)], item.type))
+                elif item.formula is None:
+                    raw.append(next(results))
+            index = convert(known[(human + 0x92, 2)], "s16")
+            rows.append(_row([step, index], fields, raw))
+        return rows
 
     def _setup_writes(self, step: int, bound: dict[str, Value]) -> list[Write]:
         """The setup writes due after the sample of `step`, their values worked out now."""
@@ -190,7 +308,8 @@ class Recorder:
         except ExpressionError as error:
             raise RecordError(str(error)) from error
         fields = self.scenario.fields
-        recording = Recording(["step", *(item.name for item in fields if not item.hidden)])
+        prefix = ["step", "human"] if self.scenario.rows == "humans" else ["step"]
+        recording = Recording([*prefix, *(item.name for item in fields if not item.hidden)])
         batch_reads = [Read(TICK_COUNTER, 4), *(read for _, read in reads if read is not None)]
         ring = RingReader(self.game.memory, self.hooks) if self.hooks else None
         if ring is not None:
@@ -234,7 +353,15 @@ class Recorder:
                 continue
             recording.missed.extend(range(step + 1, new_step))
             step = new_step
-            recording.rows.append(_row(step, fields, self._sample(reads, values[1:], bound)))
+            recording.updates += 1
+            if self.scenario.rows == "humans":
+                lines = self._human_rows(step, bound)
+                recording.lines += [",".join(str(value) for value in row) for row in lines]
+                if self.game.memory.batch([Read(TICK_COUNTER, 4)])[0] != ticks:
+                    # Another update ran while the humans were read: this sample mixes two updates.
+                    recording.torn.append(step)
+            else:
+                recording.rows.append(_row([step], fields, self._sample(reads, values[1:], bound)))
             # The pad for frame `step`, read by the next update; then the setup writes due now.
             state = pad.advance(step).raw()
             if state != written:

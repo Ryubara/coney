@@ -10,6 +10,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+import yaml
 from conventions_support import write_checkout
 
 from coney_tools import check_cli, local_gate
@@ -640,3 +641,20 @@ def test_run_changed_exits_1_when_a_step_fails_and_0_when_all_pass(
     outcome["code"] = 0
     assert check_cli.run_changed("main", "build/dev", ["pre-commit"], None, 1, None) == 0
     assert "ok   pre-commit" in capsys.readouterr().out
+
+
+# --- the gate on every OS ---------------------------------------------------------------------------------------
+
+
+def test_the_python_workflow_runs_the_local_gate_on_every_os_it_tests() -> None:
+    """Nobody runs `check changed` on Linux or macOS by hand, so CI's python job does, on its whole OS matrix."""
+    workflow = yaml.safe_load((REPO / ".github" / "workflows" / "python.yml").read_text(encoding="utf-8"))
+    job = workflow["jobs"]["python"]
+    assert job["strategy"]["matrix"]["os"]  # the OSes come from the scope script: all three, or Linux for docs only
+    steps = job["steps"]
+    checkout = next(step for step in steps if str(step.get("uses", "")).startswith("actions/checkout"))
+    # `--base HEAD^1` is the branch a pull request's merge commit joins, so the checkout needs a second commit.
+    assert int(checkout.get("with", {}).get("fetch-depth", 1)) >= 2
+    gate = [step["run"] for step in steps if "coney-tools check changed" in step.get("run", "")]
+    assert len(gate) == 1 and "--base HEAD^1" in gate[0]
+    assert "--only pre-commit" in gate[0] and "--only repo" in gate[0]

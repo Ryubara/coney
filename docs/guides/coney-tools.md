@@ -495,6 +495,44 @@ step (the first update of input) come from the scenario's `[diff]` table; flags 
 [Comparing with Coney](research-workflow.md#comparing-with-coney) explains the alignment and the start frame.
 
 ```sh
+uv run --project python coney-tools trace fight-report TRACE... [--humans] [--hz N] [--exclude HUMAN ...]
+    [--engage-distance METRES]
+uv run --project python coney-tools trace fight-report --original TRACE... --coney TRACE... [--margin SHARE]
+    [--original-gangs ID,ID,...] [--coney-gangs ID,ID,...]
+```
+
+Behaviour statistics of a gang fight, from the all-humans trace of either game (Coney's `--trace-humans`, the
+original's `pcsx2 record` of the all-humans field set; [Tracing](running.md#tracing)). The two games draw different
+random numbers, so a fight is compared by rates, shares and distributions, not update by update. A trace needs the
+columns `step`, `human` and `gang`; a metric whose columns are missing is left out. For the whole match (`all`) and
+each gang (and each human with `--humans`) it prints:
+
+* the **time share of each goal** (`goal.NAME`), of the time the human is on its feet;
+* **attacks per minute** by kind (`attack.square_per_min`, ...: a change to an attack command in `command`) and
+  **blocks per minute** (`block.per_min`: `blocking`, or the block command), per human on its feet;
+* **attackers on one target** (`attackers.mean`, `p90`, `max` and the shares of 1, 2 and 3 or more humans going for
+  one target at the same step, from `target`);
+* the **distance to the target** (`distance.p10`, `p50`, `p90`, from `x` and `y`);
+* **target switches per minute** (`target.switches_per_min`) and **goal changes and interruptions per minute**
+  (`goal.changes_per_min`, `goal.interruptions_per_min`: a goal pushed over another, or a stack replaced instead of
+  popped; the stack is `goal0`...`goal5`, or `goal` alone);
+* the **time to the first engagement** (`engage.first_s`, `median_s`, `share`: the first attack, or a target within
+  `--engage-distance`, 3 m by default, in seconds from the first step);
+* the **knock-out times** (`ko.count`, `first_s`, `median_s`, `last_s`: `health` of 0 or less);
+* the **match's length and winner** (`match.length_s`, `match.winner`): it ends at the first step where one gang or
+  none has anyone on its feet, and the gang left wins; a match still going at the trace's end has no winner.
+
+Rates are per minute of `--hz` updates a second (30). `--exclude` leaves humans out (a spectator, the pad's player).
+
+With `--original` and `--coney` (several recordings of each) it prints, for every metric, the original's spread
+(min / median / max over its runs) beside Coney's and marks with `<<` each metric where Coney's median is outside the
+original's spread (`above`, `below`, `missing`, or `different` for a winner the original never had). `--margin`
+widens the spread by that share of its width. A goal or an attack one side never uses counts as zero. Gangs are paired
+by rank, the lowest id first, or in the order of `--original-gangs` and `--coney-gangs` when their ids differ. The
+exit code is 1 when a metric is outside the spread, 0 when none is, 2 when a trace cannot be read. With one run of the
+original the spread is a point, so record several ([Comparing with Coney](research-workflow.md#comparing-with-coney)).
+
+```sh
 uv run --project python coney-tools trace mission SCENARIO --side coney|original --out CSV [--coney EXE] [--disc DISC]
     [--state STATE] [--agent ID] [--updates N]
 ```
@@ -531,6 +569,8 @@ uv run --project python coney-tools repo labels [--apply] [--repo OWNER/NAME]
 uv run --project python coney-tools repo render [--check]
 uv run --project python coney-tools repo audit [--files] [--github] [--local] [--json] [--only CHECK ...] [--strict]
     [--show N] [--snapshot FILE] [--save-snapshot FILE] [--workspace DIR] [--list]
+uv run --project python coney-tools repo pr-health [--json] [--pending-hours H] [--verbose]
+uv run --project python coney-tools repo hygiene (--event N | --sweep) [--apply] [--snapshot FILE]
 ```
 
 The checks of the repository's own rules, which CI runs on every pull request. Every value they apply (the commit
@@ -541,7 +581,7 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   `GEMINI.md`) holds the `@AGENTS.md` import line and nothing more. Exit 1 when a pointer file is wrong.
 * `repo check-title` checks the first line of a commit message or a title (`-` reads stdin) against `commits.title`:
   `area: Verb the rest`, a known area and verb, the length limit, no trailing period, the breaking suffix last. The
-  commit-title pre-commit hook and the `title` and `commits` jobs of the `pr` workflow run it.
+  `title` job of the `pr` workflow runs it on the pull request title.
 * `repo check-docs` reads the changed paths on stdin and refuses a change under `paths.code` that has no change under
   `paths.docs` and no `Docs: none` line in the body.
 * `repo check-body` checks a pull request description against the template ([What a pull request
@@ -555,6 +595,8 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   a wrong marker (an unknown block name, an end without a begin, a block never closed) is a one-line error with the
   file and line, exit code 2. [Generated blocks](repo-conventions.md#generated-blocks) lists the blocks.
 * `repo audit` reports where the repository departs from the conventions and changes nothing: see [audit](#repo-audit).
+* `repo pr-health` lists the open pull requests that are stuck: see [pr-health](#repo-pr-health).
+* `repo hygiene` writes the audit's findings back as comments: see [hygiene](#repo-hygiene).
 
 ### repo audit {#repo-audit}
 
@@ -568,7 +610,8 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   the generated blocks are current.
 * `--github` reads issues, pull requests, labels, the repository settings and the ruleset through `gh` (read only;
   `gh` must be signed in) and checks them: the sections of each open issue (a missing one, one left as `x`), its
-  Screenshots, its labels, the word "owner" for the person (say "user"), closed issues and merged pull requests that
+  Screenshots, its labels, a closed issue that still carries an `S-` status label, the word "owner" for the person
+  (say "user"), closed issues and merged pull requests that
   keep an unchecked item with no follow-up issue number, open pull requests whose description names a path on your
   machine or an image that is not uploaded, stacked pull requests, how long an item has waited, and drift between the
   labels, settings and ruleset on GitHub and the file. `--save-snapshot FILE` also writes what it read, and
@@ -576,7 +619,10 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   check needs `origin/main` in the checkout (`git fetch origin`) and says so when it is missing.
 * `--local` reads the workspace around the checkout: the free space of its drive, merged worktrees and stray files
   among the worktrees (`workspace clean` would remove them), and scratch folders of finished work that still hold
-  captures. The limits are the `workspace` section of the file.
+  captures. The limits are the `workspace` section of the file. It asks GitHub once for the merged pull requests of
+  every branch, judges the worktrees and walks the scratch folders several at a time, and does not read the last
+  activity of a worktree it will not report (a `build/` folder is `workspace clean`'s business), so a workspace of
+  80 worktrees takes seconds, not minutes.
 
 Each finding has the check's id, a severity (`error` or `warn`), the item (`#201`, a file, a worktree), a message and a
 fix class: `auto` (a coney-tools command fixes it), `skill` (a person or the `/repo-hygiene` skill fixes it with
@@ -587,6 +633,60 @@ judgement) or `owner` (a maintainer decides). The text report groups findings by
 check id or a group (`issue`) and may be repeated. Exit code 1 when a finding has severity `error` (any finding with
 `--strict`), 2 when `gh` or the snapshot cannot be read or the conventions are unusable, otherwise 0. The audit never
 edits an issue, a pull request or a label; fixing the findings is the coordinator's job.
+
+### repo pr-health {#repo-pr-health}
+
+`repo pr-health` answers "which open pull requests need someone to act?" with one read of the open pull requests and
+their checks (`gh pr list --json`) and one of the branch ruleset (`gh api repos/{owner}/{repo}/rules/branches/main`,
+which names the required checks, so nothing is hard-coded). It prints one line per cause, sorted by pull request
+number, and changes nothing:
+
+```text
+#7 fix-bat-cross checks-failed lint: body, markdownlint -> author
+#9 research-x checks-failed code: python-ok; lint: markdownlint -> author
+#12 throw-arc conflict with main -> author
+#15 char-stats ci-stuck build-ok 4.2 h (limit 3.0 h) -> coordinator
+#18 workouts-2 auto-merge-off into main -> coordinator
+```
+
+| Cause | When | Acts |
+| --- | --- | --- |
+| `checks-failed` | a **required** check failed (failure, timeout, cancelled). Its class is `lint` for the checks in `hygiene.pr_health.lint_checks` (title, body, docs, format, mkdocs, markdownlint, actionlint) and `code` for the others (`build-ok`, `python-ok`); a mix lists both | author |
+| `conflict` | GitHub says the pull request conflicts with its base | author |
+| `ci-stuck` | a required check has been queued or running longer than `hygiene.thresholds.pr_pending_hours` (default 3; `--pending-hours H` overrides it for one run) | coordinator |
+| `auto-merge-off` | the pull request is not a draft, targets `main` and has auto-merge off | coordinator |
+
+A failing check that is not required is ignored. A draft is never stuck. A stacked pull request (base other than
+`main`) is reported as `stacked` and never as lacking auto-merge; its failures and conflicts count. GitHub answers
+`UNKNOWN` for mergeability while it computes it, which means "not known yet": it is not a finding and shows only with
+`--verbose`, together with the drafts and stacked pull requests, so a rerun a minute later settles it.
+`--json` prints `checked`, `stuck` (each with `number`, `branch`, `cause`, `kind`, `detail`, `who`, `checks`, `url`),
+`other` (the `--verbose` lines) and `notices`. Exit code 0 when nothing is stuck, 1 when something is, 2 when `gh` or
+the conventions cannot be read. Run it from the coordinator's loop to find the pull requests to unstick or to push.
+
+### repo hygiene {#repo-hygiene}
+
+`repo hygiene` is what the `hygiene` workflow runs ([Workflows](repo-conventions.md#workflows)); you can run it too.
+It audits GitHub (`repo audit --github`, plus `--files` for a sweep) and writes the result back as comments, with the
+settings in `hygiene.comments` of `.github/conventions.yml`:
+
+* `--event N` is for issue or pull request `N` that just changed. It creates the item's one comment when it has
+  findings, edits it when they change, and edits it to "found nothing to fix here now" when they are gone. A comment is
+  never deleted. Findings of the checks in `hygiene.comments.report_only` (the idleness checks) are left out, because a
+  comment is activity and would end the idleness it reports.
+* `--sweep` is the weekly run. It keeps one report comment (counts per check, then the findings) on the open issue
+  titled `hygiene.report_issue.title`, creating that issue (with the report issue's labels and a task-form body) when
+  it is missing. Item comments are written by a sweep only when `hygiene.comments.on_sweep` is true, and then at most
+  `max_per_sweep` of them, resolves first; it starts false, so the sweep only reports and item comments come from
+  events.
+* Without `--apply` nothing is written: it prints `would create comment on #7: ...` for each write. `--snapshot FILE`
+  audits a saved snapshot ([audit](#repo-audit)); the comments are still read from GitHub.
+
+Only a comment by `hygiene.comments.author` (the Actions bot) whose first line is `<!-- MARKER -->` (the report's is
+`<!-- MARKER:report -->`) counts as the workflow's own, so pasting the marker never makes it edit someone else's
+comment. Text from GitHub quoted in a comment (a title in a finding) cannot mention anyone, link, embed an image or
+close the marker, and the report writes `#12` so that it makes no cross-reference in the item's timeline. Exit code 0
+when it ran, 2 when `gh` or the conventions cannot be read.
 
 ## check {#check}
 
@@ -633,6 +733,9 @@ command notes a GCC database; configure a Clang one once, beside `build/dev`, an
 CC=clang-19 CXX=clang++-19 cmake --preset dev -B build/tidy   # macOS: the Apple or Homebrew clang
 uv run --project python coney-tools check changed --build-dir build/tidy
 ```
+
+CI runs the `repo` and `pre-commit` steps on Windows, Linux and macOS in its `python` workflow, so the command's
+handling of paths, programs and long command lines is tested on all three.
 
 `--only` and `--skip` take step names, for a rerun of the one that failed. The command prints at most 40 lines of a
 failing step; run the step's tool by hand for the rest. What stays CI's: warnings only GCC emits, macOS, the
