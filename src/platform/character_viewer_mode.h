@@ -27,7 +27,7 @@
 namespace coney::platform {
 
 /// Coney's character viewer, behind `coney --view-character NAME [--anim CLIP]`
-/// (docs/guides/building.md#the-character-viewer): one character from the disc, found through the Character List,
+/// (docs/guides/running.md#the-character-viewer): one character from the disc, found through the Character List,
 /// skinned on the CPU and playing one of its clips in a loop on the fixed timestep, seen through an orbit camera driven
 /// by pad 1. The character stands at the origin in the game's axes (z up) and plays in place: the clip's root motion
 /// is not applied.

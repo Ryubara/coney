@@ -1876,6 +1876,12 @@ subsystem = "GameModes"
 size = 192
 
 [[function]]
+address = 0x00165b70
+name = "Gang_SetSharedTarget"
+subsystem = "GameModes"
+size = 276
+
+[[function]]
 address = 0x00166220
 name = "Gang_StandingCount"
 subsystem = "GameModes"
@@ -1928,6 +1934,12 @@ address = 0x00168f58
 name = "Gang_AreFriends"
 subsystem = "GameModes"
 size = 136
+
+[[function]]
+address = 0x00168fe0
+name = "Gang_IsEnemyOf"
+subsystem = "GameModes"
+size = 124
 
 [[function]]
 address = 0x001696e0
@@ -2168,6 +2180,11 @@ address = 0x0016be30
 name = "Gang_CanUseWorldFlags"
 subsystem = "GameModes"
 size = 176
+
+[[function]]
+address = 0x0016c358
+name = "Gangs_SetTruce"
+subsystem = "GameModes"
 
 [[function]]
 address = 0x0016c3a8
@@ -6958,6 +6975,12 @@ subsystem = "Human"
 size = 120
 
 [[function]]
+address = 0x00290138
+name = "Brain_IsThreat"
+subsystem = "Human"
+size = 244
+
+[[function]]
 address = 0x00290328
 name = "Brain_MakeGangsEnemies"
 subsystem = "Human"
@@ -7280,6 +7303,11 @@ address = 0x0029b848
 name = "Route_ClimbLeg"
 subsystem = "Human"
 size = 360
+
+[[function]]
+address = 0x0029b9b0
+name = "Route_TryClimbNear"
+subsystem = "Human"
 
 [[function]]
 address = 0x0029baa8

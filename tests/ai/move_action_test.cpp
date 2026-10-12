@@ -901,3 +901,19 @@ TEST_CASE("locked and wounded, an AI turns 0.375 degrees an update, even asked t
     CHECK(brain.human().speed() == Catch::Approx(brain.human().speeds().walk).margin(0.01));
     CHECK(brain.human().position().y > at.y + 0.3F);
 }
+
+TEST_CASE("a fast climber at the run tries the next leg's climb within 4.5 m of its far waypoint",
+          "[ai][move][climb]") {
+    using coney::ai::earlyClimbDue;
+    using coney::human::Gait;
+    namespace edge_flag = coney::ai::edge_flag;
+    // Route_TryClimbNear (docs/research/ai.md#route-follow): a climb leg next (kind 8 or 0x80), flag 0x2, a gait above
+    // the jog, within 4.5 m (3D).
+    CHECK(earlyClimbDue(edge_flag::kClimb, true, Gait::Run, 4.5F));
+    CHECK(earlyClimbDue(edge_flag::kJump, true, Gait::Sprint, 1.0F));
+    CHECK_FALSE(earlyClimbDue(edge_flag::kClimb, true, Gait::Run, 4.6F));
+    CHECK_FALSE(earlyClimbDue(edge_flag::kClimb, true, Gait::Jog, 2.0F));
+    CHECK_FALSE(earlyClimbDue(edge_flag::kClimb, false, Gait::Run, 2.0F));
+    CHECK_FALSE(earlyClimbDue(1, true, Gait::Run, 2.0F));
+    CHECK_FALSE(earlyClimbDue(edge_flag::kJumpDown, true, Gait::Run, 2.0F));
+}

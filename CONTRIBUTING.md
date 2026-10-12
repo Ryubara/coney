@@ -43,7 +43,8 @@ created with `gh pr create --body-file`, and reruns when you edit it. These rule
 - Docs: a change under `src/`, `python/src/` needs a change under `docs/`, `research/` or the line `Docs: none` in the
   description.
 - Closing: a line `Fixes #N` in Summary for each issue the pull request finishes, one per line; merging closes it.
-- Checklist: each unchecked item under `Remaining:` cites an issue or pull request as `#N`.
+- Checklist: every item is ticked (`- [x]`): a pull request lists only the work it finishes, and a task it does not
+  finish is left out and lives in its own issue.
 - Screenshots: an uploaded image (a path on your machine is refused) or a line `Screenshots: none (<reason>)` that gives
   a reason.
 - AI use: after `Commits written by:` one of `a person`, `an AI`, `an AI, edited by a person`, `a person, with AI help`;
@@ -51,7 +52,8 @@ created with `gh pr create --body-file`, and reruns when you edit it. These rule
 - The text names no path on your machine (`scratch/`, `../../`, `C:\`) outside an image reference.
 <!-- conventions:end -->
 
-File an issue for what you leave undone ([Issues](docs/guides/issues.md#leftovers)). To check a description yourself:
+A pull request lists only the work it finishes; file an issue for anything else you find
+([Issues](docs/guides/issues.md#follow-up-work)). To check a description yourself:
 
 ```sh
 uv run --project python coney-tools repo check-body --body description.md

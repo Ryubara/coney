@@ -1252,6 +1252,10 @@ Coney fixes (item 42):
 3. Test (level99 checkpoint 3): from `P3.Player2Jumps`, Vermin's gait is Run (and his speed the run speed) for the
    updates before he leaves the ground at the window, and again on the `fStop[4]` leg.
 
+Status: fix 2 is built (`RouteFollower::cornerPoints`); with it the gait 4 order runs him at 7.80 m/s up to both
+take-offs, where before the corner after each landing held him at 2.80 m/s. Test:
+`repo:tests/platform/disc_level99_vermin_fence_test.cpp`, which also checks his fence climb in step 3.2 (issue #232).
+
 **Item 43: where Vermin faces in the fence lesson.** `P3.WoodenFences` (the player entering `vAlmostDone`) flushes
 Vermin and teleports him to `fStop[5]` (29.5, 6.4, 0.3) with heading −1, so **the flag's heading, 273°**; the game's
 heading grows clockwise from +y and faces `(sin h, cos h)` ([Characters](characters.md#step-control)), so he faces
@@ -2380,7 +2384,7 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
   object took sends `(human, box, object)` to every enabled kind-0 box the attacker (a thrown object's thrower)
   stands in. Not yet: props, the 30 m alert after it, and the boxes' every-fifth-frame round-robin (Coney updates
   them every frame). **`--script-trace`** (`ScriptSystem::traceCalls()`,
-  [Building](../guides/building.md#tracing)) logs every binding call and every call into the scripts by name,
+  [Running Coney](../guides/running.md#tracing)) logs every binding call and every call into the scripts by name,
   Coney's own tool.
 - **Trigger spheres** (`src/world_objects/trigger_spheres.h`, `TriggerSphereCfg` in `src/scripting/world_bindings.h`):
   a pool of 100, one per object, each checked every fifth frame (index modulo 5) with the boxes' rules, 3, 5 once per
@@ -2513,8 +2517,11 @@ handler component, as for `TriggerSphereEnable`).
   nothing stayed queued; confirmed (runtime) at the show `0x001cdf7c`, as `HintBox_Queue` reads (confirmed (code) at
   `0x001ce484`-`0x001ce52c`). In both runs the queue held no entry past the call that queued it, apart from `TT_26b`
   behind a `<DISPLAYTIME>` hint. What Coney must change for it: [Coney's differences](hud.md#hint-queue-runtime).)
-- **The stale throw hint** (owner checklist item 38): the owner saw `level80`'s `TT_25` (lure the cops with a bottle)
-  stay through step 3.4 until the Wreck'em order. Coney's checkpoint 3 test (teleports to the roof, the scene
-  skipped or played out, the lesson box left and re-entered) shows the box empty when the bottle breaks and `TT_7`
-  next. Not reproduced; the backlog above is the likely cause (a lesson text queued behind another and shown after
-  the next clear).
+- **The stale throw hint** (owner checklist item 38). (Answered for Coney: the owner saw `level80`'s `TT_25` (lure the
+  cops with a bottle) stay through step 3.4 until the Wreck'em order. The likely cause was the hint box's backlog: a
+  lesson text queued behind another, then shown after the next clear. The box no longer queues on a nil-then-text set
+  ([The queue at runtime](hud.md#hint-queue-runtime)), and the bug no longer reproduces on the owner's path.
+  `repo:tests/platform/disc_level80_story_test.cpp` starts the story and jumps to checkpoint 3. It walks into Fox's box
+  and, on foot, up the stairs to the roof, then plays the lesson. The box is empty when the bottle breaks, `TT_7` is
+  the next hint and no lesson text comes back. The original was not traced for this; the order is the one in
+  [the order at runtime](#level80-hints).)
