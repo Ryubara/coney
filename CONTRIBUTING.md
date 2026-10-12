@@ -177,4 +177,4 @@ it up: [Setting up an agent tool](docs/guides/agents.md#setup).
 If an agent writes your pull request's description, have the `pr-reviewer` agent check it before you open the pull
 request: `uv run --project python coney-tools repo review <PR.md> --worktree <your checkout>`. It opens every
 screenshot and checks the text against the diff and your test logs
-([The description review](docs/guides/how-we-work.md#the-description-review)).
+([The description review](docs/guides/how-we-work.md#pr-review)).
