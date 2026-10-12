@@ -4379,9 +4379,14 @@ size = 664
 
 [[function]]
 address = 0x0021e698
-name = "Human_PlaySpeechInterrupt"
+name = "Human_PlaySpeechCutting"
 subsystem = "Human"
 size = 680
+
+[[function]]
+address = 0x0021e940
+name = "Human_UpdateSpeech"
+subsystem = "Human"
 
 [[function]]
 address = 0x0021ec38

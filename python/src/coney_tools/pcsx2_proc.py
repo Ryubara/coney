@@ -37,6 +37,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from coney_tools import window_display
 from coney_tools.config import ConfigError
 
 #: Windows' exit code for a process that has not ended.
@@ -279,6 +280,21 @@ def _user32() -> Any:
     lib.SetForegroundWindow.argtypes = [wintypes.HWND]
     lib.IsWindow.argtypes = [wintypes.HWND]
     lib.AttachThreadInput.argtypes = [wintypes.DWORD, wintypes.DWORD, wintypes.BOOL]
+    lib.EnumDisplayMonitors.argtypes = [wintypes.HDC, ctypes.c_void_p, ctypes.c_void_p, wintypes.LPARAM]
+    lib.GetMonitorInfoW.argtypes = [wintypes.HMONITOR, ctypes.c_void_p]
+    lib.EnumDisplayDevicesW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, ctypes.c_void_p, wintypes.DWORD]
+    lib.GetWindowLongW.argtypes = [wintypes.HWND, ctypes.c_int]
+    lib.GetWindowLongW.restype = wintypes.LONG
+    lib.GetWindowRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
+    lib.SetWindowPos.argtypes = [
+        wintypes.HWND,
+        wintypes.HWND,
+        ctypes.c_int,
+        ctypes.c_int,
+        ctypes.c_int,
+        ctypes.c_int,
+        wintypes.UINT,
+    ]
     return lib
 
 
@@ -470,6 +486,184 @@ def focus_guard() -> FocusGuard | None:
         give_foreground=_give_foreground,
     )
     return FocusGuard(calls)
+
+
+# --- putting PCSX2 on its display ----------------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class PlacerCalls:
+    """The window calls WindowPlacer makes, swappable so tests can fake the desktop: a process's visible top-level
+    windows with their outer rectangles (frame included), and moving a window to a rectangle without activating it."""
+
+    top_windows: Callable[[int], list[tuple[int, window_display.Rect]]]
+    move: Callable[[int, window_display.Rect], None]
+
+
+class WindowPlacer:
+    """Moves each new top-level window of a process onto one display, once, as soon as it shows.
+
+    `area` is the display's usable part; a window is centred there, shrunk to fit if larger. A window is moved only the
+    first time it is seen, so one the user drags away again stays where it is. `check()` is one poll; `start()` runs it
+    every `interval` seconds on a daemon thread until `stop()`."""
+
+    def __init__(self, calls: PlacerCalls, area: window_display.Rect, interval: float = 0.05) -> None:
+        """Place windows in `area`; nothing is watched until start()."""
+        self.calls = calls
+        self.area = area
+        self.interval = interval
+        self.pid: int | None = None
+        self.placed: set[int] = set()
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    def check(self) -> int:
+        """One poll: move every window of the process not moved before; returns how many were moved."""
+        if self.pid is None:
+            return 0
+        moved = 0
+        for hwnd, rect in self.calls.top_windows(self.pid):
+            if hwnd in self.placed or rect.width <= 0 or rect.height <= 0:
+                continue
+            self.placed.add(hwnd)
+            self.calls.move(hwnd, window_display.place_window(self.area, rect.width, rect.height))
+            moved += 1
+        return moved
+
+    def start(self, pid: int) -> None:
+        """Watch process `pid` on a background thread."""
+        self.pid = pid
+        self._thread = threading.Thread(target=self._run, name="pcsx2-window-placer", daemon=True)
+        self._thread.start()
+
+    def _run(self) -> None:
+        """Poll until stopped; a failing call ends only that poll."""
+        while not self._stop.wait(self.interval):
+            try:
+                self.check()
+            except OSError:
+                continue
+
+    def stop(self) -> None:
+        """End the watching thread."""
+        self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=1)
+
+
+class _MonitorInfo(ctypes.Structure):
+    """MONITORINFOEXW."""
+
+    _fields_ = (
+        ("cbSize", wintypes.DWORD),
+        ("rcMonitor", wintypes.RECT),
+        ("rcWork", wintypes.RECT),
+        ("dwFlags", wintypes.DWORD),
+        ("szDevice", wintypes.WCHAR * 32),
+    )
+
+
+class _DisplayDevice(ctypes.Structure):
+    """DISPLAY_DEVICEW."""
+
+    _fields_ = (
+        ("cb", wintypes.DWORD),
+        ("DeviceName", wintypes.WCHAR * 32),
+        ("DeviceString", wintypes.WCHAR * 128),
+        ("StateFlags", wintypes.DWORD),
+        ("DeviceID", wintypes.WCHAR * 128),
+        ("DeviceKey", wintypes.WCHAR * 128),
+    )
+
+
+_MONITORINFOF_PRIMARY = 1
+
+
+def _rect(rect: wintypes.RECT) -> window_display.Rect:
+    """A window_display.Rect from a Win32 RECT."""
+    return window_display.Rect(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top)
+
+
+def list_displays() -> list[window_display.Display]:
+    """The displays in the order SDL (and so Coney) numbers them on Windows: the primary first, then the others as
+    Windows enumerates them. Each one's name is its device name (ending in DISPLAY2, say) and its monitor's
+    description in brackets, so a name value can match either. Raises ConfigError off Windows."""
+    if sys.platform != "win32":  # tells mypy the Win32-only ctypes names exist
+        _need_windows("listing displays")
+        return []
+    ensure_dpi_aware()  # before any rectangle is read
+    user = _user32()
+    found: list[tuple[bool, window_display.Display]] = []
+    enum_proc = ctypes.WINFUNCTYPE(
+        wintypes.BOOL, wintypes.HMONITOR, wintypes.HDC, ctypes.POINTER(wintypes.RECT), wintypes.LPARAM
+    )
+
+    def monitor(handle: int, _dc: int, _bounds: Any, _data: int) -> bool:
+        info = _MonitorInfo()
+        info.cbSize = ctypes.sizeof(_MonitorInfo)
+        if not user.GetMonitorInfoW(handle, ctypes.byref(info)):
+            return True
+        device = _DisplayDevice()
+        device.cb = ctypes.sizeof(_DisplayDevice)
+        described = user.EnumDisplayDevicesW(info.szDevice, 0, ctypes.byref(device), 0)
+        name = f"{info.szDevice} ({device.DeviceString})" if described and device.DeviceString else info.szDevice
+        display = window_display.Display(name, _rect(info.rcMonitor), _rect(info.rcWork))
+        found.append((bool(info.dwFlags & _MONITORINFOF_PRIMARY), display))
+        return True
+
+    user.EnumDisplayMonitors(None, None, enum_proc(monitor), 0)
+    return [d for primary, d in found if primary] + [d for primary, d in found if not primary]
+
+
+_GWL_STYLE = -16
+_WS_CAPTION = 0x00C00000
+_SWP_FLAGS = 0x0004 | 0x0010 | 0x0200  # SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER
+
+
+def _top_windows(pid: int) -> list[tuple[int, window_display.Rect]]:
+    """The visible, not minimised top-level windows of `pid` that have a title bar (PCSX2's main and game windows,
+    not its menus or tooltips), each with its outer rectangle."""
+    user = _user32()
+    result: list[tuple[int, window_display.Rect]] = []
+    for window in windows_of(pid):
+        if not window.top_level or not window.visible or user.IsIconic(window.hwnd):
+            continue
+        if user.GetWindowLongW(window.hwnd, _GWL_STYLE) & _WS_CAPTION != _WS_CAPTION:
+            continue
+        rect = wintypes.RECT()
+        if user.GetWindowRect(window.hwnd, ctypes.byref(rect)):
+            result.append((window.hwnd, _rect(rect)))
+    return result
+
+
+def _move(hwnd: int, rect: window_display.Rect) -> None:
+    """Move and size a window without activating it or changing its place in the stacking order."""
+    _user32().SetWindowPos(hwnd, None, rect.x, rect.y, rect.width, rect.height, _SWP_FLAGS)
+
+
+_warned_display = False
+
+
+def window_placer() -> WindowPlacer | None:
+    """A WindowPlacer for the display `CONEY_WINDOW_DISPLAY` names, made before PCSX2 starts; None when the variable
+    is unset or empty, off Windows, or when no display matches (then a warning, once, lists the displays there are)."""
+    global _warned_display
+    choice = window_display.choice_from_environment()
+    if choice is None or sys.platform != "win32":
+        return None
+    displays = list_displays()
+    index = window_display.pick_display(choice, displays)
+    if index is None:
+        if not _warned_display:
+            _warned_display = True
+            value = os.environ.get(window_display.ENV, "")
+            print(
+                f'warning: {window_display.ENV}="{value}" matches no display (there are: '
+                f"{window_display.describe(displays)}); PCSX2 opens where it last was",
+                file=sys.stderr,
+            )
+        return None
+    return WindowPlacer(PlacerCalls(top_windows=_top_windows, move=_move), displays[index].usable)
 
 
 # --- keys -------------------------------------------------------------------------------------------------------

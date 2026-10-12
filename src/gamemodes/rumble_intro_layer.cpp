@@ -17,6 +17,9 @@ RumbleIntroLayer::RumbleIntroLayer(PauseSheetLoader loadSheet, const gui::Global
     m_intro.setDoneSink([this](std::string_view onDone) {
         m_log(std::format("rumble intro: done, calling {}\n", onDone));
         m_services.callScript(onDone);
+        if (m_afterDone) {
+            m_afterDone();
+        }
     });
 }
 

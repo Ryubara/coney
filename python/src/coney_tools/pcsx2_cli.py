@@ -25,7 +25,7 @@ from coney_tools.hooks import Hook, HookError
 from coney_tools.pcsx2_state import Patch, StateError
 from coney_tools.pine import PineClient, PineError, Read
 from coney_tools.recorder import Recorder, RecordError
-from coney_tools.scenario import PATCHES_FILE, Scenario, ScenarioError, load_scenario, with_let
+from coney_tools.scenario import PATCHES_DIR, Scenario, ScenarioError, load_scenario, with_let
 from coney_tools.wad import refuse_inside_repo
 
 #: Seconds to wait for PCSX2 to boot, load the state and run the game.
@@ -221,9 +221,13 @@ class Emulator:
         command = [str(_executable(paths.pcsx2_dir)), "-fastboot", *load, "--", str(disc)]
         # Never a plain Popen: a child of ours inherits the right to take the user's focus (pcsx2_proc's docstring).
         self.guard = pcsx2_proc.focus_guard()
+        # CONEY_WINDOW_DISPLAY: each PCSX2 window goes to that display as it appears (docs/guides/running.md).
+        self.placer = pcsx2_proc.window_placer()
         self.pid = pcsx2_proc.start_detached(command)
         if self.guard is not None:
             self.guard.start(self.pid)
+        if self.placer is not None:
+            self.placer.start(self.pid)
         if on_start is not None:
             on_start(self.pid)
         try:
@@ -243,6 +247,8 @@ class Emulator:
             self.client.close()
         if self.guard is not None:
             self.guard.stop()
+        if self.placer is not None:
+            self.placer.stop()
         if pcsx2_proc.is_pcsx2(self.pid):  # a pid of a PCSX2 that already ended may belong to something else now
             pcsx2_proc.terminate(self.pid)
         if self.ini_text is not None:
@@ -284,12 +290,12 @@ def _scenario_state(scenario: Scenario, state: str | None, scratch: Path) -> str
 
 
 def _patches(names: list[str]) -> tuple[list[Patch], list[Hook]]:
-    """The named patches and hooks of research/traces/patches.toml: the patches, with one more installing the hooks
+    """The named patches and hooks of research/traces/patches/: the patches, with one more installing the hooks
     (ids in the order named), and the hooks."""
     root = find_repo_root(Path.cwd())
     try:
-        known = pcsx2_state.load_patches(root / PATCHES_FILE)
-        hooks = hook_tools.hooks_for(names, hook_tools.load_hooks(root / PATCHES_FILE), set(known))
+        known = pcsx2_state.load_patches(root / PATCHES_DIR)
+        hooks = hook_tools.hooks_for(names, hook_tools.load_hooks(root / PATCHES_DIR), set(known))
         patches = pcsx2_state.pick(known, [name for name in names if name in known])
         return [*patches, hook_tools.build(hooks)] if hooks else patches, hooks
     except HookError as error:

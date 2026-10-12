@@ -145,6 +145,21 @@ TEST_CASE("an armed announcement plays when the player comes within 5 m", "[radi
     CHECK(sound.live.size() == 1); // the track was stopped
 }
 
+TEST_CASE("a radio whose object is destroyed stops its sound and is forgotten", "[radios]") {
+    // level95's hub mission destroys the boom box (ObjDestroy) as its cutscene starts, while an announcement plays:
+    // the announcement must not play on through the scene (#404).
+    Radios radios;
+    FakeSound sound;
+    GameRandom random;
+    radios.setup(kBox, "", 2, "", 4);
+    radios.update(locate, playerAt(4.0F), sound, random, {});
+    REQUIRE(sound.live.size() == 1);
+    const auto gone = [](double /*object*/) { return std::optional<std::array<float, 3>>{}; };
+    radios.update(gone, playerAt(4.0F), sound, random, {});
+    CHECK(sound.live.empty());
+    CHECK(radios.find(kBox) == nullptr);
+}
+
 TEST_CASE("Radio_SetMode retunes a playing radio and switches it off", "[radios]") {
     Radios radios;
     FakeSound sound;

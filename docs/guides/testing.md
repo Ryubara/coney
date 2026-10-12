@@ -27,6 +27,8 @@ request's Testing and Screenshots sections ([What a pull request shows](#pr-evid
   They are written first.
 - **Smoke tests** run the `coney` executable itself under `ctest`: start-up, argument errors, scripted input.
 - **Disc tests** need the player's own disc, found through `coney.local.toml` or `CONEY_DISC`. They skip without it.
+  Every one carries the ctest label `disc` (the Catch2 tag `[disc]`), so `coney-tools build --test -L disc` runs them
+  and nothing else ([`build`](coney-tools.md#build)).
 - **Playthrough tests** are disc tests that play a mission checkpoint from start to end through the pad.
 - **Event diffs** replay a recorded run of the original into Coney and compare the ordered events.
 - **Trace diffs** record the same scripted scenario on the original and on Coney, per update, and compare the
@@ -214,8 +216,8 @@ uv run --project python coney-tools check changed
 It runs pre-commit on the changed files, clang-tidy with the GCC and Clang warnings on the files CI's pull-request job
 would check (a changed header through the `.cpp` files that include it), `mkdocs build --strict` when docs changed,
 pytest and mypy when `python/` changed, and `repo check`; it needs a `build/dev` that was configured once
-(`cmake --preset dev`, no build). It catches what MSVC lets through: a designated initializer that skips a field
-(`-Wmissing-designated-field-initializers`), an unchecked `std::optional` access
+(`coney-tools build --configure-only --agent <id>`: configure, no build). It catches what MSVC lets through: a
+designated initializer that skips a field (`-Wmissing-designated-field-initializers`), an unchecked `std::optional` access
 (`bugprone-unchecked-optional-access`). [The command's page](coney-tools.md#check) has the options. It does not
 replace the list below, which is the whole gate, and it leaves to CI the warnings only GCC emits, macOS, the
 sanitizers and the full clang-tidy pass; a change to the build setup is checked on its changed files only.
@@ -227,8 +229,10 @@ finds a difference fixes it forward.
 
 The whole gate:
 
-- **Engine changes:** the `ci` preset build and `ctest --preset ci` with the disc configured (Windows: from a shell
-  with the MSVC environment).
+- **Engine changes:** the `ci` preset build and its tests with the disc configured, in one command:
+  `uv run --project python coney-tools build --agent <id> --preset ci --test` (it waits for a free
+  [build slot](coney-tools.md#build) and loads the MSVC environment itself; agents never run `cmake --build` or `ctest`
+  directly).
 - **Python:** `ruff check`, `ruff format --check`, `mypy` and `pytest` on `python/`; `coney-tools repo check`;
   `coney-tools progress check` (the progress inputs; its tables are built into the docs, not committed); and every
   generator's `--check` (`natives render`, `natives coney`, `natives cpp`, `refs render`, `missions render`). Rerun a
