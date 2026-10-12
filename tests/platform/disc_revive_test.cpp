@@ -283,9 +283,9 @@ TEST_CASE("the disc's level80: player 1 with a flash revives a knocked-out Warri
         },
         kLimit);
     if (!revived) {
-        for (const std::string& line : run.log()) {
-            if (line.starts_with("revive")) {
-                UNSCOPED_INFO(line);
+        for (const std::string& entry : run.log()) {
+            if (entry.starts_with("revive")) {
+                UNSCOPED_INFO(entry);
             }
         }
     }
