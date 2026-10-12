@@ -111,6 +111,7 @@ area list is the `A-` labels. The coordinator sets the priority, and an issue ca
 | | `P-medium` | Priority: next in line |
 | | `P-low` | Priority: when there is room |
 | Status | `S-needs-triage` | Status: not yet looked at |
+| | `S-ready-to-start` | Status: triaged and accepted; waiting for someone to pick it up |
 | | `S-needs-info` | Status: waiting for the reporter |
 | | `S-needs-research` | Status: an analyst must study the original first |
 | | `S-in-progress` | Status: an agent or person is working on it |
@@ -127,10 +128,16 @@ area list is the `A-` labels. The coordinator sets the priority, and an issue ca
 The coordinator reads each new issue and:
 
 1. sets the type (`bug` or `parity`, or `task`, `docs`, `enhancement`), the area and the priority;
-2. asks for what is missing with a comment and sets `S-needs-info`, or sets `S-needs-research` when an analyst must
-   study the original first ([Research workflow](research-workflow.md));
+2. moves an accepted issue from `S-needs-triage` to `S-ready-to-start`: it is understood, has a priority and can be
+   picked up as written. Otherwise it asks for what is missing with a comment and sets `S-needs-info`, sets
+   `S-needs-research` when an analyst must study the original first ([Research workflow](research-workflow.md)), or
+   sets `S-blocked` when it waits for another issue or a decision;
 3. closes a repeat as `duplicate` (pointing at the first), and a request outside the project as `wontfix`;
 4. turns a vague report into a task that an agent can take, with a research page link and an acceptance test.
+
+Whoever picks up an `S-ready-to-start` issue moves it to `S-in-progress`. The audit counts every status except
+`S-needs-triage` as triaged, so an `S-ready-to-start` issue already needs its priority label
+([Repository conventions](repo-conventions.md)).
 
 ## The life of an issue {#life}
 
@@ -139,9 +146,10 @@ Every issue has exactly one status label, and the coordinator moves it:
 | Status | Set when |
 | --- | --- |
 | `S-needs-triage` | The form sets it. |
+| `S-ready-to-start` | Triage accepted the issue: type, area and priority are set and nothing blocks it. |
 | `S-needs-info` | Triage found the report incomplete and asked the reporter. Back to triage when they answer. |
 | `S-needs-research` | The behaviour of the original is not yet written on a research page. |
-| `S-in-progress` | An agent or person starts work. |
+| `S-in-progress` | An agent or person picks up an `S-ready-to-start` issue and starts work. |
 | `S-pending-review` | The coordinator opens the pull request, with `Fixes #N` in its body. |
 | `S-blocked` | The issue waits for another issue (named in the task's "Blocked by") or a decision. |
 
