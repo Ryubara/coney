@@ -12,7 +12,7 @@ arguments.
 | Kind of rule | Where it lives | How the rest of the repository uses it |
 | --- | --- | --- |
 | A rule a program checks (a title, a description, a label, a limit, a path class) | `.github/conventions.yml` | `coney-tools` reads it; nothing hard-codes the value; AGENTS.md and the guides show a [generated block](#generated-blocks) of the lists |
-| A rule that GitHub reads from its own file (the issue forms, the pull request template, the ruleset) | Its own file | A test checks it against `conventions.yml`, so a change to one without the other fails |
+| A rule that GitHub reads from its own file (the issue forms, the pull request template, the ruleset) | Its own file | [`repo audit`](#audit-checks) checks it against `conventions.yml`, so a change to one without the other fails |
 | Tool configuration (`.clang-format`, `.pre-commit-config.yaml`, `mkdocs.yml`, `CMakePresets.json`, ...) | Its own file, in its own format | `repo.tools` names the file; its values are never copied |
 | Judgement and reasons (the clean room, evidence levels, roles, how to write a good issue) | The guide that owns the topic | Prose explains why; where it needs a value it names the key |
 
@@ -23,15 +23,15 @@ and `labels.yml`) are gone, and so are the constants that repeated their values 
 
 | Section | What it says | Read by |
 | --- | --- | --- |
-| `repo` | The default branch, the decisions only a maintainer takes (`owner_decisions`) and the tool configuration files | Tests; agents ([AGENTS.md](repo:AGENTS.md)) |
-| `paths` | Which paths are code, documentation and documentation-only; generated paths; the agent pointer files; the one file that may hold the repository's address; the large-file limit | `repo check`, `repo check-docs`, `check changed`; `repo render` (the `docs-only-paths` block); a test holds `ci-scope.sh` and pre-commit to it |
+| `repo` | The default branch, the wording (call the person who directs the project "user", never "owner"), the decisions only a maintainer takes (`owner_decisions`) and the tool configuration files | `repo audit` (`files.exist` and the wording checks); agents ([AGENTS.md](repo:AGENTS.md)) |
+| `paths` | Which paths are code, documentation and documentation-only; generated paths; the agent pointer files; the one file that may hold the repository's address; the large-file limit | `repo check`, `repo check-docs`, `check changed`; `repo render` (the `docs-only-paths` block); `ci-scope.sh` reads the docs-only list itself, and `repo audit` holds it and pre-commit to the file |
 | `commits` | The title form, its limit and suffix, the areas and verbs, the body wrap and the `Co-Authored-By` trailer | `repo check-title`, which the commit-title hook and the `title` and `commits` jobs run; `repo render` (the `commit-rules` and `commit-areas` blocks) |
-| `pull_requests` | The description's sections and which must hold text, the `Docs: none` line, `Fixes #N`, the Remaining list, the Screenshots rule, the AI use choices, stacked pull requests | `repo check-body`, `repo check-docs`; `repo render` (the `pr-rules` block); a test checks the template |
-| `merge` | The merge methods, the squash commit's wording, auto-merge, the required checks and who merges: a copy of the GitHub ruleset and settings | `repo render` (the `required-checks` block); kept for the audit that compares them |
-| `issues` | The structure of each issue form (field ids, headings, which are required, default labels), the Screenshots line, the `From:` line, links and how many labels of each family an issue carries | A test checks the forms; the rest is kept for the audit |
-| `labels` | The label families and every label with its colour and description | `repo labels`; `repo render` (the `labels` block) |
-| `hygiene` | The limits after which an item counts as stale and the weekly report issue | Kept for the hygiene checks |
-| `workspace` | The worktree and scratch layout, the free-space minimum and the busy marker | Local tools; hosted checks ignore it |
+| `pull_requests` | The description's sections and which must hold text, the `Docs: none` line, `Fixes #N`, the Remaining list, the Screenshots rule, the AI use choices, stacked pull requests | `repo check-body`, `repo check-docs`; `repo render` (the `pr-rules` block); `repo audit` checks the template and the stacked-pull-request rules |
+| `merge` | The merge methods, the squash commit's wording, auto-merge, the required checks and who merges: a copy of the GitHub ruleset and settings | `repo render` (the `required-checks` block); `repo audit --github` compares it with the GitHub ruleset and settings |
+| `issues` | The structure of each issue form (field ids, headings, which are required, default labels), the Screenshots line, the `From:` line, links and how many labels of each family an issue carries | `repo audit` (the forms, and every issue's sections, placeholders, Screenshots, labels, links and `From:` line) |
+| `labels` | The label families and every label with its colour and description | `repo labels`; `repo render` (the `labels` block); `repo audit` (the labels on GitHub) |
+| `hygiene` | The limits after which an item counts as stale, the weekly report issue and `checks`, the registry of the audit's checks | `repo audit` |
+| `workspace` | The worktree and scratch layout, the free-space minimum and the busy marker | `workspace clean` and `workspace disk`, `repo audit --local`; hosted checks ignore it |
 
 The commented file is the reference for each key: open `.github/conventions.yml` and read the comment above it.
 
@@ -59,6 +59,7 @@ Markers inside a fenced code block, like the one above, are examples and are lef
 | `pr-rules` | What CI checks in a pull request description | `pull_requests`, `paths` | `CONTRIBUTING.md`, [Testing](testing.md#pr-evidence) |
 | `required-checks` | The merge method, the required checks and the merge settings | `merge` | [Building and testing](building.md#what-ci-runs) |
 | `docs-only-paths` | The paths a documentation-only change may touch | `paths.docs_only` | [Building and testing](building.md#what-a-pull-request-runs) |
+| `audit-checks` | The table of the audit's checks | `hygiene.checks` | [Audit checks](#audit-checks) |
 
 After a change to a key, run `uv run --project python coney-tools repo render` and commit the rewritten files with the
 change. `repo render --check` fails when a block is stale; the `python` workflow and `coney-tools check changed` run
@@ -66,7 +67,70 @@ it, so a block can only drift if someone edits it by hand, and the check says wh
 merging is resolved by taking either side and running `repo render` again. To add a block, write its function in
 `python/src/coney_tools/conventions_render.py` (a function from the conventions to lines, registered in `BLOCKS`), its
 test in `python/tests/test_conventions_render.py`, and put the markers where it belongs. The issue forms and the pull
-request template are not generated: GitHub reads them directly, and a test checks them against the file.
+request template are not generated: GitHub reads them directly, and `repo audit --files` checks them against the file.
+
+## Audit checks {#audit-checks}
+
+`coney-tools repo audit` ([the command](coney-tools.md#repo-audit)) compares the repository with the file and changes
+nothing. It reports in three scopes: `files` reads the checkout (CI runs it on every pull request, so a form, the
+template or a generated block cannot drift from the file), `github` reads issues, pull requests, labels, the settings
+and the ruleset through `gh`, and `local` reads the workspace. `hygiene.checks` in the file is the registry: each entry
+says where the check runs, how bad a finding is and who fixes it, and the table below is generated from it.
+
+- **Severity.** `error` makes the audit exit 1; `warn` is reported and does not. An error is a rule a person can fix
+  in a minute (a missing section, a missing label); a warning is a judgement or a delay (a stale status, a pull request
+  idle for a month). Promoting a warning to an error is one line in the file.
+- **Fix class.** `auto`: a coney-tools command fixes it (`repo render`, `repo labels --apply`, `workspace clean`).
+  `skill`: it takes judgement, so the author or the coordinator fixes it (the `/repo-hygiene` skill, when it exists,
+  acts on a finding by this class). `owner`: a maintainer decides (the ruleset and the settings of the repository).
+- **Items.** Only open issues and open pull requests are checked for their sections, labels, wording and links. History
+  is checked only where it loses work: a closed issue or a merged pull request that keeps an unchecked item with no
+  follow-up issue number, and a pull request merged into a branch other than `main`.
+
+<!-- conventions:begin audit-checks -->
+| Check | Scope | Severity | Fix | Finds |
+| --- | --- | --- | --- | --- |
+| `files.pointer` | files | error | skill | an agent entry file (CLAUDE.md, GEMINI.md) is missing, too big, or lacks the import line |
+| `files.exist` | files | error | skill | a file or folder the conventions name does not exist |
+| `files.address` | files | error | skill | the repository's or the docs site's address appears in a file other than the README |
+| `files.forms` | files | error | skill | an issue form differs from the conventions: title, labels, field ids, headings, required flags, areas |
+| `files.template` | files | error | skill | the pull request template differs from the conventions: headings, AI use lines, the Docs: none and Fixes lines |
+| `files.generated-blocks` | files | error | auto | a generated block in AGENTS.md, CONTRIBUTING.md or a guide is out of date (coney-tools repo render) |
+| `files.ci-scope` | files | error | skill | .github/scripts/ci-scope.sh does not read the docs-only paths from the conventions file |
+| `files.large-file-limit` | files | error | skill | pre-commit's check-added-large-files limit differs from the conventions |
+| `issue.sections` | github | error | skill | an open issue lacks a required section of its form (or was filed with other headings) |
+| `issue.placeholder` | github | error | skill | a section of an open issue is empty or holds only a placeholder such as x |
+| `issue.screenshots` | github | error | skill | an open issue has no uploaded image and no Screenshots: none (reason) line |
+| `issue.labels` | github | error | skill | an issue lacks a type, area, priority (after triage) or status label, has two of one, or has an unknown label |
+| `issue.owner-word` | github | error | skill | an open issue says 'owner' for the person who directs the project (say 'user') |
+| `issue.closed-unchecked` | github | error | skill | a closed issue keeps an unchecked item that names no follow-up issue |
+| `issue.stale-status` | github | warn | skill | an issue calls a pull request open, merged or closed when it is not |
+| `issue.links` | github | warn | skill | an issue names a docs or research file as plain text, or links a file or anchor that is not on main |
+| `issue.provenance` | github | warn | skill | an issue that a pull request's Remaining list points at has no From: line |
+| `issue.triage-age` | github | warn | skill | an issue has waited in S-needs-triage longer than the limit |
+| `issue.info-age` | github | warn | skill | an issue has waited in S-needs-info with no activity longer than the limit |
+| `issue.progress-idle` | github | warn | skill | an S-in-progress issue has had no activity for longer than the limit |
+| `issue.review-without-pr` | github | warn | skill | an S-pending-review issue that no open pull request mentions |
+| `pr.title` | github | error | skill | an open pull request's title breaks the commit title rules |
+| `pr.body` | github | error | skill | an open pull request's description breaks the template rules (sections, local file paths, images not uploaded) |
+| `pr.owner-word` | github | error | skill | an open pull request says 'owner' for the person who directs the project (say 'user') |
+| `pr.remaining-uncited` | github | error | skill | a merged pull request left an unchecked Remaining item that names no issue |
+| `pr.idle` | github | warn | skill | an open pull request has had no activity for longer than the limit |
+| `pr.stacked-depends` | github | error | skill | an open pull request on a branch other than main has no Depends on #N line |
+| `pr.stacked-automerge` | github | error | skill | auto-merge is enabled on a pull request whose base is not main |
+| `pr.base-merged` | github | warn | skill | an open pull request's base branch was merged: rebase it onto main and retarget it |
+| `pr.merged-into-base` | github | error | skill | a pull request was merged into a branch other than main, so the issues it fixes stay open |
+| `gh.labels` | github | error | auto | the labels on GitHub differ from the conventions (coney-tools repo labels --apply) |
+| `gh.ruleset` | github | error | owner | the GitHub ruleset or repository settings differ from the merge section |
+| `ws.disk` | local | error | auto | the workspace drive has less free space than the minimum (coney-tools workspace clean) |
+| `ws.worktrees` | local | warn | auto | a worktree of merged work is still there, or a stray file sits among the worktrees |
+| `ws.scratch` | local | warn | skill | a scratch folder of finished work still holds captures |
+<!-- conventions:end -->
+
+To add a check, write the function in `python/src/coney_tools/audit_files.py`, `audit_github.py` or `audit_local.py`
+with `@check("group.name")` (it yields a `Problem` for each thing it finds), add its entry to `hygiene.checks` and run
+`repo render`; a test fails when an entry has no code or code has no entry. The tests give a GitHub check made-up
+issues and pull requests in the shape `gh` returns (`python/tests/audit_support.py`), never the network.
 
 ## How it is read
 
@@ -89,9 +153,8 @@ unusable, and never with a traceback.
 1. Edit the key in `.github/conventions.yml`.
 2. Run `uv run --project python coney-tools repo render` so the [generated blocks](#generated-blocks) follow. If a
    file keeps a hand-written copy of it, change that too: the issue forms in `.github/ISSUE_TEMPLATE/`, the pull request
-   template, `.github/scripts/ci-scope.sh` (the `paths.docs_only` list as a regular expression) or pre-commit's
-   `--maxkb`. `python/tests/test_conventions_files.py` and `python/tests/test_repo_checks.py` fail with the file and
-   the key until they agree.
+   template or pre-commit's `--maxkb`. `coney-tools repo audit --files` fails, naming the file and the key, until they
+   agree (`.github/scripts/ci-scope.sh` keeps no copy: it reads `paths.docs_only` from the file).
 3. Update the guide that explains the rule in the same commit ([Documentation](repo:AGENTS.md)).
 4. Changing the conventions themselves is a maintainer decision (`repo.owner_decisions`).
 

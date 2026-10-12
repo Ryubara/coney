@@ -375,3 +375,35 @@ def test_cli_commands(space: Space, monkeypatch: pytest.MonkeyPatch, capsys: pyt
     assert not path.exists()
     assert main(["workspace", "disk", "--min-gb", "0"]) == 0
     assert main(["workspace", "disk", "--min-gb", "100000000"]) == 1
+
+
+def test_disk_minimum_defaults_to_the_conventions(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from conventions_support import changed, write_checkout
+
+    monkeypatch.setattr(shutil, "disk_usage", lambda path: Usage(100 * 1024**3, 0, 35 * 1024**3))
+    checkout = tmp_path / "repos" / "coney"
+    checkout.mkdir(parents=True)
+    write_checkout(checkout, changed(("workspace.disk_min_free_gb", 40)))
+    assert run_disk(checkout, tmp_path) == 1  # 35 GB free, the file asks for 40
+    write_checkout(checkout, changed(("workspace.disk_min_free_gb", 30)))
+    assert run_disk(checkout, tmp_path) == 0
+    assert run_disk(checkout, tmp_path, 36) == 1  # an explicit limit wins over the file
+
+
+def test_disk_without_a_conventions_file_uses_the_built_in_minimum(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(shutil, "disk_usage", lambda path: Usage(100 * 1024**3, 0, 29 * 1024**3))
+    assert run_disk(tmp_path, tmp_path) == 1
+
+
+def test_clean_honours_the_busy_marker_of_the_conventions(space: Space) -> None:
+    from conventions_support import changed, write_checkout
+
+    write_checkout(space.checkout, changed(("workspace.busy_marker", ".agent-busy")))
+    kept = space.worktree("kept")
+    (kept / ".agent-busy").write_text("", encoding="utf-8")
+    removed = space.worktree("removed")
+    (removed / ".coney-busy").write_text("", encoding="utf-8")
+    assert run_clean(space.checkout, space.root, True, merged_heads=lambda branch: None) == 0
+    assert kept.is_dir() and not removed.exists()

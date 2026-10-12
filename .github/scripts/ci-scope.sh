@@ -10,18 +10,52 @@
 #
 # Pushes, the nightly run and manual runs always get everything. A draft pull request gets only the cheap checks (the
 # title, commits, docs, format and docs workflows); marking it ready for review runs the rest. A ready pull request
-# whose every changed file is documentation (DOCS_ONLY below) skips the engine builds, and runs python on Linux only:
-# python's repository checks read docs/, research/ and README.md, but do not depend on the OS. Anything else, or a
-# file this script does not recognise, runs everything.
+# whose every changed file is documentation (`paths.docs_only` of the conventions file) skips the engine builds, and
+# runs python on Linux only: python's repository checks read docs/, research/ and README.md, but do not depend on the
+# OS. Anything else, or a file this script does not recognise, runs everything.
 set -euo pipefail
 
 # Paths that never reach the engine build or the python package's behaviour: docs/, research/, the Markdown files at
 # the top level and in .github/ (not those under python/, whose tests may read them), the conventions file (whose
 # checks run on Linux anyway) and the docs site's own setup. research/ includes research/traces/, which the python
 # tests read; that is why a docs-only change still runs python on Linux.
-# This is `paths.docs_only` of .github/conventions.yml written as a regular expression, and a test
-# (python/tests/test_conventions_files.py) fails when the two differ.
-DOCS_ONLY='^(docs/|research/|[^/]+\.md$|\.github/[^/]+\.md$|\.github/conventions\.yml$|mkdocs\.yml$|mkdocs_hooks\.py$|requirements-docs\.txt$|\.markdownlint[^/]*$)'
+# The list is `paths.docs_only` of .github/conventions.yml, read here so there is one copy of it: a trailing slash
+# is a folder, and `*` matches within one folder level (so "*.md" is the Markdown files at the top level only).
+# `coney-tools repo audit --files` (files.ci-scope) checks that this script still reads the file and can parse it.
+conventions="$(dirname "${BASH_SOURCE[0]}")/../conventions.yml"
+
+# The patterns, one per line: the quoted items under the `  docs_only:` key of the file.
+docs_only_patterns() {
+  tr -d '\r' <"$conventions" | awk '
+    /^  docs_only:/ { inside = 1; next }
+    inside && /^    - "/ { sub(/^    - "/, ""); sub(/".*$/, ""); print; next }
+    inside && /^[ \t]*(#.*)?$/ { next }
+    inside { exit }
+  '
+}
+
+# The patterns as one extended regular expression: `dir/` matches the folder, any other pattern the whole path.
+docs_only_regex() {
+  local pattern alternatives=()
+  while IFS= read -r pattern; do
+    pattern="${pattern//./\\.}"
+    pattern="${pattern//\*/[^/]*}"
+    if [[ "$pattern" == */ ]]; then
+      alternatives+=("$pattern")
+    else
+      alternatives+=("$pattern\$")
+    fi
+  done < <(docs_only_patterns)
+  if ((${#alternatives[@]} == 0)); then
+    echo "ci-scope.sh: found no paths.docs_only in $conventions" >&2
+    return 1
+  fi
+  local joined
+  joined="$(IFS='|'; printf '%s' "${alternatives[*]}")"
+  printf '^(%s)' "$joined"
+}
+
+DOCS_ONLY="$(docs_only_regex)"
 
 all_os='["ubuntu-24.04","windows-2022","macos-15"]'
 linux_os='["ubuntu-24.04"]'

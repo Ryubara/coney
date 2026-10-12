@@ -529,6 +529,8 @@ uv run --project python coney-tools repo check-docs [--body FILE]      # changed
 uv run --project python coney-tools repo check-body [--body FILE|-]
 uv run --project python coney-tools repo labels [--apply] [--repo OWNER/NAME]
 uv run --project python coney-tools repo render [--check]
+uv run --project python coney-tools repo audit [--files] [--github] [--local] [--json] [--only CHECK ...] [--strict]
+    [--show N] [--snapshot FILE] [--save-snapshot FILE] [--workspace DIR] [--list]
 ```
 
 The checks of the repository's own rules, which CI runs on every pull request. Every value they apply (the commit
@@ -552,6 +554,39 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   commit both. `--check` changes nothing and exits 1 naming each file with a stale block, as the `python` workflow does;
   a wrong marker (an unknown block name, an end without a begin, a block never closed) is a one-line error with the
   file and line, exit code 2. [Generated blocks](repo-conventions.md#generated-blocks) lists the blocks.
+* `repo audit` reports where the repository departs from the conventions and changes nothing: see [audit](#repo-audit).
+
+### repo audit {#repo-audit}
+
+`repo audit` runs the checks of `hygiene.checks` in `.github/conventions.yml`, in up to three scopes
+([the checks](repo-conventions.md#audit-checks)):
+
+* `--files` reads the checkout and needs no network (the default when no scope is given). The `python` workflow runs
+  it on every pull request, and `check changed` runs it as its `repo` step. It checks the pointer files, that every
+  file the conventions name exists, that the repository's address is only in the README, that the issue forms, the
+  pull request template, `.github/scripts/ci-scope.sh` and pre-commit's size limit still agree with the file, and that
+  the generated blocks are current.
+* `--github` reads issues, pull requests, labels, the repository settings and the ruleset through `gh` (read only;
+  `gh` must be signed in) and checks them: the sections of each open issue (a missing one, one left as `x`), its
+  Screenshots, its labels, the word "owner" for the person (say "user"), closed issues and merged pull requests that
+  keep an unchecked item with no follow-up issue number, open pull requests whose description names a path on your
+  machine or an image that is not uploaded, stacked pull requests, how long an item has waited, and drift between the
+  labels, settings and ruleset on GitHub and the file. `--save-snapshot FILE` also writes what it read, and
+  `--snapshot FILE` audits a saved snapshot instead of reading GitHub (the tests do; so can you, offline). The link
+  check needs `origin/main` in the checkout (`git fetch origin`) and says so when it is missing.
+* `--local` reads the workspace around the checkout: the free space of its drive, merged worktrees and stray files
+  among the worktrees (`workspace clean` would remove them), and scratch folders of finished work that still hold
+  captures. The limits are the `workspace` section of the file.
+
+Each finding has the check's id, a severity (`error` or `warn`), the item (`#201`, a file, a worktree), a message and a
+fix class: `auto` (a coney-tools command fixes it), `skill` (a person or the `/repo-hygiene` skill fixes it with
+judgement) or `owner` (a maintainer decides). The text report groups findings by check and prints the counts;
+`--show N` limits the findings printed per check (0 prints all). `--json` prints one object with `errors`,
+`warnings`, `checks` (the count per check that ran), `notices` (what could not be read) and `findings`, each with
+`check`, `keys` (the conventions keys it enforces), `severity`, `item`, `url`, `message` and `fix`. `--only` takes a
+check id or a group (`issue`) and may be repeated. Exit code 1 when a finding has severity `error` (any finding with
+`--strict`), 2 when `gh` or the snapshot cannot be read or the conventions are unusable, otherwise 0. The audit never
+edits an issue, a pull request or a label; fixing the findings is the coordinator's job.
 
 ## check {#check}
 
@@ -567,7 +602,7 @@ line, and any failure makes the command exit 1:
 
 | Step | Runs when | What it does |
 | --- | --- | --- |
-| `repo` | always | `repo check` and `repo render --check`: `.github/conventions.yml` loads, the agent pointer files, and the generated blocks are current |
+| `repo` | always | `repo audit --files`: `.github/conventions.yml` loads, and the agent pointer files, the generated blocks, the issue forms, the pull request template, the CI scope script and pre-commit's size limit agree with it |
 | `pre-commit` | a file changed | `pre-commit run --files` on the changed files: clang-format, ruff, whitespace, the 512 KB guard, the real-clock rule |
 | `clang-tidy` | C++ under `src/` or `tests/` changed | clang-tidy on the files CI's pull-request job would check, with the compiler warnings the GCC and Clang builds enable |
 | `docs` | a file matching `paths.docs_only` of `.github/conventions.yml` changed (`docs/`, `research/`, top-level Markdown, `mkdocs.yml`, the MkDocs hooks, `requirements-docs.txt`, ...) | `mkdocs build --strict` into a throwaway folder |
@@ -637,7 +672,9 @@ uv run --project python coney-tools workspace disk [--min-gb N]
 ```
 
 `clean` removes the worktrees whose work is merged (with their local branches) and deletes the `build/` folders
-nobody has touched for `--build-hours` (default 12), skipping any worktree holding a `.coney-busy` file; it is a dry
-run without `--apply`, and reports the bytes reclaimed and the free space before and after. `disk` prints the
-workspace drive's free space and exits 1 below `--min-gb` (default 30). Rules and the busy file:
+nobody has touched for `--build-hours` (default 12), skipping any worktree holding the busy file
+(`workspace.busy_marker`, `.coney-busy`); it is a dry run without `--apply`, and reports the bytes reclaimed and
+the free space before and after. `disk` prints the workspace drive's free space and exits 1 below `--min-gb`
+(default: `workspace.disk_min_free_gb` of
+[.github/conventions.yml](repo:.github/conventions.yml), 30). Rules and the busy file:
 [Cleanup](workspace.md#cleanup).

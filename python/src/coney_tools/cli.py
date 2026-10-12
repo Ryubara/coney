@@ -30,6 +30,7 @@ from coney_tools import (
     workspace_fetch,
     xbox_cli,
 )
+from coney_tools.audit_cli import add_audit_parser, run_audit
 from coney_tools.config import PATH_KEYS, ConfigError, find_repo_root, load_config
 from coney_tools.conventions import Conventions, load_conventions
 from coney_tools.conventions_render import run_render
@@ -187,8 +188,8 @@ def _build_parser() -> argparse.ArgumentParser:
     disk.add_argument(
         "--min-gb",
         type=float,
-        default=workspace_clean.DEFAULT_MIN_GB,
-        help="the free space in GB below which the exit code is 1 (default: %(default)g)",
+        default=None,
+        help="the free space in GB below which the exit code is 1 (default: workspace.disk_min_free_gb)",
     )
     mcp = groups.add_parser("mcp", help="the debugging servers that .mcp.json registers for agents")
     serve = mcp.add_subparsers(dest="command", required=True).add_parser(
@@ -219,6 +220,7 @@ def _build_parser() -> argparse.ArgumentParser:
     render_parser.add_argument(
         "--check", action="store_true", help="change nothing; exit 1 when a block is out of date"
     )
+    add_audit_parser(repo_commands)
     _add_check_commands(groups)
     labels_parser = repo_commands.add_parser(
         "labels",
@@ -722,6 +724,8 @@ def _run(args: argparse.Namespace) -> int:
         return workspace.run_init(Path.cwd(), args.workspace, args.repo_url, args.fetch, args.dry_run)
     if args.group == "mcp":
         return mcp_serve.run_serve(args.name)
+    if args.command == "audit":
+        return run_audit(args)
     if args.command == "render":
         return run_render(find_repo_root(Path.cwd()), args.check)
     if args.command == "labels":
