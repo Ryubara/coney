@@ -792,8 +792,10 @@ addresses cited unless marked.
 5. **What he keeps.** Outside co-op a Warrior holding an object of kind 4 or 6 (the overhead props and the ghetto
    blasters) **drops it** once his enemy list is empty and no steal tactic runs (`WarriorBrain_Think` `0x003052f0`,
    step 3); a bat, baton, knife or throwable stays in his hand until he uses, throws or swaps it, or a hit makes him
-   drop a swung weapon (`Human_ApplyPendingDamage` `0x00265f70`: `Human_DropHeld` when he is swinging it, or holds a
-   set 1 object in clip 602).
+   drop it: during a throw clip or clip 602 with set 1 (`Human_ApplyPendingDamage` `0x00265f70`), when the hit
+   stuns or knocks him down while he is hurt, when it comes from a counter or special clip (620 and above), or when
+   he is grabbed holding a bat; all but the throw case are stopped by `HuSetKeepWeapon`
+   ([Combat: dropping what is held when hit](combat.md#keep-weapon)).
 
 **Coney fixes** (owner item 37; the hand-over works, the member holds the object, `play_level_objects.cpp` gives him
 its anim set):
