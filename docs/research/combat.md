@@ -2557,7 +2557,8 @@ addresses:
    [Human flags](#human-flags)):
    - **Without `0x4`**, a human that is not cuffed, has flag `0x8` and passes `0x00227d98` is **wounded**
      (`Human_StartWounded`). It drops what it carries, leaves the radar and loses its icon.
-   - Any other human without `0x4` is **knocked out** (`Human_KnockOut`, `0x00230328`) and drops what it carries.
+   - Any other human without `0x4` is **knocked out** (`Human_KnockOut`, `0x00230328`) and drops what it carries
+     ([Dropped when down](crimes.md#down-drop)).
      It is **dead** instead (state `0x100000000`, record `+0xf0` = 0) when the source of the last hit (record `+0xd0`)
      is an object of kind 29.
    - **With `0x4`**: knocked out, with record `+0xf0` 14 s later still. Confirmed (runtime), `level80`: Vermin's
