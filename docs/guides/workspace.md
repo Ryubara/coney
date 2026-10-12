@@ -183,8 +183,9 @@ what it would do, then the bytes it would reclaim; with `--apply` it acts and pr
 * **Removes a worktree** (`git worktree remove`, then its local branch) when all of these hold: no uncommitted
   changes (untracked files count), no `.coney-busy` file, not locked by git, not the folder you run it from, untouched
   for `--worktree-hours` (default 1, so a branch just created from `main` is not taken for a merged one), and every
-  commit is merged. A branch is merged when `origin/main` contains it, or when `gh pr list --state merged --head
-  <branch>` shows a pull request whose head is the branch's tip or a later commit; squash merges leave the branch's
+  commit is merged. A branch is merged when `origin/main` contains it, or when GitHub's merged pull requests
+  (read once for all worktrees: `gh pr list --state merged --limit 1000 --json headRefName,headRefOid`) include one
+  from the branch whose head is the branch's tip or a later commit; squash merges leave the branch's
   commits out of `main`, so `git branch --merged` alone would keep them all. Without `gh` (or when it fails), only
   what `origin/main` contains counts, so run `git fetch` (or pass `--fetch`) first; the rest is kept, never guessed.
 * **Deletes `build/`** (generated, ignored by git) from every worktree that is not busy and has not been touched for
@@ -209,6 +210,13 @@ delete it once you know the work is over. The file's name is `workspace.busy_mar
 folders of finished work that still hold files taken from the original), and agents delete their own `build/` when they
 finish a unit ([Briefing](agents.md#briefs)). `scratch/` is not cleaned automatically: prune built docs sites, logs and
 captures there yourself (below).
+
+**How long the audit takes.** `coney-tools repo audit --local` is meant to be run as a habit, so it is quick: GitHub is
+asked once for the merged pull requests of every branch (not once per worktree), the worktrees are judged and the
+scratch folders walked several at a time, and the last activity of a worktree is read only when the audit may report
+it. Measured on 2026-10-12 on a workspace of 80 worktrees and 180 scratch folders holding 900,000 files: 11 seconds,
+against about 3 minutes before the change (9.7 minutes on 2026-10-11, with more worktrees). The old and the new code
+report the same 194 findings.
 
 ## Scratch
 

@@ -2,6 +2,7 @@
 """Tests for coney_tools.audit_local: the workspace checks on a made-up workspace of git repositories."""
 
 import shutil
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -10,8 +11,10 @@ from conventions_support import conventions_with
 from test_workspace_clean import Space, Usage, git, tip
 
 from coney_tools import audit_local as al
+from coney_tools import workspace_clean
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
+from coney_tools.workspace_clean import plan
 
 
 @pytest.fixture
@@ -169,3 +172,83 @@ def test_the_audit_changes_nothing(space: Space) -> None:
     assert items(problems) == ["scratch/old"]
     assert path.is_dir() and (path / "build" / "dev" / "out.bin").is_file()
     assert (space.root / "scratch" / "old" / "a.p2s").is_file()
+
+
+# --- speed: what the audit does not read, and what it reads side by side --------------------------------------------
+
+
+def test_the_audit_reads_the_activity_only_of_worktrees_it_may_report(
+    space: Space, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The audit never deletes a build folder, so it needs a worktree's last activity only to tell a merged one that
+    was just made from main from one to report; walking every file of 90 worktrees took half a minute."""
+    space.worktree("done")
+    space.worktree("unmerged-1", commits=1, build=10)
+    space.worktree("unmerged-2", commits=1)
+    asked: list[Path] = []
+    real = workspace_clean.last_activity
+
+    def recording(path: Path) -> float:
+        asked.append(path)
+        return real(path)
+
+    monkeypatch.setattr(workspace_clean, "last_activity", recording)
+    (problem,) = found(al.merged_worktrees, context(space))
+    assert problem.item == "worktree done"
+    assert [path.name for path in asked] == ["done"]
+
+
+def test_a_clean_still_reads_every_worktrees_activity_for_its_build_folder(
+    space: Space, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    space.worktree("unmerged", commits=1, build=10)
+    asked: list[Path] = []
+    real = workspace_clean.last_activity
+
+    def recording(path: Path) -> float:
+        asked.append(path)
+        return real(path)
+
+    monkeypatch.setattr(workspace_clean, "last_activity", recording)
+    assert space.entries()["unmerged"].delete_build
+    assert [path.name for path in asked] == ["unmerged"]
+
+
+def test_worktrees_are_judged_side_by_side_with_the_same_answers(space: Space) -> None:
+    names = [f"w{number:02d}" for number in range(12)]
+    for number, name in enumerate(names):
+        space.worktree(name, commits=number % 3, build=5 if number % 4 == 0 else 0)
+    serial, _ = plan(replace(space.settings(), workers=1))
+    parallel, _ = plan(replace(space.settings(), workers=6))
+    assert [entry.name for entry in parallel] == sorted(names)
+    assert [(entry.name, entry.why, entry.remove, entry.delete_build) for entry in parallel] == [
+        (entry.name, entry.why, entry.remove, entry.delete_build) for entry in serial
+    ]
+
+
+def test_game_files_are_counted_at_any_depth_by_suffix(tmp_path: Path) -> None:
+    suffixes = frozenset({".p2s", ".trace", ".dump"})
+    (tmp_path / "a" / "b").mkdir(parents=True)
+    (tmp_path / "top.P2S").write_bytes(b"\0" * 10)
+    (tmp_path / "a" / "run.trace").write_bytes(b"\0" * 100)
+    (tmp_path / "a" / "b" / "deep.dump").write_bytes(b"\0" * 1000)
+    (tmp_path / "a" / "b" / "shot.png").write_bytes(b"\0")
+    (tmp_path / "a" / "b" / "state.p2s.txt").write_text("not a game file\n", encoding="utf-8")
+    assert al._game_files(tmp_path, suffixes) == (3, 1110)
+
+
+def test_an_empty_or_unreadable_scratch_folder_has_no_game_files(tmp_path: Path) -> None:
+    assert al._game_files(tmp_path, frozenset({".p2s"})) == (0, 0)
+    assert al._game_files(tmp_path / "gone", frozenset({".p2s"})) == (0, 0)
+
+
+def test_scratch_folders_are_read_side_by_side_with_the_same_answers(space: Space) -> None:
+    (space.root / "scratch" / "track-0").mkdir(parents=True)
+    for number in range(9):
+        for state in range(number):
+            scratch_file(space, f"track-{number}", f"states/{state}.p2s", size=7)
+    space.worktree("track-3")
+    folders = context(space).scratch
+    assert [(folder.name, folder.game_files, folder.game_bytes, folder.state) for folder in folders] == [
+        (f"track-{number}", number, number * 7, "active" if number in (0, 3) else "gone") for number in range(9)
+    ]

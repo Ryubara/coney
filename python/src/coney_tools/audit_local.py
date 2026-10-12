@@ -8,12 +8,14 @@ come from `workspace` in `.github/conventions.yml`. Nothing here deletes or chan
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import time
 from collections.abc import Iterator
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePath
 
 from coney_tools.audit import Problem, check
 from coney_tools.config import ConfigError
@@ -30,6 +32,8 @@ from coney_tools.workspace_clean import (
 )
 
 _GIB = 1024**3
+#: How many scratch folders are walked at once.
+SCRATCH_WORKERS = 8
 
 
 @dataclass(frozen=True)
@@ -64,15 +68,27 @@ class LocalContext:
 
 
 def _game_files(folder: Path, suffixes: frozenset[str]) -> tuple[int, int]:
-    """How many game-derived files `folder` holds (at any depth, by file type) and their total size."""
+    """How many game-derived files `folder` holds (at any depth, by file type) and their total size.
+
+    A scratch folder can hold hundreds of thousands of files, so this walks with `os.scandir`, whose entries know
+    whether they are files without a call of their own, and asks for the size of the matching files only.
+    """
     count = size = 0
-    for path in folder.rglob("*"):
-        if path.is_file() and path.suffix.lower() in suffixes:
-            count += 1
-            try:
-                size += path.stat().st_size
-            except OSError:
-                continue
+    pending = [str(folder)]
+    while pending:
+        try:
+            with os.scandir(pending.pop()) as entries:
+                for entry in entries:
+                    try:
+                        if entry.is_dir(follow_symlinks=False):
+                            pending.append(entry.path)
+                        elif PurePath(entry.name).suffix.lower() in suffixes and entry.is_file():
+                            count += 1
+                            size += entry.stat().st_size
+                    except OSError:
+                        continue
+        except OSError:
+            continue
     return count, size
 
 
@@ -156,6 +172,7 @@ def build_context(
             merged_heads=merged_heads or gh_merged_heads(checkout),
             busy_file=conventions.workspace.busy_marker,
             measure=False,
+            builds=False,
         )
         context.entries, context.stale = plan(settings)
     known = {tree.path.resolve() for tree in trees}
@@ -167,10 +184,11 @@ def build_context(
     shared = set(conventions.workspace.shared_scratch)
     scratch = layout.workspace / "scratch"
     if scratch.is_dir():
-        for child in sorted(scratch.iterdir()):
-            if not child.is_dir():
-                continue
-            count, size = _game_files(child, suffixes)
+        folders = sorted(child for child in scratch.iterdir() if child.is_dir())
+        # The folders are walked side by side: the walk waits on the disk.
+        with ThreadPoolExecutor(max_workers=max(1, min(SCRATCH_WORKERS, len(folders)))) as pool:
+            counted = list(pool.map(lambda folder: _game_files(folder, suffixes), folders))
+        for child, (count, size) in zip(folders, counted, strict=True):
             if child.name in shared:
                 state = "shared"  # the emulator's, the save states', the downloads': never a branch's leftovers
             elif not count or child.name in names:

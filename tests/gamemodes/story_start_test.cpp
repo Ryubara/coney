@@ -33,16 +33,21 @@
 #include "gamemodes/loading_screen.h"
 #include "gamemodes/mission_complete_mode.h"
 #include "gamemodes/movie_player.h"
+#include "gamemodes/pause_mode.h"
 #include "gamemodes/profile_manager_mode.h"
 #include "gamemodes/start_up_flow.h"
 #include "gui/global_strings.h"
+#include "gui/pause_menu/pause_menu.h"
 #include "gui/profile_management_gui/pm_new_game_screens.h"
 #include "hud/hud.h"
 #include "scenes/scene_player.h"
+#include "scripting/anim_callbacks.h"
+#include "scripting/script_bindings.h"
 #include "scripting/script_system.h"
 #include "support/fixtures.h"
 #include "support/font_fixtures.h"
 #include "support/lua_fixtures.h"
+#include "support/optional_value.h"
 #include "support/recording_device.h"
 #include "warriors/disk_profile_store.h"
 
@@ -140,9 +145,10 @@ struct StoryRun {
     std::unique_ptr<coney::ScriptedInput> input;
     coney::GameTimer timer;
 
-    // `profiles`: the folder of saved profiles; nothing keeps them for the run only.
+    // `profiles`: the folder of saved profiles; nothing keeps them for the run only. `boot`: start the flow from boot
+    // (the story); without it nothing runs until a direct start (StartUpFlow::startAtLevel()).
     StoryRun(std::vector<coney::InputEvent> script, bool unlockAndLoad,
-             const std::optional<std::filesystem::path>& profiles = std::nullopt)
+             const std::optional<std::filesystem::path>& profiles = std::nullopt, bool boot = true)
         : files(storyScripts(unlockAndLoad)) {
         // PM_Create's keyboard (global string 0x97); the synthetic preloads set no strings.
         strings.set(coney::gui::PmCreate::kCharactersString, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.  !?#&");
@@ -170,7 +176,9 @@ struct StoryRun {
                 return std::make_unique<FakeLevel>(levelUpdates);
             },
             profiles);
-        flow->start();
+        if (boot) {
+            flow->start();
+        }
     }
 
     // Runs frames one at a time until the mode on top is no longer `id` (at most two seconds), so a check can start on
@@ -393,6 +401,80 @@ TEST_CASE("every start of a level finds the HUD clean: a debug jump and a reload
     REQUIRE(run.stack.topId() == GameplayMode::kId);
     REQUIRE(run.starts.size() == 3);
     clean();
+}
+
+TEST_CASE("every other start of a level finds the HUD clean: the story's next mission, both pause restarts and a "
+          "direct start",
+          "[story_start][hud]") {
+    // Issue #98: the one shared HUD teardown must cover every way a level starts (docs/research/hud.md#hud-object).
+    // A hint showing, one queued, an objective line, a tutorial callback and an animation callback on the grab's hold
+    // (82, level99's PlayerState), as a mission leaves them.
+    const auto dirty = [](StoryRun& run) {
+        coney::hud::Hud& hud = run.flow->hud();
+        hud.hints().queue("the last level's hint", 1);
+        hud.hints().queue("the last level's next hint", 1);
+        hud.setObjective(0, "the last level's objective", 0, true, 0);
+        hud.setTutorialCallback("P1.BasicAttacks");
+        REQUIRE(hud.hints().showing().has_value());
+        REQUIRE(run.flow->context().animCallbacks != nullptr);
+        REQUIRE(run.flow->context().animCallbacks->addAll(82, "PlayerState"));
+    };
+    // None of it survives the start; and the new level's box works as before: a text set on it shows at once.
+    const auto clean = [](StoryRun& run) {
+        coney::hud::Hud& hud = run.flow->hud();
+        CHECK_FALSE(hud.hints().showing().has_value());
+        CHECK(hud.hints().queued().empty());
+        CHECK_FALSE(hud.checklist().slots[0].has_value());
+        CHECK(hud.tutorialCallback().empty());
+        CHECK(run.flow->context().animCallbacks->match(1.0, 82).empty());
+        hud.hints().queue("the new level's hint", 1);
+        CHECK(coney::test::got(hud.hints().showing()).text == "the new level's hint");
+        hud.hints().flush(coney::hud::kHintFlushAll);
+    };
+    // Runs until the level flow has started `count` levels and gameplay is on top, at most two seconds.
+    const auto untilStarts = [](StoryRun& run, std::size_t count) {
+        for (int i = 0; i < 60 && (run.starts.size() < count || run.stack.topId() != GameplayMode::kId); ++i) {
+            run.frames(1);
+        }
+        REQUIRE(run.starts.size() == count);
+        REQUIRE(run.stack.topId() == GameplayMode::kId);
+    };
+
+    SECTION("the story's next mission: the mission's end, UnlockAndLoad choosing the next level") {
+        StoryRun run(storyScript(), true);
+        run.frames(420);
+        run.untilTopLeaves(coney::ProfileManagerMode::kId);
+        untilStarts(run, 1);
+        dirty(run);
+        run.flow->missionComplete().launch(MissionCompleteMode::kKindNextLevel);
+        untilStarts(run, 2);
+        clean(run);
+    }
+    SECTION("the pause menu's restarts: the level, then the checkpoint") {
+        StoryRun run(storyScript(), false);
+        run.frames(420);
+        run.untilTopLeaves(coney::ProfileManagerMode::kId);
+        untilStarts(run, 1);
+        const auto restart = [&run](coney::gui::PauseOutcome outcome) {
+            coney::applyPauseOutcome(outcome, run.stack, run.flow->state(), run.flow->levelFlow(), run.flow->services(),
+                                     [](std::string_view) {});
+        };
+        dirty(run);
+        restart(coney::gui::PauseOutcome::RestartLevel);
+        untilStarts(run, 2);
+        clean(run);
+        dirty(run);
+        restart(coney::gui::PauseOutcome::RestartCheckpoint);
+        untilStarts(run, 3);
+        clean(run);
+    }
+    SECTION("a direct start (--play-level): nothing set before it survives") {
+        StoryRun run({}, false, std::nullopt, false);
+        dirty(run);
+        run.flow->startAtLevel("level1", 2);
+        untilStarts(run, 1);
+        clean(run);
+    }
 }
 
 TEST_CASE("a level's scripts run alone give player 1's start for the checkpoint asked for", "[story_start]") {
