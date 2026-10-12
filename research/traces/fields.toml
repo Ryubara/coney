@@ -769,3 +769,20 @@ name = "letterbox"
 address = "u32(0x005fdeb8) + 0x1ec"
 type = "f32"
 follow = true
+
+# A downed player (docs/research/combat.md#ground-escape): the time he gets up, the hits taken on the ground and the
+# player's own state word (the mount's 0x800, grounded 0x80000).
+[[down]]
+name = "d_getup"                          # record +0x104, the time a knocked-down human gets up (ms)
+address = "rec(player) + 0x104"
+type = "u32"
+
+[[down]]
+name = "d_ground_hits"                    # record +0xbe, the hits taken since the last rise
+address = "rec(player) + 0xbe"
+type = "s16"
+
+[[down]]
+name = "d_state"                          # record +0x00, the player's state word (low half)
+address = "rec(player) + 0x0"
+type = "u32"
