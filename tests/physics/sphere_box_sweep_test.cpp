@@ -3,6 +3,7 @@
 // ideas, a hand sphere (r 0.09) against a car-like box, with the values computed from the page's spec.
 #include "physics/sphere_box_sweep.h"
 
+#include <array>
 #include <cmath>
 #include <optional>
 
@@ -19,11 +20,14 @@ using namespace coney::physics;
 
 namespace {
 
+// The axes of an unturned box.
+constexpr std::array<Vec3, 3> kUnturned{{{1.0F, 0.0F, 0.0F}, {0.0F, 1.0F, 0.0F}, {0.0F, 0.0F, 1.0F}}};
+
 constexpr float kHand = 0.09F;
 constexpr double kEps = 1e-4;
 
 // Box B of the page: centre (0, 0, 0.5), axes identity, half (2, 1, 0.5): faces x = ±2, y = ±1, z = 0 and 1.
-Box boxB() { return Box{.half = {2.0F, 1.0F, 0.5F}, .centre = {0.0F, 0.0F, 0.5F}}; }
+Box boxB() { return Box{.half = {2.0F, 1.0F, 0.5F}, .axes = kUnturned, .centre = {0.0F, 0.0F, 0.5F}}; }
 
 // A contact filled with a marker, so the tests see which fields a sweep writes.
 Contact marked() {
@@ -66,22 +70,23 @@ std::optional<Contact> strike(Vec3 prev, Vec3 move, const Box& box = boxB(), flo
 } // namespace
 
 TEST_CASE("A sphere moving into a face hits it with the face's normal and point", "[physics][sphere-box]") {
-    const auto c = strike({0.0F, -1.3F, 0.5F}, {0.0F, 0.4F, 0.0F});
-    REQUIRE(c.has_value());
-    CHECK(c->fraction == Approx(0.525).margin(kEps));
-    checkXyz(c->halves[1].localPoint, 0.0F, -1.0F, 0.0F);
-    CHECK(c->halves[1].localPoint.w == 7.0F); // w of +0x60 is not written
-    checkVec(c->point, 0.0F, -1.0F, 0.5F, 1.0F);
-    checkVec(c->halves[1].normal, 0.0F, -1.0F, 0.0F, 0.0F);
-    checkVec(c->halves[0].normal, 0.0F, 1.0F, 0.0F, 1.0F);
-    CHECK(c->halves[1].featureType == kFeatureFace);
-    CHECK(c->halves[1].featureIndex == 2);
-    CHECK(c->flags == 0U);
+    const auto found = strike({0.0F, -1.3F, 0.5F}, {0.0F, 0.4F, 0.0F});
+    REQUIRE(found.has_value());
+    const Contact c = found.value_or(Contact{});
+    CHECK(c.fraction == Approx(0.525).margin(kEps));
+    checkXyz(c.halves[1].localPoint, 0.0F, -1.0F, 0.0F);
+    CHECK(c.halves[1].localPoint.w == 7.0F); // w of +0x60 is not written
+    checkVec(c.point, 0.0F, -1.0F, 0.5F, 1.0F);
+    checkVec(c.halves[1].normal, 0.0F, -1.0F, 0.0F, 0.0F);
+    checkVec(c.halves[0].normal, 0.0F, 1.0F, 0.0F, 1.0F);
+    CHECK(c.halves[1].featureType == kFeatureFace);
+    CHECK(c.halves[1].featureIndex == 2);
+    CHECK(c.flags == 0U);
     // Nothing else is written.
-    CHECK(c->depth == 7.0F);
-    CHECK(c->halves[0].featureType == 7);
-    CHECK(c->halves[0].localPoint == Vec4{7.0F, 7.0F, 7.0F, 7.0F});
-    CHECK(c->slide == Vec4{7.0F, 7.0F, 7.0F, 7.0F});
+    CHECK(c.depth == 7.0F);
+    CHECK(c.halves[0].featureType == 7);
+    CHECK(c.halves[0].localPoint == Vec4{7.0F, 7.0F, 7.0F, 7.0F});
+    CHECK(c.slide == Vec4{7.0F, 7.0F, 7.0F, 7.0F});
 }
 
 TEST_CASE("A sphere ending 0.1 m short of the box does not hit it", "[physics][sphere-box]") {
@@ -89,15 +94,16 @@ TEST_CASE("A sphere ending 0.1 m short of the box does not hit it", "[physics][s
 }
 
 TEST_CASE("A face-region sphere clipping the face's edge keeps the face normal", "[physics][sphere-box]") {
-    const auto c = strike({1.98F, -1.3F, 0.5F}, {0.1F, 0.4F, 0.0F});
-    REQUIRE(c.has_value());
-    CHECK(c->fraction == Approx(0.5419).margin(kEps));
-    checkXyz(c->halves[1].localPoint, 2.0F, -1.0F, 0.0F);
-    checkVec(c->point, 2.0F, -1.0F, 0.5F, 1.0F);
-    checkVec(c->halves[1].normal, 0.0F, -1.0F, 0.0F, 0.0F);
-    checkVec(c->halves[0].normal, -0.8359F, 0.5488F, 0.0F, 1.0F);
-    CHECK(c->halves[1].featureType == kFeatureFace);
-    CHECK(c->halves[1].featureIndex == 2);
+    const auto found = strike({1.98F, -1.3F, 0.5F}, {0.1F, 0.4F, 0.0F});
+    REQUIRE(found.has_value());
+    const Contact c = found.value_or(Contact{});
+    CHECK(c.fraction == Approx(0.5419).margin(kEps));
+    checkXyz(c.halves[1].localPoint, 2.0F, -1.0F, 0.0F);
+    checkVec(c.point, 2.0F, -1.0F, 0.5F, 1.0F);
+    checkVec(c.halves[1].normal, 0.0F, -1.0F, 0.0F, 0.0F);
+    checkVec(c.halves[0].normal, -0.8359F, 0.5488F, 0.0F, 1.0F);
+    CHECK(c.halves[1].featureType == kFeatureFace);
+    CHECK(c.halves[1].featureIndex == 2);
 }
 
 TEST_CASE("A path passing an edge farther than the radius misses", "[physics][sphere-box]") {
@@ -105,62 +111,67 @@ TEST_CASE("A path passing an edge farther than the radius misses", "[physics][sp
 }
 
 TEST_CASE("A sphere starting by a vertical edge meets the edge's cylinder", "[physics][sphere-box]") {
-    const auto c = strike({2.3F, -1.3F, 0.5F}, {-0.4F, 0.4F, 0.0F});
-    REQUIRE(c.has_value());
-    CHECK(c->fraction == Approx(0.5909).margin(kEps));
-    checkXyz(c->halves[1].localPoint, 2.0F, -1.0F, 0.0F);
-    checkVec(c->point, 2.0F, -1.0F, 0.5F, 1.0F);
-    checkVec(c->halves[1].normal, 0.7071F, -0.7071F, 0.0F, 0.0F);
-    checkVec(c->halves[0].normal, -0.8706F, 0.4921F, 0.0F, 1.0F);
-    CHECK(c->halves[1].featureType == kFeatureEdge);
-    CHECK(c->halves[1].featureIndex == 2);
+    const auto found = strike({2.3F, -1.3F, 0.5F}, {-0.4F, 0.4F, 0.0F});
+    REQUIRE(found.has_value());
+    const Contact c = found.value_or(Contact{});
+    CHECK(c.fraction == Approx(0.5909).margin(kEps));
+    checkXyz(c.halves[1].localPoint, 2.0F, -1.0F, 0.0F);
+    checkVec(c.point, 2.0F, -1.0F, 0.5F, 1.0F);
+    checkVec(c.halves[1].normal, 0.7071F, -0.7071F, 0.0F, 0.0F);
+    checkVec(c.halves[0].normal, -0.8706F, 0.4921F, 0.0F, 1.0F);
+    CHECK(c.halves[1].featureType == kFeatureEdge);
+    CHECK(c.halves[1].featureIndex == 2);
 }
 
 TEST_CASE("An edge along y gets the original's wrong table normal", "[physics][sphere-box]") {
-    const auto c = strike({2.3F, 0.0F, 1.3F}, {-0.4F, 0.0F, -0.4F});
-    REQUIRE(c.has_value());
-    CHECK(c->fraction == Approx(0.5909).margin(kEps));
-    checkXyz(c->halves[1].localPoint, 2.0F, 0.0F, 0.5F);
-    checkVec(c->point, 2.0F, 0.0F, 1.0F, 1.0F);
-    CHECK(c->halves[1].featureType == kFeatureEdge);
-    CHECK(c->halves[1].featureIndex == 7);
-    checkVec(c->halves[1].normal, -0.7071F, 0.0F, 0.7071F, 0.0F); // the true outward normal is (0.7071, 0, 0.7071)
-    checkVec(c->halves[0].normal, -1.0F, 0.0F, 0.0F, 1.0F);
+    const auto found = strike({2.3F, 0.0F, 1.3F}, {-0.4F, 0.0F, -0.4F});
+    REQUIRE(found.has_value());
+    const Contact c = found.value_or(Contact{});
+    CHECK(c.fraction == Approx(0.5909).margin(kEps));
+    checkXyz(c.halves[1].localPoint, 2.0F, 0.0F, 0.5F);
+    checkVec(c.point, 2.0F, 0.0F, 1.0F, 1.0F);
+    CHECK(c.halves[1].featureType == kFeatureEdge);
+    CHECK(c.halves[1].featureIndex == 7);
+    checkVec(c.halves[1].normal, -0.7071F, 0.0F, 0.7071F, 0.0F); // the true outward normal is (0.7071, 0, 0.7071)
+    checkVec(c.halves[0].normal, -1.0F, 0.0F, 0.0F, 1.0F);
 }
 
 TEST_CASE("A corner-region sphere's point is its own centre at contact", "[physics][sphere-box]") {
-    const auto c = strike({2.3F, -1.3F, 1.3F}, {-0.4F, 0.4F, -0.4F});
-    REQUIRE(c.has_value());
-    CHECK(c->fraction == Approx(0.6201).margin(kEps));
-    checkXyz(c->halves[1].localPoint, 2.0520F, -1.0520F, 0.5520F);
-    checkVec(c->point, 2.0520F, -1.0520F, 1.0520F, 1.0F);
-    CHECK(c->halves[1].featureType == kFeatureCorner);
-    CHECK(c->halves[1].featureIndex == 5);
-    checkVec(c->halves[1].normal, -0.5774F, -0.5774F, -0.5774F, 0.0F); // true: (0.5774, -0.5774, 0.5774)
-    checkVec(c->halves[0].normal, -0.8706F, 0.4921F, 0.0F, 1.0F);
+    const auto found = strike({2.3F, -1.3F, 1.3F}, {-0.4F, 0.4F, -0.4F});
+    REQUIRE(found.has_value());
+    const Contact c = found.value_or(Contact{});
+    CHECK(c.fraction == Approx(0.6201).margin(kEps));
+    checkXyz(c.halves[1].localPoint, 2.0520F, -1.0520F, 0.5520F);
+    checkVec(c.point, 2.0520F, -1.0520F, 1.0520F, 1.0F);
+    CHECK(c.halves[1].featureType == kFeatureCorner);
+    CHECK(c.halves[1].featureIndex == 5);
+    checkVec(c.halves[1].normal, -0.5774F, -0.5774F, -0.5774F, 0.0F); // true: (0.5774, -0.5774, 0.5774)
+    checkVec(c.halves[0].normal, -0.8706F, 0.4921F, 0.0F, 1.0F);
 }
 
 TEST_CASE("A centre starting inside the box hits at fraction 0 with the world z", "[physics][sphere-box]") {
     for (const Vec3 move : {Vec3{0.3F, -0.2F, 0.1F}, Vec3{}}) {
-        const auto c = strike({0.5F, 0.2F, 0.6F}, move);
-        REQUIRE(c.has_value());
-        CHECK(c->fraction == 0.0F);
-        CHECK(c->halves[1].featureType == kFeatureInside);
-        CHECK(c->halves[1].featureIndex == 0);
-        checkVec(c->point, 0.5F, 0.2F, 0.6F, 1.0F);
-        checkXyz(c->halves[1].localPoint, 0.5F, 0.2F, 0.6F); // the local z would be 0.1
-        checkVec(c->halves[1].normal, 0.9285F, 0.3714F, 0.0F, 1.0F);
-        checkVec(c->halves[0].normal, -0.9285F, -0.3714F, 0.0F, 1.0F);
+        const auto found = strike({0.5F, 0.2F, 0.6F}, move);
+        REQUIRE(found.has_value());
+        const Contact c = found.value_or(Contact{});
+        CHECK(c.fraction == 0.0F);
+        CHECK(c.halves[1].featureType == kFeatureInside);
+        CHECK(c.halves[1].featureIndex == 0);
+        checkVec(c.point, 0.5F, 0.2F, 0.6F, 1.0F);
+        checkXyz(c.halves[1].localPoint, 0.5F, 0.2F, 0.6F); // the local z would be 0.1
+        checkVec(c.halves[1].normal, 0.9285F, 0.3714F, 0.0F, 1.0F);
+        checkVec(c.halves[0].normal, -0.9285F, -0.3714F, 0.0F, 1.0F);
     }
 }
 
 TEST_CASE("A sphere already touching with its centre outside does not hit until its centre is in",
           "[physics][sphere-box]") {
     CHECK_FALSE(strike({0.0F, -1.05F, 0.5F}, {0.0F, 0.1F, 0.0F}).has_value());
-    const auto next = strike({0.0F, -0.95F, 0.5F}, {0.0F, 0.1F, 0.0F});
-    REQUIRE(next.has_value());
-    CHECK(next->fraction == 0.0F);
-    CHECK(next->halves[1].featureType == kFeatureInside);
+    const auto found = strike({0.0F, -0.95F, 0.5F}, {0.0F, 0.1F, 0.0F});
+    REQUIRE(found.has_value());
+    const Contact next = found.value_or(Contact{});
+    CHECK(next.fraction == 0.0F);
+    CHECK(next.halves[1].featureType == kFeatureInside);
 }
 
 TEST_CASE("A zero move hits only with the centre inside", "[physics][sphere-box]") {
@@ -169,9 +180,10 @@ TEST_CASE("A zero move hits only with the centre inside", "[physics][sphere-box]
 }
 
 TEST_CASE("A sweep reaching the box at exactly the end of the move hits", "[physics][sphere-box]") {
-    const auto c = strike({0.0F, -1.5F, 0.5F}, {0.0F, 0.25F, 0.0F}, boxB(), 0.25F);
-    REQUIRE(c.has_value());
-    CHECK(c->fraction == 1.0F);
+    const auto found = strike({0.0F, -1.5F, 0.5F}, {0.0F, 0.25F, 0.0F}, boxB(), 0.25F);
+    REQUIRE(found.has_value());
+    const Contact c = found.value_or(Contact{});
+    CHECK(c.fraction == 1.0F);
     CHECK_FALSE(strike({0.0F, -1.5F, 0.5F}, {0.0F, 0.125F, 0.0F}, boxB(), 0.25F).has_value());
 }
 
@@ -179,13 +191,14 @@ TEST_CASE("The local point is in the struck box's own frame from its centre", "[
     const Box rotated{.half = {2.0F, 1.0F, 0.5F},
                       .axes = {Vec3{0.0F, 1.0F, 0.0F}, Vec3{-1.0F, 0.0F, 0.0F}, Vec3{0.0F, 0.0F, 1.0F}},
                       .centre = {10.0F, 5.0F, 0.5F}};
-    const auto c = strike({11.3F, 5.0F, 0.5F}, {-0.4F, 0.0F, 0.0F}, rotated);
-    REQUIRE(c.has_value());
-    CHECK(c->fraction == Approx(0.525).margin(kEps));
-    checkXyz(c->halves[1].localPoint, 0.0F, -1.0F, 0.0F);
-    checkVec(c->point, 11.0F, 5.0F, 0.5F, 1.0F);
-    checkVec(c->halves[1].normal, 1.0F, 0.0F, 0.0F, 0.0F);
-    checkVec(c->halves[0].normal, -1.0F, 0.0F, 0.0F, 1.0F);
+    const auto found = strike({11.3F, 5.0F, 0.5F}, {-0.4F, 0.0F, 0.0F}, rotated);
+    REQUIRE(found.has_value());
+    const Contact c = found.value_or(Contact{});
+    CHECK(c.fraction == Approx(0.525).margin(kEps));
+    checkXyz(c.halves[1].localPoint, 0.0F, -1.0F, 0.0F);
+    checkVec(c.point, 11.0F, 5.0F, 0.5F, 1.0F);
+    checkVec(c.halves[1].normal, 1.0F, 0.0F, 0.0F, 0.0F);
+    checkVec(c.halves[0].normal, -1.0F, 0.0F, 0.0F, 1.0F);
 }
 
 TEST_CASE("A moving box against a resting sphere fills the mirrored halves", "[physics][sphere-box]") {
@@ -209,7 +222,7 @@ TEST_CASE("A moving box against a resting sphere fills the mirrored halves", "[p
 TEST_CASE("The six wrong region normals are the original's table entries", "[physics][sphere-box]") {
     // Each start region of a unit cube at the origin, swept straight at the centre; the table entry the original
     // writes for the four edges along y and the odd corners.
-    const Box cube{.half = {1.0F, 1.0F, 1.0F}};
+    const Box cube{.half = {1.0F, 1.0F, 1.0F}, .axes = kUnturned, .centre = {}};
     struct Case {
         Vec3 start;
         int type;
@@ -236,11 +249,12 @@ TEST_CASE("The six wrong region normals are the original's table entries", "[phy
     };
     for (const Case& k : cases) {
         CAPTURE(k.start.x, k.start.y, k.start.z);
-        const auto hit = sweepSphereOrientedBox(0.1F, 1.0F, cube, {}, k.start, coney::anim::scale(k.start, -1.0F));
-        REQUIRE(hit.has_value());
-        CHECK(hit->featureType == k.type);
-        CHECK(hit->featureIndex == k.index);
-        checkVec(hit->featureNormal, k.normal.x, k.normal.y, k.normal.z, 0.0F);
+        const auto found = sweepSphereOrientedBox(0.1F, 1.0F, cube, {}, k.start, coney::anim::scale(k.start, -1.0F));
+        REQUIRE(found.has_value());
+        const SphereBoxHit hit = found.value_or(SphereBoxHit{});
+        CHECK(hit.featureType == k.type);
+        CHECK(hit.featureIndex == k.index);
+        checkVec(hit.featureNormal, k.normal.x, k.normal.y, k.normal.z, 0.0F);
     }
 }
 

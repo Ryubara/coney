@@ -3,6 +3,8 @@
 // docs/research/physics.md's Unit 4 test ideas, one per quirk the original has, on synthetic shapes.
 #include "physics/overlaps.h"
 
+#include <array>
+
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -16,6 +18,9 @@ using coney::anim::Vec3;
 using namespace coney::physics;
 
 namespace {
+
+// The axes of an unturned box.
+constexpr std::array<Vec3, 3> kUnturned{{{1.0F, 0.0F, 0.0F}, {0.0F, 1.0F, 0.0F}, {0.0F, 0.0F, 1.0F}}};
 
 constexpr double kEps = 1e-4;
 const Vec4 kJunk{7.0F, 7.0F, 7.0F, 7.0F};
@@ -52,10 +57,10 @@ void checkVec(const Vec4& v, float x, float y, float z, float w) {
 Capsule human(Vec3 base) { return Capsule{.base = base, .radius = 0.35F, .height = 2.0F}; }
 
 // A car-like box: centre (0, 0, 0.5), half (2, 1, 0.5), axes identity.
-Box carBox() { return Box{.half = {2.0F, 1.0F, 0.5F}, .centre = {0.0F, 0.0F, 0.5F}}; }
+Box carBox() { return Box{.half = {2.0F, 1.0F, 0.5F}, .axes = kUnturned, .centre = {0.0F, 0.0F, 0.5F}}; }
 
 // A cube of half 1 at `centre`.
-Box cube(Vec3 centre) { return Box{.half = {1.0F, 1.0F, 1.0F}, .centre = centre}; }
+Box cube(Vec3 centre) { return Box{.half = {1.0F, 1.0F, 1.0F}, .axes = kUnturned, .centre = centre}; }
 
 } // namespace
 
@@ -137,7 +142,8 @@ TEST_CASE("A box and a sphere overlap as a true 3D box, in either order", "[phys
         CHECK(test(box, Sphere{{1.5F, 1.5F, 0.0F}, 0.75F}));
         const Box turned{.half = {1.0F, 0.5F, 0.5F},
                          .axes = {Vec3{0.70710677F, 0.70710677F, 0.0F}, Vec3{-0.70710677F, 0.70710677F, 0.0F},
-                                  Vec3{0.0F, 0.0F, 1.0F}}};
+                                  Vec3{0.0F, 0.0F, 1.0F}},
+                         .centre = {}};
         CHECK(test(turned, Sphere{{0.0F, 1.0F, 0.0F}, 0.4F}));
         CHECK_FALSE(test(turned, Sphere{{0.0F, 1.0F, 0.0F}, 0.2F}));
     }

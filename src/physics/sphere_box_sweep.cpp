@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <optional>
 
 #include "animation/anim_math.h"
@@ -17,7 +18,7 @@ namespace {
 using anim::Vec3;
 
 // What a step answers: a hit, no hit, or "already touching" (which the kernel treats as no hit).
-enum class Step { Miss, Hit, Touching };
+enum class Step : std::uint8_t { Miss, Hit, Touching };
 
 // Three floats in box-axis order (x, y, z of the box frame).
 using Local = std::array<float, 3>;
