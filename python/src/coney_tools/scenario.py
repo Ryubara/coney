@@ -17,6 +17,7 @@ patches = ["scripted-pad", "right-stick"]
 let = { puppet = 'human("PoizoCiv")' }   # names resolved once, before the first update
 setup = [ { address = "prec(puppet) + 0x1e", type = "u8", value = "0", frame = 0, until = 0 } ]
 calls = [ { function = "0x002b2b90", args = ["u32(puppet + 0x90)", "u32(player + 0x90)"], frame = 2 } ]
+speed = 1.0                          # PCSX2's emulation speed while recording (0.5: half; the game sees no change)
 
 [coney]
 level = "level99"                    # --play-level
@@ -52,7 +53,7 @@ A column the original and Coney's `--trace` both have uses Coney's name and unit
 from __future__ import annotations
 
 import tomllib
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -143,6 +144,9 @@ class Scenario:
     rows: str = "updates"
     #: Goal vtables to type ids, for goal_type() and goal_at() (research/references/goal-types.yaml).
     goal_types: dict[int, int] = field(default_factory=dict)
+    #: PCSX2's emulation speed while `pcsx2 record` runs it (its NominalScalar; 1.0 full speed). Below 1 a sample
+    #: that takes longer than the 16 ms between two ticks still fits in one update; the game's own time is the same.
+    speed: float = 1.0
 
     def first_input_step(self) -> int:
         """The step the first line of input takes effect on (frame N is step N + 1), or 1 for an empty script."""
@@ -336,6 +340,9 @@ def load_scenario(path: Path, root: Path) -> Scenario:
     calls = tuple(_call(item, f"{where} call {i + 1}") for i, item in enumerate(original.get("calls", [])))
     if len({call.frame for call in calls}) != len(calls):
         raise ScenarioError(f"{where}: one call per frame (the call block holds one)")
+    speed = original.get("speed", 1.0)
+    if isinstance(speed, bool) or not isinstance(speed, int | float) or not 0.05 <= speed <= 1.0:
+        raise ScenarioError(f"{where}: [original] speed must be a number from 0.05 to 1.0")
     rows = data.get("rows", "updates")
     if rows not in ("updates", "humans"):
         raise ScenarioError(f'{where}: rows must be "updates" or "humans"')
@@ -359,7 +366,22 @@ def load_scenario(path: Path, root: Path) -> Scenario:
         coney_settle=_settle(coney.get("settle", 0), where),
         rows=rows,
         goal_types=load_goal_types(root / GOAL_TYPES_FILE),
+        speed=float(speed),
     )
+
+
+def with_let(scenario: Scenario, overrides: list[str]) -> Scenario:
+    """`scenario` with `let` names given or replaced by `NAME=EXPRESSION` texts (`pcsx2 record --let`), so one
+    scenario can be recorded with different values (a random stream's offset per match). Raises ScenarioError for a
+    text that is not NAME=EXPRESSION."""
+    let = dict(scenario.let)
+    for text in overrides:
+        name, sep, expression = text.partition("=")
+        name = name.strip()
+        if not sep or not name.isidentifier():
+            raise ScenarioError(f"--let {text!r}: expected NAME=EXPRESSION")
+        let[name] = _expression(expression.strip(), f"--let {name}")
+    return replace(scenario, let=tuple(let.items()))
 
 
 def load_goal_types(path: Path) -> dict[int, int]:

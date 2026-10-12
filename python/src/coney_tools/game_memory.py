@@ -153,13 +153,15 @@ class Expression:
         return {node.id for node in ast.walk(self.tree) if isinstance(node, ast.Name) and id(node) not in called}
 
     def evaluate(self, names: Callable[[str], Any]) -> Any:
-        """The expression's value; `names` gives each name's value (raising KeyError for an unknown one).
+        """The expression's value; `names` gives each name's value (raising KeyError for an unknown one). A dict that
+        is also callable (GameMemory.names()) is used as the variables as it is, which saves a call per name.
 
         It runs as compiled Python with no builtins and the names as its only variables: parse() has checked that the
         tree holds nothing but constants, names, arithmetic and calls by name, so nothing else can run (and a
         recording of every human works out thousands of expressions an update, too many for a tree walk)."""
         try:
-            return eval(_code(self), {"__builtins__": {}}, _Names(names))
+            scope = names if isinstance(names, dict) else _Names(names)
+            return eval(_code(self), {"__builtins__": {}}, scope)
         except KeyError as error:
             raise ExpressionError(f"{self.text!r}: unknown name {error.args[0]!r}") from error
         except NameError as error:
@@ -327,25 +329,34 @@ class GameMemory:
         reads = [Read(int(address) + 4 * k, 4) for k in range(int(count))]
         return sum(1 for word in self.memory.batch(reads) if word not in (0, NULL_HANDLE))
 
-    def names(self, extra: Mapping[str, Value] | None = None) -> Callable[[str], Any]:
+    def names(self, extra: Mapping[str, Value] | None = None) -> _Scope:
         """A name lookup for Expression.evaluate(): `extra` first, then the functions and the objects above."""
-        bound = dict(extra or {})
+        return _Scope(self, {**self.functions, **(extra or {})})
 
-        def lookup(name: str) -> Any:
-            """One name's value, in the order of the docstring above."""
-            if name in bound:
-                return bound[name]
-            if name in self.functions:
-                return self.functions[name]
-            if name == "player":
-                return self.player()
-            if name == "camera":
-                return self.read(CAMERA_POINTER, "u32")
-            if name == "game_time":
-                return int(self.read(GAME_TIMER_POINTER, "u32")) + GAME_TIME_OFFSET
-            raise KeyError(name)
 
-        return lookup
+class _Scope(dict[str, Any]):
+    """The names of one evaluation: the functions and bound names as a dict, so compiled code looks them up without a
+    call (a recording of every human looks up hundreds of thousands a second), and the objects that need a read
+    (`player`, `camera`, `game_time`) worked out when asked for. Calling it looks a name up, as a lookup function."""
+
+    def __init__(self, game: GameMemory, names: dict[str, Any]) -> None:
+        """`names` over `game`'s objects."""
+        super().__init__(names)
+        self.game = game
+
+    def __missing__(self, name: str) -> Any:
+        """An object that needs a read; KeyError for a name that is not one."""
+        if name == "player":
+            return self.game.player()
+        if name == "camera":
+            return self.game.read(CAMERA_POINTER, "u32")
+        if name == "game_time":
+            return int(self.game.read(GAME_TIMER_POINTER, "u32")) + GAME_TIME_OFFSET
+        raise KeyError(name)
+
+    def __call__(self, name: str) -> Any:
+        """One name's value, as a lookup function."""
+        return self[name]
 
 
 class SampleMemory:
@@ -375,6 +386,56 @@ class SampleMemory:
         return out
 
 
+#: Each memory type's unsigned bytes as its value, for reads answered from a sample's dict (_SampleGame.read).
+_DECODE: dict[str, Callable[[int], Number]] = {
+    "u8": int,
+    "u16": int,
+    "u32": int,
+    "s8": lambda raw: raw - 0x100 if raw & 0x80 else raw,
+    "s16": lambda raw: raw - 0x10000 if raw & 0x8000 else raw,
+    "s32": lambda raw: raw - 0x100000000 if raw & 0x80000000 else raw,
+    "f32": lambda raw: struct.unpack("<f", raw.to_bytes(4, "little"))[0],
+}
+
+
+class _SampleGame(GameMemory):
+    """The names over a SampleMemory, its reads answered straight from the sample's dict. A recording of every human
+    works out about a thousand expressions an update, each making several reads, and all of them must be done before
+    the next update starts (16 ms): going through batch() and a Read for each one took too long, and samples tore.
+    The answers are the same as GameMemory's over the same SampleMemory."""
+
+    def __init__(self, sample: SampleMemory, goal_types: Mapping[int, int] | None = None) -> None:
+        """Answer from `sample`; its `missing` notes every read not made yet."""
+        super().__init__(sample, goal_types)
+        self.sample = sample
+        # Each human's handle index, once read in this sample (brain(h), tf(h) and prec(h) all ask for it).
+        self._indices: dict[int, int] = {}
+
+    def read(self, address: int, kind: str) -> Number:
+        """One value of `kind` at `address` from the sample, 0 (noted as missing) when not read yet."""
+        size = TYPES[kind][0]
+        raw = self.sample.known.get((address, size))
+        if raw is None:
+            if 0 <= address <= 0xFFFFFFFF - size:
+                self.sample.missing.add((address, size))
+            return 0.0 if kind == "f32" else 0
+        return _DECODE[kind](raw)
+
+    def index(self, human: int) -> int:
+        """The human's handle index, kept once it has been read."""
+        index = self._indices.get(human)
+        if index is None:
+            index = int(self.read(human + 0x92, "s16"))
+            if (human + 0x92, 2) in self.sample.known:
+                self._indices[human] = index
+        return index
+
+    def handles(self, address: int, count: int) -> int:
+        """As GameMemory.handles(), each word read from the sample."""
+        words = [self.read(int(address) + 4 * k, "u32") for k in range(int(count))]
+        return sum(1 for word in words if word not in (0, NULL_HANDLE))
+
+
 #: A value worked out from memory within one sample (coney_tools.recorder's `value` and `follow` fields).
 Job = Callable[[GameMemory], Any]
 
@@ -391,7 +452,7 @@ def evaluate_all(
     pointer chain of depth d takes d rounds, however many jobs there are. A job that fails, or is still unfinished
     after `rounds` rounds, gives NaN."""
     sample = SampleMemory(known)
-    game = GameMemory(sample, goal_types)
+    game = _SampleGame(sample, goal_types)
     results: list[Any] = [math.nan] * len(jobs)
     pending = list(range(len(jobs)))
     for _ in range(rounds):

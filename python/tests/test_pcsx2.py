@@ -28,12 +28,13 @@ from coney_tools.game_memory import (
     TRANSFORM_TABLE,
     ExpressionError,
     GameMemory,
+    evaluate_all,
     parse,
 )
-from coney_tools.pcsx2_cli import _scenario_state
+from coney_tools.pcsx2_cli import _scenario_state, set_ini_value
 from coney_tools.pine import PineClient, PineError, Read, Write, decode, encode
 from coney_tools.recorder import PAD_BYTES, TICK_COUNTER, Recorder
-from coney_tools.scenario import ScenarioError, load_scenario
+from coney_tools.scenario import ScenarioError, load_scenario, with_let
 
 REPO = Path(__file__).resolve().parents[2]
 
@@ -345,6 +346,38 @@ def test_expressions_find_the_player_and_his_tables() -> None:
     assert math.isclose(parse("wrap(270)").evaluate(names), -90.0)
 
 
+def test_a_sample_works_expressions_out_as_direct_reads_do() -> None:
+    # evaluate_all answers reads from the sample's own dict (fast, for every human every update): the values must be
+    # those of reading memory one value at a time, signed and float types, handles and goal stacks included.
+    fake = FakeGame()
+    brain = BRAIN_TABLE + PLAYER_INDEX * BRAIN_SIZE
+    fake.memory[brain + 0x2C] = 0xFF  # s8 -1: an empty stack
+    fake.write32(brain + 0x124, CIVILIAN_INDEX << 16 | 7)
+    fake.write(HANDLE_TABLE + CIVILIAN_INDEX * 8 + 4, 2, 7)
+    fake.write32(brain + 0x164, 0xFFFFFFFF)
+    fake.write32(brain + 0x168, 0x00050007)
+    fake.write32(brain + 0x1E8, 0xFFFFFFF0)
+    fake.write_float(TRANSFORM_TABLE + PLAYER_INDEX * 0x20 + 4, -2.5)
+    texts = [
+        "s8(brain(h) + 0x2c)",
+        "goal_at(brain(h), s8(brain(h) + 0x2c))",
+        "hidx(u32(brain(h) + 0x124))",
+        "handles(brain(h) + 0x164, 4)",
+        "s32(brain(h) + 0x1e8)",
+        "u32(brain(h) + 0x1e8) - u32(game_time)",
+        "f32(tf(h) + 4) * 2",
+        "index(h) + s16(prec(h))",
+    ]
+    direct = GameMemory(MemoryOf(fake))
+    expected = [parse(text).evaluate(direct.names({"h": PLAYER})) for text in texts]
+    memory = MemoryOf(fake)
+    expressions = [parse(text) for text in texts]
+    jobs = [lambda game, e=e: e.evaluate(game.names({"h": PLAYER})) for e in expressions]
+    assert evaluate_all(memory, {}, jobs) == expected
+    assert expected[:5] == [-1, -1, CIVILIAN_INDEX, 1, -16]
+    assert expected[6] == -5.0
+
+
 def test_expressions_refuse_anything_but_arithmetic_and_calls() -> None:
     for text in ("__import__('os')", "player.x", "[1][0]", "1 if 2 else 3", "f(x=1)", "a < b"):
         with pytest.raises(ExpressionError):
@@ -458,6 +491,30 @@ def test_a_scenario_may_name_a_state_file_under_scratch(tmp_path: Path) -> None:
         path.write_text(head + original, encoding="utf-8")
         with pytest.raises(ScenarioError, match=problem):
             load_scenario(path, tmp_path)
+
+
+def test_a_scenario_sets_its_speed_and_lets_can_be_given(tmp_path: Path) -> None:
+    path = _repo(tmp_path, "", '[original]\nspeed = 0.5\nlet = { seed = "0", base = "seed + 1" }\n')
+    scenario = load_scenario(path, tmp_path)
+    assert scenario.speed == 0.5
+    # --let replaces a name where it stands (so names after it still see it) or adds one at the end.
+    given = with_let(scenario, ["seed=341", "extra = 2 * seed"])
+    assert [(name, e.text) for name, e in given.let] == [("seed", "341"), ("base", "seed + 1"), ("extra", "2 * seed")]
+    with pytest.raises(ScenarioError, match="NAME=EXPRESSION"):
+        with_let(scenario, ["341"])
+    path.write_text('input = "demo.txt"\nupdates = 6\n[original]\nspeed = 2\n', encoding="utf-8")
+    with pytest.raises(ScenarioError, match="speed"):
+        load_scenario(path, tmp_path)
+
+
+def test_an_ini_value_is_set_in_its_section() -> None:
+    ini = "[EmuCore]\nNominalScalar = 9\n\n[Framerate]\nNominalScalar = 1\nTurboScalar = 2\n\n[Hotkeys]\nA = B\n"
+    assert set_ini_value(ini, "Framerate", "NominalScalar", "0.5") == ini.replace(
+        "[Framerate]\nNominalScalar = 1", "[Framerate]\nNominalScalar = 0.5"
+    )
+    # A missing key goes after the section's last setting; a missing section at the end.
+    assert "TurboScalar = 2\nSlomoScalar = 0.25\n\n[Hotkeys]" in set_ini_value(ini, "Framerate", "SlomoScalar", "0.25")
+    assert set_ini_value("[A]\nx = 1\n", "B", "y", "2") == "[A]\nx = 1\n\n[B]\ny = 2\n"
 
 
 def _humans_repo(tmp_path: Path) -> Path:
