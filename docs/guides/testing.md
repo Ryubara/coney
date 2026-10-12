@@ -105,6 +105,12 @@ the centre, so a byte mapped linearly over 0-255 reads back smaller than meant. 
 reads about 0.86, under the run's 0.95, and the player only walks (found when the level3 chase driver walked instead
 of running).
 
+A driver that fights holds the stick toward the foe it means to hit while it presses the attack, as a player does: a
+player's attack searches for its target along the stick's heading, and along his facing only when the stick is at
+rest ([Targets](../research/combat-moves.md#targeting)). A driver that rests the stick once in reach strikes whoever
+the player happens to face; the level5 boss fight's driver did, and lost once the AI's enemy scan changed who the
+crew fought.
+
 Why not a frame-locked script: it replays inputs by step number, so any change to the camera or the AI moves the
 characters a little, the recorded presses then land in the wrong place, and the test fails (or passes by luck) for
 reasons that have nothing to do with the mission. A driver that reads the state and steers toward the marker
