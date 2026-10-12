@@ -7,6 +7,7 @@
 // displays and moves the window.
 
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <span>
 #include <string>
@@ -35,7 +36,7 @@ struct DisplayInfo {
 /// A display asked for by a value of `--window-display` or `CONEY_WINDOW_DISPLAY`.
 struct WindowDisplayChoice {
     /// How the value names the display.
-    enum class Kind {
+    enum class Kind : std::uint8_t {
         Index,    ///< Digits: a 1-based position in the window system's list.
         Name,     ///< Any other text: part of the display's name, case ignored.
         Portrait, ///< `portrait`: the first display taller than wide.
