@@ -771,13 +771,16 @@ step does and the pinned versions: [Bootstrap](workspace.md#bootstrap).
 
 ```sh
 uv run --project python coney-tools workspace clean [--apply] [--build-hours N] [--worktree-hours N] [--fetch]
+    [--shell-hours N] [--log-idle-hours N]
 uv run --project python coney-tools workspace disk [--min-gb N]
 ```
 
 `clean` removes the worktrees whose work is merged (with their local branches) and deletes the `build/` folders
 nobody has touched for `--build-hours` (default 12), skipping any worktree holding the busy file
 (`workspace.busy_marker`, `.coney-busy`); it is a dry run without `--apply`, and reports the bytes reclaimed and
-the free space before and after. `disk` prints the workspace drive's free space and exits 1 below `--min-gb`
-(default: `workspace.disk_min_free_gb` of
+the free space before and after. It also lists, and with `--apply` stops, the **stale processes**: shells older than
+`--shell-hours` (default 3) waiting in a sleep loop on files unchanged for `--log-idle-hours` (default 1), and
+orphaned `ctest` or `coney_tests` runs whose parent is gone. `disk` prints the workspace drive's free space and
+exits 1 below `--min-gb` (default: `workspace.disk_min_free_gb` of
 [.github/conventions.yml](repo:.github/conventions.yml), 30). Rules and the busy file:
 [Cleanup](workspace.md#cleanup).

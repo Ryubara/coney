@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from coney_tools import workspace_clean
+from coney_tools import stale_processes, workspace_clean
 from coney_tools.cli import main
 from coney_tools.config import ConfigError
 from coney_tools.workspace_clean import BUSY_FILE, Entry, Settings, plan, run_clean, run_disk
@@ -107,6 +107,20 @@ class Space:
 @pytest.fixture
 def space(tmp_path: Path) -> Space:
     return Space(tmp_path)
+
+
+#: The machine's processes as `workspace clean` sees them in these tests (never the real ones: --apply stops them).
+FAKE_PROCESSES: list[stale_processes.Proc] = []
+#: The process trees a test's `workspace clean --apply` stopped.
+STOPPED: list[int] = []
+
+
+@pytest.fixture(autouse=True)
+def no_real_processes(monkeypatch: pytest.MonkeyPatch) -> None:
+    FAKE_PROCESSES.clear()
+    STOPPED.clear()
+    monkeypatch.setattr(stale_processes, "list_processes", lambda: list(FAKE_PROCESSES))
+    monkeypatch.setattr(stale_processes, "kill_tree", lambda pid: STOPPED.append(pid))
 
 
 def tip(path: Path) -> str:
@@ -528,3 +542,26 @@ def test_worktrees_judged_side_by_side_still_cost_one_gh_call(tmp_path: Path) ->
     with ThreadPoolExecutor(max_workers=8) as pool:
         answers = list(pool.map(lookup, [f"branch-{n}" for n in range(16)]))
     assert answers[1] == ["a" * 40] and answers[0] == [] and len(gh.calls) == 1
+
+
+def test_clean_lists_and_with_apply_stops_stale_processes(space: Space, capsys: pytest.CaptureFixture[str]) -> None:
+    now = time.time()
+    FAKE_PROCESSES.append(stale_processes.Proc(4242, 999_999, "ctest", now - 600, "ctest --preset dev"))
+    assert run_clean(space.checkout, space.root, False, merged_heads=lambda branch: None) == 0
+    assert "would stop   ctest (pid 4242): its parent (pid 999999) is gone" in capsys.readouterr().out
+    assert STOPPED == []
+    assert run_clean(space.checkout, space.root, True, merged_heads=lambda branch: None) == 0
+    assert STOPPED == [4242]
+
+
+def test_the_process_limits_reach_clean(space: Space, monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: list[tuple[bool, float, float]] = []
+
+    def run(apply: bool, shell: float, idle: float) -> int:
+        seen.append((apply, shell, idle))
+        return 0
+
+    monkeypatch.setattr(stale_processes, "run", run)
+    monkeypatch.chdir(space.checkout)
+    assert main(["workspace", "clean", "--shell-hours", "5", "--log-idle-hours", "2"]) == 0
+    assert seen == [(False, 5.0, 2.0)]
