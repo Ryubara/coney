@@ -26,7 +26,7 @@ namespace coney::ai {
 
 namespace {
 
-// A dealer type's radar blip (docs/research/ai.md#dealer-icon): its blip type and icon, both at 0.8.
+// A dealer type's radar blip (docs/research/ai-scripting.md#dealer-icon): its blip type and icon, both at 0.8.
 // @orig 0x002c7ee0 DealerGoal_AddRadarIcon (unknown)
 struct DealerBlip {
     int type;

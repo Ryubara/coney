@@ -222,7 +222,7 @@ void PlayLevelMode::recordDrawnPoses() {
 }
 
 std::vector<PlayLevelMode::IconDraw> PlayLevelMode::iconDraws() const {
-    // Turning with the game time of the HUD's newest step (docs/research/ai.md#dealer-icon); hidden while the
+    // Turning with the game time of the HUD's newest step (docs/research/ai-scripting.md#dealer-icon); hidden while the
     // letterbox is up (all but dyn_cross).
     std::vector<IconDraw> icons;
     const bool letterbox = m_stage->barHeight(m_hud->hud().nowMs()) > 0.0F;

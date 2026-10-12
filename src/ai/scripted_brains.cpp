@@ -530,8 +530,8 @@ void ScriptedBrains::gangDelete(int gang) {
     if (held([this, gang] { gangDelete(gang); })) {
         return;
     }
-    // Each member still in the gang goes at once (docs/research/ai.md#gang-delete), before the gang is freed, so no
-    // message handler of the gang hears of it. A copy: deleting a member edits the list.
+    // Each member still in the gang goes at once (docs/research/ai-gangs.md#gang-delete), before the gang is freed, so
+    // no message handler of the gang hears of it. A copy: deleting a member edits the list.
     if (const Gang* found = m_owner->gangs().find(gang); found != nullptr) {
         const std::vector<Brain*> members = found->members();
         for (Brain* member : members) {

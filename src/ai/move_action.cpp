@@ -108,7 +108,7 @@ ActionStatus MoveAction::update(Brain& brain) {
         m_movingSteps = 0;
     }
     m_wasClimbing = climbing;
-    // A landing since the last update (docs/research/ai.md#route-jump) keeps the route or ends the move. **Coney
+    // A landing since the last update (docs/research/ai-moving.md#route-jump) keeps the route or ends the move. **Coney
     // stand-in**: the brain does not run in the air, so the arrival test the original runs there is judged at the
     // landing: the landing waypoint counts as reached within its radius plus one update's travel at the launch speed.
     if (human.landings() != m_landings) {
@@ -314,7 +314,7 @@ float MoveAction::cornerTrial(const Brain& brain, anim::Vec3 corner, anim::Vec3 
 
 bool MoveAction::stuck(anim::Vec3 position) {
     // On the update after kStuckSteps, the distance in 3D: a climb up a slope counts its height
-    // (docs/research/ai.md#move-action).
+    // (docs/research/ai-moving.md#move-action).
     if (++m_movingSteps <= kStuckSteps) {
         return false;
     }

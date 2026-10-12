@@ -164,3 +164,49 @@ TEST_CASE("a reaction to a player's hit asks for a shake at the hit code's stren
     pair.humans.update(pair.mesh.get());
     CHECK_FALSE(pair.other.fighter().reactionShake().has_value());
 }
+
+TEST_CASE("a held human neither animates, moves nor acts while the others do", "[human][humans][debug]") {
+    // The Entity inspector's freeze for a human other than the player (docs/guides/debug-menu.md#entity-inspector):
+    // Coney's own debug tooling, so the original's order is untouched for a human that is not held.
+    Pair pair;
+    CHECK_FALSE(pair.humans.held(pair.other));
+    pair.humans.setHeld(pair.other, true);
+    CHECK(pair.humans.held(pair.other));
+    CHECK_FALSE(pair.humans.held(pair.player));
+    // The brain presses square every step and pushes the stick: a held human does neither, a pad's human is untouched.
+    pair.humans.setBrains([](std::span<Human* const> humans) {
+        REQUIRE(humans.size() == 2);
+        humans[1]->record().command = command::kSquarePressed;
+        humans[1]->record().stickY = 0.6F;
+        humans[1]->record().cameraForward = coney::test::kAlongY;
+    });
+    const coney::anim::Vec3 before = pair.other.position();
+    for (int k = 0; k < 30; ++k) {
+        pair.humans.update(pair.mesh.get());
+    }
+    CHECK(pair.other.position().x == before.x);
+    CHECK(pair.other.position().y == before.y);
+    CHECK(pair.other.animator().animId() == 388U);
+    CHECK(pair.humans.steps() == 30U);
+    // Let go, and the same brain's commands act at once.
+    pair.humans.setHeld(pair.other, false);
+    CHECK_FALSE(pair.humans.held(pair.other));
+    for (int k = 0; k < 30; ++k) {
+        pair.humans.update(pair.mesh.get());
+    }
+    CHECK(pair.other.animator().animId() != 388U);
+}
+
+TEST_CASE("a held human stays held when an earlier slot is removed, and a removed one is no longer held",
+          "[human][humans][debug]") {
+    Pair pair;
+    pair.humans.setHeld(pair.other, true);
+    pair.humans.remove(pair.player);
+    CHECK(pair.humans.held(pair.other));
+    CHECK_FALSE(pair.humans.held(pair.player));
+    pair.humans.remove(pair.other);
+    CHECK_FALSE(pair.humans.held(pair.other));
+    // Holding a human that is not in the step does nothing.
+    pair.humans.setHeld(pair.other, true);
+    CHECK_FALSE(pair.humans.held(pair.other));
+}

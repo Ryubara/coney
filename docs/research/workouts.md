@@ -365,7 +365,7 @@ and Coney's fight-stance walk (`Human::combatWalk`) turned every human it holds 
 whatever the brain asked. The turn action was overridden on every update; once it gave up, the goal queued another.
 In the original a human no pad drives (per-player `+0x1b` = 0) is moved by `Human_UpdateControl`, which turns it
 toward the brain's heading: by the fight stance's AI word (24° an update) when asked to move, with a turn on the spot
-when stopped more than 15° off, not at all within 15° ([AI: Speed control and Turning](ai.md#ai-turn)). Coney now
+when stopped more than 15° off, not at all within 15° ([AI: Speed control and Turning](ai-moving.md#ai-turn)). Coney now
 runs a player whose pad a script took through the AI's stance control (`Human::aiCombatWalk`, the turn on the spot at
 the standing step, as for every AI, a stand-in for the turn clips; [AI: Facing the target](ai.md#fight-facing)), so
 the goal's turn steers and it arrives (`repo:tests/ai/move_action_test.cpp`, and on the disc

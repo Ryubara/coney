@@ -9,7 +9,7 @@ about: |
   AI humans write the same numbers. A **Warrior command** is an order the war chief gives the crew from
   the command menu (`WCIssueCommand`, `WCEnableCommand`). How buttons are matched:
   [Combat: commands](../research/combat.md#commands); the orders:
-  [AI: Warrior commands](../research/ai.md#warrior-commands); the buttons: [Controls](controls.md).
+  [AI: Warrior commands](../research/ai-gangs.md#warrior-commands); the buttons: [Controls](controls.md).
 complete: |
   Every trigger kind, every pad command the scripts bind or switch and all seven Warrior commands
   are listed. What 1, 2, 9, 11, 21, 22 and 37-44 do is not traced, nor the command menu's layout; pad

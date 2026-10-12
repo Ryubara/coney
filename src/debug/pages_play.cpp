@@ -416,6 +416,7 @@ void addDebugDrawPage(DebugSession& session) {
             page.add(toggle("Ground normal", draw.groundNormal, "The normal of the ground under the player."));
             page.add(toggle("Camera", draw.camera, "The follow camera's wanted position and look-at point."));
             page.add(toggle("Places", draw.places, "The scene's places (start, spawn points) with their headings."));
+            addShapeDrawItems(page, draw);
         },
         "Lines drawn into the scene: collision, player, camera, places.");
 }

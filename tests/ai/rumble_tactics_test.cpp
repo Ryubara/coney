@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The tactics a Rumble match runs (docs/research/ai.md#tactic-kinds, docs/research/rumble.md#match-end):
+// The tactics a Rumble match runs (docs/research/ai-gangs.md#tactic-kinds, docs/research/rumble.md#match-end):
 // TacticConfront's ranges and events, TacticAttack's melee and codes, a tactic replaced from inside its own update, and
 // TacticDomination's hold on a flag.
 #include <algorithm>
