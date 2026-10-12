@@ -1184,6 +1184,47 @@ mask is `*t0`.
 - `SphereTriangle_Penetration`: centre (1, 1, 0.3), r 0.5 gives 1, depth **0.2**. Centre (1, 1, 0.5), r 0.5 gives
   **0** (`q = r²`, the test is strict). Centre (5, −1, 1), r 2 gives 1, depth **0.267949** (`2 − sqrt 3`).
 
+#### Seen at runtime (issue #348) {#u1-runtime}
+
+Checked 2026-10-12 in PCSX2 2.9.94 (portable, PINE), from quick-save slots 1 and 6 copied with the patches and hooks
+of `repo:research/traces/patches.toml`.
+
+**The kernel on synthetic triangles.** Through the `call-brains` call hook, the game itself called
+`Sweep_SphereTriangle` (`0x0034ee60`) on the triangle `T` of [Test ideas](#u1-tests) (written into free EE memory at
+`0x000e0000`, edges unnormalised, `d` = 0), radius 0.5, for all 14 rows of the table, with the `edge-roots` hook
+(`0x0034e454`, in `SphereSweep_Edge` after its capsule step kept a root) logging `roots[0]`, `roots[1]`, the number of
+roots in [0, 1] and the caller. Every row returned what the table says, to the printed digits (at most 2e-6 off):
+fractions 0.5, 0, 0.533333, 0, none, none, 0.5, 0.538462, none, none, 0.476954, 1.783593, 2.11547, 0.551195, masks
+7, 7, 6, 6, unwritten, unwritten, 7, 2, 2, 2, 2, 2, 4, 2. **Confirmed (runtime):**
+
+- the **late** contact (row 11): the corner step (caller `0x0034e828`, inside `SphereSweep_VertexRegion`) got roots
+  [0.476954, 0.295699], both in range, and the kernel returned the later 0.476954;
+- the **missed** contact (row 12): roots [1.783593, 0.71829], one in range, and the kernel returned 1.783593, which
+  the mesh callers drop;
+- the parallel row 13 returned 2.11547 with 0.551197 second, and row 3's edge (caller `0x0034f644`, the swept
+  branch's edge case) [0.533333, 0.8].
+
+**In play.** Five scripted walks in level99's street (slot 1, stick 60 %, about 1,100 `Sweep_SphereTriangle` calls
+from the walking capsule sweep `0x0034813c`, 540 edge steps) along and into a 0.37 m square post (material 16 at
+(75.9, 35.4)) and towards a 1.3 m planter: the corner step (`0x0034e5d0`) **never ran**, and every edge step that kept
+a root reported its first root in range (133 of 133 with one root in [0, 1]), so no late or missed contact. The walking
+sphere's centre is 0.52 m above the feet (radius 0.4704), and the post's and planter's triangles are taller than it
+on both sides, so the centre's projection is never past two edges of one triangle. Inferred from that: the late and
+missed corner contacts need a triangle corner within the sphere's height and ahead of it (a kerb, a step, the top of
+a low wall, a jump onto a ledge); level99's street near slot 1 has no such geometry, so how often they happen in
+play is still open. Scenarios: `corner_post` and `corner_planter` in `repo:research/traces/scenarios/`.
+
+**A strike shape's previous position.** `strike_prev` (slot 6, three squares at a parked sedan), with the
+`sphere-pose` hook (`0x00342b08`) and the `strike-move-*` hooks at the six places `Human_TestStrikes` reads a strike
+shape's `+0x20` (`0x0033f284`, `0x0033f3d4`, `0x0033f714`, `0x0033f9f4`, `0x0033fb54`, `0x0033fcec`). **Confirmed
+(runtime):** a right-hand sphere switched on in update 32 (`strike-shape`, bone `0x19`) was posed once per update
+(updates 32 to 36), each pose before that update's strike test, and at each test its previous centre was exactly
+the centre of the update before (for example update 33: from (40.6391, 46.1587) to (41.1509, 45.4583), 0.87 m in
+one update). Its first pose had flag `0x10` set (`+0x32` = `0x0013`) and a stale centre from elsewhere in the
+level (56.75, 41.42); the test in that update had previous = current, a zero move, as
+[the reset rule](#u6-reset) says. A sphere is posed only while switched on, so the reset is what keeps the first
+swing from sweeping from where the hand was last posed.
+
 ### Unit 2: A shape against the collision mesh {#unit-2}
 
 **What it is.** A shape swept against (or overlapping) the level's collision mesh: the cells, the visited bits, the
@@ -5403,11 +5444,10 @@ code:
 
 ## Open questions
 
-- **Not yet seen at runtime** from [the units](#units): the late or missed contacts at a triangle's corners
-  ([Unit 1](#u1-capsule), a hook on `0x0034e450` with a sphere driven into a wall's corner would show them); the
-  capsule sweep's cell-list overrun after a fraction above 1 ([Unit 2](#u2-00347c08-physicsmesh-sweepcapsule)); that
-  a strike shape's previous position is the last update's pose (a watch on a hand sphere's `+0x20` and `+0x50` over
-  two updates).
+- **Not yet seen at runtime** from [the units](#units): how often the late or missed corner contacts happen in play
+  (the kernel produces them on the EE, [Seen at runtime](#u1-runtime), but the walks tried met no triangle corner
+  within the sphere's height; a kerb, step or low wall would show them); the capsule sweep's cell-list overrun after
+  a fraction above 1 ([Unit 2](#u2-00347c08-physicsmesh-sweepcapsule)).
 - **Bits and flags the units read but cannot name:** triangle flag bit 3 (`0x8`), which a sphere sweep skips for a
   body with flag `0x100` or a query with option `0x8000` (every world object's body starts with `0x100` in
   `0x80000500`, so a flying object's sphere passes those triangles; inferred); how many triangles carry each corner

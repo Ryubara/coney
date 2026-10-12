@@ -1,0 +1,4 @@
+# Walk into a thin square post off-centre, so the walking capsule meets its triangles' edges and corners.
+# Research: docs/research/physics.md#u1-runtime. Stick 60 % up (a walk), then let go.
+10 stick left 0 60
+110 stick left 0 0

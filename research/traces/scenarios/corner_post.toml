@@ -1,0 +1,22 @@
+# The walking capsule against a post's corners (issue #348): on the original, slot 1 (level99's street, Rembrandt
+# facing -x), the player is put 2.1 m east of the 0.37 m square post (material 16) at (75.9, 35.4), 0.2 m off its
+# centre line, and walks at it with the stick 60 % up; the edge-roots hook logs every edge step that kept a root, so
+# a first listed root later than the second (late) or above 1 with the second in range (missed) shows at runtime.
+description = "level99 street: walk 60 % into a thin post's corner, logging the edge step's capsule roots"
+research = "docs/research/physics.md#u1-runtime"
+input = "corner_post.txt"
+updates = 130
+fields = ["player"]
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick", "edge-roots", "tri-sweep", "edge-step", "vertex-step"]
+setup = [
+  { address = "tf(player) + 0x0", type = "f32", value = "77.125", frame = 0, until = 2 },
+  { address = "tf(player) + 0x4", type = "f32", value = "37.103", frame = 0, until = 2 },
+]
+
+[coney]
+level = "level99"
+args = ["--checkpoint", "3", "--start", "77.125,37.103,0.2231,91.909,5.3,89.854"]
+settle = 300

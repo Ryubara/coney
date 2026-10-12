@@ -1,0 +1,23 @@
+# A strike shape's previous position (issue #348): the car_punch set-up (slot 6, the player held 0.44 m outside a
+# parked sedan's front-right door, facing it) with three squares; the sphere-pose hook logs each pose of a sphere
+# shape (its centre before the pose and its previous centre) and the strike-move hooks the centre and previous centre
+# Human_TestStrikes sweeps between, so prev at a test can be compared with the centre of the update before.
+description = "squares at a parked sedan: a strike sphere's previous and current centre at each pose and strike test"
+research = "docs/research/physics.md#u1-runtime"
+input = "strike_prev.txt"
+updates = 140
+fields = ["player"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "sphere-pose", "strike-move-a", "strike-move-b", "strike-move-c", "strike-move-d", "strike-move-e", "strike-move-f", "strike-shape"]
+setup = [
+  { address = "tf(player) + 0x0", type = "f32", value = "41.2", frame = 0, until = 139 },
+  { address = "tf(player) + 0x4", type = "f32", value = "46.4", frame = 0, until = 139 },
+  { address = "tf(player) + 0x18", type = "f32", value = "1.0", frame = 0, until = 2 },
+  { address = "tf(player) + 0x1c", type = "f32", value = "0.0", frame = 0, until = 2 },
+]
+
+[coney]
+level = "level99"
+args = ["--checkpoint", "4", "--start", "41.2,46.4,0.22,180"]
