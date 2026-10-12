@@ -56,7 +56,7 @@ def test_the_real_pull_request_rules() -> None:
 def test_the_real_merge_settings_follow_the_owners_decisions() -> None:
     merge = load_conventions(REPO).merge
     assert merge.methods == ("squash",) and merge.squash_message == "PR_BODY" and merge.auto_merge
-    assert len(merge.required_checks) == 10 and "body" in merge.required_checks
+    assert len(merge.required_checks) == 9 and "body" in merge.required_checks
 
 
 def test_the_real_hygiene_thresholds_follow_the_owners_decisions() -> None:

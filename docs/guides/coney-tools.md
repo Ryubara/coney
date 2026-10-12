@@ -579,7 +579,7 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   `GEMINI.md`) holds the `@AGENTS.md` import line and nothing more. Exit 1 when a pointer file is wrong.
 * `repo check-title` checks the first line of a commit message or a title (`-` reads stdin) against `commits.title`:
   `area: Verb the rest`, a known area and verb, the length limit, no trailing period, the breaking suffix last. The
-  commit-title pre-commit hook and the `title` and `commits` jobs of the `pr` workflow run it.
+  `title` job of the `pr` workflow runs it on the pull request title.
 * `repo check-docs` reads the changed paths on stdin and refuses a change under `paths.code` that has no change under
   `paths.docs` and no `Docs: none` line in the body.
 * `repo check-body` checks a pull request description against the template ([What a pull request
