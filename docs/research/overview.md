@@ -79,4 +79,5 @@ The leading word of a chunk container is its chunk (or group) count, not a type.
 
 ## Status
 
-* Ghidra: ELF imported into `research/ghidra/warriors` with ElfLoader + R5900 (auto-analysis).
+* Ghidra: ELF imported into the shared Ghidra project (in the workspace's `ghidra/` folder,
+  [Local workspace](../guides/workspace.md)) with ElfLoader + R5900 (auto-analysis).
