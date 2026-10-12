@@ -1466,20 +1466,109 @@ human's position, gang, brain goal stack, target and enemy count were read over 
 | until the order | no Destroyer lists or targets any Warrior, and Cleon, idle on his flag, is never approached |
 
 The order (R2 held, right stick up-left at raw (0x18, 0x30); a full (0, 0) diagonal reads as straight up, the
-disabled follow, [Warrior command menu](hud.md#warrior-command-menu)) was given about 40 s into the brawl.
-`CommandIssued` makes the Warriors and both Destroyer gangs enemies, adds Cochise and Swan to `GangWarriors` and calls
-`GoalFight` on `Destroyers1.Destroyer1` and `Destroyers1.Destroyer2`. Updates from the order:
+disabled follow, [Warrior command menu](hud.md#warrior-command-menu)) was given about 40 s into the brawl (run 1).
+Two more runs the same day from the same entry (runs 2 and 3, the order about 15 s and 60 s into the brawl) also
+read, once per update, each human's facing (the transform's quaternion at `0x00714b10` + index × `0x20`; the model's
+forward is its +y axis), enemy list, attack-slot holders (brain `+0x1a4`, at most `+0x1e4`, 4 here) and last scan
+time (`+0x160`). Run 2 has a gap of about 40 updates over the order itself.
 
-| Update | What |
-| --- | --- |
-| 1 | the crew under `FollowAndAttack` (52), each with a target; `Destroyers1.Destroyer2` engages Cleon (EngageEnemy); Cochise and Swan join the crew's formation; `Destroyers1.Destroyer1` keeps fighting Swan |
-| 4 | the Destroyers' re-scan (the gang changed): each lists 9 (the seven Warriors, Cochise and Swan), and two more turn on **Cleon, who has not attacked** (he stood still throughout) |
-| 12-21 | two more on Cleon: five in all by update 21, a sixth at 168 |
-| after | a general melee between the two crews where the block stood |
+`CommandIssued` (confirmed (disc), the script), in order: the text and locks cleared; `GangAddMember(GangWarriors, -1,
+hCochise)` and the same for `hSwan`, both appended to the `Warriors` table; every AI Warrior in that table (Cochise
+and Swan too) `BrFlush`, `BrDead(false)`, `HuForceLook(false)` and `GangAddMember(GangWarriors)` again;
+`GangMakeEnemies(GangWarriors, GangDestroyers1)` and the same for `GangDestroyers2`; `GoalFight(hDestroyer1, player,
+-1)` and `GoalFight(hDestroyer2, player, -1)`; the three turf boxes removed; **`IssueWarriorCommand(1, true)`**; the
+Destroyers' god mode off. The callback runs at the end of the dispatcher, after the player's own order has built the
+attack tactic (`WarriorCommand_Dispatch` `0x0041c4e0` calls `GameState_CallWarriorCommandCallback` last; confirmed
+(code)).
 
-So in the original **nobody has to hit first**: once the gangs are enemies, a Destroyer with no tactic picks the
-player from his own scan and score (the player's +20, [the score](ai.md#enemy-score)). The two `GoalFight` calls only
-start it a few updates sooner.
+Updates from the order, by run (confirmed (runtime)):
+
+| | Run 1 | Run 2 | Run 3 |
+| --- | --- | --- | --- |
+| Destroyers targeting the idle Cleon by update 30 | 5 (the first at update 1) | 0 | 2 (updates 4 and 25) |
+| ... by update 450 | 6 | 0 | 6 |
+| Destroyers listing one of the seven Warriors, updates 30 / 100 / 250 | 6 at update 4, at least 7 by 64 | 2 / 6 / 11 | 4 / 5 / 11 |
+| Destroyers targeting one of the seven, updates 100 / 250 | about 7 at update 193 | 5 / 6 | 3 / 7 |
+
+In run 2 the "listing" up to update 60 is only the two `GoalFight` soldiers, who list Cleon from the call
+(`Brain_AddEnemy`). Every run ends in a general melee where the block stood, the crew running in under
+`FollowAndAttack`. So **nobody has to hit first**, but how soon a Destroyer turns on the idle player varies from run
+to run: it depends on who faces the crew when the scan runs and on the attack slots (below). Run 1's "each lists
+nine at update 4" held for six of the twelve only.
+
+##### After the order: who engages whom {#level80-after-order}
+
+Answers to the four questions of the implementer of issues #406 and #73 (2026-10-12).
+
+**Cochise and Swan get `FollowAndAttack`, and walk toward the crew for 2 s only when their list is empty.**
+
+- `Gang_AddMember` (`0x00166308`) moving a human out of another gang clears his actions and his target and empties
+  his enemy list (`Brain_ClearActions`, `Brain_SetTarget(0)`, `Brain_UncountAllEnemies`, list `+0x164` cleared).
+  Confirmed (code); at runtime both lists went from 12 to 0 in the update of the callback (runs 1 and 3).
+- `IssueWarriorCommand(1, true)` (`lua_IssueWarriorCommand` `0x003747b8` → `GameState_IssueWarriorCommand`
+  `0x0041c2d0`, the command and *forced*) goes through the dispatcher **forced**, which skips the "same command
+  again only repeats the line" branch ([Warrior commands](ai-gangs.md#warrior-commands), step 2): the attack tactic
+  the player's order built is cleared and a new one made. Its Start calls `WarriorAttackTactic_GiveGoals`
+  (`0x00320618`): every living non-player member but the chief, popped to his goal base, gets `FollowAndAttack` on
+  the chief. Cochise and Swan are members by then, so they get it too. Confirmed (code); `FollowAndAttack` (vtable
+  `0x005405d0`) on both at update 0 or 1 in all three runs.
+- `FollowAndAttackGoal_Process` (`0x002bc198`) fights the best enemy (`Brain_PickBestEnemy`, flags `0xfffffbf9`)
+  within 60 m of the chief; with none and the chief more than 8 m away it pushes **FollowFormation** (0.75 m,
+  2000 ms). At its first run their lists are still empty (their own scan refills them an update or two later), so
+  both walk toward the crew for 2 s (61 updates in run 3), then fight a Destroyer. Runs 1 and 3: FollowFormation
+  from update 1; run 1 moved them about 6 m, run 3 0.7 m and 3 m (held in the crowd). Run 2: Cochise's list had
+  refilled before the goal's first look and he fought at once (Fight at update 14). Confirmed (runtime).
+- So they never leave the fight. The Destroyers keep them listed and scored (their new gang is the Destroyers' enemy
+  too), and right after the order most Destroyers still target them (below). A Coney where they stay in the block is
+  right on that. What to check: the forced re-issue rebuilds the tactic although command 1 is current,
+  `GangAddMember` empties the moved human's list, and the empty-list FollowFormation.
+
+**`GoalFight(Destroyer, Cleon)`: Melee does not keep the target; the score decides.**
+
+- `GoalFight` is `Brain_StartFight` (`0x002b2b90`) → `Brain_Fight(Cleon, −1)`: Cleon is added to the list and made
+  the target, which releases the soldier's slot on Cochise or Swan ([Starting a fight](ai.md#targets)); the stack
+  becomes FindEnemy, Melee, Fight. The Fight goal ends on its first update, Cleon being 12-19 m away (beyond
+  1.1 × far, 5.5 m, [step 4](ai.md#fight-order)). Melee then picks again with `Brain_PickBestEnemy` (`0x0029f230`),
+  as on every run of it ([The Melee goal](ai.md#melee-goal), step 2); Cleon's only extra is the +3 for the previous
+  target. Confirmed (code).
+- With the sight range `R` = 30 m (brain `+0x130`, read 30.0 on all twelve), Cleon at 15-19 m scores about
+  4 × (30 − d) + 20 (a player) + 3 = 67-83, and Cochise or Swan at 1-3 m about 108-116 ([the
+  score](ai.md#enemy-score)), unless `Brain_CanTakeSlotOn` (`0x0028dc80`) makes them −999. Its first argument is the
+  **enemy's** brain: it is false when the enemy's holders (`+0x1a4`) fill his maximum (`+0x1e4`, 4), the scorer is
+  not one of them and no holder is farther from the enemy than the scorer. Confirmed (code). So a `GoalFight`
+  soldier goes for Cleon only when Cochise and Swan both have four holders, all nearer to them than he is.
+- Run 3 (confirmed (runtime)): before the order Swan had four holders, one of them `Destroyers1.Destroyer1`, and
+  Cochise four. `GoalFight` released Destroyer1's place on Swan (three holders at update 0); at update 1 he had taken
+  it back and targeted Swan, so Cleon was his target for less than one update. `Destroyers1.Destroyer2` (in
+  Spectate, holding no slot) ran in on Swan's side and targeted her from update 81. Neither went for Cleon; another
+  soldier of the same gang, Destroyer3, did from update 4, from his own scan. Run 1: Destroyer2 engaged Cleon from
+  update 1 to 137 (EngageEnemy, then Fight), the slots-full case (inferred: the holders were not read in run 1).
+
+**The Destroyers' lists after the order: the field of view, not the scan's timing.**
+
+- The gang-changed rescan runs at once: the order's `GangMakeEnemies` stamps both gangs, and all twelve Destroyers
+  scanned within three updates (run 3: updates 2-3; run 2: the three updates before its first sample), five an
+  update ([The enemy scan](ai.md#enemy-scan)). Confirmed (runtime).
+- What that scan lists is set by sight: beyond the near radius a member must be within half the field of view of the
+  scanner's facing, and the soldiers have 110° (brain `+0x12c` read 1.92 rad on all twelve). The crew stood 13-22 m
+  off, inside the 30 m range. A Destroyer facing them listed all seven (run 3: `Destroyers1.Destroyer3` and
+  `Destroyers2.Destroyer6`, every Warrior within 0-48° of their facing); one fighting Cochise or Swan with his back to
+  them listed none (bearings 93-178°). Over 41 scans in runs 2 and 3, every Warrior a scan newly listed was within
+  55° of the scanner's facing; in 7 of them a Warrior in view was still left out (not traced). The other entries came
+  from `GoalFight` (Cleon) or were already on the list, which a scan keeps while in range and in line of sight
+  ([step 3](ai.md#enemy-scan)). Confirmed (runtime); the ground is open, so no line of sight was in question.
+- The rest are listed later, two ways. A Warrior who attacks a Destroyer is added by the hit (run 2: Vermin on
+  `Destroyers1.Destroyer4` at update 64, Snow on `Destroyers2.Destroyer6` at 76). And the next periodic scan: a
+  fighting soldier waits 2000 ms × 4 = **8 s** (run 2: `Destroyers1`'s scans at 60.33 s, then at 68.34 s), others
+  2 s; by then the crew has run in and stands in front of them (11 of 12 list a Warrior by update 250 in both runs).
+- So a Coney where most Destroyers list only Cochise and Swan after the order is right for the first seconds, if its
+  scan applies the field of view. What must follow is the crew's run-in under `FollowAndAttack` and the hits and
+  rescans that bring the Warriors into the lists.
+
+**HelpRespond's 3 s is a head look; the goal ends with the turn** ([HelpRespond](ai-goals.md#goal-help-respond)).
+Over 866 HelpRespond goals in four level80 traces (run 1 from the scene's end to the order, runs 2 and 3 from 8 s
+and 30 s before the order), the median lasted 2 updates and the longest 51 (1.7 s); none lasted 3 s. Almost all sat
+on a Spectate goal (some on a Fight), which carried on afterwards. Confirmed (runtime).
 
 **Coney.** Checked 2026-10-12 on the preview build (tip `b73ef09d`) with `--play-level level80 --checkpoint 4
 --start -236.4,176.6,4.3,180 --headless --trace-humans`, and in the code on `main` (`0a926664`) and on PR #394's
@@ -1493,14 +1582,15 @@ branch:
   one update later.
 - Why, in order:
     1. On `main`, only the members of a Scout tactic scan (`ScoutTactic::update`); `Brains::update` never does, so
-       `GangMakeEnemies` puts nobody in a list ([Attacking on sight](ai.md#aggro-on-sight), Coney status). PR #394
+       `GangMakeEnemies` puts nobody in a list ([Attacking on sight](ai-gangs.md#aggro-on-sight), Coney status). PR #394
        adds the scan to every brain's update and so fills the lists.
     2. Neither `main` nor PR #394 has `GangBrain_Think` step 3 or the Warrior think's step 1 (`Brain::think` keeps
        only the tackle meter and the swap prompt), so a listed enemy is fought only when something else calls
        `fight`: a hit, an event, a tactic or a script's `GoalFight`.
-    3. After the order (inferred from the code): the two `GoalFight` Destroyers attack Cleon, and the other ten fight
-       only a Warrior who hits them first (event 1 → `Brain_Fight`). On this level, that is finding B: "they do not
-       attack unless I hit one first".
+    3. After the order: the other ten fight only a Warrior who hits them first (event 1 → `Brain_Fight`), as the
+       scan's lists then hold only Cochise and Swan (inferred from the code). On this level, that is finding B: "they
+       do not attack unless I hit one first". Whether the two `GoalFight` Destroyers take Cleon depends on the
+       slots ([After the order](#level80-after-order)).
 
 **What Coney must do** at this fight's start:
 
@@ -1517,8 +1607,13 @@ branch:
 5. A test (`[disc][story]`, on the player's path): level80 from checkpoint 4, walked into `vCochiseSwanTrigger`, the
    scene skipped. Within 30 updates of the scene's end every Destroyer targets Cochise or Swan or has a Spectate
    goal; within 60 updates at least eight are more than 0.5 m from their flag; no Destroyer targets Cleon before the
-   attack order. After the order, with the player standing still and pressing nothing, at least three Destroyers
-   target him within 30 updates.
+   attack order. After the order, with the player standing still and pressing nothing (from three runs of the
+   original, [above](#level80-after-order)): Cochise and Swan have `FollowAndAttack` within 2 updates; by update 300
+   at least 9 of the 12 Destroyers list one of the seven Warriors and at least 5 target one. How many target the idle
+   player within 30 updates varies (5, 0 and 2), so a test must not require it.
+6. After the order: the forced `IssueWarriorCommand(1, true)` rebuilds the attack tactic although command 1 is
+   current, and gives Cochise and Swan `FollowAndAttack`; `GangAddMember` empties a moved human's enemy list; the
+   enemy scan applies the 110° field of view beyond the near radius ([After the order](#level80-after-order)).
 
 #### The order at runtime (reference) {#level80-hints}
 

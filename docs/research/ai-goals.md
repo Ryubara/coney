@@ -568,9 +568,15 @@ A gang member answering a help call: he turns to or walks to the caller's enemy 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
 | `0x002b7670` | `HelpRespondGoal_Init` | init | vtable `0x0053fd90`; `+0x10` the target handle, `+0x14` a flag, `+0x08` the time limit | confirmed (code) |
-| `0x002b76a0` | `HelpRespondGoal_Start` | Start | the caller's target: within 1.1 x far and walkable straight: turn to him and look 3 s (else 60 % a look-around); otherwise a move action to him (gait 2, 4 beyond 10 m; with an empty enemy list 4, or 5 on level `0x53`) | confirmed (code) |
+| `0x002b76a0` | `HelpRespondGoal_Start` | Start | the caller's target: within 1.1 x far and walkable straight: a turn action to him (`TurnToPointAction_Init`) and a 3 s **head look** at him (`Brain_LookAtTarget` `0x0029a000`, weight 1.0, on the human's look-at `+0x284`: no action, it does not hold the goal), nothing more (else 60 % a look-around); otherwise a move action to him (gait 2, 4 beyond 10 m; with an empty enemy list 4, or 5 on level `0x53`) | confirmed (code) |
 | `0x002b78e0` | `HelpRespondGoal_End` | End | clears the actions | confirmed (code) |
 | `0x002b7900` | `HelpRespondGoal_Process` | Process | refreshes the gang's wanted timer on the target (Brain_RefreshWanted); with `+0x14` clear, every 30 updates ends once the brain lists enemies (a fight takes over); ends when its actions are done | confirmed (code) |
+
+So the goal lasts as long as its turn: `TurnAction_Update` (`0x002fdd08`) ends within 15° of the heading, or at the
+3 s limit `TurnAction_Start` (`0x002fdc68`) sets, and then the action count (brain `+0x2e`) is 0 and Process ends the
+goal; the head look runs on by itself. Confirmed (code). At runtime (level80's last fight, 866 goals, PCSX2 2.9.94)
+the median goal lasted 2 updates and the longest 51 (1.7 s); it was pushed over a Spectate or Fight goal, which
+carried on afterwards ([level80](scripting.md#level80-after-order)). Confirmed (runtime).
 
 ### GuardFlag (type 0x2b) {#goal-guard-flag}
 
