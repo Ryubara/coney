@@ -577,7 +577,7 @@ uv run --project python coney-tools repo labels [--apply] [--repo OWNER/NAME]
 uv run --project python coney-tools repo render [--check]
 uv run --project python coney-tools repo audit [--files] [--github] [--local] [--json] [--only CHECK ...] [--strict]
     [--show N] [--snapshot FILE] [--save-snapshot FILE] [--attachments] [--workspace DIR] [--list]
-uv run --project python coney-tools repo pr-health [--json] [--pending-hours H] [--verbose]
+uv run --project python coney-tools repo pr-health [--json] [--pending-hours H] [--verbose] [--rerun [--apply]]
 uv run --project python coney-tools repo hygiene (--event N | --sweep) [--apply] [--snapshot FILE]
 ```
 
@@ -605,7 +605,8 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   a wrong marker (an unknown block name, an end without a begin, a block never closed) is a one-line error with the
   file and line, exit code 2. [Generated blocks](repo-conventions.md#generated-blocks) lists the blocks.
 * `repo audit` reports where the repository departs from the conventions and changes nothing: see [audit](#repo-audit).
-* `repo pr-health` lists the open pull requests that are stuck: see [pr-health](#repo-pr-health).
+* `repo pr-health` lists the open pull requests that are stuck, and with `--rerun` restarts the checks that failed for a
+  reason that no longer holds: see [pr-health](#repo-pr-health).
 * `repo hygiene` writes the audit's findings back as comments: see [hygiene](#repo-hygiene).
 
 ### repo review {#repo-review}
@@ -676,7 +677,7 @@ edits an issue, a pull request or a label; fixing the findings is the coordinato
 `repo pr-health` answers "which open pull requests need someone to act?" with one read of the open pull requests and
 their checks (`gh pr list --json`) and one of the branch ruleset (`gh api repos/{owner}/{repo}/rules/branches/main`,
 which names the required checks, so nothing is hard-coded). It prints one line per cause, sorted by pull request
-number, and changes nothing:
+number, and changes nothing (except `--rerun --apply`, below):
 
 ```text
 #7 fix-bat-cross checks-failed lint: body, markdownlint -> author
@@ -700,6 +701,46 @@ A failing check that is not required is ignored. A draft is never stuck. A stack
 `--json` prints `checked`, `stuck` (each with `number`, `branch`, `cause`, `kind`, `detail`, `who`, `checks`, `url`),
 `other` (the `--verbose` lines) and `notices`. Exit code 0 when nothing is stuck, 1 when something is, 2 when `gh` or
 the conventions cannot be read. Run it from the coordinator's loop to find the pull requests to unstick or to push.
+
+**`--rerun`** restarts CI that failed for a reason that no longer holds, so a stuck pull request does not wait for a
+person to notice. It adds a line per run, `#<n> <branch> rerun <checks> (run <id>): <why> -> <outcome>`, and in
+`--json` a `rerun` list (an empty list when there is nothing to rerun; the `stuck` list and the exit code are the same
+with or without `--rerun`, so exit code 1 still means a pull request is stuck). Without `--apply` it is a dry run that
+prints `would rerun` and changes nothing; `--apply` calls `gh run rerun <run> --failed`. It reads the
+head commit and description of each pull request and, for a failed required check, the runs of the head commit and
+sometimes its job log. A required check is judged stale in two ways, and a real lint, build or test failure is never
+restarted:
+
+| Stale because | How it is known | What happens |
+| --- | --- | --- |
+| the text was fixed | the `title` or `body` check failed and the pull request's **current** title or description passes `repo check-title` or `check-body` | status `new-event`: the report says to edit the title or description; no rerun is made |
+| the runner or GitHub failed | the check concluded `CANCELLED`, `STARTUP_FAILURE` or `TIMED_OUT`, or it failed and its log matches a pattern of `hygiene.pr_health.rerun.log_patterns` (the runner was lost or shut down, an action could not be downloaded) | `would rerun` / `reran` |
+
+Each `rerun` entry is one run, with these fields (stable; scripts such as the PR guard read them):
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `number` | integer | The pull request's number |
+| `branch` | string | Its head branch |
+| `run` | integer | The workflow run (an id of `gh run list`) holding the stale checks |
+| `checks` | list of strings | The stale required checks of that run, sorted |
+| `reasons` | list of strings | Why each is stale, in the order of `checks` |
+| `status` | string | `would-rerun` (dry run), `reran`, `refused` (GitHub would not), `capped` (already rerun `max_per_sha` times) or `new-event` (a fixed title or description) |
+| `detail` | string | Empty for `would-rerun` and `reran`; otherwise what happened and the new event the pull request needs |
+
+A rerun reuses the event the run started from, with the title and description of that time, so it cannot make `title`
+or `body` see a fix (observed: a rerun made after a description was fixed failed on the old text). A fixed text needs a
+new event instead (an edit of the title or description, or closing and reopening the pull request), which the report
+names; it is not done automatically because reopening changes the pull request's state.
+
+The limits are in `hygiene.pr_health.rerun` of the conventions file: `max_per_sha` (a workflow is rerun at most that
+many times on one head commit, counted from the attempts GitHub keeps for its runs, so restarting the tool loses
+nothing; at the cap the status is `capped` and the line says to push a commit), the names of the title and
+description checks, the conclusions and the log patterns. A run is restarted with `--failed` only when all its failed
+jobs are stale; when it also holds a real failure, only the stale jobs are restarted (`--job`). When GitHub refuses
+(`gh run rerun` fails, for example "cannot be retried"), the status is `refused` and the line carries GitHub's message
+and the new event the pull request needs: push a commit for a runner failure. The reads are `gh run list --commit`
+and `gh api repos/{owner}/{repo}/actions/jobs/<id>/logs`; only `--apply` writes.
 
 ### repo hygiene {#repo-hygiene}
 

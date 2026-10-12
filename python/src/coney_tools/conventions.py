@@ -499,11 +499,28 @@ class Attachments:
 
 
 @dataclass(frozen=True)
+class RerunRules:
+    """When `coney-tools repo pr-health --rerun` restarts a failed required check: only for a failure that is stale."""
+
+    #: Reruns of the checks of one workflow on one head commit, at most, so a flaky job cannot loop.
+    max_per_sha: int
+    #: The required check that runs `repo check-title` on the pull request's title.
+    title_check: str
+    #: The required check that runs `repo check-body` on the pull request's description.
+    body_check: str
+    #: Check conclusions that are never the code's fault (upper case, as GitHub writes them).
+    conclusions: tuple[str, ...]
+    #: Regular expressions (case-insensitive) that, found in a failed job's log, mean the runner or GitHub failed.
+    log_patterns: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class PrHealth:
-    """How `coney-tools repo pr-health` sorts a failing required check."""
+    """How `coney-tools repo pr-health` sorts a failing required check, and when it may rerun one."""
 
     #: Required checks whose failure is a lint failure (the author fixes the text); any other required check is code.
     lint_checks: tuple[str, ...]
+    rerun: RerunRules
 
 
 @dataclass(frozen=True)
@@ -1208,7 +1225,7 @@ def _read_hygiene(data: object, where: str) -> Hygiene:
     )
     limits = _table(table["thresholds"], limits_where, keys)
     health_where = _at(where, "pr_health")
-    health = _table(table["pr_health"], health_where, ("lint_checks",))
+    health = _table(table["pr_health"], health_where, ("lint_checks", "rerun"))
     return Hygiene(
         report_issue=ReportIssue(
             title=_text(report["title"], _at(report_where, "title")),
@@ -1224,9 +1241,36 @@ def _read_hygiene(data: object, where: str) -> Hygiene:
             report_only=report_only,
         ),
         thresholds=Thresholds(**{key: _count(limits[key], _at(limits_where, key)) for key in keys}),
-        pr_health=PrHealth(lint_checks=_texts(health["lint_checks"], _at(health_where, "lint_checks"))),
+        pr_health=PrHealth(
+            lint_checks=_texts(health["lint_checks"], _at(health_where, "lint_checks")),
+            rerun=_read_rerun(health["rerun"], _at(health_where, "rerun")),
+        ),
         attachments=_read_attachments(table["attachments"], _at(where, "attachments")),
         checks=MappingProxyType(checks),
+    )
+
+
+#: The conclusions of a finished check run that fail it (what `rerun.conclusions` may name).
+_FAILING_CONCLUSIONS = ("FAILURE", "TIMED_OUT", "CANCELLED", "STARTUP_FAILURE", "ACTION_REQUIRED", "STALE")
+
+
+def _read_rerun(data: object, where: str) -> RerunRules:
+    """The `hygiene.pr_health.rerun` section: the cap, the two text checks, the conclusions and the log patterns."""
+    table = _table(data, where, ("max_per_sha", "title_check", "body_check", "conclusions", "log_patterns"))
+    conclusions = _texts(table["conclusions"], _at(where, "conclusions"))
+    _names_in(conclusions, _FAILING_CONCLUSIONS, _at(where, "conclusions"), "a failing conclusion")
+    patterns = _texts(table["log_patterns"], _at(where, "log_patterns"), empty_ok=True)
+    for index, pattern in enumerate(patterns):
+        try:
+            re.compile(pattern)
+        except re.error as error:
+            raise _fail(f"{_at(where, 'log_patterns')}[{index}]", f"not a regular expression ({error})") from error
+    return RerunRules(
+        max_per_sha=_count(table["max_per_sha"], _at(where, "max_per_sha")),
+        title_check=_text(table["title_check"], _at(where, "title_check")),
+        body_check=_text(table["body_check"], _at(where, "body_check")),
+        conclusions=conclusions,
+        log_patterns=patterns,
     )
 
 

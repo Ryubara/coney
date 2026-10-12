@@ -275,6 +275,25 @@ hygiene:
   # text) and "code" otherwise (build-ok, python-ok and the jobs under them).
   pr_health:
     lint_checks: [title, docs, body, format, mkdocs, markdownlint, actionlint]
+    # `coney-tools repo pr-health --rerun` restarts a failed required check only when the failure is stale, never when
+    # the code is at fault: (1) title_check / body_check failed but the pull request's current title / description passes
+    # `repo check-title` / `check-body` (it was fixed after the run); (2) the check's conclusion is one of `conclusions`,
+    # or its log matches one of `log_patterns`, so the runner or GitHub failed, not the code.
+    rerun:
+      max_per_sha: 2                             # reruns on one head commit, per workflow; a flaky job cannot loop
+      title_check: title
+      body_check: body
+      conclusions: [CANCELLED, STARTUP_FAILURE, TIMED_OUT]
+      log_patterns:                              # regular expressions, case-insensitive, searched in the job's log
+        - 'The runner has received a shutdown signal'
+        - 'lost communication with the server'
+        - 'Received request to deprovision'
+        - 'The job was not acquired by Runner'
+        - 'Failed to download action'
+        - 'RPC failed; HTTP 5\d\d'
+        - 'Could not resolve host'
+        - 'Connection reset by peer'
+        - 'TLS handshake timeout'
   # The logs and text files attached to an issue, which the workflow downloads and scans on every issue event (and the
   # sweep for every open issue): docs/guides/issues.md#attachments. Only links starting with `link` and ending with one
   # of `extensions` are fetched, at most `download_kb` each, held in memory and never stored or run. A finding names the
