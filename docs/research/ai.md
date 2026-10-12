@@ -5461,7 +5461,10 @@ human whose last move failed runs straight at
   playing turn clips 395-398. `Brain::update` clears the move first (`Brain::stopMove`, as `Brain_StopMove` starts
   `Brain_UpdateGoals`), so the human follows only what this update's goals and actions wrote. In a fight stance (the
   fighter locked onto a target) a human no pad drives runs `Human::aiCombatWalk`
-  ([An AI's locomotion](characters.md#ai-locomotion)): the facing turns to the brain's heading at the AI's own stance
+  ([An AI's locomotion](characters.md#ai-locomotion)), and so does a player whose pad a script took (per-player
+  `+0x1b` clear, his brain set dead), so a script's turn steers a player locked on a foe, as the workouts'
+  GoalMoveToFlag at the heavy bag needs ([Workouts](workouts.md#coney)): the facing turns to the brain's heading
+  at the AI's own stance
   word (24°, `human::aiStanceTurn`, which the player's tuning does not change) whenever the move asks for a speed, at
   the standing step (the stand-in above) when it stands more than 15° off, and 0.375° whatever the speed when wounded;
   the feet go along the line to the move's point (`Brain::setMoveAim`, `+0x90`) at the combat-walk speed (the walk when
