@@ -386,6 +386,8 @@ std::string_view animStateName(human::AnimState state) {
         return "hold";
     case human::AnimState::CombatWalk:
         return "combat walk";
+    case human::AnimState::Debug:
+        return "debug clip";
     }
     return "?";
 }
