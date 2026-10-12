@@ -81,8 +81,8 @@ says where the check runs, how bad a finding is and who fixes it, and the table 
   in a minute (a missing section, a missing label); a warning is a judgement or a delay (a stale status, a pull request
   idle for a month). Promoting a warning to an error is one line in the file.
 - **Fix class.** `auto`: a coney-tools command fixes it (`repo render`, `repo labels --apply`, `workspace clean`).
-  `skill`: it takes judgement, so the author or the coordinator fixes it (the [`/repo-hygiene`
-  skill](#hygiene-skill) acts on a finding by this class). `owner`: a maintainer decides (the ruleset and the settings of the repository).
+  `skill`: it takes judgement, so the author or the coordinator fixes it (the [`/repo-hygiene` skill](#hygiene-skill)
+  acts on a finding by this class). `owner`: a maintainer decides (the ruleset and the settings of the repository).
 - **Items.** Only open issues and open pull requests are checked for their sections, labels, wording and links. History
   is checked only where it loses work: a closed issue or a merged pull request that keeps an unchecked item with no
   follow-up issue number, and a pull request merged into a branch other than `main`.
