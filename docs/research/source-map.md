@@ -593,5 +593,5 @@ What the [roadmap](../roadmap.md)'s "Boot the engine" step needs, with where it 
   libraries, and a RenderWare build with symbols, would pin them and name the functions.
 - **Bink and RenderWare:** functions at `0x004be000`-`0x004c1000`, inside the Bink block, call into RenderWare. Are
   they RAD's own RenderWare glue, or does the RenderWare block extend there?
-- **Tooling:** the scripts behind this map were throwaway. A `coney-tools` or Rekit command that rebuilds the map
+- **Tooling:** the scripts behind this map were throwaway. A `coney-tools` command that rebuilds the map
   from a disc (printing only counts and addresses) would keep it repeatable.
