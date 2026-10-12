@@ -21,6 +21,7 @@
 #include "debug/menu_model.h"
 #include "debug/play_controls.h"
 #include "hud/hud.h"
+#include "human/climb.h"
 
 using coney::debug::DebugServices;
 using coney::debug::DebugSession;
@@ -254,11 +255,12 @@ TEST_CASE("the Spawner page puts objects in front of the player and clears them"
     itemOn(*page, "Clear spawned").run();
     CHECK(play.spawned.empty());
 
-    // A level cannot spawn yet: the page says so instead of offering objects.
+    // A mode that cannot spawn: the page says so instead of offering objects.
     play.spawnable = false;
-    const auto level = session.model().openPage("Spawner");
-    REQUIRE(level->items().size() == 1);
-    CHECK(level->items().front().label == "Spawning");
+    const auto unable = session.model().openPage("Spawner");
+    REQUIRE(unable->items().size() == 1);
+    CHECK(unable->items().front().label == "Spawning");
+    CHECK(unable->items().front().watch() == "not in this mode");
 }
 
 TEST_CASE("every spawnable object is a primitive a sandbox can build", "[debug][sandbox]") {
@@ -270,6 +272,19 @@ TEST_CASE("every spawnable object is a primitive a sandbox can build", "[debug][
         CHECK(p.size.y > 0.0F);
         CHECK(p.surface.solid);
     }
+    // The crate and the wall are climbable walls and the fence a climbable fence, as the parkour course's are.
+    const auto find = [](std::string_view name) {
+        for (const coney::debug::Spawnable& spawnable : coney::debug::spawnables()) {
+            if (spawnable.name == name) {
+                return spawnable.primitive;
+            }
+        }
+        FAIL("no spawnable " << name);
+        return coney::sandbox::Primitive{};
+    };
+    CHECK(find("Crate (1 m)").surface.flags == coney::human::kTriangleClimbable);
+    CHECK(find("Wall (2.5 m)").surface.flags == coney::human::kTriangleClimbable);
+    CHECK(find("Fence (1.2 m)").surface.material == coney::human::kClimbableMaterial);
     const coney::anim::Vec3 ahead = coney::debug::spotAhead({1.0F, 1.0F, 2.0F}, 0.0F, 3.0F);
     CHECK(ahead.x == Catch::Approx(1.0F));
     CHECK(ahead.y == Catch::Approx(4.0F));

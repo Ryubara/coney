@@ -117,6 +117,7 @@ add_executable(coney_tests
     platform/disc_level99_noclip_test.cpp
     platform/disc_sprint_attacks_test.cpp
     platform/disc_bat_cross_test.cpp
+    platform/disc_level99_spawner_test.cpp
     platform/disc_level99_car_climb_test.cpp
     platform/disc_level99_street_props_test.cpp
     platform/disc_game_session_test.cpp
@@ -313,6 +314,7 @@ target_sources(coney_tests PRIVATE
 # The sandbox and the collision writer it uses (docs/guides/sandbox.md).
 target_sources(coney_tests PRIVATE
     raycast/collision_builder_test.cpp
+    raycast/collision_extras_test.cpp
     sandbox/disc_sandbox_combat_test.cpp
     sandbox/disc_throw_direction_test.cpp
     sandbox/disc_sandbox_player_test.cpp

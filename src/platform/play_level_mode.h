@@ -236,6 +236,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     void resetCamera() override { m_player->resetCamera(); }
     [[nodiscard]] bool freeCamera() const override { return m_freeCamera.has_value(); }
     void setFreeCamera(bool on) override;
+    /// The collision mesh the player and the AI stand on: the level's or the sandbox's, with any spawned objects in it.
+    [[nodiscard]] const raycast::CollisionMesh& collision() const { return m_scenery->collision(); }
     [[nodiscard]] bool canSpawn() const override { return m_scenery->canSpawn(); }
     std::expected<void, Error> spawn(const sandbox::Primitive& primitive) override;
     [[nodiscard]] std::size_t spawnedCount() const override { return m_spawned.size(); }

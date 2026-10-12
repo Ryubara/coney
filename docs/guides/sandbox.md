@@ -41,7 +41,8 @@ the ground below it. The controls are those of [playing a level](building.md#pla
 `--headless`, `--frames` and `--input-script` and print a summary when they stop (counts and positions only).
 
 From any run, [the debug menu](debug-menu.md)'s Levels page plays a layout by name, and in the play mode its Player
-page teleports to the spawn points, its Spawner adds objects in front of Rembrandt and its Debug draw page shows the
+page teleports to the spawn points, its Spawner adds objects in front of Rembrandt (in a level too, where they join the
+level's collision: [Spawner](debug-menu.md)) and its Debug draw page shows the
 collision mesh.
 
 ## The shipped layouts
