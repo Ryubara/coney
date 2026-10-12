@@ -1,4 +1,3 @@
-| Movies | the disc's [movies](#movies) with what plays each; choose one to watch it full screen with its captions, then carry on where you were |
 # The debug menus
 
 Coney has a debug menu of its own, in the spirit of the trainer menus players know from the GTA games: one place to
@@ -113,6 +112,7 @@ Dear ImGui (MIT licence) is pinned in `cmake/deps.cmake` and used only in `src/p
 | Cheats | the 27 retail cheat codes, each sent to the script's cheat callback |
 | Levels | the levels to play (or the level table's, in the front end), a name to type, and the sandbox layouts |
 | Missions | the story's 18 missions in order (number, title, level, checkpoints); choose a mission, then a checkpoint, to start it there |
+| Movies | the disc's [movies](#movies) with what plays each; choose one to watch it full screen with its captions, then carry on where you were |
 | Player | where the player is and how it moves (plotted), his character type and a change of it, freezing him, the [noclip](#noclip) and its hotkey, teleports |
 | Camera | the follow camera's eye, target and distance (plotted), a reset behind the player, the free camera, its values |
 | Spawner | objects put in front of the player in a sandbox: a crate, a fence, a wall, a ramp, stairs, a pillar, a ball |
