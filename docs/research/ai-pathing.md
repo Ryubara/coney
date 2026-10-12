@@ -245,7 +245,8 @@ the disc checks print counts only).
    stays: on the run-in Coney's walkable line runs from the landing to the street, so the crew runs off the landing
    instead of taking the stairs (issue #315; the test prints whether a route was planned). A follower crossing a
    fence the player jumped ran into it before climbing (issue #236): the fast climber's early climb
-   (`Route_TryClimbNear`, with its own `level80` disc test) fixes that.
+   (`Route_TryClimbNear`, #269) fixes that, and a `level80` disc test puts the player 6 m past the kind-8 fence of
+   nodes 396-403 and checks that both followers climb with fewer updates against it than a failed climb's 31 tries.
 4. **Every 31 updates the aim must stay in sight** ([The move action](ai.md#move-action) step 5). Coney never ends a
    move because its waypoint went out of a walkable line, so an AI pushed off its line (by steering, a shove, a
    corner cut) walks into the wall until the stuck test, which a wall slide may never trip. Port the check (ends the

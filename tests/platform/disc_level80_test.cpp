@@ -9,8 +9,9 @@
 // front door, the crew's thefts under the wreck order and the back door asserts its hints, objectives and scenes in
 // the original's order through checkpoint 4 (docs/research/scripting.md#level80, docs/research/objects.md#throws,
 // docs/research/ai-code.md#t2-warrior-steal); and at checkpoint 1 the crew under the follow order runs in, stands
-// while the player runs near and climbs the crates after him (docs/research/ai.md#warrior-follow). It runs only when
-// the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only (LEGAL.md).
+// while the player runs near, climbs the crates after him (docs/research/ai.md#warrior-follow) and climbs the fence
+// the player is put over without running into it first (issue #236). It runs only when the environment variable
+// CONEY_DISC names the disc and skips otherwise; it prints counts only (LEGAL.md).
 
 #include <algorithm>
 #include <array>
@@ -1091,5 +1092,118 @@ TEST_CASE(
     CHECK(highest > stack.z - 0.5F);
     // Nobody fell off the street.
     CHECK(lowest > 0.0F);
+    CHECK(level.scripts->scripts().errors() == 0);
+}
+
+namespace {
+
+// The route nodes of a kind-8 (fence climb) link among nodes [first, last] of `map`: the one with the smaller y
+// first. Nothing when there is none.
+std::optional<std::pair<std::uint32_t, std::uint32_t>> fenceLink(const coney::world::PathMap& map, std::uint32_t first,
+                                                                 std::uint32_t last) {
+    for (std::uint32_t node = first; node <= last && node < map.nodes().size(); ++node) {
+        for (const coney::world::PathEdge& edge : map.edgesOf(node)) {
+            if ((edge.flags & coney::ai::edge_flag::kClimb) != 0 && edge.to >= first && edge.to <= last) {
+                const bool lower = map.nodes()[node].position.y < map.nodes()[edge.to].position.y;
+                return lower ? std::pair{node, edge.to} : std::pair{edge.to, node};
+            }
+        }
+    }
+    return std::nullopt;
+}
+
+} // namespace
+
+TEST_CASE("the disc's level80: Warriors following the player over a fence climb it at once (issue #236)",
+          "[disc][story][follow]") {
+    // docs/research/ai.md#warrior-follow, "Crossing a fence" (PCSX2, level80): the crew standing south of the kind-8
+    // fence pairs of nodes 396-403 (y about 199.9), the player put over the fence; both Warriors pushed FollowFormation
+    // on the next update (the fence's hole refuses the line), planned routes over the kind-8 pair and climbed, about
+    // 150 and 210 updates from the teleport to standing with the player 5-7 m away; neither pressed against the fence
+    // for the 31 tries of a failed climb. Here the player lands 6 m past the fence.
+    // Without the fast climber's early climb (`Route_TryClimbNear`) one Warrior ran into the fence for 63 updates
+    // before he climbed (issue #236).
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    constexpr float beyond = 6.0F;
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    Level80 level(**engine, *wad, 1);
+    FollowingCrew run = giveFollowOrder(level, {});
+    const coney::ai::RoutePlanner* planner = run.crew[0]->planner();
+    REQUIRE(planner != nullptr);
+    const std::optional<std::pair<std::uint32_t, std::uint32_t>> link = fenceLink(planner->map(), 396, 403);
+    REQUIRE(link.has_value());
+    if (!link) {
+        return;
+    }
+    const coney::anim::Vec3 south = planner->map().nodes()[link->first].position;
+    const coney::anim::Vec3 north = planner->map().nodes()[link->second].position;
+    const float fenceY = (south.y + north.y) / 2.0F;
+
+    // The crew stands south of the fence with the player among them.
+    run.chief->human().place({south.x, south.y - 3.0F, south.z}, 0.0F);
+    run.crew[0]->human().place({south.x - 1.5F, south.y - 5.0F, south.z}, 0.0F);
+    run.crew[1]->human().place({south.x - 0.5F, south.y - 5.5F, south.z}, 0.0F);
+    // Both on the pavement west of the fence pair's line (east of it, from x about -159.2, there is no ground), 2-3 m
+    // from the player in a straight line: after 4 s both stand.
+    level.run(4ULL * 30);
+    for (coney::ai::Brain* warrior : run.crew) {
+        REQUIRE(warrior->human().position().z > south.z - 0.5F);
+        REQUIRE_FALSE(followingFormation(*warrior));
+    }
+
+    // The player over the fence, as if he had jumped it; then every update until both stand past it, or 300.
+    run.chief->human().place({north.x, north.y + beyond, north.z}, 0.0F);
+    constexpr int kBudget = 300;
+    std::vector<int> pushedAt(run.crew.size(), -1);
+    std::vector<int> climbedAt(run.crew.size(), -1);
+    std::vector<int> standingAt(run.crew.size(), -1);
+    std::vector<int> pressing(run.crew.size(), 0);
+    std::vector<int> failedAt(run.crew.size(), -1);
+    std::vector<int> failKind(run.crew.size(), 0);
+    for (int frame = 1; frame <= kBudget; ++frame) {
+        level.run(1);
+        for (std::size_t k = 0; k < run.crew.size(); ++k) {
+            coney::ai::Brain& warrior = *run.crew[k];
+            const coney::anim::Vec3 feet = warrior.human().position();
+            const bool climbing = warrior.human().traversal() == coney::human::Traversal::Climbing;
+            if (pushedAt[k] < 0 && followingFormation(warrior)) {
+                pushedAt[k] = frame;
+            }
+            if (climbedAt[k] < 0 && climbing) {
+                climbedAt[k] = frame;
+            }
+            // On the near side within 0.8 m of the fence, not climbing: running into it.
+            if (!climbing && feet.y < fenceY && feet.y > fenceY - 0.8F) {
+                ++pressing[k];
+            }
+            if (failedAt[k] < 0 && warrior.moveFailure() != coney::ai::MoveFailure::None) {
+                failedAt[k] = frame;
+                failKind[k] = static_cast<int>(warrior.moveFailure());
+            }
+            const bool stands = feet.y > fenceY + 0.5F && !climbing && warrior.human().speed() < 0.1F;
+            standingAt[k] = stands ? (standingAt[k] < 0 ? frame : standingAt[k]) : -1;
+        }
+        if (std::ranges::all_of(standingAt, [](int at) { return at >= 0; })) {
+            break;
+        }
+    }
+    for (std::size_t k = 0; k < run.crew.size(); ++k) {
+        std::printf("  level80 fence, player %.0f m past it: Warrior %zu followed at update %d, climbed at %d, stood "
+                    "past the fence at %d, %d updates at the fence before climbing, move failure %d at %d\n",
+                    static_cast<double>(beyond), k, pushedAt[k], climbedAt[k], standingAt[k], pressing[k], failKind[k],
+                    failedAt[k]);
+        // The one queued behind the other is done at once while the one ahead has not got going (FollowFormation
+        // step 6: the human it paces on stands), so its follow shows a few updates late.
+        CHECK(pushedAt[k] >= 1);
+        CHECK(pushedAt[k] <= 10);
+        CHECK(climbedAt[k] > 0);
+        CHECK(standingAt[k] > 0);
+        CHECK(pressing[k] < static_cast<int>(coney::ai::kClimbTries));
+        CHECK(failedAt[k] < 0);
+    }
     CHECK(level.scripts->scripts().errors() == 0);
 }
