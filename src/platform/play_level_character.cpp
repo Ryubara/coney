@@ -140,8 +140,8 @@ std::expected<void, Error> PlayLevelMode::changeCharacter(int type) {
     std::vector<human::PlayerStart> fighters;
     // The model each fighter was spawned as (the meshes are in the fighters' order), so it keeps its look.
     std::vector<std::string> fighterModels;
-    for (const FighterMesh& mesh : m_fighterMeshes) {
-        fighterModels.push_back(mesh.model);
+    for (const FighterMesh& drawn : m_fighterMeshes) {
+        fighterModels.push_back(drawn.model);
     }
     for (const ai::AiHuman& fighter : m_ai->humans()) {
         fighters.push_back(human::PlayerStart{.position = fighter.human->position(),
