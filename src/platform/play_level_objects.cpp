@@ -1290,8 +1290,10 @@ std::size_t PlayLevelMode::standingObjectsOf(std::string_view typeName) const {
     if (m_records == nullptr) {
         return 0;
     }
-    return static_cast<std::size_t>(std::ranges::count_if(
-        m_records->all(), [typeName](const world_objects::SpawnRecord& r) { return !r.removed && r.typeName == typeName; }));
+    return static_cast<std::size_t>(
+        std::ranges::count_if(m_records->all(), [typeName](const world_objects::SpawnRecord& r) {
+            return !r.removed && r.typeName == typeName;
+        }));
 }
 
 std::size_t PlayLevelMode::doorsDrawnNear(anim::Vec3 at, float radius) const {

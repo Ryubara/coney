@@ -156,15 +156,15 @@ class ChargeDriver final : public coney::InputSource {
 
 // When, in frames of the run, the events of one charge happened (0: not yet), and what showed in between.
 struct Timeline {
-    std::uint64_t charge = 0;       // the pad started the charge
-    std::uint64_t hit = 0;          // the fence took the breaking hit
-    std::uint64_t stopped = 0;      // the player stood still at the fence after it
-    std::uint64_t removed = 0;      // the fence removed
-    std::uint64_t fenceBroken = 0;  // P3.FenceBroken ran
-    std::uint64_t dealerPoizo = 0;  // P3.DealerPoizo ran
-    std::uint64_t cut = 0;          // the camera jumped to the dealer's
-    std::size_t effects = 0;        // ScreenQueueEffect calls from the charge to the cut
-    float fadeMost = 0.0F;          // the greatest fade level from the charge to the cut
+    std::uint64_t charge = 0;         // the pad started the charge
+    std::uint64_t hit = 0;            // the fence took the breaking hit
+    std::uint64_t stopped = 0;        // the player stood still at the fence after it
+    std::uint64_t removed = 0;        // the fence removed
+    std::uint64_t fenceBroken = 0;    // P3.FenceBroken ran
+    std::uint64_t dealerPoizo = 0;    // P3.DealerPoizo ran
+    std::uint64_t cut = 0;            // the camera jumped to the dealer's
+    std::size_t effects = 0;          // ScreenQueueEffect calls from the charge to the cut
+    float fadeMost = 0.0F;            // the greatest fade level from the charge to the cut
     std::size_t fenceDrawnBefore = 0; // doors drawn at the fence the update before the hit
     std::size_t fenceDrawnAtHit = 0;  // ... in the update of the hit
     std::size_t boardsBefore = 0;     // boards standing the update before the hit
@@ -182,8 +182,8 @@ std::size_t boardsStanding(const coney::platform::PlayLevelMode& play) {
 
 // How many of `trace`'s lines hold `text`.
 std::size_t countLines(const std::vector<std::string>& trace, std::string_view text) {
-    return static_cast<std::size_t>(std::ranges::count_if(
-        trace, [text](const std::string& line) { return line.find(text) != std::string::npos; }));
+    return static_cast<std::size_t>(
+        std::ranges::count_if(trace, [text](const std::string& line) { return line.find(text) != std::string::npos; }));
 }
 
 // Runs checkpoint 3 of level99 to the charge at fence `fence` begun `delay` frames after control returns, and on to the
@@ -246,7 +246,8 @@ Timeline runCharge(const coney::io::Wad& wad, std::size_t fence, std::uint64_t d
         const std::uint64_t now = run.frames();
         for (; logSeen < run.log().size(); ++logSeen) {
             const std::string& line = run.log()[logSeen];
-            if (timeline.hit == 0 && line.starts_with("objects: ") && line.find("struck by clip") != std::string::npos) {
+            if (timeline.hit == 0 && line.starts_with("objects: ") &&
+                line.find("struck by clip") != std::string::npos) {
                 timeline.hit = now;
                 timeline.fenceDrawnBefore = fenceDrawn;
                 timeline.boardsBefore = boards;
@@ -281,17 +282,17 @@ Timeline runCharge(const coney::io::Wad& wad, std::size_t fence, std::uint64_t d
 
 // A run's numbers on one line, counts only.
 void print(std::size_t fence, std::uint64_t delay, const Timeline& t) {
-    std::printf("  fence %zu, charge delayed %llu updates, then the updates from its start: hit +%llu, stopped +%llu, removed +%llu, "
-                "FenceBroken +%llu, DealerPoizo +%llu, cut +%llu (hit to cut %llu); screen effects %zu, fade %.2f; "
-                "fence drawn %zu -> %zu, boards %zu -> %zu\n",
-                fence, static_cast<unsigned long long>(delay), static_cast<unsigned long long>(t.hit - t.charge),
-                static_cast<unsigned long long>(t.stopped - t.charge),
-                static_cast<unsigned long long>(t.removed - t.charge),
-                static_cast<unsigned long long>(t.fenceBroken - t.charge),
-                static_cast<unsigned long long>(t.dealerPoizo - t.charge),
-                static_cast<unsigned long long>(t.cut - t.charge), static_cast<unsigned long long>(t.cut - t.hit),
-                t.effects, static_cast<double>(t.fadeMost), t.fenceDrawnBefore, t.fenceDrawnAtHit, t.boardsBefore,
-                t.boardsAfterMost);
+    std::printf(
+        "  fence %zu, charge delayed %llu updates, then the updates from its start: hit +%llu, stopped +%llu, removed "
+        "+%llu, "
+        "FenceBroken +%llu, DealerPoizo +%llu, cut +%llu (hit to cut %llu); screen effects %zu, fade %.2f; "
+        "fence drawn %zu -> %zu, boards %zu -> %zu\n",
+        fence, static_cast<unsigned long long>(delay), static_cast<unsigned long long>(t.hit - t.charge),
+        static_cast<unsigned long long>(t.stopped - t.charge), static_cast<unsigned long long>(t.removed - t.charge),
+        static_cast<unsigned long long>(t.fenceBroken - t.charge),
+        static_cast<unsigned long long>(t.dealerPoizo - t.charge), static_cast<unsigned long long>(t.cut - t.charge),
+        static_cast<unsigned long long>(t.cut - t.hit), t.effects, static_cast<double>(t.fadeMost), t.fenceDrawnBefore,
+        t.fenceDrawnAtHit, t.boardsBefore, t.boardsAfterMost);
 }
 
 } // namespace
@@ -304,8 +305,8 @@ TEST_CASE("the disc's level99: the wooden fence's break to the dealer's cut is t
         SKIP("CONEY_DISC is not set: no disc to check");
     }
     // The charge is delayed 0, 18 and 21 updates to meet the fence's 60-tick phase at a middling wait (the removal 20
-    // updates after the hit), a short one (2) and the longest (29); the second fence is charged once too: the original's
-    // window, 15-44 updates, from near both ends.
+    // updates after the hit), a short one (2) and the longest (29); the second fence is charged once too: the
+    // original's window, 15-44 updates, from near both ends.
     const std::vector<std::pair<std::size_t, std::uint64_t>> charges{{0, 0}, {0, 18}, {0, 21}, {1, 0}};
     std::uint64_t gapLeast = kCutMost;
     std::uint64_t gapMost = 0;
