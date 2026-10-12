@@ -770,6 +770,335 @@ address = "u32(0x005fdeb8) + 0x1ec"
 type = "f32"
 follow = true
 
+# Every human, every update: a scenario with `rows = "humans"` writes one row per human in use (the 60 humans at
+# 0x00640c80 + i * 0x6d0 with a record, +0xd4) per update, `step` and `human` (its handle index, the s16 at +0x92, the
+# index of brain(h) and tf(h)) first, and these columns with `h` the row's human. Coney's all-humans --trace writes the
+# same columns in the same units (metres, degrees, m/s, ms); a human is named by its index in both, so `target`,
+# `lock`, `partner` and the gang's `g_leader` / `g_chosen` are indices (-1 none). `value` fields are worked out from
+# memory at each sample: `hidx(handle)` the human index a handle names (-1 for the null handle 0xffffffff or a stale
+# one), `goal_at(brain, k)` the type id of goal stack slot k (docs/references/goal-types.md; -1 above the top),
+# `goal_type(vtable)` a goal class's type id, `handles(address, n)` how many of n words there are
+# handles (neither 0 nor 0xffffffff).
+# Research: docs/research/ai.md (#brain, #goals, #gangs, #fight), docs/research/combat.md (#state-flags,
+# #record-fields), docs/research/rumble.md#gang-battle-trace. Goal type 15 is Fight, 27 Blocking, 8 Melee, 11
+# EngageEnemy, 65 FindEnemy.
+[[humans]]
+name = "player"                           # player number: 0 player 1, -1 none (the brain drives it)
+address = "h + 0x1b0"
+type = "s8"
+
+[[humans]]
+name = "btype"                            # brain type: 0 player, 1 cop, 2 gang, 3 Warrior (ai.md#types)
+address = "brain(h) + 0x04"
+type = "s32"
+
+[[humans]]
+name = "gang"                             # gang id (gang record +0x30), -1 none
+value = "min(u32(brain(h) + 0x20c), 1) * (s16(u32(brain(h) + 0x20c) + 0x30) + 1) - 1"
+
+[[humans]]
+name = "x"
+address = "tf(h) + 0x0"
+type = "f32"
+
+[[humans]]
+name = "y"
+address = "tf(h) + 0x4"
+type = "f32"
+
+[[humans]]
+name = "z"
+address = "tf(h) + 0x8"
+type = "f32"
+
+[[humans]]
+name = "qz"
+address = "tf(h) + 0x18"
+type = "f32"
+hidden = true
+
+[[humans]]
+name = "qw"
+address = "tf(h) + 0x1c"
+type = "f32"
+hidden = true
+
+[[humans]]
+name = "heading"                          # degrees, 0 faces +y, anticlockwise
+formula = "wrap(deg(2 * atan2(qz, qw)))"
+digits = 3
+
+[[humans]]
+name = "speed"                            # m/s across the ground
+address = "h + 0x1ac"
+type = "f32"
+
+[[humans]]
+name = "vz"                               # m/s, vertical
+address = "h + 0x3a0"
+type = "f32"
+
+[[humans]]
+name = "gait"                             # 0 standing to 5 sprint
+address = "h + 0x1a8"
+type = "s32"
+
+[[humans]]
+name = "clip"                             # anim id playing
+address = "rec(h) + 0x20"
+type = "s32"
+
+[[humans]]
+name = "clip_frame"                       # the top animation task's current frame (30 a second)
+value = "u16(u32(u32(u32(h + 0xd8) + 0x2bc + 4 * max(0, u16(u32(h + 0xd8) + 0x2ac) - 1)) + 0x18) + 0x1c)"
+
+[[humans]]
+name = "command"                          # command id of this update, 0 none
+address = "prec(h) + 0x20"
+type = "u32"
+
+[[humans]]
+name = "health"
+address = "rec(h) + 0x144"
+type = "s16"
+
+[[humans]]
+name = "health_max"
+address = "rec(h) + 0x146"
+type = "s16"
+
+[[humans]]
+name = "power"                            # power meter
+address = "rec(h) + 0x148"
+type = "s16"
+
+[[humans]]
+name = "stamina"
+address = "rec(h) + 0x14a"
+type = "s16"
+
+[[humans]]
+name = "rage"                             # rage (combat.md#rage)
+address = "h + 0x650"
+type = "s32"
+
+[[humans]]
+name = "state"                            # record state word, low half (combat.md#state-flags)
+address = "rec(h) + 0x0"
+type = "u32"
+
+[[humans]]
+name = "state_hi"                         # its high half
+address = "rec(h) + 0x4"
+type = "u32"
+
+[[humans]]
+name = "phase"                            # attack phase: 0x1 wind-up, 0x2 chain, 0x4 end, 0x40000 recovery
+address = "rec(h) + 0x08"
+type = "u32"
+
+[[humans]]
+name = "code"                             # state code (tasks.md)
+address = "rec(h) + 0x14"
+type = "s32"
+
+[[humans]]
+name = "blocking"                         # state 0x8000
+formula = "(state >> 15) & 1"
+
+[[humans]]
+name = "down"                             # state 0x80000, knocked down
+formula = "(state >> 19) & 1"
+
+[[humans]]
+name = "stunned"                          # state 0x100000
+formula = "(state >> 20) & 1"
+
+[[humans]]
+name = "grabbed"                          # state 0x10 / 0x20: held from the front / rear
+formula = "min((state >> 4) & 3, 1)"
+
+[[humans]]
+name = "grabbing"                         # state 0x40 / 0x80: holding someone
+formula = "min((state >> 6) & 3, 1)"
+
+[[humans]]
+name = "attacking"                        # an attack's wind-up, chain window or end plays
+formula = "min(phase & 7, 1)"
+
+[[humans]]
+name = "partner"                          # human index of the other human in a grab, -1 none
+value = "hidx(u32(h + 0xc4))"
+
+[[humans]]
+name = "lock"                             # human index of its own target (human +0xc8), -1 none
+value = "hidx(u32(h + 0xc8))"
+
+[[humans]]
+name = "target"                           # human index of the brain's target (+0x124), -1 none
+value = "hidx(u32(brain(h) + 0x124))"
+
+[[humans]]
+name = "goals"                            # goals on the brain's stack (ai.md#brain)
+value = "s8(brain(h) + 0x2c) + 1"
+
+[[humans]]
+name = "goal"                             # the top goal's type id (references/goal-types.md), -1 none
+value = "goal_at(brain(h), s8(brain(h) + 0x2c))"
+
+[[humans]]
+name = "goal0"                            # stack slot k from the bottom, type id, -1 above the top
+value = "goal_at(brain(h), 0)"
+
+[[humans]]
+name = "goal1"
+value = "goal_at(brain(h), 1)"
+
+[[humans]]
+name = "goal2"
+value = "goal_at(brain(h), 2)"
+
+[[humans]]
+name = "goal3"
+value = "goal_at(brain(h), 3)"
+
+[[humans]]
+name = "goal4"
+value = "goal_at(brain(h), 4)"
+
+[[humans]]
+name = "goal5"
+value = "goal_at(brain(h), 5)"
+
+[[humans]]
+name = "react"                            # the reaction goal's type id, -1 none
+value = "min(u32(brain(h) + 0x3c), 1) * (goal_type(u32(u32(brain(h) + 0x3c) + 0xc)) + 1) - 1"
+
+[[humans]]
+name = "actions"                          # actions queued
+address = "brain(h) + 0x2e"
+type = "s8"
+
+[[humans]]
+name = "action"                           # the front action's vtable (ai.md#actions), 0 none
+value = "min(max(s8(brain(h) + 0x2e), 0), 1) * u32(u32(brain(h) + 0x68 + 4 * u8(brain(h) + 0x2f)) + 0x8)"
+
+[[humans]]
+name = "next_attack"                      # ms until it may attack again (brain +0x1e8)
+value = "u32(brain(h) + 0x1e8) - u32(game_time)"
+
+[[humans]]
+name = "attackable"                       # ms until it may be attacked again (+0x1ec)
+value = "u32(brain(h) + 0x1ec) - u32(game_time)"
+
+[[humans]]
+name = "warned"                           # an attack on it was announced (the block's trigger)
+address = "brain(h) + 0x200"
+type = "u8"
+
+[[humans]]
+name = "enemies"                          # handles in its enemy list (brain +0x164)
+value = "handles(brain(h) + 0x164, 16)"
+
+[[humans]]
+name = "slots"                            # attack slots taken on it (brain +0x1a4)
+value = "handles(brain(h) + 0x1a4, 16)"
+
+[[humans]]
+name = "slots_max"                        # attack slots allowed on it
+address = "brain(h) + 0x1e4"
+type = "u8"
+
+[[humans]]
+name = "active"                           # active attackers on it (brain +0x1f0)
+value = "handles(brain(h) + 0x1f0, 4)"
+
+[[humans]]
+name = "space_up"                         # attack spacing (brain +0x14a, +0x14b)
+address = "brain(h) + 0x14a"
+type = "u8"
+
+[[humans]]
+name = "space_down"
+address = "brain(h) + 0x14b"
+type = "u8"
+
+[[humans]]
+name = "hostile"                          # attackers counted on it (brain +0x152)
+address = "brain(h) + 0x152"
+type = "u8"
+
+[[humans]]
+name = "threat"                           # threat response, 0 never fights
+address = "brain(h) + 0x21c"
+type = "s32"
+
+[[humans]]
+name = "is_fight"
+formula = "1 - min(abs(goal - 15), 1)"
+hidden = true
+
+[[humans]]
+name = "f_kind"
+value = "s32(u32(brain(h) + 0x40 + 4 * max(0, s8(brain(h) + 0x2c))) + 0x10)"
+hidden = true
+
+[[humans]]
+name = "f_retarget"
+value = "u32(u32(brain(h) + 0x40 + 4 * max(0, s8(brain(h) + 0x2c))) + 0x14) - u32(game_time)"
+hidden = true
+
+[[humans]]
+name = "f_updates"
+value = "s32(u32(brain(h) + 0x40 + 4 * max(0, s8(brain(h) + 0x2c))) + 0x18)"
+hidden = true
+
+[[humans]]
+name = "f_end"
+value = "u32(u32(brain(h) + 0x40 + 4 * max(0, s8(brain(h) + 0x2c))) + 0x24) - u32(game_time)"
+hidden = true
+
+[[humans]]
+name = "f_active"
+value = "u8(u32(brain(h) + 0x40 + 4 * max(0, s8(brain(h) + 0x2c))) + 0x28)"
+hidden = true
+
+[[humans]]
+name = "fight_attack"                     # Fight on top: the attack kind picked (45 none)
+formula = "is_fight * (f_kind + 1) - 1"
+
+[[humans]]
+name = "fight_retarget"                   # ms to its next re-target
+formula = "is_fight * (f_retarget + 1) - 1"
+
+[[humans]]
+name = "fight_updates"                    # updates in the goal
+formula = "is_fight * (f_updates + 1) - 1"
+
+[[humans]]
+name = "fight_end"                        # ms to its time limit
+formula = "is_fight * (f_end + 1) - 1"
+
+[[humans]]
+name = "fight_active"                     # holds an active-attacker place
+formula = "is_fight * (f_active + 1) - 1"
+
+[[humans]]
+name = "g_alert"                          # the gang's state, 1 fighting
+value = "s16(u32(brain(h) + 0x20c) + 0x32)"
+
+[[humans]]
+name = "g_tactic"                         # its tactic's vtable, 0 none
+value = "u32(u32(u32(brain(h) + 0x20c) + 0x40) + 0x1c)"
+
+[[humans]]
+name = "g_leader"                         # human index of the gang's leader, -1 none
+value = "hidx(u32(u32(brain(h) + 0x20c) + 0x44))"
+
+[[humans]]
+name = "g_chosen"                         # human index of the gang's chosen target, -1 none
+value = "hidx(u32(u32(brain(h) + 0x20c) + 0x10))"
+
 # A downed player (docs/research/combat.md#ground-escape): the time he gets up, the hits taken on the ground and the
 # player's own state word (the mount's 0x800, grounded 0x80000).
 [[down]]
