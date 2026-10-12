@@ -2371,10 +2371,15 @@ tapped at 30; hooks `strike-contact` and `anim-dispatch`):
 | PoizoCiv | 600 → 405 and 294 at update 61, then 198 | the same, at the same update |
 
 Neither attacker played a reaction or lost health: the move ran its whole clip. The run did not
-test a flung victim striking the attacker, because this PoizoCiv took the damage and reacted only at update 61, after
-the clip 428 he was playing in the saved state had ended (the same update in both runs, so tied to his clip, not to the
-strike; inferred). By the code above, such a strike on a charger or a diver takes its health (the extreme reactions'
-20) and plays no reaction (confirmed (code) at `0x00265f70`).
+test a flung victim striking the attacker, and **PoizoCiv's 195 damage and 294 were not the charge's or the dive's**:
+moving him every update kept him airborne (clip 428, `ANIM_MOVEMENT_FALL`), and update 61 is when he landed (429)
+and took a fall's damage and knockdown (confirmed (runtime), 2026-10-12, PCSX2 2.9.94, the same slot: placed only at
+updates 0-2, he fell until update 34 and took 600 → 405 and 294 at 35 with no strike on him, the player still
+standing; the strike-shape hook (`0x003428d0`) showed only the attacker's body switching shapes on). Re-running with a
+victim who stands and reacts at once is still to do (#190): the scenarios need a placement that does not make him
+fall (writing the transform, human `+0x10` and `+0x390` at updates 0-2 still did). By the code above, such a strike
+on a charger or a diver takes its health (the extreme reactions' 20) and plays no reaction (confirmed (code) at
+`0x00265f70`).
 
 **Coney fixes** (items 25 and 29):
 
