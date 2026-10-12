@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "ai/brain.h"
+#include "ai/scan_schedule.h"
 #include "ai/tactic.h"
 #include "combat/stick.h"
 
@@ -104,10 +105,17 @@ class Gang {
     /// the first member that is. Null when none is. **Coney choice**: "down" is Coney's grounded state.
     /// @orig 0x00165678 Gang_GetLeader (unknown)
     [[nodiscard]] Brain* leader() const;
-    /// The gang's chosen target (`+0x10`): the enemy its members score 400 points more and the Warriors may hit when a
-    /// street civilian (ai::attackableBy()); null for none.
+    /// The gang's shared target (`+0x10`): the enemy its members score 400 points more, their scans keep listing and
+    /// the Warriors may hit when a street civilian (ai::attackableBy()); null for none.
     [[nodiscard]] Brain* chosenTarget() const { return m_chosenTarget; }
+    /// Stores the shared target as it is, without the checks of setSharedTarget().
     void setChosenTarget(Brain* target) { m_chosenTarget = target; }
+    /// `Gang_SetSharedTarget`: null only clears the shared target. Otherwise nothing happens with no leader (leader()),
+    /// when the leader may not take `target` (validEnemy()) or when `target`'s gang is a friend (Gangs::friends());
+    /// else `target` becomes the shared target and every AI member (not a player) adds him to its enemy list
+    /// (Brain::addEnemy()). Research: docs/research/ai-reimpl.md#gang-set-shared-target
+    /// @orig 0x00165b70 Gang_SetSharedTarget (unknown)
+    void setSharedTarget(Brain* target);
 
     /// `member`'s event, before its brain has it (`Gang_OnEvent`): while scripts run, the message handler for the
     /// event's id is called: for 18 with (member, other, standing()), for 2 with (member, other, the headcount), for
@@ -188,9 +196,8 @@ class Gangs {
     /// Gangs `a` and `b` become friends both ways: the enemy bit cleared, the friend bit set.
     /// @orig 0x0016ad80 GangMakeFriends (unknown)
     void makeFriends(int a, int b);
-    /// Whether `a` and `b` are friends (`0x00168f58`): the same gang or kind, both kinds police-like (1 or `0x17`), or
-    /// the friend bit. **Coney choices**: a human with no gang is no one's friend, and the global truce
-    /// (`0x0050cb7c`) is not built.
+    /// Whether `a` and `b` are friends (`0x00168f58`): the same gang or kind, both kinds police-like (1 or `0x17`), a
+    /// truce (setTruce()) or the friend bit. **Coney choice**: a human with no gang is no one's friend.
     /// @orig 0x00168f58 Gang_AreFriends (unknown)
     [[nodiscard]] static bool friends(const Gang* a, const Gang* b);
     /// `GangMakeNeutralOfType(id, kind)`: gang `id` and every other gang in use of kind `kind` lose each other's
@@ -209,7 +216,18 @@ class Gangs {
     /// `GangSetAlwaysSeen`: the always-seen byte. Nothing for a gang not in use.
     /// @orig 0x0016bde8 Gang_SetAlwaysSeen (unknown)
     void setAlwaysSeen(int id, bool on);
-    /// Whether gang `a` has `b` as an enemy (the enemy bit).
+    /// A truce for `ms` from now (the global end time `0x0050cb7c`): until then no gang is anyone's enemy and every
+    /// gang is every other's friend; 0 ends it at once.
+    /// @orig 0x0016c358 Gangs_SetTruce (unknown)
+    void setTruce(std::uint64_t ms);
+    /// The truce's end, game time ms; 0 for none.
+    [[nodiscard]] std::uint64_t truceEndMs() const { return m_truceEndMs; }
+    /// Whether a truce holds now.
+    [[nodiscard]] bool truce() const { return m_truceEndMs != 0 && m_nowMs < m_truceEndMs; }
+    /// Whether gang `a` treats `b` as an enemy (`Gang_IsEnemyOf`): never between kinds 1 and `0x17`, either way round,
+    /// nor during a truce (setTruce()); else the bit of `b`'s id in `a`'s enemy mask (only `a`'s: makeEnemies() sets
+    /// both). False when either is null. Research: docs/research/ai-reimpl.md#gang-is-enemy-of
+    /// @orig 0x00168fe0 Gang_IsEnemyOf (unknown)
     [[nodiscard]] static bool enemies(const Gang* a, const Gang* b);
 
     /// `GangSetThreatResponse`: every current member's brain takes `response` (later members keep their own).
@@ -235,7 +253,7 @@ class Gangs {
     /// `GangSetAttackable`: the attackable byte (brain `+0x11f`) of every current member; later members keep their own.
     /// @orig 0x0016bb58 Gang_SetAttackable (unknown)
     void setAttackable(int id, bool on);
-    /// Forgets `brain` as any gang's chosen target: it is going away.
+    /// Forgets `brain` as any gang's shared target and in the scan schedule: it is going away.
     void forget(const Brain& brain);
     /// `GangSetMsgHandler`: the Lua function `function` handles message `message` (empty clears it).
     /// @orig 0x00164bb8 Gang_SetMessageHandler (unknown)
@@ -256,6 +274,8 @@ class Gangs {
     [[nodiscard]] std::uint64_t nowMs() const { return m_nowMs; }
     /// The generator the tactics roll with.
     [[nodiscard]] combat::CombatRandom& random() { return m_random; }
+    /// The scene's enemy-scan schedule, whose tokens each update() refills; every brain's update asks it.
+    [[nodiscard]] ScanSchedule& scans() { return m_scans; }
 
   private:
     std::array<Gang, kGangSlots> m_gangs{};
@@ -263,6 +283,8 @@ class Gangs {
     ScriptServices* m_scripts = nullptr;
     std::uint64_t m_nowMs = 0;
     combat::CombatRandom m_random;
+    ScanSchedule m_scans;
+    std::uint64_t m_truceEndMs = 0; // 0x0050cb7c
 };
 
 } // namespace coney::ai
