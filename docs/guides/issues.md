@@ -46,7 +46,7 @@ only "issue #N". Write it so that the first screenful answers *what is wrong or 
   PCSX2's 7z extraction on Windows 10, whose `tar` cannot unpack it". Say what to do, to what, and how you will know
   it is done; tick the item (`- [x]`) when it is done and name the pull request that did it.
 - **Write numbers and names, not shorthand.** An issue refers to `#123` for issues and pull requests, to the
-  research page with its section, and to the item numbers of the owner's play-test by their text; a word like "the
+  research page with its section, and to the item numbers of the user's play-test by their text; a word like "the
   unit", "the stack" or a branch name alone means nothing to a newcomer.
 
 ### Screenshots {#screenshots}

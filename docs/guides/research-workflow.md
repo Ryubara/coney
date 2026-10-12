@@ -80,7 +80,7 @@ to know whether it was read in the code, seen happening, or worked out from clue
 | **inferred** | Follows from evidence that points one way, without being read or observed directly | `inferred` |
 | **speculative** | A plausible guess, written down so it can be tested | `speculative` |
 
-Examples (the current pages have no runtime observation yet, so that level is shown as a template):
+Examples:
 
 - **Confirmed (code).** [WARRIORS.DIR](../research/formats/wad-dir.md): the index's constructor at `0x00149160`
   reads the entry count, seeks to `0x10`, allocates `count * 12` bytes and reads the entry table. The claim names
