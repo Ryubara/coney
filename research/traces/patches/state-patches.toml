@@ -1,0 +1,42 @@
+# Patches for copies of PCSX2 save states (`coney-tools pcsx2 prepare-state`, `pcsx2 record`), applied to the copy's
+# eeMemory.bin before PCSX2 starts on it, so the code is patched before the recompiler first compiles it. Each code
+# edit names the instruction word the state must hold (checked: a copy is refused on a mismatch) and the word that
+# replaces it, as little-endian 32-bit words of NTSC-U SLUS_212.15. Format: python/src/coney_tools/pcsx2_state.py.
+# What the patches do and why: docs/guides/research-workflow.md#driving-pcsx2.
+
+[patch.scripted-pad]
+description = "The pad read takes the buttons and the left stick from spare bytes after the scePadRead buffer: 0x005de3aa / 0x005de3ab (buttons, active low) and 0x005de3ae / 0x005de3af (left stick x, y)."
+research = "docs/guides/research-workflow.md#driving-pcsx2"
+edits = [
+  # DualShock 2 path: the lbu loads of buffer offsets 2, 3, 6 and 7 take 0x22, 0x23, 0x26 and 0x27.
+  { address = 0x00149dd4, original = [0x92220002], replacement = [0x92220022] },
+  { address = 0x00149dd8, original = [0x92230003], replacement = [0x92230023] },
+  { address = 0x00149de8, original = [0x92230006], replacement = [0x92230026] },
+  { address = 0x00149df0, original = [0x92220007], replacement = [0x92220027] },
+  # Digital path: the same four loads.
+  { address = 0x00149e8c, original = [0x92230002], replacement = [0x92230022] },
+  { address = 0x00149e90, original = [0x92220003], replacement = [0x92220023] },
+  { address = 0x00149ea8, original = [0x92220006], replacement = [0x92220026] },
+  { address = 0x00149eb0, original = [0x92230007], replacement = [0x92230027] },
+  # The spare bytes start at rest: no button held (active low), both sticks centred.
+  { address = 0x005de3aa, bytes = "ff ff 80 80 80 80" },
+]
+
+[patch.right-stick]
+description = "The right stick from the spare bytes too: 0x005de3ac / 0x005de3ad (x, y). Use with scripted-pad."
+research = "docs/guides/research-workflow.md#driving-pcsx2"
+edits = [
+  # Buffer offsets 4 and 5 become 0x24 and 0x25, in the DualShock 2 path, then the digital path.
+  { address = 0x00149df8, original = [0x92230004], replacement = [0x92230024] },
+  { address = 0x00149e00, original = [0x92220005], replacement = [0x92220025] },
+  { address = 0x00149eb8, original = [0x92220004], replacement = [0x92220024] },
+  { address = 0x00149ec0, original = [0x92230005], replacement = [0x92230025] },
+]
+
+[patch.puppet]
+description = "A human with no pad keeps the command id written into its per-player record (+0x20): the per-update clear is a nop, so an AI human can be driven as a puppet."
+research = "docs/guides/research-workflow.md#driving-pcsx2"
+edits = [
+  # sw zero,0x20(a0) at 0x00146030 becomes a nop.
+  { address = 0x00146030, original = [0xac800020], replacement = [0x00000000] },
+]

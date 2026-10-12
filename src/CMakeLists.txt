@@ -265,6 +265,7 @@ target_sources(coney_core PRIVATE
     human/fighter_counter.cpp
     human/fighter_grab.cpp
     human/fighter_script.cpp
+    human/fighter_tandem.cpp
     human/fighter_victim.cpp
     human/player.cpp
     human/player_trace.cpp
@@ -360,6 +361,7 @@ target_sources(coney_core PRIVATE
     combat/revive.cpp
     combat/reactions.cpp
     combat/stick_games.cpp
+    combat/tandem.cpp
     combat/throw_aim.cpp
     combat/throw_velocity.cpp
     debug/combat_tunables.cpp)

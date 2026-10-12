@@ -123,6 +123,8 @@ GameSession::GameSession(RenderEngine& renderer, GameModeStack& stack, const io:
         table && table->size() == GameRandom::kTableSize) {
         m_flow->state().random.setTable(*table);
     }
+    // `--ai-seed`: the random stream's start and the brains' seeds (0, the default, changes nothing).
+    m_flow->setAiSeed(settings.aiSeed);
     // Each level's scenes, and the front end's (the Wonder Wheel's `WonderWheel_100`), over the disc's scene list.
     m_flow->gameplay().setSceneMaker([this] { return makeScenes(); });
     m_flow->levelFlow().setScenes([this] { return makeScenes(); }, &m_flow->context());

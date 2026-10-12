@@ -465,7 +465,7 @@ sets 1.
 
 All five were run (2026-10-05) with the scenarios in `repo:research/traces/scenarios/` (`tick_split`,
 `wheel_objects`, `held_attack`, `block_release`, `turn_on_spot`, `civ_fight`) and the call hooks in
-`repo:research/traces/patches.toml`; the results are in the body above: [the tick split](#tick), [humans on the
+`repo:research/traces/patches/`; the results are in the body above: [the tick split](#tick), [humans on the
 wheel](#wheel), [held flags through an attack](#held-flags), [the block's 5](#locomotion-gate) and [brain then
 dispatcher](#humans-update). None is left.
 

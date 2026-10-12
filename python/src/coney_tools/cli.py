@@ -524,9 +524,7 @@ def _add_pcsx2_commands(groups: Any) -> None:
     prepare = commands.add_parser("prepare-state", help="copy a save state with patches applied to its EE memory")
     prepare.add_argument("source", help="a .p2s file, or slot:N for quick-save slot N (only read)")
     prepare.add_argument("out", type=Path, help="the patched copy (outside the repository and sstates/)")
-    prepare.add_argument(
-        "--patch", nargs="+", default=[], metavar="NAME", help="patches of research/traces/patches.toml"
-    )
+    prepare.add_argument("--patch", nargs="+", default=[], metavar="NAME", help="patches of research/traces/patches/")
     prepare.add_argument("--pcsx2-dir", type=Path, help="the portable PCSX2 folder; default: pcsx2_dir")
     repack = commands.add_parser("repack-state", help="copy a save state with plain deflate in place of zstd")
     repack.add_argument("source", help="a .p2s file, or slot:N for quick-save slot N (only read)")

@@ -452,6 +452,7 @@ int main(int argc, char** argv) {
     sessionSettings.language = options->language;
     sessionSettings.skipMovies = options->skipMovies;
     sessionSettings.rumble = options->rumble;
+    sessionSettings.aiSeed = options->aiSeed.value_or(0);
     // `--trace-humans`: the file every human of the run is traced to, opened before the first level loads.
     std::shared_ptr<coney::platform::HumansTrace> humansTrace;
     if (const std::optional<std::string> humansTracePath = options->humansTraceFile; humansTracePath) {
