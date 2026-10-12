@@ -544,7 +544,7 @@
   depth: thorough
   notes: >-
     Confirmed (code) at 0x00295dd8: `count` is the number of slots (`+0x271`), `count2` how many followers may
-    take one (`+0x272`); the rest queue behind them. Behaviour: [AI](../../research/ai.md#formations).
+    take one (`+0x272`); the rest queue behind them. Behaviour: [AI](../../research/ai-gangs.md#formations).
   usage: {chunks: 3, calls: 4, boot: true, mission1: true, result_used: false, levels: [87, 95, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
   coney: implemented
 
@@ -721,7 +721,7 @@
   depth: thorough
   notes: >-
     Constructor 0x002cc408 interns the callback name through the script system (slot +0xcc). It resolves the speaker
-    without checking it is a human. Process 0x002cc588. Behaviour: [AI](../../research/ai.md#address-person).
+    without checking it is a human. Process 0x002cc588. Behaviour: [AI](../../research/ai-scripting.md#address-person).
   usage: {chunks: 9, calls: 15, boot: false, mission1: true, result_used: false, levels: [87, 95, 2, 86, 54, 83]}
   coney: implemented
 
@@ -808,7 +808,7 @@
   depth: thorough
   notes: >-
     Constructor 0x002df250, start 0x002df288 (joins the formation), update 0x002df3c0 (walks at gait 2; also refreshes
-    its actions every 40 updates). Behaviour: [AI](../../research/ai.md#formations).
+    its actions every 40 updates). Behaviour: [AI](../../research/ai-gangs.md#formations).
   usage: {chunks: 1, calls: 1, boot: false, mission1: true, result_used: false}
   coney: implemented
 
@@ -856,7 +856,7 @@
   notes: >-
     Fixed values from the binding: distance 0.75 m, no turn-to-leader mode. On a player-type brain (kind 3) it sets
     human flags 0x300 while it runs (no stun, weaker reactions). Every 15 updates without a route it may look for
-    another target (0x0029d5f0). Formations: [AI](../../research/ai.md#formations).
+    another target (0x0029d5f0). Formations: [AI](../../research/ai-gangs.md#formations).
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [11]}
 
 - name: GoalTravelPath
@@ -1002,7 +1002,7 @@
     within (1.1 × runner `+0x140`)² (a squared reach against metres); it then sets threat response 2 and pushes
     goals 0x002ade10 (2000, 2000) and, in the first case, an engage-enemy goal (0x47). Chaser choice: 0x002e1c18;
     hindmost segment: 0x002e1b60. Start / Resume / End save and restore the threat response, the field of view (2π
-    while it runs) and a brain byte. Full behaviour: [AI: GoalDevilRun](../../research/ai.md#devil-run).
+    while it runs) and a brain byte. Full behaviour: [AI: GoalDevilRun](../../research/ai-scripting.md#devil-run).
   usage: {chunks: 6, calls: 33, boot: false, mission1: false, result_used: false, levels: [3, 54]}
   coney: implemented
 
@@ -1027,7 +1027,7 @@
   depth: thorough
   notes: >-
     Event handler 0x002b7bc0 pushes LeftTurf (0x002f8c90) for any event it gets. The callback follows the shared
-    rule of [AI: scripted goals](../../research/ai.md#scripted). How the base goal uses `+0x08` is not traced here.
+    rule of [AI: scripted goals](../../research/ai-scripting.md#scripted). How the base goal uses `+0x08` is not traced here.
   usage: {chunks: 4, calls: 14, boot: false, mission1: false, result_used: false, levels: [3, 14, 55]}
   coney: implemented
 
@@ -1604,7 +1604,7 @@
     Pushes a call-the-police goal (vtable 0x0053f7f0) on the witness. He turns to the offender, points (anim 0x29c)
     and says `rat` (speech command 33), then gets a spinning icon and a radar blip and runs (gait 4) to a phone flag,
     queueing behind anyone using it (`hurryup`), or toward the crime scene. He phones for 6 s saying `phone_cop` (84),
-    then reports the crime (crime report with mode 1, so police responders come, [AI: crimes](../../research/ai.md#crimes)),
+    then reports the crime (crime report with mode 1, so police responders come, [AI: crimes](../../research/ai-gangs.md#crimes)),
     loses the icon and blip, and flees to the nearest exit flag (screaming if he was attacked) or cowers.
   evidence: confirmed-code
   depth: thorough
@@ -1696,7 +1696,7 @@
     States at goal `+0x36`: 0 roam, 1 smash, 2 loot, 3 leave (RiotGoal_Process 0x002d1c38). Fight choice:
     RiotGoal_TryPickFight 0x002d1288 (only for a gang-soldier brain, type 2). The gate 0x0028ff58 is whether the
     nearest player stands in the rioter's gang's turf. Roaming, targets and the fight's end:
-    [AI: GoalRiot](../../research/ai.md#riot).
+    [AI: GoalRiot](../../research/ai-scripting.md#riot).
   usage: {chunks: 8, calls: 14, boot: false, mission1: false, result_used: false, levels: [34, 86, 93, 31, 82]}
   coney: implemented
 
@@ -2185,7 +2185,7 @@
   description: >-
     Queues a turn action on the human's brain towards a world heading (converted to radians, action `+0x0c`). After
     the delay the human turns, through brain `+0x110`, until it faces the heading within 15°, then the action ends;
-    it gives up after 3 s ([AI: turning](../../research/ai.md#look-at)).
+    it gives up after 3 s ([AI: turning](../../research/ai-scripting.md#look-at)).
   evidence: confirmed-code
   depth: thorough
   notes: >-
@@ -2212,7 +2212,7 @@
   notes: >-
     Wrapper 0x002fe0c8, action set-up 0x002fe160 (a turn action, 0x002fdc28, with the target kept at `+0x1c`, vtable
     0x005430a0); update 0x002fe1b0 / 0x002fdd08 writes the heading to the target into brain `+0x110` each update.
-    Behaviour: [AI](../../research/ai.md#look-at).
+    Behaviour: [AI](../../research/ai-scripting.md#look-at).
   usage: {chunks: 37, calls: 112, boot: false, mission1: true, result_used: false, levels: [87, 95, 34, 5, 86, 9, 51, 52, 54, 55, 83, 20, 11, 60, 61, 62, 64]}
   coney: implemented
 
@@ -2316,7 +2316,7 @@
   notes: >-
     Constructor 0x00313f38 (vtable 0x00543a40): Start 0x00314038, Process 0x00314538 (every 1.75 s), event
     0x003147a0. The defenders are min(line length in metres, 60 % of the members). Behaviour:
-    [AI](../../research/ai.md#tactic-kinds).
+    [AI](../../research/ai-gangs.md#tactic-kinds).
   usage: {chunks: 18, calls: 18, boot: false, mission1: false, result_used: false, levels: [87, 2, 3, 5, 81, 86, 93, 31, 14, 9, 52, 54, 55, 84, 82, 92, 20]}
   coney: implemented
 
@@ -2337,7 +2337,7 @@
   depth: thorough
   notes: >-
     Constructor 0x003101d8 (vtable 0x00543800): Start 0x00310618, Process 0x00310768 (every 1.5 s), event 0x00310a60.
-    The formation uses set 3 with two slots per member (up to 9). Behaviour: [AI](../../research/ai.md#tactic-kinds).
+    The formation uses set 3 with two slots per member (up to 9). Behaviour: [AI](../../research/ai-gangs.md#tactic-kinds).
   usage: {chunks: 23, calls: 25, boot: false, mission1: false, result_used: false, levels: [87, 2, 3, 5, 81, 86, 93, 31, 14, 9, 52, 54, 55, 84, 82, 92, 83, 20]}
   coney: implemented
 
@@ -2359,7 +2359,7 @@
   notes: >-
     Constructor 0x0031ec90 (vtable 0x005440a0): Start 0x0031ef28, Process 0x0031efb8, event 0x0031f268. Start
     substitutes anim 0x253 with four swagger anims (0x00511620) and says the `shadow_spot` line. Behaviour:
-    [AI](../../research/ai.md#tactic-kinds).
+    [AI](../../research/ai-gangs.md#tactic-kinds).
   usage: {chunks: 18, calls: 36, boot: false, mission1: false, result_used: false, levels: [87, 2, 3, 5, 81, 86, 93, 31, 14, 9, 52, 54, 55, 84, 82, 92, 20]}
   coney: implemented
 
@@ -2384,7 +2384,7 @@
   depth: thorough
   notes: >-
     Constructor 0x00317c40 (vtable 0x00543c20): Start 0x00317f20, Process 0x003183b8 (every 150 ms), event
-    0x00318770. Hits by a player's gang do not fire `TacDamage`. Behaviour: [AI](../../research/ai.md#tactic-kinds).
+    0x00318770. Hits by a player's gang do not fire `TacDamage`. Behaviour: [AI](../../research/ai-gangs.md#tactic-kinds).
   usage: {chunks: 22, calls: 23, boot: false, mission1: false, result_used: false, levels: [87, 95, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
   coney: implemented
 
@@ -2409,7 +2409,7 @@
   notes: >-
     Constructor 0x00311ad8 (vtable 0x00543920): Start 0x00312348, Process 0x00312518, event 0x00312580. Start also
     substitutes anim 0x25b with eight hang-out idles (0x00511480). Behaviour:
-    [AI](../../research/ai.md#tactic-kinds).
+    [AI](../../research/ai-gangs.md#tactic-kinds).
   usage: {chunks: 28, calls: 72, boot: false, mission1: false, result_used: false, levels: [87, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
   coney: implemented
 
@@ -2437,7 +2437,7 @@
   notes: >-
     Constructor 0x0031f300 (vtable 0x00544100): Start 0x0031f638 (0x0031f410), Process 0x00320360 (world flags
     0x0031fb80, vandalism 0x0031fdc0, theft 0x003200c8), event 0x00320410. Behaviour:
-    [AI](../../research/ai.md#tactic-kinds).
+    [AI](../../research/ai-gangs.md#tactic-kinds).
   usage: {chunks: 19, calls: 20, boot: false, mission1: false, result_used: false, levels: [87, 95, 2, 3, 5, 81, 86, 93, 31, 14, 9, 52, 54, 55, 84, 82, 92, 20]}
   coney: implemented
 
@@ -2465,7 +2465,7 @@
   notes: >-
     Constructor 0x0031cbc0 (vtable 0x00543f80): Start 0x0031cf80, Process 0x0031d460, event 0x0031d758. A free member
     near the leader may stop to use a nearby usable flag (inferred). Behaviour:
-    [AI](../../research/ai.md#tactic-kinds).
+    [AI](../../research/ai-gangs.md#tactic-kinds).
   usage: {chunks: 20, calls: 38, boot: false, mission1: false, result_used: false, levels: [87, 95, 2, 3, 5, 81, 86, 93, 31, 14, 9, 52, 54, 55, 84, 82, 92, 20, 11]}
   coney: implemented
 
@@ -2485,7 +2485,7 @@
   notes: >-
     Constructor 0x003075c8 (vtable 0x00543320): Start 0x00307fe0, Process 0x003081a8, event 0x00308478. A gang with
     `+0xd9` set also starts one of seven coordinated sub-tactics every 7 s (0x00307a10). Behaviour:
-    [AI](../../research/ai.md#tactic-kinds), [Gang fights](../../research/gang-fights.md).
+    [AI](../../research/ai-gangs.md#tactic-kinds), [Gang fights](../../research/gang-fights.md).
   usage: {chunks: 54, calls: 184, boot: false, mission1: false, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
@@ -2508,7 +2508,7 @@
   depth: thorough
   notes: >-
     Constructor 0x00317410 (vtable 0x00543bc0): Start 0x00317700 (0x003174e8), Process 0x00317ad0, event 0x00317b38.
-    No time limit. Behaviour: [AI](../../research/ai.md#tactic-kinds).
+    No time limit. Behaviour: [AI](../../research/ai-gangs.md#tactic-kinds).
   usage: {chunks: 28, calls: 69, boot: false, mission1: false, result_used: false, levels: [87, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
   coney: implemented
 
@@ -2569,7 +2569,7 @@
   notes: >-
     Constructor 0x0031e3b8 (vtable 0x00544040): Start 0x0031e5f8, Process 0x0031ea00, event 0x0031eaf0. The
     constructor can also take up to four objects instead of a zone; the binding never passes any. Behaviour:
-    [AI](../../research/ai.md#tactic-kinds).
+    [AI](../../research/ai-gangs.md#tactic-kinds).
   usage: {chunks: 20, calls: 31, boot: false, mission1: false, result_used: false, levels: [87, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 52, 54, 55, 84, 82, 92, 20]}
   coney: implemented
 
@@ -2614,7 +2614,7 @@
   depth: thorough
   notes: >-
     Constructor 0x0031c030 (vtable 0x00543ec0): Start 0x0031c1d0 (0x0031c0e0), event 0x0031c258; Process always 0.
-    Behaviour: [AI](../../research/ai.md#tactic-kinds).
+    Behaviour: [AI](../../research/ai-gangs.md#tactic-kinds).
   usage: {chunks: 19, calls: 19, boot: false, mission1: false, result_used: false, levels: [87, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 52, 54, 55, 84, 82, 92, 20]}
   coney: implemented
 
@@ -2693,7 +2693,7 @@
     Constructor 0x003085d8 (vtable 0x00543380): Start 0x00308790 (0x00308698), event 0x003087c0 (hit 5, attack 6);
     Process always 0. The goal (vtable 0x005419b0, Process 0x002e3630) re-picks the nearest enemy every 1.5 s and
     flees at gait 5 (4 when the human is tired) unless `gait` is given. Behaviour:
-    [AI](../../research/ai.md#tactic-kinds).
+    [AI](../../research/ai-gangs.md#tactic-kinds).
   usage: {chunks: 25, calls: 32, boot: false, mission1: false, result_used: false, levels: [87, 2, 3, 5, 81, 86, 93, 31, 14, 9, 52, 54, 55, 84, 82, 92, 83, 20]}
   coney: implemented
 
@@ -2715,7 +2715,7 @@
   depth: thorough
   notes: >-
     Constructor 0x00317050 (vtable 0x00543b60): Start 0x00317218 (0x00317108), event 0x00317350. The goal's own
-    behaviour (0x002a3320, goal type 82) is not traced here. Behaviour: [AI](../../research/ai.md#tactic-kinds).
+    behaviour (0x002a3320, goal type 82) is not traced here. Behaviour: [AI](../../research/ai-gangs.md#tactic-kinds).
   usage: {chunks: 20, calls: 20, boot: false, mission1: false, result_used: false, levels: [87, 2, 3, 5, 81, 86, 93, 31, 14, 9, 52, 54, 55, 84, 82, 92, 20, 62]}
   coney: implemented
 
@@ -2786,7 +2786,7 @@
   notes: >-
     Constructor 0x0031d878 (vtable 0x00543fe0): Start 0x0031dc28, Process 0x0031e098 (every second), event
     0x0031e280. Hits, sightings and attacks alert the members without calling back. Behaviour:
-    [AI](../../research/ai.md#tactic-kinds).
+    [AI](../../research/ai-gangs.md#tactic-kinds).
   usage: {chunks: 21, calls: 23, boot: false, mission1: false, result_used: false, levels: [80, 87, 2, 3, 5, 81, 86, 93, 31, 14, 9, 52, 54, 55, 84, 82, 92, 20]}
   coney: implemented
 
@@ -2862,7 +2862,7 @@
   notes: >-
     Constructor 0x0030e670 (vtable 0x00543740): Start 0x0030ec20, Process 0x0030eec0 (every 250 ms; posture every 500
     ms), event 0x0030f408. With no route between the leaders it returns 1 when the other leader is in view, else 9.
-    Behaviour: [AI](../../research/ai.md#tactic-kinds).
+    Behaviour: [AI](../../research/ai-gangs.md#tactic-kinds).
   usage: {chunks: 26, calls: 35, boot: false, mission1: false, result_used: false, levels: [87, 95, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
   coney: implemented
 
@@ -2903,7 +2903,7 @@
   depth: thorough
   notes: >-
     Constructor 0x003149f0 (vtable 0x00543aa0): Start 0x00314f38, Process 0x003150c8, event 0x00315228. Behaviour:
-    [AI](../../research/ai.md#tactic-kinds).
+    [AI](../../research/ai-gangs.md#tactic-kinds).
   usage: {chunks: 21, calls: 22, boot: false, mission1: false, result_used: false, levels: [87, 95, 2, 3, 5, 81, 86, 93, 31, 14, 9, 52, 54, 55, 84, 82, 92, 83, 20]}
   coney: implemented
 
@@ -3185,7 +3185,7 @@
   depth: thorough
   notes: >-
     Constructor 0x0031a430 (vtable 0x00543da0): Start 0x0031af98, Process 0x0031b030, event 0x0031b1b0 (0x0031a818).
-    Behaviour: [Stealth: scouts](../../research/stealth.md#scouts), [AI](../../research/ai.md#tactic-kinds).
+    Behaviour: [Stealth: scouts](../../research/stealth.md#scouts), [AI](../../research/ai-gangs.md#tactic-kinds).
   usage: {chunks: 7, calls: 16, boot: false, mission1: false, result_used: false, levels: [87, 81, 14, 51, 82]}
   coney: implemented
 
@@ -3208,7 +3208,7 @@
     - {name: callback, lua: string, desc: "Name of the Lua function the tactic calls with (gang id, code), or nil; codes as TacticGetString."}
     - {name: option, lua: boolean, desc: "Handed to each PathScout goal (`+0x44`, meaning not traced); it also makes the call radius twice the member's brain `+0x140`."}
   description: >-
-    The path form of TacticScout (type 0x27, vtable 0x00543da0, [AI: tactic kinds](../../research/ai.md#tactic-kinds)):
+    The path form of TacticScout (type 0x27, vtable 0x00543da0, [AI: tactic kinds](../../research/ai-gangs.md#tactic-kinds)):
     every non-player member gets a `PathScout` goal (112) walking the flag route, with anim 0x29c (scouting)
     substituted gang-wide. A member who is hit, attacks or spots an enemy fights him and, when a gang-dispatch
     spawner exists, calls his gang: the call queues `callCount` responders due after `callDelaySec` seconds at his
@@ -3235,7 +3235,7 @@
     Drives a gang running a crowd tactic (`TacticCrowd`, type 0x1b); does nothing for other tactics. With `what` 0
     the crowd's periodic switch makes every free member react on each cheer tick (every 2 s); with `what` 1 every
     free member reacts once at once: a gesture clip (anim 0x8f, or 0xb1 when `enabled` is 0) after 0-750 ms, then
-    one of three cheers ([AI: TacticCrowd](../../research/ai.md#tactics)).
+    one of three cheers ([AI: TacticCrowd](../../research/ai-gangs.md#tactics)).
   evidence: confirmed-code
   depth: thorough
   notes: >-

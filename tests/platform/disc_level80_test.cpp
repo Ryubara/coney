@@ -254,7 +254,8 @@ TEST_CASE("the disc's level80: R2 and the right stick up give the follow order t
     CHECK(level.scripts->scripts().errors() == 0);
 
     // The script then stages the street (GangBrFlush(0), the Warriors walked to their flags) and, at EndStartCam,
-    // adds the crew to gang 0 again, which gives the Warriors the follow back (docs/research/ai.md#warrior-follow).
+    // adds the crew to gang 0 again, which gives the Warriors the follow back
+    // (docs/research/ai-gangs.md#warrior-follow).
     constexpr int kStaging = 15 * 30;
     level.run(kStaging);
     int following = 0;

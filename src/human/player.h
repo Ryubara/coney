@@ -179,7 +179,8 @@ class Player {
     /// enemy, or none when he has none. Coney has no brains yet, so whatever owns the enemies sets it; none until then.
     void setNearestEnemy(std::optional<float> distance) { m_nearestEnemy = distance; }
     /// Takes the pad away from the human or gives it back: while it is away update() leaves the stick centred and no
-    /// command in the record, so only the brain moves him (a player's brain set dead, docs/research/ai.md#scripted).
+    /// command in the record, so only the brain moves him (a player's brain set dead,
+    /// docs/research/ai-scripting.md#scripted).
     void setPadControlled(bool padControlled);
     /// Whether the pad drives the human (true until setPadControlled(false)).
     [[nodiscard]] bool padControlled() const { return m_padControlled; }

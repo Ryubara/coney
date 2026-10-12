@@ -7,7 +7,7 @@
 
 // Two goals that keep a human out of a fight: Idle (type 0), which holds its place, and Spectate (type `0x10`), which
 // watches a man from a distance for a while, for the Melee goal with no one to fight, the dealer and the crowd.
-// Research: docs/research/ai.md#tactics, docs/research/ai.md#dealer, docs/research/ai.md#spectate
+// Research: docs/research/ai-gangs.md#tactics, docs/research/ai-scripting.md#dealer, docs/research/ai.md#spectate
 
 namespace coney::ai {
 

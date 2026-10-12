@@ -208,8 +208,8 @@ Not on the wheel, with pools of their own:
 | camera | `Cam_ICamera` base `0x00120868`, vtable `0x00535510` ([Camera](camera.md)) | not traced | yes |
 | object zone | a bit mask in the `ObjectTaskManager`; zone 0 on, 1-254 off at start (`0x00398348` from `0x00397a48`); the zones scripts use: [Object zones](../references/zones.md) | 255 | the zone number |
 | brain, goal, action | [AI](ai.md#brain) | 60, 170, 100 | by human |
-| gang | `0x005e6e30` ([AI](ai.md#gang-record)) | 32 × 0xb10 | the slot 0-31 |
-| formation | `0x006ceaf0` ([AI](ai.md#formations)) | 41 × 0x280 | |
+| gang | `0x005e6e30` ([AI](ai-gangs.md#gang-record)) | 32 × 0xb10 | the slot 0-31 |
+| formation | `0x006ceaf0` ([AI](ai-gangs.md#formations)) | 41 × 0x280 | |
 | path | `AddPath` | 32 | a userdata |
 | physics bodies and shapes | [Physics](physics.md#iphysics) | | |
 
