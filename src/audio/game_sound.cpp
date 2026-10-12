@@ -676,7 +676,8 @@ void GameSound::updateListener() {
     const std::optional<double> player = playerHandle();
     // While a cinematic runs the camera is the scene camera, and both listeners stay on it whatever SndSetListener
     // chose: Gm_Level_Update skips the player's ear then (docs/research/sound.md#scene-world-sound).
-    // @orig 0x00158d58 Gm_Level_Update (unknown)
+    // The listener step is at 0x00158d58.
+    // @orig 0x00158728 Mode1::Update (unknown)
     if (m_listenerMode == 1 && player && !cinematicPlaying()) {
         if (const std::optional<SpeakerPlace> at = locate(*player); at) {
             m_listener.position = SoundVec{at->position.x, at->position.y, at->position.z + kPlayerEarHeight};
