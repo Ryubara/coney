@@ -170,7 +170,7 @@ What the two sections hold:
   text, only pictures of the running game.
 - **Coney.** `coney --screenshot PATH` saves the last frame of a test-mode run as a PNG. To line a frame up with the
   original's, pin the view with `--camera`, `--freeze-world` and `--render-size 640x448`
-  ([Matched views](building.md#matched-views)). `--screenshot` needs a window, so the run is not `--headless`. Take
+  ([Matched views](running.md#matched-views)). `--screenshot` needs a window, so the run is not `--headless`. Take
   the "before" shot from a build of `main` (or the branch point) and the "after" shot from the branch, with the same
   options.
 - **The original.** `coney-tools pcsx2 screenshot --copy NAME --out PNG` writes a PCSX2 copy's picture (Windows only;

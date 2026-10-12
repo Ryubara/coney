@@ -502,7 +502,7 @@ uv run --project python coney-tools trace fight-report --original TRACE... --con
 ```
 
 Behaviour statistics of a gang fight, from the all-humans trace of either game (Coney's `--trace-humans`, the
-original's `pcsx2 record` of the all-humans field set; [Tracing](building.md#tracing)). The two games draw different
+original's `pcsx2 record` of the all-humans field set; [Tracing](running.md#tracing)). The two games draw different
 random numbers, so a fight is compared by rates, shares and distributions, not update by update. A trace needs the
 columns `step`, `human` and `gang`; a metric whose columns are missing is left out. For the whole match (`all`) and
 each gang (and each human with `--humans`) it prints:

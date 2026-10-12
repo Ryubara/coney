@@ -2380,7 +2380,7 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
   object took sends `(human, box, object)` to every enabled kind-0 box the attacker (a thrown object's thrower)
   stands in. Not yet: props, the 30 m alert after it, and the boxes' every-fifth-frame round-robin (Coney updates
   them every frame). **`--script-trace`** (`ScriptSystem::traceCalls()`,
-  [Building](../guides/building.md#tracing)) logs every binding call and every call into the scripts by name,
+  [Running Coney](../guides/running.md#tracing)) logs every binding call and every call into the scripts by name,
   Coney's own tool.
 - **Trigger spheres** (`src/world_objects/trigger_spheres.h`, `TriggerSphereCfg` in `src/scripting/world_bindings.h`):
   a pool of 100, one per object, each checked every fifth frame (index modulo 5) with the boxes' rules, 3, 5 once per

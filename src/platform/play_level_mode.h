@@ -110,7 +110,7 @@ struct PlayStats {
     float travelled = 0.0F; ///< Metres the player's feet moved across the ground.
 };
 
-/// Coney's first playable mode, behind `coney --play-level NAME` (docs/guides/building.md#playing-a-level): Rembrandt
+/// Coney's first playable mode, behind `coney --play-level NAME` (docs/guides/running.md#playing-a-level): Rembrandt
 /// standing in a scenery (PlayScenery) at its start, driven by pad 1's left stick, and the follow camera behind him
 /// turned by the right stick. The scenery is a level's streamed worlds and level file, loaded as the world viewer
 /// loads them and streamed around the follow camera, or a sandbox layout (`--play-level sandbox:NAME`,
