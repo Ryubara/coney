@@ -2989,5 +2989,5 @@ stand-in**: the chase HUD is not built or drawn (no level script creates it), so
 - **Mode 2's header string** ([Objectives](#objectives-hudsetobjective), issue #238): whether the completion header
   uses the same HUD strings `0xe5`/`0xe6` as mode 0's "new objective" header or other ones (for example a "complete"
   heading), which of the two is picked by the slot, whether it takes the same colour slot (4 / 6) and size, and whether
-  the interface cue `0x11` plays on it. Coney queues mode 0's own header, then the text, both for `ms`; the owner sees
+  the interface cue `0x11` plays on it. Coney queues mode 0's own header, then the text, both for `ms`; the user sees
   the header read as a new objective, so this is probably wrong.
