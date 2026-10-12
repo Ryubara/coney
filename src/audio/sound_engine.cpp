@@ -807,4 +807,25 @@ SoundEngineStats SoundEngine::stats() const {
     return stats;
 }
 
+std::vector<LiveSound> SoundEngine::liveSounds() const {
+    std::vector<const Task*> live;
+    for (const Task& task : m_tasks) {
+        if (task.live) {
+            live.push_back(&task);
+        }
+    }
+    std::ranges::sort(live, {}, &Task::order);
+    std::vector<LiveSound> sounds;
+    sounds.reserve(live.size());
+    for (const Task* task : live) {
+        sounds.push_back(LiveSound{.handle = SoundHandle{task->id},
+                                   .hash = task->record != nullptr ? task->record->hash : 0,
+                                   .soundClass = task->record != nullptr ? task->record->soundClass : std::uint8_t{0},
+                                   .positional = task->how.position.has_value(),
+                                   .virtualPlay = task->virtualPlay,
+                                   .sent = task->sent});
+    }
+    return sounds;
+}
+
 } // namespace coney::audio

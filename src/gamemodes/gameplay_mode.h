@@ -318,6 +318,10 @@ class GameplayMode final : public GameMode {
     [[nodiscard]] const TagSession* tagSession() const { return m_tagSession ? &*m_tagSession : nullptr; }
     /// The level's tag spots.
     [[nodiscard]] const world_objects::TagSpots& tagSpots() const { return m_tagSpots; }
+    /// The level's radios (SetupRadio).
+    [[nodiscard]] const world_objects::Radios& radios() const { return m_radios; }
+    /// The level's scenes; null while no level is entered or none was made.
+    [[nodiscard]] const scenes::SceneSystem* scenes() const { return m_scenes.get(); }
     /// The loose objects and action objects a player uses with triangle; null while no level is entered.
     [[nodiscard]] const LevelPickups* pickups() const { return m_pickups ? &*m_pickups : nullptr; }
 
