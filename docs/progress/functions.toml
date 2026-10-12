@@ -73,7 +73,7 @@ size = 416
 address = 0x00104a38
 name = "Anim_RateMultiplier"
 subsystem = "Animation"
-size = 144
+size = 140
 
 [[function]]
 address = 0x00104ce0
@@ -91,19 +91,19 @@ size = 848
 address = 0x00105678
 name = "AnimTask_Loop"
 subsystem = "Animation"
-size = 200
+size = 196
 
 [[function]]
 address = 0x00105990
 name = "AnimTask_ClipThenNext"
 subsystem = "Animation"
-size = 288
+size = 284
 
 [[function]]
 address = 0x00106c80
 name = "AnimTask_Fade"
 subsystem = "Animation"
-size = 72
+size = 68
 
 [[function]]
 address = 0x00108a78
@@ -115,31 +115,31 @@ size = 304
 address = 0x0010a310
 name = "AnimTask_GaitBlend"
 subsystem = "Animation"
-size = 416
+size = 412
 
 [[function]]
 address = 0x0010a500
 name = "GaitBlend_SetTarget"
 subsystem = "Animation"
-size = 88
+size = 84
 
 [[function]]
 address = 0x0010a558
 name = "GaitBlend_SetValue"
 subsystem = "Animation"
-size = 96
+size = 92
 
 [[function]]
 address = 0x0010a5b8
 name = "GaitBlend_Advance"
 subsystem = "Animation"
-size = 2032
+size = 2028
 
 [[function]]
 address = 0x0010adf8
 name = "GaitBlend_Sample"
 subsystem = "Animation"
-size = 352
+size = 348
 
 [[function]]
 address = 0x0010be40
@@ -199,13 +199,13 @@ size = 216
 address = 0x0010d8e8
 name = "Music_Play"
 subsystem = "Audio"
-size = 184
+size = 180
 
 [[function]]
 address = 0x0010d9a0
 name = "Music_Stop"
 subsystem = "Audio"
-size = 376
+size = 372
 
 [[function]]
 address = 0x0010dfe0
@@ -217,61 +217,61 @@ size = 1160
 address = 0x0010e7d0
 name = "SystemMusic_Update"
 subsystem = "Audio"
-size = 528
+size = 524
 
 [[function]]
 address = 0x0010f3a0
 name = "SoundClasses_Load"
 subsystem = "Audio"
-size = 56
+size = 52
 
 [[function]]
 address = 0x0010f618
 name = "AudioManager_Reset"
 subsystem = "Audio"
-size = 336
+size = 332
 
 [[function]]
 address = 0x0010f810
 name = "AudioManager_Update"
 subsystem = "Audio"
-size = 240
+size = 220
 
 [[function]]
 address = 0x0010f900
 name = "SoundList_Load"
 subsystem = "Audio"
-size = 120
+size = 116
 
 [[function]]
 address = 0x0010f988
 name = "StereoTable_Load"
 subsystem = "Audio"
-size = 24
+size = 20
 
 [[function]]
 address = 0x0010f9d8
 name = "MusicList_Load"
 subsystem = "Audio"
-size = 120
+size = 116
 
 [[function]]
 address = 0x0010fa50
 name = "AudioManager_LoadBank"
 subsystem = "Audio"
-size = 208
+size = 204
 
 [[function]]
 address = 0x0010fb20
 name = "SoundPauseSound"
 subsystem = "Audio"
-size = 72
+size = 68
 
 [[function]]
 address = 0x0010fc30
 name = "AudioManager_PlayFrontEndSound"
 subsystem = "Audio"
-size = 64
+size = 60
 
 [[function]]
 address = 0x0010fdd0
@@ -283,37 +283,37 @@ size = 96
 address = 0x0010ff68
 name = "SceneSound_Preload"
 subsystem = "Audio"
-size = 176
+size = 168
 
 [[function]]
 address = 0x00110018
 name = "SceneSound_Start"
 subsystem = "Audio"
-size = 96
+size = 92
 
 [[function]]
 address = 0x00110078
 name = "SceneSound_Stop"
 subsystem = "Audio"
-size = 56
+size = 52
 
 [[function]]
 address = 0x001102a0
 name = "SceneSound_IsReady"
 subsystem = "Audio"
-size = 120
+size = 108
 
 [[function]]
 address = 0x00110790
 name = "Sound_PlayMaterialHit"
 subsystem = "Audio"
-size = 160
+size = 156
 
 [[function]]
 address = 0x00110830
 name = "Sound_PlayMaterialPair"
 subsystem = "Audio"
-size = 272
+size = 268
 
 [[function]]
 address = 0x00110940
@@ -325,7 +325,7 @@ size = 200
 address = 0x00110a08
 name = "Sound_PlayAnimSound"
 subsystem = "Audio"
-size = 160
+size = 152
 
 [[function]]
 address = 0x00110aa8
@@ -343,7 +343,7 @@ size = 272
 address = 0x00110c70
 name = "AmbientTrack_Stop"
 subsystem = "Audio"
-size = 80
+size = 76
 
 [[function]]
 address = 0x00111178
@@ -385,13 +385,13 @@ size = 416
 address = 0x00112700
 name = "Task_FindVictim"
 subsystem = "Audio"
-size = 696
+size = 692
 
 [[function]]
 address = 0x00112b10
 name = "Tasks_Update"
 subsystem = "Audio"
-size = 312
+size = 308
 
 [[function]]
 address = 0x00113370
@@ -529,37 +529,37 @@ size = 48
 address = 0x00113c58
 name = "Snd_NewMaterialSlots"
 subsystem = "Audio"
-size = 64
+size = 60
 
 [[function]]
 address = 0x00113c98
 name = "Snd_NewMaterialSound"
 subsystem = "Audio"
-size = 80
+size = 76
 
 [[function]]
 address = 0x00113ce8
 name = "Snd_DuplicateSoundMaterials"
 subsystem = "Audio"
-size = 48
+size = 44
 
 [[function]]
 address = 0x00113d18
 name = "Snd_SetNumberOfMaterialSlots"
 subsystem = "Audio"
-size = 56
+size = 52
 
 [[function]]
 address = 0x00113d50
 name = "Snd_NewAnimSlots"
 subsystem = "Audio"
-size = 56
+size = 52
 
 [[function]]
 address = 0x00113d88
 name = "Snd_NewAnimSound"
 subsystem = "Audio"
-size = 72
+size = 68
 
 [[function]]
 address = 0x00113dd0
@@ -589,7 +589,7 @@ size = 40
 address = 0x00113ed0
 name = "Sound_SetMusicTrack"
 subsystem = "Audio"
-size = 288
+size = 284
 
 [[function]]
 address = 0x00114018
@@ -601,7 +601,7 @@ size = 16
 address = 0x00114028
 name = "Sound_SetEffect"
 subsystem = "Audio"
-size = 56
+size = 52
 
 [[function]]
 address = 0x00114060
@@ -631,7 +631,7 @@ size = 48
 address = 0x00114220
 name = "SoundMatrix_Init"
 subsystem = "Audio"
-size = 776
+size = 772
 
 [[function]]
 address = 0x00114628
@@ -679,13 +679,13 @@ size = 48
 address = 0x00115cb0
 name = "SoundMatrix_NewMaterialSlots"
 subsystem = "Audio"
-size = 568
+size = 564
 
 [[function]]
 address = 0x00115ee8
 name = "SoundMatrix_NewMaterialSound"
 subsystem = "Audio"
-size = 408
+size = 404
 
 [[function]]
 address = 0x00116080
@@ -697,19 +697,19 @@ size = 544
 address = 0x001162a0
 name = "SoundMatrix_NewAnimSound"
 subsystem = "Audio"
-size = 408
+size = 404
 
 [[function]]
 address = 0x00116438
 name = "SoundMatrix_DuplicateMaterials"
 subsystem = "Audio"
-size = 72
+size = 68
 
 [[function]]
 address = 0x00116480
 name = "SoundMatrix_SetMaterialCount"
 subsystem = "Audio"
-size = 40
+size = 36
 
 [[function]]
 address = 0x001164a8
@@ -721,13 +721,13 @@ size = 784
 address = 0x00117280
 name = "Sound_PlayMaterialPairAt"
 subsystem = "Audio"
-size = 72
+size = 68
 
 [[function]]
 address = 0x0011a170
 name = "Task_Update"
 subsystem = "Audio"
-size = 3992
+size = 3988
 
 [[function]]
 address = 0x0011b450
@@ -739,7 +739,7 @@ size = 72
 address = 0x0011b498
 name = "StereoSlot_Take"
 subsystem = "Audio"
-size = 192
+size = 188
 
 [[function]]
 address = 0x0011b838
@@ -1303,49 +1303,49 @@ size = 40
 address = 0x00144a30
 name = "Pad_Released"
 subsystem = "Device/ps2"
-size = 80
+size = 76
 
 [[function]]
 address = 0x00144a80
 name = "Pad_Pressed"
 subsystem = "Device/ps2"
-size = 80
+size = 76
 
 [[function]]
 address = 0x00144ad0
 name = "Pad_PressedRepeat"
 subsystem = "Device/ps2"
-size = 184
+size = 176
 
 [[function]]
 address = 0x00144b88
 name = "Pad_Held"
 subsystem = "Device/ps2"
-size = 32
+size = 28
 
 [[function]]
 address = 0x00144ba8
 name = "Pad_ReleasedMask"
 subsystem = "Device/ps2"
-size = 72
+size = 68
 
 [[function]]
 address = 0x00144bf0
 name = "Pad_PressedMask"
 subsystem = "Device/ps2"
-size = 72
+size = 68
 
 [[function]]
 address = 0x00144fb0
 name = "Pad_Update"
 subsystem = "Device/ps2"
-size = 1272
+size = 1268
 
 [[function]]
 address = 0x001454a8
 name = "Pads_Update"
 subsystem = "Device/ps2"
-size = 456
+size = 452
 
 [[function]]
 address = 0x00145698
@@ -1441,13 +1441,13 @@ size = 1256
 address = 0x0014d2d8
 name = "AudioDevice_Duration"
 subsystem = "Device/ps2"
-size = 96
+size = 92
 
 [[function]]
 address = 0x00150078
 name = "RateToPitch"
 subsystem = "Device/ps2"
-size = 48
+size = 32
 
 [[function]]
 address = 0x00154440
@@ -1621,7 +1621,7 @@ size = 568
 address = 0x0015cae0
 name = "ModeC_Enter"
 subsystem = "GameModes"
-size = 136
+size = 132
 
 [[function]]
 address = 0x0015cf70
@@ -1645,19 +1645,19 @@ size = 96
 address = 0x0015dbb8
 name = "PauseMode_Enter"
 subsystem = "GameModes"
-size = 344
+size = 340
 
 [[function]]
 address = 0x0015dd38
 name = "PauseMode_Exit"
 subsystem = "GameModes"
-size = 96
+size = 92
 
 [[function]]
 address = 0x0015dd98
 name = "PauseMode_Update"
 subsystem = "GameModes"
-size = 464
+size = 460
 
 [[function]]
 address = 0x0015e048
@@ -1945,7 +1945,7 @@ size = 124
 address = 0x001696e0
 name = "Gangs_MusicMood"
 subsystem = "GameModes"
-size = 408
+size = 404
 
 [[function]]
 address = 0x001698c8
@@ -1969,13 +1969,13 @@ size = 200
 address = 0x00169ea0
 name = "Gang_CanReachToHelp"
 subsystem = "GameModes"
-size = 320
+size = 316
 
 [[function]]
 address = 0x0016a1e8
 name = "Gang_FreeWhenEmpty"
 subsystem = "GameModes"
-size = 56
+size = 48
 
 [[function]]
 address = 0x0016a220
@@ -1993,19 +1993,19 @@ size = 72
 address = 0x0016a2a8
 name = "Gang_EnableAttackStrategies"
 subsystem = "GameModes"
-size = 64
+size = 60
 
 [[function]]
 address = 0x0016a2e8
 name = "Gang_SetRespondPercentage"
 subsystem = "GameModes"
-size = 64
+size = 60
 
 [[function]]
 address = 0x0016a328
 name = "Gang_AddTurfBox"
 subsystem = "GameModes"
-size = 128
+size = 120
 
 [[function]]
 address = 0x0016a3a8
@@ -2023,19 +2023,19 @@ size = 80
 address = 0x0016a538
 name = "Gang_SetLeader"
 subsystem = "GameModes"
-size = 64
+size = 60
 
 [[function]]
 address = 0x0016a578
 name = "Gang_GetLeaderHandle"
 subsystem = "GameModes"
-size = 112
+size = 108
 
 [[function]]
 address = 0x0016a670
 name = "Gang_ExitWorld"
 subsystem = "GameModes"
-size = 512
+size = 504
 
 [[function]]
 address = 0x0016a870
@@ -2071,7 +2071,7 @@ size = 144
 address = 0x0016ae60
 name = "Gang_MakeEnemiesOfType"
 subsystem = "GameModes"
-size = 48
+size = 44
 
 [[function]]
 address = 0x0016ae90
@@ -2083,7 +2083,7 @@ size = 48
 address = 0x0016afc8
 name = "Gang_StartSpawner"
 subsystem = "GameModes"
-size = 80
+size = 76
 
 [[function]]
 address = 0x0016b070
@@ -2125,7 +2125,7 @@ size = 144
 address = 0x0016b4f0
 name = "Gang_SetInvestigateResponse"
 subsystem = "GameModes"
-size = 144
+size = 140
 
 [[function]]
 address = 0x0016b580
@@ -2155,13 +2155,13 @@ size = 152
 address = 0x0016bb58
 name = "Gang_SetAttackable"
 subsystem = "GameModes"
-size = 152
+size = 148
 
 [[function]]
 address = 0x0016bbf0
 name = "Gang_SetHearRange"
 subsystem = "GameModes"
-size = 256
+size = 248
 
 [[function]]
 address = 0x0016bcf0
@@ -2179,12 +2179,13 @@ size = 72
 address = 0x0016be30
 name = "Gang_CanUseWorldFlags"
 subsystem = "GameModes"
-size = 176
+size = 172
 
 [[function]]
 address = 0x0016c358
 name = "Gangs_SetTruce"
 subsystem = "GameModes"
+size = 44
 
 [[function]]
 address = 0x0016c3a8
@@ -2214,7 +2215,7 @@ size = 672
 address = 0x0016d5c0
 name = "KillHumans_Stub"
 subsystem = "GameModes"
-size = 16
+size = 8
 
 [[function]]
 address = 0x0016d810
@@ -2238,19 +2239,19 @@ size = 304
 address = 0x00170330
 name = "Garbage_Start"
 subsystem = "Graphics"
-size = 504
+size = 500
 
 [[function]]
 address = 0x00170528
 name = "Garbage_End"
 subsystem = "Graphics"
-size = 16
+size = 12
 
 [[function]]
 address = 0x00170c88
 name = "Garbage_Update"
 subsystem = "Graphics"
-size = 1592
+size = 1588
 
 [[function]]
 address = 0x001728e0
@@ -2262,7 +2263,7 @@ size = 96
 address = 0x00172940
 name = "CarPart_RenderCallback"
 subsystem = "Graphics"
-size = 816
+size = 812
 
 [[function]]
 address = 0x00172c70
@@ -2292,7 +2293,7 @@ size = 72
 address = 0x001754e8
 name = "CharacterInstance_InsertTask"
 subsystem = "Graphics"
-size = 296
+size = 288
 
 [[function]]
 address = 0x00178098
@@ -2352,19 +2353,19 @@ size = 1480
 address = 0x0017b8a8
 name = "Im2D_DrawTexturedRing"
 subsystem = "Graphics"
-size = 896
+size = 892
 
 [[function]]
 address = 0x0017bc28
 name = "Im2D_DrawTexturedDisc"
 subsystem = "Graphics"
-size = 672
+size = 668
 
 [[function]]
 address = 0x0017bec8
 name = "Im2D_DrawArc"
 subsystem = "Graphics"
-size = 992
+size = 988
 
 [[function]]
 address = 0x0017c308
@@ -2574,13 +2575,13 @@ size = 840
 address = 0x0018c8c8
 name = "ScreenFx_BlendMotionBlur"
 subsystem = "Graphics"
-size = 192
+size = 188
 
 [[function]]
 address = 0x0018c988
 name = "ScreenFx_BlendTintTo"
 subsystem = "Graphics"
-size = 200
+size = 196
 
 [[function]]
 address = 0x0018ca50
@@ -2592,7 +2593,7 @@ size = 296
 address = 0x0018cb78
 name = "ScreenFx_FinishTintBlend"
 subsystem = "Graphics"
-size = 168
+size = 164
 
 [[function]]
 address = 0x0018cc60
@@ -2616,19 +2617,19 @@ size = 376
 address = 0x0018d1d0
 name = "ScreenFx_DrawBlurPulse"
 subsystem = "Graphics"
-size = 640
+size = 636
 
 [[function]]
 address = 0x0018d450
 name = "ScreenFx_QueueEffect"
 subsystem = "Graphics"
-size = 424
+size = 420
 
 [[function]]
 address = 0x0018d5f8
 name = "ScreenFx_DrawLetterbox"
 subsystem = "Graphics"
-size = 624
+size = 620
 
 [[function]]
 address = 0x0018dac0
@@ -2652,13 +2653,13 @@ size = 80
 address = 0x0018e148
 name = "Fog3D_Start"
 subsystem = "Graphics"
-size = 424
+size = 412
 
 [[function]]
 address = 0x0018e2f0
 name = "Fog3D_SetMaxParticles"
 subsystem = "Graphics"
-size = 216
+size = 212
 
 [[function]]
 address = 0x0018e3c8
@@ -2730,19 +2731,19 @@ size = 768
 address = 0x00191dd8
 name = "WaterEffect_Update"
 subsystem = "Graphics"
-size = 1968
+size = 1964
 
 [[function]]
 address = 0x00192688
 name = "AtomicPlugin_StreamRead"
 subsystem = "Graphics"
-size = 184
+size = 180
 
 [[function]]
 address = 0x00193d80
 name = "RwDevice_BlurPass"
 subsystem = "Graphics"
-size = 1800
+size = 1796
 
 [[function]]
 address = 0x00195238
@@ -2766,13 +2767,13 @@ size = 328
 address = 0x00197b30
 name = "ChunkReader_SectorBspData"
 subsystem = "Graphics"
-size = 72
+size = 68
 
 [[function]]
 address = 0x00198e20
 name = "SectorPlugin_StreamRead"
 subsystem = "Graphics"
-size = 176
+size = 172
 
 [[function]]
 address = 0x0019add0
@@ -2838,7 +2839,7 @@ size = 8
 address = 0x0019f328
 name = "ActionPrompt_UpdateCycle"
 subsystem = "GUI"
-size = 264
+size = 260
 
 [[function]]
 address = 0x0019f430
@@ -2856,7 +2857,7 @@ size = 56
 address = 0x001a1138
 name = "Bar_Render"
 subsystem = "GUI"
-size = 2736
+size = 2732
 
 [[function]]
 address = 0x001a1bf8
@@ -2868,7 +2869,7 @@ size = 56
 address = 0x001a1db8
 name = "BaseWidget_Setup"
 subsystem = "GUI"
-size = 344
+size = 340
 
 [[function]]
 address = 0x001a2690
@@ -2880,7 +2881,7 @@ size = 640
 address = 0x001a3338
 name = "MashMeter_SetFill"
 subsystem = "GUI"
-size = 40
+size = 36
 
 [[function]]
 address = 0x001a3360
@@ -2916,13 +2917,13 @@ size = 208
 address = 0x001a6d28
 name = "WarCommandDisplay_Open"
 subsystem = "GUI"
-size = 728
+size = 724
 
 [[function]]
 address = 0x001a7040
 name = "WarCommandDisplay_ReadStick"
 subsystem = "GUI"
-size = 1904
+size = 1900
 
 [[function]]
 address = 0x001a7e48
@@ -2934,13 +2935,13 @@ size = 1768
 address = 0x001a8530
 name = "WarCommand_FromSlot"
 subsystem = "GUI"
-size = 96
+size = 92
 
 [[function]]
 address = 0x001a8590
 name = "WarCommandDisplay_Render"
 subsystem = "GUI"
-size = 1464
+size = 1012
 
 [[function]]
 address = 0x001a8e30
@@ -2970,7 +2971,7 @@ size = 328
 address = 0x001acd60
 name = "ActionPrompt_FindNearbyHuman"
 subsystem = "GUI"
-size = 384
+size = 380
 
 [[function]]
 address = 0x001acee0
@@ -3054,19 +3055,19 @@ size = 240
 address = 0x001b26a8
 name = "HUD_RadarSetTintBlue"
 subsystem = "GUI"
-size = 232
+size = 228
 
 [[function]]
 address = 0x001b2790
 name = "HUD_RadarSetTintGrey"
 subsystem = "GUI"
-size = 136
+size = 132
 
 [[function]]
 address = 0x001b2e10
 name = "HudManager_SetRadarRange"
 subsystem = "GUI"
-size = 40
+size = 36
 
 [[function]]
 address = 0x001b3f98
@@ -3090,7 +3091,7 @@ size = 40
 address = 0x001b40e0
 name = "HUD_SetRadarZoomScale"
 subsystem = "GUI"
-size = 24
+size = 20
 
 [[function]]
 address = 0x001b4168
@@ -3126,7 +3127,7 @@ size = 160
 address = 0x001b4740
 name = "HUD_EnableFixedCamIcon"
 subsystem = "GUI"
-size = 40
+size = 36
 
 [[function]]
 address = 0x001b4790
@@ -3156,7 +3157,7 @@ size = 64
 address = 0x001b4948
 name = "HUD_ShowWarCommand"
 subsystem = "GUI"
-size = 56
+size = 52
 
 [[function]]
 address = 0x001b4a88
@@ -3294,7 +3295,7 @@ size = 336
 address = 0x001b7c10
 name = "LockPickDial_ApplyVideoMode"
 subsystem = "GUI"
-size = 672
+size = 668
 
 [[function]]
 address = 0x001b7eb0
@@ -3330,7 +3331,7 @@ size = 128
 address = 0x001b8f98
 name = "MessageHUD::MessageHUD"
 subsystem = "GUI"
-size = 168
+size = 164
 
 [[function]]
 address = 0x001b9600
@@ -3342,13 +3343,13 @@ size = 5664
 address = 0x001bac20
 name = "MessageHUD_WordWrap"
 subsystem = "GUI"
-size = 704
+size = 700
 
 [[function]]
 address = 0x001bf7e0
 name = "MugMeter_Setup"
 subsystem = "GUI"
-size = 1248
+size = 1244
 
 [[function]]
 address = 0x001bfcc0
@@ -3378,7 +3379,7 @@ size = 944
 address = 0x001c09f8
 name = "MugMeter_Render"
 subsystem = "GUI"
-size = 440
+size = 436
 
 [[function]]
 address = 0x001c0bb0
@@ -3408,7 +3409,7 @@ size = 960
 address = 0x001c5210
 name = "Radar_Update"
 subsystem = "GUI"
-size = 3744
+size = 3740
 
 [[function]]
 address = 0x001c60b0
@@ -3420,7 +3421,7 @@ size = 1664
 address = 0x001c6a20
 name = "MessageBox::MessageBox"
 subsystem = "GUI"
-size = 160
+size = 156
 
 [[function]]
 address = 0x001c6fc8
@@ -3498,19 +3499,19 @@ size = 1184
 address = 0x001c9818
 name = "StereoHud_Construct"
 subsystem = "GUI"
-size = 144
+size = 140
 
 [[function]]
 address = 0x001ca118
 name = "StereoHud_Start"
 subsystem = "GUI"
-size = 104
+size = 100
 
 [[function]]
 address = 0x001ca180
 name = "StereoHud_Shutdown"
 subsystem = "GUI"
-size = 144
+size = 140
 
 [[function]]
 address = 0x001ca210
@@ -3528,7 +3529,7 @@ size = 112
 address = 0x001ca2d0
 name = "StereoHud_Update"
 subsystem = "GUI"
-size = 1480
+size = 1476
 
 [[function]]
 address = 0x001ca950
@@ -3576,7 +3577,7 @@ size = 136
 address = 0x001cb798
 name = "TagHud_Render"
 subsystem = "GUI"
-size = 2568
+size = 2564
 
 [[function]]
 address = 0x001cc1a0
@@ -3684,7 +3685,7 @@ size = 1440
 address = 0x001d2b90
 name = "MissionFailedMenu_Update"
 subsystem = "GUI"
-size = 472
+size = 468
 
 [[function]]
 address = 0x001d3ef0
@@ -3714,7 +3715,7 @@ size = 40
 address = 0x001d4b88
 name = "OptionGrid_Select"
 subsystem = "GUI"
-size = 184
+size = 180
 
 [[function]]
 address = 0x001d4c40
@@ -3732,7 +3733,7 @@ size = 144
 address = 0x001d4db8
 name = "OptionGrid_LoseFocus"
 subsystem = "GUI"
-size = 144
+size = 140
 
 [[function]]
 address = 0x001d52c8
@@ -3744,7 +3745,7 @@ size = 136
 address = 0x001d6738
 name = "YesNoBox_Setup"
 subsystem = "GUI"
-size = 464
+size = 460
 
 [[function]]
 address = 0x001d6c10
@@ -3768,19 +3769,19 @@ size = 240
 address = 0x001dbee0
 name = "PauseMenu_Open"
 subsystem = "GUI"
-size = 3040
+size = 3036
 
 [[function]]
 address = 0x001ddcf8
 name = "PauseMenu_Update"
 subsystem = "GUI"
-size = 1936
+size = 1932
 
 [[function]]
 address = 0x001df700
 name = "PauseMenu_Render"
 subsystem = "GUI"
-size = 1288
+size = 1284
 
 [[function]]
 address = 0x001dfe20
@@ -3810,7 +3811,7 @@ size = 544
 address = 0x001e1338
 name = "ScrollingMenu::ScrollingMenu"
 subsystem = "GUI"
-size = 288
+size = 284
 
 [[function]]
 address = 0x001e1e48
@@ -4008,7 +4009,7 @@ size = 272
 address = 0x00203b98
 name = "PM_PickLayout"
 subsystem = "GUI"
-size = 944
+size = 940
 
 [[function]]
 address = 0x002040f0
@@ -4098,7 +4099,7 @@ size = 440
 address = 0x002074f8
 name = "PM_Extras::HandleCommand"
 subsystem = "GUI"
-size = 264
+size = 260
 
 [[function]]
 address = 0x002079a0
@@ -4398,19 +4399,19 @@ size = 384
 address = 0x0021f410
 name = "Human_SayAnimLine"
 subsystem = "Human"
-size = 312
+size = 308
 
 [[function]]
 address = 0x0021f548
 name = "Human_PlayAnimSound"
 subsystem = "Human"
-size = 440
+size = 436
 
 [[function]]
 address = 0x0021f700
 name = "Human_OnAnimSoundEvent"
 subsystem = "Human"
-size = 3168
+size = 3164
 
 [[function]]
 address = 0x002205e0
@@ -4434,19 +4435,19 @@ size = 264
 address = 0x002213d8
 name = "Human_MaxTurn"
 subsystem = "Human"
-size = 424
+size = 420
 
 [[function]]
 address = 0x00221760
 name = "Human_GaitForSpeed"
 subsystem = "Human"
-size = 144
+size = 140
 
 [[function]]
 address = 0x002217f0
 name = "Human_LaunchJump"
 subsystem = "Human"
-size = 352
+size = 348
 
 [[function]]
 address = 0x00221a00
@@ -4482,19 +4483,19 @@ size = 168
 address = 0x00222288
 name = "Human_HasLineOfSight"
 subsystem = "Human"
-size = 232
+size = 228
 
 [[function]]
 address = 0x002223e8
 name = "Human_CanSeeHuman"
 subsystem = "Human"
-size = 288
+size = 284
 
 [[function]]
 address = 0x00222710
 name = "Human_IsInFieldOfView"
 subsystem = "Human"
-size = 264
+size = 260
 
 [[function]]
 address = 0x00222980
@@ -4506,7 +4507,7 @@ size = 200
 address = 0x00222a48
 name = "Human_IsThreatTo"
 subsystem = "Human"
-size = 72
+size = 68
 
 [[function]]
 address = 0x00222ba8
@@ -4572,7 +4573,7 @@ size = 1832
 address = 0x00225390
 name = "Human_IsIdleUnderControl"
 subsystem = "Human"
-size = 264
+size = 260
 
 [[function]]
 address = 0x00226448
@@ -4590,7 +4591,7 @@ size = 192
 address = 0x002274a8
 name = "Humans_FindAhead"
 subsystem = "Human"
-size = 240
+size = 236
 
 [[function]]
 address = 0x00227a90
@@ -4620,7 +4621,7 @@ size = 48
 address = 0x00228448
 name = "Human_HasHeld20080000"
 subsystem = "Human"
-size = 32
+size = 28
 
 [[function]]
 address = 0x00228d70
@@ -4644,7 +4645,7 @@ size = 48
 address = 0x00229b90
 name = "Human_ScaleAttackDamages"
 subsystem = "Human"
-size = 176
+size = 172
 
 [[function]]
 address = 0x00229c40
@@ -4686,7 +4687,7 @@ size = 928
 address = 0x0022ceb8
 name = "Mugging_End"
 subsystem = "Human"
-size = 376
+size = 372
 
 [[function]]
 address = 0x0022d3f8
@@ -4728,13 +4729,13 @@ size = 760
 address = 0x0022eb40
 name = "Human_Heal"
 subsystem = "Human"
-size = 216
+size = 212
 
 [[function]]
 address = 0x0022ec18
 name = "Human_Arrest"
 subsystem = "Human"
-size = 832
+size = 828
 
 [[function]]
 address = 0x0022ef58
@@ -4776,19 +4777,19 @@ size = 232
 address = 0x0022ff88
 name = "Human_EnterShadow"
 subsystem = "Human"
-size = 312
+size = 308
 
 [[function]]
 address = 0x002300c0
 name = "Human_LeaveShadow"
 subsystem = "Human"
-size = 128
+size = 124
 
 [[function]]
 address = 0x00230140
 name = "Human_ClearHiddenState"
 subsystem = "Human"
-size = 176
+size = 172
 
 [[function]]
 address = 0x00230328
@@ -4806,7 +4807,7 @@ size = 976
 address = 0x00230d00
 name = "Attack_ReachSquared"
 subsystem = "Human"
-size = 912
+size = 904
 
 [[function]]
 address = 0x00231090
@@ -4836,7 +4837,7 @@ size = 1432
 address = 0x00233b08
 name = "Human_SwapHeldObjects"
 subsystem = "Human"
-size = 312
+size = 308
 
 [[function]]
 address = 0x00233d60
@@ -4902,7 +4903,7 @@ size = 104
 address = 0x00235198
 name = "Human_SetNoReact"
 subsystem = "Human"
-size = 104
+size = 100
 
 [[function]]
 address = 0x00235200
@@ -5406,25 +5407,25 @@ size = 352
 address = 0x00238f10
 name = "Cfg_SetTagStartCallback"
 subsystem = "Human"
-size = 64
+size = 60
 
 [[function]]
 address = 0x00238f50
 name = "Tag_CallStartCallback"
 subsystem = "Human"
-size = 304
+size = 300
 
 [[function]]
 address = 0x00239080
 name = "Human_SetTagColour"
 subsystem = "Human"
-size = 128
+size = 124
 
 [[function]]
 address = 0x00239188
 name = "Tag_SetPattern"
 subsystem = "Human"
-size = 32
+size = 28
 
 [[function]]
 address = 0x00239240
@@ -5436,13 +5437,13 @@ size = 64
 address = 0x002392c0
 name = "Human_EnableTagDoneSpeech"
 subsystem = "Human"
-size = 64
+size = 60
 
 [[function]]
 address = 0x00239300
 name = "Human_EnableTagCheer"
 subsystem = "Human"
-size = 64
+size = 60
 
 [[function]]
 address = 0x00239340
@@ -5526,7 +5527,7 @@ size = 104
 address = 0x0023a2c0
 name = "Human_SetBlockLook"
 subsystem = "Human"
-size = 104
+size = 100
 
 [[function]]
 address = 0x0023a328
@@ -5610,7 +5611,7 @@ size = 80
 address = 0x0023ae90
 name = "Human_LockPadMovement"
 subsystem = "Human"
-size = 80
+size = 76
 
 [[function]]
 address = 0x0023b0e0
@@ -5640,13 +5641,13 @@ size = 192
 address = 0x0023bde8
 name = "Human_GetBoneTransform"
 subsystem = "Human"
-size = 176
+size = 172
 
 [[function]]
 address = 0x0023bf00
 name = "Human_PickUpObject"
 subsystem = "Human"
-size = 3584
+size = 3580
 
 [[function]]
 address = 0x0023cd30
@@ -5670,7 +5671,7 @@ size = 392
 address = 0x0023d8c8
 name = "Human_Move"
 subsystem = "Human"
-size = 640
+size = 636
 
 [[function]]
 address = 0x0023db48
@@ -5682,7 +5683,7 @@ size = 264
 address = 0x0023e090
 name = "Human_Land"
 subsystem = "Human"
-size = 888
+size = 884
 
 [[function]]
 address = 0x0023eab8
@@ -5700,7 +5701,7 @@ size = 936
 address = 0x0023f5e0
 name = "Human_ApplyTurnAndSlide"
 subsystem = "Human"
-size = 1008
+size = 1004
 
 [[function]]
 address = 0x0023fea8
@@ -5712,13 +5713,13 @@ size = 2392
 address = 0x00240898
 name = "Human_AirControl"
 subsystem = "Human"
-size = 1440
+size = 1436
 
 [[function]]
 address = 0x00240e38
 name = "Human_PlayerLocomotion"
 subsystem = "Human"
-size = 3416
+size = 3412
 
 [[function]]
 address = 0x00241b90
@@ -5736,7 +5737,7 @@ size = 1272
 address = 0x002432b0
 name = "Human_EnterStepControl"
 subsystem = "Human"
-size = 176
+size = 172
 
 [[function]]
 address = 0x00243360
@@ -5754,7 +5755,7 @@ size = 1064
 address = 0x00243848
 name = "Human_UpdateControl"
 subsystem = "Human"
-size = 3456
+size = 3452
 
 [[function]]
 address = 0x002446b0
@@ -5814,7 +5815,7 @@ size = 112
 address = 0x00248df0
 name = "Human_Lean"
 subsystem = "Human"
-size = 608
+size = 604
 
 [[function]]
 address = 0x00249050
@@ -5850,25 +5851,25 @@ size = 476
 address = 0x0024d810
 name = "Pickup_Search"
 subsystem = "Human"
-size = 1752
+size = 1736
 
 [[function]]
 address = 0x0024df40
 name = "Ray_IsClear"
 subsystem = "Human"
-size = 312
+size = 308
 
 [[function]]
 address = 0x0024e218
 name = "Nav_FindPolygonNear"
 subsystem = "Human"
-size = 608
+size = 604
 
 [[function]]
 address = 0x0024e478
 name = "Nav_GetWalkingDistance"
 subsystem = "Human"
-size = 400
+size = 396
 
 [[function]]
 address = 0x0024e720
@@ -5910,13 +5911,13 @@ size = 88
 address = 0x00250760
 name = "PathArea_FindAtGround"
 subsystem = "Human"
-size = 344
+size = 340
 
 [[function]]
 address = 0x002508b8
 name = "NavLink_DoorPolygon"
 subsystem = "Human"
-size = 168
+size = 156
 
 [[function]]
 address = 0x00250960
@@ -6012,7 +6013,7 @@ size = 104
 address = 0x00253688
 name = "Human_ApplyAnimSet"
 subsystem = "Human"
-size = 2016
+size = 2012
 
 [[function]]
 address = 0x00254078
@@ -6030,7 +6031,7 @@ size = 40
 address = 0x00254418
 name = "AttackTable_GetOffset"
 subsystem = "Human"
-size = 136
+size = 128
 
 [[function]]
 address = 0x002544a0
@@ -6042,7 +6043,7 @@ size = 24
 address = 0x00254508
 name = "AttackTable_GetFarRange"
 subsystem = "Human"
-size = 96
+size = 92
 
 [[function]]
 address = 0x002548f0
@@ -6090,7 +6091,7 @@ size = 3072
 address = 0x00257f38
 name = "Human_DropHeld"
 subsystem = "Human"
-size = 1016
+size = 1012
 
 [[function]]
 address = 0x00258330
@@ -6126,7 +6127,7 @@ size = 624
 address = 0x00259578
 name = "Human_ChooseAnimState"
 subsystem = "Human"
-size = 3072
+size = 3060
 
 [[function]]
 address = 0x0025b200
@@ -6138,7 +6139,7 @@ size = 2040
 address = 0x0025cf30
 name = "Human_BuildJumpTasks"
 subsystem = "Human"
-size = 240
+size = 236
 
 [[function]]
 address = 0x0025d390
@@ -6162,25 +6163,25 @@ size = 696
 address = 0x0025f770
 name = "Human_BuildIdleTasks"
 subsystem = "Human"
-size = 728
+size = 724
 
 [[function]]
 address = 0x002606e8
 name = "Uncuff_MashSuccess"
 subsystem = "Human"
-size = 904
+size = 900
 
 [[function]]
 address = 0x00260a70
 name = "Uncuff_MashFail"
 subsystem = "Human"
-size = 568
+size = 564
 
 [[function]]
 address = 0x00260ca8
 name = "Uncuff_Start"
 subsystem = "Human"
-size = 808
+size = 804
 
 [[function]]
 address = 0x002617f8
@@ -6210,7 +6211,7 @@ size = 2320
 address = 0x00263c90
 name = "Player_SpecialAttack"
 subsystem = "Human"
-size = 552
+size = 548
 
 [[function]]
 address = 0x00264178
@@ -6228,7 +6229,7 @@ size = 520
 address = 0x00264a80
 name = "Player_StartCharge"
 subsystem = "Human"
-size = 344
+size = 340
 
 [[function]]
 address = 0x00264bd8
@@ -6276,7 +6277,7 @@ size = 944
 address = 0x00269f30
 name = "Human_BlockHit"
 subsystem = "Human"
-size = 704
+size = 700
 
 [[function]]
 address = 0x0026a6d0
@@ -6288,7 +6289,7 @@ size = 1824
 address = 0x0026b0a0
 name = "Hit_PickReaction"
 subsystem = "Human"
-size = 208
+size = 204
 
 [[function]]
 address = 0x0026bad8
@@ -6330,7 +6331,7 @@ size = 160
 address = 0x00273a68
 name = "Tag_SayNearbyLine"
 subsystem = "Human"
-size = 504
+size = 500
 
 [[function]]
 address = 0x00273c60
@@ -6342,13 +6343,13 @@ size = 832
 address = 0x00273ff0
 name = "TagGame_CatmullRom"
 subsystem = "Human"
-size = 408
+size = 404
 
 [[function]]
 address = 0x002741d8
 name = "TagGame_Init"
 subsystem = "Human"
-size = 1040
+size = 1036
 
 [[function]]
 address = 0x00274638
@@ -6372,7 +6373,7 @@ size = 8
 address = 0x002748a8
 name = "TagGame_Update"
 subsystem = "Human"
-size = 1424
+size = 1420
 
 [[function]]
 address = 0x00274e38
@@ -6390,13 +6391,13 @@ size = 960
 address = 0x002752a0
 name = "Revive_Start"
 subsystem = "Human"
-size = 984
+size = 980
 
 [[function]]
 address = 0x00275678
 name = "Attack_SteerLed"
 subsystem = "Human"
-size = 840
+size = 836
 
 [[function]]
 address = 0x00276008
@@ -6408,7 +6409,7 @@ size = 448
 address = 0x002761c8
 name = "Attack_SteerToTarget"
 subsystem = "Human"
-size = 1256
+size = 1252
 
 [[function]]
 address = 0x00276998
@@ -6426,7 +6427,7 @@ size = 600
 address = 0x00277248
 name = "Human_AlignToVictimFacing"
 subsystem = "Human"
-size = 528
+size = 524
 
 [[function]]
 address = 0x00277958
@@ -6438,7 +6439,7 @@ size = 456
 address = 0x00278018
 name = "Tag_StartSprayClips"
 subsystem = "Human"
-size = 504
+size = 500
 
 [[function]]
 address = 0x00278210
@@ -6450,7 +6451,7 @@ size = 404
 address = 0x00279078
 name = "Human_FindRevivableNear"
 subsystem = "Human"
-size = 48
+size = 40
 
 [[function]]
 address = 0x00279f50
@@ -6462,7 +6463,7 @@ size = 288
 address = 0x0027a4b0
 name = "Player_FindAttackTarget"
 subsystem = "Human"
-size = 528
+size = 524
 
 [[function]]
 address = 0x0027a6c0
@@ -6474,13 +6475,13 @@ size = 888
 address = 0x0027b058
 name = "Attack_FindNearestInReach"
 subsystem = "Human"
-size = 328
+size = 324
 
 [[function]]
 address = 0x0027bc48
 name = "Mash_IsQuitCommand"
 subsystem = "Human"
-size = 128
+size = 124
 
 [[function]]
 address = 0x0027bcd8
@@ -6498,7 +6499,7 @@ size = 3120
 address = 0x0027ce90
 name = "Player_UpdateSprint"
 subsystem = "Human"
-size = 1808
+size = 1804
 
 [[function]]
 address = 0x0027d6e0
@@ -6528,7 +6529,7 @@ size = 496
 address = 0x0027df38
 name = "Player_UpdatePowerMove"
 subsystem = "Human"
-size = 224
+size = 220
 
 [[function]]
 address = 0x0027e6d8
@@ -6576,7 +6577,7 @@ size = 1560
 address = 0x00281450
 name = "Climb_RunningClipEnd"
 subsystem = "Human"
-size = 1000
+size = 996
 
 [[function]]
 address = 0x00281838
@@ -6600,19 +6601,19 @@ size = 896
 address = 0x002826f0
 name = "Climb_TryStart"
 subsystem = "Human"
-size = 760
+size = 756
 
 [[function]]
 address = 0x002829e8
 name = "Player_TryJump"
 subsystem = "Human"
-size = 384
+size = 380
 
 [[function]]
 address = 0x00284280
 name = "Flash_Use"
 subsystem = "Human"
-size = 192
+size = 188
 
 [[function]]
 address = 0x002843f8
@@ -6648,7 +6649,7 @@ size = 3736
 address = 0x00286ba8
 name = "Player_TryRevive"
 subsystem = "Human"
-size = 288
+size = 284
 
 [[function]]
 address = 0x00286cc8
@@ -6678,13 +6679,13 @@ size = 1480
 address = 0x002880d8
 name = "Player_CrossWithWeapon"
 subsystem = "Human"
-size = 1472
+size = 1468
 
 [[function]]
 address = 0x00288ad0
 name = "Steering_Clear"
 subsystem = "Human"
-size = 72
+size = 68
 
 [[function]]
 address = 0x00288b70
@@ -6696,19 +6697,19 @@ size = 112
 address = 0x00288be0
 name = "Steering_SideSign"
 subsystem = "Human"
-size = 128
+size = 124
 
 [[function]]
 address = 0x00288cb0
 name = "Steering_SetSpeed"
 subsystem = "Human"
-size = 24
+size = 16
 
 [[function]]
 address = 0x00288cc8
 name = "Steering_FindBlocker"
 subsystem = "Human"
-size = 632
+size = 628
 
 [[function]]
 address = 0x00288f40
@@ -6720,7 +6721,7 @@ size = 208
 address = 0x00289010
 name = "Steering_TryDetour"
 subsystem = "Human"
-size = 152
+size = 148
 
 [[function]]
 address = 0x002890a8
@@ -6732,7 +6733,7 @@ size = 96
 address = 0x00289138
 name = "Human_SteerAroundHumans"
 subsystem = "Human"
-size = 3120
+size = 3116
 
 [[function]]
 address = 0x00289d68
@@ -6750,13 +6751,13 @@ size = 888
 address = 0x0028a248
 name = "Brain_PushAside"
 subsystem = "Human"
-size = 224
+size = 220
 
 [[function]]
 address = 0x0028abc0
 name = "Brain_CanBeChased"
 subsystem = "Human"
-size = 88
+size = 84
 
 [[function]]
 address = 0x0028ac18
@@ -6774,7 +6775,7 @@ size = 1776
 address = 0x0028bf00
 name = "Brain_GetSightRange"
 subsystem = "Human"
-size = 64
+size = 52
 
 [[function]]
 address = 0x0028c1a8
@@ -6792,7 +6793,7 @@ size = 216
 address = 0x0028c5d8
 name = "Brain_OnArrested"
 subsystem = "Human"
-size = 208
+size = 204
 
 [[function]]
 address = 0x0028cdf8
@@ -6852,7 +6853,7 @@ size = 32
 address = 0x0028d8c0
 name = "Brain_PopToGoalBase"
 subsystem = "Human"
-size = 80
+size = 76
 
 [[function]]
 address = 0x0028d910
@@ -6954,7 +6955,7 @@ size = 96
 address = 0x0028fa18
 name = "Brain_MaybeScanEnemies"
 subsystem = "Human"
-size = 208
+size = 204
 
 [[function]]
 address = 0x0028fbb0
@@ -6972,7 +6973,7 @@ size = 104
 address = 0x0028fe90
 name = "Brain_GetSectors"
 subsystem = "Human"
-size = 120
+size = 116
 
 [[function]]
 address = 0x00290138
@@ -7008,7 +7009,7 @@ size = 48
 address = 0x00290ea8
 name = "Brain_IsAttackableBy"
 subsystem = "Human"
-size = 296
+size = 292
 
 [[function]]
 address = 0x00291008
@@ -7080,7 +7081,7 @@ size = 80
 address = 0x002927a8
 name = "Brain_SetInvestigateResponse"
 subsystem = "Human"
-size = 80
+size = 76
 
 [[function]]
 address = 0x00292848
@@ -7092,7 +7093,7 @@ size = 72
 address = 0x002928d8
 name = "Brain_SetFieldOfView"
 subsystem = "Human"
-size = 96
+size = 92
 
 [[function]]
 address = 0x00292ac0
@@ -7128,7 +7129,7 @@ size = 144
 address = 0x00292d80
 name = "Brain_DefaultOnEvent"
 subsystem = "Human"
-size = 2136
+size = 2132
 
 [[function]]
 address = 0x002935d8
@@ -7176,13 +7177,13 @@ size = 104
 address = 0x00294808
 name = "Cfg_SetVerticalSightModifier"
 subsystem = "Human"
-size = 16
+size = 12
 
 [[function]]
 address = 0x00294828
 name = "Cfg_SetCivilianAggression"
 subsystem = "Human"
-size = 24
+size = 20
 
 [[function]]
 address = 0x00294888
@@ -7272,19 +7273,19 @@ size = 856
 address = 0x0029ade0
 name = "Route_JumpArc"
 subsystem = "Human"
-size = 512
+size = 508
 
 [[function]]
 address = 0x0029b248
 name = "RouteState_CurrentNode"
 subsystem = "Human"
-size = 32
+size = 28
 
 [[function]]
 address = 0x0029b2b8
 name = "Route_JumpPoints"
 subsystem = "Human"
-size = 368
+size = 356
 
 [[function]]
 address = 0x0029b4b8
@@ -7308,24 +7309,25 @@ size = 360
 address = 0x0029b9b0
 name = "Route_TryClimbNear"
 subsystem = "Human"
+size = 236
 
 [[function]]
 address = 0x0029baa8
 name = "Route_JumpLeg"
 subsystem = "Human"
-size = 504
+size = 500
 
 [[function]]
 address = 0x0029ce98
 name = "Brain_ScoreEnemy"
 subsystem = "Human"
-size = 1176
+size = 1172
 
 [[function]]
 address = 0x0029e250
 name = "Sectors_Construct"
 subsystem = "Human"
-size = 96
+size = 92
 
 [[function]]
 address = 0x0029e2b0
@@ -7337,19 +7339,19 @@ size = 56
 address = 0x0029e350
 name = "Sectors_GetPoint"
 subsystem = "Human"
-size = 288
+size = 284
 
 [[function]]
 address = 0x0029e4b0
 name = "Sectors_ProbeWall"
 subsystem = "Human"
-size = 296
+size = 292
 
 [[function]]
 address = 0x0029e5d8
 name = "Sectors_Update"
 subsystem = "Human"
-size = 936
+size = 932
 
 [[function]]
 address = 0x0029e980
@@ -7373,31 +7375,31 @@ size = 56
 address = 0x0029ea48
 name = "Sectors_IsFree"
 subsystem = "Human"
-size = 88
+size = 76
 
 [[function]]
 address = 0x0029eaa0
 name = "Sectors_AllClear"
 subsystem = "Human"
-size = 56
+size = 52
 
 [[function]]
 address = 0x0029ead8
 name = "Sectors_IsHeldBy"
 subsystem = "Human"
-size = 56
+size = 52
 
 [[function]]
 address = 0x0029eb10
 name = "Sectors_SectorOf"
 subsystem = "Human"
-size = 40
+size = 36
 
 [[function]]
 address = 0x0029eb38
 name = "Human_GetSectorOf"
 subsystem = "Human"
-size = 344
+size = 340
 
 [[function]]
 address = 0x0029ec90
@@ -7445,7 +7447,7 @@ size = 408
 address = 0x0029f230
 name = "Brain_PickBestEnemy"
 subsystem = "Human"
-size = 376
+size = 372
 
 [[function]]
 address = 0x0029f3a8
@@ -7517,7 +7519,7 @@ size = 144
 address = 0x002abe98
 name = "LoadBumAnims"
 subsystem = "Human"
-size = 96
+size = 92
 
 [[function]]
 address = 0x002abef8
@@ -7553,31 +7555,31 @@ size = 1024
 address = 0x002add08
 name = "Goal_Melee"
 subsystem = "Human"
-size = 264
+size = 260
 
 [[function]]
 address = 0x002ade10
 name = "MeleeGoal_Init"
 subsystem = "Human"
-size = 64
+size = 60
 
 [[function]]
 address = 0x002ade60
 name = "MeleeGoal_End"
 subsystem = "Human"
-size = 48
+size = 44
 
 [[function]]
 address = 0x002ae2e8
 name = "MeleeGoal_WithTarget"
 subsystem = "Human"
-size = 2320
+size = 2316
 
 [[function]]
 address = 0x002aebf8
 name = "MeleeGoal_Process"
 subsystem = "Human"
-size = 424
+size = 420
 
 [[function]]
 address = 0x002af528
@@ -7595,13 +7597,13 @@ size = 192
 address = 0x002af670
 name = "EngageEnemyGoal_Start"
 subsystem = "Human"
-size = 608
+size = 604
 
 [[function]]
 address = 0x002af8d0
 name = "EngageEnemyGoal_End"
 subsystem = "Human"
-size = 56
+size = 52
 
 [[function]]
 address = 0x002afa48
@@ -7787,19 +7789,19 @@ size = 184
 address = 0x002b7670
 name = "HelpRespondGoal_Init"
 subsystem = "Human"
-size = 48
+size = 44
 
 [[function]]
 address = 0x002b76a0
 name = "HelpRespondGoal_Start"
 subsystem = "Human"
-size = 576
+size = 572
 
 [[function]]
 address = 0x002b78e0
 name = "HelpRespondGoal_End"
 subsystem = "Human"
-size = 32
+size = 28
 
 [[function]]
 address = 0x002b7900
@@ -7823,7 +7825,7 @@ size = 120
 address = 0x002b7c18
 name = "GuardFlagGoal_Process"
 subsystem = "Human"
-size = 360
+size = 356
 
 [[function]]
 address = 0x002b9538
@@ -7889,31 +7891,31 @@ size = 64
 address = 0x002bbe00
 name = "FollowAndAttackGoal_Start"
 subsystem = "Human"
-size = 152
+size = 148
 
 [[function]]
 address = 0x002bbe98
 name = "FollowAndAttackGoal_End"
 subsystem = "Human"
-size = 144
+size = 140
 
 [[function]]
 address = 0x002bc198
 name = "FollowAndAttackGoal_Process"
 subsystem = "Human"
-size = 2184
+size = 2180
 
 [[function]]
 address = 0x002be590
 name = "Goal_HoldPosition"
 subsystem = "Human"
-size = 176
+size = 172
 
 [[function]]
 address = 0x002be640
 name = "HoldPositionGoal_Init"
 subsystem = "Human"
-size = 64
+size = 60
 
 [[function]]
 address = 0x002be688
@@ -7925,7 +7927,7 @@ size = 40
 address = 0x002be818
 name = "HoldPositionGoal_Process"
 subsystem = "Human"
-size = 1088
+size = 1084
 
 [[function]]
 address = 0x002bec58
@@ -7967,7 +7969,7 @@ size = 1280
 address = 0x002c0430
 name = "FindEnemyGoal_Init"
 subsystem = "Human"
-size = 176
+size = 172
 
 [[function]]
 address = 0x002c0748
@@ -8003,7 +8005,7 @@ size = 184
 address = 0x002c7158
 name = "DealerGoal_QueueGesture"
 subsystem = "Human"
-size = 240
+size = 236
 
 [[function]]
 address = 0x002c74d8
@@ -8021,7 +8023,7 @@ size = 456
 address = 0x002c7de8
 name = "DealerGoal_Reset"
 subsystem = "Human"
-size = 248
+size = 244
 
 [[function]]
 address = 0x002c7ee0
@@ -8165,19 +8167,19 @@ size = 240
 address = 0x002d3940
 name = "Goal_PlayDynamicIdle"
 subsystem = "Human"
-size = 216
+size = 212
 
 [[function]]
 address = 0x002d3a18
 name = "PlayDynIdleGoal_Init"
 subsystem = "Human"
-size = 496
+size = 492
 
 [[function]]
 address = 0x002d3d58
 name = "PlayDynIdleGoal_Process"
 subsystem = "Human"
-size = 992
+size = 988
 
 [[function]]
 address = 0x002d4628
@@ -8213,7 +8215,7 @@ size = 200
 address = 0x002d5db8
 name = "CallGangGoal_Start"
 subsystem = "Human"
-size = 448
+size = 444
 
 [[function]]
 address = 0x002d5f98
@@ -8231,7 +8233,7 @@ size = 1640
 address = 0x002d6ca0
 name = "ScoutGoal_Init"
 subsystem = "Human"
-size = 272
+size = 268
 
 [[function]]
 address = 0x002d6db0
@@ -8261,7 +8263,7 @@ size = 104
 address = 0x002d73b8
 name = "ScoutGoal_Process"
 subsystem = "Human"
-size = 1216
+size = 1208
 
 [[function]]
 address = 0x002d9238
@@ -8333,7 +8335,7 @@ size = 648
 address = 0x002da810
 name = "Goal_MoveToExitFlag"
 subsystem = "Human"
-size = 232
+size = 228
 
 [[function]]
 address = 0x002da8f8
@@ -8345,7 +8347,7 @@ size = 104
 address = 0x002da960
 name = "MoveToExitFlagGoal_Start"
 subsystem = "Human"
-size = 192
+size = 188
 
 [[function]]
 address = 0x002dacf8
@@ -8465,31 +8467,31 @@ size = 200
 address = 0x002e0748
 name = "TravelPathGoal_Init"
 subsystem = "Human"
-size = 96
+size = 92
 
 [[function]]
 address = 0x002e07d0
 name = "TravelPathGoal_NextPoint"
 subsystem = "Human"
-size = 328
+size = 324
 
 [[function]]
 address = 0x002e0968
 name = "TravelPathGoal_Process"
 subsystem = "Human"
-size = 272
+size = 268
 
 [[function]]
 address = 0x002e0a78
 name = "Goal_LeadChase"
 subsystem = "Human"
-size = 208
+size = 204
 
 [[function]]
 address = 0x002e0b48
 name = "LeadChaseGoal_Init"
 subsystem = "Human"
-size = 216
+size = 212
 
 [[function]]
 address = 0x002e0dc8
@@ -8543,31 +8545,31 @@ size = 240
 address = 0x002e1850
 name = "DevilRunGoal_Init"
 subsystem = "Human"
-size = 136
+size = 132
 
 [[function]]
 address = 0x002e18d8
 name = "DevilRunGoal_Start"
 subsystem = "Human"
-size = 120
+size = 116
 
 [[function]]
 address = 0x002e1950
 name = "DevilRunGoal_End"
 subsystem = "Human"
-size = 72
+size = 68
 
 [[function]]
 address = 0x002e1998
 name = "DevilRunGoal_Resume"
 subsystem = "Human"
-size = 24
+size = 20
 
 [[function]]
 address = 0x002e2230
 name = "DevilRunGoal_Process"
 subsystem = "Human"
-size = 1736
+size = 432
 
 [[function]]
 address = 0x002e4980
@@ -8633,7 +8635,7 @@ size = 200
 address = 0x002e7b30
 name = "TiredGoal_End"
 subsystem = "Human"
-size = 232
+size = 228
 
 [[function]]
 address = 0x002e7c18
@@ -8645,19 +8647,19 @@ size = 400
 address = 0x002e7da8
 name = "TiredGoal_EndBreak"
 subsystem = "Human"
-size = 192
+size = 188
 
 [[function]]
 address = 0x002e7e68
 name = "TiredGoal_IsBreakDone"
 subsystem = "Human"
-size = 232
+size = 228
 
 [[function]]
 address = 0x002e7f50
 name = "TiredGoal_Process"
 subsystem = "Human"
-size = 616
+size = 612
 
 [[function]]
 address = 0x002e8288
@@ -8675,13 +8677,13 @@ size = 216
 address = 0x002e8530
 name = "BigBrawlerGoal_End"
 subsystem = "Human"
-size = 224
+size = 220
 
 [[function]]
 address = 0x002e8620
 name = "BigBrawlerGoal_AdjustEnemyScore"
 subsystem = "Human"
-size = 504
+size = 500
 
 [[function]]
 address = 0x002e8818
@@ -8699,7 +8701,7 @@ size = 16
 address = 0x002e8840
 name = "BigBrawlerGoal_SetStage"
 subsystem = "Human"
-size = 24
+size = 20
 
 [[function]]
 address = 0x002e8858
@@ -8711,7 +8713,7 @@ size = 880
 address = 0x002e8bc8
 name = "BigBrawlerGoal_OnHit"
 subsystem = "Human"
-size = 480
+size = 476
 
 [[function]]
 address = 0x002e8f78
@@ -8723,7 +8725,7 @@ size = 3304
 address = 0x002ed0a8
 name = "BigThrowerGoal_Init"
 subsystem = "Human"
-size = 184
+size = 180
 
 [[function]]
 address = 0x002ed168
@@ -8735,13 +8737,13 @@ size = 232
 address = 0x002ed260
 name = "BigThrowerGoal_End"
 subsystem = "Human"
-size = 232
+size = 228
 
 [[function]]
 address = 0x002ed718
 name = "BigThrowerGoal_Process"
 subsystem = "Human"
-size = 2056
+size = 2052
 
 [[function]]
 address = 0x002edf20
@@ -8759,7 +8761,7 @@ size = 416
 address = 0x002ee7b0
 name = "BigLedgeThrowerGoal_Process"
 subsystem = "Human"
-size = 1696
+size = 1692
 
 [[function]]
 address = 0x002eee50
@@ -8819,19 +8821,19 @@ size = 320
 address = 0x002faeb0
 name = "SetCommandAction_Init"
 subsystem = "Human"
-size = 48
+size = 44
 
 [[function]]
 address = 0x002faee0
 name = "SetCommandAction_Start"
 subsystem = "Human"
-size = 64
+size = 60
 
 [[function]]
 address = 0x002faf20
 name = "SetCommandAction_Update"
 subsystem = "Human"
-size = 80
+size = 76
 
 [[function]]
 address = 0x002fb9e8
@@ -8873,7 +8875,7 @@ size = 2000
 address = 0x002fcd90
 name = "Move_CornerSpeedLimit"
 subsystem = "Human"
-size = 296
+size = 292
 
 [[function]]
 address = 0x002fcf50
@@ -8945,7 +8947,7 @@ size = 152
 address = 0x002fe380
 name = "TakeStepAction_Init"
 subsystem = "Human"
-size = 40
+size = 36
 
 [[function]]
 address = 0x002fe3a8
@@ -8957,7 +8959,7 @@ size = 48
 address = 0x002fe3d8
 name = "TakeStepAction_Abort"
 subsystem = "Human"
-size = 80
+size = 76
 
 [[function]]
 address = 0x002fe428
@@ -8969,7 +8971,7 @@ size = 136
 address = 0x002fe4b0
 name = "Action_GiveWay"
 subsystem = "Human"
-size = 184
+size = 180
 
 [[function]]
 address = 0x002fe568
@@ -8999,13 +9001,13 @@ size = 32
 address = 0x002fe6c8
 name = "GiveWayAction_Update"
 subsystem = "Human"
-size = 32
+size = 28
 
 [[function]]
 address = 0x002fee38
 name = "Objects_GetDistance"
 subsystem = "Human"
-size = 120
+size = 116
 
 [[function]]
 address = 0x003035d8
@@ -9041,7 +9043,7 @@ size = 336
 address = 0x003063b0
 name = "WarriorBrain_OnEvent"
 subsystem = "Human"
-size = 368
+size = 364
 
 [[function]]
 address = 0x00306690
@@ -9059,7 +9061,7 @@ size = 120
 address = 0x00306850
 name = "Tactic_End"
 subsystem = "Human"
-size = 168
+size = 164
 
 [[function]]
 address = 0x003068f8
@@ -9107,7 +9109,7 @@ size = 352
 address = 0x00309a40
 name = "Tactic_BossDiegoVargas"
 subsystem = "Human"
-size = 288
+size = 284
 
 [[function]]
 address = 0x00309b60
@@ -9119,7 +9121,7 @@ size = 664
 address = 0x00309ea0
 name = "BossDiegoVargasTactic_AssignGoal"
 subsystem = "Human"
-size = 688
+size = 684
 
 [[function]]
 address = 0x0030a150
@@ -9131,7 +9133,7 @@ size = 776
 address = 0x0030a458
 name = "BossDiegoVargasTactic_IsAnyBossStanding"
 subsystem = "Human"
-size = 160
+size = 156
 
 [[function]]
 address = 0x0030a6c0
@@ -9227,7 +9229,7 @@ size = 136
 address = 0x00310e00
 name = "WarriorFollowTactic_Create"
 subsystem = "Human"
-size = 144
+size = 140
 
 [[function]]
 address = 0x00310f38
@@ -9245,7 +9247,7 @@ size = 136
 address = 0x00311638
 name = "WarriorFollowTactic_Process"
 subsystem = "Human"
-size = 752
+size = 748
 
 [[function]]
 address = 0x00311928
@@ -9257,7 +9259,7 @@ size = 432
 address = 0x00313400
 name = "WarriorHoldTactic_Create"
 subsystem = "Human"
-size = 144
+size = 140
 
 [[function]]
 address = 0x00313508
@@ -9269,55 +9271,55 @@ size = 528
 address = 0x00313718
 name = "HoldTactic_GiveMemberGoal"
 subsystem = "Human"
-size = 576
+size = 572
 
 [[function]]
 address = 0x00313e30
 name = "Tactic_HoldTheLine"
 subsystem = "Human"
-size = 264
+size = 260
 
 [[function]]
 address = 0x00315d98
 name = "Tactic_Defend"
 subsystem = "Human"
-size = 176
+size = 172
 
 [[function]]
 address = 0x00315e48
 name = "Tactic_WalkinTall"
 subsystem = "Human"
-size = 160
+size = 156
 
 [[function]]
 address = 0x00315ee8
 name = "Tactic_Pursue"
 subsystem = "Human"
-size = 224
+size = 220
 
 [[function]]
 address = 0x00315fc8
 name = "Tactic_HanginOut"
 subsystem = "Human"
-size = 224
+size = 220
 
 [[function]]
 address = 0x003160a8
 name = "Tactic_Wander"
 subsystem = "Human"
-size = 248
+size = 244
 
 [[function]]
 address = 0x003161a0
 name = "Tactic_TravelPath"
 subsystem = "Human"
-size = 248
+size = 244
 
 [[function]]
 address = 0x00316298
 name = "Tactic_MoveToFlag"
 subsystem = "Human"
-size = 184
+size = 180
 
 [[function]]
 address = 0x003164e0
@@ -9329,19 +9331,19 @@ size = 176
 address = 0x00316638
 name = "Tactic_Steal"
 subsystem = "Human"
-size = 176
+size = 172
 
 [[function]]
 address = 0x00316988
 name = "Tactic_AvoidEnemies"
 subsystem = "Human"
-size = 224
+size = 220
 
 [[function]]
 address = 0x00316a68
 name = "Tactic_ManWeaponPile"
 subsystem = "Human"
-size = 200
+size = 196
 
 [[function]]
 address = 0x00316b30
@@ -9353,13 +9355,13 @@ size = 160
 address = 0x00316ca0
 name = "Tactic_UseFlag"
 subsystem = "Human"
-size = 184
+size = 180
 
 [[function]]
 address = 0x00316ee8
 name = "Tactic_Idle"
 subsystem = "Human"
-size = 184
+size = 180
 
 [[function]]
 address = 0x00316fa0
@@ -9389,19 +9391,19 @@ size = 1184
 address = 0x0031af98
 name = "ScoutTactic_Start"
 subsystem = "Human"
-size = 96
+size = 92
 
 [[function]]
 address = 0x0031b030
 name = "ScoutTactic_Process"
 subsystem = "Human"
-size = 384
+size = 380
 
 [[function]]
 address = 0x00320530
 name = "WarriorAttackTactic_Create"
 subsystem = "Human"
-size = 128
+size = 124
 
 [[function]]
 address = 0x00320b60
@@ -9503,7 +9505,7 @@ size = 160
 address = 0x00337308
 name = "Segment_Intersect2D"
 subsystem = "Maths (unnamed)"
-size = 176
+size = 164
 
 [[function]]
 address = 0x003375d0
@@ -9527,7 +9529,7 @@ size = 320
 address = 0x00337a60
 name = "RayTriangle_TwoSided"
 subsystem = "Maths (unnamed)"
-size = 376
+size = 372
 
 [[function]]
 address = 0x0033d498
@@ -9557,13 +9559,13 @@ size = 2208
 address = 0x0033e278
 name = "PhysicsBody_Sweep"
 subsystem = "Physics"
-size = 1400
+size = 1396
 
 [[function]]
 address = 0x0033f110
 name = "Human_TestStrikes"
 subsystem = "Physics"
-size = 3488
+size = 3484
 
 [[function]]
 address = 0x00340918
@@ -9587,7 +9589,7 @@ size = 728
 address = 0x00343518
 name = "PhysicsCapsule_Pose"
 subsystem = "Physics"
-size = 640
+size = 636
 
 [[function]]
 address = 0x00343cd8
@@ -9599,7 +9601,7 @@ size = 1012
 address = 0x003477c0
 name = "PhysicsBody_PushOutOfWalls"
 subsystem = "Physics"
-size = 1096
+size = 1092
 
 [[function]]
 address = 0x00347c08
@@ -9641,7 +9643,7 @@ size = 528
 address = 0x0034f950
 name = "Collision_DropToGround"
 subsystem = "RayCast"
-size = 216
+size = 212
 
 [[function]]
 address = 0x0034fa28
@@ -9653,7 +9655,7 @@ size = 376
 address = 0x0034fba0
 name = "CollisionMesh_SetEnabledInVolume"
 subsystem = "RayCast"
-size = 2456
+size = 100
 
 [[function]]
 address = 0x00350538
@@ -9671,13 +9673,13 @@ size = 264
 address = 0x00350778
 name = "CollisionMesh_RayTestCell"
 subsystem = "RayCast"
-size = 808
+size = 804
 
 [[function]]
 address = 0x00350aa0
 name = "CollisionMesh_SetEnabledInBoxCell"
 subsystem = "RayCast"
-size = 568
+size = 564
 
 [[function]]
 address = 0x00350cd8
@@ -9689,7 +9691,7 @@ size = 1152
 address = 0x00351160
 name = "CollisionMesh_SetEnabledInBox"
 subsystem = "RayCast"
-size = 776
+size = 748
 
 [[function]]
 address = 0x00351468
@@ -9863,7 +9865,7 @@ size = 2104
 address = 0x00355798
 name = "SceneTrack_Flush"
 subsystem = "Scene"
-size = 800
+size = 796
 
 [[function]]
 address = 0x00355ab8
@@ -10175,7 +10177,7 @@ size = 104
 address = 0x0035f790
 name = "GangSetAttackable"
 subsystem = "Scripting"
-size = 104
+size = 100
 
 [[function]]
 address = 0x0035fc80
@@ -10217,7 +10219,7 @@ size = 160
 address = 0x00360ac8
 name = "GoalLeadChase"
 subsystem = "Scripting"
-size = 328
+size = 324
 
 [[function]]
 address = 0x00360c10
@@ -10229,7 +10231,7 @@ size = 388
 address = 0x00360d98
 name = "GoalDevilRun"
 subsystem = "Scripting"
-size = 400
+size = 396
 
 [[function]]
 address = 0x00360f28
@@ -10277,13 +10279,13 @@ size = 160
 address = 0x00363b38
 name = "GoalBigLedgeThrower"
 subsystem = "Scripting"
-size = 568
+size = 564
 
 [[function]]
 address = 0x00364708
 name = "ActTurnToDir"
 subsystem = "Scripting"
-size = 208
+size = 204
 
 [[function]]
 address = 0x003647d8
@@ -10319,7 +10321,7 @@ size = 264
 address = 0x003656a0
 name = "CameraMakeActive"
 subsystem = "Scripting"
-size = 256
+size = 252
 
 [[function]]
 address = 0x00365818
@@ -10331,7 +10333,7 @@ size = 56
 address = 0x00365a10
 name = "CameraReset"
 subsystem = "Scripting"
-size = 56
+size = 52
 
 [[function]]
 address = 0x00365a48
@@ -10355,13 +10357,13 @@ size = 56
 address = 0x00365bb8
 name = "CamSetFollowAngle"
 subsystem = "Scripting"
-size = 56
+size = 52
 
 [[function]]
 address = 0x00365bf0
 name = "CamSetFollowZoom"
 subsystem = "Scripting"
-size = 112
+size = 108
 
 [[function]]
 address = 0x00365d38
@@ -10373,13 +10375,13 @@ size = 496
 address = 0x00365f28
 name = "CameraCreateThird"
 subsystem = "Scripting"
-size = 536
+size = 532
 
 [[function]]
 address = 0x00366140
 name = "CameraCreateFixed"
 subsystem = "Scripting"
-size = 544
+size = 540
 
 [[function]]
 address = 0x00366360
@@ -10391,7 +10393,7 @@ size = 440
 address = 0x00366518
 name = "CamSetupRail"
 subsystem = "Scripting"
-size = 464
+size = 460
 
 [[function]]
 address = 0x003666e8
@@ -10415,19 +10417,19 @@ size = 200
 address = 0x00366dd0
 name = "lua_CamReversePoizo"
 subsystem = "Scripting"
-size = 72
+size = 68
 
 [[function]]
 address = 0x00367030
 name = "CamLockLocked"
 subsystem = "Scripting"
-size = 144
+size = 140
 
 [[function]]
 address = 0x003670c0
 name = "CamSetSecondary"
 subsystem = "Scripting"
-size = 160
+size = 156
 
 [[function]]
 address = 0x00367160
@@ -10439,7 +10441,7 @@ size = 128
 address = 0x003671e0
 name = "CamEnable"
 subsystem = "Scripting"
-size = 144
+size = 140
 
 [[function]]
 address = 0x00367270
@@ -10553,7 +10555,7 @@ size = 456
 address = 0x0036b220
 name = "CfgLevelName"
 subsystem = "Scripting"
-size = 672
+size = 668
 
 [[function]]
 address = 0x0036b4f0
@@ -10625,7 +10627,7 @@ size = 96
 address = 0x0036d068
 name = "TriggerSphereSetRadius"
 subsystem = "Scripting"
-size = 120
+size = 116
 
 [[function]]
 address = 0x0036d0e0
@@ -10637,19 +10639,19 @@ size = 232
 address = 0x0036d938
 name = "ToInt"
 subsystem = "Scripting"
-size = 88
+size = 84
 
 [[function]]
 address = 0x0036de50
 name = "CarSpawnRadio"
 subsystem = "Scripting"
-size = 56
+size = 52
 
 [[function]]
 address = 0x0036df48
 name = "MenuLoadLevel"
 subsystem = "Scripting"
-size = 48
+size = 44
 
 [[function]]
 address = 0x0036df98
@@ -10721,7 +10723,7 @@ size = 96
 address = 0x0036f130
 name = "HUDLaunchMissionFailed"
 subsystem = "Scripting"
-size = 48
+size = 44
 
 [[function]]
 address = 0x0036f160
@@ -10739,7 +10741,7 @@ size = 56
 address = 0x0036f250
 name = "HUDEnableFixedCamIcon"
 subsystem = "Scripting"
-size = 48
+size = 44
 
 [[function]]
 address = 0x0036f280
@@ -10829,7 +10831,7 @@ size = 152
 address = 0x00370728
 name = "HUDSetRadarZoomScale"
 subsystem = "Scripting"
-size = 56
+size = 52
 
 [[function]]
 address = 0x00370760
@@ -10859,7 +10861,7 @@ size = 56
 address = 0x003709b8
 name = "HUDRadarSetRange"
 subsystem = "Scripting"
-size = 120
+size = 116
 
 [[function]]
 address = 0x00370a30
@@ -11057,7 +11059,7 @@ size = 160
 address = 0x00377cc8
 name = "ObjSpawn"
 subsystem = "Scripting"
-size = 592
+size = 588
 
 [[function]]
 address = 0x00378088
@@ -11069,7 +11071,7 @@ size = 216
 address = 0x00378320
 name = "CarSpawn"
 subsystem = "Scripting"
-size = 464
+size = 460
 
 [[function]]
 address = 0x003785c8
@@ -11081,13 +11083,13 @@ size = 216
 address = 0x00378808
 name = "CarMakeGoodAsNew"
 subsystem = "Scripting"
-size = 56
+size = 52
 
 [[function]]
 address = 0x003788b8
 name = "CarPlaceInTrunkOnDetach"
 subsystem = "Scripting"
-size = 160
+size = 156
 
 [[function]]
 address = 0x00378958
@@ -11099,13 +11101,13 @@ size = 424
 address = 0x00379be8
 name = "lua_CamGhostDoor"
 subsystem = "Scripting"
-size = 56
+size = 52
 
 [[function]]
 address = 0x00379ea0
 name = "SetupRadio"
 subsystem = "Scripting"
-size = 224
+size = 220
 
 [[function]]
 address = 0x00379fd0
@@ -11165,19 +11167,19 @@ size = 88
 address = 0x0037ba48
 name = "SetPositionOfWater"
 subsystem = "Scripting"
-size = 592
+size = 588
 
 [[function]]
 address = 0x0037be18
 name = "QueueMotionBlurEffect_Alpha"
 subsystem = "Scripting"
-size = 120
+size = 116
 
 [[function]]
 address = 0x0037be90
 name = "QueueMotionBlurEffect"
 subsystem = "Scripting"
-size = 296
+size = 292
 
 [[function]]
 address = 0x0037d420
@@ -11249,7 +11251,7 @@ size = 184
 address = 0x00385f60
 name = "WalkingDistance"
 subsystem = "Scripting"
-size = 176
+size = 172
 
 [[function]]
 address = 0x00386010
@@ -11327,7 +11329,7 @@ size = 392
 address = 0x0038a4d8
 name = "Car_DamagePart"
 subsystem = "TaskEngine"
-size = 784
+size = 780
 
 [[function]]
 address = 0x0038a830
@@ -11375,13 +11377,13 @@ size = 2360
 address = 0x0038c7d8
 name = "Car_RemovePartBits"
 subsystem = "TaskEngine"
-size = 144
+size = 140
 
 [[function]]
 address = 0x0038c868
 name = "Car_SpawnStereo"
 subsystem = "TaskEngine"
-size = 288
+size = 284
 
 [[function]]
 address = 0x0038c990
@@ -11405,7 +11407,7 @@ size = 16
 address = 0x0038d538
 name = "Car_SetTrunkObject"
 subsystem = "TaskEngine"
-size = 128
+size = 124
 
 [[function]]
 address = 0x0038d690
@@ -11417,7 +11419,7 @@ size = 72
 address = 0x0038dde8
 name = "Car_Spawn"
 subsystem = "TaskEngine"
-size = 192
+size = 188
 
 [[function]]
 address = 0x0038dea8
@@ -11465,7 +11467,7 @@ size = 88
 address = 0x0038e860
 name = "Cars_FindNear"
 subsystem = "TaskEngine"
-size = 880
+size = 876
 
 [[function]]
 address = 0x0038ed08
@@ -11483,7 +11485,7 @@ size = 344
 address = 0x0038ef60
 name = "GlassPane_QueueDraw"
 subsystem = "TaskEngine"
-size = 304
+size = 300
 
 [[function]]
 address = 0x0038f1c8
@@ -11519,31 +11521,31 @@ size = 616
 address = 0x00390970
 name = "LightTask_Process"
 subsystem = "TaskEngine"
-size = 160
+size = 148
 
 [[function]]
 address = 0x00390f18
 name = "Cfg_AddObjectType"
 subsystem = "TaskEngine"
-size = 472
+size = 460
 
 [[function]]
 address = 0x003913d8
 name = "ObjectDb_FindByName"
 subsystem = "TaskEngine"
-size = 320
+size = 316
 
 [[function]]
 address = 0x00391c10
 name = "WorldObject_Remove"
 subsystem = "TaskEngine"
-size = 136
+size = 132
 
 [[function]]
 address = 0x00391c98
 name = "WorldObject_RegisterContext"
 subsystem = "TaskEngine"
-size = 80
+size = 76
 
 [[function]]
 address = 0x00391d48
@@ -11561,7 +11563,7 @@ size = 16
 address = 0x003932c8
 name = "OverheadWeapon_ContactDamage"
 subsystem = "TaskEngine"
-size = 392
+size = 388
 
 [[function]]
 address = 0x00393450
@@ -11579,7 +11581,7 @@ size = 1136
 address = 0x003939a8
 name = "WorldObject_OnImpact"
 subsystem = "TaskEngine"
-size = 1144
+size = 1140
 
 [[function]]
 address = 0x00393e20
@@ -11657,7 +11659,7 @@ size = 48
 address = 0x00396858
 name = "Obj_Spawn"
 subsystem = "TaskEngine"
-size = 432
+size = 424
 
 [[function]]
 address = 0x00396a08
@@ -11711,7 +11713,7 @@ size = 8
 address = 0x003973a0
 name = "Door_SetCameraGhost"
 subsystem = "TaskEngine"
-size = 96
+size = 92
 
 [[function]]
 address = 0x00397598
@@ -11753,7 +11755,7 @@ size = 40
 address = 0x003977d0
 name = "Garbage_End"
 subsystem = "TaskEngine"
-size = 40
+size = 36
 
 [[function]]
 address = 0x00398348
@@ -11777,13 +11779,13 @@ size = 936
 address = 0x00398940
 name = "ObjRecord_Add"
 subsystem = "TaskEngine"
-size = 880
+size = 872
 
 [[function]]
 address = 0x00398df8
 name = "ObjRecord_SetPinned"
 subsystem = "TaskEngine"
-size = 208
+size = 204
 
 [[function]]
 address = 0x00398fe0
@@ -11807,13 +11809,13 @@ size = 224
 address = 0x0039b020
 name = "ParticleTask_Draw"
 subsystem = "TaskEngine"
-size = 1688
+size = 1684
 
 [[function]]
 address = 0x0039bc28
 name = "Tag_Configure"
 subsystem = "TaskEngine"
-size = 296
+size = 292
 
 [[function]]
 address = 0x0039bd50
@@ -11825,13 +11827,13 @@ size = 216
 address = 0x0039be28
 name = "Steam_Configure"
 subsystem = "TaskEngine"
-size = 392
+size = 388
 
 [[function]]
 address = 0x0039bfb0
 name = "Particle_Spawn"
 subsystem = "TaskEngine"
-size = 304
+size = 268
 
 [[function]]
 address = 0x0039c0e0
@@ -11957,31 +11959,31 @@ size = 56
 address = 0x003a50e0
 name = "Camera_IsPointInPlayerView"
 subsystem = "TaskEngine"
-size = 280
+size = 276
 
 [[function]]
 address = 0x003a51f8
 name = "Cameras_IsPointVisibleAny"
 subsystem = "TaskEngine"
-size = 136
+size = 132
 
 [[function]]
 address = 0x003a5280
 name = "Cameras_IsWithinRange"
 subsystem = "TaskEngine"
-size = 72
+size = 68
 
 [[function]]
 address = 0x003a5530
 name = "ScriptObj_SpawnThrownDebris"
 subsystem = "TaskEngine"
-size = 680
+size = 668
 
 [[function]]
 address = 0x003ac4d0
 name = "Radio_Setup"
 subsystem = "TaskEngine"
-size = 304
+size = 300
 
 [[function]]
 address = 0x003ac600
@@ -12065,7 +12067,7 @@ size = 1224
 address = 0x003c4a58
 name = "SubFireball_Init"
 subsystem = "TaskEngine"
-size = 472
+size = 468
 
 [[function]]
 address = 0x003c4c38
@@ -12077,13 +12079,13 @@ size = 376
 address = 0x003c54b8
 name = "SubExplode_Update"
 subsystem = "TaskEngine"
-size = 272
+size = 268
 
 [[function]]
 address = 0x003c55e8
 name = "ScriptType_Find"
 subsystem = "TaskEngine"
-size = 184
+size = 180
 
 [[function]]
 address = 0x003c61d8
@@ -12101,7 +12103,7 @@ size = 360
 address = 0x003ca658
 name = "Fog3D_WispInit"
 subsystem = "TaskEngine"
-size = 896
+size = 892
 
 [[function]]
 address = 0x003ca9d8
@@ -12113,7 +12115,7 @@ size = 616
 address = 0x003cadd8
 name = "Fog3D_EmitterUpdate"
 subsystem = "TaskEngine"
-size = 256
+size = 252
 
 [[function]]
 address = 0x003d3d30
@@ -12203,7 +12205,7 @@ size = 160
 address = 0x003e8fa0
 name = "DynIcon_Init"
 subsystem = "TaskEngine"
-size = 832
+size = 828
 
 [[function]]
 address = 0x003e92e0
@@ -12275,7 +12277,7 @@ size = 120
 address = 0x003f17e0
 name = "PickupItem_Init"
 subsystem = "TaskEngine"
-size = 368
+size = 364
 
 [[function]]
 address = 0x003f69b8
@@ -12353,7 +12355,7 @@ size = 760
 address = 0x003fc8d8
 name = "SprayTag_HandleMessage"
 subsystem = "TaskEngine"
-size = 400
+size = 396
 
 [[function]]
 address = 0x003fca68
@@ -12365,7 +12367,7 @@ size = 376
 address = 0x003fd420
 name = "MeleeWeapon_Init"
 subsystem = "TaskEngine"
-size = 480
+size = 476
 
 [[function]]
 address = 0x003fe490
@@ -12377,7 +12379,7 @@ size = 552
 address = 0x003fe6b8
 name = "MeleeWeapon_Detach"
 subsystem = "TaskEngine"
-size = 776
+size = 772
 
 [[function]]
 address = 0x003ffe90
@@ -12389,19 +12391,19 @@ size = 368
 address = 0x004034b8
 name = "ThrownWeapon_Break"
 subsystem = "TaskEngine"
-size = 3312
+size = 3308
 
 [[function]]
 address = 0x00404c48
 name = "DynMolotov_OnMessage"
 subsystem = "TaskEngine"
-size = 2488
+size = 2484
 
 [[function]]
 address = 0x00405600
 name = "DynMolotov_Update"
 subsystem = "TaskEngine"
-size = 712
+size = 708
 
 [[function]]
 address = 0x0040c868
@@ -12461,13 +12463,13 @@ size = 48
 address = 0x0040cda8
 name = "ResourceManager_SetCharacterModel"
 subsystem = "World"
-size = 48
+size = 44
 
 [[function]]
 address = 0x0040cdd8
 name = "LevelObject_LinkModel"
 subsystem = "World"
-size = 88
+size = 84
 
 [[function]]
 address = 0x0040ce30
@@ -12479,7 +12481,7 @@ size = 232
 address = 0x0040d0a8
 name = "LevelObject_RenderBackground"
 subsystem = "World"
-size = 1504
+size = 1500
 
 [[function]]
 address = 0x0040e100
@@ -12515,13 +12517,13 @@ size = 256
 address = 0x00410648
 name = "World_LoadStream"
 subsystem = "World"
-size = 1032
+size = 1028
 
 [[function]]
 address = 0x00410a50
 name = "World_ReadStream"
 subsystem = "World"
-size = 288
+size = 284
 
 [[function]]
 address = 0x00410b70
@@ -12533,7 +12535,7 @@ size = 664
 address = 0x00410e08
 name = "World_ReadManifest"
 subsystem = "World"
-size = 520
+size = 516
 
 [[function]]
 address = 0x00411010
@@ -12545,19 +12547,19 @@ size = 176
 address = 0x004110c0
 name = "World_ReadPart"
 subsystem = "World"
-size = 1048
+size = 1044
 
 [[function]]
 address = 0x004115d0
 name = "World_UnloadPart"
 subsystem = "World"
-size = 688
+size = 684
 
 [[function]]
 address = 0x00411880
 name = "World_PendingDistance"
 subsystem = "World"
-size = 56
+size = 52
 
 [[function]]
 address = 0x00411990
@@ -12599,7 +12601,7 @@ size = 216
 address = 0x004123e8
 name = "World_ResetVisibility"
 subsystem = "World"
-size = 272
+size = 268
 
 [[function]]
 address = 0x004125b8
@@ -12617,7 +12619,7 @@ size = 480
 address = 0x00412bf8
 name = "VolumeBox_Enable"
 subsystem = "WorldObjects"
-size = 72
+size = 68
 
 [[function]]
 address = 0x00412c40
@@ -12635,19 +12637,19 @@ size = 592
 address = 0x00413018
 name = "VolumeBoxes_SendDamageMessage"
 subsystem = "WorldObjects"
-size = 384
+size = 376
 
 [[function]]
 address = 0x00413198
 name = "VolumeBox_ContainsObject"
 subsystem = "WorldObjects"
-size = 104
+size = 100
 
 [[function]]
 address = 0x004134f8
 name = "PlayerVolumeBox_Update"
 subsystem = "WorldObjects"
-size = 504
+size = 500
 
 [[function]]
 address = 0x004142d0
@@ -12689,7 +12691,7 @@ size = 184
 address = 0x00414ae0
 name = "TriggerSphere_Enable"
 subsystem = "WorldObjects"
-size = 224
+size = 216
 
 [[function]]
 address = 0x00414bc0
@@ -12701,7 +12703,7 @@ size = 264
 address = 0x004152e0
 name = "VolumeBox_SetEnabled"
 subsystem = "WorldObjects"
-size = 64
+size = 60
 
 [[function]]
 address = 0x00415378
@@ -12713,7 +12715,7 @@ size = 792
 address = 0x00415740
 name = "Path_Add"
 subsystem = "WorldObjects"
-size = 312
+size = 308
 
 [[function]]
 address = 0x004158f8
@@ -12755,7 +12757,7 @@ size = 160
 address = 0x00415ce8
 name = "Flag_Enable"
 subsystem = "WorldObjects"
-size = 72
+size = 68
 
 [[function]]
 address = 0x00415dc8
@@ -12809,7 +12811,7 @@ size = 32
 address = 0x00418150
 name = "ContextActions_Pick"
 subsystem = "Warriors"
-size = 408
+size = 404
 
 [[function]]
 address = 0x00418428
@@ -12857,7 +12859,7 @@ size = 64
 address = 0x0041a060
 name = "GameState_UpdateSystemMusic"
 subsystem = "Warriors"
-size = 784
+size = 780
 
 [[function]]
 address = 0x0041a8c0
@@ -12941,13 +12943,13 @@ size = 32
 address = 0x0041c2d0
 name = "GameState_IssueWarriorCommand"
 subsystem = "Warriors"
-size = 104
+size = 100
 
 [[function]]
 address = 0x0041c4e0
 name = "GameState_DispatchWarriorCommand"
 subsystem = "Warriors"
-size = 1840
+size = 1836
 
 [[function]]
 address = 0x0041ce98
@@ -12971,7 +12973,7 @@ size = 80
 address = 0x0041d1b0
 name = "Level_OffersHangout"
 subsystem = "Warriors"
-size = 632
+size = 272
 
 [[function]]
 address = 0x0041d4f8
@@ -13061,13 +13063,13 @@ size = 16
 address = 0x0041d830
 name = "GameState_SetDetailFlag"
 subsystem = "Warriors"
-size = 48
+size = 44
 
 [[function]]
 address = 0x0041d860
 name = "GameState_ClearDetailFlag"
 subsystem = "Warriors"
-size = 48
+size = 44
 
 [[function]]
 address = 0x0041d890
@@ -13079,7 +13081,7 @@ size = 16
 address = 0x0041d8a0
 name = "Cfg_SetCrimeResponders"
 subsystem = "Warriors"
-size = 48
+size = 44
 
 [[function]]
 address = 0x0041d8d0
@@ -13091,13 +13093,13 @@ size = 16
 address = 0x0041d920
 name = "Cfg_SetGangSizeForCombatMusic"
 subsystem = "Warriors"
-size = 16
+size = 12
 
 [[function]]
 address = 0x0041d930
 name = "Cfg_SetDisableMusicForScenes"
 subsystem = "Warriors"
-size = 16
+size = 12
 
 [[function]]
 address = 0x0041d940
@@ -13157,7 +13159,7 @@ size = 224
 address = 0x0041dbe8
 name = "GameState_EnableWarriorCommand"
 subsystem = "Warriors"
-size = 152
+size = 148
 
 [[function]]
 address = 0x0041dc80
@@ -13217,7 +13219,7 @@ size = 64
 address = 0x0041e5b0
 name = "Inventory_AddItem"
 subsystem = "Warriors"
-size = 1064
+size = 1060
 
 [[function]]
 address = 0x0041ece8
