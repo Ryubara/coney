@@ -219,11 +219,13 @@ inline std::vector<LocomotionClip> combatClips() {
         still(id, 0.4F, false, id >= 288);
     }
     // The tandems' clips (163-192: grabber, victim and attacker intros, then their ends, per set), each as many updates
-    // long as the disc's (docs/research/combat-moves.md#frame-data).
+    // long as the disc's (docs/research/combat-moves.md#frame-data). With no rate flag they play at rate 0.75, so a
+    // clip of n updates lasts n x 0.75 / 30 s.
     static constexpr std::array<int, 30> kTandemUpdates{36, 36, 36, 27, 38, 36, 47, 47, 47, 42, 54, 47, 11, 11, 11,
                                                         43, 63, 40, 14, 14, 14, 67, 67, 67, 68, 68, 68, 18, 59, 22};
+    constexpr float kTandemRate = 0.75F;
     for (std::uint32_t i = 0; i < kTandemUpdates.size(); ++i) {
-        still(163 + i, static_cast<float>(kTandemUpdates[i]) / 30.0F);
+        still(163 + i, static_cast<float>(kTandemUpdates[i]) * kTandemRate / 30.0F);
     }
     return clips;
 }
