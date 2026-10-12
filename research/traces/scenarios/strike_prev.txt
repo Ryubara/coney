@@ -1,0 +1,4 @@
+# Square taps at a parked sedan's front-right door, each a fresh attack. Research: docs/research/physics-kernels.md#u1-runtime.
+20 tap square
+60 tap square
+100 tap square

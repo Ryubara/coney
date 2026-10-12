@@ -17,11 +17,12 @@ contribute. If you only read one other file first, read [LEGAL.md](LEGAL.md).
 
 Clone the repository. To build and test the engine, follow [docs/guides/building.md](docs/guides/building.md).
 
-CI checks every pull request's title against the rules under [Commits](#commits); to check a commit title yourself,
+CI checks every pull request's title against the rules under [Commits](#commits), because the squash merge makes it the
+title of the one commit on `main`; the titles of the commits on the branch are not checked. To check a title yourself,
 with [uv](https://docs.astral.sh/uv/) installed:
 
 ```sh
-git log -1 --format=%s | uv run --project python coney-tools repo check-title -
+echo "docs: Add a page" | uv run --project python coney-tools repo check-title -
 ```
 
 CI also refuses a pull request that changes `src/` or `python/src/` without changing `docs/` or `research/`; put a
@@ -42,7 +43,8 @@ created with `gh pr create --body-file`, and reruns when you edit it. These rule
 - Docs: a change under `src/`, `python/src/` needs a change under `docs/`, `research/` or the line `Docs: none` in the
   description.
 - Closing: a line `Fixes #N` in Summary for each issue the pull request finishes, one per line; merging closes it.
-- Checklist: each unchecked item under `Remaining:` cites an issue or pull request as `#N`.
+- Checklist: every item is ticked (`- [x]`): a pull request lists only the work it finishes, and a task it does not
+  finish is left out and lives in its own issue.
 - Screenshots: an uploaded image (a path on your machine is refused) or a line `Screenshots: none (<reason>)` that gives
   a reason.
 - AI use: after `Commits written by:` one of `a person`, `an AI`, `an AI, edited by a person`, `a person, with AI help`;
@@ -50,22 +52,16 @@ created with `gh pr create --body-file`, and reruns when you edit it. These rule
 - The text names no path on your machine (`scratch/`, `../../`, `C:\`) outside an image reference.
 <!-- conventions:end -->
 
-File an issue for what you leave undone ([Issues](docs/guides/issues.md#leftovers)). To check a description yourself:
+A pull request lists only the work it finishes; file an issue for anything else you find
+([Issues](docs/guides/issues.md#follow-up-work)). To check a description yourself:
 
 ```sh
 uv run --project python coney-tools repo check-body --body description.md
 ```
 
-To build the documentation:
-
-```sh
-py -m venv .venv
-.venv/Scripts/pip install -r requirements-docs.txt
-.venv/Scripts/python -m mkdocs build --strict
-```
-
-On Linux and macOS use `python3 -m venv .venv` and `.venv/bin/` in place of `.venv/Scripts/`. The build must pass
-with `--strict`, which rejects broken links and pages missing from the navigation.
+The documentation must build with `.venv/Scripts/python -m mkdocs build --strict`, which rejects broken links and
+pages missing from the navigation. The setup, the Linux and macOS form and how to write the pages are in
+[Writing these docs](docs/guides/writing-docs.md).
 
 Game files, emulators and tool installs live outside the repository, as siblings of the checkout. The layout is
 described in [docs/guides/workspace.md](docs/guides/workspace.md).
@@ -88,10 +84,11 @@ It is at most 72 characters, has no trailing period, and uses the present tense.
 | --- | --- |
 | `build` | CMake, presets, dependency pins and toolchain setup |
 | `ci` | GitHub Actions workflows and pre-commit configuration |
-| `core` | engine core: memory, chunk system, task engine, utilities (src/core) |
+| `core` | engine level only: main loop and timing, memory, chunks, the task engine's plumbing, shared utilities (src/core) |
+| `gameplay` | the game's rules a player meets: combat, AI and crew behaviour, movement and physics responses, missions and scripts, objects and pickups, HUD and hint logic, camera behaviour |
 | `fileio` | disc and WAD access, file systems and streaming (src/fileio) |
-| `graphics` | rendering through librw: models, textures, effects (src/graphics) |
-| `audio` | sound, music and speech playback (src/audio) |
+| `graphics` | rendering through librw: models, textures, effects, drawing the HUD (src/graphics) |
+| `audio` | sound, music and speech playback; the rules that trigger a sound stay in their gameplay area (src/audio) |
 | `platform` | SDL3 and OS glue: windowing, input, timing (src/platform) |
 | `tools` | C++ asset tools and the coney_tools Python package |
 | `research` | the research pages under docs/research and the research database |

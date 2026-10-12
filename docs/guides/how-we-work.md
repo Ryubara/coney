@@ -174,11 +174,15 @@ coordinator triages them and is the only one who writes to GitHub; an agent read
 --comments`) and is often briefed with just its number. A pull request that finishes one says `Fixes #N`, so merging
 closes it. The whole process: [Issues](issues.md).
 
-**Leftovers are issues, not notes.** An agent that finishes a unit with work still undone lists each leftover in its
-message to the coordinator (title, area, research page, what "done" means), and the coordinator files the issue and
-writes its number into the pull request's Remaining list; CI refuses an unchecked Remaining item with no `#123`
-([Leftovers become issues](issues.md#leftovers)). The issue states its problem first, links pages by relative links
+**A pull request merges only when every task in it is finished.** Its Checklist lists what it finishes, all ticked, and
+CI refuses an unticked item; there is no "Remaining" list. Work an agent finds that is not part of its task goes in its
+message to the coordinator (title, area, research page, what "done" means) and the coordinator files it as an issue of
+its own; a pull request that finishes an issue says `Fixes #N`
+([Work found along the way](issues.md#follow-up-work)). The issue states its problem first, links pages by relative links
 and names the source pull request's status truthfully ([Writing an issue a newcomer can read](issues.md#writing)).
+The `hygiene` workflow comments on an issue or pull request that breaks the repository's rules and keeps that one
+comment current; fix what it lists, and the comment says so when it is done
+([Workflows](repo-conventions.md#workflows)).
 The state file (`HANDOFF.md`) keeps only the live state and issue numbers, never a list of work to do: the work list
 is the open issues.
 
