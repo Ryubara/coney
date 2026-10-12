@@ -41,6 +41,7 @@
 #include "platform/blood_textures.h"
 #include "platform/character_mesh.h"
 #include "platform/hud_layer.h"
+#include "platform/humans_trace.h"
 #include "platform/placed_objects.h"
 #include "platform/play_lighting.h"
 #include "platform/play_scenery.h"
@@ -193,6 +194,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     /// Writes the trace (human::traceHeader(), then human::traceLine() after every step) to the file at `path`,
     /// replacing it: `--trace`. Fails with ErrorCode::Io when the file cannot be opened.
     [[nodiscard]] std::expected<void, Error> traceTo(const std::string& path);
+    /// Writes every human's row (ai::FightTracer) to `trace` after every step: `--trace-humans`. The file is shared, so
+    /// a run that loads several levels writes one.
+    void traceHumansTo(std::shared_ptr<HumansTrace> trace) { m_humansTrace = std::move(trace); }
 
     /// Starts the player at `place` instead (dropped onto the ground below it, as a start is), and the camera where it
     /// says, if it says: `--start`, Coney's own test aid.
@@ -733,6 +737,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // The --trace file (closed when unset) and the steps traced.
     std::optional<std::ofstream> m_trace;
     std::uint64_t m_traceSteps = 0;
+    // The --trace-humans file (shared with the other levels of the run), when asked for.
+    std::shared_ptr<HumansTrace> m_humansTrace;
     // The level's parked cars, particles and motion blur (play_level_effects.h), when gameplay brought them.
     std::unique_ptr<PlayLevelEffects> m_levelEffects;
     // The world objects: the scripts' records and types (null without a cast), their objects, the models they are

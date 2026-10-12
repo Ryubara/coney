@@ -495,6 +495,44 @@ step (the first update of input) come from the scenario's `[diff]` table; flags 
 [Comparing with Coney](research-workflow.md#comparing-with-coney) explains the alignment and the start frame.
 
 ```sh
+uv run --project python coney-tools trace fight-report TRACE... [--humans] [--hz N] [--exclude HUMAN ...]
+    [--engage-distance METRES]
+uv run --project python coney-tools trace fight-report --original TRACE... --coney TRACE... [--margin SHARE]
+    [--original-gangs ID,ID,...] [--coney-gangs ID,ID,...]
+```
+
+Behaviour statistics of a gang fight, from the all-humans trace of either game (Coney's `--trace-humans`, the
+original's `pcsx2 record` of the all-humans field set; [Tracing](building.md#tracing)). The two games draw different
+random numbers, so a fight is compared by rates, shares and distributions, not update by update. A trace needs the
+columns `step`, `human` and `gang`; a metric whose columns are missing is left out. For the whole match (`all`) and
+each gang (and each human with `--humans`) it prints:
+
+* the **time share of each goal** (`goal.NAME`), of the time the human is on its feet;
+* **attacks per minute** by kind (`attack.square_per_min`, ...: a change to an attack command in `command`) and
+  **blocks per minute** (`block.per_min`: `blocking`, or the block command), per human on its feet;
+* **attackers on one target** (`attackers.mean`, `p90`, `max` and the shares of 1, 2 and 3 or more humans going for
+  one target at the same step, from `target`);
+* the **distance to the target** (`distance.p10`, `p50`, `p90`, from `x` and `y`);
+* **target switches per minute** (`target.switches_per_min`) and **goal changes and interruptions per minute**
+  (`goal.changes_per_min`, `goal.interruptions_per_min`: a goal pushed over another, or a stack replaced instead of
+  popped; the stack is `goal0`...`goal5`, or `goal` alone);
+* the **time to the first engagement** (`engage.first_s`, `median_s`, `share`: the first attack, or a target within
+  `--engage-distance`, 3 m by default, in seconds from the first step);
+* the **knock-out times** (`ko.count`, `first_s`, `median_s`, `last_s`: `health` of 0 or less);
+* the **match's length and winner** (`match.length_s`, `match.winner`): it ends at the first step where one gang or
+  none has anyone on its feet, and the gang left wins; a match still going at the trace's end has no winner.
+
+Rates are per minute of `--hz` updates a second (30). `--exclude` leaves humans out (a spectator, the pad's player).
+
+With `--original` and `--coney` (several recordings of each) it prints, for every metric, the original's spread
+(min / median / max over its runs) beside Coney's and marks with `<<` each metric where Coney's median is outside the
+original's spread (`above`, `below`, `missing`, or `different` for a winner the original never had). `--margin`
+widens the spread by that share of its width. A goal or an attack one side never uses counts as zero. Gangs are paired
+by rank, the lowest id first, or in the order of `--original-gangs` and `--coney-gangs` when their ids differ. The
+exit code is 1 when a metric is outside the spread, 0 when none is, 2 when a trace cannot be read. With one run of the
+original the spread is a point, so record several ([Comparing with Coney](research-workflow.md#comparing-with-coney)).
+
+```sh
 uv run --project python coney-tools trace mission SCENARIO --side coney|original --out CSV [--coney EXE] [--disc DISC]
     [--state STATE] [--agent ID] [--updates N]
 ```
@@ -569,7 +607,8 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
 * `--github` reads issues, pull requests, labels, the repository settings and the ruleset through `gh` (read only;
   `gh` must be signed in) and checks them: the sections of each open issue (a missing one, one left as `x`, headings
   that are not the form's `###` headings in its order, an Area that is not an option), its Screenshots, its labels,
-  the word "owner" for the person (say "user"), closed issues and merged pull requests that
+  a closed issue that still carries an `S-` status label, the word "owner" for the person (say "user"), closed issues
+  and merged pull requests that
   keep an unchecked item with no follow-up issue number, open pull requests whose description names a path on your
   machine or an image that is not uploaded, stacked pull requests, how long an item has waited, and drift between the
   labels, settings and ruleset on GitHub and the file. `--save-snapshot FILE` also writes what it read, and

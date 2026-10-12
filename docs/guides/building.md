@@ -195,6 +195,7 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
       [--view-world NAME] [--view-character [NAME]] [--anim CLIP]
       [--play-level NAME [--spawn NAME | --checkpoint N] [--start X,Y,Z,H[,D,YAW]] [--trace FILE]
                    [--script-trace FILE] [--scene NAME] [--camera X,Y,Z,QX,QY,QZ,QW[,FOV]] [--freeze-world]]
+      [--trace-humans FILE]
       [--render-size WxH]
       [--sandbox [NAME]] [--assets DIR] [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]
       [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps] [--tunables FILE]
@@ -661,6 +662,38 @@ The columns, positions in metres (game axes, z up), angles in degrees, speeds in
 | `band_near`, `target_pitch`, `auto_turn` | the leash band's near edge (the sprint zoom moves it), the target pitch, and the auto-centre rule's turn this step |
 | `command`, `health`, `power` | the command matched this step (0 for none; [Combat](../research/combat.md#commands)), the health and the power meter |
 | `aim_x`, `aim_y`, `aim_z`, `aim_lag` | the aim point the view faces ([Camera](../research/camera.md#aim-point)) and its lag |
+
+`--trace-humans FILE` (with `--play-level` or `--rumble`) writes **every** human's state after every step to `FILE`, one
+CSV row per human per step (`step`, then `human`, the human's number), in a Rumble match as well as in a level. It is
+Coney's side of the gang-battle comparison: [`coney-tools trace fight-report`](coney-tools.md#trace) turns the rows
+into behaviour statistics per human and per gang and compares them with the original's recording, because the two
+games draw different random numbers and a fight cannot be compared update by update. `--trace` stays the player's
+trace for `--play-level`, and in a Rumble match (where there is no one level to trace the player of) it means
+`--trace-humans`. A Rumble match goes through the menu and the arena's level, so drive the menu with an input
+script (the match starts when the arena is confirmed) and give `--frames` for the whole run; the file is opened once
+and the rows of every level loaded go into it, numbered by step from the first row.
+
+```sh
+build/dev/src/platform/coney --disc /path/to/warriors.iso --skip-movies --headless --frames 6000 --rumble warparty --arena 102 --gang-size 5 --input-script ../../scratch/rumble_menu.txt --trace-humans ../../scratch/fight.csv
+```
+
+The columns, positions in metres (game axes), angles in degrees, speeds in m/s; those marked (O) are also written by
+the original's all-humans recorder under the same name and unit (`research/traces/fields.toml`, `[[humans]]`):
+
+| Columns | What |
+| --- | --- |
+| `step`, `human` (O) | the step, from 1, and the human's number: the player's brain is 0, the others are numbered as they first appear, and keep the number when another leaves |
+| `player`, `btype`, `gang` (O) | the player number a pad drives (0 for player 1, -1 for none), the brain's type (0 player, 1 cop, 2 gang, 3 Warrior, ...) and the gang's id (-1 for none) |
+| `x`, `y`, `z`, `heading`, `speed`, `vz`, `gait` (O) | as in the player's trace |
+| `clip`, `clip_frame`, `command` (O) | the anim id playing, its frame (30 a second) and the command of the step (0 for none) |
+| `health`, `health_max`, `power`, `stamina` (O) | the meters |
+| `down`, `blocking`, `grabbed`, `grabbing` (O) | 1 on the ground, 1 blocking, 1 held or tackled, 1 holding someone |
+| `lock`, `target` (O) | the number of the human its fighter has locked on, and of its brain's target (-1 for none) |
+| `goals`, `goal`, `goal0` ... `goal5`, `react` (O) | the goal stack's depth, its top goal's type id, the stack from the bottom (-1 above the top) and the reaction goal's id ([goal types](../references/goal-types.md)) |
+| `actions`, `next_attack`, `attackable`, `warned` (O) | the actions queued, the ms until it may attack and may be attacked again, and the attacks announced on it this step |
+| `enemies`, `slots`, `slots_max`, `threat` (O) | the enemy list's length, the attackers holding a slot on it, the slots it allows and its threat response |
+| `g_tactic`, `g_leader`, `g_chosen` (O) | 1 when its gang has a tactic, and the numbers of the gang's leader and chosen target |
+| `target_dist`, `action_kind`, `attack_kind`, `slot_held` | Coney's own: metres to the target, the front action (`none`, `attack`, `move`, ...), the attack kind it presses (-1 when it is none) and 1 when it holds a slot on its target |
 
 `--script-trace FILE` (with `--play-level` and a level) writes what the level's scripts do to `FILE`, one line per
 call: every script binding they call, with its arguments and what it returned (`HUDSetObjective(0, "...", 0, nil)`,

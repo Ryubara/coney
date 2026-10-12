@@ -233,7 +233,7 @@ labels:
     - {name: wontfix, color: ffffff, description: "This will not be worked on"}
 
 hygiene:
-  # The one pinned issue the weekly sweep keeps up to date (a later change); the Action only comments, never edits.
+  # The one pinned issue the weekly sweep keeps up to date (a later change); the Action only comments, never edits (docs/guides/repo-conventions.md, "Workflows").
   report_issue:
     title: "Repo hygiene"
     labels: [task, A-tools, P-low, S-in-progress]
@@ -328,6 +328,12 @@ hygiene:
       fix: skill
       keys: [issues.labels, labels]
       summary: "an issue lacks a type, area, priority (after triage) or status label, has two of one, or has an unknown label"
+    issue.closed-status:
+      scope: github
+      severity: error
+      fix: skill
+      keys: [issues.labels.closed_keeps_status, labels.families]
+      summary: "a closed issue still carries an S- status label (the issue-status workflow removes it; this is the backstop)"
     issue.owner-word:
       scope: github
       severity: error

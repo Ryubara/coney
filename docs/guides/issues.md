@@ -138,7 +138,8 @@ prints the `gh label create ... --force` commands instead of running them.
 
 The table is generated from `labels.list` (`coney-tools repo render`). `parity` is a difference from the original and
 `enhancement` is beyond it, so it waits until the game is complete ([Faithful first](repo:AGENTS.md)). The task form's
-area list is the `A-` labels. The coordinator sets the priority, and an issue carries one status label at a time.
+area list is the `A-` labels. The coordinator sets the priority, and an open issue carries one status label at a
+time. A closed issue carries none ([What a closed issue keeps](#closed)).
 
 <!-- conventions:begin labels -->
 | Family | Label | Meaning |
@@ -193,7 +194,7 @@ Whoever picks up an `S-ready-to-start` issue moves it to `S-in-progress`. The au
 
 ## The life of an issue {#life}
 
-Every issue has exactly one status label, and the coordinator moves it:
+Every open issue has exactly one status label, and the coordinator moves it:
 
 | Status | Set when |
 | --- | --- |
@@ -206,8 +207,27 @@ Every issue has exactly one status label, and the coordinator moves it:
 | `S-blocked` | The issue waits for another issue (named in the task's "Blocked by") or a decision. |
 
 An issue is closed automatically when its pull request is squash-merged into `main`, because the body says
-`Fixes #N` ([Pull requests](repo:CONTRIBUTING.md)). If the problem is still there after the merge, reopen the issue
-and set `S-needs-triage`. Close with a reason: completed, not planned (`wontfix`) or duplicate.
+`Fixes #N` ([Pull requests](repo:CONTRIBUTING.md)). If the problem is still there after the merge, reopen the issue;
+it gets `S-needs-triage` again ([below](#closed)). Close with a reason: completed, not planned (`wontfix`) or
+duplicate.
+
+### What a closed issue keeps {#closed}
+
+A status describes work that is still open, so a closed issue never carries an `S-` label: the close reason
+(completed, not planned, duplicate) is its final state. It keeps its type, area and priority labels, and
+`wontfix` or `duplicate` when they apply, as history. A leftover status such as `S-pending-review` on a closed issue
+only misleads whoever filters by it.
+
+The `issue-status` workflow (`.github/workflows/issue-status.yml`) keeps this true without anyone remembering it:
+
+- **On close** it removes every label that starts with `S-`, whoever closed the issue and however (a merged
+  `Fixes #N` pull request, the button, `gh issue close`).
+- **On reopen** it adds `S-needs-triage`, so a reopened issue is looked at again, unless the issue already has an `S-`
+  label (someone set the status as they reopened it).
+
+It is the one workflow that writes to GitHub, and its token is limited to `issues: write`
+([Workflows](repo-conventions.md#workflows)). If it ever fails, `coney-tools repo audit --github` reports the closed
+issue under `issue.closed-status` and the coordinator removes the label by hand.
 
 ## Working from an issue {#agents}
 

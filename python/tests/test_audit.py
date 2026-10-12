@@ -63,6 +63,7 @@ def test_the_error_checks_include_what_the_user_pointed_out_by_hand() -> None:
         "issue.sections",
         "issue.placeholder",
         "issue.labels",
+        "issue.closed-status",
         "issue.closed-unchecked",
         "pr.remaining-uncited",
     } <= errors
