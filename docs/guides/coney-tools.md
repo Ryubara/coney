@@ -268,7 +268,8 @@ warning. `--fill` writes the span into each entry that has no
 `size` yet. It prints only the addresses and sizes of the functions already listed.
 
 The span is an upper bound: a function that nothing calls directly and no pointer names (one reached
-only by a tail jump) is not seen as a start, and the span of the function before it includes it. When `--fill`
+only by a tail jump) is not seen as a start, and the span of the function before it includes it, unless that function
+is itself listed in `functions.toml`: a listed function always ends the span of the one before it. When `--fill`
 gives a size that looks too large for what the research page describes, ask an analyst for the size Ghidra shows.
 
 ## natives {#natives}
