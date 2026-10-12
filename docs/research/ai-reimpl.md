@@ -25,7 +25,7 @@ built as stand-ins (for example, TacticAttack's melee goal). A unit lists those 
 replaces the stand-in, and the function stays in `functions.toml`.
 
 Shared conventions on this page: *brain* `+n` is the AI brain record ([The brain](ai.md#brain)), *human* `+n` the
-human record, *gang* `+n` the gang record ([The gang](ai.md#gang-record)), *now* the game time in ms (game state
+human record, *gang* `+n` the gang record ([The gang](ai-gangs.md#gang-record)), *now* the game time in ms (game state
 `0x0050b734`, `+0x48`). A human's position is entry *human* `+0x92` of the 32-byte position table at `0x00714b00`.
 A human is an AI when *human* `+0x1b0` (its pad) is −1. *Living* in "living members" means the member's handle
 still resolves (`Gang_CountLiving(g, 0)`, `0x00166158`, counts resolving handles); *standing* means also not down
@@ -140,7 +140,7 @@ tactic from the pool (`Tactic_Alloc`), constructs it with the callback and no ti
 In order (confirmed (code)):
 
 1. `AttackTactic_ComputeSpacing`, then `AttackTactic_GiveMelee` (below).
-2. The gang says its spot line (`Gang_SaySpotLine(gang, 0x16)`, [Gang functions](ai.md#gang-functions)).
+2. The gang says its spot line (`Gang_SaySpotLine(gang, 0x16)`, [Gang functions](ai-code.md#gang-functions)).
 3. **The cower clip group `0x29c`** of the gang's clip table (*gang* `+0x1b0`): for gang kind 6 with team-ups
    enabled (*gang* `+0xd9`), two clips from the table at `0x005110c8`; otherwise, when the gang can flee
    (*gang* `+0xdf`) and the kind's flee share (`GangConfig_GetField72`, `CfgGang` v9) is not 0, the one clip
@@ -241,7 +241,7 @@ differs from *gang* `+0x32`. It stores *state*, then:
   exceptions. Every AI member's *brain* `+0x14d` = 1.
 - Any other value: no clip change, AI members' `+0x14d` = 1.
 
-`+0x14d` = 1 keeps the turf limit on whom a member may take ([The gang](ai.md#gang-record)). Callers: the Melee goal
+`+0x14d` = 1 keeps the turf limit on whom a member may take ([The gang](ai-gangs.md#gang-record)). Callers: the Melee goal
 when the gang has no tactic, and a tactic's Start for tactic types below `0x12`.
 
 **Tests (synthetic):** a gang of four with one PedReaction holder (no Melee, response unchanged); the 1 s check with
@@ -524,24 +524,24 @@ kept by the track (`UNITS.md`); the "Spec" column links the sections that descri
 | 12 | core | Brain core: `Brain` | 12 | 1,136 | [goal-stack](ai-code.md#goal-stack), [attack-slots](ai-code.md#attack-slots), [update](camera.md#update) ... |
 | 13 | core | Brain core: `Brain` | 12 | 1,440 | [enemy-list](ai-code.md#enemy-list), [perception](ai-code.md#perception), [wanted-timers](ai-code.md#wanted-timers) ... |
 | 14 | core | Brain core: `Brain` | 12 | 1,508 | [wanted-timers](ai-code.md#wanted-timers), [attack-slots](ai-code.md#attack-slots), [attack-action](ai.md#attack-action) ... |
-| 15 | core | Brain core: `Brain` | 12 | 1,452 | [brain-events](ai-code.md#brain-events), [brain-record](ai-code.md#brain-record), [script-levers](ai.md#script-levers) ... |
-| 16 | core | Brain core: `Brain` | 12 | 1,308 | [script-bindings](ai-code.md#script-bindings), [perception](ai-code.md#perception), [address-person](ai.md#address-person) |
+| 15 | core | Brain core: `Brain` | 12 | 1,452 | [brain-events](ai-code.md#brain-events), [brain-record](ai-code.md#brain-record), [script-levers](ai-scripting.md#script-levers) ... |
+| 16 | core | Brain core: `Brain` | 12 | 1,308 | [script-bindings](ai-code.md#script-bindings), [perception](ai-code.md#perception), [address-person](ai-scripting.md#address-person) |
 | 17 | core | Brain core: `Brain` | 8 | 2,104 | [perception](ai-code.md#perception), [enemy-list](ai-code.md#enemy-list), [engage-enemy](ai.md#engage-enemy) ... |
 | 18 | core | Brain core: `AI` | 11 | 840 | [ai-pools](ai-code.md#ai-pools), [brain-events](ai-code.md#brain-events), [perception](ai-code.md#perception) |
 | 19 | core | Brain core: `Goal` | 12 | 2,556 | [original-structure](ai.md#original-structure), [ai-pools](ai-code.md#ai-pools), [goal-left-turf](ai-goals.md#goal-left-turf) ... |
-| 20 | core | Brain core: `Goal` | 12 | 6,288 | [goal-ped-logic](ai-goals.md#goal-ped-logic), [goal-call-police](ai-goals.md#goal-call-police), [crimes](ai.md#crimes) ... |
-| 21 | core | Brain core: `Goal` | 12 | 2,788 | [goal-copper-patrol](ai-goals.md#goal-copper-patrol), [path-planning](ai.md#path-planning), [goal-respond](ai-goals.md#goal-respond) ... |
+| 20 | core | Brain core: `Goal` | 12 | 6,288 | [goal-ped-logic](ai-goals.md#goal-ped-logic), [goal-call-police](ai-goals.md#goal-call-police), [crimes](ai-gangs.md#crimes) ... |
+| 21 | core | Brain core: `Goal` | 12 | 2,788 | [goal-copper-patrol](ai-goals.md#goal-copper-patrol), [path-planning](ai-moving.md#path-planning), [goal-respond](ai-goals.md#goal-respond) ... |
 | 22 | core | Brain core: `Goal` | 12 | 2,164 | [goal-cower](ai-goals.md#goal-cower), [goal-call-gang](ai-goals.md#goal-call-gang), [goal-mark](ai-goals.md#goal-mark) ... |
 | 23 | core | Brain core: `Goal` | 7 | 1,556 | [goal-join-fixed-scene](ai-goals.md#goal-join-fixed-scene), [goal-join-animation](ai-goals.md#goal-join-animation), [goal-shot-tests](ai-goals.md#goal-shot-tests) ... |
 | 24 | core | Brain core: `Formation` | 12 | 2,340 | [formation-code](ai-code.md#formation-code), [ai-config](ai-code.md#ai-config) |
-| 25 | core | Brain core: `Formation` | 8 | 2,076 | [formation-code](ai-code.md#formation-code), [formations](ai.md#formations) |
-| 26 | core | Brain core: `Queue`, `Nav` | 14 | 3,036 | [queue-code](ai-code.md#queue-code), [route-jump](ai-pathing.md#route-jump), [queues](ai.md#queues) ... |
+| 25 | core | Brain core: `Formation` | 8 | 2,076 | [formation-code](ai-code.md#formation-code), [formations](ai-gangs.md#formations) |
+| 26 | core | Brain core: `Queue`, `Nav` | 14 | 3,036 | [queue-code](ai-code.md#queue-code), [route-jump](ai-pathing.md#route-jump), [queues](ai-moving.md#queues) ... |
 | 27 | core | Brain core: `Cfg`, `Peds` | 14 | 532 | [ai-config](ai-code.md#ai-config), [actions](ai-code.md#actions) |
 | 28 | core | Brain core: `Perception` | 12 | 3,272 | [perception](ai-code.md#perception) |
 | 29 | core | Brain core: `Perception` | 12 | 4,524 | [perception](ai-code.md#perception) |
 | 30 | core | Brain core: `Perception`, `Human`, `GameState`, `Queues` | 10 | 3,108 | [perception](ai-code.md#perception), [ai-pools](ai-code.md#ai-pools), [human-filters](ai-code.md#human-filters) ... |
 | 31 | core | Brain core: `HeadLook` | 14 | 572 | [perception](ai-code.md#perception) |
-| 32 | core | Brain core: `PairLink`, `RouteState` | 12 | 1,456 | [formation-code](ai-code.md#formation-code), [route-code](ai-code.md#route-code), [path-planning](ai.md#path-planning) |
+| 32 | core | Brain core: `PairLink`, `RouteState` | 12 | 1,456 | [formation-code](ai-code.md#formation-code), [route-code](ai-code.md#route-code), [path-planning](ai-moving.md#path-planning) |
 | 33 | core | Brain core: `Route` | 7 | 2,188 | [route-claims](ai-pathing.md#route-claims), [route-jump](ai-pathing.md#route-jump), [route-code](ai-code.md#route-code) |
 | 34 | core | Brain core: `Filter` | 12 | 1,496 | [human-filters](ai-code.md#human-filters), [wanted-timers](ai-code.md#wanted-timers), [goal-cop-interact](ai-goals.md#goal-cop-interact) |
 | 35 | core | Brain core: `Humans`, `HandleList`, `Handle`, `ObjFilter` | 14 | 2,716 | [human-filters](ai-code.md#human-filters) |
@@ -565,22 +565,22 @@ kept by the track (`UNITS.md`); the "Spec" column links the sections that descri
 | 53 | fight | Fight goals: `CallGangGoal`, `CallGang`, `BackoffGoal`, `BoxerGoal` ... | 11 | 3,144 | [goal-call-gang](ai-goals.md#goal-call-gang), [goal-backoff](ai-goals.md#goal-backoff), [goal-boxer](ai-goals.md#goal-boxer) ... |
 | 54 | fight | Fight goals: `AvoidEnemiesGoal`, `AvoidEnemies`, `ConfrontGoal`, `Confront` | 13 | 5,964 | [goal-avoid-enemies](ai-goals.md#goal-avoid-enemies), [goal-confront-start](ai-goals.md#goal-confront-start) |
 | 55 | fight | Fight goals: `MaceGoal`, `GrabberGoal`, `GangBrain` | 13 | 5,612 | [goal-mace](ai-goals.md#goal-mace), [goal-grabber](ai-goals.md#goal-grabber), [types](ai.md#types) ... |
-| 56 | tactics | Tactics: `Tactic` | 12 | 1,540 | [t1-tactic-core](ai-code.md#t1-tactic-core), [tactics](ai.md#tactics), [t1-boss](ai-code.md#t1-boss) ... |
+| 56 | tactics | Tactics: `Tactic` | 12 | 1,540 | [t1-tactic-core](ai-code.md#t1-tactic-core), [tactics](ai-gangs.md#tactics), [t1-boss](ai-code.md#t1-boss) ... |
 | 57 | tactics | Tactics: `Tactic` | 12 | 2,512 | [t1-boss-luther](ai-code.md#t1-boss-luther), [t1-boss-birdie](ai-code.md#t1-boss-birdie), [t1-boss-virgil](ai-code.md#t1-boss-virgil) ... |
 | 58 | tactics | Tactics: `Tactic`, `AddressTactic`, `AvoidEnemiesTactic` | 15 | 3,744 | [t2-bindings](ai-code.md#t2-bindings), [t1-address](ai-code.md#t1-address), [t1-avoid-enemies](ai-code.md#t1-avoid-enemies) |
 | 59 | tactics | Tactics: `ConfrontTactic`, `CrowdTactic` | 9 | 2,496 | [t1-confront](ai-code.md#t1-confront), [t1-crowd](ai-code.md#t1-crowd) |
 | 60 | tactics | Tactics: `DefendTactic`, `DominationTactic` | 8 | 2,580 | [t1-defend](ai-code.md#t1-defend), [t1-domination](ai-code.md#t1-domination) |
 | 61 | tactics | Tactics: `HanginOutTactic` | 13 | 3,492 | [t1-hangin-out](ai-code.md#t1-hangin-out) |
-| 62 | tactics | Tactics: `HideTactic`, `HoldTheLineTactic` | 10 | 5,520 | [t1-hide](ai-code.md#t1-hide), [tactic-kinds](ai.md#tactic-kinds), [t1-hold-the-line](ai-code.md#t1-hold-the-line) |
-| 63 | tactics | Tactics: `IdleTactic` | 11 | 2,932 | [t1-idle](ai-code.md#t1-idle), [tactic-kinds](ai.md#tactic-kinds) |
+| 62 | tactics | Tactics: `HideTactic`, `HoldTheLineTactic` | 10 | 5,520 | [t1-hide](ai-code.md#t1-hide), [tactic-kinds](ai-gangs.md#tactic-kinds), [t1-hold-the-line](ai-code.md#t1-hold-the-line) |
+| 63 | tactics | Tactics: `IdleTactic` | 11 | 2,932 | [t1-idle](ai-code.md#t1-idle), [tactic-kinds](ai-gangs.md#tactic-kinds) |
 | 64 | tactics | Tactics: `InfoTactic`, `ManWeaponPileTactic` | 12 | 2,684 | [t2-info](ai-code.md#t2-info), [t2-bindings](ai-code.md#t2-bindings), [t2-man-weapon-pile](ai-code.md#t2-man-weapon-pile) |
 | 65 | tactics | Tactics: `MoveToFlagTactic` | 8 | 2,076 | [t2-bindings](ai-code.md#t2-bindings), [t2-move-to-flag](ai-code.md#t2-move-to-flag) |
-| 66 | tactics | Tactics: `PursueTactic` | 11 | 3,308 | [tactic-kinds](ai.md#tactic-kinds), [t2-pursue](ai-code.md#t2-pursue) |
+| 66 | tactics | Tactics: `PursueTactic` | 11 | 3,308 | [tactic-kinds](ai-gangs.md#tactic-kinds), [t2-pursue](ai-code.md#t2-pursue) |
 | 67 | tactics | Tactics: `RingTactic`, `RiotCopTactic`, `PathScoutTactic` | 13 | 3,376 | [t2-bindings](ai-code.md#t2-bindings), [t2-ring](ai-code.md#t2-ring), [t2-riot-cop](ai-code.md#t2-riot-cop) |
 | 68 | tactics | Tactics: `ScoutTactic`, `ShadowTactic` | 13 | 4,052 | [t2-scout](ai-code.md#t2-scout), [t2-bindings](ai-code.md#t2-bindings), [t2-shadow](ai-code.md#t2-shadow) |
 | 69 | tactics | Tactics: `StandGroundTactic`, `TauntTactic` | 12 | 2,780 | [t2-stand-ground](ai-code.md#t2-stand-ground), [t2-bindings](ai-code.md#t2-bindings), [t2-taunt](ai-code.md#t2-taunt) |
-| 70 | tactics | Tactics: `TravelPathTactic` | 8 | 3,236 | [tactic-kinds](ai.md#tactic-kinds), [t2-travel-path](ai-code.md#t2-travel-path) |
-| 71 | tactics | Tactics: `UseFlagTactic` | 9 | 2,864 | [tactic-kinds](ai.md#tactic-kinds), [t2-use-flag](ai-code.md#t2-use-flag) |
+| 70 | tactics | Tactics: `TravelPathTactic` | 8 | 3,236 | [tactic-kinds](ai-gangs.md#tactic-kinds), [t2-travel-path](ai-code.md#t2-travel-path) |
+| 71 | tactics | Tactics: `UseFlagTactic` | 9 | 2,864 | [tactic-kinds](ai-gangs.md#tactic-kinds), [t2-use-flag](ai-code.md#t2-use-flag) |
 | 72 | tactics | Tactics: `VandalizeTactic`, `WalkinTallTactic` | 13 | 3,868 | [t2-bindings](ai-code.md#t2-bindings), [t2-vandalize](ai-code.md#t2-vandalize), [t2-walkin-tall](ai-code.md#t2-walkin-tall) |
 | 73 | tactics | Tactics: `WanderTactic` | 12 | 4,628 | [t2-bindings](ai-code.md#t2-bindings), [t2-wander](ai-code.md#t2-wander) |
 | 74 | crew | Crew: `Player`, `PlayerBrain`, `Follow` | 8 | 3,200 | [brain-record](ai-code.md#brain-record), [original-structure](combat-moves.md#original-structure), [perception](ai-code.md#perception) ... |
@@ -602,17 +602,17 @@ kept by the track (`UNITS.md`); the "Spec" column links the sections that descri
 | 90 | world | Civilian and world goals: `AreaWalkerGoal`, `HookerGoal`, `PathBlockerGoal`, `Ped` ... | 15 | 7,540 | [goal-area-walker](ai-goals.md#goal-area-walker), [goal-hooker](ai-goals.md#goal-hooker), [goal-path-blocker](ai-goals.md#goal-path-blocker) ... |
 | 91 | world | Civilian and world goals: `TravelFlagNetGoal`, `InteractGoal`, `Interact`, `PedInteractGoal` ... | 14 | 6,112 | [goal-travel-flag-net](ai-goals.md#goal-travel-flag-net), [goal-interact](ai-goals.md#goal-interact), [goal-ped-react-noise](ai-goals.md#goal-ped-react-noise) |
 | 92 | world | Civilian and world goals: `PedReactionGoal`, `PedestrianGoal`, `Pedestrian` | 12 | 3,688 | [goal-ped-reaction](ai-goals.md#goal-ped-reaction), [goal-pedestrian](ai-goals.md#goal-pedestrian) |
-| 93 | world | Civilian and world goals: `Bum`, `BumGoal` | 14 | 2,960 | [bum-logic](ai.md#bum-logic), [goal-bum](ai-goals.md#goal-bum) |
-| 94 | world | Civilian and world goals: `BumLogicGoal`, `PeddlerGoal`, `Peddler`, `GuardFlagGoal` ... | 14 | 2,868 | [bum-logic](ai.md#bum-logic), [goal-peddler](ai-goals.md#goal-peddler), [goal-guard-flag](ai-goals.md#goal-guard-flag) ... |
+| 93 | world | Civilian and world goals: `Bum`, `BumGoal` | 14 | 2,960 | [bum-logic](ai-scripting.md#bum-logic), [goal-bum](ai-goals.md#goal-bum) |
+| 94 | world | Civilian and world goals: `BumLogicGoal`, `PeddlerGoal`, `Peddler`, `GuardFlagGoal` ... | 14 | 2,868 | [bum-logic](ai-scripting.md#bum-logic), [goal-peddler](ai-goals.md#goal-peddler), [goal-guard-flag](ai-goals.md#goal-guard-flag) ... |
 | 95 | world | Civilian and world goals: `DealerGoal`, `DealerFlee`, `DealerFleeGoal`, `IdleGoal` ... | 13 | 3,680 | [goal-dealer](ai-goals.md#goal-dealer), [goal-idle](ai-goals.md#goal-idle), [goal-general-parlay](ai-goals.md#goal-general-parlay) |
-| 96 | world | Civilian and world goals: `HideGoal`, `TagGoal` | 7 | 1,684 | [goal-hide](ai-goals.md#goal-hide), [path-planning](ai.md#path-planning), [goal-tag](ai-goals.md#goal-tag) |
+| 96 | world | Civilian and world goals: `HideGoal`, `TagGoal` | 7 | 1,684 | [goal-hide](ai-goals.md#goal-hide), [path-planning](ai-moving.md#path-planning), [goal-tag](ai-goals.md#goal-tag) |
 | 97 | world | Civilian and world goals: `DestroyGoal`, `HangOutGoal` | 14 | 5,212 | [goal-destroy](ai-goals.md#goal-destroy), [goal-hang-out](ai-goals.md#goal-hang-out) |
 | 98 | world | Civilian and world goals: `HangOut`, `InvestigateGoal`, `Investigate`, `Roam` | 12 | 6,196 | [goal-hang-out](ai-goals.md#goal-hang-out), [t1-hangin-out](ai-code.md#t1-hangin-out), [goal-chase](ai-goals.md#goal-chase) ... |
 | 99 | world | Civilian and world goals: `HarassGoal`, `PlayDynAnimGoal`, `PlayDynIdleGoal`, `PlaySpecialIdleGoal` | 14 | 4,344 | [goal-harass](ai-goals.md#goal-harass), [goal-play-dyn-animation](ai-goals.md#goal-play-dyn-animation), [goal-play-dyn-idle](ai-goals.md#goal-play-dyn-idle) ... |
 | 100 | world | Civilian and world goals: `StandIdleGoal`, `Scout`, `PathScoutGoal` | 15 | 3,600 | [goal-stand-idle](ai-goals.md#goal-stand-idle), [goal-scout](ai-goals.md#goal-scout), [goal-path-scout](ai-goals.md#goal-path-scout) |
 | 101 | world | Civilian and world goals: `PathScout`, `ReactNoiseGoal`, `ReactNoise` | 13 | 1,940 | [goal-path-scout](ai-goals.md#goal-path-scout), [brain-events](ai-code.md#brain-events), [goal-react-noise](ai-goals.md#goal-react-noise) |
 | 102 | world | Civilian and world goals: `MarkGoal`, `Mark`, `MoveToExitFlagGoal`, `MoveToExit` | 12 | 3,236 | [goal-mark](ai-goals.md#goal-mark), [goal-move-to](ai-goals.md#goal-move-to) |
-| 103 | world | Civilian and world goals: `MoveToFlagNetFlagGoal`, `MoveToUseFlagGoal`, `UseFlag` | 15 | 3,428 | [goal-move-to](ai-goals.md#goal-move-to), [tactic-kinds](ai.md#tactic-kinds) |
+| 103 | world | Civilian and world goals: `MoveToFlagNetFlagGoal`, `MoveToUseFlagGoal`, `UseFlag` | 15 | 3,428 | [goal-move-to](ai-goals.md#goal-move-to), [tactic-kinds](ai-gangs.md#tactic-kinds) |
 | 104 | world | Civilian and world goals: `MoveToPositionGoal`, `MoveToHumanGoal`, `DestroyItemGoal`, `VandalizeItemGoal` | 15 | 3,160 | [goal-move-to](ai-goals.md#goal-move-to), [goal-warrior-vandal-steal](ai-goals.md#goal-warrior-vandal-steal), [goal-destroy-item](ai-goals.md#goal-destroy-item) ... |
 | 105 | world | Civilian and world goals: `DestroyCarGoal`, `DestroyCar`, `TrackHumanGoal`, `TravelPath` ... | 15 | 4,208 | [goal-warrior-vandal-steal](ai-goals.md#goal-warrior-vandal-steal), [goal-destroy-car](ai-goals.md#goal-destroy-car), [goal-track-human](ai-goals.md#goal-track-human) ... |
 | 106 | world | Civilian and world goals: `DevilRun`, `WanderGoal`, `ShadowGoal`, `PlayParlayAnimationGoal` ... | 13 | 3,016 | [goal-devil-run](ai-goals.md#goal-devil-run), [goal-wander](ai-goals.md#goal-wander), [goal-shadow](ai-goals.md#goal-shadow) ... |

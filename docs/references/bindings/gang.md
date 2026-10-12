@@ -133,7 +133,7 @@ Adds a spawner to a gang: a point that creates gang members over time from a lis
 meaning of the numeric arguments is inferred from the stored fields and the scripts' values. Default per-spawner timers
 (10, 20, 30, 60 ...) are set at creation. The callback call is in 0x0016d860 (script slots +0x5c handle, +0x64 short,
 +0x7c string, +0x8c call with 3); scripts such as level87's StoopCallBack index their own tables by the gang id. Type
-pick 0x0016d810; spawning, the callback and out-of-sight placement: [AI: spawners](../../research/ai.md#spawners).
+pick 0x0016d810; spawning, the callback and out-of-sight placement: [AI: spawners](../../research/ai-gangs.md#spawners).
 
 - **Evidence:** confirmed (code) at `0x0016aec0`; detail: traced
 - **Wrapper** `0x00373dd0` (registered by `RegisterBindings`); **calls** `0x0016aec0`
@@ -706,7 +706,7 @@ come. The gang's four spawner slots (gang +0x640, 0x130 bytes each) are searched
 (+0x14) equals `name`.
 
 **Notes.** A spawner stops counting as in use once it has made its total number of humans ([AI:
-spawners](../../research/ai.md#spawners)), so the answer turns false when a spawner is exhausted. Plain strcmp
+spawners](../../research/ai-gangs.md#spawners)), so the answer turns false when a spawner is exhausted. Plain strcmp
 (0x00430c4c).
 
 - **Evidence:** confirmed (code) at `0x0016b618`, `0x00168b58`; detail: traced
@@ -890,8 +890,8 @@ GangQueueResponders(pos, count, delaySec, human)
 Queues reinforcements like a gang dispatch: when any gang has a spawner in the gang-dispatch states (9 or 10, [Spawner
 states](../../references/spawner-states.md#spawner-9)), the nearest such spawner with room in its four-entry queue gets
 an entry (due now + `delaySec`, the position, `count`, the caller's gang). When it is due the spawner makes a new gang
-of its own type and sends it to the position ([AI: spawners](../../research/ai.md#spawners)). Without such a spawner it
-does nothing.
+of its own type and sends it to the position ([AI: spawners](../../research/ai-gangs.md#spawners)). Without such a
+spawner it does nothing.
 
 **Notes.** The entry's kind byte is 4 (crime reports use their own kinds via 0x0016df68). The 10 s timer is set whenever
 such a spawner exists, even when no entry was queued; Gang_UpdateWanted reads it.
@@ -1249,7 +1249,7 @@ while its living count (`+0x5c`) is below this; with a negative count it fills u
 the whole wave to die before starting the next.
 
 **Notes.** Reader: GangSpawner_Update (0x001681a0, at 0x0016855c; the wave flag is spawner `+0x51`). The spawner's total
-(`+0x58`) still ends it. Spawners: [AI](../../research/ai.md#spawners).
+(`+0x58`) still ends it. Spawners: [AI](../../research/ai-gangs.md#spawners).
 
 - **Evidence:** confirmed (code) at `0x0016b0b0`, `0x00168eb8`; detail: traced
 - **Wrapper** `0x00374350` (registered by `RegisterBindings`); **calls** `0x0016b0b0` `Gang_SetSpawnerMaxConcurrent`,
@@ -1305,7 +1305,7 @@ looked up when the event fires, so the function can be defined or replaced later
 (member, other, value): for message 18 the attacker and the members still standing, for 2 the headcount, for 17 the
 event's value; other ids pass the event through a generic marshaller and count as handled when the function returns
 true. The message ids' meanings are inferred from the scripts' handler names. Behaviour:
-[AI](../../research/ai.md#gang-events).
+[AI](../../research/ai-gangs.md#gang-events).
 
 - **Evidence:** confirmed (code) at `0x0016ab38`; detail: traced
 - **Wrapper** `0x00373370` (registered by `RegisterBindings`); **calls** `0x0016ab38`
@@ -1331,7 +1331,7 @@ the first gang, and stamps the relation-change time (`+0x34`) when a mask change
 attack the second gang on sight nor count it as friends; the second gang's own attitude is unchanged.
 
 **Notes.** Gangs of the same kind, or both police kinds, still count as friends ([AI:
-gangs](../../research/ai.md#gang-record)). Call it both ways for a mutual truce.
+gangs](../../research/ai-gangs.md#gang-record)). Call it both ways for a mutual truce.
 
 - **Evidence:** confirmed (code) at `0x0016ae10`, `0x00169130`; detail: traced
 - **Wrapper** `0x00373d58` (registered by `RegisterBindings`); **calls** `0x0016ae10` `Gang_SetNeutral`, `0x00169130`
@@ -1386,8 +1386,8 @@ Sets the gang's respond percentage (byte `+0xd7` of its 0xb10-byte record at 0x0
 members already in goal HelpRespond is below it, so 0 keeps the gang out of fights it did not start and 100 sends
 everyone.
 
-**Notes.** Readers at 0x00312580 and 0x00315228 ([AI](../../research/ai.md#tactic-kinds)); other readers may exist.
-Values above 255 wrap (one byte).
+**Notes.** Readers at 0x00312580 and 0x00315228 ([AI](../../research/ai-gangs.md#tactic-kinds)); other readers may
+exist. Values above 255 wrap (one byte).
 
 - **Evidence:** confirmed (code) at `0x0016a2e8`; detail: traced
 - **Wrapper** `0x0035f4e0` (registered by `RegisterBindings`); **calls** `0x0016a2e8` `Gang_SetRespondPercentage`
@@ -1439,7 +1439,7 @@ player never sees its humans appear.
 
 **Notes.** Reader: GangSpawner_Update (0x001681a0, at 0x001685e8, the visibility test 0x001202e8). The test uses the
 spawner's own position, so it matters for spawners that place humans there, not for the states that place them away from
-the player. Spawners: [AI](../../research/ai.md#spawners).
+the player. Spawners: [AI](../../research/ai-gangs.md#spawners).
 
 - **Evidence:** confirmed (code) at `0x0016b070`, `0x00168e68`; detail: traced
 - **Wrapper** `0x00374200` (registered by `RegisterBindings`); **calls** `0x0016b070` `Gang_SetSpawnerMustBeOffScreen`,
@@ -1512,12 +1512,12 @@ GangStartSpawner(gang, spawner, mode, value)
 
 Switches a gang's named spawner to a new state, optionally with a new value, and sets its next-spawn time (`+0x64`) to
 now so a spawner made ready spawns on its next update. What each state does is in [AI:
-spawners](../../research/ai.md#spawners).
+spawners](../../research/ai-gangs.md#spawners).
 
 **Notes.** The value and next-spawn time are written even when the mode is not accepted. Spawners only run while the
 level's spawn cap allows (SetSpawnMax). Each spawn calls GangAddSpawner's callback with (human, gang id, spawner name);
 states 6, 8 and 10 place the human out of the camera's sight ([AI: out of
-sight](../../research/ai.md#spawner-placement)).
+sight](../../research/ai-gangs.md#spawner-placement)).
 
 - **Evidence:** confirmed (code) at `0x0016afc8`, `0x00168cd0`, `0x00168aa0`; detail: traced
 - **Wrapper** `0x00374288` (registered by `RegisterBindings`); **calls** `0x0016afc8` `Gang_StartSpawner`, `0x00168cd0`

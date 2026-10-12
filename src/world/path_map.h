@@ -16,7 +16,7 @@
 // The level's path data decoded: the polygons an AI walks on (the "paths"), and the route graph over them, whose nodes
 // are the C records and whose edges are the D records. The AI's route planner (ai::RoutePlanner) searches the graph;
 // the inside and walkable-line tests here are what it and the move action ask of the polygons. Game axes, z up.
-// Research: docs/research/level-loading.md#path-data, docs/research/ai.md#path-planning
+// Research: docs/research/level-loading.md#path-data, docs/research/ai-moving.md#path-planning
 
 namespace coney::world {
 
@@ -105,7 +105,7 @@ class PathMap {
     /// The edges leaving node `node`.
     [[nodiscard]] std::span<const PathEdge> edgesOf(std::uint32_t node) const;
     /// The partner of a jump edge's node `node`: the node it links to with the same non-zero pair byte (`+0x1e`);
-    /// nothing for a node with no pair byte or no such link (docs/research/ai.md#route-jump).
+    /// nothing for a node with no pair byte or no such link (docs/research/ai-moving.md#route-jump).
     /// @orig 0x002510f8 PathNode_FindPartner (unknown)
     [[nodiscard]] std::optional<std::uint32_t> partnerOf(std::uint32_t node) const;
 
@@ -146,7 +146,7 @@ class PathMap {
     /// box, widened by kAreaBoxMargin, holds the point; with none, or no ground, the first whose outline holds it in
     /// plan (**Coney choice**, matching areaAt(x, y)). A point inside a hole has this area but no areaAt().
     [[nodiscard]] std::optional<std::uint32_t> candidateArea(anim::Vec3 point, const GroundProbe* probe) const;
-    /// The walkable-line test (docs/research/ai.md#path-planning): the segment from `from` to `to` (in plan) is
+    /// The walkable-line test (docs/research/ai-moving.md#path-planning): the segment from `from` to `to` (in plan) is
     /// crossed with the edges of the start's area's polygons that have neither flag 8 (kPathPolygonExcluded) nor any
     /// of `mask`, keeping the nearest crossing (one at the very end ignored). With none, it passes when the end lies in
     /// the same area; with one, the end's area's farthest crossing must lie within 0.02 m of it, so the segment goes

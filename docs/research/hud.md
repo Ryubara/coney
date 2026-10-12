@@ -280,7 +280,7 @@ passes 5: on and off every 5 frames (1/6 s at 30 frames a second).
 A war chief (human `+0x3ac` = 1) orders his crew from a six-slot menu held open with **R2** and steered with the
 **right stick**; releasing R2 gives the highlighted order. Each player panel owns one (`WarCommandDisplay`, panel
 `+0x1ef0`, built by `WarCommandDisplay_Init`, `0x001a62c0`); the commands themselves are on
-[AI: Warrior commands](ai.md#warrior-commands). Confirmed (code) at the addresses given unless marked; not seen at
+[AI: Warrior commands](ai-gangs.md#warrior-commands). Confirmed (code) at the addresses given unless marked; not seen at
 runtime.
 
 **Input** (`Player_UseItemCommand`, `0x002843f8`; pad commands from [Combat](combat.md#commands): 1 is R2 held, 2 R2
@@ -322,7 +322,7 @@ the menu is shown, not yet issued and not locked) reads the right stick's raw by
 
 - Straight left or right (within 2.25°, `0x0050d2b4` = π/80) selects nothing new. The slot-to-command map is the
   jump table at `0x00553fe0` (`WarCommand_FromSlot`, `0x001a8530`; 7 for any other slot); command 6 has no slot. The
-  command names follow [AI](ai.md#warrior-commands) (read from the lines, inferred).
+  command names follow [AI](ai-gangs.md#warrior-commands) (read from the lines, inferred).
 - **Hysteresis:** the highlighted sector reaches π/16 = 11.25° (`0x0050d2b8`) further into each neighbour until the
   highlight moves, so a stick resting on a boundary does not flicker.
 - **Disabled commands are not skipped**: the stick can highlight them; the text then says so (below) and issuing one
@@ -334,7 +334,7 @@ the menu is shown, not yet issued and not locked) reads the right stick's raw by
 kept (`+0x1544`), its command stored as the player's last (game state `+0x41c` + player) and given through
 **`0x0041c4e0(gameState, chief, command, forced 0, pos 0, arg 0)`** (chief = display `+0x156c`); `0x0051480c` is set
 to `0xff`. A disabled command has its text cleared first and the dispatcher then refuses it
-([AI](ai.md#warrior-commands), step 1), though the last-command byte has already been written. **Only R2's release
+([AI](ai-gangs.md#warrior-commands), step 1), though the last-command byte has already been written. **Only R2's release
 issues**: there is no flick or timeout, and releasing without touching the stick issues the highlighted slot (the
 previous choice). An open menu also issues when the pause menu closes (`PauseMenu_Close`, `0x001dcb20`) and on any
 frame the HUD is not drawn (`HUD_Render`'s hidden branch, `0x001b1688`). The chief's spoken line comes from the
@@ -1557,7 +1557,7 @@ menu's objective lists ([Objectives](#objectives-hudsetobjective)), holding **it
 ### After `GUI/ChecklistMessageHUD.cpp` (no path string): radar arcs, Warrior command display {#fn-after-checklistmessagehud}
 
 `0x001a5d80`-`0x001a8fb8`: the arcs of the radar frames (HUD `+0x177d0`, `+0x18280`), the **Warrior command
-display** of the player panel (`+0x1ef0`, vtable `0x005398e0`, opened by L1 + R1, [AI](ai.md#warrior-commands)), the
+display** of the player panel (`+0x1ef0`, vtable `0x005398e0`, opened by L1 + R1, [AI](ai-gangs.md#warrior-commands)), the
 widget base ([GUI](gui.md#fn-after-checklistmessagehud)) and a small HUD toggle at `+0x15b0`.
 
 | Address | Name | What it does | Evidence |

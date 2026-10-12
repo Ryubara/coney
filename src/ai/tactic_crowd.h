@@ -10,7 +10,7 @@
 // it in place: an idle goal when the crowd cheers, a spectate goal of 4-6 s when it only watches. A cheering crowd
 // takes no hit reactions and never fights, and every 2 s sends its next member into a cheer; a watching crowd has a
 // free member gesture now and then. TacticTrigger switches the reactions: on demand, every free member cheers (two
-// clips). Research: docs/research/ai.md#tactics
+// clips). Research: docs/research/ai-gangs.md#tactics
 
 namespace coney::ai {
 

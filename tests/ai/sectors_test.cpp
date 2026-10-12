@@ -19,8 +19,8 @@
 #include "support/human_fixtures.h"
 #include "support/path_fixtures.h"
 
-// The neighbour sectors (docs/research/ai.md#neighbour-sectors): the numbering, the rebuild's counts, nearest and
-// flags, the free-player flag, the lazy wall probe, the readers and the maximum age. Synthetic humans on a floor.
+// The neighbour sectors (docs/research/ai-moving.md#neighbour-sectors): the numbering, the rebuild's counts, nearest
+// and flags, the free-player flag, the lazy wall probe, the readers and the maximum age. Synthetic humans on a floor.
 
 using coney::ai::Brain;
 using coney::ai::BrainType;
