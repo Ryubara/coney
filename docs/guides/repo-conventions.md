@@ -99,6 +99,7 @@ says where the check runs, how bad a finding is and who fixes it, and the table 
 | `files.ci-scope` | files | error | skill | .github/scripts/ci-scope.sh does not read the docs-only paths from the conventions file |
 | `files.large-file-limit` | files | error | skill | pre-commit's check-added-large-files limit differs from the conventions |
 | `issue.sections` | github | error | skill | an open issue lacks a required section of its form (or was filed with other headings) |
+| `issue.form` | github | warn | skill | an open issue is not in its form's exact shape: ### headings, names, order, no extra sections, dropdown values (coney-tools issue check) |
 | `issue.placeholder` | github | error | skill | a section of an open issue is empty or holds only a placeholder such as x |
 | `issue.screenshots` | github | error | skill | an open issue has no uploaded image and no Screenshots: none (reason) line |
 | `issue.labels` | github | error | skill | an issue lacks a type, area, priority (after triage) or status label, has two of one, or has an unknown label |

@@ -108,7 +108,7 @@ def build_report(
             specs = [spec for spec in specs if spec.id not in NEEDS_TREE]
         if snapshot.settings is None and snapshot.rulesets is None:
             specs = [spec for spec in specs if spec.id != "gh.ruleset"]
-        contexts["github"] = audit_github.GithubContext(conventions, snapshot, tree)
+        contexts["github"] = audit_github.GithubContext(conventions, snapshot, tree, root)
     if "local" in scopes:
         local = audit_local.build_context(cwd, args.workspace, conventions)
         report.notices.extend(local.notices)

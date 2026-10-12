@@ -1040,6 +1040,10 @@ runs, so a job recompiles only what changed; each job prints its hit rate at the
 | `docs` | `mkdocs build --strict`, markdownlint over every Markdown file, actionlint over the workflows |
 | `pr` | the pull request title and every commit title of it against the commit title rules, that code changes come with docs changes, and the description against the template (pull requests only; editing the title or description reruns it) |
 
+One more workflow runs on issues, not pull requests: `issue-check` runs `coney-tools issue check` on every issue
+opened or edited and keeps one comment listing the problems ([Filing an issue](issues.md#filing)); it is not a required
+check.
+
 On Windows, do not run WSL builds or clang-tidy locally to stand in for the Linux and macOS jobs: GitHub CI is that
 gate, and a failure there is fixed forward on the branch.
 
