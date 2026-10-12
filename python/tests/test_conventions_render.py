@@ -381,3 +381,66 @@ def test_audit_checks_follow_a_changed_severity() -> None:
     data["hygiene"]["checks"]["issue.links"]["severity"] = "error"
     text = "\n".join(render_block("audit-checks", parse_conventions(data)))
     assert "| `issue.links` | github | error | skill |" in text
+
+
+# --- the maintainer decisions, and rules the guides must not restate ----------------------------------------------
+
+
+def test_maintainer_decisions_name_every_decision_of_the_conventions() -> None:
+    text = " ".join(" ".join(render_block("maintainer-decisions", CONVENTIONS)).split())
+    for decision in CONVENTIONS.repo.owner_decisions:
+        assert decision in text
+    assert "stops and reports" in text
+
+
+def test_maintainer_decisions_follow_a_changed_list() -> None:
+    conventions = conventions_with(("repo.owner_decisions", ["rename the project"]))
+    text = " ".join("\n".join(render_block("maintainer-decisions", conventions)).split())
+    assert "rename the project" in text and "make the repository public" not in text
+
+
+def test_the_agents_file_shows_the_maintainer_decisions_and_the_coordinator_section_links_them() -> None:
+    assert used_blocks()["maintainer-decisions"] == ["AGENTS.md"]
+    section = (REPO / "docs/guides/how-we-work.md").read_text(encoding="utf-8")
+    assert "Escalate only maintainer decisions" in section and "repo:AGENTS.md" in section
+
+
+def outside_blocks(text: str) -> str:
+    """`text` without the generated blocks, which are where a rule is allowed to be written out."""
+    return re.sub(r"<!-- conventions:begin .*?<!-- conventions:end -->", "", text, flags=re.DOTALL)
+
+
+def prose_files() -> list[Path]:
+    """The files that explain the rules: AGENTS.md, CONTRIBUTING.md and every guide."""
+    return block_files(REPO)
+
+
+@pytest.mark.parametrize("pattern", [r"\b72 (characters|columns)", r"\bat most 72\b"])
+def test_the_commit_limits_are_written_only_in_the_generated_blocks(pattern: str) -> None:
+    """The title and body limits are `commits` in the conventions file; a guide links to them, so they cannot differ."""
+    restated = [
+        path.relative_to(REPO).as_posix()
+        for path in prose_files()
+        if re.search(pattern, outside_blocks(path.read_text(encoding="utf-8")))
+    ]
+    assert restated == []
+
+
+@pytest.mark.parametrize(
+    "stale",
+    [
+        r"[Ee]very commit (builds|must|follows)",
+        r"commits inside it still follow the title rules",
+        r"lock directory",
+        r"script that takes a lock",
+    ],
+)
+def test_no_guide_still_says_what_the_squash_merge_made_untrue(stale: str) -> None:
+    """A pull request is squash-merged by GitHub: only its final state and its title reach `main`, so the commits inside
+    it need not build or follow the title rules, and no local script merges anything."""
+    said = [
+        path.relative_to(REPO).as_posix()
+        for path in prose_files()
+        if re.search(stale, path.read_text(encoding="utf-8"))
+    ]
+    assert said == []
