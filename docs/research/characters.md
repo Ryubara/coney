@@ -2736,8 +2736,9 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
   it, along the face's own plane in 3D, and does not push the sphere out (`human::slideAlongTouchedFaces`, the
   fraction-0 contact), so a move into a face leaning back rises along it. The sweep's push-out leaves the sphere
   0.01 m clear of a face it met (`BodyTuning::contactClear`), where the original's sweep leaves it at the contact
-  and then lets it sink in (above: the crease edge came to 0.27 m of a 0.35 m sphere), so a face leaning back within the radius
-  plus that clearance counts as already reached (**Coney's reading**). Without it, at `level99`'s gravel heap a bum
+  and then lets it sink in (above: the crease edge came to 0.27 m of a 0.35 m sphere), so a face leaning back
+  within the radius plus that clearance counts as already reached (**Coney's reading**). Without it, at `level99`'s
+  gravel heap a bum
   walking the path's leg (his walk 0.557 m/s) was pushed back off face 680 every update, never slid along it, and
   stood for good at its foot, (−275.4, 131.6), under the stuck test; now he crosses the heap and reaches his flag in
   1,334 updates (`repo:tests/platform/disc_level99_heap_test.cpp`). The sweep also carries the sphere round a convex
