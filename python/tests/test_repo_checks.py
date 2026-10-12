@@ -13,7 +13,10 @@ from coney_tools.repo_checks import (
     check_docs,
     check_pointer_files,
     check_title,
+    legacy_remaining_items,
+    legacy_uncited_remaining,
     strip_comments,
+    unfinished_items,
 )
 
 POINTERS = load_conventions(REPO).paths.pointer_files
@@ -103,7 +106,7 @@ def test_the_real_rules_load_and_accept_a_real_title() -> None:
 # --- pull request descriptions -----------------------------------------------------------------------------------
 
 BODY_RULES = load_conventions(REPO).pull_requests
-CHECKLIST = "Done:\n\n- [x] The check\n\nRemaining:\n\n- [ ] The follow-up (#123)\n"
+CHECKLIST = "Done:\n\n- [x] The check\n"
 
 
 NO_SHOTS = "Screenshots: none (a docs-only change, nothing visible)"
@@ -388,81 +391,96 @@ def test_a_filled_in_template_passes() -> None:
     assert check_body(filled, BODY_RULES) == []
 
 
-# --- the Remaining list names an issue or pull request -----------------------------------------------------------
+# --- every Checklist item is ticked -------------------------------------------------------------------------------
 
 
-def checklist_body(remaining: str, done: str = "- [x] The check\n") -> str:
-    """A description whose Checklist holds `done` under Done and `remaining` under Remaining."""
-    return body().replace(CHECKLIST, f"Done:\n\n{done}\nRemaining:\n\n{remaining}")
+def checklist_body(checklist: str) -> str:
+    """A description whose Checklist section holds `checklist`."""
+    return body().replace(CHECKLIST, checklist)
 
 
-def test_a_remaining_item_with_an_issue_number_passes() -> None:
-    assert check_body(checklist_body("- [ ] Add the second unit (#123)\n- [ ] #45: the third\n"), BODY_RULES) == []
+def test_a_checklist_of_ticked_items_passes() -> None:
+    assert check_body(checklist_body("Done:\n\n- [x] One\n- [X] Two\n"), BODY_RULES) == []
 
 
-def test_a_remaining_item_without_a_number_is_refused() -> None:
-    problems = check_body(checklist_body("- [ ] Add the second unit\n- [ ] Add the third (#7)\n"), BODY_RULES)
+def test_an_unchecked_item_is_refused_with_the_rule() -> None:
+    problems = check_body(checklist_body("Done:\n\n- [x] One\n- [ ] Add the second unit\n"), BODY_RULES)
     assert len(problems) == 1
-    assert "'Add the second unit'" in problems[0] and "#123" in problems[0], problems
+    assert "'Add the second unit'" in problems[0] and "'## Checklist'" in problems[0], problems
+    assert "finish it or take it out" in problems[0], problems
 
 
-def test_every_unnumbered_remaining_item_is_reported() -> None:
-    assert len(check_body(checklist_body("- [ ] One\n- [ ] Two\n- [ ] Three (#3)\n"), BODY_RULES)) == 2
+def test_an_unchecked_item_is_refused_even_when_it_cites_an_issue() -> None:
+    assert check_body(checklist_body("Done:\n\n- [ ] Later (#123)\n"), BODY_RULES)
 
 
-def test_a_number_on_the_wrapped_line_of_an_item_counts() -> None:
-    assert check_body(checklist_body("- [ ] A long item that wraps\n  onto a second line (#99)\n"), BODY_RULES) == []
+def test_every_unchecked_item_is_reported() -> None:
+    items = "- [ ] One\n- [x] Two\n- [ ] Three (#3)\n- [ ] Four\n"
+    assert len(check_body(checklist_body(items), BODY_RULES)) == 3
 
 
-def test_a_number_in_the_next_item_does_not_count_for_the_one_before() -> None:
-    problems = check_body(checklist_body("- [ ] No number here\n- [ ] Has one (#5)\n"), BODY_RULES)
-    assert len(problems) == 1 and "No number here" in problems[0]
+def test_an_unchecked_item_under_any_label_is_refused() -> None:
+    for label in ("Done:", "Remaining:", "Remaining (later units):", "**Remaining:**", "Notes:"):
+        assert check_body(checklist_body(f"{label}\n\n- [ ] Not ticked\n"), BODY_RULES), label
 
 
-def test_a_number_in_a_word_or_a_path_is_not_a_reference() -> None:
-    for text in ("The item#12", "See docs/a.md#12", "Entity &#12;", "Version 4 (no number)"):
-        assert check_body(checklist_body(f"- [ ] {text}\n"), BODY_RULES), text
+def test_the_template_placeholder_item_is_unfinished_too() -> None:
+    assert check_body(checklist_body("Done:\n\n- [ ] ...\n"), BODY_RULES)
 
 
-def test_a_remaining_item_may_cite_a_pull_request() -> None:
-    assert check_body(checklist_body("- [ ] The rest lands in the follow-up pull request #88\n"), BODY_RULES) == []
+def test_prose_and_ticked_placeholders_are_not_refused() -> None:
+    assert check_body(checklist_body("Done:\n\nNothing else.\n"), BODY_RULES) == []
+    assert check_body(checklist_body("Done:\n\n- [x] ...\n"), BODY_RULES) == []
 
 
-def test_checked_items_and_prose_under_remaining_are_not_refused() -> None:
-    assert check_body(checklist_body("None.\n"), BODY_RULES) == []
-    assert check_body(checklist_body("- [x] Finished after all\n"), BODY_RULES) == []
+def test_a_long_item_is_shortened_in_the_message() -> None:
+    problems = check_body(checklist_body("- [ ] " + "word " * 30 + "\n"), BODY_RULES)
+    assert len(problems) == 1 and "..." in problems[0]
 
 
-def test_an_empty_remaining_list_and_the_template_placeholder_pass() -> None:
-    assert check_body(checklist_body(""), BODY_RULES) == []
-    assert check_body(checklist_body("- [ ] ...\n"), BODY_RULES) == []
+def test_unchecked_items_in_a_comment_are_ignored() -> None:
+    assert check_body(checklist_body("Done:\n\n- [x] One\n<!-- - [ ] Not an item -->\n"), BODY_RULES) == []
 
 
-def test_unchecked_items_under_done_are_not_refused() -> None:
-    assert check_body(checklist_body("", done="- [ ] Not ticked yet\n"), BODY_RULES) == []
+def test_a_wrapped_item_is_one_item() -> None:
+    problems = check_body(checklist_body("- [ ] A long item that wraps\n  onto a second line\n"), BODY_RULES)
+    assert len(problems) == 1 and "wraps onto a second line" in problems[0]
 
 
-def test_a_remaining_heading_with_a_note_or_bold_still_counts() -> None:
-    for heading in ("Remaining (later units):", "**Remaining:**"):
-        text = checklist_body("- [ ] Later\n").replace("Remaining:", heading)
-        assert check_body(text, BODY_RULES), heading
+def test_unchecked_items_outside_the_checklist_section_are_not_refused() -> None:
+    assert check_body(body(testing="- [ ] A step of the manual test\n"), BODY_RULES) == []
 
 
-def test_remaining_items_in_a_comment_are_ignored() -> None:
-    assert check_body(checklist_body("<!-- - [ ] Not an item -->\n"), BODY_RULES) == []
+def test_unfinished_items_lists_the_text_of_each() -> None:
+    text = checklist_body("Done:\n\n- [x] One\n- [ ] Two\n- [ ] Three\n  wrapped\n")
+    assert unfinished_items(text, BODY_RULES) == ["Two", "Three wrapped"]
+    assert unfinished_items("## Summary\n\nNo checklist.\n", BODY_RULES) == []
 
 
-def test_a_list_after_remaining_ends_it() -> None:
-    text = checklist_body("- [ ] Later (#2)\n").replace(
-        "\n## Testing", "\nNotes:\n\n- [ ] Not a remaining item\n\n## Testing"
-    )
-    assert check_body(text, BODY_RULES) == []
+# --- pull requests merged under the older Remaining rule ----------------------------------------------------------
+
+
+def legacy_body(remaining: str) -> str:
+    """A description in the older form, whose Checklist holds a Remaining list."""
+    return checklist_body(f"Done:\n\n- [x] One\n\nRemaining:\n\n{remaining}")
+
+
+def test_the_older_rule_wants_a_number_on_each_unchecked_remaining_item() -> None:
+    text = legacy_body("- [ ] Cited (#12)\n- [ ] Wrapped\n  onto (#13)\n- [ ] Loose\n- [ ] ...\n")
+    assert legacy_uncited_remaining(text, BODY_RULES) == ["Loose"]
+    assert legacy_remaining_items(text, BODY_RULES) == ["Cited (#12)", "Wrapped onto (#13)", "Loose"]
+
+
+def test_the_older_rule_ignores_lists_other_than_remaining() -> None:
+    text = checklist_body("Done:\n\n- [ ] Not ticked\n\nNotes:\n\n- [ ] Aside\n")
+    assert legacy_uncited_remaining(text, BODY_RULES) == [] and legacy_remaining_items(text, BODY_RULES) == []
 
 
 def test_the_real_rules_read_the_checklist_section() -> None:
-    rules = BODY_RULES
-    assert rules.remaining.section == "Checklist" and rules.remaining.label == "Remaining:"
-    assert rules.remaining.section in rules.sections
+    rules = BODY_RULES.checklist
+    assert rules.section == "Checklist" and rules.unchecked == "refused" and rules.legacy_label == "Remaining:"
+    assert rules.since.isoformat() == "2026-10-12"
+    assert rules.section in BODY_RULES.sections
 
 
 # --- the rules come from the conventions file, not from the code ---------------------------------------------------

@@ -191,7 +191,7 @@ def body_checkout(tmp_path: Path) -> Path:
 
 
 GOOD_BODY = (
-    "## Summary\n\nAdds a check.\n\n## Checklist\n\nRemaining:\n\n- [ ] Later (#12)\n\n"
+    "## Summary\n\nAdds a check.\n\n## Checklist\n\nDone:\n\n- [x] The check\n\n"
     "## Screenshots\n\nScreenshots: none (no change)\n\n"
     "## AI use\n\n- By: an AI\n- Model: Claude Sonnet 5.5\n"
 )
@@ -229,14 +229,14 @@ def test_check_body_refuses_with_exit_1_and_one_line(
     assert "'## Summary' is empty" in out[0] and "'## AI use'" in out[0]
 
 
-def test_check_body_refuses_a_remaining_item_without_a_number(
+def test_check_body_refuses_an_unchecked_checklist_item(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     monkeypatch.chdir(body_checkout(tmp_path))
-    monkeypatch.setattr("sys.stdin", io.StringIO(GOOD_BODY.replace("- [ ] Later (#12)", "- [ ] Later")))
+    monkeypatch.setattr("sys.stdin", io.StringIO(GOOD_BODY.replace("- [x] The check", "- [ ] Later (#12)")))
     assert main(["repo", "check-body"]) == 1
     out = capsys.readouterr().out
-    assert "names no issue or pull request" in out and "'Later'" in out
+    assert "finish it or take it out" in out and "Later" in out
 
 
 def test_check_body_with_an_unreadable_file_exits_2(

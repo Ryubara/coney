@@ -54,6 +54,7 @@ add_executable(coney_tests
     graphics/font_test.cpp
     graphics/frame_stats_test.cpp
     graphics/car_draw_test.cpp
+    graphics/throw_arc_test.cpp
     graphics/human_blood_test.cpp
     graphics/human_lighting_test.cpp
     graphics/light_manager_test.cpp
@@ -123,6 +124,7 @@ add_executable(coney_tests
     platform/disc_level99_handover_test.cpp
     platform/disc_hub_workout_test.cpp
     platform/disc_level99_street_test.cpp
+    platform/disc_level99_vermin_fence_test.cpp
     platform/disc_level99_store_glass_test.cpp
     platform/disc_level99_store_register_test.cpp
     platform/disc_level99_world_test.cpp
@@ -133,6 +135,7 @@ add_executable(coney_tests
     platform/disc_tagging_test.cpp
     platform/disc_story_start_test.cpp
     platform/disc_textures_test.cpp
+    platform/disc_throw_arc_test.cpp
     platform/disc_world_test.cpp
     platform/disc_level_test.cpp
     platform/disc_movies_test.cpp

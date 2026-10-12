@@ -180,10 +180,11 @@ refuses a raw `gh issue create`, a `gh issue edit` that sets the body and a `gh 
 the `issue-check` workflow checks every issue opened or edited on the website or through the API and keeps one
 comment listing the problems. The audit flags what slips past all three ([Filing an issue](issues.md#filing)).
 
-**Leftovers are issues, not notes.** An agent that finishes a unit with work still undone lists each leftover in its
-message to the coordinator (title, area, research page, what "done" means), and the coordinator files the issue and
-writes its number into the pull request's Remaining list; CI refuses an unchecked Remaining item with no `#123`
-([Leftovers become issues](issues.md#leftovers)). The issue states its problem first, links pages by relative links
+**A pull request merges only when every task in it is finished.** Its Checklist lists what it finishes, all ticked, and
+CI refuses an unticked item; there is no "Remaining" list. Work an agent finds that is not part of its task goes in its
+message to the coordinator (title, area, research page, what "done" means) and the coordinator files it as an issue of
+its own; a pull request that finishes an issue says `Fixes #N`
+([Work found along the way](issues.md#follow-up-work)). The issue states its problem first, links pages by relative links
 and names the source pull request's status truthfully ([Writing an issue a newcomer can read](issues.md#writing)).
 The state file (`HANDOFF.md`) keeps only the live state and issue numbers, never a list of work to do: the work list
 is the open issues.

@@ -246,7 +246,7 @@ def template_matches(context: FilesContext) -> Iterator[Problem]:
     for text, key in (
         (f"`{rules.docs_none.line}`", "pull_requests.docs_none"),
         (closing, "pull_requests.closing"),
-        (rules.remaining.label.rstrip(":"), "pull_requests.remaining"),
+        ("Done:", "pull_requests.checklist"),
         (f"`{rules.screenshots.none} (<reason>)`", "pull_requests.screenshots"),
     ):
         if text not in template:

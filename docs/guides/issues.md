@@ -30,8 +30,8 @@ only "issue #N". Write it so that the first screenful answers *what is wrong or 
   provenance. It goes on the `From:` line, which names where the issue came from and nothing more.
 - **State the status as it is.** When the text names a pull request or another issue, check it with `gh pr view N`
   or `gh issue view N` and say what it is: merged, open (not merged yet), closed without merging. Write "merged",
-  never "(open)" for a pull request that has landed, and tick the checklist item it finished. A leftover is usually
-  filed while its pull request is still open, so that wording goes stale when it merges: describe what the
+  never "(open)" for a pull request that has landed, and tick the checklist item it finished. An issue is usually
+  filed while the pull request it came from is still open, so that wording goes stale when it merges: describe what the
   repository does and lacks rather than only what a pull request will do, and the coordinator fixes the statuses of
   the issues that cite a pull request when it merges ([Merging safely](how-we-work.md#merging)).
 - **Link every page by a relative link.** A research page or guide is written as a Markdown link that works from an
@@ -251,33 +251,34 @@ A brief may be just "issue #N" ([Briefing](agents.md#briefs)); the issue holds t
 - **HANDOFF lists only issue numbers in flight.** The coordinator's state file names an issue by number and track,
   for example "#31, bug-doors, in progress"; the title and details stay on the issue, so there is one place to read.
 
-## Leftovers become issues {#leftovers}
+## Work found along the way becomes its own issue {#follow-up-work}
 
-A pull request that leaves work undone does not leave it in its description, which nobody reads after the merge. Every
-unchecked item under **Remaining** in the description carries the number of the issue (or the follow-up pull request)
-that holds it, such as `- [ ] The heavy bag's combo game (#109)`. CI's `body` check refuses a description with an
-unchecked item that has no `#123` in it (`coney-tools repo check-body`, rules in `pull_requests` of
-`.github/conventions.yml`). Wrapped lines belong to the item above them; checked items, prose (`None.`), the
-template's `...` placeholder and everything under Done are not looked at.
+A pull request merges only when every task in it is finished. Its Checklist lists what it finishes, each item ticked,
+and CI's `body` check refuses a description with an unticked `- [ ]` item, the template's `...` placeholder included
+(`coney-tools repo check-body`, rules in `pull_requests.checklist` of `.github/conventions.yml`). There is no
+"Remaining" list: work the pull request does not finish is not part of it and is not named in it, and a pull request
+that finishes an issue says `Fixes #N` in its Summary. Pull requests merged before 2026-10-12 keep the Remaining lists
+they were written with; their items are open issues and go through the normal queue, and the audit still holds those
+lists to the older rule (each unchecked item names an issue as `#N`).
 
-- **The author** finishes what it can, and for each leftover that is real work or an open question writes its title,
-  area, research page and "done" test, in the shape of the [task form](#report), into the message it sends the
-  coordinator with the pull request text. It follows [Writing an issue a newcomer can read](#writing): the problem
-  first, not "the pull request leaves ..."; pages as relative links; each checklist item a verifiable step. It
-  starts from `coney-tools issue draft`, saves the body to a file in its scratch folder and runs
-  `coney-tools issue check --leftover` on it until it passes ([Filing an issue](#filing)); it does not write to
-  GitHub ([Working from an issue](#agents)).
-- **A leftover a player can see comes with a picture.** For a visible bug, gap or stand-in, the author saves a
-  capture of Coney in its scratch folder's `shots/` (and of the original from PCSX2 when it has one at the same
-  place), names the files in the issue text it sends, and the coordinator files the issue with `--attach`. Pure
-  research questions and tooling work need none.
+- **The author** finishes the task it was given. Work it finds on the way that is not part of the task (a bug, a gap, an
+  open question) is written up as the issue it would be: title, area, research page and "done" test, in the shape of
+  the [task form](#report), in the message it sends the coordinator. It follows
+  [Writing an issue a newcomer can read](#writing): the problem first, not "the pull request leaves ..."; pages as
+  relative links; each checklist item a verifiable step. It starts from `coney-tools issue draft`, saves the body to a
+  file in its scratch folder and runs `coney-tools issue check --leftover` on it until it passes
+  ([Filing an issue](#filing)); it does not write to GitHub ([Working from an issue](#agents)), and the pull request
+  neither lists nor links that work.
+- **Work a player can see comes with a picture.** For a visible bug, gap or stand-in, the author saves a capture of
+  Coney in its scratch folder's `shots/` (and of the original from PCSX2 when it has one at the same place), names the
+  files in the issue text it sends, and the coordinator files the issue with `--attach`. Pure research questions and
+  tooling work need none.
 - **The coordinator** files the issue from that checked body with `coney-tools issue create --leftover` (and its
-  captures, `--attach`), labels it at triage, and puts the number into
-  the description before the pull request is opened. It rewrites a draft that reads like a copy of the pull request,
-  and when the pull request merges it updates the statuses in every issue that cites it. An item that is already
-  tracked cites its existing issue; one that is finished is ticked and moved to Done; one nobody will do is dropped,
-  not left unchecked.
-- **A follow-up pull request** may be cited in place of an issue when it is already open, but the work it carries
-  still finishes the issue that describes it, with a `Fixes #N` line in its Summary.
+  captures, `--attach`), naming where it came from on the `From:` line, and labels it at triage. It rewrites a draft
+  that reads like a copy of the pull request, and when a pull request merges it updates the statuses in every issue
+  that cites it.
+- **A task a pull request cannot finish is split before the pull request is written.** The part it can finish is the
+  pull request; the rest is an issue (or a pull request of its own, opened when it can be finished). A task nobody
+  will do is dropped, not left unticked.
 - **The state file keeps no work list.** HANDOFF holds the live state (what runs where, what waits for CI) and issue
-  numbers, never the leftovers themselves; a leftover that exists only in HANDOFF is lost when the file is cleared.
+  numbers, never the work itself; work that exists only in HANDOFF is lost when the file is cleared.

@@ -1,0 +1,26 @@
+# Sprint (L2 held, the stick at 100 % up: raw 255, full deflection), then d-pad right every 3 updates while sprinting.
+10 press l2
+10 stick left 0 100
+60 tap right
+63 tap right
+66 tap right
+69 tap right
+72 tap right
+75 tap right
+78 tap right
+81 tap right
+84 tap right
+87 tap right
+90 tap right
+93 tap right
+96 tap right
+99 tap right
+102 tap right
+105 tap right
+108 tap right
+111 tap right
+114 tap right
+117 tap right
+120 tap right
+125 stick left 0 0
+125 release l2
