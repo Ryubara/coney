@@ -424,7 +424,7 @@ Goals use them to find targets, backup and partners ([AI humans: starting a figh
 | `0x0029d438` | `ObjFilter_NearestWithFlags` | filter | keeps the nearest flagged object beyond a minimum distance | inferred |
 | `0x0029d4f8` | `ObjFilter_IsVandalisable` | filter | vandalisable and not flag `0x800000` | confirmed (code) |
 | `0x0029d558` | `ObjFilter_VandalisableInRange` | filter | vandalisable, not finished, within a range | inferred |
-| `0x0029d928` | `Glass_ClaimPane` | helper | picks a glass pane in range for the gang to break and claims it for 7 s | inferred |
+| `0x0029d928` | `Glass_ClaimPane` | helper | `(radius, human, needRay, claim, needReach, centre)`: the panes within the radius (`GlassTaskManager_ListInRange`, 64), nearest first; the first intact one not claimed by the human's gang, **not alarmed** (pane bits `+0xf8` not both 1 and 2), upright (its up axis within 0.65 of vertical) and low enough (bottom at most his z + human `+0x548`); with `needRay`, a clear ray to its centre that crosses glass (result 2); with `needReach`, a nav polygon within 0.75 m that he can reach; with `claim`, claimed for the gang for 7 s | confirmed (code) |
 | `0x0029dc38` | `Brains_Nearest` | helper | the nearest enabled brain's human to a point, passing a filter | confirmed (code) |
 | `0x0029dd38` | `Gang_CountAhead` | helper | counts gang members in a 45-degree cone ahead, stopping at 4 | inferred |
 | `0x0029df78` | `Gang_NearestInCone` | helper | the nearest gang member, beyond 1.25 m only inside a given cone | confirmed (code) |
@@ -1419,9 +1419,39 @@ the zone (−1 none), `+0x2a` the chief's line playing, `+0x2b` the answer said.
 | `0x00321240` | `WarriorStealTactic_End` | End | removes the idle fidget clips; clustering off | confirmed (code) |
 | `0x00321268` | `WarriorStealTactic_Process` | Process | once, after the chief's line: a member answers `vandal_resp` (140) or, with a zone, `steal_resp` (141); every 2 s re-picks the store; always 0 | confirmed (code) |
 | `0x00321328` | `WarriorStealTactic_OnEvent` | Event | 19 re-gives the member's goal; 22 (`+8` = 1) re-gives it with the player rule; 20 consumed | confirmed (code) |
-| `0x00321540` | `WarriorSteal_ClaimObject` | helper | for a human, walks the clusters in order (`0x00433fd8` sort) and takes each cluster's nearest object not claimed by his gang (`+0xec` gang, `+0xf0` until); when no enemy stands within 1.5 m of its navigation point the object is claimed for 5 s, the cluster's user count raised and the object returned; else 0 | confirmed (code) |
+| `0x00321540` | `WarriorSteal_ClaimObject` | helper | for a human, walks the clusters in order (`0x00433fd8` sort) and takes each cluster's nearest object to him not claimed by his gang (`+0xec` gang, `+0xf0` until); when no **other member of his gang** (gang `+0x48`, `HandleArray16_Nearest` skipping him) stands within 1.5 m of that object's navigation point the object is claimed for 5 s, the record's last user (`+0x00`) becomes him, its users (`+0x04`) go up and the object is returned; otherwise the **next cluster** is tried (not the next object); none → 0 | confirmed (code) |
+| `0x003213d8` | `StealClusters_Add` | callback | `Points_Cluster`'s callback: appends record `0x006eb318` + n × `0x30` to the walk list `0x007155d8`, count `0x00511650` + 1; last user and users 0; the group's object handles at `+0x08` (padded with `NilHandle` to ten; a group of more than ten is not clamped) | confirmed (code) |
+| `0x003214d0` | `StealClusters_Compare` | comparator | the walk's order for the human in `0x00511654`: the record he last took from first; then by the last user's address (unused records, 0, first); then fewer users first | confirmed (code) |
 | `0x003217a0` | `StealClusters_Reset` | reset | on a full reset (1, `0xffff`): sets the ten handles of each of the 20 entries at `0x006eb318` (`0x30` bytes) to −1 (inferred: the cluster records) | inferred |
 | `0x00321808` | `StealClusters_ResetAll` | reset | calls `StealClusters_Reset` with 1 and `0xffff` | confirmed (code) |
+
+**How the store's objects are clustered and walked** (confirmed (code) at `0x00320c68`, `0x003865d8`, `0x003213d8`,
+`0x00321540`, `0x003214d0`, `0x00433fd8`):
+
+1. **When.** `WarriorStealTactic_PickStore` keeps its store while the **chief** is within 12 m of the flag;
+   otherwise it takes the single nearest enabled flag of activity 14 within 12 m (straight line;
+   `Flag_FindNearestByActivity` with no reach test) and only then asks `Nav_CanReach(chief, flag, 0, 0, 1, 0xffff)`
+   (areas found from the points; a route with a blocked edge is no). Not reachable: no store (zone −1), even when a
+   farther store would be, since the second nearest is never tried. Clustering runs only when the store changes.
+2. **Which objects.** The first 64 objects of the zone (`ObjZone_ListObjects`) whose owned byte `+0x109` is set, by
+   their positions.
+3. **Grouping** (`Points_Cluster(1.0, ...)`): the point pointers are sorted by x, then y (`Cmp_PointXY`). The first
+   remaining point seeds a group; each group member in turn takes from the remaining points (in x order) every point
+   whose 3D distance to it is **under 1.0 m**, stopping its scan at the first point more than 1.0 m from it in x
+   (so a member whose x is far above the next remaining point's can miss points: single linkage with that quirk).
+   A group is finished when every member has scanned; the callback stores it and the next remaining point seeds the
+   next. So clusters are created in ascending x of their first point.
+4. **The walk** (`WarriorSteal_ClaimObject`, each time an empty-handed Warrior asks): the list of records is sorted
+   **in place** with the C library's `qsort` (`0x00433fd8`, the BSD one: an insertion sort below 7 elements, so ties
+   keep the previous order; at 7 or more, ties may move) by `StealClusters_Compare` for that Warrior: his own last
+   cluster first, then records never taken from, then the others by their last taker's record address, then fewer
+   users. In each record in that order he takes the object nearest **him** that still exists and is not claimed by
+   his gang; it is his when no gang mate stands within 1.5 m of its navigation point (else the next record).
+5. **The fetch** (`WarriorVandalStealGoal_TryFetch`): GetItem with gait **4** (a run) beyond 3 m of the standing
+   point, 3 within ([GetItem](ai.md#get-item)). A Warrior who gets nothing from the walk (no store, or every cluster
+   blocked) waits 500 ms × his place in the gang, then fetches a smash target near the chief instead. At runtime
+   (PCSX2 2.9.94, scenario `repo:research/traces/scenarios/steal_store.toml`, level80's pharmacy) the zone made **3
+   clusters**; Rembrandt claimed from the second record of his walk, Vermin from the first. Confirmed (runtime).
 
 **Coney** (`repo:src/ai/steal_goals.h`, 2026-10-11): `WarriorStealTactic`, `WarriorVandalStealGoal` (its fetch and its
 stay with the leader), `GetItemGoal` and the clusters and claims (`StealClusters`), over the level's store fronts and
