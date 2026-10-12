@@ -250,6 +250,22 @@ class AiUse:
 
 
 @dataclass(frozen=True)
+class Review:
+    """The release gate on the pr-reviewer agent's verdict (`coney-tools repo review`, `repo check-review`)."""
+
+    #: The agent's name; its definition is `.claude/agents/<agent>.md`.
+    agent: str
+    #: The verdict (JSON) the agent writes next to the description file; `repo check-review` reads it.
+    verdict_file: str
+    #: The readable report the agent writes beside the verdict.
+    report_file: str
+    #: How the description is hashed: `sha256-lf` (UTF-8, leading BOM dropped, CRLF and CR turned into LF).
+    body_hash: str
+    #: `refused`: two byte-identical images in one description fail the gate, whatever the verdict.
+    identical_images: str
+
+
+@dataclass(frozen=True)
 class Stacked:
     """The rules for a pull request whose base is not the default branch."""
 
@@ -277,6 +293,7 @@ class PullRequests:
     checklist: Checklist
     screenshots: ScreenshotsRule
     ai_use: AiUse
+    review: Review
     stacked: Stacked
 
 
@@ -761,6 +778,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
         "checklist",
         "screenshots",
         "ai_use",
+        "review",
         "stacked",
     )
     table = _table(data, where, keys)
@@ -776,6 +794,15 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
     checklist, checklist_where = sub("checklist", "section", "unchecked", "since", "legacy_label")
     screenshots, screenshots_where = sub("screenshots", "section", "none", "reason", "uploaded_only")
     ai_use, ai_where = sub("ai_use", "section", "written_by", "model")
+    review, review_where = sub("review", "agent", "verdict_file", "report_file", "body_hash", "identical_images")
+    agent = _text(review["agent"], _at(review_where, "agent"))
+    # The agent is a file name under .claude/agents/, so it holds no path separator.
+    if not re.fullmatch(r"[a-z][a-z0-9-]*", agent):
+        raise _fail(_at(review_where, "agent"), f"'{agent}' must be an agent name (lower case, digits and dashes)")
+    verdict_file = _text(review["verdict_file"], _at(review_where, "verdict_file"))
+    report_file = _text(review["report_file"], _at(review_where, "report_file"))
+    if report_file == verdict_file:
+        raise _fail(_at(review_where, "report_file"), "must differ from verdict_file")
     stacked, stacked_where = sub(
         "stacked", "depends_line", "merge_into_base", "auto_merge_on_non_default_base", "after_base_merges"
     )
@@ -832,6 +859,13 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
                 label=_text(model["label"], _at(model_where, "label")),
                 none=_text(model["none"], _at(model_where, "none")),
             ),
+        ),
+        review=Review(
+            agent=agent,
+            verdict_file=verdict_file,
+            report_file=report_file,
+            body_hash=_choice(review["body_hash"], _at(review_where, "body_hash"), ("sha256-lf",)),
+            identical_images=_choice(review["identical_images"], _at(review_where, "identical_images"), ("refused",)),
         ),
         stacked=Stacked(
             depends_line=_text(stacked["depends_line"], _at(stacked_where, "depends_line")),

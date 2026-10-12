@@ -569,6 +569,10 @@ uv run --project python coney-tools repo check
 uv run --project python coney-tools repo check-title FILE|-
 uv run --project python coney-tools repo check-docs [--body FILE]      # changed paths on stdin
 uv run --project python coney-tools repo check-body [--body FILE|-]
+uv run --project python coney-tools repo review PR.md --worktree WT [--base REF] [--model M] [--effort E]
+    [--claude EXE] [--timeout-minutes N]
+uv run --project python coney-tools repo check-review PR.md --worktree WT
+uv run --project python coney-tools repo review-stamp PR.md --worktree WT
 uv run --project python coney-tools repo labels [--apply] [--repo OWNER/NAME]
 uv run --project python coney-tools repo render [--check]
 uv run --project python coney-tools repo audit [--files] [--github] [--local] [--json] [--only CHECK ...] [--strict]
@@ -590,6 +594,8 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   `paths.docs` and no `Docs: none` line in the body.
 * `repo check-body` checks a pull request description against the template ([What a pull request
   shows](testing.md#pr-evidence)).
+* `repo review`, `repo check-review` and `repo review-stamp` are the release gate on a description's content: see
+  [review](#repo-review).
 * `repo labels` prints the `gh label create` commands for `labels.list`; `--apply` runs them (the coordinator does).
 * `repo render` rewrites the generated blocks of `AGENTS.md`, `CONTRIBUTING.md` and every guide under `docs/guides/`
   from the conventions: the text between a `<!-- conventions:begin NAME -->` line and the next
@@ -601,6 +607,30 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
 * `repo audit` reports where the repository departs from the conventions and changes nothing: see [audit](#repo-audit).
 * `repo pr-health` lists the open pull requests that are stuck: see [pr-health](#repo-pr-health).
 * `repo hygiene` writes the audit's findings back as comments: see [hygiene](#repo-hygiene).
+
+### repo review {#repo-review}
+
+The gate a description passes before the coordinator pushes it ([The description review](how-we-work.md#pr-review)).
+`PR.md` is the description file as agents write it: the title on line 1, then the body; image paths in it are relative
+to its folder.
+
+* `repo review` runs the `pr-reviewer` agent once, headlessly: it reads `.claude/agents/pr-reviewer.md` from the
+  checkout the command runs in, hands it to `claude -p --agents FILE --agent pr-reviewer --model M
+  --dangerously-skip-permissions` (a throwaway run, in `PR.md`'s folder) with a task naming `PR.md`, the worktree and
+  `--base` (default `origin/main`), and then runs `check-review`. It removes an old `REVIEW.json` and `REVIEW.md` first,
+  so a run that writes no verdict cannot leave an earlier pass behind. `--model` overrides the agent file's model,
+  `--effort` sets the effort level, `--claude` names the executable and `--timeout-minutes` (default 30) stops a run
+  that hangs. Exit 0 when the verdict releases the branch, 1 when it does not or `claude` failed, 2 when the review
+  cannot run (no description, no agent file, not a worktree).
+* `repo check-review` reads `REVIEW.json` next to `PR.md` and passes only when the verdict is `pass` with no blocker,
+  its `tip` is the worktree's HEAD, its `body_sha256` is `PR.md`'s hash now, and every local image `PR.md` shows is
+  listed with its hash now and differs from every other one. Exit 1 lists each reason (a stale tip, an edited
+  description, a replaced or unreviewed picture, the blockers); 2 when `PR.md` cannot be read.
+* `repo review-stamp` prints those values as JSON (`tip`, `body_sha256`, `images` with `path` and `sha256`, `null` for a
+  missing file). The agent copies them into its verdict, so the hash is computed in one place.
+
+The file names, the agent and the hash rule are `pull_requests.review` in `.github/conventions.yml`; the rules in full
+are the generated list in [The description review](how-we-work.md#pr-review).
 
 ### repo audit {#repo-audit}
 
