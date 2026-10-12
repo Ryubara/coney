@@ -50,16 +50,23 @@ cylinder at=0,-3.6,0 radius=0.08 height=1 segments=8 texture=marker repeat=5 ste
 # Slope gallery, north-west: ramps 3 m wide and 2 m high at 10° to 60°, low ends on y = 10, each with a platform at
 # the top. A character lands only on ground whose normal has z > 0.65, about 49° (docs/research/characters.md#ground),
 # so the 50° and 60° ramps are red: steeper than the game's walkable limit.
+# The walkable ramps (10° to 40°) end at a platform of two boxes, the top one a rise (0.2 m) deep: a full-height box
+# would put its 2 m face and top edge within the walking sphere's reach of the last metre of ramp and hold the player
+# short of the top at 30° and 40° (docs/guides/sandbox.md#landings).
 ramp at=-40,15.672,0 width=3 height=2 angle=10 texture=ramp
 ramp at=-35,12.747,0 width=3 height=2 angle=20 texture=ramp
 ramp at=-30,11.732,0 width=3 height=2 angle=30 texture=ramp
 ramp at=-25,11.192,0 width=3 height=2 angle=40 texture=ramp
 ramp at=-20,10.839,0 width=3 height=2 angle=50 texture=marker
 ramp at=-15,10.577,0 width=3 height=2 angle=60 texture=marker
-box at=-40,22.843,0 size=3,3,2 texture=ledge
-box at=-35,16.995,0 size=3,3,2 texture=ledge
-box at=-30,14.964,0 size=3,3,2 texture=ledge
-box at=-25,13.884,0 size=3,3,2 texture=ledge
+box at=-40,22.843,0 size=3,3,1.8 texture=ledge
+box at=-40,22.843,1.8 size=3,3,0.2 texture=ledge
+box at=-35,16.995,0 size=3,3,1.8 texture=ledge
+box at=-35,16.995,1.8 size=3,3,0.2 texture=ledge
+box at=-30,14.964,0 size=3,3,1.8 texture=ledge
+box at=-30,14.964,1.8 size=3,3,0.2 texture=ledge
+box at=-25,13.884,0 size=3,3,1.8 texture=ledge
+box at=-25,13.884,1.8 size=3,3,0.2 texture=ledge
 box at=-20,13.178,0 size=3,3,2 texture=ledge
 box at=-15,12.655,0 size=3,3,2 texture=ledge
 
@@ -72,7 +79,8 @@ stairs at=12,11.2,0 width=2.5 steps=8 rise=0.25 run=0.3 texture=stairs
 stairs at=16,11.05,0 width=2.5 steps=7 rise=0.30 run=0.3 texture=stairs
 stairs at=20,10.75,0 width=2.5 steps=5 rise=0.40 run=0.3 texture=stairs
 # The walkable sets' landings are two boxes, the top one a rise deep, so no wall face taller than a riser stands where
-# the player's 0.485 m walking sphere reaches it from the last step (docs/research/characters.md#walls).
+# the player's 0.47 m walking sphere reaches it from the last step (docs/research/characters.md#walls). The 25, 30 and
+# 40 cm sets are not walkable in the original (a riser of 0.25 m or more is a wall), so their landings are plain boxes.
 box at=0,17.5,0 size=2.5,3,1.9 texture=ledge
 box at=0,17.5,1.9 size=2.5,3,0.1 texture=ledge
 box at=4,15.4,0 size=2.5,3,1.8 texture=ledge
