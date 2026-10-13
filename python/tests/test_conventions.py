@@ -179,7 +179,7 @@ BAD: list[tuple[str, tuple[tuple[str, object], ...], str]] = [
     ("a no_ai choice that is not a choice", (("pull_requests.ai_use.written_by.no_ai", "robot"),), r"no_ai: 'robot'"),
     ("a docs_none class that does not exist", (("pull_requests.docs_none.when_changed", "tests"),), r"when_changed"),
     ("an unsupported unchecked rule", (("pull_requests.checklist.unchecked", "cited"),), r"checklist\.unchecked"),
-    ("a since that is no day", (("pull_requests.checklist.since", "someday"),), r"checklist\.since"),
+    ("a since that is no day or moment", (("pull_requests.checklist.since", "someday"),), r"checklist\.since"),
     ("an unknown review hash", (("pull_requests.review.body_hash", "md5"),), r"review\.body_hash"),
     ("an agent name with a path", (("pull_requests.review.agent", "agents/x"),), r"review\.agent"),
     (

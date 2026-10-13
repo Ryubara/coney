@@ -90,6 +90,7 @@ body:
         - Often
         - Sometimes
         - Once
+        - Unknown
     validations:
       required: true
   - type: textarea

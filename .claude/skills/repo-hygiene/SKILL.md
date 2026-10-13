@@ -43,19 +43,21 @@ Each finding has `check`, `item`, `message`, `severity` and `fix`. Take them in 
 
 ### `skill`: you fix it with judgement
 
-Keep the author's words: change only what the finding names. Write the new text to a file in scratch and apply it with
-`--body-file`; never paste a body into a shell line. Never delete an issue, a pull request or a comment. When the
-right answer is not yours to give (a missing summary, a missing reproduction), ask the reporter with `gh issue comment`
-and set `S-needs-info`; do not invent it.
+Keep the author's words: change only what the finding names. Write the new text to a file in scratch and apply it to
+an issue with `coney-tools issue edit N --body FILE` (it checks the body first; the issue hook refuses
+`gh issue edit --body` and `--body-file`) and to a pull request with `gh pr edit N --body-file FILE`; never paste a
+body into a shell line. Never delete an issue, a pull request or a comment. When the right answer is not yours to
+give (a missing summary, a missing reproduction), ask the reporter with `gh issue comment` and set `S-needs-info`;
+do not invent it.
 
 | Check | What to do |
 | --- | --- |
-| `issue.sections`, `issue.form`, `issue.placeholder`, `issue.screenshots` | Rewrite the body to the form's shape (`coney-tools issue check` names what differs) (`gh issue view N --json body`, then `gh issue edit N --body-file`), moving the author's text under the right headings. Add `Screenshots: none (reason)` only when the reason is plain. If the content is missing, ask. |
+| `issue.sections`, `issue.form`, `issue.placeholder`, `issue.screenshots` | Rewrite the body to the form's shape (`coney-tools issue check` names what differs) (`gh issue view N --json body`, then `coney-tools issue edit N --body FILE`), moving the author's text under the right headings. Add `Screenshots: none (reason)` only when the reason is plain. If the content is missing, ask. |
 | `issue.labels` | Set exactly one type, area, priority (after triage) and status label as [Triage](../../../docs/guides/issues.md#triage) says: `gh issue edit N --add-label ... --remove-label ...`. Replace an unknown label with the right one. |
 | `issue.closed-status` | `gh issue edit N --remove-label <S- label>`; the `issue-status` workflow normally does it. |
 | `issue.person-word`, `pr.person-word` | Reword "owner" to "user" for a person who plays or reports, "maintainer" for a person who decides. |
-| `issue.closed-unchecked` | File the follow-up issue for the unchecked item (or tick it if it was done) and write its number into the item. |
-| `issue.stale-status` | `gh pr view N` or `gh issue view N`, then change "open" to "merged" (or the true state) and tick what it finished. |
+| `issue.closed-unchecked` | File the follow-up issue for the unchecked item (or tick it if it was done) and write its number into the item (`coney-tools issue edit N --body FILE`). When the message says "closed by #M, whose Checklist is all ticked", read #M: if it did the items, tick them and name #M. |
+| `issue.stale-status` | `gh pr view N` or `gh issue view N`, then change "open" to "merged" (or the true state) and tick what it finished (`coney-tools issue edit N --body FILE`). |
 | `issue.links` | Make the link relative and point it at a file and anchor that exist on `main`. |
 | `issue.provenance` | Add the `From:` line naming where the issue came from. |
 | `issue.attachment-personal` | Never quote the log. Ask the author in a comment to replace their name with `~` in the log, attach the new copy and delete the old link; a maintainer may remove the link from the body meanwhile ([Attached logs](../../../docs/guides/issues.md#attachments)). |

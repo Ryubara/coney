@@ -484,7 +484,7 @@ def test_the_older_rule_ignores_lists_other_than_remaining() -> None:
 def test_the_real_rules_read_the_checklist_section() -> None:
     rules = BODY_RULES.checklist
     assert rules.section == "Checklist" and rules.unchecked == "refused" and rules.legacy_label == "Remaining:"
-    assert rules.since.isoformat() == "2026-10-12"
+    assert rules.since.isoformat() == "2026-10-12T10:39:13+00:00"
     assert rules.section in BODY_RULES.sections
 
 
