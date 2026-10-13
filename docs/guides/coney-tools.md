@@ -1010,8 +1010,9 @@ worktree's folder of the scratch directory (`scratch/<worktree>/`; the process i
 its path is the first line printed. No two runs share a log, so one never garbles another's; the newest 20 logs of a
 worktree are kept. What is printed after is short: a line per step (outcome, time, lane, how many steps were out of
 date, time spent waiting), the first compile, link and CMake errors (MSVC, GCC and Clang forms) and the failed steps,
-the failed tests by name (the first eight, then a count; the counts are ctest's own) with `N passed, M failed of T`,
-and a last `result:` line that names the failing step or the first failing tests. A command that exits non-zero with
+the failed tests by name (the first eight, then a count; the counts and the names are ctest's own, read from its "The
+following tests FAILED:" list, so a test's output that looks like a list entry is never taken for a failure; without
+that list, from the `***Failed` and `***Timeout` lines) with `N passed, M failed of T`, and a last `result:` line that names the failing step or the first failing tests. A command that exits non-zero with
 no error, no failed step and no failed test in its output says so plainly, `stopped from outside (no failing step
 found)`: it was killed, timed out or interrupted by something else. Exit code `0` on success, `1` on a failed step or a
 filter that selects no tests, `2` on a precheck or usage problem, `75` when it gave up waiting for a slot or for the

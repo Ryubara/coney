@@ -82,6 +82,7 @@ _EXPLAIN = re.compile(r"^ninja explain: (.*)$")
 # state to them when it is a failure: `.....***Failed`).
 _TEST_LINE = re.compile(r"^\s*\d+/\d+ Test\s+#\d+: (?P<name>.+) \.{2,}\s*(?P<state>.*?)\s+[\d.]+ sec\s*$")
 _TEST_SUMMARY = re.compile(r"(\d+)% tests passed, (\d+) tests? failed out of (\d+)")
+_TEST_FAILED_HEADING = "The following tests FAILED:"
 _TEST_FAILED_ENTRY = re.compile(r"^\s*\d+ - (?P<name>.+) \([^()]*\)\s*$")
 
 
@@ -155,6 +156,8 @@ class TestScan:
         self._lines_failed: list[str] = []
         self._summary: tuple[int, int] | None = None
         self._listed_failures: list[str] = []
+        # True while the lines are the entries under ctest's "The following tests FAILED:" heading.
+        self._in_failed_list = False
         self.none_found = False
 
     @property
@@ -166,7 +169,8 @@ class TestScan:
 
     @property
     def failed(self) -> list[str]:
-        """The names of the failed tests."""
+        """The names of the failed tests: ctest's own list when it printed one, else the lines marked `***Failed` or
+        `***Timeout` (a run killed before ctest could print its list)."""
         return self._listed_failures or self._lines_failed
 
     @property
@@ -192,10 +196,19 @@ class TestScan:
         if summary:
             self._summary = (int(summary.group(3)), int(summary.group(2)))
             return
-        listed = _TEST_FAILED_ENTRY.match(line)
-        if listed:
-            self._listed_failures.append(listed.group("name"))
+        if line.strip() == _TEST_FAILED_HEADING:
+            # A test's own output can look like an entry (`7 - name (Passed)`), so only the lines right under ctest's
+            # heading are its failures; a later heading replaces an earlier one.
+            self._in_failed_list = True
+            self._listed_failures = []
             return
+        if self._in_failed_list:
+            listed = _TEST_FAILED_ENTRY.match(line)
+            if listed:
+                self._listed_failures.append(listed.group("name"))
+                return
+            # The list ends at the first line that is not an entry ("Errors while running CTest", a blank line).
+            self._in_failed_list = False
         test = _TEST_LINE.match(line)
         if test:
             state = test.group("state")
