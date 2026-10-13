@@ -157,7 +157,8 @@ class Player {
     Player& operator=(const Player&) = delete;
     Player(Player&&) = delete;
     Player& operator=(Player&&) = delete;
-    /// Hands the follow camera back: cameras given with setCameras() no longer refer to it.
+    /// Hands the follow camera back: cameras given with setCameras() no longer refer to it. Reads nothing of his
+    /// human's clips, which may belong to a character that is already gone (a paired move's attacker).
     ~Player();
 
     /// Makes him `character` (which must outlive him) with `playerClass` where he stands, as a player made as that
