@@ -12,7 +12,9 @@ fields = ["humans"]
 # Made from QUICK RUMBLE > WAR PARTY > 1P vs CPU > Furies, Orphans, the set-up's mode (index 1) written 1 (RM_Brawl)
 # and gang size (index 2) 9 at Choose Area, then the Fight Pen: saved at the intro's "press X" prompt, brains off.
 state = "states/gang_battle_intro.p2s"
-patches = ["scripted-pad", "call-brains"]
+# The hooks of research/traces/patches/gang-battle.toml log target changes with their caller, help calls and helpers
+# sent (gang-fights.md#trace); recordings made before 2026-10-13 had none.
+patches = ["scripted-pad", "call-brains", "set-target", "help-call", "send-helper"]
 # The matches differ by an offset of the brains' random stream (its 10-bit index, maths.md#random), written
 # before the first update: `pcsx2 record --let seed=341`.
 let = { seed = "0" }

@@ -1,7 +1,7 @@
 # Gang fights: how a gang fights together
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`), read in Ghidra on 2026-10-12;
-no runtime check yet (the gang-battle trace of issue #273 is the runtime check, [below](#trace)).
+checked at runtime on Rumble's 9-a-side brawl in PCSX2 2.9.94 on 2026-10-12 and 2026-10-13 ([Runtime checks](#runtime)).
 
 How the members of a gang share out a big fight: who goes for whom, how many may hit one man at once, what the rest
 do while they wait, when they switch, how they help each other and what the gang as a whole adds. There is **no
@@ -209,12 +209,60 @@ on results 1, 5 or 6. Under TacticAttack:
 4. **Events**: 1 and 11 (a member hit or spotting someone) give Melee to a member with no fight goal while no team-up
    runs; 2 (a member died) fires `TacMemberDied` unless fled; 18 runs the flight check; 19 and 22 give everyone Melee
    again; 20 runs `AttackTactic_OnViolence`.
-5. **Team-ups** only if the arena's scripts enable them (gang `+0xd9`); whether Rumble does is not known (the trace
-   records it).
+5. **Team-ups** only if the arena's scripts enable them (gang `+0xd9`). Rumble does not: `+0xd9` stayed 0 for both
+   sides in every recorded match and no order ran ([Runtime checks](#runtime)).
 
 Side 1's AI members (with the player as chief) get the forced attack command, `WCIssueCommand(player, 1, true)`:
 FollowAndAttack on the player, best enemy within 60 m of him, and no shared target. Their gang type 3 lets one of
 them swing at a standing man at a time (v2 1) and four at a downed one (v3 4).
+
+## Runtime checks {#runtime}
+
+Confirmed (runtime), PCSX2 2.9.94: eight recordings of [Rumble's gang battle](rumble.md#gang-battle-trace), every
+human on every update, five with the Furies as side 1 (2026-10-12 and 2026-10-13) and three with the sides swapped
+([The sides swapped](rumble.md#gang-battle-swap)); the five of 2026-10-13 also ran the hooks of
+`repo:research/traces/patches/gang-battle.toml`. Counts are over the fight (the brains going on to `RumbleOver`), per
+minute that a fighter stands. The numbers per match are on [Rumble](rumble.md#gang-battle-results).
+
+1. **Each side's tactic.** Side 1 runs the attack command's tactic (`WarriorAttackTactic`, vtable `0x00544160`) for
+   the whole match, with FollowAndAttack (52) at the bottom of every member's stack; so side 1 never meets
+   TacticAttack's idle check, events, flight or team-ups. Side 2 runs TacticConfront (vtable `0x00543740`) for its
+   first 23 to 47 updates, then TacticAttack (`0x00543320`), with FindEnemy (65) at the bottom, Melee (8) above it and
+   Fight (15) on top. The alert state (`+0x32`) is 1 from the brains going on (0 under TacticConfront).
+2. **No shared target and no team-ups.** The shared target (`+0x10`) stayed empty and `GangEnableAttackStrategies`
+   (`+0xd9`) 0 on both sides in every match, and no team-up order ran. The leader (`+0x44`) stays one fighter until he goes
+   down, then passes to another (side 1 starts with `P11`).
+3. **The limits.** At most 4 of a side target one man, as the 4 attack slots allow. The spacing bytes on a man are
+   those of the gang type attacking him: on side 2's fighters (attacked by type 3) 1 standing and 4 downed, on side 1's
+   (attacked by type 19) 2 standing and 1 or 2 downed (the downed byte is raised only by a slot taken while he is
+   down). The active places held on a man stay within his byte, except in 0 to 2 % of the samples where places are
+   held, nearly all within 10 s after he got up (inferred: places taken while he was down, under the downed byte,
+   stay until their holders let go; `Brain_ClaimActiveAttacker` `0x00291008` only looks at the first `s` places).
+4. **Fight goals last 4 s.** Every fight goal starts with 4000 ms left (a few with 500 to 2500 ms), and 24 to 74 % of
+   them run to 4 s or longer (kept while an active place is held; the longest 41 s), so a member re-chooses every few
+   seconds ([Target switches](#switches) rule 1).
+5. **Where the waiting ones stand.** A fighter with Fight on top and no active place stands a median 0.9 to 1.1 m from
+   a target who is fighting him (1 to 5 % of that time in the 4 to 4.75 m band), and 1.5 to 3.5 m from a target
+   fighting someone else (6 to 25 % in the band, 29 to 67 % beyond 2.5 m). The band is where a reposition sends a
+   waiter, not where waiters spend their time ([What the waiting ones do](#waiting)). Taunts (clip `0x25b`) come 0 to
+   1.9 times a standing minute.
+6. **What changes a target** (the `set-target` hook on `Brain_SetTarget` `0x0028cfe0`, by its caller; five matches,
+   per standing minute): Melee's re-pick (`Brain_PickBestEnemy`) sets one 13 to 31 times and clears one 7 to 28 times
+   (it clears, then sets: a change of enemy shows as a clear and a set in one update); the fight goal's forced
+   re-target (`FightGoal_Process`, rule 2 of [the switches](#switches)) switches 2 to 17 times; side 1's
+   FollowAndAttack fight (`Brain_Fight`, forced) 1.8 to 4.7; side 2's GangBrain events (`GangBrain_OnEvent`, forced)
+   1.0 to 3.2; clears by `Human_DropTarget`, the Stunned goal and a slot displacement (`Brain_ClaimAttackSlot`) 0 to
+   7.5. Calls that set the same target again (most of them, through `Human_SetTarget` `0x00226c30`) change nothing.
+7. **Help.** Help calls (the `help-call` hook on `Gang_BroadcastHelpCall` `0x00293640`) come from three sites of
+   `Brain_DefaultOnEvent`: on a hit (`0x002930d8`, with an amount in `a3`), on a warning (`0x00292f08`) and a third
+   (`0x002934fc`, about once a minute). Hit and warning together: the Orphans 41 to 71 a standing minute, the Furies
+   12 to 37 (the Orphans are hit more). Every helper sent (the `send-helper` hook on `Gang_SendHelper` `0x002b75b8`,
+   0.1 to 1.6 a minute) was sent by a hearer answering a call (`Brain_OnViolenceSeen` `0x00291960`); TacticAttack's
+   3 s idle check never sent one, because side 2's fighters never had an empty goal stack (0 to 0.5 % of the time;
+   side 1's 0.4 to 12.6 %).
+8. **Side and gang** (the swap): the Furies won all eight matches, as side 1 and as side 2, and the Blocking goal
+   and few reactions go with the Furies, while side 2 attacks more often than side 1 whichever gang it is
+   ([Rumble: the sides swapped](rumble.md#gang-battle-swap)).
 
 ## Coney needs {#coney}
 
@@ -263,6 +311,12 @@ Per human and update (the field set the gang-battle trace uses; brain = `0x006d5
 | Helping | help calls (hook `0x00293640`), helpers sent (hook `0x002b75b8`), side picked (hook `0x002912b0`), state flags of mates (grabbed `0x30`, down `0x80000`) | hooks; human record `+0x00` |
 | The gang | alert `+0x32`, tactic vtable (`+0x40` → `+0x1c`), leader `+0x44`, team-ups allowed `+0xd9`, can flee `+0xdf`, start count `+0xe0`, running order (tactic `+0x10` → its vtable `+0x0c`) | gang record; the tactic |
 
+The `humans` field set records the brain and gang quantities above (the gang's as `g_alert`, `g_tactic`, `g_leader`,
+`g_chosen`, `g_teamups` and `g_order`, the team-up order running), and the hooks `set-target`, `help-call` and
+`send-helper` of `repo:research/traces/patches/gang-battle.toml` log the target changes with their caller, the help
+calls and the helpers sent. The wait reason (`Brain_CheckAttack`'s result) is not recorded yet: it needs a hook where
+the result is returned, not at the entry.
+
 Metrics the comparison can draw from them, per gang: the share of updates with 0, 1, 2, ... members on one enemy and
 with 0, 1, 2 active places held; the mean time a member holds one target; switches per minute split by cause
 (re-target, fight-goal end, engage re-target); the share of slot holders inside 4-4.75 m while waiting; taunts per
@@ -273,5 +327,4 @@ minute by kind.
 
 - What fills game state `+0x280` / `+0x284`, the attack command's fallback for the shared target.
 - Who reads TacticAttack's interval `+0x2c` / `+0x30` (`AttackTactic_ComputeSpacing` `0x00307668`).
-- Whether Rumble's arenas turn on `GangEnableAttackStrategies` (gang `+0xd9`); the gang-battle trace reads it.
 - What sends event `0x15` (the slot holders' taunts).
