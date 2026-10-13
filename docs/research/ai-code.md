@@ -120,7 +120,7 @@ are given by their Lua name ([Gang bindings](../references/bindings/gang.md)).
 | `0x0016a328` | `Gang_AddTurfBoxById` | `GangAddTurfBox`: only a volume box of kind 3 is added | Confirmed (code) |
 | `0x0016a3a8` | `Gang_RemoveTurfBox` | `GangRemoveTurfBox`: `Gang_RemoveTurfBoxPtr` | Confirmed (code) |
 | `0x0016a3f8` | `Gang_AddMemberByHandle` | `GangAddMember(gang, human)`: `Gang_AddMember` when the handle resolves | Confirmed (code) |
-| `0x0016a458` | `Gang_GetHeadCountById` | `GangGetHeadCount`: `Gang_CountLiving`, 0 for id −1 | Confirmed (code) |
+| `0x0016a458` | `Gang_GetHeadCountById` | `GangGetHeadCount`: `Gang_CountLiving(Gang_Get(id), living)` with the second argument passed through unchanged, 0 for id −1 | Confirmed (code) |
 | `0x0016a4a8` | `Gang_GetStandingCount` | `GangGetStandingCount`: `Gang_CountStanding` | Confirmed (code) |
 | `0x0016a4e8` | `Gang_IsGoodToGoById` | `GangGoodToGo`: `Gang_AreMembersReady`, 0 for id −1 | Confirmed (code) |
 | `0x0016a538` | `Gang_SetLeaderById` | `GangSetLeader`: writes the leader handle `+0x44` | Confirmed (code) |

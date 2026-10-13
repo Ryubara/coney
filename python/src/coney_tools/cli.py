@@ -914,8 +914,27 @@ def _run(args: argparse.Namespace) -> int:
     return _repo_check()
 
 
+def use_utf8_output(streams: Sequence[object] | None = None) -> None:
+    """Make the standard output and error write UTF-8 whatever the console code page is.
+
+    On Windows a redirected stdout takes the ANSI code page (cp1252), so a `→` in an audit message crashed
+    `repo audit --json > file` with a UnicodeEncodeError. Every report is read as UTF-8 (JSON files, logs), so the
+    tool writes that. Each stream keeps its error handler (stderr's is backslashreplace), so a character UTF-8 cannot
+    write (a lone surrogate from a file name) is escaped instead of crashing the error path. A stream that cannot be
+    reconfigured (a test's capture, a closed one) is left as it is.
+    """
+    for stream in streams if streams is not None else (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            try:
+                reconfigure(encoding="utf-8", errors=getattr(stream, "errors", None) or "strict")
+            except (OSError, ValueError):
+                continue
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the command line; returns 0 on success, 1 when a check fails, 2 on a usage or configuration error."""
+    use_utf8_output()
     args = _build_parser().parse_args(argv)
     try:
         status = _run(args)

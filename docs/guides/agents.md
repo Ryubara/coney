@@ -21,8 +21,8 @@ so a fresh clone gets the same setup as the maintainer's machine:
 | `.mcp.json` | The debugging servers: `ghidra-mcp` (the shared Ghidra project) and `pcsx2` (the emulator over PINE) | Claude Code; other tools take the same two commands in their own MCP config |
 | `.claude/agents/` | The roles: `analyst`, `implementer`, `reviewer`, `research-reviewer`, `pr-reviewer` | Claude Code |
 | `.claude/skills/` | The coordinator's skills: `repo-hygiene` ([the skill](repo-conventions.md#hygiene-skill)) | Claude Code |
-| `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and `coney-tools build` allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)), and `gh` commands naming a video file, which only `coney-tools clips publish` uploads ([Clips](testing.md#clips)); hooks that refuse a raw `cmake --build`, `ctest` or `ninja` ([Builds and tests](#builds)), a wait loop with no bound ([Bounded waits](#bounded-waits)) and a raw `gh` command that writes an issue (`.claude/hooks/issue_guard.py`, [Filing an issue](issues.md#filing)) and, after a `git commit`, a `Co-Authored-By` trailer that names another model than the agent runs on (`.claude/hooks/trailer_guard.py`, [Commit trailers](#trailer-guard)) | Claude Code |
-| `.claude/hooks/` | The hook scripts `settings.json` runs before and after a shell command | Claude Code |
+| `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and `coney-tools build` allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)), and `gh` commands naming a video file, which only `coney-tools clips publish` uploads ([Clips](testing.md#clips)); hooks that refuse a raw `cmake --build`, `ctest` or `ninja` ([Builds and tests](#builds)), a wait loop with no bound ([Bounded waits](#bounded-waits)), a raw `gh` command that writes an issue (`.claude/hooks/issue_guard.py`, [Filing an issue](issues.md#filing)) an Agent call with `isolation: "worktree"` (`.claude/hooks/agent_guard.py`, [Where an agent works](#worktrees)) and, after a `git commit`, a `Co-Authored-By` trailer that names another model than the agent runs on (`.claude/hooks/trailer_guard.py`, [Commit trailers](#trailer-guard)) | Claude Code |
+| `.claude/hooks/` | The hook scripts `settings.json` runs before or after a shell command or an Agent call | Claude Code |
 
 **The servers.** `.mcp.json` holds no paths. Each entry runs `coney-tools mcp serve <name>`, which finds the server
 through `coney.local.toml` (`ghidra_mcp_repo` and `pcsx2_mcp_dir`, see [Local workspace](workspace.md)) and runs it
@@ -157,6 +157,18 @@ instead of repeating it:
 A brief may be just "issue #N": the issue holds the steps, the screenshots and the acceptance test, and the agent
 reads it as [Issues](issues.md#agents) describes. Naming the number is cheaper than pasting the issue, and the
 issue stays the one place to read it.
+
+## Where an agent works {#worktrees}
+
+Every agent works in a worktree at `../../worktrees/coney/<branch>/` on a branch its brief names, and creates it
+itself (`git worktree add ../../worktrees/coney/<branch> -b <branch> origin/main`). **Never start an agent with the
+Agent tool's `isolation: "worktree"` option.** It creates the worktree for you under the main checkout's
+`.claude/worktrees/` with an automatic branch name, which is outside the layout [AGENTS.md](repo:AGENTS.md) fixes:
+the virus scanner exclusion a machine sets for the worktrees folder (without it a build starves the CPU) does not
+cover it, the `.coney-busy` marker and [the workspace cleanup](workspace.md#cleanup) do not look there, and the
+branch name is not the one the release queue and `STATUS.md` use. A hook (`.claude/hooks/agent_guard.py`, registered
+for the Agent tool in `.claude/settings.json`) refuses the call and points here; start the agent again without
+`isolation`.
 
 ## Commit trailers {#trailer-guard}
 

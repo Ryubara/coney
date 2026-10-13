@@ -180,20 +180,25 @@ def _norm(text: str) -> str:
 
 
 def detect_form(title: str, body: str, conventions: Conventions) -> str:
-    """The form a title and body follow: by the title prefix, else the form most of the headings belong to, else the
-    form the command line uses."""
+    """The form a title and body follow: the form most of the body's headings belong to (a "Bug:" title on a task-form
+    body is still a task, #461), else, when the headings tie or none match, the title prefix, else the form the
+    command line uses."""
     forms = conventions.issues.forms
-    for name, form in forms.items():
-        if form.title_prefix and title.casefold().startswith(form.title_prefix.casefold()):
-            return name
     _, blocks = _blocks(body)
     seen = {_norm(block.name) for block in blocks}
-    best, best_score = conventions.issues.cli_uses_form, 0
-    for name, form in forms.items():
-        score = sum(1 for section in form.sections if _norm(section.heading) in seen)
-        if score > best_score:
-            best, best_score = name, score
-    return best
+    scores = {
+        name: sum(1 for section in form.sections if _norm(section.heading) in seen) for name, form in forms.items()
+    }
+    top = max(scores.values(), default=0)
+    leaders = [name for name, score in scores.items() if score == top and top > 0]
+    if len(leaders) == 1:
+        return leaders[0]
+    # A tie (a body with only the shared "Screenshots" heading) or no headings: the title prefix decides among them.
+    for name in leaders or list(forms):
+        prefix = forms[name].title_prefix
+        if prefix and title.casefold().startswith(prefix.casefold()):
+            return name
+    return conventions.issues.cli_uses_form
 
 
 # --- the draft ------------------------------------------------------------------------------------------------------

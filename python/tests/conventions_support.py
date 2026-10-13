@@ -71,6 +71,7 @@ CI_CLASSES = [
     ("python/README.md", "tools_only"),
     ("python/uv.lock", "tools_only"),
     (".claude/hooks/build_guard.py", "tools_only"),
+    (".claude/hooks/agent_guard.py", "tools_only"),
     (".claude/settings.json", "tools_only"),
     ("tools/start-ghidra-mcp.ps1", "tools_only"),
     ("bootstrap.sh", "tools_only"),

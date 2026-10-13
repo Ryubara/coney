@@ -30,7 +30,11 @@ human record, *gang* `+n` the gang record ([The gang](ai-gangs.md#gang-record)),
 `0x0050b734`, `+0x48`). A human's position is entry *human* `+0x92` of the 32-byte position table at `0x00714b00`.
 A human is an AI when *human* `+0x1b0` (its pad) is −1. *Living* in "living members" means the member's handle
 still resolves (`Gang_CountLiving(g, 0)`, `0x00166158`, counts resolving handles); *standing* means also not down
-or dead (`Gang_CountLiving(g, 1)`, `Human_IsDownOrDead`). Goal kinds are the type ids of [Goals](ai.md#goals).
+or dead (`Gang_CountLiving(g, 1)`, `Human_IsDownOrDead` `0x00227e60`; only the value 1 selects it, any other
+counts resolving handles; confirmed (code) at `0x00166158`). The HUD's gang counts all pass 1
+([HUD](hud.md#gang-count-what)). Neither is `Gang_CountStanding` (`0x00166220`, `GangGetStandingCount`), which
+tests knocked out, state `0x100000000` and wounded separately (confirmed (code) at `0x00166220`). Goal kinds
+are the type ids of [Goals](ai.md#goals).
 
 ## Unit 1: threats and the gang's shared target {#unit-1}
 
