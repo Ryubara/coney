@@ -83,7 +83,9 @@ _EXPLAIN = re.compile(r"^ninja explain: (.*)$")
 _TEST_LINE = re.compile(r"^\s*\d+/\d+ Test\s+#\d+: (?P<name>.+) \.{2,}\s*(?P<state>.*?)\s+[\d.]+ sec\s*$")
 _TEST_SUMMARY = re.compile(r"(\d+)% tests passed, (\d+) tests? failed out of (\d+)")
 _TEST_FAILED_HEADING = "The following tests FAILED:"
-_TEST_FAILED_ENTRY = re.compile(r"^\s*\d+ - (?P<name>.+) \([^()]*\)\s*$")
+# An entry is `N - name (state)`, then the test's labels when it has any (`(Failed) disc story`). The name is lazy and
+# anchored on the first `(state)` that only labels (no parentheses) follow, so a name may hold parentheses.
+_TEST_FAILED_ENTRY = re.compile(r"^\s*\d+ - (?P<name>.+?) \([^()]*\)(?: [^()]*)?\s*$")
 
 
 def _cut(line: str) -> str:
@@ -170,8 +172,12 @@ class TestScan:
     @property
     def failed(self) -> list[str]:
         """The names of the failed tests: ctest's own list when it printed one, else the lines marked `***Failed` or
-        `***Timeout` (a run killed before ctest could print its list)."""
-        return self._listed_failures or self._lines_failed
+        `***Timeout` (a run killed before ctest could print its list). When the list holds fewer names than ctest
+        counted, the lines marked failed that it lacks follow it, so the gap shows."""
+        names = list(self._listed_failures)
+        if len(names) < self.failed_count:
+            names += [name for name in self._lines_failed if name not in names]
+        return names
 
     @property
     def failed_count(self) -> int:
@@ -197,18 +203,22 @@ class TestScan:
             self._summary = (int(summary.group(3)), int(summary.group(2)))
             return
         if line.strip() == _TEST_FAILED_HEADING:
-            # A test's own output can look like an entry (`7 - name (Passed)`), so only the lines right under ctest's
-            # heading are its failures; a later heading replaces an earlier one.
+            # A test's own output can look like an entry (`7 - name (Passed)`), and with --output-on-failure even hold
+            # the heading, so only the lines under the heading are failures; ctest prints the real heading last, so a
+            # later heading replaces an earlier list.
             self._in_failed_list = True
             self._listed_failures = []
             return
         if self._in_failed_list:
-            listed = _TEST_FAILED_ENTRY.match(line)
-            if listed:
-                self._listed_failures.append(listed.group("name"))
+            if not line.strip() or line.startswith("Errors while running CTest"):
+                # The list ends at a blank line or ctest's closing line. Any other line that is not an entry is
+                # skipped, never a reason to drop the entries after it (a label format we do not know).
+                self._in_failed_list = False
+            else:
+                listed = _TEST_FAILED_ENTRY.match(line)
+                if listed:
+                    self._listed_failures.append(listed.group("name"))
                 return
-            # The list ends at the first line that is not an entry ("Errors while running CTest", a blank line).
-            self._in_failed_list = False
         test = _TEST_LINE.match(line)
         if test:
             state = test.group("state")

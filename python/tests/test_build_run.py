@@ -179,13 +179,61 @@ def test_ctest_a_failed_tests_output_shaped_like_a_failure_entry_is_not_counted(
     assert (scan.failed_count, scan.failed) == (1, ["a"])
 
 
-def test_ctest_failed_list_ends_at_the_first_line_that_is_not_an_entry() -> None:
+def test_ctest_failed_list_ends_at_a_blank_line_or_the_errors_line() -> None:
     scan = scan_tests(
         "50% tests passed, 1 tests failed out of 2\n\nThe following tests FAILED:\n"
         "\t  1 - a (Failed)\n\n"
         "some later output\n\t  2 - not listed (Failed)\n"
     )
     assert scan.failed == ["a"]
+
+
+# The names are those of a real run's list (ctest prints a test's labels after its state); the numbers are made up.
+CTEST_LABELLED = """\
+50% tests passed, 4 tests failed out of 8
+
+The following tests FAILED:
+\t2009 - the disc's level3 rooftop chase, driven by the pad, reaches the gallery (Failed) disc playthrough story
+\t2017 - the disc's level5: the boss fight, won with the pad, ends the mission (Failed) disc scenes story
+\t2071 - the disc's story missions 2, 3, 5 and 6 play each checkpoint without a script error (Failed) disc story
+\t2602 - coney.frame_copies_upright (SEGFAULT)
+Errors while running CTest
+"""
+
+LABELLED_NAMES = [
+    "the disc's level3 rooftop chase, driven by the pad, reaches the gallery",
+    "the disc's level5: the boss fight, won with the pad, ends the mission",
+    "the disc's story missions 2, 3, 5 and 6 play each checkpoint without a script error",
+    "coney.frame_copies_upright",
+]
+
+
+def test_ctest_failed_entries_with_labels_after_the_state_are_read() -> None:
+    scan = scan_tests(CTEST_LABELLED)
+    assert (scan.failed, scan.failed_count) == (LABELLED_NAMES, 4)
+
+
+def test_ctest_labelled_and_unlabelled_entries_mix_and_a_timeout_follows_a_labelled_one() -> None:
+    scan = scan_tests(
+        "0% tests passed, 4 tests failed out of 4\n\nThe following tests FAILED:\n"
+        "\t  1 - plain (Failed)\n"
+        "\t  2 - labelled one (Failed) disc story\n"
+        "\t  3 - slow one (Timeout)\n"
+        "\t  4 - name (with parentheses) (Timeout) disc slow\n"
+        "Errors while running CTest\n"
+    )
+    assert scan.failed == ["plain", "labelled one", "slow one", "name (with parentheses)"]
+
+
+def test_ctest_a_short_list_is_completed_from_the_failed_lines() -> None:
+    # Fewer names listed than ctest counted: the lines marked failed fill in, so the gap shows.
+    scan = scan_tests(
+        "1/3 Test #1: a ....***Failed    0.01 sec\n2/3 Test #2: b ....***Timeout   0.01 sec\n"
+        "3/3 Test #3: c ....   Passed    0.01 sec\n\n"
+        "33% tests passed, 2 tests failed out of 3\n\nThe following tests FAILED:\n"
+        "\t  1 - a (Failed)\nErrors while running CTest\n"
+    )
+    assert (scan.failed, scan.failed_count) == (["a", "b"], 2)
 
 
 def test_ctest_a_long_failed_list_keeps_every_name_for_the_summary_to_cut() -> None:
