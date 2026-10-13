@@ -78,7 +78,7 @@ def test_the_real_labels_are_in_their_families() -> None:
     labels = load_conventions(REPO).labels
     assert labels.names("type") == ("bug", "parity", "task", "docs", "enhancement")
     assert len(labels.names("area")) == 11 and len(labels.names("priority")) == 3
-    assert labels.names("status")[0] == "S-needs-triage" and len(labels.names("status")) == 7
+    assert labels.names("status")[0] == "S-needs-triage" and len(labels.names("status")) == 9
     assert labels.names("other") == ("good first issue", "help wanted", "duplicate", "wontfix")
     assert labels.names() == tuple(label.name for label in labels.list)
 

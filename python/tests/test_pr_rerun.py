@@ -402,7 +402,7 @@ def test_without_rerun_nothing_extra_is_read(tmp_path: Path, monkeypatch: pytest
 
 
 def test_apply_needs_rerun(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    with pytest.raises(ConfigError, match="--apply only goes with --rerun"):
+    with pytest.raises(ConfigError, match="--apply goes with --labels or --rerun"):
         command(tmp_path, monkeypatch, Both([]), "--apply")
 
 
