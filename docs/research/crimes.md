@@ -1118,9 +1118,11 @@ traced, so the hit's own reaction plays.
 **The mugging and the starting money** (2026-10-07): `HuCreate` rolls each new human's carry as
 [Starting money](#starting-money) gives (`characters::rollStartingCarry()`, `repo:src/characters/starting_money.h`)
 from its recorded `CfgChar` and `CfgCharClassAttribs` calls with the game's random numbers, and sets the money
-(`HuSetMoney` later overrides it). Player 1's won mugging (`PlayLevelMode::stepMugging()`) moves all the victim's
-money in the deciding update (`LevelPickups::mugPaid()`: item 2 with the money and inventory callbacks, then item
-2's pick-up sound); his
+(`HuSetMoney` later overrides it). A gang spawner makes its human through the same `HuCreate`
+(`ScriptSpawnerWorld::spawn`), as `Spawner_MakeHuman` (`0x0016d860`) calls `Human_Init`, so a spawner's human rolls
+the same draws in the same order (`repo:tests/ai/spawner_money_test.cpp`). Player 1's won mugging
+(`PlayLevelMode::stepMugging()`) moves all the victim's money in the deciding update (`LevelPickups::mugPaid()`:
+item 2 with the money and inventory callbacks, then item 2's pick-up sound); his
 `HuSetMugCallback` callback runs with (mugger, 1 or nil) when his end clip (344 or 346) finishes, or at once for a
 let-go or a hit (`LevelPickups::mugEnded()`). **Coney's stand-ins**: a `grp_` object group carries nothing and a
 rolled object is not given to the human; `HuSetInterrogation` keeps the lines and callback

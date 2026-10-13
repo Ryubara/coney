@@ -131,6 +131,7 @@ add_executable(coney_tests
     platform/disc_tandem_test.cpp
     platform/disc_bat_cross_test.cpp
     platform/disc_level99_spawner_test.cpp
+    platform/disc_spawner_money_test.cpp
     platform/disc_level99_car_climb_test.cpp
     platform/disc_level99_street_props_test.cpp
     platform/disc_game_session_test.cpp
@@ -403,6 +404,7 @@ target_sources(coney_tests PRIVATE
     ai/scripted_story_test.cpp
     ai/sectors_test.cpp
     ai/steering_test.cpp
+    ai/spawner_money_test.cpp
     ai/spawners_test.cpp
     ai/rumble_tactics_test.cpp
     ai/swap_prompt_test.cpp
