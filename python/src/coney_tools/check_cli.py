@@ -40,6 +40,14 @@ MYPY_COMMAND: tuple[str, ...] = (
     "python/src",
     "python/tests",
 )
+#: What ruff lints: the package and the hook scripts every Claude Code session on a machine runs. The one source of
+#: these paths for the gate; CI's python job and pre-commit's ruff hooks spell the same two and a test compares them.
+#: Each folder has its own config (python/pyproject.toml; .claude/hooks/ruff.toml extends it), so the same rules apply.
+RUFF_PATHS: tuple[str, ...] = ("python", ".claude/hooks")
+#: The ruff runs, the same words as CI's python job.
+RUFF_COMMANDS: tuple[tuple[str, ...], ...] = tuple(
+    ("uv", "run", "--project", "python", "ruff", *action, *RUFF_PATHS) for action in (("check",), ("format", "--check"))
+)
 #: Lines of a failed clang-tidy run shown when nothing in it looks like a diagnostic.
 FALLBACK_TAIL_LINES = 30
 
@@ -238,13 +246,20 @@ def _step_docs(root: Path, changed: list[str]) -> StepResult:
 
 
 def _step_python(root: Path, changed: list[str]) -> StepResult:
-    """pytest and mypy over python/, when anything under it or under .claude/ changed (ruff runs in pre-commit)."""
+    """ruff, pytest and mypy, when anything under `python/` or `.claude/` changed (the tests also run the hooks).
+
+    ruff runs here over every folder in RUFF_PATHS, as CI does; pre-commit also runs it on the changed files.
+    """
     if not _python_changed(changed):
         return _skipped("python", "no Python changed")
     if not shutil.which("uv"):
         raise ConfigError("uv is not on PATH (docs/guides/building.md#python-tools)")
     problems: list[str] = []
     for label, command in (
+        *(
+            (" ".join(command[command.index("ruff") : command.index("ruff") + 2]), list(command))
+            for command in RUFF_COMMANDS
+        ),
         ("pytest", ["uv", "run", "--project", "python", "pytest", "python/tests", "-q", "-x", "--no-header"]),
         ("mypy", list(MYPY_COMMAND)),
     ):
@@ -253,8 +268,8 @@ def _step_python(root: Path, changed: list[str]) -> StepResult:
             problems.append(f"{label} failed:")
             problems.extend(f"  {line}" for line in output.splitlines()[-15:] if line.strip())
     if problems:
-        return StepResult("python", False, "pytest or mypy failed", output=_tail(problems))
-    return StepResult("python", True, "pytest, mypy")
+        return StepResult("python", False, "ruff, pytest or mypy failed", output=_tail(problems))
+    return StepResult("python", True, "ruff, pytest, mypy")
 
 
 def run_changed(

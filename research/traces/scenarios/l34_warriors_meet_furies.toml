@@ -1,0 +1,24 @@
+# level34 checkpoint 5 (the park), no input: every human on every update from the level's start, through the scene
+# l34_c4, to the Furies' first hits, to see how the AI Warriors (Snow and Ash) meet the Furies: where they go, at which
+# gait and under which goal and tactic. The state is an analyst's own (level34 checkpoint 5 entered through mode 8
+# from a level99 state, saved as the park's humans appeared, before l34_c4 starts); pass it with --state.
+# Research: docs/research/scripting.md#level34-fixes (item 16).
+description = "level34 checkpoint 5, no input: every human from the level's start to the Furies' first hits (record with --state and the level34 state)"
+research = "docs/research/scripting.md#level34-fixes"
+input = "l34_furies_first_hits.txt"
+updates = 1700
+rows = "humans"
+fields = ["humans"]
+
+[original]
+# level99's slot, a placeholder the format needs: without --state this measures level99, not level34.
+slot = 7
+# The script's binding calls (GangMakeEnemies, TacticAttack, HuSetWounded, ...) and the functions it calls by name
+# (P3.EndParkScene, P3.FuryTimeout, P3.MoveFromFence), to time each step against the humans' rows.
+patches = ["event-call", "event-callback"]
+# 19 humans a sample: slowed so that no sample tears (research-workflow.md#recording-a-trace).
+speed = 0.4
+
+[coney]
+level = "level34"
+args = ["--checkpoint", "5"]

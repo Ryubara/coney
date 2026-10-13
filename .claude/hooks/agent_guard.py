@@ -19,7 +19,7 @@ import json
 import sys
 
 MESSAGE = (
-    "Blocked: do not start an agent with isolation: \"worktree\". It puts the worktree under .claude/worktrees/ with "
+    'Blocked: do not start an agent with isolation: "worktree". It puts the worktree under .claude/worktrees/ with '
     "an automatic branch name, outside ../../worktrees/coney/<branch>/ (the layout every tool and the Defender "
     "exclusion assume). Start the agent without `isolation` and tell it, in its brief, to create its own worktree "
     "with `git worktree add ../../worktrees/coney/<branch> -b <branch> origin/main` "

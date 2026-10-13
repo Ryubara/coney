@@ -29,17 +29,13 @@ import sys
 _START = r"(?:^|[;&|(]|\$\()[ \t]*(?:[A-Za-z_]\w*=\S*[ \t]+)*"
 #: A program by name, possibly with a path in front and `.exe` after, possibly quoted (`& "C:\...\cmake.exe" --build`).
 _PATH = r"(?:\"[^\"\n]*[\\/]|'[^'\n]*[\\/]|[\"']?[^\s;&|()\"']*[\\/])?"
-_PROGRAM = (
-    _PATH + r"(?P<name>cmake|ctest|ninja)(?:\.exe)?[\"']?(?=[ \t]|$)(?P<args>[^\n;&|]*)"
-)
+_PROGRAM = _PATH + r"(?P<name>cmake|ctest|ninja)(?:\.exe)?[\"']?(?=[ \t]|$)(?P<args>[^\n;&|]*)"
 
 _COMMAND = re.compile(_START + _PROGRAM, re.MULTILINE)
 #: What a `cmake` command does that builds: configure by preset or by -S/-B, or build.
 _CMAKE_BUILDS = re.compile(r"(?:^|[ \t])(?:--build|--preset|-S|-B)")
 #: Options that only list or print for `ctest` and `ninja`.
-_CTEST_LISTS = re.compile(
-    r"(?:^|[ \t])(?:-N|--show-only(?:=\S+)?|--version|--help|-h)(?=[ \t]|$)"
-)
+_CTEST_LISTS = re.compile(r"(?:^|[ \t])(?:-N|--show-only(?:=\S+)?|--version|--help|-h)(?=[ \t]|$)")
 _NINJA_PRINTS = re.compile(r"(?:^|[ \t])(?:--version|--help|-h)(?=[ \t]|$)")
 
 #: A here-document (`<<EOF`, `<<-'EOF'`): its head line is kept, its body is text, not commands.
