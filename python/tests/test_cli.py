@@ -312,6 +312,17 @@ def test_output_streams_are_switched_to_utf8_whatever_the_console_code_page() ->
     assert raw.getvalue() == "a → b".encode()
 
 
+def test_utf8_output_keeps_each_streams_error_handler() -> None:
+    """stderr's backslashreplace survives, so a lone surrogate in an error message is escaped, not a crash."""
+    raw = io.BytesIO()
+    stream = io.TextIOWrapper(raw, encoding="cp1252", errors="backslashreplace")
+    use_utf8_output([stream])
+    assert stream.encoding == "utf-8" and stream.errors == "backslashreplace"
+    stream.write("bad \udcff name")
+    stream.flush()
+    assert raw.getvalue() == b"bad \\udcff name"
+
+
 def test_a_command_run_with_a_cp1252_pipe_prints_unicode(tmp_path: Path) -> None:
     """The real entry point, with stdout a pipe in cp1252 (as under `repo audit --json > file` on Windows)."""
     code = "import sys; from coney_tools.cli import use_utf8_output; use_utf8_output(); print('\u2192')"

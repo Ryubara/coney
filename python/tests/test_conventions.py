@@ -2,6 +2,7 @@
 """Tests for coney_tools.conventions: the loader reads .github/conventions.yml strictly and the real file is sound."""
 
 import dataclasses
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -92,6 +93,19 @@ def test_the_loaded_values_cannot_be_changed() -> None:
 
 
 # --- reading ------------------------------------------------------------------------------------------------------
+
+
+def test_a_since_written_as_a_day_is_midnight_utc() -> None:
+    """A plain `YYYY-MM-DD` still works: it means the start of that day in UTC."""
+    since = conventions_with(("pull_requests.checklist.since", "2026-10-12")).pull_requests.checklist.since
+    assert since == datetime(2026, 10, 12, tzinfo=UTC)
+
+
+def test_a_since_with_an_offset_is_converted_to_utc() -> None:
+    """A moment written with an offset is the same instant in UTC."""
+    since = conventions_with(("pull_requests.checklist.since", "2026-10-12T12:39:13+02:00")).pull_requests.checklist
+    assert since.since == datetime(2026, 10, 12, 10, 39, 13, tzinfo=UTC)
+    assert since.since.utcoffset() == timedelta(0)
 
 
 def test_a_missing_file_is_a_one_line_error(tmp_path: Path) -> None:

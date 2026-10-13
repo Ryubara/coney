@@ -491,7 +491,7 @@ hygiene:
       severity: error
       fix: skill
       keys: [pull_requests.checklist]
-      summary: "a closed issue keeps an unchecked item that names no follow-up issue"
+      summary: "a closed issue keeps an unchecked item that names no follow-up issue (names the closing pull request when its Checklist is all ticked)"
     issue.stale-status:
       scope: github
       severity: warn
