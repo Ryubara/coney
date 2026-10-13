@@ -102,10 +102,11 @@ class RouteDriver final : public coney::InputSource {
         const float dy = leg.y - feet.y;
         const float reach = std::hypot(leg.x - feet.x, leg.y - feet.y);
         // The chase is a race: the Hi-Hat pursuers run at up to 13 m/s and fight whoever they catch, and the crew
-        // does not turn back to help (the chapter turns the Warrior commands off, so the chief's automatic attack is
-        // refused; docs/research/scripting.md#level3, docs/research/ai-gangs.md#warrior-auto-commands). So he
-        // sprints wherever he is not about to climb; Snow is tireless here, so the sprint never runs out
-        // (docs/research/characters.md#sprint).
+        // does not turn back to help. The dispatcher refusing a disabled command is confirmed (code)
+        // (docs/research/ai-gangs.md#warrior-auto-commands); that the chapter's Setup turns the commands off, and the
+        // pursuers' speed, are inferred (docs/research/scripting.md#level3, docs/research/ai-scripting.md#devil-run).
+        // So he sprints wherever he is not about to climb; Snow is tireless in the chase, so the sprint never runs
+        // out (docs/research/characters.md#sprint).
         const bool slowing = leg.move == Move::Climb && reach < kClimbSlowWithin;
         steer(pad, *player, dx, dy, slowing ? kClimbStick : 1.0F);
 

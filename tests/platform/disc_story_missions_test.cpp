@@ -282,9 +282,8 @@ TEST_CASE("the disc's story missions 2, 3, 5 and 6 play each checkpoint without 
             CHECK(run.scriptErrors == 0);
             // level3's checkpoint 4 is the rooftop chase: once the pad is his, the Hi-Hat pursuers run him down and
             // the crew, its Warrior commands off, does not turn back (docs/research/scripting.md#level3), so a player
-            // who stands still for 18 s is beaten down, as the research reads the chapter. The chase's own playthrough
-            // test
-            // (disc_story_playthrough_test.cpp) plays that checkpoint through the pad instead.
+            // who stands still for 18 s is beaten down, as the research reads the chapter. The chase's own
+            // playthrough test (disc_story_playthrough_test.cpp) plays that checkpoint through the pad instead.
             if (level != "level3" || checkpoint != 4) {
                 CHECK(run.standing);
                 CHECK(run.travelled > 1.0F);

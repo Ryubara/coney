@@ -109,8 +109,11 @@ of running).
 
 A driver plays as fast as a player who wants to win would, not merely fast enough for today's AI. The level3 chase's
 driver ran and walked to its climbs, and passed only because Coney let the crew turn back and fight the pursuers off.
-Once the chapter's own lock on the Warrior commands took effect, as in the original, the crew ran on ahead and the
-pursuers beat Snow down; the driver now sprints wherever it is not about to climb.
+Once the chapter's own lock on the Warrior commands took effect, the crew ran on ahead and the pursuers beat Snow
+down. The dispatcher's refusal of a disabled command is confirmed (code); that the chapter's Setup turns the commands
+off, and the pursuers' speed, are inferred from the research ([level3](../research/scripting.md#level3),
+[Automatic commands](../research/ai-gangs.md#warrior-auto-commands),
+[the devil run](../research/ai-scripting.md#devil-run)). The driver now sprints wherever it is not about to climb.
 
 A driver that fights holds the stick toward the foe it means to hit while it presses the attack, as a player does: a
 player's attack searches for its target along the stick's heading, and along his facing only when the stick is at
