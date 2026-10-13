@@ -1018,8 +1018,8 @@ and no failed test in its output says so plainly, `stopped from outside (no fail
 timed out or interrupted by something else. Exit code `0` on success, `1` on a failed step or a filter that selects no
 tests, `2` on a precheck or usage problem, `75` when it gave up waiting for a slot or for the build folder, `130` on an
 interrupt or when its caller is gone. The children run at below-normal priority, on Windows with no console window of
-their own (`CREATE_NO_WINDOW`, so a build started from a background task opens no terminal that takes the focus), and never outlive
-the command (below).
+their own (`CREATE_NO_WINDOW`, so a build started from a background task opens no terminal that takes the
+focus), and never outlive the command (below).
 
 **Process lifetimes.** An orphaned `ctest` goes on starting tests after its caller is gone, and killing the tests one
 by one only lets it start the next, so nothing the command starts may outlive it
