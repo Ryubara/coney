@@ -2046,8 +2046,9 @@ Fixes, in the order to take them (each one implementer unit):
    are figures seen in a Coney run (the disc test prints them; it asserts only the civilians and the bums), with no
    evidence grade for the original. The $1 muggings above were plausibly of bums (they hold $1-$3), the $0 ones of
    a seller or a Destroyer soldier, who hold $0 in Coney (inferred; which human was mugged is not logged), so
-   "$0 is not faithful" is not established. Whether the sellers (428, 431) and the soldier (197) hold money in the
-   original is open (the open questions below).
+   "$0 is not faithful" is not established. The original's sellers (428, 431) hold $0 and a type 197 soldier $5 in
+   21 of 101 rolls and $0 otherwise, as Coney's roll gives
+   ([level87's sellers and soldiers](crimes.md#starting-money)), so Coney needs no fix here.
 4. **A downed human drops no money.** The original's `Human_OnHealthOut` calls `Human_DropCarried` (`0x00232c60`)
    when a human is knocked out or wounded, which leaves a `dyn_money` pickup of his money ([Dropped when
    down](crimes.md#down-drop)). Chapter 3's two early Destroyers get $5 each (`EDConstructor`, `HuSetMoney`), the
@@ -2075,11 +2076,6 @@ Open questions:
 
 - Whether a crew Warrior can be grabbed and mugged: the course grabbed humans standing beside the start more than
   once, and which human it was is not logged.
-- What the spray sellers (types 431 and 428) and the Destroyer soldier of type 197 hold at creation in the original:
-  Coney's roll from their `CfgChar` records gives them $0 (seen in a Coney run), and the three muggings of checkpoint 3
-  paid $0 (fix 3). A runtime read of `+0x370` of a seller made by `spraySpawner` and of a Destroyer soldier made by
-  the `Wanderspawn` spawner, in the original, settles whether $0 is right
-  (and so whether the chapter's paint comes from muggings or only from the two Destroyers, fix 4).
 - What the original does with `ch3.BoozerChallenge`, which the script names but never defines; its sphere goes off
   for any human, the second early Destroyer included, as soon as the chapter starts.
 - How the player reaches checkpoint 4's roof burners in the original: whether the bar door (number 11) is open at

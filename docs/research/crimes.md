@@ -425,12 +425,59 @@ state `0x01fd8400`):
 | 9, 10 | 5-10 | 0.1 | 0 | 0 | 1 |
 | 11 | 5-10 | 0.1 | 20 | 0 | 1 |
 | 12 | 10-20 | 0.1 | 20 | 0 | 1 |
+| 15 | 10-20 | (not read) | 100 | 0 | 1 |
+
+Category 15 was read in `level87` (below), the same game state; its `+0x0c` was not read.
 
 **`PoizoCiv` (type 417)**, confirmed (runtime) from the same state: category 4, `+0x14b` 0, `v16` -1, `str15`
 `grp_male_ped`. Step 2 always gives `none` (`noObject` is 100), and the money is `rand(5, 20)`, times 5 when the
 second roll is 0 or 1 (2 in 101): $5-$20, rarely $25-$100. The $18 seen at runtime ([Combat](combat-throws.md#mugging))
 is in range. His pocket is empty (item 0, count 0), so the mugging pays money only. A seeded reimplementation draws, in
 this order: the object roll, the money, the bonus roll, then `Random_Int(100)` for `+0x26c`.
+
+**`level87`'s sellers and Destroyer soldiers** (issue #354). Their `CfgChar` records, confirmed (runtime) over PINE
+in PCSX2 2.9.94 on 2026-10-13 (a copy of the user's slot 7, `level87` checkpoints 3 and then 2 loaded through mode 8
+as on [Scripts](scripting.md#level34-fixes): level index 3 to `0x005e5db0`, the checkpoint to `W_GameState + 0x33a`,
+3 to `+0x14c`; game state `0x01fd8400`); categories 11 and 15 are in the table above:
+
+| Type | Humans seen | Category | `v16` | `str15` |
+| --- | --- | --- | --- | --- |
+| 428 | `drugsSpawner0` (a seller) | 15 | 0 | `none` |
+| 431 | `spraySpawner0`-`2` (the paint sellers) | 15 | 0 | `none` |
+| 197 | `WS1`, `liqD_01` (Destroyer soldiers) | 11 | 5 | `none` |
+
+Through the steps above (confirmed (code) at `0x002187e4`-`0x00218a90`):
+
+- **The sellers always carry $0.** `noObject` is 100, so step 2 gives `none` and step 3 takes the `roll <= noObject`
+  branch with `v16` = 0, which is not above `min`: the money is `v16`, 0, and the bonus (1.0) leaves it 0.
+- **A type 197 soldier carries $5 or $0.** When `roll` (0-100) is 20 or less (21 in 101), step 3 gives `v16` = 5
+  (`min` 5 is not below it) and the bonus (1.0) keeps 5. Otherwise step 2 writes `+0x278` = 5, the object stays
+  `none` (`roll` is above `v16`) and the money stays 0. The class range 5-10 is never used, because `v16` is not -1
+  and the object is always `none`. Types 192, 194 and 199, the level's other Destroyers, have the same record
+  (category 11, `v16` 5, `none`), so the same $5-or-$0 unless a script sets their money.
+
+At runtime (confirmed (runtime), the same method, the live humans' `+0x370` polled over PINE for about four minutes in
+checkpoint 3 and five in checkpoint 2, each human's money logged when first seen; log kept in the track's scratch
+folder): every seller held $0 (`spraySpawner0`-`2`, type 431, and `drugsSpawner0`, type 428, in both checkpoints).
+The type 197 soldiers held $5 (`WS1`, checkpoint 3) and $0 (`liqD_01`, checkpoint 2). The other category 11
+Destroyers gave the same two values: a later `WS1` (192) $5, and `WS0` (194, then 199) and `liqD_02` (194) $0; the
+`CfgChar` record of type 199 is the same as 197's. `Boozer` (194) and `Knockout` (192) held $5 in both checkpoints;
+most likely the script's `EDConstructor` set it with `HuSetMoney` ([Scripts](scripting.md#level87-fixes), fix 4;
+inferred), and the roll's $5 branch is the alternative. `Boozer`, `Knockout` and `WS1` (197) later went to $0 while
+fighting the Warriors (inferred: dropped when down, [below](#down-drop)). The civilians (type 395) held $5-$19 and the
+bums (types 272-278) $1-$4, which fit category 4 for the civilians and 6 ($1-$4) for the bums (inferred: their
+categories were not logged).
+
+`Human_Init` writes `+0x278` only on step 2's object branch (stores at `0x00218850` and `0x00218888`); the only other
+writer of that field is `HuSetCarriedItem` (`0x00238230`), which stores 100 (`sw` at `0x00238270`). Confirmed (code).
+So a human whose roll skips step 2's object branch keeps an older value. `drugsSpawner0` (type 428, whose `noObject`
+of 100 always skips it) read 100 in checkpoint 3 and 5 in checkpoint 2, confirmed (runtime). The 5 can only be left
+in the slot by an earlier human. The 100 is either such a leftover or an earlier `HuSetCarriedItem`; against the
+script, his logged object (`+0x257`) was `none` while `HuSetCarriedItem` sets it (inferred: a leftover). So `+0x278`
+is no sign of which branch ran.
+
+So the $0 sellers and the $0 soldier seen in Coney's `level87` run (issue #354) match the original, and Coney needs no
+fix for them ([Coney's implementation](#coneys-implementation), the starting money).
 
 #### Dropped when down {#down-drop}
 
@@ -1120,7 +1167,10 @@ traced, so the hit's own reaction plays.
 from its recorded `CfgChar` and `CfgCharClassAttribs` calls with the game's random numbers, and sets the money
 (`HuSetMoney` later overrides it). A gang spawner makes its human through the same `HuCreate`
 (`ScriptSpawnerWorld::spawn`), as `Spawner_MakeHuman` (`0x0016d860`) calls `Human_Init`, so a spawner's human rolls
-the same draws in the same order (`repo:tests/ai/spawner_money_test.cpp`). Player 1's won mugging
+the same draws in the same order (`repo:tests/ai/spawner_money_test.cpp`). It takes the same branches for a capped
+record (`v16` not -1), so `level87`'s sellers get $0 and a type 197 soldier $5 in 21 of 101 rolls and $0 otherwise,
+as in the original ([level87's sellers and soldiers](#starting-money); inferred from reading
+`repo:src/characters/starting_money.cpp`, not rerun for these types). Player 1's won mugging
 (`PlayLevelMode::stepMugging()`) moves all the victim's money in the deciding update (`LevelPickups::mugPaid()`:
 item 2 with the money and inventory callbacks, then item 2's pick-up sound); his
 `HuSetMugCallback` callback runs with (mugger, 1 or nil) when his end clip (344 or 346) finishes, or at once for a
