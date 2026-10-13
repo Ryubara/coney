@@ -59,8 +59,8 @@ The stand-in (`AddDummyPlayer`: `GangCreate(0, "Gang0", 1)`, character 352 at `f
 
 ### A player goes down {#player-down}
 
-`CheckPlayerDead(member, attacker, standing)` (gang event 18, [AI: gang events](ai.md#gang-events)), for player 1 (and
-the same for player 2 with its own side):
+`CheckPlayerDead(member, attacker, standing)` (gang event 18, [AI: gang events](ai-gangs.md#gang-events)), for player 1
+(and the same for player 2 with its own side):
 
 - one player or versus, one fighter a side, not Survival: revive in **4 s** (Wheelchair: **1 s**) with
   `ScheduleFuncArg1("RevivePlayer", h, ms)` (`HuRevive` if still a player);
@@ -116,14 +116,14 @@ the counter panel when one is set, and at 0 ends the match: `RumbleOver(2, CamFl
 has a standing member, else a draw. `StartIt`: with one a side, the War Commands are locked and disabled for each
 player, automatic switching off and the command display hidden; `WCIssueCommand(player, 1, true)`; gang 2 the enemy of
 gang 1; outside versus, gang 2's AI is **`TacticConfront(gang2, gang1, 10, 2, 0, -1, "AIConfrontCallback")`**, whose
-callback switches to `TacticAttack(gang2)` on results 1, 5 or 6 ([AI: tactic kinds](ai.md#tactic-kinds)). In versus
+callback switches to `TacticAttack(gang2)` on results 1, 5 or 6 ([AI: tactic kinds](ai-gangs.md#tactic-kinds)). In versus
 there is no AI.
 
 **How a brawl ends** (inferred from `brawl.lua` and `level102.lua`). `AddBrawlGang1` / `2` set the per-member message
 18 handler (`StandardGang1Dead` / `2Dead`) only on members for which `HuIsAlive(h)` returns non-nil; at that point
 (before the intro, brains off, nobody down) that is every member. Only these handlers end a brawl: side 1's last
 member down → `RumbleOver(2, ...)`, side 2's → `RumbleOver(1, ...)`, `RumbleOver(3)` when the other side has nobody
-standing either. They run before the gang's `CheckPlayerDead` ([AI: gang events](ai.md#gang-events)), so the
+standing either. They run before the gang's `CheckPlayerDead` ([AI: gang events](ai-gangs.md#gang-events)), so the
 player's 4 s revival only fires during the win sequence. A CPU fighter is never revived: `CheckPlayerDead` handles
 only `Rumble.player1` / `player2`, gang 2 gets it only in versus, and every fighter is made not revivable.
 
@@ -422,14 +422,91 @@ with a 1,500 ms stand-in for any announcer line whose length it does not know.
    dropped, as in the original. That is faithful, though it can feel like a delay.
 6. A level-flow test: a looping track started in the front end has stopped when the arena's first frame runs.
 
+## Gang battle trace {#gang-battle-trace}
+
+A recording of the biggest Rumble battle with every human traced on every update, to compare gang combat with Coney's by
+behaviour statistics (issue #273); the rules it checks, with code evidence, are on [Gang fights](gang-fights.md), and
+which column checks which rule is [What a trace records](gang-fights.md#trace). The columns are the
+`humans` field set of `repo:research/traces/fields.toml` (one row per human per update; [Every
+human](../guides/research-workflow.md#recording-a-trace)); Coney's `--trace-humans` writes the same columns
+([Tracing](../guides/building.md#tracing)), and `coney-tools trace fight-report` compares the two. The
+scenario is `repo:research/traces/scenarios/gang_battle.toml`; the traces are measurements of the game and stay in the
+analyst's scratch folder.
+
+### The set-up {#gang-battle-setup}
+
+All confirmed (runtime), PCSX2 2.9.94, 2026-10-12:
+
+- **Reaching it.** QUICK RUMBLE, WAR PARTY, 1P vs CPU, the Furies and the Orphans; at Choose Area the set-up values
+  (`u16` at `0x0063eec0`) were written: index 1 (the mode) = 1 (`RM_Brawl`), index 2 (the gang size) = 9; then the
+  Fight Pen. The arena loads nine a side. The state is saved at the intro's "press X" prompt, brains off.
+- **The humans.** 30 in use: 12 crowd (`Crowd01`-`06`, gangs 0 and 1, brain type 4, one type 2), `P11`-`P19` in gang
+  **3** (handle indices 13-21) and `P21`-`P29` in gang **4** (indices 22-30). This answers the open question below on
+  the gang slots: `Gang1` is gang 3 and `Gang2` gang 4 (the gang record's `+0x30`; `AddRumbleGang2` passes 19 to
+  `GangCreate`, so that argument is not the number the record holds). A handle's high half is the index, its low
+  half a serial (`P11` is `0x000d005d`). Before the intro every fighter's brain `+0x09` (dead) is 1, its goal stack
+  empty, health 1000 of 1000; `P11` is player 1 (brain type 0).
+- **The intro** starts only when cross is held (about 300 ms, 10 updates); a press of one update did not start it.
+  The brains go on (`+0x09` turns 0, `FinishCountdown`) **151 to 172 updates** after the press, depending on the
+  match (151, 151, 172): the intro does not last a fixed number of updates.
+- **Every fighter driven by its brain.** After the sample of frame 200 the recorder calls `Human_ReleasePlayer(P11,
+  0, 1)` (`0x0022a2a8`, [Characters](characters.md)), as `HuSwitchPlayer` hands a player back; from then on no human
+  is player 0, and none became one when `P11` went down. Called before the brains go on, it stops the battle from ever
+  starting: the Furies took the follow-player goal and the Orphans none for 9,000 updates.
+- **Different matches** come from an offset added to the 10-bit index of the random stream `0x006eb880`
+  ([Maths](maths.md#random)) before the first update: 0, 341 and 682. The same offset gives the same intro length.
+- **Sampling.** PCSX2 at 0.4 speed (`speed` in the scenario): 9,001 samples a match, none missed; 10 or 11 torn, one
+  about every 1,000 updates (a frame that runs two updates), left out of the counts below.
+
+### What the matches show {#gang-battle-results}
+
+Confirmed (runtime), the three matches above (offsets 0, 341, 682). Counts are over the fight, from the brains going
+on to `RumbleOver` (every brain off: every goal stack empty from then on), per minute that a fighter stands.
+
+| | Offset 0 | Offset 341 | Offset 682 |
+| --- | --- | --- | --- |
+| Fight length | 108.1 s | 125.5 s | 144.2 s |
+| Winner (fighters out) | Furies (2 out, Orphans 9) | Furies (2, 9) | Furies (8, 9) |
+| Attacks a minute, Furies / Orphans | 13.4 / 19.1 | 16.1 / 21.4 | 18.7 / 21.7 |
+| Blocks a minute (goal 27 started) | 1.9 / 0.2 | 2.8 / 0.2 | 3.8 / 0.1 |
+| Reactions a minute (a reaction goal set) | 1.4 / 4.3 | 2.0 / 3.9 | 2.8 / 3.3 |
+| Target switches a minute | 18.1 / 15.8 | 14.4 / 12.1 | 9.6 / 13.6 |
+| Health losses a minute | 14.9 / 19.8 | 27.4 / 20.6 | 22.9 / 17.5 |
+| Top goal Fight (15), % of standing time | 78 / 95 | 77 / 94 | 71 / 93 |
+| Top goal Blocking (27), % | 8.0 / 0.5 | 10.8 / 1.2 | 16.8 / 0.1 |
+| Distance to the target, median (90 %) | 1.27 (4.38) / 1.16 (4.12) m | 1.10 (3.97) / 1.14 (4.21) m | 1.04 (3.45) / 1.04 (3.44) m |
+| Fighters on one enemy, mean | 1.37 / 1.34 | 1.42 / 1.25 | 1.21 / 1.27 |
+
+- **The player's side wins.** The Furies (side 1, `P11`'s gang) won all three, though knocked down more often (24, 31
+  and 36 times against 19, 12 and 14). The Orphans spend
+  93-95 % of their standing time with Fight on top; the Furies 71-78 %, with the Blocking goal on top 8-17 % of the
+  time against the Orphans' 0.1-1.2 %.
+- **No block is ever held.** No human of any match had the block state (`0x8000`) or the attack phase's block bit
+  (`0x1000`): while Blocking is on top, the clips are the fight idle (358), hit reactions (272, 275, 276) and
+  knock-downs (288, 196, 199). The `blocking` column is 0 throughout; count blocks by the goal.
+- **Where an attack starts.** The wind-up (phase `0x1`) starts with the target 0.78-0.80 m away (median of each side
+  and match), 0.71-1.06 m for 80 % of them (215-324 attacks a side and match).
+- **How many fight one enemy.** At most **4** of a side target one enemy at once (in every match), usually 1 (64-80
+  % of the cases), 2 in 16-32 %. Every fighter's attack slots allowed (`slots_max`) are **4**; the slots taken on a
+  fighter reach 4, its active attackers (`active`) at most 2. Both are the two limits read in the code
+  ([How many hit one man at once](gang-fights.md#limits)). An enemy list holds 8 or 9 handles most of the fight.
+- **Out of the fight.** A knocked-out fighter keeps health **1** and lies in `ANIM_DEAD_IDLE` (349); a wounded one has
+  state `0x10000` and crawls (`ANIM_WOUNDED_IDLE`, 200, then `ANIM_WOUNDED_HIT_REACT_DIE`, 204). Both count as out
+  for the brawl. A knocked-out fighter is **deleted 461 updates** (15.4 s) after it lies down (four of four checked in
+  offset 0's match). At `RumbleOver` the standing fighters of the winning side but the winner are deleted 25 updates
+  after the brains go off (offset 0), as `CreateWinCam` does.
+
+Inferred: the side difference is the player's side, not the gangs (the Furies are side 1 in every match here); a
+recording with the gangs swapped would show it.
+
 ## Coney's implementation {#coney}
 
-A Brawl (1 ON 1 or WAR PARTY) plays to its end, won or lost ([Building: QUICK RUMBLE](../guides/building.md)): the
-set-up menus, the arena script's sides, the intro and countdown, the other side's fighters, the knockdown, the player's
-revival and hand-over, the winner's cheer, the win camera and the result screen with its three paths. King of the hill
-plays to its result screen when the player holds the top, Battle royal when one side is rung out, Survival when
-the spawned enemies have beaten the player, and Wheelchair when the CPU racer finishes. Tag battle and Mercy are not
-built yet.
+A Brawl (1 ON 1 or WAR PARTY) plays to its end, won or lost
+([Running Coney: QUICK RUMBLE](../guides/running.md#loading-entries-from-your-disc)): the set-up menus, the arena
+script's sides, the intro and countdown, the other side's fighters, the knockdown, the player's revival and hand-over,
+the winner's cheer, the win camera and the result screen with its three paths. King of the hill plays to its result
+screen when the player holds the top, Battle royal when one side is rung out, Survival when the spawned enemies have
+beaten the player, and Wheelchair when the CPU racer finishes. Tag battle and Mercy are not built yet.
 
 - **Intro** (`repo:src/gui/rumble_mode_gui/rumble_intro.h`, drawn over play by
   `repo:src/gamemodes/rumble_intro_layer.h`): `ShowRumbleModeIntro` is held until the level's first frame, because
@@ -443,6 +520,17 @@ built yet.
   the follow camera drive him, his brain becomes the player's, and the human left behind fights as his class; the
   shared camera targets follow. The revival (`HuRevive` after 4 s) and the new player's cue (`SoundPlay2D`) are the
   scripts' own.
+- **Every fighter AI-driven** (`--ai-player`, a test aid, [Running: tracing](../guides/running.md#tracing)): when the
+  countdown ends (after `FinishCountdown` and `StartIt`), player 1 is released as `Human_ReleasePlayer`
+  ([Characters](characters.md#players), `0x0022a2a8`) releases a human with no one taking the pad
+  (`repo:src/ai/ai_humans.h`): his brain goes back to his class's type with its goals and actions cleared, his flags are
+  the released ones ([Combat: human flags](combat.md#human-flags)) and the pad drives nobody, so his brain alone moves
+  him and `HuSwitchPlayer` finds no player to hand on. With no one in the player list, the game-over check ([Combat:
+  defeat](combat.md#defeat)) has no one to fail the match for, however he fares. **Coney's choices**: he keeps the
+  player's fighter profile (the wider body sphere `Human_ReleasePlayer` puts back to 1.0, [Physics](physics.md#sweep),
+  and the player's hit flags), as after `HuSwitchPlayer`; the scripts' player 1 handle still names him; the HUD panel
+  stays. `--ai-seed` varies the AI's draws: the shared stream's index (`0x006eb880`, [Scripting](scripting.md)) starts
+  that far in, and Coney's per-brain generators, which the original does not have, are seeded from it.
 - **The cheer**: `HuUseAnim`'s idle replacement (slot 0) plays: its `.anm` resource is loaded from the disc when first
   named (`repo:src/characters/dynamic_clips.h`) and plays wherever the idle would.
 - **Win camera** (`repo:src/camera/win_camera.h`): `CameraCreateWin`, `CamDelete` and `CamSetFollowHeading`; it
@@ -454,13 +542,13 @@ built yet.
   (`HUDEnableTextProgress`, `HUDSetTextProgress`) and the stopwatch's display (`W_ShowStopWatch`) on the HUD, the
   leader's crown (`GangAttachSpinningIcon`, kept, not drawn), `HuForceEnableReticule` (kept) and `CamSetSplitMode`
   (kept: one view). In arenas 101, 129 and 130 the AI is held at the foot of the top tier (inferred: the way up
-  needs the flag-`0x80` jump legs the goal's `+0xe0` bit 2 allows, [AI: route follow](ai.md#route-follow), which
+  needs the flag-`0x80` jump legs the goal's `+0xe0` bit 2 allows, [AI: route follow](ai-moving.md#route-follow), which
   Coney's move action does not take), so only the player scores.
 - **Battle royal**: the scripts' own ring-out rules run on `TacticDomination`, `HuSetSlowMo` (the characters' step,
   `repo:src/camera/slow_motion.h`), `HuSetConscious` (a knocked-out mark that stops the human and its brain) and
   `TurnWarriorCommands`.
-- **Survival**: the gangs' spawners spawn ([AI: spawners](ai.md#spawners), `repo:src/ai/spawners.h`): the arena's two,
-  in state 8, make their humans on a route node out of the camera's sight beyond 15 m, and
+- **Survival**: the gangs' spawners spawn ([AI: spawners](ai-gangs.md#spawners), `repo:src/ai/spawners.h`): the arena's
+  two, in state 8, make their humans on a route node out of the camera's sight beyond 15 m, and
   `CreateENEMY` sends each at him with `GoalEngageEnemy` and `GoalMoveToHuman` (`repo:src/ai/engage_goals.h`) after
   `BrSetType`, `HuGetCharType`, `BrSetAttackWeight` and `HuGetPosition`. Once he is down `SavePlayerStats` ends the
   match with his time.
@@ -472,7 +560,7 @@ built yet.
   its own locomotion. Stand-ins: no start clip or wheelchair clips (the body slides in its idle), commands 46 and 47
   are not added (the control reads the buttons itself), and `DeclareWinner`'s pad lock stops the pushes.
   `HuSetNoAutoLock` and `CamAssignRevCamButton` are kept, and `ActGiveWay` makes the human give way to the other
-  ([AI: Giving way](ai.md#giving-way)).
+  ([AI: Giving way](ai-moving.md#giving-way)).
 - **Result screen**, mode 0x14 (`repo:src/gamemodes/rumble_result_mode.h`,
   `repo:src/gui/rumble_mode_gui/rumble_result_menu.h`):
   the world keeps running under it; its choices act through the pause menu's outcomes.
@@ -487,7 +575,8 @@ wheelchair's clips and the give-way action.
 
 ## Open questions {#open-questions}
 
-- The gang slots `Gang1` and `Gang2` take at runtime (King of the hill's `GameOver` assumes 1 and 2).
+- Why King of the hill's `GameOver` assumes gangs 1 and 2 when `Gang1` and `Gang2` are gangs 3 and 4 at runtime
+  ([Gang battle trace](#gang-battle-setup)).
 - What `SetGameMode`'s arguments 3 and 19 select, and who reads them; where the mode returns to 0 after an arena.
 - What reads `HuLockMovement`'s flag (`0x200000000`) and so what a locked human may still do.
 - Where `HUDSetNumIndicator`'s count is drawn and how it looks.
@@ -503,6 +592,8 @@ wheelchair's clips and the give-way action.
 - The intro's screen effects 0 (left out by Coney) and how opaque the prompt is when the screen takes the pad
   (Coney: 0.95).
 - The result screen's two lines' font, scale and colour, and the grids' rows (Coney: one row of two).
+- Why the AI's Blocking goal (27) never shows a held block in a Rumble brawl ([Gang battle
+  trace](#gang-battle-results)).
 - `Goal_Melee` (8) and the confront goal (60): how the melee goal picks its target and moves, and how a confronting
   member closes in (Coney: the nearest gang enemy, run to and fight; close to the critical range).
 - The confront tactic's gang radii and route test between the leaders (Coney: radii 0, always a route, so
@@ -514,7 +605,7 @@ wheelchair's clips and the give-way action.
 - The playback rate of a dynamic clip played by `HuUseAnim` (Coney: 1).
 - The range beyond which `GoalEngageEnemy`'s goal gives up its enemy (Coney: none).
 - Where spawner state 7 places its human (`0x001679e8`; Coney: as state 8 with a value of 0). The out-of-sight search
-  itself is answered in [AI: the search](ai.md#spawner-search).
+  itself is answered in [AI: the search](ai-gangs.md#spawner-search).
 - The wheelchair's clips and start (state code 5), and whether the update is 1/30 s or 1/60 s (Coney: no clips, the
   constants per 1/30 s step).
 - Mercy is versus only, and Coney has no second player yet; its one-player path (`GoalGrabTarget` on `P21` against

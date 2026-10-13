@@ -49,7 +49,7 @@ are given by their Lua name ([Gang bindings](../references/bindings/gang.md)).
 | `0x001647e0` | `Gang_ClearMsgHandlers` | Clears the 26 event handlers at `+0xe4` | Confirmed (code) |
 | `0x00164808` | `Gang_Reset` | Not in use or suspended; members, turf boxes, callbacks, handlers, masks and tactic cleared; the spawners reset; wanted timers 0; `+0xd7` 30, `+0xdd` 0x18 (no tactic kind); leader the null handle | Confirmed (code) |
 | `0x00164a28` | `Gang_SetAlertState` | On a change: fighting (1) installs the combat fidget (not kind `0x18`) and taunt (not kind `0x17`) substitutions and updates the music mood; calm (0) removes them; kind 5 keeps neither; AI members' brain `+0x14d` = 1 when calm, 0 when fighting | Confirmed (code) |
-| `0x00164b68` | `Gang_SetEmptyHandler` | Interns (or clears) the Lua name at `+0x158` called when the gang is emptied ([The gang update](ai.md#gang-update)) | Confirmed (code) |
+| `0x00164b68` | `Gang_SetEmptyHandler` | Interns (or clears) the Lua name at `+0x158` called when the gang is emptied ([The gang update](ai-gangs.md#gang-update)) | Confirmed (code) |
 | `0x00164bb8` | `Gang_SetMsgHandlerName` | Interns the name for event *n* at `+0xe4 + n × 4` | Confirmed (code) |
 | `0x00164c10` | `Gang_GetMsgHandler` | The interned handler for event *n* | Confirmed (code) |
 | `0x001651b8` | `Gang_SetMusicTrackName` | Interns (or clears) name *n* (0-2) at `+0x14c`: the kind's three music tracks, copied at `GangCreate` | Confirmed (code) |
@@ -126,11 +126,11 @@ are given by their Lua name ([Gang bindings](../references/bindings/gang.md)).
 | `0x0016a538` | `Gang_SetLeaderById` | `GangSetLeader`: writes the leader handle `+0x44` | Confirmed (code) |
 | `0x0016a578` | `Gang_GetLeaderById` | `GangGetLeader`: the leader's handle, or the null handle | Confirmed (code) |
 | `0x0016a5e8` | `Gang_SetSightRange` | `GangSetLOS`: brain `+0x130` of every member | Confirmed (code) |
-| `0x0016a670` | `Gang_ExitWorld` | `GangExitWorld(gang, flag, fn, delete)`: every member walks to the flag, or with none to the farthest exit flag (activity 8) in front of player 1 (`Goal_MoveToExitFlag`); with `delete`, flag `+0xd3` and the empty handler are set so the gang is freed when they are gone ([The gang update](ai.md#gang-update)). A gang with no living members is deleted at once, after calling `fn` with its id | Confirmed (code) |
+| `0x0016a670` | `Gang_ExitWorld` | `GangExitWorld(gang, flag, fn, delete)`: every member walks to the flag, or with none to the farthest exit flag (activity 8) in front of player 1 (`Goal_MoveToExitFlag`); with `delete`, flag `+0xd3` and the empty handler are set so the gang is freed when they are gone ([The gang update](ai-gangs.md#gang-update)). A gang with no living members is deleted at once, after calling `fn` with its id | Confirmed (code) |
 | `0x0016a870` | `Gang_EngageEnemy` | `GangEngageEnemy(gang, target)`: an engage goal on the target for every member | Confirmed (code) |
 | `0x0016a910` | `Gang_LookAt` | `GangLookAt(gang, target)`: each member's brain marked dead and flushed, then turns to the target after a random delay under 500 ms | Confirmed (code) |
 | `0x0016aa98` | `Gang_SetMembersDeadFlag` | `GangBrDead`: `Brain_SetDead` on every member's brain | Confirmed (code) |
-| `0x0016ab38` | `Gang_SetMsgHandlerById` | `GangSetMsgHandler`: `Gang_SetMsgHandlerName` on the gang ([Events](ai.md#gang-events)) | Confirmed (code) |
+| `0x0016ab38` | `Gang_SetMsgHandlerById` | `GangSetMsgHandler`: `Gang_SetMsgHandlerName` on the gang ([Events](ai-gangs.md#gang-events)) | Confirmed (code) |
 | `0x0016ab90` | `Gang_ClearHandlers` | `GangClearHandlers`: clears the gang's event handlers and every member's own script handlers | Confirmed (code) |
 | `0x0016ac40` | `Gang_SetFriendById` | `GangSetFriend`: `Gang_SetFriendBit` one way | Confirmed (code) |
 | `0x0016ac98` | `Gang_SetEnemyById` | `GangSetEnemy(a, b)`: `Gang_SetEnemyBit` one way | Confirmed (code) |
@@ -159,7 +159,7 @@ are given by their Lua name ([Gang bindings](../references/bindings/gang.md)).
 | `0x0016b728` | `Gang_Respond` | `GangRespond(gang, point, human)`: a non-police gang gets the cower substitution; every member gets brain `+0x28d` and a type-4 respond goal to the point and human; the human's gang gets a 10 s wanted timer (police) or second wanted timer | Confirmed (code) |
 | `0x0016b8b0` | `Gangs_ClearRespondersBinding` | `GangClearResponders`: calls `Gangs_ClearResponders` | Confirmed (code) |
 | `0x0016b980` | `Gang_SetCanSaveAlliesById` | `GangCanSaveAllys`: brain `+0x2d6` of every member (gang in use) | Confirmed (code) |
-| `0x0016ba18` | `Gang_FlushBrainsById` | `GangBrFlush`: clears each member's goals and actions ([Deleting a gang](ai.md#gang-delete)) | Confirmed (code) |
+| `0x0016ba18` | `Gang_FlushBrainsById` | `GangBrFlush`: clears each member's goals and actions ([Deleting a gang](ai-gangs.md#gang-delete)) | Confirmed (code) |
 | `0x0016bac0` | `Gang_SetTargetableById` | `GangSetTargetable`: brain `+0x120` | Confirmed (code) |
 | `0x0016bbf0` | `Gang_SetHearRange` | `GangSetHearRange(gang, range, which)`: brain `+0x138` (which 1, default 20 m) or `+0x134` (default 50 m); −1 restores the default | Confirmed (code) |
 | `0x0016bcf0` | `Gang_SetCanFlee` | `GangCanFlee`: byte `+0xdf` (1 after a reset) | Confirmed (code) |
@@ -249,7 +249,7 @@ actions run is in [AI humans: goals](ai.md#goals) and [actions](ai.md#actions).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
-| `0x0028d8a0` | `Brain_MarkGoalBase` | helper | stores the current top index in `+0x2d` as the goal base, only when the stack is not empty; nothing is popped ([Tactics](ai.md#tactics)) | confirmed (code) |
+| `0x0028d8a0` | `Brain_MarkGoalBase` | helper | stores the current top index in `+0x2d` as the goal base, only when the stack is not empty; nothing is popped ([Tactics](ai-gangs.md#tactics)) | confirmed (code) |
 | `0x0028d8c0` | `Brain_PopToGoalBase` | helper | pops goals down to `+0x2d`, then clears it | confirmed (code) |
 | `0x0028db08` | `Brain_FrontAction` | helper | the front action of the queue | confirmed (code) |
 | `0x0028f1e8` | `Brain_SuspendTop` | helper | suspends the top goal and clears the actions | confirmed (code) |
@@ -263,7 +263,7 @@ actions run is in [AI humans: goals](ai.md#goals) and [actions](ai.md#actions).
 ### Steering {#brain-steering}
 
 The steering state at brain `+0xa0`, which bends a walk round other humans; see
-[AI humans: steering round humans](ai.md#steering).
+[AI humans: steering round humans](ai-moving.md#steering).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -277,13 +277,13 @@ The steering state at brain `+0xa0`, which bends a walk round other humans; see
 | `0x00288be0` | `Steering_SideSign` | helper | +1 or −1 by the sign of a cross product: which side of a line a point lies | confirmed (code) |
 | `0x00288c60` | `Steering_SetGait` | helper | the gait and its speed (`Human_SpeedForGait`) | confirmed (code) |
 | `0x00288cb0` | `Steering_SetSpeed` | helper | stores the gait (`+0x32`) and speed (`+0x34`) | confirmed (code) |
-| `0x00288cc8` | `Steering_FindBlocker` | helper | of a list of nearby humans, not the target and not behind, the first whose 0.63 m disc the relative step hits ([the blocker test](ai.md#neighbour-sectors)) | confirmed (code) |
-| `0x00288f40` | `Steering_ClampStep` | helper | the step from a position toward the brain's aim point (`+0x90`), of length min(the distance, factor × the brain's speed `+0x114`) ([Steering](ai.md#steering)) | confirmed (code) |
+| `0x00288cc8` | `Steering_FindBlocker` | helper | of a list of nearby humans, not the target and not behind, the first whose 0.63 m disc the relative step hits ([the blocker test](ai-moving.md#neighbour-sectors)) | confirmed (code) |
+| `0x00288f40` | `Steering_ClampStep` | helper | the step from a position toward the brain's aim point (`+0x90`), of length min(the distance, factor × the brain's speed `+0x114`) ([Steering](ai-moving.md#steering)) | confirmed (code) |
 | `0x00289010` | `Steering_TryDetour` | helper | when the human can walk straight to the detour point and it is not blocked (`0x00249050`): avoiding on, the point and its score stored | confirmed (code) |
-| `0x002890a8` | `Steering_ResetAvoidance` | helper | from a move's Start: the held point to the origin, avoidance off, score −1e9, `+0x2b` = 0, and the human's index (human `+0x92`, low byte) into the decision counter `+0x28` and the slow counter `+0x29`, which staggers the humans' decisions ([Steering](ai.md#steering)) | confirmed (code) |
+| `0x002890a8` | `Steering_ResetAvoidance` | helper | from a move's Start: the held point to the origin, avoidance off, score −1e9, `+0x2b` = 0, and the human's index (human `+0x92`, low byte) into the decision counter `+0x28` and the slow counter `+0x29`, which staggers the humans' decisions ([Steering](ai-moving.md#steering)) | confirmed (code) |
 | `0x00289108` | `Steering_EndAvoid` | helper | avoidance off, score 0 | confirmed (code) |
 | `0x00289d68` | `Steering_RayHitsHuman` | helper | whether a ray of a given length passes within 0.63 m of a human, and at what distance | confirmed (code) |
-| `0x00289ed0` | `Brain_GiveWayTo` | helper | a standing AI in the way of a mover picks the first free sector of s, s+1, s+2, s−1, s+3, s+4, s−2 (s: straight off the mover's path) and queues a `GiveWay` step there, else asks that sector's human to give way ([Giving way](ai.md#neighbour-sectors)) | confirmed (code) |
+| `0x00289ed0` | `Brain_GiveWayTo` | helper | a standing AI in the way of a mover picks the first free sector of s, s+1, s+2, s−1, s+3, s+4, s−2 (s: straight off the mover's path) and queues a `GiveWay` step there, else asks that sector's human to give way ([Giving way](ai-moving.md#neighbour-sectors)) | confirmed (code) |
 | `0x0028a248` | `Brain_PushAside` | helper | guards `Brain_GiveWayTo` against re-entry with brain flag `+0xcc` bit 4; a brain with bit 1 (already giving way) answers yes | confirmed (code) |
 
 ### Perception and head looks {#perception}
@@ -369,7 +369,7 @@ The list of up to 16 enemies at brain `+0x164` and the score that picks among th
 | `0x0028ef48` | `Brain_UncountAllEnemies` | helper | each enemy's hostile count − 1 (players' left alone in co-op) | confirmed (code) |
 | `0x0028f000` | `Brain_ShakeOffPursuers` | helper | for a player or a Warrior: hunters of a hostile gang within 2 × far who hold him as an enemy but have no line of sight to him lower his count | confirmed (code) |
 | `0x0028f9e8` | `Brain_ClearEnemies` | helper | uncounts and empties the enemy list, brain disabled (`+0x08` = 0) | confirmed (code) |
-| `0x00290138` | `Brain_IsThreat` | helper | whether another brain is a threat: never himself; a Warrior hitting back at his chief (`+0x2e5`) and that chief are threats to each other; else enemy gangs, or both players ([The enemy scan](ai.md#enemy-scan)) | confirmed (code) |
+| `0x00290138` | `Brain_IsThreat` | helper | whether another brain is a threat: never himself; a Warrior hitting back (`+0x2e5`) and any pad player are threats to each other; else enemy gangs, or both players ([step by step](ai-reimpl.md#brain-is-threat)) | confirmed (code) |
 | `0x00290328` | `Brain_MakeGangsEnemies` | helper | sets the enemy bit between the two brains' gangs | confirmed (code) |
 | `0x00291218` | `Brain_NearestEnemyVisible` | helper | sorts the enemy list by distance; whether the nearest is visible (not in shadow, in view) | confirmed (code) |
 | `0x0029bec8` | `Brain_CanTarget` | helper | CanSeeLiving, unless he is an unarmed non-cop the brain may not engage | inferred |
@@ -442,14 +442,14 @@ How a brain hears events and passes calls for help on; see [AI humans: events](a
 | `0x00291728` | `Brain_OnDangerNear` | helper | away from trains: a danger with a point pushes a flee (unless goal 5); without one a free non-player AI avoids it for 3 s (`Goal_AvoidEnemies` 14 m, 7 m) | confirmed (code) |
 | `0x00291960` | `Brain_OnViolenceSeen` | helper | no goal `0x9a`: a free AI with threat response sides in a fight it sees (`Brain_PickSideInFight`); a busy Warrior near it looks on and may taunt (10 %); else fights and calls help; with goal `0x9a` pushes a watch goal (`0x002d84e0`) | confirmed (code) |
 | `0x00291d08` | `Brain_CallForHelp` | helper | unless in shadow mode, a 5 m help call (`Gang_BroadcastHelpCall`) | confirmed (code) |
-| `0x00292158` | `Brain_TryPatternBlock` | helper | when the attacker's pattern (`+0x5d0`) reaches the human's block threshold and he is in a fight goal: a block (`Goal_TryBlock`), ending a stun, command 4 | confirmed (code) |
+| `0x00292158` | `Brain_TryPatternBlock` | helper | when the attacker's pattern (`+0x5d0`) reaches the human's block threshold and he is in a fight goal: a block (`Goal_TryBlock`), ending a stun, command 4; step by step: [AI plan](ai-reimpl.md#pattern-block) | confirmed (code) |
 | `0x002935d8` | `Brain_IsInHearRange` | helper | whether an event's distance is within the hearing radius (`+0x134`; `+0x138` for event 20) | confirmed (code) |
 | `0x00293640` | `Gang_BroadcastHelpCall` | helper | event `0x14` from the caller to every human within min(range, his `+0x138`), not only the gang; record `+0x00` aggressor, `+0x0c` the new-enemy flag, `+0x24` the caller ([Help calls](ai.md#help-calls)) | confirmed (code) |
 
 ### Script bindings {#script-bindings}
 
 The workers behind the script commands that set brain fields, by handle; see
-[AI humans: scripted goals and actions](ai.md#scripted).
+[AI humans: scripted goals and actions](ai-scripting.md#scripted).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -509,7 +509,7 @@ The `Cfg...` workers that set the AI's global tuning values; the melee ranges ar
 ### Formations {#formation-code}
 
 The 42 formations (0x280 bytes at `0x006ceaf0`): slot sets, slot points and which follower takes which slot; see
-[AI humans: formations and follow slots](ai.md#formations).
+[AI humans: formations and follow slots](ai-gangs.md#formations).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -523,7 +523,7 @@ The 42 formations (0x280 bytes at `0x006ceaf0`): slot sets, slot points and whic
 | `0x00294ce0` | `Formation_UncrossPaths` | helper | swaps the slots of follower pairs whose paths cross | confirmed (code) |
 | `0x00294e98` | `Formation_DropGoneFollowers` | helper | followers whose human is gone leave | confirmed (code) |
 | `0x00294f38` | `Formation_UpdateSlotPoints` | helper | the slots' world points from the leader's pose, dropped to the ground; a slot is usable when the leader sees it, up to `+0x272` | confirmed (code) |
-| `0x00295250` | `Formation_RetargetFollowerMoves` | helper | after each plan, a follower whose top goal is `0x33`, `0x69` or `0x73` and whose front action is a move gets his new follow point in that move (`MoveAction_SetTarget`) and radius 0.1 m with a slot, 1.0 m without ([Where a running move's point comes from](ai.md#follow-retarget)); the old name `Formation_SetFollowerSpeeds` was wrong | confirmed (code) |
+| `0x00295250` | `Formation_RetargetFollowerMoves` | helper | after each plan, a follower whose top goal is `0x33`, `0x69` or `0x73` and whose front action is a move gets his new follow point in that move (`MoveAction_SetTarget`) and radius 0.1 m with a slot, 1.0 m without ([Where a running move's point comes from](ai-gangs.md#follow-retarget)); the old name `Formation_SetFollowerSpeeds` was wrong | confirmed (code) |
 | `0x002953c8` | `Formation_AssignSlots` | helper | each usable slot takes its nearest unassigned follower, up to `+0x272` | confirmed (code) |
 | `0x00295538` | `Formation_AssignQueue` | helper | followers left over queue behind the nearest slotted one | confirmed (code) |
 | `0x00295d08` | `Formation_PlanAndNotify` | helper | plans, then tells each follower | inferred |
@@ -547,7 +547,7 @@ The 42 formations (0x280 bytes at `0x006ceaf0`): slot sets, slot points and whic
 ### Waypoint queues {#queue-code}
 
 The 20 waypoint queues (0x90 bytes at `0x006cde30`) where humans wait their turn at a node; see
-[AI humans: waypoint queues](ai.md#queues).
+[AI humans: waypoint queues](ai-moving.md#queues).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -564,14 +564,14 @@ The 20 waypoint queues (0x90 bytes at `0x006cde30`) where humans wait their turn
 ### Routes {#route-code}
 
 Following a planned route leg by leg, including climb, jump and smash legs; see
-[AI humans: following a route](ai.md#route-follow) and [jump legs](ai.md#route-jump).
+[AI humans: following a route](ai-moving.md#route-follow) and [jump legs](ai-moving.md#route-jump).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
 | `0x0029a358` | `RouteState_Construct` | helper | constructs a route-following state | confirmed (code) |
 | `0x0029a3c0` | `RouteState_GetPoint` | helper | the point of the current waypoint | confirmed (code) |
 | `0x0029aa20` | `RouteState_Stop` | helper | stops following unless mid-leg; frees the route, index none | inferred |
-| `0x0029aa78` | `RouteState_SetFlag` | helper | sets byte `+0x11`, "move on now" ([Following a route](ai.md#route-follow)) | confirmed (code) |
+| `0x0029aa78` | `RouteState_SetFlag` | helper | sets byte `+0x11`, "move on now" ([Following a route](ai-moving.md#route-follow)) | confirmed (code) |
 | `0x0029afe0` | `RouteState_CheckArrival` | helper | on a walking leg, measures the progress to the waypoint; done legs go to state 5 | inferred |
 | `0x0029b238` | `Route_NodeCount` | helper | the number of nodes in a route | confirmed (code) |
 | `0x0029b248` | `RouteState_CurrentNode` | helper | the node at the current index | confirmed (code) |
@@ -626,7 +626,7 @@ Goals use them to find targets, backup and partners ([AI humans: starting a figh
 
 Each human has a record of the eight sectors around him (0x48 bytes at `0x006e8318`, 60 records): which sector
 holds a near human or a wall. Steering, side-picking in melee and the attack check read it; see
-[AI humans: steering round humans](ai.md#steering).
+[AI humans: steering round humans](ai-moving.md#steering).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -636,8 +636,8 @@ holds a near human or a wall. Steering, side-picking in melee and the attack che
 | `0x0029e2e8` | `Sectors_ResetHeading` | helper | stores the current heading and marks sectors stale | confirmed (code) |
 | `0x0029e350` | `Sectors_GetPoint` | helper | the owner's position plus a distance along his current heading + k × 45° | confirmed (code) |
 | `0x0029e470` | `Sectors_GetOwner` | helper | the human a sector record belongs to | confirmed (code) |
-| `0x0029e4b0` | `Sectors_ProbeWall` | helper | lazily once per rebuild: no walkable straight line (`Human_CanWalkStraightTo`) to the point 1.5 m out at the sector's centre sets bit 4 ([Neighbour sectors](ai.md#neighbour-sectors)) | confirmed (code) |
-| `0x0029e5d8` | `Sectors_Update` | helper | the rebuild: humans within 1.5 m of the owner, counted and the nearest kept per sector; flags 3 when the nearest's squared distance is below 1.5 (1.22 m), else 1; bit 8 for a free player within 5.5 m ([Neighbour sectors](ai.md#neighbour-sectors)) | confirmed (code) |
+| `0x0029e4b0` | `Sectors_ProbeWall` | helper | lazily once per rebuild: no walkable straight line (`Human_CanWalkStraightTo`) to the point 1.5 m out at the sector's centre sets bit 4 ([Neighbour sectors](ai-moving.md#neighbour-sectors)) | confirmed (code) |
+| `0x0029e5d8` | `Sectors_Update` | helper | the rebuild: humans within 1.5 m of the owner, counted and the nearest kept per sector; flags 3 when the nearest's squared distance is below 1.5 (1.22 m), else 1; bit 8 for a free player within 5.5 m ([Neighbour sectors](ai-moving.md#neighbour-sectors)) | confirmed (code) |
 | `0x0029e980` | `Sectors_GetCost` | helper | a sector's flags plus twice its human count | confirmed (code) |
 | `0x0029e9c8` | `Sectors_IsBlocked` | helper | a near human, or a probed wall | confirmed (code) |
 | `0x0029ea10` | `Sectors_IsWall` | helper | the wall bit | confirmed (code) |
@@ -684,8 +684,8 @@ Confirmed (code) for the vtables and their slots.
 
 | Class (type) | Vtable | Init | Start | Abort | Update | What it does |
 | --- | --- | --- | --- | --- | --- | --- |
-| `MoveTo` (1) | `0x00542f20` | `0x002fb9e8`, `0x002fbae0` | `0x002fc420` | `0x002fc560` | `0x002fc5c0` | walks to a point ([Moving](ai.md#move-action)) |
-| `MoveMelee` (2) | `0x005431e0` | `0x002fcf50` | `0x002fcff0` | `0x002fd068` | `0x002fd4e8` | keeps a fight distance band from a human ([MoveMelee](ai.md#move-melee)) |
+| `MoveTo` (1) | `0x00542f20` | `0x002fb9e8`, `0x002fbae0` | `0x002fc420` | `0x002fc560` | `0x002fc5c0` | walks to a point ([Moving](ai-moving.md#move-action)) |
+| `MoveMelee` (2) | `0x005431e0` | `0x002fcf50` | `0x002fcff0` | `0x002fd068` | `0x002fd4e8` | keeps a fight distance band from a human ([MoveMelee](ai-moving.md#move-melee)) |
 | `MoveMeleeLine` (3) | `0x00542fa0` | `0x002fe6e8` | `0x002fe720` | - | `0x002fe740` | sidesteps round a human for 2 s |
 | `Dive` (4) | `0x005431a0` | `0x002fda38` | `0x002fda68` | `0x002fdae8` | `0x002fdb28` | dives toward a point |
 | `Shuffle` (5) | `0x00542f60` | `0x002feaf8` | `0x002feb28` | - | `0x002feb48` | shuffles sideways in the fight stance |
@@ -720,13 +720,13 @@ Every function of the classes, and the helpers among them:
 | --- | --- | --- | --- | --- |
 | `0x002f9e48` | `Action_Update` | base Update | counts the start delay down (−1 = a random 0-500 ms) against the brain's last update time, calls Start once, then the class's Update | confirmed (code) |
 | `0x002f9f48` | `FidgetAction_Init` | `PlayFidget` init | fidget kind, line, delay | confirmed (code) |
-| `0x002f9f78` | `FidgetAction_Start` | `PlayFidget` Start | done for a dog (class 221), a brain of kind 6, or without a fidget clip (`0x00225f58`) unless holding a kind-11 object; says the line (1.5 × louder when the target is a player), plays the fidget (`0x00231ac8`) | confirmed (code) |
-| `0x002fa0e0` | `FidgetAction_Abort` | `PlayFidget` Abort | refused for a Warrior whose crew is following a free chief who has no enemies around (command neither 0, 4 nor 5); else stops the fidget (`0x00231b60`) | confirmed (code) |
+| `0x002f9f78` | `FidgetAction_Start` | `PlayFidget` Start | done for a cop brain, a dog (class 221), a class whose `+0x11b` is 6, or when not free to fidget (`0x00225f58`) unless holding a type-11 object; says the line (1.5 × louder when the target is a player), plays the fidget (`0x00231ac8`); step by step: [AI plan](ai-reimpl.md#fidget-action) | confirmed (code) |
+| `0x002fa0e0` | `FidgetAction_Abort` | `PlayFidget` Abort | when cleared, refused for an idle Warrior whose crew is following a free chief who has no enemies around (command neither 0, 4 nor 5); else stops the fidget (`0x00231b60`); [AI plan](ai-reimpl.md#fidget-action) | confirmed (code) |
 | `0x002fa1e0` | `FidgetAction_Update` | `PlayFidget` Update | done once the fidget's flags clear (`0x00228520`) | confirmed (code) |
 | `0x002fa220` | `ParlayStartAction_Init` | `ParlayStart` init | a deadline | confirmed (code) |
 | `0x002fa270` | `ParlayStartAction_Update` | `ParlayStart` Update | with the deadline passed or none, waits for pad 0's button `0x10`; writes game state `+0x412` = 1 (pressed) or 3 (timed out) | confirmed (code); the parley meaning inferred from the class name |
-| `0x002fa300` | `PlayAnimAction_Init` | `PlayDynAnim` init | anim id, variant, blends ([The dealer's gestures](ai.md#dealer-gestures)) | confirmed (code) |
-| `0x002fa338` | `PlayAnimAction_Start` | `PlayDynAnim` Start | [The dealer's gestures](ai.md#dealer-gestures) | confirmed (code) |
+| `0x002fa300` | `PlayAnimAction_Init` | `PlayDynAnim` init | anim id, variant, blends ([The dealer's gestures](ai-scripting.md#dealer-gestures)) | confirmed (code) |
+| `0x002fa338` | `PlayAnimAction_Start` | `PlayDynAnim` Start | [The dealer's gestures](ai-scripting.md#dealer-gestures) | confirmed (code) |
 | `0x002fa398` | `PlayAnimAction_Abort` | `PlayDynAnim` Abort | clears the clip's held flags | confirmed (code) |
 | `0x002fa3e0` | `PlayAnimAction_Update` | `PlayDynAnim` Update | plays once, waits while its flags last | confirmed (code) |
 | `0x002fa468` | `DynLoopAnimAction_Init` | `PlayDynLoopAnim` init | anim id, variant, blend | confirmed (code) |
@@ -751,8 +751,8 @@ Every function of the classes, and the helpers among them:
 | `0x002fb050` | `PickUpItemAction_Abort` | `PickUpItem` Abort | refused while the pick-up runs (`0x00228408`); else clears the target | confirmed (code) |
 | `0x002fb0a8` | `PickUpItemAction_Update` | `PickUpItem` Update | waits while the pick-up runs | confirmed (code) |
 | `0x002fb0f0` | `TauntAction_Init` | `Taunt` init | kind, speech line, delay | confirmed (code) |
-| `0x002fb128` | `TauntAction_Start` | `Taunt` Start | done for a brain of kind 6, or without a taunt clip unless kind 13; plays it (`0x0025f028`) and says the line; kinds 0-2 and 8 are gestures, others counted in `0x005112ac` | confirmed (code) |
-| `0x002fb278` | `TauntAction_Abort` | `Taunt` Abort | refused while the taunt plays (`0x00223c30`); else uncounts it | confirmed (code) |
+| `0x002fb128` | `TauntAction_Start` | `Taunt` Start | done for a cop brain or a class whose `+0x11b` is 6; except kind 8 (line only), done when not free to fidget unless the class's `+0x11b` is 13; plays anim `0x253` + kind (`0x0025f028`) and says the line; kinds 0-2 and 8 do not wait for the clip; step by step: [AI plan](ai-reimpl.md#taunt-action) | confirmed (code) |
+| `0x002fb278` | `TauntAction_Abort` | `Taunt` Abort | when cleared, stops the taunt (`0x00231c58`) and is refused while a waiting taunt's flags remain (`0x00223c30`); an accepted abort decrements `0x005112ac`, which nothing raises; [AI plan](ai-reimpl.md#taunt-action) | confirmed (code) |
 | `0x002fb2f0` | `TauntAction_Update` | `Taunt` Update | waits while the taunt plays | confirmed (code) |
 | `0x002fb338` | `UnlockHumanAction_Init` | `UnlockHuman` init | base fields | confirmed (code) |
 | `0x002fb360` | `UnlockHumanAction_Start` | `UnlockHuman` Start | presses command `0x32` | confirmed (code) |
@@ -777,7 +777,7 @@ Every function of the classes, and the helpers among them:
 | `0x002fbbe0` | `MoveAction_SetSpeed` | `MoveTo` helper | stores the speed (`+0x40`) | confirmed (code) |
 | `0x002fbbe8` | `MoveAction_SetTarget` | `MoveTo` helper | a new destination farther than 0.07 m: stored, the route is kept or the action restarted | confirmed (code) |
 | `0x002fbd18` | `MoveAction_CollectPoints` | `MoveTo` helper | the next points of the route, with the leg kinds | confirmed (code) |
-| `0x002fbef0` | `MoveAction_TrialSpeed` | `MoveTo` helper | the speed a simulated walk along the points allows ([Moving](ai.md#move-action)) | confirmed (code) |
+| `0x002fbef0` | `MoveAction_TrialSpeed` | `MoveTo` helper | the speed a simulated walk along the points allows ([Moving](ai-moving.md#move-action)) | confirmed (code) |
 | `0x002fc158` | `MoveAction_CornerSpeed` | `MoveTo` helper | the corner speed of the next waypoints | confirmed (code) |
 | `0x002fc330` | `MoveAction_CheckStuck` | `MoveTo` helper | on the 61st update while moving: less than 0.2 m covered in 3D → brain `+0x284` = 3 | confirmed (code) |
 | `0x002fc3e8` | `MoveAction_ResetSpeed` | `MoveTo` helper | speed = the gait's speed | confirmed (code) |
@@ -848,12 +848,12 @@ The think and event handlers per brain type ([Types](ai.md#types) has the table 
 | `0x00302118` | `CopBrain_CountBackup` | type 1 helper | how many more cops a call needs (a third of the suspects less those already on it), when the gang's last call (`+0x5f4`) is 30 s old | confirmed (code) |
 | `0x00302340` | `CopBrain_OnEvent` | type 1 event | cops' events | confirmed (code) at the table `0x007155a0` |
 | `0x00302cd8` | `DealerBrain_Think` | type 5 think | dealers' think | confirmed (code) at the table `0x00715568` |
-| `0x00302df8` | `DealerBrain_CanReactToHit` | type 5 helper | [The dealer: buying](ai.md#dealer-buy) | confirmed (code) |
-| `0x00302eb0` | `DealerBrain_FleeOrFight` | type 5 helper | rolls the run chance: flee or fight 15 s ([The dealer: buying](ai.md#dealer-buy)) | confirmed (code) |
+| `0x00302df8` | `DealerBrain_CanReactToHit` | type 5 helper | [The dealer: buying](ai-scripting.md#dealer-buy) | confirmed (code) |
+| `0x00302eb0` | `DealerBrain_FleeOrFight` | type 5 helper | rolls the run chance: flee or fight 15 s ([The dealer: buying](ai-scripting.md#dealer-buy)) | confirmed (code) |
 | `0x00303260` | `PlayerBrain_Think` | type 0 think | the player's think | confirmed (code) at the table `0x00715568` |
 | `0x00303468` | `PlayerBrain_OnPrompt` | type 0 helper | event 0 (triangle on a human): faces the human (`0x00233b08`); if he holds something and is not in shadow, he says line `0x92` | confirmed (code) |
-| `0x003035d8` | `PlayerBrain_Update` | type 0 update | target upkeep, hostiles counted, the [automatic commands](ai.md#warrior-auto-commands) | confirmed (code) |
-| `0x00303988` | `WarChief_AutoCommand` | type 0 helper | [Automatic commands](ai.md#warrior-auto-commands) | confirmed (code) |
+| `0x003035d8` | `PlayerBrain_Update` | type 0 update | target upkeep, hostiles counted, the [automatic commands](ai-gangs.md#warrior-auto-commands) | confirmed (code) |
+| `0x00303988` | `WarChief_AutoCommand` | type 0 helper | [Automatic commands](ai-gangs.md#warrior-auto-commands) | confirmed (code) |
 | `0x00303db8` | `WarChief_IsTargetInRange` | type 0 helper | the chief's target within his far melee range and not a Warrior hitting back | confirmed (code) |
 | `0x00303e68` | `Brain_HasAttackers` | helper | the attacker list (`+0x1a4`) is not empty | confirmed (code) |
 | `0x00303e90` | `PlayerBrain_OnEvent` | type 0 event | event 0 → the prompt; 11, 12, 20 consumed; others to the shared handler (`0x00292d80`) | confirmed (code) |
@@ -862,7 +862,7 @@ The think and event handlers per brain type ([Types](ai.md#types) has the table 
 | `0x00304228` | `CivlCoDiBrain_OnEvent` | type 6 event | the shopkeeper's events ([Shopkeepers](ai.md#think-shopkeeper)) | confirmed (code) at the table `0x007155a0` |
 | `0x00304c78` | `GangBrain_OnCrimeSeen` | type 2 crime witness | a gang member who sees a crime by someone hostile to him (`0x00290138`) and has no goal `0x9a` pushes Investigate (`0x5e`, 5 m, line 13) at the offender's position, or ReactNoise (`0x99`) under a Mark goal ([Gang soldiers](ai.md#think-gang)) | confirmed (code) |
 | `0x00304fa8` | `GangBrain_OnEvent` | type 2 event | gang members' events | confirmed (code) at the table `0x007155a0` |
-| `0x003052f0` | `WarriorBrain_Think` | type 3 think | [The Warriors' pick-ups](ai.md#warrior-pickups) and the fight push | confirmed (code) |
+| `0x003052f0` | `WarriorBrain_Think` | type 3 think | [The Warriors' pick-ups](ai-gangs.md#warrior-pickups) and the fight push | confirmed (code) |
 | `0x00306040` | `WarriorBrain_OnPrompt` | type 3 helper | triangle on a Warrior: when both are free and in reach (`0x0021c0a8`), faces him; line `0x92` as the player's | confirmed (code) |
 | `0x00306190` | `WarriorBrain_OnHitByChief` | type 3 helper | a Warrior hit by his chief hits back with an `AttackTarget` goal (type 9, `0x002aee48`), counted in the chief's brain `+0x2e4` | confirmed (code) |
 | `0x003063b0` | `WarriorBrain_OnEvent` | type 3 event | Warriors' events | confirmed (code) at the table `0x007155a0` |
@@ -870,15 +870,15 @@ The think and event handlers per brain type ([Types](ai.md#types) has the table 
 ## Tactics (0x00306520-0x003150c8) {#tactics-code}
 
 The tactic classes: one section per class with its binding, constructor, Start, End, Process, event slot and helpers.
-The tactic model (pool, base fields, vtable slots, event codes) is in [Tactics](ai.md#tactics); what each scripted
-tactic does is in [The scripted tactics](ai.md#tactic-kinds). Event numbers are the human events of [Script
+The tactic model (pool, base fields, vtable slots, event codes) is in [Tactics](ai-gangs.md#tactics); what each scripted
+tactic does is in [The scripted tactics](ai-gangs.md#tactic-kinds). Event numbers are the human events of [Script
 events](../references/script-events.md); codes are `TacticGetString`'s.
 
 ### The tactic core {#t1-tactic-core}
 
 Pool and base-class helpers shared by every tactic; the base fields, the vtable slots and `Tactic_Start` /
-`Tactic_Process` are in [Tactics](ai.md#tactics). A tactic may own a coordinated **strategy** object at `+0x10` (a pool
-of 8 × 0x30 at `0x006eb6f0`, mask `0x006eb6e0`), which only the Attack tactic starts.
+`Tactic_Process` are in [Tactics](ai-gangs.md#tactics). A tactic may own a coordinated **strategy** object at `+0x10` (a
+pool of 8 × 0x30 at `0x006eb6f0`, mask `0x006eb6e0`), which only the Attack tactic starts.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -911,7 +911,7 @@ scene. No script calls it.
 ### Attack (type 0x00) {#t1-attack}
 
 `TacticAttack` (vtable `0x00543320`; constructor `AttackTactic_Construct` `0x003075c8`, Start `0x00307fe0`, Process
-`0x003081a8`, both outside this list): every member melees ([Scripted tactics](ai.md#tactic-kinds)). Start is
+`0x003081a8`, both outside this list): every member melees ([Scripted tactics](ai-gangs.md#tactic-kinds)). Start is
 `AttackTactic_Start` `0x00307fe0`.
 
 | Address | Name | Role | What it does | Evidence |
@@ -922,7 +922,7 @@ scene. No script calls it.
 | `0x00307878` | `AttackTactic_OnViolence` | helper | event 20: the leader picks a side in the fight (`Brain_PickSideInFight`); each standing member with no goal melees that human, adds him as enemy and target, and sends a helper (`Gang_SendHelper`) when HelpRespond (`0x1d`) is not on his stack | confirmed (code) |
 | `0x00307d40` | `GangTactic_CheckFlee` | helper | `GangTactic_CheckFlee`, event 18 (a member down): with `+0xdf` (`GangCanFlee`) set and `+0xe0` (the living count `AttackTactic_Start` noted) above 0 (not for kind 6 with `+0xd9`), when the standing, uncuffed members number at most round(the kind's `CfgGang` v9 (`GangConfig_GetField72`) × that count / 100), each of them whose class byte `+0x11b` is 11 gets threat response 0, melee and a PedReaction (type 9) away from his enemy; sets `+0x32` (the gang fled) | confirmed (code) |
 | `0x003080c8` | `AttackTactic_End` | End | releases the gang's substitute group `0x29c` when the flee option is set (or kind 6 with `+0xd9`) | confirmed (code) |
-| `0x00308150` | `AttackTactic_OnStrategyEnd` | slot +0x1c | when the ended strategy's slot `+0x2c` answers 1, gives the members melee again | confirmed (code) |
+| `0x00308150` | `AttackTactic_OnStrategyEnd` | slot +0x1c | when the ended strategy's kind (its slot `+0x2c`) is 1, the guard orders, gives the members melee again ([Unit 3](ai-reimpl.md#unit-3)) | confirmed (code) |
 | `0x00308478` | `AttackTactic_OnEvent` | Event | 1/11 for an own member with no fight goal and no strategy: melee; 2 → 13 `TacMemberDied` unless the gang fled; 18 → `GangTactic_CheckFlee`; 19/22 → melee again; 20 → `AttackTactic_OnViolence` | confirmed (code) |
 
 ### AvoidEnemies (type 0x20) {#t1-avoid-enemies}
@@ -941,7 +941,7 @@ scene. No script calls it.
 `TacticBoss(gang, boss, stage, callback)` (vtable `0x005433e0`): an older single tactic for six bosses, chosen by
 `+0x24` (0 Diego, 1 Vargas, 2 Chatterbox, 3 Luther, 4 the Lizzies, 5 Big Mo). No script calls it; the
 `TacticBossScenarioA`-`H` tactics below replaced it, so its boss goals (types `0x93`-`0x96`) never run in the game.
-Which tactic each level uses: [AI: The boss fights](ai.md#boss-fights).
+Which tactic each level uses: [AI: The boss fights](ai-gangs.md#boss-fights).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -954,7 +954,7 @@ Which tactic each level uses: [AI: The boss fights](ai.md#boss-fights).
 ### BossDiegoVargas (type 0x0a) {#t1-boss-diego-vargas}
 
 `TacticBossScenarioA` (vtable `0x00543440`); the fight is described in [The Diego and Vargas
-fight](ai.md#boss-diego-vargas).
+fight](ai-gangs.md#boss-diego-vargas).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -962,7 +962,7 @@ fight](ai.md#boss-diego-vargas).
 | `0x00309b60` | `BossDiegoVargasTactic_Init` | init | `BossDiegoVargasTactic_Init`: flags, stage `+0x68`, break count `+0x69` = 0, the two object-handle pairs, the per-boss tables (fatigue, damage, prone, cycles) | confirmed (code) |
 | `0x00309df8` | `BossDiegoVargasTactic_GiveGoals` | helper | each member neither knocked out nor cuffed: `BossDiegoVargasTactic_AssignGoal` | confirmed (code) |
 | `0x00309ea0` | `BossDiegoVargasTactic_AssignGoal` | helper | `BossDiegoVargasTactic_AssignGoal`: Vargas (class `0x78`) BigBrawler, Diego (`0x77`) BigThrower in stage 2 or BigBrawler in stage 3, the others StationaryThrower; writes the stage into a BigBrawler goal | confirmed (code) |
-| `0x0030a150` | `BossDiegoVargasTactic_CheckHealth` | helper | `BossDiegoVargasTactic_CheckHealth`: the health caps and the Tired break ([the fight](ai.md#boss-diego-vargas)); 1 when a break starts with a held object, 2 when the break is done | confirmed (code) |
+| `0x0030a150` | `BossDiegoVargasTactic_CheckHealth` | helper | `BossDiegoVargasTactic_CheckHealth`: the health caps and the Tired break ([the fight](ai-gangs.md#boss-diego-vargas)); 1 when a break starts with a held object, 2 when the break is done | confirmed (code) |
 | `0x0030a458` | `BossDiegoVargasTactic_IsAnyBossStanding` | helper | `BossDiegoVargasTactic_IsAnyBossStanding`: stage 3 only, 1 while Diego or Vargas is not out (state flag `0x100000000`); 1 in other stages | confirmed (code) |
 | `0x0030a4f8` | `BossDiegoVargasTactic_ForwardAttackWarning` | helper | `BossDiegoVargasTactic_ForwardAttackWarning`: event 16 to the member's BigBrawler goal | confirmed (code) |
 | `0x0030a580` | `BossDiegoVargasTactic_ForwardHit` | helper | `BossDiegoVargasTactic_ForwardHit`: event 1 to the member's BigBrawler goal | confirmed (code) |
@@ -1113,7 +1113,7 @@ maces. Stage `+0x20` (1-3); `+0x21` marks the last stage done.
 ### Confront (type 0x23) {#t1-confront}
 
 `TacticConfront` (vtable `0x00543740`; constructor `ConfrontTactic_Construct` `0x0030e670`, Start `0x0030ec20`, Process
-`0x0030eec0`): the two gangs face off ([Scripted tactics](ai.md#tactic-kinds)).
+`0x0030eec0`): the two gangs face off ([Scripted tactics](ai-gangs.md#tactic-kinds)).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1125,7 +1125,7 @@ maces. Stage `+0x20` (1-3); `+0x21` marks the last stage done.
 
 ### Crowd (type 0x1b) {#t1-crowd}
 
-`TacticCrowd` (vtable `0x005437a0`): onlookers that watch or cheer; behaviour in [Tactics](ai.md#tactics).
+`TacticCrowd` (vtable `0x005437a0`): onlookers that watch or cheer; behaviour in [Tactics](ai-gangs.md#tactics).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1135,7 +1135,7 @@ maces. Stage `+0x20` (1-3); `+0x21` marks the last stage done.
 | `0x0030f7e0` | `CrowdTactic_End` | End | releases those groups; cheer mode off | confirmed (code) |
 | `0x0030f868` | `CrowdTactic_SetCheerMode` | helper | on: not pushable, human flag `0x800`, brain `+0x265` 0, threat response 0, the next of three cheer idles as idle anim; off: undoes it (threat response 2) | confirmed (code) |
 | `0x0030fa18` | `CrowdTactic_OnViolence` | helper | event 20 above strength 29 (cheering only): a free member picks a side, looks at a fighter for 20 s and, at min(strength, 100) %, queues a line (`0x8f`/`0x10`, or `0xb1` for the losing side) and a cheer clip (`0x256` or 599) | confirmed (code) |
-| `0x0030fc48` | `TacticCrowd_React` | helper | `TacticCrowd_React(what, on)`: ([Tactics](ai.md#tactics)) | confirmed (code) |
+| `0x0030fc48` | `TacticCrowd_React` | helper | `TacticCrowd_React(what, on)`: ([Tactics](ai-gangs.md#tactics)) | confirmed (code) |
 | `0x0030fe58` | `CrowdTactic_ReactNow` | helper | `TacticCrowd_React(1, on)`, for `TacticTrigger` what 1 | confirmed (code) |
 | `0x0030fe78` | `CrowdTactic_Process` | Process | every 1-2 s: watchers play `0x25c` at 51 %, cheering crowds react; every 2 s a cheering crowd sends the next member into a cheer idle; always 0 | confirmed (code) |
 | `0x00310100` | `CrowdTactic_OnEvent` | Event | 16 → 6; 20 → `CrowdTactic_OnViolence` (consumed); 19 and 22 → goals again | confirmed (code) |
@@ -1168,7 +1168,7 @@ maces. Stage `+0x20` (1-3); `+0x21` marks the last stage done.
 
 ### WarriorFollow (type 0x12) {#t1-warrior-follow}
 
-The follow command's tactic (vtable `0x005438c0`), described in [The default command](ai.md#warrior-follow).
+The follow command's tactic (vtable `0x005438c0`), described in [The default command](ai-gangs.md#warrior-follow).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1183,7 +1183,7 @@ The follow command's tactic (vtable `0x005438c0`), described in [The default com
 ### HanginOut (type 0x18) {#t1-hangin-out}
 
 `TacticHanginOut` (vtable `0x00543920`; constructor `HanginOutTactic_Construct` `0x00311ad8`, Start `0x00312348`):
-members hang about a flag ([Scripted tactics](ai.md#tactic-kinds), [HangOut](ai-goals.md#goal-hang-out)).
+members hang about a flag ([Scripted tactics](ai-gangs.md#tactic-kinds), [HangOut](ai-goals.md#goal-hang-out)).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1202,7 +1202,7 @@ members hang about a flag ([Scripted tactics](ai.md#tactic-kinds), [HangOut](ai-
 ### Hide (type 0x13) {#t1-hide}
 
 The hold command's hiding variant (`WarriorHoldTactic2_Create` `0x003128a0`, vtable `0x00543980`), used when the chief
-stands near a hiding flag ([Warrior commands](ai.md#warrior-commands)): every Warrior hides in shadow.
+stands near a hiding flag ([Warrior commands](ai-gangs.md#warrior-commands)): every Warrior hides in shadow.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1232,7 +1232,7 @@ init `PlayerGangTactic_Init` `0x00313490`, vtable `0x005439e0`): each Warrior ho
 ### HoldTheLine (type 0x04) {#t1-hold-the-line}
 
 `TacticHoldTheLine` (vtable `0x00543a40`; constructor `HoldTheLineTactic_Construct`): defenders along a line, attackers
-behind it ([Scripted tactics](ai.md#tactic-kinds)).
+behind it ([Scripted tactics](ai-gangs.md#tactic-kinds)).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1261,14 +1261,14 @@ the next range): members idle where they stand and banter.
 
 The tactic classes from TacticIdle's event slot to the attack sub-tactics: their constructors, member goals, Start, End,
 Process and event slots, and the `Tactic<Name>` bindings. How tactics run, the base fields and the event codes are in
-[Tactics](ai.md#tactics); what each class does for a script is in [the scripted tactics](ai.md#tactic-kinds). Event
-numbers are the human events of [Script events](../references/script-events.md); codes are the callback codes
-(`TacticGetString`).
+[Tactics](ai-gangs.md#tactics); what each class does for a script is in
+[the scripted tactics](ai-gangs.md#tactic-kinds). Event numbers are the human events of
+[Script events](../references/script-events.md); codes are the callback codes (`TacticGetString`).
 
 ### TacticIdle: the event slot {#t2-idle}
 
 The event slot of TacticIdle (type `0x24`, vtable `0x00543aa0`); the class is described in
-[Tactics](ai.md#tactic-kinds).
+[Tactics](ai-gangs.md#tactic-kinds).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1295,7 +1295,7 @@ the two anim names (interned by the script system `*(0x00512b04)` `+0xcc`), `+0x
 
 The `Tactic<Name>` bindings ([bindings](../references/bindings/ai.md)): each finds the gang, takes a tactic from the
 pool (`Tactic_Alloc`), runs the class constructor and sets it on the gang (`Gang_SetTactic`, which ends the old one).
-Classes: [Tactics](ai.md#tactic-kinds).
+Classes: [Tactics](ai-gangs.md#tactic-kinds).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1345,7 +1345,7 @@ Vtable `0x00543b60`; `+0x20` / `+0x24` the pile arguments, `+0x28` / `+0x2a` two
 
 Vtable `0x00543bc0`: the leader walks to a flag and the others follow in his formation, with banter. Fields: `+0x20` the
 flag, `+0x24` the gait, `+0x28` the slot set, `+0x2c` banter, `+0x30` the next banter try, `+0x34` the banter state,
-`+0x38` / `+0x3c` the banter pair, `+0x40` the leader's set before. The banter is [shared](ai.md#tactic-kinds).
+`+0x38` / `+0x3c` the banter pair, `+0x40` the leader's set before. The banter is [shared](ai-gangs.md#tactic-kinds).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1372,7 +1372,7 @@ car seen.
 | `0x00317ff8` | `PursueTactic_End` | End | releases the anim `0x29c` substitution | confirmed (code) |
 | `0x00318098` | `PursueTactic_IsNearTargetLeader` | helper | 1 when a human is within 20 m of the target gang's leader | confirmed (code) |
 | `0x003181e8` | `PursueTactic_OnCar` | helper | event 23 with a car not seen before (`+0x48`): members within 30 m drop an Investigate goal (`0x5e`); a member whose Chase goal reacts to the car (`0x002b0c88`) refreshes the sight read (`PursueTactic_AnyChaseSees` 2) | confirmed (code) |
-| `0x003183b8` | `PursueTactic_Process` | Process | described in [Tactics](ai.md#tactic-kinds) (codes 9 and 7, the 150 ms and 100 ms checks, the search time) | confirmed (code) |
+| `0x003183b8` | `PursueTactic_Process` | Process | described in [Tactics](ai-gangs.md#tactic-kinds) (codes 9 and 7, the 150 ms and 100 ms checks, the search time) | confirmed (code) |
 | `0x00318770` | `PursueTactic_OnEvent` | Event | 1: a member hit by a thrower calls for help (`Brain_CallForHelp`, consumed), else 5; 11 for an own member clears his actions; 16 → 6; 20 consumed unless the human or the offender is of either gang; 22 re-gives the goals; 23 → `0x003181e8`, consumed | confirmed (code) |
 
 ### TacticRing (type 0x08) {#t2-ring}
@@ -1392,7 +1392,7 @@ Fields: `+0x20` the flag, `+0x24` the radius, `+0x28` the start angle, `+0x2c` t
 
 ### TacticRiotCop (type 0x05) {#t2-riot-cop}
 
-Vtable `0x00543ce0`: riot police in a formation round a point ([GoalRiot](ai.md#riot), [RiotCop
+Vtable `0x00543ce0`: riot police in a formation round a point ([GoalRiot](ai-scripting.md#riot), [RiotCop
 goal](ai-goals.md#goal-riot-cop)). Fields: `+0x20` the point, `+0x30` the next check, `+0x34` the leave time, `+0x38`
 the leader's set before, `+0x3a` armed.
 
@@ -1407,7 +1407,7 @@ the leader's set before, `+0x3a` armed.
 
 ### WarriorScatter (type 0x25) {#t2-warrior-scatter}
 
-The scatter command's tactic ([Warrior commands](ai.md#warrior-commands); `WarriorScatterTactic_Create` `0x00319570`,
+The scatter command's tactic ([Warrior commands](ai-gangs.md#warrior-commands); `WarriorScatterTactic_Create` `0x00319570`,
 vtable `0x00543d40`): each Warrior runs to one of up to six hiding flags (activity `0x21`) near the chief and lies low
 there (Scatter goal `0x37`). Fields: `+0x20` six flags, `+0x38` the radius (75.0), `+0x3c` the flag count, `+0x3d` the
 next flag, `+0x3e` the chief's line playing, `+0x3f` the answer said.
@@ -1427,8 +1427,8 @@ next flag, `+0x3e` the chief's line playing, `+0x3f` the answer said.
 
 ### TacticScout and TacticPathScout (type 0x27) {#t2-scout}
 
-The rest of the Scout class (vtable `0x00543da0`; [Tactics](ai.md#tactic-kinds)). Fields of PathScout: `+0x30` up to 16
-flag indices, `+0x50` / `+0x51` / `+0x53` / `+0x54` options, `+0x52` 1 = path scout.
+The rest of the Scout class (vtable `0x00543da0`; [Tactics](ai-gangs.md#tactic-kinds)). Fields of PathScout: `+0x30` up
+to 16 flag indices, `+0x50` / `+0x51` / `+0x53` / `+0x54` options, `+0x52` 1 = path scout.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1498,7 +1498,7 @@ Vtable `0x00543f20`: the members idle and take turns playing taunt anims until a
 
 ### TacticTravelPath (type 0x17) {#t2-travel-path}
 
-The class's goals, Start, End, Process and Event ([Tactics](ai.md#tactic-kinds)); the banter fields are at
+The class's goals, Start, End, Process and Event ([Tactics](ai-gangs.md#tactic-kinds)); the banter fields are at
 `+0x48`-`+0x50`.
 
 | Address | Name | Role | What it does | Evidence |
@@ -1513,7 +1513,7 @@ The class's goals, Start, End, Process and Event ([Tactics](ai.md#tactic-kinds))
 
 ### TacticUseFlag (type 0x21) {#t2-use-flag}
 
-The class's body ([Tactics](ai.md#tactic-kinds)). Fields: `+0x20` the flag, `+0x24` the range, `+0x28` `view`, `+0x2c`
+The class's body ([Tactics](ai-gangs.md#tactic-kinds)). Fields: `+0x20` the flag, `+0x24` the range, `+0x28` `view`, `+0x2c`
 the banter timer, `+0x30` the sight range before, `+0x34` leaving, `+0x38`-`+0x40` banter, `+0x44` banter on.
 
 | Address | Name | Role | What it does | Evidence |
@@ -1523,7 +1523,7 @@ the banter timer, `+0x30` the sight range before, `+0x34` leaving, `+0x38`-`+0x4
 | `0x0031dca8` | `UseFlagTactic_End` | End | ends banter; restores every member's sight range | confirmed (code) |
 | `0x0031dd60` | `UseFlagTactic_PickBanterPair` | helper | as MoveToFlag's, skipping members in Investigate or HelpRespond; retry in 1 s | confirmed (code) |
 | `0x0031df90` | `UseFlagTactic_StepBanter` | helper | as MoveToFlag's | confirmed (code) |
-| `0x0031e098` | `UseFlagTactic_Process` | Process | described in [Tactics](ai.md#tactic-kinds): seat each second until the nearest player not in shadow comes within the range, then release with random 0-1 s delays and 7 once all reached state 3 | confirmed (code) |
+| `0x0031e098` | `UseFlagTactic_Process` | Process | described in [Tactics](ai-gangs.md#tactic-kinds): seat each second until the nearest player not in shadow comes within the range, then release with random 0-1 s delays and 7 once all reached state 3 | confirmed (code) |
 | `0x0031e270` | `UseFlagTactic_Leave` | helper | sets `+0x34`: the tactic stops seating and releases the members | confirmed (code) |
 | `0x0031e280` | `UseFlagTactic_OnEvent` | Event | 1/16 from a thrower: the member calls for help, consumed; 11 notes the spotter; with a callback, 1/11/16 make the tactic leave (`0x0031e270`), consumed; 20/23 reset the banter | confirmed (code) |
 
@@ -1580,8 +1580,8 @@ banter on.
 
 ### WarriorAttack (type 0x01) {#t2-warrior-attack}
 
-The attack command's tactic (vtable `0x00544160`, [Warrior commands](ai.md#warrior-commands)). Fields: `+0x18` the gang
-has a target, `+0x20` the chief's line playing, `+0x21` the answer said.
+The attack command's tactic (vtable `0x00544160`, [Warrior commands](ai-gangs.md#warrior-commands)). Fields: `+0x18` the
+gang has a target, `+0x20` the chief's line playing, `+0x21` the answer said.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1658,11 +1658,11 @@ built: the wreck with no store, the answering line, the fidget clips, dogs' Avoi
 ### Attack sub-tactics {#t2-sub-tactics}
 
 Short orders TacticAttack's Process starts every 7 s (`AttackTactic_StartSubTactic` `0x00307a10`,
-[Tactics](ai.md#tactic-kinds)): a pool of 8 records of 0x30 at `0x006eb6f0` (mask `0x006eb6e0`). Record: `+0x00` the
-gang, `+0x04` the time limit (−1 none), `+0x08` started, `+0x0c` the vtable (`+0x0c` Start, `+0x14` End, `+0x1c`
-Process). Each Process returns 1 (done) when the leader is gone, cuffed or knocked out. The leader opens with a speech
-command and a gesture (clips `0x2a3`/`0x2a4` in the fight stance, `0x2a7`/`0x2a8` out of it), and the order goes out
-when his line ends. The order names are inferred from the lines.
+[Tactics](ai-gangs.md#tactic-kinds); step by step in [AI reimplementation plan](ai-reimpl.md#unit-3)): a pool of 8
+records of 0x30 at `0x006eb6f0` (mask `0x006eb6e0`). Record: `+0x00` the gang, `+0x04` the time limit (−1 none), `+0x08`
+started, `+0x0c` the vtable (`+0x0c` Start, `+0x14` End, `+0x1c` Process). Each Process returns 1 (done) when the leader
+is gone, cuffed or knocked out. The leader opens with a speech command and a gesture (clips `0x2a3`/`0x2a4` in the fight
+stance, `0x2a7`/`0x2a8` out of it), and the order goes out when his line ends. The order names are inferred from the lines.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1680,7 +1680,7 @@ when his line ends. The order names are inferred from the lines.
 | `0x00321c50` | `GrabSubTactic_End` | End | pops the leader's GrabTarget goal (`0x1f`) | confirmed (code) |
 | `0x00321cd8` | `GrabSubTactic_Process` | Process | orders once; done when the leader is cuffed or knocked out, nothing was ordered, or the grab goal is gone | confirmed (code) |
 | `0x00321db8` | `ChargeSubTactic_Init` | constructor | gang, time, vtable `0x00544290`, how many members (`+0x10`) | confirmed (code) |
-| `0x00321de8` | `ChargeSubTactic_Order` | helper | up to the count: free members (not busy, not attacked, no goal `0x3f`, top goal not `0x0b`) take their nearest valid enemy, drop the fight goal and get EngageEnemy (`EngageEnemyGoal_Init`, `0x8f`) | confirmed (code) |
+| `0x00321de8` | `ChargeSubTactic_Order` | helper | up to the count: free members (not the leader, not busy, not attacked, no goal `0x3f`, top goal not `0x0b`) take the **farthest** enemy on their list when it is valid ([Unit 4](ai-reimpl.md#unit-4)), drop the fight goal and get EngageEnemy (`EngageEnemyGoal_Init`, `0x8f`) | confirmed (code) |
 | `0x00322050` | `ChargeSubTactic_Process` | Process | with two or more alive the leader says `attack` (1) and gestures (`0x2a4` / `0x2a8`); after the line, orders once | confirmed (code) |
 | `0x00322188` | `GuardSubTactic_Init` | constructor | gang, no time limit, vtable `0x005442c8`, the back-off option `+0x17`; with a time, `+0x10` = now + time | confirmed (code) |
 | `0x003221e8` | `GuardSubTactic_Order` | helper | the leader's formation: set 3 with min(2 × others, 9) slots, shape 3.0; members join and get FollowAndDefend (3.0) on him, with attack table `0x00511438` unless the option; with the option the leader backs off (FightBackOff goal) | confirmed (code) |

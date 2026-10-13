@@ -21,7 +21,9 @@ complete: |
   subtitles give play in the hub instead); 244 have no level (shared animation sets, subway scenes, and `l4_` /
   `l88_` names with no such level). **Cast** and **Props** are filled for the 188 scenes a script builds a scene
   table for: per role the character model of the human the script binds (inferred from its `HuCreate` type), per
-  object slot the object type ([Scenes: cast and props](../research/scenes.md#cast)).
+  object slot the object type ([Scenes: cast and props](../research/scenes.md#cast)). `l99_c1`'s cast and the
+  subway scenes `Coney_Sub2` and `Coney_Sub4`'s props were read at runtime
+  ([Scenes: cast at runtime](../research/scenes.md#cast-runtime)).
 defaults: {source: "scene_list.cnk, the scripts' ScenePreload, the level records", evidence: confirmed-code}
 entries:
   - {id: "movie:L1_IN", kind: movie, name: L1_IN, played_by: [boot, "level1 intro", "front end Menu.movies[2]"], on_disc: true}
@@ -45,9 +47,9 @@ entries:
   - {id: Benson_Sub3, kind: scene, name: Benson_Sub3, scene: 2, size: 2112, levels: [level14], scripts: [level14], plays_in: [level14], plays_in_by: script}
   - {id: Coney_Sub1, kind: scene, name: Coney_Sub1, scene: 3, size: 22336, levels: [level99], scripts: [level99], plays_in: [level99], plays_in_by: script}
   - {id: Coney_Sub1nocar, kind: scene, name: Coney_Sub1nocar, scene: 4, size: 2704, plays_in_by: none}
-  - {id: Coney_Sub2, kind: scene, name: Coney_Sub2, scene: 5, size: 27472, levels: [level99], scripts: [level99], plays_in: [level99], plays_in_by: script}
+  - {id: Coney_Sub2, kind: scene, name: Coney_Sub2, scene: 5, size: 27472, levels: [level99], scripts: [level99], plays_in: [level99], plays_in_by: script, props: [dyn_s_train_med_full, dyn_s_train_med_full, dyn_s_train_med_full, "?", dyn_s_train_med_full, dyn_s_train_med_full, dyn_s_train_med_full]}
   - {id: Coney_Sub3, kind: scene, name: Coney_Sub3, scene: 6, size: 1920, levels: [level80], scripts: [level80], plays_in: [level80], plays_in_by: script}
-  - {id: Coney_Sub4, kind: scene, name: Coney_Sub4, scene: 7, size: 1920, levels: [level80], scripts: [level80], plays_in: [level80], plays_in_by: script}
+  - {id: Coney_Sub4, kind: scene, name: Coney_Sub4, scene: 7, size: 1920, levels: [level80], scripts: [level80], plays_in: [level80], plays_in_by: script, props: [dyn_s_train_med_full, dyn_s_train_med_full, dyn_s_train_med_full, "?", dyn_s_train_med_full, dyn_s_train_med_full, dyn_s_train_med_full]}
   - {id: Coney_Sub5, kind: scene, name: Coney_Sub5, scene: 8, size: 13360, levels: [level83], scripts: [level83], plays_in: [level83], plays_in_by: script}
   - {id: EConey_Sub1, kind: scene, name: EConey_Sub1, scene: 9, size: 14624, plays_in_by: none}
   - {id: EConey_Sub2, kind: scene, name: EConey_Sub2, scene: 10, size: 14032, plays_in_by: none}
@@ -1217,7 +1219,7 @@ entries:
   - {id: l98_c1, kind: scene, name: l98_c1, scene: 2562, size: 111536, plays_in: [level98], plays_in_by: prefix}
   - {id: l98_c1_sub, kind: scene, name: l98_c1_sub, scene: 2563, size: 640, plays_in: [level98], plays_in_by: prefix}
   - {id: l99_ash_intro, kind: scene, name: l99_ash_intro, scene: 2612, size: 118944, plays_in: [level99], plays_in_by: script, cast: [warr_cl_gen, "warr_ve|warr_ve_gen", warr_re, warr_so_vb1_hr, warr_so_vb2_hr, warr_so_vb3_hr, "-", warr_ty], props: ["-", "-", "door (left leaf)"]}
-  - {id: l99_c1, kind: scene, name: l99_c1, scene: 2613, size: 86720, plays_in: [level99], plays_in_by: script, cast: [warr_cl_gen, "warr_ve|warr_ve_gen", "warr_re|warr_re_cv", "-", warr_so_vb2_hr, warr_so_vb1_hr, warr_so_vb3_hr, warr_ty], props: [dyn_s_spraycan, dyn_rembrandt, dyn_vermin, dyn_intro_test]}
+  - {id: l99_c1, kind: scene, name: l99_c1, scene: 2613, size: 86720, plays_in: [level99], plays_in_by: script, cast: [warr_cl_gen, warr_ve_gen, warr_re_cv, "-", warr_so_vb2_hr, warr_so_vb1_hr, warr_so_vb3_hr, warr_ty_cv], props: [dyn_s_spraycan, dyn_rembrandt, dyn_vermin, dyn_intro_test]}
   - {id: l99_c2, kind: scene, name: l99_c2, scene: 2619, size: 171520, plays_in: [level99], plays_in_by: script, cast: [warr_cl_gen, warr_re, "warr_ve|warr_ve_gen", "-"]}
   - {id: l99_c3, kind: scene, name: l99_c3, scene: 2625, size: 132624, plays_in: [level99], plays_in_by: script, cast: [warr_re, "warr_ve|warr_ve_gen", "-"]}
   - {id: l99_c4, kind: scene, name: l99_c4, scene: 2626, size: 131472, plays_in: [level99], plays_in_by: prefix}

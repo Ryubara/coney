@@ -28,12 +28,15 @@
 #include "core/error.h"
 #include "core/interpolation.h"
 #include "core/options.h"
+#include "debug/debug_lines.h"
+#include "debug/entity_inspect.h"
 #include "debug/play_controls.h"
 #include "effects/glints.h"
 #include "fileio/wad.h"
 #include "gamemodes/game_mode.h"
 #include "gamemodes/gameplay_mode.h"
 #include "graphics/render_device.h"
+#include "graphics/throw_arc.h"
 #include "hud/health_rings.h"
 #include "human/player.h"
 #include "human/strike_shapes.h"
@@ -41,12 +44,14 @@
 #include "platform/blood_textures.h"
 #include "platform/character_mesh.h"
 #include "platform/hud_layer.h"
+#include "platform/humans_trace.h"
 #include "platform/placed_objects.h"
 #include "platform/play_lighting.h"
 #include "platform/play_scenery.h"
 #include "platform/render_engine.h"
 #include "platform/scene_stage.h"
 #include "platform/texture_dictionary.h"
+#include "platform/throw_arc_renderer.h"
 #include "platform/world_renderer.h"
 #include "sandbox/sandbox_world.h"
 #include "warriors/created_humans.h"
@@ -107,7 +112,7 @@ struct PlayStats {
     float travelled = 0.0F; ///< Metres the player's feet moved across the ground.
 };
 
-/// Coney's first playable mode, behind `coney --play-level NAME` (docs/guides/building.md#playing-a-level): Rembrandt
+/// Coney's first playable mode, behind `coney --play-level NAME` (docs/guides/running.md#playing-a-level): Rembrandt
 /// standing in a scenery (PlayScenery) at its start, driven by pad 1's left stick, and the follow camera behind him
 /// turned by the right stick. The scenery is a level's streamed worlds and level file, loaded as the world viewer
 /// loads them and streamed around the follow camera, or a sandbox layout (`--play-level sandbox:NAME`,
@@ -186,6 +191,10 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] ai::AiHumans& fighters() { return *m_ai; }
     /// Player 1's throw aim (docs/research/objects.md#throws).
     [[nodiscard]] const combat::ThrowAimState& throwAim() const { return m_throwAim; }
+    /// The ribbon of player 1's throw-aim arc `alpha` of the way from the step before's arc to the newest (1 for the
+    /// newest): what the arc's drawing draws, 36 vertices; empty while he does not aim
+    /// (docs/research/graphics.md#throw-arc).
+    [[nodiscard]] std::vector<graphics::ThrowArcVertex> throwArcRibbon(float alpha) const;
     /// Player 1's lock pick under way; null when none runs (docs/research/crimes.md#lockpick).
     [[nodiscard]] const world_objects::LockPick* lockPick() const { return m_lockPick ? &*m_lockPick : nullptr; }
     [[nodiscard]] const PlayStats& stats() const { return m_stats; }
@@ -193,6 +202,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     /// Writes the trace (human::traceHeader(), then human::traceLine() after every step) to the file at `path`,
     /// replacing it: `--trace`. Fails with ErrorCode::Io when the file cannot be opened.
     [[nodiscard]] std::expected<void, Error> traceTo(const std::string& path);
+    /// Writes every human's row (ai::FightTracer) to `trace` after every step: `--trace-humans`. The file is shared, so
+    /// a run that loads several levels writes one.
+    void traceHumansTo(std::shared_ptr<HumansTrace> trace) { m_humansTrace = std::move(trace); }
 
     /// Starts the player at `place` instead (dropped onto the ground below it, as a start is), and the camera where it
     /// says, if it says: `--start`, Coney's own test aid.
@@ -232,12 +244,16 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     void resetCamera() override { m_player->resetCamera(); }
     [[nodiscard]] bool freeCamera() const override { return m_freeCamera.has_value(); }
     void setFreeCamera(bool on) override;
+    /// The collision mesh the player and the AI stand on: the level's or the sandbox's, with any spawned objects in it.
+    [[nodiscard]] const raycast::CollisionMesh& collision() const { return m_scenery->collision(); }
     [[nodiscard]] bool canSpawn() const override { return m_scenery->canSpawn(); }
     std::expected<void, Error> spawn(const sandbox::Primitive& primitive) override;
     [[nodiscard]] std::size_t spawnedCount() const override { return m_spawned.size(); }
     std::expected<void, Error> clearSpawned() override;
     [[nodiscard]] bool canSpawnFighter() const override { return true; }
     std::expected<void, Error> spawnFighter(anim::Vec3 feet, float headingDegrees) override;
+    [[nodiscard]] std::vector<std::string> fighterModels() const override;
+    std::expected<void, Error> spawnFighterAs(anim::Vec3 feet, float headingDegrees, std::string_view model) override;
     [[nodiscard]] std::size_t fighterCount() const override { return m_ai->count(); }
     void clearFighters() override;
     [[nodiscard]] bool fightersEngage() const override { return m_ai->engaging(); }
@@ -295,6 +311,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     /// pick; else a held human to mug, a pickable door, a freed car stereo and a dealer's offer in reach.
     [[nodiscard]] PromptOffer promptOffer() const override;
     [[nodiscard]] bool combatFraming() const override { return m_player->combatFraming(); }
+    /// ScriptedPlayer: `Human_ReleasePlayer` on the human the pad drives, with no one taking the pad
+    /// (ai::AiHumans::releasePlayer()): he fights on as his class's brain. False with no cast or no player left.
+    bool releasePlayerToAi() override;
     /// The model the player is drawn as.
     [[nodiscard]] const std::string& model() const { return m_model; }
 
@@ -318,6 +337,15 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] const std::vector<world_objects::CarHitEffect>& carHitEffects() const { return m_carHitEffects; }
     /// How many world objects the last frame drew (0 without pixels).
     [[nodiscard]] std::size_t objectsDrawn() const { return m_placed ? m_placed->drawn() : 0; }
+    /// The Entity inspector's view of the scene: its humans and objects (play_level_inspect.cpp).
+    [[nodiscard]] const debug::EntityInspect* inspect() const override { return &m_inspector; }
+    [[nodiscard]] bool canFreezeEntity(debug::EntityId id) const override;
+    [[nodiscard]] bool entityFrozen(debug::EntityId id) const override;
+    void setEntityFrozen(debug::EntityId id, bool frozen) override;
+    /// The distance from entity `id`'s newest-step feet (where the debug shapes are built) to where its model is drawn
+    /// `alpha` of the way from the step before to the newest one; zero for an object or an unknown id. The debug shapes
+    /// and the inspector's highlight move by it so they stay on the models at any frame rate.
+    [[nodiscard]] anim::Vec3 drawnOffsetOf(debug::EntityId id, float alpha) const;
     /// How many objects made as `typeName` the level's spawn records still hold (not removed): a disc test's way to ask
     /// whether the boards a broken fence threw are still standing, whatever the renderer.
     [[nodiscard]] std::size_t standingObjectsOf(std::string_view typeName) const;
@@ -382,8 +410,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] const ai::AiHuman* castHumanOf(double handle);
     // Makes the layout's targets, dropped onto the ground, with a mesh each.
     void makeTargets(rw::Texture* texture);
-    // Spawns a fighter dropped onto the ground below `spot`, with its mesh.
-    void addFighter(anim::Vec3 spot, float headingDegrees);
+    // Spawns a fighter dropped onto the ground below `spot`, with its mesh, as the character of `model` (empty: the
+    // scene's own).
+    void addFighter(anim::Vec3 spot, float headingDegrees, const std::string& model = {});
     // The level's scripts' humans as AI humans: the AI on the scripts' brains, then the scripts' hold released with
     // castHuman() as its spawner, which makes the humans created so far and replays the calls on them.
     void makeCast(const ScriptedCast& cast, const ai::AiConfig& fighters);
@@ -452,9 +481,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] const world_objects::Car* stereoInReach(anim::Vec3 feet) const;
     // The pickable door nearest feet at `feet` within reach (a kind-2 context record); null for none.
     [[nodiscard]] const world_objects::Door* lockInReach(anim::Vec3 feet) const;
-    // Player 1's triangle at a dealer offering a deal (a kind-4 context record, docs/research/ai.md#dealer): the first
-    // whose offer is within ai::kDealReach in plan and whose feet are within the prompt height of the human's waist
-    // deals. Returns whether one took the press.
+    // Player 1's triangle at a dealer offering a deal (a kind-4 context record, docs/research/ai-scripting.md#dealer):
+    // the first whose offer is within ai::kDealReach in plan and whose feet are within the prompt height of the human's
+    // waist deals. Returns whether one took the press.
     bool tryDeal(human::Human& human);
     // Player 1's triangle beside a Warrior whose swap prompt is up (docs/research/ai.md#warrior-swap): the Warriors
     // ahead within 1.5 m are asked nearest first; the first that does not refuse turns to him over 0.2 s and the two
@@ -465,7 +494,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // A deal's outcome for player 1: the item and money moved for a sale or a rip-off, and the dealer's line.
     void settleDeal(ai::Brain& brain, ai::DealerGoal& dealer, ai::DealOutcome outcome);
     // Each dealer whose money clip (`money_take`, his 668) passed its action event completes the sale its pair
-    // started (`DealerGoal_FinishPair`, docs/research/ai.md#dealer-buy).
+    // started (`DealerGoal_FinishPair`, docs/research/ai-scripting.md#dealer-buy).
     void stepDealerPairs();
     // The game-over check each update (GameState_CheckGameOver, docs/research/combat.md#defeat) with player 1 as it
     // sees him, then the failure's hand-off: the HUD hidden at its first update, and after 180 updates (10 once cross
@@ -542,6 +571,10 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // the arc's segments, humans are upright capsules, a human target's point is a fixed head height.
     // @orig 0x0027da10 Player_OnL1Pressed (unknown)
     void stepThrowAim(const Pad& pad);
+    // Draws player 1's throw-aim arc while he aims, `alpha` of the way from the step before's arc to the newest, red
+    // while it meets a target (docs/research/graphics.md#throw-arc).
+    // @orig 0x00419da0 ThrowArcs_RenderAll (unknown)
+    void drawThrowArc(float alpha);
     // The lock-pick dial follows player 1's pick: shown at its difficulty while it runs, with the pins' angles and the
     // pin the next press judges (docs/research/hud.md#lock-pick-dial-layout).
     void stepLockPickDial();
@@ -633,8 +666,23 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // The free camera `camera` between its last two steps, `alpha` of the way.
     [[nodiscard]] static world::DebugCamera blendedFreeCamera(const Interpolated<world::DebugCamera>& camera,
                                                               float alpha);
-    // Draws the Debug draw page's lines through the current camera, from `snapshot`.
-    void drawDebugLines(const human::PlayerSnapshot& snapshot) const;
+    // Draws the Debug draw page's lines through the current camera, from `snapshot`, the models at `alpha` of a step.
+    void drawDebugLines(const human::PlayerSnapshot& snapshot, float alpha) const;
+    // The Entity inspector's view of the mode's humans and objects (play_level_inspect.cpp): read-only (freezing is
+    // PlayControls').
+    class Inspector final : public debug::EntityInspect {
+      public:
+        explicit Inspector(PlayLevelMode& mode) : m_mode(mode) {}
+        [[nodiscard]] std::vector<debug::EntityRef> entities() const override;
+        [[nodiscard]] std::vector<debug::WatchGroup> describe(debug::EntityId id) const override;
+
+      private:
+        PlayLevelMode& m_mode;
+    };
+    // Adds the Debug draw page's collision shapes, drawn where the models are `alpha` of the way between steps, the
+    // classified wireframe round the player's feet in `snapshot` and the Entity inspector's highlight to `lines`
+    // (play_level_inspect.cpp).
+    void addInspectorLines(debug::DebugLines& lines, const human::PlayerSnapshot& snapshot, float alpha) const;
 
     RenderEngine& m_engine;
     const io::Wad& m_wad;
@@ -676,6 +724,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
         std::unique_ptr<CharacterMesh> mesh;
         std::vector<anim::Vec3> positions;
         std::vector<anim::Vec3> normals;
+        bool frozen = false; // the Entity inspector's freeze: its step is skipped
     };
     std::vector<Target> m_targets;
     std::vector<human::TargetHuman*> m_targetPointers;
@@ -693,6 +742,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
         std::unique_ptr<CharacterMesh> mesh;
         std::vector<anim::Vec3> positions;
         std::vector<anim::Vec3> normals;
+        std::string model;   // the model it was spawned as; empty: the scene's character
         bool hidden = false; // its human was deleted
     };
     std::vector<FighterMesh> m_fighterMeshes;
@@ -733,6 +783,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // The --trace file (closed when unset) and the steps traced.
     std::optional<std::ofstream> m_trace;
     std::uint64_t m_traceSteps = 0;
+    // The --trace-humans file (shared with the other levels of the run), when asked for.
+    std::shared_ptr<HumansTrace> m_humansTrace;
     // The level's parked cars, particles and motion blur (play_level_effects.h), when gameplay brought them.
     std::unique_ptr<PlayLevelEffects> m_levelEffects;
     // The world objects: the scripts' records and types (null without a cast), their objects, the models they are
@@ -745,8 +797,10 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     world_objects::DrawnPoses<double> m_drawnPoses;
     world_objects::DrawnPoses<const human::Human*> m_iconPoses;
     effects::Triglints m_glints;
-    world_objects::ObjectBodies m_objectBodies; // this step's world-object bodies
-    combat::ThrowAimState m_throwAim;           // player 1's throw aim
+    world_objects::ObjectBodies m_objectBodies;   // this step's world-object bodies
+    combat::ThrowAimState m_throwAim;             // player 1's throw aim
+    std::vector<anim::Vec3> m_previousArc;        // the arc's points on the step before (none: not aiming)
+    std::unique_ptr<ThrowArcRenderer> m_throwArc; // made when the arc is first drawn
     // The RUNTARGET bodies running humans met last step: (the human's handle, his feet, the object), struck next step.
     std::vector<std::tuple<double, anim::Vec3, double>> m_runContacts;
     world_objects::LooseObjects m_looseObjects;              // the dropped objects falling or settling
@@ -764,6 +818,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     std::vector<std::pair<double, world_objects::WorldPose>> m_hatDraws;
     hud::HealthRings m_rings;
     std::map<std::uint64_t, int> m_ringHealth; // each ringed human's health at the last step, for its hit pulse
+    Inspector m_inspector{*this};              // the Entity inspector's view of the mode
     std::unique_ptr<HudLayer> m_hud;           // the HUD's sheets, batches and pass (src/platform/hud_layer.h)
     // The layer renderWithOverlay() adds over the HUD for the render it runs; null otherwise.
     const std::function<void(graphics::RenderDevice&)>* m_overlay = nullptr;

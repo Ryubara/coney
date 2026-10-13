@@ -9,6 +9,8 @@
 #include "ai/brain.h"
 #include "ai/steering.h"
 #include "core/assert.h"
+#include "human/human.h"
+#include "human/human_flags.h"
 #include "human/locomotion.h"
 
 namespace coney::ai {
@@ -59,9 +61,22 @@ float gaitSpeed(const human::Speeds& speeds, int gait) {
     }
 }
 
+bool earlyClimbDue(std::uint16_t nextLegKind, bool fastClimber, human::Gait gait, float distance) {
+    return (nextLegKind & (edge_flag::kClimb | edge_flag::kJump)) != 0 && fastClimber && gait > human::Gait::Jog &&
+           distance <= kEarlyClimbReach;
+}
+
 ActionStatus MoveAction::start(Brain& brain) {
     const anim::Vec3 position = brain.human().position();
     m_landings = brain.human().landings();
+    // A move started again (retarget()) forgets its old route's legs and corners.
+    m_cornersAt.reset();
+    m_climbIndex = 0;
+    m_climbFails = 0;
+    m_jump = JumpState::None;
+    m_airArrived = false;
+    m_jumpIndex = 0;
+    m_movingSteps = 0;
     if (planDistance(position, m_request.point) <= kMoveNothingToDo) {
         return finish(brain);
     }
@@ -84,18 +99,100 @@ ActionStatus MoveAction::start(Brain& brain) {
     return ActionStatus::Running;
 }
 
+void MoveAction::retarget(Brain& brain, anim::Vec3 point) {
+    // A point that has hardly moved changes nothing.
+    if (anim::distance(point, m_request.point) <= kRetargetIgnore) {
+        return;
+    }
+    m_request.point = point;
+    // A straight move aims at the new point from its next update.
+    if (!m_follower) {
+        return;
+    }
+    // A route whose last node walks straight to the new point is kept, its destination moved.
+    const RoutePlanner* planner = brain.planner();
+    const std::optional<anim::Vec3> last = m_follower->lastNode();
+    if (planner != nullptr && last && planner->lineClear(*last, point)) {
+        m_follower->setDestination(point);
+        return;
+    }
+    // Otherwise the move is aborted: in a jump, a drop or a fence climb it ends on its next update, the route kept
+    // until then; else the route goes and the move starts again.
+    if (inRouteLeg(brain)) {
+        m_aborted = true;
+        return;
+    }
+    m_follower.reset();
+    m_restartedClimbing = brain.human().traversal() == human::Traversal::Climbing;
+    restart();
+}
+
+bool MoveAction::inRouteLeg(const Brain& brain) const {
+    if (!m_follower) {
+        return false;
+    }
+    // Route states 1 and 2: a jump leg jumped or dropped off.
+    if (m_follower->onJumpLeg() && m_jump != JumpState::None) {
+        return true;
+    }
+    // State 3: climbing over a kind-8 leg. **Coney choice**: any climb leg whose kind has 8 counts.
+    return brain.human().traversal() == human::Traversal::Climbing && (m_follower->legKind() & edge_flag::kClimb) != 0;
+}
+
+float MoveAction::turnLimit(const Brain& brain, anim::Vec3 position, anim::Vec3 to, float top) {
+    const human::Human& human = brain.human();
+    const human::Speeds& speeds = human.speeds();
+    if (top <= speeds.walk) {
+        return top;
+    }
+    // The circle tangent to the facing at the human through `to`: r = |d|² / (2 |facing × d|). Straight ahead it is
+    // a line (no limit); straight behind (**Coney choice**) a point, which only the walk turns onto.
+    const anim::Vec3 ahead = human::facing(human.heading());
+    const float dx = to.x - position.x;
+    const float dy = to.y - position.y;
+    const float side = std::fabs((ahead.x * dy) - (ahead.y * dx));
+    if (side < 1e-4F) {
+        return (ahead.x * dx) + (ahead.y * dy) >= 0.0F ? top : speeds.walk;
+    }
+    const float radius = ((dx * dx) + (dy * dy)) / (2.0F * side);
+    // The speed whose turn each update at that radius is the gait's turn step, 2 r sin(step / 2) x 30, stepping down
+    // to a gait that turns faster while the one above cannot keep its own speed (**Coney choice** of that reading).
+    auto gait = static_cast<int>(human::gaitOfSpeed(top, speeds));
+    gait = std::max(gait, static_cast<int>(human::Gait::Walk));
+    float limit = top;
+    for (;; --gait) {
+        const float step = human::aiMaxTurn(static_cast<human::Gait>(gait), brain.turnBoost(), human.script().wounded);
+        limit = 2.0F * radius * std::sin(step / 2.0F) * kUpdatesPerSecond;
+        if (gait <= static_cast<int>(human::Gait::Walk) || limit >= gaitSpeed(speeds, gait - 1)) {
+            break;
+        }
+    }
+    return std::clamp(limit, speeds.walk, top);
+}
+
 ActionStatus MoveAction::update(Brain& brain) {
     human::Human& human = brain.human();
-    // 1. Wait while the human is busy (Human_IsBusy) or climbing: the move stays as it was. A climb over a route's
-    // leg that has just ended leaves the human beyond the leg's waypoint: the follower moves on.
+    // 1. Done when aborted (retarget() in a jump, a drop or a fence climb; the clips play on). Wait while the human
+    // is busy (Human_IsBusy) or climbing: the move stays as it was. A climb over a route's leg that has just ended
+    // leaves the human beyond the leg's waypoint: the follower moves on (not for a climb begun before a restart).
+    if (m_aborted) {
+        return finish(brain);
+    }
     const bool climbing = human.traversal() == human::Traversal::Climbing;
-    if (m_wasClimbing && !climbing && m_follower && brain.planner() != nullptr) {
+    // An early climb that started carries the human over the next leg: the route moves on onto it at once
+    // (`Route_TryClimbNear`), so the climb's end passes the leg's far waypoint as a climb leg's does.
+    if (m_earlyClimb && climbing && !m_wasClimbing && m_follower && brain.planner() != nullptr) {
+        m_follower->passWaypoint(*brain.planner(), human.position());
+    }
+    m_earlyClimb = false;
+    if (m_wasClimbing && !climbing && m_follower && brain.planner() != nullptr && !m_restartedClimbing) {
         m_follower->passWaypoint(*brain.planner(), human.position());
         m_stuckFrom = human.position();
         m_movingSteps = 0;
     }
     m_wasClimbing = climbing;
-    // A landing since the last update (docs/research/ai.md#route-jump) keeps the route or ends the move. **Coney
+    m_restartedClimbing = m_restartedClimbing && climbing;
+    // A landing since the last update (docs/research/ai-moving.md#route-jump) keeps the route or ends the move. **Coney
     // stand-in**: the brain does not run in the air, so the arrival test the original runs there is judged at the
     // landing: the landing waypoint counts as reached within its radius plus one update's travel at the launch speed.
     if (human.landings() != m_landings) {
@@ -125,9 +222,12 @@ ActionStatus MoveAction::update(Brain& brain) {
         !m_follower->atJump() && planner->lineClear(position, m_request.point)) {
         m_follower.reset();
     }
-    // 3. Arrived; or close in plan but on another level.
+    // 3. Arrived (`Brain_CheckMoveArrival`: the distance in 3D, in plan once it is 1 m or less, so a point on a ledge
+    // above is not reached from below it); or close in plan but on another level. **Coney stand-in**: one update's
+    // travel is not taken off the distance (fix list item 5).
     const float distance = planDistance(position, m_request.point);
-    if (distance <= m_request.radius ||
+    const float full = anim::distance(position, m_request.point);
+    if ((full <= kArrivalPlanWithin ? distance : full) <= m_request.radius ||
         (distance <= kMoveHeightReach && std::fabs(position.z - m_request.point.z) > kMoveHeightGap)) {
         return finish(brain);
     }
@@ -189,6 +289,17 @@ std::optional<ActionStatus> MoveAction::followLeg(Brain& brain, anim::Vec3 posit
         return finish(brain);
     }
     if ((kind & (edge_flag::kClimb | edge_flag::kJump)) == 0) {
+        // A walked leg before a climb: a fast climber at the run tries the climb from here, toward the climb's far
+        // waypoint, while it runs on. Without it a runner reaches the climb's near waypoint against the face, too close
+        // for the running climb, and runs into the face until the leg's tries give out.
+        const human::Human& human = brain.human();
+        const anim::Vec3 far = m_follower->nextPoint();
+        if (earlyClimbDue(m_follower->nextLegKind(), human.hasFlag(human::flag::kFastClimber), human.gait(),
+                          anim::distance(position, far))) {
+            const anim::Vec3 way = anim::subtract(far, position);
+            brain.requestClimb(anim::Vec3{way.x, way.y, 0.0F});
+            m_earlyClimb = true;
+        }
         return std::nullopt;
     }
     // A climb: run at the waypoint (gait 4) and try the climb toward it each update; give up after kClimbTries.
@@ -217,10 +328,16 @@ bool MoveAction::abort(Brain& brain) {
 
 float MoveAction::cornerSpeed(Brain& brain, anim::Vec3 position, float top) {
     const human::Speeds& speeds = brain.human().speeds();
-    if (!m_follower || brain.planner() == nullptr) {
+    // With no route the only corner is the turn from the human onto the point. **Coney stand-in**: only the corner
+    // speed's first limit, every update (the trial walk over the polygons and the 11-update period are fix list item
+    // 7).
+    if (!m_follower) {
+        return turnLimit(brain, position, m_request.point, top);
+    }
+    if (brain.planner() == nullptr) {
         return top;
     }
-    const std::vector<anim::Vec3> ahead = m_follower->ahead();
+    const std::vector<anim::Vec3> ahead = m_follower->cornerPoints();
     if (m_cornersAt != m_follower->index()) {
         // The corners at the next two waypoints, each from the leg before it to the leg after.
         const float floor = std::min(speeds.walk, top);
@@ -290,7 +407,7 @@ float MoveAction::cornerTrial(const Brain& brain, anim::Vec3 corner, anim::Vec3 
 
 bool MoveAction::stuck(anim::Vec3 position) {
     // On the update after kStuckSteps, the distance in 3D: a climb up a slope counts its height
-    // (docs/research/ai.md#move-action).
+    // (docs/research/ai-moving.md#move-action).
     if (++m_movingSteps <= kStuckSteps) {
         return false;
     }

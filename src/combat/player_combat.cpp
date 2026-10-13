@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "combat/player_combat.h"
 
+#include "combat/tandem.h"
 #include "core/pad.h"
 
 namespace coney::combat {
 
-PlayerCombat::PlayerCombat(const AnimRangeList* ranges, std::uint64_t startMs, std::uint32_t seed)
-    : m_ranges(ranges), m_random(seed), m_power(kPlayerPowerMax, kPlayerPowerRefillPerSecond, startMs),
-      m_rage(kPlayerRageMax, kPlayerRageGainPercent, startMs) {}
+PlayerCombat::PlayerCombat(const AnimRangeList* ranges, std::uint64_t startMs, std::uint32_t seed, int powerMax,
+                           int powerRefillPerSecond, const RageClass& rage)
+    : m_ranges(ranges), m_random(seed), m_power(powerMax, powerRefillPerSecond, startMs), m_rage(rage, startMs) {}
 
 CombatOutput PlayerCombat::update(const CombatInput& input, const CombatTuning& tuning) {
     CombatOutput out;
@@ -16,7 +17,7 @@ CombatOutput PlayerCombat::update(const CombatInput& input, const CombatTuning& 
     // drains in rage and decays after a gain's hold.
     const bool holding = m_mode == CombatMode::Grabbing || m_mode == CombatMode::Tackling;
     m_power.update(input.nowMs, holding && !m_rage.raging(), tuning.powerDrainPerSecond);
-    m_rage.update(input.nowMs, tuning);
+    m_rage.update(input.nowMs);
     if (input.helpless) {
         return out;
     }
@@ -312,6 +313,11 @@ void PlayerCombat::grabOrTackle(const CombatInput& input, CombatOutput& out) {
         return;
     }
     const bool tackle = input.command == command::kCircleHeld;
+    // Step 3 tests the tandem before the tackle and the grab, so the grab-block flags do not refuse it.
+    if (input.tandemTarget) {
+        startTandem(input, out);
+        return;
+    }
     // A player with both grab-block flags cannot start a grab (`HuBlockGrab`). **Coney's reading**: the tap does
     // nothing at all (no intro, no miss) and the tackle is still allowed; the page names only the grab.
     if (!tackle && input.grabBlocked) {
@@ -326,6 +332,12 @@ void PlayerCombat::grabOrTackle(const CombatInput& input, CombatOutput& out) {
     m_mode = tackle ? CombatMode::Tackling : CombatMode::Grabbing;
     out.grabStarted = !tackle;
     out.tackleStarted = tackle;
+}
+
+void PlayerCombat::startTandem(const CombatInput& input, CombatOutput& out) {
+    // The chain and any buffered press are dropped; the set follows the object in hand.
+    m_chain.cancel();
+    out.tandemBase = tandemSet(input.animSet, m_random);
 }
 
 void PlayerCombat::updateCommands(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out) {
@@ -369,8 +381,13 @@ void PlayerCombat::updateCommands(const CombatInput& input, const CombatTuning& 
                                  .heldSet = input.animSet,
                                  .fightStance = input.fightStance,
                                  .snapNeedsTarget = tuning.snapNeedsTarget,
-                                 .snapTarget = input.snapTarget};
+                                 .snapTarget = input.snapTarget,
+                                 .tandem = input.tandemTarget};
         const int animId = input.command == command::kSquarePressed ? squareAttack(attack) : crossAttack(attack);
+        if (animId == kStartTandem) {
+            startTandem(input, out);
+            break;
+        }
         // A breakable target: the object attack, by the point's height.
         startAttack(animId == anim_id::kNone && input.target == TargetKind::Breakable ? objectAttack(input.objectHeight)
                                                                                       : animId,
@@ -393,7 +410,10 @@ void PlayerCombat::updateCommands(const CombatInput& input, const CombatTuning& 
 }
 
 void PlayerCombat::special(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out) {
-    if ((phaseFlags(input) & kSpecialRefusingPhases) != 0) {
+    // Player_Special refuses a pad player holding an object, whatever the object: the melee weapon's throw (502 / 491,
+    // not built) is the armed command's, and when it is refused too the command does nothing, so the cross's own
+    // release swings (docs/research/combat-moves.md#bat-cross).
+    if (input.animSet != 0 || (phaseFlags(input) & kSpecialRefusingPhases) != 0) {
         return;
     }
     // Not paired, it needs and spends the endurance fraction of the meter; rage plays its own and spends nothing.
@@ -409,8 +429,9 @@ void PlayerCombat::special(const CombatInput& input, const CombatTuning& tuning,
 
 void PlayerCombat::strongGrapple(const CombatInput& input, CombatOutput& out) {
     // The strike's clip is paired, so with nobody the search may grab nothing plays; the power meter is neither tested
-    // nor spent (the hold's drain starts with the grab, as for any).
-    if ((phaseFlags(input) & kSpecialRefusingPhases) != 0 || !input.grabTargetInReach) {
+    // nor spent (the hold's drain starts with the grab, as for any). Player_Special's refusal of a held object applies
+    // to it as to the special (special()).
+    if (input.animSet != 0 || (phaseFlags(input) & kSpecialRefusingPhases) != 0 || !input.grabTargetInReach) {
         return;
     }
     m_chain.cancel();

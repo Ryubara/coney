@@ -160,8 +160,8 @@ def _pr_rules(conventions: Conventions) -> list[str]:
         f"{', one per line' if rules.closing.one_per_line else ''}; merging closes it."
     )
     lines += _bullet(
-        f"{rules.remaining.section}: each unchecked item under `{rules.remaining.label}` cites an issue or pull "
-        f"request as `{rules.remaining.unchecked_cites}`."
+        f"{rules.checklist.section}: every item is ticked (`- [x]`): a pull request lists only the work it finishes, "
+        "and a task it does not finish is left out and lives in its own issue."
     )
     shots = rules.screenshots
     lines += _bullet(
@@ -179,6 +179,32 @@ def _pr_rules(conventions: Conventions) -> list[str]:
         lines += _bullet(
             "The text names no path on your machine (`scratch/`, `../../`, `C:\\`) outside an image reference."
         )
+    return lines
+
+
+def _pr_review(conventions: Conventions) -> list[str]:
+    """The release gate on the reviewer's verdict (docs/guides/how-we-work.md, the release queue)."""
+    review = conventions.pull_requests.review
+    lines = _bullet(
+        f"The `{review.agent}` agent (`.claude/agents/{review.agent}.md`) writes `{review.verdict_file}` and "
+        f"`{review.report_file}` next to the description file: `{review.verdict_file}` holds `tip`, `body_sha256`, "
+        "`verdict` (`pass` or `fail`), `images` (each local image's `path` and `sha256`) and `findings` (each with "
+        "`severity` `blocker` or `note`, `where` and `text`)."
+    )
+    lines += _bullet(
+        "`repo check-review` passes only when the description's title (line 1) and body (the rest) pass `repo "
+        "check-title` and `repo check-body` (a local image is allowed, as `gh --attach` uploads it), the verdict is "
+        "`pass` with no `blocker` finding, `tip` is the worktree's HEAD, `body_sha256` is the description file's "
+        "hash now and every local image the description shows is listed with its hash now; any new commit, edit or "
+        "replaced picture makes the verdict stale."
+    )
+    if review.body_hash == "sha256-lf":
+        lines += _bullet(
+            "The description's hash is the SHA-256 of the whole file (title line included) as UTF-8, with a leading "
+            "BOM dropped and CRLF or CR turned into LF."
+        )
+    if review.identical_images == "refused":
+        lines += _bullet("Two byte-identical images in one description are refused, whatever the verdict.")
     return lines
 
 
@@ -213,10 +239,19 @@ def _required_checks(conventions: Conventions) -> list[str]:
     return lines
 
 
-def _docs_only_paths(conventions: Conventions) -> list[str]:
-    """The paths of a documentation-only change, each with what its pattern matches (docs/guides/building.md)."""
+def _maintainer_decisions(conventions: Conventions) -> list[str]:
+    """The decisions only a maintainer takes, as one bullet (AGENTS.md, docs/guides/how-we-work.md)."""
+    decisions = "; ".join(conventions.repo.owner_decisions)
+    return _bullet(
+        "**Maintainer decisions** are never an agent's or a coordinator's: it stops and reports instead of acting. "
+        f"They are: {decisions}."
+    )
+
+
+def _scope_paths(patterns: tuple[str, ...]) -> list[str]:
+    """One CI scope list of `paths`, each pattern with what it matches (docs/guides/building.md)."""
     lines: list[str] = []
-    for pattern in conventions.paths.docs_only:
+    for pattern in patterns:
         folder, _, name = pattern.rpartition("/")
         if pattern.endswith("/"):
             meaning = "the folder and everything under it"
@@ -244,8 +279,12 @@ BLOCKS: dict[str, Callable[[Conventions], list[str]]] = {
     "commit-areas": _commit_areas,
     "labels": _labels,
     "pr-rules": _pr_rules,
+    "pr-review": _pr_review,
     "required-checks": _required_checks,
-    "docs-only-paths": _docs_only_paths,
+    "maintainer-decisions": _maintainer_decisions,
+    "docs-only-paths": lambda conventions: _scope_paths(conventions.paths.docs_only),
+    "tools-only-paths": lambda conventions: _scope_paths(conventions.paths.tools_only),
+    "engine-paths": lambda conventions: _scope_paths(conventions.paths.engine),
     "audit-checks": _audit_checks,
 }
 

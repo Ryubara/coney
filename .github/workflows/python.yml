@@ -1,5 +1,6 @@
-# Lint, type-check and test the coney_tools package, then run its repository checks, on all three OSes (Linux only
-# for a documentation-only pull request, none for a draft: see the changes job).
+# Lint, type-check and test the coney_tools package and run the local gate on all three OSes, and the repository checks,
+# which do not depend on the OS, once on Linux. A pull request that does not change the tools runs on Linux only, and a
+# draft not at all (see the changes job).
 # Actions are pinned to a full commit SHA; the tag is in the comment beside it.
 name: python
 
@@ -18,9 +19,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # What this run needs (.github/scripts/ci-scope.sh): every OS, except Linux only for a pull request that changes
-  # only documentation (the repository checks below read docs/ and research/, so they still run) and nothing for a
-  # draft.
+  # What this run needs (.github/scripts/ci-scope.sh): every OS when the tools changed (paths.tools_only of
+  # .github/conventions.yml: python/, .claude/, this workflow, ...) or a file no class names, and on a push; Linux only
+  # for any other ready pull request (the repository checks below read docs/, research/ and the C++ files, the same on
+  # every OS); nothing for a draft. docs/guides/building.md#what-a-pull-request-runs has the table.
   changes:
     runs-on: ubuntu-24.04
     outputs:
@@ -47,32 +49,53 @@ jobs:
       matrix:
         os: ${{ fromJSON(needs.changes.outputs.python-os) }}
     steps:
+      # Depth 2 so that HEAD^1, the branch a pull request's merge commit joins, exists for the local gate below.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       - run: uv sync --project python
       - run: uv run --project python ruff check python
       - run: uv run --project python ruff format --check python
       - run: uv run --project python mypy python/src python/tests
       - run: uv run --project python pytest python/tests
-      - run: uv run --project python coney-tools repo check
+      # The local gate (docs/guides/testing.md#local-gate) is run by hand on one machine at a time, so this runs it on
+      # every OS the job tests: the steps that depend on the OS (pre-commit in command-line-sized groups, the program
+      # lookup) fail here the way they would for a contributor. Its repo step is `repo audit --files`, which holds
+      # `repo check` and `repo render --check` too, so those still run on every OS. clang-tidy and the docs build have
+      # their own jobs; pre-commit over every file is the format job (build.yml).
+      - run: uv run --project python coney-tools check changed --base HEAD^1 --only repo --only pre-commit
+        shell: bash
+      # The repository checks below compare the checkout's own files and do not depend on the OS (each comparison turns
+      # CRLF into LF or reads text with universal newlines), so they run once, on Linux, which every run includes.
+      - if: runner.os == 'Linux'
+        run: uv run --project python coney-tools repo check
       # The generated blocks of AGENTS.md, CONTRIBUTING.md and the guides must match .github/conventions.yml.
-      - run: uv run --project python coney-tools repo render --check
+      - if: runner.os == 'Linux'
+        run: uv run --project python coney-tools repo render --check
       # The copies of a convention that GitHub reads from their own files (the issue forms, the pull request template,
       # the CI scope script, pre-commit's size limit) must still agree with .github/conventions.yml.
-      - run: uv run --project python coney-tools repo audit --files
+      - if: runner.os == 'Linux'
+        run: uv run --project python coney-tools repo audit --files
       # The progress inputs (docs/progress/, the @orig tags, the roadmap) must agree. The tables and the README's badge
       # data are not committed: the docs build writes them (mkdocs_hooks.py).
-      - run: uv run --project python coney-tools progress check
+      - if: runner.os == 'Linux'
+        run: uv run --project python coney-tools progress check
       # The script-binding pages (docs/references/bindings/) must match research/bindings/, which must be valid.
-      - run: uv run --project python coney-tools natives render --check
+      - if: runner.os == 'Linux'
+        run: uv run --project python coney-tools natives render --check
       # Their Coney status must match Coney's binding table (src/scripting/script_bindings.cpp).
-      - run: uv run --project python coney-tools natives coney --check
+      - if: runner.os == 'Linux'
+        run: uv run --project python coney-tools natives coney --check
       # The debug menus' C++ signature table (src/debug/native_signatures.cpp) must match research/bindings/.
-      - run: uv run --project python coney-tools natives cpp --check
+      - if: runner.os == 'Linux'
+        run: uv run --project python coney-tools natives cpp --check
       # The game reference pages must match their lists (research/references/).
-      - run: uv run --project python coney-tools refs render --check
+      - if: runner.os == 'Linux'
+        run: uv run --project python coney-tools refs render --check
       # The mission status pages (docs/missions/) must match research/missions.yaml.
-      - run: uv run --project python coney-tools missions render --check
+      - if: runner.os == 'Linux'
+        run: uv run --project python coney-tools missions render --check
 
   # The one required check for python: the matrix's OSes vary by change and a skipped matrix job reports its name
   # unexpanded, so "python (macos-15)" cannot be required. Passes when python passed or was skipped on purpose, fails

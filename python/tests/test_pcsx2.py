@@ -17,20 +17,24 @@ import pytest
 from coney_tools import pcsx2_state
 from coney_tools.config import ConfigError
 from coney_tools.game_memory import (
+    BRAIN_SIZE,
+    BRAIN_TABLE,
     CAMERA_POINTER,
     GAME_TIMER_POINTER,
+    HANDLE_TABLE,
     HUMAN_SIZE,
     HUMAN_TABLE,
     PER_PLAYER_TABLE,
     TRANSFORM_TABLE,
     ExpressionError,
     GameMemory,
+    evaluate_all,
     parse,
 )
-from coney_tools.pcsx2_cli import _scenario_state
+from coney_tools.pcsx2_cli import _scenario_state, set_ini_value
 from coney_tools.pine import PineClient, PineError, Read, Write, decode, encode
 from coney_tools.recorder import PAD_BYTES, TICK_COUNTER, Recorder
-from coney_tools.scenario import ScenarioError, load_scenario
+from coney_tools.scenario import ScenarioError, load_scenario, with_let
 
 REPO = Path(__file__).resolve().parents[2]
 
@@ -301,8 +305,33 @@ def test_bad_patch_files_are_named(tmp_path: Path) -> None:
         pcsx2_state.pick({}, ["nope"])
 
 
+PATCH_ONE = '[patch.one]\nedits = [{ address = 0x10, bytes = "01" }]\n'
+PATCH_TWO = '[patch.two]\nedits = [{ address = 0x20, bytes = "02" }]\n'
+
+
+def test_a_folder_of_patch_files_is_read_as_one_set(tmp_path: Path) -> None:
+    (tmp_path / "b-second.toml").write_text(PATCH_TWO, encoding="utf-8")
+    (tmp_path / "a-first.toml").write_text(PATCH_ONE, encoding="utf-8")
+    (tmp_path / "notes.txt").write_text("not a patch file", encoding="utf-8")
+    patches = pcsx2_state.load_patches(tmp_path)
+    assert list(patches) == ["one", "two"]  # read in file-name order; other files ignored
+    assert pcsx2_state.patch_files(tmp_path / "a-first.toml") == [tmp_path / "a-first.toml"]
+
+
+def test_a_patch_two_files_declare_is_refused_naming_both(tmp_path: Path) -> None:
+    (tmp_path / "a.toml").write_text(PATCH_ONE, encoding="utf-8")
+    (tmp_path / "b.toml").write_text(PATCH_ONE, encoding="utf-8")
+    with pytest.raises(pcsx2_state.StateError, match=r"b\.toml: patch one: also declared in .*a\.toml"):
+        pcsx2_state.load_patches(tmp_path)
+
+
+def test_an_empty_patch_folder_is_refused(tmp_path: Path) -> None:
+    with pytest.raises(pcsx2_state.StateError, match=r"holds no \.toml file"):
+        pcsx2_state.load_patches(tmp_path)
+
+
 def test_the_repository_patches_load_and_check_their_words() -> None:
-    patches = pcsx2_state.load_patches(REPO / "research/traces/patches.toml")
+    patches = pcsx2_state.load_patches(REPO / "research/traces/patches")
     assert {"scripted-pad", "right-stick", "puppet"} <= set(patches)
     for patch in patches.values():
         assert patch.research.startswith("docs/")
@@ -340,6 +369,38 @@ def test_expressions_find_the_player_and_his_tables() -> None:
     assert parse("game_time").evaluate(names) == TIMER + 0x48
     assert parse("deg(heading(player))").evaluate(names) == 0.0
     assert math.isclose(parse("wrap(270)").evaluate(names), -90.0)
+
+
+def test_a_sample_works_expressions_out_as_direct_reads_do() -> None:
+    # evaluate_all answers reads from the sample's own dict (fast, for every human every update): the values must be
+    # those of reading memory one value at a time, signed and float types, handles and goal stacks included.
+    fake = FakeGame()
+    brain = BRAIN_TABLE + PLAYER_INDEX * BRAIN_SIZE
+    fake.memory[brain + 0x2C] = 0xFF  # s8 -1: an empty stack
+    fake.write32(brain + 0x124, CIVILIAN_INDEX << 16 | 7)
+    fake.write(HANDLE_TABLE + CIVILIAN_INDEX * 8 + 4, 2, 7)
+    fake.write32(brain + 0x164, 0xFFFFFFFF)
+    fake.write32(brain + 0x168, 0x00050007)
+    fake.write32(brain + 0x1E8, 0xFFFFFFF0)
+    fake.write_float(TRANSFORM_TABLE + PLAYER_INDEX * 0x20 + 4, -2.5)
+    texts = [
+        "s8(brain(h) + 0x2c)",
+        "goal_at(brain(h), s8(brain(h) + 0x2c))",
+        "hidx(u32(brain(h) + 0x124))",
+        "handles(brain(h) + 0x164, 4)",
+        "s32(brain(h) + 0x1e8)",
+        "u32(brain(h) + 0x1e8) - u32(game_time)",
+        "f32(tf(h) + 4) * 2",
+        "index(h) + s16(prec(h))",
+    ]
+    direct = GameMemory(MemoryOf(fake))
+    expected = [parse(text).evaluate(direct.names({"h": PLAYER})) for text in texts]
+    memory = MemoryOf(fake)
+    expressions = [parse(text) for text in texts]
+    jobs = [lambda game, e=e: e.evaluate(game.names({"h": PLAYER})) for e in expressions]
+    assert evaluate_all(memory, {}, jobs) == expected
+    assert expected[:5] == [-1, -1, CIVILIAN_INDEX, 1, -16]
+    assert expected[6] == -5.0
 
 
 def test_expressions_refuse_anything_but_arithmetic_and_calls() -> None:
@@ -457,6 +518,112 @@ def test_a_scenario_may_name_a_state_file_under_scratch(tmp_path: Path) -> None:
             load_scenario(path, tmp_path)
 
 
+def test_a_scenario_sets_its_speed_and_lets_can_be_given(tmp_path: Path) -> None:
+    path = _repo(tmp_path, "", '[original]\nspeed = 0.5\nlet = { seed = "0", base = "seed + 1" }\n')
+    scenario = load_scenario(path, tmp_path)
+    assert scenario.speed == 0.5
+    # --let replaces a name where it stands (so names after it still see it) or adds one at the end.
+    given = with_let(scenario, ["seed=341", "extra = 2 * seed"])
+    assert [(name, e.text) for name, e in given.let] == [("seed", "341"), ("base", "seed + 1"), ("extra", "2 * seed")]
+    with pytest.raises(ScenarioError, match="NAME=EXPRESSION"):
+        with_let(scenario, ["341"])
+    path.write_text('input = "demo.txt"\nupdates = 6\n[original]\nspeed = 2\n', encoding="utf-8")
+    with pytest.raises(ScenarioError, match="speed"):
+        load_scenario(path, tmp_path)
+
+
+def test_an_ini_value_is_set_in_its_section() -> None:
+    ini = "[EmuCore]\nNominalScalar = 9\n\n[Framerate]\nNominalScalar = 1\nTurboScalar = 2\n\n[Hotkeys]\nA = B\n"
+    assert set_ini_value(ini, "Framerate", "NominalScalar", "0.5") == ini.replace(
+        "[Framerate]\nNominalScalar = 1", "[Framerate]\nNominalScalar = 0.5"
+    )
+    # A missing key goes after the section's last setting; a missing section at the end.
+    assert "TurboScalar = 2\nSlomoScalar = 0.25\n\n[Hotkeys]" in set_ini_value(ini, "Framerate", "SlomoScalar", "0.25")
+    assert set_ini_value("[A]\nx = 1\n", "B", "y", "2") == "[A]\nx = 1\n\n[B]\ny = 2\n"
+
+
+def _humans_repo(tmp_path: Path) -> Path:
+    """A made-up checkout with a per-human field set, a goal types list and a rows = "humans" scenario."""
+    path = _repo(tmp_path, "")
+    (tmp_path / "research" / "references").mkdir(parents=True)
+    (tmp_path / "research" / "references" / "goal-types.yaml").write_text(
+        "entries:\n  - {id: 8, name: Melee, vtable: 0x00540450}\n  - {id: 15, name: Fight, vtable: 0x005402d0}\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "research" / "traces" / "fields.toml").write_text(
+        """
+[[each]]
+name = "x"
+address = "tf(h) + 0x0"
+type = "f32"
+digits = 1
+[[each]]
+name = "clip"
+address = "rec(h) + 0x20"
+type = "s32"
+[[each]]
+name = "target"
+value = "hidx(u32(brain(h) + 0x124))"
+[[each]]
+name = "enemies"
+value = "handles(brain(h) + 0x164, 16)"
+[[each]]
+name = "goal"
+value = "goal_at(brain(h), s8(brain(h) + 0x2c))"
+[[each]]
+name = "goal0"
+value = "goal_at(brain(h), 0)"
+[[each]]
+name = "fight"
+formula = "1 - min(abs(goal - 15), 1)"
+""",
+        encoding="utf-8",
+    )
+    path.write_text('input = "demo.txt"\nupdates = 3\nrows = "humans"\nfields = ["each"]\n', encoding="utf-8")
+    return path
+
+
+def test_rows_per_human_follow_pointers_and_handles(tmp_path: Path, fake_pine: tuple[FakeGame, int]) -> None:
+    game, port = fake_pine
+    player_brain = BRAIN_TABLE + PLAYER_INDEX * BRAIN_SIZE
+    civilian_brain = BRAIN_TABLE + CIVILIAN_INDEX * BRAIN_SIZE
+    game.write_float(TRANSFORM_TABLE + CIVILIAN_INDEX * 0x20, 2.5)
+    # The player targets the civilian through a live handle (serial 7 in the handle table) and lists two enemies
+    # (and a free entry);
+    # his stack is Melee under Fight (two goals in the goal pool). The civilian's handle is stale (serial 8).
+    game.write(HANDLE_TABLE + CIVILIAN_INDEX * 8 + 4, 2, 7)
+    game.write32(player_brain + 0x124, CIVILIAN_INDEX << 16 | 7)
+    game.write32(civilian_brain + 0x124, PLAYER_INDEX << 16 | 8)
+    game.write32(player_brain + 0x164 + 4, 0x12345)
+    game.write32(player_brain + 0x164 + 40, 0x6789A)
+    game.write32(player_brain + 0x164 + 8, 0xFFFFFFFF)  # a free entry holding the null handle
+    game.memory[player_brain + 0x2C] = 1
+    game.write32(player_brain + 0x40, 0x00400000)
+    game.write32(player_brain + 0x44, 0x00400100)
+    game.write32(0x00400000 + 0xC, 0x00540450)
+    game.write32(0x00400100 + 0xC, 0x005402D0)
+    game.memory[civilian_brain + 0x2C] = 0xFF
+    # A sample takes several messages (the humans, then each round of pointers): updates come slower than polls.
+    game.polls_per_update = 12
+    scenario = load_scenario(_humans_repo(tmp_path), tmp_path)
+    with PineClient(port) as client:
+        recording = Recorder(GameMemory(client), scenario).record(timeout=5)
+    assert recording.header == ["step", "human", "x", "clip", "target", "enemies", "goal", "goal0", "fight"]
+    assert recording.updates == 4
+    assert recording.missed == []
+    # Step 0 is sampled whenever the first poll lands, maybe just before the next update; the others right after one.
+    assert set(recording.torn) <= {0}
+    recording.missed, recording.torn = [4, 5], [7]
+    assert recording.quality() == "missed: 4 5\ntorn: 7\n"
+    rows = [line.split(",") for line in recording.lines]
+    # Human 0 (the civilian, index 5) comes first in table order, then the player (index 3), at every step.
+    assert [row[:2] for row in rows[:4]] == [["0", "5"], ["0", "3"], ["1", "5"], ["1", "3"]]
+    civilian, player = rows[2], rows[3]
+    assert civilian[2:] == ["2.5", "0", "-1", "0", "-1", "-1", "0"]
+    assert player[3] == "1"  # the clip counts the updates
+    assert player[4:] == [str(CIVILIAN_INDEX), "2", "15", "8", "1"]
+
+
 def test_the_repository_scenarios_load() -> None:
     folder = REPO / "research/traces/scenarios"
     scenarios = sorted(folder.glob("*.toml"))
@@ -467,4 +634,6 @@ def test_the_repository_scenarios_load() -> None:
         assert scenario.events or "no input" in scenario.description, path
         assert scenario.coney_level, path
         assert scenario.slot is not None or scenario.state is not None, path
-        assert "scripted-pad" in scenario.patches, path
+        # Input is played through the scripted pad; a run with no input needs no patch for it.
+        if scenario.events:
+            assert "scripted-pad" in scenario.patches, path

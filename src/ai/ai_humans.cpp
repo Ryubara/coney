@@ -61,6 +61,21 @@ void AiHumans::switchPlayer(Brain& to, BrainType leftAs) {
     m_player.setPadControlled(!to.dead());
 }
 
+bool AiHumans::releasePlayer(BrainType leftAs) {
+    if (m_playerBrain->type() != BrainType::Player) {
+        return false;
+    }
+    releaseToAi(*m_playerBrain, leftAs);
+    // The pad leaves him: from the next update only his brain writes his record.
+    m_player.setPadControlled(false);
+    // Back into his own gang as an AI member (Gang_AddMember): no longer its war chief, and its tactic hears of him.
+    if (const Gang* gang = m_playerBrain->gang(); gang != nullptr) {
+        m_brains->gangs().addMember(gang->id(), *m_playerBrain);
+    }
+    m_playerReleased = true;
+    return true;
+}
+
 AiHumans::~AiHumans() {
     // The pad back on the player's own human before the AI humans go.
     m_player.drive(m_player.body());
@@ -99,7 +114,12 @@ Brain& AiHumans::spawn(const human::PlayerCharacter& character, const AiConfig& 
 }
 
 human::Human& AiHumans::spawnFighter(const raycast::CollisionMesh* mesh, anim::Vec3 feet, float headingDegrees) {
-    Brain& brain = spawn(m_character, m_config, mesh, feet, headingDegrees);
+    return spawnFighter(m_character, mesh, feet, headingDegrees);
+}
+
+human::Human& AiHumans::spawnFighter(const human::PlayerCharacter& character, const raycast::CollisionMesh* mesh,
+                                     anim::Vec3 feet, float headingDegrees) {
+    Brain& brain = spawn(character, m_config, mesh, feet, headingDegrees);
     m_brains->gangs().addMember(fighterGang(), brain);
     return brain.human();
 }

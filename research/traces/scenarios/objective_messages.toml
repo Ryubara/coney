@@ -1,0 +1,73 @@
+# The objective messages of HUD_SetObjective (0x001dad88), called through the call hook with texts of our own written
+# into empty memory (0x000d0000): a new objective (mode 0) and its completion (mode 2) in slot 0, the same in slot 1,
+# then a completion while the next objective waits in the scroll-in queue. The fields sample the scroll-in queue
+# (HUD 0x00600840 + 0x8dd0) and the announcement widget (+0xe340) every update.
+# Research: docs/research/hud.md#objectives-hudsetobjective
+description = "slot 1, no input: objectives set and completed by HUD_SetObjective; the scroll-in queue and announcement"
+research = "docs/research/hud.md#objectives-hudsetobjective"
+input = "objective_messages.txt"
+updates = 700
+fields = []
+
+# The showing scroll-in message's text (0 when none), its start time, the pool's free entries (5 when the queue is
+# empty and nothing shows) and whether the announcement widget shows.
+[[field]]
+name = "scroll_text"
+address = "0x00609678"
+type = "u32"
+
+[[field]]
+name = "scroll_start"
+address = "0x00609b5c"
+type = "u32"
+
+[[field]]
+name = "scroll_free"
+address = "u32(0x00609b58) + 8"
+type = "s32"
+
+[[field]]
+name = "announce_on"
+address = "0x0060eb84"
+type = "u32"
+
+[[field]]
+name = "game_time"
+address = "u32(0x0050b734) + 0x48"
+type = "u32"
+
+[original]
+slot = 1
+patches = ["scripted-pad", "call-brains"]
+setup = [
+  # 0x000d0000 "Reach the park", 0x000d0040 "Find the bonus", 0x000d0080 "Lose the cops", 0x000d00c0 "Meet Cleon".
+  { address = "0xd0000", type = "u32", value = "0x63616552", frame = 0 },
+  { address = "0xd0004", type = "u32", value = "0x68742068", frame = 0 },
+  { address = "0xd0008", type = "u32", value = "0x61702065", frame = 0 },
+  { address = "0xd000c", type = "u32", value = "0x00006b72", frame = 0 },
+  { address = "0xd0040", type = "u32", value = "0x646e6946", frame = 0 },
+  { address = "0xd0044", type = "u32", value = "0x65687420", frame = 0 },
+  { address = "0xd0048", type = "u32", value = "0x6e6f6220", frame = 0 },
+  { address = "0xd004c", type = "u32", value = "0x00007375", frame = 0 },
+  { address = "0xd0080", type = "u32", value = "0x65736f4c", frame = 0 },
+  { address = "0xd0084", type = "u32", value = "0x65687420", frame = 0 },
+  { address = "0xd0088", type = "u32", value = "0x706f6320", frame = 0 },
+  { address = "0xd008c", type = "u32", value = "0x00000073", frame = 0 },
+  { address = "0xd00c0", type = "u32", value = "0x7465654d", frame = 0 },
+  { address = "0xd00c4", type = "u32", value = "0x656c4320", frame = 0 },
+  { address = "0xd00c8", type = "u32", value = "0x00006e6f", frame = 0 },
+]
+calls = [
+  # HUD_SetObjective(slot, text, mode, silent, ms).
+  { function = "0x001dad88", args = ["0", "0xd0000", "0", "0", "8000"], frame = 5 },
+  { function = "0x001dad88", args = ["0", "0xd0000", "2", "0", "8000"], frame = 95 },
+  { function = "0x001dad88", args = ["1", "0xd0040", "0", "0", "8000"], frame = 130 },
+  { function = "0x001dad88", args = ["1", "0xd0040", "2", "0", "8000"], frame = 220 },
+  { function = "0x001dad88", args = ["0", "0xd0080", "0", "0", "8000"], frame = 330 },
+  { function = "0x001dad88", args = ["0", "0xd00c0", "0", "0", "8000"], frame = 340 },
+  { function = "0x001dad88", args = ["0", "0xd0080", "2", "0", "8000"], frame = 400 },
+]
+
+[coney]
+level = "level99"
+args = ["--checkpoint", "3"]

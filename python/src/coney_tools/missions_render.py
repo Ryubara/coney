@@ -105,7 +105,7 @@ def _run(mission: Mission) -> list[str]:
     count = len(mission.checkpoints)
     out = ["", "## Run it in Coney {#run}", ""]
     out += _wrap(
-        "With your own disc ([Playing a level](../guides/building.md#playing-a-level)); `--checkpoint` picks "
+        "With your own disc ([Playing a level](../guides/running.md#playing-a-level)); `--checkpoint` picks "
         f"where it starts, 1 to {count}:"
     )
     out += ["", "```text", f"coney --disc /path/to/disc --play-level {mission.name} --checkpoint 1", "```"]

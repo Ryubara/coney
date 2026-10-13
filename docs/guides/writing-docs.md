@@ -5,17 +5,26 @@ The docs are plain Markdown in `docs/`, built into a website with
 
 ## Setup (once)
 
+In a virtual environment at the repository root:
+
 ```powershell
 py -m venv .venv
-.venv\Scripts\pip install -r requirements-docs.txt
+.venv/Scripts/pip install -r requirements-docs.txt
 ```
 
-## Preview / build
+On Linux and macOS use `python3 -m venv .venv` and `.venv/bin/` in place of `.venv/Scripts/`.
+
+## Preview and build
 
 ```powershell
-.venv\Scripts\mkdocs serve      # live preview at http://127.0.0.1:8000
-.venv\Scripts\mkdocs build      # static site into site/ (strict: broken links fail the build)
+.venv/Scripts/python -m mkdocs serve --dev-addr 127.0.0.1:8000   # live preview, reloads as you edit
+.venv/Scripts/python -m mkdocs build --strict                    # static site into site/, as CI builds it
 ```
+
+`--strict` turns broken links and pages missing from the navigation into errors, so run it before every commit that
+touches `docs/` or `mkdocs.yml` ([The local gate](testing.md#local-gate)). The Changelog page is generated from
+`git log` at build time, so it needs the full history (no shallow clone) and is never committed. This section is the
+one home of these commands; the README, [Building and testing](building.md#documentation) and CONTRIBUTING link here.
 
 ## Publishing
 
@@ -33,11 +42,12 @@ subject, updated in place, so a reader never has to work out which of two pages 
 | Kind | Where | Rules |
 | --- | --- | --- |
 | Research | `docs/research/` | Living; one page per subsystem or format; evidence levels; implementable without Ghidra |
-| Tables | `docs/research/tables/` | Generated from `research/*.yaml` at the repository root; never edited by hand |
 | Progress | `docs/progress/` | The tables at the `progress:generated` marker are produced by the docs build, never committed; edit the data files beside the page instead |
 | Game references: lists | `docs/references/` | Generated from `research/references/` by `coney-tools refs render`; edit the YAML instead. `entities.md` is written by hand |
 | Game references: script bindings | `docs/references/bindings/` | Generated from `research/bindings/` by `coney-tools natives render`; edit the YAML instead |
 | Guides | `docs/guides/` | Living; how to build, contribute, research and review |
+| Designs | `docs/guides/` | A plan for work that is not allowed or not started yet, with the questions only a maintainer can answer ([enhancements](enhancements.md), [realtime lighting](realtime-lighting.md), [asset and script architecture](asset-and-script-architecture.md)). Not a how-to: say at the top that it is a design, and move what is built into a guide or research page |
+| Missions | `docs/missions/` | Generated from `research/missions.yaml` by `coney-tools missions render`; edit the YAML instead |
 
 ## Adding a page
 
@@ -52,6 +62,25 @@ subject, updated in place, so a reader never has to work out which of two pages 
 4. On a research page, give every non-obvious claim an address or file offset and an evidence level: confirmed
    (code), confirmed (runtime), inferred or speculative. The levels are defined in
    [Research workflow](research-workflow.md#evidence-levels).
+
+## Style
+
+- **One subject per page, said once.** Before writing a rule or a figure, search the docs for it; if a page already
+  owns it, link to that page (a heading anchor) and do not restate it. Two copies drift apart.
+- **Pages say what and how; code comments say why.** A guide says how to do the thing and links the reasons; do not
+  paste a command or a list that another page owns.
+- **Generated text is never edited.** A block between `<!-- conventions:begin ... -->` markers, and the pages under
+  `docs/references/`, `docs/missions/` and the progress tables, are rebuilt from their source; change the source
+  ([Repository conventions](repo-conventions.md#generated-blocks)).
+- **Links.** A file outside `docs/` is `repo:<path>` (step 3 above). Link a heading, not just a page, when the
+  point is in one section.
+- **Name roles, not people.** Write "the user" for the person who tests, reports or directs and "a maintainer" for the
+  one who decides; never "the owner" (the `repo.wording` key of `.github/conventions.yml`). Do not give dates or
+  names to say who decided something.
+- **No machine paths.** Write `<workspace>`, `scratch/` or a relative path, not a drive letter or a home folder.
+- **Say what is true now.** No "still small", "once it exists" or "not yet" for something that already exists; a
+  thing that is planned says "planned" in the one place that owns it.
+- **Review checklist:** [Docs review](review/docs.md) lists what a reviewer looks for.
 
 ## Subsystem page
 

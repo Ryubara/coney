@@ -16,6 +16,7 @@
 #include "ai/brains.h"
 #include "ai/gangs.h"
 #include "ai/scripted_brains.h"
+#include "ai/threats.h"
 #include "human/fighter_clips.h"
 #include "human/human.h"
 #include "human/humans.h"
@@ -26,8 +27,8 @@
 #include "support/human_fixtures.h"
 #include "world_objects/flags.h"
 
-// Giving way (docs/research/ai.md#giving-way) and the step control (docs/research/characters.md#step-control): the
-// step's clip by angle, the step played on the human, who may give way, the sector a GiveWay steps to, and the ask
+// Giving way (docs/research/ai-moving.md#giving-way) and the step control (docs/research/characters.md#step-control):
+// the step's clip by angle, the step played on the human, who may give way, the sector a GiveWay steps to, and the ask
 // passed on to a neighbour when no sector is free. Synthetic humans on a floor.
 
 using Catch::Approx;

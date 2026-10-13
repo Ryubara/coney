@@ -14,6 +14,7 @@ add_library(coney_core STATIC
     core/input_script.cpp
     core/name_hash.cpp
     core/parse_number.cpp
+    core/window_display.cpp
     core/options.cpp
     core/pad.cpp
     core/pad_handlers.cpp
@@ -59,6 +60,7 @@ add_library(coney_core STATIC
     graphics/frame_stats.cpp
     graphics/car_draw.cpp
     graphics/human_blood.cpp
+    graphics/throw_arc.cpp
     graphics/human_lighting.cpp
     graphics/level_lighting.cpp
     graphics/light_manager.cpp
@@ -72,6 +74,9 @@ add_library(coney_core STATIC
     graphics/sprite_batch.cpp
     graphics/texture_grid.cpp
     graphics/texture_lod.cpp
+    physics/overlaps.cpp
+    physics/segment_kernels.cpp
+    physics/sphere_box_sweep.cpp
     raycast/collision_mesh.cpp
     gui/bar.cpp
     gui/base_widget.cpp
@@ -263,6 +268,7 @@ target_sources(coney_core PRIVATE
     human/fighter_counter.cpp
     human/fighter_grab.cpp
     human/fighter_script.cpp
+    human/fighter_tandem.cpp
     human/fighter_victim.cpp
     human/player.cpp
     human/player_trace.cpp
@@ -303,6 +309,7 @@ target_sources(coney_core PRIVATE
     ai/swap_prompt.cpp
     ai/tactic_scout.cpp
     ai/fight_goal.cpp
+    ai/fight_trace.cpp
     ai/fight_reactions.cpp
     ai/formations.cpp
     ai/gangs.cpp
@@ -332,6 +339,7 @@ target_sources(coney_core PRIVATE
     ai/tactic_boss.cpp
     ai/tactic.cpp
     ai/targeting.cpp
+    ai/threats.cpp
     ai/tactic_attack.cpp
     ai/tactic_confront.cpp
     ai/tactic_domination.cpp
@@ -356,6 +364,7 @@ target_sources(coney_core PRIVATE
     combat/revive.cpp
     combat/reactions.cpp
     combat/stick_games.cpp
+    combat/tandem.cpp
     combat/throw_aim.cpp
     combat/throw_velocity.cpp
     debug/combat_tunables.cpp)
@@ -376,16 +385,23 @@ target_sources(coney_core PRIVATE
     sandbox/sandbox_world.cpp)
 # The debug menus: the model every front end renders, and its pages (docs/guides/debug-menu.md).
 target_sources(coney_core PRIVATE
+    debug/debug_lines.cpp
     debug/debug_session.cpp
+    debug/fighter_spawn.cpp
+    debug/entity_inspect.cpp
     debug/game_tunables.cpp
+    debug/human_shapes.cpp
+    debug/human_watch.cpp
     debug/input_gate.cpp
     debug/lua_console.cpp
     debug/menu_model.cpp
     debug/menu_navigator.cpp
     debug/native_caller.cpp
     debug/native_signatures.cpp
+    debug/object_watch.cpp
     debug/pad_menu_input.cpp
     debug/pages_engine.cpp
+    debug/pages_entity.cpp
     debug/pages_hud.cpp
     debug/pages_play.cpp
     debug/pages_scripts.cpp
@@ -393,6 +409,7 @@ target_sources(coney_core PRIVATE
     debug/story_missions.cpp
     debug/time_control.cpp
     debug/time_series.cpp
+    debug/ui_scale.cpp
     debug/tunables.cpp)
 # The in-game HUD: the player panels, hints, objectives, counters, the arrow and the radar (docs/research/hud.md).
 target_sources(coney_core PRIVATE

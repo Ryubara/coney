@@ -95,6 +95,9 @@ class ScriptedPlayer {
     /// Whether the camera frames player 1's fight now (`Camera_IsCombatFraming`, `0x00233c50`): his sounds' combat
     /// framing and the angry breathing (docs/research/sound-events.md#players).
     [[nodiscard]] virtual bool combatFraming() const { return false; }
+    /// Hands player 1 to the AI with no one taking the pad (`Human_ReleasePlayer`, ai::AiHumans::releasePlayer()):
+    /// `--ai-player`'s step when a Rumble countdown ends. False when there is no player to release.
+    virtual bool releasePlayerToAi() { return false; }
 };
 
 /// What a level's scripts drive, which gameplay gives the level it loads: the humans the scripts create, the brains
@@ -308,6 +311,12 @@ class GameplayMode final : public GameMode {
     [[nodiscard]] const std::optional<LevelStart>& start() const { return m_start; }
     /// The level's brains and gangs; null while no level is entered.
     [[nodiscard]] const ai::Brains* brains() const { return m_brains.get(); }
+    /// Each level entered from now on makes its brains with `variation` (ai::Brains, `--ai-seed`); 0 (the default) is
+    /// the usual run.
+    void setAiVariation(std::uint32_t variation) { m_aiVariation = variation; }
+    /// Player 1 handed to the AI in the loaded level (ScriptedPlayer::releasePlayerToAi()); false with no level, or
+    /// none to hand.
+    bool releasePlayerToAi();
     /// Player 1's cameras for the level; null while no level is entered.
     [[nodiscard]] camera::Cameras* cameras() const { return m_cameras.get(); }
     /// The level's glass panes and doors (empty while no level is entered).
@@ -318,6 +327,10 @@ class GameplayMode final : public GameMode {
     [[nodiscard]] const TagSession* tagSession() const { return m_tagSession ? &*m_tagSession : nullptr; }
     /// The level's tag spots.
     [[nodiscard]] const world_objects::TagSpots& tagSpots() const { return m_tagSpots; }
+    /// The level's radios (SetupRadio).
+    [[nodiscard]] const world_objects::Radios& radios() const { return m_radios; }
+    /// The level's scenes; null while no level is entered or none was made.
+    [[nodiscard]] const scenes::SceneSystem* scenes() const { return m_scenes.get(); }
     /// The loose objects and action objects a player uses with triangle; null while no level is entered.
     [[nodiscard]] const LevelPickups* pickups() const { return m_pickups ? &*m_pickups : nullptr; }
 
@@ -397,7 +410,7 @@ class GameplayMode final : public GameMode {
     [[nodiscard]] bool playerInScene() const;
     // Player 1's crew this frame: the follow the game issues itself (forced) when he is made a player and when a scene
     // that held him ends, once no scene camera is current; then his automatic commands (ai::CrewOrders), and his
-    // menu unlocked every 10 updates (docs/research/ai.md#warrior-follow, #warrior-auto-commands).
+    // menu unlocked every 10 updates (docs/research/ai-gangs.md#warrior-follow, #warrior-auto-commands).
     // @orig 0x00229c40 Human_MakePlayer (unknown)
     // @orig 0x0039f450 SceneTask_End (unknown)
     // @orig 0x003035d8 PlayerBrain_Update (unknown)
@@ -491,10 +504,11 @@ class GameplayMode final : public GameMode {
     // The level's brains and the scripts' hold on them, before the level, whose humans they refer to.
     std::unique_ptr<ai::Brains> m_brains;
     std::unique_ptr<ai::ScriptedBrains> m_scripted;
-    ai::CrewOrders m_crewOrders;  // player 1's automatic commands
-    double m_crewChief = 0.0;     // player 1's handle when his crew was last given the follow
-    bool m_crewInScene = false;   // whether a scene held player 1 last frame
-    bool m_crewFollowDue = false; // a follow waits for the scene camera to go
+    std::uint32_t m_aiVariation = 0; // `--ai-seed`, which each level's brains are made with
+    ai::CrewOrders m_crewOrders;     // player 1's automatic commands
+    double m_crewChief = 0.0;        // player 1's handle when his crew was last given the follow
+    bool m_crewInScene = false;      // whether a scene held player 1 last frame
+    bool m_crewFollowDue = false;    // a follow waits for the scene camera to go
     std::uint64_t m_crewUpdates = 0;
     std::unique_ptr<camera::Cameras> m_cameras;    // player 1's; declared before the level, whose player holds them
     std::unique_ptr<scenes::SceneSystem> m_scenes; // the level's scenes, which outlive the level that hosts them

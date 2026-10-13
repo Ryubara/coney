@@ -18,6 +18,7 @@
 #include "ai/route_planner.h"
 #include "ai/sectors.h"
 #include "ai/targeting.h"
+#include "ai/threats.h"
 #include "animation/anim_math.h"
 #include "combat/player_combat.h"
 #include "combat/reactions.h"
@@ -126,19 +127,30 @@ std::optional<float> snapHeading(Brain& brain) {
     return human::wrapAngle(heading + (*sector == 2 ? kQuarterTurn : -kQuarterTurn));
 }
 
+// The scene's brain that `wanted` is, as one that may be changed: the sector record keeps its humans read-only.
+Brain* peerOf(const Brain& owner, const Brain* wanted) {
+    if (wanted == nullptr || owner.peers() == nullptr) {
+        return nullptr;
+    }
+    for (const std::unique_ptr<Brain>& peer : *owner.peers()) {
+        if (peer.get() == wanted) {
+            return peer.get();
+        }
+    }
+    return nullptr;
+}
+
 // The fight goal's re-target (`0x002b3c30`): the nearest human in sector 0 of A's record (its first word; inferred to
-// be the nearest human) becomes the target when he is not already it, is a threat and no GrabTarget goal is on the
-// stack. **Coney stand-in**: a threat is a valid enemy on A's enemy list (`Brain_IsThreat`'s gang test is not built).
+// be the nearest human, within 1.5 m) becomes the target when he is not already it, is a threat (isThreat()) and no
+// GrabTarget goal is on the stack. His slot is forced (a full list gives up its farthest holder's), and neither the
+// enemy list nor Brain_ValidateEnemy is asked (docs/research/ai-reimpl.md#unit-1).
 void retargetFromSectors(Brain& brain) {
-    const Brain* ahead = brain.sectors(kSectorAgeMs)[0].nearest;
-    if (ahead == nullptr || ahead == brain.target() || brain.findGoal(GoalType::GrabTarget) != nullptr) {
+    Brain* ahead = peerOf(brain, brain.sectors(kSectorAgeMs)[0].nearest);
+    if (ahead == nullptr || ahead == brain.target() || !isThreat(brain, *ahead) ||
+        brain.findGoal(GoalType::GrabTarget) != nullptr) {
         return;
     }
-    const std::vector<Brain*>& enemies = brain.enemies();
-    const auto listed = std::ranges::find(enemies, ahead);
-    if (listed != enemies.end() && Brain::fightable(**listed) && validEnemy(brain, **listed)) {
-        brain.setTarget(*listed);
-    }
+    brain.setTarget(ahead, true);
 }
 
 } // namespace
@@ -246,8 +258,8 @@ GoalStatus FightGoal::process(Brain& brain) {
             brain.queueAction(std::make_unique<MoveToHumanAction>(band.limitMs, band.outer));
         } else {
             // **Coney stand-in** for the band-keeping move while it waits in the ring: the original's circles him
-            // with the heading to him written each update (docs/research/ai.md#move-melee); standing here, the human
-            // only turns to him (the brain's move is cleared every update, so nothing else would).
+            // with the heading to him written each update (docs/research/ai-moving.md#move-melee); standing here, the
+            // human only turns to him (the brain's move is cleared every update, so nothing else would).
             brain.setMoveHeading(human::headingOf(anim::subtract(target->human().position(), brain.human().position())),
                                  0.0F);
         }

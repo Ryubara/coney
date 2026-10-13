@@ -10,6 +10,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+import yaml
 from conventions_support import write_checkout
 
 from coney_tools import check_cli, local_gate
@@ -326,7 +327,7 @@ def test_compile_database_lookup_and_missing_files(tmp_path: Path) -> None:
 
 
 def test_missing_compile_database_says_how_to_make_it(tmp_path: Path) -> None:
-    with pytest.raises(ConfigError, match="cmake --preset dev"):
+    with pytest.raises(ConfigError, match="build --configure-only"):
         local_gate.load_compile_db(tmp_path / "nothing")
 
 
@@ -496,7 +497,12 @@ def test_tidy_step_warns_when_the_database_is_gccs(repo: Path, monkeypatch: pyte
     (build / "compile_commands.json").write_text(json.dumps(database), encoding="utf-8")
     result = check_cli._step_tidy(repo, ["src/other.cpp"], build, 1, None)
     assert result.ok
-    assert any("GCC compile database" in line and "CC=clang-19" in line for line in result.output)
+    hint = next(line for line in result.output if "GCC compile database" in line)
+    # The hint is a command an agent may run: the build tool configures the second folder (a raw `cmake --preset` is
+    # refused by the build guard hook).
+    assert "coney-tools build" in hint and "--build-dir build/tidy" in hint
+    assert "--env CC=clang-19" in hint and "--env CXX=clang++-19" in hint and "--configure-only" in hint
+    assert "cmake --preset" not in hint
 
 
 @pytest.mark.parametrize(
@@ -640,3 +646,20 @@ def test_run_changed_exits_1_when_a_step_fails_and_0_when_all_pass(
     outcome["code"] = 0
     assert check_cli.run_changed("main", "build/dev", ["pre-commit"], None, 1, None) == 0
     assert "ok   pre-commit" in capsys.readouterr().out
+
+
+# --- the gate on every OS ---------------------------------------------------------------------------------------
+
+
+def test_the_python_workflow_runs_the_local_gate_on_every_os_it_tests() -> None:
+    """Nobody runs `check changed` on Linux or macOS by hand, so CI's python job does, on its whole OS matrix."""
+    workflow = yaml.safe_load((REPO / ".github" / "workflows" / "python.yml").read_text(encoding="utf-8"))
+    job = workflow["jobs"]["python"]
+    assert job["strategy"]["matrix"]["os"]  # the OSes come from the scope script: all three, or Linux for docs only
+    steps = job["steps"]
+    checkout = next(step for step in steps if str(step.get("uses", "")).startswith("actions/checkout"))
+    # `--base HEAD^1` is the branch a pull request's merge commit joins, so the checkout needs a second commit.
+    assert int(checkout.get("with", {}).get("fetch-depth", 1)) >= 2
+    gate = [step["run"] for step in steps if "coney-tools check changed" in step.get("run", "")]
+    assert len(gate) == 1 and "--base HEAD^1" in gate[0]
+    assert "--only pre-commit" in gate[0] and "--only repo" in gate[0]

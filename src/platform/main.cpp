@@ -70,6 +70,7 @@
 #include "platform/error_dialogs.h"
 #include "platform/frame_pacer.h"
 #include "platform/game_session.h"
+#include "platform/humans_trace.h"
 #include "platform/imgui_overlay.h"
 #include "platform/pad_pipe.h"
 #include "platform/play_level_mode.h"
@@ -353,6 +354,12 @@ int main(int argc, char** argv) {
     windowDesc.hidden = options->renderReferences.has_value();
     // Runs started by agents and tools (test mode, --no-activate) must not take the focus from someone typing.
     windowDesc.activate = coney::activatesWindow(*options);
+    // `--window-display` (else CONEY_WINDOW_DISPLAY): agents put their runs on a display nobody works on.
+    // A local copy, as with discPath above; it outlives the start, which keeps a view of it.
+    const std::optional<std::string> windowDisplay = options->windowDisplay;
+    if (windowDisplay) {
+        windowDesc.display = *windowDisplay;
+    }
     // `--render-size`: frames of that size holding exactly the logical screen, as the original's frame buffer does.
     if (const std::optional<coney::RenderSize> size = options->renderSize; size) {
         windowDesc.width = size->width;
@@ -381,7 +388,7 @@ int main(int argc, char** argv) {
     }
 
     // --render-references: one image per character, object, car, radar icon and traced particle effect, then exit
-    // (docs/guides/building.md#reference-images).
+    // (docs/guides/running.md#reference-images).
     if (const std::optional<std::string> outDir = options->renderReferences; outDir) {
         if (!wad) {
             return 2; // parseOptions refuses --render-references without --disc, so this is never reached
@@ -448,6 +455,17 @@ int main(int argc, char** argv) {
     sessionSettings.language = options->language;
     sessionSettings.skipMovies = options->skipMovies;
     sessionSettings.rumble = options->rumble;
+    sessionSettings.aiSeed = options->aiSeed.value_or(0);
+    // `--trace-humans`: the file every human of the run is traced to, opened before the first level loads.
+    std::shared_ptr<coney::platform::HumansTrace> humansTrace;
+    if (const std::optional<std::string> humansTracePath = options->humansTraceFile; humansTracePath) {
+        auto opened = coney::platform::HumansTrace::open(*humansTracePath);
+        if (!opened) {
+            std::fprintf(stderr, "coney: %s\n", opened.error().message.c_str());
+            return 1;
+        }
+        humansTrace = std::move(*opened);
+    }
     // The saved profiles: the player's folder, or none in test mode (docs/research/save.md#coney).
     sessionSettings.profiles = coney::platform::profileFolder(*options);
     sessionSettings.cardCheckingMs = coney::MemoryCardMode::kCheckingMessageMs;
@@ -561,6 +579,9 @@ int main(int argc, char** argv) {
                     std::fprintf(stderr, "coney: %s\n", traced.error().message.c_str());
                     return 1;
                 }
+            }
+            if (humansTrace) {
+                playLevel->traceHumansTo(humansTrace);
             }
             modes.push(*playLevel);
         } else {
@@ -734,6 +755,7 @@ int main(int argc, char** argv) {
     // `--script-trace`) apply to the first level it loads.
     if (session) {
         session->attachAudio(audio.get());
+        session->setHumansTrace(humansTrace);
         if (commandLineLevel) {
             session->setFirstLevelSetup(
                 [&options](coney::platform::PlayLevelMode& mode) -> std::expected<void, coney::Error> {

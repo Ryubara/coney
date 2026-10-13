@@ -1,0 +1,171 @@
+# The store's cash register (level99, mission 1, checkpoint 2): slot 8 has the dyn_cashreg at (53.23, 57.26, 1.63).
+# The setup stands the player 0.8 m south of it facing it (+y); triangle lifts it (TwoHandPickUp, 503 / 504), then he
+# stands, walks (stick 60 %, the camera looks south so "down" walks north) and stands again.
+# Logged: his clip, gait and move-style stack (record +0x0c depth, +0x10 the styles), anim slots 0 / 4 / 6 / 11, the held
+# object's attachment (bone +0x6d, local pose +0x10 / +0x20) and its type record's hold pose (+0x00 / +0x0c).
+# Research: docs/research/objects.md#two-handed.
+description = "level99 store: triangle lifts the cash register, stand, walk 60 %, stand"
+research = "docs/research/objects.md#two-handed"
+input = "cashreg_carry.txt"
+updates = 260
+fields = ["player"]
+
+[original]
+slot = 8
+patches = ["scripted-pad", "right-stick"]
+let = { db = "u32(0x00512c04)" }
+setup = [
+  { address = "tf(player) + 0x0", type = "f32", value = "53.23", frame = 0, until = 2 },
+  { address = "tf(player) + 0x4", type = "f32", value = "56.45", frame = 0, until = 2 },
+  { address = "tf(player) + 0x10", type = "f32", value = "0", frame = 0, until = 2 },
+  { address = "tf(player) + 0x14", type = "f32", value = "0", frame = 0, until = 2 },
+  { address = "tf(player) + 0x18", type = "f32", value = "0", frame = 0, until = 2 },
+  { address = "tf(player) + 0x1c", type = "f32", value = "1", frame = 0, until = 2 },
+]
+
+[coney]
+level = "level99"
+args = ["--checkpoint", "2"]
+
+[[field]]
+name = "held"
+address = "player + 0x338"
+type = "u32"
+
+[[field]]
+name = "styles"
+address = "rec(player) + 0x0c"
+type = "s32"
+
+[[field]]
+name = "style_bytes"
+address = "rec(player) + 0x10"
+type = "u32"
+
+[[field]]
+name = "slot0"
+address = "rec(player) + 0x28"
+type = "s32"
+
+[[field]]
+name = "slot4"
+address = "rec(player) + 0x38"
+type = "s32"
+
+[[field]]
+name = "slot6"
+address = "rec(player) + 0x40"
+type = "s32"
+
+[[field]]
+name = "slot11"
+address = "rec(player) + 0x54"
+type = "s32"
+
+[[field]]
+name = "obj"
+address = "0x006ebd38 + 8 * max(0, hidx(u32(player + 0x338)))"
+type = "u32"
+follow = true
+
+[[field]]
+name = "bone"
+address = "u32(0x006ebd38 + 8 * max(0, hidx(u32(player + 0x338)))) + 0x6d"
+type = "u8"
+follow = true
+
+[[field]]
+name = "lx"
+address = "u32(0x006ebd38 + 8 * max(0, hidx(u32(player + 0x338)))) + 0x10"
+type = "f32"
+follow = true
+
+[[field]]
+name = "ly"
+address = "u32(0x006ebd38 + 8 * max(0, hidx(u32(player + 0x338)))) + 0x14"
+type = "f32"
+follow = true
+
+[[field]]
+name = "lz"
+address = "u32(0x006ebd38 + 8 * max(0, hidx(u32(player + 0x338)))) + 0x18"
+type = "f32"
+follow = true
+
+[[field]]
+name = "rx"
+address = "u32(0x006ebd38 + 8 * max(0, hidx(u32(player + 0x338)))) + 0x20"
+type = "f32"
+follow = true
+
+[[field]]
+name = "ry"
+address = "u32(0x006ebd38 + 8 * max(0, hidx(u32(player + 0x338)))) + 0x24"
+type = "f32"
+follow = true
+
+[[field]]
+name = "rz"
+address = "u32(0x006ebd38 + 8 * max(0, hidx(u32(player + 0x338)))) + 0x28"
+type = "f32"
+follow = true
+
+[[field]]
+name = "rw"
+address = "u32(0x006ebd38 + 8 * max(0, hidx(u32(player + 0x338)))) + 0x2c"
+type = "f32"
+follow = true
+
+[[field]]
+name = "otype"
+address = "u32(0x006ebd38 + 8 * max(0, hidx(u32(player + 0x338)))) + 0x112"
+type = "u16"
+follow = true
+
+[[field]]
+name = "hold_x"
+address = "db + 0x90 * u16(u32(0x006ebd38 + 8 * max(0, hidx(u32(player + 0x338)))) + 0x112) + 0x0"
+type = "f32"
+follow = true
+
+[[field]]
+name = "hold_y"
+address = "db + 0x90 * u16(u32(0x006ebd38 + 8 * max(0, hidx(u32(player + 0x338)))) + 0x112) + 0x4"
+type = "f32"
+follow = true
+
+[[field]]
+name = "hold_z"
+address = "db + 0x90 * u16(u32(0x006ebd38 + 8 * max(0, hidx(u32(player + 0x338)))) + 0x112) + 0x8"
+type = "f32"
+follow = true
+
+[[field]]
+name = "hold_qx"
+address = "db + 0x90 * u16(u32(0x006ebd38 + 8 * max(0, hidx(u32(player + 0x338)))) + 0x112) + 0xc"
+type = "f32"
+follow = true
+
+[[field]]
+name = "hold_qy"
+address = "db + 0x90 * u16(u32(0x006ebd38 + 8 * max(0, hidx(u32(player + 0x338)))) + 0x112) + 0x10"
+type = "f32"
+follow = true
+
+[[field]]
+name = "hold_qz"
+address = "db + 0x90 * u16(u32(0x006ebd38 + 8 * max(0, hidx(u32(player + 0x338)))) + 0x112) + 0x14"
+type = "f32"
+follow = true
+
+[[field]]
+name = "hold_qw"
+address = "db + 0x90 * u16(u32(0x006ebd38 + 8 * max(0, hidx(u32(player + 0x338)))) + 0x112) + 0x18"
+type = "f32"
+follow = true
+
+[[field]]
+name = "type_anims"
+address = "db + 0x90 * u16(u32(0x006ebd38 + 8 * max(0, hidx(u32(player + 0x338)))) + 0x112) + 0x84"
+type = "u32"
+follow = true

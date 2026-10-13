@@ -208,16 +208,20 @@ _LIST_LABEL = re.compile(r"^[ \t]*\**[A-Za-z][^:\n]*:\**[ \t]*$")
 NUMBER_REFERENCE = re.compile(r"(?<![\w&/])#\d+\b")
 
 
-def _remaining_items(section: str, rules: PullRequests) -> list[str]:
-    """The text of each unchecked item under the section's Remaining line (wrapped lines joined), placeholders aside."""
-    label = rules.remaining.label.rstrip(":").casefold()
+def _open_items(section: str, label: str | None = None) -> list[str]:
+    """The text of each unchecked item of a section (wrapped lines joined).
+
+    With a `label`, only the items under the list that opens with that line (`Remaining:`) count; without one, every
+    unchecked item of the section does, whatever list it is in.
+    """
+    wanted = None if label is None else label.rstrip(":").casefold()
     items: list[list[str]] = []
-    inside = False
+    inside = wanted is None
     continuing = False
     for line in section.splitlines():
         stripped = line.strip()
-        if _LIST_LABEL.match(line):
-            inside = stripped.strip("*").casefold().startswith(label)
+        if wanted is not None and _LIST_LABEL.match(line):
+            inside = stripped.strip("*").casefold().startswith(wanted)
             continuing = False
             continue
         if not inside:
@@ -227,42 +231,56 @@ def _remaining_items(section: str, rules: PullRequests) -> list[str]:
             items.append([item.group("text").strip()])
             continuing = True
         elif continuing and stripped and line[:1] in (" ", "\t") and not _LIST_MARKER.match(stripped):
-            # A wrapped line belongs to the item above it, so a number on the second line counts.
+            # A wrapped line belongs to the item above it.
             items[-1].append(stripped)
         else:
             continuing = False
-    texts = [" ".join(parts) for parts in items]
-    return [text for text in texts if text and text not in rules.placeholders]
+    return [text for text in (" ".join(parts) for parts in items) if text]
 
 
-def remaining_items(body: str, rules: PullRequests) -> list[str]:
-    """The text of each unchecked item of a pull request description's Remaining list (placeholders aside)."""
-    checklist = _split_sections(strip_comments(body)).get(rules.remaining.section.casefold())
-    return [] if checklist is None else _remaining_items(checklist, rules)
+def unfinished_items(body: str, rules: PullRequests) -> list[str]:
+    """The text of each unchecked item in a pull request description's Checklist section.
 
-
-def uncited_remaining(body: str, rules: PullRequests) -> list[str]:
-    """The Remaining items of a description that name no issue or pull request.
-
-    Work a pull request leaves undone is tracked where everyone can see it, not in a description that stops being read
-    once the pull request merges. Each item carries the number of the issue (or the follow-up pull request) that holds
-    it, such as `#123`; the coordinator files the issue when an agent has none. An empty list means every item cites one
-    (or there is no Remaining list).
+    A pull request merges only when every task in it is finished: what it does not finish is not part of it and is not
+    listed (it lives in its own issue). The template's `...` placeholder, unticked, is unfinished too.
     """
-    return [text for text in remaining_items(body, rules) if not NUMBER_REFERENCE.search(text)]
+    checklist = _split_sections(strip_comments(body)).get(rules.checklist.section.casefold())
+    return [] if checklist is None else _open_items(checklist)
 
 
-def _check_remaining(section: str, rules: PullRequests) -> list[str]:
-    """Refuse an unchecked Remaining item that names no issue or pull request (see `uncited_remaining`)."""
+def legacy_uncited_remaining(body: str, rules: PullRequests) -> list[str]:
+    """The `Remaining` items of an older description that name no issue or pull request.
+
+    Before `checklist.since` a pull request could leave work undone if each unchecked item under `Remaining:` carried
+    the number of the issue that held it (`#123`). The pull requests merged under that rule keep their lists, so the
+    audit still holds them to it (placeholders aside); an empty list means every item cites one.
+    """
+    checklist = _split_sections(strip_comments(body)).get(rules.checklist.section.casefold())
+    if checklist is None:
+        return []
+    items = [text for text in _open_items(checklist, rules.checklist.legacy_label) if text not in rules.placeholders]
+    return [text for text in items if not NUMBER_REFERENCE.search(text)]
+
+
+def legacy_remaining_items(body: str, rules: PullRequests) -> list[str]:
+    """The text of each unchecked item under the older `Remaining` list of a description (placeholders aside)."""
+    checklist = _split_sections(strip_comments(body)).get(rules.checklist.section.casefold())
+    if checklist is None:
+        return []
+    items = _open_items(checklist, rules.checklist.legacy_label)
+    return [text for text in items if text not in rules.placeholders]
+
+
+def _check_checklist(section: str, rules: PullRequests) -> list[str]:
+    """Refuse every unchecked item of the Checklist section (see `unfinished_items`)."""
     problems: list[str] = []
-    for text in _remaining_items(section, rules):
-        if not NUMBER_REFERENCE.search(text):
-            shown = text if len(text) <= 60 else text[:57] + "..."
-            label = rules.remaining.label.rstrip(":")
-            problems.append(
-                f"'## {rules.remaining.section}': the {label} item '{shown}' names no issue "
-                "or pull request; add its number (for example #123), or tick it off if it is done"
-            )
+    for text in _open_items(section):
+        shown = text if len(text) <= 60 else text[:57] + "..."
+        problems.append(
+            f"'## {rules.checklist.section}': '{shown}' is not ticked; a pull request merges only when every task "
+            "in it is finished, so finish it or take it out of the pull request (a task left for later lives in its "
+            "own issue, and a pull request that finishes an issue says Fixes #N)"
+        )
     return problems
 
 
@@ -289,7 +307,7 @@ def _check_local_paths(text: str) -> list[str]:
     ]
 
 
-def _image_targets(section: str) -> list[str]:
+def image_targets(section: str) -> list[str]:
     """What the Markdown images and `<img>` tags of `section` point at, in order of appearance."""
     found: list[tuple[int, str]] = []
     for image in _MARKDOWN_IMAGE.finditer(section):
@@ -311,7 +329,7 @@ def screenshots_problems(
     upload it. `name` is the section's heading and `none_line` the start of its `none` line (`Screenshots: none`); a
     pull request and an issue differ only in those.
     """
-    targets = _image_targets(section)
+    targets = image_targets(section)
     local = [target for target in targets if not _REMOTE.match(target)]
     if local and uploaded_only:
         return [
@@ -346,8 +364,8 @@ def check_body(body: str, rules: PullRequests) -> list[str]:
     Every section must be present as a `##` heading, the `filled` ones (Summary, Testing) must hold text of their
     own, the Screenshots section must hold an image that is an uploaded URL (not a local path) or a
     `Screenshots: none (<reason>)` line, no text may name a path on the author's machine, and the AI use
-    section must say who wrote the commits (one of the choices) and, unless a person did, name the model, and every
-    unchecked item under Remaining must name an issue or pull request (`#123`).
+    section must say who wrote the commits (one of the choices) and, unless a person did, name the model, and no
+    Checklist item may be left unticked (`- [ ]`).
     HTML comments and unchanged placeholder text count as empty, so the untouched template is refused. Returns one
     reason per broken rule; an empty list means the description passes.
     """
@@ -366,9 +384,9 @@ def check_body(body: str, rules: PullRequests) -> list[str]:
     ai_use = sections.get(rules.ai_use.section.casefold())
     if ai_use is not None:
         problems.extend(_check_ai_use(ai_use, rules))
-    checklist = sections.get(rules.remaining.section.casefold())
+    checklist = sections.get(rules.checklist.section.casefold())
     if checklist is not None:
-        problems.extend(_check_remaining(checklist, rules))
+        problems.extend(_check_checklist(checklist, rules))
     if not rules.local_paths:
         problems.extend(_check_local_paths(visible))
     return problems

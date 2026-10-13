@@ -574,9 +574,11 @@ object. Confirmed (code) at the addresses in the table.
   clip](combat.md#breakables)) plays its `TwoHandPickUp` clip, **503** `ANIM_BARREL_PICK_UP`, or **504** when the
   register is more than 0.8 m above his feet, with anim set 4 (`OVERHEAD_WEAPON_SET`). The clip's take event sends it
   message **`0x1b`** (`DynCashreg_OnPickUp` `0x003c0108`): velocity and spin zeroed, attached to his hand at the bone
-  (flag `0x10`), the hand offset from type properties 11 and 12 (or the event's), human message 3 (he holds it:
-  `Human_PickUpObject` has no case for `TYPE_GENERIC`, so `Human_SetHeldObject`) and message `0x17` with property 5,
-  1.0 and its material. **No money, item, notify or sound comes from the lift itself**; the money comes when it breaks.
+  (flag `0x10`), the hand offset from type properties 11 and 12, its `CfgObj` `holdPos` / `holdRot` (the event's in
+  a scene; [Two-handed objects](objects.md#two-handed)), human message 3 (he holds it: `Human_PickUpObject` has no
+  case for `TYPE_GENERIC`, so `Human_SetHeldObject`; it also pushes move style 4, the two-handed carry) and message
+  `0x17` with property 5, 1.0 and its material. **No money, item, notify or sound comes from the lift itself**; the
+  money comes when it breaks.
 - **Message `0x20`** deletes the drawer too (inferred: sent to an object about to be removed, as seen for the trash
   props, [Trash cans and bags](objects.md#trash-props)).
 - **Hit** (message 1; pops direction, point, a kind slot, the strength, two handles): the hit points drop by
@@ -1658,13 +1660,13 @@ record volume 100, class 1 (near 1 m, far 20 m, flags 3: looping).
 
 ### `dyn_icon` and `sub_glint` {#glint-icon}
 
-`dyn_icon` is the icon over a human (the dealer's, [AI: the dealer's icon](ai.md#dealer-icon)).
+`dyn_icon` is the icon over a human (the dealer's, [AI: the dealer's icon](ai-scripting.md#dealer-icon)).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
-| `0x003e8fa0` | `DynIcon_Init` | `dyn_icon` init | model, attached to the human, spin and height ([AI](ai.md#dealer-icon)) | confirmed (code) |
-| `0x003e92e0` | `DynIcon_Update` | `dyn_icon` update | the colour fade and the hidden state ([AI](ai.md#dealer-icon)) | confirmed (code) |
-| `0x003e9470` | `DynIcon_OnMessage` | `dyn_icon` message | 8, 10, `0x15`, `0x20`, `0x34` ([AI](ai.md#dealer-icon)) | confirmed (code) |
+| `0x003e8fa0` | `DynIcon_Init` | `dyn_icon` init | model, attached to the human, spin and height ([AI](ai-scripting.md#dealer-icon)) | confirmed (code) |
+| `0x003e92e0` | `DynIcon_Update` | `dyn_icon` update | the colour fade and the hidden state ([AI](ai-scripting.md#dealer-icon)) | confirmed (code) |
+| `0x003e9470` | `DynIcon_OnMessage` | `dyn_icon` message | 8, 10, `0x15`, `0x20`, `0x34` ([AI](ai-scripting.md#dealer-icon)) | confirmed (code) |
 | `0x003e93d0` | `DynIcon_SetColourFade` | helper (`0x34`) | a target colour and a step count; a per-update colour step (none: the colour at once) | confirmed (code) |
 | `0x003e9560` | `SubGlint_Init` | `sub_glint` init | a glint sprite (rectangle `0x40029`), size popped × 0.15, attached when given a parent | confirmed (code) |
 | `0x003e96a0` | `SubGlint_Update` | `sub_glint` update | blinks on and off every 20-30 ticks | confirmed (code) |

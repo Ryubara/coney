@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <functional>
@@ -33,6 +34,11 @@ struct DisplayOptions {
     bool safeArea = false;      ///< The GUI square's edges: the overlay camera's built-in safe-area margin.
     bool logicalBounds = false; ///< The 640 x 448 logical screen's edges.
     bool coordinates = false;   ///< Player 1's feet and heading, in a corner (needs a play mode).
+    /// The developer overlay's size: an index into uiScaleLabels() (0, Auto: from the window's height; then the fixed
+    /// scales). Read by the overlay each frame (src/debug/ui_scale.h).
+    std::size_t uiScaleChoice = 0;
+    /// The scale the overlay applied last, written by it for the Display page to show; 1 until it has drawn.
+    float uiScaleApplied = 1.0F;
 };
 
 /// What the debug menus reach in the running game. Every field may be empty; a page whose service is missing says so
@@ -112,6 +118,7 @@ class DebugSession {
     [[nodiscard]] DisplayOptions& display() { return m_display; }
     /// What the Debug draw page switches, for the play mode to draw.
     [[nodiscard]] DebugDrawOptions& debugDraw() { return m_debugDraw; }
+    [[nodiscard]] const DebugDrawOptions& debugDraw() const { return m_debugDraw; }
     /// The mode the player plays in now (DebugServices::play), or null.
     [[nodiscard]] PlayControls* play() const { return m_services.play ? m_services.play() : nullptr; }
     /// The session's log: native calls, results, console output.
@@ -138,8 +145,8 @@ class DebugSession {
     /// samples, never in real time, so a scripted run sees the same.
     static constexpr int kNoticeFrames = 90;
 
-    /// Whether the noclip hotkey (kNoclipChord, R3 + d-pad left) toggles the player's noclip in play; off until the
-    /// Player page switches it on.
+    /// Whether the noclip hotkey (kNoclipChord, R3 + d-pad left) toggles the player's noclip in play; on by default,
+    /// and the Player page switches it off.
     [[nodiscard]] bool noclipHotkey() const { return m_noclipHotkey; }
     void setNoclipHotkey(bool on) { m_noclipHotkey = on; }
     /// Switches the player's noclip (PlayControls::setNoclip()) to `on` with a notice saying so; with no player, or
@@ -163,7 +170,7 @@ class DebugSession {
     DebugLog m_log;
     LuaConsole m_console;
     std::unique_ptr<SandboxScripts> m_sandbox;
-    bool m_noclipHotkey = false;
+    bool m_noclipHotkey = true;
     std::string m_notice;       // notice()'s text
     int m_noticeFramesLeft = 0; // frames it still shows
 };

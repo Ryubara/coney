@@ -57,7 +57,7 @@ namespace {
 // A car's message: a hit's damaged part, its fire or its explosion (docs/research/cars.md).
 constexpr int kCarMessage = 0x19;
 // The materials a camera sees through: 30 `LOW_FENCE`, 2 `GLASS`, 122 `RAILING` and 107 `CHAINLINK_NOCLIMB`
-// (docs/research/ai.md#spawner-unseen).
+// (docs/research/ai-gangs.md#spawner-unseen).
 constexpr std::array<std::uint8_t, 4> kSeeThroughMaterials{30, 2, 122, 107};
 // The largest float below 1, so a draw stays in [0, 1).
 constexpr float kBelowOne = 0.99999994F;
@@ -309,7 +309,7 @@ void GameplayMode::enter() {
     if (m_context.sound != nullptr) {
         m_context.sound->gameplayEntered();
     }
-    m_brains = std::make_unique<ai::Brains>();
+    m_brains = std::make_unique<ai::Brains>(m_aiVariation);
     // What the scripts' handles name: a human, else a live world object (IsInsideBox on a thrown bottle, a flag on an
     // object), at its spawn record's place and heading.
     m_scripted = std::make_unique<ai::ScriptedBrains>(
@@ -867,6 +867,11 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
         overlay->playFrame(frame, stack.pads());
     }
     return result;
+}
+
+bool GameplayMode::releasePlayerToAi() {
+    auto* scripted = dynamic_cast<ScriptedPlayer*>(m_level.get());
+    return scripted != nullptr && scripted->releasePlayerToAi();
 }
 
 void GameplayMode::reportHumanSounds() {

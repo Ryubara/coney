@@ -22,13 +22,15 @@ from coney_tools import audit_text
 from coney_tools.audit import Problem, check
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions, IssueForm
+from coney_tools.log_scan import ScanResult
 from coney_tools.repo_checks import (
     NUMBER_REFERENCE,
     check_body,
     check_title,
-    remaining_items,
+    legacy_remaining_items,
+    legacy_uncited_remaining,
     screenshots_problems,
-    uncited_remaining,
+    unfinished_items,
 )
 
 #: How many issues and pull requests one fetch asks for; a repository with more says so in a notice.
@@ -70,6 +72,8 @@ class Pull:
     labels: tuple[str, ...]
     created: datetime
     updated: datetime
+    #: When it merged (`None` for a pull request that has not).
+    merged: datetime | None
     base: str
     head: str
     draft: bool
@@ -166,6 +170,7 @@ def parse_snapshot(data: Mapping[str, Any]) -> Snapshot:
                 labels=_names(item.get("labels")),
                 created=_time(item.get("createdAt")),
                 updated=_time(item.get("updatedAt")),
+                merged=_time(item.get("mergedAt")) if item.get("mergedAt") else None,
                 base=str(item.get("baseRefName", "")),
                 head=str(item.get("headRefName", "")),
                 draft=bool(item.get("isDraft", False)),
@@ -338,6 +343,9 @@ class GithubContext:
     snapshot: Snapshot
     #: The default branch's files, or None when they could not be read (the link check then does not run).
     tree: MainTree | None = None
+    #: The scans of the issues' attached logs by issue number (`log_scan`), or None when no attachment was downloaded
+    #: (the attachment checks then do not run).
+    attachments: Mapping[int, tuple[ScanResult, ...]] | None = None
 
     @property
     def now(self) -> datetime:
@@ -435,7 +443,7 @@ def issue_screenshots(context: GithubContext) -> Iterator[Problem]:
 
 
 def _label_problems(labels: Sequence[str], is_open: bool, conventions: Conventions) -> list[str]:
-    """What is wrong with an issue's labels: counts per family, unknown labels, a status left on a closed issue."""
+    """What is wrong with an issue's labels: counts per family and unknown labels (a closed one: unknown ones only)."""
     rules = conventions.issues.labels
     known = set(conventions.labels.names())
     families: dict[str, list[str]] = {"type": [], "area": [], "priority": [], "status": [], "other": []}
@@ -444,9 +452,7 @@ def _label_problems(labels: Sequence[str], is_open: bool, conventions: Conventio
         if name in known:
             families[conventions.labels.family(name)].append(name)
     if not is_open:
-        if families["status"] and not rules.closed_keeps_status:
-            problems.append(f"closed but still labelled {', '.join(families['status'])}")
-        return problems
+        return problems  # a closed issue keeps its history labels; a status left on it is issue.closed-status's finding
     triaged = "S-needs-triage" not in families["status"]
     for family, rule in (
         ("type", rules.type),
@@ -469,11 +475,25 @@ def _label_problems(labels: Sequence[str], is_open: bool, conventions: Conventio
 
 @check("issue.labels")
 def issue_labels(context: GithubContext) -> Iterator[Problem]:
-    """Open issues carry the labels `issues.labels` asks for; closed ones keep no status; all use known labels."""
+    """Open issues carry the labels `issues.labels` asks for; every issue uses known labels."""
     for issue in sorted(context.snapshot.issues, key=lambda item: item.number):
         problems = _label_problems(issue.labels, issue.open, context.conventions)
         if problems:
             yield _problem(issue, "; ".join(problems))
+
+
+@check("issue.closed-status")
+def issue_closed_status(context: GithubContext) -> Iterator[Problem]:
+    """A closed issue carries no `S-` label: a status describes open work (the issue-status workflow removes it)."""
+    if context.conventions.issues.labels.closed_keeps_status:
+        return
+    labels = context.conventions.labels
+    for issue in sorted(context.snapshot.issues, key=lambda item: item.number):
+        left = [name for name in issue.labels if labels.family(name) == "status"] if not issue.open else []
+        if left:
+            yield _problem(
+                issue, f"closed but still labelled {', '.join(left)}: remove it (the close reason is the final state)"
+            )
 
 
 # --- issues: wording, leftovers, links ------------------------------------------------------------------------------
@@ -553,12 +573,12 @@ def issue_links(context: GithubContext) -> Iterator[Problem]:
 
 @check("issue.provenance")
 def issue_provenance(context: GithubContext) -> Iterator[Problem]:
-    """An open issue that a pull request's Remaining list points at (a leftover) says where it came from (`From:`)."""
+    """An open issue that an older pull request's Remaining list points at says where it came from (`From:`)."""
     snapshot = context.snapshot
     rules = context.conventions.pull_requests
     leftovers: dict[int, int] = {}
     for pull in snapshot.pulls:
-        for item in remaining_items(pull.body, rules):
+        for item in legacy_remaining_items(pull.body, rules):
             for number in NUMBER_REFERENCE.findall(item):
                 leftovers.setdefault(int(number[1:]), pull.number)
     line = context.conventions.issues.provenance.line
@@ -566,6 +586,36 @@ def issue_provenance(context: GithubContext) -> Iterator[Problem]:
         source = leftovers.get(issue.number)
         if source is not None and not _PROVENANCE.search(audit_text.clean(issue.body)):
             yield _problem(issue, f"is a leftover of #{source} but has no '{line}' line saying so")
+
+
+# --- issues: attached logs -----------------------------------------------------------------------------------------
+
+
+def _attachment_problems(context: GithubContext, kind: str, advice: str) -> Iterator[Problem]:
+    """A problem per open issue whose scanned attachments found `kind` (`game_data` or `personal`), with `advice`."""
+    for number, results in sorted((context.attachments or {}).items()):
+        issue = context.snapshot.issue(number)
+        if issue is None or not issue.open:
+            continue
+        said = [f"{result.name} {reason}" for result in results for reason in getattr(result, kind)]
+        if said:
+            yield _problem(issue, f"{'; '.join(said)}: {advice}")
+
+
+@check("issue.attachment-data")
+def issue_attachment_data(context: GithubContext) -> Iterator[Problem]:
+    """An attached log holds no game data: it is text, not too large, and not script source or game text."""
+    yield from _attachment_problems(
+        context, "game_data", "delete the attachment if it holds game files or game text (LEGAL.md)"
+    )
+
+
+@check("issue.attachment-personal")
+def issue_attachment_personal(context: GithubContext) -> Iterator[Problem]:
+    """An attached log shows no user folder path and no email address."""
+    yield from _attachment_problems(
+        context, "personal", "delete the attachment and attach a copy with the name replaced by ~"
+    )
 
 
 # --- issues: ages -------------------------------------------------------------------------------------------------
@@ -650,11 +700,34 @@ def pr_owner_word(context: GithubContext) -> Iterator[Problem]:
             yield _problem(pull, f"says {wording.avoid[0]!r} {len(uses)} time(s), say {wording.person!r}: {uses[0]}")
 
 
+def _merged_since_the_rule(context: GithubContext, pull: Pull) -> bool:
+    """Whether the pull request merged on or after the day the Checklist rule began (`checklist.since`)."""
+    return pull.merged is not None and pull.merged.date() >= context.conventions.pull_requests.checklist.since
+
+
+def _items_message(items: list[str]) -> str:
+    """`2 item(s): 'a'; 'b'` for the first few unfinished items of a description."""
+    shown = "; ".join(repr(_short(item, 50)) for item in items[:3])
+    more = f" and {len(items) - 3} more" if len(items) > 3 else ""
+    return f"{len(items)} unticked Checklist item(s): {shown}{more}"
+
+
+@check("pr.unfinished-items")
+def pr_unfinished_items(context: GithubContext) -> Iterator[Problem]:
+    """A pull request merged since the Checklist rule began has every Checklist item ticked."""
+    rules = context.conventions.pull_requests
+    for pull in context.snapshot.pulls_in("merged"):
+        items = unfinished_items(pull.body, rules) if _merged_since_the_rule(context, pull) else []
+        if items:
+            yield _problem(pull, "merged with " + _items_message(items) + "; a pull request finishes all it lists")
+
+
 @check("pr.remaining-uncited")
 def pr_remaining_uncited(context: GithubContext) -> Iterator[Problem]:
-    """A merged pull request's unchecked Remaining items each name an issue (so the leftover is tracked)."""
+    """A pull request merged before the Checklist rule began names an issue on each unchecked Remaining item."""
+    rules = context.conventions.pull_requests
     for pull in context.snapshot.pulls_in("merged"):
-        loose = uncited_remaining(pull.body, context.conventions.pull_requests)
+        loose = [] if _merged_since_the_rule(context, pull) else legacy_uncited_remaining(pull.body, rules)
         if loose:
             shown = "; ".join(repr(_short(item, 50)) for item in loose[:3])
             yield _problem(pull, f"merged with {len(loose)} Remaining item(s) naming no issue: {shown}")

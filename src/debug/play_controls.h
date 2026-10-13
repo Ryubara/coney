@@ -10,6 +10,7 @@
 
 #include "animation/anim_math.h"
 #include "core/error.h"
+#include "debug/entity_inspect.h"
 #include "sandbox/sandbox_layout.h"
 
 namespace coney::hud {
@@ -34,6 +35,14 @@ struct DebugDrawOptions {
     bool groundNormal = false;    ///< The normal of the ground under the player.
     bool camera = false;          ///< The follow camera's wanted position and its look-at point.
     bool places = false;          ///< The places of PlayControls::places(), each a marker with its heading.
+    // The collision shapes and the Entity inspector's highlight (src/debug/pages_entity.cpp, src/debug/human_shapes.h).
+    bool wallClasses = false;    ///< The collision wireframe coloured by how the walking sweep classes each triangle.
+    bool shapes = false;         ///< The humans' bodies: walking or air sphere, capsule, ground probe, climb.
+    bool shapesAllHumans = true; ///< The shapes on every human; off: on the player and the inspected entity only.
+    bool strikes = false;        ///< The strike shapes switched on, and the spine and head they are tested against.
+    bool contacts = false;       ///< The contacts the last walking sweep slid along: a point and its normal.
+    std::uint64_t inspected = 0; ///< The Entity inspector's selection (an EntityId; 0 for none).
+    bool highlight = true;       ///< Mark the inspected entity in the scene.
 };
 
 /// One object the Spawner page can put in front of the player: a sandbox primitive and the name the page shows. The
@@ -105,7 +114,7 @@ class PlayControls {
     /// Switches the free camera on (at the follow camera's eye, looking where it looks) or off.
     virtual void setFreeCamera(bool on) = 0;
 
-    /// Whether objects can be spawned here (a sandbox can; a level cannot yet).
+    /// Whether objects can be spawned here (a sandbox and a level can).
     [[nodiscard]] virtual bool canSpawn() const = 0;
     /// Adds `primitive` to the scene, solid and drawn. Fails with ErrorCode::InvalidArgument where nothing can be
     /// spawned, and as the scene's rebuild does.
@@ -123,6 +132,17 @@ class PlayControls {
     /// ErrorCode::InvalidArgument where none can be spawned.
     virtual std::expected<void, Error> spawnFighter(anim::Vec3 /*feet*/, float /*headingDegrees*/) {
         return std::unexpected(Error{ErrorCode::InvalidArgument, "no AI fighters here"});
+    }
+    /// The human models an AI fighter can be drawn and move as here, sorted: every distinct model the configuration's
+    /// character types name (characterChoices()). Empty where the types are not known, and then every fighter is the
+    /// scene's own character.
+    [[nodiscard]] virtual std::vector<std::string> fighterModels() const { return {}; }
+    /// As spawnFighter(), as the character `model` (one of fighterModels()): its model, animation set and moves. An
+    /// empty `model` is the scene's own character. Fails with ErrorCode::InvalidArgument where none can be spawned.
+    /// The default ignores the model.
+    virtual std::expected<void, Error> spawnFighterAs(anim::Vec3 feet, float headingDegrees,
+                                                      std::string_view /*model*/) {
+        return spawnFighter(feet, headingDegrees);
     }
     /// AI fighters in the scene.
     [[nodiscard]] virtual std::size_t fighterCount() const { return 0; }
@@ -154,6 +174,18 @@ class PlayControls {
 
     /// The in-game HUD the mode draws, for the HUD page; null when it has none.
     [[nodiscard]] virtual hud::Hud* hud() { return nullptr; }
+
+    /// The scene's humans and objects for the Entity inspector page (src/debug/entity_inspect.h); null when the mode
+    /// cannot list them.
+    [[nodiscard]] virtual const EntityInspect* inspect() const { return nullptr; }
+    /// Whether the Entity inspector can freeze entity `id`: the player and the other humans, not an object. False by
+    /// default.
+    [[nodiscard]] virtual bool canFreezeEntity(EntityId /*id*/) const { return false; }
+    /// Whether entity `id` is frozen: it neither moves, animates nor acts until it is let go (the player ignores the
+    /// pad, as the Player page's freeze makes him). False for an entity that cannot be frozen.
+    [[nodiscard]] virtual bool entityFrozen(EntityId /*id*/) const { return false; }
+    /// Freezes entity `id`, or lets it go; nothing for an entity that cannot be frozen.
+    virtual void setEntityFrozen(EntityId /*id*/, bool /*frozen*/) {}
 };
 
 /// The spot `distance` metres in front of feet `feet` facing `headingDegrees` (0 faces +y, counter-clockwise from

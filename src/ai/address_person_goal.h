@@ -10,7 +10,7 @@
 // waits for it to come within an approach distance, then plays a scene (its speech) with the script's callback and is
 // done; with no scene it stays facing the target until it is removed. The scene is the play-animation goal (type
 // `0x21`), pushed above it; the scene system calls the callback.
-// Research: docs/research/ai.md#address-person
+// Research: docs/research/ai-scripting.md#address-person
 
 namespace coney::ai {
 

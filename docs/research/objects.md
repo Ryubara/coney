@@ -13,7 +13,7 @@ end's Wonder Wheel as the worked case), an object's **tint**, the **objective ma
 the player to walk into), the **breakable glass** panes, the **doors** and the **breakable barriers**. The lists are
 [Object tints](../references/tints.md), [Glass types](../references/glass-types.md) and [Doors](../references/doors.md);
 the classes and pools of world objects and glass panes are on [Tasks](tasks.md#classes), the crimes a pane can raise on
-[AI: crimes](ai.md#crimes), and what the player's attacks do to them on [Combat: breakables](combat.md#breakables).
+[AI: crimes](ai-gangs.md#crimes), and what the player's attacks do to them on [Combat: breakables](combat.md#breakables).
 
 ## Original structure
 
@@ -49,9 +49,13 @@ The code sits in `TaskEngine/`, in the stretches placed by position
 | `0x003e9828` | `ObjectiveMarker_SetShown` | a marker's shown state, passed on to its column | confirmed (code) |
 | `0x003e9d60` / `0x003e9fd8` / `0x003e9ea0` | `sub_objective_column` init / update / message | the marker's column | confirmed (code) |
 | `0x003a1810` / `0x003a1858` | `Obj_Attach` / `Obj_Detach` | parent, bone and local pose; detaching keeps the world pose ([Held objects](#held)) | confirmed (code) |
-| `0x003a19b0` / `0x003a1ad8` | `Obj_GetWorldPose` / `Obj_GetPoseNow` | vtable `+0xa4` / `+0xac`: an attached object's pose through its parent's bone | confirmed (code), runtime |
+| `0x003a19b0` / `0x003a1ad8` | `Obj_GetWorldPose` / `Obj_GetPoseNow` | vtable function words `+0x9c` / `+0xa4` (slots `+0x98` / `+0xa0` of `0x005453a0` and the car's `0x00544c08`): an attached object's pose through its parent's bone | confirmed (code), runtime |
 | `0x003fe490` / `0x003fe6b8` | `MeleeWeapon_Take` / `MeleeWeapon_Detach` | messages `0x1b` / `0x1c` of `melee_weapon` | confirmed (code) |
 | `0x00257f38` / `0x002586d8` | `Human_DropHeld` / `Human_ReleaseThrow` | a held object let go: dropped / thrown | confirmed (code) |
+| `0x00221ed0` | `Human_SetCarryMoveStyle` | human message 3: pushes the held object's anim set as a move style ([Two-handed objects](#two-handed)) | confirmed (code), runtime |
+| `0x00253688` | `Human_ApplyMoveStyle` | a move style's anim slot overrides; style 4 is the two-handed carry | confirmed (code), runtime |
+| `0x003ff918` / `0x003c0108` | `OverheadWeapon_OnPickedUp` / `DynCashreg_OnPickUp` | message `0x1b`: attached at the event's bone with the type's hold pose (`CfgObj` `holdPos` / `holdRot`) | confirmed (code), runtime |
+| `0x003a3978` | `ScriptObj_GetVectorProperty` | property 11 / 12: the type record's hold position (`+0x00`) / rotation (`+0x0c`) | confirmed (code) |
 | `0x003a5530` | `ScriptObj_SpawnThrownDebris` | a broken prop's piece: created by name at the prop's pose, knocked with message `0x30` ([Trash props](#trash-props)) | confirmed (code), runtime |
 | `0x003a53f0` | `Obj_SpawnChildByName` | creates an object by name at an object's pose, attached to it | confirmed (code) |
 | `0x00396bd0` | `Obj_SetColour` | `ObjColor`: packs `{r, g, b, a}` into the tint word | confirmed (code) |
@@ -259,8 +263,8 @@ and `dyn_door_stall` 10, the cabin doors 12, `dyn_door_dclub` 20, `dyn_door_varg
 The level's navigation links are the path data's **D records** (edges, [Level loading](level-loading.md#path-data)):
 8 bytes, `+0x00` the node, `+0x04` the edge flags (u16, the **kind**) and `+0x06` a u16 whose low 13 bits are a door
 number and whose top bit is the word's bit 31, the "avoid" bit: route planning adds 1,600 to the edge's cost
-([AI: path planning](ai.md#path-planning)), so a closed door makes a detour preferred, not mandatory. `0x00510590` is
-the array, `0x00510594` its count. Confirmed (code) at `0x00250960`, `0x00250c00`-`0x00250d00`.
+([AI: path planning](ai-moving.md#path-planning)), so a closed door makes a detour preferred, not mandatory.
+`0x00510590` is the array, `0x00510594` its count. Confirmed (code) at `0x00250960`, `0x00250c00`-`0x00250d00`.
 
 **A door's hole**: opening and closing by number (`0x00250c50` / `0x00250d00`, from the door's state commands with
 the second argument 1, `0x003a4b00`) change the avoid bit of every link with the number, walking the D records from
@@ -275,19 +279,19 @@ the last, and the path flags of one polygon, found from the first link they meet
 3. opening sets bit 3 (8) of that polygon's `u16` flags at `+0x48`, closing clears it.
 
 The polygon is a **hole** of an area ([Path data](level-loading.md#path-data)), never the area's outline, which
-has no flag 4. Opening it lets lines and routes cross the doorway ([AI: path planning](ai.md#path-planning)). Disc
+has no flag 4. Opening it lets lines and routes cross the doorway ([AI: path planning](ai-moving.md#path-planning)). Disc
 check (level87, door 15): links 1530 and 1537 (kind `0x10`, nodes 219 and 220, 1.4 m apart); the middle lies in the
 boxes of the street's outline (polygon 0) and of polygon 33, a clockwise 4-vertex hole of flags 7, about
 0.8 × 2.8 m, the only flag-4 candidate: polygon 33 gets flag 8.
 
-| Kind | Who sets it | How a follower takes it ([Following a route](ai.md#route-follow)) |
+| Kind | Who sets it | How a follower takes it ([Following a route](ai-moving.md#route-follow)) |
 | --- | --- | --- |
 | 4 | the data | `0x0029baa8`: faces the waypoint, then either runs or starts a jump (`Human_BeginJump`) |
 | `0x10` | the data; `ConvertJumpToDoor` (4 → `0x10`) | walked while the door is open; with the avoid bit set the move fails (brain `+0x284` = 4) |
 | `0x40` | breakable doors (by number) and window-linked panes | `0x0029bca0`: faces the waypoint, sets the move action to 4, and issues the **charge** (attack kind 19, command `0x20`) |
 
 So an AI routed through a breakable door or a pane charges it. Confirmed (code) at `0x0029ad04`-`0x0029adb8`; every
-human searches with the mask `0xff`, which admits them ([AI](ai.md#path-planning)).
+human searches with the mask `0xff`, which admits them ([AI](ai-moving.md#path-planning)).
 
 ## Behaviour
 
@@ -569,6 +573,7 @@ Triangle's pick-up search ([Breakables](combat.md#breakables)) and `Human_PickUp
 | `melee_weapon` (`0x003fd420`) | `0x218081` | yes | bit `0x80` cleared for model hash `0x13ff8ee4`; its message `0x19` sets or clears `0x8000` |
 | `thrown_weapon` (`0x00403090`) | `0x228081` | yes | |
 | `overhead_weapon` (`0x003ff6c8`) | `0x228001` | yes | not for model hash `0x8fc6ac30` |
+| `dyn_molotv` (`0x00404b38`, [the Molotov](script-types.md#molotov)) | `0x228081` | yes | |
 | `pickup_item` (`0x003f17e0`) | `0x208081` | yes | not for model hash `0x2fd690d6` (also cleared in `0x003f23f8`) |
 | `powerup_item` (`0x003f2700`) | `0x808081` | yes, but the search skips the class: it is [walked over](player-state.md#walk-over) | |
 | `simple_object` | 1 (or `0x11`) | no | `0x8080` added for model hash `0xfcbe9fbb` |
@@ -663,9 +668,9 @@ bat is the worked case ([Combat: a bat in hand](combat.md#bat)); what the human 
 object's current world pose into `+0x10` / `+0x20`, then clears the bit and the parent, so a detached object starts
 exactly where it was drawn.
 
-**The world pose** (`Obj_GetWorldPose`, `0x003a19b0`, slot `+0xa4` of the world-object vtables, e.g. `0x00544c00`):
-unattached, `+0x10` / `+0x20`; attached, three transforms composed with `0x003359b0` (rotation `qa · qb`, position
-`pa + qa · pb`, no scale):
+**The world pose** (`Obj_GetWorldPose`, `0x003a19b0`, function word `+0x9c` of the world object's vtable
+`0x005453a0` and the car's `0x00544c08`): unattached, `+0x10` / `+0x20`; attached, three transforms composed with
+`0x003359b0` (rotation `qa · qb`, position `pa + qa · pb`, no scale):
 
 ```text
 world = parent's world transform (its vtable +0x9c: for a human, its position and rotation)
@@ -787,8 +792,10 @@ addresses cited unless marked.
 5. **What he keeps.** Outside co-op a Warrior holding an object of kind 4 or 6 (the overhead props and the ghetto
    blasters) **drops it** once his enemy list is empty and no steal tactic runs (`WarriorBrain_Think` `0x003052f0`,
    step 3); a bat, baton, knife or throwable stays in his hand until he uses, throws or swaps it, or a hit makes him
-   drop a swung weapon (`Human_ApplyPendingDamage` `0x00265f70`: `Human_DropHeld` when he is swinging it, or holds a
-   set 1 object in clip 602).
+   drop it: during a throw clip or clip 602 with set 1 (`Human_ApplyPendingDamage` `0x00265f70`), when the hit
+   stuns or knocks him down while he is hurt, when it comes from a counter or special clip (620 and above), or when
+   he is grabbed holding a bat; all but the throw case are stopped by `HuSetKeepWeapon`
+   ([Combat: dropping what is held when hit](combat.md#keep-weapon)).
 
 **Coney fixes** (owner item 37; the hand-over works, the member holds the object, `play_level_objects.cpp` gives him
 its anim set):
@@ -805,6 +812,153 @@ its anim set):
 6. Test: give a bat to a Warrior; assert he holds it, its world pose equals his transform ∘ scaled hand bone ∘ local
    on the next draw, and an attack of his on an enemy plays 34 or 36 and deals the bat clip's damage plus the bat's
    bonus.
+
+#### Two-handed objects {#two-handed}
+
+How the original decides that a held object is carried in **both** hands (the cash register, a drum, a chair, an
+amp) rather than hung from the right hand like a bat or a bottle. Asked by issue #433: in Coney the `level99`
+checkpoint 2 register is lifted with the right clip but then held like a one-handed prop.
+
+**There is no "two-handed" flag.** The look comes from two bytes of the object's **type record** (`CfgObj`,
+[Object types](#object-types)), set once from the objects file (`config_preload3.lua`'s `CfgObj` lines, arguments 14
+and 20, [the binding](../references/bindings/config.md#cfgobj)), never per model or per level:
+
+| Type byte | `CfgObj` argument | What it chooses | Two-handed value |
+| --- | --- | --- | --- |
+| `+0x65` | 14 `pickupAnim` | the pick-up clip ([Combat: the pick-up clip](combat.md#bat)) | 2 `TwoHandPickUp`: 503, or 504 above 0.8 m |
+| `+0x87` | 20 `animSet` | the **move style** pushed while it is held, which swaps the idle and locomotion clips | 4 `OVERHEAD_WEAPON_SET` |
+
+The object is still attached to **one bone, the right hand (25)**; both hands meet it because every clip the style
+plays (the idle, walk, run and turns below) poses both arms round the object (inferred: the bone and the clips are
+read, the arm pose is not measured). The object's class does not matter: `overhead_weapon` and `dyn_cashreg` behave
+alike because their take handlers are alike (below), and the class only decides breaking, wear and drops.
+
+**1. The pick-up** uses `+0x65` (`Human_PlayPickupClip`, `0x0025e5a8`, from the human's message `0x14`): 2 plays
+**503** `ANIM_BARREL_PICK_UP`, or **504** `…_HIGH` when the object is more than 0.8 m above the human's feet.
+Confirmed (code), as on [Combat](combat.md#bat).
+
+**2. The take** (the clip's type-9 event, human message `0x89` in `Human_HandleMessage` `0x00245920`) sends the
+object message `0x1b` with, in push order, the human, the event's **bone**, the event's position × the human's scale,
+its rotation, and whether the human is in a scene (`Human_IsInSceneState`). The two-handed classes' handlers
+(`OverheadWeapon_OnPickedUp` `0x003ff918`, `DynCashreg_OnPickUp` `0x003c0108`) zero the velocity and spin, attach the
+object at the event's bone (flag `0x10`) and then set its local pose:
+
+```text
+if not in a scene:  local position = type record +0x00 (holdPos, w = 1)      // ScriptObj_GetVectorProperty 11
+                    local rotation = type record +0x0c (holdRot, x y z w)     // ScriptObj_GetVectorProperty 12
+else:               local position, rotation = the event's
+```
+
+So in play the clip event gives only the **bone**; the offset is `CfgObj`'s `holdPos` / `holdRot`, **not scaled** by the
+human and **not slid** by `CfgObj` `+0x70` (that slide is `melee_weapon`'s, [Take](#held)). Confirmed (code) at
+`0x003c01f0`-`0x003c0244` and `0x003ff918`; the property numbers at `0x003a3978` (11 reads three floats at the record's
+start, 12 four floats at `+0x0c`; `Cfg_AddObjectType` `0x00390f18` stores arguments 21 and 22 there).
+`overhead_weapon` additionally sets path flag 8 under its first pick-up spot and, for model hash `0xac6f5902`, clears
+its own `0x8000`.
+
+**3. The move style.** The handler then sends the human message **3** with itself. The human's case 3 reads the
+held object's type `+0x87` and, when it differs from the human's current style (`Human_GetMoveStyle`), calls
+`Human_SetCarryMoveStyle` (`0x00221ed0`):
+
+- style 0 (`NONE_SET`): nothing;
+- the human in the hidden style `0x14` ([Stealth](stealth.md#sneaking)) and the object's style 4 or 6: the top style is
+  **replaced** (`0x00253e68`);
+- no style yet: the object's style is **pushed** (`0x00253ed0`);
+- another style on top: that one is popped, the object's pushed, and the old one pushed back on top.
+
+A push applies the style with `Human_ApplyMoveStyle` (`0x00253688`): the [anim slots](characters.md#anim-slots) are
+reset to the defaults and the style's overrides written, then the gait speeds are recomputed from the new clips'
+root motion (`0x00253688` ends in the speed computation). Message `0x16` (sender not traced) calls the same function
+unless the human has state `0x180000`. Confirmed (code) at `0x002460f4` and `0x002469c8`.
+
+**Style 4, the two-handed carry** (`Human_ApplyMoveStyle` case 4, confirmed (code); clip names from the
+[anim id reference](../references/anim-ids.md)):
+
+| Slot | Default | Style 4 | Clip |
+| --- | --- | --- | --- |
+| 0 idle | 388 | **509** | `ANIM_BARREL_NORMAL_IDLE` |
+| 1 step forward | 401 | 535 | `ANIM_BARREL_FIGHT_MOVEMENT_STEP_FORWARD` |
+| 2 dash forward | 403 | 537 | `ANIM_BARREL_FIGHT_MOVEMENT_DASH_FORWARD` |
+| 3 sneak walk, 4 walk | 407, 408 | **515** | `ANIM_BARREL_MOVEMENT_WALK` |
+| 5 jog | 409 | 516 | `ANIM_BARREL_MOVEMENT_JOG` |
+| 6 run | 410 | 517 | `ANIM_BARREL_MOVEMENT_RUN` |
+| 7 sprint | 411 | 518 | `ANIM_BARREL_MOVEMENT_SPRINT` |
+| 8 slow turn right, 15 combat turn | 390, 360 | 529 | `ANIM_BARREL_FIGHT_TURN_RIGHT` |
+| 9 sneak walk start, 10 walk start | 412, 413 | **519** | `ANIM_BARREL_MOVEMENT_WALK_START` |
+| 11 combat idle | 358 | 527 | `ANIM_BARREL_FIGHT_IDLE` |
+| 12 combat shuffle forward | 366 | 535 | as slot 1 |
+| 13 combat dash forward | 368 | 537 | as slot 2 |
+| 14 combat walk forward | 372 (player 380) | 541 | `ANIM_BARREL_FIGHT_MOVEMENT_WALK_FORWARD` |
+| 33 run stop | 417 | 523 | `ANIM_BARREL_MOVEMENT_RUN_STOP` |
+
+Every other slot keeps its default (the attack slots do not matter: with set 4 in hand square and cross throw,
+[Combat: moving attacks with something in hand](combat.md#armed-moves)). Style 6 (`GHETTO_SET`, the two ghetto
+blasters, `pickupAnim` 7) is the same shape with the ghetto clips (idle 555, walk 561, run 563, run stop 569, ...).
+Styles 1-3 (knife, baton, bat) change only attack and block slots, which is why a bat is carried with the plain idle
+and walk ([Combat: a bat in hand](combat.md#bat)).
+
+**4. Letting go.** The drop (`Human_DropHeld`, `0x00257f38`, [Drop](#held)) and the throw pop the style the object
+pushed, so the slots go back to the defaults. Before a pick-up clip, a held object is dropped first when the new
+object's `pickupAnim` is 5 or 6 or the human's style is 4 or 6 ([Combat](combat.md#bat)).
+
+**At runtime** (confirmed (runtime), PCSX2 2.9.94, quick-save slot 8 copy (`level99` checkpoint 2), scenario
+`repo:research/traces/scenarios/cashreg_carry.toml`: the player put at (53.23, 56.45) facing +y, 0.8 m south of the
+store's register at (53.23, 57.26, 1.63); triangle at update 20; stick 60 % for 80 updates from update 110; one sample
+per update):
+
+| Update | Clip | Move styles | What happened |
+| --- | --- | --- | --- |
+| 21 | **504** | none | triangle: the high clip (the register is 1.42 m above his feet) |
+| 28 | 504 | depth 1, style **4** | the take: `+0x338` holds the register; slots 0 / 4 / 6 / 11 = **509 / 515 / 517 / 527** |
+| 36 | **509** | 4 | the clip ends in the barrel idle |
+| 111-120 | **519** | 4 | the stick: the barrel walk start |
+| 121-190 | **515** | 4 | the barrel walk, gait 1, 1.46 m/s |
+| 191 | 509 | 4 | stick released: back to the barrel idle (no run stop from a walk) |
+
+The register's attachment through all of it: bone **25** (the right hand), local position **(0.3075, 0.1306,
+0.2869)** m and rotation **(−0.1485, 0.0522, −0.9863, −0.0484)** (`x, y, z, w`), exactly its type record's `+0x00` /
+`+0x0c` (type index 262; its `+0x84`-`+0x87` read shape 1, axis 0, type 2 `TYPE_GENERIC`, set **4**). The bone came
+from clip 504's event; that 503 (the floor clip) also names bone 25 is inferred.
+
+**Which objects share it** (the reference list `repo:research/references/objects.yaml`, from the `CfgObj` lines):
+
+- `pickupAnim` `TwoHandPickUp` with `animSet` `OVERHEAD_WEAPON_SET`: **all 66** `overhead_weapon` types (the drums,
+  chairs, amps, crates, carts, trash cans and bags, `dyn_box_stereo`, ...), `dyn_cashreg` and `dyn_cagedchic` (class
+  `dyn_chicken`) — 68 types, the same 68 that carry set 4.
+- `dyn_cardrack` (class `dyn_masks`) has `TwoHandPickUp` with `NONE_SET`, so it would be lifted with 503 and then
+  carried with the plain clips; a `dyn_masks` object was not pickable at runtime ([Pickable objects](#pickable)).
+- `GHETTO_SET` (style 6): the two ghetto blasters, carried the same way with their own clips.
+
+So the register is not special: anything Coney lifts with 503 / 504 needs the same carry.
+
+**What Coney must do** (the gap, from Coney's code: the take uses the pick-up clip's event offset for every class,
+`world_objects::heldAttachment` in `repo:src/world_objects/object_tasks.h`, and the animator's
+[anim slots](characters.md#anim-slots) know only the hidden style; the pick-up returns to the plain idle 388):
+
+1. Read each type's `animSet` (`CfgObj` argument 20, `+0x87`) and `holdPos` / `holdRot` (arguments 21 / 22) with the
+   other `CfgObj` fields.
+2. On the take of an `overhead_weapon` or `dyn_cashreg` object outside a scene, attach it to the event's bone with
+   local position `holdPos` and rotation `holdRot` as given: no human scale, no `+0x70` slide. Keep the event's offset
+   (× scale, slid) for `melee_weapon` and the classes that do so today; in a scene use the event's pose for both.
+3. When an object is put in a human's hand (player or AI), if its `animSet` is not 0 and differs from his current move
+   style, apply it by the rules of step 3 above (push; replace the hidden style `0x14` for 4 or 6; otherwise slip it
+   under the top style).
+4. Implement move style 4's slot table above (and 6's, from the same function, when the blasters are done): reset the
+   slots to the defaults, write the overrides, recompute the gait speeds from the new clips. The pick-up clip's
+   follow-on then lands in slot 0, 509, not a fixed 388.
+5. Pop the style on the drop and the throw, restoring the default slots (or the style beneath).
+6. Test, unit: applying style 4 to the default slots gives exactly the table above, and popping it restores the
+   defaults; a take outside a scene gives `holdPos` / `holdRot` unchanged at bone 25.
+7. Test, disc, through the player's path (`coney::test::DiscSession`, `level99` checkpoint 2, a `LivePad` driver):
+   walk the player with the stick at 60 % from the shop floor to the store's register (53.23, 57.26), stop facing it
+   and tap triangle. Assert, in order: clip 504 starts; within 10 updates the register is held, his top move style is
+   4 and slot 0 is 509; when 504 ends the idle is 509; with the stick at 60 % he plays 519 then 515 (not 413 / 408);
+   the register's local pose is its `holdPos` / `holdRot` to 1e-4 at bone 25; triangle again drops it and the idle
+   goes back to 388. Print counts only. The same test against a `dyn_trashcan` on the street (slot 8 has one at
+   (47.71, 2.28), [Trash cans and bags](#trash-props)) covers the `overhead_weapon` path.
+
+Open: what the arms do in the barrel clips (that both hands reach the object is inferred from the clips' names and
+use), and the bone named by clip 503's take event (inferred 25, as 504's).
 
 ### Throws {#throws}
 
@@ -1052,7 +1206,7 @@ collision mesh that stand for them. Confirmed (code) for the spawns, counts from
    effect and the triangles only). Confirmed (code).
 6. **Break** (`0x0038f378`, called by the human and thrown-object paths, not by `BreakGlassInRadius`):
     - with the alarm (`+0xf8` both bits): the `CrimeScene` flag moves to the pane and a break-in (crime type 1) is
-      reported ([AI: crimes](ai.md#crimes));
+      reported ([AI: crimes](ai-gangs.md#crimes));
     - with the window link: when the pane is in a path polygon, the polygon gets flag 8 and its `0x40` link loses the
       avoid bit; otherwise the kind-4 link does;
     - every enabled flag of activity 9 (`_xwWindowLook`, [Flags](flags.md#activities)) within max(width, height) of
@@ -1110,8 +1264,9 @@ each side and covers the whole pane. Its body flags (`0x0033d070`) are `0x800000
    whose flags hold `0x18`; for each, a ray from 1 m above the feet to the body's centre must hit nothing in the
    level mesh, the ray excluding material 2 (its exclusion list is `{2, 1}`) and triangles with flag `0x8` (and
    `0x40`, unless the target is a human's body, body `+0x44` bit `0x40`), so glass never hides a pane from a strike.
-   A body with any of `0x30` that the human may strike (human vtable `+0x10c`, not traced) is then tested against
-   each strike shape (shape flags `0x1` and `0x2`), and the first that overlaps calls `Strike_Contact`
+   A body gathered with flag `0x8` or `0x10` (mask `0x18`, so `0x20` alone is never gathered) that the human may
+   strike (human vtable `+0x10c`, not traced) is then swept against each strike shape (shape flags `0x1` and `0x2`,
+   [Physics Unit 10](physics-bodies.md#u10-strikes)), and the first that hits calls `Strike_Contact`
    (`0x0021b290`). For a pane that is: the noise event (`0x002936a8`, 30 m), `Glass_Break` (`0x0038f378`), a
    player's crime-10 statistic and then message 1 ([A pane's life](#pane), steps 5-7).
 2. **The airborne body**. The move's sweep asks the physics world for bodies whose flags meet a mask the human
@@ -1867,7 +2022,7 @@ Coney's stand-ins for the world objects, where this page is silent:
   meets is kept for `HuIsAimingAt`, `HuGetControlName` gives `throwControl`, and a throw from the aim leaves from the
   release point with the aim's velocity. Stand-ins: the sweeps are sampled every 0.1 m along a segment (not
   `IPhysics_CollideShape`), humans are 2 m upright capsules, cars are not met, a target's point is a fixed head
-  height, and the lock-on's friendly case is not modelled (Coney's lock never takes a friend). The arc is not drawn.
+  height, and the lock-on's friendly case is not modelled (Coney's lock never takes a friend). The arc is drawn ([Graphics](graphics.md#throw-arc)).
 - **Wear and breaks in flight** ([above](#throws); `world_objects::LooseObjects`, `world_objects::Props::breakFlying`,
   the play mode's `flyingBreak`): a throw sets the flying object's body flag 1 and keeps its thrower. Each contact
   with the level mesh first takes one hit (`WorldObject_TakeHit`, the second counter first) as the table above says:

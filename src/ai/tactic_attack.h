@@ -10,7 +10,7 @@
 // TacticAttack: the gang goes for its enemies. Each AI member gets threat response 2 and a melee goal; members left
 // idle join the fight; the callback hears when no member has an enemy any more (9) and when a member dies (13). And
 // the melee goal it gives, which takes the member to the nearest enemy and fights him there.
-// Research: docs/research/ai.md#tactic-kinds, docs/references/bindings/ai.md#tacticattack
+// Research: docs/research/ai-gangs.md#tactic-kinds, docs/references/bindings/ai.md#tacticattack
 
 namespace coney::ai {
 

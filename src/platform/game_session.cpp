@@ -123,6 +123,8 @@ GameSession::GameSession(RenderEngine& renderer, GameModeStack& stack, const io:
         table && table->size() == GameRandom::kTableSize) {
         m_flow->state().random.setTable(*table);
     }
+    // `--ai-seed`: the random stream's start and the brains' seeds (0, the default, changes nothing).
+    m_flow->setAiSeed(settings.aiSeed);
     // Each level's scenes, and the front end's (the Wonder Wheel's `WonderWheel_100`), over the disc's scene list.
     m_flow->gameplay().setSceneMaker([this] { return makeScenes(); });
     m_flow->levelFlow().setScenes([this] { return makeScenes(); }, &m_flow->context());
@@ -280,6 +282,10 @@ std::expected<std::unique_ptr<GameMode>, Error> GameSession::loadLevel(const Lev
     (*mode)->setSounds(m_audio != nullptr ? &m_audio->sounds() : nullptr);
     // The game's HUD, which the scripts' bindings act on.
     (*mode)->useHud(m_flow->hud());
+    // `--trace-humans`: every level of the run writes its humans' rows to the one file.
+    if (m_humansTrace) {
+        (*mode)->traceHumansTo(m_humansTrace);
+    }
     if (LevelSetup setup = std::exchange(m_firstLevelSetup, LevelSetup{}); setup) {
         if (auto done = setup(**mode); !done) {
             return std::unexpected(std::move(done.error()));

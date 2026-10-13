@@ -19,7 +19,7 @@ DebugSession::DebugSession(TunableRegistry& tunables, DebugServices services, In
     m_gate.addBetweenSteps([this] { m_model.sampleChannels(); });
     // A notice counts down by frames.
     m_gate.addBetweenSteps([this] { m_noticeFramesLeft = m_noticeFramesLeft > 0 ? m_noticeFramesLeft - 1 : 0; });
-    // R3 + d-pad left flips the noclip while the Player page's hotkey option is on.
+    // R3 + d-pad left flips the noclip while the Player page's hotkey option is on (it starts on).
     m_gate.addHotkey(
         kNoclipChord, [this] { return m_noclipHotkey; },
         [this] {
@@ -40,6 +40,7 @@ DebugSession::DebugSession(TunableRegistry& tunables, DebugServices services, In
     addFightersPage(*this);
     addHudPage(*this);
     addDebugDrawPage(*this);
+    addEntityInspectorPage(*this);
     addDisplayPage(*this);
     addAudioPage(*this);
     addInputPage(*this);
@@ -128,6 +129,10 @@ std::vector<std::string> DebugSession::cornerLines() const {
         } else {
             lines.emplace_back("coordinates: no player");
         }
+    }
+    // The Entity inspector's selection, named while it is highlighted.
+    if (std::string inspected = inspectedCornerLine(*this); !inspected.empty()) {
+        lines.push_back(std::move(inspected));
     }
     // The last notice, while it lasts.
     if (m_noticeFramesLeft > 0) {

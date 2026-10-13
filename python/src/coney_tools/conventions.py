@@ -14,6 +14,7 @@ from __future__ import annotations
 import re
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any
@@ -98,8 +99,12 @@ class Paths:
     code: tuple[str, ...]
     #: Prefixes of the documentation, which satisfies that.
     docs: tuple[str, ...]
-    #: Patterns of what a documentation-only pull request touches (see `is_docs_only`).
+    #: Patterns of what a documentation-only pull request touches (see `is_docs_only`): CI's first scope class.
     docs_only: tuple[str, ...]
+    #: Patterns of the tools (the python package, agent setup): CI's second scope class (see `ci_class`).
+    tools_only: tuple[str, ...]
+    #: Patterns of what the engine jobs read: CI's third scope class (see `ci_class`).
+    engine: tuple[str, ...]
     generated: tuple[GeneratedPath, ...]
     pointer_files: PointerFiles
     #: The only files that may hold the repository's or the docs site's address.
@@ -117,6 +122,14 @@ class Paths:
     def is_docs_only(self, path: str) -> bool:
         """Whether `path` matches a `docs_only` pattern: a trailing `/` is a folder, `*` stays within one folder."""
         return any(_pattern_regex(pattern).fullmatch(path) for pattern in self.docs_only)
+
+    def ci_class(self, path: str) -> str:
+        """The CI scope class of `path`, as `.github/scripts/ci-scope.sh` sorts it: the first of `docs_only`,
+        `tools_only` and `engine` whose patterns match, else `unknown` (which runs everything)."""
+        for name, patterns in (("docs_only", self.docs_only), ("tools_only", self.tools_only), ("engine", self.engine)):
+            if any(_pattern_regex(pattern).fullmatch(path) for pattern in patterns):
+                return name
+        return "unknown"
 
     def docs_only_regex(self) -> str:
         """The `docs_only` patterns as the one regular expression `.github/scripts/ci-scope.sh` holds."""
@@ -195,14 +208,16 @@ class Closing:
 
 
 @dataclass(frozen=True)
-class Remaining:
-    """The list of what a pull request leaves undone: each unchecked item cites the issue that holds it."""
+class Checklist:
+    """The Checklist section: a pull request merges only when every task in it is finished, so no item is unticked."""
 
     section: str
-    #: The line that opens the list (`Remaining:`).
-    label: str
-    #: What an unchecked item must contain (`#N`: an issue or pull request number).
-    unchecked_cites: str
+    #: What an unchecked `- [ ]` item gets (`refused`: the description fails the check).
+    unchecked: str
+    #: The day the rule began; a pull request merged before it kept the older `Remaining` list.
+    since: date
+    #: The line that opened that older list (`Remaining:`), whose unchecked items had to cite an issue as `#N`.
+    legacy_label: str
 
 
 @dataclass(frozen=True)
@@ -247,6 +262,22 @@ class AiUse:
 
 
 @dataclass(frozen=True)
+class Review:
+    """The release gate on the pr-reviewer agent's verdict (`coney-tools repo review`, `repo check-review`)."""
+
+    #: The agent's name; its definition is `.claude/agents/<agent>.md`.
+    agent: str
+    #: The verdict (JSON) the agent writes next to the description file; `repo check-review` reads it.
+    verdict_file: str
+    #: The readable report the agent writes beside the verdict.
+    report_file: str
+    #: How the description is hashed: `sha256-lf` (UTF-8, leading BOM dropped, CRLF and CR turned into LF).
+    body_hash: str
+    #: `refused`: two byte-identical images in one description fail the gate, whatever the verdict.
+    identical_images: str
+
+
+@dataclass(frozen=True)
 class Stacked:
     """The rules for a pull request whose base is not the default branch."""
 
@@ -271,9 +302,10 @@ class PullRequests:
     local_paths: bool
     docs_none: DocsNone
     closing: Closing
-    remaining: Remaining
+    checklist: Checklist
     screenshots: ScreenshotsRule
     ai_use: AiUse
+    review: Review
     stacked: Stacked
 
 
@@ -409,6 +441,25 @@ class ReportIssue:
 
 
 @dataclass(frozen=True)
+class Comments:
+    """How the hygiene workflow comments on issues and pull requests (`coney-tools repo hygiene`)."""
+
+    #: The word the workflow's comments start with, inside an HTML comment, so it finds its own comments again.
+    marker: str
+    #: The login a comment must be from to count as the workflow's own (the Actions bot); anyone else's is never edited.
+    author: str
+    #: Whether an issue or pull request event (opened, edited, labelled, ...) updates that item's comment.
+    on_events: bool
+    #: Whether the weekly sweep updates item comments; false = the sweep only updates the report.
+    on_sweep: bool
+    #: At most this many item comments a sweep creates or edits (a flood stopper for a first run).
+    max_per_sweep: int
+    #: Checks whose findings go in the report only, never in an item comment: a comment is activity, which would make an
+    #: idle item look active and so hide the very finding it reports.
+    report_only: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class Thresholds:
     """How many days without a change make an item stale."""
 
@@ -416,6 +467,72 @@ class Thresholds:
     needs_info_days: int
     in_progress_idle_days: int
     pull_request_idle_days: int
+    #: Hours a required check may stay queued or running before `repo pr-health` calls the pull request stuck in CI.
+    pr_pending_hours: int
+
+
+@dataclass(frozen=True)
+class AttachmentPatterns:
+    """The regular expressions the attachment scan looks for, one tuple per kind of finding (`log_scan`)."""
+
+    #: A user's home folder (`C:\\Users\\<name>`, `/home/<name>`, `/Users/<name>`): personal information.
+    user_folder: tuple[str, ...]
+    #: An email address: personal information.
+    email: tuple[str, ...]
+    #: A line of script source (the game's scripts are Lua 4.0): possible game data.
+    script_source: tuple[str, ...]
+    #: A line of a game text or data file (the placed-objects lines, ...): possible game data.
+    game_text: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class Attachments:
+    """The text files attached to an issue that the hygiene workflow downloads and scans (`coney_tools.log_scan`)."""
+
+    #: The start of an attachment link (`https://github.com/user-attachments/files/`); the id and name follow it.
+    link: str
+    #: The file name endings that are scanned (`.txt`, `.log`), compared without regard to case.
+    extensions: tuple[str, ...]
+    #: At most this many attachments of one issue are downloaded.
+    max_files: int
+    #: At most this many attachments in one run (the weekly sweep scans every open issue).
+    max_per_run: int
+    #: At most this many KB of one attachment are downloaded; the rest is never read.
+    download_kb: int
+    #: How long one download may take.
+    timeout_seconds: int
+    #: A log larger than this many KB is reported as possible game data.
+    large_kb: int
+    #: More than this percentage of control characters (or any NUL) means the file is not text.
+    control_percent: int
+    #: A file with at least this many lines matching `script_source`, or `game_text`, is reported.
+    line_threshold: int
+    patterns: AttachmentPatterns
+
+
+@dataclass(frozen=True)
+class RerunRules:
+    """When `coney-tools repo pr-health --rerun` restarts a failed required check: only for a failure that is stale."""
+
+    #: Reruns of the checks of one workflow on one head commit, at most, so a flaky job cannot loop.
+    max_per_sha: int
+    #: The required check that runs `repo check-title` on the pull request's title.
+    title_check: str
+    #: The required check that runs `repo check-body` on the pull request's description.
+    body_check: str
+    #: Check conclusions that are never the code's fault (upper case, as GitHub writes them).
+    conclusions: tuple[str, ...]
+    #: Regular expressions (case-insensitive) that, found in a failed job's log, mean the runner or GitHub failed.
+    log_patterns: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class PrHealth:
+    """How `coney-tools repo pr-health` sorts a failing required check, and when it may rerun one."""
+
+    #: Required checks whose failure is a lint failure (the author fixes the text); any other required check is code.
+    lint_checks: tuple[str, ...]
+    rerun: RerunRules
 
 
 @dataclass(frozen=True)
@@ -444,7 +561,10 @@ class Hygiene:
     report_issue: ReportIssue
     #: The cron schedule of the weekly sweep.
     sweep: str
+    comments: Comments
     thresholds: Thresholds
+    pr_health: PrHealth
+    attachments: Attachments
     #: Check id to its spec, in file order.
     checks: Mapping[str, CheckSpec]
 
@@ -455,7 +575,12 @@ class Workspace:
 
     worktrees: str
     scratch: str
+    #: Under this much free space on the workspace drive, `workspace clean` deletes idle build folders.
     disk_min_free_gb: int
+    #: ... until free space reaches `disk_min_free_gb` plus this many GB.
+    disk_margin_gb: int
+    #: A `build/` folder unused for this many hours is deleted.
+    build_idle_hours: int
     #: A worktree holding a file of this name is never cleaned.
     busy_marker: str
     remove_worktree_when_merged: bool
@@ -543,6 +668,14 @@ def _flag(value: object, where: str) -> bool:
     return value
 
 
+def _day(value: object, where: str) -> date:
+    """A calendar day written as quoted `YYYY-MM-DD` text."""
+    try:
+        return date.fromisoformat(_text(value, where))
+    except ValueError:
+        raise _fail(where, "expected a day written as YYYY-MM-DD") from None
+
+
 def _count(value: object, where: str, minimum: int = 1) -> int:
     """A whole number of at least `minimum` (a YAML boolean is not one)."""
     if not isinstance(value, int) or isinstance(value, bool) or value < minimum:
@@ -584,22 +717,22 @@ def _each[T](value: object, where: str, build: Callable[[object, str], T]) -> tu
 
 
 def _pattern_regex(pattern: str) -> re.Pattern[str]:
-    """The regular expression of a `docs_only` pattern: `dir/` matches the whole folder, `*` stays within a folder."""
+    """The regular expression of a CI scope pattern: `dir/` matches the whole folder, `*` stays within a folder."""
     if pattern.endswith("/"):
         return re.compile(re.escape(pattern) + ".*", re.DOTALL)
     return re.compile("[^/]*".join(re.escape(part) for part in pattern.split("*")))
 
 
-#: What a `docs_only` pattern may hold: plain path characters and `*`, which `.github/scripts/ci-scope.sh` turns into a
-#: regular expression by escaping the dot and nothing more.
-_DOCS_ONLY_PATTERN = re.compile(r"^[A-Za-z0-9_./*-]+$")
+#: What a CI scope pattern (`docs_only`, `tools_only`, `engine`) may hold: plain path characters and `*`, which
+#: `.github/scripts/ci-scope.sh` turns into a regular expression by escaping the dot and nothing more.
+_SCOPE_PATTERN = re.compile(r"^[A-Za-z0-9_./*-]+$")
 
 
-def _docs_only_patterns(value: object, where: str) -> tuple[str, ...]:
-    """The `paths.docs_only` list; a pattern with a character the CI scope script does not escape is refused."""
+def _scope_patterns(value: object, where: str) -> tuple[str, ...]:
+    """One CI scope list of `paths`; a pattern with a character the CI scope script does not escape is refused."""
     patterns = _texts(value, where)
     for index, pattern in enumerate(patterns):
-        if not _DOCS_ONLY_PATTERN.match(pattern):
+        if not _SCOPE_PATTERN.match(pattern):
             raise _fail(f"{where}[{index}]", f"'{pattern}': only letters, digits, . _ / - and * (ci-scope.sh reads it)")
     return patterns
 
@@ -633,14 +766,26 @@ def _read_generated(data: object, where: str) -> GeneratedPath:
 
 def _read_paths(data: object, where: str) -> Paths:
     """The `paths` section: path classes, generated paths, pointer files and the size limit."""
-    keys = ("code", "docs", "docs_only", "generated", "pointer_files", "address_allowed_in", "large_file_kb")
+    keys = (
+        "code",
+        "docs",
+        "docs_only",
+        "tools_only",
+        "engine",
+        "generated",
+        "pointer_files",
+        "address_allowed_in",
+        "large_file_kb",
+    )
     table = _table(data, where, keys)
     pointer = _table(table["pointer_files"], _at(where, "pointer_files"), ("files", "line", "max_bytes"))
     pointer_where = _at(where, "pointer_files")
     return Paths(
         code=_texts(table["code"], _at(where, "code")),
         docs=_texts(table["docs"], _at(where, "docs")),
-        docs_only=_docs_only_patterns(table["docs_only"], _at(where, "docs_only")),
+        docs_only=_scope_patterns(table["docs_only"], _at(where, "docs_only")),
+        tools_only=_scope_patterns(table["tools_only"], _at(where, "tools_only")),
+        engine=_scope_patterns(table["engine"], _at(where, "engine")),
         generated=_each(table["generated"], _at(where, "generated"), _read_generated),
         pointer_files=PointerFiles(
             files=_texts(pointer["files"], _at(pointer_where, "files")),
@@ -716,9 +861,10 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
         "local_paths",
         "docs_none",
         "closing",
-        "remaining",
+        "checklist",
         "screenshots",
         "ai_use",
+        "review",
         "stacked",
     )
     table = _table(data, where, keys)
@@ -731,9 +877,18 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
 
     docs_none, docs_none_where = sub("docs_none", "line", "when_changed", "unless_changed")
     closing, closing_where = sub("closing", "keyword", "form", "one_per_line", "section")
-    remaining, remaining_where = sub("remaining", "section", "label", "unchecked_cites")
+    checklist, checklist_where = sub("checklist", "section", "unchecked", "since", "legacy_label")
     screenshots, screenshots_where = sub("screenshots", "section", "none", "reason", "uploaded_only")
     ai_use, ai_where = sub("ai_use", "section", "written_by", "model")
+    review, review_where = sub("review", "agent", "verdict_file", "report_file", "body_hash", "identical_images")
+    agent = _text(review["agent"], _at(review_where, "agent"))
+    # The agent is a file name under .claude/agents/, so it holds no path separator.
+    if not re.fullmatch(r"[a-z][a-z0-9-]*", agent):
+        raise _fail(_at(review_where, "agent"), f"'{agent}' must be an agent name (lower case, digits and dashes)")
+    verdict_file = _text(review["verdict_file"], _at(review_where, "verdict_file"))
+    report_file = _text(review["report_file"], _at(review_where, "report_file"))
+    if report_file == verdict_file:
+        raise _fail(_at(review_where, "report_file"), "must differ from verdict_file")
     stacked, stacked_where = sub(
         "stacked", "depends_line", "merge_into_base", "auto_merge_on_non_default_base", "after_base_merges"
     )
@@ -746,7 +901,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
     _names_in((no_ai,), choices, _at(written_where, "no_ai"), "one of the choices")
     section_fields = (
         (_at(closing_where, "section"), closing["section"]),
-        (_at(remaining_where, "section"), remaining["section"]),
+        (_at(checklist_where, "section"), checklist["section"]),
         (_at(screenshots_where, "section"), screenshots["section"]),
         (_at(ai_where, "section"), ai_use["section"]),
     )
@@ -769,10 +924,11 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
             one_per_line=_flag(closing["one_per_line"], _at(closing_where, "one_per_line")),
             section=closing["section"],
         ),
-        remaining=Remaining(
-            section=remaining["section"],
-            label=_text(remaining["label"], _at(remaining_where, "label")),
-            unchecked_cites=_choice(remaining["unchecked_cites"], _at(remaining_where, "unchecked_cites"), ("#N",)),
+        checklist=Checklist(
+            section=checklist["section"],
+            unchecked=_choice(checklist["unchecked"], _at(checklist_where, "unchecked"), ("refused",)),
+            since=_day(checklist["since"], _at(checklist_where, "since")),
+            legacy_label=_text(checklist["legacy_label"], _at(checklist_where, "legacy_label")),
         ),
         screenshots=ScreenshotsRule(
             section=screenshots["section"],
@@ -789,6 +945,13 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
                 label=_text(model["label"], _at(model_where, "label")),
                 none=_text(model["none"], _at(model_where, "none")),
             ),
+        ),
+        review=Review(
+            agent=agent,
+            verdict_file=verdict_file,
+            report_file=report_file,
+            body_hash=_choice(review["body_hash"], _at(review_where, "body_hash"), ("sha256-lf",)),
+            identical_images=_choice(review["identical_images"], _at(review_where, "identical_images"), ("refused",)),
         ),
         stacked=Stacked(
             depends_line=_text(stacked["depends_line"], _at(stacked_where, "depends_line")),
@@ -970,6 +1133,8 @@ def _read_labels(data: object, where: str) -> Labels:
 _CHECK_SCOPES = ("files", "github", "local")
 _CHECK_SEVERITIES = ("error", "warn")
 _CHECK_FIXES = ("auto", "skill", "owner")
+#: The marker of the hygiene workflow's comments: a word that cannot end or break the HTML comment it sits in.
+_MARKER = re.compile(r"^[A-Za-z][A-Za-z0-9-]*$")
 #: A check id: a group, a dot and a name.
 _CHECK_ID = re.compile(r"^[a-z]+\.[a-z][a-z-]*$")
 
@@ -999,9 +1164,63 @@ def _read_check(check_id: str, data: object, where: str) -> CheckSpec:
     )
 
 
+def _patterns(value: object, where: str) -> tuple[str, ...]:
+    """A list of regular expressions, each of which must compile."""
+    patterns = _texts(value, where)
+    for index, pattern in enumerate(patterns):
+        try:
+            re.compile(pattern)
+        except re.error as error:
+            raise _fail(f"{where}[{index}]", f"not a valid regular expression ({error})") from None
+    return patterns
+
+
+def _read_attachments(data: object, where: str) -> Attachments:
+    """`hygiene.attachments`: what the attachment scan downloads, its limits and its patterns."""
+    counts = (
+        "max_files",
+        "max_per_run",
+        "download_kb",
+        "timeout_seconds",
+        "large_kb",
+        "control_percent",
+        "line_threshold",
+    )
+    table = _table(data, where, ("link", "extensions", "patterns", *counts))
+    link = _text(table["link"], _at(where, "link"))
+    if not link.startswith("https://") or not link.endswith("/"):
+        raise _fail(_at(where, "link"), "expected an https:// address ending with /")
+    extensions = _texts(table["extensions"], _at(where, "extensions"))
+    for extension in extensions:
+        if not re.fullmatch(r"\.[a-z0-9]+", extension):
+            raise _fail(_at(where, "extensions"), f"'{extension}' is not a lower-case ending like '.log'")
+    numbers = {key: _count(table[key], _at(where, key)) for key in counts}
+    if numbers["large_kb"] > numbers["download_kb"]:
+        raise _fail(_at(where, "large_kb"), "must not be more than download_kb, or a large file could not be seen")
+    if numbers["control_percent"] > 100:
+        raise _fail(_at(where, "control_percent"), "expected a percentage of 100 or less")
+    patterns_where = _at(where, "patterns")
+    kinds = ("user_folder", "email", "script_source", "game_text")
+    patterns = _table(table["patterns"], patterns_where, kinds)
+    return Attachments(
+        link=link,
+        extensions=extensions,
+        max_files=numbers["max_files"],
+        max_per_run=numbers["max_per_run"],
+        download_kb=numbers["download_kb"],
+        timeout_seconds=numbers["timeout_seconds"],
+        large_kb=numbers["large_kb"],
+        control_percent=numbers["control_percent"],
+        line_threshold=numbers["line_threshold"],
+        patterns=AttachmentPatterns(**{kind: _patterns(patterns[kind], _at(patterns_where, kind)) for kind in kinds}),
+    )
+
+
 def _read_hygiene(data: object, where: str) -> Hygiene:
     """The `hygiene` section: the report issue, the sweep schedule, the idle limits and the audit's checks."""
-    table = _table(data, where, ("report_issue", "sweep", "thresholds", "checks"))
+    table = _table(
+        data, where, ("report_issue", "sweep", "comments", "thresholds", "pr_health", "attachments", "checks")
+    )
     checks_where = _at(where, "checks")
     raw_checks = _mapping(table["checks"], checks_where)
     if not raw_checks:
@@ -1009,28 +1228,94 @@ def _read_hygiene(data: object, where: str) -> Hygiene:
     checks = {name: _read_check(name, spec, _at(checks_where, name)) for name, spec in raw_checks.items()}
     report_where = _at(where, "report_issue")
     report = _table(table["report_issue"], report_where, ("title", "labels"))
+    comments_where = _at(where, "comments")
+    comments = _table(
+        table["comments"],
+        comments_where,
+        ("marker", "author", "on_events", "on_sweep", "max_per_sweep", "report_only"),
+    )
+    marker = _text(comments["marker"], _at(comments_where, "marker"))
+    if not _MARKER.match(marker):
+        raise _fail(_at(comments_where, "marker"), "letters, digits and hyphens only (it sits inside an HTML comment)")
+    report_only = _texts(comments["report_only"], _at(comments_where, "report_only"), empty_ok=True)
+    _names_in(report_only, checks, _at(comments_where, "report_only"), "a check in hygiene.checks")
     limits_where = _at(where, "thresholds")
-    keys = ("needs_triage_days", "needs_info_days", "in_progress_idle_days", "pull_request_idle_days")
+    keys = (
+        "needs_triage_days",
+        "needs_info_days",
+        "in_progress_idle_days",
+        "pull_request_idle_days",
+        "pr_pending_hours",
+    )
     limits = _table(table["thresholds"], limits_where, keys)
+    health_where = _at(where, "pr_health")
+    health = _table(table["pr_health"], health_where, ("lint_checks", "rerun"))
     return Hygiene(
         report_issue=ReportIssue(
             title=_text(report["title"], _at(report_where, "title")),
             labels=_texts(report["labels"], _at(report_where, "labels")),
         ),
         sweep=_text(table["sweep"], _at(where, "sweep")),
+        comments=Comments(
+            marker=marker,
+            author=_text(comments["author"], _at(comments_where, "author")),
+            on_events=_flag(comments["on_events"], _at(comments_where, "on_events")),
+            on_sweep=_flag(comments["on_sweep"], _at(comments_where, "on_sweep")),
+            max_per_sweep=_count(comments["max_per_sweep"], _at(comments_where, "max_per_sweep")),
+            report_only=report_only,
+        ),
         thresholds=Thresholds(**{key: _count(limits[key], _at(limits_where, key)) for key in keys}),
+        pr_health=PrHealth(
+            lint_checks=_texts(health["lint_checks"], _at(health_where, "lint_checks")),
+            rerun=_read_rerun(health["rerun"], _at(health_where, "rerun")),
+        ),
+        attachments=_read_attachments(table["attachments"], _at(where, "attachments")),
         checks=MappingProxyType(checks),
+    )
+
+
+#: The conclusions of a finished check run that fail it (what `rerun.conclusions` may name).
+_FAILING_CONCLUSIONS = ("FAILURE", "TIMED_OUT", "CANCELLED", "STARTUP_FAILURE", "ACTION_REQUIRED", "STALE")
+
+
+def _read_rerun(data: object, where: str) -> RerunRules:
+    """The `hygiene.pr_health.rerun` section: the cap, the two text checks, the conclusions and the log patterns."""
+    table = _table(data, where, ("max_per_sha", "title_check", "body_check", "conclusions", "log_patterns"))
+    conclusions = _texts(table["conclusions"], _at(where, "conclusions"))
+    _names_in(conclusions, _FAILING_CONCLUSIONS, _at(where, "conclusions"), "a failing conclusion")
+    patterns = _texts(table["log_patterns"], _at(where, "log_patterns"), empty_ok=True)
+    for index, pattern in enumerate(patterns):
+        try:
+            re.compile(pattern)
+        except re.error as error:
+            raise _fail(f"{_at(where, 'log_patterns')}[{index}]", f"not a regular expression ({error})") from error
+    return RerunRules(
+        max_per_sha=_count(table["max_per_sha"], _at(where, "max_per_sha")),
+        title_check=_text(table["title_check"], _at(where, "title_check")),
+        body_check=_text(table["body_check"], _at(where, "body_check")),
+        conclusions=conclusions,
+        log_patterns=patterns,
     )
 
 
 def _read_workspace(data: object, where: str) -> Workspace:
     """The `workspace` section (local only)."""
-    keys = ("worktrees", "scratch", "disk_min_free_gb", "busy_marker", "remove_worktree_when_merged")
+    keys = (
+        "worktrees",
+        "scratch",
+        "disk_min_free_gb",
+        "disk_margin_gb",
+        "build_idle_hours",
+        "busy_marker",
+        "remove_worktree_when_merged",
+    )
     table = _table(data, where, keys)
     return Workspace(
         worktrees=_text(table["worktrees"], _at(where, "worktrees")),
         scratch=_text(table["scratch"], _at(where, "scratch")),
         disk_min_free_gb=_count(table["disk_min_free_gb"], _at(where, "disk_min_free_gb")),
+        disk_margin_gb=_count(table["disk_margin_gb"], _at(where, "disk_margin_gb"), minimum=0),
+        build_idle_hours=_count(table["build_idle_hours"], _at(where, "build_idle_hours"), minimum=0),
         busy_marker=_text(table["busy_marker"], _at(where, "busy_marker")),
         remove_worktree_when_merged=_flag(
             table["remove_worktree_when_merged"], _at(where, "remove_worktree_when_merged")

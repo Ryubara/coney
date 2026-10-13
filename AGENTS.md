@@ -22,8 +22,8 @@ player's path, gamepad input, playthrough tests, the checks to run before report
 
 ## Build and test
 
-- Engine: `cmake --preset dev && cmake --build --preset dev && ctest --preset dev` (Windows: from a shell with the
-  MSVC environment, `vcvars64.bat`). Presets `dev`, `release`, `ci` (warnings as errors), `asan` (Linux/macOS).
+- Engine: `uv run --project python coney-tools build --agent <id> --preset dev --test` (presets `dev`, `release`,
+  `ci`, `asan`); a hook refuses raw `cmake --build`, `ctest`, `ninja`: [`build`](docs/guides/coney-tools.md#build).
 - Python: `uv run --project python pytest python/tests`; `uvx pre-commit run --all-files` before committing.
 - Docs: `.venv/Scripts/python -m mkdocs build --strict`. Build details: `docs/guides/building.md`.
 - On Windows, no local WSL builds or clang-tidy runs: GitHub CI is the Linux and macOS gate, and a failure there is
@@ -37,7 +37,8 @@ player's path, gamepad input, playthrough tests, the checks to run before report
   never asset files, game text or script source, per `LEGAL.md`. Issues may also hold gameplay screenshots and
   short videos of Coney or the original (a maintainer decision, 2026-10-11), never files, saves, dumps or text.
 - **Clean room:** only analysts read decompiler output or disassembly, and they write `docs/research/` pages that
-  cite addresses and short snippets. Engine code is written fresh from those pages, never transcribed.
+  cite addresses and short snippets. Engine code is written fresh from those pages, never transcribed, and never by
+  someone who has read that function's original code (`docs/guides/research-workflow.md#clean-room`).
 - **Research claims** carry an evidence level: confirmed (code) at a cited address, confirmed (runtime), inferred,
   or speculative. Addresses are like `0x001490b8` in NTSC-U `SLUS_212.15`. How: `docs/guides/research-workflow.md`.
 - **Reverse-engineering work** (Ghidra, disassembly, PCSX2, research claims) runs on Opus 5.5.
@@ -45,8 +46,12 @@ player's path, gamepad input, playthrough tests, the checks to run before report
   enhancements wait (designs may be written now); debug tooling is not a mechanic and is fine.
 - **Never exclude a file from the 512 KB large-file check** in `.pre-commit-config.yaml`: it catches game data
   committed by mistake. Split big generated data and pages instead.
-- Making the repo public, tagging releases, force-pushing `main` or someone else's branch, and legal or licence
-  questions are maintainer decisions. Whoever pushes a pull-request branch may `git push --force-with-lease` it.
+<!-- conventions:begin maintainer-decisions -->
+- **Maintainer decisions** are never an agent's or a coordinator's: it stops and reports instead of acting. They are:
+  make the repository public; tag a release; force-push main or someone else's branch; legal or licence questions;
+  change the installer or launcher; change these conventions.
+<!-- conventions:end -->
+- Whoever pushes a pull-request branch may `git push --force-with-lease` it.
 - **Local first; no agent pushes or waits on CI.** An agent commits, runs every applicable local check, writes each
   pull request's title and description to its scratch folder and tells the coordinator, who pushes from a release
   queue when CI has room (`docs/guides/how-we-work.md`, "Local first: the release queue").
@@ -83,9 +88,9 @@ the block.
 
 <!-- conventions:begin commit-rules -->
 - Title `area: Verb the rest`, at most 72 characters, present tense, no trailing period. Verbs: Add, Fix, Update,
-  Remove, Rebuild, Rework, Improve, Document. Areas: `build`, `ci`, `core`, `fileio`, `graphics`, `audio`, `platform`,
-  `tools`, `research`, `agents`, `tests`, `legal`, `docs`. A breaking change ends the title with `(BREAKING)`. What each
-  area covers: `commits.title` in `.github/conventions.yml`, which CI checks PR titles against.
+  Remove, Rebuild, Rework, Improve, Document. Areas: `build`, `ci`, `core`, `gameplay`, `fileio`, `graphics`, `audio`,
+  `platform`, `tools`, `research`, `agents`, `tests`, `legal`, `docs`. A breaking change ends the title with
+  `(BREAKING)`. What each area covers: `commits.title` in `.github/conventions.yml`, which CI checks PR titles against.
 - A body says what changed for a user or developer and why, wrapped at 72 columns. An agent ends the message with
   `Co-Authored-By: <model name> <noreply address>` (the vendor's noreply address: `noreply@anthropic.com`,
   `noreply@google.com`, `noreply@openai.com`) and no other trailer. No other email address appears in a message.

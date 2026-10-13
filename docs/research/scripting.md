@@ -304,7 +304,7 @@ message was consumed. Confirmed (code); the meanings in the last column are from
 | 6 | `(subject, n, other or NilHandle)`, `n` from `+0x00` | no |
 | 7 | `(subject, other)`, `other` from `+0x00` | no |
 | `0xb` | `(self, other)` | no |
-| 8 | not marshalled here; a flag's own handler (`0x00416038`) calls `(flag, human)` when a human arrives at it ([AI: GoalMoveToFlag](ai.md#move-to-flag)) | no |
+| 8 | not marshalled here; a flag's own handler (`0x00416038`) calls `(flag, human)` when a human arrives at it ([AI: GoalMoveToFlag](ai-scripting.md#move-to-flag)) | no |
 | 9 | `(n)`, the short at `W_GameState + 0x412` | yes |
 | 10, `0xd` | `(self)` | no |
 | `0xc` | `(self)` | yes |
@@ -317,7 +317,7 @@ message was consumed. Confirmed (code); the meanings in the last column are from
 
 `self` is the object the handler belongs to; `subject` is the record's `+0x24`; `other` is `+0x00` unless the row
 says otherwise. A gang's handlers
-(`GangSetMsgHandler`) use their own marshalling for 18, `0x11` and 2 ([AI: gang events](ai.md#gang-events)).
+(`GangSetMsgHandler`) use their own marshalling for 18, `0x11` and 2 ([AI: gang events](ai-gangs.md#gang-events)).
 
 **World objects** (props, weapons, pick-ups; the shared vtable `0x005453a0`) take a message through their `+0x44`
 (`0x00392520`): it first offers it to the object zone's handler (`ObjZone_DispatchMessage`, `0x003982a0`, whose result
@@ -689,14 +689,14 @@ described:
 | character | [Characters](characters.md), [Combat](combat.md) |
 | world | [World objects](objects.md), [World flags](flags.md) |
 | level | [Level loading](level-loading.md) |
-| ai: goals and actions (`Goal*`, `Act*`) | [AI](ai.md#scripted) |
-| gang | [AI](ai.md#gangs) |
+| ai: goals and actions (`Goal*`, `Act*`) | [AI](ai-scripting.md#scripted) |
+| gang | [AI](ai-gangs.md#gangs) |
 | hud | [HUD](hud.md) |
 | config | [Config bindings](../references/bindings/config.md) |
 | sound | [Sound](sound.md) |
 | effects | [Particles](particles.md), [The streamed world](world.md#fog) |
 | camera | [Camera](camera.md) |
-| ai: tactics (`Tactic*`) | [AI](ai.md#tactic-kinds) |
+| ai: tactics (`Tactic*`) | [AI](ai-gangs.md#tactic-kinds) |
 | ai: brains and the rest (`Br*`, ...) | [AI](ai.md#brain) |
 | scene | [Scenes](scenes.md) |
 | script | this page |
@@ -960,7 +960,7 @@ The texts the hint box showed over one play of checkpoint 1 on the original (202
 than the `HUDSetTutorialText` call: a text with `<DISPLAYTIME n>` holds the box for *n* ms first. Updates count from
 the copy's first; the gaps are where the driver was stopped and the game idled, so only differences within one
 stretch mean anything. The hooks are `lua-exec`, `c-call`, `c-call-args`, `game-hint` and `hint-show` of
-`repo:research/traces/patches.toml`. Confirmed (runtime).
+`repo:research/traces/patches/`. Confirmed (runtime).
 
 | Update | Lesson | Shown (and what the script set) |
 | --- | --- | --- |
@@ -1122,14 +1122,14 @@ the disassembly of the scripts (names, ids and values only).
 | 2.1 set-up | `P2.SetupLesson1` | the Warriors remade for the checkpoint, flash command 40 off, both players at 35 % health and demi-god 0.25, scene `l99_c2` | the scene's end | [Scenes](scenes.md) |
 | 2.2 store | `P2.EndStreetScn` | Vermin's talk prompt (message 0), `CfgInventoryCallback(P2.UpdateLootCount)`, `vInsideStore` message 3 | three items of item 10 | [Breakables](combat.md#breakables), [inventory callback](player-state.md#pickup-callback) |
 | 2.3 car | `P2.SetupCars`, 3 s after the third item | `CarMakeGoodAsNew` and `CarSpawnRadio` on the three cars, the locked camera `VerminCar`, Vermin's line; then `CfgSetSteroTheftHandler(P2.CarRadioStolen)` | the first stereo a player steals (`radioNeeded` 2 is never read) | [Cars: windows](cars.md#windows), [the theft](combat.md#stereo-theft), [context kind 3](crimes.md#context-records) |
-| 2.4 mugging | `P2.SetupPeds`, 3 s later | `PoizoCiv` sent to the phone flag `wPhone01` (dead brain, `GoalMoveToUseFlag`), the bums (`GoalBumLogic`, `GoalMoveToUseFlag`), `HuSetMugCallback(P2.PedMugged)` on both players, `SetInterrogateParam` (below), message 18 on `PoizoCiv` (`P2.MugPedDied`: a hint only); after 3 s `FlagNetTraverse(PoizoCiv, 1, 0)` walks him off | the callback with success true; then all-zero `SetInterrogateParam` | [Mugging](combat.md#mugging), [who and the callback](crimes.md#mugging), [AI](ai.md#scripted) |
+| 2.4 mugging | `P2.SetupPeds`, 3 s later | `PoizoCiv` sent to the phone flag `wPhone01` (dead brain, `GoalMoveToUseFlag`), the bums (`GoalBumLogic`, `GoalMoveToUseFlag`), `HuSetMugCallback(P2.PedMugged)` on both players, `SetInterrogateParam` (below), message 18 on `PoizoCiv` (`P2.MugPedDied`: a hint only); after 3 s `FlagNetTraverse(PoizoCiv, 1, 0)` walks him off | the callback with success true; then all-zero `SetInterrogateParam` | [Mugging](combat.md#mugging), [who and the callback](crimes.md#mugging), [AI](ai-scripting.md#scripted) |
 | 2.5 Vermin | `P2.SeeVermin`, 5 s later | the camera `VerminWait`, `ObjShow(dyn_objective_w)`, Vermin a radar objective (texture 27), command 38 on after 2.5 s | `vFenceSection` message 3 → `SetCheckPoint(3)`, `level99_lesson2` | [HUD](hud.md) |
-| 3.1 set-up | `P3.SetupLesson2` | the dealer `FlashDealer` with `GoalDealer(dealer, 0, 17, 0, 0, false)` and messages 1 and 16 (`P3.DealerHit`), Vermin (god mode, unpushable, ungrabbable, fast climber), scene `l99_c3` | the scene's end | [GoalDealer](ai.md#dealer) |
-| 3.2 fences | `P3.EndChapterScene` | `DoorOpenDegree(WXL00, 100)`, command 40 off and 38 on, Vermin (secondary camera target) to `fVerminFencePoizo` | `vFenceJump` 3, the flag's 8, then `vFenceJump2` / `3` texts | [Climbs](characters.md), [AI fence climb](ai.md#path-planning) |
+| 3.1 set-up | `P3.SetupLesson2` | the dealer `FlashDealer` with `GoalDealer(dealer, 0, 17, 0, 0, false)` and messages 1 and 16 (`P3.DealerHit`), Vermin (god mode, unpushable, ungrabbable, fast climber), scene `l99_c3` | the scene's end | [GoalDealer](ai-scripting.md#dealer) |
+| 3.2 fences | `P3.EndChapterScene` | `DoorOpenDegree(WXL00, 100)`, command 40 off and 38 on, Vermin (secondary camera target) to `fVerminFencePoizo` | `vFenceJump` 3, the flag's 8, then `vFenceJump2` / `3` texts | [Climbs](characters.md), [AI fence climb](ai-moving.md#path-planning) |
 | 3.3 climb | `vClimb` 3 (`P3.MoveToClimb`) | Vermin to `fStop2`; `P3.GetBack(1)` 10 s later flashes his radar icon while the player is lost | `fStop2` 8 → the camera `ClimbPoizo`, the players put at `fClimbWarp`; `vFirstClimb` / `vDoneClimb` 3 | [Characters](characters.md) |
 | 3.4 rooftops | `vReachRooftop` / `2` 3 (`P3.PoizoJump`) | `ObjShow(dyn_w_mission)`, the camera `JumpCam`, the players put at `fRoofTeleport`, radar target `fRadarJump` | `vReachWindow` 3 (both players with two, below), then Vermin's run to `fStop3`, his line, `vVerminJumps` 3 | [Jumps](characters.md#jump), [Moving into a pane](objects.md#pane-break) |
 | 3.5 wooden fences | `vAlmostDone` 3 (`P3.WoodenFences`) | the players put at `fBreakFencePoizo` (a held object destroyed), two locked cameras, message 2 on `dyn_door_fence02` and `03` | either fence's message 2 (`P3.FenceBroken`) | [Barriers](objects.md#barriers) |
-| 3.6 dealer | `P3.DealerPoizo`, 0.5 s later | `CfgSetGlobalTimeToLive(1000)`, money raised to at least $20, the dealer's icon `dyn_flashdeal`, `TriggerSphereCfg(dealer, true, 4, 2, 500)` with messages 3 / 4, the scene `l99_c9` preloaded | message 3 on the dealer → `P3.CheckForFlash` every 0.5 s until `InvNumberOf(1)` ≥ 1 | [Buying](ai.md#dealer), [trigger spheres](#triggers) |
+| 3.6 dealer | `P3.DealerPoizo`, 0.5 s later | `CfgSetGlobalTimeToLive(1000)`, money raised to at least $20, the dealer's icon `dyn_flashdeal`, `TriggerSphereCfg(dealer, true, 4, 2, 500)` with messages 3 / 4, the scene `l99_c9` preloaded | message 3 on the dealer → `P3.CheckForFlash` every 0.5 s until `InvNumberOf(1)` ≥ 1 | [Buying](ai-scripting.md#dealer), [trigger spheres](#triggers) |
 | 3.7 flash | `P3.FlashSpeak`, 3 s after the buy | `CfgSetGlobalTimeToLive(10000)`, command 40 on, `PadSetHandlerEx(P3.UseFlash)` | command 40 (d-pad right) → `P3.MissionOver` 1.5 s later | [The flash](combat.md#rage), [How the mission ends](#level99) |
 
 Points an implementer needs:
@@ -1138,8 +1138,8 @@ Points an implementer needs:
   target with 20 s off target allowed ([Mugging](combat.md#mugging)). The mug callback runs for every end of a
   mugging; the lesson ignores a false one.
 - **3.6**: a player hitting the dealer (message 1 or 16) fades out, removes his gang and makes him again after 2 s,
-  the players put back at `fHitDealer`. Triangle in the dealer's 1.75 m buys ([Buying](ai.md#dealer)): $20 for one
-  flash, refused at 3 carried; a dirty dealer would take the money and give nothing.
+  the players put back at `fHitDealer`. Triangle in the dealer's 1.75 m buys ([Buying](ai-scripting.md#dealer)): $20 for
+  one flash, refused at 3 carried; a dirty dealer would take the money and give nothing.
 - **3.7**: the last step waits only for the command; the flash itself heals the player when he is hurt (he is at 35 %
   from 2.1) and does nothing at full health without upgrade (6, 8).
 - **3.4**: the jump is the player's own ([Jumping](characters.md#jump)) and the script never touches the window: the
@@ -1220,9 +1220,9 @@ Nothing on the way slows him for the jump, confirmed (code):
 - The move's corner speed (`MoveAction_CornerSpeed`, `0x002fc158`) simulates only the points that
   `MoveAction_CollectPoints` (`0x002fbd18`) gathers, and that stops at the first link with bit `0x4` or `0x80`
   (a jump or drop link): the take-off point is the last point considered and nothing past the window is, so the
-  jump itself is not a corner ([Moving: the move action](ai.md#move-action)).
+  jump itself is not a corner ([Moving: the move action](ai-moving.md#move-action)).
 - An AI starts a jump at any gait, from a run too, with no run-up test (`Human_BeginJump`, `0x0023db48`), and the
-  landing here is level with the take-off, so it is a jump, not the slowing drop ([Jumps and drops](ai.md#path-planning)).
+  landing here is level with the take-off, so it is a jump, not the slowing drop ([Jumps and drops](ai-moving.md#path-planning)).
 
 **At runtime** (2026-10-11, PCSX2, confirmed (runtime); scenario `vermin_window_jump` in
 `repo:research/traces/scenarios/`, the owner's slot 9 copied, hook `event-call`). The player runs at the window with the
@@ -1251,6 +1251,10 @@ Coney fixes (item 42):
    or `0x80`, so the turn after the landing does not brake the run-up.
 3. Test (level99 checkpoint 3): from `P3.Player2Jumps`, Vermin's gait is Run (and his speed the run speed) for the
    updates before he leaves the ground at the window, and again on the `fStop[4]` leg.
+
+Status: fix 2 is built (`RouteFollower::cornerPoints`); with it the gait 4 order runs him at 7.80 m/s up to both
+take-offs, where before the corner after each landing held him at 2.80 m/s. Test:
+`repo:tests/platform/disc_level99_vermin_fence_test.cpp`, which also checks his fence climb in step 3.2 (issue #232).
 
 **Item 43: where Vermin faces in the fence lesson.** `P3.WoodenFences` (the player entering `vAlmostDone`) flushes
 Vermin and teleports him to `fStop[5]` (29.5, 6.4, 0.3) with heading −1, so **the flag's heading, 273°**; the game's
@@ -1395,11 +1399,294 @@ Points a playthrough test needs:
   have run before the volume is entered. Confirmed (runtime) for the order: `Setup` at update 54185, the preload 67
   updates later.
 
+#### The fight at checkpoint 4: where it starts and who engages {#level80-fight-start}
+
+Play-test finding (2026-10-12): in Coney the Destroyers stand "lined up, rumble-style" when the fight starts, and
+walking past them does nothing until the player hits one. This section is how the original places and starts them,
+read from the disassembly of `level80.lua` and `level80_chapter4.lua` (names, ids and values only) and the code at
+the cited addresses, then watched in PCSX2 2.9.94 (below).
+
+**Who is made, and where** (chapter 4 `Setup`; confirmed (disc) from the scripts):
+
+- `AddCochiseSwan`: gang `CochiseSwan` (kind 0) with Swan (type 6) and Cochise (type 16). `AddDestroyers1` and
+  `AddDestroyers2`: gangs `Destroyers1` and `Destroyers2` (kind 19), six soldiers each (types 192, 194, 197, 199).
+  `HuCreate` puts the twelve in **two tight rows of six** (y 166.2 and 164.8, 0.6-0.7 m apart, all at 270°). That
+  is only where they wait for the scene, which takes them over at once.
+- Both Destroyer gangs are **suspended** (`GangSuspend`), given the turf box `vTurfDestroyers` (as is `CochiseSwan`),
+  barred from picking up weapons (`BrSetThugWantsWeapon` false) and put in god mode with Cochise and Swan. No gang
+  gets a tactic and none a `GangSetThreat`: the threat response stays 2.
+- The player enters `vCochiseSwanTrigger`: scene `l80_c7` with all twenty-one humans, each in `JoinCinematic`.
+
+**The placement at the scene's end** (`EndCochiseSwanScene`): locked camera `FightCam1`; the crew flushed, made
+brain-dead and looking at Swan; then **one `TeleportToFlag` per human**, all in the same call, onto flags that
+`AddFlagsBoxesPaths` makes:
+
+| Who | Flags | Positions (x, y; z 1.3) | Heading |
+| --- | --- | --- | --- |
+| Cochise, Swan | `fCochise`, `fSwan` | (−251.5, 150.4), (−252.1, 151.4) | 75°, 50° |
+| `Destroyers1` 1-6 | `fDestroyer1`-`6` | (−251.0, 151.6), (−249.7, 150.2), (−251.5, 153.1), (−248.1, 150.2), (−249.0, 151.7), (−249.9, 153.0) | 246° |
+| `Destroyers2` 1-6 | `fDestroyer7`-`12` | (−250.9, 154.5), (−246.2, 150.3), (−247.1, 151.8), (−248.0, 153.1), (−249.1, 154.5), (−250.3, 155.9) | 246° |
+| the seven Warriors | `fCS<name>` | about 12 m north-east, round (−238, 164); Cleon on `fCSCleon` (−238.0, 163.2) | 226°-240° |
+
+So the twelve stand in a **staggered block of about 5 × 6 m, 1.4-1.6 m apart, all facing one way**, with Cochise and
+Swan at its south-west corner facing into it. They are placed all at once; nothing is spawned later and there are no
+waves. The flags are the original's own, so for one update the block looks just as planned in the original.
+
+**What makes it a brawl** (the same function, after the teleports): both Destroyer gangs are resumed, then
+`GangMakeEnemies(GangCochiseSwan, GangDestroyers1)` and the same for `GangDestroyers2`. They are **not** made enemies
+of `GangWarriors`. The Warriors stay out of it: Cleon and Vermin get `HuSetNoTarget`, the stick stays locked
+(`TutorialEnable(true)`) and only the attack order is enabled (`TT_8`). The general AI does the rest, with no
+further script call:
+
+1. `Gang_MakeEnemies` (`0x0016acf0`) sets the enemy bit both ways through `Gang_SetEnemyBit` (`0x001690c8`), whose
+   mask writers (`Gang_WriteEnemyMask` `0x00168f08`, `Gang_WriteFriendMask` `0x00168f30`) stamp the gang's change
+   time `+0x34`. Each member's `Brain_MaybeScanEnemies` (`0x0028fa18`) then scans on its next update, because the
+   gang changed since its last scan ([The enemy scan](ai.md#enemy-scan)), five brains an update. Confirmed (code).
+2. Each Destroyer lists Cochise and Swan (in range and in sight); Cochise and Swan list the twelve.
+3. With no tactic, a threat response and a non-empty list, `GangBrain_Think` step 3 (`0x00304608`) pushes the fight
+   (`Brain_PushFightGoal(−1)`: FindEnemy, Melee) on every Destroyer, and the Warrior think's step 1 does the same
+   for Cochise and Swan, who have Warrior brains (type 3) ([Gang soldiers](ai.md#think-gang),
+   [The Warriors](ai.md#think-warrior)). Melee hands out the attack slots: the soldiers who get one fight (goal
+   Fight), the rest wait in Spectate round the two, and a soldier who strays out of `vTurfDestroyers` takes a
+   LeftTurf goal back. Confirmed (code) for the steps; their order confirmed (runtime) below.
+
+**At runtime** (2026-10-12, PCSX2 2.9.94; confirmed (runtime)). The game was entered at checkpoint 4 from a
+pad-patched level80 state by setting the game state's level (record 2) and checkpoint and reloading. Cleon's
+transform was written onto `fCochiseSwan` to enter the trigger, and the scene played out. Once per update, every
+human's position, gang, brain goal stack, target and enemy count were read over PINE (index `+0x92`, brain
+`0x006d53f0` + index × `0x2f0`). Updates count from the trigger:
+
+| Update | What |
+| --- | --- |
+| 27 | everyone in `JoinCinematic` (`l80_c7` starts) |
+| 456 | the scene ends; all twenty-one stand exactly on their flags, with no goals and empty enemy lists |
+| 457-459 | the scans: Cochise and Swan list 12 enemies, each Destroyer 1 or 2 (at most five brains an update) |
+| 458-464 | all twelve Destroyers have FindEnemy, Melee and then Fight (eight, on Cochise or Swan) or Spectate (four); Cochise and Swan fight a Destroyer each |
+| about 495 | the block breaks up: soldiers close in and circle. From then on the twelve mill round the two inside the turf box (over 3,000 sampled updates, x −254 to −244, y 147 to 158), with Fight, Spectate, EngageEnemy, HelpRespond and LeftTurf by turns |
+| until the order | no Destroyer lists or targets any Warrior, and Cleon, idle on his flag, is never approached |
+
+The order (R2 held, right stick up-left at raw (0x18, 0x30); a full (0, 0) diagonal reads as straight up, the
+disabled follow, [Warrior command menu](hud.md#warrior-command-menu)) was given about 40 s into the brawl (run 1).
+Two more runs the same day from the same entry (runs 2 and 3, the order about 15 s and 60 s into the brawl) also
+read, once per update, each human's facing (the transform's quaternion at `0x00714b10` + index × `0x20`; the model's
+forward is its +y axis), enemy list, attack-slot holders (brain `+0x1a4`, at most `+0x1e4`, 4 here) and last scan
+time (`+0x160`). Run 2 has a gap of about 40 updates over the order itself.
+
+`CommandIssued` (confirmed (disc), the script), in order: the text and locks cleared; `GangAddMember(GangWarriors, -1,
+hCochise)` and the same for `hSwan`, both appended to the `Warriors` table; every AI Warrior in that table (Cochise
+and Swan too) `BrFlush`, `BrDead(false)`, `HuForceLook(false)` and `GangAddMember(GangWarriors)` again;
+`GangMakeEnemies(GangWarriors, GangDestroyers1)` and the same for `GangDestroyers2`; `GoalFight(hDestroyer1, player,
+-1)` and `GoalFight(hDestroyer2, player, -1)`; the three turf boxes removed; **`IssueWarriorCommand(1, true)`**; the
+Destroyers' god mode off. The callback runs at the end of the dispatcher, after the player's own order has built the
+attack tactic (`WarriorCommand_Dispatch` `0x0041c4e0` calls `GameState_CallWarriorCommandCallback` last; confirmed
+(code)).
+
+Updates from the order, by run (confirmed (runtime)):
+
+| | Run 1 | Run 2 | Run 3 |
+| --- | --- | --- | --- |
+| Destroyers targeting the idle Cleon by update 30 | 5 (the first at update 1) | 0 | 2 (updates 4 and 25) |
+| ... by update 450 | 6 | 0 | 6 |
+| Destroyers listing one of the seven Warriors, updates 30 / 100 / 250 | 6 at update 4, at least 7 by 64 | 2 / 6 / 11 | 4 / 5 / 11 |
+| Destroyers targeting one of the seven, updates 100 / 250 | about 7 at update 193 | 5 / 6 | 3 / 7 |
+
+In run 2 the "listing" up to update 60 is only the two `GoalFight` soldiers, who list Cleon from the call
+(`Brain_AddEnemy`). Every run ends in a general melee where the block stood, the crew running in under
+`FollowAndAttack`. So **nobody has to hit first**, but how soon a Destroyer turns on the idle player varies from run
+to run: it depends on who faces the crew when the scan runs and on the attack slots (below). Run 1's "each lists
+nine at update 4" held for six of the twelve only.
+
+##### After the order: who engages whom {#level80-after-order}
+
+Answers to the four questions of the implementer of issues #406 and #73 (2026-10-12).
+
+**Cochise and Swan get `FollowAndAttack`, and walk toward the crew for 2 s only when their list is empty.**
+
+- `Gang_AddMember` (`0x00166308`) moving a human out of another gang clears his actions and his target and empties
+  his enemy list (`Brain_ClearActions`, `Brain_SetTarget(0)`, `Brain_UncountAllEnemies`, list `+0x164` cleared).
+  Confirmed (code); at runtime both lists went from 12 to 0 in the update of the callback (runs 1 and 3).
+- `IssueWarriorCommand(1, true)` (`lua_IssueWarriorCommand` `0x003747b8` → `GameState_IssueWarriorCommand`
+  `0x0041c2d0`, the command and *forced*) goes through the dispatcher **forced**, which skips the "same command
+  again only repeats the line" branch ([Warrior commands](ai-gangs.md#warrior-commands), step 2): the attack tactic
+  the player's order built is cleared and a new one made. Its Start calls `WarriorAttackTactic_GiveGoals`
+  (`0x00320618`): every living non-player member but the chief, popped to his goal base, gets `FollowAndAttack` on
+  the chief. Cochise and Swan are members by then, so they get it too. Confirmed (code); `FollowAndAttack` (vtable
+  `0x005405d0`) on both at update 0 or 1 in all three runs.
+- `FollowAndAttackGoal_Process` (`0x002bc198`) fights the best enemy (`Brain_PickBestEnemy`, flags `0xfffffbf9`)
+  within 60 m of the chief; with none and the chief more than 8 m away it pushes **FollowFormation** (0.75 m,
+  2000 ms). At its first run their lists are still empty (their own scan refills them an update or two later), so
+  both walk toward the crew for 2 s (61 updates in run 3), then fight a Destroyer. Runs 1 and 3: FollowFormation
+  from update 1; run 1 moved them about 6 m, run 3 0.7 m and 3 m (held in the crowd). Run 2: Cochise's list had
+  refilled before the goal's first look and he fought at once (Fight at update 14). Confirmed (runtime).
+- So they never leave the fight. The Destroyers keep them listed and scored (their new gang is the Destroyers' enemy
+  too), and right after the order most Destroyers still target them (below). A Coney where they stay in the block is
+  right on that. What to check: the forced re-issue rebuilds the tactic although command 1 is current,
+  `GangAddMember` empties the moved human's list, and the empty-list FollowFormation.
+
+**`GoalFight(Destroyer, Cleon)`: Melee does not keep the target; the score decides.**
+
+- `GoalFight` is `Brain_StartFight` (`0x002b2b90`) → `Brain_Fight(Cleon, −1)`: Cleon is added to the list and made
+  the target, which releases the soldier's slot on Cochise or Swan ([Starting a fight](ai.md#targets)); the stack
+  becomes FindEnemy, Melee, Fight. The Fight goal ends on its first update, Cleon being 12-19 m away (beyond
+  1.1 × far, 5.5 m, [step 4](ai.md#fight-order)). Melee then picks again with `Brain_PickBestEnemy` (`0x0029f230`),
+  as on every run of it ([The Melee goal](ai.md#melee-goal), step 2); Cleon's only extra is the +3 for the previous
+  target. Confirmed (code).
+- With the sight range `R` = 30 m (brain `+0x130`, read 30.0 on all twelve), Cleon at 15-19 m scores about
+  4 × (30 − d) + 20 (a player) + 3 = 67-83, and Cochise or Swan at 1-3 m about 108-116 ([the
+  score](ai.md#enemy-score)), unless `Brain_CanTakeSlotOn` (`0x0028dc80`) makes them −999. Its first argument is the
+  **enemy's** brain: it is false when the enemy's holders (`+0x1a4`) fill his maximum (`+0x1e4`, 4), the scorer is
+  not one of them and no holder is farther from the enemy than the scorer. Confirmed (code). So a `GoalFight`
+  soldier goes for Cleon only when Cochise and Swan both have four holders, all nearer to them than he is.
+- Run 3 (confirmed (runtime)): before the order Swan had four holders, one of them `Destroyers1.Destroyer1`, and
+  Cochise four. `GoalFight` released Destroyer1's place on Swan (three holders at update 0); at update 1 he had taken
+  it back and targeted Swan, so Cleon was his target for less than one update. `Destroyers1.Destroyer2` (in
+  Spectate, holding no slot) ran in on Swan's side and targeted her from update 81. Neither went for Cleon; another
+  soldier of the same gang, Destroyer3, did from update 4, from his own scan. Run 1: Destroyer2 engaged Cleon from
+  update 1 to 137 (EngageEnemy, then Fight), the slots-full case (inferred: the holders were not read in run 1).
+
+**The Destroyers' lists after the order: the field of view, not the scan's timing.**
+
+- The gang-changed rescan runs at once: the order's `GangMakeEnemies` stamps both gangs, and all twelve Destroyers
+  scanned within three updates (run 3: updates 2-3; run 2: the three updates before its first sample), five an
+  update ([The enemy scan](ai.md#enemy-scan)). Confirmed (runtime).
+- What that scan lists is set by sight: beyond the near radius a member must be within half the field of view of the
+  scanner's facing, and the soldiers have 110° (brain `+0x12c` read 1.92 rad on all twelve). The crew stood 13-22 m
+  off, inside the 30 m range. A Destroyer facing them listed all seven (run 3: `Destroyers1.Destroyer3` and
+  `Destroyers2.Destroyer6`, every Warrior within 0-48° of their facing); one fighting Cochise or Swan with his back to
+  them listed none (bearings 93-178°). Over 41 scans in runs 2 and 3, every Warrior a scan newly listed was within
+  55° of the scanner's facing; in 7 of them a Warrior in view was still left out (not traced). The other entries came
+  from `GoalFight` (Cleon) or were already on the list, which a scan keeps while in range and in line of sight
+  ([step 3](ai.md#enemy-scan)). Confirmed (runtime); the ground is open, so no line of sight was in question.
+- The rest are listed later, two ways. A Warrior who attacks a Destroyer is added by the hit (run 2: Vermin on
+  `Destroyers1.Destroyer4` at update 64, Snow on `Destroyers2.Destroyer6` at 76). And the next periodic scan: a
+  fighting soldier waits 2000 ms × 4 = **8 s** (run 2: `Destroyers1`'s scans at 60.33 s, then at 68.34 s), others
+  2 s; by then the crew has run in and stands in front of them (11 of 12 list a Warrior by update 250 in both runs).
+- So a Coney where most Destroyers list only Cochise and Swan after the order is right for the first seconds, if its
+  scan applies the field of view. What must follow is the crew's run-in under `FollowAndAttack` and the hits and
+  rescans that bring the Warriors into the lists.
+
+**HelpRespond's 3 s is a head look; the goal ends with the turn** ([HelpRespond](ai-goals.md#goal-help-respond)).
+Over 866 HelpRespond goals in four level80 traces (run 1 from the scene's end to the order, runs 2 and 3 from 8 s
+and 30 s before the order), the median lasted 2 updates and the longest 51 (1.7 s); none lasted 3 s. Almost all sat
+on a Spectate goal (some on a Fight), which carried on afterwards. Confirmed (runtime).
+
+##### The first updates and the crew's targets: five more runs {#level80-fight-timeline}
+
+Second set of answers for issues #406 and #73 (2026-10-12). Five runs of the original (PCSX2 2.9.94), each from a
+checkpoint-4 state with the player put on `fCochiseSwan` (−236.4, 176.6, 4.3) to fire the trigger, every human read
+once per update over PINE (position, facing, brain goals, target `+0x124`, enemy list, attack-slot holders `+0x1a4`,
+health record `+0x144`, state word). Runs 1-3 enter the trigger at the same moment and share the opening (the game is
+deterministic from a state); runs 4 and 5 enter it 4 s and 7 s later and open differently. The order was given 15,
+40, 60, 25 and 30 s after the scene. Updates count from the scene's end, U from the order (Cochise's first
+`FollowAndAttack`). Confirmed (runtime) unless marked.
+
+**A slot refused leaves no target.** `Brain_SetTarget` (`0x0028cfe0`) stores the nil handle in `+0x124` first and
+writes the new target only when `Brain_ClaimAttackSlot` (`0x0028df30`) succeeds; a claim on a full list fails unless
+the newcomer is nearer than the farthest holder or forced. So a `Brain_Fight(side)` from `Brain_OnViolenceSeen`
+(`0x00291960`) that finds the side full leaves `+0x124` nil, pushes FindEnemy, Melee, Fight anyway, then HelpRespond
+on top (when none sits above the goal base). Nothing gives him a target or a Spectate goal until HelpRespond ends,
+except an event ([HelpRespond](ai-goals.md#goal-help-respond)). Then Fight ends at once (no slot, [step
+2](ai.md#fight-order)), Melee re-picks and, with every enemy at −999, pushes Spectate. Confirmed (code).
+
+**The fight starts within 7-9 updates.** The first Destroyer has FindEnemy and Melee at update 1 or 2, the last at
+update 7 or 9 (runs 1, 4, 5; the earlier run 1 above: all by update 8). Every Destroyer targets Cochise or Swan or has
+Spectate on his stack by update 7, 7 and 9, and all twelve at once from then. From there to update 30 at most one
+Destroyer at a time fails it, for one update (run 4, update 22: a soldier just pushed off Swan's slots, his
+HelpRespond on a targetless Fight lasting one update because he already faced the fight). Later such gaps last longer
+only when the soldier is stunned (state `0x100000`, update 31-52 in run 1: the stack is frozen under the reaction).
+No HelpRespond is pushed before update 13: the help calls come from the first attacks, by which time every soldier
+already has Fight or Spectate, so a HelpRespond lands on Spectate (the condition still holds) or, when it lands on a
+targetless Fight, on a soldier already facing the fight.
+
+**After the order: who the crew attack, and what turns a holder.** At U+300 (crew Warriors only; Cleon in brackets):
+
+| | Run 1 | Run 2 | Run 3 | Run 4 | Run 5 |
+| --- | --- | --- | --- | --- | --- |
+| Destroyers targeting a crew Warrior | 9 | 7 (+2) | 7 | 5 (+1) | 5 |
+| ... listing one of the seven | 12 | 12 | 12 | 12 | 10 |
+| slot holders on Cochise or Swan at U who target a Warrior by U+300 | 5 of 6 | 6 of 6 | 5 of 7 | 4 of 7 | 4 of 6 |
+| crew Warriors who target a holder by U+300 | 3 | 5 | 6 | 6 | 5 |
+
+- **The crew pick by score from their own list; slots on Cochise and Swan play no part.** Each crew Warrior's
+  `FollowAndAttack` picks with `Brain_PickBestEnemy` (flags `0xfffffbf9`) at 9-19 m, within U+0 to U+3 in most cases.
+  The −999 rule asks about the *Destroyer's* attackers, who are few, so a Destroyer holding a slot on Cochise is as
+  good a pick as a free one. The first pick was a holder for 1-4 of the six per run, and often not the nearest
+  Destroyer: the walk over the list stops at the first valid entry after five slots once a winner exists (empty
+  slots count), so list order matters. Confirmed (code) at `0x0029f230`; the picks confirmed (runtime).
+- **A holder turns to a Warrior in four ways**, counted over the 24 holders that did by U+300 (classified from the
+  trace: goal stack, distances, health): Melee's re-pick by score when his fight goal ends (at its 4 s deadline, or
+  the target beyond 5.5 m) and a Warrior now scores higher (13); the [fight goal's re-target](gang-fights.md#switches)
+  (a Warrior within 1.5 m straight ahead, slot forced, at most once a second; 5, often a Warrior running past toward
+  someone else); EngageEnemy's 2 s re-target when the old target is beyond 5 m (2); a hit (event 1 →
+  `Brain_SetTarget(hitter, forced)` when not busy, `GangBrain_OnEvent` `0x00304fa8`; 2). Two more lost their slot
+  first and then picked a Warrior. Inferred from the traces for the split; each path confirmed (code) at the cited
+  addresses. Free soldiers (Spectate or no slot) take a Warrior or Cleon through Melee's or Spectate's own pick.
+- **Cochise and Swan do not go out.** From 1,800 health they lost at most 164 by U+300 (lowest 1,636), were knocked
+  down (state `0x80000`) 0-2 times each for 12-73 updates, and were never knocked out. A knock-down releases no slot:
+  slot claims prune only dead holders and the knock-out alone releases them ([ai.md](ai.md#targets)). Their holders
+  fell from 6-7 at U to 1-6 at U+300, by the holders' own switches.
+
+**Coney.** Checked 2026-10-12 on the preview build (tip `b73ef09d`) with `--play-level level80 --checkpoint 4
+--start -236.4,176.6,4.3,180 --headless --trace-humans`, and in the code on `main` (`0a926664`) and on PR #394's
+branch:
+
+- The set-up matches: the same `HuCreate` rows and scene, then the twenty-one `TeleportToFlag` calls put everyone on
+  the same flags with the same headings (`makeTeleportToFlag`, `repo:src/scripting/level_bindings.cpp`).
+- **Then nothing moves.** From the scene's end to update 3,000 the twelve Destroyers, Cochise and Swan stand on
+  their flags with no goal, no target and an **empty enemy list**: a block of twelve facing one way that never breaks
+  up. That is the "lined up" look. The placement is the original's; what is missing is the brawl that should start
+  one update later.
+- Why, in order:
+    1. On `main`, only the members of a Scout tactic scan (`ScoutTactic::update`); `Brains::update` never does, so
+       `GangMakeEnemies` puts nobody in a list ([Attacking on sight](ai-gangs.md#aggro-on-sight), Coney status). PR #394
+       adds the scan to every brain's update and so fills the lists.
+    2. Neither `main` nor PR #394 has `GangBrain_Think` step 3 or the Warrior think's step 1 (`Brain::think` keeps
+       only the tackle meter and the swap prompt), so a listed enemy is fought only when something else calls
+       `fight`: a hit, an event, a tactic or a script's `GoalFight`.
+    3. After the order: the other ten fight only a Warrior who hits them first (event 1 → `Brain_Fight`), as the
+       scan's lists then hold only Cochise and Swan (inferred from the code). On this level, that is finding B: "they
+       do not attack unless I hit one first". Whether the two `GoalFight` Destroyers take Cleon depends on the
+       slots ([After the order](#level80-after-order)).
+
+**What Coney must do** at this fight's start:
+
+1. Run the enemy scan from every AI brain's update, five brains an update, on the gang-changed trigger (gang `+0x34`
+   against the brain's last scan) as well as the interval. PR #394 adds the scan; check there that
+   `GangMakeEnemies` and `GangMakeFriends` stamp the gang's change time, so the scan runs on the next update rather
+   than up to 2 s later.
+2. Add the think step that turns a list into a fight: a gang soldier (type 2), cop (type 1) or Warrior (type 3) with
+   a threat response, no fight goal, no gang tactic and a non-empty enemy list pushes FindEnemy and Melee
+   (`Brain_PushFightGoal(−1)`) on every think.
+3. Keep the placement: the flags are the original's. Do not scatter or delay the twelve.
+4. Melee's slots, with Spectate for the soldiers who get none, and LeftTurf inside `vTurfDestroyers`
+   ([The fight goal](ai.md#fight), [The Melee goal](ai.md#melee-goal)), so the block breaks into a ring.
+5. A test (`[disc][story]`, on the player's path): level80 from checkpoint 4, walked into `vCochiseSwanTrigger`, the
+   scene skipped. Each Destroyer has pushed FindEnemy and Melee by update 10 of the scene's end; by update 12 all
+   twelve at once target Cochise or Swan or have a Spectate goal, and from then to update 30 at most one fails it at
+   any update ([the timeline](#level80-fight-timeline): 7-9 and at most one, in four runs); within 60 updates at least
+   eight are more than 0.5 m from their flag; no Destroyer targets Cleon before the attack order. After the order,
+   with the player standing still and pressing nothing (eight runs of the original, [above](#level80-after-order)
+   and [the timeline](#level80-fight-timeline)): Cochise and Swan have `FollowAndAttack` within 2 updates; by update
+   300 at least 9 of the 12 Destroyers list one of the seven Warriors (Cleon and the crew), at least 4 target one,
+   at least 3 of the Destroyers that held a slot on Cochise or Swan at the order have targeted a Warrior, and at
+   least 2 crew Warriors have targeted such a holder. Cochise and Swan are never knocked out. How many target the idle
+   player within 30 updates varies (5, 0 and 2), so a test must not require it.
+6. After the order: the forced `IssueWarriorCommand(1, true)` rebuilds the attack tactic although command 1 is
+   current, and gives Cochise and Swan `FollowAndAttack`; `GangAddMember` empties a moved human's enemy list; the
+   enemy scan applies the 110° field of view beyond the near radius ([After the order](#level80-after-order)).
+7. The fight's timing and the slots ([the timeline](#level80-fight-timeline)): the scan on the gang-changed trigger
+   and the think one step in five ([ai.md](ai.md#update)) put FindEnemy and Melee on every Destroyer within 7-9
+   updates, before the first attack's help calls. `Brain_SetTarget` leaves the target nil when the slot claim fails.
+   A standing soldier's turn of more than 15° is one turn clip of about 10 updates, whatever the angle. A crew
+   Warrior's pick ignores whether a Destroyer holds a slot on someone else, and a holder leaves Cochise or Swan
+   through the fight goal's 1.5 m re-target, Melee's re-pick at the fight goal's 4 s deadline, EngageEnemy's re-target
+   and hits.
+
 #### The order at runtime (reference) {#level80-hints}
 
 One play of the whole mission on the original (2026-10-08), entered at checkpoint 1 from a `level99` state by
 setting mode 8's level to `level80` (record 2) and reloading, with the hooks `lua-exec`, `c-call`, `c-call-args`,
-`game-hint` and `hint-show` of `repo:research/traces/patches.toml` and the `call-brains` call hook. Scenes were left
+`game-hint` and `hint-show` of `repo:research/traces/patches/` and the `call-brains` call hook. Scenes were left
 to play out. Input over PINE as a pad: R2 held with the right stick at full deflection for each order (up, down,
 down-left, up-left), the left stick at 0.4-0.7 for walks, triangle, L1, cross, square and the L1/R1 mash. Long walks
 were shortened by **teleports** (`Object_Teleport`, `0x00385bb8`, through the call hook) to just outside each
@@ -1578,7 +1865,7 @@ Coney fixes (item 36):
   are over in about 2 s.
 - **At runtime** (2026-10-11, PCSX2, confirmed (runtime); three plays of the unskipped intro, entered at `level80`
   checkpoint 1 as in [the runtime order](#level80-hints)). The hooks `ember-init`, `ember-update`, `burn-init`,
-  `burn-update`, `fade-flame-init` and `fade-flame-update` of `repo:research/traces/patches.toml` logged the three
+  `burn-update`, `fade-flame-init` and `fade-flame-update` of `repo:research/traces/patches/` logged the three
   explosions about 650 updates into `l80_c1`, 5 and 4 updates apart, with six embers each. The tasks lived as follows:
     - **Embers: 2-5 updates (3-9 ticks)**, never their 25-40. Each starts 0.7 m above its flag (z 6.8 at
       `fExplosion1`) and falls about 0.6 m onto the sill or floor, so it lands almost at once and ends there.
@@ -1622,7 +1909,7 @@ Story mission 3, loaded by `runNextMission` after `level80`: Rembrandt (player 1
 Destroyers' burners in East Coney. Read from the compiled `level87.lua` and its five chapter scripts through
 `coney-tools`' Lua walker (names, ids and values only; our own words); bindings on [Story
 coverage](../references/bindings/story.md#level87). Inferred unless marked. Chapter 5 (the stealth tutorial) is on
-[Stealth](stealth.md#level87), the Destroyers' reactions on [AI](ai.md#aggro-on-sight), the tag itself on
+[Stealth](stealth.md#level87), the Destroyers' reactions on [AI](ai-gangs.md#aggro-on-sight), the tag itself on
 [Crimes](crimes.md#tagging).
 
 - **Each chapter** ends with `SaveLevelData`, `SetCheckPoint(N + 1)`, `ChLoader` (`preLoadFile` of the next chapter
@@ -1638,7 +1925,7 @@ coverage](../references/bindings/story.md#level87). Inferred unless marked. Chap
   moves (`Updater`, `ObjectiveUpdate`) and the next pattern loads (`NextTagPattern`, a `tagN` file).
 - **Paint and cash.** Chapter 1 gives 2 cans (`InvSetSpraycanCharges(0, 2)`) and tops one up when they run out
   (`ch1.CheckSpray`, `ch1.BoostSpray`); from chapter 2 the player buys paint from the spray sellers (`StartFactory`,
-  [GoalDealer](ai.md#dealer)) with mugged cash, and `CheckCash` (every 60 s) and the reminders nag (hints `CASH`,
+  [GoalDealer](ai-scripting.md#dealer)) with mugged cash, and `CheckCash` (every 60 s) and the reminders nag (hints `CASH`,
   `TT_41`, `RM_1`).
 
 | Step | Started by | Hints, objectives, scenes (in order) | Waits for | Ends with |
@@ -1692,47 +1979,101 @@ the player's money, so only the order means anything. Updates count from that ru
 
 #### Coney's run and the fix list {#level87-fixes}
 
-Coney at `f325e018` (release build), started with `--play-level level87 --checkpoint N --pad-pipe` and played by a
-scratch course over the observation (markers, events and Coney's own log lines), the left stick at 35-90 %, climbs
-made by pushing at 90 % and tapping triangle along the level's path nodes. **Checkpoint 1** plays to
-`SetCheckPoint(2)` in 2,773 updates (the ledge climb, the stick game finished on the second spray, the go-to
-objective), and chapter 2 then sets up and plays its scene. **From a checkpoint 2 start** the player has no paint;
-mugging the passers-by near the start paid $0 or $1 eight times and $14 once in 8,900 updates, and the run ended
-there. **Checkpoints 3 to 5** were not driven in this pass.
+Coney at `f325e018` (release build, the planner fixes of #271 included), started with `--play-level level87
+--checkpoint N --pad-pipe` and played by a scratch course over the observation (markers, events and Coney's own log
+lines), the left stick at 25-90 %, climbs made by pushing at 90 % and tapping triangle along the level's path nodes.
+
+- **Checkpoint 1** plays to `SetCheckPoint(2)` in 2,773 updates (the ledge climb, the stick game finished on the
+  second spray, the go-to objective), and chapter 2 then sets up and plays its scene; its first spray is cut short
+  (fix 2).
+- **Checkpoint 2** (a direct start): no paint; mugging the passers-by near the start paid $0 or $1 eight times and
+  $14 once in 8,900 updates (fix 3).
+- **Checkpoint 3**: the order matches the script and the reference: objective `MS_C3_1` (0/3) and the five spots at
+  the start, `SPRAYATTACK` once `EConey_Sub5` has loaded (update 354; the reference's 481 after `SetCheckPoint(3)`
+  include the original's load). The boozer's sphere calls the missing `ch3.BoozerChallenge` at once, set off by the
+  second early Destroyer standing beside him. No paint: three muggings of spawned humans in 6,000 updates paid $0
+  each, so no spot could be sprayed (fixes 3 and 4).
+- **Checkpoint 4**: Poizo's intro path camera, `MS_C4_1` (0/3) at the camera's end (update 335) and `RUNATTACK` 18
+  updates later, as the script orders. The course reached none of the three burners: the street one needs paint, and
+  on the level's path links the two roof spots are reached only through door links (kind `0x10`; for the roof at
+  (442.6, 112.5, 6.5), the bar door `dyn_door_bar_bani` number 11 at (457.1, 127.1), where the player stood pushing
+  for 2,000 updates) or a jump link (kind 4) 4.6 m up. No link joins the street to chapter 5's start: the way out is
+  a scripted door (`Doors.ChA17`, opened by `ch4.Exit`).
+- **Checkpoint 5**: the stealth tutorial runs in the script's order up to the kill lesson (the hide box, its hints,
+  the move to the marker, the scout lesson, then the creep hint at update 737); the player hides and sneaks (clips
+  630, 631, 633). Crept up on the first guard at 25 % stick, the player went into the fight stance 1.5 m from him
+  (clip 380) before any L1, and L1 + square played the normal combo (12, 16, 19); the guard called his gang and the
+  mission failed as spotted (update 975) (fixes 5 and 6).
 
 Fixes, in the order to take them (each one implementer unit):
 
-1. **A spray cut short leaves its spot dead.** Done (issue #330): Coney's cut-short path now gives the tagger
-   event 14 with (tag, 0). Played from checkpoint 1 into 2, triangle at chapter 2's first spot
-   called `HuTag` and Coney logged that the spray was cut short on the next update; no event 14 followed, so
-   `TagFinished` never put the spot's prompt back, and 30 later presses there did nothing. The original's
+1. **A spray cut short leaves its spot dead** (issue #330). Done: Coney's cut-short path now gives the tagger
+   event 14 with (tag, 0). Played from checkpoint 1 into 2, triangle at chapter 2's first spot called `HuTag` and
+   Coney logged that the spray was cut short on the next update; no event 14 followed, so `TagFinished` never put the
+   spot's prompt back, and 30 later presses there did nothing. The original's
    `Tag_UpdatePlayer` (`0x00273c60`) calls `Tag_End` whenever the action is no longer `0x17` or `0x18` and the spray
    flag `0x2000000` is not set while the tag still exists, and `Tag_End` (`0x0022e848`) always gives the tagger event
    `0xe` with finished = `+0x3ba` (0 here). Confirmed (code). Fix: Coney's cut-short path delivers event 14 with
    (tag, 0) as its refusal does. Test: a spray whose intro is cut short runs the script's event-14 handler with 0, and
    a second press at the spot starts a new spray.
-2. **The game hints** 16, 22 and 24/25 above: Coney queues only hint `0x15`. Add the three triggers with their
-   counters and flags in the game state. Hints 22 and 24/25 serve every level ([HUD](hud.md)).
-3. **Attacking on sight**: the Destroyers of chapters 2-4 do not react to the player until hit ([AI: attacking on
-   sight](ai.md#aggro-on-sight), issue #73).
-4. **The tag's look**: the mist and the wall tag (fixes 6 and 7 of [Crimes](crimes.md#tag-coney-fixes), issue #70).
-5. **The spray sellers** after a hit ([GoalDealer](ai.md#dealer), items 7 and 15): chapter 2's first seller is the
-   one the hints point at.
-6. **Routes at checkpoint 4**, out of the street and down from the roofs ([AI pathing](ai-pathing.md)): the planner
-   fixes merged since (#271) are not re-checked on this mission yet.
-7. **A playthrough test** per checkpoint asserting the order above, once 1-6 land
-   ([Testing](../guides/testing.md#playthrough-tests); issue #135 for the rest of the reference order).
+2. **The fight stance cuts the spray's intro short** (why chapter 2's first spray ended, issue #331). Done (issue #353):
+   Coney now makes the fix below. Before the press the player was already in the fight stance (the stance walk clips 380
+   and 384, then the fight idle 358): chapter 2's first spot has a human within 2 m, whom [the
+   stance](combat.md#fight-stance) takes as its target; chapter 1's spots have none. `HuTag` started 334
+   `ANIM_TAGGING_INTRO`, and on the next update Coney's stance walk, with the stick at rest, put the fight idle 358 back
+   over it, so the intro was no longer playing and the spray counted as cut short. In the original nothing of the stance
+   runs during a spray: `Human_UpdateActions` (`0x00254e78`) calls `MiniGame_Update`, which for a tagging player runs
+   `Tag_UpdatePlayer`, and returns at once when that answers 1, which it does from the first update of action `0x17`
+   (when it calls `Tag_StartSprayClips`) to the spray's end; `Player_UpdateActions` (with the stance,
+   `Player_UpdateSprint` `0x0027ce90`) and `Human_ChooseAnimState` come after that return. The movement function moves
+   nothing either: `Tag_StartSprayClips` (`0x00278018`) sets held flag `0x400`, a busy bit ([the locomotion
+   gate](tasks.md#locomotion-gate)), so `Human_FightStanceMove` (`0x00241b90`) sets no velocity while 334 plays.
+   Confirmed (code) at the addresses; the cause in Coney inferred from its log (the clip column) and its code. Fix:
+   while a spray runs (intro, loop and restart clips, and the stick game) the player's stance and anim-state choice do
+   not run, and 334 holds `0x400`. Test: a player in the fight stance (an enemy 1.5 m away, stick at rest) presses
+   triangle at a spot; 334 then 335 play and the stick game starts.
+3. **Spawned humans carry no money.** The original rolls the [starting money](crimes.md#starting-money) in
+   `Human_Init` for every human: `Spawner_MakeHuman` (`0x0016d860`) calls it as `Human_Create` does. Confirmed
+   (code). Coney rolls it only in `HuCreate`, so everyone a spawner makes (the street's civilians of
+   `AddcCivilians`, the bums, the wanderers) has $0, and mugging them pays nothing; the $14 of the checkpoint 2 run
+   came from a scripted human (inferred). This settles the earlier question about the passers-by: $0 is not
+   faithful. Fix: a spawner's human rolls its money and object as a scripted one does, in the same order of draws.
+   Test: a spawner human of a class whose range is 5-20 with no object holds $5-$20.
+4. **A downed human drops no money.** The original's `Human_OnHealthOut` calls `Human_DropCarried` (`0x00232c60`)
+   when a human is knocked out or wounded, which leaves a `dyn_money` pickup of his money ([Dropped when
+   down](crimes.md#down-drop)). Chapter 3's two early Destroyers get $5 each (`EDConstructor`, `HuSetMoney`), the
+   price of a can ([GoalDealer](ai-scripting.md#dealer)), so beating them is the chapter's first paint (inferred from the
+   script); Coney drops nothing. Fix and test on [Crimes](crimes.md#down-drop).
+5. **A hidden player enters the fight stance.** The original's stance starts only when the state word lacks
+   `0x200000`, the hidden state ([Fight stance](combat.md#fight-stance), step 3, `0x0027ce90`), and L1 while hidden
+   picks a target without the lock ([The stealth kill](stealth.md#stealth-kill)). Coney's stance ignores the hidden
+   state, so creeping up on a scout puts the player in the fight walk. Test: a hidden player walking to 1.5 m behind
+   an enemy keeps the stealth walk (633) and has no target until L1.
+6. **The stealth kill** ([Stealth](stealth.md#stealth-kill); not in Coney yet): checkpoint 5's kill lesson needs it.
+   Without it the guard is only hit, calls for help and the mission fails.
+7. **The game hints** 16, 22 and 24/25 above (issue #332): Coney queues only hint `0x15`. Add the three triggers with
+   their counters and flags in the game state. Hints 22 and 24/25 serve every level ([HUD](hud.md)).
+8. **Attacking on sight**: the Destroyers of chapters 2-4 do not react to the player until hit ([AI: attacking on
+   sight](ai-gangs.md#aggro-on-sight), issue #73).
+9. **The tag's look**: the mist and the wall tag (fixes 6 and 7 of [Crimes](crimes.md#tag-coney-fixes), issue #70).
+10. **The spray sellers** after a hit ([GoalDealer](ai-scripting.md#dealer), items 7 and 15): chapter 2's first seller
+    is the one the hints point at.
+11. **A playthrough test** per checkpoint asserting the order above, once 1-10 land (issue #333;
+    [Testing](../guides/testing.md#playthrough-tests); issue #135 for the rest of the reference order).
 
 Open questions:
 
-- Why chapter 2's first spray, in the story path, ended one update after `HuTag` when the same press works in
-  chapter 1 (fix 1 makes it recoverable; a `--trace` of that run, clip column, answers it).
-- Whether passers-by near chapter 2's start paying $0 is faithful: bums are categories 9-11, which carry nothing
-  unless an object is rolled ([Starting money](crimes.md#starting-money)); compare with the runtime money of
-  `level87`'s spawned humans.
 - Whether a crew Warrior can be grabbed and mugged: the course grabbed humans standing beside the start more than
   once, and which human it was is not logged.
-- What the original does with `ch3.BoozerChallenge`, which the script names but never defines.
+- What the original does with `ch3.BoozerChallenge`, which the script names but never defines; its sphere goes off
+  for any human, the second early Destroyer included, as soon as the chapter starts.
+- How the player reaches checkpoint 4's roof burners in the original: whether the bar door (number 11) is open at
+  the checkpoint's start (`OpenDoors(giStart)` opens doors by script name, and which number each name has was not
+  traced) or another way up exists that the path links do not show. The earlier note that the planner found no route
+  out of the street is answered by the path data: no link leaves the street for chapter 5, whose way is the
+  scripted door. A runtime walk of checkpoint 4 in the original settles both.
+- What a direct checkpoint 3 or 4 start holds in the original (paint and money come from the save's inventory; the
+  course started with none).
 
 ### `level34.lua` (mission 4) {#level34}
 
@@ -1816,10 +2157,10 @@ is given.
   `level34_gate`). The level police `RiotCops` (50) start at `P1.HeadToGate` and in `level34_gate`. So the same
   placement decides where every gang and every cop of the riot appears.
 - **What each rioter does** (`F.RiotPedSpawn(human, gang, name)`): violence reaction off, threat and investigate
-  responses 0. While `bRiotPeds` is true, 75 % get `GoalRiot(h, 10, 100, 2, 0, 0)` ([GoalRiot](ai.md#riot)) and 25 %
-  `FlagNetTraverse(h, 1, 100)` (the 34-node pedestrian net that `RunLevel` sets up). While it is false, all walk the
-  net. In both cases 3 in 10 get a random object of `tCivObjects` in hand (`HuPlaceItemInHand`). `bRiotPeds` is set
-  true when `level34.lua` loads. `P1.SetupSection1` sets it false for the intro, and `P1.StoreObjectives` sets it
+  responses 0. While `bRiotPeds` is true, 75 % get `GoalRiot(h, 10, 100, 2, 0, 0)` ([GoalRiot](ai-scripting.md#riot))
+  and 25 % `FlagNetTraverse(h, 1, 100)` (the 34-node pedestrian net that `RunLevel` sets up). While it is false, all
+  walk the net. In both cases 3 in 10 get a random object of `tCivObjects` in hand (`HuPlaceItemInHand`). `bRiotPeds` is
+  set true when `level34.lua` loads. `P1.SetupSection1` sets it false for the intro, and `P1.StoreObjectives` sets it
   true again once the car flippers' scene has run. So from the loot objective on, most of the crowd riots.
 
 **Against `missions.yaml`.** Its notes for `level34` record the intro, the loot, the radio and mugging objectives,
@@ -1829,11 +2170,11 @@ acts find targets. The play-test shows these are also missing:
 | What the original does | Coney now | Page |
 | --- | --- | --- |
 | State 7 places every crowd, gang and police human out of sight on a pedestrian flag | placed as state 8 with value 0: at the player's side, on the subway tracks at the start | [reinforcements](ai-world.md#spawner-reinforcements) |
-| A rioter's smash finds a vandalisable object with a stand point; a loot finds a store flag (activity 14) whose group still has objects | nothing found (the question in `missions.yaml`) | [GoalRiot](ai.md#riot) |
-| The looters wreck zones 51 and 29 (`TacticVandalize`), and the Panzers rob the pharmacy (`TacticSteal`) | both kinds are `StationTactic`: the members stand (`repo:src/ai/story_tactics.cpp`) | [AI: tactics](ai.md#tactics) |
+| A rioter's smash finds a vandalisable object with a stand point; a loot finds a store flag (activity 14) whose group still has objects | nothing found (the question in `missions.yaml`) | [GoalRiot](ai-scripting.md#riot) |
+| The looters wreck zones 51 and 29 (`TacticVandalize`), and the Panzers rob the pharmacy (`TacticSteal`) | both kinds are `StationTactic`: the members stand (`repo:src/ai/story_tactics.cpp`) | [AI: tactics](ai-gangs.md#tactics) |
 | The roof throwers and bar staff throw bottles, speakers, TVs, boxes and drum kits (`GoalStationaryThrower`) | the clip plays, nothing leaves the hand (`repo:src/ai/riot_goals.h`) | [GoalStationaryThrower](../references/bindings/ai.md#goalstationarythrower) |
-| Police: the `Cops` and `RiotCops` spawners (state 7), and at checkpoint 4 a forced crime level with a crime at the cop search flag | the spawners place their cops as above; the dispatch states 4 and 9 never spawn (no crimes are routed: checklist item 13) | [Spawners](ai.md#spawners), [Crimes](crimes.md) |
-| The Warriors' R2 commands | not every command works (checklist item 11) | [AI: Warrior commands](ai.md#warrior-commands) |
+| Police: the `Cops` and `RiotCops` spawners (state 7), and at checkpoint 4 a forced crime level with a crime at the cop search flag | the spawners place their cops as above; the dispatch states 4 and 9 never spawn (no crimes are routed: checklist item 13) | [Spawners](ai-gangs.md#spawners), [Crimes](crimes.md) |
+| The Warriors' R2 commands | not every command works (checklist item 11) | [AI: Warrior commands](ai-gangs.md#warrior-commands) |
 
 **Coney fixes (item 17).**
 
@@ -1843,7 +2184,7 @@ acts find targets. The play-test shows these are also missing:
    name). `FlagNetTraverse` must walk the 34-node net, and `GoalRiot` must roam, decide and leave in the gang's turf
    (`RiotCivs1` has no turf box, so the turf gate always passes).
 3. Give the riot's smash and loot acts their targets: vandalisable world objects with a reachable stand point, and the
-   store flags (activity 14) with objects left in their group ([GoalRiot](ai.md#riot) states 1 and 2).
+   store flags (activity 14) with objects left in their group ([GoalRiot](ai-scripting.md#riot) states 1 and 2).
 4. Build `TacticVandalize` (members wreck the zone's objects; code 1 once nothing is left) and `TacticSteal` in
    place of the standing stand-in.
 5. Let `GoalStationaryThrower`'s throws release their object (the thrown-object physics), so the roof throwers and
@@ -1852,6 +2193,149 @@ acts find targets. The play-test shows these are also missing:
    routed crimes (dispatch states 4 and 9) are item 13's work.
 7. A disc playthrough test from checkpoint 1: after `P1.EndIntroScene`, no `RiotCivs1` human appears in the subway
    while the player is in it, and at least one appears on the street flags once he comes out.
+
+#### Fix list, checkpoint by checkpoint {#level34-fixes}
+
+What stops `level34` from playing start to end in Coney. Found by playing each checkpoint headless on the disc
+(`--play-level level34 --checkpoint N`, a waypoint driver over `--pad-pipe` with the left stick at 60-100 %,
+2026-10-12, a release build of `main` at `f325e018`) and by reading the scripts above. The fixes are in the order an
+implementer can take them, and each says what "done" means. Items 1-3 are shared with every mission that uses
+spawners and link to their subject pages; the rest are this mission's.
+
+**Shared, first.**
+
+1. **The global spawn cap.** Confirmed (code) at `0x00166708` (`Gang_CachePlayerInfo`, called with 1 from
+   `Gangs_Update` `0x0016d170`): a gang's spawners (`GangSpawner_Update`, `0x001681a0`) run only while the game's
+   spawned count is under its cap. For a police gang (gang `+0x2c` = 1) that is the dispatch count `+0x324` under
+   `+0x326` (`SetCopSpawnMax`); for every other gang it is `+0x432` under `+0x434` (`SetSpawnMax`, which `level34`
+   sets to 45). Each spawn adds 1 to `+0x432` (and to `+0x324` in state 6), and `GangSpawner_OnHumanGone`
+   (`0x001672a8`) takes it off again ([Spawners](ai-gangs.md#spawners)). Coney does not read `SetSpawnMax`
+   ([Coney's implementation](ai.md#coney)), so at checkpoint 3 the riot, wanted-gang and police spawners fill the
+   human pool. In 1,500 updates of standing still, `HuCreate` was asked for 240 `RiotCivs1` humans and about 40 of
+   each cop gang. Once the pool was full, most of these calls failed (handle 0) on every update. Done: a test with
+   `SetSpawnMax(n)` and two spawners never has more than *n* spawned humans alive, and a removed human frees its
+   place.
+2. **State 7's placement** ([its fix list](ai-world.md#spawner-reinforcements); item 1 of
+   [the riot's crowd](#level34-start)). It is still a stand-in. At checkpoint 1, eight `RiotCivs1` humans appeared on
+   one subway spot (2.2, −66.7, −6.2), all at the same point. At checkpoint 2, 26 appeared on the street beside the
+   player's start (−56, −143). At checkpoint 4, the wanted gangs and cops appeared 3-6 m from the player
+   (−49, −256) and cut his health from 900 to 445 within 1,500 updates. Every crowd and police squad of the mission
+   is state 7, so this placement decides how hard checkpoints 3 and 4 are.
+3. **A suspended gang still spawns.** Confirmed (code): neither `Gangs_Update` nor `GangSpawner_Update` reads gang
+   `+0xd4` (`GangSuspend`), so the original's `RiotCivs1` spawner keeps making humans during the intro scene. Those
+   humans only stand, because their brains skip their update ([One update](ai.md#update-goals)). Coney spawns them
+   too, which matches the original; keep it.
+
+<!-- markdownlint-disable MD029 -->
+
+**Checkpoint 1** (from the subway to the street, the car flippers, then `vSection2`).
+
+4. Plays: the intro, the stairs, `vEnterRiot`, the fence (climbed with triangle) to `vIntro`, the scene
+   `l34_car_flip`, `P1.StoreObjectives` with the loot objective, and the walk towards `vSection2`. Nothing blocks
+   here once item 2 keeps the crowd out of the subway. The trigger boxes send their message for every human that
+   enters, and the scripts filter by `HuIsAPlayer` or by gang, so that is harmless.
+5. **The looters' tactics** (item 4 of [the riot's crowd](#level34-start)). In Coney, `TacticVandalize` on zone 51
+   answered with code 6 (attacked) within 30 updates, and the intro looters left. In the original, they wreck the
+   zone first and answer 1 once it is empty ([tactic kinds](ai-gangs.md#tactic-kinds)). Done: the looters break zone 51's
+   objects before they leave, unless they are attacked.
+
+**Checkpoint 2** (the stores, the stereo scene, then `vSection3Gate`).
+
+6. Plays: `vCarPoizo` warps the Warrior to `fStereoWarp`, Vermin says his line, and `P1.DoneStereoPoizo` gives the
+   radio objective and its marker. The hardware owner, the Hun store, the molotov thrower and `F.BlowupCar` all run.
+7. **What ends checkpoint 2** (settled; it was the driver). The script waits for message 3 from a player on one of
+   two boxes, both handled by `P1.EnterSection3`: `vSection3`, set by `P1.EnableSections` when section 2 is set up,
+   lies south of the shut gate `DblGt01` (corner (−111.5, −279.4), size 96.5 × 55.2, so `y` up to −224.2) and
+   cannot be reached yet; `vSection3Gate`, set only by `P1.DoneStereoPoizo`, is the strip **in front of** the gate:
+   corner (−109.3, −224, −0.3), size 3.6 × 1.8 × 5, so `x` −109.3 to −105.7 and `y` −224 to −222.2, beside the
+   gate's hinge at (−109.39, −223.97). `P1.EnterSection3` goes on only for a player, while `bObjCompleted` and
+   `bSection3` are false and `sLocation` is not 3; it clears the box's handler, starts the cop scene
+   (`P1.SetupSection3`), sets `sLocation` = 3 and calls `SetCheckPoint(3)`. Confirmed (runtime), PCSX2 2.9.94, a
+   state of `level34` checkpoint 2 loaded through mode 8 (`0x005e5d90 + 0x20` = 4, `W_GameState + 0x33a` = 2),
+   the scripted pad at stick magnitude 0.3-0.7 and the script's globals read over PINE: after the stereo scene
+   (`RadioStolen` set), walking south along `x` −107.5, `bSection3` and `bCopScene` turned true between `y` −222.19
+   and −222.43, the box's edge, and the scene moved the player to (−96.7, −247.2). The earlier Coney run had
+   stopped steering 1.5 m from its waypoint, at `y` −221.5, outside the box. With the waypoint inside the box and a
+   0.3 m arrival radius, Coney called `SetCheckPoint(3)` at (−107.6, −222.2), the same edge (2026-10-12, release
+   build of `68f4e6d3`). Nothing to fix; the playthrough driver must walk into the 1.8 m strip.
+8. **`CarSpawnRadio` runs twice on the same three cars at checkpoint 2**: once from `P1.SetupTier2Encounters` and
+   once from `P1.EnterSection2`. The original does the same, because the second call does not test `radioSpawn`.
+   Coney must make the second call harmless (no second stereo). Open question: what the binding does to a car that
+   already has a radio.
+
+**Checkpoint 3** (the three objectives, then `P1.HeadToGate`).
+
+9. This checkpoint depends on item 1: while the pool is full, nothing else can spawn.
+10. **The three objectives have no disc test that plays them together.** Disc tests exist for the radios and the
+    muggings, but not for the loot ($350 from store items; [Taking owned items](crimes.md#owned-items)) or for the
+    riot meter (200 points: a newsstand gives 3, another world object 1, a pane 2, and car message 25 gives 3). In
+    the driver runs the meter counted (1 % on the first point, then 2 %), so it is wired, but neither total was
+    played to the end. Done: a disc test from checkpoint 3 that takes store items to $350, breaks props and cars to
+    100 % and steals three stereos, then sees `P1.HeadToGate` and `SetCheckPoint(4)`.
+
+**Checkpoint 4** (to `fFinalGate`, then `vNearFuries`).
+
+11. **The way to `fFinalGate` is a fence climb, and the objective waits for the crew** (settled). No gate opens on
+    the way: `DblGt00` (opened by `P2.SetupGate`) is at `x` −111.9, and `DblGt02` (−144.94, −270.82), the gate
+    beside `fFinalGate`, opens only in `P2.AtGate`, after the objective. Past `DblGt00` the street is a dead-end alley,
+    `y` −251.5 to −260.75 at `x` −133, closed by a wall at `x` −135; its south side at `y` −260.75 is a chain-link
+    fence, and the yard behind it holds `fFinalGate`. Confirmed (runtime), PCSX2 2.9.94, a state of checkpoint 4
+    loaded through mode 8, the player put at (−100, −255) over PINE to skip the street fight: walking west at stick
+    0.7 he stopped at (−134.96, −260.75), and south at 0.6 at (−131.5, −260.75); triangle there played the fence
+    climb (anim ids 437, 438, 439, `ANIM_FENCE_CLIMB_STANDING_01` and its two parts, about 2.4 s) and left him at
+    (−131.5, −262.0), from where the flag is a walk; `P2.AtGate` ran (`ParkScene` set) with the other two Warriors
+    beside him. Coney climbs the same fence the same way (the driver taps triangle facing south at (−131.5,
+    −259.3)). What then held Coney is the objective's crew test ([`ObjectiveGoodToGo`](#objective-helper): every
+    Warrior within 15 m of the player at the flag): its two AI Warriors stayed near the start (−55, −252) until about
+    update 1,200, came on slowly and climbed after him, so the hint "You can't leave anyone in your Warparty
+    behind!" showed and `DoorOpen(DblGt02)` came at update 4,307, then `SetCheckPoint(5)` at `vNearFuries` at
+    5,481. How quickly the original's Warriors follow from the start was not measured (the player was moved past the
+    street fight). Done for the driver: climb at (−131.5, −260.75) and wait at the flag until `DoorOpen` of the
+    second gate.
+12. The player died twice in 6,000 updates, killed by the wanted gangs and cops that spawned beside him (item 2), and
+    the level restarted at checkpoint 4. Once item 2 is in, check that he can reach the gate. (In the run of item 11
+    he was not killed.)
+
+**Checkpoint 5** (the park, the Furies, then `vSubwayExit`).
+
+13. Plays: the scene `l34_c4`, `P3.EndParkScene` and the fence Furies. `P3.FuryTimeout` runs 5 s later
+    (`MoveFromFence`, which kills the two Rogues), and Vermin says a line every 15 s, as the script says.
+14. **Coney's Furies hit too early** (measured; the cause is open). The original, confirmed (runtime), PCSX2 2.9.94,
+    checkpoint 5 loaded through mode 8, the scene's end taken as the moment `SubwayScene` is set (`P3.EndParkScene`,
+    which also schedules `P3.FuryTimeout` 5 s on through `P3.ReachFence`), the player left standing at (−207.97,
+    −269.5) with no input, two runs: he turned to a fight stance (anim 359) at update 161, and the **first hit came
+    at update 276 and 294**, both a knock-down (anim 292 `ANIM_REACT_KNOCKDOWN_HIGH_FRONT`, 294 `..._HIGH_BACK`);
+    then a knock-down about every 200 updates, ground hits between, 90 health a hit, from 1,170 to 26 by update
+    1,074 (run 1). Coney (release build of `68f4e6d3`, `--play-level level34 --checkpoint 5 --headless --trace`, no
+    input; `P3.EndParkScene` at step 816): the **first hit at update 91** after the scene, before `P3.FuryTimeout`
+    (update 149) and before any `P3.MoveFromFence` or `P3.EnterDiamond` from a Warrior, so some human attacks before
+    the script makes the Furies enemies of the Warriors (`GangMakeEnemies` and `TacticAttack` are only in those
+    three functions); the hits were small reactions (anims 272, 275, 280), the first time on the ground at update
+    368, health 900 to 216 by update 785. Done: no Fury hits a Warrior before `P3.FuryTimeout`, `P3.MoveFromFence` or
+    `P3.EnterDiamond` runs, and the first hit comes about 270-300 updates after the scene for a player standing still.
+    Next step: find which human hits first in Coney and what makes it hostile. Note: the original's player had 1,170
+    health here and Coney's 900; the original state came from a save with progress, so that may be upgrades, not
+    a difference (not checked).
+15. **The route to `vSubwayExit`** (settled). `P3.GetToSubway` takes message 3 from any Warrior on `vSubwayExit`
+    (corner (−256.6, −203.2, −12.7), size 2 × 3.8 × 3.5, turned about its centre (−255.6, −201.3) by
+    `RotateVolumeBox(0.696, −0.718, 0.718, 0.696)`). Confirmed (runtime), the same state, full stick with **L2 held
+    (sprint)**, waypoints (−230, −270), (−245.1, −249), (−252.4, −222), (−248.5, −213.5), (−254.5, −202.2), (−255.6,
+    −201.3): the scene `l34_c2` started (the player moved into the subway car at (−113, −55, −207)), at update 494
+    with no hit in one run and at update 1,022 after hits (health 1,170 to 515) in another. The leg from
+    (−252.4, −222) must go by (−248.5, −213.5): straight on, the player slides along an obstacle near (−250, −214).
+    Without sprint (full stick) the Furies knocked him down near (−237, −258) or (−251, −223) about update 245, and
+    in one run he died before the box. Coney with the same route and L2 held: `P3.GetToSubway` at update 4,085 and
+    `HUDLaunchMissionComplete` at 4,501 (the first life, standing still, had died at checkpoint 5). Whether
+    `L34_OUT` plays after it was not checked.
+
+<!-- markdownlint-enable MD029 -->
+
+**A playthrough test** ([Testing](../guides/testing.md#playthrough-tests)) for the mission comes last: one driver per
+checkpoint that climbs the fences (checkpoint 1's, and checkpoint 4's at (−131.5, −260.75), item 11), walks the
+flag net (`PedNet_*`) between the boxes above, steps into `vSection3Gate`'s 1.8 m strip (item 7), waits at
+`fFinalGate` for the crew, sprints to `vSubwayExit` (item 15), and asserts the `SetCheckPoint` calls 2-5 and
+`HUDLaunchMissionComplete`. Waypoint routes that already play checkpoints 2, 4 and 5 in Coney are those of items 7,
+11 and 15.
 
 ### `level2.lua` (mission 5) {#level2}
 
@@ -1931,8 +2415,8 @@ from the disassembly of `level3.lua` and its five chapter scripts; bindings on
    **`BrDead(player, true)`**: the player's brain is off, which also [takes his pad away](ai.md#handlers); fade in
    over 2 s; schedules the mimes' door (0.1 s), `ch4.SetupPoizo` (3 s) and the pursuit (4 s).
 3. **`ch4.SetupPoizo`**: a path camera from the intro camera through three points (the second calls Snow's line);
-   every other Warrior: brain flushed, normal mode, a friendly [devil run](ai.md#devil-run) on `roofpath2` against the
-   Warriors' gang (gait 4, pace 4 m, up to 10 m/s, urgency 3) under a `GoalMoveToFlag` to the first chase flag
+   every other Warrior: brain flushed, normal mode, a friendly [devil run](ai-scripting.md#devil-run) on `roofpath2`
+   against the Warriors' gang (gait 4, pace 4 m, up to 10 m/s, urgency 3) under a `GoalMoveToFlag` to the first chase flag
    (gait 5); **the player**: normal mode and `GoalMoveToFlag(player, fRoofChase[1], 4, ...)`. With his brain off the
    player's brain still runs the goals a script pushes (`Brain_UpdateGoals`), so **the AI walks Snow** from the
    warp point (−268.5, 353.6, 16.6) toward the first chase flag (−214.7, 364, 20.2) while the pad is ignored.
@@ -1977,8 +2461,8 @@ goal does not move a brain-dead player, leaves the player standing for good. Con
 behaviour; that Snow's walk crosses `vbStartRail` is inferred from the positions (not seen at runtime).
 
 Engine behaviour this mission needs beyond its bindings: [kind-2 boxes](#triggers), the [rail
-camera](camera.md#rail) mode 0, [GoalDevilRun](ai.md#devil-run) and [message 6](#triggers) from `vGallery` when a
-human standing in it damages something.
+camera](camera.md#rail) mode 0, [GoalDevilRun](ai-scripting.md#devil-run) and [message 6](#triggers) from `vGallery`
+when a human standing in it damages something.
 
 ### `level5.lua` (mission 7) {#level5}
 
@@ -2184,7 +2668,7 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
   object took sends `(human, box, object)` to every enabled kind-0 box the attacker (a thrown object's thrower)
   stands in. Not yet: props, the 30 m alert after it, and the boxes' every-fifth-frame round-robin (Coney updates
   them every frame). **`--script-trace`** (`ScriptSystem::traceCalls()`,
-  [Building](../guides/building.md#tracing)) logs every binding call and every call into the scripts by name,
+  [Running Coney](../guides/running.md#tracing)) logs every binding call and every call into the scripts by name,
   Coney's own tool.
 - **Trigger spheres** (`src/world_objects/trigger_spheres.h`, `TriggerSphereCfg` in `src/scripting/world_bindings.h`):
   a pool of 100, one per object, each checked every fifth frame (index modulo 5) with the boxes' rules, 3, 5 once per
@@ -2317,8 +2801,11 @@ handler component, as for `TriggerSphereEnable`).
   nothing stayed queued; confirmed (runtime) at the show `0x001cdf7c`, as `HintBox_Queue` reads (confirmed (code) at
   `0x001ce484`-`0x001ce52c`). In both runs the queue held no entry past the call that queued it, apart from `TT_26b`
   behind a `<DISPLAYTIME>` hint. What Coney must change for it: [Coney's differences](hud.md#hint-queue-runtime).)
-- **The stale throw hint** (owner checklist item 38): the owner saw `level80`'s `TT_25` (lure the cops with a bottle)
-  stay through step 3.4 until the Wreck'em order. Coney's checkpoint 3 test (teleports to the roof, the scene
-  skipped or played out, the lesson box left and re-entered) shows the box empty when the bottle breaks and `TT_7`
-  next. Not reproduced; the backlog above is the likely cause (a lesson text queued behind another and shown after
-  the next clear).
+- **The stale throw hint** (owner checklist item 38). (Answered for Coney: the owner saw `level80`'s `TT_25` (lure the
+  cops with a bottle) stay through step 3.4 until the Wreck'em order. The likely cause was the hint box's backlog: a
+  lesson text queued behind another, then shown after the next clear. The box no longer queues on a nil-then-text set
+  ([The queue at runtime](hud.md#hint-queue-runtime)), and the bug no longer reproduces on the owner's path.
+  `repo:tests/platform/disc_level80_story_test.cpp` starts the story and jumps to checkpoint 3. It walks into Fox's box
+  and, on foot, up the stairs to the roof, then plays the lesson. The box is empty when the bottle breaks, `TT_7` is
+  the next hint and no lesson text comes back. The original was not traced for this; the order is the one in
+  [the order at runtime](#level80-hints).)

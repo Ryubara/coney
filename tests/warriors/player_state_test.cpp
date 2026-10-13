@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The players' state behind the inventory, statistics, unlockables, stopwatch and crime bindings
-// (docs/research/player-state.md, docs/research/scripting.md#stopwatch, docs/research/ai.md#crimes). Synthetic values.
+// (docs/research/player-state.md, docs/research/scripting.md#stopwatch, docs/research/ai-gangs.md#crimes). Synthetic
+// values.
 #include <cstdint>
 #include <optional>
 #include <string>

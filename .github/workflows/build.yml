@@ -1,6 +1,6 @@
 # Build and test the engine on every supported OS and compiler, under the sanitizers and clang-tidy, and check the
-# formatting. A draft pull request, or one that changes only documentation, skips all but the formatting (see the
-# changes job). Actions are pinned to a full commit SHA; the tag is in the comment beside it.
+# formatting. A draft pull request, or one that changes no engine file (only documentation or the tools), skips all but
+# the formatting (see the changes job). Actions are pinned to a full commit SHA; the tag is in the comment beside it.
 name: build
 
 on:
@@ -19,21 +19,29 @@ on:
 permissions:
   contents: read
 
-# A new push to a pull request cancels its older run; on main every run finishes, so each merge gets a verdict.
+# A new push to a pull request, to main or to a release branch cancels that ref's older run, queued or running: on
+# main a burst of merges otherwise queues one full build each, and those starve the macOS runners every pull request
+# needs. The newest run covers the merges before it, and the nightly run checks main again. Nightly and hand-started
+# runs get a group of their own (the run id), so a push never cancels them and they never cancel each other.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'pull_request' && 'pr' || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: >-
+    ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}-${{
+    (github.event_name == 'pull_request' || github.event_name == 'push') && 'latest' || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
 
 # Linux Clang is 19, not Ubuntu 24.04's default 18: libstdc++ declares std::expected only when __cpp_concepts is at
 # least 202002L, which Clang first reports in version 19, so Clang 18 cannot compile Coney's use of std::expected.
 # clang-tools-19 brings clang-scan-deps-19, which CMake needs to scan C++23 sources for modules when using Clang.
 jobs:
-  # What this run needs (.github/scripts/ci-scope.sh): everything, except on a draft pull request or one that changes
-  # only documentation, where build, sanitizers and clang-tidy are skipped without taking a runner.
+  # What this run needs (.github/scripts/ci-scope.sh): everything, except on a draft pull request or one whose every
+  # changed file is in paths.docs_only or paths.tools_only of .github/conventions.yml (documentation, python/,
+  # .claude/, ...: files the engine's build and tests never read), where build, sanitizers and clang-tidy are skipped
+  # without taking a runner. An engine file (paths.engine: src/, tests/, this workflow, ...) or a file no class names
+  # runs them. docs/guides/building.md#what-a-pull-request-runs has the table.
   changes:
     runs-on: ubuntu-24.04
     outputs:
-      full: ${{ steps.scope.outputs.full }}
+      build: ${{ steps.scope.outputs.build }}
     steps:
       # Depth 2: a pull request's checkout is a merge commit whose first parent (HEAD^1) is the branch it merges into.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -48,7 +56,7 @@ jobs:
   build:
     name: build (${{ matrix.name }})
     needs: changes
-    if: needs.changes.outputs.full == 'true'
+    if: needs.changes.outputs.build == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -111,7 +119,7 @@ jobs:
   sanitizers:
     name: sanitizers (${{ matrix.name }})
     needs: changes
-    if: needs.changes.outputs.full == 'true'
+    if: needs.changes.outputs.build == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -162,7 +170,7 @@ jobs:
   # with no source file to check (a test or data change, say) skips the steps below but the job still passes.
   clang-tidy:
     needs: changes
-    if: needs.changes.outputs.full == 'true'
+    if: needs.changes.outputs.build == 'true'
     runs-on: ubuntu-24.04
     env:
       CC: clang-19

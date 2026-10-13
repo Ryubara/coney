@@ -48,14 +48,28 @@ page](../references/bindings/story.md#level93).
 Research:
 
 - [Story order and what loads each level](../research/scripting.md#run-next-mission)
+- [Pickable objects (the Molotov's class)](../research/objects.md#pickable)
 
 ## Run it in Coney {#run}
 
-With your own disc ([Playing a level](../guides/building.md#playing-a-level)); `--checkpoint` picks where it starts, 1
-to 6:
+With your own disc ([Playing a level](../guides/running.md#playing-a-level)); `--checkpoint` picks where it starts, 1 to
+6:
 
 ```text
 coney --disc /path/to/disc --play-level level93 --checkpoint 1
 ```
+
+Its disc test (needs `CONEY_DISC`; [Building](../guides/building.md)):
+
+```text
+coney_tests "[disc][story][pickup]"
+```
+
+## Notes {#notes}
+
+At checkpoint 1 player 1 picks up each of the six Molotovs on the liquor store's shelves with triangle
+(`tests/platform/disc_level93_molotov_test.cpp`); they were not pickable before, their class `dyn_molotv` being missing
+from the pickable classes. Checkpoints 1 to 6 start headless and windowed with no black screen; the route to the black
+screen a player reported is not known yet.
 
 [All missions](index.md) and [how a mission moves between states](index.md#lifecycle).

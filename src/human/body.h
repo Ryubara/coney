@@ -70,6 +70,26 @@ struct WallFilter {
 /// @orig 0x00347c08 PhysicsMesh_SweepCapsule (unknown)
 [[nodiscard]] bool wallTooLow(anim::Vec3 a, anim::Vec3 b, anim::Vec3 c, float minHeight);
 
+/// Whether a face of unit `normal` can be a wall: not degenerate (length 0.5 or more) and steep (|n.z| at most
+/// kWallNormalZ). Anything flatter is a floor or a ceiling. The one rule every wall test and wallClassOf() share.
+[[nodiscard]] bool wallNormal(anim::Vec3 normal);
+
+/// What a triangle is to the walking sweep, before the move and the sphere's side are known
+/// (docs/research/characters.md#walls, steps 2-3).
+enum class WallClass : std::uint8_t {
+    Disabled,   ///< Not enabled (a door's or a pane's switched off): no test meets it.
+    Degenerate, ///< No usable normal.
+    Floor,      ///< n.z above kWallNormalZ: the ground snap stands on it, the sweep ignores it.
+    Ceiling,    ///< n.z below −kWallNormalZ: the sweep ignores it.
+    LowWall,    ///< Steep, but too low or thin for a walking body (wallTooLow() at BodyTuning::minWallHeight).
+    Wall,       ///< Steep and tall enough: it stops a walking body that moves into it from its front.
+};
+
+/// How the walking sweep classes triangle `index` of `mesh`, through the same rules its wall test applies
+/// (wallNormal(), wallTooLow() at bodyTuning().minWallHeight). Materials a climb passes through are not looked at. The
+/// debug menus colour the collision wireframe by it.
+[[nodiscard]] WallClass wallClassOf(const raycast::CollisionMesh& mesh, std::uint16_t index);
+
 /// The nearest wall a sphere at `centre` of `radius` overlaps: an enabled triangle of `mesh` with |n.z| at most
 /// kWallNormalZ, that the sphere reaches (by the distance to its closest point: face, edge or corner) from its front
 /// (either side for a two-sided one), and that `filter` keeps. Nearness by the closest point is **Coney's choice**:

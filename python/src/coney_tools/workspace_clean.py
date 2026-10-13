@@ -6,6 +6,9 @@ forgotten worktrees fill a drive (it happened: 3 GB were left and builds broke).
 work is merged and deletes the `build/` folders nobody has used for a while; `disk` tells scripts and hooks whether
 enough space is left. Both are described in docs/guides/workspace.md#cleanup.
 
+`clean` also lists the processes left behind, and stops them with `--apply`: agent shells left waiting on a run that
+died, and test runs whose caller is gone (stale_processes.py).
+
 `clean` is a dry run unless asked to `--apply`. What it will never do:
 
 * touch the main checkout, the folder it is run from, or a worktree that holds a `.coney-busy` file (an agent
@@ -17,8 +20,15 @@ enough space is left. Both are described in docs/guides/workspace.md#cleanup.
 * delete a local branch that is not merged in the same sense.
 
 A `build/` folder is generated and ignored by git, so it is deleted from any worktree that is not busy and has not
-been touched for `build_hours`, whatever state its sources are in. "Touched" is the newest modification time of the
-worktree's tracked and untracked files, of its `HEAD` and of the build folder itself.
+been touched for `build_hours` (`workspace.build_idle_hours`, 4 by default), whatever state its sources are in.
+"Touched" is the newest modification time of the worktree's tracked and untracked files, of its `HEAD` and of the
+build folder itself.
+
+**Disk pressure.** When the drive is still under the floor (`workspace.disk_min_free_gb`) after that, `clean` deletes
+the `build/` folders of the other worktrees, oldest last use first, until the free space reaches the floor plus
+`workspace.disk_margin_gb`. Only `build/` folders go in this mode, never a worktree or a source file, so uncommitted
+and unmerged work is safe. A worktree that is busy, that the command runs from, or that holds or waits for a build
+slot (`scratch/build-claims`, kept by the build queue) is skipped.
 """
 
 from __future__ import annotations
@@ -29,11 +39,14 @@ import shutil
 import stat
 import subprocess
 import sys
+import threading
 import time
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
+from coney_tools import stale_processes
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Workspace, load_conventions
 from coney_tools.workspace import find_layout
@@ -41,8 +54,14 @@ from coney_tools.workspace import find_layout
 #: The file an agent creates in its worktree while it works and deletes when it is done.
 BUSY_FILE = ".coney-busy"
 
-#: Default idle hours before a `build/` folder is deleted.
-DEFAULT_BUILD_HOURS = 12.0
+#: Default idle hours before a `build/` folder is deleted (it is only a rebuild; `workspace.build_idle_hours`).
+DEFAULT_BUILD_HOURS = 4.0
+
+#: Default GB above the floor that disk-pressure mode frees (`workspace.disk_margin_gb`).
+DEFAULT_MARGIN_GB = 10.0
+
+#: The build queue's folder under the workspace's `scratch/`: slot claims and waiting tickets, each naming a worktree.
+BUILD_CLAIMS_DIR = "build-claims"
 
 #: Default idle hours before a merged worktree is removed (so one just created from `main` is not taken for merged).
 DEFAULT_WORKTREE_HOURS = 1.0
@@ -57,6 +76,12 @@ _GIB = 1024**3
 
 #: Looks up the head commits of the merged pull requests from a branch; None when GitHub cannot be asked.
 MergedHeads = Callable[[str], list[str] | None]
+
+#: Runs a `gh` command in a folder; replaced by a fake in tests.
+GhRunner = Callable[[list[str], Path], "subprocess.CompletedProcess[str]"]
+
+#: How many merged pull requests the one `gh` call asks for (the repository has a few hundred).
+MERGED_PR_LIMIT = 1000
 
 
 @dataclass(frozen=True)
@@ -85,6 +110,11 @@ class Entry:
     reclaim: int = 0
     #: Why a build folder is kept or deleted, when it exists.
     build_why: str = ""
+    #: The build folder exists and git ignores it, so disk pressure may delete it even from a worktree that stays.
+    build_deletable: bool = False
+    #: Bytes of that build folder and hours since the worktree was last used (set with `build_deletable`).
+    build_bytes: int = 0
+    build_idle: float = 0.0
 
     @property
     def name(self) -> str:
@@ -209,28 +239,59 @@ def list_worktrees(checkout: Path) -> list[GitWorktree]:
     return result
 
 
-def gh_merged_heads(checkout: Path) -> MergedHeads:
+def _run_gh(command: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
+    """Run one `gh` command in `cwd`, capturing its output; raises OSError or SubprocessError when it cannot run."""
+    return subprocess.run(command, cwd=cwd, capture_output=True, text=True, encoding="utf-8", timeout=120, check=False)
+
+
+def gh_merged_heads(checkout: Path, run: GhRunner | None = None, *, limit: int = MERGED_PR_LIMIT) -> MergedHeads:
     """A lookup of the head commits of the merged pull requests from a branch, asked of GitHub with `gh`.
 
-    Returns None for every branch when `gh` is missing or fails once (not signed in, no network): the worktrees
-    that need the answer are then kept, which is the safe side.
+    GitHub is asked once, for the newest `limit` merged pull requests of every branch, the first time any worktree
+    needs an answer; every later branch is answered from that list. (One `gh pr list --head <branch>` per worktree took
+    9.7 minutes for about 90 of them; the single call takes seconds.) A branch the list does not hold has no merged
+    pull request, unless the list was full, when an older one may be missing and the answer is unknown.
+
+    Returns None for every branch when `gh` is missing or fails (not signed in, no network, unreadable answer): the
+    worktrees that need the answer are then kept, which is the safe side. `run` replaces the `gh` runner in tests.
     """
-    state = {"working": shutil.which("gh") is not None}
+    runner = run or _run_gh
+    # Worktrees are judged side by side: the first thread to need the answer asks, the others wait for it.
+    lock = threading.Lock()
+    asked = False
+    heads: dict[str, list[str]] | None = None
+    full = False
+
+    def ask() -> None:
+        # One call, whatever the outcome: a failure is not retried for each of the other worktrees.
+        nonlocal asked, heads, full
+        asked = True
+        if run is None and shutil.which("gh") is None:
+            return
+        command = ["gh", "pr", "list", "--state", "merged", "--limit", str(limit), "--json", "headRefName,headRefOid"]
+        try:
+            done = runner(command, checkout)
+            if done.returncode != 0:
+                return
+            pulls = json.loads(done.stdout)
+            if not isinstance(pulls, list):
+                return
+            found: dict[str, list[str]] = {}
+            for pull in pulls:
+                found.setdefault(str(pull["headRefName"]), []).append(str(pull["headRefOid"]))
+            heads, full = found, len(pulls) >= limit
+        except (OSError, subprocess.SubprocessError, ValueError, KeyError, TypeError):
+            heads = None
 
     def lookup(branch: str) -> list[str] | None:
-        if not state["working"]:
+        with lock:
+            if not asked:
+                ask()
+        if heads is None:
             return None
-        command = ["gh", "pr", "list", "--state", "merged", "--head", branch, "--json", "headRefOid", "--limit", "30"]
-        try:
-            done = subprocess.run(
-                command, cwd=checkout, capture_output=True, text=True, encoding="utf-8", timeout=60, check=False
-            )
-            if done.returncode != 0:
-                raise OSError(done.stderr)
-            return [str(item["headRefOid"]) for item in json.loads(done.stdout)]
-        except (OSError, subprocess.SubprocessError, ValueError, KeyError, TypeError):
-            state["working"] = False
-            return None
+        if branch in heads:
+            return heads[branch]
+        return None if full else []
 
     return lookup
 
@@ -274,6 +335,11 @@ class Settings:
     busy_file: str = BUSY_FILE
     #: Whether to add up the sizes a removal frees (a walk over every build folder; the audit skips it).
     measure: bool = True
+    #: Whether to judge `build/` folders too. That needs every worktree's last activity (a stat of every tracked
+    #: file); the audit only reports worktrees and skips it, reading the activity of a merged one alone.
+    builds: bool = True
+    #: How many worktrees are judged at once (git and the file system are waited for, not computed).
+    workers: int = 8
 
 
 def assess(tree: GitWorktree, settings: Settings) -> Entry:
@@ -287,19 +353,30 @@ def assess(tree: GitWorktree, settings: Settings) -> Entry:
         entry.why = "the folder this runs from"
         return entry
 
-    idle = (settings.now - last_activity(path)) / 3600.0
+    # The last activity walks every file of the worktree, so it is read once and only when a decision needs it.
+    activity: list[float] = []
+
+    def idle() -> float:
+        if not activity:
+            activity.append((settings.now - last_activity(path)) / 3600.0)
+        return activity[0]
+
     build = path / "build"
-    has_build = build.is_dir()
+    has_build = settings.builds and build.is_dir()
     ignored = has_build and _git(path, "check-ignore", "-q", "build").returncode == 0
     build_size = dir_size(build) if has_build and settings.measure else 0
+    if has_build and ignored:
+        entry.build_deletable = True
+        entry.build_bytes = build_size
+        entry.build_idle = idle()
     if has_build and not ignored:
         entry.build_why = "build/ is not ignored by git: left alone"
-    elif has_build and idle < settings.build_hours:
-        entry.build_why = f"build/ used {idle:.1f} h ago"
+    elif has_build and idle() < settings.build_hours:
+        entry.build_why = f"build/ used {idle():.1f} h ago"
     elif has_build:
         entry.delete_build = True
         entry.reclaim = build_size
-        entry.build_why = f"build/ idle {idle:.0f} h"
+        entry.build_why = f"build/ idle {idle():.0f} h"
 
     # Worktree removal: nothing may be lost.
     if tree.locked:
@@ -323,8 +400,8 @@ def assess(tree: GitWorktree, settings: Settings) -> Entry:
         else:
             entry.why = f"merged into {settings.base}"
         if entry.why.startswith(("merged into", "pull request merged")):
-            if idle < settings.worktree_hours:
-                entry.why = f"{entry.why}, but used {idle:.1f} h ago"
+            if idle() < settings.worktree_hours:
+                entry.why = f"{entry.why}, but used {idle():.1f} h ago"
             else:
                 entry.remove = True
                 entry.delete_build = False
@@ -336,7 +413,7 @@ def plan(settings: Settings) -> tuple[list[Entry], list[GitWorktree]]:
     """The entry for each worktree under the workspace's worktrees folder, and the stale ones (folder gone)."""
     trees = list_worktrees(settings.checkout)
     root = settings.root.resolve()
-    entries: list[Entry] = []
+    present: list[GitWorktree] = []
     stale: list[GitWorktree] = []
     for tree in trees[1:]:  # the first is the main checkout
         if not tree.path.resolve().is_relative_to(root):
@@ -344,7 +421,11 @@ def plan(settings: Settings) -> tuple[list[Entry], list[GitWorktree]]:
         if tree.prunable or not tree.path.is_dir():
             stale.append(tree)
         else:
-            entries.append(assess(tree, settings))
+            present.append(tree)
+    # Each worktree is judged by a few git commands and a walk of its files, which wait on the disk and on git, so a
+    # handful at once is several times faster than one after another (90 worktrees took half a minute).
+    with ThreadPoolExecutor(max_workers=max(1, min(settings.workers, len(present)))) as pool:
+        entries = list(pool.map(lambda tree: assess(tree, settings), present))
     return sorted(entries, key=lambda entry: entry.name), stale
 
 
@@ -387,14 +468,25 @@ def run_clean(
     cwd: Path,
     workspace: Path | None,
     apply: bool,
-    build_hours: float = DEFAULT_BUILD_HOURS,
+    build_hours: float | None = None,
     worktree_hours: float = DEFAULT_WORKTREE_HOURS,
     fetch: bool = False,
     *,
+    min_gb: float | None = None,
+    margin_gb: float | None = None,
     now: float | None = None,
     merged_heads: MergedHeads | None = None,
+    shell_hours: float = stale_processes.DEFAULT_SHELL_HOURS,
+    idle_hours: float = stale_processes.DEFAULT_IDLE_HOURS,
 ) -> int:
-    """Run `workspace clean`; 1 when any removal failed, else 0. Prints the report."""
+    """Run `workspace clean`; 1 when any removal or stop failed, else 0. Prints the report: the worktrees and build
+    folders, the disk-pressure deletions when the drive is under its floor, then the stale processes
+    (stale_processes.py).
+
+    `build_hours`, `min_gb` (the floor) and `margin_gb` default to `workspace.build_idle_hours`,
+    `workspace.disk_min_free_gb` and `workspace.disk_margin_gb` of the conventions file, and to the built-in values
+    when that file cannot be read.
+    """
     layout = find_layout(cwd, workspace)
     checkout = layout.checkout
     if not (checkout / ".git").exists():
@@ -407,6 +499,12 @@ def run_clean(
     if _git(checkout, "rev-parse", "--verify", "--quiet", "origin/main").returncode != 0:
         raise ConfigError("origin/main does not exist here, so nothing can be judged merged (git fetch origin)")
 
+    if build_hours is None:
+        build_hours = float(known.build_idle_hours) if known is not None else DEFAULT_BUILD_HOURS
+    if min_gb is None:
+        min_gb = float(known.disk_min_free_gb) if known is not None else DEFAULT_MIN_GB
+    if margin_gb is None:
+        margin_gb = float(known.disk_margin_gb) if known is not None else DEFAULT_MARGIN_GB
     settings = Settings(
         root=layout.workspace / "worktrees",
         checkout=checkout,
@@ -453,7 +551,17 @@ def run_clean(
         print(f"  {'prune' if apply else 'would prune':<13}{tree.path.name}: folder is gone")
     if apply and stale:
         _git(checkout, "worktree", "prune")
+
+    # Disk pressure: a dry run has no new free space to read, so it adds up what the lines above would free.
+    def free_now() -> int:
+        return shutil.disk_usage(layout.workspace).free if apply else free_before + reclaimed
+
+    pressure = _relieve_pressure(entries, layout.workspace, min_gb, margin_gb, free_now, apply)
+    failures += pressure.failures
+    reclaimed += pressure.reclaimed
+    builds += pressure.deleted
     _report_loose(settings.root / checkout.name, {tree.path.resolve() for tree in list_worktrees(checkout)})
+    failures += stale_processes.run(apply, shell_hours, idle_hours)
 
     verb = "Reclaimed" if apply else "Would reclaim"
     print(f"{verb} {_gb(reclaimed)}: {removed} worktree(s) removed, {builds} build folder(s) deleted.")
@@ -461,6 +569,88 @@ def run_clean(
         free_after = shutil.disk_usage(layout.workspace).free
         print(f"Free space: {_gb(free_before)} -> {_gb(free_after)}")
     return 1 if failures else 0
+
+
+@dataclass
+class Pressure:
+    """What disk-pressure mode did: build folders deleted, bytes freed and deletions that failed."""
+
+    deleted: int = 0
+    reclaimed: int = 0
+    failures: int = 0
+
+
+def build_queue_worktrees(claims: Path) -> set[str]:
+    """The names of the worktrees that hold a build slot or wait for one, from the build queue's folder `claims`
+    (slot and folder claims `owner.json`, tickets in every `queue*` folder, each naming its `worktree`). An absent
+    folder (no build queue here) or an unreadable file names nobody."""
+    names: set[str] = set()
+    if not claims.is_dir():
+        return names
+    for file in {*claims.glob("**/owner.json"), *claims.glob("**/queue*/*.json")}:
+        try:
+            data = json.loads(file.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if isinstance(data, dict) and isinstance(data.get("worktree"), str):
+            names.add(data["worktree"])
+    return names
+
+
+def _relieve_pressure(
+    entries: list[Entry],
+    workspace: Path,
+    floor_gb: float,
+    margin_gb: float,
+    free_now: Callable[[], int],
+    apply: bool,
+) -> Pressure:
+    """When the free space is under `floor_gb`, delete `build/` folders, the one last used longest ago first, until it
+    reaches `floor_gb + margin_gb` or none is left. Only build folders of worktrees `assess` found idle-able (not busy,
+    not the one running this, ignored by git) that hold no build slot and wait for none; nothing else is touched."""
+    result = Pressure()
+    free = free_now()
+    if free >= floor_gb * _GIB:
+        return result
+    target = (floor_gb + margin_gb) * _GIB
+    print(
+        f"Disk pressure: {_gb(free)} free is under the {floor_gb:g} GB floor; deleting idle build folders, "
+        f"oldest first, up to {_gb(target)}"
+    )
+    queued = build_queue_worktrees(workspace / "scratch" / BUILD_CLAIMS_DIR)
+    candidates = sorted(
+        (
+            entry
+            for entry in entries
+            if entry.build_deletable
+            and not entry.delete_build
+            and not entry.remove
+            and entry.name not in queued
+            and (entry.path / "build").is_dir()
+        ),
+        key=lambda entry: -entry.build_idle,
+    )
+    for entry in candidates:
+        if free >= target:
+            break
+        problem = _delete_build(entry) if apply else None
+        if problem:
+            result.failures += 1
+            print(f"  {entry.name}: FAILED: {problem}")
+            continue
+        result.deleted += 1
+        result.reclaimed += entry.build_bytes
+        after = free_now() if apply else free + entry.build_bytes
+        verb = "pressure" if apply else "would delete"
+        print(
+            f"  {verb:<13}{entry.name}: build/ last used {entry.build_idle:.1f} h ago, {_gb(entry.build_bytes)}; "
+            f"free {_gb(free)} -> {_gb(after)}",
+            flush=True,
+        )
+        free = after
+    if free < floor_gb * _GIB:
+        print(f"Free space is still under the {floor_gb:g} GB floor: no other build folder can be deleted")
+    return result
 
 
 def _report_loose(folder: Path, known: set[Path]) -> None:

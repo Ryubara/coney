@@ -18,8 +18,8 @@ enemies and wrecked cars.
 | 1 | 🚧 In Progress | Plays from the intro through the fence, the car flippers' scene and the loot objective (store items taken with triangle count toward the $350). Pane, door and car hits reach the riot box as message 6 and a car's damaged parts send message 0x19, so breaking car parts fills the riot meter. Street props (newsstands, crate stacks, benches, trash) take strikes as the original's do: a newsstand or crate stack breaks and goes on the first blow, a bench on the third bare-handed blow, each blow on an intact prop counting once. The bar staff's throws play their clip without a bottle. |
 | 2 | 🚧 In Progress | The rioters roam their gang's turf, decide, pick fights and leave as the original does; their smashing and looting find nothing to act on yet. The radio objective plays: square breaks a radio car's window, triangle starts the theft and anticlockwise stick turns steal the stereo; the three cars' stereos complete it (disc test: the level34 radio objective). A mugging (circle, triangle, the stick held on the mug meter's target) counts toward the muggings bonus through F.PedMugged (disc test: the level34 muggings bonus). |
 | 3 | 🚧 In Progress | The riot waves and the wrecked car run; the forced crime level holds the police's interest. |
-| 4 | 🚧 In Progress | The riot waves run; how the checkpoint ends is not yet played through. |
-| 5 | 🚧 In Progress | The scripts run with no error; the checkpoint is not yet played to its end. |
+| 4 | 🚧 In Progress | Plays to its end with a waypoint driver: through DblGt00, over the alley's chain-link fence with triangle, a wait at fFinalGate until both Warriors are within 15 m, then SetCheckPoint(5) at vNearFuries. The AI Warriors follow late (about 1,200 updates). |
+| 5 | 🚧 In Progress | Plays to HUDLaunchMissionComplete with a sprint route to vSubwayExit; the Furies hit about 90 updates after the scene, before the script sets them attacking (the original: 276-294). |
 
 ## What it needs {#needs}
 
@@ -44,14 +44,15 @@ Research:
 - [The mission's scripts, checkpoint by checkpoint](../research/scripting.md#level34)
 - [Story order and what loads each level](../research/scripting.md#run-next-mission)
 - [The fourth mission's brain and human calls](../research/ai.md#coney)
-- [Spawners](../research/ai.md#spawners)
+- [Spawners](../research/ai-gangs.md#spawners)
 - [The riot's crowd, and what Coney lacks](../research/scripting.md#level34-start)
 - [Cars](../research/cars.md)
+- [Fix list, checkpoint by checkpoint](../research/scripting.md#level34-fixes)
 
 ## Run it in Coney {#run}
 
-With your own disc ([Playing a level](../guides/building.md#playing-a-level)); `--checkpoint` picks where it starts, 1
-to 5:
+With your own disc ([Playing a level](../guides/running.md#playing-a-level)); `--checkpoint` picks where it starts, 1 to
+5:
 
 ```text
 coney --disc /path/to/disc --play-level level34 --checkpoint 1
@@ -66,5 +67,6 @@ coney_tests "[disc][story]"
 ## Open questions {#questions}
 
 - How Coney's objects and stores give the riot's smash and loot acts their targets (the original's are on the AI page).
+- Which human hits the player first at checkpoint 5 in Coney, before the Furies are made enemies (fix list item 14).
 
 [All missions](index.md) and [how a mission moves between states](index.md#lifecycle).

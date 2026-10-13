@@ -57,7 +57,9 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 - **Strafe attacks 31-33** are not built ([Strafe attacks](combat-moves.md#strafe)).
 - **Counters from square and cross** (76 / 9 against a grab or tackle intro) are not built; only R1 at the catch is
   ([Counters](combat-moves.md#counters)).
-- **Tandems** are not built ([Tandems](combat-moves.md#tandem)).
+- **Tandems** are built for any fighter's square, cross and circle, with Coney's choices for the alignment, the
+  grabber's let-go and the target search, and no scoring; the AI's side (its target view's `0xc12200` test and kind
+  22's choice at a rear-held target) is issue #84's ([Coney's tandem](combat-moves.md#tandem-coney)).
 - **The moving attacks' windows** open late: on the disc Coney's run attack 24 switches its shapes on at update 4 and
   off at 9, the walk attack 23 at 6 and 12, against 1 and 7, 4 and 10 at runtime
   ([How a moving attack strikes](combat.md#moving-strikes)). Coney fires the clips' events by the clip time from 0 on
@@ -125,13 +127,16 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 
 - **Sets 4-6** (barrels, bottles, the ghetto blaster): square and cross play the unarmed moves; the original throws
   (505-507, 467-472, 551-553) or smashes (473 / 475) ([Weapons](combat-moves.md#weapons)).
-- **Knife and bottle kills** (484-496) and **throwing a melee weapon** (491 / 502) are not built.
-- **Cross + square with a weapon in hand** (`0x22`) plays the special 653 in Coney (`PlayerCombat::special` has no
-  held-object test), and its phases then refuse the cross's own release, so no bat swing starts. The original's
-  `Player_Special` (`0x00287730`) refuses a pad player holding an object: `0x22` throws the weapon (502 / 491) or,
-  with the throw refused (a target within 2.0 m), starts nothing, and the cross's release plays 36 on the next update.
-  The same test keeps circle + cross's strong grapple from an armed player
-  ([Cross with a bat in hand](combat-moves.md#bat-cross)). Coney: `repo:src/combat/player_combat.cpp`.
+- **Knife and bottle kills** (484-496) and **throwing a melee weapon** (491 / 502, next entry) are not built.
+- **Throwing a melee weapon with cross + square** (`0x22`, 502 / 491): the original throws a knife, baton or bat unless
+  a target is within 2.0 m (then it does nothing, and the cross's release swings 36). Coney refuses the command for
+  a player holding any object, as `Player_Special` (`0x00287730`) does, and never throws: with nobody near the cross's
+  release swings where the original throws. The special 653 and circle + cross's strong grapple no longer start with an
+  object in hand (fixed with issue #228; [Cross with a bat in hand](combat-moves.md#bat-cross)). Coney:
+  `repo:src/combat/player_combat.cpp`.
+- **Clip 34's length** (the bat's square): Coney ends it a step early (a stand-in) so that cross works from k37 as in
+  the original; the clip-end rule behind it is an open question ([Open questions](combat-moves.md#open-questions)).
+  Coney: `repo:src/human/human_animator.cpp`.
 - **Wear**: weapons never break; the original wears them on the `use` event.
 - **Armed chain**: Coney's armed square plays the slot's swing each time; the original alternates 39 / 40 (baton)
   and 45 / 46 (knife) for a square pressed in the swing. With a bat the two agree: 34 has no chain window, so the

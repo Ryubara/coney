@@ -5,9 +5,9 @@ Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038e
 
 ## Purpose
 
-The parts of AI route planning and following that [AI humans](ai.md#path-planning) points here for, split out to keep
-that page under the size limit: the point-in-a-hole test, the waypoint claims, the jump legs and the status of Coney's
-pathing with the fixes in order. The planner itself and the route follower are on [AI humans](ai.md#path-planning).
+The parts of AI route planning and following that [AI humans](ai-moving.md#path-planning) points here for, split out to
+keep that page under the size limit: the point-in-a-hole test, the waypoint claims, the jump legs and the status of Coney's
+pathing with the fixes in order. The planner itself and the route follower are on [AI humans](ai-moving.md#path-planning).
 
 ## A point in a hole {#path-holes}
 
@@ -57,7 +57,7 @@ the addresses cited.
 - **`Nav_ClaimWaypoint(human, node, out-link flags)`** (`0x00293e40`):
     1. When the out-link has kind 4 and the node has a jump partner (`NavNode_GetQueueNode` `0x002510f8`, C byte
        `+0x1e`), the claim goes to the node's jump queue instead (`Queue_ClaimForNode` `0x00293d08`: the node's queue,
-       or a new one of the 20 at `0x006cde30` with its points laid, [Queues](ai.md#queues)); the answer is the queue's.
+       or a new one of the 20 at `0x006cde30` with its points laid, [Queues](ai-moving.md#queues)); the answer is the queue's.
     2. Otherwise an entry for the node is looked for. Held by this human → **granted** (1). Held by a handle that no
        longer resolves → it is taken over, **granted**. Held by another human: when this human is strictly nearer
        the node (3D, from both humans' positions in the position table) it takes the entry, the other's claims are
@@ -66,11 +66,11 @@ the addresses cited.
 - **`Nav_ReleaseClaims(human)`** (`0x00294088`): frees every entry the human holds and takes him out of every jump
   queue (a queue left empty is freed).
 - **Who claims**: `Route_Follow` claims the current waypoint each call (step 5 above), and the corner-speed look-ahead
-  (`MoveAction_CollectPoints` `0x002fbd18`, [The move action](ai.md#move-action)) claims each of the next waypoints it
-  collects. Moving on releases all of the human's claims, unless the new leg is a jump.
+  (`MoveAction_CollectPoints` `0x002fbd18`, [The move action](ai-moving.md#move-action)) claims each of the next
+  waypoints it collects. Moving on releases all of the human's claims, unless the new leg is a jump.
 - **Effect**: of two Warriors walking one route, the farther stops within 2 m of each shared node and waits there
   ("held", route state `+0x16` = 1, speed 0) until the nearer has moved on past it and released it; the steering
-  ([Steering](ai.md#steering) step 15) reads the same "held" flag.
+  ([Steering](ai-moving.md#steering) step 15) reads the same "held" flag.
 - **Busy links**: before a leg of kind 4 or `0x80`, with the detail level `+0x333` < 2, the link must be clear:
   another human on it (`Route_IsLinkBusy` `0x0029a3f0`, `0x0029a6c8`, [Jump legs](#route-jump)) makes this one hold
   the same way. The queue's waiting is inferred.
@@ -196,8 +196,8 @@ small pull request, in the order to do them: the first three are the likely caus
 section it implements and a test written first (synthetic path maps, as in `repo:tests/ai/route_planner_test.cpp`;
 the disc checks print counts only).
 
-1. **A\*'s limits** ([Path planning](ai.md#path-planning) step 4). Coney fails a search once 128 nodes are on the open
-   list (`kMaxSearchNodes`); the original allows 1000 on the open heap and 3000 closed, and fails only when the
+1. **A\*'s limits** ([Path planning](ai-moving.md#path-planning) step 4). Coney fails a search once 128 nodes are on the
+   open list (`kMaxSearchNodes`); the original allows 1000 on the open heap and 3000 closed, and fails only when the
    **route** would have more than 128 nodes. This made a third of `level99`'s reachable pairs fail, so a planner
    that should cross the map found no route (a likely cause of `level87` checkpoint 4's "no route out of the street").
    Also: the 65000 cap is on the running g, not on one edge; distances are 3D, truncated to whole 1/16 m per edge.
@@ -217,7 +217,7 @@ the disc checks print counts only).
    wrapping at 16 bits as the page says). With item 1's limits, the routes of more than 128 nodes among `level80`'s
    seeded pairs fell from 19 to 2: the old use term took 8 off every step, so the cheapest route was the one with the
    most nodes.
-3. **FollowFormation and FollowPlayer** ([The default command: follow](ai.md#warrior-follow)). Coney's
+3. **FollowFormation and FollowPlayer** ([The default command: follow](ai-gangs.md#warrior-follow)). Coney's
    `FollowFormationGoal` ends when the follower has no slot, and a slot is usable only when the leader sees its
    point, so a crew stops as soon as the chief turns a corner or crosses a fence. The original then follows the human
    ahead in the formation's queue (radius 2.5 m) and keeps going. Port, in this order: the follow point with the
@@ -226,24 +226,36 @@ the disc checks print counts only).
    walk distance is within the radius; the speed from `FollowFormation_PickSpeed` (replace the 3 m run/walk
    stand-in) using the walk distance; the speed and radius refreshed once a second or when the leader just stopped;
    the **running move's point** retargeted at every formation plan (and every 6 updates with no slot), never by the
-   goal's once-a-second pass ([Where a running move's point comes from](ai.md#follow-retarget)); while a move left
+   goal's once-a-second pass ([Where a running move's point comes from](ai-gangs.md#follow-retarget)); while a move left
    over from `FollowFormation` runs, `FollowPlayer` does nothing at all (no stand test) until it ends. In
    `FollowPlayerGoal` replace "back to the slot every 31 updates" with the stand-or-follow test (within 9 m, same
    `+0x2d5`, straight walkable line to the leader) and the failure back-off of 31 updates. *Tests*: a chief walking
    round an L-shaped wall keeps his two followers moving (they reach within 2.5 m of the one ahead); a follower
    within 9 m in line stands; one 12 m behind runs (gait 4 speed × f) and slows to the walk near the slot; across a
    kind-8 fence pair the follower climbs. A disc test on `level80` replays the runtime check of
-   [the follow](ai.md#warrior-follow): after "Let's Go" the crew asks 12.81 m/s from the landing, stands while the
+   [the follow](ai-gangs.md#warrior-follow): after "Let's Go" the crew asks 12.81 m/s from the landing, stands while the
    player runs within 9 m, and climbs the crate stack by its `0x80` links when the player stands on it.
-4. **Every 31 updates the aim must stay in sight** ([The move action](ai.md#move-action) step 5). Coney never ends a
-   move because its waypoint went out of a walkable line, so an AI pushed off its line (by steering, a shove, a
+   **Done in Coney** (`FollowFormationGoal`, `FollowPlayerGoal`, `Formation::followPoint` and `retargetMoves`,
+   `RoutePlanner::walkDistance`, `followSpeed`, `MoveAction::retarget`). Two more changes were needed for the disc
+   test: a straight move at 12.81 m/s circled a slot point it could not turn onto and its partner ran off the street
+   behind it, so a move with no route now slows for the turn onto its point (`MoveAction::turnLimit`, the circle part
+   of [the corner speed](ai-moving.md#corner-speed); the rest is item 7); and arrival is now in 3D (in plan within 1
+   m), so a follower below the crate stack no longer counts as arrived on top of it. The `level80` disc test passes:
+   12.81 m/s asked, no follow within 9 m in line, both stand when the player stands, the crate stack climbed. One gap
+   stays: on the run-in Coney's walkable line runs from the landing to the street, so the crew runs off the landing
+   instead of taking the stairs (issue #315; the test prints whether a route was planned). A follower crossing a
+   fence the player jumped ran into it before climbing (issue #236): the fast climber's early climb
+   (`Route_TryClimbNear`, #269) fixes that, and a `level80` disc test puts the player 6 m past the kind-8 fence of
+   nodes 396-403 and checks that both followers climb with fewer updates against it than a failed climb's 31 tries.
+4. **Every 31 updates the aim must stay in sight** ([The move action](ai-moving.md#move-action) step 5). Coney never
+   ends a move because its waypoint went out of a walkable line, so an AI pushed off its line (by steering, a shove, a
    corner cut) walks into the wall until the stuck test, which a wall slide may never trip. Port the check (ends the
    move with `+0x284` = 0, so the goal plans again), the clearing of `+0x284` at the start of every move update, and
    the climb's give-up after 31 tries ending the move without a failure code (Coney sets "stuck", which ends
    FollowFormation). *Tests*: a human whose waypoint is put behind a wall by a teleport ends its move within 31
    updates and the goal replans; a failed climb leaves `moveFailure()` at none.
-5. **Following details** ([Following a route](ai.md#route-follow)). The skip check runs on every **7th** call and its
-   counter restarts whenever the route moves on; the skip needs both links of the waypoint to be kind 1 or 2 (Coney
+5. **Following details** ([Following a route](ai-moving.md#route-follow)). The skip check runs on every **7th** call and
+   its counter restarts whenever the route moves on; the skip needs both links of the waypoint to be kind 1 or 2 (Coney
    only excludes jump legs, so it may skip a climb's or a door's waypoint); there is no turn limit on long legs
    (remove `kLongLeg` / `kSkipTurnLimit`: the original's test always passes); the arrival test subtracts one
    update's travel (speed / 30) for **every** waypoint, in 3D unless within 1 m; a new leg tests climb and jump
@@ -253,27 +265,27 @@ the disc checks print counts only).
    moving on except into a jump, and the corner look-ahead's claims. Replaces the steering's stand-in for "held".
    *Tests*: two humans on one route, the farther holds within 2 m of the shared node until the nearer passes it;
    a vanished holder's claim is taken at once.
-7. **The corner speed** ([The corner speed](ai.md#corner-speed)): the braking distance is the 32 m/s² stopping distance
+7. **The corner speed** ([The corner speed](ai-moving.md#corner-speed)): the braking distance is the 32 m/s² stopping distance
    ((v₁ − v₂)/32 = *t*, *d* = v₁*t* − 16*t*²), not 0.5 s at the first speed; the simulation's sub-steps by the current
    speed (4/5/6/7), points every *k* sub-steps, early stop when aligned; recompute every 11 updates or when the aim
    moves. *Tests*: v₁ 7.8, v₂ 3.4 → *d* = 0.77 m (*t* = 0.1375 s); a straight route keeps the run speed.
-8. **Areas from the ground** ([Path planning](ai.md#path-planning), "A point's area"): the ray starts 0.4 m above the
-   point and is 4 m long (Coney: from the point, 10 m), and the first area of the list whose byte, box (+0.35 m),
+8. **Areas from the ground** ([Path planning](ai-moving.md#path-planning), "A point's area"): the ray starts 0.4 m above
+   the point and is 4 m long (Coney: from the point, 10 m), and the first area of the list whose byte, box (+0.35 m),
    vertex count and flags match is the candidate. *Tests*: a point 3.7 m above a floor finds no area; a point
    0.3 m below a walkway's surface finds the walkway's area.
 9. **The retry without `0x80`** (step 5): the second route is never kept in the original (both g read 0); Coney keeps
    the cheaper one. Keep the first route. **Route building** (step 6): shortcuts never to the last node; the
    trailing cut's line runs from the destination to the node. *Tests*: a chain whose last node links back to the
    first keeps its middle nodes.
-10. **Formation slot points** ([Formations](ai.md#formations)): drop each slot's point to the ground (a ray from 1.9 m
-    above, 5.9 m long, so to 4.0 m below; the point 0.2 m above the hit; no hit keeps the plan point's height) instead
+10. **Formation slot points** ([Formations](ai-gangs.md#formations)): drop each slot's point to the ground (a ray from
+    1.9 m above, 5.9 m long, so to 4.0 m below; the point 0.2 m above the hit; no hit keeps the plan point's height) instead
     of keeping the leader's height, and test usability with the line from the leader (`Human_CanWalkStraightTo`); no
     slot is usable while the leader is airborne or at detail level 3 or more.
     *Test*: a leader on a kerb 0.3 m up gives slots on the road their road height.
-11. **The stuck test** ([The move action](ai.md#move-action) step 9): 3D distance, on the 61st counted update. *Test*: a
-    human climbing a steep heap 0.2 m per 60 updates in height is not stuck.
+11. **The stuck test** ([The move action](ai-moving.md#move-action) step 9): 3D distance, on the 61st counted update.
+    *Test*: a human climbing a steep heap 0.2 m per 60 updates in height is not stuck.
 
 **Gait choice** (when an AI walks, jogs, runs or sprints) is per goal, not per distance, except in the follow code:
-the table in [Gaits and speeds](ai.md#ai-gaits) gives each goal's gait, the corner speed lowers it before tight corners,
+the table in [Gaits and speeds](ai-moving.md#ai-gaits) gives each goal's gait, the corner speed lowers it before tight corners,
 a climb leg runs at gait 4, and `FollowFormation_PickSpeed` blends the leader's speed with the distance (item 3).
 Coney already takes each goal's gait from that table; item 3 is the gap.

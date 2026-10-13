@@ -132,9 +132,12 @@ human's held sound and stop it on clip event `0x45` (and on a cinematic's start 
 `Human_SayAnimLine(h, id, overLine, cut)` (`0x0021f410`) plays the entry's column 1 as the human's speech line
 (`Human_PlaySpeech` `0x0021e400`, or `Human_PlaySpeechCutting` `0x0021e698` when `cut`), at the column's volume, ×
 2 for a player. Nothing when the human cannot speak (`+0x199` clear) or the entry has no sound. While a line plays
-(`+0x178` alive) it plays only when `overLine`, and then stops that line first. As a speech line it follows
-[Speech lines](sound.md#speech): nothing during a cinematic. Where a female id is given, a human with
-`+0x3b8` = 1 uses it instead.
+(`+0x178` alive) it plays only when `overLine`, and then stops that line first **without force**: a line that may
+not be cut (`+0x194` clear: every `HuSpeakNI` line and every Warrior order) is neither stopped nor talked over, so
+the grunt is not heard and that line's script callback still runs when it ends; a cut-able line (`HuSpeak`'s) is
+replaced by the grunt and its callback is lost. Confirmed (code) and (runtime):
+[Cutting in on a line](sound.md#speech-cut-in). As a speech line it follows [Speech lines](sound.md#speech): nothing
+during a cinematic. Where a female id is given, a human with `+0x3b8` = 1 uses it instead.
 
 | `SA` id (female id) | overLine | cut | Notes | Evidence |
 | --- | --- | --- | --- | --- |
@@ -194,7 +197,7 @@ Confirmed (code):
 | the stick game is finished (`Tag_IsComplete`) and was not stopped by the 300-cell cap (game `+0x4fc` = 0) | 83 `tagdone` | `Tag_UpdatePlayer` (`0x00273c60`), not `Tag_End` | none (`+0x19c` is not read) |
 
 1. **Gate.** Nothing unless the tagger is a war chief (`+0x3ac` = 1) and his player's last Warrior command (game state
-   `0x0051489c` `+0x41a` + his `+0x1b0`) is 2, [defend](ai.md#warrior-commands).
+   `0x0051489c` `+0x41a` + his `+0x1b0`) is 2, [defend](ai-gangs.md#warrior-commands).
 2. **Candidates**: the 16 member slots (gang `+0x48`) of the tagger's gang (his brain `+0x20c`), in slot order. A slot
    counts when it holds a human who is not the gang's leader (`Gang_GetLeader` `0x00165678`, normally the tagger
    himself), not a player (`+0x1b0` = −1), not busy (`Human_IsBusy` `0x00228258`: busy means he has a record and either
@@ -497,7 +500,7 @@ Lines played by name or by voice-table hash, not by command, confirmed (code):
 
 - **Gang warning barks** and the spot line: [Sound](sound.md#warning-barks), `Gang_SaySpotLine` (`0x00165d40`).
 - **Banter** (overheard conversations of gangs under the HanginOut, Idle, MoveToFlag, TravelPath, UseFlag and Wander
-  tactics, [AI](ai.md#tactic-kinds)): `Human_SayStateResponse(h, line, near, far)` (`0x002208f0`) takes the line of
+  tactics, [AI](ai-gangs.md#tactic-kinds)): `Human_SayStateResponse(h, line, near, far)` (`0x002208f0`) takes the line of
   the speaker's **state-response** voice set (`+0x3b4`) for `statement` (20) or `response` (21), the line number
   being the gang's counter `+0x60c`, moved on after each response by the responder's line count
   (`Gang_CycleSpotLine`). With the listener nearer (human `+0x334`) than that line's `far` − 20 m and no other near

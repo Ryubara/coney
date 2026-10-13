@@ -29,11 +29,12 @@ constexpr std::string_view kUsage =
     "             [--trace FILE] [--script-trace FILE] [--scene NAME] [--camera X,Y,Z,QX,QY,QZ,QW[,FOV]]\n"
     "             [--freeze-world]] [--sandbox [NAME]]\n"
     "             [--assets DIR]\n"
-    "             [--event-log FILE] [--pad-pipe]\n"
+    "             [--event-log FILE] [--pad-pipe] [--trace-humans FILE]\n"
+    "             [--ai-player] [--ai-seed N]\n"
     "             [--dev-overlay N]\n"
     "             [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]\n"
     "             [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
-    "             [--no-activate]\n"
+    "             [--no-activate] [--window-display DISPLAY]\n"
     "             [--no-audio | --audio-test] [--skip-movies]\n"
     "\n"
     "  --disc PATH        the game's disc: a mounted disc, a folder of its files or an ISO image\n"
@@ -64,6 +65,13 @@ constexpr std::string_view kUsage =
     "                     him with its view facing YAW degrees; a test aid for trace scenarios\n"
     "  --trace FILE       with --play-level: write the player's and the camera's state after every\n"
     "                     step to FILE, one CSV line per step\n"
+    "  --trace-humans FILE with --play-level or --rumble (--trace in a match): write every human's\n"
+    "                     state (position, goals, target, attacks, blocks) after every step to\n"
+    "                     FILE, one CSV row per human per step\n"
+    "  --ai-player        with --rumble: hand player 1 to the AI when the countdown ends, so every\n"
+    "                     fighter is AI-driven (a test aid for comparing gang fights)\n"
+    "  --ai-seed N        with --play-level or --rumble: vary the AI's random draws (0 to\n"
+    "                     2147483647, default 0); the same N plays the same run\n"
     "  --script-trace FILE with --play-level levelN: write every script binding call, and every call\n"
     "                     into the scripts, with its arguments to FILE, one line each\n"
     "  --event-log FILE   write what a player would notice (binding calls, calls into the scripts,\n"
@@ -102,6 +110,11 @@ constexpr std::string_view kUsage =
     "  --show-fps         print the frame and step rates once a second\n"
     "  --no-activate      open the window without taking the keyboard focus from the one in use\n"
     "                     (always so in test mode and for --render-references)\n"
+    "  --window-display DISPLAY\n"
+    "                     open the window centred on a display: its number (1 is the first),\n"
+    "                     part of its name, or portrait (the first taller than wide); shrunk to\n"
+    "                     fit if need be, never taking the keyboard focus. Default:\n"
+    "                     CONEY_WINDOW_DISPLAY, else the system's choice\n"
     "  --no-audio         run with no sound output (no audio device is opened)\n"
     "  --skip-movies      skip every movie at once, as if it had ended (by default they play, in\n"
     "                     test mode too; any pad button skips one, as in the game)\n"
@@ -232,6 +245,12 @@ std::expected<void, Error> checkSandbox(const Options& options) {
     }
     if (options.traceFile.has_value() && !options.playLevel.has_value()) {
         return invalidArgument("--trace needs --play-level: it traces the player");
+    }
+    if (options.aiSeed.has_value() && !options.playLevel.has_value() && !options.rumble.has_value()) {
+        return invalidArgument("--ai-seed needs --play-level or --rumble: it varies the AI of a played level");
+    }
+    if (options.humansTraceFile.has_value() && !options.playLevel.has_value() && !options.rumble.has_value()) {
+        return invalidArgument("--trace-humans needs --play-level or --rumble: it traces the humans of a played level");
     }
     if (options.scriptTraceFile.has_value() && !(options.playLevel && !sandboxOfPlayLevel(*options.playLevel))) {
         return invalidArgument("--script-trace needs --play-level with a level: it traces the level's scripts");
@@ -396,6 +415,8 @@ constexpr std::array<RumbleModeName, 6> kRumbleModes{{
 constexpr int kFirstRumbleArena = 101;
 constexpr int kLastRumbleArena = 137;
 constexpr int kMaxGangSize = 9;
+// The largest `--ai-seed`: the most an int holds, so it parses as the arena and the gang size do.
+constexpr int kMaxAiSeed = 2147483647;
 // The arena and gang size a numeric game type no name lists plays in: the Fight Pen, one a side.
 constexpr int kFallbackArena = 102;
 
@@ -556,6 +577,8 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
     std::optional<std::string> rumbleArg;     // as typed, likewise
     std::optional<std::string> arenaArg;      // as typed, likewise
     std::optional<std::string> gangSizeArg;   // as typed, likewise
+    std::optional<std::string> aiSeedArg;     // as typed, likewise
+    bool aiPlayer = false;                    // `--ai-player`, which goes into the Rumble launch
     std::optional<std::string> cameraArg;     // as typed, likewise
     std::optional<std::string> renderSizeArg; // as typed, likewise
     for (std::size_t i = 0; i < args.size(); ++i) {
@@ -624,6 +647,11 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             }
         } else if (arg == "--trace") {
             if (auto value = takeValue(args, i, options.traceFile, "--trace", "the path of a CSV file"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--trace-humans") {
+            if (auto value = takeValue(args, i, options.humansTraceFile, "--trace-humans", "the path of a CSV file");
+                !value) {
                 return std::unexpected(std::move(value.error()));
             }
         } else if (arg == "--script-trace") {
@@ -781,6 +809,12 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             options.audioTest = true;
         } else if (arg == "--no-activate") {
             options.noActivate = true;
+        } else if (arg == "--window-display") {
+            if (auto value = takeValue(args, i, options.windowDisplay, "--window-display",
+                                       "a display: its number, part of its name, or portrait");
+                !value) {
+                return std::unexpected(std::move(value.error()));
+            }
         } else if (arg == "--show-fps") {
             options.showFps = true;
         } else if (arg == "--checkpoint") {
@@ -802,6 +836,20 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             if (auto value = takeValue(args, i, arenaArg, "--arena", "an arena's level number"); !value) {
                 return std::unexpected(std::move(value.error()));
             }
+        } else if (arg == "--ai-player") {
+            if (aiPlayer) {
+                return invalidArgument("--ai-player given twice");
+            }
+            aiPlayer = true;
+        } else if (arg == "--ai-seed") {
+            if (auto value = takeValue(args, i, aiSeedArg, "--ai-seed", "a whole number from 0"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+            auto seed = parseRange("--ai-seed", aiSeedArg.value_or(std::string{}), 0, kMaxAiSeed);
+            if (!seed) {
+                return std::unexpected(std::move(seed.error()));
+            }
+            options.aiSeed = static_cast<std::uint32_t>(*seed);
         } else if (arg == "--gang-size") {
             if (auto value = takeValue(args, i, gangSizeArg, "--gang-size", "the fighters a side"); !value) {
                 return std::unexpected(std::move(value.error()));
@@ -855,6 +903,9 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
     if (!rumbleArg && (arenaArg || gangSizeArg)) {
         return invalidArgument("--arena and --gang-size need --rumble: they set the match it starts");
     }
+    if (!rumbleArg && aiPlayer) {
+        return invalidArgument("--ai-player needs --rumble: it hands player 1 of a match to the AI");
+    }
     if (rumbleArg) {
         std::optional<int> arena;
         std::optional<int> gangSize;
@@ -876,7 +927,13 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
         if (!launch) {
             return std::unexpected(std::move(launch.error()));
         }
+        launch->aiPlayer = aiPlayer;
         options.rumble = *launch;
+        // `--trace FILE` in a Rumble match traces every human: there is no single player level to trace the player of.
+        if (options.traceFile.has_value() && !options.humansTraceFile.has_value()) {
+            options.humansTraceFile = std::move(options.traceFile);
+            options.traceFile.reset();
+        }
     }
     if (auto combined = checkCombinations(options); !combined) {
         return std::unexpected(std::move(combined.error()));

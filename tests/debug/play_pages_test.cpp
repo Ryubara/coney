@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The pages over a play mode (Player, Camera, Spawner, HUD, Debug draw) and the Levels page's levels and sandboxes,
 // driven through the menu model over a fake PlayControls: no game, no disc.
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
@@ -8,6 +9,7 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -21,6 +23,7 @@
 #include "debug/menu_model.h"
 #include "debug/play_controls.h"
 #include "hud/hud.h"
+#include "human/climb.h"
 
 using coney::debug::DebugServices;
 using coney::debug::DebugSession;
@@ -80,6 +83,23 @@ class FakePlay final : public coney::debug::PlayControls {
         return {};
     }
 
+    // AI fighters: spawned ones are recorded with the model each was asked for ("" for the scene's own).
+    [[nodiscard]] bool canSpawnFighter() const override { return true; }
+    std::expected<void, coney::Error> spawnFighter(coney::anim::Vec3 at, float facing) override {
+        return spawnFighterAs(at, facing, {});
+    }
+    [[nodiscard]] std::vector<std::string> fighterModels() const override { return models; }
+    std::expected<void, coney::Error> spawnFighterAs(coney::anim::Vec3 at, float facing,
+                                                     std::string_view model) override {
+        if (fighterLimit && fighters.size() >= *fighterLimit) {
+            return std::unexpected(coney::Error{coney::ErrorCode::InvalidArgument, "no room"});
+        }
+        fighters.push_back(SpawnedFighter{at, facing, std::string(model)});
+        return {};
+    }
+    [[nodiscard]] std::size_t fighterCount() const override { return fighters.size(); }
+    void clearFighters() override { fighters.clear(); }
+
     // The HUD the HUD page acts on, when `withHud`.
     [[nodiscard]] coney::hud::Hud* hud() override { return withHud ? &hudObject : nullptr; }
 
@@ -98,6 +118,14 @@ class FakePlay final : public coney::debug::PlayControls {
     std::vector<coney::debug::CharacterChoice> choices;
     int type = 32;
     int changes = 0;
+    struct SpawnedFighter {
+        coney::anim::Vec3 feet;
+        float heading;
+        std::string model;
+    };
+    std::vector<SpawnedFighter> fighters;
+    std::vector<std::string> models;
+    std::optional<std::size_t> fighterLimit;
 };
 
 // The services of a session over `play` (null: no player).
@@ -131,8 +159,8 @@ TEST_CASE("the play pages say so when no player plays", "[debug]") {
     const auto titles = session.model().pageTitles();
     CHECK(titles == std::vector<std::string>{"Time", "Tunables", "Natives", "Lua console", "Cheats", "Levels",
                                              "Missions", "Player", "Camera", "Spawner", "AI fighters", "HUD",
-                                             "Debug draw", "Display", "Audio", "Input"});
-    CHECK(session.model().openPage("Debug draw")->items().size() == 6);
+                                             "Debug draw", "Entity inspector", "Display", "Audio", "Input"});
+    CHECK(session.model().openPage("Debug draw")->items().size() == 11);
 }
 
 TEST_CASE("the HUD page switches the HUD's parts, sets the panel's values and fires messages", "[debug][hud]") {
@@ -254,11 +282,12 @@ TEST_CASE("the Spawner page puts objects in front of the player and clears them"
     itemOn(*page, "Clear spawned").run();
     CHECK(play.spawned.empty());
 
-    // A level cannot spawn yet: the page says so instead of offering objects.
+    // A mode that cannot spawn: the page says so instead of offering objects.
     play.spawnable = false;
-    const auto level = session.model().openPage("Spawner");
-    REQUIRE(level->items().size() == 1);
-    CHECK(level->items().front().label == "Spawning");
+    const auto unable = session.model().openPage("Spawner");
+    REQUIRE(unable->items().size() == 1);
+    CHECK(unable->items().front().label == "Spawning");
+    CHECK(unable->items().front().watch() == "not in this mode");
 }
 
 TEST_CASE("every spawnable object is a primitive a sandbox can build", "[debug][sandbox]") {
@@ -270,6 +299,19 @@ TEST_CASE("every spawnable object is a primitive a sandbox can build", "[debug][
         CHECK(p.size.y > 0.0F);
         CHECK(p.surface.solid);
     }
+    // The crate and the wall are climbable walls and the fence a climbable fence, as the parkour course's are.
+    // REQUIRE ends the test case when the name is missing; nothing after FAIL could be reached (MSVC C4702).
+    const auto find = [](std::string_view name) {
+        const std::vector<coney::debug::Spawnable>& all = coney::debug::spawnables();
+        const auto it = std::find_if(all.begin(), all.end(), [name](const coney::debug::Spawnable& spawnable) {
+            return spawnable.name == name;
+        });
+        REQUIRE(it != all.end());
+        return it->primitive;
+    };
+    CHECK(find("Crate (1 m)").surface.flags == coney::human::kTriangleClimbable);
+    CHECK(find("Wall (2.5 m)").surface.flags == coney::human::kTriangleClimbable);
+    CHECK(find("Fence (1.2 m)").surface.material == coney::human::kClimbableMaterial);
     const coney::anim::Vec3 ahead = coney::debug::spotAhead({1.0F, 1.0F, 2.0F}, 0.0F, 3.0F);
     CHECK(ahead.x == Catch::Approx(1.0F));
     CHECK(ahead.y == Catch::Approx(4.0F));
@@ -392,7 +434,7 @@ class FakeInput final : public coney::InputSource {
 
 } // namespace
 
-TEST_CASE("the Player page switches the noclip with a notice, and its hotkey only while that is on",
+TEST_CASE("the Player page switches the noclip with a notice, and its hotkey (on by default) until switched off",
           "[debug][noclip]") {
     TunableRegistry tunables;
     FakePlay play;
@@ -423,14 +465,8 @@ TEST_CASE("the Player page switches the noclip with a notice, and its hotkey onl
     }
     CHECK(session.cornerLines().empty());
 
-    // The hotkey is off by default: the chord is the game's.
-    CHECK_FALSE(itemOn(*page, "Noclip hotkey (R3 + D-pad left)").getBool());
-    CHECK(frameHolding(coney::pad::kR3 | coney::pad::kLeft) == (coney::pad::kR3 | coney::pad::kLeft));
-    CHECK_FALSE(play.flying);
-    (void)frameHolding(0);
-
-    // On, each press toggles the noclip, and the game never sees the chord.
-    itemOn(*page, "Noclip hotkey (R3 + D-pad left)").setBool(true);
+    // The hotkey is on by default: each press of the chord toggles the noclip, and the game never sees the chord.
+    CHECK(itemOn(*page, "Noclip hotkey (R3 + D-pad left)").getBool());
     CHECK(frameHolding(coney::pad::kR3) == coney::pad::kR3);
     CHECK(frameHolding(coney::pad::kR3 | coney::pad::kLeft) == 0);
     CHECK(play.flying);
@@ -443,9 +479,76 @@ TEST_CASE("the Player page switches the noclip with a notice, and its hotkey onl
     CHECK_FALSE(play.flying);
     CHECK(session.cornerLines() == std::vector<std::string>{"Noclip off"});
 
+    // Switched off, the chord is the game's again.
+    (void)frameHolding(0);
+    itemOn(*page, "Noclip hotkey (R3 + D-pad left)").setBool(false);
+    CHECK(frameHolding(coney::pad::kR3 | coney::pad::kLeft) == (coney::pad::kR3 | coney::pad::kLeft));
+    CHECK_FALSE(play.flying);
+    (void)frameHolding(0);
+    itemOn(*page, "Noclip hotkey (R3 + D-pad left)").setBool(true);
+
     // A mode that cannot noclip is left alone, and says so.
     (void)frameHolding(0);
     play.noclipHere = false;
     (void)frameHolding(coney::pad::kR3 | coney::pad::kLeft);
     CHECK_FALSE(play.flying);
+}
+
+TEST_CASE("the AI fighters page spawns the amount asked for, as the model picked", "[debug][fighters]") {
+    TunableRegistry tunables;
+    FakePlay play;
+    play.models = {"model_a", "model_b", "model_c"};
+    DebugSession session(tunables, servicesOver(&play), nullptr);
+    const auto page = session.model().openPage("AI fighters");
+    REQUIRE(page != nullptr);
+
+    // The picker: Random first, then the models.
+    const MenuItem& model = itemOn(*page, "Model");
+    REQUIRE(model.choices.size() == 4);
+    CHECK(model.choices[0] == "Random");
+    CHECK(model.choices[2] == "model_b");
+    const MenuItem& amount = itemOn(*page, "Amount");
+    CHECK(amount.getNumber() == 1.0);
+
+    // One click, a chosen model, three fighters: each is that model, all facing the player (heading 0, so 180).
+    model.setChoice(2);
+    amount.setNumber(3.0);
+    itemOn(*page, "Spawn fighters").run();
+    REQUIRE(play.fighters.size() == 3);
+    for (const auto& fighter : play.fighters) {
+        CHECK(fighter.model == "model_b");
+        CHECK(fighter.heading == 180.0F);
+    }
+    // They stand apart, in a row across the player's line, 4 m ahead (+y).
+    CHECK(play.fighters[0].feet.y == Catch::Approx(4.0F));
+    CHECK(play.fighters[0].feet.x != play.fighters[1].feet.x);
+
+    // Random: each gets its own draw from the list, so a run of them is not all one model.
+    play.fighters.clear();
+    model.setChoice(0);
+    amount.setNumber(12.0);
+    itemOn(*page, "Spawn fighters").run();
+    REQUIRE(play.fighters.size() == 12);
+    std::set<std::string> seen;
+    for (const auto& fighter : play.fighters) {
+        CHECK_FALSE(fighter.model.empty());
+        seen.insert(fighter.model);
+    }
+    CHECK(seen.size() > 1);
+}
+
+TEST_CASE("the AI fighters page stops at the first fighter that cannot be spawned and says so", "[debug][fighters]") {
+    TunableRegistry tunables;
+    FakePlay play;
+    play.fighterLimit = 2;
+    DebugSession session(tunables, servicesOver(&play), nullptr);
+    const auto page = session.model().openPage("AI fighters");
+    REQUIRE(page != nullptr);
+    // No model list here: only Random, which means the scene's own character.
+    CHECK(itemOn(*page, "Model").choices == std::vector<std::string>{"Random"});
+    itemOn(*page, "Amount").setNumber(5.0);
+    itemOn(*page, "Spawn fighters").run();
+    CHECK(play.fighters.size() == 2);
+    CHECK(play.fighters[0].model.empty());
+    CHECK(session.log().last(1).front() == "fighters: 2 spawned of 5");
 }

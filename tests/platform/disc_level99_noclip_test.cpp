@@ -95,3 +95,50 @@ TEST_CASE("the disc's level99: the noclip flies player 1 up and across, hovers, 
     CHECK(human.position().z < flown.z - 4.0F);
     CHECK(play->player().respawns() == 0);
 }
+
+namespace {
+
+// The hotkey's pad: the intro scene skipped, then R3 + d-pad left tapped together twice, a second apart.
+constexpr std::uint64_t kChordOnAt = 300;
+constexpr std::uint64_t kChordOffAt = 360;
+constexpr std::string_view kChordPad = "100 tap cross\n"
+                                       "300 tap r3 left\n"
+                                       "360 tap r3 left\n";
+
+} // namespace
+
+TEST_CASE("the disc's level99: R3 + d-pad left on pad 1 switches the noclip on and off with no menu opened",
+          "[disc][story][debug][noclip]") {
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    coney::test::DiscSession run(*wad, kChordPad);
+    // The debug menus' input gate between the pad and the game, as `coney` puts it: the hotkey is on by default.
+    coney::debug::DebugServices services;
+    coney::platform::connectDebugServices(services, [&run] { return &run.session(); });
+    services.play = [&run]() -> coney::debug::PlayControls* { return run.session().play(); };
+    coney::debug::TunableRegistry tunables;
+    coney::debug::DebugSession debug(tunables, services, &run.input());
+    run.stack().setInput(&debug.gate());
+    REQUIRE(debug.noclipHotkey());
+    run.session().startAtLevel("level99", 1);
+    REQUIRE(run.runUntilPlay());
+
+    REQUIRE(run.runToPlayFrame(kChordOnAt));
+    coney::platform::PlayLevelMode* play = run.session().play();
+    REQUIRE(play != nullptr);
+    CHECK_FALSE(play->noclip());
+    // The chord's frame has been read: the noclip is on, with its notice, and the menu stayed shut.
+    REQUIRE(run.runToPlayFrame(kChordOnAt + 2));
+    CHECK(play->noclip());
+    REQUIRE_FALSE(debug.cornerLines().empty());
+    CHECK(debug.cornerLines().back() == "Noclip on");
+    CHECK_FALSE(debug.navigator().isOpen());
+
+    REQUIRE(run.runToPlayFrame(kChordOffAt + 2));
+    CHECK_FALSE(play->noclip());
+    REQUIRE_FALSE(debug.cornerLines().empty());
+    CHECK(debug.cornerLines().back() == "Noclip off");
+    CHECK_FALSE(debug.navigator().isOpen());
+}

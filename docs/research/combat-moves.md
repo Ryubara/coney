@@ -505,7 +505,9 @@ A **tandem** is a three-person move: a player strikes a victim another human hol
   test it after the target-state strikes; circle tests it before grabbing ([Combat](combat.md#grab), step 3). The
   three callers (`Player_Square`, `Player_Cross`, `Player_GrabOrTackle`) are the only ones, and none tests for a
   pad: they are the dispatcher's, which an AI human runs too ([An AI's attacks](combat.md#ai-attacks)). An earlier
-  reading here said "the player only"; that is corrected below.
+  reading here said "the player only"; that is corrected below. Square and cross pressed **together** (command
+  `0x22`) are not among them: that is the special 653, which hits the victim and breaks the hold. Every input, with
+  runtime checks: [Which button starts it](#tandem-input).
 - **The set**: a bat or baton in hand → 181-186; a knife → 187-192; otherwise 163-168, 169-174 or 175-180 at random.
   Each set has an intro and an end for the grabber, victim and attacker (ids +0 to +5).
 - The three are linked and placed by the set's pair offsets. At the **end of the victim's intro** the attacker's
@@ -519,6 +521,70 @@ At runtime (`moves_tandem`: Ash, the player's ally, given the grab command at Po
 in 85): square played the set 1 on the next update, the player's 165 and the victim's 164 for **51** updates (not
 the 36 of their clips), then 168 / 167; the victim lost **400** (50 + 350) on the first update of 167. Confirmed
 (runtime).
+
+#### Which button starts it {#tandem-input}
+
+Asked in issue #412: a player's report said the tandem is not square and cross and involves holding circle. The answer:
+**any one attack button** starts it, square, cross or circle, and circle works **tapped or held**; what does not is
+**square and cross together**. The game's own level80 tutorial line for the tandem (`LEVEL80.TANDEM`, shown by
+`level80_chapter4.lua`'s `TandemText`) agrees: it tells the player that any attack button works on an enemy a teammate holds.
+
+**The four inputs.** Each is one command of [the command tables](combat.md#commands), and `Player_UpdateActions`
+(`0x0027c120`) hands it on only when the player is not busy (`Human_IsBusy`) and holds none of the held flags
+`0x5c7fee0`. Confirmed (code) at the addresses cited:
+
+| Input | Command, and the sample it comes on | Path | Where the tandem test sits |
+| --- | --- | --- | --- |
+| square pressed | `0xf`, the sample square goes down | `Player_Square` (`0x00286cc8`) | step 8, after the moving attacks, strafes, snaps, the target re-pick and the low, mid and front-grab strikes ([Square](#square)) |
+| cross tapped or held | `0x10`, on the release of a press of 1-3 samples, or on the 4th sample held (`0x12` on the press does nothing here) | `Player_Cross` (`0x00287a18`) | the same place ([Cross](#cross)) |
+| circle tapped | `0xd`, on the release of a press of 1-6 samples (`0x1e` on the press does nothing here) | `Player_GrabOrTackle` (`0x00284920`) | first: after the stance and the grounded mount, before the grab |
+| circle held | `0xe`, on the 7th sample held (`0x0050b708` = 7), before any release | `Player_GrabOrTackle` | first: after the stance and the grounded mount, before the tackle |
+
+Square and cross together are matched as the combination `0x22` (square newly down while cross is held), which the
+dispatcher sends to `Player_Special` before it looks at `0xf` or `0x10`; `Player_Special` is not a caller of
+`Tandem_Start` (its only callers are the three above). L2 with square or cross (`0x21` / `0x20`, the dive
+and the charge) is matched first too. Confirmed (code) at `0x0027c120` and the callers of `0x0026f860`.
+
+**When it is allowed** (`Tandem_CanStart`, `0x00258e10`, confirmed (code)): the target is in a **rear** hold (state
+`0x20`; a front hold, state `0x10`, never), held by anyone; the player stands within 45° of the victim's front
+(`Human_GetSideOf(victim, player, 1)` = 0); and the victim has none of the held flags `0xc12200` (already in a paired
+move or tandem). The grabber's own state is not tested. There is **no distance test** in the tandem itself: the reach
+is the target pick's.
+
+- Circle: a pad player's circle always searches again (`Player_FindCounterTarget`, `0x0027ac30`, called when the brain
+  type `+0x04` is 0) within 1.25 × the far range of id 3 (3.75 m) when held, or of id 70 (3.12 m) when tapped,
+  first among the enemies within about 54° (`0x0051096c` = 0.9425 rad) of the aim heading (`Player_GetAimHeading`),
+  then wider. So the held enemy the player faces is picked even when another enemy was his target.
+- Square keeps the current target and searches only without one or when it is too far ([Targets](#targeting));
+  cross always searches. A square at another, nearer target strikes that one.
+- Before the tandem test, square and cross can start something else at the same press: out of the stance and
+  running, the run attacks 24 / 23 (or 193 at a low target); with the stick past 0.95, the strafes 31-33 (L1 locked)
+  and the snaps 25 / 27 / 29; at a front-held target, 120. Circle has none of these: it puts the player in the stance
+  and goes to the tandem test. **Inferred**: this is why circle is the dependable button in play, from a run or with
+  the stick pushed, which matches the player's report that circle works; square and cross do start it when the
+  player stands in front of the held enemy with the stick near the centre (the runs below).
+
+**At runtime** (confirmed (runtime), PCSX2 2.9.94, the `moves_tandem` set-up: slot 6, PoizoCiv (600 health) in Ash's
+rear hold (85), the player 1.1 m in front of him facing him, stick centred, in the stance's idle 388; hook
+`anim-dispatch`; one scenario per input, the press at script frame 60, which update 61 reads):
+
+| Scenario | Input | Commands seen (update) | Result |
+| --- | --- | --- | --- |
+| `moves_tandem` | square tapped at 60 | `0xf` (61) | the tandem at 61: player 165, PoizoCiv 164, Ash 163 |
+| `moves_tandem_cross` | cross tapped at 60 | `0x12` (61), `0x10` (62) | the tandem at 62 |
+| `moves_tandem_circle_tap` | circle tapped at 60 | `0x1e` (61), `0xd` (62) | the tandem at 62 |
+| `moves_tandem_circle_hold` | circle held from 60 to 72 | `0x1e` (61), `0xe` (67) | the tandem at **67**, the 7th update held, five before the release; the release gave no `0xd` |
+| `moves_tandem_square_cross` | cross held from 60 to 64, square tapped at 61 | `0x12` (61), `0x22` (62), `0x16` (63), `0x10` (64) | **no tandem**: 653 `SPECIAL_ATTACK1_FRONT` at 62; at 69 PoizoCiv lost 6 (600 → 594) and played 133, Ash 107 `GRAB_REAR_BREAK_REACT` then 268: the hold was broken. The later `0x10` found the player busy |
+
+Each of the four tandems played the first set, 163-168.
+
+**To script it** (on the original, through the `scripted-pad` patch; the recorder writes the same bytes from a Coney
+input script): the second button byte `0x005de3ab` is active low, so circle alone is `0xdf`, cross `0xbf`, square
+`0x7f`, cross and square `0x3f`, none `0xff`; the first byte `0x005de3aa` stays `0xff` and the four stick bytes
+`0x005de3ac`-`0x005de3af` stay `0x80`. A circle hold is `0xdf` written for at least 7 updates (the tandem starts on the
+7th); a circle tap is `0xdf` for 1-6 updates, then `0xff`. In a Coney input script: `60 tap circle`, or
+`60 press circle` and `72 release circle`; the negative test is `60 press cross`, `61 tap square`, `64 release
+cross`, which must play 653 and no tandem.
 
 #### Who starts a tandem, and how an AI chooses it {#tandem-ai}
 
@@ -586,6 +652,33 @@ rear-held enemy (in a real fight, or after an `IssueWarriorCommand` attack order
    stop](combat.md#protected-moves), so others leave them alone.
 5. Test: an AI ally in front of the player's rear hold picks kind 22 and starts the tandem (assert the three clips
    and the victim's damage at the intro end); in front of a front hold it does not.
+
+#### Coney's tandem {#tandem-coney}
+
+Coney plays the tandem from `repo:src/combat/tandem.h` (the start test, the set, the damage and
+`Human_IsDamageDefeating`) and `repo:src/human/fighter_tandem.cpp` (the three humans). Items 1, 2 and 4 of the fixes
+above are built; item 3 (the AI's kind 22 becoming the tandem, and the `heldC12200` view) is left to issue #84. Any
+fighter's square, cross, circle tapped or circle held at a target that `Tandem_CanStart` allows starts it, a player's
+or an AI's. Where the page is silent, these are **Coney's choices**:
+
+- **The target.** Square and cross search within 3 m, circle within its grab's or tackle's search range; the current
+  target when it qualifies, else the nearest qualifying one. The original's target rules for a held victim are not
+  traced (open question below).
+- **Who moves.** Only the attacker is aligned: he turns and slides, over the share of his intro's time a grab's
+  connect uses, to where the victim stands at his intro's pair point (the Anim Range List direction × reach, straight
+  ahead at the reach without one). The victim keeps the rear hold's offset from his grabber.
+- **The grabber joins on his own next update**, through a request the victim keeps, rather than through a link to the
+  grabber, so a grabber removed meanwhile cannot leave a dangling link. With the humans' alternating order, all three
+  clips start on the same step.
+- **The let-go.** The grabber lets go at the end of his own end clip (27 updates for the first set), not the 48
+  updates after the damage measured at runtime (open question below).
+- **The damage** lands when the victim's intro hands over to his end clip, as a hit with no reaction. A defeating hit
+  takes all his health, and his death waits until his clips no longer hold `0xc12200`
+  ([Moves a hit cannot stop](combat.md#protected-moves), item 4).
+- **The empty-handed set** is one of the three drawn evenly from the fighter's own random numbers.
+- **No scoring.** `Grab_ScoreMove` is not called: its "100 points of category 6" has no counterpart in Coney's
+  player statistics, which have categories 0-5 (open question below).
+- **No other command.** The attacker and the grabber take no command until their tandem clips are over.
 
 ### Stealth: hiding and the stealth kill {#stealth}
 
@@ -735,22 +828,30 @@ plus `puppet` in slot 6; the stick at rest (128, 128) throughout; a tap holds th
 | `bat_cross_square` | cross held 3 updates, square tapped on its 2nd, nobody near | `0x22` played **502** (the bat thrown, out of the hand at k20, 35 updates); the release's `0x10` at k2 dropped |
 | `bat_cross_square_near` | the same, `PoizoCiv` 1.5 m ahead | `0x22` started nothing; the release's `0x10` on the next update played **36**, 35 updates, which hit him for 64 at k13 |
 
-**Coney** (`repo:src/combat/player_combat.cpp`, `repo:src/combat/attacks.cpp`, main at `6f9281af`), read for this
-issue:
+**Coney** (`repo:src/combat/player_combat.cpp`, `repo:src/combat/attacks.cpp`, `repo:src/human/human_animator.cpp`),
+fixed for issue #228:
 
 - The gates are the original's: Coney's cross acts on `0x10` (`kCrossLongHold`), refused under `0x100101f`
   (`kAttackRefusingPhases`) and dropped under `0x5c7fee0` (`kDispatchDroppingPhases`), with the clips' own phase
   events and lengths. Its chain (`AttackChain`) stores the cross press during 34's wind-up and, having no armed steps
-  (`nextChainAttack` knows only 12, 11 and 16), plays nothing: the same result as the original for the bat. So the
-  plain cases (cross after 34, after 36, after square-square, after the drop) should already match, provided Coney's
-  34 hands over to 389 on k37 as above; the disc test the issue asks for checks exactly that.
-- **Cross + square with a weapon differs.** Coney's `PlayerCombat::special` has no held-object test, so with a bat in
-  hand `0x22` plays the special 653 (spending power), whose phases then refuse the cross's own `0x10`: the player sees
-  a push, not a bat swing. The original never plays 653 (or the strong grapple) for a pad player holding an object:
-  it throws the bat (502) when the throw is allowed, else does nothing and lets the cross's release play 36. A cross
-  pressed a moment before a square, or a square pressed before cross is let go, is the input that gives `0x22`, so this
-  is the likely cause of "cross sometimes does not start an attack" in Coney ([Combat
-  differences](combat-diffs.md#weapons)).
+  (`nextChainAttack` knows only 12, 11 and 16), plays nothing: the same result as the original for the bat. The
+  disc test (`repo:tests/platform/disc_bat_cross_test.cpp`, level99 with a bat in hand, cross tapped 33-40 updates
+  after a square and 31-38 after a cross) finds the first cross that swings at **k37 after 34 and k35 after 36**,
+  and none before, as the table above.
+- **34's length is a stand-in.** Coney's 34 (28 frames at 0.75) lasted 38 updates, so a cross on k37 was dropped.
+  Coney ends that one clip a step early (`ClipThenNextTask`'s `handOverEarly`, set for anim id 34 in
+  `HumanAnimator::clipThen`) so that 389 and the held flags clear on k37. **Coney stand-in**: the cause is open
+  ([Open questions](#open-questions)). Ending every clip when its cursor's frame reaches its last frame (the rule for
+  events, [Reading the tables](#reading)) fits 34 and 36 but ends the parkour clip 441 and the grab miss's 69 a step
+  early, against their runtime lengths, so it was not adopted.
+- **Cross + square (`0x22`) and circle + cross (`0x23`) with an object in hand** do nothing in Coney, as in the
+  original's `Player_Special`, which refuses a pad player holding an object: `PlayerCombat::special` and
+  `strongGrapple` return when `CombatInput::animSet` is not 0 (sets 1-6). Before, `0x22` played the special 653
+  (spending a quarter of the power), whose phases refused the cross's own `0x10`, and `0x23` started a grab: the player
+  saw a push, not a bat swing, and that was the likely cause of "cross sometimes does not start an attack". Now
+  the cross's release plays 36 (47, 41 for a knife, a baton) on the next update. **Not built**: the original's
+  throw of the melee weapon (502 / 491) for the `0x22` that has a free target ([Combat
+  differences](combat-diffs.md#weapons)), so with nobody near Coney swings where the original throws.
 
 ### Commands only scripts and the AI send {#ai-commands}
 
@@ -1068,6 +1169,19 @@ The moves Coney plays and where they differ from the table above: [Combat differ
   on the left. That target was pinned while walking, so the steer's lead may explain it ([Contact](#reach)); not
   rerun against a still target.
 - Why the tandem intro ran 51 updates, not 36.
+- The tandem's alignment: which of the three humans `Tandem_AlignThree` (`0x00277458`) moves, by which offsets and
+  over what time. Coney moves only the attacker, to his intro's pair point ([Coney's tandem](#tandem-coney)).
+- When the tandem's grabber lets go: 48 updates after the damage at runtime, where his end clip (166) lasts 27. Coney
+  lets go at the end of the clip.
+- How the empty-handed set is drawn: whether the three sets are equally likely, and from which random source.
+- What `Grab_ScoreMove`'s "100 points of category 6" adds to: Coney's player statistics have categories 0-5, so the
+  tandem scores nothing in Coney yet.
+- The target a held victim is found by: `Player_PickTarget` and the grab's search skip held humans in Coney; which
+  search square, cross and circle use to reach a rear-held victim for the tandem was not traced.
+- Whether a Warrior who grabs an enemy in a real fight holds him from the rear (where a tandem is possible) or from
+  the front (where square and cross give 120 and circle grabs instead), and how often: every [tandem
+  run](#tandem-input) staged the rear hold with a puppet. A rumble with the Warriors' own brains, logging the
+  grabber's state `0x20` / `0x10`, would tell.
 - Whether a Warrior's own type-3 brain (the Warriors' think, `0x003052f0`) starts a tandem: in `moves_tandem_ai` Ash
   with that brain stood idle, so the run gave him type-2 handlers ([An AI tandem at runtime](#tandem-ai)). To find out,
   rerun the scenario without the brain writes and give Ash an attack order on PoizoCiv once he is in the rear hold,
@@ -1077,5 +1191,10 @@ The moves Coney plays and where they differ from the table above: [Combat differ
   tables](#reading)). A run of a rate-0.9 clip with a tie (an event at frame 5 or 14) would check it.
 - Why 34 `BAT_COMBO_S1` hands over to 389 after 37 updates when its frame count gives 38 (36's 35 matches its
   count), and when the bat's 35 plays at all, if no pad chain reaches it ([Cross with a bat in hand](#bat-cross)).
+  Coney ends clip 34 a step early as a stand-in until the clip-end rule is known; the rule for events (the cursor's
+  frame reaches the frame) fits 34 and 36 but not Coney's other measured lengths, e.g. the parkour clip 441 and the
+  grab miss's 69 ([Coney](#bat-cross)). To find out: the lengths of several more chain clips at runtime, 12 (16
+  frames) to 20 (26 frames) and 19 (21 frames) especially, from the first update to the one 389 or the next clip
+  holds.
 - 490 `KNIFE_ATTACK_FROM_RUN`, 18 `ATTACK_SSX3_HOLD` and the `_02` snaps: no code path plays them here (20 is the
   chain's random pick after `SS2`, `0x00280708`).

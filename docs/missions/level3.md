@@ -46,12 +46,12 @@ Research:
 - [Story order and what loads each level](../research/scripting.md#run-next-mission)
 - [The mission's script and the rooftop chase](../research/scripting.md#level3)
 - [Rail cameras](../research/camera.md#rail)
-- [AI: GoalDevilRun](../research/ai.md#devil-run)
+- [AI: GoalDevilRun](../research/ai-scripting.md#devil-run)
 
 ## Run it in Coney {#run}
 
-With your own disc ([Playing a level](../guides/building.md#playing-a-level)); `--checkpoint` picks where it starts, 1
-to 5:
+With your own disc ([Playing a level](../guides/running.md#playing-a-level)); `--checkpoint` picks where it starts, 1 to
+5:
 
 ```text
 coney --disc /path/to/disc --play-level level3 --checkpoint 1

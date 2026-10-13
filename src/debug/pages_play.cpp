@@ -13,7 +13,9 @@
 
 #include "debug/debug_pages.h"
 #include "debug/debug_session.h"
+#include "debug/fighter_spawn.h"
 #include "debug/play_controls.h"
+#include "human/climb.h"
 
 namespace coney::debug {
 
@@ -21,6 +23,14 @@ namespace {
 
 // What a page shows in place of its items when no player plays.
 constexpr std::string_view kNoPlayer = "no player: --play-level, or a sandbox from the Levels page";
+
+// What the AI fighters page remembers between clicks: the model picked (0 is Random), how many to spawn, and the random
+// numbers Random draws (a fixed seed, so a run with the same clicks spawns the same models).
+struct FighterSpawnState {
+    std::size_t model = 0;
+    double amount = 1.0;
+    SpawnRandom random{0x5eed5eedU};
+};
 
 // A point as the pages print it.
 std::string pointText(anim::Vec3 p) { return std::format("({:.2f}, {:.2f}, {:.2f})", p.x, p.y, p.z); }
@@ -205,7 +215,8 @@ void addPlayerPage(DebugSession& session) {
             page.add(toggleItem(
                          "Noclip hotkey (R3 + D-pad left)", [&session] { return session.noclipHotkey(); },
                          [&session](bool on) { session.setNoclipHotkey(on); }))
-                .withHelp("While on, R3 + d-pad left (keyboard: H + left arrow) toggles the noclip in play.");
+                .withHelp("On by default: R3 + d-pad left (keyboard: H + left arrow) toggles the noclip in play. "
+                          "Off, the chord is the game's.");
             page.add(submenuItem("Teleport", [&session] {
                          auto sub = std::make_shared<MenuPage>("Teleport");
                          fillTeleport(*sub, session);
@@ -276,7 +287,7 @@ void addSpawnerPage(DebugSession& session) {
                 return;
             }
             if (!play->canSpawn()) {
-                page.add(watchItem("Spawning", [] { return std::string("needs a sandbox: load one from Levels"); }));
+                page.add(watchItem("Spawning", [] { return std::string("not in this mode"); }));
                 return;
             }
             MenuItem ahead = numberItem(
@@ -306,14 +317,15 @@ void addSpawnerPage(DebugSession& session) {
             }));
             page.add(logItem("Log", [&session] { return session.log().last(3); }));
         },
-        "Objects put in front of the player, in a sandbox.");
+        "Objects put in front of the player, in a sandbox or a level.");
 }
 
 void addFightersPage(DebugSession& session) {
     auto distance = std::make_shared<double>(4.0);
+    auto spawn = std::make_shared<FighterSpawnState>();
     session.model().addPage(
         "AI fighters",
-        [&session, distance](MenuPage& page) {
+        [&session, distance, spawn](MenuPage& page) {
             const PlayControls* play = session.play();
             if (play == nullptr) {
                 page.add(watchItem("No player", [] { return std::string(kNoPlayer); }));
@@ -329,17 +341,45 @@ void addFightersPage(DebugSession& session) {
             ahead.units = "m";
             ahead.defaultValue = 4.0;
             page.add(std::move(ahead));
-            page.add(playAction(session, "Spawn a fighter",
-                                [&session, distance](PlayControls& p) {
-                                    const anim::Vec3 feet = spotAhead(p.playerFeet(), p.playerHeadingDegrees(),
-                                                                      static_cast<float>(*distance));
-                                    // It faces the player.
-                                    auto spawned = p.spawnFighter(feet, p.playerHeadingDegrees() + 180.0F);
-                                    session.print(spawned ? std::format("fighters: one at {}", pointText(feet))
-                                                          : "fighters: " + spawned.error().message);
+            // The model picker: Random (each fighter its own), then every human model the scene can load. With no
+            // list (a mode that does not know the configuration's types) only Random is there, and it means the
+            // scene's own character.
+            std::vector<std::string> modelChoices{"Random"};
+            const std::vector<std::string> models = play->fighterModels();
+            modelChoices.insert(modelChoices.end(), models.begin(), models.end());
+            page.add(choiceItem(
+                         "Model", std::move(modelChoices), [spawn] { return spawn->model; },
+                         [spawn](std::size_t choice) { spawn->model = choice; }))
+                .withHelp("The model, animation set and moves of the fighters: one of the human models, or Random for "
+                          "a different one each.");
+            MenuItem amount = numberItem(
+                "Amount", [spawn] { return spawn->amount; }, [spawn](double v) { spawn->amount = v; }, 1.0,
+                static_cast<double>(kMaxFighterAmount), 1.0, true);
+            amount.defaultValue = 1.0;
+            amount.help = "How many fighters one click spawns, in rows of five in front of the player.";
+            page.add(std::move(amount));
+            page.add(playAction(session, "Spawn fighters",
+                                [&session, distance, spawn](PlayControls& p) {
+                                    const int amount = static_cast<int>(spawn->amount);
+                                    const std::vector<std::string> picks =
+                                        pickFighterModels(p.fighterModels(), spawn->model, amount, spawn->random);
+                                    const float heading = p.playerHeadingDegrees();
+                                    const std::vector<anim::Vec3> spots =
+                                        fighterSpots(p.playerFeet(), heading, static_cast<float>(*distance), amount);
+                                    std::size_t made = 0;
+                                    for (std::size_t i = 0; i < spots.size(); ++i) {
+                                        // Each faces the player.
+                                        auto spawned = p.spawnFighterAs(spots[i], heading + 180.0F, picks[i]);
+                                        if (!spawned) {
+                                            session.print("fighters: " + spawned.error().message);
+                                            break;
+                                        }
+                                        ++made;
+                                    }
+                                    session.print(std::format("fighters: {} spawned of {}", made, spots.size()));
                                 }))
-                .withHelp("An AI human with a sparring Warrior's brain, facing the player; it fights him when he is "
-                          "in its melee range and engaging is on.");
+                .withHelp("AI humans with a sparring Warrior's brain, facing the player, as the model and amount "
+                          "above; they fight him when he is in their melee range and engaging is on.");
             page.add(playToggle(
                          session, "Engaging", [](const PlayControls& p) { return p.fightersEngage(); },
                          [](PlayControls& p, bool on) { p.setFightersEngage(on); }))
@@ -378,6 +418,7 @@ void addDebugDrawPage(DebugSession& session) {
             page.add(toggle("Ground normal", draw.groundNormal, "The normal of the ground under the player."));
             page.add(toggle("Camera", draw.camera, "The follow camera's wanted position and look-at point."));
             page.add(toggle("Places", draw.places, "The scene's places (start, spawn points) with their headings."));
+            addShapeDrawItems(page, draw);
         },
         "Lines drawn into the scene: collision, player, camera, places.");
 }
@@ -396,9 +437,17 @@ const std::vector<Spawnable>& spawnables() {
             return p;
         };
         std::vector<Spawnable> list;
-        list.push_back({"Crate (1 m)", make(sandbox::Shape::Box, {1.0F, 1.0F, 1.0F}, {0.9F, 0.7F, 0.4F})});
-        list.push_back({"Fence (1.2 m)", make(sandbox::Shape::Box, {3.0F, 0.1F, 1.2F}, {0.5F, 0.8F, 0.5F})});
-        list.push_back({"Wall (2.5 m)", make(sandbox::Shape::Box, {4.0F, 0.3F, 2.5F}, {0.8F, 0.5F, 0.5F})});
+        // The crate and the wall carry flag bit 7 (climbable by anyone) and the fence material 30 (`LOW_FENCE`), as the
+        // parkour course's blocks and fences do, so the climbs take them (docs/research/collision.md#triangles).
+        sandbox::Primitive crate = make(sandbox::Shape::Box, {1.0F, 1.0F, 1.0F}, {0.9F, 0.7F, 0.4F});
+        crate.surface.flags = human::kTriangleClimbable;
+        list.push_back({"Crate (1 m)", crate});
+        sandbox::Primitive fence = make(sandbox::Shape::Box, {3.0F, 0.1F, 1.2F}, {0.5F, 0.8F, 0.5F});
+        fence.surface.material = human::kClimbableMaterial;
+        list.push_back({"Fence (1.2 m)", fence});
+        sandbox::Primitive wall = make(sandbox::Shape::Box, {4.0F, 0.3F, 2.5F}, {0.8F, 0.5F, 0.5F});
+        wall.surface.flags = human::kTriangleClimbable;
+        list.push_back({"Wall (2.5 m)", wall});
         list.push_back({"Ramp (1 m rise)", make(sandbox::Shape::Ramp, {2.0F, 3.0F, 1.0F}, {0.6F, 0.6F, 0.9F})});
         sandbox::Primitive stairs = make(sandbox::Shape::Stairs, {2.0F, 0.0F, 0.0F}, {0.7F, 0.7F, 0.7F});
         stairs.steps = 6;

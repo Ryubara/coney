@@ -131,7 +131,7 @@ struct TurnState {
 /// An AI human's turn limit per update for a gait (the table's AI words, which `CfgSetTurnRates` leaves alone),
 /// radians: 12° walking or standing, 6° jogging, 4° running, 2.5° sprinting, multiplied by `boost` + 1 for a turn boost
 /// (brain `+0x0b`) of 0 or more and divided by 1 − `boost` below 0; a wounded human turns 0.375° whatever the gait or
-/// boost. The turn is a constant step: no easing (docs/research/ai.md#ai-turn).
+/// boost. The turn is a constant step: no easing (docs/research/ai-moving.md#ai-turn).
 /// @orig 0x002212d0 Human_GetTurnRateForGait (unknown)
 [[nodiscard]] float aiMaxTurn(Gait gait, int boost, bool wounded);
 

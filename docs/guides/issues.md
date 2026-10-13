@@ -30,8 +30,8 @@ only "issue #N". Write it so that the first screenful answers *what is wrong or 
   provenance. It goes on the `From:` line, which names where the issue came from and nothing more.
 - **State the status as it is.** When the text names a pull request or another issue, check it with `gh pr view N`
   or `gh issue view N` and say what it is: merged, open (not merged yet), closed without merging. Write "merged",
-  never "(open)" for a pull request that has landed, and tick the checklist item it finished. A leftover is usually
-  filed while its pull request is still open, so that wording goes stale when it merges: describe what the
+  never "(open)" for a pull request that has landed, and tick the checklist item it finished. An issue is usually
+  filed while the pull request it came from is still open, so that wording goes stale when it merges: describe what the
   repository does and lacks rather than only what a pull request will do, and the coordinator fixes the statuses of
   the issues that cite a pull request when it merges ([Merging safely](how-we-work.md#merging)).
 - **Link every page by a relative link.** A research page or guide is written as a Markdown link that works from an
@@ -58,7 +58,8 @@ show (a sound, a research question, tooling), the section holds one line, `Scree
 `## Screenshots` section in the same shape.
 
 Drag screenshots and short videos into the form's Screenshots box, and attach Coney's log, the text it prints in the
-terminal you started it from, as a `.txt` file in the bug form's Log box. From the command line,
+terminal you started it from, as a `.txt` file in the bug form's Log box (with no user name or email address in it:
+[Attached logs](#attachments)). From the command line,
 `gh issue create --attach ./shots/f.png` (or `gh issue edit N --attach ...`) uploads the file, and a
 `![alt](./shots/f.png)` already in the body is pointed at the upload (gh 2.99 or later). Captures stay in scratch
 and are deleted once uploaded.
@@ -76,6 +77,28 @@ exception to [No game data](repo:LEGAL.md#no-game-data) for issues: never attach
 dumps, executables, BIOS images, disc images, extracted files or the game's text or script source. The bug form has a
 required checkbox that says so. A maintainer deletes an attachment that breaks the rule.
 
+### Attached logs {#attachments}
+
+A log is public the moment it is attached, and a person can attach more than they meant: a path that names their
+user folder, an email address, or a file that is not a log at all. So the `hygiene` workflow
+([Workflows](repo-conventions.md#workflows)) downloads each `.txt` and `.log` attached to an issue's body whenever the
+issue is opened or edited (and every open issue's in the weekly sweep) and scans it. Two checks of the audit report
+what it finds, in the workflow's one comment on the issue:
+
+- `issue.attachment-personal`: a line shows a user folder (`C:\Users\<name>\`, `/home/<name>/`, `/Users/<name>/`) or
+  an email address. Replace the name with `~` (`~\Downloads\disc.iso`), attach the new copy and delete the old link.
+- `issue.attachment-data`: the file may be game data: it is not text, it is larger than a log should be, or enough of
+  its lines look like the game's script source or data files. Delete it if it holds anything
+  [What may be attached](#media) rules out; a long ordinary log can stay.
+
+The comment names the file and the line numbers, never the text, so it does not repeat what it warns about. The
+patterns and limits (which links, how much is downloaded, the size and line thresholds) are `hygiene.attachments` in
+[.github/conventions.yml](repo:.github/conventions.yml). The download is bounded (a size cap and a timeout), sent
+without credentials and only ever held in memory: nothing attached is stored or run. The scan is a heuristic, so a
+finding is a prompt to look, and a clean scan is not a promise. `coney-tools repo audit --github --attachments` runs
+the same scan over every open issue. Removing the link from the body does not delete the file on GitHub; a person who
+attached something private by mistake can ask a maintainer, who can ask GitHub to remove it.
+
 ## Labels {#labels}
 
 The label scheme follows rust-lang/rust's prefixes (`A-` for the area, `P-` for the priority, `S-` for the status),
@@ -86,7 +109,8 @@ prints the `gh label create ... --force` commands instead of running them.
 
 The table is generated from `labels.list` (`coney-tools repo render`). `parity` is a difference from the original and
 `enhancement` is beyond it, so it waits until the game is complete ([Faithful first](repo:AGENTS.md)). The task form's
-area list is the `A-` labels. The coordinator sets the priority, and an issue carries one status label at a time.
+area list is the `A-` labels. The coordinator sets the priority, and an open issue carries one status label at a
+time. A closed issue carries none ([What a closed issue keeps](#closed)).
 
 <!-- conventions:begin labels -->
 | Family | Label | Meaning |
@@ -141,7 +165,7 @@ Whoever picks up an `S-ready-to-start` issue moves it to `S-in-progress`. The au
 
 ## The life of an issue {#life}
 
-Every issue has exactly one status label, and the coordinator moves it:
+Every open issue has exactly one status label, and the coordinator moves it:
 
 | Status | Set when |
 | --- | --- |
@@ -154,8 +178,27 @@ Every issue has exactly one status label, and the coordinator moves it:
 | `S-blocked` | The issue waits for another issue (named in the task's "Blocked by") or a decision. |
 
 An issue is closed automatically when its pull request is squash-merged into `main`, because the body says
-`Fixes #N` ([Pull requests](repo:CONTRIBUTING.md)). If the problem is still there after the merge, reopen the issue
-and set `S-needs-triage`. Close with a reason: completed, not planned (`wontfix`) or duplicate.
+`Fixes #N` ([Pull requests](repo:CONTRIBUTING.md)). If the problem is still there after the merge, reopen the issue;
+it gets `S-needs-triage` again ([below](#closed)). Close with a reason: completed, not planned (`wontfix`) or
+duplicate.
+
+### What a closed issue keeps {#closed}
+
+A status describes work that is still open, so a closed issue never carries an `S-` label: the close reason
+(completed, not planned, duplicate) is its final state. It keeps its type, area and priority labels, and
+`wontfix` or `duplicate` when they apply, as history. A leftover status such as `S-pending-review` on a closed issue
+only misleads whoever filters by it.
+
+The `issue-status` workflow (`.github/workflows/issue-status.yml`) keeps this true without anyone remembering it:
+
+- **On close** it removes every label that starts with `S-`, whoever closed the issue and however (a merged
+  `Fixes #N` pull request, the button, `gh issue close`).
+- **On reopen** it adds `S-needs-triage`, so a reopened issue is looked at again, unless the issue already has an `S-`
+  label (someone set the status as they reopened it).
+
+It is the one workflow that writes to GitHub, and its token is limited to `issues: write`
+([Workflows](repo-conventions.md#workflows)). If it ever fails, `coney-tools repo audit --github` reports the closed
+issue under `issue.closed-status` and the coordinator removes the label by hand.
 
 ## Working from an issue {#agents}
 
@@ -171,36 +214,41 @@ A brief may be just "issue #N" ([Briefing](agents.md#briefs)); the issue holds t
   recordings are deleted from scratch when done ([Sharing one machine](how-we-work.md#shared-machine)).
 - **Work the usual way:** the research first when the status says so, then a failing test, then the fix
   ([Testing](testing.md#done)). The pull request description has a `Fixes #N` line in its Summary.
+- **Issues are filed through `coney-tools issue` only.** A hook
+  ([`.claude/hooks/issue_guard.py`](repo:.claude/hooks/issue_guard.py)) refuses a raw `gh issue create`, a
+  `gh issue edit` that sets the body and a `gh api` call that writes an issue, so the body is checked against the
+  form first. Labels, titles, comments and closing pass, and so does a command that names only another
+  repository (`-R owner/name`).
 - **Agents never write to GitHub.** No comments, labels, issues or pull requests: the coordinator does all of it,
   from the same release queue as pull requests ([How we work](how-we-work.md)). An agent reports what it would say
   (the finding, the question for the reporter, the status change) in its message to the coordinator.
 - **HANDOFF lists only issue numbers in flight.** The coordinator's state file names an issue by number and track,
   for example "#31, bug-doors, in progress"; the title and details stay on the issue, so there is one place to read.
 
-## Leftovers become issues {#leftovers}
+## Work found along the way becomes its own issue {#follow-up-work}
 
-A pull request that leaves work undone does not leave it in its description, which nobody reads after the merge. Every
-unchecked item under **Remaining** in the description carries the number of the issue (or the follow-up pull request)
-that holds it, such as `- [ ] The heavy bag's combo game (#109)`. CI's `body` check refuses a description with an
-unchecked item that has no `#123` in it (`coney-tools repo check-body`, rules in `pull_requests` of
-`.github/conventions.yml`). Wrapped lines belong to the item above them; checked items, prose (`None.`), the
-template's `...` placeholder and everything under Done are not looked at.
+A pull request merges only when every task in it is finished. Its Checklist lists what it finishes, each item ticked,
+and CI's `body` check refuses a description with an unticked `- [ ]` item, the template's `...` placeholder included
+(`coney-tools repo check-body`, rules in `pull_requests.checklist` of `.github/conventions.yml`). There is no
+"Remaining" list: work the pull request does not finish is not part of it and is not named in it, and a pull request
+that finishes an issue says `Fixes #N` in its Summary. Pull requests merged before 2026-10-12 keep the Remaining lists
+they were written with; their items are open issues and go through the normal queue, and the audit still holds those
+lists to the older rule (each unchecked item names an issue as `#N`).
 
-- **The author** finishes what it can, and for each leftover that is real work or an open question writes its title,
-  area, research page and "done" test, in the shape of the [task form](#report), into the message it sends the
-  coordinator with the pull request text. It follows [Writing an issue a newcomer can read](#writing): the problem
-  first, not "the pull request leaves ..."; pages as relative links; each checklist item a verifiable step. It does
-  not write to GitHub ([Working from an issue](#agents)).
-- **A leftover a player can see comes with a picture.** For a visible bug, gap or stand-in, the author saves a
-  capture of Coney in its scratch folder's `shots/` (and of the original from PCSX2 when it has one at the same
-  place), names the files in the issue text it sends, and the coordinator files the issue with `--attach`. Pure
-  research questions and tooling work need none.
-- **The coordinator** files the issue from that text with its captures, labels it at triage, and puts the number into
-  the description before the pull request is opened. It rewrites a draft that reads like a copy of the pull request,
-  and when the pull request merges it updates the statuses in every issue that cites it. An item that is already
-  tracked cites its existing issue; one that is finished is ticked and moved to Done; one nobody will do is dropped,
-  not left unchecked.
-- **A follow-up pull request** may be cited in place of an issue when it is already open, but the work it carries
-  still finishes the issue that describes it, with a `Fixes #N` line in its Summary.
+- **The author** finishes the task it was given. Work it finds on the way that is not part of the task (a bug, a gap, an
+  open question) is written up as the issue it would be: title, area, research page and "done" test, in the shape of
+  the [task form](#report), in the message it sends the coordinator. It follows
+  [Writing an issue a newcomer can read](#writing): the problem first, not "the pull request leaves ..."; pages as
+  relative links; each checklist item a verifiable step. It does not write to GitHub
+  ([Working from an issue](#agents)), and the pull request neither lists nor links that work.
+- **Work a player can see comes with a picture.** For a visible bug, gap or stand-in, the author saves a capture of
+  Coney in its scratch folder's `shots/` (and of the original from PCSX2 when it has one at the same place), names the
+  files in the issue text it sends, and the coordinator files the issue with `--attach`. Pure research questions and
+  tooling work need none.
+- **The coordinator** files the issue from that text with its captures and labels it at triage, naming where it came
+  from on a `From:` line. When a pull request merges it updates the statuses in every issue that cites it.
+- **A task a pull request cannot finish is split before the pull request is written.** The part it can finish is the
+  pull request; the rest is an issue (or a pull request of its own, opened when it can be finished). A task nobody
+  will do is dropped, not left unticked.
 - **The state file keeps no work list.** HANDOFF holds the live state (what runs where, what waits for CI) and issue
-  numbers, never the leftovers themselves; a leftover that exists only in HANDOFF is lost when the file is cleared.
+  numbers, never the work itself; work that exists only in HANDOFF is lost when the file is cleared.

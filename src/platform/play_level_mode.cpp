@@ -6,6 +6,8 @@
 #include <cmath>
 #include <format>
 #include <numbers>
+#include <set>
+#include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -335,17 +337,22 @@ void PlayLevelMode::makeTargets(rw::Texture* texture) {
     }
 }
 
-void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees) {
+void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees, const std::string& model) {
     // Dropped onto the ground below its spot, as a teleport is.
     raycast::Vec3 feet{spot.x, spot.y, spot.z + kTeleportDrop};
     if (!raycast::dropToGround(m_scenery->collision(), kTeleportDrop * 2.0F, feet)) {
         feet.z = spot.z;
     }
-    m_ai->spawnFighter(&m_scenery->collision(), anim::Vec3{feet.x, feet.y, feet.z}, headingDegrees);
-    const std::size_t vertices = m_character->assets().model.vertices.size();
+    // The scene's character, or the one `model` names (loaded once and kept, as the scripts' humans' are; a model that
+    // does not load falls back to the scene's, with a line saying so).
+    const CastLook look =
+        model.empty() ? CastLook{.character = m_character.get(), .texture = m_texture} : castCharacter(model);
+    m_ai->spawnFighter(*look.character, &m_scenery->collision(), anim::Vec3{feet.x, feet.y, feet.z}, headingDegrees);
+    const std::size_t vertices = look.character->assets().model.vertices.size();
     FighterMesh mesh;
-    mesh.character = m_character.get();
-    mesh.mesh = std::make_unique<CharacterMesh>(m_character->assets().model, m_texture);
+    mesh.character = look.character;
+    mesh.model = model;
+    mesh.mesh = std::make_unique<CharacterMesh>(look.character->assets().model, look.texture);
     mesh.positions.resize(vertices);
     mesh.normals.resize(vertices);
     m_fighterMeshes.push_back(std::move(mesh));
@@ -353,6 +360,21 @@ void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees) {
 
 std::expected<void, Error> PlayLevelMode::spawnFighter(anim::Vec3 feet, float headingDegrees) {
     addFighter(feet, headingDegrees);
+    return {};
+}
+
+std::vector<std::string> PlayLevelMode::fighterModels() const {
+    // The distinct models of the configured types a player can be drawn as, sorted.
+    std::set<std::string> models;
+    for (const debug::CharacterChoice& choice : characterChoices()) {
+        models.insert(choice.model);
+    }
+    return {models.begin(), models.end()};
+}
+
+std::expected<void, Error> PlayLevelMode::spawnFighterAs(anim::Vec3 feet, float headingDegrees,
+                                                         std::string_view model) {
+    addFighter(feet, headingDegrees, std::string(model));
     return {};
 }
 
@@ -557,7 +579,9 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     stepObjectBodies();
     m_player->update(playerPad, &m_scenery->collision(), m_combatants);
     for (Target& target : m_targets) {
-        target.human->step();
+        if (!target.frozen) {
+            target.human->step();
+        }
     }
     m_ai->capture();
     stepPickups();
@@ -574,6 +598,10 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     m_stats.travelled += std::hypot(after.x - before.x, after.y - before.y);
     if (m_trace) {
         *m_trace << human::traceLine(++m_traceSteps, *m_player);
+    }
+    // Every human's row for this step, after all their updates.
+    if (m_humansTrace) {
+        m_humansTrace->write(m_ai->brains());
     }
     if (const std::uint32_t id = m_player->human().animator().animId(); id != m_lastAnimId) {
         m_print(std::format("frame {}: clip {}\n", frame.index, id));
@@ -806,19 +834,22 @@ void PlayLevelMode::render(const RenderTime& time) {
     // the see-through panes and the cars' glass, then the effects; then, as the sprite batches after the whole world
     // (graphics.md#a-frame), the blob shadows, and the health rings over them. **Coney's choice**: the coronas, which
     // the original batches between the shadows and the rings, follow the rings (WorldRenderer::render draws them).
-    const auto afterWorlds = [this, &drawCars, &snapshot, &blended, &ringFeet] {
+    const auto afterWorlds = [this, &drawCars, &snapshot, &blended, &ringFeet, alpha] {
         if (m_levelEffects) {
             m_levelEffects->drawWater();
         }
         drawGlass();
         drawCars(graphics::CarPass::Glass);
+        // The throw-aim arc, blended by its vertices' alpha among the see-through things (**Coney's stand-in** for its
+        // place in WorldManager_Render's order, not traced).
+        drawThrowArc(alpha);
         if (m_levelEffects) {
             m_levelEffects->drawInScene(blended.pose);
             m_levelEffects->drawGlints(m_glints.sprites(), blended.pose);
         }
         m_lights->drawShadows();
         drawRings(ringFeet);
-        drawDebugLines(snapshot);
+        drawDebugLines(snapshot, alpha);
     };
     m_scenery->draw(m_engine, blended, millisecondsOf(time.gameTicks), drawObjects, afterWorlds);
 }
@@ -841,7 +872,7 @@ world::DebugCamera PlayLevelMode::blendedFreeCamera(const Interpolated<world::De
     return between;
 }
 
-void PlayLevelMode::drawDebugLines(const human::PlayerSnapshot& snapshot) const {
+void PlayLevelMode::drawDebugLines(const human::PlayerSnapshot& snapshot, float alpha) const {
     if (m_debugDraw == nullptr || !m_engine.drawsPixels()) {
         return;
     }
@@ -849,7 +880,7 @@ void PlayLevelMode::drawDebugLines(const human::PlayerSnapshot& snapshot) const 
     LineList lines;
     const anim::Vec3 feet = snapshot.feet;
     // The collision triangles whose first corner is near the feet, as a wireframe, up to a budget.
-    if (options.collision) {
+    if (options.collision && !options.wallClasses) {
         const raycast::CollisionMesh& mesh = m_scenery->collision();
         const auto vertices = mesh.vertices();
         const float reach = options.collisionRadius * options.collisionRadius;
@@ -899,6 +930,12 @@ void PlayLevelMode::drawDebugLines(const human::PlayerSnapshot& snapshot) const 
             const anim::Vec3 ahead = human::facing(place.headingDegrees * std::numbers::pi_v<float> / 180.0F);
             lines.add(place.feet, anim::add(place.feet, anim::scale(ahead, kHeadingLength)), kPlace);
         }
+    }
+    // The collision shapes, the classified wireframe and the Entity inspector's highlight (play_level_inspect.cpp).
+    debug::DebugLines extra;
+    addInspectorLines(extra, snapshot, alpha);
+    for (const debug::DebugLine& line : extra.lines()) {
+        lines.add(line.a, line.b, line.colour);
     }
     lines.draw();
 }

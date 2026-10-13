@@ -42,10 +42,10 @@ have come from the page, so its independence can be shown; code written by someo
 carefully they worked. You may analyse one function and implement a different one, as long as you have never read
 the original code of the one you implement.
 
-For agents, Rekit enforces the split where the platform allows: the analyst agent and the implementer agent are
-separate, and the implementer agent has no Ghidra or emulator tools at all. People keep it by discipline: before
-implementing a function, check that you haven't read the original code of the functions involved, and hand
-the work on if you have.
+For agents, the agent definitions in `.claude/agents` enforce the split where the platform allows: the analyst agent
+and the implementer agent are separate, and the implementer agent has no Ghidra or emulator tools at all. People keep
+it by discipline: before implementing a function, check that you haven't read the original code of the functions
+involved, and hand the work on if you have.
 
 What crosses from analyst to implementer is **facts and behaviour**, never code: data layouts, constants, file
 formats, algorithms needed to read the game's data (the CRC-32 name hash, for example), and prose descriptions of
@@ -110,44 +110,10 @@ A page also says what it was checked against: the executable (`SLUS_212.15`, see
 
 ## The research database {#the-research-database}
 
-Research pages are for reading; the research database is the same knowledge in a form tools can check. It is a set
-of YAML files in `research/` at the repository root, in the schema Rekit defines:
-
-- `research/symbols/<area>.yaml`: one entry per function or global, by address;
-- `research/types/<area>.yaml`: one entry per struct, with its fields at their offsets.
-
-```yaml
-# research/symbols/<area>.yaml
-- addr: 0x001490b8
-  name: DVDWadIndex::Find
-  tu: Device/ps2/fileio/DVDWadIndexPS2.cpp     # original translation unit, when known
-  evidence: confirmed-code                     # confirmed-code | confirmed-runtime | inferred | speculative
-  reimpl: src/fileio/wad_index.cpp             # filled in by `rekit research check --fix-reimpl`
-  notes: CRC-32 of the lowercased name, then a linear scan.
-```
-
-```yaml
-# research/types/<area>.yaml
-- name: WadDirEntry
-  size: 12
-  evidence: confirmed-code
-  fields:
-    - { offset: 0x0, type: u32, name: wadOffset }
-    - { offset: 0x4, type: u32, name: size }
-    - { offset: 0x8, type: u32, name: nameHash, notes: "CRC-32 of the lowercased path" }
-```
-
-The database keeps three things in step:
-
-- **the code:** `rekit research check` matches every `@orig` tag in the source against the symbols, in both
-  directions (see [Comments and @orig](conventions.md#comments-and-orig));
-- **the docs:** `rekit research tables` generates the symbol and type tables in `docs/research/tables/`, which are
-  never edited by hand;
-- **Ghidra:** `rekit ghidra apply` pushes names, types and comments into an analyst's local Ghidra project, and
-  `rekit ghidra export` brings new names back, never overwriting an entry that has a higher evidence level.
-
-The database **arrives with Rekit**. Until then, findings are recorded on the research pages only, and the YAML
-is seeded from them when it arrives. One file is already there, because it is Coney's own: the script bindings.
+Research pages are for reading; a research database is planned: the same knowledge as YAML files in `research/` at
+the repository root, one entry per function, global and struct, that tools can check against the code. It does not
+exist yet. Until it does, findings live on the research pages only, and the YAML is seeded from them when it is
+created. One file is already there, because it is Coney's own: the script bindings.
 
 ### The script bindings {#bindings}
 
@@ -322,7 +288,12 @@ leave the focus alone:
   `--headless`, never as a plain interactive run. In test mode Coney's window opens without taking the focus (it
   may show on top, but keystrokes stay where they were), and `--render-references` (which hides its window) never
   takes it either. Any other windowed run started by a tool adds `--no-activate`
-  ([Frame rate](building.md#frame-rate)).
+  ([Frame rate](running.md#frame-rate)).
+- **On the agents' display.** Every window an agent opens goes on the display set aside for agents, never on the one
+  the user works on. The agent tool's environment sets `CONEY_WINDOW_DISPLAY` (the [setup](agents.md#setup)), and
+  Coney opens its window centred on that display, never taking the keyboard focus
+  ([Which display](running.md#window-display)); the PCSX2 launcher
+  reads the same variable (below). An agent never overrides it with `--window-display` for its own runs.
 - **ctest needs nothing.** The disc tests inside `coney_tests` run on librw's NULL renderer and open no window; the
   `coney` smoke tests (`repo:src/platform/CMakeLists.txt`) run `--headless` or stop at the command line before a
   window opens; the one test with a window (`coney.frame_copies_upright`) hides it and so never takes the focus. A new
@@ -353,6 +324,15 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
   foreground, hands it back to the window that had it (no input sent, PCSX2 never minimised, so screenshots keep
   working). Checked 2026-10-07: the foreground owner logged every 50 ms over a state launch and over a cold boot
   (about 900 polls each) was never PCSX2.
+- **Where its windows go.** With `CONEY_WINDOW_DISPLAY` set, the launcher also moves each PCSX2 window (the main
+  window, and the game's when it has its own) onto that display as soon as it shows, centred and shrunk to the
+  display's usable area if larger, without activating it (`SetWindowPos` with `SWP_NOACTIVATE`); a window is moved
+  once, so one dragged elsewhere stays there. The value means what it means for Coney
+  ([Which display](running.md#window-display)): an index counts the primary display as 1 and the rest in Windows'
+  order, as SDL does, and a name matches the display's device name (`DISPLAY2`) or its monitor's description as
+  Windows lists it. A value that matches nothing prints one warning listing the displays, and PCSX2 opens where it
+  last was (its own `PCSX2.ini` keeps that place, `[UI]` `MainWindowGeometry`; the launcher does not edit it).
+  `repo:python/src/coney_tools/pcsx2_proc.py` (`WindowPlacer`).
 - **Several at once.** A portable PCSX2 keeps its settings, states and memory cards in its own folder, so each copy of
   the folder (`pcsx2`, `pcsx2-b`, ..., each with its own `PINESlot` 28011, 28012, ...) is an independent instance, and
   `coney-tools pcsx2` reads the port from that copy's `PCSX2.ini`. Every PCSX2 use starts with
@@ -408,8 +388,8 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
   those addresses, and start it with `coney-tools pcsx2 launch --agent <id> <copy>`; restart PCSX2 the same way
   for every run. Then write the bytes over PINE (the stick table above gives the magnitude). Find the player as the human
   whose `+0x1b0` is 0: in later levels it is not human 0, and the per-player record is indexed by its `+0x92`. The
-  patch is `scripted-pad` in `research/traces/patches.toml`, with each instruction word it expects and the one that
-  replaces it; `coney-tools pcsx2 prepare-state` and `pcsx2 record` make the copy and restart PCSX2 for you.
+  patch is `scripted-pad` in `research/traces/patches/state-patches.toml`, with each instruction word it expects and the
+  one that replaces it; `coney-tools pcsx2 prepare-state` and `pcsx2 record` make the copy and restart PCSX2 for you.
 - **The right stick, too** (2026-10-05, the feel pass). The right stick's loads are at `0x00149df8` / `0x00149e00`
   (DualShock 2 path) and `0x00149eb8` / `0x00149ec0` (digital path), offsets 4 and 5; making them 0x24 and 0x25
   puts the right stick's x and y at `0x005de3ac` / `0x005de3ad` (the `right-stick` patch). The stick table at
@@ -465,7 +445,7 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
   keep your own states as files in your scratch folder, made as above. PINE can only save to a slot number: when a
   state must be saved from a running game, save it to an empty slot above 10 and move the file to your scratch folder
   at once. A state saved from a patched copy still holds the patches; put each patched word back to the original that
-  `patches.toml` lists before using it as a scenario's `state`, or the copy is refused.
+  `research/traces/patches/` lists before using it as a scenario's `state`, or the copy is refused.
 - **Hygiene.** Save states, screenshots and logs contain game data: keep them in your scratch folder (move the
   `.p2s` files out of `pcsx2/sstates/` afterwards) and close PCSX2 when done. Screenshots are measured, never
   committed; a claim quotes the numbers.
@@ -543,16 +523,21 @@ hook among the scenario's patches: `{ function = "0x002b2b90", args = ["u32(enem
 frame = 3 }` is `GoalFight(enemy, player)`. One call per frame; the arguments (up to six) are expressions worked out
 then, and the recorder stops if the call before was not made.
 
-**Patches** (`research/traces/patches.toml`) are named groups of edits to the copy's `eeMemory.bin`: a code edit gives
-the address, the instruction word the state must hold there and the word that replaces it, and the copy is refused
+**Patches** (the files of `research/traces/patches/`) are named groups of edits to the copy's `eeMemory.bin`: a code
+edit gives the address, the instruction word the state must hold there and the word that replaces it, and the copy is refused
 when the state holds something else. `scripted-pad`, `right-stick` and `puppet` are the patches of
-[Driving PCSX2](#driving-pcsx2).
+[Driving PCSX2](#driving-pcsx2). The patches and the hooks ([Hooks](#hooks)) are declared in the TOML files of that
+folder, read together in file-name order; a name must be unique across them. **A pass adds its own file**
+(`patches/<pass>.toml`, with a comment at the top saying what the pass asked and the research page), and never appends
+to an existing one: two research branches that each append to one shared file conflict on nearly every merge, two
+files never do. Put a patch or hook in an existing file only to change that very entry.
 
 **Fields** (`research/traces/fields.toml`) are named sets of columns. A field is read every update at an
 **address expression** (`tf(player) + 0x4`, type `f32`), or worked out by a **formula** from the fields before it
 (`wrap(deg(2 * atan2(qz, qw)))`); `hidden = true` keeps a helper out of the CSV, and `follow = true` works the address
 out again at every sample, for a chain of pointers that changes as the game plays (the top of an animation stack).
-Expressions are arithmetic over these names, and nothing else of Python:
+A **value** field (`value = "handles(brain(h) + 0x164, 16)"`) is an expression over memory worked out at every sample,
+whose result is the column. Expressions are arithmetic over these names, and nothing else of Python:
 
 | Name | Value |
 | --- | --- |
@@ -562,13 +547,34 @@ Expressions are arithmetic over these names, and nothing else of Python:
 | `prec(h)`, `tf(h)`, `brain(h)` | `0x00660f50 + index × 0x2c`; `0x00714b00 + index × 0x20`; `0x006d53f0 + index × 0x2f0` |
 | `heading(h)` | the heading in radians from the transform's rotation (0 faces +y, anticlockwise) |
 | `camera`, `game_time` | `*(0x005d9158)`; `*(0x0050b734) + 0x48` |
+| `h` | with `rows = "humans"`, the row's human |
+| `hidx(handle)` | the handle index a handle names (high half), -1 for the null handle `0xffffffff` or a stale one (`0x00390180`) |
+| `goal_type(vt)`, `goal_at(brain, k)` | a goal class's type id ([goal types](../references/goal-types.md)); the type of stack slot k, -1 above the top |
+| `handles(address, n)` | how many of n words are handles, neither 0 nor `0xffffffff` (a handle list's length) |
 | `u8` ... `f32` (address) | a value in memory (`u8 s8 u16 s16 u32 s32 f32`) |
 | `sin cos atan2 hypot sqrt abs min max deg rad wrap pi` | math; `wrap` takes degrees to (-180, 180] |
 
-A column that Coney's `--trace` also writes has Coney's name and unit ([Tracing](building.md#tracing)): `x`, `y`,
+A column that Coney's `--trace` also writes has Coney's name and unit ([Tracing](running.md#tracing)): `x`, `y`,
 `z`, `heading`, `speed`, `vz`, `gait`, `clip`, `stamina`, `command`, `health`, `power` and the camera's `cam_*`,
 `look_*`, `wanted_*`, `cam_distance`, `cam_pitch`, `cam_yaw`, `band_near` and `target_pitch`. `phase` (record
 `+0x08`) is the original's only.
+
+**Every human.** `rows = "humans"` in a scenario writes one row per human in use per update (`step`, `human`, then the
+fields, with `h` the row's human) instead of one per update: the `humans` field set, a gang battle's every fighter
+([Rumble: gang battle trace](../research/rumble.md#gang-battle-trace)), is the contract for Coney's all-humans
+`--trace`. One message reads which humans are in use and every fixed address; the `value` and `follow` fields are then
+worked out together, one message per level of pointers (four or five messages a sample). The recorder prints how many
+samples were **torn**: read while the next update had already started, so they mix two updates. A sample of 30 humans
+takes about 11 ms (2026-10-12, PCSX2 2.9.94: 1.6 ms of it PINE), close to the 16 ms between the tick that ends an
+update and the next update's, and at full speed 64 of 601 samples tore; `speed` in `[original]` (PCSX2's
+`[Framerate]` `NominalScalar`, set in the claimed copy's ini for the run and put back afterwards) slows the emulation:
+at 0.4 a 9,000-update match had none missed. The game steps by emulated ticks, but not every wait is a fixed number
+of updates (the Rumble intro ended after 151 to 172, [Rumble](../research/rumble.md#gang-battle-setup)), so time a
+scenario's calls with a margin. A frame that runs two updates (about one in 1,000) still tears its sample; the trace's
+`.quality.txt` lists every missed and torn step.
+
+`pcsx2 record --let NAME=EXPR` gives or replaces a name of the scenario's `let`, so one scenario is recorded with
+different values: the gang battle's matches differ by an offset of the brains' random stream (`--let seed=341`).
 
 #### Hooks {#hooks}
 
@@ -595,7 +601,11 @@ box's queue, [HUD](../research/hud.md#hint-queue-runtime)) and `anim-dispatch` a
 which anim id and which script callback it runs). The level80 passes added the teammate hooks (`hit-by-chief`,
 `hit-reaction`, `attack-target-push`, `push-contact`, `can-push`, `say-command`) and the fire hooks (`ember-init`,
 `burn-init`, `fade-flame-init`, `debris-flame` and their update hooks); the revive pass added `revive-start` and
-`revive-finish` ([Combat](../research/combat.md#revive-runtime)). One run installs at most 64 hooks, fewer than
+`revive-finish` ([Combat](../research/combat.md#revive-runtime)), the speech pass `say-anim-line`, `stop-speech`,
+`play-speech` and `play-speech-cut` (who starts, stops or refuses a human's line, with his line state before each;
+[Sound](../research/sound.md#speech-cut-in)), and the scene-mapping pass `scene-find`, `scene-bind-human`,
+`scene-bind-object` (what each scene binds, [Scenes](../research/scenes.md#cast-runtime)) and `lua-exec-source`
+(`lua-exec` with the chunk name's text). One run installs at most 64 hooks, fewer than
 the file holds, so name only the ones a pass needs. Two hooks at one address cannot be installed together (`hint-show`
 and `event-hint` are the same place): pick one, and add any extra value it needs to the one you keep. When the update
 of an entry matters, log the tick count and use it: in that pass one Lua call's four `HintBox_Queue` entries, all at
@@ -643,6 +653,17 @@ The smoke scenarios reproduce claims of the research pages: `walk60` (the walk s
 (level99 checkpoint 3 with `--start`), and `combat_cross` (`X1` then `XX2` at a puppet civilian 1.5 m away, slot 6, which
 walks in to 1.36 m; on Coney the fight yard's `cross` spawn, a still target 1.05 m away that X1 steers onto alike).
 
+**Gang fights are compared by behaviour, not by step.** The two games draw different random numbers, so a big fight
+(a Rumble gang battle) never plays out alike twice, even in the original. Record several matches of the original and
+several of Coney with the all-humans trace (one row per human per update; Coney's `--trace-humans`, the original's
+`[[humans]]` field set of `research/traces/fields.toml`), then `coney-tools trace fight-report --original ... --coney
+...` computes rates, shares and distributions per gang (goal time shares, attacks and blocks per minute, attackers on
+one target, distance to the target, target switches, goal interruptions, time to the first engagement, knock-out
+times, the match's length and winner) and flags each metric where Coney is outside the original's spread
+([coney-tools](coney-tools.md#trace)). Keep the recordings in the scratch folder, never in the repository. Match the
+original's set-up on Coney's side: where the recording hands player 1 to the AI after the countdown, run Coney with
+`--ai-player`, and give each Coney match its own `--ai-seed` ([Running: tracing](running.md#tracing)).
+
 ### Differential playthroughs {#differential-playthroughs}
 
 A trace diff compares two games update by update, which holds for a few seconds of walking but not for a mission: the
@@ -653,7 +674,7 @@ events**, and drives both games through the same stretch with one **adaptive cou
 1. **Event logs on both sides, at the same semantic points.** Each game writes one CSV line per event (`step, kind,
    name, detail`): a script binding called, a call into the scripts by name, a hint shown, a sound started, a human
    appearing, going down or removed. Coney writes them with `--event-log`
-   ([Building](building.md#event-log)); the original's come from hooks at the places that do the same thing (the
+   ([Running Coney](running.md#event-log)); the original's come from hooks at the places that do the same thing (the
    script VM's binding call, the engine's script look-up, the hint box, the sound start), cited to their addresses on
    the research pages. A binding's call is the best hook: it is the mission script's own vocabulary, so both games
    name the event alike without interpretation.

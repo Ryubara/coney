@@ -7,14 +7,15 @@
 #include "ai/goal.h"
 #include "ai/tactic.h"
 #include "animation/anim_math.h"
+#include "human/locomotion.h"
 
 // A player's crew under the Warrior commands' default: the follow tactic the game issues itself (when the chief is
 // made a player and when a scene ends), the follow goal it gives each member (keep to the chief's formation, face his
 // enemies, never attack), the attack and hold commands' tactics and goals, and the chief's automatic commands that
-// switch the crew to attack or defend and back. Research: docs/research/ai.md#warrior-commands,
-// docs/research/ai.md#warrior-follow, docs/research/ai.md#warrior-attack, docs/research/ai.md#warrior-hold,
-// docs/research/ai-goals.md#goal-follow-and-attack, docs/research/ai-goals.md#goal-hold-position,
-// docs/research/ai.md#warrior-auto-commands
+// switch the crew to attack or defend and back. Research: docs/research/ai-gangs.md#warrior-commands,
+// docs/research/ai-gangs.md#warrior-follow, docs/research/ai-gangs.md#warrior-attack,
+// docs/research/ai-gangs.md#warrior-hold, docs/research/ai-goals.md#goal-follow-and-attack,
+// docs/research/ai-goals.md#goal-hold-position, docs/research/ai-gangs.md#warrior-auto-commands
 
 namespace coney::ai {
 
@@ -31,8 +32,38 @@ inline constexpr int kCrewSteal = 5;
 /// The follow tactic's distance (`0x00310e00` is given 9.0) and the formation slot reach its follow goal walks to.
 inline constexpr float kCrewFollowDistance = 9.0F;
 inline constexpr float kCrewSlotReach = 0.75F;
-/// The follow goal re-takes its slot every this many updates.
-inline constexpr std::uint64_t kCrewSlotPeriod = 31;
+/// After a failed walk the follow goal waits this many updates before it follows again (the failure then cleared).
+inline constexpr int kCrewFailWait = 31;
+/// In fight mode the follow goal stands within this distance of the leader, metres (9 m out of it).
+inline constexpr float kCrewFightFollowDistance = 10.0F;
+/// FollowFormation: beyond this walk distance it moves, metres; its move's radius at a slot, metres; every this many
+/// updates, without a slot, the follow point goes into the running move; the leader's gait is noted every 2-7 updates;
+/// it looks again at most this often while its move runs, ms; and on a failed walk distance it waits, counting, and
+/// tries again at kFollowRetryCount (the original vandalises a breakable object on every kFollowVandalEvery-th).
+inline constexpr float kFollowMoveBeyond = 0.2F;
+inline constexpr float kFollowSlotMoveRadius = 0.1F;
+inline constexpr std::uint32_t kFollowRefreshSteps = 6;
+inline constexpr int kFollowGaitEveryMin = 2;
+inline constexpr int kFollowGaitEveryMax = 7;
+inline constexpr std::uint64_t kFollowCheckMs = 1000;
+inline constexpr int kFollowRetryCount = 30;
+inline constexpr int kFollowVandalEvery = 15;
+
+/// The speed and gait FollowFormation moves at.
+struct FollowPace {
+    float speed = 0.0F;
+    int gait = 2;
+};
+
+/// FollowFormation's speed (docs/research/ai-gangs.md#warrior-follow, "The speed") for a follower `distance` (its walk
+/// distance) from its follow point with the arrival distance `arrival`, behind a human moving at `paceSpeed`, of
+/// `speeds`: within `arrival` the pace (capped at 1.25 x sprint); beyond it f = 0.1 x (distance - arrival), raised by
+/// 4 f x (pace - walk) under 2 m/s and by 1 over 2 m/s or when `hurried` (the follower has attackers); the gait the run
+/// beyond 8 m, the jog beyond 4 m, else the walk; the speed max(gait's, pace) x f within [walk, 1.25 x sprint].
+/// **Coney stand-in**: the leader's `+0x2d5` (which also hurries and makes the gait a run) is not modelled.
+/// @orig 0x002dfef8 FollowFormation_PickSpeed (unknown)
+[[nodiscard]] FollowPace followSpeed(float distance, float arrival, float paceSpeed, bool hurried,
+                                     const human::Speeds& speeds);
 /// In fight mode it takes the nearest attacker of the crew within this distance, metres.
 inline constexpr float kCrewAttackerReach = 20.0F;
 /// Out of fight mode (mode 3) it turns to the leader's heading when more than this off it (radians, 60°), every 2-4 s.
@@ -42,14 +73,15 @@ inline constexpr int kCrewTurnMaxMs = 4000;
 /// Its move to the chief's enemy is cut after this long.
 inline constexpr std::uint32_t kCrewMoveMs = 3000;
 
-/// `GoalFollowPlayer(distance, leader, mode)` (type `0x32`, vtable `0x00541d70`): keeps to the leader's formation. Out
-/// of fight mode it walks back to its slot every 31 updates (FollowFormationGoal) and, in mode 3, turns to the
-/// leader's heading when more than 60° off it every 2-4 s. In fight mode (a member of its gang has attackers and it
-/// is someone's enemy) it keeps a target, else takes the nearest attacker of the gang within 20 m or the leader's
-/// target, and turns to it within the far melee range or moves to it (3 s); it never attacks.
-/// **Coney stand-ins**: the straight-line test that also sends it back to its slot, the fight stance, the 2π field of
-/// view, fetching pick-ups and the idle actions are not built; "someone's enemy" (`+0x152`, inferred) is read as any
-/// fightable brain holding it among its enemies.
+/// `GoalFollowPlayer(distance, leader, mode)` (type `0x32`, vtable `0x00541d70`): keeps to the leader's formation.
+/// After a failed walk it waits kCrewFailWait updates. It stands while the leader is within `distance` (10 m in fight
+/// mode) and it can walk to him in a straight line; otherwise it pushes FollowFormationGoal. Then, in fight mode (a
+/// member of its gang has attackers and it is someone's enemy) it keeps a target, else takes the nearest attacker of
+/// the gang within 20 m or the leader's target, and turns to it within the far melee range or moves to it (3 s); it
+/// never attacks. Out of it, in mode 3, it turns to the leader's heading when more than 60° off it every 2-4 s.
+/// **Coney stand-ins**: the `+0x2d5` match of the stand test, the trains' part of the straight line, the fight stance,
+/// the 2π field of view, fetching pick-ups and the idle actions are not built; "someone's enemy" (`+0x152`,
+/// inferred) is read as any fightable brain holding it among its enemies.
 /// @orig 0x002de380 Goal_FollowPlayer (unknown)
 class FollowPlayerGoal final : public Goal {
   public:
@@ -60,6 +92,11 @@ class FollowPlayerGoal final : public Goal {
 
     /// Joins the leader's formation (made on first use).
     void start(Brain& brain) override;
+    /// Taken up again once the goal above it was popped and its actions are done (so nothing, not even the stand
+    /// test, runs while a move left over from FollowFormation runs): it joins the formation again and turns next in
+    /// 1-2 s. **Coney stand-in**: the fight stance it leaves and the fidget it times (2-3 s) are not built.
+    /// @orig 0x002de540 FollowPlayerGoal_Resume (unknown)
+    void resume(Brain& brain) override;
     /// Done when the leader is gone; else the fight mode's turn or move, or the slot walk and the turn to his heading.
     /// @orig 0x002de7c0 FollowPlayerGoal_Process (unknown)
     [[nodiscard]] GoalStatus process(Brain& brain) override;
@@ -83,21 +120,38 @@ class FollowPlayerGoal final : public Goal {
     float m_distance;
     int m_mode;
     std::uint64_t m_nextTurnMs = 0;
+    int m_failWait = 0; // +0x24: updates counted since a walk failed
 };
 
-/// `FollowFormation(reach, leader)` (type `0x33`): walks to its slot in the leader's formation and is done within
-/// `reach` of it, without a slot, or once the walk failed. **Coney stand-in**: the walk runs (gait 4) while the slot is
-/// more than 3 m away and walks (gait 2) nearer (the gait is not on the page).
+/// `FollowFormation(reach, leader)` (type `0x33`, docs/research/ai-gangs.md#warrior-follow): follows its point in the
+/// leader's formation (Formation::followPoint(): its slot within `reach`, else the human it queues behind within
+/// 2.5 m) at followSpeed(), over the route its move plans, measuring the way by the walk distance
+/// (RoutePlanner::walkDistance()). It is done when it no longer follows, the leader is gone or the last move failed,
+/// or once the human it follows stands and it is within the radius. **Coney stand-ins**: the time limit is read as
+/// "done once that long has passed" (the page names the argument only); the turn with a running leader, the fight
+/// stance, the flags a Warrior gets, the kind-6 wait, the turn and boost for a new move under attack and the
+/// vandalising of a breakable object while it cannot get there are not built.
 /// @orig 0x002dfba8 Goal_FollowFormation (unknown)
 class FollowFormationGoal final : public Goal {
   public:
-    /// Walks to within `reach` of the slot the follower holds.
-    explicit FollowFormationGoal(float reach) : Goal(GoalType::FollowFormation), m_reach(reach) {}
+    /// Follows to within `reach` of its slot; done after `limitMs` when it is not 0.
+    explicit FollowFormationGoal(float reach, std::uint64_t limitMs = 0)
+        : Goal(GoalType::FollowFormation), m_reach(reach), m_limitMs(limitMs) {}
+    /// Draws how often the leader's gait is noted (2-7 updates) and notes the start.
+    void start(Brain& brain) override;
+    /// One update (above).
+    /// @orig 0x002e0088 FollowFormationGoal_Process (unknown)
     [[nodiscard]] GoalStatus process(Brain& brain) override;
 
   private:
     float m_reach;
-    bool m_walked = false;
+    std::uint64_t m_limitMs;
+    std::uint64_t m_startMs = 0;
+    std::uint32_t m_updates = 0;
+    int m_gaitEvery = kFollowGaitEveryMin;
+    human::Gait m_leaderGait = human::Gait::Standing; // the leader's gait when last noted
+    std::uint64_t m_checkMs = 0;                      // it looks again with a move running from then
+    int m_waiting = 0;                                // +0x2a: updates counted since the walk distance failed
 };
 
 /// WarriorFollowTactic (command 0, type `0x12`, vtable `0x005438c0`): the chief's formation takes nine slots and every
@@ -143,8 +197,8 @@ inline constexpr float kCrewAttackStay = 8.0F;
 /// joins the chief's formation; each update it fights the best enemy within 60 m of the chief: a fight goal (4000 ms)
 /// once in reach, else the fight's run-in (EngageEnemyGoal) while it may close on him, else a straight move to him.
 /// With no enemy it stays within 8 m of the chief, turning to his heading every 4 s, and farther it walks back to its
-/// formation slot (FollowFormationGoal, 0.75 m). **Coney stand-ins**: picking up things to fight with, the fight
-/// stance and its shuffle, the fidgets and the FollowFormation time limit (2000 ms) are not built; its enemies are its
+/// formation slot (FollowFormationGoal, 0.75 m, for at most 2000 ms). **Coney stand-ins**: picking up things to fight
+/// with, the fight stance and its shuffle and the fidgets are not built; its enemies are its
 /// own plus (as the follow goal's fight mode) the nearest attacker of the crew; "in reach" is within the far melee
 /// range x 1.1 and "chasable" Brain::mayApproach().
 /// @orig 0x002bbdc0 FollowAndAttackGoal_Init (unknown)

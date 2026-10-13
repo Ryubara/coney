@@ -15,7 +15,7 @@ from typing import Any
 import pytest
 import yaml
 from audit_support import CONVENTIONS, found, items
-from conventions_support import REPO
+from conventions_support import CI_CLASSES, REPO
 
 from coney_tools import audit_files as af
 from coney_tools.audit import registered
@@ -259,10 +259,19 @@ def test_a_block_edited_by_hand_is_found(root: Path) -> None:
 # --- files.ci-scope and files.large-file-limit ------------------------------------------------------------------
 
 
-def test_a_scope_script_with_its_own_list_is_found(root: Path) -> None:
-    edit(root, ".github/scripts/ci-scope.sh", 'DOCS_ONLY="$(docs_only_regex)"', "DOCS_ONLY='^(docs/|research/)'")
+@pytest.mark.parametrize(
+    ("line", "own"),
+    [
+        ('DOCS_ONLY="$(regex_of docs_only)"', "DOCS_ONLY='^(docs/|research/)'"),
+        ('TOOLS_ONLY="$(regex_of tools_only)"', "TOOLS_ONLY='^(python/)'"),
+        ('ENGINE="$(regex_of engine)"', "ENGINE='^(src/|tests/)'"),
+    ],
+)
+def test_a_scope_script_with_its_own_list_is_found(root: Path, line: str, own: str) -> None:
+    edit(root, ".github/scripts/ci-scope.sh", line, own)
     messages = [problem.message for problem in found(af.ci_scope_reads_the_file, context(root))]
     assert any("its own regular expression" in message for message in messages)
+    assert any("does not read paths." in message for message in messages)
 
 
 def test_a_scope_script_that_no_longer_names_the_file_is_found(root: Path) -> None:
@@ -273,21 +282,43 @@ def test_a_scope_script_that_no_longer_names_the_file_is_found(root: Path) -> No
     assert any("does not read" in problem.message for problem in found(af.ci_scope_reads_the_file, context(root)))
 
 
-def test_a_docs_only_list_the_script_cannot_parse_is_found(root: Path) -> None:
-    edit(root, CONVENTIONS_FILE, '    - "docs/"\n', "    - 'docs/'\n")
+@pytest.mark.parametrize(("key", "item"), [("docs_only", "docs/"), ("tools_only", "python/"), ("engine", "src/")])
+def test_a_scope_list_the_script_cannot_parse_is_found(root: Path, key: str, item: str) -> None:
+    edit(root, CONVENTIONS_FILE, f'    - "{item}"\n', f"    - '{item}'\n")
     (problem,) = found(af.ci_scope_reads_the_file, context(root))
-    assert problem.item == CONVENTIONS_FILE and "one quoted pattern per line" in problem.message
+    assert problem.item == CONVENTIONS_FILE and f"paths.{key} must be" in problem.message
 
 
-def test_the_docs_only_list_is_read_the_way_the_script_reads_it() -> None:
-    text = '  docs_only:\n    - "docs/"   # why\n\n    # a comment\n    - "*.md"\n  generated:\n    - "no"\n'
-    assert af.docs_only_as_written(text) == ["docs/", "*.md"]
+@pytest.mark.parametrize("key", ["docs_only", "tools_only", "engine"])
+def test_a_scope_list_is_read_the_way_the_script_reads_it(key: str) -> None:
+    text = f'  {key}:\n    - "docs/"   # why\n\n    # a comment\n    - "*.md"\n  generated:\n    - "no"\n'
+    assert af.scope_list_as_written(text, key) == ["docs/", "*.md"]
+    assert af.scope_list_as_written(text, "other") == []
 
 
 def test_a_limit_that_pre_commit_does_not_pass_is_found(root: Path) -> None:
     edit(root, ".pre-commit-config.yaml", "--maxkb=512", "--maxkb=1024")
     (problem,) = found(af.large_file_limit_matches, context(root))
     assert "--maxkb=512" in problem.message
+
+
+# --- files.markdown-hook ------------------------------------------------------------------------------------------
+
+
+def test_the_markdownlint_hook_is_in_the_clean_copy(root: Path) -> None:
+    assert "id: markdownlint-cli2" in (root / ".pre-commit-config.yaml").read_text(encoding="utf-8")
+
+
+def test_a_pre_commit_config_without_the_markdownlint_hook_is_found(root: Path) -> None:
+    edit(root, ".pre-commit-config.yaml", "id: markdownlint-cli2", "id: something-else")
+    (problem,) = found(af.markdown_hook_exists, context(root))
+    assert problem.item == ".pre-commit-config.yaml" and "markdownlint-cli2" in problem.message
+
+
+def test_a_missing_pre_commit_config_is_found_by_the_markdownlint_check(root: Path) -> None:
+    (root / ".pre-commit-config.yaml").unlink()
+    (problem,) = found(af.markdown_hook_exists, context(root))
+    assert "missing" in problem.message
 
 
 # --- the scope script itself --------------------------------------------------------------------------------------
@@ -308,18 +339,16 @@ def find_bash() -> str | None:
 needs_bash = pytest.mark.skipif(find_bash() is None, reason="no bash")
 
 
-def run_scope(root: Path, changed: list[str], event: str = "pull_request", draft: str = "false") -> dict[str, str]:
-    """Commit a base, then `changed`, in a made-up repository holding the script and the conventions; run the script."""
-    subprocess.run(["git", "init", "-q", "-b", "main"], cwd=root, check=True, env=GIT_ENV)
+def commit_all(root: Path, message: str) -> None:
+    """Stage everything in the made-up repository and commit it."""
     subprocess.run(["git", "add", "-A"], cwd=root, check=True, env=GIT_ENV)
-    subprocess.run(["git", "commit", "-q", "-m", "base"], cwd=root, check=True, env=GIT_ENV)
-    for name in changed:
-        (root / name).parent.mkdir(parents=True, exist_ok=True)
-        with (root / name).open("a", encoding="utf-8", newline="\n") as handle:
-            handle.write("# changed\n")
-    subprocess.run(["git", "add", "-A"], cwd=root, check=True, env=GIT_ENV)
-    subprocess.run(["git", "commit", "-q", "-m", "change"], cwd=root, check=True, env=GIT_ENV)
+    subprocess.run(["git", "commit", "-q", "--allow-empty", "-m", message], cwd=root, check=True, env=GIT_ENV)
+
+
+def run_scope_on(root: Path, event: str = "pull_request", draft: str = "false") -> tuple[dict[str, str], str]:
+    """Run the script in `root` on the commit HEAD against HEAD^1; its outputs and what it printed."""
     output = root / "out.txt"
+    output.unlink(missing_ok=True)
     env = {**GIT_ENV, "EVENT": event, "DRAFT": draft, "GITHUB_OUTPUT": str(output)}
     bash = find_bash()
     assert bash is not None
@@ -327,53 +356,170 @@ def run_scope(root: Path, changed: list[str], event: str = "pull_request", draft
         [bash, ".github/scripts/ci-scope.sh"], cwd=root, env=env, capture_output=True, text=True, check=False
     )
     assert done.returncode == 0, done.stderr
-    return dict(line.split("=", 1) for line in output.read_text(encoding="utf-8").splitlines())
+    outputs = dict(line.split("=", 1) for line in output.read_text(encoding="utf-8").splitlines())
+    return outputs, done.stdout
+
+
+def make_change(
+    root: Path, changed: list[str], moved: tuple[tuple[str, str], ...] = (), deleted: tuple[str, ...] = ()
+) -> None:
+    """Commit a base, then a change (`changed` files written, `moved` pairs renamed, `deleted` files removed), in a
+    made-up repository holding the script and the conventions."""
+    for name in (*(old for old, _ in moved), *deleted):
+        (root / name).parent.mkdir(parents=True, exist_ok=True)
+        (root / name).write_text("base\n", encoding="utf-8")
+    subprocess.run(["git", "init", "-q", "-b", "main"], cwd=root, check=True, env=GIT_ENV)
+    commit_all(root, "base")
+    for name in changed:
+        (root / name).parent.mkdir(parents=True, exist_ok=True)
+        with (root / name).open("a", encoding="utf-8", newline="\n") as handle:
+            handle.write("# changed\n")
+    for old, new in moved:
+        (root / new).parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(["git", "mv", old, new], cwd=root, check=True, env=GIT_ENV)
+    for name in deleted:
+        (root / name).unlink()
+    commit_all(root, "change")
+
+
+def run_scope(
+    root: Path,
+    changed: list[str],
+    event: str = "pull_request",
+    draft: str = "false",
+    moved: tuple[tuple[str, str], ...] = (),
+    deleted: tuple[str, ...] = (),
+) -> dict[str, str]:
+    """`make_change`, then the script's outputs for that change."""
+    make_change(root, changed, moved, deleted)
+    return run_scope_on(root, event, draft)[0]
+
+
+ALL_OS = '["ubuntu-24.04","windows-2022","macos-15"]'
+LINUX = '["ubuntu-24.04"]'
+
+#: What a ready pull request runs for each change: the engine jobs (build, sanitizers, clang-tidy) or not, and the
+#: OSes python runs on. One class at a time, then mixed pull requests, which get the union of what their files need.
+SCOPE_CASES = [
+    # docs_only: no engine jobs, python on Linux.
+    (["docs/guides/a.md"], "false", LINUX),
+    (["README.md"], "false", LINUX),
+    (["research/x.yaml"], "false", LINUX),
+    ([".github/conventions.yml"], "false", LINUX),
+    (["mkdocs.yml"], "false", LINUX),
+    (["docs/a.md", "CONTRIBUTING.md"], "false", LINUX),
+    ([".github/workflows/pr.yml"], "false", LINUX),
+    ([".github/workflows/docs.yml"], "false", LINUX),
+    # tools_only: no engine jobs, python on every OS.
+    (["python/src/coney_tools/cli.py"], "false", ALL_OS),
+    (["python/README.md"], "false", ALL_OS),
+    ([".claude/hooks/a.py"], "false", ALL_OS),
+    ([".pre-commit-config.yaml"], "false", ALL_OS),
+    ([".github/ISSUE_TEMPLATE/bug.yml"], "false", ALL_OS),
+    ([".github/workflows/python.yml"], "false", ALL_OS),
+    (["bootstrap.sh", "tools/a.ps1"], "false", ALL_OS),
+    # engine: the engine jobs, python on Linux.
+    (["src/core/a.cpp"], "true", LINUX),
+    (["tests/core/a_test.cpp"], "true", LINUX),
+    (["assets/sandbox/a.txt"], "true", LINUX),
+    (["CMakeLists.txt"], "true", LINUX),
+    (["cmake/deps.cmake"], "true", LINUX),
+    ([".clang-tidy"], "true", LINUX),
+    ([".github/workflows/build.yml"], "true", LINUX),
+    ([".github/actions/ccache/action.yml"], "true", LINUX),
+    # unknown: everything.
+    (["sub/README.md"], "true", ALL_OS),
+    (["docs.md/x"], "true", ALL_OS),
+    ([".github/scripts/tidy-files.sh"], "true", ALL_OS),
+    ([".github/workflows/new.yml"], "true", ALL_OS),
+    ([".gitattributes"], "true", ALL_OS),
+    # Mixed: the union.
+    (["docs/a.md", "python/src/coney_tools/cli.py"], "false", ALL_OS),
+    (["docs/a.md", "src/b.cpp"], "true", LINUX),
+    (["python/src/coney_tools/cli.py", "src/b.cpp"], "true", ALL_OS),
+    (["src/b.cpp", ".github/workflows/python.yml"], "true", ALL_OS),
+    (["docs/a.md", "src/b.cpp", "LICENSE"], "true", ALL_OS),
+    ([".github/workflows/build.yml", ".github/workflows/python.yml"], "true", ALL_OS),
+]
 
 
 @needs_bash
-@pytest.mark.parametrize(
-    "changed",
-    [
-        ["docs/guides/a.md"],
-        ["README.md"],
-        ["research/x.yaml"],
-        [".github/conventions.yml"],
-        ["mkdocs.yml"],
-        ["docs/a.md", "CONTRIBUTING.md"],
-    ],
-)
-def test_a_documentation_only_change_skips_the_builds(root: Path, changed: list[str]) -> None:
+@pytest.mark.parametrize(("changed", "build", "python_os"), SCOPE_CASES)
+def test_a_pull_request_runs_what_its_files_need(root: Path, changed: list[str], build: str, python_os: str) -> None:
     result = run_scope(root, changed)
-    assert result["full"] == "false" and result["python-os"] == '["ubuntu-24.04"]' and result["python"] == "true"
+    assert (result["build"], result["python"], result["python-os"]) == (build, "true", python_os)
+
+
+@needs_bash
+def test_the_script_sorts_files_the_way_the_conventions_do(root: Path) -> None:
+    """Every path of the conventions' table, changed at once: the class the script prints for each is `ci_class`."""
+    make_change(root, [path for path, _ in CI_CLASSES])
+    _, printed = run_scope_on(root)
+    sorted_by_script: dict[str, str] = {}
+    for line in printed.splitlines():
+        if line.startswith("  "):
+            name, path = line.split()
+            sorted_by_script[path] = name
+    paths = load_conventions(root).paths
+    assert sorted_by_script == {path: paths.ci_class(path) for path, _ in CI_CLASSES}
+    assert sorted_by_script == dict(CI_CLASSES)
 
 
 @needs_bash
 @pytest.mark.parametrize(
-    "changed",
+    ("moved", "build", "python_os"),
     [
-        ["src/core/a.cpp"],
-        ["docs/a.md", "src/b.cpp"],
-        ["python/README.md"],
-        ["CMakeLists.txt"],
-        ["sub/README.md"],
-        ["docs.md/x"],
-        [".github/workflows/pr.yml"],
+        # Both sides of a move count: out of src/ is still an engine change, into python/ a tools change.
+        ((("src/a.cpp", "docs/a.md"),), "true", LINUX),
+        ((("docs/a.md", "src/a.cpp"),), "true", LINUX),
+        ((("python/a.py", "python/b.py"),), "false", ALL_OS),
+        ((("docs/a.md", "docs/b.md"),), "false", LINUX),
+        ((("docs/a.md", "python/a.md"),), "false", ALL_OS),
+        ((("misc/a.txt", "docs/a.md"),), "true", ALL_OS),
     ],
 )
-def test_a_change_that_reaches_the_engine_runs_everything(root: Path, changed: list[str]) -> None:
-    assert run_scope(root, changed)["full"] == "true"
+def test_a_rename_counts_both_of_its_sides(
+    root: Path, moved: tuple[tuple[str, str], ...], build: str, python_os: str
+) -> None:
+    result = run_scope(root, [], moved=moved)
+    assert (result["build"], result["python-os"]) == (build, python_os)
 
 
 @needs_bash
-def test_the_script_reads_a_changed_list_from_the_conventions(root: Path) -> None:
-    """Add a docs-only pattern to the file and the script follows it: there is no second copy."""
-    edit(root, CONVENTIONS_FILE, '    - "mkdocs.yml"\n', '    - "mkdocs.yml"\n    - "tools-notes/"\n')
-    assert run_scope(root, ["tools-notes/a.txt"])["full"] == "false"
+@pytest.mark.parametrize(
+    ("deleted", "build", "python_os"),
+    [(("src/a.cpp",), "true", LINUX), (("python/a.py",), "false", ALL_OS), (("docs/a.md",), "false", LINUX)],
+)
+def test_a_deleted_file_counts_like_a_changed_one(
+    root: Path, deleted: tuple[str, ...], build: str, python_os: str
+) -> None:
+    result = run_scope(root, [], deleted=deleted)
+    assert (result["build"], result["python-os"]) == (build, python_os)
 
 
 @needs_bash
-def test_a_conventions_file_without_the_list_stops_the_script(root: Path) -> None:
-    text = (root / CONVENTIONS_FILE).read_text(encoding="utf-8").replace("  docs_only:", "  docs_only_renamed:")
+def test_an_empty_change_runs_everything(root: Path) -> None:
+    result = run_scope(root, [])
+    assert (result["build"], result["python"], result["python-os"]) == ("true", "true", ALL_OS)
+
+
+@needs_bash
+@pytest.mark.parametrize("key", ["docs_only", "tools_only", "engine"])
+def test_the_script_reads_a_changed_list_from_the_conventions(root: Path, key: str) -> None:
+    """Add a pattern to one list of the file and the script follows it: there is no second copy."""
+    text = (root / CONVENTIONS_FILE).read_text(encoding="utf-8")
+    (root / CONVENTIONS_FILE).write_text(
+        text.replace(f"  {key}:\n", f'  {key}:\n    - "notes-x/"\n', 1), encoding="utf-8", newline="\n"
+    )
+    result = run_scope(root, ["notes-x/a.txt"])
+    expected = {"docs_only": ("false", LINUX), "tools_only": ("false", ALL_OS), "engine": ("true", LINUX)}
+    assert (result["build"], result["python-os"]) == expected[key]
+
+
+@needs_bash
+@pytest.mark.parametrize("key", ["docs_only", "tools_only", "engine"])
+def test_a_conventions_file_without_a_list_stops_the_script(root: Path, key: str) -> None:
+    text = (root / CONVENTIONS_FILE).read_text(encoding="utf-8").replace(f"  {key}:", f"  {key}_renamed:")
     (root / CONVENTIONS_FILE).write_text(text, encoding="utf-8", newline="\n")
     bash = find_bash()
     assert bash is not None
@@ -385,15 +531,18 @@ def test_a_conventions_file_without_the_list_stops_the_script(root: Path) -> Non
         text=True,
         check=False,
     )
-    assert done.returncode != 0 and "found no paths.docs_only" in done.stderr
+    assert done.returncode != 0 and f"found no paths.{key}" in done.stderr
 
 
 @needs_bash
-def test_pushes_and_drafts_behave_as_before(root: Path) -> None:
-    assert run_scope(root, ["docs/a.md"], event="push")["full"] == "true"
+@pytest.mark.parametrize("event", ["push", "schedule", "workflow_dispatch"])
+def test_pushes_nightly_and_manual_runs_get_everything(root: Path, event: str) -> None:
+    result = run_scope(root, ["docs/a.md"], event=event)
+    assert (result["build"], result["python"], result["python-os"]) == ("true", "true", ALL_OS)
 
 
 @needs_bash
-def test_a_draft_runs_only_the_cheap_checks(tmp_path: Path) -> None:
-    result = run_scope(checkout(tmp_path), ["src/a.cpp"], draft="true")
-    assert result["full"] == "false" and result["python"] == "false"
+@pytest.mark.parametrize("changed", [["src/a.cpp"], ["python/a.py"], ["docs/a.md"], ["misc/a"]])
+def test_a_draft_runs_only_the_cheap_checks(root: Path, changed: list[str]) -> None:
+    result = run_scope(root, changed, draft="true")
+    assert result["build"] == "false" and result["python"] == "false"

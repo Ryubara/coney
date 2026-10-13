@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <span>
 #include <string>
@@ -368,6 +369,24 @@ TEST_CASE("the window takes the focus only in a run a person plays", "[options]"
     CHECK(coney::usageText().find("--no-activate") != std::string_view::npos);
 }
 
+TEST_CASE("window-display names the display the window opens on", "[options]") {
+    auto plain = parseOptions({});
+    REQUIRE(plain.has_value());
+    CHECK_FALSE(plain->windowDisplay.has_value());
+
+    auto asked = parse(std::array<std::string_view, 2>{"--window-display", "portrait"});
+    REQUIRE(asked.has_value());
+    CHECK(asked->windowDisplay == "portrait");
+    // Any text is taken as given: whether a display matches is known only once the window system lists them.
+    auto name = parse(std::array<std::string_view, 2>{"--window-display", "LG HDR"});
+    REQUIRE(name.has_value());
+    CHECK(name->windowDisplay == "LG HDR");
+
+    CHECK_FALSE(parse(std::array<std::string_view, 1>{"--window-display"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 4>{"--window-display", "1", "--window-display", "2"}).has_value());
+    CHECK(coney::usageText().find("--window-display") != std::string_view::npos);
+}
+
 TEST_CASE("the sandbox option takes a layout or defaults to the default one, and needs no disc", "[options][sandbox]") {
     auto bare = parse(std::array<std::string_view, 1>{"--sandbox"});
     REQUIRE(bare.has_value());
@@ -690,4 +709,79 @@ TEST_CASE("the pad pipe is test mode and takes the place of an input script", "[
     CHECK_FALSE(
         parse(std::array<std::string_view, 4>{"--pad-pipe", "--input-script", "s.txt", "--headless"}).has_value());
     CHECK_FALSE(parse(std::array<std::string_view, 2>{"--pad-pipe", "--pad-pipe"}).has_value());
+}
+
+TEST_CASE("the trace-humans option names the file every human's rows are traced to", "[options]") {
+    // A played level and a Rumble match both have humans to trace.
+    auto play =
+        parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "level99", "--trace-humans", "h.csv"});
+    REQUIRE(play.has_value());
+    CHECK(play->humansTraceFile == "h.csv");
+    auto rumble =
+        parse(std::array<std::string_view, 6>{"--disc", "x", "--rumble", "warparty", "--trace-humans", "h.csv"});
+    REQUIRE(rumble.has_value());
+    CHECK(rumble->humansTraceFile == "h.csv");
+    // It needs a game that is played, and a file.
+    CHECK_FALSE(parse(std::array<std::string_view, 2>{"--trace-humans", "h.csv"}).has_value());
+    CHECK_FALSE(
+        parse(std::array<std::string_view, 5>{"--disc", "x", "--rumble", "warparty", "--trace-humans"}).has_value());
+    // In a Rumble match --trace traces every human too: the match has no one level to trace the player of.
+    auto traced = parse(std::array<std::string_view, 6>{"--disc", "x", "--rumble", "warparty", "--trace", "t.csv"});
+    REQUIRE(traced.has_value());
+    CHECK(traced->humansTraceFile == "t.csv");
+    CHECK_FALSE(traced->traceFile.has_value());
+    CHECK(coney::usageText().find("--trace-humans") != std::string_view::npos);
+}
+
+TEST_CASE("the ai-player option hands player 1 to the AI in a Rumble match, and needs one", "[options]") {
+    auto handed = parse(std::array<std::string_view, 9>{"--disc", "x", "--rumble", "1", "--arena", "102", "--gang-size",
+                                                        "9", "--ai-player"});
+    REQUIRE(handed.has_value());
+    if (!handed) {
+        return;
+    }
+    // A local: clang-tidy cannot follow a check through the outer optional.
+    const std::optional<coney::RumbleLaunch> launch = handed->rumble;
+    REQUIRE(launch.has_value());
+    if (!launch) {
+        return;
+    }
+    CHECK(launch->aiPlayer);
+    CHECK(launch->gameType == 1);
+    CHECK(launch->arena == 102);
+    CHECK(launch->gangSize == 9);
+    // Off unless asked for.
+    auto plain = parse(std::array<std::string_view, 4>{"--disc", "x", "--rumble", "warparty"});
+    REQUIRE(plain.has_value());
+    CHECK_FALSE(plain->rumble.value_or(coney::RumbleLaunch{}).aiPlayer);
+    // Only a Rumble match hands the player over, and only once.
+    CHECK_FALSE(parse(std::array<std::string_view, 3>{"--disc", "x", "--ai-player"}).has_value());
+    CHECK_FALSE(
+        parse(std::array<std::string_view, 5>{"--disc", "x", "--play-level", "level99", "--ai-player"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 6>{"--disc", "x", "--rumble", "1", "--ai-player", "--ai-player"})
+                    .has_value());
+    CHECK(coney::usageText().find("--ai-player") != std::string_view::npos);
+}
+
+TEST_CASE("the ai-seed option varies the AI's random draws of a played level or a Rumble match", "[options]") {
+    auto rumble = parse(std::array<std::string_view, 6>{"--disc", "x", "--rumble", "1", "--ai-seed", "17"});
+    REQUIRE(rumble.has_value());
+    CHECK(rumble->aiSeed == std::optional<std::uint32_t>(17));
+    auto play =
+        parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "level99", "--ai-seed", "2147483647"});
+    REQUIRE(play.has_value());
+    CHECK(play->aiSeed == std::optional<std::uint32_t>(2147483647));
+    // Unset without the option.
+    auto plain = parse(std::array<std::string_view, 4>{"--disc", "x", "--rumble", "1"});
+    REQUIRE(plain.has_value());
+    CHECK_FALSE(plain->aiSeed.has_value());
+    // A whole number from 0, for a played game, given once.
+    CHECK_FALSE(parse(std::array<std::string_view, 6>{"--disc", "x", "--rumble", "1", "--ai-seed", "-1"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 6>{"--disc", "x", "--rumble", "1", "--ai-seed", "x"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 5>{"--disc", "x", "--rumble", "1", "--ai-seed"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 4>{"--disc", "x", "--ai-seed", "3"}).has_value());
+    CHECK_FALSE(
+        parse(std::array<std::string_view, 8>{"--disc", "x", "--rumble", "1", "--ai-seed", "3", "--ai-seed", "4"})
+            .has_value());
+    CHECK(coney::usageText().find("--ai-seed") != std::string_view::npos);
 }

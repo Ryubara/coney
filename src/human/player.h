@@ -119,7 +119,15 @@ struct PlayerClass {
     std::vector<std::int16_t> damage;
     int damagePercent = 0;                        ///< The Warrior class byte `+0x06`; 0 leaves the damage unscaled.
     std::optional<combat::PowerClass> powerClass; ///< Nothing keeps combat::kPlayerPowerClass.
+    /// His health: the type's times the Warrior class's byte `+0x05` (characters::PlayerTraits::health); 0 keeps
+    /// kPlayerHealth.
+    int health = 0;
+    std::optional<combat::RageClass> rage; ///< His Warrior class's rage; nothing keeps combat::kPlayerRageClass.
 };
+
+/// The fighter profile of a player of `playerClass`: his power class, health and rage, each the player's default
+/// (class 64, kPlayerHealth, class 6's rage) where the class gives none.
+[[nodiscard]] FighterProfile playerProfileOf(const PlayerClass& playerClass);
 
 /// The class a player made as `type` plays with, from `types` (characters::CharacterTypes::playerTraitsOf()); empty
 /// when `types` has no such type. The one path for every player, the one a level starts with and a changed one alike,
@@ -179,7 +187,8 @@ class Player {
     /// enemy, or none when he has none. Coney has no brains yet, so whatever owns the enemies sets it; none until then.
     void setNearestEnemy(std::optional<float> distance) { m_nearestEnemy = distance; }
     /// Takes the pad away from the human or gives it back: while it is away update() leaves the stick centred and no
-    /// command in the record, so only the brain moves him (a player's brain set dead, docs/research/ai.md#scripted).
+    /// command in the record, so only the brain moves him (a player's brain set dead,
+    /// docs/research/ai-scripting.md#scripted).
     void setPadControlled(bool padControlled);
     /// Whether the pad drives the human (true until setPadControlled(false)).
     [[nodiscard]] bool padControlled() const { return m_padControlled; }

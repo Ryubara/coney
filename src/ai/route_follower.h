@@ -13,7 +13,7 @@
 // Following a route: the waypoints are the route's nodes and then the destination. The follower gives the move
 // action the waypoint to aim at, moves on when the human reaches it, skips the ones it can already walk past in a
 // straight line, and frees the route once only the destination is left.
-// Research: docs/research/ai.md#route-follow
+// Research: docs/research/ai-moving.md#route-follow
 
 namespace coney::ai {
 
@@ -39,8 +39,12 @@ class RouteFollower {
     /// leg on is not walked, kind 1 or 2). The route is freed once the destination is the waypoint.
     /// @orig 0x0029aa88 Route_Follow (unknown)
     [[nodiscard]] anim::Vec3 waypoint(const RoutePlanner& planner, anim::Vec3 position, float speed = 0.0F);
-    /// The waypoints still ahead, the current first (the destination last): what the corner speed looks at.
+    /// The waypoints still ahead, the current first (the destination last).
     [[nodiscard]] std::vector<anim::Vec3> ahead() const;
+    /// The waypoints the corner speed looks at: those ahead, the current first, up to the first whose leg on has bit
+    /// `0x4` or `0x80` (a jump, drop or ledge climb), which is the last: nothing past a take-off is a corner (the
+    /// points the original collects at `0x002fbd18`, docs/research/scripting.md#level99-p2-vermin-fence).
+    [[nodiscard]] std::vector<anim::Vec3> cornerPoints() const;
     /// The index of the current waypoint (the destination is the last).
     [[nodiscard]] std::size_t index() const { return m_index; }
     /// The link kind of the leg to the current waypoint (the D record that steps from the waypoint before to it, on
@@ -48,14 +52,24 @@ class RouteFollower {
     /// @orig 0x00251070 Route_LegKind (unknown)
     [[nodiscard]] std::uint16_t legKind() const { return m_legKinds[m_index]; }
     [[nodiscard]] bool legAvoided() const { return m_legAvoided[m_index]; }
+    /// The link kind of the leg out of the current waypoint (to the next); 0 when the destination is the waypoint.
+    [[nodiscard]] std::uint16_t nextLegKind() const { return onLastLeg() ? std::uint16_t{0} : m_legKinds[m_index + 1]; }
+    /// The waypoint after the current one; the current one when it is the destination.
+    [[nodiscard]] anim::Vec3 nextPoint() const { return onLastLeg() ? m_points[m_index] : m_points[m_index + 1]; }
     /// Whether the leg to the current waypoint is a jump leg (kind 4): the current waypoint is the landing point.
     [[nodiscard]] bool onJumpLeg() const { return isJumpLeg(m_legKinds[m_index]); }
     /// Whether the current waypoint is a jump leg's take-off or landing: the route is kept for it.
     [[nodiscard]] bool atJump() const { return onJumpLeg() || (!onLastLeg() && isJumpLeg(m_legKinds[m_index + 1])); }
-    /// Whether a leg of `kind` is a jump leg: kind 4, not a climb (docs/research/ai.md#route-jump).
+    /// Whether a leg of `kind` is a jump leg: kind 4, not a climb (docs/research/ai-moving.md#route-jump).
     [[nodiscard]] static bool isJumpLeg(std::uint16_t kind);
     /// Moves on past the current waypoint, as when it is reached (a climb over its leg has ended beyond it).
     void passWaypoint(const RoutePlanner& planner, anim::Vec3 position) { moveOn(planner, position, true); }
+    /// Moves the destination, the last waypoint, to `point`.
+    void setDestination(anim::Vec3 point) { m_points.back() = point; }
+    /// The position of the route's last node, the waypoint before the destination; nothing for a route of none.
+    [[nodiscard]] std::optional<anim::Vec3> lastNode() const {
+        return m_points.size() >= 2 ? std::optional<anim::Vec3>{m_points[m_points.size() - 2]} : std::nullopt;
+    }
     /// Whether the destination is the waypoint (the route is freed).
     [[nodiscard]] bool onLastLeg() const { return m_index + 1 >= m_points.size(); }
     /// The route node of the current waypoint; nothing once the destination is the waypoint.
@@ -74,7 +88,7 @@ class RouteFollower {
     [[nodiscard]] bool canSkip(const RoutePlanner& planner, anim::Vec3 position) const;
 
     // Puts the current waypoint where a jump leg wants it: a take-off at the human's point in the queue along its
-    // edge, a landing at the human's position projected onto the landing edge (docs/research/ai.md#route-jump).
+    // edge, a landing at the human's position projected onto the landing edge (docs/research/ai-moving.md#route-jump).
     // @orig 0x0029b2b8 Route_JumpPoints (unknown)
     void placeJumpPoint(const RoutePlanner& planner, anim::Vec3 position);
 

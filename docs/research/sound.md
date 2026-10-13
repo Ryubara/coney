@@ -59,7 +59,7 @@ Names are ours; every other function of the unit is in the [Function index](#fun
 | `0x00114c98` | `VoiceTable_IsBlocked` | a fixed list of lines not played in certain levels | confirmed (code) |
 | `0x002205e0` | `Human_SayCommand` | a human says a speech command (the work of `SoundPlayCommand`) | confirmed (code) |
 | `0x0021e400` / `0x0021e698` | `Human_PlaySpeech` / `Human_PlaySpeechCutting` | plays a line at the human with an end callback (the second also cuts a line off) | confirmed (code) |
-| `0x0041cc40` | `WarChief_SayCommand` | the line a war chief says for a Warrior command ([AI](ai.md#warrior-commands)) | confirmed (code) |
+| `0x0041cc40` | `WarChief_SayCommand` | the line a war chief says for a Warrior command ([AI](ai-gangs.md#warrior-commands)) | confirmed (code) |
 
 ## Data
 
@@ -498,6 +498,10 @@ carried boom box is inferred.
 sound; 10 with 0 stops it and leaves the radio off (state 10); `0x1b` (picked up) calls `onPickUp` with the player's
 handle and queues hint text `0x11`. Confirmed (code).
 
+**A destroyed radio.** `ObjDestroy` of the boom box (the level95 hub's mission action does it) removes the object
+that holds the radio record. What happens to a sound still playing is not traced; Coney stops it and forgets the
+radio, as the smash (message 1) does on the next update. Inferred.
+
 ### Interface sounds
 
 `SoundCfgInterfaceSound(n, name)` fills a numbered cue table in the sound matrix; `0x0010fc30` plays cue `n` as a 2D
@@ -525,7 +529,8 @@ acts by id. Confirmed (code):
   a player, half for one hidden in shadow.
 - **Held objects** (ids `0x34`, `0x56`): the held object's material against itself or against 17.
 - **Vocal ids** (grunts and efforts): the entry's first sound said as a speech line (`Human_SayAnimLine`,
-  `0x0021f410`; needs `+0x199`, a player twice as loud), some only when no line plays, some cutting it.
+  `0x0021f410`; needs `+0x199`, a player twice as loud), some only when no line plays, some cutting it, none over a
+  line that may not be cut ([Cutting in on a line](#speech-cut-in)).
 - **Speech-command ids**: `Human_SayCommand` with a fixed command (`0x8b` itself says `onfire`, 107, while `+0x19b`
   is set; others taunts and reactions, some only when `Ambient_MayGesture` allows).
 
@@ -540,7 +545,9 @@ sound-by-hash events of [Scene soundtracks](#scene-sound). Type 13 starts the sc
 (`0x002205e0`), confirmed (code):
 
 1. Nothing when the human cannot speak (`+0x199` clear). A line already playing is cut off when the fourth argument
-   (`interrupt`, default true) is set; otherwise nothing is said while it plays.
+   (`interrupt`, default true) is set, unless it may not be cut (`+0x194` clear, a `HuSpeakNI` line or an order):
+   then nothing is said and the command's callback runs at once ([Cutting in on a line](#speech-cut-in)). Without
+   `interrupt` nothing is said while any line plays.
 2. `VoiceTable_NextLine(+0x3b0, command)` picks the line. With a chance below 100 it rolls 0-99 and says nothing
    when the roll is higher than the chance. With no lines it says nothing. Otherwise it takes line `next + 1`, adds
    one to `next` and wraps it to 0 at the count: **a set's lines for a command play in turn, not at random**. A line
@@ -622,10 +629,92 @@ that were cut).
    duckable flag**: false makes a non-duckable line, which plays at pitch 1 and ducks every other duckable
    directional sound of a non-player to `+0x3faac` (0.2) while it lasts.
 4. `Human_UpdateSpeech` (`0x0021e940`, each update) starts the stream once it is primed (and the speaking pose with
-   it), keeps it at the human's head, and when the line is gone calls the Lua callback with its argument and sets
-   `+0x194` again. A line stopped by `HuShutUp` keeps its Lua callback, which runs at that next update; a line cut off
-   by a new one loses it (the new line's callback replaces it). The speaker looks at the `listener` for the line's
-   length plus 0.5 s.
+   it), keeps it at the human's head, and when the line is gone calls the Lua callback with its argument, or, when
+   there is none, sets `+0x194` again. A line stopped by `HuShutUp` keeps its Lua callback, which runs at that next
+   update; a line cut off by a new one loses it (the new line's callback replaces it). The full rule is
+   [below](#speech-cut-in). The speaker looks at the `listener` for the line's length plus 0.5 s.
+
+#### Cutting in on a line {#speech-cut-in}
+
+Every way a human's line starts or stops goes through the same four fields and two functions, so one rule covers
+`HuSpeak`, `HuSpeakNI`, `HuShutUp`, speech commands and the grunts of [vocal ids](sound-events.md#vocal-ids).
+Confirmed (code) at the addresses given:
+
+| Human field | Meaning | Written by |
+| --- | --- | --- |
+| `+0x178` | the current line's sound handle; "alive" means it still resolves to a task (`SoundHandle_Resolve`, `0x0010f578`) | every line start |
+| `+0x188` / `+0x190` | the Lua callback (an interned name, 0 for none) and its argument | **every** line start writes both, 0 when the new line has none (`0x0021e56c`, `0x0021e818`); `Human_UpdateSpeech` clears `+0x188` just before it calls it (`0x0021eb20`) |
+| `+0x194` | "the line may be cut": 1 normally; 0 while a line that must play out runs | 0: `Human_PlaySpeechCutting` (`0x0021e744`, every `HuSpeakNI` line and every cutting line), `Player_StartPreparedLine` (`0x0021f26c`) and `Strike_Contact` after its `fuck_you` (88) complaint (`0x0021b4a4`, [Combat](combat.md#teammates)); 1: `Human_StopSpeech` when it stops (`0x0021ecac`), `Human_UpdateSpeech` when no line is alive and no callback is pending (`0x0021ebbc`), `Human_Init` |
+| `+0x195` | set with `+0x194` by a stop: the stopped line's queued voice follow-up (`+0x184`) is dropped | `Human_StopSpeech` |
+
+**Stopping** (`Human_StopSpeech(human, force)`, `0x0021ec38`): nothing when no line is alive. Without `force`,
+nothing either while `+0x194` is 0: **an uncut line is never stopped by an unforced stop**. Otherwise the stream
+stops (and is freed at once, `AudioManager_StopTask` `0x00112c60`, so the handle no longer resolves), the speaking
+pose ends and `+0x194` goes back to 1. **A stop never touches the callback** (`+0x188`). `HuShutUp(human, force)`
+passes its flag; the game's own forced stops are a knock-out, a defeat, a lethal reaction, a paired attack or grab
+starting (`Attack_StartPaired`, `Grab_StartPairedMove`), mugging, some goals' ends and `Humans_StopAllSpeech`; every
+other caller (the speech commands, the vocal ids, the gang barks, banter, scenes) stops without force.
+
+**Starting** a line has two forms, and neither will start over a line that is alive and uncut:
+
+- `Human_PlaySpeech` (`0x0021e400`; `HuSpeak`, the non-cutting vocal ids, uncut speech commands) plays only when **no
+  line is alive and `+0x194` is 1**.
+- `Human_PlaySpeechCutting` (`0x0021e698`; `HuSpeakNI`, the cutting ids `die` and `expire`, speech commands said
+  with `uncut` 0) plays unless a line is alive with `+0x194` 0. It stops the current line first (unforced) and
+  clears `+0x194` for its own.
+
+A start that plays nothing calls **its own** callback at once (when it has one) and leaves the human's line, callback
+and `+0x194` as they were. A start that plays writes its own callback (or 0) over `+0x188`.
+
+**When a pending callback runs or is lost:** the callback in `+0x188` runs at the first `Human_UpdateSpeech` that
+finds no live line (once; `+0x194` is then set back to 1 an update later, by the next update's no-callback branch). It
+is lost only when another line **starts** on the same human before that update: a cutting line over a cut-able one,
+or any line (a grunt included) in the gap between a stop and the next update. Hence:
+
+1. A vocal id with `overLine` over an **uncut** line (`HuSpeakNI`'s, `+0x194` 0): `Human_SayAnimLine` calls the
+   unforced stop, which does nothing, then `Human_PlaySpeech`, which finds the line alive and plays nothing; the grunt
+   has no callback, so nothing runs. **The line and its callback are untouched; the grunt is simply not heard.** The
+   cutting ids (`die` 58, `expire` 115) go through `Human_PlaySpeechCutting` and are refused the same way.
+   Confirmed (code) at `0x0021f410`, `0x0021ec38`, `0x0021e400`, `0x0021e698`; confirmed (runtime), below.
+2. The same over a **cut-able** line (`HuSpeak`'s, a speech command's said uncut 1): the stop ends the line, the grunt
+   plays in its place and writes 0 over `+0x188`: **the line's callback is lost** and never runs. Confirmed (code)
+   and (runtime), below.
+3. `Human_SayCommand` (`0x002205e0`) with `interrupt` (the `pain` grunt 12 of `SA` 28, `SoundPlayCommand`'s default)
+   calls the same unforced stop and then one of the two starts: over an uncut line it says nothing, though the voice
+   table's counter has moved and `Sound_MarkCommandSaid` has run (`0x001106d0`), and the command's own callback runs
+   at once; the uncut line and its callback carry on. Over a cut-able line it cuts it and the old callback is lost.
+   Without `interrupt`, nothing is said while any line is alive. Confirmed (code).
+4. `HuSpeak` while a line is alive, or in the one update after an uncut line with a callback ended (`+0x194` still 0):
+   nothing plays and its callback runs at once. `HuSpeakNI` over an uncut line: the same. Confirmed (code).
+5. `HuShutUp(false)` on an uncut line does nothing; `HuShutUp(true)` stops it and the callback runs at the next
+   update. Confirmed (code) and (runtime), below.
+6. A line that ends by itself, or is stopped, and has its callback replaced by a new line started in the same update
+   before `Human_UpdateSpeech` runs (a forced stop followed by a grunt in one update) loses it: inferred from the
+   writes above, not seen at runtime.
+
+**At runtime** (2026-10-12, PCSX2 2.9.94, confirmed (runtime)). Scenario `repo:research/traces/scenarios/speech_cutin.toml`
+on `level80` checkpoint 1 with Cleon as the player, the hooks `say-anim-line`, `stop-speech`, `play-speech`,
+`play-speech-cut` and `event-callback` of `repo:research/traces/patches/`: the game's own `HuSpeakNI` and
+`HuSpeak` workers called through the call hook on Cleon with probe callback names, square tapped every 8 updates
+during the first two lines. Updates are the trace's steps:
+
+| Step | What happened | Cleon's line, callback, `+0x194` after |
+| --- | --- | --- |
+| 321 | `HuSpeakNI` (callback `SpeechProbeA`): `Human_PlaySpeechCutting` plays | new line, `SpeechProbeA`, 0 |
+| 351, 399 | square swings: `Human_SayAnimLine(Cleon, 9 grunt_pch, overLine 1, cut 0)`; `Human_StopSpeech(force 0)` returns, `Human_PlaySpeech` plays nothing | unchanged (same handle), `SpeechProbeA`, 0 |
+| 412 | the line ends by itself (91 updates long): `SpeechProbeA` looked up from `Human_UpdateSpeech` (`0x0021eb3c`) | `+0x188` 0, `+0x194` still 0 |
+| 413 | the next update sets `+0x194` back | 1 |
+| 521 | `HuSpeak` (callback `SpeechProbeB`) | new line, `SpeechProbeB`, 1 |
+| 548 | a swing's `grunt_pch`: the stop ends the line, the grunt plays in its place | the grunt, 0, 1; **`SpeechProbeB` is never looked up** |
+| 701-792 | the control: `HuSpeak` (`SpeechProbeC`), no swings; it ends and `SpeechProbeC` is looked up | |
+| 821 | `HuSpeakNI` (`SpeechProbeD`) | new line, `SpeechProbeD`, 0 |
+| 851 | `HuShutUp(Cleon, false)` | unchanged |
+| 871 | `HuShutUp(Cleon, true)`: stopped, and `SpeechProbeD` looked up in the same update (the call hook runs before the humans' speech update) | 0, 1 |
+
+The follow command at step 41 shows one more case: Cleon's own command line goes through `Human_PlaySpeechCutting`
+(called from `Human_SayCommand`, `0x0022073c` its return), so a Warrior order is an uncut line too (`+0x194` 0 for
+its 30 updates). The run does not reach mission 2's end; the end's line is `HuSpeakNI` with a callback, which is
+case 1 above whatever swings, grunts or `pain` lines Cleon makes while it plays.
 
 ### Scene soundtracks {#scene-sound}
 
@@ -742,6 +831,89 @@ storing the handle at `0x0021ef58`; event 71 on a car goes through `0x00110258`.
 On the disc (*inferred*, from scanning the `.scn` files for listed hashes): 228 scenes name a stereo sound, using 228
 of the 248 once each; every main level99 scene (`l99_c1`-`c9`, `l99_t1`, `l99_ash_intro`) has its own. The scenes
 also name streamed mono sounds 280 times and bank sounds 4 times: the event 14/71 sounds.
+
+#### World sound during a scene {#scene-world-sound}
+
+**The engine does not silence the world for a scene.** Nothing in the scene task's start (`SceneTask_Start`,
+`0x0039d870`) or end (`SceneTask_End`, `0x0039f450`) stops, pauses or fades the ambient bed, the ambient emitters or
+the other sounds; their sound calls are the soundtrack's wait and start, the system music off and back on, the held
+speech stopped (`Humans_StopAllSpeech`, `0x0021ecd0`, a cinematic with roles) and each bound human's and object's
+sounds stopped at the end. What a cinematic (scene state `0x0051489c + 0x410` set) changes is a set of **volume
+factors and the listener**, each read every update, so all of it undoes itself the update after the end clears
+`+0x410`. Confirmed (code) at the addresses below:
+
+| What | During a cinematic | Where |
+| --- | --- | --- |
+| **The listener** | both listeners are the **current camera** (the scene camera) for the whole scene: `Gm_Level_Update` takes the camera's matrix and skips the player-ear position (player 1 + 1.8 m) it uses outside a scene when the audio manager's `+0x60` is 0. So emitter ranges, distance attenuation and pan are heard from the scene camera. The same holds while `+0x411` is set (not traced) | `0x00158d58`, `Gm_Level_Update` (`0x00158728`) |
+| Ambient emitters | every emitter sound's `a8` is the ambient factor **0.75** (`Ambient_GetVolume`), applied to playing ones each emitter update (once a second) and to new ones as they start; a `music` emitter's mode-3 loop starts at 0.75 instead of its music duck. Emitters keep starting, stopping and measuring range as usual | `0x0010bf90`, `0x0010c100` |
+| The ambient bed (`SoundPlayAmbientTrack`) | **unchanged**, full volume | none reads `+0x410` |
+| Directional voices not a player's | × the duck factor 0.2 (`+0x3faac`): `Tasks_Update` sets both non-duckable flags for the whole update | `0x00112b10`, [Task update](#three-d) |
+| Speech lines | `Human_PlaySpeech` / `_Cutting` play nothing; held lines stopped at the start | `0x0021e458`, `0x0021e6f0` |
+| Music | × 0.75 (with ducking on); the system music is switched off at the start and back on at the end, only if it was on | `0x0010e5c4`, [Scenes](scenes.md#starting) |
+| Radios | volume 0.5 | `0x003ad4fc`, [Radios](#radios) |
+
+**Runtime** (PCSX2 2.9.94, the audio manager's task list read over PINE about every 55 ms; a scratch state in a
+`level34` cinematic, `+0x410` = 3): for the last 6.4 s of the scene the live tasks were the scene soundtrack (class
+224, sent at 1.0 per side) and the **ambient bed** (`0x83b1ba40`, class 51, record volume 20 %), sent at **0.18 per
+side**, which is its full `0.2 × 0.9` (sound volume): the bed is not lowered by a cinematic. No emitter sound was
+live during the scene (the camera was out of their ranges); after the end, emitter and world sounds started again
+within 2 s. Confirmed (runtime).
+
+**What silences the world is the scripts.** The hub's mission actions (`level95.lua`, `story.RunMissionAction`, read
+as bytecode) do it around their cutscenes, confirmed (code) for the scripts:
+
+- **`MA_CUTSCENE`** (a mission's start or end scene played in the hub, the yellow marker's): before
+  `SuperRunScene`, `SoundStopAmbientTrack()` (the bed fades out over **2 s**, `AmbientTrack_Stop` `0x00110c70`),
+  `ScreenQueueEffect(0, 0.5)`, and, when the clubhouse's `events` exist, `events.Mute(true, true)`: every Warrior
+  sitting at a chat flag has his sound commands switched off (`HuEnableSoundCommands(h, false)`) and is shut up
+  (`HuShutUp(h, true)`), and the workout's Warrior is stopped; the second argument true skips the
+  `SoundPauseSound(true)` it would otherwise make. Nothing in the action plays the bed again: it comes back when the
+  player next crosses a `soundbox` volume ([level95](sound-events.md#level95)), or with the next level.
+- **Entering or leaving the clubhouse** (the door actions): `SoundStopAmbientTrack()` at the door, then
+  `SoundPauseSound(true)` while the other half's script loads (`level95_clubhouse` / `level95_coney`); the loaded half's
+  set-up plays its own bed and un-pauses.
+- At runtime (the same PCSX2, `level95` checkpoint 2 reached by setting the level and checkpoint over PINE, player in
+  the clubhouse): no bed was live inside, one loop emitter (class 106) and the Warriors' chat lines (class 142) played,
+  and the next mission scene's soundtrack was already prepared (`+0x9c` = 0). The cutscene itself was not reached in
+  this pass.
+
+**Movies** differ: `Movie_Play` (`0x0042a938`) stops the music and **every** sound (`0x0010fba8` → `0x00112a90`)
+before the movie, bed and emitters included, and restarts nothing ([Movies](movies.md#movie-play)); the emitters'
+loops come back on their own (mode 3 restarts a loop whenever none plays), the bed only when a script plays it.
+
+**What Coney must do** (for an implementer; the engine side is `repo:src/audio/game_sound.cpp`,
+`repo:src/audio/ambient_emitters.cpp`, the stage `repo:src/platform/play_level_scene.cpp`):
+
+1. **Listener at the scene camera while a cinematic runs**, whatever `SndSetListener` chose: Coney's
+   `GameSound::updateListener` uses the player's ear when the listener mode is 1, also during a scene. During a
+   cinematic both the position and the ears must come from the scene camera's view (`0x00158d58`).
+2. **Keep the bed at full volume during a scene** (no engine duck), and the emitters at 0.75 (already built); do not
+   add a blanket mute: the original plays world sound under every scene that no script silences.
+3. **Make the scripts' silencing work in play**: `story.RunMissionAction`'s `MA_CUTSCENE` path must reach
+   `SoundStopAmbientTrack` (a 2 s fade-out of the bed) before the scene, and `events.Mute(true, true)` must reach
+   `HuEnableSoundCommands(h, false)` and `HuShutUp(h, true)` for the chat Warriors. If the bed still plays in Coney's
+   hub cutscene (#404), the first thing to check is whether this action runs and whether Coney's
+   `stopAmbientTrack` stops the bed that the `soundbox` set-up started (the same handle).
+4. **Do not restart the bed at the scene's end**; it returns only through a script (`soundbox` enter or exit) or the
+   next level.
+5. **The test** (offline mixer, no disc): with the bed and one in-range emitter playing, start a cinematic: the bed's
+   sent level stays the same, the emitter's falls to 0.75 of it, a non-player directional voice to 0.2; moving the
+   player 30 m away while the scene camera stays near the emitter keeps it audible (the listener is the camera); a
+   `SoundStopAmbientTrack` call fades the bed to 0 over 2 s; after the end everything returns to its own factors on
+   the next update. A disc test then plays the hub's first `MA_CUTSCENE` and checks the bed is stopped and stays
+   stopped through the scene.
+
+**What #404 was** (Coney's disc test `repo:tests/platform/disc_hub_cutscene_audio_test.cpp`, hub at checkpoint 2):
+not the bed (stopped, 0 frames heard) nor an emitter nor the chat Warriors, but a **radio announcement**. Walking to
+the marker passes the hub's boom box within 5 m, which starts its armed announcement (`djlady_02`, class 213); the
+mission action then `ObjDestroy`s the boom box (it spawns a `dyn_s_blaster` in its place) and starts the scene.
+Coney kept the destroyed object's radio, which could no longer be found, so it was never updated: the announcement
+played on at full level through all 1,779 frames of the scene, when the radio's update would have stopped it (state
+6 with a scene running). Coney now drops a radio whose object is gone and stops its sound ([Radios](#radios)).
+Confirmed (runtime, Coney); the original's own result for that frame is inferred, not traced.
+
+Open: what `+0x411` is; the hub cutscene itself at runtime in the original (bed fade, emitter levels from the scene
+camera, and whether `ObjDestroy` of a radio's object stops its sound at once).
 
 ### The front end and level99
 
@@ -1309,7 +1481,7 @@ workers) that belong to this page, by address.
   frame, and a stalled frame (0.2-1.1 s on a busy machine in real-time play) emptied the old half-second ring, which
   cut streamed speech and ambient loops short.
 - `Mixer`: the game's voices as the device takes them: a 15-bit level per side and the SPU2 pitch word, mixed at
-  48 kHz; SDL3's device or, in test mode, offline ([Building](../guides/building.md#sound)).
+  48 kHz; SDL3's device or, in test mode, offline ([Running Coney](../guides/running.md#sound)).
 - `SoundPlayer`: what game code calls (play by name hash, 2D or at a position, stop, pause); `engine()` for banks,
   music, the load screen and scenes. Main gives it the engine when a disc is given.
 - `ObjectSounds` (`repo:src/audio/object_sounds.h`): the glass panes', doors' and barriers' sounds: a name hash as a
@@ -1359,8 +1531,12 @@ workers) that belong to this page, by address.
   level when its segment, as a ray, crosses a level triangle, without the turn limits and state `0x4000000`; a
   pane sounds as `GLASS`; a thrown human against the level (`Human_OnContact`) does not sound yet.
 - `VoiceTable` (`voice_table.cpp`, [The voice table](#voice-table)) and `Speech` (`speech.cpp`,
-  [Saying a speech command](#speech)): one line per human at a time, positional and directional at him, cut off by
-  an interrupting one.
+  [Saying a speech command](#speech)): one line per human at a time, positional and directional at him. `Speech`
+  keeps the human's "may be cut" flag and callback as [Cutting in on a line](#speech-cut-in) says: the two starts
+  (`Start::Waiting` for `HuSpeak`, the grunts and commands said uncut; `Start::Cutting` for `HuSpeakNI`, `die`,
+  `expire` and commands said cutting), the one stop (`shutUp` with `force`: `HuShutUp` passes its argument, every
+  other caller stops unforced) and the speech update that runs a gone line's callback once. A grunt over a
+  `HuSpeakNI` line is silent and the line plays on, which is what lets mission 2's last line (`FadeOut`) end.
 - `AmbientEmitters` (`ambient_emitters.cpp`, [Ambient emitters](#ambient)): both binding forms (the older one named
   `particle task`; the same name, sound and first point is the existing emitter, switched on), modes 1-5, the range
   from `pos1`, the plays, the delays, the points, the volume, the name kinds, the filter on player 1's covered
@@ -1393,8 +1569,9 @@ game's music update does; the random factors come from the engine's own seeded s
 generator, `0x006eb8b0`, seeded from the timer at start-up, `0x0010f768`). The speech and ambience stand-ins: an emitter
 plays one sound at a time, waiting a random whole number of seconds in its two delays before the first and after each
 one ends (level99's pairs, 1-3 to 10-30, read as seconds), from a random point of its line or a random one of its
-positions; its range, `plays`, `mode`, `filter` and the name kinds are not read; a line follows its speaker; a line
-stopped by `HuShutUp` or cut off drops its callback; `HuShutUp` always stops (the human's `+0x194` is not modelled);
+positions; its range, `plays`, `mode`, `filter` and the name kinds are not read; a line follows its speaker; a
+script's `SoundPlayCommand` says its line as a cut-able one (`CommandCall::cutting` false: which `uncut` the script's
+call passes is not traced; Warrior orders, which say theirs cutting, are not built);
 `HuSpeak`'s fifth argument is not read, and neither speaker turns to a look-at target; a human's voice set is his type's
 own `CfgChar` voice (no alias rule, no `HuSetVoiceIndex`); the fixed list of blocked lines is not applied;
 `SndSetListener` 0 is the camera and 1 the player (inferred); the bank deferral of mode 1's enter ends with the load
@@ -1409,7 +1586,50 @@ sounds. The hub's sound bindings
 plays nothing more) and on; `SoundPlay` plays a sound once at a point; `SndLoadMatrix` empties the sound matrix and
 runs `<name>_preload.lua` when the name changes; `HuSay` speaks a line with no callback.
 
+### Speech cut-in: what Coney changed {#speech-cut-in-fixes}
+
+Coney used to drop a line's callback whenever the line was stopped, and let any stop end any line, so a grunt from
+Cleon's swing ended mission 2's last line (`HuSpeakNI(Cleon, line, "FadeOut")`) and `FadeOut` never ran (#239). It now
+matches [Cutting in on a line](#speech-cut-in) (`repo:src/audio/speech.cpp`, `GameSound`); the five changes, each
+tested in `repo:tests/audio/game_sound_test.cpp` (`[cut-in]`):
+
+1. **Keep the "may be cut" flag per human** (the original's `+0x194`): set by default, cleared while a line started
+   by `HuSpeakNI`, a cutting vocal id (`die`, `expire`) or a speech command said cutting (every Warrior order) plays,
+   set again by a stop that stops, and by the speech update when no line is alive and no callback is waiting.
+2. **Keep the callback on the human, not on the line.** A stop leaves it in place; the speech update runs it (once)
+   at the first update that finds no live line, whether the line ended or was stopped. Starting a line that plays
+   overwrites it with the new line's callback, or with none. A start that plays nothing runs its own callback at once
+   and leaves the human's untouched.
+3. **One unforced stop** (`Speech::shutUp` with a `force` flag): an unforced stop does nothing while the flag of 1 is
+   clear. `HuShutUp` passes its argument; the vocal ids, speech commands and every other game-side caller stop
+   unforced (a forced stop is only for knock-outs, defeats, lethal reactions, paired attacks and grabs, mugging and
+   stopping every line).
+4. **Two starts.** The waiting start (`HuSpeak`, non-cutting vocal ids, commands said uncut) plays only when no line is
+   alive and the flag is set; the cutting start (`HuSpeakNI`, `die`, `expire`, commands said cutting) plays unless a
+   line is alive with the flag clear, stopping the current line unforced first and clearing the flag.
+   `HumanSoundEvents::sayAnimLine` then needs no special case: over an uncut line its stop does nothing and its start
+   refuses, so the grunt is silent and the line plays on.
+5. **Speech commands with `interrupt`** stop unforced and then start (cutting or waiting by the command's `uncut`);
+   over an uncut line nothing is said, but the voice table's counter still moves and the command's callback runs at
+   once.
+
+**The tests** (unit, `GameSound` with an offline engine, no disc): a human says a line through the
+`HuSpeakNI` path with callback `A`; while it plays, a vocal id with `overLine` (`SA` 9) is said for him: the line's
+handle is unchanged and still playing, no grunt plays, and when the line ends `A` is reported once. Its mirror: the
+same with the `HuSpeak` path and callback `B`: the grunt replaces the line and `B` is never reported. And
+`HuShutUp(false)` on the `HuSpeakNI` line leaves it playing; `HuShutUp(true)` stops it and `A` is reported at the next
+update. The disc test `[disc][story][level80-end]` (`repo:tests/platform/disc_level80_end_test.cpp`, square held until
+`MS_C4_2` is ticked + 5 s) reaches `l80_c3` and `HUDLaunchMissionComplete`: before the change the mission never
+completed under the swinging, after it it does.
+
+**Coney's choices:** a script's `SoundPlayCommand` says its line cut-able (the `uncut` it passes is not traced, see
+the open question below), and a refused start in `Speech::say` leaves the human's callback and flag as they were,
+the caller running its own callback at once.
+
 ## Open questions
+
+- Which `uncut` the script's `SoundPlayCommand` (`Sound_PlayHumanCommand`, `0x001140d8`) passes to
+  `Human_SayCommand`: Coney says its lines cut-able, so a later command or grunt replaces them.
 
 - What game state `+0x268` is (it scales sounds of others, music and pitch).
 - Who sets the system-music mood (game state `+0x40c`).

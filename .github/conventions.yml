@@ -39,27 +39,65 @@ paths:
   # A change here needs a change under `docs` (the living doc moves with the code) or a `Docs: none` line.
   code: ["src/", "python/src/"]
   docs: ["docs/", "research/"]
-  # A pull request that touches only these skips the engine builds (.github/scripts/ci-scope.sh) and the local gate's
-  # clang-tidy step, and a change to them is what `coney-tools check changed` builds the docs for. A trailing slash
-  # means a folder; `*` matches within one folder level, so "*.md" is the Markdown files at the top level only.
-  # ci-scope.sh reads this list itself with awk, so keep one quoted pattern per line, made of letters, digits, . _ / -
-  # and *; `coney-tools repo audit` (files.ci-scope) checks that the script can still read it.
+  # The three CI scope classes below decide what a pull request runs (.github/scripts/ci-scope.sh; the table is in
+  # docs/guides/building.md#what-a-pull-request-runs). A changed file takes the first class it matches, in the order
+  # docs_only, tools_only, engine; a file in none of them runs everything. A trailing slash means a folder; `*` matches
+  # within one folder level, so "*.md" is the Markdown files at the top level only. ci-scope.sh reads these lists
+  # itself with awk, so keep one quoted pattern per line, made of letters, digits, . _ / - and *;
+  # `coney-tools repo audit` (files.ci-scope) checks that the script can still read them.
+  #
+  # Read by neither the engine build nor the python package on any one OS in particular: the engine jobs are skipped
+  # and python runs on Linux only (its repository checks compare these files). A change to them is also what
+  # `coney-tools check changed` builds the docs for. The workflows here run on every pull request themselves (docs,
+  # pr) or only on Linux (hygiene, issue-status), and actionlint checks them all.
   docs_only:
     - "docs/"
     - "research/"
     - "*.md"
     - ".github/*.md"
     - ".github/conventions.yml"
+    - ".github/workflows/docs.yml"
+    - ".github/workflows/pr.yml"
+    - ".github/workflows/hygiene.yml"
+    - ".github/workflows/issue-status.yml"
     - "mkdocs.yml"
     - "mkdocs_hooks.py"
     - "requirements-docs.txt"
     - ".markdownlint*"
+  # The tools: never read by the engine's build or tests (CMake reads only src/, tests/, assets/ and cmake/), so the
+  # engine jobs are skipped, but the python package, its tests or its OS-dependent local gate read them, so python
+  # runs on every OS. The docs build imports python/src/coney_tools, but the docs workflow runs on every change anyway.
+  tools_only:
+    - "python/"
+    - ".claude/"
+    - "tools/"
+    - "bootstrap.ps1"
+    - "bootstrap.sh"
+    - "coney.local.example.toml"
+    - ".mcp.json"
+    - ".pre-commit-config.yaml"
+    - ".github/ISSUE_TEMPLATE/"
+    - ".github/workflows/python.yml"
+  # The engine: what the build, sanitizers and clang-tidy jobs read. They run; python runs on Linux only, because its
+  # checks that read C++ files (progress, natives) do not depend on the OS. Not here, so they run everything: the
+  # scripts in .github/scripts/, which the clang-tidy job or every job runs and python's tests run under bash on
+  # every OS.
+  engine:
+    - "src/"
+    - "tests/"
+    - "assets/"
+    - "cmake/"
+    - "CMakeLists.txt"
+    - "CMakePresets.json"
+    - ".clang-format"
+    - ".clang-tidy"
+    - ".github/actions/"
+    - ".github/workflows/build.yml"
   # Written by a generator, never by hand; on a merge conflict take either side and rerun it.
   generated:
     - {path: "docs/references/bindings/", by: "coney-tools natives render"}
     - {path: "docs/references/", by: "coney-tools refs render", except: ["docs/references/entities.md"]}
     - {path: "docs/missions/", by: "coney-tools missions render"}
-    - {path: "docs/research/tables/", by: "research/*.yaml"}
   # The agent entry files hold one line that imports AGENTS.md and nothing of their own, so the rules cannot drift.
   pointer_files: {files: ["CLAUDE.md", "GEMINI.md"], line: "@AGENTS.md", max_bytes: 400}
   # Only these files may hold the repository's or the docs site's address.
@@ -76,10 +114,11 @@ commits:
     areas:
       build: "CMake, presets, dependency pins and toolchain setup"
       ci: "GitHub Actions workflows and pre-commit configuration"
-      core: "engine core: memory, chunk system, task engine, utilities (src/core)"
+      core: "engine level only: main loop and timing, memory, chunks, the task engine's plumbing, shared utilities (src/core)"
+      gameplay: "the game's rules a player meets: combat, AI and crew behaviour, movement and physics responses, missions and scripts, objects and pickups, HUD and hint logic, camera behaviour"
       fileio: "disc and WAD access, file systems and streaming (src/fileio)"
-      graphics: "rendering through librw: models, textures, effects (src/graphics)"
-      audio: "sound, music and speech playback (src/audio)"
+      graphics: "rendering through librw: models, textures, effects, drawing the HUD (src/graphics)"
+      audio: "sound, music and speech playback; the rules that trigger a sound stay in their gameplay area (src/audio)"
       platform: "SDL3 and OS glue: windowing, input, timing (src/platform)"
       tools: "C++ asset tools and the coney_tools Python package"
       research: "the research pages under docs/research and the research database"
@@ -107,7 +146,10 @@ pull_requests:
   local_paths: false                             # no scratch/, ../../ or C:\ in the text (images are the exception)
   docs_none: {line: "Docs: none", when_changed: code, unless_changed: docs}   # names of the `paths` classes
   closing: {keyword: "Fixes", form: "Fixes #N", one_per_line: true, section: Summary}
-  remaining: {section: Checklist, label: "Remaining:", unchecked_cites: "#N"}
+  # Every task a pull request lists is finished: an unticked `- [ ]` item in the section is refused, and work the pull
+  # request does not finish is not listed (it lives in its own issue). A pull request merged before `since` kept the
+  # older `legacy_label` list, whose unchecked items each had to cite an issue as `#N`; the audit still holds those.
+  checklist: {section: Checklist, unchecked: refused, since: "2026-10-12", legacy_label: "Remaining:"}
   screenshots: {section: Screenshots, none: "Screenshots: none", reason: required, uploaded_only: true}
   ai_use:
     section: "AI use"
@@ -116,6 +158,17 @@ pull_requests:
       choices: ["a person", "an AI", "an AI, edited by a person", "a person, with AI help"]
       no_ai: "a person"
     model: {label: "Model:", none: "n/a"}
+  # The release gate on the pr-reviewer agent's verdict (`coney-tools repo review`, `repo check-review`). The agent
+  # (.claude/agents/<agent>.md) writes both files next to the description file. The verdict binds to what it
+  # reviewed: the branch tip, the description's hash and each local image's hash, so a new commit, an edit or a
+  # replaced picture makes it stale and the review runs again. `sha256-lf`: SHA-256 of the description file's UTF-8
+  # text with a leading BOM dropped and CRLF or CR turned into LF. Two byte-identical images are refused outright.
+  review:
+    agent: pr-reviewer
+    verdict_file: REVIEW.json
+    report_file: REVIEW.md
+    body_hash: sha256-lf
+    identical_images: refused
   stacked:
     depends_line: "Depends on #N"                # required when the base is not the default branch
     merge_into_base: false                       # never merged into a non-default base: retarget to main first
@@ -132,7 +185,7 @@ merge:
   delete_branch_on_merge: true
   linear_history: true
   up_to_date_required: false                     # no merge queue yet (how-we-work#merging)
-  required_checks: [title, commits, docs, body, build-ok, python-ok, format, mkdocs, markdownlint, actionlint]
+  required_checks: [title, docs, body, build-ok, python-ok, format, mkdocs, markdownlint, actionlint]
   who: [maintainer, coordinator]                 # never the agent that wrote the work
 
 issues:
@@ -234,16 +287,85 @@ labels:
     - {name: wontfix, color: ffffff, description: "This will not be worked on"}
 
 hygiene:
-  # The one pinned issue the weekly sweep keeps up to date (a later change); the Action only comments, never edits.
+  # The one issue the weekly sweep reports on: one comment on it, edited in place; the workflow creates the issue if it
+  # is missing (docs/guides/repo-conventions.md, "Workflows").
   report_issue:
     title: "Repo hygiene"
     labels: [task, A-tools, P-low, S-in-progress]
   sweep: "0 6 * * 1"                             # weekly, Monday 06:00 UTC
+  # What `coney-tools repo hygiene` and .github/workflows/hygiene.yml do (docs/guides/repo-conventions.md, "Workflows").
+  # The workflow keeps ONE comment per item that has findings, edited in place (never deleted; "all fixed" when the
+  # findings are gone), and one comment on the report issue for the sweep. It starts at warn level: on_sweep false means
+  # the weekly sweep only updates the report and item comments come from events alone.
+  comments:
+    marker: coney-repo-hygiene                   # the comment starts with <!-- marker -->; the report's has :report
+    author: "github-actions[bot]"                # only comments from this login are the workflow's own
+    on_events: true
+    on_sweep: false
+    max_per_sweep: 25                            # with on_sweep true, item comments created or edited per sweep
+    report_only: [issue.triage-age, issue.info-age, issue.progress-idle, pr.idle]   # idleness: a comment would hide it
   thresholds:
     needs_triage_days: 7
     needs_info_days: 21
     in_progress_idle_days: 30
     pull_request_idle_days: 30
+    pr_pending_hours: 3                          # a required check queued or running this long: stuck in CI
+  # `coney-tools repo pr-health` calls a failing required check "lint" when it is one of these (the author fixes the
+  # text) and "code" otherwise (build-ok, python-ok and the jobs under them).
+  pr_health:
+    lint_checks: [title, docs, body, format, mkdocs, markdownlint, actionlint]
+    # `coney-tools repo pr-health --rerun` restarts a failed required check only when the failure is stale, never when
+    # the code is at fault: (1) title_check / body_check failed but the pull request's current title / description passes
+    # `repo check-title` / `check-body` (it was fixed after the run); (2) the check's conclusion is one of `conclusions`,
+    # or its log matches one of `log_patterns`, so the runner or GitHub failed, not the code.
+    rerun:
+      max_per_sha: 2                             # reruns on one head commit, per workflow; a flaky job cannot loop
+      title_check: title
+      body_check: body
+      conclusions: [CANCELLED, STARTUP_FAILURE, TIMED_OUT]
+      log_patterns:                              # regular expressions, case-insensitive, searched in the job's log
+        - 'The runner has received a shutdown signal'
+        - 'lost communication with the server'
+        - 'Received request to deprovision'
+        - 'The job was not acquired by Runner'
+        - 'Failed to download action'
+        - 'RPC failed; HTTP 5\d\d'
+        - 'Could not resolve host'
+        - 'Connection reset by peer'
+        - 'TLS handshake timeout'
+  # The logs and text files attached to an issue, which the workflow downloads and scans on every issue event (and the
+  # sweep for every open issue): docs/guides/issues.md#attachments. Only links starting with `link` and ending with one
+  # of `extensions` are fetched, at most `download_kb` each, held in memory and never stored or run. A finding names the
+  # file and line numbers only, never the text it matched. The patterns are Python regular expressions (single-quoted,
+  # so a backslash is literal); a line is matched in its first 2000 characters.
+  attachments:
+    link: "https://github.com/user-attachments/files/"
+    extensions: [".txt", ".log"]
+    max_files: 5                                 # per issue
+    max_per_run: 50                              # downloads in one run (the sweep)
+    download_kb: 2048                            # the rest of a bigger file is never downloaded
+    timeout_seconds: 20                          # per download
+    large_kb: 512                                # a bigger log is reported as possible game data (as paths.large_file_kb)
+    control_percent: 1                           # more control characters than this (or any NUL): not text
+    line_threshold: 5                            # this many script or game-text lines make a finding
+    patterns:
+      # Personal information: a user's home folder (a path written from ~ is fine) and email addresses.
+      user_folder:
+        - '(?i)\b[a-z]:[\\/]+(?:users|documents and settings)[\\/]+(?!(?:public|default|default user|all users)(?:[\\/]|$))[^\\/\s:*?"<>|]+'
+        - '(?<![\w.~])/home/[^/\s:*?"<>|]+'
+        - '(?<![\w.~])/Users/(?!Shared(?:/|$))[^/\s:*?"<>|]+'
+      email:
+        - '(?i)\b[a-z0-9._%+-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}\b'
+      # Possible game data: lines of Lua script source (docs/research/scripting.md) ...
+      script_source:
+        - '^\s*(?:local\s+)?function\s+[\w.:]+\s*\('
+        - '^\s*local\s+[A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*\s*='
+        - '^\s*(?:if|elseif|while)\s.*\s(?:then|do)\s*$'
+        - '^\s*end\s*[,)]?\s*$'
+      # ... and lines of the game's data files: a placed-objects line, a position then a rotation
+      # (docs/research/objects.md#objs-file).
+      game_text:
+        - '\{\s*-?[\d.]+\s*,\s*-?[\d.]+\s*,\s*-?[\d.]+\s*\}\s*,\s*\{\s*-?[\d.]+\s*,\s*-?[\d.]+\s*,\s*-?[\d.]+\s*,\s*-?[\d.]+\s*\}'
   # The audit's checks (`coney-tools repo audit`; docs/guides/repo-conventions.md#audit-checks). scope: where it runs
   # (files = the checkout, github = issues, pull requests, labels and settings, local = the workspace). severity: error
   # fails the audit (exit code 1), warn is only reported. fix: auto = a coney-tools command fixes it, skill = the
@@ -279,7 +401,7 @@ hygiene:
       scope: files
       severity: error
       fix: skill
-      keys: [pull_requests.template, pull_requests.sections, pull_requests.ai_use, pull_requests.docs_none, pull_requests.closing, pull_requests.remaining]
+      keys: [pull_requests.template, pull_requests.sections, pull_requests.ai_use, pull_requests.docs_none, pull_requests.closing, pull_requests.checklist]
       summary: "the pull request template differs from the conventions: headings, AI use lines, the Docs: none and Fixes lines"
     files.generated-blocks:
       scope: files
@@ -291,14 +413,20 @@ hygiene:
       scope: files
       severity: error
       fix: skill
-      keys: [paths.docs_only]
-      summary: ".github/scripts/ci-scope.sh does not read the docs-only paths from the conventions file"
+      keys: [paths.docs_only, paths.tools_only, paths.engine]
+      summary: ".github/scripts/ci-scope.sh does not read the CI scope paths (docs_only, tools_only, engine) from the conventions file"
     files.large-file-limit:
       scope: files
       severity: error
       fix: skill
       keys: [paths.large_file_kb]
       summary: "pre-commit's check-added-large-files limit differs from the conventions"
+    files.markdown-hook:
+      scope: files
+      severity: error
+      fix: skill
+      keys: [repo.tools]
+      summary: "pre-commit has no markdownlint-cli2 hook, so a long Markdown line is first caught by CI"
     issue.sections:
       scope: github
       severity: error
@@ -323,6 +451,12 @@ hygiene:
       fix: skill
       keys: [issues.labels, labels]
       summary: "an issue lacks a type, area, priority (after triage) or status label, has two of one, or has an unknown label"
+    issue.closed-status:
+      scope: github
+      severity: error
+      fix: skill
+      keys: [issues.labels.closed_keeps_status, labels.families]
+      summary: "a closed issue still carries an S- status label (the issue-status workflow removes it; this is the backstop)"
     issue.owner-word:
       scope: github
       severity: error
@@ -333,7 +467,7 @@ hygiene:
       scope: github
       severity: error
       fix: skill
-      keys: [pull_requests.remaining]
+      keys: [pull_requests.checklist]
       summary: "a closed issue keeps an unchecked item that names no follow-up issue"
     issue.stale-status:
       scope: github
@@ -352,7 +486,19 @@ hygiene:
       severity: warn
       fix: skill
       keys: [issues.provenance]
-      summary: "an issue that a pull request's Remaining list points at has no From: line"
+      summary: "an issue that an older pull request's Remaining list points at has no From: line"
+    issue.attachment-data:
+      scope: github
+      severity: warn
+      fix: skill
+      keys: [hygiene.attachments]
+      summary: "a log attached to an open issue may hold game data: not text, too large, or lines of script source or game text"
+    issue.attachment-personal:
+      scope: github
+      severity: warn
+      fix: skill
+      keys: [hygiene.attachments.patterns]
+      summary: "a log attached to an open issue shows personal information: a user folder path or an email address"
     issue.triage-age:
       scope: github
       severity: warn
@@ -395,12 +541,18 @@ hygiene:
       fix: skill
       keys: [repo.wording]
       summary: "an open pull request says 'owner' for the person who directs the project (say 'user')"
+    pr.unfinished-items:
+      scope: github
+      severity: error
+      fix: skill
+      keys: [pull_requests.checklist]
+      summary: "a pull request merged since the Checklist rule began has an unticked Checklist item (an open one is pr.body)"
     pr.remaining-uncited:
       scope: github
       severity: error
       fix: skill
-      keys: [pull_requests.remaining]
-      summary: "a merged pull request left an unchecked Remaining item that names no issue"
+      keys: [pull_requests.checklist]
+      summary: "a pull request merged before the Checklist rule left an unchecked Remaining item that names no issue"
     pr.idle:
       scope: github
       severity: warn
@@ -466,6 +618,8 @@ hygiene:
 workspace:
   worktrees: "../../worktrees/coney/<branch>/"
   scratch: "../../scratch/<branch>/"
-  disk_min_free_gb: 30
+  disk_min_free_gb: 30                           # under it, `workspace clean` deletes idle build/ folders
+  disk_margin_gb: 10                             # ... until free space reaches disk_min_free_gb + this
+  build_idle_hours: 4                            # a build/ folder unused this long is deleted (cheap to rebuild)
   busy_marker: ".coney-busy"                     # a worktree holding it is never cleaned
   remove_worktree_when_merged: true

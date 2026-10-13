@@ -295,7 +295,7 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    `GoalPlayDynAnimation` sets and clears the same bit around its clip ([AI](../../research/ai.md#dyn-animation)),
+    `GoalPlayDynAnimation` sets and clears the same bit around its clip ([AI](../../research/ai-scripting.md#dyn-animation)),
     so the end of such a goal also clears a forced look.
   usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false, levels: [80, 5]}
   coney: implemented
@@ -308,7 +308,7 @@
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human (passed on but ignored)."}
   description: >-
     Does nothing in this build: the function it calls returns at once. Scripts call it to end a head look-at;
-    look-ats here end by themselves ([AI: turning](../../research/ai.md#look-at)).
+    look-ats here end by themselves ([AI: turning](../../research/ai-scripting.md#look-at)).
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 5, calls: 6, boot: false, mission1: false, result_used: false, levels: [2, 5, 31, 54]}
@@ -796,12 +796,16 @@
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
     - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
   description: >-
-    Sets or clears flag bit 0x2000 of the human's flag word; from the name, the human does not drop its weapon when
-    hit.
+    Sets or clears flag bit 0x2000 of the human's flag word, which keeps a held weapon in hand when he is knocked
+    down or stunned while hurt, grabbed, mounted, arrested, hit by a counter or a special move, or starts a grab or
+    tackle. An object of anim set 4 or 6 (the two-handed props, the ghetto blasters) is dropped anyway.
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Bit confirmed (code) at 0x00237328; the effect is inferred from the name.
+    Bit set at 0x00237328 and read at five places (0x00257ce8, 0x00257d70, 0x00257e38, 0x0026a7bc, 0x0022ed14). It
+    does not stop the drop of an object whose throw a hit interrupts, nor of a kind-39 object
+    (Human_ApplyPendingDamage, 0x00265f70). Rage's SetRageMode sets it. Details:
+    [Combat: dropping what is held when hit](../../research/combat.md#keep-weapon).
   usage: {chunks: 12, calls: 18, boot: true, mission1: true, result_used: false, levels: [34, 93, 14, 51, 54, 83]}
   coney: implemented
 
@@ -2081,7 +2085,7 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Storage at 0x002383a0. The AI's sight check: [AI](../../research/ai.md#tactic-kinds).
+    Storage at 0x002383a0. The AI's sight check: [AI](../../research/ai-gangs.md#tactic-kinds).
   usage: {chunks: 27, calls: 71, boot: false, mission1: false, result_used: false, levels: [87, 2, 3, 5, 81, 93, 14, 9, 51, 52, 54, 84, 82, 83, 20, 11]}
   coney: implemented
 
@@ -2893,7 +2897,7 @@
     as 668, 196, 195. 668 is the fidget (itch) the goal plays every 10 s with a player near, 669 the big puke, 196
     and 195 the knocked-down pose and the hit while down ([Combat](../../research/combat.md)), so a sleeping or
     begging bum lies or sits in its own clips; 320-324 being the arrested state's idle, hit, dying, dead and second
-    hit is inferred (a type-0 bum is put in the arrested state). [AI: GoalBumLogic](../../research/ai.md#bum-logic).
+    hit is inferred (a type-0 bum is put in the arrested state). [AI: GoalBumLogic](../../research/ai-scripting.md#bum-logic).
     Requesting fills 13 of the 64 dynamic-animation list entries. Releasing also drops files another script
     requested separately by the same name. Confirmed (code) unless marked.
   usage: {chunks: 8, calls: 9, boot: false, mission1: false, result_used: false, levels: [87, 5, 51, 11]}
@@ -3584,7 +3588,7 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    The name says climb; what edge flags 8 and 0x80 look like in play is not traced (ai.md#path-planning). The switch
+    The name says climb; what edge flags 8 and 0x80 look like in play is not traced (ai-moving.md#path-planning). The switch
     is global and stays set until changed (not traced whether a level load clears it).
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [82]}
 
@@ -3659,7 +3663,7 @@
     0x0041c2d0 → `GameState_IssueWarriorCommandFor` 0x0041dc80 → 0x0041c4e0. Refused while a scene camera (type 4)
     is player 1's, while commands are locked (`+0x411`), the player's menu is locked (`+0x42e`), the command is
     disabled (`WCEnableCommand`) or the human is not a war chief. The command number is not range-checked. What each
-    command starts: [AI](../../research/ai.md#warrior-commands).
+    command starts: [AI](../../research/ai-gangs.md#warrior-commands).
   usage: {chunks: 7, calls: 15, boot: false, mission1: false, result_used: false, levels: [80, 87, 93, 82]}
   coney: implemented
 
@@ -3767,7 +3771,7 @@
   args:
     - {name: "on", lua: boolean, default: true, desc: "True (also when the argument is absent) turns the automatic commands on; stored at game state +0x431."}
   description: >-
-    Turns the war chief's automatic commands on or off ([AI](../../research/ai.md#warrior-auto-commands)): while the
+    Turns the war chief's automatic commands on or off ([AI](../../research/ai-gangs.md#warrior-auto-commands)): while the
     byte is set, the chief's brain orders his crew to fight or follow by what he does. `InitLevel` sets it; only the
     Rumble arenas (`brawl`, `kinghill`, `royal`, `survival`, `tagbt`) turn it off.
   evidence: confirmed-code

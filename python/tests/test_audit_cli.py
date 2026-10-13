@@ -12,7 +12,7 @@ from conventions_support import REPO
 from test_audit_files import checkout
 from test_workspace_clean import Space, Usage
 
-from coney_tools import audit_github
+from coney_tools import audit_github, log_scan
 from coney_tools.cli import main
 
 
@@ -46,7 +46,7 @@ def no_tree(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_files_is_the_default_scope_and_this_checkout_is_clean(capsys: pytest.CaptureFixture[str]) -> None:
     code, out, _ = run(capsys)
-    assert code == 0 and out.strip() == "audit files: 8 checks, 0 errors, 0 warnings"
+    assert code == 0 and out.strip() == "audit files: 9 checks, 0 errors, 0 warnings"
 
 
 def test_files_json_lists_the_checks_that_ran(capsys: pytest.CaptureFixture[str]) -> None:
@@ -55,7 +55,7 @@ def test_files_json_lists_the_checks_that_ran(capsys: pytest.CaptureFixture[str]
     assert (
         code == 0 and data["findings"] == [] and data["errors"] == 0 and next(iter(data["checks"])) == "files.pointer"
     )
-    assert all(count == 0 for count in data["checks"].values()) and len(data["checks"]) == 8
+    assert all(count == 0 for count in data["checks"].values()) and len(data["checks"]) == 9
 
 
 def test_a_finding_in_the_checkout_fails_the_run(
@@ -85,7 +85,7 @@ def test_list_prints_the_registry(capsys: pytest.CaptureFixture[str]) -> None:
     lines = out.splitlines()
     assert (
         code == 0
-        and len(lines) == len(CONVENTIONS.hygiene.checks) == 35
+        and len(lines) == len(CONVENTIONS.hygiene.checks) == 40
         and lines[0].startswith("files.pointer")
         and "fix: owner" in out
     )
@@ -213,3 +213,33 @@ def test_scopes_run_together_in_order(
     data = json.loads(out)
     assert code == 0 and data["scopes"] == ["files", "github"]
     assert next(iter(data["checks"])) == "files.pointer" and "issue.labels" in data["checks"]
+
+
+# --- --attachments --------------------------------------------------------------------------------------------------
+
+
+def test_without_attachments_the_attachment_checks_say_they_did_not_run(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    no_tree(monkeypatch)
+    path = snapshot_file(tmp_path, issues=[issue(5)])
+    code, out, _ = run(capsys, "--github", "--snapshot", str(path), "--only", "issue.attachment-personal")
+    assert code == 0 and "attachments not downloaded" in out and "0 checks" in out
+
+
+def test_attachments_scan_the_open_issues(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    no_tree(monkeypatch)
+    link = "https://github.com/user-attachments/files/9/run.log"
+    monkeypatch.setattr(log_scan, "download", lambda url, limit, timeout: b"mail me: someone@example.com\n")
+    path = snapshot_file(tmp_path, issues=[issue(5, body=task_body(extra=f"{link}\n\n"))])
+    code, out, _ = run(
+        capsys, "--github", "--snapshot", str(path), "--attachments", "--only", "issue.attachment-personal"
+    )
+    assert code == 0 and "#5: run.log shows an email address on line 1" in out and "someone" not in out
+
+
+def test_attachments_need_github(capsys: pytest.CaptureFixture[str]) -> None:
+    code, _, err = run(capsys, "--attachments")
+    assert code == 2 and "--attachments needs --github" in err

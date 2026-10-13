@@ -308,6 +308,113 @@ levels 60-64), the speed class byte at `+0x11c`, and four strings (32 bytes each
 
 `Human_GetScale` (`0x0021d020`) returns it, except 1.0 in a scene for a scale under 1.1.
 
+### Stats {#stats}
+
+Everything that makes one character stronger, tougher or faster than another comes from four configuration tables, all
+set by the configuration scripts and again by each difficulty's (the boot set equals normal's). The sections above
+and the pages they link hold the detail; this is the one list. "Human" is the field the value lands in when a human
+is made or becomes a player; the evidence is as the cited page gives it. Every type's values on normal:
+[Characters](../references/characters.md) (its *Stats (normal)* column joins the four tables).
+
+**1. The character type** (`CfgChar`, record `0x00684620 + type × 0x1ac`, [Character classes](#classes)); `Human_Init`
+(`0x00218008`) reads it at creation, `+0x11b` and `+0x11d` from the type's own record and the rest after the
+[remap](#type-to-model) from the class's:
+
+| Stat | Field | Human | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| Behaviour | byte `+0x11a` | brain type | the AI's brain kind ([AI: types](ai.md#types)) | confirmed (code) |
+| Category | byte `+0x11b` | (read from the record) | 14 the Warriors: a player takes his Warrior's power class; 13 the bosses and big fighters; the money class and the civilian reactions ([Starting money](crimes.md#starting-money)) | confirmed (code) |
+| Speed class | byte `+0x11c` | record `+0x164`-`+0x17c` | the [speed class](#speed-classes), a fallback the clips' own speeds replace in play | confirmed (code) |
+| Power class | byte `+0x11d` | `+0x1b8`, `+0x1b9` | below; a Warriors player's `+0x1b9` is his Warrior's | confirmed (code) |
+| Health | s16 `+0x116` | record `+0x144` / `+0x146` | health and its maximum (1800 for every Warrior, 600 for the street civilian) | confirmed (runtime) ([Combat: damage](combat.md#damage)) |
+| Damage table × damage scale | s16 × 45 at `+0xb8` | the human's Anim Range List | written over the list's damages when the model is attached (`0x00217a98`); a player's first times his Warrior class's damage % ([Damage](combat.md#damage-table)) | confirmed (code), confirmed (runtime) |
+| Attack table | byte × 45 at `+0x11e` | brain `+0x298` | an AI's weight for each attack kind ([AI](ai.md)) | confirmed (code) |
+| Range table | float × 45 at `+0x00` (÷ 100) | not traced | no reader found | not traced |
+| Hat | string `+0x14c` | the hat object | worn from creation ([Hats](#hats)) | confirmed (code) |
+| Voice | s16 `+0x118` | voice set | the folder of the type's speech ([Characters reference](../references/characters.md#fields); the binding page calls it a Warrior index) | inferred |
+| `flag_14b` | byte `+0x14b` | `+0x3b8` | a civilian woman's tag colour ([Tagging](crimes.md#tag-look)), the `_female` animation sounds ([Sound events](sound-events.md#players)), the money record 16 for category 4 ([Starting money](crimes.md#starting-money)); the body scale `+0x65c` = 1 − 0.01 × n is read beside it, `n` not traced | confirmed (code); the scale not traced |
+| Drop group, drop chance | string `+0x16c`, int `+0xb4` | `+0x257`, `+0x278`, money `+0x370` | the carried object and its drop chance, and the starting money ([Starting money](crimes.md#starting-money)) | confirmed (code) |
+| Weapon | string `+0x18c` | not traced | read by `Human_Init`; what it gives is not traced | not traced |
+
+**2. The power class** (`CfgPowerClass`, record `0x006619a0 + class × 0x44`, [Power classes](#power-classes)), by
+`+0x1b9` for a player and `+0x1b8` otherwise (`0x00222b78`). A player of a Warriors type plays with 58-66 by Warrior
+(7 without one); everyone else with the type's own class. Confirmed (code) at each reader:
+
+| Stat | Field | What it does |
+| --- | --- | --- |
+| Power meter | s16 `+0x28`, `+0x2a` | maximum and refill per second (record `+0x148`); × `+0x18` while hurt (`0x00223068`); with the gym's power upgrade a player's maximum × (1 + byte 2 / 100) |
+| Stamina | s16 `+0x2c`, `+0x2e` | maximum and refill per second (record `+0x14a`, `Human_StaminaMax` `0x00223188`); with the gym's stamina upgrade a player's maximum × (1 + byte 3 / 100) |
+| Hurt threshold | float `+0x04` | below this share of maximum health the human is hurt (`0x00222ff8`) |
+| Stun, down | s16 `+0x30`, `+0x34`; floats `+0x10`, `+0x14` | a stun's and a knockdown's length, ms, and their factors while hurt ([Reactions](combat.md#reactions)) |
+| Weapon stun | float `+0x00` | as the attacker, scales the victim's stun for weapon hits of 20-49 damage (`0x0022f658`) |
+| Grab struggle | byte `+0x36` | the grabbed human's strike costs the grabber 1 / n of its power (`0x0027fd68`) |
+| AI: block, counter, attack delay | floats `+0x08`, `+0x0c`, `+0x24`, `+0x1c`, `+0x20`; bytes `+0x37`, `+0x39` | the AI's block chances, counter chance, attack delay factors, pattern-reading threshold and throws at walls ([AI](ai.md#block)) |
+| Health bar | byte `+0x40` | the pause Stats screen's Health bar (`+0x40` / 100, [Stats screen](pause.md#stats-screen)); the health rings' span ([HUD](hud.md#the-health-rings)) |
+| Not traced | `+0x32`, `+0x38`, `+0x3a`-`+0x3f`, `+0x41`, `+0x42` | stored; no reader found |
+
+**3. The Warrior class** (`CfgWarriorClass`, record `0x006b65c0 + class × 14`, human `+0x1ba` by type: 0-8 the nine
+Warriors, 9 everyone else), read through `0x00222b58`. Confirmed (code) at each reader
+([Warrior classes](../references/warrior-classes.md)):
+
+| Stat | Field | What it does |
+| --- | --- | --- |
+| Rage | s16 `+0x00`; bytes `+0x02`-`+0x04` | the rage maximum, the gain percentage, and the idle decay and the drain while raging, percent of the maximum per 20 s ([Rage](combat.md#rage)) |
+| Health % | byte `+0x05` | when the human becomes a player (`Human_MakePlayer` `0x00229c40`) his health and maximum are times n %, rounded; divided back when he stops being one (`0x0022a2a8`). Rembrandt: 1800 × 50 % = 900 |
+| Damage % (Strength) | byte `+0x06` | a player's attack damages times n % ([Damage](combat.md#damage-table)); the Stats screen's Strength bar |
+| Context games | bytes `+0x07`-`+0x0c` | the cuffing hold, the uncuff mash, tagging, lock picking, the stereo theft and mugging |
+
+**4. The gym upgrades** (`CfgWarriorUpgrade`, bytes `0x006b6650`-`0x006b6653`; 10, 20, 10, 20), each only while its
+unlockable is unlocked ([Unlockables](player-state.md#unlockables)): punch damage + 10 % (6, 5), kick damage + 20 % (6,
+6), the power maximum + 10 % (6, 11), the stamina maximum + 20 % (6, 12). Confirmed (code)
+([`CfgWarriorUpgrade`](../references/bindings/config.md#cfgwarriorupgrade)).
+
+**The pause Stats screen's bars** read these: Strength from the damage %, Stamina from the power and stamina maxima
+(upgrades included), Health from the power class's `+0x40`, Rage from the rage maximum / 150. The formulas are on
+[Pause: Stats screen](pause.md#stats-screen). "Strength" is not a field of its own: it is the Warrior class's damage %.
+
+#### Coney's implementation {#stats-coney}
+
+Coney reads the four tables from the configuration calls the scripts make (`characters::CharacterTypes`,
+`ai::aiConfigFrom()`), on the one difficulty it runs: the boot set, which is normal's. A human gets its type's stats
+when it is made (`ai::AiHumans::spawn()`, from the cast of a level's scripts) and a player when he is made or changes
+type (`human::playerClassOf()`, `human::playerProfileOf()`):
+
+| Stat | Applied? | Where | Test |
+| --- | --- | --- | --- |
+| Behaviour | yes, AI | `ai::aiConfigFrom()` → brain type | `tests/ai/disc_ai_config_test.cpp` |
+| Category | yes: boss class, a Warriors player's power class, the money class | `ai::FighterClass::category`, `characters::powerClassOf()`, `characters::moneyCategory()` | `tests/characters/character_types_test.cpp`, `tests/characters/starting_money_test.cpp` |
+| Speed class | no (a fallback; Coney uses the clips' speeds as the original does in play) | | |
+| Power class (AI and player) | yes | `play_level_cast.cpp` (the type's `+0x11d`), `characters::CharacterTypes::playerTraitsOf()` | `tests/characters/character_types_test.cpp`, `tests/platform/disc_change_character_test.cpp` |
+| Health (AI) | yes | `ai::FighterClass::health` | `tests/ai/brain_test.cpp` |
+| Health (player) × Health % | yes | `characters::PlayerTraits::health`, `human::playerProfileOf()` | `tests/characters/character_types_test.cpp`, `tests/platform/disc_change_character_test.cpp` |
+| Damage table × scale; player × Damage % | yes | `characters::parseCfgChar()`, `human::Human` (its own Anim Range List) | `tests/characters/character_types_test.cpp`, `tests/combat/anim_ranges_test.cpp` |
+| Attack table | yes, AI | `ai::FightSettings::attackWeights` | `tests/ai/fight_goal_test.cpp` |
+| Range table | no: not traced | | |
+| Hat | yes | `platform/play_level_hats.cpp` | `tests/world_objects/hats_test.cpp` (the fittings; the creation path has none) |
+| Voice | yes | `script::voiceSetOfType()` | `tests/audio/game_sound_test.cpp` |
+| `flag_14b` | the tag colour and the female sounds; not the body scale (every human has the player's 0.97) | `play_level_cast.cpp`, the sound events | `tests/audio/human_sound_events_test.cpp` |
+| Drop group, drop chance, money | yes | `characters::rollStartingCarry()` at `HuCreate` | `tests/characters/starting_money_test.cpp` |
+| Weapon | no: not traced | | |
+| Power meter (`+0x28`, `+0x2a`) | yes, every human (was the player's 400 and 60 for all before) | `combat::PlayerCombat` from `human::FighterProfile::powerClass` | `tests/human/human_test.cpp`, `tests/platform/disc_change_character_test.cpp` |
+| Hurt power factor (`+0x18`) | yes | `combat::PowerMeter::setHurt()` | `tests/combat/meters_test.cpp` |
+| Stamina (`+0x2c`, `+0x2e`) | yes, every human (was the player's 135 and 40 for all) | `human::Stamina`, `human::Human::spawn()` | `tests/human/stamina_test.cpp`, `tests/human/human_test.cpp`, `tests/platform/disc_change_character_test.cpp` |
+| Hurt threshold, stun, down times | yes | `human::Victim`, `human::Fighter::hurt()` | `tests/human/being_hit_test.cpp` |
+| Stun and down factors while hurt (`+0x10`, `+0x14`), weapon stun (`+0x00`) | no | | |
+| Grab struggle (`+0x36`) | yes | `human::Fighter` | `tests/combat/grabbed_test.cpp` |
+| AI block, counter, delays, walls (`+0x08`, `+0x0c`, `+0x1c`, `+0x20`, `+0x24`, `+0x39`) | yes | `combat::PowerClass`, the brains | `tests/ai/fight_reactions_test.cpp`, `tests/ai/brain_test.cpp` |
+| AI pattern-reading threshold (`+0x37`) | no | | |
+| `+0x40` (health rings) | yes: read from the configuration now (was Rembrandt's 35 for every class) | `characters::parseCfgPowerClass()`, `play_level_world.cpp` | `tests/characters/character_types_test.cpp`, `tests/hud/health_rings_test.cpp` |
+| Rage (max, gain, decay, drain) | yes, the player's Warrior class (was class 6's for every player) | `combat::RageClass`, `combat::RageMeter` | `tests/combat/meters_test.cpp`, `tests/human/human_test.cpp`, `tests/platform/disc_change_character_test.cpp` |
+| Health % given back on release | no: Coney's hand-over is a stand-in that keeps one player human ([hand-over](#level99-handover)) | | |
+| Lock pick, tagging, mash bytes | yes | `scripting/object_bindings.cpp` | `tests/scripting/object_bindings_test.cpp` |
+| Cuffing, stereo, mugging bytes | no: those games are not implemented for a player | | |
+| Gym upgrades | no | | |
+| Stats screen | no: the pause menu's Stats item is not implemented | | |
+
+Coney's readings: the player's health is read from the type's own `+0x116` (the page does not say which record
+`Human_Init` takes it from; every Warriors alias has its class's value), rounded to the nearest; a configuration with
+no `CfgWarriorClass` leaves the health unscaled and the rage at class 6's.
+
 ### Hats {#hats}
 
 `CfgHat(set, type, hat, {x, y, z}, {i, j, k, r})` (`Cfg_AddHatFit`, `0x00228d70`) fills a **hat-fit set**: a record of
@@ -647,7 +754,7 @@ becomes player 1 when player 1 goes. What the engine calls "the player" (the rin
 8. **Difficulty scaling**: health (record `+0x144`, `+0x146`) times a percentage, power maxima reloaded, attack damage
    times another percentage (bytes `+5` and `+6` of the record `0x00222b58` returns; `Human_ReleasePlayer` divides
    back).
-9. The war chief's default Warrior command 0 to its gang (`0x0041c4e0`, [AI](ai.md#warrior-commands)), the gang's
+9. The war chief's default Warrior command 0 to its gang (`0x0041c4e0`, [AI](ai-gangs.md#warrior-commands)), the gang's
    cached player data (`0x00166708`), physics body flag `0x400` and a wider body, the human flags of the table above.
    Returns 1.
 
@@ -695,7 +802,7 @@ disassembly; each step is confirmed (code) as above:
    front end's pad for slot 0), takes HUD panel 0 (just freed) and is added to the camera targets.
 4. **`GangBrFlush(0)`** clears the old pair's goals and actions.
 5. **`GangDelete(0)`** destroys the old Rembrandt and the old Ash at once ([Destroying a human](#destroy),
-   [AI: deleting a gang](ai.md#gang-delete)).
+   [AI: deleting a gang](ai-gangs.md#gang-delete)).
 
 So the player moves with `HuChangePlayerGang`, not with `HuCreate`: an implementation that binds the player on any
 `HuCreate(..., 1, ...)` while a player exists diverges here, and one that ignores `HuChangePlayerGang` leaves the pad on
@@ -951,7 +1058,7 @@ release.
 ### An AI's locomotion {#ai-locomotion}
 
 An AI human has no stick: its goals and actions write the brain's heading `+0x110`, speed `+0x114` (from a gait,
-`Brain_SetMoveGait` `0x0028aac0`), aim point `+0x90` and radius `+0x118` ([AI, Moving](ai.md#moving)), and its
+`Brain_SetMoveGait` `0x0028aac0`), aim point `+0x90` and radius `+0x118` ([AI, Moving](ai-moving.md#moving)), and its
 control function, `Human_UpdateControl` (`0x00243848`, the default `+0x1bc`), turns them into a velocity and a
 rotation each update. For a pad-controlled human the same function only picks the player's control (locomotion, air,
 fight stance, button tap or wheelchair) and runs it. Confirmed (code) at `0x00243848` unless marked.
@@ -971,7 +1078,7 @@ keeps sprinting at 0 (inferred: no reader found).
    than 0.1; in a fight stance (state `0x3`) → the base speed (`+0x164` × `+0x3a4`, the combat walk) when asked for
    more than 0.1, else 0; carrying an object of kind 4 or 6 and asked for more than the run speed → it **drops** the
    object (`0x00257f38`) unless its type's `+0x87` is 6 and `+0x5a` is 0; otherwise at most 25 m/s. With brain
-   `+0x0b` (the turn boost, [AI](ai.md#brain-boosts)) above 0, a human (`+0x1b0` = −1) in a fight stance gets
+   `+0x0b` (the turn boost, [AI](ai-gangs.md#brain-boosts)) above 0, a human (`+0x1b0` = −1) in a fight stance gets
    anim slot 14 = 380 (the player's combat walk) and its speeds recomputed; at 0 or below, slot 14 goes back to 372.
 3. **Speeding up from rest** (current speed exactly 0): unless the state code is 3 or 7 or the anim state is 4, the
    state code becomes **6** (run start) when asked for at least the run speed (**8** instead when brain `+0x0c` is
@@ -1045,7 +1152,7 @@ inferred from the subtraction). Positive angles turn left. Confirmed (code):
 
 The clip is played by `0x0025cb90`: a fade of 0.1 s, the clip, then the idle (slot 0, or slot 11 in a fight stance)
 looping, holding the given flag (`0x20000000` here) while it plays, state code 0. This is the turn (398) seen at
-runtime before an AI's run-in ([AI, Moving](ai.md#moving)).
+runtime before an AI's run-in ([AI, Moving](ai-moving.md#moving)).
 
 **Arriving with one clip** (`0x0025c5b8`, the global `0x005104e8` = 1): while the brain asks for more than the jog
 speed, its `+0x11c` is 0, the human is not down, not hurt and holds no flag, and its point is at least 0.1 m beyond
@@ -1063,7 +1170,7 @@ Confirmed (code):
 
 So an AI running at its point stops with the run stop once the point is closer than the run stop's slide (about
 1.6 m for Rembrandt), and one starting near its point takes a step or dash. Whether a given goal's move reaches
-this test is the move action's business ([AI, The move action](ai.md#move-action)).
+this test is the move action's business ([AI, The move action](ai-moving.md#move-action)).
 
 **Other effects**: when the brain asks for any gait above 0 (`Brain_UpdateGait`, `0x0028ab08`), the human lets go of
 carried props (`0x0024ce40`) and, after a state 18 or with held flag `0x20000`, its animation is rebuilt
@@ -1103,7 +1210,7 @@ control (`+0x1bc` = `0x00243420`, the member-function pointer form `+0x1be` = �
 
    The step then starts on the first free update.
 3. **Pick the clip.** Let `d` be the brain's heading `+0x110` minus the facing, wrapped to −π..π. The turn boost is
-   brain `+0x0b` ([AI](ai.md#brain-boosts)). The facing to end on is the heading, offset so that the clip's own
+   brain `+0x0b` ([AI](ai-gangs.md#brain-boosts)). The facing to end on is the heading, offset so that the clip's own
    direction points along the heading:
 
    | `d` | End facing | Fight stance | Boost 0 or below | Boost above 0 |
@@ -1172,7 +1279,7 @@ GiveWay ends; nothing else restores it. The destroy (`GiveWayAction_Destroy`, `0
 steps out of a walker's.
 
 **Who may give way** (`Brain_GiveWayTo`, before its free-sector search, which is in
-[AI: Giving way](ai.md#giving-way)). All of these must hold:
+[AI: Giving way](ai-moving.md#giving-way)). All of these must hold:
 
 - the stander's brain has a task (`+0x04` ≠ 0) or its `+0x09` is set;
 - **neither human is a threat to the other**: `Human_IsThreatTo` (`0x00222a48`) is false both ways. It is
@@ -1600,7 +1707,7 @@ Nothing else changes them:
   material rule is the climb's pass-through of 30, 31 and 122. `GRAVEL` (106) and the rest have no movement rule.
 - **The triangle's bits 14-15.** The sweep reads them as the edge of a corner slide; 3 names none, and the gravel
   faces below hold 3.
-- **The route.** A leg of kind 1 is walked with no handler of its own ([AI: link kinds](ai.md#route-follow)). The
+- **The route.** A leg of kind 1 is walked with no handler of its own ([AI: link kinds](ai-moving.md#route-follow)). The
   sweep, the contact handler and the snap read neither the brain nor its route, and an AI's body moves through the
   same move as the player's. Two things differ: the sphere's radius (body `+0x60`, about 0.35 m for an AI,
   [above](#walls)), and the slid velocity, which is written back only to a player's body (body flag `0x400`,
@@ -1671,12 +1778,12 @@ update, read over PINE:
 | street, updates 1-81 | 1.654 m/s straight at the first waypoint, 20° off 680's normal in plan |
 | 679, along 680's foot, 82-110 | the centre's projection **0.36 to 0.02 m outside the crease edge** (679-680) with the edge 0.50 down to 0.27 m from the centre (radius 0.35): the edge case of step 1. He moved 0.013-0.015 m across the ground (0.42 m/s) and 0.012 m up per update, turned 20-30° north of his aim, while his asked speed (`+0x1ac`) and velocity stayed 1.654 m/s; the "could not move" counter stayed 0 |
 | inside 680, 111-155 | the projection inside the face (step 1's first case), the centre sinking to 0.21 m from its plane; feet still on 679 until update 140, then on 680 itself (`n.z` 0.526): 0.33 m/s across and 0.45 m/s up |
-| crest | the route moved on to (−280.76, 130.48) at update 160, before he reached the first waypoint (the route's straight-line skip, [AI](ai.md#route-follow)); he crested at z 3.7, took the drop leg and stopped 1.9 m from the target at update 487 |
+| crest | the route moved on to (−280.76, 130.48) at update 160, before he reached the first waypoint (the route's straight-line skip, [AI](ai-moving.md#route-follow)); he crested at z 3.7, took the drop leg and stopped 1.9 m from the target at update 487 |
 
 The same run with his body `+0x60` raised to 1.3429 (radius 0.470, Coney's) was alike: the crease edge 0.49 down
 to 0.35 m from the centre, the projection 0.27 to 0.05 m outside it, 0.013-0.015 m across and 0.012 m up per
 update, never blocked; this passes within 0.5 m of the point where Coney's bum stalled before 2026-10-11. Neither
-run tripped the move action's stuck test (0.2 m in 60 updates, [AI](ai.md#move-action)): about 1.1 m was covered
+run tripped the move action's stuck test (0.2 m in 60 updates, [AI](ai-moving.md#move-action)): about 1.1 m was covered
 in each 60 updates on the heap. The waypoint was not skipped to get round the heap, and nothing warped him.
 
 The push-out `PhysicsBody_PushOutOfWalls` (`0x003477c0`, a sphere out of the nearest wall by `n × (r − distance)`)
@@ -1819,7 +1926,7 @@ from any gait, standing too, and its `+0x3c0` is not written. `Human_LaunchJump`
 `+0x1b` is 0 the velocity of the route follower's arc instead (`0x0029ade0`): the lowest of the vertical speeds 0.5,
 1.25, 2.0, ... m/s whose arc lands on the route's landing point at no more than 10 m/s in plan. Confirmed (code), and
 at runtime for Vermin (3.5 m/s up, 9.55 m/s across a 4.1 m gap); the rest is in
-[AI: Jump legs](ai.md#route-jump).
+[AI: Jump legs](ai-moving.md#route-jump).
 
 **In an input script**: `stick left 0 100`, wait until the run start is over and the speed is above 3.3 m/s, then
 `tap triangle`; add `press l2` beforehand for a sprint jump.
@@ -2006,7 +2113,7 @@ itself is above.
 The marker over a human's head (a mission target's star, a dealer's sign, the co-op player markers, the crown in
 Rumble) is a **3D world object of class `dyn_icon`**, attached to the human; it is not a HUD sprite. One per human,
 its handle at human `+0x360`. Confirmed (code) at the cited addresses unless marked; not checked at run time. The
-dealer's case is also on [AI: the dealer's icon](ai.md#dealer-icon).
+dealer's case is also on [AI: the dealer's icon](ai-scripting.md#dealer-icon).
 
 **Making one** (`Human_ShowOverheadIcon`, `0x002271f0`; reached from `HuAttachSpinningIcon` `0x00238a88`,
 `GangAttachSpinningIcon` `0x0016b2c8` for each of the gang's 16 member slots, and the game's own callers):
@@ -2050,8 +2157,8 @@ out in 3 steps. No level script calls it.
   ([World objects: the attachment](objects.md#held)).
 - **No spin** for model hashes `0x8b7fe995`, `0x7644ee5d`, `0x1de2e2ca`, `0x1a72a32d`, `0x687e742b`: the angular
   velocity is zeroed and flag bit 1 cleared. These are the player markers (`dyn_play_one`, `dyn_play_two` and their
-  `_euro` forms) and `dyn_lizziestarget` ([AI](ai.md#dealer-icon)); they keep the half-turn local rotation, so they
-  turn with the human.
+  `_euro` forms) and `dyn_lizziestarget` ([AI](ai-scripting.md#dealer-icon)); they keep the half-turn local rotation, so
+  they turn with the human.
 - **`dyn_cuffs`** (`0x464ac521`) takes the type record's offset and rotation (properties 11 and 12), turns at π/2
   rad/s, and is detached at once, so it stays where it appeared ([Crimes: arrest](crimes.md#arrest)).
 - **Colour state** (5 words): not fading, colour **`0xFFFFFFFF`** (white, opaque), the rest 0.
@@ -2145,7 +2252,7 @@ bytes each. A human flag is a bit of `+0xe0`, a state flag one of record `+0x00`
 | `0x0021e3a8` | `Human_GetSoundVolumeScale` | 1.0, or the combat-framing volume (game state `+0x24c`) for a player while the camera frames a fight. | confirmed (code) |
 | `0x0021e940` | `Human_UpdateSpeech` | Per update speech: when the line ends, clears speaking state and runs the end callback once; while it plays, moves the stream to the head and faces the partner. | confirmed (code) |
 | `0x0021ec30` | `Human_GetSpeechHandle` | Returns the current speech line handle `+0x178`. | confirmed (code) |
-| `0x0021ec38` | `Human_StopSpeech` | Stops the current line when alive and forced (or already flagged), ends the speaking pose and marks it stopped without callback. | confirmed (code) |
+| `0x0021ec38` | `Human_StopSpeech` | `(human, force)`: stops the current line when it is alive and either forced or cut-able (`+0x194` set); ends the speaking pose, sets `+0x194` and `+0x195` and drops the queued follow-up (`+0x184`); never touches the Lua callback, which runs at the next `Human_UpdateSpeech` ([Sound](sound.md#speech-cut-in)). | confirmed (code) |
 | `0x0021ed28` | `Human_SayCopLine` | Says a cop command line; on success stores a callback hash so the script hears when it ends. | confirmed (code) |
 | `0x0021ede0` | `Human_PlayNextVoiceLine` | Plays the next line of voice bank 0x29 at the human when the shared voice slot 0x005e6d80 is free, and takes that slot. | confirmed (code) |
 | `0x0021ee50` | `Human_PlayVoiceByName` | Hashes a fixed name (0x005d91e0) and plays it through Human_PlayVoiceAt. | confirmed (code) |
@@ -2254,7 +2361,7 @@ bytes each. A human flag is a bit of `+0xe0`, a state flag one of record `+0x00`
 | `0x00227428` | `Human_HasOverheadIconType` | True when the overhead icon `+0x360` is a world object of the given type. | confirmed (code) |
 | `0x002274a0` | `Human_EmptyStub3` | Empty function called by Human_StateUpdate. | confirmed (code) |
 | `0x00227738` | `Humans_FindNear` | Collects up to n humans of the game state's list (`+0x224`, `+0x228`) within a radius of a point, skipping one human and an optional filter; distances squared go beside each. | confirmed (code) |
-| `0x002278a8` | `Humans_FindNearSegment` | Finds humans whose pose slot lies near a segment (Segment_ClosestPoint), skipping one; used by Route_IsJumpLegClear ([AI: Giving way](ai.md#giving-way)). | confirmed (code) |
+| `0x002278a8` | `Humans_FindNearSegment` | Finds humans whose pose slot lies near a segment (Segment_ClosestPoint), skipping one; used by Route_IsJumpLegClear ([AI: Giving way](ai-moving.md#giving-way)). | confirmed (code) |
 | `0x00227a38` | `Human_IsButtonTapControl` | State flag 0x100000000000 (button-tap movement, Human_SetButtonTapControl). | confirmed (code) |
 | `0x00227a60` | `Human_IsInWheelchair` | State flag 0x80000000000 (wheelchair control). | confirmed (code) |
 | `0x00227b78` | `Human_SetFightStanceControl` | Control function `+0x1bc` = Human_FightStanceMove (lock-on). | confirmed (code) |
@@ -2290,7 +2397,7 @@ bytes each. A human flag is a bit of `+0xe0`, a state flag one of record `+0x00`
 | `0x00228630` | `Human_SetState20000000` | Sets state flag 0x20000000 (the victim just before a tackle hit). | confirmed (code) |
 | `0x00228658` | `Human_GetLastHitObject` | Record `+0xd0` resolved: the world object that last hit the human. | confirmed (code) |
 | `0x00228680` | `Human_GetLastHitObjectHandle` | Record `+0xd0` as a handle (null without a record). | confirmed (code) |
-| `0x002286a0` | `Human_IsSwingingHeld` | Held flag 0x800000, or 0x1000010 while holding an object and playing one of eleven weapon swing clips (0x1d3-0x229). | confirmed (code) |
+| `0x002286a0` | `Human_IsSwingingHeld` | Held flag 0x800000, or 0x1000010 while holding an object and playing one of the eleven object throw clips (467, 471, 472, 491, 502, 505-507, 551-553; a throw wind-up, not a melee swing). A hit drops the held object while it is true ([Combat: dropping what is held](combat.md#keep-weapon)). | confirmed (code) |
 | `0x002287e0` | `Humans_StaticInitAll` | Static initialiser: Humans_StaticInit(1, 0xffff). | confirmed (code) |
 | `0x00228818` | `SpeedClass_Get` | Speed class record `0x006b6548` + class x 0x18. | confirmed (code) |
 | `0x00228830` | `PowerClass_Get` | Power class record `0x006619a0` + class x 0x44. | confirmed (code) |
@@ -2599,7 +2706,7 @@ the human code reads.
 | `0x002446a8` | `Human_SetButtonTapParam` | Sets `+0x6bc` for the button-tap control. | confirmed (code) |
 | `0x002446b0` | `Human_SetThrowAimState` | Enters throw aiming: the control function and the aim point. | confirmed (code) |
 | `0x00247a08` | `Human_SetFallStartPoint` | `+0x2c0` = the given point when it is on the nav mesh, else `+0x2b0`. | confirmed (code) |
-| `0x00247a50` | `Nav_WalkDistanceTo` | The straight distance to a point a walkable line reaches, else the length of a route planned to it ([AI](ai.md#warrior-follow)); 0 with no area or no route. | confirmed (code) |
+| `0x00247a50` | `Nav_WalkDistanceTo` | The straight distance to a point a walkable line reaches, else the length of a route planned to it ([AI](ai-gangs.md#warrior-follow)); 0 with no area or no route. | confirmed (code) |
 | `0x00247fc0` | `Human_StrikeShapeOn` | Turns a strike shape on (message 0x8f). | confirmed (code) |
 | `0x00248110` | `Human_StrikeShapeOff` | Turns a strike shape off (message 0x90). | confirmed (code) |
 | `0x002482e0` | `Human_CanHeadLook` | Whether the head may turn to look. | confirmed (code) |
@@ -2626,7 +2733,7 @@ the human code reads.
 ### Navigation {#code-nav}
 
 `0x0024e1f8`-`0x00250e00`: the human's side of the navigation mesh (on-mesh tests, path polygons, links); the planner is
-on [AI](ai.md#path-planning).
+on [AI](ai-moving.md#path-planning).
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -2691,8 +2798,8 @@ arrival clips of an AI, and the per-human actions.
 | `0x00255cf8` | `Human_UpdateSpecialIdle` | State code 0x1d: the special idle (672 start, then 671 looping) from the script's clips; ends the special state. | confirmed (code) |
 | `0x002570e8` | `Human_ComputeThrowVelocity` | The launch velocity of a thrown held object: aimed at the target (led by its speed) or along the facing, scaled by the object's weight and the human's scale. | confirmed (code) |
 | `0x00257ce8` | `Human_EndThrowAim` | Cancels the throw aim and drops what cannot stay in hand (kinds 4 and 6; any but sets 1 and 2 without human flag 0x2000). | confirmed (code) |
-| `0x00257d70` | `Human_EndThrowAimDropHeavy` | Ends the throw aim: drops a held object of kind 4 or 6, then (no human flag 0x2000) drops any other unless an AI holds one of sets 1 or 2. | confirmed (code) |
-| `0x00257e38` | `Human_EndThrowAimIfHurt` | Ends the throw aim and drops a held object of kind 4 or 6; a hurt human (no human flag 0x2000) also drops any other, unless an AI holds one of sets 1 or 2. | confirmed (code) |
+| `0x00257d70` | `Human_EndThrowAimDropHeavy` | Ends the throw aim: drops a held object of kind 4 or 6, then (no human flag 0x2000) drops any other when the human is hurt or holds set 3, unless a cop (brain type 1) holds set 1 or 2 ([Combat: dropping what is held](combat.md#keep-weapon)). | confirmed (code) |
+| `0x00257e38` | `Human_EndThrowAimIfHurt` | Ends the throw aim and drops a held object of kind 4 or 6; a hurt human (no human flag 0x2000) also drops any other, unless a cop (brain type 1) holds set 1 or 2 ([Combat: dropping what is held](combat.md#keep-weapon)). | confirmed (code) |
 | `0x00257ef0` | `Human_KnockOffHatIfDown` | Class 0x80 down or dead: knocks the hat off ([Hats](#hats)). | confirmed (code) |
 | `0x00258330` | `Human_KnockOffHat` | Throws the worn hat off (unless HuSetKeepHat or kind 27): spin 8 rad/s, drop at 2 m/s, +0x364 cleared ([Hats](#hats)). | confirmed (code) |
 | `0x00258968` | `Human_ReleaseAll` | Lets go of everything: breaks a pair, ends a mini-game, drops the held object, clears the object target, ends rage, clears state 0x18800f, empties the move-style stack and sets style 0x12. | confirmed (code) |
@@ -2765,9 +2872,9 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
   (`src/platform/play_lighting.*`) every human is drawn in the two passes of
   [Drawing a human](graphics.md#human-draw): the second pass blends the blood texture
   (`src/graphics/human_blood.*`, the three `charblood` textures of `global.pak`) by its alpha below 90% health.
-- `--view-character [NAME] [--anim CLIP]` ([Building](../guides/building.md#the-character-viewer)) shows a skinned
+- `--view-character [NAME] [--anim CLIP]` ([Running Coney](../guides/running.md#the-character-viewer)) shows a skinned
   character playing a clip in place on the fixed 30 Hz step, with a pad-driven orbit camera.
-- `--render-references DIR` ([Building](../guides/building.md#reference-images)) writes a 256x256
+- `--render-references DIR` ([Running Coney](../guides/running.md#reference-images)) writes a 256x256
   transparent PNG of every character, posed at its default clip's first frame (and of every object,
   [Level loading](level-loading.md#the-object-list)), from a fixed three-quarter camera
   (`src/characters/reference_render.*` frames and reduces; `src/platform/reference_renderer.*` draws offscreen).
@@ -2786,7 +2893,8 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
   in a combat stance, full at 2.0 rad): the defaults, and for a level `--play-level` runs, what the preload's
   `CfgSetTurnRates` and `CfgTurnRate` calls recorded.
 - `src/human/stamina.*` is the stamina meter ([Sprint and stamina](#sprint)): the drain at the sprint gait, the
-  refill and the gait, airborne and "run with L2" blocks, and `Player_UpdateSprint`'s rule (L2 held and stamina not
+  refill (the maximum and the refill each human's power class's, [Stats](#stats-coney)) and the gait, airborne and
+  "run with L2" blocks, and `Player_UpdateSprint`'s rule (L2 held and stamina not
   0, asked again every update).
 - `src/human/body.*` is the walking body of [Walls and steps](#walls): the sphere of 0.35 × scale² (× 1.4286 for
   the player: 0.4705 m) centred 0.05 above its radius, wall triangles `|n.z|` ≤ 0.65 that the move goes into, the
@@ -2863,7 +2971,7 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
   renderer that draws between steps.
 - The debug menu's tunables ([Debug menu](../guides/debug-menu.md#tunables)) expose the body, sprint, jump, climb
   and lean values above, each defaulting to the original's.
-- `--play-level NAME` ([Building](../guides/building.md#playing-a-level)) plays it: `src/platform/play_level_mode.*`
+- `--play-level NAME` ([Running Coney](../guides/running.md#playing-a-level)) plays it: `src/platform/play_level_mode.*`
   steps the player, streams the level and runs the visibility pass in its update, and draws from the snapshots of the
   last two steps, blended by the frame's alpha, in its render
   ([Update and render](../guides/conventions.md#update-and-render)). A disc test (`[frame_rate]`) plays both scripts

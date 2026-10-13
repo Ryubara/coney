@@ -11,7 +11,7 @@
 // Brain_GiveWayTo tests who may give way, picks a free sector of the stander's record and queues a GiveWay action, or
 // asks the human in each of those sectors to make room in turn. The step is the TakeStep action's: the human's step
 // control plays one step clip on the sector's heading (human::Human::enterStepControl()).
-// Research: docs/research/ai.md#giving-way, docs/research/characters.md#step-control
+// Research: docs/research/ai-moving.md#giving-way, docs/research/characters.md#step-control
 
 namespace coney::ai {
 
@@ -21,11 +21,6 @@ class Brain;
 inline constexpr int kGiveWayDelayRange = 125;
 /// A script's ActGiveWay acts only on a human with fewer than this many queued actions.
 inline constexpr std::size_t kGiveWayQueueLimit = 8;
-
-/// Whether `other` is a threat to `brain`: their gangs are enemies, or both are players. **Coney stand-in**: a
-/// Warrior's mode (`+0x2e5`), which can force it either way, is not read.
-/// @orig 0x00222a48 Human_IsThreatTo (unknown)
-[[nodiscard]] bool isThreat(const Brain& brain, const Brain& other);
 
 /// Asks `stander` to give way to `mover`, whose path is the line through `point` along `step`: yes at once when the
 /// stander already gives way; no while he is inside a push-aside; otherwise giveWayTo() with both marked meanwhile.

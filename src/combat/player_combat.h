@@ -48,7 +48,11 @@ struct CombatInput {
     bool grabTargetInReach = false; ///< The search found someone to grab for this circle or circle + cross.
     /// Both grab-block flags on the player (`0x40000000` and `0x80000000`, `HuBlockGrab`): circle starts no grab.
     bool grabBlocked = false;
-    bool snapTarget = false;     ///< The snap's search found a human that is not the target (SquareInput).
+    bool snapTarget = false; ///< The snap's search found a human that is not the target (SquareInput).
+    /// The human square, cross or circle aims at is held from the rear in front of this one and allows a tandem
+    /// (combat::tandemCanStart(), the caller's search). Square and cross start it after their other target tests,
+    /// circle before grabbing (docs/research/combat.md#grab, step 3).
+    bool tandemTarget = false;
     ChainTargets chain;          ///< What the chain's next step reads of the targets (AttackChain::update()).
     bool fromRear = false;       ///< Holding the victim from behind.
     bool wallInReach = false;    ///< A wall within a throw's reach.
@@ -80,14 +84,20 @@ struct CombatOutput {
     MountAction mountAction = MountAction::None; ///< What the player did in the mount (startAnim is its clip).
     bool grabPowerOut = false;             ///< The grab broke because the power meter ran out (grabAction is LetGo).
     GameResult game = GameResult::Running; ///< A minigame's result this update (mugging or theft).
+    /// The tandem starts with the set whose first id this is (combat::tandemSet()); anim_id::kNone otherwise. The
+    /// fighter plays the three humans' clips; startAnim stays anim_id::kNone.
+    int tandemBase = anim_id::kNone;
 };
 
 /// The player's combat state and its per-update decisions.
 class PlayerCombat {
   public:
     /// A fighter whose damage comes from `ranges` (null: hits do no damage), starting at game time `startMs` with full
-    /// power and empty rage, its coin flips seeded with `seed`. `ranges` must outlive it.
-    PlayerCombat(const AnimRangeList* ranges, std::uint64_t startMs, std::uint32_t seed);
+    /// power and empty rage, its coin flips seeded with `seed`: its power meter of `powerMax` refilling
+    /// `powerRefillPerSecond` (its power class's `+0x28` and `+0x2a`), its rage meter of `rage` (its Warrior class's).
+    /// `ranges` must outlive it.
+    PlayerCombat(const AnimRangeList* ranges, std::uint64_t startMs, std::uint32_t seed, int powerMax = kPlayerPowerMax,
+                 int powerRefillPerSecond = kPlayerPowerRefillPerSecond, const RageClass& rage = kPlayerRageClass);
 
     /// One update, in the original's order: the block, the chain, the meters, the state routes, the commands.
     ///
@@ -151,12 +161,15 @@ class PlayerCombat {
     // The grabbing route.
     void updateGrabbing(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
     // Cross + square outside a hold: the special 653 (645 in rage), which needs and spends a quarter of the power meter
-    // (docs/research/combat.md#attacks). Refused on kSpecialRefusingPhases. The fighter adds 2 from the target's rear
+    // (docs/research/combat.md#attacks). Refused on kSpecialRefusingPhases and with an object in hand
+    // (CombatInput::animSet not 0: the original throws a melee weapon instead, which is not built; either way no
+    // special, docs/research/combat-moves.md#bat-cross). The fighter adds 2 from the target's rear
     // (Fighter::playAttack()). **Coney choice**: circle + triangle (the tag) is not built.
     // @orig 0x00287730 Player_Special (unknown)
     void special(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
     // Circle + cross outside a hold: the strong grapple, a grab whose connect is the strike 657 (649 in rage), with no
-    // power check or cost; with nobody to grab, nothing (docs/research/combat.md#strong-grapple).
+    // power check or cost; with nobody to grab, nothing (docs/research/combat.md#strong-grapple). Refused, like the
+    // special, with an object in hand (docs/research/combat-moves.md#bat-cross).
     // @orig 0x00263c90 Player_SpecialAttack (unknown)
     void strongGrapple(const CombatInput& input, CombatOutput& out);
     // The mounted route (after a tackle or a grab's mount): updateMount's move, played through the chain or the mode.
@@ -167,6 +180,9 @@ class PlayerCombat {
     bool extendPowerMove(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
     // The theft route.
     void updateTheft(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
+    // Square, cross or circle at a target that allows one: the tandem with the set the object in hand picks
+    // (CombatOutput::tandemBase). The fighter plays it (human::Fighter, `Tandem_Start`).
+    void startTandem(const CombatInput& input, CombatOutput& out);
     /// Circle tapped or held: a grab or a tackle, or a miss.
     /// @orig 0x00284920 Player_GrabOrTackle (unknown)
     void grabOrTackle(const CombatInput& input, CombatOutput& out);

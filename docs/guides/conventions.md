@@ -197,9 +197,7 @@ function to `docs/progress/functions.toml` (address, original name, subsystem an
 `uv run --project python coney-tools progress check`. Nothing generated is committed: the progress page's tables
 come from the docs build. CI fails when a tag and the file disagree. `coney-tools progress sizes --fill` finds a
 size from your own disc. Details:
-[the progress commands](coney-tools.md#progress) and [Progress](../progress/index.md). Rekit's
-`rekit research check` matches the tags against the research database in both directions, so a tag with a wrong
-address, or a reimplemented symbol with no tag, is caught by CI once that check is in place.
+[the progress commands](coney-tools.md#progress) and [Progress](../progress/index.md).
 
 ### A complete example
 
@@ -462,8 +460,7 @@ gamepad input, playthroughs) and where the checks run are in [Testing](testing.m
 ## Python {#python}
 
 `python/coney_tools` holds Coney-specific automation: the WAD extractor and name recovery, the PCSX2 bridge, and
-the harness that drives a running Coney or PCSX2 with scripted input. Tooling that would be useful to other
-reverse-engineering projects goes to Rekit instead, once a second project needs it.
+the harness that drives a running Coney or PCSX2 with scripted input.
 
 - **Python 3.12 or newer**, managed with [uv](https://docs.astral.sh/uv/): `uv sync` sets up the environment and
   `uv run` runs inside it, so everyone uses the same locked dependencies.

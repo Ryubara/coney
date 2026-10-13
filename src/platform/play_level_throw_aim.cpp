@@ -8,7 +8,9 @@
 #include <cmath>
 #include <cstdint>
 #include <format>
+#include <memory>
 #include <optional>
+#include <span>
 #include <vector>
 
 #include "ai/ai_humans.h"
@@ -18,6 +20,7 @@
 #include "combat/commands.h"
 #include "combat/throw_aim.h"
 #include "combat/throw_velocity.h"
+#include "graphics/throw_arc.h"
 #include "platform/play_level_mode.h"
 #include "raycast/collision_mesh.h"
 #include "world_objects/object_bodies.h"
@@ -70,6 +73,11 @@ template <typename Meets> std::optional<float> sweep(anim::Vec3 from, anim::Vec3
 } // namespace
 
 void PlayLevelMode::stepThrowAim(const Pad& pad) {
+    // The arc as the step before left it, for a render between the steps to blend from; none while not aiming.
+    m_previousArc.clear();
+    if (m_throwAim.active()) {
+        m_previousArc.assign(m_throwAim.arc().begin(), m_throwAim.arc().begin() + m_throwAim.arcPoints());
+    }
     human::Human& human = m_player->human();
     human::ScriptState& script = human.script();
     const world_objects::SpawnRecord* record = m_records != nullptr && script.heldObject != world_objects::kNoObject
@@ -207,6 +215,33 @@ void PlayLevelMode::stepThrowAim(const Pad& pad) {
     if (m_throwAim.aimed() != before) {
         m_print(std::format("throw: aiming at {:.0f} (pitch {:.3f})\n", m_throwAim.aimed(), m_throwAim.pitch()));
     }
+}
+
+std::vector<graphics::ThrowArcVertex> PlayLevelMode::throwArcRibbon(float alpha) const {
+    // Only while he is in the aiming state and holds the object (ThrowArcs_RenderAll, ThrowArc_Render).
+    if (!m_throwAim.active() || m_throwAim.arcPoints() < 2) {
+        return {};
+    }
+    const std::span<const anim::Vec3> newest(m_throwAim.arc().data(), static_cast<std::size_t>(m_throwAim.arcPoints()));
+    const std::vector<anim::Vec3> points = graphics::blendThrowArc(m_previousArc, newest, alpha);
+    // The ribbon runs along the thrower's right axis (his frame's x), level across the arc; red while the arc meets a
+    // target: the human or object HuIsAimingAt reads (`+0x634`), none for the level mesh.
+    const anim::Vec3 right = combat::throwerToWorld(anim::Vec3{1.0F, 0.0F, 0.0F}, m_throwAim.heading());
+    return graphics::throwArcStrip(points, right, m_throwAim.arcCut(), m_throwAim.aimed() != 0.0);
+}
+
+void PlayLevelMode::drawThrowArc(float alpha) {
+    if (!m_engine.drawsPixels()) {
+        return;
+    }
+    const std::vector<graphics::ThrowArcVertex> ribbon = throwArcRibbon(alpha);
+    if (ribbon.empty()) {
+        return;
+    }
+    if (!m_throwArc) {
+        m_throwArc = std::make_unique<ThrowArcRenderer>(m_wad, m_print);
+    }
+    m_throwArc->draw(ribbon);
 }
 
 } // namespace coney::platform

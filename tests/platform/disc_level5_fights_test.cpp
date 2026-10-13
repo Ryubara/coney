@@ -3,14 +3,15 @@
 // Checks against the player's own disc that `level5`'s two fights play to their ends as `--play-level level5
 // --checkpoint N` plays them, headless, driven by the pad alone: after the chapter's scene the player walks up to the
 // nearest foe still standing (the left stick at 50 %) until one is within 2.5 m and attacks (square, pressed only
-// while one is that near).
+// while one is that near), the stick still held toward that foe so the attack's target search aims at him.
 // - Checkpoint 2, the bar: once every Hurricane of both bar gangs is down their gangs' message 18 runs `BarCleared`,
-//   the scene `l5_c5` plays and its end sets checkpoint 3.
+//   the scene `l5_c5` plays and its end sets checkpoint 3; on the way a Hurricane's own enemy scan lists the player.
 // - Checkpoint 4, the boss fight: `TacticBossScenarioA` takes Diego and Vargas through three stages and its last
 //   callback ends the mission (`HUDLaunchMissionComplete`).
 // See docs/research/scripting.md#level5. They run only when the environment variable CONEY_DISC names the disc and
 // skip otherwise; they print counts and positions only (LEGAL.md).
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
@@ -63,7 +64,7 @@ constexpr std::uint64_t kFightFrom = 600;
 constexpr int kWalkPercent = 50;
 constexpr std::uint64_t kAimEvery = 40;
 constexpr std::uint64_t kTapEvery = 10;
-// Within this distance (metres) of the nearest foe the player stops walking and fights where he stands.
+// Within this distance (metres) of the nearest foe the player presses square, the stick still toward that foe.
 constexpr float kFightRange = 2.5F;
 // A preferred foe standing within this distance (metres) of the player is fought before a nearer one.
 constexpr float kPreferRange = 6.0F;
@@ -128,11 +129,12 @@ class FightPad final : public coney::InputSource {
 
 // What a fight's run found.
 struct FightRun {
-    std::uint64_t frame = 0;  // the frame the run stopped on
-    std::size_t foes = 0;     // the humans the run counted as foes
-    int standing = 0;         // of those, the ones with health left at the end
-    int health = 0;           // player 1's health at the end
-    std::uint64_t errors = 0; // the scripts' errors
+    std::uint64_t frame = 0;     // the frame the run stopped on
+    std::size_t foes = 0;        // the humans the run counted as foes
+    int standing = 0;            // of those, the ones with health left at the end
+    int health = 0;              // player 1's health at the end
+    std::uint64_t errors = 0;    // the scripts' errors
+    std::uint64_t firstSeen = 0; // the first frame a foe listed player 1 as an enemy (his scan, unit 1); 0 for never
 };
 
 // Plays `level5` at `checkpoint` as --play-level does, the pad fighting every human whose name starts with one of
@@ -256,11 +258,16 @@ FightRun playFight(const coney::io::Wad& wad, int checkpoint, std::vector<std::s
         return std::hypot(nearest->x - feet.x, nearest->y - feet.y) < kFightRange;
     };
     // The steer source puts the route's point (0, 0) on the nearest foe still standing: the view is player 1's feet
-    // less that foe's. With none standing, or one within kFightRange, the stick rests.
-    pad.setSteerSource([&play, &nearestFoe, &inReach](std::size_t port) -> std::optional<coney::SteerView> {
+    // less that foe's. With none standing the stick rests. Within kFightRange it stays on that foe, as a player holds
+    // it while he strikes: a player's square searches for its human along the stick's heading, and along his facing
+    // only when the stick is at rest (Player_PickTarget, docs/research/combat-moves.md#targeting). With the stick at
+    // rest he struck whoever he happened to face, and once every gang's brains scan for enemies
+    // (docs/research/ai-reimpl.md#unit-1) the crew no longer took Vargas off him: Vargas never tired a second time
+    // and the player went down with both bosses standing.
+    pad.setSteerSource([&play, &nearestFoe](std::size_t port) -> std::optional<coney::SteerView> {
         const coney::platform::PlayLevelMode* level = play();
         const std::optional<coney::anim::Vec3> nearest = nearestFoe();
-        if (port != 0 || level == nullptr || !nearest || inReach()) {
+        if (port != 0 || level == nullptr || !nearest) {
             return std::nullopt;
         }
         const coney::anim::Vec3 feet = level->playerFeet();
@@ -287,6 +294,16 @@ FightRun playFight(const coney::io::Wad& wad, int checkpoint, std::vector<std::s
     while (run.frame < lastFrame && !done(scripts)) {
         stack.runUntilEmpty(timer, {}, 1);
         ++run.frame;
+        if (const coney::platform::PlayLevelMode* level = play(); run.firstSeen == 0 && level != nullptr) {
+            for (const coney::ai::Brain* foe : foeBrains(*level)) {
+                if (std::ranges::any_of(foe->enemies(), [](const coney::ai::Brain* enemy) {
+                        return enemy->type() == coney::ai::BrainType::Player;
+                    })) {
+                    run.firstSeen = run.frame;
+                    break;
+                }
+            }
+        }
     }
     if (const coney::platform::PlayLevelMode* level = play(); level != nullptr) {
         const std::vector<const coney::ai::Brain*> found = foeBrains(*level);
@@ -319,9 +336,14 @@ TEST_CASE("the disc's level5: the bar fight, won with the pad, moves the mission
         checkPoint = scripts.state().checkPoint;
         return checkPoint >= 3;
     });
-    std::printf("  level5 bar fight: checkpoint %g at frame %llu, %zu Hurricanes, %d standing, player 1 health %d\n",
-                checkPoint, static_cast<unsigned long long>(run.frame), run.foes, run.standing, run.health);
+    std::printf("  level5 bar fight: checkpoint %g at frame %llu, %zu Hurricanes, %d standing, player 1 health %d, "
+                "first seen at frame "
+                "%llu\n",
+                checkPoint, static_cast<unsigned long long>(run.frame), run.foes, run.standing, run.health,
+                static_cast<unsigned long long>(run.firstSeen));
     CHECK(run.foes == 8);
+    // The Hurricanes' own scans list him (every AI brain scans from its update, docs/research/ai-reimpl.md#unit-1).
+    CHECK(run.firstSeen != 0);
     CHECK(checkPoint == 3);
     CHECK(run.errors == 0);
 }
@@ -333,9 +355,9 @@ TEST_CASE("the disc's level5: the boss fight, won with the pad, ends the mission
     }
     bool complete = false;
     // Vargas first when he is near: stage 3 holds him at 67 % and 34 % until he tires, which only the hits he takes
-    // bring, and ends once neither boss stands (docs/research/ai.md#boss-diego-vargas). Fighting whoever was nearest,
-    // the pad could beat on Diego, in front now that humans meet, while Vargas waited at his cap until the player
-    // went down.
+    // bring, and ends once neither boss stands (docs/research/ai-gangs.md#boss-diego-vargas). Fighting whoever was
+    // nearest, the pad could beat on Diego, in front now that humans meet, while Vargas waited at his cap until the
+    // player went down.
     const FightRun run =
         playFight(*wad, 4, {"Diego", "Vargas"}, "Vargas", 15000, [&complete](coney::LevelScripts& scripts) {
             complete = scripts.host().missionCompleteRequested();

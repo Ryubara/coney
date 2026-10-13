@@ -79,7 +79,7 @@ Brain::~Brain() = default;
 
 // The brain whose human stands at `position` (the announced attacker); null when none does. **Coney reading**: the
 // announcement carries the attacker's position, so the attacker is the peer standing there (the boss counters answer
-// him, docs/research/ai.md#boss-diego-vargas).
+// him, docs/research/ai-gangs.md#boss-diego-vargas).
 Brain* Brain::announcer(anim::Vec3 position) const {
     if (m_peers == nullptr) {
         return nullptr;
@@ -120,6 +120,12 @@ void Brain::update(std::uint64_t nowMs) {
         stopMove();
     }
     if (runsGoals && !held && !m_knockedOut && !m_human->airborne() && !m_human->fighter().health().depleted()) {
+        // The enemy scan on this brain's own schedule, before the goals that pick from the list
+        // (docs/research/ai-reimpl.md#unit-1). **Coney's reading**: a brain with no gang has no enemy gang to find and
+        // takes no scan token.
+        if (m_gang != nullptr) {
+            static_cast<void>(m_gang->owner().scans().maybeScan(m_gang->owner(), *this, nowMs));
+        }
         // The reaction goal, else the goal stack; then the actions.
         if (!updateReactionGoal()) {
             processGoals();
@@ -326,6 +332,8 @@ bool Brain::clearActions() {
 
 Action* Brain::frontAction() { return m_actionCount == 0 ? nullptr : m_actions[m_actionFront].get(); }
 
+const Action* Brain::frontAction() const { return m_actionCount == 0 ? nullptr : m_actions[m_actionFront].get(); }
+
 void Brain::flush() {
     clearGoals();
     clearActions();
@@ -476,10 +484,10 @@ void Brain::addEnemy(Brain& enemy) {
     }
 }
 
-void Brain::setTarget(Brain* target) {
+void Brain::setTarget(Brain* target, bool force) {
     if (m_target == target) {
         if (m_target != nullptr) {
-            m_target->claimSlot(*this);
+            m_target->claimSlot(*this, force);
         }
         return;
     }
@@ -488,7 +496,7 @@ void Brain::setTarget(Brain* target) {
     }
     m_target = target;
     if (m_target != nullptr) {
-        m_target->claimSlot(*this);
+        m_target->claimSlot(*this, force);
     }
 }
 
@@ -513,7 +521,7 @@ void Brain::retarget() {
     }
 }
 
-bool Brain::claimSlot(Brain& attacker) {
+bool Brain::claimSlot(Brain& attacker, bool force) {
     if (std::ranges::find(m_slots, &attacker) != m_slots.end()) {
         raiseSpacing(attacker);
         return true;
@@ -523,12 +531,15 @@ bool Brain::claimSlot(Brain& attacker) {
         raiseSpacing(attacker);
         return true;
     }
-    // Full: a closer attacker takes the farthest one's slot.
+    // Full: a closer attacker, or one forced in, takes the farthest one's slot, and the farthest loses his target.
     const auto farthest = std::ranges::max_element(m_slots, {}, [this](const Brain* b) { return distanceTo(*b); });
-    if (farthest == m_slots.end() || distanceTo(attacker) >= distanceTo(**farthest)) {
+    if (farthest == m_slots.end() || (!force && distanceTo(attacker) >= distanceTo(**farthest))) {
         return false;
     }
     m_fight.places.release(*farthest);
+    if ((*farthest)->m_target == this) {
+        (*farthest)->m_target = nullptr;
+    }
     *farthest = &attacker;
     raiseSpacing(attacker);
     return true;
@@ -692,6 +703,19 @@ Sectors& Brain::sectors(std::uint64_t maxAgeMs) {
         m_sectors.rebuild(*this, others, m_nowMs);
     }
     return m_sectors;
+}
+
+void releaseToAi(Brain& brain, BrainType leftAs) {
+    // Its class's type first: an AI brain has no pad to hand back (Brain::setType()), so no later BrDead gives the pad
+    // to the human again.
+    brain.setType(leftAs);
+    brain.clearGoals();
+    static_cast<void>(brain.clearActions());
+    // The flags Human_ReleasePlayer leaves for that type: rage gone, revivable again for a Warrior.
+    human::Human& human = brain.human();
+    const std::uint64_t released = releasedFlags(human.flags(), leftAs);
+    human.setFlag(~released, false);
+    human.setFlag(released, true);
 }
 
 } // namespace coney::ai

@@ -7,9 +7,9 @@ contribute. If you only read one other file first, read [LEGAL.md](LEGAL.md).
 
 - Read [LEGAL.md](LEGAL.md). The short version: no game data anywhere in the project, and the clean room is
   never broken.
-- The clean room splits the work in two. Analysts may read decompiler output and disassembly of the original game,
-  and write what they learn into `docs/research/`. Anyone writing engine code works from `docs/research/` only and
-  never copies or paraphrases decompiler output. See [LEGAL.md](LEGAL.md#clean-room).
+- The clean room splits the work in two: analysts read the original and write `docs/research/`; anyone writing
+  engine code works from those pages only, and never implements a function whose original code they have read. See
+  [LEGAL.md](LEGAL.md#clean-room) and [how we keep it](docs/guides/research-workflow.md#clean-room).
 - Research lives in `docs/research/`. If the page you need does not exist or is wrong, fixing the research is a
   contribution in its own right. Each claim carries an evidence level and, where it applies, an address.
 
@@ -17,11 +17,12 @@ contribute. If you only read one other file first, read [LEGAL.md](LEGAL.md).
 
 Clone the repository. To build and test the engine, follow [docs/guides/building.md](docs/guides/building.md).
 
-CI checks every pull request's title against the rules under [Commits](#commits); to check a commit title yourself,
+CI checks every pull request's title against the rules under [Commits](#commits), because the squash merge makes it the
+title of the one commit on `main`; the titles of the commits on the branch are not checked. To check a title yourself,
 with [uv](https://docs.astral.sh/uv/) installed:
 
 ```sh
-git log -1 --format=%s | uv run --project python coney-tools repo check-title -
+echo "docs: Add a page" | uv run --project python coney-tools repo check-title -
 ```
 
 CI also refuses a pull request that changes `src/` or `python/src/` without changing `docs/` or `research/`; put a
@@ -42,7 +43,8 @@ created with `gh pr create --body-file`, and reruns when you edit it. These rule
 - Docs: a change under `src/`, `python/src/` needs a change under `docs/`, `research/` or the line `Docs: none` in the
   description.
 - Closing: a line `Fixes #N` in Summary for each issue the pull request finishes, one per line; merging closes it.
-- Checklist: each unchecked item under `Remaining:` cites an issue or pull request as `#N`.
+- Checklist: every item is ticked (`- [x]`): a pull request lists only the work it finishes, and a task it does not
+  finish is left out and lives in its own issue.
 - Screenshots: an uploaded image (a path on your machine is refused) or a line `Screenshots: none (<reason>)` that gives
   a reason.
 - AI use: after `Commits written by:` one of `a person`, `an AI`, `an AI, edited by a person`, `a person, with AI help`;
@@ -50,22 +52,16 @@ created with `gh pr create --body-file`, and reruns when you edit it. These rule
 - The text names no path on your machine (`scratch/`, `../../`, `C:\`) outside an image reference.
 <!-- conventions:end -->
 
-File an issue for what you leave undone ([Issues](docs/guides/issues.md#leftovers)). To check a description yourself:
+A pull request lists only the work it finishes; file an issue for anything else you find
+([Issues](docs/guides/issues.md#follow-up-work)). To check a description yourself:
 
 ```sh
 uv run --project python coney-tools repo check-body --body description.md
 ```
 
-To build the documentation:
-
-```sh
-py -m venv .venv
-.venv/Scripts/pip install -r requirements-docs.txt
-.venv/Scripts/python -m mkdocs build --strict
-```
-
-On Linux and macOS use `python3 -m venv .venv` and `.venv/bin/` in place of `.venv/Scripts/`. The build must pass
-with `--strict`, which rejects broken links and pages missing from the navigation.
+The documentation must build with `.venv/Scripts/python -m mkdocs build --strict`, which rejects broken links and
+pages missing from the navigation. The setup, the Linux and macOS form and how to write the pages are in
+[Writing these docs](docs/guides/writing-docs.md).
 
 Game files, emulators and tool installs live outside the repository, as siblings of the checkout. The layout is
 described in [docs/guides/workspace.md](docs/guides/workspace.md).
@@ -78,20 +74,21 @@ A commit title is:
 area: Verb the rest
 ```
 
-It is at most 72 characters, has no trailing period, and uses the present tense. The areas and verbs are
-`commits.title` in [.github/conventions.yml](.github/conventions.yml)
-([Repository conventions](docs/guides/repo-conventions.md)), and this block is generated from them
-(`coney-tools repo render`):
+The length, the tense and the areas and verbs are `commits.title` in
+[.github/conventions.yml](.github/conventions.yml) ([Repository conventions](docs/guides/repo-conventions.md)); the rules
+are written out in [AGENTS.md](AGENTS.md#commits-and-github), and this block, generated from them
+(`coney-tools repo render`), shows the areas:
 
 <!-- conventions:begin commit-areas -->
 | Area | Covers |
 | --- | --- |
 | `build` | CMake, presets, dependency pins and toolchain setup |
 | `ci` | GitHub Actions workflows and pre-commit configuration |
-| `core` | engine core: memory, chunk system, task engine, utilities (src/core) |
+| `core` | engine level only: main loop and timing, memory, chunks, the task engine's plumbing, shared utilities (src/core) |
+| `gameplay` | the game's rules a player meets: combat, AI and crew behaviour, movement and physics responses, missions and scripts, objects and pickups, HUD and hint logic, camera behaviour |
 | `fileio` | disc and WAD access, file systems and streaming (src/fileio) |
-| `graphics` | rendering through librw: models, textures, effects (src/graphics) |
-| `audio` | sound, music and speech playback (src/audio) |
+| `graphics` | rendering through librw: models, textures, effects, drawing the HUD (src/graphics) |
+| `audio` | sound, music and speech playback; the rules that trigger a sound stay in their gameplay area (src/audio) |
 | `platform` | SDL3 and OS glue: windowing, input, timing (src/platform) |
 | `tools` | C++ asset tools and the coney_tools Python package |
 | `research` | the research pages under docs/research and the research database |
@@ -103,7 +100,9 @@ It is at most 72 characters, has no trailing period, and uses the present tense.
 Verbs: Add, Fix, Update, Remove, Rebuild, Rework, Improve, Document.
 <!-- conventions:end -->
 
-Make one commit per logical change: a test goes in the same commit as the code that makes it pass.
+Commits on a branch are dropped by the squash merge, so they need not be tidy or build one by one; what must hold is
+the branch's final state, the pull request title and its description. Where you can, make one commit per logical
+change, with a test in the same commit as the code that makes it pass: it is easier to review.
 
 The body has an opening paragraph saying what changes and why, then `Changes:` with one bullet per part when there
 are several, then `Verified:` with the commands you ran and what they printed. For example:
@@ -146,7 +145,7 @@ The person who submits or merges the work answers for it. The full rule is in [L
 
 - Every pull request is squash-merged: its commits become one commit on `main`, and the pull request title becomes
   the commit title, so it follows the same `area: Verb the rest` format. A pull request holds one feature, so that
-  the commit it becomes also reverts as one. The commits inside it still follow the title rules (CI checks them).
+  the commit it becomes also reverts as one. The commits inside it are not checked; the title is.
 - CI must pass.
 - Fill in the pull request template: a summary, a checklist of what the pull request finishes and what is still to
   do, what you tested and the results, before and after screenshots of anything a player can see (attach them to the
@@ -174,3 +173,8 @@ AI agents read [AGENTS.md](AGENTS.md) first; it is the single instruction file f
 The repository also ships the agent tool configuration (`.mcp.json` for the Ghidra and PCSX2 debugging servers,
 `.claude/agents/` for the roles, `.claude/settings.json` for shared permissions); what each holds and how to set
 it up: [Setting up an agent tool](docs/guides/agents.md#setup).
+
+If an agent writes your pull request's description, have the `pr-reviewer` agent check it before you open the pull
+request: `uv run --project python coney-tools repo review <PR.md> --worktree <your checkout>`. It opens every
+screenshot and checks the text against the diff and your test logs
+([The description review](docs/guides/how-we-work.md#pr-review)).

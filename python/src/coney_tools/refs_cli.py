@@ -18,7 +18,7 @@ from typing import Any
 
 import yaml
 
-from coney_tools import refs, refs_engine, refs_env, refs_play, refs_render
+from coney_tools import refs, refs_engine, refs_env, refs_play, refs_render, refs_stats
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.refs import Topic
 from coney_tools.refs_topics import TOPICS, topic
@@ -69,7 +69,14 @@ def pages(root: Path, lists: list[refs.RefList]) -> dict[Path, str]:
         gaps=load_gaps(root),
     )
     out = {root / DOCS_DIR / "index.md": index}
-    out.update({root / DOCS_DIR / f"{reflist.topic.key}.md": refs_render.page(reflist) for reflist in lists})
+    # Columns joined from other lists (the characters' stats from their power and Warrior classes).
+    extra = refs_stats.extra_columns({reflist.topic.key: reflist for reflist in lists})
+    out.update(
+        {
+            root / DOCS_DIR / f"{reflist.topic.key}.md": refs_render.page(reflist, extra.get(reflist.topic.key, ()))
+            for reflist in lists
+        }
+    )
     for reflist in lists:
         if reflist.topic.split:
             out.update({root / DOCS_DIR / path: text for path, text in refs_render.group_pages(reflist).items()})
@@ -469,7 +476,7 @@ STARTERS: dict[str, dict[str, Any]] = {
         "AI humans write the same numbers. A **Warrior command** is an order the war chief gives the crew from\n"
         "the command menu (`WCIssueCommand`, `WCEnableCommand`). How buttons are matched:\n"
         "[Combat: commands](../research/combat.md#commands); the orders:\n"
-        "[AI: Warrior commands](../research/ai.md#warrior-commands); the buttons: [Controls](controls.md).",
+        "[AI: Warrior commands](../research/ai-gangs.md#warrior-commands); the buttons: [Controls](controls.md).",
         "complete": "Every trigger kind, every pad command the scripts bind or switch and all seven Warrior commands\n"
         "are listed. What 1, 2, 9, 11, 21, 22 and 37-44 do is not traced, nor the command menu's layout; pad\n"
         "commands the code tests but no script binds are not listed.",
@@ -479,7 +486,7 @@ STARTERS: dict[str, dict[str, Any]] = {
         "source": "every script, SetMsgHandler and GangSetMsgHandler",
         "about": "The messages scripts subscribe to with `SetMsgHandler(object, message, callback)`, and the same\n"
         "messages for a whole gang with `GangSetMsgHandler(gang, message, callback)`: a human's event goes to its\n"
-        "own handlers, then to its gang's ([AI: gang events](../research/ai.md#gang-events)). The meaning of a\n"
+        "own handlers, then to its gang's ([AI: gang events](../research/ai-gangs.md#gang-events)). The meaning of a\n"
         "message is read from the names of the callbacks scripts give it.",
         "complete": "Every message number a script uses with either binding is listed; meanings are inferred from\n"
         "callback names.",

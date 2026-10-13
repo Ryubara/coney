@@ -59,6 +59,10 @@ class AiHumans {
     /// (may be null) facing `headingDegrees`; with engaging() on it fights the player once he comes within its far
     /// melee range. Returns its human.
     human::Human& spawnFighter(const raycast::CollisionMesh* mesh, anim::Vec3 feet, float headingDegrees);
+    /// As above, as `character` (which must outlive it): its model's files, animation set and moves; the fighters'
+    /// class and power class stay AiConfig's. Joins the same gang.
+    human::Human& spawnFighter(const human::PlayerCharacter& character, const raycast::CollisionMesh* mesh,
+                               anim::Vec3 feet, float headingDegrees);
     /// Spawns an AI human playing `character` (which must outlive it), of the class and power class `config` gives,
     /// fighting by its settings, with its feet at `feet` on `mesh` (may be null: no snap) facing `headingDegrees`, in
     /// no gang. Returns its brain.
@@ -80,6 +84,19 @@ class AiHumans {
     /// AI brain of type `leftAs`. Nothing when `to` is the player's brain already.
     /// Research: docs/research/rumble.md#switch-player
     void switchPlayer(Brain& to, BrainType leftAs);
+    /// `Human_ReleasePlayer(player, 0, 1)` with no one to take the pad: the human the pad drives becomes an AI of
+    /// `leftAs` (ai::releaseToAi(): his class's brain, goals and actions cleared, the released flags) and the pad
+    /// drives no one (human::Player::setPadControlled(false)), so his brain alone moves him; he stays in the world and
+    /// rejoins his gang as an AI member (`Gang_AddMember`), and the follow camera keeps him. The original's own caller
+    /// hands the pad to a team-mate; a test run that has every human AI-driven calls it alone (`--ai-player`). Returns
+    /// false, doing nothing, when the pad's human is no longer a player (released already). **Coney's choices**: his
+    /// fighter profile (body sphere, player hit flags) and power class stay a player's, as after switchPlayer(); the
+    /// scripts' player 1 handle still names him; there is no difficulty scaling to undo.
+    /// @orig 0x0022a2a8 Human_ReleasePlayer (unknown)
+    /// Research: docs/research/characters.md#players, docs/research/rumble.md#coney
+    bool releasePlayer(BrainType leftAs);
+    /// Whether releasePlayer() has run: no human is a player any more (the original's player list is empty).
+    [[nodiscard]] bool playerReleased() const { return m_playerReleased; }
 
     /// Whether an idle fighter starts a fight with the player when he is within its far melee range: Coney's stand-in
     /// for the level scripts' `GoalFight` calls (`level99_combat.lua`, docs/research/ai.md#level99), which a scene
@@ -131,6 +148,7 @@ class AiHumans {
     std::vector<AiHuman> m_humans;
     std::vector<const human::Human*> m_removing; // deleted, to leave at the next step
     bool m_engaging = true;
+    bool m_playerReleased = false; // releasePlayer() ran
     int m_playerGang = -1;
     int m_fighterGang = -1;
 };

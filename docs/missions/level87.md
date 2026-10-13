@@ -21,10 +21,10 @@ goals.
 | # | Status | Note |
 | --- | --- | --- |
 | 1 | 🚧 In Progress | Plays to checkpoint 2 driven by the pad: the walk and climb to the first burner, triangle at its flag (the spray intro 334 where he stands, then the stick game as the loop 335 starts), the tag finished with the left stick, and the walk to the streets. Played on into checkpoint 2, chapter 2's set-up fails (the preLoadFile fix is being merged). |
-| 2 | 🚧 In Progress | Played on from checkpoint 1 (2026-10-12, f325e018), chapter 2 sets up and plays its scene; a spray cut short at the first spot gives the spot back to the script (fix 1, #330), but the fight stance there still cuts each spray short (#353). From a checkpoint 2 start, driven by the pad: a passer-by mugged for cash, spray bought from the dealer, the three burners tagged and the walk back to the back alleys' marker reach checkpoint 3. |
-| 3 | 🚧 In Progress | From a checkpoint 3 start, driven by the pad: passers-by mugged for cash, spray bought, three burners tagged (one up the stairs on the roofs, which needs the route planner's upper-floor fix) and the walk to the alleys' exit reach checkpoint 4. The crew's tag lines need the defend order. |
-| 4 | 🚧 In Progress | Played on from checkpoint 3, driven by the pad with the route planner's upper-floor fix: Poizo's intro, then the last three burners (one in the street, two on the roofs) tagged, and "Get out of East Coney" set. Blocked: the planner finds no route out of the street by the checkpoint's start or down from the roofs to the exit marker (with mission2-impl). |
-| 5 | 🚧 In Progress | The stealth tutorial ([Stealth](../research/stealth.md#level87)); not driven to its end yet. |
+| 2 | 🚧 In Progress | Played on from checkpoint 1 (2026-10-12, f325e018), chapter 2 sets up and plays its scene; the fight stance no longer cuts its first spray short (fix 2, #353), and a spray cut short there gives the spot back to the script (fix 1, #330). From a checkpoint 2 start the passers-by, made by spawners, carry no money, so muggings pay $0 (fix 3). |
+| 3 | 🚧 In Progress | From a checkpoint 3 start (2026-10-12, f325e018): the objective, the five spots and the spray-attack hint come in the script's order, but with no paint and $0 from every mugging of a spawned human no burner can be tagged (fixes 3 and 4: spawned humans' money, the money a downed Destroyer drops). |
+| 4 | 🚧 In Progress | From a checkpoint 4 start (2026-10-12, f325e018): Poizo's intro camera, the objective and the running-attack hint in order. The street burner needs paint; on the path links the roof burners are reached only through a door (the bar door, number 11) or a jump link, and the player could not pass the door; whether it is open in the original is an open question. No path link leaves the street for checkpoint 5: the way out is the scripted door `ch4.Exit` opens. |
+| 5 | 🚧 In Progress | From a checkpoint 5 start (2026-10-12, f325e018): the stealth tutorial runs in order to the kill lesson and the player hides and sneaks, but creeping up on the guard puts him in the fight stance and there is no stealth kill, so the guard calls for help and the mission fails (fixes 5 and 6; [Stealth](../research/stealth.md#level87)). |
 
 ## What it needs {#needs}
 
@@ -52,7 +52,7 @@ Research:
 
 - [Story order and what loads each level](../research/scripting.md#run-next-mission)
 - [World objects: doors](../research/objects.md)
-- [AI: scripted goals and actions](../research/ai.md#scripted)
+- [AI: scripted goals and actions](../research/ai-scripting.md#scripted)
 - [Crimes: tagging](../research/crimes.md#tagging)
 - [The mission's scripts, checkpoint by checkpoint](../research/scripting.md#level87)
 - [The order at runtime (reference)](../research/scripting.md#level87-hints)
@@ -60,8 +60,8 @@ Research:
 
 ## Run it in Coney {#run}
 
-With your own disc ([Playing a level](../guides/building.md#playing-a-level)); `--checkpoint` picks where it starts, 1
-to 5:
+With your own disc ([Playing a level](../guides/running.md#playing-a-level)); `--checkpoint` picks where it starts, 1 to
+5:
 
 ```text
 coney --disc /path/to/disc --play-level level87 --checkpoint 1
@@ -77,6 +77,8 @@ coney_tests "[disc][story]"
 
 - Chapter 3 names a callback its script never defines (`ch3.BoozerChallenge`); Coney logs and skips it, and what the
   original does is not traced (Scripts, errors in a fresh state).
+- How the player reaches checkpoint 4's roof burners in the original: whether the bar door (number 11) is open at the
+  checkpoint's start (Scripts, the fix list).
 
 ## Notes {#notes}
 

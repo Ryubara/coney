@@ -12,6 +12,7 @@
 #include "combat/combat_tuning.h"
 #include "combat/rage_awards.h"
 #include "combat/reactions.h"
+#include "combat/tandem.h"
 #include "human/fighter_clips.h"
 
 // The fighter's victim side: the player hit (a duck, a block, the health floor, the hit armour, the reaction, the stun,
@@ -136,25 +137,21 @@ void Fighter::takePending(const FighterInput& input, HumanAnimator& animator) {
         m_combat.power().spend(kThirdHitPower);
     }
     if (m_health.depleted()) {
-        // Out of health: whatever it held goes, and the dying reaction plays.
-        if (m_held != nullptr) {
-            releaseHold(animator, false);
+        // A lethal hit waits while the clip playing holds any of 0xc12200 (a dive, a paired move's or a tandem's
+        // victim): the health is gone, no reaction plays, and the death plays once the flags drop (update(), step 1).
+        // The charge's 0x1000000 is not in the mask, so a charger dies at once
+        // (docs/research/combat.md#protected-moves, item 4).
+        if ((animator.flags() & combat::kTandemRefusingHeld) != 0) {
+            m_deathPending = hit;
+            return;
         }
-        m_combat.interrupt();
-        m_combat.release();
-        m_grabbed.reset();
-        m_holdState.reset();
-        m_holdAttached = false;
-        m_victim.die(hit, here, animator);
-        m_reacting = true;
+        dieNow(hit, input, animator);
         return;
     }
     // A move holding any of 0x1c16a40 (the charge, the dive, a paired move's victim) takes the health and plays on:
     // the pending damage is cleared with no reaction (`Human_ApplyPendingDamage`,
     // docs/research/combat.md#protected-moves). So a victim the charge flings into the charger, whose extreme reaction
-    // strikes with every shape, cannot knock him down. A lethal hit ends him at once above, as the original's does for
-    // the charge (`0x1000000` is not in `0xc12200`); **stand-in** for the dive and a paired move's victim, whose lethal
-    // reaction the original holds back until their clip ends.
+    // strikes with every shape, cannot knock him down.
     // @orig 0x00265f70 Human_ApplyPendingDamage (unknown)
     if (combat::heldCancelsReaction(animator.flags())) {
         ++m_hitsShrugged;
@@ -195,6 +192,24 @@ void Fighter::takePending(const FighterInput& input, HumanAnimator& animator) {
     // The reaction shakes the players' cameras at the hit code's strength (docs/research/camera.md#shake).
     m_reactionShake =
         ReactionShake{.level = combat::decodeHitCode(hit.code).strength, .attackerIsPlayer = hit.attackerIsPlayer};
+}
+
+void Fighter::dieNow(const IncomingHit& hit, const FighterInput& input, HumanAnimator& animator) {
+    // Out of health: whatever it held goes, a hold on it or a tandem it plays ends, and the dying reaction plays.
+    if (m_held != nullptr) {
+        releaseHold(animator, false);
+    }
+    m_combat.interrupt();
+    m_combat.release();
+    m_grabbed.reset();
+    m_holdState.reset();
+    m_holdAttached = false;
+    m_rearHeld = false;
+    m_tandemRole = TandemRole::None;
+    m_tandemRequest.reset();
+    m_deathPending.reset();
+    m_victim.die(hit, frame(input), animator);
+    m_reacting = true;
 }
 
 void Fighter::reportHitSound(const IncomingHit& hit, std::uint32_t struck) {
@@ -361,7 +376,8 @@ void Fighter::updateGrabbed(const FighterInput& input, HumanAnimator& animator) 
 
 void Fighter::struggleInHold(const FighterInput& input, const HumanAnimator& animator) {
     const std::optional<HeldGrabber> held = std::exchange(m_heldGrabber, std::nullopt);
-    if (!held.has_value()) {
+    // A tandem's victim does not struggle: his clips are the tandem's.
+    if (!held.has_value() || m_tandemRole != TandemRole::None) {
         return;
     }
     combat::GrabbedInput in;
@@ -481,6 +497,8 @@ void Fighter::enterHold(TargetState targetState, HumanAnimator& animator, std::u
     } else if (!m_victim.grounded()) {
         m_victim.knockDown(nowMs, false);
     }
+    // The hold's side is told afresh by the grabber each update (setRearHeld()).
+    m_rearHeld = false;
     if (targetState == TargetState::Held || targetState == TargetState::Mounted) {
         // Taken into the hold: a grab it held, a catch on it, the attack and the steer it was making all end.
         if (!m_holdState.has_value()) {

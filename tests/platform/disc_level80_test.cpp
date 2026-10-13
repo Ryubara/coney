@@ -8,8 +8,10 @@
 // (docs/research/crimes.md#uncuffing); at checkpoint 3 an adaptive pad playthrough of the throw lesson, the store's
 // front door, the crew's thefts under the wreck order and the back door asserts its hints, objectives and scenes in
 // the original's order through checkpoint 4 (docs/research/scripting.md#level80, docs/research/objects.md#throws,
-// docs/research/ai-code.md#t2-warrior-steal). It runs only when the environment variable CONEY_DISC names the disc and
-// skips otherwise; it prints counts only (LEGAL.md).
+// docs/research/ai-code.md#t2-warrior-steal); and at checkpoint 1 the crew under the follow order runs in, stands
+// while the player runs near, climbs the crates after him (docs/research/ai-gangs.md#warrior-follow) and climbs the
+// fence the player is put over without running into it first (issue #236). It runs only when the environment variable
+// CONEY_DISC names the disc and skips otherwise; it prints counts only (LEGAL.md).
 
 #include <algorithm>
 #include <array>
@@ -27,10 +29,16 @@
 #include <utility>
 #include <vector>
 
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include "ai/brain.h"
 #include "ai/brains.h"
+#include "ai/crew.h"
+#include "ai/goal.h"
+#include "ai/move_action.h"
+#include "ai/route_follower.h"
+#include "ai/route_planner.h"
 #include "ai/swap_prompt.h"
 #include "combat/throw_aim.h"
 #include "core/game_random.h"
@@ -42,6 +50,7 @@
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/gameplay_mode.h"
 #include "gamemodes/level_start.h"
+#include "graphics/throw_arc.h"
 #include "gui/global_strings.h"
 #include "hud/hint_box.h"
 #include "hud/hud.h"
@@ -62,6 +71,7 @@
 #include "scripting/script_bindings.h"
 #include "scripting/script_system.h"
 #include "warriors/inventory.h"
+#include "world/path_map.h"
 #include "world/sector_budget.h"
 #include "world_objects/flags.h"
 
@@ -252,7 +262,8 @@ TEST_CASE("the disc's level80: R2 and the right stick up give the follow order t
     CHECK(level.scripts->scripts().errors() == 0);
 
     // The script then stages the street (GangBrFlush(0), the Warriors walked to their flags) and, at EndStartCam,
-    // adds the crew to gang 0 again, which gives the Warriors the follow back (docs/research/ai.md#warrior-follow).
+    // adds the crew to gang 0 again, which gives the Warriors the follow back
+    // (docs/research/ai-gangs.md#warrior-follow).
     constexpr int kStaging = 15 * 30;
     level.run(kStaging);
     int following = 0;
@@ -692,6 +703,26 @@ TEST_CASE("the disc's level80 checkpoint 3: Fox, Hold Up, the bottle thrown from
     level.pad.buttons = 0;
     REQUIRE(level.runUntil([&] { return hinted("TT_28"); }, kWait));
     REQUIRE(level.play()->throwAim().active());
+    // The arc's ribbon while he aims, before it meets the marker (docs/research/graphics.md#throw-arc): 36 vertices
+    // with the first pair on his hand and faded in from it, 0.16 m wide level across the arc, grey while the aim
+    // meets no target.
+    {
+        const coney::platform::PlayLevelMode& play = *level.play();
+        const std::vector<coney::graphics::ThrowArcVertex> ribbon = play.throwArcRibbon(1.0F);
+        REQUIRE(ribbon.size() == 36);
+        const coney::anim::Vec3 hand = play.throwAim().releasePoint();
+        CHECK((ribbon[0].position.x + ribbon[1].position.x) / 2.0F == Catch::Approx(hand.x).margin(1e-3));
+        CHECK((ribbon[0].position.y + ribbon[1].position.y) / 2.0F == Catch::Approx(hand.y).margin(1e-3));
+        CHECK((ribbon[0].position.z + ribbon[1].position.z) / 2.0F == Catch::Approx(hand.z).margin(1e-3));
+        const coney::anim::Vec3 across = coney::anim::subtract(ribbon[1].position, ribbon[0].position);
+        CHECK(std::hypot(across.x, across.y) == Catch::Approx(0.16F).margin(1e-4));
+        CHECK(across.z == Catch::Approx(0.0F).margin(1e-4));
+        CHECK(ribbon[0].rgba[3] == 0);
+        CHECK(ribbon[2].rgba[3] >= 127); // then 127 plus up to 16 by how far along the arc
+        CHECK(ribbon[2].rgba[3] <= 143);
+        const bool already = play.player().human().script().aimedObject != 0;
+        CHECK(ribbon[2].rgba[0] == (already ? 170 : 127));
+    }
 
     // The stick brings the arc onto the marker, as a player does: it turns him to face it, then pitches the aim down
     // from the start, a few steps a frame, until the arc meets it (HuIsAimingAt).
@@ -723,6 +754,14 @@ TEST_CASE("the disc's level80 checkpoint 3: Fox, Hold Up, the bottle thrown from
     }
     REQUIRE(aimed);
     REQUIRE(level.runUntil([&] { return hinted("TT_29"); }, kWait));
+    // On the marker the ribbon is red: (170, 43, 43).
+    {
+        const std::vector<coney::graphics::ThrowArcVertex> ribbon = level.play()->throwArcRibbon(1.0F);
+        REQUIRE(ribbon.size() == 36);
+        CHECK(ribbon[2].rgba[0] == 170);
+        CHECK(ribbon[2].rgba[1] == 43);
+        CHECK(ribbon[2].rgba[2] == 43);
+    }
 
     // Cross throws from the aim; the bottle breaks by the marker, the cops are distracted and Fox's second scene plays.
     level.pad.buttons = coney::pad::kCross;
@@ -866,4 +905,306 @@ TEST_CASE("the disc's level80 checkpoint 3: Fox, Hold Up, the bottle thrown from
     std::printf("  level80 checkpoint 3: %zu hints, objectives and scenes in order, %td of the store's stock stolen, "
                 "checkpoint %.0f\n",
                 seen.size(), taken, level.checkPoint());
+}
+
+namespace {
+
+// level80 from "Let's Go" with the follow order given (R2 held, the right stick up at 95 %), and the script's staging
+// of the street run out: the chief and the Warriors that follow him.
+struct FollowingCrew {
+    coney::ai::Brain* chief = nullptr;
+    std::vector<coney::ai::Brain*> crew;
+    std::vector<coney::anim::Vec3> atLetsGo; // the Warriors' feet when the order was asked for
+};
+
+// Runs `level` to the follow order and gives it; `watch` (may be empty) sees every frame from the order on.
+FollowingCrew giveFollowOrder(Level80& level, const std::function<void(const FollowingCrew&)>& watch) {
+    FollowingCrew found;
+    // The intro, skipped, until the script asks for Let's Go.
+    constexpr int kWait = 30 * 60;
+    int frame = 0;
+    const auto tapUntilAsked = [&level, &frame] {
+        if (level.scripts->state().story.commandCallback.empty()) {
+            constexpr int kTapEvery = 30;
+            ++frame;
+            level.pad.buttons = (frame % kTapEvery == 0) ? coney::pad::kCross : 0;
+            return false;
+        }
+        return true;
+    };
+    REQUIRE(level.runUntil(tapUntilAsked, kWait));
+    REQUIRE(level.gameplay->brains() != nullptr);
+    // The test moves player 1 and the Warriors and reads their moves, so it reaches into the brains gameplay owns.
+    auto& brains = const_cast<coney::ai::Brains&>(*level.gameplay->brains());
+    std::vector<coney::ai::Brain*> warriors;
+    for (std::size_t i = 0; i < brains.size(); ++i) {
+        coney::ai::Brain& brain = brains.at(i);
+        if (brain.type() == coney::ai::BrainType::Player) {
+            found.chief = &brain;
+        } else if (brain.type() == coney::ai::BrainType::Warrior) {
+            warriors.push_back(&brain);
+        }
+    }
+    REQUIRE(found.chief != nullptr);
+    // Before the order every Warrior counts, so the run-in is watched; after the staging only the followers do.
+    found.crew = warriors;
+    for (const coney::ai::Brain* warrior : warriors) {
+        found.atLetsGo.push_back(warrior->human().position());
+    }
+    if (watch) {
+        level.watch = [&found, watch] { watch(found); };
+    }
+    level.pad.buttons = coney::pad::kR2;
+    level.run(2);
+    level.pad.rightY = 0.95F;
+    level.run(6);
+    level.pad.buttons = 0;
+    level.run(1);
+    level.pad.rightY = 0.0F;
+    // The run-in and the script's staging of the street.
+    constexpr int kStaging = 15 * 30;
+    level.run(kStaging);
+    level.watch = nullptr;
+    std::erase_if(found.crew, [](const coney::ai::Brain* warrior) { return warrior->following() == nullptr; });
+    REQUIRE(found.crew.size() == 2);
+    return found;
+}
+
+// Whether `warrior` follows a FollowFormation goal now.
+bool followingFormation(coney::ai::Brain& warrior) {
+    return warrior.findGoal(coney::ai::GoalType::FollowFormation) != nullptr;
+}
+
+} // namespace
+
+TEST_CASE(
+    "the disc's level80: the crew runs in after Let's Go, stands while the player runs near and climbs the crates",
+    "[disc][story][follow]") {
+    // The runtime check of docs/research/ai-gangs.md#warrior-follow (PCSX2, level80 at "Let's Go"): the Warriors ask
+    // 12.81 m/s (1.25 x sprint) on their run-in, stand while the player runs within 9 m in a straight line and follow
+    // once he is past it, and climb the crate stack by its 0x80 ledge links when he stands on it.
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    Level80 level(**engine, *wad, 1);
+
+    // Every frame: the fastest speed a Warrior's follow move asks, whether one planned a route, whether one climbed a
+    // 0x80 ledge leg, and each FollowFormation pushed while its Warrior stood within 9 m of the chief in a straight
+    // line (none should be: there the follow goal stands).
+    float fastest = 0.0F;
+    bool routed = false;
+    bool ledge = false;
+    int pushedNear = 0;
+    int pushedFar = 0;
+    std::vector<bool> wasFollowing(8, false);
+    const auto watch = [&](const FollowingCrew& at) {
+        for (std::size_t k = 0; k < at.crew.size() && k < wasFollowing.size(); ++k) {
+            coney::ai::Brain& warrior = *at.crew[k];
+            const bool following = followingFormation(warrior);
+            if (following && !wasFollowing[k]) {
+                const coney::ai::RoutePlanner* planner = warrior.planner();
+                const bool inLine =
+                    planner == nullptr || planner->lineClear(warrior.human().position(), at.chief->human().position());
+                ++((warrior.distanceTo(*at.chief) <= coney::ai::kCrewFollowDistance && inLine) ? pushedNear
+                                                                                               : pushedFar);
+            }
+            wasFollowing[k] = following;
+            const auto* move = dynamic_cast<const coney::ai::MoveAction*>(warrior.frontAction());
+            if (move == nullptr || !following) {
+                continue;
+            }
+            fastest = std::max(fastest, move->speed().value_or(0.0F));
+            routed = routed || move->routed();
+            const coney::ai::RouteFollower* route = move->follower();
+            ledge = ledge || (route != nullptr && (route->legKind() & coney::ai::edge_flag::kJump) != 0 &&
+                              warrior.human().traversal() == coney::human::Traversal::Climbing);
+        }
+    };
+    FollowingCrew run = giveFollowOrder(level, watch);
+    coney::ai::Brain* chief = run.chief;
+    const float sprint = run.crew[0]->human().speeds().sprint;
+    float startHeight = 0.0F;
+    for (const coney::anim::Vec3 feet : run.atLetsGo) {
+        startHeight = std::max(startHeight, feet.z - chief->human().position().z);
+    }
+    // **Known difference** (not checked): the original's Warriors planned a route down the landing's stairs; Coney's
+    // walkable line passes from the landing to the street, so they run straight.
+    std::printf("  level80 follow: run-in from %.1f m up asked up to %.2f m/s (1.25 x sprint %.2f), route %s\n",
+                static_cast<double>(startHeight), static_cast<double>(fastest), static_cast<double>(1.25F * sprint),
+                routed ? "planned" : "none");
+    CHECK(fastest > 1.25F * sprint - 0.01F);
+
+    // The player runs (stick 100 % ahead) for 4 s, then stops for 6 s.
+    pushedNear = 0;
+    pushedFar = 0;
+    level.watch = [&] { watch(run); };
+    level.pad.leftY = 1.0F;
+    level.run(4ULL * 30);
+    level.pad.leftY = 0.0F;
+    level.run(6ULL * 30);
+    std::printf("  level80 follow: while the player ran, %d follows began beyond 9 m or out of line, %d within\n",
+                pushedFar, pushedNear);
+    CHECK(pushedNear == 0);
+    CHECK(pushedFar > 0);
+    // Both stand once he stands: no Warrior circles a point left over from his run.
+    for (coney::ai::Brain* warrior : run.crew) {
+        CHECK(warrior->human().speed() < 0.1F);
+        CHECK(warrior->distanceTo(*chief) < coney::ai::kCrewFollowDistance);
+    }
+
+    // The crate stack: the route nodes 860-865 whose 0x80 links climb onto it
+    // (docs/research/ai-gangs.md#warrior-follow). The player is put on its top node and stands there.
+    const coney::ai::RoutePlanner* planner = run.crew[0]->planner();
+    REQUIRE(planner != nullptr);
+    const coney::world::PathMap& map = planner->map();
+    REQUIRE(map.nodes().size() > 865);
+    std::uint32_t top = 860;
+    bool ledgeLinks = false;
+    for (std::uint32_t node = 860; node <= 865; ++node) {
+        if (map.nodes()[node].position.z > map.nodes()[top].position.z) {
+            top = node;
+        }
+        for (const coney::world::PathEdge& edge : map.edgesOf(node)) {
+            ledgeLinks = ledgeLinks || (edge.flags & coney::ai::edge_flag::kJump) != 0;
+        }
+    }
+    REQUIRE(ledgeLinks);
+    const coney::anim::Vec3 stack = map.nodes()[top].position;
+    chief->human().place(stack, chief->human().heading());
+    level.run(2);
+    float highest = -1000.0F;
+    float lowest = 1000.0F;
+    for (int second = 0; second < 20 && highest < stack.z - 0.5F; ++second) {
+        level.run(30);
+        for (const coney::ai::Brain* warrior : run.crew) {
+            highest = std::max(highest, warrior->human().position().z);
+            lowest = std::min(lowest, warrior->human().position().z);
+        }
+    }
+    level.watch = nullptr;
+    std::printf("  level80 follow: player on the crates %.1f m up; a Warrior climbed a ledge leg: %s; highest Warrior "
+                "%.1f m, lowest %.1f m\n",
+                static_cast<double>(stack.z), ledge ? "yes" : "no", static_cast<double>(highest),
+                static_cast<double>(lowest));
+    CHECK(ledge);
+    CHECK(highest > stack.z - 0.5F);
+    // Nobody fell off the street.
+    CHECK(lowest > 0.0F);
+    CHECK(level.scripts->scripts().errors() == 0);
+}
+
+namespace {
+
+// The route nodes of a kind-8 (fence climb) link among nodes [first, last] of `map`: the one with the smaller y
+// first. Nothing when there is none.
+std::optional<std::pair<std::uint32_t, std::uint32_t>> fenceLink(const coney::world::PathMap& map, std::uint32_t first,
+                                                                 std::uint32_t last) {
+    for (std::uint32_t node = first; node <= last && node < map.nodes().size(); ++node) {
+        for (const coney::world::PathEdge& edge : map.edgesOf(node)) {
+            if ((edge.flags & coney::ai::edge_flag::kClimb) != 0 && edge.to >= first && edge.to <= last) {
+                const bool lower = map.nodes()[node].position.y < map.nodes()[edge.to].position.y;
+                return lower ? std::pair{node, edge.to} : std::pair{edge.to, node};
+            }
+        }
+    }
+    return std::nullopt;
+}
+
+} // namespace
+
+TEST_CASE("the disc's level80: Warriors following the player over a fence climb it at once (issue #236)",
+          "[disc][story][follow]") {
+    // docs/research/ai-gangs.md#warrior-follow, "Crossing a fence" (PCSX2, level80): the crew standing south of the
+    // kind-8 fence pairs of nodes 396-403 (y about 199.9), the player put over the fence; both Warriors pushed
+    // FollowFormation on the next update (the fence's hole refuses the line), planned routes over the kind-8 pair and
+    // climbed, about 150 and 210 updates from the teleport to standing with the player 5-7 m away; neither pressed
+    // against the fence for the 31 tries of a failed climb. Here the player lands 6 m past the fence. Without the fast
+    // climber's early climb (`Route_TryClimbNear`) one Warrior ran into the fence for 63 updates before he climbed
+    // (issue #236).
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    constexpr float beyond = 6.0F;
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    Level80 level(**engine, *wad, 1);
+    FollowingCrew run = giveFollowOrder(level, {});
+    const coney::ai::RoutePlanner* planner = run.crew[0]->planner();
+    REQUIRE(planner != nullptr);
+    const std::optional<std::pair<std::uint32_t, std::uint32_t>> link = fenceLink(planner->map(), 396, 403);
+    REQUIRE(link.has_value());
+    if (!link) {
+        return;
+    }
+    const coney::anim::Vec3 south = planner->map().nodes()[link->first].position;
+    const coney::anim::Vec3 north = planner->map().nodes()[link->second].position;
+    const float fenceY = (south.y + north.y) / 2.0F;
+
+    // The crew stands south of the fence with the player among them.
+    run.chief->human().place({south.x, south.y - 3.0F, south.z}, 0.0F);
+    run.crew[0]->human().place({south.x - 1.5F, south.y - 5.0F, south.z}, 0.0F);
+    run.crew[1]->human().place({south.x - 0.5F, south.y - 5.5F, south.z}, 0.0F);
+    // Both on the pavement west of the fence pair's line (east of it, from x about -159.2, there is no ground), 2-3 m
+    // from the player in a straight line: after 4 s both stand.
+    level.run(4ULL * 30);
+    for (coney::ai::Brain* warrior : run.crew) {
+        REQUIRE(warrior->human().position().z > south.z - 0.5F);
+        REQUIRE_FALSE(followingFormation(*warrior));
+    }
+
+    // The player over the fence, as if he had jumped it; then every update until both stand past it, or 300.
+    run.chief->human().place({north.x, north.y + beyond, north.z}, 0.0F);
+    constexpr int kBudget = 300;
+    std::vector<int> pushedAt(run.crew.size(), -1);
+    std::vector<int> climbedAt(run.crew.size(), -1);
+    std::vector<int> standingAt(run.crew.size(), -1);
+    std::vector<int> pressing(run.crew.size(), 0);
+    std::vector<int> failedAt(run.crew.size(), -1);
+    std::vector<int> failKind(run.crew.size(), 0);
+    for (int frame = 1; frame <= kBudget; ++frame) {
+        level.run(1);
+        for (std::size_t k = 0; k < run.crew.size(); ++k) {
+            coney::ai::Brain& warrior = *run.crew[k];
+            const coney::anim::Vec3 feet = warrior.human().position();
+            const bool climbing = warrior.human().traversal() == coney::human::Traversal::Climbing;
+            if (pushedAt[k] < 0 && followingFormation(warrior)) {
+                pushedAt[k] = frame;
+            }
+            if (climbedAt[k] < 0 && climbing) {
+                climbedAt[k] = frame;
+            }
+            // On the near side within 0.8 m of the fence, not climbing: running into it.
+            if (!climbing && feet.y < fenceY && feet.y > fenceY - 0.8F) {
+                ++pressing[k];
+            }
+            if (failedAt[k] < 0 && warrior.moveFailure() != coney::ai::MoveFailure::None) {
+                failedAt[k] = frame;
+                failKind[k] = static_cast<int>(warrior.moveFailure());
+            }
+            const bool stands = feet.y > fenceY + 0.5F && !climbing && warrior.human().speed() < 0.1F;
+            standingAt[k] = stands ? (standingAt[k] < 0 ? frame : standingAt[k]) : -1;
+        }
+        if (std::ranges::all_of(standingAt, [](int at) { return at >= 0; })) {
+            break;
+        }
+    }
+    for (std::size_t k = 0; k < run.crew.size(); ++k) {
+        std::printf("  level80 fence, player %.0f m past it: Warrior %zu followed at update %d, climbed at %d, stood "
+                    "past the fence at %d, %d updates at the fence before climbing, move failure %d at %d\n",
+                    static_cast<double>(beyond), k, pushedAt[k], climbedAt[k], standingAt[k], pressing[k], failKind[k],
+                    failedAt[k]);
+        // The one queued behind the other is done at once while the one ahead has not got going (FollowFormation
+        // step 6: the human it paces on stands), so its follow shows a few updates late.
+        CHECK(pushedAt[k] >= 1);
+        CHECK(pushedAt[k] <= 10);
+        CHECK(climbedAt[k] > 0);
+        CHECK(standingAt[k] > 0);
+        CHECK(pressing[k] < static_cast<int>(coney::ai::kClimbTries));
+        CHECK(failedAt[k] < 0);
+    }
+    CHECK(level.scripts->scripts().errors() == 0);
 }
