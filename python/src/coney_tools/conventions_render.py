@@ -175,6 +175,13 @@ def _pr_rules(conventions: Conventions) -> list[str]:
         f"{ai.section}: after `{ai.written_by.label}` one of {_codes(ai.written_by.choices)}; unless it is "
         f"`{ai.written_by.no_ai}`, `{ai.model.label}` names the model (`{ai.model.none}` is not enough)."
     )
+    if ai.model.names_trailer_models:
+        lines += _bullet(
+            f"`{ai.model.label}` also names every model that a `{conventions.commits.trailers.ai_co_author.key}` "
+            "trailer on the branch's commits names (any case, anywhere on the line), whoever wrote them. It is checked "
+            "where the branch is at hand: `repo check-review`, and `repo check-body` given `--worktree`; CI's `body` "
+            "job sees only the description."
+        )
     if not rules.local_paths:
         lines += _bullet(
             "The text names no path on your machine (`scratch/`, `../../`, `C:\\`) outside an image reference."

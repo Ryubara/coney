@@ -157,7 +157,10 @@ pull_requests:
       label: "Commits written by:"
       choices: ["a person", "an AI", "an AI, edited by a person", "a person, with AI help"]
       no_ai: "a person"
-    model: {label: "Model:", none: "n/a"}
+    # The Model line must also name each model that a `Co-Authored-By` trailer (commits.trailers) of the branch's
+    # commits names, matched case-insensitively anywhere on the line; checked where the branch is at hand
+    # (docs/guides/coney-tools.md, repo check-body).
+    model: {label: "Model:", none: "n/a", names_trailer_models: true}
   # The release gate on the pr-reviewer agent's verdict (`coney-tools repo review`, `repo check-review`). The agent
   # (.claude/agents/<agent>.md) writes both files next to the description file. The verdict binds to what it
   # reviewed: the branch tip, the description's hash and each local image's hash, so a new commit, an edit or a

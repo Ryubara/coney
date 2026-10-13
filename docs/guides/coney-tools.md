@@ -618,10 +618,10 @@ from your disc, kept in scratch). It exits with 0 when Coney has every compared 
 uv run --project python coney-tools repo check
 uv run --project python coney-tools repo check-title FILE|-
 uv run --project python coney-tools repo check-docs [--body FILE]      # changed paths on stdin
-uv run --project python coney-tools repo check-body [--body FILE|-]
+uv run --project python coney-tools repo check-body [--body FILE|-] [--worktree WT [--base REF]]
 uv run --project python coney-tools repo review PR.md --worktree WT [--base REF] [--model M] [--effort E]
     [--claude EXE] [--timeout-minutes N]
-uv run --project python coney-tools repo check-review PR.md --worktree WT
+uv run --project python coney-tools repo check-review PR.md --worktree WT [--base REF]
 uv run --project python coney-tools repo review-stamp PR.md --worktree WT
 uv run --project python coney-tools repo labels [--apply] [--repo OWNER/NAME]
 uv run --project python coney-tools repo render [--check]
@@ -643,7 +643,9 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
 * `repo check-docs` reads the changed paths on stdin and refuses a change under `paths.code` that has no change under
   `paths.docs` and no `Docs: none` line in the body.
 * `repo check-body` checks a pull request description against the template ([What a pull request
-  shows](testing.md#pr-evidence)).
+  shows](testing.md#pr-evidence)). Given `--worktree`, it also reads the branch's commits (`--base`, default
+  `origin/main`, to `HEAD`) and requires the AI use `Model:` line to name every model a `Co-Authored-By` trailer on them
+  credits: see [the Model line](#repo-model-line).
 * `repo review`, `repo check-review` and `repo review-stamp` are the release gate on a description's content: see
   [review](#repo-review).
 * `repo labels` prints the `gh label create` commands for `labels.list`; `--apply` runs them (the coordinator does).
@@ -658,6 +660,39 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
 * `repo pr-health` lists the open pull requests that are stuck, and with `--rerun` restarts the checks that failed for a
   reason that no longer holds: see [pr-health](#repo-pr-health).
 * `repo hygiene` writes the audit's findings back as comments: see [hygiene](#repo-hygiene).
+
+### The Model line and the branch's trailers {#repo-model-line}
+
+A branch whose commits carry a `Co-Authored-By: <model name> <noreply address>` trailer was written with that model, so
+the description's `Model:` line must say so. Without this check only the `pr-reviewer` agent caught a line that named
+the wrong model, and it cost three review rounds (pull requests #460, #466 and #467).
+
+* **What counts.** A trailer on a commit of `base..HEAD` whose key is `commits.trailers.ai_co_author.key` (any case) and
+  whose address is one of `commits.trailers.ai_co_author.noreply`; a person credited as a co-author is not a model. Each
+  model counts once (compared without regard to case or runs of spaces).
+* **The match.** The model name must appear on the `Model:` line, in any case and anywhere on it (`Claude Opus 5.5` is
+  found in `Claude Sonnet 5.5 and claude opus 5.5 (review)`), not as the start of a longer version (`Claude Opus 5.55`).
+  A branch with no such trailer needs nothing; a `Model:` line of `n/a` for a human-written change passes as before.
+  Whoever the description says wrote the commits, a trailer on them has to be named: `a person` with an AI trailer is
+  refused. When the AI use lines are themselves unusable (a missing or empty `Model:` for an AI-written branch) only that
+  is reported, not the trailers too.
+* **The base must be fresh and right.** `base..HEAD` is what the branch has that the base lacks. With a stale
+  `origin/main`, a branch that has merged a newer `main` also counts the commits it merged in, and so their trailers
+  (other authors' models) must be named: run `git fetch` and the refusal goes away. A stacked branch
+  ([Dependent units are stacked](how-we-work.md#release-queue)) with the default base also counts the parent unit's
+  trailers: pass `--base <parent branch>`.
+* **The message.** One reason per missing model, naming it:
+  `AI use: 'Model:' does not name Claude Opus 5.5, which a Co-Authored-By trailer on the branch's commits credits`.
+* **Where it runs.** Locally, where the branch is at hand: `repo check-review` and `repo review` read the commits of the
+  worktree after `--base` (default `origin/main`) and refuse before the agent starts, and `repo check-body --worktree WT`
+  does the same for a description on its own. **CI does not run it:** the `body` job gets the description from the event
+  and has no commits (its checkout is shallow, and a full history for one string comparison would slow a required
+  check on every edit), so it passes no models and stays a description-only check, as `Docs: none` is. The coordinator's
+  release step is the gate ([The description review](how-we-work.md#pr-review)). A branch git cannot list (an unknown
+  `--base`, not a worktree) exits 2 rather than passing as one without trailers.
+* **One source.** The trailer's key and addresses are `commits.trailers` and the rule's switch is
+  `pull_requests.ai_use.model.names_trailer_models` in [.github/conventions.yml](repo:.github/conventions.yml); the check
+  holds no copy, and the generated rules in [CONTRIBUTING.md](repo:CONTRIBUTING.md) state it.
 
 ### repo review {#repo-review}
 
@@ -676,8 +711,10 @@ to its folder.
 * `repo check-review` first runs the checks CI runs on the description: `check-title` on `PR.md`'s line 1 and
   `check-body` on the rest (`PR.md`'s convention: title on line 1, body after it), except that a local image counts as an
   upload, since `gh --attach` uploads it when the pull request is opened. Each reason is printed with a `title:` or
-  `body:` prefix, together with the verdict's, so a missing template section is caught before the push. `repo review`
-  runs the same checks before it starts the agent and stops at once when they fail. It then reads `REVIEW.json` next to
+  `body:` prefix, together with the verdict's, so a missing template section is caught before the push. It also holds
+  the `Model:` line to the `Co-Authored-By` trailers of the commits after `--base` (default `origin/main`), which CI
+  cannot see ([the Model line](#repo-model-line)). `repo review` runs the same checks before it starts the agent and
+  stops at once when they fail. It then reads `REVIEW.json` next to
   `PR.md` and passes only when the verdict is `pass` with no blocker, its `tip` is the worktree's HEAD, its
   `body_sha256` is `PR.md`'s hash now, and every local image `PR.md` shows is listed with its hash now and differs from
   every other one. Exit 1 lists each reason (a title or body CI would refuse, a stale tip, an edited description, a

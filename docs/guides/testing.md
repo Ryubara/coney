@@ -152,6 +152,9 @@ description that leaves either empty (`coney-tools repo check-body`). All of wha
   a reason.
 - AI use: after `Commits written by:` one of `a person`, `an AI`, `an AI, edited by a person`, `a person, with AI help`;
   unless it is `a person`, `Model:` names the model (`n/a` is not enough).
+- `Model:` also names every model that a `Co-Authored-By` trailer on the branch's commits names (any case, anywhere on
+  the line), whoever wrote them. It is checked where the branch is at hand: `repo check-review`, and `repo check-body`
+  given `--worktree`; CI's `body` job sees only the description.
 - The text names no path on your machine (`scratch/`, `../../`, `C:\`) outside an image reference.
 <!-- conventions:end -->
 

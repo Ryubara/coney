@@ -250,6 +250,8 @@ class ModelLine:
     label: str
     #: What a person writes when no model applies; not enough when an AI took part.
     none: str
+    #: Whether the line must also name every model that a `Co-Authored-By` trailer on the branch's commits names.
+    names_trailer_models: bool
 
 
 @dataclass(frozen=True)
@@ -923,7 +925,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
     written_where = _at(ai_where, "written_by")
     written = _table(ai_use["written_by"], written_where, ("label", "choices", "no_ai"))
     model_where = _at(ai_where, "model")
-    model = _table(ai_use["model"], model_where, ("label", "none"))
+    model = _table(ai_use["model"], model_where, ("label", "none", "names_trailer_models"))
     choices = _texts(written["choices"], _at(written_where, "choices"))
     no_ai = _text(written["no_ai"], _at(written_where, "no_ai"))
     _names_in((no_ai,), choices, _at(written_where, "no_ai"), "one of the choices")
@@ -972,6 +974,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
             model=ModelLine(
                 label=_text(model["label"], _at(model_where, "label")),
                 none=_text(model["none"], _at(model_where, "none")),
+                names_trailer_models=_flag(model["names_trailer_models"], _at(model_where, "names_trailer_models")),
             ),
         ),
         review=Review(

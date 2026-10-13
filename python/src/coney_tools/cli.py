@@ -41,8 +41,15 @@ from coney_tools.conventions import Conventions, load_conventions
 from coney_tools.conventions_render import run_render
 from coney_tools.hygiene_cli import add_hygiene_parser, run_hygiene
 from coney_tools.pr_health import add_pr_health_parser, run_pr_health
-from coney_tools.pr_review import add_review_parsers, run_review_command
-from coney_tools.repo_checks import check_body, check_docs, check_pointer_files, check_title, first_line
+from coney_tools.pr_review import DEFAULT_BASE, add_review_parsers, run_review_command
+from coney_tools.repo_checks import (
+    branch_trailer_models,
+    check_body,
+    check_docs,
+    check_pointer_files,
+    check_title,
+    first_line,
+)
 from coney_tools.repo_labels import apply_labels, gh_script
 
 
@@ -132,9 +139,14 @@ def _repo_check_docs(body_file: str | None) -> int:
     return 0
 
 
-def _repo_check_body(body_file: str | None) -> int:
-    """Check the pull request description in `body_file` (`-` or none reads stdin); 1 when refused."""
-    rules = _conventions().pull_requests
+def _repo_check_body(body_file: str | None, worktree: Path | None = None, base: str = DEFAULT_BASE) -> int:
+    """Check the pull request description in `body_file` (`-` or none reads stdin); 1 when refused.
+
+    With a `worktree`, the Model line must also name the models its commits after `base` credit in trailers; CI has
+    only the description and gives none.
+    """
+    conventions = _conventions()
+    rules = conventions.pull_requests
     if body_file is None or body_file == "-":
         body = sys.stdin.read()
     else:
@@ -143,7 +155,8 @@ def _repo_check_body(body_file: str | None) -> int:
         except (OSError, UnicodeDecodeError) as error:
             print(f"coney-tools: {body_file}: cannot be read ({error})", file=sys.stderr)
             return 2
-    problems = check_body(body, rules)
+    models = branch_trailer_models(worktree, base, conventions.commits.trailers) if worktree else []
+    problems = check_body(body, rules, models)
     if problems:
         print(f"body refused: {'; '.join(problems)} (see .github/pull_request_template.md)")
         return 1
@@ -249,6 +262,15 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     check_body_parser.add_argument(
         "--body", help="a file holding the pull request description; - or omitted reads stdin"
+    )
+    check_body_parser.add_argument(
+        "--worktree",
+        type=Path,
+        help="the branch's worktree: also require the Model line to name every model its commits credit in a "
+        "Co-Authored-By trailer (what `repo check-review` does)",
+    )
+    check_body_parser.add_argument(
+        "--base", default=DEFAULT_BASE, help="what the branch is compared with, with --worktree (default: %(default)s)"
     )
     render_parser = repo_commands.add_parser(
         "render",
@@ -888,7 +910,7 @@ def _run(args: argparse.Namespace) -> int:
     if args.command == "check-docs":
         return _repo_check_docs(args.body)
     if args.command == "check-body":
-        return _repo_check_body(args.body)
+        return _repo_check_body(args.body, args.worktree, args.base)
     return _repo_check()
 
 
