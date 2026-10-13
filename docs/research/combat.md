@@ -2597,14 +2597,15 @@ Confirmed (code). A mounted human is state `0x800` instead, and the dispatcher s
   (`0x002617f8`), which plays 617-620 by the target's side ([Block](#block)). Confirmed (code).
 - **What opens it: the rise's own `0x25` events.** 199's clip, `gen_face_up_ground_get_up` (21 frames; the generic
   set's, and no character maps 199 to another clip), carries event **`0x25` on frames 11-18**, the duck's event
-  ([Block](#block)); its other events are `0x43` and 7 at frame 0, `0x44` at 6, `0xb` at 9 and 14, and **`0x48` at
-  frame 14**. Read from the disc (numbers only). Only three clips on the disc carry `0x25`: the two ducks of anim 616
-  (`gen_duck`, frames 6-13; `dest_bo_duck`, 1-13) and this one. So the rise counter is the duck counter's own path,
-  not a code path of its own: each `0x25` sends message `0xa5` to the clip's human (`Anim_FireFrameEvents`
-  `0x00101dd8`), and the handler (`Human_HandleMessage` `0x00245920`, case at `0x00246ae8`) sets record `+0x14` =
-  `0xe` (`0x00246b64`) when `Human_IsFreeToReact` (`0x00225498`) allows it, the human is not both stunned
-  (`0x100000`) and flagged `0x8000000` (human `+0xe0`), and a player's current command is square (`0xf`, `0x11`,
-  `0x15`) or cross (`0x10`, `0x12`, `0x16`) (`0x0027b988`). Confirmed (code).
+  ([Block](#block)); its other events are `0x43` and 7 at frame 0, `0x44` at 6, `0xb` at 9 and 14, and **`0x48` at frame
+  14**. Inferred: the frames come from the clip's event list read from the disc (numbers only), a file check and not a
+  level of its own; the window they predict is confirmed (runtime) in the table below, which fits them. Only three clips
+  on the disc carry `0x25`: the two ducks of anim 616 (`gen_duck`, frames 6-13; `dest_bo_duck`, 1-13) and this one. So
+  the rise counter is the duck counter's own path, not a code path of its own: each `0x25` sends message `0xa5` to the
+  clip's human (`Anim_FireFrameEvents` `0x00101dd8`), and the handler (`Human_HandleMessage` `0x00245920`, case at
+  `0x00246ae8`) sets record `+0x14` = `0xe` (`0x00246b64`) when `Human_IsFreeToReact` (`0x00225498`) allows it, the
+  human is not both stunned (`0x100000`) and flagged `0x8000000` (human `+0xe0`), and a player's current command is
+  square (`0xf`, `0x11`, `0x15`) or cross (`0x10`, `0x12`, `0x16`) (`0x0027b988`). Confirmed (code).
 - **Why the window ends at frame 13.** Event `0x48` (frame 14) clears the clip's held flags and sets held **`0x40000`**
   (the recovery phase) on the human and the clip (`Anim_FireFrameEvents`, the `0x48` branch). `Human_IsFreeToReact`
   refuses every held flag but `0x40089000`, so it lets the rise's `0x8000` through and refuses `0x40000`: from frame
@@ -2616,21 +2617,30 @@ Confirmed (code). A mounted human is state `0x800` instead, and the dispatcher s
 - **The window at runtime** (confirmed (runtime), PCSX2 2.9.94, 2026-10-13: `ground_rise_counter` and variants of it,
   a copy of slot 6 as above with the second kick removed; square tapped at update 80 starts 199 on update 81, then one
   square or cross tap; k counts updates from 199's first, k = 0 at 81). 199 ran 28 updates (81-108) with no input
-  after it, so it plays at about 0.75 speed, as 616 does.
+  after it, so it plays at about 0.75 speed, as 616 does. A square tapped at update t reached the record (command
+  `0xf`) on t + 1; the table gives that update.
 
-  | Command reaches the record on | k | Result |
+  | Square's command reached the record on | k | Result |
   | --- | --- | --- |
-  | updates 90, 91, 93, 94, 95 (square) | 9-14 | nothing; he rises into 356 / 357 |
-  | **96, 97, 98** (square; cross tapped at 94, 95 and 96, whose release command `0x10` or press `0x12` lands there) | **15-17** | **620** on that same update, the puppet at his left |
-  | 99-102 and 105-107 (square); 99 and 100 (cross tapped at 98) | 18 and later | nothing |
+  | updates 90, 91, 93, 94, 95 | 9-14 | nothing; he rises into 356 / 357 |
+  | **96, 97, 98** | **15-17** | **620** on that same update, the puppet at his left |
+  | 99-102, 105-107 | 18 and later | nothing |
 
-  The counter plays on the update the command arrives: the clip's events fire before `Human_UpdateActions` handles
-  `+0x14` in the same update. Frames 11-13 at 0.75 speed would span k = 15-18; the window closing after k = 17 puts
-  the effective speed at about 0.78 (inferred from the edges; the exact rate of 199 was not read).
+  Cross, by the update it was tapped: tapped at 94 or 95, 620 on update 96 (k = 15); tapped at 96, 620 on 97
+  (k = 16); tapped at 98 or 100, nothing. Which cross command (`0x12` press or `0x10` release) was the one taken was
+  not recorded. The counter plays on the update the command arrives: the clip's events fire before
+  `Human_UpdateActions` handles `+0x14` in the same update.
+
+  **The runtime edges, k = 15-17, are the rule; the frame range is only the explanation.** Frames 11-13 at exactly
+  0.75 speed would span k = 15-18, yet k = 18 does nothing, so 199's effective rate is a little above 0.75 (about
+  0.78 from the edges; inferred). The rate was not read from the code or the clip, so a reimplementation that maps
+  frames 11-13 through a 0.75 rate gets k = 18 wrong; it must reproduce k = 15-17.
 - **The AI does not counter from the rise.** The `0xa5` handler asks an AI's brain (`Brain_WantsCounter`
   `0x0028c6a8`): while its reaction goal is Grounded (`0x17`) the answer is `GroundedGoal_WantsCounter` (`0x002b4aa0`),
   which is always no, and the Grounded goal lasts while the human is knocked down (`GroundedGoal_Process`
-  `0x002b4aa8` ends it once `Human_IsKnockedDown` is false), which is through the whole of 199. Confirmed (code);
+  `0x002b4aa8` ends it once `Human_IsKnockedDown` (`0x00223b98`: state `0x80000`, with a record) is false). State
+  `0x80000` is cleared only by 199's end callback (`Human_EndDownState` `0x0025e26c` → `Human_GetUp`), so the goal
+  lasts through the whole of 199. Confirmed (code);
   not seen at runtime.
 - **The AI.** An AI's Grounded goal (`0x17`, `0x002b4aa8`) queues kind 42 on itself about 1.9 s after going down while
   it is attacked ([AI](ai.md#fight-reactions)). `AttackKind_ToCommand` (`0x00231090`, table `0x0055c170`) makes kind
@@ -2698,14 +2708,18 @@ mount plays when something **outside** the pair breaks it (a teleport, a hit on 
    both stunned and flagged `0x8000000`; (c) a player's command that update is square (`0xf`, `0x11`, `0x15`) or cross
    (`0x10`, `0x12`, `0x16`); an AI's comes from its goals, and a Grounded AI says no. Coney's
    `combat::asksDuckCounter` already holds (c). For 199 this means the events of frames 11-13 (frame 14's is in the
-   same update as the `0x48` and is refused).
+   same update as the `0x48` and is refused). **Test against the runtime window, k = 15-17 from 199's first update,
+   not against frames 11-13 through a 0.75 rate** (that gives k = 15-18, and k = 18 does nothing in the original;
+   199's exact rate is not known, see the runtime paragraph above).
 2. **Where it runs.** Before the down state's own update skips the dispatcher: in the original the `+0x14` = `0xe`
    test comes before `Human_UpdateDown` and before the dispatcher, so being down (`0x80000`) does not stop it. In Coney
    that means the counter check must run for a human in his rise even though `stepVictim` says he is reacting.
 3. **What it does.** The same as the duck's: the foe if within 1.25 × anim 617's far range, else the nearest human in
    that range; end the rise clip and the stun; play 617-620 by the target's side (`combat::duckCounterClip`), with the
-   duck counter's hits (here 50 and a knockdown of the attacker). The counter plays on the update the command arrives.
-   Without a target nothing plays (the request lasts, as for the duck, while the window is open).
+   counter's own hit: 50 health points (the damage field of 617-620 in the generic set's
+   [Anim Range List](#damage-table), read from the disc), which knocked the puppet down at runtime. The counter
+   plays on the update the command arrives. Without a target nothing plays (the request lasts, as for the duck,
+   while the window is open).
 4. **Not for AI humans in their rise** (their Grounded goal says no).
 5. **Failing tests to write first.**
     - Unit (`tests/human`): a player knocked down by a crushing hit, ground time over, rises with 199 at update R
@@ -2714,7 +2728,7 @@ mount plays when something **outside** the pair breaks it (a teleport, a hit on 
       357. The same with cross (`0x12` press, `0x10` release). Today all fail at the first case.
     - Unit: the same for an AI human in 199 with its Grounded goal: no counter whatever its command.
     - Disc (`tests/platform`): the clip mapped to anim 199 for the generic set carries `0x25` on frames 11-18 and
-      `0x48` on frame 14 (counts only), and Coney's window from it is k = 15-17 at 199's play rate.
+      `0x48` on frame 14 (counts only), and Coney's window from it is k = 15-17 (the runtime edges).
 
 ### Knocked out, and the mission failing {#defeat}
 
