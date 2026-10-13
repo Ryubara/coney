@@ -2368,7 +2368,7 @@ spawners and link to their subject pages; the rest are this mission's.
 
     **Coney** (as issue #493 states, from `fix-furies-passive`'s run): its AI Warriors follow the player under
     `FollowPlayer` and run out to the Furies (one at up to gait 4, the other gait 3), so a Warrior is hit first and the
-    player 6 updates later (+275 and +281 in that run's notes); in the
+    player 6 updates later (that run's trace, steps 997 and 1003); in the
     original the player is hit first (+299) and a Warrior 93 updates later. The fixes, each against the original's
     behaviour on [Fight mode](ai-gangs.md#warrior-follow) (code in `repo:src/ai/crew.cpp`, `FollowPlayerGoal`):
 
