@@ -38,8 +38,9 @@ using coney::human::Traversal;
 
 // What a leg of a route asks of the driver.
 enum class Move : std::uint8_t {
-    Run,   // run at full deflection to the point; done within kArrived of it
-    Climb, // walk at kClimbStick toward the point beyond a face, tapping triangle near it; done once a climb has ended
+    Run,   // sprint (L2 held) at full deflection to the point; done within kArrived of it
+    Climb, // sprint to within kClimbSlowWithin of the point beyond a face, then walk at kClimbStick, tapping triangle
+           // near it; done once a climb has ended
     Jump, // sprint (L2 held) along the leg's line and tap triangle from the point's x on; done once the jump has landed
     Charge, // sprint (L2 held) along the leg's line and tap cross from the point's x on; done once the charge has ended
 };
@@ -59,6 +60,9 @@ constexpr float kClimbStick = 0.9F;
 // How far from a Climb leg's point triangle starts being tapped, m: the point lies 1.5-2 m beyond the face, and a
 // standing climb takes a face within about 1.2 m (docs/research/characters.md#climb).
 constexpr float kClimbTapWithin = 4.0F;
+// How far from a Climb leg's point the driver stops sprinting and goes on at kClimbStick, m: beyond the tap distance,
+// so the walk has slowed him before triangle is tapped.
+constexpr float kClimbSlowWithin = 6.0F;
 // Frames between button taps while a climb, a jump or a charge is wanted.
 constexpr int kTapEvery = 6;
 // How far past a Jump or Charge leg's take-off x the driver aims along the leg's line, m.
@@ -97,17 +101,27 @@ class RouteDriver final : public coney::InputSource {
         const float dx = aimX - feet.x;
         const float dy = leg.y - feet.y;
         const float reach = std::hypot(leg.x - feet.x, leg.y - feet.y);
-        const float deflection = leg.move == Move::Climb ? kClimbStick : 1.0F;
-        steer(pad, *player, dx, dy, deflection);
+        // The chase is a race: the Hi-Hat pursuers run at up to 13 m/s and fight whoever they catch, and the crew
+        // does not turn back to help (the chapter turns the Warrior commands off, so the chief's automatic attack is
+        // refused; docs/research/scripting.md#level3, docs/research/ai-gangs.md#warrior-auto-commands). So he
+        // sprints wherever he is not about to climb; Snow is tireless here, so the sprint never runs out
+        // (docs/research/characters.md#sprint).
+        const bool slowing = leg.move == Move::Climb && reach < kClimbSlowWithin;
+        steer(pad, *player, dx, dy, slowing ? kClimbStick : 1.0F);
 
-        // Buttons: L2 held for a jump's or a charge's run-up; triangle tapped near a climb's face or past a jump's
-        // take-off; cross tapped past a charge's (L2 held, then cross pressed: the charge, combat.md#run-attacks).
+        // Buttons: L2 held while he sprints and for a jump's or a charge's run-up; triangle tapped near a climb's face
+        // or past a jump's take-off; cross tapped past a charge's (L2 held, then cross pressed: the charge,
+        // combat.md#run-attacks).
         const bool tapFrame = m_frame % kTapEvery == 0;
         const bool onGround = human.traversal() == Traversal::None && !human.airborne();
         switch (leg.move) {
         case Move::Run:
+            pad.buttons |= coney::pad::kL2;
             break;
         case Move::Climb:
+            if (!slowing) {
+                pad.buttons |= coney::pad::kL2;
+            }
             if (tapFrame && onGround && reach < kClimbTapWithin) {
                 pad.buttons |= coney::pad::kTriangle;
             }
@@ -259,7 +273,19 @@ TEST_CASE("the disc's level3 rooftop chase, driven by the pad, reaches the galle
                                    [](const std::string& line) { return line.starts_with("mission failed"); });
     };
     const auto& state = run.session().flow().state();
-    run.runUntil([&] { return state.checkPoint >= 5 || failed(); }, kChaseLimit);
+    // The chapter's Setup turns player 1's Warrior commands 0-5 off (docs/research/scripting.md#level3), so through
+    // the chase the chief's automatic attack is refused and the crew keeps running ahead
+    // (docs/research/ai-gangs.md#warrior-auto-commands): the race the driver has to win.
+    bool commandsOn = false;
+    run.runUntil(
+        [&] {
+            const auto& commands = state.characters.warriorCommands.at(0);
+            // Until the gallery's chapter (checkpoint 5), which sets its own.
+            commandsOn = commandsOn || (state.checkPoint < 5 &&
+                                        std::ranges::any_of(commands.begin(), commands.begin() + 6, std::identity{}));
+            return state.checkPoint >= 5 || failed();
+        },
+        kChaseLimit);
 
     const coney::platform::PlayLevelMode* play = run.session().play();
     const std::uint64_t errors = run.session().flow().scripts().errors();
@@ -274,6 +300,7 @@ TEST_CASE("the disc's level3 rooftop chase, driven by the pad, reaches the galle
                     static_cast<double>(feet.y), static_cast<double>(feet.z), play->player().human().health().value());
     }
     CHECK(errors == 0);
+    CHECK_FALSE(commandsOn);
     CHECK_FALSE(failed());
     CHECK(state.checkPoint == 5);
     REQUIRE(play != nullptr);
