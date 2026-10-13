@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // Checks against the player's own disc that `--scene` (docs/guides/running.md#playing-a-level) plays a scene in a level
-// other than level99, the case of issue 446 (`--play-level level2 --scene l2_c1` crashed as soon as the scene's
-// characters appeared): the level starts as `coney --play-level level2 --scene l2_c1` starts it, the scene's roles are
-// drawn as puppets, and every puppet the scene has posed is handed to the play mode's lit draw, never rendered bare
-// (a puppet's atomic belongs to no world, and librw's lit pipeline crashes on that, which only a window shows). It runs
-// only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only (LEGAL.md).
+// other than level99, the case of issue 446: the level starts as `coney --play-level level2 --scene l2_c1` starts it,
+// the scene starts with its camera current and puppets exist for its roles, and the stage hands each posed puppet's
+// own mesh to the draw its caller gives it, one call per posed puppet. The crash itself only a window shows, so these
+// tests do not show it. They run only when the environment variable CONEY_DISC names the disc and skip otherwise; they
+// print counts only (LEGAL.md).
 
 #include <cstddef>
 #include <cstdint>
@@ -42,7 +42,7 @@ constexpr std::uint64_t kLookAt = 120;
 
 } // namespace
 
-TEST_CASE("the disc's level2: --scene l2_c1 starts as the command line starts it and draws its roles as puppets",
+TEST_CASE("the disc's level2: --scene l2_c1 starts with its camera current and puppets for its roles",
           "[disc][scenes][options]") {
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
@@ -77,7 +77,7 @@ TEST_CASE("the disc's level2: --scene l2_c1 starts as the command line starts it
     CHECK(puppets > 0);
 }
 
-TEST_CASE("a scene's puppets are drawn through the caller's lit draw, one call for each posed puppet",
+TEST_CASE("a scene's posed puppets are handed to the caller's draw, each its own mesh, once each",
           "[disc][scenes][options]") {
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
@@ -106,15 +106,24 @@ TEST_CASE("a scene's puppets are drawn through the caller's lit draw, one call f
     REQUIRE(stage.humanReady(1000.0));
     REQUIRE(stage.humanReady(1001.0));
     REQUIRE(stage.puppetCount() == 2);
-    int drawn = 0;
-    stage.drawPuppets([&drawn](coney::platform::CharacterMesh&) { ++drawn; });
-    CHECK(drawn == 0);
+    // The meshes each draw hands over: one per posed puppet, each with its atomics, none twice.
+    std::vector<const coney::platform::CharacterMesh*> drawn;
+    const auto record = [&drawn](coney::platform::CharacterMesh& mesh) {
+        CHECK(mesh.atomic() != nullptr);
+        CHECK(mesh.bloodAtomic() != nullptr);
+        drawn.push_back(&mesh);
+    };
+    stage.drawPuppets(record);
+    CHECK(drawn.empty());
     stage.humanPose(1000.0, coney::scenes::RoleFrame{.role = 0, .pose = {}, .feet = {}, .heading = 0.0F});
-    stage.drawPuppets([&drawn](coney::platform::CharacterMesh&) { ++drawn; });
-    CHECK(drawn == 1);
+    stage.drawPuppets(record);
+    REQUIRE(drawn.size() == 1);
+    const coney::platform::CharacterMesh* first = drawn[0];
     stage.humanPose(1001.0, coney::scenes::RoleFrame{.role = 1, .pose = {}, .feet = {}, .heading = 0.0F});
-    drawn = 0;
-    stage.drawPuppets([&drawn](coney::platform::CharacterMesh&) { ++drawn; });
-    CHECK(drawn == 2);
-    std::printf("scene puppets: 2 joined, 0 then 1 then 2 drawn as they were posed\n");
+    drawn.clear();
+    stage.drawPuppets(record);
+    REQUIRE(drawn.size() == 2);
+    CHECK(drawn[0] != drawn[1]);
+    CHECK((drawn[0] == first || drawn[1] == first));
+    std::printf("scene puppets: 2 joined, 0 then 1 then 2 distinct meshes drawn as they were posed\n");
 }
