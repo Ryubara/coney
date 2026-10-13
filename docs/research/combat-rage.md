@@ -617,7 +617,7 @@ Every Warrior and every player is made revivable: `ai::startingFlags` gives a hu
 table in [Human flags](combat.md#human-flags) as its brain is made (`Brains::add`), and `ai::releasedFlags` those of a player
 handed back to the AI (`AiHumans::switchPlayer`). A Warrior downed in a fight (his health gone) counts as knocked out,
 as one a script knocked out does. So beside a crew Warrior downed in any fight the prompt shows with a flash and
-d-pad left revives him, with no script call (owner item 8). The disc test `repo:tests/platform/disc_revive_test.cpp`
+d-pad left revives him, with no script call (user item 8). The disc test `repo:tests/platform/disc_revive_test.cpp`
 downs a `level80` Warrior with a strike, walks player 1 to him by the stick at 60 % and revives him: 351 ran 22
 updates, 353 34, 389 25 and the revived's 354 73, each counted with the update it starts (the runtime read 21, 33, 25
 and 72), the steer turned him over 25 updates to 8.8° left of the

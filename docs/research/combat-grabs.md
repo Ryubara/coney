@@ -332,7 +332,7 @@ the holds and strikes and carried only the spins' and connects' root motion (78:
 
 ### The hold walk: clips, speed and turning {#hold-walk}
 
-What plays while the grabber walks the pair, from the front or from behind (owner item 21). Confirmed (code) at the
+What plays while the grabber walks the pair, from the front or from behind (user item 21). Confirmed (code) at the
 addresses cited unless marked.
 
 1. **Refused while busy.** `Human_MoveGrabbing` (`0x00245310`) runs for a grabbing or mugging human with a player's
@@ -378,7 +378,7 @@ addresses cited unless marked.
    it is the grabber's rotation × the stored relative rotation, so it swings round the grabber on the hold's offset
    (from behind 0.24 m, 23.5° to the left; from the front 1.08 m, 20.6° to the right, [the offsets](#grab-posing)).
 
-**Coney fixes** (owner item 21; Coney's `Fighter::moveGrab` already turns and moves the pair):
+**Coney fixes** (user item 21; Coney's `Fighter::moveGrab` already turns and moves the pair):
 
 1. Give the grabber movement style 7 (front) or 9 (rear) and the victim 8 or 10 for the whole hold, and switch them
    on every spin (78 / 79 to 9 / 10, 80 / 81 to 7 / 8), as the table says.
@@ -476,7 +476,7 @@ receives each hit's anim id, wants 219 or 221 and then 223 before it calls `P1.B
 
 ### The mount's power strike ends the mount {#mount-power}
 
-Cross held and square pressed in the mount (owner checklist item 32) is **not** a mount strike: it ends the mount
+Cross held and square pressed in the mount (user checklist item 32) is **not** a mount strike: it ends the mount
 and leaves the mounter standing in the fight stance and the victim on the ground. Confirmed (code) at the addresses
 cited, and (runtime) as below; the clip events read from the disc (numbers only).
 

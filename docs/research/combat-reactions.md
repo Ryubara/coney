@@ -103,7 +103,7 @@ armour, the held flags `0x1c16a40` or human flag `0x800` cancel the reaction:
 
 No "in a sync move" flag exists. What protects a human in a dive, a charge, a power move, a finisher or a tandem is
 the record `+0x08` **held flags** those moves' clip tasks hold ([Held flags](tasks.md#held-flags)), read in three
-places. Confirmed (code) at the addresses cited; owner checklist items 25 and 29.
+places. Confirmed (code) at the addresses cited; user checklist items 25 and 29.
 
 **Who holds what** (each bit is held by the clip task for the clip's whole length, then cleared with it):
 
@@ -232,7 +232,7 @@ the same 20 by the same code (inferred: the dive holds `0x400000`, in the same m
    drops, a victim whose clip holds any of `0x1c16a40` plays no reaction and is not interrupted. Before it, a charge
    into a human broke off on impact and the charger fell: the victim's crushing mid reaction (296-299) switches every
    strike shape on and its flung body struck the charger for 20 with a heavy high hit, which played 292-295 on him
-   (owner report, 2026-10-11). The original takes the same 20 from the charger with no reaction (confirmed (runtime),
+   (user report, 2026-10-11). The original takes the same 20 from the charger with no reaction (confirmed (runtime),
    the run above). The dive escaped only by chance (inferred; no strike back in the run above): its crushing high hit
    gives 300-303, which strike with the spine and head alone.
    Still to do: a paired move's victim holding `0x400000` (Coney's paired clips

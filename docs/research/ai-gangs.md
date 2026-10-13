@@ -349,7 +349,7 @@ line) → ATTACK at 2-3 m**; a hit at any point → ATTACK at once.
 fight it hears about; it does not stop code 3. No form holds a gang passive by its threat response; the passive ones
 are held by a short sight (`HuSetLOSRange` 1 or 4) or by `Halt`.
 
-**Coney status and fix** (checked 2026-10-11, `repo:src/ai`; item 5 of the owner's list):
+**Coney status and fix** (checked 2026-10-11, `repo:src/ai`; item 5 of the user's list):
 
 - Coney runs the enemy scan only for members under TacticScout (`ScoutTactic::update` →
   `ScanSchedule::maybeScan`); `Brains::update` and `Brain::think` never scan. So no Destroyer under HANGINGOUT, IDLE,

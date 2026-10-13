@@ -41,7 +41,7 @@ stereo theft.
 
 ### Teammates: what the player may do to his own crew {#teammates}
 
-Owner item 10 asks what the original allows against the player's own Warriors outside the hangout. Confirmed (code)
+User item 10 asks what the original allows against the player's own Warriors outside the hangout. Confirmed (code)
 at the addresses cited unless marked; "teammate" is a human friendly to the player (`Human_IsFriendly`, `0x00222a90`,
 `Brain_IsFriendly`) and in his gang (brain `+0x20c`).
 
@@ -150,7 +150,7 @@ brain read every update:
   `say-command`) on the same update. Vermin's health stayed 1800. Whether the line is heard (the speech system may
   drop it) was not checked.
 
-**Coney fixes** (owner item 10; the blocking itself is owner item 40, physics.md#human-contacts):
+**Coney fixes** (user item 10; the blocking itself is user item 40, physics.md#human-contacts):
 
 1. Run the strike test against every human body, not only the opposed ones: Coney's `Humans::opposed` (the
    `AiHumans` opposition, `!Gangs::friends`) currently gates the strike test as well as the targets, which is why the
@@ -334,7 +334,7 @@ addresses cited):
   (`Human_IsThreatTo`, `0x00222a48`: `Brain_IsThreat`, the two gangs are enemies or both are players), and neither
   down nor dead (`0x00227e60`), nor in state `0xe0000` (`0x00223b48`), nor holding `0x40` (`0x00223c10`). A neutral
   civilian, whose gang is no enemy of the Warriors, is refused, so **walking past a civilian never enters the stance
-  or locks** (owner item 14); one does once his gang has been made an enemy (a civilian of kind 3 who fights back,
+  or locks** (user item 14); one does once his gang has been made an enemy (a civilian of kind 3 who fights back,
   `Hostile_Attack`, [AI goals](ai-goals.md)). The attack picks are wider: `TargetFilter_Enemy` (`0x00279410`) and
   `0x00279568` skip only allies and the same gang, so square still picks and hits a civilian, without locking.
 

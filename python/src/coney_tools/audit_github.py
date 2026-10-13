@@ -20,11 +20,11 @@ from typing import Any, Protocol
 
 from coney_tools import audit_text
 from coney_tools.audit import Problem, check
+from coney_tools.audit_text import NUMBER_REFERENCE
 from coney_tools.config import ConfigError
-from coney_tools.conventions import Conventions, IssueForm
+from coney_tools.conventions import Conventions, IssueForm, Wording
 from coney_tools.log_scan import ScanResult
 from coney_tools.repo_checks import (
-    NUMBER_REFERENCE,
     check_body,
     check_title,
     legacy_remaining_items,
@@ -501,14 +501,22 @@ def issue_closed_status(context: GithubContext) -> Iterator[Problem]:
 # --- issues: wording, leftovers, links ------------------------------------------------------------------------------
 
 
-@check("issue.owner-word")
-def issue_owner_word(context: GithubContext) -> Iterator[Problem]:
-    """An open issue calls the person who directs the project 'user', not 'owner'."""
+def _wording_message(wording: Wording, uses: list[str]) -> str:
+    """The finding for a banned word: how often, and what to say instead."""
+    return (
+        f"says {wording.avoid[0]!r} {len(uses)} time(s); say {wording.person!r} for who tested or filed it and "
+        f"{wording.decider!r} for who decides: {uses[0]}"
+    )
+
+
+@check("issue.person-word")
+def issue_person_word(context: GithubContext) -> Iterator[Problem]:
+    """An open issue says 'user' for who tested or filed it and 'maintainer' for who decides, never 'owner'."""
     wording = context.conventions.repo.wording
     for issue in context.snapshot.open_issues():
         uses = audit_text.word_uses(f"{issue.title}\n{issue.body}", wording.avoid)
         if uses:
-            yield _problem(issue, f"says {wording.avoid[0]!r} {len(uses)} time(s), say {wording.person!r}: {uses[0]}")
+            yield _problem(issue, _wording_message(wording, uses))
 
 
 @check("issue.closed-unchecked")
@@ -717,14 +725,14 @@ def pr_body(context: GithubContext) -> Iterator[Problem]:
             yield _problem(pull, shown)
 
 
-@check("pr.owner-word")
-def pr_owner_word(context: GithubContext) -> Iterator[Problem]:
-    """An open pull request calls the person who directs the project 'user', not 'owner'."""
+@check("pr.person-word")
+def pr_person_word(context: GithubContext) -> Iterator[Problem]:
+    """An open pull request says 'user' for who tested or filed it and 'maintainer' for who decides, never 'owner'."""
     wording = context.conventions.repo.wording
     for pull in context.snapshot.pulls_in("open"):
         uses = audit_text.word_uses(f"{pull.title}\n{pull.body}", wording.avoid)
         if uses:
-            yield _problem(pull, f"says {wording.avoid[0]!r} {len(uses)} time(s), say {wording.person!r}: {uses[0]}")
+            yield _problem(pull, _wording_message(wording, uses))
 
 
 def _merged_since_the_rule(context: GithubContext, pull: Pull) -> bool:

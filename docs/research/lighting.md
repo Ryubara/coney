@@ -1,7 +1,7 @@
 # Lighting
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). Runtime values were read
-over PINE in PCSX2 2.9.94 on 2026-10-06 from the owner's quick-save slot 1 (`level99`, checkpoint 3, loaded read-only
+over PINE in PCSX2 2.9.94 on 2026-10-06 from the user's quick-save slot 1 (`level99`, checkpoint 3, loaded read-only
 from a copy), counts and values only.
 
 ## Purpose
@@ -187,7 +187,7 @@ the scenery stays visible from its prelighting alone; with the normal 0.227 a li
 only from 40 to 53 (saturating). The humans do not change. **The sky does**: it is lit by list A too
 ([The background](level-loading.md#render-order)); with `+0x50` raised from 0.07 to 0.77 (light A 0.227 → 0.927) the
 sky's mean screen colour went from (10, 17, 27) to (22, 34, 54) of 255, about twice, like the walls (confirmed
-(runtime), PCSX2 2.9.94, the owner's slot 1 copied to a file, `level99` street, window screenshots).
+(runtime), PCSX2 2.9.94, the user's slot 1 copied to a file, `level99` street, window screenshots).
 
 **The maths**, confirmed (runtime), PCSX2 2.9.94 GS dumps of the `level99` street with lights changed over PINE
 (every vertex's colour read from the GS packets, world positions rebuilt from the camera; the VU1 microcode itself was

@@ -422,12 +422,12 @@ classes](../references/warrior-classes.md)). Confirmed (code) at `0x00284ca0`, `
    first). So the **slack** is the limit minus the required time, and the target angle jumps (at least 80° away) each
    period of progress: a dealer gives **1.75-2.25 s of slack and a new angle every 0.75 s** (three to four jumps to
    catch in 2.75 s), a civilian with byte 2 gives 6 s of slack and a jump every 1.25 s, and a bum 9 s. That is the
-   "dealers are hard" of the owner's report: the victim's bar (bar 1, amber) fills over 4.5 s.
+   "dealers are hard" of the user's report: the victim's bar (bar 1, amber) fills over 4.5 s.
 4. **The other player as victim** (`+0x1b0` set) has no limit: the race is mode 1 against his own record
    (`Mug_GetPlayerVictimParams`, `0x002853a8`, [the other stick games](#other-stick-games)).
 5. **The payout** is the same for all (the victim's money, × 1.5 for a dealer brain, [Crimes](crimes.md#mugging)).
 
-**Coney fixes** (owner item 27; Coney runs every mugging with one record, `CombatTuning`'s 5000 / 2500 / 50000, and
+**Coney fixes** (user item 27; Coney runs every mugging with one record, `CombatTuning`'s 5000 / 2500 / 50000, and
 no victim limit):
 
 1. Build the record per mugging from the table above, by the victim's `CfgChar` category and `flag_14b` and the

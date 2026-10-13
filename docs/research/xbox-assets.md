@@ -11,7 +11,7 @@ measured on [Xbox executable](xbox-executable.md).
 
 ## Purpose
 
-The decision (owner, 2026-10-07): **Coney installs from the player's discs, and the Xbox disc is the preferred
+The decision (a maintainer, 2026-10-07): **Coney installs from the player's discs, and the Xbox disc is the preferred
 source of assets, the PS2 disc filling the gaps.** At install `coney-tools extract` converts the assets to open
 formats outside the repository; given the Xbox disc as well, it takes each asset from whichever disc has the better
 version. The PS2 version stays the only reference for behaviour, and level scripts, data tables and game text are

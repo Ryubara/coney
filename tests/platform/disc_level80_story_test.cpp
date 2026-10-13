@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // Checks against the player's own disc that the second story mission's hints follow the mission from checkpoint to
-// checkpoint, on the owner's path (a stale "throw a bottle" hint was seen to stay up until the Wreck'em order). The
+// checkpoint, on the user's path (a stale "throw a bottle" hint was seen to stay up until the Wreck'em order). The
 // story is started from the menus, in the one game session every start uses (tests/support/disc_session.h), and level80
 // is jumped to at checkpoints 1, 2, 3 and 4 in turn, as the debug menu does. Each start must find the hint box and the
 // objective empty, whatever the last one left. An adaptive pad plays as a player would, the left stick at 70 % on the
@@ -437,7 +437,7 @@ TEST_CASE("the disc's level80 from the story: the hints at each checkpoint, walk
     REQUIRE(run.until([&] { return run.shown.objective == "MS_C2_1"; }));
     CHECK(hintsFrom(run.shown.order, at2).empty());
 
-    // Checkpoint 3, the owner's path: into Fox's box through his gate; his scene plays and is skipped.
+    // Checkpoint 3, the user's path: into Fox's box through his gate; his scene plays and is skipped.
     const std::size_t at3 = jumpTo(3);
     REQUIRE(run.until([&] { return run.shown.objective == "MS_C3_1"; }));
     const coney::anim::Vec3 fox = run.flagAt("fFoxTrigger");

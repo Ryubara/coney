@@ -44,7 +44,7 @@ class Finding:
     severity: str
     item: str
     message: str
-    #: `auto`, `skill` or `owner` (see `CheckSpec.fix`).
+    #: `auto`, `skill` or `maintainer` (see `CheckSpec.fix`).
     fix: str
     #: The conventions keys the check enforces.
     keys: tuple[str, ...]

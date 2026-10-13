@@ -719,7 +719,7 @@ TEST_CASE("the level's shut-down clears every hint, objective and panel the leve
 }
 
 TEST_CASE("a context prompt's GSTRING.ACTIONBUTTON draws the triangle button, not the letter n", "[hud]") {
-    // Owner item 9 ("n Give Weapon"): the prompt strings start with <MONEYFONT><ST></MONEYFONT> and a space, and in the
+    // User item 9 ("n Give Weapon"): the prompt strings start with <MONEYFONT><ST></MONEYFONT> and a space, and in the
     // prompt's part_page0 font the <ST> character n inside <MONEYFONT> is rectangle 11 + ('n' - '0') = 73.
     Hud hud = makeHud(nullptr);
     Canvas canvas;

@@ -1551,7 +1551,7 @@ addresses given:
   steps, once a frame, where the original's `HUD_Update` stands; then the scheduled calls. A text set on a free box
   shows within the call that set it ([The queue at runtime](hud.md#hint-queue-runtime)), so texts set by a callback
   and a scheduled call in one step never back up (before, from `level99`'s lesson 6 on, the box showed each grab hint
-  `TT_19*` one text late, in place of the lesson's: owner checklist item 33b).
+  `TT_19*` one text late, in place of the lesson's: user checklist item 33b).
 
 ### Moving, standing on the ground and falling {#ground}
 
@@ -1933,7 +1933,7 @@ at runtime for Vermin (3.5 m/s up, 9.55 m/s across a 4.1 m gap); the rest is in
 
 #### Triangle with something in hand {#triangle-held}
 
-Owner checklist item 2 (an early press at a wall drops the weapon instead of climbing). The four tries above, read
+User checklist item 2 (an early press at a wall drops the weapon instead of climbing). The four tries above, read
 again for a held object; confirmed (code) at `Player_UpdateActions` (`0x0027c120`, both its triangle blocks),
 `Climb_TryStart` (`0x002826f0`), `Climb_Start` (`0x00281c20`), `Player_TriangleAction` (`0x002811f0`),
 `ContextAction_Use` (`0x0024d530`) and `Human_PickUpSearch` (`0x0024d810`):

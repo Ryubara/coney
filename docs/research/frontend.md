@@ -635,7 +635,7 @@ runtime (inferred: hidden by the opaque background).
 
 #### The Choose Gangs fighters {#rm-choose-gangs-fighters}
 
-What stands behind each gang name on Choose Gangs (owner checklist item 23). Coney draws nothing there yet
+What stands behind each gang name on Choose Gangs (user checklist item 23). Coney draws nothing there yet
 ([Coney's implementation](#coneys-implementation)). Confirmed (code) unless marked; the layout values are in the
 Choose Gangs row of [Per screen](#rumble-screens).
 

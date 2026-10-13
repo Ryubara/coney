@@ -111,27 +111,67 @@ def test_the_minimum_is_the_one_in_the_conventions(space: Space, monkeypatch: py
     ]
 
 
-def test_captures_in_a_scratch_folder_without_a_worktree_are_reported(space: Space) -> None:
-    scratch = space.root / "scratch"
-    (scratch / "old-track" / "shots").mkdir(parents=True)
-    (scratch / "old-track" / "shots" / "a.png").write_bytes(b"\0" * 2048)
-    (scratch / "old-track" / "notes.md").write_text("notes\n", encoding="utf-8")
-    (scratch / "text-only").mkdir()
-    (scratch / "text-only" / "notes.md").write_text("notes\n", encoding="utf-8")
-    space.worktree("live")
-    (scratch / "live").mkdir()
-    (scratch / "live" / "b.gif").write_bytes(b"\0")
+def scratch_file(space: Space, folder: str, name: str, size: int = 1024) -> None:
+    """A file `name` of `size` bytes in the scratch folder `folder`."""
+    path = space.root / "scratch" / folder / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(b"\0" * size)
+
+
+def test_game_captures_in_the_scratch_folder_of_a_gone_branch_are_reported(space: Space) -> None:
+    scratch_file(space, "old-track", "states/a.p2s", 2048)
+    scratch_file(space, "old-track", "trace.trace")
+    scratch_file(space, "old-track", "notes.md")
     (problem,) = found(al.finished_scratch, context(space))
-    assert problem.item == "scratch/old-track" and "1 capture file(s)" in problem.message
+    assert problem.item == "scratch/old-track"
+    assert "2 game-derived file(s)" in problem.message and "no branch of that name is left" in problem.message
+
+
+def test_the_scratch_folder_of_a_merged_branch_is_reported(space: Space) -> None:
+    git(space.checkout, "branch", "done", "origin/main")
+    scratch_file(space, "done", "dump.bin")
+    (problem,) = found(al.finished_scratch, context(space))
+    assert problem.item == "scratch/done" and "its branch is merged" in problem.message
+
+
+def test_the_scratch_folder_of_unmerged_or_live_work_is_not_reported(space: Space) -> None:
+    path = space.worktree("unmerged", commits=1)
+    shutil.rmtree(path)
+    git(space.checkout, "worktree", "prune")  # the branch stays, with a commit that origin/main lacks
+    space.worktree("live")
+    for folder in ("unmerged", "live"):
+        scratch_file(space, folder, "state.p2s")
+    assert found(al.finished_scratch, context(space)) == []
+
+
+def test_screenshots_and_text_in_a_finished_scratch_folder_are_not_reported(space: Space) -> None:
+    for name in ("shots/a.png", "shots/b.gif", "clip.mp4", "notes.md", "run.log"):
+        scratch_file(space, "old-track", name)
+    assert found(al.finished_scratch, context(space)) == []
+
+
+def test_a_shared_scratch_folder_is_never_reported(space: Space) -> None:
+    scratch_file(space, "pcsx2-states", "slot1.p2s")
+    assert found(al.finished_scratch, context(space)) == []
+    plain = conventions_with(("workspace.shared_scratch", ["downloads"]))
+    assert items(found(al.finished_scratch, context(space, plain))) == ["scratch/pcsx2-states"]
+
+
+def test_the_game_capture_types_are_the_ones_in_the_conventions(space: Space) -> None:
+    scratch_file(space, "old-track", "state.p2s")
+    custom = conventions_with(("workspace.game_capture_suffixes", [".dmp"]))
+    assert found(al.finished_scratch, context(space, custom)) == []
+    scratch_file(space, "old-track", "heap.DMP")
+    assert items(found(al.finished_scratch, context(space, custom))) == ["scratch/old-track"]
 
 
 def test_the_audit_changes_nothing(space: Space) -> None:
     path = space.worktree("done", build=1000)
-    (space.root / "scratch" / "old").mkdir(parents=True)
-    (space.root / "scratch" / "old" / "a.png").write_bytes(b"\0")
-    context(space)
+    scratch_file(space, "old", "a.p2s")
+    problems = found(al.finished_scratch, context(space))
+    assert items(problems) == ["scratch/old"]
     assert path.is_dir() and (path / "build" / "dev" / "out.bin").is_file()
-    assert (space.root / "scratch" / "old" / "a.png").is_file()
+    assert (space.root / "scratch" / "old" / "a.p2s").is_file()
 
 
 # --- speed: what the audit does not read, and what it reads side by side --------------------------------------------
@@ -186,29 +226,29 @@ def test_worktrees_are_judged_side_by_side_with_the_same_answers(space: Space) -
     ]
 
 
-def test_captures_are_counted_at_any_depth_by_suffix(tmp_path: Path) -> None:
+def test_game_files_are_counted_at_any_depth_by_suffix(tmp_path: Path) -> None:
+    suffixes = frozenset({".p2s", ".trace", ".dump"})
     (tmp_path / "a" / "b").mkdir(parents=True)
-    (tmp_path / "top.PNG").write_bytes(b"\0" * 10)
-    (tmp_path / "a" / "clip.mp4").write_bytes(b"\0" * 100)
-    (tmp_path / "a" / "b" / "deep.gif").write_bytes(b"\0" * 1000)
-    (tmp_path / "a" / "b" / "notes.md").write_text("not a capture\n", encoding="utf-8")
-    (tmp_path / "a" / "b" / "shot.png.txt").write_text("not a capture either\n", encoding="utf-8")
-    assert al._captures(tmp_path) == (3, 1110)
+    (tmp_path / "top.P2S").write_bytes(b"\0" * 10)
+    (tmp_path / "a" / "run.trace").write_bytes(b"\0" * 100)
+    (tmp_path / "a" / "b" / "deep.dump").write_bytes(b"\0" * 1000)
+    (tmp_path / "a" / "b" / "shot.png").write_bytes(b"\0")
+    (tmp_path / "a" / "b" / "state.p2s.txt").write_text("not a game file\n", encoding="utf-8")
+    assert al._game_files(tmp_path, suffixes) == (3, 1110)
 
 
-def test_an_empty_or_unreadable_scratch_folder_has_no_captures(tmp_path: Path) -> None:
-    assert al._captures(tmp_path) == (0, 0)
-    assert al._captures(tmp_path / "gone") == (0, 0)
+def test_an_empty_or_unreadable_scratch_folder_has_no_game_files(tmp_path: Path) -> None:
+    assert al._game_files(tmp_path, frozenset({".p2s"})) == (0, 0)
+    assert al._game_files(tmp_path / "gone", frozenset({".p2s"})) == (0, 0)
 
 
 def test_scratch_folders_are_read_side_by_side_with_the_same_answers(space: Space) -> None:
-    scratch = space.root / "scratch"
+    (space.root / "scratch" / "track-0").mkdir(parents=True)
     for number in range(9):
-        (scratch / f"track-{number}" / "shots").mkdir(parents=True)
-        for shot in range(number):
-            (scratch / f"track-{number}" / "shots" / f"{shot}.png").write_bytes(b"\0" * 7)
+        for state in range(number):
+            scratch_file(space, f"track-{number}", f"states/{state}.p2s", size=7)
     space.worktree("track-3")
     folders = context(space).scratch
-    assert [(folder.name, folder.captures, folder.capture_bytes, folder.has_worktree) for folder in folders] == [
-        (f"track-{number}", number, number * 7, number == 3) for number in range(9)
+    assert [(folder.name, folder.game_files, folder.game_bytes, folder.state) for folder in folders] == [
+        (f"track-{number}", number, number * 7, "active" if number in (0, 3) else "gone") for number in range(9)
     ]

@@ -1,6 +1,6 @@
 ---
 name: repo-hygiene
-description: Coordinator only. Run the repository audit and fix each finding by its fix class (auto, skill, owner), then fix the issues that cite the pull requests that just merged. Use after every merge round and once a week, or when asked to tidy the issues, pull requests, labels or workspace.
+description: Coordinator only. Run the repository audit and fix each finding by its fix class (auto, skill, maintainer), then fix the issues that cite the pull requests that just merged. Use after every merge round and once a week, or when asked to tidy the issues, pull requests, labels or workspace.
 ---
 
 # Repo hygiene
@@ -31,7 +31,7 @@ check that did not run found nothing. The weekly `hygiene` workflow writes the s
 ## 2. Fix by class
 
 Each finding has `check`, `item`, `message`, `severity` and `fix`. Take them in this order: `auto`, `skill`, then
-`owner`. Fix errors before warnings.
+`maintainer`. Fix errors before warnings.
 
 ### `auto`: a command fixes it
 
@@ -53,7 +53,7 @@ and set `S-needs-info`; do not invent it.
 | `issue.sections`, `issue.form`, `issue.placeholder`, `issue.screenshots` | Rewrite the body to the form's shape (`coney-tools issue check` names what differs) (`gh issue view N --json body`, then `gh issue edit N --body-file`), moving the author's text under the right headings. Add `Screenshots: none (reason)` only when the reason is plain. If the content is missing, ask. |
 | `issue.labels` | Set exactly one type, area, priority (after triage) and status label as [Triage](../../../docs/guides/issues.md#triage) says: `gh issue edit N --add-label ... --remove-label ...`. Replace an unknown label with the right one. |
 | `issue.closed-status` | `gh issue edit N --remove-label <S- label>`; the `issue-status` workflow normally does it. |
-| `issue.owner-word`, `pr.owner-word` | Reword "owner" to "user" for a person who plays or reports, "maintainer" for a person who decides. |
+| `issue.person-word`, `pr.person-word` | Reword "owner" to "user" for a person who plays or reports, "maintainer" for a person who decides. |
 | `issue.closed-unchecked` | File the follow-up issue for the unchecked item (or tick it if it was done) and write its number into the item. |
 | `issue.stale-status` | `gh pr view N` or `gh issue view N`, then change "open" to "merged" (or the true state) and tick what it finished. |
 | `issue.links` | Make the link relative and point it at a file and anchor that exist on `main`. |
@@ -75,10 +75,10 @@ and set `S-needs-info`; do not invent it.
 | `ws.scratch` | Delete the finished work's captures from its scratch folder (generated media may be deleted), or ask the track. |
 | `files.pointer`, `files.exist`, `files.address`, `files.forms`, `files.template`, `files.ci-scope`, `files.large-file-limit`, `files.markdown-hook` | A change to the repository: make it on a branch in a worktree as one unit, with the check's rule from the conventions, and queue it ([the release queue](../../../docs/guides/how-we-work.md#release-queue)). |
 
-### `owner`: stop
+### `maintainer`: stop
 
-A finding with fix `owner` (`gh.ruleset`: the ruleset or the repository settings differ from the `merge` section) is a
-maintainer decision. Do not change the ruleset, the settings, the conventions file's `merge` section or the repository's
+A finding with fix `maintainer` (`gh.ruleset`: the ruleset or the repository settings differ from the `merge` section) is
+a maintainer decision. Do not change the ruleset, the settings, the conventions file's `merge` section or the repository's
 visibility to make it pass. Report it to the maintainer with the finding's message and which side you think is right.
 
 ## 3. After a merge round: the issues that cite the pull requests
@@ -92,8 +92,8 @@ you miss.
 ## 4. Check and report
 
 Run the audit again. Report the counts per class before and after, what you changed (item numbers), what you left and
-why, every `owner` finding, and every notice. If a finding came back, a workflow or a rule is not doing its job: say so
-in the report so that it is fixed at the source (the conventions or the check), not by hand again.
+why, every `maintainer` finding, and every notice. If a finding came back, a workflow or a rule is not doing its job: say
+so in the report so that it is fixed at the source (the conventions or the check), not by hand again.
 
 ## Limits
 

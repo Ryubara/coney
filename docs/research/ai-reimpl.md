@@ -102,8 +102,9 @@ lock-on (`ScriptedStory::startWarriorCommand`). Tests: `repo:tests/ai/threats_te
 `repo:tests/ai/scripted_story_test.cpp`. Stand-ins and questions left for an analyst:
 
 - The hit-back flag `+0x2e5` exists on Coney's brain but nothing sets it until `WarriorBrain_OnHitByChief` is built.
-- The fallbacks `+0x280` / `+0x284` are not filled (the open question below), so with no lock-on the attack command
-  leaves the shared target clear.
+- The fallbacks `+0x280` / `+0x284` are not filled, so with no lock-on the attack command leaves the shared target
+  clear. They are now known: the crime reporter (a civilian phoning the police or calling a gang) and the human
+  calling his gang or running off after a rip-off ([Gang fights](gang-fights.md#targets) rule 4).
 - Coney clears the shared target where the command's tactic is started (after the dispatcher's refusals and the
   repeat check). Does the original clear it before the refusals, so a refused or repeated command also clears it?
 - A brain with no gang takes no scan token in Coney. Does the original's `Brain_MaybeScanEnemies` take a token for a
@@ -643,7 +644,8 @@ object first); an object claimed 2 s ago by the same gang (skipped) and by anoth
 Unit 7 (the fight goal's Start, Resume, Suspend and End, the fidget and taunt actions, the pattern block, and the
 waiting ring of [The reposition](ai.md#fight-reposition), gang-fight need 7) is described by its sections and by
 the three below: the fidget and taunt actions and `Brain_TryPatternBlock`. Gang-fight needs 8 (event `0x15`'s
-sender, an open question) and 11 (the tandem, issue #84) are not units yet.
+taunts; its senders are on [Gang fights](gang-fights.md#waiting) rule 5) and 11 (the tandem, issue #84) are not
+units yet.
 
 The two actions use the action base of [Actions](ai.md#actions): `+0x00` brain, `+0x04` delay (s16 ms), `+0x06`
 started, `+0x08` vtable; Start returns 2 for "already done" (the action is dropped with only its destroy run) and 0
@@ -912,6 +914,5 @@ kept by the track (`UNITS.md`); the "Spec" column links the sections that descri
 
 ## Open questions {#open-questions}
 
-- What fills game state `+0x280` and `+0x284`, the attack command's fallbacks for the shared target ([Unit 1](#unit-1)).
-- What sends event `0x15` (the slot holders' taunts, gang-fight need 8).
-- Whether Rumble's arenas enable team-ups (*gang* `+0xd9`); the gang-battle trace of issue #273 reads it.
+- None open here: what fills game state `+0x280` and `+0x284`, what sends event `0x15` and whether Rumble enables
+  the team-ups are answered on [Gang fights](gang-fights.md) (issue #298).

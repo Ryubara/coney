@@ -50,7 +50,7 @@ class Copy:
     name: str
     path: Path
     port: int | None
-    #: Whether its ini lets the SDL gamepad source drive it (the owner's pad would then move the game).
+    #: Whether its ini lets the SDL gamepad source drive it (the user's pad would then move the game).
     sdl: bool = False
 
 

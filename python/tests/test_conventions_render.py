@@ -414,13 +414,13 @@ def test_audit_checks_follow_a_changed_severity() -> None:
 
 def test_maintainer_decisions_name_every_decision_of_the_conventions() -> None:
     text = " ".join(" ".join(render_block("maintainer-decisions", CONVENTIONS)).split())
-    for decision in CONVENTIONS.repo.owner_decisions:
+    for decision in CONVENTIONS.repo.maintainer_decisions:
         assert decision in text
     assert "stops and reports" in text
 
 
 def test_maintainer_decisions_follow_a_changed_list() -> None:
-    conventions = conventions_with(("repo.owner_decisions", ["rename the project"]))
+    conventions = conventions_with(("repo.maintainer_decisions", ["rename the project"]))
     text = " ".join("\n".join(render_block("maintainer-decisions", conventions)).split())
     assert "rename the project" in text and "make the repository public" not in text
 

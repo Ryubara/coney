@@ -87,7 +87,7 @@ def test_list_prints_the_registry(capsys: pytest.CaptureFixture[str]) -> None:
         code == 0
         and len(lines) == len(CONVENTIONS.hygiene.checks) == 41
         and lines[0].startswith("files.pointer")
-        and "fix: owner" in out
+        and "fix: maintainer" in out
     )
 
 

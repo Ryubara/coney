@@ -29,14 +29,14 @@ STATUSES: dict[str, tuple[str, str, str]] = {
     "pending-approval": (
         "\U0001f3ae",
         "Pending Gameplay Approval",
-        "Built to its end in Coney; waits for the owner's play-test against the original.",
+        "Built to its end in Coney; waits for the user's play-test against the original.",
     ),
     "needs-fixes": (
         "\U0001f527",
         "Needs Fixes",
         "A play-test found something off; back in maintenance, the known issues are listed.",
     ),
-    "approved": ("✅", "Approved", "The owner played it and signed it off."),
+    "approved": ("✅", "Approved", "The user played it and signed it off."),
 }
 #: Statuses that mean the code for it is written, whatever the play-test said.
 BUILT = ("pending-approval", "needs-fixes", "approved")
@@ -102,7 +102,7 @@ class Mission:
         return sum(1 for c in self.checkpoints if c.status in BUILT)
 
     def approved(self) -> int:
-        """How many checkpoints the owner has signed off."""
+        """How many checkpoints the user has signed off."""
         return sum(1 for c in self.checkpoints if c.status == "approved")
 
 

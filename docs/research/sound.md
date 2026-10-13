@@ -1,7 +1,7 @@
 # Sound
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`): Ghidra, the disc's data
-read with `coney-tools`, and PCSX2 2.9.94 over PINE (2026-10-06, the owner's quick-save slot 1 copied to a file: level99
+read with `coney-tools`, and PCSX2 2.9.94 over PINE (2026-10-06, the user's quick-save slot 1 copied to a file: level99
 checkpoint 3, the audio manager's state read while the game ran).
 
 ## Purpose

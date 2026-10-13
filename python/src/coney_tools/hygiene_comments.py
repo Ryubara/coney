@@ -113,7 +113,7 @@ def render_item(comments: Comments, findings: Sequence[Finding]) -> str:
         "",
     ]
     for finding in findings:
-        who = " (a maintainer decides)" if finding.fix == "owner" else ""
+        who = " (a maintainer decides)" if finding.fix == "maintainer" else ""
         lines.append(f"- `{finding.check}` ({finding.severity}): {neutralize(finding.message)}{who}")
     lines += [
         "",
