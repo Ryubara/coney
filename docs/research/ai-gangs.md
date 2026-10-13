@@ -1065,9 +1065,10 @@ the field of view (brain `+0x12c`) becomes 2π, and with no actions queued:
    ([Automatic commands](#warrior-auto-commands)) or when hit (below).
 
 Confirmed (runtime) at `level34` checkpoint 5 ([Scripts](scripting.md#level34-fixes) item 16): Ash and Snow stood
-1.14-1.64 m from the standing player, turning to Furies that were 20.5 m (Snow) and 7.3 m (Ash) off when taken as targets, never walking
-toward them, and backed off at gait 2 (1.92 m/s) once a Fury came within 3.6 m (Snow) and 4.1 m (Ash). (An earlier version of this page had the turn and the move the other
-way round, and the target as the nearest attacker within 20 m of the follower.)
+1.14-1.64 m from the standing player, turning to Furies that were 20.5 m (Snow) and 7.3 m (Ash) off when taken as
+targets, never walking toward them, and backed off at gait 2 (1.92 m/s) once a Fury came within 3.6 m (Snow) and
+4.1 m (Ash). (An earlier version of this page had the turn and the move the other way round, and the target as the
+nearest attacker within 20 m of the follower.)
 
 Out of fight mode the goal sets the field of view back to 110° (1.9199 rad) and clears the target, then
 leaves the stance, may fetch a pickable object (the roll of [the Warriors' pick-ups](#warrior-pickups), every 30

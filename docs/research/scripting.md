@@ -2377,8 +2377,9 @@ from the scene's end, which came at update 717 in one and 716 in the other). The
        target beyond the range).
     2. **The band move.** Coney's `MoveToHumanAction` only closes in to a stop distance; it needs the original's
        near / far band. The spec is `MoveMelee` on [Move-to-human](ai-moving.md#move-melee), side circling, its ±10
-       counters and its done rule (in the band, side counter 0, |radial counter| < 6) included; in short: below near², back away at gait 2;
-       above far², close in at gait 4; done inside the band. Without it item 1 cannot back off.
+       counters and its done rule (in the band, side counter 0, |radial counter| < 6) included; in short: below
+       near², back away at gait 2; above far², close in at gait 4; done inside the band. Without it item 1 cannot
+       back off.
     3. **The target.** Keep the current target while it is still a valid enemy; else the nearest human of the
        follower's own enemy list (to the follower) that is up and within 20 m of the **leader**; else the leader's
        target when it is up, used for the turn or the back-off even when friendly but made the follower's own target
