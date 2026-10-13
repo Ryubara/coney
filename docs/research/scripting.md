@@ -960,7 +960,7 @@ The texts the hint box showed over one play of checkpoint 1 on the original (202
 than the `HUDSetTutorialText` call: a text with `<DISPLAYTIME n>` holds the box for *n* ms first. Updates count from
 the copy's first; the gaps are where the driver was stopped and the game idled, so only differences within one
 stretch mean anything. The hooks are `lua-exec`, `c-call`, `c-call-args`, `game-hint` and `hint-show` of
-`repo:research/traces/patches.toml`. Confirmed (runtime).
+`repo:research/traces/patches/`. Confirmed (runtime).
 
 | Update | Lesson | Shown (and what the script set) |
 | --- | --- | --- |
@@ -1686,7 +1686,7 @@ branch:
 
 One play of the whole mission on the original (2026-10-08), entered at checkpoint 1 from a `level99` state by
 setting mode 8's level to `level80` (record 2) and reloading, with the hooks `lua-exec`, `c-call`, `c-call-args`,
-`game-hint` and `hint-show` of `repo:research/traces/patches.toml` and the `call-brains` call hook. Scenes were left
+`game-hint` and `hint-show` of `repo:research/traces/patches/` and the `call-brains` call hook. Scenes were left
 to play out. Input over PINE as a pad: R2 held with the right stick at full deflection for each order (up, down,
 down-left, up-left), the left stick at 0.4-0.7 for walks, triangle, L1, cross, square and the L1/R1 mash. Long walks
 were shortened by **teleports** (`Object_Teleport`, `0x00385bb8`, through the call hook) to just outside each
@@ -1865,7 +1865,7 @@ Coney fixes (item 36):
   are over in about 2 s.
 - **At runtime** (2026-10-11, PCSX2, confirmed (runtime); three plays of the unskipped intro, entered at `level80`
   checkpoint 1 as in [the runtime order](#level80-hints)). The hooks `ember-init`, `ember-update`, `burn-init`,
-  `burn-update`, `fade-flame-init` and `fade-flame-update` of `repo:research/traces/patches.toml` logged the three
+  `burn-update`, `fade-flame-init` and `fade-flame-update` of `repo:research/traces/patches/` logged the three
   explosions about 650 updates into `l80_c1`, 5 and 4 updates apart, with six embers each. The tasks lived as follows:
     - **Embers: 2-5 updates (3-9 ticks)**, never their 25-40. Each starts 0.7 m above its flag (z 6.8 at
       `fExplosion1`) and falls about 0.6 m onto the sill or floor, so it lands almost at once and ends there.
@@ -2015,22 +2015,22 @@ Fixes, in the order to take them (each one implementer unit):
    `0xe` with finished = `+0x3ba` (0 here). Confirmed (code). Fix: Coney's cut-short path delivers event 14 with
    (tag, 0) as its refusal does. Test: a spray whose intro is cut short runs the script's event-14 handler with 0, and
    a second press at the spot starts a new spray.
-2. **The fight stance cuts the spray's intro short** (why chapter 2's first spray ended, issue #331). Before the
-   press the player was already in the fight stance (the stance walk clips 380 and 384, then the fight idle 358):
-   chapter 2's first spot has a human within 2 m, whom [the stance](combat.md#fight-stance) takes as its target;
-   chapter 1's spots have none. `HuTag` started 334 `ANIM_TAGGING_INTRO`, and on the next update Coney's stance walk,
-   with the stick at rest, put the fight idle 358 back over it, so the intro was no longer playing and the spray
-   counted as cut short. In the original nothing of the stance runs during a spray: `Human_UpdateActions`
-   (`0x00254e78`) calls `MiniGame_Update`, which for a tagging player runs `Tag_UpdatePlayer`, and returns at once
-   when that answers 1, which it does from the first update of action `0x17` (when it calls `Tag_StartSprayClips`)
-   to the spray's end; `Player_UpdateActions` (with the stance, `Player_UpdateSprint` `0x0027ce90`) and
-   `Human_ChooseAnimState` come after that return. The movement function moves nothing either: `Tag_StartSprayClips`
-   (`0x00278018`) sets held flag `0x400`, a busy bit ([the locomotion gate](tasks.md#locomotion-gate)), so
-   `Human_FightStanceMove` (`0x00241b90`) sets no velocity while 334 plays. Confirmed (code) at the addresses; the
-   cause in Coney inferred from its log (the clip column) and its code. Fix: while a spray runs (intro, loop and
-   restart clips, and the stick game) the player's stance and anim-state choice do not run, and 334 holds `0x400`.
-   Test: a player in the fight stance (an enemy 1.5 m away, stick at rest) presses triangle at a spot; 334 then 335
-   play and the stick game starts.
+2. **The fight stance cuts the spray's intro short** (why chapter 2's first spray ended, issue #331). Done (issue #353):
+   Coney now makes the fix below. Before the press the player was already in the fight stance (the stance walk clips 380
+   and 384, then the fight idle 358): chapter 2's first spot has a human within 2 m, whom [the
+   stance](combat.md#fight-stance) takes as its target; chapter 1's spots have none. `HuTag` started 334
+   `ANIM_TAGGING_INTRO`, and on the next update Coney's stance walk, with the stick at rest, put the fight idle 358 back
+   over it, so the intro was no longer playing and the spray counted as cut short. In the original nothing of the stance
+   runs during a spray: `Human_UpdateActions` (`0x00254e78`) calls `MiniGame_Update`, which for a tagging player runs
+   `Tag_UpdatePlayer`, and returns at once when that answers 1, which it does from the first update of action `0x17`
+   (when it calls `Tag_StartSprayClips`) to the spray's end; `Player_UpdateActions` (with the stance,
+   `Player_UpdateSprint` `0x0027ce90`) and `Human_ChooseAnimState` come after that return. The movement function moves
+   nothing either: `Tag_StartSprayClips` (`0x00278018`) sets held flag `0x400`, a busy bit ([the locomotion
+   gate](tasks.md#locomotion-gate)), so `Human_FightStanceMove` (`0x00241b90`) sets no velocity while 334 plays.
+   Confirmed (code) at the addresses; the cause in Coney inferred from its log (the clip column) and its code. Fix:
+   while a spray runs (intro, loop and restart clips, and the stick game) the player's stance and anim-state choice do
+   not run, and 334 holds `0x400`. Test: a player in the fight stance (an enemy 1.5 m away, stick at rest) presses
+   triangle at a spot; 334 then 335 play and the stick game starts.
 3. **Spawned humans carry no money.** The original rolls the [starting money](crimes.md#starting-money) in
    `Human_Init` for every human: `Spawner_MakeHuman` (`0x0016d860`) calls it as `Human_Create` does. Confirmed
    (code). Coney rolls it only in `HuCreate`, so everyone a spawner makes (the street's civilians of

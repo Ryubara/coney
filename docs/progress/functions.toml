@@ -4379,9 +4379,14 @@ size = 664
 
 [[function]]
 address = 0x0021e698
-name = "Human_PlaySpeechInterrupt"
+name = "Human_PlaySpeechCutting"
 subsystem = "Human"
 size = 680
+
+[[function]]
+address = 0x0021e940
+name = "Human_UpdateSpeech"
+subsystem = "Human"
 
 [[function]]
 address = 0x0021ec38
@@ -4532,6 +4537,11 @@ address = 0x00223068
 name = "Human_PowerMax"
 subsystem = "Human"
 size = 288
+
+[[function]]
+address = 0x00223188
+name = "Human_StaminaMax"
+subsystem = "Human"
 
 [[function]]
 address = 0x002235f8
@@ -5797,6 +5807,11 @@ address = 0x00245920
 name = "Human_HandleMessage"
 subsystem = "Human"
 size = 8248
+
+[[function]]
+address = 0x00247a50
+name = "Nav_WalkDistanceTo"
+subsystem = "Human"
 
 [[function]]
 address = 0x00247fc0
@@ -7258,6 +7273,11 @@ subsystem = "Human"
 size = 792
 
 [[function]]
+address = 0x00295250
+name = "Formation_RetargetFollowerMoves"
+subsystem = "Human"
+
+[[function]]
 address = 0x002953c8
 name = "Formation_AssignSlots"
 subsystem = "Human"
@@ -7276,6 +7296,11 @@ subsystem = "Human"
 size = 40
 
 [[function]]
+address = 0x00295e38
+name = "Formation_GetFollowPoint"
+subsystem = "Human"
+
+[[function]]
 address = 0x00295ec8
 name = "Formation_SetSlot"
 subsystem = "Human"
@@ -7292,6 +7317,11 @@ address = 0x00296028
 name = "Formation_Leave"
 subsystem = "Human"
 size = 160
+
+[[function]]
+address = 0x002963b0
+name = "Formation_GetAhead"
+subsystem = "Human"
 
 [[function]]
 address = 0x00299238
@@ -8476,6 +8506,11 @@ subsystem = "Human"
 size = 72
 
 [[function]]
+address = 0x002de540
+name = "FollowPlayerGoal_Resume"
+subsystem = "Human"
+
+[[function]]
 address = 0x002de7c0
 name = "FollowPlayerGoal_Process"
 subsystem = "Human"
@@ -8510,6 +8545,16 @@ address = 0x002dfba8
 name = "Goal_FollowFormation"
 subsystem = "Human"
 size = 136
+
+[[function]]
+address = 0x002dfef8
+name = "FollowFormation_PickSpeed"
+subsystem = "Human"
+
+[[function]]
+address = 0x002e0088
+name = "FollowFormationGoal_Process"
+subsystem = "Human"
 
 [[function]]
 address = 0x002e05a8
@@ -8894,6 +8939,11 @@ address = 0x002fb9e8
 name = "MoveAction_Init"
 subsystem = "Human"
 size = 248
+
+[[function]]
+address = 0x002fbbe8
+name = "MoveAction_SetTarget"
+subsystem = "Human"
 
 [[function]]
 address = 0x002fbd18
@@ -9652,6 +9702,102 @@ subsystem = "Physics"
 size = 1012
 
 [[function]]
+address = 0x003453f8
+name = "PhysicsSweep_SphereBox"
+subsystem = "Physics"
+size = 200
+
+[[function]]
+address = 0x003454c0
+name = "PhysicsSweep_BoxSphere"
+subsystem = "Physics"
+size = 200
+
+[[function]]
+address = 0x00345d58
+name = "PhysicsOverlap_SphereSphere"
+subsystem = "Physics"
+size = 124
+
+[[function]]
+address = 0x00345dd8
+name = "PhysicsOverlap_BoxBox"
+subsystem = "Physics"
+size = 1452
+
+[[function]]
+address = 0x00346388
+name = "PhysicsOverlap_CapsuleCapsule"
+subsystem = "Physics"
+size = 372
+
+[[function]]
+address = 0x00346500
+name = "PhysicsOverlap_SegmentSegment"
+subsystem = "Physics"
+size = 384
+
+[[function]]
+address = 0x00346680
+name = "PhysicsOverlap_BoxSphere"
+subsystem = "Physics"
+size = 388
+
+[[function]]
+address = 0x00346808
+name = "PhysicsOverlap_CapsuleBox"
+subsystem = "Physics"
+size = 1292
+
+[[function]]
+address = 0x00346d18
+name = "PhysicsOverlap_BoxCapsule"
+subsystem = "Physics"
+size = 156
+
+[[function]]
+address = 0x00346db8
+name = "PhysicsOverlap_SphereBox"
+subsystem = "Physics"
+size = 36
+
+[[function]]
+address = 0x00346de0
+name = "PhysicsOverlap_SegmentSphere"
+subsystem = "Physics"
+size = 208
+
+[[function]]
+address = 0x00346eb0
+name = "PhysicsOverlap_SphereSegment"
+subsystem = "Physics"
+size = 36
+
+[[function]]
+address = 0x00346ed8
+name = "PhysicsOverlap_CapsuleSphere"
+subsystem = "Physics"
+size = 184
+
+[[function]]
+address = 0x00346f90
+name = "PhysicsOverlap_SphereCapsule"
+subsystem = "Physics"
+size = 36
+
+[[function]]
+address = 0x00346fb8
+name = "PhysicsOverlap_SegmentCapsule"
+subsystem = "Physics"
+size = 396
+
+[[function]]
+address = 0x00347148
+name = "PhysicsOverlap_CapsuleSegment"
+subsystem = "Physics"
+size = 36
+
+[[function]]
 address = 0x003477c0
 name = "PhysicsBody_PushOutOfWalls"
 subsystem = "Physics"
@@ -9668,6 +9814,84 @@ address = 0x00349a60
 name = "Sweep_SphereCapsule"
 subsystem = "Physics"
 size = 2160
+
+[[function]]
+address = 0x0034a2d0
+name = "CapsuleBox_CornerCircle"
+subsystem = "Physics"
+size = 68
+
+[[function]]
+address = 0x0034a6a0
+name = "CapsuleBox_SideInterval"
+subsystem = "Physics"
+size = 44
+
+[[function]]
+address = 0x0034ac08
+name = "Segment_ClosestParam"
+subsystem = "Physics"
+size = 192
+
+[[function]]
+address = 0x0034acc8
+name = "Segment_ClosestPoint"
+subsystem = "Physics"
+size = 132
+
+[[function]]
+address = 0x0034ad50
+name = "Segment_ClosestPoints"
+subsystem = "Physics"
+size = 508
+
+[[function]]
+address = 0x0034af50
+name = "Ray_SphereRoot"
+subsystem = "Physics"
+size = 136
+
+[[function]]
+address = 0x0034afd8
+name = "Ray_CircleRoot"
+subsystem = "Physics"
+size = 100
+
+[[function]]
+address = 0x0034b040
+name = "SphereBox_SweepCorner"
+subsystem = "Physics"
+size = 884
+
+[[function]]
+address = 0x0034b3b8
+name = "SphereBox_SweepEdge"
+subsystem = "Physics"
+size = 584
+
+[[function]]
+address = 0x0034b600
+name = "SphereBox_SweepEdges"
+subsystem = "Physics"
+size = 432
+
+[[function]]
+address = 0x0034b7b0
+name = "SphereBox_SweepFaceEdges"
+subsystem = "Physics"
+size = 828
+
+[[function]]
+address = 0x0034baf0
+name = "SphereBox_ToBoxSpace"
+subsystem = "Physics"
+size = 248
+
+[[function]]
+address = 0x0034bbe8
+name = "Sweep_SphereOrientedBox"
+subsystem = "Physics"
+size = 2116
 
 [[function]]
 address = 0x0034e3b8

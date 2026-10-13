@@ -290,7 +290,8 @@ bool HumanSoundEvents::sayAnimLine(const script::HumanSoundCall& who, const Huma
     if (!entry || entry->sounds[0] == 0) {
         return false;
     }
-    // Over a line only when asked, and then the line stops first.
+    // Over a line only when asked, and then the line stops first, without force: a line that may not be cut stays and
+    // the start below finds it alive, so the grunt is silent and that line (and its callback) plays on.
     if (m_voices.speaking(who.human)) {
         if (!overLine) {
             return false;

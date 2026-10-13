@@ -9,6 +9,7 @@
 #include "core/error.h"
 #include "debug/debug_session.h"
 #include "platform/imgui_model_view.h"
+#include "platform/imgui_ui_scale.h"
 #include "platform/render_engine.h"
 
 namespace coney::platform {
@@ -60,6 +61,7 @@ class ImGuiOverlay {
     ImGuiOverlay(debug::DebugSession& session, std::string iniPath);
 
     ImGuiModelView m_view;
+    ImGuiUiScale m_scale;
     std::string m_iniPath; // kept alive for ImGui, which holds only the pointer
     bool m_visible = false;
     bool m_sdlStarted = false;     // the SDL3 backend is up and must be shut down

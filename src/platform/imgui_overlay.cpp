@@ -30,7 +30,7 @@ bool isMouseEvent(const SDL_Event& event) {
 } // namespace
 
 ImGuiOverlay::ImGuiOverlay(debug::DebugSession& session, std::string iniPath)
-    : m_view(session.model()), m_iniPath(std::move(iniPath)) {}
+    : m_view(session.model()), m_scale(session.display()), m_iniPath(std::move(iniPath)) {}
 
 std::expected<std::unique_ptr<ImGuiOverlay>, Error>
 ImGuiOverlay::start(RenderEngine& renderer, debug::DebugSession& session, std::string iniPath) {
@@ -47,6 +47,7 @@ ImGuiOverlay::start(RenderEngine& renderer, debug::DebugSession& session, std::s
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     ImGui::StyleColorsDark();
     overlay->m_view.keepOpenPagesInSettings();
+    overlay->m_scale.setup();
     // From here on the destructor undoes whatever started, so an early return cleans up.
     overlay->m_sdlStarted = ImGui_ImplSDL3_InitForOpenGL(static_cast<SDL_Window*>(window), context);
     if (!overlay->m_sdlStarted) {
@@ -56,6 +57,11 @@ ImGuiOverlay::start(RenderEngine& renderer, debug::DebugSession& session, std::s
     overlay->m_glStarted = ImGui_ImplOpenGL3_Init(nullptr);
     if (!overlay->m_glStarted) {
         return fail(ErrorCode::PlatformFailure, "Dear ImGui's OpenGL 3 backend did not start");
+    }
+    // The settings are read now, not at the first frame, so the saved scale choice is known before the first frame is
+    // sized (Dear ImGui does not read them again).
+    if (io.IniFilename != nullptr) {
+        ImGui::LoadIniSettingsFromDisk(io.IniFilename);
     }
     return overlay;
 }
@@ -101,6 +107,10 @@ void ImGuiOverlay::draw() {
     }
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
+    // The display's size is known now (the backend just read the window): size the widgets and the font for it, so a
+    // resized window or a new display is followed from the next frame on.
+    m_scale.update(ImGui::GetIO().DisplaySize.y);
+    m_view.setUiScale(m_scale.scale());
     ImGui::NewFrame();
     m_view.draw(kHideLabel);
     ImGui::Render();

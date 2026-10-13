@@ -7,7 +7,9 @@ with the default branch, when a required check has been queued or running longer
 `hygiene.thresholds.pr_pending_hours`, or when it targets the default branch, is not a draft and has auto-merge
 off. Failing checks that are not required are ignored, a draft is never stuck, and a stacked pull request (base other
 than the default branch) is reported as stacked, never as lacking auto-merge. GitHub answers `UNKNOWN` for mergeability
-while it computes it; that is "not known yet", shown only with `--verbose`. The command only reads GitHub.
+while it computes it; that is "not known yet", shown only with `--verbose`. The report only reads GitHub. `--rerun`
+(see `coney_tools.pr_rerun`) adds the failed required checks that are stale and would be rerun; only `--rerun --apply`
+changes anything, by calling `gh run rerun`.
 """
 
 from __future__ import annotations
@@ -24,9 +26,12 @@ from typing import Any, NamedTuple
 from coney_tools.audit_github import Runner, run_gh
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import Conventions, load_conventions
+from coney_tools.pr_rerun import FailedCheck, PullChecks, Rerun, plan_reruns
 
 #: The JSON fields read from `gh pr list`.
 PULL_FIELDS = "number,title,headRefName,baseRefName,isDraft,mergeable,autoMergeRequest,statusCheckRollup,url"
+#: The fields `--rerun` reads besides those: the head commit, and the description to check against the template.
+RERUN_FIELDS = f"{PULL_FIELDS},headRefOid,body"
 #: More open pull requests than this are not expected; the command says so when it reaches it.
 LIMIT = 200
 
@@ -49,6 +54,11 @@ class CheckState(NamedTuple):
     state: str
     #: When it started (or was queued); None when GitHub gave no time.
     started: datetime | None
+    #: The check run's conclusion in upper case (a status context's state); empty while it has none.
+    conclusion: str = ""
+    #: The check's `detailsUrl` (it holds the run and job ids) and its workflow; empty for a commit status.
+    url: str = ""
+    workflow: str = ""
 
 
 @dataclass(frozen=True)
@@ -115,15 +125,20 @@ class Health:
     notices: list[str] = field(default_factory=list)
     #: How many open pull requests were looked at.
     checked: int = 0
+    #: The reruns planned or done (`--rerun`); None when the option was not given.
+    reruns: list[Rerun] | None = None
 
     def as_json(self) -> dict[str, object]:
-        """The report as the JSON object scripts read."""
-        return {
+        """The report as the JSON object scripts read; `rerun` is there only with `--rerun`."""
+        report: dict[str, object] = {
             "checked": self.checked,
             "stuck": [item.as_json() for item in self.stuck],
             "other": [item.as_json() for item in self.notes],
             "notices": list(self.notices),
         }
+        if self.reruns is not None:
+            report["rerun"] = [item.as_json() for item in self.reruns]
+        return report
 
 
 # --- reading the data ---------------------------------------------------------------------------------------------
@@ -164,7 +179,8 @@ def checks_of(rollup: object) -> list[CheckState]:
             state = "pending"
         stamp = _moment(entry.get("completedAt")) or started or datetime.min.replace(tzinfo=UTC)
         if name not in latest or stamp >= latest[name][0]:
-            latest[name] = (stamp, CheckState(name, state, started))
+            details, workflow = str(entry.get("detailsUrl") or ""), str(entry.get("workflowName") or "")
+            latest[name] = (stamp, CheckState(name, state, started, result, details, workflow))
     return [state for _, state in latest.values()]
 
 
@@ -250,10 +266,15 @@ def judge(
 # --- the command --------------------------------------------------------------------------------------------------
 
 
-def fetch(default_branch: str, run: Runner = run_gh) -> tuple[list[dict[str, Any]], tuple[str, ...]]:
-    """Read the open pull requests and the default branch's required checks; ConfigError when `gh` cannot."""
+def fetch(
+    default_branch: str, run: Runner = run_gh, fields: str = PULL_FIELDS
+) -> tuple[list[dict[str, Any]], tuple[str, ...]]:
+    """Read the open pull requests (`fields` of each) and the default branch's required checks.
+
+    ConfigError when `gh` cannot.
+    """
     try:
-        pulls = json.loads(run(["pr", "list", "--state", "open", "--limit", str(LIMIT), "--json", PULL_FIELDS]))
+        pulls = json.loads(run(["pr", "list", "--state", "open", "--limit", str(LIMIT), "--json", fields]))
         rules = json.loads(run(["api", f"repos/{{owner}}/{{repo}}/rules/branches/{default_branch}"]))
     except (OSError, ValueError) as error:
         raise ConfigError(f"cannot read GitHub with gh ({error}); sign in with `gh auth login`") from error
@@ -262,9 +283,31 @@ def fetch(default_branch: str, run: Runner = run_gh) -> tuple[list[dict[str, Any
     return pulls, required_from_rules(rules)
 
 
+def pull_checks(pull: dict[str, Any], required: Sequence[str]) -> PullChecks:
+    """What `--rerun` needs of one pull request (gh's JSON): its text, head commit and failed checks.
+
+    A draft has none: it is never rerun, as it is never stuck.
+    """
+    failed = tuple(
+        FailedCheck(check.name, check.conclusion, check.url, check.workflow)
+        for check in checks_of(pull.get("statusCheckRollup"))
+        if check.state == "failed" and not pull.get("isDraft")
+    )
+    return PullChecks(
+        number=int(pull["number"]),
+        branch=str(pull.get("headRefName", "")),
+        title=str(pull.get("title") or ""),
+        body=str(pull.get("body") or ""),
+        head=str(pull.get("headRefOid") or ""),
+        required=frozenset(required),
+        failed=failed,
+    )
+
+
 def format_text(health: Health, verbose: bool) -> Iterable[str]:
-    """The report lines: one per cause, then (verbose) the pull requests that were looked at and not called stuck."""
+    """The report lines: one per cause, the reruns, then (verbose) the pull requests not called stuck."""
     yield from (item.line() for item in health.stuck)
+    yield from (item.line() for item in health.reruns or [])
     if verbose:
         yield from (f"{item.line()} (not stuck)" for item in health.notes)
 
@@ -277,7 +320,7 @@ def add_pr_health_parser(repo_commands: argparse._SubParsersAction[argparse.Argu
         description=(
             "Lists the open pull requests that are stuck, one line each: #number branch cause detail -> who acts. "
             "Required checks come from the branch ruleset. Exit code 0 when nothing is stuck, 1 when something is, "
-            "2 when gh or the conventions cannot be read. Reads GitHub only."
+            "2 when gh or the conventions cannot be read. Reads GitHub only, unless --rerun --apply."
         ),
     )
     parser.add_argument("--json", action="store_true", help="print the report as JSON instead of text")
@@ -290,13 +333,25 @@ def add_pr_health_parser(repo_commands: argparse._SubParsersAction[argparse.Argu
     parser.add_argument(
         "--verbose", action="store_true", help="also show drafts, stacked pull requests and unknown mergeability"
     )
+    parser.add_argument(
+        "--rerun",
+        action="store_true",
+        help="also list the failed required checks that are stale (text fixed since, runner lost) and would be rerun",
+    )
+    parser.add_argument(
+        "--apply", action="store_true", help="with --rerun: really rerun them (gh run rerun), not only list them"
+    )
 
 
 def run_pr_health(args: argparse.Namespace, run: Runner = run_gh, now: datetime | None = None) -> int:
     """Run `coney-tools repo pr-health`; 0 when nothing is stuck, 1 when something is."""
     conventions = load_conventions(find_repo_root(Path.cwd()))
-    pulls, required = fetch(conventions.repo.default_branch, run)
+    if args.apply and not args.rerun:
+        raise ConfigError("--apply only goes with --rerun")
+    pulls, required = fetch(conventions.repo.default_branch, run, RERUN_FIELDS if args.rerun else PULL_FIELDS)
     health = judge(pulls, required, conventions, now or datetime.now(UTC), args.pending_hours)
+    if args.rerun:
+        health.reruns = plan_reruns([pull_checks(pull, required) for pull in pulls], conventions, run, args.apply)
     if not required:
         health.notices.append(f"the {conventions.repo.default_branch} ruleset requires no status checks")
     if len(pulls) >= LIMIT:

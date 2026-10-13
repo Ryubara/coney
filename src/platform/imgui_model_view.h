@@ -41,6 +41,10 @@ class ImGuiModelView {
     /// next run. Call once, before the context's first frame; the view must outlive the context.
     void keepOpenPagesInSettings();
 
+    /// Sets the factor the view's own pixel sizes (a new window's size, a plot's height) are multiplied by: the
+    /// overlay's scale (ImGuiUiScale). Widgets inside a window follow the style and the font, which scale themselves.
+    void setUiScale(float scale) { m_uiScale = scale; }
+
     /// Opens or closes the window of the top-level page `title` (Favourites too).
     void setPageOpen(const std::string& title, bool open) { m_open[title] = open; }
     /// Whether the window of `title` is open.
@@ -75,6 +79,7 @@ class ImGuiModelView {
     void drawWatch(const debug::MenuItem& item, const std::string& path);
 
     debug::MenuModel& m_model;
+    float m_uiScale = 1.0F;                                          // the overlay scale (setUiScale())
     std::shared_ptr<debug::MenuPage> m_root;                         // the top-level pages, made on the first draw
     std::map<std::string, bool> m_open;                              // page windows open, by title
     std::map<std::string, std::shared_ptr<debug::MenuPage>> m_pages; // pages made, by path

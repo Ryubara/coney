@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ai/brain.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -653,4 +654,69 @@ TEST_CASE("a human starts with its brain type's flags, and a player handed back 
           (flag::kComboStrength | flag::kGod | flag::kFastClimber | flag::kRevivable));
     CHECK(releasedFlags(kPlayer, BrainType::Cop) == (flag::kComboStrength | flag::kGod | 0x2000U));
     CHECK(releasedFlags(kPlayer, BrainType::Gang) == (flag::kComboStrength | flag::kGod));
+}
+
+TEST_CASE("the brains' variation moves every brain's and the gangs' rolls, the same for the same variation", "[ai]") {
+    Scene scene;
+    Human& human = scene.player();
+    // Three scenes' brains for the same slot seed: the default (variation 0), and two runs of variation 9.
+    coney::ai::Brains plain;
+    coney::ai::Brains varied(9);
+    coney::ai::Brains again(9);
+    CHECK(plain.variation() == 0);
+    CHECK(varied.variation() == 9);
+    Brain& a = plain.add(human, BrainType::Gang, coney::ai::FightSettings{}, 3);
+    Brain& b = varied.add(human, BrainType::Gang, coney::ai::FightSettings{}, 3);
+    Brain& c = again.add(human, BrainType::Gang, coney::ai::FightSettings{}, 3);
+    // Variation 0 keeps the slot seed as it was: the same rolls as a brain made directly with it.
+    Brain direct(human, BrainType::Gang, coney::ai::FightSettings{}, 3);
+    bool brainDiffers = false;
+    bool gangDiffers = false;
+    for (int i = 0; i < 20; ++i) {
+        const int rolled = a.rand100();
+        CHECK(rolled == direct.rand100());
+        const int rolledVaried = b.rand100();
+        CHECK(rolledVaried == c.rand100());
+        brainDiffers = brainDiffers || rolled != rolledVaried;
+        const std::uint32_t gang = varied.gangs().random().next();
+        CHECK(gang == again.gangs().random().next());
+        gangDiffers = gangDiffers || plain.gangs().random().next() != gang;
+    }
+    CHECK(brainDiffers);
+    CHECK(gangDiffers);
+    // Two brains of one scene still roll apart: the variation does not make slot seeds collide.
+    CHECK(coney::ai::variedSeed(3, 9) != coney::ai::variedSeed(4, 9));
+    CHECK(coney::ai::variedSeed(3, 0) == 3U);
+}
+
+TEST_CASE("a player released to the AI takes his class's brain, loses his goals, actions and pad, keeps fighting flags",
+          "[ai][revive]") {
+    namespace flag = coney::human::flag;
+    Scene scene;
+    Brain& player = scene.playerBrain();
+    // The pad's switch, as the play mode gives a player's brain: BrDead turns it.
+    int padCalls = 0;
+    player.setPadControl([&padCalls](bool /*padControlled*/) { ++padCalls; });
+    std::vector<std::string> log;
+    REQUIRE(player.pushGoal(std::make_unique<LoggingGoal>("g", log)));
+    REQUIRE(player.queueAction(std::make_unique<LoggingAction>("a", log)));
+    REQUIRE(player.goalCount() == 1);
+    REQUIRE(scene.player().hasFlag(flag::kRageAllowed));
+
+    // Human_ReleasePlayer as a Warrior: his class's brain type, the goals and actions gone, the released flags.
+    coney::ai::releaseToAi(player, BrainType::Warrior);
+    CHECK(player.type() == BrainType::Warrior);
+    CHECK(player.goalCount() == 0);
+    CHECK(player.actionCount() == 0);
+    CHECK(scene.player().hasFlag(flag::kRevivable));
+    CHECK_FALSE(scene.player().hasFlag(flag::kRageAllowed));
+    // The pad is no longer his: a brain set dead and alive again does not hand it back.
+    player.setDead(true);
+    player.setDead(false);
+    CHECK(padCalls == 0);
+    // He thinks as an AI from now on: an update runs a goal pushed after the release.
+    REQUIRE(player.pushGoal(std::make_unique<LoggingGoal>("h", log)));
+    log.clear();
+    scene.run(5);
+    CHECK(std::ranges::find(log, std::string("h start")) != log.end());
 }

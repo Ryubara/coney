@@ -354,6 +354,12 @@ int main(int argc, char** argv) {
     windowDesc.hidden = options->renderReferences.has_value();
     // Runs started by agents and tools (test mode, --no-activate) must not take the focus from someone typing.
     windowDesc.activate = coney::activatesWindow(*options);
+    // `--window-display` (else CONEY_WINDOW_DISPLAY): agents put their runs on a display nobody works on.
+    // A local copy, as with discPath above; it outlives the start, which keeps a view of it.
+    const std::optional<std::string> windowDisplay = options->windowDisplay;
+    if (windowDisplay) {
+        windowDesc.display = *windowDisplay;
+    }
     // `--render-size`: frames of that size holding exactly the logical screen, as the original's frame buffer does.
     if (const std::optional<coney::RenderSize> size = options->renderSize; size) {
         windowDesc.width = size->width;
@@ -449,6 +455,7 @@ int main(int argc, char** argv) {
     sessionSettings.language = options->language;
     sessionSettings.skipMovies = options->skipMovies;
     sessionSettings.rumble = options->rumble;
+    sessionSettings.aiSeed = options->aiSeed.value_or(0);
     // `--trace-humans`: the file every human of the run is traced to, opened before the first level loads.
     std::shared_ptr<coney::platform::HumansTrace> humansTrace;
     if (const std::optional<std::string> humansTracePath = options->humansTraceFile; humansTracePath) {

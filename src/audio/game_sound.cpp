@@ -214,20 +214,24 @@ bool GameSound::Voices::speaking(double human) const {
 }
 
 void GameSound::Voices::stopLine(double human) {
+    // The vocal ids stop without force: a line that may not be cut (HuSpeakNI's) is left alone.
     if (SoundEngine* engine = m_owner.m_sounds.engine(); engine != nullptr) {
-        m_owner.m_speech.shutUp(*engine, human);
+        m_owner.m_speech.shutUp(*engine, human, false);
     }
 }
 
-bool GameSound::Voices::sayLine(const script::HumanSoundCall& who, std::uint32_t hash, float volume, bool /*cut*/) {
+bool GameSound::Voices::sayLine(const script::HumanSoundCall& who, std::uint32_t hash, float volume, bool cut) {
     SoundEngine* engine = m_owner.m_sounds.engine();
     if (engine == nullptr || scenePlaying()) {
         return false;
     }
-    // A cutting line (HuSpeakNI's kind) is not modelled apart (the human's +0x194): every line may be cut.
+    // The vocal ids that cut (`die`, `expire`) start as HuSpeakNI does; the others wait for a free human.
     const SpeakerPlace at{.position = SoundVec{who.position[0], who.position[1], who.position[2]},
                           .facing = facingOf(who.headingDegrees)};
-    return m_owner.m_speech.say(*engine, who.human, hash, at, true, {}, std::nullopt, volume).valid();
+    return m_owner.m_speech
+        .say(*engine, who.human, hash, at, cut ? Speech::Start::Cutting : Speech::Start::Waiting, {}, std::nullopt,
+             volume)
+        .valid();
 }
 
 bool GameSound::Voices::sayCommand(const script::HumanSoundCall& who, std::uint32_t command, float volume,
@@ -269,6 +273,14 @@ bool GameSound::Voices::mayGesture(const script::HumanSoundCall& who) {
 bool GameSound::Voices::scenePlaying() const {
     const script::BindingContext* context = m_owner.m_context;
     return context != nullptr && context->scenes != nullptr && context->scenes->cinematicActive();
+}
+
+bool GameSound::cinematicPlaying() const {
+    if (m_context != nullptr && m_context->scenes != nullptr && m_context->scenes->cinematicActive()) {
+        return true;
+    }
+    const SoundEngine* engine = m_sounds.engine();
+    return engine != nullptr && engine->cinematic();
 }
 
 // ---- The sound matrix ----
@@ -466,14 +478,16 @@ bool GameSound::speak(const script::SpeechCall& call, std::string_view callback,
     if (!at || engine->tables().find(hash) == nullptr) {
         return false;
     }
-    return m_speech.say(*engine, call.human, hash, *at, call.interrupt, std::string(callback), callbackArg).valid();
+    // HuSpeakNI (`interrupt`) starts cutting, HuSpeak waits.
+    return m_speech
+        .say(*engine, call.human, hash, *at, call.interrupt ? Speech::Start::Cutting : Speech::Start::Waiting,
+             std::string(callback), callbackArg)
+        .valid();
 }
 
-void GameSound::shutUp(double human, bool /*force*/) {
-    // Coney's stand-in: the human's speech-allowed byte (+0x194) that an unforced call checks is not modelled, so every
-    // call stops the line.
+void GameSound::shutUp(double human, bool force) {
     if (SoundEngine* engine = m_sounds.engine(); engine != nullptr) {
-        m_speech.shutUp(*engine, human);
+        m_speech.shutUp(*engine, human, force);
     }
 }
 
@@ -500,13 +514,20 @@ std::optional<double> GameSound::sayCommandAt(const script::CommandCall& call, s
     if (!at || (!call.interrupt && m_speech.speaking(*engine, call.human))) {
         return std::nullopt;
     }
+    // Interrupting stops the line first, without force: a line that may not be cut stays, and below the start finds it.
+    if (call.interrupt) {
+        m_speech.shutUp(*engine, call.human, false);
+    }
     const std::optional<std::uint32_t> line = m_voices.nextLine(
         voiceSet, call.command, [engine](std::int32_t low, std::int32_t high) { return engine->random(low, high); });
     if (!line) {
         return std::nullopt;
     }
-    const SoundHandle sound = m_speech.say(*engine, call.human, *line, *at, call.interrupt, std::string(callback),
-                                           call.human, volume, duckable);
+    // The voice table's counter has moved either way; over a line that may not be cut nothing is said and the caller
+    // runs the command's callback at once.
+    const SoundHandle sound =
+        m_speech.say(*engine, call.human, *line, *at, call.cutting ? Speech::Start::Cutting : Speech::Start::Waiting,
+                     std::string(callback), call.human, volume, duckable);
     if (!sound.valid()) {
         return std::nullopt;
     }
@@ -676,7 +697,11 @@ void GameSound::updateListener() {
     const anim::Vec3 right = anim::normalise(anim::cross(camera::viewForward(view), camera::viewUp(view)));
     m_listener = Listener{.position = soundVec(view.position), .right = soundVec(right)};
     const std::optional<double> player = playerHandle();
-    if (m_listenerMode == 1 && player) {
+    // While a cinematic runs the camera is the scene camera, and both listeners stay on it whatever SndSetListener
+    // chose: Gm_Level_Update skips the player's ear then (docs/research/sound.md#scene-world-sound).
+    // The listener step is at 0x00158d58.
+    // @orig 0x00158728 Mode1::Update (unknown)
+    if (m_listenerMode == 1 && player && !cinematicPlaying()) {
         if (const std::optional<SpeakerPlace> at = locate(*player); at) {
             m_listener.position = SoundVec{at->position.x, at->position.y, at->position.z + kPlayerEarHeight};
         }

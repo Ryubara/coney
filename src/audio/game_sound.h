@@ -196,8 +196,10 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     [[nodiscard]] std::optional<SpeakerPlace> locate(double handle) const;
     // The handle of player 1's human, when the scripts made one.
     [[nodiscard]] std::optional<double> playerHandle() const;
-    // Puts the listener at player 1's camera (and, for listener 1, at the player).
+    // Puts the listener at player 1's camera (and, for listener 1 outside a cinematic, at the player).
     void updateListener();
+    // Whether a cinematic runs (scene state +0x410): the scenes say so, or the stage told the engine.
+    [[nodiscard]] bool cinematicPlaying() const;
     // Runs the ambient emitters with the game's view (AmbientWorld).
     void updateEmitters(SoundEngine& engine);
     // Fades the angry breathing in while the camera frames a fight and out after.

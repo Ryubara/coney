@@ -517,6 +517,11 @@ void PlayLevelMode::stepGameOver(const Pad& pad) {
         return;
     }
     if (!m_gameOver->failed()) {
+        // The check runs over the players; once player 1 is handed to the AI (`--ai-player`) the list is empty and
+        // nothing fails the mission (docs/research/combat.md#defeat, docs/research/characters.md#players).
+        if (m_ai->playerReleased()) {
+            return;
+        }
         const human::Human& human = m_player->human();
         const GameOverPlayer player{.dead = false,
                                     .knockedOut = human.fighter().health().depleted() || human.script().knockedOut,

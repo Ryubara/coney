@@ -54,6 +54,14 @@ def test_the_real_pull_request_rules() -> None:
     assert rules.ai_use.written_by.no_ai == "a person"
 
 
+def test_the_real_review_gate() -> None:
+    review = load_conventions(REPO).pull_requests.review
+    assert review.agent == "pr-reviewer"
+    assert (review.verdict_file, review.report_file) == ("REVIEW.json", "REVIEW.md")
+    assert review.body_hash == "sha256-lf" and review.identical_images == "refused"
+    assert (REPO / ".claude" / "agents" / f"{review.agent}.md").is_file()
+
+
 def test_the_real_merge_settings_follow_the_owners_decisions() -> None:
     merge = load_conventions(REPO).merge
     assert merge.methods == ("squash",) and merge.squash_message == "PR_BODY" and merge.auto_merge
@@ -172,6 +180,13 @@ BAD: list[tuple[str, tuple[tuple[str, object], ...], str]] = [
     ("a docs_none class that does not exist", (("pull_requests.docs_none.when_changed", "tests"),), r"when_changed"),
     ("an unsupported unchecked rule", (("pull_requests.checklist.unchecked", "cited"),), r"checklist\.unchecked"),
     ("a since that is no day", (("pull_requests.checklist.since", "someday"),), r"checklist\.since"),
+    ("an unknown review hash", (("pull_requests.review.body_hash", "md5"),), r"review\.body_hash"),
+    ("an agent name with a path", (("pull_requests.review.agent", "agents/x"),), r"review\.agent"),
+    (
+        "one file for the verdict and the report",
+        (("pull_requests.review.report_file", "REVIEW.json"),),
+        r"review\.report_file",
+    ),
     (
         "a squash message GitHub does not have",
         (("merge.squash_message", "BODY"),),

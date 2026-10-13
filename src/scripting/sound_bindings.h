@@ -48,6 +48,10 @@ struct CommandCall {
     std::uint32_t command = 0; ///< The speech command id, 0-206.
     bool interrupt = true;     ///< Cut off a line the human is saying; false: say nothing while one plays.
     double target = 0.0;       ///< A human the speaker looks at for the line.
+    /// Said as a cutting line (`Human_SayCommand`'s `uncut` 0, a Warrior's order): it cuts a line that may be cut and
+    /// then may not be cut itself. **Coney's stand-in:** a script's `SoundPlayCommand` leaves it false (which `uncut`
+    /// the script's call passes is not traced).
+    bool cutting = false;
 };
 
 /// A human's sound as gameplay hands it to the game's sound (docs/research/sound-events.md): what his update asked for
@@ -193,7 +197,8 @@ class SoundHost {
     /// Makes a human say a line by name, its callback to run when the line ends. False when no line plays (no such
     /// human or sound, or the human is speaking and the call does not interrupt): the caller then runs the callback.
     virtual bool speak(const SpeechCall& call, std::string_view callback, std::optional<double> callbackArg) = 0;
-    /// `HuShutUp(human, force)`: stops the line the human is saying.
+    /// `HuShutUp(human, force)`: stops the line the human is saying; without `force`, not a line that may not be cut
+    /// (a HuSpeakNI line). The line's callback is kept and runs at the next update.
     virtual void shutUp(double human, bool force) = 0;
     /// Makes a human say a speech command; the callback is called with the speaker's handle when the line ends. The
     /// line's handle, or nothing when no line plays (the caller then runs the callback).

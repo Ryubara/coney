@@ -40,7 +40,7 @@ target_sources(coney_platform PRIVATE game_session.cpp)
 # Where the player profiles are kept: the per-user data folder (docs/research/save.md#coney).
 target_sources(coney_platform PRIVATE profile_folder.cpp)
 # The developer overlay over the same menus, with Dear ImGui (docs/guides/debug-menu.md#the-developer-overlay).
-target_sources(coney_platform PRIVATE imgui_model_view.cpp imgui_overlay.cpp)
+target_sources(coney_platform PRIVATE imgui_model_view.cpp imgui_overlay.cpp imgui_ui_scale.cpp)
 coney_target_defaults(coney_platform)
 target_link_libraries(coney_platform PUBLIC coney_core coney_audio coney_movies SDL3::SDL3-static librw::librw imgui)
 target_link_libraries(coney_platform PRIVATE ffmpeg_bink)
@@ -157,6 +157,11 @@ if(DEFINED ENV{CONEY_DISC} AND NOT "$ENV{CONEY_DISC}" STREQUAL "")
                      --input-script "${PROJECT_SOURCE_DIR}/tests/support/play_walk.txt")
     set_tests_properties(coney.freezes_level PROPERTIES TIMEOUT 120 PASS_REGULAR_EXPRESSION
                          "camera: pinned at \\(75.200, 41.100, 1.800\\).*fov 65.0.*world: frozen after frame")
+    # Every check above needs the disc: label them like the disc tests of coney_tests, so `ctest -L disc` runs (or
+    # lists) them all, and `-LE disc` leaves them out.
+    set_tests_properties(coney.reaches_main_menu coney.story_reaches_level99 coney.plays_movies coney.views_character
+                         coney.plays_level coney.exits_cleanly_level95 coney.exits_cleanly_level99 coney.plays_sandbox
+                         coney.freezes_level PROPERTIES LABELS disc)
 endif()
 
 # Coney's own assets (the sandbox's layouts and textures, assets/sandbox) copied beside the executable on every build,
