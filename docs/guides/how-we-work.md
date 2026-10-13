@@ -111,6 +111,12 @@ coordinator, who pushes them when CI has room.
 - **Every description is reviewed before it is pushed** ([below](#pr-review)). The coordinator runs
   `coney-tools repo review <PR.md> --worktree <worktree>` and pushes only when `repo check-review` passes. Any edit to
   the description or its pictures, and any new commit on the branch, makes the verdict stale: review again.
+- **Stale failures restart themselves.** `coney-tools repo pr-health --rerun --apply` (run from the coordinator's
+  watch loop) reruns a required check that failed because the runner or GitHub did (cancelled, never started, timed
+  out, or a log that shows the runner was lost), at most twice per workflow and commit, and never a real lint, build or
+  test failure. For a `title` or `body` check that failed on text fixed since, it reports that the pull request needs a
+  new event (edit the title or description) because a rerun would reuse the old text
+  ([pr-health](coney-tools.md#repo-pr-health)).
 - **A failure CI finds later** (another platform, a check that cannot run locally) goes to the coordinator when it is
   trivial, otherwise to a small fresh agent ([When a pull request fails checks](agents.md#ci-failures)); never back
   to the agent that wrote the unit.
