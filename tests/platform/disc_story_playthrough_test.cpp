@@ -234,8 +234,9 @@ class RouteDriver final : public coney::InputSource {
 // hitpoints) closes the roof from post to post: two-sided, they stop him from either side until one breaks, and a
 // charge (16) breaks one in a hit (docs/research/objects.md#barriers), so he charges through the middle of number 10
 // (y 363.7-366.2; number 6 is beside it at y 366.2-368.6). The run leg before the charge lines him up on y 365, because
-// the charge breaks only the barrier it meets: coming in at y 366.4 it broke number 6, and he then pushed against
-// number 10 while the pursuers caught up.
+// the charge breaks only the barrier it meets. Without it he came in near the line between the two and broke number 6,
+// which held only while he cleared number 10 by about 1 m; after the physics sweep of #434 moved his approach by
+// 0.7 m that margin fell to 0.28 m, he slid into number 10 and pushed against it while the pursuers caught up.
 constexpr std::array kChaseRoute{
     Leg{Move::Run, -212.0F, 363.7F},  Leg{Move::Climb, -205.5F, 363.5F}, Leg{Move::Climb, -200.5F, 363.3F},
     Leg{Move::Run, -163.0F, 363.4F},  Leg{Move::Climb, -157.5F, 362.8F}, Leg{Move::Run, -136.0F, 361.8F},
