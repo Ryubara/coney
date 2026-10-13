@@ -192,9 +192,11 @@ def _pr_review(conventions: Conventions) -> list[str]:
         "`severity` `blocker` or `note`, `where` and `text`)."
     )
     lines += _bullet(
-        "`repo check-review` passes only when the verdict is `pass` with no `blocker` finding, `tip` is the worktree's "
-        "HEAD, `body_sha256` is the description file's hash now and every local image the description shows is "
-        "listed with its hash now; any new commit, edit or replaced picture makes the verdict stale."
+        "`repo check-review` passes only when the description's title (line 1) and body (the rest) pass `repo "
+        "check-title` and `repo check-body` (a local image is allowed, as `gh --attach` uploads it), the verdict is "
+        "`pass` with no `blocker` finding, `tip` is the worktree's HEAD, `body_sha256` is the description file's "
+        "hash now and every local image the description shows is listed with its hash now; any new commit, edit or "
+        "replaced picture makes the verdict stale."
     )
     if review.body_hash == "sha256-lf":
         lines += _bullet(

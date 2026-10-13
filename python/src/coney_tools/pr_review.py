@@ -9,8 +9,9 @@ reviewed and checks it before a push:
 
 * `review-stamp` prints what a verdict must quote: the branch tip, the description's hash and each local image's hash.
   The agent copies them, so it never computes a hash itself.
-* `check-review` passes only when the verdict is `pass` with no blocker and every quoted value is still current, so a
-  new commit, an edit or a replaced picture sends the description back for review.
+* `check-review` passes only when the title and body pass the same checks CI runs (`check_title`, `check_body`) and the
+  verdict is `pass` with no blocker and every quoted value is still current, so a new commit, an edit or a replaced
+  picture sends the description back for review.
 * `review` runs the agent headlessly (`claude -p`) and then `check-review`; the launcher is injected for the tests.
 
 The file names, the agent and the hash rule are `pull_requests.review` in `.github/conventions.yml`.
@@ -19,6 +20,7 @@ The file names, the agent and the hash rule are `pull_requests.review` in `.gith
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import hashlib
 import json
 import re
@@ -31,8 +33,8 @@ from typing import Any
 import yaml
 
 from coney_tools.config import ConfigError, find_repo_root
-from coney_tools.conventions import Review, load_conventions
-from coney_tools.repo_checks import image_targets
+from coney_tools.conventions import Conventions, Review, load_conventions
+from coney_tools.repo_checks import check_body, check_title, image_targets
 
 #: Reads a worktree's HEAD commit: the tip a verdict must quote.
 HeadReader = Callable[[Path], str]
@@ -184,11 +186,38 @@ def _image_problems(stamp_images: list[dict[str, Any]], reviewed: list[dict[str,
     return problems
 
 
-def check_review(pr_file: Path, worktree: Path, rules: Review, head_of: HeadReader | None = None) -> list[str]:
-    """Why the verdict next to `pr_file` does not release the branch in `worktree`; empty when it does.
+def description_problems(description: str, conventions: Conventions) -> list[str]:
+    """What CI's `title` and `body` jobs would refuse in the description file's text, each reason prefixed `title:` or
+    `body:`.
 
-    ReviewError when the description itself cannot be read or the worktree has no HEAD.
+    The file follows the PR.md convention (the title on line 1, the body after it); the coordinator passes them to
+    `gh pr create` as the title and `--body-file`. A local
+    image is accepted where CI wants an uploaded one, because `gh --attach` uploads it when the pull request is opened
+    (a missing or identical picture is the verdict check's business).
     """
+    text = description.removeprefix("﻿").replace("\r\n", "\n").replace("\r", "\n")
+    title, _, body = text.partition("\n")
+    rules = conventions.pull_requests
+    draft_rules = dataclasses.replace(rules, screenshots=dataclasses.replace(rules.screenshots, uploaded_only=False))
+    return [f"title: {problem}" for problem in check_title(title, conventions.commits.title)] + [
+        f"body: {problem}" for problem in check_body(body, draft_rules)
+    ]
+
+
+def check_review(
+    pr_file: Path, worktree: Path, conventions: Conventions, head_of: HeadReader | None = None
+) -> list[str]:
+    """Why `pr_file` does not release the branch in `worktree`; empty when it does.
+
+    Both halves are reported together: the title and body problems CI would find (`description_problems`), then the
+    verdict's. ReviewError when the description itself cannot be read or the worktree has no HEAD.
+    """
+    problems = description_problems(read_description(pr_file), conventions)
+    return problems + _verdict_problems(pr_file, worktree, conventions.pull_requests.review, head_of)
+
+
+def _verdict_problems(pr_file: Path, worktree: Path, rules: Review, head_of: HeadReader | None) -> list[str]:
+    """Why the verdict next to `pr_file` does not release the branch in `worktree`; empty when it does."""
     stamp = make_stamp(pr_file, worktree, head_of)
     verdict_path = pr_file.parent / rules.verdict_file
     if not verdict_path.is_file():
@@ -285,7 +314,7 @@ def run_review(
     worktree: Path,
     base: str,
     root: Path,
-    rules: Review,
+    conventions: Conventions,
     *,
     launch: Launcher | None = None,
     head_of: HeadReader | None = None,
@@ -295,13 +324,18 @@ def run_review(
 ) -> int:
     """Run the reviewer agent of the checkout at `root` on `pr_file`, then check its verdict; 0 when it releases.
 
-    The agent runs in the description's folder (the scratch folder), so whatever it writes lands there. An old verdict
+    A description that fails the title or body checks is refused before the agent starts. The agent runs in the
+    description's folder (the scratch folder), so whatever it writes lands there. An old verdict
     is removed first: a run that fails to write one must not leave an earlier pass behind.
     """
+    rules = conventions.pull_requests.review
     pr_file = pr_file.resolve()
     worktree = worktree.resolve()
     folder = pr_file.parent
-    read_description(pr_file)
+    # A description CI would refuse is not worth a review run: send it back first.
+    early = description_problems(read_description(pr_file), conventions)
+    if early:
+        return _report(early, folder / rules.report_file)
     definition = agent_definition(root / ".claude" / "agents" / f"{rules.agent}.md")
     for name in (rules.verdict_file, rules.report_file):
         (folder / name).unlink(missing_ok=True)
@@ -318,7 +352,7 @@ def run_review(
     if status != 0:
         print(f"review: {claude} exited with {status}", file=sys.stderr)
         return 1
-    return _report(check_review(pr_file, worktree, rules, head_of), folder / rules.report_file)
+    return _report(check_review(pr_file, worktree, conventions, head_of), folder / rules.report_file)
 
 
 def _report(problems: list[str], report: Path) -> int:
@@ -361,7 +395,10 @@ def add_review_parsers(repo_commands: argparse._SubParsersAction[argparse.Argume
     )
     check = repo_commands.add_parser(
         "check-review",
-        help="check that the reviewer's verdict passes and is current (tip, description and images unchanged)",
+        help=(
+            "check the title and body as CI does, and that the reviewer's verdict passes and is current "
+            "(tip, description and images unchanged)"
+        ),
     )
     check.add_argument("pr_file", type=Path, help=pr_help)
     check.add_argument("--worktree", type=Path, required=True, help=wt_help)
@@ -378,16 +415,17 @@ def run_review_command(args: argparse.Namespace) -> int:
         print(json.dumps(make_stamp(args.pr_file, args.worktree), indent=2))
         return 0
     root = find_repo_root(Path.cwd())
-    rules = load_conventions(root).pull_requests.review
+    conventions = load_conventions(root)
+    rules = conventions.pull_requests.review
     if args.command == "check-review":
-        problems = check_review(args.pr_file, args.worktree, rules)
+        problems = check_review(args.pr_file, args.worktree, conventions)
         return _report(problems, args.pr_file.parent / rules.report_file)
     return run_review(
         args.pr_file,
         args.worktree,
         args.base,
         root,
-        rules,
+        conventions,
         launch=lambda command, cwd: launch_claude(command, cwd, args.timeout_minutes),
         claude=args.claude,
         model=args.model,

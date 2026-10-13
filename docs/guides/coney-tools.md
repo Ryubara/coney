@@ -623,10 +623,15 @@ to its folder.
   `--effort` sets the effort level, `--claude` names the executable and `--timeout-minutes` (default 30) stops a run
   that hangs. Exit 0 when the verdict releases the branch, 1 when it does not or `claude` failed, 2 when the review
   cannot run (no description, no agent file, not a worktree).
-* `repo check-review` reads `REVIEW.json` next to `PR.md` and passes only when the verdict is `pass` with no blocker,
-  its `tip` is the worktree's HEAD, its `body_sha256` is `PR.md`'s hash now, and every local image `PR.md` shows is
-  listed with its hash now and differs from every other one. Exit 1 lists each reason (a stale tip, an edited
-  description, a replaced or unreviewed picture, the blockers); 2 when `PR.md` cannot be read.
+* `repo check-review` first runs the checks CI runs on the description: `check-title` on `PR.md`'s line 1 and
+  `check-body` on the rest (`PR.md`'s convention: title on line 1, body after it), except that a local image counts as an
+  upload, since `gh --attach` uploads it when the pull request is opened. Each reason is printed with a `title:` or
+  `body:` prefix, together with the verdict's, so a missing template section is caught before the push. `repo review`
+  runs the same checks before it starts the agent and stops at once when they fail. It then reads `REVIEW.json` next to
+  `PR.md` and passes only when the verdict is `pass` with no blocker, its `tip` is the worktree's HEAD, its
+  `body_sha256` is `PR.md`'s hash now, and every local image `PR.md` shows is listed with its hash now and differs from
+  every other one. Exit 1 lists each reason (a title or body CI would refuse, a stale tip, an edited description, a
+  replaced or unreviewed picture, the blockers); 2 when `PR.md` cannot be read.
 * `repo review-stamp` prints those values as JSON (`tip`, `body_sha256`, `images` with `path` and `sha256`, `null` for a
   missing file). The agent copies them into its verdict, so the hash is computed in one place.
 
