@@ -123,6 +123,12 @@ def no_real_processes(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(stale_processes, "kill_tree", lambda pid: STOPPED.append(pid))
 
 
+@pytest.fixture(autouse=True)
+def roomy_drive(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Unless a test says otherwise there is plenty of room: the machine's real free space decides nothing."""
+    monkeypatch.setattr(shutil, "disk_usage", lambda path: Usage(1000 * 1024**3, 0, 500 * 1024**3))
+
+
 def tip(path: Path) -> str:
     return git(path, "rev-parse", "HEAD")
 
@@ -354,9 +360,9 @@ def test_report_names_free_space_and_folders_that_are_not_worktrees(
 ) -> None:
     space.worktree("done", build=2000)
     (space.worktrees / "stray-folder").mkdir()
-    frees = iter([10 * 1024**3, 12 * 1024**3])  # before and after
+    frees = iter([10 * 1024**3, 12 * 1024**3, 12 * 1024**3])  # before, at the disk-pressure check, after
     monkeypatch.setattr(shutil, "disk_usage", lambda path: Usage(100, 50, next(frees)))
-    run_clean(space.checkout, space.root, True)
+    run_clean(space.checkout, space.root, True, min_gb=0)
     out = capsys.readouterr().out
     assert "Free space: 10.0 GB" in out
     assert "Free space: 10.0 GB -> 12.0 GB" in out

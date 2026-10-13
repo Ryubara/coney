@@ -276,4 +276,16 @@ void SandboxRenderer::render(RenderEngine& engine, const WorldView& view, const 
     engine.present();
 }
 
+void SandboxRenderer::drawGeometry(const RenderEngine& engine) const {
+    if (engine.camera() == nullptr) {
+        return; // NULL backend: nothing to draw
+    }
+    rw::SetRenderState(rw::ZTESTENABLE, 1);
+    rw::SetRenderState(rw::ZWRITEENABLE, 1);
+    rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
+    for (rw::Atomic* atomic : m_atomics) {
+        atomic->render();
+    }
+}
+
 } // namespace coney::platform

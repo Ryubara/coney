@@ -110,8 +110,28 @@ def test_the_ring_reader_keeps_entries_in_order_and_counts_overflow() -> None:
     assert reader.log.lost == 5
 
 
+HOOK = (
+    '[hook.{name}]\naddress = 0x00100000\noriginal = [0x03e00008, 0xac450014]\nlog = ["a0"]\n'
+    'description = "d"\nresearch = "docs/x.md"\n'
+)
+
+
+def test_hooks_are_read_from_every_file_of_a_folder(tmp_path: Path) -> None:
+    (tmp_path / "a.toml").write_text(HOOK.format(name="first"), encoding="utf-8")
+    other = HOOK.format(name="second") + '[patch.p]\nedits = [{ address = 1, bytes = "00" }]\n'
+    (tmp_path / "b.toml").write_text(other, encoding="utf-8")
+    assert list(load_hooks(tmp_path)) == ["first", "second"]
+
+
+def test_a_hook_two_files_declare_is_refused_naming_both(tmp_path: Path) -> None:
+    (tmp_path / "a.toml").write_text(HOOK.format(name="same"), encoding="utf-8")
+    (tmp_path / "b.toml").write_text(HOOK.format(name="same"), encoding="utf-8")
+    with pytest.raises(HookError, match=r"b\.toml: hook same: also declared in .*a\.toml"):
+        load_hooks(tmp_path)
+
+
 def test_the_repository_hooks_build() -> None:
-    known = load_hooks(REPO / "research/traces/patches.toml")
+    known = load_hooks(REPO / "research/traces/patches")
     assert {"tick-game", "humans-update", "state-code", "call-brains"} <= set(known)
     calls = [hook for hook in known.values() if hook.call]
     others = [hook for hook in known.values() if not hook.call]

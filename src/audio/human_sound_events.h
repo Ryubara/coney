@@ -31,7 +31,7 @@ class HumanVoices {
 
     /// Whether `human` is saying a line (`+0x178` alive).
     [[nodiscard]] virtual bool speaking(double human) const = 0;
-    /// Stops the line `human` is saying.
+    /// Stops the line `human` is saying, without force: a line that may not be cut (`+0x194` clear) is left alone.
     virtual void stopLine(double human) = 0;
     /// Plays the sound `hash` as `who`'s speech line at `volume` (cutting: `HuSpeakNI`'s kind); whether it plays.
     /// Nothing plays during a cinematic.

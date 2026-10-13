@@ -100,6 +100,25 @@ right. `--dev-overlay N` shows it for the first N frames and then hides it, to c
 Dear ImGui (MIT licence) is pinned in `cmake/deps.cmake` and used only in `src/platform/`
 ([LEGAL.md](repo:LEGAL.md#licences)).
 
+### Size at any resolution {#ui-scale}
+
+The overlay is drawn at the same physical size on a 1080p, a 1440p and a 4K display. Its *scale* is the window's
+height as Dear ImGui sees it (`DisplaySize.y`: the pixel height on Windows, where Coney is DPI-aware, and the height in
+points on macOS, where the system's scaling is already taken out) over 1080, rounded to a step of an eighth and kept
+between 1x and 4x: 1x at 1080 and below, 2x at 2160, so a 4K window has the overlay at twice the size of a 1080p one and
+not a quarter of it. The scale follows the window as it is resized or moved to another display, from the next frame.
+
+A scale sets every size of Dear ImGui's style (padding, spacing, scrollbars, rounding) and the font size, and makes the
+font again at that size, so the text stays sharp and is not a stretched picture: at 1x the overlay uses Dear ImGui's
+pixel-clean 13 px font, above that its scalable font at 13 px times the scale. The windows that are open are resized
+and moved by the same ratio, so the layout keeps its shape. The settings file (`coney-imgui.ini`) keeps the scale its
+windows were saved at, so a window saved at 1x opens at the right size and place at 2x.
+
+The Display page's *Debug UI scale* overrides the choice: *Auto* (the rule above), or a fixed 1x, 1.25x, 1.5x, 2x,
+2.5x, 3x or 4x, kept in the settings file; *Debug UI scale now* shows the scale in use. The pad menu is not affected
+(it is drawn in the game's own screen space). The rule is `src/debug/ui_scale.h`, the Dear ImGui side
+`src/platform/imgui_ui_scale.h`; both have tests that need no window.
+
 ## The pages {#pages}
 
 | Page | What it has |
@@ -115,12 +134,12 @@ Dear ImGui (MIT licence) is pinned in `cmake/deps.cmake` and used only in `src/p
 | Movies | the disc's [movies](#movies) with what plays each; choose one to watch it full screen with its captions, then carry on where you were |
 | Player | where the player is and how it moves (plotted), his character type and a change of it, freezing him, the [noclip](#noclip) and its hotkey, teleports |
 | Camera | the follow camera's eye, target and distance (plotted), a reset behind the player, the free camera, its values |
-| Spawner | objects put in front of the player in a sandbox: a crate, a fence, a wall, a ramp, stairs, a pillar, a ball |
+| Spawner | objects put in front of the player in a sandbox or a level: a crate, a fence, a wall, a ramp, stairs, a pillar, a ball |
 | AI fighters | AI humans that fight the player: spawn one in front of him, the engaging toggle, their state, clear them |
 | HUD | the [in-game HUD](../research/hud.md)'s parts on and off, player 1's rage, score, money and items set (-1 gives the value back), an objective, a hint and an announcement fired |
 | Debug draw | lines in the scene: collision near the player (plain or by wall class), the player's heading and velocity, the camera, places, every human's collision shapes, strike shapes and contacts |
 | Entity inspector | pick a human or object (nearest, next, looked at, from a list), mark it in the scene and watch everything Coney knows of it |
-| Display | the frame-stats line, the FPS counter, the frame cap and vsync (live), the player's coordinates, the GUI safe area, the logical screen |
+| Display | the frame-stats line, the FPS counter, the frame cap and vsync (live), the player's coordinates, the GUI safe area, the logical screen, the [overlay's size](#ui-scale) |
 | Audio | the output device, the master and bus volumes, a looping test tone, the voices playing (plotted) |
 | Input | port 1 live: buttons held, both sticks (plotted), the raw stick bytes, the triggers' pressure |
 
@@ -218,10 +237,22 @@ Levels), through `debug::PlayControls` (`src/debug/play_controls.h`), which the 
 there is no player. A teleport drops the player onto the ground below the spot and places the camera behind him again.
 Frozen, the player ignores the pad. *Reset behind player* places the follow camera again with the Follow camera
 tunables, so the leash, pitch and look-at height apply at once. The free camera flies with pad 1 as the world viewer's
-does, while the player stands still and the scenery streams round the free camera. The Spawner adds sandbox primitives
-(Coney's own sizes) in front of the player, facing his way, and rebuilds the sandbox with its collision and lighting; a
-level cannot spawn yet. *AI fighters* spawns a fighter ([Sandbox](sandbox.md#ai-fighters)) the chosen distance in front
-of the player, facing him, in a sandbox or a level; *Engaging* off keeps idle fighters from taking him on.
+does, while the player stands still and the scenery streams round the free camera. *AI fighters* spawns a fighter
+([Sandbox](sandbox.md#ai-fighters)) the chosen distance in front of the player, facing him, in a sandbox or a level;
+*Engaging* off keeps idle fighters from taking him on.
+
+**Spawner.** The page adds sandbox primitives (Coney's own sizes) the chosen distance in front of the player, facing his
+way, in a sandbox or a level; *Clear spawned* removes them all. The crate and the wall carry flag bit 7 (climbable by
+anyone) and the fence material 30 (`LOW_FENCE`), as the parkour course's blocks and fences do, so the climbs take them
+([Collision](../research/collision.md#triangles)); the ramp and the stairs are walked up. In a sandbox the page rebuilds
+the sandbox with its collision and lighting. In a level the objects' solid triangles (the same ones a sandbox makes) are
+added to the level's collision mesh after the disc's own, listed in its grid cells after what each cell held, so the
+player, the AI, the climbs, the jumps and the cameras meet them through the queries they use for the level; they are
+drawn among the scenery with the sandbox's baked light and tints. The disc's triangles, their order and their indices
+are untouched, and *Clear spawned* puts the mesh back exactly as it was loaded. A level loaded again (a jump, a
+mission's start) starts with nothing spawned. A script that switches the collision in a box (a door, a barrier) switches
+spawned triangles inside that box too. An AI human only climbs on its route's climb legs, which come from the level's
+path data, so it walks into a spawned obstacle rather than over it, as it does in a sandbox.
 
 **Change character.** *Character type* lists every type the scripts' `CfgChar` calls configure (449 on the disc) when
 the scripts set up the scene (a level's own, the story's, or level99's for a sandbox), each with the model a player
@@ -231,8 +262,10 @@ stands, at full health, with the camera behind him, through the play mode's own 
 animation set and moves (their Anim Range List), the speeds its clips give, and his class, taken as the level's
 starting player takes his. That is the class's damage table scaled by his Warrior class's percentage
 ([Damage](../research/combat.md#damage-table)), and his power class: his Warrior's (58-66) for a Warriors type, else the
-type's own ([Power classes](../research/characters.md#power-classes)), which sets his power meter, hurt threshold,
-stun and down times. The Player page's *Character* line shows both classes. The AI fighters are made again where they
+type's own ([Power classes](../research/characters.md#power-classes)), which sets his power meter, stamina, hurt
+threshold, stun and down times; his health, the type's times his Warrior class's percentage (Cleon's 1800 × 85 % =
+1530); and his Warrior class's rage ([Stats](../research/characters.md#stats)). The Player page's *Character* line
+shows both classes. The AI fighters are made again where they
 stand, at full health, since their brains hold the player they fought; they and the targets keep the scene's
 character. In a level whose scripts hold the player (every story level, the hub included) the brains and the scripts
 hold him by his handle, so he is not made again but becomes the type in place (`human::Player::changeCharacter()`):
@@ -242,9 +275,8 @@ where he was with the camera where it was. The scripts' record of him and his br
 (`tests/platform/disc_level99_change_character_test.cpp`) checks the result against a player made as the type. The
 new character loads from the disc, so that frame stalls briefly.
 
-Not taken from the configuration yet, because Coney does not model them for a player: the health (he keeps 900, the
-player's maximum read at runtime, which the class's 1800 does not explain), the power class's stamina, the Warrior
-class's rage, mashing, theft and mugging stats, the body scale (Rembrandt's 0.97), the speed class (a fallback the
+Not taken from the configuration yet, because Coney does not model them for a player: the Warrior class's cuffing,
+theft and mugging stats, the gym upgrades, the body scale (Rembrandt's 0.97), the speed class (a fallback the
 original does not use in play, [Speed classes](../research/characters.md#speed-classes)), the attack table, attack
 delays and brain type (an AI's, not a pad's), the voice, hat and weapon, and the movement styles that change the anim
 slots.
@@ -340,12 +372,13 @@ He has no collision, no gravity and no falling or landing, so no fall hurts him;
 Switched off, he is dropped from where he stands with the normal physics: on the ground if it is under his feet, else
 he falls to whatever is below. A short notice, *Noclip on* or *Noclip off*, shows under the corner lines for 90 frames.
 
-*Noclip hotkey (R3 + D-pad left)*, off by default, makes **R3 and d-pad left together** (keyboard: **H and the left
-arrow**) switch the noclip in play, whichever is pressed first, once per press. The input gate
-(`src/debug/input_gate.h`) catches the chord before the game: from the moment both are held neither reaches the game
-until it is let go, so the d-pad press neither enters a cheat code nor acts in a fight. (An R3 held first reaches the
-game until the left completes the chord, as a lone R3 always does.) With the option off the chord is ordinary input. It
-does not fire while the menu is open. The flight is `human::Human::setFlight()` with the speeds of
+*Noclip hotkey (R3 + D-pad left)*, on by default (the page's option switches it off), makes **R3 and d-pad left
+together** (keyboard: **H and the left arrow**) switch the noclip in play, whichever is pressed first, once per press.
+The input gate (`src/debug/input_gate.h`) catches the chord before the game: from the moment both are held neither
+reaches the game until it is let go, so the d-pad press neither enters a cheat code nor acts in a fight. (An R3 held
+first reaches the game until the left completes the chord, as a lone R3 always does.) With the option off the chord is
+ordinary input. It does not fire while the menu is open; `tests/platform/disc_level99_noclip_test.cpp` presses it
+through pad 1 in level99. The flight is `human::Human::setFlight()` with the speeds of
 `human::noclipFlight()`, stepped at the fixed 1/30 s like everything else, so a scripted run (`--input-script`) flies
 the same path every time.
 
@@ -361,11 +394,11 @@ The first tunables are the player's and the camera's researched values (`src/deb
 | --- | --- |
 | Movement | stick dead zone (0.12), run threshold (0.95), acceleration (24 m/s², 0.8 m/s an update), turn limit walking, jogging, running and sprinting (20°, 18°, 18°, 16° an update), in a stance (24°), turn ease (2.0 rad) and carry (0.8), lean factor and lean factor walking (0.4, 8) |
 | Body | radius (0.35 × scale), player factor (1.4286: the player's sphere is 0.35 × scale × this × scale, 0.4704 m), foot gap (0.05 m), step height (0.25 m: lower wall faces do not stop a walk), contact clear (0.01 m left between the walking sphere and a wall), air radius (0.5 × scale) |
-| Sprint | stamina maximum (135), drain (20/s), refill (40/s) |
+| Sprint | drain (20/s); the stamina maximum and refill are each human's power class's ([Stats](../research/characters.md#stats)) |
 | Jump | minimum speed (3.3 m/s), up speed (5.5 m/s), climbable check (5.5 m), air turn (4° an update, Coney's choice) |
 | Climb | low and high probe (0.69 m, 1.7 m), reach and running reach (1.5 m, 4.5 m), probe behind (0.4 m), fence top limit (0.25 m), fence ceiling (2.5 m), wall window (1.7-2.91 m), short wall window (0.7-1.7 m) |
 | Follow camera | position lag (0.22), collision margin (0.2 m), closest after collision (0.5 m), auto-centre (on; off is the default rule), one player camera `0x0050b19c` (on), leash near and far (4.8 m, 5.3 m), pitch (13°), look-at height (1.4 m) |
-| Combat | history hold (7 samples), snaps need a target (`CfgSnap`, on), `S1`'s timing (hit 2, window 6 to 15, recovery 17, end 20 updates; the other attacks keep their measured timing), grab search scale (1.25), power endurance (0.25), grab strike cost (0.2, halved for the player), power drain (15/s), rage points cap (25) and factors (1.0, 0.1), rage drain (9.36/s), rage hold (5000 ms), rage decay (7.8/s), the button mash, the mugging and the stereo theft ([Combat](../research/combat.md#coneys-implementation), `src/debug/combat_tunables.cpp`) |
+| Combat | history hold (7 samples), snaps need a target (`CfgSnap`, on), `S1`'s timing (hit 2, window 6 to 15, recovery 17, end 20 updates; the other attacks keep their measured timing), grab search scale (1.25), power endurance (0.25), grab strike cost (0.2, halved for the player), power drain (15/s), rage points cap (25) and factors (1.0, 0.1), rage hold (5000 ms) (the rage's drain and decay are the player's Warrior class's), the button mash, the mugging and the stereo theft ([Combat](../research/combat.md#coneys-implementation), `src/debug/combat_tunables.cpp`) |
 | Display | cutscene letterbox (on: the black bars over cutscenes, as the original draws them; off plays cutscenes full screen) |
 
 The leash, pitch and look-at height apply when the camera is next placed (a level start); the others at the next step.

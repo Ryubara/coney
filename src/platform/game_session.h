@@ -47,6 +47,7 @@ struct GameSessionSettings {
     Language language = Language::English; ///< The legal screen's and the loading screens' language.
     bool skipMovies = false;               ///< `--skip-movies`: every movie ends at once.
     std::optional<RumbleLaunch> rumble;    ///< `--rumble`: the match the Rumble menu starts, whatever it chose.
+    std::uint32_t aiSeed = 0;              ///< `--ai-seed`: how the AI's draws vary (StartUpFlow::setAiSeed()).
     /// The saved profiles' folder (DiskProfileStore); nothing: they last the run, as in test mode.
     std::optional<std::filesystem::path> profiles;
     /// How long the memory-card mode shows its "checking" message (MemoryCardMode::kCheckingMessageMs in the game).

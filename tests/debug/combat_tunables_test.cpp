@@ -12,7 +12,7 @@ using coney::debug::TunableRegistry;
 TEST_CASE("the combat tunables edit the values combat reads, defaulting to the research's", "[debug][combat]") {
     TunableRegistry registry;
     coney::debug::registerCombatTunables(registry);
-    CHECK(registry.inCategory("Combat").size() == 39);
+    CHECK(registry.inCategory("Combat").size() == 37);
     REQUIRE(registry.find("Combat/History hold") != nullptr);
     CHECK(registry.find("Combat/History hold")->defaultValue() == 7.0);
     REQUIRE(registry.find("Combat/Power endurance") != nullptr);
@@ -31,20 +31,18 @@ TEST_CASE("the combat tunables edit the values combat reads, defaulting to the r
     registry.applyPending();
     CHECK(coney::combat::combatTuning().historyHoldSamples == 7);
     CHECK(coney::combat::combatTuning().snapNeedsTarget);
-    CHECK(registry.removeCategory("Combat") == 39);
+    CHECK(registry.removeCategory("Combat") == 37);
 }
 
-TEST_CASE("the combat tunables register beside the game's, as main does, with the rage's new values",
-          "[debug][combat]") {
+TEST_CASE("the combat tunables register beside the game's, as main does, with the rage's hold", "[debug][combat]") {
     TunableRegistry registry;
     coney::debug::registerGameTunables(registry);
     const std::size_t game = registry.size();
     coney::debug::registerCombatTunables(registry);
-    CHECK(registry.size() == game + 39);
-    REQUIRE(registry.find("Combat/Rage drain") != nullptr);
-    CHECK(registry.find("Combat/Rage drain")->defaultValue() == Catch::Approx(9.36));
+    CHECK(registry.size() == game + 37);
+    // The rage's drain and decay are each player's Warrior class's (combat::RageClass), not tunables.
+    CHECK(registry.find("Combat/Rage drain") == nullptr);
     REQUIRE(registry.find("Combat/Rage hold") != nullptr);
     CHECK(registry.find("Combat/Rage hold")->defaultValue() == 5000.0);
-    REQUIRE(registry.find("Combat/Rage decay") != nullptr);
-    CHECK(registry.find("Combat/Rage decay")->defaultValue() == Catch::Approx(7.8));
+    CHECK(registry.find("Combat/Rage decay") == nullptr);
 }

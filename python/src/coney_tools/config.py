@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import subprocess
 import tomllib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 #: Keys of `coney.local.toml` that hold folders. Each may be relative to the repository root, absolute or "".
@@ -16,11 +16,19 @@ PATH_KEYS: tuple[str, ...] = (
     "pcsx2_dir",
     "pcsx2_root",
     "pcsx2_claims_dir",
+    "build_claims_dir",
     "scratch_dir",
     "jdk_home",
     "ghidra_mcp_repo",
     "pcsx2_mcp_dir",
 )
+
+#: Keys of `coney.local.toml` that hold whole numbers, with their defaults (`build_slots`: how many builds run at
+#: once; `build_fast_lane_steps` and `build_fast_lane_tests`: the sizes below which a job uses the fast lane).
+INT_KEYS: dict[str, int] = {"build_slots": 2, "build_fast_lane_steps": 50, "build_fast_lane_tests": 20}
+
+#: The smallest value a number key accepts (default 0): `build_slots` needs a slot, and 0 turns a fast lane off.
+INT_MINIMUM: dict[str, int] = {"build_slots": 1}
 
 LOCAL_FILE = "coney.local.toml"
 EXAMPLE_FILE = "coney.local.example.toml"
@@ -36,6 +44,8 @@ class Config:
 
     #: Every entry of PATH_KEYS; None when the key is missing or "".
     paths: dict[str, Path | None]
+    #: Every entry of INT_KEYS, the default where the file does not set it.
+    numbers: dict[str, int] = field(default_factory=lambda: dict(INT_KEYS))
 
 
 def find_repo_root(start: Path) -> Path:
@@ -99,9 +109,10 @@ def load_config(root: Path) -> Config:
     except (tomllib.TOMLDecodeError, UnicodeDecodeError, OSError) as error:
         raise ConfigError(f"{path}: {error}") from error
 
-    unknown = sorted(set(data) - set(PATH_KEYS))
+    unknown = sorted(set(data) - set(PATH_KEYS) - set(INT_KEYS))
     if unknown:
-        raise ConfigError(f"{path}: unknown key(s) {', '.join(unknown)}; known keys are {', '.join(PATH_KEYS)}")
+        known = ", ".join((*PATH_KEYS, *INT_KEYS))
+        raise ConfigError(f"{path}: unknown key(s) {', '.join(unknown)}; known keys are {known}")
 
     paths: dict[str, Path | None] = {}
     for key in PATH_KEYS:
@@ -109,4 +120,11 @@ def load_config(root: Path) -> Config:
         if not isinstance(value, str):
             raise ConfigError(f"{path}: {key} must be a string, got {type(value).__name__}")
         paths[key] = (root / value).resolve() if value else None
-    return Config(paths=paths)
+    numbers = dict(INT_KEYS)
+    for key in INT_KEYS:
+        value = data.get(key, INT_KEYS[key])
+        least = INT_MINIMUM.get(key, 0)
+        if isinstance(value, bool) or not isinstance(value, int) or value < least:
+            raise ConfigError(f"{path}: {key} must be a whole number of at least {least}, got {value!r}")
+        numbers[key] = value
+    return Config(paths=paths, numbers=numbers)

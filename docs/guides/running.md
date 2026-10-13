@@ -29,7 +29,7 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
       [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps] [--tunables FILE]
       [--no-audio | --audio-test]
       [--skip-movies] [--rumble TYPE [--arena N] [--gang-size N]]
-      [--profiles DIR] [--dev-overlay N] [--no-activate] [--event-log FILE] [--pad-pipe]
+      [--profiles DIR] [--dev-overlay N] [--no-activate] [--window-display DISPLAY] [--event-log FILE] [--pad-pipe]
 ```
 
 Coney draws with librw's OpenGL 3 renderer (an OpenGL 3.3 core context through SDL3; librw falls back to 2.1 or OpenGL
@@ -54,6 +54,40 @@ The STORY profiles are saved as one file each (`profile-1.sav` to `profile-6.sav
 (`%APPDATA%\Coney\Coney\` on Windows, `~/.local/share/Coney/Coney/` on Linux, `~/Library/Application
 Support/Coney/Coney/` on macOS); `--profiles DIR` names another folder. A test-mode run without `--profiles` keeps
 its profiles in memory, so tests never touch yours ([Profiles and saving](../research/save.md#coney)).
+
+### Which display the window opens on {#window-display}
+
+`--window-display DISPLAY`, or the environment variable `CONEY_WINDOW_DISPLAY` when the option is not given, opens the
+window centred on one display. It is debug tooling, there so that agents' runs stay off the display a person is
+working on ([Running Coney](research-workflow.md#running-coney)). The value is one of:
+
+| Value | Display |
+| --- | --- |
+| `1`, `2`, ... | That display in SDL's list, counted from 1. On Windows the primary display is 1 and the others follow in Windows' own order, which need not match the numbers in Windows' display settings |
+| `portrait` (any case) | The first display taller than wide |
+| any other text | The first display whose name holds it, case ignored: SDL's name for it, on Windows the monitor's model (`DELL U2724D`) |
+
+The window keeps its size when it fits the display's usable area (the display less its taskbar or menu bar, and less
+the window's own borders) and is otherwise shrunk to the largest size of the same shape that fits, so a 1920 × 1080
+window on a 1080 × 1920 display opens 1080 wide; frames then have the window's new size. An empty value, or neither
+the option nor the variable, leaves the window where SDL puts it (on the primary display). A value that matches no
+display prints one warning on stderr, listing the displays there are with their numbers, names and sizes, and the
+window opens where SDL puts it.
+
+Whenever a value is set (even one that matches no display), the window also opens without taking the keyboard focus,
+as with `--no-activate`, and SDL keeps it from taking the focus when it is shown or raised later: a run placed on a
+display of its own is one an agent or a tool started, and the person typing elsewhere keeps their keystrokes.
+
+librw makes and shows the window itself inside its start-up, so Coney cannot create it in the right place; it moves
+the window the moment SDL reports it shown, before its OpenGL context exists or a frame is drawn
+(`RenderEngine::start`, `repo:src/platform/render_engine.cpp`; the choosing and fitting are
+`repo:src/core/window_display.h`). A hidden window (`--render-references`) is moved too. Moving a window to a display
+with another scale makes Windows resize it on the way (640 × 448 made on a 150 % display came out 646 × 465 on a
+100 % one, letterboxing every frame and capture), so Coney sets the size again once the window has arrived; the
+`coney.frame_copies_upright` check opens its window on every display in turn and fails when a frame is not the size
+it asked for. The same variable places the
+windows of PCSX2 copies that `coney-tools pcsx2 launch` and `pcsx2 record` start
+([Driving PCSX2](research-workflow.md#driving-pcsx2)).
 
 ### Frame rate {#frame-rate}
 
@@ -504,6 +538,29 @@ and the rows of every level loaded go into it, numbered by step from the first r
 
 ```sh
 build/dev/src/platform/coney --disc /path/to/warriors.iso --skip-movies --headless --frames 6000 --rumble warparty --arena 102 --gang-size 5 --input-script ../../scratch/rumble_menu.txt --trace-humans ../../scratch/fight.csv
+```
+
+Two options make Coney's run match the analysts' recordings of the original, where every fighter is AI-driven and each
+recording draws different random numbers:
+
+- `--ai-player` (with `--rumble`) hands player 1 to the AI when the countdown ends, once the arena script's
+  `FinishCountdown` and the rules' `StartIt` have run: the brain his class gives takes him over, his goals and actions
+  are cleared and the pad drives no one, as the original's `Human_ReleasePlayer` (`0x0022a2a8`) does to the human it
+  takes the pad from ([Rumble: Coney](../research/rumble.md#coney)). The log says `player: player 1 (human N) handed
+  to the AI`; his trace rows then have `player` -1 and his class's `btype`. The pad does nothing for the rest of the
+  match, and the scripts' hand-over to a team-mate no longer happens, since nobody is a player; nor does the
+  game-over check fail the match when he is beaten.
+- `--ai-seed N` (with `--rumble` or `--play-level`, 0 to 2147483647) varies the AI's random draws: the game's random
+  stream starts N draws in (as each recording of the original starts its index at `0x006eb880` somewhere else), and
+  every brain's and gang's own generator is seeded from N. The same N plays the same run; 0, the default, is the
+  usual run.
+
+The gang-fight scenario, a 9-a-side Brawl in the Fight Pen (the Furies against the Orphans) played out by the
+AI, once per seed (`rumble_menu.txt` drives QUICK RUMBLE and the intro's prompt, as `kQuickRumbleScript` in
+`repo:tests/support/disc_play_fixtures.h` does):
+
+```sh
+build/dev/src/platform/coney --disc /path/to/warriors.iso --skip-movies --headless --frames 12000 --rumble 1 --arena 102 --gang-size 9 --ai-player --ai-seed 3 --input-script ../../scratch/rumble_menu.txt --trace-humans ../../scratch/fight_seed3.csv
 ```
 
 The columns, positions in metres (game axes), angles in degrees, speeds in m/s; those marked (O) are also written by

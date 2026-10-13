@@ -15,7 +15,9 @@ rules are in the repository, not here, and they override any brief:
    read decompiler output or disassembly and never open Ghidra or PCSX2; when a page is silent, use a marked stand-in
    and ask a question through the coordinator ([Stand-ins](../../docs/guides/testing.md#stand-ins)).
 3. Tests come first, and the work is done when `docs/guides/testing.md#done` says so; run the
-   [local gate](../../docs/guides/testing.md#local-gate) before reporting.
+   [local gate](../../docs/guides/testing.md#local-gate) before reporting. Build and test only through
+   `uv run --project python coney-tools build --agent <id> --preset dev --test`, never `cmake --build`, `ctest` or
+   `ninja` directly ([`build`](../../docs/guides/coney-tools.md#build)).
 4. No game data in the repository, ever (`LEGAL.md`).
 
 Report what your brief asks for and what `docs/guides/how-we-work.md#agent-conduct` lists.
