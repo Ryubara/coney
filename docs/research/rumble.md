@@ -502,8 +502,8 @@ stands.
   state `0x10000` and crawls (`ANIM_WOUNDED_IDLE`, 200, then `ANIM_WOUNDED_HIT_REACT_DIE`, 204). Both count as out
   for the brawl, and so does the dying state before them (`0x80000000`, from the lethal hit). A knocked-out fighter is
   **deleted 461 updates** (15.4 s) after it lies down (four of four checked in offset 0's match): 420 knocked out, then
-  41 dead ([Combat: the knocked-out bit](combat.md#knocked-out-bit)). At `RumbleOver` the standing fighters of the winning side but the winner are deleted 25 updates
-  after the brains go off (offset 0), as `CreateWinCam` does.
+  41 dead ([Combat: the knocked-out bit](combat.md#knocked-out-bit)). At `RumbleOver` the standing fighters of the
+  winning side but the winner are deleted 25 updates after the brains go off (offset 0), as `CreateWinCam` does.
 
 ### The sides swapped {#gang-battle-swap}
 
