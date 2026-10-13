@@ -21,8 +21,8 @@ so a fresh clone gets the same setup as the maintainer's machine:
 | `.mcp.json` | The debugging servers: `ghidra-mcp` (the shared Ghidra project) and `pcsx2` (the emulator over PINE) | Claude Code; other tools take the same two commands in their own MCP config |
 | `.claude/agents/` | The roles: `analyst`, `implementer`, `reviewer`, `research-reviewer`, `pr-reviewer` | Claude Code |
 | `.claude/skills/` | The coordinator's skills: `repo-hygiene` ([the skill](repo-conventions.md#hygiene-skill)) | Claude Code |
-| `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and `coney-tools build` allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)), and `gh` commands naming a video file, which only `coney-tools clips publish` uploads ([Clips](testing.md#clips)); hooks that refuse a raw `cmake --build`, `ctest` or `ninja` ([Builds and tests](#builds)), a wait loop with no bound ([Bounded waits](#bounded-waits)) and a raw `gh` command that writes an issue (`.claude/hooks/issue_guard.py`, [Filing an issue](issues.md#filing)) | Claude Code |
-| `.claude/hooks/` | The hook scripts `settings.json` runs before a shell command | Claude Code |
+| `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and `coney-tools build` allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)), and `gh` commands naming a video file, which only `coney-tools clips publish` uploads ([Clips](testing.md#clips)); hooks that refuse a raw `cmake --build`, `ctest` or `ninja` ([Builds and tests](#builds)), a wait loop with no bound ([Bounded waits](#bounded-waits)) and a raw `gh` command that writes an issue (`.claude/hooks/issue_guard.py`, [Filing an issue](issues.md#filing)) and, after a `git commit`, a `Co-Authored-By` trailer that names another model than the agent runs on (`.claude/hooks/trailer_guard.py`, [Commit trailers](#trailer-guard)) | Claude Code |
+| `.claude/hooks/` | The hook scripts `settings.json` runs before and after a shell command | Claude Code |
 
 **The servers.** `.mcp.json` holds no paths. Each entry runs `coney-tools mcp serve <name>`, which finds the server
 through `coney.local.toml` (`ghidra_mcp_repo` and `pcsx2_mcp_dir`, see [Local workspace](workspace.md)) and runs it
@@ -157,6 +157,25 @@ instead of repeating it:
 A brief may be just "issue #N": the issue holds the steps, the screenshots and the acceptance test, and the agent
 reads it as [Issues](issues.md#agents) describes. Naming the number is cheaper than pasting the issue, and the
 issue stays the one place to read it.
+
+## Commit trailers {#trailer-guard}
+
+An agent's commits end with `Co-Authored-By: <the model it runs on> <noreply@anthropic.com>`
+([AGENTS.md](repo:AGENTS.md)). The coordinator's session gets a system reminder naming the coordinator's own model for
+that line, and subagents see it too and copy it: on 2026-10-13 a Sonnet agent twice credited Opus, the pull request's
+Model line followed the wrong trailer, and `coney-tools repo check-body` passed because body and trailers agreed with
+each other. A hook (`.claude/hooks/trailer_guard.py`, registered in `.claude/settings.json` for `PostToolUse` on Bash
+and PowerShell commands that start `git commit` or `git -C ... commit`, and `git -c ... commit` on Bash) now checks
+every commit once it exists. Claude Code gives a hook no model, but it does give the main session's `transcript_path`
+and, inside a subagent, an `agent_id`; that agent's own transcript (`<session>/subagents/agent-<id>.jsonl`, [Checking
+a run](#check)) names the model on every assistant entry (`claude-sonnet-5-5`), and the hook derives the trailer's
+name from it (`Claude Sonnet 5.5`) instead of keeping a table. A trailer with the vendor's address that names a
+different model exits 2, and the agent sees the reason and amends the commit with the one trailer it should have. A
+commit that printed nothing (`git commit -q`) is judged from the HEAD of the working directory and of the directories
+the command names, if it was made in the last two minutes. Other command shapes are not checked: `git --no-pager
+commit`, `git --git-dir=... commit`, `git.exe commit` and a full path to git. The hook fails open when it cannot tell
+(no transcript, an id that is not a Claude model, no trailer, another vendor, a commit it cannot find), and a person
+committing outside Claude Code never runs it.
 
 ## Running without losing the cache {#cache}
 
