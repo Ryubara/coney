@@ -1938,7 +1938,7 @@ default mode.
   (`0x16f`, a long flat bar, 37 × 6 texels) for every fifth, blue, all rotated **3.3 rad** (about 189°, so tilted
   about 9° off their art). Size (an overlay height; the width follows from the rectangle's aspect): 0.04 × 1.2 =
   **0.048** for a stroke, 0.017 × 1.2 = **0.0204** for a crossing bar (`0x0050d5c0`, `0x0050d5c4` × `0x0050d604`).
-- **Where mark *i* goes** (0-based, *i* < the living count), in GUI units, `NumIndicator_Update` (`0x001b67b8`) with
+- **Where mark *i* goes** (0-based, *i* < the standing count), in GUI units, `NumIndicator_Update` (`0x001b67b8`) with
   the default mode's layout (`NumIndicator_ApplyLayout`, `0x001b6168`: origin (0.09, 0.94) `0x0050d5f0`/`0x0050d5f8`,
   header shift 0.08 `0x0050d600`):
 
@@ -1959,7 +1959,7 @@ default mode.
   is the one seen**: the header at the first mark's no-header place plus (0.065, −0.1) = **(0.06, 0.944)**, size
   0.04 × 1.2 = 0.048 (`0x0050d608` × `0x0050d604`), and the marks from x 0.125. German moves the origin 0.05 right
   and the header shift to 0.15. Confirmed (code).
-- Only nine mark sprites exist (`+0x340`), but the loop lays out as many as the gang has living members; a tenth
+- Only nine mark sprites exist (`+0x340`), but the loop lays out as many as the gang has standing members; a tenth
   would be the second crossing bar at x −0.05 + origin (back over the first group) and would write past the sprites
   (inferred; the Rumble gangs that use it are not checked for size).
 - **Who calls it** (disc scan of the compiled scripts): only Rumble, `brawl.lua` and `royal.lua`, each in two branches
@@ -2008,7 +2008,7 @@ not watched in PCSX2).
 
 #### The panel's tally (players 0 and 1) {#panel-tally}
 
-`PlayerHUD_LayoutTallyMarks(panel, shifted)` (`0x00213e68`) lays out mark *i* (0-based, *i* < the living count
+`PlayerHUD_LayoutTallyMarks(panel, shifted)` (`0x00213e68`) lays out mark *i* (0-based, *i* < the standing count
 `+0x413c`) from the panel table `T` = `0x0050fa40` + layout × `0x240` (the table of [the panel
 layout](#the-player-panel-layout-0x0050fa10)). Values read from the executable (the default mode; other modes
 rewrite the table, `0x00211ef8`); confirmed (code) at `0x00213e68`, `0x00213770`, `0x00214138`:
