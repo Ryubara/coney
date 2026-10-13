@@ -145,7 +145,7 @@ int ScoutTactic::update(Gang& gang) {
             if (canAct(*member) && member->findGoal(kMeleeGoal) == nullptr &&
                 member->findGoal(GoalType::CallGang) == nullptr &&
                 std::ranges::any_of(member->enemies(), [](const Brain* e) { return Brain::fightable(*e); })) {
-                giveMelee(*member, gang.owner());
+                giveMelee(*member);
             }
         }
     }
@@ -182,7 +182,7 @@ bool ScoutTactic::event(Gang& gang, Brain& member, const BrainEvent& event) {
     // 4. He fights, then may run to call the gang.
     member.addEnemy(*who);
     member.setTarget(who);
-    giveMelee(member, gang.owner());
+    giveMelee(member);
     maybeCall(member, *who);
     return true;
 }

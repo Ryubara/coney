@@ -44,9 +44,9 @@ class Tactic {
     /// Its Lua callback (`+0x0c`).
     [[nodiscard]] const std::string& callback() const { return m_callback; }
 
-    /// One gang update (`Tactic_Process`): starts it on the first (Tactic_Start: the time limit made absolute, every
-    /// AI member's goal base marked and his target dropped, then start()); past the time limit 2; else what update()
-    /// returns.
+    /// One gang update (`Tactic_Process`): starts it on the first (Tactic_Start: the time limit made absolute, the gang
+    /// put on alert (Gang::setAlertState(), fighting) when alertsGang(), every AI member's goal base marked and his
+    /// target dropped, then start()); past the time limit 2; else what update() returns.
     /// @orig 0x003067d8 Tactic_Process (unknown)
     /// @orig 0x00306690 Tactic_Start (unknown)
     int process(Gang& gang);

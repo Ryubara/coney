@@ -4,10 +4,13 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "ai/brain.h"
@@ -44,6 +47,38 @@ inline constexpr int kGangMessageHeadcount = 2;
 /// A member left (value 0) or joined (value 1) the gang (event `0x16`, from `Gang_RemoveMember` and `Gang_AddMember`).
 inline constexpr int kGangMessageMembers = 0x16;
 inline constexpr int kGangMessageArrest = 0x11;
+/// The event on which a tactic gives its members their goals again (`0x13`; the attack tactic's Melee).
+inline constexpr int kGangMessageRegive = 0x13;
+
+/// The gang's alert states (`+0x32`): calm, and fighting (docs/research/ai-reimpl.md#alert-state).
+inline constexpr int kGangCalm = 0;
+inline constexpr int kGangFighting = 1;
+/// The clip groups of the gang's clip table (`+0x1b0`) the attack tactic and the alert state fill: the cower clips,
+/// the combat fidgets, the advancing taunts (`taunt*_adv`), the taunts (`gen_tnt_*`) and the cheers (`gen_tnt_cheer*`).
+inline constexpr int kCowerClips = 0x29c;
+inline constexpr int kCombatFidgetClips = 0x25b;
+inline constexpr int kTauntAdvanceClips = 0x253;
+inline constexpr int kTauntClips = 0x257;
+inline constexpr int kCheerClips = 0x256;
+/// The gang kinds the alert state special-cases: 5 takes no clips, `0x18` no combat fidgets (and kPoliceLikeKind no
+/// taunts); and the kind whose team-ups (GangOrders::attackStrategies) take the two cower clips.
+inline constexpr int kNoAlertClipsKind = 5;
+inline constexpr int kNoFidgetsKind = 0x18;
+inline constexpr int kTeamUpCowerKind = 6;
+/// The class role (`CharClass` `+0x11b`) a beaten gang sends running.
+inline constexpr int kFleeRole = 11;
+
+/// What the gangs read from the level's configuration, each empty (null) for none.
+struct GangLookups {
+    /// A member's class role (`CharClass` `+0x11b`, the `CfgChar` category); nothing when not known.
+    std::function<std::optional<int>(const Brain&)> role;
+    /// A gang kind's flee share (`CfgGang` v9, `GangConfig_GetField72`), percent of its count; 0 never flees.
+    std::function<int(int kind)> fleeShare;
+};
+
+/// Whether `brain`'s human is down or dead (`Human_IsDownOrDead`). **Coney's reading**: out of health, or on the
+/// ground (the down and dead state flags are not traced).
+[[nodiscard]] bool downOrDead(const Brain& brain);
 
 /// A gang's turf holds at most this many volume boxes (`+0x15c`, count `+0x17c`).
 inline constexpr std::size_t kTurfBoxes = 8;
@@ -53,7 +88,8 @@ struct GangOrders {
     double leader = 0;                     ///< `+0x44`: the leader's handle (`GangSetLeader`); 0 for none.
     std::array<double, kTurfBoxes> turf{}; ///< `+0x15c`: the turf's volume boxes; 0 for an empty slot.
     int respondPercent = 0;                ///< `+0xd7`: members that may help at once, percent.
-    bool attackStrategies = false;         ///< `+0xd9`: the coordinated attacks (not built in Coney).
+    /// `+0xd9`: the team-ups (not built in Coney; the attack tactic's cower clips and flight read it).
+    bool attackStrategies = false;
     /// `GangExitWorld`: the members are leaving; the callback runs once the last has gone, and the gang is then
     /// deleted unless `keepWhenEmpty`.
     bool exiting = false;
@@ -117,6 +153,31 @@ class Gang {
     /// @orig 0x00165b70 Gang_SetSharedTarget (unknown)
     void setSharedTarget(Brain* target);
 
+    /// The alert state (`+0x32`): kGangCalm when made.
+    [[nodiscard]] int alertState() const { return m_alertState; }
+    /// `Gang_SetAlertState`: nothing unless `state` differs from the alert state. Fighting (kGangFighting) installs the
+    /// combat fidgets and the fight taunts (each unless the kind leaves them out; none for kind 5) and clears every AI
+    /// member's turf limit (Brain::setKeepsToTurf()); calm removes the same groups and sets the limit; any other state
+    /// changes no clip and sets the limit. **Coney stand-in**: the music mood the fighting state updates is not built.
+    /// Research: docs/research/ai-reimpl.md#alert-state
+    /// @orig 0x00164a28 Gang_SetAlertState (unknown)
+    void setAlertState(int state);
+    /// How many clips group `group` of the gang's clip table (`+0x1b0`) holds; 0 when it is not installed. **Coney
+    /// stand-in**: only the counts are kept; the clips' names are not all on the page, and nothing plays them yet.
+    [[nodiscard]] int clipGroup(int group) const;
+    /// Installs `clips` clips as group `group`, in place of what it held.
+    void setClipGroup(int group, int clips);
+    /// Releases group `group` (`GangClips_ReleaseGroup`); nothing when it is not installed.
+    void releaseClipGroup(int group);
+
+    /// Whether the gang may flee once beaten (`+0xdf`, `GangCanFlee`): true when made, as after the original's reset.
+    [[nodiscard]] bool canFlee() const { return m_canFlee; }
+    /// @orig 0x0016bcf0 Gang_SetCanFlee (unknown)
+    void setCanFlee(bool on) { m_canFlee = on; }
+    /// The living count the attack tactic's start noted for its flight (`+0xe0`); −1 until then.
+    [[nodiscard]] int fleeCount() const { return m_fleeCount; }
+    void setFleeCount(int count) { m_fleeCount = count; }
+
     /// `member`'s event, before its brain has it (`Gang_OnEvent`): while scripts run, the message handler for the
     /// event's id is called: for 18 with (member, other, standing()), for 2 with (member, other, the headcount), for
     /// `0x11` with (member, other, the event's value), none of which uses the event; for any other id with (member,
@@ -134,6 +195,15 @@ class Gang {
     // The tactic's update (`Tactic_Process`, from the gang's update `0x00166708`), its callback fired on a non-zero
     // result. The tactic must be set.
     void processTactic();
+    // The fighting state's clip groups, and their removal when calm. Research: docs/research/ai-reimpl.md#alert-state
+    // @orig 0x001694b8 Gang_AddCombatFidgetClips (unknown)
+    void addCombatFidgetClips();
+    // @orig 0x001694e8 Gang_RemoveCombatFidgetClips (unknown)
+    void removeCombatFidgetClips();
+    // @orig 0x00169508 Gang_AddFightTauntClips (unknown)
+    void addFightTauntClips();
+    // @orig 0x00169570 Gang_RemoveFightTauntClips (unknown)
+    void removeFightTauntClips();
 
     Gangs* m_owner = nullptr;
     int m_id = -1;
@@ -151,6 +221,10 @@ class Gang {
     std::uint32_t m_tacticsSet = 0; // tactics set so far
     std::map<int, std::string> m_handlers;
     GangOrders m_orders;
+    std::map<int, int> m_clipGroups; // +0x1b0: group → clips installed
+    int m_alertState = kGangCalm;    // +0x32
+    int m_fleeCount = -1;            // +0xe0
+    bool m_canFlee = true;           // +0xdf
 };
 
 /// The gangs of a level, by id.
@@ -167,6 +241,12 @@ class Gangs {
     /// The script services the message handlers and tactics call through (null for none: no handler is called).
     void setScripts(ScriptServices* scripts) { m_scripts = scripts; }
     [[nodiscard]] ScriptServices* scripts() const { return m_scripts; }
+    /// What the gangs read from the level's configuration.
+    void setLookups(GangLookups lookups) { m_lookups = std::move(lookups); }
+    /// `brain`'s class role; nothing when not known.
+    [[nodiscard]] std::optional<int> roleOf(const Brain& brain) const;
+    /// Gang kind `kind`'s flee share, percent; 0 when not known.
+    [[nodiscard]] int fleeShare(int kind) const;
 
     /// `GangCreate(kind, name)`: takes the first free slot for a gang of `kind` named `name`. Returns its id, or -1
     /// when the name is in use or every slot is taken.
@@ -281,6 +361,7 @@ class Gangs {
     std::array<Gang, kGangSlots> m_gangs{};
     std::vector<std::unique_ptr<Tactic>> m_retired; // tactics replaced, freed by the next update
     ScriptServices* m_scripts = nullptr;
+    GangLookups m_lookups;
     std::uint64_t m_nowMs = 0;
     combat::CombatRandom m_random;
     ScanSchedule m_scans;

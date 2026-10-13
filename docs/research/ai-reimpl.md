@@ -110,9 +110,10 @@ lock-on (`ScriptedStory::startWarriorCommand`). Tests: `repo:tests/ai/threats_te
 
 ## Unit 2: TacticAttack in full, without team-ups {#unit-2}
 
-Gang-fight needs 2, 3, 9 and 10. Today `repo:src/ai/tactic_attack.h` gives members a stand-in melee goal on the
-nearest gang enemy; this unit gives them the real Melee goal (`repo:src/ai/melee_goal.h`, already built), the
-idle pass toward the farthest busy mate, the violence event, flight and the gang's alert state.
+Gang-fight needs 2, 3, 9 and 10. Before this unit `repo:src/ai/tactic_attack.h` gave members a stand-in melee goal
+on the nearest gang enemy; the unit gives them the real Melee goal (`repo:src/ai/melee_goal.h`), the idle pass
+toward the farthest busy mate, the violence event, flight and the gang's alert state (Coney status at the end of
+this section).
 
 **The record** (`AttackTactic_Construct` `0x003075c8`, vtable `0x00543320`; confirmed (code)):
 
@@ -187,8 +188,8 @@ Returns the tactic code for `Tactic_Process` (0 = carry on). Confirmed (code). I
 The name is misleading: it is the HelpRespond **pusher**. Arguments (helper handle, target handle, *flag*, time
 limit); both handles must resolve to humans; it allocates a goal, initialises HelpRespond
 (`HelpRespondGoal_Init` `0x002b7670`, [HelpRespond](ai-goals.md#goal-help-respond)) on the helper's brain toward the
-target with the flag and limit, and pushes it. Confirmed (code). Coney's `giveMelee` carries this tag but only gives
-Melee: the tag belongs on Coney's HelpRespond push.
+target with the flag and limit, and pushes it. Confirmed (code). The tag is on Coney's HelpRespond push
+(`sendHelper`, `repo:src/ai/brain_events.h`).
 
 ### `AttackTactic_OnViolence` (`0x00307878`, 408 bytes) {#attack-on-violence}
 
@@ -249,6 +250,26 @@ one member listing an enemy (returns 0 and the idle pass waits for the next upda
 the idle pass with three idle and two busy mates at known distances (each idle one gets HelpRespond toward the same
 farthest busy one); event `0x14` with and without a picked side; event 1 for a member of another gang (ignored);
 event 2 after flight (no callback); the alert state set twice to 1 (clips installed once) and to 2.
+
+**Coney status (implemented).** `repo:src/ai/tactic_attack.h` (`TacticAttack`, `tacticAttack`, every tag above but
+the team-up ones), the real `MeleeGoal` in place of the stand-in (Coney's story and scout tactics give it too),
+`Brain::hasFightGoal` and the turf-limit byte `Brain::keepsToTurf` (`repo:src/ai/brain.h`), and the gang's alert state,
+clip groups, `canFlee` and flee count (`repo:src/ai/gangs.h`). `Tactic_Start` puts a gang tactic's gang in the
+fighting state. The flight moved from the hub's per-update check (`ScriptedHub`) into the attack tactic's event 18;
+the hub hands the gangs its categories and flee shares. Tests: `repo:tests/ai/tactic_attack_test.cpp`. Stand-ins and
+questions left for an analyst:
+
+- The clip groups keep only their clip counts (the names of the fidget, taunt and team-up cower clips are not on the
+  page, and nothing plays the groups yet); the random three of five taunts is not drawn. The music mood update and the
+  spot line at Start are not built.
+- `Tactic_Start` "sets the gang's alert state": Coney sets 1 (fighting). Which value does it pass?
+- The idle pass: a member given Melee earlier in the same pass counts as busy for the later ones in Coney (the loop
+  order read literally). Is the farthest busy mate chosen with the stacks as they stand before the pass, or as it goes?
+  And is the distance in 3-D (Coney) or in plan?
+- The flight: Coney pops each fleeing member to his goal base before his Melee and PedReaction, as `GiveMelee` does.
+  Does `GangTactic_CheckFlee` pop and mark too, or push on top of what he has? Does a second event 18 after the
+  flight run the check again (Coney's does)?
+- A brain's `+0x14d` when made: Coney starts it at 1 (calm).
 
 ## Unit 3: team-up framework, the sub-tactic pool and the draw {#unit-3}
 

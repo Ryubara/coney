@@ -24,7 +24,7 @@ enum class GoalType : std::uint8_t {
     MoveToExitFlag = 0x02,     ///< MoveToExitFlagGoal: leaves the scene through an exit flag.
     MoveToUseFlag = 0x04,      ///< MoveToUseFlagGoal.
     MoveToHuman = 0x06,        ///< MoveToHumanGoal.
-    Melee = 0x08,              ///< MeleeGoal (a fight's), TacticMeleeGoal (the attack tactic's stand-in).
+    Melee = 0x08,              ///< MeleeGoal: a fight's, and what the tactics give their fighters.
     EngageEnemy = 0x0b,        ///< EngageEnemyGoal.
     Fight = 0x0f,              ///< FightGoal.
     Spectate = 0x10,           ///< SpectateGoal: stands and watches for a while.
@@ -49,6 +49,7 @@ enum class GoalType : std::uint8_t {
     FollowAndAttack = 0x34,    ///< FollowAndAttackGoal: fights the best enemy near the war chief, or stays with him.
     HoldPosition = 0x36,       ///< HoldPositionGoal: keeps to a radius round a point and fights from there.
     TravelPath = 0x38,         ///< TravelPathGoal.
+    LeftTurf = 0x3f,           ///< LeftTurfGoal: not built; a fight goal to Brain::hasFightGoal().
     FindEnemy = 0x41,          ///< FindEnemyGoal: looks for an enemy to fight.
     AreaWalker = 0x47,         ///< AreaWalkerGoal: strolls round a centre.
     LeadChase = 0x49,          ///< LeadChaseGoal: leads a chaser along a path.

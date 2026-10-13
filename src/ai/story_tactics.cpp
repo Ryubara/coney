@@ -379,7 +379,7 @@ void PursueTactic::start(Gang& gang) {
         if (canAct(*member)) {
             member->addEnemy(*leader);
             member->setTarget(leader);
-            giveMelee(*member, gang.owner());
+            giveMelee(*member);
         }
     }
 }
