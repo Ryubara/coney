@@ -47,7 +47,7 @@ runs:
         $zip = Join-Path $env:RUNNER_TEMP "$name.zip"
         Invoke-WebRequest -Uri "https://github.com/ccache/ccache/releases/download/v$version/$name.zip" -OutFile $zip
         $expected = '6219f3865ca59aec41ee4b678df171d5d35855ecb2b6dbbbd20690b3a68af7b4'
-        if ((Get-FileHash $zip -Algorithm SHA256).Hash -ne $expected) { throw "ccache $version: wrong SHA-256" }
+        if ((Get-FileHash $zip -Algorithm SHA256).Hash -ne $expected) { throw "ccache ${version}: wrong SHA-256" }
         Expand-Archive $zip -DestinationPath $env:RUNNER_TEMP
         Add-Content $env:GITHUB_PATH (Join-Path $env:RUNNER_TEMP $name)
     # CMake reads the two launcher variables when it first configures; the presets stay untouched, so local builds do
