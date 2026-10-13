@@ -408,6 +408,7 @@ target_sources(coney_core PRIVATE
     debug/story_missions.cpp
     debug/time_control.cpp
     debug/time_series.cpp
+    debug/ui_scale.cpp
     debug/tunables.cpp)
 # The in-game HUD: the player panels, hints, objectives, counters, the arrow and the radar (docs/research/hud.md).
 target_sources(coney_core PRIVATE

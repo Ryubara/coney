@@ -152,6 +152,7 @@ add_executable(coney_tests
     platform/disc_world_streaming_test.cpp
     platform/ffmpeg_info_test.cpp
     platform/imgui_model_view_test.cpp
+    platform/imgui_ui_scale_test.cpp
     platform/profile_folder_test.cpp
     platform/room_smoke_overlay_test.cpp
     platform/scene_stage_test.cpp
@@ -352,6 +353,7 @@ target_sources(coney_tests PRIVATE
     debug/play_pages_test.cpp
     debug/story_missions_test.cpp
     debug/time_scale_test.cpp
+    debug/ui_scale_test.cpp
     debug/tunables_test.cpp)
 # The AI humans' brains (docs/research/ai.md).
 target_sources(coney_tests PRIVATE
