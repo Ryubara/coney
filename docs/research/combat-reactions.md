@@ -887,7 +887,8 @@ fix is item 3 of [Scripts: the props go into hands by clip events](scripting.md#
 target at the scene's start and take the object on the clip's type-9 event). With the bats in hand, Coney needs:
 
 1. The armed choice of clip for an AI with set 3: 501 on arrival at a run, 36 or 34 standing, and at a man down either 37
-   or the unarmed grounded strikes 193 / 194 (what picks between them is open).
+   or the unarmed grounded strikes 193 / 194. Both choices are open: what makes an AI pick 34 or 36 (for the player
+   it is the square / cross split of [A bat in hand](combat-throws.md#bat)), and what picks 37 or 193 / 194.
 2. An AI's bat hit dealt as an object contact through `ThrownObject_HitHuman`'s rules: the bat type's `CfgObj` `+0x58`
    × the holder's power-class first float (90 for a class 26 Fury with `dyn_bat`, 72 for class 5), not the clip's
    damage; negative (no harm) against a friend; and the type, knife and victim cases listed in step 3 above, which did
