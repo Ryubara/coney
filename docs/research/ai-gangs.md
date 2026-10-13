@@ -829,7 +829,8 @@ and the game itself go through one dispatcher, `0x0041c4e0(state, chief, command
    (`WarChief_CheckCrewInRange`, `0x0041c338`): when the gang's nearest other member is more than 50 m away (squared
    distance over 2500), the command is **refused** and, unless quiet, the chief says **18 `range`**, or **92
    `range2`** when any member is cuffed or knocked out (`Human_SayCommand(1.0, chief, …, no interrupt)`); game state
-   `+0x414` + player records the refusal. Within range, giving the current command again (the tactic's `+0x18`
+   `+0x414` + player records the refusal ([The out-of-range flag](#warrior-range-flag)).
+   Within range, giving the current command again (the tactic's `+0x18`
    clear) only repeats its line (`WarChief_SayCommand`, `0x0041cc40`) and, for 0 under a tactic of type `0x12`,
    calls `0x003114e0` on it. **Forced**, only defend (2) goes through the range check (quietly).
 3. Otherwise the gang's tactic is cleared and the command's started: 0 `0x00310e00` (given 9.0), 1 `0x00320530`
@@ -842,6 +843,35 @@ and the game itself go through one dispatcher, `0x0041c4e0(state, chief, command
    3 `hold` (`holdhide`), 4 `scatter`, 5 `steal` when the nearest store flag (activity `0xe`) is closer than 64 (8 m
    if that is a squared distance, inferred) and its zone still has objects (`ObjZone_HasObjects`, `0x0039a580`),
    else `vandal`; 6 none. **A forced command says nothing**, and neither does a quiet one (step 2).
+
+### The out-of-range flag {#warrior-range-flag}
+
+`WarChief_CheckCrewInRange(state, chief, quiet, forced)` (`0x0041c338`) keeps one byte per player, game state
+`+0x414` + the chief's player index (human `+0x1b0`), that says whether his crew was out of range at the last check.
+Confirmed (code) at `0x0041c338` unless marked:
+
+- **Who checks.** The dispatcher (`0x0041c4e0`, calls at `0x0041c600` and `0x0041c738`), as step 2 above, and the
+  player's own update, `PlayerBrain_Update` (`0x003035d8`, call at `0x003037c4`): every 40 updates (brain `+0x34`
+  modulo 40) it calls the check with `quiet` and `forced` both 1, so **no line is spoken** and the byte simply follows
+  the crew ([The player](ai.md#think-player), step 4).
+- **What it writes.** Only for a war chief (human `+0x3ac` = 1): the gang's nearest other member
+  (`Gang_FindNearestOtherMember`) within 50 m (squared distance 2500 or less) clears the byte and the check returns 0;
+  farther, it sets the byte to 1, says 18 `range` or 92 `range2` unless `quiet` or `forced` is set, and returns 1. A
+  gang with no other member returns 0 and leaves the byte as it was; so does a human who is not a war chief.
+- **Who reads it.** An instruction scan of `SLUS_212.15` for offset `0x414` finds two readers:
+    - the **Warrior command menu**, `WarCommandDisplay_Update` (`0x001a7e48`, the load at `0x001a8028`): while the menu
+      is open and no command has been issued, a set byte replaces the highlighted command's name with entry 6 of the
+      command-text table (`0x006007d8`), the **out-of-range** text from `GSTRING.COMMAND` 6, which carries a 2.5 s
+      `<DISPLAYTIME>` ([The Warrior command menu](hud.md#warrior-command-menu)). Confirmed (runtime), PCSX2 2.9.94,
+      `level80`: with the byte held at 1 the open menu showed that text instead of the command's name.
+    - the **mission-failure check**, `GameState_CheckGameOver` (`0x004197a8`, the load at `0x0041996c`): when player 1
+      is down and others could still help, a set byte fails the mission at once instead of waiting for a member to
+      reach him ([The mission failing](combat-reactions.md#defeat), case 5).
+- **No other cue.** Besides the chief's line (unforced, not quiet) and the menu's text, nothing plays or shows: the
+  check calls no sound or HUD function, and neither reader plays a sound. The refused command itself is not shown as
+  refused: the menu closes after an issue and its text is updated only before one, so the out-of-range text is seen
+  the next time the menu opens while the crew is still out of range (inferred from the order of the updates;
+  confirmed (code) that the text is set only before an issue).
 
 The command tactics, by command (constructor, vtable, type id; confirmed (code)):
 

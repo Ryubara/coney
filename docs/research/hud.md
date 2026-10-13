@@ -375,8 +375,15 @@ So two rows of three, about 0.07 apart, the top row at y 0.795 and the bottom at
 record's `+0x10`) over a box sprite (rectangle `0x4e`, colour (0, 0, 0, 143)) sized to the text plus (0.013, the
 record's `+0x64`). The text is entry *slot* of the command-text table (`0x006007c0`, filled by `CfgWarriorCommand`
 from [`GSTRING.COMMAND`](../references/text-labels.md#text-gstring-command); indexed by display slot, not command
-id); entry 6 (`0x006007d8`) replaces it while all the player's commands are locked (game state `+0x414` + player) and
-entry 7 (`0x006007dc`) while the highlighted command is disabled. **Colours** (`WarCommandDisplay_Render`,
+id); entry 6 (`0x006007d8`), the **out-of-range** text, replaces it while the crew is out of range (game state
+`+0x414` + player, set by the [range check](ai-gangs.md#warrior-range-flag); confirmed (runtime), below) and entry 7
+(`0x006007dc`) while the highlighted command is disabled. Each is read every update while the menu is open and no
+command has been issued yet (`WarCommandDisplay_Update`, `0x001a7e48`, which copies the byte to `+0x154c`); after an
+issue the text is left as it was until it expires. **Runtime check** (PCSX2 2.9.94, a `level80` checkpoint state with
+the `scripted-pad` and `right-stick` patches, R2 held, sticks at rest): with the byte left alone the menu named the
+highlighted command; with the byte rewritten to 1 every few milliseconds the same menu showed the out-of-range text
+in its place. Written once, the byte went back to 0 within a second: the player's update checks the range every 40
+updates and clears it while a member is within 50 m. **Colours** (`WarCommandDisplay_Render`,
 `0x001a8590`, values from `0x001a8b48`): the highlighted slot's icon white, plate gold (255, 183, 0), backing grey;
 the others' icon white, plate dark (35, 35, 35), backing black; a disabled command's icon (30, 30, 30). The 16:9
 and other modes overwrite the offsets and sizes (`0x001a7e48`); they are not listed here.

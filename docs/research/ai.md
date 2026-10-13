@@ -856,7 +856,8 @@ handler.
 2. Every 300 updates, `+0x152` = how many AI humans of all 32 gangs hold him in their enemy lists.
 3. Every 2 s (brain `+0x160`), `PlayerBrain_ScanNearEnemies(7.5 m, target)` (`0x0028af88`).
 4. `WarChief_AutoCommand` ([Automatic commands](ai-gangs.md#warrior-auto-commands)) every update; every 40 updates
-   `WarChief_CheckCrewInRange`.
+   `WarChief_CheckCrewInRange`, quiet and forced, so it only refreshes the [out-of-range flag](ai-gangs.md#warrior-range-flag)
+   (call at `0x003037c4`).
 5. Brain `+0x110` = his heading.
 6. While `+0x2e4` is set (a Warrior is hitting back at him, [`WarriorBrain_OnHitByChief`](ai-code.md#brain-types)),
    every 13 updates each AI member of his gang within 15 m who is free, not sparring (`+0x2e5` clear) and has no
@@ -2766,7 +2767,7 @@ Around the commands:
 
 | Behaviour | Original | Coney |
 | --- | --- | --- |
-| Crew out of range | unforced (and forced defend): nearest member beyond 50 m refuses the command; 18 `range` / 92 `range2` | **missing**: always given |
+| Crew out of range | unforced (and forced defend): nearest member beyond 50 m refuses the command; 18 `range` / 92 `range2`; the per-player flag ([out-of-range flag](ai-gangs.md#warrior-range-flag)) also refreshed quietly every 40 updates, shown as the menu's out-of-range text and read by the mission-failure check | **missing**: always given |
 | Forced and quiet orders | forced commands and a chief already speaking say nothing | silent always (no lines at all) |
 | Repeating the current order | unforced: line again, no rebuild | refused silently (matches, minus the line) |
 | [Automatic commands](ai-gangs.md#warrior-auto-commands) | follow → attack / defend / steal; attack, defend → follow; steal → follow beyond 15 m | **partial**: follow → attack and back only (`CrewOrders`, `repo:src/ai/crew.h`) |
@@ -2804,7 +2805,8 @@ it was not run (Coney reading); the kind 4 / 6 drop is not built.
    (the same bone and offset as the swap's placement); then add the kind 4 / 6 drop rule.
 5. **Revive** (item 8): built for player 1 ([Combat](combat-rage.md#revive)); the crew's flag (`Human_Init`'s) and the AI
    rescue remain.
-6. **The 50 m range refusal** with 18 / 92, then the hide tactic and the hide-in-shadow order.
+6. **The 50 m range refusal** with 18 / 92, the out-of-range flag with its menu text and its mission-failure shortcut
+   ([out-of-range flag](ai-gangs.md#warrior-range-flag)), then the hide tactic and the hide-in-shadow order.
 
 **The fourth mission's brain and human calls** (`src/scripting/mission4_bindings.*`, for `level34`). `BrSetPedType`
 keeps the low 16 bits at the brain (**stand-in**: neither the civilian brain nor the mugging reads it yet).
