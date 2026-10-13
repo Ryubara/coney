@@ -108,11 +108,17 @@ the list on the next update. The real arrest path sets the same flag ([Arrest](c
 arrested crew member is listed (inferred from the flag; an arrest by a cop was not staged). The fighting state was
 not staged at runtime.
 
-**What else the HUD shows for the crew.** Nothing reacts to a member fighting or being hit short of these three
-states: the [health rings](hud-radar.md#the-health-rings) are drawn only for the players and the player's target,
-and the [gang tally](hud-functions-lua.md#gang-count-what) counts members who are not down (a cuffed member keeps
-his mark, as state `0x20000` is not in `Human_IsDownOrDead`'s mask). A member in a fight within 50 m of the camera
-gets no HUD cue at all. In the runtime check above, the knocked-out member's radar blip also changed look; that was
+**The fight alert.** The third state is the HUD's warning that a crew member is in a fight the player cannot see: it
+appears only when the member is both being fought (an enemy lists him and holds one of his attack slots) and far
+from the camera, and it goes when either stops. This is how players know it: the user reports from play that the
+icon pops up when an ally is fighting while the player is far away (corroboration; the 50 m threshold and the tests
+are confirmed (code) at `0x001a0420`, and the state was not staged in PCSX2).
+
+**What else the HUD shows for the crew.** Nothing else reacts to a member fighting or being hit: the [health
+rings](hud-radar.md#the-health-rings) are drawn only for the players and the player's target, and the [gang
+tally](hud-functions-lua.md#gang-count-what) counts members who are not down (a cuffed member keeps his mark, as state
+`0x20000` is not in `Human_IsDownOrDead`'s mask). A member in a fight within 50 m of the camera, where the player can
+see him, gets no HUD cue. In the runtime check above, the knocked-out member's radar blip also changed look; that was
 not traced. When a crew member is arrested, the other cues are not the HUD's: he says 25 `arrested`, and the
 `dyn_cuffs` icon floats over his head in the world ([Arrest](crimes.md#arrest), step 6).
 
