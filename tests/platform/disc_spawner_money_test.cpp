@@ -83,7 +83,7 @@ TEST_CASE("the disc's level87 checkpoint 3: the street's civilians and bums hold
     const TypeMoney& civilians = byType.at(kCivilian);
     CHECK(civilians.humans >= 1);
     CHECK(civilians.lowest >= 5);
-    // The bums roll $1-$4 or nothing; some of them hold money.
+    // The bums roll $1-$4, so some of them hold money.
     int bumsWithMoney = 0;
     for (const int type : kBums) {
         if (byType.contains(type)) {

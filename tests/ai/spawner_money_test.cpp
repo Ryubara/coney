@@ -134,7 +134,10 @@ struct SpawnLevel final : public coney::ai::SpawnerWorld {
         return found != scripted->bound().end() && found->second->human().alive();
     }
     [[nodiscard]] bool seen(coney::anim::Vec3 /*centre*/, float /*radius*/) const override { return false; }
-    // The play mode's own: HuCreate(name, type, {x, y, z}, heading, model, 0, gang).
+    // A copy of the play mode's ScriptSpawnerWorld::spawn (gamemodes/gameplay_mode.cpp, in an anonymous namespace, so
+    // the test cannot use the class): HuCreate(name, type, {x, y, z}, heading, model, 0, gang). It cannot see that
+    // function stop calling HuCreate; the disc test (tests/platform/disc_spawner_money_test.cpp) runs the real one but
+    // asserts only the street's civilians and bums, which the scripts make by HuCreate themselves.
     double spawn(const coney::ai::SpawnRequest& request) override {
         auto position = std::make_shared<coney::script::Table>();
         for (std::size_t i = 0; i < request.position.size(); ++i) {

@@ -1987,7 +1987,8 @@ lines), the left stick at 25-90 %, climbs made by pushing at 90 % and tapping tr
   second spray, the go-to objective), and chapter 2 then sets up and plays its scene; its first spray is cut short
   (fix 2).
 - **Checkpoint 2** (a direct start): no paint; mugging the passers-by near the start paid $0 or $1 eight times and
-  $14 once in 8,900 updates (fix 3, withdrawn: the amounts are the bums' and a civilian's rolls).
+  $14 once in 8,900 updates (fix 3, withdrawn: the $1 amounts fit the bums, who hold $1-$3, and the $14 a civilian;
+  inferred, the victims are not logged).
 - **Checkpoint 3**: the order matches the script and the reference: objective `MS_C3_1` (0/3) and the five spots at
   the start, `SPRAYATTACK` once `EConey_Sub5` has loaded (update 354; the reference's 481 after `SetCheckPoint(3)`
   include the original's load). The boozer's sphere calls the missing `ch3.BoozerChallenge` at once, set off by the
@@ -2040,13 +2041,13 @@ Fixes, in the order to take them (each one implementer unit):
    `repo:tests/ai/spawner_money_test.cpp` drives a spawner over the scripted brains and checks a class of $5-$20 gives
    $5-$20 and that the draws equal `characters::rollStartingCarry()`'s on the same seed. A level87 checkpoint 3 run
    (`repo:tests/platform/disc_spawner_money_test.cpp`, 1,500 updates) finds the street's civilians (type 395) holding
-   $7-$15 and the bums (types 272-278, the bums among them) $1-$3, and the wanderers, the spray and drug sellers
-   (types 194, 197, 428, 431) $0 or the $5 a script sets. Confirmed (runtime) in Coney. So the $0 and $1
-   muggings above were most likely of
-   bums, whose class pays $1-$4 ([Starting money](crimes.md#starting-money), category 6), and of sellers or
-   wanderers who hold nothing (inferred; which human was mugged is not logged), and "$0 is not faithful" is not
-   established. Whether the sellers (431, 428) and the wanderers (197) hold money in the original is open (the
-   open questions below).
+   $7-$15 and the bums (types 272-278, the bums among them) $1-$3. The spray and drug sellers (types 428 and 431)
+   and the Destroyer soldier of type 197 hold $0; the Destroyers of type 194 hold the $5 a script gives them. These
+   are figures seen in a Coney run (the disc test prints them; it asserts only the civilians and the bums), with no
+   evidence grade for the original. The $1 muggings above were plausibly of bums (they hold $1-$3), the $0 ones of
+   a seller or a Destroyer soldier, who hold $0 in Coney (inferred; which human was mugged is not logged), so
+   "$0 is not faithful" is not established. Whether the sellers (428, 431) and the soldier (197) hold money in the
+   original is open (the open questions below).
 4. **A downed human drops no money.** The original's `Human_OnHealthOut` calls `Human_DropCarried` (`0x00232c60`)
    when a human is knocked out or wounded, which leaves a `dyn_money` pickup of his money ([Dropped when
    down](crimes.md#down-drop)). Chapter 3's two early Destroyers get $5 each (`EDConstructor`, `HuSetMoney`), the
@@ -2074,9 +2075,10 @@ Open questions:
 
 - Whether a crew Warrior can be grabbed and mugged: the course grabbed humans standing beside the start more than
   once, and which human it was is not logged.
-- What the spray sellers (types 431 and 428) and the wanderer of type 197 hold at creation in the original: Coney's
-  roll from their `CfgChar` records gives them $0, and the three muggings of checkpoint 3 paid $0 (fix 3). A runtime
-  read of `+0x370` of a seller made by `spraySpawner` and of a wanderer, in the original, settles whether $0 is right
+- What the spray sellers (types 431 and 428) and the Destroyer soldier of type 197 hold at creation in the original:
+  Coney's roll from their `CfgChar` records gives them $0 (seen in a Coney run), and the three muggings of checkpoint 3
+  paid $0 (fix 3). A runtime read of `+0x370` of a seller made by `spraySpawner` and of a Destroyer soldier made by
+  the `Wanderspawn` spawner, in the original, settles whether $0 is right
   (and so whether the chapter's paint comes from muggings or only from the two Destroyers, fix 4).
 - What the original does with `ch3.BoozerChallenge`, which the script names but never defines; its sphere goes off
   for any human, the second early Destroyer included, as soon as the chapter starts.
