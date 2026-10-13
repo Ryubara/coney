@@ -497,6 +497,9 @@ def test_ci_and_the_gate_run_ruff_over_the_same_paths() -> None:
     for command in check_cli.RUFF_COMMANDS:
         assert f"- run: {' '.join(command)}\n" in workflow
         assert command[-len(check_cli.RUFF_PATHS) :] == check_cli.RUFF_PATHS
+    building = (REPO / "docs" / "guides" / "building.md").read_text(encoding="utf-8").replace("\r\n", "\n")
+    for command in check_cli.RUFF_COMMANDS:
+        assert " ".join(command) in building, "building.md shows each ruff command"
     # No other ruff line may lint fewer paths (an old `ruff check python` left behind would pass the check above).
     ruff_lines = [line.strip() for line in workflow.splitlines() if "ruff" in line and "- run:" in line]
     assert sorted(ruff_lines) == sorted(f"- run: {' '.join(command)}" for command in check_cli.RUFF_COMMANDS)

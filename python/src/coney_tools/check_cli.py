@@ -256,7 +256,10 @@ def _step_python(root: Path, changed: list[str]) -> StepResult:
         raise ConfigError("uv is not on PATH (docs/guides/building.md#python-tools)")
     problems: list[str] = []
     for label, command in (
-        *((" ".join(command[4:6]), list(command)) for command in RUFF_COMMANDS),
+        *(
+            (" ".join(command[command.index("ruff") : command.index("ruff") + 2]), list(command))
+            for command in RUFF_COMMANDS
+        ),
         ("pytest", ["uv", "run", "--project", "python", "pytest", "python/tests", "-q", "-x", "--no-header"]),
         ("mypy", list(MYPY_COMMAND)),
     ):

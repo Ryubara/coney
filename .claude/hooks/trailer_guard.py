@@ -7,7 +7,7 @@ and copy it: on 2026-10-13 a Sonnet agent twice credited Opus. The pull request'
 trailer, and `coney-tools repo check-body --worktree` passed because the body and the trailers agreed with each other.
 
 Claude Code puts no model in a hook's input, so this hook reads it from the transcript of the agent that ran the
-command (the hook input fields it uses are listed in docs/guides/agents.md#trailer-guard):
+command (the fields it reads or ignores are listed in docs/guides/agents.md#trailer-guard):
 
 * every hook gets `transcript_path`, always the *main* session's transcript;
 * inside a subagent it also gets `agent_id`, and that agent's own transcript is
