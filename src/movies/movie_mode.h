@@ -10,6 +10,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "audio/mixer.h"
@@ -54,6 +55,27 @@ struct MovieCaptions {
 /// when the movie has none (or no level's chunk is loaded).
 using CaptionSource = std::function<std::optional<MovieCaptions>(std::string_view movie)>;
 
+/// What a movie asked for by Coney's debug menu does differently from the game's own
+/// (docs/guides/debug-menu.md#movies). Coney-only: the original plays movies only from its own callers
+/// (docs/research/movies.md#callers).
+struct MovieRequest {
+    /// The debug menu asked for it: the game's sound is held (SoundHold) and given back when the movie ends, in place
+    /// of being stopped, so the game resumes as it was; and it plays even under `--skip-movies`, which skips the
+    /// game's own movies.
+    bool debug = false;
+    /// Show ordinary captions whatever the subtitle option says (an English game has it off).
+    bool alwaysCaptions = false;
+};
+
+/// How the game's sound is held while a debug movie plays and given back after: Coney-only, as MovieRequest.
+struct SoundHold {
+    /// Holds every sound playing now where it is (the pause menu's way, not a stop); returns false when the sound was
+    /// held already (the pause menu under the movie), so release() is not called for it.
+    std::function<bool()> hold;
+    /// Gives back what hold() held.
+    std::function<void()> release;
+};
+
 /// How movies are played in this run.
 struct MovieSettings {
     /// Convert and draw each frame. Off in a headless run: the frames are still decoded, on the same clock, so the
@@ -82,6 +104,9 @@ struct MovieSettings {
 /// Bink pace the frames by the real clock and sound). A movie that cannot be opened is skipped, as the original skips
 /// one Bink cannot open. When the mode leaves, the screen it last drew is black.
 ///
+/// A movie Coney's debug menu asks for (MovieRequest) holds the game's sound in place of stopping it and gives it back
+/// at its end, so the game below resumes exactly as it was (docs/guides/debug-menu.md#movies).
+///
 /// Research: docs/research/movies.md
 class MovieMode final : public GameMode, public MoviePlayer {
   public:
@@ -102,6 +127,9 @@ class MovieMode final : public GameMode, public MoviePlayer {
     /// Stops the game's own sound as a movie starts (Movie_Play step 1: the music and every sound task, through the
     /// game's sound engine, so none is left thinking it still plays); empty: only the mixer's voices are stopped.
     void setSoundStop(std::function<void()> stop) { m_soundStop = std::move(stop); }
+    /// Holds the game's sound while a debug movie (MovieRequest::debug) plays, in place of the stop; empty: only the
+    /// mixer's voices are paused (Mixer::pauseAll()). Coney-only.
+    void setSoundHold(SoundHold hold) { m_soundHold = std::move(hold); }
     /// The captions of each movie come from `source` (empty: none).
     void setCaptionSource(CaptionSource source) { m_captionSource = std::move(source); }
     /// The captions are drawn in `font` (Coney's stand-in: the page does not name the caption font); null: none drawn.
@@ -110,6 +138,9 @@ class MovieMode final : public GameMode, public MoviePlayer {
     /// Queues the movie `name` and puts the player on the stack if it is not there yet.
     /// @orig 0x0042a938 Movie_Play (unknown)
     void playMovie(std::string_view name) override;
+    /// Queues the movie `name` as `request` asks (Coney's debug menu: MovieRequest) and puts the player on the stack
+    /// if it is not there yet.
+    void playMovie(std::string_view name, MovieRequest request);
 
     [[nodiscard]] std::uint32_t id() const override { return kId; }
     /// The game clock stands still while a movie plays: nothing else runs while `Movie_Play` blocks.
@@ -142,6 +173,8 @@ class MovieMode final : public GameMode, public MoviePlayer {
     struct Playing {
         std::string name;
         bool skippable = true;
+        MovieRequest request;
+        bool soundHeld = false; // a debug movie's hold took the game's sound, to be given back
         std::unique_ptr<MovieDecoder> decoder;
         MovieInfo info;
         double seconds = 0.0;     // the movie's time at this step
@@ -153,7 +186,7 @@ class MovieMode final : public GameMode, public MoviePlayer {
     };
 
     /// Opens the next queued movie; false when it cannot be played (it is then counted and dropped).
-    bool start(std::string name);
+    bool start(std::string name, MovieRequest request);
     /// Ends the movie playing: its sound stops and its captions go.
     void finish(bool skipped);
     /// One step of the movie playing: the frame loop's pass; false once it has ended.
@@ -173,11 +206,12 @@ class MovieMode final : public GameMode, public MoviePlayer {
     MovieScreen* m_screen;
     audio::Mixer* m_mixer;
     std::function<void()> m_soundStop;
+    SoundHold m_soundHold;
     MovieSettings m_settings;
     std::function<void(std::string_view)> m_log;
     CaptionSource m_captionSource;
 
-    std::deque<std::string> m_queue;
+    std::deque<std::pair<std::string, MovieRequest>> m_queue;
     std::unique_ptr<Playing> m_current;
     std::vector<std::uint8_t> m_pixels;           // the due frame's RGBA
     const graphics::Texture* m_texture = nullptr; // the due frame on the screen's texture; null: black

@@ -230,13 +230,13 @@ void PlayLevelMode::poseHat(const human::Human& human, const human::PlayerCharac
         return;
     }
     const auto bones = anim::boneTransforms(character.skeleton(), pose);
-    m_hatDraws.emplace_back(
+    m_attachedDraws.emplace_back(
         found->second.hat,
         world_objects::heldWorldPose(feet, heading, bones.at(world_objects::kHatBone), 1.0F, found->second.local));
 }
 
-void PlayLevelMode::drawHats() {
-    for (const auto& [hat, pose] : m_hatDraws) {
+void PlayLevelMode::drawAttachedObjects() {
+    for (const auto& [hat, pose] : m_attachedDraws) {
         const world_objects::SpawnRecord* record = m_records != nullptr ? m_records->find(hat) : nullptr;
         const world_objects::ObjectType* type =
             record != nullptr && m_objectTypes != nullptr ? m_objectTypes->find(record->typeName) : nullptr;

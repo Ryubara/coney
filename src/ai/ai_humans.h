@@ -59,6 +59,10 @@ class AiHumans {
     /// (may be null) facing `headingDegrees`; with engaging() on it fights the player once he comes within its far
     /// melee range. Returns its human.
     human::Human& spawnFighter(const raycast::CollisionMesh* mesh, anim::Vec3 feet, float headingDegrees);
+    /// As above, as `character` (which must outlive it): its model's files, animation set and moves; the fighters'
+    /// class and power class stay AiConfig's. Joins the same gang.
+    human::Human& spawnFighter(const human::PlayerCharacter& character, const raycast::CollisionMesh* mesh,
+                               anim::Vec3 feet, float headingDegrees);
     /// Spawns an AI human playing `character` (which must outlive it), of the class and power class `config` gives,
     /// fighting by its settings, with its feet at `feet` on `mesh` (may be null: no snap) facing `headingDegrees`, in
     /// no gang. Returns its brain.

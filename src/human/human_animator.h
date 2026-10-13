@@ -77,6 +77,7 @@ enum class AnimState : std::int8_t {
     Hold = 104,    ///< **Coney's**: a held combat pose (a block, a grab, a mount, a mugging) until combat changes it.
     CombatWalk =
         105, ///< **Coney's**: locked onto a target, the combat walk (380-387) or the fight idle, set by the human.
+    Workout = 106, ///< **Coney's**: a workout's enter clip, then its loop blend, until the workout ends.
 };
 
 /// The bits of the human's record `+0x08` a clip task holds while it plays and sets as it starts
@@ -107,6 +108,13 @@ inline constexpr float kJumpFade = 0.1F;
 inline constexpr float kLandFade = 0.0F;
 /// The fade into a combat clip, seconds. **Coney's choice** (the combat builders are not researched).
 inline constexpr float kCombatFade = 0.1F;
+/// A workout's start: the fade-out it pushes (0.1333 s) and its loop blend's speed (16 units a second).
+inline constexpr float kWorkoutFade = 0.1333F;
+inline constexpr float kWorkoutBlendSpeed = 16.0F;
+/// The workout's anim ids: the enter and exit clips and the first loop clip (slots 691-695).
+inline constexpr std::uint32_t kAnimWorkoutEnter = 691;
+inline constexpr std::uint32_t kAnimWorkoutExit = 692;
+inline constexpr std::uint32_t kAnimWorkoutLoop = 693;
 /// A new attack enters over this long from the pose before it (`AnimTaskChained_Construct(0.2, ...)` in `Attack_Start`
 /// and `Attack_StartSolo`, docs/research/combat-moves.md#input). **Coney's reading**: a chain step, which the original
 /// swaps into the running task (its blend not traced), keeps kCombatFade.
@@ -191,6 +199,16 @@ class HumanAnimator {
     /// plays, its task holding `held` on the record `+0x08`.
     /// Research: docs/research/ai-scripting.md#dyn-animation
     void playScripted(const anim::AnimClip& clip, std::uint32_t animId, float rate, float fade, HeldFlags held);
+    /// A workout's clips (docs/research/workouts.md#engine): a fade of kWorkoutFade, the enter clip (anim 691) and
+    /// then a gait blend over the three loop clips (693-695) at kWorkoutBlendSpeed units a second, its target kept as
+    /// given and no root motion sampled (flags `0x201`); the state stays Workout until endWorkout(). **Coney choice**:
+    /// the blend starts at value 0 (its first value is not on the page), and slots 696-697, which the blend names but
+    /// never reaches, repeat the fast clip.
+    void playWorkout(const anim::AnimClip& enter, const std::array<const anim::AnimClip*, 3>& loops);
+    /// The workout's loop blend once the enter clip has handed over to it; null before, or with no workout.
+    [[nodiscard]] anim::GaitBlendTask* workoutLoop() const;
+    /// Ends the workout's clips: the exit clip (anim 692) and then the idle, or the idle at once with none.
+    void endWorkout(const anim::AnimClip* exit);
     /// The combat walk locked onto a target: `clip` (one of 380-387, or the fight idle 358 with the stick at rest)
     /// looping with no root velocity, since the human sets the velocity (docs/research/combat.md#targets). A clip the
     /// set lacks is the fight idle's, or the idle's. Changes nothing while it already plays.

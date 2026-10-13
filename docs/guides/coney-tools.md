@@ -577,7 +577,7 @@ uv run --project python coney-tools repo labels [--apply] [--repo OWNER/NAME]
 uv run --project python coney-tools repo render [--check]
 uv run --project python coney-tools repo audit [--files] [--github] [--local] [--json] [--only CHECK ...] [--strict]
     [--show N] [--snapshot FILE] [--save-snapshot FILE] [--attachments] [--workspace DIR] [--list]
-uv run --project python coney-tools repo pr-health [--json] [--pending-hours H] [--verbose] [--rerun [--apply]]
+uv run --project python coney-tools repo pr-health [--json] [--pending-hours H] [--verbose] [--labels] [--rerun] [--apply]
 uv run --project python coney-tools repo hygiene (--event N | --sweep) [--apply] [--snapshot FILE]
 ```
 
@@ -623,10 +623,15 @@ to its folder.
   `--effort` sets the effort level, `--claude` names the executable and `--timeout-minutes` (default 30) stops a run
   that hangs. Exit 0 when the verdict releases the branch, 1 when it does not or `claude` failed, 2 when the review
   cannot run (no description, no agent file, not a worktree).
-* `repo check-review` reads `REVIEW.json` next to `PR.md` and passes only when the verdict is `pass` with no blocker,
-  its `tip` is the worktree's HEAD, its `body_sha256` is `PR.md`'s hash now, and every local image `PR.md` shows is
-  listed with its hash now and differs from every other one. Exit 1 lists each reason (a stale tip, an edited
-  description, a replaced or unreviewed picture, the blockers); 2 when `PR.md` cannot be read.
+* `repo check-review` first runs the checks CI runs on the description: `check-title` on `PR.md`'s line 1 and
+  `check-body` on the rest (`PR.md`'s convention: title on line 1, body after it), except that a local image counts as an
+  upload, since `gh --attach` uploads it when the pull request is opened. Each reason is printed with a `title:` or
+  `body:` prefix, together with the verdict's, so a missing template section is caught before the push. `repo review`
+  runs the same checks before it starts the agent and stops at once when they fail. It then reads `REVIEW.json` next to
+  `PR.md` and passes only when the verdict is `pass` with no blocker, its `tip` is the worktree's HEAD, its
+  `body_sha256` is `PR.md`'s hash now, and every local image `PR.md` shows is listed with its hash now and differs from
+  every other one. Exit 1 lists each reason (a title or body CI would refuse, a stale tip, an edited description, a
+  replaced or unreviewed picture, the blockers); 2 when `PR.md` cannot be read.
 * `repo review-stamp` prints those values as JSON (`tip`, `body_sha256`, `images` with `path` and `sha256`, `null` for a
   missing file). The agent copies them into its verdict, so the hash is computed in one place.
 
@@ -644,9 +649,10 @@ are the generated list in [The description review](how-we-work.md#pr-review).
   pull request template, `.github/scripts/ci-scope.sh` and pre-commit's size limit still agree with the file, and that
   the generated blocks are current.
 * `--github` reads issues, pull requests, labels, the repository settings and the ruleset through `gh` (read only;
-  `gh` must be signed in) and checks them: the sections of each open issue (a missing one, one left as `x`), its
-  Screenshots, its labels, a closed issue that still carries an `S-` status label, the word "owner" for the person
-  (say "user"), closed issues and merged pull requests that
+  `gh` must be signed in) and checks them: the sections of each open issue (a missing one, one left as `x`, headings
+  that are not the form's `###` headings in its order, an Area that is not an option), its Screenshots, its labels,
+  a closed issue that still carries an `S-` status label, the word "owner" for the person (say "user"), closed issues
+  and merged pull requests that
   keep an unchecked item with no follow-up issue number, open pull requests whose description names a path on your
   machine or an image that is not uploaded, stacked pull requests, how long an item has waited, and drift between the
   labels, settings and ruleset on GitHub and the file. `--save-snapshot FILE` also writes what it read, and
@@ -699,8 +705,21 @@ A failing check that is not required is ignored. A draft is never stuck. A stack
 `UNKNOWN` for mergeability while it computes it, which means "not known yet": it is not a finding and shows only with
 `--verbose`, together with the drafts and stacked pull requests, so a rerun a minute later settles it.
 `--json` prints `checked`, `stuck` (each with `number`, `branch`, `cause`, `kind`, `detail`, `who`, `checks`, `url`),
-`other` (the `--verbose` lines) and `notices`. Exit code 0 when nothing is stuck, 1 when something is, 2 when `gh` or
-the conventions cannot be read. Run it from the coordinator's loop to find the pull requests to unstick or to push.
+`other` (the `--verbose` lines), `notices` and `labels` (see below). Exit code 0 when nothing is stuck, 1 when something
+is, 2 when `gh` or the conventions cannot be read. Run it from the coordinator's loop to find the pull requests to
+unstick or to push.
+
+`--labels` also compares the labels on every open pull request with its causes and prints what would change, after the
+findings: `add S-conflict to #12 (conflict with main)`, `remove S-failing from #7 (cleared)` (`would add ...` until
+`--labels --apply`). `hygiene.pr_health.labels` in `.github/conventions.yml` maps the causes to labels (`conflict` to
+`S-conflict`, `checks-failed` to `S-failing`); a pull request with the cause gets the label, one without it loses the
+label (a draft is never stuck, so it carries neither), and no other label is ever added or removed.
+`--labels --apply` makes the
+changes through `gh api` on the issue labels endpoints and needs a token that may write issues; the exit code is still
+the findings' (the `hygiene` workflow accepts 1). While GitHub answers `UNKNOWN` for a pull request's mergeability the
+command rereads up to `hygiene.pr_health.unknown_retries` times, `unknown_wait_seconds` apart, and a pull request still
+unknown keeps its conflict label as it is. The labels must exist in the repository with their colours: `repo labels
+--apply` creates them from `labels.list`.
 
 **`--rerun`** restarts CI that failed for a reason that no longer holds, so a stuck pull request does not wait for a
 person to notice. It adds a line per run, `#<n> <branch> rerun <checks> (run <id>): <why> -> <outcome>`, and in
@@ -769,6 +788,41 @@ comment. Text from GitHub quoted in a comment (a title in a finding) cannot ment
 close the marker, and the report writes `#12` so that it makes no cross-reference in the item's timeline. Exit code 0
 when it ran, 2 when `gh` or the conventions cannot be read.
 
+## issue {#issue}
+
+```sh
+uv run --project python coney-tools issue draft [task|bug]
+uv run --project python coney-tools issue check --title T --body FILE [--form F] [--leftover] [--online] [--attach F]
+uv run --project python coney-tools issue create --title T --body FILE [--label L ...] [--parent N] [--leftover]
+    [--attach F] [--offline] [--dry-run]
+uv run --project python coney-tools issue edit N --body FILE [--title T] [--offline] [--dry-run]
+uv run --project python coney-tools issue link N --parent P [--dry-run]
+```
+
+Drafts, checks and files issues in their form's exact shape ([Filing an issue](issues.md#filing)). Every rule is
+read from `issues` in `.github/conventions.yml` and from the form files in `.github/ISSUE_TEMPLATE/`; nothing is
+copied into the code.
+
+* `draft` prints a blank body: the form's `###` headings in order, each preceded by an HTML comment with the form's
+  description, required or optional, and the allowed values (the Area's `A-` labels, a bug's dropdown choices), then
+  the `From:` line. The form is `task` unless you name `bug`.
+* `check` validates a title and a body file (`-` reads stdin) and prints one line per problem, tagged with its kind
+  (`title`, `headings`, `empty`, `choices`, `screenshots`, `from`, `links`, `wording`, `status`); exit 0 when there is
+  none, 1 otherwise. The form comes from `--form`, else the title prefix, else the headings. Docs and research pages
+  and their `{#anchor}`s are looked up in `origin/main` of the checkout with git, offline; a missing `origin/main` is
+  a note, not a pass. `--leftover` wants the `From:` line. `--online` reads the state of each cited `#N` with `gh`
+  and compares it with the words "open", "merged" and "closed" beside it. `--attach` says local screenshots will be
+  uploaded, so a local image in the Screenshots section is accepted.
+* `create` runs `check` (the states online unless `--offline`), then `gh issue create` with the form's labels and
+  the Area's `A-` label. `--label` adds a label (checked against `labels.list`; a type or status label replaces the
+  form's). `--parent N` links the new issue as a sub-issue of N through the sub-issues API, and tells you the
+  `issue link` command to run if only that step fails. `--dry-run` checks and prints the `gh` commands, running none.
+* `edit` runs the same check on the new body (with `--title`, or the issue's current title read with `gh`) before
+  `gh issue edit`. `link` makes an existing issue a sub-issue of another.
+
+The body is filed without the draft's comments. Exit 2 when the conventions, a form file or the body file cannot be
+read.
+
 ## check {#check}
 
 ```sh
@@ -786,8 +840,8 @@ line, and any failure makes the command exit 1:
 | `repo` | always | `repo audit --files`: `.github/conventions.yml` loads, and the agent pointer files, the generated blocks, the issue forms, the pull request template, the CI scope script and pre-commit's size limit agree with it |
 | `pre-commit` | a file changed | `pre-commit run --files` on the changed files: clang-format, ruff, whitespace, the 512 KB guard, the real-clock rule |
 | `clang-tidy` | C++ under `src/` or `tests/` changed | clang-tidy on the files CI's pull-request job would check, with the compiler warnings the GCC and Clang builds enable |
-| `docs` | a file matching `paths.docs_only` of `.github/conventions.yml` changed (`docs/`, `research/`, top-level Markdown, `mkdocs.yml`, the MkDocs hooks, `requirements-docs.txt`, ...) | `mkdocs build --strict` into a throwaway folder |
-| `python` | `python/` changed | `pytest python/tests` and `mypy python/src python/tests` |
+| `docs` | a file matching `paths.docs_only` of `.github/conventions.yml` changed (`docs/`, `research/`, top-level Markdown, `mkdocs.yml`, the MkDocs hooks, `requirements-docs.txt`, ...), or the python the build imports (`python/src/coney_tools/progress*.py`, `config.py`) | `mkdocs build --strict` into a throwaway folder |
+| `python` | `python/` or `.claude/` changed (the tests also run the hooks) | `pytest python/tests` and `mypy python/src python/tests` |
 
 **Which files clang-tidy checks.** The same rules as CI (`.github/scripts/tidy-files.sh`): a changed `.cpp` itself, a
 changed header through every `.cpp` that includes it, directly or through other headers. A test keeps the two in

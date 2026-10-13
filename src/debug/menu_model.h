@@ -50,9 +50,11 @@ class MenuPage;
 /// logic of its own. Build one with the factory functions below, which fill the fields each kind needs.
 struct MenuItem {
     ItemKind kind = ItemKind::Action;
-    std::string label;  ///< What the item is called; unique within its page (pins find an item by it).
-    std::string help;   ///< One line of help, shown for the item under the cursor or on hover.
-    std::string detail; ///< A short tag shown beside a Submenu in place of `>` (a binding's status); may be empty.
+    std::string label; ///< What the item is called; unique within its page (pins find an item by it).
+    std::string help;  ///< One line of help, shown for the item under the cursor or on hover.
+    /// A short tag shown beside a Submenu in place of `>` (a binding's status) or beside an Action (a movie's use);
+    /// may be empty.
+    std::string detail;
 
     /// Action: what choosing it does.
     std::function<void()> run;
@@ -127,7 +129,7 @@ struct MenuItem {
 [[nodiscard]] MenuItem logItem(std::string label, std::function<std::vector<std::string>()> lines);
 
 /// The text a front end shows beside an item's label: on/off, the number with its units, the chosen option, the text,
-/// the watched value, `>` for a submenu; empty for an action or a log.
+/// the watched value, `>` (or its detail) for a submenu, an action's detail; empty for a log.
 [[nodiscard]] std::string valueText(const MenuItem& item);
 
 /// Changes a Number by `steps` steps of `size` (clamped, whole numbers rounded), a Toggle by flipping it (any non-zero

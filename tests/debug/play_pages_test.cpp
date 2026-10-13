@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -82,6 +83,23 @@ class FakePlay final : public coney::debug::PlayControls {
         return {};
     }
 
+    // AI fighters: spawned ones are recorded with the model each was asked for ("" for the scene's own).
+    [[nodiscard]] bool canSpawnFighter() const override { return true; }
+    std::expected<void, coney::Error> spawnFighter(coney::anim::Vec3 at, float facing) override {
+        return spawnFighterAs(at, facing, {});
+    }
+    [[nodiscard]] std::vector<std::string> fighterModels() const override { return models; }
+    std::expected<void, coney::Error> spawnFighterAs(coney::anim::Vec3 at, float facing,
+                                                     std::string_view model) override {
+        if (fighterLimit && fighters.size() >= *fighterLimit) {
+            return std::unexpected(coney::Error{coney::ErrorCode::InvalidArgument, "no room"});
+        }
+        fighters.push_back(SpawnedFighter{at, facing, std::string(model)});
+        return {};
+    }
+    [[nodiscard]] std::size_t fighterCount() const override { return fighters.size(); }
+    void clearFighters() override { fighters.clear(); }
+
     // The HUD the HUD page acts on, when `withHud`.
     [[nodiscard]] coney::hud::Hud* hud() override { return withHud ? &hudObject : nullptr; }
 
@@ -100,6 +118,14 @@ class FakePlay final : public coney::debug::PlayControls {
     std::vector<coney::debug::CharacterChoice> choices;
     int type = 32;
     int changes = 0;
+    struct SpawnedFighter {
+        coney::anim::Vec3 feet;
+        float heading;
+        std::string model;
+    };
+    std::vector<SpawnedFighter> fighters;
+    std::vector<std::string> models;
+    std::optional<std::size_t> fighterLimit;
 };
 
 // The services of a session over `play` (null: no player).
@@ -132,7 +158,7 @@ TEST_CASE("the play pages say so when no player plays", "[debug]") {
     // The pages come after Levels, and Debug draw needs no player.
     const auto titles = session.model().pageTitles();
     CHECK(titles == std::vector<std::string>{"Time", "Tunables", "Natives", "Lua console", "Cheats", "Levels",
-                                             "Missions", "Player", "Camera", "Spawner", "AI fighters", "HUD",
+                                             "Missions", "Movies", "Player", "Camera", "Spawner", "AI fighters", "HUD",
                                              "Debug draw", "Entity inspector", "Display", "Audio", "Input"});
     CHECK(session.model().openPage("Debug draw")->items().size() == 11);
 }
@@ -466,4 +492,63 @@ TEST_CASE("the Player page switches the noclip with a notice, and its hotkey (on
     play.noclipHere = false;
     (void)frameHolding(coney::pad::kR3 | coney::pad::kLeft);
     CHECK_FALSE(play.flying);
+}
+
+TEST_CASE("the AI fighters page spawns the amount asked for, as the model picked", "[debug][fighters]") {
+    TunableRegistry tunables;
+    FakePlay play;
+    play.models = {"model_a", "model_b", "model_c"};
+    DebugSession session(tunables, servicesOver(&play), nullptr);
+    const auto page = session.model().openPage("AI fighters");
+    REQUIRE(page != nullptr);
+
+    // The picker: Random first, then the models.
+    const MenuItem& model = itemOn(*page, "Model");
+    REQUIRE(model.choices.size() == 4);
+    CHECK(model.choices[0] == "Random");
+    CHECK(model.choices[2] == "model_b");
+    const MenuItem& amount = itemOn(*page, "Amount");
+    CHECK(amount.getNumber() == 1.0);
+
+    // One click, a chosen model, three fighters: each is that model, all facing the player (heading 0, so 180).
+    model.setChoice(2);
+    amount.setNumber(3.0);
+    itemOn(*page, "Spawn fighters").run();
+    REQUIRE(play.fighters.size() == 3);
+    for (const auto& fighter : play.fighters) {
+        CHECK(fighter.model == "model_b");
+        CHECK(fighter.heading == 180.0F);
+    }
+    // They stand apart, in a row across the player's line, 4 m ahead (+y).
+    CHECK(play.fighters[0].feet.y == Catch::Approx(4.0F));
+    CHECK(play.fighters[0].feet.x != play.fighters[1].feet.x);
+
+    // Random: each gets its own draw from the list, so a run of them is not all one model.
+    play.fighters.clear();
+    model.setChoice(0);
+    amount.setNumber(12.0);
+    itemOn(*page, "Spawn fighters").run();
+    REQUIRE(play.fighters.size() == 12);
+    std::set<std::string> seen;
+    for (const auto& fighter : play.fighters) {
+        CHECK_FALSE(fighter.model.empty());
+        seen.insert(fighter.model);
+    }
+    CHECK(seen.size() > 1);
+}
+
+TEST_CASE("the AI fighters page stops at the first fighter that cannot be spawned and says so", "[debug][fighters]") {
+    TunableRegistry tunables;
+    FakePlay play;
+    play.fighterLimit = 2;
+    DebugSession session(tunables, servicesOver(&play), nullptr);
+    const auto page = session.model().openPage("AI fighters");
+    REQUIRE(page != nullptr);
+    // No model list here: only Random, which means the scene's own character.
+    CHECK(itemOn(*page, "Model").choices == std::vector<std::string>{"Random"});
+    itemOn(*page, "Amount").setNumber(5.0);
+    itemOn(*page, "Spawn fighters").run();
+    CHECK(play.fighters.size() == 2);
+    CHECK(play.fighters[0].model.empty());
+    CHECK(session.log().last(1).front() == "fighters: 2 spawned of 5");
 }

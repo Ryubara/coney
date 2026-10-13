@@ -8,9 +8,15 @@
 # data and personal information (`hygiene.attachments`, docs/guides/issues.md#attachments). The download is bounded (a
 # size cap and a timeout), carries no token, stays in memory and is never stored, run or quoted in a comment.
 #
-# It only comments: it never edits an issue's title, body, labels or state, and it deletes nothing. It is not a required
-# check (it is not in merge.required_checks), so a failure here never blocks a merge. Its token is limited to writing
-# issues (to GitHub a comment on a pull request is an issue comment). It runs with `pull_request_target` so that a pull
+# The comments never edit an issue's title, body, labels or state, and delete nothing. The one write beyond comments
+# (the maintainer approved it on 2026-10-12): on every push to the default branch, and in the sweep, `coney-tools repo
+# pr-health --labels --apply` puts `S-conflict` on each open pull request that conflicts with the default branch and
+# `S-failing` on each that fails a required check, and takes the label off when that is fixed (`hygiene.pr_health` of
+# the conventions; those two labels only, never another). GitHub works out whether a pull request conflicts only when
+# asked, so a push to main is the moment the answer changes. It is not a required check (it is not in
+# merge.required_checks), so a failure here never blocks a merge. Its token is limited to writing issues (to GitHub a
+# comment or a label on a pull request is an issue write) and reading pull requests and their checks
+# (`pull-requests`, `checks` and `statuses` read, for `gh pr list`). It runs with `pull_request_target` so that a pull
 # request from a fork can be commented on; for that reason it checks out the default branch only (no `ref`, no
 # `repository`: never the pull request's own code) and nothing a pull request, an issue or a comment says is expanded
 # into a script's text: the item number and the event name reach the script through environment variables, and the
@@ -26,16 +32,24 @@ on:
   # Must equal hygiene.sweep in .github/conventions.yml (a test checks it).
   schedule:
     - cron: "0 6 * * 1"
+  # A push to main changes whether each open pull request conflicts, so the labels are refreshed then.
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
   issues: write
+  pull-requests: read
+  checks: read
+  statuses: read
 
 # One run per item at a time and in order; a newer event for the same item waits for the running one, so two runs never
 # edit the same comment together. The sweep and a manual run share one group of their own.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || 'sweep' }}
+  group: >-
+    ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number
+    || (github.event_name == 'push' && 'push') || 'sweep' }}
   cancel-in-progress: false
 
 jobs:
@@ -47,7 +61,7 @@ jobs:
       # pull_request_target, which is the point.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
-      - name: Update the comments
+      - name: Update the comments and the pull request labels
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -60,7 +74,12 @@ jobs:
               [[ "$NUMBER" =~ ^[0-9]+$ ]] || { echo "unexpected item number" >&2; exit 1; }
               uv run --project python coney-tools repo hygiene --event "$NUMBER" --apply
               ;;
+            push)
+              # Exit code 1 means "a pull request is stuck", which is the report, not a failure of this run.
+              uv run --project python coney-tools repo pr-health --labels --apply || [ "$?" -eq 1 ]
+              ;;
             *)
               uv run --project python coney-tools repo hygiene --sweep --apply
+              uv run --project python coney-tools repo pr-health --labels --apply || [ "$?" -eq 1 ]
               ;;
           esac

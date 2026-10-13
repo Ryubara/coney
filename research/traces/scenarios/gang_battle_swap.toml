@@ -1,0 +1,33 @@
+# gang_battle.toml with the sides swapped: the Orphans are side 1 (gang 3, P11-P19, the player's side) and the Furies
+# side 2 (gang 4, P21-P29). It tells a difference of the player's side from a difference of the gangs
+# (rumble.md#gang-battle-swap).
+# Research: docs/research/rumble.md#gang-battle-trace (the state, the settings and what the matches show).
+description = "Fight Pen brawl, 9 a side, the Orphans as side 1, player 1 handed to the AI after the countdown: every human, every update"
+research = "docs/research/rumble.md"
+input = "gang_battle.txt"                # the same script as gang_battle.toml
+updates = 9000
+rows = "humans"
+fields = ["humans"]
+
+[original]
+# Made as gang_battle.toml's state, and at Choose Area the two sides' set-up values swapped as well
+# (frontend.md#rumble-setup): indices 3 and 4 (the gangs), 5-13 and 14-22 (their character types) and the names at
+# 0x0063eef0 and 0x0063ef10; the intro then reads "ORPHANS vs BASEBALL FURIES". Saved at the "press X" prompt.
+state = "states/gang_battle_swap_intro.p2s"
+# The hooks of research/traces/patches/gang-battle.toml log target changes with their caller, help calls and helpers
+# sent (gang-fights.md#trace); recordings made before 2026-10-13 had none.
+patches = ["scripted-pad", "call-brains", "set-target", "help-call", "send-helper"]
+# The matches differ by an offset of the brains' random stream (its 10-bit index, maths.md#random), written
+# before the first update: `pcsx2 record --let seed=341`.
+let = { seed = "0" }
+setup = [ { address = "0x006eb880", type = "u32", value = "(u32(0x006eb880) + seed) & 0x3ff", frame = 0, until = 0 } ]
+# The countdown ends and the brains go on at step 151 to 172 (the fighters' brain +0x09 turns 0; the intro does not
+# take a fixed number of updates). At frame 200 player 1 (P11) is given back to his brain, as HuSwitchPlayer gives a
+# player back: Human_ReleasePlayer(h, 0, 1). Given back before the brains go on, nobody ever fights.
+calls = [ { function = "0x0022a2a8", args = ["player", "0", "1"], frame = 200 } ]
+# A sample of 30 humans takes about 11 ms, near the 16 ms before the next update: at 0.4 speed none tears.
+speed = 0.4
+
+[coney]
+level = "level102"
+args = ["--rumble", "1", "--arena", "102", "--gang-size", "9"]

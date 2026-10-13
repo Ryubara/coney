@@ -105,6 +105,30 @@ TEST_CASE("a clip's descriptor and sections decode into channels with absolute f
     CHECK(clip->events[0].position.z == Approx(1.0F));
 }
 
+TEST_CASE("an event keeps its 16 bytes from +8 as text: the prop events' object name", "[anim_clip]") {
+    // Two events and no sections: 59's prop event 0x30 naming `s_spraycan` (the rest zero), and an event whose 16
+    // bytes are all letters, which has no terminator.
+    Bytes keyframes;
+    keyframes.u16(0).u16(0x30).u16(0).u16(0).text("s_spraycan").fill(6, 0);
+    keyframes.u16(64).u16(0x31).u16(0).u16(0).text("abcdefghijklmnop");
+    const Bytes descriptor = clipDescriptor(ClipFields{.name = "gen_grab_front_power10_p2",
+                                                       .displacementX = 0.0F,
+                                                       .displacementY = 0.0F,
+                                                       .duration = 70.0F / 30.0F,
+                                                       .mask = 0,
+                                                       .channels = 0,
+                                                       .events = 2,
+                                                       .flags = 0},
+                                            0, 0, 0);
+    auto clip = parseAnimClip(descriptor.span(), keyframes.span());
+    REQUIRE(clip.has_value());
+    REQUIRE(clip->events.size() == 2);
+    CHECK(clip->events[0].type == 0x30);
+    CHECK(coney::anim::eventText(clip->events[0]) == "s_spraycan");
+    CHECK(clip->events[1].frame == 64);
+    CHECK(coney::anim::eventText(clip->events[1]) == "abcdefghijklmnop");
+}
+
 TEST_CASE("a clip with damaged sizes or channels is refused", "[anim_clip]") {
     const TestClip data = makeClip();
 

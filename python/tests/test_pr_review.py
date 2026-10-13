@@ -25,7 +25,8 @@ from coney_tools.pr_review import (
     run_review,
 )
 
-RULES = load_conventions(REPO).pull_requests.review
+CONVENTIONS = load_conventions(REPO)
+RULES = CONVENTIONS.pull_requests.review
 TIP = "a" * 40
 OTHER_TIP = "b" * 40
 
@@ -34,6 +35,12 @@ BODY = """tools: Add a thing
 ## Summary
 
 Adds a thing.
+
+## Checklist
+
+Done:
+
+- [x] The thing is added
 
 ## Testing
 
@@ -44,6 +51,11 @@ Adds a thing.
 - **Coney before:** ![before](./shots/before.png)
 - **Coney after:** <img src="./shots/after.png" alt="after">
 - Uploaded already: ![old](https://github.com/user-attachments/assets/1234)
+
+## AI use
+
+- **Commits written by:** an AI
+- **Model:** Claude Sonnet 5.5
 """
 
 
@@ -139,19 +151,19 @@ def test_review_stamp_prints_the_stamp_as_json(
 def test_a_current_passing_verdict_passes(tmp_path: Path) -> None:
     pr = write_pr(tmp_path)
     write_verdict(pr)
-    assert check_review(pr, tmp_path, RULES, head) == []
+    assert check_review(pr, tmp_path, CONVENTIONS, head) == []
 
 
 def test_no_verdict_file_is_refused(tmp_path: Path) -> None:
     pr = write_pr(tmp_path)
-    assert any("no REVIEW.json" in problem for problem in check_review(pr, tmp_path, RULES, head))
+    assert any("no REVIEW.json" in problem for problem in check_review(pr, tmp_path, CONVENTIONS, head))
 
 
 def test_a_failing_verdict_is_refused_with_its_blockers(tmp_path: Path) -> None:
     pr = write_pr(tmp_path)
     finding = {"severity": "blocker", "where": "Screenshots", "text": "the after shot shows a loading screen"}
     write_verdict(pr, verdict="fail", findings=[finding])
-    problems = check_review(pr, tmp_path, RULES, head)
+    problems = check_review(pr, tmp_path, CONVENTIONS, head)
     assert any("verdict is fail" in problem for problem in problems)
     assert any("loading screen" in problem for problem in problems)
 
@@ -159,19 +171,19 @@ def test_a_failing_verdict_is_refused_with_its_blockers(tmp_path: Path) -> None:
 def test_a_pass_that_lists_a_blocker_is_refused(tmp_path: Path) -> None:
     pr = write_pr(tmp_path)
     write_verdict(pr, findings=[{"severity": "blocker", "where": "Testing", "text": "no log for the count"}])
-    assert any("blocker" in problem for problem in check_review(pr, tmp_path, RULES, head))
+    assert any("blocker" in problem for problem in check_review(pr, tmp_path, CONVENTIONS, head))
 
 
 def test_a_pass_with_notes_only_passes(tmp_path: Path) -> None:
     pr = write_pr(tmp_path)
     write_verdict(pr, findings=[{"severity": "note", "where": "Summary", "text": "could be shorter"}])
-    assert check_review(pr, tmp_path, RULES, head) == []
+    assert check_review(pr, tmp_path, CONVENTIONS, head) == []
 
 
 def test_a_new_commit_makes_the_verdict_stale(tmp_path: Path) -> None:
     pr = write_pr(tmp_path)
     write_verdict(pr)
-    problems = check_review(pr, tmp_path, RULES, lambda _worktree: OTHER_TIP)
+    problems = check_review(pr, tmp_path, CONVENTIONS, lambda _worktree: OTHER_TIP)
     assert any("stale" in problem and "tip" in problem for problem in problems)
 
 
@@ -179,21 +191,23 @@ def test_an_edit_to_the_description_makes_the_verdict_stale(tmp_path: Path) -> N
     pr = write_pr(tmp_path)
     write_verdict(pr)
     pr.write_text(BODY.replace("Adds a thing.", "Adds two things."), encoding="utf-8")
-    assert any("stale" in problem and "description" in problem for problem in check_review(pr, tmp_path, RULES, head))
+    assert any(
+        "stale" in problem and "description" in problem for problem in check_review(pr, tmp_path, CONVENTIONS, head)
+    )
 
 
 def test_turning_line_endings_into_crlf_keeps_the_verdict_current(tmp_path: Path) -> None:
     pr = write_pr(tmp_path)
     write_verdict(pr)
     pr.write_bytes(BODY.replace("\n", "\r\n").encode("utf-8"))
-    assert check_review(pr, tmp_path, RULES, head) == []
+    assert check_review(pr, tmp_path, CONVENTIONS, head) == []
 
 
 def test_a_replaced_image_makes_the_verdict_stale(tmp_path: Path) -> None:
     pr = write_pr(tmp_path)
     write_verdict(pr)
     (tmp_path / "shots" / "after.png").write_bytes(b"another after")
-    assert any("./shots/after.png" in problem for problem in check_review(pr, tmp_path, RULES, head))
+    assert any("./shots/after.png" in problem for problem in check_review(pr, tmp_path, CONVENTIONS, head))
 
 
 def test_an_image_the_verdict_does_not_list_is_refused(tmp_path: Path) -> None:
@@ -202,19 +216,19 @@ def test_an_image_the_verdict_does_not_list_is_refused(tmp_path: Path) -> None:
     images = data["images"]
     assert isinstance(images, list)
     write_verdict(pr, images=images[:1])
-    assert any("not reviewed" in problem for problem in check_review(pr, tmp_path, RULES, head))
+    assert any("not reviewed" in problem for problem in check_review(pr, tmp_path, CONVENTIONS, head))
 
 
 def test_two_identical_images_are_refused_whatever_the_verdict(tmp_path: Path) -> None:
     pr = write_pr(tmp_path, shots={"before.png": b"same", "after.png": b"same"})
     write_verdict(pr)
-    assert any("identical" in problem for problem in check_review(pr, tmp_path, RULES, head))
+    assert any("identical" in problem for problem in check_review(pr, tmp_path, CONVENTIONS, head))
 
 
 def test_a_missing_image_is_refused(tmp_path: Path) -> None:
     pr = write_pr(tmp_path, shots={"before.png": b"before"})
     write_verdict(pr)
-    assert any("missing" in problem for problem in check_review(pr, tmp_path, RULES, head))
+    assert any("missing" in problem for problem in check_review(pr, tmp_path, CONVENTIONS, head))
 
 
 @pytest.mark.parametrize(
@@ -228,7 +242,7 @@ def test_a_missing_image_is_refused(tmp_path: Path) -> None:
 def test_a_malformed_verdict_file_is_refused(tmp_path: Path, text: str, expected: str) -> None:
     pr = write_pr(tmp_path)
     (tmp_path / RULES.verdict_file).write_text(text, encoding="utf-8")
-    assert any(expected in problem for problem in check_review(pr, tmp_path, RULES, head))
+    assert any(expected in problem for problem in check_review(pr, tmp_path, CONVENTIONS, head))
 
 
 @pytest.mark.parametrize(
@@ -244,7 +258,7 @@ def test_a_malformed_verdict_file_is_refused(tmp_path: Path, text: str, expected
 def test_a_verdict_with_a_bad_field_is_refused(tmp_path: Path, changes: dict[str, object], expected: str) -> None:
     pr = write_pr(tmp_path)
     write_verdict(pr, **changes)
-    assert any(expected in problem for problem in check_review(pr, tmp_path, RULES, head))
+    assert any(expected in problem for problem in check_review(pr, tmp_path, CONVENTIONS, head))
 
 
 def test_check_review_exits_0_when_current_and_1_when_stale(
@@ -265,6 +279,65 @@ def test_check_review_exits_2_for_a_missing_description(tmp_path: Path, monkeypa
     monkeypatch.chdir(REPO)
     monkeypatch.setattr(pr_review, "git_head", head)
     assert main(["repo", "check-review", str(tmp_path / "PR.md"), "--worktree", str(tmp_path)]) == 2
+
+
+# --- the title and body checks check-review also runs -----------------------------------------------------------------
+
+
+def test_a_description_missing_a_template_section_is_refused(tmp_path: Path) -> None:
+    # The pull request that was opened with `Screenshots: none (...)` but no `## Screenshots` heading.
+    body = BODY.replace("## Screenshots", "Screenshots: none (no visible change)\n\n## Details")
+    pr = write_pr(tmp_path, body)
+    write_verdict(pr)
+    problems = check_review(pr, tmp_path, CONVENTIONS, head)
+    assert any(problem.startswith("body:") and "## Screenshots" in problem for problem in problems)
+
+
+def test_a_bad_title_is_refused_with_the_title_named(tmp_path: Path) -> None:
+    pr = write_pr(tmp_path, BODY.replace("tools: Add a thing", "Add a thing."))
+    write_verdict(pr)
+    problems = check_review(pr, tmp_path, CONVENTIONS, head)
+    assert any(problem.startswith("title:") for problem in problems)
+
+
+def test_title_and_body_problems_are_reported_alongside_the_verdict(tmp_path: Path) -> None:
+    pr = write_pr(tmp_path, BODY.replace("tools: Add a thing", "nope").replace("## Testing", "## Tests"))
+    problems = check_review(pr, tmp_path, CONVENTIONS, head)
+    assert any(problem.startswith("title:") for problem in problems)
+    assert any(problem.startswith("body:") and "## Testing" in problem for problem in problems)
+    assert any("no REVIEW.json" in problem for problem in problems)
+
+
+def test_the_body_check_gets_what_follows_the_title_line(tmp_path: Path) -> None:
+    # A title line alone has no sections at all; a title is not part of the body.
+    pr = write_pr(tmp_path, "tools: Add a thing\n")
+    problems = check_review(pr, tmp_path, CONVENTIONS, head)
+    assert any(problem.startswith("body:") and "## Summary" in problem for problem in problems)
+    assert not any(problem.startswith("title:") for problem in problems)
+
+
+def test_local_screenshots_in_a_draft_pass_the_body_check(tmp_path: Path) -> None:
+    # `gh pr create --attach` uploads these, so the draft may point at local files.
+    pr = write_pr(tmp_path)
+    write_verdict(pr)
+    assert check_review(pr, tmp_path, CONVENTIONS, head) == []
+
+
+def test_a_local_path_in_the_text_is_still_refused(tmp_path: Path) -> None:
+    pr = write_pr(tmp_path, BODY.replace("Adds a thing.", "Adds a thing, see C:\\Users\\me\\notes.txt."))
+    write_verdict(pr)
+    assert any("local path" in problem for problem in check_review(pr, tmp_path, CONVENTIONS, head))
+
+
+def test_check_review_exits_1_for_a_description_missing_a_section(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    pr = write_pr(tmp_path, BODY.replace("## Screenshots", "## Pictures"))
+    write_verdict(pr)
+    monkeypatch.chdir(REPO)
+    monkeypatch.setattr(pr_review, "git_head", head)
+    assert main(["repo", "check-review", str(pr), "--worktree", str(tmp_path)]) == 1
+    assert "body:" in capsys.readouterr().out
 
 
 # --- the agent definition and the launcher --------------------------------------------------------------------------
@@ -320,7 +393,7 @@ class FakeClaude:
 def test_review_launches_in_the_description_folder_then_checks_the_verdict(tmp_path: Path) -> None:
     pr = write_pr(tmp_path)
     claude = FakeClaude()
-    assert run_review(pr, tmp_path, "origin/main", REPO, RULES, launch=claude, head_of=head) == 0
+    assert run_review(pr, tmp_path, "origin/main", REPO, CONVENTIONS, launch=claude, head_of=head) == 0
     command, cwd = claude.calls[0]
     assert cwd == tmp_path
     assert RULES.agent in claude.agents
@@ -333,19 +406,21 @@ def test_review_launches_in_the_description_folder_then_checks_the_verdict(tmp_p
 def test_review_removes_an_old_verdict_before_it_starts(tmp_path: Path) -> None:
     pr = write_pr(tmp_path)
     write_verdict(pr)
-    assert run_review(pr, tmp_path, "origin/main", REPO, RULES, launch=FakeClaude(verdict=None), head_of=head) == 1
+    assert (
+        run_review(pr, tmp_path, "origin/main", REPO, CONVENTIONS, launch=FakeClaude(verdict=None), head_of=head) == 1
+    )
     assert not (tmp_path / RULES.verdict_file).exists()
 
 
 def test_review_fails_on_a_failing_verdict(tmp_path: Path) -> None:
     pr = write_pr(tmp_path)
-    assert run_review(pr, tmp_path, "origin/main", REPO, RULES, launch=FakeClaude("fail"), head_of=head) == 1
+    assert run_review(pr, tmp_path, "origin/main", REPO, CONVENTIONS, launch=FakeClaude("fail"), head_of=head) == 1
 
 
 def test_review_fails_when_claude_fails(tmp_path: Path) -> None:
     pr = write_pr(tmp_path)
     claude = FakeClaude(status=3)
-    assert run_review(pr, tmp_path, "origin/main", REPO, RULES, launch=claude, head_of=head) == 1
+    assert run_review(pr, tmp_path, "origin/main", REPO, CONVENTIONS, launch=claude, head_of=head) == 1
 
 
 def test_review_command_line_uses_the_injected_launcher(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -357,3 +432,10 @@ def test_review_command_line_uses_the_injected_launcher(tmp_path: Path, monkeypa
     assert main(["repo", "review", str(pr), "--worktree", str(tmp_path), "--model", "opus"]) == 0
     command, _cwd = claude.calls[0]
     assert command[command.index("--model") + 1] == "opus"
+
+
+def test_review_refuses_a_bad_description_without_launching_the_agent(tmp_path: Path) -> None:
+    pr = write_pr(tmp_path, BODY.replace("## Screenshots", "## Pictures"))
+    claude = FakeClaude()
+    assert run_review(pr, tmp_path, "origin/main", REPO, CONVENTIONS, launch=claude, head_of=head) == 1
+    assert claude.calls == []

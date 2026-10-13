@@ -1,7 +1,8 @@
 # AI reimplementation plan: units and specifications
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`), read in Ghidra on 2026-10-12.
-No runtime check yet; each claim states its evidence level.
+Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`), read in Ghidra on
+2026-10-12 (the ObjectPile goal, the fidget and taunt actions and the pattern block on 2026-10-13). No runtime check
+yet; each claim states its evidence level.
 
 ## Purpose
 
@@ -301,7 +302,6 @@ script binding's living head count (`ScriptedBrains::gangHeadCount`, members wit
 the HUD's gang counter, which also counts health. Tests: `repo:tests/ai/tactic_attack_test.cpp`. Stand-ins left:
 
 - "Cuffed" in the flight is the human's scripted arrested state.
-
 - The clip groups keep only their clip counts, and nothing plays the groups yet; the random three of five taunts is
   not drawn. The names are now in the [alert state](#alert-state) table.
 - The spot line at Start is not built: `Gang_SaySpotLine` (`0x00165d40`) is specified in
@@ -554,21 +554,216 @@ Gang-fight need 4, last part. Confirmed (code). Depends on the GetItem goal (tag
      −1)` with the pile option, else a pushed GetItem goal (`GetItemGoal_Init(goal, brain, object, 4, −1)`). The
      next object gets a new member.
   6. Stops when the objects run out or the count is reached.
-- The ObjectPile goal (`0x002bada8`-`0x002bb010`) is described under [ObjectPile](ai-goals.md#goal-object-pile);
-  its Process gets the same treatment as this unit before the unit starts (see [Unit 7](#unit-7)'s note).
 
-**Tests (synthetic):** three throwables at 5, 10 and 40 m and three free members (two ordered, nearest object
-first); an object claimed 2 s ago by the same gang (skipped) and by another gang (taken); pile option with a
+### The ObjectPile goal (type `0x60`, `0x002bada8`-`0x002bb3cc`) {#object-pile}
+
+Confirmed (code) at each address; read in Ghidra on 2026-10-13. The member walks to the pile, picks an object up,
+throws it at the nearest enemy he can see, and goes back for the next, until the pile is gone, his end time passes or
+something else takes him over. The class list is on [AI goals](ai-goals.md#goal-object-pile).
+
+**Record** (a goal of the pool, [Goals](ai.md#goals)): `+0x00` brain, `+0x04` started, `+0x05` resume pending,
+`+0x08` time limit (−1, none), `+0x0c` vtable `0x0053faf0`, `+0x10` **the pile's handle**, `+0x14` **the throw
+target's handle**, `+0x18` **the end time** (0 = none), `+0x1c` **walking** (set while his own GetItem walk is on
+top), `+0x1d` **interrupted** (once set, the goal ends).
+
+- **`Goal_ObjectPile(human handle, pile handle, duration)`** (`0x002bada8`): resolves the human; nothing when the
+  handle does not resolve to a human. Otherwise allocates a goal, runs Init and pushes it (`Brain_PushGoal`, which
+  suspends the old top).
+- **Init** (`0x002bae38`): the fields above; `+0x10` = the pile handle, `+0x14` = the null handle (`0x006ebd30`),
+  `+0x18` = the duration argument, `+0x1c` = `+0x1d` = 0.
+- **Start** (`0x002bae80`, vtable `+0x24`): `+0x18` = 0 when it holds −1, else `+0x18` + *now* (the duration made
+  an end time). *Brain* `+0x21c` (the threat response, [The brain](ai.md#brain)) = 0. The Throw order passes −1,
+  so its members have no end time.
+- **Resume** (`0x002baec0`, `+0x34`): `+0x1c` = 0.
+- **Suspend** (`0x002baf08`, `+0x3c`): when `+0x1c` is 0, `+0x1d` = 1. So the goal survives being covered by its
+  own GetItem walk (which sets `+0x1c` first), but any other goal pushed over it (a hit reaction, a fight) ends it as
+  soon as it is back on top.
+- **End** (`0x002baec8`, `+0x2c`): drops his target (`Brain_SetTarget(brain, 0, 0)`) and sets *brain* `+0x21c` = 2.
+- **Event** (`+0x4c`): the default `Goal_DefaultOnEvent` (`0x0029ef80`); score hook `+0x54` the default
+  `0x0029f3a8`.
+
+**Process** (`0x002bb010`), each update; returns 0 (go on) unless it says done (2):
+
+1. `+0x1d` set: done.
+2. The pile's handle no longer resolves to a world object: done.
+3. Actions queued (*brain* `+0x2e` > 0): return 0.
+4. Mid-throw (`Human_IsSwingingHeld`, `0x002286a0`: held flag `0x800000`, or `0x1000010` while holding an object
+   and playing one of the object throw clips): return 0.
+5. `+0x18` not 0 and below *now* (unsigned): done.
+6. **Armed?** He is armed for the pile when `Human_HeldIsThrowable(him, 0)` (`0x00223ea0`) or
+   `Human_HoldsKind4Or6` (`0x00224000`) is true. For an AI (pad −1) the first is true only when the held object's
+   type kind byte (`+0x87`) is 5, or it is 1 with the type byte `+0x86` = 11 (the knife); the second when the kind
+   byte is 4 or 6.
+7. **Not armed** (fetch):
+    1. Holding anything else: drop it (`Human_DropHeld`, `0x00257f38`). Then drop the target
+       (`Brain_SetTarget(brain, 0, 0)`).
+    2. Squared distance from his position to the pile's position (world object `+0x10`) at most 1.0 (within 1 m):
+       queue a PickUpItem action on the pile object (`PickUpItemAction_Init(action, brain, pile, delay 33 ms)`,
+       `0x002faf98`; nothing when the action pool is full); return 0.
+    3. Farther: leave the fight stance (`0x0022fef0`), `+0x1c` = 1, and push a GetItem goal on the pile
+       (`GetItemGoal_Init(goal, brain, pile handle, gait 4, limit −1)`, [GetItem](ai.md#get-item)); return 0. The
+       push suspends this goal, which `+0x1c` keeps alive; GetItem's end resumes it, clearing `+0x1c`.
+8. **Armed** (throw):
+    1. The target is `+0x14` resolved and checked with `Brain_ValidateEnemy(brain, it)` (`0x0028d358`). None: on
+       every 10th update (*brain* `+0x34` % 10 = 0) pick one (`ObjectPileGoal_PickTarget`, below); return 0.
+    2. No line of sight to him (`Human_HasLineOfSight(self, him, 0, 0)`, [Sight](ai.md#sight)): `+0x14` = the null
+       handle; return 0.
+    3. `d²` = squared distance between the two; `R²` = `Attack_ReachSquared(d², self, kind 0)` (`0x00230d00`, the
+       reach of attack kind 0 with what he holds: 30 m for held set 5, 15 m for set 4, else the attack table's
+       reach; [Combat code index](combat.md#code-index)).
+    4. `d²` > `R²` (out of reach): enter the fight stance (`0x0022fe80`) and queue a MoveMelee action on him
+       (`0x002fcf50`, [MoveMelee](ai-moving.md#move-melee)) with the band from 2 *r* to max(`R`, 2 *r* + 1) m, *r*
+       his capsule radius (0.35 × his scale, `0x00219860`), no delay, limit 2000 ms; return 0.
+    5. In reach: only on every 30th update (*brain* `+0x34` % 30 = 0), else return 0. Set him as the target with
+       the slot forced (`Brain_SetTarget(brain, him, 1)`). Unless the attack cool-down is over (*now* ≥ *brain*
+       `+0x1e8`), return 0. Queue a TurnTo action to his position at his maximum turn rate (`Human_MaxTurn`,
+       `0x002213d8`; no delay; skipped when the pool is full), then `Brain_QueueAttack(brain, him, kind 0, delay 33
+       ms, time −1.0)`, which queues one attack action of kind 0 (the throw, for an armed human). Return 0.
+
+**`ObjectPileGoal_PickTarget`** (`0x002baf20`): `+0x14` = the nearest of a list to his position
+(`HandleArray16_SortNearest`, then entry 0). The list is his enemy list (*brain* `+0x164`, 16 handles) when it is
+not empty; otherwise a fresh list of the humans within his sight range (`Brain_GetSightRange`) that he can see
+(`Humans_ListNearVisible`, `0x0029c7e8`) and that pass `Filter_IsThrowTarget` (`0x0029c0d8`: not cuffed, a threat to
+him, `Brain_ValidateEnemy`). An empty list gives the null handle. The enemy list is not filtered by sight here: a
+listed enemy out of sight is picked, then dropped at step 8.2 on the next update.
+
+**Tests (synthetic):** a member 0.8 m from a pile (PickUpItem queued, no goal pushed) and 6 m from it (GetItem
+pushed with gait 4, the goal survives the suspend and `+0x1c` clears on resume); another goal pushed over it (done
+on its next Process); an end time passed and none (−1); armed with a kind-5 object and an enemy in sight beyond the
+reach (a MoveMelee band from 0.7 m to the reach, for a target of scale 1) and in reach (turn plus attack only on
+updates divisible by 30, and only after the cool-down); a target out of sight (cleared, re-picked on the next 10th
+update); an empty enemy list (the visible-humans fallback); the pile object removed (done).
+
+**Tests of the order (synthetic):** three throwables at 5, 10 and 40 m and three free members (two ordered, nearest
+object first); an object claimed 2 s ago by the same gang (skipped) and by another gang (taken); pile option with a
 `dyn_pile` and a crate; an unreachable object (the same member gets the next one); End pops ObjectPile.
 
 ## Unit 7 and later: what each needs first {#unit-7}
 
 Unit 7 (the fight goal's Start, Resume, Suspend and End, the fidget and taunt actions, the pattern block, and the
-waiting ring of [The reposition](ai.md#fight-reposition), gang-fight need 7) is described by its sections; before
-it starts, the fidget and taunt actions' Start and Abort (`0x002f9f78`, `0x002fa0e0`, `0x002fb128`,
-`0x002fb278`) and `Brain_TryPatternBlock` (`0x00292158`) get a step-by-step section here, as Units 1-6 have. The
-same holds for the ObjectPile goal of Unit 6. Gang-fight needs 8 (event `0x15`'s sender, an open question) and 11
-(the tandem, issue #84) are not units yet.
+waiting ring of [The reposition](ai.md#fight-reposition), gang-fight need 7) is described by its sections and by
+the three below: the fidget and taunt actions and `Brain_TryPatternBlock`. Gang-fight needs 8 (event `0x15`'s
+sender, an open question) and 11 (the tandem, issue #84) are not units yet.
+
+The two actions use the action base of [Actions](ai.md#actions): `+0x00` brain, `+0x04` delay (s16 ms), `+0x06`
+started, `+0x08` vtable; Start returns 2 for "already done" (the action is dropped with only its destroy run) and 0
+to go on; Abort gets a **mode**, 0 when the action ended normally (`Brain_PopAction(brain, 0)` after Update returned
+2) and 1 when it is cleared (`Brain_ClearActions`, which stops at the first action whose Abort returns 0). In both
+Starts, the **line** is said with `Human_SayCommand(volume, human, line, 0, 0, 1, null handle, 1)` (`0x002205e0`,
+[Saying a speech command](sound.md#speech)) at volume 1.0, or 1.5 when his current target is a pad human (target
+`+0x1b0` ≠ −1); a line of 0 says nothing.
+
+### The fidget action (`PlayFidget`, type 15) {#fidget-action}
+
+Confirmed (code) at each address; read in Ghidra on 2026-10-13.
+
+**Init** (`FidgetAction_Init(action, brain, anim, idle, line, delay)`, `0x002f9f48`): vtable `0x00542c60`;
+`+0x0c` the **anim id** (or substitution group), `+0x10` the **idle** flag, `+0x14` the **line** (s16), `+0x04` the
+delay. The fight goal's reposition passes group `0x25b` (the combat fidgets), idle 0, its line; FollowAndDefend's
+fidget passes anim 0 with idle 1 (`0x002b32d4`, `0x002bd574`).
+
+**Start** (`FidgetAction_Start`, `0x002f9f78`):
+
+1. Done (2) for a cop brain (*brain* `+0x04` = 1), a dog (human `+0xcc`, the class id, = `0xdd`), or a class whose
+   role byte (`CharClass` `+0x11b`) is 6.
+2. **Free to fidget.** Required unless idle is 0 and he holds a world object whose type byte `+0x86` is 11 (the
+   knife): `Human_IsFreeForFidget` (`0x00225f58`: no held flag at all, none of the state flags `0x7bf9e9f7ff0`,
+   nothing held). Not free: done.
+3. Say the line (above).
+4. Idle 0 on a dealer brain (*brain* `+0x04` = 5): done, after the line.
+5. Play it: `Human_PlayHeldIdle(human, anim, idle)` (`0x00231ac8`) plays, as an overlay clip and only when no held
+   flag is set, group `0x25c` (the idle fidgets) when idle is 1; with idle 0, anim `0x25a` when he holds a type-11
+   object, else the given anim. Return 0.
+
+**Update** (`0x002fa1e0`): 0 while held flag `0x100` (a fidget plays) is set, else done.
+
+**Abort** (`FidgetAction_Abort(action, mode)`, `0x002fa0e0`):
+
+1. **Refused (0)** only when all hold: mode 1 (cleared); a Warrior brain (*brain* `+0x04` = 3); idle 1; his gang's
+   (*brain* `+0x20c`) leader is a pad human; the gang has a tactic (*gang* `+0x40` ≠ 0); the leader's gait is idle;
+   no member of the gang has attackers (`Gang_AnyMemberHasAttackers`, `0x00169658`); and the leader's last command
+   (game state `*0x0051489c` + leader `+0x1b0` + `0x41a`, [Warrior commands](ai-gangs.md#warrior-commands)) is not
+   0, 4 or 5. So an idle Warrior's fidget is not cut by a re-planned follow while the chief stands still and nobody
+   fights.
+2. Otherwise stop the fidget (`Human_StopFidget`, `0x00231b60`: while held flag `0x100` is set, drop the overlay
+   when he is moving, else rebuild the idle when his clip is `0x25b` or `0x25c`) and accept (1).
+
+**Tests (synthetic):** a cop, a dog and a class-6 human (done at once); a human holding a crate (not free, done) and
+one holding a knife with idle 0 (plays `0x25a`); a line said at 1.0 and at 1.5 (target a pad human); a dealer with
+idle 0 (line, then done); an AI Warrior's idle fidget cleared while the chief stands with command 1 (refused) and
+with command 4 (stopped); a normal end (stopped).
+
+### The taunt action (`Taunt`, type 29) {#taunt-action}
+
+Confirmed (code) at each address; read in Ghidra on 2026-10-13. This corrects the class table of
+[AI code](ai-code.md#actions), which read the cop test as the class kind and the class exemption as taunt kind 13.
+
+**Init** (`TauntAction_Init(action, brain, kind, arg, line, delay)`, `0x002fb0f0`): vtable `0x00542e60`; `+0x0c` the
+**kind**, `+0x10` a second argument (passed on to the clip builder, which ignores it), `+0x14` **wait** = 1,
+`+0x18` the **line** (s16), `+0x04` the delay.
+
+**Start** (`TauntAction_Start`, `0x002fb128`):
+
+1. Done (2) for a cop brain (*brain* `+0x04` = 1) or a class whose role byte (`CharClass` `+0x11b`) is 6.
+2. **The clip**, unless the kind is 8 (a line with no clip): when he is not free to fidget (as above) he is done,
+   except a class whose role byte is 13, which goes on. Then `Human_BuildAnimState(human, kind, arg, 0)`
+   (`0x0025f028`): for a kind 0-7, and only when the human has an animation controller (human `+0xd8`), it plays anim
+   id `0x253` + kind (`0x253`-`0x25a`) as an animation task (`AnimTask5_Construct`, `0x00106240`) with 0.05 s
+   blends, first setting held flag (`Human_SetHeldFlag`, `0x00226640`) `0x200000` for the anims `0x256`-`0x259`
+   (kinds 3-6) and `0x100000` for the others. A kind of 8 or more plays nothing.
+3. Say the line (above).
+4. `+0x14` (wait) = 0 for kinds 0, 1, 2 and 8, else 1. Return 0.
+
+The kinds the shared event handler uses ([The shared event handler](ai.md#shared-events)) are 3 and 4, anims 598
+and 599 (`0x256`, `0x257`).
+
+**Update** (`0x002fb2f0`): with wait 0, done at once; with wait 1, 0 while held flags `0x300000` (either taunt
+flag) are set, else done.
+
+**Abort** (`TauntAction_Abort(action, mode)`, `0x002fb278`):
+
+1. Mode 0 (normal end): accept (1).
+2. Otherwise stop the taunt first (`Human_StopTaunt`, `0x00231c58`: while held flags `0x300000` are set, drop the
+   overlay when he is moving, else rebuild the idle when his clip is in `0x253`-`0x25a`). Then refuse (0) only when
+   wait is 1 and flags `0x300000` are still held; else accept (1).
+3. Every accepted abort decrements the global `0x005112ac`. Nothing else in the executable reads or writes it (the
+   only code references are the two in this function), so it is a count that is never raised; inferred vestigial,
+   and Coney need not keep it.
+
+**Tests (synthetic):** a cop and a class-6 human (done); kind 8 with a line (no clip, done on the next update); kind 3
+on a free human (anim `0x256`, flag `0x200000`, waits); kind 0 (anim `0x253`, no wait); a busy human (done) and a busy
+class-13 human (plays); cleared while the clip plays (stopped; refused while the flags remain).
+
+### `Brain_TryPatternBlock(brain, attacker)` (`0x00292158`) {#pattern-block}
+
+Confirmed (code); read in Ghidra on 2026-10-13. Called by the shared event handler on an attack warning (event
+`0x10`) when the attacker has a pad or is a Warrior ([The shared event handler](ai.md#shared-events), step 4.4),
+after *brain* `+0x200` was raised for this warning. It lets an AI in a fight block a player who repeats one pattern.
+
+1. `t` = his own class threshold, `Human_GetBlockPatternThreshold` (`0x002236c8`): (16 − class `+0x37`) / 16, or 0
+   when `+0x37` is 0. `t` = 0: nothing.
+2. The attacker's pattern: `f0` = byte `+0x5d0` × 0.05, `f1` = byte `+0x5d1` × 0.05 (`0x00418398`). Neither
+   `f0` ≥ `t` nor `f1` ≥ `t`: nothing.
+3. His actions are blocked (`HumanRecord_AreActionsBlocked`, `0x00228228`: any of the state flags `0x7bf9e9f7ff0`):
+   nothing.
+4. His top goal (*brain* `+0x2c` the top index, goals at *brain* `+0x40`) must exist and be a Fight goal (type
+   `0xf`); else nothing.
+5. Clear his actions (`Brain_ClearActions`). When one refused (the queue, *brain* `+0x2e`, is not empty): nothing.
+6. `Goal_TryBlock(fight goal, 0)` (`0x0029f098`, [Blocking](ai.md#block)): with the chance argument 0 it uses his
+   block chance, and it **always** blocks when **his current target** (*brain* `+0x124`, through
+   `Brain_ValidateEnemy`) is pad-controlled (per-player `+0x1b`) and meets the same pattern test. So the block is
+   certain only when the warning's attacker is the human he is fighting; another attacker gets the ordinary chance
+   (a quarter of it for a Warrior). It pushes the block goal (`0x1b`) unless one is already above his goal base
+   (*brain* `+0x2d`) and returns 1 when it pushed.
+7. When it pushed: if he is stunned and standing (`Human_IsStunnedStanding`, `0x00223bc0`: state `0x100000` without
+   `0x80000`), end the stun (`Human_EndStun`, `0x0022f8d8`); then write command 4 (block) to his per-player record
+   (`0x00660f50` + index × `0x2c`, `+0x20`). As [Blocking](ai.md#block) says, command 4 does not make an AI block;
+   the block goal's other effects do.
+
+**Tests (synthetic):** a class threshold of 0 (nothing); a player whose pattern byte reaches `t` attacking his
+current target, who is in a Fight goal with an empty queue (block goal pushed, command 4, a standing stun ended);
+the same with the pattern below `t`, with a non-Fight top goal, with an action that refuses to abort, and with the
+attacker not his target (the ordinary chance, seeded).
 
 ## Reimplementation plan {#plan}
 

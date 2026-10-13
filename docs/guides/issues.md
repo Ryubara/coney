@@ -54,8 +54,8 @@ only "issue #N". Write it so that the first screenful answers *what is wrong or 
 Every issue has a **Screenshots** section, as every pull request does. It shows the problem: Coney at the place and
 moment it goes wrong and, when there is a capture of it, the original from the same place. When there is nothing to
 show (a sound, a research question, tooling), the section holds one line, `Screenshots: none (<reason>)`, such as
-`Screenshots: none (sound only)`. The forms ask for it; an issue filed from the command line ends with a
-`## Screenshots` section in the same shape.
+`Screenshots: none (sound only)`. The forms ask for it, and an issue filed from the command line has the same
+`### Screenshots` section ([Filing an issue](#filing)).
 
 Drag screenshots and short videos into the form's Screenshots box, and attach Coney's log, the text it prints in the
 terminal you started it from, as a `.txt` file in the bug form's Log box (with no user name or email address in it:
@@ -99,6 +99,60 @@ finding is a prompt to look, and a clean scan is not a promise. `coney-tools rep
 the same scan over every open issue. Removing the link from the body does not delete the file on GitHub; a person who
 attached something private by mistake can ask a maintainer, who can ask GitHub to remove it.
 
+## Filing an issue {#filing}
+
+An issue filed from the command line skips the web form, so a guard runs before it is written. Nobody files, edits or
+links an issue with a raw `gh` command: `coney-tools issue` is the only way, and it reads every rule from
+`.github/conventions.yml` (`issues`) and the form files in `.github/ISSUE_TEMPLATE/`, so a change to a form or a rule
+changes the command with it ([Repository conventions](repo-conventions.md)). The commands are in
+[coney-tools](coney-tools.md#issue).
+
+1. **Draft.** `coney-tools issue draft task` (or `bug`) prints a blank body with the form's `###` headings in its
+   order. A comment before each section carries the form's own description, whether the section is required, and
+   the values it allows (the Area is one of the `A-` labels; a bug's dropdowns list theirs). The `From:` line and the
+   `Screenshots: none (<reason>)` convention are there too. Fill it in; the comments may stay, they are not shown and
+   the issue is filed without them.
+2. **Check.** `coney-tools issue check --title "..." --body FILE [--leftover] [--online]` says what is wrong, one line
+   per problem, and exits 1: headings at the wrong level (`## Screenshots`), with other names, extra, missing or out
+   of order; a required section empty or `x`; an Area that is not an option; a docs or research page written as plain
+   text instead of `[docs/x.md](../blob/main/docs/x.md)`, or linked to a file or `{#anchor}` that is not on `main`
+   (read from `origin/main` in your checkout, no network; `git fetch origin` first); a Screenshots section with
+   neither an uploaded image nor the `none (<reason>)` line; a leftover without its `From:` line; "owner" for the
+   user; the repository's address. A page that exists only on a branch stays plain text with a note such as
+   "not on `main` yet". With `--online`, the words that call `#N` open, merged or closed are compared with
+   `gh` ([State the status as it is](#writing)).
+3. **File.** `coney-tools issue create --title "..." --body FILE [--label L ...] [--parent N] [--leftover] [--attach F]`
+   runs the same check and then `gh issue create` with the form's labels and the Area's `A-` label; every label is
+   validated against the labels of the conventions, and a `--label` of the type or status family replaces the form's
+   (`--label docs` for a documentation task). `--parent N` then links the new issue as a sub-issue of issue N, which
+   is where a leftover goes (the issue its source pull request fixes). `--dry-run` checks and prints the commands
+   and writes nothing.
+4. **Change.** `coney-tools issue edit N --body FILE [--title T]` checks the new body the same way before
+   `gh issue edit`, and `coney-tools issue link N --parent P` makes an existing issue a sub-issue.
+
+The coordinator, and an agent whose brief says to file, use these commands; any other agent hands the checked body
+file to the coordinator.
+
+**How the rules are enforced.** Four layers, each for a way an issue could skip the form:
+
+- `coney-tools issue draft`, `check` and `create` (above) put the check before the write.
+- A Claude Code hook in the repository, `.claude/hooks/issue_guard.py` (registered in `.claude/settings.json`, so every
+  contributor and agent session has it), refuses a raw `gh issue create`, a `gh issue edit` with `--body`,
+  `--body-file`, `-b` or `-F`, and a `gh api` call that creates an issue, changes its body or title, or links a
+  sub-issue. It refuses only where `gh` starts a command, so a command that merely mentions these (an `echo`, a
+  commit message, the body of a here-document) passes; labels, titles, comments and closing stay with `gh`, and so
+  does a command that names only another repository (`-R owner/name`, `GH_REPO=`, a `repos/owner/name` path), which
+  the hook tells from this one by the working directory's `origin` remote. The
+  refusal names `coney-tools issue draft`, `create` and `edit`. `coney-tools` itself runs `gh` as a subprocess,
+  which the hook never sees.
+- The `issue-check` workflow (`.github/workflows/issue-check.yml`) runs `coney-tools issue check --online` on every
+  issue opened or edited, so an issue filed on the website or through the API is covered too. When the check
+  fails it posts one comment listing the problems, updates that comment on later edits, and deletes it once the
+  issue passes. It only comments: it sets no labels and edits nothing.
+- `coney-tools repo audit --github` runs the same shape check over every open issue (`issue.form` in
+  [Audit checks](repo-conventions.md#audit-checks)), so an issue that was filed before these existed, or
+  that slipped through, is flagged afterwards.
+
 ## Labels {#labels}
 
 The label scheme follows rust-lang/rust's prefixes (`A-` for the area, `P-` for the priority, `S-` for the status),
@@ -141,11 +195,17 @@ time. A closed issue carries none ([What a closed issue keeps](#closed)).
 | | `S-in-progress` | Status: an agent or person is working on it |
 | | `S-pending-review` | Status: a pull request is open |
 | | `S-blocked` | Status: waiting for another issue or a decision |
+| | `S-conflict` | Status: a pull request conflicts with main (set by CI) |
+| | `S-failing` | Status: a pull request fails a required check (set by CI) |
 | GitHub's own | `good first issue` | Good for newcomers |
 | | `help wanted` | Extra attention is needed |
 | | `duplicate` | This issue already exists |
 | | `wontfix` | This will not be worked on |
 <!-- conventions:end -->
+
+`S-conflict` and `S-failing` are for pull requests, not issues, and nobody sets them by hand: the `hygiene` workflow
+puts them on an open pull request that conflicts with `main` or fails a required check, and takes them off when that
+is fixed ([Workflows](repo-conventions.md#workflows)).
 
 ## Triage {#triage}
 
@@ -214,14 +274,11 @@ A brief may be just "issue #N" ([Briefing](agents.md#briefs)); the issue holds t
   recordings are deleted from scratch when done ([Sharing one machine](how-we-work.md#shared-machine)).
 - **Work the usual way:** the research first when the status says so, then a failing test, then the fix
   ([Testing](testing.md#done)). The pull request description has a `Fixes #N` line in its Summary.
-- **Issues are filed through `coney-tools issue` only.** A hook
-  ([`.claude/hooks/issue_guard.py`](repo:.claude/hooks/issue_guard.py)) refuses a raw `gh issue create`, a
-  `gh issue edit` that sets the body and a `gh api` call that writes an issue, so the body is checked against the
-  form first. Labels, titles, comments and closing pass, and so does a command that names only another
-  repository (`-R owner/name`).
-- **Agents never write to GitHub.** No comments, labels, issues or pull requests: the coordinator does all of it,
-  from the same release queue as pull requests ([How we work](how-we-work.md)). An agent reports what it would say
-  (the finding, the question for the reporter, the status change) in its message to the coordinator.
+- **Agents write to GitHub only through `coney-tools issue`.** No comments, labels or pull requests, and an issue only
+  with `issue create`, `edit` or `link` ([Filing an issue](#filing)), and only when the brief says to: the
+  coordinator does the rest, from the same release queue as pull requests ([How we work](how-we-work.md)). An agent
+  reports what it would say (the finding, the question for the reporter, the status change) in its message to the
+  coordinator.
 - **HANDOFF lists only issue numbers in flight.** The coordinator's state file names an issue by number and track,
   for example "#31, bug-doors, in progress"; the title and details stay on the issue, so there is one place to read.
 
@@ -239,14 +296,18 @@ lists to the older rule (each unchecked item names an issue as `#N`).
   open question) is written up as the issue it would be: title, area, research page and "done" test, in the shape of
   the [task form](#report), in the message it sends the coordinator. It follows
   [Writing an issue a newcomer can read](#writing): the problem first, not "the pull request leaves ..."; pages as
-  relative links; each checklist item a verifiable step. It does not write to GitHub
-  ([Working from an issue](#agents)), and the pull request neither lists nor links that work.
+  relative links; each checklist item a verifiable step. It starts from `coney-tools issue draft`, saves the body to a
+  file in its scratch folder and runs `coney-tools issue check --leftover` on it until it passes
+  ([Filing an issue](#filing)); it does not write to GitHub ([Working from an issue](#agents)), and the pull request
+  neither lists nor links that work.
 - **Work a player can see comes with a picture.** For a visible bug, gap or stand-in, the author saves a capture of
   Coney in its scratch folder's `shots/` (and of the original from PCSX2 when it has one at the same place), names the
   files in the issue text it sends, and the coordinator files the issue with `--attach`. Pure research questions and
   tooling work need none.
-- **The coordinator** files the issue from that text with its captures and labels it at triage, naming where it came
-  from on a `From:` line. When a pull request merges it updates the statuses in every issue that cites it.
+- **The coordinator** files the issue from that checked body with `coney-tools issue create --leftover` (and its
+  captures, `--attach`), naming where it came from on the `From:` line, and labels it at triage. It rewrites a draft
+  that reads like a copy of the pull request, and when a pull request merges it updates the statuses in every issue
+  that cites it.
 - **A task a pull request cannot finish is split before the pull request is written.** The part it can finish is the
   pull request; the rest is an issue (or a pull request of its own, opened when it can be finished). A task nobody
   will do is dropped, not left unticked.

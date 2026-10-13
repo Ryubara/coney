@@ -2,6 +2,7 @@
 #include "fileio/disc.h"
 
 #include <cstddef>
+#include <string>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
@@ -83,6 +84,28 @@ TEST_CASE("a file in a folder below the root is found as FOLDER/FILE, on an imag
     REQUIRE(disc.has_value());
     CHECK(disc->has("IOP/BFW.SND"));
     CHECK(disc->readFile("iop/bfw.snd") == payload(30, 2));
+}
+
+TEST_CASE("the files of a folder below the root are listed by name, sorted, on an image and in a folder", "[disc]") {
+    TempDir dir;
+    const auto image = coney::test::buildIso({{"A.BIN;1", payload(4, 1)},
+                                              {"PSS/TWO.BIK;1", payload(8, 2)},
+                                              {"PSS/ONE.BIK;1", payload(8, 3)},
+                                              {"IOP/BFW.SND;1", payload(8, 4)}});
+    auto iso = Disc::open(dir.write("game.iso", image));
+    REQUIRE(iso.has_value());
+    CHECK(iso->filesIn("pss") == std::vector<std::string>{"ONE.BIK", "TWO.BIK"});
+    CHECK(iso->filesIn("IOP") == std::vector<std::string>{"BFW.SND"});
+    CHECK(iso->filesIn("NONE").empty());
+    CHECK(iso->filesIn("").empty()); // the root is not a folder below it
+
+    TempDir folder;
+    folder.write("Pss/b.bik", payload(3, 5));
+    folder.write("Pss/A.Bik", payload(3, 6));
+    folder.write("PssX/C.BIK", payload(3, 7));
+    auto disc = Disc::open(folder.path());
+    REQUIRE(disc.has_value());
+    CHECK(disc->filesIn("PSS") == std::vector<std::string>{"A.BIK", "B.BIK"});
 }
 
 TEST_CASE("a file that is not an ISO image is refused", "[disc]") {

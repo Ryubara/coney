@@ -82,6 +82,12 @@ void GameSound::update() {
     if (engine == nullptr) {
         return;
     }
+    // A cinematic's start stops the sound each human holds (the spray loop, docs/research/sound-events.md#spray-loop).
+    const bool cinematic = engine->cinematic();
+    if (cinematic && !m_cinematicSeen) {
+        m_humanSounds.stopHeldSounds();
+    }
+    m_cinematicSeen = cinematic;
     if (engine->paused()) {
         // The breathing's fades do not count the pause.
         m_breathing.lastMs.reset();
@@ -153,7 +159,9 @@ std::string GameSound::summary() const {
 }
 
 void GameSound::humanSound(const script::HumanSoundCall& call) {
-    ++(call.sound.kind == human::HumanSound::Kind::Anim ? m_animSounds : m_impactSounds);
+    if (call.sound.kind != human::HumanSound::Kind::StopHeld) {
+        ++(call.sound.kind == human::HumanSound::Kind::Anim ? m_animSounds : m_impactSounds);
+    }
     if (m_sounds.engine() == nullptr) {
         return;
     }
@@ -569,6 +577,8 @@ void GameSound::gameplayLeft() {
     m_combatFraming = false;
     m_breathing = Breathing{};
     m_ambientEventMs.reset();
+    m_humanSounds.stopHeldSounds();
+    m_cinematicSeen = false;
     if (engine == nullptr) {
         return;
     }

@@ -7,9 +7,11 @@ with the default branch, when a required check has been queued or running longer
 `hygiene.thresholds.pr_pending_hours`, or when it targets the default branch, is not a draft and has auto-merge
 off. Failing checks that are not required are ignored, a draft is never stuck, and a stacked pull request (base other
 than the default branch) is reported as stacked, never as lacking auto-merge. GitHub answers `UNKNOWN` for mergeability
-while it computes it; that is "not known yet", shown only with `--verbose`. The report only reads GitHub. `--rerun`
-(see `coney_tools.pr_rerun`) adds the failed required checks that are stale and would be rerun; only `--rerun --apply`
-changes anything, by calling `gh run rerun`.
+while it computes it; that is "not known yet", shown only with `--verbose`. Without `--labels` and `--rerun` the
+command only reads GitHub. `--labels` also compares each pull request's labels with its causes and, with `--apply`,
+adds and removes `hygiene.pr_health.labels` (`S-conflict`, `S-failing`) through `gh` (`coney_tools.pr_labels`; the
+`hygiene` workflow runs it on every push to the default branch). `--rerun` (see `coney_tools.pr_rerun`) adds the failed
+required checks that are stale and would be rerun; only `--rerun --apply` calls `gh run rerun`.
 """
 
 from __future__ import annotations
@@ -17,7 +19,8 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from collections.abc import Iterable, Sequence
+import time
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -25,11 +28,12 @@ from typing import Any, NamedTuple
 
 from coney_tools.audit_github import Runner, run_gh
 from coney_tools.config import ConfigError, find_repo_root
-from coney_tools.conventions import Conventions, load_conventions
+from coney_tools.conventions import PR_HEALTH_CAUSES, Conventions, load_conventions
+from coney_tools.pr_labels import LabelChange, plan, unknown_numbers, write
 from coney_tools.pr_rerun import FailedCheck, PullChecks, Rerun, plan_reruns
 
 #: The JSON fields read from `gh pr list`.
-PULL_FIELDS = "number,title,headRefName,baseRefName,isDraft,mergeable,autoMergeRequest,statusCheckRollup,url"
+PULL_FIELDS = "number,title,headRefName,baseRefName,isDraft,mergeable,autoMergeRequest,statusCheckRollup,labels,url"
 #: The fields `--rerun` reads besides those: the head commit, and the description to check against the template.
 RERUN_FIELDS = f"{PULL_FIELDS},headRefOid,body"
 #: More open pull requests than this are not expected; the command says so when it reaches it.
@@ -41,7 +45,7 @@ FAILED = frozenset({"FAILURE", "TIMED_OUT", "CANCELLED", "STARTUP_FAILURE", "ACT
 PASSED = frozenset({"SUCCESS", "NEUTRAL", "SKIPPED"})
 
 #: The causes, in the order one pull request lists them.
-CAUSES = ("checks-failed", "conflict", "ci-stuck", "auto-merge-off")
+CAUSES = PR_HEALTH_CAUSES
 #: Who acts on each cause: the author fixes their branch; the coordinator unsticks CI and merging.
 WHO = {"checks-failed": "author", "conflict": "author", "ci-stuck": "coordinator", "auto-merge-off": "coordinator"}
 
@@ -125,6 +129,8 @@ class Health:
     notices: list[str] = field(default_factory=list)
     #: How many open pull requests were looked at.
     checked: int = 0
+    #: The label changes `--labels` found (empty without it).
+    label_changes: list[LabelChange] = field(default_factory=list)
     #: The reruns planned or done (`--rerun`); None when the option was not given.
     reruns: list[Rerun] | None = None
 
@@ -135,6 +141,7 @@ class Health:
             "stuck": [item.as_json() for item in self.stuck],
             "other": [item.as_json() for item in self.notes],
             "notices": list(self.notices),
+            "labels": [item.as_json() for item in self.label_changes],
         }
         if self.reruns is not None:
             report["rerun"] = [item.as_json() for item in self.reruns]
@@ -320,7 +327,7 @@ def add_pr_health_parser(repo_commands: argparse._SubParsersAction[argparse.Argu
         description=(
             "Lists the open pull requests that are stuck, one line each: #number branch cause detail -> who acts. "
             "Required checks come from the branch ruleset. Exit code 0 when nothing is stuck, 1 when something is, "
-            "2 when gh or the conventions cannot be read. Reads GitHub only, unless --rerun --apply."
+            "2 when gh or the conventions cannot be read. Reads GitHub only, unless --apply with --labels or --rerun."
         ),
     )
     parser.add_argument("--json", action="store_true", help="print the report as JSON instead of text")
@@ -334,22 +341,48 @@ def add_pr_health_parser(repo_commands: argparse._SubParsersAction[argparse.Argu
         "--verbose", action="store_true", help="also show drafts, stacked pull requests and unknown mergeability"
     )
     parser.add_argument(
+        "--labels",
+        action="store_true",
+        help="also list the labels to add to or remove from the open pull requests (hygiene.pr_health.labels)",
+    )
+    parser.add_argument(
         "--rerun",
         action="store_true",
         help="also list the failed required checks that are stale (text fixed since, runner lost) and would be rerun",
     )
     parser.add_argument(
-        "--apply", action="store_true", help="with --rerun: really rerun them (gh run rerun), not only list them"
+        "--apply",
+        action="store_true",
+        help="with --labels: make those label changes through gh; with --rerun: really rerun the checks (gh run rerun)",
     )
 
 
-def run_pr_health(args: argparse.Namespace, run: Runner = run_gh, now: datetime | None = None) -> int:
-    """Run `coney-tools repo pr-health`; 0 when nothing is stuck, 1 when something is."""
+def run_pr_health(
+    args: argparse.Namespace,
+    run: Runner = run_gh,
+    now: datetime | None = None,
+    sleep: Callable[[float], None] = time.sleep,
+) -> int:
+    """Run `coney-tools repo pr-health`; 0 when nothing is stuck, 1 when something is.
+
+    With `--labels`, GitHub is reread (after `sleep`) while it still answers `UNKNOWN` for a pull request's
+    mergeability, up to `hygiene.pr_health.unknown_retries` times, before the label changes are printed or applied.
+    """
+    if args.apply and not (args.labels or args.rerun):
+        raise ConfigError("--apply goes with --labels or --rerun")
     conventions = load_conventions(find_repo_root(Path.cwd()))
-    if args.apply and not args.rerun:
-        raise ConfigError("--apply only goes with --rerun")
-    pulls, required = fetch(conventions.repo.default_branch, run, RERUN_FIELDS if args.rerun else PULL_FIELDS)
+    fields = RERUN_FIELDS if args.rerun else PULL_FIELDS
+    pulls, required = fetch(conventions.repo.default_branch, run, fields)
     health = judge(pulls, required, conventions, now or datetime.now(UTC), args.pending_hours)
+    if args.labels:
+        rules = conventions.hygiene.pr_health
+        for _ in range(rules.unknown_retries):
+            if not unknown_numbers(health):
+                break
+            sleep(rules.unknown_wait_seconds)
+            pulls, required = fetch(conventions.repo.default_branch, run, fields)
+            health = judge(pulls, required, conventions, now or datetime.now(UTC), args.pending_hours)
+        health.label_changes = plan(pulls, health, rules)
     if args.rerun:
         health.reruns = plan_reruns([pull_checks(pull, required) for pull in pulls], conventions, run, args.apply)
     if not required:
@@ -361,6 +394,10 @@ def run_pr_health(args: argparse.Namespace, run: Runner = run_gh, now: datetime 
     else:
         for line in format_text(health, args.verbose):
             print(line)
+        for change in health.label_changes:
+            print(change.line(args.apply))
         for text in health.notices:
             print(f"coney-tools: note: {text}", file=sys.stderr)
+    if args.apply and args.labels:
+        write(health.label_changes, run)
     return 1 if health.stuck else 0
