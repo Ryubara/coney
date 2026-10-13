@@ -11,6 +11,7 @@ from pathlib import Path
 
 import pytest
 from conventions_support import REPO
+from git_support import make_branch, message
 
 from coney_tools import pr_review
 from coney_tools.cli import main
@@ -24,6 +25,9 @@ from coney_tools.pr_review import (
     review_command,
     run_review,
 )
+
+#: The real reader of a branch's trailer models, which the fixture below replaces for all but the tests that use it.
+REAL_GIT_BRANCH_MODELS = pr_review.git_branch_models
 
 CONVENTIONS = load_conventions(REPO)
 RULES = CONVENTIONS.pull_requests.review
@@ -57,6 +61,12 @@ Done:
 - **Commits written by:** an AI
 - **Model:** Claude Sonnet 5.5
 """
+
+
+@pytest.fixture(autouse=True)
+def no_trailers(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The fake worktrees here are not git repositories: unless a test says otherwise, the branch has no trailers."""
+    monkeypatch.setattr(pr_review, "git_branch_models", lambda _worktree, _base: [])
 
 
 def head(_worktree: Path) -> str:
@@ -439,3 +449,93 @@ def test_review_refuses_a_bad_description_without_launching_the_agent(tmp_path: 
     claude = FakeClaude()
     assert run_review(pr, tmp_path, "origin/main", REPO, CONVENTIONS, launch=claude, head_of=head) == 1
     assert claude.calls == []
+
+
+# --- the Model line against the branch's Co-Authored-By trailers -----------------------------------------------------
+
+
+def models(*names: str) -> pr_review.ModelReader:
+    """A fake reader of the branch's trailer models: always `names`, whatever the worktree and base."""
+    return lambda _worktree, _base: list(names)
+
+
+def test_a_model_the_description_does_not_name_is_refused_with_the_model_named(tmp_path: Path) -> None:
+    pr = write_pr(tmp_path)
+    write_verdict(pr)
+    problems = check_review(pr, tmp_path, CONVENTIONS, head, models("Claude Sonnet 5.5", "Claude Opus 5.5"))
+    assert len(problems) == 1
+    assert problems[0].startswith("body: ") and "Claude Opus 5.5" in problems[0]
+
+
+def test_the_same_branch_passes_once_the_description_names_the_model(tmp_path: Path) -> None:
+    pr = write_pr(
+        tmp_path, BODY.replace("- **Model:** Claude Sonnet 5.5", "- **Model:** Claude Sonnet 5.5, Claude Opus 5.5")
+    )
+    write_verdict(pr)
+    assert check_review(pr, tmp_path, CONVENTIONS, head, models("Claude Sonnet 5.5", "Claude Opus 5.5")) == []
+
+
+def test_a_branch_without_trailers_passes_as_before(tmp_path: Path) -> None:
+    pr = write_pr(tmp_path, BODY.replace("an AI\n- **Model:** Claude Sonnet 5.5", "a person\n- **Model:** n/a"))
+    write_verdict(pr)
+    assert check_review(pr, tmp_path, CONVENTIONS, head, models()) == []
+
+
+def test_the_reader_gets_the_worktree_and_the_base(tmp_path: Path) -> None:
+    pr = write_pr(tmp_path)
+    write_verdict(pr)
+    calls: list[tuple[Path, str]] = []
+
+    def reader(worktree: Path, base: str) -> list[str]:
+        calls.append((worktree, base))
+        return []
+
+    check_review(pr, tmp_path, CONVENTIONS, head, reader, "origin/dev")
+    assert calls == [(tmp_path, "origin/dev")]
+
+
+def test_review_refuses_a_wrong_model_line_without_launching_the_agent(tmp_path: Path) -> None:
+    pr = write_pr(tmp_path)
+    claude = FakeClaude()
+    status = run_review(
+        pr, tmp_path, "origin/main", REPO, CONVENTIONS, launch=claude, head_of=head, models_of=models("Claude Opus 5.5")
+    )
+    assert status == 1 and claude.calls == []
+
+
+def test_check_review_on_the_command_line_reads_the_trailers_of_a_real_branch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    make_branch(repo, [message("tools: Add a thing", "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>")])
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    pr = write_pr(scratch)
+    write_verdict(pr)
+    monkeypatch.chdir(REPO)
+    monkeypatch.setattr(pr_review, "git_head", head)
+    monkeypatch.setattr(pr_review, "git_branch_models", REAL_GIT_BRANCH_MODELS)
+    argv = ["repo", "check-review", str(pr), "--worktree", str(repo), "--base", "main~1"]
+    assert main(argv) == 1
+    assert "Claude Opus 5.5" in capsys.readouterr().out
+    pr.write_text(BODY.replace("Claude Sonnet 5.5", "Claude Opus 5.5"), encoding="utf-8")
+    write_verdict(pr)
+    assert main(argv) == 0
+
+
+def test_check_review_exits_2_when_the_base_cannot_be_found(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    make_branch(repo, [message()])
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    pr = write_pr(scratch)
+    write_verdict(pr)
+    monkeypatch.chdir(REPO)
+    monkeypatch.setattr(pr_review, "git_head", head)
+    monkeypatch.setattr(pr_review, "git_branch_models", REAL_GIT_BRANCH_MODELS)
+    assert main(["repo", "check-review", str(pr), "--worktree", str(repo)]) == 2
+    assert "origin/main" in capsys.readouterr().err

@@ -6,9 +6,12 @@ from pathlib import Path
 
 import pytest
 from conventions_support import REPO, conventions_with
+from git_support import make_branch, message
 
+from coney_tools.config import ConfigError
 from coney_tools.conventions import load_conventions
 from coney_tools.repo_checks import (
+    branch_trailer_models,
     check_body,
     check_docs,
     check_pointer_files,
@@ -16,6 +19,7 @@ from coney_tools.repo_checks import (
     legacy_remaining_items,
     legacy_uncited_remaining,
     strip_comments,
+    trailer_models,
     unfinished_items,
 )
 
@@ -578,3 +582,99 @@ def test_the_sections_and_labels_are_the_files() -> None:
     text = body().replace("## Screenshots", "## Pictures")
     assert check_body(text, rules) == []
     assert any("missing the section '## Pictures'" in problem for problem in check_body(body(), rules))
+
+
+# --- the Model line against the branch's Co-Authored-By trailers -----------------------------------------------------
+
+TRAILERS = load_conventions(REPO).commits.trailers
+OPUS = "Claude Opus 5.5"
+SONNET = "Claude Sonnet 5.5"
+
+
+def test_the_trailer_models_are_the_ai_co_authors_of_every_message() -> None:
+    messages = [
+        message("a: Add b", f"Co-Authored-By: {SONNET} <noreply@anthropic.com>"),
+        message("a: Fix c", f"Co-Authored-By: {OPUS} <noreply@anthropic.com>"),
+        message("a: Fix d", f"Co-Authored-By: {SONNET} <noreply@anthropic.com>"),
+    ]
+    assert trailer_models(messages, TRAILERS) == [SONNET, OPUS]
+
+
+def test_the_trailer_key_and_the_model_name_are_read_case_insensitively() -> None:
+    text = message("a: Add b", "co-authored-by:   claude   Haiku 5  <NoReply@Anthropic.com>")
+    assert trailer_models([text], TRAILERS) == ["claude Haiku 5"]
+
+
+def test_a_person_as_co_author_is_not_a_model() -> None:
+    text = message("a: Add b", "Co-Authored-By: Ada Lovelace <ada@example.org>")
+    assert trailer_models([text], TRAILERS) == []
+
+
+def test_a_message_without_trailers_names_no_model() -> None:
+    assert trailer_models([message()], TRAILERS) == []
+    assert trailer_models([], TRAILERS) == []
+
+
+def test_a_model_the_line_does_not_name_is_refused_naming_it() -> None:
+    problems = check_body(body(model=SONNET), BODY_RULES, branch_models=[SONNET, OPUS])
+    assert len(problems) == 1
+    assert OPUS in problems[0] and "'Model:'" in problems[0] and "Co-Authored-By" in problems[0]
+
+
+def test_the_same_branch_passes_once_the_line_names_the_model() -> None:
+    assert check_body(body(model=f"{SONNET}, {OPUS}"), BODY_RULES, branch_models=[SONNET, OPUS]) == []
+
+
+def test_the_model_is_matched_anywhere_on_the_line_and_in_any_case() -> None:
+    line = "claude  OPUS 5.5 (reviewed), and Claude Sonnet 5.5 for the code"
+    assert check_body(body(model=line), BODY_RULES, branch_models=[OPUS, SONNET]) == []
+
+
+def test_a_version_prefix_is_not_a_match() -> None:
+    # "Claude Opus 5.5" must not be found inside "Claude Opus 5.55".
+    assert check_body(body(model="Claude Opus 5.55"), BODY_RULES, branch_models=[OPUS])
+
+
+@pytest.mark.parametrize("model", ["", "n/a"])
+def test_a_person_with_a_trailer_on_the_branch_must_name_the_model(model: str) -> None:
+    problems = check_body(body(written_by="a person", model=model), BODY_RULES, branch_models=[OPUS])
+    assert len(problems) == 1 and OPUS in problems[0]
+
+
+def test_a_branch_without_trailers_needs_nothing_more() -> None:
+    assert check_body(body(written_by="a person", model="n/a"), BODY_RULES, branch_models=[]) == []
+    assert check_body(body(), BODY_RULES) == []
+
+
+def test_an_unusable_model_line_is_reported_once() -> None:
+    problems = check_body(body(model="n/a"), BODY_RULES, branch_models=[OPUS])
+    assert len(problems) == 1 and "an AI took part" in problems[0]
+
+
+def test_the_rule_can_be_switched_off_in_the_conventions() -> None:
+    rules = conventions_with(("pull_requests.ai_use.model.names_trailer_models", False)).pull_requests
+    assert check_body(body(model=SONNET), rules, branch_models=[OPUS]) == []
+
+
+def test_the_branch_models_come_from_the_commits_after_the_base(tmp_path: Path) -> None:
+    repo = make_branch(
+        tmp_path,
+        [
+            message("a: Add b", f"Co-Authored-By: {SONNET} <noreply@anthropic.com>"),
+            message("a: Fix c", f"Co-Authored-By: {OPUS} <noreply@anthropic.com>"),
+        ],
+    )
+    # The base commit's own trailer (Haiku) is not on the branch.
+    assert branch_trailer_models(repo, "main~2", TRAILERS) == [SONNET, OPUS]
+    assert branch_trailer_models(repo, "HEAD", TRAILERS) == []
+
+
+def test_a_base_git_cannot_find_is_an_error_not_a_pass(tmp_path: Path) -> None:
+    repo = make_branch(tmp_path, [message()])
+    with pytest.raises(ConfigError, match="origin/main"):
+        branch_trailer_models(repo, "origin/main", TRAILERS)
+
+
+def test_a_folder_that_is_not_a_worktree_is_an_error(tmp_path: Path) -> None:
+    with pytest.raises(ConfigError):
+        branch_trailer_models(tmp_path / "missing", "origin/main", TRAILERS)
