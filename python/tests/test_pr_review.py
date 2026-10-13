@@ -15,7 +15,7 @@ from git_support import make_branch, message
 
 from coney_tools import pr_review
 from coney_tools.cli import main
-from coney_tools.conventions import load_conventions
+from coney_tools.conventions import Trailers, load_conventions
 from coney_tools.pr_review import (
     agent_definition,
     check_review,
@@ -27,7 +27,7 @@ from coney_tools.pr_review import (
 )
 
 #: The real reader of a branch's trailer models, which the fixture below replaces for all but the tests that use it.
-REAL_GIT_BRANCH_MODELS = pr_review.git_branch_models
+REAL_BRANCH_MODELS = pr_review.branch_trailer_models
 
 CONVENTIONS = load_conventions(REPO)
 RULES = CONVENTIONS.pull_requests.review
@@ -66,7 +66,7 @@ Done:
 @pytest.fixture(autouse=True)
 def no_trailers(monkeypatch: pytest.MonkeyPatch) -> None:
     """The fake worktrees here are not git repositories: unless a test says otherwise, the branch has no trailers."""
-    monkeypatch.setattr(pr_review, "git_branch_models", lambda _worktree, _base: [])
+    monkeypatch.setattr(pr_review, "branch_trailer_models", lambda _worktree, _base, _trailers: [])
 
 
 def head(_worktree: Path) -> str:
@@ -456,7 +456,7 @@ def test_review_refuses_a_bad_description_without_launching_the_agent(tmp_path: 
 
 def models(*names: str) -> pr_review.ModelReader:
     """A fake reader of the branch's trailer models: always `names`, whatever the worktree and base."""
-    return lambda _worktree, _base: list(names)
+    return lambda _worktree, _base, _trailers: list(names)
 
 
 def test_a_model_the_description_does_not_name_is_refused_with_the_model_named(tmp_path: Path) -> None:
@@ -486,7 +486,7 @@ def test_the_reader_gets_the_worktree_and_the_base(tmp_path: Path) -> None:
     write_verdict(pr)
     calls: list[tuple[Path, str]] = []
 
-    def reader(worktree: Path, base: str) -> list[str]:
+    def reader(worktree: Path, base: str, _trailers: Trailers) -> list[str]:
         calls.append((worktree, base))
         return []
 
@@ -515,7 +515,7 @@ def test_check_review_on_the_command_line_reads_the_trailers_of_a_real_branch(
     write_verdict(pr)
     monkeypatch.chdir(REPO)
     monkeypatch.setattr(pr_review, "git_head", head)
-    monkeypatch.setattr(pr_review, "git_branch_models", REAL_GIT_BRANCH_MODELS)
+    monkeypatch.setattr(pr_review, "branch_trailer_models", REAL_BRANCH_MODELS)
     argv = ["repo", "check-review", str(pr), "--worktree", str(repo), "--base", "main~1"]
     assert main(argv) == 1
     assert "Claude Opus 5.5" in capsys.readouterr().out
@@ -536,6 +536,6 @@ def test_check_review_exits_2_when_the_base_cannot_be_found(
     write_verdict(pr)
     monkeypatch.chdir(REPO)
     monkeypatch.setattr(pr_review, "git_head", head)
-    monkeypatch.setattr(pr_review, "git_branch_models", REAL_GIT_BRANCH_MODELS)
+    monkeypatch.setattr(pr_review, "branch_trailer_models", REAL_BRANCH_MODELS)
     assert main(["repo", "check-review", str(pr), "--worktree", str(repo)]) == 2
     assert "origin/main" in capsys.readouterr().err

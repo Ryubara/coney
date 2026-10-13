@@ -33,13 +33,14 @@ from typing import Any
 import yaml
 
 from coney_tools.config import ConfigError, find_repo_root
-from coney_tools.conventions import Conventions, Review, load_conventions
+from coney_tools.conventions import Conventions, Review, Trailers, load_conventions
 from coney_tools.repo_checks import branch_trailer_models, check_body, check_title, image_targets
 
 #: Reads a worktree's HEAD commit: the tip a verdict must quote.
 HeadReader = Callable[[Path], str]
-#: Reads the models a branch's commits credit in `Co-Authored-By` trailers, given its worktree and its base.
-ModelReader = Callable[[Path, str], list[str]]
+#: Reads the models a branch's commits credit in `Co-Authored-By` trailers, given its worktree, its base and the
+#: conventions' trailer rules (the real one is `branch_trailer_models`).
+ModelReader = Callable[[Path, str, Trailers], list[str]]
 #: Runs a command in a folder and returns its exit code (the real one starts `claude`).
 Launcher = Callable[[list[str], Path], int]
 
@@ -118,16 +119,6 @@ def git_head(worktree: Path) -> str:
     if result.returncode != 0:
         raise ReviewError(f"{worktree}: not a git worktree ({result.stderr.strip()})")
     return result.stdout.strip()
-
-
-def git_branch_models(worktree: Path, base: str) -> list[str]:
-    """The models a `Co-Authored-By` trailer credits on the commits of `worktree` after `base`.
-
-    ConfigError when git cannot list the commits. The trailer's key and the model addresses are `commits.trailers` in
-    the conventions; this is the default reader of the checks below, replaced in the tests.
-    """
-    trailers = load_conventions(find_repo_root(Path.cwd())).commits.trailers
-    return branch_trailer_models(worktree, base, trailers)
 
 
 def make_stamp(pr_file: Path, worktree: Path, head_of: HeadReader | None = None) -> dict[str, object]:
@@ -234,7 +225,7 @@ def check_review(
     which only the local gate can read. ReviewError when the description itself cannot be read, the worktree has no
     HEAD or its commits cannot be listed.
     """
-    models = (models_of or git_branch_models)(worktree, base)
+    models = (models_of or branch_trailer_models)(worktree, base, conventions.commits.trailers)
     problems = description_problems(read_description(pr_file), conventions, models)
     return problems + _verdict_problems(pr_file, worktree, conventions.pull_requests.review, head_of)
 
@@ -357,7 +348,7 @@ def run_review(
     worktree = worktree.resolve()
     folder = pr_file.parent
     # A description CI would refuse is not worth a review run: send it back first.
-    models = (models_of or git_branch_models)(worktree, base)
+    models = (models_of or branch_trailer_models)(worktree, base, conventions.commits.trailers)
     early = description_problems(read_description(pr_file), conventions, models)
     if early:
         return _report(early, folder / rules.report_file)

@@ -676,6 +676,11 @@ the wrong model, and it cost three review rounds (pull requests #460, #466 and #
   Whoever the description says wrote the commits, a trailer on them has to be named: `a person` with an AI trailer is
   refused. When the AI use lines are themselves unusable (a missing or empty `Model:` for an AI-written branch) only that
   is reported, not the trailers too.
+* **The base must be fresh and right.** `base..HEAD` is what the branch has that the base lacks. With a stale
+  `origin/main`, a branch that has merged a newer `main` also counts the commits it merged in, and so their trailers
+  (other authors' models) must be named: run `git fetch` and the refusal goes away. A stacked branch
+  ([Dependent units are stacked](how-we-work.md#release-queue)) with the default base also counts the parent unit's
+  trailers: pass `--base <parent branch>`.
 * **The message.** One reason per missing model, naming it:
   `AI use: 'Model:' does not name Claude Opus 5.5, which a Co-Authored-By trailer on the branch's commits credits`.
 * **Where it runs.** Locally, where the branch is at hand: `repo check-review` and `repo review` read the commits of the

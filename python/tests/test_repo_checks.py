@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 from conventions_support import REPO, conventions_with
-from git_support import make_branch, message
+from git_support import git, make_branch, message
 
 from coney_tools.config import ConfigError
 from coney_tools.conventions import load_conventions
@@ -678,3 +678,26 @@ def test_a_base_git_cannot_find_is_an_error_not_a_pass(tmp_path: Path) -> None:
 def test_a_folder_that_is_not_a_worktree_is_an_error(tmp_path: Path) -> None:
     with pytest.raises(ConfigError):
         branch_trailer_models(tmp_path / "missing", "origin/main", TRAILERS)
+
+
+def test_a_merge_of_main_counts_main_s_trailers_only_while_origin_main_is_stale(tmp_path: Path) -> None:
+    (tmp_path / "upstream").mkdir()
+    upstream = make_branch(tmp_path / "upstream", [])
+    clone = tmp_path / "clone"
+    git(tmp_path, "clone", "-q", str(upstream), str(clone))
+    git(clone, "switch", "-q", "-c", "feature")
+    (clone / "g.txt").write_text("1", encoding="utf-8")
+    git(clone, "add", "g.txt")
+    git(clone, "commit", "-q", "-m", message("a: Add b", f"Co-Authored-By: {SONNET} <noreply@anthropic.com>"))
+    # Main moves on upstream with another model's commit and the branch merges it, but its origin/main is put back to
+    # the old commit: a clone that merged a newer main without having fetched it into origin/main.
+    old_main = git(clone, "rev-parse", "origin/main").strip()
+    (upstream / "f.txt").write_text("new", encoding="utf-8")
+    git(upstream, "commit", "-q", "-a", "-m", message("a: Fix c", f"Co-Authored-By: {OPUS} <noreply@anthropic.com>"))
+    git(clone, "fetch", "-q", "origin")
+    git(clone, "merge", "-q", "--no-ff", "-m", "Merge main", "origin/main")
+    git(clone, "update-ref", "refs/remotes/origin/main", old_main)
+    assert branch_trailer_models(clone, "origin/main", TRAILERS) == [OPUS, SONNET]
+    # After a fetch, origin/main holds the merged commits and only the branch's own trailer is left.
+    git(clone, "fetch", "-q", "origin")
+    assert branch_trailer_models(clone, "origin/main", TRAILERS) == [SONNET]
