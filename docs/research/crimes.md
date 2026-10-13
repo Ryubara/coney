@@ -998,7 +998,10 @@ it, so n cans give n charges), the fraction sent to the spot (message `0x41`) as
 side and wasted charge. In gameplay (`repo:src/gamemodes/gameplay_tag.cpp`) `HuTag` for player 1 with paint locks
 his movement where he stands, drops a held object of anim set 4 or 6 (a club stays in the hand, `tagDropsHeld()`)
 and plays 334, turning him to the tag over half its length, then the loop 335, and 337 then 335 again when a pause
-begins (`Human::startTagSpray()`); when the loop starts, the session runs on pad 1's left stick, the spot gets its
+begins (`Human::startTagSpray()`). 334 holds the busy bit `0x400`, and while any of the three plays the player's
+stance, commands, triangle actions and anim-state choice do not run and the stick step is skipped, as the original's
+`Human_UpdateActions` (`0x00254e78`) returns after the spray's update (issue #353; a player in the fight stance used
+to have the fight idle put back over 334). When the loop starts, the session runs on pad 1's left stick, the spot gets its
 tagger (message `0x00`, which starts its own fade in) and `CfgTagStartCallback`'s function is called with (tagger,
 tag, flag) and no result asked ([above](#tag-callbacks)); an AI tagger's starts at once. A body something else takes
 during the intro ends it unsprayed (**Coney's reading**). Without paint he says 37 `nopaint` and gets event 14 with

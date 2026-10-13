@@ -238,20 +238,19 @@ TEST_CASE("a tireless human's stamina stays full while it sprints", "[human][scr
 }
 
 TEST_CASE("the rage meter's script operations: full with a hold, a fraction, and the lock", "[human][script]") {
-    const combat::CombatTuning tuning;
-    combat::RageMeter rage(78, 144, 0);
+    combat::RageMeter rage(combat::kPlayerRageClass, 0);
     rage.fill(1000, 5000);
     CHECK(rage.full());
     // Held: no decay before 6000 ms.
-    rage.update(5000, tuning);
+    rage.update(5000);
     CHECK(rage.value() == 78);
     rage.setFraction(0.5F, 5000);
     CHECK(rage.value() == 39);
     rage.setLocked(true, 5000);
-    rage.update(20000, tuning);
+    rage.update(20000);
     CHECK(rage.value() == 39);
     rage.setLocked(false, 20000);
-    rage.update(21000, tuning);
+    rage.update(21000);
     CHECK(rage.value() < 39);
 
     combat::PowerMeter power(400, 60, 0);

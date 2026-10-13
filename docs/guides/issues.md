@@ -58,7 +58,8 @@ show (a sound, a research question, tooling), the section holds one line, `Scree
 `## Screenshots` section in the same shape.
 
 Drag screenshots and short videos into the form's Screenshots box, and attach Coney's log, the text it prints in the
-terminal you started it from, as a `.txt` file in the bug form's Log box. From the command line,
+terminal you started it from, as a `.txt` file in the bug form's Log box (with no user name or email address in it:
+[Attached logs](#attachments)). From the command line,
 `gh issue create --attach ./shots/f.png` (or `gh issue edit N --attach ...`) uploads the file, and a
 `![alt](./shots/f.png)` already in the body is pointed at the upload (gh 2.99 or later). Captures stay in scratch
 and are deleted once uploaded.
@@ -78,6 +79,28 @@ Gameplay screenshots and short videos of Coney or of the original may be attache
 exception to [No game data](repo:LEGAL.md#no-game-data) for issues: never attach asset files, save files, memory
 dumps, executables, BIOS images, disc images, extracted files or the game's text or script source. The bug form has a
 required checkbox that says so. A maintainer deletes an attachment that breaks the rule.
+
+### Attached logs {#attachments}
+
+A log is public the moment it is attached, and a person can attach more than they meant: a path that names their
+user folder, an email address, or a file that is not a log at all. So the `hygiene` workflow
+([Workflows](repo-conventions.md#workflows)) downloads each `.txt` and `.log` attached to an issue's body whenever the
+issue is opened or edited (and every open issue's in the weekly sweep) and scans it. Two checks of the audit report
+what it finds, in the workflow's one comment on the issue:
+
+- `issue.attachment-personal`: a line shows a user folder (`C:\Users\<name>\`, `/home/<name>/`, `/Users/<name>/`) or
+  an email address. Replace the name with `~` (`~\Downloads\disc.iso`), attach the new copy and delete the old link.
+- `issue.attachment-data`: the file may be game data: it is not text, it is larger than a log should be, or enough of
+  its lines look like the game's script source or data files. Delete it if it holds anything
+  [What may be attached](#media) rules out; a long ordinary log can stay.
+
+The comment names the file and the line numbers, never the text, so it does not repeat what it warns about. The
+patterns and limits (which links, how much is downloaded, the size and line thresholds) are `hygiene.attachments` in
+[.github/conventions.yml](repo:.github/conventions.yml). The download is bounded (a size cap and a timeout), sent
+without credentials and only ever held in memory: nothing attached is stored or run. The scan is a heuristic, so a
+finding is a prompt to look, and a clean scan is not a promise. `coney-tools repo audit --github --attachments` runs
+the same scan over every open issue. Removing the link from the body does not delete the file on GitHub; a person who
+attached something private by mistake can ask a maintainer, who can ask GitHub to remove it.
 
 ## Labels {#labels}
 
@@ -194,6 +217,11 @@ A brief may be just "issue #N" ([Briefing](agents.md#briefs)); the issue holds t
   recordings are deleted from scratch when done ([Sharing one machine](how-we-work.md#shared-machine)).
 - **Work the usual way:** the research first when the status says so, then a failing test, then the fix
   ([Testing](testing.md#done)). The pull request description has a `Fixes #N` line in its Summary.
+- **Issues are filed through `coney-tools issue` only.** A hook
+  ([`.claude/hooks/issue_guard.py`](repo:.claude/hooks/issue_guard.py)) refuses a raw `gh issue create`, a
+  `gh issue edit` that sets the body and a `gh api` call that writes an issue, so the body is checked against the
+  form first. Labels, titles, comments and closing pass, and so does a command that names only another
+  repository (`-R owner/name`).
 - **Agents never write to GitHub.** No comments, labels, issues or pull requests: the coordinator does all of it,
   from the same release queue as pull requests ([How we work](how-we-work.md)). An agent reports what it would say
   (the finding, the question for the reporter, the status change) in its message to the coordinator.

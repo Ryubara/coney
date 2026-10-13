@@ -448,13 +448,14 @@ class Slots:
         report: Callable[[Waiting], None] | None = None,
         report_every: float = REPORT_SECONDS,
         timeout: float | None = None,
-        abandon: Callable[[float], str | None] | None = None,
+        abandon: Callable[[float, float], str | None] | None = None,
     ) -> BuildClaim:
         """Wait in the queue until this build is at its head and a slot is free, then claim it. `report` is called
         with a Waiting (place, queue length, holders, a rough wait) when waiting starts and every `report_every`
         seconds after. Raises SlotTimeout, carrying the place, after `timeout` seconds or as soon as `abandon` (asked at
-        every look that finds no slot, with the seconds waited so far) answers with a reason: the caller's own limit,
-        such as a time budget the wait plus the build would pass. The ticket is gone however this returns or raises."""
+        every look that finds no slot, with the seconds waited so far and the rough seconds still to wait) answers
+        with a reason: the caller's own limit, such as a time budget the wait plus the build would pass. The ticket is
+        gone however this returns or raises."""
         ticket = self.join(agent, worktree, preset, priority, pid)
         started = self.clock()
         last_report: float | None = None
@@ -472,7 +473,8 @@ class Slots:
                 live = [row for row in snapshot.queue if not row.stale]
                 place = next((row.position for row in live if row.ticket.name == ticket.name), len(live))
                 held = ", ".join(f"{h.agent} ({h.preset}, {h.step})" for h in holders) or "nobody"
-                reason = abandon(now - started) if abandon is not None else None
+                minutes = estimate_wait(place, holders, self.slots, now, self.lane)
+                reason = abandon(now - started, minutes * 60) if abandon is not None else None
                 if reason is not None:
                     raise SlotTimeout(f"{reason}; held by {held}", place, len(live))
                 if timeout is not None and now - started >= timeout:
@@ -480,7 +482,6 @@ class Slots:
                         f"no {self.what} free after {timeout / 60:.0f} minutes; held by {held}", place, len(live)
                     )
                 if report is not None and (last_report is None or now - last_report >= report_every):
-                    minutes = estimate_wait(place, holders, self.slots, now, self.lane)
                     report(Waiting(place, len(live), holders, minutes))
                     last_report = now
                 self.sleep(poll)
@@ -500,7 +501,7 @@ class Slots:
         report: Callable[[Waiting], None] | None = None,
         report_every: float = REPORT_SECONDS,
         timeout: float | None = None,
-        abandon: Callable[[float], str | None] | None = None,
+        abandon: Callable[[float, float], str | None] | None = None,
     ) -> Iterator[BuildClaim]:
         """Hold a slot for a `with` block: acquired as `acquire` does, released however the block ends (success,
         failure or an interrupt)."""

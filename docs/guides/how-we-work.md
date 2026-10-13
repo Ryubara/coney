@@ -108,11 +108,53 @@ coordinator, who pushes them when CI has room.
   [Capturing and attaching](testing.md#pr-media)). Priority: engine fixes first, then what
   unblocks other work. A pull request runs only the jobs its change can break, so a documentation-only one is cheap
   ([What CI runs](building.md#what-ci-runs)).
+- **Every description is reviewed before it is pushed** ([below](#pr-review)). The coordinator runs
+  `coney-tools repo review <PR.md> --worktree <worktree>` and pushes only when `repo check-review` passes. Any edit to
+  the description or its pictures, and any new commit on the branch, makes the verdict stale: review again.
+- **Stale failures restart themselves.** `coney-tools repo pr-health --rerun --apply` (run from the coordinator's
+  watch loop) reruns a required check that failed because the runner or GitHub did (cancelled, never started, timed
+  out, or a log that shows the runner was lost), at most twice per workflow and commit, and never a real lint, build or
+  test failure. For a `title` or `body` check that failed on text fixed since, it reports that the pull request needs a
+  new event (edit the title or description) because a rerun would reuse the old text
+  ([pr-health](coney-tools.md#repo-pr-health)).
 - **A failure CI finds later** (another platform, a check that cannot run locally) goes to the coordinator when it is
   trivial, otherwise to a small fresh agent ([When a pull request fails checks](agents.md#ci-failures)); never back
   to the agent that wrote the unit.
 - **A description is public:** the clean-room rules of a research page apply (addresses and short findings, no
   decompiler output).
+
+### The description review {#pr-review}
+
+`coney-tools repo check-body` (and CI) only checks a description's structure. On 2026-10-12 a pull request was
+released whose screenshots did not match it: three of its four pictures showed a letterboxed scene instead of
+gameplay, and its before and after pair were the same file. So a second reader goes over every description before it
+is pushed: the `pr-reviewer` agent ([Running agents](agents.md#setup)). It reads the description, the branch's diff and
+the logs the description cites, opens every picture, and writes a verdict: whether each picture shows what the text
+says (gameplay, not a scene, loading screen or menu; the right level; before and after that differ), whether each
+claim in Summary and Testing is backed by the diff or a log, whether `Fixes #N` fits, that nothing is left for later,
+that `Docs: none` is allowed and that AI use is filled.
+
+```sh
+uv run --project python coney-tools repo review <PR.md> --worktree <worktree>
+uv run --project python coney-tools repo check-review <PR.md> --worktree <worktree>
+```
+
+`repo review` runs the agent headlessly (`claude -p`, a throwaway run in the scratch folder) and then
+`repo check-review`, the gate the release step runs before it pushes ([repo review](coney-tools.md#repo-review)).
+A failing verdict goes back as a fix to the description or the captures, never as a push. The gate's rules, generated
+from `pull_requests.review` in [.github/conventions.yml](repo:.github/conventions.yml):
+
+<!-- conventions:begin pr-review -->
+- The `pr-reviewer` agent (`.claude/agents/pr-reviewer.md`) writes `REVIEW.json` and `REVIEW.md` next to the description
+  file: `REVIEW.json` holds `tip`, `body_sha256`, `verdict` (`pass` or `fail`), `images` (each local image's `path` and
+  `sha256`) and `findings` (each with `severity` `blocker` or `note`, `where` and `text`).
+- `repo check-review` passes only when the verdict is `pass` with no `blocker` finding, `tip` is the worktree's HEAD,
+  `body_sha256` is the description file's hash now and every local image the description shows is listed with its hash
+  now; any new commit, edit or replaced picture makes the verdict stale.
+- The description's hash is the SHA-256 of the whole file (title line included) as UTF-8, with a leading BOM dropped and
+  CRLF or CR turned into LF.
+- Two byte-identical images in one description are refused, whatever the verdict.
+<!-- conventions:end -->
 
 People contributing from their own fork push and open pull requests themselves
 ([CONTRIBUTING.md](repo:CONTRIBUTING.md)); the queue is how a coordinator runs many agents on one machine.

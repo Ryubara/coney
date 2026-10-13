@@ -4,6 +4,10 @@
 # sweep also comments on items) are `hygiene.comments` of .github/conventions.yml, and the code is
 # python/src/coney_tools/hygiene_cli.py.
 #
+# Each run also downloads the .txt and .log files attached to the issues it looks at and scans them for possible game
+# data and personal information (`hygiene.attachments`, docs/guides/issues.md#attachments). The download is bounded (a
+# size cap and a timeout), carries no token, stays in memory and is never stored, run or quoted in a comment.
+#
 # It only comments: it never edits an issue's title, body, labels or state, and it deletes nothing. It is not a required
 # check (it is not in merge.required_checks), so a failure here never blocks a merge. Its token is limited to writing
 # issues (to GitHub a comment on a pull request is an issue comment). It runs with `pull_request_target` so that a pull
