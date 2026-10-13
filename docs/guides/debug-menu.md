@@ -114,7 +114,7 @@ Dear ImGui (MIT licence) is pinned in `cmake/deps.cmake` and used only in `src/p
 | Missions | the story's 18 missions in order (number, title, level, checkpoints); choose a mission, then a checkpoint, to start it there |
 | Player | where the player is and how it moves (plotted), his character type and a change of it, freezing him, the [noclip](#noclip) and its hotkey, teleports |
 | Camera | the follow camera's eye, target and distance (plotted), a reset behind the player, the free camera, its values |
-| Spawner | objects put in front of the player in a sandbox: a crate, a fence, a wall, a ramp, stairs, a pillar, a ball |
+| Spawner | objects put in front of the player in a sandbox or a level: a crate, a fence, a wall, a ramp, stairs, a pillar, a ball |
 | AI fighters | AI humans that fight the player: spawn one in front of him, the engaging toggle, their state, clear them |
 | HUD | the [in-game HUD](../research/hud.md)'s parts on and off, player 1's rage, score, money and items set (-1 gives the value back), an objective, a hint and an announcement fired |
 | Debug draw | lines in the scene: collision near the player (plain or by wall class), the player's heading and velocity, the camera, places, every human's collision shapes, strike shapes and contacts |
@@ -183,10 +183,22 @@ Levels), through `debug::PlayControls` (`src/debug/play_controls.h`), which the 
 there is no player. A teleport drops the player onto the ground below the spot and places the camera behind him again.
 Frozen, the player ignores the pad. *Reset behind player* places the follow camera again with the Follow camera
 tunables, so the leash, pitch and look-at height apply at once. The free camera flies with pad 1 as the world viewer's
-does, while the player stands still and the scenery streams round the free camera. The Spawner adds sandbox primitives
-(Coney's own sizes) in front of the player, facing his way, and rebuilds the sandbox with its collision and lighting; a
-level cannot spawn yet. *AI fighters* spawns a fighter ([Sandbox](sandbox.md#ai-fighters)) the chosen distance in front
-of the player, facing him, in a sandbox or a level; *Engaging* off keeps idle fighters from taking him on.
+does, while the player stands still and the scenery streams round the free camera. *AI fighters* spawns a fighter
+([Sandbox](sandbox.md#ai-fighters)) the chosen distance in front of the player, facing him, in a sandbox or a level;
+*Engaging* off keeps idle fighters from taking him on.
+
+**Spawner.** The page adds sandbox primitives (Coney's own sizes) the chosen distance in front of the player, facing his
+way, in a sandbox or a level; *Clear spawned* removes them all. The crate and the wall carry flag bit 7 (climbable by
+anyone) and the fence material 30 (`LOW_FENCE`), as the parkour course's blocks and fences do, so the climbs take them
+([Collision](../research/collision.md#triangles)); the ramp and the stairs are walked up. In a sandbox the page rebuilds
+the sandbox with its collision and lighting. In a level the objects' solid triangles (the same ones a sandbox makes) are
+added to the level's collision mesh after the disc's own, listed in its grid cells after what each cell held, so the
+player, the AI, the climbs, the jumps and the cameras meet them through the queries they use for the level; they are
+drawn among the scenery with the sandbox's baked light and tints. The disc's triangles, their order and their indices
+are untouched, and *Clear spawned* puts the mesh back exactly as it was loaded. A level loaded again (a jump, a
+mission's start) starts with nothing spawned. A script that switches the collision in a box (a door, a barrier) switches
+spawned triangles inside that box too. An AI human only climbs on its route's climb legs, which come from the level's
+path data, so it walks into a spawned obstacle rather than over it, as it does in a sandbox.
 
 **Change character.** *Character type* lists every type the scripts' `CfgChar` calls configure (449 on the disc) when
 the scripts set up the scene (a level's own, the story's, or level99's for a sandbox), each with the model a player

@@ -14,6 +14,7 @@
 #include "debug/debug_pages.h"
 #include "debug/debug_session.h"
 #include "debug/play_controls.h"
+#include "human/climb.h"
 
 namespace coney::debug {
 
@@ -277,7 +278,7 @@ void addSpawnerPage(DebugSession& session) {
                 return;
             }
             if (!play->canSpawn()) {
-                page.add(watchItem("Spawning", [] { return std::string("needs a sandbox: load one from Levels"); }));
+                page.add(watchItem("Spawning", [] { return std::string("not in this mode"); }));
                 return;
             }
             MenuItem ahead = numberItem(
@@ -307,7 +308,7 @@ void addSpawnerPage(DebugSession& session) {
             }));
             page.add(logItem("Log", [&session] { return session.log().last(3); }));
         },
-        "Objects put in front of the player, in a sandbox.");
+        "Objects put in front of the player, in a sandbox or a level.");
 }
 
 void addFightersPage(DebugSession& session) {
@@ -398,9 +399,17 @@ const std::vector<Spawnable>& spawnables() {
             return p;
         };
         std::vector<Spawnable> list;
-        list.push_back({"Crate (1 m)", make(sandbox::Shape::Box, {1.0F, 1.0F, 1.0F}, {0.9F, 0.7F, 0.4F})});
-        list.push_back({"Fence (1.2 m)", make(sandbox::Shape::Box, {3.0F, 0.1F, 1.2F}, {0.5F, 0.8F, 0.5F})});
-        list.push_back({"Wall (2.5 m)", make(sandbox::Shape::Box, {4.0F, 0.3F, 2.5F}, {0.8F, 0.5F, 0.5F})});
+        // The crate and the wall carry flag bit 7 (climbable by anyone) and the fence material 30 (`LOW_FENCE`), as the
+        // parkour course's blocks and fences do, so the climbs take them (docs/research/collision.md#triangles).
+        sandbox::Primitive crate = make(sandbox::Shape::Box, {1.0F, 1.0F, 1.0F}, {0.9F, 0.7F, 0.4F});
+        crate.surface.flags = human::kTriangleClimbable;
+        list.push_back({"Crate (1 m)", crate});
+        sandbox::Primitive fence = make(sandbox::Shape::Box, {3.0F, 0.1F, 1.2F}, {0.5F, 0.8F, 0.5F});
+        fence.surface.material = human::kClimbableMaterial;
+        list.push_back({"Fence (1.2 m)", fence});
+        sandbox::Primitive wall = make(sandbox::Shape::Box, {4.0F, 0.3F, 2.5F}, {0.8F, 0.5F, 0.5F});
+        wall.surface.flags = human::kTriangleClimbable;
+        list.push_back({"Wall (2.5 m)", wall});
         list.push_back({"Ramp (1 m rise)", make(sandbox::Shape::Ramp, {2.0F, 3.0F, 1.0F}, {0.6F, 0.6F, 0.9F})});
         sandbox::Primitive stairs = make(sandbox::Shape::Stairs, {2.0F, 0.0F, 0.0F}, {0.7F, 0.7F, 0.7F});
         stairs.steps = 6;
