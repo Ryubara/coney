@@ -2,7 +2,7 @@
 // The Diego and Vargas fight (docs/research/ai-gangs.md#boss-diego-vargas): the tired goal stuns the boss and lets him
 // up when his fatigue runs out; six hits in the fight tire a BigBrawler; and TacticBossScenarioA gives each Hurricane
 // his goal, holds Diego's health above the stage's cap until he is tired, then answers 18 for the break and 1 once it
-// is done. Synthetic scenes.
+// is done; hits taken at the cap count toward tiring him. Synthetic scenes.
 #include "ai/boss_goals.h"
 
 #include <algorithm>
@@ -109,4 +109,54 @@ TEST_CASE("TacticBossScenarioA caps Diego's health until he is tired, then answe
     CHECK(std::ranges::find(scene.services.clips, coney::ai::boss_anim::kBreak) != scene.services.clips.end());
     scene.run(90);
     CHECK(codesOf(scene, "P1.Boss") == std::vector<int>{coney::ai::kTacAnimStart, 1});
+}
+
+TEST_CASE("hits a capped boss takes still count, so six of them tire him and the next starts his break",
+          "[ai][boss]") {
+    // Held at the cap, a boss loses health to each hit and the tactic puts it back on its next update: the hit must
+    // still reach his BigBrawler (event 1), or he never tires and the stage can never end
+    // (docs/research/ai-gangs.md#boss-diego-vargas). Found when the level5 boss fight's Vargas stood at 67 % for
+    // 9,000 updates with two hits counted.
+    AiScene scene;
+    const int hurricanes = scene.brains.gangs().create(19, "Hurricanes");
+    const int warriors = scene.brains.gangs().create(1, "Warriors");
+    scene.brains.gangs().makeEnemies(hurricanes, warriors);
+    Brain& diego = scene.add(Vec3{44.0F, 40.0F, 0.0F}, 0.0F);
+    diego.setCharacterClass(coney::ai::kDiegoClass);
+    scene.brains.gangs().addMember(hurricanes, diego);
+    // A player who never presses anything, so the only hits are the test's.
+    Brain& player = scene.add(Vec3{44.0F, 41.2F, 0.0F}, 180.0F, coney::ai::BrainType::Player);
+    scene.brains.gangs().addMember(warriors, player);
+    coney::script::TacticCall call;
+    call.kind = coney::script::TacticKind::BossDiegoVargas;
+    call.callback = "P1.Boss";
+    call.boss.stage = 1;
+    const coney::ai::TacticServices services{.scripts = &scene.services};
+    scene.brains.gangs().setTactic(hurricanes, coney::ai::makeStoryTactic(call, {}, services));
+    scene.run(2);
+    auto* brawler = static_cast<coney::ai::BigBrawlerGoal*>(diego.findGoal(GoalType::BigBrawler));
+    REQUIRE(brawler != nullptr);
+    scene.run(30);
+    REQUIRE(brawler->state() == coney::ai::BigBrawlerGoal::State::Fight);
+
+    // Five hits at the cap: each is put back above it, and each is counted.
+    diego.human().setHealthPercent(50.0F);
+    scene.run(1);
+    REQUIRE(diego.human().healthPercent() == Catch::Approx(67.0F).margin(0.5F));
+    for (int hit = 1; hit < 5; ++hit) {
+        diego.human().setHealthPercent(60.0F);
+        scene.run(1);
+        CHECK(diego.human().healthPercent() == Catch::Approx(67.0F).margin(0.5F));
+    }
+    CHECK(brawler->hits() == 5);
+    CHECK(codesOf(scene, "P1.Boss").empty());
+    // The sixth tires him; the next hit, tired at the cap, starts his break (18).
+    diego.human().setHealthPercent(60.0F);
+    scene.run(1);
+    CHECK(brawler->hits() == 0);
+    REQUIRE(diego.topGoal() != nullptr);
+    CHECK(diego.topGoal()->type() == GoalType::Tired);
+    diego.human().setHealthPercent(60.0F);
+    scene.run(1);
+    CHECK(codesOf(scene, "P1.Boss") == std::vector<int>{coney::ai::kTacAnimStart});
 }

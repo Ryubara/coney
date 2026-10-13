@@ -240,6 +240,9 @@ class Brain {
     /// Its human's health when the brains last looked (Brains::reportDamage()); -1 before the first look.
     [[nodiscard]] int seenHealth() const { return m_seenHealth; }
     void setSeenHealth(int health) { m_seenHealth = health; }
+    /// Health its human lost before this step's tactics ran, not yet reported as event 1 (Brains::noteDamage()).
+    [[nodiscard]] int unreportedDamage() const { return m_unreportedDamage; }
+    void setUnreportedDamage(int damage) { m_unreportedDamage = damage; }
     /// What its human's own script handlers are reached through (deliverEvent()); null for none. The level's scripted
     /// brains set it when they bind the brain to a handle.
     [[nodiscard]] ScriptServices* services() const { return m_services; }
@@ -631,6 +634,7 @@ class Brain {
     std::optional<std::uint32_t> m_routeNode; // RouteState_CurrentNode of +0xe0
     int m_characterClass = -1;                // the human's class
     int m_seenHealth = -1;
+    int m_unreportedDamage = 0;
     int m_turnBoost = 0; // +0x0b
     BrainType m_type;
     bool m_enabled = true;

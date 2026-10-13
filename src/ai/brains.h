@@ -85,6 +85,9 @@ class Brains {
 
     // Event 18 for each human whose health has run out since the last step.
     void reportDowns();
+    // The health each human lost since the last step, kept before the gangs' tactics run: a tactic that holds a boss
+    // above his cap gives the health back at once, and the hit must still reach reportDamage().
+    void noteDamage();
     // Event 1 for each human whose health fell since the last step (**Coney stand-in**: the original's sender of
     // message 1 is not traced), about the nearest other human that can fight, the damage as its value.
     void reportDamage();
