@@ -254,12 +254,19 @@ minute that a fighter stands. The numbers per match are on [Rumble](rumble.md#ga
    1.0 to 3.2; clears by `Human_DropTarget`, the Stunned goal and a slot displacement (`Brain_ClaimAttackSlot`) 0 to
    7.5. Calls that set the same target again (most of them, through `Human_SetTarget` `0x00226c30`) change nothing.
 7. **Help.** Help calls (the `help-call` hook on `Gang_BroadcastHelpCall` `0x00293640`) come from three sites of
-   `Brain_DefaultOnEvent`: on a hit (`0x002930d8`, with an amount in `a3`), on a warning (`0x00292f08`) and a third
-   (`0x002934fc`, about once a minute). Hit and warning together: the Orphans 41 to 71 a standing minute, the Furies
-   12 to 37 (the Orphans are hit more). Every helper sent (the `send-helper` hook on `Gang_SendHelper` `0x002b75b8`,
-   0.1 to 1.6 a minute) was sent by a hearer answering a call (`Brain_OnViolenceSeen` `0x00291960`); TacticAttack's
-   3 s idle check never sent one, because side 2's fighters never had an empty goal stack (0 to 0.5 % of the time;
-   side 1's 0.4 to 12.6 %).
+   `Brain_DefaultOnEvent` `0x00292d80`, which the hook tells apart by return address: on a hit (event 1, call at
+   `0x002930d0`, returning to `0x002930d8`, with an amount in `a3`), on an attack warning (event `0x10`, call
+   `0x00292f00`, return `0x00292f08`) and on a **new enemy** (event `0xb`, call `0x002934f4`, return `0x002934fc`:
+   unless that enemy is throwing at him, `Human_IsThrowingAt` `0x002281d8`, a 20 m call with the new-enemy flag `t0` =
+   1 and `a2`, `a3` zero; confirmed (code), [the shared handler](ai.md#shared-events) item 3). Event `0xb` comes from
+   the enemy scan when `Brain_AddEnemy` lists an enemy for the first time, and is rare once both sides are engaged
+   (inferred): 0.1 to 1.3 a standing minute a side (confirmed (runtime)). Per standing minute, five matches (three
+   swapped, two not): hit and warning, the Orphans 41 to 70 and the Furies 12 to 37 (the Orphans are hit more); all
+   three sites, the Orphans 41 to 71 and the Furies 13 to 38. [Rumble's comparison](rumble.md#gang-battle-metrics)
+   rule 11 counts all three. Every helper sent (the `send-helper` hook on `Gang_SendHelper` `0x002b75b8`, 0.1 to 1.6 a
+   minute) was sent by a hearer answering a call (`Brain_OnViolenceSeen` `0x00291960`); TacticAttack's 3 s idle check
+   never sent one, because side 2's fighters never had an empty goal stack (0 to 0.5 % of the time; side 1's 0.4 to
+   12.6 %).
 8. **Side and gang** (the swap): the Furies won all eight matches, as side 1 and as side 2, and the Blocking goal
    and few reactions go with the Furies, while side 2 attacks more often than side 1 whichever gang it is
    ([Rumble: the sides swapped](rumble.md#gang-battle-swap)).
