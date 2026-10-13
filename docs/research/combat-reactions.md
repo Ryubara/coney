@@ -768,22 +768,24 @@ are knock-downs of 90 health; Coney's are small reactions of 18-54
 bat's own damage and gives a heavy high reaction.
 
 **1. Where the bats come from: the scene.** The fourteen Furies (`ParkFury01`-`10`, `ParkFury14`, `FenceFury1`-`3`,
-character types 90-94) are made with no weapon: the five types' `CfgChar` weapon string (record `+0x18c`) is `none`, so
-`Human_Init` (`0x00218008`) puts nothing in their hands, and their power classes (5 for types 90, 26 for the rest) do
-not draw one either (confirmed (runtime), the records read over PINE during the first run; that read's output was not
-kept, and the classes are borne out by the 90 and 72 below). `gPlayCutScene` then binds them to `l34_c4`'s roles
-and binds fourteen `dyn_bat` objects (and `dyn_furies`) to its object slots with `SceneAddObject` (inferred: the
-calls were logged by Coney's interpreter running the original's chapter script, not traced in the original; the
-scene's fourteen `dyn_bat` and one `dyn_furies` props are the scene data's own list, on
-[Scenes](../references/scenes.md#scene-l34-c4)). At the
-scene's start each role's pick target is the slot its clip's first type-9 event names, and the event takes the object
-into the hand ([Scripts: the props go into hands by clip events](scripting.md#level80-arrest-fire), confirmed (code)
-at `0x0039d870`). At runtime every Fury's hand (human `+0x338`) went from Nil to a `dyn_bat` (`CfgObj` class
-`melee_weapon`, anim set 3, `+0x58` = 90) on the same update, a few updates into the level and long before the
-scene's end, and still held it when the fight began (confirmed (runtime), PCSX2 2.9.94, two runs, below). That the
-hand-over is the scene's type-9 event is inferred: the timing, the fourteen bound bats and the documented start agree,
-but the event values of `l34_c4`'s role clips were not read. The script's own `HuSetKeepWeapon(Fury, 1)` before
-`GoalFight` keeps the bat in hand when he is hit ([Dropping what is held](combat-rage.md#keep-weapon)).
+character types 90-94) are made with no weapon. Every Fury's hand was empty at tick 1 of the polled run (confirmed
+(runtime), the polled run's hand poll); the five types' `CfgChar` weapon string (record `+0x18c`) read `none` and their
+power classes 5 (type 90) and 26 (the rest) over PINE in the first run, so `Human_Init` (`0x00218008`) puts nothing in
+their hands and the classes draw nothing either. Those `CfgChar` values are graded inferred: that read's output was not
+kept, and what still supports them is the empty hands at tick 1 and the 90 and 72 below, which fit floats 1.0 and 0.8.
+`gPlayCutScene` then binds them to `l34_c4`'s roles and binds fourteen `dyn_bat` objects (and `dyn_furies`) to its
+object slots with `SceneAddObject` (inferred: the calls were logged by Coney's interpreter running the original's
+chapter script, not traced in the original; the scene's fourteen `dyn_bat` and one `dyn_furies` props are the scene
+data's own list, on [Scenes](../references/scenes.md#scene-l34-c4)). At the scene's start each role's pick target is the
+slot its clip's first type-9 event names, and the event takes the object into the hand ([Scripts: the props go into
+hands by clip events](scripting.md#level80-arrest-fire), confirmed (code) at `0x0039d870`). At runtime every Fury's hand
+(human `+0x338`) went from Nil at tick 1 to a held object by tick 9, long before the scene's end, and still held it when
+the fight began (confirmed (runtime), PCSX2 2.9.94, two runs, below). That the object is a `dyn_bat` (`CfgObj` class
+`melee_weapon`, anim set 3, `+0x58` = 90) was read over PINE without a kept log, so it is inferred: the Furies then
+played set 3's bat clips, and every bat hit dealt 90 or 72. That the hand-over is the scene's type-9 event is inferred:
+the timing, the fourteen bound bats and the documented start agree, but the event values of `l34_c4`'s role clips were
+not read. The script's own `HuSetKeepWeapon(Fury, 1)` before `GoalFight` keeps the bat in hand when he is hit ([Dropping
+what is held](combat-rage.md#keep-weapon)).
 
 **2. What they swing.** With set 3 in hand an AI's square and cross play the bat's clips
 ([A bat in hand](combat-throws.md#bat)): **501** `SWINGABLE_OBJECT_ATTACK_FROM_RUN` when he arrives at a run, **36**
@@ -794,11 +796,16 @@ but the event values of `l34_c4`'s role clips were not read. The script's own `H
 and the 37s of steps 762 and 802 and all three 193 / 194 landed on `SceneRogue2` on the ground (hits at steps 775,
 781, 815, 825 and 850; rec1's `anim-dispatch`, `strike-contact` and `deal-damage` logs; human names by allocation
 order); in the polled run the downed player was hit the same way (below). What picks 37 or 193 / 194 was not found.
-Their Anim Range List entries, read from the Furies' own lists (record `+0x160`) and the same in the player's:
-501 damage 20, hit code `0x2a`, flags `0x400`; 36 damage 130, `0x2a`; 37 damage 75, `0x0a`; 34 / 35 damage 10,
-`0x29` / `0x2b` (confirmed (runtime), read over PINE during the first run; that read's output was not kept, so
-these five entries want a re-read before an implementer relies on the clip damages, which the bat's hits do not
-use). Code `0x2a` is a straight high **heavy** hit ([Hit codes](combat.md#hit-codes)).
+Their Anim Range List entries on the disc ([chunk `0x45`](formats/animation.md#anim-range-list)), the same in the
+park Furies' character data (`fury_so1`-`4`, resource `312adcb1`), `fury_lt`'s and the player's (`warr_ve`): 501
+damage 20, hit code `0x2a`, flags `0x400`; 36 damage 130, `0x2a`; 37 damage 75, `0x0a`; 34 / 35 damage 10, `0x29` /
+`0x2b`; 193 / 194 damage 50, `0x0a`. Those are the disc's values, read with the chunk's layout (confirmed (code) at
+its readers) from `coney-tools extract`'s output; 44 of the 53 character data resources hold exactly these for these
+ids. That the Furies' lists at runtime (record `+0x160`) hold the same is inferred: a PINE read in the first run gave
+the same for 501 and 34-37 but its output was not kept, and the disc is corroboration, not a grade. The hit codes
+are supported by the reactions (292-295 from 501 and 36 fit `0x2a`, confirmed (runtime) below). The damages can be
+overwritten by the class when the human is made ([damage table](combat.md#damage-table)): 193 / 194 hold 50 on the
+disc but dealt 25 here (not traced). Code `0x2a` is a straight high **heavy** hit ([Hit codes](combat.md#hit-codes)).
 
 **3. The damage is the bat's, not the clip's.** None of the Furies' bat hits went through `Strike_Contact`
 (`0x0021b290`): its hook logged only unarmed and grounded strikes, while every bat hit came from
