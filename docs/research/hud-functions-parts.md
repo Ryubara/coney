@@ -42,18 +42,79 @@ the behaviour is confirmed (code) unless a row says otherwise.
 | `0x0019faf0` | `CrewStatus_Init` | eight order slots (`+0x44`) = -1, entries hidden, count `+0x40` = 0, layout `+0x1310`-`+0x1324` | confirmed (code) |
 | `0x0019fbb0` | `CrewStatus_Setup(iconSize, aspect, list, position, cell, step, columns, rows)` | from the HUD's level set-up (0.05, 0.7, columns 2, rows 4): the grid, and the caption markup text `+0x13b0` (size 0.1, grey 128) | confirmed (code) |
 | `0x0019fd00` | `CrewStatus_Shutdown` | slot `+0x68`: releases the eight entries | confirmed (code) |
-| `0x0019fda0` | `CrewStatus_Update` | slot `+0x30`, from `HUD_Update` while the statistics game mode is below 100: each live entry at its grid cell (order index modulo the columns, rows below), entries whose human no longer resolves removed; the caption under the last row | confirmed (code) |
+| `0x0019fda0` | `CrewStatus_Update` | slot `+0x30`, from `HUD_Update` while the statistics game mode is below 100: each live entry at its grid cell (order index modulo the columns, rows below); an entry that is hidden or whose human no longer resolves is removed; the caption under the last row | confirmed (code); removal confirmed (runtime) |
 | `0x001a03a8` | `CrewStatus_Render` | slot `+0x38`: the entries and the caption | confirmed (code) |
-| `0x001a0420` | `CrewStatus_Add(list, human)` | from `0x001b3960` (`Humans_Update`): a member of player 1's gang who is down (`0x00227dd8`), dead (`0x00223b70`) or lost (brain `+0x152` set and over 50 m off) gets one entry (eight at most); the caption becomes colour tag 5, the human's name (capitalised) and string `0xe1`, `0xe2` or `0xe3` | confirmed (code); the three states' meanings inferred from the icons |
+| `0x001a0420` | `CrewStatus_Add(list, human)` | from `0x001b3960` (`HUD_TagAddHuman`, called by `Humans_Update` for every member of player 1's gang every update): a member who is **knocked out** (`0x00227dd8`), **cuffed** (`Human_IsCuffed`, `0x00223b70`, state `0x20000`) or **fighting far off** (brain `+0x152` set, an attacker in brain `+0x1a4`, over 50 m from the camera) gets one entry (eight at most); the caption becomes the 2.5 s format, colour tag 5, the human's name (capitalised) and string `0xe1`, `0xe2` or `0xe3` ([The crew status list](#crew-status)) | confirmed (code); cuffed and knocked out confirmed (runtime) |
 | `0x001a07f0` | `CrewStatus_Remove(list, human)` | from `Human_Destroy` and `Human_MakePlayer` (`0x001b39a0`): drops the human's entry and renumbers the rest | confirmed (code) |
 | `0x001a08c8`, `0x001a0918` | `CrewStatusEntry_Init`, `_Setup` | portrait sprite `+0x40` (`(191, 191, 191, 255)`, `CrewStatus_GetIcon`) and status sprite `+0x140` (rectangle `0x19`, grey 128); 0.035 further left in 16:9 | confirmed (code) |
 | `0x001a0b00` | `CrewStatusEntry_Shutdown` | slot `+0x68`: both sprites released, the human handle cleared | confirmed (code) |
 | `0x001a0b60` | `CrewStatusEntry_Place` | the portrait at a position, the status sprite offset by (`0x0050d018`, `0x0050d01c`); sizes × 0.8 in 16:9 | confirmed (code) |
 | `0x001a0c90` | `CrewStatusEntry_Render` | slot `+0x38`: both sprites when the batch is resident | confirmed (code) |
-| `0x001a0d28` | `CrewStatusEntry_Update` | slot `+0x30`: hidden unless the human is in player 1's gang; status rectangle `0x1a` (down), `0x19` (dead) or `0x15` (lost); the status alpha pulses on an 800 ms triangle wave, cubed | confirmed (code) |
+| `0x001a0d28` | `CrewStatusEntry_Update` | slot `+0x30`: hidden unless the human is in player 1's gang; status rectangle `0x1a` (knocked out), `0x19` (cuffed) or `0x15` (fighting far off), and hidden when none holds (the update then removes it); the status alpha pulses on an 800 ms triangle wave, cubed | confirmed (code) |
 | `0x001a0fd0`, `0x001a1008`, `0x001a1098` | `Bar_Construct`, `HudBar_Construct`, `HudBar_Init` | the meter's set-up and defaults ([The rage meter](hud.md#the-rage-meter), [GUI](gui.md#widget-classes)) | confirmed (code) |
 | `0x001a1138` | `HudBar_Draw(flashBelow, bar, flash, trail)` | the end caps (rectangles +2, +3), back (+0), fill (+1) and an optional second fill `+0x3c`; a flash below `flashBelow` and a fading trail, both unused: every caller passes 0 for both ([The rage meter](hud.md#the-rage-meter)) | confirmed (code) |
 | `0x001a1be8` | `HudBar_SetFillGradient(bar, on, low, high)` | `+0x60` on: the fill colour is lerped from `+0x30` to `+0x34` by the fill | confirmed (code) |
+
+### The crew status list {#crew-status}
+
+The HUD's only alert about the crew: a portrait for each member of the player's gang who is in trouble, with a
+pulsing status icon under it, and a one-line caption naming the member when an entry appears. It lives at HUD
+`+0x10` (`0x00600850`) and sits at the top of the screen, a little left of centre.
+
+**Who is listed.** Every update, `Humans_Update` hands each human whose brain's gang (`+0x20c`) is player 1's (game
+state `+0x228`) to `HUD_TagAddHuman` (`0x001b3960`, call at `0x002493a0`; its other caller is
+`Human_ReleasePlayer`, `0x0022a574`), which passes it to `CrewStatus_Add` (`0x001a0420`). The member gets an entry
+when one of three states holds, tested in this order; the same three choose the caption and the icon.
+Confirmed (code) at `0x001a0420` and `0x001a0d28`:
+
+| State | Test | Caption string (`GSTRING.HUD`) | Status rectangle | On screen |
+| --- | --- | --- | --- | --- |
+| **knocked out** | `Human_IsKnockedOut` (`0x00227dd8`): state `0x40000`, or no record | `0xe1` (225): the "down" text | `0x1a` | a red cross |
+| **cuffed** (arrested) | `Human_IsCuffed` (`0x00223b70`): state `0x20000`, the state [`Human_Arrest`](crimes.md#arrest) sets | `0xe2` (226): the "arrested" text | `0x19` | a blue badge |
+| **fighting far off** | brain `+0x152` not 0 (the count of brains that hold him in their enemy lists, [fight mode under follow](ai-gangs.md#warrior-follow)), at least one live handle in his 16 attack slots (brain `+0x1a4`, `HandleArray16_CountLive`), and human `+0x334` (his distance to the nearest camera, written by `Human_UpdateLod` `0x0023d660`) above 50 m (its square above 2500) | `0xe3` (227): the "fighting" text | `0x15` | not seen |
+
+- The caption texts are `GSTRING.HUD` 225-227 of `config_strings_<code>.lua` ([Text labels](../references/text-labels.md#text-gstring-hud)),
+  given to the engine by `CfgHUDMessage`; their English words name the three states as the table does (read from the
+  script, not quoted here). This replaces the earlier reading of the states as down, dead and lost, which was
+  inferred from the icons: `0x00223b70` is the cuffed test, and nothing in the list tests death.
+- Not listed: a human whose character id (`+0xcc`) is 270-287, the bums ([Characters](../references/characters.md));
+  a human whose gang is not player 1's and whose brain type (`+0x04`) is neither 0 nor 3 is refused by `Add`, and
+  `CrewStatusEntry_Update` hides any entry whose human is not in player 1's gang. The code does not exclude the player
+  himself; whether his own entry ever shows was not checked.
+- A human already listed is not added twice. At most eight entries; a ninth is dropped.
+
+**The entry.** A portrait (`CrewStatus_GetIcon`, above) and the status sprite under it, whose alpha follows an 800 ms
+triangle wave, cubed, so the icon pulses. Each update `CrewStatusEntry_Update` re-tests the three states and sets the
+rectangle; when none holds it hides the entry, and `CrewStatus_Update` then removes it and renumbers the rest. So the
+list is live: an entry lasts exactly as long as its state (a member who gets up, is uncuffed or comes back within
+50 m of the camera leaves the list), and it can change icon while listed (a cuffed member knocked out shows the cross).
+
+**The caption.** When an entry is added, `CrewStatus_Add` builds the caption from the format at `0x00553cb8`, an
+engine constant: `<DISPLAYTIME 2500><SIZE 1.0><CENTER>`, then colour tag 5 (`HudColourTag_Get(5)`, a grey colour tag
+from `CfgHUDColor`), the human's name with its first letter upper-cased, a space, and the state's string. One special
+name is swapped: `WarriorsSoldier` (`0x00553c90`) is shown as `Warriors Soldier` (`0x00553ca0`, copied with a
+16-byte limit). The caption is one markup text for the whole list, placed under the last row, so a new entry
+replaces the previous caption. It shows for **2.5 s**, the fade included: full for 1.5 s, then its alpha falls over
+the last second (the `<DISPLAYTIME>` rule, [Markup tags](gui.md#markup)). **No sound** plays: `CrewStatus_Add` calls
+no sound function. Confirmed (code) at `0x001a0420`, `0x0019fda0`, `0x001a03a8`.
+
+**Runtime check** (PCSX2 2.9.94; a copy of a `level80` checkpoint state with the player and two Warriors, humans 1
+and 2; the record flags at `*(human + 0xd4)` written over PINE): setting `0x20000` on human 1 added one entry (list
+count `+0x40` = 1, order slot 0) with a blue badge under his portrait and the caption built as above with the
+arrested text; the caption widget's alpha (`+0x1b0` of the caption at `+0x13b0`) was 255 at first and
+fading by about 2 s. To see the caption in a still, the format's `2500` was patched to `9500` in memory; it then
+showed centred under the portraits. Setting `0x40000` instead gave the red cross, pulsing; clearing the flag emptied
+the list on the next update. The real arrest path sets the same flag ([Arrest](crimes.md#arrest), step 2), so an
+arrested crew member is listed (inferred from the flag; an arrest by a cop was not staged). The fighting state was
+not staged at runtime.
+
+**What else the HUD shows for the crew.** Nothing reacts to a member fighting or being hit short of these three
+states: the [health rings](hud-radar.md#the-health-rings) are drawn only for the players and the player's target,
+and the [gang tally](hud-functions-lua.md#gang-count-what) counts members who are not down (a cuffed member keeps
+his mark, as state `0x20000` is not in `Human_IsDownOrDead`'s mask). A member in a fight within 50 m of the camera
+gets no HUD cue at all. In the runtime check above, the knocked-out member's radar blip also changed look; that was
+not traced. When a crew member is arrested, the other cues are not the HUD's: he says 25 `arrested`, and the
+`dyn_cuffs` icon floats over his head in the world ([Arrest](crimes.md#arrest), step 6).
 
 ## After `GUI/BaseWidget.cpp` (no path string): mash meter and chase HUD {#fn-after-basewidget}
 
@@ -177,7 +238,7 @@ widget base ([GUI](gui.md#fn-after-checklistmessagehud)) and a small HUD toggle 
 | `0x001a7000`, `0x001a7020` | `WarCommandDisplay_ReleaseCamera`, `_IsReady` | `0x0050b1b0[pad]` = 1: the camera's right stick back on ([Warrior command menu](hud.md#warrior-command-menu)); the batch is resident | confirmed (code) |
 | `0x001a7040` | `WarCommandDisplay_ReadStick` | every `*0x0050d280` ms, with the stick (pad record bytes `+0x2a`/`+0x2b`) more than 110 from centre: the stick's angle picks one of six sectors (with hysteresis `0x0050d2b8`) as the selection `+0x1540`; interface cue `0x20` on a change | confirmed (code) |
 | `0x001a77b0`, `0x001a7d10` | `WarCommandDisplay_Place`, `_BlinkSlot` | the slot sprites round the centre; the selected slot blinks by the counter `+0x1578` | confirmed (code) |
-| `0x001a7e48` | `WarCommandDisplay_Update` | slot `+0x30`: closed when the player is down; the stick read unless the menu is locked; after an issue the sprites fade and the display closes when its text expires; text = the command's name or the locked text | confirmed (code) |
+| `0x001a7e48` | `WarCommandDisplay_Update` | slot `+0x30`: closed when the player is down; the stick read unless the menu is locked; after an issue the sprites fade and the display closes when its text expires; text = the command's name, or entry 6, the out-of-range text, while game state `+0x414` + player is set (load at `0x001a8028`; [out-of-range flag](ai-gangs.md#warrior-range-flag)); entry 7 for a disabled command | confirmed (code) |
 | `0x001a8530` | `WarCommand_FromSlot(display, slot)` | jump table `0x00553fe0`: display slot 0-5 → command id; 7 otherwise | confirmed (code) |
 | `0x001a8590` | `WarCommandDisplay_Render` | slot `+0x38`: the selected slot white / gold `(255, 183, 0)` / grey, the others white / dark `(35, 35, 35)` / black; a disabled command in `(30, 30, 30)` | confirmed (code) |
 | `0x001a8988` | `WarCommandDisplay_ShowCurrent` | maps the player's last command to a slot and shows its name; no caller or table reference found (not needed: unreferenced) | confirmed (code) |
@@ -412,7 +473,7 @@ neighbours.
 | `0x001b38b8`, `0x001b38d8` | `HUD_LoadCredits`, `HUD_StartCredits` | `Credits_Load` / `Credits_Start` on `+0xea30` | confirmed (code) |
 | `0x001b38f8` | `HUD_ScoreBoardSignal` | `0x001c28c8` on the score board (from `0x003a4c48`) | confirmed (code) |
 | `0x001b3918`, `0x001b3940` | `HUD_QueueScrollIn`, `HUD_FlushScrollIn` | the scroll-in queue's queue and `0x001c94c8` ([Objectives](hud-messages.md#objectives-hudsetobjective)) | confirmed (code) |
-| `0x001b3960`, `0x001b39a0` | `HUD_TagAddHuman`, `HUD_TagRemoveHuman` | a human's handle into or out of the `+0x10` widget (`0x001a0420`, `0x001a07f0`) | confirmed (code) |
+| `0x001b3960`, `0x001b39a0` | `HUD_TagAddHuman`, `HUD_TagRemoveHuman` | a human's handle into or out of the `+0x10` widget (`0x001a0420`, `0x001a07f0`); `HUD_TagAddHuman` is called by `Humans_Update` (`0x002493a0`) and `Human_ReleasePlayer` (`0x0022a574`) | confirmed (code) |
 | `0x001b39e0`, `0x001b3b38` | `HUD_LockPickStart(hud, player, difficulty)`, `HUD_LockPickEnd` | the dial: difficulty, three zone flags (difficulty 0: none; 1: the middle one; other: the outer two), values 1, 2, 3, shown / hidden ([Crimes](crimes.md)) | confirmed (code) |
 | `0x001b3b68`, `0x001b3ba8`, `0x001b3c78` | `HUD_MashMeterShow`, `_Hide`, `_Update` | the mash meter (`0x001a3310`, `0x001a3338`) | confirmed (code) |
 | `0x001b3c00`, `0x001b3c30` | `HUD_StereoTheftStart`, `_End` | the stereo widget's start (`0x001ca118`) and shutdown | confirmed (code) |

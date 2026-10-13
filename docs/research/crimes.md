@@ -176,7 +176,15 @@ then sets state `0x20000000`. Confirmed (code) at the cited addresses.
    key, it also gets the **`dyn_cuffs` icon** over its head (`Human_ShowOverheadIcon`, `0x002271f0`, handle at human
    `+0x360`; `dyn_p_one` and `dyn_p_two` names become `dyn_play_one` and `dyn_play_two`, with `_euro` when game state
    `+0x120` is set).
-7. For a type-3 brain, the player whose gang it is gets `0x004de250(…, player, 0, 1)` (not traced).
+7. For a type-3 brain, the player whose gang it is gets `Stats_AddHarmony(…, player, 0, 1)` (`0x004de250`), a
+   statistics tally, not a HUD call (confirmed (code) at `0x004de250`).
+
+**On the HUD**, a cuffed member of the player's gang is listed by the [crew status
+list](hud-functions-parts.md#crew-status) for as long as state `0x20000` holds: his portrait with a pulsing blue badge,
+and for 2.5 s a caption with his name and the arrested text (`GSTRING.HUD` 226). No interface sound plays. The list
+tests the state, not the arrest call, so a scripted `HuSetArrested` shows the same. Confirmed (code) at `0x001a0420`;
+confirmed (runtime) by setting the state over PINE. He keeps his mark in the [gang
+tally](hud-functions-lua.md#gang-count-what), which counts only members not down.
 
 A human with no AI brain component (vtable `+0xf4` null) gets only state `0x20000`, the style and action 0.
 

@@ -614,7 +614,9 @@ It works through these cases, confirmed (code):
 4. When no one else in player 1's gang is free to help (`Gang_NoneAbleToHelp`, `0x00169dd8`: not cuffed, out or
    busy), the mission fails at once.
 5. When others are free, and player 1 is cuffed (not out) or holds a flash (item 1), and game state
-   `+0x414 + player` is 0, it **waits**. Every 37 updates it asks whether a free member has a route to him
+   `+0x414 + player` is 0 (the crew was within 50 m at the last range check,
+   [out-of-range flag](ai-gangs.md#warrior-range-flag)), it **waits**; with the byte set it fails at
+   once. Every 37 updates it asks whether a free member has a route to him
    (`Gang_CanReachToHelp`, `0x00169ea0`; [who can help](#defeat-helpers)). A yes resets the count at `+0x56e6`; the
    4th no in a row fails the mission.
    A knocked-out player without a flash fails at once.

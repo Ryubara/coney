@@ -16,7 +16,8 @@ under its old anchor.
 
 What the HUD puts on screen during play, where, in which colours, and what drives each part: the player panel (name
 banner, rage meter, score, money and item counters), the hint box, objective and announcement messages, the counter
-panels, the instruction arrow, the radar's place on screen, and the calls that show and hide it all. The sprite and
+panels, the instruction arrow, the radar's place on screen, the crew status list
+([The crew status list](hud-functions-parts.md#crew-status)), and the calls that show and hide it all. The sprite and
 text machinery underneath (widgets, sprite sheets, fonts, markup, draw order) is on [GUI](gui.md); the radar's blips
 and icons are on [GUI: the radar](gui.md#radar-icons); the script bindings are in the
 [HUD bindings](../references/bindings/hud.md).
@@ -375,8 +376,15 @@ So two rows of three, about 0.07 apart, the top row at y 0.795 and the bottom at
 record's `+0x10`) over a box sprite (rectangle `0x4e`, colour (0, 0, 0, 143)) sized to the text plus (0.013, the
 record's `+0x64`). The text is entry *slot* of the command-text table (`0x006007c0`, filled by `CfgWarriorCommand`
 from [`GSTRING.COMMAND`](../references/text-labels.md#text-gstring-command); indexed by display slot, not command
-id); entry 6 (`0x006007d8`) replaces it while all the player's commands are locked (game state `+0x414` + player) and
-entry 7 (`0x006007dc`) while the highlighted command is disabled. **Colours** (`WarCommandDisplay_Render`,
+id); entry 6 (`0x006007d8`), the **out-of-range** text, replaces it while the crew is out of range (game state
+`+0x414` + player, set by the [range check](ai-gangs.md#warrior-range-flag); confirmed (runtime), below) and entry 7
+(`0x006007dc`) while the highlighted command is disabled. Each is read every update while the menu is open and no
+command has been issued yet (`WarCommandDisplay_Update`, `0x001a7e48`, which copies the byte to `+0x154c`); after an
+issue the text is left as it was until it expires. **Runtime check** (PCSX2 2.9.94, a `level80` checkpoint state with
+the `scripted-pad` and `right-stick` patches, R2 held, sticks at rest): with the byte left alone the menu named the
+highlighted command; with the byte rewritten to 1 every few milliseconds the same menu showed the out-of-range text
+in its place. Written once, the byte went back to 0 within a second: the player's update checks the range every 40
+updates and clears it while a member is within 50 m. **Colours** (`WarCommandDisplay_Render`,
 `0x001a8590`, values from `0x001a8b48`): the highlighted slot's icon white, plate gold (255, 183, 0), backing grey;
 the others' icon white, plate dark (35, 35, 35), backing black; a disabled command's icon (30, 30, 30). The 16:9
 and other modes overwrite the offsets and sizes (`0x001a7e48`); they are not listed here.
@@ -1118,6 +1126,9 @@ stand-in**: the chase HUD is not built or drawn (no level script creates it), so
 
 ## Open questions
 
+- [The crew status list](hud-functions-parts.md#crew-status): the fighting-far-off icon (rectangle `0x15`) was never
+  seen at runtime; the knocked-out member's radar blip changed look at runtime, not traced; whether the player's own
+  entry can ever show (the code does not exclude him).
 - Which character each name-banner sheet (records `0x1f`-`0x32`) names, beyond Rembrandt (`0x2f`).
 - The handcuff and key counters' icon rectangles, and the counters' exact text offsets.
 - What `0x00225ff0` tests; a runtime look at a shown prompt (the alignment and the button glyph are answered:
