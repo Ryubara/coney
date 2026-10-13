@@ -16,7 +16,8 @@ under its old anchor.
 
 What the HUD puts on screen during play, where, in which colours, and what drives each part: the player panel (name
 banner, rage meter, score, money and item counters), the hint box, objective and announcement messages, the counter
-panels, the instruction arrow, the radar's place on screen, and the calls that show and hide it all. The sprite and
+panels, the instruction arrow, the radar's place on screen, the crew status list
+([The crew status list](hud-functions-parts.md#crew-status)), and the calls that show and hide it all. The sprite and
 text machinery underneath (widgets, sprite sheets, fonts, markup, draw order) is on [GUI](gui.md); the radar's blips
 and icons are on [GUI: the radar](gui.md#radar-icons); the script bindings are in the
 [HUD bindings](../references/bindings/hud.md).
@@ -1125,6 +1126,9 @@ stand-in**: the chase HUD is not built or drawn (no level script creates it), so
 
 ## Open questions
 
+- [The crew status list](hud-functions-parts.md#crew-status): the fighting-far-off icon (rectangle `0x15`) was never
+  seen at runtime; the knocked-out member's radar blip changed look at runtime, not traced; whether the player's own
+  entry can ever show (the code does not exclude him).
 - Which character each name-banner sheet (records `0x1f`-`0x32`) names, beyond Rembrandt (`0x2f`).
 - The handcuff and key counters' icon rectangles, and the counters' exact text offsets.
 - What `0x00225ff0` tests; a runtime look at a shown prompt (the alignment and the button glyph are answered:

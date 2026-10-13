@@ -861,12 +861,14 @@ Confirmed (code) at `0x0041c338` unless marked:
 - **Who reads it.** An instruction scan of `SLUS_212.15` for offset `0x414` finds two readers:
     - the **Warrior command menu**, `WarCommandDisplay_Update` (`0x001a7e48`, the load at `0x001a8028`): while the menu
       is open and no command has been issued, a set byte replaces the highlighted command's name with entry 6 of the
-      command-text table (`0x006007d8`), the **out-of-range** text from `GSTRING.COMMAND` 6, which carries a 2.5 s
-      `<DISPLAYTIME>` ([The Warrior command menu](hud.md#warrior-command-menu)). Confirmed (runtime), PCSX2 2.9.94,
-      `level80`: with the byte held at 1 the open menu showed that text instead of the command's name.
+      command-text table (`0x006007d8`), the **out-of-range** text from `GSTRING.COMMAND` 6
+      ([The Warrior command menu](hud.md#warrior-command-menu)). That text's 2.5 s `<DISPLAYTIME>` is in the script's
+      text, not set by the code (read from `config_strings_en.lua`). Confirmed (runtime), PCSX2 2.9.94, `level80`:
+      with the byte held at 1 the open menu showed that text instead of the command's name.
     - the **mission-failure check**, `GameState_CheckGameOver` (`0x004197a8`, the load at `0x0041996c`): when player 1
-      is down and others could still help, a set byte fails the mission at once instead of waiting for a member to
-      reach him ([The mission failing](combat-reactions.md#defeat), case 5).
+      is cuffed (not knocked out) or holds a flash (item 1) and others could still help, a set byte fails the mission
+      at once instead of waiting for a member to reach him. A knocked-out player 1 without a flash fails at once
+      whatever the byte ([The mission failing](combat-reactions.md#defeat), case 5).
 - **No other cue.** Besides the chief's line (unforced, not quiet) and the menu's text, nothing plays or shows: the
   check calls no sound or HUD function, and neither reader plays a sound. The refused command itself is not shown as
   refused: the menu closes after an issue and its text is updated only before one, so the out-of-range text is seen
