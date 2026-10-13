@@ -62,6 +62,7 @@ void Brains::setCollision(const raycast::CollisionMesh* collision) {
 void Brains::update() {
     ++m_steps;
     const std::uint64_t now = nowMs();
+    noteDamage();
     m_formations.update(now);
     m_gangs.update(now);
     for (std::size_t index = 0; index < m_brains.size(); ++index) {
@@ -83,12 +84,26 @@ void Brains::update() {
     reportDowns();
 }
 
+void Brains::noteDamage() {
+    for (const std::unique_ptr<Brain>& brain : m_brains) {
+        const int health = brain->human().fighter().health().value();
+        const int seen = brain->seenHealth();
+        if (seen >= 0 && health < seen) {
+            brain->setUnreportedDamage(brain->unreportedDamage() + seen - health);
+            brain->setSeenHealth(health);
+        }
+    }
+}
+
 void Brains::reportDamage() {
     for (const std::unique_ptr<Brain>& brain : m_brains) {
         const int health = brain->human().fighter().health().value();
         const int seen = brain->seenHealth();
         brain->setSeenHealth(health);
-        if (seen < 0 || health >= seen) {
+        // What noteDamage() kept from before the tactics ran, and whatever fell since.
+        const int damage = brain->unreportedDamage() + (seen >= 0 && health < seen ? seen - health : 0);
+        brain->setUnreportedDamage(0);
+        if (damage <= 0) {
             continue;
         }
         // The attacker is not passed down with the hit, so the nearest human that can fight stands in for it.
@@ -104,7 +119,7 @@ void Brains::reportDamage() {
                 nearest = other.get();
             }
         }
-        deliverEvent(*brain, BrainEvent{.id = kEventDamaged, .other = nearest, .value = seen - health});
+        deliverEvent(*brain, BrainEvent{.id = kEventDamaged, .other = nearest, .value = damage});
     }
 }
 

@@ -127,6 +127,12 @@ reasons that have nothing to do with the mission. A driver that reads the state 
 survives those changes, and a failure means the mission really cannot be finished. Like every disc test, it skips
 without a disc and prints only aggregates.
 
+A fight is chaotic: a change of 0.1 mm in one update can send it down another course, so the commit a bisect of a
+failing fight names may only have nudged it. Before blaming that commit, print the positions, health and goal states
+every update on both sides of it and find the first update that differs: if the two runs agree until a difference in
+the last digit, the fault is in the course the fight took after it. The level5 boss fight bisected to the physics
+sweep (#434), which moved a boss 0.0001 m; the real fault was a capped boss whose hits were never counted.
+
 ### Diff against the original {#diff-against-the-original}
 
 A recorded run of the original, with the same pad input from the same start, is replayed into Coney, and the two
