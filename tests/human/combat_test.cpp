@@ -765,3 +765,37 @@ TEST_CASE("the spray's intro turns the tagger to the tag over its first half, th
     CHECK(played[1] == 335);
     CHECK(fight.human().tagSprayPlaying());
 }
+
+TEST_CASE("a player in the fight stance sprays: 334 then 335 play, the stance's walk and attacks wait for the spray",
+          "[human][combat]") {
+    // The original runs no stance, command or anim-state choice while a spray runs (`Human_UpdateActions` returns
+    // after `Tag_UpdatePlayer`), and 334 holds the busy bit 0x400, so `Human_FightStanceMove` moves nothing
+    // (docs/research/scripting.md#level87-fixes, fix 2).
+    const FightCharacter character;
+    Fight fight(character, 1.5F);
+    // The enemy 1.5 m ahead with the stick at rest: the stance takes him and the fight idle plays.
+    fight.run("", 10);
+    REQUIRE(fight.human().fighter().lockTarget() != nullptr);
+    REQUIRE(fight.human().animator().animId() == coney::human::kAnimFightIdle);
+    const Vec3 start = fight.human().position();
+    // The tag to his right; square is pressed during the loop, which must not start an attack.
+    REQUIRE(fight.human().startTagSpray(Vec3{42.0F, 40.0F, 1.0F}));
+    std::vector<std::uint32_t> played;
+    fight.run("70 tap square\n", 90, [&](std::uint64_t) {
+        const std::uint32_t now = fight.human().animator().animId();
+        if (played.empty() || played.back() != now) {
+            played.push_back(now);
+        }
+    });
+    REQUIRE(played.size() == 2);
+    CHECK(played[0] == 334);
+    CHECK(played[1] == 335);
+    CHECK(fight.human().tagSprayLooping());
+    // He turned to the tag, not back to the enemy, and stood where he was.
+    CHECK(fight.human().heading() == Approx(-std::numbers::pi_v<float> / 2.0F).margin(1e-3));
+    CHECK(std::hypot(fight.human().position().x - start.x, fight.human().position().y - start.y) < 0.05F);
+    // The spray's end gives the stance back.
+    fight.human().endTagSpray();
+    fight.run("", 10);
+    CHECK_FALSE(fight.human().tagSprayPlaying());
+}

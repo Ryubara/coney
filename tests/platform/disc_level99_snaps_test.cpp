@@ -276,6 +276,7 @@ TEST_CASE("the disc's level99 lesson 7: the second wave surrounds the player and
     const coney::script::Value done = p1.table()->field("SnapsDone");
     int doneCalls = 0;
     auto counted = std::make_shared<coney::script::Function>();
+    // NOLINTNEXTLINE(bugprone-exception-escape): copying the captures can only fail on allocation
     counted->native = [&vm, &doneCalls, done](std::span<const coney::script::Value> args) {
         ++doneCalls;
         return vm.call(done, args);

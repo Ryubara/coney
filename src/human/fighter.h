@@ -142,6 +142,8 @@ struct FighterProfile {
     /// Its class's `+0x11b` is kBossCategory (the bosses and big fighters): its punches sound as `BOSS_FIST` and a hit
     /// on it as on the head (docs/research/sound-events.md#strike-human).
     bool bossClass = false;
+    /// Its Warrior class's rage (a player's, `CfgWarriorClass`); class 6's by default. Only a player gains rage.
+    combat::RageClass rage = combat::kPlayerRageClass;
 };
 
 /// A grab another human has caught the player in, at the end of its intro (docs/research/combat.md#grabbed).
@@ -158,7 +160,9 @@ struct GrabCatch {
 class Fighter {
   public:
     /// A fighter whose damage comes from `ranges` (may be null: no damage), coin flips seeded with `seed`, of `profile`
-    /// (the player's power class and kPlayerHealth by default; a profile's health of 0 takes kPlayerHealth).
+    /// (the player's power class and kPlayerHealth by default; a profile's health of 0 takes kPlayerHealth): its power
+    /// meter is its power class's (`+0x28`, `+0x2a`) and its rage meter its profile's rage
+    /// (docs/research/characters.md#stats).
     explicit Fighter(const combat::AnimRangeList* ranges, std::uint32_t seed = 1, const FighterProfile& profile = {});
 
     /// One update: the hits, warnings and grab taken since the last update (the victim's side), the timers of a

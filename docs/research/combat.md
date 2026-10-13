@@ -1130,7 +1130,7 @@ confirmed (runtime) where marked.
 
 **At runtime** (confirmed (runtime), PCSX2, a copy of slot 6: the civilian `PoizoCiv` held in place facing the player
 at 1.0-3.5 m until the intro ended, circle and cross pressed on the same update and held for 4 updates, no stick;
-scenario `strong_grapple` and hooks of [`patches.toml`](repo:research/traces/patches.toml)):
+scenario `strong_grapple` and hooks of [`research/traces/patches/`](repo:research/traces/patches/)):
 
 | Case | Player | Victim | Damage | Tutorial callback |
 | --- | --- | --- | --- | --- |
@@ -3657,7 +3657,7 @@ at the addresses cited unless marked; "teammate" is a human friendly to the play
 setting mode 8's level ([the runtime order](scripting.md#level80-hints)). Cleon was the player, with Vermin, Rembrandt
 and Ajax following (`FollowPlayer`, goal 50). Input was the scripted pad of
 [Driving PCSX2](../guides/research-workflow.md#driving-pcsx2), hooks `strike-contact`, `hit-by-chief`, `hit-reaction`,
-`attack-target-push`, `push-contact` and `can-push` of `repo:research/traces/patches.toml`, with Vermin's record and
+`attack-target-push`, `push-contact` and `can-push` of `repo:research/traces/patches/`, with Vermin's record and
 brain read every update:
 
 - **Hits 1-3 land with a reaction and no health lost.** Cleon walked to 0.85 m from Vermin (stick 0.5, aimed at
@@ -4497,7 +4497,7 @@ a seeded generator (`CombatRandom`), so a run with the same seed and input is th
 | `combat/grabbed.*` | held in another human's grab (`Player_UpdateGrabbed`): the struggle and its cost to the grabber, the escape or reversal roll, the strike back 104 and the counter at the catch (76 / 77) |
 | `combat/rage_awards.*` | the rage a hit gives its attacker: the two awards per attack (event 2 and event 1), halved when blocked, and the repeat tracker (`+0x182`: six of a kind within 5 s halves later hits; the throw bonus) |
 | `combat/lock_on.*` | the lock-on rule by `CfgLockOn` and the auto settings, the combat walk's clip by the stick's angle (380-387), when a target is dropped, and the grab's turn step (`0x00245310`) |
-| `combat/meters.*` | health, the pending damage (the update's largest), `strikeDamage()`, the power meter (400, refill 60/s, drain 15/s, `spend()`) and the rage meter (78, the gain formula truncated per award, the 5 s hold, the 7.8/s decay, start, the 9.36/s drain); the power maximum scaled by the hurt factor |
+| `combat/meters.*` | health, the pending damage (the update's largest), `strikeDamage()`, the power meter (its power class's maximum and refill, 400 and 60/s for class 64; drain 15/s, `spend()`) and the rage meter (its Warrior class's maximum, gain, decay and drain, `RageClass`: 78, 144 %, 7.8/s and 9.36/s for class 6; the gain formula truncated per award, the 5 s hold, start); the power maximum scaled by the hurt factor ([Stats](characters.md#stats-coney)) |
 | `combat/grab.*` | when a grab may start, the search ranges (far range × 1.25), the nearest-candidate search, the throw by stick side and wall, and one update of a grab (strikes, the power strikes with the rear spin first, throws, the release with too little power, the R1 and circle spins, the L2 let-go, the mugging; nothing spent in rage) |
 | `combat/stick_games.*` | the mugging, the stereo theft's rotation (mode 3) and the button mash (mode 1) |
 | `combat/player_combat.*` | the dispatcher: block, chain, meters, the routes (grabbing, tackling, mugging, theft) and the commands, in the original's order; the grab breaks at 0 power |
