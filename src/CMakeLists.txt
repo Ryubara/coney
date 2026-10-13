@@ -392,6 +392,8 @@ target_sources(coney_core PRIVATE
 # The debug menus: the model every front end renders, and its pages (docs/guides/debug-menu.md).
 target_sources(coney_core PRIVATE
     debug/debug_lines.cpp
+    debug/anim_catalog.cpp
+    debug/anim_id_names.cpp
     debug/debug_session.cpp
     debug/fighter_spawn.cpp
     debug/entity_inspect.cpp
@@ -406,6 +408,7 @@ target_sources(coney_core PRIVATE
     debug/native_signatures.cpp
     debug/object_watch.cpp
     debug/pad_menu_input.cpp
+    debug/pages_anim.cpp
     debug/pages_engine.cpp
     debug/pages_entity.cpp
     debug/pages_hud.cpp

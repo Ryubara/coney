@@ -388,6 +388,8 @@ std::string_view animStateName(human::AnimState state) {
         return "combat walk";
     case human::AnimState::Workout:
         return "workout";
+    case human::AnimState::Debug:
+        return "debug clip";
     }
     return "?";
 }

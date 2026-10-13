@@ -568,8 +568,10 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     // In the noclip the pad flies him (human::Player::update()) and works nothing else: no lock pick, throw aim or
     // mugging.
     const bool noclip = m_player->noclip();
-    const bool picking = !noclip && !m_frozen && !m_freeCamera && !sceneHoldsPlayer() && stepLockPick(pad);
-    const Pad& playerPad = m_frozen || m_freeCamera || sceneHoldsPlayer() || picking ? kStill : pad;
+    // While the debug menus' Animation player plays a clip on him, he stands still for it as a frozen player does.
+    const bool held = m_frozen || m_player->human().animator().debugClipPlaying();
+    const bool picking = !noclip && !held && !m_freeCamera && !sceneHoldsPlayer() && stepLockPick(pad);
+    const Pad& playerPad = held || m_freeCamera || sceneHoldsPlayer() || picking ? kStill : pad;
     const Pad& actionPad = noclip ? kStill : playerPad;
 
     // The characters' update, then the cameras' (human::Player keeps that order).

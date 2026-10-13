@@ -73,6 +73,8 @@ class PlayerCharacter {
 
     [[nodiscard]] const characters::CharacterAssets& assets() const { return m_assets; }
     [[nodiscard]] const characters::AnimSet& anims() const { return m_anims; }
+    /// The generic character data, which answers the ids the character's own data leaves to the defaults.
+    [[nodiscard]] const characters::CharacterData& generic() const { return m_generic; }
     [[nodiscard]] const anim::Skeleton& skeleton() const { return m_skeleton; }
     /// The character's Anim Range List, decoded: its moves' damage and reach (combat::AnimRangeList).
     [[nodiscard]] const combat::AnimRangeList& ranges() const { return m_ranges; }

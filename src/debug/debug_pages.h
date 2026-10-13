@@ -45,6 +45,10 @@ void addSpawnerPage(DebugSession& session);
 /// The AI fighters page: spawn a fighter in front of the player, clear them, switch their engaging on or off, and watch
 /// them. Over PlayControls.
 void addFightersPage(DebugSession& session);
+/// The Animation player page: the anim sets the player can play from, each one's clips by category with their
+/// lengths, played on the player once or looping at a speed, and stopped; his own animation comes back after. Over
+/// PlayControls; says so when no player plays.
+void addAnimPlayerPage(DebugSession& session);
 /// The HUD page: the in-game HUD's parts on and off (the HUD, the player panel, force-show, the rage bar's flashing,
 /// the radar, the arrow), player 0's rage, score, money and items set, and an objective, a hint and an announcement
 /// fired. Over PlayControls::hud(); says so when no mode draws a HUD.
