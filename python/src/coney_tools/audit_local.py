@@ -41,8 +41,7 @@ class ScratchFolder:
     """A scratch folder (named for its branch) and the game-derived captures it holds."""
 
     name: str
-    #: Files whose type `workspace.game_capture_suffixes` names (traces, dumps, save states), at any depth, and the
-    #: `workspace.game_capture_folder_suffixes` files under a capture folder.
+    #: Files whose type `workspace.game_capture_suffixes` names (traces, dumps, save states), at any depth.
     game_files: int
     game_bytes: int
     #: `shared` (a folder of the workspace itself, not of a branch), `active` (a worktree carries the name, or nothing
@@ -78,13 +77,9 @@ LISTED_PATHS = 5
 class CaptureRules:
     """What counts as a file taken from the original (`workspace` in the conventions file), names lower-cased."""
 
-    #: File types that count anywhere.
+    #: File types that count, in any folder.
     suffixes: frozenset[str]
-    #: File types that count only under a folder in `folders`.
-    folder_suffixes: frozenset[str]
-    #: Folder names where the original's captures live.
-    folders: frozenset[str]
-    #: Folder names never walked into (build and dependency trees).
+    #: Folder names never walked into (build and tool trees).
     skip: frozenset[str]
 
     @classmethod
@@ -93,8 +88,6 @@ class CaptureRules:
         workspace = conventions.workspace
         return cls(
             frozenset(suffix.lower() for suffix in workspace.game_capture_suffixes),
-            frozenset(suffix.lower() for suffix in workspace.game_capture_folder_suffixes),
-            frozenset(name.lower() for name in workspace.game_capture_folders),
             frozenset(name.lower() for name in workspace.scratch_skip_folders),
         )
 
@@ -110,18 +103,18 @@ class Captures:
 
 
 def _game_files(folder: Path, rules: CaptureRules) -> Captures:
-    """The game-derived files `folder` holds (at any depth, by file type and place), their size and the first paths.
+    """The game-derived files `folder` holds (at any depth, by file type), their size and the first paths.
 
     A scratch folder can hold hundreds of thousands of files, so this walks with `os.scandir`, whose entries know
     whether they are files without a call of their own, and asks for the size of the matching files only. Build and
-    dependency trees (`rules.skip`) are not entered: nothing in them came from the original.
+    tool trees (`rules.skip`) are not entered: nothing in them came from the original.
     """
     count = size = 0
     paths: list[str] = []
-    # Each pending folder carries its path relative to `folder` and whether a capture folder is above it.
-    pending = [(str(folder), "", False)]
+    # Each pending folder carries its path relative to `folder`.
+    pending = [(str(folder), "")]
     while pending:
-        path, relative, in_capture_folder = pending.pop()
+        path, relative = pending.pop()
         try:
             with os.scandir(path) as entries:
                 for entry in entries:
@@ -129,12 +122,8 @@ def _game_files(folder: Path, rules: CaptureRules) -> Captures:
                         lowered = entry.name.lower()
                         if entry.is_dir(follow_symlinks=False):
                             if lowered not in rules.skip:
-                                inside = in_capture_folder or lowered in rules.folders
-                                pending.append((entry.path, f"{relative}{entry.name}/", inside))
-                            continue
-                        suffix = PurePath(lowered).suffix
-                        counts = suffix in rules.suffixes or (in_capture_folder and suffix in rules.folder_suffixes)
-                        if counts and entry.is_file():
+                                pending.append((entry.path, f"{relative}{entry.name}/"))
+                        elif PurePath(lowered).suffix in rules.suffixes and entry.is_file():
                             count += 1
                             size += entry.stat().st_size
                             paths.append(f"{relative}{entry.name}")
