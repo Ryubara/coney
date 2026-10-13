@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from conventions_support import REMOVE, REPO, changed, conventions_with, real_data, write_checkout
+from conventions_support import CI_CLASSES, REMOVE, REPO, changed, conventions_with, real_data, write_checkout
 
 from coney_tools.conventions import (
     CONVENTIONS_FILE,
@@ -292,7 +292,8 @@ def test_a_colour_is_kept_in_lower_case() -> None:
         ("docs/sub/dir/page.md", False, True, True),
         ("src/README.md", True, False, False),
         (".github/CONTRIBUTING.md", False, False, True),
-        (".github/workflows/pr.yml", False, False, False),
+        (".github/workflows/pr.yml", False, False, True),
+        (".github/workflows/build.yml", False, False, False),
         (".github/conventions.yml", False, False, True),
         ("mkdocs.yml", False, False, True),
         ("mkdocs.yml.bak", False, False, False),
@@ -304,6 +305,25 @@ def test_a_colour_is_kept_in_lower_case() -> None:
 def test_paths_are_classified(path: str, code: bool, docs: bool, docs_only: bool) -> None:
     paths = load_conventions(REPO).paths
     assert (paths.is_code(path), paths.is_docs(path), paths.is_docs_only(path)) == (code, docs, docs_only)
+
+
+@pytest.mark.parametrize(("path", "expected"), CI_CLASSES)
+def test_each_path_falls_in_its_ci_scope_class(path: str, expected: str) -> None:
+    assert load_conventions(REPO).paths.ci_class(path) == expected
+
+
+def test_no_scope_pattern_is_hidden_by_an_earlier_class() -> None:
+    """A path written like each pattern falls in that pattern's own class: an earlier class never shadows it."""
+    paths = load_conventions(REPO).paths
+    for key in ("docs_only", "tools_only", "engine"):
+        for pattern in getattr(paths, key):
+            example = pattern.replace("*", "x") + ("x" if pattern.endswith("/") else "")
+            assert paths.ci_class(example) == key, pattern
+
+
+def test_the_first_matching_class_wins() -> None:
+    paths = conventions_with(("paths.tools_only", ["a/"]), ("paths.engine", ["a/", "b/"])).paths
+    assert [paths.ci_class(path) for path in ("a/x", "b/x", "c/x")] == ["tools_only", "engine", "unknown"]
 
 
 def test_the_docs_only_regex_is_the_patterns_joined() -> None:

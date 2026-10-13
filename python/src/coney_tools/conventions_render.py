@@ -248,10 +248,10 @@ def _maintainer_decisions(conventions: Conventions) -> list[str]:
     )
 
 
-def _docs_only_paths(conventions: Conventions) -> list[str]:
-    """The paths of a documentation-only change, each with what its pattern matches (docs/guides/building.md)."""
+def _scope_paths(patterns: tuple[str, ...]) -> list[str]:
+    """One CI scope list of `paths`, each pattern with what it matches (docs/guides/building.md)."""
     lines: list[str] = []
-    for pattern in conventions.paths.docs_only:
+    for pattern in patterns:
         folder, _, name = pattern.rpartition("/")
         if pattern.endswith("/"):
             meaning = "the folder and everything under it"
@@ -282,7 +282,9 @@ BLOCKS: dict[str, Callable[[Conventions], list[str]]] = {
     "pr-review": _pr_review,
     "required-checks": _required_checks,
     "maintainer-decisions": _maintainer_decisions,
-    "docs-only-paths": _docs_only_paths,
+    "docs-only-paths": lambda conventions: _scope_paths(conventions.paths.docs_only),
+    "tools-only-paths": lambda conventions: _scope_paths(conventions.paths.tools_only),
+    "engine-paths": lambda conventions: _scope_paths(conventions.paths.engine),
     "audit-checks": _audit_checks,
 }
 

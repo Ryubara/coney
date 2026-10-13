@@ -1,41 +1,47 @@
 #!/usr/bin/env bash
-# Decides how much of CI a run needs, so a pull request that changes only documentation does not queue the builds.
+# Decides how much of CI a run needs, so a pull request runs only the jobs its change can break.
 # Run inside a checkout whose HEAD is a pull request's merge commit (fetch depth 2, so HEAD^1 is the branch it merges
 # into) or any other commit. Reads EVENT (github.event_name) and DRAFT ("true" for a draft pull request) from the
 # environment and appends to $GITHUB_OUTPUT (or prints, when it is unset):
 #
-#   full=true|false      build, sanitizers and clang-tidy run, and python runs on every OS
+#   build=true|false     the engine jobs run: build, sanitizers and clang-tidy (the build workflow)
 #   python=true|false    python runs at all
 #   python-os=<JSON>     the OSes python runs on
 #
 # Pushes, the nightly run and manual runs always get everything. A draft pull request gets only the cheap checks (the
-# title, docs, format and docs workflows); marking it ready for review runs the rest. A ready pull request
-# whose every changed file is documentation (`paths.docs_only` of the conventions file) skips the engine builds, and
-# runs python on Linux only: python's repository checks read docs/, research/ and README.md, but do not depend on the
-# OS. Anything else, or a file this script does not recognise, runs everything.
+# title, docs, format and docs workflows); marking it ready for review runs the rest. A ready pull request sorts each
+# changed file into the first CI scope class of .github/conventions.yml it matches (`paths.docs_only`, then
+# `paths.tools_only`, then `paths.engine`) and runs:
+#
+#   docs_only    nothing more than python on Linux, whose repository checks read docs/, research/ and the rest
+#   tools_only   python on every OS (the python package and its OS-dependent local gate changed)
+#   engine       the engine jobs; python on Linux (its checks that read C++ files do not depend on the OS)
+#   anything else, or no changed file at all: everything (the engine jobs and python on every OS)
+#
+# so a mixed pull request gets the union of what its files need. The table is in
+# docs/guides/building.md#what-a-pull-request-runs. Python always runs on Linux for a ready pull request: its repository
+# checks (the conventions, the generated pages, the progress inputs) can read any file.
 set -euo pipefail
 
-# Paths that never reach the engine build or the python package's behaviour: docs/, research/, the Markdown files at
-# the top level and in .github/ (not those under python/, whose tests may read them), the conventions file (whose
-# checks run on Linux anyway) and the docs site's own setup. research/ includes research/traces/, which the python
-# tests read; that is why a docs-only change still runs python on Linux.
-# The list is `paths.docs_only` of .github/conventions.yml, read here so there is one copy of it: a trailing slash
+# The lists are keys of `paths` in .github/conventions.yml, read here so there is one copy of them: a trailing slash
 # is a folder, and `*` matches within one folder level (so "*.md" is the Markdown files at the top level only).
-# `coney-tools repo audit --files` (files.ci-scope) checks that this script still reads the file and can parse it.
+# research/ includes research/traces/, which the python tests read; that is one reason docs_only still runs python on
+# Linux. `coney-tools repo audit --files` (files.ci-scope) checks that this script still reads the file and can parse
+# every list.
 conventions="$(dirname "${BASH_SOURCE[0]}")/../conventions.yml"
 
-# The patterns, one per line: the quoted items under the `  docs_only:` key of the file.
-docs_only_patterns() {
-  tr -d '\r' <"$conventions" | awk '
-    /^  docs_only:/ { inside = 1; next }
+# The patterns of one list, one per line: the quoted items under the `  <key>:` line of the file.
+patterns_of() {
+  tr -d '\r' <"$conventions" | awk -v key="  $1:" '
+    index($0, key) == 1 { inside = 1; next }
     inside && /^    - "/ { sub(/^    - "/, ""); sub(/".*$/, ""); print; next }
     inside && /^[ \t]*(#.*)?$/ { next }
     inside { exit }
   '
 }
 
-# The patterns as one extended regular expression: `dir/` matches the folder, any other pattern the whole path.
-docs_only_regex() {
+# One list as an extended regular expression: `dir/` matches the folder, any other pattern the whole path.
+regex_of() {
   local pattern alternatives=()
   while IFS= read -r pattern; do
     pattern="${pattern//./\\.}"
@@ -45,9 +51,9 @@ docs_only_regex() {
     else
       alternatives+=("$pattern\$")
     fi
-  done < <(docs_only_patterns)
+  done < <(patterns_of "$1")
   if ((${#alternatives[@]} == 0)); then
-    echo "ci-scope.sh: found no paths.docs_only in $conventions" >&2
+    echo "ci-scope.sh: found no paths.$1 in $conventions" >&2
     return 1
   fi
   local joined
@@ -55,35 +61,55 @@ docs_only_regex() {
   printf '^(%s)' "$joined"
 }
 
-DOCS_ONLY="$(docs_only_regex)"
+DOCS_ONLY="$(regex_of docs_only)"
+TOOLS_ONLY="$(regex_of tools_only)"
+ENGINE="$(regex_of engine)"
 
 all_os='["ubuntu-24.04","windows-2022","macos-15"]'
 linux_os='["ubuntu-24.04"]'
 
-full=true
+build=true
 python=true
 python_os="$all_os"
 
 if [[ "${EVENT:?}" == pull_request ]]; then
   if [[ "${DRAFT:-false}" == true ]]; then
-    full=false
+    build=false
     python=false
     echo "Draft pull request: only the cheap checks run."
   else
-    # --no-renames lists both sides of a move, so moving a file out of src/ counts as a code change.
+    # --no-renames lists both sides of a move, so moving a file out of src/ counts as an engine change.
     changed="$(git diff --name-only --no-renames HEAD^1 HEAD)"
-    echo "Changed files:"
-    printf '%s\n' "$changed"
-    if [[ -n "$changed" ]] && ! grep -Evq "$DOCS_ONLY" <<<"$changed"; then
-      full=false
+    echo "Changed files, each with its class:"
+    if [[ -n "$changed" ]]; then
+      build=false
       python_os="$linux_os"
-      echo "Documentation only: the engine builds are skipped and python runs on Linux only."
+      # Each file adds what its class needs; nothing ever takes a job away again.
+      while IFS= read -r file; do
+        if [[ "$file" =~ $DOCS_ONLY ]]; then
+          class=docs_only
+        elif [[ "$file" =~ $TOOLS_ONLY ]]; then
+          class=tools_only
+          python_os="$all_os"
+        elif [[ "$file" =~ $ENGINE ]]; then
+          class=engine
+          build=true
+        else
+          class=unknown
+          build=true
+          python_os="$all_os"
+        fi
+        printf '  %-10s %s\n' "$class" "$file"
+      done <<<"$changed"
+    else
+      echo "  (none: everything runs)"
     fi
+    echo "Engine jobs: $build; python on: $python_os"
   fi
 fi
 
 {
-  echo "full=$full"
+  echo "build=$build"
   echo "python=$python"
   echo "python-os=$python_os"
 } >>"${GITHUB_OUTPUT:-/dev/stdout}"

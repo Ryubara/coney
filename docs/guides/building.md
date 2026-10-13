@@ -297,7 +297,7 @@ by the nightly one; the nightly and hand-started `build` runs are never cancelle
 | Workflow | Jobs |
 | --- | --- |
 | `build` | `ci` preset build and tests on Windows (MSVC), Linux (GCC 13 and Clang 19) and macOS (Apple Clang); `asan` preset on Linux Clang 19 and macOS; clang-tidy (a pull request: changed files only); pre-commit over every file; the `build-ok` gate |
-| `python` | ruff, mypy, pytest, `coney-tools repo check` and the local gate (`check changed`: its `repo` and `pre-commit` steps) on Windows, Linux and macOS; the `python-ok` gate |
+| `python` | ruff, mypy, pytest and the local gate (`check changed`: its `repo` and `pre-commit` steps) on Windows, Linux and macOS; the repository checks (`repo check`, `repo render --check`, `repo audit --files`, `progress check`, the generators' `--check`) on Linux; the `python-ok` gate |
 | `docs` | `mkdocs build --strict`, markdownlint over every Markdown file, actionlint over the workflows |
 | `pr` | the pull request title against the commit title rules, that code changes come with docs changes, and the description against the template (pull requests only; editing the title or description reruns it) |
 
@@ -306,20 +306,49 @@ gate, and a failure there is fixed forward on the branch.
 
 ### What a pull request runs {#what-a-pull-request-runs}
 
-Runners are shared (about 20 jobs at once, 5 of them on macOS), so a pull request runs only what its change can break.
-A `changes` job at the start of `build` and `python` decides, with `.github/scripts/ci-scope.sh`:
+Runners are shared (about 20 jobs at once, 5 of them on macOS), so a pull request runs only what its change can break,
+and gives up no check that the change could fail. A `changes` job at the start of `build` and `python` decides, with
+`.github/scripts/ci-scope.sh`. It sorts each changed file into the first of three classes of
+[.github/conventions.yml](repo:.github/conventions.yml) whose list matches it (`paths.docs_only`, then
+`paths.tools_only`, then `paths.engine`), and the pull request runs what any of its files needs:
 
 | Change | `build`, `sanitizers`, `clang-tidy` | `python` | `format`, `docs`, `pr` workflows |
 | --- | --- | --- | --- |
 | Draft pull request (any change) | skipped | skipped | run |
-| Only documentation: every changed file is on the list below the table | skipped | Linux only | run |
-| Anything else (`src/`, `tests/`, `python/`, `cmake/`, `CMakeLists.txt`, `CMakePresets.json`, `.clang-*`, the workflows, `assets/`, a file not on the list) | run | all three OSes | run |
+| A `docs_only` file: documentation, the conventions file, the docs site's setup, the `docs`, `pr`, `hygiene` and `issue-status` workflows | skipped | Linux only | run |
+| A `tools_only` file: `python/`, `.claude/`, the pre-commit configuration, the issue forms, the `python` workflow and the other tool files | skipped | all three OSes | run |
+| An `engine` file: `src/`, `tests/`, `assets/`, `cmake/`, the CMake files, `.clang-*`, the `build` workflow and its ccache action | run | Linux only | run |
+| A file in no class (`.github/scripts/`, a new workflow, `.gitattributes`, `LICENSE`, ...), or no changed file | run | all three OSes | run |
 | Push to `main` or `release/`, nightly run, manual run | run | all three OSes | run |
 
-The documentation-only list is `paths.docs_only` in [.github/conventions.yml](repo:.github/conventions.yml) (a
-trailing `/` is a folder and `*` matches within one folder level). `ci-scope.sh` reads it from the file, so there is
-no second copy, and `coney-tools repo audit --files` fails a pull request when the script stops being able to. The
-block below is generated from the list (`coney-tools repo render`), and `research/` includes `research/traces/`:
+A pull request with files of several classes gets the union: documentation and `python/` runs python on every OS and
+no engine jobs; `src/` and `python/` runs the engine jobs and python on every OS. Both sides of a rename count, so
+moving a file out of `src/` is an engine change. Why each class runs what it runs:
+
+- **The engine jobs read only the engine files.** CMake and the C++ tests read `src/`, `tests/`, `assets/` and
+  `cmake/` from the checkout, nothing under `python/`, `.claude/`, `docs/` or `research/` (the paths those name in
+  C++ are help text). The tools are read by the python package, its tests and the docs build (`mkdocs_hooks.py` imports
+  `coney_tools` from `python/src/`); the docs workflow runs on every pull request, so that is still checked.
+- **Python runs on Linux for every ready pull request,** because its repository checks compare `docs/` and
+  `research/` with each other (missions, bindings, references, progress), read the conventions and the workflows, and
+  read C++ files (the `@orig` tags, the binding table, the debug menus' signature table), and its tests read
+  `research/traces/`, `tests/` and `cmake/`. Those reads do not depend on the OS: each normalises CRLF to LF (or reads
+  text in universal-newline mode) and compares contents.
+- **Python runs on every OS only when the tools changed** (or a file no class names): ruff, mypy, pytest and the local
+  gate (`check changed`: its `repo` and `pre-commit` steps) are run on each OS because the tools behave differently
+  there (paths, command-line length, programs, line endings). An engine-only change does not change those tools.
+- **In the python job, the OS-independent repository checks run once, on Linux:** `repo check`, `repo render --check`,
+  `repo audit --files`, `progress check` and the generators' `--check` (`natives`, `refs`, `missions`). `repo check`
+  and `repo render --check` are part of `repo audit --files`, which the local gate's `repo` step still runs on every OS.
+- **The `format` job and the local gate's `pre-commit` step both run pre-commit,** on purpose: `format` runs every
+  hook on every file on Linux, the gate runs `coney-tools check changed` (its own grouping of the changed files and its
+  program lookup) on each OS the python job tests. Dropping either would lose a check the other does not make.
+
+The lists, generated from [.github/conventions.yml](repo:.github/conventions.yml) (`coney-tools repo render`; a
+trailing `/` is a folder and `*` matches within one folder level). `ci-scope.sh` reads them from the file, so there is
+no second copy, and `coney-tools repo audit --files` fails a pull request when the script stops being able to.
+
+`docs_only` (`research/` includes `research/traces/`):
 
 <!-- conventions:begin docs-only-paths -->
 - `docs/`: the folder and everything under it
@@ -327,16 +356,48 @@ block below is generated from the list (`coney-tools repo render`), and `researc
 - `*.md`: matching files at the top level only
 - `.github/*.md`: matching files directly in `.github/`
 - `.github/conventions.yml`: that file
+- `.github/workflows/docs.yml`: that file
+- `.github/workflows/pr.yml`: that file
+- `.github/workflows/hygiene.yml`: that file
+- `.github/workflows/issue-status.yml`: that file
 - `mkdocs.yml`: that file
 - `mkdocs_hooks.py`: that file
 - `requirements-docs.txt`: that file
 - `.markdownlint*`: matching files at the top level only
 <!-- conventions:end -->
 
-`python` still runs on Linux for documentation because its repository checks compare `docs/` and `research/` with
-each other (missions, bindings, references, progress), and its tests read `research/traces/`. Marking a draft "Ready
-for review" starts the full run, so open work as a draft while it is unfinished and mark it ready when it should be
-checked. There is no merge queue.
+`tools_only`:
+
+<!-- conventions:begin tools-only-paths -->
+- `python/`: the folder and everything under it
+- `.claude/`: the folder and everything under it
+- `tools/`: the folder and everything under it
+- `bootstrap.ps1`: that file
+- `bootstrap.sh`: that file
+- `coney.local.example.toml`: that file
+- `.mcp.json`: that file
+- `.pre-commit-config.yaml`: that file
+- `.github/ISSUE_TEMPLATE/`: the folder and everything under it
+- `.github/workflows/python.yml`: that file
+<!-- conventions:end -->
+
+`engine`:
+
+<!-- conventions:begin engine-paths -->
+- `src/`: the folder and everything under it
+- `tests/`: the folder and everything under it
+- `assets/`: the folder and everything under it
+- `cmake/`: the folder and everything under it
+- `CMakeLists.txt`: that file
+- `CMakePresets.json`: that file
+- `.clang-format`: that file
+- `.clang-tidy`: that file
+- `.github/actions/`: the folder and everything under it
+- `.github/workflows/build.yml`: that file
+<!-- conventions:end -->
+
+Marking a draft "Ready for review" starts the full run, so open work as a draft while it is unfinished and mark it
+ready when it should be checked. There is no merge queue.
 
 A skipped matrix job reports its name unexpanded (`build (${{ matrix.name }})`), so the per-platform jobs cannot be
 required checks. Each workflow ends with a gate job instead, `build-ok` and `python-ok`, which runs every time and

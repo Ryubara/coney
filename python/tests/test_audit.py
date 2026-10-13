@@ -112,10 +112,19 @@ def test_the_registry_keeps_file_order_and_cannot_be_changed() -> None:
         checks["x"] = checks["files.pointer"]  # type: ignore[index]
 
 
+@pytest.mark.parametrize("key", ["docs_only", "tools_only", "engine"])
 @pytest.mark.parametrize("pattern", ["docs/(a)", "a b", "$x", "a|b", "[a]"])
-def test_a_docs_only_pattern_the_scope_script_cannot_read_is_refused(pattern: str) -> None:
-    data = changed(("paths.docs_only.0", pattern))
-    with pytest.raises(ConventionsError, match=r"paths\.docs_only\[0\]"):
+def test_a_scope_pattern_the_scope_script_cannot_read_is_refused(key: str, pattern: str) -> None:
+    data = changed((f"paths.{key}.0", pattern))
+    with pytest.raises(ConventionsError, match=rf"paths\.{key}\[0\]"):
+        parse_conventions(data)
+
+
+@pytest.mark.parametrize("key", ["tools_only", "engine"])
+def test_a_missing_scope_list_is_refused(key: str) -> None:
+    data = real_data()
+    del data["paths"][key]
+    with pytest.raises(ConventionsError, match=key):
         parse_conventions(data)
 
 

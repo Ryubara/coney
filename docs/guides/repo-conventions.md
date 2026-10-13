@@ -24,7 +24,7 @@ and `labels.yml`) are gone, and so are the constants that repeated their values 
 | Section | What it says | Read by |
 | --- | --- | --- |
 | `repo` | The default branch, the wording (call the person who directs the project "user", never "owner"), the decisions only a maintainer takes (`owner_decisions`) and the tool configuration files | `repo audit` (`files.exist` and the wording checks); agents ([AGENTS.md](repo:AGENTS.md)) |
-| `paths` | Which paths are code, documentation and documentation-only; generated paths; the agent pointer files; the one file that may hold the repository's address; the large-file limit | `repo check`, `repo check-docs`, `check changed`; `repo render` (the `docs-only-paths` block); `ci-scope.sh` reads the docs-only list itself, and `repo audit` holds it and pre-commit to the file |
+| `paths` | Which paths are code and documentation; the CI scope classes (`docs_only`, `tools_only`, `engine`); generated paths; the agent pointer files; the one file that may hold the repository's address; the large-file limit | `repo check`, `repo check-docs`, `check changed`; `repo render` (the `docs-only-paths`, `tools-only-paths` and `engine-paths` blocks); `ci-scope.sh` reads the three scope lists itself, and `repo audit` holds it and pre-commit to the file |
 | `commits` | The title form, its limit and suffix, the areas and verbs, the body wrap and the `Co-Authored-By` trailer | `repo check-title`, which the commit-title hook and the `title` job run; `repo render` (the `commit-rules` and `commit-areas` blocks) |
 | `pull_requests` | The description's sections and which must hold text, the `Docs: none` line, `Fixes #N`, the Checklist (every item ticked), the Screenshots rule, the AI use choices, the review gate (`review`: the reviewer agent, its verdict and report files, the description hash), stacked pull requests | `repo check-body`, `repo check-docs`, `repo review` and `repo check-review`; `repo render` (the `pr-rules` and `pr-review` blocks); `repo audit` checks the template and the stacked-pull-request rules |
 | `merge` | The merge methods, the squash commit's wording, auto-merge, the required checks and who merges: a copy of the GitHub ruleset and settings | `repo render` (the `required-checks` block); `repo audit --github` compares it with the GitHub ruleset and settings |
@@ -61,6 +61,8 @@ Markers inside a fenced code block, like the one above, are examples and are lef
 | `required-checks` | The merge method, the required checks and the merge settings | `merge` | [Building and testing](building.md#what-ci-runs) |
 | `maintainer-decisions` | The decisions only a maintainer takes | `repo.owner_decisions` | `AGENTS.md` (the coordinator section of [How we work](how-we-work.md#coordinator) links to it) |
 | `docs-only-paths` | The paths a documentation-only change may touch | `paths.docs_only` | [Building and testing](building.md#what-a-pull-request-runs) |
+| `tools-only-paths` | The paths that run python on every OS and skip the engine jobs | `paths.tools_only` | [Building and testing](building.md#what-a-pull-request-runs) |
+| `engine-paths` | The paths that run the engine jobs and python on Linux | `paths.engine` | [Building and testing](building.md#what-a-pull-request-runs) |
 | `audit-checks` | The table of the audit's checks | `hygiene.checks` | [Audit checks](#audit-checks) |
 
 After a change to a key, run `uv run --project python coney-tools repo render` and commit the rewritten files with the
@@ -98,7 +100,7 @@ says where the check runs, how bad a finding is and who fixes it, and the table 
 | `files.forms` | files | error | skill | an issue form differs from the conventions: title, labels, field ids, headings, required flags, areas |
 | `files.template` | files | error | skill | the pull request template differs from the conventions: headings, AI use lines, the Docs: none and Fixes lines |
 | `files.generated-blocks` | files | error | auto | a generated block in AGENTS.md, CONTRIBUTING.md or a guide is out of date (coney-tools repo render) |
-| `files.ci-scope` | files | error | skill | .github/scripts/ci-scope.sh does not read the docs-only paths from the conventions file |
+| `files.ci-scope` | files | error | skill | .github/scripts/ci-scope.sh does not read the CI scope paths (docs_only, tools_only, engine) from the conventions file |
 | `files.large-file-limit` | files | error | skill | pre-commit's check-added-large-files limit differs from the conventions |
 | `files.markdown-hook` | files | error | skill | pre-commit has no markdownlint-cli2 hook, so a long Markdown line is first caught by CI |
 | `issue.sections` | github | error | skill | an open issue lacks a required section of its form (or was filed with other headings) |
@@ -161,7 +163,8 @@ unusable, and never with a traceback.
 2. Run `uv run --project python coney-tools repo render` so the [generated blocks](#generated-blocks) follow. If a
    file keeps a hand-written copy of it, change that too: the issue forms in `.github/ISSUE_TEMPLATE/`, the pull request
    template or pre-commit's `--maxkb`. `coney-tools repo audit --files` fails, naming the file and the key, until they
-   agree (`.github/scripts/ci-scope.sh` keeps no copy: it reads `paths.docs_only` from the file).
+   agree (`.github/scripts/ci-scope.sh` keeps no copy: it reads `paths.docs_only`, `paths.tools_only` and
+   `paths.engine` from the file).
 3. Update the guide that explains the rule in the same commit ([Documentation](repo:AGENTS.md)).
 4. Changing the conventions themselves is a maintainer decision (`repo.owner_decisions`).
 
