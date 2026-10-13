@@ -1263,10 +1263,10 @@ HuForceEnableReticule(human, enable)
 **Returns** nothing.
 
 Sets one global (0x005104f8), not a per-human flag. The reticule update (0x0024b780) draws each player's health and
-power rings at its feet ([HUD: the health rings](../../research/hud.md#the-health-rings)) while the HUD shows and the
-player is not down, airborne, climbing or in a scene: normally only after SELECT is pressed or a flash used (held 4 s,
-then fading over 0.5 s), in a fight stance, or at 20 % health or below; with the global set, every such player's rings
-are drawn every frame at full strength. The rings of the players' targets are not affected.
+power rings at its feet ([HUD: the health rings](../../research/hud-radar.md#the-health-rings)) while the HUD shows and
+the player is not down, airborne, climbing or in a scene: normally only after SELECT is pressed or a flash used (held 4
+s, then fading over 0.5 s), in a fight stance, or at 20 % health or below; with the global set, every such player's
+rings are drawn every frame at full strength. The rings of the players' targets are not affected.
 
 **Notes.** The setting persists until changed, across humans. Rumble turns it on for every fighter.
 

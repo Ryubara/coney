@@ -740,7 +740,7 @@ What [one in-game frame](boot.md#one-frame) does on the screen, confirmed (code)
    (`part_page1`, [Lighting](lighting.md#humans)), the **coronas** (`lighting`, [Lighting](lighting.md#corona)) and the
    particles, so all of them come after the whole world pass, the water and the translucent objects included, in
    ascending key (measured in a fight: the `part_page1` batches, then `lighting`, [GUI](gui.md#draw-order));
-   the ground rings (`0x0017b2e0`, [HUD](hud.md#the-health-rings)); slot `+0x118` (heat distortion).
+   the ground rings (`0x0017b2e0`, [HUD](hud-radar.md#the-health-rings)); slot `+0x118` (heat distortion).
 4. **Overlays** (`0x00156658`): the HUD (`0x001b1688`) and the overlay pass `0x00185d20` that flushes it ([2D
    drawing](#2d-drawing)); the **screen effects** (slot `+0x128`: the tint, flashes and blur, drawn at once, not
    queued); the subtitles and their flush; the intro movie layer and the credits, each with a flush; the queued 2D

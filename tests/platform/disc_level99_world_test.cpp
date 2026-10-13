@@ -4,9 +4,9 @@
 // played as `--play-level level99 --checkpoint 1` plays it, headless, through the intro scene. Once the first hint is
 // up, the first objective marker (`dyn_w_mission`, shown by `P1.SetupCam`) is in the world with its disc and gold
 // column at full alpha (docs/research/objects.md#objective-markers); SELECT brings player 1's two health rings up
-// (docs/research/hud.md#the-health-rings); and the lesson-9 bats, laid on the ground as the scene `l99_c8` leaves them,
-// are drawn there (docs/research/objects.md#pickable). It runs only when the environment variable CONEY_DISC names
-// the disc and skips otherwise; it prints counts only (LEGAL.md).
+// (docs/research/hud-radar.md#the-health-rings); and the lesson-9 bats, laid on the ground as the scene `l99_c8` leaves
+// them, are drawn there (docs/research/objects.md#pickable). It runs only when the environment variable CONEY_DISC
+// names the disc and skips otherwise; it prints counts only (LEGAL.md).
 #include <array>
 #include <cstddef>
 #include <cstdint>

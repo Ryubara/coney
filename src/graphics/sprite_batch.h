@@ -20,7 +20,7 @@ struct Sprite {
 };
 
 /// One corner of a triangle of a batch: the original's immediate-mode 2D vertices, which some HUD parts draw over a
-/// batch's texture (the radar's disc, docs/research/hud.md#the-radar-on-screen).
+/// batch's texture (the radar's disc, docs/research/hud-radar.md#the-radar-on-screen).
 struct OverlayVertex {
     OverlayPoint position; ///< In the overlay camera's space.
     float u = 0.0F;        ///< Texture coordinate across the whole texture.

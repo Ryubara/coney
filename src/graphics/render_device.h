@@ -113,8 +113,8 @@ class RenderDevice {
 
     /// Draws `vertices` as a list of triangles (three corners each; a remainder is ignored) with `texture` (null: flat
     /// colour) in the same 2D states as drawQuads(), the colour and texture coordinates blended across each triangle:
-    /// the original's immediate-mode 2D shapes (the radar's disc, docs/research/hud.md#the-radar-on-screen), sampled
-    /// and tested as `states` says.
+    /// the original's immediate-mode 2D shapes (the radar's disc, docs/research/hud-radar.md#the-radar-on-screen),
+    /// sampled and tested as `states` says.
     virtual void drawTriangles(const Texture* texture, std::span<const LogicalVertex> vertices,
                                const TriangleStates& states) = 0;
 

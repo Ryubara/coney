@@ -446,8 +446,8 @@ no victim limit):
 Three more per-update state machines run the same stick game for the other player's side of a mugging and for both
 sides of the **cuffing hold** (the hold a tackle leads to, `Tackle_StartHold` `0x0022d030`, state `0x8000000000` for
 the holder and `0x10000000000` for the held; `Player_UpdateHold` picks the side; [The cuffing hold](#cuffing-hold)).
-Each drives the mug meter in its own mode ([HUD: the mug meter](hud.md#mug-meter-layout)). Confirmed (code) at
-`0x00286550`, `0x002833c0`, `0x00283a30`.
+Each drives the mug meter in its own mode ([HUD: the mug meter](hud-functions-panels.md#mug-meter-layout)). Confirmed
+(code) at `0x00286550`, `0x002833c0`, `0x00283a30`.
 
 What they share with `Player_UpdateMugging` (mode 0, above): the record `+0xd4` of the human running the game (state
 `+0x128`, progress `+0x12c`, off-target time `+0x138`, start `+0x130`, time limit `+0x134`), the target angle (human
@@ -478,7 +478,7 @@ value is not 0, being **near** the target resets the off-target time in the hold
 So a mugging between two players is a race between two games: the mugger's mode 0 succeeds at his own required time,
 the victim's mode 1 ends it in the victim's favour at the victim's required time, and a victim who stays off target
 too long hands the mugger the win. The hold is the same race between holder (mode 2) and held (mode 3). The modes'
-meter colours and prompts are on [HUD: the mug meter](hud.md#mug-meter-layout).
+meter colours and prompts are on [HUD: the mug meter](hud-functions-panels.md#mug-meter-layout).
 
 ### The cuffing hold {#cuffing-hold}
 

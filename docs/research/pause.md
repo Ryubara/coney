@@ -18,7 +18,7 @@ draws the world tinted towards black. Over it the **pause menu** shows a header 
 grid of seven items in two rows (**Objectives : Stats : Options** / **Controls : Restart : Resume : Quit**) and a usage
 line; the item picked fills the space above the grid. Resume, triangle, or START (after 1.5 s) fade the menu out over
 1.5 s and pop the mode. Restart and Quit ask Yes/No and then reload the level or leave to the front end. **There is no
-map screen**: the game has no full-screen map, and the only map is the radar disc ([HUD](hud.md#the-radar-on-screen)).
+map screen**: the game has no full-screen map, and the only map is the radar disc ([HUD](hud-radar.md#the-radar-on-screen)).
 
 ## Original structure
 
@@ -226,8 +226,8 @@ anywhere once 1,500 ms (`0x0050ee8c`) have passed since it opened (`+0x3ba4`). C
 
 - **Objectives** (0): the three headers stacked, the selected one expanded to its list; up and down choose the header
   (selection 0-2, starting at 0, or 2 in a Rumble level). An empty list shows "None" (`0x109`, `0x001dd0b8`). The
-  lists are the checklists `HUDSetObjective` fills ([HUD: objectives](hud.md#objectives-hudsetobjective)). Usage line
-  `0x19` (up/down select, triangle back). Selected header gold (current) or purple (bonus), the others grey.
+  lists are the checklists `HUDSetObjective` fills ([HUD: objectives](hud-messages.md#objectives-hudsetobjective)).
+  Usage line `0x19` (up/down select, triangle back). Selected header gold (current) or purple (bonus), the others grey.
 - **Stats** (1): only when the Stats screen is available (`+0x3bb8`): the character's portrait, the name banner, four
   bars (Strength `0xf3`, Stamina `0xf4`, Health `0xf5`, Rage `0xf6`) and a description paragraph
   ([The Stats screen](#stats-screen)). Otherwise nothing opens.
@@ -647,7 +647,7 @@ step 0x6f0: count +0, selection +4, index +8, 5 item pointers +0x0c, description
 
 `0x001dab30`-`0x001dfe20`: `PauseMenu` (vtable `0x0053bdc0`, input `0x0053bd98`, object `0x0062e790`, pointer
 `0x0050eddc`) and the objective checklists it holds; the objective calls are described in
-[hud.md](hud.md#objectives-hudsetobjective).
+[hud.md](hud-messages.md#objectives-hudsetobjective).
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |

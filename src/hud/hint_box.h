@@ -49,7 +49,7 @@ struct MarkupTimes {
 /// Coney's stand-in: the game timer does not freeze yet, so a `<FREEZE ms>` hint shows for the larger of `ms` and
 /// kHintFreezeMinMs. The text is copied, not kept by pointer.
 ///
-/// Research: docs/research/hud.md#hints-hudsettutorialtext, docs/research/hud.md#hint-queue-runtime
+/// Research: docs/research/hud-messages.md#hints-hudsettutorialtext, docs/research/hud-messages.md#hint-queue-runtime
 class HintBox {
   public:
     /// A box whose cue plays through `sound` (silent when it is empty).

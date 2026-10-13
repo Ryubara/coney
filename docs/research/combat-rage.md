@@ -522,7 +522,7 @@ object.
 
 ## Reviving a downed Warrior {#revive}
 
-The prompt (HUD string 4) and who can be revived are on [HUD: action prompts](hud.md#action-prompts); this is the
+The prompt (HUD string 4) and who can be revived are on [HUD: action prompts](hud-messages.md#action-prompts); this is the
 action. **D-pad left** pressed makes command `0x27` ([the street's tables](combat.md#commands), confirmed (runtime)), which
 `Player_TryRevive` (`0x00286ba8`) handles; an AI Warrior reaches the same function through
 [SaveHuman](ai-goals.md#goal-save-human) (inferred from its brain-type test below). Confirmed (code) at the addresses

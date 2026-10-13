@@ -16,8 +16,8 @@ namespace coney::platform {
 namespace {
 
 // The batches' capacities and depths (the 2D sort keys, docs/research/gui.md#draw-order): the radar disc under
-// everything (HUD_Render draws it before the sorted pass, docs/research/hud.md#the-radar-on-screen), the flat quads,
-// the big font, then part_page0 (the text and the icons) and hud_minigames.
+// everything (HUD_Render draws it before the sorted pass, docs/research/hud-radar.md#the-radar-on-screen), the flat
+// quads, the big font, then part_page0 (the text and the icons) and hud_minigames.
 constexpr std::size_t kTextCapacity = 2048;
 constexpr std::size_t kSmallCapacity = 64;
 constexpr float kFlatDepth = 8000.0F;
@@ -29,7 +29,7 @@ constexpr float kMinigamesDepth = 10000.0F;
 constexpr std::size_t kSheetCapacity = 16;
 constexpr float kSheetDepth = 11000.0F;
 // The 2D shapes (the lock-pick dial's wedges, then its face), over every sprite batch: the original draws them after
-// the overlay's sprites (docs/research/hud.md#lock-pick-dial-layout). Two players' fans of 32 segments.
+// the overlay's sprites (docs/research/hud-functions-lua.md#lock-pick-dial-layout). Two players' fans of 32 segments.
 constexpr std::size_t kShapeCapacity = 160;
 constexpr float kShapesDepth = 20000.0F;
 constexpr float kShapeFaceDepth = 20001.0F;

@@ -616,8 +616,9 @@ bytes each; kinds 0 and 1 use slot 0): kind 0 a red (200, 30, 30) bar 0.17 × 0.
 with a (217, 158, 12) fill. Kind 2 is a separate three-sprite gauge (0x0060b180). Fill them with HUDSetBarPercentage.
 
 **Notes.** Kind 2's gauge (0x001a3720) starts with values 60 (`+0x348`) and 30 (`+0x340`) and the marker sprite 0x1a0007
-(sheet `chasebar`); its look is on [HUD: scripted bars](../../research/hud.md#scripted-bars). Positions shift down by a
-constant in a two-player game (0x00609e8c). The bars draw in the HUD pass ([HUD: render order](../../research/hud.md)).
+(sheet `chasebar`); its look is on [HUD: scripted bars](../../research/hud-messages.md#scripted-bars). Positions shift
+down by a constant in a two-player game (0x00609e8c). The bars draw in the HUD pass ([HUD: render
+order](../../research/hud.md)).
 
 - **Evidence:** confirmed (code) at `0x001b53b0`, `0x001b4ba0`, `0x001b4c98`, `0x001b4f00`, `0x001b5008`; detail: traced
 - **Wrapper** `0x0036f5b8` (registered by `RegisterBindings`); **calls** `0x001b53b0` `HUD_EnableBar`, `0x001b4ba0`
@@ -740,7 +741,7 @@ Shows or hides the tutorial's on-screen arrow pointing at a HUD element; positio
 it on.
 
 **Notes.** The arrow is rectangle 10 of hud_minigames, size 0.06, grey (191, 191, 191), and bobs along its direction
-(0x001b7330). Behaviour: [The in-game HUD](../../research/hud.md#the-instruction-arrow-hudenableinstarrow).
+(0x001b7330). Behaviour: [The in-game HUD](../../research/hud-messages.md#the-instruction-arrow-hudenableinstarrow).
 
 - **Evidence:** confirmed (code) at `0x001b5c30`; detail: traced
 - **Wrapper** `0x0036fdd0` (registered by `RegisterBindings`); **calls** `0x001b5c30` `HUD_EnableInstructionArrow`
@@ -943,7 +944,7 @@ standing player and widens toward `far` as the player speeds up. Level 3 passes 
 50 and 75.
 
 **Notes.** The floats pass through in registers, which hides them in the decompiled wrapper. The zoom formula and
-HUDSetRadarZoomScale are in [HUD: the radar](../../research/hud.md#the-radar-on-screen).
+HUDSetRadarZoomScale are in [HUD: the radar](../../research/hud-radar.md#the-radar-on-screen).
 
 - **Evidence:** confirmed (code) at `0x001b40c0`, `0x001b2e10`; detail: traced
 - **Wrapper** `0x003709b8` (registered by `RegisterBindings`); **calls** `0x001b40c0` `HUD_SetRadarRange`, `0x001b2e10`
@@ -1041,7 +1042,8 @@ uses it to announce an entered cheat.
 **Notes.** Kind 5 goes to a separate text widget (0x0060e990, HUD +0xe150); the other kinds restart the HUD manager's
 announcement widget (+0xe340) through 0x001b3cb0, which also looks up interface cue 0x14. An announcement lasts as its
 own <DISPLAYTIME> markup says, else until replaced; while the +0xe340 one shows, the objective message, the hint box and
-the action prompts are hidden. Details: [The in-game HUD](../../research/hud.md#announcements-and-other-messages).
+the action prompts are hidden. Details: [The in-game
+HUD](../../research/hud-messages.md#announcements-and-other-messages).
 
 - **Evidence:** confirmed (code) at `0x001b5b08`; detail: traced
 - **Wrapper** `0x0036e858` (registered by `RegisterBindings`); **calls** `0x001b5b08` `HUD_SetAnnounceMessage`
@@ -1333,7 +1335,7 @@ string 0xe5 or 0xe6 (which ends the line), then the text; a text whose leading t
 that icon. Mode 2 flushes that message and shows announcement 2 for slot 1 only (runtime-checked in level99,
 2026-10-11); mode 0 for slot 1 also queues tutorial hint 0x15 once while game tutorial text is on. That mode 2 ticks the
 line off is inferred (0x001a5070). The checklist is the object at 0x0062e790 (pointer 0x0050eddc). Behaviour: [The
-in-game HUD](../../research/hud.md#objectives-hudsetobjective).
+in-game HUD](../../research/hud-messages.md#objectives-hudsetobjective).
 
 - **Evidence:** confirmed (code) at `0x001dad88`; detail: traced
 - **Wrapper** `0x0036f280` (registered by `RegisterBindings`); **calls** `0x001dad88` `HUD_SetObjective`
@@ -1508,7 +1510,7 @@ The pointer is stored as given (0x006095f0), not interned.
 
 **Notes.** Not tied to the hint text. Cleared only by nil or when the HUD is released at UnloadLevel. Player 2's hits do
 not call it. Because the name is not interned, the original relies on the script keeping the string alive (constants in
-a chunk are). Details: [The in-game HUD](../../research/hud.md#tutorial-callback).
+a chunk are). Details: [The in-game HUD](../../research/hud-messages.md#tutorial-callback).
 
 - **Evidence:** confirmed (code) at `0x001b5e90`; detail: traced
 - **Wrapper** `0x00370098` (registered by `RegisterBindings`); **calls** `0x001b5e90` `Tutorial_SetCallback`
@@ -1535,7 +1537,7 @@ Queues a tutorial hint in the hint box (the text panel used by the tutorial and 
 interface sound cue 0x15 for each new hint; hidden while an objective message or an announcement shows. At most 20 hints
 are held (more are dropped) and the text is kept by pointer. A hint stays until its own <DISPLAYTIME ms> or <FREEZE ms>
 markup ends it, or until it is flushed, withdrawn or interrupted; without either tag it stays. Queue and timing: [The
-in-game HUD](../../research/hud.md#hints-hudsettutorialtext).
+in-game HUD](../../research/hud-messages.md#hints-hudsettutorialtext).
 
 - **Evidence:** confirmed (code) at `0x001b4980`; detail: traced
 - **Wrapper** `0x0036f380` (registered by `RegisterBindings`); **calls** `0x001b4980` `Tutorial_QueueText`
@@ -1695,8 +1697,8 @@ The scripts use it for the mash prompts in chases, fights and workouts.
 
 **Notes.** Stores the two icons at prompt +0x440/+0x444, the rates at +0x448 and +0x458, sets the cycle flag +0x45c and
 hides the prompt widget until its next update; the icon sprite (+0x480) is set up with a fixed size 0.1. The cycle runs
-in ActionPrompt_Update ([HUD: action prompts](../../research/hud.md#action-prompts)), so it shows only while that
-player's prompt itself is shown.
+in ActionPrompt_Update ([HUD: action prompts](../../research/hud-messages.md#action-prompts)), so it shows only while
+that player's prompt itself is shown.
 
 - **Evidence:** confirmed (code) at `0x001b5a90`, `0x0019f270`, `0x0019f328`; detail: traced
 - **Wrapper** `0x0036fc80` (registered by `RegisterBindings`); **calls** `0x001b5a90` `HUD_TurnOnActionCycleAnim`,

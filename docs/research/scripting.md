@@ -258,7 +258,7 @@ One countdown (or count-up) timer for the whole game, the object at `*0x0051504c
 | `+0x08` / `+0x0c` | s32 | current time / target time, ms |
 | `+0x10` | float | rate the elapsed time is multiplied by: 1.0 from the constructor (`0x00423358`); other writers not traced |
 | `+0x14` | u32 | running (`W_StartStopWatch`'s argument; the update clears it at the target) |
-| `+0x18` / `+0x1c` | u32 / char* | shown on the HUD / the label drawn before the time; read by the HUD's stopwatch text (`StopWatchHud_UpdateMinutes`, `0x001cd5e8`, and `0x001cd748`; [HUD](hud.md#fn-after-textentrypad)); written by `W_ShowStopWatch` (`0x00423670` → `0x004235e0`) |
+| `+0x18` / `+0x1c` | u32 / char* | shown on the HUD / the label drawn before the time; read by the HUD's stopwatch text (`StopWatchHud_UpdateMinutes`, `0x001cd5e8`, and `0x001cd748`; [HUD](hud-functions-panels.md#fn-after-textentrypad)); written by `W_ShowStopWatch` (`0x00423670` → `0x004235e0`) |
 | `+0x20` | char[32] | the callback's name, kept as text (empty for none) |
 | `+0x40` / `+0x48` | s32 | warning window (ms) / time of the last warning beep; `W_SetStopWatch` sets 0 / 1000 |
 
@@ -808,7 +808,7 @@ eight `l99_` scenes on a loop ([Scenes: the scene test](scenes.md#scene-test)).
 → `P1.FirstGlow`, `vClimb` → `P3.MoveToClimb`, ...); message 8 on four flags (an AI teacher arrived); messages 1, 3, 4
 and 16 on the dealer, whose trigger sphere gives 3 and 4; 18 on a civilian and, through `GangSetMsgHandler`, on a gang;
 2 on two breakable fences; one 50-second stopwatch (`P1.SendWarriors` → `P1.TimesUp`); about 60 scheduled calls; the
-tutorial's attack callback (`HUDSetTutorialCallback`, [HUD](hud.md#tutorial-callback)), animation callbacks
+tutorial's attack callback (`HUDSetTutorialCallback`, [HUD](hud-messages.md#tutorial-callback)), animation callbacks
 ([Characters](characters.md#anim-callbacks)) and pad handlers (`PadSetHandlerEx`). How each is delivered:
 [Message handlers](#message-handlers), [Trigger boxes and spheres](#triggers), [The mission stopwatch](#stopwatch),
 [Scheduled calls](#scheduled-calls). No script of the mission launches a failure: the players are demi-gods (below)
@@ -872,8 +872,8 @@ researched and whether Coney implements it (`ShowHud`, for one, does nothing in 
 
 `level99_combat.lua` runs twelve sections in order from a
 table, each started by the previous one's end (directly, or scheduled 1-2.5 s later). A lesson that teaches a move
-sets `HUDSetTutorialCallback` and counts the anim ids the [callback](hud.md#tutorial-callback) passes, which is the
-attacker's id when the **victim applies the damage**, so only moves that hurt someone count. Inferred from the
+sets `HUDSetTutorialCallback` and counts the anim ids the [callback](hud-messages.md#tutorial-callback) passes, which is
+the attacker's id when the **victim applies the damage**, so only moves that hurt someone count. Inferred from the
 disassembly of the script (ids and counts only); the moves themselves are confirmed where linked.
 
 | # | Section | Waits for (anim ids, in order) | Move | Researched |
@@ -1066,8 +1066,8 @@ Every hint call, shown hint and callback of lessons 5-8 over two plays of the or
 same course and state as above, 3,600 updates each), by update from `P1.SetupPowerAttacks`, the call that starts
 lesson 5. Updates are tick counts halved, so two events in one update are exact; where the runs differ the second
 run's update follows a slash. "set" is a `HUDSetTutorialText` call, "shown" the `0x001cdf7c` show, "anim" an
-[animation callback](characters.md#anim-callbacks) and "tutorial" the [tutorial callback](hud.md#tutorial-callback)
-with its anim id. Method and hooks: [The queue at runtime](hud.md#hint-queue-runtime). Confirmed (runtime).
+[animation callback](characters.md#anim-callbacks) and "tutorial" the [tutorial callback](hud-messages.md#tutorial-callback)
+with its anim id. Method and hooks: [The queue at runtime](hud-messages.md#hint-queue-runtime). Confirmed (runtime).
 
 | Update | Lesson | What ran | Hint calls | Shown, in that update |
 | --- | --- | --- | --- | --- |
@@ -1096,7 +1096,7 @@ uses.) What a test can rely on:
 
 - **No lateness**: every text was shown in the update its `HUDSetTutorialText` call ran (0 updates late), because a
   nil cleared the box first and the box then showed the new text at once
-  ([Queueing](hud.md#hints-hudsettutorialtext)). The only late text in lessons 1-8 is `TT_26b` (lesson 3), queued
+  ([Queueing](hud-messages.md#hints-hudsettutorialtext)). The only late text in lessons 1-8 is `TT_26b` (lesson 3), queued
   behind `TT_26a`'s `<DISPLAYTIME 3000>` and shown 92 updates after it. So a playthrough test can assert that each
   lesson text shows in the update its callback ran, and that the box is never more than one text behind.
 - **`PlayerState` and the lesson callbacks never share an update in lesson 5**: the grab's anim callback runs at the
@@ -2684,10 +2684,10 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
   (`LevelScripts`, `src/gamemodes/level_start.h`). In `level99` at checkpoint 1 the tutorial runs from the intro
   through the two markers (`vMark01`, `vMark03`; how the original draws them:
   [Objective markers](objects.md#objective-markers)), the `l99_t1` scene and `P1.SetupBasicAttacks`; the basic-attacks
-  lesson then waits for the tutorial callback (`HUDSetTutorialCallback`, [HUD](hud.md#tutorial-callback)), which the
-  play mode calls with each hit player 1 strikes. The lessons run through the light and heavy attacks, the grab and
-  its strikes, the mount and its strikes ([Combat](combat-grabs.md#mount)), the L2 let-go, the targeting lesson (L1 held
-  2 s, heard through the `PadSetHandlerEx` handler, which the play mode calls after the level's step with each
+  lesson then waits for the tutorial callback (`HUDSetTutorialCallback`, [HUD](hud-messages.md#tutorial-callback)),
+  which the play mode calls with each hit player 1 strikes. The lessons run through the light and heavy attacks, the
+  grab and its strikes, the mount and its strikes ([Combat](combat-grabs.md#mount)), the L2 let-go, the targeting lesson
+  (L1 held 2 s, heard through the `PadSetHandlerEx` handler, which the play mode calls after the level's step with each
   human's pad command, [PadSetHandlerEx](../references/bindings/input.md#padsethandlerex)), the combos and the strong
   attack, then stop at the strong grapple (circle + cross), whose research is under way.
 - **The level table** (`src/warriors/level_table.h`, `GameState`): `CfgLevelName`'s records by index, read by
@@ -2791,21 +2791,22 @@ handler component, as for `TriggerSphereEnable`).
   [Warrior classes](../references/warrior-classes.md)). Each would move up from
   inferred once a reader or a runtime observation is found.
 - **Hint texts set twice in one frame** (user checklist item 33b). (Answered by the original's runtime trace,
-  [The queue at runtime](hud.md#hint-queue-runtime) and [lessons 5-8](#level99-hint-timing), two runs: neither of the
-  two places where Coney's `level99` course run queued two texts in one step backs up in the original.
-  **Lesson 5's end**: `PlayerState`'s animation callback on the strong grapple's hold 82 runs at the connect (update
-  157, `TT_19b` shown) and `P1.Power` sets `TT_24d` when the hit is scored with 82 (update 191), 34 updates apart in
-  both runs, so the two texts never share an update; confirmed (runtime), the dispatch of 82 from the four-clip mix's
+  [The queue at runtime](hud-messages.md#hint-queue-runtime) and [lessons 5-8](#level99-hint-timing), two runs: neither
+  of the two places where Coney's `level99` course run queued two texts in one step backs up in the original. **Lesson
+  5's end**: `PlayerState`'s animation callback on the strong grapple's hold 82 runs at the connect (update 157,
+  `TT_19b` shown) and `P1.Power` sets `TT_24d` when the hit is scored with 82 (update 191), 34 updates apart in both
+  runs, so the two texts never share an update; confirmed (runtime), the dispatch of 82 from the four-clip mix's
   constructor (`0x00106fe0`, [Animation callbacks](characters.md#anim-callbacks)). **`P1.StartSnaps`**: its
   `HUDSetTutorialText` calls (nil, `TT_25c`, nil, `TT_25c`) ran in one tick; each text found the box free and showed
-  within its own call, so the box showed the snap text, cleared it and showed it again, with the cue twice, and
-  nothing stayed queued; confirmed (runtime) at the show `0x001cdf7c`, as `HintBox_Queue` reads (confirmed (code) at
+  within its own call, so the box showed the snap text, cleared it and showed it again, with the cue twice, and nothing
+  stayed queued; confirmed (runtime) at the show `0x001cdf7c`, as `HintBox_Queue` reads (confirmed (code) at
   `0x001ce484`-`0x001ce52c`). In both runs the queue held no entry past the call that queued it, apart from `TT_26b`
-  behind a `<DISPLAYTIME>` hint. What Coney must change for it: [Coney's differences](hud.md#hint-queue-runtime).)
+  behind a `<DISPLAYTIME>` hint. What Coney must change for it: [Coney's
+  differences](hud-messages.md#hint-queue-runtime).)
 - **The stale throw hint** (user checklist item 38). (Answered for Coney: the user saw `level80`'s `TT_25` (lure the
   cops with a bottle) stay through step 3.4 until the Wreck'em order. The likely cause was the hint box's backlog: a
   lesson text queued behind another, then shown after the next clear. The box no longer queues on a nil-then-text set
-  ([The queue at runtime](hud.md#hint-queue-runtime)), and the bug no longer reproduces on the user's path.
+  ([The queue at runtime](hud-messages.md#hint-queue-runtime)), and the bug no longer reproduces on the user's path.
   `repo:tests/platform/disc_level80_story_test.cpp` starts the story and jumps to checkpoint 3. It walks into Fox's box
   and, on foot, up the stairs to the roof, then plays the lesson. The box is empty when the bottle breaks, `TT_7` is
   the next hint and no lesson text comes back. The original was not traced for this; the order is the one in

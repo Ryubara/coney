@@ -31,7 +31,7 @@ struct ScrollInMessage {
 /// Coney's choices: a message's cue plays when it comes to the front; it fades out over its tail; the original's
 /// y offset (`0x0050ea58`) is taken as 0 (not on the page).
 ///
-/// Research: docs/research/hud.md#objectives-hudsetobjective
+/// Research: docs/research/hud-messages.md#objectives-hudsetobjective
 class ScrollInQueue {
   public:
     /// Appends `message`.
@@ -68,7 +68,7 @@ struct ChecklistLine {
 /// The objectives' checklist (`ChecklistMessageHUD.cpp`, `0x0062e790`): two slots and a third list for slot 2. Where it
 /// is shown is not traced (inferred: the pause menu), so Coney keeps it for the debug menus only.
 ///
-/// Research: docs/research/hud.md#objectives-hudsetobjective
+/// Research: docs/research/hud-messages.md#objectives-hudsetobjective
 struct Checklist {
     std::array<std::optional<ChecklistLine>, 3> slots;
 };

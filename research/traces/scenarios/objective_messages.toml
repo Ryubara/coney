@@ -2,9 +2,9 @@
 # into empty memory (0x000d0000): a new objective (mode 0) and its completion (mode 2) in slot 0, the same in slot 1,
 # then a completion while the next objective waits in the scroll-in queue. The fields sample the scroll-in queue
 # (HUD 0x00600840 + 0x8dd0) and the announcement widget (+0xe340) every update.
-# Research: docs/research/hud.md#objectives-hudsetobjective
+# Research: docs/research/hud-messages.md#objectives-hudsetobjective
 description = "slot 1, no input: objectives set and completed by HUD_SetObjective; the scroll-in queue and announcement"
-research = "docs/research/hud.md#objectives-hudsetobjective"
+research = "docs/research/hud-messages.md#objectives-hudsetobjective"
 input = "objective_messages.txt"
 updates = 700
 fields = []

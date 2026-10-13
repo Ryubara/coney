@@ -32,7 +32,7 @@ A human is an AI when *human* `+0x1b0` (its pad) is −1. *Living* in "living me
 still resolves (`Gang_CountLiving(g, 0)`, `0x00166158`, counts resolving handles); *standing* means also not down
 or dead (`Gang_CountLiving(g, 1)`, `Human_IsDownOrDead` `0x00227e60`; only the value 1 selects it, any other
 counts resolving handles; confirmed (code) at `0x00166158`). The HUD's gang counts all pass 1
-([HUD](hud.md#gang-count-what)). Neither is `Gang_CountStanding` (`0x00166220`, `GangGetStandingCount`), which
+([HUD](hud-functions-lua.md#gang-count-what)). Neither is `Gang_CountStanding` (`0x00166220`, `GangGetStandingCount`), which
 tests knocked out, state `0x100000000` and wounded separately (confirmed (code) at `0x00166220`). Goal kinds
 are the type ids of [Goals](ai.md#goals).
 

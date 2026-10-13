@@ -60,7 +60,7 @@ struct LockPickLayout {
 /// drawn over them. The play mode shows it while the player picks a lock and gives it the pins' angles each update;
 /// there is no text.
 ///
-/// Research: docs/research/hud.md#lock-pick-dial-layout
+/// Research: docs/research/hud-functions-lua.md#lock-pick-dial-layout
 /// @orig 0x001b7eb0 LockPickDial_Init (unknown)
 class LockPickHud {
   public:
@@ -84,7 +84,7 @@ class LockPickHud {
     /// are what Init and ApplyVideoMode write; the radius and pin factors and the shapes' override what Draw writes
     /// every update.
     ///
-    /// Research: docs/research/hud.md#lock-pick-dial-layout
+    /// Research: docs/research/hud-functions-lua.md#lock-pick-dial-layout
     /// @orig 0x001b7eb0 LockPickDial_Init (unknown)
     /// @orig 0x001b7c10 LockPickDial_ApplyVideoMode (unknown)
     /// @orig 0x001b8530 LockPickDial_Draw (unknown)
@@ -93,7 +93,7 @@ class LockPickHud {
     /// with y down: radius × (sin a, cos a), a = π − j × 2π / 32, so vertex 0 is straight up and the rim runs
     /// clockwise.
     ///
-    /// Research: docs/research/hud.md#lock-pick-dial-layout
+    /// Research: docs/research/hud-functions-lua.md#lock-pick-dial-layout
     /// @orig 0x0017bec8 Im2D_DrawArc (unknown)
     /// @orig 0x0017c308 Shape2D_DrawQueued (unknown)
     [[nodiscard]] static graphics::LogicalPoint rimOffset(graphics::LogicalPoint radius, int j);
@@ -103,7 +103,7 @@ class LockPickHud {
     /// draws flat-shaded, so each segment takes rim vertex j + 1's colour, and a wedge of k vertices each side is the
     /// 2k + 1 whole segments from -(k + 1) to +k segments off 12 o'clock (half a segment towards 11).
     ///
-    /// Research: docs/research/hud.md#lock-pick-dial-layout
+    /// Research: docs/research/hud-functions-lua.md#lock-pick-dial-layout
     [[nodiscard]] static bool wedgeSegment(float percent, int j);
 
     /// Adds player `player`'s dial while it is shown: the pins, largest first (`canvas.minigames`), then over every

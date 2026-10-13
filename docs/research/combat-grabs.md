@@ -172,7 +172,7 @@ The player's state word was `0x45` front (`0x85` rear) from the connect, the vic
 (`0x21`) in the hold; the hold lasted until the end of the 150-update run, so the strong grapple **does not let go**:
 every [move in the grab](#grabbing) follows. 60 is Rembrandt's index-17 value after his 115 % scale.
 
-**The tutorial callback** ([HUD](hud.md#tutorial-callback)) is called once, by the victim's
+**The tutorial callback** ([HUD](hud-messages.md#tutorial-callback)) is called once, by the victim's
 `Human_ApplyPendingDamage` on the update the hold replaces 657, so the anim id it passes is the **hold's, 82 (84 from
 the rear), not 657** (confirmed (runtime): `Tutorial_CallCallback` given `0x52` and `0x54`). `level99`'s lesson waits
 for exactly 82 or 84 ([The combat tutorial](scripting.md#level99-lessons)).

@@ -30,8 +30,8 @@ struct PowerClass {
     /// them when there is one (`Grabbing_PickMove`, docs/research/ai.md#fight-reactions).
     bool throwsAtWalls = false;
     /// Byte `+0x40` (`CfgPowerClass` argument 29, 0-100): the health rings span byte / 100 of their circle (35 for
-    /// Rembrandt's class 64, read at runtime; docs/research/hud.md#the-health-rings), and the pause Stats screen's
-    /// Health bar is byte / 100 (docs/research/pause.md#stats-screen).
+    /// Rembrandt's class 64, read at runtime; docs/research/hud-radar.md#the-health-rings), and the pause Stats
+    /// screen's Health bar is byte / 100 (docs/research/pause.md#stats-screen).
     int ringByte = 35;
 };
 

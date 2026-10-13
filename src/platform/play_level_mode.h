@@ -572,10 +572,10 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // Player 1's mugging: the scripts' record for the next one, and the end of one (the money, the mug callback).
     void stepMugging(human::Human& human);
     // The stereo-theft panel follows player 1's theft: shown from the press, its progress each update with cue 0x22 per
-    // stage (and 0x23 for the last), gone as the end clip starts (docs/research/hud.md#stereo-layout).
+    // stage (and 0x23 for the last), gone as the end clip starts (docs/research/hud-functions-panels.md#stereo-layout).
     void stepStereoPanel(const human::Human& human);
     // The mug meter follows player 1's mugging: shown while it runs, with the raw left stick, whether it is on target
-    // and both bars' fills (docs/research/hud.md#mug-meter-layout).
+    // and both bars' fills (docs/research/hud-functions-panels.md#mug-meter-layout).
     void stepMugMeter(const human::Human& human, const Pad& pad);
 
     // --- play_level_throw_aim.cpp: the throw's aim.
@@ -591,7 +591,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // @orig 0x00419da0 ThrowArcs_RenderAll (unknown)
     void drawThrowArc(float alpha);
     // The lock-pick dial follows player 1's pick: shown at its difficulty while it runs, with the pins' angles and the
-    // pin the next press judges (docs/research/hud.md#lock-pick-dial-layout).
+    // pin the next press judges (docs/research/hud-functions-lua.md#lock-pick-dial-layout).
     void stepLockPickDial();
     // The level's glass panes, after the opaque world and before the rings (docs/research/objects.md#pane-draw).
     void drawGlass() const;

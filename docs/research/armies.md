@@ -32,7 +32,7 @@ below. This page gathers them and does not repeat them.
 | --- | --- | --- |
 | Character models | every human drawn with its type's `_a` model | [Characters: from a type to a model](characters.md#type-to-model) |
 | Camera | the rail's mode 3: trails the hindmost fighter at a fixed downward pitch, forward only | [Camera: mode 3](camera.md#rail-mode3) |
-| HUD | two `ANHud` panels (health, power, credits, the boss picture), the GO sign; `HideHud` does nothing while game state `+0x14c` is 1 | [HUD: the Armies panel](hud.md#fn-anhud) |
+| HUD | two `ANHud` panels (health, power, credits, the boss picture), the GO sign; `HideHud` does nothing while game state `+0x14c` is 1 | [HUD: the Armies panel](hud-functions-panels.md#fn-anhud) |
 | Failure | no mission-failed shot; the Armies game over (mode 0xd, `ANGameOver_Toggle` `0x001557f8`) | [Pause: the game-over screen](pause.md#an-game-over) |
 | Pause | its own pause menu | [Pause: the Armies pause menu](pause.md#an-pause-menu) |
 | Sound | the sound matrix `armies` (`global.lua`, levels 60-64), the bank `armies`, the load screen's bank `armload` | [Sound: banks](sound.md#banks), [Scripts: global.lua](scripting.md#globallua) |
@@ -86,8 +86,8 @@ The HUD in play: top left Swan's portrait, his name and a seven-digit score (000
 centre the two-digit **timer** (starting at 99); top right **"PRESS THE START BUTTON TO JOIN"**, blinking; at the right
 edge **"GO"** with an arrow pointing right, blinking; bottom right **"CREDITS: 07"** (`HUDANSetCredit(7)`). So the idle
 stage runs a 99-second timer that ends in the continue screen without any fight ([HUD: the Armies
-panel](hud.md#fn-anhud) for the panel's code). Which script call starts the timer and the `P1.Start03` timing were not
-traced here.
+panel](hud-functions-panels.md#fn-anhud) for the panel's code). Which script call starts the timer and the `P1.Start03`
+timing were not traced here.
 
 ## In Coney {#coney}
 
@@ -126,8 +126,8 @@ The minimum to show Armies of the Night instead of a black screen, in order:
 4. **Make the stage recognisable:** build mode 3 of the rail ([Camera: mode 3](camera.md#rail-mode3)), so the
    camera trails the hindmost fighter at the −7° pitch. Take `isArmiesLevel` as 60-69.
 5. **Then the bindings in the list above**, the HUD's credits and GO sign first ([HUD: the Armies
-   panel](hud.md#fn-anhud)), then the game over (mode 0xd, [Pause](pause.md#an-game-over)), so that losing ends in
-   the stage's own screen and not in the story's mission-failed one.
+   panel](hud-functions-panels.md#fn-anhud)), then the game over (mode 0xd, [Pause](pause.md#an-game-over)), so that
+   losing ends in the stage's own screen and not in the story's mission-failed one.
 6. **Tests:** a disc test that `level60` at checkpoint 1 reaches `P1.Start03` with the rail camera active and mode 3
    set; a debug-menu test that no listed level fails to load; and, once the hub path exists, a playthrough from the
    trophy. With the pad idle, compare with [the original's first frames](#first-frames): the load screen, the intro

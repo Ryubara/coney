@@ -29,7 +29,7 @@ enum class MugMeterMode : std::uint8_t { Mugging = 0, Mugged = 1, Holding = 2, H
 /// left stick's picture (a dot moving on a ball) and three arcs rippling out on the side the stick points to, with a
 /// prompt above. The game drives it each update while the player mugs; it is drawn only then.
 ///
-/// Research: docs/research/hud.md#mug-meter-layout
+/// Research: docs/research/hud-functions-panels.md#mug-meter-layout
 /// @orig 0x001bf7e0 MugMeter_Setup (MissionSelectHUD.cpp)
 class MugMeter {
   public:
