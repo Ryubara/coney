@@ -1,7 +1,8 @@
 # Compile through ccache and restore its cache from main, so a job recompiles only what changed. A runner starts
-# empty, so without this every job recompiles everything, SDL3 and librw included. Windows (MSVC) works too because
-# the ci and asan presets inherit "cacheable" (CMakePresets.json): /Z7 keeps the debug info in each object, where
-# MSVC's default /Zi writes a shared PDB that ccache refuses, and no precompiled headers, which ccache cannot use.
+# empty, so without this every job recompiles everything, SDL3 and librw included. Windows (MSVC) works too: every
+# preset uses /Z7 (the "embedded-debug-info" preset in CMakePresets.json), which keeps the debug info in each object
+# where MSVC's default /Zi writes a shared PDB that ccache refuses, and the ci and asan presets also inherit
+# "cacheable", which turns off precompiled headers, which ccache cannot use.
 # Call it after the step that installs the packages (on Linux the package index is already updated by then), and
 # end the job with ./.github/actions/ccache-save, which reports the hit rate and saves the cache (main only).
 #
