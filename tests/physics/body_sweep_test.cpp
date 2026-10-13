@@ -120,7 +120,7 @@ TEST_CASE("a head-on wall: advance, slide to nothing, stuck", "[physics][body_sw
     const auto out = coney::physics::sweepBody(kDt, world, body, Vec3{3, 0, 0});
     checkVec(owner.at, Vec3{0.04F, 0, 0});
     REQUIRE(out.has_value());
-    checkVec(out.value(), Vec3{0.04F, 0, 0});
+    checkVec(out.value_or(Vec3{}), Vec3{0.04F, 0, 0});
     CHECK(body.stuck == 1);
     REQUIRE(owner.velocities.size() == 2); // the stuck branch, then the write-back
     checkVec(owner.velocities[0], Vec3{});
@@ -163,7 +163,7 @@ TEST_CASE("a wall at an angle: advance along the normal, then the slid move in f
         const auto out = coney::physics::sweepBody(kDt, world, body, Vec3{3, 0, 0});
         checkVec(owner.at, Vec3{0.076F, 0.032F, 0});
         REQUIRE(out.has_value());
-        checkVec(out.value(), Vec3{0.076F, 0.032F, 0});
+        checkVec(out.value_or(Vec3{}), Vec3{0.076F, 0.032F, 0});
         CHECK(body.stuck == 0);
         if (flags != 0) {
             REQUIRE(owner.velocities.size() == 1);
@@ -192,7 +192,7 @@ TEST_CASE("a corner: two passes stop, the third has no move", "[physics][body_sw
     checkVec(owner.at, Vec3{0.04F, 0.04F, 0});
     CHECK(body.stuck == 1);
     REQUIRE(out.has_value());
-    checkVec(out.value(), Vec3{0.04F, 0.04F, 0});
+    checkVec(out.value_or(Vec3{}), Vec3{0.04F, 0.04F, 0});
     REQUIRE_FALSE(owner.velocities.empty());
     checkVec(owner.velocities.front(), Vec3{});
 }
@@ -207,7 +207,7 @@ TEST_CASE("three stopping passes leave the body at the advances, the slid move n
     checkVec(owner.at, Vec3{0.012F, -0.016F, 0});
     CHECK(body.stuck == 1);
     REQUIRE(out.has_value());
-    checkVec(out.value(), Vec3{0.012F, -0.016F, 0});
+    checkVec(out.value_or(Vec3{}), Vec3{0.012F, -0.016F, 0});
     REQUIRE_FALSE(owner.velocities.empty());
     checkVec(owner.velocities.front(), Vec3{});
 }
@@ -460,7 +460,7 @@ TEST_CASE("a capsule body moved through the mesh world stops 0.01 m short of a w
     body.shape.type = coney::physics::ShapeType::Capsule;
     const auto out = coney::physics::sweepBody(kDt, world, body, Vec3{30, 0, 0});
     REQUIRE(out.has_value());
-    checkVec(out.value(), Vec3{0.29F, 0, 0});
+    checkVec(out.value_or(Vec3{}), Vec3{0.29F, 0, 0});
     CHECK(body.stuck == 1);
     REQUIRE(!owner.velocities.empty());
     checkVec(owner.velocities.back(), Vec3{});
@@ -469,7 +469,7 @@ TEST_CASE("a capsule body moved through the mesh world stops 0.01 m short of a w
     owner.velocities.clear();
     const auto away = coney::physics::sweepBody(kDt, world, body, Vec3{-30, 0, 0});
     REQUIRE(away.has_value());
-    checkVec(away.value(), Vec3{-1, 0, 0});
+    checkVec(away.value_or(Vec3{}), Vec3{-1, 0, 0});
     CHECK(body.stuck == 0);
     CHECK(owner.velocities.empty());
 }

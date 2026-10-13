@@ -302,7 +302,7 @@ TEST_CASE("the airborne push-out: the nearest wall, horizontally, r - distance",
     const auto wall = meshOf(wallFacingMinusX(0.0F));
     const auto push = coney::physics::pushOutOfWalls(*wall, Sphere{Vec3{-0.3F, 0, 1}, 0.5F}, scratch);
     REQUIRE(push.has_value());
-    checkVec(push.value(), Vec3{-0.2F, 0, 0});
+    checkVec(push.value_or(Vec3{}), Vec3{-0.2F, 0, 0});
     // Behind a one-sided wall: nothing.
     CHECK_FALSE(coney::physics::pushOutOfWalls(*wall, Sphere{Vec3{0.3F, 0, 1}, 0.5F}, scratch).has_value());
     // Two walls at 0.3 and 0.2: only the nearer pushes, by 0.3.
@@ -310,7 +310,7 @@ TEST_CASE("the airborne push-out: the nearest wall, horizontally, r - distance",
     both.push_back(BuildTriangle{.corners = {Rv{-0.5F, -5, 0}, Rv{-0.5F, 5, 0}, Rv{-0.5F, 5, 3}}});
     const auto two = coney::physics::pushOutOfWalls(*meshOf(both), Sphere{Vec3{-0.3F, 0, 1}, 0.5F}, scratch);
     REQUIRE(two.has_value());
-    checkVec(two.value(), Vec3{0.3F, 0, 0});
+    checkVec(two.value_or(Vec3{}), Vec3{0.3F, 0, 0});
     // A wall leaning so that n.z = 0.6: the push is (n.x, n.y, 0) × (r − distance), shorter than r − distance.
     const float lean = 0.6F / 0.8F;
     const auto sloped = meshOf({BuildTriangle{.corners = {Rv{0, -5, 0}, Rv{3 * lean, 5, 3}, Rv{0, 5, 0}}},
@@ -319,5 +319,5 @@ TEST_CASE("the airborne push-out: the nearest wall, horizontally, r - distance",
     const Vec3 centre{(1.0F * lean) - (0.3F * 0.8F), 0, 1.0F + (0.3F * 0.6F)};
     const auto slopedPush = coney::physics::pushOutOfWalls(*sloped, Sphere{centre, 0.5F}, scratch);
     REQUIRE(slopedPush.has_value());
-    checkVec(slopedPush.value(), Vec3{-0.8F * 0.2F, 0, 0});
+    checkVec(slopedPush.value_or(Vec3{}), Vec3{-0.8F * 0.2F, 0, 0});
 }
