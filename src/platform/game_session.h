@@ -9,6 +9,8 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 #include "core/assert.h"
 #include "core/chunk_system.h"
@@ -99,7 +101,14 @@ class GameSession {
     /// The debug menus' jump to `level` at `checkpoint`, carried out at the next beginFrame(); false, changing nothing,
     /// when the level table has no such level.
     bool jumpToLevel(std::string_view level, int checkpoint);
-    /// Carries out a jump asked for since the last frame. Call it between frames, outside any step.
+    /// The debug menu's movie (docs/guides/debug-menu.md#movies): plays `name` over whatever runs at the next
+    /// beginFrame(), as a MovieRequest::debug (the game held beneath it, its sound held and given back, played even
+    /// under `--skip-movies`), with ordinary captions whatever the subtitle option when `captions`. False, changing
+    /// nothing, when the disc has no such movie or a movie is playing or asked for already. Coney-only.
+    bool playDebugMovie(std::string_view name, bool captions);
+    /// The movies on the disc (discMovies()), read once.
+    [[nodiscard]] const std::vector<std::string>& discMovieNames();
+    /// Carries out a jump or a debug movie asked for since the last frame. Call it between frames, outside any step.
     void beginFrame();
 
     /// The start-up flow.
@@ -138,6 +147,8 @@ class GameSession {
     std::shared_ptr<HumansTrace> m_humansTrace;
     std::optional<std::string> m_pendingLevel;
     int m_pendingCheckpoint = 1;
+    std::optional<std::pair<std::string, bool>> m_pendingMovie; // playDebugMovie(): the name and the captions switch
+    std::optional<std::vector<std::string>> m_discMovies;
     std::optional<scenes::SceneList> m_sceneList;
     bool m_sceneListFailed = false;
     std::optional<RasterMovieScreen> m_movieScreen;

@@ -66,12 +66,15 @@ void MovieMode::setCaptionFont(const graphics::Font* font) {
     }
 }
 
-void MovieMode::playMovie(std::string_view name) {
-    if (m_settings.skipAll) {
+void MovieMode::playMovie(std::string_view name) { playMovie(name, MovieRequest{}); }
+
+void MovieMode::playMovie(std::string_view name, MovieRequest request) {
+    // `--skip-movies` skips the game's own movies; one the debug menu asks for is played anyway.
+    if (m_settings.skipAll && !request.debug) {
         m_log(std::format("movie: {} skipped (--skip-movies)\n", name));
         return;
     }
-    m_queue.emplace_back(name);
+    m_queue.emplace_back(std::string(name), request);
     // The caller waits beneath the player, as the original's caller waits inside Movie_Play.
     if (!m_onStack) {
         m_onStack = true;
@@ -97,11 +100,12 @@ const CaptionRecord* MovieMode::caption() const {
         return nullptr;
     }
     const MovieCaptions& captions = *movieCaptions;
-    const bool subtitles = m_settings.subtitlesOn ? m_settings.subtitlesOn() : false;
+    const bool subtitles =
+        m_current->request.alwaysCaptions || (m_settings.subtitlesOn ? m_settings.subtitlesOn() : false);
     return captions.captions.visible(subtitles);
 }
 
-bool MovieMode::start(std::string name) {
+bool MovieMode::start(std::string name, MovieRequest request) {
     auto decoder = m_open(name);
     if (!decoder) {
         // As BinkOpen failing: the movie is silently skipped (Coney logs why).
@@ -112,15 +116,29 @@ bool MovieMode::start(std::string name) {
     auto playing = std::make_unique<Playing>();
     playing->name = std::move(name);
     playing->skippable = movieSkippable(playing->name);
+    playing->request = request;
     playing->decoder = std::move(*decoder);
     playing->info = playing->decoder->info();
-    // Movie_Play stops the music and every sound before Bink takes the sound hardware: the game's sound engine first,
-    // so its tasks end with their voices, then whatever else the mixer plays.
-    if (m_soundStop) {
-        m_soundStop();
+    if (request.debug) {
+        // Coney's debug menu: the game's sound is held where it is, as the pause menu holds it, and given back at the
+        // movie's end (finish()), so the game resumes as it was.
+        if (m_soundHold.hold) {
+            playing->soundHeld = m_soundHold.hold();
+        } else if (m_mixer != nullptr) {
+            m_mixer->pauseAll();
+            playing->soundHeld = true;
+        }
+    } else {
+        // Movie_Play stops the music and every sound before Bink takes the sound hardware: the game's sound engine
+        // first, so its tasks end with their voices, then whatever else the mixer plays.
+        if (m_soundStop) {
+            m_soundStop();
+        }
+        if (m_mixer != nullptr) {
+            m_mixer->stopAll();
+        }
     }
     if (m_mixer != nullptr) {
-        m_mixer->stopAll();
         if (playing->info.hasAudio) {
             const auto capacity =
                 static_cast<std::uint32_t>(kStreamSeconds * static_cast<double>(playing->info.sampleRate));
@@ -156,6 +174,14 @@ void MovieMode::finish(bool skipped) {
     }
     if (m_mixer != nullptr && m_current->voice.valid()) {
         m_mixer->stop(m_current->voice);
+    }
+    // A debug movie gives back the sound its hold took.
+    if (m_current->soundHeld) {
+        if (m_soundHold.release) {
+            m_soundHold.release();
+        } else if (m_mixer != nullptr) {
+            m_mixer->resumeAll();
+        }
     }
     if (skipped) {
         ++m_counts.skipped;
@@ -254,9 +280,9 @@ ModeResult MovieMode::update(GameModeStack& stack, const FrameTime& frame) {
         if (m_queue.empty()) {
             return ModeResult::Leave;
         }
-        std::string name = std::move(m_queue.front());
+        auto [name, request] = std::move(m_queue.front());
         m_queue.pop_front();
-        start(std::move(name));
+        start(std::move(name), request);
     }
     if (!step(stack, frame) && m_queue.empty()) {
         return ModeResult::Leave;

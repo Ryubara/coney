@@ -314,7 +314,11 @@ scripts' delayed calls and scenes included ([Front end: background](frontend.md#
 same every time (a 29.97 movie shows no new frame on about one step in a thousand); YUV to RGB uses the BT.601 studio
 matrix; the captions are read from `level<n>.lev` for `L<n>_IN` and `L<n>_OUT` whatever level is loaded, and drawn in
 `big_font`; the movie sound plays on the mixer's music bus; the screen-effects fade-out after a movie is not set
-(the front end's own fades follow). `--skip-movies` skips every movie, as before Coney played them.
+(the front end's own fades follow). `--skip-movies` skips every movie the game plays, as before Coney played them.
+
+The debug menu's Movies page (Coney's own path, [Debug menus](../guides/debug-menu.md#movies)) plays any movie on
+request through the same player, with two differences: the game's sound is held and given back at the end rather
+than stopped, so the game resumes as it was, and it plays under `--skip-movies` too.
 
 ## Open questions {#open-questions}
 

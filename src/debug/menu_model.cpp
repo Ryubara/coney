@@ -155,6 +155,7 @@ std::string valueText(const MenuItem& item) {
     case ItemKind::Watch:
         return item.watch ? item.watch() : std::string{};
     case ItemKind::Action:
+        return item.detail;
     case ItemKind::Log:
         return {};
     }

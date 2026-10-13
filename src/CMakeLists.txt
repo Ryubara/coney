@@ -403,6 +403,7 @@ target_sources(coney_core PRIVATE
     debug/pages_engine.cpp
     debug/pages_entity.cpp
     debug/pages_hud.cpp
+    debug/pages_movies.cpp
     debug/pages_play.cpp
     debug/pages_scripts.cpp
     debug/pages_time.cpp
