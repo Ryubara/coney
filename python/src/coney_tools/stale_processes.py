@@ -31,6 +31,8 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
+from coney_tools.process_lifetime import CREATE_NO_WINDOW
+
 #: Shells an agent tool runs commands in.
 SHELLS = frozenset({"bash", "sh", "zsh", "dash", "pwsh", "powershell"})
 #: Test programs whose orphans are stopped.
@@ -240,7 +242,7 @@ def list_processes() -> list[Proc]:
                 errors="replace",
                 check=False,
                 timeout=120,
-                creationflags=0x08000000,  # CREATE_NO_WINDOW
+                creationflags=CREATE_NO_WINDOW,
             )
             rows = json.loads(done.stdout or "[]")
         except (OSError, subprocess.TimeoutExpired, ValueError):
@@ -289,7 +291,7 @@ def kill_tree(pid: int) -> str | None:
             capture_output=True,
             text=True,
             check=False,
-            creationflags=0x08000000,  # CREATE_NO_WINDOW
+            creationflags=CREATE_NO_WINDOW,
         )
         return None if done.returncode == 0 else (done.stderr or done.stdout).strip() or f"exit {done.returncode}"
     by_pid = {p.pid: p for p in list_processes()}

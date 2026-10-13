@@ -715,10 +715,14 @@ def test_the_stats_log_is_removed_however_the_run_ends(tmp_path: Path) -> None:
     assert not stats_log.exists()
 
 
-# The Windows creation flags of the detached child: it must not open a console window of its own.
+# The Windows creation flags of the detached child: it must not open a console window of its own. The values are the
+# Win32 ones, written out here so the test checks the numbers Windows sees, not the module's names for them.
 
 
-DETACHED_PROCESS = 0x00000008  # the flag that leaves a child with no console, which Windows Terminal then replaces
+CREATE_NO_WINDOW = 0x08000000
+CREATE_NEW_PROCESS_GROUP = 0x00000200
+CREATE_BREAKAWAY_FROM_JOB = 0x01000000
+DETACHED_PROCESS = 0x00000008  # leaves the venv launcher's child with no console, which Windows Terminal then shows
 
 
 def test_the_detached_child_on_windows_has_no_window_and_a_group_of_its_own(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -729,15 +733,13 @@ def test_the_detached_child_on_windows_has_no_window_and_a_group_of_its_own(monk
 
         def __init__(self, command: list[str], **kwargs: Any) -> None:
             seen.append(kwargs["creationflags"])
-            if kwargs["creationflags"] & build_cli.CREATE_BREAKAWAY_FROM_JOB:
+            if kwargs["creationflags"] & CREATE_BREAKAWAY_FROM_JOB:
                 raise OSError("the job forbids leaving it")
 
     monkeypatch.setattr(sys, "platform", "win32")
     monkeypatch.setattr(subprocess, "Popen", FakePopen)
     assert build_cli.spawn_detached(["x"], Path(), Path(os.devnull)) == 7
     # First try leaves the job, then the retry stays in it; both hide the console and keep Ctrl+C away.
-    assert len(seen) == 2 and seen[0] == seen[1] | build_cli.CREATE_BREAKAWAY_FROM_JOB
-    for flags in seen:
-        assert flags & build_cli.CREATE_NO_WINDOW
-        assert flags & build_cli.CREATE_NEW_PROCESS_GROUP
-        assert not flags & DETACHED_PROCESS  # DETACHED_PROCESS makes Windows Terminal show a new window
+    hidden = CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP
+    assert seen == [hidden | CREATE_BREAKAWAY_FROM_JOB, hidden]
+    assert not any(flags & DETACHED_PROCESS for flags in seen)
