@@ -400,7 +400,8 @@ So the causes rule 7 of [Rumble's comparison](rumble.md#gang-battle-metrics) nee
 `0x002b3ca8`; **hit back** `0x00305220` and `0x0028d330` with `ra2` `0x00305200` (or, unlogged, force 1);
 **help response** `0x00291c80` and `0x0028d330` with `ra2` `0x00291c6c` (or, unlogged, force 0); **engage**
 `0x002afcd0`; **displaced** `0x0028e0fc`; **reactions and own state** (stunned, wounded, knocked out, down)
-`0x002b4bdc`, `0x002b52fc`, `0x002b4af4` (Grounded, never logged) and `Human_DropTarget` from `0x0028fb30` and
+`0x002b4bdc`, `0x002b52fc`, `0x002b4af4` (Grounded, never logged: it runs only while he is down, but the clear's cause
+is the target hiding in shadow, not his being down) and `Human_DropTarget` from `0x0028fb30` and
 `0x0028c414`; **orders** (tactic start, Melee's end, an item) `Human_DropTarget` from `0x0030678c`, `0x002ade80` and
 `0x002dc884`. The sites a brawl could reach but the recordings never logged (Melee's no-slot clear `0x002aec88`,
 FollowAndAttack's 60 m clear `0x002bc278`, TacticAttack's violence handler `0x0030797c`, the grab and mount
