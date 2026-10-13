@@ -159,6 +159,10 @@ at most 45 in all, and leaves at once with exit 75 when the queue says it cannot
 | `ci` | Debug, warnings as errors | what CI builds; run it before a pull request |
 | `asan` | Debug, warnings as errors, AddressSanitizer and UBSan | memory and undefined-behaviour bugs; Linux and macOS only |
 
+`ci` and `asan` also compile the way a compiler cache can store, as CI does ([Caches](#ci-caches)): MSVC keeps the
+debug information inside each object (`/Z7`) instead of one shared PDB, and no target uses a precompiled header.
+Debugging works the same; the linker still writes the executable's PDB.
+
 `ctest` runs the Catch2 unit tests (`coney_tests`) and smoke tests of the `coney` executable itself: it starts and
 stops headless, prints its help, refuses a bad command line, plays a synthetic input script and opens
 [the debug menu](debug-menu.md) with the pad chord. `ctest -N` lists them all; each is declared in the
@@ -286,8 +290,9 @@ build --strict` is the one CI runs) and how to write the pages are in [Writing t
 Every pull request, and every push to `main` or a `release/` branch, runs these GitHub Actions workflows. The `build`
 workflow also runs every night on `main` and on demand: open the repository's Actions tab, choose `build`, press
 "Run workflow" and pick a branch that is already on GitHub (or `gh workflow run build.yml --ref <branch>`). A manual
-run checks every file with clang-tidy. On Linux and macOS the jobs compile through ccache and keep its cache between
-runs, so a job recompiles only what changed; each job prints its hit rate at the end.
+run checks every file with clang-tidy. Every compiling job, Windows included, goes through ccache and starts from
+`main`'s cache, so it recompiles only what changed; each job prints its hit rate at the end and in its summary
+([Caches](#ci-caches)).
 
 A newer push cancels the older run of the same workflow on the same ref, queued or running: on a pull request, and
 on `main` or a `release/` branch too, so a burst of merges builds only the newest commit instead of queueing one full
@@ -355,3 +360,38 @@ GitHub ruleset and settings, and this block is generated from it (`coney-tools r
 
 If a job fails, the commands above reproduce it locally on the platform you are on. The workflow files under
 `.github/workflows/` are short and list every step.
+
+### Caches {#ci-caches}
+
+The `build` workflow keeps two kinds of GitHub Actions cache, both through the actions in `.github/actions/`. The
+repository has 10 GB of them; when that is full GitHub drops the least recently used entries.
+
+- **The compiler cache** (`ccache`, then `ccache-save` at the end of the job): one entry per job, of the `ccache`
+  folder. Pull requests only restore it; pushes to `main` and `release/` branches, the nightly run and manual runs
+  save it. A pull request's entry would be scoped to its own `refs/pull/N/merge` ref, which no other pull request can
+  read, so it could only push `main`'s useful entries out: on 2026-10-13 the cache held 9.6 of its 10 GB in 28
+  entries, one per job and commit. A pull request restores the newest entry of its job from `main`.
+- **The dependency sources** (`deps`, then `deps-save` after the configure step): SDL3, librw, Catch2, Dear ImGui and
+  FFmpeg as fetched, one entry per OS and version of `cmake/deps.cmake`, shared by every job and preset on that OS.
+  `CONEY_DEPS_SOURCES` makes `cmake/deps.cmake` fetch into `build/_deps-sources/<name>` and use a complete copy found
+  there without downloading. The build trees under `build/<preset>/_deps/` are not kept: they belonged to one
+  compiler and preset, a fresh job rebuilds them anyway (Ninja has no record of them), and they made eight entries of
+  about 400 MB. The same rule applies: only runs outside pull requests save.
+- **Rolling entries.** Each saved compiler-cache entry is named after the run, and the `cache-prune` job, which runs
+  after the build jobs outside pull requests, deletes every older entry of the same job (and older dependency entries
+  of the same OS) on that branch, so `main` keeps one per job. Before saving, a job drops what it did not use
+  (`ccache --evict-older-than` the job's own duration), so the entry is the size of one build, not of the cap.
+- **Sharing.** clang-tidy builds with the same compiler, preset and flags as `build (linux-clang-19)`, so it restores
+  that job's entry and leaves the saving to it. The `asan` jobs differ in flags and keep their own.
+- **What a cache can store.** The `ci` and `asan` presets inherit the hidden `cacheable` preset: MSVC's default `/Zi`
+  writes every object's debug information into one shared PDB, which ccache refuses, so they use `/Z7`
+  (`CMAKE_MSVC_DEBUG_INFORMATION_FORMAT` `Embedded`, with policy CMP0141 on for the dependencies too); and SDL3's
+  precompiled header made its 265 sources uncacheable everywhere, so `CMAKE_DISABLE_PRECOMPILE_HEADERS` is on.
+- **Sizes.** Each job's cap is 700 MB (`max-size` of the `ccache` action). Six jobs save (four `build`, two
+  `sanitizers`): at most 6 × 0.7 = 4.2 GB, plus three dependency entries (one per OS, about 0.1 to 0.2 GB each) and
+  the `setup-uv` caches (about 50 MB per OS), about 5 GB in all, half of the 10 GB. While a `main` run is between its
+  saves and `cache-prune`, the old and new entries of a job both exist for a few minutes. A full build's objects must
+  fit under the cap, or the build evicts its own objects and the next run misses: when a job's summary shows the
+  cache size at 100 % and the hit rate of an unchanged rebuild stays low, raise that job's cap and redo this sum.
+- **Hit rates.** Each job's summary shows `ccache --show-stats` for that job alone (the counters are zeroed after the
+  restore): cacheable calls, hits, misses, uncacheable calls and the cache size.

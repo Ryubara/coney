@@ -1,0 +1,42 @@
+# The end of a job that compiled through ./.github/actions/ccache: report this job's hit rate in the log and the job
+# summary, and save the cache, except on a pull request (why: the ccache action's header and
+# docs/guides/building.md#ci-caches). Call it with `if: ${{ !cancelled() }}`, so a failed build still reports and,
+# on main, still saves what it compiled.
+name: ccache-save
+description: Report this job's ccache hit rate and, outside pull requests, save its cache as this job's newest entry.
+
+inputs:
+  save:
+    description: >-
+      "false" for a job that shares another job's key (clang-tidy shares build (linux-clang-19)'s): it restores that
+      cache but leaves the saving to the job that owns the key.
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    # Keep only what this job read or wrote: ccache marks an entry it hits as used (its mtime), so anything older than
+    # the job is for sources that have changed since, and dropping it keeps the saved entry the size of one build
+    # instead of growing to the cap. Only before a save; a pull request's cache is thrown away anyway.
+    - if: ${{ !cancelled() && inputs.save == 'true' && github.event_name != 'pull_request' }}
+      shell: bash
+      run: ccache --evict-older-than "$(( $(date +%s) - CONEY_CCACHE_START + 60 ))s"
+    - if: ${{ !cancelled() }}
+      shell: bash
+      run: |
+        ccache --show-stats
+        {
+          echo "### ccache: $CONEY_CCACHE_KEY"
+          echo
+          echo "This job's calls only (the counters start at zero after the restore). Outside a pull request the"
+          echo "cache size is what this job saves."
+          echo
+          echo '```text'
+          ccache --show-stats
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
+    - if: ${{ !cancelled() && inputs.save == 'true' && github.event_name != 'pull_request' }}
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: .ccache
+        key: ccache-${{ env.CONEY_CCACHE_KEY }}-${{ github.run_id }}
