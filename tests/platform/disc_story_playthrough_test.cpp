@@ -232,7 +232,10 @@ class RouteDriver final : public coney::InputSource {
 // (x 167.4, y 361.5-366.7); the way on is the steel stairs beside it (y 367-369.5), up to the platform at z 16.5 and
 // the jump to the gallery's roof. At x 85.2 a row of three `dyn_door_fence` barriers (numbers 4, 6 and 10, 10
 // hitpoints) closes the roof from post to post: two-sided, they stop him from either side until one breaks, and a
-// charge (16) breaks one in a hit (docs/research/objects.md#barriers), so he charges through the middle of number 10.
+// charge (16) breaks one in a hit (docs/research/objects.md#barriers), so he charges through the middle of number 10
+// (y 363.7-366.2; number 6 is beside it at y 366.2-368.6). The run leg before the charge lines him up on y 365, because
+// the charge breaks only the barrier it meets: coming in at y 366.4 it broke number 6, and he then pushed against
+// number 10 while the pursuers caught up.
 constexpr std::array kChaseRoute{
     Leg{Move::Run, -212.0F, 363.7F},  Leg{Move::Climb, -205.5F, 363.5F}, Leg{Move::Climb, -200.5F, 363.3F},
     Leg{Move::Run, -163.0F, 363.4F},  Leg{Move::Climb, -157.5F, 362.8F}, Leg{Move::Run, -136.0F, 361.8F},
@@ -241,10 +244,10 @@ constexpr std::array kChaseRoute{
     Leg{Move::Climb, -83.0F, 364.9F}, Leg{Move::Run, -79.5F, 364.9F},    Leg{Move::Climb, -74.5F, 364.9F},
     Leg{Move::Jump, -64.5F, 364.9F},  Leg{Move::Run, 15.0F, 364.8F},     Leg{Move::Jump, 18.5F, 364.8F},
     Leg{Move::Run, 50.0F, 365.1F},    Leg{Move::Run, 66.0F, 367.4F},     Leg{Move::Climb, 74.5F, 367.5F},
-    Leg{Move::Charge, 81.5F, 365.0F}, Leg{Move::Run, 92.0F, 365.0F},     Leg{Move::Climb, 96.0F, 365.0F},
-    Leg{Move::Jump, 100.5F, 365.0F},  Leg{Move::Run, 134.0F, 364.7F},    Leg{Move::Climb, 139.5F, 364.8F},
-    Leg{Move::Jump, 149.5F, 364.8F},  Leg{Move::Run, 164.5F, 368.2F},    Leg{Move::Run, 178.0F, 368.2F},
-    Leg{Move::Jump, 191.5F, 368.2F},  Leg{Move::Run, 206.0F, 368.2F},
+    Leg{Move::Run, 79.0F, 365.0F},    Leg{Move::Charge, 81.5F, 365.0F},  Leg{Move::Run, 92.0F, 365.0F},
+    Leg{Move::Climb, 96.0F, 365.0F},  Leg{Move::Jump, 100.5F, 365.0F},   Leg{Move::Run, 134.0F, 364.7F},
+    Leg{Move::Climb, 139.5F, 364.8F}, Leg{Move::Jump, 149.5F, 364.8F},   Leg{Move::Run, 164.5F, 368.2F},
+    Leg{Move::Run, 178.0F, 368.2F},   Leg{Move::Jump, 191.5F, 368.2F},   Leg{Move::Run, 206.0F, 368.2F},
 };
 
 // How long the chase may take before it counts as stuck: 3 minutes of frames.
