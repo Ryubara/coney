@@ -135,9 +135,10 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
   object in hand (fixed with issue #228; [Cross with a bat in hand](combat-moves.md#bat-cross)). Coney:
   `repo:src/combat/player_combat.cpp`.
 - **Clip lengths**: Coney ends a clip when its time reaches its duration, ceil(F / rate) updates; the original ends
-  it on the update its frame would reach F, one update sooner on 19, 20, 34, 389, the dive and 50 of the 174 clips in
-  the move tables ([When a clip ends](formats/animation.md#clip-end)). Coney ends clip 34 alone a step early (a
-  stand-in) so that cross works from k37 as in the original; the rule can now replace it. Coney:
+  it on the update its frame would reach F, one update sooner on 50 of the 174 clips in the move tables (19, 20, 34
+  and the dive among them) and on 389, which they do not list ([When a clip ends](formats/animation.md#clip-end)).
+  Coney ends clip 34 alone a step early (a stand-in) so that cross works from k37 as in the original; the rule can
+  now replace it. Coney:
   `repo:src/animation/anim_task.cpp`, `repo:src/human/human_animator.cpp`.
 - **Wear**: weapons never break; the original wears them on the `use` event.
 - **Armed chain**: Coney's armed square plays the slot's swing each time; the original alternates 39 / 40 (baton)

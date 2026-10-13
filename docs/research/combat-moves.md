@@ -848,8 +848,8 @@ fixed for issue #228:
   original ends **every** clip by one rule ([When a clip ends](formats/animation.md#clip-end)), the update its
   cursor's frame would reach the frame count *f* (the event rule with the tie, [Reading the tables](#reading)), which
   gives 37 for 34, 35 for 36, 15 for 441 (a tie: 10.5 / 0.75 = 14, one late), 16 for 69 and 26 for 19, all as
-  measured. Coney's clip tasks end when the time reaches the duration (ceil(*f* / *r*)), one update late on 19, 34,
-  the dive 1 and 50 of the 174 clips in the tables below.
+  measured. Coney's clip tasks end when the time reaches the duration (ceil(*f* / *r*)), one update late on 50 of
+  the 174 clips in the tables below (19, 34 and the dive 1 among them).
 - **Cross + square (`0x22`) and circle + cross (`0x23`) with an object in hand** do nothing in Coney, as in the
   original's `Player_Special`, which refuses a pad player holding an object: `PlayerCombat::special` and
   `strongGrapple` return when `CombatInput::animSet` is not 0 (sets 1-6). Before, `0x22` played the special 653

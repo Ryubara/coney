@@ -472,9 +472,13 @@ otherwise:    change nothing; return (t + s) − (D − 1/60)
 
 So **a clip ends on the update whose step would bring its frame to F**, the same rule as an event at frame F
 ([Reading the tables](../combat-moves.md#reading)): counting the clip's first update as k = 0 and its first step on
-k = 1, it ends on the first k with k × *r* ≥ F − 0.5, one update later on an exact tie at rates 0.75 and 0.9 (the
-summed time falls a hair short). A clip therefore **lasts ceil((F − 0.5) / *r*) updates** away from the ties, not
-ceil(F / *r*); its time never reaches *D*, and the last frame it shows is F − 1. Confirmed (code) at `0x001044a0`.
+k = 1, it ends on the first k with k × *r* ≥ F − 0.5. A clip therefore **lasts ceil((F − 0.5) / *r*) updates** away
+from the ties, not ceil(F / *r*); its time never reaches *D*, and the last frame it shows is F − 1. Confirmed (code)
+at `0x001044a0`. **On an exact tie** at rates 0.75 and 0.9 (k × *r* = F − 0.5) it ends one update later, because the
+summed time falls a hair short; that rests on the FPU rounding every add and multiply toward zero, which is
+**inferred** ([Reading the tables](../combat-moves.md#reading)), not read in the code. Summed with round-to-nearest,
+440 and 441 would last 10 and 14 updates instead of the 11 and 15 measured below. The one tie that is exact even then
+is F = 2 at 0.75 (k = 2), which acts on time; see the overshoot of 0.0 below.
 
 **On the end update** (confirmed (code) at `0x00105af0`, `0x00108bd0`, `0x00105570`, `0x00105f78`):
 
@@ -506,9 +510,14 @@ overshoot is measured from *D* − 1/60, **a loop repeats every *D* − 1/60 sec
 every *D*: the frame F key is never shown, and each pass starts 1/60 s of clip time later than an exact *D* period
 would. Confirmed (code); confirmed (runtime) below.
 
-A step whose overshoot comes out exactly 0.0 is taken as "not ended" by the callers, although the cursor was not
-stepped; the task would then repeat that update for ever. Only an end exactly on a tie in exact float arithmetic could
-give 0.0; none was seen (inferred from the arithmetic, speculative that it can happen).
+A step whose overshoot comes out exactly 0.0 is taken as "not ended" by the callers (confirmed (code) at
+`0x00105af0`, `0x00108bd0`, `0x00105770`), although the cursor was not stepped, so the task would repeat that update
+for ever. An end exactly on a tie gives that 0.0: by the page's arithmetic (*s* = 0.033333335 × 0.75, toward-zero
+rounding) a **2-frame clip at rate 0.75** reaches its k = 2 tie exactly, its frame test says "end" and its overshoot
+`1/60 − ((D − t) − s)` is exactly 0.0 (inferred from the arithmetic, not seen). Such a clip would never end. No clip in
+the [move tables](../combat-moves.md#frame-data) has fewer than 4 frames; to check the rest, list the clips whose
+duration is 2/30 s and whose id's Anim Range List record has none of `0x800`, `0x1000`, `0x2000` (the 0.75 rate) in
+any character set (not done).
 
 **At runtime** (PCSX2 2.9.94, level99 street, slot 1 copied; scenarios `clip_end_chains` and `clip_end_loop` in
 `repo:research/traces/scenarios/`, the bottom task's cursor read every update). The chain clips' lengths, from the
@@ -527,9 +536,9 @@ first update showing the id to the first showing the next one, all match the rul
 The lengths measured before agree as well: 12 `S1` 20 ([Tasks](../tasks.md#held-flags)), 34 37 and 36 35 (a tie,
 25.5 / 0.75 = 34, one late) ([Cross with a bat in hand](../combat-moves.md#bat-cross)), 69 16, the fence climb's 440
 11, 441 15 (both ties) and 442 13 ([Characters](../characters.md#climb)), the dive 1 61
-([Combat](../combat.md#protected-moves)). The rule with the time summed in single precision rounded toward zero gives
-every one of them; ceil(F / *r*) is one too many for 19, 20, 389, 34 and the dive, and the rule without the late tie
-one too few for 36, 440 and 441. The idle loop 388 (60 frames,
+([Combat](../combat.md#protected-moves)). The rule with the time summed in single precision rounded toward zero (the
+inferred rounding mode, above) gives every one of them; ceil(F / *r*) is one too many for 19, 20, 389, 34 and the
+dive, and the rule without the late tie one too few for 36, 440 and 441. The idle loop 388 (60 frames,
 2.0 s, at 0.75) wrapped every 79 updates, its time after each wrap 0.0249, 0.0166, 0.0083 s: each pass 1.9833 s of
 clip time, *D* − 1/60.
 
@@ -684,8 +693,8 @@ In the task system:
   ends on the update its time reaches its length (`XX2`'s 24 frames at 0.8 in 30 updates at runtime), not one later
   when the floats' sum falls a hair short. **A known difference:** that is ceil(F / *r*) updates, where the original
   ends on the update its frame would reach F (ceil((F − 0.5) / *r*), late on a tie, [When a clip ends](#clip-end)):
-  Coney plays one update too many on 19, 20, 34, 389, the dive and 50 of the 174 clips on
-  [Combat moves](../combat-moves.md#frame-data). Clip 34 alone is ended a step early as a stand-in
+  Coney plays one update too many on 50 of the 174 clips on [Combat moves](../combat-moves.md#frame-data) (19, 20,
+  34 and the dive 1 among them), and on 389, which the tables do not list. Clip 34 alone is ended a step early as a stand-in
   (`handOverEarly`). Coney's loop carries its whole overshoot (a period of *D*), the original's a period of
   *D* − 1/60.
 - **Held flags** ([Tasks](../tasks.md#held-flags)): a task holds bits of its human's record `+0x08` and sets its start
