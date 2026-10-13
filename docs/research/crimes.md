@@ -465,8 +465,8 @@ Destroyers gave the same two values: a later `WS1` (192) $5, and `WS0` (194, the
 most likely the script's `EDConstructor` set it with `HuSetMoney` ([Scripts](scripting.md#level87-fixes), fix 4;
 inferred), and the roll's $5 branch is the alternative. `Boozer`, `Knockout` and `WS1` (197) later went to $0 while
 fighting the Warriors (inferred: dropped when down, [below](#down-drop)). The civilians (type 395) held $5-$19 and the
-bums (types 272-278) $1-$4; type 272 is category 6 ($1-$4, read), and the rest fit category 4 for the civilians and
-6 for the other bums (inferred: those categories were not read).
+bums (types 272-278) $1-$4, which fit category 4 for the civilians and 6 ($1-$4) for the bums (inferred: their
+categories were not logged).
 
 `Human_Init` writes `+0x278` only on step 2's object branch (stores at `0x00218850` and `0x00218888`); the only other
 writer of that field is `HuSetCarriedItem` (`0x00238230`), which stores 100 (`sw` at `0x00238270`). Confirmed (code).
