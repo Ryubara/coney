@@ -116,6 +116,7 @@ add_executable(coney_tests
     platform/disc_level99_scene_speech_test.cpp
     platform/disc_level99_hud_test.cpp
     platform/disc_level99_story_sounds_test.cpp
+    platform/disc_level99_power_lesson_test.cpp
     platform/disc_level99_scene_grab_test.cpp
     platform/disc_level99_snaps_test.cpp
     platform/disc_level99_course_test.cpp

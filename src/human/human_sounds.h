@@ -38,6 +38,9 @@ struct HumanSound {
     enum class Kind : std::uint8_t {
         Anim,   ///< Clip event 11: the animation sound `animSound` (`Human_OnAnimSoundEvent`, `0x0021f700`).
         Impact, ///< A hit's or a contact's material pair (`Human_PlayImpactSound`, `0x00220ac8`).
+        /// Clip event `0x45` (message `0xc5`): the sound the human holds (the spray loop) stops
+        /// (docs/research/sound-events.md#spray-loop).
+        StopHeld,
     };
     Kind kind = Kind::Anim;
     std::uint32_t animSound = 0; ///< Anim: the `SA` id.

@@ -46,6 +46,14 @@ class RecordingHost final : public scenes::SceneHost {
     }
     bool humanReady(double /*human*/) override { return ready; }
     bool humanFree(double human) override { return !inPair.contains(human); }
+    // A bind's reset: written down; the human's pair ends too when `resetBreaksPairs` is set, as the play mode's does.
+    void resetHumanForJoin(double human) override {
+        calls.push_back(std::format("reset {}", human));
+        if (resetBreaksPairs) {
+            inPair.erase(human);
+        }
+    }
+    bool resetBreaksPairs = false;
     void humanEnterScene(double human, std::size_t role) override {
         calls.push_back(std::format("enter {} {}", human, role));
     }
@@ -538,6 +546,37 @@ TEST_CASE("a bound human in a grab at the start is left out: not taken in, not p
     CHECK_FALSE(h.host.made("exit 7"));
     REQUIRE(h.host.released.contains(7.0));
     CHECK_FALSE(h.host.released.at(7.0).has_value());
+}
+
+TEST_CASE("a bind resets the human first, so one in a grab is taken in; an unbound one is left alone", "[scenes]") {
+    // docs/research/scenes.md#join-reset: Scene_BindHuman resets the human (his pair broken, his carried prop removed)
+    // when the script binds him, so l99_c7 takes in Rudy, held in Rembrandt's 59, and a human never bound keeps his
+    // pair.
+    Harness h;
+    h.host.resetBreaksPairs = true;
+    h.system.preload("tst_long", "");
+    h.step();
+    h.host.inPair.insert(7.0);
+    h.host.inPair.insert(9.0);
+    REQUIRE(h.system.joinHuman(7.0, 3, 0, 2));
+    CHECK(h.host.made("reset 7"));
+    CHECK(h.host.indexOf("reset 7") < h.host.indexOf("join 7 3 0 2"));
+    REQUIRE(h.system.play(3, Harness::cinematic()));
+    for (int i = 0; i < 20 && h.system.state(3) != scenes::SceneState::Playing; ++i) {
+        h.step();
+    }
+    CHECK(h.system.state(3) == scenes::SceneState::Playing);
+    CHECK(h.host.made("enter 7 0"));
+    CHECK_FALSE(h.host.made("reset 9"));
+    CHECK(h.host.inPair.contains(9.0));
+
+    // The reset stands when the bind is refused (no role 5).
+    Harness refused;
+    refused.system.preload("tst_long", "");
+    refused.step();
+    CHECK_FALSE(refused.system.joinHuman(8.0, 3, 5, 2));
+    CHECK(refused.host.made("reset 8"));
+    CHECK_FALSE(refused.host.made("join 8 3 5 2"));
 }
 
 TEST_CASE("START skips and sets the chain skip; a stop ends a starting scene; freeze suspends the brains", "[scenes]") {

@@ -698,7 +698,7 @@ void PlayLevelMode::stepObjectBodies() {
     // lost its body (a broken cash register has not).
     for (const world_objects::SpawnRecord& record : m_records->all()) {
         if (record.removed || !m_objectTasks.inWorld(record.handle) || m_wornHats.contains(record.handle) ||
-            (m_pickups != nullptr && m_pickups->inHand(record.handle)) ||
+            m_carriedProps.contains(record.handle) || (m_pickups != nullptr && m_pickups->inHand(record.handle)) ||
             (m_objects != nullptr && m_objects->props.bodyLost(record.handle))) {
             continue;
         }

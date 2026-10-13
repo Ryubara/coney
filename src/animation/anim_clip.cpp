@@ -22,6 +22,8 @@ constexpr std::size_t kMaskBytes = 5;
 constexpr std::size_t kNameOffset = 0x25;
 constexpr std::size_t kNameBytes = 30;
 constexpr std::size_t kFlagsOffset = 0x44;
+// Where an event's text (ClipEvent::text) starts.
+constexpr std::size_t kEventTextOffset = 8;
 
 // The scales of the stored integers: positions x / 1023, y / 1023, z / 2047; rotations x, y, z × 2^-15.
 constexpr float kPositionScaleXy = 1.0F / 1023.0F;
@@ -139,12 +141,20 @@ std::vector<ClipEvent> readEvents(std::span<const std::byte> bytes, std::size_t 
         event.word = static_cast<std::uint16_t>(s16At(e, 6));
         event.position = decodePosition(s16At(e, 8), s16At(e, 10), s16At(e, 12));
         event.rotation = decodeRotation(s16At(e, 14), s16At(e, 16), s16At(e, 18));
+        for (std::size_t c = 0; c < event.text.size(); ++c) {
+            event.text.at(c) = static_cast<char>(std::to_integer<std::uint8_t>(e[kEventTextOffset + c]));
+        }
         events.push_back(event);
     }
     return events;
 }
 
 } // namespace
+
+std::string_view eventText(const ClipEvent& event) {
+    const std::string_view all(event.text.data(), event.text.size());
+    return all.substr(0, all.find('\0'));
+}
 
 const std::vector<RotationKey>* AnimClip::rotationChannel(std::size_t bone) const {
     const auto found = std::ranges::find(rotationBones, bone);

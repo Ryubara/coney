@@ -245,6 +245,28 @@ TEST_CASE("a held human taken out of the level, or freed by a script, ends the h
         fight.run("0 stick left 100 0\n", 10);
         CHECK(fight.other().position().x == Approx(at.x).margin(1e-4F));
     }
+    SECTION("a scene bind's reset of the victim lets both go (docs/research/scenes.md#join-reset)") {
+        HumanFight fight(character, 1.5F);
+        fight.run("5 tap circle\n", 40);
+        REQUIRE(fight.other().state() == TargetState::Held);
+        fight.other().resetForJoin();
+        CHECK_FALSE(fight.other().fighter().inPair());
+        CHECK_FALSE(fight.other().attached());
+        fight.run("", 2);
+        CHECK(fight.player().fighter().held() == nullptr);
+        CHECK_FALSE(fight.player().fighter().inPair());
+    }
+    SECTION("a scene bind's reset of the grabber lets the victim go") {
+        HumanFight fight(character, 1.5F);
+        fight.run("5 tap circle\n", 40);
+        REQUIRE(fight.player().fighter().held() == &fight.other());
+        fight.player().resetForJoin();
+        CHECK(fight.player().fighter().held() == nullptr);
+        CHECK_FALSE(fight.player().fighter().inPair());
+        fight.run("", 2);
+        CHECK_FALSE(fight.other().fighter().inPair());
+        CHECK(fight.other().state() != TargetState::Held);
+    }
 }
 
 TEST_CASE("circle + cross grabs with the strike 657, deals its 60 as the hold starts and keeps holding",

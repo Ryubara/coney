@@ -362,7 +362,8 @@ class GameplayMode final : public GameMode {
     // (docs/research/script-types.md#strober), and a garbage pile's flies' loop (#flies).
     void syncSystemSounds();
     // Hands the sounds the scripts' humans asked for this step (their clips' animation sounds, the hits they took) to
-    // the game's sound, with what it reads of each (docs/research/sound-events.md).
+    // the game's sound, with what it reads of each (docs/research/sound-events.md); a human gone since the last step
+    // is reported removed, so the sound he held stops.
     void reportHumanSounds();
     // HuTag (docs/research/crimes.md#tagging): player 1 with paint starts the stick game at the spot, without paint
     // says 37 `nopaint` and gets event 14 unfinished; another human is the spot's tagger at once (Coney's stand-in
@@ -561,6 +562,7 @@ class GameplayMode final : public GameMode {
     ai::HideMemory m_hideMemory;                  // player 1's ground rule memory (updateHiding())
     std::unique_ptr<GameMode> m_level;
     std::uint32_t m_playerTeleports = 0;  // player 1's teleports the level has been told of
+    std::vector<double> m_soundHumans;    // the humans reportHumanSounds() saw last step, for their removal
     PauseMode* m_pause = nullptr;         // what START pauses through; not owned
     std::vector<PlayOverlay*> m_overlays; // screens over play; not owned
 };

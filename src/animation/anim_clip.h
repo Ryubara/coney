@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <expected>
@@ -60,7 +61,13 @@ struct ClipEvent {
     std::uint16_t word = 0; ///< The u16 at +6.
     Vec3 position;          ///< +8: scaled as a position key.
     Quat rotation;          ///< +0xe: x, y, z, with w rebuilt as a rotation key's.
+    /// The 16 bytes from +8 to the event's end, as stored: the object name types 0x30 and 0x31 carry (`s_spraycan`,
+    /// read with eventText(); docs/research/combat.md#power-move-props).
+    std::array<char, 16> text{};
 };
+
+/// The text of `event` (ClipEvent::text) up to its first 0 byte, or all 16 bytes when it has none.
+[[nodiscard]] std::string_view eventText(const ClipEvent& event);
 
 /// Clip flag `0x10000` (`Anim_HitsWithCapsule`, docs/research/animation.md#clip-flags): its strike shapes are tested
 /// against a human target's capsule, not its spine and head (gen_rage_sweep, gen_sweep).

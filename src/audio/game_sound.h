@@ -87,6 +87,10 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     void setPitchFactor(float factor) override;
     /// The human's animation or hit sound (HumanSoundEvents), with his type's traits.
     void humanSound(const script::HumanSoundCall& call) override;
+    /// HumanSoundEvents::humanRemoved().
+    void humanRemoved(double human) override { m_humanSounds.humanRemoved(human); }
+    /// The humans' animation and hit sounds, for tests and logs.
+    [[nodiscard]] const HumanSoundEvents& humanSounds() const { return m_humanSounds; }
     bool loadSoundMatrix(std::string_view name) override;
     void newMaterialSlots(std::uint32_t m1, std::uint32_t m2, std::uint32_t count, std::uint32_t columns,
                           const std::array<float, 3>& volumes) override;
@@ -222,6 +226,7 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     int m_listenerMode = 0;
     bool m_playerCovered = false;           // setPlayerCovered()
     bool m_combatFraming = false;           // setCombatFraming()
+    bool m_cinematicSeen = false;           // the engine's cinematic at the last update, for its start
     std::optional<double> m_ambientEventMs; // markAmbientEvent()'s stamp on the engine's clock (+0x1b78c)
     // The angry breathing (game state +0x234 its sound, +0x248 its state): its loop and level, and the engine's clock
     // at the last update (none: the next update starts the count).

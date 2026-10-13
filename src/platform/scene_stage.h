@@ -113,6 +113,8 @@ class SceneStage final : public scenes::SceneHost {
     /// Sets what tells whether a bound human is free to be taken in at the scene's start (not in a grab or a mount);
     /// without one every human is.
     void setFreeTest(std::function<bool(double)> test) { m_isFree = std::move(test); }
+    /// Sets what resets a human a script binds to a role (resetHumanForJoin()); without one nothing is reset.
+    void setJoinReset(std::function<void(double)> reset) { m_onJoinReset = std::move(reset); }
     /// Sets what plays a bound human's animation sound (role clip event 11): the human, the `SA` id and where the
     /// scene holds him (none before his first frame). Without one the sound is not played.
     void setAnimSoundHandler(std::function<void(double, std::uint32_t, std::optional<anim::Vec3>)> handler) {
@@ -143,6 +145,7 @@ class SceneStage final : public scenes::SceneHost {
                    int gait) override;
     [[nodiscard]] bool humanReady(double human) override;
     [[nodiscard]] bool humanFree(double human) override;
+    void resetHumanForJoin(double human) override;
     void humanEnterScene(double human, std::size_t role) override;
     void humanPose(double human, const scenes::RoleFrame& frame) override;
     void humanExitScene(double human) override;
@@ -198,6 +201,7 @@ class SceneStage final : public scenes::SceneHost {
     std::function<void(const Release&)> m_onRelease;
     std::function<void(double, bool)> m_onJoin;
     std::function<bool(double)> m_isFree;
+    std::function<void(double)> m_onJoinReset;
     bool m_widescreen = false; // the view is wider than 4:3 (setWidescreen())
     std::function<void(double, std::uint32_t, std::optional<anim::Vec3>)> m_onAnimSound;
     std::function<void(double, anim::Vec3, anim::Quat)> m_onObjectPose; // where the scene's object moves go

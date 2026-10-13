@@ -109,6 +109,9 @@ class SoundHost {
 
     /// A human's animation sound or hit sound, played as the game chooses it. Ignored by default.
     virtual void humanSound(const HumanSoundCall& /*call*/) {}
+    /// The human `human` (his script handle) is gone from the level: the sound he holds stops with him (the spray loop,
+    /// docs/research/sound-events.md#spray-loop). Ignored by default.
+    virtual void humanRemoved(double /*human*/) {}
 
     // ---- The sound matrix (docs/research/sound.md#sound-matrix); a host without one ignores them ----
 

@@ -594,6 +594,7 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     stepGameOver(pad);
     stepObjects();
     stepHats();
+    stepCarriedProps();
     const anim::Vec3 after = m_player->human().position();
     m_stats.travelled += std::hypot(after.x - before.x, after.y - before.y);
     if (m_trace) {
@@ -754,8 +755,9 @@ void PlayLevelMode::render(const RenderTime& time) {
                                  skin(character, pose, feet, heading, 0.0F, positions, normals);
                              });
         skin(playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading, snapshot.lean, m_positions, m_normals);
-        m_hatDraws.clear();
+        m_attachedDraws.clear();
         poseHat(m_player->human(), playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading);
+        poseCarriedProp(m_player->human(), playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading);
         m_mesh->update(m_positions, m_normals);
         const raycast::CollisionMesh& ground = m_scenery->collision();
         m_lights->addShadow(ground, snapshot.feet);
@@ -788,6 +790,7 @@ void PlayLevelMode::render(const RenderTime& time) {
             FighterMesh& mesh = m_fighterMeshes[i];
             skin(*mesh.character, pose.pose, pose.feet, pose.heading, 0.0F, mesh.positions, mesh.normals);
             poseHat(*fighters[i].human, *mesh.character, pose.pose, pose.feet, pose.heading);
+            poseCarriedProp(*fighters[i].human, *mesh.character, pose.pose, pose.feet, pose.heading);
             mesh.mesh->update(mesh.positions, mesh.normals);
             m_lights->addShadow(ground, pose.feet);
             ringFeet[ringKey(fighters[i].human.get())] = pose.feet;
