@@ -26,11 +26,11 @@ and `labels.yml`) are gone, and so are the constants that repeated their values 
 | `repo` | The default branch, the wording (call the person who directs the project "user", never "owner"), the decisions only a maintainer takes (`owner_decisions`) and the tool configuration files | `repo audit` (`files.exist` and the wording checks); agents ([AGENTS.md](repo:AGENTS.md)) |
 | `paths` | Which paths are code, documentation and documentation-only; generated paths; the agent pointer files; the one file that may hold the repository's address; the large-file limit | `repo check`, `repo check-docs`, `check changed`; `repo render` (the `docs-only-paths` block); `ci-scope.sh` reads the docs-only list itself, and `repo audit` holds it and pre-commit to the file |
 | `commits` | The title form, its limit and suffix, the areas and verbs, the body wrap and the `Co-Authored-By` trailer | `repo check-title`, which the commit-title hook and the `title` job run; `repo render` (the `commit-rules` and `commit-areas` blocks) |
-| `pull_requests` | The description's sections and which must hold text, the `Docs: none` line, `Fixes #N`, the Checklist (every item ticked), the Screenshots rule, the AI use choices, stacked pull requests | `repo check-body`, `repo check-docs`; `repo render` (the `pr-rules` block); `repo audit` checks the template and the stacked-pull-request rules |
+| `pull_requests` | The description's sections and which must hold text, the `Docs: none` line, `Fixes #N`, the Checklist (every item ticked), the Screenshots rule, the AI use choices, the review gate (`review`: the reviewer agent, its verdict and report files, the description hash), stacked pull requests | `repo check-body`, `repo check-docs`, `repo review` and `repo check-review`; `repo render` (the `pr-rules` and `pr-review` blocks); `repo audit` checks the template and the stacked-pull-request rules |
 | `merge` | The merge methods, the squash commit's wording, auto-merge, the required checks and who merges: a copy of the GitHub ruleset and settings | `repo render` (the `required-checks` block); `repo audit --github` compares it with the GitHub ruleset and settings |
 | `issues` | The structure of each issue form (field ids, headings, which are required, default labels), the Screenshots line, the `From:` line, links and how many labels of each family an issue carries | `repo audit` (the forms, and every issue's sections, placeholders, Screenshots, labels, links and `From:` line) |
 | `labels` | The label families and every label with its colour and description | `repo labels`; `repo render` (the `labels` block); `repo audit` (the labels on GitHub) |
-| `hygiene` | The limits after which an item counts as stale or stuck (`thresholds`, including `pr_pending_hours`), which required checks are lint (`pr_health.lint_checks`), the labels for stuck pull requests (`pr_health.labels`), the weekly report issue, how the workflow comments (`comments`) and `checks`, the registry of the audit's checks | `repo audit`, `repo pr-health`, `repo hygiene` |
+| `hygiene` | The limits after which an item counts as stale or stuck (`thresholds`, including `pr_pending_hours`), which required checks are lint (`pr_health.lint_checks`), the labels for stuck pull requests (`pr_health.labels`), when `pr-health --rerun` may restart a check (`pr_health.rerun`: the cap per commit, the conclusions and log patterns of a runner failure), the weekly report issue, how the workflow comments (`comments`), what the scan of attached logs downloads and looks for (`attachments`: the link, the endings, the size and time limits, the patterns) and `checks`, the registry of the audit's checks | `repo audit`, `repo pr-health`, `repo hygiene` |
 | `workspace` | The worktree and scratch layout, the free-space minimum and the busy marker | `workspace clean` and `workspace disk`, `repo audit --local`; hosted checks ignore it |
 
 The commented file is the reference for each key: open `.github/conventions.yml` and read the comment above it.
@@ -57,6 +57,7 @@ Markers inside a fenced code block, like the one above, are examples and are lef
 | `commit-areas` | A table of each area and what it covers, and the verbs | `commits.title` | `CONTRIBUTING.md`, [commit review](review/commits.md) |
 | `labels` | Every label with its family and description | `labels` | [Issues](issues.md#labels) |
 | `pr-rules` | What CI checks in a pull request description | `pull_requests`, `paths` | `CONTRIBUTING.md`, [Testing](testing.md#pr-evidence) |
+| `pr-review` | The release gate on the reviewer's verdict: its files, its fields and what makes it stale | `pull_requests.review` | [How we work](how-we-work.md#pr-review) |
 | `required-checks` | The merge method, the required checks and the merge settings | `merge` | [Building and testing](building.md#what-ci-runs) |
 | `maintainer-decisions` | The decisions only a maintainer takes | `repo.owner_decisions` | `AGENTS.md` (the coordinator section of [How we work](how-we-work.md#coordinator) links to it) |
 | `docs-only-paths` | The paths a documentation-only change may touch | `paths.docs_only` | [Building and testing](building.md#what-a-pull-request-runs) |
@@ -110,6 +111,8 @@ says where the check runs, how bad a finding is and who fixes it, and the table 
 | `issue.stale-status` | github | warn | skill | an issue calls a pull request open, merged or closed when it is not |
 | `issue.links` | github | warn | skill | an issue names a docs or research file as plain text, or links a file or anchor that is not on main |
 | `issue.provenance` | github | warn | skill | an issue that an older pull request's Remaining list points at has no From: line |
+| `issue.attachment-data` | github | warn | skill | a log attached to an open issue may hold game data: not text, too large, or lines of script source or game text |
+| `issue.attachment-personal` | github | warn | skill | a log attached to an open issue shows personal information: a user folder path or an email address |
 | `issue.triage-age` | github | warn | skill | an issue has waited in S-needs-triage longer than the limit |
 | `issue.info-age` | github | warn | skill | an issue has waited in S-needs-info with no activity longer than the limit |
 | `issue.progress-idle` | github | warn | skill | an S-in-progress issue has had no activity for longer than the limit |
@@ -193,7 +196,10 @@ hygiene`](coney-tools.md#repo-hygiene)). Its token has `contents: read`, `issues
 requests, checks and statuses, nothing more. It runs on
 `pull_request_target` so that a pull request from a fork gets its comment, which is safe only because it checks out the
 default branch and never the pull request's code, and because what a title or body says reaches a script through
-an environment variable and a comment only after it is made harmless (no mention, link, image or HTML). It starts at
+an environment variable and a comment only after it is made harmless (no mention, link, image or HTML). It also
+downloads the `.txt` and `.log` files attached to an issue and scans them for game data and personal information
+([Attached logs](issues.md#attachments)); that content is only read in memory, within a size cap and a timeout, never
+stored, run or quoted. It starts at
 warn level (`hygiene.comments.on_sweep` false): item comments come from events, the sweep only reports, and it is not a
 required check. The report issue is the one thing it creates besides comments, and only when no open issue has the
 title `hygiene.report_issue.title`; creating an issue is a write beyond a comment, so the maintainer approves it

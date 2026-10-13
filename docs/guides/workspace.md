@@ -179,7 +179,7 @@ happening; run them from the main checkout or any worktree.
 
 ```sh
 uv run --project python coney-tools workspace clean [--apply] [--build-hours N] [--worktree-hours N] [--fetch]
-    [--shell-hours N] [--log-idle-hours N]
+    [--min-gb N] [--margin-gb N] [--shell-hours N] [--log-idle-hours N]
 uv run --project python coney-tools workspace disk [--min-gb N]
 ```
 
@@ -196,9 +196,21 @@ free space before and after.
   commits out of `main`, so `git branch --merged` alone would keep them all. Without `gh` (or when it fails), only
   what `origin/main` contains counts, so run `git fetch` (or pass `--fetch`) first; the rest is kept, never guessed.
 * **Deletes `build/`** (generated, ignored by git) from every worktree that is not busy and has not been touched for
-  `--build-hours` (default 12): the newest modification time of its tracked and untracked files, of git's `HEAD` for
-  it and of the build folder and the entries one and two levels in (a running build writes there). Sources are never
-  touched this way, so it also applies to a worktree with uncommitted or unmerged work.
+  `--build-hours` (default `workspace.build_idle_hours`, 4; it is only a rebuild): the newest modification time of
+  its tracked and untracked files, of git's `HEAD` for it and of the build folder and the entries one and two levels
+  in (a running build writes there). Sources are never touched this way, so it also applies to a worktree with
+  uncommitted or unmerged work.
+* **Disk pressure** (`--min-gb`, default `workspace.disk_min_free_gb`, 30; `--margin-gb`, default
+  `workspace.disk_margin_gb`, 10). After the two steps above, if the drive still has less than the floor free, `clean`
+  deletes the `build/` folders of the remaining worktrees, **the one last used longest ago first**, until the free
+  space reaches the floor plus the margin (40 GB by default), re-reading the free space after each. This is what keeps
+  the drive above the floor when twenty-five open branches each hold a 4 GB build used within the last hours, which
+  the age rule alone never touches. Only `build/` folders go in this mode, never a worktree, a source file or a branch,
+  so uncommitted and unmerged work is safe. Skipped: a worktree with the busy file, the folder you run it from, a
+  `build/` that git does not ignore, and a worktree that holds a build slot or waits for one (a slot claim or ticket
+  in `scratch/build-claims/` naming it; without that folder, nothing is skipped on that account). Each deletion is
+  printed with the free space before and after, and a line says so when the drive is still under the floor with no
+  build folder left to delete. A dry run lists the deletions it would make, adding up the sizes.
 * **Never touches** the main checkout, a worktree outside `worktrees/`, or folders git does not know as worktrees (it
   only names them; the loose files and logs in `worktrees/coney/` are for you to delete). A worktree whose folder is
   gone has its record pruned.
@@ -225,7 +237,8 @@ delete it once you know the work is over. The file's name is `workspace.busy_mar
 
 **`workspace disk`** prints the free space of the workspace's drive and exits 1 below `--min-gb` (default: 30, the
 `workspace.disk_min_free_gb` key of [.github/conventions.yml](repo:.github/conventions.yml)), for hooks and scripts
-(`coney-tools workspace disk || coney-tools workspace clean --apply`). The coordinator runs
+(`coney-tools workspace disk || coney-tools workspace clean --apply`); a hook that runs `clean --apply` every half
+hour keeps the drive above the floor on its own. The coordinator runs
 `clean --apply` after every merge round (`coney-tools repo audit --local` lists what it would remove and the scratch
 folders that still hold captures), and agents delete their own `build/` when they finish a unit
 ([Briefing](agents.md#briefs)). `scratch/` is not cleaned automatically: prune built docs sites, logs and captures

@@ -4,6 +4,10 @@
 # sweep also comments on items) are `hygiene.comments` of .github/conventions.yml, and the code is
 # python/src/coney_tools/hygiene_cli.py.
 #
+# Each run also downloads the .txt and .log files attached to the issues it looks at and scans them for possible game
+# data and personal information (`hygiene.attachments`, docs/guides/issues.md#attachments). The download is bounded (a
+# size cap and a timeout), carries no token, stays in memory and is never stored, run or quoted in a comment.
+#
 # The comments never edit an issue's title, body, labels or state, and delete nothing. The one write beyond comments
 # (the maintainer approved it on 2026-10-12): on every push to the default branch, and in the sweep, `coney-tools repo
 # pr-health --labels --apply` puts `S-conflict` on each open pull request that conflicts with the default branch and

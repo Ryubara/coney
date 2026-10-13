@@ -21,6 +21,11 @@ struct WindowDesc {
     /// shape, and the 3D view keeps the 4:3 display shape across it (`--render-size`). Otherwise the logical screen
     /// keeps its shape inside the window, with black bars round it.
     bool logicalFrame = false;
+    /// The display to open on (`--window-display`; core/window_display.h has the values): the window is centred on
+    /// it, and shrunk to fit when larger. Empty: the `CONEY_WINDOW_DISPLAY` environment variable, else wherever the
+    /// window system puts it. A set value (either way) also keeps the window from taking the keyboard focus, as
+    /// `activate = false` does. Must outlive RenderEngine::start.
+    std::string_view display;
 };
 
 /// The game's window, as the main loop sees it: a source of events.

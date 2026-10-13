@@ -26,6 +26,7 @@
 #include "audio/sound_player.h"
 #include "audio/voice_table.h"
 #include "audio_fixtures.h"
+#include "camera/camera_view.h"
 #include "camera/cameras.h"
 #include "camera/follow_camera.h"
 #include "core/error.h"
@@ -785,6 +786,42 @@ TEST_CASE("the listener sits at player 1's camera, or at the player for listener
     rig.frames(1);
     // Player 1 (handle 10) stands at the origin: the listener 1.8 m above his feet.
     CHECK(rig.sound.listener().position.x == Approx(0.0F));
+    CHECK(rig.sound.listener().position.z == Approx(GameSound::kPlayerEarHeight));
+}
+
+// #404, docs/research/sound.md#scene-world-sound: while a cinematic runs the original hears from the scene camera
+// (`0x00158d58`), its position and its ears, even when SndSetListener chose the player.
+TEST_CASE("during a cinematic the listener is the scene camera, also for listener 1", "[audio][scenes]") {
+    Rig rig;
+    coney::camera::FollowCamera follow{coney::anim::Vec3{40.0F, 40.0F, 0.0F}, 0.0F};
+    coney::camera::Cameras cameras;
+    cameras.attachFollow(&follow);
+    rig.context.cameras = &cameras;
+    rig.call("SndSetListener", {Value(1.0)});
+    rig.frames(1);
+    REQUIRE(rig.sound.listener().position.z == Approx(GameSound::kPlayerEarHeight));
+
+    // The scene camera, 30 m from player 1 (at the origin), looking along +x: its right is -y.
+    const coney::anim::Vec3 shot{0.0F, 30.0F, 5.0F};
+    cameras.beginScene(coney::camera::CameraView{.position = shot,
+                                                 .orientation = coney::camera::lookRotation({1.0F, 0.0F, 0.0F}),
+                                                 .lookAt = {shot.x + 1.0F, shot.y, shot.z}});
+    rig.engine().setCinematic(true);
+    rig.frames(1);
+    const coney::audio::Listener& during = rig.sound.listener();
+    CHECK(during.position.x == Approx(shot.x));
+    CHECK(during.position.y == Approx(shot.y));
+    CHECK(during.position.z == Approx(shot.z));
+    CHECK(during.right.x == Approx(0.0F).margin(1e-4));
+    CHECK(during.right.y == Approx(-1.0F));
+    CHECK(during.right.z == Approx(0.0F).margin(1e-4));
+
+    // The update after the end, the player's ear again.
+    rig.engine().setCinematic(false);
+    cameras.endScene(0.0F);
+    rig.frames(1);
+    CHECK(rig.sound.listener().position.x == Approx(0.0F));
+    CHECK(rig.sound.listener().position.y == Approx(0.0F));
     CHECK(rig.sound.listener().position.z == Approx(GameSound::kPlayerEarHeight));
 }
 

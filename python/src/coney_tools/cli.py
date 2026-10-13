@@ -38,6 +38,7 @@ from coney_tools.conventions import Conventions, load_conventions
 from coney_tools.conventions_render import run_render
 from coney_tools.hygiene_cli import add_hygiene_parser, run_hygiene
 from coney_tools.pr_health import add_pr_health_parser, run_pr_health
+from coney_tools.pr_review import add_review_parsers, run_review_command
 from coney_tools.repo_checks import check_body, check_docs, check_pointer_files, check_title, first_line
 from coney_tools.repo_labels import apply_labels, gh_script
 
@@ -171,16 +172,29 @@ def _build_parser() -> argparse.ArgumentParser:
     init.add_argument("--dry-run", action="store_true", help="print the steps without doing any")
     clean = workspace_commands.add_parser(
         "clean",
-        help="remove merged worktrees and old build folders, stop stale waits and orphaned test runs "
-        "(a dry run unless --apply)",
+        help="remove merged worktrees and old build folders (all idle ones when the drive is low), stop stale waits "
+        "and orphaned test runs (a dry run unless --apply)",
     )
     clean.add_argument("--workspace", type=Path, help="the workspace folder (default: found from the checkout)")
     clean.add_argument("--apply", action="store_true", help="act; without it, only report what would be done")
     clean.add_argument(
         "--build-hours",
         type=float,
-        default=workspace_clean.DEFAULT_BUILD_HOURS,
-        help="delete build/ folders of worktrees untouched this many hours (default: %(default)g)",
+        default=None,
+        help="delete build/ folders of worktrees untouched this many hours (default: workspace.build_idle_hours)",
+    )
+    clean.add_argument(
+        "--min-gb",
+        type=float,
+        default=None,
+        help="disk pressure: under this much free space, delete idle build/ folders "
+        "(default: workspace.disk_min_free_gb)",
+    )
+    clean.add_argument(
+        "--margin-gb",
+        type=float,
+        default=None,
+        help="... until this much more than --min-gb is free (default: workspace.disk_margin_gb)",
     )
     clean.add_argument(
         "--worktree-hours",
@@ -242,6 +256,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     add_audit_parser(repo_commands)
     add_pr_health_parser(repo_commands)
+    add_review_parsers(repo_commands)
     add_hygiene_parser(repo_commands)
     _add_check_commands(groups)
     labels_parser = repo_commands.add_parser(
@@ -787,6 +802,8 @@ def _run(args: argparse.Namespace) -> int:
             args.build_hours,
             args.worktree_hours,
             args.fetch,
+            min_gb=args.min_gb,
+            margin_gb=args.margin_gb,
             shell_hours=args.shell_hours,
             idle_hours=args.log_idle_hours,
         )
@@ -798,6 +815,8 @@ def _run(args: argparse.Namespace) -> int:
         return mcp_serve.run_serve(args.name)
     if args.command == "audit":
         return run_audit(args)
+    if args.command in ("review", "check-review", "review-stamp"):
+        return run_review_command(args)
     if args.command == "pr-health":
         return run_pr_health(args)
     if args.command == "hygiene":

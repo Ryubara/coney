@@ -231,7 +231,7 @@ def test_without_labels_the_command_reads_only() -> None:
 
 def test_apply_without_labels_is_refused(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     gh = FakeGh([])
-    with pytest.raises(ConfigError, match="--apply goes with --labels"):
+    with pytest.raises(ConfigError, match="--apply goes with --labels or --rerun"):
         command(tmp_path, monkeypatch, gh, "--apply")
     assert gh.calls == []
 

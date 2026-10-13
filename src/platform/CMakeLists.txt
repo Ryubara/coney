@@ -40,7 +40,7 @@ target_sources(coney_platform PRIVATE game_session.cpp)
 # Where the player profiles are kept: the per-user data folder (docs/research/save.md#coney).
 target_sources(coney_platform PRIVATE profile_folder.cpp)
 # The developer overlay over the same menus, with Dear ImGui (docs/guides/debug-menu.md#the-developer-overlay).
-target_sources(coney_platform PRIVATE imgui_model_view.cpp imgui_overlay.cpp)
+target_sources(coney_platform PRIVATE imgui_model_view.cpp imgui_overlay.cpp imgui_ui_scale.cpp)
 coney_target_defaults(coney_platform)
 target_link_libraries(coney_platform PUBLIC coney_core coney_audio coney_movies SDL3::SDL3-static librw::librw imgui)
 target_link_libraries(coney_platform PRIVATE ffmpeg_bink)

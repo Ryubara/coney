@@ -20,6 +20,8 @@
 
 namespace coney::raycast {
 
+struct BuildTriangle; // raycast/collision_builder.h
+
 /// A point or direction in the game's axes (z up).
 struct Vec3 {
     float x = 0.0F;
@@ -140,6 +142,23 @@ class CollisionMesh final : public chunk::LoadedObject {
     /// The unit face normal of triangle `index`: (v1 - v0) × (v2 - v0), normalised (zero for a degenerate triangle).
     [[nodiscard]] Vec3 faceNormal(std::uint32_t index) const;
 
+    // Extra triangles: Coney's own, with no counterpart in the original (which never changes a mesh's geometry). The
+    // debug menus' Spawner adds sandbox primitives to a level's mesh with them (docs/guides/debug-menu.md); defined in
+    // collision_builder.cpp beside Coney's other writer of the format.
+
+    /// Adds `triangles` after the mesh's own, each enabled with its flags, material and area byte, and lists each in
+    /// the grid cells its box touches and one more on every side (as encodeCollisionMesh() lists them), after what
+    /// the cell listed before. The mesh's own triangles, vertices and their indices, and every cell's own list and
+    /// its order, are left as they are, so every query meets what it met before, then the new triangles. A triangle
+    /// outside the grid's box goes in its edge cells, where the queries clamp too. Fails with
+    /// ErrorCode::InvalidArgument, leaving the mesh unchanged, for a corner that is not finite, or for more triangles,
+    /// vertices or entries in one cell than the format's `u16` indices and counts can name.
+    [[nodiscard]] std::expected<void, Error> addExtraTriangles(std::span<const BuildTriangle> triangles);
+    /// Removes every triangle addExtraTriangles() added: the mesh is again as it was built, its lists included.
+    void clearExtraTriangles();
+    /// The triangles addExtraTriangles() added and clearExtraTriangles() has not removed.
+    [[nodiscard]] std::size_t extraTriangleCount() const;
+
   private:
     CollisionMesh() = default;
 
@@ -169,6 +188,16 @@ class CollisionMesh final : public chunk::LoadedObject {
     std::vector<CollisionTriangle> m_triangles;
     std::vector<Vec3> m_vertices;
     mutable std::vector<std::uint8_t> m_checked; // one bit per triangle, cleared at the start of each query
+
+    // The mesh as built, kept by the first addExtraTriangles() so clearExtraTriangles() can put it back.
+    struct Built {
+        std::size_t triangles = 0;
+        std::size_t vertices = 0;
+        std::size_t lists = 0;
+        std::size_t checked = 0;
+        std::vector<std::uint32_t> grid;
+    };
+    std::optional<Built> m_built;
 };
 
 /// The chunk `0x03` handler: pops the header just loaded, then the index lists (`0x06`), grid (`0x05`), triangles

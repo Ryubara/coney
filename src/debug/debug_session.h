@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <functional>
@@ -33,6 +34,11 @@ struct DisplayOptions {
     bool safeArea = false;      ///< The GUI square's edges: the overlay camera's built-in safe-area margin.
     bool logicalBounds = false; ///< The 640 x 448 logical screen's edges.
     bool coordinates = false;   ///< Player 1's feet and heading, in a corner (needs a play mode).
+    /// The developer overlay's size: an index into uiScaleLabels() (0, Auto: from the window's height; then the fixed
+    /// scales). Read by the overlay each frame (src/debug/ui_scale.h).
+    std::size_t uiScaleChoice = 0;
+    /// The scale the overlay applied last, written by it for the Display page to show; 1 until it has drawn.
+    float uiScaleApplied = 1.0F;
 };
 
 /// What the debug menus reach in the running game. Every field may be empty; a page whose service is missing says so

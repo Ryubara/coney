@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "combat/meters.h"
 #include "combat/power_class.h"
 #include "scripting/lua_value.h"
 #include "scripting/script_bindings.h"
@@ -48,8 +49,20 @@ struct CharacterType {
 [[nodiscard]] combat::PowerClass parseCfgPowerClass(std::span<const script::Value> call,
                                                     const combat::PowerClass& base);
 
+/// What a player's Warrior class record gives (`CfgWarriorClass`, the 14-byte record at `0x006b65c0 + class x 14`;
+/// docs/references/warrior-classes.md): each field nothing when the call left it out.
+struct WarriorClass {
+    std::optional<int> healthPercent;      ///< Byte `+0x05`: a player's health and its maximum in percent.
+    std::optional<int> damagePercent;      ///< Byte `+0x06`: a player's attack damage in percent (the Strength bar).
+    std::optional<combat::RageClass> rage; ///< `+0x00`-`+0x04`: the rage maximum, gain, decay and drain.
+};
+
+/// The Warrior class `call` (a recorded `CfgWarriorClass` call's arguments) configures
+/// (docs/references/bindings/config.md#cfgwarriorclass).
+[[nodiscard]] WarriorClass parseCfgWarriorClass(std::span<const script::Value> call);
+
 /// What a player of one character type takes from the configuration when he is made (`Human_Init`,
-/// `Human_AttachInstance`; docs/research/characters.md#power-classes, docs/research/combat.md#damage-table).
+/// `Human_AttachInstance`, `Human_MakePlayer`; docs/research/characters.md#stats).
 struct PlayerTraits {
     int classType = 0;                ///< The character class (characterClassOf()) whose record gives the damage.
     std::vector<std::int16_t> damage; ///< The class record's damage table (`+0xb8`); empty when it has none.
@@ -57,6 +70,11 @@ struct PlayerTraits {
     std::optional<combat::PowerClass> powerClass; ///< Its `CfgPowerClass` record; nothing when none was recorded.
     int warriorClass = 0;                         ///< His Warrior class (`+0x1ba`, warriorClassOf()).
     int damagePercent = 0; ///< That class's damage scale (`CfgWarriorClass` byte `+0x06`); 0 when none was recorded.
+    int healthPercent = 0; ///< That class's health percentage (byte `+0x05`); 0 when none was recorded.
+    /// His health and its maximum: the type's `CfgChar` health times healthPercent, rounded (unscaled when that is
+    /// 0); 0 when the type's call gives no health.
+    int health = 0;
+    std::optional<combat::RageClass> rage; ///< That class's rage; nothing when none was recorded.
 };
 
 /// Every character type the configuration defines, by type: the last `CfgChar` call of each type wins, as the
@@ -85,10 +103,9 @@ class CharacterTypes {
 
   private:
     std::vector<CharacterType> m_types; // sorted by type, one each
-    // The last `CfgPowerClass` call of each class id, and the damage % (`CfgWarriorClass` `+0x06`) of each Warrior
-    // class.
+    // The last `CfgPowerClass` call of each class id, and the last `CfgWarriorClass` call of each Warrior class.
     std::vector<std::pair<int, combat::PowerClass>> m_powerClasses;
-    std::vector<std::pair<int, int>> m_damagePercents;
+    std::vector<std::pair<int, WarriorClass>> m_warriorClasses;
 };
 
 } // namespace coney::characters
