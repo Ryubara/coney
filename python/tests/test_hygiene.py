@@ -369,7 +369,8 @@ def test_an_event_comments_on_its_item_once_and_edits_it_when_it_changes(
 def test_fixing_the_item_resolves_the_comment_instead_of_deleting_it(tmp_path: Path) -> None:
     remote = FakeRemote()
     run_hygiene(namespace(snapshot_file(tmp_path, issues=[broken_issue(7)]), event=7), remote)
-    fixed = snapshot_file(tmp_path, issues=[issue(7)])
+    # The issue checks want the form's level-three headings, so the fixed issue writes Screenshots that way too.
+    fixed = snapshot_file(tmp_path, issues=[issue(7, body=task_body().replace("## Screenshots", "### Screenshots"))])
     run_hygiene(namespace(fixed, event=7), remote)
     [(_, _, body)] = remote.comments[7]
     assert body == render_resolved(COMMENTS) and remote.writes[-1][0] == "edit"

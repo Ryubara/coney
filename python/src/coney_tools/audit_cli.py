@@ -133,7 +133,7 @@ def build_report(
             scans = scan(snapshot, conventions)
             report.notices.extend(scans.notices)
             attachments = scans.results
-        contexts["github"] = audit_github.GithubContext(conventions, snapshot, tree, attachments)
+        contexts["github"] = audit_github.GithubContext(conventions, snapshot, tree, root, attachments)
     if "local" in scopes:
         local = audit_local.build_context(cwd, args.workspace, conventions)
         report.notices.extend(local.notices)

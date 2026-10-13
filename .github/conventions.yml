@@ -443,6 +443,12 @@ hygiene:
       fix: skill
       keys: [issues.forms, issues.cli_uses_form]
       summary: "an open issue lacks a required section of its form (or was filed with other headings)"
+    issue.form:
+      scope: github
+      severity: warn
+      fix: skill
+      keys: [issues.forms, issues.cli_uses_form, issues.links]
+      summary: "an open issue is not in its form's exact shape: ### headings, names, order, no extra sections, dropdown values (coney-tools issue check)"
     issue.placeholder:
       scope: github
       severity: error

@@ -343,6 +343,8 @@ class GithubContext:
     snapshot: Snapshot
     #: The default branch's files, or None when they could not be read (the link check then does not run).
     tree: MainTree | None = None
+    #: The checkout, which holds the issue forms the `issue.form` check reads; None skips that check.
+    root: Path | None = None
     #: The scans of the issues' attached logs by issue number (`log_scan`), or None when no attachment was downloaded
     #: (the attachment checks then do not run).
     attachments: Mapping[int, tuple[ScanResult, ...]] | None = None
@@ -586,6 +588,31 @@ def issue_provenance(context: GithubContext) -> Iterator[Problem]:
         source = leftovers.get(issue.number)
         if source is not None and not _PROVENANCE.search(audit_text.clean(issue.body)):
             yield _problem(issue, f"is a leftover of #{source} but has no '{line}' line saying so")
+
+
+#: What `issue.form` leaves to the rules above (content, screenshots, links, wording, statuses): it reports the shape.
+_COVERED_ELSEWHERE = frozenset({"empty", "screenshots", "links", "wording", "status"})
+
+
+@check("issue.form")
+def issue_form_shape(context: GithubContext) -> Iterator[Problem]:
+    """An open issue has its form's exact shape: `###` headings with the form's names in its order, no extra
+    sections, and a dropdown value from the form's options (`coney-tools issue check` runs the whole check)."""
+    # Imported here: issue_form uses this module's label check, so a top-level import would be circular.
+    from coney_tools import issue_form
+
+    if context.root is None:
+        return
+    specs: dict[str, issue_form.FormSpec] = {}
+    options = issue_form.CheckOptions(skip=_COVERED_ELSEWHERE)
+    for issue in context.snapshot.open_issues():
+        name = issue_form.detect_form(issue.title, issue.body, context.conventions)
+        if name not in specs:
+            specs[name] = issue_form.load_form(context.root, context.conventions, name)
+        found = issue_form.check_issue(issue.title, issue.body, specs[name], context.conventions, options).problems
+        if found:
+            shown = "; ".join(problem.message for problem in found[:3])
+            yield _problem(issue, shown + (f"; and {len(found) - 3} more" if len(found) > 3 else ""))
 
 
 # --- issues: attached logs -----------------------------------------------------------------------------------------
