@@ -78,6 +78,16 @@ struct SoundEngineStats {
     std::uint64_t bankErrors = 0;     ///< Banks the load screen could not load.
 };
 
+/// A live sound as the engine last sent it (SoundEngine::liveSounds()), for tests and the debug menu.
+struct LiveSound {
+    SoundHandle handle;          ///< The sound.
+    std::uint32_t hash = 0;      ///< Its name hash.
+    std::uint8_t soundClass = 0; ///< Its class in the sound list.
+    bool positional = false;     ///< Placed in the world (heard from the listeners), not 2D.
+    bool virtualPlay = false;    ///< Tracked but silent: no voice.
+    std::array<float, 2> sent{}; ///< The left and right volumes last sent (0-1; -1 before its first update).
+};
+
 /// The game's audio manager: every sound is a task (up to kMaxTasks) started by name hash. The sound list gives its
 /// sample and class; the class its priority, distances and flags. A task takes one of the game's 48 voices: 13-47 for
 /// samples of the bank loaded into sound RAM, the stream channels 5-9 (10-12 for the small loops) for sounds streamed
@@ -183,6 +193,8 @@ class SoundEngine {
     void stopAmbientTrack();
     /// Sets the ambient bed's volume (its caller volume).
     void setAmbientTrackVolume(float volume);
+    /// The ambient bed now: invalid when none was started or it was stopped (a stopped bed may still be fading out).
+    [[nodiscard]] SoundHandle ambientTrack() const { return m_ambient; }
     /// Fills interface cue `index` with the sound `hash` (SoundCfgInterfaceSound).
     void setInterfaceSound(std::size_t index, std::uint32_t hash);
     /// The sound in interface cue `index`; 0 for an empty or unknown cue.
@@ -248,6 +260,9 @@ class SoundEngine {
     [[nodiscard]] SoundTables& tables() { return m_tables; }
     /// The counts so far.
     [[nodiscard]] SoundEngineStats stats() const;
+    /// Every live sound in start order, with what was last sent for it: what a run hears now, for the tests that check
+    /// it (counts and levels only) and the debug menu.
+    [[nodiscard]] std::vector<LiveSound> liveSounds() const;
 
   private:
     // The game's voices: stream channels 1-12 and SPU2 voices 13-47 (docs/research/sound.md#play).

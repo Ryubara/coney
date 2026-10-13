@@ -219,6 +219,9 @@ void Human::applyDamageModifier(float factor) {
 void Human::setFighterProfile(const FighterProfile& profile) {
     m_profile = profile;
     m_fighter = Fighter(m_ranges, 1, m_profile);
+    // Its stamina is its power class's, full (`Human_Init`'s defaults, docs/research/characters.md#stats).
+    m_stamina =
+        Stamina(m_profile.powerClass.staminaMax, static_cast<float>(m_profile.powerClass.staminaRefillPerSecond));
 }
 
 void Human::changeCharacter(const characters::AnimSet& anims, const combat::AnimRangeList* ranges,
@@ -292,7 +295,8 @@ void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float
     m_landingPending = false;
     m_turn = TurnState{};
     m_lastStick = StickIntent{};
-    m_stamina = Stamina(staminaTuning().maximum);
+    m_stamina =
+        Stamina(m_profile.powerClass.staminaMax, static_cast<float>(m_profile.powerClass.staminaRefillPerSecond));
     m_sprinting = false;
     m_jumping = false;
     m_strikes.clear();

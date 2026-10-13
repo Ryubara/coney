@@ -93,8 +93,11 @@ struct CombatOutput {
 class PlayerCombat {
   public:
     /// A fighter whose damage comes from `ranges` (null: hits do no damage), starting at game time `startMs` with full
-    /// power and empty rage, its coin flips seeded with `seed`. `ranges` must outlive it.
-    PlayerCombat(const AnimRangeList* ranges, std::uint64_t startMs, std::uint32_t seed);
+    /// power and empty rage, its coin flips seeded with `seed`: its power meter of `powerMax` refilling
+    /// `powerRefillPerSecond` (its power class's `+0x28` and `+0x2a`), its rage meter of `rage` (its Warrior class's).
+    /// `ranges` must outlive it.
+    PlayerCombat(const AnimRangeList* ranges, std::uint64_t startMs, std::uint32_t seed, int powerMax = kPlayerPowerMax,
+                 int powerRefillPerSecond = kPlayerPowerRefillPerSecond, const RageClass& rage = kPlayerRageClass);
 
     /// One update, in the original's order: the block, the chain, the meters, the state routes, the commands.
     ///

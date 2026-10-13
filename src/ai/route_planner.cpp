@@ -140,6 +140,26 @@ std::expected<RoutePlan, MoveFailure> RoutePlanner::request(anim::Vec3 from, ani
     return RoutePlan{.route = std::move(route)};
 }
 
+std::optional<float> RoutePlanner::walkDistance(anim::Vec3 from, anim::Vec3 to) {
+    std::expected<RoutePlan, MoveFailure> plan = request(from, to);
+    if (!plan) {
+        return std::nullopt;
+    }
+    const std::optional<Route>& route = plan->route;
+    if (!route.has_value()) {
+        return anim::distance(from, to);
+    }
+    // Along the route: from the start through each node to the point. The route is freed when `plan` goes.
+    float length = 0.0F;
+    anim::Vec3 at = from;
+    for (const std::uint32_t node : route->nodes()) {
+        const anim::Vec3 next = m_map->nodes()[node].position;
+        length += anim::distance(at, next);
+        at = next;
+    }
+    return length + anim::distance(at, to);
+}
+
 std::uint32_t RoutePlanner::edgeCost(std::uint32_t from, const world::PathEdge& edge, std::uint16_t mask) const {
     const std::span<const world::PathNode> nodes = m_map->nodes();
     // The sum is a u16 in the original: each addition wraps.

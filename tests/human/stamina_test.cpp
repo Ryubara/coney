@@ -85,3 +85,20 @@ TEST_CASE("the sprint is asked for only while L2 is held and stamina is not 0", 
     CHECK_FALSE(coney::human::sprintAsked(false, 135));
     CHECK_FALSE(coney::human::sprintAsked(true, 135, true));
 }
+
+TEST_CASE("stamina refills at its power class's rate up to its maximum", "[human][stamina]") {
+    // A street civilian's class 2 on normal: 95 points, 20 a second.
+    Stamina stamina(95, 20.0F);
+    CHECK(stamina.value() == 95);
+    CHECK(stamina.maximum() == 95);
+    for (int i = 0; i < 30; ++i) {
+        stamina.drain(Gait::Sprint, false, kStep);
+    }
+    const int drained = stamina.value();
+    // One second of standing gains 20 (within the carried fraction).
+    for (int i = 0; i < 30; ++i) {
+        stamina.refill(RefillBlocks{}, kStep);
+    }
+    CHECK(stamina.value() - drained >= 19);
+    CHECK(stamina.value() - drained <= 20);
+}
