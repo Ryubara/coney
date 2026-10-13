@@ -7,6 +7,7 @@ import os
 import re
 import shutil
 import subprocess
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -458,8 +459,8 @@ def test_mypy_command_reads_the_projects_strict_config() -> None:
     none: without `--config-file` the `[tool.mypy] strict = true` of python/pyproject.toml is silently ignored."""
     command = check_cli.MYPY_COMMAND
     assert command[command.index("--config-file") + 1] == "python/pyproject.toml"
-    config = (REPO / "python" / "pyproject.toml").read_text(encoding="utf-8")
-    assert "[tool.mypy]\nstrict = true" in config.replace("\r\n", "\n")
+    config = tomllib.loads((REPO / "python" / "pyproject.toml").read_text(encoding="utf-8"))
+    assert config["tool"]["mypy"]["strict"] is True
 
 
 def test_ci_and_docs_run_the_same_mypy_command_as_the_gate() -> None:
@@ -467,9 +468,14 @@ def test_ci_and_docs_run_the_same_mypy_command_as_the_gate() -> None:
     wanted = " ".join(check_cli.MYPY_COMMAND)
     workflow = (REPO / ".github" / "workflows" / "python.yml").read_text(encoding="utf-8")
     assert f"- run: {wanted}\n" in workflow.replace("\r\n", "\n")
-    for guide in ("building.md", "coney-tools.md"):
+    # building.md shows the whole command; coney-tools.md's table shows it after `uv run --project python`.
+    short = " ".join(check_cli.MYPY_COMMAND[4:])
+    for guide, words in (("building.md", wanted), ("coney-tools.md", f"`{short}`")):
         text = (REPO / "docs" / "guides" / guide).read_text(encoding="utf-8")
-        assert "--config-file python/pyproject.toml python/src python/tests" in text
+        assert words in text, guide
+    # conventions.md only names the flag, but it must be the one the command uses.
+    conventions = (REPO / "docs" / "guides" / "conventions.md").read_text(encoding="utf-8")
+    assert "`--config-file python/pyproject.toml`" in conventions
 
 
 @pytest.mark.parametrize(
