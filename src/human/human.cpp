@@ -1164,9 +1164,11 @@ bool Human::tagSprayPlaying() const {
 }
 
 void Human::endTagSpray() {
+    // A finished or abandoned spray ends through 336 (Tag_EndSprayClips), whose event 0x31 drops the can; the fight
+    // stance is the lock on a target (the original tests the state word's 0x3).
     m_clipTurn.reset();
     if (tagSprayPlaying()) {
-        m_animator.settleToIdle();
+        m_animator.playTagEnd(m_fighter.lockTarget() != nullptr);
     }
 }
 

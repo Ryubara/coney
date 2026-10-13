@@ -2055,7 +2055,8 @@ Fixes, in the order to take them (each one implementer unit):
    their counters and flags in the game state. Hints 22 and 24/25 serve every level ([HUD](hud.md)).
 8. **Attacking on sight**: the Destroyers of chapters 2-4 do not react to the player until hit ([AI: attacking on
    sight](ai-gangs.md#aggro-on-sight), issue #73).
-9. **The tag's look**: the mist and the wall tag (fixes 6 and 7 of [Crimes](crimes.md#tag-coney-fixes), issue #70).
+9. **The tag's look**: the mist and the wall tag (fixes 6 and 7 of [Crimes](crimes.md#tag-coney-fixes), issue #70),
+   and the end clip 336 that removes the can (fix 9 there, issue #407; done for player 1).
 10. **The spray sellers** after a hit ([GoalDealer](ai-scripting.md#dealer), items 7 and 15): chapter 2's first seller
     is the one the hints point at.
 11. **A playthrough test** per checkpoint asserting the order above, once 1-10 land (issue #333;

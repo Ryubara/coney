@@ -108,7 +108,7 @@ inline std::vector<LocomotionClip> locomotionClips() {
 /// s), the ground (193, 195, 196, 199, 207, 210, 212), the mount (118, 119, 219-226, 244, 245, 248, 249; 0.4 s), the
 /// reactions 268-303 (0.4 s; 288-303, the heavy and crushing ones, knock down), the stun (356 loop, 357 end), the fight
 /// idle (358), the miss's 389, the block (606, 607, looping), the stereo theft (683, 0.5 s; 684 looping) and the
-/// spray (334, 1 s; 335 looping; 337, 0.5 s).
+/// spray (334, 1 s; 335 looping; 337, 0.5 s; its end 336, 0.5 s), and the transition into the fight idle (359, 0.3 s).
 inline std::vector<LocomotionClip> combatClips() {
     std::vector<LocomotionClip> clips;
     // A still clip of `id` lasting `duration`, looping at rate 1 with `loop`.
@@ -165,6 +165,9 @@ inline std::vector<LocomotionClip> combatClips() {
     still(334, 1.0F);
     still(335, 1.0F, true);
     still(337, 0.5F);
+    // The spray's end (336) and the transition into the fight idle (359).
+    still(336, 0.5F);
+    still(359, 0.3F);
     // The mount's loop carries its pair event: the victim 0.120 m to the left and 0.032 m ahead.
     clips.push_back({.id = 210,
                      .speed = 0.0F,

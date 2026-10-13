@@ -731,8 +731,9 @@ class Human final : public Holdable {
     /// Whether the spray's clips still play (the intro, the loop or the restart): false once something else took the
     /// body.
     [[nodiscard]] bool tagSprayPlaying() const;
-    /// The spray is over: a spray clip still playing leaves for the idle. **Coney's reading**: what the original
-    /// plays at Tag_End is not on the page.
+    /// The spray is over (finished or let go): a spray clip still playing hands over to 336 and the idle, or the fight
+    /// idle in a fight stance (HumanAnimator::playTagEnd()). A spray cut short does not come here: it plays no end
+    /// clip.
     void endTagSpray();
     /// Whether a pick-up is under way.
     [[nodiscard]] bool pickingUp() const { return m_pickUp.has_value(); }
