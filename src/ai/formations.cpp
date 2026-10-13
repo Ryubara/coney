@@ -9,6 +9,8 @@
 #include <utility>
 
 #include "ai/brain.h"
+#include "ai/goal.h"
+#include "ai/move_action.h"
 #include "ai/route_planner.h"
 #include "ai/steering.h"
 #include "human/locomotion.h"
@@ -136,9 +138,29 @@ void Formation::plan(std::uint64_t nowMs) {
             ++usable;
         }
     }
-    // 3. Followers whose human is gone leave; then the assignment.
+    // 3. Followers whose human is gone leave; then the assignment, and the followers' running moves take their new
+    // points.
     std::erase_if(m_followers, [](const Follower& f) { return f.brain == nullptr; });
     assign();
+    retargetMoves();
+}
+
+void Formation::retargetMoves() {
+    for (const Follower& entry : m_followers) {
+        // Only a follower whose top goal follows the formation (type `0x33`, or `0x69`; `0x73` is not built) and
+        // whose front action is a move.
+        const Goal* top = entry.brain->topGoal();
+        if (top == nullptr || (top->type() != GoalType::FollowFormation && top->type() != GoalType::Pedestrian)) {
+            continue;
+        }
+        auto* move = dynamic_cast<MoveAction*>(entry.brain->frontAction());
+        const std::optional<FollowPoint> follow = followPoint(*entry.brain, 0.0F);
+        if (move == nullptr || !follow) {
+            continue;
+        }
+        move->retarget(*entry.brain, follow->point);
+        move->setRadius(follow->slot ? kRetargetSlotRadius : kRetargetQueueRadius);
+    }
 }
 
 void Formation::assign() {
@@ -230,6 +252,19 @@ std::optional<anim::Vec3> Formation::slotPoint(const Brain& follower) const {
     }
     const FollowSlot& slot = m_sets[static_cast<std::size_t>(m_set)][static_cast<std::size_t>(entry->slot)];
     return anim::Vec3{toMetres(slot.point[0]), toMetres(slot.point[1]), toMetres(slot.point[2])};
+}
+
+std::optional<FollowPoint> Formation::followPoint(const Brain& follower, float arrival) const {
+    const Follower* entry = this->follower(follower);
+    if (entry == nullptr) {
+        return std::nullopt;
+    }
+    if (const std::optional<anim::Vec3> slot = slotPoint(follower)) {
+        return FollowPoint{.point = *slot, .radius = arrival, .pace = m_leader, .slot = true};
+    }
+    // No usable slot: behind the human ahead in the queue (the leader before the first plan queues it).
+    const Brain* ahead = entry->behind != nullptr ? entry->behind : m_leader;
+    return FollowPoint{.point = ahead->human().position(), .radius = kQueueFollowRadius, .pace = ahead, .slot = false};
 }
 
 const Follower* Formation::follower(const Brain& brain) const {

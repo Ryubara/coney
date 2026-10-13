@@ -35,7 +35,7 @@ constexpr std::string_view kUsage =
     "             [--dev-overlay N]\n"
     "             [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]\n"
     "             [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
-    "             [--no-activate]\n"
+    "             [--no-activate] [--window-display DISPLAY]\n"
     "             [--no-audio | --audio-test] [--skip-movies]\n"
     "             [--record FILE [--record-seconds N]]\n"
     "\n"
@@ -112,6 +112,11 @@ constexpr std::string_view kUsage =
     "  --show-fps         print the frame and step rates once a second\n"
     "  --no-activate      open the window without taking the keyboard focus from the one in use\n"
     "                     (always so in test mode and for --render-references)\n"
+    "  --window-display DISPLAY\n"
+    "                     open the window centred on a display: its number (1 is the first),\n"
+    "                     part of its name, or portrait (the first taller than wide); shrunk to\n"
+    "                     fit if need be, never taking the keyboard focus. Default:\n"
+    "                     CONEY_WINDOW_DISPLAY, else the system's choice\n"
     "  --no-audio         run with no sound output (no audio device is opened)\n"
     "  --skip-movies      skip every movie at once, as if it had ended (by default they play, in\n"
     "                     test mode too; any pad button skips one, as in the game)\n"
@@ -845,6 +850,12 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             options.audioTest = true;
         } else if (arg == "--no-activate") {
             options.noActivate = true;
+        } else if (arg == "--window-display") {
+            if (auto value = takeValue(args, i, options.windowDisplay, "--window-display",
+                                       "a display: its number, part of its name, or portrait");
+                !value) {
+                return std::unexpected(std::move(value.error()));
+            }
         } else if (arg == "--show-fps") {
             options.showFps = true;
         } else if (arg == "--checkpoint") {

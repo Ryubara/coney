@@ -250,6 +250,22 @@ class AiUse:
 
 
 @dataclass(frozen=True)
+class Review:
+    """The release gate on the pr-reviewer agent's verdict (`coney-tools repo review`, `repo check-review`)."""
+
+    #: The agent's name; its definition is `.claude/agents/<agent>.md`.
+    agent: str
+    #: The verdict (JSON) the agent writes next to the description file; `repo check-review` reads it.
+    verdict_file: str
+    #: The readable report the agent writes beside the verdict.
+    report_file: str
+    #: How the description is hashed: `sha256-lf` (UTF-8, leading BOM dropped, CRLF and CR turned into LF).
+    body_hash: str
+    #: `refused`: two byte-identical images in one description fail the gate, whatever the verdict.
+    identical_images: str
+
+
+@dataclass(frozen=True)
 class Stacked:
     """The rules for a pull request whose base is not the default branch."""
 
@@ -277,6 +293,7 @@ class PullRequests:
     checklist: Checklist
     screenshots: ScreenshotsRule
     ai_use: AiUse
+    review: Review
     stacked: Stacked
 
 
@@ -443,11 +460,67 @@ class Thresholds:
 
 
 @dataclass(frozen=True)
+class AttachmentPatterns:
+    """The regular expressions the attachment scan looks for, one tuple per kind of finding (`log_scan`)."""
+
+    #: A user's home folder (`C:\\Users\\<name>`, `/home/<name>`, `/Users/<name>`): personal information.
+    user_folder: tuple[str, ...]
+    #: An email address: personal information.
+    email: tuple[str, ...]
+    #: A line of script source (the game's scripts are Lua 4.0): possible game data.
+    script_source: tuple[str, ...]
+    #: A line of a game text or data file (the placed-objects lines, ...): possible game data.
+    game_text: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class Attachments:
+    """The text files attached to an issue that the hygiene workflow downloads and scans (`coney_tools.log_scan`)."""
+
+    #: The start of an attachment link (`https://github.com/user-attachments/files/`); the id and name follow it.
+    link: str
+    #: The file name endings that are scanned (`.txt`, `.log`), compared without regard to case.
+    extensions: tuple[str, ...]
+    #: At most this many attachments of one issue are downloaded.
+    max_files: int
+    #: At most this many attachments in one run (the weekly sweep scans every open issue).
+    max_per_run: int
+    #: At most this many KB of one attachment are downloaded; the rest is never read.
+    download_kb: int
+    #: How long one download may take.
+    timeout_seconds: int
+    #: A log larger than this many KB is reported as possible game data.
+    large_kb: int
+    #: More than this percentage of control characters (or any NUL) means the file is not text.
+    control_percent: int
+    #: A file with at least this many lines matching `script_source`, or `game_text`, is reported.
+    line_threshold: int
+    patterns: AttachmentPatterns
+
+
+@dataclass(frozen=True)
+class RerunRules:
+    """When `coney-tools repo pr-health --rerun` restarts a failed required check: only for a failure that is stale."""
+
+    #: Reruns of the checks of one workflow on one head commit, at most, so a flaky job cannot loop.
+    max_per_sha: int
+    #: The required check that runs `repo check-title` on the pull request's title.
+    title_check: str
+    #: The required check that runs `repo check-body` on the pull request's description.
+    body_check: str
+    #: Check conclusions that are never the code's fault (upper case, as GitHub writes them).
+    conclusions: tuple[str, ...]
+    #: Regular expressions (case-insensitive) that, found in a failed job's log, mean the runner or GitHub failed.
+    log_patterns: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class PrHealth:
-    """How `coney-tools repo pr-health` sorts a failing required check."""
+    """How `coney-tools repo pr-health` sorts a failing required check, and when it may rerun one."""
 
     #: Required checks whose failure is a lint failure (the author fixes the text); any other required check is code.
     lint_checks: tuple[str, ...]
+    rerun: RerunRules
 
 
 @dataclass(frozen=True)
@@ -479,6 +552,7 @@ class Hygiene:
     comments: Comments
     thresholds: Thresholds
     pr_health: PrHealth
+    attachments: Attachments
     #: Check id to its spec, in file order.
     checks: Mapping[str, CheckSpec]
 
@@ -503,7 +577,12 @@ class Workspace:
 
     worktrees: str
     scratch: str
+    #: Under this much free space on the workspace drive, `workspace clean` deletes idle build folders.
     disk_min_free_gb: int
+    #: ... until free space reaches `disk_min_free_gb` plus this many GB.
+    disk_margin_gb: int
+    #: A `build/` folder unused for this many hours is deleted.
+    build_idle_hours: int
     #: A worktree holding a file of this name is never cleaned.
     busy_marker: str
     remove_worktree_when_merged: bool
@@ -776,6 +855,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
         "checklist",
         "screenshots",
         "ai_use",
+        "review",
         "stacked",
     )
     table = _table(data, where, keys)
@@ -791,6 +871,15 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
     checklist, checklist_where = sub("checklist", "section", "unchecked", "since", "legacy_label")
     screenshots, screenshots_where = sub("screenshots", "section", "none", "reason", "uploaded_only")
     ai_use, ai_where = sub("ai_use", "section", "written_by", "model")
+    review, review_where = sub("review", "agent", "verdict_file", "report_file", "body_hash", "identical_images")
+    agent = _text(review["agent"], _at(review_where, "agent"))
+    # The agent is a file name under .claude/agents/, so it holds no path separator.
+    if not re.fullmatch(r"[a-z][a-z0-9-]*", agent):
+        raise _fail(_at(review_where, "agent"), f"'{agent}' must be an agent name (lower case, digits and dashes)")
+    verdict_file = _text(review["verdict_file"], _at(review_where, "verdict_file"))
+    report_file = _text(review["report_file"], _at(review_where, "report_file"))
+    if report_file == verdict_file:
+        raise _fail(_at(review_where, "report_file"), "must differ from verdict_file")
     stacked, stacked_where = sub(
         "stacked", "depends_line", "merge_into_base", "auto_merge_on_non_default_base", "after_base_merges"
     )
@@ -847,6 +936,13 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
                 label=_text(model["label"], _at(model_where, "label")),
                 none=_text(model["none"], _at(model_where, "none")),
             ),
+        ),
+        review=Review(
+            agent=agent,
+            verdict_file=verdict_file,
+            report_file=report_file,
+            body_hash=_choice(review["body_hash"], _at(review_where, "body_hash"), ("sha256-lf",)),
+            identical_images=_choice(review["identical_images"], _at(review_where, "identical_images"), ("refused",)),
         ),
         stacked=Stacked(
             depends_line=_text(stacked["depends_line"], _at(stacked_where, "depends_line")),
@@ -1059,9 +1155,63 @@ def _read_check(check_id: str, data: object, where: str) -> CheckSpec:
     )
 
 
+def _patterns(value: object, where: str) -> tuple[str, ...]:
+    """A list of regular expressions, each of which must compile."""
+    patterns = _texts(value, where)
+    for index, pattern in enumerate(patterns):
+        try:
+            re.compile(pattern)
+        except re.error as error:
+            raise _fail(f"{where}[{index}]", f"not a valid regular expression ({error})") from None
+    return patterns
+
+
+def _read_attachments(data: object, where: str) -> Attachments:
+    """`hygiene.attachments`: what the attachment scan downloads, its limits and its patterns."""
+    counts = (
+        "max_files",
+        "max_per_run",
+        "download_kb",
+        "timeout_seconds",
+        "large_kb",
+        "control_percent",
+        "line_threshold",
+    )
+    table = _table(data, where, ("link", "extensions", "patterns", *counts))
+    link = _text(table["link"], _at(where, "link"))
+    if not link.startswith("https://") or not link.endswith("/"):
+        raise _fail(_at(where, "link"), "expected an https:// address ending with /")
+    extensions = _texts(table["extensions"], _at(where, "extensions"))
+    for extension in extensions:
+        if not re.fullmatch(r"\.[a-z0-9]+", extension):
+            raise _fail(_at(where, "extensions"), f"'{extension}' is not a lower-case ending like '.log'")
+    numbers = {key: _count(table[key], _at(where, key)) for key in counts}
+    if numbers["large_kb"] > numbers["download_kb"]:
+        raise _fail(_at(where, "large_kb"), "must not be more than download_kb, or a large file could not be seen")
+    if numbers["control_percent"] > 100:
+        raise _fail(_at(where, "control_percent"), "expected a percentage of 100 or less")
+    patterns_where = _at(where, "patterns")
+    kinds = ("user_folder", "email", "script_source", "game_text")
+    patterns = _table(table["patterns"], patterns_where, kinds)
+    return Attachments(
+        link=link,
+        extensions=extensions,
+        max_files=numbers["max_files"],
+        max_per_run=numbers["max_per_run"],
+        download_kb=numbers["download_kb"],
+        timeout_seconds=numbers["timeout_seconds"],
+        large_kb=numbers["large_kb"],
+        control_percent=numbers["control_percent"],
+        line_threshold=numbers["line_threshold"],
+        patterns=AttachmentPatterns(**{kind: _patterns(patterns[kind], _at(patterns_where, kind)) for kind in kinds}),
+    )
+
+
 def _read_hygiene(data: object, where: str) -> Hygiene:
     """The `hygiene` section: the report issue, the sweep schedule, the idle limits and the audit's checks."""
-    table = _table(data, where, ("report_issue", "sweep", "comments", "thresholds", "pr_health", "checks"))
+    table = _table(
+        data, where, ("report_issue", "sweep", "comments", "thresholds", "pr_health", "attachments", "checks")
+    )
     checks_where = _at(where, "checks")
     raw_checks = _mapping(table["checks"], checks_where)
     if not raw_checks:
@@ -1090,7 +1240,7 @@ def _read_hygiene(data: object, where: str) -> Hygiene:
     )
     limits = _table(table["thresholds"], limits_where, keys)
     health_where = _at(where, "pr_health")
-    health = _table(table["pr_health"], health_where, ("lint_checks",))
+    health = _table(table["pr_health"], health_where, ("lint_checks", "rerun"))
     return Hygiene(
         report_issue=ReportIssue(
             title=_text(report["title"], _at(report_where, "title")),
@@ -1106,14 +1256,51 @@ def _read_hygiene(data: object, where: str) -> Hygiene:
             report_only=report_only,
         ),
         thresholds=Thresholds(**{key: _count(limits[key], _at(limits_where, key)) for key in keys}),
-        pr_health=PrHealth(lint_checks=_texts(health["lint_checks"], _at(health_where, "lint_checks"))),
+        pr_health=PrHealth(
+            lint_checks=_texts(health["lint_checks"], _at(health_where, "lint_checks")),
+            rerun=_read_rerun(health["rerun"], _at(health_where, "rerun")),
+        ),
+        attachments=_read_attachments(table["attachments"], _at(where, "attachments")),
         checks=MappingProxyType(checks),
+    )
+
+
+#: The conclusions of a finished check run that fail it (what `rerun.conclusions` may name).
+_FAILING_CONCLUSIONS = ("FAILURE", "TIMED_OUT", "CANCELLED", "STARTUP_FAILURE", "ACTION_REQUIRED", "STALE")
+
+
+def _read_rerun(data: object, where: str) -> RerunRules:
+    """The `hygiene.pr_health.rerun` section: the cap, the two text checks, the conclusions and the log patterns."""
+    table = _table(data, where, ("max_per_sha", "title_check", "body_check", "conclusions", "log_patterns"))
+    conclusions = _texts(table["conclusions"], _at(where, "conclusions"))
+    _names_in(conclusions, _FAILING_CONCLUSIONS, _at(where, "conclusions"), "a failing conclusion")
+    patterns = _texts(table["log_patterns"], _at(where, "log_patterns"), empty_ok=True)
+    for index, pattern in enumerate(patterns):
+        try:
+            re.compile(pattern)
+        except re.error as error:
+            raise _fail(f"{_at(where, 'log_patterns')}[{index}]", f"not a regular expression ({error})") from error
+    return RerunRules(
+        max_per_sha=_count(table["max_per_sha"], _at(where, "max_per_sha")),
+        title_check=_text(table["title_check"], _at(where, "title_check")),
+        body_check=_text(table["body_check"], _at(where, "body_check")),
+        conclusions=conclusions,
+        log_patterns=patterns,
     )
 
 
 def _read_workspace(data: object, where: str) -> Workspace:
     """The `workspace` section (local only)."""
-    keys = ("worktrees", "scratch", "disk_min_free_gb", "busy_marker", "remove_worktree_when_merged", "clips")
+    keys = (
+        "worktrees",
+        "scratch",
+        "disk_min_free_gb",
+        "disk_margin_gb",
+        "build_idle_hours",
+        "busy_marker",
+        "remove_worktree_when_merged",
+        "clips",
+    )
     table = _table(data, where, keys)
     clips_where = _at(where, "clips")
     clips = _table(table["clips"], clips_where, ("folder", "max_seconds", "warn_mb", "keep_hours"))
@@ -1121,6 +1308,8 @@ def _read_workspace(data: object, where: str) -> Workspace:
         worktrees=_text(table["worktrees"], _at(where, "worktrees")),
         scratch=_text(table["scratch"], _at(where, "scratch")),
         disk_min_free_gb=_count(table["disk_min_free_gb"], _at(where, "disk_min_free_gb")),
+        disk_margin_gb=_count(table["disk_margin_gb"], _at(where, "disk_margin_gb"), minimum=0),
+        build_idle_hours=_count(table["build_idle_hours"], _at(where, "build_idle_hours"), minimum=0),
         busy_marker=_text(table["busy_marker"], _at(where, "busy_marker")),
         remove_worktree_when_merged=_flag(
             table["remove_worktree_when_merged"], _at(where, "remove_worktree_when_merged")

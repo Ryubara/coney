@@ -107,6 +107,12 @@ the centre, so a byte mapped linearly over 0-255 reads back smaller than meant. 
 reads about 0.86, under the run's 0.95, and the player only walks (found when the level3 chase driver walked instead
 of running).
 
+A driver that fights holds the stick toward the foe it means to hit while it presses the attack, as a player does: a
+player's attack searches for its target along the stick's heading, and along his facing only when the stick is at
+rest ([Targets](../research/combat-moves.md#targeting)). A driver that rests the stick once in reach strikes whoever
+the player happens to face; the level5 boss fight's driver did, and lost once the AI's enemy scan changed who the
+crew fought.
+
 Why not a frame-locked script: it replays inputs by step number, so any change to the camera or the AI moves the
 characters a little, the recorded presses then land in the wrong place, and the test fails (or passes by luck) for
 reasons that have nothing to do with the mission. A driver that reads the state and steers toward the marker
@@ -178,6 +184,11 @@ What the two sections hold:
   options.
 - **The original.** `coney-tools pcsx2 screenshot --copy NAME --out PNG` writes a PCSX2 copy's picture (Windows only;
   [Driving PCSX2](research-workflow.md#driving-pcsx2)), from a copy you hold a claim on.
+- **Look at each picture before using it.** Open every capture and check that it shows what its caption says:
+  gameplay, not a letterboxed scene, a loading or black screen or a menu; the right level and place; the frame and
+  options the text states. A before and after pair must differ: two identical shots mean a capture went wrong, so take
+  it again. The `pr-reviewer` agent checks the same before release, and `repo check-review` refuses byte-identical
+  images ([The description review](how-we-work.md#pr-review)).
 - **Video.** A short clip (10 seconds at most) of Coney comes from `coney --record`, one of the original from
   `coney-tools pcsx2 clip`, and both go up only with `coney-tools clips publish`: the rules and how each is kept are
   in [Clips](#clips) below. Never a screen recorder.

@@ -289,6 +289,11 @@ leave the focus alone:
   may show on top, but keystrokes stay where they were), and `--render-references` (which hides its window) never
   takes it either. Any other windowed run started by a tool adds `--no-activate`
   ([Frame rate](running.md#frame-rate)).
+- **On the agents' display.** Every window an agent opens goes on the display set aside for agents, never on the one
+  the user works on. The agent tool's environment sets `CONEY_WINDOW_DISPLAY` (the [setup](agents.md#setup)), and
+  Coney opens its window centred on that display, never taking the keyboard focus
+  ([Which display](running.md#window-display)); the PCSX2 launcher
+  reads the same variable (below). An agent never overrides it with `--window-display` for its own runs.
 - **ctest needs nothing.** The disc tests inside `coney_tests` run on librw's NULL renderer and open no window; the
   `coney` smoke tests (`repo:src/platform/CMakeLists.txt`) run `--headless` or stop at the command line before a
   window opens; the one test with a window (`coney.frame_copies_upright`) hides it and so never takes the focus. A new
@@ -319,6 +324,15 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
   foreground, hands it back to the window that had it (no input sent, PCSX2 never minimised, so screenshots keep
   working). Checked 2026-10-07: the foreground owner logged every 50 ms over a state launch and over a cold boot
   (about 900 polls each) was never PCSX2.
+- **Where its windows go.** With `CONEY_WINDOW_DISPLAY` set, the launcher also moves each PCSX2 window (the main
+  window, and the game's when it has its own) onto that display as soon as it shows, centred and shrunk to the
+  display's usable area if larger, without activating it (`SetWindowPos` with `SWP_NOACTIVATE`); a window is moved
+  once, so one dragged elsewhere stays there. The value means what it means for Coney
+  ([Which display](running.md#window-display)): an index counts the primary display as 1 and the rest in Windows'
+  order, as SDL does, and a name matches the display's device name (`DISPLAY2`) or its monitor's description as
+  Windows lists it. A value that matches nothing prints one warning listing the displays, and PCSX2 opens where it
+  last was (its own `PCSX2.ini` keeps that place, `[UI]` `MainWindowGeometry`; the launcher does not edit it).
+  `repo:python/src/coney_tools/pcsx2_proc.py` (`WindowPlacer`).
 - **Several at once.** A portable PCSX2 keeps its settings, states and memory cards in its own folder, so each copy of
   the folder (`pcsx2`, `pcsx2-b`, ..., each with its own `PINESlot` 28011, 28012, ...) is an independent instance, and
   `coney-tools pcsx2` reads the port from that copy's `PCSX2.ini`. Every PCSX2 use starts with

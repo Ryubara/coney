@@ -7,7 +7,9 @@
 #include <utility>
 
 #include "camera/camera_lens.h"
+#include "core/assert.h"
 #include "core/game_timer.h"
+#include "sandbox/sandbox_mesh.h"
 #include "world/view_frustum.h"
 #include "world/world_streamer.h"
 
@@ -147,15 +149,64 @@ void LevelPlayScenery::findVisible(const WorldView& newest) {
 
 void LevelPlayScenery::draw(RenderEngine& engine, const WorldView& view, std::uint64_t nowMs,
                             const std::function<void()>& drawObjects, const std::function<void()>& afterWorlds) {
-    // The world draws the sectors its own view sees (WorldRenderer::render), with the characters among the objects.
-    m_renderer.render(engine, *m_scenery.set, m_scenery.level.get(), view, m_pending, nowMs, drawObjects, {},
+    // The world draws the sectors its own view sees (WorldRenderer::render), with the characters among the objects;
+    // the debug menus' spawned objects go first among those, in the world's camera, states and fog.
+    if (!m_extraRenderer) {
+        m_renderer.render(engine, *m_scenery.set, m_scenery.level.get(), view, m_pending, nowMs, drawObjects, {},
+                          afterWorlds);
+        return;
+    }
+    const auto withExtras = [this, &engine, &drawObjects] {
+        m_extraRenderer->drawGeometry(engine);
+        if (drawObjects) {
+            drawObjects();
+        }
+    };
+    m_renderer.render(engine, *m_scenery.set, m_scenery.level.get(), view, m_pending, nowMs, withExtras, {},
                       afterWorlds);
+}
+
+std::expected<void, Error> LevelPlayScenery::setExtras(const RenderEngine& engine,
+                                                       const std::vector<sandbox::Primitive>& extra) {
+    raycast::CollisionMesh& mesh = *m_scenery.level->collision;
+    if (extra.empty()) {
+        mesh.clearExtraTriangles();
+        m_extraSolid.clear();
+        m_extraRenderer.reset();
+        return {};
+    }
+    // 1. The objects as a sandbox builds them (the drawn mesh with its baked light, and the solid triangles), and
+    // their renderer, before anything in the level changes.
+    sandbox::SandboxLayout layout;
+    layout.primitives = extra;
+    auto world = sandbox::SandboxWorld::build(std::move(layout));
+    if (!world) {
+        return std::unexpected(std::move(world.error()));
+    }
+    auto renderer = SandboxRenderer::create(engine, *world);
+    if (!renderer) {
+        return std::unexpected(std::move(renderer.error()));
+    }
+    std::vector<raycast::BuildTriangle> solid = sandbox::sandboxCollisionTriangles(world->layout());
+    // 2. The level's mesh: the old objects' triangles out, the new ones in; on a refusal the old ones go back (they
+    // fitted before, so they fit again).
+    mesh.clearExtraTriangles();
+    if (auto added = mesh.addExtraTriangles(solid); !added) {
+        const bool restored = mesh.addExtraTriangles(m_extraSolid).has_value();
+        CONEY_ASSERT(restored);
+        return added;
+    }
+    m_extraSolid = std::move(solid);
+    m_extraRenderer = std::move(*renderer);
+    return {};
 }
 
 anim::Vec3 LevelPlayScenery::lightDirection() const { return kLevelLightDirection; }
 
 std::string LevelPlayScenery::summary() const {
-    return std::format("; parts read {}, freed {}, failed {}", m_loads, m_unloads, m_failures);
+    return std::format("; parts read {}, freed {}, failed {}", m_loads, m_unloads, m_failures) +
+           (m_extraSolid.empty() ? std::string{}
+                                 : std::format(", spawned collision triangles {}", m_extraSolid.size()));
 }
 
 std::vector<debug::Place> PlayScenery::places() const {
@@ -165,7 +216,7 @@ std::vector<debug::Place> PlayScenery::places() const {
 
 std::expected<void, Error> PlayScenery::setExtras(const RenderEngine& /*engine*/,
                                                   const std::vector<sandbox::Primitive>& /*extra*/) {
-    return fail(ErrorCode::InvalidArgument, "objects can be spawned in a sandbox only, for now");
+    return fail(ErrorCode::InvalidArgument, "objects cannot be spawned here");
 }
 
 std::expected<std::unique_ptr<SandboxPlayScenery>, Error>

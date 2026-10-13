@@ -1078,8 +1078,8 @@ def test_a_queued_build_leaves_once_the_wait_plus_its_median_would_pass_the_budg
     run.history = history_of(tmp_path, dev_build_main=[28, 30, 30, 40])
     result = run.go()
     assert result.exit_code == 75
-    # 30 min of build left room for 25 min of waiting, not the 45 of --max-wait.
-    assert 25 * MINUTE < run.now - NOW <= 26 * MINUTE
+    # 30 min of build left room for about 25 min of waiting, not the 45 of --max-wait.
+    assert 24 * MINUTE < run.now - NOW <= 25 * MINUTE  # the queue still counts a busy slot as 1 more min
     assert run.main.status().queue == []
     text = "\n".join(result.summary)
     assert "build: still queued" in text
@@ -1092,7 +1092,7 @@ def test_without_a_history_the_typical_durations_are_the_estimate(tmp_path: Path
     full_main_lane(run)
     result = run.go()
     assert result.exit_code == 75
-    assert 40 * MINUTE < run.now - NOW <= 41 * MINUTE  # typical build of 15 min
+    assert 39 * MINUTE < run.now - NOW <= 40 * MINUTE  # typical build of 15 min, 1 min left in a busy slot
     assert "about 15 min (typical, no history)" in "\n".join(result.summary)
 
 
@@ -1132,7 +1132,7 @@ def test_the_test_phase_counts_the_whole_call_against_the_budget(tmp_path: Path)
     result = run.go()
     assert result.exit_code == 75
     # 40 min of build, then the full test run (typical 10 min) leaves after about 5 min of waiting.
-    assert 45 * MINUTE < run.now - NOW <= 46 * MINUTE
+    assert 44 * MINUTE < run.now - NOW <= 45 * MINUTE
     text = "\n".join(result.summary)
     assert "build: ok" in text and "test: still queued" in text and "the tests would take about 10 min" in text
 
@@ -1142,7 +1142,7 @@ def test_the_wait_for_the_build_folder_counts_against_the_budget(tmp_path: Path)
     hold_folder(run, "bob", 101)
     result = run.go()
     assert result.exit_code == 75
-    assert 20 * MINUTE < run.now - NOW <= 21 * MINUTE
+    assert 19 * MINUTE < run.now - NOW <= 20 * MINUTE
     assert "the budget is 20 min" in "\n".join(result.summary)
     assert run.toolchain.commands == []
 
@@ -1179,3 +1179,37 @@ def test_the_waiting_line_names_the_budget(tmp_path: Path) -> None:
     full_main_lane(run)
     run.go()
     assert any("waiting for a build slot" in line and "55 min budget" in line for line in run.lines)
+
+
+def test_a_long_queue_is_left_at_once_when_its_estimate_cannot_fit_the_budget(tmp_path: Path) -> None:
+    # Two slots held and four builds ahead: the queue's own estimate is well past the budget, so the run leaves at its
+    # first look instead of sitting through most of the budget (an agent idle that long loses its prompt cache).
+    run = Run(tmp_path, budget=45.0, max_wait=40.0)
+    full_main_lane(run)
+    for n, agent in enumerate(("dan", "erin", "frank", "gina")):
+        run.main.join(agent, agent, "dev", False, 200 + n)
+        run.alive.add(200 + n)
+    run.now += 1  # they joined first
+    result = run.go()
+    assert result.exit_code == 75
+    assert run.now - NOW < MINUTE
+    text = "\n".join(result.summary)
+    assert "the queue ahead is about" in text and "the budget is 45 min" in text
+    assert "--detach" in text and "STATUS.md" in text and "coney-tools build result" in text
+
+
+def test_a_short_queue_estimate_waits_as_before(tmp_path: Path) -> None:
+    run = Run(tmp_path, budget=55.0, max_wait=45.0)
+    full_main_lane(run)
+    run.history = history_of(tmp_path, dev_build_main=[10])
+    freed: list[int] = []
+
+    def free_a_slot() -> None:
+        if run.now - NOW >= 5 * MINUTE and not freed:
+            freed.append(1)
+            claim = run.main.status().slots[0].claim
+            assert claim is not None
+            run.main.release_claim(claim)
+
+    run.on_sleep.append(free_a_slot)
+    assert run.go().ok

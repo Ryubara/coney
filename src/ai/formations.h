@@ -42,6 +42,11 @@ inline constexpr float kStoppedSpeed = 0.005F;
 inline constexpr float kPlanLeadDistance = 2.0F;
 /// Passes of the crossing-paths swap.
 inline constexpr int kSwapPasses = 3;
+/// A follower with no usable slot follows the human it queues behind to within this distance, m.
+inline constexpr float kQueueFollowRadius = 2.5F;
+/// A plan gives a follower's running move this radius: at a slot, and with none (m).
+inline constexpr float kRetargetSlotRadius = 0.1F;
+inline constexpr float kRetargetQueueRadius = 1.0F;
 
 /// One follow slot of a set: its offset from the leader and its point in the world at the last plan, in 1/16 m.
 struct FollowSlot {
@@ -54,6 +59,14 @@ struct Follower {
     Brain* brain = nullptr;
     int slot = -1;
     Brain* behind = nullptr;
+};
+
+/// Where a follower goes (FollowFormation's follow point, docs/research/ai-gangs.md#warrior-follow step 4).
+struct FollowPoint {
+    anim::Vec3 point;            ///< Its slot's point, or the position of the human it queues behind.
+    float radius = 0.0F;         ///< How near it must come: the goal's arrival distance at a slot, else 2.5 m.
+    const Brain* pace = nullptr; ///< The human whose speed paces it: the leader at a slot, else the one ahead.
+    bool slot = false;           ///< Whether it holds a slot.
 };
 
 /// One leader's formation.
@@ -94,7 +107,8 @@ class Formation {
     /// @orig 0x002956d0 Formation_Plan (unknown)
     void update(std::uint64_t nowMs);
     /// Plans now: the next plan time (kPlanWalkingMs while the leader walks, else kPlanOtherMs), the plan point and
-    /// heading, the slots' points and which are usable, then the assignment. **Coney choices**: a slot is usable when
+    /// heading, the slots' points and which are usable, then the assignment, then each follower's running move takes
+    /// its new follow point (retargetMoves()). **Coney choices**: a slot is usable when
     /// the leader's brain's planner finds the line to it walkable, or always without a planner (the original tests a
     /// line of sight, `0x002221e0`); the slot's point keeps the leader's height (no ground ray); the swap of crossing
     /// paths runs over the slotted followers.
@@ -102,6 +116,13 @@ class Formation {
     /// @orig 0x002953c8 Formation_AssignSlots (unknown)
     void plan(std::uint64_t nowMs);
 
+    /// Where `follower` goes: its slot's point within `arrival` while it holds one (a slot usable at the last plan);
+    /// otherwise the position of the human it queues behind (the follower ahead of it in the queue, or the leader)
+    /// within kQueueFollowRadius, that human's speed then standing in for the leader's. Nothing when it does not follow
+    /// this formation.
+    /// @orig 0x00295e38 Formation_GetFollowPoint (unknown)
+    /// @orig 0x002963b0 Formation_GetAhead (unknown)
+    [[nodiscard]] std::optional<FollowPoint> followPoint(const Brain& follower, float arrival) const;
     /// `follower`'s slot point in the world, m; nothing when it has no slot.
     [[nodiscard]] std::optional<anim::Vec3> slotPoint(const Brain& follower) const;
     /// `follower`'s entry; null when it does not follow.
@@ -121,6 +142,11 @@ class Formation {
     // Each usable slot, in order, takes its nearest unassigned follower; the rest queue nearest-first, round robin,
     // behind the slotted followers (or the leader); then up to kSwapPasses passes swap slotted pairs whose paths cross.
     void assign();
+    // Each follower whose top goal is FollowFormation (or type `0x69`) and whose front action is a move gets its new
+    // follow point in that move (MoveAction::retarget()) and the radius kRetargetSlotRadius at a slot, else
+    // kRetargetQueueRadius (docs/research/ai-gangs.md#follow-retarget).
+    // @orig 0x00295250 Formation_RetargetFollowerMoves (unknown)
+    void retargetMoves();
 
     Brain* m_leader;
     std::array<std::array<FollowSlot, kFormationSlots>, kFormationSets> m_sets{};

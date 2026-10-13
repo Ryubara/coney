@@ -20,6 +20,23 @@ inline constexpr int kPlayerPowerRefillPerSecond = 60; ///< `+0x2a`.
 inline constexpr int kPlayerRageMax = 78;
 inline constexpr int kPlayerRageGainPercent = 144;
 
+/// What a Warrior class gives a player's rage meter (`CfgWarriorClass`, docs/references/warrior-classes.md): the
+/// maximum (s16 `+0x00`), the gain percentage (`+0x02`), and the idle decay (`+0x03`) and the drain while raging
+/// (`+0x04`), each in percent of the maximum per 20 s (`Human_DrainMeters`, `0x002562d0`).
+struct RageClass {
+    int maximum = kPlayerRageMax;
+    int gainPercent = kPlayerRageGainPercent;
+    int decayPercent = 200;
+    int drainPercent = 240;
+};
+
+/// Rembrandt's and Ash's class 6 on normal: 78, 144 %, 200 % and 240 % (confirmed at runtime,
+/// docs/research/combat.md#constants).
+inline constexpr RageClass kPlayerRageClass{};
+
+/// The span the decay and drain percentages are given over (`0x002562d0`): 20 s.
+inline constexpr float kRageRateSeconds = 20.0F;
+
 /// A human's health (record `+0x144`) and its maximum (`+0x146`).
 class Health {
   public:
@@ -122,9 +139,9 @@ struct RageGain {
 /// The rage meter (human `+0x650`), filled by hits and spent by rage.
 class RageMeter {
   public:
-    /// An empty meter of `maximum` with the Warrior class's `gainPercent`, its clock starting at `startMs`.
-    explicit RageMeter(int maximum = kPlayerRageMax, int gainPercent = kPlayerRageGainPercent,
-                       std::uint64_t startMs = 0);
+    /// An empty meter of `rage`'s maximum (at least 1, CONEY_ASSERT), gain, decay and drain, its clock starting at
+    /// `startMs`.
+    explicit RageMeter(const RageClass& rage = kPlayerRageClass, std::uint64_t startMs = 0);
 
     [[nodiscard]] int value() const { return m_value; }
     [[nodiscard]] int maximum() const { return m_maximum; }
@@ -167,16 +184,18 @@ class RageMeter {
     /// (`+0x648`) cleared and the drain's clock restarted at `nowMs`. An empty meter ends it at the next update().
     void force(std::uint64_t nowMs);
 
-    /// Moves to game time `nowMs`: while raging the meter drains at CombatTuning::rageDrainPerSecond and rage ends when
-    /// it is empty; otherwise, once the hold of the last gain has passed, it decays at
-    /// CombatTuning::rageDecayPerSecond.
+    /// Moves to game time `nowMs`: while raging the meter drains at the class's drain percentage of the maximum per
+    /// 20 s and rage ends when it is empty; otherwise, once the hold of the last gain has passed, it decays at the
+    /// decay percentage of the maximum per 20 s (9.36 and 7.8 a second for class 6).
     /// @orig 0x002562d0 Human_DrainMeters (unknown)
-    void update(std::uint64_t nowMs, const CombatTuning& tuning);
+    void update(std::uint64_t nowMs);
 
   private:
     int m_value = 0;
     int m_maximum;
     int m_gainPercent;
+    float m_decayPerSecond; // the class's decay and drain, as points a second
+    float m_drainPerSecond;
     std::uint64_t m_lastMs;
     std::uint64_t m_holdUntilMs = 0; // the meter does not decay before this (human `+0x648`)
     float m_carry = 0.0F;

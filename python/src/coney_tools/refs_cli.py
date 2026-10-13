@@ -18,7 +18,7 @@ from typing import Any
 
 import yaml
 
-from coney_tools import refs, refs_engine, refs_env, refs_play, refs_render
+from coney_tools import refs, refs_engine, refs_env, refs_play, refs_render, refs_stats
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.refs import Topic
 from coney_tools.refs_topics import TOPICS, topic
@@ -69,7 +69,14 @@ def pages(root: Path, lists: list[refs.RefList]) -> dict[Path, str]:
         gaps=load_gaps(root),
     )
     out = {root / DOCS_DIR / "index.md": index}
-    out.update({root / DOCS_DIR / f"{reflist.topic.key}.md": refs_render.page(reflist) for reflist in lists})
+    # Columns joined from other lists (the characters' stats from their power and Warrior classes).
+    extra = refs_stats.extra_columns({reflist.topic.key: reflist for reflist in lists})
+    out.update(
+        {
+            root / DOCS_DIR / f"{reflist.topic.key}.md": refs_render.page(reflist, extra.get(reflist.topic.key, ()))
+            for reflist in lists
+        }
+    )
     for reflist in lists:
         if reflist.topic.split:
             out.update({root / DOCS_DIR / path: text for path, text in refs_render.group_pages(reflist).items()})

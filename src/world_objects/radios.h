@@ -65,7 +65,9 @@ struct Radio {
 /// **Coney's stand-ins** where the page is silent: a radio updates every frame; a track or clip stopped because the
 /// player went beyond 40 m starts again from the start (state 1) when he comes back; the DJ links of kinds 0 and 1,
 /// whose sounds are not named, play nothing, so they end at once; Radio_SetMode's modes 4 and up (never used) are
-/// not built, nor the messages that pick the radio up, smash it or switch it (Coney has no carried boom box).
+/// not built, nor the messages that pick the radio up, smash it or switch it (Coney has no carried boom box); a
+/// radio whose object is destroyed (`ObjDestroy`) stops its sound at once and is forgotten, as the smash's next
+/// update does.
 ///
 /// Research: docs/research/sound.md#radios, docs/references/bindings/sound.md#setupradio
 class Radios {
@@ -105,9 +107,9 @@ class Radios {
     /// @orig 0x003ac600 Radio_SetMode (unknown)
     void setMode(double object, int mode, RadioSound& sound);
 
-    /// One update of every radio: `locate` finds a radio's object (nothing: it is skipped), `world` the player and
-    /// the progress, `call` calls a script function (with the player's handle for `onPickUp`, none for
-    /// `onSegment`).
+    /// One update of every radio: `locate` finds a radio's object (nothing: the object is gone, so the radio stops
+    /// its sound and is forgotten), `world` the player and the progress, `call` calls a script function (with the
+    /// player's handle for `onPickUp`, none for `onSegment`).
     /// @orig 0x003ad440 Radio_Update (unknown)
     void update(const std::function<std::optional<std::array<float, 3>>(double object)>& locate,
                 const RadioWorld& world, RadioSound& sound, GameRandom& random,

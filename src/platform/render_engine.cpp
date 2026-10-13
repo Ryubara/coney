@@ -4,8 +4,10 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdio>
 #include <cstring>
 #include <filesystem>
+#include <format>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -17,6 +19,7 @@
 #include <rw.h>
 
 #include "core/assert.h"
+#include "core/window_display.h"
 #include "platform/movie_screen.h"
 #include "platform/sprite_sheets.h"
 #include "platform/texture_lod.h"
@@ -102,6 +105,145 @@ std::optional<std::string> openGlTooOld() {
     return tooOld;
 }
 
+// The rectangle of an SDL one.
+DisplayRect toDisplayRect(const SDL_Rect& rect) { return {rect.x, rect.y, rect.w, rect.h}; }
+
+// The displays SDL lists, in its order (the primary first), with the ids to address them by.
+std::vector<std::pair<SDL_DisplayID, DisplayInfo>> listDisplays() {
+    std::vector<std::pair<SDL_DisplayID, DisplayInfo>> displays;
+    int count = 0;
+    SDL_DisplayID* ids = SDL_GetDisplays(&count);
+    for (int i = 0; ids != nullptr && i < count; ++i) {
+        DisplayInfo info;
+        const char* name = SDL_GetDisplayName(ids[i]);
+        info.name = name != nullptr ? name : "";
+        SDL_Rect rect{};
+        SDL_GetDisplayBounds(ids[i], &rect);
+        info.bounds = toDisplayRect(rect);
+        if (!SDL_GetDisplayUsableBounds(ids[i], &rect)) {
+            rect = SDL_Rect{info.bounds.x, info.bounds.y, info.bounds.width, info.bounds.height};
+        }
+        info.usable = toDisplayRect(rect);
+        displays.emplace_back(ids[i], std::move(info));
+    }
+    SDL_free(ids);
+    return displays;
+}
+
+// Where the display setting comes from (`--window-display`, else CONEY_WINDOW_DISPLAY) and its text; empty when
+// neither is set.
+struct DisplaySetting {
+    std::string_view source;
+    std::string_view value;
+};
+
+// The display setting in force: the option when given, else the environment variable.
+DisplaySetting displaySetting(std::string_view option) {
+    if (!option.empty()) {
+        return {"--window-display", option};
+    }
+    const char* fromEnvironment = SDL_getenv("CONEY_WINDOW_DISPLAY");
+    return {"CONEY_WINDOW_DISPLAY",
+            fromEnvironment != nullptr ? std::string_view(fromEnvironment) : std::string_view()};
+}
+
+// The display the setting names (core/window_display.h); nothing when it is unset or nothing matches. A value that
+// matches nothing is reported once per process on stderr, with the displays there are, and the window then opens
+// where SDL puts it.
+std::optional<SDL_DisplayID> chosenDisplay(std::string_view option) {
+    const auto [source, value] = displaySetting(option);
+    const std::optional<WindowDisplayChoice> choice = parseWindowDisplay(value);
+    if (!choice) {
+        return std::nullopt;
+    }
+    const std::vector<std::pair<SDL_DisplayID, DisplayInfo>> displays = listDisplays();
+    std::vector<DisplayInfo> infos;
+    infos.reserve(displays.size());
+    for (const auto& [id, info] : displays) {
+        infos.push_back(info);
+    }
+    if (const std::optional<std::size_t> index = pickDisplay(*choice, infos)) {
+        return displays[*index].first;
+    }
+    static bool warned = false;
+    if (!warned) {
+        warned = true;
+        std::string known;
+        for (std::size_t i = 0; i < infos.size(); ++i) {
+            known += std::format("{}{} \"{}\" {}x{}", i == 0 ? "" : ", ", i + 1, infos[i].name, infos[i].bounds.width,
+                                 infos[i].bounds.height);
+        }
+        std::fprintf(stderr,
+                     "coney: warning: %.*s \"%.*s\" matches no display (there are: %s); the window opens where "
+                     "the system puts it\n",
+                     static_cast<int>(source.size()), source.data(), static_cast<int>(value.size()), value.data(),
+                     known.c_str());
+    }
+    return std::nullopt;
+}
+
+// Centres `window` on `display`'s usable area, its frame included, shrinking it to fit when it is larger. The size is
+// the client area's, so the borders the window system adds round it are taken off the area first.
+void placeOnDisplay(SDL_Window* window, SDL_DisplayID display) {
+    SDL_Rect usable{};
+    if (!SDL_GetDisplayUsableBounds(display, &usable)) {
+        return;
+    }
+    int top = 0;
+    int left = 0;
+    int bottom = 0;
+    int right = 0;
+    if (!SDL_GetWindowBordersSize(window, &top, &left, &bottom, &right)) {
+        top = left = bottom = right = 0; // a window system that cannot say: the client area alone
+    }
+    const DisplayRect area{usable.x + left, usable.y + top, usable.w - left - right, usable.h - top - bottom};
+    int width = 0;
+    int height = 0;
+    SDL_GetWindowSize(window, &width, &height);
+    if (width <= 0 || height <= 0) {
+        return;
+    }
+    const DisplayRect place = placeWindow(area, width, height);
+    if (place.width != width || place.height != height) {
+        SDL_SetWindowSize(window, place.width, place.height);
+    }
+    SDL_SetWindowPosition(window, place.x, place.y);
+    SDL_SyncWindow(window); // window systems that move windows later (X11) have done it before the size is read
+    // A display with another scale changes the client area on the way: Windows rescales the window as it crosses
+    // (measured: 640x448 made on a 150 % display came out 646x465 on a 100 % one). The frame is the client area, so
+    // a grown one letterboxes the logical screen and no longer matches `--render-size`; set the size again, and
+    // centre it again at that size.
+    int placedWidth = 0;
+    int placedHeight = 0;
+    SDL_GetWindowSize(window, &placedWidth, &placedHeight);
+    if (placedWidth != place.width || placedHeight != place.height) {
+        SDL_SetWindowSize(window, place.width, place.height);
+        SDL_SetWindowPosition(window, place.x, place.y);
+        SDL_SyncWindow(window);
+    }
+}
+
+// What the event watch below needs: the display, and whether the window is already on it.
+struct DisplayWatch {
+    SDL_DisplayID display = 0;
+    bool placed = false;
+};
+
+// Moves librw's window to its display the moment SDL shows it. librw's GL3 device makes and shows the window inside
+// Engine::start with SDL's default position (the primary display), so this watch, which SDL calls as it sends the
+// window's SHOWN event, is the earliest point Coney can reach it: before its OpenGL context exists and before any
+// frame is drawn. The OpenGL check's own hidden window is never shown, so it is never moved.
+bool SDLCALL placeWhenShown(void* userdata, SDL_Event* event) {
+    auto* watch = static_cast<DisplayWatch*>(userdata);
+    if (!watch->placed && event->type == SDL_EVENT_WINDOW_SHOWN) {
+        if (SDL_Window* window = SDL_GetWindowFromID(event->window.windowID); window != nullptr) {
+            watch->placed = true;
+            placeOnDisplay(window, watch->display);
+        }
+    }
+    return true;
+}
+
 } // namespace
 
 RenderEngine::RenderEngine(RenderBackend backend, const WindowDesc& desc)
@@ -141,8 +283,11 @@ std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBa
     // it ignores its own failures and goes on to use a display list it never made; holding our own reference also
     // keeps SDL alive until librw has destroyed its window.
     if (openGl) {
-        // Before librw makes and shows the window, so a run nobody is playing never takes the keyboard focus.
-        setWindowActivation(desc.activate && !desc.hidden);
+        // Before librw makes and shows the window, so a run nobody is playing never takes the keyboard focus. A run
+        // placed on a display of its own (--window-display, CONEY_WINDOW_DISPLAY) is one an agent or tool started, so
+        // it never takes it either, on this show or a later one.
+        const bool placed = parseWindowDisplay(displaySetting(desc.display).value).has_value();
+        setWindowActivation(desc.activate && !desc.hidden && !placed);
         if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
             return startFailure("SDL_InitSubSystem(SDL_INIT_VIDEO)", true);
         }
@@ -182,7 +327,32 @@ std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBa
     // For the NULL backend, put librw's NULL device in that slot for the duration of the copy, then put GL3 back: the
     // engine then runs on the NULL device until it closes, and SDL's video is never started.
     bool opened = false;
+    // `--window-display` / CONEY_WINDOW_DISPLAY: librw's GL3 device makes and shows the window in Engine::start, so
+    // the watch covers open and start, and the window goes to its display as it is shown (placeWhenShown), or right
+    // after start on a window system that never sent the event. The guard removes the watch on every way out.
+    DisplayWatch displayWatch;
+    std::optional<SDL_DisplayID> display;
+    struct WatchGuard {
+        DisplayWatch* watch = nullptr;
+        WatchGuard() = default;
+        WatchGuard(const WatchGuard&) = delete;
+        WatchGuard& operator=(const WatchGuard&) = delete;
+        WatchGuard(WatchGuard&&) = delete;
+        WatchGuard& operator=(WatchGuard&&) = delete;
+        ~WatchGuard() {
+            if (watch != nullptr) {
+                SDL_RemoveEventWatch(placeWhenShown, watch);
+            }
+        }
+    } watchGuard;
     if (openGl) {
+        display = chosenDisplay(desc.display);
+        if (display) {
+            displayWatch.display = *display;
+            if (SDL_AddEventWatch(placeWhenShown, &displayWatch)) {
+                watchGuard.watch = &displayWatch;
+            }
+        }
         opened = rw::Engine::open(&params) != 0;
     } else {
         const rw::Device gl3Device = rw::gl3::renderdevice;
@@ -205,6 +375,9 @@ std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBa
     engine->m_librwStarted = true;
     if (!openGl) {
         return engine;
+    }
+    if (display && !displayWatch.placed && engine->m_sdlWindow != nullptr) {
+        placeOnDisplay(static_cast<SDL_Window*>(engine->m_sdlWindow), *display);
     }
 
     // Engine::start succeeds even when the GL3 device could not make a window or a context; the only sign is that it

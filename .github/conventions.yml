@@ -119,6 +119,17 @@ pull_requests:
       choices: ["a person", "an AI", "an AI, edited by a person", "a person, with AI help"]
       no_ai: "a person"
     model: {label: "Model:", none: "n/a"}
+  # The release gate on the pr-reviewer agent's verdict (`coney-tools repo review`, `repo check-review`). The agent
+  # (.claude/agents/<agent>.md) writes both files next to the description file. The verdict binds to what it
+  # reviewed: the branch tip, the description's hash and each local image's hash, so a new commit, an edit or a
+  # replaced picture makes it stale and the review runs again. `sha256-lf`: SHA-256 of the description file's UTF-8
+  # text with a leading BOM dropped and CRLF or CR turned into LF. Two byte-identical images are refused outright.
+  review:
+    agent: pr-reviewer
+    verdict_file: REVIEW.json
+    report_file: REVIEW.md
+    body_hash: sha256-lf
+    identical_images: refused
   stacked:
     depends_line: "Depends on #N"                # required when the base is not the default branch
     merge_into_base: false                       # never merged into a non-default base: retarget to main first
@@ -264,6 +275,58 @@ hygiene:
   # text) and "code" otherwise (build-ok, python-ok and the jobs under them).
   pr_health:
     lint_checks: [title, docs, body, format, mkdocs, markdownlint, actionlint]
+    # `coney-tools repo pr-health --rerun` restarts a failed required check only when the failure is stale, never when
+    # the code is at fault: (1) title_check / body_check failed but the pull request's current title / description passes
+    # `repo check-title` / `check-body` (it was fixed after the run); (2) the check's conclusion is one of `conclusions`,
+    # or its log matches one of `log_patterns`, so the runner or GitHub failed, not the code.
+    rerun:
+      max_per_sha: 2                             # reruns on one head commit, per workflow; a flaky job cannot loop
+      title_check: title
+      body_check: body
+      conclusions: [CANCELLED, STARTUP_FAILURE, TIMED_OUT]
+      log_patterns:                              # regular expressions, case-insensitive, searched in the job's log
+        - 'The runner has received a shutdown signal'
+        - 'lost communication with the server'
+        - 'Received request to deprovision'
+        - 'The job was not acquired by Runner'
+        - 'Failed to download action'
+        - 'RPC failed; HTTP 5\d\d'
+        - 'Could not resolve host'
+        - 'Connection reset by peer'
+        - 'TLS handshake timeout'
+  # The logs and text files attached to an issue, which the workflow downloads and scans on every issue event (and the
+  # sweep for every open issue): docs/guides/issues.md#attachments. Only links starting with `link` and ending with one
+  # of `extensions` are fetched, at most `download_kb` each, held in memory and never stored or run. A finding names the
+  # file and line numbers only, never the text it matched. The patterns are Python regular expressions (single-quoted,
+  # so a backslash is literal); a line is matched in its first 2000 characters.
+  attachments:
+    link: "https://github.com/user-attachments/files/"
+    extensions: [".txt", ".log"]
+    max_files: 5                                 # per issue
+    max_per_run: 50                              # downloads in one run (the sweep)
+    download_kb: 2048                            # the rest of a bigger file is never downloaded
+    timeout_seconds: 20                          # per download
+    large_kb: 512                                # a bigger log is reported as possible game data (as paths.large_file_kb)
+    control_percent: 1                           # more control characters than this (or any NUL): not text
+    line_threshold: 5                            # this many script or game-text lines make a finding
+    patterns:
+      # Personal information: a user's home folder (a path written from ~ is fine) and email addresses.
+      user_folder:
+        - '(?i)\b[a-z]:[\\/]+(?:users|documents and settings)[\\/]+(?!(?:public|default|default user|all users)(?:[\\/]|$))[^\\/\s:*?"<>|]+'
+        - '(?<![\w.~])/home/[^/\s:*?"<>|]+'
+        - '(?<![\w.~])/Users/(?!Shared(?:/|$))[^/\s:*?"<>|]+'
+      email:
+        - '(?i)\b[a-z0-9._%+-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}\b'
+      # Possible game data: lines of Lua script source (docs/research/scripting.md) ...
+      script_source:
+        - '^\s*(?:local\s+)?function\s+[\w.:]+\s*\('
+        - '^\s*local\s+[A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*\s*='
+        - '^\s*(?:if|elseif|while)\s.*\s(?:then|do)\s*$'
+        - '^\s*end\s*[,)]?\s*$'
+      # ... and lines of the game's data files: a placed-objects line, a position then a rotation
+      # (docs/research/objects.md#objs-file).
+      game_text:
+        - '\{\s*-?[\d.]+\s*,\s*-?[\d.]+\s*,\s*-?[\d.]+\s*\}\s*,\s*\{\s*-?[\d.]+\s*,\s*-?[\d.]+\s*,\s*-?[\d.]+\s*,\s*-?[\d.]+\s*\}'
   # The audit's checks (`coney-tools repo audit`; docs/guides/repo-conventions.md#audit-checks). scope: where it runs
   # (files = the checkout, github = issues, pull requests, labels and settings, local = the workspace). severity: error
   # fails the audit (exit code 1), warn is only reported. fix: auto = a coney-tools command fixes it, skill = the
@@ -385,6 +448,18 @@ hygiene:
       fix: skill
       keys: [issues.provenance]
       summary: "an issue that an older pull request's Remaining list points at has no From: line"
+    issue.attachment-data:
+      scope: github
+      severity: warn
+      fix: skill
+      keys: [hygiene.attachments]
+      summary: "a log attached to an open issue may hold game data: not text, too large, or lines of script source or game text"
+    issue.attachment-personal:
+      scope: github
+      severity: warn
+      fix: skill
+      keys: [hygiene.attachments.patterns]
+      summary: "a log attached to an open issue shows personal information: a user folder path or an email address"
     issue.triage-age:
       scope: github
       severity: warn
@@ -504,7 +579,9 @@ hygiene:
 workspace:
   worktrees: "../../worktrees/coney/<branch>/"
   scratch: "../../scratch/<branch>/"
-  disk_min_free_gb: 30
+  disk_min_free_gb: 30                           # under it, `workspace clean` deletes idle build/ folders
+  disk_margin_gb: 10                             # ... until free space reaches disk_min_free_gb + this
+  build_idle_hours: 4                            # a build/ folder unused this long is deleted (cheap to rebuild)
   busy_marker: ".coney-busy"                     # a worktree holding it is never cleaned
   remove_worktree_when_merged: true
   # In-game video clips for issues and pull requests (`coney-tools clips`; docs/guides/testing.md#clips): they live
