@@ -372,9 +372,46 @@ the goal's turn steers and it arrives (`repo:tests/ai/move_action_test.cpp`, and
 `repo:tests/platform/disc_hub_workout_test.cpp`). The headings were not the cause: the goal and
 `TeleportToFlag` both read a flag's degrees as Coney's heading (the turn θ about `+z`, [Flags](flags.md#position)).
 
-What Coney has besides: the `HuWorkout` binding with stand-ins
-([Characters](characters.md#coneys-implementation)): a start within 1.5 m, a fixed 1.5 s repetition at an effort
-of 1, no clips, the effort decaying by the decay table; `CfgWorkoutParams` keeps the 1.8 as a float.
+**The cause, found and fixed** (Coney, 2026-10-11): `DeactivateWarchief` sets the player's brain dead, so the pad is
+given up and the goal runs, but the player stands in the fight stance locked on a foe (the bag, or any fighter near),
+and Coney's fight-stance walk (`Human::combatWalk`) turned every human it holds to face the lock target each update,
+whatever the brain asked. The turn action was overridden on every update; once it gave up, the goal queued another.
+In the original a human no pad drives (per-player `+0x1b` = 0) is moved by `Human_UpdateControl`, which turns it
+toward the brain's heading: by the fight stance's AI word (24° an update) when asked to move, with a turn on the spot
+when stopped more than 15° off, not at all within 15° ([AI: Speed control and Turning](ai.md#ai-turn)). Coney now
+runs a player whose pad a script took through the AI's stance control (`Human::aiCombatWalk`, the turn on the spot at
+the standing step, as for every AI, a stand-in for the turn clips; [AI: Facing the target](ai.md#fight-facing)), so
+the goal's turn steers and it arrives (`repo:tests/ai/move_action_test.cpp`, and on the disc
+`repo:tests/platform/disc_hub_workout_test.cpp`). The headings were not the cause: the goal and
+`TeleportToFlag` both read a flag's degrees as Coney's heading (the turn θ about `+z`, [Flags](flags.md#position)).
+
+**The cycle games in Coney** (2026-10-11): `HuWorkout` follows [The engine side](#engine). A workout begins once all
+five clips load (the level's clip source, by the names the script gives) and, for the player who is his own target,
+at any distance; the enter clip plays, then a gait blend over the slow, mid and fast clips at 16 units a second whose
+target and rate `human::WorkoutEffort` sets each update from the station's `CfgWorkoutParams` tables (the pumps, the
+hold counter, the 0.03 decay and its 0.3 share below a third, the end on triangle or when worn down). Each wrap of the
+blend's leading clip calls the repetition callback; the end clears the flag, calls the end callback and plays the exit
+clip. `repo:tests/human/workout_test.cpp` checks the rules (the run-down ends 58-68 updates into the loop, the
+runtime's 63) and `repo:tests/platform/disc_hub_workout_test.cpp` plays each cycle station through the pad: five
+repetitions at a press every 4 updates, each gap within 3 updates of the runtime's or a little below (Coney's 33-34
+at the chin-ups, 28 at the push-ups and 36 at the sit-ups against the runtime's 37, 30-31 and 39-40: an open question
+below), the rank's unlock and the prompt back with `Rank: 1/10`; at the chin-ups also a
+run-down with no repetition ending 58-68 updates into the loop, and triangle ending the loop on the update it is
+pressed. **Stand-ins and choices**:
+
+- Another human's equipment is reached within 1.5 m (the start clip's attack-table reach is not read).
+- The blend starts at value 0.
+- `Human_AlignToObject` turns a human only toward another target.
+- Coney applies a script's teleport of player 1 at the end of the frame, after the workout may have begun, so every
+  spawn of a human that is working out keeps its clips.
+- The update runs from the loop's first update on, whether or not the loop is on top: `Human_EndWorkout` stops the
+  blend only if it is on top, so a clip played over it (a hit reaction, a script's clip) leaves the workout running;
+  meanwhile *v* is the loop's last value and only the effort, the pumps and the end run, so triangle still ends it
+  (inferred: the code that skips the update during the enter clip is not on this page).
+- Not done: the start's push sphere off (Coney's bodies push nothing aside yet) and the held flag `0x2000` on the
+  start's chain and on the exit clip (`Human_PlayActionClip(h, 692, 0x2000, 0)`; in Coney's task flags `0x2000` is
+  the duck's counter phase, so the bit's meaning here needs reading first); the exit clip fades in at the combat
+  fade.
 
 ## Notes for implementers
 
@@ -383,8 +420,9 @@ of 1, no clips, the effort decaying by the decay table; `CfgWorkoutParams` keeps
 - **All**: make `GoalMoveToFlag` with `faceFlag` arrive for the player (done, [Coney](#coney)); keep `TeleportToFlag`
   exact; `HuWorkout`'s target is the player himself, so drop the 1.5 m reach stand-in (the reach test passes at 0).
   `CfgWorkoutParams`' fourth argument is a flag (non-zero → 1.0), so the timing factor is always 1.
-- **Chin-ups, push-ups, sit-ups** (`Human_UpdateWorkout` as in [The engine side](#engine)): play the enter clip 691
-  then a gait blend over 693-695 (speed 16 units/s, unrounded target 3 × effort − 1, or 0 below an effort of 1/3);
+- **Chin-ups, push-ups, sit-ups** (done, [Coney](#coney); `Human_UpdateWorkout` as in [The engine side](#engine)):
+  play the enter clip 691 then a gait blend over 693-695 (speed 16 units/s, unrounded target 3 × effort − 1, or 0
+  below an effort of 1/3);
   effort starts at 1 (the script's 1.5 is capped) with a hold counter of 6; a cross press sets the counter to
   `hold[L]` and adds `gain[L]` on that many updates; otherwise decay 0.03 (× 0.3 below 1/3); the rate is 1, or
   3 × effort + 2 × decay once the blend is at 0; end on triangle or when that rate fell to 3 × decay; a repetition is
@@ -420,6 +458,12 @@ walk to each station with the stick at a partial deflection, then:
    assert `UM_Unlock(95, 1, 9)` (or 10) and the power (stamina) maximum raised.
 
 ## Open questions
+
+- Why Coney's repetitions, pumped every 4 updates, come about a tenth sooner than the original's (33-34, 28 and 36
+  updates against 37, 30-31 and 39-40 at the chin-ups, push-ups and sit-ups). The ratio is close to 0.9, the rate
+  `CfgAnimSpeeds` gives clips with range flag `0x2000` ([Animation: Playback rate](formats/animation.md#playback-rate)),
+  so the loop may play at that rate (speculative); a runtime read of the blend task's rate `+0x0c` during a workout
+  would settle it.
 
 - The slow clip of the sit-ups (not reached at runtime) and the enter and exit clips' lengths: read them from the clip
   files.

@@ -348,6 +348,10 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     /// then the idle; holds kScriptedClipHeld as playClip() does. Nothing when the source has no such clip.
     [[nodiscard]] std::optional<std::uint32_t> playNamedClip(Brain& human, int animId, std::string_view name,
                                                              float fade) override;
+    /// The clip source's clip `name`; null when it has none.
+    [[nodiscard]] const anim::AnimClip* namedClip(std::string_view name) const {
+        return m_clipSource ? m_clipSource(name) : nullptr;
+    }
     /// Whether the clip source answers `name`.
     [[nodiscard]] bool clipAvailable(std::string_view name) const override {
         return m_clipSource && m_clipSource(name) != nullptr;

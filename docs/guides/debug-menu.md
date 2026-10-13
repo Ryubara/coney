@@ -131,10 +131,11 @@ The Display page's *Debug UI scale* overrides the choice: *Auto* (the rule above
 | Cheats | the 27 retail cheat codes, each sent to the script's cheat callback |
 | Levels | the levels to play (or the level table's, in the front end), a name to type, and the sandbox layouts |
 | Missions | the story's 18 missions in order (number, title, level, checkpoints); choose a mission, then a checkpoint, to start it there |
+| Movies | the disc's [movies](#movies) with what plays each; choose one to watch it full screen with its captions, then carry on where you were |
 | Player | where the player is and how it moves (plotted), his character type and a change of it, freezing him, the [noclip](#noclip) and its hotkey, teleports |
 | Camera | the follow camera's eye, target and distance (plotted), a reset behind the player, the free camera, its values |
 | Spawner | objects put in front of the player in a sandbox or a level: a crate, a fence, a wall, a ramp, stairs, a pillar, a ball |
-| AI fighters | AI humans that fight the player: spawn one in front of him, the engaging toggle, their state, clear them |
+| AI fighters | AI humans that fight the player: a model picker (every human model, or Random) and an amount, spawn them in front of him, the engaging toggle, their state, clear them |
 | HUD | the [in-game HUD](../research/hud.md)'s parts on and off, player 1's rage, score, money and items set (-1 gives the value back), an objective, a hint and an announcement fired |
 | Debug draw | lines in the scene: collision near the player (plain or by wall class), the player's heading and velocity, the camera, places, every human's collision shapes, strike shapes and contacts |
 | Entity inspector | pick a human or object (nearest, next, looked at, from a list), mark it in the scene and watch everything Coney knows of it |
@@ -197,14 +198,57 @@ have yet (before the preloads at the legal screen fill it) is refused and the pa
 `src/debug/story_missions.cpp`, which a Python test checks against `research/missions.yaml` and the [levels
 list](../references/levels.md). The hub (`level95`) between the missions is not listed: the Levels page loads it.
 
+### Movies {#movies}
+
+The Movies page plays any of the disc's Bink movies over whatever the game is doing, and then gives the game back
+exactly as it was. It is **Coney's own path**, debug tooling and not a mechanic: the original plays a movie only from
+its own callers (start-up, a level's intro and outro, the front end's attract movie and EXTRAS,
+[Movies](../research/movies.md#callers)), never on request. Nothing changes while you do not use it.
+
+- **The list** is the disc's own `PSS` folder: every `PSS/<NAME>.BIK`, as `coney-tools movies list` reads it, so
+  Coney keeps no copy of it (`discMovies()`, `src/gamemodes/movie_player.h`). The start-up movies come first in the
+  order the game plays them, then the others by name (`TRAILER`), then the levels' by level number. Each is tagged
+  with what plays it in the game, read from its name: `start-up`, `level9 intro` (`L9_IN`), `level31 outro`
+  (`L31_OUT`). Without a disc, or before the game session runs (a sandbox or a viewer), the page says *No movies*.
+- **Captions always**, on by default, shows a movie's ordinary captions whatever the game's subtitle option says
+  (an English game has it off, so its movies show none). Off, the option decides, as for the game's own movies.
+- **Choosing a movie** closes the menu and plays the movie at the start of the next frame, full screen on the movie
+  player the game uses (`movies::MovieMode`): its frames, its sound at 80 %, its captions. Any button skips it, as
+  any button skips the game's own movies; `LOGO`, which the game plays unskippable, plays to its end. The button that
+  chose it is held back from the movie until you let go of it, as every press that closes the menu is.
+- **While it plays the game is held**: the movie player sits on top of the mode stack, so the mode beneath (play, the
+  pause menu, the front end) runs no step, its scripts, timers and scenes stand still (the game clock stops, as under
+  any movie) and the HUD is hidden as under the pause menu. Unlike the game's own movies, which stop the music and
+  every sound first, a debug movie **holds** the game's sound where it is, as the pause menu does, and gives it back
+  when it ends; if something holds it already (the pause menu under the movie), it is left held.
+  `--skip-movies` skips only the game's own movies: one chosen here plays anyway.
+- **When it ends or is skipped** the movie player leaves the stack and the mode beneath resumes, as after the pause
+  menu: the same mode, the same level state and checkpoint, the player and camera where they were, the pad going to
+  the game as before. **The menu stays closed** (Coney's choice): it had to close for the movie's skip to reach the
+  movie, and you come back to the game as after any movie. L3 + R3 opens it again on the Movies page with the cursor
+  on the movie you watched, for the next one.
+
+A movie cannot be chosen while another plays. A disc test (`tests/platform/disc_debug_movies_test.cpp`) drives the
+page through the pad in `level99`, plays `PLOGO` to its end and skips `L99_IN`, and checks that the mode stack, the
+player, the camera, the level, the checkpoint, the HUD and the sound engine's pause are the same before and after.
+
 **Player, Camera, Spawner and AI fighters** act on the mode the player plays in (`--play-level`, or a sandbox from
 Levels), through `debug::PlayControls` (`src/debug/play_controls.h`), which the play mode implements; elsewhere they say
 there is no player. A teleport drops the player onto the ground below the spot and places the camera behind him again.
 Frozen, the player ignores the pad. *Reset behind player* places the follow camera again with the Follow camera
 tunables, so the leash, pitch and look-at height apply at once. The free camera flies with pad 1 as the world viewer's
-does, while the player stands still and the scenery streams round the free camera. *AI fighters* spawns a fighter
+does, while the player stands still and the scenery streams round the free camera. *AI fighters* spawns fighters
 ([Sandbox](sandbox.md#ai-fighters)) the chosen distance in front of the player, facing him, in a sandbox or a level;
 *Engaging* off keeps idle fighters from taking him on.
+
+*Spawn fighters* makes *Amount* of them (1 to 50) in one click, in rows of five centred in front of the player, each
+row 1.2 m further out. *Model* picks what they look and move as: any human model the scene's character types name (the
+list *Change character* below draws on, sorted, with its distinct models) or *Random*, which draws a model for each
+fighter from the whole list (a generator of the menu's own with a fixed seed, so it never moves the game's random
+numbers and a run with the same clicks spawns the same models). A model is loaded from the disc the first time it is
+used and kept, so a first click with many models stalls briefly. Without a list (a sandbox without a disc) only
+*Random* is offered and every fighter is the scene's own character. A fighter keeps its model when *Change character*
+makes the fighters again.
 
 **Spawner.** The page adds sandbox primitives (Coney's own sizes) the chosen distance in front of the player, facing his
 way, in a sandbox or a level; *Clear spawned* removes them all. The crate and the wall carry flag bit 7 (climbable by

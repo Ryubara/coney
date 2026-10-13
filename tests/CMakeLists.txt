@@ -97,6 +97,7 @@ add_executable(coney_tests
     hud/mug_meter_test.cpp
     hud/war_command_display_test.cpp
     platform/disc_change_character_test.cpp
+    platform/disc_fighter_models_test.cpp
     platform/disc_inspector_freeze_test.cpp
     platform/disc_sprite_sheets_test.cpp
     platform/disc_rumble_test.cpp
@@ -116,6 +117,7 @@ add_executable(coney_tests
     platform/disc_level99_scene_speech_test.cpp
     platform/disc_level99_hud_test.cpp
     platform/disc_level99_story_sounds_test.cpp
+    platform/disc_level99_power_lesson_test.cpp
     platform/disc_level99_scene_grab_test.cpp
     platform/disc_level99_snaps_test.cpp
     platform/disc_level99_course_test.cpp
@@ -149,6 +151,7 @@ add_executable(coney_tests
     platform/disc_world_test.cpp
     platform/disc_level_test.cpp
     platform/disc_movies_test.cpp
+    platform/disc_debug_movies_test.cpp
     platform/disc_play_frame_rate_test.cpp
     platform/disc_world_streaming_test.cpp
     platform/clip_recorder_test.cpp
@@ -274,6 +277,7 @@ target_sources(coney_tests PRIVATE
     camera/follow_script_test.cpp
     human/disc_player_test.cpp
     human/human_test.cpp
+    human/workout_test.cpp
     human/human_revive_test.cpp
     human/way_clear_test.cpp
     human/flight_test.cpp
@@ -346,10 +350,12 @@ target_compile_definitions(coney_tests PRIVATE CONEY_ASSETS_DIR="${PROJECT_SOURC
 target_sources(coney_tests PRIVATE
     debug/audio_page_test.cpp
     debug/debug_session_test.cpp
+    debug/fighter_spawn_test.cpp
     debug/entity_inspector_test.cpp
     debug/human_shapes_test.cpp
     debug/input_gate_test.cpp
     debug/menu_navigator_test.cpp
+    debug/movies_page_test.cpp
     debug/native_caller_test.cpp
     debug/pad_menu_input_test.cpp
     debug/play_pages_test.cpp

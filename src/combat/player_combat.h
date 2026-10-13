@@ -116,7 +116,7 @@ class PlayerCombat {
     void startTheft(TheftKind kind, std::uint64_t nowMs, float stageTurns = 1.0F, float mashFactor = 1.5F);
     /// Ends a theft minigame from outside, with no result (`MiniGame_Abort`: a hit on the player, the cuffed human
     /// gone): back to free.
-    /// @orig 0x002325e0 MiniGame_Abort (unknown)
+    /// @orig 0x002325e0 Human_ResetForMode (unknown)
     void abortTheft();
     /// How the last theft minigame ended: GameResult::Running while one runs or none has ended; an aborted one leaves
     /// it Running.

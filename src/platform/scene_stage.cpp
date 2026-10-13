@@ -201,6 +201,12 @@ bool SceneStage::humanReady(double human) {
 
 bool SceneStage::humanFree(double human) { return !m_isFree || m_isFree(human); }
 
+void SceneStage::resetHumanForJoin(double human) {
+    if (m_onJoinReset) {
+        m_onJoinReset(human);
+    }
+}
+
 void SceneStage::humanEnterScene(double /*human*/, std::size_t /*role*/) {}
 
 void SceneStage::humanPose(double human, const scenes::RoleFrame& frame) {

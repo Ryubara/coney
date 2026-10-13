@@ -75,9 +75,10 @@ void PlayLevelMode::stepWorldObjects(world::Vec3 eye, const WorldView& worldView
     view.camera = anim::Vec3{eye.x, -eye.z, eye.y};
     view.drawDistance = m_drawDistance.current();
     view.elapsedMs = elapsedMs;
-    // An object in a hand or a hat on a head is drawn by its holder.
+    // An object in a hand, a hat on a head or a carried prop is drawn by its holder.
     view.inHand = [this](double handle) {
-        return m_wornHats.contains(handle) || (m_pickups != nullptr && m_pickups->inHand(handle));
+        return m_wornHats.contains(handle) || m_carriedProps.contains(handle) ||
+               (m_pickups != nullptr && m_pickups->inHand(handle));
     };
     m_objectTasks.step(*m_records, *m_objectTypes, view);
     // The glints, at 60 ticks a second of the step's game time.
@@ -296,7 +297,7 @@ void PlayLevelMode::drawWorldObjects(const human::PlayerSnapshot& snapshot, floa
                         PlacedObjects::Look{.sizeCullExempt = true});
         iconId -= 1.0;
     }
-    drawHats();
+    drawAttachedObjects();
     PlacedObjects::DrawOptions options;
     const world::Vec3 eye = m_lights->scene().pose().position;
     options.camera = anim::Vec3{eye.x, eye.y, eye.z};

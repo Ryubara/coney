@@ -3,8 +3,10 @@
 // Checks against the player's own disc that a grab held when one of `level99`'s tutorial scenes starts leaves no human
 // stuck in it: the level plays as `--play-level level99 --checkpoint 1` plays it, headless, driven through lessons
 // 1-6 by the shared input script (lesson 7's scene is not skipped); then the player grabs a bum (circle tapped whenever
-// he holds no one) until lesson 7's scene `l99_c7` takes him over, and once the scene has ended and given him back no
-// human is grabbing, holding, held or mounted (docs/research/scenes.md#starting, docs/research/combat.md#grabbing). It
+// he holds no one) until lesson 7's scene `l99_c7` takes him over. He still holds the bum of his power move 59 on the
+// update before the scene's play; the play binds them, and each bind resets its human and ends his pair, so as the
+// scene starts and once it has ended and given him back no human is grabbing, holding, held or mounted
+// (docs/research/scenes.md#join-reset, docs/research/combat.md#grabbing). It
 // runs only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only
 // (LEGAL.md).
 
@@ -60,6 +62,9 @@ constexpr std::uint64_t kLessonSixDone = 2240;
 // How long to wait for lesson 7's scene after lesson 6, and for it to end, in frames.
 constexpr std::uint64_t kSceneWait = 3000;
 constexpr std::uint64_t kSceneLength = 3000;
+// At most how many frames the last pair is seen before the cinematic counts as active: the play's binds end it in
+// the play's update, and the scene starts a few updates later.
+constexpr std::uint64_t kBindToStart = 3;
 // Frames after the scene gives the player back before the humans are counted (the let-go clips play out).
 constexpr int kSettle = 90;
 
@@ -213,6 +218,9 @@ TEST_CASE("the disc's level99: a grab held as lesson 7's scene starts leaves no 
     // 2. Until lesson 7's cinematic starts: circle tapped whenever the player holds no one, so a grab is under
     // way as the scene starts.
     GrabCounts atStart;
+    // The last pair seen before the start, and the frame it was seen on.
+    GrabCounts lastPair;
+    std::uint64_t lastPairAt = 0;
     bool started = false;
     std::uint64_t grabs = 0;
     while (pad.nextFrame() < kLessonSixDone + kSceneWait) {
@@ -220,6 +228,10 @@ TEST_CASE("the disc's level99: a grab held as lesson 7's scene starts leaves no 
             started = true;
             atStart = grabCounts(*play());
             break;
+        }
+        if (const GrabCounts now = grabCounts(*play()); now.total() > 0) {
+            lastPair = now;
+            lastPairAt = pad.nextFrame();
         }
         const std::uint64_t at = pad.nextFrame();
         if (play()->player().human().fighter().held() == nullptr && at % 10 == 0) {
@@ -229,11 +241,17 @@ TEST_CASE("the disc's level99: a grab held as lesson 7's scene starts leaves no 
         step();
     }
     const std::uint64_t startedAt = pad.nextFrame();
-    std::printf("  level99 lesson 7's scene started at frame %llu after %llu grabs: %d holding, %d held, %d grabbed\n",
+    std::printf("  level99 lesson 7's scene started at frame %llu after %llu grabs: %d holding, %d held, %d grabbed "
+                "(the last pair at frame %llu: %d holding, %d held, %d grabbed)\n",
                 static_cast<unsigned long long>(startedAt), static_cast<unsigned long long>(grabs), atStart.holding,
-                atStart.held, atStart.grabbed);
+                atStart.held, atStart.grabbed, static_cast<unsigned long long>(lastPairAt), lastPair.holding,
+                lastPair.held, lastPair.grabbed);
     REQUIRE(started);
-    CHECK(atStart.holding + atStart.held > 0);
+    // A pair (59's) was held up to the play's update, so the binds had one to end.
+    CHECK(lastPair.total() > 0);
+    CHECK(lastPairAt + kBindToStart >= startedAt);
+    // The play's binds broke every pair before its start (docs/research/scenes.md#join-reset).
+    CHECK(atStart.total() == 0);
 
     // 3. The cinematic plays and ends; then the humans settle.
     while (pad.nextFrame() < startedAt + kSceneLength && sceneSystem->cinematicActive()) {

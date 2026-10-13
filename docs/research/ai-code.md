@@ -442,7 +442,7 @@ How a brain hears events and passes calls for help on; see [AI humans: events](a
 | `0x00291728` | `Brain_OnDangerNear` | helper | away from trains: a danger with a point pushes a flee (unless goal 5); without one a free non-player AI avoids it for 3 s (`Goal_AvoidEnemies` 14 m, 7 m) | confirmed (code) |
 | `0x00291960` | `Brain_OnViolenceSeen` | helper | no goal `0x9a`: a free AI with threat response sides in a fight it sees (`Brain_PickSideInFight`); a busy Warrior near it looks on and may taunt (10 %); else fights and calls help; with goal `0x9a` pushes a watch goal (`0x002d84e0`) | confirmed (code) |
 | `0x00291d08` | `Brain_CallForHelp` | helper | unless in shadow mode, a 5 m help call (`Gang_BroadcastHelpCall`) | confirmed (code) |
-| `0x00292158` | `Brain_TryPatternBlock` | helper | when the attacker's pattern (`+0x5d0`) reaches the human's block threshold and he is in a fight goal: a block (`Goal_TryBlock`), ending a stun, command 4 | confirmed (code) |
+| `0x00292158` | `Brain_TryPatternBlock` | helper | when the attacker's pattern (`+0x5d0`) reaches the human's block threshold and he is in a fight goal: a block (`Goal_TryBlock`), ending a stun, command 4; step by step: [AI plan](ai-reimpl.md#pattern-block) | confirmed (code) |
 | `0x002935d8` | `Brain_IsInHearRange` | helper | whether an event's distance is within the hearing radius (`+0x134`; `+0x138` for event 20) | confirmed (code) |
 | `0x00293640` | `Gang_BroadcastHelpCall` | helper | event `0x14` from the caller to every human within min(range, his `+0x138`), not only the gang; record `+0x00` aggressor, `+0x0c` the new-enemy flag, `+0x24` the caller ([Help calls](ai.md#help-calls)) | confirmed (code) |
 
@@ -720,8 +720,8 @@ Every function of the classes, and the helpers among them:
 | --- | --- | --- | --- | --- |
 | `0x002f9e48` | `Action_Update` | base Update | counts the start delay down (−1 = a random 0-500 ms) against the brain's last update time, calls Start once, then the class's Update | confirmed (code) |
 | `0x002f9f48` | `FidgetAction_Init` | `PlayFidget` init | fidget kind, line, delay | confirmed (code) |
-| `0x002f9f78` | `FidgetAction_Start` | `PlayFidget` Start | done for a dog (class 221), a brain of kind 6, or without a fidget clip (`0x00225f58`) unless holding a kind-11 object; says the line (1.5 × louder when the target is a player), plays the fidget (`0x00231ac8`) | confirmed (code) |
-| `0x002fa0e0` | `FidgetAction_Abort` | `PlayFidget` Abort | refused for a Warrior whose crew is following a free chief who has no enemies around (command neither 0, 4 nor 5); else stops the fidget (`0x00231b60`) | confirmed (code) |
+| `0x002f9f78` | `FidgetAction_Start` | `PlayFidget` Start | done for a cop brain, a dog (class 221), a class whose `+0x11b` is 6, or when not free to fidget (`0x00225f58`) unless holding a type-11 object; says the line (1.5 × louder when the target is a player), plays the fidget (`0x00231ac8`); step by step: [AI plan](ai-reimpl.md#fidget-action) | confirmed (code) |
+| `0x002fa0e0` | `FidgetAction_Abort` | `PlayFidget` Abort | when cleared, refused for an idle Warrior whose crew is following a free chief who has no enemies around (command neither 0, 4 nor 5); else stops the fidget (`0x00231b60`); [AI plan](ai-reimpl.md#fidget-action) | confirmed (code) |
 | `0x002fa1e0` | `FidgetAction_Update` | `PlayFidget` Update | done once the fidget's flags clear (`0x00228520`) | confirmed (code) |
 | `0x002fa220` | `ParlayStartAction_Init` | `ParlayStart` init | a deadline | confirmed (code) |
 | `0x002fa270` | `ParlayStartAction_Update` | `ParlayStart` Update | with the deadline passed or none, waits for pad 0's button `0x10`; writes game state `+0x412` = 1 (pressed) or 3 (timed out) | confirmed (code); the parley meaning inferred from the class name |
@@ -751,8 +751,8 @@ Every function of the classes, and the helpers among them:
 | `0x002fb050` | `PickUpItemAction_Abort` | `PickUpItem` Abort | refused while the pick-up runs (`0x00228408`); else clears the target | confirmed (code) |
 | `0x002fb0a8` | `PickUpItemAction_Update` | `PickUpItem` Update | waits while the pick-up runs | confirmed (code) |
 | `0x002fb0f0` | `TauntAction_Init` | `Taunt` init | kind, speech line, delay | confirmed (code) |
-| `0x002fb128` | `TauntAction_Start` | `Taunt` Start | done for a brain of kind 6, or without a taunt clip unless kind 13; plays it (`0x0025f028`) and says the line; kinds 0-2 and 8 are gestures, others counted in `0x005112ac` | confirmed (code) |
-| `0x002fb278` | `TauntAction_Abort` | `Taunt` Abort | refused while the taunt plays (`0x00223c30`); else uncounts it | confirmed (code) |
+| `0x002fb128` | `TauntAction_Start` | `Taunt` Start | done for a cop brain or a class whose `+0x11b` is 6; except kind 8 (line only), done when not free to fidget unless the class's `+0x11b` is 13; plays anim `0x253` + kind (`0x0025f028`) and says the line; kinds 0-2 and 8 do not wait for the clip; step by step: [AI plan](ai-reimpl.md#taunt-action) | confirmed (code) |
+| `0x002fb278` | `TauntAction_Abort` | `Taunt` Abort | when cleared, stops the taunt (`0x00231c58`) and is refused while a waiting taunt's flags remain (`0x00223c30`); an accepted abort decrements `0x005112ac`, which nothing raises; [AI plan](ai-reimpl.md#taunt-action) | confirmed (code) |
 | `0x002fb2f0` | `TauntAction_Update` | `Taunt` Update | waits while the taunt plays | confirmed (code) |
 | `0x002fb338` | `UnlockHumanAction_Init` | `UnlockHuman` init | base fields | confirmed (code) |
 | `0x002fb360` | `UnlockHumanAction_Start` | `UnlockHuman` Start | presses command `0x32` | confirmed (code) |

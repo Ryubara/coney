@@ -428,10 +428,14 @@ A recording of the biggest Rumble battle with every human traced on every update
 behaviour statistics (issue #273); the rules it checks, with code evidence, are on [Gang fights](gang-fights.md), and
 which column checks which rule is [What a trace records](gang-fights.md#trace). The columns are the
 `humans` field set of `repo:research/traces/fields.toml` (one row per human per update; [Every
-human](../guides/research-workflow.md#recording-a-trace)); Coney's `--trace-humans` writes the same columns
-([Tracing](../guides/building.md#tracing)), and `coney-tools trace fight-report` compares the two. The
-scenario is `repo:research/traces/scenarios/gang_battle.toml`; the traces are measurements of the game and stay in the
-analyst's scratch folder.
+human](../guides/research-workflow.md#recording-a-trace)); Coney's `--trace-humans` writes many of the same columns
+([Tracing](../guides/building.md#tracing)), and `coney-tools trace fight-report` compares the two by the rules of
+[What the comparison computes](#gang-battle-metrics). Coney does not write yet `phase`, `state`, `stunned`,
+`attacking`, `active`, `space_up`, `space_down`, `fight_updates`, `fight_active`, `g_alert`, `g_teamups`, `g_order`
+and `brain_off`, which those rules use, and writes `g_tactic` as a flag where the original has the tactic's vtable.
+The scenarios are `repo:research/traces/scenarios/gang_battle.toml` and its mirror `gang_battle_swap.toml`
+([The sides swapped](#gang-battle-swap)); the traces are measurements of the game and stay in the analyst's scratch
+folder.
 
 ### The set-up {#gang-battle-setup}
 
@@ -460,27 +464,30 @@ All confirmed (runtime), PCSX2 2.9.94, 2026-10-12:
 
 ### What the matches show {#gang-battle-results}
 
-Confirmed (runtime), the three matches above (offsets 0, 341, 682). Counts are over the fight, from the brains going
-on to `RumbleOver` (every brain off: every goal stack empty from then on), per minute that a fighter stands.
+Confirmed (runtime), five matches with the Furies as side 1: offsets 0, 341 and 682 (2026-10-12) and 100 and 500
+(2026-10-13, with the hooks of `repo:research/traces/patches/gang-battle.toml`). Counts are over the fight, from the
+brains going on to `RumbleOver` (every brain off: every goal stack empty from then on), per minute that a fighter
+stands.
 
-| | Offset 0 | Offset 341 | Offset 682 |
-| --- | --- | --- | --- |
-| Fight length | 108.1 s | 125.5 s | 144.2 s |
-| Winner (fighters out) | Furies (2 out, Orphans 9) | Furies (2, 9) | Furies (8, 9) |
-| Attacks a minute, Furies / Orphans | 13.4 / 19.1 | 16.1 / 21.4 | 18.7 / 21.7 |
-| Blocks a minute (goal 27 started) | 1.9 / 0.2 | 2.8 / 0.2 | 3.8 / 0.1 |
-| Reactions a minute (a reaction goal set) | 1.4 / 4.3 | 2.0 / 3.9 | 2.8 / 3.3 |
-| Target switches a minute | 18.1 / 15.8 | 14.4 / 12.1 | 9.6 / 13.6 |
-| Health losses a minute | 14.9 / 19.8 | 27.4 / 20.6 | 22.9 / 17.5 |
-| Top goal Fight (15), % of standing time | 78 / 95 | 77 / 94 | 71 / 93 |
-| Top goal Blocking (27), % | 8.0 / 0.5 | 10.8 / 1.2 | 16.8 / 0.1 |
-| Distance to the target, median (90 %) | 1.27 (4.38) / 1.16 (4.12) m | 1.10 (3.97) / 1.14 (4.21) m | 1.04 (3.45) / 1.04 (3.44) m |
-| Fighters on one enemy, mean | 1.37 / 1.34 | 1.42 / 1.25 | 1.21 / 1.27 |
+| | Offset 0 | Offset 341 | Offset 682 | Offset 100 | Offset 500 |
+| --- | --- | --- | --- | --- | --- |
+| Fight length | 108.1 s | 125.5 s | 144.2 s | 110.5 s | 123.5 s |
+| Winner (fighters out) | Furies (2 out, Orphans 9) | Furies (2, 9) | Furies (8, 9) | Furies (3, 9) | Furies (3, 9) |
+| Attacks a minute, Furies / Orphans | 13.4 / 19.1 | 16.1 / 21.4 | 18.7 / 21.7 | 19.4 / 22.3 | 14.1 / 21.8 |
+| Blocks a minute (goal 27 started) | 1.9 / 0.2 | 2.8 / 0.2 | 3.8 / 0.1 | 2.5 / 0.4 | 2.7 / 0.0 |
+| Reactions a minute (a reaction goal set) | 1.4 / 4.3 | 2.0 / 3.9 | 2.8 / 3.3 | 1.5 / 4.3 | 1.2 / 4.8 |
+| Target switches a minute | 18.1 / 15.8 | 14.4 / 12.1 | 9.6 / 13.6 | 14.2 / 10.3 | 25.2 / 12.6 |
+| Health losses a minute | 14.9 / 19.8 | 27.4 / 20.6 | 22.9 / 17.5 | 17.3 / 23.2 | 14.4 / 22.5 |
+| Top goal Fight (15), % of standing time | 78 / 95 | 77 / 94 | 71 / 93 | 74 / 90 | 79 / 95 |
+| Top goal Blocking (27), % | 8.0 / 0.5 | 10.8 / 1.2 | 16.8 / 0.1 | 10.2 / 2.3 | 9.6 / 0.0 |
+| Distance to the target, median (90 %) | 1.27 (4.38) / 1.16 (4.12) m | 1.10 (3.97) / 1.14 (4.21) m | 1.04 (3.45) / 1.04 (3.44) m | 1.17 (4.05) / 1.13 (3.61) m | 1.21 (4.48) / 1.07 (4.11) m |
+| Fighters on one enemy, mean | 1.37 / 1.34 | 1.42 / 1.25 | 1.21 / 1.27 | 1.38 / 1.19 | 1.44 / 1.19 |
 
-- **The player's side wins.** The Furies (side 1, `P11`'s gang) won all three, though knocked down more often (24, 31
-  and 36 times against 19, 12 and 14). The Orphans spend
-  93-95 % of their standing time with Fight on top; the Furies 71-78 %, with the Blocking goal on top 8-17 % of the
-  time against the Orphans' 0.1-1.2 %.
+- **The Furies win.** The Furies (side 1, `P11`'s gang) won all five, though knocked down more often (24, 31, 36, 22 and
+  18 times against 19, 12, 14, 6 and 14). The Orphans spend 90-95 % of their standing time with Fight on top; the Furies
+  71-79 %, with the Blocking goal on top 8-17 % of the time against the Orphans' 0-2.3 %. With the sides swapped the
+  Furies still win ([below](#gang-battle-swap)): with these two gangs, it is the gang, not the side (one pair of gangs,
+  five matches one way and three the other).
 - **No block is ever held.** No human of any match had the block state (`0x8000`) or the attack phase's block bit
   (`0x1000`): while Blocking is on top, the clips are the fight idle (358), hit reactions (272, 275, 276) and
   knock-downs (288, 196, 199). The `blocking` column is 0 throughout; count blocks by the goal.
@@ -488,7 +495,8 @@ on to `RumbleOver` (every brain off: every goal stack empty from then on), per m
   and match), 0.71-1.06 m for 80 % of them (215-324 attacks a side and match).
 - **How many fight one enemy.** At most **4** of a side target one enemy at once (in every match), usually 1 (64-80
   % of the cases), 2 in 16-32 %. Every fighter's attack slots allowed (`slots_max`) are **4**; the slots taken on a
-  fighter reach 4, its active attackers (`active`) at most 2. Both are the two limits read in the code
+  fighter reach 4, its active attackers (`active`) at most 2 (3 in a few samples just after he got up,
+  [Gang fights: runtime checks](gang-fights.md#runtime) rule 3). Both are the two limits read in the code
   ([How many hit one man at once](gang-fights.md#limits)). An enemy list holds 8 or 9 handles most of the fight.
 - **Out of the fight.** A knocked-out fighter keeps health **1** and lies in `ANIM_DEAD_IDLE` (349); a wounded one has
   state `0x10000` and crawls (`ANIM_WOUNDED_IDLE`, 200, then `ANIM_WOUNDED_HIT_REACT_DIE`, 204). Both count as out
@@ -496,8 +504,82 @@ on to `RumbleOver` (every brain off: every goal stack empty from then on), per m
   offset 0's match). At `RumbleOver` the standing fighters of the winning side but the winner are deleted 25 updates
   after the brains go off (offset 0), as `CreateWinCam` does.
 
-Inferred: the side difference is the player's side, not the gangs (the Furies are side 1 in every match here); a
-recording with the gangs swapped would show it.
+### The sides swapped {#gang-battle-swap}
+
+Confirmed (runtime), PCSX2 2.9.94, 2026-10-13: `repo:research/traces/scenarios/gang_battle_swap.toml`, the same
+battle with the Orphans as side 1 (gang 3, `P11`-`P19`, the player's side, handed to the AI as above) and the Furies
+as side 2 (gang 4). Its state is made like the first, but at Choose Area the two sides' set-up values are swapped too
+([Front end: set-up](frontend.md#rumble-setup)): indices 3 and 4 (the gangs), 5-13 with 14-22 (their character types)
+and the two names at `0x0063eef0` and `0x0063ef10`; the intro then names the Orphans first. Offsets 0, 341 and 682.
+
+| Side 1 Orphans / side 2 Furies | Offset 0 | Offset 341 | Offset 682 |
+| --- | --- | --- | --- |
+| Fight length | 69.9 s | 69.9 s | 79.4 s |
+| Winner (fighters out) | Furies (0 out, Orphans 9) | Furies (0, 9) | Furies (0, 9) |
+| Attacks a minute | 8.1 / 26.2 | 13.6 / 28.6 | 12.7 / 21.9 |
+| Blocks a minute (goal 27 started) | 0.4 / 1.0 | 0.1 / 1.9 | 0.0 / 1.8 |
+| Reactions a minute | 5.7 / 0.8 | 5.3 / 0.8 | 5.8 / 0.8 |
+| Target switches a minute | 9.3 / 30.4 | 8.9 / 37.9 | 10.9 / 23.5 |
+| Health losses a minute | 36.7 / 7.1 | 45.2 / 9.5 | 32.1 / 8.9 |
+| Top goal Fight (15), % | 82 / 86 | 90 / 84 | 92 / 87 |
+| Top goal Blocking (27), % | 1.1 / 4.3 | 0.5 / 8.3 | 0.0 / 5.8 |
+| Distance to the target, median (90 %) | 1.25 (4.56) / 1.31 (4.31) m | 1.11 (4.28) / 0.98 (3.62) m | 1.36 (4.58) / 1.13 (4.25) m |
+| Fighters on one enemy, mean | 1.32 / 1.76 | 1.20 / 1.55 | 1.24 / 1.68 |
+
+- **With these two gangs, the gang decides who wins, and how it fights.** The Furies won all three as side 2, faster
+  and without losing a fighter. What goes with the Furies on either side: winning, the Blocking goal (4.3-17 % of
+  their standing time against the Orphans' 0-2.3 %) and few reactions (0.8-2.8 a minute against 3.3-5.8). Inferred:
+  from the two gangs' classes, which this pass did not compare ([Characters](characters.md)).
+- **The side decides how often it attacks.** Side 2 attacked more often than side 1 in all eight matches (Orphans
+  19-22 against Furies 13-19; Furies 22-29 against Orphans 8-14). Inferred: side 1 fights under the attack command's
+  FollowAndAttack and side 2 under TacticAttack's Melee ([Gang fights: runtime checks](gang-fights.md#runtime)).
+- **Spacing goes with the side**: side 2's fighters carry the spacing bytes of gang type 3, the type of side 1 that
+  attacks them (1 standing, 4 downed), and side 1's those of type 19, in both orientations, as `GangCreate`'s types
+  say ([How many hit one man at once](gang-fights.md#limits)).
+- **No team-ups, no shared target** on either side in any of the eight matches.
+
+### What the comparison computes {#gang-battle-metrics}
+
+The rules that turn an all-humans trace into the statistics above, for the original's recordings and Coney's alike
+(`coney-tools trace fight-report`, [Comparing with Coney](../guides/research-workflow.md#comparing-with-coney)).
+They come from the recordings; where a rule differs from what the report did before, the original's trace showed why.
+
+1. **The fighters** are the humans of the two sides' gangs (the gangs of `P11` and `P21`: 3 and 4 in the original);
+   the crowd (gangs 0 and 1, brain type 4) is left out.
+2. **The fight** runs from the first update where a fighter's brain is on (`brain_off` 0, or failing that column, the
+   first goal pushed) to `RumbleOver`, the first update after which every fighter's `brain_off` is 1 (or every goal
+   stack is empty for 30 updates in a row: one update with every stack empty happens mid-fight). Nothing before or
+   after counts: the intro is 151-172 updates, and the trace goes on after the end.
+3. **Out of the fight**: clip 349 (`ANIM_DEAD_IDLE`), or state `0x10000` (wounded, clips 200 and 204), or the human
+   gone from the trace (a knocked-out fighter is deleted 461 updates after he lies down). Health stays 1, so health 0
+   is never a knock-out test. **Standing time** is a fighter's updates in the fight while not out; every rate is per
+   standing minute at 30 updates a second, per side.
+4. **The winner** is the side with fighters standing at `RumbleOver`; the fighters out of each side are counted then.
+5. **Attacks** are wind-up starts: the `phase` bit `0x1` turning on (the `command` column does not hold an AI's
+   attacks). Their distance is the target's at that update.
+6. **Blocks** are the Blocking goal (27) becoming the top goal; the `blocking` state bit is never set by the AI here.
+   **Reactions** are `react` turning from -1 to a goal id; **knock-downs** `down` turning on; **health losses**
+   `health` going down.
+7. **Target switches** count every change of `target` between two humans or to and from none, and split by kind:
+   A to B, set from none, cleared to none. Melee's re-pick clears and sets within one update, so a sample shows it
+   as A to B. With the `set-target` hook (or Coney's equivalent), split by cause as in
+   [Gang fights: runtime checks](gang-fights.md#runtime) rule 6.
+8. **Goal shares** are the top goal's share of standing time; **fight goals** are runs of Fight on top, a new one
+   when `fight_updates` starts again: their length (median, 90th percentile, the share reaching 4 s).
+9. **Fighters on one enemy**: at each update, for each enemy that standing fighters of a side target, how many do (the
+   mean, the maximum, the shares of 1, 2, 3 and 4). **Active places** on a fighter: the shares of `active` 0, 1, 2.
+10. **Waiting**: the distance to the target of a fighter with Fight on top and `fight_active` 0, split by whether the
+    target's own target is him (medians, the share in 4-4.75 m). **Taunts**: clip `0x25b` (603) starting.
+11. **Help**: help calls a minute, from all three sites of [Gang fights](gang-fights.md#runtime) rule 7 (the `help-call`
+    hook, one per `Gang_BroadcastHelpCall`; Coney: one per help call, whatever the number of hearers its event 20
+    reaches, not one per event received), helpers sent a minute (the `send-helper` hook) and HelpRespond goal (29)
+    starts; the **idle share**, an empty goal stack while standing.
+12. **The gang**: the tactic each side runs and when it changes (side 1 the attack command's tactic for the whole
+    match; side 2 TacticConfront for its first 23-47 updates, then TacticAttack), `g_teamups` (0) and `g_order` (no
+    order), `g_chosen` (none).
+
+The spread to compare against is the original's range over its matches of one orientation (the five above with the
+Furies as side 1, or the three swapped), since the gangs and the sides each change the numbers.
 
 ## Coney's implementation {#coney}
 
