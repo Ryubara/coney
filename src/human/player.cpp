@@ -238,7 +238,14 @@ PlayerSnapshot Player::capture() const {
     return snapshot;
 }
 
-Player::~Player() { setCameras(nullptr); }
+Player::~Player() {
+    // Only the follow camera is handed back. No snapshot is taken (setCameras() would take one): nobody reads it, and
+    // the pose it samples may be a clip another character owns (the attacker's side of a paired move), which the play
+    // mode may have freed before its player.
+    if (m_cameras != nullptr) {
+        m_cameras->attachFollow(nullptr);
+    }
+}
 
 std::optional<anim::Vec3> Player::followForward() const {
     if (m_cameras == nullptr) {

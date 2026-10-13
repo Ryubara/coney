@@ -21,11 +21,13 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include "animation/anim_clip.h"
 #include "characters/character_data.h"
 #include "core/input_script.h"
 #include "core/pads.h"
 #include "fileio/disc.h"
 #include "fileio/wad.h"
+#include "human/human_animator.h"
 #include "human/player.h"
 #include "human/player_trace.h"
 #include "platform/level_file.h"
@@ -300,4 +302,34 @@ TEST_CASE("level3's chase roof at z 10.3: the wall at x 167.4 does not climb, th
     CHECK(up.position.x > 178.0F);
     CHECK(up.position.z > 16.3F);
     CHECK_FALSE(up.airborne);
+}
+
+TEST_CASE("a player outlives the clips he plays: his removal reads nothing of a clip whose owner went first",
+          "[disc][player]") {
+    const char* discPath = SDL_getenv("CONEY_DISC");
+    if (discPath == nullptr || *discPath == '\0') {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    const Level99 loaded = loadLevel99(discPath);
+    auto player = std::make_unique<coney::human::Player>(
+        *loaded.character, nullptr, coney::human::PlayerStart{.position = {0.0F, 0.0F, 0.0F}, .headingDegrees = 0.0F});
+
+    // A clip another owner keeps, as a cast character's set keeps the attacker's side of a paired move or a scene its
+    // dynamic clips: a play mode removes those owners before its player (the crash after the disc's AI-driven Brawl).
+    // The owner is large, so the allocator may hand its memory back to the system when it goes: reading the clip
+    // after that faults on the Windows heap and under AddressSanitizer (the `asan` preset is the gate everywhere).
+    // Where a freed large vector stays mapped (glibc, macOS), a stale read can succeed and this test alone proves
+    // nothing.
+    constexpr std::size_t kClips = 1U << 15U;
+    auto owner = std::make_unique<std::vector<coney::anim::AnimClip>>(kClips);
+    coney::anim::AnimClip& clip = owner->back();
+    clip.duration = 2.0F;
+    player->body().playScripted(clip, 0x7fffU, 1.0F, 0.0F, coney::human::HeldFlags{});
+    REQUIRE(player->body().animator().drivingClipPlaying());
+    owner.reset();
+
+    player.reset();
+    SUCCEED("the player went without sampling the clip");
 }
