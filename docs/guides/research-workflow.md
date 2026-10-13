@@ -605,11 +605,12 @@ which anim id and which script callback it runs). The level80 passes added the t
 `play-speech` and `play-speech-cut` (who starts, stops or refuses a human's line, with his line state before each;
 [Sound](../research/sound.md#speech-cut-in)), and the scene-mapping pass `scene-find`, `scene-bind-human`,
 `scene-bind-object` (what each scene binds, [Scenes](../research/scenes.md#cast-runtime)) and `lua-exec-source`
-(`lua-exec` with the chunk name's text). One run installs at most 64 hooks, fewer than
-the file holds, so name only the ones a pass needs. Two hooks at one address cannot be installed together (`hint-show`
-and `event-hint` are the same place): pick one, and add any extra value it needs to the one you keep. When the update
-of an entry matters, log the tick count and use it: in that pass one Lua call's four `HintBox_Queue` entries, all at
-one tick, were labelled with two consecutive steps.
+(`lua-exec` with the chunk name's text), and the gang-battle pass `set-target`, `help-call` and `send-helper` (who
+changes a fighter's target, help calls and helpers sent; [Gang fights](../research/gang-fights.md#runtime)). One
+run installs at most 64 hooks, fewer than the file holds, so name only the ones a pass needs. Two hooks at one address
+cannot be installed together (`hint-show` and `event-hint` are the same place): pick one, and add any extra value it
+needs to the one you keep. When the update of an entry matters, log the tick count and use it: in that pass one Lua
+call's four `HintBox_Queue` entries, all at one tick, were labelled with two consecutive steps.
 
 A logged load can also log the **text** it points to: `text = N` (at most N bytes, up to 1024) reads the string at the
 value plus `text_offset`, and `text_when = "NAME=VALUE"` reads it only when another logged value has that value (a
