@@ -2333,6 +2333,81 @@ spawners and link to their subject pages; the rest are this mission's.
     in one run he died before the box. Coney with the same route and L2 held: `P3.GetToSubway` at update 4,085 and
     `HUDLaunchMissionComplete` at 4,501 (the first life, standing still, had died at checkpoint 5). Whether
     `L34_OUT` plays after it was not checked.
+16. **How the AI Warriors meet the Furies** (issue #493): in the original they **hold their ground beside the
+    player and let the Furies come**; they never walk out to meet them. Confirmed (runtime), PCSX2 2.9.94,
+    2026-10-13: a state of checkpoint 5 made by loading it through mode 8 from a `level99` state (the writes of item
+    14) and saved as the park's humans appeared, before `l34_c4` started; then
+    [`l34_warriors_meet_furies`](repo:research/traces/scenarios/l34_warriors_meet_furies.toml) recorded every human
+    every update with no input (hooks `event-call` and `event-callback`; two runs, identical step for step counted
+    from the scene's end, which came at update 717 in one and 716 in the other). The scene's end is the update that
+    runs `P3.EndParkScene` (its `tfence_shake_01` emitter); times are updates after it. Vermin is the player, at
+    (−207.97, −269.50); Ash and Snow are the AI Warriors.
+
+    | After the scene's end | Ash and Snow |
+    | --- | --- |
+    | 0 | Out of the scene under the follow command (tactic `0x005438c0`), `FollowPlayer` (`0x32`) their only goal, standing 1.64 m (Ash) and 1.34 m (Snow) from the player |
+    | 0-150 | No enemies; they stand. Snow turns once (mode 3, toward the player's heading) at +81 |
+    | +150 | `P3.FuryTimeout` (`P3.MoveFromFence`): the Furies' `GoalFight` on the player and `TacticAttack`, the Warriors made enemies of the park Furies |
+    | +152 / +178 | **Targets taken** (fight mode was on for both from about +151, when the hostile count reached 2 and the Furies took attack slots): Ash takes `FenceFury3` (7.3 m from him) as his target, Snow `ParkFury02` (20.5 m); each enters the fight stance (358 / 359) and only **turns** to his target, again and again as it moves |
+    | +280 | Still standing where the scene left them, gait 0, 1.47 m and 1.14 m from the player |
+    | +286 | The first park Fury within 5 m of the player |
+    | +299 | **The first hit, on the player** (292, a knock-down). The same update Snow, his target 3.6 m off, starts `MoveMelee` and **backs away** from him at gait 2 (1.92 m/s); Ash does the same at +316 (4.1 m) |
+    | +392 | The first hit on a Warrior (Ash, 1,800 to 1,710); each Warrior answers his first hit with an attack action (`0x00542ce0`) while `FollowPlayer` is still his only goal |
+    | +474 | The automatic **attack** command: tactic `0x00544160`, `FollowAndAttack` (`0x34`) with `Fight` (`0x0f`) on top: only now do they fight |
+
+    Until the first hit on a Warrior neither moved more than 2.96 m (Ash) or 4.68 m (Snow) from his spot, and never
+    above gait 2 (walk), all of it backing away. Why, confirmed (code), [Fight mode](ai-gangs.md#warrior-follow):
+    under `FollowPlayer` a Warrior in fight mode only turns to a target beyond his melee range and backs off from one
+    inside it (`0x002de7c0`); fight mode came on here because gang members had attackers (from +151 the Furies held
+    attack slots on the player and on both Warriors) and the Furies had listed the Warrior as an enemy (`0x002de650`,
+    test 4; the player had no target until +298); Snow's target came 26 updates after Ash's because the one enemy in
+    his list was over 20 m from the player until then (inferred); the Warriors attack only from the attack command,
+    which `WarChief_AutoCommand` (`0x00303988`) gives once the player's own target is within his far melee range and
+    he has attackers for 1.5 s without a break ([Automatic commands](ai-gangs.md#warrior-auto-commands)); with the
+    player knocked down and his target lost, that took until +474 (inferred).
+
+    **Coney** (as issue #493 states, from `fix-furies-passive`'s run): its AI Warriors follow the player under
+    `FollowPlayer` and run out to the Furies (one at up to gait 4, the other gait 3), so a Warrior is hit first and the
+    player 6 updates later (that run's trace, steps 997 and 1003); in the
+    original the player is hit first (+299) and a Warrior 93 updates later. The fixes, each against the original's
+    behaviour on [Fight mode](ai-gangs.md#warrior-follow) (code in `repo:src/ai/crew.cpp`, `FollowPlayerGoal`):
+
+    1. **Turn, do not close in.** In fight mode, beyond the range (the far melee range, or the near one when the
+       target's actions are blocked or he is busy) queue only a turn to the target; within it queue the move-to-human
+       action with the band range + 0.5 m to range + 1.0 m and a 3 s limit. Coney does the reverse (a move to the
+       target beyond the range).
+    2. **The band move.** Coney's `MoveToHumanAction` only closes in to a stop distance; it needs the original's
+       near / far band. The spec is `MoveMelee` on [Move-to-human](ai-moving.md#move-melee), side circling, its ±10
+       counters and its done rule (in the band, side counter 0, |radial counter| < 6) included; in short: below
+       near², back away at gait 2; above far², close in at gait 4; done inside the band. Without it item 1 cannot
+       back off.
+    3. **The target.** Keep the current target while it is still a valid enemy; else the nearest human of the
+       follower's own enemy list (to the follower) that is up and within 20 m of the **leader**; else the leader's
+       target when it is up, used for the turn or the back-off even when friendly but made the follower's own target
+       only when not friendly; with no leader's target or a down one, none. Coney takes the nearest attacker of any
+       crew member within 20 m of the follower.
+    4. **The fight-mode tests**, in the original's order: the leader's target not a Warrior turns it on; a player
+       holding an attack slot on the follower turns it off; any player's brain `+0x2e4` turns it on; a member with
+       attackers and a non-zero count of brains holding the follower as an enemy turns it on. Coney has only the last
+       two, and counts only attackers who hold the follower as an enemy. Give the brain the count (raised when another
+       brain adds it as an enemy, lowered when removed) rather than scanning attack slots.
+    5. **Field of view**: 2π in fight mode, 110° (and the target cleared) out of it.
+    6. **Test** (`[disc]`, `tests/platform/disc_level34_furies_test.cpp` or beside it, checkpoint 5, no input): from
+       the scene's end to the first hit on the player, neither AI Warrior is ever above gait 2 nor more than 5 m from
+       where the scene left him, and his top goal is `FollowPlayer`; the first hit lands on the player, not a Warrior;
+       neither attacks before he is first hit himself (each answers his first hit with an attack action), and neither
+       has the `FollowAndAttack` (`0x34`) or `Fight` (`0x0f`) goal before the attack tactic (`0x00544160`) is queued
+       for him, which comes after the player's first hit.
+
+    The fight-mode stand distance, 10 m instead of the goal's 9 m, is already Coney's (`kCrewFightFollowDistance`,
+    `repo:src/ai/crew.h`); keep it.
+
+    Open: who queues the attack action a Warrior plays on his first hit while `FollowPlayer` is his only goal (the
+    hit event's handler, [The Warriors](ai.md#think-warrior), is the likely source; not traced), and the Warriors'
+    far melee range (`+0x140`). A new action is queued only when the queue is empty, so the runs bound it only
+    roughly: Snow's last turn was chosen about 5.5-5.7 m from his target and his back-off at 3.6-3.8 m, Ash's back-off
+    at about 4.1-4.3 m, so between about 3.8 m and 5.5 m (inferred). Reading brain `+0x140` of a Warrior at runtime
+    settles it.
 
 <!-- markdownlint-enable MD029 -->
 

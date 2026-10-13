@@ -1022,13 +1022,56 @@ no new `FollowFormation` and no turn while a left-over move runs. (Pushing a goa
 `Brain_PushGoal` `0x0028d758`.)
 
 So a Warrior stands still anywhere within 9 m of the chief as long as a straight walkable line joins them, and only
-walks when the chief gets farther, turns a corner, or crosses a fence. Its **fight mode**
-(`0x002de650`) is on for a Warrior when a player's brain `+0x2e4` is set (a Warrior is hitting back at a chief who
-hit him, `WarriorBrain_OnHitByChief` `0x00306190`), or when a member of its gang has attackers and its own brain
-`+0x152` (inferred: how many hold it as an enemy) is not 0; it is off while one of its own attackers is a player. In
-fight mode it widens its field of view to 2π, keeps a valid target, else takes the nearest attacker within 20 m or
-the leader's target, enters the fight stance and **turns to the target** within the far melee range (the near one
-when the target is busy) or moves to him (`MoveToHumanAction`, 3 s); it does **not attack**. Out of fight mode it
+walks when the chief gets farther, turns a corner, or crosses a fence.
+
+**Fight mode** (`FollowPlayerGoal_IsFightMode` `0x002de650`, given the goal, the leader and the leader's target,
+brain `+0x124`; only a follower whose brain is of type 3, a Warrior, can be in it). Confirmed (code) at
+`0x002de650`; the tests in this order, the first that decides wins:
+
+1. The leader has a target: when the target's brain is not of type 3 (not a Warrior), **on**. When it is a Warrior,
+   on when the leader is a player whose brain `+0x2e4` is set (a Warrior hitting back at a chief who hit him,
+   `WarriorBrain_OnHitByChief` `0x00306190`).
+2. **Off** when any of the 16 attack slots on the follower (brain `+0x1a4`) is held by a player.
+3. **On** when any player's brain `+0x2e4` is set (the players at game state `+0x224` / `+0x228`).
+4. **On** when a member of its gang has attackers (`Gang_AnyMemberHasAttackers` `0x00169658`) and its own brain
+   `+0x152` is not 0, else off. `+0x152` counts the brains that have put this one in their enemy lists:
+   `Brain_CountHostile` (`0x0028ef20`) raises it, called by `Brain_AddEnemy` (`0x0028d538`, unless a player adds a
+   player) and by [the enemy scan](ai.md#enemy-scan) (`Brain_ScanEnemies` `0x0028b358`, its call at `0x0028b9e8`);
+   `Brain_UncountHostile` (`0x0028ef30`) lowers it, called by the enemy scan (its call at `0x0028b7d0`),
+   `Brain_UncountEnemy` (`0x0028d6a0`) and
+   `Brain_UncountAllEnemies` (`0x0028ef48`). A player's `+0x152` is raised and lowered the same way and also
+   recounted every 300 updates, which overwrites it ([The player](ai.md#think-player)).
+
+So the leader's target alone turns it on (test 1): an AI follower is in fight mode whenever his player chief has
+locked on to anyone but a Warrior, whether or not anyone attacks.
+
+**In fight mode** (confirmed (code) at `0x002de7c0`): the stand distance is 10 m (squared 100) instead of the goal's 9 m,
+the field of view (brain `+0x12c`) becomes 2π, and with no actions queued:
+
+1. **The target**: his own target when it still passes `Brain_ValidateEnemy` (`0x0028d358`); else the human of his
+   **own enemy list** (brain `+0x164`) nearest **to him**, if that human is up and within **20 m of the leader**;
+   else the leader's target when it is up: it is used for the steps below even when friendly, and only when it is
+   not friendly (`Brain_IsFriendly` `0x00290230`) does it also become his own target (`0x0028cfe0`; `0x002deae0` to
+   `0x002deb08`). With no leader's target, or a down one, none: the target is cleared and it goes on as out of fight
+   mode below, from leaving the stance (the field of view stays 2π).
+2. It enters the fight stance (`0x0022fe80`). The range is the far melee range (brain `+0x140`), or the near one
+   (`+0x13c`) when the target's actions are blocked or he is busy.
+3. **Beyond the range** it only **turns** to the target (`TurnToPointAction` `0x002fe000`, at the human's max turn).
+   **Within the range** it queues `MoveToHumanAction` (`MoveMelee`, [Move-to-human](ai-moving.md#move-melee)) on him
+   with the band range + 0.5 m to range + 1.0 m and a 3 s limit: since he is already inside the band's near edge, it
+   **backs off**, walking (gait 2), to keep that distance.
+4. It never attacks and never starts a move toward the target from fight mode: the band move backs off (and
+   `MoveMelee` may side-step, or close in at gait 4 if the target gets beyond the band's far edge while it runs,
+   [Move-to-human](ai-moving.md#move-melee) steps 3-4). A Warrior fights only under the attack command
+   ([Automatic commands](#warrior-auto-commands)) or when hit (below).
+
+Confirmed (runtime) at `level34` checkpoint 5 ([Scripts](scripting.md#level34-fixes) item 16): Ash and Snow stood
+1.14-1.64 m from the standing player, turning to Furies that were 20.5 m (Snow) and 7.3 m (Ash) off when taken as
+targets, never walking toward them, and backed off at gait 2 (1.92 m/s) once a Fury came within 3.6 m (Snow) and
+4.1 m (Ash). (An earlier version of this page had the turn and the move the other way round, and the target as the
+nearest attacker within 20 m of the follower.)
+
+Out of fight mode the goal sets the field of view back to 110° (1.9199 rad) and clears the target, then
 leaves the stance, may fetch a pickable object (the roll of [the Warriors' pick-ups](#warrior-pickups), every 30
 updates), every 2-4 s turns as its mode says, and every 3-6 s, unless its own or the leader's brain `+0x2d5` is set,
 at 30 % (Warriors only while standing) queues a fidget (`PlayFidget`, `0x002f9f48`). The **modes** (goal `+0x18`,
