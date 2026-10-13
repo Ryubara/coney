@@ -16,6 +16,7 @@
 #include "ai/gangs.h"
 #include "ai/move_action.h"
 #include "ai/move_to_human_action.h"
+#include "ai/route_planner.h"
 #include "ai/script_services.h"
 #include "ai/targeting.h"
 #include "ai/turn_action.h"
@@ -37,10 +38,31 @@ constexpr int kRegoalMode = 1;
 // The follow goal's mode: 3 turns to the leader's heading.
 constexpr int kModeLeaderHeading = 3;
 constexpr int kTacticMode = 3;
-// Beyond this from its slot the formation walk runs (**Coney stand-in**), metres; the gaits.
-constexpr float kRunBeyond = 3.0F;
+// FollowFormation's speed: the share of the distance past the arrival, the pace that counts as hurried, the
+// pace's weight below it, the cap on the pace (x sprint), and the distances beyond which it runs and jogs.
+constexpr float kPaceShare = 0.1F;
+constexpr float kHurriedPace = 2.0F;
+constexpr float kSlowPaceWeight = 4.0F;
+constexpr float kPaceCap = 1.25F;
+constexpr float kRunBeyond = 8.0F;
+constexpr float kJogBeyond = 4.0F;
 constexpr int kWalkGait = 2;
+constexpr int kJogGait = 3;
 constexpr int kRunGait = 4;
+// The follow goal's first turn after its Resume comes after 1-2 s.
+constexpr int kResumeTurnMinMs = 1000;
+constexpr int kResumeTurnMaxMs = 2000;
+// FollowAndAttack's FollowFormation runs for at most this long, ms.
+constexpr std::uint64_t kAttackFollowMs = 2000;
+
+// Whether `brain` can walk to `other` in a straight line (Human_CanWalkStraightToHuman); with no path data it can.
+bool canWalkStraightTo(const Brain& brain, const Brain& other) {
+    const RoutePlanner* planner = brain.planner();
+    return planner == nullptr || planner->lineClear(brain.human().position(), other.human().position());
+}
+
+// Whether `brain` has any attacker (brain `+0x1a4`).
+bool attacked(const Brain& brain) { return !brain.attackSlots().empty(); }
 
 // Whether `brain` is an AI human's that can act: not a player's, fightable and not on the ground.
 bool canAct(const Brain& brain) {
@@ -94,6 +116,24 @@ bool gangHasEnemy(const Gang& gang) {
 
 } // namespace
 
+FollowPace followSpeed(float distance, float arrival, float paceSpeed, bool hurried, const human::Speeds& speeds) {
+    const float top = kPaceCap * speeds.sprint;
+    const float pace = std::min(paceSpeed, top);
+    if (distance <= arrival) {
+        return FollowPace{.speed = pace, .gait = static_cast<int>(human::gaitForSpeed(pace, speeds))};
+    }
+    float f = kPaceShare * (distance - arrival);
+    if (pace < kHurriedPace) {
+        f += kSlowPaceWeight * f * std::max(pace - speeds.walk, 0.0F);
+    }
+    if (pace > kHurriedPace || hurried) {
+        f += 1.0F;
+    }
+    const int gait = distance > kRunBeyond ? kRunGait : (distance > kJogBeyond ? kJogGait : kWalkGait);
+    const float speed = std::clamp(std::max(gaitSpeed(speeds, gait), pace) * f, speeds.walk, top);
+    return FollowPace{.speed = speed, .gait = gait};
+}
+
 // ---- FollowPlayerGoal ----
 
 void FollowPlayerGoal::start(Brain& brain) {
@@ -104,6 +144,12 @@ void FollowPlayerGoal::start(Brain& brain) {
     if (Formation* formation = m_formations->of(*leader, true); formation != nullptr) {
         formation->join(brain);
     }
+}
+
+void FollowPlayerGoal::resume(Brain& brain) {
+    start(brain);
+    m_nextTurnMs =
+        brain.nowMs() + static_cast<std::uint64_t>(rollRange(brain.random(), kResumeTurnMinMs, kResumeTurnMaxMs));
 }
 
 bool FollowPlayerGoal::fightMode(const Brain& brain) const {
@@ -151,18 +197,27 @@ GoalStatus FollowPlayerGoal::process(Brain& brain) {
     if (leader == nullptr || leader->human().outOfWorld()) {
         return GoalStatus::Done;
     }
+    // 1. After a failed walk it waits about a second, then clears the failure.
+    if (brain.moveFailure() != MoveFailure::None) {
+        if (++m_failWait >= kCrewFailWait) {
+            m_failWait = 0;
+            brain.setMoveFailure(MoveFailure::None);
+        }
+    }
+    // 2. It stands while the leader is near and in a straight line; otherwise, unless it is waiting, it follows.
+    const bool fighting = fightMode(brain);
+    const float reach = fighting ? kCrewFightFollowDistance : m_distance;
+    const bool stands = brain.distanceTo(*leader) <= reach && canWalkStraightTo(brain, *leader);
+    if (!stands && m_failWait == 0 && brain.pushGoal(std::make_unique<FollowFormationGoal>(kCrewSlotReach))) {
+        return GoalStatus::Again;
+    }
+    // 3. With actions queued it lets them run; then the fight mode, or the turn of its mode.
     if (brain.actionCount() > 0) {
         return GoalStatus::Stop;
     }
-    if (fightMode(brain)) {
+    if (fighting) {
         fight(brain, *leader);
         return GoalStatus::Stop;
-    }
-    // Back to its slot every 31 updates.
-    if (brain.updates() % kCrewSlotPeriod == 0) {
-        if (brain.pushGoal(std::make_unique<FollowFormationGoal>(kCrewSlotReach))) {
-            return GoalStatus::Again;
-        }
     }
     // Mode 3: toward the leader's heading when more than 60° off it, every 2-4 s.
     if (m_mode == kModeLeaderHeading && brain.nowMs() >= m_nextTurnMs) {
@@ -184,29 +239,84 @@ void FollowPlayerGoal::end(Brain& brain) {
 
 // ---- FollowFormationGoal ----
 
+void FollowFormationGoal::start(Brain& brain) {
+    m_startMs = brain.nowMs();
+    m_gaitEvery = rollRange(brain.random(), kFollowGaitEveryMin, kFollowGaitEveryMax);
+}
+
 GoalStatus FollowFormationGoal::process(Brain& brain) {
-    if (brain.actionCount() > 0) {
+    // 1. Done when it no longer follows, the leader is gone, the last move failed (the follow goal waits it out) or
+    // its time is up.
+    const Formation* formation = brain.following();
+    if (formation == nullptr || formation->leader().human().outOfWorld() || brain.moveFailure() != MoveFailure::None ||
+        (m_limitMs != 0 && brain.nowMs() - m_startMs >= m_limitMs)) {
+        return GoalStatus::Done;
+    }
+    const Brain& leader = formation->leader();
+    const std::optional<FollowPoint> follow = formation->followPoint(brain, m_reach);
+    if (!follow) {
+        return GoalStatus::Done;
+    }
+    ++m_updates;
+    auto* move = dynamic_cast<MoveAction*>(brain.frontAction());
+    // 2. Every 6 updates, without a slot, the running move goes to the follow point.
+    if (move != nullptr && !follow->slot && m_updates % kFollowRefreshSteps == 0) {
+        move->retarget(brain, follow->point);
+    }
+    // 3. Now and then the leader's gait is noted; unless he has just stopped (from a run to under a jog), nothing more
+    // while a move runs and the check time has not come.
+    bool justStopped = false;
+    if (m_updates % static_cast<std::uint32_t>(m_gaitEvery) == 0) {
+        const human::Gait gait = leader.human().gait();
+        justStopped = m_leaderGait > human::Gait::Jog && gait < human::Gait::Jog;
+        m_leaderGait = gait;
+    }
+    if (!justStopped && brain.nowMs() < m_checkMs && brain.actionCount() > 0) {
         return GoalStatus::Stop;
     }
-    const Formation* formation = brain.following();
-    const std::optional<anim::Vec3> slot = formation != nullptr ? formation->slotPoint(brain) : std::nullopt;
-    if (!slot) {
-        return GoalStatus::Done;
+    // 5. How far it walks there: while that failed it waits, trying again at kFollowRetryCount. **Coney stand-in**:
+    // the original smashes a breakable object within 1.5 m on every 15th count; Coney does not.
+    if (m_waiting > 0) {
+        ++m_waiting;
+    }
+    if (m_waiting > 0 && m_waiting < kFollowRetryCount) {
+        return GoalStatus::Stop;
     }
     const anim::Vec3 position = brain.human().position();
-    const float away = std::hypot(slot->x - position.x, slot->y - position.y);
-    // Done once there, or once the walk it queued came back without getting there.
-    if (away <= m_reach || (m_walked && brain.moveFailure() != MoveFailure::None)) {
-        brain.setMoveFailure(MoveFailure::None);
+    RoutePlanner* planner = brain.planner();
+    const std::optional<float> walk =
+        planner != nullptr ? planner->walkDistance(position, follow->point) : anim::distance(position, follow->point);
+    if (!walk) {
+        m_waiting = 1;
+        return GoalStatus::Stop;
+    }
+    m_waiting = 0;
+    // 6. Done once the human it follows stands and it is within the radius.
+    const human::Human& pace = follow->pace->human();
+    const bool paceStands = pace.gait() == human::Gait::Standing;
+    if (paceStands && *walk < follow->radius) {
         return GoalStatus::Done;
     }
-    m_walked = true;
-    brain.queueAction(std::make_unique<MoveAction>(MoveRequest{.point = *slot,
-                                                               .radius = m_reach,
-                                                               .gait = away > kRunBeyond ? kRunGait : kWalkGait,
-                                                               .option = true,
-                                                               .delayMs = 0,
-                                                               .flagKind = false}));
+    // 7. Beyond 0.2 m it moves at the follow speed: a new move, or the running one's speed and radius.
+    if (*walk > kFollowMoveBeyond) {
+        const FollowPace speed =
+            followSpeed(*walk, follow->radius, pace.speed(), attacked(brain), brain.human().speeds());
+        const float radius = follow->slot ? kFollowSlotMoveRadius : kQueueFollowRadius;
+        if (move != nullptr) {
+            move->setSpeed(speed.speed);
+            move->setRadius(radius);
+        } else if (brain.actionCount() == 0) {
+            auto made = std::make_unique<MoveAction>(MoveRequest{.point = follow->point,
+                                                                 .radius = radius,
+                                                                 .gait = speed.gait,
+                                                                 .option = !paceStands,
+                                                                 .delayMs = 0,
+                                                                 .flagKind = false});
+            made->setSpeed(speed.speed);
+            brain.queueAction(std::move(made));
+        }
+    }
+    m_checkMs = brain.nowMs() + kFollowCheckMs;
     return GoalStatus::Stop;
 }
 
@@ -308,7 +418,7 @@ GoalStatus FollowAndAttackGoal::process(Brain& brain) {
     m_lastTarget = nullptr;
     // No enemy: near the leader it stays, turning to his heading every 4 s; farther, back to its slot.
     if (brain.distanceTo(*leader) > kCrewAttackStay) {
-        if (brain.pushGoal(std::make_unique<FollowFormationGoal>(kCrewSlotReach))) {
+        if (brain.pushGoal(std::make_unique<FollowFormationGoal>(kCrewSlotReach, kAttackFollowMs))) {
             return GoalStatus::Again;
         }
         return GoalStatus::Stop;

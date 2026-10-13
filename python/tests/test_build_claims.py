@@ -512,7 +512,7 @@ def test_a_waiting_build_can_be_called_off_by_its_caller(tmp_path: Path, world: 
     assert take(slots, world, "holder", 1701) is not None
     asked: list[float] = []
 
-    def abandon(waited: float) -> str | None:
+    def abandon(waited: float, expected: float) -> str | None:
         asked.append(waited)
         return "would not fit" if waited >= 30 else None
 
@@ -525,7 +525,9 @@ def test_a_waiting_build_can_be_called_off_by_its_caller(tmp_path: Path, world: 
 
 def test_a_build_that_gets_its_slot_is_not_called_off(tmp_path: Path, world: World) -> None:
     slots = make(tmp_path, world, slots=1)
-    claim = slots.acquire("waiter", "wt", "dev", False, 11703, poll=10, report=None, abandon=lambda waited: "never")
+    claim = slots.acquire(
+        "waiter", "wt", "dev", False, 11703, poll=10, report=None, abandon=lambda waited, expected: "never"
+    )
     assert claim.agent == "waiter"
 
 

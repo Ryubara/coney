@@ -36,6 +36,7 @@ CHARACTERS = Topic(
             "category",
             "int",
             "Byte `+0x11b`: role category; picks the cash range and civilian reactions (14 Warriors).",
+            "Category",
         ),
         F(
             "speed_class",
@@ -55,7 +56,7 @@ CHARACTERS = Topic(
         F("attack_table", "str", "The 45-entry attack table."),
         F("damage_scale", "float", "Multiplier applied to the damage table."),
         F("range_table", "str", "The 45-entry range table."),
-        F("hat", "str", "Hat object worn (an [object](objects.md) name), or none."),
+        F("hat", "str", "Hat object worn (an [object](objects.md) name), or none.", "Hat"),
         F(
             "voice",
             "int",

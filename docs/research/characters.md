@@ -308,6 +308,113 @@ levels 60-64), the speed class byte at `+0x11c`, and four strings (32 bytes each
 
 `Human_GetScale` (`0x0021d020`) returns it, except 1.0 in a scene for a scale under 1.1.
 
+### Stats {#stats}
+
+Everything that makes one character stronger, tougher or faster than another comes from four configuration tables, all
+set by the configuration scripts and again by each difficulty's (the boot set equals normal's). The sections above
+and the pages they link hold the detail; this is the one list. "Human" is the field the value lands in when a human
+is made or becomes a player; the evidence is as the cited page gives it. Every type's values on normal:
+[Characters](../references/characters.md) (its *Stats (normal)* column joins the four tables).
+
+**1. The character type** (`CfgChar`, record `0x00684620 + type × 0x1ac`, [Character classes](#classes)); `Human_Init`
+(`0x00218008`) reads it at creation, `+0x11b` and `+0x11d` from the type's own record and the rest after the
+[remap](#type-to-model) from the class's:
+
+| Stat | Field | Human | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| Behaviour | byte `+0x11a` | brain type | the AI's brain kind ([AI: types](ai.md#types)) | confirmed (code) |
+| Category | byte `+0x11b` | (read from the record) | 14 the Warriors: a player takes his Warrior's power class; 13 the bosses and big fighters; the money class and the civilian reactions ([Starting money](crimes.md#starting-money)) | confirmed (code) |
+| Speed class | byte `+0x11c` | record `+0x164`-`+0x17c` | the [speed class](#speed-classes), a fallback the clips' own speeds replace in play | confirmed (code) |
+| Power class | byte `+0x11d` | `+0x1b8`, `+0x1b9` | below; a Warriors player's `+0x1b9` is his Warrior's | confirmed (code) |
+| Health | s16 `+0x116` | record `+0x144` / `+0x146` | health and its maximum (1800 for every Warrior, 600 for the street civilian) | confirmed (runtime) ([Combat: damage](combat.md#damage)) |
+| Damage table × damage scale | s16 × 45 at `+0xb8` | the human's Anim Range List | written over the list's damages when the model is attached (`0x00217a98`); a player's first times his Warrior class's damage % ([Damage](combat.md#damage-table)) | confirmed (code), confirmed (runtime) |
+| Attack table | byte × 45 at `+0x11e` | brain `+0x298` | an AI's weight for each attack kind ([AI](ai.md)) | confirmed (code) |
+| Range table | float × 45 at `+0x00` (÷ 100) | not traced | no reader found | not traced |
+| Hat | string `+0x14c` | the hat object | worn from creation ([Hats](#hats)) | confirmed (code) |
+| Voice | s16 `+0x118` | voice set | the folder of the type's speech ([Characters reference](../references/characters.md#fields); the binding page calls it a Warrior index) | inferred |
+| `flag_14b` | byte `+0x14b` | `+0x3b8` | a civilian woman's tag colour ([Tagging](crimes.md#tag-look)), the `_female` animation sounds ([Sound events](sound-events.md#players)), the money record 16 for category 4 ([Starting money](crimes.md#starting-money)); the body scale `+0x65c` = 1 − 0.01 × n is read beside it, `n` not traced | confirmed (code); the scale not traced |
+| Drop group, drop chance | string `+0x16c`, int `+0xb4` | `+0x257`, `+0x278`, money `+0x370` | the carried object and its drop chance, and the starting money ([Starting money](crimes.md#starting-money)) | confirmed (code) |
+| Weapon | string `+0x18c` | not traced | read by `Human_Init`; what it gives is not traced | not traced |
+
+**2. The power class** (`CfgPowerClass`, record `0x006619a0 + class × 0x44`, [Power classes](#power-classes)), by
+`+0x1b9` for a player and `+0x1b8` otherwise (`0x00222b78`). A player of a Warriors type plays with 58-66 by Warrior
+(7 without one); everyone else with the type's own class. Confirmed (code) at each reader:
+
+| Stat | Field | What it does |
+| --- | --- | --- |
+| Power meter | s16 `+0x28`, `+0x2a` | maximum and refill per second (record `+0x148`); × `+0x18` while hurt (`0x00223068`); with the gym's power upgrade a player's maximum × (1 + byte 2 / 100) |
+| Stamina | s16 `+0x2c`, `+0x2e` | maximum and refill per second (record `+0x14a`, `Human_StaminaMax` `0x00223188`); with the gym's stamina upgrade a player's maximum × (1 + byte 3 / 100) |
+| Hurt threshold | float `+0x04` | below this share of maximum health the human is hurt (`0x00222ff8`) |
+| Stun, down | s16 `+0x30`, `+0x34`; floats `+0x10`, `+0x14` | a stun's and a knockdown's length, ms, and their factors while hurt ([Reactions](combat.md#reactions)) |
+| Weapon stun | float `+0x00` | as the attacker, scales the victim's stun for weapon hits of 20-49 damage (`0x0022f658`) |
+| Grab struggle | byte `+0x36` | the grabbed human's strike costs the grabber 1 / n of its power (`0x0027fd68`) |
+| AI: block, counter, attack delay | floats `+0x08`, `+0x0c`, `+0x24`, `+0x1c`, `+0x20`; bytes `+0x37`, `+0x39` | the AI's block chances, counter chance, attack delay factors, pattern-reading threshold and throws at walls ([AI](ai.md#block)) |
+| Health bar | byte `+0x40` | the pause Stats screen's Health bar (`+0x40` / 100, [Stats screen](pause.md#stats-screen)); the health rings' span ([HUD](hud.md#the-health-rings)) |
+| Not traced | `+0x32`, `+0x38`, `+0x3a`-`+0x3f`, `+0x41`, `+0x42` | stored; no reader found |
+
+**3. The Warrior class** (`CfgWarriorClass`, record `0x006b65c0 + class × 14`, human `+0x1ba` by type: 0-8 the nine
+Warriors, 9 everyone else), read through `0x00222b58`. Confirmed (code) at each reader
+([Warrior classes](../references/warrior-classes.md)):
+
+| Stat | Field | What it does |
+| --- | --- | --- |
+| Rage | s16 `+0x00`; bytes `+0x02`-`+0x04` | the rage maximum, the gain percentage, and the idle decay and the drain while raging, percent of the maximum per 20 s ([Rage](combat.md#rage)) |
+| Health % | byte `+0x05` | when the human becomes a player (`Human_MakePlayer` `0x00229c40`) his health and maximum are times n %, rounded; divided back when he stops being one (`0x0022a2a8`). Rembrandt: 1800 × 50 % = 900 |
+| Damage % (Strength) | byte `+0x06` | a player's attack damages times n % ([Damage](combat.md#damage-table)); the Stats screen's Strength bar |
+| Context games | bytes `+0x07`-`+0x0c` | the cuffing hold, the uncuff mash, tagging, lock picking, the stereo theft and mugging |
+
+**4. The gym upgrades** (`CfgWarriorUpgrade`, bytes `0x006b6650`-`0x006b6653`; 10, 20, 10, 20), each only while its
+unlockable is unlocked ([Unlockables](player-state.md#unlockables)): punch damage + 10 % (6, 5), kick damage + 20 % (6,
+6), the power maximum + 10 % (6, 11), the stamina maximum + 20 % (6, 12). Confirmed (code)
+([`CfgWarriorUpgrade`](../references/bindings/config.md#cfgwarriorupgrade)).
+
+**The pause Stats screen's bars** read these: Strength from the damage %, Stamina from the power and stamina maxima
+(upgrades included), Health from the power class's `+0x40`, Rage from the rage maximum / 150. The formulas are on
+[Pause: Stats screen](pause.md#stats-screen). "Strength" is not a field of its own: it is the Warrior class's damage %.
+
+#### Coney's implementation {#stats-coney}
+
+Coney reads the four tables from the configuration calls the scripts make (`characters::CharacterTypes`,
+`ai::aiConfigFrom()`), on the one difficulty it runs: the boot set, which is normal's. A human gets its type's stats
+when it is made (`ai::AiHumans::spawn()`, from the cast of a level's scripts) and a player when he is made or changes
+type (`human::playerClassOf()`, `human::playerProfileOf()`):
+
+| Stat | Applied? | Where | Test |
+| --- | --- | --- | --- |
+| Behaviour | yes, AI | `ai::aiConfigFrom()` → brain type | `tests/ai/disc_ai_config_test.cpp` |
+| Category | yes: boss class, a Warriors player's power class, the money class | `ai::FighterClass::category`, `characters::powerClassOf()`, `characters::moneyCategory()` | `tests/characters/character_types_test.cpp`, `tests/characters/starting_money_test.cpp` |
+| Speed class | no (a fallback; Coney uses the clips' speeds as the original does in play) | | |
+| Power class (AI and player) | yes | `play_level_cast.cpp` (the type's `+0x11d`), `characters::CharacterTypes::playerTraitsOf()` | `tests/characters/character_types_test.cpp`, `tests/platform/disc_change_character_test.cpp` |
+| Health (AI) | yes | `ai::FighterClass::health` | `tests/ai/brain_test.cpp` |
+| Health (player) × Health % | yes | `characters::PlayerTraits::health`, `human::playerProfileOf()` | `tests/characters/character_types_test.cpp`, `tests/platform/disc_change_character_test.cpp` |
+| Damage table × scale; player × Damage % | yes | `characters::parseCfgChar()`, `human::Human` (its own Anim Range List) | `tests/characters/character_types_test.cpp`, `tests/combat/anim_ranges_test.cpp` |
+| Attack table | yes, AI | `ai::FightSettings::attackWeights` | `tests/ai/fight_goal_test.cpp` |
+| Range table | no: not traced | | |
+| Hat | yes | `platform/play_level_hats.cpp` | `tests/world_objects/hats_test.cpp` (the fittings; the creation path has none) |
+| Voice | yes | `script::voiceSetOfType()` | `tests/audio/game_sound_test.cpp` |
+| `flag_14b` | the tag colour and the female sounds; not the body scale (every human has the player's 0.97) | `play_level_cast.cpp`, the sound events | `tests/audio/human_sound_events_test.cpp` |
+| Drop group, drop chance, money | yes | `characters::rollStartingCarry()` at `HuCreate` | `tests/characters/starting_money_test.cpp` |
+| Weapon | no: not traced | | |
+| Power meter (`+0x28`, `+0x2a`) | yes, every human (was the player's 400 and 60 for all before) | `combat::PlayerCombat` from `human::FighterProfile::powerClass` | `tests/human/human_test.cpp`, `tests/platform/disc_change_character_test.cpp` |
+| Hurt power factor (`+0x18`) | yes | `combat::PowerMeter::setHurt()` | `tests/combat/meters_test.cpp` |
+| Stamina (`+0x2c`, `+0x2e`) | yes, every human (was the player's 135 and 40 for all) | `human::Stamina`, `human::Human::spawn()` | `tests/human/stamina_test.cpp`, `tests/human/human_test.cpp`, `tests/platform/disc_change_character_test.cpp` |
+| Hurt threshold, stun, down times | yes | `human::Victim`, `human::Fighter::hurt()` | `tests/human/being_hit_test.cpp` |
+| Stun and down factors while hurt (`+0x10`, `+0x14`), weapon stun (`+0x00`) | no | | |
+| Grab struggle (`+0x36`) | yes | `human::Fighter` | `tests/combat/grabbed_test.cpp` |
+| AI block, counter, delays, walls (`+0x08`, `+0x0c`, `+0x1c`, `+0x20`, `+0x24`, `+0x39`) | yes | `combat::PowerClass`, the brains | `tests/ai/fight_reactions_test.cpp`, `tests/ai/brain_test.cpp` |
+| AI pattern-reading threshold (`+0x37`) | no | | |
+| `+0x40` (health rings) | yes: read from the configuration now (was Rembrandt's 35 for every class) | `characters::parseCfgPowerClass()`, `play_level_world.cpp` | `tests/characters/character_types_test.cpp`, `tests/hud/health_rings_test.cpp` |
+| Rage (max, gain, decay, drain) | yes, the player's Warrior class (was class 6's for every player) | `combat::RageClass`, `combat::RageMeter` | `tests/combat/meters_test.cpp`, `tests/human/human_test.cpp`, `tests/platform/disc_change_character_test.cpp` |
+| Health % given back on release | no: Coney's hand-over is a stand-in that keeps one player human ([hand-over](#level99-handover)) | | |
+| Lock pick, tagging, mash bytes | yes | `scripting/object_bindings.cpp` | `tests/scripting/object_bindings_test.cpp` |
+| Cuffing, stereo, mugging bytes | no: those games are not implemented for a player | | |
+| Gym upgrades | no | | |
+| Stats screen | no: the pause menu's Stats item is not implemented | | |
+
+Coney's readings: the player's health is read from the type's own `+0x116` (the page does not say which record
+`Human_Init` takes it from; every Warriors alias has its class's value), rounded to the nearest; a configuration with
+no `CfgWarriorClass` leaves the health unscaled and the rage at class 6's.
+
 ### Hats {#hats}
 
 `CfgHat(set, type, hat, {x, y, z}, {i, j, k, r})` (`Cfg_AddHatFit`, `0x00228d70`) fills a **hat-fit set**: a record of
@@ -2786,7 +2893,8 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
   in a combat stance, full at 2.0 rad): the defaults, and for a level `--play-level` runs, what the preload's
   `CfgSetTurnRates` and `CfgTurnRate` calls recorded.
 - `src/human/stamina.*` is the stamina meter ([Sprint and stamina](#sprint)): the drain at the sprint gait, the
-  refill and the gait, airborne and "run with L2" blocks, and `Player_UpdateSprint`'s rule (L2 held and stamina not
+  refill (the maximum and the refill each human's power class's, [Stats](#stats-coney)) and the gait, airborne and
+  "run with L2" blocks, and `Player_UpdateSprint`'s rule (L2 held and stamina not
   0, asked again every update).
 - `src/human/body.*` is the walking body of [Walls and steps](#walls): the sphere of 0.35 × scale² (× 1.4286 for
   the player: 0.4705 m) centred 0.05 above its radius, wall triangles `|n.z|` ≤ 0.65 that the move goes into, the

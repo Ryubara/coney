@@ -21,7 +21,7 @@ so a fresh clone gets the same setup as the maintainer's machine:
 | `.mcp.json` | The debugging servers: `ghidra-mcp` (the shared Ghidra project) and `pcsx2` (the emulator over PINE) | Claude Code; other tools take the same two commands in their own MCP config |
 | `.claude/agents/` | The roles: `analyst`, `implementer`, `reviewer`, `research-reviewer`, `pr-reviewer` | Claude Code |
 | `.claude/skills/` | The coordinator's skills: `repo-hygiene` ([the skill](repo-conventions.md#hygiene-skill)) | Claude Code |
-| `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and `coney-tools build` allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)); hooks that refuse a raw `cmake --build`, `ctest` or `ninja` ([Builds and tests](#builds)) and a wait loop with no bound ([Bounded waits](#bounded-waits)) | Claude Code |
+| `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and `coney-tools build` allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)); hooks that refuse a raw `cmake --build`, `ctest` or `ninja` ([Builds and tests](#builds)), a wait loop with no bound ([Bounded waits](#bounded-waits)) and a raw `gh issue create` or issue body edit ([Issues](issues.md#agents)) | Claude Code |
 | `.claude/hooks/` | The hook scripts `settings.json` runs before a shell command | Claude Code |
 
 **The servers.** `.mcp.json` holds no paths. Each entry runs `coney-tools mcp serve <name>`, which finds the server
@@ -162,8 +162,9 @@ issue stays the one place to read it.
   minutes run in the background with their output going to a file; the agent checks the file every few minutes
   (each check keeps the cache warm) or once when the run should be done. Even an hour-long cache does not survive a
   run that takes longer. A build or test run is `coney-tools build ...` started with `run_in_background`
-  ([Builds and tests](#builds)); it prints its log path first, and gives up waiting for a slot after 45 minutes,
-  or sooner when the wait plus the build would pass its 55-minute budget.
+  ([Builds and tests](#builds)); it prints its log path first, and gives up waiting for a slot after 40 minutes,
+  or sooner when the wait plus the build would pass its 45-minute budget; a longer wait runs `--detach`
+  ([Build waits](#build-waits)).
 - **Every wait has a bound** ([Bounded waits](#bounded-waits)): never `until ...; do sleep ...; done` or `while true`
   in a shell, which a hook refuses.
 - **Keep tool output small.** Print counts, the failing lines and the end of a log, never a whole log: every line an
@@ -203,10 +204,10 @@ uv run --project python coney-tools build --agent <id> --preset dev --test [-R <
   it prints first.
 - **A second configuration** (the Clang build clang-tidy reads on Linux and macOS) is `--build-dir build/tidy --env
   CC=clang-19 --env CXX=clang++-19` with `--configure-only`; never a raw `cmake`.
-- **Exit code 75 means "still queued".** The command waited its cap (45 minutes), or as long as its time budget
-  allowed (`--budget`, 55 minutes for the wait and the steps together, so the agent's one-hour prompt cache stays warm;
-  it estimates a step from the median of its recent runs), left the queue and said its position and the numbers. Do
-  other work (docs, review, the next unit) and run the same command again later; do not loop on it in one call.
+- **Exit code 75 means "still queued".** The command left the queue: its wait reached `--max-wait`, or the wait the
+  queue still expects plus the step would pass the time budget (`--budget`), in which case it leaves at its first
+  look. It said its position and the numbers. Do other work and run the same command again later, or detach it and
+  stop ([Build waits](#build-waits)); do not loop on it in one call.
 - **`--priority`** goes ahead of the queue. The coordinator uses it for a build somebody is waiting on; an agent does
   not set it on its own.
 - **`build status`** shows who holds the slots and who waits. A crashed run is taken over by the next claimer, which
@@ -217,6 +218,24 @@ uv run --project python coney-tools build --agent <id> --preset dev --test [-R <
   `coney-tools build` command, and everything under it goes with it.
 - The coordinator sets the number of slots for the machine with `build_slots` in `coney.local.toml`
   ([Local workspace](workspace.md#local-config)) and does not stagger builds by hand any more.
+
+## Build waits {#build-waits}
+
+**No agent waits on a build past its prompt cache.** The cache lasts about an hour; an agent that sits idle longer
+wakes up and writes its whole context again, which on 2026-10-12 cost about 1.1 M tokens in one day. So
+`coney-tools build` enforces it:
+
+- A call you wait on may wait at most 40 minutes for a slot (`--max-wait`, the default) and take at most 45 minutes
+  in all, waits and steps together (`--budget`, the default). Larger values, and `--budget 0`, are refused (exit 2).
+- The run estimates its wait from the queue (who holds the slots, how long their steps usually take) and each step
+  from the median of its recent runs. When the two cannot fit the budget it leaves at once with exit 75, instead of
+  sitting through most of the hour.
+- When your wait would be long (exit 75, or `build status` shows a long queue), either do other work and run the
+  command again later, or **detach it and stop**: `coney-tools build --agent <id> ... --detach` starts the same run
+  in the background, apart from your shell, and returns at once. It may wait as long as it needs (default 240 minutes,
+  no budget). Write `STATUS.md` naming the worktree and the command, and end your turn. Whoever continues runs
+  `coney-tools build result --dir <worktree>`: exit 75 while it runs, then the run's summary, log path and exit code
+  ([`build result`](coney-tools.md#build)).
 
 ## Bounded waits {#bounded-waits}
 
