@@ -712,11 +712,15 @@ tactic (inferred: a fighting ring's spectators).
 ### ObjectPile (type 0x60) {#goal-object-pile}
 
 Take objects from a pile and throw them at the nearest human until a time.
+Step by step, with Process: [AI plan: the ObjectPile goal](ai-reimpl.md#object-pile).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
 | `0x002bada8` | `Goal_ObjectPile` | pusher | resolves the human and pushes an ObjectPile goal on a world object with an end time | confirmed (code) |
 | `0x002bae38` | `ObjectPileGoal_Init` | init | vtable `0x0053faf0`; `+0x10` the object pile's handle, `+0x14` the target (none), `+0x18` the end time | confirmed (code) |
+| `0x002bae80` | `ObjectPileGoal_Start` | Start | `+0x18` = 0 for −1, else made an end time (+ now); brain `+0x21c` = 0 | confirmed (code) |
+| `0x002baec0` | `ObjectPileGoal_Resume` | Resume | clears `+0x1c` (walking to the pile) | confirmed (code) |
+| `0x002baf08` | `ObjectPileGoal_Suspend` | Suspend | unless `+0x1c` is set, sets `+0x1d`: covered by any goal but its own GetItem walk, it ends | confirmed (code) |
 | `0x002baec8` | `ObjectPileGoal_End` | End | clears the target and sets brain `+0x21c` = 2 | confirmed (code) |
 | `0x002baf20` | `ObjectPileGoal_PickTarget` | helper | `+0x14` = the nearest human: from the brain's list `+0x164`, or when it is empty the visible humans in sight range (filter `0x0029c0d8`) | confirmed (code) |
 | `0x002bb010` | `ObjectPileGoal_Process` | Process | done when the pile is gone or the end time passed; empty-handed: picks up from the pile within 1 m (PickUpItem) or walks to it with a GetItem-type goal (`0x002dc7a0`); holding a throwable: picks a target every 10 updates, closes to reach (2000 ms) or every 30 updates turns and throws (attack kind 0) | confirmed (code) |
