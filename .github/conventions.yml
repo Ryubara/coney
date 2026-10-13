@@ -634,7 +634,7 @@ hygiene:
       scope: local
       severity: warn
       fix: skill
-      keys: [workspace.scratch, workspace.game_capture_suffixes, workspace.shared_scratch]
+      keys: [workspace.scratch, workspace.game_capture_suffixes, workspace.game_capture_folder_suffixes, workspace.game_capture_folders, workspace.scratch_skip_folders, workspace.shared_scratch]
       summary: "a scratch folder of merged or abandoned work still holds files taken from the original (traces, dumps, save states)"
 
 # Local only (`workspace clean|disk`); the hosted checks ignore it.
@@ -648,7 +648,14 @@ workspace:
   remove_worktree_when_merged: true
   # File types taken from the original (PCSX2 save states, traces, memory dumps): `repo audit --local` finds them in the
   # scratch folder of a branch that is merged or gone, where they have no use left. Screenshots are not on this list.
-  game_capture_suffixes: [".p2s", ".trace", ".dump", ".bin"]
+  game_capture_suffixes: [".p2s", ".trace", ".dump"]
+  # File types that are captures only in the folders below, at any depth: `.bin` is also CMake's, Gradle's and every
+  # terminal recorder's, so a `.bin` elsewhere is not reported. Folder names match in any case.
+  game_capture_folder_suffixes: [".bin"]
+  game_capture_folders: [states, pcsx2-states, trace, pcsx2]
+  # Build and dependency trees the scratch check never walks into, at any depth (case-insensitive): nothing in them
+  # came from the original, and they hold hundreds of thousands of files.
+  scratch_skip_folders: [CMakeFiles, _deps, .gradle, build]
   # Scratch folders that are the workspace's own, not a branch's (the emulator's files, the saved states, the PCSX2
   # claims, the downloads, the preview builds): the scratch check never reports them.
   shared_scratch: [pcsx2, pcsx2-states, pcsx2-claims, downloads, preview, public-preview, presentation]

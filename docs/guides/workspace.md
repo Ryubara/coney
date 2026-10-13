@@ -262,7 +262,11 @@ is done, and keep out of it anything you would be sorry to lose; findings belong
 Name a scratch folder for its branch (`scratch/<branch>/`). `coney-tools repo audit --local` warns (`ws.scratch`) about
 a folder whose branch is merged or gone and that still holds files taken from the original: the types in
 `workspace.game_capture_suffixes` of [.github/conventions.yml](repo:.github/conventions.yml) (PCSX2 save states,
-traces, memory dumps). They are of no use once the work is finished, and they are the files that must never leave the
-machine. Screenshots are not looked at there: upload what an issue or a pull request needs, then delete them. The
-folders in `workspace.shared_scratch` (the emulator's files, the saved states, the PCSX2 claims, the downloads, the
-preview builds) belong to the workspace and are never reported.
+traces, memory dumps: `.p2s`, `.trace`, `.dump`, anywhere), plus a `.bin` file under a folder named in
+`workspace.game_capture_folders` (`states`, `pcsx2-states`, `trace`, `pcsx2`). A `.bin` elsewhere is not counted
+(CMake, Gradle and terminal recorders write them), and the walk never enters a build or dependency tree
+(`workspace.scratch_skip_folders`: `CMakeFiles`, `_deps`, `.gradle`, `build`). The finding lists the first five paths
+(relative to the folder) and counts the rest: look at them before deleting. They are of no use once the work is
+finished, and they are the files that must never leave the machine. Screenshots are not looked at there: upload what
+an issue or a pull request needs, then delete them. The folders in `workspace.shared_scratch` (the emulator's files,
+the saved states, the PCSX2 claims, the downloads, the preview builds) belong to the workspace and are never reported.
