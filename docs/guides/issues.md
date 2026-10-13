@@ -214,6 +214,11 @@ A brief may be just "issue #N" ([Briefing](agents.md#briefs)); the issue holds t
   recordings are deleted from scratch when done ([Sharing one machine](how-we-work.md#shared-machine)).
 - **Work the usual way:** the research first when the status says so, then a failing test, then the fix
   ([Testing](testing.md#done)). The pull request description has a `Fixes #N` line in its Summary.
+- **Issues are filed through `coney-tools issue` only.** A hook
+  ([`.claude/hooks/issue_guard.py`](repo:.claude/hooks/issue_guard.py)) refuses a raw `gh issue create`, a
+  `gh issue edit` that sets the body and a `gh api` call that writes an issue, so the body is checked against the
+  form first. Labels, titles, comments and closing pass, and so does a command that names only another
+  repository (`-R owner/name`).
 - **Agents never write to GitHub.** No comments, labels, issues or pull requests: the coordinator does all of it,
   from the same release queue as pull requests ([How we work](how-we-work.md)). An agent reports what it would say
   (the finding, the question for the reporter, the status change) in its message to the coordinator.
