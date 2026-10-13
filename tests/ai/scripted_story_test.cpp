@@ -236,6 +236,31 @@ TEST_CASE("A Warrior command reaches the chief's crew and the callback", "[ai][s
     CHECK(level.scripted->storyHost().warriorCommand() == 0);
 }
 
+TEST_CASE("A forced Warrior command the scripts turned off is refused and the crew keeps its goals", "[ai][story]") {
+    // The chief's automatic attack is a forced dispatch (docs/research/ai-gangs.md#warrior-auto-commands), and the
+    // dispatcher refuses a command turned off for the player, forced or not: level3's chase turns commands 0-5 off so
+    // that the crew runs on ahead of a chief the pursuers have caught (docs/research/scripting.md#level3).
+    Level level;
+    Brain& crew = level.add({44.0F, 40.0F, 0.0F});
+    const int gang = level.scripted->gangCreate(0, "Warriors");
+    level.scripted->gangAddMember(gang, 1.0);
+    level.scripted->gangAddMember(gang, 2.0);
+    level.call("IssueWarriorCommand", {Value(0.0), Value(true)});
+    level.scene.brains.gangs().update(0);
+    REQUIRE(crew.topGoal() != nullptr);
+    REQUIRE(crew.topGoal()->type() == GoalType::FollowPlayer);
+    level.call("WCEnableCommand", {Value(1.0), Value(1.0), Value(0.0)});
+    level.call("IssueWarriorCommand", {Value(1.0), Value(true)});
+    level.scene.brains.gangs().update(0);
+    CHECK(level.scripted->storyHost().warriorCommand() == 0);
+    REQUIRE(crew.topGoal() != nullptr);
+    CHECK(crew.topGoal()->type() == GoalType::FollowPlayer);
+    // Turned on again, the same forced attack goes through.
+    level.call("WCEnableCommand", {Value(1.0), Value(1.0), Value(1.0)});
+    level.call("IssueWarriorCommand", {Value(1.0), Value(true)});
+    CHECK(level.scripted->storyHost().warriorCommand() == 1);
+}
+
 TEST_CASE("Every Warrior command clears the crew's shared target; the menu's attack sets it to the chief's lock-on",
           "[ai][story][threat]") {
     // WarriorCommand_Dispatch and Gang_SetSharedTarget (docs/research/ai-reimpl.md#unit-1).

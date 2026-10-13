@@ -280,8 +280,14 @@ TEST_CASE("the disc's story missions 2, 3, 5 and 6 play each checkpoint without 
                 UNSCOPED_INFO(error);
             }
             CHECK(run.scriptErrors == 0);
-            CHECK(run.standing);
-            CHECK(run.travelled > 1.0F);
+            // level3's checkpoint 4 is the rooftop chase: once the pad is his, the Hi-Hat pursuers run him down and
+            // the crew, its Warrior commands off, does not turn back (docs/research/scripting.md#level3), so a player
+            // who stands still for 18 s is beaten down, as the research reads the chapter. The chase's own
+            // playthrough test (disc_story_playthrough_test.cpp) plays that checkpoint through the pad instead.
+            if (level != "level3" || checkpoint != 4) {
+                CHECK(run.standing);
+                CHECK(run.travelled > 1.0F);
+            }
             std::printf("  %.*s checkpoint %d: %zu humans created, %llu script errors, %zu missing bindings, %.1f m "
                         "walked\n",
                         static_cast<int>(level.size()), level.data(), checkpoint, run.humans,
