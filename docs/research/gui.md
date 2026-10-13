@@ -469,9 +469,9 @@ Confirmed (code) at `0x001b9600` (`MessageHUD_Layout`), `0x00179958` (`Font_Meas
   slot 6, instead of `firstGlyph + c`; `Page_Rect` keeps only the low 16 bits, so `0xd0100` is rectangle **256**.
 - So in `part_page0` the money font starts at rectangle 11 for `'0'`: `<MONEYPLUS>` `=` is 24, `<MONEYMINUS>` `<` 23,
   and **`<ST>`, the character `n`, is rectangle 73: the triangle button** (the same rectangle the scripts pass to
-  `HUDTurnOnActionCycleAnim` as the triangle, [HUD](hud.md#action-prompts); inferred-corroborated). `<ST>` appears only
-  inside `<MONEYFONT>`; without it, it is the letter n. The icon tags `<BOBJ>` `;` → 22, `<ROBJ>` `@` → 27, `<YOBJ>` `A`
-  → 28 likewise.
+  `HUDTurnOnActionCycleAnim` as the triangle, [HUD](hud-messages.md#action-prompts); inferred-corroborated). `<ST>`
+  appears only inside `<MONEYFONT>`; without it, it is the letter n. The icon tags `<BOBJ>` `;` → 22, `<ROBJ>` `@` → 27,
+  `<YOBJ>` `A` → 28 likewise.
 - In `big_font` the animated stick tags give characters 2-6 (each alternates its own character with 2 every period
   `0x0050e6e4`: `<SDD>` 3, `<SDL>` 4, `<SDR>` 5, `<SDU>` 6), drawn as rectangles 257-261: the stick pictures. HUD string
   4 (revive) uses `<SIZE 1.5><BIGFONT><MONEYFONT><SDL>...`.
@@ -706,7 +706,7 @@ A radar's fields and its 128 slots of `0x40` bytes (from radar `+0x920`). Confir
 | `+0x08` / `+0x0c` | shown (`Radar_Show`) / hidden (`Radar_HideAllBlips`) |
 | `+0x14` | enemy blips (types 5, 6, 8) may show when marked (inferred) |
 | `+0x18` | enemy marks never time out (inferred) |
-| `+0x20`, `+0x24`, `+0x28` | zoom, fast and rest radii ([HUD](hud.md#the-radar-on-screen)) |
+| `+0x20`, `+0x24`, `+0x28` | zoom, fast and rest radii ([HUD](hud-radar.md#the-radar-on-screen)) |
 | `+0x38`-`+0x40` | disc colour state, old state, change time |
 | `+0x48`-`+0x60` | the sprite batches ([table above](#radar-icons)); `+0x48` holds icons 25 and 26 |
 | `+0x70` / `+0x80` | the player's position / matrix, copied by `Radar_Update` |
@@ -853,9 +853,9 @@ fields are in [The markup text widget's fields](#markup-text-fields); the tags i
 ### After `GUI/MissionSelectHUD.cpp` (no path string): `MultiLineTextWidget` and the HUD's bars {#fn-multilinetext}
 
 A translation unit without a path string runs from `0x001c16a8` to its static-init stub `0x001c3dc0`. Besides the
-HUD pieces in [HUD](hud.md#fn-hud-bars-panels), it holds `MultiLineTextWidget` (vtable `0x0053a550`, class string
-of the PM and Rumble screens' allocations): plain text (no markup) wrapped into at most 10 lines, used by the
-captions, the error screen and the profile and Rumble dialogs.
+HUD pieces in [HUD](hud-functions-panels.md#fn-hud-bars-panels), it holds `MultiLineTextWidget` (vtable `0x0053a550`,
+class string of the PM and Rumble screens' allocations): plain text (no markup) wrapped into at most 10 lines, used by
+the captions, the error screen and the profile and Rumble dialogs.
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -874,7 +874,7 @@ captions, the error screen and the profile and Rumble dialogs.
 
 `0x001c41a0`-`0x001c6878`: the two radars (HUD `+0x15d0` and `+0x3f10`, [The radar](#radar-icons)); a radar is a
 plain struct, not a widget, with 128 blip slots of `0x40` bytes from `+0x920` (layout in
-[Radar blip slots](#radar-blip-slots)). The map disc is drawn by `Radar_Render` ([HUD](hud.md#the-radar-on-screen)).
+[Radar blip slots](#radar-blip-slots)). The map disc is drawn by `Radar_Render` ([HUD](hud-radar.md#the-radar-on-screen)).
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -883,7 +883,7 @@ plain struct, not a widget, with 128 blip slots of `0x40` bytes from `+0x920` (l
 | `0x001c42e0` | `Radar_IsCreated` | returns `+0x00` | confirmed (code) |
 | `0x001c42e8` | `Radar_HideAllBlips` | when created: hidden `+0x0c` = 1 and every used slot's dot (`0x001e9b38`) or widget (vtable `+0x40`, 0) hidden | confirmed (code) |
 | `0x001c4388`, `0x001c4448` | `Radar_Show`, `Radar_Hide` | only while the radar is on (`+0x04`): show or hide every used slot's dot or widget; show also clears `+0x0c` and sets shown `+0x08`, hide clears `+0x08` | confirmed (code) |
-| `0x001c4500` | `Radar_SetTintState` | the disc colour state ([HUD](hud.md#the-radar-on-screen)) | confirmed (code) |
+| `0x001c4500` | `Radar_SetTintState` | the disc colour state ([HUD](hud-radar.md#the-radar-on-screen)) | confirmed (code) |
 | `0x001c4528`, `0x001c45a0` | `Radar_SetBlipMode`, `Radar_SendSlotMode` | find the handle's slot on a layer, then send its dot message `0x19` with the mode ([Blip modes](#radar-icons)) | confirmed (code) |
 | `0x001c4640` | `Radar_SetBlipIconLock` | layer 0 slot `+0x34` = the value; while it is set `Radar_SetSlotIcon` and `Radar_SetBlipIcon` do nothing (its caller `HUD_RadarSetBlipIconLock`, `0x001b2bf0`, is the `flag` of `HUDSetRadarItemTexture`) | confirmed (code) |
 | `0x001c4690` | `Radar_SetSlotIcon(scale, radar, slot, icon)` | unless locked: the dot's two size floats (`+0xbc`, `+0xc0`) × `scale`, message `0x11` with the icon (the dot's rectangle), slot `+0x18` = icon | confirmed (code) |
@@ -898,7 +898,7 @@ plain struct, not a widget, with 128 blip slots of `0x40` bytes from `+0x920` (l
 | `0x001c5158` | `Radar_FindFreeSlot` | first slot whose in-use byte `+0x31` is 0, or -1 | confirmed (code) |
 | `0x001c5188` | `Radar_FindSlot(radar, handle, layer)` | the (`layer` + 1)-th slot holding the handle, or -1 | confirmed (code) |
 | `0x001c5210` | `Radar_Update(radar, playerMatrix)` | per frame from `HUD_Update`; below the table | confirmed (code) |
-| `0x001c60b0` | `Radar_Render` | the map disc ([HUD](hud.md#the-radar-on-screen)) | confirmed (code) |
+| `0x001c60b0` | `Radar_Render` | the map disc ([HUD](hud-radar.md#the-radar-on-screen)) | confirmed (code) |
 | `0x001c6730` | `Radar_MoveSlotToBatch48` | recreates a slot's dot in batch `+0x48`, keeping its size and icon; `Radar_Update` does it for icons 25 and 26 (so batch `+0x48`, depth 10,000, holds those two) | confirmed (code) |
 | `0x001c6878` | `Radar_GetBlipPosition(out, radar, handle)` | the layer-0 dot's world position (its vtable `+0xac`); the instruction arrow uses it | confirmed (code) |
 

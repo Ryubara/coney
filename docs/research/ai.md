@@ -873,7 +873,7 @@ of the fight stance, not blocked, standing, one holding something, the other pla
 #### The weapon swap {#warrior-swap}
 
 Triangle beside a Warrior (or, in two-player play, beside the other player) whose swap prompt is up
-([step 7](#think-warrior); [HUD: the talk prompt](hud.md#talk-prompt)) swaps what the two hold in their hands.
+([step 7](#think-warrior); [HUD: the talk prompt](hud-messages.md#talk-prompt)) swaps what the two hold in their hands.
 Confirmed (code) at `0x0024d810`, `0x00306040`, `0x00303468`, `0x00233b08`, `0x0021c0a8`, `0x00101360` unless marked.
 
 **How the press gets there.** The swap has no context record: it comes from triangle's pick-up search

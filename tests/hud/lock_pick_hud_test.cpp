@@ -172,7 +172,7 @@ TEST_CASE("the lock-pick face maps the rectangle's circle upright", "[hud][lockp
 }
 
 TEST_CASE("the lock-pick pins rest at 3.14, not pi", "[hud][lockpick]") {
-    // The original's rest angle is the constant 3.14 (docs/research/hud.md#lock-pick-dial-layout).
+    // The original's rest angle is the constant 3.14 (docs/research/hud-functions-lua.md#lock-pick-dial-layout).
     LockPickHud dial;
     dial.setPins({1.0F, 2.0F, 3.0F}, 1);
     dial.show(true, 0);

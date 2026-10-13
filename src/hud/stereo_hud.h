@@ -9,9 +9,9 @@
 
 namespace coney::hud {
 
-/// The stereo-theft panel's layout in the default video mode (docs/research/hud.md#stereo-layout): the anchor (player
-/// 1's x is mirrored), the backdrop's size, the arrow's corner offsets, the parts' sizes (overlay units, the moving
-/// parts square) and the stick's and ring's offsets.
+/// The stereo-theft panel's layout in the default video mode (docs/research/hud-functions-panels.md#stereo-layout): the
+/// anchor (player 1's x is mirrored), the backdrop's size, the arrow's corner offsets, the parts' sizes (overlay units,
+/// the moving parts square) and the stick's and ring's offsets.
 inline constexpr GuiPoint kStereoAnchor{0.12F, 0.57F};
 inline constexpr float kStereoSize = 0.08F;
 inline constexpr float kStereoCornerY = 0.05F;
@@ -45,7 +45,7 @@ inline constexpr graphics::Rgba kStereoRingColour{225, 186, 65, 255};
 /// The play mode starts it with the triangle press (the intro clip), sets the progress each update and ends it the
 /// moment the success or failure clip starts. update() runs on the fixed step with the game time.
 ///
-/// Research: docs/research/hud.md#stereo-layout
+/// Research: docs/research/hud-functions-panels.md#stereo-layout
 /// @orig 0x001c9818 StereoHud_Construct (unknown)
 class StereoHud {
   public:

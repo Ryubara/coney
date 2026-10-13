@@ -53,7 +53,7 @@ struct ChaseGauge {
 /// own sprite word `0x020a0000` is not loaded), and kind 3's bars take kind 1's size; one batch draws the gauge's three
 /// sprites in order (track, marker, icon) in place of their three depths.
 ///
-/// Research: docs/research/hud.md#scripted-bars, docs/references/bindings/hud.md#hudenablebar
+/// Research: docs/research/hud-messages.md#scripted-bars, docs/references/bindings/hud.md#hudenablebar
 class ScriptedBars {
   public:
     /// The marker's sprite word (`chasebar` rectangle 7).

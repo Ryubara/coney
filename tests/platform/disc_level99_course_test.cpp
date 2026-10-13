@@ -174,7 +174,7 @@ TEST_CASE("the disc's level99 combat tutorial: the play-through script passes le
         });
     // Frames on which a text waited in the queue behind a hint with no time of its own: in the original only a
     // `<DISPLAYTIME>` hint holds the box, and its successor waits one update after it ends (nothing showing then),
-    // docs/research/hud.md#hint-queue-runtime.
+    // docs/research/hud-messages.md#hint-queue-runtime.
     std::size_t backedUp = 0;
     for (; frame < kCourseEnd + kCheckpointWait && (armed.empty() || armed.back() != "P1.RageMoves"); ++frame) {
         stack.runUntilEmpty(timer, {}, 1);

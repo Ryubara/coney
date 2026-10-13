@@ -246,7 +246,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = 
 
 [hook.attack-score]
 description = "Each call of the attack-scoring step (0x002653d8, from Human_ApplyPendingDamage for a pad-controlled attacker): the attacker, the victim and whether the hit landed (0 blocked)."
-research = "docs/research/hud.md#tutorial-callback"
+research = "docs/research/hud-messages.md#tutorial-callback"
 address = 0x002653d8
 # addiu sp,sp,-0x60; sq s1,0x40(sp)
 original = [0x27bdffa0, 0x7fb10040]
@@ -254,7 +254,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = 
 
 [hook.tutorial-callback]
 description = "Each call of Tutorial_CallCallback (0x001ce9a8): the anim id it would pass to the HUDSetTutorialCallback function, and the name word (0 when none is set)."
-research = "docs/research/hud.md#tutorial-callback"
+research = "docs/research/hud-messages.md#tutorial-callback"
 address = 0x001ce9a8
 # addiu sp,sp,-0x30; sq s1,0x10(sp)
 original = [0x27bdffd0, 0x7fb10010]
@@ -438,7 +438,7 @@ log = [{ value = "[a2 + 0x20]", name = "t3" }, { value = "[a2 + 0x28]", name = "
 
 [hook.game-hint]
 description = "Each call of HintBox_QueueGameHint (0x001ce1e8): the game's own hint id (a CfgTutorialMessage entry) queued at priority 2."
-research = "docs/research/hud.md#hints-hudsettutorialtext"
+research = "docs/research/hud-messages.md#hints-hudsettutorialtext"
 address = 0x001ce1e8
 # addiu sp,sp,-0x10; lui v0,0x62
 original = [0x27bdfff0, 0x3c020062]
@@ -446,7 +446,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a1", name = 
 
 [hook.hint-show]
 description = "HintBox_Update taking the next hint off its queue (0x001cdf7c, after MarkupText_SetText): the hint's text pointer and its priority, the moment it shows."
-research = "docs/research/hud.md#hints-hudsettutorialtext"
+research = "docs/research/hud-messages.md#hints-hudsettutorialtext"
 address = 0x001cdf7c
 # lbu v0,0x4(s1); lui a0,0x60
 original = [0x92220004, 0x3c040060]
@@ -454,7 +454,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "[s1 + 0x0]", name 
 
 [hook.hint-queue]
 description = "Each call of HintBox_Queue (0x001ce3c0, HUDSetTutorialText and the game's own queueing): the text (0 for nil) and its priority, with the box's showing text pointer (+0x68) and priority (+0x3ac) before the call."
-research = "docs/research/hud.md#hint-queue-runtime"
+research = "docs/research/hud-messages.md#hint-queue-runtime"
 address = 0x001ce3c0
 # addiu sp,sp,-0x40; move t0,a1
 original = [0x27bdffc0, 0x00a0402d]
@@ -462,7 +462,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a1", name = 
 
 [hook.hint-clear]
 description = "Each call of MessageHUD_Shutdown (0x001b9290, the markup text's clear, vtable +0x6c): the widget and the caller; the hint box is 0x00609250."
-research = "docs/research/hud.md#hint-queue-runtime"
+research = "docs/research/hud-messages.md#hint-queue-runtime"
 address = 0x001b9290
 # addiu sp,sp,-0x40; sq s0,0x30(sp)
 original = [0x27bdffc0, 0x7fb00030]
@@ -470,7 +470,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = 
 
 [hook.hint-withdraw]
 description = "Each call of HintBox_Withdraw (0x001ce5c0): the text pointer withdrawn, and the box's showing text."
-research = "docs/research/hud.md#hint-queue-runtime"
+research = "docs/research/hud-messages.md#hint-queue-runtime"
 address = 0x001ce5c0
 # addiu sp,sp,-0x80; sq s1,0x60(sp)
 original = [0x27bdff80, 0x7fb10060]
@@ -478,7 +478,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a1", name = 
 
 [hook.hint-flush]
 description = "Each call of HintBox_FlushPriority (0x001ce748, HUDFlushTutorialText): the priority flushed, and the box's showing text."
-research = "docs/research/hud.md#hint-queue-runtime"
+research = "docs/research/hud-messages.md#hint-queue-runtime"
 address = 0x001ce748
 # addiu sp,sp,-0xc0; sq s2,0x90(sp)
 original = [0x27bdff40, 0x7fb20090]

@@ -119,7 +119,7 @@ struct ScriptState {
     /// The talk prompt (human `+0x1b2`, and the message-0 handler's text `+0x7c`): set by a Warrior's brain each think
     /// while the swap prompt applies (ai::thinkSwapPrompt()), which then gives talkString, `GSTRING.HUD` 0xc-0xe, in
     /// place of any talkText of its own; with neither the prompt reads `GSTRING.HUD` 9
-    /// (docs/research/hud.md#talk-prompt).
+    /// (docs/research/hud-messages.md#talk-prompt).
     bool talkable = false;
     std::uint32_t talkString = 0;
     std::string talkText;

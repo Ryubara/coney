@@ -13,7 +13,7 @@ namespace coney::hud {
 namespace {
 
 // The layout table `0x0050d050` in the default video mode, GUI units, by player: the button's centre, the bar's left
-// end and the glyphs' right edges (docs/research/hud.md#mash-meter-layout).
+// end and the glyphs' right edges (docs/research/hud-functions-parts.md#mash-meter-layout).
 struct MeterPlace {
     float buttonX;
     float barLeft;

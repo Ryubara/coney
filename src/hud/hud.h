@@ -218,7 +218,7 @@ class Hud {
     /// calls, where the original's `HUD_Update` runs in its frame (after the simulation, whose animation and tutorial
     /// callbacks set texts, and before `ScriptSystem::Update`; docs/research/level-loading.md#a-frame-of-play), since
     /// Coney's own HUD step comes before those callbacks. One step only: an expired hint's successor then shows one
-    /// update after it ends, as in the original (docs/research/hud.md#hint-queue-runtime).
+    /// update after it ends, as in the original (docs/research/hud-messages.md#hint-queue-runtime).
     void updateHints(std::uint64_t nowMs) {
         if (!m_letterbox) {
             m_hints.update(nowMs);
@@ -277,22 +277,25 @@ class Hud {
     void stopActionCycle(std::size_t player) { m_cycles.at(player).on = false; }
     [[nodiscard]] const ActionCycle& actionCycle(std::size_t player) const { return m_cycles.at(player); }
 
-    /// Player `player`'s mash meter (HUD `+0xebc0` + player × `0x430`, docs/research/hud.md#mash-meter-layout).
+    /// Player `player`'s mash meter (HUD `+0xebc0` + player × `0x430`,
+    /// docs/research/hud-functions-parts.md#mash-meter-layout).
     [[nodiscard]] MashMeter& mashMeter(std::size_t player) { return m_mash.at(player); }
     [[nodiscard]] const MashMeter& mashMeter(std::size_t player) const { return m_mash.at(player); }
-    /// Player `player`'s stereo-theft panel (HUD `+0xfea0` + player × `0xb10`, docs/research/hud.md#stereo-layout).
+    /// Player `player`'s stereo-theft panel (HUD `+0xfea0` + player × `0xb10`,
+    /// docs/research/hud-functions-panels.md#stereo-layout).
     [[nodiscard]] StereoHud& stereo(std::size_t player) { return m_stereo.at(player); }
     [[nodiscard]] const StereoHud& stereo(std::size_t player) const { return m_stereo.at(player); }
-    /// Player `player`'s mug meter (player panel `+0x3480`, docs/research/hud.md#mug-meter-layout).
+    /// Player `player`'s mug meter (player panel `+0x3480`, docs/research/hud-functions-panels.md#mug-meter-layout).
     [[nodiscard]] MugMeter& mug(std::size_t player) { return m_mug.at(player); }
     [[nodiscard]] const MugMeter& mug(std::size_t player) const { return m_mug.at(player); }
-    /// Player `player`'s lock-pick dial (HUD `+0xf420` + player × `0x540`, docs/research/hud.md#lock-pick-dial-layout).
+    /// Player `player`'s lock-pick dial (HUD `+0xf420` + player × `0x540`,
+    /// docs/research/hud-functions-lua.md#lock-pick-dial-layout).
     [[nodiscard]] LockPickHud& lockPick(std::size_t player) { return m_lockPick.at(player); }
     [[nodiscard]] const LockPickHud& lockPick(std::size_t player) const { return m_lockPick.at(player); }
     /// Player `player`'s fixed-camera icon (HUD `+0x135e0` + player × `0x100`).
     [[nodiscard]] FixedCamIcon& fixedCamIcon(std::size_t player) { return m_fixedCam.at(player); }
     [[nodiscard]] const FixedCamIcon& fixedCamIcon(std::size_t player) const { return m_fixedCam.at(player); }
-    /// Player `player`'s tagging panel (docs/research/hud.md#fn-after-subtitle).
+    /// Player `player`'s tagging panel (docs/research/hud-functions-panels.md#fn-after-subtitle).
     [[nodiscard]] TagHud& tagPanel(std::size_t player) { return m_tagPanels.at(player); }
     [[nodiscard]] const TagHud& tagPanel(std::size_t player) const { return m_tagPanels.at(player); }
     /// Player `player`'s Warrior command menu (panel `+0x1ef0`, docs/research/hud.md#warrior-command-menu).

@@ -80,7 +80,7 @@
     announcement widget (+0xe340) through 0x001b3cb0, which also looks up interface cue 0x14. An announcement lasts as
     its own <DISPLAYTIME> markup says, else until replaced; while the +0xe340 one shows, the objective message, the hint
     box and the action prompts are hidden. Details: [The in-game
-    HUD](../../research/hud.md#announcements-and-other-messages).
+    HUD](../../research/hud-messages.md#announcements-and-other-messages).
   usage: {chunks: 17, calls: 50, boot: true, mission1: true, result_used: false, levels: [95, 34, 60, 61, 62, 63, 64]}
   coney: implemented
 
@@ -525,7 +525,7 @@
     Mode 2 flushes that message and shows announcement 2 for slot 1 only (runtime-checked in level99, 2026-10-11); mode
     0 for slot 1 also queues tutorial hint 0x15 once while game tutorial text is on. That mode 2 ticks the line off is
     inferred (0x001a5070). The checklist is the object at 0x0062e790 (pointer 0x0050eddc). Behaviour:
-    [The in-game HUD](../../research/hud.md#objectives-hudsetobjective).
+    [The in-game HUD](../../research/hud-messages.md#objectives-hudsetobjective).
   usage: {chunks: 149, calls: 675, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
   coney: implemented
 
@@ -556,7 +556,7 @@
     sound cue 0x15 for each new hint; hidden while an objective message or an announcement shows. At most 20 hints are
     held (more are dropped) and the text is kept by pointer. A hint stays until its own <DISPLAYTIME ms> or <FREEZE ms>
     markup ends it, or until it is flushed, withdrawn or interrupted; without either tag it stays. Queue and timing:
-    [The in-game HUD](../../research/hud.md#hints-hudsettutorialtext).
+    [The in-game HUD](../../research/hud-messages.md#hints-hudsettutorialtext).
   usage: {chunks: 53, calls: 244, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
   coney: implemented
 
@@ -672,7 +672,7 @@
   depth: thorough
   notes: >-
     Kind 2's gauge (0x001a3720) starts with values 60 (`+0x348`) and 30 (`+0x340`) and the marker sprite 0x1a0007
-    (sheet `chasebar`); its look is on [HUD: scripted bars](../../research/hud.md#scripted-bars). Positions shift
+    (sheet `chasebar`); its look is on [HUD: scripted bars](../../research/hud-messages.md#scripted-bars). Positions shift
     down by a constant in a two-player game (0x00609e8c). The bars draw in the HUD pass
     ([HUD: render order](../../research/hud.md)).
   usage: {chunks: 28, calls: 100, boot: false, mission1: false, result_used: false, levels: [2, 3, 5, 81, 86, 93, 31, 51, 54, 55, 84, 82, 92, 20, 11]}
@@ -796,7 +796,7 @@
   notes: >-
     Stores the two icons at prompt +0x440/+0x444, the rates at +0x448 and +0x458, sets the cycle flag +0x45c and hides
     the prompt widget until its next update; the icon sprite (+0x480) is set up with a fixed size 0.1. The cycle runs
-    in ActionPrompt_Update ([HUD: action prompts](../../research/hud.md#action-prompts)), so it shows only while that
+    in ActionPrompt_Update ([HUD: action prompts](../../research/hud-messages.md#action-prompts)), so it shows only while that
     player's prompt itself is shown.
   usage: {chunks: 7, calls: 13, boot: false, mission1: false, result_used: false, levels: [95, 3, 81, 51, 54, 84]}
   coney: implemented
@@ -834,7 +834,7 @@
   depth: thorough
   notes: >-
     The arrow is rectangle 10 of hud_minigames, size 0.06, grey (191, 191, 191), and bobs along its direction
-    (0x001b7330). Behaviour: [The in-game HUD](../../research/hud.md#the-instruction-arrow-hudenableinstarrow).
+    (0x001b7330). Behaviour: [The in-game HUD](../../research/hud-messages.md#the-instruction-arrow-hudenableinstarrow).
   usage: {chunks: 1, calls: 1, boot: false, mission1: true, result_used: false}
   coney: implemented
 
@@ -901,7 +901,7 @@
   notes: >-
     Not tied to the hint text. Cleared only by nil or when the HUD is released at UnloadLevel. Player 2's hits do not
     call it. Because the name is not interned, the original relies on the script keeping the string alive (constants
-    in a chunk are). Details: [The in-game HUD](../../research/hud.md#tutorial-callback).
+    in a chunk are). Details: [The in-game HUD](../../research/hud-messages.md#tutorial-callback).
   usage: {chunks: 2, calls: 20, boot: false, mission1: true, result_used: false, levels: [95]}
   coney: implemented
 
@@ -1141,7 +1141,7 @@
   depth: thorough
   notes: >-
     The floats pass through in registers, which hides them in the decompiled wrapper. The zoom formula and
-    HUDSetRadarZoomScale are in [HUD: the radar](../../research/hud.md#the-radar-on-screen).
+    HUDSetRadarZoomScale are in [HUD: the radar](../../research/hud-radar.md#the-radar-on-screen).
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [3]}
   coney: implemented
 

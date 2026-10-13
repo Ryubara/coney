@@ -39,7 +39,8 @@ struct CounterPanel {
 /// the texts are `value label` (kind 0), `label value` (kind 1) and `label got/needed` (kind 2) with whole numbers; a
 /// bar (kind 3) is a grey bar under its label, filled in white.
 ///
-/// Research: docs/research/hud.md#announcements-and-other-messages, docs/references/bindings/hud.md#hudgetnewph
+/// Research: docs/research/hud-messages.md#announcements-and-other-messages,
+/// docs/references/bindings/hud.md#hudgetnewph
 class CounterPanels {
   public:
     /// `HUDGetNewPH(kind, label, width)`: the first free panel's index, or -1 when all five are taken. It stays

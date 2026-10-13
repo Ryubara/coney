@@ -597,7 +597,7 @@ runtime-checks pass: `tick-game` and `humans-update` (the play step and the char
 the wheel updates), `state-code` (record `+0x14`'s setter), `set-command` and `get-command` (per-player `+0x20`),
 `brain-think`, `brain-event`, `attack-warning`, `try-block`, `block-start`, `skid-test` (the locomotion's run-stop test)
 and `call-brains`. The hint-queue pass added `hint-queue`, `hint-clear`, `hint-withdraw` and `hint-flush` (the hint
-box's queue, [HUD](../research/hud.md#hint-queue-runtime)) and `anim-dispatch` and `anim-callback-match` (who starts
+box's queue, [HUD](../research/hud-messages.md#hint-queue-runtime)) and `anim-dispatch` and `anim-callback-match` (who starts
 which anim id and which script callback it runs). The level80 passes added the teammate hooks (`hit-by-chief`,
 `hit-reaction`, `attack-target-push`, `push-contact`, `can-push`, `say-command`) and the fire hooks (`ember-init`,
 `burn-init`, `fade-flame-init`, `debris-flame` and their update hooks); the revive pass added `revive-start` and

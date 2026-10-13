@@ -15,7 +15,7 @@
 namespace coney::hud {
 
 /// The level's map on the radar, from its level record (`CfgLevelName`): the sprite sheet named after the world holds
-/// the map's texture, and three floats map world metres onto it (docs/research/hud.md#the-radar-on-screen).
+/// the map's texture, and three floats map world metres onto it (docs/research/hud-radar.md#the-radar-on-screen).
 struct RadarMap {
     std::string sheet;    ///< The world name (record `+0x39`); the sheet is the resource named by its CRC-32.
     float offsetX = 0.0F; ///< Record `+0x6c` (argument 13): added to the world x.

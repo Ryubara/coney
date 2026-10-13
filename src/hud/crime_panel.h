@@ -9,9 +9,9 @@
 
 namespace coney::hud {
 
-/// The radar frame's arcs (docs/research/hud.md#fn-radar-frame): the wanted pair's radii and the second timer's, in
-/// pixels round the radar disc's centre; the default video mode's stretch (x 1.1, y 1.0); the segments; the colours;
-/// the least fill drawn; the easing per update and the jump that snaps.
+/// The radar frame's arcs (docs/research/hud-functions-parts.md#fn-radar-frame): the wanted pair's radii and the second
+/// timer's, in pixels round the radar disc's centre; the default video mode's stretch (x 1.1, y 1.0); the segments; the
+/// colours; the least fill drawn; the easing per update and the jump that snaps.
 inline constexpr float kCrimeInner = 54.0F;
 inline constexpr float kCrimeMiddle = 57.6F;
 inline constexpr float kCrimeOuter = 61.2F;
@@ -34,7 +34,7 @@ inline constexpr float kCrimeFullAbove = 0.9F;
 /// **Coney's placement**: the easing runs in update() (the HUD's fixed step), where the original eases in each draw,
 /// which it makes once per update.
 ///
-/// Research: docs/research/hud.md#fn-radar-frame
+/// Research: docs/research/hud-functions-parts.md#fn-radar-frame
 class CrimePanel {
   public:
     /// The fill of a timer with `fraction` of its 10 s left: 1 above 0.9, else the fraction, 0 for none.

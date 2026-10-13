@@ -291,7 +291,7 @@ Effects bit 0 spawns `part_light_bugs` at the light when it is made (`0x0017c508
   128 is **half transparent**, and the shadow is faint (confirmed (runtime), PCSX2 2.9.94, `level99`: a soft, barely
   darker patch under Rembrandt's feet). Rembrandt's `+0x580`-`+0x588` read 1.195, 1.097, 1.0 (confirmed (runtime)).
   The reticule update turns a player's shadow on every update and the Rumble team disc turns it off
-  ([HUD: the health rings](hud.md#the-health-rings)), which are drawn after it, over it.
+  ([HUD: the health rings](hud-radar.md#the-health-rings)), which are drawn after it, over it.
 
 ### The glow {#glow}
 
@@ -338,8 +338,8 @@ that only link are described above. Names are ours. Confirmed (code) at each add
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
-| `0x0017b1e0`, `0x0017b2e0` | `GroundRing_Queue`, `GroundRing_DrawQueued` | [HUD](hud.md#the-health-rings) | confirmed (code) |
-| `0x0017b8a8`, `0x0017bc28` | `Im2D_DrawTexturedRing`, `Im2D_DrawTexturedDisc` | [HUD](hud.md#the-health-rings) | confirmed (code) |
+| `0x0017b1e0`, `0x0017b2e0` | `GroundRing_Queue`, `GroundRing_DrawQueued` | [HUD](hud-radar.md#the-health-rings) | confirmed (code) |
+| `0x0017b8a8`, `0x0017bc28` | `Im2D_DrawTexturedRing`, `Im2D_DrawTexturedDisc` | [HUD](hud-radar.md#the-health-rings) | confirmed (code) |
 | `0x0017bec8` | `Im2D_DrawArc(shape)` | the part (`+0xb4` per cent) of a ring as a fan of segments with its colours; the chase and lock-pick gauges | confirmed (code) |
 | `0x0017c2a8` | `Shape2D_Queue(shape)` | copies a 0xc0-byte shape into the queue at `0x005fd9f0` (at most 6, count `0x0050ccd8`) | confirmed (code) |
 | `0x0017c308` | `Shape2D_DrawQueued` | draws each queued shape (a full disc at 100 %, else an arc) and empties the queue, from the viewport pass (`0x00156658`, `0x00156978`) | confirmed (code) |
@@ -396,7 +396,7 @@ unlit vertices (0) reach the GS as 59, 64 and 29 of 128 (street dump), `level100
   255, and the blob shadow's (10, 10, 10, 128) is half transparent. Coronas and shadows are drawn with Z test and no Z
   write after the world.
 - The blob shadow is 1 m square (`+0x580` is not researched); the shadow-ground check uses the shadow's ray.
-  The [health rings](hud.md#the-health-rings) are drawn over the shadows.
+  The [health rings](hud-radar.md#the-health-rings) are drawn over the shadows.
 - A light with radius 0 given `SetLightFlicker` keeps its corona and flickers (no `sub_flashing_light` particle);
   light bugs are not spawned. No object uses the pulse or the glow yet.
 - A sandbox (no level scripts) gets a stand-in ambient and directional light; the front end's background has its own

@@ -238,8 +238,8 @@ class Fighter {
     [[nodiscard]] int hitsLanded() const { return m_hitsLanded; }
     [[nodiscard]] int damageDealt() const { return m_damageDealt; }
     /// The anim ids of the hits this player's human struck a victim with in its last update (landed or met by a
-    /// block alike), oldest first: what the combat tutorial's callback hears (docs/research/hud.md#tutorial-callback).
-    /// An AI's hits are not kept.
+    /// block alike), oldest first: what the combat tutorial's callback hears
+    /// (docs/research/hud-messages.md#tutorial-callback). An AI's hits are not kept.
     [[nodiscard]] const std::vector<int>& strikes() const { return m_strikes; }
     /// Whether `animId` is the free attack playing that strikes through the human's strike shapes: started out of a
     /// hold by a human with shapes (FighterInput::strikeShapes) from a clip that switches one on. Such an attack hits a

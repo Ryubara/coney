@@ -349,7 +349,7 @@ is made or becomes a player; the evidence is as the cited page gives it. Every t
 | Weapon stun | float `+0x00` | as the attacker, scales the victim's stun for weapon hits of 20-49 damage (`0x0022f658`) |
 | Grab struggle | byte `+0x36` | the grabbed human's strike costs the grabber 1 / n of its power (`0x0027fd68`) |
 | AI: block, counter, attack delay | floats `+0x08`, `+0x0c`, `+0x24`, `+0x1c`, `+0x20`; bytes `+0x37`, `+0x39` | the AI's block chances, counter chance, attack delay factors, pattern-reading threshold and throws at walls ([AI](ai.md#block)) |
-| Health bar | byte `+0x40` | the pause Stats screen's Health bar (`+0x40` / 100, [Stats screen](pause.md#stats-screen)); the health rings' span ([HUD](hud.md#the-health-rings)) |
+| Health bar | byte `+0x40` | the pause Stats screen's Health bar (`+0x40` / 100, [Stats screen](pause.md#stats-screen)); the health rings' span ([HUD](hud-radar.md#the-health-rings)) |
 | Not traced | `+0x32`, `+0x38`, `+0x3a`-`+0x3f`, `+0x41`, `+0x42` | stored; no reader found |
 
 **3. The Warrior class** (`CfgWarriorClass`, record `0x006b65c0 + class × 14`, human `+0x1ba` by type: 0-8 the nine
@@ -1526,7 +1526,7 @@ addresses given:
   `AnimTaskFourMix_Construct`, `0x00106f50`) on both stacks in the same update; the four-mix's constructor takes its
   clips (82 and 86 for the grabber, 83 and 87 for the victim) and so fires the callbacks of the **hold ids at the
   connect**, the length of the connecting clip before the hold plays. Confirmed (runtime), PCSX2 2.9.94, `level99`
-  checkpoint 1 (hooks `anim-dispatch` and `anim-callback-match`, [the queue at runtime](hud.md#hint-queue-runtime)):
+  checkpoint 1 (hooks `anim-dispatch` and `anim-callback-match`, [the queue at runtime](hud-messages.md#hint-queue-runtime)):
   for each grab the dispatch of 82 for the player (from `0x00106fe0`) and of 83 for the victim came in the tick the
   connecting clip started (657 from `AnimTaskChained_Construct`, `0x00105990`); in the strong grapple the hold played
   and the tutorial callback received 82 **34 updates later**, and no second dispatch of 82 came when the hold began.
@@ -1539,17 +1539,17 @@ addresses given:
   ending in the fight idle 358 started it twice in one update. `level99`'s `PlayerState` then ran twice: each time
   `HUDSetTutorialText(nil)` and a hint, and the second nil found nothing showing yet, so one hint stayed queued per
   double start. The box backed up behind them, and the Targeting and Light Combos hints never showed
-  ([Hints](hud.md#hints-hudsettutorialtext)). **A grab's hold ids** (82 / 83, 84 / 85 from the rear) fire at the
+  ([Hints](hud-messages.md#hints-hudsettutorialtext)). **A grab's hold ids** (82 / 83, 84 / 85 from the rear) fire at the
   connect, as above: `Fighter::connect` reports the start of the hold its chain and the victim's end in
   (`AnimTaskStack::announceFollowOn`), and the hold does not report again when it begins, so `PlayerState`'s grab
   hint and `P1.Power`'s `TT_24d` come the connecting clip's length apart. **Coney's reading**: the four-clip mix's
   second clips (86 / 87) are not reported, since Coney's hold plays the one clip; the paired reaction (658 for the
   strong grapple) is still dispatched for the victim, not for the grabber as above.
 - **Coney's order in a step** (inferred from the original's frame, [A frame of play](level-loading.md#a-frame-of-play)):
-  the animation callbacks run before the [tutorial callback](hud.md#tutorial-callback), since the original calls
+  the animation callbacks run before the [tutorial callback](hud-messages.md#tutorial-callback), since the original calls
   that one when the victim applies the damage, with the id the attacker has already started; then the hint box
   steps, once a frame, where the original's `HUD_Update` stands; then the scheduled calls. A text set on a free box
-  shows within the call that set it ([The queue at runtime](hud.md#hint-queue-runtime)), so texts set by a callback
+  shows within the call that set it ([The queue at runtime](hud-messages.md#hint-queue-runtime)), so texts set by a callback
   and a scheduled call in one step never back up (before, from `level99`'s lesson 6 on, the box showed each grab hint
   `TT_19*` one text late, in place of the lesson's: user checklist item 33b).
 

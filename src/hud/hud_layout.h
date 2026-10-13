@@ -128,7 +128,7 @@ inline constexpr float kSlotLine1 = 0.104F;
 inline constexpr float kSlotLine2 = 0.146F;
 inline constexpr float kCounterTextOffset = 0.022F;
 
-// ---- The panel's tally (docs/research/hud.md#panel-tally) ----
+// ---- The panel's tally (docs/research/hud-functions-lua.md#panel-tally) ----
 
 /// From the panel's base, per player: the first stroke's (and the bars' base) x, the later strokes' base x; for both
 /// the marks' y. The steps, the turn and the rectangles are the gang-count indicator's (num_indicator.h).

@@ -383,7 +383,7 @@ class GameplayMode final : public GameMode {
     // @orig 0x00273a68 Tag_SayNearbyLine (unknown)
     void sayTagLine(double tagger, std::uint32_t command);
     // Player 1's tagging panel follows his stick game: the path, the painted cells, the cursor, the charge left and
-    // the paint's colour each update; hidden with no game (docs/research/hud.md#fn-after-subtitle).
+    // the paint's colour each update; hidden with no game (docs/research/hud-functions-panels.md#fn-after-subtitle).
     void updateTagPanel();
     // The spray's start once its intro clip has played (0x0022e610): the stick game, message 0 to the tag, the start
     // callback.
@@ -396,8 +396,8 @@ class GameplayMode final : public GameMode {
     // mission-failed menus are the ones that do while the menu can be open.
     void issueOpenWarCommand();
     // The combat tutorial's callback (`HUDSetTutorialCallback`) with the anim id of each hit player 1 struck in the
-    // level's step, landed or blocked (docs/research/hud.md#tutorial-callback). The original calls it from the damage
-    // step itself; Coney calls it right after the step.
+    // level's step, landed or blocked (docs/research/hud-messages.md#tutorial-callback). The original calls it from the
+    // damage step itself; Coney calls it right after the step.
     // @orig 0x001ce9a8 Tutorial_CallCallback (unknown)
     void callTutorialCallback();
     // The `PadSetHandlerEx` handler, once per human with a pad command this step (its handle, the command, 1),
@@ -425,8 +425,8 @@ class GameplayMode final : public GameMode {
     [[nodiscard]] std::optional<anim::Vec3> promptObjectPosition(double handle) const;
     // Player 1's feet as the scripts see them; nothing with no player 1.
     [[nodiscard]] std::optional<anim::Vec3> playerFeet() const;
-    // HUD_Update's choice of player 1's action prompt (docs/research/hud.md#action-prompts), as far as Coney has it:
-    // a held human to mug, a downed partner to revive (revivePrompt()), a cuffed human to free (kind 0,
+    // HUD_Update's choice of player 1's action prompt (docs/research/hud-messages.md#action-prompts), as far as Coney
+    // has it: a held human to mug, a downed partner to revive (revivePrompt()), a cuffed human to free (kind 0,
     // uncuffPrompt()), the action object's text (with its hint), a pickable door, a car stereo, a dealer's offer (the
     // level's promptOffer()), then a talkable human (talkPrompt()); none while he sprays, frees a cuffed human, is in a
     // scene or a mini-game holds him.
@@ -448,7 +448,7 @@ class GameplayMode final : public GameMode {
     // The kind-0 prompt, `GSTRING.HUD` 2, while a cuffed human is in reach and no mash runs; empty otherwise.
     [[nodiscard]] std::string uncuffPrompt() const;
     // The knocked-out partner player 1 could revive (`Human_FindRevivableNear`): the nearest revivable human friendly
-    // to him within 3 m, not cuffed, in sight; null when none (docs/research/hud.md#action-prompts).
+    // to him within 3 m, not cuffed, in sight; null when none (docs/research/hud-messages.md#action-prompts).
     // @orig 0x00279078 Human_FindRevivableNear (unknown)
     [[nodiscard]] ai::Brain* revivableInReach() const;
     // The talk prompt (`ActionPrompt_FindNearbyHuman`): the first talkable Warrior or co-op partner within 1.5 m, his

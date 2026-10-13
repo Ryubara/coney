@@ -95,7 +95,7 @@ A time of 0 means no clock (rank 1 of the cycle games). Every station call passe
   (code).
 - **`Started(h)`** (the engine's start callback): for a human other than the player, `HuStopWorkout(h)`; for the
   player: `started` = true, `ActivateWarchief`, `StartHUD` ([HUD](#hud)), `HUDTurnOnActionCycleAnim(4, 0.1, 6, 79,
-  79)` (the blinking cross icon, [HUD](hud.md#action-prompts)), `HuLockPadMovement(player, true)`,
+  79)` (the blinking cross icon, [HUD](hud-messages.md#action-prompts)), `HuLockPadMovement(player, true)`,
   `HuSetWorkoutBlend(player, 1.5)`. Confirmed (code).
 - **`DoRep(h)`** (each repetition): `reps` + 1; `SoundPlay2D("vags/misc/menu_spray")`; the counter panel's value; when
   `reps` ≥ `repTable[rankPassed]`: `UM_Unlock(Level, 1, unlockOffset + rankPassed - 1)` (when `rankPassed - 1` ≤
@@ -206,7 +206,7 @@ decay was exactly 0.03 per update whatever the clip time. `HuSetWorkoutParams` (
 No `HuWorkout`: the player fights the bag human with his own attacks. Confirmed (code) unless marked:
 
 - **`workout.Setup`** (station 1) sets `HUDSetTutorialCallback("workout.lCombos")`, so every hit player 1 lands or
-  has blocked calls `workout.lCombos(animId)` ([Tutorial callback](hud.md#tutorial-callback)).
+  has blocked calls `workout.lCombos(animId)` ([Tutorial callback](hud-messages.md#tutorial-callback)).
 - **`CalloutCombos01`**: `ActivateWarchief`, `StartHUD`, `landed` = 0, `CfgPlayerCombatWalkOnly(1)`,
   `HuLockPadMovement(player, true)`, the stopwatch ([HUD](#hud)), then `CalloutCombos02`.
 - **`CalloutCombos02`** picks `combo` = `random(1, 6)`; if it equals the previous one, the next (6 wraps to 1). It
@@ -294,7 +294,8 @@ table serves: the player's workout does not read it.
 Confirmed (code), the layout confirmed (runtime) at the bag:
 
 - **The counter**: `HUDGetNewPH(2, LEVEL95.WLABEL[type])` (a counter panel of kind 2, label then `value/max`,
-  [HUD](hud.md#fn-hud-bars-panels)), its maximum `repTable[rank]` and its value the repetitions or combos landed.
+  [HUD](hud-functions-panels.md#fn-hud-bars-panels)), its maximum `repTable[rank]` and its value the repetitions or
+  combos landed.
 - **The clock** when `timeTable[rank]` > 0 (not rank 1 of the cycle games): the stopwatch with a label, in its
   minutes form (`0:26`) at the top right, right-aligned, with the counter panel under it: the place
   `StopWatchHud_ApplyVideoMode` gives, (1.0, 0.24), not the HUD table's (0.5, 0.135)

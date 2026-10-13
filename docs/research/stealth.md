@@ -141,7 +141,7 @@ plays is not traced.
 
 The only HUD cue is the **radar disc colour**: blue `(100, 120, 200, 240)` while the player stands on shadow ground
 and may hide (the hidden state follows on the same update), grey `(191, 191, 191, 240)` otherwise, blended over
-500 ms ([HUD: the radar](hud.md#the-radar-on-screen)). `HUD_RadarSetTintBlue` (`0x001b26a8`) sets it only while the
+500 ms ([HUD: the radar](hud-radar.md#the-radar-on-screen)). `HUD_RadarSetTintBlue` (`0x001b26a8`) sets it only while the
 HUD shows and the player is in neither state `0x00227dd8` nor `0x00223b70`; in a two-player game with one shared
 view, a grey for one player waits until the other is also off shadow ground (or knocked out or cuffed). Confirmed
 (code) at `0x0023eab8`. No text, icon or screen effect marks hiding; the tutorial explains it with hint text
@@ -228,7 +228,7 @@ so a stealth kill out of their sight goes unnoticed; noises still carry 50 m ([D
 a spinning icon over him, line `0xa9` and the call clip `0x29c`; he runs (gait 5) to the farthest phone flag
 (activity 6) within the radius, or a call spot beside him on his turf; there line `0x16` and clip `0x29d`, then
 `Responders_QueueGangCall(count, delay, point)` and **`Gang_SetSecondWantedTimer(player's gang, 10 s)`**: the
-player's gang now has its second wanted timer (the **orange** arc round the radar, [HUD](hud.md#fn-radar-frame)).
+player's gang now has its second wanted timer (the **orange** arc round the radar, [HUD](hud-functions-parts.md#fn-radar-frame)).
 Killing or knocking out the caller before he reaches the phone stops the call. The first call can also queue tutorial
 hint `0x17`. Confirmed (code).
 

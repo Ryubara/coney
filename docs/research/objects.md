@@ -441,7 +441,7 @@ The **marker** a mission asks the player to walk into is two world objects: a di
 about the vertical, at the top of a translucent coloured column standing on the ground. Scripts place it with
 `ObjSpawn` of a `dyn_objective` type, show it with `ObjShow` and remove it with `ObjDestroy`; the volume box the
 player walks into is a separate object ([Scripting: triggers](scripting.md#triggers)). The marker has no radar part:
-a script that wants one adds a radar objective itself ([HUD](hud.md#the-radar-on-screen)).
+a script that wants one adds a radar objective itself ([HUD](hud-radar.md#the-radar-on-screen)).
 
 **In `level99`** (inferred from the script's calls): `RegisterObjects` spawns four `dyn_w_mission` (the script's
 `Objects.dyn_w_mission01`-`04`), each standing in a volume box. `P1.SetupCam` sets the first hint, calls

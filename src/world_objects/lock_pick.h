@@ -20,7 +20,7 @@ inline constexpr int kLockPins = 3;
 /// What a pin turns per frame, radians, times its speed.
 inline constexpr float kPinStep = 0.1F;
 /// The angle every pin starts at and a miss puts it back to: the constant 3.14, not π (`0x0050d6e4`; at it the notch
-/// points straight down). Research: docs/research/hud.md#lock-pick-dial-layout
+/// points straight down). Research: docs/research/hud-functions-lua.md#lock-pick-dial-layout
 inline constexpr float kPinRest = 3.14F;
 /// The pins' speeds, first to last.
 inline constexpr std::array<int, kLockPins> kPinSpeeds{1, 2, 3};
