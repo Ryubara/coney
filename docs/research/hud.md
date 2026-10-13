@@ -1889,8 +1889,8 @@ are [listed with the bars](#scripted-bars).
 | `0x001b6168` | `NumIndicator_ApplyLayout` | the [gang-count indicator](#gang-count-indicator)'s layout globals per video mode; German (`W_GameState + 0x120` = 4) adds 0.05 to the origin's x and 0.07 to the header gap | confirmed (code) |
 | `0x001b6358` | `NumIndicator_Setup(ind, position, header)` | from the HUD's set-up (`0x001ad588`): the header sprite when given, two black shadows, nine tally sprites; count 9, gang −1, off | confirmed (code) |
 | `0x001b66e0`, `0x001b6ba0` | `NumIndicator_Shutdown`, `NumIndicator_Render` | slot `+0x68`: shuts the header (when made) and the nine tally sprites down (slot `+0x70`); slot `+0x38`: when shown, the shadows, the header and `count` tally sprites | confirmed (code) |
-| `0x001b6770` | `NumIndicator_Set(ind, on, gang)` | `HUDSetNumIndicator` for player 2 (`0x001b4438`; players 0 and 1 go to their panel's slots `+0x50` and `+0x48`): gang `+0xc60`, on `+0x04`, count `+0xc40` = the gang's living members (`0x00166158`) | confirmed (code) |
-| `0x001b67b8` | `NumIndicator_Update` | slot `+0x30`: when shown, recounts and lays out the tally marks ([below](#gang-count-indicator)) | confirmed (code) |
+| `0x001b6770` | `NumIndicator_Set(ind, on, gang)` | `HUDSetNumIndicator` for player 2 (`0x001b4438`; players 0 and 1 go to their panel's slots `+0x50` and `+0x48`): gang `+0xc60`, on `+0x04`, count `+0xc40` = the gang's **standing** members, `Gang_CountLiving(gang, 1)` (`0x001b6798`, `li a1,0x1` in the delay slot; [what it counts](#gang-count-what)) | confirmed (code) |
+| `0x001b67b8` | `NumIndicator_Update` | slot `+0x30`: when shown, recounts (`Gang_CountLiving(gang, 1)` again, `0x001b68a4`) and lays out the tally marks ([below](#gang-count-indicator)) | confirmed (code) |
 | `0x001b6c50` | `HudCounter_Setup(iconSize, iconDepth, c, position, textOffset, iconColour, textColour, metrics, sprite, instance, textFlags, anchor, fontSlot, visible, active, markup)` | an icon (`BaseWidget` `+0x300`) and a text: a `TextWidget` at `+0x40`, or with `markup` a markup text widget at `+0x110` (`+0x410` = markup); text at position + `*textOffset` (`+0x400`); used by the item counters ([Item counters](#item-counters)) | confirmed (code) |
 | `0x001b6df0`, `0x001b6e40` | `HudCounter_Shutdown`, `HudCounter_SetPosition` | slot `+0x68` (shared with five subclass vtables): shuts the text and the icon down, `+0x0c` = 0; slot `+0x08`: text at pos + `+0x400`, icon at pos, pos to `+0x20` | confirmed (code) |
 | `0x001b6ed8`, `0x001b6f60` | `HudCounter_Render`, `HudCounter_Update` | slot `+0x38`: when visible and shown, the icon then the text; slot `+0x30`: the text then the icon | confirmed (code) |
@@ -1917,7 +1917,8 @@ are [listed with the bars](#scripted-bars).
 
 #### The gang-count indicator {#gang-count-indicator}
 
-`HUDSetNumIndicator`'s shared indicator (HUD `+0x16b30`) counts a gang's living members as **tally marks**: four
+`HUDSetNumIndicator`'s shared indicator (HUD `+0x16b30`) counts a gang's standing members ([what it
+counts](#gang-count-what)) as **tally marks**: four
 strokes and a fifth crossing them. Confirmed (code) at `0x001b6358`, `0x001b67b8`, `0x001b6168`; values in the
 default mode.
 
@@ -1969,10 +1970,41 @@ default mode.
 - **Players 0 and 1** (`HUD_SetNumIndicator`, `0x001b4438`) go to their **panel's own tally** instead: interface slot
   `+0x50` stores the gang at panel `+0x4140` (`0x004eca18`) and slot `+0x48` the "on" at `+0x4130` (`0x004eca10`);
   in an `ANHud` panel (levels 60-69) both slots are empty functions. The panel's update (`PlayerHUD_RefreshTallyMarks`,
-  `0x00214bc8`) counts the gang's living members into `+0x413c` and lays out the same pattern of strokes and bars
+  `0x00214bc8`; the live path is `PlayerHUD_Update`, `0x00214138`) counts the gang's standing members into
+  `+0x413c` and lays out the same pattern of strokes and bars
   (`PlayerHUD_LayoutTallyMarks`, `0x00213e68`, the nine sprites at `+0x4150`, in the player's colour) from the panel's
   origin (`+0x40e0`, the [panel base](#the-player-panel-layout-0x0050fa10) by panel layout `+0x40f4`) with the panel
   layout table's entries. No header is drawn there. See [the panel's tally](#panel-tally) for the numbers.
+
+#### What the count counts {#gang-count-what}
+
+Every HUD count of a gang's members passes **1** as `Gang_CountLiving`'s second argument, so the marks show the
+members that are **standing**, not every member that still exists. **Evidence:** confirmed (code) at each call
+site below. Because both the indicator and the panel recount every update, a member who is knocked out or tackled
+loses his mark while he is down and gets it back when he is up again (inferred from the recount and the state test;
+not watched in PCSX2).
+
+| Call | Caller | Argument |
+| --- | --- | --- |
+| `0x001b6798` | `NumIndicator_Set` (`0x001b6770`), the shared indicator when it is turned on | `Gang_CountLiving(Gang_Get(gang), 1)`: `li a1,0x1` in the delay slot |
+| `0x001b68a4` | `NumIndicator_Update` (`0x001b67b8`), each update while shown | `Gang_CountLiving(Gang_Get(gang), 1)`: `li a1,0x1` |
+| `0x00214310` | `PlayerHUD_Update` (`0x00214138`), the panel tally of players 0 and 1 while `+0x4130` is on | `Gang_GetHeadCountById(+0x4140, 1)`: `li a1,0x1` at `0x00214314` |
+| `0x00214c00` | `PlayerHUD_RefreshTallyMarks` (`0x00214bc8`, no caller found) | `Gang_GetHeadCountById(+0x4140, 1)`: `li a1,0x1` at `0x00214bf4` |
+
+- `Gang_GetHeadCountById(id, living)` (`0x0016a458`, also behind the script's `GangGetHeadCount`): 0 when `id` is
+  −1, else `Gang_CountLiving(Gang_Get(id), living)` (`Gang_Get`, `0x0016c388`) with `living` passed through
+  unchanged. Confirmed (code) at `0x0016a458`. So the panel tally (a one-player brawl's gang 1 included) and the
+  shared indicator count the same way.
+- `Gang_CountLiving(gang, living)` (`0x00166158`) walks the gang's 16 member handles at gang `+0x48`. With
+  `living` **equal to 1** it counts a slot when the handle resolves and `Human_IsDownOrDead` (`0x00227e60`) is not 1;
+  with **any other value** it returns `HandleArray16_CountLive(gang + 0x48)` (`0x004dae00`), the handles that
+  resolve, down or not. Confirmed (code) at `0x00166158`, `0x004dae00`.
+- `Human_IsDownOrDead` (`0x00227e60`) is 1 when the human has no record (`+0xd4` = 0) or is in any of the states
+  `0x180050000`: dead `0x100000000`, dying `0x80000000`, knocked out `0x40000`, tackled `0x10000`
+  ([the gang pages](ai-gangs.md) name the bits). Confirmed (code) at `0x00227e60`. Health is not read.
+- `Gang_CountStanding` (`0x00166220`, the script's `GangGetStandingCount` through `0x0016a4a8`) is a **different,
+  stricter** count that the HUD does not use: a member counts when his handle resolves and he is not knocked out,
+  not in state `0x100000000` and not wounded (three separate tests). Confirmed (code) at `0x00166220`.
 
 #### The panel's tally (players 0 and 1) {#panel-tally}
 
@@ -2696,7 +2728,7 @@ Confirmed (code) at `0x00210e48`, `0x00211938`, `0x002102f0`.
 | `0x00213718`, `0x00213770` | `PlayerHUD_FindCounterSlot`, `PlayerHUD_UpdateCounters` | the [item counters](#item-counters): the slot (of four, `0x0050fee0` + player × `0xc0`) holding an item or the first free one; the counters' slots, places and counts | confirmed (code) |
 | `0x00213e68` | `PlayerHUD_LayoutTallyMarks(panel, shifted)` | `+0x413c` marks from the origin `+0x40e0` with the table's `+0x1f0`-`+0x230`, every fifth crossing the four before, shifted below the counters ([The panel's tally](#panel-tally)) | confirmed (code) |
 | `0x00214138` | `PlayerHUD_Update` | slot `+0x40`: values, colours and positions each frame ([The rage meter](#the-rage-meter) and the sections after it) | confirmed (code) |
-| `0x00214bc8`, `0x00214c28` | `PlayerHUD_RefreshTallyMarks`, `PlayerHUD_RenderTallyMarks` | slot `+0x60`: when the tally is on, origin from `0x0050fa10`, count = living members of gang `+0x4140` (`0x0016a458`), laid out unshifted; slot `+0x68`: the marks drawn at full alpha. No caller found (inferred unused): `PlayerHUD_Update` and `PlayerHUD_Render` do the live work; `HUD_SetNumIndicator` turns the tally on ([The panel's tally](#panel-tally)) | confirmed (code) |
+| `0x00214bc8`, `0x00214c28` | `PlayerHUD_RefreshTallyMarks`, `PlayerHUD_RenderTallyMarks` | slot `+0x60`: when the tally is on, origin from `0x0050fa10`, count = standing members of gang `+0x4140` (`Gang_GetHeadCountById(gang, 1)`, `0x0016a458`, call `0x00214c00`; [what it counts](#gang-count-what)), laid out unshifted; slot `+0x68`: the marks drawn at full alpha. No caller found (inferred unused): `PlayerHUD_Update` and `PlayerHUD_Render` do the live work; `HUD_SetNumIndicator` turns the tally on ([The panel's tally](#panel-tally)) | confirmed (code) |
 | `0x00214cb0`, `0x00214ce8` | `PlayerHUD_StaticInit`, `PlayerHUD_StaticInitStub` | static initialiser (ctor list `0x0053414c`): the colour `0x00640c40` = (128, 0, 0, 111) | confirmed (code) |
 
 ### Game-state functions {#warriors-functions}
@@ -2838,7 +2870,9 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   shared one (`HUDSetNumIndicator` player 2), in a level numbered 100 or more, draws the blue header (sheet-table record
   `0x20e`, French `0x20f`, German `0x210`) with its two black shadows at (0.06, 0.944) and the gang's living members as
   tally marks from x 0.125, turned 3.3 rad, recounted each update; German's layout moves both. **Coney's readings**:
-  living is health left (`0x00166158`'s test is not described); at most nine marks; the shadows sort at the banners'
+  living is health left, which differs from the original: it counts standing members, `Gang_CountLiving(gang, 1)`,
+  not down or dead and regardless of health ([what the count counts](#gang-count-what), issue #456); at most nine
+  marks; the shadows sort at the banners'
   shadow depth. Players 0 and 1's go to their [panel tallies](#panel-tally) (`PlayerPanel::tallyMarkPlace()`): the same
   marks from the panel's base in the rage colour at the panel's fade, dropped below the money and counters.
 - **In play**: the play mode steps the HUD with player 1's rage, score, money and item counts (flash, spray paint,
