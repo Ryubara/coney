@@ -6,7 +6,7 @@ large. The overview, the data tables and the code index stay on [Combat](combat.
 Every claim keeps the evidence level it had there.
 
 This page covers how a hit lands on a busy target, the reactions (stun, knockdown, getting up and countering), being
-knocked out and the mission failing, being hit at runtime and hit blood.
+knocked out and the mission failing, being hit at runtime, a bat's hit (the level34 Furies) and hit blood.
 
 ## Damage, health and reactions {#damage}
 
@@ -758,6 +758,156 @@ player's block. The puppet civilian, blocking the player, ducked under `X1`, `XX
 Being hit gave the player no rage. Every gain set the hold timer to now + 5000 ms. A later run gave `S1` 1, `X1` 5,
 `XS2` 10, `SX2` 13 and `SSX3` 15 every time; the 7 is the halved gain ([Rage](combat-rage.md#rage)): `SSX3`'s two awards
 3 and 8 give 2 + 5 at a factor 0.72, and `S1`'s 1 gives 0.
+
+## A bat's hit: why the level34 Furies knock the player down {#bat-knockdown}
+
+Asked by issue #492: at `level34` checkpoint 5 (the park) the original's first Fury hits on a player standing still
+are knock-downs of 90 health; Coney's are small reactions of 18-54
+([Scripts: the level34 fix list](scripting.md#level34-fixes), item 14). The answer: **every park and fence Fury holds a
+`dyn_bat`**, so it fights with the bat's clips, and a bat's hit is the bat object touching the victim, which deals the
+bat's own damage and gives a heavy high reaction.
+
+**1. Where the bats come from: the scene.** The fourteen Furies (`ParkFury01`-`10`, `ParkFury14`, `FenceFury1`-`3`,
+character types 90-94) are made with no weapon. Every Fury's hand was empty at tick 1 of the polled run (confirmed
+(runtime), the polled run's hand poll); the five types' `CfgChar` weapon string (record `+0x18c`) read `none` and their
+power classes 5 (type 90) and 26 (the rest) over PINE in the first run, so `Human_Init` (`0x00218008`) puts nothing in
+their hands and the classes draw nothing either. Those `CfgChar` values are graded inferred: that read's output was not
+kept, and what still supports them is the empty hands at tick 1 and the 90 and 72 below, which fit floats 1.0 and 0.8.
+`gPlayCutScene` then binds them to `l34_c4`'s roles and binds fourteen `dyn_bat` objects (and `dyn_furies`) to its
+object slots with `SceneAddObject` (inferred: the calls were logged by Coney's interpreter running the original's
+chapter script, not traced in the original; the scene's fourteen `dyn_bat` and one `dyn_furies` props are the scene
+data's own list, on [Scenes](../references/scenes.md#scene-l34-c4)). At the scene's start each role's pick target is the
+slot its clip's first type-9 event names, and the event takes the object into the hand ([Scripts: the props go into
+hands by clip events](scripting.md#level80-arrest-fire), confirmed (code) at `0x0039d870`). At runtime every Fury's hand
+(human `+0x338`) went from Nil at tick 1 to a held object by tick 9, long before the scene's end, and still held it when
+the fight began (confirmed (runtime), PCSX2 2.9.94, two runs, below). That the object is a `dyn_bat` (`CfgObj` class
+`melee_weapon`, anim set 3, `+0x58` = 90) was read over PINE without a kept log, so it is inferred: the Furies then
+played set 3's bat clips, and every bat hit dealt 90 or 72. That the hand-over is the scene's type-9 event is inferred:
+the timing, the fourteen bound bats and the documented start agree, but the event values of `l34_c4`'s role clips were
+not read. The script's own `HuSetKeepWeapon(Fury, 1)` before `GoalFight` keeps the bat in hand when he is hit ([Dropping
+what is held](combat-rage.md#keep-weapon)).
+
+**2. What they swing.** With set 3 in hand an AI's square and cross play the bat's clips
+([A bat in hand](combat-throws.md#bat)): **501** `SWINGABLE_OBJECT_ATTACK_FROM_RUN` when he arrives at a run, **36**
+`BAT_COMBO_X1` or **34** (the bat's square swing) standing, and at a man on the ground either **37**
+`BAT_COMBO_GROUNDED_STRIKE_01` or the unarmed grounded strikes **193** / **194**, bat still in hand (35 was not seen;
+34 once, `ParkFury09` at step 1375, its hit on `ParkFury07` at step 1386). In the recorded run `ParkFury03` and
+`ParkFury10`, both holding bats, played 37 at steps 730, 762, 802 and 846 and 194 / 193 at steps 767, 811 and 838,
+and the 37s of steps 762 and 802 and all three 193 / 194 landed on `SceneRogue2` on the ground (hits at steps 775,
+781, 815, 825 and 850; rec1's `anim-dispatch`, `strike-contact` and `deal-damage` logs; human names by allocation
+order); in the polled run the downed player was hit the same way (below). What picks 37 or 193 / 194 was not found.
+Their Anim Range List entries on the disc ([chunk `0x45`](formats/animation.md#anim-range-list)), the same in the
+park Furies' character data (`fury_so1`-`4`, resource `312adcb1`), `fury_lt`'s and the player's (`warr_ve`): 501
+damage 20, hit code `0x2a`, flags `0x400`; 36 damage 130, `0x2a`; 37 damage 75, `0x0a`; 34 / 35 damage 10, `0x29` /
+`0x2b`; 193 / 194 damage 50, `0x0a`. Those are the disc's values, read with the chunk's layout (confirmed (code) at
+its readers) from `coney-tools extract`'s output; 44 of the 53 character data resources hold exactly these for these
+ids. That the Furies' lists at runtime (record `+0x160`) hold the same is inferred: a PINE read in the first run gave
+the same for 501 and 34-37 but its output was not kept, and the disc is corroboration, not a grade. The hit codes
+are supported by the reactions (292-295 from 501 and 36 fit `0x2a`, confirmed (runtime) below). The damages can be
+overwritten by the class when the human is made ([damage table](combat.md#damage-table)): 193 / 194 hold 50 on the
+disc but dealt 25 here (not traced). Code `0x2a` is a straight high **heavy** hit ([Hit codes](combat.md#hit-codes)).
+
+**3. The damage is the bat's, not the clip's.** None of the Furies' bat hits went through `Strike_Contact`
+(`0x0021b290`): its hook logged only unarmed and grounded strikes, while every bat hit came from
+`ThrownObject_HitHuman` (`0x00392b88`, the call returning at `0x00393158`). That path is the held object's own body
+touching the victim: `WorldObject_OnContact` (`0x00394050`) takes the object type's `CfgObj` u16 `+0x58` and, for an
+object in a hand, multiplies it by the holder's power-class first float (`Human_GetClassRecord` `0x00222b78`, table
+`0x006619a0` + class × `0x44`); `ThrownObject_HitHuman` negates it against a friend and passes it to
+`Human_DealDamage` (`0x0021d680`) with the holder as the attacker (confirmed (code)).
+
+`ThrownObject_HitHuman` serves thrown objects too, and between the friend test and `Human_DealDamage` it can still
+change the damage. Its cases, all confirmed (code) at `0x00392b88` (the fields' meanings are not traced unless
+named), with A the attacker it is given, O the object and V the victim:
+
+- No attacker: it plays the contact sound and returns with no damage.
+- A friend of the attacker (`Human_IsFriendly`): the damage is negated, and `Human_DealDamage`'s fifth argument is 0
+  instead of 1.
+- O's type has `CfgObj` byte `+0x86` = `0x24` and A's word `+0x1a8` is above 2: × 0.25.
+- O's type `+0x86` = `0x0b` and O's flags `+0x54` have `0x4000000` (the thrown knife: this case ends in
+  `Human_StickThrownKnife`): when the human at O `+0x11c` is set and V is that human's target or not his friend, the
+  damage is replaced by the type's `+0x58` (no class float), or by V's whole health when V's character type `+0xcc` is
+  `0x4f`; a hit with O `+0x11c` empty skips every case below.
+- The human at O `+0x11c` (empty: no case below applies): when his brain's type (brain `+0x4`) is 3 and V is of class
+  13 (`Human_IsClass13` `0x00223e20`), × 0.5; then, when his signed byte `+0x1b0` is not −1, × 3 against V of
+  character type `0x77` or `0x78` and × 1.25 against `0x87`.
+
+None changed the damage in this fight (all 23 calls returning at `0x00393158` in the recorded run dealt 90, −90 or
+−72, `+0x58` × the class float or its negation, and the polled run's bat hits took 90 or 72), so for a Fury's bat on the
+player or a fellow Fury only the friend case
+applies; the other cases are for Coney's implementer of thrown objects and of other holders to take whole.
+
+So a Fury of power class 26 (float 1.0) deals **90** with any bat clip, 501, 34, 36 or 37 alike, and one of class 5
+(types 90, `ParkFury01` and `ParkFury14`, float 0.8) deals **72**; the clip's own damage (20, 10, 130, 75) is not used.
+Confirmed (runtime): every bat hit on the player in the recorded run took exactly 90, from 501, 36 and 37 (all from
+class 26 Furies), and `ParkFury14` (human `0x646510`, named by allocation order) dealt **−72** with 36 to
+`ParkFury10` at step 1339 (rec1's `deal-damage` log, return `0x00393158`), the class 5 figure measured directly.
+`ParkFury09`'s 34 (clip damage 10) dealt −90 to `ParkFury07` at step 1386 through the same return, a fourth bat clip
+whose own damage was ignored. A
+bat that touched a fellow Fury of class 26 dealt −90 (the friend case).
+
+**The 25s: grounded strikes without the bat.** The bat's contact is not every hit an armed Fury lands. His 193 / 194
+(above) go through `Strike_Contact` (return `0x0021b69c` into `Human_DealDamage`) and deal **25** each, the bat
+adding nothing (confirmed (runtime): rec1 steps 781, 825 and 850, `ParkFury10` and `ParkFury03` on `SceneRogue2`). In
+the polled run the player took 90, then 72 at +319 (while `ParkFury14` and `FenceFury1` were both in 501 within
+0.71 m), then 25 three times while he was down (updates 394, 486 and 582, each with 195 `GROUNDED_STRIKE_REACT`), and
+90 once more at update 446; the polled run read no clips at those three, so that they were 193 / 194 is inferred from
+the recorded run.
+
+This corrects [Objects in a hand](objects.md#held) item 3, which reads `Strike_Contact`'s weapon bonus (clip damage +
+`+0x58`, × the float) as a held weapon's damage: that code exists, but for these bat swings it did not run. Whether
+the player's own bat (64 with `dyn_bat_tuff`, [A bat in hand](combat-throws.md#bat)), the knife or the baton take the
+same contact path was not checked.
+
+**4. Why it knocks him down.** The reaction is chosen as for any hit, from the attacker's current clip's hit code and
+the side ([Hit codes](combat.md#hit-codes)): `0x2a` gives strength 2 (heavy), height 2 (high), so 292-295
+`ANIM_REACT_KNOCKDOWN_HIGH_*` by side, and those reactions knock down ([Reactions](#reactions)). 501 and 36 are not
+combo ids, so no strength step applies. A man already down gets the ground reactions (195, 196) from 37 and from
+193 / 194. Confirmed
+(runtime): every 501 or 36 hit on the standing player played 292, 293 or 295 (`Hit_PlayReaction` `0x0026b0a0`
+hooked), then 196 down and 199 rising; the reaction rule itself is confirmed (code) at `0x00266d00`.
+
+**At runtime** (confirmed (runtime), PCSX2 2.9.94, 2026-10-13: a copy of slot 7 (`level99`), `level34` checkpoint 5
+loaded through mode 8 as on [Scripts](scripting.md#level34-fixes) (level index 4 to `0x005e5db0`, checkpoint 5 to
+`W_GameState + 0x33a`, 3 to `+0x14c`), a state saved 9 ticks into the level once every Fury held his bat, then
+[`l34_furies_first_hits`](repo:research/traces/scenarios/l34_furies_first_hits.toml) recorded from it: no input, hooks
+`strike-contact`, `anim-dispatch`, `hit-reaction` and `deal-damage`; a second run polled the hands and clips over PINE).
+The scenario's `slot = 7` is that `level99` slot and measures the wrong level unless `--state` gives the level34
+state. In the recorded run the scene's end is step 697, the first `anim-dispatch` entry, when every human's clip is
+set at once (19 to 388, 3 to 704); the table's times are steps − 697:
+
+| After the scene's end (about) | Attacker, clip | Player | Health |
+| --- | --- | --- | --- |
+| +162 | | fight stance 359 | 1,170 |
+| +296 | `FenceFury1`, 501 | 292, then 196 down | 1,170 → 1,080 |
+| +486 | `ParkFury02`, 36; the next update `ParkFury03`, 36 | 295 (the second hit lands in it, no new reaction) | → 990 → 900 |
+| +569 | `ParkFury10`, 37 | 195 on the ground | → 810 |
+| +631 | `ParkFury10`, 36 | 292, then 196 | → 720 |
+
+In the second run (scene end read from `SubwayScene`) the first hit came at +310 from `FenceFury1` or `ParkFury02`,
+both in 501 within 2 m, with 293 and 90, then 72 (inferred `ParkFury14`'s, above) 9 updates later, and later the
+three 25s on the downed player (above). The issue's two
+runs (+276 and +294, 292 and 294) fit the same opening: a bat run attack on arrival.
+
+**Coney** (`level34`, `fix-furies-passive`'s measurements, [Scripts](scripting.md#level34-fixes) item 14): the Furies
+swing only unarmed clips (11, 12, 13, 15, 16 in its trace), because Coney gives a scene's bound props to no one: the
+fix is item 3 of [Scripts: the props go into hands by clip events](scripting.md#level80-arrest-fire) (set the pick
+target at the scene's start and take the object on the clip's type-9 event). With the bats in hand, Coney needs:
+
+1. The armed choice of clip for an AI with set 3: 501 on arrival at a run, 36 or 34 standing, and at a man down either 37
+   or the unarmed grounded strikes 193 / 194. Both choices are open: what makes an AI pick 34 or 36 (for the player
+   it is the square / cross split of [A bat in hand](combat-throws.md#bat)), and what picks 37 or 193 / 194.
+2. An AI's bat hit dealt as an object contact through `ThrownObject_HitHuman`'s rules: the bat type's `CfgObj` `+0x58`
+   × the holder's power-class first float (90 for a class 26 Fury with `dyn_bat`, 72 for class 5), not the clip's
+   damage; negative (no harm) against a friend; and the type, knife and victim cases listed in step 3 above, which did
+   not apply here but belong to the same function. Only `dyn_bat` in an AI's hand was measured; the knife, the baton
+   and the player's bat stay open.
+3. The 193 / 194 grounded strikes of an armed AI dealt through `Strike_Contact` as unarmed hits: 25, with no bat bonus.
+4. The reaction from the swing clip's hit code (`0x2a`: 292-295 and down; 195 for a man on the ground).
+5. Test (`tests/platform/disc_level34_furies_test.cpp`, checkpoint 5, no input): every Fury holds a `dyn_bat` once
+   `l34_c4` has started; the first hit on the player lands about 270-330 updates after the scene's end, deals 90 (or
+   72 from `ParkFury01` / `ParkFury14`) and plays one of 292-295 with the player then down; every later hit on the
+   standing player (501, 34 or 36) deals 90 or 72, and every hit on him while he is down deals 90 or 72 (37) or 25
+   (193 / 194).
 
 ## Hit blood {#hit-blood}
 
