@@ -787,13 +787,14 @@ but the event values of `l34_c4`'s role clips were not read. The script's own `H
 
 **2. What they swing.** With set 3 in hand an AI's square and cross play the bat's clips
 ([A bat in hand](combat-throws.md#bat)): **501** `SWINGABLE_OBJECT_ATTACK_FROM_RUN` when he arrives at a run, **36**
-`BAT_COMBO_X1` standing, and at a man on the ground either **37** `BAT_COMBO_GROUNDED_STRIKE_01` or the unarmed
-grounded strikes **193** / **194**, bat still in hand (34 and 35 were not seen). In the recorded run `ParkFury03` and
+`BAT_COMBO_X1` or **34** (the bat's square swing) standing, and at a man on the ground either **37**
+`BAT_COMBO_GROUNDED_STRIKE_01` or the unarmed grounded strikes **193** / **194**, bat still in hand (35 was not seen;
+34 once, `ParkFury09` at step 1375, its hit on `ParkFury07` at step 1386). In the recorded run `ParkFury03` and
 `ParkFury10`, both holding bats, played 37 at steps 730, 762, 802 and 846 and 194 / 193 at steps 767, 811 and 838,
-and the 37 of step 762 and all three 193 / 194 landed on `SceneRogue2` on the ground (hits at steps 775, 781, 825
-and 850; rec1's `anim-dispatch`, `strike-contact` and `deal-damage` logs; human names by allocation order); in the
-polled run the downed player was hit the same way (below). What picks 37 or 193 / 194 was not found. Their Anim Range
-List entries, read from the Furies' own lists (record `+0x160`) and the same in the player's:
+and the 37s of steps 762 and 802 and all three 193 / 194 landed on `SceneRogue2` on the ground (hits at steps 775,
+781, 815, 825 and 850; rec1's `anim-dispatch`, `strike-contact` and `deal-damage` logs; human names by allocation
+order); in the polled run the downed player was hit the same way (below). What picks 37 or 193 / 194 was not found.
+Their Anim Range List entries, read from the Furies' own lists (record `+0x160`) and the same in the player's:
 501 damage 20, hit code `0x2a`, flags `0x400`; 36 damage 130, `0x2a`; 37 damage 75, `0x0a`; 34 / 35 damage 10,
 `0x29` / `0x2b` (confirmed (runtime), read over PINE during the first run; that read's output was not kept, so
 these five entries want a re-read before an implementer relies on the clip damages, which the bat's hits do not
@@ -828,11 +829,13 @@ None changed the damage in this fight (all 23 calls returning at `0x00393158` in
 player or a fellow Fury only the friend case
 applies; the other cases are for Coney's implementer of thrown objects and of other holders to take whole.
 
-So a Fury of power class 26 (float 1.0) deals **90** with any bat clip, 501, 36 or 37 alike, and one of class 5
-(types 90, `ParkFury01` and `ParkFury14`, float 0.8) deals **72**; the clip's own damage (20, 130, 75) is not used.
+So a Fury of power class 26 (float 1.0) deals **90** with any bat clip, 501, 34, 36 or 37 alike, and one of class 5
+(types 90, `ParkFury01` and `ParkFury14`, float 0.8) deals **72**; the clip's own damage (20, 10, 130, 75) is not used.
 Confirmed (runtime): every bat hit on the player in the recorded run took exactly 90, from 501, 36 and 37 (all from
 class 26 Furies), and `ParkFury14` (human `0x646510`, named by allocation order) dealt **−72** with 36 to
-`ParkFury10` at step 1339 (rec1's `deal-damage` log, return `0x00393158`), the class 5 figure measured directly. A
+`ParkFury10` at step 1339 (rec1's `deal-damage` log, return `0x00393158`), the class 5 figure measured directly.
+`ParkFury09`'s 34 (clip damage 10) dealt −90 to `ParkFury07` at step 1386 through the same return, a fourth bat clip
+whose own damage was ignored. A
 bat that touched a fellow Fury of class 26 dealt −90 (the friend case).
 
 **The 25s: grounded strikes without the bat.** The bat's contact is not every hit an armed Fury lands. His 193 / 194
@@ -883,7 +886,7 @@ swing only unarmed clips (11, 12, 13, 15, 16 in its trace), because Coney gives 
 fix is item 3 of [Scripts: the props go into hands by clip events](scripting.md#level80-arrest-fire) (set the pick
 target at the scene's start and take the object on the clip's type-9 event). With the bats in hand, Coney needs:
 
-1. The armed choice of clip for an AI with set 3: 501 on arrival at a run, 36 standing, and at a man down either 37
+1. The armed choice of clip for an AI with set 3: 501 on arrival at a run, 36 or 34 standing, and at a man down either 37
    or the unarmed grounded strikes 193 / 194 (what picks between them is open).
 2. An AI's bat hit dealt as an object contact through `ThrownObject_HitHuman`'s rules: the bat type's `CfgObj` `+0x58`
    × the holder's power-class first float (90 for a class 26 Fury with `dyn_bat`, 72 for class 5), not the clip's
@@ -895,7 +898,8 @@ target at the scene's start and take the object on the clip's type-9 event). Wit
 5. Test (`tests/platform/disc_level34_furies_test.cpp`, checkpoint 5, no input): every Fury holds a `dyn_bat` once
    `l34_c4` has started; the first hit on the player lands about 270-330 updates after the scene's end, deals 90 (or
    72 from `ParkFury01` / `ParkFury14`) and plays one of 292-295 with the player then down; every later hit on the
-   standing player deals 90 or 72, and every hit on him while he is down deals 90 or 72 (37) or 25 (193 / 194).
+   standing player (501, 34 or 36) deals 90 or 72, and every hit on him while he is down deals 90 or 72 (37) or 25
+   (193 / 194).
 
 ## Hit blood {#hit-blood}
 
