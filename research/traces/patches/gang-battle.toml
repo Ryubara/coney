@@ -17,8 +17,8 @@ log = [
   { value = "a2", name = "force" },
   # The word at 0(sp) is the caller's own return address when the caller saves ra there. For the wrappers
   # Human_SetTarget (ra 0x00226cbc), Brain_Fight (ra 0x0028d330) and Human_DropTarget (ra 0x00226fd8) it names the
-  # cause. Human_SetTarget has 15 call sites in 9 functions (Human_SyncTargetFromBrain, Human_SetTargetFromHandle, Human_HandleMessage
-  # and the player's Player_LockOnTarget, Player_UpdateSprint, Player_TryStartRage, Player_GrabOrTackle,
+  # cause. Human_SetTarget has 15 call sites in 10 functions (Human_SyncTargetFromBrain, Human_SetTargetFromHandle,
+  # Human_HandleMessage and the player's Player_LockOnTarget, Player_UpdateSprint, Player_TryStartRage, Player_GrabOrTackle,
   # Player_Square, Player_CrossWithWeapon, Player_ArmedSpecial); in these AI-only recordings every call came from
   # Human_SyncTargetFromBrain (ra2 0x00226f5c) and none changed the target. GangBrain_OnEvent, Brain_OnViolenceSeen,
   # StunnedGoal_Process, SpectateGoal_End and AttackAction_Start also save ra at 0(sp), so there it names their
