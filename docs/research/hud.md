@@ -734,7 +734,9 @@ mission ends through `HUDLaunchMissionComplete` and mode 0xb ([Front end](fronte
 
 Every function of the HUD files, by source file in address order, with the name it has in Ghidra (ours). Rows link to
 the section that describes the behaviour where there is one. The files and ranges are from the [Source
-map](source-map.md#gui).
+map](source-map.md#gui). The tables live on three pages: [HUD parts to `GUI/HUDInterface.cpp`](hud-functions-parts.md),
+[`GUI/HUDLua.cpp`](hud-functions-lua.md) and [`GUI/MessageHUD.cpp` to the game state](hud-functions-panels.md); the
+headings below point to them.
 
 ### Before `GUI/BaseWidget.cpp` (no path string): HUD parts {#fn-pre-basewidget}
 
