@@ -230,6 +230,16 @@ def test_docs_only_paths_explain_each_kind_of_pattern() -> None:
     assert "file" in by_pattern["mkdocs.yml"]
 
 
+@pytest.mark.parametrize(("block", "key"), [("tools-only-paths", "tools_only"), ("engine-paths", "engine")])
+def test_the_other_scope_lists_are_rendered_too(block: str, key: str) -> None:
+    lines = render_block(block, CONVENTIONS)
+    assert {line.split("`")[1] for line in lines} == set(getattr(CONVENTIONS.paths, key))
+    assert render_block(block, conventions_with((f"paths.{key}", ["a/", "b.txt"]))) == [
+        "- `a/`: the folder and everything under it",
+        "- `b.txt`: that file",
+    ]
+
+
 def test_a_code_span_is_never_split_across_two_lines() -> None:
     # A long list of verbs forces wrapping; the trailer's code span has spaces in it.
     conventions = conventions_with(("commits.title.verbs", [f"Verb{n}" for n in range(30)]))

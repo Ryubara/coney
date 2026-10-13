@@ -265,20 +265,22 @@ def generated_blocks_current(context: FilesContext) -> Iterator[Problem]:
 
 #: The line of ci-scope.sh that names the file it reads.
 _SCOPE_READS_FILE = re.compile(r"conventions\.yml")
-#: A regular expression the script must not hold itself any more.
-_HARD_CODED_SCOPE = re.compile(r"^\s*DOCS_ONLY\s*=\s*'\^\(", re.MULTILINE)
-#: How the script finds the list in the file: the items under `  docs_only:` written one per line as `    - "pattern"`.
-_DOCS_ONLY_ITEM = re.compile(r'^    - "(?P<pattern>[^"]+)"[ \t]*(?:#.*)?$')
+#: A regular expression of paths the script must not hold itself (`DOCS_ONLY='^(docs/|...)'`): it reads the lists.
+_HARD_CODED_SCOPE = re.compile(r"^\s*[A-Z_]+\s*=\s*'\^\(", re.MULTILINE)
+#: How the script finds a list in the file: the items under `  <key>:` written one per line as `    - "pattern"`.
+_SCOPE_ITEM = re.compile(r'^    - "(?P<pattern>[^"]+)"[ \t]*(?:#.*)?$')
+#: The CI scope lists of `paths` that ci-scope.sh reads, in the order it tries them.
+SCOPE_LISTS = ("docs_only", "tools_only", "engine")
 
 
-def docs_only_as_written(conventions_text: str) -> list[str]:
-    """The `paths.docs_only` patterns read the way ci-scope.sh reads them: quoted, one per line, under the key."""
+def scope_list_as_written(conventions_text: str, key: str) -> list[str]:
+    """The patterns of `paths.<key>` read the way ci-scope.sh reads them: quoted, one per line, under the key."""
     found: list[str] = []
     inside = False
     for line in conventions_text.splitlines():
-        if line.startswith("  docs_only:"):
+        if line.startswith(f"  {key}:"):
             inside = True
-        elif inside and (match := _DOCS_ONLY_ITEM.match(line)):
+        elif inside and (match := _SCOPE_ITEM.match(line)):
             found.append(match.group("pattern"))
         elif inside and line.strip() and not line.lstrip().startswith("#"):
             break
@@ -287,22 +289,29 @@ def docs_only_as_written(conventions_text: str) -> list[str]:
 
 @check("files.ci-scope")
 def ci_scope_reads_the_file(context: FilesContext) -> Iterator[Problem]:
-    """ci-scope.sh reads `paths.docs_only` from the conventions file instead of keeping a copy, and can parse it."""
+    """ci-scope.sh reads the CI scope lists of `paths` from the conventions file instead of keeping a copy, and can
+    parse each of them."""
     script = _read(context.root, CI_SCOPE_SCRIPT)
     if script is None:
         yield Problem(CI_SCOPE_SCRIPT, "is missing or unreadable")
         return
     if _HARD_CODED_SCOPE.search(script):
-        yield Problem(CI_SCOPE_SCRIPT, "holds its own regular expression of the docs-only paths (DOCS_ONLY='^(...')")
+        yield Problem(
+            CI_SCOPE_SCRIPT, "holds its own regular expression of paths (DOCS_ONLY='^(...') instead of reading it"
+        )
     if not _SCOPE_READS_FILE.search(script):
         yield Problem(CI_SCOPE_SCRIPT, f"does not read {CONVENTIONS_FILE}")
-    written = docs_only_as_written(_read(context.root, CONVENTIONS_FILE) or "")
-    if tuple(written) != context.conventions.paths.docs_only:
-        yield Problem(
-            CONVENTIONS_FILE,
-            'paths.docs_only must be written one quoted pattern per line (    - "docs/") so that ci-scope.sh can '
-            f"read it; the script finds {written}",
-        )
+    text = _read(context.root, CONVENTIONS_FILE) or ""
+    for key in SCOPE_LISTS:
+        if f"regex_of {key}" not in script:
+            yield Problem(CI_SCOPE_SCRIPT, f"does not read paths.{key} (`regex_of {key}`)")
+        written = scope_list_as_written(text, key)
+        if tuple(written) != getattr(context.conventions.paths, key):
+            yield Problem(
+                CONVENTIONS_FILE,
+                f'paths.{key} must be written one quoted pattern per line (    - "docs/") so that ci-scope.sh can '
+                f"read it; the script finds {written}",
+            )
 
 
 @check("files.large-file-limit")

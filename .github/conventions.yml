@@ -39,21 +39,60 @@ paths:
   # A change here needs a change under `docs` (the living doc moves with the code) or a `Docs: none` line.
   code: ["src/", "python/src/"]
   docs: ["docs/", "research/"]
-  # A pull request that touches only these skips the engine builds (.github/scripts/ci-scope.sh) and the local gate's
-  # clang-tidy step, and a change to them is what `coney-tools check changed` builds the docs for. A trailing slash
-  # means a folder; `*` matches within one folder level, so "*.md" is the Markdown files at the top level only.
-  # ci-scope.sh reads this list itself with awk, so keep one quoted pattern per line, made of letters, digits, . _ / -
-  # and *; `coney-tools repo audit` (files.ci-scope) checks that the script can still read it.
+  # The three CI scope classes below decide what a pull request runs (.github/scripts/ci-scope.sh; the table is in
+  # docs/guides/building.md#what-a-pull-request-runs). A changed file takes the first class it matches, in the order
+  # docs_only, tools_only, engine; a file in none of them runs everything. A trailing slash means a folder; `*` matches
+  # within one folder level, so "*.md" is the Markdown files at the top level only. ci-scope.sh reads these lists
+  # itself with awk, so keep one quoted pattern per line, made of letters, digits, . _ / - and *;
+  # `coney-tools repo audit` (files.ci-scope) checks that the script can still read them.
+  #
+  # Read by neither the engine build nor the python package on any one OS in particular: the engine jobs are skipped
+  # and python runs on Linux only (its repository checks compare these files). A change to them is also what
+  # `coney-tools check changed` builds the docs for. The workflows here run on every pull request themselves (docs,
+  # pr) or only on Linux (hygiene, issue-status), and actionlint checks them all.
   docs_only:
     - "docs/"
     - "research/"
     - "*.md"
     - ".github/*.md"
     - ".github/conventions.yml"
+    - ".github/workflows/docs.yml"
+    - ".github/workflows/pr.yml"
+    - ".github/workflows/hygiene.yml"
+    - ".github/workflows/issue-status.yml"
     - "mkdocs.yml"
     - "mkdocs_hooks.py"
     - "requirements-docs.txt"
     - ".markdownlint*"
+  # The tools: never read by the engine's build or tests (CMake reads only src/, tests/, assets/ and cmake/), so the
+  # engine jobs are skipped, but the python package, its tests or its OS-dependent local gate read them, so python
+  # runs on every OS. The docs build imports python/src/coney_tools, but the docs workflow runs on every change anyway.
+  tools_only:
+    - "python/"
+    - ".claude/"
+    - "tools/"
+    - "bootstrap.ps1"
+    - "bootstrap.sh"
+    - "coney.local.example.toml"
+    - ".mcp.json"
+    - ".pre-commit-config.yaml"
+    - ".github/ISSUE_TEMPLATE/"
+    - ".github/workflows/python.yml"
+  # The engine: what the build, sanitizers and clang-tidy jobs read. They run; python runs on Linux only, because its
+  # checks that read C++ files (progress, natives) do not depend on the OS. Not here, so they run everything: the
+  # scripts in .github/scripts/, which the clang-tidy job or every job runs and python's tests run under bash on
+  # every OS.
+  engine:
+    - "src/"
+    - "tests/"
+    - "assets/"
+    - "cmake/"
+    - "CMakeLists.txt"
+    - "CMakePresets.json"
+    - ".clang-format"
+    - ".clang-tidy"
+    - ".github/actions/"
+    - ".github/workflows/build.yml"
   # Written by a generator, never by hand; on a merge conflict take either side and rerun it.
   generated:
     - {path: "docs/references/bindings/", by: "coney-tools natives render"}
@@ -374,8 +413,8 @@ hygiene:
       scope: files
       severity: error
       fix: skill
-      keys: [paths.docs_only]
-      summary: ".github/scripts/ci-scope.sh does not read the docs-only paths from the conventions file"
+      keys: [paths.docs_only, paths.tools_only, paths.engine]
+      summary: ".github/scripts/ci-scope.sh does not read the CI scope paths (docs_only, tools_only, engine) from the conventions file"
     files.large-file-limit:
       scope: files
       severity: error

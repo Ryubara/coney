@@ -99,8 +99,12 @@ class Paths:
     code: tuple[str, ...]
     #: Prefixes of the documentation, which satisfies that.
     docs: tuple[str, ...]
-    #: Patterns of what a documentation-only pull request touches (see `is_docs_only`).
+    #: Patterns of what a documentation-only pull request touches (see `is_docs_only`): CI's first scope class.
     docs_only: tuple[str, ...]
+    #: Patterns of the tools (the python package, agent setup): CI's second scope class (see `ci_class`).
+    tools_only: tuple[str, ...]
+    #: Patterns of what the engine jobs read: CI's third scope class (see `ci_class`).
+    engine: tuple[str, ...]
     generated: tuple[GeneratedPath, ...]
     pointer_files: PointerFiles
     #: The only files that may hold the repository's or the docs site's address.
@@ -118,6 +122,14 @@ class Paths:
     def is_docs_only(self, path: str) -> bool:
         """Whether `path` matches a `docs_only` pattern: a trailing `/` is a folder, `*` stays within one folder."""
         return any(_pattern_regex(pattern).fullmatch(path) for pattern in self.docs_only)
+
+    def ci_class(self, path: str) -> str:
+        """The CI scope class of `path`, as `.github/scripts/ci-scope.sh` sorts it: the first of `docs_only`,
+        `tools_only` and `engine` whose patterns match, else `unknown` (which runs everything)."""
+        for name, patterns in (("docs_only", self.docs_only), ("tools_only", self.tools_only), ("engine", self.engine)):
+            if any(_pattern_regex(pattern).fullmatch(path) for pattern in patterns):
+                return name
+        return "unknown"
 
     def docs_only_regex(self) -> str:
         """The `docs_only` patterns as the one regular expression `.github/scripts/ci-scope.sh` holds."""
@@ -705,22 +717,22 @@ def _each[T](value: object, where: str, build: Callable[[object, str], T]) -> tu
 
 
 def _pattern_regex(pattern: str) -> re.Pattern[str]:
-    """The regular expression of a `docs_only` pattern: `dir/` matches the whole folder, `*` stays within a folder."""
+    """The regular expression of a CI scope pattern: `dir/` matches the whole folder, `*` stays within a folder."""
     if pattern.endswith("/"):
         return re.compile(re.escape(pattern) + ".*", re.DOTALL)
     return re.compile("[^/]*".join(re.escape(part) for part in pattern.split("*")))
 
 
-#: What a `docs_only` pattern may hold: plain path characters and `*`, which `.github/scripts/ci-scope.sh` turns into a
-#: regular expression by escaping the dot and nothing more.
-_DOCS_ONLY_PATTERN = re.compile(r"^[A-Za-z0-9_./*-]+$")
+#: What a CI scope pattern (`docs_only`, `tools_only`, `engine`) may hold: plain path characters and `*`, which
+#: `.github/scripts/ci-scope.sh` turns into a regular expression by escaping the dot and nothing more.
+_SCOPE_PATTERN = re.compile(r"^[A-Za-z0-9_./*-]+$")
 
 
-def _docs_only_patterns(value: object, where: str) -> tuple[str, ...]:
-    """The `paths.docs_only` list; a pattern with a character the CI scope script does not escape is refused."""
+def _scope_patterns(value: object, where: str) -> tuple[str, ...]:
+    """One CI scope list of `paths`; a pattern with a character the CI scope script does not escape is refused."""
     patterns = _texts(value, where)
     for index, pattern in enumerate(patterns):
-        if not _DOCS_ONLY_PATTERN.match(pattern):
+        if not _SCOPE_PATTERN.match(pattern):
             raise _fail(f"{where}[{index}]", f"'{pattern}': only letters, digits, . _ / - and * (ci-scope.sh reads it)")
     return patterns
 
@@ -754,14 +766,26 @@ def _read_generated(data: object, where: str) -> GeneratedPath:
 
 def _read_paths(data: object, where: str) -> Paths:
     """The `paths` section: path classes, generated paths, pointer files and the size limit."""
-    keys = ("code", "docs", "docs_only", "generated", "pointer_files", "address_allowed_in", "large_file_kb")
+    keys = (
+        "code",
+        "docs",
+        "docs_only",
+        "tools_only",
+        "engine",
+        "generated",
+        "pointer_files",
+        "address_allowed_in",
+        "large_file_kb",
+    )
     table = _table(data, where, keys)
     pointer = _table(table["pointer_files"], _at(where, "pointer_files"), ("files", "line", "max_bytes"))
     pointer_where = _at(where, "pointer_files")
     return Paths(
         code=_texts(table["code"], _at(where, "code")),
         docs=_texts(table["docs"], _at(where, "docs")),
-        docs_only=_docs_only_patterns(table["docs_only"], _at(where, "docs_only")),
+        docs_only=_scope_patterns(table["docs_only"], _at(where, "docs_only")),
+        tools_only=_scope_patterns(table["tools_only"], _at(where, "tools_only")),
+        engine=_scope_patterns(table["engine"], _at(where, "engine")),
         generated=_each(table["generated"], _at(where, "generated"), _read_generated),
         pointer_files=PointerFiles(
             files=_texts(pointer["files"], _at(pointer_where, "files")),
