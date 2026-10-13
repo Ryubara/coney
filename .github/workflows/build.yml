@@ -239,10 +239,11 @@ jobs:
   # Keeps one ccache entry per job and one dependency entry per OS on this ref: deletes the older ones once this run
   # has saved its own, so main's entries stay within the repository's 10 GB (docs/guides/building.md#ci-caches). A
   # key's family is the key without its last part (a run id, a commit SHA or a deps.cmake hash). Pull requests save
-  # nothing, so they skip it. The only job with write access to the Actions API, which deleting a cache needs.
+  # nothing, so they skip it. The only job with write access to the Actions API, which deleting a cache needs. Two
+  # runs on main can overlap (push, nightly, manual), so an entry the other run already deleted is not an error.
   cache-prune:
     needs: [build, sanitizers, clang-tidy]
-    if: ${{ always() && github.event_name != 'pull_request' }}
+    if: ${{ !cancelled() && github.event_name != 'pull_request' }}
     runs-on: ubuntu-24.04
     permissions:
       actions: write
@@ -260,7 +261,7 @@ jobs:
             "$RUNNER_TEMP/caches.json" > "$RUNNER_TEMP/stale.txt"
           while read -r id key; do
             echo "Deleting $key"
-            gh cache delete "$id"
+            gh cache delete "$id" || echo "Already gone: $key"
           done < "$RUNNER_TEMP/stale.txt"
 
   format:
