@@ -351,12 +351,12 @@ an assert. A parser that silently accepts truncated data is a Critical review fi
   releases them, so no early return can leak them.
 - **No owning raw pointers.** Ownership is `std::unique_ptr`, a container, or a small RAII wrapper. A raw pointer
   or reference means "I'm looking at something someone else owns" and nothing more, as `WadIndex::find` above
-  shows.
-- **A destructor reads only what its object owns.** It may detach itself from what it is attached to, but it
-  samples, logs or snapshots nothing through its references: their owners may be gone already, as a mode's members
-  are destroyed in reverse order. `human::Player`'s destructor once took a camera snapshot, which sampled his pose;
-  held in a paired move, he played the attacker's clip from a cast character the play mode had freed first, and the
-  disc's AI-driven Brawl test crashed when it ended mid-match.
+  shows. What that means for a destructor is the next rule.
+- **A destructor reads only what its object owns.** It samples, logs or snapshots nothing through its references:
+  their owners may be gone already, as a mode's members are destroyed in reverse order. It may detach itself from
+  an object it is attached to only when that object is documented to outlive it (`Player::setCameras` says the
+  cameras do); otherwise it touches nothing. For example, a player's destructor must not sample his pose, because
+  a clip he plays can belong to a character freed before him.
 - **Disc data is read through `coney::io::Reader`**, with explicit little-endian reads (`readU8`, `readU16Le`,
   `readU32Le`, `readF32Le`, `seek`, `remaining`). Each read checks the bounds and returns
   `std::expected<T, Error>`, so running off the end of a buffer is an error rather than a crash.

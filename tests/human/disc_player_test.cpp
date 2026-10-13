@@ -318,8 +318,10 @@ TEST_CASE("a player outlives the clips he plays: his removal reads nothing of a 
 
     // A clip another owner keeps, as a cast character's set keeps the attacker's side of a paired move or a scene its
     // dynamic clips: a play mode removes those owners before its player (the crash after the disc's AI-driven Brawl).
-    // The owner is large, so the allocator hands its memory back to the system when it goes, and reading the clip
-    // after that faults on every platform instead of reading stale bytes.
+    // The owner is large, so the allocator may hand its memory back to the system when it goes: reading the clip
+    // after that faults on the Windows heap and under AddressSanitizer (the `asan` preset is the gate everywhere).
+    // Where a freed large vector stays mapped (glibc, macOS), a stale read can succeed and this test alone proves
+    // nothing.
     constexpr std::size_t kClips = 1U << 15U;
     auto owner = std::make_unique<std::vector<coney::anim::AnimClip>>(kClips);
     coney::anim::AnimClip& clip = owner->back();
