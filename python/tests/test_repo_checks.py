@@ -666,7 +666,7 @@ def test_the_branch_models_come_from_the_commits_after_the_base(tmp_path: Path) 
         ],
     )
     # The base commit's own trailer (Haiku) is not on the branch.
-    assert branch_trailer_models(repo, "main~2", TRAILERS) == [SONNET, OPUS]
+    assert branch_trailer_models(repo, "main~2", TRAILERS) == [OPUS, SONNET]
     assert branch_trailer_models(repo, "HEAD", TRAILERS) == []
 
 
@@ -702,6 +702,26 @@ def test_a_merge_of_main_counts_main_s_trailers_only_while_origin_main_is_stale(
     # After a fetch, origin/main holds the merged commits and only the branch's own trailer is left.
     git(clone, "fetch", "-q", "origin")
     assert branch_trailer_models(clone, "origin/main", TRAILERS) == [SONNET]
+
+
+def test_the_branch_models_do_not_depend_on_which_side_of_a_merge_is_newer(tmp_path: Path) -> None:
+    # The same merge as above, but main's commit is made before the branch's: `git log` lists the two the other way
+    # round (it orders by commit time), and the answer must not change.
+    (tmp_path / "upstream").mkdir()
+    upstream = make_branch(tmp_path / "upstream", [])
+    clone = tmp_path / "clone"
+    git(tmp_path, "clone", "-q", str(upstream), str(clone))
+    git(clone, "switch", "-q", "-c", "feature")
+    old_main = git(clone, "rev-parse", "origin/main").strip()
+    (upstream / "f.txt").write_text("new", encoding="utf-8")
+    git(upstream, "commit", "-q", "-a", "-m", message("a: Fix c", f"Co-Authored-By: {OPUS} <noreply@anthropic.com>"))
+    (clone / "g.txt").write_text("1", encoding="utf-8")
+    git(clone, "add", "g.txt")
+    git(clone, "commit", "-q", "-m", message("a: Add b", f"Co-Authored-By: {SONNET} <noreply@anthropic.com>"))
+    git(clone, "fetch", "-q", "origin")
+    git(clone, "merge", "-q", "--no-ff", "-m", "Merge main", "origin/main")
+    git(clone, "update-ref", "refs/remotes/origin/main", old_main)
+    assert branch_trailer_models(clone, "origin/main", TRAILERS) == [OPUS, SONNET]
 
 
 # --- list bullets: one definition, shared with the audit's text reader ----------------------------------------------
