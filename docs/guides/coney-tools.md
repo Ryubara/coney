@@ -791,8 +791,8 @@ line, and any failure makes the command exit 1:
 | `repo` | always | `repo audit --files`: `.github/conventions.yml` loads, and the agent pointer files, the generated blocks, the issue forms, the pull request template, the CI scope script and pre-commit's size limit agree with it |
 | `pre-commit` | a file changed | `pre-commit run --files` on the changed files: clang-format, ruff, whitespace, the 512 KB guard, the real-clock rule |
 | `clang-tidy` | C++ under `src/` or `tests/` changed | clang-tidy on the files CI's pull-request job would check, with the compiler warnings the GCC and Clang builds enable |
-| `docs` | a file matching `paths.docs_only` of `.github/conventions.yml` changed (`docs/`, `research/`, top-level Markdown, `mkdocs.yml`, the MkDocs hooks, `requirements-docs.txt`, ...) | `mkdocs build --strict` into a throwaway folder |
-| `python` | `python/` changed | `pytest python/tests` and `mypy python/src python/tests` |
+| `docs` | a file matching `paths.docs_only` of `.github/conventions.yml` changed (`docs/`, `research/`, top-level Markdown, `mkdocs.yml`, the MkDocs hooks, `requirements-docs.txt`, ...), or the python the build imports (`python/src/coney_tools/progress*.py`, `config.py`) | `mkdocs build --strict` into a throwaway folder |
+| `python` | `python/` or `.claude/` changed (the tests also run the hooks) | `pytest python/tests` and `mypy python/src python/tests` |
 
 **Which files clang-tidy checks.** The same rules as CI (`.github/scripts/tidy-files.sh`): a changed `.cpp` itself, a
 changed header through every `.cpp` that includes it, directly or through other headers. A test keeps the two in

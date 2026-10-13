@@ -306,11 +306,15 @@ gate, and a failure there is fixed forward on the branch.
 
 ### What a pull request runs {#what-a-pull-request-runs}
 
-Runners are shared (about 20 jobs at once, 5 of them on macOS), so a pull request runs only what its change can break,
-and gives up no check that the change could fail. A `changes` job at the start of `build` and `python` decides, with
+Runners are shared (about 20 jobs at once, 5 of them on macOS), so a pull request runs only what its change can break.
+Two checks are given up on purpose: an engine-only pull request no longer runs the local gate's `pre-commit` step
+or the repository checks on Windows or macOS, because they do not depend on the OS (below) and `format` still runs
+pre-commit over every file on Linux. A `changes` job at the start of `build` and `python` decides, with
 `.github/scripts/ci-scope.sh`. It sorts each changed file into the first of three classes of
 [.github/conventions.yml](repo:.github/conventions.yml) whose list matches it (`paths.docs_only`, then
-`paths.tools_only`, then `paths.engine`), and the pull request runs what any of its files needs:
+`paths.tools_only`, then `paths.engine`), and the pull request runs what any of its files needs. The lists are those of
+the branch the pull request merges into, not its own: the file is itself `docs_only`, so a pull request that edited a
+list could otherwise skip the jobs it changes. A change to a list applies to the pull requests after it:
 
 | Change | `build`, `sanitizers`, `clang-tidy` | `python` | `format`, `docs`, `pr` workflows |
 | --- | --- | --- | --- |

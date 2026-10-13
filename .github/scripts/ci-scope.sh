@@ -28,11 +28,22 @@ set -euo pipefail
 # research/ includes research/traces/, which the python tests read; that is one reason docs_only still runs python on
 # Linux. `coney-tools repo audit --files` (files.ci-scope) checks that this script still reads the file and can parse
 # every list.
+#
+# A pull request is sorted by the lists of the branch it merges into (HEAD^1), not of its own merge commit: the file is
+# itself docs-only, so a pull request that edits src/ and also lists src/ as docs-only would otherwise skip its own
+# engine jobs. A change to the lists takes effect for the pull requests after it. With no parent that holds the file
+# (a first commit, or a pull request that adds it), the checked-out file is read.
+conventions_path=".github/conventions.yml"
 conventions="$(dirname "${BASH_SOURCE[0]}")/../conventions.yml"
+if [[ "${EVENT:-}" == pull_request ]] && base_text="$(git show "HEAD^1:$conventions_path" 2>/dev/null)"; then
+  conventions_text="$base_text"
+else
+  conventions_text="$(cat "$conventions")"
+fi
 
 # The patterns of one list, one per line: the quoted items under the `  <key>:` line of the file.
 patterns_of() {
-  tr -d '\r' <"$conventions" | awk -v key="  $1:" '
+  printf '%s\n' "$conventions_text" | tr -d '\r' | awk -v key="  $1:" '
     index($0, key) == 1 { inside = 1; next }
     inside && /^    - "/ { sub(/^    - "/, ""); sub(/".*$/, ""); print; next }
     inside && /^[ \t]*(#.*)?$/ { next }
@@ -53,7 +64,7 @@ regex_of() {
     fi
   done < <(patterns_of "$1")
   if ((${#alternatives[@]} == 0)); then
-    echo "ci-scope.sh: found no paths.$1 in $conventions" >&2
+    echo "ci-scope.sh: found no paths.$1 in $conventions_path" >&2
     return 1
   fi
   local joined
