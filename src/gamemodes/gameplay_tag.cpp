@@ -134,15 +134,22 @@ void GameplayMode::updateTagging(const Pads& pads, double seconds) {
         m_tagTicks -= kTicksPerSpotUpdate;
         m_tagSpots.update();
     }
-    // The spray's intro: the stick game goes live when its loop starts; a body something else took ends it unsprayed.
+    // The spray's intro: the stick game goes live when its loop starts; a body something else took ends it unsprayed,
+    // and the tagger still gets event 14 with the tag and 0, so the script gives the spot its prompt back
+    // (docs/research/scripting.md#level87-fixes, fix 1): `Tag_UpdatePlayer` (`0x00273c60`) ends a spray whose action
+    // was taken over through `Tag_End` (`0x0022e848`), which always sends the event.
     if (m_tagIntro) {
         const auto* scripted = dynamic_cast<const ScriptedPlayer*>(m_level.get());
         if (scripted == nullptr || scripted->tagSprayLooping()) {
             beginTagSpray();
         } else if (!scripted->tagSprayPlaying()) {
-            m_log(std::format("tag: the spray of tag {:.0f} was cut short\n", m_tagIntro->tag));
-            m_scripted->storyHost().lockMovement(m_tagIntro->human, false);
+            const TagIntro intro = *m_tagIntro;
             m_tagIntro.reset();
+            m_log(std::format("tag: the spray of tag {:.0f} was cut short\n", intro.tag));
+            m_scripted->storyHost().lockMovement(intro.human, false);
+            if (m_context.messages != nullptr) {
+                m_context.messages->deliver(m_scripts, intro.human, kTagEndEvent, 0.0, intro.tag, 0.0);
+            }
         }
     }
     if (!m_tagSession) {
