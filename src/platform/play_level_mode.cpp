@@ -538,7 +538,8 @@ void PlayLevelMode::drawCharacter() const {
             m_lights->drawHumanPasses(*fighter.mesh, false, blood);
         }
     }
-    m_stage->drawPuppets();
+    // A scene's puppets are lit like any human (a bare render of their atomics crashes: issue 446); no blood layer.
+    m_stage->drawPuppets([this](CharacterMesh& mesh) { m_lights->drawHumanPasses(mesh, false, nullptr); });
 }
 
 rw::Texture* PlayLevelMode::bloodTextureFor(const combat::Health& health) const {

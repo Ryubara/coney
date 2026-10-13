@@ -119,11 +119,12 @@ void SceneStage::skinPuppets(float alpha, const Skin& skin) {
     }
 }
 
-void SceneStage::drawPuppets() const {
-    for (const auto& [human, puppet] : m_puppets) {
+void SceneStage::drawPuppets(const DrawPuppet& draw) {
+    for (auto& [human, puppet] : m_puppets) {
         const auto bound = m_bound.find(human);
+        // Only a puppet the scene has posed: before its first frame there is nothing skinned to draw.
         if (bound != m_bound.end() && bound->second.frame && puppet.mesh != nullptr) {
-            puppet.mesh->atomic()->render();
+            draw(*puppet.mesh);
         }
     }
 }

@@ -635,7 +635,10 @@ original's save state stands, as `walk60` and `run_circle` do from slot 1's firs
 
 `--scene NAME` (with `--play-level`) plays the in-engine scene NAME at once, after any `--start`, as a level99
 cinematic: player 1 takes the role named `warrrecv` and the other roles are played by stand-ins drawn from the role's
-model, letterboxed and skippable with cross or START ([Scenes](../research/scenes.md)). It plays on the level's own
+model (a role whose model Coney does not know is drawn as player 1's), letterboxed and skippable with cross or START
+([Scenes](../research/scenes.md)). Any level's scenes play, not only level99's (`--play-level level2 --scene l2_c1`);
+the stand-ins are lit like the other humans, never drawn bare, which crashed a run with a window
+([`disc_scene_option_test.cpp`](repo:tests/platform/disc_scene_option_test.cpp) guards it). It plays on the level's own
 scene system, beside the scenes the level's scripts play themselves (level99's intro, `l99_c1`, at checkpoint 1). It
 is a test aid:
 
