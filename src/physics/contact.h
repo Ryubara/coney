@@ -13,7 +13,8 @@
 // names; the others keep what the record held, as the original's uncleared stack record does, so the tests can check
 // what was written. The moving body's resolution reads the same record.
 // Research: docs/research/physics.md#contacts, docs/research/physics.md#u4-summary-for-the-implementer,
-// docs/research/physics.md#u4b-summary-for-the-implementer, docs/research/physics-bodies.md#u2-mapping-into-the-c0-contact
+// docs/research/physics.md#u4b-summary-for-the-implementer,
+// docs/research/physics-bodies.md#u2-mapping-into-the-c0-contact
 
 namespace coney::physics {
 
@@ -75,9 +76,9 @@ struct Contact {
     /// `+0x88`: a penetration depth (overlap tests that say so); the sphere sweep writes its signed start distance from
     /// the plane here.
     float depth = 0.0F;
-    Vec4 point;                            ///< `+0x90`: the contact point in the world.
-    Vec4 slide;                            ///< `+0xa0`: a slide vector, read with kContactAddSlide or kContactStoreSlide.
-    std::uint32_t flags = 0;               ///< `+0xb0`: kContact* bits.
+    Vec4 point;              ///< `+0x90`: the contact point in the world.
+    Vec4 slide;              ///< `+0xa0`: a slide vector, read with kContactAddSlide or kContactStoreSlide.
+    std::uint32_t flags = 0; ///< `+0xb0`: kContact* bits.
     std::optional<std::uint32_t> triangle; ///< `+0xb4`: the level triangle met, nothing for a body.
 
     friend bool operator==(const Contact&, const Contact&) = default;
